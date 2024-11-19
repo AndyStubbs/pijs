@@ -11,9 +11,11 @@ find the latest version.
 
 Pi.js is named after the mathematical constant **π (pi)**, which plays a key role in many graphics and game development functions. It provides an all-in-one solution for handling graphics, sound, and user input, making it an excellent choice for creating interactive and nostalgic game experiences.
 
-Built on top of the **HTML5 Canvas API**, Pi.js is:
-- **Lightweight** and optimized for fast performance.
-- **Beginner-friendly**, with a simple and intuitive API.
+Built on top of the **HTML5 Canvas API**, Pi.js has:
+- **Retro Inspiration**: draw retro style graphics without modern effects like anti-aliasing
+- **Great at Primatives**: lines, circles, pixels - remember those? Pi.js is great for creating primatives for retro graphics.
+- **Print command**: A modern graphics library that has a print command - Yes.
+- **Beginner-friendly**: with a simple and intuitive API.
 - Capable of supporting **modern 2D games** alongside retro-style creations.
 
 ---
@@ -26,6 +28,7 @@ Built on top of the **HTML5 Canvas API**, Pi.js is:
 
 - **Sound**:
 	- Play and manage sound effects and background music.
+	- Even generate your own sounds based on frequency or notes!
 
 - **Input Handling**:
 	- Capture keyboard and mouse input with ease.
