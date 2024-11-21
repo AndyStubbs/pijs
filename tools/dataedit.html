@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Data Edit</title>
+		<script src="../build/pi-latest.js"></script>
+		<style>
+			html, body {
+				background-color: black;
+			}
+			#data-text-container {
+				display: none;
+				position: absolute;
+				width: 500px;
+				height: 285px;
+				left: calc( 50% - 250px);
+				top: calc( 50% - 142.5px);
+				z-index: 99;
+				background-color: rgba(255,255,255,0.9);
+				color: rgb(68, 68, 68);
+				padding: 5px;
+				border: 1px solid black;
+			}
+			#data-text-container textarea {
+				display: block;
+				width: calc( 100% - 5px );
+				height: 225px;
+				margin-bottom: 5px;
+				resize: none;
+			}
+			#data-text-container input[type="button"] {
+				margin-right: 15px;
+				border-radius: 5px;
+				padding: 5px;
+				width: 100px;
+				cursor: pointer;
+				background-color: #77a;
+				border: 1px solid #338;
+				color: #0d0d0d;
+			}
+			#data-text-container input[type="button"]:hover {
+				background-color: #99e;
+			}
+			.buttons {
+				display: flex;
+				justify-content: space-around;
+			}
+		</style>
+	</head>
+<body>
+
+<div id="data-text-container">
+	<label for="data-text">Data Value</label>
+	<textarea id="data-text"></textarea>
+	<div class="buttons">
+		<input id="load-btn" type="button" value="Load" />
+		<input id="copy-btn" type="button" value="Copy" />
+		<input id="close-btn" type="button" value="Close" />
+	</div>
+</div>
+
+<script>
+
+"use strict";
+
+// Close modal popup
+document.getElementById( "close-btn" ).addEventListener( "click", () => {
+	document.getElementById( "data-text-container" ).style.display = "none";
+} );
+
+// Setup Menu
+$.ready( () => {
+	$.screen( "320x200" );
+	$.setFont( 2 );
+	$.print( "Hello World" );
+	$.setActionKey( "Control" );
+	$.setActionKey( "m" );
+	$.onkey( [ "Control", "m" ], "down", showMenu );
+	show();
+} );
+
+function show() {
+	$.cls();
+	$.setColor( "#fff" );
+	$.setPos( 0, 0 );
+	$.print( "Ctrl+M - Menu" );
+	$.setColor( "#888" );
+	$.line( 0, 10, $.width(), 10 );
+}
+
+function showMenu() {
+	$.print( "Menu" );
+}
+
+function showData() {
+	document.getElementById( "data-text-container" ).style.display = "block";
+}
+
+</script>
+</body>
+</html>
