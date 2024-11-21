@@ -69,12 +69,13 @@ document.getElementById( "close-btn" ).addEventListener( "click", () => {
 
 // Setup Menu
 $.ready( () => {
-	$.screen( "320x200" );
+	$.screen( { "aspect": "320x200", "willReadFrequently": true } );
 	$.setFont( 2 );
 	$.print( "Hello World" );
 	$.setActionKey( "Control" );
 	$.setActionKey( "m" );
 	$.onkey( [ "Control", "m" ], "down", showMenu );
+	$.onkey( "1", "down", () => setDataSize );
 	show();
 } );
 
@@ -88,11 +89,20 @@ function show() {
 }
 
 function showMenu() {
-	$.print( "Menu" );
+	show();
+	$.setPos( 0, 2 );
+	$.print( "1. Set Data Size" );
+	$.print( "2. Show Data" );
 }
 
 function showData() {
 	document.getElementById( "data-text-container" ).style.display = "block";
+}
+
+function setDataSize() {
+	show();
+	$.setPos( 0, 2 );
+	print( "Set Data Size" );
 }
 
 </script>
