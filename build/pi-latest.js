@@ -5,7 +5,7 @@
 * Copyright Andy Stubbs
 * Released under the Apache License 2.0
 * https://www.apache.org/licenses/LICENSE-2.0
-* Date: 2024-10-12
+* Date: 2024-11-22
 * @preserve
 */
 
@@ -510,8 +510,7 @@ window.pi.util = ( function () {
 	var pi = window.pi;
 
 	function isFunction( fn ) {
-		return fn &&
-			{}.toString.call( fn ) === '[object Function]';
+		return typeof fn === 'function';
 	}
 
 	function isDomElement( el ) {

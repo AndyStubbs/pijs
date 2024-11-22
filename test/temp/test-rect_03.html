@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>QBS Test Results</title>
+	<title>PIJS Test Results</title>
 	<style>
 		img {
 			max-width: calc(50% - 25px);
@@ -31,10 +31,10 @@
 	<h1>Test Results</h1>
 	<div id="test_stats"><div id='stats'></div>
 			<span class='error'>Discrepancies Found</span>
-			<span class='neutral'>1 new images not verified.</span>
+			<span class='error'>1 mismatched images.</span>
 		
 			<ol>
-				<li><a href='#test_0'>rect 03 - Not Verified</a></li>
+				<li><a href='#test_0'>rect 03 - Not Matched</a></li>
 			</ol></div>
 	<hr />
 	<div id="unit_tests"></div>
@@ -43,9 +43,9 @@
 		<div id='test_0'></div>
 		<h2>rect 03</h2>
 		<div class='link'><a href='http://localhost:8080/test/tests/rect_03.html' target='_blank'>http://localhost:8080/test/tests/rect_03.html</a>&nbsp;&nbsp;-&nbsp;&nbsp;<a href='#stats'>Go back</a></div>
-		<span class='neutral'>Not Verified</span><br />
-		<img src='tests/screenshots/rect_03.png' />
-		<img src='tests/screenshots/rect_03_new.png' /></div>
+		<span class='error'>NOT MATCHED - Difference: 0.39</span><br />
+		<a href='image-compare.html?file1=..%2Ftests%2Fscreenshots%2Frect_03.png&file2=..%2Ftests%2Fscreenshots%2Frect_03_new.png' target='_blank'><img src='../tests/screenshots/rect_03.png' /></a>
+		<a href='image-compare.html?file1=..%2Ftests%2Fscreenshots%2Frect_03.png&file2=..%2Ftests%2Fscreenshots%2Frect_03_new.png' target='_blank'><img src='../tests/screenshots/rect_03_new.png' /></a></div>
 	<div id="performance_tests"></div>
 </body>
 </html>

@@ -34,11 +34,11 @@
 				width: 100px;
 				cursor: pointer;
 				background-color: #77a;
-				border: 1px solid #338;
+				border: 1px solid #99e;
 				color: #0d0d0d;
 			}
 			#data-text-container input[type="button"]:hover {
-				background-color: #99e;
+				background-color: #558;
 			}
 			.buttons {
 				display: flex;
@@ -62,6 +62,10 @@
 
 "use strict";
 
+let data = [];
+let size = [ 30, 30 ];
+let screen = null;
+
 // Close modal popup
 document.getElementById( "close-btn" ).addEventListener( "click", () => {
 	document.getElementById( "data-text-container" ).style.display = "none";
@@ -69,15 +73,28 @@ document.getElementById( "close-btn" ).addEventListener( "click", () => {
 
 // Setup Menu
 $.ready( () => {
-	$.screen( { "aspect": "320x200", "willReadFrequently": true } );
+	screen = $.screen( { "aspect": "320x200", "willReadFrequently": true } );
 	$.setFont( 2 );
 	$.print( "Hello World" );
 	$.setActionKey( "Control" );
 	$.setActionKey( "m" );
-	$.onkey( [ "Control", "m" ], "down", showMenu );
-	$.onkey( "1", "down", () => setDataSize );
+	setupInput();
 	show();
 } );
+
+function setupInput() {
+	$.onkey( [ "Control", "m" ], "down", showMenu );
+	$.onkey( "Digit1", "down", setDataSize );
+	$.onkey( "Digit2", "down", showData );
+	$.onkey( "Digit3", "down", clearData );
+}
+
+function removeInput() {
+	$.offkey( [ "Control", "m" ], "down", showMenu );
+	$.offkey( "Digit1", "down", setDataSize );
+	$.offkey( "Digit2", "down", showData );
+	$.offkey( "Digit3", "down", clearData );
+}
 
 function show() {
 	$.cls();
@@ -93,16 +110,28 @@ function showMenu() {
 	$.setPos( 0, 2 );
 	$.print( "1. Set Data Size" );
 	$.print( "2. Show Data" );
+	$.print( "3. Clear Data" );
 }
 
 function showData() {
 	document.getElementById( "data-text-container" ).style.display = "block";
 }
 
-function setDataSize() {
+function clearData() {
+	data = [];
+	show();
+}
+
+async function setDataSize() {
+	console.log( "Setting data size" );
+	removeInput();
 	show();
 	$.setPos( 0, 2 );
-	print( "Set Data Size" );
+	$.print( "Set Data Size" );
+	size[ 0 ] = await $.input( "Enter width: ", null, true, true, false );
+	size[ 1 ] = await $.input( "Enter height: ", null, true, true, false );
+	setupInput();
+	show();
 }
 
 </script>

@@ -7,8 +7,7 @@ window.pi.util = ( function () {
 	var pi = window.pi;
 
 	function isFunction( fn ) {
-		return fn &&
-			{}.toString.call( fn ) === '[object Function]';
+		return typeof fn === 'function';
 	}
 
 	function isDomElement( el ) {
