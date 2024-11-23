@@ -66,6 +66,7 @@ let g_data = [];
 let g_size = [ 30, 30 ];
 let g_screen = null;
 let g_colors = [ 15, 0 ];
+let g_showGrid = true;
 
 // Close modal popup
 document.getElementById( "close-btn" ).addEventListener( "click", () => {
@@ -80,6 +81,7 @@ $.ready( () => {
 	$.setActionKey( "Control" );
 	$.setActionKey( "m" );
 	setupInput();
+	clearData();
 	show();
 } );
 
@@ -92,6 +94,8 @@ function setupInput() {
 	$.onkey( "Digit5", "down", showValues );
 	$.onkey( "Digit6", "down", pickColor1 );
 	$.onkey( "Digit7", "down", pickColor2 );
+	$.onkey( "Digit8", "down", showHideGrid );
+	$.onkey( "Digit9", "down", exitMenu );
 }
 
 function removeInput() {
@@ -103,33 +107,50 @@ function removeInput() {
 	$.offkey( "Digit5", "down", showValues );
 	$.offkey( "Digit6", "down", pickColor1 );
 	$.offkey( "Digit7", "down", pickColor2 );
+	$.offkey( "Digit8", "down", showHideGrid );
+	$.offkey( "Digit8", "down", exitMenu );
 }
 
 function show( isSkipData ) {
 	$.cls();
 	$.setColor( "#fff" );
 	$.setPos( 0, 0 );
-	$.print( "0 - Menu", true );
-	$.setColor( "#888" );
-	$.line( 0, 10, 105, 10 );
+	$.print( " 0 - Menu", true );
+	$.setColor( "#aaa" );
+	$.line( 8, 11, 275, 11 );
 	showActiveColors();
 	if( !isSkipData ) {
 		showData();
 	}
 }
 
+function showHideGrid() {
+	g_showGrid = !g_showGrid;
+	show();
+}
+
+function exitMenu() {
+	show();
+}
+
 function showMenu() {
 	show( true );
-	$.setColor( "#888" );
+	$.setColor( "#aaa" );
 	$.setPos( 0, 2 );
-	$.print( "0. See Menu" );
-	$.print( "1. Set Color 1" );
-	$.print( "2. Set Color 2" );
-	$.print( "3. Set Data Size" );
-	$.print( "4. Clear Data" );
-	$.print( "5. Show Data" );
-	$.print( "6. Pick Color 1" );
-	$.print( "7. Pick Color 2" );
+	$.print( " 0. See Menu" );
+	$.print( " 1. Set Color 1" );
+	$.print( " 2. Set Color 2" );
+	$.print( " 3. Set Data Size" );
+	$.print( " 4. Clear Data" );
+	$.print( " 5. Show Data" );
+	$.print( " 6. Pick Color 1" );
+	$.print( " 7. Pick Color 2" );
+	if( g_showGrid ) {
+		$.print( " 8. Hide Grid" );
+	} else {
+		$.print( " 8. Show Grid" );
+	}
+	$.print( " 9. Exit Menu" );
 }
 
 function showValues() {
@@ -161,31 +182,63 @@ async function setDataSize() {
 }
 
 function showData() {
-	$.put( g_data, 200, 12 );
+	let x = $.width() - g_size[ 0 ] - 10;
+	let y = 20;
+	$.setColor( "#333" );
+	$.rect( x - 3, y - 3, g_size[ 0 ] + 6, g_size[ 1 ] + 6 );
+	$.put( g_data, x, y );
+
+	let maxWidth = $.width() - g_size[ 0 ] + 10;
+	let maxHeight = $.height() - 20;
+	let width = Math.floor( maxWidth / g_size[ 0 ] );
+	let height = Math.floor( maxHeight / g_size[ 0 ] );
+	if( width > height ) {
+		width = height;
+	} else {
+		height = width;
+	}
+	let offX = 9;
+	let offY = 17;
+	for( x = 0; x < g_size[ 0 ]; x += 1 ) {
+		for( y = 0; y < g_size[ 1 ]; y += 1 ) {
+			if( g_showGrid ) {
+				$.setColor( "#333" );
+			} else {
+				$.setColor( g_data[ x ][ y ] );
+			}
+			$.rect(
+				offX + x * width - 1,
+				offY + y * height - 1,
+				width + 1,
+				height + 1,
+				g_data[ x ][ y ]
+			);
+		}
+	}
 }
 
 function showActiveColors() {
 	$.setColor( "#555" );
-	$.rect( 294, 0, 26, 14 );
-	drawColorBox( 295, 1, 12, g_colors[ 0 ] );
-	drawColorBox( 307, 1, 12, g_colors[ 1 ] );
+	$.rect( 286, 0, 26, 14 );
+	drawColorBox( 287, 1, 12, g_colors[ 0 ] );
+	drawColorBox( 299, 1, 12, g_colors[ 1 ] );
 	setShadeColor( g_colors[ 0 ] );
-	$.setPosPx( 297, 3 );
+	$.setPosPx( 289, 3 );
 	$.print( "1" );
 	setShadeColor( g_colors[ 1 ] );
-	$.setPosPx( 309, 3 );
+	$.setPosPx( 301, 3 );
 	$.print( "2" );
 }
 
 function setColor1() {
-	show();
+	show( true );
 	$.setPos( 0, 3 );
 	$.print( "Set Color 1", true, true );
 	showColors();
 }
 
 function setColor2() {
-	show();
+	show( true );
 	$.setPos( 0, 3 );
 	$.print( "Set Color 2", true, true );
 	showColors();
@@ -251,6 +304,7 @@ function pickColor2() {
 }
 
 function pickColor( c ) {
+	$.show( true );
 	removeInput();
 	let offX = 50;
 	let offY = 50;
