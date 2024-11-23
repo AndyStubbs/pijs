@@ -62,9 +62,17 @@
 
 "use strict";
 
-let data = [];
-let size = [ 30, 30 ];
-let screen = null;
+let g_data = [];
+let g_size = [ 30, 30 ];
+let g_screen = null;
+let g_colors = [ 15, 0 ];
+//$.rect( 294, 0, 26, 14 );
+let g_activeColorBox = {
+	"x": 294,
+	"y": 0,
+	"width": 26,
+	"height": 14
+};
 
 // Close modal popup
 document.getElementById( "close-btn" ).addEventListener( "click", () => {
@@ -73,7 +81,7 @@ document.getElementById( "close-btn" ).addEventListener( "click", () => {
 
 // Setup Menu
 $.ready( () => {
-	screen = $.screen( { "aspect": "320x200", "willReadFrequently": true } );
+	g_screen = $.screen( { "aspect": "320x200", "willReadFrequently": true } );
 	$.setFont( 2 );
 	$.print( "Hello World" );
 	$.setActionKey( "Control" );
@@ -85,53 +93,132 @@ $.ready( () => {
 function setupInput() {
 	$.onkey( [ "Control", "m" ], "down", showMenu );
 	$.onkey( "Digit1", "down", setDataSize );
-	$.onkey( "Digit2", "down", showData );
+	$.onkey( "Digit2", "down", showValues );
 	$.onkey( "Digit3", "down", clearData );
+	$.onclick( () => showActiveColors, false, )
 }
 
 function removeInput() {
 	$.offkey( [ "Control", "m" ], "down", showMenu );
 	$.offkey( "Digit1", "down", setDataSize );
-	$.offkey( "Digit2", "down", showData );
+	$.offkey( "Digit2", "down", showValues );
 	$.offkey( "Digit3", "down", clearData );
 }
 
-function show() {
+function show( isSkipData ) {
 	$.cls();
 	$.setColor( "#fff" );
 	$.setPos( 0, 0 );
-	$.print( "Ctrl+M - Menu" );
+	$.print( "Ctrl+M - Menu", true );
 	$.setColor( "#888" );
-	$.line( 0, 10, $.width(), 10 );
+	$.line( 0, 10, 105, 10 );
+	if( !isSkipData ) {
+		showData();
+	}
 }
 
 function showMenu() {
-	show();
+	show( true );
 	$.setPos( 0, 2 );
 	$.print( "1. Set Data Size" );
-	$.print( "2. Show Data" );
+	$.print( "2. Show Data Values" );
 	$.print( "3. Clear Data" );
 }
 
-function showData() {
+function showValues() {
 	document.getElementById( "data-text-container" ).style.display = "block";
 }
 
 function clearData() {
-	data = [];
+	g_data = [];
+	for( let y = 0; y < g_size[ 1 ]; y += 1 ){
+		g_data.push( [] );
+		for( let x = 0; x < g_size[ 0 ]; x += 1 ) {
+			g_data[ y ].push( 3 );
+		}
+	}
 	show();
 }
 
 async function setDataSize() {
 	console.log( "Setting data size" );
 	removeInput();
-	show();
+	show( true );
 	$.setPos( 0, 2 );
 	$.print( "Set Data Size" );
-	size[ 0 ] = await $.input( "Enter width: ", null, true, true, false );
-	size[ 1 ] = await $.input( "Enter height: ", null, true, true, false );
+	g_size[ 0 ] = await $.input( "Enter width: ", null, true, true, false );
+	g_size[ 1 ] = await $.input( "Enter height: ", null, true, true, false );
 	setupInput();
 	show();
+}
+
+function showData() {
+	$.put( g_data, 200, 12 );
+	showActiveColors();
+}
+
+function showActiveColors() {
+	$.setColor( "#555" );
+	$.rect( 294, 0, 26, 14 );
+	drawColorBox( 295, 1, 12, g_colors[ 0 ] );
+	drawColorBox( 307, 1, 12, g_colors[ 1 ] );
+	setShadeColor( g_colors[ 0 ] );
+	$.setPosPx( 297, 3 );
+	$.print( "1" );
+	setShadeColor( g_colors[ 1 ] );
+	$.setPosPx( 309, 3 );
+	$.print( "2" );
+}
+
+function showColors() {
+	let offX = 40;
+	let offY = 40;
+	let row = 0;
+	let col = 0;
+	let size = 12;
+	let cols = 20;
+	let pixels = [ 0, 0 ];
+	$.setColor( "#555" );
+	$.rect( offX - 1, offY - 1, size * ( cols + 1 ) + 2, size * 12 + 2 );
+	for( let c = 0; c < 252; c += 1 ) {
+		drawColorBox( col + offX, row + offY, size, c );
+		if( c === g_colors[ 0 ] ) {
+			pixels[ 0 ] = [ col + offX, row + offY ];
+		} else if( c === g_colors[ 1 ] ) {
+			pixels[ 1 ] = [ col + offX, row + offY ];
+		}
+		col += size;
+		if( col > size * cols ) {
+			col = 0;
+			row += size;
+		}
+	}
+
+	// Show primary color
+	setShadeColor( g_colors[ 0 ] );
+	$.setPosPx( pixels[ 0 ][ 0 ] + 2, pixels[ 0 ][ 1 ] + 2 );
+	$.print( 1 );
+
+	// Show secondary color
+	setShadeColor( g_colors[ 1 ] );
+	$.setPosPx( pixels[ 1 ][ 0 ] + 2, pixels[ 1 ][ 1 ] + 2 );
+	$.print( 2 );
+}
+
+function drawColorBox( x, y, size,c  ) {
+	$.setColor( "#888" );
+	$.rect( x, y, size, size );
+	$.setColor( c );
+	$.rect( x, y, size - 2, size - 2, c );
+}
+
+function setShadeColor( color ) {
+	const val = $.getPal()[ color ];
+	if( val.r + val.g + val.b > 128 ) {
+		$.setColor( "#000" );
+	} else {
+		$.setColor( "#fff" );
+	}
 }
 
 </script>
