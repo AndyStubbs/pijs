@@ -66,13 +66,6 @@ let g_data = [];
 let g_size = [ 30, 30 ];
 let g_screen = null;
 let g_colors = [ 15, 0 ];
-//$.rect( 294, 0, 26, 14 );
-let g_activeColorBox = {
-	"x": 294,
-	"y": 0,
-	"width": 26,
-	"height": 14
-};
 
 // Close modal popup
 document.getElementById( "close-btn" ).addEventListener( "click", () => {
@@ -91,27 +84,31 @@ $.ready( () => {
 } );
 
 function setupInput() {
-	$.onkey( [ "Control", "m" ], "down", showMenu );
-	$.onkey( "Digit1", "down", setDataSize );
-	$.onkey( "Digit2", "down", showValues );
-	$.onkey( "Digit3", "down", clearData );
-	$.onclick( () => showActiveColors, false, )
+	$.onkey( "Digit0", "down", showMenu );
+	$.onkey( "Digit1", "down", setColor1 );
+	$.onkey( "Digit2", "down", setColor2 );
+	$.onkey( "Digit3", "down", setDataSize );
+	$.onkey( "Digit4", "down", clearData );
+	$.onkey( "Digit5", "down", showValues );
 }
 
 function removeInput() {
-	$.offkey( [ "Control", "m" ], "down", showMenu );
-	$.offkey( "Digit1", "down", setDataSize );
-	$.offkey( "Digit2", "down", showValues );
-	$.offkey( "Digit3", "down", clearData );
+	$.offkey( "Digit0", "down", showMenu );
+	$.offkey( "Digit1", "down", setColor1 );
+	$.offkey( "Digit2", "down", setColor2 );
+	$.offkey( "Digit3", "down", setDataSize );
+	$.offkey( "Digit4", "down", clearData );
+	$.offkey( "Digit5", "down", showValues );
 }
 
 function show( isSkipData ) {
 	$.cls();
 	$.setColor( "#fff" );
 	$.setPos( 0, 0 );
-	$.print( "Ctrl+M - Menu", true );
+	$.print( "0 - Menu", true );
 	$.setColor( "#888" );
 	$.line( 0, 10, 105, 10 );
+	showActiveColors();
 	if( !isSkipData ) {
 		showData();
 	}
@@ -119,10 +116,13 @@ function show( isSkipData ) {
 
 function showMenu() {
 	show( true );
+	$.setColor( "#888" );
 	$.setPos( 0, 2 );
-	$.print( "1. Set Data Size" );
-	$.print( "2. Show Data Values" );
-	$.print( "3. Clear Data" );
+	$.print( "0. See Menu" );
+	$.print( "1. Set Color 1" );
+	$.print( "2. Set Color 2" );
+	$.print( "3. Set Data Size" );
+	$.print( "4. Clear Data" );
 }
 
 function showValues() {
@@ -144,6 +144,7 @@ async function setDataSize() {
 	console.log( "Setting data size" );
 	removeInput();
 	show( true );
+	$.setColor( "#888" );
 	$.setPos( 0, 2 );
 	$.print( "Set Data Size" );
 	g_size[ 0 ] = await $.input( "Enter width: ", null, true, true, false );
@@ -154,7 +155,6 @@ async function setDataSize() {
 
 function showData() {
 	$.put( g_data, 200, 12 );
-	showActiveColors();
 }
 
 function showActiveColors() {
@@ -170,8 +170,43 @@ function showActiveColors() {
 	$.print( "2" );
 }
 
+function setColor1() {
+	show();
+	$.setPos( 0, 3 );
+	$.print( "Set Color 1", true, true );
+	showColors();
+}
+
+function setColor2() {
+	show();
+	$.setPos( 0, 3 );
+	$.print( "Set Color 2", true, true );
+	pickColor();
+}
+
+function pickColor() {
+	$.setColor( "#fff" );
+	$.rect( 25, 25, 250, 150 );
+	let r = 0;
+	let g = 0;
+	let b = 0;
+	for( let x = 25; x < 250; x += 1 ) {
+		for( let y = 25; y < 150; y += 1 ) {
+			$.setColor( [ r, g, b ] );
+			$.pset( x, y );
+			if( x % 3 === 0 ) {
+				r += 1;
+			} else if( x % 3 === 1 ) {
+				g += 1;
+			} else {
+				b += 1;
+			}
+		}
+	}
+}
+
 function showColors() {
-	let offX = 40;
+	let offX = 25;
 	let offY = 40;
 	let row = 0;
 	let col = 0;
