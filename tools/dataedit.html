@@ -65,7 +65,7 @@
 let g_data = [];
 let g_size = [ 30, 30 ];
 let g_screen = null;
-let g_colors = [ 15, 0 ];
+let g_color = 15;
 let g_showGrid = true;
 
 // Close modal popup
@@ -76,6 +76,7 @@ document.getElementById( "close-btn" ).addEventListener( "click", () => {
 // Setup Menu
 $.ready( () => {
 	g_screen = $.screen( { "aspect": "320x200", "willReadFrequently": true } );
+	$.setEnableContextMenu( false );
 	$.setFont( 2 );
 	$.print( "Hello World" );
 	$.setActionKey( "Control" );
@@ -87,28 +88,24 @@ $.ready( () => {
 
 function setupInput() {
 	$.onkey( "Digit0", "down", showMenu );
-	$.onkey( "Digit1", "down", setColor1 );
-	$.onkey( "Digit2", "down", setColor2 );
-	$.onkey( "Digit3", "down", setDataSize );
-	$.onkey( "Digit4", "down", clearData );
-	$.onkey( "Digit5", "down", showValues );
-	$.onkey( "Digit6", "down", pickColor1 );
-	$.onkey( "Digit7", "down", pickColor2 );
-	$.onkey( "Digit8", "down", showHideGrid );
-	$.onkey( "Digit9", "down", exitMenu );
+	$.onkey( "Digit1", "down", showColors );
+	$.onkey( "Digit2", "down", setDataSize );
+	$.onkey( "Digit3", "down", clearData );
+	$.onkey( "Digit4", "down", showValues );
+	$.onkey( "Digit5", "down", pickColor );
+	$.onkey( "Digit6", "down", showHideGrid );
+	$.onkey( "Digit7", "down", exitMenu );
 }
 
 function removeInput() {
 	$.offkey( "Digit0", "down", showMenu );
-	$.offkey( "Digit1", "down", setColor1 );
-	$.offkey( "Digit2", "down", setColor2 );
-	$.offkey( "Digit3", "down", setDataSize );
-	$.offkey( "Digit4", "down", clearData );
-	$.offkey( "Digit5", "down", showValues );
-	$.offkey( "Digit6", "down", pickColor1 );
-	$.offkey( "Digit7", "down", pickColor2 );
-	$.offkey( "Digit8", "down", showHideGrid );
-	$.offkey( "Digit8", "down", exitMenu );
+	$.offkey( "Digit1", "down", showColors );
+	$.offkey( "Digit2", "down", setDataSize );
+	$.offkey( "Digit3", "down", clearData );
+	$.offkey( "Digit4", "down", showValues );
+	$.offkey( "Digit5", "down", pickColor );
+	$.offkey( "Digit6", "down", showHideGrid );
+	$.offkey( "Digit7", "down", exitMenu );
 }
 
 function show( isSkipData ) {
@@ -117,8 +114,9 @@ function show( isSkipData ) {
 	$.setPos( 0, 0 );
 	$.print( " 0 - Menu", true );
 	$.setColor( "#aaa" );
-	$.line( 8, 11, 275, 11 );
-	showActiveColors();
+	$.line( 8, 11, 305, 11 );
+	$.setColor( "#555" );
+	drawColorBox( 306, 0, 12, g_color );
 	if( !isSkipData ) {
 		showData();
 	}
@@ -138,19 +136,17 @@ function showMenu() {
 	$.setColor( "#aaa" );
 	$.setPos( 0, 2 );
 	$.print( " 0. See Menu" );
-	$.print( " 1. Set Color 1" );
-	$.print( " 2. Set Color 2" );
-	$.print( " 3. Set Data Size" );
-	$.print( " 4. Clear Data" );
-	$.print( " 5. Show Data" );
-	$.print( " 6. Pick Color 1" );
-	$.print( " 7. Pick Color 2" );
+	$.print( " 1. Set Color" );
+	$.print( " 2. Set Data Size" );
+	$.print( " 3. Clear Data" );
+	$.print( " 4. Show Data" );
+	$.print( " 5. Pick Color" );
 	if( g_showGrid ) {
-		$.print( " 8. Hide Grid" );
+		$.print( " 6. Hide Grid" );
 	} else {
-		$.print( " 8. Show Grid" );
+		$.print( " 6. Show Grid" );
 	}
-	$.print( " 9. Exit Menu" );
+	$.print( " 7. Exit Menu" );
 }
 
 function showValues() {
@@ -217,34 +213,10 @@ function showData() {
 	}
 }
 
-function showActiveColors() {
-	$.setColor( "#555" );
-	$.rect( 286, 0, 26, 14 );
-	drawColorBox( 287, 1, 12, g_colors[ 0 ] );
-	drawColorBox( 299, 1, 12, g_colors[ 1 ] );
-	setShadeColor( g_colors[ 0 ] );
-	$.setPosPx( 289, 3 );
-	$.print( "1" );
-	setShadeColor( g_colors[ 1 ] );
-	$.setPosPx( 301, 3 );
-	$.print( "2" );
-}
-
-function setColor1() {
-	show( true );
-	$.setPos( 0, 3 );
-	$.print( "Set Color 1", true, true );
-	showColors();
-}
-
-function setColor2() {
-	show( true );
-	$.setPos( 0, 3 );
-	$.print( "Set Color 2", true, true );
-	showColors();
-}
-
 function showColors() {
+	show( true );
+	$.setPos( 0, 3 );
+	$.print( "Set Color", true, true );
 	let offX = 25;
 	let offY = 40;
 	let row = 0;
@@ -256,10 +228,8 @@ function showColors() {
 	$.rect( offX - 1, offY - 1, size * ( cols + 1 ) + 2, size * 12 + 2 );
 	for( let c = 0; c < 252; c += 1 ) {
 		drawColorBox( col + offX, row + offY, size, c );
-		if( c === g_colors[ 0 ] ) {
-			pixels[ 0 ] = [ col + offX, row + offY ];
-		} else if( c === g_colors[ 1 ] ) {
-			pixels[ 1 ] = [ col + offX, row + offY ];
+		if( c === g_color ) {
+			pixels = [ col + offX, row + offY ];
 		}
 		col += size;
 		if( col > size * cols ) {
@@ -269,14 +239,9 @@ function showColors() {
 	}
 
 	// Show primary color
-	setShadeColor( g_colors[ 0 ] );
-	$.setPosPx( pixels[ 0 ][ 0 ] + 2, pixels[ 0 ][ 1 ] + 2 );
-	$.print( 1 );
-
-	// Show secondary color
-	setShadeColor( g_colors[ 1 ] );
-	$.setPosPx( pixels[ 1 ][ 0 ] + 2, pixels[ 1 ][ 1 ] + 2 );
-	$.print( 2 );
+	setShadeColor( g_color );
+	$.setPosPx( pixels[ 0 ] + 2, pixels[ 1 ] + 1 );
+	$.print( "o" );
 }
 
 function drawColorBox( x, y, size,c  ) {
@@ -295,22 +260,15 @@ function setShadeColor( color ) {
 	}
 }
 
-function pickColor1() {
-	pickColor( 0 );
-}
-
-function pickColor2() {
-	pickColor( 1 );
-}
-
-function pickColor( c ) {
-	$.show( true );
+function pickColor() {
+	show( true );
 	removeInput();
 	let offX = 50;
 	let offY = 50;
 	let width = 200;
 	let height = 100;
 	let hitBox = { "x": offX, "y": offY, "width": width, "height": height };
+	let color = null;
 	$.rect( offX - 1, offY - 1, width + 2, height + 2 );
 
 	$.setColor( "#555" );
@@ -323,14 +281,23 @@ function pickColor( c ) {
 	}
 
 	$.onmouse( "move", getPickColor, false, hitBox );
+	$.onmouse( "up", setPickColor, true );
 
 	function getPickColor( mouse ) {
-		console.log( mouse );
 		if( mouse.buttons > 0 ) {
-			let c3 = $.getPixel( mouse.x, mouse.y );
-			$.setColor( c3 );
+			color = $.getPixel( mouse.x, mouse.y );
+			$.setColor( color );
 			$.rect( hitBox.x - 1, hitBox.y - 1, hitBox.width + 2, hitBox.height + 2 );
 		}
+	}
+
+	function setPickColor() {
+		if( color ) {
+			$.setPalColor( g_color, color );
+		}
+		$.offmouse( "move", getPickColor );
+		setupInput();
+		show();
 	}
 }
 
