@@ -83,7 +83,8 @@ $.ready( () => {
 	$.setActionKey( "m" );
 	setupInput();
 	clearData();
-	show();
+	drawHeader();
+	drawData();
 } );
 
 function setupInput() {
@@ -108,7 +109,7 @@ function removeInput() {
 	$.offkey( "Digit7", "down", exitMenu );
 }
 
-function show( isSkipData ) {
+function drawHeader() {
 	$.cls();
 	$.setColor( "#fff" );
 	$.setPos( 0, 0 );
@@ -117,22 +118,21 @@ function show( isSkipData ) {
 	$.line( 8, 11, 305, 11 );
 	$.setColor( "#555" );
 	drawColorBox( 306, 0, 12, g_color );
-	if( !isSkipData ) {
-		showData();
-	}
 }
 
 function showHideGrid() {
 	g_showGrid = !g_showGrid;
-	show();
+	drawHeader();
+	drawData();
 }
 
 function exitMenu() {
-	show();
+	drawHeader();
+	drawData();
 }
 
 function showMenu() {
-	show( true );
+	drawHeader();
 	$.setColor( "#aaa" );
 	$.setPos( 0, 2 );
 	$.print( " 0. See Menu" );
@@ -150,10 +150,17 @@ function showMenu() {
 }
 
 function showValues() {
+	drawHeader();
+	removeInput();
 	document.getElementById( "data-text-container" ).style.display = "block";
+	document.getElementById( "close-btn" ).addEventListener( "click", () => {
+		setupInput();
+		drawHeader();
+	}, { "once": true } );
 }
 
 function clearData() {
+	drawHeader();
 	g_data = [];
 	for( let y = 0; y < g_size[ 1 ]; y += 1 ){
 		g_data.push( [] );
@@ -161,23 +168,23 @@ function clearData() {
 			g_data[ y ].push( 3 );
 		}
 	}
-	show();
+	drawData();
 }
 
 async function setDataSize() {
-	console.log( "Setting data size" );
 	removeInput();
-	show( true );
+	drawHeader();
 	$.setColor( "#888" );
 	$.setPos( 0, 2 );
 	$.print( "Set Data Size" );
 	g_size[ 0 ] = await $.input( "Enter width: ", null, true, true, false );
 	g_size[ 1 ] = await $.input( "Enter height: ", null, true, true, false );
 	setupInput();
-	show();
+	drawHeader();
+	drawData();
 }
 
-function showData() {
+function drawData() {
 	let x = $.width() - g_size[ 0 ] - 10;
 	let y = 20;
 	$.setColor( "#333" );
@@ -214,8 +221,9 @@ function showData() {
 }
 
 function showColors() {
-	show( true );
+	drawHeader( true );
 	$.setPos( 0, 3 );
+	$.setColor( "#fff" );
 	$.print( "Set Color", true, true );
 	let offX = 25;
 	let offY = 40;
@@ -261,7 +269,7 @@ function setShadeColor( color ) {
 }
 
 function pickColor() {
-	show( true );
+	drawHeader( true );
 	removeInput();
 	let offX = 50;
 	let offY = 50;
@@ -297,7 +305,8 @@ function pickColor() {
 		}
 		$.offmouse( "move", getPickColor );
 		setupInput();
-		show();
+		drawHeader();
+		drawData();
 	}
 }
 
