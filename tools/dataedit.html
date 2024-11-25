@@ -65,9 +65,19 @@
 
 let g_data = [];
 let g_size = [ 30, 30 ];
+let g_drawArea = {
+	"x": 0,
+	"y": 0,
+	"width": 0,
+	"height": 0
+};
 let g_screen = null;
 let g_color = 15;
 let g_showGrid = true;
+let g_drawing = {
+	"start": false,
+	"last": false
+};
 
 // Close modal popup
 document.getElementById( "close-btn" ).addEventListener( "click", () => {
@@ -111,6 +121,7 @@ function removeInput() {
 }
 
 function drawHeader() {
+	stopDrawing();
 	$.cls();
 	$.setColor( "#fff" );
 	$.setPos( 0, 0 );
@@ -163,13 +174,54 @@ async function setDataSize() {
 	drawData();
 }
 
+function startDrawing() {
+	$.onmouse( "down", drawMouseDown );
+	$.onmouse( "move", drawMouseMove );
+}
+
+function stopDrawing() {
+	$.offmouse( "down", drawMouseDown );
+	$.offmouse( "move", drawMouseMove );
+}
+
+function drawMouseDown( mouse ) {
+	console.log( mouse );
+	g_drawing.start = true;
+	g_drawing.last = [ mouse.x, mouse.y ];
+	
+	let x = Math.floor( ( mouse.x - g_drawArea.x ) / g_drawArea.width );
+	let y = Math.floor( ( mouse.y - g_drawArea.y ) / g_drawArea.height );
+	if( x < g_data.length && x >= 0 && y < g_data[ x ].length ) {
+		g_data[ y ][ x ] = 1;
+	}
+	$.put( g_data, g_drawArea.px, g_drawArea.py );
+	if( g_showGrid ) {
+		$.setColor( "#333" );
+	} else {
+		$.setColor( g_data[ x ][ y ] );
+	}
+	$.rect(
+		g_drawArea.x + x * width - 1,
+		g_drawArea.y + y * height - 1,
+		width + 1,
+		height + 1,
+		g_data[ y ][ x ]
+	);
+}
+
+function drawMouseMove( mouse ) {
+	
+}
+
 function drawData() {
+	startDrawing();
 	let x = $.width() - g_size[ 0 ] - 10;
 	let y = 20;
 	$.setColor( "#333" );
 	$.rect( x - 3, y - 3, g_size[ 0 ] + 6, g_size[ 1 ] + 6 );
 	$.put( g_data, x, y );
-
+	g_drawArea.px = x;
+	g_drawArea.py = y;
 	let maxWidth = $.width() - g_size[ 0 ] + 10;
 	let maxHeight = $.height() - 20;
 	let width = Math.floor( maxWidth / g_size[ 0 ] );
@@ -181,6 +233,10 @@ function drawData() {
 	}
 	let offX = 9;
 	let offY = 17;
+	g_drawArea.x = offX;
+	g_drawArea.y = offY;
+	g_drawArea.width = width;
+	g_drawArea.height = height;
 	for( x = 0; x < g_size[ 0 ]; x += 1 ) {
 		for( y = 0; y < g_size[ 1 ]; y += 1 ) {
 			if( g_showGrid ) {
@@ -197,6 +253,7 @@ function drawData() {
 			);
 		}
 	}
+
 }
 
 function showColors() {
