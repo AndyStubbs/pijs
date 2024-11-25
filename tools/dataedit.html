@@ -75,9 +75,10 @@ let g_screen = null;
 let g_color = 15;
 let g_showGrid = true;
 let g_drawing = {
-	"start": false,
+	"drawing": false,
 	"last": false
 };
+let g_showingMenu = false;
 
 // Close modal popup
 document.getElementById( "close-btn" ).addEventListener( "click", () => {
@@ -99,25 +100,23 @@ $.ready( () => {
 } );
 
 function setupInput() {
-	$.onkey( "Digit0", "down", showMenu );
+	$.onkey( "Digit0", "down", toggleMenu );
 	$.onkey( "Digit1", "down", showColors );
 	$.onkey( "Digit2", "down", setDataSize );
 	$.onkey( "Digit3", "down", showValues );
 	$.onkey( "Digit4", "down", pickColor );
 	$.onkey( "Digit5", "down", showHideGrid );
 	$.onkey( "Digit6", "down", showPalette );
-	$.onkey( "Digit7", "down", exitMenu );
 }
 
 function removeInput() {
-	$.offkey( "Digit0", "down", showMenu );
+	$.offkey( "Digit0", "down", toggleMenu );
 	$.offkey( "Digit1", "down", showColors );
 	$.offkey( "Digit2", "down", setDataSize );
 	$.offkey( "Digit3", "down", showValues );
 	$.offkey( "Digit4", "down", pickColor );
 	$.offkey( "Digit5", "down", showHideGrid );
 	$.offkey( "Digit6", "down", showPalette );
-	$.offkey( "Digit7", "down", exitMenu );
 }
 
 function drawHeader() {
@@ -138,27 +137,22 @@ function showHideGrid() {
 	drawData();
 }
 
-function exitMenu() {
+function toggleMenu() {
 	drawHeader();
-	drawData();
-}
-
-function showMenu() {
-	drawHeader();
+	g_showingMenu = !g_showingMenu
+	if( !g_showingMenu ) {
+		drawData();
+		return;
+	}
 	$.setColor( "#aaa" );
 	$.setPos( 0, 2 );
-	$.print( " 0. See Menu" );
+	$.print( " 0. Toggle Menu" );
 	$.print( " 1. Set Color" );
 	$.print( " 2. Set Data Size" );
-	$.print( " 3. Show Data Values" );
-	$.print( " 4. Pick Color" );
-	if( g_showGrid ) {
-		$.print( " 5. Hide Grid" );
-	} else {
-		$.print( " 5. Show Grid" );
-	}
-	$.print( " 6. Show Palette Colors" );
-	$.print( " 7. Exit Menu" );
+	$.print( " 3. Toggle Grid" );
+	$.print( " 4. Manage Data Values" );
+	$.print( " 5. Set Palette Color" );
+	$.print( " 6. Manage Palette Colors" );
 }
 
 async function setDataSize() {
@@ -177,40 +171,64 @@ async function setDataSize() {
 function startDrawing() {
 	$.onmouse( "down", drawMouseDown );
 	$.onmouse( "move", drawMouseMove );
+	$.onmouse( "up", drawMouseUp );
 }
 
 function stopDrawing() {
 	$.offmouse( "down", drawMouseDown );
 	$.offmouse( "move", drawMouseMove );
+	$.offmouse( "up", drawMouseUp );
 }
 
 function drawMouseDown( mouse ) {
 	console.log( mouse );
-	g_drawing.start = true;
+	g_drawing.drawing = true;
 	g_drawing.last = [ mouse.x, mouse.y ];
 	
 	let x = Math.floor( ( mouse.x - g_drawArea.x ) / g_drawArea.width );
 	let y = Math.floor( ( mouse.y - g_drawArea.y ) / g_drawArea.height );
 	if( x < g_data.length && x >= 0 && y < g_data[ x ].length ) {
-		g_data[ y ][ x ] = 1;
+		g_data[ y ][ x ] = g_color;
+		drawPixel( x, y );
 	}
-	$.put( g_data, g_drawArea.px, g_drawArea.py );
-	if( g_showGrid ) {
-		$.setColor( "#333" );
-	} else {
-		$.setColor( g_data[ x ][ y ] );
-	}
-	$.rect(
-		g_drawArea.x + x * width - 1,
-		g_drawArea.y + y * height - 1,
-		width + 1,
-		height + 1,
-		g_data[ y ][ x ]
-	);
 }
 
 function drawMouseMove( mouse ) {
-	
+	if( g_drawing.drawing ) {
+		let x = Math.floor( ( mouse.x - g_drawArea.x ) / g_drawArea.width );
+		let y = Math.floor( ( mouse.y - g_drawArea.y ) / g_drawArea.height );
+		if( x < g_data.length && x >= 0 && y < g_data[ x ].length ) {
+			g_data[ y ][ x ] = g_color;
+			drawPixel( x, y );
+		}
+	}
+}
+
+function drawMouseUp() {
+	g_drawing.drawing = false;
+}
+
+function drawPixel( x, y ) {
+	$.put( g_data, g_drawArea.px, g_drawArea.py );
+	if( g_showGrid ) {
+		$.setColor( "#333" );
+		$.rect(
+			g_drawArea.x + x * g_drawArea.width - 1,
+			g_drawArea.y + y * g_drawArea.height - 1,
+			g_drawArea.width + 1,
+			g_drawArea.height + 1,
+			g_data[ y ][ x ]
+		);
+	} else {
+		$.setColor( g_data[ y ][ x ] );
+		$.rect(
+			g_drawArea.x + x * g_drawArea.width,
+			g_drawArea.y + y * g_drawArea.height,
+			g_drawArea.width,
+			g_drawArea.height,
+			g_data[ y ][ x ]
+		);
+	}
 }
 
 function drawData() {
@@ -223,7 +241,7 @@ function drawData() {
 	g_drawArea.px = x;
 	g_drawArea.py = y;
 	let maxWidth = $.width() - g_size[ 0 ] + 10;
-	let maxHeight = $.height() - 20;
+	let maxHeight = $.height() - 25;
 	let width = Math.floor( maxWidth / g_size[ 0 ] );
 	let height = Math.floor( maxHeight / g_size[ 0 ] );
 	if( width > height ) {
@@ -231,26 +249,15 @@ function drawData() {
 	} else {
 		height = width;
 	}
-	let offX = 9;
-	let offY = 17;
-	g_drawArea.x = offX;
-	g_drawArea.y = offY;
+	g_drawArea.x = 9;
+	g_drawArea.y = 17;
 	g_drawArea.width = width;
 	g_drawArea.height = height;
+
+	$.rect( 5, 13, width * g_size[ 0 ] + width + 3, height * g_size[ 1 ] + height + 3 );
 	for( x = 0; x < g_size[ 0 ]; x += 1 ) {
 		for( y = 0; y < g_size[ 1 ]; y += 1 ) {
-			if( g_showGrid ) {
-				$.setColor( "#333" );
-			} else {
-				$.setColor( g_data[ x ][ y ] );
-			}
-			$.rect(
-				offX + x * width - 1,
-				offY + y * height - 1,
-				width + 1,
-				height + 1,
-				g_data[ x ][ y ]
-			);
+			drawPixel( x, y );
 		}
 	}
 
@@ -486,7 +493,6 @@ function clearData() {
 		}
 	}
 }
-
 
 function showPalette() {
 	drawHeader();
