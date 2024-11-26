@@ -64,7 +64,7 @@
 "use strict";
 
 let g_data = [];
-let g_size = [ 30, 30 ];
+let g_size = [ 16, 16 ];
 let g_drawArea = {
 	"x": 0,
 	"y": 0,
@@ -73,7 +73,7 @@ let g_drawArea = {
 };
 let g_screen = null;
 let g_color = 15;
-let g_showGrid = true;
+let g_showGrid = false;
 let g_drawing = {
 	"drawing": false,
 	"last": false
@@ -244,14 +244,16 @@ function stateDraw() {
 	g_drawArea.width = width;
 	g_drawArea.height = height;
 
-	//$.rect( 5, 13, width * g_size[ 0 ] + width + 3, height * g_size[ 1 ] + height + 3 );
 	for( x = 0; x < g_size[ 0 ]; x += 1 ) {
 		for( y = 0; y < g_size[ 1 ]; y += 1 ) {
 			drawPixel( x, y );
 		}
 	}
 	$.setColor( "#333" );
-	$.rect( 8, 16, width * g_size[ 0 ] + 1, height * g_size[ 1 ] + 1 );
+
+	if( !g_showGrid ) {
+		$.rect( 8, 16, width * g_size[ 0 ] + 2, height * g_size[ 1 ] + 2 );
+	}
 
 	function startDrawing() {
 		$.onmouse( "down", drawMouseDown );
@@ -273,7 +275,11 @@ function stateDraw() {
 		let x = Math.floor( ( mouse.x - g_drawArea.x ) / g_drawArea.width );
 		let y = Math.floor( ( mouse.y - g_drawArea.y ) / g_drawArea.height );
 		if( x < g_data.length && x >= 0 && y < g_data[ x ].length ) {
-			g_data[ y ][ x ] = g_color;
+			if( mouse.buttons === 1 ) {
+				g_data[ y ][ x ] = g_color;
+			} else {
+				g_data[ y ][ x ] = 0;
+			}
 			drawPixel( x, y );
 		}
 	}
@@ -283,7 +289,11 @@ function stateDraw() {
 			let x = Math.floor( ( mouse.x - g_drawArea.x ) / g_drawArea.width );
 			let y = Math.floor( ( mouse.y - g_drawArea.y ) / g_drawArea.height );
 			if( x < g_data.length && x >= 0 && y < g_data[ x ].length ) {
-				g_data[ y ][ x ] = g_color;
+				if( mouse.buttons === 1 ) {
+					g_data[ y ][ x ] = g_color;
+				} else {
+					g_data[ y ][ x ] = 0;
+				}
 				drawPixel( x, y );
 			}
 		}
@@ -374,7 +384,9 @@ async function stateDataSize() {
 	drawHeader();
 	$.setColor( "#888" );
 	$.setPos( 0, 2 );
-	$.print( "Set Data Size" );
+	$.print( `Current Size: (${g_size[ 0 ]}x${g_size[ 1 ]})` );
+	$.print();
+	$.print( "Set New Data Size" );
 
 	// Get the width
 	let width = -1;
