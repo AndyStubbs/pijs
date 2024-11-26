@@ -101,22 +101,22 @@ $.ready( () => {
 
 function setupInput() {
 	$.onkey( "Digit0", "down", toggleMenu );
-	$.onkey( "Digit1", "down", showColors );
+	$.onkey( "Digit1", "down", setColor );
 	$.onkey( "Digit2", "down", setDataSize );
-	$.onkey( "Digit3", "down", showValues );
-	$.onkey( "Digit4", "down", pickColor );
-	$.onkey( "Digit5", "down", showHideGrid );
-	$.onkey( "Digit6", "down", showPalette );
+	$.onkey( "Digit3", "down", toggleGrid );
+	$.onkey( "Digit4", "down", manageData );
+	$.onkey( "Digit5", "down", setPaletteColor );
+	$.onkey( "Digit6", "down", managePalette );
 }
 
 function removeInput() {
 	$.offkey( "Digit0", "down", toggleMenu );
-	$.offkey( "Digit1", "down", showColors );
+	$.offkey( "Digit1", "down", setColor );
 	$.offkey( "Digit2", "down", setDataSize );
-	$.offkey( "Digit3", "down", showValues );
-	$.offkey( "Digit4", "down", pickColor );
-	$.offkey( "Digit5", "down", showHideGrid );
-	$.offkey( "Digit6", "down", showPalette );
+	$.offkey( "Digit3", "down", toggleGrid );
+	$.offkey( "Digit4", "down", manageData );
+	$.offkey( "Digit5", "down", setPaletteColor );
+	$.offkey( "Digit6", "down", managePalette );
 }
 
 function drawHeader() {
@@ -131,7 +131,7 @@ function drawHeader() {
 	drawColorBox( 306, 0, 12, g_color );
 }
 
-function showHideGrid() {
+function toggleGrid() {
 	g_showGrid = !g_showGrid;
 	drawHeader();
 	drawData();
@@ -263,7 +263,7 @@ function drawData() {
 
 }
 
-function showColors() {
+function setColor() {
 	drawHeader( true );
 	$.setPos( 0, 3 );
 	$.setColor( "#fff" );
@@ -311,7 +311,7 @@ function setShadeColor( color ) {
 	}
 }
 
-function pickColor() {
+function setPaletteColor() {
 	drawHeader( true );
 	removeInput();
 	let offX = 50;
@@ -409,7 +409,7 @@ function generateColor( x, y, xRange, yRange ) {
 	return hslToRgb( hue, saturation, lightness );
 }
 
-function showValues() {
+function manageData() {
 	const dataText = document.getElementById( "data-text" );
 	const dataLabel = document.querySelector( "#data-text-container label" );
 	drawHeader();
@@ -494,7 +494,7 @@ function clearData() {
 	}
 }
 
-function showPalette() {
+function managePalette() {
 	drawHeader();
 	removeInput();
 	let msg = "[";
