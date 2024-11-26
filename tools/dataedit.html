@@ -79,6 +79,19 @@ let g_drawing = {
 	"last": false
 };
 let g_showingMenu = false;
+let g_resetActions = [];
+let g_state = "";
+let g_menuInputActive = false;
+
+const g_states = {
+	"menu": { "allow-menu": true },
+	"drawing": { "allow-menu": true },
+	"set-color": { "allow-menu": true },
+	"set-data-size": { "allow-menu": false },
+	"manage-data-values": { "allow-menu": false },
+	"set-palette-color": { "allow-menu": true },
+	"manage-palette-color": { "allow-menu": false }
+};
 
 // Close modal popup
 document.getElementById( "close-btn" ).addEventListener( "click", () => {
@@ -90,37 +103,59 @@ $.ready( () => {
 	g_screen = $.screen( { "aspect": "320x200", "willReadFrequently": true } );
 	$.setEnableContextMenu( false );
 	$.setFont( 2 );
-	$.print( "Hello World" );
-	$.setActionKey( "Control" );
-	$.setActionKey( "m" );
-	setupInput();
 	clearData();
-	drawHeader();
-	drawData();
+	stateDraw();
 } );
 
-function setupInput() {
-	$.onkey( "Digit0", "down", toggleMenu );
-	$.onkey( "Digit1", "down", setColor );
-	$.onkey( "Digit2", "down", setDataSize );
-	$.onkey( "Digit3", "down", toggleGrid );
-	$.onkey( "Digit4", "down", manageData );
-	$.onkey( "Digit5", "down", setPaletteColor );
-	$.onkey( "Digit6", "down", managePalette );
+function setupMenuInput() {
+	if( !g_menuInputActive ) {
+		$.onkey( "Digit0", "down", stateMenu );
+		$.onkey( "Digit1", "down", stateColor );
+		$.onkey( "Digit2", "down", stateDataSize );
+		$.onkey( "Digit3", "down", toggleGrid );
+		$.onkey( "Digit4", "down", stateManageData );
+		$.onkey( "Digit5", "down", statePaletteColor );
+		$.onkey( "Digit6", "down", stateManagePalette );
+		g_menuInputActive = true;
+	}
 }
 
-function removeInput() {
-	$.offkey( "Digit0", "down", toggleMenu );
-	$.offkey( "Digit1", "down", setColor );
-	$.offkey( "Digit2", "down", setDataSize );
-	$.offkey( "Digit3", "down", toggleGrid );
-	$.offkey( "Digit4", "down", manageData );
-	$.offkey( "Digit5", "down", setPaletteColor );
-	$.offkey( "Digit6", "down", managePalette );
+function removeMenuInput() {
+	if( g_menuInputActive ) {
+		$.offkey( "Digit0", "down", stateMenu );
+		$.offkey( "Digit1", "down", stateColor );
+		$.offkey( "Digit2", "down", stateDataSize );
+		$.offkey( "Digit3", "down", toggleGrid );
+		$.offkey( "Digit4", "down", stateManageData );
+		$.offkey( "Digit5", "down", statePaletteColor );
+		$.offkey( "Digit6", "down", stateManagePalette );
+		g_menuInputActive = false;
+	}
+}
+
+function setState( state ) {
+	g_state = state;
+	g_resetActions.forEach( action => action() );
+	g_resetActions = [];
+
+	if( g_states[ g_state ][ "allow-menu" ] ) {
+		setupMenuInput();
+	} else {
+		removeMenuInput();
+	}
+}
+
+function drawColorBox( x, y, size, c, b ) {
+	if( !b ) {
+		b = "#888";
+	}
+	$.setColor( b );
+	$.rect( x, y, size, size );
+	$.setColor( c );
+	$.rect( x, y, size - 2, size - 2, c );
 }
 
 function drawHeader() {
-	stopDrawing();
 	$.cls();
 	$.setColor( "#fff" );
 	$.setPos( 0, 0 );
@@ -133,105 +168,60 @@ function drawHeader() {
 
 function toggleGrid() {
 	g_showGrid = !g_showGrid;
-	drawHeader();
-	drawData();
+	if( g_state === "drawing" ) {
+		stateDraw();
+	} else if( g_state === "menu" ) {
+		drawMenu();
+	}
 }
 
-function toggleMenu() {
+function drawMenu() {
 	drawHeader();
-	g_showingMenu = !g_showingMenu
-	if( !g_showingMenu ) {
-		drawData();
-		return;
+	let gridStatus = "Off";
+	if( g_showGrid ) {
+		gridStatus = "On";
 	}
 	$.setColor( "#aaa" );
 	$.setPos( 0, 2 );
 	$.print( " 0. Toggle Menu" );
 	$.print( " 1. Set Color" );
 	$.print( " 2. Set Data Size" );
-	$.print( " 3. Toggle Grid" );
+	$.print( ` 3. Toggle Grid: ${gridStatus}` );
 	$.print( " 4. Manage Data Values" );
 	$.print( " 5. Set Palette Color" );
 	$.print( " 6. Manage Palette Colors" );
 }
 
-async function setDataSize() {
-	removeInput();
-	drawHeader();
-	$.setColor( "#888" );
-	$.setPos( 0, 2 );
-	$.print( "Set Data Size" );
-	g_size[ 0 ] = await $.input( "Enter width: ", null, true, true, false );
-	g_size[ 1 ] = await $.input( "Enter height: ", null, true, true, false );
-	setupInput();
-	drawHeader();
-	drawData();
-}
-
-function startDrawing() {
-	$.onmouse( "down", drawMouseDown );
-	$.onmouse( "move", drawMouseMove );
-	$.onmouse( "up", drawMouseUp );
-}
-
-function stopDrawing() {
-	$.offmouse( "down", drawMouseDown );
-	$.offmouse( "move", drawMouseMove );
-	$.offmouse( "up", drawMouseUp );
-}
-
-function drawMouseDown( mouse ) {
-	console.log( mouse );
-	g_drawing.drawing = true;
-	g_drawing.last = [ mouse.x, mouse.y ];
-	
-	let x = Math.floor( ( mouse.x - g_drawArea.x ) / g_drawArea.width );
-	let y = Math.floor( ( mouse.y - g_drawArea.y ) / g_drawArea.height );
-	if( x < g_data.length && x >= 0 && y < g_data[ x ].length ) {
-		g_data[ y ][ x ] = g_color;
-		drawPixel( x, y );
-	}
-}
-
-function drawMouseMove( mouse ) {
-	if( g_drawing.drawing ) {
-		let x = Math.floor( ( mouse.x - g_drawArea.x ) / g_drawArea.width );
-		let y = Math.floor( ( mouse.y - g_drawArea.y ) / g_drawArea.height );
-		if( x < g_data.length && x >= 0 && y < g_data[ x ].length ) {
-			g_data[ y ][ x ] = g_color;
-			drawPixel( x, y );
+function clearData() {
+	g_data = [];
+	for( let y = 0; y < g_size[ 1 ]; y += 1 ){
+		g_data.push( [] );
+		for( let x = 0; x < g_size[ 0 ]; x += 1 ) {
+			g_data[ y ].push( 0 );
 		}
 	}
 }
 
-function drawMouseUp() {
-	g_drawing.drawing = false;
-}
 
-function drawPixel( x, y ) {
-	$.put( g_data, g_drawArea.px, g_drawArea.py );
-	if( g_showGrid ) {
-		$.setColor( "#333" );
-		$.rect(
-			g_drawArea.x + x * g_drawArea.width - 1,
-			g_drawArea.y + y * g_drawArea.height - 1,
-			g_drawArea.width + 1,
-			g_drawArea.height + 1,
-			g_data[ y ][ x ]
-		);
-	} else {
-		$.setColor( g_data[ y ][ x ] );
-		$.rect(
-			g_drawArea.x + x * g_drawArea.width,
-			g_drawArea.y + y * g_drawArea.height,
-			g_drawArea.width,
-			g_drawArea.height,
-			g_data[ y ][ x ]
-		);
+/*************
+ * States
+ * ***********/
+
+function stateMenu() {
+	setState( "menu" );
+	g_showingMenu = !g_showingMenu
+	if( !g_showingMenu ) {
+		stateDraw();
+		return;
 	}
+	drawMenu();
 }
 
-function drawData() {
+function stateDraw() {
+	setState( "drawing" );
+	g_showingMenu = false;
+	g_resetActions.push( stopDrawing );
+	drawHeader();
 	startDrawing();
 	let x = $.width() - g_size[ 0 ] - 10;
 	let y = 20;
@@ -254,20 +244,88 @@ function drawData() {
 	g_drawArea.width = width;
 	g_drawArea.height = height;
 
-	$.rect( 5, 13, width * g_size[ 0 ] + width + 3, height * g_size[ 1 ] + height + 3 );
+	//$.rect( 5, 13, width * g_size[ 0 ] + width + 3, height * g_size[ 1 ] + height + 3 );
 	for( x = 0; x < g_size[ 0 ]; x += 1 ) {
 		for( y = 0; y < g_size[ 1 ]; y += 1 ) {
 			drawPixel( x, y );
 		}
 	}
+	$.setColor( "#333" );
+	$.rect( 8, 16, width * g_size[ 0 ] + 1, height * g_size[ 1 ] + 1 );
+
+	function startDrawing() {
+		$.onmouse( "down", drawMouseDown );
+		$.onmouse( "move", drawMouseMove );
+		$.onmouse( "up", drawMouseUp );
+	}
+
+	function stopDrawing() {
+		$.offmouse( "down", drawMouseDown );
+		$.offmouse( "move", drawMouseMove );
+		$.offmouse( "up", drawMouseUp );
+	}
+
+	function drawMouseDown( mouse ) {
+		console.log( mouse );
+		g_drawing.drawing = true;
+		g_drawing.last = [ mouse.x, mouse.y ];
+		
+		let x = Math.floor( ( mouse.x - g_drawArea.x ) / g_drawArea.width );
+		let y = Math.floor( ( mouse.y - g_drawArea.y ) / g_drawArea.height );
+		if( x < g_data.length && x >= 0 && y < g_data[ x ].length ) {
+			g_data[ y ][ x ] = g_color;
+			drawPixel( x, y );
+		}
+	}
+
+	function drawMouseMove( mouse ) {
+		if( g_drawing.drawing ) {
+			let x = Math.floor( ( mouse.x - g_drawArea.x ) / g_drawArea.width );
+			let y = Math.floor( ( mouse.y - g_drawArea.y ) / g_drawArea.height );
+			if( x < g_data.length && x >= 0 && y < g_data[ x ].length ) {
+				g_data[ y ][ x ] = g_color;
+				drawPixel( x, y );
+			}
+		}
+	}
+
+	function drawMouseUp() {
+		g_drawing.drawing = false;
+	}
+
+	function drawPixel( x, y ) {
+		$.put( g_data, g_drawArea.px, g_drawArea.py );
+		if( g_showGrid ) {
+			$.setColor( "#333" );
+			$.rect(
+				g_drawArea.x + x * g_drawArea.width - 1,
+				g_drawArea.y + y * g_drawArea.height - 1,
+				g_drawArea.width + 1,
+				g_drawArea.height + 1,
+				g_data[ y ][ x ]
+			);
+		} else {
+			$.setColor( g_data[ y ][ x ] );
+			$.rect(
+				g_drawArea.x + x * g_drawArea.width,
+				g_drawArea.y + y * g_drawArea.height,
+				g_drawArea.width,
+				g_drawArea.height,
+				g_data[ y ][ x ]
+			);
+		}
+	}
 
 }
 
-function setColor() {
+function stateColor() {
+	setState( "set-color" );
+	g_resetActions.push( resetInput );
 	drawHeader( true );
 	$.setPos( 0, 3 );
 	$.setColor( "#fff" );
 	$.print( "Set Color", true, true );
+
 	let offX = 25;
 	let offY = 40;
 	let row = 0;
@@ -275,13 +333,16 @@ function setColor() {
 	let size = 12;
 	let cols = 20;
 	let pixels = [ 0, 0 ];
+	let hitBox = {
+		"x": offX - 1,
+		"y": offY - 1,
+		"width": size * ( cols + 1 ) + 2,
+		"height": size * 12 + 2
+	};
 	$.setColor( "#555" );
-	$.rect( offX - 1, offY - 1, size * ( cols + 1 ) + 2, size * 12 + 2 );
+	$.rect( hitBox );
 	for( let c = 0; c < 252; c += 1 ) {
 		drawColorBox( col + offX, row + offY, size, c );
-		if( c === g_color ) {
-			pixels = [ col + offX, row + offY ];
-		}
 		col += size;
 		if( col > size * cols ) {
 			col = 0;
@@ -289,31 +350,145 @@ function setColor() {
 		}
 	}
 
-	// Show primary color
-	setShadeColor( g_color );
-	$.setPosPx( pixels[ 0 ] + 2, pixels[ 1 ] + 1 );
-	$.print( "o" );
-}
+	$.onmouse( "down", mouseDown, false, hitBox );
 
-function drawColorBox( x, y, size,c  ) {
-	$.setColor( "#888" );
-	$.rect( x, y, size, size );
-	$.setColor( c );
-	$.rect( x, y, size - 2, size - 2, c );
-}
+	function mouseDown( mouse ) {
+		const c = $.get( mouse.x, mouse.y, mouse.x, mouse.y )[ 0 ][ 0 ];
+		if( c === 0 ) {
+			$.setPos( 0, 2 );
+			$.setColor( "red" );
+			$.print( "Invalid color choice", true, true );
+			return;
+		}
+		g_color = c;
+		stateDraw();
+	}
 
-function setShadeColor( color ) {
-	const val = $.getPal()[ color ];
-	if( val.r + val.g + val.b > 128 ) {
-		$.setColor( "#000" );
-	} else {
-		$.setColor( "#fff" );
+	function resetInput() {
+		$.offmouse( "down", mouseDown );
 	}
 }
 
-function setPaletteColor() {
+async function stateDataSize() {
+	setState( "set-data-size" );
+	drawHeader();
+	$.setColor( "#888" );
+	$.setPos( 0, 2 );
+	$.print( "Set Data Size" );
+
+	// Get the width
+	let width = -1;
+	while( width < 5 || width > 50 ) {
+		width = await $.input( "Width (5 - 50): ", null, true, true, false );
+	}
+	g_size[ 0 ] = width;
+
+	// Get the height
+	let height = -1;
+	while( height < 5 || height > 50 ) {
+		height = await $.input( "Height (5 - 50): ", null, true, true, false );
+	}
+	g_size[ 1 ] = height;
+
+	
+	// Copy data
+	let g_dataCopy = [];
+	for( let y = 0; y < g_size[ 1 ]; y += 1 ) {
+		g_dataCopy.push( [] );
+		for( let x = 0; x < g_size[ 0 ]; x += 1 ) {
+			if( g_data.length > y && g_data[ y ].length > x ) {
+				g_dataCopy[ y ].push( g_data[ y ][ x ] );
+			} else {
+				g_dataCopy[ y ].push( 0 );
+			}
+		}
+	}
+	g_data = g_dataCopy;
+	stateDraw();
+}
+
+function stateManageData() {
+	setState( "manage-data-values" );
+	drawHeader();
+
+	const dataText = document.getElementById( "data-text" );
+	const dataLabel = document.querySelector( "#data-text-container label" );
+	document.getElementById( "data-text-container" ).style.display = "block";
+	dataLabel.innerHTML = "Data Values";
+	document.getElementById( "reset-btn" ).addEventListener( "click", resetButtonClick );
+	document.getElementById( "close-btn" ).addEventListener( "click", closeButtonClick );
+	document.getElementById( "update-btn" ).addEventListener( "click", updateButtonClick );
+	updateDataValues();
+
+	function updateDataValues() {
+		let msg = "[";
+		let line = "";
+		g_data.forEach( row => {
+			line = "\n  [";
+			for( let i = 0; i < row.length; i += 1 ) {
+				line += row[ i ] + ","
+			}
+			msg += line.substring( 0, line.length - 1 ) + "],";
+			line = "";
+		} );
+		msg = msg.substring( 0, msg.length - 1 );
+		msg += "\n]";
+		dataText.value = msg;
+	}
+
+	function updateButtonClick() {
+		const pal = $.getPal();
+		try {
+			const data = JSON.parse( dataText.value );
+			if( !Array.isArray( data ) ) {
+				throw "Outer data object must be array.";
+			}
+			data.forEach( row => {
+				if( !Array.isArray( row ) ) {
+					throw "Array inner row is not an array.";
+				}
+				row.forEach( val => {
+					if( isNaN( val ) ) {
+						throw "Inner row value is not a number.";
+					}
+					if( val >= pal.length || val < 0 ) {
+						throw `Value is not in range (0 - ${pal.length})` ;
+					}
+				} );
+			} );
+			g_data = data;
+			updateDataValues();
+			dataLabel.innerHTML = "Data Values - <span style='font-weight: bold; color: green;'>" +
+				"Data values updated successful.</span>";
+		} catch( ex ) {
+			alert( `Error updating values: ${ex}` );
+			console.log( ex );
+		}
+	}
+
+	function resetButtonClick() {
+		clearData();
+		updateDataValues();
+		dataLabel.innerHTML = "Data Values - <span style='font-weight: bold; color: black;'>" +
+			"Data values reset successful.</span>";
+	}
+	
+	function closeButtonClick() {
+		resetDataInput();
+	}
+
+	function resetDataInput() {
+		document.getElementById( "reset-btn" ).removeEventListener( "click", resetButtonClick );
+		document.getElementById( "close-btn" ).removeEventListener( "click", closeButtonClick );
+		document.getElementById( "update-btn" ).removeEventListener( "click", updateButtonClick );
+		stateDraw();
+	}
+}
+
+function statePaletteColor() {
+	setState( "set-palette-color" );
 	drawHeader( true );
-	removeInput();
+	removeMenuInput();
 	let offX = 50;
 	let offY = 50;
 	let width = 200;
@@ -347,156 +522,70 @@ function setPaletteColor() {
 			$.setPalColor( g_color, color );
 		}
 		$.offmouse( "move", getPickColor );
-		setupInput();
-		drawHeader();
-		drawData();
-	}
-}
-
-function generateColor( x, y, xRange, yRange ) {
-	const clamp = ( value, min, max ) => Math.max( min, Math.min( max, value ) );
-
-	// Normalize x and y within their respective ranges
-	const normalizedX = clamp( x / xRange, 0, 1 );
-	const normalizedY = clamp( y / yRange, 0, 1 );
-
-	// Define a threshold for the gray column (e.g., 10% of the xRange)
-	const grayThreshold = 0.025;
-
-	if( normalizedX <= grayThreshold ) {
-		// If x falls in the gray column, return a grayscale color
-		const brightness = Math.round( normalizedY * 255 );
-		return [ brightness, brightness, brightness ];
+		stateDraw();
 	}
 
-	// Calculate the hue for the remaining color spectrum
-	const hue = ( ( normalizedX - grayThreshold ) / ( 1 - grayThreshold ) ) * 360;
+	function generateColor( x, y, xRange, yRange ) {
+		const clamp = ( value, min, max ) => Math.max( min, Math.min( max, value ) );
 
-	// Use normalizedY to determine saturation and lightness (brightness)
-	 // Full saturation for vivid colors
-	const saturation = 1;
+		// Normalize x and y within their respective ranges
+		const normalizedX = clamp( x / xRange, 0, 1 );
+		const normalizedY = clamp( y / yRange, 0, 1 );
 
-	// Lightness directly mapped from normalizedY
-	const lightness = normalizedY;
+		// Define a threshold for the gray column (e.g., 10% of the xRange)
+		const grayThreshold = 0.025;
 
-	// Convert HSL to RGB
-	const hslToRgb = ( h, s, l ) => {
-		const c = ( 1 - Math.abs( 2 * l - 1 ) ) * s;
-		const x = c * ( 1 - Math.abs( ( h / 60 ) % 2 - 1 ) );
-		const m = l - c / 2;
-
-		let r = 0, g = 0, b = 0;
-		if( h >= 0 && h < 60 ) {
-			[ r, g, b ] = [ c, x, 0 ];
-		} else if( h >= 60 && h < 120 ) {
-			[ r, g, b ] = [ x, c, 0 ];
-		} else if( h >= 120 && h < 180 ){
-			[ r, g, b ] = [ 0, c, x ];
-		} else if( h >= 180 && h < 240 ){
-			[ r, g, b ] = [ 0, x, c ];
-		} else if( h >= 240 && h < 300 ) {
-			[ r, g, b ] = [ x, 0, c ];
-		} else if( h >= 300 && h <= 360 ){
-			[ r, g, b ] = [ c, 0, x ];
+		if( normalizedX <= grayThreshold ) {
+			// If x falls in the gray column, return a grayscale color
+			const brightness = Math.round( normalizedY * 255 );
+			return [ brightness, brightness, brightness ];
 		}
-		return [
-			Math.round( ( r + m ) * 255 ),
-			Math.round( ( g + m ) * 255 ),
-			Math.round( ( b + m ) * 255 ),
-		];
-	};
 
-	return hslToRgb( hue, saturation, lightness );
-}
+		// Calculate the hue for the remaining color spectrum
+		const hue = ( ( normalizedX - grayThreshold ) / ( 1 - grayThreshold ) ) * 360;
 
-function manageData() {
-	const dataText = document.getElementById( "data-text" );
-	const dataLabel = document.querySelector( "#data-text-container label" );
-	drawHeader();
-	removeInput();
-	document.getElementById( "data-text-container" ).style.display = "block";
-	dataLabel.innerHTML = "Data Values";
-	document.getElementById( "reset-btn" ).addEventListener( "click", resetButtonClick );
-	document.getElementById( "close-btn" ).addEventListener( "click", closeButtonClick );
-	document.getElementById( "update-btn" ).addEventListener( "click", updateButtonClick );
-	updateDataValues();
+		// Use normalizedY to determine saturation and lightness (brightness)
+		 // Full saturation for vivid colors
+		const saturation = 1;
 
-	function updateDataValues() {
-		let msg = "[";
-		let line = "";
-		g_data.forEach( row => {
-			line = "\n  [";
-			for( let i = 0; i < row.length; i += 1 ) {
-				line += row[ i ] + ","
+		// Lightness directly mapped from normalizedY
+		const lightness = normalizedY;
+
+		// Convert HSL to RGB
+		const hslToRgb = ( h, s, l ) => {
+			const c = ( 1 - Math.abs( 2 * l - 1 ) ) * s;
+			const x = c * ( 1 - Math.abs( ( h / 60 ) % 2 - 1 ) );
+			const m = l - c / 2;
+
+			let r = 0, g = 0, b = 0;
+			if( h >= 0 && h < 60 ) {
+				[ r, g, b ] = [ c, x, 0 ];
+			} else if( h >= 60 && h < 120 ) {
+				[ r, g, b ] = [ x, c, 0 ];
+			} else if( h >= 120 && h < 180 ){
+				[ r, g, b ] = [ 0, c, x ];
+			} else if( h >= 180 && h < 240 ){
+				[ r, g, b ] = [ 0, x, c ];
+			} else if( h >= 240 && h < 300 ) {
+				[ r, g, b ] = [ x, 0, c ];
+			} else if( h >= 300 && h <= 360 ){
+				[ r, g, b ] = [ c, 0, x ];
 			}
-			msg += line.substring( 0, line.length - 1 ) + "],";
-			line = "";
-		} );
-		msg = msg.substring( 0, msg.length - 1 );
-		msg += "\n]";
-		dataText.value = msg;
-	}
-	function updateButtonClick() {
-		const pal = $.getPal();
-		try {
-			const data = JSON.parse( dataText.value );
-			if( !Array.isArray( data ) ) {
-				throw "Outer data object must be array.";
-			}
-			data.forEach( row => {
-				if( !Array.isArray( row ) ) {
-					throw "Array inner row is not an array.";
-				}
-				row.forEach( val => {
-					if( isNaN( val ) ) {
-						throw "Inner row value is not a number.";
-					}
-					if( val >= pal.length || val < 0 ) {
-						throw `Value is not in range (0 - ${pal.length})` ;
-					}
-				} );
-			} );
-			g_data = data;
-			updateDataValues();
-			dataLabel.innerHTML = "Data Values - <span style='font-weight: bold; color: green;'>" +
-				"Data values updated successful.</span>";
-		} catch( ex ) {
-			alert( `Error updating values: ${ex}` );
-			console.log( ex );
-		}
-	}
-	function resetButtonClick() {
-		clearData();
-		updateDataValues();
-		dataLabel.innerHTML = "Data Values - <span style='font-weight: bold; color: black;'>" +
-			"Data values reset successful.</span>";
-	}
-	function closeButtonClick() {
-		setupInput();
-		drawHeader();
-		resetDataInput();
-		drawData();
-	}
-	function resetDataInput() {
-		document.getElementById( "reset-btn" ).removeEventListener( "click", resetButtonClick );
-		document.getElementById( "close-btn" ).removeEventListener( "click", closeButtonClick );
-		document.getElementById( "update-btn" ).removeEventListener( "click", updateButtonClick );
+			return [
+				Math.round( ( r + m ) * 255 ),
+				Math.round( ( g + m ) * 255 ),
+				Math.round( ( b + m ) * 255 ),
+			];
+		};
+
+		return hslToRgb( hue, saturation, lightness );
 	}
 }
 
-function clearData() {
-	g_data = [];
-	for( let y = 0; y < g_size[ 1 ]; y += 1 ){
-		g_data.push( [] );
-		for( let x = 0; x < g_size[ 0 ]; x += 1 ) {
-			g_data[ y ].push( 0 );
-		}
-	}
-}
-
-function managePalette() {
+function stateManagePalette() {
+	setState( "manage-palette-color" );
 	drawHeader();
-	removeInput();
+	removeMenuInput();
 	let msg = "[";
 	let pal = $.getPal();
 	let line = "";
@@ -514,8 +603,7 @@ function managePalette() {
 	document.getElementById( "data-text-container" ).style.display = "block";
 	document.querySelector( "#data-text-container label" ).innerHTML = "Color Palette Values";
 	document.getElementById( "close-btn" ).addEventListener( "click", () => {
-		setupInput();
-		drawHeader();
+		stateDraw();
 	}, { "once": true } );
 }
 
