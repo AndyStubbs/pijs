@@ -10,15 +10,16 @@
 			#data-text-container {
 				display: none;
 				position: absolute;
-				width: 720px;
+				width: 900px;
 				height: 300px;
-				left: calc( 50% - 360px);
-				top: calc( 50% - 150px);
+				left: calc(50% - 450px);
+				top: calc(50% - 150px);
 				z-index: 99;
 				background-color: rgba(255,255,255,0.9);
 				color: rgb(68, 68, 68);
-				padding: 5px;
+				padding: 15px;
 				border: 1px solid black;
+				border-radius: 3px;
 			}
 			#data-text-container textarea {
 				display: block;
@@ -26,6 +27,8 @@
 				height: 240px;
 				margin-bottom: 5px;
 				resize: none;
+				overflow: auto;
+				white-space: nowrap;
 			}
 			#data-text-container input[type="button"] {
 				margin-right: 15px;
@@ -423,9 +426,13 @@ function stateManageData() {
 	setState( "manage-data-values" );
 	drawHeader();
 
+	const container = document.getElementById( "data-text-container" );
 	const dataText = document.getElementById( "data-text" );
 	const dataLabel = document.querySelector( "#data-text-container label" );
-	document.getElementById( "data-text-container" ).style.display = "block";
+	const containerWidth = Math.min( Math.max( g_size[ 0 ] * 35, 400 ), 1000 );
+	container.style.width = containerWidth + "px";
+	container.style.left = `calc(50% - ${containerWidth / 2}px)`;
+	container.style.display = "block";
 	dataLabel.innerHTML = "Data Values";
 	document.getElementById( "reset-btn" ).addEventListener( "click", resetButtonClick );
 	document.getElementById( "close-btn" ).addEventListener( "click", closeButtonClick );
@@ -438,7 +445,8 @@ function stateManageData() {
 		g_data.forEach( row => {
 			line = "\n  [";
 			for( let i = 0; i < row.length; i += 1 ) {
-				line += row[ i ] + ","
+				line += row[ i ].toString().padStart( 3, " " ) + ","
+				//line += row[ i ] + ","
 			}
 			msg += line.substring( 0, line.length - 1 ) + "],";
 			line = "";
@@ -597,7 +605,12 @@ function statePaletteColor() {
 function stateManagePalette() {
 	setState( "manage-palette-color" );
 	drawHeader();
-	removeMenuInput();
+	const container = document.getElementById( "data-text-container" );
+	const containerWidth = 800;
+	container.style.width = containerWidth + "px";
+	container.style.left = `calc(50% - ${containerWidth / 2}px)`;
+	container.style.display = "block";
+
 	let msg = "[";
 	let pal = $.getPal();
 	let line = "";
@@ -612,7 +625,6 @@ function stateManagePalette() {
 	msg += "\n]";
 	const dataText = document.getElementById( "data-text" );
 	dataText.value = msg;
-	document.getElementById( "data-text-container" ).style.display = "block";
 	document.querySelector( "#data-text-container label" ).innerHTML = "Color Palette Values";
 	document.getElementById( "close-btn" ).addEventListener( "click", () => {
 		stateDraw();
