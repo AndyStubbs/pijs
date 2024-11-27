@@ -33,6 +33,7 @@
 				resize: none;
 				overflow: auto;
 				white-space: nowrap;
+				cursor: text;
 			}
 			#data-text-container input[type="button"] {
 				margin-right: 15px;
@@ -370,7 +371,7 @@ function stateColor() {
 	let col = 0;
 	let size = 12;
 	let cols = 20;
-	let pixels = [ 0, 0 ];
+	let pixels = [];
 	let hitBox = {
 		"x": offX - 1,
 		"y": offY - 1,
@@ -380,7 +381,19 @@ function stateColor() {
 	$.setColor( "#555" );
 	$.rect( hitBox );
 	for( let c = 0; c < 252; c += 1 ) {
+		const pos = [ col + offX, row + offY ];
+		pixels.push( pos );
 		drawColorBox( col + offX, row + offY, size, c );
+		if( c === g_color ) {
+			const color = $.getPal()[ c ];
+			if( color.r + color.g + color.b > 180 ) {
+				$.setColor( "black" );
+			} else {
+				$.setColor( "white" );
+			}
+			$.setPosPx( pos[ 0 ] + 2, pos[ 1 ] + 1 );
+			$.print( "c" );
+		}
 		col += size;
 		if( col > size * cols ) {
 			col = 0;
@@ -391,8 +404,17 @@ function stateColor() {
 	$.onmouse( "down", mouseDown, false, hitBox );
 
 	function mouseDown( mouse ) {
-		const c = $.get( mouse.x, mouse.y, mouse.x, mouse.y )[ 0 ][ 0 ];
-		if( c === 0 ) {
+		let c = -1;
+		pixels.forEach( ( p, i ) => {
+			if(
+				mouse.x > p[ 0 ] && mouse.x < p[ 0 ] + size &&
+				mouse.y > p[ 1 ] && mouse.y < p[ 1 ] + size
+			) {
+				c = i;
+			}
+		} );
+		///const c = $.get( mouse.x, mouse.y, mouse.x, mouse.y )[ 0 ][ 0 ];
+		if( c < 1 ) {
 			$.setPos( 0, 2 );
 			$.setColor( "red" );
 			$.print( "Invalid color choice", true, true );
@@ -449,6 +471,7 @@ async function stateDataSize() {
 
 function stateManageData() {
 	setState( "manage-data-values" );
+	g_resetActions.push( resetDataInput );
 	drawHeader();
 
 	const container = document.getElementById( "data-text-container" );
@@ -533,8 +556,8 @@ function stateManageData() {
 
 function statePaletteColor() {
 	setState( "set-palette-color" );
-	drawHeader( true );
-	removeMenuInput();
+	g_resetActions.push( clearInput );
+	drawHeader();
 	let offX = 50;
 	let offY = 50;
 	let width = 200;
@@ -569,6 +592,11 @@ function statePaletteColor() {
 		}
 		$.offmouse( "move", getPickColor );
 		stateDraw();
+	}
+
+	function clearInput() {
+		$.offmouse( "move", getPickColor );
+		$.offmouse( "up", setPickColor );
 	}
 
 	function generateColor( x, y, xRange, yRange ) {
@@ -630,31 +658,88 @@ function statePaletteColor() {
 
 function stateManagePalette() {
 	setState( "manage-palette-color" );
+	g_resetActions.push( clearInput );
 	drawHeader();
-	const container = document.getElementById( "data-text-container" );
-	const containerWidth = 800;
-	container.style.width = containerWidth + "px";
-	container.style.left = `calc(50% - ${containerWidth / 2}px)`;
-	container.style.display = "block";
-
-	let msg = "[";
-	let pal = $.getPal();
-	let line = "";
-	pal.forEach( ( c ) => {
-		line += ` "${$.util.rgbToHex( c.r, c.g, c.b, c.a )}",`;
-		if( line.length > 80 ) {
-			msg += "\n  " + line;
-			line = "";
-		}
-	} );
-	msg += "\n  " + line.substring( 0, line.length - 1 );
-	msg += "\n]";
-	const dataText = document.getElementById( "data-text" );
-	dataText.value = msg;
+	setContainerText();
 	document.querySelector( "#data-text-container label" ).innerHTML = "Color Palette Values";
-	document.getElementById( "close-btn" ).addEventListener( "click", () => {
+	document.getElementById( "update-btn" ).addEventListener( "click", updateButton );
+	document.getElementById( "reset-btn" ).addEventListener( "click", resetButton );
+	document.getElementById( "close-btn" ).addEventListener( "click", closeButton );
+
+	function setContainerText() {
+		const container = document.getElementById( "data-text-container" );
+		const containerWidth = 800;
+		container.style.width = containerWidth + "px";
+		container.style.left = `calc(50% - ${containerWidth / 2}px)`;
+		container.style.display = "block";
+
+		let msg = "[";
+		let pal = $.getPal();
+		let line = "";
+		pal.forEach( ( c, i ) => {
+			if( i > 251 ) {
+				return;
+			}
+			line += ` "${$.util.rgbToHex( c.r, c.g, c.b, c.a )}",`;
+			if( line.length > 80 ) {
+				msg += "\n  " + line;
+				line = "";
+			}
+		} );
+		if( line === "" ) {
+			msg = msg.substring( 0, msg.lastIndexOf( "," ) );
+		} else {
+			msg += "\n  " + line.substring( 0, line.lastIndexOf( "," ) - 1 );
+		}
+		msg += "\n]";
+		const dataText = document.getElementById( "data-text" );
+		dataText.value = msg;
+	}
+
+	function updateButton() {
+		const dataText = document.getElementById( "data-text" );
+		try {
+			const data = JSON.parse( dataText.value );
+			if( !Array.isArray( data ) ) {
+				throw "Outer data object must be array.";
+			}
+			data.forEach( color => {
+				if( typeof color !== "string" ) {
+					throw "Color value must be a string.";
+				}
+			} );
+			data.forEach( ( c, i ) => {
+				$.setPalColor( i, c );
+			} );
+			document.querySelector( "#data-text-container label" ).innerHTML = "Color Palette " +
+				"Values - <span style='font-weight: bold; color: green;'>Color palette updated " +
+				"successfully!</span>";
+		} catch( ex ) {
+			alert( `Error updating values: ${ex}` );
+			console.log( ex );
+		}
+	}
+
+	function resetButton() {
+		const pal = $.getDefaultPal();
+		pal.forEach( ( c, i ) => {
+			$.setPalColor( i, c );
+		} );
+		setContainerText();
+		document.querySelector( "#data-text-container label" ).innerHTML = "Color Palette Values" +
+			" - <span style='font-weight: bold;'>Color palette reset to default." +
+			"</span>";
+	}
+
+	function closeButton() {
 		stateDraw();
-	}, { "once": true } );
+	}
+
+	function clearInput() {
+		document.getElementById( "close-btn" ).removeEventListener( "click", closeButton );
+		document.getElementById( "update-btn" ).removeEventListener( "click", updateButton );
+		document.getElementById( "reset-btn" ).removeEventListener( "click", resetButton );
+	}
 }
 
 </script>
