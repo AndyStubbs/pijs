@@ -21,6 +21,10 @@
 				border: 1px solid black;
 				border-radius: 3px;
 			}
+			#data-text-container label {
+				margin-bottom: 8px;
+				display: block;
+			}
 			#data-text-container textarea {
 				display: block;
 				width: calc( 100% - 5px );
@@ -109,6 +113,9 @@ $.ready( () => {
 	clearData();
 	stateDraw();
 } );
+
+// Copy Button
+document.getElementById( "copy-btn" ).addEventListener( "click", copyButtonClick );
 
 function setupMenuInput() {
 	if( !g_menuInputActive ) {
@@ -205,6 +212,24 @@ function clearData() {
 	}
 }
 
+function copyButtonClick() {
+	const textarea = document.getElementById( "data-text" );
+	const text = textarea.value;
+	const dataLabel = document.querySelector( "#data-text-container label" );
+
+	// Copy text to clipboard
+	navigator.clipboard.writeText( text ).then( () => {
+		if( dataLabel.textContent.indexOf( "Data Values" ) > -1 ) {
+			dataLabel.innerHTML = "Data Values - <span style='font-weight: bold; color: black;'>" +
+				"Data copied to clipboard.</span>";
+		} else {
+			dataLabel.innerHTML = "Color Palette Values - " +
+			"<span style='font-weight: bold; color: black;'>Data copied to clipboard.</span>";
+		}
+	} ).catch( err => {
+		console.error( "Error copying text: ", err );
+	} );
+}
 
 /*************
  * States
@@ -271,7 +296,6 @@ function stateDraw() {
 	}
 
 	function drawMouseDown( mouse ) {
-		console.log( mouse );
 		g_drawing.drawing = true;
 		g_drawing.last = [ mouse.x, mouse.y ];
 		
@@ -307,6 +331,7 @@ function stateDraw() {
 	}
 
 	function drawPixel( x, y ) {
+		$.cls( g_drawArea.px, g_drawArea.py, g_size[ 0 ], g_size[ 1 ] );
 		$.put( g_data, g_drawArea.px, g_drawArea.py );
 		if( g_showGrid ) {
 			$.setColor( "#333" );
@@ -437,6 +462,7 @@ function stateManageData() {
 	document.getElementById( "reset-btn" ).addEventListener( "click", resetButtonClick );
 	document.getElementById( "close-btn" ).addEventListener( "click", closeButtonClick );
 	document.getElementById( "update-btn" ).addEventListener( "click", updateButtonClick );
+	document.getElementById( "copy-btn" ).addEventListener( "click", copyButtonClick );
 	updateDataValues();
 
 	function updateDataValues() {
