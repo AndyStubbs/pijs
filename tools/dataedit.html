@@ -471,7 +471,6 @@ async function stateDataSize() {
 
 function stateManageData() {
 	setState( "manage-data-values" );
-	g_resetActions.push( resetDataInput );
 	drawHeader();
 
 	const container = document.getElementById( "data-text-container" );
@@ -485,7 +484,6 @@ function stateManageData() {
 	document.getElementById( "reset-btn" ).addEventListener( "click", resetButtonClick );
 	document.getElementById( "close-btn" ).addEventListener( "click", closeButtonClick );
 	document.getElementById( "update-btn" ).addEventListener( "click", updateButtonClick );
-	document.getElementById( "copy-btn" ).addEventListener( "click", copyButtonClick );
 	updateDataValues();
 
 	function updateDataValues() {
