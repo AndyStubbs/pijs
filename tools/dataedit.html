@@ -273,48 +273,61 @@ function stateDraw() {
 	g_resetActions.push( stopDrawing );
 	drawHeader();
 	startDrawing();
-	let x = $.width() - g_size[ 0 ] - 10;
-	let y = 20;
-	$.setColor( "#333" );
-	$.rect( x - 3, y - 3, g_size[ 0 ] + 6, g_size[ 1 ] + 6 );
-	$.put( g_data, x, y );
-	g_drawArea.px = x;
-	g_drawArea.py = y;
-	let maxWidth = $.width() - g_size[ 0 ] + 10;
-	let maxHeight = $.height() - 25;
-	let width = Math.floor( maxWidth / g_size[ 0 ] );
-	let height = Math.floor( maxHeight / g_size[ 0 ] );
-	if( width > height ) {
-		width = height;
-	} else {
-		height = width;
-	}
-	g_drawArea.x = 9;
-	g_drawArea.y = 17;
-	g_drawArea.width = width;
-	g_drawArea.height = height;
+	updateDrawImage();
 
-	for( x = 0; x < g_size[ 0 ]; x += 1 ) {
-		for( y = 0; y < g_size[ 1 ]; y += 1 ) {
-			drawPixel( x, y );
+	function updateDrawImage() {
+		let x = $.width() - g_size[ 0 ] - 10;
+		let y = 20;
+		$.setColor( "#333" );
+		$.rect( x - 3, y - 3, g_size[ 0 ] + 6, g_size[ 1 ] + 6 );
+		$.put( g_data, x, y );
+		g_drawArea.px = x;
+		g_drawArea.py = y;
+		let maxWidth = $.width() - g_size[ 0 ] + 10;
+		let maxHeight = $.height() - 25;
+		let width = Math.floor( maxWidth / g_size[ 0 ] );
+		let height = Math.floor( maxHeight / g_size[ 0 ] );
+		if( width > height ) {
+			width = height;
+		} else {
+			height = width;
 		}
-	}
-	$.setColor( "#333" );
+		g_drawArea.x = 9;
+		g_drawArea.y = 17;
+		g_drawArea.width = width;
+		g_drawArea.height = height;
 
-	if( !g_showGrid ) {
-		$.rect( 8, 16, width * g_size[ 0 ] + 2, height * g_size[ 1 ] + 2 );
+		$.cls( 8, 16, width * g_size[ 0 ] + 2, height * g_size[ 1 ] + 2 );
+		for( x = 0; x < g_size[ 0 ]; x += 1 ) {
+			for( y = 0; y < g_size[ 1 ]; y += 1 ) {
+				drawPixel( x, y );
+			}
+		}
+
+		$.setColor( "#333" );
+		if( !g_showGrid ) {
+			$.rect( 8, 16, width * g_size[ 0 ] + 2, height * g_size[ 1 ] + 2 );
+		}
 	}
 
 	function startDrawing() {
 		$.onmouse( "down", drawMouseDown );
 		$.onmouse( "move", drawMouseMove );
 		$.onmouse( "up", drawMouseUp );
+		$.onkey( "ArrowLeft", "down", shiftLeft );
+		$.onkey( "ArrowUp", "down", shiftUp );
+		$.onkey( "ArrowRight", "down", shiftRight );
+		$.onkey( "ArrowDown", "down", shiftDown );
 	}
 
 	function stopDrawing() {
 		$.offmouse( "down", drawMouseDown );
 		$.offmouse( "move", drawMouseMove );
 		$.offmouse( "up", drawMouseUp );
+		$.offkey( "ArrowLeft", "down", shiftLeft );
+		$.offkey( "ArrowUp", "down", shiftUp );
+		$.offkey( "ArrowRight", "down", shiftRight );
+		$.offkey( "ArrowDown", "down", shiftDown );
 	}
 
 	function drawMouseDown( mouse ) {
@@ -377,6 +390,85 @@ function stateDraw() {
 		}
 	}
 
+	function shiftLeft() {
+		let temp = [];
+		for( let y = 0; y < g_data.length; y += 1 ) {
+			temp.push( [] );
+			for( let x = 1; x < g_data[ y ].length; x += 1 ) {
+				temp[ y ].push( g_data[ y ][ x ] );
+				if( x === g_data[ y ].length - 1 ) {
+					temp[ y ].push( g_data[ y ][ 0 ] );
+				}
+			}
+		}
+		g_data = temp;
+		saveState();
+		updateDrawImage();
+	}
+
+	function shiftUp() {
+		let temp = [];
+		for( let y = 0; y < g_data.length; y += 1 ) {
+			temp.push( [] );
+			for( let x = 0; x < g_data[ y ].length; x += 1 ) {
+				temp[ y ].push( 0 );
+			}
+		}
+		for( let y = 0; y < g_data.length; y += 1 ) {
+			for( let x = 0; x < g_data[ y ].length; x += 1 ) {
+				if( y === g_data.length - 1 ) {
+					temp[ y ][ x ] = g_data[ 0 ][ x ];
+				} else {
+					temp[ y ][ x ] = g_data[ y + 1 ][ x ];
+				}
+			}
+		}
+		g_data = temp;
+		saveState();
+		updateDrawImage();
+	}
+
+	function shiftRight() {
+		let temp = [];
+		for( let y = 0; y < g_data.length; y += 1 ) {
+			temp.push( [] );
+			for( let x = 0; x < g_data[ y ].length; x += 1 ) {
+				temp[ y ].push( 0 );
+			}
+		}
+		for( let y = 0; y < g_data.length; y += 1 ) {
+			for( let x = 1; x < g_data[ y ].length; x += 1 ) {
+				temp[ y ][ x ] = g_data[ y ][ x - 1 ];
+				if( x === g_data[ y ].length - 1 ) {
+					temp[ y ][ 0 ] = g_data[ y ][ x ];
+				}
+			}
+		}
+		g_data = temp;
+		saveState();
+		updateDrawImage();
+	}
+
+	function shiftDown() {
+		let temp = [];
+		for( let y = 0; y < g_data.length; y += 1 ) {
+			temp.push( [] );
+			for( let x = 0; x < g_data[ y ].length; x += 1 ) {
+				temp[ y ].push( 0 );
+			}
+		}
+		for( let y = 1; y < g_data.length; y += 1 ) {
+			for( let x = 0; x < g_data[ y ].length; x += 1 ) {
+				temp[ y ][ x ] = g_data[ y - 1 ][ x ];
+				if( y === g_data.length - 1 ) {
+					temp[ 0 ][ x ] = g_data[ y ][ x ];
+				}
+			}
+		}
+		g_data = temp;
+		saveState();
+		updateDrawImage();
+	}
 }
 
 function stateColor() {
