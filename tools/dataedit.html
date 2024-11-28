@@ -111,7 +111,7 @@ $.ready( () => {
 	g_screen = $.screen( { "aspect": "320x200", "willReadFrequently": true } );
 	$.setEnableContextMenu( false );
 	$.setFont( 2 );
-	clearData();
+	loadState();
 	stateDraw();
 } );
 
@@ -232,6 +232,27 @@ function copyButtonClick() {
 	} );
 }
 
+function loadState() {
+	const dataValues = localStorage.getItem( "dataedit-values" );
+	if(dataValues !== null) {
+		g_data = JSON.parse( dataValues );
+	} else {
+		clearData();
+	}
+	const colorValues = localStorage.getItem( "dataedit-colors" );
+	if(colorValues !== null) {
+		const colors = JSON.parse(colorValues);
+		colors.forEach( ( c, i ) => {
+			$.setPalColor( i, c );
+		} );
+	}
+}
+
+function saveState() {
+	localStorage.setItem( "dataedit-values", JSON.stringify( g_data ) );
+	localStorage.setItem( "dataedit-colors", JSON.stringify( $.getPal() ) );
+}
+
 /*************
  * States
  * ***********/
@@ -329,6 +350,7 @@ function stateDraw() {
 
 	function drawMouseUp() {
 		g_drawing.drawing = false;
+		saveState();
 	}
 
 	function drawPixel( x, y ) {
@@ -527,6 +549,7 @@ function stateManageData() {
 			updateDataValues();
 			dataLabel.innerHTML = "Data Values - <span style='font-weight: bold; color: green;'>" +
 				"Data values updated successful.</span>";
+			saveState();
 		} catch( ex ) {
 			alert( `Error updating values: ${ex}` );
 			console.log( ex );
@@ -538,6 +561,7 @@ function stateManageData() {
 		updateDataValues();
 		dataLabel.innerHTML = "Data Values - <span style='font-weight: bold; color: black;'>" +
 			"Data values reset successful.</span>";
+		saveState();
 	}
 	
 	function closeButtonClick() {
@@ -587,6 +611,7 @@ function statePaletteColor() {
 	function setPickColor() {
 		if( color ) {
 			$.setPalColor( g_color, color );
+			saveState();
 		}
 		$.offmouse( "move", getPickColor );
 		stateDraw();
@@ -712,6 +737,7 @@ function stateManagePalette() {
 			document.querySelector( "#data-text-container label" ).innerHTML = "Color Palette " +
 				"Values - <span style='font-weight: bold; color: green;'>Color palette updated " +
 				"successfully!</span>";
+			saveState();
 		} catch( ex ) {
 			alert( `Error updating values: ${ex}` );
 			console.log( ex );
@@ -727,6 +753,7 @@ function stateManagePalette() {
 		document.querySelector( "#data-text-container label" ).innerHTML = "Color Palette Values" +
 			" - <span style='font-weight: bold;'>Color palette reset to default." +
 			"</span>";
+		saveState();
 	}
 
 	function closeButton() {
