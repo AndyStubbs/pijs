@@ -1,0 +1,341 @@
+# Pi.js Coding Conventions
+
+## General Formatting
+
+### Character limit
+- Keep characters at less than 100 characters per line.
+
+### Indentation
+- Use **tabs** for indentation (not spaces)
+- Maintain consistent tab usage throughout all files
+
+### String Literals
+- Use **double quotes** (`"`) for all regular strings
+- Use **backticks** (`` ` ``) only for template literals with interpolation
+- Never use single quotes (`'`)
+
+**Examples:**
+```javascript
+// ✓ Good
+const message = "Hello, world!";
+const name = "Pi.js";
+const greeting = `Welcome to ${name}`;
+
+// ✗ Bad
+const message = 'Hello, world!';
+const greeting = "Welcome to " + name;
+```
+
+### Spacing and Parentheses
+
+#### Function Calls and Object Literals
+- Add spaces **inside** parentheses for function calls
+- Add spaces inside curly braces for object literals
+
+**Examples:**
+```javascript
+// ✓ Good
+myFunction( arg1, arg2, arg3 );
+const obj = { "key": "value", "num": 42 };
+if( condition ) {
+	doSomething();
+}
+
+// ✗ Bad
+myFunction(arg1, arg2, arg3);
+const obj = {"key": "value", "num": 42};
+if (condition) {
+	doSomething();
+}
+```
+
+#### Control Statements
+- **No space** before parentheses in `if`, `while`, `for`, `switch` statements
+- Space after the closing parenthesis before the opening brace
+
+**Examples:**
+```javascript
+// ✓ Good
+if( condition ) {
+	// code
+}
+
+while( counter < 10 ) {
+	counter++;
+}
+
+for( let i = 0; i < array.length; i++ ) {
+	// code
+}
+
+// ✗ Bad
+if (condition) {
+	// code
+}
+
+while (counter < 10) {
+	counter++;
+}
+```
+
+### Object Properties
+- **Always quote** object property names, even when not required by JavaScript
+- Use double quotes for property names
+
+**Examples:**
+```javascript
+// ✓ Good
+const config = {
+	"width": 800,
+	"height": 600,
+	"autoRender": true
+};
+
+// ✗ Bad
+const config = {
+	width: 800,
+	height: 600,
+	autoRender: true
+};
+```
+
+### Conditional Expressions
+- **No ternary operators** — prefer explicit `if` statements
+- Keep conditional logic clear and readable
+
+**Examples:**
+```javascript
+// ✓ Good
+let result;
+if( condition ) {
+	result = valueA;
+} else {
+	result = valueB;
+}
+
+// ✗ Bad
+const result = condition ? valueA : valueB;
+```
+
+## Code Organization
+
+### Modularity
+- Keep code modular, readable, and self-contained
+- Each function should have a single, clear purpose
+- Break complex logic into smaller helper functions
+- Keep files focused on specific functionality
+
+### Comments and Documentation
+
+#### JSDoc Comments
+- Include JSDoc block comments at the top of **all JavaScript files**
+- Document all public functions with JSDoc comments
+- Include parameter types and return types
+
+**File Header Example:**
+```javascript
+/**
+ * Pi.js - Screen Graphics Module
+ * 
+ * Handles all screen drawing operations including shapes, lines, and pixels.
+ * 
+ * @module pi-screen-graphics
+ * @requires pi-util
+ * @requires pi-screen-helper
+ */
+```
+
+**Function Documentation Example:**
+```javascript
+/**
+ * Draws a circle on the screen
+ * 
+ * @param {Object} screenData - The screen data object
+ * @param {Array} args - Arguments array [x, y, radius, color, filled]
+ * @returns {void}
+ */
+function circle( screenData, args ) {
+	// implementation
+}
+```
+
+### Variable Declarations
+- Use `const` for values that won't be reassigned
+- Use `let` for values that will be reassigned
+- Avoid `var` in new code (legacy code may still use it)
+- Declare variables at the beginning of their scope when possible
+
+**Examples:**
+```javascript
+// ✓ Good
+const maxWidth = 800;
+let currentX = 0;
+
+for( let i = 0; i < 10; i++ ) {
+	currentX += i;
+}
+
+// ✗ Bad
+var maxWidth = 800;
+var currentX = 0;
+```
+
+## Build System Conventions
+
+### Modern JavaScript Features
+With the new build system (esbuild), you can use:
+- `const` and `let`
+- Arrow functions (when they don't conflict with readability)
+- Template literals
+- Destructuring
+- Optional chaining (`?.`)
+- Nullish coalescing (`??`)
+- ES2020+ features
+
+**Note:** Even with modern features available, maintain the spacing and formatting conventions above.
+
+### Function Declarations
+- Prefer traditional function declarations for named functions
+- Arrow functions are acceptable for callbacks and short inline functions
+- Maintain spacing conventions with arrow functions
+
+**Examples:**
+```javascript
+// ✓ Good - traditional function
+function processData( data ) {
+	return data.map( item => item.value );
+}
+
+// ✓ Good - arrow function for callback
+array.forEach( ( item ) => {
+	console.log( item );
+} );
+
+// ✓ Good - short arrow function
+const double = ( x ) => x * 2;
+```
+
+## Naming Conventions
+
+### Variables and Functions
+- Use camelCase for variable and function names
+- Use descriptive names that indicate purpose
+- Prefix private/internal variables with `m_` (member) when inside modules
+
+**Examples:**
+```javascript
+let screenWidth = 800;
+let m_imageCache = {};
+
+function calculateDistance( x1, y1, x2, y2 ) {
+	// implementation
+}
+```
+
+### Constants
+- Use camelCase for regular constants
+- Use UPPER_CASE for true constants that never change
+
+**Examples:**
+```javascript
+const maxRetries = 3;
+const PI = 3.14159;
+const DEFAULT_COLOR = "#000000";
+```
+
+## Error Handling
+
+### Logging and Errors
+- Use the library's built-in logging system (`m_piData.log`)
+- Provide clear, descriptive error messages
+- Include parameter names in error messages
+
+**Examples:**
+```javascript
+if( !screenData ) {
+	m_piData.log( "drawCircle: No screen data available." );
+	return;
+}
+
+if( typeof radius !== "number" ) {
+	m_piData.log( "drawCircle: Parameter 'radius' must be a number." );
+	return;
+}
+```
+
+## Testing Conventions
+
+### Test Files
+- Maintain spacing and formatting conventions in test files
+- Use descriptive test names
+- Keep tests focused and isolated
+
+### Integration Tests
+- Visual regression tests should include TOML metadata blocks
+- Screenshot comparison tests should be deterministic
+
+## Git Commit Messages
+
+### Format
+- Use clear, descriptive commit messages
+- Start with a verb in present tense
+- Reference issue numbers when applicable
+
+**Examples:**
+```
+Add esbuild integration to build system
+Fix spacing in screen graphics module
+Update documentation for modern JavaScript features
+Migrate tests from Puppeteer to Playwright
+```
+
+## Project-Specific Rules
+
+### Git and Version Control
+- **Manual git operations only** - Never automatically commit, push, or execute any git commands
+- AI assistants should stage files but ALWAYS wait for explicit user approval before committing
+- Never use `--force`, `--no-verify`, or other bypass flags without explicit user request
+- Always preserve commit history and never rewrite history without explicit approval
+- User will manually review and execute all git commands
+
+### Build and Release Process
+- Never automatically run build scripts that create release artifacts without explicit approval
+- Version bumps must be explicitly requested by the user
+- Release process requires manual verification at each step
+- Always document what changes will be made before executing
+
+### Testing
+- Visual regression tests use screenshot comparison with PNG files
+- Test files include TOML metadata blocks for configuration
+- Never delete or overwrite existing test screenshots without explicit approval
+- Integration tests are in `test/tests/`, unit tests will be in `test/unit/`
+
+### File Organization
+- Source files are in `src/` directory
+- Build outputs go to `build/` directory
+- Documentation files go to `docs/` directory
+- Never modify build artifacts directly - always regenerate via build script
+- Keep the modular file structure intact
+
+### Dependencies
+- Minimize dependencies - prefer zero-dependency solutions when possible
+- Document any new dependency additions and justify why they're needed
+- Keep devDependencies minimal
+- Avoid adding transitive dependencies when possible
+
+## Summary Checklist
+
+When writing or reviewing code, ensure:
+- [ ] Tabs for indentation
+- [ ] Double quotes for strings (backticks for templates)
+- [ ] Spaces inside parentheses: `func( arg )`
+- [ ] No space before parens in control statements: `if(` not `if (`
+- [ ] All object properties quoted: `{ "key": "value" }`
+- [ ] No ternary operators (use explicit if/else)
+- [ ] JSDoc comments at top of file
+- [ ] Functions documented with JSDoc
+- [ ] Clear, descriptive variable names
+- [ ] Modular, readable code structure
+- [ ] Manual approval for all git operations
+- [ ] Never auto-commit or auto-push changes
+

@@ -56,8 +56,9 @@ To work on the **Pi.js** library, you'll need to configure your local developmen
 
 Make sure you have the following installed on your system:
 
-1. **Node.js** (v14 or later) and **npm** (Node Package Manager).
-2. A code editor, such as **Visual Studio Code**.
+1. **Node.js** (v18 or later) and **npm** (Node Package Manager).
+   - The project includes a `.nvmrc` file. Use `nvm use` to automatically switch to the correct version.
+2. A code editor, such as **Visual Studio Code** or **Cursor**.
 
 ---
 
@@ -108,9 +109,30 @@ Make sure you have the following installed on your system:
 
 ---
 
+## **Coding Conventions**
+
+This project follows specific coding conventions to maintain consistency. Key conventions include:
+
+- **Tabs** for indentation (not spaces)
+- **Double quotes** for strings, backticks only for template literals
+- **Spaces inside parentheses**: `func( arg )` not `func(arg)`
+- **No space before parens** in control statements: `if(` not `if (`
+- **Always quote object properties**: `{ "key": "value" }`
+- **No ternary operators** - use explicit if/else statements
+- **JSDoc comments** at the top of all JavaScript files
+
+For complete details, see the `.cursorrules` file in the project root.
+
+---
+
 ## **Contributing**
 
-For contributions, ensure your changes pass the build process without errors. Submit pull requests with details of your updates, including how they impact the build.
+For contributions, ensure your changes:
+1. Follow the coding conventions in `.cursorrules`
+2. Pass the build process without errors
+3. Include appropriate tests for new features
+
+Submit pull requests with details of your updates, including how they impact the build.
 
 ---
 
