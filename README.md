@@ -2,147 +2,396 @@
 
 Welcome to **Pi.js**, a JavaScript library designed to simplify the creation of retro-style games and demos. Inspired by the programming language **QBasic**, Pi.js offers a beginner-friendly approach to building 2D games on modern web browsers.
 
-Please checkout the official website for Pi.js (https://pijs.org) for detailed documentation and to
-find the latest version.
+**Official Website:** https://pijs.org
 
 ---
 
-## **Overview**
+## Overview
 
 Pi.js is named after the mathematical constant **π (pi)**, which plays a key role in many graphics and game development functions. It provides an all-in-one solution for handling graphics, sound, and user input, making it an excellent choice for creating interactive and nostalgic game experiences.
 
-Built on top of the **HTML5 Canvas API**, Pi.js has:
-- **Retro Inspiration**: draw retro style graphics without modern effects like anti-aliasing
-- **Great at Primatives**: lines, circles, pixels - remember those? Pi.js is great for creating primatives for retro graphics.
-- **Print command**: A modern graphics library that has a print command - Yes.
-- **Beginner-friendly**: with a simple and intuitive API.
-- Capable of supporting **modern 2D games** alongside retro-style creations.
+**Quick Tip:** The library is accessible via `$` (preferred, for brevity) or `pi` (for clarity). Examples use `$`.
+
+Built on top of the **HTML5 Canvas API**, Pi.js features:
+
+- **Pixel-Perfect Graphics** - Retro-style graphics without anti-aliasing
+- **Primitive Drawing** - Lines, circles, rectangles - old-school style
+- **Print Command** - A modern library with classic BASIC print functionality
+- **Beginner-Friendly** - Simple, intuitive API inspired by QBasic
+- **Modern 2D Games** - Capable of both retro and contemporary game development
 
 ---
 
-## **Features**
+## Features
 
-- **Graphics**: 
-	- Simple drawing functions for 2D shapes, images, and text.
-	- Support for sprite animations to bring your characters and objects to life.
+### Graphics
+- 2D shape drawing (lines, circles, rectangles, ellipses, bezier curves)
+- Pixel-perfect rendering mode (manual pixel manipulation)
+- Anti-aliased mode for smooth graphics
+- Sprite and image support with transformations
+- Custom fonts and text rendering
+- Paint/fill operations
+- Path drawing
 
-- **Sound**:
-	- Play and manage sound effects and background music.
-	- Even generate your own sounds based on frequency or notes!
+### Sound
+- WebAudio-based sound system
+- Load and play sound effects
+- Generate sounds programmatically
+- PLAY command (QBasic-style music notation)
+- Volume control
 
-- **Input Handling**:
-	- Capture keyboard and mouse input with ease.
+### Input Handling
+- Keyboard input with key state tracking
+- Mouse input with position and button states
+- Touch screen support (multi-touch)
+- Gamepad/controller support
 
-- **Beginner-Friendly**:
-	- Easy-to-use API that makes it accessible for newcomers to game development.
-
-- **Retro Game Aesthetics**:
-	- Perfect for creating games inspired by the 80s and 90s.
-
----
-
-## **Getting Started**
-
-To start using Pi.js, please visit (https://pijs.org) for instructions on how to use pijs. The following 
-instructions are for working on the pi.js library itself.
-
-# Setting Up for Local Development
-
-To work on the **Pi.js** library, you'll need to configure your local development environment to handle its custom build process. This involves installing dependencies and running the custom build script to generate the library files.
-
----
-
-## **Prerequisites**
-
-Make sure you have the following installed on your system:
-
-1. **Node.js** (v18 or later) and **npm** (Node Package Manager).
-   - The project includes a `.nvmrc` file. Use `nvm use` to automatically switch to the correct version.
-2. A code editor, such as **Visual Studio Code** or **Cursor**.
+### Advanced Features
+- Multiple screen/canvas support
+- Palette system with color management
+- Table formatting
+- Blend modes and pen effects
 
 ---
 
-## **Setup Instructions**
+## 🚧 Project Status: v2.0 Refactor in Progress
 
-1. **Clone the Repository**
-   git clone https://github.com/your-repo/pi.js.git
-   cd pi.js
+Pi.js is currently undergoing a major modernization refactor. See `REFACTOR-PLAN.md` for details.
 
-2. **Install Dependencies**
-   Run the following command to install all necessary Node.js packages:
-   npm install
+### Current Version
+- **Stable:** v1.2.4 (available on `v1.2.x` branch)
+- **In Development:** v2.0.0 (main branch)
 
-3. **Understand the Build Process**
-   The build process uses a custom Node.js script (`build.js`) with the following steps:
-   - Reads configurations from `build.toml` and `change-log.toml`.
-   - Combines and minifies source files.
-   - Updates version numbers and build dates.
-   - Outputs multiple build artifacts:
-     - Full library file: `<name>-<version>.js`
-     - Minified library file: `<name>-<version>.min.js`
-     - Source map: `<name>-<version>.min.js.map`
-     - Extra command file: `<name>-extra.js`
-   - Writes a `change-log.json` file for easy version tracking.
+### What's New in v2.0
 
-4. **Run the Build Script**
-   Execute the custom build script to generate the library files:
-   node build.js
+#### Completed ✅
+- Modern build system using esbuild (100x faster builds)
+- ES2020+ JavaScript support (const/let, arrow functions, etc.)
+- Minimal dependencies (reduced from 6 to 4 packages)
+- Modular architecture with clean separation of concerns
+- Improved code quality with comprehensive JSDoc
+- Multiple output formats (ESM, CJS, IIFE)
 
-5. **Generated Files**
-   After the build process completes, the output files will be available in the `build/` directory:
-   - `pi-latest.js`: The latest version of the library.
-   - Version-specific files (e.g., `pi-1.0.0.js`, `pi-1.0.0.min.js`).
-   - Source maps and additional files for development and debugging.
+#### In Progress 🔄
+- Porting all 265+ API methods to new architecture
+- Maintaining 100% API compatibility
+- Pixel-mode implementation for retro graphics
+- Full test coverage
 
-6. **Testing the Build**
-   To test the build, serve the files locally using a web server. For example:
-   npx http-server
-   Open the browser at the provided local address and load your test files.
+#### Legacy Code
+The v1.2.4 codebase is preserved in `.legacy/src/` for reference during refactor.
 
 ---
 
-## **Development Workflow**
+## Getting Started
 
-- **Modify Source Files**: Edit the JavaScript source files as needed.
-- **Update `build.toml`**: Update the `build.toml` file to define build configurations such as file lists, version numbers, and extra commands.
-- **Run the Build Script**: Use the `node build.js` command to rebuild the library.
+### For Users
+
+Visit https://pijs.org for complete documentation, tutorials, and examples of using Pi.js in your projects.
+
+### For Contributors
+
+The following instructions are for working on the Pi.js library itself.
 
 ---
 
-## **Coding Conventions**
+## Development Setup
 
-This project follows specific coding conventions to maintain consistency. Key conventions include:
+### Prerequisites
+
+- **Node.js** v18 or later
+- **npm** (Node Package Manager)
+- Code editor (Visual Studio Code or Cursor recommended)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/AndyStubbs/pijs.git
+cd pijs
+
+# Install dependencies
+npm install
+```
+
+### Build
+
+```bash
+# Build all formats (ESM, CJS, IIFE)
+npm run build
+```
+
+Output files in `build/dist/`:
+- `pi.js` - IIFE format, unminified (for debugging)
+- `pi.min.js` - IIFE format, minified (for <script> tags)
+- `pi.esm.min.js` - ES Module format (for import statements)
+- `pi.cjs.min.js` - CommonJS format (for Node.js)
+
+### Development Server
+
+```bash
+# Start local dev server
+npm run server
+```
+
+Opens server at `http://localhost:8080/`
+
+### Testing
+
+```bash
+# Run tests (to be implemented)
+npm test
+```
+
+---
+
+## Project Structure
+
+```
+pijs/
+├── .cursorrules              # Coding conventions
+├── .legacy/                  # v1.2.4 legacy code (reference only)
+│   └── src/                  # Original source files
+├── src/                      # v2.0 refactored source
+│   ├── core/                 # Core systems
+│   │   ├── pi-data.js        # Global data storage
+│   │   ├── command-system.js # Command registration
+│   │   ├── errors.js         # Error handling
+│   │   └── ...
+│   ├── modules/              # Feature modules
+│   │   ├── utils.js          # Utilities ✅
+│   │   ├── screen.js         # Screen management
+│   │   ├── graphics-pixel.js # Pixel-mode drawing
+│   │   ├── graphics-aa.js    # Anti-aliased drawing
+│   │   ├── input.js          # Input handling
+│   │   └── ...
+│   └── index.js              # Main entry point
+├── scripts/
+│   └── build.js              # esbuild build script
+├── build/
+│   └── dist/                 # Build outputs
+├── test/                     # Test files
+├── docs/                     # Documentation
+├── package.json              # Dependencies and scripts
+├── README.md                 # This file
+└── REFACTOR-PLAN.md          # Detailed refactor plan
+```
+
+---
+
+## Coding Conventions
+
+This project follows strict coding conventions to maintain consistency. Key rules:
 
 - **Tabs** for indentation (not spaces)
-- **Double quotes** for strings, backticks only for template literals
+- **Double quotes** for strings
+- **Backticks** only for template literals
 - **Spaces inside parentheses**: `func( arg )` not `func(arg)`
-- **No space before parens** in control statements: `if(` not `if (`
-- **Always quote object properties**: `{ "key": "value" }`
-- **No ternary operators** - use explicit if/else statements
-- **JSDoc comments** at the top of all JavaScript files
+- **No space before control parens**: `if(` not `if (`
+- **Quote all object properties**: `{ "key": "value" }`
+- **No ternary operators** - use explicit if/else
+- **JSDoc comments** required for all files
+- **Line limit** of 100 characters
 
-For complete details, see the `.cursorrules` file in the project root.
-
----
-
-## **Contributing**
-
-For contributions, ensure your changes:
-1. Follow the coding conventions in `.cursorrules`
-2. Pass the build process without errors
-3. Include appropriate tests for new features
-
-Submit pull requests with details of your updates, including how they impact the build.
+See `.cursorrules` for complete details.
 
 ---
 
-## **Troubleshooting**
+## API Usage (v2.0)
 
-If you encounter issues:
-1. Ensure all required dependencies are installed.
-2. Check for errors in the `build.toml` or `change-log.toml` configuration files.
-3. Review the console output for details about errors or warnings during the build process.
+### Basic Example (Browser with script tag)
 
-For further assistance, open an issue in the repository.
+```html
+<script src="build/dist/pi.min.js"></script>
+<script>
+  // Create a screen (using $ alias - preferred)
+  const screen = $.screen( "myCanvas", 800, 600 );
+  
+  // Draw a line
+  $.line( 0, 0, 100, 100 );
+  
+  // Draw a circle
+  $.circle( 400, 300, 50 );
+  
+  // Or use pi if you prefer
+  pi.line( 100, 100, 200, 200 );
+</script>
+```
+
+### Using ES Modules
+
+```javascript
+import $ from "./build/dist/pi.esm.min.js";
+
+const screen = $.screen( "myCanvas", 800, 600 );
+$.line( 0, 0, 100, 100 );
+```
+
+### Dual Parameter Styles
+
+Pi.js supports both positional and object-based parameters:
+
+```javascript
+// Positional parameters
+$.line( 0, 0, 100, 100 );
+
+// Object parameters
+$.line( { "x1": 0, "y1": 0, "x2": 100, "y2": 100 } );
+```
+
+### Pixel Mode vs Anti-Aliased
+
+```javascript
+// Pixel-perfect mode (default) - no anti-aliasing
+$.set( { "pixelMode": true } );
+$.circle( 400, 300, 50 ); // Pixel-perfect circle
+
+// Anti-aliased mode - smooth graphics
+$.set( { "pixelMode": false } );
+$.circle( 400, 300, 50 ); // Smooth circle
+```
+
+### Plugin Support
+
+Pi.js v2.0 exposes an internal API (`$._` or `pi._`) for creating plugins and extensions:
+
+```javascript
+// Example: Creating a particle system plugin
+( function() {
+  "use strict";
+  
+  // Register a new command using pi._ (both $ and pi reference same object)
+  pi._.addCommand( "particle", function( screenData, args ) {
+    const x = args[ 0 ];
+    const y = args[ 1 ];
+    const color = args[ 2 ];
+    // Your particle logic here...
+  }, false, true, [ "x", "y", "color" ] );
+  
+  // Now users can call with preferred $ alias:
+  $.particle( 100, 100, "#FF0000" );
+} )();
+```
+
+**Plugin API:**
+- `pi._.addCommand()` - Register single-implementation commands
+- `pi._.addCommands()` - Register dual pixel/anti-aliased implementations
+- `pi._.addSetting()` - Register settings
+- `pi._.addPen()` - Add custom pen modes
+- `pi._.addBlendCommand()` - Add blend operations
+- `pi._.data` - Access internal data store
+
+**Alias Note:** 
+- `$` and `pi` both reference the same object
+- Use `$` for brevity (preferred) or `pi` for clarity
+- `$` is only set if not already defined (won't conflict with jQuery)
+- If `$` is already taken, use `pi` instead
+
+**v2.0 Change:** In v1.x, `pi._` was deleted after initialization to hide internal APIs. In v2.0, we're **keeping it exposed** to enable extensibility and community plugins.
 
 ---
+
+## Contributing
+
+We welcome contributions! To contribute:
+
+1. **Read** `.cursorrules` for coding standards
+2. **Fork** the repository
+3. **Create** a feature branch
+4. **Follow** the coding conventions
+5. **Test** your changes
+6. **Submit** a pull request
+
+### Areas Needing Help
+
+See `REFACTOR-PLAN.md` for the current refactor progress. Major areas:
+
+- Porting legacy modules to new architecture
+- Writing unit tests
+- Migrating visual tests to Playwright
+- Documentation and examples
+
+---
+
+## Dependencies
+
+### Production
+None! Pi.js has zero runtime dependencies.
+
+### Development
+
+Minimal dev dependencies:
+- `esbuild` - Fast bundler and minifier (zero transitive deps!)
+- `@playwright/test` - Modern testing framework
+- `@iarna/toml` - TOML config parser
+- `pngjs` - PNG image comparison for tests
+
+**Total:** 4 dev dependencies (down from 6 in v1.2.4)
+
+---
+
+## Build System
+
+### Modern Build with esbuild
+
+The new build system using esbuild provides:
+
+- **~100x faster** than uglify-js
+- **Multiple formats** in one build (ESM, CJS, IIFE)
+- **Source maps** for debugging
+- **Tree-shaking** for smaller bundles
+- **Modern JS** support (ES2020+)
+
+### Build Configuration
+
+Build is configured via `scripts/build.js`. Customization options:
+
+- Output formats
+- Minification settings
+- Source map generation
+- Banner text
+- Target JavaScript version
+
+---
+
+## Testing
+
+### Visual Regression Tests
+
+Located in `test/tests/`, these tests use screenshot comparison to ensure pixel-perfect rendering.
+
+### Unit Tests (Coming Soon)
+
+Will be located in `test/unit/` for testing individual modules.
+
+### Running Tests
+
+```bash
+npm test
+```
+
+---
+
+## License
+
+Apache License 2.0 - See `LICENSE` file for details.
+
+Copyright Andy Stubbs
+
+---
+
+## Links
+
+- **Website:** https://pijs.org
+- **Repository:** https://github.com/AndyStubbs/pijs
+- **Issues:** https://github.com/AndyStubbs/pijs/issues
+
+---
+
+## Acknowledgments
+
+Inspired by QBasic and the retro programming community. Built with modern web technologies to bring classic programming experiences to the browser.
+
+---
+
+**Note:** This project is actively being refactored. See `REFACTOR-PLAN.md` for detailed refactor progress and plans.

@@ -155,8 +155,32 @@ const result = condition ? valueA : valueB;
  * @returns {void}
  */
 function circle( screenData, args ) {
+	
 	// implementation
 }
+```
+
+#### Inline Comments
+- **Place comments above code**, not after code on the same line
+- **Always include an empty line** before a comment
+- Keep comments concise and meaningful
+
+**Examples:**
+```javascript
+// ✓ Good
+const x = 10;
+
+// Calculate the distance
+const distance = Math.sqrt( x * x + y * y );
+
+// Apply transformation
+transform( distance );
+
+// ✗ Bad
+const x = 10; // Initial value
+const distance = Math.sqrt( x * x + y * y ); // Calculate distance
+// Apply transformation
+transform( distance );
 ```
 
 ### Variable Declarations
@@ -334,6 +358,8 @@ When writing or reviewing code, ensure:
 - [ ] No ternary operators (use explicit if/else)
 - [ ] JSDoc comments at top of file
 - [ ] Functions documented with JSDoc
+- [ ] Comments above code, not after on same line
+- [ ] Empty line before each comment
 - [ ] Clear, descriptive variable names
 - [ ] Modular, readable code structure
 - [ ] Manual approval for all git operations

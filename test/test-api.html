@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pi.js 2.0 - API Inspector</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 20px;
+			font-family: monospace;
+			background: #222;
+			color: #fff;
+		}
+		h1 {
+			color: #4CAF50;
+		}
+		.section {
+			margin: 20px 0;
+			padding: 15px;
+			background: #333;
+			border-radius: 5px;
+		}
+		.section h2 {
+			margin-top: 0;
+			color: #FFC107;
+		}
+		.command-list {
+			background: #1a1a1a;
+			padding: 15px;
+			border-radius: 3px;
+			max-height: 500px;
+			overflow-y: auto;
+		}
+		.command {
+			padding: 3px 0;
+		}
+		.count {
+			color: #4CAF50;
+			font-weight: bold;
+		}
+		.status {
+			color: #FFC107;
+			font-style: italic;
+		}
+	</style>
+</head>
+<body>
+	<h1>Pi.js 2.0 API Inspector</h1>
+	<p>Inspecting the current API structure...</p>
+
+	<div id="results"></div>
+
+	<script type="module">
+		const results = document.getElementById( "results" );
+
+		try {
+			// Import the Pi.js API
+			const piModule = await import( "../build/dist/pi.esm.min.js" );
+			const pi = piModule.default || piModule.pi;
+			
+			// Create status section
+			const statusSection = document.createElement( "div" );
+			statusSection.className = "section";
+			statusSection.innerHTML = `
+				<h2>Pi.js ${pi.version || "unknown"}</h2>
+				<h2>Phase 0 Status: Foundation Complete ✅</h2>
+				<div class="status">
+					Core files implemented:
+					<ul>
+						<li>src/core/pi-data.js - Global data storage</li>
+						<li>src/core/command-system.js - Command registration system</li>
+						<li>src/core/errors.js - Error handling</li>
+						<li>src/modules/utils.js - Utility functions (COMPLETE)</li>
+					</ul>
+				</div>
+			`;
+			results.appendChild( statusSection );
+
+			// Display namespace structure
+			const structureSection = document.createElement( "div" );
+			structureSection.className = "section";
+			structureSection.innerHTML = "<h2>API Namespace Structure</h2>";
+			
+			const structureList = document.createElement( "div" );
+			structureList.className = "command-list";
+			
+			// Check for _ namespace
+			if( pi._ ) {
+				structureList.innerHTML += `<div class="command">✓ pi._ (internal API)</div>`;
+				for( const key in pi._ ) {
+					structureList.innerHTML += `<div class="command">  └─ pi._.${key}</div>`;
+				}
+			}
+			
+			// Check for util namespace
+			if( pi.util ) {
+				const utilCount = Object.keys( pi.util ).length;
+				structureList.innerHTML += `<div class="command">✓ pi.util (${utilCount} utility functions)</div>`;
+			}
+			
+			structureSection.appendChild( structureList );
+			results.appendChild( structureSection );
+
+			// Display utils
+			if( pi.util ) {
+				const utilsSection = document.createElement( "div" );
+				utilsSection.className = "section";
+				utilsSection.innerHTML = "<h2>Utility Functions</h2>";
+				
+				const utilsList = document.createElement( "div" );
+				utilsList.className = "command-list";
+				
+				const utils = Object.keys( pi.util ).sort();
+				utilsList.innerHTML = `<div class="count">Total: ${utils.length}</div>`;
+				
+				utils.forEach( util => {
+					utilsList.innerHTML += `<div class="command">pi.util.${util}</div>`;
+				} );
+				
+				utilsSection.appendChild( utilsList );
+				results.appendChild( utilsSection );
+			}
+
+			// Display internal data structure
+			if( pi._.data ) {
+				const dataSection = document.createElement( "div" );
+				dataSection.className = "section";
+				dataSection.innerHTML = "<h2>Internal Data Store (pi._.data)</h2>";
+				
+				const dataList = document.createElement( "div" );
+				dataList.className = "command-list";
+				
+				const dataKeys = Object.keys( pi._.data ).sort();
+				dataList.innerHTML = `<div class="count">Properties: ${dataKeys.length}</div>`;
+				
+				dataKeys.forEach( key => {
+					const value = pi._.data[ key ];
+					const type = typeof value;
+					dataList.innerHTML += `<div class="command">${key}: ${type}</div>`;
+				} );
+				
+				dataSection.appendChild( dataList );
+				results.appendChild( dataSection );
+			}
+
+			// Next steps
+			const nextSection = document.createElement( "div" );
+			nextSection.className = "section";
+			nextSection.innerHTML = `
+				<h2>Next: Phase 1 - Core System</h2>
+				<div class="status">
+					To implement:
+					<ul>
+						<li>Command registration (addCommand, addCommands, addSetting)</li>
+						<li>API method generation</li>
+						<li>Parameter parsing (object/array support)</li>
+						<li>Ready/wait/resume system</li>
+					</ul>
+					<br>
+					After Phase 1, the API will have pi.ready(), pi.screen(), etc.
+				</div>
+			`;
+			results.appendChild( nextSection );
+
+			console.log( "Pi.js loaded successfully!" );
+			console.log( "pi object:", pi );
+
+		} catch( e ) {
+			results.innerHTML = `
+				<div class="section">
+					<h2 style="color: #f44336;">Error Loading API</h2>
+					<div>Build the project first with: <code>npm run build</code></div>
+					<pre style="color: #f44336;">${e.message}\n${e.stack}</pre>
+				</div>
+			`;
+			console.error( "Failed to load Pi.js:", e );
+		}
+	</script>
+</body>
+</html>
