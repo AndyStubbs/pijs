@@ -6,8 +6,6 @@
  * @module core/pi-data
  */
 
-import { logError } from "./errors.js";
-
 // Central Pi.js data storage
 export const piData = {
 	"nextScreenId": 0,
@@ -32,7 +30,6 @@ export const piData = {
 	"settings": {},
 	"settingsList": [],
 	"volume": 0.75,
-	"log": logError,
 	"isTouchScreen": false,
 	"defaultInputFocus": typeof window !== "undefined" ? window : null
 };

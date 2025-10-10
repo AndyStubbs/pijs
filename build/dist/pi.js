@@ -5,7 +5,7 @@
  * @license Apache-2.0
  * @preserve
  */
-var Pi = (() => {
+var pi = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
   var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -31,21 +31,6 @@ var Pi = (() => {
     pi: () => pi
   });
 
-  // src/core/errors.js
-  var ErrorMode = Object.freeze({
-    "LOG": "log",
-    "THROW": "throw",
-    "NONE": "none"
-  });
-  var currentErrorMode = ErrorMode.LOG;
-  function logError(msg) {
-    if (currentErrorMode === ErrorMode.LOG) {
-      console.error(msg);
-    } else if (currentErrorMode === ErrorMode.THROW) {
-      throw new Error(msg);
-    }
-  }
-
   // src/core/pi-data.js
   var piData = {
     "nextScreenId": 0,
@@ -70,10 +55,10 @@ var Pi = (() => {
     "settings": {},
     "settingsList": [],
     "volume": 0.75,
-    "log": logError,
     "isTouchScreen": false,
     "defaultInputFocus": typeof window !== "undefined" ? window : null
   };
+  var commandList = [];
 
   // src/modules/utils.js
   var utils_exports = {};
@@ -384,17 +369,69 @@ var Pi = (() => {
   });
   var queueMicrotask = window.queueMicrotask || ((callback) => setTimeout(callback, 0));
 
+  // src/core/command-system.js
+  function addCommand(name, fn, isInternal, isScreen, parameters, isSet) {
+    piData.commands[name] = fn;
+    if (!isInternal) {
+      commandList.push({
+        "name": name,
+        "fn": fn,
+        "isScreen": isScreen,
+        "parameters": parameters || [],
+        "isSet": isSet,
+        "noParse": isSet
+      });
+    }
+  }
+  function addCommands(name, fnPx, fnAa, parameters) {
+    addCommand(name, function(screenData, args) {
+      if (screenData.pixelMode) {
+        fnPx(screenData, args);
+      } else {
+        fnAa(screenData, args);
+      }
+    }, false, true, parameters);
+  }
+  function addSetting(name, fn, isScreen, parameters) {
+    piData.settings[name] = {
+      "name": name,
+      "fn": fn,
+      "isScreen": isScreen,
+      "parameters": parameters || []
+    };
+    piData.settingsList.push(name);
+  }
+  function addPen(name, fn, cap) {
+    piData.penList.push(name);
+    piData.pens[name] = {
+      "cmd": fn,
+      "cap": cap
+    };
+  }
+  function addBlendCommand(name, fn) {
+    piData.blendCommandsList.push(name);
+    piData.blendCommands[name] = fn;
+  }
+
   // src/index.js
   var VERSION = "2.0.0-alpha.1";
   var pi = {
     "version": VERSION,
     "_": {
-      "data": piData
+      "data": piData,
+      "addCommand": addCommand,
+      "addCommands": addCommands,
+      "addSetting": addSetting,
+      "addPen": addPen,
+      "addBlendCommand": addBlendCommand
     },
     "util": utils_exports
   };
   if (typeof window !== "undefined") {
     window.pi = pi;
+    if (window.$ === void 0) {
+      window.$ = pi;
+    }
   }
   var index_default = pi;
   return __toCommonJS(index_exports);

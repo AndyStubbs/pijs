@@ -54,11 +54,41 @@
 	<script type="module">
 		const results = document.getElementById( "results" );
 
+		// Helper to fetch file size
+		async function getFileSize( url ) {
+			try {
+				const response = await fetch( url );
+				if( response.ok ) {
+					const blob = await response.blob();
+					return blob.size;
+				}
+			} catch( e ) {
+				console.warn( `Could not fetch size for ${url}` );
+			}
+			return null;
+		}
+
+		// Helper to format bytes
+		function formatBytes( bytes ) {
+			if( bytes === null ) return "N/A";
+			if( bytes < 1024 ) return `${bytes} B`;
+			if( bytes < 1024 * 1024 ) return `${(bytes / 1024).toFixed(2)} KB`;
+			return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+		}
+
 		try {
 			// Import the Pi.js API
 			const piModule = await import( "../build/dist/pi.esm.min.js" );
 			const pi = piModule.default || piModule.pi;
 			
+			// Fetch file sizes
+			const sizes = {
+				"unminified": await getFileSize( "../build/dist/pi.js" ),
+				"minified": await getFileSize( "../build/dist/pi.min.js" ),
+				"esm": await getFileSize( "../build/dist/pi.esm.min.js" ),
+				"cjs": await getFileSize( "../build/dist/pi.cjs.min.js" )
+			};
+
 			// Create status section
 			const statusSection = document.createElement( "div" );
 			statusSection.className = "section";
@@ -69,13 +99,53 @@
 					Core files implemented:
 					<ul>
 						<li>src/core/pi-data.js - Global data storage</li>
-						<li>src/core/command-system.js - Command registration system</li>
-						<li>src/core/errors.js - Error handling</li>
-						<li>src/modules/utils.js - Utility functions (COMPLETE)</li>
+						<li>src/core/command-system.js - Command registration (native errors)</li>
+						<li>src/modules/utils.js - Utility functions (COMPLETE - 546 lines)</li>
 					</ul>
 				</div>
 			`;
 			results.appendChild( statusSection );
+
+			// Create bundle size section
+			const sizeSection = document.createElement( "div" );
+			sizeSection.className = "section";
+			sizeSection.innerHTML = "<h2>Bundle Sizes</h2>";
+			
+			const sizeList = document.createElement( "div" );
+			sizeList.className = "command-list";
+			
+			sizeList.innerHTML = `
+				<div class="command">
+					<span class="count">Unminified (IIFE):</span> 
+					${formatBytes( sizes.unminified )}
+				</div>
+				<div class="command">
+					<span class="count">Minified (IIFE):</span> 
+					${formatBytes( sizes.minified )}
+				</div>
+				<div class="command">
+					<span class="count">ESM (minified):</span> 
+					${formatBytes( sizes.esm )}
+				</div>
+				<div class="command">
+					<span class="count">CJS (minified):</span> 
+					${formatBytes( sizes.cjs )}
+				</div>
+			`;
+
+			// Add compression ratio if both sizes available
+			if( sizes.unminified && sizes.minified ) {
+				const ratio = ((1 - sizes.minified / sizes.unminified) * 100).toFixed(1);
+				sizeList.innerHTML += `
+					<div class="command">
+						<span class="count">Compression:</span> 
+						${ratio}% smaller when minified
+					</div>
+				`;
+			}
+			
+			sizeSection.appendChild( sizeList );
+			results.appendChild( sizeSection );
 
 			// Display namespace structure
 			const structureSection = document.createElement( "div" );

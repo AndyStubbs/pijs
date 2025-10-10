@@ -70,60 +70,99 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 **Status:** Complete  
 **Files Created:**
 - `src/core/pi-data.js` - Central data storage
-- `src/core/command-system.js` - Command registration
-- `src/core/errors.js` - Error handling
-- `src/modules/utils.js` - All utility functions
-- `scripts/build.js` - esbuild build script
-- `package.json` - Updated dependencies
+- `src/core/command-system.js` - Command registration (uses native errors)
+- `src/modules/utils.js` - All utility functions (546 lines, fully ported)
+- `scripts/build.js` - esbuild build script with version injection
+- `package.json` - Updated dependencies (4 minimal deps)
+- `server.js` - Simple development server
+- `.cursorrules` - Project coding conventions
 
 **What Works:**
 - Build system compiles successfully
-- Utils module fully ported
+- Utils module fully ported (colors, math, strings, type checking)
 - Core architecture in place
 - Development server functional
+- Version managed from single source (package.json)
+- `$` alias with jQuery conflict protection
+- Plugin API exposed via `pi._`
+
+**Design Decisions:**
+- Using native JavaScript errors (TypeError, RangeError, Error with .code)
+- No custom error modes - keeping it simple
+- Using console.warn() for deprecations
+- Merged init logic into index.js (no separate init file)
 
 ---
 
 ### Phase 1: Core System 🔄 IN PROGRESS
 
 **Legacy Files:**
-- `.legacy/src/pi.js` (504 lines)
-- `.legacy/src/pi-init.js` (26 lines)
+- `.legacy/src/pi.js` (504 lines) - Core command system, ready/wait
+- `.legacy/src/pi-init.js` (26 lines) - Final initialization
 
 **New Files:**
-- `src/index.js` - Main entry point
-- `src/core/ready-system.js` - Ready/wait/resume
-- `src/modules/init.js` - Initialization
+- `src/index.js` - Main entry point (update needed)
+- No separate files - merge init logic into index.js
 
 **Tasks:**
-1. Complete command registration system
-   - [x] `addCommand` - registers single implementation
-   - [x] `addCommands` - registers dual pixel/AA implementations
-   - [x] `addSetting` - registers settings
-   - [x] `parseOptions` - converts object params to arrays
-   - [ ] Wire up to API generation
 
-2. Implement ready/wait/resume system
-   - [ ] `pi.ready(fn)` - run when Pi is loaded
-   - [ ] `pi._.wait()` - increment wait counter
-   - [ ] `pi._.resume()` - decrement wait counter
-   - [ ] Document.ready integration
+1. **Add ready/wait/resume system to index.js**
+   - [ ] Create ready callback queue
+   - [ ] Implement wait counter (delays ready callbacks)
+   - [ ] Implement resume function (decrements counter)
+   - [ ] Implement startReadyList function
+   - [ ] Hook to document.readyState
+   - [ ] Register `$.ready(fn)` command
+   - [ ] Expose `wait()` and `resume()` in `pi._` for modules
 
-3. Error handling
-   - [x] Error logging system
-   - [ ] Error modes (log/throw/none)
-   - [ ] Descriptive error messages
+2. **Simplify error handling**
+   - [x] Remove custom error modes (log/throw/none)
+   - [ ] Use native JavaScript errors for invariants:
+     - `TypeError` for wrong types
+     - `RangeError` for out-of-bounds values
+     - `Error` with `.code` property for Pi.js-specific errors
+   - [ ] Use `console.warn()` for deprecations and non-fatal issues
+   - [ ] Remove `src/core/errors.js` (use native errors instead)
+   - [ ] Remove custom logging system (too complex)
 
-4. Process commands and build API
-   - [ ] Process all registered commands
-   - [ ] Create `pi.*` methods for each command
-   - [ ] Support both positional and object parameters
+3. **Complete API generation**
+   - [x] `processCommands(api)` function exists in command-system.js
+   - [ ] Call `processCommands(pi)` in index.js after modules load
+   - [ ] Verify commands create `pi.*` and `$.*` methods
+   - [ ] Test both positional and object parameters work
+
+4. **Add core utility commands**
+   - [ ] `setScreen(screen)` - set active screen
+   - [ ] `getScreen(id)` - get screen by ID
+   - [ ] `removeAllScreens()` - cleanup all screens
+   - [ ] `setDefaultColor(color)` - set default drawing color
+   - [ ] `setDefaultPal(palette)` - set default palette
+   - [ ] `getDefaultPal()` - get default palette
+   - [ ] `setDefaultInputFocus(element)` - set input focus element
+   - [ ] `set(options)` - global settings command
+
+5. **Module initialization pattern**
+   - [ ] Each feature module exports `init(pi)` function
+   - [ ] Modules call `pi._.addCommand()` to register
+   - [ ] index.js imports and calls all init functions
+   - [ ] Proper load order matters
 
 **Acceptance Criteria:**
-- [ ] `pi.ready()` executes callbacks correctly
-- [ ] Commands auto-generate API methods
-- [ ] Both `pi.func(a, b)` and `pi.func({a, b})` work
-- [ ] Error logging functional
+- [ ] `$.ready(fn)` executes callbacks correctly
+- [ ] `$.ready()` waits for document.ready
+- [ ] Wait/resume system works for async operations
+- [ ] Commands auto-generate `$.*` methods
+- [ ] Both `$.func(a, b)` and `$.func({a, b})` work
+- [ ] Native errors thrown for invalid input
+- [ ] Console warnings for non-fatal issues
+- [ ] All Phase 1 commands work (setScreen, getScreen, etc.)
+
+**Implementation Notes:**
+
+- **Merge pi-init.js into index.js**: No need for separate file
+- **Keep ready system in index.js**: Simple, all in one place
+- **No complex error system**: Use native JavaScript errors
+- **Module pattern**: Each module calls `pi._.addCommand()` during init
 
 ---
 

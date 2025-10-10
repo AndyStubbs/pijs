@@ -207,8 +207,11 @@ export function getScreenData( screenId, commandName ) {
 		if( commandName === "set" ) {
 			return false;
 		}
-		piData.log( `${commandName}: No screens available for command.` );
-		return false;
+
+		// Use native Error for missing screen
+		const error = new Error( `${commandName}: No screens available for command.` );
+		error.code = "NO_SCREEN";
+		throw error;
 	}
 
 	if( screenId === undefined || screenId === null ) {
@@ -216,8 +219,10 @@ export function getScreenData( screenId, commandName ) {
 	}
 
 	if( utils.isInteger( screenId ) && !piData.screens[ screenId ] ) {
-		piData.log( `${commandName}: Invalid screen id.` );
-		return false;
+		// Use native Error for invalid screen ID
+		const error = new Error( `${commandName}: Invalid screen id.` );
+		error.code = "INVALID_SCREEN_ID";
+		throw error;
 	}
 
 	return piData.screens[ screenId ];
