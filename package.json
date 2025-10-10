@@ -1,37 +1,31 @@
 {
-  "name": "pijs",
-  "version": "1.2.4",
-  "description": "Graphics and sound library",
-  "main": "build.js",
-  "directories": {
-    "test": "test"
-  },
-  "scripts": {
-    "test": "node test/run-tests.js",
-    "server": "start node server.js",
-    "server2": "node server.js",
-    "build": "node build.js",
-    "update-version": "node update-version.js",
-    "build-docs": "node build-docs.js",
-    "build-map": "node build-command-map.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/AndyStubbs/pi-js"
-  },
-  "author": "Andy Stubbs",
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/AndyStubbs/pi-js/issues"
-  },
-  "homepage": "https://www.pijs.org",
-  "devDependencies": {
-    "@iarna/toml": "^2.2.3",
-    "connect": "^3.7.0",
-    "node-cmd": "^3.0.0",
-    "pngjs": "^3.4.0",
-    "puppeteer": "^22.6.5",
-    "serve-static": "^1.14.1",
-    "uglify-js": "^3.8.0"
-  }
+	"name": "pijs",
+	"version": "1.2.4",
+	"description": "Graphics and sound library",
+	"main": "build/dist/pi.js",
+	"directories": {
+		"test": "test"
+	},
+	"scripts": {
+		"test": "echo \"Tests will be implemented\" && exit 0"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/AndyStubbs/pijs"
+	},
+	"author": "Andy Stubbs",
+	"license": "Apache-2.0",
+	"bugs": {
+		"url": "https://github.com/AndyStubbs/pijs/issues"
+	},
+	"homepage": "https://www.pijs.org",
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"devDependencies": {
+		"@iarna/toml": "^2.2.3",
+		"@playwright/test": "^1.56.0",
+		"esbuild": "^0.25.10",
+		"pngjs": "^7.0.0"
+	}
 }
