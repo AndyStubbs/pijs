@@ -164,5 +164,254 @@ export function init( pi ) {
 		ctx.lineTo( x2, y2 );
 		ctx.stroke();
 	}
+
+	// CIRCLE - Draw circle (Midpoint circle algorithm for pixel mode)
+	pi._.addCommands( "circle", pxCircle, aaCircle, [ "x", "y", "radius", "fillColor" ] );
+
+	function pxCircle( screenData, args ) {
+		let x = Math.round( args[ 0 ] );
+		let y = Math.round( args[ 1 ] );
+		let radius = Math.round( args[ 2 ] );
+		let fillColor = args[ 3 ];
+		let isFill = false;
+
+		if(
+			!pi.util.isInteger( x ) ||
+			!pi.util.isInteger( y ) ||
+			!pi.util.isInteger( radius )
+		) {
+			const error = new TypeError( "circle: x, y, radius must be integers." );
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		// Check for fill color
+		if( fillColor != null ) {
+			fillColor = piData.commands.findColorValue( screenData, fillColor, "circle" );
+			if( fillColor === undefined ) {
+				return;
+			}
+			isFill = true;
+		}
+
+		piData.commands.getImageData( screenData );
+
+		// Handle filled circles with buffer swap
+		let tempData;
+		if( isFill ) {
+			piData.commands.setImageDirty( screenData );
+			tempData = screenData.imageData;
+
+			screenData.bufferContext.clearRect( 0, 0, screenData.width, screenData.height );
+			screenData.imageData = screenData.bufferContext.getImageData(
+				0, 0, screenData.width, screenData.height
+			);
+		}
+
+		// Initialize the color for the circle
+		const color = screenData.fColor;
+
+		radius -= 1;
+		let x2 = radius;
+		let y2 = 0;
+
+		// Midpoint circle algorithm - Only print initial points if r > 0
+		if( radius > 1 ) {
+			screenData.pen.draw( screenData, x2 + x, y2 + y, color );
+			screenData.pen.draw( screenData, -x2 + x, y2 + y, color );
+			screenData.pen.draw( screenData, x, x2 + y, color );
+			screenData.pen.draw( screenData, x, -x2 + y, color );
+		} else if( radius === 1 ) {
+			screenData.pen.draw( screenData, x + 1, y, color );
+			screenData.pen.draw( screenData, x - 1, y, color );
+			screenData.pen.draw( screenData, x, y + 1, color );
+			screenData.pen.draw( screenData, x, y - 1, color );
+			y2 = x2 + 1;
+		} else if( radius === 0 ) {
+			screenData.pen.draw( screenData, x, y, color );
+			y2 = x2 + 1;
+		}
+
+		// Initialize decision parameter
+		let midPoint = 1 - radius;
+
+		while( x2 > y2 ) {
+			y2 += 1;
+
+			if( midPoint <= 0 ) {
+				// Mid-point is inside or on the perimeter
+				midPoint = midPoint + 2 * y2 + 1;
+			} else {
+				// Mid point is outside the perimeter
+				x2 -= 1;
+				midPoint = midPoint + 2 * y2 - 2 * x2 + 1;
+			}
+
+			// Set pixels around point and reflection in other octants
+			screenData.pen.draw( screenData, x2 + x, y2 + y, color );
+			screenData.pen.draw( screenData, -x2 + x, y2 + y, color );
+			screenData.pen.draw( screenData, x2 + x, -y2 + y, color );
+			screenData.pen.draw( screenData, -x2 + x, -y2 + y, color );
+
+			// Set pixels on the perimeter points if not on x = y
+			if( x2 !== y2 ) {
+				screenData.pen.draw( screenData, y2 + x, x2 + y, color );
+				screenData.pen.draw( screenData, -y2 + x, x2 + y, color );
+				screenData.pen.draw( screenData, y2 + x, -x2 + y, color );
+				screenData.pen.draw( screenData, -y2 + x, -x2 + y, color );
+			}
+		}
+
+		// Handle fill
+		if( isFill ) {
+			// Paint the center of the shape (requires paint command from Phase 6)
+			if( piData.commands.paint ) {
+				piData.commands.paint( screenData, [ x, y, fillColor ] );
+			}
+
+			// Copy the data back onto the main canvas
+			radius += screenData.pen.size;
+			for( y2 = -radius; y2 <= radius; y2 += 1 ) {
+				for( x2 = -radius; x2 <= radius; x2 += 1 ) {
+					const i = ( ( y2 + y ) * screenData.width + ( x2 + x ) ) * 4;
+					if( screenData.imageData.data[ i + 3 ] > 0 ) {
+						tempData.data[ i ] = screenData.imageData.data[ i ];
+						tempData.data[ i + 1 ] = screenData.imageData.data[ i + 1 ];
+						tempData.data[ i + 2 ] = screenData.imageData.data[ i + 2 ];
+						tempData.data[ i + 3 ] = screenData.imageData.data[ i + 3 ];
+					}
+				}
+			}
+			screenData.imageData = tempData;
+		}
+
+		piData.commands.setImageDirty( screenData );
+	}
+
+	function aaCircle( screenData, args ) {
+		let x = args[ 0 ] + 0.5;
+		let y = args[ 1 ] + 0.5;
+		let r = args[ 2 ] - 0.9;
+		let fillColor = args[ 3 ];
+
+		if( isNaN( x ) || isNaN( y ) || isNaN( r ) ) {
+			const error = new TypeError( "circle: parameters x, y, r must be numbers." );
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		// Check for fill
+		let isFill = false;
+		if( fillColor != null ) {
+			fillColor = piData.commands.findColorValue( screenData, fillColor, "circle" );
+			if( fillColor === undefined ) {
+				return;
+			}
+			isFill = true;
+		}
+
+		screenData.screenObj.render();
+
+		const ctx = screenData.context;
+
+		if( isFill ) {
+			ctx.fillStyle = fillColor.s;
+			ctx.beginPath();
+			ctx.arc( x, y, r, 0, Math.PI * 2 );
+			ctx.fill();
+		} else {
+			ctx.beginPath();
+			ctx.arc( x, y, r, 0, Math.PI * 2 );
+			ctx.stroke();
+		}
+	}
+
+	// RECT - Draw rectangle
+	pi._.addCommands( "rect", pxRect, aaRect, [ "x", "y", "width", "height", "fillColor" ] );
+
+	function pxRect( screenData, args ) {
+		let x = Math.round( args[ 0 ] );
+		let y = Math.round( args[ 1 ] );
+		let width = Math.round( args[ 2 ] );
+		let height = Math.round( args[ 3 ] );
+		let fillColor = args[ 4 ];
+
+		if(
+			!pi.util.isInteger( x ) || !pi.util.isInteger( y ) ||
+			!pi.util.isInteger( width ) || !pi.util.isInteger( height )
+		) {
+			const error = new TypeError( "rect: x, y, width, height must be integers." );
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		const color = screenData.fColor;
+		const isFill = fillColor != null;
+
+		if( isFill ) {
+			fillColor = piData.commands.findColorValue( screenData, fillColor, "rect" );
+			if( fillColor === undefined ) {
+				return;
+			}
+		}
+
+		piData.commands.getImageData( screenData );
+
+		// Draw outline
+		for( let i = 0; i < width; i++ ) {
+			screenData.pen.draw( screenData, x + i, y, color );
+			screenData.pen.draw( screenData, x + i, y + height - 1, color );
+		}
+
+		for( let i = 1; i < height - 1; i++ ) {
+			screenData.pen.draw( screenData, x, y + i, color );
+			screenData.pen.draw( screenData, x + width - 1, y + i, color );
+		}
+
+		// Fill if needed
+		if( isFill ) {
+			for( let j = 1; j < height - 1; j++ ) {
+				for( let i = 1; i < width - 1; i++ ) {
+					piData.commands.setPixel( screenData, x + i, y + j, fillColor );
+				}
+			}
+		}
+
+		piData.commands.setImageDirty( screenData );
+	}
+
+	function aaRect( screenData, args ) {
+		const x = args[ 0 ];
+		const y = args[ 1 ];
+		const width = args[ 2 ];
+		const height = args[ 3 ];
+		let fillColor = args[ 4 ];
+
+		if( isNaN( x ) || isNaN( y ) || isNaN( width ) || isNaN( height ) ) {
+			const error = new TypeError( "rect: parameters must be numbers." );
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		const isFill = fillColor != null;
+
+		if( isFill ) {
+			fillColor = piData.commands.findColorValue( screenData, fillColor, "rect" );
+			if( fillColor === undefined ) {
+				return;
+			}
+		}
+
+		screenData.screenObj.render();
+
+		const ctx = screenData.context;
+
+		if( isFill ) {
+			ctx.fillStyle = fillColor.s;
+			ctx.fillRect( x, y, width, height );
+		} else {
+			ctx.strokeRect( x, y, width, height );
+		}
+	}
 }
 

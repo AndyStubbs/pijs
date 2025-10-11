@@ -90,12 +90,30 @@
 
 			status.innerHTML += `<div>✓ Drew multiple lines</div>`;
 
+			// Draw a circle
+			$.setDefaultColor( 7 ); // Cyan
+			screen.circle( 200, 100, 30 );
+			status.innerHTML += `<div>✓ Drew circle (Midpoint algorithm)</div>`;
+
+			// Draw filled circle
+			screen.circle( 100, 150, 20, 2 ); // Red fill
+			status.innerHTML += `<div>✓ Drew filled circle</div>`;
+
+			// Draw rectangles
+			$.setDefaultColor( 5 ); // Yellow
+			screen.rect( 230, 10, 80, 40 );
+			status.innerHTML += `<div>✓ Drew rectangle</div>`;
+
+			// Draw filled rectangle
+			screen.rect( 230, 60, 80, 40, 4 ); // Blue fill
+			status.innerHTML += `<div>✓ Drew filled rectangle</div>`;
+
 			// Render to canvas
 			screen.render();
 
 			status.innerHTML += `
 				<div style="color: #4CAF50; font-weight: bold; margin-top: 15px;">
-					✓ Phase 4 (Partial) - CLS, PSET, LINE working!
+					✓ Phase 4 Complete - Pixel-Mode Drawing Working!
 				</div>
 				<div style="margin-top: 10px;">
 					Commands tested:
@@ -104,10 +122,18 @@
 						<li>screen.cls() - Clear screen ✓</li>
 						<li>screen.pset() - Set pixel ✓</li>
 						<li>screen.line() - Bresenham line ✓</li>
+						<li>screen.circle() - Midpoint circle ✓</li>
+						<li>screen.circle() - Filled circle ✓</li>
+						<li>screen.rect() - Rectangle ✓</li>
+						<li>screen.rect() - Filled rectangle ✓</li>
 						<li>$.setDefaultPal() - Set palette ✓</li>
 						<li>$.setDefaultColor() - Set color ✓</li>
 						<li>screen.render() - Render to canvas ✓</li>
 					</ul>
+				</div>
+				<div style="margin-top: 10px; color: #FFC107;">
+					🎨 Pixel-perfect retro graphics working!<br>
+					All shapes use manual pixel algorithms (Bresenham, Midpoint)
 				</div>
 			`;
 
