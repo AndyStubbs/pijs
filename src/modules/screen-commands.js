@@ -135,5 +135,57 @@ export function init( pi ) {
 			}
 		}
 	}
+
+	// SET COLOR - Set drawing color for current screen
+	pi._.addCommand( "setColor", setColor, false, true, [ "color", "isAddToPalette" ] );
+	pi._.addSetting( "color", setColor, true, [ "color", "isAddToPalette" ] );
+
+	function setColor( screenData, args ) {
+		const colorInput = args[ 0 ];
+		const isAddToPalette = !!args[ 1 ];
+
+		const colorValue = piData.commands.findColorValue(
+			screenData, colorInput, "setColor"
+		);
+
+		if( colorValue === undefined ) {
+			return;
+		}
+
+		if( isAddToPalette ) {
+			screenData.fColor = screenData.screenObj.findColor(
+				colorValue, isAddToPalette
+			);
+		} else {
+			screenData.fColor = colorValue;
+		}
+
+		// Update canvas context styles for AA mode
+		screenData.context.fillStyle = colorValue.s;
+		screenData.context.strokeStyle = colorValue.s;
+	}
+
+	// SET PEN SIZE - Set pen size for drawing
+	pi._.addCommand( "setPenSize", setPenSize, false, true, [ "size" ] );
+	pi._.addSetting( "penSize", setPenSize, true, [ "size" ] );
+
+	function setPenSize( screenData, args ) {
+		let size = args[ 0 ];
+
+		if( size === undefined ) {
+			size = 1;
+		}
+
+		if( !pi.util.isInteger( size ) || size < 1 ) {
+			const error = new TypeError( "setPenSize: size must be an integer >= 1." );
+			error.code = "INVALID_PEN_SIZE";
+			throw error;
+		}
+
+		screenData.pen.size = size;
+
+		// Update canvas line width for AA mode
+		screenData.context.lineWidth = size;
+	}
 }
 

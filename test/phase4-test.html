@@ -66,23 +66,28 @@
 			status.innerHTML += `<div>✓ Screen cleared</div>`;
 
 			// Draw some pixels
+			screen.setColor( 2 ); // Red
 			screen.pset( 10, 10 );
 			screen.pset( 11, 10 );
 			screen.pset( 12, 10 );
-			status.innerHTML += `<div>✓ Drew pixels</div>`;
+			status.innerHTML += `<div>✓ Drew pixels (using setColor)</div>`;
 
 			// Draw a line
+			screen.setColor( 3 ); // Green
 			screen.line( 20, 20, 100, 80 );
 			status.innerHTML += `<div>✓ Drew line (Bresenham algorithm)</div>`;
 
 			// Draw another line
+			screen.setColor( 4 ); // Blue
 			screen.line( 100, 20, 20, 80 );
 
 			// Draw diagonal lines
+			screen.setColor( 5 ); // Yellow
 			screen.line( 0, 0, 319, 199 );
 			screen.line( 0, 199, 319, 0 );
 
 			// Draw a box
+			screen.setColor( 6 ); // Magenta
 			screen.line( 150, 50, 250, 50 );
 			screen.line( 250, 50, 250, 150 );
 			screen.line( 250, 150, 150, 150 );
@@ -91,20 +96,22 @@
 			status.innerHTML += `<div>✓ Drew multiple lines</div>`;
 
 			// Draw a circle
-			$.setDefaultColor( 7 ); // Cyan
+			screen.setColor( 7 ); // Cyan
 			screen.circle( 200, 100, 30 );
 			status.innerHTML += `<div>✓ Drew circle (Midpoint algorithm)</div>`;
 
 			// Draw filled circle
+			screen.setColor( 1 ); // White outline
 			screen.circle( 100, 150, 20, 2 ); // Red fill
 			status.innerHTML += `<div>✓ Drew filled circle</div>`;
 
 			// Draw rectangles
-			$.setDefaultColor( 5 ); // Yellow
+			screen.setColor( 5 ); // Yellow
 			screen.rect( 230, 10, 80, 40 );
 			status.innerHTML += `<div>✓ Drew rectangle</div>`;
 
 			// Draw filled rectangle
+			screen.setColor( 6 ); // Magenta outline
 			screen.rect( 230, 60, 80, 40, 4 ); // Blue fill
 			status.innerHTML += `<div>✓ Drew filled rectangle</div>`;
 
@@ -120,14 +127,14 @@
 					<ul>
 						<li>$.screen() - Create screen ✓</li>
 						<li>screen.cls() - Clear screen ✓</li>
+						<li>screen.setColor() - Set drawing color ✓</li>
 						<li>screen.pset() - Set pixel ✓</li>
 						<li>screen.line() - Bresenham line ✓</li>
 						<li>screen.circle() - Midpoint circle ✓</li>
 						<li>screen.circle() - Filled circle ✓</li>
 						<li>screen.rect() - Rectangle ✓</li>
 						<li>screen.rect() - Filled rectangle ✓</li>
-						<li>$.setDefaultPal() - Set palette ✓</li>
-						<li>$.setDefaultColor() - Set color ✓</li>
+						<li>$.setDefaultPal() - Set default palette ✓</li>
 						<li>screen.render() - Render to canvas ✓</li>
 					</ul>
 				</div>
