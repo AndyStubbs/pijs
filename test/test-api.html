@@ -34,6 +34,7 @@
 		}
 		.command {
 			padding: 3px 0;
+			color: #4CAF50;
 		}
 		.count {
 			color: #4CAF50;
@@ -43,6 +44,12 @@
 			color: #FFC107;
 			font-style: italic;
 		}
+		.category {
+			color: #2196F3;
+			font-weight: bold;
+			margin-top: 10px;
+			margin-bottom: 5px;
+		}
 	</style>
 </head>
 <body>
@@ -51,7 +58,8 @@
 
 	<div id="results"></div>
 
-	<script type="module">
+	<script src="../build/pi.js"></script>
+	<script>
 		const results = document.getElementById( "results" );
 
 		// Helper to fetch file size
@@ -76,176 +84,293 @@
 			return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 		}
 
-		try {
-			// Import the Pi.js API
-			const piModule = await import( "../build/pi.esm.min.js" );
-			const pi = piModule.default || piModule.pi;
-			
-			// Fetch file sizes
-			const sizes = {
-				"unminified": await getFileSize( "../build/pi.js" ),
-				"minified": await getFileSize( "../build/pi.min.js" ),
-				"esm": await getFileSize( "../build/pi.esm.min.js" ),
-				"cjs": await getFileSize( "../build/pi.cjs.min.js" )
-			};
+		async function inspectAPI() {
+			try {
+				// Use $ alias (pi.js loaded as IIFE)
+				const pi = window.pi;
+				const $ = window.$;
 
-			// Create status section
-			const statusSection = document.createElement( "div" );
-			statusSection.className = "section";
-			statusSection.innerHTML = `
-				<h2>Pi.js ${pi.version || "unknown"}</h2>
-				<h2>Phase 0 Status: Foundation Complete ✅</h2>
-				<div class="status">
-					Core files implemented:
-					<ul>
-						<li>src/core/pi-data.js - Global data storage</li>
-						<li>src/core/command-system.js - Command registration (native errors)</li>
-						<li>src/modules/utils.js - Utility functions (COMPLETE - 546 lines)</li>
-					</ul>
-				</div>
-			`;
-			results.appendChild( statusSection );
+				// Fetch file sizes
+				const sizes = {
+					"unminified": await getFileSize( "../build/pi.js" ),
+					"minified": await getFileSize( "../build/pi.min.js" ),
+					"esm": await getFileSize( "../build/pi.esm.min.js" ),
+					"cjs": await getFileSize( "../build/pi.cjs.min.js" )
+				};
 
-			// Create bundle size section
-			const sizeSection = document.createElement( "div" );
-			sizeSection.className = "section";
-			sizeSection.innerHTML = "<h2>Bundle Sizes</h2>";
-			
-			const sizeList = document.createElement( "div" );
-			sizeList.className = "command-list";
-			
-			sizeList.innerHTML = `
-				<div class="command">
-					<span class="count">Unminified (IIFE):</span> 
-					${formatBytes( sizes.unminified )}
-				</div>
-				<div class="command">
-					<span class="count">Minified (IIFE):</span> 
-					${formatBytes( sizes.minified )}
-				</div>
-				<div class="command">
-					<span class="count">ESM (minified):</span> 
-					${formatBytes( sizes.esm )}
-				</div>
-				<div class="command">
-					<span class="count">CJS (minified):</span> 
-					${formatBytes( sizes.cjs )}
-				</div>
-			`;
-
-			// Add compression ratio if both sizes available
-			if( sizes.unminified && sizes.minified ) {
-				const ratio = ((1 - sizes.minified / sizes.unminified) * 100).toFixed(1);
-				sizeList.innerHTML += `
-					<div class="command">
-						<span class="count">Compression:</span> 
-						${ratio}% smaller when minified
+				// Create status section
+				const statusSection = document.createElement( "div" );
+				statusSection.className = "section";
+				statusSection.innerHTML = `
+					<h2>Pi.js v${pi.version}</h2>
+					<h2>Refactor Progress: Phases 0-4 Complete ✅</h2>
+					<div class="status">
+						<ul>
+							<li>✅ Phase 0: Foundation - Core architecture</li>
+							<li>✅ Phase 1: Core System - Ready/wait, command registration</li>
+							<li>✅ Phase 2: Screen Management - Screen creation & lifecycle</li>
+							<li>✅ Phase 3: Helper Functions - Blend modes, pens, pixel ops</li>
+							<li>✅ Phase 4: Pixel-Mode Drawing - Lines, circles, rectangles</li>
+							<li>🔄 Phase 5+: In progress...</li>
+						</ul>
 					</div>
 				`;
-			}
-			
-			sizeSection.appendChild( sizeList );
-			results.appendChild( sizeSection );
+				results.appendChild( statusSection );
 
-			// Display namespace structure
-			const structureSection = document.createElement( "div" );
-			structureSection.className = "section";
-			structureSection.innerHTML = "<h2>API Namespace Structure</h2>";
-			
-			const structureList = document.createElement( "div" );
-			structureList.className = "command-list";
-			
-			// Check for _ namespace
-			if( pi._ ) {
-				structureList.innerHTML += `<div class="command">✓ pi._ (internal API)</div>`;
-				for( const key in pi._ ) {
-					structureList.innerHTML += `<div class="command">  └─ pi._.${key}</div>`;
+				// Create bundle size section
+				const sizeSection = document.createElement( "div" );
+				sizeSection.className = "section";
+				sizeSection.innerHTML = "<h2>Bundle Sizes</h2>";
+				
+				const sizeList = document.createElement( "div" );
+				sizeList.className = "command-list";
+				
+				sizeList.innerHTML = `
+					<div class="command">
+						<span class="count">Unminified (IIFE):</span> 
+						${formatBytes( sizes.unminified )}
+					</div>
+					<div class="command">
+						<span class="count">Minified (IIFE):</span> 
+						${formatBytes( sizes.minified )}
+					</div>
+					<div class="command">
+						<span class="count">ESM (minified):</span> 
+						${formatBytes( sizes.esm )}
+					</div>
+					<div class="command">
+						<span class="count">CJS (minified):</span> 
+						${formatBytes( sizes.cjs )}
+					</div>
+				`;
+
+				// Add compression ratio if both sizes available
+				if( sizes.unminified && sizes.minified ) {
+					const ratio = ((1 - sizes.minified / sizes.unminified) * 100).toFixed(1);
+					sizeList.innerHTML += `
+						<div class="command">
+							<span class="count">Compression:</span> 
+							${ratio}% smaller when minified
+						</div>
+					`;
 				}
-			}
-			
-			// Check for util namespace
-			if( pi.util ) {
-				const utilCount = Object.keys( pi.util ).length;
-				structureList.innerHTML += `<div class="command">✓ pi.util (${utilCount} utility functions)</div>`;
-			}
-			
-			structureSection.appendChild( structureList );
-			results.appendChild( structureSection );
+				
+				sizeSection.appendChild( sizeList );
+				results.appendChild( sizeSection );
 
-			// Display utils
-			if( pi.util ) {
-				const utilsSection = document.createElement( "div" );
-				utilsSection.className = "section";
-				utilsSection.innerHTML = "<h2>Utility Functions</h2>";
+				// Get all public API methods (exclude internal, util, version, _)
+				const publicMethods = [];
+				const screenMethods = [];
 				
-				const utilsList = document.createElement( "div" );
-				utilsList.className = "command-list";
+				for( const key in pi ) {
+					if( key === "_" || key === "util" || key === "version" ) {
+						continue;
+					}
+					if( typeof pi[ key ] === "function" ) {
+						publicMethods.push( key );
+					}
+				}
+
+				// Get screen methods by creating a test screen
+				try {
+					const testScreen = pi.screen( "1x1" );
+					for( const key in testScreen ) {
+						if( typeof testScreen[ key ] === "function" ) {
+							screenMethods.push( key );
+						}
+					}
+					pi.removeAllScreens();
+				} catch( e ) {
+					console.warn( "Could not enumerate screen methods:", e );
+				}
+
+				// Display public API methods
+				const apiSection = document.createElement( "div" );
+				apiSection.className = "section";
+				apiSection.innerHTML = "<h2>Public API Methods</h2>";
 				
-				const utils = Object.keys( pi.util ).sort();
-				utilsList.innerHTML = `<div class="count">Total: ${utils.length}</div>`;
+				const apiList = document.createElement( "div" );
+				apiList.className = "command-list";
 				
-				utils.forEach( util => {
-					utilsList.innerHTML += `<div class="command">pi.util.${util}</div>`;
+				apiList.innerHTML = `<div class="count">Total Commands: ${publicMethods.length}</div>`;
+				
+				// Sort and display
+				publicMethods.sort().forEach( method => {
+					apiList.innerHTML += `<div class="command">$.${method}()</div>`;
 				} );
 				
-				utilsSection.appendChild( utilsList );
-				results.appendChild( utilsSection );
+				apiSection.appendChild( apiList );
+				results.appendChild( apiSection );
+
+				// Display screen methods
+				if( screenMethods.length > 0 ) {
+					const screenSection = document.createElement( "div" );
+					screenSection.className = "section";
+					screenSection.innerHTML = "<h2>Screen Instance Methods</h2>";
+					
+					const screenList = document.createElement( "div" );
+					screenList.className = "command-list";
+					
+					screenList.innerHTML = `<div class="count">Total Methods: ${screenMethods.length}</div>`;
+					
+					screenMethods.sort().forEach( method => {
+						screenList.innerHTML += `<div class="command">screen.${method}()</div>`;
+					} );
+					
+					screenSection.appendChild( screenList );
+					results.appendChild( screenSection );
+				}
+
+				// Display namespace structure
+				const structureSection = document.createElement( "div" );
+				structureSection.className = "section";
+				structureSection.innerHTML = "<h2>API Namespace Structure</h2>";
+				
+				const structureList = document.createElement( "div" );
+				structureList.className = "command-list";
+				
+				structureList.innerHTML = `
+					<div class="command">✓ window.pi - Main API object</div>
+					<div class="command">✓ window.$ - Preferred alias (same as pi)</div>
+				`;
+				
+				// Check for _ namespace
+				if( pi._ ) {
+					structureList.innerHTML += `<div class="command">✓ pi._ - Internal API (for plugins)</div>`;
+					const internalKeys = Object.keys( pi._ ).sort();
+					internalKeys.forEach( key => {
+						structureList.innerHTML += `<div class="command">  └─ pi._.${key}</div>`;
+					} );
+				}
+				
+				// Check for util namespace
+				if( pi.util ) {
+					const utilCount = Object.keys( pi.util ).length;
+					structureList.innerHTML += `<div class="command">✓ pi.util - ${utilCount} utility functions</div>`;
+				}
+				
+				structureSection.appendChild( structureList );
+				results.appendChild( structureSection );
+
+				// Display implemented commands by category
+				const implSection = document.createElement( "div" );
+				implSection.className = "section";
+				implSection.innerHTML = "<h2>Implemented Commands by Category</h2>";
+				
+				const implList = document.createElement( "div" );
+				implList.className = "command-list";
+				
+				implList.innerHTML = `
+					<div class="category">Core System (Phase 1):</div>
+					<div class="command">• $.ready(callback) - Execute when Pi.js is loaded</div>
+					<div class="command">• $.setScreen(screen) - Set active screen</div>
+					<div class="command">• $.getScreen(id) - Get screen by ID</div>
+					<div class="command">• $.removeAllScreens() - Remove all screens</div>
+					<div class="command">• $.setDefaultColor(color) - Set default drawing color</div>
+					<div class="command">• $.setDefaultPal(palette) - Set default palette</div>
+					<div class="command">• $.getDefaultPal() - Get default palette</div>
+					<div class="command">• $.setDefaultInputFocus(element) - Set input focus</div>
+					<div class="command">• $.set(options) - Global settings</div>
+
+					<div class="category">Screen Management (Phase 2):</div>
+					<div class="command">• $.screen(aspect, container?, options?) - Create screen/canvas</div>
+					<div class="command">• screen.width() - Get screen width</div>
+					<div class="command">• screen.height() - Get screen height</div>
+					<div class="command">• screen.canvas() - Get canvas element</div>
+					<div class="command">• screen.setBgColor(color) - Set background color</div>
+					<div class="command">• screen.setContainerBgColor(color) - Set container bg</div>
+					<div class="command">• screen.findColor(color) - Find/add color to palette</div>
+					<div class="command">• screen.cls(x?, y?, width?, height?) - Clear screen</div>
+					<div class="command">• screen.render() - Render to canvas</div>
+					<div class="command">• screen.removeScreen() - Remove this screen</div>
+
+					<div class="category">Drawing Commands (Phase 4):</div>
+					<div class="command">• screen.pset(x, y) - Set pixel</div>
+					<div class="command">• screen.line(x1, y1, x2, y2) - Draw line (Bresenham)</div>
+					<div class="command">• screen.circle(x, y, radius, fillColor?) - Draw circle</div>
+					<div class="command">• screen.rect(x, y, w, h, fillColor?) - Draw rectangle</div>
+
+					<div class="category">Utility Functions (Phase 0):</div>
+					<div class="command">• pi.util.* - ${Object.keys( pi.util || {} ).length} utility functions</div>
+					<div class="command">  └─ Color conversion, math helpers, type checking, etc.</div>
+
+					<div class="category">Plugin API (pi._):</div>
+					<div class="command">• pi._.addCommand() - Register single command</div>
+					<div class="command">• pi._.addCommands() - Register dual pixel/AA command</div>
+					<div class="command">• pi._.addSetting() - Register setting</div>
+					<div class="command">• pi._.addPen() - Register pen mode</div>
+					<div class="command">• pi._.addBlendCommand() - Register blend mode</div>
+					<div class="command">• pi._.data - Access internal data store</div>
+					<div class="command">• pi._.parseOptions() - Parse command parameters</div>
+				`;
+				
+				implSection.appendChild( implList );
+				results.appendChild( implSection );
+
+				// Display utils
+				if( pi.util ) {
+					const utilsSection = document.createElement( "div" );
+					utilsSection.className = "section";
+					utilsSection.innerHTML = "<h2>Utility Functions (pi.util.*)</h2>";
+					
+					const utilsList = document.createElement( "div" );
+					utilsList.className = "command-list";
+					
+					const utils = Object.keys( pi.util ).sort();
+					utilsList.innerHTML = `<div class="count">Total: ${utils.length}</div>`;
+					
+					utils.forEach( util => {
+						utilsList.innerHTML += `<div class="command">pi.util.${util}</div>`;
+					} );
+					
+					utilsSection.appendChild( utilsList );
+					results.appendChild( utilsSection );
+				}
+
+				// Next steps
+				const nextSection = document.createElement( "div" );
+				nextSection.className = "section";
+				nextSection.innerHTML = `
+					<h2>Next Phases</h2>
+					<div class="status">
+						<ul>
+							<li>Phase 6: Paint & Fill - Flood fill algorithm</li>
+							<li>Phase 7: Bezier & Advanced Drawing</li>
+							<li>Phase 8: Image Operations - Load, draw, manipulate</li>
+							<li>Phase 9: Text & Fonts - Built-in fonts, print command</li>
+							<li>Phase 10: Table Formatting</li>
+							<li>Phase 11: Keyboard Input</li>
+							<li>Phase 12: Mouse Input</li>
+							<li>Phase 13: Touch Input</li>
+							<li>Phase 14: Gamepad Input</li>
+							<li>Phase 15: Sound System</li>
+							<li>Phase 16: PLAY Command</li>
+							<li>Phase 17: Palette System (extended)</li>
+							<li>Phase 18-20: Testing, docs, release</li>
+						</ul>
+					</div>
+				`;
+				results.appendChild( nextSection );
+
+				console.log( "Pi.js loaded successfully!" );
+				console.log( "pi object:", pi );
+				console.log( "$ alias:", $ );
+				console.log( "Public methods:", publicMethods );
+
+			} catch( e ) {
+				results.innerHTML = `
+					<div class="section">
+						<h2 style="color: #f44336;">Error Loading API</h2>
+						<div>Build the project first with: <code>npm run build</code></div>
+						<pre style="color: #f44336;">${e.message}\n${e.stack}</pre>
+					</div>
+				`;
+				console.error( "Failed to load Pi.js:", e );
 			}
-
-			// Display internal data structure
-			if( pi._.data ) {
-				const dataSection = document.createElement( "div" );
-				dataSection.className = "section";
-				dataSection.innerHTML = "<h2>Internal Data Store (pi._.data)</h2>";
-				
-				const dataList = document.createElement( "div" );
-				dataList.className = "command-list";
-				
-				const dataKeys = Object.keys( pi._.data ).sort();
-				dataList.innerHTML = `<div class="count">Properties: ${dataKeys.length}</div>`;
-				
-				dataKeys.forEach( key => {
-					const value = pi._.data[ key ];
-					const type = typeof value;
-					dataList.innerHTML += `<div class="command">${key}: ${type}</div>`;
-				} );
-				
-				dataSection.appendChild( dataList );
-				results.appendChild( dataSection );
-			}
-
-			// Next steps
-			const nextSection = document.createElement( "div" );
-			nextSection.className = "section";
-			nextSection.innerHTML = `
-				<h2>Next: Phase 1 - Core System</h2>
-				<div class="status">
-					To implement:
-					<ul>
-						<li>Command registration (addCommand, addCommands, addSetting)</li>
-						<li>API method generation</li>
-						<li>Parameter parsing (object/array support)</li>
-						<li>Ready/wait/resume system</li>
-					</ul>
-					<br>
-					After Phase 1, the API will have pi.ready(), pi.screen(), etc.
-				</div>
-			`;
-			results.appendChild( nextSection );
-
-			console.log( "Pi.js loaded successfully!" );
-			console.log( "pi object:", pi );
-
-		} catch( e ) {
-			results.innerHTML = `
-				<div class="section">
-					<h2 style="color: #f44336;">Error Loading API</h2>
-					<div>Build the project first with: <code>npm run build</code></div>
-					<pre style="color: #f44336;">${e.message}\n${e.stack}</pre>
-				</div>
-			`;
-			console.error( "Failed to load Pi.js:", e );
 		}
+
+		// Run inspection
+		inspectAPI();
 	</script>
 </body>
 </html>
