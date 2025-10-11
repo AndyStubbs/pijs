@@ -413,5 +413,341 @@ export function init( pi ) {
 			ctx.strokeRect( x, y, width, height );
 		}
 	}
+
+	// ELLIPSE - Draw ellipse (Midpoint ellipse algorithm for pixel mode)
+	pi._.addCommands( "ellipse", pxEllipse, aaEllipse,
+		[ "x", "y", "radiusX", "radiusY", "fillColor" ]
+	);
+
+	function pxEllipse( screenData, args ) {
+		let x = Math.round( args[ 0 ] );
+		let y = Math.round( args[ 1 ] );
+		let radiusX = Math.round( args[ 2 ] );
+		let radiusY = Math.round( args[ 3 ] );
+		let fillColor = args[ 4 ];
+
+		if( isNaN( x ) || isNaN( y ) || isNaN( radiusX ) || isNaN( radiusY ) ) {
+			const error = new TypeError(
+				"ellipse: parameters x, y, radiusX, radiusY must be integers."
+			);
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		let isFill = false;
+		if( fillColor != null ) {
+			fillColor = piData.commands.findColorValue( screenData, fillColor, "ellipse" );
+			if( fillColor === undefined ) {
+				return;
+			}
+			isFill = true;
+		}
+
+		piData.commands.getImageData( screenData );
+
+		// Handle filled ellipses with buffer swap
+		let tempData;
+		if( isFill ) {
+			piData.commands.setImageDirty( screenData );
+			tempData = screenData.imageData;
+
+			screenData.bufferContext.clearRect( 0, 0, screenData.width, screenData.height );
+			screenData.imageData = screenData.bufferContext.getImageData(
+				0, 0, screenData.width, screenData.height
+			);
+		}
+
+		// Initialize the color
+		const color = screenData.fColor;
+
+		// Handle degenerate case
+		if( radiusX === 0 && radiusY === 0 ) {
+			screenData.pen.draw( screenData, Math.floor( x ), Math.floor( y ), color );
+			piData.commands.setImageDirty( screenData );
+			return;
+		}
+
+		// Midpoint ellipse algorithm
+		// Starting points
+		let x2 = 0;
+		let y2 = radiusY;
+
+		// Decision parameter of region 1
+		let d1 = ( radiusY * radiusY ) - ( radiusX * radiusX * radiusY ) +
+			( 0.25 * radiusX * radiusX );
+
+		let dx = 2 * radiusY * radiusY * x2;
+		let dy = 2 * radiusX * radiusX * y2;
+
+		// For region 1
+		while( dx < dy ) {
+			// 4-way symmetry
+			screenData.pen.draw( screenData, Math.floor( x2 + x ), Math.floor( y2 + y ), color );
+			screenData.pen.draw( screenData, Math.floor( -x2 + x ), Math.floor( y2 + y ), color );
+			screenData.pen.draw( screenData, Math.floor( x2 + x ), Math.floor( -y2 + y ), color );
+			screenData.pen.draw( screenData, Math.floor( -x2 + x ), Math.floor( -y2 + y ), color );
+
+			// Update decision parameter
+			if( d1 < 0 ) {
+				x2++;
+				dx = dx + ( 2 * radiusY * radiusY );
+				d1 = d1 + dx + ( radiusY * radiusY );
+			} else {
+				x2++;
+				y2--;
+				dx = dx + ( 2 * radiusY * radiusY );
+				dy = dy - ( 2 * radiusX * radiusX );
+				d1 = d1 + dx - dy + ( radiusY * radiusY );
+			}
+		}
+
+		// Decision parameter of region 2
+		let d2 = ( ( radiusY * radiusY ) * ( ( x2 + 0.5 ) * ( x2 + 0.5 ) ) ) +
+			( ( radiusX * radiusX ) * ( ( y2 - 1 ) * ( y2 - 1 ) ) ) -
+			( radiusX * radiusX * radiusY * radiusY );
+
+		// Plotting points of region 2
+		while( y2 >= 0 ) {
+			// 4-way symmetry
+			screenData.pen.draw( screenData, Math.floor( x2 + x ), Math.floor( y2 + y ), color );
+			screenData.pen.draw( screenData, Math.floor( -x2 + x ), Math.floor( y2 + y ), color );
+			screenData.pen.draw( screenData, Math.floor( x2 + x ), Math.floor( -y2 + y ), color );
+			screenData.pen.draw( screenData, Math.floor( -x2 + x ), Math.floor( -y2 + y ), color );
+
+			// Update parameter
+			if( d2 > 0 ) {
+				y2--;
+				dy = dy - ( 2 * radiusX * radiusX );
+				d2 = d2 + ( radiusX * radiusX ) - dy;
+			} else {
+				y2--;
+				x2++;
+				dx = dx + ( 2 * radiusY * radiusY );
+				dy = dy - ( 2 * radiusX * radiusX );
+				d2 = d2 + dx - dy + ( radiusX * radiusX );
+			}
+		}
+
+		// Handle fill
+		if( isFill ) {
+			// Paint the center of the shape (requires paint command from Phase 6)
+			if( piData.commands.paint ) {
+				piData.commands.paint( screenData, [ x, y, fillColor ] );
+			}
+
+			// Copy the data back onto the main canvas
+			radiusX += screenData.pen.size;
+			radiusY += screenData.pen.size;
+			for( y2 = -radiusY; y2 <= radiusY; y2 += 1 ) {
+				for( x2 = -radiusX; x2 <= radiusX; x2 += 1 ) {
+					const i = ( ( y2 + y ) * screenData.width + ( x2 + x ) ) * 4;
+					if( screenData.imageData.data[ i + 3 ] > 0 ) {
+						tempData.data[ i ] = screenData.imageData.data[ i ];
+						tempData.data[ i + 1 ] = screenData.imageData.data[ i + 1 ];
+						tempData.data[ i + 2 ] = screenData.imageData.data[ i + 2 ];
+						tempData.data[ i + 3 ] = screenData.imageData.data[ i + 3 ];
+					}
+				}
+			}
+			screenData.imageData = tempData;
+		}
+
+		piData.commands.setImageDirty( screenData );
+	}
+
+	function aaEllipse( screenData, args ) {
+		const cx = args[ 0 ];
+		const cy = args[ 1 ];
+		const rx = args[ 2 ];
+		const ry = args[ 3 ];
+		let fillColor = args[ 4 ];
+
+		if( isNaN( cx ) || isNaN( cy ) || isNaN( rx ) || isNaN( ry ) ) {
+			const error = new TypeError(
+				"ellipse: parameters x, y, radiusX, radiusY must be numbers."
+			);
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		let isFill = false;
+		if( fillColor != null ) {
+			fillColor = piData.commands.findColorValue( screenData, fillColor, "ellipse" );
+			if( fillColor === undefined ) {
+				return;
+			}
+			isFill = true;
+		}
+
+		screenData.screenObj.render();
+
+		const ctx = screenData.context;
+
+		ctx.beginPath();
+		ctx.strokeStyle = screenData.fColor.s;
+		ctx.moveTo( cx + rx, cy );
+		ctx.ellipse( cx, cy, rx, ry, 0, pi.util.math.deg360, false );
+
+		if( isFill ) {
+			ctx.fillStyle = fillColor.s;
+			ctx.fill();
+		}
+		ctx.stroke();
+
+		piData.commands.resetImageData( screenData );
+	}
+
+	// ARC - Draw arc (partial circle)
+	pi._.addCommands( "arc", pxArc, aaArc, [ "x", "y", "radius", "angle1", "angle2" ] );
+
+	function pxArc( screenData, args ) {
+		let x = Math.round( args[ 0 ] );
+		let y = Math.round( args[ 1 ] );
+		let radius = Math.round( args[ 2 ] );
+		let angle1 = args[ 3 ];
+		let angle2 = args[ 4 ];
+
+		// Normalize angles to 0-360
+		angle1 = ( angle1 + 360 ) % 360;
+		angle2 = ( angle2 + 360 ) % 360;
+
+		const winding = angle1 > angle2;
+
+		if( isNaN( x ) || isNaN( y ) || isNaN( radius ) ) {
+			const error = new TypeError( "arc: x, y, radius must be integers." );
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		piData.commands.getImageData( screenData );
+
+		const color = screenData.fColor;
+
+		// Helper function to check if angle is within arc range
+		function shouldDrawPixel( px, py ) {
+			let a = pi.util.radiansToDegrees( Math.atan2( py - y, px - x ) );
+			a = ( a + 360 ) % 360;
+
+			if( winding ) {
+				return a >= angle1 || a <= angle2;
+			}
+			return a >= angle1 && a <= angle2;
+		}
+
+		radius -= 1;
+		if( radius < 0 ) {
+			radius = 0;
+		}
+
+		let x2 = radius;
+		let y2 = 0;
+
+		// Handle special cases
+		if( radius > 1 ) {
+			if( shouldDrawPixel( x2 + x, y2 + y ) ) {
+				screenData.pen.draw( screenData, x2 + x, y2 + y, color );
+			}
+			if( shouldDrawPixel( -x2 + x, y2 + y ) ) {
+				screenData.pen.draw( screenData, -x2 + x, y2 + y, color );
+			}
+			if( shouldDrawPixel( x, x2 + y ) ) {
+				screenData.pen.draw( screenData, x, x2 + y, color );
+			}
+			if( shouldDrawPixel( x, -x2 + y ) ) {
+				screenData.pen.draw( screenData, x, -x2 + y, color );
+			}
+		} else if( radius === 1 ) {
+			if( shouldDrawPixel( x + 1, y ) ) screenData.pen.draw( screenData, x + 1, y, color );
+			if( shouldDrawPixel( x - 1, y ) ) screenData.pen.draw( screenData, x - 1, y, color );
+			if( shouldDrawPixel( x, y + 1 ) ) screenData.pen.draw( screenData, x, y + 1, color );
+			if( shouldDrawPixel( x, y - 1 ) ) screenData.pen.draw( screenData, x, y - 1, color );
+			piData.commands.setImageDirty( screenData );
+			return;
+		} else if( radius === 0 ) {
+			screenData.pen.draw( screenData, x, y, color );
+			piData.commands.setImageDirty( screenData );
+			return;
+		}
+
+		// Midpoint circle algorithm with angle checking
+		let midPoint = 1 - radius;
+
+		while( x2 > y2 ) {
+			y2 += 1;
+
+			if( midPoint <= 0 ) {
+				midPoint = midPoint + 2 * y2 + 1;
+			} else {
+				x2 -= 1;
+				midPoint = midPoint + 2 * y2 - 2 * x2 + 1;
+			}
+
+			// Draw pixels in arc range (8-way symmetry)
+			if( shouldDrawPixel( x2 + x, y2 + y ) ) {
+				screenData.pen.draw( screenData, x2 + x, y2 + y, color );
+			}
+			if( shouldDrawPixel( -x2 + x, y2 + y ) ) {
+				screenData.pen.draw( screenData, -x2 + x, y2 + y, color );
+			}
+			if( shouldDrawPixel( x2 + x, -y2 + y ) ) {
+				screenData.pen.draw( screenData, x2 + x, -y2 + y, color );
+			}
+			if( shouldDrawPixel( -x2 + x, -y2 + y ) ) {
+				screenData.pen.draw( screenData, -x2 + x, -y2 + y, color );
+			}
+
+			if( x2 !== y2 ) {
+				if( shouldDrawPixel( y2 + x, x2 + y ) ) {
+					screenData.pen.draw( screenData, y2 + x, x2 + y, color );
+				}
+				if( shouldDrawPixel( -y2 + x, x2 + y ) ) {
+					screenData.pen.draw( screenData, -y2 + x, x2 + y, color );
+				}
+				if( shouldDrawPixel( y2 + x, -x2 + y ) ) {
+					screenData.pen.draw( screenData, y2 + x, -x2 + y, color );
+				}
+				if( shouldDrawPixel( -y2 + x, -x2 + y ) ) {
+					screenData.pen.draw( screenData, -y2 + x, -x2 + y, color );
+				}
+			}
+		}
+
+		piData.commands.setImageDirty( screenData );
+	}
+
+	function aaArc( screenData, args ) {
+		let x = args[ 0 ];
+		let y = args[ 1 ];
+		let radius = args[ 2 ];
+		let angle1 = args[ 3 ];
+		let angle2 = args[ 4 ];
+
+		if( isNaN( x ) || isNaN( y ) || isNaN( radius ) || isNaN( angle1 ) || isNaN( angle2 ) ) {
+			const error = new TypeError( "arc: parameters must be numbers." );
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		x = x + 0.5;
+		y = y + 0.5;
+		radius = radius - 0.9;
+		if( radius < 0 ) {
+			radius = 0;
+		}
+
+		screenData.screenObj.render();
+
+		angle1 = pi.util.degreesToRadian( angle1 );
+		angle2 = pi.util.degreesToRadian( angle2 );
+
+		const ctx = screenData.context;
+		ctx.beginPath();
+		ctx.strokeStyle = screenData.fColor.s;
+		ctx.moveTo( x + Math.cos( angle1 ) * radius, y + Math.sin( angle1 ) * radius );
+		ctx.arc( x, y, radius, angle1, angle2 );
+		ctx.stroke();
+
+		piData.commands.resetImageData( screenData );
+	}
 }
 

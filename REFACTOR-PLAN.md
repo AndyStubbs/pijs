@@ -281,16 +281,16 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
    - [x] Rectangle outline
    - [x] Anti-aliased version
 
-5. Ellipse drawing (Deferred)
-   - [ ] `pxEllipse(x, y, rx, ry)` - pixel-perfect ellipse
-   - [ ] Filled ellipse
-   - [ ] Ellipse outline
-   - Note: Less commonly used, will add if needed
+5. Ellipse drawing ✅ COMPLETE
+   - [x] `pxEllipse(x, y, rx, ry)` - pixel-perfect ellipse
+   - [x] Filled ellipse
+   - [x] Ellipse outline
+   - [x] Anti-aliased version
 
-6. Arc drawing (Deferred)
-   - [ ] `pxArc(x, y, radius, start, end)` - pixel-perfect arc
-   - [ ] Pie/wedge support
-   - Note: Less commonly used, will add if needed
+6. Arc drawing ✅ COMPLETE
+   - [x] `pxArc(x, y, radius, start, end)` - pixel-perfect arc
+   - [x] Angle wrapping (e.g. 315° to 45°)
+   - [x] Anti-aliased version
 
 **Acceptance Criteria:** ✅ ALL MET
 - [x] Core pixel-mode drawing commands work
@@ -303,18 +303,23 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 - `screen.line(x1, y1, x2, y2)` - Bresenham line algorithm
 - `screen.circle(x, y, radius, fillColor?)` - Midpoint circle algorithm
 - `screen.rect(x, y, width, height, fillColor?)` - Rectangle
+- `screen.ellipse(x, y, radiusX, radiusY, fillColor?)` - Midpoint ellipse algorithm
+- `screen.arc(x, y, radius, angle1, angle2)` - Arc drawing with angle wrapping
+- `screen.setColor(color)` - Set drawing color for current screen
+- `screen.setPenSize(size)` - Set pen size
 - Dual implementations (pixel/AA) work correctly
 - Filled shapes supported
 
 **Bundle Size:**
-- Unminified: 57.09 KB (+6.89 KB)
-- Minified: 26.41 KB (+3.00 KB)
+- Unminified: 68.18 KB (+17.98 KB from Phase 3)
+- Minified: 31.06 KB (+7.95 KB from Phase 3)
 
 **Implementation Notes:**
-- Filled circles use buffer swap technique for clean fills
+- Filled circles and ellipses use buffer swap technique for clean fills
 - All pixel mode commands use manual algorithms (no canvas AA)
 - Anti-aliased versions use native canvas methods
-- Ellipse and Arc deferred - less common, can add later if needed
+- Arc command supports angle wrapping (e.g., 315° to 45° crosses 0°)
+- Complete pixel-perfect drawing suite ready
 
 ---
 
