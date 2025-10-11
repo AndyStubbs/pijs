@@ -1,0 +1,31 @@
+{
+	"editor.rulers": [ 100 ],
+	"editor.tabSize": 4,
+	"editor.insertSpaces": false,
+	"editor.detectIndentation": false,
+	"editor.wordWrap": "off",
+	"files.eol": "\n",
+
+	// Prefer ESLint for fixes, avoid Prettier fighting your spacing rules
+	"editor.formatOnSave": false,
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "explicit"
+	},
+
+	// Language-specific safety
+	"[javascript]": {
+		"editor.defaultFormatter": null,
+		"editor.formatOnSave": false
+	},
+	"[json]": {
+		"editor.defaultFormatter": null,
+		"editor.formatOnSave": false
+	},
+	"[markdown]": {
+		"editor.defaultFormatter": null,
+		"editor.formatOnSave": false
+	},
+
+	// ESLint
+	"eslint.enable": false,
+}
