@@ -331,9 +331,20 @@ export function init( pi ) {
 		screenData.mouse = {
 			"x": -1,
 			"y": -1,
+			"offsetX": 0,
+			"offsetY": 0,
+			"button": 0,
 			"buttons": 0,
 			"lastX": -1,
-			"lastY": -1
+			"lastY": -1,
+			"eventType": ""
+		};
+		screenData.touch = {
+			"x": -1,
+			"y": -1,
+			"count": 0,
+			"touches": [],
+			"eventType": ""
 		};
 		screenData.touches = {};
 		screenData.lastTouches = {};

@@ -9,7 +9,7 @@
  * @license Apache-2.0
  */
 
-import { piData } from "./core/pi-data.js";
+import { piData, defaultPaletteHex } from "./core/pi-data.js";
 import * as cmd from "./core/command-system.js";
 import * as utils from "./modules/utils.js";
 import * as core from "./modules/core-commands.js";
@@ -23,6 +23,10 @@ import * as images from "./modules/images.js";
 import * as font from "./modules/font.js";
 import * as print from "./modules/print.js";
 import * as table from "./modules/table.js";
+import * as keyboard from "./modules/keyboard.js";
+import * as mouse from "./modules/mouse.js";
+import * as touch from "./modules/touch.js";
+import * as gamepad from "./modules/gamepad.js";
 import { loadBuiltInFonts } from "./assets/font-data.js";
 
 // Version injected during build from package.json
@@ -110,7 +114,15 @@ images.init( pi );
 font.init( pi );
 print.init( pi );
 table.init( pi );
+keyboard.init( pi );
+mouse.init( pi );
+touch.init( pi );
+gamepad.init( pi );
 core.init( pi );
+
+// Initialize default palette (must be after core.init which registers setDefaultPal)
+piData.commands.setDefaultPal( [ defaultPaletteHex ] );
+piData.commands.setDefaultColor( [ 7 ] );
 
 // Process all commands and create API methods
 cmd.processCommands( pi );
