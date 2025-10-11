@@ -401,6 +401,28 @@ var pi = (() => {
     };
     piData.settingsList.push(name);
   }
+  function parseOptions(cmd, args) {
+    if (cmd.noParse) {
+      return args;
+    }
+    if (args.length > 0 && typeof args[0] === "object" && args[0] !== null && !args[0].hasOwnProperty("screen") && !isArray(args[0]) && !isDomElement(args[0])) {
+      const options = args[0];
+      const args2 = [];
+      let foundParameter = false;
+      for (let i = 0; i < cmd.parameters.length; i++) {
+        if (options.hasOwnProperty(cmd.parameters[i])) {
+          args2.push(options[cmd.parameters[i]]);
+          foundParameter = true;
+        } else {
+          args2.push(null);
+        }
+      }
+      if (foundParameter) {
+        return args2;
+      }
+    }
+    return args;
+  }
   function addPen(name, fn, cap) {
     piData.penList.push(name);
     piData.pens[name] = {
@@ -412,9 +434,242 @@ var pi = (() => {
     piData.blendCommandsList.push(name);
     piData.blendCommands[name] = fn;
   }
+  function processCommands(api) {
+    commandList.sort((a, b) => {
+      const nameA = a.name.toUpperCase();
+      const nameB = b.name.toUpperCase();
+      if (nameA < nameB) {
+        return -1;
+      }
+      if (nameA > nameB) {
+        return 1;
+      }
+      return 0;
+    });
+    for (const cmd of commandList) {
+      processCommand(api, cmd);
+    }
+  }
+  function processCommand(api, cmd) {
+    if (cmd.isSet) {
+      piData.screenCommands[cmd.name] = cmd;
+      api[cmd.name] = function(...args) {
+        const parsedArgs = parseOptions(cmd, args);
+        return piData.commands[cmd.name](null, parsedArgs);
+      };
+      return;
+    }
+    if (cmd.isScreen) {
+      piData.screenCommands[cmd.name] = cmd;
+      api[cmd.name] = function(...args) {
+        const parsedArgs = parseOptions(cmd, args);
+        const screenData = getScreenData(void 0, cmd.name);
+        if (screenData !== false) {
+          return piData.commands[cmd.name](screenData, parsedArgs);
+        }
+      };
+    } else {
+      api[cmd.name] = function(...args) {
+        const parsedArgs = parseOptions(cmd, args);
+        return piData.commands[cmd.name](parsedArgs);
+      };
+    }
+  }
+  function getScreenData(screenId, commandName) {
+    if (piData.activeScreen === null) {
+      if (commandName === "set") {
+        return false;
+      }
+      const error = new Error(`${commandName}: No screens available for command.`);
+      error.code = "NO_SCREEN";
+      throw error;
+    }
+    if (screenId === void 0 || screenId === null) {
+      screenId = piData.activeScreen.id;
+    }
+    if (isInteger(screenId) && !piData.screens[screenId]) {
+      const error = new Error(`${commandName}: Invalid screen id.`);
+      error.code = "INVALID_SCREEN_ID";
+      throw error;
+    }
+    return piData.screens[screenId];
+  }
+
+  // src/modules/core-commands.js
+  function init(pi2) {
+    const piData2 = pi2._.data;
+    pi2._.addCommand("setScreen", setScreen, false, false, ["screen"]);
+    pi2._.addSetting("screen", setScreen, false, ["screen"]);
+    function setScreen(args) {
+      const screenObj = args[0];
+      let screenId;
+      if (pi2.util.isInteger(screenObj)) {
+        screenId = screenObj;
+      } else if (screenObj && pi2.util.isInteger(screenObj.id)) {
+        screenId = screenObj.id;
+      }
+      if (!piData2.screens[screenId]) {
+        const error = new Error("screen: Invalid screen.");
+        error.code = "INVALID_SCREEN";
+        throw error;
+      }
+      piData2.activeScreen = piData2.screens[screenId];
+    }
+    pi2._.addCommand("removeAllScreens", removeAllScreens, false, false, []);
+    function removeAllScreens() {
+      for (const i in piData2.screens) {
+        const screenData = piData2.screens[i];
+        screenData.screenObj.removeScreen();
+      }
+      piData2.nextScreenId = 0;
+    }
+    pi2._.addCommand("getScreen", getScreen, false, false, ["screenId"]);
+    function getScreen(args) {
+      const screenId = args[0];
+      const screen = getScreenData(screenId, "getScreen");
+      return screen.screenObj;
+    }
+    pi2._.addCommand("setDefaultColor", setDefaultColor, false, false, ["color"]);
+    pi2._.addSetting("defaultColor", setDefaultColor, false, ["color"]);
+    function setDefaultColor(args) {
+      let c = args[0];
+      if (!isNaN(Number(c)) && piData2.defaultPalette.length > c) {
+        piData2.defaultColor = c;
+      } else {
+        c = pi2.util.convertToColor(c);
+        if (c === null) {
+          const error = new TypeError(
+            "setDefaultColor: invalid color value for parameter color."
+          );
+          error.code = "INVALID_COLOR";
+          throw error;
+        }
+        piData2.defaultColor = c;
+      }
+    }
+    pi2._.addCommand("setDefaultPal", setDefaultPal, false, false, ["pal"]);
+    pi2._.addSetting("defaultPal", setDefaultPal, false, ["pal"]);
+    function setDefaultPal(args) {
+      const pal = args[0];
+      if (!pi2.util.isArray(pal)) {
+        const error = new TypeError("setDefaultPal: parameter pal is not an array.");
+        error.code = "INVALID_PARAMETER";
+        throw error;
+      }
+      if (pal.length < 1) {
+        const error = new RangeError(
+          "setDefaultPal: parameter pal must have at least one color value."
+        );
+        error.code = "EMPTY_PALETTE";
+        throw error;
+      }
+      piData2.defaultPalette = [];
+      if (pal.length > 1) {
+        piData2.defaultColor = 1;
+      } else {
+        piData2.defaultColor = 0;
+      }
+      for (let i = 0; i < pal.length; i++) {
+        const c = pi2.util.convertToColor(pal[i]);
+        if (c === null) {
+          console.warn("setDefaultPal: invalid color value inside array pal.");
+          piData2.defaultPalette.push(pi2.util.convertToColor("#000000"));
+        } else {
+          piData2.defaultPalette.push(c);
+        }
+      }
+      const firstColor = piData2.defaultPalette[0];
+      piData2.defaultPalette[0] = pi2.util.convertToColor([
+        firstColor.r,
+        firstColor.g,
+        firstColor.b,
+        0
+      ]);
+    }
+    pi2._.addCommand("getDefaultPal", getDefaultPal, false, false, []);
+    function getDefaultPal() {
+      const colors = [];
+      for (const color of piData2.defaultPalette) {
+        colors.push(color);
+      }
+      return colors;
+    }
+    pi2._.addCommand("setDefaultInputFocus", setDefaultInputFocus, false, false, ["element"]);
+    pi2._.addSetting("defaultInputFocus", setDefaultInputFocus, false, ["element"]);
+    function setDefaultInputFocus(args) {
+      let element = args[0];
+      if (typeof element === "string") {
+        element = document.getElementById(element);
+      }
+      if (!element || !pi2.util.canAddEventListeners(element)) {
+        const error = new TypeError(
+          "setDefaultInputFocus: Invalid argument element. Element must be a DOM element or string id of a DOM element."
+        );
+        error.code = "INVALID_ELEMENT";
+        throw error;
+      }
+      if (!(element.tabIndex >= 0)) {
+        element.tabIndex = 0;
+      }
+      piData2.defaultInputFocus = element;
+      if (piData2.commands["reinitKeyboard"]) {
+        piData2.commands["reinitKeyboard"]();
+      }
+    }
+    pi2._.addCommand("set", set, false, true, piData2.settingsList, true);
+    function set(screenData, args) {
+      const options = args[0];
+      for (const optionName in options) {
+        if (piData2.settings[optionName]) {
+          const setting = piData2.settings[optionName];
+          let optionValues = options[optionName];
+          if (!pi2.util.isArray(optionValues) && typeof optionValues === "object") {
+            optionValues = pi2._.parseOptions(setting, [optionValues]);
+          } else {
+            optionValues = [optionValues];
+          }
+          if (setting.isScreen) {
+            if (!screenData) {
+              screenData = getScreenData(void 0, `set ${setting.name}`);
+            }
+            setting.fn(screenData, optionValues);
+          } else {
+            setting.fn(optionValues);
+          }
+        }
+      }
+    }
+  }
 
   // src/index.js
   var VERSION = "2.0.0-alpha.1";
+  var waitCount = 0;
+  var waiting = false;
+  var readyList = [];
+  var startReadyListTimeout = 0;
+  function wait() {
+    waitCount++;
+    waiting = true;
+  }
+  function resume() {
+    waitCount--;
+    if (waitCount === 0) {
+      startReadyList();
+    }
+  }
+  function startReadyList() {
+    if (document.readyState !== "loading" && waitCount === 0) {
+      waiting = false;
+      const temp = readyList.slice();
+      readyList.length = 0;
+      for (const fn of temp) {
+        fn();
+      }
+    } else {
+      clearTimeout(startReadyListTimeout);
+      startReadyListTimeout = setTimeout(startReadyList, 10);
+    }
+  }
   var pi = {
     "version": VERSION,
     "_": {
@@ -423,10 +678,30 @@ var pi = (() => {
       "addCommands": addCommands,
       "addSetting": addSetting,
       "addPen": addPen,
-      "addBlendCommand": addBlendCommand
+      "addBlendCommand": addBlendCommand,
+      "parseOptions": parseOptions,
+      "wait": wait,
+      "resume": resume
     },
     "util": utils_exports
   };
+  addCommand("ready", ready, false, false, ["fn"]);
+  function ready(args) {
+    const fn = args[0];
+    if (isFunction(fn)) {
+      if (waiting) {
+        readyList.push(fn);
+      } else if (document.readyState === "loading") {
+        readyList.push(fn);
+        clearTimeout(startReadyListTimeout);
+        startReadyListTimeout = setTimeout(startReadyList, 10);
+      } else {
+        fn();
+      }
+    }
+  }
+  init(pi);
+  processCommands(pi);
   if (typeof window !== "undefined") {
     window.pi = pi;
     if (window.$ === void 0) {
