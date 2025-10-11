@@ -20,10 +20,10 @@ const banner = `/**
  * @preserve
  */`;
 
-// Ensure dist directory exists
-const distDir = path.join( __dirname, "../build" );
-if( !fs.existsSync( distDir ) ) {
-	fs.mkdirSync( distDir, { "recursive": true } );
+// Ensure build directory exists
+const buildDir = path.join( __dirname, "../build" );
+if( !fs.existsSync( buildDir ) ) {
+	fs.mkdirSync( buildDir, { "recursive": true } );
 }
 
 // Plugin to inject version
@@ -59,7 +59,7 @@ async function build() {
 		await esbuild.build( {
 			...buildOptions,
 			"format": "esm",
-			"outfile": path.join( distDir, "pi.esm.min.js" )
+			"outfile": path.join( buildDir, "pi.esm.min.js" )
 		} );
 
 		// Build CJS version
@@ -67,7 +67,7 @@ async function build() {
 		await esbuild.build( {
 			...buildOptions,
 			"format": "cjs",
-			"outfile": path.join( distDir, "pi.cjs.min.js" )
+			"outfile": path.join( buildDir, "pi.cjs.min.js" )
 		} );
 
 		// Build IIFE version (for <script> tags)
@@ -76,7 +76,7 @@ async function build() {
 			...buildOptions,
 			"format": "iife",
 			"globalName": "pi",
-			"outfile": path.join( distDir, "pi.min.js" )
+			"outfile": path.join( buildDir, "pi.min.js" )
 		} );
 
 		// Build unminified IIFE version for debugging
@@ -86,7 +86,7 @@ async function build() {
 			"format": "iife",
 			"globalName": "pi",
 			"minify": false,
-			"outfile": path.join( distDir, "pi.js" )
+			"outfile": path.join( buildDir, "pi.js" )
 		} );
 
 		console.log( "✓ Build completed successfully!" );
@@ -108,7 +108,7 @@ async function build() {
 		console.log( "" );
 		console.log( "File sizes:" );
 		files.forEach( file => {
-			const filePath = path.join( distDir, file );
+			const filePath = path.join( buildDir, file );
 			if( fs.existsSync( filePath ) ) {
 				const stats = fs.statSync( filePath );
 				const sizeKB = ( stats.size / 1024 ).toFixed( 2 );

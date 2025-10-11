@@ -13,6 +13,9 @@ import { piData } from "./core/pi-data.js";
 import * as cmd from "./core/command-system.js";
 import * as utils from "./modules/utils.js";
 import * as core from "./modules/core-commands.js";
+import * as helper from "./modules/screen-helper.js";
+import * as screen from "./modules/screen.js";
+import * as screenCmd from "./modules/screen-commands.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -88,7 +91,10 @@ function ready( args ) {
 	}
 }
 
-// Initialize core commands
+// Initialize modules
+helper.init( pi );
+screen.init( pi );
+screenCmd.init( pi );
 core.init( pi );
 
 // Process all commands and create API methods
