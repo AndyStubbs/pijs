@@ -135,12 +135,18 @@
 			screen.arc( 160, 40, 30, 315, 45 );
 			status.innerHTML += `<div>✓ Drew arc crossing 0° (315° to 45°)</div>`;
 
+			// Test paint/flood fill
+			screen.setColor( 2 ); // Red
+			screen.circle( 220, 180, 20 ); // Draw outline first
+			screen.paint( 220, 180, 5 ); // Fill with yellow
+			status.innerHTML += `<div>✓ Used paint() to fill circle</div>`;
+
 			// Render to canvas
 			screen.render();
 
 			status.innerHTML += `
 				<div style="color: #4CAF50; font-weight: bold; margin-top: 15px;">
-					✓ Phase 4 Complete - Pixel-Mode Drawing Working!
+					✓ Phases 4-6 Complete - Drawing & Fill Working!
 				</div>
 				<div style="margin-top: 10px;">
 					Commands tested:
@@ -157,13 +163,15 @@
 						<li>screen.ellipse() - Midpoint ellipse ✓</li>
 						<li>screen.ellipse() - Filled ellipse ✓</li>
 						<li>screen.arc() - Arc drawing ✓</li>
+						<li>screen.paint() - Flood fill ✓</li>
 						<li>$.setDefaultPal() - Set default palette ✓</li>
 						<li>screen.render() - Render to canvas ✓</li>
 					</ul>
 				</div>
 				<div style="margin-top: 10px; color: #FFC107;">
 					🎨 Pixel-perfect retro graphics working!<br>
-					All shapes use manual pixel algorithms (Bresenham, Midpoint)
+					All shapes use manual pixel algorithms (Bresenham, Midpoint)<br>
+					✨ Phase 6: Flood fill (paint) working for filling shapes!
 				</div>
 			`;
 

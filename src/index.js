@@ -17,6 +17,7 @@ import * as helper from "./modules/screen-helper.js";
 import * as screen from "./modules/screen.js";
 import * as screenCmd from "./modules/screen-commands.js";
 import * as graphics from "./modules/graphics-pixel.js";
+import * as paint from "./modules/paint.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -97,6 +98,7 @@ helper.init( pi );
 screen.init( pi );
 screenCmd.init( pi );
 graphics.init( pi );
+paint.init( pi );
 core.init( pi );
 
 // Process all commands and create API methods
