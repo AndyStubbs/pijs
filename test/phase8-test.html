@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Phase 8 - Image Operations Test</title>
+	<style>
+		body {
+			margin: 20px;
+			font-family: monospace;
+			background: #222;
+			color: #fff;
+		}
+		h1 {
+			color: #4CAF50;
+		}
+		.status {
+			margin: 20px 0;
+			padding: 15px;
+			background: #333;
+			border-radius: 5px;
+		}
+		canvas {
+			border: 2px solid #4CAF50;
+			margin: 20px 0;
+		}
+		#testImage {
+			margin: 20px 0;
+			border: 2px solid #FFC107;
+		}
+	</style>
+</head>
+<body>
+	<h1>Phase 8: Image Operations Test</h1>
+	<div class="status" id="status">Loading Pi.js...</div>
+	<div id="container"></div>
+
+	<!-- Test image to load -->
+	<img id="testImage" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mNk+M9Qz0AEYBxVSF+FAP0FDmX/8FPOAA
+AAAElFTkSuQmCC" alt="Test" style="display:none;">
+
+	<script src="../build/pi.js"></script>
+	<script>
+		const status = document.getElementById( "status" );
+
+		try {
+			// Use $ alias (pi.js loaded as IIFE)
+			const $ = window.$ || window.pi;
+
+			if( !$ ) {
+				throw new Error( "Pi.js failed to load" );
+			}
+
+			status.innerHTML = `
+				<div>✓ Pi.js v${$.version} loaded</div>
+				<div>✓ Using unminified build/pi.js for debugging</div>
+				<div>Testing image operations...</div>
+			`;
+
+			// Set up a simple palette
+			$.setDefaultPal( [
+				"#000000", // 0 - black (transparent)
+				"#FFFFFF", // 1 - white
+				"#FF0000", // 2 - red
+				"#00FF00", // 3 - green
+				"#0000FF", // 4 - blue
+				"#FFFF00", // 5 - yellow
+				"#FF00FF", // 6 - magenta
+				"#00FFFF"  // 7 - cyan
+			] );
+
+			// Create a test screen
+			const screen = $.screen( "320x200", "container" );
+
+			status.innerHTML += `<div>✓ Screen created: ${screen.width()}x${screen.height()}</div>`;
+
+			// Draw a background pattern
+			screen.cls();
+			screen.setColor( 1 );
+			for( let i = 0; i < 320; i += 20 ) {
+				screen.line( i, 0, i, 199 );
+			}
+			for( let i = 0; i < 200; i += 20 ) {
+				screen.line( 0, i, 319, i );
+			}
+			screen.render();
+			status.innerHTML += `<div>✓ Drew background grid</div>`;
+
+			// Test loading image from existing element
+			const imgElement = document.getElementById( "testImage" );
+			const imgName = $.loadImage( imgElement, "testImg" );
+			status.innerHTML += `<div>✓ Loaded image from element: ${imgName}</div>`;
+
+			// Draw the image
+			$.ready( function() {
+				screen.setColor( 2 ); // Red
+				screen.rect( 48, 48, 24, 24 ); // Border around image
+
+				screen.drawImage( "testImg", 50, 50 );
+				status.innerHTML += `<div>✓ Drew image at (50, 50)</div>`;
+
+				// Draw scaled image
+				screen.setColor( 3 ); // Green
+				screen.rect( 98, 48, 44, 44 ); // Border
+				screen.drawImage( "testImg", 100, 50, 0, 0, 0, 255, 2, 2 ); // 2x scale
+				status.innerHTML += `<div>✓ Drew scaled image (2x)</div>`;
+
+				// Draw rotated image
+				screen.setColor( 4 ); // Blue
+				screen.drawImage( "testImg", 80, 120, 45, 0.5, 0.5 ); // 45° rotation
+				status.innerHTML += `<div>✓ Drew rotated image (45°)</div>`;
+
+				// Test getImage - capture a region
+				const capturedName = screen.getImage( "captured", 50, 50, 60, 60 );
+				status.innerHTML += `<div>✓ Captured image region: ${capturedName}</div>`;
+
+				// Draw the captured image elsewhere
+				screen.drawImage( "captured", 150, 50 );
+				status.innerHTML += `<div>✓ Drew captured image at (150, 50)</div>`;
+
+				screen.render();
+
+				status.innerHTML += `
+					<div style="color: #4CAF50; font-weight: bold; margin-top: 15px;">
+						✓ Phase 8 (Partial) - Image Operations Working!
+					</div>
+					<div style="margin-top: 10px;">
+						Commands tested:
+						<ul>
+							<li>$.loadImage(element, name) - Load from DOM element ✓</li>
+							<li>screen.drawImage(name, x, y) - Draw image ✓</li>
+							<li>screen.drawImage() - with scaling ✓</li>
+							<li>screen.drawImage() - with rotation ✓</li>
+							<li>screen.getImage(name, x1, y1, x2, y2) - Capture region ✓</li>
+						</ul>
+					</div>
+					<div style="margin-top: 10px; color: #FFC107;">
+						🖼️ Image loading, drawing, and manipulation working!<br>
+						Supports scaling, rotation, and alpha blending.
+					</div>
+				`;
+			} );
+
+		} catch( e ) {
+			status.innerHTML = `
+				<div style="color: #f44336;">✗ Error: ${e.message}</div>
+				<pre style="color: #f44336;">${e.stack}</pre>
+			`;
+			console.error( e );
+		}
+	</script>
+</body>
+</html>
+

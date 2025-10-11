@@ -18,6 +18,11 @@ import * as screen from "./modules/screen.js";
 import * as screenCmd from "./modules/screen-commands.js";
 import * as graphics from "./modules/graphics-pixel.js";
 import * as paint from "./modules/paint.js";
+import * as bezier from "./modules/bezier.js";
+import * as images from "./modules/images.js";
+import * as font from "./modules/font.js";
+import * as print from "./modules/print.js";
+import { loadBuiltInFonts } from "./assets/font-data.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -99,20 +104,25 @@ screen.init( pi );
 screenCmd.init( pi );
 graphics.init( pi );
 paint.init( pi );
+bezier.init( pi );
+images.init( pi );
+font.init( pi );
+print.init( pi );
 core.init( pi );
 
 // Process all commands and create API methods
 cmd.processCommands( pi );
 
-// Export for different module systems
-if( typeof window !== "undefined" ) {
-	window.pi = pi;
-	
-	// Set $ alias only if not already defined (avoid jQuery conflicts)
-	if( window.$ === undefined ) {
-		window.$ = pi;
-	}
+// Set $ alias only if not already defined (avoid jQuery conflicts)
+if( typeof window !== "undefined" && window.$ === undefined ) {
+	window.$ = pi;
 }
 
+// Load built-in fonts after API is ready
+if( typeof window !== "undefined" ) {
+	loadBuiltInFonts( pi );
+}
+
+// Export for different module systems
 export default pi;
 export { pi };

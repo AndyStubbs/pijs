@@ -36,7 +36,11 @@
 
 		try {
 			// Use $ alias (pi.js loaded as IIFE)
-			const $ = window.$;
+			const $ = window.$ || window.pi;
+
+			if( !$ ) {
+				throw new Error( "Pi.js failed to load" );
+			}
 
 			status.innerHTML = `
 				<div>✓ Pi.js v${$.version} loaded</div>
@@ -141,12 +145,22 @@
 			screen.paint( 220, 180, 5 ); // Fill with yellow
 			status.innerHTML += `<div>✓ Used paint() to fill circle</div>`;
 
+			// Test bezier curve
+			screen.setColor( 4 ); // Blue
+			screen.bezier( 10, 180, 40, 160, 80, 160, 110, 180 );
+			status.innerHTML += `<div>✓ Drew bezier curve (cubic)</div>`;
+
+			// Another bezier curve
+			screen.setColor( 6 ); // Magenta
+			screen.bezier( 120, 190, 130, 170, 150, 195, 170, 185 );
+			status.innerHTML += `<div>✓ Drew another bezier curve</div>`;
+
 			// Render to canvas
 			screen.render();
 
 			status.innerHTML += `
 				<div style="color: #4CAF50; font-weight: bold; margin-top: 15px;">
-					✓ Phases 4-6 Complete - Drawing & Fill Working!
+					✓ Phases 4-7 Complete - Drawing, Fill & Bezier Working!
 				</div>
 				<div style="margin-top: 10px;">
 					Commands tested:
@@ -164,6 +178,7 @@
 						<li>screen.ellipse() - Filled ellipse ✓</li>
 						<li>screen.arc() - Arc drawing ✓</li>
 						<li>screen.paint() - Flood fill ✓</li>
+						<li>screen.bezier() - Cubic Bezier curves ✓</li>
 						<li>$.setDefaultPal() - Set default palette ✓</li>
 						<li>screen.render() - Render to canvas ✓</li>
 					</ul>
@@ -171,7 +186,8 @@
 				<div style="margin-top: 10px; color: #FFC107;">
 					🎨 Pixel-perfect retro graphics working!<br>
 					All shapes use manual pixel algorithms (Bresenham, Midpoint)<br>
-					✨ Phase 6: Flood fill (paint) working for filling shapes!
+					✨ Phase 6: Flood fill (paint) working for filling shapes!<br>
+					📈 Phase 7: Cubic Bezier curves for smooth paths!
 				</div>
 			`;
 

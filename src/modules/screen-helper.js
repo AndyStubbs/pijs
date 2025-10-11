@@ -271,6 +271,85 @@ export function init( pi ) {
 		return colorValue;
 	}
 
+	// PUT - Put pixel data to screen
+	pi._.addCommand( "put", put, false, true, [ "data", "x", "y", "includeZero" ] );
+
+	function put( screenData, args ) {
+		const data = args[ 0 ];
+		let x = Math.round( args[ 1 ] );
+		let y = Math.round( args[ 2 ] );
+		const includeZero = !!args[ 3 ];
+
+		// Exit if no data
+		if( !data || data.length < 1 ) {
+			return;
+		}
+
+		if( isNaN( x ) || isNaN( y ) ) {
+			const error = new TypeError( "put: parameters x and y must be integers." );
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		// Clip x if offscreen
+		let startX;
+		if( x < 0 ) {
+			startX = x * -1;
+		} else {
+			startX = 0;
+		}
+
+		// Clip y if offscreen
+		let startY;
+		if( y < 0 ) {
+			startY = y * -1;
+		} else {
+			startY = 0;
+		}
+
+		// Calc width & height
+		let width = data[ 0 ].length - startX;
+		let height = data.length - startY;
+
+		// Clamp width & height
+		if( x + startX + width >= screenData.width ) {
+			width = screenData.width - x - startX;
+		}
+		if( y + startY + height >= screenData.height ) {
+			height = screenData.height - y - startY;
+		}
+
+		// Exit if there is no data that fits the screen
+		if( width <= 0 || height <= 0 ) {
+			return;
+		}
+
+		piData.commands.getImageData( screenData );
+
+		// Loop through the data
+		for( let dataY = startY; dataY < startY + height; dataY++ ) {
+			for( let dataX = startX; dataX < startX + width; dataX++ ) {
+
+				// Get the color
+				const c = screenData.pal[ data[ dataY ][ dataX ] ];
+
+				// Calculate the index of the image data
+				const i = ( ( screenData.width * ( y + dataY - startY ) ) + 
+					( x + dataX - startX ) ) * 4;
+
+				// Put the color in the image data
+				if( c && ( c.a > 0 || includeZero ) ) {
+					screenData.imageData.data[ i ] = c.r;
+					screenData.imageData.data[ i + 1 ] = c.g;
+					screenData.imageData.data[ i + 2 ] = c.b;
+					screenData.imageData.data[ i + 3 ] = c.a;
+				}
+			}
+		}
+
+		piData.commands.setImageDirty( screenData );
+	}
+
 	// Set defaults
 	piData.defaultPenDraw = setPixelSafe;
 	piData.defaultBlendCmd = normalBlend;
