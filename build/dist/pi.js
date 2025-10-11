@@ -18,7 +18,8 @@ var pi = (() => {
     if (from && typeof from === "object" || typeof from === "function") {
       for (let key of __getOwnPropNames(from))
         if (!__hasOwnProp.call(to, key) && key !== except)
-          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) ||
+          desc.enumerable });
     }
     return to;
   };
@@ -206,7 +207,8 @@ var pi = (() => {
     return s.color !== "";
   }
   function compareColors(color1, color2) {
-    return color1.r === color2.r && color1.g === color2.g && color1.b === color2.b && color1.a === color2.a;
+    return color1.r === color2.r && color1.g === color2.g && color1.b === color2.b && color1.a === color2.
+    a;
   }
   function hexToData(hex, width, height) {
     hex = hex.toUpperCase();
@@ -250,7 +252,8 @@ var pi = (() => {
     return Math.min(Math.max(num, min), max);
   }
   function inRange(point, hitBox) {
-    return point.x >= hitBox.x && point.x < hitBox.x + hitBox.width && point.y >= hitBox.y && point.y < hitBox.y + hitBox.height;
+    return point.x >= hitBox.x && point.x < hitBox.x + hitBox.width && point.y >= hitBox.y && point.
+    y < hitBox.y + hitBox.height;
   }
   function inRange2(x1, y1, x2, y2, width, height) {
     return x1 >= x2 && x1 < x2 + width && y1 >= y2 && y1 < y2 + height;
@@ -405,7 +408,8 @@ var pi = (() => {
     if (cmd.noParse) {
       return args;
     }
-    if (args.length > 0 && typeof args[0] === "object" && args[0] !== null && !args[0].hasOwnProperty("screen") && !isArray(args[0]) && !isDomElement(args[0])) {
+    if (args.length > 0 && typeof args[0] === "object" && args[0] !== null && !args[0].hasOwnProperty(
+    "screen") && !isArray(args[0]) && !isDomElement(args[0])) {
       const options = args[0];
       const args2 = [];
       let foundParameter = false;
@@ -603,7 +607,8 @@ var pi = (() => {
       }
       if (!element || !pi2.util.canAddEventListeners(element)) {
         const error = new TypeError(
-          "setDefaultInputFocus: Invalid argument element. Element must be a DOM element or string id of a DOM element."
+          "setDefaultInputFocus: Invalid argument element. Element must be a DOM element or string \
+id of a DOM element."
         );
         error.code = "INVALID_ELEMENT";
         throw error;
