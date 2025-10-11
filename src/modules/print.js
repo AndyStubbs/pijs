@@ -237,5 +237,107 @@ export function init( pi ) {
 			"col": Math.floor( screenData.printCursor.x / screenData.printCursor.font.width )
 		};
 	}
+
+	// SETPOS - Set cursor position by column and row
+	pi._.addCommand( "setPos", setPos, false, true, [ "col", "row" ] );
+	pi._.addSetting( "pos", setPos, true, [ "col", "row" ] );
+
+	function setPos( screenData, args ) {
+		const col = args[ 0 ];
+		const row = args[ 1 ];
+
+		// Set the x value
+		if( col != null ) {
+			if( isNaN( col ) ) {
+				const error = new TypeError( "setPos: parameter col must be a number" );
+				error.code = "INVALID_COL";
+				throw error;
+			}
+			let x = Math.floor( col * screenData.printCursor.font.width );
+			if( x > screenData.width ) {
+				x = screenData.width - screenData.printCursor.font.width;
+			}
+			screenData.printCursor.x = x;
+		}
+
+		// Set the y value
+		if( row != null ) {
+			if( isNaN( row ) ) {
+				const error = new TypeError( "setPos: parameter row must be a number" );
+				error.code = "INVALID_ROW";
+				throw error;
+			}
+			let y = Math.floor( row * screenData.printCursor.font.height );
+			if( y > screenData.height ) {
+				y = screenData.height - screenData.printCursor.font.height;
+			}
+			screenData.printCursor.y = y;
+		}
+	}
+
+	// SETPOSPX - Set cursor position by pixels
+	pi._.addCommand( "setPosPx", setPosPx, false, true, [ "x", "y" ] );
+	pi._.addSetting( "posPx", setPosPx, true, [ "x", "y" ] );
+
+	function setPosPx( screenData, args ) {
+		const x = args[ 0 ];
+		const y = args[ 1 ];
+
+		if( x != null ) {
+			if( isNaN( x ) ) {
+				const error = new TypeError( "setPosPx: parameter x must be an integer" );
+				error.code = "INVALID_X";
+				throw error;
+			}
+			screenData.printCursor.x = Math.round( x );
+		}
+
+		if( y != null ) {
+			if( isNaN( y ) ) {
+				const error = new TypeError( "setPosPx: parameter y must be an integer" );
+				error.code = "INVALID_Y";
+				throw error;
+			}
+			screenData.printCursor.y = Math.round( y );
+		}
+	}
+
+	// GETPOS - Get cursor position in columns and rows
+	pi._.addCommand( "getPos", getPos, false, true, [] );
+
+	function getPos( screenData ) {
+		return {
+			"col": Math.floor(
+				screenData.printCursor.x / screenData.printCursor.font.width
+			),
+			"row": Math.floor(
+				screenData.printCursor.y / screenData.printCursor.font.height
+			)
+		};
+	}
+
+	// GETCOLS - Get screen width in columns
+	pi._.addCommand( "getCols", getCols, false, true, [] );
+
+	function getCols( screenData ) {
+		return screenData.printCursor.cols;
+	}
+
+	// GETROWS - Get screen height in rows
+	pi._.addCommand( "getRows", getRows, false, true, [] );
+
+	function getRows( screenData ) {
+		return screenData.printCursor.rows;
+	}
+
+	// GETPOSPX - Get cursor position in pixels
+	pi._.addCommand( "getPosPx", getPosPx, false, true, [] );
+
+	function getPosPx( screenData ) {
+		return {
+			"x": screenData.printCursor.x,
+			"y": screenData.printCursor.y
+		};
+	}
 }
 

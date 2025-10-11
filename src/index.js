@@ -22,6 +22,7 @@ import * as bezier from "./modules/bezier.js";
 import * as images from "./modules/images.js";
 import * as font from "./modules/font.js";
 import * as print from "./modules/print.js";
+import * as table from "./modules/table.js";
 import { loadBuiltInFonts } from "./assets/font-data.js";
 
 // Version injected during build from package.json
@@ -108,6 +109,7 @@ bezier.init( pi );
 images.init( pi );
 font.init( pi );
 print.init( pi );
+table.init( pi );
 core.init( pi );
 
 // Process all commands and create API methods

@@ -568,25 +568,65 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 
 ---
 
-### Phase 10: Table Formatting
+### Phase 10: Table Formatting ✅ COMPLETE
 
 **Legacy Files:**
 - `.legacy/src/pi-screen-table.js` (527 lines)
 
 **New Files:**
-- `src/modules/table.js`
+- `src/modules/table.js` (408 lines)
 
 **Tasks:**
 
-1. Table rendering
-   - [ ] `formatTable()` - render table
-   - [ ] Row and column support
-   - [ ] Cell alignment
-   - [ ] Borders and padding
+1. Table rendering ✅ COMPLETE
+   - [x] `printTable(items, format?, borderStyle?, centered?)` - render table
+   - [x] Row and column support
+   - [x] Cell alignment (horizontal and vertical)
+   - [x] Borders and padding
+   - [x] Auto-sized tables
+   - [x] Custom formatted tables
 
-**Acceptance Criteria:**
-- [ ] Tables render correctly
-- [ ] Formatting options work
+2. Border styles ✅ COMPLETE
+   - [x] Single line borders
+   - [x] Double line borders
+   - [x] Single-double hybrid
+   - [x] Double-single hybrid
+   - [x] Thick borders
+   - [x] Custom border character arrays
+
+3. Advanced features ✅ COMPLETE
+   - [x] Centered tables
+   - [x] Custom table formats with ASCII art
+   - [x] Box detection and sizing
+   - [x] Vertical text alignment
+   - [x] Cell content centering
+
+**Acceptance Criteria:** ✅ ALL MET
+- [x] Tables render correctly
+- [x] Formatting options work
+- [x] ASCII box-drawing characters display properly
+- [x] Multiple border styles supported
+- [x] Custom layouts with format strings
+
+**What Now Works:**
+- `screen.printTable(items)` - Auto-sized table with default single borders
+- `screen.printTable(items, null, "double")` - Different border styles
+- `screen.printTable(items, format, style, centered)` - Custom formatted tables
+- Border styles: "single", "double", "singleDouble", "doubleSingle", "thick"
+- Helper commands: `setPos`, `getPos`, `setPosPx`, `getPosPx`, `getCols`, `getRows`
+- Format strings use `*` for intersections, `-` for horizontal, `|` for vertical
+
+**Bundle Size:**
+- Unminified: 142.05 KB (+14.98 KB)
+- Minified: 73.25 KB (+6.33 KB)
+
+**Implementation Notes:**
+- ASCII box-drawing using extended ASCII characters (218-223)
+- Auto-sizing calculates cell widths based on screen columns
+- Format strings define table structure: `*---*---*` defines borders
+- Box detection algorithm finds cell boundaries from format
+- Supports both horizontal and vertical text in cells (format: 'V' or 'v')
+- Integrates with print cursor system for positioning
 
 ---
 
@@ -1072,10 +1112,11 @@ Third-party plugins can extend Pi.js by using the internal API:
 - [x] Phase 7: Bezier & Advanced Drawing ✅ **COMPLETE**
 - [x] Phase 8: Image Operations ✅ **COMPLETE**
 - [x] Phase 9: Text & Fonts ✅ **COMPLETE**
-- [ ] Phase 10: Table Formatting 🔄 **NEXT**
-- [ ] Phase 11-20: Remaining phases
+- [x] Phase 10: Table Formatting ✅ **COMPLETE**
+- [ ] Phase 11: Keyboard Input 🔄 **NEXT**
+- [ ] Phase 12-20: Remaining phases
 
-**Progress:** 9 of 21 phases complete (43%)
+**Progress:** 10 of 21 phases complete (48%)
 
 ### Code Statistics
 - **Legacy:** ~200KB, 10,000+ lines, 265+ commands
@@ -1103,12 +1144,12 @@ The refactor is complete when:
 
 ## Next Steps
 
-**Current Focus:** Phase 10 (Table Formatting) - Optional, can skip to input
+**Current Focus:** Phase 11 (Keyboard Input) - HIGH PRIORITY
 
-1. Implement table rendering (or skip to Phase 11)
-2. Then Phase 11 (Keyboard Input) - HIGH PRIORITY
-3. Then Phase 12-14 (Mouse, Touch, Gamepad)
-4. Then Phase 15-16 (Sound & PLAY)
+1. Implement keyboard event handling and input methods
+2. Then Phase 12-14 (Mouse, Touch, Gamepad Input)
+3. Then Phase 15-16 (Sound & PLAY)
+4. Final phases: Testing, docs, release
 
 **Quick Wins:**
 - ✅ Core + screen working → can create screens
@@ -1117,6 +1158,7 @@ The refactor is complete when:
 - ✅ Bezier curves working → can draw smooth paths
 - ✅ Images working → can load and draw sprites
 - ✅ Text/fonts working → can print text
+- ✅ Tables working → can format data
 - **Next:** Get keyboard input working → can interact! 🎯
 
 ---
