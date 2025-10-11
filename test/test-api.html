@@ -78,15 +78,15 @@
 
 		try {
 			// Import the Pi.js API
-			const piModule = await import( "../build/dist/pi.esm.min.js" );
+			const piModule = await import( "../build/pi.esm.min.js" );
 			const pi = piModule.default || piModule.pi;
 			
 			// Fetch file sizes
 			const sizes = {
-				"unminified": await getFileSize( "../build/dist/pi.js" ),
-				"minified": await getFileSize( "../build/dist/pi.min.js" ),
-				"esm": await getFileSize( "../build/dist/pi.esm.min.js" ),
-				"cjs": await getFileSize( "../build/dist/pi.cjs.min.js" )
+				"unminified": await getFileSize( "../build/pi.js" ),
+				"minified": await getFileSize( "../build/pi.min.js" ),
+				"esm": await getFileSize( "../build/pi.esm.min.js" ),
+				"cjs": await getFileSize( "../build/pi.cjs.min.js" )
 			};
 
 			// Create status section

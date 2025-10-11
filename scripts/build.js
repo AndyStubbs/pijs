@@ -21,7 +21,7 @@ const banner = `/**
  */`;
 
 // Ensure dist directory exists
-const distDir = path.join( __dirname, "../build/dist" );
+const distDir = path.join( __dirname, "../build" );
 if( !fs.existsSync( distDir ) ) {
 	fs.mkdirSync( distDir, { "recursive": true } );
 }
@@ -92,10 +92,10 @@ async function build() {
 		console.log( "✓ Build completed successfully!" );
 		console.log( "" );
 		console.log( "Output files:" );
-		console.log( "  - build/dist/pi.js (IIFE, unminified)" );
-		console.log( "  - build/dist/pi.min.js (IIFE, minified)" );
-		console.log( "  - build/dist/pi.esm.min.js (ESM)" );
-		console.log( "  - build/dist/pi.cjs.min.js (CJS)" );
+		console.log( "  - build/pi.js (IIFE, unminified)" );
+		console.log( "  - build/pi.min.js (IIFE, minified)" );
+		console.log( "  - build/pi.esm.min.js (ESM)" );
+		console.log( "  - build/pi.cjs.min.js (CJS)" );
 
 		// Print file sizes
 		const files = [
