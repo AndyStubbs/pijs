@@ -47,7 +47,8 @@ const buildOptions = {
 	"banner": { "js": banner },
 	"target": "es2020",
 	"platform": "browser",
-	"plugins": [ injectVersionPlugin ]
+	"plugins": [ injectVersionPlugin ],
+	"keepNames": true
 };
 
 async function build() {
@@ -86,13 +87,14 @@ async function build() {
 			"format": "iife",
 			"globalName": "pi",
 			"minify": false,
+			"sourcemap": true,
 			"outfile": path.join( buildDir, "pi.js" )
 		} );
 
 		console.log( "✓ Build completed successfully!" );
 		console.log( "" );
 		console.log( "Output files:" );
-		console.log( "  - build/pi.js (IIFE, unminified)" );
+		console.log( "  - build/pi.js (IIFE, unminified with sourcemaps)" );
 		console.log( "  - build/pi.min.js (IIFE, minified)" );
 		console.log( "  - build/pi.esm.min.js (ESM)" );
 		console.log( "  - build/pi.cjs.min.js (CJS)" );

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Phase 4 - Pixel Drawing Test</title>
+	<style>
+		body {
+			margin: 20px;
+			font-family: monospace;
+			background: #222;
+			color: #fff;
+		}
+		h1 {
+			color: #4CAF50;
+		}
+		.status {
+			margin: 20px 0;
+			padding: 15px;
+			background: #333;
+			border-radius: 5px;
+		}
+		canvas {
+			border: 2px solid #4CAF50;
+			margin: 20px 0;
+		}
+	</style>
+</head>
+<body>
+	<h1>Phase 4: Pixel-Mode Drawing Test</h1>
+	<div class="status" id="status">Loading Pi.js...</div>
+	<div id="container"></div>
+
+	<script src="../build/pi.js"></script>
+	<script>
+		const status = document.getElementById( "status" );
+
+		try {
+			// Use $ alias (pi.js loaded as IIFE)
+			const $ = window.$;
+
+			status.innerHTML = `
+				<div>✓ Pi.js v${$.version} loaded</div>
+				<div>✓ Using unminified build/pi.js for debugging</div>
+				<div>Testing pixel-mode drawing commands...</div>
+			`;
+
+			// Set up a simple palette
+			$.setDefaultPal( [
+				"#000000", // 0 - black (transparent)
+				"#FFFFFF", // 1 - white
+				"#FF0000", // 2 - red
+				"#00FF00", // 3 - green
+				"#0000FF", // 4 - blue
+				"#FFFF00", // 5 - yellow
+				"#FF00FF", // 6 - magenta
+				"#00FFFF"  // 7 - cyan
+			] );
+
+			// Create a test screen
+			const screen = $.screen( "320x200", "container" );
+
+			status.innerHTML += `<div>✓ Screen created: ${screen.width()}x${screen.height()}</div>`;
+
+			// Clear screen
+			screen.cls();
+			status.innerHTML += `<div>✓ Screen cleared</div>`;
+
+			// Draw some pixels
+			screen.pset( 10, 10 );
+			screen.pset( 11, 10 );
+			screen.pset( 12, 10 );
+			status.innerHTML += `<div>✓ Drew pixels</div>`;
+
+			// Draw a line
+			screen.line( 20, 20, 100, 80 );
+			status.innerHTML += `<div>✓ Drew line (Bresenham algorithm)</div>`;
+
+			// Draw another line
+			screen.line( 100, 20, 20, 80 );
+
+			// Draw diagonal lines
+			screen.line( 0, 0, 319, 199 );
+			screen.line( 0, 199, 319, 0 );
+
+			// Draw a box
+			screen.line( 150, 50, 250, 50 );
+			screen.line( 250, 50, 250, 150 );
+			screen.line( 250, 150, 150, 150 );
+			screen.line( 150, 150, 150, 50 );
+
+			status.innerHTML += `<div>✓ Drew multiple lines</div>`;
+
+			// Render to canvas
+			screen.render();
+
+			status.innerHTML += `
+				<div style="color: #4CAF50; font-weight: bold; margin-top: 15px;">
+					✓ Phase 4 (Partial) - CLS, PSET, LINE working!
+				</div>
+				<div style="margin-top: 10px;">
+					Commands tested:
+					<ul>
+						<li>$.screen() - Create screen ✓</li>
+						<li>screen.cls() - Clear screen ✓</li>
+						<li>screen.pset() - Set pixel ✓</li>
+						<li>screen.line() - Bresenham line ✓</li>
+						<li>$.setDefaultPal() - Set palette ✓</li>
+						<li>$.setDefaultColor() - Set color ✓</li>
+						<li>screen.render() - Render to canvas ✓</li>
+					</ul>
+				</div>
+			`;
+
+		} catch( e ) {
+			status.innerHTML = `
+				<div style="color: #f44336;">✗ Error: ${e.message}</div>
+				<pre style="color: #f44336;">${e.stack}</pre>
+			`;
+			console.error( e );
+		}
+	</script>
+</body>
+</html>

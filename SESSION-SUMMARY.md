@@ -2,7 +2,7 @@
 
 **Date:** October 11, 2025  
 **Version:** 2.0.0-alpha.1  
-**Progress:** 4 of 21 phases complete (19%)
+**Progress:** 4 of 21 phases complete (19%), Phase 4 started
 
 ---
 
@@ -44,10 +44,14 @@
 ## 📊 Current Stats
 
 ### Bundle Sizes
-- **Unminified:** 42.89 KB
-- **Minified (IIFE):** 19.76 KB
-- **ESM:** 19.39 KB ⚡ (smallest)
-- **CJS:** 19.75 KB
+- **Unminified:** 46.66 KB
+- **Minified (IIFE):** 21.67 KB
+- **ESM:** 21.31 KB ⚡ (smallest)
+- **CJS:** 21.67 KB
+
+**Phase 4 (Partial) Added:**
+- Adds cls, pset, line commands
+- +1.91 KB minified (+3.77 KB unminified)
 
 ### Code Written
 - **New code:** ~2,200 lines
@@ -59,7 +63,7 @@
 ### Files Created
 ```
 src/
-├── index.js (117 lines) - Entry point with ready system
+├── index.js (119 lines) - Entry point with ready system
 ├── core/
 │   ├── pi-data.js (58 lines) - Global data store
 │   └── command-system.js (231 lines) - Command registration
@@ -68,7 +72,8 @@ src/
     ├── core-commands.js (212 lines) - Core commands
     ├── screen-helper.js (273 lines) - Pixel/blend helpers
     ├── screen.js (392 lines) - Screen creation
-    └── screen-commands.js (152 lines) - Screen commands
+    ├── screen-commands.js (152 lines) - Screen commands
+    └── graphics-pixel.js (187 lines) - Pixel drawing ⭐ NEW
 ```
 
 ---
@@ -94,6 +99,9 @@ src/
 - `screen.width()` / `screen.height()` - Dimensions
 - `screen.canvas()` - Get canvas element
 - `screen.setBgColor(color)` - Background color
+- `screen.cls()` - Clear screen ⭐ NEW
+- `screen.pset(x, y)` - Set pixel ⭐ NEW
+- `screen.line(x1, y1, x2, y2)` - Draw line (Bresenham) ⭐ NEW
 
 **Utilities:**
 - All 40+ util functions (colors, math, strings, etc.)
@@ -106,15 +114,24 @@ const screen = $.screen( "320x200", "#container" );
 
 // Set colors
 $.setDefaultPal( [ "#000000", "#FFFFFF", "#FF0000", "#00FF00" ] );
-$.setDefaultColor( 1 );
+$.setDefaultColor( 2 ); // Red
 
-// Screen is ready with:
-// - 320x200 pixel dimensions
-// - Pixel-perfect rendering (imageRendering: pixelated)
-// - Buffer canvas for double-buffering
-// - Auto-render on dirty flag
-// - Default palette
+// Clear screen
+screen.cls();
+
+// Draw pixels
+screen.pset( 10, 10 ); // Single pixel
+screen.pset( 11, 10 );
+
+// Draw lines (Bresenham algorithm - pixel perfect!)
+$.setDefaultColor( 3 ); // Green
+screen.line( 0, 0, 319, 199 ); // Diagonal line
+
+// Render to display
+screen.render();
 ```
+
+**Visual test:** `http://localhost:8080/test/phase4-test.html`
 
 ---
 

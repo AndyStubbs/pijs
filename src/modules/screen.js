@@ -115,7 +115,7 @@ export function init( pi ) {
 	// Setup API command method on screen object
 	function setupApiCommand( screenObj, name, screenData, cmd ) {
 		screenObj[ name ] = function( ...args ) {
-			const parsedArgs = piData.commands.parseOptions( cmd, args );
+			const parsedArgs = pi._.parseOptions( cmd, args );
 			return screenData.commands[ name ]( screenData, parsedArgs );
 		};
 	}

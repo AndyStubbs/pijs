@@ -540,6 +540,12 @@ export const math = Object.freeze( {
 } );
 
 // Queue microtask (built-in in modern browsers)
-export const queueMicrotask = window.queueMicrotask || 
-	( ( callback ) => setTimeout( callback, 0 ) );
+// Wrap to preserve window context
+export const queueMicrotask = ( callback ) => {
+	if( window.queueMicrotask ) {
+		window.queueMicrotask( callback );
+	} else {
+		setTimeout( callback, 0 );
+	}
+};
 

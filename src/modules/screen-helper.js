@@ -176,6 +176,7 @@ export function init( pi ) {
 	pi._.addPen( "circle", drawCirclePen, "round" );
 
 	function drawCirclePen( screenData, x, y, c ) {
+		
 		// Special case for pen size 2
 		if( screenData.pen.size === 2 ) {
 			piData.commands.setPixelSafe( screenData, x, y, c );
