@@ -1131,15 +1131,22 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 
 **New Files:**
 - `test/tests/` (94 HTML test files ported)
-- `scripts/update-test-paths.js` - Script to update test file paths
+- `test/run-visual-tests.js` - Playwright test runner (383 lines)
+- `test/README.md` - Test documentation
+- `playwright.config.js` - Playwright configuration
+- `server.js` - Enhanced with directory listing
 
 **Tasks:**
 
-1. Visual regression tests ✅ PORTED
+1. Visual regression tests ✅ COMPLETE
    - [x] Copy all 94 test files from legacy
    - [x] Update paths from `pi-latest.js` to `pi.js`
    - [x] Preserve TOML metadata blocks
    - [x] Keep 207 screenshot files for comparison
+   - [x] Create Playwright test framework
+   - [x] Implement parallel test execution
+   - [x] Add screenshot comparison (pixel-by-pixel with 1% threshold)
+   - [x] Generate HTML results page
    - [ ] Run all tests and check results
    - [ ] Fix failing tests
    - [ ] Regenerate screenshots where needed
@@ -1170,7 +1177,31 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 - Tables (table_01 - table_03)
 - Special (ready, set, parameters, errors, canvas, cls, resize, layers, view, contextMode)
 
+**Testing Infrastructure:** ✅ COMPLETE
+- Playwright test runner with parallel execution
+- TOML metadata parser for test configuration
+- PNG pixel-by-pixel comparison (1% tolerance)
+- HTML results page generation
+- Directory listing in dev server for easy navigation
+- Test commands:
+  - `npm test` - Run all tests headless
+  - `npm run test:headed` - Run with visible browser
+  - `npm run test:ui` - Interactive Playwright UI
+
+**Test Runner Features:**
+- Parses TOML metadata from test files
+- Sets viewport size from metadata
+- Waits for specified delay
+- Takes screenshot and compares with reference
+- Generates detailed HTML results page
+- Tracks passed/failed/skipped tests
+- Shows diff percentage for failures
+- Creates `test-results/results.html` summary
+- **Note:** Server must be running manually (`npm run server`) before tests
+
 **Acceptance Criteria:**
+- [x] Testing framework implemented
+- [x] All 94 tests ported and configured
 - [ ] All visual tests pass
 - [ ] No console errors
 - [ ] Performance acceptable
