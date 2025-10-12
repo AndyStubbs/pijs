@@ -131,9 +131,14 @@ piData.commands.setDefaultColor( [ 7 ] );
 // Process all commands and create API methods
 cmd.processCommands( pi );
 
-// Set $ alias only if not already defined (avoid jQuery conflicts)
-if( typeof window !== "undefined" && window.$ === undefined ) {
-	window.$ = pi;
+// Set window.pi for browser environments
+if( typeof window !== "undefined" ) {
+	window.pi = pi;
+
+	// Set $ alias only if not already defined (avoid jQuery conflicts)
+	if( window.$ === undefined ) {
+		window.$ = pi;
+	}
 }
 
 // Load built-in fonts after API is ready

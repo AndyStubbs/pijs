@@ -175,18 +175,26 @@
 					}
 				}
 
-				// Get screen methods by creating a test screen
-				try {
-					const testScreen = pi.screen( "1x1" );
+			// Get screen methods by creating a test screen
+			try {
+				// Verify both pi.screen and $.screen exist and are the same
+				console.log( "pi.screen exists:", typeof pi.screen === "function" );
+				console.log( "$.screen exists:", typeof $.screen === "function" );
+				console.log( "pi.screen === $.screen:", pi.screen === $.screen );
+
+				// Create a test screen (both should work)
+				const testScreen = pi.screen( { "aspect": "1x1", "noStyles": true } );
+				if( testScreen ) {
 					for( const key in testScreen ) {
 						if( typeof testScreen[ key ] === "function" ) {
 							screenMethods.push( key );
 						}
 					}
 					pi.removeAllScreens();
-				} catch( e ) {
-					console.warn( "Could not enumerate screen methods:", e );
 				}
+			} catch( e ) {
+				console.warn( "Could not enumerate screen methods:", e );
+			}
 
 				// Display public API methods
 				const apiSection = document.createElement( "div" );

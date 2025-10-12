@@ -71,25 +71,24 @@ async function build() {
 			"outfile": path.join( buildDir, "pi.cjs.min.js" )
 		} );
 
-		// Build IIFE version (for <script> tags)
-		console.log( "Building IIFE..." );
-		await esbuild.build( {
-			...buildOptions,
-			"format": "iife",
-			"globalName": "pi",
-			"outfile": path.join( buildDir, "pi.min.js" )
-		} );
+	// Build IIFE version (for <script> tags)
+	// Note: No globalName - we set window.pi manually in index.js
+	console.log( "Building IIFE..." );
+	await esbuild.build( {
+		...buildOptions,
+		"format": "iife",
+		"outfile": path.join( buildDir, "pi.min.js" )
+	} );
 
-		// Build unminified IIFE version for debugging
-		console.log( "Building IIFE (unminified)..." );
-		await esbuild.build( {
-			...buildOptions,
-			"format": "iife",
-			"globalName": "pi",
-			"minify": false,
-			"sourcemap": true,
-			"outfile": path.join( buildDir, "pi.js" )
-		} );
+	// Build unminified IIFE version for debugging
+	console.log( "Building IIFE (unminified)..." );
+	await esbuild.build( {
+		...buildOptions,
+		"format": "iife",
+		"minify": false,
+		"sourcemap": true,
+		"outfile": path.join( buildDir, "pi.js" )
+	} );
 
 		console.log( "✓ Build completed successfully!" );
 		console.log( "" );
