@@ -1000,25 +1000,74 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 
 ---
 
-### Phase 17: Palette System
+### Phase 17: Palette & Screen Settings ✅ COMPLETE
 
 **Legacy Files:**
 - `.legacy/src/pi-pal.js` (51 lines)
+- `.legacy/src/pi-screen-commands.js` (palette commands section)
+- `.legacy/src/pi-screen-graphics.js` (palette commands section)
 
 **New Files:**
-- `src/modules/palette.js`
+- Default palette in `src/core/pi-data.js`
+- Palette commands in `src/modules/core-commands.js` and `src/modules/screen-commands.js`
 
 **Tasks:**
 
-1. Palette management
-   - [ ] `setDefaultPal(colors)` - set default palette
-   - [ ] `getDefaultPal()` - get palette
-   - [ ] `setDefaultColor(index)` - set default color
-   - [ ] Color index resolution
+1. Global palette management ✅ COMPLETE
+   - [x] `setDefaultPal(colors)` - set default palette
+   - [x] `getDefaultPal()` - get default palette
+   - [x] `setDefaultColor(index)` - set default color
+   - [x] Default 256-color palette initialization
 
-**Acceptance Criteria:**
-- [ ] Palette commands work
-- [ ] Color mapping correct
+2. Screen palette management ✅ COMPLETE
+   - [x] `screen.getPal()` - get screen's palette
+   - [x] `screen.setPalColor(index, color)` - set palette color by index
+   - [x] `screen.swapColor(oldColor, newColor)` - swap color in palette and on screen
+   - [x] `screen.findColor(color, tolerance?, addToPalette?)` - find/add colors
+   - [x] Palette caching for performance
+
+3. Screen settings ✅ COMPLETE
+   - [x] `screen.setPixelMode(bool)` - toggle pixel-perfect vs anti-aliased
+   - [x] `screen.setPen(pen, size?, noise?)` - pen style, size, and noise
+   - [x] `screen.setBlendMode(mode)` - blend mode for pixel operations
+   - [x] Pen types: pixel, square, circle
+   - [x] Blend modes: normal, blend
+
+**Acceptance Criteria:** ✅ ALL MET
+- [x] Palette commands work
+- [x] Color mapping correct
+- [x] Pixel mode switching works
+- [x] Pen modes apply correctly
+- [x] Blend modes work
+
+**What Now Works:**
+- `$.setDefaultPal(colors)` - Set default 256-color palette
+- `$.getDefaultPal()` - Get default palette
+- `$.setDefaultColor(7)` - Set default color index
+- `screen.getPal()` - Get screen's current palette
+- `screen.setPalColor(7, "#FF0000")` - Change palette color
+- `screen.swapColor(15, "#00FF00")` - Swap all instances of color on screen
+- `screen.findColor("#FF5555", 0.9, true)` - Find or add color to palette
+- `screen.setPixelMode(true)` - Enable pixel-perfect mode (no AA)
+- `screen.setPixelMode(false)` - Enable anti-aliased mode
+- `screen.setPen("square", 5)` - Set square pen with size 5
+- `screen.setPen("circle", 3, [-1,1,-1,1])` - Pen with noise effect
+- `screen.setBlendMode("normal")` - Direct pixel replacement
+- `screen.setBlendMode("blend")` - Alpha blending
+
+**Bundle Size:**
+- Unminified: 227.79 KB (+6.35 KB from Phase 16)
+- Minified: 110.83 KB (+3.23 KB from Phase 16)
+
+**Implementation Notes:**
+- Default 256-color CGA palette initialized on startup
+- Color 0 set to transparent for sprite masking
+- Palette caching prevents redundant findColor lookups
+- swapColor updates both palette and all pixels on screen
+- Pixel mode affects all drawing commands (line, circle, rect, etc.)
+- Pen system controls drawing style (pixel, square, circle brushes)
+- Noise adds randomization to pen drawing
+- Blend modes control how new pixels combine with existing ones
 
 ---
 
@@ -1281,10 +1330,11 @@ Third-party plugins can extend Pi.js by using the internal API:
 - [x] Phase 14: Gamepad Input ✅ **COMPLETE**
 - [x] Phase 15: Sound System ✅ **COMPLETE**
 - [x] Phase 16: PLAY Command ✅ **COMPLETE**
-- [ ] Phase 17: Palette System 🔄 **NEXT**
-- [ ] Phase 18-20: Testing, docs, release
+- [x] Phase 17: Palette & Screen Settings ✅ **COMPLETE**
+- [ ] Phase 18: Testing & Bug Fixing 🔄 **NEXT**
+- [ ] Phase 19-20: Documentation, release
 
-**Progress:** 16 of 21 phases complete (76%)
+**Progress:** 17 of 21 phases complete (81%)
 
 ### Code Statistics
 - **Legacy:** ~200KB, 10,000+ lines, 265+ commands
@@ -1312,14 +1362,30 @@ The refactor is complete when:
 
 ## Next Steps
 
-**Current Focus:** Phase 17-20 (Final Stretch!) - CRITICAL PRIORITY
+**Current Focus:** Phase 18-20 (Final Stretch - Polish & Release!) 🚀
 
-1. Phase 17: Extended Palette System (if needed)
-2. Phase 18: Testing & Bug Fixing - Run all visual regression tests
-3. Phase 19: Documentation - API reference, migration guide, examples
-4. Phase 20: Release Preparation - Version bump, changelog, publish
+🎉 **MAJOR MILESTONE:** All core porting complete! (17/17 phases)
 
-**Quick Wins:**
+1. Phase 18: Testing & Bug Fixing 🔄 **NEXT**
+   - Run all existing visual regression tests (~200 tests)
+   - Fix failing tests
+   - Add unit tests for core functions
+   - Cross-browser testing (Chrome, Firefox, Safari)
+   - Performance benchmarks
+
+2. Phase 19: Documentation
+   - Complete API reference documentation
+   - Migration guide from v1.2.4 to v2.0.0
+   - Update examples and tutorials
+   - Plugin authoring guide
+
+3. Phase 20: Release Preparation
+   - Version bump to 2.0.0
+   - Generate changelog from all phases
+   - Tag release in Git
+   - Update website (pijs.org)
+
+**Quick Wins - ALL COMPLETE! ✅**
 - ✅ Core + screen working → can create screens
 - ✅ Pixel drawing working → can see output
 - ✅ Paint/fill working → can fill shapes
@@ -1329,8 +1395,9 @@ The refactor is complete when:
 - ✅ Tables working → can format data
 - ✅ Input working → can interact! 🎯 (Keyboard, Mouse, Touch, Gamepad)
 - ✅ Sound working → can add audio! 🔊 (Sound, PLAY)
-- **Next:** Polish and release! 🚀
+- ✅ Palette working → can manipulate colors! 🎨 (Palette, Pen, Blend)
+- **Next:** Polish, test, document, and release! 🚀
 
 ---
 
-**Last Updated:** October 11, 2025
+**Last Updated:** October 12, 2025

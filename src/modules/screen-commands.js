@@ -255,6 +255,235 @@ export function init( pi ) {
 		screenData.context.lineWidth = size;
 	}
 
+	// GETPAL - Get screen's palette
+	pi._.addCommand( "getPal", getPal, false, true, [] );
+
+	function getPal( screenData ) {
+		const colors = [];
+		for( let i = 0; i < screenData.pal.length; i++ ) {
+			const color = {
+				"r": screenData.pal[ i ].r,
+				"g": screenData.pal[ i ].g,
+				"b": screenData.pal[ i ].b,
+				"a": screenData.pal[ i ].a,
+				"s": screenData.pal[ i ].s
+			};
+			colors.push( color );
+		}
+		return colors;
+	}
+
+	// SETPALCOLOR - Set a specific color in the palette
+	pi._.addCommand( "setPalColor", setPalColor, false, true, [ "index", "color" ] );
+	pi._.addSetting( "palColor", setPalColor, true, [ "index", "color" ] );
+
+	function setPalColor( screenData, args ) {
+		const index = args[ 0 ];
+		const color = args[ 1 ];
+
+		if( !pi.util.isInteger( index ) || index < 0 || index > screenData.pal.length ) {
+			const error = new RangeError( "setPalColor: index is not a valid integer value" );
+			error.code = "INVALID_INDEX";
+			throw error;
+		}
+
+		const colorValue = pi.util.convertToColor( color );
+		if( colorValue === null ) {
+			const error = new TypeError(
+				"setPalColor: parameter color is not a valid color format"
+			);
+			error.code = "INVALID_COLOR";
+			throw error;
+		}
+
+		// Check if we are changing the current selected fore color
+		if( screenData.fColor.s === screenData.pal[ index ].s ) {
+			screenData.fColor = colorValue;
+		}
+
+		// Update the color cache
+		if( screenData.cache.findColor[ color.s ] ) {
+			screenData.cache.findColor[ color.s ] = index;
+		}
+
+		screenData.pal[ index ] = colorValue;
+	}
+
+	// SWAPCOLOR - Swap one color for another in the palette and screen
+	pi._.addCommand( "swapColor", swapColor, false, true, [ "oldColor", "newColor" ] );
+
+	function swapColor( screenData, args ) {
+		let oldColor = args[ 0 ];
+		let newColor = args[ 1 ];
+
+		// Validate oldColor
+		if( !pi.util.isInteger( oldColor ) ) {
+			const error = new TypeError( "swapColor: parameter oldColor must be an integer" );
+			error.code = "INVALID_OLD_COLOR";
+			throw error;
+		}
+
+		if( oldColor < 0 || oldColor >= screenData.pal.length ) {
+			const error = new RangeError( "swapColor: parameter oldColor is an invalid integer" );
+			error.code = "INVALID_OLD_COLOR_INDEX";
+			throw error;
+		}
+
+		if( screenData.pal[ oldColor ] === undefined ) {
+			const error = new Error(
+				"swapColor: parameter oldColor is not in the screen color palette"
+			);
+			error.code = "COLOR_NOT_IN_PALETTE";
+			throw error;
+		}
+
+		const index = oldColor;
+		oldColor = screenData.pal[ index ];
+
+		// Validate newColor
+		newColor = pi.util.convertToColor( newColor );
+		if( newColor === null ) {
+			const error = new TypeError(
+				"swapColor: parameter newColor is not a valid color format"
+			);
+			error.code = "INVALID_NEW_COLOR";
+			throw error;
+		}
+
+		piData.commands.getImageData( screenData );
+		const data = screenData.imageData.data;
+
+		// Swap all colors on screen
+		for( let y = 0; y < screenData.height; y++ ) {
+			for( let x = 0; x < screenData.width; x++ ) {
+				const i = ( ( screenData.width * y ) + x ) * 4;
+				if(
+					data[ i ] === oldColor.r &&
+					data[ i + 1 ] === oldColor.g &&
+					data[ i + 2 ] === oldColor.b &&
+					data[ i + 3 ] === oldColor.a
+				) {
+					data[ i ] = newColor.r;
+					data[ i + 1 ] = newColor.g;
+					data[ i + 2 ] = newColor.b;
+					data[ i + 3 ] = newColor.a;
+				}
+			}
+		}
+
+		piData.commands.setImageDirty( screenData );
+
+		// Update the pal data
+		screenData.pal[ index ] = newColor;
+	}
+
+	// SETPIXELMODE - Toggle pixel mode on/off
+	pi._.addCommand( "setPixelMode", setPixelMode, false, true, [ "isEnabled" ] );
+	pi._.addSetting( "pixelMode", setPixelMode, true, [ "isEnabled" ] );
+
+	function setPixelMode( screenData, args ) {
+		const isEnabled = args[ 0 ];
+
+		if( isEnabled ) {
+			screenData.context.imageSmoothingEnabled = false;
+			screenData.pixelMode = true;
+		} else {
+			screenData.context.imageSmoothingEnabled = true;
+			screenData.pixelMode = false;
+		}
+	}
+
+	// SETPEN - Set pen style, size, and noise
+	pi._.addCommand( "setPen", setPen, false, true, [ "pen", "size", "noise" ] );
+	pi._.addSetting( "pen", setPen, true, [ "pen", "size", "noise" ] );
+
+	function setPen( screenData, args ) {
+		let pen = args[ 0 ];
+		let size = Math.round( args[ 1 ] );
+		let noise = args[ 2 ];
+
+		if( !piData.pens[ pen ] ) {
+			const error = new TypeError(
+				`setPen: parameter pen is not a valid pen. Valid pens: ${piData.penList.join( ", " )}`
+			);
+			error.code = "INVALID_PEN";
+			throw error;
+		}
+
+		if( !pi.util.isInteger( size ) ) {
+			const error = new TypeError( "setPen: parameter size must be an integer" );
+			error.code = "INVALID_SIZE";
+			throw error;
+		}
+
+		if( noise && ( !pi.util.isArray( noise ) && isNaN( noise ) ) ) {
+			const error = new TypeError( "setPen: parameter noise is not an array or number" );
+			error.code = "INVALID_NOISE";
+			throw error;
+		}
+
+		if( pi.util.isArray( noise ) ) {
+			noise = noise.slice();
+			for( let i = 0; i < noise.length; i++ ) {
+				if( isNaN( noise[ i ] ) ) {
+					const error = new TypeError(
+						"setPen: parameter noise array contains an invalid value"
+					);
+					error.code = "INVALID_NOISE_VALUE";
+					throw error;
+				}
+			}
+		}
+
+		if( pen === "pixel" ) {
+			size = 1;
+		}
+
+		// Set the minimum pen size to 1
+		if( size < 1 ) {
+			size = 1;
+		}
+
+		// Handle special case of size of one
+		if( size === 1 ) {
+
+			// Size is one so only draw one pixel
+			screenData.pen.draw = piData.pens.pixel.cmd;
+
+			// Set the line width for context draw
+			screenData.context.lineWidth = 1;
+		} else {
+
+			// Set the draw mode for pixel draw
+			screenData.pen.draw = piData.pens[ pen ].cmd;
+
+			// Set the line width for context draw
+			screenData.context.lineWidth = size * 2 - 1;
+		}
+
+		screenData.pen.noise = noise;
+		screenData.pen.size = size;
+		screenData.context.lineCap = piData.pens[ pen ].cap;
+	}
+
+	// SETBLENDMODE - Set blend mode for pixel operations
+	pi._.addCommand( "setBlendMode", setBlendMode, false, true, [ "mode" ] );
+	pi._.addSetting( "blendMode", setBlendMode, true, [ "mode" ] );
+
+	function setBlendMode( screenData, args ) {
+		const mode = args[ 0 ];
+
+		if( !piData.blendCommands[ mode ] ) {
+			const error = new TypeError(
+				`setBlendMode: Argument blend is not a valid blend mode. Valid modes: ${piData.blendCommandsList.join( ", " )}`
+			);
+			error.code = "INVALID_BLEND_MODE";
+			throw error;
+		}
+
+		screenData.blendPixelCmd = piData.blendCommands[ mode ];
+	}
+
 	// GET - Capture screen region as 2D array of palette indices
 	pi._.addCommand( "get", get, false, true,
 		[ "x1", "y1", "x2", "y2", "tolerance", "isAddToPalette" ]

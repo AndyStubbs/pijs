@@ -107,14 +107,15 @@
 				statusSection.className = "section";
 				statusSection.innerHTML = `
 					<h2>Pi.js v${pi.version}</h2>
-					<h2>Refactor Progress: Phases 0-14 Complete ✅ (67%)</h2>
+					<h2>Refactor Progress: Phases 0-17 Complete ✅ (81%)</h2>
 					<div class="status">
 						<ul>
 							<li>✅ Phase 0-4: Foundation, Core, Screen, Helpers, Drawing</li>
 							<li>✅ Phase 6-7: Paint/Fill, Bezier Curves</li>
 							<li>✅ Phase 8-10: Images, Fonts/Text, Tables</li>
 							<li>✅ Phase 11-14: Input (Keyboard, Mouse, Touch, Gamepad)</li>
-							<li>🔄 Phase 15-20: Sound, PLAY, Palette, Testing, Docs</li>
+							<li>✅ Phase 15-17: Sound, PLAY, Palette & Settings</li>
+							<li>🔄 Phase 18-20: Testing, Documentation, Release</li>
 						</ul>
 					</div>
 				`;
@@ -337,13 +338,14 @@
 					<h2>Remaining Phases</h2>
 					<div class="status">
 						<ul>
-							<li>🔄 Phase 15: Sound System - WebAudio, sound loading/playback</li>
-							<li>Phase 16: PLAY Command - QBasic-style music notation</li>
-							<li>Phase 17: Palette System (extended features)</li>
-							<li>Phase 18: Testing & Bug Fixing - Visual regression, unit tests</li>
+							<li>🔄 Phase 18: Testing & Bug Fixing - Visual regression, unit tests</li>
 							<li>Phase 19: Documentation - API reference, migration guide</li>
 							<li>Phase 20: Release Preparation - Version bump, changelog</li>
 						</ul>
+						<br>
+						<h3 style="color: #4CAF50;">🎉 Core Porting Complete!</h3>
+						<p style="color: #4CAF50;">All 17 core phases finished! 227KB unminified, 110KB minified.</p>
+						<p style="color: #FFC107;">Next: Polish, test, document, and release v2.0.0!</p>
 					</div>
 				`;
 				results.appendChild( nextSection );
