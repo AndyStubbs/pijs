@@ -7,3 +7,4 @@ test/test-results/
 test/playwright-report/
 test/tests/screenshots/*_new.png
 test/tests/screenshots/*_diff.png
+test/tests/screenshots/new/

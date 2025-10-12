@@ -114,7 +114,7 @@ function compareImages( img1Path, img2Path, threshold = 0.01 ) {
 
 // Find all test HTML files
 function findTestFiles() {
-	const testsDir = path.join( __dirname, "tests" );
+	const testsDir = path.join( __dirname, "tests", "html" );
 	const testFiles = [];
 
 	if( !fs.existsSync( testsDir ) ) {
@@ -133,7 +133,7 @@ function findTestFiles() {
 				testFiles.push( {
 					"file": file,
 					"path": filePath,
-					"url": `/test/tests/${file}`,
+					"url": `/test/tests/html/${file}`,
 					"metadata": metadata
 				} );
 			}

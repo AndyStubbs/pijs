@@ -6,10 +6,13 @@ This directory contains visual regression tests for Pi.js v2.0.
 
 ```
 test/
-├── tests/                  # 94 HTML test files
-│   ├── *.html             # Individual test files
-│   ├── images/            # Test assets
+├── tests/                  # Test files directory
+│   ├── html/              # 94 HTML test files
+│   │   ├── *.html         # Individual test files
+│   │   ├── images/        # Test assets
+│   │   └── libs/          # JavaScript libraries (seedrandom.js)
 │   └── screenshots/       # Reference PNG images
+│       └── new/           # Generated screenshots (gitignored)
 ├── run-visual-tests.js    # Playwright test runner
 ├── test-api.html          # API comparison tool
 └── README.md              # This file
@@ -53,7 +56,7 @@ npm run server
 ```
 
 Then navigate to:
-- `http://localhost:8080/test/tests/` - All test files
+- `http://localhost:8080/test/tests/html/` - All test files
 - `http://localhost:8080/test/test-api.html` - API comparison tool
 
 ## Test Results
@@ -111,7 +114,7 @@ The test runner:
 
 ## Adding New Tests
 
-1. Create HTML file in `test/tests/`
+1. Create HTML file in `test/tests/html/`
 2. Add TOML metadata block
 3. Write test code using `$.ready()`
 4. Run test once to generate reference screenshot
