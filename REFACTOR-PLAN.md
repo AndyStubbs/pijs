@@ -1124,29 +1124,51 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 
 ---
 
-### Phase 18: Testing & Bug Fixing
+### Phase 18: Testing & Bug Fixing 🔄 IN PROGRESS
+
+**Legacy Files:**
+- `.legacy/test/tests/` (94 HTML test files + 207 PNG screenshots)
+
+**New Files:**
+- `test/tests/` (94 HTML test files ported)
+- `scripts/update-test-paths.js` - Script to update test file paths
 
 **Tasks:**
 
-1. Visual regression tests
-   - [ ] Run all existing tests
+1. Visual regression tests ✅ PORTED
+   - [x] Copy all 94 test files from legacy
+   - [x] Update paths from `pi-latest.js` to `pi.js`
+   - [x] Preserve TOML metadata blocks
+   - [x] Keep 207 screenshot files for comparison
+   - [ ] Run all tests and check results
    - [ ] Fix failing tests
-   - [ ] Document test results
+   - [ ] Regenerate screenshots where needed
 
 2. Manual testing
-   - [ ] Test all commands
+   - [ ] Test all commands manually
    - [ ] Test edge cases
-   - [ ] Cross-browser testing
+   - [ ] Cross-browser testing (Chrome, Firefox, Safari, Edge)
 
 3. Performance testing
    - [ ] Benchmark drawing operations
    - [ ] Memory leak testing
-   - [ ] Optimize hot paths
+   - [ ] Optimize hot paths if needed
 
 4. Bug fixing
-   - [ ] Fix reported issues
+   - [ ] Fix reported issues from tests
    - [ ] Edge case handling
    - [ ] Error message improvements
+
+**Test Files Ported:** 94 HTML test files covering:
+- Screen management (screen_01 - screen_11)
+- Drawing primitives (line, circle, rect, ellipse, arc, bezier, pset)
+- Paint/fill operations (paint_01 - paint_03)
+- Text/fonts (print_01 - print_10, loadFont, pos, setPos)
+- Images (drawImage, drawSprite, get, put, getPixel, filterImg)
+- Input (inkey, offkey, onkey, inmouse, onmouse, inpress, onpress, onclick, intouch, ontouch, inputFocus)
+- Palettes (palette, pens, blend)
+- Tables (table_01 - table_03)
+- Special (ready, set, parameters, errors, canvas, cls, resize, layers, view, contextMode)
 
 **Acceptance Criteria:**
 - [ ] All visual tests pass
@@ -1384,10 +1406,11 @@ Third-party plugins can extend Pi.js by using the internal API:
 - [x] Phase 15: Sound System ✅ **COMPLETE**
 - [x] Phase 16: PLAY Command ✅ **COMPLETE**
 - [x] Phase 17: Palette & Screen Settings ✅ **COMPLETE**
-- [ ] Phase 18: Testing & Bug Fixing 🔄 **NEXT**
-- [ ] Phase 19-20: Documentation, release
+- [x] Phase 18: Testing & Bug Fixing 🔄 **IN PROGRESS** (tests ported, need to run and fix)
+- [ ] Phase 19: Documentation 🔄 **NEXT**
+- [ ] Phase 20: Release Preparation
 
-**Progress:** 17 of 21 phases complete (81%)
+**Progress:** 17 of 21 phases complete (81%), Phase 18 in progress
 
 ### Code Statistics
 - **Legacy:** ~200KB, 10,000+ lines, 265+ commands
