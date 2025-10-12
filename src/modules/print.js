@@ -200,44 +200,6 @@ export function init( pi ) {
 		screenData.pal = defaultPal;
 	}
 
-	// LOCATE - Set print cursor position
-	pi._.addCommand( "locate", locate, false, true, [ "row", "col" ] );
-
-	function locate( screenData, args ) {
-		let row = args[ 0 ];
-		let col = args[ 1 ];
-
-		if( row !== undefined ) {
-			if( !pi.util.isInteger( row ) || row < 0 ) {
-				const error = new TypeError( "locate: row must be a non-negative integer." );
-				error.code = "INVALID_ROW";
-				throw error;
-			}
-			screenData.printCursor.y = row * screenData.printCursor.font.height;
-		}
-
-		if( col !== undefined ) {
-			if( !pi.util.isInteger( col ) || col < 0 ) {
-				const error = new TypeError( "locate: col must be a non-negative integer." );
-				error.code = "INVALID_COL";
-				throw error;
-			}
-			screenData.printCursor.x = col * screenData.printCursor.font.width;
-		}
-	}
-
-	// POS - Get cursor position
-	pi._.addCommand( "pos", pos, false, true, [] );
-
-	function pos( screenData ) {
-		return {
-			"x": screenData.printCursor.x,
-			"y": screenData.printCursor.y,
-			"row": Math.floor( screenData.printCursor.y / screenData.printCursor.font.height ),
-			"col": Math.floor( screenData.printCursor.x / screenData.printCursor.font.width )
-		};
-	}
-
 	// SETPOS - Set cursor position by column and row
 	pi._.addCommand( "setPos", setPos, false, true, [ "col", "row" ] );
 	pi._.addSetting( "pos", setPos, true, [ "col", "row" ] );

@@ -347,5 +347,117 @@ export function init( pi ) {
 			}
 		}
 	}
+
+	// GETAVAILABLEFONTS - Get list of loaded fonts
+	pi._.addCommand( "getAvailableFonts", getAvailableFonts, false, false, [] );
+
+	function getAvailableFonts() {
+		const data = [];
+		for( const i in piData.fonts ) {
+			data.push( {
+				"id": piData.fonts[ i ].id,
+				"width": piData.fonts[ i ].width,
+				"height": piData.fonts[ i ].height
+			} );
+		}
+		return data;
+	}
+
+	// SETFONTSIZE - Set canvas font size
+	pi._.addCommand( "setFontSize", setFontSize, false, true, [ "width", "height" ] );
+	pi._.addSetting( "fontSize", setFontSize, true, [ "width", "height" ] );
+
+	function setFontSize( screenData, args ) {
+		const width = args[ 0 ];
+		const height = args[ 1 ];
+
+		if( isNaN( width ) ) {
+			const error = new TypeError( "setFontSize: width must be a number" );
+			error.code = "INVALID_WIDTH";
+			throw error;
+		}
+
+		if( isNaN( height ) ) {
+			const error = new TypeError( "setFontSize: height must be a number" );
+			error.code = "INVALID_HEIGHT";
+			throw error;
+		}
+
+		if( screenData.printCursor.font.mode !== "bitmap" ) {
+			console.warn( "setFontSize: only bitmap fonts can change sizes" );
+			return;
+		}
+
+		screenData.printCursor.font.width = width;
+		screenData.printCursor.font.height = height;
+
+		// Update rows and cols
+		screenData.printCursor.cols = Math.floor( screenData.width / width );
+		screenData.printCursor.rows = Math.floor( screenData.height / height );
+	}
+
+	// SETCHAR - Set custom character data for pixel font
+	pi._.addCommand( "setChar", setChar, false, true, [ "code", "data" ] );
+	pi._.addSetting( "char", setChar, true, [ "code", "data" ] );
+
+	function setChar( screenData, args ) {
+		let code = args[ 0 ];
+		let data = args[ 1 ];
+
+		if( screenData.printCursor.font.mode !== "pixel" ) {
+			console.warn( "setChar: only pixel fonts can change characters" );
+			return;
+		}
+
+		if( typeof code === "string" ) {
+			code = code.charCodeAt( 0 );
+		} else {
+			code = Math.round( code );
+		}
+
+		if( isNaN( code ) ) {
+			const error = new TypeError( "setChar: code must be an integer or a string" );
+			error.code = "INVALID_CODE";
+			throw error;
+		}
+
+		// Validate data
+		if( typeof data === "string" ) {
+			data = pi.util.hexToData(
+				data,
+				screenData.printCursor.font.width,
+				screenData.printCursor.font.height
+			);
+		} else if( pi.util.isArray( data ) ) {
+			if( data.length !== screenData.printCursor.font.height ) {
+				const error = new RangeError( "setChar: data array is the wrong length" );
+				error.code = "INVALID_DATA_LENGTH";
+				throw error;
+			}
+
+			for( let i = 0; i < data.length; i++ ) {
+				if( data[ i ].length !== screenData.printCursor.font.width ) {
+					const error = new RangeError( "setChar: data array row is the wrong length" );
+					error.code = "INVALID_DATA_WIDTH";
+					throw error;
+				}
+
+				for( let j = 0; j < data[ i ].length; j++ ) {
+					if( !pi.util.isInteger( data[ i ][ j ] ) ) {
+						const error = new TypeError( "setChar: data array contains invalid data" );
+						error.code = "INVALID_DATA_VALUE";
+						throw error;
+					}
+				}
+			}
+		} else {
+			const error = new TypeError( "setChar: data must be a string or an array" );
+			error.code = "INVALID_DATA_TYPE";
+			throw error;
+		}
+
+		// Set font data
+		screenData.printCursor.font.data[ code ] = data;
+	}
 }
 

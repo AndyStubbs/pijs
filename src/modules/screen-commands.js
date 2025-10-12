@@ -167,6 +167,18 @@ export function init( pi ) {
 		screenData.lastEvent = null;
 	}
 
+	// SETAUTORENDER - Enable/disable automatic rendering
+	pi._.addCommand( "setAutoRender", setAutoRender, false, true, [ "isAutoRender" ] );
+	pi._.addSetting( "autoRender", setAutoRender, true, [ "isAutoRender" ] );
+
+	function setAutoRender( screenData, args ) {
+		screenData.isAutoRender = !!args[ 0 ];
+
+		if( screenData.isAutoRender ) {
+			screenData.screenObj.render();
+		}
+	}
+
 	// Remove the screen from the page and memory
 	pi._.addCommand( "removeScreen", removeScreen, false, true, [] );
 
@@ -640,6 +652,76 @@ export function init( pi ) {
 		}
 
 		screenData.blendPixelCmd = piData.blendCommands[ mode ];
+	}
+
+	// GETPIXEL - Get color of a single pixel
+	pi._.addCommand( "getPixel", getPixel, false, true, [ "x", "y" ] );
+
+	function getPixel( screenData, args ) {
+		const x = Math.round( args[ 0 ] );
+		const y = Math.round( args[ 1 ] );
+
+		// Make sure x and y are integers
+		if( !pi.util.isInteger( x ) || !pi.util.isInteger( y ) ) {
+			const error = new TypeError( "getPixel: x and y must be integers" );
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		piData.commands.getImageData( screenData );
+		const data = screenData.imageData.data;
+
+		// Calculate the index
+		const i = ( ( screenData.width * y ) + x ) * 4;
+		return pi.util.convertToColor( {
+			"r": data[ i ],
+			"g": data[ i + 1 ],
+			"b": data[ i + 2 ],
+			"a": data[ i + 3 ]
+		} );
+	}
+
+	// FILTERIMG - Apply a filter function to all pixels
+	pi._.addCommand( "filterImg", filterImg, false, true, [ "filter" ] );
+
+	function filterImg( screenData, args ) {
+		const filter = args[ 0 ];
+
+		if( !pi.util.isFunction( filter ) ) {
+			const error = new TypeError( "filterImg: filter must be a callback function" );
+			error.code = "INVALID_FILTER";
+			throw error;
+		}
+
+		piData.commands.getImageData( screenData );
+		const data = screenData.imageData.data;
+
+		// Apply filter to all pixels
+		for( let y = 0; y < screenData.height; y++ ) {
+			for( let x = 0; x < screenData.width; x++ ) {
+				const i = ( ( screenData.width * y ) + x ) * 4;
+				const color = filter( {
+					"r": data[ i ],
+					"g": data[ i + 1 ],
+					"b": data[ i + 2 ],
+					"a": data[ i + 3 ]
+				}, x, y );
+
+				if( color &&
+					pi.util.isInteger( color.r ) &&
+					pi.util.isInteger( color.g ) &&
+					pi.util.isInteger( color.b ) &&
+					pi.util.isInteger( color.a )
+				) {
+					data[ i ] = pi.util.clamp( color.r, 0, 255 );
+					data[ i + 1 ] = pi.util.clamp( color.g, 0, 255 );
+					data[ i + 2 ] = pi.util.clamp( color.b, 0, 255 );
+					data[ i + 3 ] = pi.util.clamp( color.a, 0, 255 );
+				}
+			}
+		}
+
+		piData.commands.setImageDirty( screenData );
 	}
 
 	// GET - Capture screen region as 2D array of palette indices

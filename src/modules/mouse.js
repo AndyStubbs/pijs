@@ -347,5 +347,16 @@ export function init( pi ) {
 			}
 		}
 	}
+
+	// SETENABLECONTEXTMENU - Enable/disable right-click context menu
+	pi._.addCommand( "setEnableContextMenu", setEnableContextMenu, false, true, [ "isEnabled" ] );
+	pi._.addSetting( "enableContextMenu", setEnableContextMenu, true, [ "isEnabled" ] );
+
+	function setEnableContextMenu( screenData, args ) {
+		screenData.isContextMenuEnabled = !!args[ 0 ];
+
+		// Activate the mouse event listeners
+		startMouse( screenData );
+	}
 }
 

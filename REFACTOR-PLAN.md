@@ -1072,7 +1072,7 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 - `screen.draw("B R50 R50")` - Blind move (move without drawing)
 - `screen.draw("C#FF0000 R100")` - Hex color in draw string
 
-**Additional Commands Added:**
+**Additional Commands Added (Event System):**
 - `screen.clearEvents()` - Clear all event listeners
 - `screen.inpress()` - Get unified press state (mouse or touch)
 - `screen.onpress(mode, fn, once?, hitBox?, customData?)` - Press event listener
@@ -1084,9 +1084,23 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 - `screen.setInputCursor(char)` - Set input prompt cursor character
 - `$.setPinchZoom(bool)` - Enable/disable pinch zoom on mobile
 
+**Additional Commands Added (Graphics & Fonts):**
+- `screen.getPixel(x, y)` - Get color of pixel at position
+- `screen.filterImg(filterFn)` - Apply filter function to all pixels
+- `screen.setAutoRender(bool)` - Enable/disable automatic rendering
+- `screen.setEnableContextMenu(bool)` - Enable/disable right-click menu
+- `$.getAvailableFonts()` - Get list of all loaded fonts
+- `screen.setFontSize(width, height)` - Set canvas font size
+- `screen.setChar(code, data)` - Set custom character in pixel font
+
 **Bundle Size:**
-- Unminified: 243.55 KB (+22.11 KB from Phase 16)
-- Minified: 116.65 KB (+8.88 KB from Phase 16)
+- Unminified: 248.46 KB (+27.02 KB from Phase 16)
+- Minified: 119.31 KB (+11.54 KB from Phase 16)
+
+**API Cleanup:**
+- Removed `locate()` - use `setPos(col, row)` instead
+- Removed `pos()` - use `getPos()` instead (returns {col, row})
+- Reduces duplication and makes API more consistent
 
 **Implementation Notes:**
 - Default 256-color CGA palette initialized on startup
