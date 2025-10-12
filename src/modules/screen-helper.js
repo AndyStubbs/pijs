@@ -42,6 +42,9 @@ export function init( pi ) {
 		data[ i ] = ( c.r * pct ) + data[ i ] * pct2;
 		data[ i + 1 ] = ( c.g * pct ) + data[ i + 1 ] * pct2;
 		data[ i + 2 ] = ( c.b * pct ) + data[ i + 2 ] * pct2;
+
+		// Alpha blending formula: result_alpha = source_alpha + dest_alpha * (1 - source_alpha)
+		data[ i + 3 ] = c.a + data[ i + 3 ] * pct2;
 	}
 
 	// ImageData Helpers

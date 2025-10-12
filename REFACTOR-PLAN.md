@@ -1056,8 +1056,8 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 - `screen.setBlendMode("blend")` - Alpha blending
 
 **Bundle Size:**
-- Unminified: 227.79 KB (+6.35 KB from Phase 16)
-- Minified: 110.83 KB (+3.23 KB from Phase 16)
+- Unminified: 226.67 KB (+5.23 KB from Phase 16)
+- Minified: 110.29 KB (+2.52 KB from Phase 16)
 
 **Implementation Notes:**
 - Default 256-color CGA palette initialized on startup
@@ -1068,6 +1068,13 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 - Pen system controls drawing style (pixel, square, circle brushes)
 - Noise adds randomization to pen drawing
 - Blend modes control how new pixels combine with existing ones
+- **Bug Fix & Optimization:** Replaced complex buffer-swap-paint approach with standard horizontal line filling for circles/ellipses
+- Filled shapes now use simple scanline algorithm (draw horizontal lines row by row)
+- This is faster, simpler, and properly respects blend modes
+- **Critical Bug Fix:** Alpha blending now properly sets result alpha channel (was leaving pixels transparent!)
+- Alpha blend formula: `result_alpha = source_alpha + dest_alpha * (1 - source_alpha)`
+- Without this fix, blended pixels had correct RGB but alpha=0, making them invisible
+- Bundle size: 226.67 KB unminified, 110.29 KB minified
 
 ---
 

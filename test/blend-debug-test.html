@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Blend Mode Debug Test</title>
+	<style>
+		body {
+			margin: 20px;
+			font-family: monospace;
+			background: #222;
+			color: #fff;
+		}
+		canvas {
+			display: block;
+			margin: 20px 0;
+		}
+		.info {
+			background: #333;
+			padding: 15px;
+			margin: 10px 0;
+		}
+	</style>
+</head>
+<body>
+	<h1>Blend Mode Debug Test</h1>
+	<div id="container" style="width: 320px; height: 240px;"></div>
+	<div class="info" id="info">Loading...</div>
+
+	<script src="../build/pi.js"></script>
+	<script>
+		const $ = window.$ || window.pi;
+		const info = document.getElementById( "info" );
+
+		try {
+			// Create screen
+			const screen = $.screen( "320x240", "container" );
+			
+			info.innerHTML = `
+				<div>Screen created: ${screen.width()}x${screen.height()}</div>
+				<div>Pixel mode: ${screen.canvas().getContext('2d').imageSmoothingEnabled === false}</div>
+			`;
+
+			// Clear screen to black
+			screen.cls();
+			
+			// Test 1: Draw a solid red circle
+			info.innerHTML += `<div><br><strong>Test 1: Solid Red Circle</strong></div>`;
+			screen.setColor( 12 );  // Red from palette
+			screen.circle( 100, 100, 40, 12 );
+			screen.render();
+			info.innerHTML += `<div>Drew red circle at (100, 100) radius 40</div>`;
+
+			// Get palette color to check alpha
+			const pal = screen.getPal();
+			info.innerHTML += `<div>Palette color 12 (red): rgba(${pal[12].r}, ${pal[12].g}, ${pal[12].b}, ${pal[12].a})</div>`;
+			
+			// Test 2: Set blend mode and draw semi-transparent blue circle
+			info.innerHTML += `<div><br><strong>Test 2: Semi-Transparent Blue (blend mode)</strong></div>`;
+			screen.setBlendMode( "blend" );
+			
+			// Convert rgba color
+			const blueColor = $.util.convertToColor( "rgba(0, 0, 255, 128)" );
+			info.innerHTML += `<div>Blue color: rgba(${blueColor.r}, ${blueColor.g}, ${blueColor.b}, ${blueColor.a})</div>`;
+			
+			screen.setColor( blueColor );
+			screen.circle( 100, 100, 40, blueColor );
+			screen.render();
+			info.innerHTML += `<div>Drew blue circle (should blend over red)</div>`;
+			
+			// Test 3: Check what's on screen
+			const pixel = $.util.getPixelSafe( screen.canvas().getContext('2d').getImageData(0,0,screen.width(),screen.height()), 100, 100, screen.width() );
+			if( pixel ) {
+				info.innerHTML += `<div>Center pixel: rgba(${pixel.r}, ${pixel.g}, ${pixel.b}, ${pixel.a})</div>`;
+			}
+
+			console.log( "Test complete", { screen, pal, blueColor, pixel } );
+
+		} catch( e ) {
+			info.innerHTML = `<div style="color: #f44; background: #511;">ERROR: ${e.message}</div><pre>${e.stack}</pre>`;
+			console.error( e );
+		}
+	</script>
+</body>
+</html>
+

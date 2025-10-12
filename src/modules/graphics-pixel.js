@@ -196,21 +196,39 @@ export function init( pi ) {
 
 		piData.commands.getImageData( screenData );
 
-		// Handle filled circles with buffer swap
-		let tempData;
-		if( isFill ) {
-			piData.commands.setImageDirty( screenData );
-			tempData = screenData.imageData;
-
-			screenData.bufferContext.clearRect( 0, 0, screenData.width, screenData.height );
-			screenData.imageData = screenData.bufferContext.getImageData(
-				0, 0, screenData.width, screenData.height
-			);
-		}
-
-		// Initialize the color for the circle
+		// Initialize the color for the circle outline
 		const color = screenData.fColor;
 
+		// Fill the circle first if needed (draw horizontal lines)
+		if( isFill ) {
+			const r = radius - 1;
+			const rSquared = r * r;
+
+			// Draw horizontal lines for each row of the circle
+			for( let dy = -r; dy <= r; dy++ ) {
+				const py = y + dy;
+
+				// Skip if row is out of bounds
+				if( py < 0 || py >= screenData.height ) {
+					continue;
+				}
+
+				// Calculate half-width of circle at this y coordinate
+				const dx = Math.floor( Math.sqrt( rSquared - dy * dy ) );
+
+				// Draw horizontal line from -dx to +dx
+				for( let px = x - dx; px <= x + dx; px++ ) {
+					// Skip if pixel is out of bounds
+					if( px < 0 || px >= screenData.width ) {
+						continue;
+					}
+
+					piData.commands.setPixel( screenData, px, py, fillColor );
+				}
+			}
+		}
+
+		// Now draw the outline
 		radius -= 1;
 		let x2 = radius;
 		let y2 = 0;
@@ -260,29 +278,6 @@ export function init( pi ) {
 				screenData.pen.draw( screenData, y2 + x, -x2 + y, color );
 				screenData.pen.draw( screenData, -y2 + x, -x2 + y, color );
 			}
-		}
-
-		// Handle fill
-		if( isFill ) {
-			// Paint the center of the shape (requires paint command from Phase 6)
-			if( piData.commands.paint ) {
-				piData.commands.paint( screenData, [ x, y, fillColor ] );
-			}
-
-			// Copy the data back onto the main canvas
-			radius += screenData.pen.size;
-			for( y2 = -radius; y2 <= radius; y2 += 1 ) {
-				for( x2 = -radius; x2 <= radius; x2 += 1 ) {
-					const i = ( ( y2 + y ) * screenData.width + ( x2 + x ) ) * 4;
-					if( screenData.imageData.data[ i + 3 ] > 0 ) {
-						tempData.data[ i ] = screenData.imageData.data[ i ];
-						tempData.data[ i + 1 ] = screenData.imageData.data[ i + 1 ];
-						tempData.data[ i + 2 ] = screenData.imageData.data[ i + 2 ];
-						tempData.data[ i + 3 ] = screenData.imageData.data[ i + 3 ];
-					}
-				}
-			}
-			screenData.imageData = tempData;
 		}
 
 		piData.commands.setImageDirty( screenData );
@@ -445,19 +440,7 @@ export function init( pi ) {
 
 		piData.commands.getImageData( screenData );
 
-		// Handle filled ellipses with buffer swap
-		let tempData;
-		if( isFill ) {
-			piData.commands.setImageDirty( screenData );
-			tempData = screenData.imageData;
-
-			screenData.bufferContext.clearRect( 0, 0, screenData.width, screenData.height );
-			screenData.imageData = screenData.bufferContext.getImageData(
-				0, 0, screenData.width, screenData.height
-			);
-		}
-
-		// Initialize the color
+		// Initialize the color for the outline
 		const color = screenData.fColor;
 
 		// Handle degenerate case
@@ -467,7 +450,38 @@ export function init( pi ) {
 			return;
 		}
 
-		// Midpoint ellipse algorithm
+		// Fill the ellipse first if needed (draw horizontal lines)
+		if( isFill ) {
+			const rxSquared = radiusX * radiusX;
+			const rySquared = radiusY * radiusY;
+
+			// Draw horizontal lines for each row of the ellipse
+			for( let dy = -radiusY; dy <= radiusY; dy++ ) {
+				const py = y + dy;
+
+				// Skip if row is out of bounds
+				if( py < 0 || py >= screenData.height ) {
+					continue;
+				}
+
+				// Calculate half-width of ellipse at this y coordinate
+				// Using ellipse equation: (x/rx)^2 + (y/ry)^2 = 1
+				// Solving for x: x = rx * sqrt(1 - (y/ry)^2)
+				const dx = Math.floor( radiusX * Math.sqrt( 1 - ( dy * dy ) / rySquared ) );
+
+				// Draw horizontal line from -dx to +dx
+				for( let px = x - dx; px <= x + dx; px++ ) {
+					// Skip if pixel is out of bounds
+					if( px < 0 || px >= screenData.width ) {
+						continue;
+					}
+
+					piData.commands.setPixel( screenData, px, py, fillColor );
+				}
+			}
+		}
+
+		// Now draw the outline using Midpoint ellipse algorithm
 		// Starting points
 		let x2 = 0;
 		let y2 = radiusY;
@@ -526,30 +540,6 @@ export function init( pi ) {
 				dy = dy - ( 2 * radiusX * radiusX );
 				d2 = d2 + dx - dy + ( radiusX * radiusX );
 			}
-		}
-
-		// Handle fill
-		if( isFill ) {
-			// Paint the center of the shape (requires paint command from Phase 6)
-			if( piData.commands.paint ) {
-				piData.commands.paint( screenData, [ x, y, fillColor ] );
-			}
-
-			// Copy the data back onto the main canvas
-			radiusX += screenData.pen.size;
-			radiusY += screenData.pen.size;
-			for( y2 = -radiusY; y2 <= radiusY; y2 += 1 ) {
-				for( x2 = -radiusX; x2 <= radiusX; x2 += 1 ) {
-					const i = ( ( y2 + y ) * screenData.width + ( x2 + x ) ) * 4;
-					if( screenData.imageData.data[ i + 3 ] > 0 ) {
-						tempData.data[ i ] = screenData.imageData.data[ i ];
-						tempData.data[ i + 1 ] = screenData.imageData.data[ i + 1 ];
-						tempData.data[ i + 2 ] = screenData.imageData.data[ i + 2 ];
-						tempData.data[ i + 3 ] = screenData.imageData.data[ i + 3 ];
-					}
-				}
-			}
-			screenData.imageData = tempData;
 		}
 
 		piData.commands.setImageDirty( screenData );
