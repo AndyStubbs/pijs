@@ -145,50 +145,6 @@ export function init( pi ) {
 		// Load the frames when the image gets loaded
 		m_callback = function() {
 
-			// Helper: Get cluster of connected pixels (for auto-detection)
-			function getCluster( x, y, frameData ) {
-				const clusterName = x + "_" + y;
-				if(
-					searched[ clusterName ] || x < 0 || x >= width || 
-					y < 0 || y >= height
-				) {
-					return;
-				}
-
-				const clusters = [];
-				clusters.push( [ x, y, clusterName ] );
-
-				while( clusters.length > 0 ) {
-					const cluster = clusters.pop();
-					x = cluster[ 0 ];
-					y = cluster[ 1 ];
-					const name = cluster[ 2 ];
-					searched[ name ] = true;
-					const index = ( x + y * width ) * 4;
-
-					if( data[ index + 3 ] > 0 ) {
-						frameData.x = Math.min( frameData.x, x );
-						frameData.y = Math.min( frameData.y, y );
-						frameData.right = Math.max( frameData.right, x );
-						frameData.bottom = Math.max( frameData.bottom, y );
-						frameData.width = frameData.right - frameData.x + 1;
-						frameData.height = frameData.bottom - frameData.y + 1;
-
-						for( let i = 0; i < dirs.length; i++ ) {
-							const x2 = x + dirs[ i ][ 0 ];
-							const y2 = y + dirs[ i ][ 1 ];
-							const name2 = x2 + "_" + y2;
-							if(
-								!( searched[ name2 ] || x2 < 0 || x2 >= width || 
-								y2 < 0 || y2 >= height )
-							) {
-								clusters.push( [ x2, y2, name2 ] );
-							}
-						}
-					}
-				}
-			}
-
 			// Update the image data
 			const imageData = piData.images[ name ];
 			imageData.type = "spritesheet";
@@ -217,6 +173,50 @@ export function init( pi ) {
 					[ -1,  1 ], [ 0,  1 ], [ 1,  1 ]
 				];
 				const data = context.getImageData( 0, 0, width, height ).data;
+
+				// Helper: Get cluster of connected pixels (for auto-detection)
+				function getCluster( x, y, frameData ) {
+					const clusterName = x + "_" + y;
+					if(
+						searched[ clusterName ] || x < 0 || x >= width || 
+						y < 0 || y >= height
+					) {
+						return;
+					}
+
+					const clusters = [];
+					clusters.push( [ x, y, clusterName ] );
+
+					while( clusters.length > 0 ) {
+						const cluster = clusters.pop();
+						x = cluster[ 0 ];
+						y = cluster[ 1 ];
+						const name = cluster[ 2 ];
+						searched[ name ] = true;
+						const index = ( x + y * width ) * 4;
+
+						if( data[ index + 3 ] > 0 ) {
+							frameData.x = Math.min( frameData.x, x );
+							frameData.y = Math.min( frameData.y, y );
+							frameData.right = Math.max( frameData.right, x );
+							frameData.bottom = Math.max( frameData.bottom, y );
+							frameData.width = frameData.right - frameData.x + 1;
+							frameData.height = frameData.bottom - frameData.y + 1;
+
+							for( let i = 0; i < dirs.length; i++ ) {
+								const x2 = x + dirs[ i ][ 0 ];
+								const y2 = y + dirs[ i ][ 1 ];
+								const name2 = x2 + "_" + y2;
+								if(
+									!( searched[ name2 ] || x2 < 0 || x2 >= width || 
+									y2 < 0 || y2 >= height )
+								) {
+									clusters.push( [ x2, y2, name2 ] );
+								}
+							}
+						}
+					}
+				}
 
 				// Read the alpha component of each pixel
 				for( let i = 3; i < data.length; i += 4 ) {

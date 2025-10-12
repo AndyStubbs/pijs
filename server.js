@@ -202,8 +202,10 @@ const server = http.createServer( ( req, res ) => {
 		return;
 	}
 
-	let filePath = "." + req.url;
 	let urlPath = req.url;
+	
+	// Decode URL and strip query string for file path
+	let filePath = "." + decodeURIComponent( req.url.split( "?" )[0] );
 	
 	// Check if path exists
 	fs.stat( filePath, ( error, stats ) => {
