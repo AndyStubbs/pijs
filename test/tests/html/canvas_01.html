@@ -26,14 +26,14 @@
 	$.ready(function () {
 		$.screen("200x200");
 		$.print("Hello World");
-		$.setColor(4);
+		$.setColor(3);
 		$.line(25, 15, 115, 195);
 		$.render();
 		var canvas = $.canvas();
 		var context = canvas.getContext("2d");
 		context.moveTo(15, 15);
 		context.lineTo(100, 195);
-		context.strokeStyle = "red";
+		context.strokeStyle = "cyan";
 		context.stroke();
 	});
 </script>
