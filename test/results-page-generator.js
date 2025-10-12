@@ -50,7 +50,7 @@ function generateResultsPage( results ) {
 			// Use screenshotName from test record (preserves camelCase like "loadFont_01")
 			const baseName = test.screenshotName || test.file.replace( ".html", "" );
 			const refPath = `/test/tests/screenshots/${baseName}.png`;
-			const newPath = `/test/tests/screenshots/${baseName}_new.png`;
+			const newPath = `/test/tests/screenshots/new/${baseName}.png`;
 			
 			failedHTML += `
 			<div class="test-item failed">

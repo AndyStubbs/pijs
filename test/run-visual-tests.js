@@ -188,8 +188,8 @@ test.describe( "Pi.js Visual Regression Tests", () => {
 				// Take screenshot
 				const screenshotPath = path.join(
 					__dirname,
-					"tests/screenshots",
-					`${testName}_new.png`
+					"tests/screenshots/new",
+					`${testName}.png`
 				);
 
 				await page.screenshot( {

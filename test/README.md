@@ -100,7 +100,7 @@ $.ready(function () {
 
 3. **Reference Screenshot:**
 - Located in `tests/screenshots/circle_01.png`
-- New screenshots saved as `circle_01_new.png`
+- New screenshots saved in `tests/screenshots/new/circle_01.png`
 
 ## Screenshot Comparison
 
@@ -117,8 +117,8 @@ The test runner:
 1. Create HTML file in `test/tests/html/`
 2. Add TOML metadata block
 3. Write test code using `$.ready()`
-4. Run test once to generate reference screenshot
-5. Rename `*_new.png` to `*.png` if output is correct
+4. Run test once to generate screenshot in `tests/screenshots/new/`
+5. Review output and copy to `tests/screenshots/` if correct
 
 ## Test Coverage
 
@@ -143,11 +143,11 @@ Current tests cover:
 
 **Screenshot mismatches:**
 - Check console for errors
-- Compare `*_new.png` with `*.png` manually
+- Compare images in `screenshots/new/` with `screenshots/` manually
 - Verify test logic is correct
 - Font rendering may vary by OS/browser
 
 **Reference images missing:**
 - Tests will be skipped if no reference image exists
-- Generate reference by running test and copying `*_new.png` to `*.png`
+- Generate reference by running test and copying from `screenshots/new/` to `screenshots/`
 
