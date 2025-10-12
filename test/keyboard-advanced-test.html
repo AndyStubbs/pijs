@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Advanced Keyboard Commands Test</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 20px;
+			font-family: monospace;
+			background: #222;
+			color: #fff;
+		}
+		h1 {
+			color: #4CAF50;
+		}
+		.status {
+			margin: 20px 0;
+			padding: 15px;
+			background: #333;
+			border-radius: 5px;
+		}
+		canvas {
+			margin: 20px 0;
+			display: block;
+		}
+		.info {
+			background: #1a1a1a;
+			padding: 15px;
+			border-radius: 5px;
+			margin: 20px 0;
+		}
+		.key {
+			color: #4CAF50;
+			font-weight: bold;
+		}
+		button {
+			background: #4CAF50;
+			color: white;
+			border: none;
+			padding: 10px 20px;
+			margin: 5px;
+			border-radius: 3px;
+			cursor: pointer;
+			font-family: monospace;
+		}
+		button:hover {
+			background: #45a049;
+		}
+	</style>
+</head>
+<body>
+	<h1>Advanced Keyboard Commands Test</h1>
+	<div class="status" id="status">Loading Pi.js...</div>
+	<div id="container" style="width: 640px; height: 400px;"></div>
+
+	<div class="info">
+		<h3>Tests Available:</h3>
+		<button id="testInput">Test INPUT Command</button>
+		<button id="testInputNumber">Test INPUT (Number)</button>
+		<button id="testInputInt">Test INPUT (Integer)</button>
+		<button id="testCombo">Test Key Combos</button>
+		<button id="clearScreen">Clear Screen</button>
+		
+		<h3>Key Combinations Active:</h3>
+		<ul>
+			<li><span class="key">Ctrl+S:</span> Save notification</li>
+			<li><span class="key">Ctrl+Shift+D:</span> Debug mode</li>
+			<li><span class="key">Alt+F:</span> File menu</li>
+		</ul>
+		
+		<h3>Instructions:</h3>
+		<ul>
+			<li>Click "Test INPUT Command" to try text input with a prompt</li>
+			<li>Click "Test INPUT (Number)" for numeric-only input</li>
+			<li>Click "Test INPUT (Integer)" for integer-only input</li>
+			<li>Click "Test Key Combos" to activate key combination listeners</li>
+			<li>Try the key combinations listed above</li>
+		</ul>
+	</div>
+
+	<script src="../build/pi.js"></script>
+	<script>
+		const status = document.getElementById( "status" );
+		const $ = window.$ || window.pi;
+
+		try {
+			// Create screen
+			const screen = $.screen( "640x400", "container" );
+			screen.cls();
+			screen.setFont( 4 );  // Use 8x14 font
+
+			status.innerHTML = "✅ Advanced keyboard test ready!";
+
+			// Test state
+			let testLog = [];
+
+			function addLog( msg, color ) {
+				testLog.push( { "msg": msg, "color": color || 15 } );
+				
+				// Keep last 25 lines
+				if( testLog.length > 25 ) {
+					testLog.shift();
+				}
+				
+				redraw();
+			}
+
+			function redraw() {
+				screen.cls();
+				
+				// Title
+				screen.locate( 0, 0 );
+				screen.setColor( 10 );
+				screen.print( "ADVANCED KEYBOARD TEST", true, true );
+				
+				// Draw log
+				for( let i = 0; i < testLog.length; i++ ) {
+					screen.locate( i + 2, 0 );
+					screen.setColor( testLog[ i ].color );
+					screen.print( testLog[ i ].msg, false );
+				}
+				
+				screen.render();
+			}
+
+			// Test 1: Input command (text)
+			document.getElementById( "testInput" ).addEventListener( "click", async () => {
+				addLog( "--- Text Input Test ---", 14 );
+				addLog( "Type your name and press ENTER:", 11 );
+				
+				try {
+					const result = await screen.input( "Name: " );
+					addLog( `You entered: "${result}"`, 10 );
+				} catch( e ) {
+					addLog( `Input cancelled or error: ${e.message}`, 12 );
+				}
+			} );
+
+			// Test 2: Input command (number)
+			document.getElementById( "testInputNumber" ).addEventListener( "click", async () => {
+				addLog( "--- Number Input Test ---", 14 );
+				addLog( "Enter a number (decimals allowed):", 11 );
+				
+				try {
+					const result = await screen.input( "Number: ", null, true );
+					addLog( `You entered: ${result} (type: ${typeof result})`, 10 );
+				} catch( e ) {
+					addLog( `Input cancelled or error: ${e.message}`, 12 );
+				}
+			} );
+
+			// Test 3: Input command (integer)
+			document.getElementById( "testInputInt" ).addEventListener( "click", async () => {
+				addLog( "--- Integer Input Test ---", 14 );
+				addLog( "Enter an integer (no decimals):", 11 );
+				
+				try {
+					const result = await screen.input( "Age: ", null, true, true );
+					addLog( `You entered: ${result} (type: ${typeof result})`, 10 );
+				} catch( e ) {
+					addLog( `Input cancelled or error: ${e.message}`, 12 );
+				}
+			} );
+
+			// Test 4: Key combinations
+			let combosActive = false;
+			
+			document.getElementById( "testCombo" ).addEventListener( "click", () => {
+				if( combosActive ) {
+					addLog( "Key combos already active!", 14 );
+					return;
+				}
+				
+				combosActive = true;
+				addLog( "--- Key Combo Test ---", 14 );
+				addLog( "Key combos activated! Try them:", 11 );
+				
+				// Ctrl+S
+				$.onkeyCombo( [ "ControlLeft", "KeyS" ], () => {
+					addLog( "Ctrl+S pressed - Save!", 10 );
+				} );
+				
+				// Ctrl+Shift+D
+				$.onkeyCombo( [ "ControlLeft", "ShiftLeft", "KeyD" ], () => {
+					addLog( "Ctrl+Shift+D pressed - Debug mode!", 13 );
+				} );
+				
+				// Alt+F
+				$.onkeyCombo( [ "AltLeft", "KeyF" ], () => {
+					addLog( "Alt+F pressed - File menu!", 14 );
+				} );
+				
+				addLog( "Try: Ctrl+S, Ctrl+Shift+D, Alt+F", 11 );
+			} );
+
+			// Test 5: Input with callback
+			async function testInputCallback() {
+				addLog( "--- Input with Callback Test ---", 14 );
+				addLog( "Enter your favorite color:", 11 );
+				
+				screen.input( "Color: ", ( value ) => {
+					addLog( `Callback received: "${value}"`, 10 );
+				} );
+			}
+
+			// Clear screen button
+			document.getElementById( "clearScreen" ).addEventListener( "click", () => {
+				testLog = [];
+				redraw();
+				addLog( "Screen cleared. Tests ready!", 11 );
+			} );
+
+			// Initial display
+			addLog( "Advanced keyboard commands loaded!", 10 );
+			addLog( "Click a button above to test features.", 11 );
+			addLog( "", 15 );
+			addLog( "Available commands:", 14 );
+			addLog( "  $.onkeyCombo(keys, fn) - Key combinations", 15 );
+			addLog( "  $.offkeyCombo(keys, fn) - Remove combo", 15 );
+			addLog( "  screen.input(prompt) - Text input", 15 );
+			addLog( "  screen.input(prompt, cb, isNumber) - Number input", 15 );
+			addLog( "  screen.cancelInput() - Cancel active input", 15 );
+
+			console.log( "✅ Advanced keyboard commands initialized!" );
+			console.log( "Commands:", {
+				"input": screen.input,
+				"cancelInput": screen.cancelInput,
+				"onkeyCombo": $.onkeyCombo,
+				"offkeyCombo": $.offkeyCombo
+			} );
+
+		} catch( e ) {
+			status.innerHTML = `✗ Error: ${e.message}`;
+			console.error( "Test failed:", e );
+			throw e;
+		}
+	</script>
+</body>
+</html>
+

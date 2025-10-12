@@ -17,9 +17,19 @@ export function init( pi ) {
 	let m_inputIndex = 0;
 	let m_onKeyEventListeners = {};
 	let m_anyKeyEventListeners = {};
+	let m_onKeyCombos = {};  // Key combination listeners
 	let m_isKeyEventsActive = false;
 	let m_inputFocus = null;
 	let m_preventKeys = {};
+
+	// Input command state
+	let m_inputQueue = [];  // Queue of active input requests
+	let m_inputQueueIndex = 0;
+	let m_promptInterval = null;
+	let m_promptBlink = false;
+	let m_promptLastTime = 0;
+	let m_promptBackground = null;
+	let m_promptBackgroundWidth = 0;
 
 	// Keyboard started flag
 	let keyboardStarted = false;
@@ -330,6 +340,399 @@ export function init( pi ) {
 			stopKeyboard();
 			startKeyboard();
 		}
+	}
+
+	// ONKEYCOMBO - Register key combination listener
+	pi._.addCommand( "onkeyCombo", onkeyCombo, false, false, [ "keys", "fn", "once" ] );
+
+	function onkeyCombo( args ) {
+		const keys = args[ 0 ];
+		const fn = args[ 1 ];
+		const once = !!args[ 2 ];
+
+		if( !pi.util.isArray( keys ) || keys.length === 0 ) {
+			const error = new TypeError( "onkeyCombo: keys must be a non-empty array" );
+			error.code = "INVALID_KEYS";
+			throw error;
+		}
+
+		if( !pi.util.isFunction( fn ) ) {
+			const error = new TypeError( "onkeyCombo: fn must be a function" );
+			error.code = "INVALID_CALLBACK";
+			throw error;
+		}
+
+		const comboId = keys.join( "+" );
+		const allKeys = [];
+
+		const comboData = {
+			"keys": keys.slice(),
+			"keyData": [],
+			"fn": fn,
+			"allKeys": allKeys,
+			"once": once
+		};
+
+		// If the key combo doesn't exist add it
+		if( !m_onKeyCombos[ comboId ] ) {
+			m_onKeyCombos[ comboId ] = [];
+		}
+		m_onKeyCombos[ comboId ].push( comboData );
+
+		for( let i = 0; i < keys.length; i++ ) {
+			addKeyCombo( keys[ i ], i, allKeys, fn, once, comboData );
+		}
+	}
+
+	function addKeyCombo( key, i, allKeys, fn, once, comboData ) {
+
+		// Store the functions so we can run offkeyCombo later
+		comboData.keyData.push( {
+			"key": key,
+			"keyComboDown": keyComboDown,
+			"keyComboUp": keyComboUp
+		} );
+
+		// Default state is not pressed
+		allKeys.push( false );
+
+		// On key down
+		onkey( [ key, "down", keyComboDown, false ] );
+
+		// On key up
+		onkey( [ key, "up", keyComboUp, false ] );
+
+		function keyComboDown( e ) {
+			allKeys[ i ] = true;
+			if( allKeys.indexOf( false ) === -1 ) {
+				if( once ) {
+					offkey( [ key, "down", keyComboDown ] );
+					offkey( [ key, "up", keyComboUp ] );
+				}
+				fn( e );
+			}
+		}
+
+		function keyComboUp( e ) {
+			allKeys[ i ] = false;
+		}
+	}
+
+	// OFFKEYCOMBO - Remove key combination listener
+	pi._.addCommand( "offkeyCombo", offkeyCombo, false, false, [ "keys", "fn" ] );
+
+	function offkeyCombo( args ) {
+		const keys = args[ 0 ];
+		const fn = args[ 1 ];
+
+		if( !pi.util.isArray( keys ) ) {
+			return;
+		}
+
+		const comboId = keys.join( "+" );
+
+		if( !m_onKeyCombos[ comboId ] ) {
+			return;
+		}
+
+		for( let i = m_onKeyCombos[ comboId ].length - 1; i >= 0; i-- ) {
+			const combo = m_onKeyCombos[ comboId ][ i ];
+
+			if( !fn || combo.fn === fn ) {
+
+				// Remove all individual key listeners for this combo
+				for( let j = 0; j < combo.keyData.length; j++ ) {
+					const kd = combo.keyData[ j ];
+					offkey( [ kd.key, "down", kd.keyComboDown ] );
+					offkey( [ kd.key, "up", kd.keyComboUp ] );
+				}
+
+				m_onKeyCombos[ comboId ].splice( i, 1 );
+			}
+		}
+
+		if( m_onKeyCombos[ comboId ].length === 0 ) {
+			delete m_onKeyCombos[ comboId ];
+		}
+	}
+
+	// INPUT - Get user text input with prompt
+	pi._.addCommand( "input", input, false, true, [
+		"prompt", "callback", "isNumber", "isInteger", "allowNegative"
+	] );
+
+	function input( screenData, args ) {
+		const prompt = args[ 0 ] || "";
+		const callback = args[ 1 ];
+		const isNumber = !!args[ 2 ];
+		const isInteger = !!args[ 3 ];
+		const allowNegative = args[ 4 ] !== false;
+
+		if( typeof prompt !== "string" ) {
+			const error = new TypeError( "input: prompt must be a string" );
+			error.code = "INVALID_PROMPT";
+			throw error;
+		}
+
+		if( callback != null && !pi.util.isFunction( callback ) ) {
+			const error = new TypeError( "input: callback must be a function" );
+			error.code = "INVALID_CALLBACK";
+			throw error;
+		}
+
+		// Create promise for async/await support
+		let resolvePromise, rejectPromise;
+		const promise = new Promise( ( resolve, reject ) => {
+			resolvePromise = resolve;
+			rejectPromise = reject;
+		} );
+
+		const inputData = {
+			"prompt": prompt,
+			"isNumber": isNumber,
+			"isInteger": isInteger,
+			"allowNegative": allowNegative,
+			"val": "",
+			"callback": callback,
+			"resolve": resolvePromise,
+			"reject": rejectPromise,
+			"screenData": screenData
+		};
+
+		m_inputQueue.push( inputData );
+
+		// Start input collection if this is the first input
+		if( m_inputQueue.length === 1 ) {
+			startInputCollection();
+		}
+
+		return promise;
+	}
+
+	function startInputCollection() {
+		startKeyboard();
+
+		const input = m_inputQueue[ m_inputQueueIndex ];
+		if( !input ) {
+			return;
+		}
+
+		// Reset blinking cursor state
+		m_promptLastTime = Date.now();
+		m_promptBackground = null;
+		m_promptBackgroundWidth = 0;
+
+		// Start blinking cursor interval
+		if( !m_promptInterval ) {
+			m_promptInterval = setInterval( showPrompt, 100 );
+		}
+
+		// Listen for keyboard input
+		onkey( [ null, "down", collectInput, false ] );
+	}
+
+	function collectInput( event ) {
+		const input = m_inputQueue[ m_inputQueueIndex ];
+		if( !input ) {
+			return;
+		}
+
+		let removeLastChar = false;
+
+		if( event.key === "Enter" ) {
+
+			// Enter key pressed - finish input
+			finishInput( input );
+
+		} else if( event.key === "Backspace" ) {
+
+			// Backspace - remove last character
+			if( input.val.length > 0 ) {
+				input.val = input.val.substring( 0, input.val.length - 1 );
+			}
+
+		} else if( event.key && event.key.length === 1 ) {
+
+			// Handle +/- for numbers
+			if( input.isNumber && input.allowNegative ) {
+				if( event.key === "-" && input.val.length === 0 ) {
+					input.val = "-";
+					return;
+				} else if( event.key === "+" && input.val.charAt( 0 ) === "-" ) {
+					input.val = input.val.substring( 1 );
+					return;
+				}
+			}
+
+			// Add character
+			input.val += event.key;
+
+			// Validate number input
+			if( input.isNumber ) {
+				if( isNaN( Number( input.val ) ) ) {
+					removeLastChar = true;
+				} else if( input.isInteger && event.key === "." ) {
+					removeLastChar = true;
+				}
+			}
+		}
+
+		// Remove invalid character
+		if( removeLastChar ) {
+			input.val = input.val.substring( 0, input.val.length - 1 );
+		}
+
+		// Update display
+		showPrompt();
+	}
+
+	function showPrompt( hideCursor ) {
+		if( m_inputQueue.length === 0 || m_inputQueueIndex >= m_inputQueue.length ) {
+			return;
+		}
+
+		const input = m_inputQueue[ m_inputQueueIndex ];
+		const screenData = input.screenData;
+
+		// Build message
+		let msg = input.prompt + input.val;
+
+		// Blink cursor every half second
+		const now = Date.now();
+		if( now - m_promptLastTime > 500 ) {
+			m_promptBlink = !m_promptBlink;
+			m_promptLastTime = now;
+		}
+
+		if( m_promptBlink && !hideCursor ) {
+			msg += screenData.printCursor.prompt;
+		}
+
+		// Check if need to scroll first
+		let pos = piData.commands.getPos( screenData );
+		if( pos.row >= piData.commands.getRows( screenData ) ) {
+			piData.commands.print( screenData, [ "", false ] );
+			piData.commands.setPos( screenData, [ pos.col, pos.row - 1 ] );
+			pos = piData.commands.getPos( screenData );
+		}
+
+		// Get the background pixels
+		const posPx = piData.commands.getPosPx( screenData );
+		const width = ( msg.length + 1 ) * screenData.printCursor.font.width;
+		const height = screenData.printCursor.font.height;
+
+		// If there is no background, save it
+		if( !m_promptBackground ) {
+			m_promptBackground = piData.commands.get( screenData,
+				[ posPx.x, posPx.y, posPx.x + width, posPx.y + height ]
+			);
+		} else if( m_promptBackgroundWidth < width ) {
+
+			// We have a background but we need a bigger background
+			piData.commands.put( screenData,
+				[ m_promptBackground, posPx.x, posPx.y, true ]
+			);
+			m_promptBackground = piData.commands.get( screenData,
+				[ posPx.x, posPx.y, posPx.x + width, posPx.y + height ]
+			);
+		} else {
+
+			// Restore the background
+			piData.commands.put( screenData,
+				[ m_promptBackground, posPx.x, posPx.y, true ]
+			);
+		}
+
+		// Store the background width for later use
+		m_promptBackgroundWidth = width;
+
+		// Print the prompt + input + cursor
+		piData.commands.print( screenData, [ msg, true ] );
+
+		// Reset cursor position
+		piData.commands.setPos( screenData, [ pos.col, pos.row ] );
+
+		piData.commands.render( screenData );
+	}
+
+	function finishInput( input ) {
+
+		// Show prompt one last time without cursor
+		showPrompt( true );
+
+		// Stop blinking cursor
+		if( m_promptInterval ) {
+			clearInterval( m_promptInterval );
+			m_promptInterval = null;
+		}
+
+		// Clear background
+		m_promptBackground = null;
+		m_promptBackgroundWidth = 0;
+
+		// Remove input listener
+		offkey( [ null, "down", collectInput ] );
+
+		// Process and validate input
+		processInputValue( input );
+
+		// Print newline
+		piData.commands.print( input.screenData, [ "" ] );
+
+		// Call callback if provided
+		if( input.callback ) {
+			input.callback( input.val );
+		}
+
+		// Resolve promise
+		input.resolve( input.val );
+
+		// Move to next input in queue
+		m_inputQueueIndex++;
+		if( m_inputQueueIndex >= m_inputQueue.length ) {
+			m_inputQueue = [];
+			m_inputQueueIndex = 0;
+		} else {
+			startInputCollection();
+		}
+	}
+
+	function processInputValue( input ) {
+		if( input.isNumber ) {
+			if( input.val === "" || input.val === "-" ) {
+				input.val = 0;
+			} else {
+				input.val = Number( input.val );
+				if( input.isInteger ) {
+					input.val = Math.floor( input.val );
+				}
+			}
+		}
+	}
+
+	// CANCELINPUT - Cancel active input request
+	pi._.addCommand( "cancelInput", cancelInput, false, true, [] );
+
+	function cancelInput( screenData ) {
+
+		// Clear all inputs
+		for( let i = m_inputQueue.length - 1; i >= 0; i-- ) {
+			if( m_inputQueue[ i ].screenData === screenData ) {
+				m_inputQueue[ i ].reject( new Error( "Input cancelled" ) );
+				m_inputQueue.splice( i, 1 );
+			}
+		}
+
+		// Stop prompt interval
+		if( m_promptInterval ) {
+			clearInterval( m_promptInterval );
+			m_promptInterval = null;
+		}
+
+		// Remove input listener
+		offkey( [ null, "down", collectInput ] );
+
+		m_inputQueueIndex = 0;
 	}
 }
 

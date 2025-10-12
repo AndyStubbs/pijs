@@ -657,9 +657,15 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
    - [x] Input queue (m_inputs array)
    - [x] Character buffering
    - [x] Special key handling (Enter, Backspace, Tab)
-   - [ ] `input(prompt)` - get user input (deferred - less common)
+   - [x] `input(prompt, callback?, isNumber?, isInteger?, allowNegative?)` - user input
 
-4. Key mapping ✅ COMPLETE
+4. Advanced features ✅ COMPLETE
+   - [x] `onkeyCombo(keys, fn, once?)` - Key combination detection
+   - [x] `offkeyCombo(keys, fn?)` - Remove combo listener
+   - [x] `cancelInput()` - Cancel active input request
+   - [x] Blinking cursor for input prompt
+
+5. Key mapping ✅ COMPLETE
    - [x] Standard key codes (KeyA-KeyZ, Digit0-9)
    - [x] Special keys (Arrow keys, F-keys, Enter, Escape, etc.)
    - [x] Modifier keys (Shift, Control, Alt)
@@ -675,13 +681,20 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 **What Now Works:**
 - `$.inkey()` - Get next key from input buffer
 - `$.inkey("a")` - Check if specific key is pressed
+- `$.inkey("KeyA")` - Check physical key (modern approach, no lookup table!)
 - `$.onkey("Enter", "down", fn)` - Key event listener
 - `$.onkey("*", "down", fn)` - Listen to any key
 - `$.offkey(key, mode, fn)` - Remove listener
 - `$.preventKey(key, true)` - Prevent default browser behavior
 - `$.clearKeys()` - Clear all key states
-- Key lookup table for character → code mapping
-- Multiple key state tracking systems
+- `screen.input(prompt, callback?, isNumber?, isInteger?, allowNegative?)` - User input
+- `screen.cancelInput()` - Cancel active input
+- `$.onkeyCombo(["ControlLeft", "KeyS"], fn)` - Key combination (Ctrl+S)
+- `$.offkeyCombo(keys, fn)` - Remove combo listener
+- No lookup table - uses native KeyboardEvent.code directly
+- Multiple key state tracking (character, key property, code)
+- Blinking cursor for input prompt
+- Promise-based input for async/await support
 
 ---
 
@@ -817,11 +830,14 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 - Connect/disconnect events
 
 **Bundle Size:**
-- Unminified: 175.42 KB (+33.37 KB)
-- Minified: 87.97 KB (+14.72 KB)
+- Unminified: 184.07 KB (+41.92 KB from Phase 10)
+- Minified: 91.83 KB (+18.58 KB from Phase 10)
 
 **Implementation Notes:**
-- Keyboard uses comprehensive key lookup table (100+ mappings)
+- Keyboard modernized: **Removed 100+ line lookup table**, uses native KeyboardEvent.code
+- User input with blinking cursor and promise-based async support
+- Key combinations detect multiple simultaneous key presses
+- Number/integer validation for input command
 - Mouse and touch scale coordinates for canvas size vs display size
 - Touch prevents mouse events to avoid duplicate input
 - Gamepad uses polling loop for continuous state updates

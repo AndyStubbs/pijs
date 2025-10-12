@@ -107,15 +107,14 @@
 				statusSection.className = "section";
 				statusSection.innerHTML = `
 					<h2>Pi.js v${pi.version}</h2>
-					<h2>Refactor Progress: Phases 0-4 Complete ✅</h2>
+					<h2>Refactor Progress: Phases 0-14 Complete ✅ (67%)</h2>
 					<div class="status">
 						<ul>
-							<li>✅ Phase 0: Foundation - Core architecture</li>
-							<li>✅ Phase 1: Core System - Ready/wait, command registration</li>
-							<li>✅ Phase 2: Screen Management - Screen creation & lifecycle</li>
-							<li>✅ Phase 3: Helper Functions - Blend modes, pens, pixel ops</li>
-							<li>✅ Phase 4: Pixel-Mode Drawing - Lines, circles, rectangles</li>
-							<li>🔄 Phase 5+: In progress...</li>
+							<li>✅ Phase 0-4: Foundation, Core, Screen, Helpers, Drawing</li>
+							<li>✅ Phase 6-7: Paint/Fill, Bezier Curves</li>
+							<li>✅ Phase 8-10: Images, Fonts/Text, Tables</li>
+							<li>✅ Phase 11-14: Input (Keyboard, Mouse, Touch, Gamepad)</li>
+							<li>🔄 Phase 15-20: Sound, PLAY, Palette, Testing, Docs</li>
 						</ul>
 					</div>
 				`;
@@ -335,22 +334,15 @@
 				const nextSection = document.createElement( "div" );
 				nextSection.className = "section";
 				nextSection.innerHTML = `
-					<h2>Next Phases</h2>
+					<h2>Remaining Phases</h2>
 					<div class="status">
 						<ul>
-							<li>Phase 6: Paint & Fill - Flood fill algorithm</li>
-							<li>Phase 7: Bezier & Advanced Drawing</li>
-							<li>Phase 8: Image Operations - Load, draw, manipulate</li>
-							<li>Phase 9: Text & Fonts - Built-in fonts, print command</li>
-							<li>Phase 10: Table Formatting</li>
-							<li>Phase 11: Keyboard Input</li>
-							<li>Phase 12: Mouse Input</li>
-							<li>Phase 13: Touch Input</li>
-							<li>Phase 14: Gamepad Input</li>
-							<li>Phase 15: Sound System</li>
-							<li>Phase 16: PLAY Command</li>
-							<li>Phase 17: Palette System (extended)</li>
-							<li>Phase 18-20: Testing, docs, release</li>
+							<li>🔄 Phase 15: Sound System - WebAudio, sound loading/playback</li>
+							<li>Phase 16: PLAY Command - QBasic-style music notation</li>
+							<li>Phase 17: Palette System (extended features)</li>
+							<li>Phase 18: Testing & Bug Fixing - Visual regression, unit tests</li>
+							<li>Phase 19: Documentation - API reference, migration guide</li>
+							<li>Phase 20: Release Preparation - Version bump, changelog</li>
 						</ul>
 					</div>
 				`;

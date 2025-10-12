@@ -136,6 +136,71 @@ export function init( pi ) {
 		}
 	}
 
+	// FINDCOLOR - Find or add color to palette
+	pi._.addCommand( "findColor", findColor, false, true,
+		[ "color", "tolerance", "isAddToPalette" ]
+	);
+
+	function findColor( screenData, args ) {
+		let color = args[ 0 ];
+		let tolerance = args[ 1 ];
+		const isAddToPalette = !!args[ 2 ];
+
+		// Max color difference constant
+		const m_maxDifference = ( 255 * 255 ) * 3.25;
+
+		if( tolerance == null ) {
+			tolerance = 1;
+		} else if( isNaN( tolerance ) || tolerance < 0 || tolerance > 1 ) {
+			const error = new RangeError(
+				"findColor: parameter tolerance must be a number between 0 and 1"
+			);
+			error.code = "INVALID_TOLERANCE";
+			throw error;
+		}
+
+		tolerance = tolerance * ( 2 - tolerance ) * m_maxDifference;
+		const pal = screenData.pal;
+
+		// Check cache first
+		if( color && color.s && screenData.cache.findColor[ color.s ] !== undefined ) {
+			return screenData.cache.findColor[ color.s ];
+		}
+
+		// Convert color to color object
+		color = piData.commands.findColorValue( screenData, color, "findColor" );
+
+		// Find exact match or closest color in palette
+		for( let i = 0; i < pal.length; i++ ) {
+			if( pal[ i ].s === color.s ) {
+				screenData.cache.findColor[ color.s ] = i;
+				return i;
+			} else {
+				const dr = pal[ i ].r - color.r;
+				const dg = pal[ i ].g - color.g;
+				const db = pal[ i ].b - color.b;
+				const da = pal[ i ].a - color.a;
+
+				const difference = ( dr * dr + dg * dg + db * db + da * da * 0.25 );
+				const similarity = m_maxDifference - difference;
+
+				if( similarity >= tolerance ) {
+					screenData.cache.findColor[ color.s ] = i;
+					return i;
+				}
+			}
+		}
+
+		// Add to palette if allowed
+		if( isAddToPalette ) {
+			pal.push( color );
+			screenData.cache.findColor[ color.s ] = pal.length - 1;
+			return pal.length - 1;
+		}
+
+		return 0;
+	}
+
 	// SET COLOR - Set drawing color for current screen
 	pi._.addCommand( "setColor", setColor, false, true, [ "color", "isAddToPalette" ] );
 	pi._.addSetting( "color", setColor, true, [ "color", "isAddToPalette" ] );
@@ -153,16 +218,18 @@ export function init( pi ) {
 		}
 
 		if( isAddToPalette ) {
-			screenData.fColor = screenData.screenObj.findColor(
-				colorValue, isAddToPalette
+			// Find or add color to palette
+			const colorIndex = piData.commands.findColor( screenData,
+				[ colorValue, 1, isAddToPalette ]
 			);
+			screenData.fColor = screenData.pal[ colorIndex ];
 		} else {
 			screenData.fColor = colorValue;
 		}
 
 		// Update canvas context styles for AA mode
-		screenData.context.fillStyle = colorValue.s;
-		screenData.context.strokeStyle = colorValue.s;
+		screenData.context.fillStyle = screenData.fColor.s;
+		screenData.context.strokeStyle = screenData.fColor.s;
 	}
 
 	// SET PEN SIZE - Set pen size for drawing
@@ -186,6 +253,80 @@ export function init( pi ) {
 
 		// Update canvas line width for AA mode
 		screenData.context.lineWidth = size;
+	}
+
+	// GET - Capture screen region as 2D array of palette indices
+	pi._.addCommand( "get", get, false, true,
+		[ "x1", "y1", "x2", "y2", "tolerance", "isAddToPalette" ]
+	);
+
+	function get( screenData, args ) {
+		let x1 = Math.round( args[ 0 ] );
+		let y1 = Math.round( args[ 1 ] );
+		let x2 = Math.round( args[ 2 ] );
+		let y2 = Math.round( args[ 3 ] );
+		const tolerance = args[ 4 ] != null ? args[ 4 ] : 1;
+		const isAddToPalette = !!args[ 5 ];
+
+		if( isNaN( x1 ) || isNaN( y1 ) || isNaN( x2 ) || isNaN( y2 ) ) {
+			const error = new TypeError( "get: parameters x1, x2, y1, y2 must be integers." );
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		if( isNaN( tolerance ) ) {
+			const error = new TypeError( "get: parameter tolerance must be a number." );
+			error.code = "INVALID_TOLERANCE";
+			throw error;
+		}
+
+		// Clamp coordinates
+		x1 = pi.util.clamp( x1, 0, screenData.width - 1 );
+		x2 = pi.util.clamp( x2, 0, screenData.width - 1 );
+		y1 = pi.util.clamp( y1, 0, screenData.height - 1 );
+		y2 = pi.util.clamp( y2, 0, screenData.height - 1 );
+
+		// Swap if needed
+		if( x1 > x2 ) {
+			const t = x1;
+			x1 = x2;
+			x2 = t;
+		}
+		if( y1 > y2 ) {
+			const t = y1;
+			y1 = y2;
+			y2 = t;
+		}
+
+		// Get image data
+		piData.commands.getImageData( screenData );
+
+		const imageData = screenData.imageData;
+		const data = [];
+
+		let row = 0;
+		for( let y = y1; y <= y2; y++ ) {
+			data.push( [] );
+			for( let x = x1; x <= x2; x++ ) {
+
+				// Calculate the index of the image data
+				const i = ( ( screenData.width * y ) + x ) * 4;
+				const r = imageData.data[ i ];
+				const g = imageData.data[ i + 1 ];
+				const b = imageData.data[ i + 2 ];
+				const a = imageData.data[ i + 3 ];
+
+				const color = pi.util.rgbToColor( r, g, b, a );
+				const colorIndex = piData.commands.findColor( screenData,
+					[ color, tolerance, isAddToPalette ]
+				);
+
+				data[ row ].push( colorIndex );
+			}
+			row += 1;
+		}
+
+		return data;
 	}
 }
 
