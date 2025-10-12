@@ -486,7 +486,8 @@ export function init( pi ) {
 						continue;
 					}
 
-					piData.commands.setPixel( screenData, px, py, fillColor );
+					// Set individual pixel for scanline fill (like pxCircle)
+					piData.commands.setPixelSafe( screenData, px, py, fillColor );
 				}
 			}
 		}
