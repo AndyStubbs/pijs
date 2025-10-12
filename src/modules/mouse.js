@@ -212,5 +212,140 @@ export function init( pi ) {
 			}
 		}
 	}
+
+	// GETMOUSE - Get mouse state (internal helper)
+	pi._.addCommand( "getMouse", getMouse, true, true, [] );
+
+	function getMouse( screenData ) {
+		return {
+			"x": screenData.mouse.x,
+			"y": screenData.mouse.y,
+			"lastX": screenData.mouse.lastX,
+			"lastY": screenData.mouse.lastY,
+			"buttons": screenData.mouse.buttons,
+			"action": screenData.mouse.eventType,
+			"type": "mouse"
+		};
+	}
+
+	// INPRESS - Get press state (mouse or touch)
+	pi._.addCommand( "inpress", inpress, false, true, [] );
+
+	function inpress( screenData ) {
+		// Activate the mouse and touch event listeners
+		piData.commands.startMouse( screenData );
+		piData.commands.startTouch( screenData );
+
+		if( screenData.lastEvent === "touch" ) {
+			return piData.commands.getTouchPress( screenData );
+		}
+
+		return piData.commands.getMouse( screenData );
+	}
+
+	// ONPRESS - Register press event listener
+	pi._.addCommand( "onpress", onpress, false, true,
+		[ "mode", "fn", "once", "hitBox", "customData" ]
+	);
+
+	function onpress( screenData, args ) {
+		const mode = args[ 0 ];
+		const fn = args[ 1 ];
+		const once = args[ 2 ];
+		const hitBox = args[ 3 ];
+		const customData = args[ 4 ];
+
+		const isValid = piData.commands.onevent(
+			mode, fn, once, hitBox, [ "down", "up", "move" ], "onpress",
+			screenData.onPressEventListeners, null, null, customData
+		);
+
+		// Activate the mouse and touch event listeners
+		if( isValid ) {
+			piData.commands.startMouse( screenData );
+			piData.commands.startTouch( screenData );
+			screenData.pressEventListenersActive += 1;
+		}
+	}
+
+	// OFFPRESS - Remove press event listener
+	pi._.addCommand( "offpress", offpress, false, true, [ "mode", "fn" ] );
+
+	function offpress( screenData, args ) {
+		const mode = args[ 0 ];
+		const fn = args[ 1 ];
+
+		const isValid = piData.commands.offevent(
+			mode, fn, [ "down", "up", "move" ], "offpress",
+			screenData.onPressEventListeners
+		);
+
+		if( isValid ) {
+			if( fn == null ) {
+				screenData.pressEventListenersActive = 0;
+			} else {
+				screenData.pressEventListenersActive -= 1;
+				if( screenData.pressEventListenersActive < 0 ) {
+					screenData.pressEventListenersActive = 0;
+				}
+			}
+		}
+	}
+
+	// ONCLICK - Register click event listener
+	pi._.addCommand( "onclick", onclick, false, true,
+		[ "fn", "once", "hitBox", "customData" ]
+	);
+
+	function onclick( screenData, args ) {
+		const fn = args[ 0 ];
+		const once = args[ 1 ];
+		let hitBox = args[ 2 ];
+		const customData = args[ 3 ];
+
+		if( hitBox == null ) {
+			hitBox = {
+				"x": 0,
+				"y": 0,
+				"width": piData.commands.width( screenData ),
+				"height": piData.commands.height( screenData )
+			};
+		}
+
+		const isValid = piData.commands.onevent(
+			"click", fn, once, hitBox, [ "click" ], "onclick",
+			screenData.onClickEventListeners, null, null, customData
+		);
+
+		// Activate the mouse and touch event listeners
+		if( isValid ) {
+			piData.commands.startMouse( screenData );
+			piData.commands.startTouch( screenData );
+			screenData.clickEventListenersActive += 1;
+		}
+	}
+
+	// OFFCLICK - Remove click event listener
+	pi._.addCommand( "offclick", offclick, false, true, [ "fn" ] );
+
+	function offclick( screenData, args ) {
+		const fn = args[ 0 ];
+
+		const isValid = piData.commands.offevent(
+			"click", fn, [ "click" ], "offclick",
+			screenData.onClickEventListeners
+		);
+
+		if( isValid ) {
+			if( fn == null ) {
+				screenData.clickEventListenersActive = 0;
+			} else {
+				screenData.clickEventListenersActive -= 1;
+				if( screenData.clickEventListenersActive < 0 ) {
+					screenData.clickEventListenersActive = 0;
+				}
+			}
+		}
+	}
 }
 

@@ -1072,9 +1072,21 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 - `screen.draw("B R50 R50")` - Blind move (move without drawing)
 - `screen.draw("C#FF0000 R100")` - Hex color in draw string
 
+**Additional Commands Added:**
+- `screen.clearEvents()` - Clear all event listeners
+- `screen.inpress()` - Get unified press state (mouse or touch)
+- `screen.onpress(mode, fn, once?, hitBox?, customData?)` - Press event listener
+- `screen.offpress(mode, fn?)` - Remove press listener
+- `screen.onclick(fn, once?, hitBox?, customData?)` - Click event listener
+- `screen.offclick(fn?)` - Remove click listener
+- `$.startKeyboard()` - Start keyboard event listeners (auto-starts)
+- `$.stopKeyboard()` - Stop keyboard and clear state
+- `screen.setInputCursor(char)` - Set input prompt cursor character
+- `$.setPinchZoom(bool)` - Enable/disable pinch zoom on mobile
+
 **Bundle Size:**
-- Unminified: 232.59 KB (+11.15 KB from Phase 16)
-- Minified: 112.44 KB (+4.67 KB from Phase 16)
+- Unminified: 243.55 KB (+22.11 KB from Phase 16)
+- Minified: 116.65 KB (+8.88 KB from Phase 16)
 
 **Implementation Notes:**
 - Default 256-color CGA palette initialized on startup

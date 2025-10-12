@@ -734,5 +734,70 @@ export function init( pi ) {
 
 		m_inputQueueIndex = 0;
 	}
+
+	// STARTKEYBOARD - Start keyboard event listeners
+	pi._.addCommand( "startKeyboard", startKeyboard, false, false, [] );
+
+	function startKeyboard() {
+		// This is a no-op since keyboard events start automatically
+		// Kept for API compatibility
+		return true;
+	}
+
+	// STOPKEYBOARD - Stop keyboard event listeners
+	pi._.addCommand( "stopKeyboard", stopKeyboard, false, false, [] );
+
+	function stopKeyboard() {
+		// Clear all keyboard state
+		m_keys = {};
+		m_keyKeys = {};
+		m_keyCodes = {};
+		m_inputs = [];
+		m_onkeyListeners = {};
+		m_onKeyCombos = {};
+		return true;
+	}
+
+	// SETINPUTCURSOR - Set the cursor character for input prompt
+	pi._.addCommand( "setInputCursor", setInputCursor, false, true, [ "cursor" ] );
+	pi._.addSetting( "inputCursor", setInputCursor, true, [ "cursor" ] );
+
+	function setInputCursor( screenData, args ) {
+		let cursor = args[ 0 ];
+
+		if( pi.util.isInteger( cursor ) ) {
+			cursor = String.fromCharCode( cursor );
+		}
+
+		if( typeof cursor !== "string" ) {
+			const error = new TypeError( "setInputCursor: cursor must be a string or integer" );
+			error.code = "INVALID_CURSOR";
+			throw error;
+		}
+
+		const font = screenData.printCursor.font;
+
+		if( font.mode === "pixel" ) {
+			// Check if character exists in pixel font charset
+			if( font.charset ) {
+				let badChar = true;
+				for( let i = 0; i < font.charset.length; i++ ) {
+					if( font.charset.charAt( i ) === cursor ) {
+						badChar = false;
+						break;
+					}
+				}
+
+				if( badChar ) {
+					console.warn(
+						`setInputCursor: cursor "${cursor}" not found in current font charset`
+					);
+					return;
+				}
+			}
+		}
+
+		screenData.printCursor.prompt = cursor;
+	}
 }
 

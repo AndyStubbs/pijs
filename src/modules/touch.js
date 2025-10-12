@@ -222,5 +222,76 @@ export function init( pi ) {
 			}
 		}
 	}
+
+	// GETTOUCHPRESS - Get touch press state (internal helper)
+	pi._.addCommand( "getTouchPress", getTouchPress, true, true, [] );
+
+	function getTouchPress( screenData ) {
+		function copyTouches( touches, touchArr, action ) {
+			for( const i in touches ) {
+				const touch = touches[ i ];
+				const touchData = {
+					"x": touch.x,
+					"y": touch.y,
+					"id": touch.id,
+					"lastX": touch.lastX,
+					"lastY": touch.lastY,
+					"action": touch.action,
+					"type": "touch"
+				};
+
+				if( action !== undefined ) {
+					touch.action = action;
+				}
+
+				touchArr.push( touchData );
+			}
+		}
+
+		const touchArr = [];
+
+		copyTouches( screenData.touches, touchArr );
+
+		if( touchArr.length === 0 ) {
+			copyTouches( screenData.lastTouches, touchArr, "up" );
+		}
+
+		if( touchArr.length > 0 ) {
+			const touchData = touchArr[ 0 ];
+			if( touchData.action === "up" ) {
+				touchData.buttons = 0;
+			} else {
+				touchData.buttons = 1;
+			}
+
+			touchData.touches = touchArr;
+			return touchData;
+		}
+
+		return {
+			"x": -1,
+			"y": -1,
+			"id": -1,
+			"lastX": -1,
+			"lastY": -1,
+			"action": "none",
+			"buttons": 0,
+			"type": "touch"
+		};
+	}
+
+	// SETPINCHZOOM - Enable/disable pinch zoom
+	pi._.addCommand( "setPinchZoom", setPinchZoom, false, false, [ "isEnabled" ] );
+	pi._.addSetting( "pinchZoom", setPinchZoom, false, [ "isEnabled" ] );
+
+	function setPinchZoom( args ) {
+		const isEnabled = !!args[ 0 ];
+
+		if( isEnabled ) {
+			document.body.style.touchAction = "";
+		} else {
+			document.body.style.touchAction = "none";
+		}
+	}
 }
 

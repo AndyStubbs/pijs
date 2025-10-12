@@ -9,6 +9,164 @@
 export function init( pi ) {
 	const piData = pi._.data;
 
+	// ONEVENT - Helper for adding event listeners (internal)
+	pi._.addCommand( "onevent", onevent, true, true, [] );
+
+	function onevent( mode, fn, once, hitBox, modes, name, listenerArr, extraId,
+		extraData, customData
+	) {
+		// Make sure mode is valid
+		let modeFound = false;
+
+		for( let i = 0; i < modes.length; i++ ) {
+			if( mode === modes[ i ] ) {
+				modeFound = true;
+				break;
+			}
+		}
+
+		if( !modeFound ) {
+			const error = new TypeError(
+				`${name}: mode needs to be one of the following ${modes.join( ", " )}`
+			);
+			error.code = "INVALID_MODE";
+			throw error;
+		}
+
+		// Make sure once is a boolean
+		once = !!once;
+
+		// Make sure function is valid
+		if( !pi.util.isFunction( fn ) ) {
+			const error = new TypeError( `${name}: fn is not a valid function` );
+			error.code = "INVALID_CALLBACK";
+			throw error;
+		}
+
+		// Validate hitbox
+		if( hitBox ) {
+			if(
+				!pi.util.isInteger( hitBox.x ) ||
+				!pi.util.isInteger( hitBox.y ) ||
+				!pi.util.isInteger( hitBox.width ) ||
+				!pi.util.isInteger( hitBox.height )
+			) {
+				const error = new TypeError(
+					`${name}: hitbox must have properties x, y, width, and height whose values are integers`
+				);
+				error.code = "INVALID_HITBOX";
+				throw error;
+			}
+		}
+
+		// Prevent event from being triggered in case event is called in an event
+		setTimeout( function() {
+			const originalFn = fn;
+			let newMode;
+
+			// Add extraId to mode
+			if( typeof extraId === "string" ) {
+				newMode = mode + extraId;
+			} else {
+				newMode = mode;
+			}
+
+			// If it's a one time function
+			if( once ) {
+				fn = function( data, customData ) {
+					offevent( mode, originalFn, modes, name, listenerArr, extraId );
+					originalFn( data, customData );
+				};
+			}
+
+			if( !listenerArr[ newMode ] ) {
+				listenerArr[ newMode ] = [];
+			}
+
+			listenerArr[ newMode ].push( {
+				"fn": fn,
+				"hitBox": hitBox,
+				"extraData": extraData,
+				"clickDown": false,
+				"originalFn": originalFn,
+				"customData": customData
+			} );
+		}, 1 );
+
+		return true;
+	}
+
+	// OFFEVENT - Helper for removing event listeners (internal)
+	pi._.addCommand( "offevent", offevent, true, true, [] );
+
+	function offevent( mode, fn, modes, name, listenerArr, extraId ) {
+		// Make sure mode is valid
+		let modeFound = false;
+
+		for( let i = 0; i < modes.length; i++ ) {
+			if( mode === modes[ i ] ) {
+				modeFound = true;
+				break;
+			}
+		}
+
+		if( !modeFound ) {
+			const error = new TypeError(
+				`${name}: mode needs to be one of the following ${modes.join( ", " )}`
+			);
+			error.code = "INVALID_MODE";
+			throw error;
+		}
+
+		// Add extraId to mode
+		if( typeof extraId === "string" ) {
+			mode += extraId;
+		}
+
+		// Validate fn
+		const isClear = fn == null;
+		if( !isClear && !pi.util.isFunction( fn ) ) {
+			const error = new TypeError( `${name}: fn is not a valid function` );
+			error.code = "INVALID_CALLBACK";
+			throw error;
+		}
+
+		if( listenerArr[ mode ] ) {
+			if( isClear ) {
+				delete listenerArr[ mode ];
+			} else {
+				for( let i = listenerArr[ mode ].length - 1; i >= 0; i-- ) {
+					if( listenerArr[ mode ][ i ].originalFn === fn ) {
+						listenerArr[ mode ].splice( i, 1 );
+					}
+
+					if( listenerArr[ mode ].length === 0 ) {
+						delete listenerArr[ mode ];
+					}
+				}
+			}
+			return true;
+		}
+
+		return false;
+	}
+
+	// CLEAREVENTS - Clear all event listeners
+	pi._.addCommand( "clearEvents", clearEvents, false, true, [] );
+
+	function clearEvents( screenData ) {
+		// Reset all event listeners
+		screenData.onMouseEventListeners = {};
+		screenData.onTouchEventListeners = {};
+		screenData.onPressEventListeners = {};
+		screenData.onClickEventListeners = {};
+		screenData.mouseEventListenersActive = 0;
+		screenData.touchEventListenersActive = 0;
+		screenData.pressEventListenersActive = 0;
+		screenData.clickEventListenersActive = 0;
+		screenData.lastEvent = null;
+	}
+
 	// Remove the screen from the page and memory
 	pi._.addCommand( "removeScreen", removeScreen, false, true, [] );
 
