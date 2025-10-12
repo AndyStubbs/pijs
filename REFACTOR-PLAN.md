@@ -1006,10 +1006,12 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 - `.legacy/src/pi-pal.js` (51 lines)
 - `.legacy/src/pi-screen-commands.js` (palette commands section)
 - `.legacy/src/pi-screen-graphics.js` (palette commands section)
+- `.legacy/src/pi-screen-draw.js` (221 lines) - DRAW command
 
 **New Files:**
 - Default palette in `src/core/pi-data.js`
 - Palette commands in `src/modules/core-commands.js` and `src/modules/screen-commands.js`
+- `src/modules/draw.js` (239 lines) - DRAW command
 
 **Tasks:**
 
@@ -1033,6 +1035,16 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
    - [x] Pen types: pixel, square, circle
    - [x] Blend modes: normal, blend
 
+4. DRAW command (turtle graphics) ✅ COMPLETE
+   - [x] `screen.draw(drawString)` - QBasic-style drawing strings
+   - [x] Direction commands: U/D/L/R (cardinal), E/F/G/H (diagonal)
+   - [x] Color commands: C n (palette), C#RRGGBB (hex)
+   - [x] Position: M x,y (move absolute)
+   - [x] Angle: TA n or T n (turn angle in degrees)
+   - [x] Modifiers: B (blind move), N (return after)
+   - [x] Paint: P n (flood fill)
+   - [x] Arc: A radius,start,end
+
 **Acceptance Criteria:** ✅ ALL MET
 - [x] Palette commands work
 - [x] Color mapping correct
@@ -1054,10 +1066,15 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 - `screen.setPen("circle", 3, [-1,1,-1,1])` - Pen with noise effect
 - `screen.setBlendMode("normal")` - Direct pixel replacement
 - `screen.setBlendMode("blend")` - Alpha blending
+- `screen.draw("U50 R50 D50 L50")` - Turtle graphics (draw square)
+- `screen.draw("M 100,100 C14 U50")` - Move, change color, draw
+- `screen.draw("TA 45 U50")` - Turn angle and draw
+- `screen.draw("B R50 R50")` - Blind move (move without drawing)
+- `screen.draw("C#FF0000 R100")` - Hex color in draw string
 
 **Bundle Size:**
-- Unminified: 226.67 KB (+5.23 KB from Phase 16)
-- Minified: 110.29 KB (+2.52 KB from Phase 16)
+- Unminified: 232.59 KB (+11.15 KB from Phase 16)
+- Minified: 112.44 KB (+4.67 KB from Phase 16)
 
 **Implementation Notes:**
 - Default 256-color CGA palette initialized on startup
@@ -1074,7 +1091,10 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 - **Critical Bug Fix:** Alpha blending now properly sets result alpha channel (was leaving pixels transparent!)
 - Alpha blend formula: `result_alpha = source_alpha + dest_alpha * (1 - source_alpha)`
 - Without this fix, blended pixels had correct RGB but alpha=0, making them invisible
-- Bundle size: 226.67 KB unminified, 110.29 KB minified
+- **DRAW Command:** QBasic-compatible turtle graphics for path drawing
+- DRAW parser supports all QBasic commands (U/D/L/R/E/F/G/H/M/C/T/B/N/P/A)
+- Maintains screen cursor position (x, y) and angle for relative drawing
+- Bundle size: 232.59 KB unminified, 112.44 KB minified (includes DRAW)
 
 ---
 
