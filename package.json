@@ -9,11 +9,8 @@
 	"scripts": {
 		"build": "node scripts/build.js",
 		"test": "playwright test",
-		"test:headed": "playwright test --headed",
-		"test:ui": "playwright test --ui",
-		"test:verbose": "playwright test --reporter=list",
-		"server": "node server.js",
-		"dev": "node scripts/build.js && node server.js"
+		"test:grep": "playwright test --grep",
+		"server": "node server.js"
 	},
 	"repository": {
 		"type": "git",
