@@ -30,7 +30,7 @@ function generateResultsPage( results ) {
 	html = html.replace( "{{FAILED}}", results.failed );
 	html = html.replace( "{{SKIPPED}}", results.skipped );
 	html = html.replace( "{{PASS_RATE}}", passRate );
-	html = html.replace( "{{PASS_RATE_COLOR}}", passRateColor );
+	html = html.replace( "var(--pass-rate-color)", passRateColor );
 
 	// Build failed tests HTML
 	let failedHTML = "";
