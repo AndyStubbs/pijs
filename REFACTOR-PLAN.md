@@ -848,78 +848,155 @@ Complete refactor to modern, modular architecture while maintaining **100% API c
 
 ---
 
-### Phase 15: Sound System
+### Phase 15: Sound System ✅ COMPLETE
 
 **Legacy Files:**
 - `.legacy/src/pi-sound.js` (582 lines)
 
 **New Files:**
-- `src/modules/sound.js`
+- `src/modules/sound.js` (426 lines)
 
 **Tasks:**
 
-1. WebAudio setup
-   - [ ] Audio context creation
-   - [ ] Gain node for volume
-   - [ ] Audio routing
+1. WebAudio setup ✅ COMPLETE
+   - [x] Audio context creation (lazy initialization)
+   - [x] Gain node for volume control
+   - [x] Audio routing (oscillator → envelope → master → destination)
+   - [x] Master volume control
 
-2. Sound loading
-   - [ ] `loadSound(url)` - load sound file
-   - [ ] Sound caching
-   - [ ] Async loading
-   - [ ] Error handling
+2. Sound loading ✅ COMPLETE
+   - [x] `createAudioPool(src, poolSize)` - load sound file with pooling
+   - [x] Sound caching in audio pools
+   - [x] Async loading with wait/resume
+   - [x] Error handling with retry logic (3 attempts)
+   - [x] `deleteAudioPool(id)` - cleanup audio resources
 
-3. Sound playback
-   - [ ] `playSound(name)` - play loaded sound
-   - [ ] Loop support
-   - [ ] Volume control
-   - [ ] Stop/pause functions
+3. Sound playback ✅ COMPLETE
+   - [x] `playAudioPool(id, volume?, startTime?, duration?)` - play loaded sound
+   - [x] Pool rotation for multiple simultaneous plays
+   - [x] Volume control per sound
+   - [x] Start time and duration control
+   - [x] `stopAudioPool(id?)` - stop audio pools
 
-4. Sound generation
-   - [ ] `beep(freq, duration)` - generate tone
-   - [ ] Waveform selection
-   - [ ] ADSR envelope
+4. Sound generation ✅ COMPLETE
+   - [x] `sound(freq, duration, vol?, type?, delay?, attack?, decay?)` - generate tone
+   - [x] Waveform selection (sine, square, sawtooth, triangle)
+   - [x] Custom waveforms (periodic wave tables)
+   - [x] ADSR envelope (attack, sustain, decay)
+   - [x] `stopSound(id?)` - stop generated sounds
 
-**Acceptance Criteria:**
-- [ ] Load sound files
-- [ ] Play sounds
-- [ ] Volume control works
-- [ ] Multiple sounds play
-- [ ] Generation works
+5. Volume management ✅ COMPLETE
+   - [x] `setVolume(volume)` - global master volume
+   - [x] Real-time volume updates for active sounds
+   - [x] Smooth volume ramping
+
+**Acceptance Criteria:** ✅ ALL MET
+- [x] Load sound files via audio pools
+- [x] Play sounds with pooling for overlap
+- [x] Volume control works globally and per-sound
+- [x] Multiple sounds play simultaneously
+- [x] Sound generation with ADSR works
+- [x] Waveform types selectable
+
+**What Now Works:**
+- `$.sound(440, 1)` - Generate 440Hz tone for 1 second
+- `$.sound(440, 1, 0.5, "sine")` - Sine wave at 50% volume
+- `$.sound(440, 1, 1, "square", 0, 0.1, 0.2)` - With attack/decay envelope
+- `$.createAudioPool(url, 5)` - Load sound file with 5-sound pool
+- `$.playAudioPool(id, 1, 0, 2)` - Play sound at full volume for 2 seconds
+- `$.stopAudioPool(id)` - Stop specific pool
+- `$.stopSound(id)` - Stop specific generated sound
+- `$.setVolume(0.5)` - Set master volume to 50%
+- Custom waveforms via periodic wave tables
+- Retry logic for failed audio loads
 
 ---
 
-### Phase 16: PLAY Command
+### Phase 16: PLAY Command ✅ COMPLETE
 
 **Legacy Files:**
 - `.legacy/src/pi-play.js` (645 lines)
 
 **New Files:**
-- `src/modules/play.js`
+- `src/modules/play.js` (387 lines)
 
 **Tasks:**
 
-1. PLAY string parser
-   - [ ] Note parsing (C, D, E, etc.)
-   - [ ] Octave parsing (O1-O7)
-   - [ ] Length parsing (L1-L64)
-   - [ ] Tempo parsing (T32-T255)
+1. PLAY string parser ✅ COMPLETE
+   - [x] Note parsing (C, D, E, F, G, A, B with sharps/flats)
+   - [x] Octave parsing (O0-O7)
+   - [x] Note by number (N0-N84)
+   - [x] Length parsing (L1-L64)
+   - [x] Tempo parsing (T32-T255)
+   - [x] Pause command (P1-P64)
+   - [x] Octave shortcuts (< and >)
+   - [x] Dotted notes (. for 1.5x, .. for 1.75x)
+   - [x] Volume control (V0-V100)
+   - [x] ADSR envelope control (MA, MT, MD for attack/sustain/decay %)
+   - [x] Waveform selection (SQUARE, SINE, TRIANGLE, SAWTOOTH)
+   - [x] Custom wavetables ([[real],[imag]])
 
-2. Music generation
-   - [ ] Note to frequency conversion
-   - [ ] Duration calculation
-   - [ ] Sequence playback
+2. Music generation ✅ COMPLETE
+   - [x] Note to frequency conversion (12-note chromatic scale)
+   - [x] Duration calculation based on tempo and note length
+   - [x] Sequence playback with timing
+   - [x] ADSR envelope application
 
-3. QBasic compatibility
-   - [ ] PLAY command syntax
-   - [ ] ML (music legato) support
-   - [ ] MN (music normal) support
-   - [ ] MS (music staccato) support
+3. QBasic compatibility ✅ COMPLETE
+   - [x] PLAY command syntax parsing
+   - [x] ML (music legato) support - full note duration
+   - [x] MN (music normal) support - 87.5% of note (default)
+   - [x] MS (music staccato) support - 75% of note
+   - [x] Sharp (+) and flat (-) notation
+   - [x] Dot notation for dotted notes
 
-**Acceptance Criteria:**
-- [ ] PLAY strings parse
-- [ ] Music plays correctly
-- [ ] QBasic syntax compatible
+**Acceptance Criteria:** ✅ ALL MET
+- [x] PLAY strings parse correctly
+- [x] Music plays with correct timing
+- [x] QBasic syntax compatible
+- [x] Multiple octaves supported
+- [x] Tempo and length commands work
+
+**What Now Works:**
+- `$.play("L4 O4 C D E F G A B O5 C")` - Scale
+- `$.play("T120 L8 C E G O5 C O4 G E C")` - Melody with tempo
+- `$.play("O4 C4 E4 G2")` - Notes with individual lengths
+- `$.play("C. D. E.")` - Dotted notes (1.5x duration)
+- `$.play("C.. D.. E..")` - Double dotted notes (1.75x duration)
+- `$.play("V50 C V100 D")` - Volume control (0-100%)
+- `$.play("MA50 MT80 MD20 C D E")` - ADSR envelope control
+- `$.play("MF C D E")` - Full note mode (no gaps between notes)
+- `$.play("ML C D E")` - Legato (full notes)
+- `$.play("MS C D E")` - Staccato (short notes)
+- `$.play("SQUARE C SINE D TRIANGLE E")` - Waveform selection
+- `$.play("[[0,0.8,0.2,1],[1,0,1,0]] C D E")` - Custom wavetables
+- `$.play("C# D# F# G#")` - Sharps
+- `$.play("D- E- A- B-")` - Flats
+- `$.play("< C > C")` - Octave up/down shortcuts
+- `$.play("P4 C P4 D")` - Pauses
+- `$.play("N48 N52 N55")` - Notes by number (N0-N84)
+- `$.stopPlay()` - Stop all PLAY tracks
+- Note frequencies from A0 (27.5Hz) to G#9 (13289Hz)
+
+**Bundle Size:**
+- Unminified: 222.88 KB (+38.81 KB from Phase 14)
+- Minified: 108.38 KB (+14.54 KB from Phase 14)
+
+**Implementation Notes:**
+- WebAudio API for all sound generation
+- HTML5 Audio for sound file playback (more compatible)
+- Audio pools prevent sound file reloading for rapid-fire sounds
+- Enhanced PLAY parser with custom tokenizer (supports all QBasic features)
+- Dotted note support (. = 1.5x, .. = 1.75x, ... = progressive)
+- Per-note volume control (V0-V100)
+- Per-note ADSR envelope control (MA, MT, MD 0-100%)
+- Waveform switching mid-song (SQUARE, SINE, TRIANGLE, SAWTOOTH)
+- Custom wavetable support for unique sounds
+- ADSR envelope for realistic note articulation
+- Tempo in BPM (beats per minute), converted to seconds per beat
+- Note length as fraction of whole note (L4 = quarter note)
+- Music styles affect note duration (legato, normal, staccato)
+- Full note mode (MF) for gapless playback
 
 ---
 
@@ -1202,10 +1279,12 @@ Third-party plugins can extend Pi.js by using the internal API:
 - [x] Phase 12: Mouse Input ✅ **COMPLETE**
 - [x] Phase 13: Touch Input ✅ **COMPLETE**
 - [x] Phase 14: Gamepad Input ✅ **COMPLETE**
-- [ ] Phase 15: Sound System 🔄 **NEXT**
-- [ ] Phase 16-20: Remaining phases
+- [x] Phase 15: Sound System ✅ **COMPLETE**
+- [x] Phase 16: PLAY Command ✅ **COMPLETE**
+- [ ] Phase 17: Palette System 🔄 **NEXT**
+- [ ] Phase 18-20: Testing, docs, release
 
-**Progress:** 14 of 21 phases complete (67%)
+**Progress:** 16 of 21 phases complete (76%)
 
 ### Code Statistics
 - **Legacy:** ~200KB, 10,000+ lines, 265+ commands
@@ -1233,12 +1312,12 @@ The refactor is complete when:
 
 ## Next Steps
 
-**Current Focus:** Phase 15 (Sound System) - HIGH PRIORITY
+**Current Focus:** Phase 17-20 (Final Stretch!) - CRITICAL PRIORITY
 
-1. Implement WebAudio setup and sound loading
-2. Then Phase 16 (PLAY Command) for music notation
-3. Then Phase 17 (Extended Palette System)
-4. Final phases: Testing, docs, release
+1. Phase 17: Extended Palette System (if needed)
+2. Phase 18: Testing & Bug Fixing - Run all visual regression tests
+3. Phase 19: Documentation - API reference, migration guide, examples
+4. Phase 20: Release Preparation - Version bump, changelog, publish
 
 **Quick Wins:**
 - ✅ Core + screen working → can create screens
@@ -1249,7 +1328,8 @@ The refactor is complete when:
 - ✅ Text/fonts working → can print text
 - ✅ Tables working → can format data
 - ✅ Input working → can interact! 🎯 (Keyboard, Mouse, Touch, Gamepad)
-- **Next:** Get sound working → can add audio! 🔊
+- ✅ Sound working → can add audio! 🔊 (Sound, PLAY)
+- **Next:** Polish and release! 🚀
 
 ---
 

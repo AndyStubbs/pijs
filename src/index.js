@@ -27,6 +27,8 @@ import * as keyboard from "./modules/keyboard.js";
 import * as mouse from "./modules/mouse.js";
 import * as touch from "./modules/touch.js";
 import * as gamepad from "./modules/gamepad.js";
+import * as sound from "./modules/sound.js";
+import * as play from "./modules/play.js";
 import { loadBuiltInFonts } from "./assets/font-data.js";
 
 // Version injected during build from package.json
@@ -118,6 +120,8 @@ keyboard.init( pi );
 mouse.init( pi );
 touch.init( pi );
 gamepad.init( pi );
+sound.init( pi );
+play.init( pi );
 core.init( pi );
 
 // Initialize default palette (must be after core.init which registers setDefaultPal)
