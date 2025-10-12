@@ -62,7 +62,7 @@ function parseTOML( content ) {
 }
 
 // Compare two PNG images
-function compareImages( img1Path, img2Path, threshold = 0.1 ) {
+function compareImages( img1Path, img2Path, threshold = 0.01 ) {
 	if( !fs.existsSync( img1Path ) || !fs.existsSync( img2Path ) ) {
 		return { "match": false, "error": "Missing image file" };
 	}

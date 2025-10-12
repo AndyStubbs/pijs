@@ -201,7 +201,7 @@ export function init( pi ) {
 
 		// Fill the circle first if needed (draw horizontal lines)
 		if( isFill ) {
-			const r = radius - 1;
+			const r = radius - 1; // Use same radius as outline
 			const rSquared = r * r;
 
 			// Draw horizontal lines for each row of the circle
@@ -223,35 +223,36 @@ export function init( pi ) {
 						continue;
 					}
 
-					piData.commands.setPixel( screenData, px, py, fillColor );
+					// Set individual pixel for scanline fill
+					piData.commands.setPixelSafe( screenData, px, py, fillColor );
 				}
 			}
 		}
 
-		// Now draw the outline
-		radius -= 1;
-		let x2 = radius;
+		// Draw the outline after fill (outline will overwrite fill pixels on border)
+		const outlineRadius = radius - 1;
+		let x2 = outlineRadius;
 		let y2 = 0;
 
 		// Midpoint circle algorithm - Only print initial points if r > 0
-		if( radius > 1 ) {
+		if( outlineRadius > 1 ) {
 			screenData.pen.draw( screenData, x2 + x, y2 + y, color );
 			screenData.pen.draw( screenData, -x2 + x, y2 + y, color );
 			screenData.pen.draw( screenData, x, x2 + y, color );
 			screenData.pen.draw( screenData, x, -x2 + y, color );
-		} else if( radius === 1 ) {
+		} else if( outlineRadius === 1 ) {
 			screenData.pen.draw( screenData, x + 1, y, color );
 			screenData.pen.draw( screenData, x - 1, y, color );
 			screenData.pen.draw( screenData, x, y + 1, color );
 			screenData.pen.draw( screenData, x, y - 1, color );
 			y2 = x2 + 1;
-		} else if( radius === 0 ) {
+		} else if( outlineRadius === 0 ) {
 			screenData.pen.draw( screenData, x, y, color );
 			y2 = x2 + 1;
 		}
 
 		// Initialize decision parameter
-		let midPoint = 1 - radius;
+		let midPoint = 1 - outlineRadius;
 
 		while( x2 > y2 ) {
 			y2 += 1;
@@ -295,6 +296,11 @@ export function init( pi ) {
 			throw error;
 		}
 
+		// Ensure radius is not negative
+		if( r < 0 ) {
+			r = 0;
+		}
+
 		// Check for fill
 		let isFill = false;
 		if( fillColor != null ) {
@@ -308,17 +314,21 @@ export function init( pi ) {
 		screenData.screenObj.render();
 
 		const ctx = screenData.context;
+		const strokeColor = screenData.fColor.s;
 
+		// Create single path for both fill and stroke
+		ctx.beginPath();
+		ctx.arc( x, y, r, 0, Math.PI * 2 );
+
+		// Draw fill first if needed
 		if( isFill ) {
 			ctx.fillStyle = fillColor.s;
-			ctx.beginPath();
-			ctx.arc( x, y, r, 0, Math.PI * 2 );
 			ctx.fill();
-		} else {
-			ctx.beginPath();
-			ctx.arc( x, y, r, 0, Math.PI * 2 );
-			ctx.stroke();
 		}
+
+		// Always draw the outline stroke
+		ctx.strokeStyle = strokeColor;
+		ctx.stroke();
 	}
 
 	// RECT - Draw rectangle
