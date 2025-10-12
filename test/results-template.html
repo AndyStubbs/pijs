@@ -126,6 +126,26 @@
 		.close-btn:hover {
 			background: #d32f2f;
 		}
+		.reset-base-btn {
+			background: #FFC107;
+			color: #000;
+			border: none;
+			padding: 10px 20px;
+			border-radius: 3px;
+			cursor: pointer;
+			font-family: monospace;
+			font-weight: bold;
+			font-size: 16px;
+			margin-right: 10px;
+		}
+		.reset-base-btn:hover {
+			background: #FFD54F;
+		}
+		.reset-base-btn:disabled {
+			background: #666;
+			color: #999;
+			cursor: not-allowed;
+		}
 		.screenshots-modal {
 			display: flex;
 			gap: 20px;
@@ -286,7 +306,10 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<h2 id="modalTitle">Screenshot Comparison</h2>
-				<button class="close-btn" onclick="closeModal()">Close (ESC)</button>
+				<div>
+					<button class="reset-base-btn" id="resetBaseBtn" onclick="resetBaseImage()">Reset Base Image</button>
+					<button class="close-btn" onclick="closeModal()">Close (ESC)</button>
+				</div>
 			</div>
 			<div class="screenshots-modal">
 				<div class="screenshot-container">
@@ -312,6 +335,148 @@
 	</div>
 
 	<script>
+		// Store current baseName for reset operation
+		let currentBaseName = null;
+		
+		// Check if new screenshots exist for failed tests on page load
+		window.addEventListener( "DOMContentLoaded", function() {
+			checkMissingScreenshots();
+		} );
+		
+		async function checkMissingScreenshots() {
+			const failedTests = document.querySelectorAll( ".test-item.failed" );
+			let movedCount = 0;
+			
+			for( const testItem of failedTests ) {
+
+				// Extract baseName from the View Comparison button
+				const viewBtn = testItem.querySelector( ".view-diff-btn" );
+				if( !viewBtn ) continue;
+				
+				const onclickAttr = viewBtn.getAttribute( "onclick" );
+				const match = onclickAttr.match( /showDiffModal\([^,]+,\s*'([^']+)'/ );
+				if( !match ) continue;
+				
+				const baseName = match[ 1 ];
+				const newPath = `/test/tests/screenshots/new/${baseName}.png`;
+				
+				// Check if new screenshot exists
+				try {
+					const response = await fetch( newPath, { "method": "HEAD" } );
+					if( response.status === 404 ) {
+
+						// New screenshot doesn't exist - convert to skipped
+						testItem.classList.remove( "failed" );
+						testItem.classList.add( "skipped" );
+						testItem.style.borderLeftColor = "#FFC107";
+						
+						// Update status badge
+						const statusBadge = testItem.querySelector( ".test-status" );
+						if( statusBadge ) {
+							statusBadge.classList.remove( "status-failed" );
+							statusBadge.classList.add( "status-skipped" );
+							statusBadge.textContent = "SKIPPED";
+						}
+						
+						// Update error message
+						const errorMsg = testItem.querySelector( ".error-msg" );
+						if( errorMsg ) {
+							errorMsg.textContent = "Base image was reset - re-run tests";
+							errorMsg.style.color = "#FFC107";
+						}
+						
+						// Remove View Comparison button
+						if( viewBtn ) {
+							viewBtn.remove();
+						}
+						
+						movedCount++;
+					}
+				} catch( err ) {
+					console.error( `Error checking ${newPath}:`, err );
+				}
+			}
+			
+			// Update counts if any tests were moved
+			if( movedCount > 0 ) {
+				updateTestCounts( movedCount );
+			}
+		}
+		
+		function updateTestCounts() {
+
+			// Get all skipped tests that were just converted
+			const convertedSkippedTests = [];
+			document.querySelectorAll( ".test-item.skipped" ).forEach( test => {
+				if( test.parentElement && test.parentElement.id === "list-failed" ) {
+					convertedSkippedTests.push( test );
+				}
+			} );
+			
+			// Update failed count
+			const failedList = document.getElementById( "list-failed" );
+			if( failedList ) {
+				const failedCount = failedList.querySelectorAll( ".test-item.failed" ).length;
+				const failedHeader = failedList.previousElementSibling;
+				if( failedHeader && failedHeader.querySelector( "h2" ) ) {
+					const h2 = failedHeader.querySelector( "h2" );
+					h2.textContent = `Failed Tests (${failedCount})`;
+					
+					// Hide section if no failed tests
+					if( failedCount === 0 ) {
+						failedList.closest( ".summary" ).style.display = "none";
+					}
+				}
+				const failedStat = document.querySelector( ".stat-failed" );
+				failedStat.textContent = failedCount;
+			}
+			
+			// Handle skipped section
+			let skippedList = document.getElementById( "list-skipped" );
+			
+			// Create skipped section if it doesn't exist
+			if( !skippedList && convertedSkippedTests.length > 0 ) {
+				const failSection = document.getElementById( "list-failed" ).closest( ".summary" );
+				const skippedSection = document.createElement( "div" );
+				skippedSection.className = "summary";
+				skippedSection.innerHTML = `
+					<div class="section-header" onclick="toggleSection('skipped')">
+						<h2 style="color: #FFC107;">Skipped Tests (0)</h2>
+						<span class="toggle-icon" id="toggle-skipped">▼</span>
+					</div>
+					<div class="test-list" id="list-skipped"></div>
+				`;
+				
+				// Insert after failed section or at the end
+				if( failSection.nextElementSibling ) {
+					failSection.parentElement.insertBefore(
+						skippedSection, failSection.nextElementSibling
+					);
+				} else {
+					failSection.parentElement.appendChild( skippedSection );
+				}
+				
+				skippedList = document.getElementById( "list-skipped" );
+			}
+			
+			// Move converted tests to skipped section
+			if( skippedList ) {
+				convertedSkippedTests.forEach( test => {
+					skippedList.appendChild( test );
+				} );
+				
+				// Update skipped count
+				const skippedCount = skippedList.querySelectorAll( ".test-item.skipped" ).length;
+				const skippedHeader = skippedList.previousElementSibling;
+				if( skippedHeader && skippedHeader.querySelector( "h2" ) ) {
+					const h2 = skippedHeader.querySelector( "h2" );
+					h2.textContent = `Skipped Tests (${skippedCount})`;
+				}
+				const skippedStat = document.querySelector( ".stat-skipped" );
+				skippedStat.textContent = skippedCount;
+			}
+		}
+		
 		function toggleSection( section ) {
 			const list = document.getElementById( "list-" + section );
 			const icon = document.getElementById( "toggle-" + section );
@@ -321,6 +486,9 @@
 		}
 		
 		function showDiffModal( testName, baseName, refPath, newPath ) {
+
+			// Store baseName for reset operation
+			currentBaseName = baseName;
 			const modal = document.getElementById( "diffModal" );
 			const modalTitle = document.getElementById( "modalTitle" );
 			const modalRefImg = document.getElementById( "modalRefImg" );
@@ -403,9 +571,60 @@
 			} );
 		}
 		
+		function resetBaseImage() {
+			if( !currentBaseName ) {
+				alert( "No test selected" );
+				return;
+			}
+			
+			// Confirm with user
+			const confirmed = confirm( 
+				`Are you sure you want to reset the base image for "${currentBaseName}"?\n\n` +
+				`This will replace the reference screenshot with the current test output.\n` +
+				`The test will pass on the next run.`
+			);
+			
+			if( !confirmed ) {
+				return;
+			}
+			
+			// Disable button during request
+			const resetBtn = document.getElementById( "resetBaseBtn" );
+			resetBtn.disabled = true;
+			resetBtn.textContent = "Resetting...";
+			
+			// Send POST request to server
+			fetch( "/api/reset-base-image", {
+				"method": "POST",
+				"headers": {
+					"Content-Type": "application/json"
+				},
+				"body": JSON.stringify( { "baseName": currentBaseName } )
+			} )
+			.then( response => response.json() )
+			.then( data => {
+				if( data.success ) {
+										
+					// Reload the page - the test will be auto-marked as skipped
+					location.reload();
+				} else {
+					alert( `Error: ${data.error}` );
+				}
+			} )
+			.catch( err => {
+				alert( `Error resetting base image: ${err.message}` );
+			} )
+			.finally( () => {
+				// Re-enable button
+				resetBtn.disabled = false;
+				resetBtn.textContent = "Reset Base Image";
+			} );
+		}
+		
 		function closeModal() {
 			const modal = document.getElementById( "diffModal" );
 			modal.classList.remove( "visible" );
+			currentBaseName = null;
 		}
 		
 		// Close modal on ESC key

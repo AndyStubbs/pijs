@@ -138,6 +138,70 @@ function generateDirectoryListing( dirPath, urlPath ) {
 const server = http.createServer( ( req, res ) => {
 	console.log( `${req.method} ${req.url}` );
 
+	// Handle CORS preflight
+	if( req.method === "OPTIONS" ) {
+		res.writeHead( 200, {
+			"Access-Control-Allow-Origin": "*",
+			"Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+			"Access-Control-Allow-Headers": "Content-Type"
+		} );
+		res.end();
+		return;
+	}
+
+	// Handle POST request to reset base image
+	if( req.method === "POST" && req.url === "/api/reset-base-image" ) {
+		let body = "";
+		
+		req.on( "data", chunk => {
+			body += chunk.toString();
+		} );
+		
+		req.on( "end", () => {
+			try {
+				const data = JSON.parse( body );
+				const baseName = data.baseName;
+				
+				// Validate baseName to prevent path traversal
+				if( !baseName || baseName.includes( ".." ) || baseName.includes( "/" ) || baseName.includes( "\\" ) ) {
+					res.writeHead( 400, { "Content-Type": "application/json" } );
+					res.end( JSON.stringify( { "error": "Invalid base name" } ) );
+					return;
+				}
+				
+				const sourcePath = path.join( __dirname, "test", "tests", "screenshots", "new", `${baseName}.png` );
+				const destPath = path.join( __dirname, "test", "tests", "screenshots", `${baseName}.png` );
+				
+				// Check if source exists
+				if( !fs.existsSync( sourcePath ) ) {
+					res.writeHead( 404, { "Content-Type": "application/json" } );
+					res.end( JSON.stringify( { "error": "Source screenshot not found" } ) );
+					return;
+				}
+				
+				// Copy file
+				fs.copyFileSync( sourcePath, destPath );
+				
+				// Delete the new image after copying
+				fs.unlinkSync( sourcePath );
+				
+				console.log( `Reset base image: ${baseName}.png (new image deleted)` );
+				
+				res.writeHead( 200, { 
+					"Content-Type": "application/json",
+					"Access-Control-Allow-Origin": "*"
+				} );
+				res.end( JSON.stringify( { "success": true, "message": `Base image reset: ${baseName}.png` } ) );
+			} catch( err ) {
+				console.error( "Error resetting base image:", err );
+				res.writeHead( 500, { "Content-Type": "application/json" } );
+				res.end( JSON.stringify( { "error": err.message } ) );
+			}
+		} );
+		
+		return;
+	}
+
 	let filePath = "." + req.url;
 	let urlPath = req.url;
 	
