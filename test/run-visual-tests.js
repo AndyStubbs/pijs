@@ -62,7 +62,7 @@ function parseTOML( content ) {
 }
 
 // Compare two PNG images
-function compareImages( img1Path, img2Path, threshold = 0.01 ) {
+function compareImages( img1Path, img2Path, threshold = 0.001 ) {
 	if( !fs.existsSync( img1Path ) || !fs.existsSync( img2Path ) ) {
 		return { "match": false, "error": "Missing image file" };
 	}
@@ -97,7 +97,8 @@ function compareImages( img1Path, img2Path, threshold = 0.01 ) {
 			const diff = Math.abs( r1 - r2 ) + Math.abs( g1 - g2 ) + 
 				Math.abs( b1 - b2 ) + Math.abs( a1 - a2 );
 
-			if( diff > threshold * 255 * 4 ) {
+			// Account for browser fingerprinting protection (typically 1-2 pixel noise)
+			if( diff > 6 ) {
 				diffPixels++;
 			}
 		}
@@ -106,7 +107,7 @@ function compareImages( img1Path, img2Path, threshold = 0.01 ) {
 	const diffPercent = ( diffPixels / totalPixels ) * 100;
 
 	return {
-		"match": diffPercent < 1,
+		"match": diffPercent < (threshold * 100),
 		"diffPixels": diffPixels,
 		"diffPercent": diffPercent.toFixed( 2 )
 	};

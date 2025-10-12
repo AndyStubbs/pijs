@@ -38,7 +38,12 @@
 			$.drawImage( "ship", 120, 50, 135, 0.5, 0.5 );
 			$.drawImage( "ship", 150, 50, 180, 0.5, 0.5 );
 			$.removeImage( "ship" );
-			$.drawImage( "ship", 180, 50, 225, 0.5, 0.5 );
+			try{ 
+				$.drawImage( "ship", 180, 50, 225, 0.5, 0.5 );
+			} catch( err ) {
+				$.setColor( 4 );
+				$.print( err.message );
+			}
 			$.getImage( "ship2", 15, 35, 101, 65 );
 			$.drawImage( "ship2", 55, 130 );
 		} );

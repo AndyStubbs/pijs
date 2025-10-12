@@ -90,6 +90,11 @@ function generateResultsPage( results ) {
 		<div class="test-list collapsed" id="list-passed">`;
 
 		for( const test of sortedPassed ) {
+			// Use screenshotName from test record (preserves camelCase like "loadFont_01")
+			const baseName = test.screenshotName || test.file.replace( ".html", "" );
+			const refPath = `/test/tests/screenshots/${baseName}.png`;
+			const newPath = `/test/tests/screenshots/new/${baseName}.png`;
+			
 			passedHTML += `
 			<div class="test-item passed">
 				<div class="test-content">
@@ -100,6 +105,7 @@ function generateResultsPage( results ) {
 						<div class="test-details">${test.file}</div>
 					</div>
 					<div class="test-actions">
+						<button class="view-diff-btn" onclick="showDiffModal('${test.name}', '${baseName}', '${refPath}', '${newPath}')">View Comparison</button>
 						<div class="test-status status-passed">PASSED</div>
 					</div>
 				</div>

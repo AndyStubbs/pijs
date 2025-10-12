@@ -51,7 +51,7 @@ class MinimalReporter {
 			"name": title,
 			"file": htmlFile,
 			"screenshotName": screenshotName, // Used for image paths
-			"url": `/test/tests/${htmlFile}`,
+			"url": `/test/tests/html/${htmlFile}`,
 			"status": result.status,
 			"error": result.error ? result.error.message : null
 		};
