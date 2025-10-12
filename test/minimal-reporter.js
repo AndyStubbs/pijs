@@ -30,15 +30,27 @@ class MinimalReporter {
 		// Extract test name and filename
 		const title = test.title;
 		
-		// Try to extract the actual HTML filename from the test
-		// The title format is usually the metadata name (e.g., "circle 01")
-		// We need to convert it to the filename format (e.g., "circle_01.html")
-		let htmlFile = title.toLowerCase().replace( /\s+/g, "_" ) + ".html";
+		// Get actual screenshot base name from annotation (preserves camelCase)
+		let screenshotName = null;
+		if( test.annotations ) {
+			const annotation = test.annotations.find( a => a.type === "screenshot-name" );
+			if( annotation ) {
+				screenshotName = annotation.description;
+			}
+		}
+		
+		// Fallback to lowercase conversion if no annotation
+		if( !screenshotName ) {
+			screenshotName = title.toLowerCase().replace( /\s+/g, "_" );
+		}
+		
+		const htmlFile = screenshotName + ".html";
 		
 		// Create test record
 		const testRecord = {
 			"name": title,
 			"file": htmlFile,
+			"screenshotName": screenshotName, // Used for image paths
 			"url": `/test/tests/${htmlFile}`,
 			"status": result.status,
 			"error": result.error ? result.error.message : null
