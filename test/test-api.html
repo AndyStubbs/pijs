@@ -62,9 +62,88 @@
 
 	<div id="results"></div>
 
-	<script src="../build/pi.js"></script>
 	<script>
 		const results = document.getElementById( "results" );
+		
+		// Load and compare both versions
+		let legacyAPI = null;
+		let currentAPI = null;
+
+		// Helper to extract API methods from a pi object
+		function extractAPIMethods( piObj ) {
+			const methods = {
+				"global": [],
+				"screen": []
+			};
+
+			// Get global methods
+			for( const key in piObj ) {
+				if( key === "_" || key === "util" || key === "version" ) {
+					continue;
+				}
+				if( typeof piObj[ key ] === "function" ) {
+					methods.global.push( key );
+				}
+			}
+
+			// Get screen methods
+			try {
+				const testScreen = piObj.screen ? piObj.screen( "1x1" ) : null;
+				if( testScreen ) {
+					for( const key in testScreen ) {
+						if( typeof testScreen[ key ] === "function" ) {
+							methods.screen.push( key );
+						}
+					}
+					piObj.removeAllScreens();
+				}
+			} catch( e ) {
+				console.warn( "Could not enumerate screen methods:", e );
+			}
+
+			return methods;
+		}
+
+		// Load legacy version first
+		async function loadLegacy() {
+			return new Promise( ( resolve, reject ) => {
+				const script = document.createElement( "script" );
+				script.src = "../releases/pi-1.2.4.js";
+				script.onload = () => {
+					if( window.pi ) {
+						legacyAPI = extractAPIMethods( window.pi );
+						
+						// Clean up legacy pi from window
+						delete window.pi;
+						delete window.$;
+						
+						resolve();
+					} else {
+						reject( new Error( "Legacy pi.js not found" ) );
+					}
+				};
+				script.onerror = () => reject( new Error( "Could not load pi-1.2.4.js" ) );
+				document.head.appendChild( script );
+			} );
+		}
+
+		// Load current version
+		async function loadCurrent() {
+			return new Promise( ( resolve, reject ) => {
+				const script = document.createElement( "script" );
+				script.src = "../build/pi.js";
+				script.onload = () => {
+					if( window.pi ) {
+						currentAPI = extractAPIMethods( window.pi );
+						resolve();
+					} else {
+						reject( new Error( "Current pi.js not found" ) );
+					}
+				};
+				script.onerror = () => reject( new Error( "Could not load pi.js" ) );
+				document.head.appendChild( script );
+			} );
+		}
 
 		// Helper to fetch file size
 		async function getFileSize( url ) {
@@ -93,6 +172,11 @@
 				// Use $ alias (pi.js loaded as IIFE)
 				const pi = window.pi;
 				const $ = window.$;
+
+				// Verify pi is loaded
+				if( !pi ) {
+					throw new Error( "Pi.js not loaded. window.pi is undefined." );
+				}
 
 				// Fetch file sizes
 				const sizes = {
@@ -339,29 +423,113 @@
 					results.appendChild( utilsSection );
 				}
 
-				// Next steps
-				const nextSection = document.createElement( "div" );
-				nextSection.className = "section";
-				nextSection.innerHTML = `
-					<h2>Remaining Phases</h2>
-					<div class="status">
-						<ul>
-							<li>🔄 Phase 18: Testing & Bug Fixing - Visual regression, unit tests</li>
-							<li>Phase 19: Documentation - API reference, migration guide</li>
-							<li>Phase 20: Release Preparation - Version bump, changelog</li>
-						</ul>
-						<br>
-						<h3 style="color: #4CAF50;">🎉 Core Porting Complete!</h3>
-						<p style="color: #4CAF50;">All 17 core phases finished! 227KB unminified, 110KB minified.</p>
-						<p style="color: #FFC107;">Next: Polish, test, document, and release v2.0.0!</p>
-					</div>
-				`;
-				results.appendChild( nextSection );
+			// API Comparison section
+			if( legacyAPI ) {
+				const compSection = document.createElement( "div" );
+				compSection.className = "section";
+				compSection.innerHTML = "<h2>API Comparison: v1.2.4 vs v2.0</h2>";
+				
+				const compList = document.createElement( "div" );
+				compList.className = "command-list";
 
-				console.log( "Pi.js loaded successfully!" );
-				console.log( "pi object:", pi );
-				console.log( "$ alias:", $ );
-				console.log( "Public methods:", publicMethods );
+				// Compare global methods
+				const legacyGlobal = new Set( legacyAPI.global );
+				const currentGlobal = new Set( publicMethods );
+				
+				const newCommands = publicMethods.filter( m => !legacyGlobal.has( m ) );
+				const missingCommands = legacyAPI.global.filter( m => !currentGlobal.has( m ) );
+				const sharedCommands = publicMethods.filter( m => legacyGlobal.has( m ) );
+
+				// Compare screen methods
+				const legacyScreen = new Set( legacyAPI.screen );
+				const currentScreen = new Set( screenMethods );
+				
+				const newScreenCommands = screenMethods.filter( m => !legacyScreen.has( m ) );
+				const missingScreenCommands = legacyAPI.screen.filter( m => !currentScreen.has( m ) );
+				const sharedScreenCommands = screenMethods.filter( m => legacyScreen.has( m ) );
+
+				compList.innerHTML = `
+					<div class="category">Global Commands:</div>
+					<div class="command">v1.2.4: <span class="count">${legacyAPI.global.length}</span> commands</div>
+					<div class="command">v2.0: <span class="count">${publicMethods.length}</span> commands</div>
+					<div class="command">Shared: <span class="count" style="color: #4CAF50;">${sharedCommands.length}</span></div>
+					<div class="command">New in v2.0: <span class="count" style="color: #2196F3;">${newCommands.length}</span></div>
+					<div class="command">Missing from v2.0: <span class="count" style="color: #f44336;">${missingCommands.length}</span></div>
+					
+					<div class="category">Screen Commands:</div>
+					<div class="command">v1.2.4: <span class="count">${legacyAPI.screen.length}</span> commands</div>
+					<div class="command">v2.0: <span class="count">${screenMethods.length}</span> commands</div>
+					<div class="command">Shared: <span class="count" style="color: #4CAF50;">${sharedScreenCommands.length}</span></div>
+					<div class="command">New in v2.0: <span class="count" style="color: #2196F3;">${newScreenCommands.length}</span></div>
+					<div class="command">Missing from v2.0: <span class="count" style="color: #f44336;">${missingScreenCommands.length}</span></div>
+				`;
+
+				// Show new commands
+				if( newCommands.length > 0 ) {
+					compList.innerHTML += `<div class="category">New Global Commands in v2.0:</div>`;
+					newCommands.sort().forEach( cmd => {
+						compList.innerHTML += `<div class="command" style="color: #2196F3;">+ $.${cmd}()</div>`;
+					} );
+				}
+
+				if( newScreenCommands.length > 0 ) {
+					compList.innerHTML += `<div class="category">New Screen Commands in v2.0:</div>`;
+					newScreenCommands.sort().forEach( cmd => {
+						compList.innerHTML += `<div class="command" style="color: #2196F3;">+ screen.${cmd}()</div>`;
+					} );
+				}
+
+				// Show missing commands
+				if( missingCommands.length > 0 ) {
+					compList.innerHTML += `<div class="category">Missing Global Commands (from v1.2.4):</div>`;
+					missingCommands.sort().forEach( cmd => {
+						compList.innerHTML += `<div class="command" style="color: #f44336;">- $.${cmd}()</div>`;
+					} );
+				}
+
+				if( missingScreenCommands.length > 0 ) {
+					compList.innerHTML += `<div class="category">Missing Screen Commands (from v1.2.4):</div>`;
+					missingScreenCommands.sort().forEach( cmd => {
+						compList.innerHTML += `<div class="command" style="color: #f44336;">- screen.${cmd}()</div>`;
+					} );
+				}
+
+				compSection.appendChild( compList );
+				results.appendChild( compSection );
+			}
+
+			// Next steps
+			const nextSection = document.createElement( "div" );
+			nextSection.className = "section";
+			nextSection.innerHTML = `
+				<h2>Remaining Phases</h2>
+				<div class="status">
+					<ul>
+						<li>🔄 Phase 18: Testing & Bug Fixing - Visual regression, unit tests</li>
+						<li>Phase 19: Documentation - API reference, migration guide</li>
+						<li>Phase 20: Release Preparation - Version bump, changelog</li>
+					</ul>
+					<br>
+					<h3 style="color: #4CAF50;">🎉 Core Porting Complete!</h3>
+					<p style="color: #4CAF50;">All 17 core phases finished! 226KB unminified, 110KB minified.</p>
+					<p style="color: #FFC107;">Next: Polish, test, document, and release v2.0.0!</p>
+				</div>
+			`;
+			results.appendChild( nextSection );
+
+			console.log( "Pi.js loaded successfully!" );
+			console.log( "pi object:", pi );
+			console.log( "$ alias:", $ );
+			console.log( "Public methods:", publicMethods );
+			
+			if( legacyAPI ) {
+				console.log( "Legacy API comparison:", {
+					"v1.2.4 global": legacyAPI.global.length,
+					"v2.0 global": publicMethods.length,
+					"v1.2.4 screen": legacyAPI.screen.length,
+					"v2.0 screen": screenMethods.length
+				} );
+			}
 
 			} catch( e ) {
 				results.innerHTML = `
@@ -375,8 +543,41 @@
 			}
 		}
 
-		// Run inspection
-		inspectAPI();
+		// Compare and display results
+		async function compareVersions() {
+			try {
+				await loadLegacy();
+				console.log( "✓ Legacy version loaded", legacyAPI );
+			} catch( e ) {
+				console.warn( "Could not load legacy version:", e.message );
+			}
+
+			try {
+				await loadCurrent();
+				console.log( "✓ Current version loaded", currentAPI );
+				console.log( "window.pi available:", !!window.pi );
+				console.log( "window.$ available:", !!window.$ );
+			} catch( e ) {
+				console.error( "Could not load current version:", e );
+				results.innerHTML = `
+					<div class="section">
+						<h2 style="color: #f44336;">Error Loading Current Version</h2>
+						<pre style="color: #f44336;">${e.message}\n${e.stack}</pre>
+					</div>
+				`;
+				return;
+			}
+
+			// Now run the inspection with comparison
+			inspectAPI();
+		}
+
+		// Start the comparison process
+		compareVersions();
+
+		setTimeout( () => {
+			document.body.style.overflow = "";
+		}, 100 );
 	</script>
 </body>
 </html>
