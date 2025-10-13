@@ -6,6 +6,8 @@
  * @module modules/utils
  */
 
+"use strict";
+
 // Type checking utilities
 export const isFunction = ( fn ) => typeof fn === "function";
 export const isDomElement = ( el ) => el instanceof Element;

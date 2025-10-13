@@ -6,6 +6,8 @@
  * @module modules/font
  */
 
+"use strict";
+
 export function init( pi ) {
 	const piData = pi._.data;
 	const m_piWait = pi._.wait;

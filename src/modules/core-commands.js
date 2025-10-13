@@ -6,6 +6,8 @@
  * @module modules/core-commands
  */
 
+"use strict";
+
 import { getScreenData } from "../core/command-system.js";
 
 export function init( pi ) {

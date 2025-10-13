@@ -6,6 +6,8 @@
  * @module modules/paint
  */
 
+"use strict";
+
 export function init( pi ) {
 	const piData = pi._.data;
 	const m_maxDifference = ( 255 * 255 ) * 3.25;

@@ -6,6 +6,8 @@
  * @module core/command-system
  */
 
+"use strict";
+
 import { piData, commandList } from "./pi-data.js";
 import * as utils from "../modules/utils.js";
 

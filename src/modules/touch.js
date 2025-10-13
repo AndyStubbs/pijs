@@ -6,6 +6,8 @@
  * @module modules/touch
  */
 
+"use strict";
+
 export function init( pi ) {
 	const piData = pi._.data;
 

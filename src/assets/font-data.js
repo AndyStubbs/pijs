@@ -6,6 +6,8 @@
  * @module assets/font-data
  */
 
+"use strict";
+
 export function loadBuiltInFonts( pi ) {
 	// Font 0: 6x6
 	pi.loadFont(

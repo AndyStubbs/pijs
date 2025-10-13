@@ -6,6 +6,8 @@
  * @module core/pi-data
  */
 
+"use strict";
+
 // Default 256-color palette (CGA + extended colors) - raw hex strings
 // Will be converted to Pi.js color objects during initialization
 export const defaultPaletteHex = [

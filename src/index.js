@@ -9,6 +9,8 @@
  * @license Apache-2.0
  */
 
+"use strict";
+
 import { piData, defaultPaletteHex } from "./core/pi-data.js";
 import * as cmd from "./core/command-system.js";
 import * as utils from "./modules/utils.js";

@@ -7,6 +7,8 @@
  * @module modules/graphics-pixel
  */
 
+"use strict";
+
 export function init( pi ) {
 	const piData = pi._.data;
 
