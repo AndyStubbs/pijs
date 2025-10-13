@@ -47,6 +47,38 @@ let cmdContext = {
 	"target": ""
 };
 
+// Optional verbose movement logging (set PI_LOG_MOVES=1)
+const LOG_MOVES = process.env.PI_LOG_MOVES === "1";
+let LOG_FILE_PATH = process.env.PI_LOG_MOVES_FILE || null;
+let LOG_FILE_READY = false;
+let LOG_START_TIME = 0;
+
+function setLogFileForTest( testBaseName ) {
+	if( !LOG_MOVES ) {
+		return;
+	}
+	try {
+		const logsDir = path.join( __dirname, "logs" );
+		if( !fs.existsSync( logsDir ) ) {
+			fs.mkdirSync( logsDir, { "recursive": true } );
+		}
+		LOG_FILE_PATH = path.join( logsDir, `${testBaseName}.log` );
+		fs.writeFileSync( LOG_FILE_PATH, `# "${testBaseName}" movement log\n` );
+		LOG_FILE_READY = true;
+	} catch( _e ) {}
+}
+
+function logMove( type, details ) {
+	if( !LOG_MOVES ) {
+		return;
+	}
+	try {
+		const elapsed = Date.now() - LOG_START_TIME;
+		const line = `[${elapsed}] ${type}: ${JSON.stringify( details )}\n`;
+		fs.appendFileSync( LOG_FILE_PATH, line );
+	} catch( _e ) {}
+}
+
 // Test results storage
 const results = {
 	"total": 0,
@@ -284,6 +316,10 @@ async function executeCommand( page, command ) {
 				for( let i = 0; i < steps; i++ ) {
 					cmdContext.mouse.x += dx;
 					cmdContext.mouse.y += dy;
+					logMove( "MV-step", {
+						"x": Math.round( cmdContext.mouse.x ),
+						"y": Math.round( cmdContext.mouse.y )
+					} );
 					await page.mouse.move(
 						Math.round( cmdContext.mouse.x ),
 						Math.round( cmdContext.mouse.y )
@@ -292,6 +328,7 @@ async function executeCommand( page, command ) {
 			} else if( Array.isArray( data ) ) {
 				cmdContext.mouse.x = parseInt( data[ 0 ] );
 				cmdContext.mouse.y = parseInt( data[ 1 ] );
+				logMove( "MV", { "x": cmdContext.mouse.x, "y": cmdContext.mouse.y } );
 				await page.mouse.move( cmdContext.mouse.x, cmdContext.mouse.y );
 			}
 			break;
@@ -299,20 +336,31 @@ async function executeCommand( page, command ) {
 		// Mouse down
 		case "MD":
 			cmdContext.mouse.buttons = 1;
+			logMove( "MD", { "button": data || "left" } );
 			await page.mouse.down( { "button": data || "left" } );
 			break;
 
 		// Mouse up
 		case "MU":
 			cmdContext.mouse.buttons = 0;
+			logMove( "MU", { "button": data || "left" } );
 			await page.mouse.up( { "button": data || "left" } );
 			break;
 
 		// Mouse click
 		case "MC":
 			if( cmdContext.target ) {
+				logMove( "MC-target", {
+					"selector": cmdContext.target,
+					"button": data || "left"
+				} );
 				await page.click( cmdContext.target, { "button": data || "left" } );
 			} else {
+				logMove( "MC", {
+					"x": cmdContext.mouse.x,
+					"y": cmdContext.mouse.y,
+					"button": data || "left"
+				} );
 				await page.mouse.click(
 					cmdContext.mouse.x,
 					cmdContext.mouse.y,
@@ -491,6 +539,7 @@ async function executeCommands( page, commandString ) {
 
 	const commands = parseCommands( commandString );
 
+	LOG_START_TIME = Date.now();
 	for( const command of commands ) {
 		const result = await executeCommand( page, command );
 
@@ -617,6 +666,12 @@ test.describe( "Pi.js Visual Regression Tests", () => {
 					"waitUntil": "networkidle",
 					"timeout": 30000
 				} );
+
+				// Prepare per-test log file named after the screenshot base
+				if( LOG_MOVES ) {
+					const baseName = ( testName || testFile.file ).replace( /\.html$/, "" );
+					setLogFileForTest( baseName );
+				}
 
 				// Wait for delay if specified
 				if( metadata.delay > 0 ) {
