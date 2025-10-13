@@ -339,8 +339,7 @@ export function init( pi ) {
 				const c = screenData.pal[ data[ dataY ][ dataX ] ];
 
 				// Calculate the index of the image data
-				const i = ( ( screenData.width * ( y + dataY - startY ) ) + 
-					( x + dataX - startX ) ) * 4;
+				const i = ( ( screenData.width * ( y + dataY ) ) + ( x + dataX ) ) * 4;
 
 				// Put the color in the image data
 				if( c && ( c.a > 0 || includeZero ) ) {
