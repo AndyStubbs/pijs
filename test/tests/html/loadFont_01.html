@@ -61,7 +61,8 @@
 			$.setFont( font );
 			$.print( ":;<=>?@" + String.fromCharCode( 1 ) + String.fromCharCode( 2 ) );
 			$.print(
-				"The quick brown fox jumped over the lazy dog. 0123456789θ"
+				"The quick brown fox jumped over the lazy dog. 0123456789" +
+				String.fromCharCode( 952 )
 			);
 			$.render();
 		} );

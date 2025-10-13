@@ -329,24 +329,23 @@ export function init( pi ) {
 	pi._.addCommand( "bitmapPrint", bitmapPrint, true, false );
 
 	function bitmapPrint( screenData, msg, x, y ) {
-		const printCursor = screenData.printCursor;
+		screenData.screenObj.render();
+		const font = screenData.printCursor.font;
+		const width = font.image.width;
+		const columns = Math.floor( width / font.sWidth );
 
 		for( let i = 0; i < msg.length; i++ ) {
-			const charIndex = printCursor.font.chars[ msg.charCodeAt( i ) ];
+			const charIndex = font.chars[ msg.charCodeAt( i ) ];
+			
+			// Get the source x & y coordinates
+			const sx = ( charIndex % columns ) * font.sWidth;
+			const sy = Math.floor( charIndex / columns ) * font.sHeight;
 
-			if( charIndex !== undefined && printCursor.font.image ) {
-				screenData.context.drawImage(
-					printCursor.font.image,
-					charIndex * printCursor.font.sWidth,
-					0,
-					printCursor.font.sWidth,
-					printCursor.font.sHeight,
-					x + ( i * printCursor.font.width ),
-					y,
-					printCursor.font.width,
-					printCursor.font.height
-				);
-			}
+			// Draw the character on the screen
+			screenData.context.drawImage(
+				font.image, sx, sy, font.sWidth, font.sHeight,
+				x + font.width * i, y, font.width, font.height
+			);
 		}
 	}
 
