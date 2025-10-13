@@ -41,7 +41,7 @@ const path = require( "path" );
 const { PNG } = require( "pngjs" );
 
 // Command execution context
-let commandContext = {
+let cmdContext = {
 	"mouse": { "x": 0, "y": 0, "buttons": 0 },
 	"touch": { "x": 0, "y": 0, "id": 0 },
 	"target": ""
@@ -257,151 +257,154 @@ async function executeCommand( page, command ) {
 	const data = command.data;
 
 	switch( cmd ) {
+
+		// Delay - return the delay value to be handled by caller
 		case "DL":
-			// Delay - return the delay value to be handled by caller
 			return { "delay": parseInt( data ) };
 
+		// Select element
 		case "SL":
-			// Select element
-			commandContext.target = data;
+			cmdContext.target = data;
 			if( data && data !== "" ) {
 				await page.focus( data );
 			}
 			break;
 
+		// Mouse move
 		case "MV":
-			// Mouse move
 			if( Array.isArray( data ) && data.length === 3 ) {
+
 				// Move with steps
 				const x2 = parseInt( data[ 0 ] );
 				const y2 = parseInt( data[ 1 ] );
 				const steps = parseInt( data[ 2 ] );
-				const dx = ( x2 - commandContext.mouse.x ) / steps;
-				const dy = ( y2 - commandContext.mouse.y ) / steps;
+				const dx = ( x2 - cmdContext.mouse.x ) / steps;
+				const dy = ( y2 - cmdContext.mouse.y ) / steps;
 
 				for( let i = 0; i < steps; i++ ) {
-					commandContext.mouse.x += dx;
-					commandContext.mouse.y += dy;
+					cmdContext.mouse.x += dx;
+					cmdContext.mouse.y += dy;
 					await page.mouse.move(
-						Math.round( commandContext.mouse.x ),
-						Math.round( commandContext.mouse.y )
+						Math.round( cmdContext.mouse.x ),
+						Math.round( cmdContext.mouse.y )
 					);
 				}
 			} else if( Array.isArray( data ) ) {
-				commandContext.mouse.x = parseInt( data[ 0 ] );
-				commandContext.mouse.y = parseInt( data[ 1 ] );
-				await page.mouse.move( commandContext.mouse.x, commandContext.mouse.y );
+				cmdContext.mouse.x = parseInt( data[ 0 ] );
+				cmdContext.mouse.y = parseInt( data[ 1 ] );
+				await page.mouse.move( cmdContext.mouse.x, cmdContext.mouse.y );
 			}
 			break;
 
+		// Mouse down
 		case "MD":
-			// Mouse down
-			commandContext.mouse.buttons = 1;
+			cmdContext.mouse.buttons = 1;
 			await page.mouse.down( { "button": data || "left" } );
 			break;
 
+		// Mouse up
 		case "MU":
-			// Mouse up
-			commandContext.mouse.buttons = 0;
+			cmdContext.mouse.buttons = 0;
 			await page.mouse.up( { "button": data || "left" } );
 			break;
 
+		// Mouse click
 		case "MC":
-			// Mouse click
-			if( commandContext.target ) {
-				await page.click( commandContext.target, { "button": data || "left" } );
+			if( cmdContext.target ) {
+				await page.click( cmdContext.target, { "button": data || "left" } );
 			} else {
 				await page.mouse.click(
-					commandContext.mouse.x,
-					commandContext.mouse.y,
+					cmdContext.mouse.x,
+					cmdContext.mouse.y,
 					{ "button": data || "left" }
 				);
 			}
 			break;
 
+		// Type text
 		case "KT":
-			// Type text
-			if( commandContext.target ) {
-				await page.type( commandContext.target, data );
+			if( cmdContext.target ) {
+				await page.type( cmdContext.target, data );
 			} else {
 				await page.keyboard.type( data );
 			}
 			break;
 
+		// Key down
 		case "KD":
-			// Key down
 			await page.keyboard.down( data );
 			break;
 
+		// Key up
 		case "KU":
-			// Key up
 			await page.keyboard.up( data );
 			break;
 
+		// Key press
 		case "KP":
-			// Key press
 			await page.keyboard.press( data );
 			break;
 
+		// Touch start
 		case "TS":
-			// Touch start
 			if( Array.isArray( data ) ) {
-				commandContext.touch.x = parseInt( data[ 0 ] );
-				commandContext.touch.y = parseInt( data[ 1 ] );
+				cmdContext.touch.x = parseInt( data[ 0 ] );
+				cmdContext.touch.y = parseInt( data[ 1 ] );
 				await dispatchTouch(
 					page,
-					commandContext.target,
+					cmdContext.target,
 					"touchstart",
 					data,
-					commandContext.touch.id
+					cmdContext.touch.id
 				);
 			}
 			break;
 
+		// Touch move
 		case "TM":
-			// Touch move
 			if( Array.isArray( data ) && data.length === 3 ) {
+
 				// Move with steps
 				const x2 = parseInt( data[ 0 ] );
 				const y2 = parseInt( data[ 1 ] );
 				const steps = parseInt( data[ 2 ] );
-				const dx = ( x2 - commandContext.touch.x ) / steps;
-				const dy = ( y2 - commandContext.touch.y ) / steps;
+				const dx = ( x2 - cmdContext.touch.x ) / steps;
+				const dy = ( y2 - cmdContext.touch.y ) / steps;
 
 				for( let i = 0; i < steps; i++ ) {
-					commandContext.touch.x += dx;
-					commandContext.touch.y += dy;
+					cmdContext.touch.x += dx;
+					cmdContext.touch.y += dy;
 					await dispatchTouch(
 						page,
-						commandContext.target,
+						cmdContext.target,
 						"touchmove",
-						[ Math.round( commandContext.touch.x ), Math.round( commandContext.touch.y ) ],
-						commandContext.touch.id
+						[ Math.round( cmdContext.touch.x ), Math.round( cmdContext.touch.y ) ],
+						cmdContext.touch.id
 					);
 				}
 			} else if( Array.isArray( data ) ) {
-				commandContext.touch.x = parseInt( data[ 0 ] );
-				commandContext.touch.y = parseInt( data[ 1 ] );
+				cmdContext.touch.x = parseInt( data[ 0 ] );
+				cmdContext.touch.y = parseInt( data[ 1 ] );
 				await dispatchTouch(
 					page,
-					commandContext.target,
+					cmdContext.target,
 					"touchmove",
 					data,
-					commandContext.touch.id
+					cmdContext.touch.id
 				);
 			}
 			break;
 
+		// Touch end
 		case "TE":
-			// Touch end
 			await dispatchTouch(
 				page,
-				commandContext.target,
+				cmdContext.target,
 				"touchend",
 				[],
-				commandContext.touch.id
+				cmdContext.touch.id
 			);
-			commandContext.touch.id += 1;
+			cmdContext.touch.id += 1;
 			break;
 	}
 
@@ -480,7 +483,7 @@ async function executeCommands( page, commandString ) {
 	}
 
 	// Reset command context
-	commandContext = {
+	cmdContext = {
 		"mouse": { "x": 0, "y": 0, "buttons": 0 },
 		"touch": { "x": 0, "y": 0, "id": 0 },
 		"target": ""
@@ -544,7 +547,7 @@ function compareImages( img1Path, img2Path, threshold = 0.001 ) {
 	const diffPercent = ( diffPixels / totalPixels ) * 100;
 
 	return {
-		"match": diffPercent < (threshold * 100),
+		"match": diffPercent < ( threshold * 100 ),
 		"diffPixels": diffPixels,
 		"diffPercent": diffPercent.toFixed( 2 )
 	};
