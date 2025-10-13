@@ -193,7 +193,7 @@ export function init( pi ) {
 					printCursor.font.data[ charIndex ],
 					x + ( i * printCursor.font.width ),
 					y,
-					true
+					false
 				);
 			}
 		}
