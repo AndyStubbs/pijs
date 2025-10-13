@@ -143,6 +143,8 @@ export function init( pi ) {
 			screenData.touch.x = screenData.touch.touches[ 0 ].x;
 			screenData.touch.y = screenData.touch.touches[ 0 ].y;
 		}
+
+		screenData.lastEvent = "touch";
 	}
 
 	function getTouch( screenData ) {

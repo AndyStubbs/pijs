@@ -123,6 +123,8 @@ export function init( pi ) {
 		screenData.mouse.button = e.button;
 		screenData.mouse.buttons = e.buttons;
 		screenData.mouse.eventType = eventType;
+
+		screenData.lastEvent = "mouse";
 	}
 
 	function getMouse( screenData ) {
@@ -234,6 +236,7 @@ export function init( pi ) {
 	pi._.addCommand( "inpress", inpress, false, true, [] );
 
 	function inpress( screenData ) {
+
 		// Activate the mouse and touch event listeners
 		piData.commands.startMouse( screenData );
 		piData.commands.startTouch( screenData );

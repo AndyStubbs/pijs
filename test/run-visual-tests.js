@@ -292,11 +292,13 @@ async function executeCommand( page, command ) {
 
 		// Delay - return the delay value to be handled by caller
 		case "DL":
+			logMove( "DL", { "ms": parseInt( data ) } );
 			return { "delay": parseInt( data ) };
 
 		// Select element
 		case "SL":
 			cmdContext.target = data;
+			logMove( "SL", { "selector": data } );
 			if( data && data !== "" ) {
 				await page.focus( data );
 			}
@@ -371,6 +373,7 @@ async function executeCommand( page, command ) {
 
 		// Type text
 		case "KT":
+			logMove( "KT", { "text": data } );
 			if( cmdContext.target ) {
 				await page.type( cmdContext.target, data );
 			} else {
@@ -380,16 +383,19 @@ async function executeCommand( page, command ) {
 
 		// Key down
 		case "KD":
+			logMove( "KD", { "key": data } );
 			await page.keyboard.down( data );
 			break;
 
 		// Key up
 		case "KU":
+			logMove( "KU", { "key": data } );
 			await page.keyboard.up( data );
 			break;
 
 		// Key press
 		case "KP":
+			logMove( "KP", { "key": data } );
 			await page.keyboard.press( data );
 			break;
 
@@ -398,6 +404,7 @@ async function executeCommand( page, command ) {
 			if( Array.isArray( data ) ) {
 				cmdContext.touch.x = parseInt( data[ 0 ] );
 				cmdContext.touch.y = parseInt( data[ 1 ] );
+				logMove( "TS", { "x": cmdContext.touch.x, "y": cmdContext.touch.y, "id": cmdContext.touch.id } );
 				await dispatchTouch(
 					page,
 					cmdContext.target,
@@ -422,6 +429,7 @@ async function executeCommand( page, command ) {
 				for( let i = 0; i < steps; i++ ) {
 					cmdContext.touch.x += dx;
 					cmdContext.touch.y += dy;
+					logMove( "TM-step", { "x": Math.round( cmdContext.touch.x ), "y": Math.round( cmdContext.touch.y ), "id": cmdContext.touch.id } );
 					await dispatchTouch(
 						page,
 						cmdContext.target,
@@ -433,6 +441,7 @@ async function executeCommand( page, command ) {
 			} else if( Array.isArray( data ) ) {
 				cmdContext.touch.x = parseInt( data[ 0 ] );
 				cmdContext.touch.y = parseInt( data[ 1 ] );
+				logMove( "TM", { "x": cmdContext.touch.x, "y": cmdContext.touch.y, "id": cmdContext.touch.id } );
 				await dispatchTouch(
 					page,
 					cmdContext.target,
@@ -445,6 +454,7 @@ async function executeCommand( page, command ) {
 
 		// Touch end
 		case "TE":
+			logMove( "TE", { "id": cmdContext.touch.id } );
 			await dispatchTouch(
 				page,
 				cmdContext.target,

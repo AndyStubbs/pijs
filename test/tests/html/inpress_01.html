@@ -12,10 +12,13 @@
 				MV 10, 10
 				MD
 				MV 70, 90, 10
+				DL 60
 				MU
 				SL "canvas"
+				DL 60
 				TS 90, 10
 				TM 150, 90, 10
+				DL 60
 				TE
 			"""
 			[[TOML_END]]
@@ -49,6 +52,9 @@
 		animation();
 		function animation () {
 			var mouse = $.inpress();
+			if( mouse.x !== -1 ) {
+				console.log( mouse );
+			}
 			$.put( corner, 0, 0 );
 			$.setPos( 0, 0 );
 			$.print( mouse.buttons );
