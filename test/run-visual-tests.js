@@ -233,6 +233,7 @@ test.describe( "Pi.js Visual Regression Tests", () => {
 						);
 					}
 				} else {
+					
 					// No reference image - skip
 					results.skipped++;
 					results.tests.push( {
