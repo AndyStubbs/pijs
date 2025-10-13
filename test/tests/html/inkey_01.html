@@ -29,8 +29,8 @@
 <script>
 	$.ready( function () {
 		$.screen( "200x200" );
-		$.setActionKey( 17 );
-		$.setActionKey( "KeyS" );
+		$.preventKey( 17 );
+		$.preventKey( "KeyS" );
 		setInterval( function () {
 			var keys, key;
 			keys = $.inkey();

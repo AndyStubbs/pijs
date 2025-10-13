@@ -12,9 +12,9 @@ export function init( pi ) {
 	const piData = pi._.data;
 
 	// Keyboard state
-	let m_keys = {};  // Key by character
-	let m_keyKeys = {};  // Key by .key property
-	let m_keyCodes = {};  // Key by .code property
+	let m_inKeys = {};  // Key by character
+	let m_inKeyCodes = {};  // Key by .key property
+	let m_inCodes = {};  // Key by .code property
 	let m_inputs = [];  // Input buffer
 	let m_inputIndex = 0;
 	let m_onKeyEventListeners = {};
@@ -34,10 +34,13 @@ export function init( pi ) {
 	let m_promptBackgroundWidth = 0;
 
 	// Keyboard started flag
-	let keyboardStarted = false;
+	let m_keyboardStarted = false;
+
+	// STARTKEYBOARD - Start keyboard event listeners
+	pi._.addCommand( "startKeyboard", startKeyboard, false, false, [] );
 
 	function startKeyboard() {
-		if( keyboardStarted ) {
+		if( m_keyboardStarted ) {
 			return;
 		}
 
@@ -51,11 +54,23 @@ export function init( pi ) {
 		target.addEventListener( "keyup", onKeyUp );
 		target.addEventListener( "blur", clearPressedKeys );
 
-		keyboardStarted = true;
+		m_keyboardStarted = true;
 	}
 
+	// STOPKEYBOARD - Stop keyboard event listeners
+	pi._.addCommand( "stopKeyboard", stopKeyboard, false, false, [] );
+
 	function stopKeyboard() {
-		if( !keyboardStarted ) {
+
+		// Clear all keyboard state
+		m_inKeys = {};
+		m_inKeyCodes = {};
+		m_inCodes = {};
+		m_inputs = [];
+		m_onkeyListeners = {};
+		m_onKeyCombos = {};
+
+		if( !m_keyboardStarted ) {
 			return;
 		}
 
@@ -67,35 +82,29 @@ export function init( pi ) {
 			target.removeEventListener( "blur", clearPressedKeys );
 		}
 
-		keyboardStarted = false;
+		m_keyboardStarted = false;
 	}
 
 	function onKeyDown( e ) {
 		const key = e.key;
 		const code = e.code;
+		const keyCode = e.keyCode;
+		const keyData = {
+			"key": e.key,
+			"location": e.location,
+			"code": e.code,
+			"keyCode": e.keyCode
+		};
 
 		// Track key state
-		if( key ) {
-			m_keys[ key ] = true;
-			m_keyKeys[ key ] = true;
-		}
-		if( code ) {
-			m_keyCodes[ code ] = true;
-		}
+		m_inKeys[ key ] = keyData;
+		m_inKeyCodes[ keyCode ] = keyData;
+		m_inCodes[ code ] = keyData;
 
-		// Add to input buffer if it's a printable character
-		if( key && key.length === 1 ) {
-			m_inputs.push( key );
-		} else if( key === "Enter" ) {
-			m_inputs.push( "\n" );
-		} else if( key === "Backspace" ) {
-			m_inputs.push( "\b" );
-		} else if( key === "Tab" ) {
-			m_inputs.push( "\t" );
-		}
+		m_inputs.push( keyData );
 
 		// Prevent default for registered keys
-		if( m_preventKeys[ key ] || m_preventKeys[ code ] ) {
+		if( m_preventKeys[ key ] || m_preventKeys[ code ] || m_preventKeys[ keyCode ] ) {
 			e.preventDefault();
 		}
 
@@ -108,15 +117,12 @@ export function init( pi ) {
 	function onKeyUp( e ) {
 		const key = e.key;
 		const code = e.code;
+		const keyCode = e.keyCode;
 
 		// Clear key state
-		if( key ) {
-			m_keys[ key ] = false;
-			m_keyKeys[ key ] = false;
-		}
-		if( code ) {
-			m_keyCodes[ code ] = false;
-		}
+		m_inKeys[ key ] = false;
+		m_inCodes[ code ] = false;
+		m_inKeyCodes[ keyCode ] = false;
 
 		// Trigger event listeners
 		if( m_isKeyEventsActive ) {
@@ -125,14 +131,14 @@ export function init( pi ) {
 	}
 
 	function clearPressedKeys() {
-		for( const i in m_keys ) {
-			m_keys[ i ] = false;
+		for( const i in m_inKeys ) {
+			m_inKeys[ i ] = false;
 		}
-		for( const i in m_keyKeys ) {
-			m_keyKeys[ i ] = false;
+		for( const i in m_inKeyCodes ) {
+			m_inKeyCodes[ i ] = false;
 		}
-		for( const i in m_keyCodes ) {
-			m_keyCodes[ i ] = false;
+		for( const i in m_inCodes ) {
+			m_inCodes[ i ] = false;
 		}
 	}
 
@@ -187,24 +193,29 @@ export function init( pi ) {
 
 		// If the key is provided then return the key status
 		if( key != null ) {
+
 			// Check by character first (e.g., "a", ";", ":")
-			if( m_keys[ key ] ) {
-				return m_keys[ key ];
+			if( m_inKeys[ key ] ) {
+				return m_inKeys[ key ];
 			}
+
 			// Then check by .key property
-			if( m_keyKeys[ key ] ) {
-				return m_keyKeys[ key ];
+			if( m_inKeyCodes[ key ] ) {
+				return m_inKeyCodes[ key ];
 			}
+
 			// Finally check by .code property (e.g., "KeyA", "Semicolon")
-			return m_keyCodes[ key ] || false;
+			return m_inCodes[ key ] || false;
 		}
 
-		// If no key is provided then return next key from input buffer
-		if( m_inputs.length > 0 ) {
-			return m_inputs.shift();
+		// If no key is provided then return all keys pressed status
+		const keysReturn = {};
+		for( const i in m_inCodes ) {
+			if( m_inCodes[ i ] ) {
+				keysReturn[ i ] = m_inCodes[ i ];
+			}
 		}
-
-		return "";
+		return keysReturn;
 	}
 
 	// ONKEY - Register key event listener
@@ -299,9 +310,9 @@ export function init( pi ) {
 	pi._.addCommand( "clearKeys", clearKeys, false, false, [] );
 
 	function clearKeys() {
-		m_keys = {};
-		m_keyKeys = {};
-		m_keyCodes = {};
+		m_inKeys = {};
+		m_inKeyCodes = {};
+		m_inCodes = {};
 		m_inputs = [];
 		m_inputIndex = 0;
 	}
@@ -310,7 +321,7 @@ export function init( pi ) {
 	pi._.addCommand( "reinitKeyboard", reinitKeyboard, true, false );
 
 	function reinitKeyboard() {
-		if( keyboardStarted ) {
+		if( m_keyboardStarted ) {
 			stopKeyboard();
 			m_inputFocus = piData.defaultInputFocus;
 			startKeyboard();
@@ -338,7 +349,7 @@ export function init( pi ) {
 		m_inputFocus = element;
 
 		// Reinitialize keyboard if already started
-		if( keyboardStarted ) {
+		if( m_keyboardStarted ) {
 			stopKeyboard();
 			startKeyboard();
 		}
@@ -735,29 +746,6 @@ export function init( pi ) {
 		offkey( [ null, "down", collectInput ] );
 
 		m_inputQueueIndex = 0;
-	}
-
-	// STARTKEYBOARD - Start keyboard event listeners
-	pi._.addCommand( "startKeyboard", startKeyboard, false, false, [] );
-
-	function startKeyboard() {
-		// This is a no-op since keyboard events start automatically
-		// Kept for API compatibility
-		return true;
-	}
-
-	// STOPKEYBOARD - Stop keyboard event listeners
-	pi._.addCommand( "stopKeyboard", stopKeyboard, false, false, [] );
-
-	function stopKeyboard() {
-		// Clear all keyboard state
-		m_keys = {};
-		m_keyKeys = {};
-		m_keyCodes = {};
-		m_inputs = [];
-		m_onkeyListeners = {};
-		m_onKeyCombos = {};
-		return true;
 	}
 
 	// SETINPUTCURSOR - Set the cursor character for input prompt
