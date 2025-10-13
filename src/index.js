@@ -10,25 +10,33 @@
 
 "use strict";
 
+import * as cmd from "./core/commands.js";
+import * as screen from "./core/screen-manager.js";
+
 // Version injected during build from package.json
 const VERSION = __VERSION__;
 
 // Create the pi object with _ (internal API for plugins) and util namespaces
-const pi = {
-	"version": VERSION,
-	"_": {}
+const piApi = {
+	"version": VERSION
 };
+
+// Append all the commands to the api
+cmd.processApi( piApi );
+
+// Processs screen commands
+screen.sortScreenCommands();
 
 // Set window.pi for browser environments
 if( typeof window !== "undefined" ) {
-	window.pi = pi;
+	window.pi = piApi;
 
 	// Set $ alias only if not already defined (avoid jQuery conflicts)
 	if( window.$ === undefined ) {
-		window.$ = pi;
+		window.$ = piApi;
 	}
 }
 
 // Export for different module systems
-export default pi;
-export { pi };
+export default piApi;
+export { piApi as pi };

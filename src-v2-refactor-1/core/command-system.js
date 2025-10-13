@@ -146,6 +146,7 @@ export function addBlendCommand( name, fn ) {
  * @param {Object} api - API object to add methods to
  */
 export function processCommands( api ) {
+	
 	// Alphabetize commands
 	commandList.sort( ( a, b ) => {
 		const nameA = a.name.toUpperCase();
