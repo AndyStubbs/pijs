@@ -2,12 +2,50 @@
  * Pi.js Visual Regression Test Runner
  * 
  * Runs all visual tests, compares screenshots, and generates results page
+ * 
+ * Command String Support:
+ * Tests can include a "commands" string in the TOML metadata to simulate user interactions
+ * before capturing the screenshot.
+ * 
+ * Supported commands:
+ * - KD "key" - Key down (e.g., KD "Control", KD "a")
+ * - KU "key" - Key up
+ * - KP "key" - Key press
+ * - KT "text" - Type text
+ * - MD [button] - Mouse down (left/right/middle)
+ * - MU [button] - Mouse up
+ * - MC [button] - Mouse click
+ * - MV x,y - Mouse move to position
+ * - MV x,y,steps - Mouse move with steps
+ * - TS x,y - Touch start
+ * - TM x,y - Touch move
+ * - TM x,y,steps - Touch move with steps
+ * - TE - Touch end
+ * - DL ms - Delay in milliseconds
+ * - SL "selector" - Select element (focus target for subsequent events)
+ * 
+ * Example:
+ * commands = """
+ *   KD "Control"
+ *   DL 100
+ *   KD "s"
+ *   DL 100
+ *   KU "s"
+ *   KU "Control"
+ * """
  */
 
 const { test, expect } = require( "@playwright/test" );
 const fs = require( "fs" );
 const path = require( "path" );
 const { PNG } = require( "pngjs" );
+
+// Command execution context
+let commandContext = {
+	"mouse": { "x": 0, "y": 0, "buttons": 0 },
+	"touch": { "x": 0, "y": 0, "id": 0 },
+	"target": ""
+};
 
 // Test results storage
 const results = {
@@ -32,17 +70,45 @@ function parseTOML( content ) {
 		"name": null,
 		"width": 320,
 		"height": 200,
-		"delay": 0
+		"delay": 0,
+		"commands": null
 	};
 
 	// Simple TOML parser for our needs
 	const lines = tomlStr.trim().split( /\r?\n/ );
+	let inMultiline = false;
+	let multilineKey = null;
+	let multilineValue = "";
+
 	for( const line of lines ) {
 		const trimmedLine = line.trim();
+
+		// Handle multiline strings (""")
+		if( inMultiline ) {
+			if( trimmedLine.endsWith( '"""' ) ) {
+				multilineValue += trimmedLine.slice( 0, -3 );
+				metadata[ multilineKey ] = multilineValue.trim();
+				inMultiline = false;
+				multilineKey = null;
+				multilineValue = "";
+			} else {
+				multilineValue += line + "\n";
+			}
+			continue;
+		}
+
 		const match = trimmedLine.match( /^(\w+)\s*=\s*(.+)$/ );
 		if( match ) {
 			const key = match[ 1 ];
 			let value = match[ 2 ].trim();
+
+			// Check for multiline string start
+			if( value === '"""' ) {
+				inMultiline = true;
+				multilineKey = key;
+				multilineValue = "";
+				continue;
+			}
 
 			// Remove quotes
 			if( value.startsWith( '"' ) && value.endsWith( '"' ) ) {
@@ -59,6 +125,377 @@ function parseTOML( content ) {
 	}
 
 	return metadata;
+}
+
+/**
+ * Parse command string into command objects
+ * 
+ * @param {string} commandString - Command string to parse
+ * @returns {Array} Array of command objects
+ */
+function parseCommands( commandString ) {
+	if( !commandString || commandString.trim() === "" ) {
+		return [];
+	}
+
+	// Remove potential conflicts (quoted strings)
+	const conflicts = removeQuotes( commandString );
+
+	// Remove spaces and convert to upper case
+	const cleanedString = conflicts.str.split( /\s+/ ).join( "" ).toUpperCase();
+
+	// Regex to match command patterns
+	const regString = "(?=" +
+		"MD|" +
+		"MD\\d+|" +
+		"MV\\d+\\,\\d+|" +
+		"MV\\d+\\,\\d+,\\d+|" +
+		"MU|" +
+		"MU\\d+|" +
+		"MC|" +
+		"MC\\d+|" +
+		"TS|" +
+		"TM\\d+\\,\\d+|" +
+		"TM\\d+\\,\\d+,\\d+|" +
+		"TE|" +
+		"KD\\d+|" +
+		"KU\\d+|" +
+		"KP\\d+|" +
+		"KT\\d+|" +
+		"DL\\d+|" +
+		"SL\\d+" +
+	")";
+
+	const reg = new RegExp( regString );
+
+	// Split the commands
+	const commands = cleanedString.split( reg );
+
+	// Process commands into structured format
+	return processCommands( commands, conflicts.data );
+}
+
+/**
+ * Remove quotes from command string and store quoted values
+ * 
+ * @param {string} commandString - Command string with quotes
+ * @returns {Object} Object with str (cleaned string) and data (quoted values)
+ */
+function removeQuotes( commandString ) {
+	const quotes = [];
+	let start = commandString.indexOf( '"' );
+
+	while( start !== -1 ) {
+		const end = commandString.indexOf( '"', start + 1 );
+
+		if( start >= end || end === -1 ) {
+			console.error( "Unmatched quotes in command string!" );
+			break;
+		}
+
+		// Add to the quotes array
+		quotes.push( commandString.substring( start + 1, end ) );
+
+		// Remove the quoted item from the string
+		commandString = commandString.substring( 0, start ) +
+			( quotes.length - 1 ) + commandString.substring( end + 1 );
+
+		// Find the next quote
+		start = commandString.indexOf( '"' );
+	}
+
+	return {
+		"data": quotes,
+		"str": commandString
+	};
+}
+
+/**
+ * Process commands into structured format
+ * 
+ * @param {Array} commands - Array of command strings
+ * @param {Array} conflictData - Array of quoted string values
+ * @returns {Array} Array of processed command objects
+ */
+function processCommands( commands, conflictData ) {
+	const conflictItems = [ "KD", "KU", "KP", "KT", "SL", "MC", "MD", "MU" ];
+	const processedCommands = [];
+
+	for( let i = 0; i < commands.length; i++ ) {
+		if( commands[ i ].length === 0 ) continue;
+
+		const cmd = commands[ i ].substring( 0, 2 );
+		let data = commands[ i ].substr( 2 ).split( "," );
+
+		if( data.length === 1 ) {
+			data = data[ 0 ];
+		}
+
+		// Grab the data from the conflictData (quoted strings)
+		if( conflictItems.indexOf( cmd ) > -1 && data !== "" ) {
+			data = conflictData[ parseInt( data ) ];
+		}
+
+		processedCommands.push( {
+			"cmd": cmd,
+			"data": data
+		} );
+	}
+
+	return processedCommands;
+}
+
+/**
+ * Execute a single command
+ * 
+ * @param {Object} page - Playwright page object
+ * @param {Object} command - Command object with cmd and data properties
+ * @returns {Promise<Object|null>} Result object or null
+ */
+async function executeCommand( page, command ) {
+	const cmd = command.cmd;
+	const data = command.data;
+
+	switch( cmd ) {
+		case "DL":
+			// Delay - return the delay value to be handled by caller
+			return { "delay": parseInt( data ) };
+
+		case "SL":
+			// Select element
+			commandContext.target = data;
+			if( data && data !== "" ) {
+				await page.focus( data );
+			}
+			break;
+
+		case "MV":
+			// Mouse move
+			if( Array.isArray( data ) && data.length === 3 ) {
+				// Move with steps
+				const x2 = parseInt( data[ 0 ] );
+				const y2 = parseInt( data[ 1 ] );
+				const steps = parseInt( data[ 2 ] );
+				const dx = ( x2 - commandContext.mouse.x ) / steps;
+				const dy = ( y2 - commandContext.mouse.y ) / steps;
+
+				for( let i = 0; i < steps; i++ ) {
+					commandContext.mouse.x += dx;
+					commandContext.mouse.y += dy;
+					await page.mouse.move(
+						Math.round( commandContext.mouse.x ),
+						Math.round( commandContext.mouse.y )
+					);
+				}
+			} else if( Array.isArray( data ) ) {
+				commandContext.mouse.x = parseInt( data[ 0 ] );
+				commandContext.mouse.y = parseInt( data[ 1 ] );
+				await page.mouse.move( commandContext.mouse.x, commandContext.mouse.y );
+			}
+			break;
+
+		case "MD":
+			// Mouse down
+			commandContext.mouse.buttons = 1;
+			await page.mouse.down( { "button": data || "left" } );
+			break;
+
+		case "MU":
+			// Mouse up
+			commandContext.mouse.buttons = 0;
+			await page.mouse.up( { "button": data || "left" } );
+			break;
+
+		case "MC":
+			// Mouse click
+			if( commandContext.target ) {
+				await page.click( commandContext.target, { "button": data || "left" } );
+			} else {
+				await page.mouse.click(
+					commandContext.mouse.x,
+					commandContext.mouse.y,
+					{ "button": data || "left" }
+				);
+			}
+			break;
+
+		case "KT":
+			// Type text
+			if( commandContext.target ) {
+				await page.type( commandContext.target, data );
+			} else {
+				await page.keyboard.type( data );
+			}
+			break;
+
+		case "KD":
+			// Key down
+			await page.keyboard.down( data );
+			break;
+
+		case "KU":
+			// Key up
+			await page.keyboard.up( data );
+			break;
+
+		case "KP":
+			// Key press
+			await page.keyboard.press( data );
+			break;
+
+		case "TS":
+			// Touch start
+			if( Array.isArray( data ) ) {
+				commandContext.touch.x = parseInt( data[ 0 ] );
+				commandContext.touch.y = parseInt( data[ 1 ] );
+				await dispatchTouch(
+					page,
+					commandContext.target,
+					"touchstart",
+					data,
+					commandContext.touch.id
+				);
+			}
+			break;
+
+		case "TM":
+			// Touch move
+			if( Array.isArray( data ) && data.length === 3 ) {
+				// Move with steps
+				const x2 = parseInt( data[ 0 ] );
+				const y2 = parseInt( data[ 1 ] );
+				const steps = parseInt( data[ 2 ] );
+				const dx = ( x2 - commandContext.touch.x ) / steps;
+				const dy = ( y2 - commandContext.touch.y ) / steps;
+
+				for( let i = 0; i < steps; i++ ) {
+					commandContext.touch.x += dx;
+					commandContext.touch.y += dy;
+					await dispatchTouch(
+						page,
+						commandContext.target,
+						"touchmove",
+						[ Math.round( commandContext.touch.x ), Math.round( commandContext.touch.y ) ],
+						commandContext.touch.id
+					);
+				}
+			} else if( Array.isArray( data ) ) {
+				commandContext.touch.x = parseInt( data[ 0 ] );
+				commandContext.touch.y = parseInt( data[ 1 ] );
+				await dispatchTouch(
+					page,
+					commandContext.target,
+					"touchmove",
+					data,
+					commandContext.touch.id
+				);
+			}
+			break;
+
+		case "TE":
+			// Touch end
+			await dispatchTouch(
+				page,
+				commandContext.target,
+				"touchend",
+				[],
+				commandContext.touch.id
+			);
+			commandContext.touch.id += 1;
+			break;
+	}
+
+	return null;
+}
+
+/**
+ * Dispatch touch event to page
+ * 
+ * @param {Object} page - Playwright page object
+ * @param {string} target - CSS selector for target element
+ * @param {string} name - Touch event name
+ * @param {Array} data - Touch coordinates [x, y]
+ * @param {number} id - Touch identifier
+ * @returns {Promise<void>}
+ */
+async function dispatchTouch( page, target, name, data, id ) {
+	const coords = Array.isArray( data ) && data.length >= 2 ? 
+		[ parseInt( data[ 0 ] ), parseInt( data[ 1 ] ) ] : 
+		[];
+
+	await page.evaluate(
+		( { selector, eventName, coordinates, touchId } ) => {
+			const targetElement = selector ? 
+				document.querySelector( selector ) : 
+				document.body;
+
+			const touchConfig = {
+				"cancelable": true,
+				"bubbles": true,
+				"touches": [],
+				"targetTouches": [],
+				"changedTouches": [],
+				"shiftKey": false
+			};
+
+			if( coordinates.length >= 2 ) {
+				const touch = new Touch( {
+					"identifier": touchId,
+					"target": targetElement,
+					"clientX": coordinates[ 0 ],
+					"clientY": coordinates[ 1 ],
+					"pageX": coordinates[ 0 ],
+					"pageY": coordinates[ 1 ],
+					"radiusX": 2.5,
+					"radiusY": 2.5,
+					"rotationAngle": 10,
+					"force": 0.5
+				} );
+				touchConfig.touches.push( touch );
+				touchConfig.changedTouches.push( touch );
+			}
+
+			const event = new TouchEvent( eventName, touchConfig );
+			targetElement.dispatchEvent( event );
+		},
+		{ 
+			"selector": target, 
+			"eventName": name, 
+			"coordinates": coords, 
+			"touchId": id 
+		}
+	);
+}
+
+/**
+ * Execute all commands from a command string
+ * 
+ * @param {Object} page - Playwright page object
+ * @param {string} commandString - Command string to execute
+ * @returns {Promise<void>}
+ */
+async function executeCommands( page, commandString ) {
+	if( !commandString ) {
+		return;
+	}
+
+	// Reset command context
+	commandContext = {
+		"mouse": { "x": 0, "y": 0, "buttons": 0 },
+		"touch": { "x": 0, "y": 0, "id": 0 },
+		"target": ""
+	};
+
+	const commands = parseCommands( commandString );
+
+	for( const command of commands ) {
+		const result = await executeCommand( page, command );
+
+		// Handle delay
+		if( result && result.delay ) {
+			await page.waitForTimeout( result.delay );
+		}
+	}
 }
 
 // Compare two PNG images
@@ -181,6 +618,11 @@ test.describe( "Pi.js Visual Regression Tests", () => {
 				// Wait for delay if specified
 				if( metadata.delay > 0 ) {
 					await page.waitForTimeout( metadata.delay );
+				}
+
+				// Execute commands if specified
+				if( metadata.commands ) {
+					await executeCommands( page, metadata.commands );
 				}
 
 				// Wait for render
