@@ -13,9 +13,16 @@ import * as utils from "../core/utils";
 import * as renderer from "../core/renderer";
 
 
-// Add Graphics Screen Data
-screenManager.addScreenDataItem( "fColor", null );
-screenManager.addScreenDataItem( "cursor", { "x": 0, "y": 0 } );
+
+/***************************************************************************************************
+ * Module Commands
+ **************************************************************************************************/
+
+
+// Initialize graphics module
+export function init() {
+	screenManager.addScreenDataItem( "cursor", { "x": 0, "y": 0 } );
+}
 
 
 /***************************************************************************************************
@@ -24,7 +31,7 @@ screenManager.addScreenDataItem( "cursor", { "x": 0, "y": 0 } );
 
 
 // pset command
-screenManager.addCommand( "pset", pset, [ "x", "y" ] );
+screenManager.addPixelCommand( "pset", pset, [ "x", "y" ] );
 function pset( screenData, options ) {
 	
 	const x = Math.round( options.x );
@@ -43,11 +50,30 @@ function pset( screenData, options ) {
 	}
 
 	// Get the fore color
-	const color = screenData.fColor;
+	const color = screenData.color;
 
 	renderer.getImageData( screenData );
 	renderer.draw( screenData, x, y, color );
 	renderer.setImageDirty( screenData );
+
+	// Set the cursor after drawing
+	screenData.cursor.x = x;
+	screenData.cursor.y = y;
+}
+
+screenManager.addAACommand( "pset", aaPset, [ "x", "y" ] );
+function aaPset( screenData, options ) {
+	const x = options.x;
+	const y = options.y;
+
+	if( isNaN( x ) || isNaN( y ) ) {
+		const error = new TypeError( "pset: Arguments x and y must be numbers." );
+		error.code = "INVALID_COORDINATES";
+		throw error;
+	}
+
+	screenData.api.render();
+	screenData.context.fillRect( x, y, 1, 1 );
 
 	// Set the cursor after drawing
 	screenData.cursor.x = x;

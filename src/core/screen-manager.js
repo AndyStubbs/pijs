@@ -19,7 +19,9 @@ const m = {
 	"commandList": [],
 	"pixelCommands": {},
 	"aaCommands": {},
-	"screenDataItems": {}
+	"screenDataItems": {},
+	"screenDataItemGetters": [],
+	"screenInternalCommands": []
 };
 
 
@@ -107,6 +109,14 @@ export function sortScreenCommands() {
  */
 export function addScreenDataItem( name, val ) {
 	m.screenDataItems[ name ] = val;
+}
+
+export function addScreenInternalCommands( name, fn ) {
+	m.screenInternalCommands.push( { name, fn } );
+}
+
+export function addScreenDataItemGetter( name, fn ) {
+	m.screenDataItemGetters.push( { name, fn } );
 }
 
 export function getActiveScreen() {
@@ -382,6 +392,16 @@ function createScreenData( options ) {
 
 	// Append additional items onto the screendata
 	Object.assign( screenData, structuredClone( m.screenDataItems ) );
+
+	// Append dynamic screendata items
+	for( const itemGetter of m.screenDataItemGetters ) {
+		screenData[ itemGetter.name ] = structuredClone( itemGetter.fn() );
+	}
+
+	// Append internal screen commands to screen data
+	for( const cmd of m.screenInternalCommands ) {
+		screenData[ cmd.name ] = cmd.fn;
+	}
 
 	// Additional setup for screen data
 	m.nextScreenId += 1;

@@ -10,30 +10,41 @@
 
 "use strict";
 
-import * as cmd from "./core/commands.js";
+// Core Modules
+import * as commands from "./core/commands.js";
 import * as screenManager from "./core/screen-manager.js";
+import * as colors from "./core/colors.js";
+import * as renderer from "./core/renderer.js";
+
+// Other Modules
+import * as graphics from "./modules/graphics.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
 
 // Create the pi object with _ (internal API for plugins) and util namespaces
-const piApi = {
+const api = {
 	"version": VERSION
 };
 
+// Initialize the modules
+renderer.init();
+colors.init();
+graphics.init();
+
 // Append all the commands to the api
-cmd.processApi( piApi, screenManager );
+commands.processApi( api, screenManager );
 
 // Set window.pi for browser environments
 if( typeof window !== "undefined" ) {
-	window.pi = piApi;
+	window.pi = api;
 
 	// Set $ alias only if not already defined (avoid jQuery conflicts)
 	if( window.$ === undefined ) {
-		window.$ = piApi;
+		window.$ = api;
 	}
 }
 
 // Export for different module systems
-export default piApi;
-export { piApi as pi };
+export default api;
+export { api as pi };

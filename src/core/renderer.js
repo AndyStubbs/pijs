@@ -17,25 +17,32 @@ const m = {
 	"blends": {}
 };
 
-// Add default pen
-addPen( "pixel", penSetPixel, "square" );
-
-// Add default blend
-addBlend( "normal", blendNormal );
-
-// Add Render Screen Data
-screenManager.addScreenDataItem( "imageData", null );
-screenManager.addScreenDataItem( "isDirty", false );
-screenManager.addScreenDataItem( "pen", m.pens[ "pixel" ].fn );
-screenManager.addScreenDataItem( "penData", { "cap": "square", "size": 1 } );
-screenManager.addScreenDataItem( "blend", m.blends[ "normal" ].fn );
-screenManager.addScreenDataItem( "blendColor", blendGetColorNoNoise );
-screenManager.addScreenDataItem( "blendData", { "noise": null } );
-
 
 /***************************************************************************************************
  * Module Commands
  **************************************************************************************************/
+
+
+// Initialize the renderer
+export function init() {
+
+	// Add default pen
+	addPen( "pixel", penSetPixel, "square" );
+
+	// Add default blend
+	addBlend( "normal", blendNormal );
+
+	// Add Render Screen Data
+	screenManager.addScreenDataItem( "imageData", null );
+	screenManager.addScreenDataItem( "isDirty", false );
+	screenManager.addScreenDataItem( "penData", { "cap": "square", "size": 1 } );
+	screenManager.addScreenDataItem( "blendData", { "noise": null } );
+
+	// Add Screen Internal Commands
+	screenManager.addScreenInternalCommands( "pen", m.pens[ "pixel" ].fn );
+	screenManager.addScreenInternalCommands( "blend", m.blends[ "normal" ].fn );
+	screenManager.addScreenInternalCommands( "blendColor", blendGetColorNoNoise );
+}
 
 export function addPen( name, fn, cap ) {
 	m.pens[ name ] = { fn, cap, "size": 1 };
@@ -79,6 +86,7 @@ export function draw( screenData, x, y, c ) {
 /***************************************************************************************************
  * External API Commands
  **************************************************************************************************/
+
 
 // Render command
 screenManager.addCommand( "render", render, [] );
@@ -140,6 +148,7 @@ function setPen( screenData, options ) {
 	screenData.context.lineCap = m.pens[ pen ].cap;
 }
 
+// Set blend mode
 screenManager.addCommand( "setBlendMode", setBlendMode, [ "mode", "noise" ] );
 function setBlendMode( screenData, options ) {
 	const mode = options.mode;
