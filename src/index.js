@@ -11,7 +11,7 @@
 "use strict";
 
 import * as cmd from "./core/commands.js";
-import * as screen from "./core/screen-manager.js";
+import * as screenManager from "./core/screen-manager.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -22,10 +22,7 @@ const piApi = {
 };
 
 // Append all the commands to the api
-cmd.processApi( piApi );
-
-// Processs screen commands
-screen.sortScreenCommands();
+cmd.processApi( piApi, screenManager );
 
 // Set window.pi for browser environments
 if( typeof window !== "undefined" ) {

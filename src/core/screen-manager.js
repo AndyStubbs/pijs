@@ -1,10 +1,10 @@
 /**
- * Pi.js - Screen Module
+ * Pi.js - Screen Manager Module
  * 
  * Screen creation and management for Pi.js.
  * Creates canvas elements, manages multiple screens, handles aspect ratios.
  * 
- * @module modules/screen
+ * @module core/screen-manager
  */
 
 "use strict";
@@ -21,19 +21,24 @@ const m = {
 	"screenDataItems": {}
 };
 
-commands.addCommand( "screen", screen );
-
 /**
  * Add a command to the screen
  * 
  * @param {string} name - Command name
  * @param {Function} fn - Command function
+ * @param {Array} parameterNames - List of parameter names.
  */
-export function addScreenCommand( name, fn ) {
+export function addCommand( name, fn, parameterNames ) {
+
+	// Add the command to the command list
 	m.commandList.push( {
 		"name": name,
-		"fn": fn
+		"fn": fn,
+		"parameterNames": parameterNames
 	} );
+
+	// Add the command to the global command list
+	commands.addCommand( name, fn, parameterNames, true );
 }
 
 /**
@@ -52,11 +57,16 @@ export function addScreenDataItem( name, val ) {
 	m.screenDataItems[ name ] = val;
 }
 
-function screen( ...args ) {
-	const options = utils.parseOptions( args, [
-		"aspect", "container", "isOffscreen", "willReadFrequently", "noStyles", "resizeCallback"
-	] );
-	
+export function getActiveScreen() {
+	return m.activeScreen;
+}
+
+commands.addCommand( "screen", screen, [
+	"aspect", "container", "isOffscreen", "willReadFrequently", "noStyles", "resizeCallback"
+] );
+
+function screen( options ) {
+
 	// Validate resize callback
 	if( options.resizeCallback != null && !utils.isFunction( options.resizeCallback ) ) {
 		const error = new TypeError( "screen: resizeCallback must be a function." );
@@ -75,53 +85,19 @@ function screen( ...args ) {
 	}
 
 	// Create appropriate screen type
-	let screenData;
-
-	if( options.isOffscreen ) {
-		if( !aspectData ) {
-			const error = new Error(
-				"screen: You must supply an aspect ratio with exact dimensions " +
-				"for offscreen screens."
-			);
-			error.code = "NO_ASPECT_OFFSCREEN";
-			throw error;
-		}
-		if( aspectData.splitter !== "x" ) {
-			const error = new Error(
-				"screen: You must use aspect ratio with e(x)act pixel dimensions for offscreen" +
-				"screens. For example: 320x200 for width of 320 and height of 200 pixels."
-			);
-			error.code = "INVALID_OFFSCREEN_ASPECT";
-			throw error;
-		}
-		screenData = createOffscreenScreen( options );
-	} else {
-
-		// Get the container element from the dom if it's available
-		if( typeof options.container === "string" ) {
-			options.container = document.getElementById( options.container );
-		} else if( !options.container ) {
-			options.container = document.body;
-		} else if( !utils.isDomElement( options.container ) ) {
-			const error = new TypeError(
-				"screen: Invalid argument container. Container must be a DOM element " +
-				"or a string id of a DOM element."
-			);
-			error.code = "INVALID_CONTAINER";
-			throw error;
-		}
-
-		if( options.noStyles ) {
-			screenData = createNoStyleScreen( options );
-		} else {
-			screenData = createScreen( options );
-		}
-	}
+	let screenData = createScreen( options );
 
 	// Add all the screen commands to the screenData api
 	for( const command of m.commandList ) {
-		screenData.api[ command.name ] = command.name;
+		screenData.api[ command.name ] = ( ...args ) => {
+			const options = utils.parseOptions( args, command.parameterNames );
+			command.fn( screenData, options );
+		};
 	}
+
+	// Assign screen to active screen
+	m.activeScreen = screenData;
+	m.screens[ screenData.id ] = screenData;
 
 	return screenData.api;
 }
@@ -157,6 +133,51 @@ function parseAspect( aspect ) {
 	};
 }
 
+// Determines the type of screen to create and returns the created screen
+function createScreen( options ) {
+	if( options.isOffscreen ) {
+		if( !aspectData ) {
+			const error = new Error(
+				"screen: You must supply an aspect ratio with exact dimensions " +
+				"for offscreen screens."
+			);
+			error.code = "NO_ASPECT_OFFSCREEN";
+			throw error;
+		}
+		if( aspectData.splitter !== "x" ) {
+			const error = new Error(
+				"screen: You must use aspect ratio with e(x)act pixel dimensions for offscreen" +
+				"screens. For example: 320x200 for width of 320 and height of 200 pixels."
+			);
+			error.code = "INVALID_OFFSCREEN_ASPECT";
+			throw error;
+		}
+		screenData = createOffscreenScreen( options );
+	}
+
+	// Get the container element from the dom if it's available
+	if( typeof options.container === "string" ) {
+		options.container = document.getElementById( options.container );
+	} else if( !options.container ) {
+		options.container = document.body;
+	} else if( !utils.isDomElement( options.container ) ) {
+		const error = new TypeError(
+			"screen: Invalid argument container. Container must be a DOM element " +
+			"or a string id of a DOM element."
+		);
+		error.code = "INVALID_CONTAINER";
+		throw error;
+	}
+
+	// Return a no style screen
+	if( options.noStyles ) {
+		return createNoStyleScreen( options );
+	}
+
+	// Return the default screen
+	return createDefaultScreen( options );
+}
+
 // Create offscreen canvas
 function createOffscreenScreen( options ) {
 
@@ -180,7 +201,7 @@ function createOffscreenScreen( options ) {
 }
 
 // Create screen with default styling
-function createScreen( options ) {
+function createDefaultScreen( options ) {
 
 	// Create the canvases
 	options.canvas = document.createElement( "canvas" );
@@ -300,10 +321,8 @@ function createScreenData( options ) {
 
 	// Additional setup for screen data
 	m.nextScreenId += 1;
-	m.activeScreen = screenData;
 	options.canvas.dataset.screenId = screenData.id;
 	screenData.context.imageSmoothingEnabled = false;
-	m.screens[ screenData.id ] = screenData;
 
 	return screenData;
 }
@@ -371,7 +390,7 @@ function setCanvasSize( aspectData, canvas, maxWidth, maxHeight ) {
 		canvas.width = width;
 		canvas.height = height;
 	} else {
-		
+
 		// For ratio mode, set to container size
 		canvas.width = Math.floor( newWidth );
 		canvas.height = Math.floor( newHeight );
