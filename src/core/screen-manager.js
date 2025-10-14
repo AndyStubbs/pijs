@@ -22,6 +22,10 @@ const m_screenInternalCommands = [];
 
 let m_nextScreenId = 0;
 let m_activeScreen = null;
+let m_defaultInputFocus = window;
+
+// Add event listener to resize all the screens
+window.addEventListener( "resize", resizeScreens );
 
 /***************************************************************************************************
  * Module Commands
@@ -166,6 +170,44 @@ function screen( options ) {
 	m_screens[ screenData.id ] = screenData;
 
 	return screenData.api;
+}
+
+// TODO: Maybe just set the input focus on either the container or canvas and have input confined
+// to the screen. Worth considering.
+// setDefaultInputFocus
+commands.addCommand( "setDefaultInputFocus", setDefaultInputFocus, [ "element" ] );
+function setDefaultInputFocus( options ) {
+	let element = options.element;
+
+	if( element === m_defaultInputFocus ) {
+		return;
+	}
+
+	if( typeof element === "string" ) {
+		element = document.getElementById( element );
+	}
+
+	if( !element || !utils.canAddEventListeners( element ) ) {
+		const error = new TypeError(
+			"setDefaultInputFocus: Invalid argument element. " +
+			"Element must be a DOM element or string id of a DOM element."
+		);
+		error.code = "INVALID_ELEMENT";
+		throw error;
+	}
+
+	if( !( element.tabIndex >= 0 ) ) {
+		element.tabIndex = 0;
+	}
+
+	// Update input focus
+	m_defaultInputFocus = element;
+
+	// TODO: Add this keyboard reinit once keyboard is implemented
+	// Reinitialize keyboard if command exists
+	//if( piData.commands[ "reinitKeyboard" ] ) {
+	//	piData.commands[ "reinitKeyboard" ]();
+	//}
 }
 
 
@@ -379,7 +421,7 @@ function createScreenData( options ) {
 		"isNoStyles": options.isNoStyles,
 		"context": options.canvas.getContext( "2d", contextAttributes ),
 		"bufferCanvas": options.bufferCanvas,
-		"bufferContext": options.bufferContext,
+		"bufferContext": options.bufferCanvas.getContext( "2d", contextAttributes ),
 		"clientRect": options.canvas.getBoundingClientRect(),
 		"resizeCallback": options.resizeCallback,
 		"api": {
@@ -485,4 +527,80 @@ function getSize( element ) {
 		"width": element.offsetWidth || element.clientWidth || element.width,
 		"height": element.offsetHeight || element.clientHeight || element.height
 	};
+}
+
+// Resizes all screens
+function resizeScreens() {
+	for( const i in m_screens ) {
+		const screenData = m_screens[ i ];
+
+		// Skip if screen is not visible
+		if(
+			screenData.isOffscreen ||
+			screenData.isNoStyles ||
+			screenData.canvas.offsetParent === null
+		) {
+			continue;
+		}
+
+		// Store the previous size
+		const fromSize = {
+			"width": screenData.canvas.offsetWidth,
+			"height": screenData.canvas.offsetHeight
+		};
+
+		// Draw the canvas to the buffer
+		screenData.bufferContext.clearRect( 0, 0, screenData.width, screenData.height );
+		screenData.bufferContext.drawImage( screenData.canvas, 0, 0 );
+
+		let size;
+		
+		if( screenData.aspectData ) {
+
+			// Update the canvas to the new size
+			size = getSize( screenData.container );
+			setCanvasSize( screenData.aspectData, screenData.canvas, size.width, size.height );
+
+		} else {
+
+			// Update canvas to fullscreen absolute pixels
+			size = getSize( screenData.canvas );
+			screenData.canvas.width = size.width;
+			screenData.canvas.height = size.height;
+
+		}
+
+		// Resize the client rectangle
+		screenData.clientRect = screenData.canvas.getBoundingClientRect();
+
+		// Draw the buffer back onto the canvas
+		screenData.context.drawImage(
+			screenData.bufferCanvas, 0, 0, screenData.width, screenData.height
+		);
+
+		// Reset image data
+		screenData.imageData = null;
+
+		// Set the new buffer size
+		screenData.bufferCanvas.width = screenData.canvas.width;
+		screenData.bufferCanvas.height = screenData.canvas.height;
+
+		// Set the new screen size
+		screenData.width = screenData.canvas.width;
+		screenData.height = screenData.canvas.height;
+
+		// Send the resize data to the client
+		if( screenData.resizeCallback ) {
+			const toSize = {
+				"width": screenData.canvas.offsetWidth,
+				"height": screenData.canvas.offsetHeight
+			};
+			if(
+				fromSize.width !== toSize.width ||
+				fromSize.height !== toSize.height
+			) {
+				screenData.resizeCallback( fromSize, toSize );
+			}
+		}
+	}
 }
