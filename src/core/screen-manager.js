@@ -17,9 +17,14 @@ const m = {
 	"screens": {},
 	"activeScreen": null,
 	"commandList": [],
-	"commands": {},
 	"screenDataItems": {}
 };
+
+
+/***************************************************************************************************
+ * Module Commands
+ **************************************************************************************************/
+
 
 /**
  * Add a command to the screen
@@ -61,10 +66,16 @@ export function getActiveScreen() {
 	return m.activeScreen;
 }
 
+
+/***************************************************************************************************
+ * External API Commands
+ **************************************************************************************************/
+
+
+// screen command
 commands.addCommand( "screen", screen, [
 	"aspect", "container", "isOffscreen", "willReadFrequently", "noStyles", "resizeCallback"
 ] );
-
 function screen( options ) {
 
 	// Validate resize callback
@@ -101,6 +112,12 @@ function screen( options ) {
 
 	return screenData.api;
 }
+
+
+/***************************************************************************************************
+ * Internal Commands
+ **************************************************************************************************/
+
 
 /**
  * Parses an aspect ratio string into an object containing width, height, and splitter information.

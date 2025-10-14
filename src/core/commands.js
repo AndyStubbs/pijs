@@ -21,7 +21,7 @@ const m = {
  * @param {string} name - Command name
  * @param {Function} fn - Command function
  */
-export function addCommand( name, fn, parameterNames, isScreen ) {
+export function addCommand( name, fn, parameterNames, isScreen = false) {
 	m.commandList.push( {
 		"name": name,
 		"fn": fn,
