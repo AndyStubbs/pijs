@@ -242,6 +242,7 @@ function removeScreen( screenData ) {
 	delete m_screens[ screenId ];
 }
 
+
 // TODO: Maybe just set the input focus on either the container or canvas and have input confined
 // to the screen. Worth considering.
 // setDefaultInputFocus

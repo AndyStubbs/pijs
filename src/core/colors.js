@@ -246,6 +246,50 @@ function findColor( screenData, options ) {
 	return false;
 }
 
+// Set the background color of the canvas
+screenManager.addCommand( "setBgColor", setBgColor, [ "color" ] );
+function setBgColor( screenData, options ) {
+	const color = options.color;
+	let bc;
+
+	if( utils.isInteger( color ) ) {
+		bc = screenData.pal[ color ];
+	} else {
+		bc = utils.convertToColor( color );
+	}
+	if( bc && typeof bc.s === "string" ) {
+		screenData.canvas.style.backgroundColor = bc.s;
+	} else {
+		const error = new TypeError( "bgColor: invalid color value for parameter color." );
+		error.code = "INVALID_COLOR";
+		throw error;
+	}
+}
+
+// Set the background color of the container
+screenManager.addCommand( "setContainerBgColor", setContainerBgColor, [ "color" ] );
+function setContainerBgColor( screenData, options ) {
+	const color = options.color;
+	let bc;
+	if( screenData.container ) {
+		if( utils.isInteger( color ) ) {
+			bc = screenData.pal[ color ];
+		} else {
+			bc = utils.convertToColor( color );
+		}
+		if( bc && typeof bc.s === "string" ) {
+			screenData.container.style.backgroundColor = bc.s;
+			return;
+		} else {
+			const error = new TypeError(
+				"containerBgColor: invalid color value for parameter color."
+			);
+			error.code = "INVALID_COLOR";
+			throw error
+		}
+	}
+}
+
 
 /***************************************************************************************************
  * Internal Commands
