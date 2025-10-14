@@ -17,6 +17,8 @@ const m = {
 	"screens": {},
 	"activeScreen": null,
 	"commandList": [],
+	"pixelCommands": {},
+	"aaCommands": {},
 	"screenDataItems": {}
 };
 
@@ -44,6 +46,51 @@ export function addCommand( name, fn, parameterNames ) {
 
 	// Add the command to the global command list
 	commands.addCommand( name, fn, parameterNames, true );
+}
+
+/**
+ * Add a pixel command to the commands
+ * 
+ * @param {string} name - Command name
+ * @param {Function} fn - Command function
+ * @param {Array} parameterNames - List of parameter names.
+ */
+export function addPixelCommand( name, fn, parameterNames ) {
+
+	const cmd = {
+		"name": name,
+		"fn": fn,
+		"parameterNames": parameterNames
+	};
+
+	// Add the command to the command list
+	m.commandList.push( cmd );
+
+	// Add the command to the global command list
+	commands.addCommand( name, fn, parameterNames, true );
+	
+	// Add the command to the pixel command list
+	m.pixelCommands[ name ] = cmd;
+
+}
+
+/**
+ * Add an AA command to the screen
+ * 
+ * @param {string} name - Command name
+ * @param {Function} fn - Command function
+ * @param {Array} parameterNames - List of parameter names.
+ */
+export function addAACommand( name, fn, parameterNames ) {
+
+	const cmd = {
+		"name": name,
+		"fn": fn,
+		"parameterNames": parameterNames
+	};
+
+	// Add the command to the pixel command list
+	m.aaCommands[ name ] = cmd;
 }
 
 /**

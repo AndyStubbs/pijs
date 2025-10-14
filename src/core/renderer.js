@@ -13,20 +13,22 @@ import * as screenManager from "./screen-manager";
 import * as utils from "./utils";
 
 const m = {
-	"pens": [],
+	"pens": {},
+	"blends": {}
 };
 
 // Add default pen
-addPen( "pixel", setPixelPen, "square" );
+addPen( "pixel", penSetPixel, "square" );
+
+// Add default blend
+addBlend( "normal", blendNormal );
 
 // Add Render Screen Data
 screenManager.addScreenDataItem( "render", {
 	"imageData": null,
 	"isDirty": false,
 	"pen": m.pens[ "pixel" ],
-	"blend": setPixelBlend,
-	"getImageData": getImageData,
-	"setImageDirty": setImageDirty
+	"blend": m.blends[ "normal" ]
 } );
 
 
@@ -37,8 +39,14 @@ screenManager.addScreenDataItem( "render", {
 export function addPen( name, fn, cap ) {
 	m.pens[ name ] = {
 		"cmd": fn,
-		"cap": cap
+		"cap": cap,
+		"size": 1,
+		"noise": false
 	};
+}
+
+export function addBlend( name, fn ) {
+	m.blends[ name ] = fn;
 }
 
 export function getImageData( screenData ) {
@@ -85,13 +93,84 @@ function render( screenData ) {
 	screenData.isDirty = false;
 }
 
+// Set Pen Command
+screenManager.addCommand( "setPen", setPen, [ "pen", "size", "noise" ] );
+function setPen( screenData, options ) {
+	const pen = options.pen;
+	let size = Math.round( options.size );
+	let noise = options.noise;
+
+	if( !m.pens[ pen ] ) {
+		const error = new TypeError(
+			`setPen: parameter pen is not a valid pen.`
+		);
+		error.code = "INVALID_PEN";
+		throw error;
+	}
+
+	if( !utils.isInteger( size ) ) {
+		const error = new TypeError( "setPen: parameter size must be an integer" );
+		error.code = "INVALID_SIZE";
+		throw error;
+	}
+
+	if( noise && ( !utils.isArray( noise ) && isNaN( noise ) ) ) {
+		const error = new TypeError( "setPen: parameter noise is not an array or number" );
+		error.code = "INVALID_NOISE";
+		throw error;
+	}
+
+	if( utils.isArray( noise ) ) {
+		noise = noise.slice();
+		for( let i = 0; i < noise.length; i++ ) {
+			if( isNaN( noise[ i ] ) ) {
+				const error = new TypeError(
+					"setPen: parameter noise array contains an invalid value"
+				);
+				error.code = "INVALID_NOISE_VALUE";
+				throw error;
+			}
+		}
+	}
+
+	if( pen === "pixel" ) {
+		size = 1;
+	}
+
+	// Set the minimum pen size to 1
+	if( size < 1 ) {
+		size = 1;
+	}
+
+	// Handle special case of size of one
+	if( size === 1 ) {
+
+		// Size is one so only draw one pixel
+		screenData.pen = m.pens[ "pixel" ];
+
+		// Set the line width for context draw
+		screenData.context.lineWidth = 1;
+	} else {
+
+		// Set the draw mode for pixel draw
+		screenData.pen = m.pens[ pen ];
+
+		// Set the line width for context draw
+		screenData.context.lineWidth = size * 2 - 1;
+	}
+
+	screenData.pen.noise = noise;
+	screenData.pen.size = size;
+	screenData.context.lineCap = m.pens[ pen ].cap;
+}
+
 /***************************************************************************************************
  * Internal Commands
  **************************************************************************************************/
 
 
 // Default Set Pixel Pen
-function setPixelPen( screenData, x, y, c ) {
+function penSetPixel( screenData, x, y, c ) {
 	if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
 		return;
 	}
@@ -102,7 +181,7 @@ function setPixelPen( screenData, x, y, c ) {
 }
 
 // Default Blend Mode
-function setPixelBlend( screenData, x, y, c ) {
+function blendNormal( screenData, x, y, c ) {
 
 	// Get the image data
 	const data = screenData.imageData.data
