@@ -37,6 +37,8 @@ export function init() {
 	screenManager.addScreenDataItem( "isDirty", false );
 	screenManager.addScreenDataItem( "penData", { "cap": "square", "size": 1 } );
 	screenManager.addScreenDataItem( "blendData", { "noise": null } );
+	screenManager.addScreenDataItem( "isAutoRender", true );
+	screenManager.addScreenDataItem( "autoRenderMicrotaskScheduled", false );
 
 	// Add Screen Internal Commands
 	screenManager.addScreenInternalCommands( "pen", m.pens[ "pixel" ].fn );
@@ -53,7 +55,7 @@ export function addBlend( name, fn ) {
 }
 
 export function getImageData( screenData ) {
-	if( screenData.dirty === false || screenData.imageData === null ) {
+	if( screenData.isDirty === false || screenData.imageData === null ) {
 		screenData.imageData = screenData.context.getImageData(
 			0, 0, screenData.width, screenData.height
 		);
@@ -61,16 +63,16 @@ export function getImageData( screenData ) {
 }
 
 export function setImageDirty( screenData ) {
-	if( screenData.dirty === false ) {
-		screenData.dirty = true;
+	if( screenData.isDirty === false ) {
+		screenData.isDirty = true;
 		if(
 			screenData.isAutoRender && 
 			! screenData.autoRenderMicrotaskScheduled 
 		) {
 			screenData.autoRenderMicrotaskScheduled = true;
 			utils.queueMicrotask( function () {
-				if( screenData.screenObj && screenData.isAutoRender ) {
-					screenData.screenObj.render();
+				if( screenData.isAutoRender ) {
+					screenData.api.render();
 				}
 				screenData.autoRenderMicrotaskScheduled = false;
 			} );
@@ -199,7 +201,7 @@ function penSetPixel( screenData, x, y, c ) {
 // Default Blend Mode
 function blendNormal( screenData, x, y, c ) {
 
-	c = screenData.blendColor( c );
+	c = screenData.blendColor( screenData, c );
 
 	// Get the image data
 	const data = screenData.imageData.data

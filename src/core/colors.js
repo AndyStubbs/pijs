@@ -133,12 +133,6 @@ function setDefaultPal( options ) {
 
 	m.defaultPal = [];
 
-	if( pal.length > 1 ) {
-		m.defaultColor = 1;
-	} else {
-		m.defaultColor = 0;
-	}
-
 	for( let i = 0; i < pal.length; i++ ) {
 		const c = utils.convertToColor( pal[ i ] );
 		if( c === null ) {
@@ -157,6 +151,14 @@ function setDefaultPal( options ) {
 		firstColor.b,
 		0
 	] );
+
+	// Make sure default color is in the new palette
+	const defaultColorIndex = findColorIndex( m.defaultColor, m.defaultPal, 1 );
+	if( defaultColorIndex && defaultColorIndex < m.defaultPal.length ) {
+		m.defaultColor = m.defaultPal[ defaultColorIndex ];
+	} else {
+		m.defaultColor = m.defaultPal[ 1 ];
+	}
 }
 
 // Set default color
@@ -165,7 +167,7 @@ function setDefaultColor( options ) {
 	let c = options.color;
 
 	if( !isNaN( Number( c ) ) && m.defaultPal.length > c ) {
-		m.defaultColor = c;
+		m.defaultColor = m.defaultPal[ c ];
 	} else {
 		c = utils.convertToColor( c );
 		if( c === null ) {
@@ -211,9 +213,6 @@ function findColor( screenData, options ) {
 	let tolerance = options.tolerance;
 	const isAddToPalette = !!options.isAddToPalette;
 
-	// Max color difference constant
-	const maxDifference = ( 255 * 255 ) * 3.25;
-
 	if( tolerance == null ) {
 		tolerance = 1;
 	} else if( isNaN( tolerance ) || tolerance < 0 || tolerance > 1 ) {
@@ -224,7 +223,6 @@ function findColor( screenData, options ) {
 		throw error;
 	}
 
-	tolerance = tolerance * ( 2 - tolerance ) * maxDifference;
 	const pal = screenData.pal;
 
 	// Check cache first
@@ -235,11 +233,38 @@ function findColor( screenData, options ) {
 	// Convert color to color object
 	color = findColorValue( screenData, color, "findColor" );
 
+	const index = findColorIndex( color, pal, tolerance, screenData.findColorCache );
+	if( index ) {
+		return index;
+	}
+
+	// Add to palette if allowed
+	if( isAddToPalette ) {
+		pal.push( color );
+		screenData.findColorCache[ color.s ] = pal.length - 1;
+		return pal.length - 1;
+	}
+
+	return false;
+}
+
+
+/***************************************************************************************************
+ * Internal Commands
+ **************************************************************************************************/
+
+
+function findColorIndex( color, pal, tolerance, cache = {} ) {
+
+	// Max color difference constant
+	const maxDifference = ( 255 * 255 ) * 3.25;
+	tolerance = tolerance * ( 2 - tolerance ) * maxDifference;
+
 	// TODO: Maybe add special handling for pal index 0 which should is transparent color
 	// Find exact match or closest color in palette
 	for( let i = 0; i < pal.length; i++ ) {
 		if( pal[ i ].s === color.s ) {
-			screenData.findColorCache[ color.s ] = i;
+			cache[ color.s ] = i;
 			return i;
 		} else {
 			const dr = pal[ i ].r - color.r;
@@ -251,25 +276,11 @@ function findColor( screenData, options ) {
 			const similarity = maxDifference - difference;
 
 			if( similarity >= tolerance ) {
-				screenData.findColorCache[ color.s ] = i;
+				cache[ color.s ] = i;
 				return i;
 			}
 		}
 	}
 
-	// Add to palette if allowed
-	if( isAddToPalette ) {
-		pal.push( color );
-		screenData.findColorCache[ color.s ] = pal.length - 1;
-		return pal.length - 1;
-	}
-
-	return 0;
+	return false;
 }
-
-
-/***************************************************************************************************
- * Internal Commands
- **************************************************************************************************/
-
-

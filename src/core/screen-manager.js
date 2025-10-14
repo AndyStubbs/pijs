@@ -144,7 +144,7 @@ function screen( options ) {
 
 	// Parse aspect ratio
 	if( typeof options.aspect === "string" && options.aspect !== "" ) {
-		options.aspectData = parseAspect( aspect.toLowerCase() );
+		options.aspectData = parseAspect( options.aspect.toLowerCase() );
 		if( !options.aspectData ) {
 			const error = new Error( "screen: invalid value for aspect." );
 			error.code = "INVALID_ASPECT";
