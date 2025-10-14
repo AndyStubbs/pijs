@@ -11,6 +11,7 @@
 import * as utils from "./utils";
 
 const m_commandList = [];
+const m_settings = {};
 
 /**
  * Add a command to the system
@@ -18,13 +19,21 @@ const m_commandList = [];
  * @param {string} name - Command name
  * @param {Function} fn - Command function
  */
-export function addCommand( name, fn, parameterNames, isScreen = false) {
-	m_commandList.push( {
+export function addCommand( name, fn, parameterNames, isScreen = false ) {
+	const cmd = {
 		"name": name,
 		"fn": fn,
 		"parameterNames": parameterNames,
 		"isScreen": isScreen
-	} );
+	};
+	m_commandList.push( cmd );
+
+	// Add to settings item if starts with set
+	if( name.startsWith( "set" ) && name !== "set" ) {
+
+		const settingName = cmd.name.substring( 3, 4 ).toLowerCase() + cmd.name.substring( 4 );
+		m_settings[ settingName ] = cmd;
+	}
 }
 
 /**
@@ -32,6 +41,19 @@ export function addCommand( name, fn, parameterNames, isScreen = false) {
  * @param {Object} api - An object which will recieve all the commands that have been added
  */
 export function processApi( api, screenManager ) {
+
+	// Get the settings list
+	const setList = []
+	for( const cmd of m_commandList ) {
+		if( cmd.name.startsWith( "set" ) ) {
+			const settingName = cmd.name.substring( 3, 4 ).toLowerCase() + cmd.name.substring( 4 );
+			setList.push( settingName );
+		}
+	}
+	
+	// Add the set commands -- not all set commands are screen commands but some are so use
+	// screenManager to add command
+	screenManager.addCommand( "set", set, setList );
 
 	// Sort global command list
 	m_commandList.sort( ( a, b ) => a.name.localeCompare( b.name ) );
@@ -52,6 +74,45 @@ export function processApi( api, screenManager ) {
 				const options = utils.parseOptions( args, command.parameterNames );
 				return command.fn( options );
 			};
+		}
+	}
+}
+
+
+/***************************************************************************************************
+ * External API Commands
+ **************************************************************************************************/
+
+
+// Global settings command
+// -- added in processApi after all settings have been added as commands
+// -- needs to handle null values for screenData
+function set( screenData, options ) {
+
+	// Loop through all the options
+	for( const optionName in options ) {
+
+		// Skip blanks
+		if( !options[ optionName ] ) {
+			continue;
+		}
+
+		// If the option is a valid setting
+		if( m_settings[ optionName ] ) {
+
+			// Get the setting data
+			const setting = m_settings[ optionName ];
+			const optionValues = options[ optionName ];
+
+			// Parse the options from the setting
+			const parsedOptions = utils.parseOptions( optionValues, setting.parameterNames );
+
+			// Call the setting function
+			if( setting.isScreen ) {
+				setting.fn( screenData, parsedOptions );
+			} else {
+				setting.fn( parsedOptions );
+			}
 		}
 	}
 }

@@ -280,6 +280,25 @@ function setDefaultInputFocus( options ) {
 	//}
 }
 
+// Set the active screen on pi
+commands.addCommand( "setScreen", setScreen, [ "screen" ] );
+function setScreen( options ) {
+	const screenObj = options.screen;
+	let screenId;
+
+	if( utils.isInteger( screenObj ) ) {
+		screenId = screenObj;
+	} else if( screenObj && utils.isInteger( screenObj.id ) ) {
+		screenId = screenObj.id;
+	}
+	if( ! m_screens[ screenId ] ) {
+		const error = new Error( "screen: Invalid screen." );
+		error.code = "INVALID_SCREEN";
+		throw error;
+	}
+	m_activeScreen = m_screens[ screenId ];
+}
+
 // width command
 addCommand( "width", width, [] );
 function width( screenData ) {

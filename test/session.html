@@ -6,16 +6,15 @@
 	</head>
 <body>
 <script>
-	$.screen( "320x200" );
+	const s = $.screen( "320x200" );
 	$.pset( 5, 5 );
 	$.setColor( 4 );
 	$.pset( 6, 6 );
-	$.setBgColor( 2 );
-	$.setContainerBgColor( 11 );
+	$.set( { "bgColor": 3, "containerBgColor": 5 } );
 
-	console.log( "width", $.width() );
-	console.log( "height", $.height() );
-	console.log( "canvas", $.canvas() );
+	console.log( "width", s.width() );
+	console.log( "height", s.height() );
+	console.log( "canvas", s.canvas() );
 </script>
 </body>
 </html>
