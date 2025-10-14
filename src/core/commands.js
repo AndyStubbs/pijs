@@ -105,7 +105,9 @@ function set( screenData, options ) {
 			const optionValues = options[ optionName ];
 
 			// Parse the options from the setting
-			const parsedOptions = utils.parseOptions( optionValues, setting.parameterNames );
+			// Wrap optionValues in array if not already an array
+			const argsArray = Array.isArray( optionValues ) ? optionValues : [ optionValues ];
+			const parsedOptions = utils.parseOptions( argsArray, setting.parameterNames );
 
 			// Call the setting function
 			if( setting.isScreen ) {
