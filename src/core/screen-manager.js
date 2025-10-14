@@ -27,6 +27,7 @@ let m_defaultInputFocus = window;
 // Add event listener to resize all the screens
 window.addEventListener( "resize", resizeScreens );
 
+
 /***************************************************************************************************
  * Module Commands
  **************************************************************************************************/
@@ -105,7 +106,6 @@ export function sortScreenCommands() {
 }
 
 /**
- * 
  * @param {string} name - Name of data item
  * @param {*} val - Default value of the data item
  */
@@ -161,7 +161,7 @@ function screen( options ) {
 	for( const command of m_commandList ) {
 		screenData.api[ command.name ] = ( ...args ) => {
 			const options = utils.parseOptions( args, command.parameterNames );
-			command.fn( screenData, options );
+			return command.fn( screenData, options );
 		};
 	}
 
@@ -242,7 +242,6 @@ function removeScreen( screenData ) {
 	delete m_screens[ screenId ];
 }
 
-
 // TODO: Maybe just set the input focus on either the container or canvas and have input confined
 // to the screen. Worth considering.
 // setDefaultInputFocus
@@ -279,6 +278,24 @@ function setDefaultInputFocus( options ) {
 	//if( piData.commands[ "reinitKeyboard" ] ) {
 	//	piData.commands[ "reinitKeyboard" ]();
 	//}
+}
+
+// width command
+addCommand( "width", width, [] );
+function width( screenData ) {
+	return screenData.width;
+}
+
+// Height Command
+addCommand( "height", height, [] );
+function height( screenData ) {
+	return screenData.height;
+}
+
+// Canvas Command
+addCommand( "canvas", canvas, [] );
+function canvas( screenData ) {
+	return screenData.canvas;
 }
 
 

@@ -55,7 +55,7 @@ export const isDomElement = ( el ) => el instanceof Element;
 export const isArray = Array.isArray;
 export const isInteger = Number.isInteger;
 export const canAddEventListeners = ( el ) => {
-	return typeof el.addEventListener === "function" && 
+	return typeof el.addEventListener === "function" &&
 		typeof el.removeEventListener === "function";
 };
 

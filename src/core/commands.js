@@ -45,12 +45,12 @@ export function processApi( api, screenManager ) {
 			api[ command.name ] = ( ...args ) => {
 				const options = utils.parseOptions( args, command.parameterNames );
 				const screenData = screenManager.getActiveScreen();
-				command.fn( screenData, options );
+				return command.fn( screenData, options );
 			};
 		} else {
 			api[ command.name ] = ( ...args ) => {
 				const options = utils.parseOptions( args, command.parameterNames );
-				command.fn( options );
+				return command.fn( options );
 			};
 		}
 	}
