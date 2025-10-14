@@ -12,10 +12,8 @@
 import * as screenManager from "./screen-manager";
 import * as utils from "./utils";
 
-const m = {
-	"pens": {},
-	"blends": {}
-};
+const m_pens = {};
+const m_blends = {};
 
 
 /***************************************************************************************************
@@ -41,17 +39,17 @@ export function init() {
 	screenManager.addScreenDataItem( "autoRenderMicrotaskScheduled", false );
 
 	// Add Screen Internal Commands
-	screenManager.addScreenInternalCommands( "pen", m.pens[ "pixel" ].fn );
-	screenManager.addScreenInternalCommands( "blend", m.blends[ "normal" ].fn );
+	screenManager.addScreenInternalCommands( "pen", m_pens[ "pixel" ].fn );
+	screenManager.addScreenInternalCommands( "blend", m_blends[ "normal" ].fn );
 	screenManager.addScreenInternalCommands( "blendColor", blendGetColorNoNoise );
 }
 
 export function addPen( name, fn, cap ) {
-	m.pens[ name ] = { fn, cap, "size": 1 };
+	m_pens[ name ] = { fn, cap, "size": 1 };
 }
 
 export function addBlend( name, fn ) {
-	m.blends[ name ] = { fn };
+	m_blends[ name ] = { fn };
 }
 
 export function getImageData( screenData ) {
@@ -105,7 +103,7 @@ function setPen( screenData, options ) {
 	const pen = options.pen;
 	let size = Math.round( options.size );
 
-	if( !m.pens[ pen ] ) {
+	if( !m_pens[ pen ] ) {
 		const error = new TypeError(
 			`setPen: parameter pen is not a valid pen.`
 		);
@@ -132,22 +130,22 @@ function setPen( screenData, options ) {
 	if( size === 1 ) {
 
 		// Size is one so only draw one pixel
-		screenData.pen = m.pens[ "pixel" ].fn;
+		screenData.pen = m_pens[ "pixel" ].fn;
 
 		// Set the line width for context draw
 		screenData.context.lineWidth = 1;
 	} else {
 
 		// Set the draw mode for pixel draw
-		screenData.pen = m.pens[ pen ].fn;
+		screenData.pen = m_pens[ pen ].fn;
 
 		// Set the line width for context draw
 		screenData.context.lineWidth = size * 2 - 1;
 	}
 
 	screenData.penData.size = size;
-	screenData.penData.cap = m.pens[ pen ].cap;
-	screenData.context.lineCap = m.pens[ pen ].cap;
+	screenData.penData.cap = m_pens[ pen ].cap;
+	screenData.context.lineCap = m_pens[ pen ].cap;
 }
 
 // Set blend mode
@@ -156,7 +154,7 @@ function setBlendMode( screenData, options ) {
 	const mode = options.mode;
 	let noise = options.noise;
 
-	if( !m.blends[ mode ] ) {
+	if( !m_blends[ mode ] ) {
 		const error = new TypeError(
 			`setBlendMode: Argument blend is not a valid blend mode.`
 		);
@@ -181,7 +179,7 @@ function setBlendMode( screenData, options ) {
 		screenData.blendData.noise = null;
 	}
 
-	screenData.blend = m.blends[ mode ].fn;
+	screenData.blend = m_blends[ mode ].fn;
 }
 
 

@@ -42,13 +42,13 @@ const injectVersionPlugin = {
 const buildOptions = {
 	"entryPoints": [ path.join( __dirname, "../src/index.js" ) ],
 	"bundle": true,
-	"minify": true,
 	"sourcemap": true,
 	"banner": { "js": banner },
 	"target": "es2020",
 	"platform": "browser",
 	"plugins": [ injectVersionPlugin ],
-	"keepNames": true
+	//"keepNames": true,
+	"sourceRoot": "../src/"
 };
 
 async function build() {
@@ -60,6 +60,7 @@ async function build() {
 		await esbuild.build( {
 			...buildOptions,
 			"format": "esm",
+			"minify": true,
 			"outfile": path.join( buildDir, "pi.esm.min.js" )
 		} );
 
@@ -68,27 +69,30 @@ async function build() {
 		await esbuild.build( {
 			...buildOptions,
 			"format": "cjs",
+			"minify": true,
 			"outfile": path.join( buildDir, "pi.cjs.min.js" )
 		} );
 
-	// Build IIFE version (for <script> tags)
-	// Note: No globalName - we set window.pi manually in index.js
-	console.log( "Building IIFE..." );
-	await esbuild.build( {
-		...buildOptions,
-		"format": "iife",
-		"outfile": path.join( buildDir, "pi.min.js" )
-	} );
+		// Build IIFE version (for <script> tags)
+		// Note: No globalName - we set window.pi manually in index.js
+		console.log( "Building IIFE..." );
+		await esbuild.build( {
+			...buildOptions,
+			"format": "iife",
+			"minify": true,
+			"outfile": path.join( buildDir, "pi.min.js" )
+		} );
 
-	// Build unminified IIFE version for debugging
-	console.log( "Building IIFE (unminified)..." );
-	await esbuild.build( {
-		...buildOptions,
-		"format": "iife",
-		"minify": false,
-		"sourcemap": true,
-		"outfile": path.join( buildDir, "pi.js" )
-	} );
+		// Build unminified IIFE version for debugging
+		console.log( "Building IIFE (unminified)..." );
+		const unminifiedOptions = {
+			...buildOptions,
+			"format": "iife",
+			"minify": false,
+			"outfile": path.join( buildDir, "pi.js" ),
+		};
+		await esbuild.build( unminifiedOptions );
+		//console.log( unminifiedOptions );
 
 		console.log( "✓ Build completed successfully!" );
 		console.log( "" );

@@ -12,10 +12,8 @@ import * as commands from "./commands";
 import * as utils from "./utils";
 import * as screenManager from "./screen-manager";
 
-const m = {
-	"defaultPal": [],
-	"defaultColor": -1
-};
+let m_defaultPal = [];
+let m_defaultColor = -1;
 
 
 /***************************************************************************************************
@@ -75,8 +73,8 @@ export function init() {
 	screenManager.addScreenDataItem( "findColorCache", {} );
 
 	// Add getters for screen manager to get defaults for dynamic items
-	screenManager.addScreenDataItemGetter( "pal", () => m.defaultPal );
-	screenManager.addScreenDataItemGetter( "color", () => m.defaultColor );
+	screenManager.addScreenDataItemGetter( "pal", () => m_defaultPal );
+	screenManager.addScreenDataItemGetter( "color", () => m_defaultColor );
 }
 
 // Gets the color index
@@ -131,21 +129,21 @@ function setDefaultPal( options ) {
 		throw error;
 	}
 
-	m.defaultPal = [];
+	m_defaultPal = [];
 
 	for( let i = 0; i < pal.length; i++ ) {
 		const c = utils.convertToColor( pal[ i ] );
 		if( c === null ) {
 			console.warn( "setDefaultPal: invalid color value inside array pal." );
-			m.defaultPal.push( utils.convertToColor( "#000000" ) );
+			m_defaultPal.push( utils.convertToColor( "#000000" ) );
 		} else {
-			m.defaultPal.push( c );
+			m_defaultPal.push( c );
 		}
 	}
 
 	// Set color 0 to transparent
-	const firstColor = m.defaultPal[ 0 ];
-	m.defaultPal[ 0 ] = utils.convertToColor( [
+	const firstColor = m_defaultPal[ 0 ];
+	m_defaultPal[ 0 ] = utils.convertToColor( [
 		firstColor.r,
 		firstColor.g,
 		firstColor.b,
@@ -153,11 +151,11 @@ function setDefaultPal( options ) {
 	] );
 
 	// Make sure default color is in the new palette
-	const defaultColorIndex = findColorIndex( m.defaultColor, m.defaultPal, 1 );
-	if( defaultColorIndex && defaultColorIndex < m.defaultPal.length ) {
-		m.defaultColor = m.defaultPal[ defaultColorIndex ];
+	const defaultColorIndex = findColorIndex( m_defaultColor, m_defaultPal, 1 );
+	if( defaultColorIndex && defaultColorIndex < m_defaultPal.length ) {
+		m_defaultColor = m_defaultPal[ defaultColorIndex ];
 	} else {
-		m.defaultColor = m.defaultPal[ 1 ];
+		m_defaultColor = m_defaultPal[ 1 ];
 	}
 }
 
@@ -166,8 +164,8 @@ commands.addCommand( "setDefaultColor", setDefaultColor, [ "color" ] );
 function setDefaultColor( options ) {
 	let c = options.color;
 
-	if( !isNaN( Number( c ) ) && m.defaultPal.length > c ) {
-		m.defaultColor = m.defaultPal[ c ];
+	if( !isNaN( Number( c ) ) && m_defaultPal.length > c ) {
+		m_defaultColor = m_defaultPal[ c ];
 	} else {
 		c = utils.convertToColor( c );
 		if( c === null ) {
@@ -177,7 +175,7 @@ function setDefaultColor( options ) {
 			error.code = "INVALID_COLOR";
 			throw error;
 		}
-		m.defaultColor = c;
+		m_defaultColor = c;
 	}
 }
 

@@ -12,18 +12,16 @@
 import * as commands from "./commands";
 import * as utils from "./utils";
 
-const m = {
-	"nextScreenId": 0,
-	"screens": {},
-	"activeScreen": null,
-	"commandList": [],
-	"pixelCommands": {},
-	"aaCommands": {},
-	"screenDataItems": {},
-	"screenDataItemGetters": [],
-	"screenInternalCommands": []
-};
+const m_screens = {};
+const m_commandList = [];
+const m_pixelCommands = {};
+const m_aaCommands = {};
+const m_screenDataItems = {};
+const m_screenDataItemGetters = [];
+const m_screenInternalCommands = [];
 
+let m_nextScreenId = 0;
+let m_activeScreen = null;
 
 /***************************************************************************************************
  * Module Commands
@@ -40,7 +38,7 @@ const m = {
 export function addCommand( name, fn, parameterNames ) {
 
 	// Add the command to the command list
-	m.commandList.push( {
+	m_commandList.push( {
 		"name": name,
 		"fn": fn,
 		"parameterNames": parameterNames
@@ -66,13 +64,13 @@ export function addPixelCommand( name, fn, parameterNames ) {
 	};
 
 	// Add the command to the command list
-	m.commandList.push( cmd );
+	m_commandList.push( cmd );
 
 	// Add the command to the global command list
 	commands.addCommand( name, fn, parameterNames, true );
 	
 	// Add the command to the pixel command list
-	m.pixelCommands[ name ] = cmd;
+	m_pixelCommands[ name ] = cmd;
 
 }
 
@@ -92,14 +90,14 @@ export function addAACommand( name, fn, parameterNames ) {
 	};
 
 	// Add the command to the pixel command list
-	m.aaCommands[ name ] = cmd;
+	m_aaCommands[ name ] = cmd;
 }
 
 /**
  * Sort the screen commands by name
  */
 export function sortScreenCommands() {
-	m.commandList.sort( ( a, b ) => a.name.localeCompare( b.name ) );
+	m_commandList.sort( ( a, b ) => a.name.localeCompare( b.name ) );
 }
 
 /**
@@ -108,19 +106,19 @@ export function sortScreenCommands() {
  * @param {*} val - Default value of the data item
  */
 export function addScreenDataItem( name, val ) {
-	m.screenDataItems[ name ] = val;
+	m_screenDataItems[ name ] = val;
 }
 
 export function addScreenInternalCommands( name, fn ) {
-	m.screenInternalCommands.push( { name, fn } );
+	m_screenInternalCommands.push( { name, fn } );
 }
 
 export function addScreenDataItemGetter( name, fn ) {
-	m.screenDataItemGetters.push( { name, fn } );
+	m_screenDataItemGetters.push( { name, fn } );
 }
 
 export function getActiveScreen() {
-	return m.activeScreen;
+	return m_activeScreen;
 }
 
 
@@ -156,7 +154,7 @@ function screen( options ) {
 	let screenData = createScreen( options );
 
 	// Add all the screen commands to the screenData api
-	for( const command of m.commandList ) {
+	for( const command of m_commandList ) {
 		screenData.api[ command.name ] = ( ...args ) => {
 			const options = utils.parseOptions( args, command.parameterNames );
 			command.fn( screenData, options );
@@ -164,8 +162,8 @@ function screen( options ) {
 	}
 
 	// Assign screen to active screen
-	m.activeScreen = screenData;
-	m.screens[ screenData.id ] = screenData;
+	m_activeScreen = screenData;
+	m_screens[ screenData.id ] = screenData;
 
 	return screenData.api;
 }
@@ -371,7 +369,7 @@ function createScreenData( options ) {
 
 	// Create the screen data object
 	const screenData = {
-		"id": m.nextScreenId,
+		"id": m_nextScreenId,
 		"canvas": options.canvas,
 		"width": options.canvas.width,
 		"height": options.canvas.height,
@@ -385,26 +383,26 @@ function createScreenData( options ) {
 		"clientRect": options.canvas.getBoundingClientRect(),
 		"resizeCallback": options.resizeCallback,
 		"api": {
-			"id": m.nextScreenId,
+			"id": m_nextScreenId,
 			"screen": true
 		}
 	};
 
 	// Append additional items onto the screendata
-	Object.assign( screenData, structuredClone( m.screenDataItems ) );
+	Object.assign( screenData, structuredClone( m_screenDataItems ) );
 
 	// Append dynamic screendata items
-	for( const itemGetter of m.screenDataItemGetters ) {
+	for( const itemGetter of m_screenDataItemGetters ) {
 		screenData[ itemGetter.name ] = structuredClone( itemGetter.fn() );
 	}
 
 	// Append internal screen commands to screen data
-	for( const cmd of m.screenInternalCommands ) {
+	for( const cmd of m_screenInternalCommands ) {
 		screenData[ cmd.name ] = cmd.fn;
 	}
 
 	// Additional setup for screen data
-	m.nextScreenId += 1;
+	m_nextScreenId += 1;
 	options.canvas.dataset.screenId = screenData.id;
 	screenData.context.imageSmoothingEnabled = false;
 

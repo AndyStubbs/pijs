@@ -10,10 +10,7 @@
 
 import * as utils from "./utils";
 
-const m = {
-	"commandList": [],
-	"screenCommandList": []
-};
+const m_commandList = [];
 
 /**
  * Add a command to the system
@@ -22,7 +19,7 @@ const m = {
  * @param {Function} fn - Command function
  */
 export function addCommand( name, fn, parameterNames, isScreen = false) {
-	m.commandList.push( {
+	m_commandList.push( {
 		"name": name,
 		"fn": fn,
 		"parameterNames": parameterNames,
@@ -37,13 +34,13 @@ export function addCommand( name, fn, parameterNames, isScreen = false) {
 export function processApi( api, screenManager ) {
 
 	// Sort global command list
-	m.commandList.sort( ( a, b ) => a.name.localeCompare( b.name ) );
+	m_commandList.sort( ( a, b ) => a.name.localeCompare( b.name ) );
 
 	// Sort screen commands
 	screenManager.sortScreenCommands();
 
 	// Add all commands to API
-	for( const command of m.commandList ) {
+	for( const command of m_commandList ) {
 		if( command.isScreen ) {
 			api[ command.name ] = ( ...args ) => {
 				const options = utils.parseOptions( args, command.parameterNames );
