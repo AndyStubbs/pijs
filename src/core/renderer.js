@@ -24,12 +24,13 @@ addPen( "pixel", penSetPixel, "square" );
 addBlend( "normal", blendNormal );
 
 // Add Render Screen Data
-screenManager.addScreenDataItem( "render", {
-	"imageData": null,
-	"isDirty": false,
-	"pen": m.pens[ "pixel" ],
-	"blend": m.blends[ "normal" ]
-} );
+screenManager.addScreenDataItem( "imageData", null );
+screenManager.addScreenDataItem( "isDirty", false );
+screenManager.addScreenDataItem( "pen", m.pens[ "pixel" ].fn );
+screenManager.addScreenDataItem( "penData", { "cap": "square", "size": 1 } );
+screenManager.addScreenDataItem( "blend", m.blends[ "normal" ].fn );
+screenManager.addScreenDataItem( "blendColor", blendGetColorNoNoise );
+screenManager.addScreenDataItem( "blendData", { "noise": null } );
 
 
 /***************************************************************************************************
@@ -37,16 +38,11 @@ screenManager.addScreenDataItem( "render", {
  **************************************************************************************************/
 
 export function addPen( name, fn, cap ) {
-	m.pens[ name ] = {
-		"cmd": fn,
-		"cap": cap,
-		"size": 1,
-		"noise": false
-	};
+	m.pens[ name ] = { fn, cap, "size": 1 };
 }
 
 export function addBlend( name, fn ) {
-	m.blends[ name ] = fn;
+	m.blends[ name ] = { fn };
 }
 
 export function getImageData( screenData ) {
@@ -76,7 +72,7 @@ export function setImageDirty( screenData ) {
 }
 
 export function draw( screenData, x, y, c ) {
-	screenData.render.pen.cmd( screenData, x, y, c );
+	screenData.pen( screenData, x, y, c );
 }
 
 
@@ -94,11 +90,10 @@ function render( screenData ) {
 }
 
 // Set Pen Command
-screenManager.addCommand( "setPen", setPen, [ "pen", "size", "noise" ] );
+screenManager.addCommand( "setPen", setPen, [ "pen", "size" ] );
 function setPen( screenData, options ) {
 	const pen = options.pen;
 	let size = Math.round( options.size );
-	let noise = options.noise;
 
 	if( !m.pens[ pen ] ) {
 		const error = new TypeError(
@@ -114,25 +109,6 @@ function setPen( screenData, options ) {
 		throw error;
 	}
 
-	if( noise && ( !utils.isArray( noise ) && isNaN( noise ) ) ) {
-		const error = new TypeError( "setPen: parameter noise is not an array or number" );
-		error.code = "INVALID_NOISE";
-		throw error;
-	}
-
-	if( utils.isArray( noise ) ) {
-		noise = noise.slice();
-		for( let i = 0; i < noise.length; i++ ) {
-			if( isNaN( noise[ i ] ) ) {
-				const error = new TypeError(
-					"setPen: parameter noise array contains an invalid value"
-				);
-				error.code = "INVALID_NOISE_VALUE";
-				throw error;
-			}
-		}
-	}
-
 	if( pen === "pixel" ) {
 		size = 1;
 	}
@@ -146,23 +122,57 @@ function setPen( screenData, options ) {
 	if( size === 1 ) {
 
 		// Size is one so only draw one pixel
-		screenData.pen = m.pens[ "pixel" ];
+		screenData.pen = m.pens[ "pixel" ].fn;
 
 		// Set the line width for context draw
 		screenData.context.lineWidth = 1;
 	} else {
 
 		// Set the draw mode for pixel draw
-		screenData.pen = m.pens[ pen ];
+		screenData.pen = m.pens[ pen ].fn;
 
 		// Set the line width for context draw
 		screenData.context.lineWidth = size * 2 - 1;
 	}
 
-	screenData.pen.noise = noise;
-	screenData.pen.size = size;
+	screenData.penData.size = size;
+	screenData.penData.cap = m.pens[ pen ].cap;
 	screenData.context.lineCap = m.pens[ pen ].cap;
 }
+
+screenManager.addCommand( "setBlendMode", setBlendMode, [ "mode", "noise" ] );
+function setBlendMode( screenData, options ) {
+	const mode = options.mode;
+	let noise = options.noise;
+
+	if( !m.blends[ mode ] ) {
+		const error = new TypeError(
+			`setBlendMode: Argument blend is not a valid blend mode.`
+		);
+		error.code = "INVALID_BLEND_MODE";
+		throw error;
+	}
+
+	if( utils.isArray( noise ) ) {
+		for( let i = 0; i < noise.length; i++ ) {
+			if( isNaN( noise[ i ] ) ) {
+				const error = new TypeError(
+					"setBlendMode: parameter noise array contains an invalid value"
+				);
+				error.code = "INVALID_NOISE_VALUE";
+				throw error;
+			}
+		}
+		screenData.blendColor = blendGetColorNoise;
+		screenData.blendData.noise = noise;
+	} else {
+		screenData.blendColor = blendGetColorNoNoise;
+		screenData.blendData.noise = null;
+	}
+
+	screenData.blend = m.blends[ mode ].fn;
+}
+
 
 /***************************************************************************************************
  * Internal Commands
@@ -174,14 +184,13 @@ function penSetPixel( screenData, x, y, c ) {
 	if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
 		return;
 	}
-
-	getImageData( screenData );
-	screenData.render.blend( screenData, x, y, c );
-	setImageDirty( screenData );
+	screenData.blend( screenData, x, y, c );
 }
 
 // Default Blend Mode
 function blendNormal( screenData, x, y, c ) {
+
+	c = screenData.blendColor( c );
 
 	// Get the image data
 	const data = screenData.imageData.data
@@ -193,4 +202,38 @@ function blendNormal( screenData, x, y, c ) {
 	data[ i + 1 ] = c.g;
 	data[ i + 2 ] = c.b;
 	data[ i + 3 ] = c.a;
+}
+
+// Default Blend Color Picker
+function blendGetColorNoNoise( screenData, c ) {
+	return c;
+}
+
+// Default Noise Blend Color Picker
+function blendGetColorNoise( screenData, c ) {
+	const noise = screenData.blend.noise;
+	const c2 = { "r": c.r, "g": c.g, "b": c.b, "a": c.a };
+	const half = noise / 2;
+
+	if( utils.isArray( noise ) ) {
+		c2.r = utils.clamp(
+			Math.round( c2.r + utils.rndRange( -noise[ 0 ], noise[ 0 ] ) ),	0, 255
+		);
+		c2.g = utils.clamp(
+			Math.round( c2.g + utils.rndRange( -noise[ 1 ], noise[ 1 ] ) ), 0, 255
+		);
+		c2.b = utils.clamp(
+			Math.round( c2.b + utils.rndRange( -noise[ 2 ], noise[ 2 ] ) ), 0, 255
+		);
+		c2.a = utils.clamp(
+			c2.a + utils.rndRange( -noise[ 3 ], noise[ 3 ] ), 0, 255
+		);
+	} else {
+		const change = Math.round( Math.random() * noise - half );
+		c2.r = utils.clamp( c2.r + change, 0, 255 );
+		c2.g = utils.clamp( c2.g + change, 0, 255 );
+		c2.b = utils.clamp( c2.b + change, 0, 255 );
+	}
+
+	return c2;
 }

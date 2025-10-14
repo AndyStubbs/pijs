@@ -10,12 +10,12 @@
 
 import * as screenManager from "../core/screen-manager";
 import * as utils from "../core/utils";
+import * as renderer from "../core/renderer";
+
 
 // Add Graphics Screen Data
-screenManager.addScreenDataItem( "graphics", {
-	"fColor": null,
-	"cursor": { "x": 0, "y": 0 }
-} );
+screenManager.addScreenDataItem( "fColor", null );
+screenManager.addScreenDataItem( "cursor", { "x": 0, "y": 0 } );
 
 
 /***************************************************************************************************
@@ -37,10 +37,6 @@ function pset( screenData, options ) {
 		throw error;
 	}
 
-	// Set the cursor
-	screenData.x = x;
-	screenData.y = y;
-
 	// Make sure x and y are on the screen
 	if( ! utils.inRange2( x, y, 0, 0, screenData.width, screenData.height ) ) {
 		return;
@@ -49,9 +45,13 @@ function pset( screenData, options ) {
 	// Get the fore color
 	const color = screenData.fColor;
 
-	m_piData.commands.getImageData( screenData );
-	screenData.render.draw( screenData, x, y, color );
-	m_piData.commands.setImageDirty( screenData );
+	renderer.getImageData( screenData );
+	renderer.draw( screenData, x, y, color );
+	renderer.setImageDirty( screenData );
+
+	// Set the cursor after drawing
+	screenData.cursor.x = x;
+	screenData.cursor.y = y;
 }
 
 
