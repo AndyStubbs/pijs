@@ -180,36 +180,56 @@ function removeScreen( screenData ) {
 	// TODO: uncomment out cancelInput once input is created
 	//screenData.api.cancelInput();
 
+	// Store the screen ID before we start nullifying properties
+	const errorMessage = `Cannot call {METHOD}() on removed screen (id: ${screenId}). ` +
+		`The screen has been removed from the page.`;
+
 	// Replace all commands from screen object - prevents outside reference to screen from calling
 	// screen functions on screen that doesn't exist
 	for( const key in screenData.api ) {
 		if( typeof screenData.api[ key ] === "function" ) {
+
+			// Use string replacement to avoid capturing screenData in closure
 			screenData.api[ key ] = () => {
-				throw new Error(
-					`Cannot call ${key}() on removed screen (id: ${screenData.id}). ` +
-					`The screen has been removed from the page.`
-				);
+				throw new Error( errorMessage.replace( "{METHOD}", key ) );
 			};
 		}
 	}
 
 	// Remove the canvas from the page
-	if( screenData.canvas.parentElement ) {
+	if( screenData.canvas && screenData.canvas.parentElement ) {
 		screenData.canvas.parentElement.removeChild( screenData.canvas );
 	}
 
-	// Set the values to null
+	// Clean up all references to prevent memory leaks
 	screenData.canvas = null;
 	screenData.bufferCanvas = null;
+	screenData.context = null;
+	screenData.bufferContext = null;
+	screenData.imageData = null;
 	screenData.pal = null;
 	screenData.commands = null;
-	screenData.context = null;
-	screenData.imageData = null;
 	screenData.screenObj = null;
+	screenData.resizeCallback = null;
+	screenData.container = null;
+	screenData.aspectData = null;
+	screenData.clientRect = null;
+
+	// Remove additional screenData items
+	for( const i in m_screenDataItems ) {
+		screenData[ i ] = null;
+	}
+	for( const getter of m_screenDataItemGetters ) {
+		screenData[ getter.name ] = null;
+	}
+	for( const internal of m_screenInternalCommands ) {
+		screenData[ internal.name ] = null;
+	}
 
 	// If the current screen is the active screen then we should set the active screen to the next
-	// screen.
+	// screen available, or null if no screens remain.
 	if( screenData === m_activeScreen ) {
+		m_activeScreen = null;
 		for( const i in m_screens ) {
 			if( m_screens[ i ] !== screenData ) {
 				m_activeScreen = m_screens[ i ];
