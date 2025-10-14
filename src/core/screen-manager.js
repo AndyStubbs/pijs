@@ -172,6 +172,56 @@ function screen( options ) {
 	return screenData.api;
 }
 
+// Remove the screen from the page and memory
+commands.addCommand( "removeScreen", removeScreen, [] );
+function removeScreen( screenData ) {
+	const screenId = screenData.id;
+
+	// TODO: uncomment out cancelInput once input is created
+	//screenData.api.cancelInput();
+
+	// Replace all commands from screen object - prevents outside reference to screen from calling
+	// screen functions on screen that doesn't exist
+	for( const key in screenData.api ) {
+		if( typeof screenData.api[ key ] === "function" ) {
+			screenData.api[ key ] = () => {
+				throw new Error(
+					`Cannot call ${key}() on removed screen (id: ${screenData.id}). ` +
+					`The screen has been removed from the page.`
+				);
+			};
+		}
+	}
+
+	// Remove the canvas from the page
+	if( screenData.canvas.parentElement ) {
+		screenData.canvas.parentElement.removeChild( screenData.canvas );
+	}
+
+	// Set the values to null
+	screenData.canvas = null;
+	screenData.bufferCanvas = null;
+	screenData.pal = null;
+	screenData.commands = null;
+	screenData.context = null;
+	screenData.imageData = null;
+	screenData.screenObj = null;
+
+	// If the current screen is the active screen then we should set the active screen to the next
+	// screen.
+	if( screenData === m_activeScreen ) {
+		for( const i in m_screens ) {
+			if( m_screens[ i ] !== screenData ) {
+				m_activeScreen = m_screens[ i ];
+				break;
+			}
+		}
+	}
+
+	// Delete the screen from the screens container
+	delete m_screens[ screenId ];
+}
+
 // TODO: Maybe just set the input focus on either the container or canvas and have input confined
 // to the screen. Worth considering.
 // setDefaultInputFocus
@@ -554,7 +604,7 @@ function resizeScreens() {
 		screenData.bufferContext.drawImage( screenData.canvas, 0, 0 );
 
 		let size;
-		
+
 		if( screenData.aspectData ) {
 
 			// Update the canvas to the new size
