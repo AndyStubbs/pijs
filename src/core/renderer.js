@@ -124,6 +124,19 @@ function cls( screenData, options ) {
 	}
 }
 
+// setAutoRender command
+screenManager.addCommand( "setAutoRender", setAutoRender, [ "isAutoRender" ] );
+function setAutoRender( screenData, options ) {
+	const isAutoRender = !!options.isAutoRender;
+
+	screenData.isAutoRender = isAutoRender;
+
+	// If enabling auto-render, render any pending changes immediately
+	if( isAutoRender ) {
+		screenData.api.render();
+	}
+}
+
 // Set Pen Command
 screenManager.addCommand( "setPen", setPen, [ "pen", "size" ] );
 function setPen( screenData, options ) {

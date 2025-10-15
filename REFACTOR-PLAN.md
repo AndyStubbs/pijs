@@ -98,7 +98,7 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ✅ `swapColor` - Swap palette color throughout screen
 - ✅ `findColor` - Find/add color in palette
 
-#### Screen Management Commands (90% Complete)
+#### Screen Management Commands (100% Complete)
 **Module: screen-manager.js**
 - ✅ `screen` - Create new screen with aspect ratio support
 - ✅ `removeScreen` - Remove screen from page
@@ -114,12 +114,13 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ✅ `cls` - Clear screen (full or partial)
 - ✅ `setPen` - Set pen type and size
 - ✅ `setBlendMode` - Set blend mode with noise support
+- ✅ `setAutoRender` - Enable/disable automatic rendering
 
 ---
 
-### 🔨 Remaining Features (66 APIs from legacy)
+### 🔨 Remaining Features (65 APIs from legacy)
 
-#### Priority 1: Core Drawing Features (2 APIs)
+#### Priority 1: Core Drawing Features (1 API)
 **Recommended: modules/paint.js**
 - ⬜ `paint` - Flood fill with tolerance (pi-screen-paint.js)
 
@@ -228,8 +229,7 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ⬜ `clearEvents` - Clear all event handlers
 
 #### Priority 7: Additional Core Features (2 APIs)
-**Recommended: core/screen-manager.js or commands.js**
-- ⬜ `setAutoRender` - Enable/disable auto-rendering
+**Recommended: commands.js**
 - ⬜ `ready` - Document ready callback
 - ⬜ `setErrorMode` - Set error handling mode
 
@@ -295,8 +295,7 @@ src/assets/
 
 1. **Font System** - Use bitmap fonts, canvas fonts, or both?
 2. **Event System** - Separate module or integrate into screen-manager?
-3. **setAutoRender** - Add to renderer.js or screen-manager.js?
-4. **Asset Loading** - How to handle async loading (Promises? Callbacks? Both?)
+3. **Asset Loading** - How to handle async loading (Promises? Callbacks? Both?)
 
 ---
 
@@ -312,7 +311,7 @@ src/assets/
 8. **Implement gamepad.js** - Gamepad support
 9. **Implement play.js** - Musical playback
 10. **Implement table.js** - Table formatting
-11. **Complete remaining core features** - setAutoRender, event system, error modes
+11. **Complete remaining core features** - Event system, error modes, ready callback
 
 ---
 
