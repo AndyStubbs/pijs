@@ -14,6 +14,10 @@ const m_commandList = [];
 const m_settings = {};
 let m_api;
 let m_screenManager;
+let m_readyCallbacks = [];
+let m_isDocumentReady = false;
+let m_waitCount = 0;
+let m_checkReadyTimeout = null;
 
 
 /***************************************************************************************************
@@ -24,6 +28,41 @@ let m_screenManager;
 export function init( api, screenManager ) {
 	m_api = api;
 	m_screenManager = screenManager;
+
+	// Set up document ready detection
+	if( typeof document !== "undefined" ) {
+		if( document.readyState === "loading" ) {
+			document.addEventListener( "DOMContentLoaded", onDocumentReady );
+		} else {
+
+			// Document already ready
+			m_isDocumentReady = true;
+		}
+	} else {
+
+		// Not in browser environment, mark as ready immediately
+		m_isDocumentReady = true;
+	}
+}
+
+/**
+ * Increment wait count - called by modules when starting async operations
+ */
+export function wait() {
+	m_waitCount++;
+}
+
+/**
+ * Decrement wait count - called by modules when async operations complete
+ */
+export function done() {
+	m_waitCount--;
+	if( m_waitCount < 0 ) {
+		m_waitCount = 0;
+	}
+
+	// Check if ready to trigger callbacks
+	scheduleReadyCheck();
 }
 
 /**
@@ -103,6 +142,51 @@ export function processApiCommand( command ) {
  **************************************************************************************************/
 
 
+/**
+ * ready command - waits for document ready and all pending resources
+ * 
+ * Supports both callback and promise patterns:
+ *   - $.ready( callback )        // Callback style
+ *   - await $.ready()            // Promise style
+ *   - $.ready().then( ... )      // Promise .then() style
+ * 
+ * Behavior:
+ *   - Never executes immediately (always defers to next tick)
+ *   - Waits for document ready AND all resources with pending wait count
+ *   - All ready() calls before resources are loaded trigger together
+ *   - Each callback/promise only triggers once
+ * 
+ * Example:
+ *   $.loadImage( "a.png", "a" );
+ *   $.loadImage( "b.png", "b" );
+ *   $.ready( () => console.log( "Both loaded" ) );
+ *   // Waits for both a and b, triggers once
+ */
+addCommand( "ready", ready, [ "callback" ] );
+function ready( options ) {
+	const callback = options.callback;
+
+	// Validate callback if provided
+	if( callback != null && !utils.isFunction( callback ) ) {
+		const error = new TypeError( "ready: Parameter callback must be a function." );
+		error.code = "INVALID_CALLBACK";
+		throw error;
+	}
+
+	// Never execute immediately - always defer to next tick
+	return new Promise( ( resolve ) => {
+		m_readyCallbacks.push( {
+			"callback": callback,
+			"resolve": resolve,
+			"triggered": false
+		} );
+
+		// Schedule a check for next tick (allows more resources to be added in same thread)
+		scheduleReadyCheck();
+	} );
+}
+
+
 // Global settings command
 // -- (Command added in processApi) after all settings have been added as commands
 // -- Note: screenData will be null if the setting is not a screen setting
@@ -137,5 +221,69 @@ function set( screenData, options ) {
 				setting.fn( parsedOptions );
 			}
 		}
+	}
+}
+
+
+/***************************************************************************************************
+ * Internal Commands
+ **************************************************************************************************/
+
+
+// Called when document is ready
+function onDocumentReady() {
+	m_isDocumentReady = true;
+
+	// Check if we can trigger ready callbacks
+	scheduleReadyCheck();
+}
+
+// Schedule a ready check on next tick (allows more load calls in same thread)
+function scheduleReadyCheck() {
+
+	// Clear any existing timeout
+	if( m_checkReadyTimeout !== null ) {
+		clearTimeout( m_checkReadyTimeout );
+	}
+
+	// Schedule check for next tick
+	m_checkReadyTimeout = setTimeout( checkReady, 0 );
+}
+
+// Check if all conditions are met to trigger ready callbacks
+function checkReady() {
+	m_checkReadyTimeout = null;
+
+	// Don't check if document not ready
+	if( !m_isDocumentReady ) {
+		return;
+	}
+
+	// Don't trigger if resources are still loading
+	if( m_waitCount !== 0 ) {
+		return;
+	}
+
+	// Trigger all pending ready callbacks together
+	// Note: All ready() calls registered before this point will trigger at once
+	// This allows loads in the same thread to be captured before triggering
+	const callbacks = m_readyCallbacks.slice();
+	m_readyCallbacks = [];
+
+	for( const item of callbacks ) {
+
+		// Skip if already triggered (shouldn't happen, but safety check)
+		if( item.triggered ) {
+			continue;
+		}
+
+		// Mark as triggered (ensures each callback only runs once)
+		item.triggered = true;
+
+		// Execute callback and resolve promise
+		if( item.callback ) {
+			item.callback();
+		}
+		item.resolve();
 	}
 }

@@ -60,11 +60,16 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 ### ✅ Completed Features (October 15, 2025)
 
 #### Core System (100% Complete)
-- ✅ **commands.js** - Command registration and API generation system
+- ✅ **commands.js** - Command registration, API generation, ready system
 - ✅ **screen-manager.js** - Screen creation, management, multiple screens, aspect ratio handling
 - ✅ **utils.js** - Math, color conversion, type checking, string utilities
 - ✅ **colors.js** - Complete palette and color management
 - ✅ **renderer.js** - Image data rendering, pen system, blend modes
+
+**Core Commands:**
+- ✅ `ready` - Document ready with callback/promise support and resource loading
+- ✅ `set` - Global settings command
+- ✅ `wait` / `done` - Module-level resource loading tracking (exported for modules)
 
 #### Graphics Commands (100% Complete - 19/19 from legacy)
 **Module: graphics.js**
@@ -87,6 +92,11 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 
 **Module: paint.js**
 - ✅ `paint` - Flood fill with tolerance (optimized BFS implementation)
+
+#### Image Commands (29% Complete - 2/7 from legacy)
+**Module: images.js**
+- ✅ `loadImage` - Load image from URL (with ready() integration)
+- ✅ `drawImage` - Draw image to screen (basic implementation)
 
 #### Color/Palette Commands (100% Complete - 10/10)
 **Module: colors.js**
@@ -121,7 +131,7 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 
 ---
 
-### 🔨 Remaining Features (64 APIs from legacy)
+### 🔨 Remaining Features (61 APIs from legacy)
 
 #### Priority 1: Text & Printing (26 APIs)
 **Recommended: modules/font.js**
@@ -192,12 +202,10 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ⬜ `offgamepad` - Unregister gamepad handler
 - ⬜ `ingamepads` - Check gamepad state
 
-#### Priority 3: Images (7 APIs)
-**Recommended: modules/images.js**
-- ⬜ `loadImage` - Load image from URL
+#### Priority 3: Images (5 APIs remaining)
+**Module: modules/images.js**
 - ⬜ `removeImage` - Remove loaded image
 - ⬜ `getImage` - Get loaded image
-- ⬜ `drawImage` - Draw image to screen
 - ⬜ `drawSprite` - Draw sprite from sheet
 - ⬜ `loadSpritesheet` - Load spritesheet
 - ⬜ `getSpritesheetData` - Get spritesheet data
@@ -225,10 +233,8 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ⬜ `triggerEventListeners` - Trigger custom events
 - ⬜ `clearEvents` - Clear all event handlers
 
-#### Priority 6: Additional Core Features (2 APIs)
-**Recommended: commands.js**
-- ⬜ `ready` - Document ready callback
-- ⬜ `setErrorMode` - Set error handling mode
+#### Priority 6: Additional Core Features (0 APIs - DEPRECATED)
+- ⬜ `setErrorMode` - FEATURE DEPRECATED - Do not implement
 
 ---
 
@@ -288,12 +294,12 @@ src/assets/
 6. **Screen Data** - All screen state stored in screenData object
 7. **Command Registration** - Automatic API generation via screenManager.addCommand()
 8. **Flood Fill Algorithm** - BFS with Uint8Array visited tracking, single-pass pixel setting
+9. **Ready/Loading System** - Tracks document ready + resource loading, supports callbacks & promises, triggers once
 
 ### Remaining Decisions
 
 1. **Font System** - Use bitmap fonts, canvas fonts, or both?
 2. **Event System** - Separate module or integrate into screen-manager?
-3. **Asset Loading** - How to handle async loading (Promises? Callbacks? Both?)
 
 ---
 
@@ -308,7 +314,7 @@ src/assets/
 7. **Implement gamepad.js** - Gamepad support
 8. **Implement play.js** - Musical playback
 9. **Implement table.js** - Table formatting
-10. **Complete remaining core features** - Event system, error modes, ready callback
+10. **Complete remaining core features** - Event system (onevent, offevent, etc.)
 
 ---
 
