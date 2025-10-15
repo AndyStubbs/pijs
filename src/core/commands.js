@@ -12,6 +12,8 @@ import * as utils from "./utils";
 
 const m_commandList = [];
 const m_settings = {};
+let m_api;
+let m_screenManager;
 
 /**
  * Add a command to the system
@@ -61,20 +63,30 @@ export function processApi( api, screenManager ) {
 	// Sort screen commands
 	screenManager.sortScreenCommands();
 
+	// Keep a copy of the API
+	m_api = api;
+	m_screenManager = screenManager;
+
 	// Add all commands to API
 	for( const command of m_commandList ) {
-		if( command.isScreen ) {
-			api[ command.name ] = ( ...args ) => {
-				const options = utils.parseOptions( args, command.parameterNames );
-				const screenData = screenManager.getActiveScreen();
-				return command.fn( screenData, options );
-			};
-		} else {
-			api[ command.name ] = ( ...args ) => {
-				const options = utils.parseOptions( args, command.parameterNames );
-				return command.fn( options );
-			};
-		}
+		processApiCommand( command );
+	}
+
+}
+
+// Process an api command
+export function processApiCommand( command ) {
+	if( command.isScreen ) {
+		m_api[ command.name ] = ( ...args ) => {
+			const options = utils.parseOptions( args, command.parameterNames );
+			const screenData = m_screenManager.getActiveScreen();
+			return command.fn( screenData, options );
+		};
+	} else {
+		m_api[ command.name ] = ( ...args ) => {
+			const options = utils.parseOptions( args, command.parameterNames );
+			return command.fn( options );
+		};
 	}
 }
 

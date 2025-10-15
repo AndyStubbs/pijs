@@ -65,7 +65,8 @@ export function addPixelCommand( name, fn, parameterNames ) {
 	const cmd = {
 		"name": name,
 		"fn": fn,
-		"parameterNames": parameterNames
+		"parameterNames": parameterNames,
+		"isScreen": true
 	};
 
 	// Add the command to the command list
@@ -91,7 +92,8 @@ export function addAACommand( name, fn, parameterNames ) {
 	const cmd = {
 		"name": name,
 		"fn": fn,
-		"parameterNames": parameterNames
+		"parameterNames": parameterNames,
+		"isScreen": true
 	};
 
 	// Add the command to the pixel command list
@@ -159,10 +161,7 @@ function screen( options ) {
 
 	// Add all the screen commands to the screenData api
 	for( const command of m_commandList ) {
-		screenData.api[ command.name ] = ( ...args ) => {
-			const options = utils.parseOptions( args, command.parameterNames );
-			return command.fn( screenData, options );
-		};
+		processApiCommand( screenData, command );
 	}
 
 	// Assign screen to active screen
@@ -317,11 +316,39 @@ function canvas( screenData ) {
 	return screenData.canvas;
 }
 
+// Set pixel mode command
+addCommand( "setPixelMode", setPixelMode, [ "isEnabled" ] );
+function setPixelMode( screenData, options ) {
+	const isEnabled = options.isEnabled;
+
+	if( isEnabled ) {
+		screenData.context.imageSmoothingEnabled = false;
+		for( const name in m_pixelCommands ) {
+			processApiCommand( screenData, m_pixelCommands[ name ] );
+			commands.processApiCommand( m_pixelCommands[ name ] );
+		}
+	} else {
+		screenData.context.imageSmoothingEnabled = true;
+		for( const name in m_aaCommands ) {
+			processApiCommand( screenData, m_aaCommands[ name ] );
+			commands.processApiCommand( m_aaCommands[ name ] );
+		}
+	}
+}
+
 
 /***************************************************************************************************
  * Internal Commands
  **************************************************************************************************/
 
+
+// Process api command
+function processApiCommand( screenData, command ) {
+	screenData.api[ command.name ] = ( ...args ) => {
+		const options = utils.parseOptions( args, command.parameterNames );
+		return command.fn( screenData, options );
+	};
+}
 
 /**
  * Parses an aspect ratio string into an object containing width, height, and splitter information.

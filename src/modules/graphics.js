@@ -32,7 +32,6 @@ export function init() {
 // pset command
 screenManager.addPixelCommand( "pset", pset, [ "x", "y" ] );
 function pset( screenData, options ) {
-	
 	const x = Math.round( options.x );
 	const y = Math.round( options.y );
 
