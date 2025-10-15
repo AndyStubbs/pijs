@@ -34,16 +34,31 @@ export function init() {
 
 
 // loadImage command
-commands.addCommand( "loadImage", loadImage, [ "url", "name", "onLoad", "onError" ] );
+commands.addCommand( "loadImage", loadImage, [ "src", "name", "onLoad", "onError" ] );
 function loadImage( options ) {
-	const url = options.url;
+	const src = options.src;
 	let name = options.name;
 	const onLoadCallback = options.onLoad;
 	const onErrorCallback = options.onError;
+	const srcErrMsg = "loadImage: Parameter src must be a string URL, Image element, or Canvas " +
+		"element.";
 
-	if( typeof url !== "string" || url === "" ) {
-		const error = new TypeError( "loadImage: Parameter url must be a non-empty string." );
-		error.code = "INVALID_URL";
+	// Validate src parameter - can be string URL, Image element, or Canvas element
+	if( typeof src === "string" ) {
+		if( src === "" ) {
+			const error = new TypeError( srcErrMsg );
+			error.code = "INVALID_SRC";
+			throw error;
+		}
+	} else if( src && typeof src === "object" ) {
+		if( src.tagName !== "IMG" && src.tagName !== "CANVAS" ) {
+			const error = new TypeError( srcErrMsg );
+			error.code = "INVALID_SRC";
+			throw error;
+		}
+	} else {
+		const error = new TypeError( srcErrMsg );
+		error.code = "INVALID_SRC";
 		throw error;
 	}
 
@@ -78,9 +93,34 @@ function loadImage( options ) {
 		throw error;
 	}
 
+	let img;
+
+	// Handle Image or Canvas element passed directly
+	if( typeof src !== "string" ) {
+
+		// Use the element directly
+		img = src;
+
+		// Store immediately since element is already loaded
+		m_images[ name ] = {
+			"status": "ready",
+			"image": img,
+			"width": img.width,
+			"height": img.height
+		};
+
+		// Call user callback if provided
+		if( onLoadCallback ) {
+			onLoadCallback( img );
+		}
+
+		return name;
+	}
+
+	// Handle string URL - requires async loading
 	m_images[ name ] = { "status": "loading" };
 
-	const img = new Image();
+	img = new Image();
 
 	// Set up handlers before setting src
 	// Increment wait count for ready() - will be decremented in onload/onerror
@@ -123,7 +163,7 @@ function loadImage( options ) {
 	};
 
 	// Set source - may trigger onload synchronously if cached
-	img.src = url;
+	img.src = src;
 
 	return name;
 }
