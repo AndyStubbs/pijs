@@ -1,7 +1,7 @@
 /**
  * Pi.js - Graphics Module
  * 
- * Basic Graphics Commands
+ * Basic Graphics Commands: pset, line, rect, circle, get, put, getPixel
  * 
  * @module modules/graphics
  */
@@ -585,6 +585,41 @@ function get( screenData, options ) {
 	}
 
 	return data;
+}
+
+
+// getPixel command
+screenManager.addCommand( "getPixel", getPixel, [ "x", "y" ] );
+function getPixel( screenData, options ) {
+	const x = Math.round( options.x );
+	const y = Math.round( options.y );
+
+	// Make sure x and y are integers
+	if( !utils.isInteger( x ) || !utils.isInteger( y ) ) {
+		const error = new TypeError( "getPixel: Arguments x and y must be integers." );
+		error.code = "INVALID_COORDINATES";
+		throw error;
+	}
+
+	// Check if coordinates are within bounds
+	if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
+		const error = new RangeError( "getPixel: Coordinates are out of bounds." );
+		error.code = "OUT_OF_BOUNDS";
+		throw error;
+	}
+
+	renderer.getImageData( screenData );
+	const data = screenData.imageData.data;
+
+	// Calculate the index
+	const i = ( ( screenData.width * y ) + x ) * 4;
+	const c = utils.convertToColor( {
+		"r": data[ i ],
+		"g": data[ i + 1 ],
+		"b": data[ i + 2 ],
+		"a": data[ i + 3 ]
+	} );
+	return c;
 }
 
 
