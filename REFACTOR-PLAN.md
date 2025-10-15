@@ -66,7 +66,7 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ✅ **colors.js** - Complete palette and color management
 - ✅ **renderer.js** - Image data rendering, pen system, blend modes
 
-#### Graphics Commands (100% Complete - 18/18 from legacy)
+#### Graphics Commands (100% Complete - 19/19 from legacy)
 **Module: graphics.js**
 - ✅ `pset` - Set pixel (pixel & AA modes)
 - ✅ `line` - Draw line (Bresenham algorithm)
@@ -83,7 +83,10 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ✅ `filterImg` - Apply filter function to all pixels
 
 **Module: draw.js**
-- ✅ `draw` - BASIC-style drawing with string commands (U/D/L/R/E/F/G/H/M/C/T/A/B/N)
+- ✅ `draw` - BASIC-style drawing with string commands (U/D/L/R/E/F/G/H/M/C/T/A/B/N/P/S)
+
+**Module: paint.js**
+- ✅ `paint` - Flood fill with tolerance (optimized BFS implementation)
 
 #### Color/Palette Commands (100% Complete - 10/10)
 **Module: colors.js**
@@ -118,15 +121,9 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 
 ---
 
-### 🔨 Remaining Features (65 APIs from legacy)
+### 🔨 Remaining Features (64 APIs from legacy)
 
-#### Priority 1: Core Drawing Features (1 API)
-**Recommended: modules/paint.js**
-- ⬜ `paint` - Flood fill with tolerance (pi-screen-paint.js)
-
-**Note**: Paint command is referenced in `draw` command but currently stubbed out
-
-#### Priority 2: Text & Printing (26 APIs)
+#### Priority 1: Text & Printing (26 APIs)
 **Recommended: modules/font.js**
 - ⬜ `setFont` - Set font family
 - ⬜ `setFontSize` - Set font size
@@ -153,7 +150,7 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 **Recommended: modules/table.js**
 - ⬜ `printTable` - Print formatted tables
 
-#### Priority 3: Input System (37 APIs)
+#### Priority 2: Input System (37 APIs)
 **Recommended: modules/keyboard.js**
 - ⬜ `startKeyboard` - Initialize keyboard input
 - ⬜ `stopKeyboard` - Stop keyboard input
@@ -195,7 +192,7 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ⬜ `offgamepad` - Unregister gamepad handler
 - ⬜ `ingamepads` - Check gamepad state
 
-#### Priority 4: Images (7 APIs)
+#### Priority 3: Images (7 APIs)
 **Recommended: modules/images.js**
 - ⬜ `loadImage` - Load image from URL
 - ⬜ `removeImage` - Remove loaded image
@@ -205,7 +202,7 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ⬜ `loadSpritesheet` - Load spritesheet
 - ⬜ `getSpritesheetData` - Get spritesheet data
 
-#### Priority 5: Sound (12 APIs)
+#### Priority 4: Sound (12 APIs)
 **Recommended: modules/sound.js**
 - ⬜ `sound` - Play simple sound
 - ⬜ `createSound` - Create sound object
@@ -221,14 +218,14 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ⬜ `createTrack` - Create music track
 - ⬜ `stopPlay` - Stop playing track
 
-#### Priority 6: Event System (4 APIs)
+#### Priority 5: Event System (4 APIs)
 **Recommended: core/events.js or integrate into screen-manager.js**
 - ⬜ `onevent` - Register custom event handler
 - ⬜ `offevent` - Unregister custom event handler
 - ⬜ `triggerEventListeners` - Trigger custom events
 - ⬜ `clearEvents` - Clear all event handlers
 
-#### Priority 7: Additional Core Features (2 APIs)
+#### Priority 6: Additional Core Features (2 APIs)
 **Recommended: commands.js**
 - ⬜ `ready` - Document ready callback
 - ⬜ `setErrorMode` - Set error handling mode
@@ -290,6 +287,7 @@ src/assets/
 5. **Module Pattern** - Each module has `init()`, External API, and Internal sections
 6. **Screen Data** - All screen state stored in screenData object
 7. **Command Registration** - Automatic API generation via screenManager.addCommand()
+8. **Flood Fill Algorithm** - BFS with Uint8Array visited tracking, single-pass pixel setting
 
 ### Remaining Decisions
 
@@ -301,17 +299,16 @@ src/assets/
 
 ## Next Steps (Recommended Order)
 
-1. **Implement paint.js** - Required by draw command for P/S commands
-2. **Implement font.js + print.js** - Core text functionality
-3. **Implement images.js** - Image loading and drawing
-4. **Implement keyboard.js** - Basic keyboard input
-5. **Implement mouse.js** - Mouse input and events
-6. **Implement sound.js** - Basic sound effects
-7. **Implement touch.js** - Touch support for mobile
-8. **Implement gamepad.js** - Gamepad support
-9. **Implement play.js** - Musical playback
-10. **Implement table.js** - Table formatting
-11. **Complete remaining core features** - Event system, error modes, ready callback
+1. **Implement font.js + print.js** - Core text functionality
+2. **Implement images.js** - Image loading and drawing
+3. **Implement keyboard.js** - Basic keyboard input
+4. **Implement mouse.js** - Mouse input and events
+5. **Implement sound.js** - Basic sound effects
+6. **Implement touch.js** - Touch support for mobile
+7. **Implement gamepad.js** - Gamepad support
+8. **Implement play.js** - Musical playback
+9. **Implement table.js** - Table formatting
+10. **Complete remaining core features** - Event system, error modes, ready callback
 
 ---
 

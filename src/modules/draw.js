@@ -171,12 +171,14 @@ function draw( screenData, options ) {
 				break;
 			}
 
-			// TODO: Implement paint module
-			// P - Paint (not implemented - requires paint module)
+			// P - Paint / S - Paint (with tolerance)
 			case "P":
-			case "S":
+			case "S": {
+				const colorNum = utils.getInt( drawArgs[ 1 ], 0 );
+				screenData.api.paint( screenData.cursor.x, screenData.cursor.y, colorNum );
 				isBlind = true;
 				break;
+			}
 
 			// A - Arc Line
 			case "A":

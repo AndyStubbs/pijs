@@ -20,6 +20,7 @@ import * as renderer from "./core/renderer.js";
 import * as graphics from "./modules/graphics.js";
 import * as graphicsAdvanced from "./modules/graphics-advanced.js";
 import * as draw from "./modules/draw.js";
+import * as paint from "./modules/paint.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -37,6 +38,7 @@ colors.init();
 graphics.init();
 graphicsAdvanced.init();
 draw.init();
+paint.init();
 
 // Append all the commands to the api
 commands.processApi();
