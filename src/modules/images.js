@@ -383,7 +383,9 @@ function drawImage( screenData, options ) {
 	const scaleY = options.scaleY;
 
 	if( !m_images[ name ] ) {
-		const error = new Error( `drawImage: Image "${name}" not found. Did you forget to load it?` );
+		const error = new Error(
+			`drawImage: Image "${name}" not found. Did you forget to load it?`
+		);
 		error.code = "IMAGE_NOT_FOUND";
 		throw error;
 	}
@@ -410,7 +412,9 @@ function drawImage( screenData, options ) {
 		throw error;
 	}
 
-	drawItem( screenData, imageData.image, x, y, rotation, anchorX, anchorY, alpha, null, scaleX, scaleY );
+	drawItem(
+		screenData, imageData.image, x, y, rotation, anchorX, anchorY, alpha, null, scaleX, scaleY
+	);
 }
 
 // drawSprite command
@@ -472,7 +476,9 @@ function drawSprite( screenData, options ) {
 
 
 // Shared function to draw images and sprites with transformations
-function drawItem( screenData, img, x, y, rotation, anchorX, anchorY, alpha, frameData, scaleX, scaleY ) {
+function drawItem(
+	screenData, img, x, y, rotation, anchorX, anchorY, alpha, frameData, scaleX, scaleY
+) {
 
 	// Default values for scale
 	if( scaleX == null || isNaN( Number( scaleX ) ) ) {
