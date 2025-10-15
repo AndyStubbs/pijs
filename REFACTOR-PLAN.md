@@ -99,8 +99,8 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ✅ `loadSpritesheet` - Load spritesheet with auto-detection or fixed grid
 - ✅ `removeImage` - Remove loaded image from memory
 - ✅ `getImage` - Capture screen region as image
-- ✅ `drawImage` - Draw image to screen (basic implementation)
-- ✅ `drawSprite` - Draw sprite frame from spritesheet (basic implementation)
+- ✅ `drawImage` - Draw image with rotation, anchors, alpha, scaling
+- ✅ `drawSprite` - Draw sprite frame with rotation, anchors, alpha, scaling
 - ✅ `getSpritesheetData` - Get spritesheet frame data
 
 #### Color/Palette Commands (100% Complete - 10/10)

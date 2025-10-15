@@ -365,12 +365,22 @@ function getSpritesheetData( screenData, options ) {
 	return spriteData;
 }
 
-// drawImage command (stub for now)
-screenManager.addCommand( "drawImage", drawImage, [ "name", "x", "y", "rotation", "anchorX", "anchorY" ] );
+// drawImage command
+screenManager.addCommand(
+	"drawImage",
+	drawImage,
+	[ "name", "x", "y", "rotation", "anchorX", "anchorY", "alpha", "scaleX", "scaleY" ]
+);
 function drawImage( screenData, options ) {
 	const name = options.name;
 	const x = options.x || 0;
 	const y = options.y || 0;
+	const rotation = options.rotation;
+	const anchorX = options.anchorX;
+	const anchorY = options.anchorY;
+	const alpha = options.alpha;
+	const scaleX = options.scaleX;
+	const scaleY = options.scaleY;
 
 	if( !m_images[ name ] ) {
 		const error = new Error( `drawImage: Image "${name}" not found. Did you forget to load it?` );
@@ -394,9 +404,13 @@ function drawImage( screenData, options ) {
 		throw error;
 	}
 
-	// TODO: Implement full drawImage with rotation and anchors
-	screenData.api.render();
-	screenData.context.drawImage( imageData.image, x, y );
+	if( isNaN( x ) || isNaN( y ) ) {
+		const error = new TypeError( "drawImage: parameters x and y must be numbers" );
+		error.code = "INVALID_COORDINATES";
+		throw error;
+	}
+
+	drawItem( screenData, imageData.image, x, y, rotation, anchorX, anchorY, alpha, null, scaleX, scaleY );
 }
 
 // drawSprite command
@@ -409,6 +423,12 @@ function drawSprite( screenData, options ) {
 	const frame = options.frame || 0;
 	const x = options.x || 0;
 	const y = options.y || 0;
+	const rotation = options.rotation;
+	const anchorX = options.anchorX;
+	const anchorY = options.anchorY;
+	const alpha = options.alpha;
+	const scaleX = options.scaleX;
+	const scaleY = options.scaleY;
 
 	// Validate name
 	if( !m_images[ name ] ) {
@@ -442,19 +462,7 @@ function drawSprite( screenData, options ) {
 	const img = spriteData.image;
 	const frameData = spriteData.frames[ frame ];
 
-	// TODO: Implement full drawSprite with rotation, anchors, alpha, scale
-	screenData.api.render();
-	screenData.context.drawImage(
-		img,
-		frameData.x,
-		frameData.y,
-		frameData.width,
-		frameData.height,
-		x,
-		y,
-		frameData.width,
-		frameData.height
-	);
+	drawItem( screenData, img, x, y, rotation, anchorX, anchorY, alpha, frameData, scaleX, scaleY );
 }
 
 
@@ -462,6 +470,92 @@ function drawSprite( screenData, options ) {
  * Internal Commands
  **************************************************************************************************/
 
+
+// Shared function to draw images and sprites with transformations
+function drawItem( screenData, img, x, y, rotation, anchorX, anchorY, alpha, frameData, scaleX, scaleY ) {
+
+	// Default values for scale
+	if( scaleX == null || isNaN( Number( scaleX ) ) ) {
+		scaleX = 1;
+	}
+
+	if( scaleY == null || isNaN( Number( scaleY ) ) ) {
+		scaleY = 1;
+	}
+
+	// Default value for rotation
+	if( rotation == null ) {
+		rotation = 0;
+	}
+
+	// Convert rotation from degrees to radians
+	rotation = utils.degreesToRadian( rotation );
+
+	// Default values for anchor
+	if( !anchorX ) {
+		anchorX = 0;
+	}
+	if( !anchorY ) {
+		anchorY = 0;
+	}
+
+	// Default value for alpha
+	if( !alpha && alpha !== 0 ) {
+		alpha = 255;
+	}
+
+	// Calculate anchor position in pixels
+	if( frameData ) {
+		anchorX = Math.round( frameData.width * anchorX );
+		anchorY = Math.round( frameData.height * anchorY );
+	} else {
+		anchorX = Math.round( img.width * anchorX );
+		anchorY = Math.round( img.height * anchorY );
+	}
+
+	const context = screenData.context;
+
+	// Save current alpha
+	const oldAlpha = context.globalAlpha;
+	context.globalAlpha = ( alpha / 255 );
+
+	// Render any pending changes
+	screenData.api.render();
+
+	// Apply transformations
+	context.translate( x, y );
+	context.rotate( rotation );
+	context.scale( scaleX, scaleY );
+
+	// Draw image or sprite frame
+	if( frameData == null ) {
+
+		// Draw full image
+		context.drawImage( img, -anchorX, -anchorY );
+	} else {
+
+		// Draw sprite frame
+		context.drawImage(
+			img,
+			frameData.x,
+			frameData.y,
+			frameData.width,
+			frameData.height,
+			-anchorX,
+			-anchorY,
+			frameData.width,
+			frameData.height
+		);
+	}
+
+	// Restore transformations
+	context.scale( 1 / scaleX, 1 / scaleY );
+	context.rotate( -rotation );
+	context.translate( -x, -y );
+
+	// Restore alpha
+	context.globalAlpha = oldAlpha;
+}
 
 // Process spritesheet with fixed grid dimensions
 function processSpriteSheetFixed( imageData, width, height ) {
