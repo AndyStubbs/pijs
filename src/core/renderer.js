@@ -26,8 +26,8 @@ export function init() {
 
 	// Add pens
 	addPen( "pixel", penSetPixel, "square" );
-	addPen( "square", penSquare );
-	addPen( "circle", penCircle );
+	addPen( "square", penSquare, "square" );
+	addPen( "circle", penCircle, "round" );
 
 	// Add blends blend
 	addBlend( "replace", blendReplace );
@@ -321,7 +321,7 @@ function penSetPixel( screenData, x, y, c ) {
 function penSquare( screenData, x, y, c ) {
 
 	// Size must always be an odd number
-	const size = screenData.pen.size * 2 - 1;
+	const size = screenData.penData.size * 2 - 1;
 
 	// Compute the center offset of the square
 	const offset = Math.round( size / 2 ) - 1;
@@ -343,7 +343,7 @@ function penSquare( screenData, x, y, c ) {
 function penCircle( screenData, x, y, c ) {
 
 	// Special case for pen size 2
-	if( screenData.pen.size === 2 ) {
+	if( screenData.penData.size === 2 ) {
 		if( x >= 0 && x < screenData.width && y >= 0 && y < screenData.height ) {
 			screenData.blend( screenData, x, y, c );
 		}
@@ -363,10 +363,10 @@ function penCircle( screenData, x, y, c ) {
 	}
 
 	// Double size to get the size of the outer box
-	const size = screenData.pen.size * 2;
+	const size = screenData.penData.size * 2;
 
 	// Half is size of radius
-	const half = screenData.pen.size;
+	const half = screenData.penData.size;
 
 	// Calculate the center of circle
 	const offset = half - 1;

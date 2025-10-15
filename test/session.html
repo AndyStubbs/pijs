@@ -7,8 +7,10 @@
 <body>
 <script>
 	const s = $.screen( "100x100" );
-	$.setPixelMode( false );
-	$.pset( 50, 50 );
+	
+	//$.setPixelMode( false );
+	$.setPen( "circle", 20 );
+	$.line( 5, 5, 95, 95 );
 
 
 	console.log( "width", s.width() );

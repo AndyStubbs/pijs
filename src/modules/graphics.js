@@ -30,6 +30,8 @@ export function init() {
  **************************************************************************************************/
 
 
+// TODO: Research: should I draw with pen or just set a pixel. Currently in pixel mode I'm drawing
+// with a pen but in AA mode I'm just filling a rect. I need to pick one a go with it.
 // pset command
 screenManager.addPixelCommand( "pset", pset, [ "x", "y" ] );
 function pset( screenData, options ) {
