@@ -6,21 +6,10 @@
 	</head>
 <body>
 <script>
-	const s = $.screen( "320x200" );
+	const s = $.screen( "100x100" );
 	$.setPixelMode( false );
-	$.pset( 5, 5 );
+	$.pset( 50, 50 );
 
-	$.setColor( 4 );
-	$.setPixelMode( true );
-	$.pset( 6, 6 );
-
-	$.setColor( 5 );
-	$.setPixelMode( false );
-	s.pset( 7, 7 );
-
-	$.set( { "bgColor": 3, "containerBgColor": 5 } );
-
-	$.print( "Hello" );
 
 	console.log( "width", s.width() );
 	console.log( "height", s.height() );
