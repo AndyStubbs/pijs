@@ -290,6 +290,144 @@ function setContainerBgColor( screenData, options ) {
 	}
 }
 
+// Set palette color
+screenManager.addCommand( "setPalColor", setPalColor, [ "index", "color" ] );
+function setPalColor( screenData, options ) {
+	const index = options.index;
+	const color = options.color;
+
+	if(
+		!utils.isInteger( index ) ||
+		index < 0 ||
+		index >= screenData.pal.length
+	) {
+		const error = new RangeError( "setPalColor: index is not a valid integer value." );
+		error.code = "INVALID_INDEX";
+		throw error;
+	}
+
+	const colorValue = utils.convertToColor( color );
+	if( colorValue === null ) {
+		const error = new TypeError(
+			"setPalColor: parameter color is not a valid color format."
+		);
+		error.code = "INVALID_COLOR";
+		throw error;
+	}
+
+	// Store the old color before replacing
+	const oldColor = screenData.pal[ index ];
+
+	// Check if we are changing the current selected fore color
+	if( screenData.color.s === oldColor.s ) {
+		screenData.color = colorValue;
+		screenData.context.fillStyle = colorValue.s;
+		screenData.context.strokeStyle = colorValue.s;
+	}
+
+	// Update the findColorCache - remove entries that pointed to this palette index
+	// and entries that matched the old color
+	for( const key in screenData.findColorCache ) {
+		if( screenData.findColorCache[ key ] === index ) {
+			delete screenData.findColorCache[ key ];
+		}
+	}
+
+	// Add the new color to the cache
+	screenData.findColorCache[ colorValue.s ] = index;
+
+	// Set the new palette color
+	screenData.pal[ index ] = colorValue;
+}
+
+// Get palette
+screenManager.addCommand( "getPal", getPal, [] );
+function getPal( screenData ) {
+	const colors = [];
+	for( let i = 0; i < screenData.pal.length; i++ ) {
+		const color = {
+			"r": screenData.pal[ i ].r,
+			"g": screenData.pal[ i ].g,
+			"b": screenData.pal[ i ].b,
+			"a": screenData.pal[ i ].a,
+			"s": screenData.pal[ i ].s,
+			"s2": screenData.pal[ i ].s2
+		};
+		colors.push( color );
+	}
+	return colors;
+}
+
+// Set entire palette
+screenManager.addCommand( "setPal", setPal, [ "pal" ] );
+function setPal( screenData, options ) {
+	const pal = options.pal;
+
+	if( !utils.isArray( pal ) ) {
+		const error = new TypeError( "setPal: parameter pal is not an array." );
+		error.code = "INVALID_PARAMETER";
+		throw error;
+	}
+
+	if( pal.length < 2 ) {
+		const error = new RangeError(
+			"setPal: parameter pal must have at least two color values."
+		);
+		error.code = "EMPTY_PALETTE";
+		throw error;
+	}
+
+	// Convert all colors and validate
+	const newPal = [];
+	for( let i = 0; i < pal.length; i++ ) {
+		const c = utils.convertToColor( pal[ i ] );
+		if( c === null ) {
+			const error = new TypeError(
+				`setPal: invalid color value at index ${i} in array pal.`
+			);
+			error.code = "INVALID_COLOR";
+			throw error;
+		}
+		newPal.push( c );
+	}
+
+	// Set color 0 to transparent (first color should always be transparent)
+	const firstColor = newPal[ 0 ];
+	newPal[ 0 ] = utils.convertToColor( [
+		firstColor.r,
+		firstColor.g,
+		firstColor.b,
+		0
+	] );
+
+	// Set the new palette
+	screenData.pal = newPal;
+
+	// Clear the findColorCache since we've replaced the entire palette
+	screenData.findColorCache = {};
+
+	// Rebuild cache for new palette colors
+	for( let i = 0; i < newPal.length; i++ ) {
+		screenData.findColorCache[ newPal[ i ].s ] = i;
+	}
+
+	// Check if current drawing color needs to be updated
+	// Find the new palette index that best matches the current color
+	const currentColor = screenData.color;
+	const newIndex = findColorIndex( currentColor, newPal, 1, screenData.findColorCache );
+	if( newIndex !== false ) {
+		screenData.color = newPal[ newIndex ];
+		screenData.context.fillStyle = screenData.color.s;
+		screenData.context.strokeStyle = screenData.color.s;
+	} else {
+
+		// If current color not found, default to palette index 1
+		screenData.color = newPal[ 1 ];
+		screenData.context.fillStyle = screenData.color.s;
+		screenData.context.strokeStyle = screenData.color.s;
+	}
+}
+
 
 /***************************************************************************************************
  * Internal Commands

@@ -403,7 +403,15 @@ function swapColor( screenData, options ) {
 	// Update the pal data
 	screenData.pal[ index ] = newColorValue;
 
-	// TODO: update or reset findColor cache
+	// Update the findColorCache - remove entries that pointed to this palette index
+	for( const key in screenData.findColorCache ) {
+		if( screenData.findColorCache[ key ] === index ) {
+			delete screenData.findColorCache[ key ];
+		}
+	}
+
+	// Add the new color to the cache
+	screenData.findColorCache[ newColorValue.s ] = index;
 }
 
 
