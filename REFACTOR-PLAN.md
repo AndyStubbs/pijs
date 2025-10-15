@@ -136,9 +136,9 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 
 ---
 
-### 🔨 Remaining Features (50 APIs from legacy)
+### 🔨 Remaining Features (37 APIs from legacy)
 
-#### Priority 1: Text & Printing (20 APIs)
+#### Priority 1: Text & Printing (1 API remaining)
 
 #### Font Commands (100% Complete - 6/6)
 **Module: font.js**
@@ -154,20 +154,23 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ✅ Base32 compression/decompression for pixel fonts
 - ✅ Automatic font loading on initialization
 
-**Recommended: modules/print.js**
-- ⬜ `print` - Print text to screen
-- ⬜ `piPrint` - Pi.js bitmap print
-- ⬜ `canvasPrint` - Canvas text print
-- ⬜ `bitmapPrint` - Bitmap font print
-- ⬜ `setPos` - Set cursor position (row/col)
-- ⬜ `setPosPx` - Set cursor position (pixels)
-- ⬜ `getPos` - Get cursor position (row/col)
-- ⬜ `getPosPx` - Get cursor position (pixels)
-- ⬜ `getCols` - Get columns count
-- ⬜ `getRows` - Get rows count
-- ⬜ `piCalcWidth` - Calculate text width
-- ⬜ `canvasCalcWidth` - Calculate canvas text width
-- ⬜ `setWordBreak` - Set word breaking behavior
+#### Print Commands (100% Complete - 13/13)
+**Module: print.js**
+- ✅ `print` - Print text to screen with word wrapping and auto-scroll
+- ✅ `setPos` - Set cursor position (row/col)
+- ✅ `setPosPx` - Set cursor position (pixels)
+- ✅ `getPos` - Get cursor position (row/col)
+- ✅ `getPosPx` - Get cursor position (pixels)
+- ✅ `getCols` - Get columns count
+- ✅ `getRows` - Get rows count
+- ✅ `piCalcWidth` - Calculate text width for pixel fonts
+- ✅ `canvasCalcWidth` - Calculate canvas text width
+- ✅ `setWordBreak` - Set word breaking behavior
+
+**Internal Print Functions:**
+- ✅ `piPrint` - Pi.js pixel font rendering using put command
+- ✅ `canvasPrint` - Canvas text rendering
+- ✅ `bitmapPrint` - Bitmap font image rendering
 
 **Recommended: modules/table.js**
 - ⬜ `printTable` - Print formatted tables
@@ -306,7 +309,7 @@ src/assets/
 ## Next Steps (Recommended Order)
 
 1. ~~**Implement font.js**~~ ✅ **COMPLETE** - Font loading, management, and character data
-2. **Implement print.js** - Text printing, cursor positioning, word breaking
+2. ~~**Implement print.js**~~ ✅ **COMPLETE** - Text printing, cursor positioning, word wrapping, auto-scroll
 3. **Implement keyboard.js** - Basic keyboard input
 4. **Implement mouse.js** - Mouse input and events
 5. **Implement sound.js** - Basic sound effects

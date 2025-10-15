@@ -6,7 +6,7 @@
 	</head>
 <body>
 <script>
-	const s = $.screen( "32x20" );
+	const s = $.screen( "320x200" );
 	$.setPixelMode( false );
 	$.pset( 5, 5 );
 
@@ -19,6 +19,8 @@
 	s.pset( 7, 7 );
 
 	$.set( { "bgColor": 3, "containerBgColor": 5 } );
+
+	$.print( "Hello" );
 
 	console.log( "width", s.width() );
 	console.log( "height", s.height() );

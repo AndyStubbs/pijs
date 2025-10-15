@@ -26,7 +26,12 @@ export function parseOptions( args, parameterNames ) {
 	}
 
 	// Case 1: First argument is a non-null object
-	if( args.length > 0 && typeof args[ 0 ] === "object" && args[ 0 ] !== null ) {
+	if(
+		args.length > 0 &&
+		typeof args[ 0 ] === "object" &&
+		args[ 0 ] !== null &&
+		!isArray( args[ 0 ] )
+	) {
 		const inputOptions = args[ 0 ];
 
 		for( const name of parameterNames ) {

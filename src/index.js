@@ -23,6 +23,7 @@ import * as draw from "./modules/draw.js";
 import * as paint from "./modules/paint.js";
 import * as images from "./modules/images.js";
 import * as font from "./modules/font.js";
+import * as print from "./modules/print.js";
 
 // Assets
 import * as fontData from "./assets/font-data.js";
@@ -46,6 +47,7 @@ draw.init();
 paint.init();
 images.init();
 font.init();
+print.init();
 
 // Append all the commands to the api
 commands.processApi();

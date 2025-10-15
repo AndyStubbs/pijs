@@ -91,8 +91,8 @@ function loadFont( options ) {
 		"mode": isEncoded ? "pixel" : "bitmap",
 		"bitmap": {
 			"image": null,
-			"sWidth": width,
-			"sHeight": height
+			"width": width,
+			"height": height
 		}
 	};
 
@@ -143,10 +143,11 @@ function setFont( screenData, options ) {
 	const font = m_fonts[ fontId ];
 	screenData.font = font;
 
-	// TODO: Update when print module is implemented
-	// Set the rows and cols based on font size
-	// screenData.printCursor.cols = Math.floor( screenData.width / font.width );
-	// screenData.printCursor.rows = Math.floor( screenData.height / font.height );
+	// Update print cursor font reference
+	if( screenData.printCursor ) {
+		screenData.printCursor.font = font;
+		updatePrintCursorDimensions( screenData );
+	}
 }
 
 // setFontSize command
@@ -162,15 +163,10 @@ function setFontSize( screenData, options ) {
 
 	screenData.fontSize = size;
 
-	// TODO: Update when print module is implemented
-	// Update rows and cols
-	// const font = screenData.font;
-	// screenData.printCursor.cols = Math.floor(
-	//     screenData.width / ( font.width * size )
-	// );
-	// screenData.printCursor.rows = Math.floor(
-	//     screenData.height / ( font.height * size )
-	// );
+	// Update print cursor dimensions
+	if( screenData.printCursor ) {
+		updatePrintCursorDimensions( screenData );
+	}
 }
 
 // getAvailableFonts command
@@ -251,6 +247,18 @@ function setChar( screenData, options ) {
  * Internal Commands
  **************************************************************************************************/
 
+
+// Update print cursor rows and columns based on font and size
+function updatePrintCursorDimensions( screenData ) {
+	const font = screenData.font;
+	const size = screenData.fontSize;
+	screenData.printCursor.cols = Math.floor(
+		screenData.width / ( font.width * size )
+	);
+	screenData.printCursor.rows = Math.floor(
+		screenData.height / ( font.height * size )
+	);
+}
 
 // Decompress base32-encoded font data
 function decompressFont( numStr, width, height ) {
@@ -336,7 +344,7 @@ function loadFontFromImage( fontSrc, font ) {
 		commands.wait();
 
 		img.onload = function() {
-			font.image = img;
+			font.bitmap.image = img;
 			commands.done();
 		};
 
@@ -350,7 +358,7 @@ function loadFontFromImage( fontSrc, font ) {
 	} else if( fontSrc instanceof HTMLImageElement ) {
 
 		// Use image element directly
-		font.image = fontSrc;
+		font.bitmap.image = fontSrc;
 	} else {
 		const error = new TypeError( "loadFont: fontSrc must be a string or Image element." );
 		error.code = "INVALID_FONT_SRC";

@@ -171,6 +171,9 @@ function screen( options ) {
 	m_activeScreen = screenData;
 	m_screens[ screenData.id ] = screenData;
 
+	// Setup the initial font for the screen
+	screenData.api.setFont( screenData.font.id );
+
 	return screenData.api;
 }
 
