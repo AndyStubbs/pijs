@@ -208,10 +208,7 @@ function removeScreen( screenData ) {
 	screenData.bufferCanvas = null;
 	screenData.context = null;
 	screenData.bufferContext = null;
-	screenData.imageData = null;
-	screenData.pal = null;
 	screenData.commands = null;
-	screenData.screenObj = null;
 	screenData.resizeCallback = null;
 	screenData.container = null;
 	screenData.aspectData = null;
@@ -714,9 +711,6 @@ function resizeScreens() {
 		screenData.context.drawImage(
 			screenData.bufferCanvas, 0, 0, screenData.width, screenData.height
 		);
-
-		// Reset image data
-		screenData.imageData = null;
 
 		// Set the new buffer size
 		screenData.bufferCanvas.width = screenData.canvas.width;

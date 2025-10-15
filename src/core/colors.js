@@ -11,6 +11,7 @@
 import * as commands from "./commands";
 import * as utils from "./utils";
 import * as screenManager from "./screen-manager";
+import * as renderer from "./renderer";
 
 let m_defaultPal = [];
 let m_defaultColor = -1;
@@ -69,12 +70,10 @@ export function init() {
 	setDefaultPal( { "pal": defaultPaletteHex } );
 	setDefaultColor( { "color": 7 } );
 
-	// Add findColor cach
-	screenManager.addScreenDataItem( "findColorCache", {} );
-
 	// Add getters for screen manager to get defaults for dynamic items
 	screenManager.addScreenDataItemGetter( "pal", () => m_defaultPal );
 	screenManager.addScreenDataItemGetter( "color", () => m_defaultColor );
+	screenManager.addScreenDataItemGetter( "colorCache", getPrepopulatedColorCache );
 }
 
 // Gets the color index
@@ -224,14 +223,14 @@ function findColor( screenData, options ) {
 	const pal = screenData.pal;
 
 	// Check cache first
-	if( color && color.s && screenData.findColorCache[ color.s ] !== undefined ) {
-		return screenData.findColorCache[ color.s ];
+	if( color && color.s && screenData.colorCache[ color.s ] !== undefined ) {
+		return screenData.colorCache[ color.s ];
 	}
 
 	// Convert color to color object
 	color = findColorValue( screenData, color, "findColor" );
 
-	const index = findColorIndex( color, pal, tolerance, screenData.findColorCache );
+	const index = findColorIndex( color, pal, tolerance, screenData.colorCache );
 	if( index ) {
 		return index;
 	}
@@ -239,7 +238,7 @@ function findColor( screenData, options ) {
 	// Add to palette if allowed
 	if( isAddToPalette ) {
 		pal.push( color );
-		screenData.findColorCache[ color.s ] = pal.length - 1;
+		screenData.colorCache[ color.s ] = pal.length - 1;
 		return pal.length - 1;
 	}
 
@@ -325,19 +324,12 @@ function setPalColor( screenData, options ) {
 		screenData.context.strokeStyle = colorValue.s;
 	}
 
-	// Update the findColorCache - remove entries that pointed to this palette index
-	// and entries that matched the old color
-	for( const key in screenData.findColorCache ) {
-		if( screenData.findColorCache[ key ] === index ) {
-			delete screenData.findColorCache[ key ];
-		}
-	}
-
-	// Add the new color to the cache
-	screenData.findColorCache[ colorValue.s ] = index;
-
 	// Set the new palette color
 	screenData.pal[ index ] = colorValue;
+
+	// Update the colorCache - remove old color entry and add new one
+	delete screenData.colorCache[ oldColor.s ];
+	screenData.colorCache[ colorValue.s ] = index;
 }
 
 // Get palette
@@ -403,18 +395,18 @@ function setPal( screenData, options ) {
 	// Set the new palette
 	screenData.pal = newPal;
 
-	// Clear the findColorCache since we've replaced the entire palette
-	screenData.findColorCache = {};
+	// Clear the colorCache since we've replaced the entire palette
+	screenData.colorCache = {};
 
 	// Rebuild cache for new palette colors
 	for( let i = 0; i < newPal.length; i++ ) {
-		screenData.findColorCache[ newPal[ i ].s ] = i;
+		screenData.colorCache[ newPal[ i ].s ] = i;
 	}
 
 	// Check if current drawing color needs to be updated
 	// Find the new palette index that best matches the current color
 	const currentColor = screenData.color;
-	const newIndex = findColorIndex( currentColor, newPal, 1, screenData.findColorCache );
+	const newIndex = findColorIndex( currentColor, newPal, 1, screenData.colorCache );
 	if( newIndex !== false ) {
 		screenData.color = newPal[ newIndex ];
 		screenData.context.fillStyle = screenData.color.s;
@@ -428,11 +420,87 @@ function setPal( screenData, options ) {
 	}
 }
 
+// swapColor command
+screenManager.addCommand( "swapColor", swapColor, [ "oldColor", "newColor" ] );
+function swapColor( screenData, options ) {
+	let oldColor = options.oldColor;
+	const newColor = options.newColor;
+
+	// Validate oldColor
+	if( !utils.isInteger( oldColor ) ) {
+		const error = new TypeError( "swapColor: Parameter oldColor must be an integer." );
+		error.code = "INVALID_PARAMETERS";
+		throw error;
+	} else if( oldColor < 0 || oldColor > screenData.pal.length ) {
+		const error = new RangeError( "swapColor: Parameter oldColor is an invalid integer." );
+		error.code = "INVALID_COLOR_INDEX";
+		throw error;
+	} else if( screenData.pal[ oldColor ] === undefined ) {
+		const error = new RangeError(
+			"swapColor: Parameter oldColor is not in the screen color palette."
+		);
+		error.code = "COLOR_NOT_IN_PALETTE";
+		throw error;
+	}
+
+	const index = oldColor;
+	oldColor = screenData.pal[ index ];
+
+	// Validate newColor
+	const newColorValue = utils.convertToColor( newColor );
+	if( newColorValue === null ) {
+		const error = new TypeError(
+			"swapColor: Parameter newColor is not a valid color format."
+		);
+		error.code = "INVALID_COLOR";
+		throw error;
+	}
+
+	renderer.getImageData( screenData );
+	const data = screenData.imageData.data;
+
+	// Swap all colors
+	for( let y = 0; y < screenData.height; y++ ) {
+		for( let x = 0; x < screenData.width; x++ ) {
+			const i = ( ( screenData.width * y ) + x ) * 4;
+			if(
+				data[ i ] === oldColor.r &&
+				data[ i + 1 ] === oldColor.g &&
+				data[ i + 2 ] === oldColor.b &&
+				data[ i + 3 ] === oldColor.a
+			) {
+				data[ i ] = newColorValue.r;
+				data[ i + 1 ] = newColorValue.g;
+				data[ i + 2 ] = newColorValue.b;
+				data[ i + 3 ] = newColorValue.a;
+			}
+		}
+	}
+
+	renderer.setImageDirty( screenData );
+
+	// Update the pal data
+	screenData.pal[ index ] = newColorValue;
+
+	// Update the colorCache - remove old color entry and add new one
+	delete screenData.colorCache[ oldColor.s ];
+	screenData.colorCache[ newColorValue.s ] = index;
+}
+
 
 /***************************************************************************************************
  * Internal Commands
  **************************************************************************************************/
 
+
+// Prepopulate color cache with all palette colors
+function getPrepopulatedColorCache() {
+	const cache = {};
+	for( let i = 0; i < m_defaultPal.length; i++ ) {
+		cache[ m_defaultPal[ i ].s ] = i;
+	}
+	return cache;
+}
 
 function findColorIndex( color, pal, tolerance, cache = {} ) {
 

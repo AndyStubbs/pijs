@@ -1,7 +1,7 @@
 /**
  * Pi.js - Advanced Graphics Module
  * 
- * Advanced Graphics Commands: arc, ellipse, bezier, filterImg, swapColor
+ * Advanced Graphics Commands: arc, ellipse, bezier, filterImg
  * 
  * @module modules/graphics-advanced
  */
@@ -338,80 +338,6 @@ function aaEllipse( screenData, options ) {
 		screenData.context.fill();
 	}
 	screenData.context.stroke();
-}
-
-
-// swapColor command
-screenManager.addCommand( "swapColor", swapColor, [ "oldColor", "newColor" ] );
-function swapColor( screenData, options ) {
-	let oldColor = options.oldColor;
-	const newColor = options.newColor;
-
-	// Validate oldColor
-	if( !utils.isInteger( oldColor ) ) {
-		const error = new TypeError( "swapColor: Parameter oldColor must be an integer." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
-	} else if( oldColor < 0 || oldColor > screenData.pal.length ) {
-		const error = new RangeError( "swapColor: Parameter oldColor is an invalid integer." );
-		error.code = "INVALID_COLOR_INDEX";
-		throw error;
-	} else if( screenData.pal[ oldColor ] === undefined ) {
-		const error = new RangeError(
-			"swapColor: Parameter oldColor is not in the screen color palette."
-		);
-		error.code = "COLOR_NOT_IN_PALETTE";
-		throw error;
-	}
-
-	const index = oldColor;
-	oldColor = screenData.pal[ index ];
-
-	// Validate newColor
-	const newColorValue = utils.convertToColor( newColor );
-	if( newColorValue === null ) {
-		const error = new TypeError(
-			"swapColor: Parameter newColor is not a valid color format."
-		);
-		error.code = "INVALID_COLOR";
-		throw error;
-	}
-
-	renderer.getImageData( screenData );
-	const data = screenData.imageData.data;
-
-	// Swap all colors
-	for( let y = 0; y < screenData.height; y++ ) {
-		for( let x = 0; x < screenData.width; x++ ) {
-			const i = ( ( screenData.width * y ) + x ) * 4;
-			if(
-				data[ i ] === oldColor.r &&
-				data[ i + 1 ] === oldColor.g &&
-				data[ i + 2 ] === oldColor.b &&
-				data[ i + 3 ] === oldColor.a
-			) {
-				data[ i ] = newColorValue.r;
-				data[ i + 1 ] = newColorValue.g;
-				data[ i + 2 ] = newColorValue.b;
-				data[ i + 3 ] = newColorValue.a;
-			}
-		}
-	}
-
-	renderer.setImageDirty( screenData );
-
-	// Update the pal data
-	screenData.pal[ index ] = newColorValue;
-
-	// Update the findColorCache - remove entries that pointed to this palette index
-	for( const key in screenData.findColorCache ) {
-		if( screenData.findColorCache[ key ] === index ) {
-			delete screenData.findColorCache[ key ];
-		}
-	}
-
-	// Add the new color to the cache
-	screenData.findColorCache[ newColorValue.s ] = index;
 }
 
 
