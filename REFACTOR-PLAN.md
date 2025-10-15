@@ -93,10 +93,15 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 **Module: paint.js**
 - ✅ `paint` - Flood fill with tolerance (optimized BFS implementation)
 
-#### Image Commands (29% Complete - 2/7 from legacy)
+#### Image Commands (100% Complete - 7/7 from legacy)
 **Module: images.js**
-- ✅ `loadImage` - Load image from URL (with ready() integration)
+- ✅ `loadImage` - Load from URL/Image/Canvas (with ready() integration)
+- ✅ `loadSpritesheet` - Load spritesheet with auto-detection or fixed grid
+- ✅ `removeImage` - Remove loaded image from memory
+- ✅ `getImage` - Capture screen region as image
 - ✅ `drawImage` - Draw image to screen (basic implementation)
+- ✅ `drawSprite` - Draw sprite frame from spritesheet (basic implementation)
+- ✅ `getSpritesheetData` - Get spritesheet frame data
 
 #### Color/Palette Commands (100% Complete - 10/10)
 **Module: colors.js**
@@ -131,7 +136,7 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 
 ---
 
-### 🔨 Remaining Features (61 APIs from legacy)
+### 🔨 Remaining Features (56 APIs from legacy)
 
 #### Priority 1: Text & Printing (26 APIs)
 **Recommended: modules/font.js**
@@ -202,15 +207,7 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ⬜ `offgamepad` - Unregister gamepad handler
 - ⬜ `ingamepads` - Check gamepad state
 
-#### Priority 3: Images (5 APIs remaining)
-**Module: modules/images.js**
-- ⬜ `removeImage` - Remove loaded image
-- ⬜ `getImage` - Get loaded image
-- ⬜ `drawSprite` - Draw sprite from sheet
-- ⬜ `loadSpritesheet` - Load spritesheet
-- ⬜ `getSpritesheetData` - Get spritesheet data
-
-#### Priority 4: Sound (12 APIs)
+#### Priority 3: Sound (12 APIs)
 **Recommended: modules/sound.js**
 - ⬜ `sound` - Play simple sound
 - ⬜ `createSound` - Create sound object
@@ -226,14 +223,14 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ⬜ `createTrack` - Create music track
 - ⬜ `stopPlay` - Stop playing track
 
-#### Priority 5: Event System (4 APIs)
+#### Priority 4: Event System (4 APIs)
 **Recommended: core/events.js or integrate into screen-manager.js**
 - ⬜ `onevent` - Register custom event handler
 - ⬜ `offevent` - Unregister custom event handler
 - ⬜ `triggerEventListeners` - Trigger custom events
 - ⬜ `clearEvents` - Clear all event handlers
 
-#### Priority 6: Additional Core Features (0 APIs - DEPRECATED)
+#### Priority 5: Additional Core Features (0 APIs - DEPRECATED)
 - ⬜ `setErrorMode` - FEATURE DEPRECATED - Do not implement
 
 ---
@@ -257,19 +254,15 @@ src/modules/
   └── gamepad.js      - Gamepad support and button mapping
 ```
 
-### Media System (3 files)
+### Media System (2 files)
 ```
 src/modules/
-  ├── images.js       - Image loading, sprites, spritesheet management
   ├── sound.js        - Sound effects, audio pools, volume control
   └── play.js         - Musical note playback, track creation
 ```
 
-### Core Extensions (2 files)
+### Core Extensions (1 file)
 ```
-src/modules/
-  └── paint.js        - Flood fill with tolerance support
-
 src/core/
   └── events.js       - Custom event system (or integrate into screen-manager)
 ```
@@ -306,15 +299,14 @@ src/assets/
 ## Next Steps (Recommended Order)
 
 1. **Implement font.js + print.js** - Core text functionality
-2. **Implement images.js** - Image loading and drawing
-3. **Implement keyboard.js** - Basic keyboard input
-4. **Implement mouse.js** - Mouse input and events
-5. **Implement sound.js** - Basic sound effects
-6. **Implement touch.js** - Touch support for mobile
-7. **Implement gamepad.js** - Gamepad support
-8. **Implement play.js** - Musical playback
-9. **Implement table.js** - Table formatting
-10. **Complete remaining core features** - Event system (onevent, offevent, etc.)
+2. **Implement keyboard.js** - Basic keyboard input
+3. **Implement mouse.js** - Mouse input and events
+4. **Implement sound.js** - Basic sound effects
+5. **Implement touch.js** - Touch support for mobile
+6. **Implement gamepad.js** - Gamepad support
+7. **Implement play.js** - Musical playback
+8. **Implement table.js** - Table formatting
+9. **Complete remaining core features** - Event system (onevent, offevent, etc.)
 
 ---
 
