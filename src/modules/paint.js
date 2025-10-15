@@ -108,17 +108,18 @@ function paint( screenData, options ) {
 	// Use Uint8Array for efficient visited pixel tracking
 	const visited = new Uint8Array( width * height );
 
-	// BFS queue for flood fill (more efficient than stack/DFS)
+	// BFS queue for flood fill - using head pointer for O(1) dequeue
 	const queue = [];
 	queue.push( { "x": x, "y": y } );
 
 	// Mark starting pixel as visited
 	visited[ y * width + x ] = 1;
 
-	while( queue.length > 0 ) {
+	let head = 0;
+	while( head < queue.length ) {
 
-		// Dequeue from front (BFS)
-		const pixel = queue.shift();
+		// Dequeue using head pointer (O(1) instead of O(n) with shift)
+		const pixel = queue[ head++ ];
 		const px = pixel.x;
 		const py = pixel.y;
 
