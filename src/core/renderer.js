@@ -24,11 +24,14 @@ const m_blends = {};
 // Initialize the renderer
 export function init() {
 
-	// Add default pen
+	// Add pens
 	addPen( "pixel", penSetPixel, "square" );
+	addPen( "square", penSquare );
+	addPen( "circle", penCircle );
 
-	// Add default blend
-	addBlend( "normal", blendNormal );
+	// Add blends blend
+	addBlend( "replace", blendReplace );
+	addBlend( "alpha", blendAlpha );
 
 	// Add Render Screen Data
 	screenManager.addScreenDataItem( "imageData", null );
@@ -40,16 +43,8 @@ export function init() {
 
 	// Add Screen Internal Commands
 	screenManager.addScreenInternalCommands( "pen", m_pens[ "pixel" ].fn );
-	screenManager.addScreenInternalCommands( "blend", m_blends[ "normal" ].fn );
+	screenManager.addScreenInternalCommands( "blend", m_blends[ "replace" ].fn );
 	screenManager.addScreenInternalCommands( "blendColor", blendGetColorNoNoise );
-}
-
-export function addPen( name, fn, cap ) {
-	m_pens[ name ] = { fn, cap, "size": 1 };
-}
-
-export function addBlend( name, fn ) {
-	m_blends[ name ] = { fn };
 }
 
 export function getImageData( screenData ) {
@@ -228,30 +223,14 @@ function setBlendMode( screenData, options ) {
  **************************************************************************************************/
 
 
-// Default Set Pixel Pen
-function penSetPixel( screenData, x, y, c ) {
-	if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
-		return;
-	}
-	screenData.blend( screenData, x, y, c );
+function addPen( name, fn, cap ) {
+	m_pens[ name ] = { fn, cap, "size": 1 };
 }
 
-// Default Blend Mode
-function blendNormal( screenData, x, y, c ) {
-
-	c = screenData.blendColor( screenData, c );
-
-	// Get the image data
-	const data = screenData.imageData.data
-
-	// Calculate the index
-	const i = ( ( screenData.width * y ) + x ) * 4;
-
-	data[ i ] = c.r;
-	data[ i + 1 ] = c.g;
-	data[ i + 2 ] = c.b;
-	data[ i + 3 ] = c.a;
+function addBlend( name, fn ) {
+	m_blends[ name ] = { fn };
 }
+
 
 // Default Blend Color Picker
 function blendGetColorNoNoise( screenData, c ) {
@@ -285,4 +264,133 @@ function blendGetColorNoise( screenData, c ) {
 	}
 
 	return c2;
+}
+
+/***************************************************************************************************
+ * Blends
+ **************************************************************************************************/
+
+
+function blendReplace( screenData, x, y, c ) {
+
+	c = screenData.blendColor( screenData, c );
+
+	// Get the image data
+	const data = screenData.imageData.data
+
+	// Calculate the index
+	const i = ( ( screenData.width * y ) + x ) * 4;
+
+	data[ i ] = c.r;
+	data[ i + 1 ] = c.g;
+	data[ i + 2 ] = c.b;
+	data[ i + 3 ] = c.a;
+}
+
+function blendAlpha( screenData, x, y, c ) {
+
+	// Get the image data
+	const data = screenData.imageData.data
+
+	// Calculate the index
+	const i = ( ( screenData.width * y ) + x ) * 4;
+
+	// displayColor = sourceColor × alpha / 255 + backgroundColor × (255 – alpha) / 255
+	// blend = ( source * source_alpha) + desitination * ( 1 - source_alpha)
+	const pct = c.a / 255;
+	const pct2 = ( 255 - c.a ) / 255;
+	data[ i ] = ( c.r * pct ) + data[ i ] * pct2
+	data[ i + 1 ] = ( c.g * pct ) + data[ i + 1 ] * pct2;
+	data[ i + 2 ] = ( c.b * pct ) + data[ i + 2 ] * pct2;
+}
+
+
+/***************************************************************************************************
+ * Pens
+ **************************************************************************************************/
+
+
+// Set pixel pen
+function penSetPixel( screenData, x, y, c ) {
+	if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
+		return;
+	}
+	screenData.blend( screenData, x, y, c );
+}
+
+function penSquare( screenData, x, y, c ) {
+
+	// Size must always be an odd number
+	const size = screenData.pen.size * 2 - 1;
+
+	// Compute the center offset of the square
+	const offset = Math.round( size / 2 ) - 1;
+
+	// Calculate bounds and clip to screen
+	const startX = utils.clamp( x - offset, 0, screenData.width );
+	const endX = utils.clamp( x - offset + size, 0, screenData.width );
+	const startY = utils.clamp( y - offset, 0, screenData.height );
+	const endY = utils.clamp( y - offset + size, 0, screenData.height );
+
+	// Draw the clipped square
+	for( let py = startY; py < endY; py++ ) {
+		for( let px = startX; px < endX; px++ ) {
+			screenData.blend( screenData, px, py, c );
+		}
+	}
+}
+
+function penCircle( screenData, x, y, c ) {
+
+	// Special case for pen size 2
+	if( screenData.pen.size === 2 ) {
+		if( x >= 0 && x < screenData.width && y >= 0 && y < screenData.height ) {
+			screenData.blend( screenData, x, y, c );
+		}
+		if( x + 1 >= 0 && x + 1 < screenData.width && y >= 0 && y < screenData.height ) {
+			screenData.blend( screenData, x + 1, y, c );
+		}
+		if( x - 1 >= 0 && x - 1 < screenData.width && y >= 0 && y < screenData.height ) {
+			screenData.blend( screenData, x - 1, y, c );
+		}
+		if( x >= 0 && x < screenData.width && y + 1 >= 0 && y + 1 < screenData.height ) {
+			screenData.blend( screenData, x, y + 1, c );
+		}
+		if( x >= 0 && x < screenData.width && y - 1 >= 0 && y - 1 < screenData.height ) {
+			screenData.blend( screenData, x, y - 1, c );
+		}
+		return;
+	}
+
+	// Double size to get the size of the outer box
+	const size = screenData.pen.size * 2;
+
+	// Half is size of radius
+	const half = screenData.pen.size;
+
+	// Calculate the center of circle
+	const offset = half - 1;
+
+	// Calculate bounds and clip to screen
+	const startX = utils.clamp( x - offset, 0, screenData.width );
+	const endX = utils.clamp( x - offset + size, 0, screenData.width );
+	const startY = utils.clamp( y - offset, 0, screenData.height );
+	const endY = utils.clamp( y - offset + size, 0, screenData.height );
+
+	// Loop through the clipped square boundary
+	for( let py = startY; py < endY; py++ ) {
+		const y3 = py - y;
+
+		for( let px = startX; px < endX; px++ ) {
+			const x3 = px - x;
+
+			// Compute the radius of point - round to make pixel perfect
+			const r = Math.round( Math.sqrt( x3 * x3 + y3 * y3 ) );
+
+			// Only draw the pixel if it is inside the circle
+			if( r < half ) {
+				screenData.blend( screenData, px, py, c );
+			}
+		}
+	}
 }
