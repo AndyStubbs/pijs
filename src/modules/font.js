@@ -201,8 +201,8 @@ function setChar( screenData, options ) {
 		charCode = charCode.charCodeAt( 0 );
 	}
 
-	if( !utils.isInteger( charCode ) || charCode < 0 || charCode > 255 ) {
-		const error = new RangeError( "setChar: charCode must be an integer between 0 and 255" );
+	if( !utils.isInteger( charCode ) ) {
+		const error = new TypeError( "setChar: charCode must be an integer" );
 		error.code = "INVALID_CHAR_CODE";
 		throw error;
 	}
