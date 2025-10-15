@@ -22,6 +22,10 @@ import * as graphicsAdvanced from "./modules/graphics-advanced.js";
 import * as draw from "./modules/draw.js";
 import * as paint from "./modules/paint.js";
 import * as images from "./modules/images.js";
+import * as font from "./modules/font.js";
+
+// Assets
+import * as fontData from "./assets/font-data.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -41,9 +45,13 @@ graphicsAdvanced.init();
 draw.init();
 paint.init();
 images.init();
+font.init();
 
 // Append all the commands to the api
 commands.processApi();
+
+// Load built-in fonts
+fontData.loadBuiltInFonts( api );
 
 // Set window.pi for browser environments
 if( typeof window !== "undefined" ) {

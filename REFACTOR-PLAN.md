@@ -136,16 +136,23 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 
 ---
 
-### 🔨 Remaining Features (56 APIs from legacy)
+### 🔨 Remaining Features (50 APIs from legacy)
 
-#### Priority 1: Text & Printing (26 APIs)
-**Recommended: modules/font.js**
-- ⬜ `setFont` - Set font family
-- ⬜ `setFontSize` - Set font size
-- ⬜ `setDefaultFont` - Set default font
-- ⬜ `getAvailableFonts` - List available fonts
-- ⬜ `loadFont` - Load custom font
-- ⬜ `setChar` - Set character bitmap data
+#### Priority 1: Text & Printing (20 APIs)
+
+#### Font Commands (100% Complete - 6/6)
+**Module: font.js**
+- ✅ `loadFont` - Load base32-encoded or image-based fonts with charset support
+- ✅ `setDefaultFont` - Set default font for new screens
+- ✅ `setFont` - Set font for current screen
+- ✅ `setFontSize` - Set font size multiplier
+- ✅ `getAvailableFonts` - List loaded fonts with metadata
+- ✅ `setChar` - Override character bitmap data
+
+**Asset: font-data.js**
+- ✅ Built-in fonts: 6x6, 6x8 (default), 8x8, 8x14, 8x16
+- ✅ Base32 compression/decompression for pixel fonts
+- ✅ Automatic font loading on initialization
 
 **Recommended: modules/print.js**
 - ⬜ `print` - Print text to screen
@@ -291,22 +298,23 @@ src/assets/
 
 ### Remaining Decisions
 
-1. **Font System** - Use bitmap fonts, canvas fonts, or both?
+1. ~~**Font System** - Use bitmap fonts, canvas fonts, or both?~~ ✅ **RESOLVED**: Using base32-encoded bitmap fonts with optional image-based fonts
 2. **Event System** - Separate module or integrate into screen-manager?
 
 ---
 
 ## Next Steps (Recommended Order)
 
-1. **Implement font.js + print.js** - Core text functionality
-2. **Implement keyboard.js** - Basic keyboard input
-3. **Implement mouse.js** - Mouse input and events
-4. **Implement sound.js** - Basic sound effects
-5. **Implement touch.js** - Touch support for mobile
-6. **Implement gamepad.js** - Gamepad support
-7. **Implement play.js** - Musical playback
-8. **Implement table.js** - Table formatting
-9. **Complete remaining core features** - Event system (onevent, offevent, etc.)
+1. ~~**Implement font.js**~~ ✅ **COMPLETE** - Font loading, management, and character data
+2. **Implement print.js** - Text printing, cursor positioning, word breaking
+3. **Implement keyboard.js** - Basic keyboard input
+4. **Implement mouse.js** - Mouse input and events
+5. **Implement sound.js** - Basic sound effects
+6. **Implement touch.js** - Touch support for mobile
+7. **Implement gamepad.js** - Gamepad support
+8. **Implement play.js** - Musical playback
+9. **Implement table.js** - Table formatting
+10. **Complete remaining core features** - Event system (onevent, offevent, etc.)
 
 ---
 
