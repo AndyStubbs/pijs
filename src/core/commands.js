@@ -104,8 +104,8 @@ export function processApiCommand( command ) {
 
 
 // Global settings command
-// -- added in processApi after all settings have been added as commands
-// -- needs to handle null values for screenData
+// -- (Command added in processApi) after all settings have been added as commands
+// -- Note: screenData will be null if the setting is not a screen setting
 function set( screenData, options ) {
 
 	// Loop through all the options
