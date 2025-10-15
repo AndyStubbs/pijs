@@ -15,6 +15,17 @@ const m_settings = {};
 let m_api;
 let m_screenManager;
 
+
+/***************************************************************************************************
+ * Module Commands
+ **************************************************************************************************/
+
+
+export function init( api, screenManager ) {
+	m_api = api;
+	m_screenManager = screenManager;
+}
+
 /**
  * Add a command to the system
  * 
@@ -40,9 +51,8 @@ export function addCommand( name, fn, parameterNames, isScreen = false ) {
 
 /**
  * Sorts then sets commands on the api
- * @param {Object} api - An object which will recieve all the commands that have been added
  */
-export function processApi( api, screenManager ) {
+export function processApi() {
 
 	// Get the settings list
 	const setList = []
@@ -55,17 +65,14 @@ export function processApi( api, screenManager ) {
 	
 	// Add the set commands -- not all set commands are screen commands but some are so use
 	// screenManager to add command
-	screenManager.addCommand( "set", set, setList );
+	m_screenManager.addCommand( "set", set, setList );
 
 	// Sort global command list
 	m_commandList.sort( ( a, b ) => a.name.localeCompare( b.name ) );
 
 	// Sort screen commands
-	screenManager.sortScreenCommands();
+	m_screenManager.sortScreenCommands();
 
-	// Keep a copy of the API
-	m_api = api;
-	m_screenManager = screenManager;
 
 	// Add all commands to API
 	for( const command of m_commandList ) {

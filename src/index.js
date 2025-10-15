@@ -18,6 +18,8 @@ import * as renderer from "./core/renderer.js";
 
 // Other Modules
 import * as graphics from "./modules/graphics.js";
+import * as graphicsAdvanced from "./modules/graphics-advanced.js";
+import * as draw from "./modules/draw.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -28,12 +30,16 @@ const api = {
 };
 
 // Initialize the modules
+commands.init( api, screenManager );
+screenManager.init();
 renderer.init();
 colors.init();
 graphics.init();
+graphicsAdvanced.init();
+draw.init();
 
 // Append all the commands to the api
-commands.processApi( api, screenManager );
+commands.processApi();
 
 // Set window.pi for browser environments
 if( typeof window !== "undefined" ) {

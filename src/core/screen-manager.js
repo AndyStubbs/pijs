@@ -24,14 +24,17 @@ let m_nextScreenId = 0;
 let m_activeScreen = null;
 let m_defaultInputFocus = window;
 
-// Add event listener to resize all the screens
-window.addEventListener( "resize", resizeScreens );
-
 
 /***************************************************************************************************
  * Module Commands
  **************************************************************************************************/
 
+
+export function init() {
+	
+	// Add event listener to resize all the screens
+	window.addEventListener( "resize", resizeScreens );
+}
 
 /**
  * Add a command to the screen

@@ -4,6 +4,24 @@
 
 ### Character limit
 - Keep characters at less than 100 characters per line.
+- When wrapping blocks if/while/function/etc that are over 100 characters try to keep conditional in
+- logical groups on a line and always put the final `) {` on it's own new line.
+**Examples:**
+```javascript
+// ✓ Good
+if(
+	!utils.isInteger( x ) || !utils.isInteger( y ) ||
+	!utils.isInteger( width ) || !utils.isInteger( height )
+) {
+	// ...
+}
+
+// ✗ Bad
+if( !utils.isInteger( x ) || !utils.isInteger( y )
+	||!utils.isInteger( width ) || !utils.isInteger( height ) ) {
+	// ...
+}
+```
 
 ### Indentation
 - Use **tabs** for indentation (not spaces)
