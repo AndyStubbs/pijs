@@ -382,27 +382,64 @@ function drawImage( screenData, options ) {
 	const scaleX = options.scaleX;
 	const scaleY = options.scaleY;
 
-	if( !m_images[ name ] ) {
-		const error = new Error(
-			`drawImage: Image "${name}" not found.`
+	let image;
+
+	if( typeof name === "string" ) {
+
+		// Handle string image name
+		if( !m_images[ name ] ) {
+			const error = new Error(
+				`drawImage: Image "${name}" not found.`
+			);
+			error.code = "IMAGE_NOT_FOUND";
+			throw error;
+		}
+	
+		const imageData = m_images[ name ];
+	
+		if( imageData.status === "loading" ) {
+			const error = new Error(
+				`drawImage: Image "${name}" is still loading. Use $.ready() to wait for it.`
+			);
+			error.code = "IMAGE_NOT_READY";
+			throw error;
+		}
+	
+		if( imageData.status === "error" ) {
+			const error = new Error( `drawImage: Image "${name}" failed to load.` );
+			error.code = "IMAGE_LOAD_FAILED";
+			throw error;
+		}
+
+		image = imageData.image;
+	} else if( name && typeof name === "object" ) {
+
+		// Handle screen API object
+		if( name.screen === true ) {
+			image = name.canvas();
+			if( !image ) {
+				const error = new Error( "drawImage: Screen has no canvas." );
+				error.code = "INVALID_SCREEN";
+				throw error;
+			}
+		} else if( name.tagName === "CANVAS" || name.tagName === "IMG" ) {
+
+			// Handle Canvas or Image element
+			image = name;
+		} else {
+			const error = new TypeError(
+				"drawImage: Parameter name must be a string, screen object, Canvas element, " +
+				"or Image element."
+			);
+			error.code = "INVALID_NAME";
+			throw error;
+		}
+	} else {
+		const error = new TypeError(
+			"drawImage: Parameter name must be a string, screen object, Canvas element, " +
+			"or Image element."
 		);
-		error.code = "IMAGE_NOT_FOUND";
-		throw error;
-	}
-
-	const imageData = m_images[ name ];
-
-	if( imageData.status === "loading" ) {
-		const error = new Error(
-			`drawImage: Image "${name}" is still loading. Use $.ready() to wait for it.`
-		);
-		error.code = "IMAGE_NOT_READY";
-		throw error;
-	}
-
-	if( imageData.status === "error" ) {
-		const error = new Error( `drawImage: Image "${name}" failed to load.` );
-		error.code = "IMAGE_LOAD_FAILED";
+		error.code = "INVALID_NAME";
 		throw error;
 	}
 
@@ -413,7 +450,7 @@ function drawImage( screenData, options ) {
 	}
 
 	drawItem(
-		screenData, imageData.image, x, y, rotation, anchorX, anchorY, alpha, null, scaleX, scaleY
+		screenData, image, x, y, rotation, anchorX, anchorY, alpha, null, scaleX, scaleY
 	);
 }
 
