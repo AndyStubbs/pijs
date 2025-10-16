@@ -57,7 +57,8 @@ $.ready( function () {
 		y = 15;
 
 		$.setPixelMode( true );
-		$.setPen( "square", i , [ 100, 200, 100, 1 ] );
+		$.setPen( "square", i );
+		$.setBlend( "replace",  [ 100, 200, 100, 1 ] );
 		draw( x, y );
 		$.setPixelMode( false );
 		draw( x + 30, y );
@@ -65,6 +66,7 @@ $.ready( function () {
 
 		$.setPixelMode( true );
 		$.setPen( "circle", i, 100 );
+		$.setBlend( "replace", 100 );
 		draw( x, y );
 		$.setPixelMode( false );
 		draw( x + 30, y );
