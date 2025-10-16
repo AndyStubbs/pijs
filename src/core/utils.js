@@ -560,11 +560,15 @@ export function binarySearch( data, search, compareFn ) {
  * @returns {number} Parsed integer or default
  */
 export function getInt( val, def ) {
-	val = parseInt( val );
-	if( isNaN( val ) ) {
-		val = def;
+	if( val === null || val === undefined ) {
+		return def;
 	}
-	return val;
+	const parsed = Number( val );
+	if( !Number.isFinite( parsed ) ) {
+		return def;
+	}
+
+	return Math.round( parsed );
 }
 
 // Common math constants

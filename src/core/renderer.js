@@ -95,10 +95,10 @@ function render( screenData ) {
 // cls (clear screen) command
 screenManager.addCommand( "cls", cls, [ "x", "y", "width", "height" ] );
 function cls( screenData, options ) {
-	const x = utils.getInt( Math.round( options.x ), 0 );
-	const y = utils.getInt( Math.round( options.y ), 0 );
-	const width = utils.getInt( Math.round( options.width ), screenData.width );
-	const height = utils.getInt( Math.round( options.height ), screenData.height );
+	const x = utils.getInt( options.x, 0 );
+	const y = utils.getInt( options.y, 0 );
+	const width = utils.getInt( options.width, screenData.width );
+	const height = utils.getInt( options.height, screenData.height );
 
 	// If clearing a partial region, render first to preserve other content
 	if( x !== 0 || y !== 0 || width !== screenData.width || height !== screenData.height ) {
@@ -110,12 +110,10 @@ function cls( screenData, options ) {
 		screenData.context.clearRect( x, y, width, height );
 		screenData.imageData = null;
 		screenData.isDirty = false;
-
-		// Reset cursor if it exists
-		if( screenData.cursor ) {
-			screenData.cursor.x = 0;
-			screenData.cursor.y = 0;
-		}
+		screenData.printCursor.x = 0;
+		screenData.printCursor.y = 0;
+		screenData.cursor.x = 0;
+		screenData.cursor.y = 0;
 	}
 }
 
