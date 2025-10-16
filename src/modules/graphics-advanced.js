@@ -326,7 +326,7 @@ function aaEllipse( screenData, options ) {
 	screenData.context.beginPath();
 	screenData.context.strokeStyle = screenData.color.s;
 	screenData.context.moveTo( cx + rx, cy );
-	screenData.context.ellipse( cx, cy, rx, ry, 0, utils.math.deg360, false );
+	screenData.context.ellipse( cx, cy, rx, ry, 0, Math.PI * 2, false );
 	if( isFill ) {
 		screenData.context.fillStyle = fillColor.s;
 		screenData.context.fill();
