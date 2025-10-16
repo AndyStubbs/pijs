@@ -178,14 +178,14 @@ function setPen( screenData, options ) {
 }
 
 // Set blend mode
-screenManager.addCommand( "setBlendMode", setBlendMode, [ "mode", "noise" ] );
-function setBlendMode( screenData, options ) {
+screenManager.addCommand( "setBlend", setBlend, [ "mode", "noise" ] );
+function setBlend( screenData, options ) {
 	const mode = options.mode;
 	let noise = options.noise;
 
 	if( !m_blends[ mode ] ) {
 		const error = new TypeError(
-			`setBlendMode: Argument blend is not a valid blend mode.`
+			`setBlend: Argument blend is not a valid blend mode.`
 		);
 		error.code = "INVALID_BLEND_MODE";
 		throw error;
@@ -195,7 +195,7 @@ function setBlendMode( screenData, options ) {
 		for( let i = 0; i < noise.length; i++ ) {
 			if( isNaN( noise[ i ] ) ) {
 				const error = new TypeError(
-					"setBlendMode: parameter noise array contains an invalid value"
+					"setBlend: parameter noise array contains an invalid value"
 				);
 				error.code = "INVALID_NOISE_VALUE";
 				throw error;
@@ -204,8 +204,14 @@ function setBlendMode( screenData, options ) {
 		screenData.blendColor = blendGetColorNoise;
 		screenData.blendData.noise = noise;
 	} else {
-		screenData.blendColor = blendGetColorNoNoise;
-		screenData.blendData.noise = null;
+		noise = utils.getInt( noise, null );
+		if( noise === null ) {
+			screenData.blendColor = blendGetColorNoNoise;
+			screenData.blendData.noise = null;
+		} else {
+			screenData.blendColor = blendGetColorNoise;
+			screenData.blendData.noise = utils.clamp( noise, 0, 255 );
+		}
 	}
 
 	screenData.blend = m_blends[ mode ].fn;
@@ -233,7 +239,7 @@ function blendGetColorNoNoise( screenData, c ) {
 
 // Default Noise Blend Color Picker
 function blendGetColorNoise( screenData, c ) {
-	const noise = screenData.blend.noise;
+	const noise = screenData.blendData.noise;
 	const c2 = { "r": c.r, "g": c.g, "b": c.b, "a": c.a };
 	const half = noise / 2;
 

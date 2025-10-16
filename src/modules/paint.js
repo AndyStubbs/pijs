@@ -147,6 +147,9 @@ function paint( screenData, options ) {
 		data[ i + 1 ] = fillColor.g;
 		data[ i + 2 ] = fillColor.b;
 		data[ i + 3 ] = fillColor.a;
+		
+		// TODO: Research maybe use blend here so we can use noise or alpha in paint
+		//screenData.blend( screenData, pixel.x, pixel.y, fillColor );
 
 		// Add adjacent pixels to queue if not visited and in bounds
 		addToQueue( queue, visited, px + 1, py, width, height );

@@ -31,7 +31,8 @@
 Math.seedrandom('constant');
 $.ready( function () {
 	$.screen( "200x200" );
-	$.setPen( "circle", 10, 35 );
+	$.setPen( "circle", 10 );
+	$.setBlend( "replace", 35 );
 	$.setColor( 9 );
 	$.line( 0, 0, 199, 199 );
 	$.setColor( 10 );
