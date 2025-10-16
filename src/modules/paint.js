@@ -43,10 +43,10 @@ function paint( screenData, options ) {
 		throw error;
 	}
 
-	// Set the default tolerance to 0.001 - Should not be 0 because some browser add random noise
-	// to canvas as a security feature
+	// Set the default tolerance to 1 for maximum fill tolerance
+	// Note: Even with tolerance=1, the algorithm still respects color boundaries
 	if( tolerance == null || tolerance === false ) {
-		tolerance = 0.001;
+		tolerance = 1;
 	}
 
 	if( isNaN( tolerance ) || tolerance < 0 || tolerance > 1 ) {
