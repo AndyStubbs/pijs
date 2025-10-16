@@ -76,8 +76,8 @@ export function init() {
 	screenManager.addScreenDataItemGetter( "colorCache", getPrepopulatedColorCache );
 }
 
-// Gets the color index
-export function findColorValue( screenData, colorInput, commandName ) {
+// Gets the color value by index or raw color value
+export function getColorValue( screenData, colorInput, commandName ) {
 	let colorValue;
 
 	if( utils.isInteger( colorInput ) ) {
@@ -101,6 +101,21 @@ export function findColorValue( screenData, colorInput, commandName ) {
 	}
 
 	return colorValue;
+}
+
+export function getColorIndex( screenData, colorValue, tolerance, isAddToPalette ) {
+	let c = findColorIndex( colorValue, screenData.pal, tolerance, screenData.colorCache );
+
+	if( c === false ) {
+		if( isAddToPalette ) {
+			screenData.pal.push( colorValue );
+			c = screenData.pal.length;
+			screenData.colorCache[ oldColor.s ] = c;
+		} else {
+			return 0;
+		}
+	}
+	return c;
 }
 
 
@@ -183,7 +198,7 @@ screenManager.addCommand( "setColor", setColor, [ "color", "isAddToPalette" ] );
 function setColor( screenData, options ) {
 	const colorInput = options.color;
 	const isAddToPalette = !!options.isAddToPalette;
-	const colorValue = findColorValue( screenData, colorInput, "setColor" );
+	const colorValue = getColorValue( screenData, colorInput, "setColor" );
 
 	if( colorValue === undefined ) {
 		return;
@@ -228,7 +243,7 @@ function findColor( screenData, options ) {
 	}
 
 	// Convert color to color object
-	color = findColorValue( screenData, color, "findColor" );
+	color = getColorValue( screenData, color, "findColor" );
 
 	const index = findColorIndex( color, pal, tolerance, screenData.colorCache );
 	if( index ) {
@@ -520,6 +535,8 @@ function findColorIndex( color, pal, tolerance, cache = {} ) {
 			const db = pal[ i ].b - color.b;
 			const da = pal[ i ].a - color.a;
 
+			// TODO: Need to unify color distance formula in all use cases
+			// TODO: Research better color distance formulas
 			const difference = ( dr * dr + dg * dg + db * db + da * da * 0.25 );
 			const similarity = maxDifference - difference;
 

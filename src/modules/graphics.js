@@ -194,10 +194,7 @@ function rect( screenData, options ) {
 
 	let isFill = false;
 	if( fillColor != null ) {
-		fillColor = colors.findColorValue( screenData, fillColor, "rect" );
-		if( fillColor === undefined ) {
-			return;
-		}
+		fillColor = colors.getColorValue( screenData, fillColor, "rect" );
 		isFill = true;
 	}
 
@@ -267,10 +264,7 @@ function aaRect( screenData, options ) {
 	}
 
 	if( fillColor != null ) {
-		fillColor = colors.findColorValue( screenData, fillColor, "rect" );
-		if( fillColor === undefined ) {
-			return;
-		}
+		fillColor = colors.getColorValue( screenData, fillColor, "rect" );
 		isFill = true;
 	}
 
@@ -302,10 +296,7 @@ function circle( screenData, options ) {
 	}
 
 	if( fillColor != null ) {
-		fillColor = colors.findColorValue( screenData, fillColor, "circle" );
-		if( fillColor === undefined ) {
-			return;
-		}
+		fillColor = colors.getColorValue( screenData, fillColor, "circle" );
 		isFill = true;
 	}
 
@@ -421,10 +412,7 @@ function aaCircle( screenData, options ) {
 
 	let isFill = false;
 	if( fillColor != null ) {
-		fillColor = colors.findColorValue( screenData, fillColor, "circle" );
-		if( fillColor === undefined ) {
-			return;
-		}
+		fillColor = colors.getColorValue( screenData, fillColor, "circle" );
 		isFill = true;
 	}
 
@@ -575,10 +563,8 @@ function get( screenData, options ) {
 			const g = imageData.data[ i + 1 ];
 			const b = imageData.data[ i + 2 ];
 			const a = imageData.data[ i + 3 ];
-			const c = screenData.api.findColor(
-				utils.rgbToColor( r, g, b, a ),
-				tolerance,
-				isAddToPalette
+			const c = colors.getColorIndex(
+				screenData, utils.rgbToColor( r, g, b, a ), tolerance, isAddToPalette
 			);
 			data[ row ].push( c );
 		}

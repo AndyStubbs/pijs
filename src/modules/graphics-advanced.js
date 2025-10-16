@@ -182,10 +182,7 @@ function ellipse( screenData, options ) {
 
 	let isFill = false;
 	if( fillColor != null ) {
-		fillColor = colors.findColorValue( screenData, fillColor, "ellipse" );
-		if( fillColor === undefined ) {
-			return;
-		}
+		fillColor = colors.getColorValue( screenData, fillColor, "ellipse" );
 		isFill = true;
 	}
 
@@ -318,10 +315,7 @@ function aaEllipse( screenData, options ) {
 
 	let isFill = false;
 	if( fillColor != null ) {
-		fillColor = colors.findColorValue( screenData, fillColor, "ellipse" );
-		if( fillColor === undefined ) {
-			return;
-		}
+		fillColor = colors.getColorValue( screenData, fillColor, "ellipse" );
 		isFill = true;
 	}
 
