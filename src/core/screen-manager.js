@@ -12,6 +12,7 @@
 import * as commands from "./commands";
 import * as utils from "./utils";
 
+const SCREEN_API_PROTO = { "screen": true };
 const m_screens = {};
 const m_commandList = [];
 const m_pixelCommands = {};
@@ -404,7 +405,7 @@ function parseAspect( aspect ) {
 // Determines the type of screen to create and returns the created screen
 function createScreen( options ) {
 	if( options.isOffscreen ) {
-		if( !aspectData ) {
+		if( !options.aspectData ) {
 			const error = new Error(
 				"screen: You must supply an aspect ratio with exact dimensions " +
 				"for offscreen screens."
@@ -412,7 +413,7 @@ function createScreen( options ) {
 			error.code = "NO_ASPECT_OFFSCREEN";
 			throw error;
 		}
-		if( aspectData.splitter !== "x" ) {
+		if( options.aspectData.splitter !== "x" ) {
 			const error = new Error(
 				"screen: You must use aspect ratio with e(x)act pixel dimensions for offscreen" +
 				"screens. For example: 320x200 for width of 320 and height of 200 pixels."
@@ -420,7 +421,7 @@ function createScreen( options ) {
 			error.code = "INVALID_OFFSCREEN_ASPECT";
 			throw error;
 		}
-		screenData = createOffscreenScreen( options );
+		return createOffscreenScreen( options );
 	}
 
 	// Get the container element from the dom if it's available
@@ -563,6 +564,9 @@ function createScreenData( options ) {
 	// Set the will read frequently attribute to improve speed of primative graphics
 	const contextAttributes = { "willReadFrequently": !!options.willReadFrequently };
 
+	const screenApi = Object.create( SCREEN_API_PROTO );
+	screenApi.id = m_nextScreenId;
+
 	// Create the screen data object
 	const screenData = {
 		"id": m_nextScreenId,
@@ -578,10 +582,7 @@ function createScreenData( options ) {
 		"bufferContext": options.bufferCanvas.getContext( "2d", contextAttributes ),
 		"clientRect": options.canvas.getBoundingClientRect(),
 		"resizeCallback": options.resizeCallback,
-		"api": {
-			"id": m_nextScreenId,
-			"screen": true
-		}
+		"api": screenApi
 	};
 
 	// Append additional items onto the screendata
