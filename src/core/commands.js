@@ -126,6 +126,11 @@ export function processApiCommand( command ) {
 		m_api[ command.name ] = ( ...args ) => {
 			const options = utils.parseOptions( args, command.parameterNames );
 			const screenData = m_screenManager.getActiveScreen();
+			if( !screenData ) {
+				const error = new Error( `${command.name}: No screens available for command.` );
+				error.code = "NO_SCREEN";
+				throw error;
+			}
 			return command.fn( screenData, options );
 		};
 	} else {
