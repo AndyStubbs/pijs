@@ -649,7 +649,7 @@ function setCanvasSize( aspectData, canvas, maxWidth, maxHeight ) {
 	canvas.style.marginTop = Math.floor( ( maxHeight - newHeight ) / 2 ) + "px";
 
 	// Set the actual canvas dimensions
-	if( splitter === "x" || splitter === "e" ) {
+	if( splitter !== ":" ) {
 		canvas.width = width;
 		canvas.height = height;
 	} else {

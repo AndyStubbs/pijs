@@ -432,13 +432,12 @@ function aaCircle( screenData, options ) {
 	const angle1 = utils.degreesToRadian( 0 );
 	const angle2 = utils.degreesToRadian( 360 );
 	screenData.context.beginPath();
-	screenData.context.strokeStyle = screenData.color.s;
-	screenData.context.moveTo( x + Math.cos( angle1 ) * r, y + Math.sin( angle1 ) * r );
 	screenData.context.arc( x, y, r, angle1, angle2 );
 	if( isFill ) {
 		screenData.context.fillStyle = fillColor.s;
 		screenData.context.fill();
 	}
+	screenData.context.strokeStyle = screenData.color.s;
 	screenData.context.stroke();
 }
 

@@ -14,7 +14,7 @@
 		</script>
 		<script src="tests/html/libs/seedrandom.js"></script>
 		<!-- [Pi.js Script]-->
-		<script src="../../../build/pi.js"></script>
+		<script src="../../../releases/v2-refactor-1/pi.js"></script>
 		<!-- [/Pi.js Script]-->
 		<style>
 			html, body {
@@ -29,7 +29,7 @@ Math.seedrandom( 'constant' );
 
 var $screen;
 
-$screen = $.screen( { "aspect": "300m210", "isMultiple": true } );
+$screen = $.screen( { "aspect": "300x210", "isMultiple": true } );
 $screen.setPixelMode( false );
 $screen.setPen( "circle", 6 );
 var pens = [ "circle", "pixel", "square" ];
