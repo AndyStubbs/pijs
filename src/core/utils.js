@@ -25,13 +25,8 @@ export function parseOptions( args, parameterNames ) {
 		resultOptions[ name ] = null;
 	}
 
-	// Case 1: First argument is a non-null object
-	if(
-		args.length > 0 &&
-		typeof args[ 0 ] === "object" &&
-		args[ 0 ] !== null &&
-		!isArray( args[ 0 ] )
-	) {
+	// Case 1: First argument is an object literal
+	if( args.length > 0 && isObjectLiteral( args[ 0 ] ) ) {
 		const inputOptions = args[ 0 ];
 
 		for( const name of parameterNames ) {
@@ -62,6 +57,13 @@ export const isInteger = Number.isInteger;
 export const canAddEventListeners = ( el ) => {
 	return typeof el.addEventListener === "function" &&
 		typeof el.removeEventListener === "function";
+};
+export const isObjectLiteral = ( obj ) => {
+	if( typeof obj !== "object" || obj === null || Array.isArray( obj ) ) {
+		return false;
+	}
+	const proto = Object.getPrototypeOf( obj );
+	return proto === null || proto === Object.prototype;
 };
 
 // Color conversion utilities

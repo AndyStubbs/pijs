@@ -384,7 +384,7 @@ function drawImage( screenData, options ) {
 
 	if( !m_images[ name ] ) {
 		const error = new Error(
-			`drawImage: Image "${name}" not found. Did you forget to load it?`
+			`drawImage: Image "${name}" not found.`
 		);
 		error.code = "IMAGE_NOT_FOUND";
 		throw error;
