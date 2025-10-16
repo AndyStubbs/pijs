@@ -73,10 +73,6 @@ export function setImageDirty( screenData ) {
 	}
 }
 
-export function draw( screenData, x, y, c ) {
-	screenData.pen( screenData, x, y, c );
-}
-
 
 /***************************************************************************************************
  * External API Commands

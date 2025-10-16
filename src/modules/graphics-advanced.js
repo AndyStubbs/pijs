@@ -65,10 +65,10 @@ function arc( screenData, options ) {
 		a = ( a + 360 ) % 360;
 		if( winding ) {
 			if( a >= angle1 || a <= angle2 ) {
-				renderer.draw( screenData, x2, y2, color );
+				screenData.pen( screenData, x2, y2, color );
 			}
 		} else if( a >= angle1 && a <= angle2 ) {
-			renderer.draw( screenData, x2, y2, color );
+			screenData.pen( screenData, x2, y2, color );
 		}
 	}
 
@@ -86,7 +86,7 @@ function arc( screenData, options ) {
 		renderer.setImageDirty( screenData );
 		return;
 	} else if( radius === 0 ) {
-		renderer.draw( screenData, x, y, color );
+		screenData.pen( screenData, x, y, color );
 		renderer.setImageDirty( screenData );
 		return;
 	}
@@ -195,7 +195,7 @@ function ellipse( screenData, options ) {
 	const color = screenData.color;
 
 	if( radiusX === 0 && radiusY === 0 ) {
-		renderer.draw( screenData, Math.floor( x ), Math.floor( y ), color );
+		screenData.pen( screenData, Math.floor( x ), Math.floor( y ), color );
 		renderer.setImageDirty( screenData );
 		return;
 	}
@@ -250,10 +250,10 @@ function ellipse( screenData, options ) {
 	while( dx < dy ) {
 
 		// 4-way symmetry
-		renderer.draw( screenData, Math.floor( x2 + x ), Math.floor( y2 + y ), color );
-		renderer.draw( screenData, Math.floor( -x2 + x ), Math.floor( y2 + y ), color );
-		renderer.draw( screenData, Math.floor( x2 + x ), Math.floor( -y2 + y ), color );
-		renderer.draw( screenData, Math.floor( -x2 + x ), Math.floor( -y2 + y ), color );
+		screenData.pen( screenData, Math.floor( x2 + x ), Math.floor( y2 + y ), color );
+		screenData.pen( screenData, Math.floor( -x2 + x ), Math.floor( y2 + y ), color );
+		screenData.pen( screenData, Math.floor( x2 + x ), Math.floor( -y2 + y ), color );
+		screenData.pen( screenData, Math.floor( -x2 + x ), Math.floor( -y2 + y ), color );
 
 		// Checking and updating value of decision parameter based on algorithm
 		if( d1 < 0 ) {
@@ -278,10 +278,10 @@ function ellipse( screenData, options ) {
 	while( y2 >= 0 ) {
 
 		// 4-way symmetry
-		renderer.draw( screenData, Math.floor( x2 + x ), Math.floor( y2 + y ), color );
-		renderer.draw( screenData, Math.floor( -x2 + x ), Math.floor( y2 + y ), color );
-		renderer.draw( screenData, Math.floor( x2 + x ), Math.floor( -y2 + y ), color );
-		renderer.draw( screenData, Math.floor( -x2 + x ), Math.floor( -y2 + y ), color );
+		screenData.pen( screenData, Math.floor( x2 + x ), Math.floor( y2 + y ), color );
+		screenData.pen( screenData, Math.floor( -x2 + x ), Math.floor( y2 + y ), color );
+		screenData.pen( screenData, Math.floor( x2 + x ), Math.floor( -y2 + y ), color );
+		screenData.pen( screenData, Math.floor( -x2 + x ), Math.floor( -y2 + y ), color );
 
 		// Checking and updating parameter value based on algorithm
 		if( d2 > 0 ) {
@@ -433,7 +433,7 @@ function bezier( screenData, options ) {
 	let lastPoint = calcBezierStep( 0, points );
 
 	// Set the first pixel
-	renderer.draw( screenData, lastPoint.x, lastPoint.y, color );
+	screenData.pen( screenData, lastPoint.x, lastPoint.y, color );
 
 	let t = 0.1;
 	let dt = 0.1;
@@ -446,7 +446,7 @@ function bezier( screenData, options ) {
 			t -= dt;
 			dt = dt * 0.75;
 		} else {
-			renderer.draw( screenData, point.x, point.y, color );
+			screenData.pen( screenData, point.x, point.y, color );
 			lastPoint = point;
 		}
 		t += dt;
@@ -454,7 +454,7 @@ function bezier( screenData, options ) {
 
 	// Draw the last step
 	const point = calcBezierStep( 1, points );
-	renderer.draw( screenData, point.x, point.y, color );
+	screenData.pen( screenData, point.x, point.y, color );
 
 	renderer.setImageDirty( screenData );
 }

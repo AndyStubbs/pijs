@@ -54,7 +54,7 @@ function pset( screenData, options ) {
 	const color = screenData.color;
 
 	renderer.getImageData( screenData );
-	renderer.draw( screenData, x, y, color );
+	screenData.pen( screenData, x, y, color );
 	renderer.setImageDirty( screenData );
 
 	// Set the cursor after drawing
@@ -129,7 +129,7 @@ function line( screenData, options ) {
 	renderer.getImageData( screenData );
 
 	// Set the first pixel
-	renderer.draw( screenData, x1, y1, color );
+	screenData.pen( screenData, x1, y1, color );
 
 	// Loop until the end of the line
 	while( !( ( x1 === x2 ) && ( y1 === y2 ) ) ) {
@@ -146,7 +146,7 @@ function line( screenData, options ) {
 		}
 
 		// Set the next pixel
-		renderer.draw( screenData, x1, y1, color );
+		screenData.pen( screenData, x1, y1, color );
 	}
 
 	renderer.setImageDirty( screenData );
@@ -242,7 +242,7 @@ function rect( screenData, options ) {
 		// Draw line by line
 		for( ; y < y2Adjusted; y += 1 ) {
 			for( let x3 = x; x3 < x2Adjusted; x3 += 1 ) {
-				renderer.draw( screenData, x3, y, fillColor );
+				screenData.pen( screenData, x3, y, fillColor );
 			}
 		}
 
@@ -357,18 +357,18 @@ function circle( screenData, options ) {
 
 	// Only print initial points if r > 0
 	if( radius > 1 ) {
-		renderer.draw( screenData, x2 + x, y2 + y, color );
-		renderer.draw( screenData, -x2 + x, y2 + y, color );
-		renderer.draw( screenData, x, x2 + y, color );
-		renderer.draw( screenData, x, -x2 + y, color );
+		screenData.pen( screenData, x2 + x, y2 + y, color );
+		screenData.pen( screenData, -x2 + x, y2 + y, color );
+		screenData.pen( screenData, x, x2 + y, color );
+		screenData.pen( screenData, x, -x2 + y, color );
 	} else if( radius === 1 ) {
-		renderer.draw( screenData, x + 1, y, color );
-		renderer.draw( screenData, x - 1, y, color );
-		renderer.draw( screenData, x, y + 1, color );
-		renderer.draw( screenData, x, y - 1, color );
+		screenData.pen( screenData, x + 1, y, color );
+		screenData.pen( screenData, x - 1, y, color );
+		screenData.pen( screenData, x, y + 1, color );
+		screenData.pen( screenData, x, y - 1, color );
 		y2 = x2 + 1;
 	} else if( radius === 0 ) {
-		renderer.draw( screenData, x, y, color );
+		screenData.pen( screenData, x, y, color );
 		y2 = x2 + 1;
 	}
 
@@ -389,17 +389,17 @@ function circle( screenData, options ) {
 		}
 
 		// Set pixels around point and reflection in other octants
-		renderer.draw( screenData, x2 + x, y2 + y, color );
-		renderer.draw( screenData, -x2 + x, y2 + y, color );
-		renderer.draw( screenData, x2 + x, -y2 + y, color );
-		renderer.draw( screenData, -x2 + x, -y2 + y, color );
+		screenData.pen( screenData, x2 + x, y2 + y, color );
+		screenData.pen( screenData, -x2 + x, y2 + y, color );
+		screenData.pen( screenData, x2 + x, -y2 + y, color );
+		screenData.pen( screenData, -x2 + x, -y2 + y, color );
 
 		// Set pixels on the perimeter points if not on x = y
 		if( x2 != y2 ) {
-			renderer.draw( screenData, y2 + x, x2 + y, color );
-			renderer.draw( screenData, -y2 + x, x2 + y, color );
-			renderer.draw( screenData, y2 + x, -x2 + y, color );
-			renderer.draw( screenData, -y2 + x, -x2 + y, color );
+			screenData.pen( screenData, y2 + x, x2 + y, color );
+			screenData.pen( screenData, -y2 + x, x2 + y, color );
+			screenData.pen( screenData, y2 + x, -x2 + y, color );
+			screenData.pen( screenData, -y2 + x, -x2 + y, color );
 		}
 	}
 
