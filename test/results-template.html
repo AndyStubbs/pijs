@@ -11,10 +11,10 @@
 			padding: 20px;
 			margin: 0;
 		}
-		body > * {
-			max-width: 1200px;
-			margin-left: auto !important;
-			margin-right: auto !important;
+		.page {
+			max-width: 1000px;
+			margin-left: auto;
+			margin-right: auto;
 		}
 		h1 {
 			color: #4CAF50;
@@ -270,44 +270,44 @@
 	</style>
 </head>
 <body>
-	<h1>Pi.js v2.0 Visual Regression Test Results</h1>
-	
-	<div class="summary">
-		<h2>Test Summary</h2>
-		<div class="stats">
-			<div class="stat">
-				<div class="stat-value">{{TOTAL}}</div>
-				<div>Total Tests</div>
+	<div class="page">
+		<h1>Pi.js v2.0 Visual Regression Test Results</h1>
+		
+		<div class="summary">
+			<h2>Test Summary</h2>
+			<div class="stats">
+				<div class="stat">
+					<div class="stat-value">{{TOTAL}}</div>
+					<div>Total Tests</div>
+				</div>
+				<div class="stat">
+					<div class="stat-value stat-passed">{{PASSED}}</div>
+					<div>Passed</div>
+				</div>
+				<div class="stat">
+					<div class="stat-value stat-failed">{{FAILED}}</div>
+					<div>Failed</div>
+				</div>
+				<div class="stat">
+					<div class="stat-value stat-skipped">{{SKIPPED}}</div>
+					<div>Skipped</div>
+				</div>
+				<div class="stat">
+					<div class="stat-value" style="color: var(--pass-rate-color)">{{PASS_RATE}}%</div>
+					<div>Pass Rate</div>
+				</div>
 			</div>
-			<div class="stat">
-				<div class="stat-value stat-passed">{{PASSED}}</div>
-				<div>Passed</div>
-			</div>
-			<div class="stat">
-				<div class="stat-value stat-failed">{{FAILED}}</div>
-				<div>Failed</div>
-			</div>
-			<div class="stat">
-				<div class="stat-value stat-skipped">{{SKIPPED}}</div>
-				<div>Skipped</div>
-			</div>
-			<div class="stat">
-				<div class="stat-value" style="color: var(--pass-rate-color)">{{PASS_RATE}}%</div>
-				<div>Pass Rate</div>
-			</div>
-		</div>
 
-		<div>
-			<a href="/test/playwright-report/" target="_blank">Playwright Report</a>
+			<div>
+				<a href="/test/playwright-report/" target="_blank">Playwright Report</a>
+			</div>
 		</div>
+		{{FAILED_TESTS}}
+
+		{{PASSED_TESTS}}
+
+		{{SKIPPED_TESTS}}
 	</div>
-
-{{FAILED_TESTS}}
-
-{{PASSED_TESTS}}
-
-{{SKIPPED_TESTS}}
-
 	<!-- Modal for screenshot comparison -->
 	<div id="diffModal" class="modal">
 		<div class="modal-content">
