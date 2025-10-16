@@ -65,8 +65,10 @@ function draw( screenData, options ) {
 	// This triggers a move back after drawing the next command
 	let isReturn = false;
 
-	// Store the last cursor
-	let lastCursor = { "x": screenData.cursor.x, "y": screenData.cursor.y, "angle": 0 };
+	// Store the last cursor - use current angle, not 0
+	let lastCursor = {
+		"x": screenData.cursor.x, "y": screenData.cursor.y, "angle": screenData.angle
+	};
 
 	// Move without drawing
 	let isBlind = false;
@@ -168,15 +170,26 @@ function draw( screenData, options ) {
 				const angle = utils.degreesToRadian( 270 ) + screenData.angle;
 				screenData.cursor.x += Math.round( Math.cos( angle ) * len );
 				screenData.cursor.y += Math.round( Math.sin( angle ) * len );
-				break;
-			}
+			break;
+		}
 
-			// P - Paint / S - Paint (with tolerance)
-			case "P":
-			case "S": {
+			// P - Paint Exact Match
+			case "P": {
 				const colorNum = utils.getInt( drawArgs[ 1 ], 0 );
 				screenData.api.paint( screenData.cursor.x, screenData.cursor.y, colorNum );
 				isBlind = true;
+				break;
+			}
+
+			// S - Scale
+			/*
+				Set scale factor. n may range from 1 to 255. n is divided by 4 to derive the scale 
+				factor. The scale factor is multiplied by the distances given with U, D, L, R, E, 
+				F, G, H, or relative M commands to get the actual distance traveled. The default 
+				for S is 4.
+			*/
+			case "S": {
+				// TODO: Implement scale factor
 				break;
 			}
 
