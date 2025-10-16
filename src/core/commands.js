@@ -112,12 +112,10 @@ export function processApi() {
 	// Sort screen commands
 	m_screenManager.sortScreenCommands();
 
-
 	// Add all commands to API
 	for( const command of m_commandList ) {
 		processApiCommand( command );
 	}
-
 }
 
 // Process an api command

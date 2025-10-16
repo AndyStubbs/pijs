@@ -301,6 +301,23 @@ function setScreen( options ) {
 	m_activeScreen = m_screens[ screenId ];
 }
 
+commands.addCommand( "getScreen", getScreen, [ "screenId" ] );
+function getScreen( options ) {
+	const screenId = utils.getInt( options.screenId, null );
+	if( screenId === null ) {
+		const error = new Error( "screen: Invalid screen id." );
+		error.code = "INVALID_SCREEN_ID";
+		throw error;
+	}
+	const screen = m_screens[ screenId ];
+	if( !screen ) {
+		const error = new Error( `screen: Screen "${screenId} not found.` );
+		error.code = "SCREEN_NOT_FOUND";
+		throw error;
+	}
+	return screen.api;
+}
+
 // width command
 addCommand( "width", width, [] );
 function width( screenData ) {
