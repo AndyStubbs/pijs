@@ -169,6 +169,10 @@ function setPen( screenData, options ) {
 		screenData.pen = m_pens[ pen ].fn;
 
 		// Set the line width for context draw
+		
+		// TODO: Maybe set this to just size - borders look too big on canvas draw but
+		// it is fit to the canvas standards so maybe it's not important to have pixel
+		// and AA match 100%
 		screenData.context.lineWidth = size * 2 - 1;
 	}
 
