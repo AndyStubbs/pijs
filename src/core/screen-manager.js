@@ -380,7 +380,7 @@ function processApiCommand( screenData, command ) {
  * 						  null if the input is invalid.
  */
 function parseAspect( aspect ) {
-	const match = aspect.match( /^(\d+)(:|x|e|m)(\d+)$/ );
+	const match = aspect.replaceAll( " ", "" ).match( /^(\d+)(:|x|e|m)(\d+)$/ );
 
 	if( !match ) {
 		return null;
@@ -398,7 +398,7 @@ function parseAspect( aspect ) {
 		"width": width,
 		"height": height,
 		"splitter": splitter,
-		"isMultiple": splitter === "m",
+		"isMultiple": splitter === "m" || splitter === "e",
 	};
 }
 
