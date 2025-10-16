@@ -207,26 +207,31 @@ function getAvailableFonts() {
 screenManager.addCommand( "setChar", setChar, [ "charCode", "data" ] );
 function setChar( screenData, options ) {
 	let charCode = options.charCode;
-	const data = options.data;
+	let data = options.data;
 
 	// Convert string to char code
 	if( typeof charCode === "string" ) {
 		charCode = charCode.charCodeAt( 0 );
-	}
-
-	if( !utils.isInteger( charCode ) ) {
-		const error = new TypeError( "setChar: charCode must be an integer" );
-		error.code = "INVALID_CHAR_CODE";
-		throw error;
-	}
-
-	if( !utils.isArray( data ) ) {
-		const error = new TypeError( "setChar: data must be a 2D array" );
-		error.code = "INVALID_DATA";
-		throw error;
+	} else {
+		charCode = utils.getInt( charCode, null );
+		if( charCode === null ) {
+			const error = new TypeError( "setChar: charCode must be an integer or a string" );
+			error.code = "INVALID_CHAR_CODE";
+			throw error;
+		}
 	}
 
 	const font = screenData.font;
+
+	if( !utils.isArray( data ) ) {
+		if( typeof data === "string" ) {
+			data = utils.hexToData( data, font.width, font.height );
+		} else {
+			const error = new TypeError( "setChar: data must be a 2D array or an encode string" );
+			error.code = "INVALID_DATA";
+			throw error;
+		}
+	}
 
 	// Validate data dimensions match font
 	if( data.length !== font.height ) {
@@ -237,6 +242,7 @@ function setChar( screenData, options ) {
 		throw error;
 	}
 
+	// Validate data items
 	for( let i = 0; i < data.length; i++ ) {
 		if( !utils.isArray( data[ i ] ) || data[ i ].length !== font.width ) {
 			const error = new RangeError(
