@@ -149,6 +149,11 @@ const server = http.createServer( ( req, res ) => {
 		return;
 	}
 
+	// Add CORS headers to all responses
+	res.setHeader( "Access-Control-Allow-Origin", "*" );
+	res.setHeader( "Access-Control-Allow-Methods", "POST, GET, OPTIONS" );
+	res.setHeader( "Access-Control-Allow-Headers", "Content-Type" );
+
 	// Handle POST request to reset base image
 	if( req.method === "POST" && req.url === "/api/reset-base-image" ) {
 		let body = "";
@@ -194,6 +199,64 @@ const server = http.createServer( ( req, res ) => {
 				res.end( JSON.stringify( { "success": true, "message": `Base image reset: ${baseName}.png` } ) );
 			} catch( err ) {
 				console.error( "Error resetting base image:", err );
+				res.writeHead( 500, { "Content-Type": "application/json" } );
+				res.end( JSON.stringify( { "error": err.message } ) );
+			}
+		} );
+		
+		return;
+	}
+
+	// Handle POST request to approve new test
+	if( req.method === "POST" && req.url === "/api/approve-new-test" ) {
+		console.log( "Approve new test endpoint hit" );
+		let body = "";
+		
+		req.on( "data", chunk => {
+			body += chunk.toString();
+		} );
+		
+		req.on( "end", () => {
+			try {
+				console.log( "Request body:", body );
+				const data = JSON.parse( body );
+				const baseName = data.baseName;
+				console.log( "Base name:", baseName );
+				
+				// Validate baseName to prevent path traversal
+				if( !baseName || baseName.includes( ".." ) || baseName.includes( "/" ) || baseName.includes( "\\" ) ) {
+					console.log( "Invalid base name" );
+					res.writeHead( 400, { "Content-Type": "application/json" } );
+					res.end( JSON.stringify( { "error": "Invalid base name" } ) );
+					return;
+				}
+				
+				const sourcePath = path.join( __dirname, "test", "tests", "screenshots", "new", `${baseName}.png` );
+				const destPath = path.join( __dirname, "test", "tests", "screenshots", `${baseName}.png` );
+				
+				console.log( "Source path:", sourcePath );
+				console.log( "Dest path:", destPath );
+				console.log( "Source exists:", fs.existsSync( sourcePath ) );
+				
+				// Check if source exists
+				if( !fs.existsSync( sourcePath ) ) {
+					res.writeHead( 404, { "Content-Type": "application/json" } );
+					res.end( JSON.stringify( { "error": "New screenshot not found", "path": sourcePath } ) );
+					return;
+				}
+				
+				// Copy file to set as reference
+				fs.copyFileSync( sourcePath, destPath );
+				
+				// Delete the new image after copying
+				fs.unlinkSync( sourcePath );
+				
+				console.log( `Approved new test: ${baseName}.png (set as reference)` );
+				
+				res.writeHead( 200, { "Content-Type": "application/json" } );
+				res.end( JSON.stringify( { "success": true, "message": `New test approved: ${baseName}.png` } ) );
+			} catch( err ) {
+				console.error( "Error approving new test:", err );
 				res.writeHead( 500, { "Content-Type": "application/json" } );
 				res.end( JSON.stringify( { "error": err.message } ) );
 			}

@@ -63,7 +63,8 @@ function setLogFileForTest( testBaseName ) {
 			fs.mkdirSync( logsDir, { "recursive": true } );
 		}
 		LOG_FILE_PATH = path.join( logsDir, `${testBaseName}.log` );
-		fs.writeFileSync( LOG_FILE_PATH, `# "${testBaseName}" movement log\n` );
+		const time = new Date().toLocaleString();
+		fs.writeFileSync( LOG_FILE_PATH, `# "${testBaseName}" movement log - ${time}\n` );
 		LOG_FILE_READY = true;
 	} catch( _e ) {}
 }
@@ -664,6 +665,15 @@ test.describe( "Pi.js Visual Regression Tests", () => {
 
 			results.total++;
 
+			// Check if reference exists before running test
+			const referencePath = path.join(
+				__dirname,
+				"tests/screenshots",
+				`${testName}.png`
+			);
+
+			const isNewTest = !fs.existsSync( referencePath );
+
 			try {
 				// Set viewport size
 				await page.setViewportSize( {
@@ -708,68 +718,80 @@ test.describe( "Pi.js Visual Regression Tests", () => {
 					"fullPage": false
 				} );
 
-				// Compare with reference
-				const referencePath = path.join(
-					__dirname,
-					"tests/screenshots",
-					`${testName}.png`
-				);
-
-				if( fs.existsSync( referencePath ) ) {
-					const comparison = compareImages( referencePath, screenshotPath );
-
-					if( comparison.match ) {
-						results.passed++;
-						results.tests.push( {
-							"name": metadata.name,
-							"file": testFile.file,
-							"url": testFile.url,
-							"status": "passed"
-						} );
-					} else {
-						results.failed++;
-						results.tests.push( {
-							"name": metadata.name,
-							"file": testFile.file,
-							"url": testFile.url,
-							"status": "failed",
-							"error": comparison.error || 
-								`${comparison.diffPercent}% pixels different`
-						} );
-
-						// Fail the test
-						throw new Error(
-							`Screenshot mismatch: ${comparison.diffPercent}% different`
-						);
-					}
-				} else {
-					
-					// No reference image - skip
+				// If new test, mark as skipped after taking screenshot
+				if( isNewTest ) {
 					results.skipped++;
 					results.tests.push( {
 						"name": metadata.name,
 						"file": testFile.file,
 						"url": testFile.url,
 						"status": "skipped",
-						"error": "No reference screenshot"
+						"error": "No reference screenshot",
+						"screenshotName": testName
 					} );
 
-					test.skip();
+					// Add annotation for skip reason so reporter can pick it up
+					test.info().annotations.push( {
+						"type": "skip-reason",
+						"description": "No reference screenshot"
+					} );
+
+					// Skip the test after screenshot is taken
+					test.skip( true, "No reference screenshot - new test needs approval" );
+					return;
 				}
-			} catch( error ) {
-				if( !results.tests.find( t => t.file === testFile.file ) ) {
+
+				// Compare with reference
+				const comparison = compareImages( referencePath, screenshotPath );
+
+				if( comparison.match ) {
+					results.passed++;
+					results.tests.push( {
+						"name": metadata.name,
+						"file": testFile.file,
+						"url": testFile.url,
+						"status": "passed",
+						"screenshotName": testName
+					} );
+				} else {
 					results.failed++;
 					results.tests.push( {
 						"name": metadata.name,
 						"file": testFile.file,
 						"url": testFile.url,
 						"status": "failed",
-						"error": error.message
+						"error": comparison.error || 
+							`${comparison.diffPercent}% pixels different`,
+						"screenshotName": testName
+					} );
+
+					// Fail the test
+					throw new Error(
+						`Screenshot mismatch: ${comparison.diffPercent}% different`
+					);
+				}
+			} catch( error ) {
+
+				// Check if this is a skip error (thrown by test.skip())
+				const isSkipError = error.message && 
+					( error.message.includes( "skipped" ) || error.message.includes( "Test is skipped" ) );
+				const alreadyRecorded = results.tests.find( t => t.file === testFile.file );
+				
+				if( !alreadyRecorded && !isSkipError ) {
+					const testName = metadata.file || metadata.name;
+					results.failed++;
+					results.tests.push( {
+						"name": metadata.name,
+						"file": testFile.file,
+						"url": testFile.url,
+						"status": "failed",
+						"error": error.message,
+						"screenshotName": testName
 					} );
 				}
 
-				// Fail with minimal error (details shown in our summary)
-				throw new Error( error.message );
+				// Re-throw all errors including skip errors for Playwright to handle
+				throw error;
 			}
 		} );
 	}

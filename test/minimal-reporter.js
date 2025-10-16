@@ -46,6 +46,20 @@ class MinimalReporter {
 		
 		const htmlFile = screenshotName + ".html";
 		
+		// Get error message - for skipped tests, check skip reason
+		let errorMessage = null;
+		if( result.error ) {
+			errorMessage = result.error.message;
+		} else if( result.status === "skipped" ) {
+			// Check test annotations for skip reason or custom error
+			if( test.annotations ) {
+				const errorAnnotation = test.annotations.find( a => a.type === "skip-reason" );
+				if( errorAnnotation ) {
+					errorMessage = errorAnnotation.description;
+				}
+			}
+		}
+		
 		// Create test record
 		const testRecord = {
 			"name": title,
@@ -53,7 +67,7 @@ class MinimalReporter {
 			"screenshotName": screenshotName, // Used for image paths
 			"url": `/test/tests/html/${htmlFile}`,
 			"status": result.status,
-			"error": result.error ? result.error.message : null
+			"error": errorMessage
 		};
 		
 		this.allTests.push( testRecord );

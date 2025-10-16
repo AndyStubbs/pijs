@@ -132,6 +132,16 @@ function generateResultsPage( results ) {
 		<div class="test-list collapsed" id="list-skipped">`;
 
 		for( const test of sortedSkipped ) {
+			// Use screenshotName from test record
+			const baseName = test.screenshotName || test.file.replace( ".html", "" );
+			const newPath = `/test/tests/screenshots/new/${baseName}.png`;
+			
+			// Check if this is a new test (no reference screenshot)
+			const isNewTest = test.error && test.error.includes( "No reference screenshot" );
+			const viewButton = isNewTest ? 
+				`<button class="view-diff-btn" onclick="showNewTestModal('${test.name}', '${baseName}', '${newPath}')">View & Approve</button>` : 
+				"";
+			
 			skippedHTML += `
 			<div class="test-item skipped">
 				<div class="test-content">
@@ -143,6 +153,7 @@ function generateResultsPage( results ) {
 						${test.error ? `<div class="error-msg">${test.error}</div>` : ""}
 					</div>
 					<div class="test-actions">
+						${viewButton}
 						<div class="test-status status-skipped">SKIPPED</div>
 					</div>
 				</div>

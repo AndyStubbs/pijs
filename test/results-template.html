@@ -11,6 +11,11 @@
 			padding: 20px;
 			margin: 0;
 		}
+		body > * {
+			max-width: 1200px;
+			margin-left: auto !important;
+			margin-right: auto !important;
+		}
 		h1 {
 			color: #4CAF50;
 		}
@@ -336,9 +341,31 @@
 		</div>
 	</div>
 
+	<!-- Modal for new test approval -->
+	<div id="newTestModal" class="modal">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2 id="newTestModalTitle">New Test Screenshot</h2>
+				<div>
+					<button class="reset-base-btn" id="approveTestBtn" onclick="approveNewTest()">Approve & Set as Reference</button>
+					<button class="close-btn" onclick="closeNewTestModal()">Close (ESC)</button>
+				</div>
+			</div>
+			<div class="screenshots-modal">
+				<div class="screenshot-container" style="max-width: 60%; margin: 0 auto;">
+					<h3>New Test Screenshot</h3>
+					<div class="screenshot-wrapper">
+						<img id="newTestImg" src="" alt="New Test">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<script>
-		// Store current baseName for reset operation
+		// Store current baseName for reset and approve operations
 		let currentBaseName = null;
+		let currentNewTestBaseName = null;
 		
 		// Check if new screenshots exist for failed tests on page load
 		window.addEventListener( "DOMContentLoaded", function() {
@@ -402,6 +429,68 @@
 			// Update counts if any tests were moved
 			if( movedCount > 0 ) {
 				updateTestCounts( movedCount );
+			}
+			
+			// Check skipped tests for approved tests
+			await checkApprovedTests();
+		}
+		
+		async function checkApprovedTests() {
+			const skippedTests = document.querySelectorAll( ".test-item.skipped" );
+			
+			for( const testItem of skippedTests ) {
+
+				// Extract baseName from the View & Approve button (if it exists)
+				const viewBtn = testItem.querySelector( ".view-diff-btn" );
+				if( !viewBtn ) continue;
+				
+				const onclickAttr = viewBtn.getAttribute( "onclick" );
+				const match = onclickAttr.match( /showNewTestModal\([^,]+,\s*'([^']+)'/ );
+				if( !match ) continue;
+				
+				const baseName = match[ 1 ];
+				const basePath = `/test/tests/screenshots/${baseName}.png`;
+				const newPath = `/test/tests/screenshots/new/${baseName}.png`;
+				
+				try {
+
+					// Check both base and new paths
+					const baseResponse = await fetch( basePath, { "method": "HEAD" } );
+					const newResponse = await fetch( newPath, { "method": "HEAD" } );
+					
+					const baseExists = baseResponse.status === 200;
+					const newExists = newResponse.status === 200;
+					
+					// If base exists but new doesn't = approved, waiting for re-run
+					if( baseExists && !newExists ) {
+
+						// Update error message
+						const errorMsg = testItem.querySelector( ".error-msg" );
+						if( errorMsg ) {
+							errorMsg.textContent = "Base image set - re-run tests to validate";
+							errorMsg.style.color = "#4CAF50";
+						}
+						
+						// Remove View & Approve button
+						viewBtn.remove();
+					}
+					
+					// If neither exists = something went wrong
+					if( !baseExists && !newExists ) {
+
+						// Update error message
+						const errorMsg = testItem.querySelector( ".error-msg" );
+						if( errorMsg ) {
+							errorMsg.textContent = "Screenshot missing - re-run tests";
+							errorMsg.style.color = "#f44336";
+						}
+						
+						// Remove View & Approve button
+						viewBtn.remove();
+					}
+				} catch( err ) {
+					console.error( `Error checking ${baseName}:`, err );
+				}
 			}
 		}
 		
@@ -629,10 +718,84 @@
 			currentBaseName = null;
 		}
 		
+		function showNewTestModal( testName, baseName, newPath ) {
+
+			// Store baseName for approve operation
+			currentNewTestBaseName = baseName;
+			const modal = document.getElementById( "newTestModal" );
+			const modalTitle = document.getElementById( "newTestModalTitle" );
+			const modalImg = document.getElementById( "newTestImg" );
+			
+			// Set title
+			modalTitle.textContent = `New Test Screenshot: ${testName}`;
+			
+			// Set image source
+			modalImg.src = newPath;
+			
+			// Show modal
+			modal.classList.add( "visible" );
+		}
+		
+		function closeNewTestModal() {
+			const modal = document.getElementById( "newTestModal" );
+			modal.classList.remove( "visible" );
+			currentNewTestBaseName = null;
+		}
+		
+		function approveNewTest() {
+			if( !currentNewTestBaseName ) {
+				alert( "No test selected" );
+				return;
+			}
+			
+			// Confirm with user
+			const confirmed = confirm( 
+				`Are you sure you want to approve "${currentNewTestBaseName}" as a new test?\n\n` +
+				`This will set the current screenshot as the reference image.\n` +
+				`The test will pass on the next run.`
+			);
+			
+			if( !confirmed ) {
+				return;
+			}
+			
+			// Disable button during request
+			const approveBtn = document.getElementById( "approveTestBtn" );
+			approveBtn.disabled = true;
+			approveBtn.textContent = "Approving...";
+			
+			// Send POST request to server
+			fetch( "/api/approve-new-test", {
+				"method": "POST",
+				"headers": {
+					"Content-Type": "application/json"
+				},
+				"body": JSON.stringify( { "baseName": currentNewTestBaseName } )
+			} )
+			.then( response => response.json() )
+			.then( data => {
+				if( data.success ) {
+					// Reload the page - the test will be auto-marked as skipped
+					location.reload();
+				} else {
+					alert( `Error: ${data.error}` );
+				}
+			} )
+			.catch( err => {
+				alert( `Error approving new test: ${err.message}` );
+			} )
+			.finally( () => {
+				// Re-enable button
+				approveBtn.disabled = false;
+				approveBtn.textContent = "Approve & Set as Reference";
+			} );
+		}
+		
 		// Close modal on ESC key
 		document.addEventListener( "keydown", function( e ) {
 			if( e.key === "Escape" ) {
 				closeModal();
+				closeNewTestModal();
 			}
 		} );
 		
@@ -640,6 +803,12 @@
 		document.getElementById( "diffModal" ).addEventListener( "click", function( e ) {
 			if( e.target === this ) {
 				closeModal();
+			}
+		} );
+		
+		document.getElementById( "newTestModal" ).addEventListener( "click", function( e ) {
+			if( e.target === this ) {
+				closeNewTestModal();
 			}
 		} );
 	</script>
