@@ -25,7 +25,6 @@ let m_nextFontId = 0;
 // Initialize font module
 export function init() {
 	screenManager.addScreenDataItemGetter( "font", () => m_defaultFont );
-	screenManager.addScreenDataItemGetter( "fontSize", () => 10 );
 }
 
 
@@ -128,45 +127,63 @@ function setDefaultFont( options ) {
 }
 
 // setFont command
-screenManager.addCommand( "setFont", setFont, [ "fontId" ] );
+screenManager.addCommand( "setFont", setFont, [ "font" ] );
 function setFont( screenData, options ) {
-	const fontId = options.fontId;
+	const fontInput = options.font;
+
+	let font;
 
 	// Check if this is a valid font
-	if( !m_fonts[ fontId ] ) {
+	if( typeof fontInput === "string" ) {
+		screenData.context.font = fontInput;
+		screenData.context.textBaseline = "top";
+		font = {
+			"name": screenData.context.font,
+			"width": 10,
+			"height": 10,
+			"mode": "canvas"
+		};
+	} else if( m_fonts[ fontInput ] ) {
+		font = m_fonts[ fontInput ];
+	} else {
 		const error = new RangeError( "setFont: invalid fontId" );
 		error.code = "INVALID_FONT_ID";
 		throw error;
 	}
 
-	// Set the font data
-	const font = m_fonts[ fontId ];
+	// Set the screenData font and print cursor
 	screenData.font = font;
-
-	// Update print cursor font reference
-	if( screenData.printCursor ) {
-		screenData.printCursor.font = font;
-		updatePrintCursorDimensions( screenData );
-	}
+	updatePrintCursorDimensions( screenData );
 }
 
 // setFontSize command
-screenManager.addCommand( "setFontSize", setFontSize, [ "size" ] );
+screenManager.addCommand( "setFontSize", setFontSize, [ "width", "height" ] );
 function setFontSize( screenData, options ) {
-	const size = Math.round( options.size );
-
-	if( !utils.isInteger( size ) || size < 1 ) {
-		const error = new RangeError( "setFontSize: size must be an integer greater than 0" );
+	if( screenData.font.mode !== "bitmap" ) {
+		const error = new RangeError(
+			"setFontSize: only bitmap fonts can change sizes. Load a bitmap font before setting " +
+			"the font size."
+		);
 		error.code = "INVALID_SIZE";
 		throw error;
 	}
 
-	screenData.fontSize = size;
+	const width = utils.getInt( options.width, null );
+	const height = utils.getInt( options.height, null );
+
+	if( !width || width < 1 || !height || height < 1 ) {
+		const error = new RangeError(
+			"setFontSize: width and height must be an integer greater than 0"
+		);
+		error.code = "INVALID_SIZE";
+		throw error;
+	}
+
+	screenData.font.width = width;
+	screenData.font.height = height;
 
 	// Update print cursor dimensions
-	if( screenData.printCursor ) {
-		updatePrintCursorDimensions( screenData );
-	}
+	updatePrintCursorDimensions( screenData );
 }
 
 // getAvailableFonts command
@@ -251,13 +268,50 @@ function setChar( screenData, options ) {
 // Update print cursor rows and columns based on font and size
 function updatePrintCursorDimensions( screenData ) {
 	const font = screenData.font;
-	const size = screenData.fontSize;
-	screenData.printCursor.cols = Math.floor(
-		screenData.width / ( font.width * size )
-	);
-	screenData.printCursor.rows = Math.floor(
-		screenData.height / ( font.height * size )
-	);
+
+	if( font.mode === "canvas" ) {
+
+		// Measure the actual size of the font by actually drawing the font on a temp canvas and
+		// checking the color values
+		const tempSize = Math.round( screenData.context.measureText( "M" ).width * 2 );
+		const tempCanvas = document.createElement( "canvas" );
+		tempCanvas.width = tempSize;
+		tempCanvas.height = tempSize;
+		const tempContext = tempCanvas.getContext( "2d", { "willReadFrequently": true } );
+		tempContext.font = screenData.context.font;
+		tempContext.textBaseline = "top";
+		tempContext.fillStyle = "#FF0000";
+
+		// Fill some text with characters at a fixed spot
+		const tempMessage = "WHMGLIyzjpgl_|,.";
+		for( const c of tempMessage ) {
+			tempContext.fillText( c, 0, 0 );
+		}
+
+		// Loop through the tempCanvas pixel data
+		let minX = Infinity;
+		let maxX = 0;
+		let minY = Infinity;
+		let maxY = 0;
+		const data = tempContext.getImageData( 0, 0, tempSize, tempSize ).data;
+		for( let y = 0; y < tempSize; y++ ) {
+			for( let x = 0; x < tempSize; x++ ) {
+				const index = (y * tempSize + x) * 4;
+				if( data[ index ] === 255 ) {
+					minX = Math.min( x, minX );
+					maxX = Math.max( x, maxX );
+					minY = Math.min( y, minY );
+					maxY = Math.max( y, maxY );
+				}
+			}
+		}
+
+		screenData.font.width = maxX - minX;
+		screenData.font.height = maxY - minY;
+	}
+
+	screenData.printCursor.cols = Math.floor( screenData.width / screenData.font.width );
+	screenData.printCursor.rows = Math.floor( screenData.height / screenData.font.height );
 }
 
 // Decompress base32-encoded font data

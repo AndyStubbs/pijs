@@ -35,10 +35,10 @@ export function init() {
 
 
 // print command
-screenManager.addCommand( "print", print, [ "msg", "inLine", "isCentered" ] );
+screenManager.addCommand( "print", print, [ "msg", "isInline", "isCentered" ] );
 function print( screenData, options ) {
 	let msg = options.msg;
-	const inLine = !!options.inLine;
+	const isInline = !!options.isInline;
 	const isCentered = !!options.isCentered;
 
 	// Bail if not possible to print an entire line on screen
@@ -58,7 +58,7 @@ function print( screenData, options ) {
 	// Split messages by newlines
 	const parts = msg.split( /\n/ );
 	for( let i = 0; i < parts.length; i++ ) {
-		startPrint( screenData, parts[ i ], inLine, isCentered );
+		startPrint( screenData, parts[ i ], isInline, isCentered );
 	}
 }
 
@@ -183,7 +183,7 @@ function canvasCalcWidth( screenData, options ) {
 
 
 // Start printing text
-function startPrint( screenData, msg, inLine, isCentered ) {
+function startPrint( screenData, msg, isInline, isCentered ) {
 	const printCursor = screenData.printCursor;
 	const font = screenData.font;
 
@@ -197,7 +197,7 @@ function startPrint( screenData, msg, inLine, isCentered ) {
 
 	// Handle text wrapping if text is too wide
 	if(
-		!inLine &&
+		!isInline &&
 		!isCentered &&
 		width + printCursor.x > screenData.width &&
 		msg.length > 1
@@ -218,8 +218,8 @@ function startPrint( screenData, msg, inLine, isCentered ) {
 			}
 		}
 
-		startPrint( screenData, msg1, inLine, isCentered );
-		startPrint( screenData, msg2, inLine, isCentered );
+		startPrint( screenData, msg1, isInline, isCentered );
+		startPrint( screenData, msg2, isInline, isCentered );
 		return;
 	}
 
@@ -248,7 +248,7 @@ function startPrint( screenData, msg, inLine, isCentered ) {
 	}
 
 	// Advance cursor position
-	if( !inLine ) {
+	if( !isInline ) {
 		printCursor.y += font.height;
 		printCursor.x = 0;
 	} else {
