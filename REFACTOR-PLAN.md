@@ -136,9 +136,9 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 
 ---
 
-### 🔨 Remaining Features (37 APIs from legacy)
+### 🔨 Remaining Features (36 APIs from legacy)
 
-#### Priority 1: Text & Printing (1 API remaining)
+#### Priority 1: Text & Printing (100% Complete)
 
 #### Font Commands (100% Complete - 6/6)
 **Module: font.js**
@@ -172,8 +172,8 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ✅ `canvasPrint` - Canvas text rendering
 - ✅ `bitmapPrint` - Bitmap font image rendering
 
-**Recommended: modules/table.js**
-- ⬜ `printTable` - Print formatted tables
+**Module: table.js (100% Complete - 1/1)**
+- ✅ `printTable` - Print formatted tables with border styles and custom layouts
 
 #### Priority 2: Input System (37 APIs)
 **Recommended: modules/keyboard.js**
@@ -310,15 +310,15 @@ src/assets/
 
 1. ~~**Implement font.js**~~ ✅ **COMPLETE** - Font loading, management, and character data
 2. ~~**Implement print.js**~~ ✅ **COMPLETE** - Text printing, cursor positioning, word wrapping, auto-scroll
-3. **Implement keyboard.js** - Basic keyboard input
-4. **Implement mouse.js** - Mouse input and events
-5. **Implement sound.js** - Basic sound effects
-6. **Implement touch.js** - Touch support for mobile
-7. **Implement gamepad.js** - Gamepad support
-8. **Implement play.js** - Musical playback
-9. **Implement table.js** - Table formatting
+3. ~~**Implement table.js**~~ ✅ **COMPLETE** - Table formatting with customizable borders
+4. **Implement keyboard.js** - Basic keyboard input
+5. **Implement mouse.js** - Mouse input and events
+6. **Implement sound.js** - Basic sound effects
+7. **Implement touch.js** - Touch support for mobile
+8. **Implement gamepad.js** - Gamepad support
+9. **Implement play.js** - Musical playback
 10. **Complete remaining core features** - Event system (onevent, offevent, etc.)
 
 ---
 
-**Last Updated:** October 15, 2025
+**Last Updated:** October 16, 2025

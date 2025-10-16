@@ -459,7 +459,7 @@ export function pad( str, len, c ) {
 		str = c + str + c;
 	}
 	if( str.length > len ) {
-		str = str.substr( 0, len );
+		str = str.substring( 0, len );
 	}
 	return str;
 }
