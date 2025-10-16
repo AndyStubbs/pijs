@@ -101,6 +101,18 @@ export function processApi() {
 			setList.push( settingName );
 		}
 	}
+
+	// Sort the settings list
+	setList.sort( ( settingNameA, settingNameB ) => {
+
+		// Screen should always go first
+		if( settingNameA === "screen" ) {
+			return -1;
+		} else if( settingNameB === "screen" ) {
+			return 1;
+		}
+		return settingNameA.localeCompare( settingNameB );
+	} );
 	
 	// Add the set commands -- not all set commands are screen commands but some are so use
 	// screenManager to add command
@@ -124,7 +136,7 @@ export function processApiCommand( command ) {
 		m_api[ command.name ] = ( ...args ) => {
 			const options = utils.parseOptions( args, command.parameterNames );
 			const screenData = m_screenManager.getActiveScreen();
-			if( !screenData ) {
+			if( !screenData && command.name !== "set" ) {
 				const error = new Error( `${command.name}: No screens available for command.` );
 				error.code = "NO_SCREEN";
 				throw error;
@@ -199,7 +211,7 @@ function set( screenData, options ) {
 	for( const optionName in options ) {
 
 		// Skip blanks
-		if( !options[ optionName ] ) {
+		if( options[ optionName ] === null ) {
 			continue;
 		}
 
@@ -214,7 +226,8 @@ function set( screenData, options ) {
 			// 		 EX: set( { "pos": { "row": 1, "col": 1 } } );
 			// Parse the options from the setting
 			// Wrap optionValues in array if not already an array
-			const argsArray = Array.isArray( optionValues ) ? optionValues : [ optionValues ];
+			//const argsArray = Array.isArray( optionValues ) ? optionValues : [ optionValues ];
+			const argsArray = [ optionValues ];
 			const parsedOptions = utils.parseOptions( argsArray, setting.parameterNames );
 
 			// Call the setting function
@@ -222,6 +235,11 @@ function set( screenData, options ) {
 				setting.fn( screenData, parsedOptions );
 			} else {
 				setting.fn( parsedOptions );
+			}
+
+			// If we just set the screen then refresh the active screen
+			if( optionName === "screen" ) {
+				screenData = m_screenManager.getActiveScreen();
 			}
 		}
 	}

@@ -13,8 +13,10 @@ import * as screenManager from "../core/screen-manager";
 import * as utils from "../core/utils";
 
 const m_fonts = [];
+const m_fontBitmaps = {};
 let m_defaultFont = null;
 let m_nextFontId = 0;
+let m_nextFontBitmapId = 0;
 
 
 /***************************************************************************************************
@@ -25,6 +27,10 @@ let m_nextFontId = 0;
 // Initialize font module
 export function init() {
 	screenManager.addScreenDataItemGetter( "font", () => m_defaultFont );
+}
+
+export function getFontBitmap( bitmapId ) {
+	return m_fontBitmaps[ bitmapId ];
 }
 
 
@@ -88,11 +94,7 @@ function loadFont( options ) {
 		"chars": chars,
 		"charSet": charSet,
 		"mode": isEncoded ? "pixel" : "bitmap",
-		"bitmap": {
-			"image": null,
-			"width": width,
-			"height": height
-		}
+		"bitmapId": null
 	};
 
 	// Add to fonts array
@@ -395,6 +397,12 @@ function decompressFont( numStr, width, height ) {
 function loadFontFromImage( fontSrc, font ) {
 	let img;
 
+	const bitmap = {
+		"image": null,
+		"width": font.width,
+		"height": font.height
+	};
+
 	if( typeof fontSrc === "string" ) {
 
 		// Create a new image
@@ -404,7 +412,7 @@ function loadFontFromImage( fontSrc, font ) {
 		commands.wait();
 
 		img.onload = function() {
-			font.bitmap.image = img;
+			bitmap.image = img;
 			commands.done();
 		};
 
@@ -418,11 +426,19 @@ function loadFontFromImage( fontSrc, font ) {
 	} else if( fontSrc instanceof HTMLImageElement ) {
 
 		// Use image element directly
-		font.bitmap.image = fontSrc;
+		bitmap.image = fontSrc;
 	} else {
 		const error = new TypeError( "loadFont: fontSrc must be a string or Image element." );
 		error.code = "INVALID_FONT_SRC";
 		throw error;
 	}
+	
+	// Set the bitmapId
+	font.bitmapId = m_nextFontBitmapId;
+	m_nextFontBitmapId += 1;
+
+	// Set the bitmap object
+	m_fontBitmaps[ font.bitmapId ] = bitmap;
+
 }
 

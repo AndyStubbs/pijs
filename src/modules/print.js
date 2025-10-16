@@ -10,6 +10,7 @@
 
 import * as screenManager from "../core/screen-manager";
 import * as renderer from "../core/renderer";
+import * as fontModule from "./font";
 
 
 /***************************************************************************************************
@@ -347,8 +348,19 @@ function bitmapPrint( screenData, msg, x, y ) {
 	screenData.api.render();
 
 	const font = screenData.font;
-	const width = font.bitmap.image.width;
-	const columns = Math.floor( width / font.bitmap.width );
+	const bitmap = fontModule.getFontBitmap( font.bitmapId );
+	if( !bitmap ) {
+		const error = new TypeError( "print: font bitmap not found" );
+		error.code = "FONT_BITMAP_NOT_FOUND";
+		throw error;
+	}
+
+	const bitmapWidth = bitmap.image.width;
+	
+	// Get the source width & height of bitmap characters
+	const sw = bitmap.width;
+	const sh = bitmap.height;
+	const columns = Math.floor( bitmapWidth / sw );
 
 	// Loop through each character in the message
 	for( let i = 0; i < msg.length; i++ ) {
@@ -359,14 +371,17 @@ function bitmapPrint( screenData, msg, x, y ) {
 		if( charIndex !== undefined ) {
 
 			// Get the source x & y coordinates
-			const sx = ( charIndex % columns ) * font.bitmap.width;
-			const sy = Math.floor( charIndex / columns ) * font.bitmap.height;
+			const sx = ( charIndex % columns ) * sw;
+			const sy = Math.floor( charIndex / columns ) * sh;
+
+			// Get the destination x coordinate
+			const dx = x + font.width * i;
 
 			// Draw the character on the screen
 			screenData.context.drawImage(
-				font.bitmap.image,
-				sx, sy, font.bitmap.width, font.bitmap.height,
-				x + font.width * i, y, font.width, font.height
+				bitmap.image,
+				sx, sy, sw, sh,
+				dx, y, font.width, font.height
 			);
 		}
 	}
