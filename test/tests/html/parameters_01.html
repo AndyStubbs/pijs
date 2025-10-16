@@ -47,7 +47,8 @@ $.ready(function () {
 	$.setColor( { "color": 15 } );
 	$.pset( { "x": 10, "y": 35 } );
 	$.pset( { "x": 55, "y": 10 } );
-	$.setPen( { "pen": "circle", "size": 3, "noise": 55 } );
+	$.setPen( { "pen": "circle", "size": 3 } );
+	$.setBlend( { "mode": "replace", "noise": [ 55, 55, 55, 55 ] } )
 	$.setColor( 2 );
 	$.bezier( {
 		"xStart": 5,
