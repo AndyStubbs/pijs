@@ -30,7 +30,8 @@ $.ready( function () {
 	var color2 = [ 0, 87, 225 ];
 	$.screen( "256x256" );
 	$.setColor( 15 );
-	$.setPen( "pixel", 1, 35 );
+	$.setPen( "pixel", 1 );
+	$.setBlend( "replace", 35 );
 	for( i = 0; i < 128; i++ ) {
 		color[ 1 ] -= 2;
 		$.setColor( color );
