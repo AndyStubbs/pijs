@@ -1,9 +1,9 @@
 /**
- * Pi.js - Draw Module
+ * Pi.js - Keyboard Module
  * 
- * BASIC-style draw command with string syntax for procedural drawing
+ * Basic keyboard handler for screens
  * 
- * @module modules/draw
+ * @module modules/keyboard
  */
 
 "use strict";
@@ -89,7 +89,7 @@ function inkey( screenData, options ) {
 			return screenData.inKeys[ key ];
 		}
 
-		return {};
+		return null;
 	}
 
 	// If inkey is blank return all key codes
@@ -100,6 +100,9 @@ function inkey( screenData, options ) {
 		}
 	}
 
+	if( Object.keys( keyCodes ).length === 0 ) {
+		return null;
+	}
 	return keyCodes;
 }
 
