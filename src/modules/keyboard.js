@@ -488,12 +488,12 @@ function startInput( screenData ) {
 		if( keyData.key === "Enter" ) {
 			screenData.api.offkey( "any", "down", onInputKeyDownFn );
 			finishInput( screenData );
-		
+			return;
 		// Handle Escape - Cancel Input
 		} else if( keyData.key === "Escape" ) {
 			screenData.api.offkey( "any", "down", onInputKeyDownFn );
 			finishInput( screenData, true );
-		
+			return;
 		// Handle Backspace - Erase last character
 		} else if( keyData.key === "Backspace" ) {
 			if( inputData.val.length > 0 ) {
@@ -509,8 +509,10 @@ function startInput( screenData ) {
 			if( inputData.isNumber && inputData.allowNegative ) {
 
 				// If user enters a "-" then insert "-" at the start
-				if( keyData.key === "-" && inputData.val.charAt( 0 ) !== "-" ) {
-					inputData.val = "-" + inputData.val.substring( 1 );
+				if( keyData.key === "-" ) {
+					if( inputData.val.charAt( 0 ) !== "-" ) {
+						inputData.val = "-" + inputData.val;
+					}
 					inputHandled = true;
 				
 				// Any time the user enters a "+" key then replace the minus symbol
@@ -572,12 +574,12 @@ function showPrompt( screenData, hideCursorOverride ) {
 
 	// Get the background pixels
 	const posPx = screenData.api.getPosPx( screenData );
-	const width = ( msg.length + 1 ) * screenData.font.width;
-	const height = screenData.font.height;
+	const width = ( msg.length + 1 ) * screenData.font.width + 2;
+	const height = screenData.font.height + 2;
 
 	// Restore the background image over the prompt
-	screenData.context.clearRect( posPx.x, posPx.y, width, height );
-	screenData.context.drawImage( inputData.backCanvas, posPx.x, posPx.y, width, height );
+	screenData.context.clearRect( posPx.x - 1, posPx.y - 1, width, height );
+	screenData.context.drawImage( inputData.backCanvas, posPx.x - 1, posPx.y - 1, width, height );
 	screenData.imageData = null;
 	
 	// Print the prompt + input + cursor
@@ -593,8 +595,8 @@ function finishInput( screenData, isCancel ) {
 	// Show prompt on complete, without the cursor
 	showPrompt( screenData, true );
 
-	// Move cursor down by printing a new line
-	screenData.api.print( "" );
+	// Move cursor down one line
+	screenData.printCursor.y += screenData.font.height;
 
 	// Clear the interval
 	clearInterval( inputData.interval );

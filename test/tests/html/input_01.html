@@ -12,12 +12,16 @@
 				DL 100
 				KT "Hello World"
 				KP "Enter"
+				DL 100
 				KT "5"
 				KP "Enter"
+				DL 100
 				KT "Andy"
 				KP "Enter"
+				DL 100
 				KT "Stubbs"
 				KP "Enter"
+				DL 100
 				KT "500"
 				KP "Enter"
 				"""
@@ -40,7 +44,7 @@ $.ready( function () {
 	$.paint( 1, 1, 1 );
 	$.setColor( 15 );
 	$.render();
-	$.input( "Say something? ", function ( val ) {
+	$.input( "Say something? ", async function ( val ) {
 		$.print( "You said, \"" + val + "\"" );
 		getInput2();
 	} );
@@ -49,7 +53,7 @@ $.ready( function () {
 			$.print( "Your number is " + val + "." );
 		}, true, 10, false
 	);
-});
+} );
 
 async function getInput2() {
 	var first = await $.input( "First name: " );
