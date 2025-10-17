@@ -413,13 +413,19 @@ function triggerAnyKeyEventHandlers( screenData, event, mode ) {
 		return;
 	}
 
-	const toRemove = [];
-	for( let i = 0; i < handlers.length; i += 1 ) {
-		const handler = handlers[ i ];
+	const handlersCopy = handlers.slice();
+	const toRemove = new Set();
+	for( let i = 0; i < handlersCopy.length; i += 1 ) {
+		const handler = handlersCopy[ i ];
 		if( handler.mode !== mode ) {
 			continue;
 		}
 		if( !handler.allowRepeat && event.repeat ) {
+			continue;
+		}
+
+		// Need to check if handler has been removed in case a previous handler includes an offkey
+		if( !handlers.includes( handler ) ) {
 			continue;
 		}
 		let keyData = screenData.inCodes[ event.code ];
@@ -428,18 +434,18 @@ function triggerAnyKeyEventHandlers( screenData, event, mode ) {
 		}
 		handler.fn( keyData );
 		if( handler.once ) {
-			toRemove.push( i );
+			toRemove.add( handler );
 		}
 	}
 
 	// Remove the handlers that are one time only calls
-	for( let i = toRemove.length - 1; i >= 0; i -= 1 ) {
-		handlers.splice( i, 1 );
-	}
-
-	// Delete the array if empty
-	if( handlers.length === 0 ) {
-		delete screenData.onKeyHandlers[ "any" ];
+	if( toRemove.size > 0 ) {
+		screenData.onKeyHandlers[ keyOrCode ] = handlers.filter( h => !toRemove.has( h ) );
+		
+		// Delete the array if empty
+		if( screenData.onKeyHandlers[ keyOrCode ].length === 0 ) {
+			delete screenData.onKeyHandlers[ keyOrCode ];
+		}
 	}
 }
 
