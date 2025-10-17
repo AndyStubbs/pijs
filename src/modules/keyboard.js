@@ -35,6 +35,7 @@ export function init() {
 	screenManager.addScreenDataItem( "inKeys", {} );
 	screenManager.addScreenDataItem( "actionKeys", new Set() );
 	screenManager.addScreenDataItem( "onKeyHandlers", {} );
+	screenManager.addScreenDataItem( "inputData", null );
 
 	// Add initialize screen item
 	screenManager.addScreenInitFunction( ( screenData ) => {
@@ -156,7 +157,7 @@ function onkey( screenData, options ) {
 	}
 
 	if( typeof fn !== "function" ) {
-		const error = new TypeError( "onkey: callback must be a function." );
+		const error = new TypeError( "onkey: fn must be a function." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
 	}
@@ -232,6 +233,59 @@ function offkey( screenData, options ) {
 			delete screenData.onKeyHandlers[ key ];
 		}
 	}
+}
+
+screenManager.addCommand(
+	"input", input, [ "prompt", "fn", "cursor", "isNumber", "isInteger", "allowNegative" ]
+);
+function input( screenData, options ) {
+	const prompt = options.prompt;
+	const fn = options.fn;
+	const cursor = options.cursor ? options.cursor : String.fromCharCode( 219 );
+	const isNumber = !!options.isNumber;
+	const isInteger = !!options.isInteger;
+	const allowNegative = !!options.allowNegative;
+
+	if( typeof prompt !== "string" ) {
+		const error = new TypeError( "input: prompt must be a string" );
+		error.code = "INVALID_PARAMETERS";
+		throw error;
+	}
+
+	if( fn && typeof fn !== "function" ) {
+		const error = new TypeError( "input: fn must be a function." );
+		error.code = "INVALID_PARAMETERS";
+		throw error;
+	}
+
+	if( typeof cursor !== "string" ) {
+		const error = new TypeError( "input: cursor must be a string" );
+		error.code = "INVALID_PARAMETERS";
+		throw error;
+	}
+
+	// Create promise for async/await support
+	let resolvePromise, rejectPromise;
+	const promise = new Promise( ( resolve, reject ) => {
+		resolvePromise = resolve;
+		rejectPromise = reject;
+	} );
+
+	screenData.inputData = {
+		"prompt": prompt,
+		"isNumber": isNumber,
+		"isInteger": isInteger,
+		"allowNegative": allowNegative,
+		"val": "",
+		"fn": fn,
+		"resolve": resolvePromise,
+		"reject": rejectPromise,
+		"screenData": screenData
+	};
+
+	startInput( screenData );
+
+	return promise;
 }
 
 /***************************************************************************************************
@@ -414,3 +468,24 @@ function isFromEditableTarget ( event ) {
 	return false;
 }
 
+
+/***************************************************************************************************
+ * Input Commands
+ **************************************************************************************************/
+
+
+function startInput( screenData ) {
+
+	// Add input event listerners
+	const onInputKeyDown = ( keyData ) => {
+		screenData.inputData.val += keyData.key;
+		showPrompt( screenData );
+	};
+	screenData.api.onkey( "any", "down", onInputKeyDown );
+
+	showPrompt( screenData );
+}
+
+function showPrompt( screenData ) {
+	screenData.api.print( screenData.inputData.val );
+}
