@@ -32,7 +32,7 @@
 			"use strict";
 
 			// Create screen
-			const screen = $.screen( { "aspect": "320x200" } );
+			const screen = $.screen( { "aspect": "640x480", "container": "container" } );
 
 			// Set background
 			$.cls( 0 );
@@ -46,7 +46,7 @@
 			$.print( "" );
 
 			// Test 2: Number input
-			const age = await $.input( "How old are you? ", null, "$", true );
+			const age = await $.input( "How old are you? ", null, null, true );
 			$.print( `You are ${age} years old.` );
 			$.print( "" );
 
