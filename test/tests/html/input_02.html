@@ -10,17 +10,13 @@
 			height = 210
 			commands = """
 				KT "Andy Stubbs"
-				KD "Enter"
-				SL "canvas"
-				TS 150, 105
-				TE
-				TS 45, 37
-				TE
-				TS 8, 37
-				TE
-				TS 119, 54
-				TE
+				KP "Enter"
+				DL 100
+				KT "41"
+				KP "Enter"
+				DL 100
 				KT "-800"
+				KP "Enter"
 				DL 100
 			"""
 			[[TOML_END]]
@@ -38,32 +34,30 @@
 <script>
 
 $.screen( { "aspect": "300m210" } );
-
-$.input( {
-	"prompt": "What is your name? ", 
-	"callback": function ( name ) {
-		$.print( "Hello " + name );
-	},
-	"onscreenKeyboard": "always"
-} );
-$.input( {
-	"prompt": "What is your age? ", 
-	"callback": function ( age ) {
-		$.print( "You are " + age + " years old." );
-	},
-	"onscreenKeyboard": "auto",
-	"isNumber": true,
-	"isInteger": true,
-	"allowNegative": false
-} );
-$.input( {
-	"prompt": "How much money do you have? ", 
-	"callback": function ( money ) {
-		$.print( "You have $" + money + "." );
-	},
-	"onscreenKeyboard": "auto",
-	"isNumber": true,
-	"allowNegative": true
+$.ready( async () => {
+	await $.input( {
+		"prompt": "What is your name? ", 
+		"fn": function ( name ) {
+			$.print( "Hello " + name );
+		}
+	} );
+	await $.input( {
+		"prompt": "What is your age? ", 
+		"fn": function ( age ) {
+			$.print( "You are " + age + " years old." );
+		},
+		"isNumber": true,
+		"isInteger": true,
+		"allowNegative": false
+	} );
+	await $.input( {
+		"prompt": "How much money do you have? ", 
+		"fn": function ( money ) {
+			$.print( "You have $" + money + "." );
+		},
+		"isNumber": true,
+		"allowNegative": true
+	} );
 } );
 
 </script>

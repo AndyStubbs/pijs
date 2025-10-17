@@ -293,6 +293,12 @@ function input( screenData, options ) {
 	return promise;
 }
 
+commands.addCommand( "cancelInput", cancelInput, [] );
+function cancelInput() {
+	if( m_inputData ) {
+		finishInput( true );
+	}
+}
 
 /***************************************************************************************************
  * Internal Helper Functions
@@ -530,20 +536,23 @@ function onInputKeyDown( keyData ) {
 		}
 	}
 }
+
 function showPrompt( hideCursorOverride ) {
 	const screenData = m_inputData.screenData;
 	let msg = m_inputData.prompt + m_inputData.val;
 
 	// Blink cursor after every blink duration
-	const now = Date.now();
-	if( now - m_inputData.lastCursorBlink > CURSOR_BLINK ) {
-		m_inputData.lastCursorBlink = now;
-		m_inputData.showCursor = !m_inputData.showCursor;
-	}
+	if( !hideCursorOverride ) {
+		const now = Date.now();
+		if( now - m_inputData.lastCursorBlink > CURSOR_BLINK ) {
+			m_inputData.lastCursorBlink = now;
+			m_inputData.showCursor = !m_inputData.showCursor;
+		}
 
-	// Show cursor if not hidden
-	if( m_inputData.showCursor && !hideCursorOverride ) {
-		msg += m_inputData.cursor;
+		// Show cursor if not hidden
+		if( m_inputData.showCursor ) {
+			msg += m_inputData.cursor;
+		}
 	}
 
 	// Check if need to scroll first
@@ -561,7 +570,6 @@ function showPrompt( hideCursorOverride ) {
 
 	// Restore the background image over the prompt
 	screenData.context.clearRect( posPx.x, posPx.y, width, height );
-	screenData.context.fillRect( posPx.x, posPx.y, width, height );
 	screenData.context.drawImage(
 		m_inputData.backCanvas,
 		posPx.x, posPx.y, width, height,
