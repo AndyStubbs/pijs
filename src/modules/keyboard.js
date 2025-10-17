@@ -10,7 +10,6 @@
 
 import * as commands from "../core/commands";
 import * as screenManager from "../core/screen-manager";
-import * as renderer from "../core/renderer";
 import * as utils from "../core/utils";
 
 // Input tags that we don't want to capture
