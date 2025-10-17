@@ -431,6 +431,8 @@ function createDefaultScreen( options ) {
 	options.bufferCanvas = document.createElement( "canvas" );
 
 	// Style the canvas
+	options.canvas.tabIndex = 0;
+	options.canvas.style.outline = "none";
 	options.canvas.style.backgroundColor = "black";
 	options.canvas.style.position = "absolute";
 	options.canvas.style.imageRendering = "pixelated";
@@ -495,6 +497,9 @@ function createNoStyleScreen( options ) {
 
 	// Append canvas to container
 	options.container.appendChild( options.canvas );
+
+	// Add tabindex to canvas
+	options.canvas.tabIndex = 0;
 
 	if( options.aspectData && options.aspectData.splitter === "x" ) {
 

@@ -12,7 +12,7 @@ import * as screenManager from "../core/screen-manager";
 import * as utils from "../core/utils";
 
 // Input tags that we don't want to capture
-const INPUT_TAGS = new Set( [ "INPUT", "TEXTAREA", "SELECT" ] );
+const INPUT_TAGS = new Set( [ "INPUT", "TEXTAREA", "SELECT", "BUTTON" ] );
 
 // Global screen handlers
 const m_screenKeyboardHandlers = {};
@@ -23,7 +23,7 @@ const m_screenKeyboardHandlers = {};
  **************************************************************************************************/
 
 
-// Initialize draw module
+// Initialize keyboard module
 export function init() {
 
 	// Add keyboard event listeners
@@ -33,7 +33,8 @@ export function init() {
 	// Add screen data items
 	screenManager.addScreenDataItem( "inCodes", {} );
 	screenManager.addScreenDataItem( "inKeys", {} );
-	screenManager.addScreenDataItem( "actionKeys", {} );
+	screenManager.addScreenDataItem( "actionKeys", new Set() );
+	screenManager.addScreenDataItem( "onKeyHandlers", {} );
 
 	// Add initialize screen item
 	screenManager.addScreenInitFunction( ( screenData ) => {
@@ -51,7 +52,6 @@ export function init() {
 }
 
 
-
 /***************************************************************************************************
  * External API Commands
  **************************************************************************************************/
@@ -60,6 +60,7 @@ export function init() {
 screenManager.addCommand( "startKeyboard", startKeyboard, [] );
 function startKeyboard( screenData ) {
 	m_screenKeyboardHandlers[ screenData.id ] = screenData;
+	screenData.canvas.focus();
 }
 
 screenManager.addCommand( "stopKeyboard", stopKeyboard, [] );
@@ -116,7 +117,7 @@ function setActionKeys( screenData, options ) {
 		throw error;
 	}
 	for( const key of keys ) {
-		screenData.actionKeys[ key ] = true;
+		screenData.actionKeys.add( key );
 	}
 }
 
@@ -130,10 +131,108 @@ function removeActionKeys( screenData, options ) {
 		throw error;
 	}
 	for( const key of keys ) {
-		delete screenData.actionKeys[ key ];
+		screenData.actionKeys.delete( key );
 	}
 }
 
+screenManager.addCommand( "onkey", onkey, [ "key", "mode", "fn", "once", "allowRepeat" ] );
+function onkey( screenData, options ) {
+	const key = options.key;
+	const mode = options.mode;
+	const fn = options.fn;
+	const once = !!options.once;
+	const allowRepeat = !!options.allowRepeat;
+	
+	if( !key || ( typeof key !== "string" && !utils.isArray( key ) ) ) {
+		const error = new TypeError( "onkey: key must be a string or an array of strings." );
+		error.code = "INVALID_PARAMETERS";
+		throw error;
+	}
+
+	if( !mode || ( typeof mode !== "string" ) ) {
+		const error = new TypeError( "onkey: mode must be a string with value of up or down." );
+		error.code = "INVALID_PARAMETERS";
+		throw error;
+	}
+
+	if( typeof fn !== "function" ) {
+		const error = new TypeError( "onkey: callback must be a function." );
+		error.code = "INVALID_PARAMETERS";
+		throw error;
+	}
+
+	// Normalize key into an array for easier processing
+	const combo = typeof key === "string" ? [ key ] : key;
+
+	const handler = {
+		"comboKey": combo.sort().join( "" ),
+		"combo": combo,
+		"mode": mode,
+		"fn": fn,
+		"once": once,
+		"allowRepeat": allowRepeat,
+	};
+	
+	// Add a on key handler for each of the key codes - in combo all must be pressed
+	for( const key of combo ) {
+		if( !screenData.onKeyHandlers[ key ] ) {
+			screenData.onKeyHandlers[ key ] = [];
+		}
+		screenData.onKeyHandlers[ key ].push( handler );
+	}
+}
+
+screenManager.addCommand( "offkey", offkey, [ "key", "mode", "fn", "once", "allowRepeat" ] );
+function offkey( screenData, options ) {
+	const key = options.key;
+	const mode = options.mode;
+	const fn = options.fn;
+	const once = !!options.once;
+	const allowRepeat = !!options.allowRepeat;
+
+	if( !key || ( typeof key !== "string" && !utils.isArray( key ) ) ) {
+		const error = new TypeError( "offkey: key must be a string or an array of strings." );
+		error.code = "INVALID_PARAMETERS";
+		throw error;
+	}
+
+	if( typeof fn !== "function" ) {
+		const error = new TypeError( "offkey: callback must be a function." );
+		error.code = "INVALID_PARAMETERS";
+		throw error;
+	}
+
+	// Normalize key into an array for easier processing
+	const combo = typeof key === "string" ? [ key ] : key;
+	const comboKey = combo.sort().join( "" );
+
+	// Find the handlers and remove them
+	for( const key of combo ) {
+		const handlers = screenData.onKeyHandlers[ key ];
+		if( !handlers ) {
+			continue;
+		}
+		const toRemove = [];
+		for( let i = 0; i < handlers.length; i += 1 ) {
+			const handler = handlers[ i ];
+			if(
+				handler.comboKey === comboKey &&
+				handler.mode === mode &&
+				handler.fn === fn &&
+				handler.once === once &&
+				handler.allowRepeat === allowRepeat
+			) {
+				toRemove.push( i );
+			}
+		}
+		for( let i = toRemove.length - 1; i >= 0; i -= 1 ) {
+			handlers.splice( i, 1 );
+		}
+		if( handlers.length === 0 ) {
+			delete screenData.onKeyHandlers[ key ];
+		}
+	}
+}
 
 /***************************************************************************************************
  * Internal Helper Functions
@@ -164,22 +263,124 @@ function onKeyDown( screenData, event ) {
 	const keyData = {
 		"code": event.code,
 		"key": event.key,
-		"location": event.location
+		"location": event.location,
+		"altKey": event.altKey,
+		"ctrlKey": event.ctrlKey,
+		"metaKey": event.metaKey,
+		"shiftKey": event.shiftKey,
+		"repeat": event.repeat
 	};
 	screenData.inCodes[ event.code ] = keyData;
 	screenData.inKeys[ event.key ] = keyData;
 
-	if( screenData.actionKeys[ event.code ] || screenData.actionKeys[ event.key ] ) {
+	triggerKeyEventHandlers( screenData, event, "down", event.code );
+	triggerKeyEventHandlers( screenData, event, "down", event.key );
+	if( screenData.actionKeys.has( event.code ) || screenData.actionKeys.has( event.key ) ) {
+		event.preventDefault();
+	}
+
+	// Handle the any key
+	triggerAnyKeyEventHandlers( screenData, event, "down" );
+}
+
+function onKeyUp( screenData, event ) {
+	triggerKeyEventHandlers( screenData, event, "up", event.code );
+	triggerKeyEventHandlers( screenData, event, "up", event.key );
+
+	// Handle the any key
+	triggerAnyKeyEventHandlers( screenData, event, "up" );
+
+	delete screenData.inCodes[ event.code ];
+	delete screenData.inKeys[ event.key ];
+
+	if( screenData.actionKeys.has( event.code ) || screenData.actionKeys.has( event.key ) ) {
 		event.preventDefault();
 	}
 }
 
-function onKeyUp( screenData, event ) {
-	delete screenData.inCodes[ event.code ];
-	delete screenData.inKeys[ event.key ];
+function triggerKeyEventHandlers( screenData, event, mode, keyOrCode ) {
 
-	if( screenData.actionKeys[ event.code ] || screenData.actionKeys[ event.key ] ) {
-		event.preventDefault();
+	let handlers = screenData.onKeyHandlers[ keyOrCode ];
+	if( !handlers ) {
+		return;
+	}
+
+	const toRemove = [];
+	for( let i = 0; i < handlers.length; i += 1 ) {
+		const handler = handlers[ i ];
+		if( handler.mode !== mode ) {
+			continue;
+		}
+		if( event.repeat && !handler.allowRepeat ) {
+			continue;
+		}
+		const isAllKeysPressed = handler.combo.every(
+			key => screenData.inKeys[ key ] || screenData.inCodes[ key ]
+		);
+		if( isAllKeysPressed ) {
+			const comboData = handler.combo.map( key => {
+				if( screenData.inKeys[ key ] ) {
+					return screenData.inKeys[ key ];
+				}
+				return screenData.inCodes[ key ];
+			} )
+			if( comboData.length === 1 ) {
+				handler.fn( comboData[ 0 ] );
+			} else {
+				handler.fn( comboData );
+			}
+
+			if( handler.once ) {
+				toRemove.push( i );
+			}
+		}
+	}
+
+	// Remove the handlers that are one time only calls
+	for( let i = toRemove.length - 1; i >= 0; i -= 1 ) {
+		handlers.splice( i, 1 );
+	}
+
+	// Delete the array if empty
+	if( handlers.length === 0 ) {
+		delete screenData.onKeyHandlers[ keyOrCode ];
+	}
+
+}
+
+function triggerAnyKeyEventHandlers( screenData, event, mode ) {
+	const handlers = screenData.onKeyHandlers[ "any" ];
+	if( !handlers ) {
+		return;
+	}
+
+	const toRemove = [];
+	for( let i = 0; i < handlers.length; i += 1 ) {
+		const handler = handlers[ i ];
+		if( handler.mode !== mode ) {
+			continue;
+		}
+		if( !handler.allowRepeat && event.repeat ) {
+			continue;
+		}
+		let keyData = screenData.inCodes[ event.code ];
+		if( !keyData ) {
+			keyData = screenData.inKeys[ event.code ];
+		}
+		handler.fn( keyData );
+		if( handler.once ) {
+			toRemove.push( i );
+		}
+	}
+
+	// Remove the handlers that are one time only calls
+	for( let i = toRemove.length - 1; i >= 0; i -= 1 ) {
+		handlers.splice( i, 1 );
+	}
+
+	// Delete the array if empty
+	if( handlers.length === 0 ) {
+		delete screenData.onKeyHandlers[ "any" ];
 	}
 }
 
@@ -207,3 +408,4 @@ function isFromEditableTarget ( event ) {
 
 	return false;
 }
+
