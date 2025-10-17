@@ -329,20 +329,16 @@ function onKeyDown( screenData, event ) {
 
 	triggerKeyEventHandlers( screenData, event, "down", event.code );
 	triggerKeyEventHandlers( screenData, event, "down", event.key );
+	triggerKeyEventHandlers( screenData, event, "down", "any" );
 	if( screenData.actionKeys.has( event.code ) || screenData.actionKeys.has( event.key ) ) {
 		event.preventDefault();
 	}
-
-	// Handle the any key
-	triggerAnyKeyEventHandlers( screenData, event, "down" );
 }
 
 function onKeyUp( screenData, event ) {
 	triggerKeyEventHandlers( screenData, event, "up", event.code );
 	triggerKeyEventHandlers( screenData, event, "up", event.key );
-
-	// Handle the any key
-	triggerAnyKeyEventHandlers( screenData, event, "up" );
+	triggerKeyEventHandlers( screenData, event, "up", "any" );
 
 	delete screenData.inCodes[ event.code ];
 	delete screenData.inKeys[ event.key ];
@@ -354,18 +350,22 @@ function onKeyUp( screenData, event ) {
 
 function triggerKeyEventHandlers( screenData, event, mode, keyOrCode ) {
 
-	let handlers = screenData.onKeyHandlers[ keyOrCode ];
+	const handlers = screenData.onKeyHandlers[ keyOrCode ];
 	if( !handlers ) {
 		return;
 	}
-	const handlersCopy = handlers.slice();
 
+	const isAnyKey = keyOrCode === "any";
+	const handlersCopy = handlers.slice();
 	const toRemove = new Set();
+
 	for( let i = 0; i < handlersCopy.length; i += 1 ) {
 		const handler = handlersCopy[ i ];
+
 		if( handler.mode !== mode ) {
 			continue;
 		}
+
 		if( event.repeat && !handler.allowRepeat ) {
 			continue;
 		}
@@ -374,16 +374,34 @@ function triggerKeyEventHandlers( screenData, event, mode, keyOrCode ) {
 		if( !handlers.includes( handler ) ) {
 			continue;
 		}
+
+		// For "any" key handlers, pass the current key data
+		if( isAnyKey ) {
+			let keyData = screenData.inCodes[ event.code ];
+			if( !keyData ) {
+				keyData = screenData.inKeys[ event.key ];
+			}
+			handler.fn( keyData );
+
+			if( handler.once ) {
+				toRemove.add( handler );
+			}
+			continue;
+		}
+
+		// For specific key handlers, check combo and pass combo data
 		const isAllKeysPressed = handler.combo.every(
 			key => screenData.inKeys[ key ] || screenData.inCodes[ key ]
 		);
+
 		if( isAllKeysPressed ) {
 			const comboData = handler.combo.map( key => {
 				if( screenData.inKeys[ key ] ) {
 					return screenData.inKeys[ key ];
 				}
 				return screenData.inCodes[ key ];
-			} )
+			} );
+
 			if( comboData.length === 1 ) {
 				handler.fn( comboData[ 0 ] );
 			} else {
@@ -407,47 +425,6 @@ function triggerKeyEventHandlers( screenData, event, mode, keyOrCode ) {
 	}
 }
 
-function triggerAnyKeyEventHandlers( screenData, event, mode ) {
-	const handlers = screenData.onKeyHandlers[ "any" ];
-	if( !handlers ) {
-		return;
-	}
-
-	const handlersCopy = handlers.slice();
-	const toRemove = new Set();
-	for( let i = 0; i < handlersCopy.length; i += 1 ) {
-		const handler = handlersCopy[ i ];
-		if( handler.mode !== mode ) {
-			continue;
-		}
-		if( !handler.allowRepeat && event.repeat ) {
-			continue;
-		}
-
-		// Need to check if handler has been removed in case a previous handler includes an offkey
-		if( !handlers.includes( handler ) ) {
-			continue;
-		}
-		let keyData = screenData.inCodes[ event.code ];
-		if( !keyData ) {
-			keyData = screenData.inKeys[ event.code ];
-		}
-		handler.fn( keyData );
-		if( handler.once ) {
-			toRemove.add( handler );
-		}
-	}
-
-	// Remove the handlers that are one time only calls
-	if( toRemove.size > 0 ) {
-		screenData.onKeyHandlers[ keyOrCode ] = handlers.filter( h => !toRemove.has( h ) );
-		
-		// Delete the array if empty
-		if( screenData.onKeyHandlers[ keyOrCode ].length === 0 ) {
-			delete screenData.onKeyHandlers[ keyOrCode ];
-		}
-	}
-}
 
 function isFromEditableTarget ( event ) {
 	const element = event.target;
