@@ -44,18 +44,18 @@ $.ready( function () {
 	$.paint( 1, 1, 1 );
 	$.setColor( 15 );
 	$.render();
-	$.input( "Say something? ", async function ( val ) {
+	$.input( "Say something? ", function ( val ) {
 		$.print( "You said, \"" + val + "\"" );
 		getInput2();
 	} );
-	$.input(
-		"Pick a number between 1 and 10: ", function ( val ) {
-			$.print( "Your number is " + val + "." );
-		}, true, 10, false
-	);
 } );
 
 async function getInput2() {
+	await $.input(
+		"Pick a number between 1 and 10: ", function ( val ) {
+			$.print( "Your number is " + val + "." );
+		}, null, true, 10, false
+	);
 	var first = await $.input( "First name: " );
 	var last = await $.input( "Last name: " );
 	var money = await $.input( "Money: " );

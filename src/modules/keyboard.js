@@ -269,7 +269,12 @@ function input( screenData, options ) {
 		rejectPromise = reject;
 	} );
 
-	screenData.inputData = {
+	if( m_inputData ) {
+		finishInput( true );
+	}
+
+	m_inputData = {
+		"screenData": screenData,
 		"prompt": prompt,
 		"cursor": cursor,
 		"lastCursorBlink": Date.now(),
@@ -283,7 +288,7 @@ function input( screenData, options ) {
 		"reject": rejectPromise
 	};
 
-	startInput( screenData );
+	startInput();
 
 	return promise;
 }
@@ -414,7 +419,6 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 	}
 }
 
-
 function isFromEditableTarget ( event ) {
 	const element = event.target;
 	if( !element ) {
@@ -446,9 +450,9 @@ function isFromEditableTarget ( event ) {
  **************************************************************************************************/
 
 
-function startInput( screenData ) {
+function startInput() {
 
-	const inputData = screenData.inputData;
+	const screenData = m_inputData.screenData;
 
 	// Create a background canvas
 	const backCanvas = document.createElement( "canvas" );
@@ -463,90 +467,83 @@ function startInput( screenData ) {
 	backContext.drawImage( screenData.canvas, 0, 0 );
 
 	// Save the background canvas to the input data
-	inputData.backCanvas = backCanvas;
-	inputData.backContext = backContext;
+	m_inputData.backCanvas = backCanvas;
+	m_inputData.backContext = backContext;
 
-	// Add input event listerners
-	const onInputKeyDownFn = ( keyData ) => {
+	// Add input event listerner
+	commands.getApi().onkey( "any", "down", onInputKeyDown );
 
-		// Handle Enter Key - Complete Input
-		if( keyData.key === "Enter" ) {
-			screenData.api.offkey( "any", "down", onInputKeyDownFn );
-			finishInput( screenData );
-			return;
-		// Handle Escape - Cancel Input
-		} else if( keyData.key === "Escape" ) {
-			screenData.api.offkey( "any", "down", onInputKeyDownFn );
-			finishInput( screenData, true );
-			return;
-		// Handle Backspace - Erase last character
-		} else if( keyData.key === "Backspace" ) {
-			if( inputData.val.length > 0 ) {
-				inputData.val = inputData.val.substring( 0, inputData.val.length - 1 );
-			}
-		
-		// Handle single length keys
-		} else if( keyData.key && keyData.key.length === 1 ) {
-
-			let inputHandled = false;
-
-			// Handle +/- numbers
-			if( inputData.isNumber && inputData.allowNegative ) {
-
-				// If user enters a "-" then insert "-" at the start
-				if( keyData.key === "-" ) {
-					if( inputData.val.charAt( 0 ) !== "-" ) {
-						inputData.val = "-" + inputData.val;
-					}
-					inputHandled = true;
-				
-				// Any time the user enters a "+" key then replace the minus symbol
-				} else if( keyData.key === "+" && inputData.val.charAt( 0 ) === "-" ) {
-					inputData.val = inputData.val.substring( 1 );
-					inputHandled = true;
-				}
-			}
-
-			if( !inputHandled ) {
-				inputData.val += keyData.key;
-
-				// Make sure it's a valid number or valid integer
-				if(
-					( inputData.isNumber && isNaN( Number( inputData.val ) ) ) ||
-					( inputData.isInteger && !utils.isInteger( Number( inputData.val ) ) )
-				) {
-					inputData.val = inputData.val.substring( 0, inputData.val.length - 1 );
-				}
-			}
-
-		}
-		showPrompt( screenData );
-	};
-
-	screenData.api.onkey( "any", "down", onInputKeyDownFn );
-
-	const showPromptFn = () => {
-		showPrompt( screenData );
-	};
-
-	screenData.inputData.interval = setInterval( showPromptFn, 100 );
-	showPromptFn();
+	// Add interval for blinking cursor
+	m_inputData.interval = setInterval( showPrompt, 100 );
 }
 
-function showPrompt( screenData, hideCursorOverride ) {
-	const inputData = screenData.inputData;
-	let msg = inputData.prompt + inputData.val;
+function onInputKeyDown( keyData ) {
+
+	// Handle Enter Key - Complete Input
+	if( keyData.key === "Enter" ) {
+		finishInput();
+		return;
+	
+	// Handle Escape - Cancel Input
+	} else if( keyData.key === "Escape" ) {
+		finishInput( true );
+		return;
+	
+	// Handle Backspace - Erase last character
+	} else if( keyData.key === "Backspace" ) {
+		if( m_inputData.val.length > 0 ) {
+			m_inputData.val = m_inputData.val.substring( 0, m_inputData.val.length - 1 );
+		}
+	
+	// Handle single length keys
+	} else if( keyData.key && keyData.key.length === 1 ) {
+
+		let inputHandled = false;
+
+		// Handle +/- numbers
+		if( m_inputData.isNumber && m_inputData.allowNegative ) {
+
+			// If user enters a "-" then insert "-" at the start
+			if( keyData.key === "-" ) {
+				if( m_inputData.val.charAt( 0 ) !== "-" ) {
+					m_inputData.val = "-" + m_inputData.val;
+				}
+				inputHandled = true;
+			
+			// Any time the user enters a "+" key then replace the minus symbol
+			} else if( keyData.key === "+" && m_inputData.val.charAt( 0 ) === "-" ) {
+				m_inputData.val = m_inputData.val.substring( 1 );
+				inputHandled = true;
+			}
+		}
+
+		if( !inputHandled ) {
+			m_inputData.val += keyData.key;
+
+			// Make sure it's a valid number or valid integer
+			if(
+				( m_inputData.isNumber && isNaN( Number( m_inputData.val ) ) ) ||
+				( m_inputData.isInteger && !utils.isInteger( Number( m_inputData.val ) ) )
+			) {
+				m_inputData.val = m_inputData.val.substring( 0, m_inputData.val.length - 1 );
+			}
+		}
+	}
+}
+function showPrompt( hideCursorOverride ) {
+	const screenData = m_inputData.screenData;
+	let msg = m_inputData.prompt + m_inputData.val;
 
 	// Blink cursor after every blink duration
 	const now = Date.now();
-	if( now - inputData.lastCursorBlink > CURSOR_BLINK ) {
-		inputData.lastCursorBlink = now;
-		inputData.showCursor = !inputData.showCursor;
+	if( now - m_inputData.lastCursorBlink > CURSOR_BLINK ) {
+		m_inputData.lastCursorBlink = now;
+		m_inputData.showCursor = !m_inputData.showCursor;
 	}
 
 	// Show cursor if not hidden
-	if( inputData.showCursor && !hideCursorOverride ) {
-		msg += inputData.cursor;
+	if( m_inputData.showCursor && !hideCursorOverride ) {
+		msg += m_inputData.cursor;
 	}
 
 	// Check if need to scroll first
@@ -559,12 +556,17 @@ function showPrompt( screenData, hideCursorOverride ) {
 
 	// Get the background pixels
 	const posPx = screenData.api.getPosPx( screenData );
-	const width = ( msg.length + 1 ) * screenData.font.width + 2;
-	const height = screenData.font.height + 2;
+	const width = ( msg.length + 1 ) * screenData.font.width;
+	const height = screenData.font.height;
 
 	// Restore the background image over the prompt
-	screenData.context.clearRect( posPx.x - 1, posPx.y - 1, width, height );
-	screenData.context.drawImage( inputData.backCanvas, posPx.x - 1, posPx.y - 1, width, height );
+	screenData.context.clearRect( posPx.x, posPx.y, width, height );
+	screenData.context.fillRect( posPx.x, posPx.y, width, height );
+	screenData.context.drawImage(
+		m_inputData.backCanvas,
+		posPx.x, posPx.y, width, height,
+		posPx.x, posPx.y, width, height
+	);
 	screenData.imageData = null;
 	
 	// Print the prompt + input + cursor
@@ -574,41 +576,49 @@ function showPrompt( screenData, hideCursorOverride ) {
 	screenData.api.setPos( pos.col, pos.row );
 }
 
-function finishInput( screenData, isCancel ) {
-	const inputData = screenData.inputData;
+function finishInput( isCancel ) {
+	const screenData = m_inputData.screenData;
+
+	// Remove input key handler
+	commands.getApi().offkey( "any", "down", onInputKeyDown );
 
 	// Show prompt on complete, without the cursor
-	showPrompt( screenData, true );
+	showPrompt( true );
 
 	// Move cursor down one line
 	screenData.printCursor.y += screenData.font.height;
 
 	// Clear the interval
-	clearInterval( inputData.interval );
+	clearInterval( m_inputData.interval );
 
 	// Process Input Value
-	let val = inputData.val;
-	if( inputData.isNumber ) {
+	let val = m_inputData.val;
+	if( m_inputData.isNumber ) {
 		if( val === "" || val === "-" ) {
 			val = 0;
 		} else {
 			val = Number( val );
-			if( inputData.isInteger ) {
+			if( m_inputData.isInteger ) {
 				val = Math.floor( val );
 			}
 		}
 	}
 
+	// Clear out the inputData
+	const tempInputData = m_inputData;
+	m_inputData = null;
+
 	// Handle cancel input
 	if( isCancel ) {
-		inputData.reject( val );
+		tempInputData.reject( val );
 	
 	// Handle successful input
 	} else {
-		inputData.resolve( val );
+		tempInputData.resolve( val );
 
-		if( inputData.fn ) {
-			inputData.fn( val );
+		// Callback function
+		if( tempInputData.fn ) {
+			tempInputData.fn( val );
 		}
 	}
 }
