@@ -37,14 +37,14 @@
 		$.screen( "300x200" );
 		$.print( "Press key Ctrl+Z." );
 		$.render();
-		$.onkey( [ "Control", "z" ], "down", press );
+		$.onkey( [ "Control", "KeyZ" ], "down", press );
 		$.onkey( "Control", "down", press2 );
-		$.onkey( "Z", "down", press2 );
+		$.onkey( "KeyZ", "down", press2 );
 	} );
 	function press( e ) {
 		$.print( "You pressed Ctrl+Z." );
 		$.render();
-		$.offkey( [ "Control", "z" ], "down", press );
+		$.offkey( [ "Control", "KeyZ" ], "down", press );
 	}
 	function press2( e ) {
 		$.print( "You pressed " + e.key );

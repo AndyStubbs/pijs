@@ -304,14 +304,20 @@ function triggerKeyEventHandlers( screenData, event, mode, keyOrCode ) {
 	if( !handlers ) {
 		return;
 	}
+	const handlersCopy = handlers.slice();
 
-	const toRemove = [];
-	for( let i = 0; i < handlers.length; i += 1 ) {
-		const handler = handlers[ i ];
+	const toRemove = new Set();
+	for( let i = 0; i < handlersCopy.length; i += 1 ) {
+		const handler = handlersCopy[ i ];
 		if( handler.mode !== mode ) {
 			continue;
 		}
 		if( event.repeat && !handler.allowRepeat ) {
+			continue;
+		}
+
+		// Need to check if handler has been removed in case a previous handler includes an offkey
+		if( !handlers.includes( handler ) ) {
 			continue;
 		}
 		const isAllKeysPressed = handler.combo.every(
@@ -331,21 +337,20 @@ function triggerKeyEventHandlers( screenData, event, mode, keyOrCode ) {
 			}
 
 			if( handler.once ) {
-				toRemove.push( i );
+				toRemove.add( handler );
 			}
 		}
 	}
 
 	// Remove the handlers that are one time only calls
-	for( let i = toRemove.length - 1; i >= 0; i -= 1 ) {
-		handlers.splice( i, 1 );
+	if( toRemove.size > 0 ) {
+		screenData.onKeyHandlers[ keyOrCode ] = handlers.filter( h => !toRemove.has( h ) );
+		
+		// Delete the array if empty
+		if( screenData.onKeyHandlers[ keyOrCode ].length === 0 ) {
+			delete screenData.onKeyHandlers[ keyOrCode ];
+		}
 	}
-
-	// Delete the array if empty
-	if( handlers.length === 0 ) {
-		delete screenData.onKeyHandlers[ keyOrCode ];
-	}
-
 }
 
 function triggerAnyKeyEventHandlers( screenData, event, mode ) {
