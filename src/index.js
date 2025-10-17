@@ -25,6 +25,7 @@ import * as images from "./modules/images.js";
 import * as font from "./modules/font.js";
 import * as print from "./modules/print.js";
 import * as table from "./modules/table.js";
+import * as keyboard from "./modules/keyboard.js";
 
 // Assets
 import * as fontData from "./assets/font-data.js";
@@ -50,6 +51,7 @@ images.init();
 font.init();
 print.init();
 table.init();
+keyboard.init();
 
 // Append all the commands to the api
 commands.processApi();

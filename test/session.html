@@ -1,19 +1,23 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Errors 02</title>
+		<title>Inkey 01</title>
 		<script type="text/toml">
 			[[TOML_START]]
-			test = "screenshot.js"
-			file = "errors_02"
-			name = "errors 02"
+			file = "inkey_01"
+			name = "inkey 01"
 			width = 200
 			height = 200
-			delay = 0
+			commands = """
+				KD "Control"
+				DL 100
+				KD "s"
+				DL 100
+			"""
 			[[TOML_END]]
 		</script>
 		<!-- [Pi.js Script]-->
-		<script src="../../../releases/v2-refactor-1/pi.js"></script>
+		<script src="../../../build/pi.js"></script>
 		<!-- [/Pi.js Script]-->
 		<style>
 			html, body {
@@ -23,13 +27,29 @@
 	</head>
 <body>
 <script>
-
-$.screen( "200x200" );
-try {
-	$.draw( 75 );
-} catch( error ) {
-	$.print( error.message );
-}
+	$.ready( function () {
+		$.screen( "200x200" );
+		$.setActionKeys( [ "KeyS", "Control" ] );
+		setInterval( function () {
+			var keys, key;
+			keys = $.inkey();
+			$.cls();
+			$.print( "Press any key" );
+			key = $.inkey( "Control" );
+			if( key.key ) {
+				$.print( "Control key is pressed." );
+			} else {
+				$.print( "Control key is not pressed." );
+			}
+			for( key in keys ) {
+				$.print( "--------------------------" );
+				$.print( "key:      " + keys[ key ].key );
+				$.print( "location: " + keys[ key ].location );
+				$.print( "code:     " + keys[ key ].code );
+			}
+			$.render();
+		}, 60 );
+	} );
 </script>
 </body>
 </html>

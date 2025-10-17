@@ -20,10 +20,12 @@ const m_aaCommands = {};
 const m_screenDataItems = {};
 const m_screenDataItemGetters = [];
 const m_screenInternalCommands = [];
+const m_screenDataInitFunctions = [];
+const m_sceenDataCleanupFunctions = [];
+
 
 let m_nextScreenId = 0;
 let m_activeScreen = null;
-let m_defaultInputFocus = window;
 
 
 /***************************************************************************************************
@@ -37,13 +39,6 @@ export function init() {
 	window.addEventListener( "resize", resizeScreens );
 }
 
-/**
- * Add a command to the screen
- * 
- * @param {string} name - Command name
- * @param {Function} fn - Command function
- * @param {Array} parameterNames - List of parameter names.
- */
 export function addCommand( name, fn, parameterNames ) {
 
 	// Add the command to the command list
@@ -57,13 +52,6 @@ export function addCommand( name, fn, parameterNames ) {
 	commands.addCommand( name, fn, parameterNames, true );
 }
 
-/**
- * Add a pixel command to the commands
- * 
- * @param {string} name - Command name
- * @param {Function} fn - Command function
- * @param {Array} parameterNames - List of parameter names.
- */
 export function addPixelCommand( name, fn, parameterNames ) {
 
 	const cmd = {
@@ -84,13 +72,6 @@ export function addPixelCommand( name, fn, parameterNames ) {
 
 }
 
-/**
- * Add an AA command to the screen
- * 
- * @param {string} name - Command name
- * @param {Function} fn - Command function
- * @param {Array} parameterNames - List of parameter names.
- */
 export function addAACommand( name, fn, parameterNames ) {
 
 	const cmd = {
@@ -104,17 +85,10 @@ export function addAACommand( name, fn, parameterNames ) {
 	m_aaCommands[ name ] = cmd;
 }
 
-/**
- * Sort the screen commands by name
- */
 export function sortScreenCommands() {
 	m_commandList.sort( ( a, b ) => a.name.localeCompare( b.name ) );
 }
 
-/**
- * @param {string} name - Name of data item
- * @param {*} val - Default value of the data item
- */
 export function addScreenDataItem( name, val ) {
 	m_screenDataItems[ name ] = val;
 }
@@ -129,6 +103,14 @@ export function addScreenDataItemGetter( name, fn ) {
 
 export function getActiveScreen() {
 	return m_activeScreen;
+}
+
+export function addScreenInitFunction( fn ) {
+	m_screenDataInitFunctions.push( fn );
+}
+
+export function addScreenCleanupFunction( fn ) {
+	m_sceenDataCleanupFunctions.push( fn );
 }
 
 
@@ -174,6 +156,11 @@ function screen( options ) {
 
 	// Setup the initial font for the screen
 	screenData.api.setFont( screenData.font.id );
+
+	// Call init functions for all modules that need initialization
+	for( const fn of m_screenDataInitFunctions ) {
+		fn( screenData );
+	}
 
 	return screenData.api;
 }
@@ -241,46 +228,13 @@ function removeScreen( screenData ) {
 		}
 	}
 
+	// Call cleanup functions for all modules that need cleanup
+	for( const fn of m_sceenDataCleanupFunctions ) {
+		fn( screenData );
+	}
+
 	// Delete the screen from the screens container
 	delete m_screens[ screenId ];
-}
-
-// TODO: Maybe just set the input focus on either the container or canvas and have input confined
-// to the screen. Worth considering.
-// setDefaultInputFocus
-commands.addCommand( "setDefaultInputFocus", setDefaultInputFocus, [ "element" ] );
-function setDefaultInputFocus( options ) {
-	let element = options.element;
-
-	if( element === m_defaultInputFocus ) {
-		return;
-	}
-
-	if( typeof element === "string" ) {
-		element = document.getElementById( element );
-	}
-
-	if( !element || !utils.canAddEventListeners( element ) ) {
-		const error = new TypeError(
-			"setDefaultInputFocus: Invalid argument element. " +
-			"Element must be a DOM element or string id of a DOM element."
-		);
-		error.code = "INVALID_ELEMENT";
-		throw error;
-	}
-
-	if( !( element.tabIndex >= 0 ) ) {
-		element.tabIndex = 0;
-	}
-
-	// Update input focus
-	m_defaultInputFocus = element;
-
-	// TODO: Add this keyboard reinit once keyboard is implemented
-	// Reinitialize keyboard if command exists
-	//if( piData.commands[ "reinitKeyboard" ] ) {
-	//	piData.commands[ "reinitKeyboard" ]();
-	//}
 }
 
 // Set the active screen on pi
