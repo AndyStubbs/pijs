@@ -39,11 +39,11 @@ export function init() {
 /**
  * Register a plugin with Pi.js
  * 
- * @param {Object} pluginConfig - Plugin configuration object
- * @param {string} pluginConfig.name - Unique name for the plugin
- * @param {Function} pluginConfig.init - Initialization function that receives pluginApi
- * @param {string} [pluginConfig.version] - Optional version string
- * @param {string} [pluginConfig.description] - Optional description
+ * @param {Object} options - Plugin configuration
+ * @param {string} options.name - Unique name for the plugin
+ * @param {Function} options.init - Initialization function that receives pluginApi
+ * @param {string} [options.version] - Optional version string
+ * @param {string} [options.description] - Optional description
  * @returns {void}
  * 
  * @example
@@ -56,35 +56,28 @@ export function init() {
  *   }
  * } );
  */
-commands.addCommand( "registerPlugin", registerPlugin, [ "pluginConfig" ] );
+commands.addCommand( "registerPlugin", registerPlugin, [ "name", "version", "description", "init" ] );
 function registerPlugin( options ) {
-	const pluginConfig = options.pluginConfig;
 
-	// Validate plugin config
-	if( !pluginConfig || typeof pluginConfig !== "object" ) {
-		const error = new TypeError( "registerPlugin: Plugin config must be an object." );
-		error.code = "INVALID_PLUGIN_CONFIG";
-		throw error;
-	}
-
-	if( !pluginConfig.name || typeof pluginConfig.name !== "string" ) {
+	// Validate required parameters
+	if( !options.name || typeof options.name !== "string" ) {
 		const error = new TypeError( "registerPlugin: Plugin must have a 'name' property." );
 		error.code = "INVALID_PLUGIN_NAME";
 		throw error;
 	}
 
-	if( !pluginConfig.init || typeof pluginConfig.init !== "function" ) {
+	if( !options.init || typeof options.init !== "function" ) {
 		const error = new TypeError(
-			`registerPlugin: Plugin '${pluginConfig.name}' must have an 'init' function.`
+			`registerPlugin: Plugin '${options.name}' must have an 'init' function.`
 		);
 		error.code = "INVALID_PLUGIN_INIT";
 		throw error;
 	}
 
 	// Check for duplicate
-	if( m_plugins.find( p => p.name === pluginConfig.name ) ) {
+	if( m_plugins.find( p => p.name === options.name ) ) {
 		const error = new Error(
-			`registerPlugin: Plugin '${pluginConfig.name}' is already registered.`
+			`registerPlugin: Plugin '${options.name}' is already registered.`
 		);
 		error.code = "DUPLICATE_PLUGIN";
 		throw error;
@@ -92,10 +85,10 @@ function registerPlugin( options ) {
 
 	// Store plugin info
 	const pluginInfo = {
-		"name": pluginConfig.name,
-		"version": pluginConfig.version || "unknown",
-		"description": pluginConfig.description || "",
-		"config": pluginConfig,
+		"name": options.name,
+		"version": options.version || "unknown",
+		"description": options.description || "",
+		"config": options,
 		"initialized": false
 	};
 

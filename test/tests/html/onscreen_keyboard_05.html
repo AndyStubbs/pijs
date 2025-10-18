@@ -30,6 +30,8 @@
 		</script>
 		<!-- [Pi.js Script]-->
 		<script src="../../../build/pi.js"></script>
+		<script src="../../../plugins/print-table/dist/print-table.min.js"></script>
+		<script src="../../../plugins/onscreen-keyboard/dist/onscreen-keyboard.min.js"></script>
 		<!-- [/Pi.js Script]-->
 	</head>
 <body>
@@ -43,7 +45,8 @@ $.ready( async function() {
 
 	$.print( "Number input (mixed):" );
 	
-	const num = $.input( { "prompt": "Num: ", "isNumber": true, "onscreenKeyboard": "always" } );
+	$.showKeyboard( "number" );
+	const num = $.input( { "prompt": "Num: ", "isNumber": true } );
 
 } );
 

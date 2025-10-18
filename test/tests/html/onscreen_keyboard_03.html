@@ -25,6 +25,8 @@
 		</script>
 		<!-- [Pi.js Script]-->
 		<script src="../../../build/pi.js"></script>
+		<script src="../../../plugins/print-table/dist/print-table.min.js"></script>
+		<script src="../../../plugins/onscreen-keyboard/dist/onscreen-keyboard.min.js"></script>
 		<!-- [/Pi.js Script]-->
 	</head>
 <body>
@@ -38,7 +40,8 @@ $.ready( async function() {
 
 	$.print( "Input with keyboard:" );
 	
-	const name = $.input( { "prompt": "Name: ", "onscreenKeyboard": "always" } );
+	$.showKeyboard( "text" );
+	const name = $.input( "Name: " );
 
 } );
 

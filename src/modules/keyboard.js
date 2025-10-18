@@ -237,7 +237,7 @@ function offkey( options ) {
 screenManager.addCommand(
 	"input",
 	input,
-	[ "prompt", "fn", "cursor", "isNumber", "isInteger", "allowNegative", "onscreenKeyboard" ]
+	[ "prompt", "fn", "cursor", "isNumber", "isInteger", "allowNegative" ]
 );
 function input( screenData, options ) {
 	const prompt = options.prompt;
@@ -246,7 +246,6 @@ function input( screenData, options ) {
 	const isNumber = !!options.isNumber;
 	const isInteger = !!options.isInteger;
 	const allowNegative = !!options.allowNegative;
-	const onscreenKeyboard = options.onscreenKeyboard || "none";
 
 	if( typeof prompt !== "string" ) {
 		const error = new TypeError( "input: prompt must be a string" );
@@ -262,21 +261,6 @@ function input( screenData, options ) {
 
 	if( typeof cursor !== "string" ) {
 		const error = new TypeError( "input: cursor must be a string" );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
-	}
-
-	if( typeof onscreenKeyboard !== "string" ) {
-		const error = new TypeError( "input: onscreenKeyboard must be a string." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
-	}
-
-	const validKeyboardModes = [ "none", "auto", "always" ];
-	if( !validKeyboardModes.includes( onscreenKeyboard ) ) {
-		const error = new TypeError(
-			"input: onscreenKeyboard must be 'none', 'auto', or 'always'."
-		);
 		error.code = "INVALID_PARAMETERS";
 		throw error;
 	}
@@ -301,7 +285,6 @@ function input( screenData, options ) {
 		"isNumber": isNumber,
 		"isInteger": isInteger,
 		"allowNegative": allowNegative,
-		"onscreenKeyboard": onscreenKeyboard,
 		"val": "",
 		"fn": fn,
 		"resolve": resolvePromise,
@@ -501,12 +484,6 @@ function startInput() {
 
 	// Add interval for blinking cursor
 	m_inputData.interval = setInterval( showPrompt, 100 );
-
-	// Show onscreen keyboard if requested
-	if( m_inputData.onscreenKeyboard === "always" ) {
-		const mode = m_inputData.isNumber ? "number" : "text";
-		screenData.api.showKeyboard( mode );
-	}
 }
 
 function onInputKeyDown( keyData ) {
@@ -612,11 +589,6 @@ function showPrompt( hideCursorOverride ) {
 
 function finishInput( isCancel ) {
 	const screenData = m_inputData.screenData;
-
-	// Hide onscreen keyboard if it was shown
-	if( m_inputData.onscreenKeyboard !== "none" ) {
-		screenData.api.hideKeyboard();
-	}
 
 	// Remove input key handler
 	commands.getApi().offkey( "any", "down", onInputKeyDown );
