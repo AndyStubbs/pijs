@@ -34,6 +34,9 @@ export function init() {
 
 	// Add screen initialization
 	screenManager.addScreenInitFunction( initTouchData );
+
+	// Add window blur handler
+	window.addEventListener( "blur", onWindowBlur );
 }
 
 function initTouchData( screenData ) {
@@ -283,5 +286,15 @@ function getScreenDataFromEvent( e ) {
 	}
 
 	return null;
+}
+
+function onWindowBlur() {
+
+	// Clear all touch states when window loses focus
+	const activeScreen = screenManager.getActiveScreen();
+	if( activeScreen ) {
+		activeScreen.lastTouches = activeScreen.touches;
+		activeScreen.touches = {};
+	}
 }
 

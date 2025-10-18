@@ -35,6 +35,7 @@ let m_isKeyboardActive = false;
 // Initialize keyboard module
 export function init() {
 	startKeyboard();
+	window.addEventListener( "blur", onWindowBlur );
 }
 
 
@@ -446,6 +447,17 @@ function isFromEditableTarget ( event ) {
 	}
 
 	return false;
+}
+
+function onWindowBlur() {
+
+	// Clear all key states when window loses focus
+	for( const code in m_inCodes ) {
+		delete m_inCodes[ code ];
+	}
+	for( const key in m_inKeys ) {
+		delete m_inKeys[ key ];
+	}
 }
 
 

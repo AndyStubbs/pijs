@@ -36,6 +36,9 @@ export function init() {
 
 	// Add screen initialization
 	screenManager.addScreenInitFunction( initMouseData );
+
+	// Add window blur handler
+	window.addEventListener( "blur", onWindowBlur );
 }
 
 function initMouseData( screenData ) {
@@ -280,5 +283,15 @@ function getScreenDataFromEvent( e ) {
 	}
 
 	return null;
+}
+
+function onWindowBlur() {
+
+	// Reset mouse button state when window loses focus
+	const activeScreen = screenManager.getActiveScreen();
+	if( activeScreen && activeScreen.mouse ) {
+		activeScreen.mouse.buttons = 0;
+		activeScreen.mouse.action = "up";
+	}
 }
 

@@ -15,7 +15,6 @@ import * as utils from "./utils";
  * Event Management Functions
  **************************************************************************************************/
 
-// TODO: Release all down events when window loses focus. This inlcudes mouse, keyboard, and touch
 
 /**
  * Register an event listener
