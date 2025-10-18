@@ -10,8 +10,6 @@
 		"build": "node scripts/build.js",
 		"test": "playwright test run-visual-tests.js",
 		"test:grep": "playwright test run-visual-tests.js --grep",
-		"test:log": "set PI_LOG_MOVES=1&& playwright test run-visual-tests.js",
-		"test:log:grep": "set PI_LOG_MOVES=1&& playwright test run-visual-tests.js --grep",
 		"test:plugins": "set PI_TEST_TYPE=plugins&& playwright test run-visual-tests.js",
 		"test:plugins:grep": "set PI_TEST_TYPE=plugins&& playwright test run-visual-tests.js --grep",
 		"server": "node server.js"

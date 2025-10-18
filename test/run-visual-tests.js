@@ -47,30 +47,24 @@ let cmdContext = {
 	"target": ""
 };
 
-// Optional verbose movement logging (set PI_LOG_MOVES=1)
-const LOG_MOVES = process.env.PI_LOG_MOVES === "1";
-let LOG_FILE_PATH = process.env.PI_LOG_MOVES_FILE || null;
-let LOG_FILE_READY = false;
+// Movement logging - always enabled
+let LOG_FILE_PATH = null;
 let LOG_START_TIME = 0;
 
 function setLogFileForTest( testBaseName ) {
-	if( !LOG_MOVES ) {
-		return;
-	}
 	try {
-		const logsDir = path.join( __dirname, "logs" );
+		const logsDir = path.join( __dirname, config.logsDir );
 		if( !fs.existsSync( logsDir ) ) {
 			fs.mkdirSync( logsDir, { "recursive": true } );
 		}
 		LOG_FILE_PATH = path.join( logsDir, `${testBaseName}.log` );
 		const time = new Date().toLocaleString();
 		fs.writeFileSync( LOG_FILE_PATH, `# "${testBaseName}" movement log - ${time}\n` );
-		LOG_FILE_READY = true;
 	} catch( _e ) {}
 }
 
 function logMove( type, details ) {
-	if( !LOG_MOVES ) {
+	if( !LOG_FILE_PATH ) {
 		return;
 	}
 	try {
@@ -87,6 +81,7 @@ const TEST_CONFIG = {
 		"testsDir": "tests/html",
 		"screenshotsDir": "tests/screenshots",
 		"newScreenshotsDir": "tests/screenshots/new",
+		"logsDir": "tests/logs",
 		"urlPrefix": "/test/tests/html",
 		"description": "Pi.js Visual Regression Tests"
 	},
@@ -94,6 +89,7 @@ const TEST_CONFIG = {
 		"testsDir": "tests-plugins/html",
 		"screenshotsDir": "tests-plugins/screenshots",
 		"newScreenshotsDir": "tests-plugins/screenshots/new",
+		"logsDir": "tests-plugins/logs",
 		"urlPrefix": "/test/tests-plugins/html",
 		"description": "Pi.js Plugin Visual Regression Tests"
 	}
@@ -719,10 +715,8 @@ test.describe( config.description, () => {
 				} );
 
 				// Prepare per-test log file named after the screenshot base
-				if( LOG_MOVES ) {
-					const baseName = ( testName || testFile.file ).replace( /\.html$/, "" );
-					setLogFileForTest( baseName );
-				}
+				const baseName = ( testName || testFile.file ).replace( /\.html$/, "" );
+				setLogFileForTest( baseName );
 
 				// Wait for delay if specified
 				if( metadata.delay > 0 ) {
