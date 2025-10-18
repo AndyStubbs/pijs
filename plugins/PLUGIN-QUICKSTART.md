@@ -14,13 +14,13 @@ test/test-plugin-system.html           ← Basic inline tests
 
 ### 2. Use the Example Plugin
 
-**Option A: With Script Tags (Simplest)**
+**Option A: With Script Tags (Browser)**
 ```html
 <!DOCTYPE html>
 <html>
 <body>
 	<script src="build/pi.min.js"></script>
-	<script src="plugins/example-plugin/example-plugin.js"></script>
+	<script src="plugins/example-plugin/dist/example-plugin.min.js"></script>
 	<script>
 		pi.ready( () => {
 			pi.screen( { "aspect": "16:9" } );
@@ -32,14 +32,14 @@ test/test-plugin-system.html           ← Basic inline tests
 </html>
 ```
 
-**Option B: With ES Modules**
+**Option B: With ES Modules (Modern)**
 ```html
 <!DOCTYPE html>
 <html>
 <body>
 	<script type="module">
 		import pi from "./build/pi.esm.min.js";
-		import examplePlugin from "./plugins/example-plugin/index.js";
+		import examplePlugin from "./plugins/example-plugin/dist/example-plugin.esm.min.js";
 		
 		pi.registerPlugin( {
 			"name": "example-plugin",
@@ -125,7 +125,7 @@ This automatically builds your plugin along with Pi.js!
 	<div id="container"></div>
 	
 	<script src="build/pi.min.js"></script>
-	<script src="plugins/my-first-plugin/my-first-plugin.js"></script>
+	<script src="plugins/my-first-plugin/dist/my-first-plugin.min.js"></script>
 	<script>
 		pi.ready( () => {
 			pi.screen( { "aspect": "16:9", "container": "container" } );

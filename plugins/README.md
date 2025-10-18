@@ -23,9 +23,8 @@ Plugins are modular extensions that can:
 - Hook into screen initialization and cleanup
 - Provide additional utilities and features
 
-Plugins work seamlessly with all three build formats:
+Plugins work seamlessly with both build formats:
 - **ESM** (ES Modules)
-- **CJS** (CommonJS)
 - **IIFE** (Immediately Invoked Function Expression for `<script>` tags)
 
 ---
@@ -48,7 +47,7 @@ The simplest way to use plugins in the browser:
 	<script src="build/pi.min.js"></script>
 	
 	<!-- Load plugin (auto-registers itself) -->
-	<script src="plugins/my-plugin/my-plugin.js"></script>
+	<script src="plugins/my-plugin/dist/my-plugin.min.js"></script>
 	
 	<script>
 		pi.ready( () => {
@@ -68,27 +67,7 @@ For modern JavaScript projects:
 
 ```javascript
 import pi from "./build/pi.esm.min.js";
-import myPlugin from "./plugins/my-plugin/my-plugin.esm.js";
-
-// Register the plugin
-pi.registerPlugin( {
-	"name": "my-plugin",
-	"init": myPlugin
-} );
-
-pi.ready( () => {
-	pi.screen( { "aspect": "16:9" } );
-	pi.myPluginCommand( "hello" );
-} );
-```
-
-### CommonJS (CJS)
-
-For Node.js environments:
-
-```javascript
-const pi = require( "./build/pi.cjs.min.js" );
-const myPlugin = require( "./plugins/my-plugin/my-plugin.cjs.js" );
+import myPlugin from "./plugins/my-plugin/dist/my-plugin.esm.min.js";
 
 // Register the plugin
 pi.registerPlugin( {
@@ -388,9 +367,11 @@ node scripts/build.js
 ```
 
 This will:
-1. Build Pi.js in all formats (ESM, CJS, IIFE)
+1. Build Pi.js in both formats (ESM and IIFE)
 2. Automatically discover and build all plugins in the `plugins/` directory
-3. Skip any directories without an `index.js` file
+3. Generate both minified and unminified versions
+4. Output plugin builds to `plugins/<plugin-name>/dist/`
+5. Skip any directories without an `index.js` file
 
 ### Build Individual Plugin
 
@@ -455,8 +436,8 @@ function myCommand( options ) {
 
 ### 4. **Compatibility**
 
-- Support all three build formats (ESM, CJS, IIFE)
-- Test in different environments
+- Support both build formats (ESM and IIFE)
+- Test in browser environments
 - Don't depend on external libraries unless necessary
 - Use Pi.js utilities when available
 

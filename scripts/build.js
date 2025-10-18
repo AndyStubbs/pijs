@@ -1,7 +1,7 @@
 /**
  * Pi.js Build Script
  * 
- * Builds Pi.js using esbuild for ESM, CJS, and IIFE formats.
+ * Builds Pi.js using esbuild for ESM and IIFE formats.
  */
 
 const esbuild = require( "esbuild" );
@@ -47,7 +47,6 @@ const buildOptions = {
 	"target": "es2020",
 	"platform": "browser",
 	"plugins": [ injectVersionPlugin ],
-	//"keepNames": true,
 	"sourceRoot": "../src/"
 };
 
@@ -61,6 +60,12 @@ async function buildPlugin( pluginName, pluginDir ) {
 
 	console.log( `  Building plugin: ${pluginName}...` );
 
+	// Create dist directory
+	const distDir = path.join( pluginDir, "dist" );
+	if( !fs.existsSync( distDir ) ) {
+		fs.mkdirSync( distDir, { "recursive": true } );
+	}
+
 	const pluginBuildOptions = {
 		"entryPoints": [ entryPoint ],
 		"bundle": true,
@@ -70,36 +75,61 @@ async function buildPlugin( pluginName, pluginDir ) {
 	};
 
 	try {
-		// Build all three formats
+		// Build ESM (unminified)
 		await esbuild.build( {
 			...pluginBuildOptions,
 			"format": "esm",
-			"outfile": path.join( pluginDir, `${pluginName}.esm.js` )
+			"minify": false,
+			"outfile": path.join( distDir, `${pluginName}.esm.js` )
 		} );
 
+		// Build ESM (minified)
 		await esbuild.build( {
 			...pluginBuildOptions,
-			"format": "cjs",
-			"outfile": path.join( pluginDir, `${pluginName}.cjs.js` )
+			"format": "esm",
+			"minify": true,
+			"outfile": path.join( distDir, `${pluginName}.esm.min.js` )
 		} );
 
+		// Build IIFE (unminified)
 		await esbuild.build( {
 			...pluginBuildOptions,
 			"format": "iife",
-			"outfile": path.join( pluginDir, `${pluginName}.js` )
+			"minify": false,
+			"outfile": path.join( distDir, `${pluginName}.js` )
 		} );
 
-		// Calculate total size
+		// Build IIFE (minified)
+		await esbuild.build( {
+			...pluginBuildOptions,
+			"format": "iife",
+			"minify": true,
+			"outfile": path.join( distDir, `${pluginName}.min.js` )
+		} );
+
+		// Calculate sizes
+		const files = [
+			`${pluginName}.esm.js`,
+			`${pluginName}.esm.min.js`,
+			`${pluginName}.js`,
+			`${pluginName}.min.js`
+		];
+
 		let totalSize = 0;
-		[ `${pluginName}.esm.js`, `${pluginName}.cjs.js`, `${pluginName}.js` ].forEach( file => {
-			const filePath = path.join( pluginDir, file );
+		let minifiedSize = 0;
+		files.forEach( file => {
+			const filePath = path.join( distDir, file );
 			if( fs.existsSync( filePath ) ) {
-				totalSize += fs.statSync( filePath ).size;
+				const size = fs.statSync( filePath ).size;
+				totalSize += size;
+				if( file.includes( ".min." ) ) {
+					minifiedSize += size;
+				}
 			}
 		} );
 
-		const totalSizeKB = ( totalSize / 1024 ).toFixed( 2 );
-		console.log( `    ✓ ${pluginName} (${totalSizeKB} KB total)` );
+		const minSizeKB = ( minifiedSize / 1024 ).toFixed( 2 );
+		console.log( `    ✓ ${pluginName} (${minSizeKB} KB minified)` );
 
 		return true;
 	} catch( error ) {
@@ -158,15 +188,6 @@ async function build() {
 			"outfile": path.join( buildDir, "pi.esm.min.js" )
 		} );
 
-		// Build CJS version
-		console.log( "Building CJS..." );
-		await esbuild.build( {
-			...buildOptions,
-			"format": "cjs",
-			"minify": true,
-			"outfile": path.join( buildDir, "pi.cjs.min.js" )
-		} );
-
 		// Build IIFE version (for <script> tags)
 		// Note: No globalName - we set window.pi manually in index.js
 		console.log( "Building IIFE..." );
@@ -194,14 +215,12 @@ async function build() {
 		console.log( "  - build/pi.js (IIFE, unminified with sourcemaps)" );
 		console.log( "  - build/pi.min.js (IIFE, minified)" );
 		console.log( "  - build/pi.esm.min.js (ESM)" );
-		console.log( "  - build/pi.cjs.min.js (CJS)" );
 
 		// Print file sizes
 		const files = [
 			"pi.js",
 			"pi.min.js",
-			"pi.esm.min.js",
-			"pi.cjs.min.js"
+			"pi.esm.min.js"
 		];
 
 		console.log( "" );

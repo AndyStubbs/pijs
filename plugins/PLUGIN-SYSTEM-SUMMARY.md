@@ -18,12 +18,11 @@
 
 ✅ **Build System**
 - Successfully built Pi.js v2.0.0-alpha.1 with plugin support
-- All formats include plugin system (ESM, CJS, IIFE)
+- Both formats include plugin system (ESM and IIFE)
 - Build sizes:
   - `pi.js`: 201.26 KB (unminified with sourcemaps)
   - `pi.min.js`: 99.97 KB (minified IIFE)
   - `pi.esm.min.js`: 99.98 KB (minified ESM)
-  - `pi.cjs.min.js`: 100.35 KB (minified CJS)
 
 ### Tools & Scripts
 
@@ -60,10 +59,11 @@
 ✅ **Example Plugin** (`plugins/example-plugin/`)
 - Full-featured demonstration plugin
 - Source code: `index.js`
-- Built versions:
-  - `example-plugin.esm.js` (2.03 KB)
-  - `example-plugin.cjs.js` (2.90 KB)
-  - `example-plugin.js` (2.14 KB)
+- Built versions (in `dist/` directory):
+  - `example-plugin.esm.js` (unminified)
+  - `example-plugin.esm.min.js` (minified, ~1 KB)
+  - `example-plugin.js` (unminified)
+  - `example-plugin.min.js` (minified, ~1 KB)
 - Documentation: `README.md`
 
 **Plugin Commands:**
@@ -77,6 +77,9 @@
 - Lifecycle hooks (init/cleanup)
 - Utility function usage
 - Auto-registration for IIFE
+
+**Build Sizes:**
+- Minified total: ~2.28 KB (both ESM and IIFE minified)
 
 ### Test Pages
 
@@ -103,7 +106,6 @@
 ### 1. Multi-Format Support
 - ✅ Works with IIFE (browser `<script>` tags)
 - ✅ Works with ESM (modern ES modules)
-- ✅ Works with CJS (Node.js/CommonJS)
 
 ### 2. Plugin API
 - ✅ `addCommand()` - Global commands
@@ -161,7 +163,6 @@ src/index.js                             (Added plugins import and init)
 build/pi.js                              (Rebuilt with plugin system)
 build/pi.min.js                          (Rebuilt with plugin system)
 build/pi.esm.min.js                      (Rebuilt with plugin system)
-build/pi.cjs.min.js                      (Rebuilt with plugin system)
 ```
 
 ## 🧪 Testing
@@ -209,7 +210,7 @@ build/pi.cjs.min.js                      (Rebuilt with plugin system)
 4. **Use plugin:**
    ```html
    <script src="build/pi.min.js"></script>
-   <script src="plugins/my-plugin/my-plugin.js"></script>
+   <script src="plugins/my-plugin/dist/my-plugin.min.js"></script>
    <script>
        pi.myCmd( "test" );
    </script>
@@ -299,7 +300,7 @@ pi.ready( () => {
 The Pi.js plugin system is **fully implemented, tested, and documented**. You now have:
 
 - ✅ A complete plugin system integrated into Pi.js
-- ✅ Full multi-format support (ESM, CJS, IIFE)
+- ✅ Multi-format support (ESM and IIFE)
 - ✅ Comprehensive documentation
 - ✅ Working example plugin
 - ✅ Build tools for plugin development

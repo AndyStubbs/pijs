@@ -2,7 +2,7 @@
 
 ## Overview
 
-Pi.js now includes a comprehensive plugin system that allows developers to extend the library's functionality without modifying the core code. The plugin system is fully compatible with all three build formats: ESM, CJS, and IIFE.
+Pi.js now includes a comprehensive plugin system that allows developers to extend the library's functionality without modifying the core code. The plugin system is fully compatible with both build formats: ESM and IIFE.
 
 ## What Was Implemented
 
@@ -70,7 +70,7 @@ The plugin API provides these capabilities:
    - Screen commands: `trackClick()`, `drawRandomCircle()`
    - Screen data: Custom click tracking
    - Lifecycle hooks: Init and cleanup
-   - Built versions: ESM, CJS, IIFE
+   - Built versions: ESM and IIFE
 
 2. **`plugins/example-plugin/README.md`** - Example plugin documentation
 
@@ -95,19 +95,19 @@ The plugin API provides these capabilities:
 
 ### Multi-Format Support
 
-The plugin system works seamlessly with all three build formats:
+The plugin system works seamlessly with both build formats:
 
 **IIFE (Browser `<script>` tags)**
 ```html
 <script src="build/pi.min.js"></script>
-<script src="plugins/my-plugin/my-plugin.js"></script>
+<script src="plugins/my-plugin/dist/my-plugin.min.js"></script>
 <!-- Plugin auto-registers -->
 ```
 
 **ESM (ES Modules)**
 ```javascript
 import pi from "./build/pi.esm.min.js";
-import myPlugin from "./plugins/my-plugin/index.js";
+import myPlugin from "./plugins/my-plugin/dist/my-plugin.esm.min.js";
 
 pi.registerPlugin( {
 	"name": "my-plugin",
@@ -115,16 +115,6 @@ pi.registerPlugin( {
 } );
 ```
 
-**CJS (CommonJS/Node.js)**
-```javascript
-const pi = require( "./build/pi.cjs.min.js" );
-const myPlugin = require( "./plugins/my-plugin/my-plugin.cjs.js" );
-
-pi.registerPlugin( {
-	"name": "my-plugin",
-	"init": myPlugin
-} );
-```
 
 ### Plugin Validation
 
@@ -209,7 +199,7 @@ To test the plugin system:
 
 1. **Extensibility** - Add features without modifying core code
 2. **Modularity** - Plugins are self-contained and reusable
-3. **Compatibility** - Works with all build formats
+3. **Compatibility** - Works with ESM and IIFE formats
 4. **Type Safety** - Command system provides consistent parameter handling
 5. **Clean API** - Plugins use the same patterns as core modules
 6. **Easy Distribution** - Build scripts create ready-to-use bundles
@@ -227,7 +217,7 @@ To test the plugin system:
 ### For Library Users
 
 1. Find or create plugins for your needs
-2. Load plugins using your preferred format (ESM/CJS/IIFE)
+2. Load plugins using your preferred format (ESM or IIFE)
 3. Register plugins with `pi.registerPlugin()`
 4. Use plugin commands like any other Pi.js command
 

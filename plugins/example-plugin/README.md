@@ -75,7 +75,7 @@ pi.drawRandomCircle( 200, 150, 75 );
 
 ```html
 <script src="../../build/pi.min.js"></script>
-<script src="example-plugin.js"></script>
+<script src="dist/example-plugin.min.js"></script>
 
 <script>
 	pi.ready( () => {
@@ -90,7 +90,7 @@ pi.drawRandomCircle( 200, 150, 75 );
 
 ```javascript
 import pi from "../../build/pi.esm.min.js";
-import examplePlugin from "./plugins/example-plugin/index.js";
+import examplePlugin from "./plugins/example-plugin/dist/example-plugin.esm.min.js";
 
 pi.registerPlugin( {
 	"name": "example-plugin",
@@ -118,10 +118,11 @@ Or build just this plugin:
 node scripts/build-plugin.js example-plugin
 ```
 
-This creates:
+This creates (in the `dist/` directory):
 - `example-plugin.esm.js` (ES Module)
-- `example-plugin.cjs.js` (CommonJS)
+- `example-plugin.esm.min.js` (ES Module, minified)
 - `example-plugin.js` (IIFE for browsers)
+- `example-plugin.min.js` (IIFE, minified)
 
 ## Screen Data
 
