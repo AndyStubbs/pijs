@@ -8,24 +8,24 @@
 			name = "onscreen keyboard 02 - number keyboard touch"
 			width = 400
 			height = 280
-			test = "screenshot.js"
 			commands = """
-				DL 200
-				TS 40,120
+				DL 100
+				TS 10,35
+				DL 30
+				TE
+				TS 45,35
+				DL 30
+				TE
+				TS 55,55
+				DL 30
+				TE
+				TS 140,35
+				DL 30
+				TE
+				TS 75,35
+				DL 30
 				TE
 				DL 100
-				TS 56,120
-				TE
-				DL 100
-				TS 72,120
-				TE
-				DL 100
-				TS 88,120
-				TE
-				DL 100
-				TS 104,120
-				TE
-				DL 200
 				"""
 			[[TOML_END]]
 		</script>
@@ -44,9 +44,28 @@ $.setColor( 7 );
 
 $.ready( function() {
 
+	let buffer = "";
+	let cnt = $.getCols();
 	$.print( "Touch number keys:" );
 	$.print( "" );
 	$.showKeyboard( "number" );
+
+	setInterval( () => {
+		const keys = $.inkey();
+		$.cls( 0, 8, 400, 16 );
+		if( keys && keys.length > 0 ) {
+			for( let key of keys ) {
+				if( key.key !== buffer.charAt( buffer.length - 1 ) ) {
+					buffer += key.key;
+				}
+			}
+		}
+		$.setPos( 0, 1 );
+		let start = Math.max( buffer.length - cnt, 0 );
+		$.print( buffer.substring( start ), true );
+	} );
+
+	$.onpress( "down", ( data ) => console.log( [ data.x, data.y ] ) );
 
 } );
 
