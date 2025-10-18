@@ -70,6 +70,8 @@ commands.addCommand( "inkey", inkey, [ "key" ] );
 function inkey( options ) {
 	const key = options.key;
 
+	// TODO: Fix inkey, I think return values are wrong.
+
 	if( key ) {
 
 		if( typeof key !== "string" ) {

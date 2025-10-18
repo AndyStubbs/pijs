@@ -115,6 +115,8 @@ function showKeyboard( screenData, options ) {
 		throw error;
 	}
 
+	// TODO: Keyboard should remember staring position and not move if printCursor moves.
+
 	// Store keyboard state
 	m_keyboardState.screenData = screenData;
 	m_keyboardState.inputMode = mode;

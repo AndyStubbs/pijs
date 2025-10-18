@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Onscreen Keyboard 01</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "onscreen_keyboard_01"
+			name = "onscreen keyboard 01 - text keyboard clicks"
+			width = 400
+			height = 280
+			test = "screenshot.js"
+			commands = """
+				DL 200
+				MV 40,120
+				MC
+				DL 100
+				MV 56,120
+				MC
+				DL 100
+				MV 72,120
+				MC
+				DL 100
+				MV 88,120
+				MC
+				DL 100
+				MV 104,120
+				MC
+				DL 200
+				"""
+			[[TOML_END]]
+		</script>
+		<!-- [Pi.js Script]-->
+		<script src="../../../build/pi.js"></script>
+		<!-- [/Pi.js Script]-->
+		<style>
+			html, body {
+				color: white;
+				background-color: gray;
+				margin: 0;
+			}
+		</style>
+	</head>
+<body>
+<script>
+
+$.screen( { "aspect": "400x280" } );
+$.setFont( 2 );
+$.setColor( 7 );
+
+$.ready( function() {
+
+	$.print( "Click keyboard keys:" );
+	$.print( "" );
+	$.showKeyboard( "text" );
+	
+	setInterval( () => {
+		const keys = $.inkey();
+		$.setPos( 2, 15 );
+		if( keys ) {
+			for( let key in keys ) {
+				$.print( key, true );
+			}
+		}
+		$.setPos( 0, 2 );
+	} );
+
+} );
+
+</script>
+</body>
+</html>
+
+
