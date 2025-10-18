@@ -51,6 +51,100 @@ const buildOptions = {
 	"sourceRoot": "../src/"
 };
 
+async function buildPlugin( pluginName, pluginDir ) {
+	const entryPoint = path.join( pluginDir, "index.js" );
+
+	// Skip if no index.js exists
+	if( !fs.existsSync( entryPoint ) ) {
+		return false;
+	}
+
+	console.log( `  Building plugin: ${pluginName}...` );
+
+	const pluginBuildOptions = {
+		"entryPoints": [ entryPoint ],
+		"bundle": true,
+		"sourcemap": true,
+		"target": "es2020",
+		"platform": "browser"
+	};
+
+	try {
+		// Build all three formats
+		await esbuild.build( {
+			...pluginBuildOptions,
+			"format": "esm",
+			"outfile": path.join( pluginDir, `${pluginName}.esm.js` )
+		} );
+
+		await esbuild.build( {
+			...pluginBuildOptions,
+			"format": "cjs",
+			"outfile": path.join( pluginDir, `${pluginName}.cjs.js` )
+		} );
+
+		await esbuild.build( {
+			...pluginBuildOptions,
+			"format": "iife",
+			"outfile": path.join( pluginDir, `${pluginName}.js` )
+		} );
+
+		// Calculate total size
+		let totalSize = 0;
+		[ `${pluginName}.esm.js`, `${pluginName}.cjs.js`, `${pluginName}.js` ].forEach( file => {
+			const filePath = path.join( pluginDir, file );
+			if( fs.existsSync( filePath ) ) {
+				totalSize += fs.statSync( filePath ).size;
+			}
+		} );
+
+		const totalSizeKB = ( totalSize / 1024 ).toFixed( 2 );
+		console.log( `    ✓ ${pluginName} (${totalSizeKB} KB total)` );
+
+		return true;
+	} catch( error ) {
+		console.error( `    ✗ Failed to build ${pluginName}:`, error.message );
+		return false;
+	}
+}
+
+async function buildAllPlugins() {
+	const pluginsDir = path.join( __dirname, "..", "plugins" );
+
+	// Check if plugins directory exists
+	if( !fs.existsSync( pluginsDir ) ) {
+		return;
+	}
+
+	// Get all directories in plugins folder
+	const entries = fs.readdirSync( pluginsDir, { "withFileTypes": true } );
+	const pluginDirs = entries
+		.filter( entry => entry.isDirectory() )
+		.map( entry => entry.name );
+
+	if( pluginDirs.length === 0 ) {
+		return;
+	}
+
+	console.log( "" );
+	console.log( `Building plugins...` );
+
+	let builtCount = 0;
+	for( const pluginName of pluginDirs ) {
+		const pluginDir = path.join( pluginsDir, pluginName );
+		const success = await buildPlugin( pluginName, pluginDir );
+		if( success ) {
+			builtCount++;
+		}
+	}
+
+	if( builtCount > 0 ) {
+		console.log( `  ✓ Built ${builtCount} plugin(s)` );
+	} else {
+		console.log( `  No buildable plugins found (plugins need an index.js file)` );
+	}
+}
+
 async function build() {
 	console.log( `Building Pi.js v${version}...` );
 
@@ -120,6 +214,9 @@ async function build() {
 				console.log( `  ${file}: ${sizeKB} KB` );
 			}
 		} );
+
+		// Build all plugins
+		await buildAllPlugins();
 
 	} catch( error ) {
 		console.error( "✗ Build failed:", error );

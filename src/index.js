@@ -30,6 +30,7 @@ import * as onscreenKeyboard from "./modules/onscreen-keyboard.js";
 import * as mouse from "./modules/mouse.js";
 import * as touch from "./modules/touch.js";
 import * as press from "./modules/press.js";
+import * as plugins from "./core/plugins.js";
 
 // Assets
 import * as fontData from "./assets/font-data.js";
@@ -60,6 +61,7 @@ onscreenKeyboard.init();
 mouse.init();
 touch.init();
 press.init();
+plugins.init();
 
 // Append all the commands to the api
 commands.processApi();

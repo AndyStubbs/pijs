@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pi.js Example Plugin Test</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			margin: 0;
+			padding: 20px;
+			background: #f5f5f5;
+		}
+		.container {
+			max-width: 1400px;
+			margin: 0 auto;
+		}
+		h1 {
+			color: #333;
+			text-align: center;
+		}
+		.grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 20px;
+			margin: 20px 0;
+		}
+		.section {
+			background: white;
+			padding: 20px;
+			border-radius: 8px;
+			box-shadow: 0 2px 4px rgba( 0, 0, 0, 0.1 );
+		}
+		.section h2 {
+			margin-top: 0;
+			color: #444;
+			border-bottom: 2px solid #4CAF50;
+			padding-bottom: 10px;
+		}
+		button {
+			padding: 10px 20px;
+			margin: 5px 5px 5px 0;
+			background: #4CAF50;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 14px;
+		}
+		button:hover {
+			background: #45a049;
+		}
+		button:active {
+			background: #3d8b40;
+		}
+		.output {
+			margin-top: 15px;
+			padding: 15px;
+			background: #f9f9f9;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			font-family: "Courier New", monospace;
+			font-size: 13px;
+			white-space: pre-wrap;
+			max-height: 300px;
+			overflow-y: auto;
+		}
+		.success {
+			color: #4CAF50;
+			font-weight: bold;
+		}
+		.error {
+			color: #f44336;
+			font-weight: bold;
+		}
+		.info {
+			color: #2196F3;
+		}
+		#canvas-container {
+			background: #000;
+			border-radius: 8px;
+			overflow: hidden;
+			height: 500px;
+		}
+		.full-width {
+			grid-column: 1 / -1;
+		}
+		code {
+			background: #f0f0f0;
+			padding: 2px 6px;
+			border-radius: 3px;
+			font-family: "Courier New", monospace;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h1>🎨 Pi.js Example Plugin Test</h1>
+		
+		<div class="grid">
+			<div class="section">
+				<h2>📦 Plugin Info</h2>
+				<p>This page tests the <strong>example-plugin</strong> that demonstrates Pi.js plugin capabilities.</p>
+				<button onclick="showPluginInfo()">Show Plugin Info</button>
+				<button onclick="testGetLibraryInfo()">Get Library Info</button>
+				<div id="info-output" class="output"></div>
+			</div>
+			
+			<div class="section">
+				<h2>🌍 Global Commands</h2>
+				<p>Test commands that work without a screen.</p>
+				<button onclick="testHello()">Test hello()</button>
+				<button onclick="testHelloNamed()">Test hello( "World" )</button>
+				<div id="global-output" class="output"></div>
+			</div>
+			
+			<div class="section">
+				<h2>🖱️ Click Tracking</h2>
+				<p>Test the <code>trackClick()</code> command.</p>
+				<button onclick="testSingleClick()">Single Click</button>
+				<button onclick="testMultipleClicks()">Multiple Clicks</button>
+				<button onclick="resetClicks()">Reset (New Screen)</button>
+				<div id="click-output" class="output"></div>
+			</div>
+			
+			<div class="section">
+				<h2>🎨 Drawing Commands</h2>
+				<p>Test the <code>drawRandomCircle()</code> command.</p>
+				<button onclick="drawOneCircle()">Draw One Circle</button>
+				<button onclick="drawManyCircles()">Draw Many Circles</button>
+				<button onclick="clearCanvas()">Clear Canvas</button>
+				<div id="draw-output" class="output"></div>
+			</div>
+			
+			<div class="section full-width">
+				<h2>🖼️ Canvas</h2>
+				<div id="canvas-container"></div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Load Pi.js -->
+	<script src="../build/pi.js"></script>
+	
+	<!-- Load Example Plugin -->
+	<script type="module">
+		import examplePlugin from "../plugins/example-plugin/index.js";
+		
+		// Register the plugin
+		pi.registerPlugin( {
+			"name": "example-plugin",
+			"version": "1.0.0",
+			"description": "Example plugin demonstrating Pi.js plugin capabilities",
+			"init": examplePlugin
+		} );
+		
+		// Make functions available globally
+		window.examplePluginLoaded = true;
+		
+		// Initialize screen when ready
+		pi.ready( () => {
+			const screen = pi.screen( {
+				"aspect": "16:9",
+				"container": "canvas-container"
+			} );
+			
+			// Clear to dark background
+			pi.color( 32, 32, 40 );
+			pi.clear();
+			
+			// Draw welcome message
+			pi.color( 100, 200, 100 );
+			pi.print( "Pi.js with Example Plugin", 10, 10 );
+			pi.print( `Screen: ${pi.width()} x ${pi.height()}`, 10, 30 );
+			
+			logOutput( "info-output", "✓ Pi.js initialized with example-plugin", "success" );
+			logOutput( "info-output", `  Screen size: ${pi.width()}x${pi.height()}`, "info" );
+		} );
+	</script>
+
+	<!-- Test Functions -->
+	<script>
+		function logOutput( elementId, message, className = "" ) {
+			const output = document.getElementById( elementId );
+			if( className ) {
+				output.innerHTML += `<span class="${className}">${message}</span>\n`;
+			} else {
+				output.innerHTML += `${message}\n`;
+			}
+			output.scrollTop = output.scrollHeight;
+			console.log( message );
+		}
+		
+		function clearOutput( elementId ) {
+			document.getElementById( elementId ).innerHTML = "";
+		}
+		
+		function showPluginInfo() {
+			clearOutput( "info-output" );
+			
+			try {
+				const plugins = pi.getPlugins();
+				logOutput( "info-output", `✓ Registered Plugins: ${plugins.length}`, "success" );
+				
+				plugins.forEach( ( p, i ) => {
+					logOutput( "info-output", `\n${i + 1}. ${p.name}` );
+					logOutput( "info-output", `   Version: ${p.version}`, "info" );
+					logOutput( "info-output", `   Description: ${p.description}`, "info" );
+					logOutput( "info-output", `   Initialized: ${p.initialized}`, "info" );
+				} );
+			} catch( error ) {
+				logOutput( "info-output", `✗ Error: ${error.message}`, "error" );
+			}
+		}
+		
+		function testGetLibraryInfo() {
+			clearOutput( "info-output" );
+			
+			try {
+				const info = pi.getLibraryInfo();
+				logOutput( "info-output", "✓ Library Information:", "success" );
+				logOutput( "info-output", `  Version: ${info.version}`, "info" );
+				logOutput( "info-output", `  Plugin System: ${info.pluginSystem}`, "info" );
+			} catch( error ) {
+				logOutput( "info-output", `✗ Error: ${error.message}`, "error" );
+			}
+		}
+		
+		function testHello() {
+			clearOutput( "global-output" );
+			
+			try {
+				const result = pi.hello();
+				logOutput( "global-output", "✓ Called: pi.hello()", "success" );
+				logOutput( "global-output", `  Result: "${result}"`, "info" );
+			} catch( error ) {
+				logOutput( "global-output", `✗ Error: ${error.message}`, "error" );
+			}
+		}
+		
+		function testHelloNamed() {
+			clearOutput( "global-output" );
+			
+			try {
+				const names = [ "Pi.js", "Plugin System", "Developer" ];
+				
+				logOutput( "global-output", "✓ Testing hello() with names:", "success" );
+				
+				names.forEach( name => {
+					const result = pi.hello( name );
+					logOutput( "global-output", `  "${result}"`, "info" );
+				} );
+			} catch( error ) {
+				logOutput( "global-output", `✗ Error: ${error.message}`, "error" );
+			}
+		}
+		
+		function testSingleClick() {
+			clearOutput( "click-output" );
+			
+			try {
+				const x = Math.floor( Math.random() * pi.width() );
+				const y = Math.floor( Math.random() * pi.height() );
+				
+				const count = pi.trackClick( x, y );
+				
+				logOutput( "click-output", "✓ Click tracked", "success" );
+				logOutput( "click-output", `  Position: (${x}, ${y})`, "info" );
+				logOutput( "click-output", `  Total clicks: ${count}`, "info" );
+			} catch( error ) {
+				logOutput( "click-output", `✗ Error: ${error.message}`, "error" );
+			}
+		}
+		
+		function testMultipleClicks() {
+			clearOutput( "click-output" );
+			
+			try {
+				logOutput( "click-output", "✓ Tracking 5 clicks:", "success" );
+				
+				for( let i = 0; i < 5; i++ ) {
+					const x = Math.floor( Math.random() * pi.width() );
+					const y = Math.floor( Math.random() * pi.height() );
+					const count = pi.trackClick( x, y );
+					logOutput( "click-output", `  Click ${count}: (${x}, ${y})`, "info" );
+				}
+			} catch( error ) {
+				logOutput( "click-output", `✗ Error: ${error.message}`, "error" );
+			}
+		}
+		
+		function resetClicks() {
+			clearOutput( "click-output" );
+			
+			try {
+				// Remove and recreate screen to reset click counter
+				pi.removeScreen();
+				pi.screen( {
+					"aspect": "16:9",
+					"container": "canvas-container"
+				} );
+				
+				pi.color( 32, 32, 40 );
+				pi.clear();
+				
+				logOutput( "click-output", "✓ Screen reset - clicks cleared", "success" );
+				
+				// Test that counter is reset
+				const count = pi.trackClick( 100, 100 );
+				logOutput( "click-output", `  New click count: ${count}`, "info" );
+			} catch( error ) {
+				logOutput( "click-output", `✗ Error: ${error.message}`, "error" );
+			}
+		}
+		
+		function drawOneCircle() {
+			clearOutput( "draw-output" );
+			
+			try {
+				const x = pi.width() / 2;
+				const y = pi.height() / 2;
+				const radius = 50;
+				
+				pi.drawRandomCircle( x, y, radius );
+				
+				logOutput( "draw-output", "✓ Drew one circle", "success" );
+				logOutput( "draw-output", `  Position: (${x}, ${y})`, "info" );
+				logOutput( "draw-output", `  Radius: ${radius}`, "info" );
+			} catch( error ) {
+				logOutput( "draw-output", `✗ Error: ${error.message}`, "error" );
+			}
+		}
+		
+		function drawManyCircles() {
+			clearOutput( "draw-output" );
+			
+			try {
+				const count = 20;
+				logOutput( "draw-output", `✓ Drawing ${count} circles...`, "success" );
+				
+				for( let i = 0; i < count; i++ ) {
+					const x = Math.random() * pi.width();
+					const y = Math.random() * pi.height();
+					const radius = 10 + Math.random() * 40;
+					
+					pi.drawRandomCircle( x, y, radius );
+				}
+				
+				logOutput( "draw-output", `  Drew ${count} random circles`, "info" );
+			} catch( error ) {
+				logOutput( "draw-output", `✗ Error: ${error.message}`, "error" );
+			}
+		}
+		
+		function clearCanvas() {
+			clearOutput( "draw-output" );
+			
+			try {
+				pi.color( 32, 32, 40 );
+				pi.clear();
+				
+				pi.color( 100, 200, 100 );
+				pi.print( "Canvas Cleared", pi.width() / 2 - 50, pi.height() / 2 );
+				
+				logOutput( "draw-output", "✓ Canvas cleared", "success" );
+			} catch( error ) {
+				logOutput( "draw-output", `✗ Error: ${error.message}`, "error" );
+			}
+		}
+	</script>
+</body>
+</html>
+
