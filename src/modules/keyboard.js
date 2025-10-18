@@ -70,8 +70,6 @@ commands.addCommand( "inkey", inkey, [ "key" ] );
 function inkey( options ) {
 	const key = options.key;
 
-	// TODO: Fix inkey, I think return values are wrong.
-
 	if( key ) {
 
 		if( typeof key !== "string" ) {
@@ -90,20 +88,17 @@ function inkey( options ) {
 			return m_inKeys[ key ];
 		}
 
-		return null;
+		return {};
 	}
 
 	// If inkey is blank return all key codes
-	const keyCodes = {};
+	const keyCodes = [];
 	for( const code in m_inCodes ) {
 		if( m_inCodes[ code ] ) {
-			keyCodes[ code ] = m_inCodes[ code ];
+			keyCodes.push( m_inCodes[ code ] );
 		}
 	}
 
-	if( Object.keys( keyCodes ).length === 0 ) {
-		return null;
-	}
 	return keyCodes;
 }
 
