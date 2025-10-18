@@ -432,7 +432,9 @@ async function executeCommand( page, command ) {
 			if( Array.isArray( data ) ) {
 				cmdContext.touch.x = parseInt( data[ 0 ] );
 				cmdContext.touch.y = parseInt( data[ 1 ] );
-				logMove( "TS", { "x": cmdContext.touch.x, "y": cmdContext.touch.y, "id": cmdContext.touch.id } );
+				logMove( "TS", {
+					"x": cmdContext.touch.x, "y": cmdContext.touch.y, "id": cmdContext.touch.id
+				} );
 				await dispatchTouch(
 					page,
 					cmdContext.target,
@@ -525,7 +527,7 @@ async function dispatchTouch( page, target, name, data, id ) {
 		( { selector, eventName, coordinates, touchId } ) => {
 			const targetElement = selector ? 
 				document.querySelector( selector ) : 
-				document.body;
+				document.querySelector( "canvas" );
 
 			const touchConfig = {
 				"cancelable": true,

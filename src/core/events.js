@@ -16,6 +16,7 @@ import * as utils from "./utils";
  **************************************************************************************************/
 
 // TODO: Release all down events when window loses focus. This inlcudes mouse, keyboard, and touch
+// TODO: Need to throw errors if parameters are incorrect instead of console.warn
 
 /**
  * Register an event listener
