@@ -74,6 +74,15 @@ function logMove( type, details ) {
 	} catch( _e ) {}
 }
 
+function logMessage( message ) {
+	if( !LOG_FILE_PATH ) {
+		return;
+	}
+	try {
+		fs.appendFileSync( LOG_FILE_PATH, `${message}\n` );
+	} catch( _e ) {}
+}
+
 // Test configuration - can be overridden by environment variable
 const TEST_TYPE = process.env.PI_TEST_TYPE || "core";
 const TEST_CONFIG = {
@@ -717,6 +726,19 @@ test.describe( config.description, () => {
 				// Prepare per-test log file named after the screenshot base
 				const baseName = ( testName || testFile.file ).replace( /\.html$/, "" );
 				setLogFileForTest( baseName );
+
+				// Capture console messages and errors
+				page.on( "console", msg => {
+					const type = msg.type();
+					const text = msg.text();
+					logMessage( `[console.${type}] ${text}` );
+				} );
+
+				// Capture page errors
+				page.on( "pageerror", error => {
+					logMessage( `[PAGE ERROR] ${error.message}` );
+					logMessage( `  Stack: ${error.stack}` );
+				} );
 
 				// Wait for delay if specified
 				if( metadata.delay > 0 ) {

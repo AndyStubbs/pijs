@@ -166,6 +166,7 @@ const server = http.createServer( ( req, res ) => {
 			try {
 				const data = JSON.parse( body );
 				const baseName = data.baseName;
+				const testType = data.testType || "core";
 				
 				// Validate baseName to prevent path traversal
 				if( !baseName || baseName.includes( ".." ) || baseName.includes( "/" ) || baseName.includes( "\\" ) ) {
@@ -174,8 +175,10 @@ const server = http.createServer( ( req, res ) => {
 					return;
 				}
 				
-				const sourcePath = path.join( __dirname, "test", "tests", "screenshots", "new", `${baseName}.png` );
-				const destPath = path.join( __dirname, "test", "tests", "screenshots", `${baseName}.png` );
+				// Determine paths based on test type
+				const testsDir = testType === "plugins" ? "tests-plugins" : "tests";
+				const sourcePath = path.join( __dirname, "test", testsDir, "screenshots", "new", `${baseName}.png` );
+				const destPath = path.join( __dirname, "test", testsDir, "screenshots", `${baseName}.png` );
 				
 				// Check if source exists
 				if( !fs.existsSync( sourcePath ) ) {
@@ -221,7 +224,9 @@ const server = http.createServer( ( req, res ) => {
 				console.log( "Request body:", body );
 				const data = JSON.parse( body );
 				const baseName = data.baseName;
+				const testType = data.testType || "core";
 				console.log( "Base name:", baseName );
+				console.log( "Test type:", testType );
 				
 				// Validate baseName to prevent path traversal
 				if( !baseName || baseName.includes( ".." ) || baseName.includes( "/" ) || baseName.includes( "\\" ) ) {
@@ -231,8 +236,10 @@ const server = http.createServer( ( req, res ) => {
 					return;
 				}
 				
-				const sourcePath = path.join( __dirname, "test", "tests", "screenshots", "new", `${baseName}.png` );
-				const destPath = path.join( __dirname, "test", "tests", "screenshots", `${baseName}.png` );
+				// Determine paths based on test type
+				const testsDir = testType === "plugins" ? "tests-plugins" : "tests";
+				const sourcePath = path.join( __dirname, "test", testsDir, "screenshots", "new", `${baseName}.png` );
+				const destPath = path.join( __dirname, "test", testsDir, "screenshots", `${baseName}.png` );
 				
 				console.log( "Source path:", sourcePath );
 				console.log( "Dest path:", destPath );

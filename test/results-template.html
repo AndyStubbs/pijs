@@ -367,6 +367,12 @@
 		let currentBaseName = null;
 		let currentNewTestBaseName = null;
 		
+		// Test type from page generation (injected by results-page-generator.js)
+		const TEST_TYPE = "{{TEST_TYPE}}";
+		const SCREENSHOT_BASE = TEST_TYPE === "plugins" 
+			? "/test/tests-plugins/screenshots" 
+			: "/test/tests/screenshots";
+		
 		// Check if new screenshots exist for failed tests on page load
 		window.addEventListener( "DOMContentLoaded", function() {
 			checkMissingScreenshots();
@@ -387,7 +393,7 @@
 				if( !match ) continue;
 				
 				const baseName = match[ 1 ];
-				const newPath = `/test/tests/screenshots/new/${baseName}.png`;
+				const newPath = `${SCREENSHOT_BASE}/new/${baseName}.png`;
 				
 				// Check if new screenshot exists
 				try {
@@ -449,8 +455,8 @@
 				if( !match ) continue;
 				
 				const baseName = match[ 1 ];
-				const basePath = `/test/tests/screenshots/${baseName}.png`;
-				const newPath = `/test/tests/screenshots/new/${baseName}.png`;
+				const basePath = `${SCREENSHOT_BASE}/${baseName}.png`;
+				const newPath = `${SCREENSHOT_BASE}/new/${baseName}.png`;
 				
 				try {
 
@@ -690,7 +696,7 @@
 				"headers": {
 					"Content-Type": "application/json"
 				},
-				"body": JSON.stringify( { "baseName": currentBaseName } )
+				"body": JSON.stringify( { "baseName": currentBaseName, "testType": TEST_TYPE } )
 			} )
 			.then( response => response.json() )
 			.then( data => {
@@ -770,7 +776,7 @@
 				"headers": {
 					"Content-Type": "application/json"
 				},
-				"body": JSON.stringify( { "baseName": currentNewTestBaseName } )
+				"body": JSON.stringify( { "baseName": currentNewTestBaseName, "testType": TEST_TYPE } )
 			} )
 			.then( response => response.json() )
 			.then( data => {

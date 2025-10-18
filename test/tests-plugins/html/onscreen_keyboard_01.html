@@ -10,13 +10,36 @@
 			height = 280
 			test = "screenshot.js"
 			commands = """
-				DL 200
-				MV 78,70
-				MC
 				DL 100
+				MV 78,70
+				MD
+				DL 30
+				MU
 				MV 25,83
-				MC
-				DL 200
+				MD
+				DL 30
+				MU
+				MV 154,86
+				MD
+				DL 30
+				MU
+				MV 205,51
+				MD
+				DL 30
+				MU
+				MV 75,50
+				MD
+				DL 30
+				MU
+				MV 190,70
+				MD
+				DL 30
+				MU
+				MV 120,70
+				MD
+				DL 30
+				MU
+				DL 100
 				"""
 			[[TOML_END]]
 		</script>
@@ -43,31 +66,31 @@ $.setColor( 7 );
 let buffer = "";
 let cnt = $.getCols();
 
-$.ready( function() {
+$.print( "Click keyboard keys:" );
+$.print( "" );
 
-	$.print( "Click keyboard keys:" );
-	$.print( "" );
-	$.showKeyboard( "text" );
-	
-	setInterval( () => {
-		const keys = $.inkey();
-		$.cls( 0, 8, 400, 16 );
-		if( keys ) {
-			for( let key of keys ) {
+$.showKeyboard( "text" );
+$.render();
+
+setInterval( () => {
+	const keys = $.inkey();
+	$.cls( 0, 8, 400, 16 );
+	if( keys && keys.length > 0 ) {
+		for( let key of keys ) {
+			if( key.key !== buffer.charAt( buffer.length - 1 ) ) {
 				buffer += key.key;
 			}
-			$.setPos( 0, 1 );
-			let start = Math.max( buffer.length - cnt, 0 );
-			$.print( buffer.substring( start ), true );
 		}
-		$.setPos( 0, 5 );
-	} );
-
-	setInterval( () => {
-		console.log( $.inpress() );
-	}, 5000 );
-
+	}
+	$.setPos( 0, 1 );
+	let start = Math.max( buffer.length - cnt, 0 );
+	$.print( buffer.substring( start ), true );
+	$.setPos( 0, 5 );
 } );
+
+setInterval( () => {
+	console.log( $.inpress() );
+}, 5000 );
 
 </script>
 </body>

@@ -140,7 +140,10 @@ class MinimalReporter {
 		};
 		
 		const resultsHTML = generateResultsPage( resultsData );
-		const resultsPath = path.join( process.cwd(), "test/test-results/results.html" );
+		// Determine results filename based on test type
+		const testType = process.env.PI_TEST_TYPE || "core";
+		const resultsFilename = testType === "plugins" ? "results-plugins.html" : "results.html";
+		const resultsPath = path.join( process.cwd(), "test/test-results", resultsFilename );
 		const resultsDir = path.dirname( resultsPath );
 		
 		// Ensure directory exists

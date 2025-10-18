@@ -7,6 +7,12 @@
 const fs = require( "fs" );
 const path = require( "path" );
 
+// Determine test type and paths
+const TEST_TYPE = process.env.PI_TEST_TYPE || "core";
+const SCREENSHOT_BASE = TEST_TYPE === "plugins" 
+	? "/test/tests-plugins/screenshots" 
+	: "/test/tests/screenshots";
+
 // Generate HTML results page
 function generateResultsPage( results ) {
 	const passed = results.tests.filter( t => t.status === "passed" );
@@ -49,8 +55,8 @@ function generateResultsPage( results ) {
 		for( const test of sortedFailed ) {
 			// Use screenshotName from test record (preserves camelCase like "loadFont_01")
 			const baseName = test.screenshotName || test.file.replace( ".html", "" );
-			const refPath = `/test/tests/screenshots/${baseName}.png`;
-			const newPath = `/test/tests/screenshots/new/${baseName}.png`;
+			const refPath = `${SCREENSHOT_BASE}/${baseName}.png`;
+			const newPath = `${SCREENSHOT_BASE}/new/${baseName}.png`;
 			
 			failedHTML += `
 			<div class="test-item failed">
@@ -92,8 +98,8 @@ function generateResultsPage( results ) {
 		for( const test of sortedPassed ) {
 			// Use screenshotName from test record (preserves camelCase like "loadFont_01")
 			const baseName = test.screenshotName || test.file.replace( ".html", "" );
-			const refPath = `/test/tests/screenshots/${baseName}.png`;
-			const newPath = `/test/tests/screenshots/new/${baseName}.png`;
+			const refPath = `${SCREENSHOT_BASE}/${baseName}.png`;
+			const newPath = `${SCREENSHOT_BASE}/new/${baseName}.png`;
 			
 			passedHTML += `
 			<div class="test-item passed">
@@ -134,7 +140,7 @@ function generateResultsPage( results ) {
 		for( const test of sortedSkipped ) {
 			// Use screenshotName from test record
 			const baseName = test.screenshotName || test.file.replace( ".html", "" );
-			const newPath = `/test/tests/screenshots/new/${baseName}.png`;
+			const newPath = `${SCREENSHOT_BASE}/new/${baseName}.png`;
 			
 			// Check if this is a new test (no reference screenshot)
 			const isNewTest = test.error && test.error.includes( "No reference screenshot" );
@@ -169,6 +175,7 @@ function generateResultsPage( results ) {
 	html = html.replace( "{{FAILED_TESTS}}", failedHTML );
 	html = html.replace( "{{PASSED_TESTS}}", passedHTML );
 	html = html.replace( "{{SKIPPED_TESTS}}", skippedHTML );
+	html = html.replace( "{{TEST_TYPE}}", TEST_TYPE );
 
 	return html;
 }
