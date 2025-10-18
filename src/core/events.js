@@ -16,7 +16,6 @@ import * as utils from "./utils";
  **************************************************************************************************/
 
 // TODO: Release all down events when window loses focus. This inlcudes mouse, keyboard, and touch
-// TODO: Need to throw errors if parameters are incorrect instead of console.warn
 
 /**
  * Register an event listener
@@ -47,10 +46,11 @@ export function onevent(
 	}
 
 	if( !modeFound ) {
-		console.warn(
+		const error = new Error(
 			`${name}: mode needs to be one of the following: ${modes.join( ", " )}.`
 		);
-		return false;
+		error.code = "INVALID_MODE";
+		throw error;
 	}
 
 	// Validate once parameter
@@ -58,8 +58,9 @@ export function onevent(
 
 	// Validate callback function
 	if( !utils.isFunction( fn ) ) {
-		console.warn( `${name}: fn is not a valid function.` );
-		return false;
+		const error = new Error( `${name}: fn is not a valid function.` );
+		error.code = "INVALID_FUNCTION";
+		throw error;
 	}
 
 	// Validate hitBox
@@ -70,11 +71,12 @@ export function onevent(
 			!Number.isInteger( hitBox.width ) ||
 			!Number.isInteger( hitBox.height )
 		) {
-			console.warn(
+			const error = new Error(
 				`${name}: hitBox must have properties x, y, width, and height ` +
 				`whose values are integers.`
 			);
-			return false;
+			error.code = "INVALID_HITBOX";
+			throw error;
 		}
 	}
 
@@ -139,10 +141,11 @@ export function offevent( mode, fn, modes, name, listenerArr, extraId ) {
 	}
 
 	if( !modeFound ) {
-		console.warn(
+		const error = new Error(
 			`${name}: mode needs to be one of the following: ${modes.join( ", " )}.`
 		);
-		return false;
+		error.code = "INVALID_MODE";
+		throw error;
 	}
 
 	// Add extraId to mode if provided
@@ -154,8 +157,9 @@ export function offevent( mode, fn, modes, name, listenerArr, extraId ) {
 	const isClear = fn == null;
 
 	if( !isClear && !utils.isFunction( fn ) ) {
-		console.warn( `${name}: fn is not a valid function.` );
-		return false;
+		const error = new Error( `${name}: fn is not a valid function.` );
+		error.code = "INVALID_FUNCTION";
+		throw error;
 	}
 
 	// Remove listeners
