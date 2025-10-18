@@ -79,8 +79,12 @@ let m_keyboardState = {
 	"hitBoxes": null,
 	"screenData": null,
 	"isVisible": false,
+	"startPosPx": null,
 	"startPos": null,
-	"inputMode": "text"
+	"inputMode": "text",
+	"activeKeys": new Map(),
+	"highlightedKeys": new Set(),
+	"toggledKeys": new Set()
 };
 
 export default function onscreenKeyboardPlugin( pluginApi ) {
@@ -90,13 +94,22 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 
 	// Add showKeyboard command
 	pluginApi.addScreenCommand( "showKeyboard", showKeyboard, [ "mode" ] );
-
 	function showKeyboard( screenData, options ) {
 		const mode = options.mode || "text";
 
 		if( mode !== "text" && mode !== "number" ) {
 			const error = new TypeError( "showKeyboard: mode must be 'text' or 'number'." );
 			error.code = "INVALID_MODE";
+			throw error;
+		}
+
+		// Check if printTable is available (required dependency)
+		if( !screenData.api.printTable || typeof screenData.api.printTable !== "function" ) {
+			const error = new Error(
+				"showKeyboard: Requires the 'print-table' plugin. " +
+				"Load print-table plugin before onscreen-keyboard."
+			);
+			error.code = "MISSING_DEPENDENCY";
 			throw error;
 		}
 
@@ -114,6 +127,19 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 			m_keyboardState.isLowerCase = true;
 		}
 
+		// Move to keyboard position (below current line) and save start position
+		const pos = screenData.api.getPos();
+		pos.row += 1;
+		screenData.api.setPos( 0, pos.row );
+		m_keyboardState.startPos = pos;
+
+		// Set keyboard initial pixel position
+		const posPx = screenData.api.getPosPx();
+		m_keyboardState.startPosPx = posPx;
+
+		// Restore original position
+		screenData.api.setPos( pos.col, pos.row - 1 );
+
 		renderKeyboard();
 		m_keyboardState.isVisible = true;
 	}
@@ -126,8 +152,8 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 			return;
 		}
 
-		if( m_keyboardState.background && m_keyboardState.startPos ) {
-			const pos = m_keyboardState.startPos;
+		if( m_keyboardState.background && m_keyboardState.startPosPx ) {
+			const pos = m_keyboardState.startPosPx;
 
 			// Restore background
 			screenData.context.clearRect(
@@ -147,7 +173,7 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 		m_keyboardState.isVisible = false;
 		m_keyboardState.background = null;
 		m_keyboardState.hitBoxes = null;
-		m_keyboardState.startPos = null;
+		m_keyboardState.startPosPx = null;
 		m_keyboardState.screenData = null;
 	}
 
@@ -160,22 +186,11 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 		const layout = m_keyboardState.layout;
 		const format = KEYBOARD_FORMATS[ m_keyboardState.format ];
 
-		// Get current position
-		const pos = screenData.api.getPos();
-
-		// Move to keyboard position (below current line)
-		screenData.api.setPos( 0, pos.row + 1 );
-
 		// Calculate dimensions
 		const font = screenData.font;
-		const keyboardPos = screenData.api.getPos();
-		const x = keyboardPos.col * font.width;
-		const y = keyboardPos.row * font.height;
+		const { x, y } = m_keyboardState.startPosPx;
 		const width = format[ 0 ].length * font.width;
 		const height = format.length * font.height;
-
-		// Store start position
-		m_keyboardState.startPos = { x, y };
 
 		// Save background
 		if( !m_keyboardState.background ) {
@@ -204,15 +219,32 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 		// Build display keys array
 		const displayKeys = buildDisplayKeys( layout );
 
+		// Get the current screen position
+		const pos = screenData.api.getPos();
+
+		// Set the position to the original start position
+		const startPos = m_keyboardState.startPos;
+		screenData.api.setPos( startPos.col, startPos.row );
+
 		// Print the keyboard using table
 		const hitBoxes = screenData.api.printTable( displayKeys, format );
 
-		// Restore original position
+		// Restore the position to the start position
 		screenData.api.setPos( pos.col, pos.row );
 
-		// Store hitboxes and setup events
+		// Only setup events if this is the first render (hitBoxes was null)
+		const isFirstRender = m_keyboardState.hitBoxes === null;
+
+		// Store hitboxes
 		m_keyboardState.hitBoxes = hitBoxes;
-		setupKeyboardEvents( hitBoxes );
+
+		// Setup events only on first render
+		if( isFirstRender ) {
+			setupKeyboardEvents( hitBoxes );
+		}
+
+		// Redraw highlights for currently pressed keys
+		redrawHighlights();
 	}
 
 	function buildDisplayKeys( layout ) {
@@ -236,30 +268,68 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 		// Clear any existing events first
 		clearKeyboardEvents();
 
-		// Add press events for each key
-		for( let i = 0; i < hitBoxes.length; i++ ) {
-			const screenData = m_keyboardState.screenData;
-			screenData.api.onpress(
-				"down", onKeyboardPress, false, hitBoxes[ i ].pixels, { "index": i }
-			);
-		}
+		const screenData = m_keyboardState.screenData;
+
+		// Add global move handler to detect key presses via movement
+		screenData.api.onpress( "move", onKeyboardMove, false );
+
+		// Add down handler to start tracking
+		screenData.api.onpress( "down", onKeyboardDown, false );
+
+		// Add up handler to release all keys
+		screenData.api.onpress( "up", onKeyboardUp, false );
 	}
 
 	function clearKeyboardEvents() {
-		if( !m_keyboardState.hitBoxes || !m_keyboardState.screenData ) {
+		if( !m_keyboardState.screenData ) {
 			return;
 		}
 
 		const screenData = m_keyboardState.screenData;
-		const hitBoxes = m_keyboardState.hitBoxes;
 
-		for( let i = 0; i < hitBoxes.length; i++ ) {
-			screenData.api.offpress( "down", onKeyboardPress );
+		// Remove event handlers
+		screenData.api.offpress( "move", onKeyboardMove );
+		screenData.api.offpress( "down", onKeyboardDown );
+		screenData.api.offpress( "up", onKeyboardUp );
+
+		// Release all active keys
+		for( const [ index, keyEvent ] of m_keyboardState.activeKeys ) {
+			simulateKeyRelease( keyEvent );
+		}
+		m_keyboardState.activeKeys.clear();
+		m_keyboardState.highlightedKeys.clear();
+	}
+
+	function onKeyboardDown( data ) {
+
+		// Immediately check if press is on a key and activate it
+		onKeyboardMove( data );
+	}
+
+	function onKeyboardUp( data ) {
+
+		// Release all active keys
+		const keysToRelease = Array.from( m_keyboardState.activeKeys.keys() );
+
+		for( const index of keysToRelease ) {
+			const keyEvent = m_keyboardState.activeKeys.get( index );
+			if( keyEvent ) {
+				simulateKeyRelease( keyEvent );
+				m_keyboardState.activeKeys.delete( index );
+			}
+			m_keyboardState.highlightedKeys.delete( index );
+		}
+
+		// Clear toggled keys when all presses are released
+		m_keyboardState.toggledKeys.clear();
+
+		// Redraw keyboard if any keys were released
+		if( keysToRelease.length > 0 ) {
+			renderKeyboard();
 		}
 	}
 
-	function onKeyboardPress( data, customData ) {
-		const index = customData.index;
+	function pressKey( index ) {
 		const layout = m_keyboardState.layout;
 		const keys = KEYBOARD_LAYOUTS[ layout ];
 		let keyValue = keys[ index ];
@@ -275,25 +345,45 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 
 		// Handle special keys
 		if( keyValue === "CapsLock" ) {
-			if( m_keyboardState.isLowerCase ) {
-				m_keyboardState.layout = "uppercase";
-				m_keyboardState.isLowerCase = false;
-			} else {
-				m_keyboardState.layout = "lowercase";
-				m_keyboardState.isLowerCase = true;
+
+			// Only toggle if not already toggled during this press
+			if( !m_keyboardState.toggledKeys.has( index ) ) {
+				m_keyboardState.toggledKeys.add( index );
+
+				if( m_keyboardState.isLowerCase ) {
+					m_keyboardState.layout = "uppercase";
+					m_keyboardState.isLowerCase = false;
+				} else {
+					m_keyboardState.layout = "lowercase";
+					m_keyboardState.isLowerCase = true;
+				}
+
+				// Add to highlighted and active keys for visual feedback
+				m_keyboardState.highlightedKeys.add( index );
+				m_keyboardState.activeKeys.set( index, null );
+
+				renderKeyboard();
 			}
-			renderKeyboard();
-			highlightKey( customData.index );
 			return;
 
 		} else if( keyValue === "SYMBOLS" ) {
-			if( m_keyboardState.layout === "symbol" ) {
-				m_keyboardState.layout = m_keyboardState.isLowerCase ? "lowercase" : "uppercase";
-			} else {
-				m_keyboardState.layout = "symbol";
+
+			// Only toggle if not already toggled during this press
+			if( !m_keyboardState.toggledKeys.has( index ) ) {
+				m_keyboardState.toggledKeys.add( index );
+
+				if( m_keyboardState.layout === "symbol" ) {
+					m_keyboardState.layout = m_keyboardState.isLowerCase ? "lowercase" : "uppercase";
+				} else {
+					m_keyboardState.layout = "symbol";
+				}
+
+				// Add to highlighted and active keys for visual feedback
+				m_keyboardState.highlightedKeys.add( index );
+				m_keyboardState.activeKeys.set( index, null );
+
+				renderKeyboard();
 			}
-			renderKeyboard();
-			highlightKey( customData.index );
 			return;
 
 		} else if( keyValue === "+/-" ) {
@@ -312,13 +402,105 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 			keyEvent = createKeyEvent( keyValue, keyCode );
 		}
 
-		// Trigger the key event
+		// Trigger the key down event
 		if( keyEvent ) {
 			simulateKeystroke( keyEvent );
+
+			// Store the active key for later release
+			m_keyboardState.activeKeys.set( index, keyEvent );
 		}
 
-		// Highlight the pressed key
-		highlightKey( customData.index );
+		// Add to highlighted keys and draw highlight
+		m_keyboardState.highlightedKeys.add( index );
+		drawKeyHighlight( index );
+	}
+
+	function releaseKey( index ) {
+
+		// Get the key event that was pressed
+		const keyEvent = m_keyboardState.activeKeys.get( index );
+
+		if( keyEvent ) {
+
+			// Trigger key up event (only for regular keys, not toggle keys)
+			simulateKeyRelease( keyEvent );
+		}
+
+		// Remove from active keys and highlights
+		m_keyboardState.activeKeys.delete( index );
+		m_keyboardState.highlightedKeys.delete( index );
+	}
+
+	function onKeyboardMove( data ) {
+
+		const screenData = m_keyboardState.screenData;
+		const hitBoxes = m_keyboardState.hitBoxes;
+		const pressData = screenData.api.inpress();
+
+		// Get all current touches/presses
+		const activePresses = [];
+
+		// Check mouse press
+		if( pressData.buttons > 0 && pressData.type !== "touch" ) {
+			activePresses.push( { "x": pressData.x, "y": pressData.y } );
+		}
+
+		// Check touch presses
+		if( pressData.touches && pressData.touches.length > 0 ) {
+			for( const touch of pressData.touches ) {
+				if( touch.action !== "up" ) {
+					activePresses.push( { "x": touch.x, "y": touch.y } );
+				}
+			}
+		}
+
+		// Track which keys should be active based on current presses
+		const keysUnderPress = new Set();
+
+		for( const press of activePresses ) {
+			for( let i = 0; i < hitBoxes.length; i++ ) {
+				const hitBox = hitBoxes[ i ].pixels;
+
+				// Check if press is over this key
+				if(
+					press.x >= hitBox.x &&
+					press.x < hitBox.x + hitBox.width &&
+					press.y >= hitBox.y &&
+					press.y < hitBox.y + hitBox.height
+				) {
+					keysUnderPress.add( i );
+					break; // Each press can only be on one key
+				}
+			}
+		}
+
+		let needsRedraw = false;
+
+		// Activate keys that are being pressed but not yet active
+		for( const index of keysUnderPress ) {
+			if( !m_keyboardState.activeKeys.has( index ) ) {
+				pressKey( index );
+				needsRedraw = true;
+			}
+		}
+
+		// Release keys that are no longer being pressed
+		const keysToRelease = [];
+		for( const [ index ] of m_keyboardState.activeKeys ) {
+			if( !keysUnderPress.has( index ) ) {
+				keysToRelease.push( index );
+			}
+		}
+
+		for( const index of keysToRelease ) {
+			releaseKey( index );
+			needsRedraw = true;
+		}
+
+		// Redraw keyboard if any keys changed state
+		if( needsRedraw ) {
+			renderKeyboard();
+		}
 	}
 
 	function createKeyEvent( key, code ) {
@@ -354,7 +536,27 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 		window.dispatchEvent( syntheticEvent );
 	}
 
-	function highlightKey( index ) {
+	function simulateKeyRelease( keyEvent ) {
+
+		// Create a synthetic keyboard event that mimics a real keyup
+		const syntheticEvent = new KeyboardEvent( "keyup", {
+			"key": keyEvent.key,
+			"code": keyEvent.code,
+			"location": keyEvent.location,
+			"altKey": keyEvent.altKey,
+			"ctrlKey": keyEvent.ctrlKey,
+			"metaKey": keyEvent.metaKey,
+			"shiftKey": keyEvent.shiftKey,
+			"repeat": false,
+			"bubbles": true,
+			"cancelable": true
+		} );
+
+		// Dispatch the event to trigger keyboard handlers
+		window.dispatchEvent( syntheticEvent );
+	}
+
+	function drawKeyHighlight( index ) {
 		if( !m_keyboardState.hitBoxes || !m_keyboardState.screenData ) {
 			return;
 		}
@@ -367,25 +569,38 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 
 		// Draw highlight
 		screenData.api.setColor( 15 );
-		screenData.api.rect( pixels.x, pixels.y, pixels.width + 1, pixels.height + 1 );
+		screenData.api.rect( pixels.x + 1, pixels.y, pixels.width, pixels.height + 1 );
 
 		// Restore color
 		screenData.api.setColor( currentColor.s );
+	}
 
-		// Re-render keyboard after short delay
-		setTimeout( () => {
-			if( m_keyboardState.isVisible ) {
-				renderKeyboard();
-			}
-		}, 100 );
+	function redrawHighlights() {
+		if( !m_keyboardState.highlightedKeys || m_keyboardState.highlightedKeys.size === 0 ) {
+			return;
+		}
+
+		// Redraw all highlighted keys
+		for( const index of m_keyboardState.highlightedKeys ) {
+			drawKeyHighlight( index );
+		}
 	}
 
 	function cleanupScreen( screenData ) {
 		if( m_keyboardState.screenData === screenData ) {
+
+			// Release all active keys before cleanup
+			for( const [ index, keyEvent ] of m_keyboardState.activeKeys ) {
+				simulateKeyRelease( keyEvent );
+			}
+			m_keyboardState.activeKeys.clear();
+			m_keyboardState.highlightedKeys.clear();
+			m_keyboardState.toggledKeys.clear();
+
 			m_keyboardState.isVisible = false;
 			m_keyboardState.background = null;
 			m_keyboardState.hitBoxes = null;
-			m_keyboardState.startPos = null;
+			m_keyboardState.startPosPx = null;
 			m_keyboardState.screenData = null;
 		}
 	}
