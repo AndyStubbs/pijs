@@ -179,7 +179,12 @@ async function build() {
 	console.log( `Building Pi.js v${version}...` );
 
 	try {
+		// Build all plugins first
+		await buildAllPlugins();
+
 		// Build ESM version
+		console.log( "" );
+		console.log( "Building Pi.js..." );
 		console.log( "Building ESM..." );
 		await esbuild.build( {
 			...buildOptions,
@@ -233,9 +238,6 @@ async function build() {
 				console.log( `  ${file}: ${sizeKB} KB` );
 			}
 		} );
-
-		// Build all plugins
-		await buildAllPlugins();
 
 	} catch( error ) {
 		console.error( "✗ Build failed:", error );
