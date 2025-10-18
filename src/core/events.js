@@ -15,6 +15,8 @@ import * as utils from "./utils";
  * Event Management Functions
  **************************************************************************************************/
 
+// TODO: Add clearEvents command that clears all "on" events including keyboard, don't need
+// clearKeys from legacy, that's redundant.  Just clearEvents.
 
 /**
  * Register an event listener
