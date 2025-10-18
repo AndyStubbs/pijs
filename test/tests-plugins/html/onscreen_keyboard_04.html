@@ -5,27 +5,30 @@
 		<script type="text/toml">
 			[[TOML_START]]
 			file = "onscreen_keyboard_04"
-			name = "onscreen keyboard 04 - layout switching"
+			name = "onscreen keyboard 04 - number input mixed"
 			width = 400
 			height = 280
 			test = "screenshot.js"
 			commands = """
-				DL 200
-				TS 376,136
-				TE
-				DL 200
-				TS 40,136
-				TE
 				DL 100
-				TS 56,136
+				KP "3"
+				MV 59, 45
+				MC
+				DL 10
+				MV 111,27
+				MC
+				DL 10
+				TS 123,27
+				DL 10
 				TE
+				TS 27, 48
+				DL 10
+				TE
+				MV 45, 142
+				MC
+				DL 10
+				KP "Enter"
 				DL 100
-				TS 72,136
-				TE
-				DL 200
-				TS 328,152
-				TE
-				DL 200
 				"""
 			[[TOML_END]]
 		</script>
@@ -42,11 +45,15 @@ $.screen( { "aspect": "400x280" } );
 $.setFont( 2 );
 $.setColor( 7 );
 
-$.ready( function() {
+$.ready( async function() {
 
-	$.print( "Layout switching:" );
-	$.print( "" );
-	$.showKeyboard( "text" );
+	$.onpress( "down", ( data ) => console.log( data.x, data.y ) );
+
+	$.print( "Number input (mixed):" );
+	$.showKeyboard( "number" );
+	const num = await $.input( { "prompt": "Num: ", "isNumber": true, "allowNegative": true } );
+	$.hideKeyboard();
+	$.print( `Your number is: ${num}` );
 
 } );
 

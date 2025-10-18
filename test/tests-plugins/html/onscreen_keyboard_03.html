@@ -10,16 +10,26 @@
 			height = 280
 			test = "screenshot.js"
 			commands = """
-				DL 300
-				MV 40,152
-				MC
 				DL 100
-				MV 56,152
+				MV 188, 44
 				MC
-				DL 100
-				MV 168,168
+				MV 8, 58
 				MC
-				DL 200
+				DL 10
+				MV 188, 44
+				MC
+				DL 10
+				MV 140, 77
+				MC
+				DL 10
+				MV 41, 58
+				MC
+				DL 10
+				MV 94, 43
+				MC
+				DL 10
+				MV 195, 75
+				MC
 				"""
 			[[TOML_END]]
 		</script>
@@ -39,9 +49,10 @@ $.setColor( 7 );
 $.ready( async function() {
 
 	$.print( "Input with keyboard:" );
-	
 	$.showKeyboard( "text" );
-	const name = $.input( "Name: " );
+	const name = await $.input( "Name: " );
+	$.hideKeyboard();
+	$.print( `Your name is ${name}.` );
 
 } );
 
