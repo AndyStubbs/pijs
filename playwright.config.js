@@ -8,14 +8,14 @@ const { defineConfig, devices } = require( "@playwright/test" );
 
 module.exports = defineConfig( {
 	"testDir": "./test",
-	"testMatch": "run-visual-tests.js",
+	"testMatch": "scripts/run-visual-tests.js",
 	"fullyParallel": true,
 	"forbidOnly": !!process.env.CI,
 	"retries": process.env.CI ? 2 : 0,
 	"workers": process.env.CI ? 1 : undefined,
-	"globalSetup": require.resolve( "./test/global-setup.js" ),
+	"globalSetup": require.resolve( "./test/scripts/global-setup.js" ),
 	"reporter": [
-		[ require.resolve( "./test/minimal-reporter.js" ) ],
+		[ require.resolve( "./test/scripts/minimal-reporter.js" ) ],
 		[ "html", { "outputFolder": "test/playwright-report", "open": "never" } ]
 	],
 	"outputDir": "test/test-results",

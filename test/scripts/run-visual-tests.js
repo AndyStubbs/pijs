@@ -87,18 +87,18 @@ function logMessage( message ) {
 const TEST_TYPE = process.env.PI_TEST_TYPE || "core";
 const TEST_CONFIG = {
 	"core": {
-		"testsDir": "tests/html",
-		"screenshotsDir": "tests/screenshots",
-		"newScreenshotsDir": "tests/screenshots/new",
-		"logsDir": "tests/logs",
+		"testsDir": "../tests/html",
+		"screenshotsDir": "../tests/screenshots",
+		"newScreenshotsDir": "../tests/screenshots/new",
+		"logsDir": "../tests/logs",
 		"urlPrefix": "/test/tests/html",
 		"description": "Pi.js Visual Regression Tests"
 	},
 	"plugins": {
-		"testsDir": "tests-plugins/html",
-		"screenshotsDir": "tests-plugins/screenshots",
-		"newScreenshotsDir": "tests-plugins/screenshots/new",
-		"logsDir": "tests-plugins/logs",
+		"testsDir": "../tests-plugins/html",
+		"screenshotsDir": "../tests-plugins/screenshots",
+		"newScreenshotsDir": "../tests-plugins/screenshots/new",
+		"logsDir": "../tests-plugins/logs",
 		"urlPrefix": "/test/tests-plugins/html",
 		"description": "Pi.js Plugin Visual Regression Tests"
 	}

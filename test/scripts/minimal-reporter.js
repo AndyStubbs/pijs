@@ -61,11 +61,13 @@ class MinimalReporter {
 		}
 		
 		// Create test record
+		const testType = process.env.PI_TEST_TYPE || "core";
+		const testsDir = testType === "plugins" ? "tests-plugins" : "tests";
 		const testRecord = {
 			"name": title,
 			"file": htmlFile,
 			"screenshotName": screenshotName, // Used for image paths
-			"url": `/test/tests/html/${htmlFile}`,
+			"url": `/test/${testsDir}/html/${htmlFile}`,
 			"status": result.status,
 			"error": errorMessage
 		};
@@ -140,10 +142,11 @@ class MinimalReporter {
 		};
 		
 		const resultsHTML = generateResultsPage( resultsData );
+		
 		// Determine results filename based on test type
 		const testType = process.env.PI_TEST_TYPE || "core";
 		const resultsFilename = testType === "plugins" ? "results-plugins.html" : "results.html";
-		const resultsPath = path.join( process.cwd(), "test/test-results", resultsFilename );
+		const resultsPath = path.join( process.cwd(), "test", resultsFilename );
 		const resultsDir = path.dirname( resultsPath );
 		
 		// Ensure directory exists
@@ -154,7 +157,7 @@ class MinimalReporter {
 		fs.writeFileSync( resultsPath, resultsHTML );
 		
 		// Show results page link
-		console.log( `Results page: ${resultsPath}` );
+		console.log( `Results page: ${resultsPath.replace( process.cwd() + path.sep, "" )}` );
 		console.log( "========================================\n" );
 	}
 }

@@ -8,10 +8,10 @@
 	},
 	"scripts": {
 		"build": "node scripts/build.js",
-		"test": "playwright test run-visual-tests.js",
-		"test:grep": "playwright test run-visual-tests.js --grep",
-		"test:plugins": "set PI_TEST_TYPE=plugins&& playwright test run-visual-tests.js",
-		"test:plugins:grep": "set PI_TEST_TYPE=plugins&& playwright test run-visual-tests.js --grep",
+		"test": "playwright test test/scripts/run-visual-tests.js",
+		"test:grep": "playwright test test/scripts/run-visual-tests.js --grep",
+		"test:plugins": "set PI_TEST_TYPE=plugins&& playwright test test/scripts/run-visual-tests.js",
+		"test:plugins:grep": "set PI_TEST_TYPE=plugins&& playwright test test/scripts/run-visual-tests.js --grep",
 		"server": "node server.js"
 	},
 	"repository": {

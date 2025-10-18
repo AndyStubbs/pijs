@@ -62,8 +62,8 @@ Then navigate to:
 ## Test Results
 
 After running tests, results are available at:
-- `test/test-results/results.html` - Custom summary page for core tests with visual diffs
-- `test/test-results/results-plugins.html` - Custom summary page for plugin tests with visual diffs
+- `test/results.html` - Custom summary page for core tests with visual diffs
+- `test/results-plugins.html` - Custom summary page for plugin tests with visual diffs
 - `test/test-results/` - Playwright test artifacts (screenshots, traces)
 - `test/playwright-report/` - Playwright's detailed HTML report
 
