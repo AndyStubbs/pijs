@@ -57,10 +57,13 @@ $.ready( function() {
 	
 	setInterval( () => {
 		const keys = $.inkey();
-		$.setPos( 2, 15 );
+		let i = 0;
+		$.cls( 0, 8, 400, 16 );
 		if( keys ) {
 			for( let key in keys ) {
+				$.setPos( i, 1 );
 				$.print( key, true );
+				i += 1;
 			}
 		}
 		$.setPos( 0, 2 );
