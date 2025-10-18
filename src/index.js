@@ -26,6 +26,9 @@ import * as font from "./modules/font.js";
 import * as print from "./modules/print.js";
 import * as table from "./modules/table.js";
 import * as keyboard from "./modules/keyboard.js";
+import * as mouse from "./modules/mouse.js";
+import * as touch from "./modules/touch.js";
+import * as press from "./modules/press.js";
 
 // Assets
 import * as fontData from "./assets/font-data.js";
@@ -52,6 +55,9 @@ font.init();
 print.init();
 table.init();
 keyboard.init();
+mouse.init();
+touch.init();
+press.init();
 
 // Append all the commands to the api
 commands.processApi();

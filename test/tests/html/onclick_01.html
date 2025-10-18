@@ -77,15 +77,16 @@ $.onclick( clickTwo, false, hitbox2, { "name": "button2", "val": 7 } );
 $.onclick( clickThree, true, hitbox3, "button3" );
 $.onclick( clickFour, true, hitbox4, "button4" );
 
-$.input( "Enter your name: ", function ( data ) {
-	$.print( data );
-} );
-$.input( "Enter your age: ", function ( data ) {
-	$.print( data );
-}, true, true );
+( async () => {
+	await $.input( "Enter your name: ", function ( data ) {
+		$.print( data );
+	} );
+	await $.input( "Enter your age: ", function ( data ) {
+		$.print( data );
+	}, null, true, true );
+} )();
 
 function clickOne( data, customData ) {
-	console.log( data, customData );
 	$.setColor( 2 );
 	drawBox( hitbox );
 
@@ -94,7 +95,6 @@ function clickOne( data, customData ) {
 }
 
 function clickTwo( data, customData ) {
-	console.log( data, customData );
 	$.setColor( 7 );
 	drawBox( hitbox );
 
@@ -102,27 +102,28 @@ function clickTwo( data, customData ) {
 	drawBox( hitbox2 );
 
 	$.setColor( 7 );
+	$.setPos( 19, 13 );
+	$.print( customData.name );
+	$.setPos( 0, 0 );
 }
 
 function clickThree( data, customData ) {
-	console.log( data, customData );
 	$.offclick( clickOne, false, hitbox );
 	$.offclick( clickTwo, false, hitbox2 );
+	$.cancelInput();
 	$.setColor( 4 );
 	drawBox( hitbox3 );
-	$.cancelInput();
 	$.print( "" );
 	$.print( "Click boxes are turned off!" );
 }
 
 function clickFour( data, customData ) {
-	console.log( data, customData );
 	$.offclick( clickOne, false, hitbox );
 	$.offclick( clickTwo, false, hitbox2 );
 	$.offclick( clickThree, true, hitbox3 );
+	$.cancelInput();
 	$.setColor( 4 );
 	drawBox( hitbox4 );
-	$.cancelInput();
 	$.print( "" );
 	$.print( "Click boxes are turned off!" );
 	$.print( "All inputs have been cancelled" );

@@ -327,6 +327,7 @@ async function executeCommand( page, command ) {
 						Math.round( cmdContext.mouse.x ),
 						Math.round( cmdContext.mouse.y )
 					);
+					await page.waitForTimeout( 10 );
 				}
 			} else if( Array.isArray( data ) ) {
 				cmdContext.mouse.x = parseInt( data[ 0 ] );
@@ -430,7 +431,11 @@ async function executeCommand( page, command ) {
 				for( let i = 0; i < steps; i++ ) {
 					cmdContext.touch.x += dx;
 					cmdContext.touch.y += dy;
-					logMove( "TM-step", { "x": Math.round( cmdContext.touch.x ), "y": Math.round( cmdContext.touch.y ), "id": cmdContext.touch.id } );
+					logMove( "TM-step", {
+						"x": Math.round( cmdContext.touch.x ),
+						"y": Math.round( cmdContext.touch.y ),
+						"id": cmdContext.touch.id
+					} );
 					await dispatchTouch(
 						page,
 						cmdContext.target,
@@ -438,11 +443,16 @@ async function executeCommand( page, command ) {
 						[ Math.round( cmdContext.touch.x ), Math.round( cmdContext.touch.y ) ],
 						cmdContext.touch.id
 					);
+					await page.waitForTimeout( 10 );
 				}
 			} else if( Array.isArray( data ) ) {
 				cmdContext.touch.x = parseInt( data[ 0 ] );
 				cmdContext.touch.y = parseInt( data[ 1 ] );
-				logMove( "TM", { "x": cmdContext.touch.x, "y": cmdContext.touch.y, "id": cmdContext.touch.id } );
+				logMove( "TM", {
+					"x": cmdContext.touch.x,
+					"y": cmdContext.touch.y,
+					"id": cmdContext.touch.id
+				} );
 				await dispatchTouch(
 					page,
 					cmdContext.target,

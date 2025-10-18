@@ -36,6 +36,12 @@ $.ready( function () {
 	var hitbox = {
 		x: 25, y: 25, width: 100, height: 100
 	};
+	
+	// Helper function to clamp values between min and max
+	function clamp( num, min, max ) {
+		return Math.min( Math.max( num, min ), max );
+	}
+	
 	$.screen( "320x200" );
 	$.set( { "enableContextMenu": false } );
 	$.startMouse();
@@ -51,10 +57,10 @@ $.ready( function () {
 	}, false, hitbox );
 	$.onmouse( "move", function ( data ) {
 		if( isDrawing ) {
-			data.x = pi.util.clamp( data.x, hitbox.x, hitbox.x + hitbox.width - 2 );
-			data.y = pi.util.clamp( data.y, hitbox.y, hitbox.y + hitbox.height - 2 );
-			data.lastX = pi.util.clamp( data.lastX, hitbox.x, hitbox.x + hitbox.width - 2 );
-			data.lastY = pi.util.clamp( data.lastY, hitbox.y, hitbox.y + hitbox.height - 2 );
+			data.x = clamp( data.x, hitbox.x, hitbox.x + hitbox.width - 2 );
+			data.y = clamp( data.y, hitbox.y, hitbox.y + hitbox.height - 2 );
+			data.lastX = clamp( data.lastX, hitbox.x, hitbox.x + hitbox.width - 2 );
+			data.lastY = clamp( data.lastY, hitbox.y, hitbox.y + hitbox.height - 2 );
 			$.line( data.x, data.y, data.lastX, data.lastY );
 			$.render();
 		}

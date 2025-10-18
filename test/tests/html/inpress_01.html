@@ -11,13 +11,15 @@
 			commands = """
 				MV 10, 10
 				MD
-				MV 70, 90, 10
+				DL 10
+				MV 70, 90, 15
 				DL 60
 				MU
 				SL "canvas"
 				DL 60
 				TS 90, 10
-				TM 150, 90, 10
+				DL 10
+				TM 150, 90, 15
 				DL 60
 				TE
 			"""
@@ -48,16 +50,14 @@
 		$.rect( 0, 0, 8, 14 );
 		$.paint( 1, 1, 16 );
 		$.setColor( 15 );
-		var corner = $.get( 0, 0, 18, 8 );
 		animation();
 		function animation () {
+			$.cls( 0, 0, 75, 8 );
 			var mouse = $.inpress();
 			if( mouse.x !== -1 ) {
-				console.log( mouse );
+				$.setPos( 0, 0 );
+				$.print( `${mouse.buttons} (${mouse.x}, ${mouse.y})` );
 			}
-			$.put( corner, 0, 0 );
-			$.setPos( 0, 0 );
-			$.print( mouse.buttons );
 			if( mouse.buttons > 0 ) {
 				if( ! isDrawing ) {
 					$.pset( mouse.x, mouse.y );
@@ -74,7 +74,7 @@
 
 			var keys = $.inkey();
 			for( i = 0; i < 10; i++ ) {
-				if( keys[ "Digit" + i ] ) {
+				if( keys && keys[ "Digit" + i ] ) {
 					$.setColor( i );
 				}
 			}

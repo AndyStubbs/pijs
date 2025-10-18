@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pi.js - Mouse & Touch Test</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			font-family: Arial, sans-serif;
+		}
+	</style>
+</head>
+<body>
+	<script src="../build/pi.js"></script>
+	<script>
+		// Create a screen
+		const s = pi.screen( { "aspect": "320x240" } );
+
+		// Clear screen
+		s.cls();
+
+		// Draw instructions
+		s.setColor( "white" );
+		$.setPosPx( 10, 10 );
+		s.print( "Mouse & Touch Test" );
+		$.setPosPx( 10, 25 );
+		s.print( "Move mouse or touch to draw" );
+		$.setPosPx( 10, 40 );
+		s.print( "Click to change color" );
+
+		let currentColor = "cyan";
+		const colors = [ "cyan", "yellow", "lime", "magenta", "orange" ];
+		let colorIndex = 0;
+
+		// Track mouse movement and draw
+		s.onmouse( "move", ( mouse ) => {
+			if( mouse.buttons > 0 ) {
+				s.setColor( currentColor );
+				s.circle( mouse.x, mouse.y, 5 );
+				s.render();
+			}
+		} );
+
+		// Track touch movement and draw
+		s.ontouch( "move", ( touches ) => {
+			s.setColor( currentColor );
+			for( const touch of touches ) {
+				s.circle( touch.x, touch.y, 5 );
+			}
+			s.render();
+		} );
+
+		// Click to change color
+		s.onclick( ( press ) => {
+			colorIndex = ( colorIndex + 1 ) % colors.length;
+			currentColor = colors[ colorIndex ];
+			
+			// Update the color indicator
+			s.setColor( "black" );
+			s.rect( 10, 55, 150, 20, "black" );
+			s.setColor( currentColor );
+			$.setPosPx( 10, 60 );
+			s.print( `Color: ${currentColor}` );
+			s.render();
+		} );
+
+		// Test inpress command
+		function checkPress() {
+			const press = s.inpress();
+			
+			if( press && press.buttons > 0 ) {
+				s.setColor( "white" );
+				s.rect( 10, 80, 300, 20, "white" );
+				s.setColor( "red" );
+				$.setPosPx( 10, 85 );
+				s.print( `Press: x=${press.x} y=${press.y} type=${press.type}` );
+				s.render();
+			}
+			
+			requestAnimationFrame( checkPress );
+		}
+
+		checkPress();
+	</script>
+</body>
+</html>
+

@@ -12,12 +12,14 @@
 				DL 30
 				SL "canvas"
 				TS 10, 10
+				DL 10
 				TM 310, 190, 3
 				TE
+				DL 10
 				TS 10, 190
+				DL 10
 				TM 310, 10, 3
 				TE
-
 			"""
 			[[TOML_END]]
 		</script>
@@ -67,7 +69,7 @@ $.ready( function () {
 
 		var keys = $.inkey();
 		for( i = 0; i < 10; i++) {
-			if( keys[ "Digit" + i ] ) {
+			if( keys && keys[ "Digit" + i ] ) {
 				$.setColor( i );
 			}
 		}
