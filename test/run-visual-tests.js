@@ -80,6 +80,27 @@ function logMove( type, details ) {
 	} catch( _e ) {}
 }
 
+// Test configuration - can be overridden by environment variable
+const TEST_TYPE = process.env.PI_TEST_TYPE || "core";
+const TEST_CONFIG = {
+	"core": {
+		"testsDir": "tests/html",
+		"screenshotsDir": "tests/screenshots",
+		"newScreenshotsDir": "tests/screenshots/new",
+		"urlPrefix": "/test/tests/html",
+		"description": "Pi.js Visual Regression Tests"
+	},
+	"plugins": {
+		"testsDir": "tests-plugins/html",
+		"screenshotsDir": "tests-plugins/screenshots",
+		"newScreenshotsDir": "tests-plugins/screenshots/new",
+		"urlPrefix": "/test/tests-plugins/html",
+		"description": "Pi.js Plugin Visual Regression Tests"
+	}
+};
+
+const config = TEST_CONFIG[ TEST_TYPE ];
+
 // Test results storage
 const results = {
 	"total": 0,
@@ -625,7 +646,7 @@ function compareImages( img1Path, img2Path, threshold = 0.001 ) {
 
 // Find all test HTML files
 function findTestFiles() {
-	const testsDir = path.join( __dirname, "tests", "html" );
+	const testsDir = path.join( __dirname, config.testsDir );
 	const testFiles = [];
 
 	if( !fs.existsSync( testsDir ) ) {
@@ -644,7 +665,7 @@ function findTestFiles() {
 				testFiles.push( {
 					"file": file,
 					"path": filePath,
-					"url": `/test/tests/html/${file}`,
+					"url": `${config.urlPrefix}/${file}`,
 					"metadata": metadata
 				} );
 			}
@@ -657,10 +678,10 @@ function findTestFiles() {
 // Run visual regression tests
 const testFiles = findTestFiles();
 
-console.log( `\nFound ${testFiles.length} visual regression tests` );
-console.log( "Running tests...\n" );
+console.log( `\nFound ${testFiles.length} ${TEST_TYPE} tests` );
+console.log( `Running ${TEST_TYPE} tests...\n` );
 
-test.describe( "Pi.js Visual Regression Tests", () => {
+test.describe( config.description, () => {
 	test.describe.configure( { "mode": "parallel" } );
 
 	for( const testFile of testFiles ) {
@@ -678,7 +699,7 @@ test.describe( "Pi.js Visual Regression Tests", () => {
 			// Check if reference exists before running test
 			const referencePath = path.join(
 				__dirname,
-				"tests/screenshots",
+				config.screenshotsDir,
 				`${testName}.png`
 			);
 
@@ -719,7 +740,7 @@ test.describe( "Pi.js Visual Regression Tests", () => {
 				// Take screenshot
 				const screenshotPath = path.join(
 					__dirname,
-					"tests/screenshots/new",
+					config.newScreenshotsDir,
 					`${testName}.png`
 				);
 

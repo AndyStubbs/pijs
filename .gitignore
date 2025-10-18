@@ -7,3 +7,4 @@ plugins/*/dist/
 test/test-results/
 test/playwright-report/
 test/tests/screenshots/new/
+test/tests-plugins/screenshots/new/
