@@ -37,7 +37,7 @@ function pset( screenData, options ) {
 	const y = Math.round( options.y );
 
 	// Make sure x and y are integers
-	if( !utils.isInteger( x ) || !utils.isInteger( y ) ) {
+	if( !Number.isInteger( x ) || !Number.isInteger( y ) ) {
 		const error = new TypeError( "pset: Arguments x and y must be integers." );
 		error.code = "INVALID_COORDINATES";
 		throw error;
@@ -93,8 +93,8 @@ function line( screenData, options ) {
 
 	// Make sure x and y are integers
 	if(
-		!utils.isInteger( x1 ) || !utils.isInteger( y1 ) ||
-		!utils.isInteger( x2 ) || !utils.isInteger( y2 )
+		!Number.isInteger( x1 ) || !Number.isInteger( y1 ) ||
+		!Number.isInteger( x2 ) || !Number.isInteger( y2 )
 	) {
 		const error = new TypeError( "line: Arguments x1, y1, x2, and y2 must be integers." );
 		error.code = "INVALID_COORDINATES";
@@ -185,8 +185,8 @@ function rect( screenData, options ) {
 	let fillColor = options.fillColor;
 
 	if(
-		!utils.isInteger( x ) || !utils.isInteger( y ) ||
-		!utils.isInteger( width ) || !utils.isInteger( height )
+		!Number.isInteger( x ) || !Number.isInteger( y ) ||
+		!Number.isInteger( width ) || !Number.isInteger( height )
 	) {
 		const error = new TypeError( "rect: x, y, width, and height must be integers." );
 		error.code = "INVALID_PARAMETERS";
@@ -290,7 +290,7 @@ function circle( screenData, options ) {
 	let fillColor = options.fillColor;
 	let isFill = false;
 
-	if( !utils.isInteger( x ) || !utils.isInteger( y ) || !utils.isInteger( radius ) ) {
+	if( !Number.isInteger( x ) || !Number.isInteger( y ) || !Number.isInteger( radius ) ) {
 		const error = new TypeError( "circle: x, y, radius must be integers." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
@@ -583,7 +583,7 @@ function getPixel( screenData, options ) {
 	const y = Math.round( options.y );
 
 	// Make sure x and y are integers
-	if( !utils.isInteger( x ) || !utils.isInteger( y ) ) {
+	if( !Number.isInteger( x ) || !Number.isInteger( y ) ) {
 		const error = new TypeError( "getPixel: Arguments x and y must be integers." );
 		error.code = "INVALID_COORDINATES";
 		throw error;

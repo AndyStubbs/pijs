@@ -37,7 +37,7 @@ function paint( screenData, options ) {
 	let fillColor = options.fillColor;
 	let tolerance = options.tolerance;
 
-	if( !utils.isInteger( x ) || !utils.isInteger( y ) ) {
+	if( !Number.isInteger( x ) || !Number.isInteger( y ) ) {
 		const error = new TypeError( "paint: Parameters x and y must be integers" );
 		error.code = "INVALID_COORDINATES";
 		throw error;
@@ -58,7 +58,7 @@ function paint( screenData, options ) {
 	}
 
 	// Get fill color
-	if( utils.isInteger( fillColor ) ) {
+	if( Number.isInteger( fillColor ) ) {
 		if( fillColor >= screenData.pal.length ) {
 			const error = new RangeError(
 				"paint: Argument fillColor is not a color in the palette."

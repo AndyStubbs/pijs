@@ -365,10 +365,10 @@ function filterImg( screenData, options ) {
 			);
 			if(
 				color &&
-				utils.isInteger( color.r ) &&
-				utils.isInteger( color.g ) &&
-				utils.isInteger( color.b ) &&
-				utils.isInteger( color.a )
+				Number.isInteger( color.r ) &&
+				Number.isInteger( color.g ) &&
+				Number.isInteger( color.b ) &&
+				Number.isInteger( color.a )
 			) {
 				data[ i ] = utils.clamp( color.r, 0, 255 );
 				data[ i + 1 ] = utils.clamp( color.g, 0, 255 );

@@ -243,9 +243,9 @@ function setScreen( options ) {
 	const screenObj = options.screen;
 	let screenId;
 
-	if( utils.isInteger( screenObj ) ) {
+	if( Number.isInteger( screenObj ) ) {
 		screenId = screenObj;
-	} else if( screenObj && utils.isInteger( screenObj.id ) ) {
+	} else if( screenObj && Number.isInteger( screenObj.id ) ) {
 		screenId = screenObj.id;
 	}
 	if( ! m_screens[ screenId ] ) {

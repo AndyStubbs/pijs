@@ -63,10 +63,10 @@ export function onevent(
 	// Validate hitBox
 	if( hitBox ) {
 		if(
-			!utils.isInteger( hitBox.x ) ||
-			!utils.isInteger( hitBox.y ) ||
-			!utils.isInteger( hitBox.width ) ||
-			!utils.isInteger( hitBox.height )
+			!Number.isInteger( hitBox.x ) ||
+			!Number.isInteger( hitBox.y ) ||
+			!Number.isInteger( hitBox.width ) ||
+			!Number.isInteger( hitBox.height )
 		) {
 			console.warn(
 				`${name}: hitBox must have properties x, y, width, and height ` +
@@ -213,7 +213,7 @@ export function triggerEventListeners( mode, data, listenerArr, clickStatus ) {
 			let newData;
 
 			// Handle array data (touches)
-			if( utils.isArray( data ) ) {
+			if( Array.isArray( data ) ) {
 				newData = [];
 				for( let j = 0; j < data.length; j++ ) {
 					const pos = data[ j ];

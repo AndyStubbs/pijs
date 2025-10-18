@@ -198,7 +198,7 @@ function loadSpritesheet( options ) {
 	}
 
 	// Validate spriteWidth and spriteHeight for fixed mode
-	if( !isAuto && ( !utils.isInteger( spriteWidth ) || !utils.isInteger( spriteHeight ) ) ) {
+	if( !isAuto && ( !Number.isInteger( spriteWidth ) || !Number.isInteger( spriteHeight ) ) ) {
 		const error = new TypeError( "loadSpriteSheet: width and height must be integers." );
 		error.code = "INVALID_DIMENSIONS";
 		throw error;
@@ -214,7 +214,7 @@ function loadSpritesheet( options ) {
 	}
 
 	// Validate margin
-	if( !utils.isInteger( margin ) ) {
+	if( !Number.isInteger( margin ) ) {
 		const error = new TypeError( "loadSpriteSheet: margin must be an integer." );
 		error.code = "INVALID_MARGIN";
 		throw error;
@@ -488,7 +488,7 @@ function drawSprite( screenData, options ) {
 	}
 
 	// Validate frame
-	if( !utils.isInteger( frame ) || frame >= spriteData.frames.length || frame < 0 ) {
+	if( !Number.isInteger( frame ) || frame >= spriteData.frames.length || frame < 0 ) {
 		const error = new RangeError( "drawSprite: frame number is not valid" );
 		error.code = "INVALID_FRAME";
 		throw error;

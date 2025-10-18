@@ -109,7 +109,7 @@ commands.addCommand( "setActionKeys", setActionKeys, [ "keys" ] );
 function setActionKeys( options ) {
 	const keys = options.keys;
 
-	if( !utils.isArray( keys ) ) {
+	if( !Array.isArray( keys ) ) {
 		const error = new TypeError( "setActionKeys: keys must be an array." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
@@ -123,7 +123,7 @@ commands.addCommand( "removeActionKeys", removeActionKeys, [ "keys" ] );
 function removeActionKeys( options ) {
 	const keys = options.keys;
 
-	if( !utils.isArray( keys ) ) {
+	if( !Array.isArray( keys ) ) {
 		const error = new TypeError( "removeActionKeys: keys must be an array." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
@@ -141,7 +141,7 @@ function onkey( options ) {
 	const once = !!options.once;
 	const allowRepeat = !!options.allowRepeat;
 	
-	if( !key || ( typeof key !== "string" && !utils.isArray( key ) ) ) {
+	if( !key || ( typeof key !== "string" && !Array.isArray( key ) ) ) {
 		const error = new TypeError( "onkey: key must be a string or an array of strings." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
@@ -188,7 +188,7 @@ function offkey( options ) {
 	const once = !!options.once;
 	const allowRepeat = !!options.allowRepeat;
 
-	if( !key || ( typeof key !== "string" && !utils.isArray( key ) ) ) {
+	if( !key || ( typeof key !== "string" && !Array.isArray( key ) ) ) {
 		const error = new TypeError( "offkey: key must be a string or an array of strings." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
@@ -528,7 +528,7 @@ function onInputKeyDown( keyData ) {
 			// Make sure it's a valid number or valid integer
 			if(
 				( m_inputData.isNumber && isNaN( Number( m_inputData.val ) ) ) ||
-				( m_inputData.isInteger && !utils.isInteger( Number( m_inputData.val ) ) )
+				( m_inputData.isInteger && !Number.isInteger( Number( m_inputData.val ) ) )
 			) {
 				m_inputData.val = m_inputData.val.substring( 0, m_inputData.val.length - 1 );
 			}

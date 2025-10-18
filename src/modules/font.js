@@ -64,7 +64,7 @@ function loadFont( options ) {
 		}
 	}
 
-	if( !( utils.isArray( charSet ) || typeof charSet === "string" ) ) {
+	if( !( Array.isArray( charSet ) || typeof charSet === "string" ) ) {
 		const error = new TypeError( "loadFont: charSet must be an array or a string." );
 		error.code = "INVALID_CHARSET";
 		throw error;
@@ -225,7 +225,7 @@ function setChar( screenData, options ) {
 
 	const font = screenData.font;
 
-	if( !utils.isArray( data ) ) {
+	if( !Array.isArray( data ) ) {
 		if( typeof data === "string" ) {
 			data = utils.hexToData( data, font.width, font.height );
 		} else {
@@ -246,7 +246,7 @@ function setChar( screenData, options ) {
 
 	// Validate data items
 	for( let i = 0; i < data.length; i++ ) {
-		if( !utils.isArray( data[ i ] ) || data[ i ].length !== font.width ) {
+		if( !Array.isArray( data[ i ] ) || data[ i ].length !== font.width ) {
 			const error = new RangeError(
 				`setChar: data width at row ${i} must match font width (${font.width})`
 			);

@@ -140,7 +140,7 @@ function setPen( screenData, options ) {
 		throw error;
 	}
 
-	if( !utils.isInteger( size ) ) {
+	if( !Number.isInteger( size ) ) {
 		const error = new TypeError( "setPen: parameter size must be an integer" );
 		error.code = "INVALID_SIZE";
 		throw error;
@@ -195,7 +195,7 @@ function setBlend( screenData, options ) {
 		throw error;
 	}
 
-	if( utils.isArray( noise ) ) {
+	if( Array.isArray( noise ) ) {
 		for( let i = 0; i < noise.length; i++ ) {
 			if( isNaN( noise[ i ] ) ) {
 				const error = new TypeError(
@@ -247,7 +247,7 @@ function blendGetColorNoise( screenData, c ) {
 	const c2 = { "r": c.r, "g": c.g, "b": c.b, "a": c.a };
 	const half = noise / 2;
 
-	if( utils.isArray( noise ) ) {
+	if( Array.isArray( noise ) ) {
 		c2.r = utils.clamp(
 			Math.round( c2.r + utils.rndRange( -noise[ 0 ], noise[ 0 ] ) ),	0, 255
 		);

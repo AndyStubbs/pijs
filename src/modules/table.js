@@ -88,7 +88,7 @@ function printTable( screenData, options ) {
 	const isCentered = !!options.isCentered;
 
 	// Validate items
-	if( !utils.isArray( items ) ) {
+	if( !Array.isArray( items ) ) {
 		console.error( "printTable: items must be an array" );
 		return [];
 	}
@@ -102,7 +102,7 @@ function printTable( screenData, options ) {
 	let isFormatted;
 	if( tableFormat == null ) {
 		isFormatted = false;
-	} else if( utils.isArray( tableFormat ) ) {
+	} else if( Array.isArray( tableFormat ) ) {
 		for( let i = 0; i < tableFormat.length; i++ ) {
 			if( typeof tableFormat[ i ] !== "string" ) {
 				console.error( "printTable: tableFormat must be an array of strings" );
@@ -118,7 +118,7 @@ function printTable( screenData, options ) {
 	// Resolve border style
 	if( typeof borderStyle === "string" && m_borderStyles[ borderStyle ] ) {
 		borderStyle = m_borderStyles[ borderStyle ];
-	} else if( !utils.isArray( borderStyle ) ) {
+	} else if( !Array.isArray( borderStyle ) ) {
 		console.error( "printTable: borderStyle must be a string or array" );
 		return [];
 	}
@@ -376,7 +376,7 @@ function buildFormattedTable( screenData, items, borders, tableFormat, isCentere
 
 	let i = 0;
 	for( let row = 0; row < items.length; row++ ) {
-		if( utils.isArray( items[ row ] ) ) {
+		if( Array.isArray( items[ row ] ) ) {
 			for( let col = 0; col < items[ row ].length; col++ ) {
 				if( i < boxes.length ) {
 					printItem( screenData, boxes[ i ], items[ row ][ col ], pos.col );

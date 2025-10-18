@@ -80,7 +80,7 @@ export function init() {
 export function getColorValue( screenData, colorInput, commandName ) {
 	let colorValue;
 
-	if( utils.isInteger( colorInput ) ) {
+	if( Number.isInteger( colorInput ) ) {
 		if( colorInput > screenData.pal.length ) {
 			const error = new RangeError(
 				`${commandName}: parameter color is not a color in the palette.`
@@ -129,7 +129,7 @@ commands.addCommand( "setDefaultPal", setDefaultPal, [ "pal" ] );
 function setDefaultPal( options ) {
 	const pal = options.pal;
 
-	if( !utils.isArray( pal ) ) {
+	if( !Array.isArray( pal ) ) {
 		const error = new TypeError( "setDefaultPal: parameter pal is not an array." );
 		error.code = "INVALID_PARAMETER";
 		throw error;
@@ -266,7 +266,7 @@ function setBgColor( screenData, options ) {
 	const color = options.color;
 	let bc;
 
-	if( utils.isInteger( color ) ) {
+	if( Number.isInteger( color ) ) {
 		bc = screenData.pal[ color ];
 	} else {
 		bc = utils.convertToColor( color );
@@ -286,7 +286,7 @@ function setContainerBgColor( screenData, options ) {
 	const color = options.color;
 	let bc;
 	if( screenData.container ) {
-		if( utils.isInteger( color ) ) {
+		if( Number.isInteger( color ) ) {
 			bc = screenData.pal[ color ];
 		} else {
 			bc = utils.convertToColor( color );
@@ -311,7 +311,7 @@ function setPalColor( screenData, options ) {
 	const color = options.color;
 
 	if(
-		!utils.isInteger( index ) ||
+		!Number.isInteger( index ) ||
 		index < 0 ||
 		index >= screenData.pal.length
 	) {
@@ -370,7 +370,7 @@ screenManager.addCommand( "setPal", setPal, [ "pal" ] );
 function setPal( screenData, options ) {
 	const pal = options.pal;
 
-	if( !utils.isArray( pal ) ) {
+	if( !Array.isArray( pal ) ) {
 		const error = new TypeError( "setPal: parameter pal is not an array." );
 		error.code = "INVALID_PARAMETER";
 		throw error;
@@ -442,7 +442,7 @@ function swapColor( screenData, options ) {
 	const newColor = options.newColor;
 
 	// Validate oldColor
-	if( !utils.isInteger( oldColor ) ) {
+	if( !Number.isInteger( oldColor ) ) {
 		const error = new TypeError( "swapColor: Parameter oldColor must be an integer." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
