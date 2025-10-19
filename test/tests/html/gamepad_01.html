@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Gamepad Test 01 - Basic Gamepad Support</title>
 	<script src="../../../build/pi.js"></script>
-	<style>body { background-color: gray };</style>
+	<style>body { background-color: gray; };</style>
 </head>
 <body>
 <script>
@@ -47,64 +47,26 @@ const buttonStates = {
 };
 
 // Connection events
-$.ongamepad( null, "connect", null, ( data ) => {
+$.onGamepadConnected( ( data ) => {
 	gamepadConnected = true;
 	gamepadIndex = data.index;
-	setupGamepads();
 } );
 
-$.ongamepad( null, "disconnect", null, ( data ) => {
+$.onGamepadDisconnected( ( data ) => {
 	gamepadConnected = false;
 	gamepadIndex = null;
 } );
 
-if( gamepadIndex ) {
-	setupGamepads();
-}
+// Sensitivity controls
+$.onkey( "ArrowUp", "down", () => {
+	sensitivity = Math.min( 1, sensitivity + 0.05 );
+	$.setGamepadSensitivity( sensitivity );
+} );
 
-function setupGamepads() {
-
-	// Button events - listen for all buttons (0-15)
-	$.ongamepad( gamepadIndex, "down", "any", ( data ) => {
-		if( data.index >= 0 && data.index <= 15 ) {
-			buttonStates[ data.index ] = true;
-			buttonPressed = `Button ${data.index} pressed!`;
-		}
-	} );
-
-	$.ongamepad( gamepadIndex, "up", "any", ( data ) => {
-		if( data.index >= 0 && data.index <= 15 ) {
-			buttonStates[ data.index ] = false;
-			buttonPressed = "";
-		}
-	} );
-
-	// Axis events - listen for all axes
-	$.ongamepad( gamepadIndex, "axis", null, ( changedAxes ) => {
-		for( const axis of changedAxes ) {
-			if( axis.index === 0 ) {
-				axis0Value = axis.value;
-			} else if( axis.index === 1 ) {
-				axis1Value = axis.value;
-			} else if( axis.index === 2 ) {
-				axis2Value = axis.value;
-			} else if( axis.index === 3 ) {
-				axis3Value = axis.value;
-			}
-		}
-	} );
-
-	// Sensitivity controls
-	$.onkey( "ArrowUp", "down", () => {
-		sensitivity = Math.min( 1, sensitivity + 0.05 );
-		$.setGamepadSensitivity( sensitivity );
-	} );
-
-	$.onkey( "ArrowDown", "down", () => {
-		sensitivity = Math.max( 0, sensitivity - 0.05 );
-		$.setGamepadSensitivity( sensitivity );
-	} );
-}
+$.onkey( "ArrowDown", "down", () => {
+	sensitivity = Math.max( 0, sensitivity - 0.05 );
+	$.setGamepadSensitivity( sensitivity );
+} );
 
 
 // Draw loop
@@ -138,6 +100,30 @@ function draw() {
 	$.setPosPx( 6, 67 );
 	$.setColor( 14 );
 	$.print( `Sensitivity: ${sensitivity.toFixed( 2 )}` );
+	
+	// Poll gamepad state
+	if( gamepadConnected && gamepadIndex !== null ) {
+		const gamepad = $.ingamepad( gamepadIndex );
+		if( gamepad ) {
+
+			// Update button states
+			for( let i = 0; i < 16; i++ ) {
+				if( gamepad.getButtonJustPressed( i ) ) {
+					buttonStates[ i ] = true;
+					buttonPressed = `Button ${i} pressed!`;
+				} else if( gamepad.getButtonJustReleased( i ) ) {
+					buttonStates[ i ] = false;
+					buttonPressed = "";
+				}
+			}
+			
+			// Update axis values
+			axis0Value = gamepad.getAxis( 0 );
+			axis1Value = gamepad.getAxis( 1 );
+			axis2Value = gamepad.getAxis( 2 );
+			axis3Value = gamepad.getAxis( 3 );
+		}
+	}
 	
 	// Button press message
 	if( buttonPressed ) {
