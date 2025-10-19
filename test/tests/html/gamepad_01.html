@@ -127,14 +127,14 @@ function draw() {
 	pi.print( "- UP/DOWN: adjust sensitivity" );
 	
 	// Sensitivity display
-	pi.setPos( 0, 10 );
+	pi.setPosPx( 6, 67 );
 	pi.setColor( 14 );
 	pi.print( `Sensitivity: ${sensitivity.toFixed( 2 )}` );
 	
 	// Button press message
 	if( buttonPressed ) {
 		pi.setColor( 11 );
-		pi.setPos( 0, 11 );
+		pi.setPosPx( 6, 76 );
 		pi.print( buttonPressed );
 	}
 	
@@ -142,22 +142,22 @@ function draw() {
 
 	// Axis bars
 	pi.setColor( 15 );
-	pi.setPos( 3, axisRow );
+	pi.setPos( 1, axisRow );
 	pi.print( "Left Stick X (Axis 0):" );
 	drawAxisBar( axisRow + 1, axis0Value );
 	axisRow += 2;
 	
-	pi.setPos( 3, axisRow );
+	pi.setPos( 1, axisRow );
 	pi.print( "Left Stick Y (Axis 1):" );
 	drawAxisBar( axisRow + 1, axis1Value );
 	axisRow += 2;
 	
-	pi.setPos( 3, axisRow );
+	pi.setPos( 1, axisRow );
 	pi.print( "Right Stick X (Axis 2):" );
 	drawAxisBar( axisRow + 1, axis2Value );
 	axisRow += 2;
 	
-	pi.setPos( 3, axisRow );
+	pi.setPos( 1, axisRow );
 	pi.print( "Right Stick Y (Axis 3):" );
 	drawAxisBar( axisRow + 1, axis3Value );
 	
@@ -211,16 +211,16 @@ function drawGamepadButtons() {
 	
 	// Draw D-pad buttons (plus shape)
 	// Up
-	drawDpadButton( dpadStartX + buttonSpacing - 4, dpadStartY, dpadSize, 4, "^" );
+	drawDpadButton( dpadStartX + buttonSpacing - 4, dpadStartY, dpadSize, 12, "^" );
 
 	// Down  
-	drawDpadButton( dpadStartX + buttonSpacing - 4, dpadStartY + buttonSpacing * 2, dpadSize, 5, "v" );
+	drawDpadButton( dpadStartX + buttonSpacing - 4, dpadStartY + buttonSpacing * 2, dpadSize, 13, "v" );
 
 	// Left
-	drawDpadButton( dpadStartX, dpadStartY + buttonSpacing, dpadSize, 6, "<" );
+	drawDpadButton( dpadStartX, dpadStartY + buttonSpacing, dpadSize, 14, "<" );
 
 	// Right
-	drawDpadButton( dpadStartX + buttonSpacing * 1.5, dpadStartY + buttonSpacing, dpadSize, 7, ">" );
+	drawDpadButton( dpadStartX + buttonSpacing * 1.5, dpadStartY + buttonSpacing, dpadSize, 15, ">" );
 	
 	// Draw face buttons (XYAB) with X and B centered vertically
 	const facePositions = [
@@ -241,24 +241,11 @@ function drawGamepadButtons() {
 	const rectStartY = 30;
 
 	// Draw rectangular buttons above
-	// Left Shoulder (8)
-	drawRectButton( rectStartX, rectStartY, rectWidth, rectHeight, 8, "L1" );
+	drawRectButton( 175, 40, 50, 12, 6, "LB" );
+	drawRectButton( 175, 60, 50, 11, 4, "LT" );
+	drawRectButton( 235, 40, 50, 12, 6, "RB" );
+	drawRectButton( 235, 60, 50, 11, 4, "RT" );
 
-	// Right Shoulder (9)
-	drawRectButton( rectStartX + rectWidth + 10, rectStartY, rectWidth, rectHeight, 9, "R1" );
-
-	// Left Trigger (10)
-	drawRectButton( rectStartX + ( rectWidth + 10 ) * 2, rectStartY, rectWidth, rectHeight, 10, "L2" );
-	// Right Trigger (11)
-	drawRectButton( rectStartX + ( rectWidth + 10 ) * 3, rectStartY, rectWidth, rectHeight, 11, "R2" );
-	// Back/Select (12)
-	drawRectButton( rectStartX + ( rectWidth + 10 ) * 4, rectStartY, rectWidth, rectHeight, 12, "Back" );
-	// Start (13)
-	drawRectButton( rectStartX + ( rectWidth + 10 ) * 5, rectStartY, rectWidth, rectHeight, 13, "Start" );
-	// Left Stick Click (14)
-	drawRectButton( rectStartX + ( rectWidth + 10 ) * 6, rectStartY, rectWidth, rectHeight, 14, "LS" );
-	// Right Stick Click (15)
-	drawRectButton( rectStartX + ( rectWidth + 10 ) * 7, rectStartY, rectWidth, rectHeight, 15, "RS" );
 }
 
 function drawDpadButton( x, y, size, buttonIndex, label ) {
@@ -310,7 +297,7 @@ function drawRectButton( x, y, width, height, buttonIndex, label ) {
 function drawAxisBar( row, value ) {
 	const barWidth = 150;
 	const barHeight = 5;
-	const centerX = 90;
+	const centerX = 80;
 	const y = row * 8;
 	
 	// Draw background
@@ -334,8 +321,8 @@ function drawAxisBar( row, value ) {
 	
 	// Draw value text
 	pi.setColor( 15 );
-	pi.setPos( 30, row );
-	pi.print( value.toFixed( 2 ) );
+	pi.setPosPx( 155, y - 2);
+	pi.print( value.toFixed( 2 ).padStart( 5, " " ) );
 }
 
 draw();
