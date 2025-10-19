@@ -6,12 +6,18 @@
  * @module modules/touch
  */
 
+// TODO Research this: [Violation] Added non-passive event listener to a scroll-blocking 
+// 'touchstart' event. Consider marking event handler as 'passive' to make the page more 
+// responsive. See https://www.chromestatus.com/feature/5745543795965952
+// [Violation] Added non-passive event listener to a scroll-blocking 'touchmove' event. 
+// Consider marking event handler as 'passive' to make the page more responsive. 
+// See https://www.chromestatus.com/feature/5745543795965952
+
 "use strict";
 
 import * as screenManager from "../core/screen-manager";
 import * as commands from "../core/commands";
 import * as events from "../core/events";
-import * as utils from "../core/utils";
 
 
 /***************************************************************************************************

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Gamepad Test 01 - Basic Gamepad Support</title>
+	<script src="../../../build/pi.js"></script>
+</head>
+<body>
+<script>
+
+/*+++
+title = "Gamepad Test 01 - Basic Gamepad Support"
+description = "Tests gamepad connection, button events, and axis events"
++++*/
+
+pi.screen( "320x200" );
+
+let gamepadConnected = false;
+let gamepadIndex = -1;
+let buttonPressed = "";
+let sensitivity = 0.2;
+let axis0Value = 0;
+let axis1Value = 0;
+let axis2Value = 0;
+let axis3Value = 0;
+
+// Button states for visual display
+const buttonStates = {
+	0: false, // A button
+	1: false, // B button
+	2: false, // X button
+	3: false, // Y button
+	4: false, // D-pad Up
+	5: false, // D-pad Down
+	6: false, // D-pad Left
+	7: false, // D-pad Right
+	8: false, // Left Shoulder
+	9: false, // Right Shoulder
+	10: false, // Left Trigger
+	11: false, // Right Trigger
+	12: false, // Back/Select
+	13: false, // Start
+	14: false, // Left Stick Click
+	15: false  // Right Stick Click
+};
+
+// Connection events
+pi.ongamepad( 0, "connect", null, ( data ) => {
+	gamepadConnected = true;
+	gamepadIndex = data.index;
+} );
+
+pi.ongamepad( 0, "disconnect", null, ( data ) => {
+	gamepadConnected = false;
+	gamepadIndex = -1;
+} );
+
+// Button events - listen for all buttons (0-15)
+pi.ongamepad( 0, "down", "any", ( data ) => {
+	if( data.index >= 0 && data.index <= 15 ) {
+		buttonStates[ data.index ] = true;
+		buttonPressed = `Button ${data.index} pressed!`;
+		setTimeout( () => {
+			buttonPressed = "";
+		}, 1000 );
+	}
+} );
+
+pi.ongamepad( 0, "up", "any", ( data ) => {
+	if( data.index >= 0 && data.index <= 15 ) {
+		buttonStates[ data.index ] = false;
+	}
+} );
+
+// Axis events - listen for all axes
+pi.ongamepad( 0, "axis", null, ( changedAxes ) => {
+	for( const axis of changedAxes ) {
+		if( axis.index === 0 ) {
+			axis0Value = axis.value;
+		} else if( axis.index === 1 ) {
+			axis1Value = axis.value;
+		} else if( axis.index === 2 ) {
+			axis2Value = axis.value;
+		} else if( axis.index === 3 ) {
+			axis3Value = axis.value;
+		}
+	}
+} );
+
+// Sensitivity controls
+pi.onkey( "ArrowUp", "down", () => {
+	sensitivity = Math.min( 1, sensitivity + 0.05 );
+	pi.setGamepadSensitivity( sensitivity );
+} );
+
+pi.onkey( "ArrowDown", "down", () => {
+	sensitivity = Math.max( 0, sensitivity - 0.05 );
+	pi.setGamepadSensitivity( sensitivity );
+} );
+
+// Draw loop
+function draw() {
+	pi.cls( 0 );
+	pi.setColor( 15 );
+	
+	// Title
+	pi.setPos( 0, 0 );
+	pi.print( "GAMEPAD TEST - Basic Support" );
+	
+	// Connection status
+	pi.setPos( 0, 2 );
+	if( gamepadConnected ) {
+		pi.setColor( 10 );
+		pi.print( `Gamepad ${gamepadIndex} connected!` );
+	} else {
+		pi.setColor( 8 );
+		pi.print( "No gamepad connected. Press a button to connect." );
+	}
+	
+	// Instructions
+	pi.setColor( 15 );
+	pi.setPos( 0, 4 );
+	pi.print( "Instructions:" );
+	pi.print( "- Move analog sticks" );
+	pi.print( "- Press any button" );
+	pi.print( "- UP/DOWN: adjust sensitivity" );
+	
+	// Sensitivity display
+	pi.setPos( 0, 10 );
+	pi.setColor( 14 );
+	pi.print( `Sensitivity: ${sensitivity.toFixed( 2 )}` );
+	
+	// Button press message
+	if( buttonPressed ) {
+		pi.setColor( 11 );
+		pi.setPos( 0, 11 );
+		pi.print( buttonPressed );
+	}
+	
+	let axisRow = 11;
+
+	// Axis bars
+	pi.setColor( 15 );
+	pi.setPos( 3, axisRow );
+	pi.print( "Left Stick X (Axis 0):" );
+	drawAxisBar( axisRow + 1, axis0Value );
+	axisRow += 2;
+	
+	pi.setPos( 3, axisRow );
+	pi.print( "Left Stick Y (Axis 1):" );
+	drawAxisBar( axisRow + 1, axis1Value );
+	axisRow += 2;
+	
+	pi.setPos( 3, axisRow );
+	pi.print( "Right Stick X (Axis 2):" );
+	drawAxisBar( axisRow + 1, axis2Value );
+	axisRow += 2;
+	
+	pi.setPos( 3, axisRow );
+	pi.print( "Right Stick Y (Axis 3):" );
+	drawAxisBar( axisRow + 1, axis3Value );
+	
+	// Draw all gamepad buttons
+	drawGamepadButtons();
+	
+	// Visual representation of sticks
+	pi.setColor( 8 );
+	
+	const stickHeight = 170;
+
+	// Left stick
+	pi.circle( 80, stickHeight, 15 );
+	pi.setColor( 11 );
+	const leftX = 80 + axis0Value * 12;
+	const leftY = stickHeight + axis1Value * 12;
+	pi.circle( leftX, leftY, 4 );
+	
+	// Right stick
+	pi.setColor( 8 );
+	pi.circle( 240, stickHeight, 15 );
+	pi.setColor( 11 );
+	const rightX = 240 + axis2Value * 12;
+	const rightY = stickHeight + axis3Value * 12;
+	pi.circle( rightX, rightY, 4 );
+	
+	// Better aligned stick labels
+	pi.setColor( 15 );
+	pi.setPosPx( 55, 185 );
+	pi.print( "Left Stick", true );
+	pi.setPosPx( 209, 185 );
+	pi.print( "Right Stick", true );
+	
+	requestAnimationFrame( draw );
+}
+
+function drawGamepadButtons() {
+	const buttonSize = 12;
+	const buttonSpacing = 16;
+	const dpadSize = 10;
+	const rectWidth = 20;
+	const rectHeight = 8;
+	
+	// Face buttons (XYAB) - moved down and to the left
+	const faceStartX = 265;
+	const faceStartY = 100;
+	
+	// D-pad buttons (plus shape) - to the left of XYAB
+	const dpadStartX = 215;
+	const dpadStartY = 100;
+	
+	// Draw D-pad buttons (plus shape)
+	// Up
+	drawDpadButton( dpadStartX + buttonSpacing - 4, dpadStartY, dpadSize, 4, "^" );
+
+	// Down  
+	drawDpadButton( dpadStartX + buttonSpacing - 4, dpadStartY + buttonSpacing * 2, dpadSize, 5, "v" );
+
+	// Left
+	drawDpadButton( dpadStartX, dpadStartY + buttonSpacing, dpadSize, 6, "<" );
+
+	// Right
+	drawDpadButton( dpadStartX + buttonSpacing * 1.5, dpadStartY + buttonSpacing, dpadSize, 7, ">" );
+	
+	// Draw face buttons (XYAB) with X and B centered vertically
+	const facePositions = [
+		{ "x": faceStartX + buttonSpacing, "y": faceStartY + buttonSpacing * 2 }, // A (bottom right)
+		{ "x": faceStartX + buttonSpacing * 2, "y": faceStartY + buttonSpacing }, // B (top right, centered)
+		{ "x": faceStartX, "y": faceStartY + buttonSpacing }, // X (top left, centered)
+		{ "x": faceStartX + buttonSpacing, "y": faceStartY } // Y (top center)
+	];
+	
+	const faceLabels = [ "A", "B", "X", "Y" ];
+	for( let i = 0; i < 4; i++ ) {
+		const pos = facePositions[ i ];
+		drawFaceButton( pos.x, pos.y, buttonSize, i, faceLabels[ i ] );
+	}
+	
+	// Rectangular buttons above
+	const rectStartX = 75;
+	const rectStartY = 30;
+
+	// Draw rectangular buttons above
+	// Left Shoulder (8)
+	drawRectButton( rectStartX, rectStartY, rectWidth, rectHeight, 8, "L1" );
+
+	// Right Shoulder (9)
+	drawRectButton( rectStartX + rectWidth + 10, rectStartY, rectWidth, rectHeight, 9, "R1" );
+
+	// Left Trigger (10)
+	drawRectButton( rectStartX + ( rectWidth + 10 ) * 2, rectStartY, rectWidth, rectHeight, 10, "L2" );
+	// Right Trigger (11)
+	drawRectButton( rectStartX + ( rectWidth + 10 ) * 3, rectStartY, rectWidth, rectHeight, 11, "R2" );
+	// Back/Select (12)
+	drawRectButton( rectStartX + ( rectWidth + 10 ) * 4, rectStartY, rectWidth, rectHeight, 12, "Back" );
+	// Start (13)
+	drawRectButton( rectStartX + ( rectWidth + 10 ) * 5, rectStartY, rectWidth, rectHeight, 13, "Start" );
+	// Left Stick Click (14)
+	drawRectButton( rectStartX + ( rectWidth + 10 ) * 6, rectStartY, rectWidth, rectHeight, 14, "LS" );
+	// Right Stick Click (15)
+	drawRectButton( rectStartX + ( rectWidth + 10 ) * 7, rectStartY, rectWidth, rectHeight, 15, "RS" );
+}
+
+function drawDpadButton( x, y, size, buttonIndex, label ) {
+	// Button rectangle
+	if( buttonStates[ buttonIndex ] ) {
+		pi.setColor( 14 ); // Bright yellow when pressed
+	} else {
+		pi.setColor( 8 ); // Dark gray when not pressed
+	}
+	pi.rect( x - size / 2, y - size / 2, size, size );
+	
+	// Button label
+	pi.setColor( 15 );
+	pi.setPosPx( x - 3, y - 3 );
+	pi.print( label );
+}
+
+function drawFaceButton( x, y, size, buttonIndex, label ) {
+	// Button circle
+	if( buttonStates[ buttonIndex ] ) {
+		pi.setColor( 14 ); // Bright yellow when pressed
+	} else {
+		pi.setColor( 8 ); // Dark gray when not pressed
+	}
+	pi.circle( x, y, size );
+	
+	// Button label
+	pi.setColor( 15 );
+	pi.setPosPx( x - 3, y - 3 );
+	pi.print( label );
+}
+
+function drawRectButton( x, y, width, height, buttonIndex, label ) {
+
+	// Button rectangle
+	if( buttonStates[ buttonIndex ] ) {
+		pi.setColor( 14 ); // Bright yellow when pressed
+	} else {
+		pi.setColor( 8 ); // Dark gray when not pressed
+	}
+	pi.rect( x, y, width, height );
+	
+	// Button label (centered)
+	pi.setColor( 15 );
+	pi.setPosPx( x + ( width - label.length * 4 ) / 2, y + 2 );
+	pi.print( label );
+}
+
+function drawAxisBar( row, value ) {
+	const barWidth = 150;
+	const barHeight = 5;
+	const centerX = 90;
+	const y = row * 8;
+	
+	// Draw background
+	pi.setColor( 8 );
+	pi.rect( centerX - barWidth / 2, y, barWidth, barHeight );
+	
+	// Draw center line
+	pi.setColor( 7 );
+	pi.line( centerX, y, centerX, y + barHeight - 1 );
+	
+	// Draw value indicator
+	const indicatorX = centerX + value * ( barWidth / 2 );
+	if( value > 0 ) {
+		pi.setColor( 10 );
+	} else if( value < 0 ) {
+		pi.setColor( 12 );
+	} else {
+		pi.setColor( 7 );
+	}
+	pi.circle( indicatorX, y + 2, 3 );
+	
+	// Draw value text
+	pi.setColor( 15 );
+	pi.setPos( 30, row );
+	pi.print( value.toFixed( 2 ) );
+}
+
+draw();
+
+</script>
+</body>
+</html>
+

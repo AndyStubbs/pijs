@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Gamepad Test 03 - Axis Events</title>
+	<script src="../../../build/pi.js"></script>
+</head>
+<body>
+<script>
+
+/*+++
+title = "Gamepad Test 03 - Axis Events"
+description = "Tests gamepad axis events and sensitivity settings"
++++*/
+
+pi.screen( "320x200" );
+
+let axis0Value = 0;
+let axis1Value = 0;
+let axis2Value = 0;
+let axis3Value = 0;
+let sensitivity = 0.2;
+let allAxesChanged = [];
+
+// Start gamepad
+pi.startGamepad();
+
+// Set initial sensitivity
+pi.setGamepadSensitivity( sensitivity );
+
+// Listen for all axes (demonstrates null/all feature)
+pi.ongamepad( 0, "axis", null, ( changedAxes ) => {
+	allAxesChanged = changedAxes;
+	
+	// Update individual axis values
+	for( const axis of changedAxes ) {
+		if( axis.index === 0 ) {
+			axis0Value = axis.value;
+		} else if( axis.index === 1 ) {
+			axis1Value = axis.value;
+		} else if( axis.index === 2 ) {
+			axis2Value = axis.value;
+		} else if( axis.index === 3 ) {
+			axis3Value = axis.value;
+		}
+	}
+} );
+
+// Sensitivity controls
+pi.onkey( "ArrowUp", "down", () => {
+	sensitivity = Math.min( 1, sensitivity + 0.05 );
+	pi.setGamepadSensitivity( sensitivity );
+} );
+
+pi.onkey( "ArrowDown", "down", () => {
+	sensitivity = Math.max( 0, sensitivity - 0.05 );
+	pi.setGamepadSensitivity( sensitivity );
+} );
+
+// Draw loop
+function draw() {
+	pi.cls( 0 );
+	pi.setColor( 15 );
+	
+	// Title
+	pi.setPos( 0, 0 );
+	pi.print( "GAMEPAD TEST - Axis Events" );
+	
+	// Instructions
+	pi.setPos( 0, 2 );
+	pi.print( "Move the analog sticks on your" );
+	pi.setPos( 0, 3 );
+	pi.print( "gamepad to see axis values." );
+	pi.setPos( 0, 4 );
+	pi.print( "Use UP/DOWN arrows to adjust" );
+	pi.setPos( 0, 5 );
+	pi.print( "sensitivity (deadzone)." );
+	
+	// Sensitivity display
+	pi.setPos( 0, 7 );
+	pi.setColor( 14 );
+	pi.print( `Sensitivity: ${sensitivity.toFixed( 2 )}` );
+	
+	// Axis value bars
+	pi.setColor( 15 );
+	pi.setPos( 0, 9 );
+	pi.print( "Left Stick X (Axis 0):" );
+	drawAxisBar( 10, axis0Value );
+	
+	pi.setPos( 0, 11 );
+	pi.print( "Left Stick Y (Axis 1):" );
+	drawAxisBar( 12, axis1Value );
+	
+	pi.setPos( 0, 13 );
+	pi.print( "Right Stick X (Axis 2):" );
+	drawAxisBar( 14, axis2Value );
+	
+	pi.setPos( 0, 15 );
+	pi.print( "Right Stick Y (Axis 3):" );
+	drawAxisBar( 16, axis3Value );
+	
+	// Visual representation of sticks
+	pi.setColor( 8 );
+	
+	// Left stick
+	pi.circle( 80, 160, 20 );
+	pi.setColor( 11 );
+	const leftX = 80 + axis0Value * 15;
+	const leftY = 160 + axis1Value * 15;
+	pi.circle( leftX, leftY, 5 );
+	
+	// Right stick
+	pi.setColor( 8 );
+	pi.circle( 240, 160, 20 );
+	pi.setColor( 11 );
+	const rightX = 240 + axis2Value * 15;
+	const rightY = 160 + axis3Value * 15;
+	pi.circle( rightX, rightY, 5 );
+	
+	// Labels
+	pi.setColor( 15 );
+	pi.setPos( 7, 22 );
+	pi.print( "Left Stick" );
+	pi.setPos( 27, 22 );
+	pi.print( "Right Stick" );
+	
+	requestAnimationFrame( draw );
+}
+
+function drawAxisBar( row, value ) {
+	const barWidth = 200;
+	const barHeight = 6;
+	const centerX = 100;
+	const y = row * 8;
+	
+	// Draw background
+	pi.setColor( 8 );
+	pi.rect( centerX - barWidth / 2, y, barWidth, barHeight );
+	
+	// Draw center line
+	pi.setColor( 7 );
+	pi.line( centerX, y, centerX, y + barHeight );
+	
+	// Draw value indicator
+	const indicatorX = centerX + value * ( barWidth / 2 );
+	if( value > 0 ) {
+		pi.setColor( 10 );
+	} else if( value < 0 ) {
+		pi.setColor( 12 );
+	} else {
+		pi.setColor( 7 );
+	}
+	pi.rect( indicatorX - 2, y, 4, barHeight );
+	
+	// Draw value text
+	pi.setColor( 15 );
+	pi.setPos( 35, row );
+	pi.print( value.toFixed( 2 ) );
+}
+
+draw();
+
+</script>
+</body>
+</html>
+

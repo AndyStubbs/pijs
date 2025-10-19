@@ -27,6 +27,7 @@ import * as print from "./modules/print.js";
 import * as keyboard from "./modules/keyboard.js";
 import * as mouse from "./modules/mouse.js";
 import * as touch from "./modules/touch.js";
+import * as gamepad from "./modules/gamepad.js";
 import * as press from "./modules/press.js";
 import * as plugins from "./core/plugins.js";
 
@@ -56,6 +57,7 @@ print.init();
 keyboard.init();
 mouse.init();
 touch.init();
+gamepad.init();
 press.init();
 plugins.init();
 

@@ -371,6 +371,7 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 			continue;
 		}
 
+		// TODO: This is O(N^2) could be optimized if problematic
 		// Need to check if handler has been removed in case a previous handler includes an offkey
 		if( !handlers.includes( handler ) ) {
 			continue;
