@@ -61,15 +61,13 @@ pi.ongamepad( 0, "down", "any", ( data ) => {
 	if( data.index >= 0 && data.index <= 15 ) {
 		buttonStates[ data.index ] = true;
 		buttonPressed = `Button ${data.index} pressed!`;
-		setTimeout( () => {
-			buttonPressed = "";
-		}, 1000 );
 	}
 } );
 
 pi.ongamepad( 0, "up", "any", ( data ) => {
 	if( data.index >= 0 && data.index <= 15 ) {
 		buttonStates[ data.index ] = false;
+		buttonPressed = "";
 	}
 } );
 
@@ -195,75 +193,33 @@ function draw() {
 }
 
 function drawGamepadButtons() {
-	const buttonSize = 12;
-	const buttonSpacing = 16;
-	const dpadSize = 10;
-	const rectWidth = 20;
-	const rectHeight = 8;
-	
-	// Face buttons (XYAB) - moved down and to the left
-	const faceStartX = 265;
-	const faceStartY = 100;
-	
-	// D-pad buttons (plus shape) - to the left of XYAB
-	const dpadStartX = 215;
-	const dpadStartY = 100;
-	
-	// Draw D-pad buttons (plus shape)
-	// Up
-	drawDpadButton( dpadStartX + buttonSpacing - 4, dpadStartY, dpadSize, 12, "^" );
 
-	// Down  
-	drawDpadButton( dpadStartX + buttonSpacing - 4, dpadStartY + buttonSpacing * 2, dpadSize, 13, "v" );
-
-	// Left
-	drawDpadButton( dpadStartX, dpadStartY + buttonSpacing, dpadSize, 14, "<" );
-
-	// Right
-	drawDpadButton( dpadStartX + buttonSpacing * 1.5, dpadStartY + buttonSpacing, dpadSize, 15, ">" );
+	// Draw dpads
+	drawRectButton( 209, 94, 12, 12, 12, "^" );
+	drawRectButton( 209, 124, 12, 12, 13, "v" );
+	drawRectButton( 195, 109, 12, 12, 14, "<" );
+	drawRectButton( 222, 109, 12, 12, 15, ">" );
 	
 	// Draw face buttons (XYAB) with X and B centered vertically
-	const facePositions = [
-		{ "x": faceStartX + buttonSpacing, "y": faceStartY + buttonSpacing * 2 }, // A (bottom right)
-		{ "x": faceStartX + buttonSpacing * 2, "y": faceStartY + buttonSpacing }, // B (top right, centered)
-		{ "x": faceStartX, "y": faceStartY + buttonSpacing }, // X (top left, centered)
-		{ "x": faceStartX + buttonSpacing, "y": faceStartY } // Y (top center)
-	];
-	
-	const faceLabels = [ "A", "B", "X", "Y" ];
-	for( let i = 0; i < 4; i++ ) {
-		const pos = facePositions[ i ];
-		drawFaceButton( pos.x, pos.y, buttonSize, i, faceLabels[ i ] );
-	}
-	
-	// Rectangular buttons above
-	const rectStartX = 75;
-	const rectStartY = 30;
+	drawCircleButton( 275, 130, 10, 0, "A" );
+	drawCircleButton( 295, 115, 10, 1, "B" );
+	drawCircleButton( 255, 115, 10, 2, "X" );
+	drawCircleButton( 275, 100, 10, 3, "Y" );
 
-	// Draw rectangular buttons above
-	drawRectButton( 175, 40, 50, 12, 6, "LB" );
-	drawRectButton( 175, 60, 50, 11, 4, "LT" );
-	drawRectButton( 235, 40, 50, 12, 6, "RB" );
-	drawRectButton( 235, 60, 50, 11, 4, "RT" );
+	// Draw back buttons
+	drawRectButton( 193, 40, 40, 12, 6, "LB" );
+	drawRectButton( 193, 60, 40, 12, 4, "LT" );
+	drawRectButton( 253, 40, 40, 12, 7, "RB" );
+	drawRectButton( 253, 60, 40, 12, 5, "RT" );
+
+	// Draw Menu Buttons
+	drawCircleButton( 229, 85, 6, 8, "+" );
+	drawCircleButton( 255, 85, 6, 9, "-" );
 
 }
 
-function drawDpadButton( x, y, size, buttonIndex, label ) {
-	// Button rectangle
-	if( buttonStates[ buttonIndex ] ) {
-		pi.setColor( 14 ); // Bright yellow when pressed
-	} else {
-		pi.setColor( 8 ); // Dark gray when not pressed
-	}
-	pi.rect( x - size / 2, y - size / 2, size, size );
-	
-	// Button label
-	pi.setColor( 15 );
-	pi.setPosPx( x - 3, y - 3 );
-	pi.print( label );
-}
+function drawCircleButton( x, y, size, buttonIndex, label ) {
 
-function drawFaceButton( x, y, size, buttonIndex, label ) {
 	// Button circle
 	if( buttonStates[ buttonIndex ] ) {
 		pi.setColor( 14 ); // Bright yellow when pressed
