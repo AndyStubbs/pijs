@@ -46,7 +46,7 @@ const m_steps = [
 		"check": () => $.ingamepad( m_gamepadIndex ).getButton( 0 ).pressed,
 		"status": "incomplete"
 	}, {
-		"name": "getButtonJustPressed",
+		"name": "getButtonPressed",
 		"instructions": "Press button 1: B/O/A",
 		"check": () => $.ingamepad( m_gamepadIndex ).getButtonPressed( 1 ),
 		"status": "incomplete"
@@ -86,8 +86,8 @@ const m_steps = [
 		"check": () => !m_isConnected,
 		"status": "incomplete"
 	}, {
-		"name": "onGamepadConnected",
-		"instructions": "Reconnect the gamepad",
+		"name": "onGamepadConnected2",
+		"instructions": "Reconnect the gamepad and press a button or move an axes.",
 		"check": () => m_isConnected,
 		"status": "incomplete"
 	}
@@ -152,7 +152,7 @@ function waitForNextStep() {
 	}
 	
 	let isZeroed = true;
-	if( m_gamepadIndex ) {
+	if( m_gamepadIndex !== null ) {
 		const gamepad = $.ingamepad( m_gamepadIndex );
 		for( const axis of gamepad.axes ) {
 			if( axis !== 0 ) {
