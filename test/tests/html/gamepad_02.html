@@ -5,6 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Gamepad Test 02 - Multiple Gamepads</title>
 	<script src="../../../build/pi.js"></script>
+	<style>body { background-color: gray; }</style>
 </head>
 <body>
 <script>
@@ -22,14 +23,14 @@ function draw() {
 	$.setColor( 15 );
 	
 	// Title
-	$.setPos( 0, 0 );
-	$.print( "GAMEPAD TEST - Multiple Gamepads" );
+	$.setPos( 0, 1 );
+	$.print( "GAMEPAD TEST - Multiple Gamepads (4 Controllers)", false, true );
+	$.print();
 	
 	// Instructions
-	$.setPos( 0, 2 );
-	$.setColor( 8 );
+	$.setColor( 7 );
 	$.print( "Connect up to 4 gamepads" );
-	$.print( "Press buttons or move sticks" );
+	$.print( "Press buttons or move sticks to see real-time data" );
 	
 	// Get all gamepads
 	const allGamepads = $.ingamepad();
@@ -37,61 +38,128 @@ function draw() {
 	$.setPos( 0, 5 );
 	$.setColor( 15 );
 	$.print( `Total connected: ${allGamepads.length}` );
-	
-	// Test individual gamepad access
+
+	// Single column layout for 4 gamepads
 	for( let i = 0; i < 4; i++ ) {
 		const gp = $.ingamepad( i );
-		const row = 7 + i * 5;
+		const columnX = 0;
+		const startRow = 7 + ( i * 12 );
 		
-		$.setPos( 0, row );
+		$.setPos( columnX, startRow );
 		
 		if( gp ) {
+
+			// Gamepad header
 			$.setColor( 10 );
-			$.print( `Gamepad ${i}: Connected (index ${gp.index})` );
+			$.print( `Gamepad ${i}: Connected (ID: ${gp.index})` );
 			
-			// Show buttons
+			// Basic info
 			$.setColor( 15 );
-			$.setPos( 2, row + 1 );
-			$.print( `Buttons: ${gp.buttons.length}, Axes: ${gp.axes.length}` );
+			$.setPos( columnX + 2, startRow + 1 );
+			$.print( "ID:", true );
+			$.setColor( 7 );
+			$.print( ` ${gp.id || "Unknown"}` );
 			
-			// Show pressed buttons
-			$.setPos( 2, row + 2 );
-			const pressedButtons = [];
-			for( let j = 0; j < gp.buttons.length; j++ ) {
-				if( gp.buttons[ j ].pressed ) {
-					pressedButtons.push( j );
-				}
-			}
-			if( pressedButtons.length > 0 ) {
-				$.setColor( 14 );
-				$.print( `Pressed: ${pressedButtons.join( ", " )}` );
-			} else {
-				$.setColor( 8 );
-				$.print( "No buttons pressed" );
-			}
+			$.setColor( 15 );
+			$.setPos( columnX + 2, startRow + 2 );
+			$.print( "Mapping:", true );
+			$.setColor( 7 );
+			$.print( ` ${gp.mapping || "Standard"}` );
 			
-			// Show axis values
-			$.setPos( 2, row + 3 );
-			if( gp.axes2 && gp.axes2.length > 0 ) {
-				const hasMovement = gp.axes2.some( a => Math.abs( a ) > 0 );
-				
-				if( hasMovement ) {
-					const allAxes = [];
-					for( let j = 0; j < Math.min( 4, gp.axes2.length ); j++ ) {
-						allAxes.push( `${j}:${gp.axes2[ j ].toFixed( 2 )}` );
-					}
+			$.setColor( 15 );
+			$.setPos( columnX + 2, startRow + 3 );
+			$.print( "Buttons:", true );
+			$.setColor( 7 );
+			$.print( ` ${gp.buttons.length}, Axes: ${gp.axes.length}` );
+			
+			// Button states
+			$.setPos( columnX + 2, startRow + 4 );
+			$.setColor( 15 );
+			$.print( "Buttons:" );
+			
+			// Show first 8 buttons in a grid
+			for( let j = 0; j < Math.min( 8, gp.buttons.length ); j++ ) {
+				const button = gp.buttons[ j ];
+				$.setPos( columnX + 4 + ( j * 4 ), startRow + 5 );
+				if( button.pressed ) {
 					$.setColor( 11 );
-					$.print( allAxes.join( ", " ).substring( 0, 37 ) );
+					$.print( `[${j}]`, true );
 				} else {
 					$.setColor( 8 );
-					$.print( "No axis movement" );
+					$.print( ` ${j} `, true );
 				}
 			}
+			
+			// Show remaining buttons if any
+			if( gp.buttons.length > 8 ) {
+				for( let j = 8; j < Math.min( 16, gp.buttons.length ); j++ ) {
+					const button = gp.buttons[ j ];
+					$.setPos( columnX + 4 + ( ( j - 8 ) * 4 ), startRow + 6 );
+					if( button.pressed ) {
+						$.setColor( 11 );
+						$.print( `[${j}]`, true );
+					} else {
+						$.setColor( 8 );
+						$.print( ` ${j} `, true );
+					}
+				}
+			}
+			
+			// Axis values
+			$.setPos( columnX + 2, startRow + 7 );
+			$.setColor( 15 );
+			$.print( "Axes:" );
+			$.print( "  [", true );
+
+			// Show first 4 axes
+			for( let j = 0; j < Math.min( 4, gp.axes.length ); j++ ) {
+				const axisValue = gp.axes[ j ];
+				$.setPos( columnX + 4 + ( j * 8 ), startRow + 8 );
+				if( Math.abs( axisValue ) > 0.1 ) {
+					$.setColor( 10 );
+					$.print( `${axisValue.toFixed( 2 )}`, true );
+				} else {
+					$.setColor( 8 );
+					$.print( `${axisValue.toFixed( 2 )}`, true );
+				}
+			}
+			
+			// Show remaining axes if any
+			if( gp.axes.length > 4 ) {
+				for( let j = 4; j < Math.min( 8, gp.axes.length ); j++ ) {
+					const axisValue = gp.axes[ j ];
+					$.setPos( columnX + 4 + ( ( j - 4 ) * 8 ), startRow + 9 );
+					if( Math.abs( axisValue ) > 0.1 ) {
+						$.setColor( 10 );
+						$.print( `${axisValue.toFixed( 2 )}`, true );
+					} else {
+						$.setColor( 8 );
+						$.print( `${axisValue.toFixed( 2 )}`, true );
+					}
+				}
+			}
+
+			$.setColor( 15 );
+			$.print( " ]" );
+			
+			// Connection status
+			$.setPos( columnX + 2, startRow + 10 );
+			$.setColor( 12 );
+			$.print( `Connected: ${gp.connected ? "Yes" : "No"}` );
+			
 		} else {
+			// No gamepad connected
 			$.setColor( 8 );
 			$.print( `Gamepad ${i}: Not connected` );
+			$.setPos( columnX + 2, startRow + 1 );
+			$.print( "Press any button to connect" );
 		}
 	}
+	
+	// Footer info
+	$.setPos( 0, 57 );
+	$.setColor( 7 );
+	$.print( "Legend: [X] = Pressed, X = Released | Green = Active, Gray = Inactive" );
 	
 	requestAnimationFrame( draw );
 }

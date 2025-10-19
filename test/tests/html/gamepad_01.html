@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Gamepad Test 01 - Basic Gamepad Support</title>
 	<script src="../../../build/pi.js"></script>
-	<style>body { background-color: gray; };</style>
+	<style>body { background-color: gray; }</style>
 </head>
 <body>
 <script>
@@ -76,20 +76,20 @@ function draw() {
 	
 	// Title
 	$.setPos( 0, 0 );
-	$.print( "GAMEPAD TEST - Basic Support" );
-	
+	$.print( "GAMEPAD TEST - Basic Support", false, true );
+	$.print();
+
 	// Connection status
-	$.setPos( 0, 2 );
 	if( gamepadConnected ) {
 		$.setColor( 10 );
-		$.print( `Gamepad ${gamepadIndex} connected!` );
+		$.print( `Gamepad ${gamepadIndex} connected!`, false, true );
 	} else {
-		$.setColor( 8 );
-		$.print( "No gamepad connected. Press a button to connect." );
+		$.setColor( 7 );
+		$.print( "No gamepad connected. Press a button to connect.", false, true );
 	}
 	
 	// Instructions
-	$.setColor( 15 );
+	$.setColor( 7 );
 	$.setPos( 0, 4 );
 	$.print( "Instructions:" );
 	$.print( "- Move analog sticks" );
@@ -135,23 +135,26 @@ function draw() {
 	let axisRow = 11;
 
 	// Axis bars
-	$.setColor( 15 );
+	$.setColor( 7 );
 	$.setPos( 1, axisRow );
 	$.print( "Left Stick X (Axis 0):" );
 	drawAxisBar( axisRow + 1, axis0Value );
 	axisRow += 2;
 	
 	$.setPos( 1, axisRow );
+	$.setColor( 7 );
 	$.print( "Left Stick Y (Axis 1):" );
 	drawAxisBar( axisRow + 1, axis1Value );
 	axisRow += 2;
 	
 	$.setPos( 1, axisRow );
+	$.setColor( 7 );
 	$.print( "Right Stick X (Axis 2):" );
 	drawAxisBar( axisRow + 1, axis2Value );
 	axisRow += 2;
 	
 	$.setPos( 1, axisRow );
+	$.setColor( 7 );
 	$.print( "Right Stick Y (Axis 3):" );
 	drawAxisBar( axisRow + 1, axis3Value );
 	
@@ -188,7 +191,7 @@ function draw() {
 	$.circle( rightX, rightY, 4 );
 	
 	// Better aligned stick labels
-	$.setColor( 15 );
+	$.setColor( 7 );
 	$.setPosPx( 55, 185 );
 	$.print( "Left Stick", true );
 	$.setPosPx( 209, 185 );
