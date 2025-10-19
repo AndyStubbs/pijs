@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Gamepad Test 03 - Command Sequence Test</title>
+	<script src="../../../build/pi.js"></script>
+	<style>body { background-color: gray; }</style>
+</head>
+<body>
+<script>
+
+/*+++
+title = "Gamepad Test 03 - Command Sequence Test"
+description = "Sequential test of all gamepad commands and events"
++++*/
+
+$.screen( "480x300" );
+
+let m_step = 0;
+let m_log = [];
+let m_isConnected = false;
+let m_waitingTimeout = false;
+let m_gamepadIndex = null;
+let m_waitTime = 0;
+
+$.onGamepadConnected( ( gamepad ) => {
+	m_gamepadIndex = gamepad.index;
+	m_isConnected = true;
+} );
+
+$.onGamepadDisconnected( () => {
+	m_gamepadIndex = null;
+	m_isConnected = false;
+} )
+
+const m_steps = [
+	{
+		"name": "onGamepadConnected",
+		"instructions": "Connect a gamepad and press a button or move an axis.",
+		"check": () => m_isConnected,
+		"status": "incomplete"
+	}, {
+		"name": "getButton",
+		"instructions": "Press button 0: A/B/X",
+		"check": () => $.ingamepad( m_gamepadIndex ).getButton( 0 ).pressed,
+		"status": "incomplete"
+	}, {
+		"name": "getButtonJustPressed",
+		"instructions": "Press button 1: B/O/A",
+		"check": () => $.ingamepad( m_gamepadIndex ).getButtonPressed( 1 ),
+		"status": "incomplete"
+	}, {
+		"name": "getButtonJustPressed",
+		"instructions": "Press button 2: X/Square/Y",
+		"check": () => $.ingamepad( m_gamepadIndex ).getButtonJustPressed( 2 ),
+		"status": "incomplete"
+	}, {
+		"name": "getButtonJustReleased",
+		"instructions": "Press and release button 3: Y/Triangle/X",
+		"check": () => $.ingamepad( m_gamepadIndex ).getButtonJustReleased( 3 ),
+		"status": "incomplete"
+	}, {
+		"name": "getAxis",
+		"instructions": "Move the left control stick horizontally",
+		"check": () => $.ingamepad( m_gamepadIndex ).getAxis( 0 ),
+		"status": "incomplete"
+	}, {
+		"name": "getAxis2",
+		"instructions": "Move the left control stick vertically",
+		"check": () => $.ingamepad( m_gamepadIndex ).getAxis( 1 ),
+		"status": "incomplete"
+	}, {
+		"name": "getAxisChanged",
+		"instructions": "Move the right control stick horizontally",
+		"check": () => $.ingamepad( m_gamepadIndex ).getAxisChanged( 2 ),
+		"status": "incomplete"
+	}, {
+		"name": "getAxisChanged2",
+		"instructions": "Move the right control stick vertically",
+		"check": () => $.ingamepad( m_gamepadIndex ).getAxisChanged( 3 ),
+		"status": "incomplete"
+	}, {
+		"name": "onGamepadDisconnected",
+		"instructions": "Disconnect the gamepad",
+		"check": () => !m_isConnected,
+		"status": "incomplete"
+	}, {
+		"name": "onGamepadConnected",
+		"instructions": "Reconnect the gamepad",
+		"check": () => m_isConnected,
+		"status": "incomplete"
+	}
+]
+
+// Main draw loop
+function draw() {
+	$.cls( 0 );
+	
+	// Title
+	$.setColor( 15 );
+	$.setPos( 0, 0 );
+	$.print( "GAMEPAD TEST 03 - Command Sequence Test", false, true );
+	$.print();
+	
+	// Show the test log
+	for( const log of m_log ) {
+		$.setColor( log.color );
+		$.print( log.msg );
+	}
+
+	if( m_step < m_steps.length ) {
+		runStep();
+	} else {
+		$.setColor( 10 );
+		$.print();
+		$.print( "All tests completed successfully!" );
+	}
+
+	if( m_gamepadIndex ) {
+		drawFooter();
+	}
+
+	requestAnimationFrame( draw );
+}
+
+function runStep() {
+	const step = m_steps[ m_step ];
+	if( step.status === "incomplete" ) {
+		let testTitle = `Test ${m_step + 1}: ${step.name}`;
+		$.setColor( 15 );
+		$.print( `${testTitle}` );
+		$.setColor( 7 );
+		$.print();
+		$.print( step.instructions );
+
+		if( step.check() ) {
+			step.status = "waiting";
+			m_log.push( { "color": 2, "msg": `${testTitle} - completed successfully!` } );
+		}
+	} else {
+		waitForNextStep();
+	}
+}
+
+function waitForNextStep() {
+	$.setColor( 7 );
+	$.print();
+	$.print( "Release all buttons and axes and wait for next step." );
+	if( m_waitTime > 0 ) {
+		$.print( `Waiting ( ${Date.now() - m_waitTime} )` );
+	}
+	
+	let isZeroed = true;
+	if( m_gamepadIndex ) {
+		const gamepad = $.ingamepad( m_gamepadIndex );
+		for( const axis of gamepad.axes ) {
+			if( axis !== 0 ) {
+				isZeroed = false;
+				break;
+			}
+		}
+		for( const button of gamepad.buttons ) {
+			if( button.pressed ) {
+				isZeroed = false;
+			}
+		}
+	}
+	
+	if( isZeroed ) {
+		if( !m_waitingTimeout ) {
+			m_waitingTimeout = setTimeout( () => {
+				m_step += 1;
+				m_waitingTimeout = null;
+				m_waitTime = 0;
+			}, 1000 );
+			m_waitTime = Date.now();
+		}
+	} else {
+
+		// Buttons not reset so continue waiting and clear any timeouts if already waiting
+		clearTimeout( m_waitingTimeout );
+		m_waitingTimeout = null;
+		m_waitTime = 0;
+	}
+}
+
+function drawFooter() {
+	let rows = $.getRows();
+	$.setPos( 0, rows - 3 );
+	const gamepad = $.ingamepad( m_gamepadIndex );
+
+	$.setColor( 15 );
+	$.print( "ID:      ", true );
+	$.setColor( 7 );
+	$.print( gamepad.id.substring( 0, $.getCols() - 8 ) );
+
+	// Print the axes
+	$.setColor( 15 );
+	$.print( "Axes:    [", true );
+	for( const axis of gamepad.axes ) {
+		if( axis === 0 ) {
+			$.setColor( 8 );
+		} else {
+			$.setColor( 3 );
+		}
+		$.print( axis.toFixed( 2 ).padStart( 6 ), true );
+	}
+	$.setColor( 15 );
+	$.print( "   ]" );
+
+	// Print the buttons
+	$.setColor( 15 );
+	$.print( "Buttons: [", true );
+	for( let i = 0; i < gamepad.buttons.length; i += 1 ) {
+		const button = gamepad.buttons[ i ];
+		if( button.pressed ) {
+			$.setColor( 3 );
+		} else {
+			$.setColor( 8 );
+		}
+		$.print( ( "" + i ).padStart( 3 ), true );
+	}
+	$.print( " ]", true );
+}
+draw();
+
+</script>
+</body>
+</html>
+
