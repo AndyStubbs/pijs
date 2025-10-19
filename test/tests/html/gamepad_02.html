@@ -14,48 +14,48 @@ title = "Gamepad Test 02 - Multiple Gamepads"
 description = "Tests multiple gamepad support and ingamepad() with index parameter"
 +++*/
 
-pi.screen( "320x200" );
+$.screen( "640x480" );
 
 // Draw loop
 function draw() {
-	pi.cls( 0 );
-	pi.setColor( 15 );
+	$.cls( 0 );
+	$.setColor( 15 );
 	
 	// Title
-	pi.setPos( 0, 0 );
-	pi.print( "GAMEPAD TEST - Multiple Gamepads" );
+	$.setPos( 0, 0 );
+	$.print( "GAMEPAD TEST - Multiple Gamepads" );
 	
 	// Instructions
-	pi.setPos( 0, 2 );
-	pi.setColor( 8 );
-	pi.print( "Connect up to 4 gamepads" );
-	pi.print( "Press buttons or move sticks" );
+	$.setPos( 0, 2 );
+	$.setColor( 8 );
+	$.print( "Connect up to 4 gamepads" );
+	$.print( "Press buttons or move sticks" );
 	
 	// Get all gamepads
-	const allGamepads = pi.ingamepad();
+	const allGamepads = $.ingamepad();
 	
-	pi.setPos( 0, 5 );
-	pi.setColor( 15 );
-	pi.print( `Total connected: ${allGamepads.length}` );
+	$.setPos( 0, 5 );
+	$.setColor( 15 );
+	$.print( `Total connected: ${allGamepads.length}` );
 	
 	// Test individual gamepad access
 	for( let i = 0; i < 4; i++ ) {
-		const gp = pi.ingamepad( i );
+		const gp = $.ingamepad( i );
 		const row = 7 + i * 5;
 		
-		pi.setPos( 0, row );
+		$.setPos( 0, row );
 		
 		if( gp ) {
-			pi.setColor( 10 );
-			pi.print( `Gamepad ${i}: Connected (index ${gp.index})` );
+			$.setColor( 10 );
+			$.print( `Gamepad ${i}: Connected (index ${gp.index})` );
 			
 			// Show buttons
-			pi.setColor( 15 );
-			pi.setPos( 2, row + 1 );
-			pi.print( `Buttons: ${gp.buttons.length}, Axes: ${gp.axes.length}` );
+			$.setColor( 15 );
+			$.setPos( 2, row + 1 );
+			$.print( `Buttons: ${gp.buttons.length}, Axes: ${gp.axes.length}` );
 			
 			// Show pressed buttons
-			pi.setPos( 2, row + 2 );
+			$.setPos( 2, row + 2 );
 			const pressedButtons = [];
 			for( let j = 0; j < gp.buttons.length; j++ ) {
 				if( gp.buttons[ j ].pressed ) {
@@ -63,15 +63,15 @@ function draw() {
 				}
 			}
 			if( pressedButtons.length > 0 ) {
-				pi.setColor( 14 );
-				pi.print( `Pressed: ${pressedButtons.join( ", " )}` );
+				$.setColor( 14 );
+				$.print( `Pressed: ${pressedButtons.join( ", " )}` );
 			} else {
-				pi.setColor( 8 );
-				pi.print( "No buttons pressed" );
+				$.setColor( 8 );
+				$.print( "No buttons pressed" );
 			}
 			
 			// Show axis values
-			pi.setPos( 2, row + 3 );
+			$.setPos( 2, row + 3 );
 			if( gp.axes2 && gp.axes2.length > 0 ) {
 				const hasMovement = gp.axes2.some( a => Math.abs( a ) > 0 );
 				
@@ -80,16 +80,16 @@ function draw() {
 					for( let j = 0; j < Math.min( 4, gp.axes2.length ); j++ ) {
 						allAxes.push( `${j}:${gp.axes2[ j ].toFixed( 2 )}` );
 					}
-					pi.setColor( 11 );
-					pi.print( allAxes.join( ", " ).substring( 0, 37 ) );
+					$.setColor( 11 );
+					$.print( allAxes.join( ", " ).substring( 0, 37 ) );
 				} else {
-					pi.setColor( 8 );
-					pi.print( "No axis movement" );
+					$.setColor( 8 );
+					$.print( "No axis movement" );
 				}
 			}
 		} else {
-			pi.setColor( 8 );
-			pi.print( `Gamepad ${i}: Not connected` );
+			$.setColor( 8 );
+			$.print( `Gamepad ${i}: Not connected` );
 		}
 	}
 	

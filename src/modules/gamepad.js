@@ -108,7 +108,11 @@ function setGamepadSensitivity( options ) {
 		throw error;
 	}
 
-	m_axesSensitivity = sensitivity;
+	if( sensitivity === 1 ) {
+		m_axesSensitivity = 0.99999;
+	} else {
+		m_axesSensitivity = sensitivity;
+	}
 }
 
 commands.addCommand( "onGamepadConnected", onGamepadConnected, [ "fn" ] );
