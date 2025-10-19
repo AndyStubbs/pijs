@@ -114,19 +114,12 @@ commands.addCommand(
 	"ongamepad", ongamepad,[ "gamepadIndex", "mode", "item", "fn", "once", "allowRepeat" ]
 );
 function ongamepad( options ) {
-	const gamepadIndex = options.gamepadIndex !== undefined ? options.gamepadIndex : 0;
+	const gamepadIndex = options.gamepadIndex !== undefined ? options.gamepadIndex : "any";
 	const mode = options.mode;
 	const item = options.item;
 	const fn = options.fn;
 	const once = !!options.once;
 	const allowRepeat = !!options.allowRepeat;
-
-	// Validate gamepadIndex
-	if( !Number.isInteger( gamepadIndex ) || gamepadIndex < 0 ) {
-		const error = new TypeError( "ongamepad: gamepadIndex must be a non-negative integer." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
-	}
 
 	// Validate mode
 	const validModes = [ "down", "up", "pressed", "axis", "connect", "disconnect" ];
@@ -135,6 +128,16 @@ function ongamepad( options ) {
 			`ongamepad: mode must be one of: ${validModes.join( ", " )}.`
 		);
 		error.code = "INVALID_MODE";
+		throw error;
+	}
+
+	// Validate gamepadIndex unless connect/disconnect
+	if( 
+		mode !== "connect" && mode !== "disconnect" && 
+		( !Number.isInteger( gamepadIndex ) || gamepadIndex < 0 )
+	) {
+		const error = new TypeError( "ongamepad: gamepadIndex must be a non-negative integer." );
+		error.code = "INVALID_PARAMETERS";
 		throw error;
 	}
 
@@ -212,9 +215,13 @@ function ongamepad( options ) {
 commands.addCommand( "offgamepad", offgamepad, [ "gamepadIndex", "mode", "item", "fn" ] );
 function offgamepad( options ) {
 	const gamepadIndex = options.gamepadIndex !== undefined ? options.gamepadIndex : 0;
-	const mode = options.mode;
+	let mode = options.mode;
 	const item = options.item;
 	const fn = options.fn;
+
+	if( mode === "connect" || mode === "disconnect" ) {
+		mode = "any";
+	}
 
 	// Validate function
 	if( typeof fn !== "function" ) {
@@ -274,6 +281,7 @@ function gamepadConnected( e ) {
 	m_controllers[ e.gamepad.index ] = e.gamepad;
 	e.gamepad.controllerIndex = m_controllerArr.length;
 	m_controllerArr.push( e.gamepad );
+	m_controllerArr.sort( ( a, b ) => a.gamepad.index - b.gamepad.index );
 	updateController( e.gamepad );
 
 	// Trigger connect handlers
@@ -372,7 +380,7 @@ function smoothAxis( axis ) {
 }
 
 function triggerConnectionHandlers( mode, gamepadIndex ) {
-	const handlerKey = `${gamepadIndex}_${mode}_none`;
+	const handlerKey = `any_${mode}_none`;
 	const handlers = m_onGamepadHandlers[ handlerKey ];
 
 	if( !handlers ) {
@@ -596,8 +604,6 @@ function triggerButtonHandlers( gamepad, items, mode, handlers ) {
 				if( handler.once ) {
 					toRemove.push( handler );
 				}
-
-				break;
 			}
 		}
 	}

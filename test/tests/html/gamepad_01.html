@@ -5,6 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Gamepad Test 01 - Basic Gamepad Support</title>
 	<script src="../../../build/pi.js"></script>
+	<style>body { background-color: gray };</style>
 </head>
 <body>
 <script>
@@ -14,10 +15,10 @@ title = "Gamepad Test 01 - Basic Gamepad Support"
 description = "Tests gamepad connection, button events, and axis events"
 +++*/
 
-pi.screen( "320x200" );
+$.screen( "320x200" );
 
 let gamepadConnected = false;
-let gamepadIndex = -1;
+let gamepadIndex = null;
 let buttonPressed = "";
 let sensitivity = 0.2;
 let axis0Value = 0;
@@ -46,148 +47,166 @@ const buttonStates = {
 };
 
 // Connection events
-pi.ongamepad( 0, "connect", null, ( data ) => {
+$.ongamepad( null, "connect", null, ( data ) => {
 	gamepadConnected = true;
 	gamepadIndex = data.index;
+	setupGamepads();
 } );
 
-pi.ongamepad( 0, "disconnect", null, ( data ) => {
+$.ongamepad( null, "disconnect", null, ( data ) => {
 	gamepadConnected = false;
-	gamepadIndex = -1;
+	gamepadIndex = null;
 } );
 
-// Button events - listen for all buttons (0-15)
-pi.ongamepad( 0, "down", "any", ( data ) => {
-	if( data.index >= 0 && data.index <= 15 ) {
-		buttonStates[ data.index ] = true;
-		buttonPressed = `Button ${data.index} pressed!`;
-	}
-} );
+if( gamepadIndex ) {
+	setupGamepads();
+}
 
-pi.ongamepad( 0, "up", "any", ( data ) => {
-	if( data.index >= 0 && data.index <= 15 ) {
-		buttonStates[ data.index ] = false;
-		buttonPressed = "";
-	}
-} );
+function setupGamepads() {
 
-// Axis events - listen for all axes
-pi.ongamepad( 0, "axis", null, ( changedAxes ) => {
-	for( const axis of changedAxes ) {
-		if( axis.index === 0 ) {
-			axis0Value = axis.value;
-		} else if( axis.index === 1 ) {
-			axis1Value = axis.value;
-		} else if( axis.index === 2 ) {
-			axis2Value = axis.value;
-		} else if( axis.index === 3 ) {
-			axis3Value = axis.value;
+	// Button events - listen for all buttons (0-15)
+	$.ongamepad( gamepadIndex, "down", "any", ( data ) => {
+		if( data.index >= 0 && data.index <= 15 ) {
+			buttonStates[ data.index ] = true;
+			buttonPressed = `Button ${data.index} pressed!`;
 		}
-	}
-} );
+	} );
 
-// Sensitivity controls
-pi.onkey( "ArrowUp", "down", () => {
-	sensitivity = Math.min( 1, sensitivity + 0.05 );
-	pi.setGamepadSensitivity( sensitivity );
-} );
+	$.ongamepad( gamepadIndex, "up", "any", ( data ) => {
+		if( data.index >= 0 && data.index <= 15 ) {
+			buttonStates[ data.index ] = false;
+			buttonPressed = "";
+		}
+	} );
 
-pi.onkey( "ArrowDown", "down", () => {
-	sensitivity = Math.max( 0, sensitivity - 0.05 );
-	pi.setGamepadSensitivity( sensitivity );
-} );
+	// Axis events - listen for all axes
+	$.ongamepad( gamepadIndex, "axis", null, ( changedAxes ) => {
+		for( const axis of changedAxes ) {
+			if( axis.index === 0 ) {
+				axis0Value = axis.value;
+			} else if( axis.index === 1 ) {
+				axis1Value = axis.value;
+			} else if( axis.index === 2 ) {
+				axis2Value = axis.value;
+			} else if( axis.index === 3 ) {
+				axis3Value = axis.value;
+			}
+		}
+	} );
+
+	// Sensitivity controls
+	$.onkey( "ArrowUp", "down", () => {
+		sensitivity = Math.min( 1, sensitivity + 0.05 );
+		$.setGamepadSensitivity( sensitivity );
+	} );
+
+	$.onkey( "ArrowDown", "down", () => {
+		sensitivity = Math.max( 0, sensitivity - 0.05 );
+		$.setGamepadSensitivity( sensitivity );
+	} );
+}
+
 
 // Draw loop
 function draw() {
-	pi.cls( 0 );
-	pi.setColor( 15 );
+	$.cls( 0 );
+	$.setColor( 15 );
 	
 	// Title
-	pi.setPos( 0, 0 );
-	pi.print( "GAMEPAD TEST - Basic Support" );
+	$.setPos( 0, 0 );
+	$.print( "GAMEPAD TEST - Basic Support" );
 	
 	// Connection status
-	pi.setPos( 0, 2 );
+	$.setPos( 0, 2 );
 	if( gamepadConnected ) {
-		pi.setColor( 10 );
-		pi.print( `Gamepad ${gamepadIndex} connected!` );
+		$.setColor( 10 );
+		$.print( `Gamepad ${gamepadIndex} connected!` );
 	} else {
-		pi.setColor( 8 );
-		pi.print( "No gamepad connected. Press a button to connect." );
+		$.setColor( 8 );
+		$.print( "No gamepad connected. Press a button to connect." );
 	}
 	
 	// Instructions
-	pi.setColor( 15 );
-	pi.setPos( 0, 4 );
-	pi.print( "Instructions:" );
-	pi.print( "- Move analog sticks" );
-	pi.print( "- Press any button" );
-	pi.print( "- UP/DOWN: adjust sensitivity" );
+	$.setColor( 15 );
+	$.setPos( 0, 4 );
+	$.print( "Instructions:" );
+	$.print( "- Move analog sticks" );
+	$.print( "- Press any button" );
+	$.print( "- UP/DOWN: adjust sensitivity" );
 	
 	// Sensitivity display
-	pi.setPosPx( 6, 67 );
-	pi.setColor( 14 );
-	pi.print( `Sensitivity: ${sensitivity.toFixed( 2 )}` );
+	$.setPosPx( 6, 67 );
+	$.setColor( 14 );
+	$.print( `Sensitivity: ${sensitivity.toFixed( 2 )}` );
 	
 	// Button press message
 	if( buttonPressed ) {
-		pi.setColor( 11 );
-		pi.setPosPx( 6, 76 );
-		pi.print( buttonPressed );
+		$.setColor( 11 );
+		$.setPosPx( 6, 76 );
+		$.print( buttonPressed );
 	}
 	
 	let axisRow = 11;
 
 	// Axis bars
-	pi.setColor( 15 );
-	pi.setPos( 1, axisRow );
-	pi.print( "Left Stick X (Axis 0):" );
+	$.setColor( 15 );
+	$.setPos( 1, axisRow );
+	$.print( "Left Stick X (Axis 0):" );
 	drawAxisBar( axisRow + 1, axis0Value );
 	axisRow += 2;
 	
-	pi.setPos( 1, axisRow );
-	pi.print( "Left Stick Y (Axis 1):" );
+	$.setPos( 1, axisRow );
+	$.print( "Left Stick Y (Axis 1):" );
 	drawAxisBar( axisRow + 1, axis1Value );
 	axisRow += 2;
 	
-	pi.setPos( 1, axisRow );
-	pi.print( "Right Stick X (Axis 2):" );
+	$.setPos( 1, axisRow );
+	$.print( "Right Stick X (Axis 2):" );
 	drawAxisBar( axisRow + 1, axis2Value );
 	axisRow += 2;
 	
-	pi.setPos( 1, axisRow );
-	pi.print( "Right Stick Y (Axis 3):" );
+	$.setPos( 1, axisRow );
+	$.print( "Right Stick Y (Axis 3):" );
 	drawAxisBar( axisRow + 1, axis3Value );
 	
 	// Draw all gamepad buttons
 	drawGamepadButtons();
 	
 	// Visual representation of sticks
-	pi.setColor( 8 );
+	$.setColor( 8 );
 	
 	const stickHeight = 170;
 
 	// Left stick
-	pi.circle( 80, stickHeight, 15 );
-	pi.setColor( 11 );
+	if( buttonStates[ 10 ] ) {
+		$.setColor( 14 );
+	} else {
+		$.setColor( 8 );
+	}
+	$.circle( 80, stickHeight, 15 );
+	$.setColor( 11 );
 	const leftX = 80 + axis0Value * 12;
 	const leftY = stickHeight + axis1Value * 12;
-	pi.circle( leftX, leftY, 4 );
+	$.circle( leftX, leftY, 4 );
 	
 	// Right stick
-	pi.setColor( 8 );
-	pi.circle( 240, stickHeight, 15 );
-	pi.setColor( 11 );
+	if( buttonStates[ 11 ] ) {
+		$.setColor( 14 );
+	} else {
+		$.setColor( 8 );
+	}
+	$.circle( 240, stickHeight, 15 );
+	$.setColor( 11 );
 	const rightX = 240 + axis2Value * 12;
 	const rightY = stickHeight + axis3Value * 12;
-	pi.circle( rightX, rightY, 4 );
+	$.circle( rightX, rightY, 4 );
 	
 	// Better aligned stick labels
-	pi.setColor( 15 );
-	pi.setPosPx( 55, 185 );
-	pi.print( "Left Stick", true );
-	pi.setPosPx( 209, 185 );
-	pi.print( "Right Stick", true );
+	$.setColor( 15 );
+	$.setPosPx( 55, 185 );
+	$.print( "Left Stick", true );
+	$.setPosPx( 209, 185 );
+	$.print( "Right Stick", true );
 	
 	requestAnimationFrame( draw );
 }
@@ -213,8 +232,8 @@ function drawGamepadButtons() {
 	drawRectButton( 253, 60, 40, 12, 5, "RT" );
 
 	// Draw Menu Buttons
-	drawCircleButton( 229, 85, 6, 8, "+" );
-	drawCircleButton( 255, 85, 6, 9, "-" );
+	drawCircleButton( 229, 85, 6, 8, "-" );
+	drawCircleButton( 255, 85, 6, 9, "+" );
 
 }
 
@@ -222,32 +241,32 @@ function drawCircleButton( x, y, size, buttonIndex, label ) {
 
 	// Button circle
 	if( buttonStates[ buttonIndex ] ) {
-		pi.setColor( 14 ); // Bright yellow when pressed
+		$.setColor( 14 ); // Bright yellow when pressed
 	} else {
-		pi.setColor( 8 ); // Dark gray when not pressed
+		$.setColor( 8 ); // Dark gray when not pressed
 	}
-	pi.circle( x, y, size );
+	$.circle( x, y, size );
 	
 	// Button label
-	pi.setColor( 15 );
-	pi.setPosPx( x - 3, y - 3 );
-	pi.print( label );
+	$.setColor( 15 );
+	$.setPosPx( x - 3, y - 3 );
+	$.print( label );
 }
 
 function drawRectButton( x, y, width, height, buttonIndex, label ) {
 
 	// Button rectangle
 	if( buttonStates[ buttonIndex ] ) {
-		pi.setColor( 14 ); // Bright yellow when pressed
+		$.setColor( 14 ); // Bright yellow when pressed
 	} else {
-		pi.setColor( 8 ); // Dark gray when not pressed
+		$.setColor( 8 ); // Dark gray when not pressed
 	}
-	pi.rect( x, y, width, height );
+	$.rect( x, y, width, height );
 	
 	// Button label (centered)
-	pi.setColor( 15 );
-	pi.setPosPx( x + ( width - label.length * 4 ) / 2, y + 2 );
-	pi.print( label );
+	$.setColor( 15 );
+	$.setPosPx( x + ( width - label.length * 4 ) / 2, y + 2 );
+	$.print( label );
 }
 
 function drawAxisBar( row, value ) {
@@ -257,28 +276,28 @@ function drawAxisBar( row, value ) {
 	const y = row * 8;
 	
 	// Draw background
-	pi.setColor( 8 );
-	pi.rect( centerX - barWidth / 2, y, barWidth, barHeight );
+	$.setColor( 8 );
+	$.rect( centerX - barWidth / 2, y, barWidth, barHeight );
 	
 	// Draw center line
-	pi.setColor( 7 );
-	pi.line( centerX, y, centerX, y + barHeight - 1 );
+	$.setColor( 7 );
+	$.line( centerX, y, centerX, y + barHeight - 1 );
 	
 	// Draw value indicator
 	const indicatorX = centerX + value * ( barWidth / 2 );
 	if( value > 0 ) {
-		pi.setColor( 10 );
+		$.setColor( 10 );
 	} else if( value < 0 ) {
-		pi.setColor( 12 );
+		$.setColor( 12 );
 	} else {
-		pi.setColor( 7 );
+		$.setColor( 7 );
 	}
-	pi.circle( indicatorX, y + 2, 3 );
+	$.circle( indicatorX, y + 2, 3 );
 	
 	// Draw value text
-	pi.setColor( 15 );
-	pi.setPosPx( 155, y - 2);
-	pi.print( value.toFixed( 2 ).padStart( 5, " " ) );
+	$.setColor( 15 );
+	$.setPosPx( 155, y - 2);
+	$.print( value.toFixed( 2 ).padStart( 5, " " ) );
 }
 
 draw();
