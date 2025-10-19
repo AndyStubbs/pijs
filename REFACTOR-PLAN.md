@@ -136,7 +136,7 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 
 ---
 
-### 🔨 Remaining Features (36 APIs from legacy)
+### 🔨 Remaining Features (25 APIs from legacy)
 
 #### Priority 1: Text & Printing (100% Complete)
 
@@ -217,21 +217,21 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 - ⬜ `offgamepad` - Unregister gamepad handler
 - ⬜ `ingamepads` - Check gamepad state
 
-#### Priority 3: Sound (12 APIs)
-**Recommended: modules/sound.js**
-- ⬜ `sound` - Play simple sound
-- ⬜ `createSound` - Create sound object
-- ⬜ `stopSound` - Stop playing sound
-- ⬜ `setVolume` - Set volume
-- ⬜ `createAudioPool` - Create audio pool for multiple instances
-- ⬜ `deleteAudioPool` - Delete audio pool
-- ⬜ `playAudioPool` - Play from audio pool
-- ⬜ `stopAudioPool` - Stop audio pool
+#### Priority 3: Sound (100% Complete - 11/11)
+**Module: sound.js**
+- ✅ `sound` - Play simple sound with frequency, volume, attack, decay
+- ✅ `stopSound` - Stop playing sound or all sounds
+- ✅ `setVolume` - Set global volume for all sounds
+- ✅ `createAudioPool` - Create audio pool for multiple instances
+- ✅ `deleteAudioPool` - Delete audio pool
+- ✅ `playAudioPool` - Play from audio pool with volume/timing control
+- ✅ `stopAudioPool` - Stop audio pool or all pools
+- ✅ `createSound` - Internal sound creation (exported for play module)
 
-**Recommended: modules/play.js**
-- ⬜ `play` - Play musical notes/sequence
-- ⬜ `createTrack` - Create music track
-- ⬜ `stopPlay` - Stop playing track
+**Module: play.js**
+- ✅ `play` - Play musical notes using BASIC-style notation (A-G, O, T, V, L, M, W, P, N, etc.)
+- ✅ `stopPlay` - Stop playing track or all tracks
+- ✅ `createTrack` - Internal track creation from play string
 
 #### Priority 4: Event System (4 APIs)
 **Recommended: core/events.js or integrate into screen-manager.js**
@@ -311,14 +311,14 @@ src/assets/
 1. ~~**Implement font.js**~~ ✅ **COMPLETE** - Font loading, management, and character data
 2. ~~**Implement print.js**~~ ✅ **COMPLETE** - Text printing, cursor positioning, word wrapping, auto-scroll
 3. ~~**Implement table.js**~~ ✅ **COMPLETE** - Table formatting with customizable borders
-4. **Implement keyboard.js** - Basic keyboard input
-5. **Implement mouse.js** - Mouse input and events
-6. **Implement sound.js** - Basic sound effects
-7. **Implement touch.js** - Touch support for mobile
-8. **Implement gamepad.js** - Gamepad support
-9. **Implement play.js** - Musical playback
+4. ~~**Implement sound.js**~~ ✅ **COMPLETE** - Sound effects, audio pools, volume control
+5. ~~**Implement play.js**~~ ✅ **COMPLETE** - BASIC-style music notation playback
+6. **Implement keyboard.js** - Basic keyboard input
+7. **Implement mouse.js** - Mouse input and events
+8. **Implement touch.js** - Touch support for mobile
+9. **Implement gamepad.js** - Gamepad support
 10. **Complete remaining core features** - Event system (onevent, offevent, etc.)
 
 ---
 
-**Last Updated:** October 16, 2025
+**Last Updated:** October 19, 2025

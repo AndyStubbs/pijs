@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Sound Test 1 - Basic Sounds</title>
+	<meta charset="utf-8">
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			padding: 20px;
+			background: #222;
+			color: #fff;
+		}
+		button {
+			margin: 10px;
+			padding: 10px 20px;
+			font-size: 16px;
+			cursor: pointer;
+		}
+		.section {
+			margin-bottom: 30px;
+			padding: 20px;
+			background: #333;
+			border-radius: 5px;
+		}
+	</style>
+</head>
+<body>
+	<h1>Sound Module Test</h1>
+
+	<div class="section">
+		<h2>Basic Sounds</h2>
+		<button onclick="playBeep()">Play Beep (440 Hz)</button>
+		<button onclick="playLowNote()">Play Low Note (220 Hz)</button>
+		<button onclick="playHighNote()">Play High Note (880 Hz)</button>
+		<button onclick="stopAllSounds()">Stop All</button>
+	</div>
+
+	<div class="section">
+		<h2>Waveforms</h2>
+		<button onclick="playSine()">Sine Wave</button>
+		<button onclick="playSquare()">Square Wave</button>
+		<button onclick="playSawtooth()">Sawtooth</button>
+		<button onclick="playTriangle()">Triangle (default)</button>
+	</div>
+
+	<div class="section">
+		<h2>ADSR Envelope</h2>
+		<button onclick="playWithAttack()">With Attack</button>
+		<button onclick="playWithDecay()">With Decay</button>
+		<button onclick="playLong()">Long Note (2s)</button>
+	</div>
+
+	<div class="section">
+		<h2>Volume Control</h2>
+		<button onclick="setVol(1.0)">Volume 100%</button>
+		<button onclick="setVol(0.5)">Volume 50%</button>
+		<button onclick="setVol(0.25)">Volume 25%</button>
+		<button onclick="playBeep()">Test Current Volume</button>
+	</div>
+
+	<script src="../../../build/pi.js"></script>
+	<script>
+		function playBeep() {
+			$.sound( { "frequency": 440, "duration": 0.5 } );
+		}
+
+		function playLowNote() {
+			$.sound( { "frequency": 220, "duration": 0.5 } );
+		}
+
+		function playHighNote() {
+			$.sound( { "frequency": 880, "duration": 0.5 } );
+		}
+
+		function playSine() {
+			$.sound( { "frequency": 440, "duration": 0.5, "oType": "sine" } );
+		}
+
+		function playSquare() {
+			$.sound( { "frequency": 440, "duration": 0.5, "oType": "square" } );
+		}
+
+		function playSawtooth() {
+			$.sound( { "frequency": 440, "duration": 0.5, "oType": "sawtooth" } );
+		}
+
+		function playTriangle() {
+			$.sound( { "frequency": 440, "duration": 0.5, "oType": "triangle" } );
+		}
+
+		function playWithAttack() {
+			$.sound( { "frequency": 440, "duration": 0.5, "attack": 0.2 } );
+		}
+
+		function playWithDecay() {
+			$.sound( { "frequency": 440, "duration": 0.5, "decay": 0.3 } );
+		}
+
+		function playLong() {
+			$.sound( { "frequency": 440, "duration": 2.0 } );
+		}
+
+		function setVol( vol ) {
+			$.setVolume( vol );
+		}
+
+		function stopAllSounds() {
+			$.stopSound( null );
+		}
+	</script>
+</body>
+</html>
+

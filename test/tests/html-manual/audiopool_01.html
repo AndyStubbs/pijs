@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Audio Pool Test 1</title>
+	<meta charset="utf-8">
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			padding: 20px;
+			background: #222;
+			color: #fff;
+		}
+		button {
+			margin: 10px;
+			padding: 10px 20px;
+			font-size: 16px;
+			cursor: pointer;
+		}
+		.section {
+			margin-bottom: 30px;
+			padding: 20px;
+			background: #333;
+			border-radius: 5px;
+		}
+		pre {
+			background: #111;
+			padding: 10px;
+			border-radius: 5px;
+			overflow-x: auto;
+		}
+		#status {
+			background: #111;
+			padding: 10px;
+			border-radius: 5px;
+			margin-top: 10px;
+			min-height: 20px;
+		}
+	</style>
+</head>
+<body>
+	<h1>Audio Pool Test</h1>
+
+	<div class="section">
+		<h2>Audio Pool Info</h2>
+		<p>Audio pools allow you to play the same sound multiple times simultaneously.</p>
+		<p>Each pool maintains multiple instances of the same audio file that can play overlapping.</p>
+		<div id="status">Ready to load audio...</div>
+	</div>
+
+	<div class="section">
+		<h2>Setup</h2>
+		<button onclick="loadAudio()">Load Test Audio</button>
+		<p>Note: This test uses a data URL beep sound since we don't have audio files in the repo.</p>
+	</div>
+
+	<div class="section">
+		<h2>Play Sounds</h2>
+		<button onclick="playSingleSound()">Play Once</button>
+		<button onclick="playRapidFire()">Rapid Fire (5x)</button>
+		<button onclick="playOverlapping()">Overlapping (3x with delay)</button>
+		<button onclick="stopPool()">Stop All</button>
+	</div>
+
+	<div class="section">
+		<h2>Volume Control</h2>
+		<button onclick="playWithVolume(1.0)">Play at 100%</button>
+		<button onclick="playWithVolume(0.5)">Play at 50%</button>
+		<button onclick="playWithVolume(0.25)">Play at 25%</button>
+	</div>
+
+	<script src="../../../build/pi.js"></script>
+	<script>
+		let audioPoolId = null;
+
+		// Generate a simple beep sound as a data URL
+		// This creates a 0.5 second 440Hz beep
+		function generateBeepDataURL() {
+
+			// For this test, we'll use a silent audio file
+			// In a real application, you would load an actual audio file
+			return "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+		}
+
+		function loadAudio() {
+			const status = document.getElementById( "status" );
+			status.textContent = "Loading audio pool with 5 instances...";
+
+			try {
+
+				// Note: In a real application, use an actual audio file URL
+				// audioPoolId = $.createAudioPool( "sounds/beep.mp3", 5 );
+				
+				// For testing without external files, we use a data URL
+				audioPoolId = $.createAudioPool( generateBeepDataURL(), 5 );
+
+				$.ready( () => {
+					status.textContent = "Audio pool loaded successfully! Pool ID: " + audioPoolId;
+				} );
+			} catch( error ) {
+				status.textContent = "Error: " + error.message;
+				console.error( error );
+			}
+		}
+
+		function playSingleSound() {
+			if( !audioPoolId ) {
+				alert( "Please load audio first!" );
+				return;
+			}
+
+			try {
+				$.playAudioPool( audioPoolId );
+			} catch( error ) {
+				alert( "Error: " + error.message );
+				console.error( error );
+			}
+		}
+
+		function playRapidFire() {
+			if( !audioPoolId ) {
+				alert( "Please load audio first!" );
+				return;
+			}
+
+			try {
+
+				// Play 5 sounds in rapid succession
+				// The audio pool ensures they can all play simultaneously
+				for( let i = 0; i < 5; i++ ) {
+					setTimeout( () => {
+						$.playAudioPool( audioPoolId );
+					}, i * 100 );
+				}
+			} catch( error ) {
+				alert( "Error: " + error.message );
+				console.error( error );
+			}
+		}
+
+		function playOverlapping() {
+			if( !audioPoolId ) {
+				alert( "Please load audio first!" );
+				return;
+			}
+
+			try {
+
+				// Play 3 sounds with longer delays so they overlap
+				for( let i = 0; i < 3; i++ ) {
+					setTimeout( () => {
+						$.playAudioPool( audioPoolId, 1.0, 0, 1.5 );
+					}, i * 500 );
+				}
+			} catch( error ) {
+				alert( "Error: " + error.message );
+				console.error( error );
+			}
+		}
+
+		function playWithVolume( volume ) {
+			if( !audioPoolId ) {
+				alert( "Please load audio first!" );
+				return;
+			}
+
+			try {
+				$.playAudioPool( audioPoolId, volume );
+			} catch( error ) {
+				alert( "Error: " + error.message );
+				console.error( error );
+			}
+		}
+
+		function stopPool() {
+			if( !audioPoolId ) {
+				alert( "Please load audio first!" );
+				return;
+			}
+
+			try {
+				$.stopAudioPool( audioPoolId );
+			} catch( error ) {
+				alert( "Error: " + error.message );
+				console.error( error );
+			}
+		}
+	</script>
+</body>
+</html>
+

@@ -29,6 +29,8 @@ import * as mouse from "./modules/mouse.js";
 import * as touch from "./modules/touch.js";
 import * as gamepad from "./modules/gamepad.js";
 import * as press from "./modules/press.js";
+import * as sound from "./modules/sound.js";
+import * as play from "./modules/play.js";
 import * as plugins from "./core/plugins.js";
 
 // Assets
@@ -59,6 +61,8 @@ mouse.init();
 touch.init();
 gamepad.init();
 press.init();
+sound.init();
+play.init();
 plugins.init();
 
 // Append all the commands to the api

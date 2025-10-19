@@ -293,6 +293,25 @@ export function getInt( val, def ) {
 	return Math.round( parsed );
 }
 
+/**
+ * Parse float with default value
+ * 
+ * @param {*} val - Value to parse
+ * @param {number} def - Default value if parsing fails
+ * @returns {number} Parsed float or default
+ */
+export function getFloat( val, def ) {
+	if( val === null || val === undefined ) {
+		return def;
+	}
+	const parsed = Number( val );
+	if( !Number.isFinite( parsed ) ) {
+		return def;
+	}
+
+	return parsed;
+}
+
 // Queue microtask (built-in in modern browsers)
 // Wrap to preserve window context
 export const queueMicrotask = ( callback ) => {

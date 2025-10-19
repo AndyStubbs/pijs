@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Play Test 1 - Musical Notation</title>
+	<meta charset="utf-8">
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			padding: 20px;
+			background: #222;
+			color: #fff;
+		}
+		button {
+			margin: 10px;
+			padding: 10px 20px;
+			font-size: 16px;
+			cursor: pointer;
+		}
+		.section {
+			margin-bottom: 30px;
+			padding: 20px;
+			background: #333;
+			border-radius: 5px;
+		}
+		pre {
+			background: #111;
+			padding: 10px;
+			border-radius: 5px;
+			overflow-x: auto;
+		}
+	</style>
+</head>
+<body>
+	<h1>PLAY Command Test</h1>
+
+	<div class="section">
+		<h2>Simple Melodies</h2>
+		<button onclick="playScale()">Play C Major Scale</button>
+		<pre>$.play( "C D E F G A B C5" );</pre>
+		
+		<button onclick="playMaryHadALamb()">Mary Had a Little Lamb</button>
+		<pre>$.play( "L4 E D C D E E E2 D D D2 E G G2 E D C D E E E E D D E D C2" );</pre>
+	</div>
+
+	<div class="section">
+		<h2>Commands</h2>
+		<button onclick="playOctaves()">Octave Changes (O)</button>
+		<pre>$.play( "O3 C O4 C O5 C O6 C" );</pre>
+
+		<button onclick="playTempo()">Tempo (T120)</button>
+		<pre>$.play( "T60 C D E F T120 C D E F T180 C D E F" );</pre>
+
+		<button onclick="playVolume()">Volume (V)</button>
+		<pre>$.play( "V100 C V75 C V50 C V25 C" );</pre>
+	</div>
+
+	<div class="section">
+		<h2>Note Lengths</h2>
+		<button onclick="playRhythm()">Different Lengths</button>
+		<pre>$.play( "C1 C2 C4 C8 C16" );</pre>
+
+		<button onclick="playDotted()">Dotted Notes</button>
+		<pre>$.play( "C4. C4 C4.. C4" );</pre>
+	</div>
+
+	<div class="section">
+		<h2>Music Styles</h2>
+		<button onclick="playStaccato()">Staccato (MS)</button>
+		<pre>$.play( "MS C D E F G" );</pre>
+
+		<button onclick="playLegato()">Legato (ML)</button>
+		<pre>$.play( "ML C D E F G" );</pre>
+
+		<button onclick="playNormal()">Normal (MN)</button>
+		<pre>$.play( "MN C D E F G" );</pre>
+	</div>
+
+	<div class="section">
+		<h2>Waveforms</h2>
+		<button onclick="playSineWave()">Sine Wave</button>
+		<pre>$.play( "SINE C D E F G" );</pre>
+
+		<button onclick="playSquareWave()">Square Wave</button>
+		<pre>$.play( "SQUARE C D E F G" );</pre>
+
+		<button onclick="playSawtoothWave()">Sawtooth Wave</button>
+		<pre>$.play( "SAWTOOTH C D E F G" );</pre>
+	</div>
+
+	<div class="section">
+		<h2>Multiple Tracks (Chords)</h2>
+		<button onclick="playChord()">C Major Chord</button>
+		<pre>$.play( "C2, E2, G2" );</pre>
+
+		<button onclick="playMelodyWithBass()">Melody with Bass</button>
+		<pre>$.play( "O4 C D E F G A, O2 C1 G1" );</pre>
+	</div>
+
+	<div class="section">
+		<h2>Controls</h2>
+		<button onclick="stopMusic()">Stop All Music</button>
+	</div>
+
+	<script src="../../../build/pi.js"></script>
+	<script>
+		function playScale() {
+			$.play( "C D E F G A B C5" );
+		}
+
+		function playMaryHadALamb() {
+			$.play( "L4 E D C D E E E2 D D D2 E G G2 E D C D E E E E D D E D C2" );
+		}
+
+		function playOctaves() {
+			$.play( "O3 C O4 C O5 C O6 C" );
+		}
+
+		function playTempo() {
+			$.play( "T60 C D E F T120 C D E F T180 C D E F" );
+		}
+
+		function playVolume() {
+			$.play( "V100 C V75 C V50 C V25 C" );
+		}
+
+		function playRhythm() {
+			$.play( "C1 C2 C4 C8 C16" );
+		}
+
+		function playDotted() {
+			$.play( "C4. C4 C4.. C4" );
+		}
+
+		function playStaccato() {
+			$.play( "MS C D E F G" );
+		}
+
+		function playLegato() {
+			$.play( "ML C D E F G" );
+		}
+
+		function playNormal() {
+			$.play( "MN C D E F G" );
+		}
+
+		function playSineWave() {
+			$.play( "SINE C D E F G" );
+		}
+
+		function playSquareWave() {
+			$.play( "SQUARE C D E F G" );
+		}
+
+		function playSawtoothWave() {
+			$.play( "SAWTOOTH C D E F G" );
+		}
+
+		function playChord() {
+			$.play( "C2, E2, G2" );
+		}
+
+		function playMelodyWithBass() {
+			$.play( "O4 C D E F G A, O2 C1 G1" );
+		}
+
+		function stopMusic() {
+			$.stopPlay( null );
+		}
+	</script>
+</body>
+</html>
+
