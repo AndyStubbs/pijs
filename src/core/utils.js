@@ -121,6 +121,15 @@ export function convertToColor( color ) {
 	return colorStringToColor( color );
 }
 
+export function calcColorDifference( c1, c2, w = [ 0.2, 0.68, 0.07, 0.05 ] ) {
+	const dr = c1.r - c2.r;
+	const dg = c1.g - c2.g;
+	const db = c1.b - c2.b;
+	const da = c1.a - c2.a;
+
+	return ( dr * dr * w[ 0 ] + dg * dg * w[ 1 ] + db * db * w[ 2 ] + da * da * w[ 3 ] );
+}
+
 // Data conversion utilities
 
 /**

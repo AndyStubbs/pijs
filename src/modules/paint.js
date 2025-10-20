@@ -101,8 +101,13 @@ function paint( screenData, options ) {
 		return;
 	}
 
+	// Create a simple color structure for the calc weight util
+	const startColor = { "r": startR, "g": startG, "b": startB, "a": startA };
+
 	// Calculate tolerance threshold for color comparison
-	const maxDifference = ( 255 * 255 ) * 3.25;
+	// Using perceptual weights: [0.2, 0.68, 0.07, 0.05] for R, G, B, A
+	const weights = [ 0.2, 0.68, 0.07, 0.05 ];
+	const maxDifference = ( 255 * 255 ) * weights.reduce( ( a, b ) => a + b );
 	const toleranceThreshold = tolerance * ( 2 - tolerance ) * maxDifference;
 
 	// Use Uint8Array for efficient visited pixel tracking
@@ -122,19 +127,13 @@ function paint( screenData, options ) {
 		const pixel = queue[ head++ ];
 		const px = pixel.x;
 		const py = pixel.y;
-
 		const i = ( py * width + px ) * 4;
-		const pixelR = data[ i ];
-		const pixelG = data[ i + 1 ];
-		const pixelB = data[ i + 2 ];
-		const pixelA = data[ i + 3 ];
 
-		// Calculate color difference
-		const dr = pixelR - startR;
-		const dg = pixelG - startG;
-		const db = pixelB - startB;
-		const da = pixelA - startA;
-		const difference = ( dr * dr + dg * dg + db * db + da * da * 0.25 );
+		// Calculate color difference using utility function with perceptual weights
+		const pixelColor = {
+			"r": data[ i ], "g": data[ i + 1 ], "b": data[ i + 2 ], "a": data[ i + 3 ]
+		};
+		const difference = utils.calcColorDifference( startColor, pixelColor, weights );
 		const similarity = maxDifference - difference;
 
 		// Skip if color doesn't match within tolerance

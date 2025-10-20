@@ -222,12 +222,10 @@ function setColor( screenData, options ) {
 screenManager.addCommand( "findColor", findColor, [ "color", "tolerance", "isAddToPalette" ] );
 function findColor( screenData, options ) {
 	let color = options.color;
-	let tolerance = options.tolerance;
+	let tolerance = utils.getFloat( options.tolerance, 1 );
 	const isAddToPalette = !!options.isAddToPalette;
 
-	if( tolerance == null ) {
-		tolerance = 1;
-	} else if( isNaN( tolerance ) || tolerance < 0 || tolerance > 1 ) {
+	if( tolerance === null || tolerance < 0 || tolerance > 1 ) {
 		const error = new RangeError(
 			"findColor: parameter tolerance must be a number between 0 and 1"
 		);
@@ -523,21 +521,20 @@ function findColorIndex( color, pal, tolerance, cache = {} ) {
 	const maxDifference = ( 255 * 255 ) * 3.25;
 	tolerance = tolerance * ( 2 - tolerance ) * maxDifference;
 
-	// TODO: Maybe add special handling for pal index 0 which is transparent color
 	// Find exact match or closest color in palette
 	for( let i = 0; i < pal.length; i++ ) {
 		if( pal[ i ].s === color.s ) {
 			cache[ color.s ] = i;
 			return i;
 		} else {
-			const dr = pal[ i ].r - color.r;
-			const dg = pal[ i ].g - color.g;
-			const db = pal[ i ].b - color.b;
-			const da = pal[ i ].a - color.a;
+			let difference;
 
-			// TODO: Need to unify color distance formula in all use cases
-			// TODO: Research better color distance formulas
-			const difference = ( dr * dr + dg * dg + db * db + da * da * 0.25 );
+			//Special case for color 0 we care more about alpha values for 0 - transparent color
+			if( i === 0 ) {
+				difference = utils.calcColorDifference( pal[ i ], color, [ 0.2, 0.2, 0.2, 0.4 ] );
+			} else {
+				difference = utils.calcColorDifference( pal[ i ], color );
+			}
 			const similarity = maxDifference - difference;
 
 			if( similarity >= tolerance ) {
