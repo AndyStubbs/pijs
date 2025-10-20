@@ -15,6 +15,7 @@ import * as commands from "./core/commands.js";
 import * as screenManager from "./core/screen-manager.js";
 import * as colors from "./core/colors.js";
 import * as renderer from "./core/renderer.js";
+import * as events from "./core/events.js";
 
 // Other Modules
 import * as graphics from "./modules/graphics.js";
@@ -49,6 +50,7 @@ commands.init( api, screenManager );
 screenManager.init();
 renderer.init();
 colors.init();
+events.init();
 graphics.init();
 graphicsAdvanced.init();
 draw.init();

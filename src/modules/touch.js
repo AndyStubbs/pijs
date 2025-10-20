@@ -45,6 +45,17 @@ export function init() {
 	window.addEventListener( "blur", onWindowBlur );
 }
 
+/**
+ * Clear all touch event handlers for a screen
+ * Called by clearEvents command
+ * 
+ * @param {Object} screenData - Screen data object
+ */
+export function clearTouchEvents( screenData ) {
+	screenData.onTouchEventListeners = {};
+	screenData.touchEventListenersActive = 0;
+}
+
 function initTouchData( screenData ) {
 
 	// Initialize touch event listeners

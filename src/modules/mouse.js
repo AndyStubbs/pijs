@@ -41,6 +41,21 @@ export function init() {
 	window.addEventListener( "blur", onWindowBlur );
 }
 
+/**
+ * Clear all mouse event handlers for a screen
+ * Called by clearEvents command
+ * 
+ * @param {Object} screenData - Screen data object
+ */
+export function clearMouseEvents( screenData ) {
+	screenData.onMouseEventListeners = {
+		"down": [],
+		"up": [],
+		"move": []
+	};
+	screenData.mouseEventListenersActive = 0;
+}
+
 function initMouseData( screenData ) {
 
 	// Initialize mouse position to center of screen

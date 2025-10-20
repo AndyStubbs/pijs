@@ -31,6 +31,28 @@ export function init() {
 	screenManager.addScreenInitFunction( initPressData );
 }
 
+/**
+ * Clear all press event handlers for a screen
+ * Called by clearEvents command
+ * 
+ * @param {Object} screenData - Screen data object
+ */
+export function clearPressEvents( screenData ) {
+	screenData.onPressEventListeners = {};
+	screenData.pressEventListenersActive = 0;
+}
+
+/**
+ * Clear all click event handlers for a screen
+ * Called by clearEvents command
+ * 
+ * @param {Object} screenData - Screen data object
+ */
+export function clearClickEvents( screenData ) {
+	screenData.onClickEventListeners = {};
+	screenData.clickEventListenersActive = 0;
+}
+
 function initPressData( screenData ) {
 
 	// Initialize press event listeners

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>clearEvents Test 2 - No Screen</title>
+	<meta charset="utf-8">
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			padding: 20px;
+			background: #222;
+			color: #fff;
+		}
+		button {
+			margin: 10px;
+			padding: 10px 20px;
+			font-size: 16px;
+			cursor: pointer;
+		}
+		.section {
+			margin-bottom: 30px;
+			padding: 20px;
+			background: #333;
+			border-radius: 5px;
+		}
+		#log {
+			background: #111;
+			padding: 15px;
+			border-radius: 5px;
+			min-height: 200px;
+			font-family: monospace;
+			max-height: 400px;
+			overflow-y: auto;
+		}
+		.log-entry {
+			margin: 5px 0;
+			padding: 5px;
+			border-left: 3px solid #4CAF50;
+			padding-left: 10px;
+		}
+		.log-clear {
+			border-left-color: #f44336;
+		}
+		.log-error {
+			border-left-color: #ff9800;
+		}
+	</style>
+</head>
+<body>
+	<h1>clearEvents() Test - Without Screen</h1>
+	<p>This test verifies that clearEvents works for keyboard and gamepad even without a screen.</p>
+
+	<div class="section">
+		<h2>Setup Event Handlers (No Screen Required)</h2>
+		<button onclick="setupKeyboard()">Add Keyboard Handler (press any key)</button>
+		<button onclick="setupGamepad()">Add Gamepad Connection Handler</button>
+		<button onclick="setupBoth()">Add Both</button>
+	</div>
+
+	<div class="section">
+		<h2>Clear Events (Should Work Without Screen)</h2>
+		<button onclick="clearKeyboard()">Clear Keyboard</button>
+		<button onclick="clearGamepad()">Clear Gamepad</button>
+		<button onclick="clearAll()">Clear ALL</button>
+	</div>
+
+	<div class="section">
+		<h2>Try to Clear Screen-Dependent Events (Should Fail)</h2>
+		<button onclick="tryMouse()">Try Clear Mouse (should error)</button>
+		<button onclick="tryTouch()">Try Clear Touch (should error)</button>
+		<button onclick="tryPress()">Try Clear Press (should error)</button>
+	</div>
+
+	<div class="section">
+		<h2>Event Log</h2>
+		<button onclick="clearLog()">Clear Log</button>
+		<div id="log"></div>
+	</div>
+
+	<script src="../../../build/pi.js"></script>
+	<script>
+		// NOTE: No screen is created - testing without screen!
+
+		function log( message, isError = false, isClear = false ) {
+			const logDiv = document.getElementById( "log" );
+			const entry = document.createElement( "div" );
+			let className = "log-entry";
+			if( isClear ) {
+				className += " log-clear";
+			} else if( isError ) {
+				className += " log-error";
+			}
+			entry.className = className;
+			entry.textContent = new Date().toLocaleTimeString() + " - " + message;
+			logDiv.appendChild( entry );
+			logDiv.scrollTop = logDiv.scrollHeight;
+		}
+
+		function setupKeyboard() {
+			try {
+				$.onkey( "any", "down", ( data ) => {
+					log( `Keyboard: Key "${data.key}" pressed` );
+				} );
+				log( "✓ Keyboard handler added (no screen required)" );
+			} catch( error ) {
+				log( "✗ Error: " + error.message, true );
+			}
+		}
+
+		function setupGamepad() {
+			try {
+				$.onGamepadConnected( ( gamepad ) => {
+					log( `Gamepad connected: ${gamepad.id}` );
+				} );
+				log( "✓ Gamepad handler added (no screen required)" );
+			} catch( error ) {
+				log( "✗ Error: " + error.message, true );
+			}
+		}
+
+		function setupBoth() {
+			setupKeyboard();
+			setupGamepad();
+		}
+
+		function clearKeyboard() {
+			try {
+				$.clearEvents( "keyboard" );
+				log( "✓ Keyboard handlers cleared (no screen required)", false, true );
+			} catch( error ) {
+				log( "✗ Error: " + error.message, true );
+			}
+		}
+
+		function clearGamepad() {
+			try {
+				$.clearEvents( "gamepad" );
+				log( "✓ Gamepad handlers cleared (no screen required)", false, true );
+			} catch( error ) {
+				log( "✗ Error: " + error.message, true );
+			}
+		}
+
+		function clearAll() {
+			try {
+				$.clearEvents();
+				log( "✓ ALL handlers cleared (keyboard + gamepad, no screen needed)", false, true );
+			} catch( error ) {
+				log( "✗ Error: " + error.message, true );
+			}
+		}
+
+		function tryMouse() {
+			try {
+				$.clearEvents( "mouse" );
+				log( "✗ This should have thrown an error!", true );
+			} catch( error ) {
+				log( "✓ Expected error: " + error.message, true );
+			}
+		}
+
+		function tryTouch() {
+			try {
+				$.clearEvents( "touch" );
+				log( "✗ This should have thrown an error!", true );
+			} catch( error ) {
+				log( "✓ Expected error: " + error.message, true );
+			}
+		}
+
+		function tryPress() {
+			try {
+				$.clearEvents( "press" );
+				log( "✗ This should have thrown an error!", true );
+			} catch( error ) {
+				log( "✓ Expected error: " + error.message, true );
+			}
+		}
+
+		function clearLog() {
+			document.getElementById( "log" ).innerHTML = "";
+		}
+
+		// Initial message
+		log( "Ready! No screen created - testing keyboard/gamepad clearEvents without screen." );
+		log( "Try adding keyboard handlers and pressing keys, then clearing them." );
+	</script>
+</body>
+</html>
+

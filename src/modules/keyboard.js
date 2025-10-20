@@ -38,6 +38,16 @@ export function init() {
 	window.addEventListener( "blur", onWindowBlur );
 }
 
+/**
+ * Clear all keyboard event handlers
+ * Called by clearEvents command
+ */
+export function clearKeyboardEvents() {
+	for( const mode in m_onKeyHandlers ) {
+		delete m_onKeyHandlers[ mode ];
+	}
+}
+
 
 /***************************************************************************************************
  * External API Commands

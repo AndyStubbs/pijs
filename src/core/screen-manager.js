@@ -39,17 +39,18 @@ export function init() {
 	window.addEventListener( "resize", resizeScreens );
 }
 
-export function addCommand( name, fn, parameterNames ) {
+export function addCommand( name, fn, parameterNames, screenOptional = false ) {
 
 	// Add the command to the command list
 	m_commandList.push( {
 		"name": name,
 		"fn": fn,
-		"parameterNames": parameterNames
+		"parameterNames": parameterNames,
+		"screenOptional": screenOptional
 	} );
 
 	// Add the command to the global command list
-	commands.addCommand( name, fn, parameterNames, true );
+	commands.addCommand( name, fn, parameterNames, true, screenOptional );
 }
 
 export function addPixelCommand( name, fn, parameterNames ) {

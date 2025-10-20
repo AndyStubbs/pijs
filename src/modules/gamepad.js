@@ -40,6 +40,15 @@ export function init() {
 	window.addEventListener( "focus", onWindowFocus );
 }
 
+/**
+ * Clear all gamepad event handlers
+ * Called by clearEvents command
+ */
+export function clearGamepadEvents() {
+	m_onConnectHandlers.length = 0;
+	m_onDisconnectHandlers.length = 0;
+}
+
 
 /***************************************************************************************************
  * External API Commands

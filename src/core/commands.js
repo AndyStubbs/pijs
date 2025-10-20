@@ -70,13 +70,17 @@ export function done() {
  * 
  * @param {string} name - Command name
  * @param {Function} fn - Command function
+ * @param {Array<string>} parameterNames - Parameter names
+ * @param {boolean} isScreen - If true, command requires screen
+ * @param {boolean} screenOptional - If true, screen is optional (only valid if isScreen is true)
  */
-export function addCommand( name, fn, parameterNames, isScreen = false ) {
+export function addCommand( name, fn, parameterNames, isScreen = false, screenOptional = false ) {
 	const cmd = {
 		"name": name,
 		"fn": fn,
 		"parameterNames": parameterNames,
-		"isScreen": isScreen
+		"isScreen": isScreen,
+		"screenOptional": screenOptional
 	};
 	m_commandList.push( cmd );
 
@@ -115,8 +119,9 @@ export function processApi() {
 	} );
 	
 	// Add the set commands -- not all set commands are screen commands but some are so use
-	// screenManager to add command
-	m_screenManager.addCommand( "set", set, setList );
+	// screenManager to add command. Set is screen-optional since it handles both screen and
+	// non-screen settings.
+	m_screenManager.addCommand( "set", set, setList, true );
 
 	// Sort global command list
 	m_commandList.sort( ( a, b ) => a.name.localeCompare( b.name ) );
@@ -136,7 +141,7 @@ export function processApiCommand( command ) {
 		m_api[ command.name ] = ( ...args ) => {
 			const options = utils.parseOptions( args, command.parameterNames );
 			const screenData = m_screenManager.getActiveScreen();
-			if( !screenData && command.name !== "set" ) {
+			if( !screenData && !command.screenOptional ) {
 				const error = new Error( `${command.name}: No screens available for command.` );
 				error.code = "NO_SCREEN";
 				throw error;
