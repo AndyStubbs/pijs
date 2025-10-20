@@ -232,8 +232,6 @@ function set( screenData, options ) {
 			const setting = m_settings[ optionName ];
 			const optionValues = options[ optionName ];
 
-			// TODO: Make sure this works with nested objects:
-			// 		 EX: set( { "pos": { "row": 1, "col": 1 } } );
 			// Parse the options from the setting
 			// Wrap optionValues in array if not already an array
 			//const argsArray = Array.isArray( optionValues ) ? optionValues : [ optionValues ];

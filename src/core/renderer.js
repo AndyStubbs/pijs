@@ -130,7 +130,7 @@ function setAutoRender( screenData, options ) {
 screenManager.addCommand( "setPen", setPen, [ "pen", "size" ] );
 function setPen( screenData, options ) {
 	const pen = options.pen;
-	let size = Math.round( options.size );
+	let size = utils.getFloat( options.size, null );
 
 	if( !m_pens[ pen ] ) {
 		const error = new TypeError(
@@ -140,8 +140,8 @@ function setPen( screenData, options ) {
 		throw error;
 	}
 
-	if( !Number.isInteger( size ) ) {
-		const error = new TypeError( "setPen: parameter size must be an integer" );
+	if( size === null ) {
+		const error = new TypeError( "setPen: parameter size must be a number" );
 		error.code = "INVALID_SIZE";
 		throw error;
 	}
@@ -169,11 +169,7 @@ function setPen( screenData, options ) {
 		screenData.pen = m_pens[ pen ].fn;
 
 		// Set the line width for context draw
-		
-		// TODO: Maybe set this to just size - borders look too big on canvas draw but
-		// it is fit to the canvas standards so maybe it's not important to have pixel
-		// and AA match 100%
-		screenData.context.lineWidth = size * 2 - 1;
+		screenData.context.lineWidth = size;
 	}
 
 	screenData.penData.size = size;
@@ -324,8 +320,8 @@ function penSetPixel( screenData, x, y, c ) {
 
 function penSquare( screenData, x, y, c ) {
 
-	// Size must always be an odd number
-	const size = screenData.penData.size * 2 - 1;
+	// Size must always be an odd integer
+	const size = Math.round( screenData.penData.size ) | 1;
 
 	// Compute the center offset of the square
 	const offset = Math.round( size / 2 ) - 1;
@@ -346,8 +342,11 @@ function penSquare( screenData, x, y, c ) {
 
 function penCircle( screenData, x, y, c ) {
 
+	// Pen circle size must be an integer
+	const baseSize = Math.round( screenData.penData.size );
+
 	// Special case for pen size 2
-	if( screenData.penData.size === 2 ) {
+	if( baseSize === 2 ) {
 		if( x >= 0 && x < screenData.width && y >= 0 && y < screenData.height ) {
 			screenData.blend( screenData, x, y, c );
 		}
@@ -367,32 +366,36 @@ function penCircle( screenData, x, y, c ) {
 	}
 
 	// Double size to get the size of the outer box
-	const size = screenData.penData.size * 2;
+	const diameter = baseSize * 2;
 
 	// Half is size of radius
-	const half = screenData.penData.size;
+	const half = baseSize;
 
 	// Calculate the center of circle
 	const offset = half - 1;
 
+	// Pre-calculate squared radius threshold
+	// We compare squared distance to (half - 0.5)^2
+	const radiusThresholdSq = ( half - 0.5 ) * ( half - 0.5 );
+
 	// Calculate bounds and clip to screen
 	const startX = utils.clamp( x - offset, 0, screenData.width );
-	const endX = utils.clamp( x - offset + size, 0, screenData.width );
+	const endX = utils.clamp( x - offset + diameter, 0, screenData.width );
 	const startY = utils.clamp( y - offset, 0, screenData.height );
-	const endY = utils.clamp( y - offset + size, 0, screenData.height );
+	const endY = utils.clamp( y - offset + diameter, 0, screenData.height );
 
 	// Loop through the clipped square boundary
 	for( let py = startY; py < endY; py++ ) {
-		const y3 = py - y;
+		const dy = py - y;
 
 		for( let px = startX; px < endX; px++ ) {
-			const x3 = px - x;
+			const dx = px - x;
 
-			// Compute the radius of point - round to make pixel perfect
-			const r = Math.round( Math.sqrt( x3 * x3 + y3 * y3 ) );
+			// Compute the squared distance from the center
+			const distSq = dx * dx + dy * dy;
 
-			// Only draw the pixel if it is inside the circle
-			if( r < half ) {
+			// Only draw the pixel if its squared distance is less than the threshold
+			if( distSq < radiusThresholdSq ) {
 				screenData.blend( screenData, px, py, c );
 			}
 		}
