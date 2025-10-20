@@ -336,35 +336,54 @@ function aaEllipse( screenData, options ) {
 }
 
 
-// TODO: Add optional coordinate parameters that allow clipping of filter.
 // filterImg command
-screenManager.addCommand( "filterImg", filterImg, [ "filter" ] );
+screenManager.addCommand( "filterImg", filterImg, [ "filter", "x1", "y1", "x2", "y2" ] );
 function filterImg( screenData, options ) {
 	const filter = options.filter;
 
+	// Get optional clipping bounds (default to full screen)
+	let x1 = utils.getInt( options.x1, 0 );
+	let y1 = utils.getInt( options.y1, 0 );
+	let x2 = utils.getInt( options.x2, screenData.width - 1 );
+	let y2 = utils.getInt( options.y2, screenData.height - 1 );
+
 	if( !utils.isFunction( filter ) ) {
-		const error = new TypeError( "filter: Argument filter must be a callback function." );
+		const error = new TypeError( "filterImg: Argument filter must be a callback function." );
 		error.code = "INVALID_CALLBACK";
 		throw error;
+	}
+
+	// Validate and clamp bounds to screen dimensions
+	x1 = utils.clamp( x1, 0, screenData.width - 1 );
+	y1 = utils.clamp( y1, 0, screenData.height - 1 );
+	x2 = utils.clamp( x2, 0, screenData.width - 1 );
+	y2 = utils.clamp( y2, 0, screenData.height - 1 );
+
+	// Ensure x1 <= x2 and y1 <= y2
+	if( x1 > x2 ) {
+		const temp = x1;
+		x1 = x2;
+		x2 = temp;
+	}
+	if( y1 > y2 ) {
+		const temp = y1;
+		y1 = y2;
+		y2 = temp;
 	}
 
 	renderer.getImageData( screenData );
 	const data = screenData.imageData.data;
 
-	// Apply filter to all colors
-	for( let y = 0; y < screenData.height; y++ ) {
-		for( let x = 0; x < screenData.width; x++ ) {
+	// Apply filter to specified region
+	for( let y = y1; y <= y2; y++ ) {
+		for( let x = x1; x <= x2; x++ ) {
 			const i = ( ( screenData.width * y ) + x ) * 4;
-			const color = filter(
-				{
-					"r": data[ i ],
-					"g": data[ i + 1 ],
-					"b": data[ i + 2 ],
-					"a": data[ i + 3 ]
-				},
-				x,
-				y
-			);
+			const color = filter( {
+				"r": data[ i ],
+				"g": data[ i + 1 ],
+				"b": data[ i + 2 ],
+				"a": data[ i + 3 ]
+			}, x, y );
 			if(
 				color &&
 				Number.isInteger( color.r ) &&
@@ -382,7 +401,6 @@ function filterImg( screenData, options ) {
 
 	renderer.setImageDirty( screenData );
 }
-
 
 // bezier command
 screenManager.addPixelCommand(

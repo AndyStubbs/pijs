@@ -4,7 +4,6 @@
 		<title>Graphics Advanced Comprehensive Test</title>
 		<script type="text/toml">
 			[[TOML_START]]
-			test = "screenshot.js"
 			file = "graphics_advanced_comprehensive"
 			name = "graphics advanced comprehensive"
 			width = 640
@@ -223,7 +222,7 @@
 		// Create a test pattern to filter
 		$.setPixelMode( true );
 		
-		// Colorful pattern
+		// Colorful pattern - 3x2 grid of rectangles
 		$.setColor( 9 );
 		$.rect( 330, 270, 80, 30, 9 );
 		
@@ -261,9 +260,9 @@
 		$.setColor( 7 );
 		$.circle( 560, 325, 15, 7 );
 		
-		// Apply grayscale filter to top half
-		$.filterImg( function ( color, x, y ) {
-			if( x >= 320 && x < 640 && y >= 270 && y < 320 ) {
+		// Test 1: Apply grayscale filter to top-left rectangle using clipping
+		$.filterImg(
+			function ( color ) {
 				const avg = Math.round( ( color.r + color.g + color.b ) / 3 );
 				return {
 					"r": avg,
@@ -271,13 +270,122 @@
 					"b": avg,
 					"a": color.a
 				};
-			}
-			return color;
-		} );
+			},
+			330, 270, 409, 299
+		);
 		
-		// Apply color inversion filter to specific area
+		// Test 2: Apply color inversion filter to middle rectangle using clipping
+		$.filterImg(
+			function ( color ) {
+				return {
+					"r": 255 - color.r,
+					"g": 255 - color.g,
+					"b": 255 - color.b,
+					"a": color.a
+				};
+			},
+			420, 310, 499, 339
+		);
+		
+		// Test 3: Apply red tint to top-right rectangle using clipping
+		$.filterImg(
+			function ( color ) {
+				return {
+					"r": Math.min( 255, color.r + 50 ),
+					"g": color.g,
+					"b": color.b,
+					"a": color.a
+				};
+			},
+			510, 270, 589, 299
+		);
+		
+		// Test 4: Apply blue tint to bottom-right rectangle using clipping
+		$.filterImg(
+			function ( color ) {
+				return {
+					"r": color.r,
+					"g": color.g,
+					"b": Math.min( 255, color.b + 50 ),
+					"a": color.a
+				};
+			},
+			510, 310, 589, 339
+		);
+		
+		// Draw text labels
+		$.setColor( 15 );
+		$.setPosPx( 330, 355 );
+		$.print( "Filters with clipping:" );
+		$.setPosPx( 330, 365 );
+		$.print( "Gray/Inv/Red/Blue" );
+		
+		// Draw gradient pattern for additional filter tests
+		for( let y = 390; y < 450; y += 5 ) {
+			const colorVal = Math.floor( ( y - 390 ) / 60 * 14 ) + 1;
+			$.setColor( colorVal );
+			$.rect( 330, y, 280, 5, colorVal );
+		}
+		
+		// Test 5: Apply brightness adjustment to left half of gradient (full clipping)
+		$.filterImg(
+			function ( color ) {
+				const factor = 1.5;
+				return {
+					"r": Math.min( 255, Math.round( color.r * factor ) ),
+					"g": Math.min( 255, Math.round( color.g * factor ) ),
+					"b": Math.min( 255, Math.round( color.b * factor ) ),
+					"a": color.a
+				};
+			}, 330, 390, 469, 449
+		);
+		
+		// Test 6: Apply sepia tone to right half of gradient (full clipping)
+		$.filterImg(
+			function ( color ) {
+				const r = Math.min( 255, Math.round( color.r * 0.393 + color.g * 0.769 + color.b * 0.189 ) );
+				const g = Math.min( 255, Math.round( color.r * 0.349 + color.g * 0.686 + color.b * 0.168 ) );
+				const b = Math.min( 255, Math.round( color.r * 0.272 + color.g * 0.534 + color.b * 0.131 ) );
+				return {
+					"r": r,
+					"g": g,
+					"b": b,
+					"a": color.a
+				};
+			},
+			470, 390, 609, 449
+		);
+		
+		// Add divider line
+		$.setColor( 8 );
+		$.line( 469, 390, 469, 449 );
+		
+		// Labels for gradient tests
+		$.setColor( 0 );
+		$.setPosPx( 340, 455 );
+		$.print( "Bright" );
+		$.setPosPx( 520, 455 );
+		$.print( "Sepia" );
+		
+		// Create test pattern for additional clipping tests
+		$.setColor( 9 );
+		$.rect( 330, 460, 40, 15, 9 );
+		$.setColor( 10 );
+		$.rect( 375, 460, 40, 15, 10 );
+		$.setColor( 11 );
+		$.rect( 420, 460, 40, 15, 11 );
+		$.setColor( 12 );
+		$.rect( 465, 460, 40, 15, 12 );
+		$.setColor( 13 );
+		$.rect( 510, 460, 40, 15, 13 );
+		$.setColor( 14 );
+		$.rect( 555, 460, 40, 15, 14 );
+		
+		// Test 7: NO coordinates - applies to entire screen (backward compatibility)
+		// This should invert the bottom-left rectangle ONLY (within filterImg section)
+		// but technically processes whole screen
 		$.filterImg( function ( color, x, y ) {
-			if( x >= 420 && x < 510 && y >= 310 && y < 340 ) {
+			if( x >= 330 && x <= 369 && y >= 460 && y <= 474 ) {
 				return {
 					"r": 255 - color.r,
 					"g": 255 - color.g,
@@ -288,43 +396,38 @@
 			return color;
 		} );
 		
-		// Draw text after first filters
-		$.setColor( 15 );
-		$.setPosPx( 330, 355 );
-		$.print( "Grayscale (top)" );
-		$.setPosPx( 330, 365 );
-		$.print( "Inverted (middle)" );
-		$.setPosPx( 330, 375 );
-		$.print( "Original (bottom)" );
-		
-		// Apply brightness adjustment to bottom section
-		$.filterImg( function ( color, x, y ) {
-			if( x >= 320 && x < 640 && y >= 390 && y < 460 ) {
-				const factor = 1.5;
+		// Test 8: Partial coordinates - only x1, y1 provided (x2, y2 default to screen max)
+		// Darken filter starting from specific point to end of screen
+		$.filterImg(
+			function ( color ) {
 				return {
-					"r": Math.min( 255, Math.round( color.r * factor ) ),
-					"g": Math.min( 255, Math.round( color.g * factor ) ),
-					"b": Math.min( 255, Math.round( color.b * factor ) ),
+					"r": Math.round( color.r * 0.7 ),
+					"g": Math.round( color.g * 0.7 ),
+					"b": Math.round( color.b * 0.7 ),
 					"a": color.a
 				};
-			}
-			return color;
-		} );
+			},
+			465, 460
+		);
 		
-		// Draw gradient pattern for brightness test
-		for( let y = 390; y < 450; y += 5 ) {
-			const colorVal = Math.floor( ( y - 390 ) / 60 * 14 ) + 1;
-			$.setColor( colorVal );
-			$.rect( 330, y, 280, 5, colorVal );
-		}
+		// Test 9: Mixed coordinates - x1, y1, x2 provided, y2 defaults
+		// Green tint on second rectangle (override previous darkening partially)
+		$.filterImg(
+			function ( color ) {
+				return {
+					"r": color.r,
+					"g": Math.min( 255, color.g + 40 ),
+					"b": color.b,
+					"a": color.a
+				};
+			},
+			375, 460, 414
+		);
 		
 		// === Draw section dividers ===
 		$.setColor( 8 );
 		$.line( 320, 0, 320, 479 );
 		$.line( 0, 240, 639, 240 );
-		
-		// Final render
-		$.render();
 	} );
 </script>
 </body>
