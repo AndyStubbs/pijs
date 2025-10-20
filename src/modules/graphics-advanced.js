@@ -336,6 +336,7 @@ function aaEllipse( screenData, options ) {
 }
 
 
+// TODO: Add optional coordinate parameters that allow clipping of filter.
 // filterImg command
 screenManager.addCommand( "filterImg", filterImg, [ "filter" ] );
 function filterImg( screenData, options ) {

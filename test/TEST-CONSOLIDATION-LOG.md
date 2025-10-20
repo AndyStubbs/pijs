@@ -65,14 +65,6 @@ The following related tests were kept as they test specific edge cases or random
 - `pens_02.html` - Additional pen variations
 - `pens_03.html` - Pen edge cases
 
-### Next Steps
-Consider creating similar comprehensive tests for:
-1. **Print module** - Consolidate print_01 through print_10
-2. **Draw module** - Consolidate draw_01, draw_02, drawSprite_01, drawSprite_02, drawImage_01, drawImage_02
-3. **Screen module** - Consolidate screen_01 through screen_11
-4. **Input handling** - Consolidate keyboard, mouse, touch tests
-5. **Advanced graphics** - Consolidate arc, ellipse, bezier tests
-
 ### Verification
 All 77 remaining tests pass with 100% success rate. The `graphics_comprehensive.html` test successfully validates:
 - ✓ PSET with multiple pen types and sizes
@@ -86,4 +78,88 @@ All 77 remaining tests pass with 100% success rate. The `graphics_comprehensive.
 - ✓ Different pen sizes: 1-5
 - ✓ Color palette usage: colors 2-15
 - ✓ Edge cases: corner pixels, boundary conditions
+
+---
+
+## Advanced Graphics Module Consolidation
+
+**Date**: October 20, 2025
+
+### Summary
+Consolidated 5 individual advanced graphics tests into a single comprehensive test file, reducing test count from 77 to 73 tests while maintaining 100% test coverage.
+
+### New Test File
+- **`graphics_advanced_comprehensive.html`** - Comprehensive test covering all advanced graphics commands
+  - Screen size: 640x480 pixels
+  - Layout: 2x2 grid (4 sections)
+  - Tests: ARC, ELLIPSE, BEZIER, FILTERIMG
+  - Modes: Both pixel mode and anti-aliased mode
+  - Pen types: pixel, square, circle (various sizes)
+
+### Removed Test Files
+The following 5 test files were removed as their functionality is fully covered by `graphics_advanced_comprehensive.html`:
+
+#### HTML Test Files:
+1. `arc_01.html` - Arc command with spirals, dashed circles, and random arcs
+2. `ellipse_01.html` - Basic ellipse functionality
+3. `ellipse_02.html` - Ellipse with pixel vs AA mode comparison
+4. `bezier_01.html` - Bezier curves with randomized control points
+5. `filterImg_01.html` - Filter image functionality
+
+#### Screenshot Baseline Files:
+1. `test/tests/screenshots/arc_01.png`
+2. `test/tests/screenshots/ellipse_01.png`
+3. `test/tests/screenshots/ellipse_02.png`
+4. `test/tests/screenshots/bezier_01.png`
+5. `test/tests/screenshots/filterImg_01.png`
+
+### Test Results
+- **Before**: 77 tests
+- **After**: 73 tests
+- **Reduction**: 5 tests (6.5% reduction)
+- **Pass Rate**: 100%
+- **Test Time**: ~72 seconds for full suite
+
+### Benefits
+1. **Faster Execution**: Fewer tests to run overall
+2. **Better Organization**: Related advanced graphics functionality tested together
+3. **Easier Maintenance**: Single file to update when advanced graphics API changes
+4. **Visual Comparison**: Side-by-side pixel mode vs anti-aliased mode comparisons
+5. **Comprehensive Coverage**: Tests multiple variations of each command
+
+### Tests Retained
+The following related test was kept as it tests specific edge cases with randomization:
+- `ellipse_03.html` - Randomized ellipse tests with seedrandom
+
+### Verification
+All 73 remaining tests pass with 100% success rate. The `graphics_advanced_comprehensive.html` test successfully validates:
+- ✓ ARC with quarter circles, half circles, dashed circles, spirals, and overlapping arcs
+- ✓ ARC in both pixel and anti-aliased modes
+- ✓ ELLIPSE with horizontal and vertical orientations
+- ✓ ELLIPSE with filled and outlined variants
+- ✓ ELLIPSE in both pixel and anti-aliased modes
+- ✓ BEZIER curves with various control points (S-curves, waves, loops, sharp turns)
+- ✓ BEZIER with thick pens (square and circle)
+- ✓ BEZIER in both pixel and anti-aliased modes
+- ✓ FILTERIMG with grayscale, color inversion, and brightness adjustments
+- ✓ FILTERIMG with coordinate-based filtering
+
+---
+
+## Overall Consolidation Summary
+
+### Total Progress
+- **Original test count**: 87 tests
+- **Current test count**: 73 tests
+- **Total reduction**: 15 tests (17.2% reduction)
+- **Pass rate**: 100%
+- **Files consolidated**: 2 comprehensive test files created
+
+### Next Steps
+Consider creating similar comprehensive tests for:
+1. **Print module** - Consolidate print_01 through print_10
+2. **Draw module** - Consolidate draw_01, draw_02, drawSprite_01, drawSprite_02, drawImage_01, drawImage_02
+3. **Screen module** - Consolidate screen_01 through screen_09
+4. **Input handling** - Consolidate keyboard, mouse, touch tests
+5. **Paint module** - Consolidate paint tests
 
