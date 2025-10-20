@@ -523,7 +523,7 @@ function findColorIndex( color, pal, tolerance, cache = {} ) {
 	const maxDifference = ( 255 * 255 ) * 3.25;
 	tolerance = tolerance * ( 2 - tolerance ) * maxDifference;
 
-	// TODO: Maybe add special handling for pal index 0 which should is transparent color
+	// TODO: Maybe add special handling for pal index 0 which is transparent color
 	// Find exact match or closest color in palette
 	for( let i = 0; i < pal.length; i++ ) {
 		if( pal[ i ].s === color.s ) {

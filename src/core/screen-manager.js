@@ -166,13 +166,17 @@ function screen( options ) {
 	return screenData.api;
 }
 
+// TODO: Add test for removeScreen - check for memory leaks and event leaks
 // Remove the screen from the page and memory
 commands.addCommand( "removeScreen", removeScreen, [] );
 function removeScreen( screenData ) {
 	const screenId = screenData.id;
 
-	// TODO: uncomment out cancelInput once input is created
-	//screenData.api.cancelInput();
+	// Cancel any inputs
+	screenData.api.cancelInput();
+
+	// Clear all events
+	screenData.api.clearEvents();
 
 	// Store the screen ID before we start nullifying properties
 	const errorMessage = `Cannot call {METHOD}() on removed screen (id: ${screenId}). ` +
