@@ -177,6 +177,7 @@ function onkey( options ) {
 		"fn": fn,
 		"once": once,
 		"allowRepeat": allowRepeat,
+		"isRemoved": false
 	};
 	
 	// Add a on key handler for each of the key codes - in combo all must be pressed
@@ -229,10 +230,11 @@ function offkey( options ) {
 				handler.allowRepeat === allowRepeat
 			) {
 				toRemove.push( i );
+				handler.isRemoved = true;
 			}
 		}
 		for( let i = toRemove.length - 1; i >= 0; i -= 1 ) {
-			handlers.splice( i, 1 );
+			handlers.splice( toRemove[ i ], 1 );
 		}
 		if( handlers.length === 0 ) {
 			delete m_onKeyHandlers[ key ];
@@ -381,9 +383,8 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 			continue;
 		}
 
-		// TODO: This is O(N^2) could be optimized if problematic
 		// Need to check if handler has been removed in case a previous handler includes an offkey
-		if( !handlers.includes( handler ) ) {
+		if( handler.isRemoved ) {
 			continue;
 		}
 
@@ -397,6 +398,7 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 
 			if( handler.once ) {
 				toRemove.add( handler );
+				handler.isRemoved = true;
 			}
 			continue;
 		}
@@ -420,6 +422,7 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 
 			if( handler.once ) {
 				toRemove.add( handler );
+				handler.isRemoved = true;
 			}
 		}
 	}
