@@ -32,11 +32,25 @@ This document lists all external API commands available in Pi.js.
 ### `screen( aspect, container, isOffscreen, willReadFrequently, noStyles, resizeCallback )`
 Creates a new screen/canvas with specified properties.
 
+**Parameters:**
+- **aspect**: Aspect ratio string (e.g., `"4:3"`, `"320x200"`, `"80m60"`, `"80e60"`)
+- **container**: DOM element or ID to contain the canvas
+- **isOffscreen**: Boolean - create an offscreen canvas for rendering
+- **willReadFrequently**: Boolean - optimize canvas for frequent pixel reading
+- **noStyles**: Boolean - create canvas without default styling
+- **resizeCallback**: Function - called when screen is resized: `function( screen, fromSize, toSize )`
+  - `screen`: The screen object that was resized
+  - `fromSize`: Object with `width` and `height` before resize
+  - `toSize`: Object with `width` and `height` after resize
+  - **Note**: Screens automatically resize when their container element resizes (using ResizeObserver)
+
 ### `setScreen( screen )`
 Sets the active screen for drawing operations.
 
 ### `removeScreen()`
 Removes the current screen from the page and memory.
+
+**Note:** After removal, calling any methods on the removed screen object will throw a `TypeError` with code `"DELETED_METHOD"`.
 
 ### `getScreen( screenId )`
 Gets a screen object by its ID.

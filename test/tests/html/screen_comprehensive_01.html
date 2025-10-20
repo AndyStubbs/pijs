@@ -29,6 +29,9 @@
 				height: 120px;
 				padding: 0;
 			}
+			.container.wide {
+				width: 320px;
+			}
 			#removed-indicator {
 				color: #0f0;
 				font-family: monospace;
@@ -50,6 +53,7 @@
 	<div class="container" id="c10"></div>
 	<div class="container" id="c11"></div>
 	<div class="container" id="c12"></div>
+	<div class="container" id="c13"></div>
 <script>
 	$.ready( function () {
 
@@ -63,7 +67,7 @@
 		$.print( "120x120 exact" );
 		$.print( "w=" + $.width() + " h=" + $.height() );
 		$.rect( 5, 5, $.width() - 10, $.height() - 10 );
-		//$.render();
+		
 
 		// Test 2: 4:3 aspect ratio (: format)
 		const s2 = $.screen( {
@@ -75,7 +79,7 @@
 		$.print( "4:3 ratio" );
 		$.print( "w=" + $.width() + " h=" + $.height() );
 		$.circle( $.width() / 2, $.height() / 2, 20 );
-		//$.render();
+		
 
 		// Test 3: 80m60 exact multiples (m format)
 		const s3 = $.screen( {
@@ -88,7 +92,7 @@
 		$.print( "w=" + $.width() + " h=" + $.height() );
 		$.line( 0, 0, $.width() - 1, $.height() - 1 );
 		$.line( $.width() - 1, 0, 0, $.height() - 1 );
-		//$.render();
+		
 
 		// Test 4: 50e50 extend (e format)
 		const s4 = $.screen( {
@@ -100,7 +104,7 @@
 		$.print( "50e50 extend" );
 		$.print( "w=" + $.width() + " h=" + $.height() );
 		$.rect( 0, 0, $.width() - 1, $.height() - 1 );
-		//$.render();
+		
 
 		// Test 5: noStyles option
 		const s5 = $.screen( {
@@ -113,7 +117,7 @@
 		$.print( "noStyles" );
 		$.print( "w=" + $.width() + " h=" + $.height() );
 		$.pset( 80, 60 );
-		//$.render();
+		
 
 		// Test 6: Offscreen canvas - draw to it then display
 		const offscreen = $.screen( {
@@ -136,7 +140,7 @@
 		$.print( "From offscreen:" );
 		$.drawImage( offscreen, 0, 20 );
 		$.drawImage( offscreen, 80, 20 );
-		//$.render();
+		
 
 		// Test 8: Create screen to be removed
 		const toRemove = $.screen( {
@@ -147,7 +151,7 @@
 		$.setFont( 1 );
 		$.print( "Will be removed" );
 		$.rect( 10, 10, 140, 100 );
-		//$.render();
+		
 
 		// Test removeScreen() and verify it throws errors after removal
 		$.removeScreen( toRemove );
@@ -171,14 +175,14 @@
 		$.setFont( 1 );
 		$.print( "setScreen test" );
 		const s7id = s7.id;
-		//$.render();
+		
 
 		// Switch to s1 and back using setScreen
 		$.setScreen( s1 );
 		$.print( "Switched To Screen" );
 		$.setScreen( s7 );
 		$.print( "Switched back" );
-		//$.render();
+		
 
 		// Test 10: Test getScreen()
 		const s8 = $.screen( {
@@ -229,7 +233,6 @@
 		$.print( "aa=" + antialiasMode );
 		$.print( "pix=" + pixelMode );
 		$.circle( 130, 60, 20 );
-		//$.render();
 
 		// Test 13: willReadFrequently option
 		const s11 = $.screen( {
@@ -247,7 +250,39 @@
 		for( let i = 0; i < 50; i++ ) {
 			$.pset( 10 + i, 50 + Math.sin( i / 5 ) * 10 );
 		}
-		//$.render();
+		
+		// Test 14: create 2 screens in a container and resize them
+		const resizeFn = ( screen, fromSize, toSize ) => {
+			const fromDim = `${fromSize.width}x${fromSize.height}`;
+			const toDim = `${toSize.width}x${toSize.height}`;
+			let screenNum;
+			if( screen === s12 ) {
+				screen.setPos( 0, 1 );
+				screenNum = 1;
+			} else if ( screen === s13 ) {
+				screen.setPos( 0, 5 );
+				screenNum = 2;
+			}
+			screen.setColor( 2 );
+			screen.print( `Screen ${screenNum} resized from ${fromDim} to ${toDim}` );
+		};
+		const s12 = $.screen( {
+			"aspect": "320x120",
+			"container": document.getElementById( "c13" ),
+			"willReadFrequently": true,
+			"resizeCallback": resizeFn
+		} );
+		s12.print( "Test 13: Screen 1" );
+		const s13 = $.screen( {
+			"aspect": "320x120",
+			"container": document.getElementById( "c13" ),
+			"willReadFrequently": true,
+			"resizeCallback": resizeFn
+		} );
+		s13.setBgColor( "#00000000" );
+		s13.print( "\n\n\n" );
+		s13.print( "Test 13: Screen 2" );
+		s13.canvas().parentElement.classList.add( "wide" );
 
 	} );
 </script>

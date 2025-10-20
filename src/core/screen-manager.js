@@ -26,6 +26,8 @@ const m_sceenDataCleanupFunctions = [];
 
 let m_nextScreenId = 0;
 let m_activeScreen = null;
+let m_resizeObserver = null;
+const m_observedContainers = new Set();
 
 
 /***************************************************************************************************
@@ -35,8 +37,28 @@ let m_activeScreen = null;
 
 export function init() {
 	
-	// Add event listener to resize all the screens
-	window.addEventListener( "resize", resizeScreens );
+	// Create a single ResizeObserver for all screen containers
+	m_resizeObserver = new ResizeObserver( ( entries ) => {
+		for( const entry of entries ) {
+			const container = entry.target;
+			
+			// Find all canvas elements in this container
+			const canvases = container.querySelectorAll( "canvas[data-screen-id]" );
+			if( canvases.length === 0 ) {
+				continue;
+			}
+			
+			// Resize all screens in this container
+			for( const canvas of canvases ) {
+				const screenId = parseInt( canvas.dataset.screenId, 10 );
+				const screenData = m_screens[ screenId ];
+				
+				if( screenData ) {
+					resizeScreen( screenData );
+				}
+			}
+		}
+	} );
 }
 
 export function addCommand( name, fn, parameterNames, screenOptional = false ) {
@@ -200,6 +222,26 @@ function removeScreen( screenData ) {
 		screenData.canvas.parentElement.removeChild( screenData.canvas );
 	}
 
+	// Unobserve the container from the global resize observer if no other screens use it
+	if( screenData.container && m_resizeObserver && m_observedContainers.has( screenData.container ) ) {
+		
+		// Check if any other screens are using this container
+		let hasOtherScreens = false;
+		for( const id in m_screens ) {
+			const otherScreen = m_screens[ id ];
+			if( otherScreen !== screenData && otherScreen.container === screenData.container ) {
+				hasOtherScreens = true;
+				break;
+			}
+		}
+		
+		// Only unobserve if no other screens are using this container
+		if( !hasOtherScreens ) {
+			m_resizeObserver.unobserve( screenData.container );
+			m_observedContainers.delete( screenData.container );
+		}
+	}
+
 	// Clean up all references to prevent memory leaks
 	screenData.canvas = null;
 	screenData.bufferCanvas = null;
@@ -210,6 +252,7 @@ function removeScreen( screenData ) {
 	screenData.container = null;
 	screenData.aspectData = null;
 	screenData.clientRect = null;
+	screenData.previousOffsetSize = null;
 
 	// Remove additional screenData items
 	for( const i in m_screenDataItems ) {
@@ -432,6 +475,7 @@ function createOffscreenScreen( options ) {
 	options.isOffscreen = true;
 	options.isNoStyles = false;
 	options.resizeCallback = null;
+	options.previousOffsetSize = null;
 
 	return createScreenData( options );
 }
@@ -500,7 +544,22 @@ function createDefaultScreen( options ) {
 		options.bufferCanvas.height = size.height;
 	}
 
-	return createScreenData( options );
+	// Store initial offset size for resize callback
+	options.previousOffsetSize = {
+		"width": options.canvas.offsetWidth,
+		"height": options.canvas.offsetHeight
+	};
+
+	// Create screen data first
+	const screenData = createScreenData( options );
+
+	// Add container to the global resize observer (only if not already observed)
+	if( m_resizeObserver && options.container && !m_observedContainers.has( options.container ) ) {
+		m_resizeObserver.observe( options.container );
+		m_observedContainers.add( options.container );
+	}
+
+	return screenData;
 }
 
 // Create screen without styles
@@ -526,6 +585,9 @@ function createNoStyleScreen( options ) {
 		options.bufferCanvas.width = size.width;
 		options.bufferCanvas.height = size.height;
 	}
+
+	// Store initial offset size for resize callback (not used for noStyles, but for consistency)
+	options.previousOffsetSize = null;
 
 	return createScreenData( options );
 }
@@ -554,6 +616,7 @@ function createScreenData( options ) {
 		"bufferContext": options.bufferCanvas.getContext( "2d", contextAttributes ),
 		"clientRect": options.canvas.getBoundingClientRect(),
 		"resizeCallback": options.resizeCallback,
+		"previousOffsetSize": options.previousOffsetSize || null,
 		"api": screenApi
 	};
 
@@ -658,75 +721,77 @@ function getSize( element ) {
 	};
 }
 
-// Resizes all screens
-function resizeScreens() {
-	for( const i in m_screens ) {
-		const screenData = m_screens[ i ];
+// Resizes a single screen
+function resizeScreen( screenData ) {
 
-		// Skip if screen is not visible
+	// Skip if screen is not visible or should not be resized
+	if(
+		screenData.isOffscreen ||
+		screenData.isNoStyles ||
+		screenData.canvas.offsetParent === null
+	) {
+		return;
+	}
+
+	// Get the previous size (stored from last time)
+	const fromSize = screenData.previousOffsetSize || {
+		"width": screenData.canvas.offsetWidth,
+		"height": screenData.canvas.offsetHeight
+	};
+
+	// Draw the canvas to the buffer
+	screenData.bufferContext.clearRect( 0, 0, screenData.width, screenData.height );
+	screenData.bufferContext.drawImage( screenData.canvas, 0, 0 );
+
+	let size;
+
+	if( screenData.aspectData ) {
+
+		// Update the canvas to the new size
+		size = getSize( screenData.container );
+		setCanvasSize( screenData.aspectData, screenData.canvas, size.width, size.height );
+
+	} else {
+
+		// Update canvas to fullscreen absolute pixels
+		size = getSize( screenData.canvas );
+		screenData.canvas.width = size.width;
+		screenData.canvas.height = size.height;
+
+	}
+
+	// Resize the client rectangle
+	screenData.clientRect = screenData.canvas.getBoundingClientRect();
+
+	// Draw the buffer back onto the canvas
+	screenData.context.drawImage(
+		screenData.bufferCanvas, 0, 0, screenData.width, screenData.height
+	);
+
+	// Set the new buffer size
+	screenData.bufferCanvas.width = screenData.canvas.width;
+	screenData.bufferCanvas.height = screenData.canvas.height;
+
+	// Set the new screen size
+	screenData.width = screenData.canvas.width;
+	screenData.height = screenData.canvas.height;
+
+	// Get the new size after resize
+	const toSize = {
+		"width": screenData.canvas.offsetWidth,
+		"height": screenData.canvas.offsetHeight
+	};
+
+	// Send the resize data to the client
+	if( screenData.resizeCallback ) {
 		if(
-			screenData.isOffscreen ||
-			screenData.isNoStyles ||
-			screenData.canvas.offsetParent === null
+			fromSize.width !== toSize.width ||
+			fromSize.height !== toSize.height
 		) {
-			continue;
-		}
-
-		// Store the previous size
-		const fromSize = {
-			"width": screenData.canvas.offsetWidth,
-			"height": screenData.canvas.offsetHeight
-		};
-
-		// Draw the canvas to the buffer
-		screenData.bufferContext.clearRect( 0, 0, screenData.width, screenData.height );
-		screenData.bufferContext.drawImage( screenData.canvas, 0, 0 );
-
-		let size;
-
-		if( screenData.aspectData ) {
-
-			// Update the canvas to the new size
-			size = getSize( screenData.container );
-			setCanvasSize( screenData.aspectData, screenData.canvas, size.width, size.height );
-
-		} else {
-
-			// Update canvas to fullscreen absolute pixels
-			size = getSize( screenData.canvas );
-			screenData.canvas.width = size.width;
-			screenData.canvas.height = size.height;
-
-		}
-
-		// Resize the client rectangle
-		screenData.clientRect = screenData.canvas.getBoundingClientRect();
-
-		// Draw the buffer back onto the canvas
-		screenData.context.drawImage(
-			screenData.bufferCanvas, 0, 0, screenData.width, screenData.height
-		);
-
-		// Set the new buffer size
-		screenData.bufferCanvas.width = screenData.canvas.width;
-		screenData.bufferCanvas.height = screenData.canvas.height;
-
-		// Set the new screen size
-		screenData.width = screenData.canvas.width;
-		screenData.height = screenData.canvas.height;
-
-		// Send the resize data to the client
-		if( screenData.resizeCallback ) {
-			const toSize = {
-				"width": screenData.canvas.offsetWidth,
-				"height": screenData.canvas.offsetHeight
-			};
-			if(
-				fromSize.width !== toSize.width ||
-				fromSize.height !== toSize.height
-			) {
-				screenData.resizeCallback( fromSize, toSize );
-			}
+			screenData.resizeCallback( screenData.api, fromSize, toSize );
 		}
 	}
+
+	// Store the new size for next time
+	screenData.previousOffsetSize = toSize;
 }
