@@ -243,9 +243,7 @@ function offkey( options ) {
 }
 
 screenManager.addCommand(
-	"input",
-	input,
-	[ "prompt", "fn", "cursor", "isNumber", "isInteger", "allowNegative" ]
+	"input", input, [ "prompt", "fn", "cursor", "isNumber", "isInteger", "allowNegative" ]
 );
 function input( screenData, options ) {
 	const prompt = options.prompt;
@@ -304,12 +302,13 @@ function input( screenData, options ) {
 	return promise;
 }
 
-commands.addCommand( "cancelInput", cancelInput, [] );
-function cancelInput() {
+screenManager.addCommand( "cancelInput", cancelInput, [] );
+function cancelInput( screenData ) {
 	if( m_inputData ) {
 		finishInput( true );
 	}
 }
+
 
 /***************************************************************************************************
  * Internal Helper Functions

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Screen Comprehensive Test</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "screen_comprehensive"
+			name = "Screen Comprehensive Test"
+			width = 820
+			height = 620
+			delay = 100
+			[[TOML_END]]
+		</script>
+		<script src="../../../build/pi.js"></script>
+		<style>
+			html, body {
+				background-color: #333;
+				margin: 0;
+				padding: 10px;
+				width: 800px;
+				height: 600px;
+			}
+			.container {
+				display: inline-block;
+				vertical-align: top;
+				margin: 5px;
+				background-color: #555;
+				width: 160px;
+				height: 120px;
+				padding: 0;
+			}
+			#removed-indicator {
+				color: #0f0;
+				font-family: monospace;
+				font-size: 10px;
+			}
+		</style>
+	</head>
+<body>
+	<div class="container" id="c1"></div>
+	<div class="container" id="c2"></div>
+	<div class="container" id="c3"></div>
+	<div class="container" id="c4"></div>
+	<div class="container" id="c5"></div>
+	<div class="container" id="c6"></div>
+	<div class="container" id="c7"></div>
+	<div  class="container" id="removed-indicator"></div>
+	<div class="container" id="c8"></div>
+	<div class="container" id="c9"></div>
+	<div class="container" id="c10"></div>
+	<div class="container" id="c11"></div>
+	<div class="container" id="c12"></div>
+<script>
+	$.ready( function () {
+
+		// Test 1: 120x120 exact pixels (x format)
+		const s1 = $.screen( {
+			"aspect": "120x120",
+			"container": document.getElementById( "c1" )
+		} );
+		$.setColor( 12 );
+		$.setFont( 1 );
+		$.print( "120x120 exact" );
+		$.print( "w=" + $.width() + " h=" + $.height() );
+		$.rect( 5, 5, $.width() - 10, $.height() - 10 );
+		//$.render();
+
+		// Test 2: 4:3 aspect ratio (: format)
+		const s2 = $.screen( {
+			"aspect": "4:3",
+			"container": document.getElementById( "c2" )
+		} );
+		$.setColor( 10 );
+		$.setFont( 1 );
+		$.print( "4:3 ratio" );
+		$.print( "w=" + $.width() + " h=" + $.height() );
+		$.circle( $.width() / 2, $.height() / 2, 20 );
+		//$.render();
+
+		// Test 3: 80m60 exact multiples (m format)
+		const s3 = $.screen( {
+			"aspect": "70m60",
+			"container": document.getElementById( "c3" )
+		} );
+		$.setColor( 11 );
+		$.setFont( 1 );
+		$.print( "70m60 mult" );
+		$.print( "w=" + $.width() + " h=" + $.height() );
+		$.line( 0, 0, $.width() - 1, $.height() - 1 );
+		$.line( $.width() - 1, 0, 0, $.height() - 1 );
+		//$.render();
+
+		// Test 4: 50e50 extend (e format)
+		const s4 = $.screen( {
+			"aspect": "50e50",
+			"container": document.getElementById( "c4" )
+		} );
+		$.setColor( 14 );
+		$.setFont( 1 );
+		$.print( "50e50 extend" );
+		$.print( "w=" + $.width() + " h=" + $.height() );
+		$.rect( 0, 0, $.width() - 1, $.height() - 1 );
+		//$.render();
+
+		// Test 5: noStyles option
+		const s5 = $.screen( {
+			"aspect": "160x120",
+			"container": document.getElementById( "c5" ),
+			"noStyles": true
+		} );
+		$.setColor( 10 );
+		$.setFont( 1 );
+		$.print( "noStyles" );
+		$.print( "w=" + $.width() + " h=" + $.height() );
+		$.pset( 80, 60 );
+		//$.render();
+
+		// Test 6: Offscreen canvas - draw to it then display
+		const offscreen = $.screen( {
+			"aspect": "80x60",
+			"isOffscreen": true
+		} );
+		$.setColor( 13 );
+		$.setFont( 1 );
+		$.print( "Offscreen" );
+		$.circle( 40, 30, 25 );
+		$.render();
+
+		// Test 7: Display offscreen canvas
+		const s6 = $.screen( {
+			"aspect": "160x120",
+			"container": document.getElementById( "c6" )
+		} );
+		$.setColor( 15 );
+		$.setFont( 1 );
+		$.print( "From offscreen:" );
+		$.drawImage( offscreen, 0, 20 );
+		$.drawImage( offscreen, 80, 20 );
+		//$.render();
+
+		// Test 8: Create screen to be removed
+		const toRemove = $.screen( {
+			"aspect": "160x120",
+			"container": document.getElementById( "c7" )
+		} );
+		$.setColor( 8 );
+		$.setFont( 1 );
+		$.print( "Will be removed" );
+		$.rect( 10, 10, 140, 100 );
+		//$.render();
+
+		// Test removeScreen() and verify it throws errors after removal
+		$.removeScreen( toRemove );
+		let errorCaught = false;
+		try {
+			toRemove.print( "Should fail" );
+		} catch( e ) {
+			errorCaught = true;
+		}
+
+		// Show visual indicator that screen was removed
+		document.getElementById( "removed-indicator" ).innerHTML = 
+			"REMOVED<br>Screen removed<br>Error caught: " + errorCaught;
+
+		// Test 9: Test setScreen() and getScreen()
+		const s7 = $.screen( {
+			"aspect": "160x120",
+			"container": document.getElementById( "c8" )
+		} );
+		$.setColor( 2 );
+		$.setFont( 1 );
+		$.print( "setScreen test" );
+		const s7id = s7.id;
+		//$.render();
+
+		// Switch to s1 and back using setScreen
+		$.setScreen( s1 );
+		$.print( "Switched To Screen" );
+		$.setScreen( s7 );
+		$.print( "Switched back" );
+		//$.render();
+
+		// Test 10: Test getScreen()
+		const s8 = $.screen( {
+			"aspect": "160x120",
+			"container": document.getElementById( "c9" )
+		} );
+
+		$.setScreen( 0 );
+		const retrievedScreen = $.getScreen( s8.id );
+		retrievedScreen.setColor( 6 );
+		retrievedScreen.setFont( 1 );
+		retrievedScreen.print( "getScreen test" );
+		retrievedScreen.print( "id=" + s8.id );
+		retrievedScreen.render();
+
+		// Test 11: Test canvas() method
+		const s9 = $.screen( {
+			"aspect": "160x120",
+			"container": document.getElementById( "c10" )
+		} );
+		$.setColor( 5 );
+		$.setFont( 1 );
+		$.print( "canvas() test" );
+		$.render();
+		const canvasElem = $.canvas();
+		const ctx = canvasElem.getContext( "2d" );
+		ctx.strokeStyle = "#ff0";
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		ctx.moveTo( 10, 30 );
+		ctx.lineTo( 150, 30 );
+		ctx.stroke();
+
+		// Test 12: Test setPixelMode() and getPixelMode()
+		const s10 = $.screen( {
+			"aspect": "160x120",
+			"container": document.getElementById( "c11" )
+		} );
+		const initialMode = $.getPixelMode();
+		$.setPixelMode( false );
+		const antialiasMode = $.getPixelMode();
+		$.setPixelMode( true );
+		const pixelMode = $.getPixelMode();
+		$.setColor( 15 );
+		$.setFont( 1 );
+		$.print( "Pixel mode Test" );
+		$.print( "init=" + initialMode );
+		$.print( "aa=" + antialiasMode );
+		$.print( "pix=" + pixelMode );
+		$.circle( 130, 60, 20 );
+		//$.render();
+
+		// Test 13: willReadFrequently option
+		const s11 = $.screen( {
+			"aspect": "160x120",
+			"container": document.getElementById( "c12" ),
+			"willReadFrequently": true
+		} );
+		$.setColor( 3 );
+		$.setFont( 1 );
+		$.print( "willReadFreq" );
+		$.print( "w=" + $.width() );
+		$.print( "h=" + $.height() );
+
+		// Draw some pixels to test read frequently
+		for( let i = 0; i < 50; i++ ) {
+			$.pset( 10 + i, 50 + Math.sin( i / 5 ) * 10 );
+		}
+		//$.render();
+
+	} );
+</script>
+</body>
+</html>
+

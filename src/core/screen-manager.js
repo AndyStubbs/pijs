@@ -167,7 +167,7 @@ function screen( options ) {
 }
 
 // Remove the screen from the page and memory
-commands.addCommand( "removeScreen", removeScreen, [] );
+addCommand( "removeScreen", removeScreen, [] );
 function removeScreen( screenData ) {
 	const screenId = screenData.id;
 
@@ -188,7 +188,9 @@ function removeScreen( screenData ) {
 
 			// Use string replacement to avoid capturing screenData in closure
 			screenData.api[ key ] = () => {
-				throw new Error( errorMessage.replace( "{METHOD}", key ) );
+				const error = new TypeError( errorMessage.replace( "{METHOD}", key ) );
+				error.code = "DELETED_METHOD";
+				throw error;
 			};
 		}
 	}
