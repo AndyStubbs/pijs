@@ -6,13 +6,6 @@
  * @module modules/touch
  */
 
-// TODO Research this: [Violation] Added non-passive event listener to a scroll-blocking 
-// 'touchstart' event. Consider marking event handler as 'passive' to make the page more 
-// responsive. See https://www.chromestatus.com/feature/5745543795965952
-// [Violation] Added non-passive event listener to a scroll-blocking 'touchmove' event. 
-// Consider marking event handler as 'passive' to make the page more responsive. 
-// See https://www.chromestatus.com/feature/5745543795965952
-
 "use strict";
 
 import * as screenManager from "../core/screen-manager";
@@ -75,10 +68,15 @@ function initTouchData( screenData ) {
 screenManager.addCommand( "startTouch", startTouch, [] );
 function startTouch( screenData ) {
 	if( !screenData.touchStarted ) {
-		screenData.canvas.addEventListener( "touchstart", touchStart );
-		screenData.canvas.addEventListener( "touchmove", touchMove );
-		screenData.canvas.addEventListener( "touchend", touchEnd );
-		screenData.canvas.addEventListener( "touchcancel", touchEnd );
+
+		// Mark as non-passive because we call preventDefault() to prevent mouse events
+		// and scrolling behavior on the canvas
+		const options = { "passive": false };
+
+		screenData.canvas.addEventListener( "touchstart", touchStart, options );
+		screenData.canvas.addEventListener( "touchmove", touchMove, options );
+		screenData.canvas.addEventListener( "touchend", touchEnd, options );
+		screenData.canvas.addEventListener( "touchcancel", touchEnd, options );
 		screenData.touchStarted = true;
 	}
 }
