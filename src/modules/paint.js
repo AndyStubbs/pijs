@@ -9,6 +9,7 @@
 "use strict";
 
 import * as screenManager from "../core/screen-manager";
+import * as colors from "../core/colors";
 import * as utils from "../core/utils";
 import * as renderer from "../core/renderer";
 
@@ -30,26 +31,21 @@ export function init() {
 
 
 // paint command
-screenManager.addCommand( "paint", paint, [ "x", "y", "fillColor", "tolerance" ] );
+screenManager.addCommand( "paint", paint, [ "x", "y", "fillColor", "tolerance", "boundaryColor" ] );
 function paint( screenData, options ) {
-	const x = Math.round( options.x );
-	const y = Math.round( options.y );
+	const x = utils.getInt( options.x, null );
+	const y = utils.getInt( options.y, null );
 	let fillColor = options.fillColor;
-	let tolerance = options.tolerance;
+	let tolerance = utils.getFloat( options.tolerance, 1 );
+	let boundaryColor = options.boundaryColor;
 
-	if( !Number.isInteger( x ) || !Number.isInteger( y ) ) {
+	if( x === null || y === null ) {
 		const error = new TypeError( "paint: Parameters x and y must be integers" );
 		error.code = "INVALID_COORDINATES";
 		throw error;
 	}
 
-	// Set the default tolerance to 1 for maximum fill tolerance
-	// Note: Even with tolerance=1, the algorithm still respects color boundaries
-	if( tolerance == null || tolerance === false ) {
-		tolerance = 1;
-	}
-
-	if( isNaN( tolerance ) || tolerance < 0 || tolerance > 1 ) {
+	if( tolerance < 0 || tolerance > 1 ) {
 		const error = new RangeError(
 			"paint: Parameter tolerance must be a number between 0 and 1."
 		);
@@ -58,23 +54,7 @@ function paint( screenData, options ) {
 	}
 
 	// Get fill color
-	if( Number.isInteger( fillColor ) ) {
-		if( fillColor >= screenData.pal.length ) {
-			const error = new RangeError(
-				"paint: Argument fillColor is not a color in the palette."
-			);
-			error.code = "COLOR_OUT_OF_RANGE";
-			throw error;
-		}
-		fillColor = screenData.pal[ fillColor ];
-	} else {
-		fillColor = utils.convertToColor( fillColor );
-		if( fillColor === null ) {
-			const error = new TypeError( "paint: Argument fillColor is not a valid color format." );
-			error.code = "INVALID_COLOR";
-			throw error;
-		}
-	}
+	fillColor = colors.getColorValue( screenData, fillColor, "paint", "fillColor" );
 
 	renderer.getImageData( screenData );
 	const data = screenData.imageData.data;
@@ -101,9 +81,6 @@ function paint( screenData, options ) {
 		return;
 	}
 
-	// Create a simple color structure for the calc weight util
-	const startColor = { "r": startR, "g": startG, "b": startB, "a": startA };
-
 	// Calculate tolerance threshold for color comparison
 	// Using perceptual weights: [0.2, 0.68, 0.07, 0.05] for R, G, B, A
 	const weights = [ 0.2, 0.68, 0.07, 0.05 ];
@@ -120,6 +97,34 @@ function paint( screenData, options ) {
 	// Mark starting pixel as visited
 	visited[ y * width + x ] = 1;
 
+	// Define color comparison function based on fill mode (no conditionals in hot loop)
+	let shouldSkipPixel;
+	if( boundaryColor !== null ) {
+
+		// Boundary fill mode: skip pixels that match boundary color
+		boundaryColor = colors.getColorValue(
+			screenData, boundaryColor, "paint", "boundaryColor"
+		);
+		const refColor = {
+			"r": boundaryColor.r, "g": boundaryColor.g, "b": boundaryColor.b, "a": boundaryColor.a
+		};
+		shouldSkipPixel = ( pixelColor ) => {
+			const difference = utils.calcColorDifference( refColor, pixelColor, weights );
+			const similarity = maxDifference - difference;
+			return similarity >= toleranceThreshold;
+		};
+
+	} else {
+
+		// Flood fill mode: skip pixels that don't match start color
+		const startColor = { "r": startR, "g": startG, "b": startB, "a": startA };
+		shouldSkipPixel = ( pixelColor ) => {
+			const difference = utils.calcColorDifference( startColor, pixelColor, weights );
+			const similarity = maxDifference - difference;
+			return similarity < toleranceThreshold;
+		};
+	}
+
 	let head = 0;
 	while( head < queue.length ) {
 
@@ -129,15 +134,13 @@ function paint( screenData, options ) {
 		const py = pixel.y;
 		const i = ( py * width + px ) * 4;
 
-		// Calculate color difference using utility function with perceptual weights
+		// Get pixel color
 		const pixelColor = {
 			"r": data[ i ], "g": data[ i + 1 ], "b": data[ i + 2 ], "a": data[ i + 3 ]
 		};
-		const difference = utils.calcColorDifference( startColor, pixelColor, weights );
-		const similarity = maxDifference - difference;
 
-		// Skip if color doesn't match within tolerance
-		if( similarity < toleranceThreshold ) {
+		// Skip if color comparison fails
+		if( shouldSkipPixel( pixelColor ) ) {
 			continue;
 		}
 
@@ -172,4 +175,3 @@ function addToQueue( queue, visited, x, y, width, height ) {
 		queue.push( { "x": x, "y": y } );
 	}
 }
-

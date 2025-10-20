@@ -77,13 +77,13 @@ export function init() {
 }
 
 // Gets the color value by index or raw color value
-export function getColorValue( screenData, colorInput, commandName ) {
+export function getColorValue( screenData, colorInput, commandName, parameterName = "color" ) {
 	let colorValue;
 
 	if( Number.isInteger( colorInput ) ) {
 		if( colorInput > screenData.pal.length ) {
 			const error = new RangeError(
-				`${commandName}: parameter color is not a color in the palette.`
+				`${commandName}: Parameter ${parameterName} is not a color in the palette.`
 			);
 			error.code = "COLOR_OUT_OF_RANGE";
 			throw error;
@@ -93,7 +93,7 @@ export function getColorValue( screenData, colorInput, commandName ) {
 		colorValue = utils.convertToColor( colorInput );
 		if( colorValue === null ) {
 			const error = new TypeError(
-				`${commandName}: parameter color is not a valid color format.`
+				`${commandName}: Parameter ${parameterName} is not a valid color format.`
 			);
 			error.code = "INVALID_COLOR";
 			throw error;
