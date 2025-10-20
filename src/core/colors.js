@@ -207,7 +207,7 @@ function setColor( screenData, options ) {
 	if( isAddToPalette ) {
 
 		// Find or add color to palette
-		const colorIndex = screenData.api.findColor( screenData, colorValue, 1, isAddToPalette );
+		const colorIndex = screenData.api.getPalColor( screenData, colorValue, 1, isAddToPalette );
 		screenData.color = screenData.pal[ colorIndex ];
 	} else {
 		screenData.color = colorValue;
@@ -219,15 +219,15 @@ function setColor( screenData, options ) {
 }
 
 // Given a color value, find the index from the color palette.
-screenManager.addCommand( "findColor", findColor, [ "color", "tolerance", "isAddToPalette" ] );
-function findColor( screenData, options ) {
+screenManager.addCommand( "getPalColor", getPalColor, [ "color", "tolerance", "isAddToPalette" ] );
+function getPalColor( screenData, options ) {
 	let color = options.color;
 	let tolerance = utils.getFloat( options.tolerance, 1 );
 	const isAddToPalette = !!options.isAddToPalette;
 
 	if( tolerance === null || tolerance < 0 || tolerance > 1 ) {
 		const error = new RangeError(
-			"findColor: parameter tolerance must be a number between 0 and 1"
+			"getPalColor: Parameter tolerance must be a number between 0 and 1."
 		);
 		error.code = "INVALID_TOLERANCE";
 		throw error;
@@ -241,7 +241,7 @@ function findColor( screenData, options ) {
 	}
 
 	// Convert color to color object
-	color = getColorValue( screenData, color, "findColor" );
+	color = getColorValue( screenData, color, "getPalColor" );
 
 	const index = findColorIndex( color, pal, tolerance, screenData.colorCache );
 	if( index ) {
