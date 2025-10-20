@@ -166,7 +166,6 @@ function screen( options ) {
 	return screenData.api;
 }
 
-// TODO: Add test for removeScreen - check for memory leaks and event leaks
 // Remove the screen from the page and memory
 commands.addCommand( "removeScreen", removeScreen, [] );
 function removeScreen( screenData ) {
@@ -299,21 +298,28 @@ function canvas( screenData ) {
 // Set pixel mode command
 addCommand( "setPixelMode", setPixelMode, [ "isEnabled" ] );
 function setPixelMode( screenData, options ) {
-	const isEnabled = options.isEnabled;
+	const isEnabled = !!options.isEnabled;
 
-	if( isEnabled ) {
+	// If we are enabling pixel mode and it's not already set then we setup pixel mode
+	if( isEnabled && screenData.context.imageSmoothingEnabled ) {
 		screenData.context.imageSmoothingEnabled = false;
 		for( const name in m_pixelCommands ) {
 			processApiCommand( screenData, m_pixelCommands[ name ] );
 			commands.processApiCommand( m_pixelCommands[ name ] );
 		}
-	} else {
+	} else if( !isEnabled && !screenData.context.imageSmoothingEnabled ) {
 		screenData.context.imageSmoothingEnabled = true;
 		for( const name in m_aaCommands ) {
 			processApiCommand( screenData, m_aaCommands[ name ] );
 			commands.processApiCommand( m_aaCommands[ name ] );
 		}
 	}
+}
+
+// Set pixel mode command
+addCommand( "getPixelMode", getPixelMode, [] );
+function getPixelMode( screenData ) {
+	return !screenData.context.imageSmoothingEnabled;
 }
 
 
