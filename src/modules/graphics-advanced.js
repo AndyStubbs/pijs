@@ -30,15 +30,17 @@ export function init() { /* no-op */ }
 // arc command
 screenManager.addPixelCommand( "arc", arc, [ "x", "y", "radius", "angle1", "angle2" ] );
 function arc( screenData, options ) {
-	const x = Math.round( options.x );
-	const y = Math.round( options.y );
-	let radius = Math.round( options.radius );
-	let angle1 = options.angle1;
-	let angle2 = options.angle2;
+	const x = utils.getInt( options.x, null );
+	const y = utils.getInt( options.y, null );
+	let radius = utils.getInt( options.radius, null );
+	let angle1 = utils.getInt( options.angle1, null );
+	let angle2 = utils.getInt( options.angle2, null );
 
 	// Make sure x and y are integers
-	if( isNaN( x ) || isNaN( y ) || isNaN( radius ) ) {
-		const error = new TypeError( "arc: Argument's x, y, radius must be integers." );
+	if( x === null || y === null || radius === null || angle1 === null || angle2 === null ) {
+		const error = new TypeError(
+			"arc: Argument's x, y, radius, angle1, and angle2 must be integers."
+		);
 		error.code = "INVALID_PARAMETERS";
 		throw error;
 	}
@@ -127,17 +129,16 @@ function arc( screenData, options ) {
 
 screenManager.addAACommand( "arc", aaArc, [ "x", "y", "radius", "angle1", "angle2" ] );
 function aaArc( screenData, options ) {
-	let x = options.x;
-	let y = options.y;
-	let radius = options.radius;
-	const angle1 = options.angle1;
-	const angle2 = options.angle2;
+	let x = utils.getFloat( options.x, null );
+	let y = utils.getFloat( options.y, null );
+	let radius = utils.getFloat( options.radius, null );
+	const angle1 = utils.getFloat( options.angle1, null );
+	const angle2 = utils.getFloat( options.angle2, null );
 
-	if(
-		isNaN( x ) || isNaN( y ) || isNaN( radius ) ||
-		isNaN( angle1 ) || isNaN( angle2 )
-	) {
-		const error = new TypeError( "arc: Parameters cx, cy, r, a1, a2 must be numbers." );
+	if( x === null || y === null || radius === null || angle1 === null || angle2 === null ) {
+		const error = new TypeError(
+			"arc: Argument's x, y, radius, angle1, and angle2 must be numbers."
+		);
 		error.code = "INVALID_PARAMETERS";
 		throw error;
 	}

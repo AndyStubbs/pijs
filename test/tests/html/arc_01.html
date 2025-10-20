@@ -4,7 +4,6 @@
 		<title>Arc 01</title>
 		<script type="text/toml">
 			[[TOML_START]]
-			test = "screenshot.js"
 			file = "arc_01"
 			name = "arc 01"
 			width = 200
@@ -12,9 +11,8 @@
 			delay = 0
 			[[TOML_END]]
 		</script>
-		<!-- [Pi.js Script]-->
 		<script src="../../../build/pi.js"></script>
-		<!-- [/Pi.js Script]-->
+		<script src="libs/seedrandom.js"></script>
 		<style>
 			html, body {
 				background-color: grey;
@@ -23,15 +21,56 @@
 	</head>
 <body>
 <script>
-	$.ready(function () {
-		$.screen( "100x100" );
-		$.setPixelMode( false );
-		$.arc( 50, 5, 45, 45, 90 );
-		$.setPixelMode( true );
-		$.setColor( 15 );
-		$.arc( 50, 35, 45, 45, 90 );
+	Math.seedrandom( 'constant' );
+
+	$.ready( function () {
+		$.screen( "200x200" );
+		drawSpirals();
+		drawDashedCircles();
+		drawRandomArcs();
+	} );
+
+	function drawSpirals() {
+		let sa = 0;
+		let ea = 90;
+		let da = 45;
+		$.setColor( 1 );
+		for(let r = 0; r < 50; r++) {
+			$.setPixelMode( true );
+			$.arc( 50, 48, r, sa, ea );
+			$.render();
+			$.setPixelMode( false );
+			$.arc( 150, 48, r, sa, ea );
+			sa += da;
+			ea += da;
+		}
 		$.render();
-	});
+	}
+
+	function drawDashedCircles() {
+		$.setColor(2);
+		$.setPixelMode( true );
+		for( a = 0; a <= 360; a += 60 ) {
+			$.arc( 50, 148, 30, a, a + 50 );
+		}
+		$.render();
+		$.setPixelMode( false );
+		for( a = 0; a <= 360; a += 60 ) {
+			$.arc( 50, 148, 45, a, a + 50 );
+		}
+	}
+
+	function drawRandomArcs() {
+		for( let i = 0; i < 25; i += 1 ) {
+			$.setColor( Math.floor( Math.random() * 15 ) + 1 );
+			$.setPixelMode( Math.random() > 0.5 );
+			const r = Math.floor( Math.random() * 50 + 1 );
+			const a = Math.floor( Math.random() * 360 );
+			const a2 = Math.floor( Math.random() * 360 );
+			$.arc( 150, 148, r, a, a2 );
+			$.render();
+		}
+	}
 </script>
 </body>
 </html>

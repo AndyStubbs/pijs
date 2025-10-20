@@ -124,7 +124,6 @@ function parseTOML( content ) {
 
 	const tomlStr = tomlMatch[ 1 ];
 	const metadata = {
-		"test": "screenshot.js",
 		"file": null,
 		"name": null,
 		"width": 320,
@@ -667,15 +666,12 @@ function findTestFiles() {
 			const filePath = path.join( testsDir, file );
 			const content = fs.readFileSync( filePath, "utf8" );
 			const metadata = parseTOML( content );
-
-			if( metadata && metadata.test === "screenshot.js" ) {
-				testFiles.push( {
-					"file": file,
-					"path": filePath,
-					"url": `${config.urlPrefix}/${file}`,
-					"metadata": metadata
-				} );
-			}
+			testFiles.push( {
+				"file": file,
+				"path": filePath,
+				"url": `${config.urlPrefix}/${file}`,
+				"metadata": metadata
+			} );
 		}
 	}
 
