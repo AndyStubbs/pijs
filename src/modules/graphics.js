@@ -576,6 +576,9 @@ function get( screenData, options ) {
 }
 
 
+// TODO: Research getPixel, it returns a pi.js specific color format, not sure if it should return
+// a pal index or not.  Also setColor will fail if you pass in the raw value for setPixel
+// need to research how this should work.
 // getPixel command
 screenManager.addCommand( "getPixel", getPixel, [ "x", "y" ] );
 function getPixel( screenData, options ) {

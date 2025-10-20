@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Graphics Comprehensive Test</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			test = "screenshot.js"
+			file = "graphics_comprehensive"
+			name = "graphics comprehensive"
+			width = 640
+			height = 480
+			delay = 0
+			[[TOML_END]]
+		</script>
+		<!-- [Pi.js Script]-->
+		<script src="../../../build/pi.js"></script>
+		<!-- [/Pi.js Script]-->
+		<style>
+			html, body {
+				background-color: grey;
+			}
+		</style>
+	</head>
+<body>
+<script>
+	$.ready( function () {
+		$.screen( "640x480" );
+		
+		// Test grid layout:
+		// +------------------+------------------+------------------+
+		// | PSET Tests       | LINE Tests       | RECT Tests       |
+		// | (0,0 - 213,240)  | (213,0 - 426,240)| (426,0 - 640,240)|
+		// +------------------+------------------+------------------+
+		// | CIRCLE Tests     | GET/PUT Tests    | GETPIXEL Tests   |
+		// | (0,240 - 213,480)| (213,240-426,480)| (426,240-640,480)|
+		// +------------------+------------------+------------------+
+
+		// === SECTION 1: PSET Tests (Top Left) ===
+		// Test pset with different pen types and pixel modes
+		
+		// Pixel mode pset with different pens
+		$.setPixelMode( true );
+		$.setColor( 15 );
+		$.print( 5, 5, "PSET" );
+		
+		// Square pens
+		let y = 25;
+		for( let size = 1; size <= 5; size++ ) {
+			$.setColor( 9 );
+			$.setPen( "square", size );
+			$.pset( 20, y );
+			y += size * 2 + 5;
+		}
+		
+		// Circle pens
+		y = 25;
+		for( let size = 1; size <= 5; size++ ) {
+			$.setColor( 10 );
+			$.setPen( "circle", size );
+			$.pset( 60, y );
+			y += size * 2 + 5;
+		}
+		
+		// Pixel pen
+		$.setPen( "pixel", 1 );
+		$.setColor( 14 );
+		for( let i = 0; i < 20; i++ ) {
+			$.pset( 100 + i, 25 + i );
+		}
+		
+		// Anti-aliased pset
+		$.setPixelMode( false );
+		$.setColor( 12 );
+		$.setPen( "circle", 3 );
+		for( let i = 0; i < 5; i++ ) {
+			$.pset( 140 + i * 12, 30 + i * 8 );
+		}
+		
+		// Reset to pixel mode
+		$.setPixelMode( true );
+		$.setPen( "pixel", 1 );
+
+		// === SECTION 2: LINE Tests (Top Center) ===
+		$.setColor( 15 );
+		$.print( 218, 5, "LINE" );
+		
+		// Horizontal lines with different colors
+		for( let i = 0; i < 5; i++ ) {
+			$.setColor( i + 9 );
+			$.line( 220, 25 + i * 10, 360, 25 + i * 10 );
+		}
+		
+		// Vertical lines
+		for( let i = 0; i < 5; i++ ) {
+			$.setColor( i + 2 );
+			$.line( 370 + i * 10, 25, 370 + i * 10, 75 );
+		}
+		
+		// Diagonal lines - pixel mode
+		$.setColor( 10 );
+		$.line( 220, 90, 280, 130 );
+		$.line( 280, 90, 220, 130 );
+		
+		// Anti-aliased lines
+		$.setPixelMode( false );
+		$.setPen( "circle", 2 );
+		$.setColor( 12 );
+		$.line( 300, 90, 360, 130 );
+		$.line( 360, 90, 300, 130 );
+		
+		// Thick lines with different pens
+		$.setPixelMode( true );
+		$.setPen( "square", 3 );
+		$.setColor( 14 );
+		$.line( 220, 150, 360, 150 );
+		
+		$.setPen( "circle", 3 );
+		$.setColor( 11 );
+		$.line( 220, 170, 360, 170 );
+		
+		// Reset
+		$.setPen( "pixel", 1 );
+
+		// === SECTION 3: RECT Tests (Top Right) ===
+		$.setColor( 15 );
+		$.print( 431, 5, "RECT" );
+		
+		// Simple outlined rectangles
+		$.setPixelMode( true );
+		$.setColor( 9 );
+		$.rect( 435, 25, 40, 30 );
+		
+		$.setColor( 10 );
+		$.rect( 480, 25, 50, 40 );
+		
+		// Filled rectangles
+		$.setColor( 14 );
+		$.rect( 535, 25, 35, 45, 11 );
+		
+		$.setColor( 12 );
+		$.rect( 575, 25, 50, 35, 2 );
+		
+		// Rectangles with thick pens
+		$.setPen( "square", 3 );
+		$.setColor( 13 );
+		$.rect( 435, 80, 60, 40 );
+		
+		$.setPen( "circle", 2 );
+		$.setColor( 10 );
+		$.rect( 505, 80, 50, 40, 9 );
+		
+		// Anti-aliased rectangles
+		$.setPixelMode( false );
+		$.setPen( "pixel", 1 );
+		$.setColor( 14 );
+		$.rect( 435, 135, 45, 35 );
+		
+		$.setColor( 12 );
+		$.rect( 490, 135, 55, 40, 10 );
+		
+		// Reset
+		$.setPixelMode( true );
+
+		// === SECTION 4: CIRCLE Tests (Bottom Left) ===
+		$.setColor( 15 );
+		$.print( 5, 245, "CIRCLE" );
+		
+		// Simple circles - pixel mode
+		$.setPixelMode( true );
+		$.setColor( 9 );
+		$.circle( 35, 285, 15 );
+		
+		$.setColor( 10 );
+		$.circle( 75, 285, 20 );
+		
+		$.setColor( 11 );
+		$.circle( 125, 285, 25 );
+		
+		// Filled circles
+		$.setColor( 14 );
+		$.circle( 35, 340, 18, 2 );
+		
+		$.setColor( 12 );
+		$.circle( 85, 340, 22, 9 );
+		
+		$.setColor( 13 );
+		$.circle( 145, 340, 28, 10 );
+		
+		// Circles with thick pens
+		$.setPen( "circle", 3 );
+		$.setColor( 10 );
+		$.circle( 40, 410, 20 );
+		
+		$.setColor( 14 );
+		$.circle( 100, 410, 25, 11 );
+		
+		// Anti-aliased circles
+		$.setPixelMode( false );
+		$.setPen( "pixel", 1 );
+		$.setColor( 12 );
+		$.circle( 160, 410, 22 );
+		
+		$.setColor( 13 );
+		$.circle( 195, 410, 18, 9 );
+		
+		// Reset
+		$.setPixelMode( true );
+		$.setPen( "pixel", 1 );
+
+		// === SECTION 5: GET/PUT Tests (Bottom Center) ===
+		$.setColor( 15 );
+		$.print( 218, 245, "GET/PUT" );
+		
+		// Draw a pattern to capture with get
+		$.setColor( 14 );
+		$.rect( 225, 270, 30, 30, 11 );
+		$.setColor( 10 );
+		$.circle( 240, 285, 10 );
+		
+		// Get the pattern
+		const pattern = $.get( 225, 270, 254, 299 );
+		
+		// Put the pattern in different locations
+		$.put( pattern, 270, 270 );
+		$.put( pattern, 225, 315 );
+		$.put( pattern, 270, 315 );
+		
+		// Create a simple sprite data manually
+		const spriteData = [
+			[ 0, 9, 9, 9, 0 ],
+			[ 9, 10, 10, 10, 9 ],
+			[ 9, 10, 14, 10, 9 ],
+			[ 9, 10, 10, 10, 9 ],
+			[ 0, 9, 9, 9, 0 ]
+		];
+		
+		// Test put with sprite data
+		$.put( spriteData, 330, 275 );
+		$.put( spriteData, 350, 275 );
+		$.put( spriteData, 370, 275 );
+		
+		// Scale up test - put larger pattern
+		const smallPattern = $.get( 330, 275, 334, 279 );
+		for( let py = 0; py < 3; py++ ) {
+			for( let px = 0; px < 3; px++ ) {
+				$.put( smallPattern, 320 + px * 15, 310 + py * 15 );
+			}
+		}
+
+		// === SECTION 6: GETPIXEL Tests (Bottom Right) ===
+		$.setColor( 15 );
+		$.print( 431, 245, "GETPIXEL" );
+		
+		// Draw a gradient-like pattern to test getPixel
+		for( let x = 0; x < 50; x++ ) {
+			for( let y = 0; y < 30; y++ ) {
+				const colorIndex = Math.floor( ( x + y ) / 8 ) % 14 + 1;
+				$.setColor( colorIndex );
+				$.pset( 435 + x, 270 + y );
+			}
+		}
+		
+		// Test getPixel and verify by drawing samples
+		const testPixels = [
+			{ "x": 440, "y": 275 },
+			{ "x": 460, "y": 285 },
+			{ "x": 475, "y": 290 }
+		];
+		
+		// Draw white boxes around test pixels
+		$.setColor( 15 );
+		for( let i = 0; i < testPixels.length; i++ ) {
+			const px = testPixels[ i ].x;
+			const py = testPixels[ i ].y;
+			$.rect( px - 2, py - 2, 5, 5 );
+		}
+		
+		// Get pixel colors and display them below
+		let displayY = 320;
+		for( let i = 0; i < testPixels.length; i++ ) {
+			const px = testPixels[ i ].x;
+			const py = testPixels[ i ].y;
+			const pixelColor = $.getPixel( px, py );
+			
+			// Draw a small sample of the retrieved color
+			$.setColor( pixelColor.s );
+			$.rect( 440, displayY, 20, 20, pixelColor );
+			displayY += 25;
+		}
+		
+		// Test getPixel with corners
+		$.setColor( 9 );
+		$.pset( 0, 0 );
+		$.pset( 639, 0 );
+		$.pset( 0, 479 );
+		$.pset( 639, 479 );
+		
+		const corner1 = $.getPixel( 0, 0 );
+		const corner2 = $.getPixel( 639, 0 );
+		const corner3 = $.getPixel( 0, 479 );
+		const corner4 = $.getPixel( 639, 479 );
+		
+		// Display corner test results
+		$.setColor( corner1.s );
+		$.rect( 500, 320, 10, 10, corner1.s );
+		$.setColor( corner2.s );
+		$.rect( 515, 320, 10, 10, corner2.s );
+		$.setColor( corner3.s );
+		$.rect( 500, 335, 10, 10, corner3.s );
+		$.setColor( corner4.s );
+		$.rect( 515, 335, 10, 10, corner4.s );
+		
+		// === Draw section dividers ===
+		$.setColor( 15 );
+		$.line( 213, 0, 213, 479 );
+		$.line( 426, 0, 426, 479 );
+		$.line( 0, 240, 639, 240 );
+
+		// Final render
+		$.render();
+	} );
+</script>
+</body>
+</html>
+
