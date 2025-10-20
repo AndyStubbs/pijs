@@ -8,6 +8,14 @@
 
 "use strict";
 
+const COLOR_PROTO = {
+	"r": 0,
+	"g": 0,
+	"b": 0,
+	"a": 0,
+	"s": "",
+	"s2": ""
+};
 
 /**
  * Parse options - normalizes input arguments into an object with named parameters.
@@ -364,14 +372,15 @@ function hexToColor( hex ) {
 		a = 255;
 	}
 
-	return {
-		"r": r,
-		"g": g,
-		"b": b,
-		"a": a,
-		"s": `rgba(${r},${g},${b},${Math.round( a / 255 * 1000 ) / 1000})`,
-		"s2": s2
-	};
+	const color = Object.create( COLOR_PROTO );
+	color.r = r;
+	color.g = g;
+	color.b = b;
+	color.a = a;
+	color.s = `rgba(${r},${g},${b},${Math.round( a / 255 * 1000 ) / 1000})`;
+	color.s2 = s2;
+
+	return color;
 }
 
 /**

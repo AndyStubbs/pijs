@@ -576,9 +576,6 @@ function get( screenData, options ) {
 }
 
 
-// TODO: Research getPixel, it returns a pi.js specific color format, not sure if it should return
-// a pal index or not.  Also setColor will fail if you pass in the raw value for setPixel
-// need to research how this should work.
 // getPixel command
 screenManager.addCommand( "getPixel", getPixel, [ "x", "y" ] );
 function getPixel( screenData, options ) {
@@ -595,6 +592,41 @@ function getPixel( screenData, options ) {
 	// Check if coordinates are within bounds
 	if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
 		const error = new RangeError( "getPixel: Coordinates are out of bounds." );
+		error.code = "OUT_OF_BOUNDS";
+		throw error;
+	}
+
+	renderer.getImageData( screenData );
+	const data = screenData.imageData.data;
+
+	// Calculate the index
+	const i = ( ( screenData.width * y ) + x ) * 4;
+	const c = utils.convertToColor( {
+		"r": data[ i ],
+		"g": data[ i + 1 ],
+		"b": data[ i + 2 ],
+		"a": data[ i + 3 ]
+	} );
+	const colorIndex = colors.getColorIndex( screenData, c );
+	return colorIndex;
+}
+
+
+screenManager.addCommand( "getPixelColor", getPixelColor, [ "x", "y" ] );
+function getPixelColor( screenData, options ) {
+	const x = Math.round( options.x );
+	const y = Math.round( options.y );
+
+	// Make sure x and y are integers
+	if( !Number.isInteger( x ) || !Number.isInteger( y ) ) {
+		const error = new TypeError( "getPixelColor: Arguments x and y must be integers." );
+		error.code = "INVALID_COORDINATES";
+		throw error;
+	}
+
+	// Check if coordinates are within bounds
+	if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
+		const error = new RangeError( "getPixelColor: Coordinates are out of bounds." );
 		error.code = "OUT_OF_BOUNDS";
 		throw error;
 	}

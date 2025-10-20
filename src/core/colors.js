@@ -103,6 +103,7 @@ export function getColorValue( screenData, colorInput, commandName, parameterNam
 	return colorValue;
 }
 
+// Gets a color's index in current screen palette
 export function getColorIndex( screenData, colorValue, tolerance, isAddToPalette ) {
 	let c = findColorIndex( colorValue, screenData.pal, tolerance, screenData.colorCache );
 
@@ -219,15 +220,15 @@ function setColor( screenData, options ) {
 }
 
 // Given a color value, find the index from the color palette.
-screenManager.addCommand( "getPalColor", getPalColor, [ "color", "tolerance", "isAddToPalette" ] );
-function getPalColor( screenData, options ) {
+screenManager.addCommand( "getPalIndex", getPalIndex, [ "color", "tolerance", "isAddToPalette" ] );
+function getPalIndex( screenData, options ) {
 	let color = options.color;
 	let tolerance = utils.getFloat( options.tolerance, 1 );
 	const isAddToPalette = !!options.isAddToPalette;
 
 	if( tolerance === null || tolerance < 0 || tolerance > 1 ) {
 		const error = new RangeError(
-			"getPalColor: Parameter tolerance must be a number between 0 and 1."
+			"getPalIndex: Parameter tolerance must be a number between 0 and 1."
 		);
 		error.code = "INVALID_TOLERANCE";
 		throw error;
@@ -241,7 +242,7 @@ function getPalColor( screenData, options ) {
 	}
 
 	// Convert color to color object
-	color = getColorValue( screenData, color, "getPalColor" );
+	color = getColorValue( screenData, color, "getPalIndex" );
 
 	const index = findColorIndex( color, pal, tolerance, screenData.colorCache );
 	if( index ) {
