@@ -6,6 +6,11 @@
  * @module core/colors
  */
 
+// TODO: serDefaultPal and setPal should not set 0'th item to black, it should insert black at
+// position 0 and then add all the colors into the palette. So the indices will shift by 1, but
+// at least the user will not have to add an unused color to the palette when setting palette
+// colors. Also make sure to updat e the defaultPaletteHex in init to remove the 0'th item.
+
 "use strict";
 
 import * as commands from "./commands";

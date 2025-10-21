@@ -8,15 +8,11 @@
 
 "use strict";
 
-const COLOR_PROTO = {
-	"key": 0,
-	"r": 0,
-	"g": 0,
-	"b": 0,
-	"a": 0,
-	"rgba": "",
-	"hex": ""
-};
+
+/***************************************************************************************************
+ * General Utility Functions
+ **************************************************************************************************/
+
 
 /**
  * Parse options - normalizes input arguments into an object with named parameters.
@@ -68,105 +64,6 @@ export const isObjectLiteral = ( obj ) => {
 	const proto = Object.getPrototypeOf( obj );
 	return proto === null || proto === Object.prototype;
 };
-
-/**
- * Generates a unique 32-bit integer key for an opaque RGB color.
- * Each color component (R, G, B) is assumed to be an 8-bit integer (0-255).
- * The components are packed in the order: Red | Green | Blue.
- *
- * @param {number} r - Red component (0-255).
- * @param {number} g - Green component (0-255).
- * @param {number} b - Blue component (0-255).
- * @param {number} a - Alpha component (0-255).
- * @returns {number} A 32-bit integer representing the color.
- */
-export function generateColorKey( r, g, b, a ) {
-	return ( r << 24 ) | ( g << 16 ) | ( b << 8 ) | a;
-}
-
-/**
- * Convert RGB to color object
- * 
- * @param {number} r - Red component (0-255)
- * @param {number} g - Green component (0-255)
- * @param {number} b - Blue component (0-255)
- * @param {number} a - Alpha component (0-255)
- * @returns {Object} Color object
- */
-export function rgbToColor( r, g, b, a ) {
-	const hex = rgbToHex( r, g, b, a );
-	return createColor( r, g, b, a, hex );
-}
-
-/**
- * Convert various color formats to color object
- * 
- * @param {*} color - Color in various formats
- * @returns {Object|null} Color object or null if invalid
- */
-export function convertToColor( color ) {
-	if( color === undefined ) {
-		return null;
-	}
-
-	// Array format [r, g, b, a]
-	if( Array.isArray( color ) ) {
-		if( color.length < 3 ) {
-			return null;
-		} else if( color.length === 3 ) {
-			color.push( 255 );
-		}
-	} else if( color.r !== undefined ) {
-
-		// Convert from object literal or color object
-		color = [ color.r, color.g, color.b, color.a ];
-	} else if( typeof color === "string" ) {
-
-		// Check if is hex format
-		const checkHexColor = /(^#[0-9A-F]{8}$)|(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i;
-		if( checkHexColor.test( color ) ) {
-			return hexToColor( color );
-		}
-
-		// RGB/RGBA format
-		if( color.indexOf( "rgb" ) === 0 ) {
-			color = splitRgb( color );
-			if( color.length < 3 ) {
-				return null;
-			} else if( color.length === 3 ) {
-				color.push( 255 );
-			}
-		} else {
-
-			// Named color or other CSS color
-			return colorStringToColor( color );
-		}
-	}
-
-	// Parse rgb colors
-	for( let i = 0; i < 3; i += 1 ) {
-		color[ i ] = getInt( color[ i ], 0 );
-	}
-
-	// Parse alpha
-	color[ 3 ] = getFloat( color[ 3 ], 0 );
-	if( color[ 3 ] < 1 ) {
-		color[ 3 ] = Math.round( color[ 3 ] * 255 );
-	} else {
-		color[ 3 ] = Math.round( color[ 3 ] );
-	}
-	
-	return rgbToColor( color[ 0 ], color[ 1 ], color[ 2 ], color[ 3 ] );
-}
-
-export function calcColorDifference( c1, c2, w = [ 0.2, 0.68, 0.07, 0.05 ] ) {
-	const dr = c1.r - c2.r;
-	const dg = c1.g - c2.g;
-	const db = c1.b - c2.b;
-	const da = c1.a - c2.a;
-
-	return ( dr * dr * w[ 0 ] + dg * dg * w[ 1 ] + db * db * w[ 2 ] + da * da * w[ 3 ] );
-}
 
 // Data conversion utilities
 
@@ -371,8 +268,123 @@ export const queueMicrotask = ( callback ) => {
 
 
 /***************************************************************************************************
- * Internal Commands
+ * Color Utility Functions
  **************************************************************************************************/
+
+
+const COLOR_PROTO = {
+	"key": 0,
+	"r": 0,
+	"g": 0,
+	"b": 0,
+	"a": 0,
+	"rgba": "",
+	"hex": ""
+};
+const m_colorCheckerContext = document.createElement( "canvas" ).getContext( "2d" );
+
+/**
+ * Generates a unique 32-bit integer key for an opaque RGB color.
+ * Each color component (R, G, B) is assumed to be an 8-bit integer (0-255).
+ * The components are packed in the order: Red | Green | Blue.
+ *
+ * @param {number} r - Red component (0-255).
+ * @param {number} g - Green component (0-255).
+ * @param {number} b - Blue component (0-255).
+ * @param {number} a - Alpha component (0-255).
+ * @returns {number} A 32-bit integer representing the color.
+ */
+export function generateColorKey( r, g, b, a ) {
+	return ( r << 24 ) | ( g << 16 ) | ( b << 8 ) | a;
+}
+
+/**
+ * Convert RGB to color object
+ * 
+ * @param {number} r - Red component (0-255)
+ * @param {number} g - Green component (0-255)
+ * @param {number} b - Blue component (0-255)
+ * @param {number} a - Alpha component (0-255)
+ * @returns {Object} Color object
+ */
+export function rgbToColor( r, g, b, a ) {
+	const hex = rgbToHex( r, g, b, a );
+	return createColor( r, g, b, a, hex );
+}
+
+/**
+ * Convert various color formats to color object
+ * 
+ * @param {*} color - Color in various formats
+ * @returns {Object|null} Color object or null if invalid
+ */
+export function convertToColor( color ) {
+	if( color === undefined || color === null ) {
+		return null;
+	}
+
+	// Check if color is already a color prototype object
+	if( Object.getPrototypeOf( color ) === COLOR_PROTO ) {
+		return color;
+	} else if( Array.isArray( color ) ) {
+
+		// Array format [r, g, b, a]
+		if( color.length < 3 ) {
+			return null;
+		} else if( color.length === 3 ) {
+			color.push( 255 );
+		}
+	} else if( color.r !== undefined ) {
+
+		// Convert from object literal or color object
+		color = [ color.r, color.g, color.b, color.a ];
+	} else if( typeof color === "string" ) {
+
+		// Check if is hex format
+		const checkHexColor = /(^#[0-9A-F]{8}$)|(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i;
+		if( checkHexColor.test( color ) ) {
+			return hexToColor( color );
+		}
+
+		// RGB/RGBA format
+		if( color.indexOf( "rgb" ) === 0 ) {
+			color = splitRgb( color );
+			if( color.length < 3 ) {
+				return null;
+			} else if( color.length === 3 ) {
+				color.push( 255 );
+			}
+		} else {
+
+			// Named color or other CSS color
+			return colorStringToColor( color );
+		}
+	}
+
+	// Parse rgb colors
+	for( let i = 0; i < 3; i += 1 ) {
+		color[ i ] = getInt( color[ i ], 0 );
+	}
+
+	// Parse alpha
+	color[ 3 ] = getFloat( color[ 3 ], 0 );
+	if( color[ 3 ] < 1 ) {
+		color[ 3 ] = Math.round( color[ 3 ] * 255 );
+	} else {
+		color[ 3 ] = Math.round( color[ 3 ] );
+	}
+	
+	return rgbToColor( color[ 0 ], color[ 1 ], color[ 2 ], color[ 3 ] );
+}
+
+export function calcColorDifference( c1, c2, w = [ 0.2, 0.68, 0.07, 0.05 ] ) {
+	const dr = c1.r - c2.r;
+	const dg = c1.g - c2.g;
+	const db = c1.b - c2.b;
+	const da = c1.a - c2.a;
+
+	return ( dr * dr * w[ 0 ] + dg * dg * w[ 1 ] + db * db * w[ 2 ] + da * da * w[ 3 ] );
+}
 
 function createColor( r, g, b, a, hex ) {
 	const color = Object.create( COLOR_PROTO );
@@ -475,10 +487,9 @@ function rgbToHex( r, g, b, a ) {
  * @returns {Object} Color object
  */
 function colorStringToColor( colorStr ) {
-	const canvas = document.createElement( "canvas" );
-	const context = canvas.getContext( "2d", { "willReadFrequently": true } );
-	context.fillStyle = colorStr;
-	context.fillRect( 0, 0, 1, 1 );
-	const data = context.getImageData( 0, 0, 1, 1 ).data;
+	m_colorCheckerContext.clearRect( 0, 0, 1, 1 );
+	m_colorCheckerContext.fillStyle = colorStr;
+	m_colorCheckerContext.fillRect( 0, 0, 1, 1 );
+	const data = m_colorCheckerContext.getImageData( 0, 0, 1, 1 ).data;
 	return rgbToColor( data[ 0 ], data[ 1 ], data[ 2 ], data[ 3 ] );
 }

@@ -12,6 +12,7 @@ const TEST_TYPE = process.env.PI_TEST_TYPE || "core";
 const SCREENSHOT_BASE = TEST_TYPE === "plugins" 
 	? "/test/tests-plugins/screenshots" 
 	: "/test/tests/screenshots";
+const TEST_NAME = TEST_TYPE === "core" ? "Core" : "Plugins";
 
 // Generate HTML results page
 function generateResultsPage( results ) {
@@ -172,6 +173,7 @@ function generateResultsPage( results ) {
 	}
 
 	// Replace placeholders in template
+	html = html.replaceAll( "{{TEST_NAME}}", TEST_NAME );
 	html = html.replace( "{{FAILED_TESTS}}", failedHTML );
 	html = html.replace( "{{PASSED_TESTS}}", passedHTML );
 	html = html.replace( "{{SKIPPED_TESTS}}", skippedHTML );

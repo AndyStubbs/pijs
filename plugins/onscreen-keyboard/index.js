@@ -567,12 +567,14 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 		// Save current color
 		const currentColor = screenData.color;
 
+		// TODO: This should not be a fixed color - need to specify a key highlight color in
+		// the parameters - or maybe use color 1 since a palette must have at least 2 colors
 		// Draw highlight
 		screenData.api.setColor( 15 );
 		screenData.api.rect( pixels.x + 1, pixels.y, pixels.width, pixels.height + 1 );
 
 		// Restore color
-		screenData.api.setColor( currentColor.s );
+		screenData.api.setColor( currentColor.hex );
 	}
 
 	function redrawHighlights() {
