@@ -30,16 +30,22 @@ export function parseOptions( args, parameterNames ) {
 		resultOptions[ name ] = null;
 	}
 
+	let isNamedParameterFound = false;
+
 	// Case 1: First argument is an object literal
 	if( args.length > 0 && isObjectLiteral( args[ 0 ] ) ) {
 		const inputOptions = args[ 0 ];
 
 		for( const name of parameterNames ) {
 			if( name in inputOptions ) {
+				isNamedParameterFound = true;
 				resultOptions[ name ] = inputOptions[ name ];
 			}
 		}
-	} else {
+	} 
+	
+	// If no named parameters found then treat as positional array
+	if( !isNamedParameterFound ) {
 
 		// Case 2: Arguments are passed positionally
 		// Map the positional arguments to the named parameters
