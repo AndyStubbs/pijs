@@ -6,15 +6,22 @@
  * @module modules/utils
  */
 
+// TODO Refactor color creation to make the code easier to follow and to support the new key
+// without alpha, colors still contain alpha but it will be fixed at 255 or 1.
+
+// TODO: Add a key field for quicker lookup in color cache. Maybe and integer field instead of 
+// color.s we could use the key field for colorCache.
+
 "use strict";
 
 const COLOR_PROTO = {
+	"key": 0,
 	"r": 0,
 	"g": 0,
 	"b": 0,
 	"a": 0,
-	"s": "",
-	"s2": ""
+	"rgba": "",
+	"hex": ""
 };
 
 /**
@@ -55,6 +62,20 @@ export function parseOptions( args, parameterNames ) {
 	}
 
 	return resultOptions;
+}
+
+/**
+ * Generates a unique 32-bit integer key for an opaque RGB color.
+ * Each color component (R, G, B) is assumed to be an 8-bit integer (0-255).
+ * The components are packed in the order: Red | Green | Blue.
+ *
+ * @param {number} r - Red component (0-255).
+ * @param {number} g - Green component (0-255).
+ * @param {number} b - Blue component (0-255).
+ * @returns {number} A 32-bit integer representing the color.
+ */
+export function generateOpaqueColorKey( r, g, b ) {
+	return ( r << 16 ) | ( g << 8 ) | b;
 }
 
 // Type checking utilities
@@ -344,9 +365,6 @@ export const queueMicrotask = ( callback ) => {
  * Internal Commands
  **************************************************************************************************/
 
-
-// TODO: Add a key field for quicker lookup in color cache. Maybe and integer field instead of 
-// color.s we could use the key field for colorCache
 /**
  * Convert hex color to color object
  * 

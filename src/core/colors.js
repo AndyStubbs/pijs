@@ -6,6 +6,9 @@
  * @module core/colors
  */
 
+// TODO: No longer store alpha color values except for the the 0 item in the palette.
+// TODO: Color 0 will automatically be
+
 "use strict";
 
 import * as commands from "./commands";
