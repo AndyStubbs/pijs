@@ -345,6 +345,8 @@ export const queueMicrotask = ( callback ) => {
  **************************************************************************************************/
 
 
+// TODO: Add a key field for quicker lookup in color cache. Maybe and integer field instead of 
+// color.s we could use the key field for colorCache
 /**
  * Convert hex color to color object
  * 
