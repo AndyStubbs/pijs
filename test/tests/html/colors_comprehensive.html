@@ -22,10 +22,8 @@
 <script>
 	$.ready( function () {
 		const customPalette = [
-			"#000000", "#FF0000", "#00FF00", "#0000FF",
-			"#FFFF00", "#FF00FF", "#00FFFF", "#FFFFFF",
-			"#800000", "#008000", "#000080", "#808000",
-			"#800080", "#008080", "#808080", "#333"
+			"#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF", "#FFFFFF", "#800000",
+			"#008000", "#000080", "#808000", "#800080", "#008080", "#808080", "#333"
 		];
 
 		$.setDefaultPal( { "pal": customPalette } );
@@ -38,23 +36,23 @@
 		$.setContainerBgColor( "gray" );
 
 		// Test setBgColor
-		$.setBgColor( "#111111" );
+		$.setBgColor( "#333" );
 
 		// Start the test
 		$.print( "Starting Colors Test" );
 
 		// Test getPal
-		$.print( `Original Pal Size: ${$.getPal().length}` );
+		$.print( `Starting Pal Size: ${$.getPal().length}` );
 
 		// Test setColor by adding two more colors to palette
 		$.setColor( "brown", true );
-		$.print( "Added Brown" );
+		$.print( "Added Color: \"brown\"" );
 		$.setColor( "orange", true );
-		$.print( "Added Orange" );
+		$.print( "Added Color: \"orange\"" );
 		$.print( `Pal Size After Adding 2 Size: ${$.getPal().length}` );
 
 		// Test setColor ithout adding to palette
-		$.setColor( "#f3f3f3" );	
+		$.setColor( "#f3f300" );	
 		$.print( `Pal Size After setColor Without Adding: ${$.getPal().length}` );
 
 		// Draw palette swatches
@@ -69,22 +67,22 @@
 		// Test setPalColor
 		$.setPalColor( brownIndex, "HotPink" );
 		$.setColor( "HotPink" );
-		$.print( `Changed palette color of "brown" to HotPink` );
-		const hotPinkIndex = $.getPalIndex( "HotPink" );
-		$.print( `"HotPink" Index: ${hotPinkIndex}` );
+		$.print(
+			`Changed palette color of "brown" to HotPink index: ${$.getPalIndex( "HotPink" )}`
+		);
 
 		// Redraw palette
-		drawPaletteSwatches( 10, 135 );
+		drawPaletteSwatches( 10, 120 );
 
 		// Test setPal
-		$.setPal( [ "black", "LightSalmon", "LightCoral", "LawnGreen", "Indigo" ] );
-		$.setPosPx( 0, 185 );
+		$.setPal( [ "LightSalmon", "LightCoral", "LawnGreen", "Indigo" ] );
+		$.setPosPx( 0, 165 );
 		$.print( `Pal Size after setPal with new palette: ${$.getPal().length}` );
-		drawPaletteSwatches( 10, 200 );
+		drawPaletteSwatches( 10, 180 );
 
 		// Test swapColor
 		$.swapColor( 3, 4 );
-		$.setPosPx( 0, 225 );
+		$.setPosPx( 0, 205 );
 		$.setColor( 4 );
 		$.print( "Swapped Colors \"LawnGreen: 3\" and \"Indigo: 4\"" );
 
@@ -93,27 +91,32 @@
 		$.setColor( "LightSkyBlue" );
 		$.print( "Swapped Colors \"LightCoral: 2\" and \"LightSkyBlue: new\"" );
 
+		$.setColor( "black", true );
+		$.print( "Added Color: \"black\"" );
+		drawPaletteSwatches( 10, 235 );
+
 	} );
 
 	function drawPaletteSwatches( startX, startY ) {
-		const pal = $.getPal();
+		const pal = $.getPalInternal();
 		for( let i = 0; i < pal.length; i++ ) {
 			const x = startX + ( i % 9 ) * 20;
 			const y = startY + Math.floor( i / 9 ) * 20;
-			$.setColor( i );
+			$.setColor( pal[ i ] );
 			$.rect( x, y, 20, 20, i );
 			if( i > 9 ) {
 				$.setPosPx( x + 4, y + 7 );
 			} else {
 				$.setPosPx( x + 7, y + 7 );
 			}
-			if( i === 7 || i === 4 && pal.length > 15 ) {
-				$.setColor( 15 );
+			if( pal[ i ].r + pal[ i ].g + pal[ i ].b > 400 ) {
+				$.setColor( "black" );
 			} else {
 				$.setColor( "white" );
 			}
 			$.print( i, true );
 		}
+		$.setColor( "white" );
 	}
 
 </script>
