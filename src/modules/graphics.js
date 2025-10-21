@@ -167,7 +167,7 @@ function aaLine( screenData, options ) {
 	}
 
 	screenData.api.render();
-	screenData.context.strokeStyle = screenData.color.s;
+	screenData.context.strokeStyle = screenData.color.hex;
 	screenData.context.beginPath();
 	screenData.context.moveTo( x1, y1 );
 	screenData.context.lineTo( x2, y2 );
@@ -271,10 +271,10 @@ function aaRect( screenData, options ) {
 
 	screenData.api.render();
 	screenData.context.beginPath();
-	screenData.context.strokeStyle = screenData.color.s;
+	screenData.context.strokeStyle = screenData.color.hex;
 	screenData.context.rect( x, y, width, height );
 	if( isFill ) {
-		screenData.context.fillStyle = fillColor.s;
+		screenData.context.fillStyle = fillColor.hex;
 		screenData.context.fill();
 	}
 	screenData.context.stroke();
@@ -423,10 +423,10 @@ function aaCircle( screenData, options ) {
 	screenData.context.beginPath();
 	screenData.context.arc( x, y, r, angle1, angle2 );
 	if( isFill ) {
-		screenData.context.fillStyle = fillColor.s;
+		screenData.context.fillStyle = fillColor.hex;
 		screenData.context.fill();
 	}
-	screenData.context.strokeStyle = screenData.color.s;
+	screenData.context.strokeStyle = screenData.color.hex;
 	screenData.context.stroke();
 }
 
@@ -550,9 +550,41 @@ function get( screenData, options ) {
 
 	renderer.getImageData( screenData );
 
-	const imageData = screenData.imageData;
 
+	const imageData = screenData.imageData;
 	const data = [];
+	let colorLookupFn;
+	if( tolerance === 1 ) {
+		colorLookupFn = ( i ) => {
+			const key = utils.generateColorKey(
+				imageData.data[ i ],
+				imageData.data[ i + 1],
+				imageData.data[ i + 2 ],
+				imageData.data[ i + 3 ]
+			);
+			const c = screenData.colorCache[ key ];
+			if( c ) {
+				data[ row ].push( c );
+			} else {
+				data[ row ].push( 0 );
+			}
+		}
+	} else {
+		colorLookupFn = ( i ) => {
+			const c = colors.getColorIndex(
+				screenData,
+				utils.rgbToColor(
+					imageData.data[ i ],
+					imageData.data[ i + 1],
+					imageData.data[ i + 2 ],
+					imageData.data[ i + 3 ]
+				),
+				tolerance,
+				isAddToPalette
+			);
+			data[ row ].push( c );
+		}
+	}
 	let row = 0;
 	for( let y = y1; y <= y2; y++ ) {
 		data.push( [] );
@@ -560,14 +592,7 @@ function get( screenData, options ) {
 
 			// Calculate the index of the image data
 			const i = ( ( screenData.width * y ) + x ) * 4;
-			const r = imageData.data[ i ];
-			const g = imageData.data[ i + 1 ];
-			const b = imageData.data[ i + 2 ];
-			const a = imageData.data[ i + 3 ];
-			const c = colors.getColorIndex(
-				screenData, utils.rgbToColor( r, g, b, a ), tolerance, isAddToPalette
-			);
-			data[ row ].push( c );
+			colorLookupFn( i );
 		}
 		row += 1;
 	}

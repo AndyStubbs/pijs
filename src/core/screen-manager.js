@@ -637,8 +637,8 @@ function createScreenData( options ) {
 	m_nextScreenId += 1;
 	options.canvas.dataset.screenId = screenData.id;
 	screenData.context.imageSmoothingEnabled = false;
-	screenData.context.fillStyle = screenData.color.s;
-	screenData.context.strokeStyle = screenData.color.s;
+	screenData.context.fillStyle = screenData.color.hex;
+	screenData.context.strokeStyle = screenData.color.hex;
 
 	return screenData;
 }

@@ -154,7 +154,7 @@ function aaArc( screenData, options ) {
 	const angle1Rad = utils.degreesToRadian( angle1 );
 	const angle2Rad = utils.degreesToRadian( angle2 );
 	screenData.context.beginPath();
-	screenData.context.strokeStyle = screenData.color.s;
+	screenData.context.strokeStyle = screenData.color.hex;
 	screenData.context.moveTo(
 		x + Math.cos( angle1Rad ) * radius,
 		y + Math.sin( angle1Rad ) * radius
@@ -325,11 +325,11 @@ function aaEllipse( screenData, options ) {
 	}
 
 	screenData.context.beginPath();
-	screenData.context.strokeStyle = screenData.color.s;
+	screenData.context.strokeStyle = screenData.color.hex;
 	screenData.context.moveTo( cx + rx, cy );
 	screenData.context.ellipse( cx, cy, rx, ry, 0, Math.PI * 2, false );
 	if( isFill ) {
-		screenData.context.fillStyle = fillColor.s;
+		screenData.context.fillStyle = fillColor.hex;
 		screenData.context.fill();
 	}
 	screenData.context.stroke();
@@ -501,7 +501,7 @@ function aaBezier( screenData, options ) {
 
 	screenData.api.render();
 
-	screenData.context.strokeStyle = screenData.color.s;
+	screenData.context.strokeStyle = screenData.color.hex;
 	screenData.context.beginPath();
 	screenData.context.moveTo( xStart, yStart );
 	screenData.context.bezierCurveTo( x1, y1, x2, y2, xEnd, yEnd );

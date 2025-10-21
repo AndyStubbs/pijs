@@ -6,12 +6,6 @@
  * @module modules/utils
  */
 
-// TODO Refactor color creation to make the code easier to follow and to support the new key
-// without alpha, colors still contain alpha but it will be fixed at 255 or 1.
-
-// TODO: Add a key field for quicker lookup in color cache. Maybe and integer field instead of 
-// color.s we could use the key field for colorCache.
-
 "use strict";
 
 const COLOR_PROTO = {
@@ -64,20 +58,6 @@ export function parseOptions( args, parameterNames ) {
 	return resultOptions;
 }
 
-/**
- * Generates a unique 32-bit integer key for an opaque RGB color.
- * Each color component (R, G, B) is assumed to be an 8-bit integer (0-255).
- * The components are packed in the order: Red | Green | Blue.
- *
- * @param {number} r - Red component (0-255).
- * @param {number} g - Green component (0-255).
- * @param {number} b - Blue component (0-255).
- * @returns {number} A 32-bit integer representing the color.
- */
-export function generateOpaqueColorKey( r, g, b ) {
-	return ( r << 16 ) | ( g << 8 ) | b;
-}
-
 // Type checking utilities
 export const isFunction = ( fn ) => typeof fn === "function";
 export const isDomElement = ( el ) => el instanceof Element;
@@ -90,6 +70,21 @@ export const isObjectLiteral = ( obj ) => {
 };
 
 /**
+ * Generates a unique 32-bit integer key for an opaque RGB color.
+ * Each color component (R, G, B) is assumed to be an 8-bit integer (0-255).
+ * The components are packed in the order: Red | Green | Blue.
+ *
+ * @param {number} r - Red component (0-255).
+ * @param {number} g - Green component (0-255).
+ * @param {number} b - Blue component (0-255).
+ * @param {number} a - Alpha component (0-255).
+ * @returns {number} A 32-bit integer representing the color.
+ */
+export function generateColorKey( r, g, b, a ) {
+	return ( r << 24 ) | ( g << 16 ) | ( b << 8 ) | a;
+}
+
+/**
  * Convert RGB to color object
  * 
  * @param {number} r - Red component (0-255)
@@ -99,7 +94,8 @@ export const isObjectLiteral = ( obj ) => {
  * @returns {Object} Color object
  */
 export function rgbToColor( r, g, b, a ) {
-	return hexToColor( rgbToHex( r, g, b, a ) );
+	const hex = rgbToHex( r, g, b, a );
+	return createColor( r, g, b, a, hex );
 }
 
 /**
@@ -114,40 +110,53 @@ export function convertToColor( color ) {
 	}
 
 	// Array format [r, g, b, a]
-	if( Array.isArray( color ) && color.length > 2 ) {
-		return rgbToColor( color[ 0 ], color[ 1 ], color[ 2 ], color[ 3 ] );
-	}
-
-	// Object format {r, g, b, a}
-	if(
-		Number.isInteger( color?.r ) &&
-		Number.isInteger( color?.g ) &&
-		Number.isInteger( color?.b )
-	) {
-		return rgbToColor( color.r, color.g, color.b, color.a );
-	}
-
-	if( typeof color !== "string" ) {
-		return null;
-	}
-
-	// Hex format
-	const checkHexColor = /(^#[0-9A-F]{8}$)|(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i;
-	if( checkHexColor.test( color ) ) {
-		return hexToColor( color );
-	}
-
-	// RGB/RGBA format
-	if( color.indexOf( "rgb" ) === 0 ) {
-		const rgbParts = splitRgb( color );
-		if( rgbParts.length < 3 ) {
+	if( Array.isArray( color ) ) {
+		if( color.length < 3 ) {
 			return null;
+		} else if( color.length === 3 ) {
+			color.push( 255 );
 		}
-		return rgbToColor( rgbParts[ 0 ], rgbParts[ 1 ], rgbParts[ 2 ], rgbParts[ 3 ] );
+	} else if( color.r !== undefined ) {
+
+		// Convert from object literal or color object
+		color = [ color.r, color.g, color.b, color.a ];
+	} else if( typeof color === "string" ) {
+
+		// Check if is hex format
+		const checkHexColor = /(^#[0-9A-F]{8}$)|(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i;
+		if( checkHexColor.test( color ) ) {
+			return hexToColor( color );
+		}
+
+		// RGB/RGBA format
+		if( color.indexOf( "rgb" ) === 0 ) {
+			color = splitRgb( color );
+			if( color.length < 3 ) {
+				return null;
+			} else if( color.length === 3 ) {
+				color.push( 255 );
+			}
+		} else {
+
+			// Named color or other CSS color
+			return colorStringToColor( color );
+		}
 	}
 
-	// Named color or other CSS color
-	return colorStringToColor( color );
+	// Parse rgb colors
+	for( let i = 0; i < 3; i += 1 ) {
+		color[ i ] = getInt( color[ i ], 0 );
+	}
+
+	// Parse alpha
+	color[ 3 ] = getFloat( color[ 3 ], 0 );
+	if( color[ 3 ] < 1 ) {
+		color[ 3 ] = Math.round( color[ 3 ] * 255 );
+	} else {
+		color[ 3 ] = Math.round( color[ 3 ] );
+	}
+	
+	return rgbToColor( color[ 0 ], color[ 1 ], color[ 2 ], color[ 3 ] );
 }
 
 export function calcColorDifference( c1, c2, w = [ 0.2, 0.68, 0.07, 0.05 ] ) {
@@ -365,6 +374,19 @@ export const queueMicrotask = ( callback ) => {
  * Internal Commands
  **************************************************************************************************/
 
+function createColor( r, g, b, a, hex ) {
+	const color = Object.create( COLOR_PROTO );
+	color.key = generateColorKey( r, g, b, a, hex );
+	color.r = r;
+	color.g = g;
+	color.b = b;
+	color.a = a;
+	color.rgba = `rgba(${r},${g},${b},${Math.round( a / 255).toFixed( 3 )})`;
+	color.hex = hex;
+
+	return color;
+}
+
 /**
  * Convert hex color to color object
  * 
@@ -372,8 +394,7 @@ export const queueMicrotask = ( callback ) => {
  * @returns {Object} Color object with r, g, b, a, s, s2 properties
  */
 function hexToColor( hex ) {
-	let r, g, b, a, s2;
-	s2 = hex;
+	let r, g, b, a;
 
 	if( hex.length === 4 ) {
 		r = parseInt( hex.slice( 1, 2 ), 16 ) * 16 - 1;
@@ -386,21 +407,12 @@ function hexToColor( hex ) {
 	}
 
 	if( hex.length === 9 ) {
-		s2 = hex.slice( 0, 7 );
 		a = parseInt( hex.slice( 7, 9 ), 16 );
 	} else {
 		a = 255;
 	}
 
-	const color = Object.create( COLOR_PROTO );
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
-	color.s = `rgba(${r},${g},${b},${Math.round( a / 255 * 1000 ) / 1000})`;
-	color.s2 = s2;
-
-	return color;
+	return createColor( r, g, b, a, hex );
 }
 
 /**

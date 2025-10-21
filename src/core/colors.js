@@ -6,9 +6,6 @@
  * @module core/colors
  */
 
-// TODO: No longer store alpha color values except for the the 0 item in the palette.
-// TODO: Color 0 will automatically be
-
 "use strict";
 
 import * as commands from "./commands";
@@ -114,7 +111,7 @@ export function getColorIndex( screenData, colorValue, tolerance, isAddToPalette
 		if( isAddToPalette ) {
 			screenData.pal.push( colorValue );
 			c = screenData.pal.length - 1;
-			screenData.colorCache[ colorValue.s ] = c;
+			screenData.colorCache[ colorValue.key ] = c;
 		} else {
 			return 0;
 		}
@@ -218,8 +215,8 @@ function setColor( screenData, options ) {
 	screenData.color = colorValue;
 
 	// Update canvas context styles for AA mode
-	screenData.context.fillStyle = screenData.color.s;
-	screenData.context.strokeStyle = screenData.color.s;
+	screenData.context.fillStyle = screenData.color.hex;
+	screenData.context.strokeStyle = screenData.color.hex;
 
 	return true;
 }
@@ -242,8 +239,8 @@ function getPalIndex( screenData, options ) {
 	const pal = screenData.pal;
 
 	// Check cache first
-	if( color && color.s && screenData.colorCache[ color.s ] !== undefined ) {
-		return screenData.colorCache[ color.s ];
+	if( color && color.key && screenData.colorCache[ color.key ] !== undefined ) {
+		return screenData.colorCache[ color.key ];
 	}
 
 	// Convert color to color object
@@ -257,7 +254,7 @@ function getPalIndex( screenData, options ) {
 	// Add to palette if allowed
 	if( isAddToPalette ) {
 		pal.push( color );
-		screenData.colorCache[ color.s ] = pal.length - 1;
+		screenData.colorCache[ color.key ] = pal.length - 1;
 		return pal.length - 1;
 	}
 
@@ -275,8 +272,8 @@ function setBgColor( screenData, options ) {
 	} else {
 		bc = utils.convertToColor( color );
 	}
-	if( bc && typeof bc.s === "string" ) {
-		screenData.canvas.style.backgroundColor = bc.s;
+	if( bc && typeof bc.hex === "string" ) {
+		screenData.canvas.style.backgroundColor = bc.hex;
 	} else {
 		const error = new TypeError( "bgColor: invalid color value for parameter color." );
 		error.code = "INVALID_COLOR";
@@ -295,8 +292,8 @@ function setContainerBgColor( screenData, options ) {
 		} else {
 			bc = utils.convertToColor( color );
 		}
-		if( bc && typeof bc.s === "string" ) {
-			screenData.container.style.backgroundColor = bc.s;
+		if( bc && typeof bc.hex === "string" ) {
+			screenData.container.style.backgroundColor = bc.hex;
 			return;
 		} else {
 			const error = new TypeError(
@@ -337,36 +334,24 @@ function setPalColor( screenData, options ) {
 	const oldColor = screenData.pal[ index ];
 
 	// Check if we are changing the current selected fore color
-	if( screenData.color.s === oldColor.s ) {
+	if( screenData.color.key === oldColor.key ) {
 		screenData.color = colorValue;
-		screenData.context.fillStyle = colorValue.s;
-		screenData.context.strokeStyle = colorValue.s;
+		screenData.context.fillStyle = colorValue.hex;
+		screenData.context.strokeStyle = colorValue.hex;
 	}
 
 	// Set the new palette color
 	screenData.pal[ index ] = colorValue;
 
 	// Update the colorCache - remove old color entry and add new one
-	delete screenData.colorCache[ oldColor.s ];
-	screenData.colorCache[ colorValue.s ] = index;
+	delete screenData.colorCache[ oldColor.key ];
+	screenData.colorCache[ colorValue.key ] = index;
 }
 
 // Get palette
 screenManager.addCommand( "getPal", getPal, [] );
 function getPal( screenData ) {
-	const colors = [];
-	for( let i = 0; i < screenData.pal.length; i++ ) {
-		const color = {
-			"r": screenData.pal[ i ].r,
-			"g": screenData.pal[ i ].g,
-			"b": screenData.pal[ i ].b,
-			"a": screenData.pal[ i ].a,
-			"s": screenData.pal[ i ].s,
-			"s2": screenData.pal[ i ].s2
-		};
-		colors.push( color );
-	}
-	return colors;
+	return structuredClone( screenData.pal );
 }
 
 // Set entire palette
@@ -419,7 +404,7 @@ function setPal( screenData, options ) {
 
 	// Rebuild cache for new palette colors
 	for( let i = 0; i < newPal.length; i++ ) {
-		screenData.colorCache[ newPal[ i ].s ] = i;
+		screenData.colorCache[ newPal[ i ].key ] = i;
 	}
 
 	// Check if current drawing color needs to be updated
@@ -428,14 +413,14 @@ function setPal( screenData, options ) {
 	const newIndex = findColorIndex( currentColor, newPal, 1, screenData.colorCache );
 	if( newIndex !== false ) {
 		screenData.color = newPal[ newIndex ];
-		screenData.context.fillStyle = screenData.color.s;
-		screenData.context.strokeStyle = screenData.color.s;
+		screenData.context.fillStyle = screenData.color.hex;
+		screenData.context.strokeStyle = screenData.color.hex;
 	} else {
 
 		// If current color not found, default to palette index 1
 		screenData.color = newPal[ 1 ];
-		screenData.context.fillStyle = screenData.color.s;
-		screenData.context.strokeStyle = screenData.color.s;
+		screenData.context.fillStyle = screenData.color.hex;
+		screenData.context.strokeStyle = screenData.color.hex;
 	}
 }
 
@@ -498,14 +483,14 @@ function swapColor( screenData, options ) {
 	if( newColorIndex !== false ) {
 		screenData.pal[ oldColorIndex ] = newColor;
 		screenData.pal[ newColorIndex ] = oldColor;
-		screenData.colorCache[ oldColor.s ] = newColorIndex;
-		screenData.colorCache[ newColor.s ] = oldColorIndex;
+		screenData.colorCache[ oldColor.key ] = newColorIndex;
+		screenData.colorCache[ newColor.key ] = oldColorIndex;
 	} else {
 
 		// Update just the oldColor palette and cache
-		delete screenData.colorCache[ oldColor.s ];
+		delete screenData.colorCache[ oldColor.key ];
 		screenData.pal[ oldColorIndex ] = newColor;
-		screenData.colorCache[ newColor.s ] = newColorIndex;
+		screenData.colorCache[ newColor.key ] = newColorIndex;
 	}
 }
 
@@ -519,7 +504,7 @@ function swapColor( screenData, options ) {
 function getPrepopulatedColorCache() {
 	const cache = {};
 	for( let i = 0; i < m_defaultPal.length; i++ ) {
-		cache[ m_defaultPal[ i ].s ] = i;
+		cache[ m_defaultPal[ i ].key ] = i;
 	}
 	return cache;
 }
@@ -533,8 +518,8 @@ function findColorIndex( color, pal, tolerance, cache = {} ) {
 
 	// Find exact match or closest color in palette
 	for( let i = 0; i < pal.length; i++ ) {
-		if( pal[ i ].s === color.s ) {
-			cache[ color.s ] = i;
+		if( pal[ i ].key === color.key ) {
+			cache[ color.key ] = i;
 			return i;
 		} else {
 			let difference;
@@ -548,7 +533,7 @@ function findColorIndex( color, pal, tolerance, cache = {} ) {
 			const similarity = maxDifference - difference;
 
 			if( similarity >= tolerance ) {
-				cache[ color.s ] = i;
+				cache[ color.key ] = i;
 				return i;
 			}
 		}
