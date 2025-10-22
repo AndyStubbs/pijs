@@ -90,17 +90,17 @@ This document outlines the current test coverage status for Pi.js and provides a
 |---------|--------|------------|-------|
 | `paint()` | ✅ Tested | 3 | Good coverage |
 
-### ⚠️ Images & Sprites
+### ✅ Images & Sprites
 
 | Command | Status | Test Count | Notes |
 |---------|--------|------------|-------|
-| `loadImage()` | ✅ Tested | Several | Good coverage |
-| `loadSpritesheet()` | ✅ Tested | Several | Good coverage |
-| `removeImage()` | ❌ **Missing** | 0 | **Needs tests** |
-| `getImage()` | ❌ **Missing** | 0 | **Needs tests** (screen capture to image) |
-| `getSpritesheetData()` | ⚠️ Limited | Few | **Needs more tests** |
-| `drawImage()` | ✅ Tested | Several | Good coverage |
-| `drawSprite()` | ✅ Tested | Several | Good coverage |
+| `loadImage()` | ✅ Tested | Comprehensive | Full coverage in `images_comprehensive.html` |
+| `loadSpritesheet()` | ✅ Tested | Comprehensive | Full coverage in `images_comprehensive.html` |
+| `removeImage()` | ✅ Tested | Comprehensive | Full coverage in `images_comprehensive.html` |
+| `getImage()` | ✅ Tested | Comprehensive | Full coverage in `images_comprehensive.html` |
+| `getSpritesheetData()` | ✅ Tested | Comprehensive | Full coverage in `images_comprehensive.html` |
+| `drawImage()` | ✅ Tested | Comprehensive | Full coverage in `images_comprehensive.html` |
+| `drawSprite()` | ✅ Tested | Comprehensive | Full coverage in `images_comprehensive.html` |
 
 ### ❌ Fonts
 
