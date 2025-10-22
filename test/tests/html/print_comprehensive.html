@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Print Comprehensive</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "print_comprehensive"
+			name = "print comprehensive"
+			width = 660
+			height = 510
+			delay = 0
+			[[TOML_END]]
+		</script>
+		<script src="../../../build/pi.js"></script>
+		<style>
+			html, body {
+				background-color: grey;
+				margin: 0;
+				padding: 0;
+			}
+			.container {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 10px;
+				padding: 10px;
+			}
+			.screen {
+				border: 2px solid #333;
+				background-color: #000;
+			}
+		</style>
+	</head>
+<body>
+	<div class="container">
+		<!-- Screen 1: Built-in Fonts -->
+		<div id="screen1" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 2: Canvas Fonts -->
+		<div id="screen2" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 3: Bitmap Fonts -->
+		<div id="screen3" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 4: Cursor Positioning -->
+		<div id="screen4" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 5: Word Wrapping -->
+		<div id="screen5" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 6: Vertical Scrolling -->
+		<div id="screen6" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 7: Custom Characters -->
+		<div id="screen7" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 8: Font Size Changes -->
+		<div id="screen8" class="screen" style="width: 200px; height: 150px;"></div>
+	</div>
+	
+	<!-- Font Images -->
+	<img src="images/font-8x14.png" id="font-image" style="display: none;"></img>
+	<img src="images/gnsh-bitmapfont-colour2.png" id="font-gnsh" style="display: none;"></img>
+	<img src="images/font-block.png" id="font-block" style="display: none;"></img>
+	
+<script>
+	$.ready( function() {
+		
+		// ============================================================
+		// Screen 1: Built-in Fonts (6x6, 6x8, 8x8, 8x14, 8x16)
+		// ============================================================
+		$.screen( "200x150", "screen1" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "1: BUILT-IN FONTS" );
+		
+		// Test all built-in fonts
+		const fonts = [
+			{ id: 0, name: "6x6" },
+			{ id: 1, name: "6x8" },
+			{ id: 2, name: "8x8" },
+			{ id: 3, name: "8x14" },
+			{ id: 4, name: "8x16" }
+		];
+		
+		let y = 20;
+		for( const font of fonts ) {
+			$.setFont( font.id );
+			$.setPosPx( 5, y );
+			$.print( font.name + ": ABC 123" );
+			y += 15;
+		}
+		
+		// ============================================================
+		// Screen 2: Canvas Fonts (CSS fonts)
+		// ============================================================
+		$.screen( "200x150", "screen2" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "2: CANVAS FONTS" );
+		
+		// Test various canvas fonts
+		const canvasFonts = [
+			"12px Arial",
+			"bold 14px serif", 
+			"italic 10px monospace",
+			"16px sans-serif",
+			"20px Times"
+		];
+		
+		y = 20;
+		for( const fontStr of canvasFonts ) {
+			$.setFont( fontStr );
+			$.setPosPx( 5, y );
+			$.print( fontStr );
+			y += 20;
+		}
+		
+		// ============================================================
+		// Screen 3: Bitmap Fonts (loaded from images)
+		// ============================================================
+		$.screen( "200x150", "screen3" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "3: BITMAP FONTS" );
+		
+		// Load bitmap font
+		const bitmapFont = $.loadFont( document.getElementById( "font-image" ), 8, 14 );
+
+		const charset = " ~\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`" +
+			"abcdefghijklmnopqrstuvwxyz{|}~";
+		const gnshFont = $.loadFont( document.getElementById( "font-gnsh" ), 5, 12, charset );
+		
+		// 8x14 font
+		$.setFont( bitmapFont );
+		$.setPosPx( 5, 20 );
+		$.print( "Bitmap Font" );
+		$.setPosPx( 5, 35 );
+		$.print( "ABC 123 !@#" );
+		$.setPosPx( 5, 50 );
+		$.print( "The quick brown fox\n" );
+
+		$.setFont( gnshFont );
+		$.print( "Bitmap Font2");
+		$.print( "ABC 123 !@#" );
+		$.print( "The quick brown fox jumped over the lazy dogs." );
+
+		
+		// ============================================================
+		// Screen 4: Cursor Positioning
+		// ============================================================
+		$.screen( "200x150", "screen4" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "4: CURSOR POSITION" );
+		
+		$.setFont( 2 ); // 8x8 font
+		
+		// Test setPos (row/column)
+		$.setPos( 0, 2 );
+		$.print( "setPos(0,2)" );
+		$.setPos( 5, 3 );
+		$.print( "setPos(5,3)" );
+		$.setPos( 10, 4 );
+		$.print( "setPos(10,4)" );
+		
+		// Test setPosPx (pixels)
+		$.setPosPx( 5, 60 );
+		$.print( "setPosPx(5,60)" );
+		$.setPosPx( 50, 80 );
+		$.print( "setPosPx(50,80)" );
+		
+		// Test getPos and getPosPx
+		$.setPosPx( 5, 100 );
+		const pos = $.getPos();
+		const posPx = $.getPosPx();
+		$.print( `getPos: ${pos.col},${pos.row}` );
+		$.setPosPx( 5, 115 );
+		$.print( `getPosPx: ${posPx.x},${posPx.y}` );
+		
+		// ============================================================
+		// Screen 5: Word Wrapping
+		// ============================================================
+		$.screen( "200x150", "screen5" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "5: WORD WRAPPING" );
+		
+		$.setFont( 2 ); // 8x8 font
+		$.setWordBreak( true );
+		$.setPosPx( 5, 20 );
+		$.print(
+			"This is a very long line that should wrap to multiple lines when it reaches the " +
+			"edge of the screen."
+		);
+		
+		$.setWordBreak( false );
+		$.setPosPx( 5, 80 );
+		$.print( "This line should not wrap and will be cut off at the edge." );
+		
+		// ============================================================
+		// Screen 6: Vertical Scrolling
+		// ============================================================
+		$.screen( "200x150", "screen6" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "6: VERTICAL SCROLL" );
+		
+		$.setFont( 2 ); // 8x8 font
+		
+		// Fill screen to trigger scrolling
+		for( let i = 0; i < 25; i++ ) {
+			$.print(
+				`Line ${i + 1}: This is a test line that should cause vertical scrolling when ` +
+				`the screen fills up.`
+			);
+		}
+		
+		// ============================================================
+		// Screen 7: Custom Characters
+		// ============================================================
+		$.screen( "200x150", "screen7" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "7: CUSTOM CHARS" );
+		
+		$.setFont( 2 ); // 8x8 font
+		
+		// Define custom characters: A-E
+		$.setChar( 65, "1092ba547cc6fe92" );
+		$.setChar( 66, "423c2418187e1818" );
+		$.setChar( 67, "7cd67cfec6aafe00" );
+		$.setChar( 68, "00183c667e5a42c3" );
+		$.setChar( 69, "008199FFDBFFBD18" );
+		
+		$.setPosPx( 5, 20 );
+		$.print( "Custom: ABCDE" );
+		$.setPosPx( 5, 35 );
+		$.print( "Mixed: A1B2C3D4E5" );
+		
+		// ============================================================
+		// Screen 8: Font Size Changes
+		// ============================================================
+		$.screen( "200x150", "screen8" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "8: FONT SIZES" );
+		
+		// Load bitmap font for size testing
+		const blockFont = $.loadFont(
+			document.getElementById( "font-block" ), 10, 10, "ABCDEFGHI"
+		);
+		$.setFont( blockFont );
+		
+		$.setPosPx( 5, 20 );
+		$.print( "ABCDFGHI" );
+		
+		$.setFontSize( 15, 15 );
+		$.setPosPx( 5, 40 );
+		$.print( "ABCDFGHI" );
+		
+		$.setFontSize( 20, 20 );
+		$.setPosPx( 5, 70 );
+		$.print( "ABCDFGHI" );
+		
+		$.setFontSize( 8, 8 );
+		$.setPosPx( 5, 100 );
+		$.print( "ABCDFGHI" );
+		
+		// ============================================================
+		// Test getCols and getRows
+		// ============================================================
+		$.setFont( 2 ); // 8x8 font
+		const cols = $.getCols();
+		const rows = $.getRows();
+		
+		$.setPosPx( 5, 120 );
+		$.print( `Cols: ${cols}, Rows: ${rows}` );
+		
+		// ============================================================
+		// Test getAvailableFonts
+		// ============================================================
+		const availableFonts = $.getAvailableFonts();
+		$.setPosPx( 5, 135 );
+		$.print( `Fonts: ${availableFonts.length}` );
+		
+		$.render();
+	} );
+</script>
+</body>
+</html>
