@@ -35,7 +35,7 @@ let m_isKeyboardActive = false;
 // Initialize keyboard module
 export function init() {
 	startKeyboard();
-	window.addEventListener( "blur", onWindowBlur );
+	window.addEventListener( "blur", clearInKeys );
 }
 
 /**
@@ -75,6 +75,9 @@ function stopKeyboard() {
 	window.removeEventListener( "keydown", onKeyDown, { "capture": true } );
 	window.removeEventListener( "keyup", onKeyUp, { "capture": true } );
 	m_isKeyboardActive = false;
+
+	// Clear keys to prevent any after effects
+	clearInKeys();
 }
 
 commands.addCommand( "inkey", inkey, [ "key" ] );
@@ -99,7 +102,7 @@ function inkey( options ) {
 			return m_inKeys[ key ];
 		}
 
-		return {};
+		return null;
 	}
 
 	// If inkey is blank return all key codes
@@ -242,6 +245,13 @@ function offkey( options ) {
 	}
 }
 
+// TODO: A couple of bugs notice with input at 640x480. First sometimes I see rogue cursor after
+// hitting the backspace. Then If I type in the letter A as the first character I noticed the left
+// side looks like it's getting sliced a little bit. This may be due to the drawing of the cursor
+// and clearing space for the flashing display.
+// FIX: Grabbing the background and drawing the background is a bit messy. I think a better solution
+// would be to draw the input on a separate canvas that is overlaying the current screen canvas.
+// But I don't know. I am refactoring to WebGL so I will address this as part of the refactor.
 screenManager.addCommand(
 	"input", input, [ "prompt", "fn", "cursor", "isNumber", "isInteger", "allowNegative" ]
 );
@@ -319,6 +329,7 @@ function onKeyDown( event ) {
 
 	// Ignore typing when focus is inside an editable
 	if( isFromEditableTarget( event ) ) {
+		clearInKeys();
 		return;
 	}
 	const keyData = {
@@ -346,6 +357,7 @@ function onKeyUp( event ) {
 	
 	// Ignore typing when focus is inside an editable
 	if( isFromEditableTarget( event ) ) {
+		clearInKeys();
 		return;
 	}
 	triggerKeyEventHandlers( event, "up", event.code );
@@ -393,7 +405,11 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 			if( !keyData ) {
 				keyData = m_inKeys[ event.key ];
 			}
-			handler.fn( keyData );
+
+			// In case stopKeyboard gets called in another key event handler keyData will be blank
+			if( keyData !== undefined ) {
+				handler.fn( keyData );
+			}
 
 			if( handler.once ) {
 				toRemove.add( handler );
@@ -462,9 +478,9 @@ function isFromEditableTarget ( event ) {
 	return false;
 }
 
-function onWindowBlur() {
+function clearInKeys() {
 
-	// Clear all key states when window loses focus
+	// Clear all key states
 	for( const code in m_inCodes ) {
 		delete m_inCodes[ code ];
 	}

@@ -193,6 +193,8 @@ function setColor( screenData, options ) {
 	return true;
 }
 
+// TODO: Add getColor command to get the active screen color
+
 // Given a color value, find the index from the color palette.
 screenManager.addCommand( "getPalIndex", getPalIndex, [ "color", "tolerance" ] );
 function getPalIndex( screenData, options ) {

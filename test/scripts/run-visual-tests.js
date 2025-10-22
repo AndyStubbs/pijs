@@ -78,8 +78,10 @@ function logMessage( message ) {
 	if( !LOG_FILE_PATH ) {
 		return;
 	}
+	const elapsed = Date.now() - LOG_START_TIME;
+	const line = `[${elapsed}] ${message}\n`;
 	try {
-		fs.appendFileSync( LOG_FILE_PATH, `${message}\n` );
+		fs.appendFileSync( LOG_FILE_PATH, line );
 	} catch( _e ) {}
 }
 
