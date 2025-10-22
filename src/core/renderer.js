@@ -289,19 +289,26 @@ function blendReplace( screenData, x, y, c ) {
 
 function blendAlpha( screenData, x, y, c ) {
 
+	c = screenData.blendColor( screenData, c );
+	
 	// Get the image data
 	const data = screenData.imageData.data
 
 	// Calculate the index
 	const i = ( ( screenData.width * y ) + x ) * 4;
 
-	// displayColor = sourceColor × alpha / 255 + backgroundColor × (255 – alpha) / 255
-	// blend = ( source * source_alpha) + desitination * ( 1 - source_alpha)
-	const pct = c.a / 255;
-	const pct2 = ( 255 - c.a ) / 255;
-	data[ i ] = ( c.r * pct ) + data[ i ] * pct2
-	data[ i + 1 ] = ( c.g * pct ) + data[ i + 1 ] * pct2;
-	data[ i + 2 ] = ( c.b * pct ) + data[ i + 2 ] * pct2;
+	// Normalize alpha to [ 0, 1 ]
+	const srcA = c.a / 255;
+	const dstA = data[ i + 3 ] / 255;
+	const outA = srcA + dstA * ( 1 - srcA );
+
+	// Blend the RGB channels
+	data[ i ] = Math.round( ( c.r * srcA + data[ i ] * dstA * ( 1 - srcA ) ) / outA );
+	data[ i + 1 ] = Math.round( ( c.g * srcA + data[ i + 1 ] * dstA * ( 1 - srcA ) ) / outA );
+	data[ i + 2 ] = Math.round( ( c.b * srcA + data[ i + 2 ] * dstA * ( 1 - srcA ) ) / outA );
+
+	// Update alpha channel
+	data[ i + 3 ] = Math.round( outA * 255 );
 }
 
 

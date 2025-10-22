@@ -340,19 +340,26 @@ function canvas( screenData ) {
 	return screenData.canvas;
 }
 
+// TODO: Consider simplifying api commands. This fancy processApiCommand is complex and it only
+// saves 1 if statement per command call. It might be worth it to simplify it.
+// TODO: When pixel mode is set it's setting it in a mixed state. The global $ will get set for
+// all screens, but only the current screen on the screen state will get updated.
+// Preferred fix is to not set the global $ pixel mode but only for active screen. Or just
+// set pixel mode for global $ and all screens - make this a global command only.
+
 // Set pixel mode command
 addCommand( "setPixelMode", setPixelMode, [ "isEnabled" ] );
 function setPixelMode( screenData, options ) {
 	const isEnabled = !!options.isEnabled;
 
 	// If we are enabling pixel mode and it's not already set then we setup pixel mode
-	if( isEnabled && screenData.context.imageSmoothingEnabled ) {
+	if( isEnabled ) {
 		screenData.context.imageSmoothingEnabled = false;
 		for( const name in m_pixelCommands ) {
 			processApiCommand( screenData, m_pixelCommands[ name ] );
 			commands.processApiCommand( m_pixelCommands[ name ] );
 		}
-	} else if( !isEnabled && !screenData.context.imageSmoothingEnabled ) {
+	} else {
 		screenData.context.imageSmoothingEnabled = true;
 		for( const name in m_aaCommands ) {
 			processApiCommand( screenData, m_aaCommands[ name ] );

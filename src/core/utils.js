@@ -401,7 +401,7 @@ function createColor( r, g, b, a, hex ) {
 	color.g = g;
 	color.b = b;
 	color.a = a;
-	color.rgba = `rgba(${r},${g},${b},${Math.round( a / 255).toFixed( 3 )})`;
+	color.rgba = `rgba(${r},${g},${b},${( a / 255 ).toFixed( 3 )})`;
 	color.hex = hex;
 
 	return color;

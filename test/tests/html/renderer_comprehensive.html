@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Renderer Comprehensive</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "renderer_comprehensive"
+			name = "renderer comprehensive"
+			width = 660
+			height = 510
+			delay = 100
+			[[TOML_END]]
+		</script>
+		<script src="../../../build/pi.js"></script>
+		<script src="libs/seedrandom.js"></script>
+		<style>
+			html, body {
+				background-color: grey;
+				margin: 0;
+				padding: 0;
+			}
+			.container {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 10px;
+				padding: 10px;
+			}
+			.screen {
+				border: 2px solid #333;
+				background-color: #000;
+			}
+		</style>
+	</head>
+<body>
+	<div class="container">
+		<!-- Screen 1: Pen Types -->
+		<div id="screen1" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 2: Pen Sizes -->
+		<div id="screen2" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 3: Blend Modes -->
+		<div id="screen3" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 4: Noise Blending -->
+		<div id="screen4" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 5: Auto Render -->
+		<div id="screen5" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 6: Clear Screen -->
+		<div id="screen6" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 7: Pixel Mode vs AA -->
+		<div id="screen7" class="screen" style="width: 200px; height: 150px;"></div>
+		
+		<!-- Screen 8: Complex Interactions -->
+		<div id="screen8" class="screen" style="width: 200px; height: 150px;"></div>
+	</div>
+	
+<script>
+	Math.seedrandom( "constant" );
+	$.ready( function() {
+		
+		// ============================================================
+		// Screen 1: Pen Types (pixel, square, circle)
+		// ============================================================
+		$.screen( "200x150", "screen1" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "1: PEN TYPES" );
+		
+		// Test pixel pen
+		$.setPen( "pixel", 1 );
+		$.setColor( 14 );
+		$.setPosPx( 5, 20 );
+		$.print( "Pixel pen:" );
+		$.pset( 20, 35 );
+		$.pset( 25, 35 );
+		$.pset( 30, 35 );
+		
+		// Test square pen
+		$.setPen( "square", 3 );
+		$.setColor( 10 );
+		$.setPosPx( 5, 50 );
+		$.print( "Square pen:" );
+		$.pset( 20, 65 );
+		$.pset( 30, 65 );
+		$.pset( 40, 65 );
+		
+		// Test circle pen
+		$.setPen( "circle", 5 );
+		$.setColor( 12 );
+		$.setPosPx( 5, 80 );
+		$.print( "Circle pen:" );
+		$.pset( 20, 95 );
+		$.pset( 35, 95 );
+		$.pset( 50, 95 );
+		
+		// ============================================================
+		// Screen 2: Pen Sizes (1-10)
+		// ============================================================
+		$.screen( "200x150", "screen2" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "2: PEN SIZES" );
+		
+		// Square pens of different sizes
+		$.setColor( 9 );
+		for( let i = 1; i <= 8; i++ ) {
+			$.setPen( "square", i );
+			$.pset( 20 + i * 8, 30 );
+		}
+		$.setPosPx( 5, 45 );
+		$.print( "Square 1-8:" );
+		
+		// Circle pens of different sizes
+		$.setColor( 11 );
+		for( let i = 1; i <= 8; i++ ) {
+			$.setPen( "circle", i );
+			$.pset( 20 + i * 8, 60 );
+		}
+		$.setPosPx( 5, 75 );
+		$.print( "Circle 1-8:" );
+		
+		// Large pens
+		$.setPen( "square", 10 );
+		$.setColor( 13 );
+		$.pset( 50, 100 );
+		$.setPen( "circle", 12 );
+		$.setColor( 14 );
+		$.pset( 100, 100 );
+		$.setPosPx( 5, 115 );
+		$.print( "Large: 10sq, 12cir" );
+		
+		// ============================================================
+		// Screen 3: Blend Modes (replace, alpha)
+		// ============================================================
+		const replaceColor1 = "rgba(0,255,0,1)";
+		const alphaColor1 =  "rgba(0,0,255,1)";
+		const replaceColor2 = "rgba(0,255,0,0.5)";
+		const alphaColor2 =  "rgba(0,0,255,0.5)";
+
+		$.screen( "200x150", "screen3" );
+		$.setBgColor( "#00000000" );
+		$.setContainerBgColor( "#00000000" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "3: BLEND MODES" );
+		
+		$.setPosPx( 5, 15 );
+		$.setColor( replaceColor1 );
+		$.print( "replace" );
+
+		$.setPosPx( 80, 15 );
+		$.setColor( alphaColor1 );
+		$.print( "alpha", true );
+
+		// Background pattern
+		$.setColor( 7 );
+		for( let x = 10; x < 180; x += 5 ) {
+			for( let y = 30; y < 140; y += 5 ) {
+				$.pset( x, y );
+				$.pset( x - 1, y );
+				$.pset( x + 1, y );
+				$.pset( x, y - 1 );
+				$.pset( x, y + 1 );
+			}
+		}
+		
+		// Replace blend 1
+		$.setColor( replaceColor1 );
+		$.setBlend( "replace" );
+		$.rect( 15, 35, 100, 65, replaceColor2 );
+		
+		// Alpha blend 1
+		$.setColor( alphaColor1 );
+		$.setBlend( "alpha" );
+		$.rect( 70, 35, 100, 65, alphaColor2 );
+
+		// Replace blend 2
+		$.setColor( replaceColor1 );
+		$.setBlend( "replace" );
+		$.rect( 15, 65, 100, 65, replaceColor2 );
+		
+		// Alpha blend 2
+		$.setColor( alphaColor1 );
+		$.setBlend( "alpha" );
+		$.rect( 70, 65, 100, 65, alphaColor2 );
+
+		// Reset blend to default
+		$.setBlend( "replace" );
+		
+		// ============================================================
+		// Screen 4: Noise Blending
+		// ============================================================
+		$.screen( "200x150", "screen4" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "4: NOISE BLENDING" );
+		
+		$.setColor( 10 );
+		$.setPosPx( 5, 17 );
+		$.print( "Noise 50" );
+
+		$.setColor( 12 );
+		$.setPosPx( 75, 17 );
+		$.print( "Noise [30,60,30,0]" );
+
+		// Background pattern
+		$.setColor( 7 );
+		for( let x = 10; x < 180; x += 5 ) {
+			for( let y = 30; y < 140; y += 5 ) {
+				$.pset( x, y );
+				$.pset( x - 1, y );
+				$.pset( x + 1, y );
+				$.pset( x, y - 1 );
+				$.pset( x, y + 1 );
+			}
+		}
+		
+		// Noise blend with single value
+		$.setColor( 10 );
+		$.setBlend( "replace", 50 );
+		$.rect( 15, 35, 65, 45, "rgba(88,255,88,0.5)" );
+		$.setBlend( "alpha", 50 );
+		$.rect( 15, 85, 65, 45, "rgba(88,255,88,0.5)" );
+		
+		
+		// Noise blend with array
+		$.setBlend( "replace", [ 30, 60, 30, 0 ] );
+		$.setColor( 9 );
+		$.setBlend( "replace", 50 );
+		$.rect( 105, 35, 65, 45, "rgba(88,88,255,0.5)" );
+		$.setBlend( "alpha", 50 );
+		$.rect( 105, 85, 65, 45, "rgba(88,88,255,0.5)" );
+		
+		// ============================================================
+		// Screen 5: Auto Render
+		// ============================================================
+		$.screen( "200x150", "screen5" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+
+		// Test auto-render enabled (default)
+		$.setAutoRender( true );
+		$.print( "5: AUTO RENDER" );
+		$.setColor( 7 );
+		$.print( "\nShould be blank below this line:" );
+		$.line( 0, 35, 200, 35 );
+		
+		setTimeout( () => {
+			const $screen = $.getScreen( 4 );
+			$screen.setAutoRender( false );
+			$screen.setColor( 7 );
+			$screen.setPos( 0, 9 );
+			$screen.print( "This should not appear", true, true );
+		}, 0 )
+		
+		// ============================================================
+		// Screen 6: Clear Screen (cls)
+		// ============================================================
+		$.screen( "200x150", "screen6" );
+		
+		// Fill screen with pattern
+		$.setColor( 2 );
+		for( let x = 10; x < 190; x += 10 ) {
+			for( let y = 20; y < 140; y += 10 ) {
+				$.pset( x, y );
+			}
+		}
+		
+		// Add some text
+		$.setColor( 15 );
+		$.setPosPx( 10, 30 );
+		$.print( "Before cls" );
+		$.setPosPx( 10, 45 );
+		$.print( "Pattern here" );
+					
+		// Full clear
+		$.cls();
+		$.setColor( 12 );
+		$.setPosPx( 10, 20 );
+		$.print( "After full cls" );
+		$.setPosPx( 10, 35 );
+		$.print( "Clean screen - only red dots" );
+
+		// Draw a second pattern after cls
+		$.setColor( 4 );
+		for( let x = 15; x < 190; x += 10 ) {
+			for( let y = 25; y < 140; y += 10 ) {
+				$.pset( x, y );
+			}
+		}
+
+		// Partial clear
+		$.cls( 50, 50, 100, 50 );
+		$.setColor( 10 );
+		$.setPosPx( 10, 70 );
+		$.print( "Partial cls" );
+
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "6: CLEAR SCREEN" );
+		
+		// ============================================================
+		// Screen 7: Pixel Mode vs Anti-Aliased
+		// ============================================================
+		$.screen( "200x150", "screen7" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "7: PIXEL vs AA" );
+		
+		// Pixel mode (default)
+		$.setPixelMode( true );
+		$.setColor( 9 );
+		$.setPosPx( 5, 20 );
+		$.print( "Pixel mode:" );
+		$.setPen( "circle", 8 );
+		$.pset( 30, 40 );
+		$.setPen( "square", 6 );
+		$.pset( 50, 40 );
+		$.setPen( "circle", 4 );
+		$.pset( 70, 40 );
+		
+		// Anti-aliased mode
+		$.setPixelMode( false );
+		$.setColor( 11 );
+		$.setPosPx( 5, 60 );
+		$.print( "AA mode:" );
+		$.setPen( "circle", 8 );
+		$.pset( 30, 80 );
+		$.setPen( "square", 6 );
+		$.pset( 50, 80 );
+		$.setPen( "circle", 4 );
+		$.pset( 70, 80 );
+		
+		// Lines comparison
+		$.setColor( 13 );
+		$.setPosPx( 5, 100 );
+		$.print( "Lines:" );
+		$.setPixelMode( true );
+		$.setPen( "circle", 3 );
+		$.line( 20, 115, 60, 125 );
+		$.setPixelMode( false );
+		$.setPen( "circle", 3 );
+		$.line( 70, 115, 110, 125 );
+		
+		// ============================================================
+		// Screen 8: Complex Interactions
+		// ============================================================
+		$.screen( "200x150", "screen8" );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "8: COMPLEX" );
+		
+		// Background with noise
+		$.setPixelMode( true );
+		$.setBlend( "replace", 20 );
+		$.setColor( 1 );
+		$.rect( 10, 20, 180, 105, "rgba(88,88,150,1)" );
+		
+		// Different pens with alpha blending
+		$.setBlend( "alpha" );
+		$.setColor( "rgba(255,0,0,0.7)" );
+		$.setPen( "circle", 6 );
+		$.pset( 30, 50 );
+		
+		$.setColor( "rgba(0,255,0,0.5)" );
+		$.setPen( "square", 8 );
+		$.pset( 50, 50 );
+		
+		$.setColor( "rgba(0,0,255,0.8)" );
+		$.setPen( "circle", 4 );
+		$.pset( 70, 50 );
+		
+		// Lines with different modes
+		$.setBlend( "replace", 30 );
+		$.setColor( 14 );
+		$.setPen( "circle", 2 );
+		$.line( 20, 90, 80, 100 );
+		
+		$.setBlend( "alpha" );
+		$.setColor( "rgba(255,255,0,0.6)" );
+		$.setPen( "square", 3 );
+		$.line( 20, 110, 80, 120 );
+		
+		// Final render
+		$.render();
+		$.setPosPx( 5, 130 );
+		$.print( "Complex blend test" );
+		
+	} );
+</script>
+</body>
+</html>
