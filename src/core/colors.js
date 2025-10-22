@@ -14,6 +14,7 @@ import * as screenManager from "./screen-manager";
 import * as renderer from "./renderer";
 
 let m_defaultPal = [];
+let m_defaultPalMap = new Map();
 let m_defaultColor = -1;
 
 
@@ -68,51 +69,10 @@ export function init() {
 	// Add getters for screen manager to get defaults for dynamic items
 	screenManager.addScreenDataItemGetter( "pal", () => m_defaultPal );
 	screenManager.addScreenDataItemGetter( "color", () => m_defaultColor );
-	screenManager.addScreenDataItemGetter( "colorCache", getPrepopulatedColorCache );
+	screenManager.addScreenDataItemGetter( "palMap", () => m_defaultPalMap );
 }
 
-// Gets the color value by index or raw color value
-export function getColorValue( screenData, colorInput, commandName, parameterName = "color" ) {
-	let colorValue;
-
-	if( Number.isInteger( colorInput ) ) {
-		if( colorInput > screenData.pal.length ) {
-			const error = new RangeError(
-				`${commandName}: Parameter ${parameterName} is not a color in the palette.`
-			);
-			error.code = "COLOR_OUT_OF_RANGE";
-			throw error;
-		}
-		colorValue = screenData.pal[ colorInput ];
-	} else {
-		colorValue = utils.convertToColor( colorInput );
-		if( colorValue === null ) {
-			const error = new TypeError(
-				`${commandName}: Parameter ${parameterName} is not a valid color format.`
-			);
-			error.code = "INVALID_COLOR";
-			throw error;
-		}
-	}
-
-	return colorValue;
-}
-
-// Gets a color's index in current screen palette
-export function getColorIndex( screenData, colorValue, tolerance, isAddToPalette ) {
-	let c = findColorIndex( colorValue, screenData.pal, tolerance, screenData.colorCache );
-
-	if( c === false ) {
-		if( isAddToPalette ) {
-			screenData.pal.push( colorValue );
-			c = screenData.pal.length - 1;
-			screenData.colorCache[ colorValue.key ] = c;
-		} else {
-			return 0;
-		}
-	}
-	return c;
-}
+export { findColorIndexByColorValue, getColorValueByRawInput };
 
 
 /***************************************************************************************************
@@ -153,11 +113,14 @@ function setDefaultPal( options ) {
 		}
 	}
 
+	// Set the default pal map
+	m_defaultPalMap = new Map();
+	for( let i = 0; i < m_defaultPal.length; i++ ) {
+		m_defaultPalMap.set( m_defaultPal[ i ].key, i );
+	}
+
 	// Make sure default color is in the new palette
-	const defaultColorIndex = findColorIndex( m_defaultColor, m_defaultPal, 1 );
-	if( defaultColorIndex && defaultColorIndex < m_defaultPal.length ) {
-		m_defaultColor = m_defaultPal[ defaultColorIndex ];
-	} else {
+	if( !m_defaultPalMap.has( m_defaultColor.key ) ) {
 		m_defaultColor = m_defaultPal[ 1 ];
 	}
 }
@@ -173,9 +136,9 @@ function setDefaultColor( options ) {
 		c = utils.convertToColor( c );
 		if( c === null ) {
 			const error = new TypeError(
-				"setDefaultColor: invalid color value for parameter color."
+				"setDefaultColor: Parameter color is not a valid color format."
 			);
-			error.code = "INVALID_COLOR";
+			error.code = "INVALID_PARAMETER";
 			throw error;
 		}
 		m_defaultColor = c;
@@ -187,22 +150,43 @@ screenManager.addCommand( "setColor", setColor, [ "color", "isAddToPalette" ] );
 function setColor( screenData, options ) {
 	const colorInput = options.color;
 	const isAddToPalette = !!options.isAddToPalette;
-	const colorValue = getColorValue( screenData, colorInput, "setColor" );
 
-	if( colorValue === undefined ) {
-		return false;
+	let colorValue;
+
+	// If colorInput is an number then get colorValue for pal
+	if( typeof colorInput === "number" ) {
+		if( colorInput >= screenData.pal.length ) {
+			const error = new TypeError(
+				`setColor: Parameter color index is not in pal.`
+			);
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
+		colorValue = screenData.pal[ colorInput ];
+	} else {
+
+		// Convert the color to a colorValue
+		colorValue = utils.convertToColor( colorInput );
+
+		// If we were unable to convert this color than it is not a valid color format
+		if( colorValue === null ) {
+			const error = new TypeError(
+				`setColor: Parameter color is not a valid color format.`
+			);
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
+
+		// If we are adding to palette then we need to do an additional check to see if the color
+		// is already in the palette or not
+		if( isAddToPalette && findColorIndexByColorValue( screenData, colorValue ) === null ) {
+			screenData.pal.push( colorValue );
+			screenData.palMap.set( colorValue.key, screenData.pal.length - 1 );
+		}
 	}
 
-	// Skip getColorIndex if we are not adding the color to the palette
-	if( isAddToPalette ) {
-
-		// Call getColorIndex just to add the color to the palette if it is not currently in the pal
-		getColorIndex( screenData, colorValue, 1, isAddToPalette );
-	}
-
+	// Update the color values
 	screenData.color = colorValue;
-
-	// Update canvas context styles for AA mode
 	screenData.context.fillStyle = screenData.color.hex;
 	screenData.context.strokeStyle = screenData.color.hex;
 
@@ -210,43 +194,35 @@ function setColor( screenData, options ) {
 }
 
 // Given a color value, find the index from the color palette.
-screenManager.addCommand( "getPalIndex", getPalIndex, [ "color", "tolerance", "isAddToPalette" ] );
+screenManager.addCommand( "getPalIndex", getPalIndex, [ "color", "tolerance" ] );
 function getPalIndex( screenData, options ) {
 	let color = options.color;
 	let tolerance = utils.getFloat( options.tolerance, 1 );
-	const isAddToPalette = !!options.isAddToPalette;
 
-	if( tolerance === null || tolerance < 0 || tolerance > 1 ) {
+	// Validate tolerance variable
+	if( tolerance < 0 || tolerance > 1 ) {
 		const error = new RangeError(
 			"getPalIndex: Parameter tolerance must be a number between 0 and 1."
 		);
-		error.code = "INVALID_TOLERANCE";
+		error.code = "INVALID_PARAMETER";
 		throw error;
 	}
 
-	const pal = screenData.pal;
-
-	// Check cache first
-	if( color && color.key && screenData.colorCache[ color.key ] !== undefined ) {
-		return screenData.colorCache[ color.key ];
+	// Convert to color value
+	const colorValue = utils.convertToColor( color );
+	if( colorValue === null ) {
+		const error = new TypeError(
+			`getPalIndex: Parameter color is not a valid color format.`
+		);
+		error.code = "INVALID_COLOR";
+		throw error;
 	}
 
-	// Convert color to color object
-	color = getColorValue( screenData, color, "getPalIndex" );
-
-	const index = findColorIndex( color, pal, tolerance, screenData.colorCache );
-	if( index ) {
-		return index;
+	const index = findColorIndexByColorValue( screenData, colorValue, tolerance );
+	if( index === null ) {
+		return false;
 	}
-
-	// Add to palette if allowed
-	if( isAddToPalette ) {
-		pal.push( color );
-		screenData.colorCache[ color.key ] = pal.length - 1;
-		return pal.length - 1;
-	}
-
-	return false;
+	return index;
 }
 
 // Set the background color of the canvas
@@ -299,16 +275,20 @@ function setPalColor( screenData, options ) {
 	const index = options.index;
 	const color = options.color;
 
+	// index must be an integer
 	if(
 		!Number.isInteger( index ) ||
 		index < 0 ||
 		index >= screenData.pal.length
 	) {
-		const error = new RangeError( "setPalColor: Parameter index is not a valid integer value." );
+		const error = new RangeError(
+			"setPalColor: Parameter index must be an integer value."
+		);
 		error.code = "INVALID_INDEX";
 		throw error;
 	}
 
+	// index cannot be 0
 	if( index === 0 ) {
 		const error = new RangeError(
 			"setPalColor: Parameter index cannot be 0, this is reserved for transparency. To set " +
@@ -318,6 +298,7 @@ function setPalColor( screenData, options ) {
 		throw error;
 	}
 
+	// Get the color value
 	const colorValue = utils.convertToColor( color );
 	if( colorValue === null ) {
 		const error = new TypeError(
@@ -340,18 +321,19 @@ function setPalColor( screenData, options ) {
 	// Set the new palette color
 	screenData.pal[ index ] = colorValue;
 
-	// Update the colorCache - remove old color entry and add new one
-	delete screenData.colorCache[ oldColor.key ];
-	screenData.colorCache[ colorValue.key ] = index;
+	// Update the palMap - remove old color entry and add new one
+	screenData.palMap.delete( oldColor.key );
+	screenData.palMap.set( colorValue.key, index );
 }
 
 // Get palette
 screenManager.addCommand( "getPal", getPal, [] );
 function getPal( screenData ) {
 	const filteredPal = [];
+
+	// Need to explicitly convert each color because they need to have the 
 	for( let i = 1; i < screenData.pal.length; i += 1 ) {
-		const color = screenData.pal[ i ];
-		filteredPal.push( utils.rgbToColor( color.r, color.g, color.b, color.a ) )
+		filteredPal.push( { ...screenData.pal[ i ] } );
 	}
 	return filteredPal;
 }
@@ -361,8 +343,7 @@ screenManager.addCommand( "getPalInternal", getPalInternal, [] );
 function getPalInternal( screenData ) {
 	const filteredPal = [];
 	for( let i = 0; i < screenData.pal.length; i += 1 ) {
-		const color = screenData.pal[ i ];
-		filteredPal.push( utils.rgbToColor( color.r, color.g, color.b, color.a ) )
+		filteredPal.push( { ...screenData.pal[ i ] } );
 	}
 	return filteredPal;
 }
@@ -393,7 +374,7 @@ function setPal( screenData, options ) {
 	for( let i = 0; i < pal.length; i++ ) {
 		const c = utils.convertToColor( pal[ i ] );
 		if( c === null ) {
-			console.warn( `setDefaultPal: Invalid color value inside array pal at index: ${i}.` );
+			console.warn( `setPal: Invalid color value inside array pal at index: ${i}.` );
 			newPal.push( utils.convertToColor( "#000000" ) );
 		} else {
 			newPal.push( c );
@@ -403,19 +384,19 @@ function setPal( screenData, options ) {
 	// Set the new palette
 	screenData.pal = newPal;
 
-	// Clear the colorCache since we've replaced the entire palette
-	screenData.colorCache = {};
+	// Clear the palMap since we've replaced the entire palette
+	screenData.palMap = new Map();
 
-	// Rebuild cache for new palette colors
+	// Rebuild palMap for new palette colors
 	for( let i = 0; i < newPal.length; i++ ) {
-		screenData.colorCache[ newPal[ i ].key ] = i;
+		screenData.palMap.set( newPal[ i ].key, i );
 	}
 
 	// Check if current drawing color needs to be updated
 	// Find the new palette index that best matches the current color
 	const currentColor = screenData.color;
-	const newIndex = findColorIndex( currentColor, newPal, 1, screenData.colorCache );
-	if( newIndex !== false ) {
+	const newIndex = findColorIndexByColorValue( screenData, currentColor );
+	if( newIndex !== null ) {
 		screenData.color = newPal[ newIndex ];
 		screenData.context.fillStyle = screenData.color.hex;
 		screenData.context.strokeStyle = screenData.color.hex;
@@ -428,74 +409,195 @@ function setPal( screenData, options ) {
 	}
 }
 
-// TODO: Maybe change this to swapColors and allow multiple color swaps at the same time
-// swapColor command
-screenManager.addCommand( "swapColor", swapColor, [ "oldColor", "newColor" ] );
-function swapColor( screenData, options ) {
+// replaceColors command - replaces colors on the canvas
+screenManager.addCommand( "replaceColors", replaceColors, [ "findColors", "newColors" ] );
+function replaceColors( screenData, options ) {
 
-	// Get the color values
-	let oldColor = getColorValue( screenData, options.oldColor, "swapColor" );
-	let newColor = getColorValue( screenData, options.newColor, "swapColor" );
+	let findColors = options.findColors;
+	const newColors = options.newColors;
 
-	// Get the color indices
-	let oldColorIndex = findColorIndex( oldColor, screenData.pal, 1, screenData.colorCache );
-	let newColorIndex = findColorIndex( newColor, screenData.pal, 1, screenData.colorCache );
+	// Validate findColors
+	if( !Array.isArray( findColors ) || !Array.isArray( newColors ) ) {
+		const error = new TypeError( "replaceColors: Parameter findColors is must be an array." );
+		error.code = "INVALID_PARAMETER";
+		throw error;
+	}
 
-	// OldColor must exist in the palette
-	if( oldColorIndex === false ) {
-		const error = new TypeError(
-			"swapColor: Parameter oldColor is found in the color palette."
-		);
-		error.code = "INVALID_COLOR";
+	// Make sure there are enough newColors to replace the findColors
+	if( findColors.length > newColors.length ) {
+
+		// Remove the findColors that don't have a replacement value
+		let newArray = [];
+		for( let i = 0; i < newColors.length; i += 1 ) {
+			newArray.push( findColors[ i ] );
+		}
+		findColors = newArray;
+	}
+
+	// Build the findKeys map
+	let findKeys = {};
+	for( let i = 0; i < findColors.length; i += 1 ) {
+
+		// Make sure the findColor is a valid color
+		const findColor = getColorValueByRawInput( screenData, findColors[ i ] );
+		if( findColor === null ) {
+			
+			// Skip and warn
+			console.warn(
+				`replaceColors: Invalid color value inside array findColors at index: ${i}.`
+			);
+			continue;
+		}
+		
+		// Make sure the newColor is a valid color
+		let newColor = getColorValueByRawInput( screenData, newColors[ i ] );
+		if( newColor === null ) {
+			
+			// Skip and warn
+			console.warn(
+				`replaceColors: Invalid color value inside array newColors at index: ${i}.`
+			);
+			continue;
+		}
+
+		findKeys[ findColor.key ] = newColor;
+	}
+
+	// Might want to throw an exception but trying to make this consistant with replacePalColors
+	if( Object.keys( findKeys ).length === 0 ) {
+		const error = new TypeError( "replaceColors: No valid find and new colors found." );
+		error.code = "INVALID_PARAMETER";
 		throw error;
 	}
 
 	renderer.getImageData( screenData );
 	const data = screenData.imageData.data;
 
-	// Swap all colors
+	// Replace all the colors
 	for( let y = 0; y < screenData.height; y++ ) {
 		for( let x = 0; x < screenData.width; x++ ) {
 			const i = ( ( screenData.width * y ) + x ) * 4;
-			if(
-				data[ i ] === oldColor.r &&
-				data[ i + 1 ] === oldColor.g &&
-				data[ i + 2 ] === oldColor.b &&
-				data[ i + 3 ] === oldColor.a
-			) {
-				data[ i ] = newColor.r;
-				data[ i + 1 ] = newColor.g;
-				data[ i + 2 ] = newColor.b;
-				data[ i + 3 ] = newColor.a;
-			} else if(
-				data[ i ] === newColor.r &&
-				data[ i + 1 ] === newColor.g &&
-				data[ i + 2 ] === newColor.b &&
-				data[ i + 3 ] === newColor.a
-			) {
-				data[ i ] = oldColor.r;
-				data[ i + 1 ] = oldColor.g;
-				data[ i + 2 ] = oldColor.b;
-				data[ i + 3 ] = oldColor.a;
+			const r = data[ i ];
+			const g = data[ i + 1 ];
+			const b = data[ i + 2 ];
+			const a = data[ i + 3 ];
+			const colorKey = utils.generateColorKey( r, g, b, a );
+			if( findKeys[ colorKey ] ) {
+				data[ i ] = findKeys[ colorKey ].r;
+				data[ i + 1 ] = findKeys[ colorKey ].g;
+				data[ i + 2 ] = findKeys[ colorKey ].b;
+				data[ i + 3 ] = findKeys[ colorKey ].a;
 			}
 		}
 	}
 
 	renderer.setImageDirty( screenData );
+}
 
-	// If the newColorIndex is also in the palette then swap the color palette values
-	if( newColorIndex !== false ) {
-		screenData.pal[ oldColorIndex ] = newColor;
-		screenData.pal[ newColorIndex ] = oldColor;
-		screenData.colorCache[ oldColor.key ] = newColorIndex;
-		screenData.colorCache[ newColor.key ] = oldColorIndex;
-	} else {
+// replaceColors command - replaces colors on the canvas and in the palette
+screenManager.addCommand( "replacePalColors", replacePalColors, [ "findColors", "newColors" ] );
+function replacePalColors( screenData, options ) {
 
-		// Update just the oldColor palette and cache
-		delete screenData.colorCache[ oldColor.key ];
-		screenData.pal[ oldColorIndex ] = newColor;
-		screenData.colorCache[ newColor.key ] = newColorIndex;
+	let findColors = options.findColors;
+	const newColors = options.newColors;
+
+	// Validate findColors
+	if( !Array.isArray( findColors ) || !Array.isArray( newColors ) ) {
+		const error = new TypeError(
+			"replacePalColors: Parameter findColors is must be an array."
+		);
+		error.code = "INVALID_PARAMETER";
+		throw error;
 	}
+
+	// Make sure there are enough newColors to replace the findColors
+	if( findColors.length > newColors.length ) {
+
+		// Remove the findColors that don't have a replacement value
+		let newArray = [];
+		for( let i = 0; i < newColors.length; i += 1 ) {
+			newArray.push( findColors[ i ] );
+		}
+		findColors = newArray;
+	}
+
+	// Build the findKeys map
+	let findKeys = {};
+	for( let i = 0; i < findColors.length; i += 1 ) {
+		
+		// Make sure the findColor is a valid color or pal index value
+		let findColorValue = null;
+		if( Number.isInteger( findColors[ i ] ) && findColors[ i ] < screenData.pal.length ) {
+			findColorValue = screenData.pal[ findColors[ i ] ];
+		}
+		if( findColorValue === null ) {
+			findColorValue = utils.convertToColor( findColors[ i ] );
+
+			// If index can't be found skip and continue silently
+			if( findColorIndexByColorValue( screenData, findColorValue ) === null ) {
+				continue;
+			}
+		}
+
+		// Make sure the newColor is a valid color
+		let newColorValue = null;
+		if( Number.isInteger( newColors[ i ] ) && newColors[ i ] < screenData.pal.length ) {
+			newColorValue = screenData.pal[ newColors[ i ] ];
+		}
+		if( newColorValue === null ) {
+			newColorValue = utils.convertToColor( newColors[ i ] );
+		}
+		if( newColorValue === null ) {
+			console.warn(
+				`replacePalColors: Invalid color value inside array newColors at index: ${i}.`
+			);
+			continue;
+		}
+		findKeys[ findColorValue.key ] = newColorValue;
+	}
+
+	if( Object.keys( findKeys ).length === 0 ) {
+
+		// Return silently no need to warn or throw an error this could be what the user expected
+		return;
+	}
+
+	renderer.getImageData( screenData );
+	const data = screenData.imageData.data;
+
+	// Replace all the colors in the screen
+	for( let y = 0; y < screenData.height; y++ ) {
+		for( let x = 0; x < screenData.width; x++ ) {
+			const i = ( ( screenData.width * y ) + x ) * 4;
+			const r = data[ i ];
+			const g = data[ i + 1 ];
+			const b = data[ i + 2 ];
+			const a = data[ i + 3 ];
+			const colorKey = utils.generateColorKey( r, g, b, a );
+			if( findKeys[ colorKey ] ) {
+				data[ i ] = findKeys[ colorKey ].r;
+				data[ i + 1 ] = findKeys[ colorKey ].g;
+				data[ i + 2 ] = findKeys[ colorKey ].b;
+				data[ i + 3 ] = findKeys[ colorKey ].a;
+			}
+		}
+	}
+
+	// Replace the colors in the palette
+	for( let i = 0; i < screenData.pal.length; i += 1 ) {
+		const colorKey = screenData.pal[ i ].key;
+		if( findKeys[ colorKey ] ) {
+			screenData.pal[ i ] = findKeys[ colorKey ];
+		}
+	}
+
+	// Rebuild the palette map
+	screenData.palMap = new Map();
+	for( let i = 0; i < screenData.pal.length; i += 1 ) {
+		screenData.palMap.set( screenData.pal[ i ].key, i );
+	}
+
+	renderer.setImageDirty( screenData );
 }
 
 
@@ -504,44 +606,60 @@ function swapColor( screenData, options ) {
  **************************************************************************************************/
 
 
-// Prepopulate color cache with all palette colors
-function getPrepopulatedColorCache() {
-	const cache = {};
-	for( let i = 0; i < m_defaultPal.length; i++ ) {
-		cache[ m_defaultPal[ i ].key ] = i;
+function getColorValueByRawInput( screenData, rawInput ) {
+	let colorValue;
+
+	// If it is an integer than get from pal array
+	if( Number.isInteger( rawInput ) ) {
+		if( rawInput >= screenData.pal.length ) {
+			return null;
+		}
+		return screenData.pal[ rawInput ];
 	}
-	return cache;
+	
+	// Convert to a color value
+	colorValue = utils.convertToColor( rawInput );
+
+	return colorValue;
 }
 
+
 // Finds a color index without adding it to palette
-function findColorIndex( color, pal, tolerance, cache = {} ) {
+function findColorIndexByColorValue( screenData, color, tolerance = 1 ) {
+
+	// First check by key - fastest lookup
+	if( screenData.palMap.has( color.key ) ) {
+		return screenData.palMap.get( color.key );
+	}
 
 	// Max color difference constant
 	const maxDifference = ( 255 * 255 ) * 3.25;
 	tolerance = tolerance * ( 2 - tolerance ) * maxDifference;
 
 	// Find exact match or closest color in palette
-	for( let i = 0; i < pal.length; i++ ) {
-		if( pal[ i ].key === color.key ) {
-			cache[ color.key ] = i;
+	for( let i = 0; i < screenData.pal.length; i++ ) {
+		if( screenData.pal[ i ].key === color.key ) {
 			return i;
 		} else {
 			let difference;
 
 			//Special case for color 0 we care more about alpha values for 0 - transparent color
 			if( i === 0 ) {
-				difference = utils.calcColorDifference( pal[ i ], color, [ 0.2, 0.2, 0.2, 0.4 ] );
+				difference = utils.calcColorDifference(
+					screenData.pal[ i ], color, [ 0.2, 0.2, 0.2, 0.4 ]
+				);
 			} else {
-				difference = utils.calcColorDifference( pal[ i ], color );
+				difference = utils.calcColorDifference( screenData.pal[ i ], color );
 			}
-			const similarity = maxDifference - difference;
 
+			// Compare the similarity with the tolerance level
+			const similarity = maxDifference - difference;
 			if( similarity >= tolerance ) {
-				cache[ color.key ] = i;
 				return i;
 			}
 		}
 	}
 
-	return false;
+	return null;
 }
+

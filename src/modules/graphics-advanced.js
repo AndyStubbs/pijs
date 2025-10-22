@@ -167,23 +167,30 @@ function aaArc( screenData, options ) {
 // ellipse command
 screenManager.addPixelCommand( "ellipse", ellipse, [ "x", "y", "radiusX", "radiusY", "fillColor" ] );
 function ellipse( screenData, options ) {
-	const x = Math.round( options.x );
-	const y = Math.round( options.y );
-	const radiusX = Math.round( options.radiusX );
-	const radiusY = Math.round( options.radiusY );
+	const x = utils.getInt( options.x, null );
+	const y = utils.getInt( options.y, null );
+	const radiusX = utils.getInt( options.radiusX, null );
+	const radiusY = utils.getInt( options.radiusY, null );
 	let fillColor = options.fillColor;
 
-	if( isNaN( x ) || isNaN( y ) || isNaN( radiusX ) || isNaN( radiusY ) ) {
+	if( x === null || y === null || radiusX === null || radiusY === null ) {
 		const error = new TypeError(
 			"ellipse: Parameters x, y, radiusX, radiusY must be integers."
 		);
-		error.code = "INVALID_PARAMETERS";
+		error.code = "INVALID_PARAMETER";
 		throw error;
 	}
 
 	let isFill = false;
-	if( fillColor != null ) {
-		fillColor = colors.getColorValue( screenData, fillColor, "ellipse" );
+	if( fillColor !== null ) {
+		fillColor = colors.getColorValueByRawInput( screenData, fillColor );
+		if( fillColor === null ) {
+			const error = new TypeError(
+				"ellipse: Parameter fillColor must be a valid color format."
+			);
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
 		isFill = true;
 	}
 
@@ -300,23 +307,30 @@ function ellipse( screenData, options ) {
 
 screenManager.addAACommand( "ellipse", aaEllipse, [ "x", "y", "radiusX", "radiusY", "fillColor" ] );
 function aaEllipse( screenData, options ) {
-	const cx = options.x;
-	const cy = options.y;
-	const rx = options.radiusX;
-	const ry = options.radiusY;
+	const cx = utils.getInt( options.x, null );
+	const cy = utils.getInt( options.y, null );
+	const rx = utils.getInt( options.radiusX, null );
+	const ry = utils.getInt( options.radiusY, null );
 	let fillColor = options.fillColor;
 
-	if( isNaN( cx ) || isNaN( cy ) || isNaN( rx ) || isNaN( ry ) ) {
+	if( cx === null || cy === null || rx === null || ry === null ) {
 		const error = new TypeError(
-			"ellipse: Parameters x, y, radiusX, radiusY must be numbers."
+			"ellipse: Parameters x, y, radiusX, radiusY must be integers."
 		);
-		error.code = "INVALID_PARAMETERS";
+		error.code = "INVALID_PARAMETER";
 		throw error;
 	}
 
 	let isFill = false;
 	if( fillColor != null ) {
-		fillColor = colors.getColorValue( screenData, fillColor, "ellipse" );
+		fillColor = colors.getColorValueByRawInput( screenData, fillColor );
+		if( fillColor === null ) {
+			const error = new TypeError(
+				"ellipse: Parameter fillColor must be a valid color format."
+			);
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
 		isFill = true;
 	}
 

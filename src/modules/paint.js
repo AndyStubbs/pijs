@@ -41,7 +41,7 @@ function paint( screenData, options ) {
 
 	if( x === null || y === null ) {
 		const error = new TypeError( "paint: Parameters x and y must be integers" );
-		error.code = "INVALID_COORDINATES";
+		error.code = "INVALID_PARAMETER";
 		throw error;
 	}
 
@@ -49,13 +49,17 @@ function paint( screenData, options ) {
 		const error = new RangeError(
 			"paint: Parameter tolerance must be a number between 0 and 1."
 		);
-		error.code = "INVALID_TOLERANCE";
+		error.code = "INVALID_PARAMETER";
 		throw error;
 	}
 
 	// Get fill color
-	fillColor = colors.getColorValue( screenData, fillColor, "paint", "fillColor" );
-
+	fillColor = colors.getColorValueByRawInput( screenData, fillColor );
+	if( fillColor === null ) {
+		const error = new RangeError( "paint: Parameter fillColor is not a valid color format." );
+		error.code = "INVALID_PARAMETER";
+		throw error;
+	}
 	renderer.getImageData( screenData );
 	const data = screenData.imageData.data;
 	const width = screenData.width;
@@ -102,9 +106,14 @@ function paint( screenData, options ) {
 	if( boundaryColor !== null ) {
 
 		// Boundary fill mode: skip pixels that match boundary color
-		boundaryColor = colors.getColorValue(
-			screenData, boundaryColor, "paint", "boundaryColor"
-		);
+		boundaryColor = colors.getColorValueByRawInput( screenData, boundaryColor );
+		if( boundaryColor === null ) {
+			const error = new RangeError(
+				"paint: Parameter boundaryColor is not a valid color format."
+			);
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
 		const refColor = {
 			"r": boundaryColor.r, "g": boundaryColor.g, "b": boundaryColor.b, "a": boundaryColor.a
 		};

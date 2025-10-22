@@ -81,19 +81,21 @@
 		drawPaletteSwatches( 10, 180 );
 
 		// Test swapColor
-		$.swapColor( 3, 4 );
+		$.replacePalColors( [ 3 ], [ "MidnightBlue" ] );
 		$.setPosPx( 0, 205 );
-		$.setColor( 4 );
-		$.print( "Swapped Colors \"LawnGreen: 3\" and \"Indigo: 4\"" );
+		$.setColor( 3 );
+		$.print( "Swapped Colors \"LawnGreen: 3\" with \"MidnightBlue\"" );
 
 		// Test swapColor with a new color not in palette
-		$.swapColor( "LightCoral", "LightSkyBlue" );
+		$.replaceColors( [ "LightCoral" ], [ "LightSkyBlue" ] );
 		$.setColor( "LightSkyBlue" );
-		$.print( "Swapped Colors \"LightCoral: 2\" and \"LightSkyBlue: new\"" );
+		$.print(
+			"Swapped Colors \"LightCoral: 2\" with \"LightSkyBlue\" but didn't change the pal."
+		);
 
 		$.setColor( "black", true );
 		$.print( "Added Color: \"black\"" );
-		drawPaletteSwatches( 10, 235 );
+		drawPaletteSwatches( 10, 242 );
 
 	} );
 

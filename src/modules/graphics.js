@@ -33,13 +33,13 @@ export function init() {
 // pset command
 screenManager.addPixelCommand( "pset", pset, [ "x", "y" ] );
 function pset( screenData, options ) {
-	const x = Math.round( options.x );
-	const y = Math.round( options.y );
+	const x = utils.getInt( options.x, null );
+	const y = utils.getInt( options.y, null );
 
 	// Make sure x and y are integers
-	if( !Number.isInteger( x ) || !Number.isInteger( y ) ) {
-		const error = new TypeError( "pset: Arguments x and y must be integers." );
-		error.code = "INVALID_COORDINATES";
+	if( x === null || y === null ) {
+		const error = new TypeError( "pset: Parameters x and y must be integers." );
+		error.code = "INVALID_PARAMETER";
 		throw error;
 	}
 
@@ -62,12 +62,12 @@ function pset( screenData, options ) {
 
 screenManager.addAACommand( "pset", aaPset, [ "x", "y" ] );
 function aaPset( screenData, options ) {
-	const x = options.x;
-	const y = options.y;
+	const x = utils.getFloat( options.x, null );
+	const y = utils.getFloat( options.y, null );
 
-	if( isNaN( x ) || isNaN( y ) ) {
-		const error = new TypeError( "pset: Arguments x and y must be numbers." );
-		error.code = "INVALID_COORDINATES";
+	if( x === null || y === null ) {
+		const error = new TypeError( "pset: Parameters x and y must be numbers." );
+		error.code = "INVALID_PARAMETER";
 		throw error;
 	}
 
@@ -86,16 +86,13 @@ function aaPset( screenData, options ) {
 // line command
 screenManager.addPixelCommand( "line", line, [ "x1", "y1", "x2", "y2" ] );
 function line( screenData, options ) {
-	let x1 = Math.round( options.x1 );
-	let y1 = Math.round( options.y1 );
-	const x2 = Math.round( options.x2 );
-	const y2 = Math.round( options.y2 );
+	let x1 = utils.getInt( options.x1, null );
+	let y1 = utils.getInt( options.y1, null );
+	const x2 = utils.getInt( options.x2, null );
+	const y2 = utils.getInt( options.y2, null );
 
 	// Make sure x and y are integers
-	if(
-		!Number.isInteger( x1 ) || !Number.isInteger( y1 ) ||
-		!Number.isInteger( x2 ) || !Number.isInteger( y2 )
-	) {
+	if( x1 === null || y1 === null || x2 === null || y2 === null ) {
 		const error = new TypeError( "line: Arguments x1, y1, x2, and y2 must be integers." );
 		error.code = "INVALID_COORDINATES";
 		throw error;
@@ -155,14 +152,14 @@ function line( screenData, options ) {
 
 screenManager.addAACommand( "line", aaLine, [ "x1", "y1", "x2", "y2" ] );
 function aaLine( screenData, options ) {
-	const x1 = options.x1;
-	const y1 = options.y1;
-	const x2 = options.x2;
-	const y2 = options.y2;
+	const x1 = utils.getFloat( options.x1, null );
+	const y1 = utils.getFloat( options.y1, null );
+	const x2 = utils.getFloat( options.x2, null );
+	const y2 = utils.getFloat( options.y2, null );
 
-	if( isNaN( x1 ) || isNaN( y1 ) || isNaN( x2 ) || isNaN( y2 ) ) {
+	if( x1 === null || y1 === null || x2 === null || y2 === null ) {
 		const error = new TypeError( "line: Parameters x1, y1, x2, y2 must be numbers." );
-		error.code = "INVALID_COORDINATES";
+		error.code = "INVALID_PARAMETER";
 		throw error;
 	}
 
@@ -178,24 +175,28 @@ function aaLine( screenData, options ) {
 // rect command
 screenManager.addPixelCommand( "rect", rect, [ "x", "y", "width", "height", "fillColor" ] );
 function rect( screenData, options ) {
-	let x = Math.round( options.x );
-	let y = Math.round( options.y );
-	const width = Math.round( options.width );
-	const height = Math.round( options.height );
+	let x = utils.getInt( options.x, null );
+	let y = utils.getInt( options.y, null );
+	const width = utils.getInt( options.width, null );
+	const height = utils.getInt( options.height, null );
 	let fillColor = options.fillColor;
 
-	if(
-		!Number.isInteger( x ) || !Number.isInteger( y ) ||
-		!Number.isInteger( width ) || !Number.isInteger( height )
-	) {
-		const error = new TypeError( "rect: x, y, width, and height must be integers." );
-		error.code = "INVALID_PARAMETERS";
+	if( x === null || y === null || width === null || height === null ) {
+		const error = new TypeError( "rect: Paramters x, y, width, and height must be integers." );
+		error.code = "INVALID_PARAMETER";
 		throw error;
 	}
 
 	let isFill = false;
 	if( fillColor != null ) {
-		fillColor = colors.getColorValue( screenData, fillColor, "rect" );
+		fillColor = colors.getColorValueByRawInput( screenData, fillColor );
+		if( fillColor === null ) {
+			const error = new TypeError(
+				"rect: Parameter fillColor must be a valid color format."
+			);
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
 		isFill = true;
 	}
 
@@ -251,21 +252,28 @@ function rect( screenData, options ) {
 
 screenManager.addAACommand( "rect", aaRect, [ "x", "y", "width", "height", "fillColor" ] );
 function aaRect( screenData, options ) {
-	const x = options.x;
-	const y = options.y;
-	const width = options.width;
-	const height = options.height;
+	const x = utils.getFloat( options.x, null );
+	const y = utils.getFloat( options.y, null );
+	const width = utils.getFloat( options.width, null );
+	const height = utils.getFloat( options.height );
 	let fillColor = options.fillColor;
 	let isFill = false;
 
-	if( isNaN( x ) || isNaN( y ) || isNaN( width ) || isNaN( height ) ) {
+	if( x === null || y === null || width === null || height === null ) {
 		const error = new TypeError( "rect: Parameters x, y, width, height must be numbers." );
-		error.code = "INVALID_PARAMETERS";
+		error.code = "INVALID_PARAMETER";
 		throw error;
 	}
 
 	if( fillColor != null ) {
-		fillColor = colors.getColorValue( screenData, fillColor, "rect" );
+		fillColor = colors.getColorValueByRawInput( screenData, fillColor );
+		if( fillColor === null ) {
+			const error = new TypeError(
+				"rect: Parameter fillColor must be a valid color format."
+			);
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
 		isFill = true;
 	}
 
@@ -284,20 +292,27 @@ function aaRect( screenData, options ) {
 // circle command
 screenManager.addPixelCommand( "circle", circle, [ "x", "y", "radius", "fillColor" ] );
 function circle( screenData, options ) {
-	const x = Math.round( options.x );
-	const y = Math.round( options.y );
-	let radius = Math.round( options.radius );
+	const x = utils.getInt( options.x, null );
+	const y = utils.getInt( options.y, null );
+	let radius = utils.getInt( options.radius, null );
 	let fillColor = options.fillColor;
 	let isFill = false;
 
-	if( !Number.isInteger( x ) || !Number.isInteger( y ) || !Number.isInteger( radius ) ) {
-		const error = new TypeError( "circle: x, y, radius must be integers." );
+	if( x === null || y === null || radius === null ) {
+		const error = new TypeError( "circle: Paramters x, y, and radius must be integers." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
 	}
 
 	if( fillColor != null ) {
-		fillColor = colors.getColorValue( screenData, fillColor, "circle" );
+		fillColor = colors.getColorValueByRawInput( screenData, fillColor );
+		if( fillColor === null ) {
+			const error = new TypeError(
+				"circle: Parameter fillColor must be a valid color format."
+			);
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
 		isFill = true;
 	}
 
@@ -400,9 +415,9 @@ function circle( screenData, options ) {
 
 screenManager.addAACommand( "circle", aaCircle, [ "x", "y", "radius", "fillColor" ] );
 function aaCircle( screenData, options ) {
-	const x = options.x + 0.5;
-	const y = options.y + 0.5;
-	const r = options.radius - 0.9;
+	const x = utils.getFloat( options.x + 0.5, null );
+	const y = utils.getFloat( options.y + 0.5, null );
+	const r = utils.getFloat( options.radius - 0.9, null );
 	let fillColor = options.fillColor;
 
 	if( isNaN( x ) || isNaN( y ) || isNaN( r ) ) {
@@ -413,7 +428,14 @@ function aaCircle( screenData, options ) {
 
 	let isFill = false;
 	if( fillColor != null ) {
-		fillColor = colors.getColorValue( screenData, fillColor, "circle" );
+		fillColor = colors.getColorValueByRawInput( screenData, fillColor, "circle" );
+		if( fillColor === null ) {
+			const error = new TypeError(
+				"circle: Parameter fillColor must be a valid color format."
+			);
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
 		isFill = true;
 	}
 
@@ -510,7 +532,7 @@ function put( screenData, options ) {
 
 
 // get command
-screenManager.addCommand( "get", get, [ "x1", "y1", "x2", "y2", "tolerance", "isAddToPalette" ] );
+screenManager.addCommand( "get", get, [ "x1", "y1", "x2", "y2", "tolerance" ] );
 function get( screenData, options ) {
 	let x1 = Math.round( options.x1 );
 	let y1 = Math.round( options.y1 );
@@ -550,7 +572,6 @@ function get( screenData, options ) {
 
 	renderer.getImageData( screenData );
 
-
 	const imageData = screenData.imageData;
 	const data = [];
 	let colorLookupFn;
@@ -562,27 +583,26 @@ function get( screenData, options ) {
 				imageData.data[ i + 2 ],
 				imageData.data[ i + 3 ]
 			);
-			const c = screenData.colorCache[ key ];
-			if( c ) {
-				data[ row ].push( c );
+			if( screenData.palMap.has( key ) ) {
+				data[ row ].push( screenData.palMap.get( key ) );
 			} else {
 				data[ row ].push( 0 );
 			}
 		}
 	} else {
 		colorLookupFn = ( i ) => {
-			const c = colors.getColorIndex(
-				screenData,
-				utils.rgbToColor(
-					imageData.data[ i ],
-					imageData.data[ i + 1],
-					imageData.data[ i + 2 ],
-					imageData.data[ i + 3 ]
-				),
-				tolerance,
-				isAddToPalette
+			const colorValue = utils.rgbToColor(
+				imageData.data[ i ],
+				imageData.data[ i + 1],
+				imageData.data[ i + 2 ],
+				imageData.data[ i + 3 ]
 			);
-			data[ row ].push( c );
+			const c = colors.findColorIndexByColorValue( screenData, colorValue, tolerance );
+			if( c === null ) {
+				data[ row ].push( 0 );
+			} else {
+				data[ row ].push( c );
+			}
 		}
 	}
 	let row = 0;
@@ -626,13 +646,8 @@ function getPixel( screenData, options ) {
 
 	// Calculate the index
 	const i = ( ( screenData.width * y ) + x ) * 4;
-	const c = utils.convertToColor( {
-		"r": data[ i ],
-		"g": data[ i + 1 ],
-		"b": data[ i + 2 ],
-		"a": data[ i + 3 ]
-	} );
-	const colorIndex = colors.getColorIndex( screenData, c );
+	const colorValue = utils.rgbToColor( data[ i ], data[ i + 1], data[ i + 2 ], data[ i + 3 ] );
+	const colorIndex = colors.findColorIndexByColorValue( screenData, colorValue );
 	return colorIndex;
 }
 
@@ -661,13 +676,9 @@ function getPixelColor( screenData, options ) {
 
 	// Calculate the index
 	const i = ( ( screenData.width * y ) + x ) * 4;
-	const c = utils.convertToColor( {
-		"r": data[ i ],
-		"g": data[ i + 1 ],
-		"b": data[ i + 2 ],
-		"a": data[ i + 3 ]
-	} );
-	return c;
+	const colorValue = utils.rgbToColor( data[ i ], data[ i + 1], data[ i + 2 ], data[ i + 3 ] );
+	
+	return colorValue;
 }
 
 

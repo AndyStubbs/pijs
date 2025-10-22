@@ -287,7 +287,9 @@ const COLOR_PROTO = {
 	"rgba": "",
 	"hex": ""
 };
-const m_colorCheckerContext = document.createElement( "canvas" ).getContext( "2d" );
+const m_colorCheckerContext = document.createElement( "canvas" ).getContext(
+	"2d", { "willReadFrequently": true }
+);
 
 /**
  * Generates a unique 32-bit integer key for an opaque RGB color.
@@ -325,7 +327,7 @@ export function rgbToColor( r, g, b, a ) {
  * @returns {Object|null} Color object or null if invalid
  */
 export function convertToColor( color ) {
-	if( color === undefined || color === null ) {
+	if( color === undefined || color === null || color === "" ) {
 		return null;
 	}
 
