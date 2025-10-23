@@ -248,6 +248,26 @@ function showResults() {
 		$.print( `Items Per Second: ${Math.round( result.itemCountPerSecond )}` );
 		$.print( `Test Duration:    ${Math.round( result.testTime / 1000 )}` );
 	}
+
+	$.setColor( 7 );
+	$.print( "Options:" );
+	$.print( "\n-------------------------------------------" );
+	$.print();
+	$.print( "1. Run tests again" );
+	$.print( "2. Post test results" );
+	$.print( "Press # choice" );
+
+	// On key
+	$.onkey( "1", "down", () => {
+		m_testIndex = -1;
+		runNextTest();
+	}, true );
+
+	// Handle a server side request and send it the results data
+	$.onkey( "2", "down", () => {
+		$.cls();
+		$.print( "Feature not implemented")
+	}, true );
 }
 
 function calcAvg( data ) {
