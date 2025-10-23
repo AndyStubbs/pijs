@@ -222,14 +222,14 @@ function runNextTest() {
 
 		$.cls( 0, 0, 150, 80 );
 		$.setColor( 15 );
-		$.print( "Item Count:  " + itemCount.toFixed( 0 ).padStart( 6, " " ) );
-		$.print( "Target FPS:  " + m_targetFps.toFixed( 0 ).padStart( 6, " " ) );
-		$.print( "FPS:         " + fps.toFixed( 0 ).padStart( 6, " " ) );
+		$.print( "Item Count: " + itemCount.toFixed( 0 ).padStart( 6, " " ) );
+		$.print( "Target FPS: " + m_targetFps.toFixed( 0 ).padStart( 6, " " ) );
+		$.print( "FPS:        " + fps.toFixed( 0 ).padStart( 6, " " ) );
 		if( instability !== null ) {
 			if( extraTime === elapsed + EXTRA_TIME ) {
 				$.setColor( 4 );
 			}
-			$.print( "Instability: " + instability.toFixed( 3 ).padStart( 6, " " ) );
+			$.print( "Instability: " + instability.toFixed( 2 ).padStart( 6, " " ) );
 		}
 
 		lt = t;

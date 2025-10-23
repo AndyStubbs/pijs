@@ -30,50 +30,34 @@ function init( api ) {
  */
 function showResults( resultsObject ) {
 	const { version, date, tests: results } = resultsObject;
+
+	// Clear the screen
 	$.cls();
 	
-	// Title - centered
-	$.setColor( 10 );
-	$.setPos( 0, 2 );
-	$.print( "Test Results", true, true );
-	
-	// Date/Time and Pi.js version - centered
-	$.setColor( 7 );
-	$.setPos( 0, 4 );
+	// Compact summary table - one line of data
 	const dateTime = new Date( date ).toLocaleString();
-	$.print( `Generated: ${dateTime} | Pi.js Version: ${version}`, false, true );
+	const completedTests = results.filter( r => r.status === "complete" ).length;
 	
-	// Test session summary
-	$.setColor( 2 );
-	$.setPos( 0, 6 );
-	$.print( "Session Summary", false, true );
-	
-	// Create summary table
 	const summaryData = [
-		[ "Total Tests", results.length.toString() ],
-		[ "Completed Tests", results.filter( r => r.status === "complete" ).length.toString() ],
-		[ "Incomplete Tests", results.filter( r => r.status === "incomplete" ).length.toString() ],
-		[ "Average Items/Sec", Math.round( results.reduce( ( sum, r ) => sum + r.itemCountPerSecond, 0 ) / results.length ).toString() ]
+		[ 
+			`Generated: ${dateTime}`,
+			`Version: ${version}`,
+			`Completed: ${completedTests} of ${results.length}`,
+		]
 	];
 	
 	const summaryFormat = [
-		"*-----------------------------------*",
-		"|                                   |",
-		"*-----------------------------------*",
-		"|                                   |",
-		"*-----------------------------------*",
-		"|                                   |",
-		"*-----------------------------------*",
-		"|                                   |",
-		"*-----------------------------------*"
+		"*-------------------------------------*-------------------------*------------------------------*",
+		"|                                     |                         |                              |",
+		"*-------------------------------------*-------------------------*------------------------------*"
 	];
-	
-	$.setColor( 15 );
-	$.setPos( 0, 7 );
+
+	// Draw the table at the top
+	$.setColor( 10 );
 	$.printTable( summaryData, summaryFormat, "single", true );
 	
-	// Position the detailed results table below the summary
-	const resultsStartRow = 16;
+	// Position the detailed results table below the compact summary
+	const resultsStartRow = 4;
 	$.setPos( 0, resultsStartRow );
 	
 	// Create results table data
@@ -98,40 +82,25 @@ function showResults( resultsObject ) {
 	const resultsFormat = [ borderLine, itemLine, borderLine ];
 	
 	// Extend format for each result row (header + data rows)
-	for( let i = 0; i < results.length + 1; i++ ) {
+	for( let i = 0; i < results.length; i++ ) {
 		resultsFormat.push( itemLine );
 		resultsFormat.push( borderLine );
 	}
 	
 	// Display results table
-	$.setColor( 15 );
+	$.setColor( 7 );
 	$.printTable( resultsData, resultsFormat, "double", true );
 	
 	// Add some spacing
-	$.setPos( 0, resultsStartRow + resultsFormat.length + 2 );
+	$.setPos( 0, $.getRows() - 3 );
 	
-	// Create menu options table
-	menuOptionsData.push( [ "1. Run tests again" ] );
-	menuOptionsData.push( [ "2. Post test results" ] );
-	menuOptionsData.push( [ "3. Return to main menu" ] );
-	
-	const menuFormat = [
-		"*-----------------------------------*",
-		"|                                   |",
-		"*-----------------------------------*",
-		"|                                   |",
-		"*-----------------------------------*",
-		"|                                   |",
-		"*-----------------------------------*"
-	];
-	
-	$.setColor( 7 );
-	$.printTable( menuOptionsData, menuFormat, "single", true );
-	
-	// Instruction - centered below table
-	$.setColor( 7 );
-	$.setPos( 0, resultsStartRow + resultsFormat.length + menuFormat.length + 3 );
-	$.print( "Enter Key (1 - 3)", false, true );
+	// Create compact menu options table - one line of data
+	menuOptionsData.push(
+		[ "1. Restart Tests", "2. Post Results", "3. Return to Main Menu" ]
+	);
+		
+	$.setColor( 15 );
+	$.printTable( menuOptionsData, null, "single", true );
 	
 	// Set up menu handlers with once flag
 	$.onkey( "1", "down", () => {

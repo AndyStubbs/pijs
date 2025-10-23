@@ -108,18 +108,31 @@ function showMainMenu() {
 	$.setColor( 7 );
 	$.print( "Enter Key (1 - 3)", false, true );
 	
-	// Set up menu handlers with once flag
-	$.onkey( "1", "down", () => {
+	// Set up menu handlers
+	$.onkey( "1", "down", menu1 );
+	$.onkey( "2", "down", menu2 );
+	$.onkey( "3", "down", menu3 );
+
+	function menu1() {
+		clearMenuKeys();
 		g_testManager.startTests();
-	}, true );
-	
-	$.onkey( "2", "down", () => {
+	}
+
+	function menu2() {
+		clearMenuKeys();
 		showPreviousResults();
-	}, true );
-	
-	$.onkey( "3", "down", () => {
+	}
+
+	function menu3() {
+		clearMenuKeys();
 		showExitMessage();
-	}, true );
+	}
+
+	function clearMenuKeys() {
+		$.offkey( "1", "down", menu1 );
+		$.offkey( "2", "down", menu2 )
+		$.offkey( "3", "down", menu3 )
+	}
 }
 
 /**
