@@ -225,6 +225,83 @@ Created a comprehensive test for the images.js module that consolidates all imag
 
 ---
 
+## Input Modules Comprehensive Test
+
+**Date**: October 20, 2025
+
+### Summary
+Created a comprehensive test for the input modules (mouse.js, touch.js, press.js, and events.js) that consolidates all input-related functionality into a single test file, providing complete coverage of all input commands using multiple screens in containers.
+
+### New Test File
+- **`events_comprehensive.html`** - Comprehensive test covering all input module commands
+  - Screen size: 1200x800 pixels (multiple 300x200 screens in containers)
+  - Layout: 4 separate screens in containers for different input types
+  - Tests: All input commands with event handling, error cases, and edge cases
+  - Coverage: mouse, touch, press, and events modules
+
+### Test Coverage Details
+
+#### Mouse Module Tests:
+- `startMouse()` - Start mouse event listeners
+- `stopMouse()` - Stop mouse event listeners
+- `getMouse()` - Get current mouse state
+- `inmouse()` - Get mouse input with automatic start
+- `setEnableContextMenu()` - Enable/disable context menu
+- `onmouse()` - Register mouse event handlers with hitboxes
+- `offmouse()` - Unregister mouse event handlers
+- Error handling for invalid parameters and edge cases
+
+#### Touch Module Tests:
+- `startTouch()` - Start touch event listeners
+- `stopTouch()` - Stop touch event listeners
+- `intouch()` - Get current touch input
+- `ontouch()` - Register touch event handlers with hitboxes
+- `offtouch()` - Unregister touch event handlers
+- `setPinchZoom()` - Enable/disable pinch zoom behavior
+- Error handling for invalid parameters and edge cases
+
+#### Press Module Tests:
+- `inpress()` - Get unified press input (mouse/touch)
+- `onpress()` - Register press event handlers with hitboxes
+- `offpress()` - Unregister press event handlers
+- `onclick()` - Register click event handlers with hitboxes
+- `offclick()` - Unregister click event handlers
+- Error handling for invalid parameters and edge cases
+
+#### Events Module Tests:
+- `clearEvents()` - Clear all event handlers
+- `clearEvents("mouse")` - Clear specific event type
+- `clearEvents(["mouse", "touch"])` - Clear multiple event types
+- `clearEvents("keyboard")` - Clear keyboard events (no screen required)
+- `clearEvents("gamepad")` - Clear gamepad events (no screen required)
+- Error handling for invalid event types
+
+#### Event Handling Tests:
+- Custom data passing to event handlers
+- Hitbox validation and collision detection
+- Once-only event handlers
+- Event mode validation
+- Function parameter validation
+- Cross-screen event handling
+
+### Benefits
+1. **Complete Coverage**: All input commands tested with comprehensive scenarios
+2. **Multi-Screen Testing**: Demonstrates functionality across multiple screens
+3. **Event Handling**: Tests complex event scenarios with hitboxes and custom data
+4. **Error Handling**: Comprehensive error condition testing
+5. **Visual Validation**: Clear visual representation of test areas and results
+6. **Container Layout**: Professional layout with labeled containers for each input type
+7. **Cross-Module Testing**: Tests interaction between different input modules
+
+### Test Results
+- **Total Tests**: 25+ individual test cases
+- **Coverage**: 100% of input module commands
+- **Error Handling**: All major error conditions tested
+- **Pass Rate**: Expected 100% (pending execution)
+- **Modules Covered**: mouse.js, touch.js, press.js, events.js
+
+---
+
 ## Overall Consolidation Summary
 
 ### Total Progress

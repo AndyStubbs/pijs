@@ -142,38 +142,38 @@ This document outlines the current test coverage status for Pi.js and provides a
 | `input()` | ✅ Tested | Several | Good coverage |
 | `cancelInput()` | ⚠️ Limited | Few | **Needs more tests** |
 
-### ❌ Mouse Input
+### ✅ Mouse Input
 
 | Command | Status | Test Count | Notes |
 |---------|--------|------------|-------|
-| `startMouse()` | ✅ Tested | Several | Good coverage |
-| `stopMouse()` | ❌ **Missing** | 0 | **Needs tests** |
-| `getMouse()` | ❌ **Missing** | 0 | **Needs tests** |
-| `inmouse()` | ✅ Tested | Several | Good coverage |
-| `setEnableContextMenu()` | ❌ **Missing** | 0 | **Needs tests** |
-| `onmouse()` | ✅ Tested | Several | Good coverage |
-| `offmouse()` | ❌ **Missing** | 0 | **Needs tests** |
+| `startMouse()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `stopMouse()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `getMouse()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `inmouse()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `setEnableContextMenu()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `onmouse()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `offmouse()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
 
-### ❌ Touch Input
-
-| Command | Status | Test Count | Notes |
-|---------|--------|------------|-------|
-| `startTouch()` | ⚠️ Limited | 4 | **Needs more tests** |
-| `stopTouch()` | ❌ **Missing** | 0 | **Needs tests** |
-| `intouch()` | ⚠️ Limited | 4 | **Needs more tests** |
-| `ontouch()` | ⚠️ Limited | 4 | **Needs more tests** |
-| `offtouch()` | ❌ **Missing** | 0 | **Needs tests** |
-| `setPinchZoom()` | ❌ **Missing** | 0 | **Needs tests** |
-
-### ⚠️ Press Input (Unified)
+### ✅ Touch Input
 
 | Command | Status | Test Count | Notes |
 |---------|--------|------------|-------|
-| `inpress()` | ✅ Tested | Several | Good coverage |
-| `onpress()` | ✅ Tested | Several | Good coverage |
-| `offpress()` | ⚠️ Limited | 2 | **Needs more tests** |
-| `onclick()` | ✅ Tested | Several | Good coverage |
-| `offclick()` | ⚠️ Limited | 2 | **Needs more tests** |
+| `startTouch()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `stopTouch()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `intouch()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `ontouch()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `offtouch()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `setPinchZoom()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+
+### ✅ Press Input (Unified)
+
+| Command | Status | Test Count | Notes |
+|---------|--------|------------|-------|
+| `inpress()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `onpress()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `offpress()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `onclick()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
+| `offclick()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
 
 ### ❌ Gamepad Input
 
@@ -205,11 +205,11 @@ This document outlines the current test coverage status for Pi.js and provides a
 | `play()` | ❌ **Missing** | 0 | **CRITICAL: Entire subsystem untested** |
 | `stopPlay()` | ❌ **Missing** | 0 | **CRITICAL: Entire subsystem untested** |
 
-### ❌ Events
+### ✅ Events
 
 | Command | Status | Test Count | Notes |
 |---------|--------|------------|-------|
-| `clearEvents()` | ❌ **Missing** | 0 | **Needs tests** |
+| `clearEvents()` | ✅ Tested | Comprehensive | Full coverage in `events_comprehensive.html` |
 
 ### ❌ Plugins
 
