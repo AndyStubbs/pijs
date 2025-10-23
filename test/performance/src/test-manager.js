@@ -6,7 +6,7 @@
  * @module test-manager
  */
 
-export { init, startTests, getTargetFps, restartTests };
+export { init, startTests, getTargetFps };
 
 "use strict";
 
@@ -38,12 +38,13 @@ async function init( api ) {
 }
 
 /**
- * Runs the next test in the queue
+ * Starts the test suite from the beginning
  * 
  * @returns {void}
  */
 function startTests() {
 	m_testIndex = -1;
+	m_results = [];
 	runNextTest();
 }
 
@@ -54,18 +55,6 @@ function startTests() {
  */
 function getTargetFps() {
 	return m_targetFps;
-}
-
-
-/**
- * Restarts the tests from the beginning
- * 
- * @returns {void}
- */
-function restartTests() {
-	m_testIndex = -1;
-	m_results = [];
-	runNextTest();
 }
 
 /**

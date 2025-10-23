@@ -47,7 +47,7 @@ async function initApp() {
 	// Create API object for managers
 	const api = {
 		showMainMenu: showMainMenu,
-		restartTests: () => g_testManager.restartTests()
+		startTests: () => g_testManager.startTests()
 	};
 	
 	// Initialize managers with API

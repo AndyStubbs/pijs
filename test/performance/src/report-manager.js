@@ -104,8 +104,8 @@ function showResults( resultsObject ) {
 	
 	// Set up menu handlers with once flag
 	$.onkey( "1", "down", () => {
-		if( m_api && m_api.restartTests ) {
-			m_api.restartTests();
+		if( m_api && m_api.startTests ) {
+			m_api.startTests();
 		}
 	}, true );
 	
