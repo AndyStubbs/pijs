@@ -6,7 +6,7 @@
  * @module test-manager
  */
 
-export { init, startTests, getTargetFps };
+export { init, startTests, getTargetFps, setOnCompleteCallback };
 
 "use strict";
 
@@ -23,6 +23,7 @@ m_tests.push( g_arcTest.getConfig() );
 let m_results = [];
 let m_testIndex = -1;
 let m_targetFps = 60;
+let m_onCompleteCallback = null;
 
 /*
  * Initializes the test manager
@@ -51,47 +52,14 @@ function getTargetFps() {
 }
 
 /**
- * Displays the test results
+ * Sets the callback function to call when tests are complete
  * 
+ * @param {Function} callback - Function to call when tests complete
  * @returns {void}
  */
-function showResults() {
-	$.cls();
-	$.setColor( 10 );
-	$.print( "Tests Complete" );
-	$.setColor( 2 );
-
-	for( const result of m_results ) {
-		$.print();
-		$.print( `Test: ${result.name}` );
-		$.print( "-------------------------------------------" );
-		$.print( `Status:           ${result.status}` );
-		$.print( `Items Per Frame:  ${Math.round( result.itemCountAvg )} ` );
-		$.print( `Items Per Second: ${Math.round( result.itemCountPerSecond )}` );
-		$.print( `Test Duration:    ${Math.round( result.testTime / 1000 )}` );
-	}
-
-	$.setColor( 7 );
-	$.print( "Options:" );
-	$.print( "\n-------------------------------------------" );
-	$.print();
-	$.print( "1. Run tests again" );
-	$.print( "2. Post test results" );
-	$.print( "Press # choice" );
-
-	// On key
-	$.onkey( "1", "down", () => {
-		m_testIndex = -1;
-		runNextTest();
-	}, true );
-
-	// Handle a server side request and send it the results data
-	$.onkey( "2", "down", () => {
-		$.cls();
-		$.print( "Feature not implemented" );
-	}, true );
+function setOnCompleteCallback( callback ) {
+	m_onCompleteCallback = callback;
 }
-
 
 /**
  * Calculates the target FPS for the current system
@@ -255,6 +223,57 @@ function runNextTest() {
 		lt = t;
 		requestAnimationFrame( loop );
 	};
+}
+
+
+/**
+ * Displays the test results
+ * 
+ * @returns {void}
+ */
+function showResults() {
+	$.cls();
+	$.setColor( 10 );
+	$.print( "Tests Complete" );
+	$.setColor( 2 );
+
+	for( const result of m_results ) {
+		$.print();
+		$.print( `Test: ${result.name}` );
+		$.print( "-------------------------------------------" );
+		$.print( `Status:           ${result.status}` );
+		$.print( `Items Per Frame:  ${Math.round( result.itemCountAvg )} ` );
+		$.print( `Items Per Second: ${Math.round( result.itemCountPerSecond )}` );
+		$.print( `Test Duration:    ${Math.round( result.testTime / 1000 )}` );
+	}
+
+	$.setColor( 7 );
+	$.print( "Options:" );
+	$.print( "\n-------------------------------------------" );
+	$.print();
+	$.print( "1. Run tests again" );
+	$.print( "2. Post test results" );
+	$.print( "0. Return to main menu" );
+	$.print( "Press # choice" );
+
+	// On key
+	$.onkey( "1", "down", () => {
+		m_testIndex = -1;
+		runNextTest();
+	}, true );
+
+	// Handle a server side request and send it the results data
+	$.onkey( "2", "down", () => {
+		$.cls();
+		$.print( "Feature not implemented" );
+	}, true );
+	
+	// Return to main menu
+	$.onkey( "0", "down", () => {
+		if( m_onCompleteCallback ) {
+			m_onCompleteCallback();
+		}
+	}, true );
 }
 
 /**

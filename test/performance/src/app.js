@@ -45,46 +45,148 @@ async function initApp() {
 	
 	// Wait for test manager initialization to complete
 	await g_testManager.init();
+	
+	// Set up callback to return to main menu when tests complete
+	g_testManager.setOnCompleteCallback( showMainMenu );
 
-	waitForKeyLoop();
+	showMainMenu();
 }
 
 /**
- * Waits for user input to begin testing
+ * Shows the main menu with options
  * 
  * @returns {void}
  */
-function waitForKeyLoop() {
-	let i = 0;
-	let lastT = 0;
-	const phrase = "Press any key to begin";
-	const loop = ( t ) => {
-		$.cls( 0, 100, $.width(), $.height() - 100 );
-		$.setColor( 7 );
-		$.setPos( 1, $.getRows() - 2 );
-		$.print( "Target FPS: " + g_testManager.getTargetFps().toFixed( 2 ) );
-		$.setColor( 2 );
-		$.rect( 300, m_centerY - 16, 200, 32 );
-		$.setPos( 0, m_centerPosY );
-		$.print( phrase, true, true );
-		$.setColor( 10 );
-		$.setPos( 39 + i, m_centerPosY );
-		if( i <= phrase.length - 1 ) {
-			$.print( phrase.substring( i, i + 1 ), true );
-		}
-		if( t > lastT + 150 ) {
-			i += 1;
-			if( i > phrase.length ) {
-				i = 0;
-			}
-			lastT = t;
-		}
+function showMainMenu() {
+	$.cls();
+	
+	// Title - centered
+	$.setColor( 10 );
+	$.setPos( 0, 2 );
+	$.print( "Performance Tests", true, true );
+	
+	// Target FPS - bottom right
+	$.setColor( 7 );
+	$.setPos( $.getCols() - 20, $.getRows() - 2 );
+	$.print( "Target FPS: " + g_testManager.getTargetFps().toFixed( 2 ) );
+	
+	// Center the menu vertically
+	const menuStartRow = Math.floor( $.getRows() / 2 ) - 4;
+	$.setPos( 0, menuStartRow );
 
-		if( $.inkey().length > 0 ) {
-			g_testManager.startTests();
-			return;
-		}
-		requestAnimationFrame( loop );
-	};
-	loop();
+	// Create the menu title
+	$.setColor( 10 );
+	$.print( "MAIN MENU", false, true );
+	
+	// Create main menu table
+	const menuItems = [
+		[ "1. Run Performance Tests" ],
+		[ "2. View Previous Results" ],
+		[ "3. Exit                 " ]
+	];
+
+	const menuFormat = [
+		"*-------------------------------*",
+		"|                               |",
+		"*-------------------------------*",
+		"|                               |",
+		"*-------------------------------*",
+		"|                               |",
+		"*-------------------------------*",
+	]
+
+	$.setColor( 15 );
+	$.printTable( menuItems, menuFormat, "double", true );
+
+	// Instruction - centered below table
+	$.setColor( 7 );
+	$.print( "Enter Key (1 - 3)", false, true );
+	
+	// Set up menu handlers with once flag
+	$.onkey( "1", "down", () => {
+		g_testManager.startTests();
+	}, true );
+	
+	$.onkey( "2", "down", () => {
+		showPreviousResults();
+	}, true );
+	
+	$.onkey( "3", "down", () => {
+		showExitMessage();
+	}, true );
+}
+
+/**
+ * Shows previous results menu (placeholder)
+ * 
+ * @returns {void}
+ */
+function showPreviousResults() {
+	$.cls();
+	
+	// Title - centered
+	$.setColor( 10 );
+	$.setPos( 0, 2 );
+	$.print( "Previous Results", true, true );
+	
+	// Center the content vertically
+	const contentStartRow = Math.floor( $.getRows() / 2 ) - 1;
+	$.setPos( 0, contentStartRow );
+	
+	// Create placeholder message table
+	const placeholderItems = [
+		[ "Feature not implemented yet" ],
+		[ "Coming soon..." ]
+	];
+	
+	$.setColor( 7 );
+	$.printTable( placeholderItems, null, "single", true );
+	
+	// Instruction - centered below table
+	$.setColor( 7 );
+	$.setPos( 0, contentStartRow + 6 );
+	$.print( "Press any key to return to main menu", false, true );
+	
+	$.onkey( "", "down", () => {
+		showMainMenu();
+	}, true );
+}
+
+/**
+ * Shows exit message
+ * 
+ * @returns {void}
+ */
+function showExitMessage() {
+	$.cls();
+	
+	// Center the content vertically
+	const contentStartRow = Math.floor( $.getRows() / 2 ) - 1;
+	$.setPos( 0, contentStartRow );
+	
+	// Create exit message table
+	const exitItems = [
+		[ "Thank you for using" ],
+		[ "Performance Tests!" ]
+	];
+
+	const format = [
+		"*-----------------------*",
+		"|                       |",
+		"*-----------------------*",
+		"|                       |",
+		"*-----------------------*"
+	];
+	
+	$.setColor( 15 );
+	$.printTable( exitItems, format, "double", true );
+	
+	// Instruction - centered below table
+	$.setColor( 7 );
+	$.setPos( 0, contentStartRow + 6 );
+	$.print( "Press F5 to restart", false, true );
+	
+	$.onkey( "", "down", () => {
+		showMainMenu();
+	}, true );
 }
