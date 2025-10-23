@@ -5,35 +5,88 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Performance Test 01</title>
 	<script src="../../../build/pi.js"></script>
+	<script src="libs/seedrandom.js"></script>
 	<style>body { background-color: gray; }</style>
 </head>
 <body>
 <script>
+Math.seedrandom( "constant" );
+const m_tests = [
+	{
+		"name": "Line Test",
+		"run": testLine,
+		"init": initTestLine,
+		"data": {},
+		"itemCountStart": 500
+	}, {
+		"name": "Arc Test",
+		"run": testArc,
+		"init": initTestArc,
+		"data": {},
+		"itemCountStart": 250
+	}
+];
+const m_results = [];
+let m_testIndex = -1;
+let m_targetFps = 60;
+let m_centerY = 0;
+let m_centerPosY = 0;
 
-const ITEM_COUNT = 50;
+$.ready( init );
 
-$.screen( "800x600" );
-$.setFont( 4 );
-$.setColor( 10 );
-$.setPos( 0, 2 );
-$.print( "Performance Test 01", true, true );
+function init() {
+	$.screen( "800x600" );
+	$.setFont( 4 );
+	m_centerY = Math.floor( $.height() / 2 ) - 20;
+	m_centerPosY = Math.floor( $.getRows() / 2 ) - 1;
+	$.setColor( 10 );
+	$.setPos( 0, 2 );
+	$.print( "Performance Test 01", true, true );
+	$.setPos( 0, m_centerPosY );
+	$.setColor( 15 );
+	$.print( "Loading...", true, true );
+	calculateTargetFPS();
+}
 
-waitForKeyLoop();
+function calculateTargetFPS() {
+	const CALC_TIME = 1000;
+	let duration = 0;
+	let frames = 0;
+	let lt = 0;
+	requestAnimationFrame( loop );
+	function loop( t ) {
+		if( lt > 0 ) {
+			let dt = t - lt;
+			duration += dt;
+			frames += 1;
+		}
+		lt = t;
+		if( duration < CALC_TIME ) {
+			requestAnimationFrame( loop );
+		} else {
+			m_targetFps = calcFpsFromMs( duration / frames );
+			waitForKeyLoop();
+		}
+	}
+}
 
 function waitForKeyLoop() {
 	let i = 0;
 	let lastT = 0;
 	const phrase = "Press any key to begin";
 	const loop = ( t ) => {
-		$.cls( 300, 280, 200, 30 );
+		$.cls( 0, 100, $.width(), $.height() - 100 );
+		$.setColor( 7 );
+		$.setPos( 1, $.getRows() - 2 );
+		$.print( "Target FPS: " + m_targetFps.toFixed( 2 ) );
 		$.setColor( 2 );
-		$.rect( 300, 280, 200, 30 );
-		$.setPos( 0, 18 );
+		$.rect( 300, m_centerY - 16, 200, 32 );
+		$.setPos( 0, m_centerPosY );
 		$.print( phrase, true, true );
 		$.setColor( 10 );
-		$.setPos( 39 + i, 18 );
+		$.setPos( 39 + i, m_centerPosY );
 		if( i <= phrase.length - 1 ) {
-			$.print( phrase.substring( i, i + 1 ) );
+			$.print( phrase.substring( i, i + 1 ), true );
 		}
 		if( t > lastT + 150 ) {
 			i += 1
@@ -44,7 +97,7 @@ function waitForKeyLoop() {
 		}
 
 		if( $.inkey().length > 0 ) {
-			testArc();
+			runNextTest();
 			return;
 		}
 		requestAnimationFrame( loop );
@@ -52,43 +105,238 @@ function waitForKeyLoop() {
 	loop();
 }
 
-function testArc() {
-	const pal = $.getPal();
-	const loop = ( t ) => {
-		$.cls();
-		for( let i = 0; i < ITEM_COUNT; i += 1 ) {
-			$.setColor( Math.floor( Math.random() * pal.length ) );
-			$.arc(
-				Math.floor( Math.random() * $.width() ),
-				Math.floor( Math.random() * $.height() ),
-				Math.floor( Math.random() * $.width() ),
-				Math.floor( Math.random() * 360 ),
-				Math.floor( Math.random() * 360 )
-			);
+function runNextTest() {
+	const WARMUP_TIME = 5000;
+	const MAX_TIME = 30000;
+	const EXTRA_TIME = 5000;
+	const MAX_INSTABILITY = 0.5;
+	const SLOPE_CALC_SIZE = 35;
+
+	m_testIndex += 1;
+	if( m_testIndex >= m_tests.length ) {
+		showResults();
+		return;
+	}
+
+	let test = m_tests[ m_testIndex ];
+	let itemCount = test.itemCountStart;
+	let startTime = 0;
+	let lt = 0;
+	let extraTime = 0;
+
+	// Sliding queue
+	let recentItemCounts = [];
+	let recentItemCountsIndex = 0;
+
+	// Initialize the test
+	test.init( test.data );
+
+	// Start the test loop
+	requestAnimationFrame( loop );
+
+	// Test Loop Function
+	function loop( t ) {
+		if( !startTime ) {
+			startTime = t;
 		}
+
+		// Compute Times
+		let dt = t - lt;
+		let fps = calcFpsFromMs( dt );
+		let elapsed = t - startTime;
+
+		// Track the recent frame counts to calculate stability
+		if( recentItemCounts.length >= SLOPE_CALC_SIZE ) {
+			recentItemCounts.shift();
+		}
+		recentItemCounts.push( itemCount );
+		let instability = Math.abs( calcSlopeFromQueue( recentItemCounts ) );
+
+		if( elapsed > WARMUP_TIME ) {
+
+			// Extend extra time because the calculation are stable
+			if( instability > MAX_INSTABILITY ) {
+				extraTime = elapsed + EXTRA_TIME;
+			}
+
+			if(
+				// If we have reached the MAX_TIME - end test incomplete
+				( elapsed > MAX_TIME ) ||
+
+				// If item count is stable and extra time has been hit then complete the test
+				( instability <= MAX_INSTABILITY && elapsed > extraTime )
+			) {
+				let status = "complete";
+				if( instability > MAX_INSTABILITY ) {
+					status = "incomplete";
+				}
+				const itemCountAvg = calcAvg( recentItemCounts );
+				m_results.push( {
+					"name": test.name,
+					"status": status,
+					"itemCountAvg": itemCountAvg,
+					"itemCountPerSecond": itemCountAvg * m_targetFps,
+					"testTime": elapsed
+				} );
+				return runNextTest();
+			}
+		} else {
+
+			// Ensure a minimum of extra time after warm up
+			extraTime = elapsed + EXTRA_TIME;
+		}
+
+		// Test is completed
+		if( elapsed > MAX_TIME ) {
+			return runNextTest();
+		}
+		if( fps < m_targetFps * 0.95 ) {
+
+			if( elapsed > WARMUP_TIME ) {
+
+				// After warmup time decrement slowly
+				itemCount -= 1;
+
+				// We have passed the warmup time and have hit a item count maximum
+				if( extraTime === 0 ) {
+					extraTime = elapsed + EXTRA_TIME;
+				}
+			} else {
+
+				// During warmup time decrement quicker
+				itemCount = Math.max( itemCount - 10, 1 );
+			}
+		} else {
+
+			// Running at framerate
+
+			// During warmup time increment quicker
+			if( elapsed > WARMUP_TIME ) {
+				itemCount += 1;
+			} else {
+				itemCount += 10;
+			}
+		}
+
+		test.run( itemCount, test.data );
+
+		$.cls( 0, 0, 150, 80 );
+		$.setColor( 15 );
+		$.print( "Item Count:  " + itemCount.toFixed( 0 ).padStart( 6, " " ) );
+		$.print( "Target FPS:  " + m_targetFps.toFixed( 0 ).padStart( 6, " " ) );
+		$.print( "FPS:         " + fps.toFixed( 0 ).padStart( 6, " " ) );
+		if( instability !== null ) {
+			if( extraTime === elapsed +EXTRA_TIME ) {
+				$.setColor( 4 );
+			}
+			$.print( "Instability: " + instability.toFixed( 3 ).padStart( 6, " " ) );
+		}
+
+		lt = t;
 		requestAnimationFrame( loop );
 	};
-	loop();
 }
 
-function testLines() {
-	const pal = $.getPal();
-	const loop = ( t ) => {
-		$.cls();
-		for( let i = 0; i < ITEM_COUNT; i += 1 ) {
-			$.setColor( Math.floor( Math.random() * pal.length ) );
-			$.line(
-				Math.floor( Math.random() * $.width() ),
-				Math.floor( Math.random() * $.height() ),
-				Math.floor( Math.random() * $.width() ),
-				Math.floor( Math.random() * $.height() )
-			);
-		}
-		requestAnimationFrame( loop );
-	};
-	loop();
+function showResults() {
+	$.cls();
+	$.setColor( 10 );
+	$.print( "Tests Complete" );
+	$.setColor( 2 );
+
+	for( const result of m_results ) {
+		$.print();
+		$.print( `Test: ${result.name}` );
+		$.print( "-------------------------------------------" );
+		$.print( `Status:           ${result.status}` );
+		$.print( `Items Per Frame:  ${Math.round( result.itemCountAvg )} ` );
+		$.print( `Items Per Second: ${Math.round( result.itemCountPerSecond )}` );
+		$.print( `Test Duration:    ${Math.round( result.testTime / 1000 )}` );
+	}
 }
 
+function calcAvg( data ) {
+	if( data.length === 0 ) {
+		return 0;
+	}
+	return data.reduce( ( sum, item ) => sum + item, 0 ) / data.length;
+}
+
+function calcFpsFromMs( ms ) {
+	if( ms <= 0 ) return 0;
+	return 1000 / ms;
+}
+
+function calcSlopeFromQueue( dataPoints ) {
+	const n = dataPoints.length;
+
+	// Need at least 2 points to calculate a slope
+	if( n < 2 ) {
+		return null;
+	}
+
+	let sum_x = 0;     // Sum of x-coordinates (indices)
+	let sum_y = 0;     // Sum of y-coordinates (data values)
+	let sum_xy = 0;    // Sum of (x * y)
+	let sum_xx = 0;    // Sum of (x * x)
+
+	for( let i = 0; i < n; i++ ) {
+		const x = i;          		// x-coordinate is the index
+		const y = dataPoints[ i ]; 	// y-coordinate is the data point value
+
+		sum_x += x;
+		sum_y += y;
+		sum_xy += ( x * y );
+		sum_xx += ( x * x );
+	}
+
+	// Calculate the numerator and denominator for the slope formula:
+	// m = (n * sum_xy - sum_x * sum_y) / (n * sum_xx - sum_x * sum_x)
+	const numerator = n * sum_xy - sum_x * sum_y;
+	const denominator = n * sum_xx - sum_x * sum_x;
+
+	return numerator / denominator;
+}
+
+/***************************************************************************************************
+ * TESTS
+ **************************************************************************************************/
+
+function initTestLine( data ) {
+	data.pal = $.getPal();
+}
+
+function testLine( itemCount, data ) {
+	pal = data.pal;
+	$.cls();
+	for( let i = 0; i < itemCount; i += 1 ) {
+		$.setColor( Math.floor( Math.random() * pal.length ) );
+		$.line(
+			Math.floor( Math.random() * $.width() ),
+			Math.floor( Math.random() * $.height() ),
+			Math.floor( Math.random() * $.width() ),
+			Math.floor( Math.random() * $.height() )
+		);
+	}
+}
+
+function initTestArc( data ) {
+	data.pal = $.getPal();
+}
+
+function testArc( itemCount, data ) {
+	const pal = data.pal;
+	$.cls();
+	for( let i = 0; i < itemCount; i += 1 ) {
+		$.setColor( Math.floor( Math.random() * pal.length ) );
+		$.arc(
+			Math.floor( Math.random() * $.width() ),
+			Math.floor( Math.random() * $.height() ),
+			Math.floor( Math.random() * $.width() ),
+			Math.floor( Math.random() * 360 ),
+			Math.floor( Math.random() * 360 )
+		);
+	}
+}
 
 </script>
 </body>
