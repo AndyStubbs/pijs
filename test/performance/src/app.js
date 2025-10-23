@@ -208,7 +208,7 @@ function showPreviousResults() {
 	$.setPos( 0, contentStartRow + 6 );
 	$.print( "Press any key to return to main menu", false, true );
 	
-	$.onkey( "", "down", () => {
+	$.onkey( "any", "down", () => {
 		showMainMenu();
 	}, true );
 }
@@ -247,7 +247,7 @@ function showExitMessage() {
 	$.setPos( 0, contentStartRow + 6 );
 	$.print( "Press F5 to restart", false, true );
 	
-	$.onkey( "", "down", () => {
+	$.onkey( "any", "down", () => {
 		showMainMenu();
 	}, true );
 }

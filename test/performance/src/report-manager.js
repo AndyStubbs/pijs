@@ -6,7 +6,7 @@
  * @module report-manager
  */
 
-export { init, showResults };
+export { init, showResults, postResults };
 
 "use strict";
 
@@ -102,22 +102,35 @@ function showResults( resultsObject ) {
 	$.setColor( 15 );
 	$.printTable( menuOptionsData, null, "single", true );
 	
-	// Set up menu handlers with once flag
-	$.onkey( "1", "down", () => {
+	// Set up menu handlers
+	$.onkey( "1", "down", menu1 );
+	$.onkey( "2", "down", menu2 );
+	$.onkey( "3", "down", menu3 );
+
+	function menu1() {
+		clearMenuKeys();
 		if( m_api && m_api.startTests ) {
 			m_api.startTests();
 		}
-	}, true );
-	
-	$.onkey( "2", "down", () => {
-		showPostResults();
-	}, true );
-	
-	$.onkey( "3", "down", () => {
+	}
+
+	function menu2() {
+		clearMenuKeys();
+		postResults( resultsObject );
+	}
+
+	function menu3() {
+		clearMenuKeys();
 		if( m_api && m_api.showMainMenu ) {
 			m_api.showMainMenu();
 		}
-	}, true );
+	}
+
+	function clearMenuKeys() {
+		$.offkey( "1", "down", menu1 );
+		$.offkey( "2", "down", menu2 );
+		$.offkey( "3", "down", menu3 );
+	}
 }
 
 /**
@@ -159,8 +172,74 @@ function showPostResults() {
 	$.setPos( 0, contentStartRow + 6 );
 	$.print( "Press any key to return", false, true );
 	
-	$.onkey( "", "down", () => {
+	$.onkey( "any", "down", () => {
 		// Return to results (would need results data passed back)
+		if( m_api && m_api.showMainMenu ) {
+			m_api.showMainMenu();
+		}
+	}, true );
+}
+
+/**
+ * Posts the test results to the server for storage
+ * 
+ * @param {Object} resultsObject - Results object containing version, date, and tests array
+ * @returns {void}
+ */
+async function postResults( resultsObject ) {
+	$.cls();
+	
+	// Show title
+	$.setColor( 10 );
+	$.setPos( 0, 2 );
+	$.print( "Performance Tests", true, true );
+	
+	// Center the content vertically
+	const contentStartRow = Math.floor( $.getRows() / 2 ) - 1;
+	$.setPos( 0, contentStartRow );
+	
+	// Show posting message
+	$.setColor( 7 );
+	$.print( "Posting results...", false, true );
+	
+	try {
+		// Send results to server
+		const response = await fetch( "http://localhost:8080/api/post-results", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify( resultsObject )
+		} );
+		
+		const result = await response.json();
+		
+		if( response.ok && result.success ) {
+
+			// Show success message
+			$.setColor( 2 );
+			$.setPos( 0, contentStartRow + 2 );
+			$.print( `Results saved: ${result.filename}`, false, true );
+		} else {
+			
+			// Show error message
+			$.setColor( 4 );
+			$.setPos( 0, contentStartRow + 2 );
+			$.print( `Error: ${result.error || "Failed to save results"}`, false, true );
+		}
+	} catch( error ) {
+		// Show error message
+		$.setColor( 4 );
+		$.setPos( 0, contentStartRow + 2 );
+		$.print( `Error: ${error.message}`, false, true );
+	}
+	
+	// Show instruction
+	$.setColor( 7 );
+	$.setPos( 0, contentStartRow + 4 );
+	$.print( "Press any key to return to main menu", false, true );
+	
+	$.onkey( "any", "down", () => {
 		if( m_api && m_api.showMainMenu ) {
 			m_api.showMainMenu();
 		}

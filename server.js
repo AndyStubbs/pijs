@@ -7,6 +7,7 @@
 const http = require( "http" );
 const fs = require( "fs" );
 const path = require( "path" );
+const os = require( "os" );
 
 const PORT = 8080;
 
@@ -202,6 +203,75 @@ const server = http.createServer( ( req, res ) => {
 				res.end( JSON.stringify( { "success": true, "message": `Base image reset: ${baseName}.png` } ) );
 			} catch( err ) {
 				console.error( "Error resetting base image:", err );
+				res.writeHead( 500, { "Content-Type": "application/json" } );
+				res.end( JSON.stringify( { "error": err.message } ) );
+			}
+		} );
+		
+		return;
+	}
+
+	// Handle POST request to save performance test results
+	if( req.method === "POST" && req.url === "/api/post-results" ) {
+		let body = "";
+		
+		req.on( "data", chunk => {
+			body += chunk.toString();
+		} );
+		
+		req.on( "end", () => {
+			try {
+				const data = JSON.parse( body );
+				
+				// Add system information to the results
+				const systemInfo = {
+					"os": {
+						"platform": os.platform(),
+						"type": os.type(),
+						"release": os.release(),
+						"arch": os.arch(),
+						"cpus": os.cpus().length,
+						"cpuModel": os.cpus()[0]?.model || "Unknown",
+						"totalMemory": Math.round( os.totalmem() / 1024 / 1024 / 1024 ) + " GB",
+						"freeMemory": Math.round( os.freemem() / 1024 / 1024 / 1024 ) + " GB"
+					},
+					"browser": {
+						"userAgent": req.headers[ "user-agent" ] || "Unknown",
+						"language": req.headers[ "accept-language" ] || "Unknown"
+					},
+					"timestamp": new Date().toISOString()
+				};
+				
+				// Merge system info with results
+				const resultsWithSystemInfo = {
+					...data,
+					"systemInfo": systemInfo
+				};
+				
+				// Create results directory if it doesn't exist
+				const resultsDir = path.join( __dirname, "test", "performance", "data" );
+				if( !fs.existsSync( resultsDir ) ) {
+					fs.mkdirSync( resultsDir, { recursive: true } );
+				}
+				
+				// Generate filename with timestamp
+				const timestamp = new Date().toISOString().replace( /[:.]/g, "-" );
+				const filename = `results-${timestamp}.json`;
+				const filepath = path.join( resultsDir, filename );
+				
+				// Write results to file
+				fs.writeFileSync( filepath, JSON.stringify( resultsWithSystemInfo, null, 2 ) );
+				
+				console.log( `Performance test results saved: ${filename}` );
+				
+				res.writeHead( 200, { "Content-Type": "application/json" } );
+				res.end( JSON.stringify( { 
+					"success": true, 
+					"message": `Results saved to ${filename}`,
+					"filename": filename
+				} ) );
+			} catch( err ) {
+				console.error( "Error saving performance results:", err );
 				res.writeHead( 500, { "Content-Type": "application/json" } );
 				res.end( JSON.stringify( { "error": err.message } ) );
 			}

@@ -107,6 +107,7 @@ function runNextTest() {
 		const resultsObject = {
 			"version": $.version || "Unknown",
 			"date": new Date().toISOString(),
+			"targetFps": m_targetFps,
 			"tests": m_results
 		};
 		g_reportManager.showResults( resultsObject );
@@ -226,8 +227,6 @@ function runNextTest() {
 		requestAnimationFrame( loop );
 	};
 }
-
-
 
 /**
  * Calculates the average of an array of numbers
