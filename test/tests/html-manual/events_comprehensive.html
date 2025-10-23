@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Pointer Events Comprehensive Test</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "events_comprehensive"
+			name = "Events Comprehensive Test"
+			width = 1200
+			height = 800
+			delay = 0
+			commands = """
+				SL "#mouse-screen canvas"
+				DL 15
+				MV 150, 100
+				MD
+				DL 15
+				MU
+				DL 15
+				MD
+				DL 15
+				MU
+				MD
+				DL 15
+				MU
+				MD
+				DL 15
+				MU
+				DL 15
+				MV 225, 40
+				DL 15
+				MD
+				DL 15
+				MU
+				DL 15
+				MD
+				DL 15
+				MU
+				DL 15
+				MV 225, 40
+				MD
+				DL 15
+				MU
+				DL 15
+				MV 225, 100
+				MD
+				DL 15
+				MU
+				DL 15
+				MV 150, 150
+				MD
+				DL 15
+				MU
+				DL 15
+				MV 200, 195
+				MD
+				DL 15
+				MU
+				DL 100
+
+
+				SL "#touch-screen canvas"
+				DL 15
+				TS 150, 100
+				DL 15
+				TE
+				DL 15
+				TS 150, 100
+				DL 15
+				TE
+				DL 15
+				TS 225, 40
+				DL 15
+				TE
+				DL 15
+				TS 225, 40
+				DL 15
+				TE
+				DL 15
+				TS 225, 100
+				DL 15
+				TE
+				DL 15
+				TS 150, 150
+				DL 15
+				TE
+				DL 100
+
+
+				SL "#press-screen canvas"
+				DL 15
+				MV 150, 100
+				DL 15
+				MD
+				DL 15
+				MU
+				DL 15
+				MV 150, 100
+				DL 15
+				MD
+				DL 15
+				MU
+				DL 15
+				MV 225, 40
+				DL 15
+				MD
+				DL 15
+				MU
+				DL 15
+				MV 225, 100
+				DL 15
+				MD
+				DL 15
+				MU
+				DL 15
+				MV 150, 150
+				DL 15
+				MD
+				DL 15
+				MU
+				DL 15
+				MV 125, 160
+				DL 15
+				MD
+				DL 15
+				MU
+				DL 100
+
+				SL "#events-screen canvas"
+				DL 15
+				MV 150, 100
+				DL 15
+				MC
+				DL 15
+				"""
+			[[TOML_END]]
+		</script>
+		<!-- [Pi.js Script]-->
+		<script src="../../../build/pi.js"></script>
+		<!-- [/Pi.js Script]-->
+		<style>
+			html, body {
+				background-color: #333;
+				margin: 0;
+				padding: 10px;
+				font-family: Arial, sans-serif;
+			}
+			.container {
+				display: inline-block;
+				margin: 5px;
+				border: 2px solid #666;
+				background-color: #222;
+				vertical-align: top;
+				width: 320px;
+				height: 250px;
+			}
+			.screen-label {
+				color: white;
+				text-align: center;
+				padding: 5px;
+				font-size: 12px;
+			}
+		</style>
+	</head>
+<body>
+
+<!-- Test containers for multiple screens -->
+<div class="container">
+	<div class="screen-label">Mouse Test Screen</div>
+	<div id="mouse-screen"></div>
+</div>
+
+<div class="container">
+	<div class="screen-label">Touch Test Screen</div>
+	<div id="touch-screen"></div>
+</div>
+
+<div class="container">
+	<div class="screen-label">Press Test Screen</div>
+	<div id="press-screen"></div>
+</div>
+
+<div class="container">
+	<div class="screen-label">Events Test Screen</div>
+	<div id="events-screen"></div>
+</div>
+
+
+<script>
+
+	const tests = [
+		setupMouseModule,
+		testEnableContextMenu,
+		testBasicMouseDown,
+		testBasicMouseUp,
+		testBasicMouseDownOnce,
+		testHitboxMouseDown,
+		testHitboxMouseDownWithData,
+		testBasicMouseMoveOnce,
+		testInMouse,
+		setupTouchModule,
+		testBasicTouchStart,
+		testBasicTouchEnd,
+		testBasicTouchStartOnce,
+		testHitboxTouchStart,
+		testHitboxTouchStartWithData,
+		testBasicTouchMoveOnce,
+		testInTouch,
+		setupPressModule,
+		testBasicPressDown,
+		testBasicPressUp,
+		testBasicPressDownOnce,
+		testHitboxPressDown,
+		testHitboxPressDownWithData,
+		testBasicPressMoveOnce,
+		testInPress,
+		testBasicClick,
+		testHitboxClick,
+		testHitboxClickWithData,
+		setupEventsModule,
+		testClearEventsAll,
+		testClearEventsMouse,
+		testClearEventsTouch,
+		testClearEventsPress,
+		testClearEventsKeyboard,
+		testClearEventsGamepad,
+		testClearEventsInvalid
+	];
+	let test = 0;
+	let mouseScreen = $.screen( "300x200", "mouse-screen" );
+	let touchScreen = $.screen( "300x200", "touch-screen" );
+	let pressScreen = $.screen( "300x200", "press-screen" );
+	let eventsScreen = $.screen( "300x200", "events-screen" );
+
+	// Main test execution
+	$.ready( function() {
+		nextTest( tests, test++ );
+	} );
+
+	function printTestResult( testName, result ) {
+		if( result ) {
+			$.setColor( 2 );
+			$.print( "$ " + testName );
+		} else {
+			$.setColor( 4 );
+			$.print( "! " + testName );
+		}
+	}
+
+	function nextTest( tests, test ) {
+		console.log( "Test: ", test );
+		setTimeout( tests[ test ], 50 );
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Mouse Module Tests
+	////////////////////////////////////////////////////////////////////////////////////////////////
+
+	function setupMouseModule() {
+		$.setScreen( mouseScreen );
+		$.setBgColor( 1 );
+		$.setColor( 15 );
+		$.setPos( 1, 1 );
+		$.print( "Mouse Module Tests" );
+		nextTest( tests, test++ );
+	}
+
+	function testEnableContextMenu() {
+		try {
+			$.setEnableContextMenu( true );
+			printTestResult( "setEnableContextMenu true", true );
+		} catch( e ) {
+			printTestResult( "setEnableContextMenu true", false );
+		}
+		
+		try {
+			$.setEnableContextMenu( false );
+			printTestResult( "setEnableContextMenu false", true);
+		} catch( e ) {
+			printTestResult( "setEnableContextMenu false", false );
+		}
+
+		nextTest( tests, test++ );
+	}
+	
+	function testBasicMouseDown() {
+		try {
+			$.onmouse( "down", onmousedown );
+		} catch( e ) {
+			printTestResult( "testBasicMouseDown", false);
+		}
+
+		function onmousedown( data ) {
+			if( data && data.action === "down" ) {
+				printTestResult( "testBasicMouseDown", true );
+			} else {
+				printTestResult( "testBasicMouseDown", false );
+			}
+			$.offmouse( "down", onmousedown );
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testBasicMouseUp() {
+		try {
+			$.onmouse( "up", onmouseup );
+		} catch( e ) {
+			printTestResult( "testBasicMouseUp", false);
+		}
+
+		function onmouseup( data ) {
+			if( data && data.action === "up" ) {
+				printTestResult( "testBasicMouseUp", true );
+			} else {
+				printTestResult( "testBasicMouseUp", false );
+			}
+			$.offmouse( "up", onmouseup );
+
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testBasicMouseDownOnce() {
+		try {
+			$.onmouse( "down", onmousedown, true );
+		} catch( e ) {
+			printTestResult( "testBasicMouseDownOnce", false);
+		}
+
+		function onmousedown( data ) {
+			if( data && data.action === "down" ) {
+				printTestResult( "testBasicMouseDownOnce", true );
+			} else {
+				printTestResult( "testBasicMouseDownOnce", false );
+			}
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testHitboxMouseDown() {
+		console.log( "Starting hitbox mousedown test" );
+		const hitBox = { "x": 200, "y": 15, "width": 50, "height": 50 };
+		console.log( JSON.stringify( hitBox ) );
+		$.setColor( 15 );
+		$.rect( hitBox );
+		try {
+			$.onmouse( "down", onmousedown, true, hitBox );
+		} catch( e ) {
+			printTestResult( "testHitboxMouseDown", false);
+		}
+
+		function onmousedown( data ) {
+			if( data && data.action === "down" ) {
+				printTestResult( "testHitboxMouseDown", true );
+				$.setColor( 2 );
+			} else {
+				printTestResult( "testHitboxMouseDown", false );
+				$.setColor( 4 );
+			}
+			$.rect( hitBox );
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testHitboxMouseDownWithData() {
+		const hitBox = { "x": 200, "y": 75, "width": 50, "height": 50 };
+		$.setColor( 15 );
+		$.rect( hitBox );
+		try {
+			$.onmouse( "down", onmousedown, true, hitBox, { "cool": "beans" } );
+		} catch( e ) {
+			printTestResult( "testHitboxMouseDownWithData", false);
+		}
+
+		function onmousedown( data, customData ) {
+			if( data && data.action === "down" && customData.cool ) {
+				printTestResult( "testHitboxMouseDownWithData", true );
+				$.setColor( 2 );
+			} else {
+				printTestResult( "testHitboxMouseDownWithData", false );
+				$.setColor( 4 );
+			}
+			$.rect( hitBox );
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testBasicMouseMoveOnce() {
+		try {
+			$.onmouse( "move", onmousedown, true );
+		} catch( e ) {
+			printTestResult( "testBasicMouseMoveOnce", false);
+		}
+
+		function onmousedown( data ) {
+			if( data && data.action === "move" ) {
+				printTestResult( "testBasicMouseMoveOnce", true );
+			} else {
+				printTestResult( "testBasicMouseMoveOnce", false );
+			}
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testInMouse() {
+		let lastX;
+		let lastY;
+		let testMoveX = true;
+		let testMoveY = true;
+		let testButton1 = true;
+		let testButton2 = true;
+
+		const interval = setInterval( () => {
+			const mouse = $.inmouse();
+			if( testMoveX && lastX && mouse.x !== lastX ) {
+				printTestResult( "testInMouseMoveX", true );
+				testMoveX = false;
+			}
+			if( testMoveY && lastY && mouse.y !== lastY ) {
+				printTestResult( "testInMouseMoveY", true );
+				testMoveY = false;
+			}
+			if( testButton1 && mouse.buttons === 1 ) {
+				printTestResult( "testInMouseButton1", true );
+				testButton1 = false;
+			}
+			if( testButton2 && mouse.buttons === 2 ) {
+				printTestResult( "testInMouseButton2", true );
+				testButton2 = false;
+			}
+
+			if( !testMoveX && !testMoveY && !testButton1 && !testButton2 ) {
+				clearInterval( interval );
+				nextTest( tests, test++ );
+			}
+			lastX = mouse.x;
+			lastY = mouse.y;
+		}, 20 );
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Touch Module Tests
+	////////////////////////////////////////////////////////////////////////////////////////////////
+
+	function setupTouchModule() {
+		$.setScreen( touchScreen );
+		$.setBgColor( 1 );
+		$.setColor( 15 );
+		$.setPos( 1, 1 );
+		$.print( "Touch Module Tests" );
+		nextTest( tests, test++ );
+	}
+
+	function testBasicTouchStart() {
+		try {
+			$.ontouch( "start", ontouchstart );
+		} catch( e ) {
+			printTestResult( "testBasicTouchStart", false );
+		}
+
+		function ontouchstart( touches ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "start" ) {
+				printTestResult( "testBasicTouchStart", true );
+			} else {
+				printTestResult( "testBasicTouchStart", false );
+			}
+			$.offtouch( "start", ontouchstart );
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testBasicTouchEnd() {
+		try {
+			$.ontouch( "end", ontouchend );
+		} catch( e ) {
+			printTestResult( "testBasicTouchEnd", false );
+		}
+
+		function ontouchend( touches ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "end" ) {
+				printTestResult( "testBasicTouchEnd", true );
+			} else {
+				printTestResult( "testBasicTouchEnd", false );
+			}
+			$.offtouch( "end", ontouchend );
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testBasicTouchStartOnce() {
+		try {
+			$.ontouch( "start", ontouchstart, true );
+		} catch( e ) {
+			printTestResult( "testBasicTouchStartOnce", false );
+		}
+
+		function ontouchstart( touches ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "start" ) {
+				printTestResult( "testBasicTouchStartOnce", true );
+			} else {
+				printTestResult( "testBasicTouchStartOnce", false );
+			}
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testHitboxTouchStart() {
+		const hitBox = { "x": 200, "y": 15, "width": 50, "height": 50 };
+		$.setColor( 15 );
+		$.rect( hitBox );
+		try {
+			$.ontouch( "start", ontouchstart, true, hitBox );
+		} catch( e ) {
+			printTestResult( "testHitboxTouchStart", false );
+		}
+
+		function ontouchstart( touches ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "start" ) {
+				printTestResult( "testHitboxTouchStart", true );
+				$.setColor( 2 );
+			} else {
+				printTestResult( "testHitboxTouchStart", false );
+				$.setColor( 4 );
+			}
+			$.rect( hitBox );
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testHitboxTouchStartWithData() {
+		const hitBox = { "x": 200, "y": 75, "width": 50, "height": 50 };
+		$.setColor( 15 );
+		$.rect( hitBox );
+		try {
+			$.ontouch( "start", ontouchstart, true, hitBox, { "cool": "beans" } );
+		} catch( e ) {
+			printTestResult( "testHitboxTouchStartWithData", false );
+		}
+
+		function ontouchstart( touches, customData ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "start" && customData.cool ) {
+				printTestResult( "testHitboxTouchStartWithData", true );
+				$.setColor( 2 );
+			} else {
+				printTestResult( "testHitboxTouchStartWithData", false );
+				$.setColor( 4 );
+			}
+			$.rect( hitBox );
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testBasicTouchMoveOnce() {
+		try {
+			$.ontouch( "move", ontouchmove, true );
+		} catch( e ) {
+			printTestResult( "testBasicTouchMoveOnce", false );
+		}
+
+		function ontouchmove( touches ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "move" ) {
+				printTestResult( "testBasicTouchMoveOnce", true );
+			} else {
+				printTestResult( "testBasicTouchMoveOnce", false );
+			}
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testInTouch() {
+		let lastX;
+		let lastY;
+		let testMoveX = true;
+		let testMoveY = true;
+		let testTouchCount = true;
+
+		const interval = setInterval( () => {
+			const touches = $.intouch();
+			if( testMoveX && lastX && touches.length > 0 && touches[ 0 ].x !== lastX ) {
+				printTestResult( "testInTouchMoveX", true );
+				testMoveX = false;
+			}
+			if( testMoveY && lastY && touches.length > 0 && touches[ 0 ].y !== lastY ) {
+				printTestResult( "testInTouchMoveY", true );
+				testMoveY = false;
+			}
+			if( testTouchCount && touches.length > 0 ) {
+				printTestResult( "testInTouchCount", true );
+				testTouchCount = false;
+			}
+
+			if( !testMoveX && !testMoveY && !testTouchCount ) {
+				clearInterval( interval );
+				nextTest( tests, test++ );
+			}
+			if( touches.length > 0 ) {
+				lastX = touches[ 0 ].x;
+				lastY = touches[ 0 ].y;
+			}
+		}, 20 );
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Press Module Tests
+	////////////////////////////////////////////////////////////////////////////////////////////////
+
+	function setupPressModule() {
+		$.setScreen( pressScreen );
+		$.setBgColor( 1 );
+		$.setColor( 15 );
+		$.setPos( 1, 1 );
+		$.print( "Press Module Tests" );
+		
+		nextTest( tests, test++ );
+	}
+
+	function testBasicPressDown() {
+		try {
+			$.onpress( "down", onpressdown );
+		} catch( e ) {
+			printTestResult( "testBasicPressDown", false );
+		}
+
+		function onpressdown( data ) {
+			if( data && data.action === "down" ) {
+				printTestResult( "testBasicPressDown", true );
+			} else {
+				printTestResult( "testBasicPressDown", false );
+			}
+			$.offpress( "down", onpressdown );
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testBasicPressUp() {
+		try {
+			$.onpress( "up", onpressup );
+		} catch( e ) {
+			printTestResult( "testBasicPressUp", false );
+		}
+
+		function onpressup( data ) {
+			if( data && data.action === "up" ) {
+				printTestResult( "testBasicPressUp", true );
+			} else {
+				printTestResult( "testBasicPressUp", false );
+			}
+			$.offpress( "up", onpressup );
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testBasicPressDownOnce() {
+		try {
+			$.onpress( "down", onpressdown, true );
+		} catch( e ) {
+			printTestResult( "testBasicPressDownOnce", false );
+		}
+
+		function onpressdown( data ) {
+			console.log( JSON.stringify( data ) );
+			if( data && data.action === "down" ) {
+				printTestResult( "testBasicPressDownOnce", true );
+			} else {
+				printTestResult( "testBasicPressDownOnce", false );
+			}
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testHitboxPressDown() {
+		console.log( "Starting hitbox test" );
+		const hitBox = { "x": 200, "y": 15, "width": 50, "height": 50 };
+		$.setColor( 15 );
+		$.rect( hitBox );
+		try {
+			$.onpress( "down", onpressdown, true, hitBox );
+		} catch( e ) {
+			printTestResult( "testHitboxPressDown", false );
+		}
+
+		function onpressdown( data ) {
+			console.log( JSON.stringify( data ) );
+			if( data && data.action === "down" ) {
+				printTestResult( "testHitboxPressDown", true );
+				$.setColor( 2 );
+			} else {
+				printTestResult( "testHitboxPressDown", false );
+				$.setColor( 4 );
+			}
+			$.rect( hitBox );
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testHitboxPressDownWithData() {
+		const hitBox = { "x": 200, "y": 75, "width": 50, "height": 50 };
+		$.setColor( 15 );
+		$.rect( hitBox );
+		try {
+			$.onpress( "down", onpressdown, true, hitBox, { "cool": "beans" } );
+		} catch( e ) {
+			printTestResult( "testHitboxPressDownWithData", false );
+		}
+
+		function onpressdown( data, customData ) {
+			if( data && data.action === "down" && customData.cool ) {
+				printTestResult( "testHitboxPressDownWithData", true );
+				$.setColor( 2 );
+			} else {
+				printTestResult( "testHitboxPressDownWithData", false );
+				$.setColor( 4 );
+			}
+			$.rect( hitBox );
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testBasicPressMoveOnce() {
+		try {
+			$.onpress( "move", onpressmove, true );
+		} catch( e ) {
+			printTestResult( "testBasicPressMoveOnce", false );
+		}
+
+		function onpressmove( data ) {
+			if( data && data.action === "move" ) {
+				printTestResult( "testBasicPressMoveOnce", true );
+			} else {
+				printTestResult( "testBasicPressMoveOnce", false );
+			}
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testInPress() {
+		let lastX;
+		let lastY;
+		let testMoveX = true;
+		let testMoveY = true;
+		let testButtons = true;
+
+		const interval = setInterval( () => {
+			const press = $.inpress();
+			if( testMoveX && lastX && press.x !== lastX ) {
+				printTestResult( "testInPressMoveX", true );
+				testMoveX = false;
+			}
+			if( testMoveY && lastY && press.y !== lastY ) {
+				printTestResult( "testInPressMoveY", true );
+				testMoveY = false;
+			}
+			if( testButtons && press.buttons > 0 ) {
+				printTestResult( "testInPressButtons", true );
+				testButtons = false;
+			}
+
+			if( !testMoveX && !testMoveY && !testButtons ) {
+				clearInterval( interval );
+				nextTest( tests, test++ );
+			}
+			lastX = press.x;
+			lastY = press.y;
+		}, 20 );
+	}
+
+	function testBasicClick() {
+		try {
+			$.onclick( onclick );
+		} catch( e ) {
+			printTestResult( "testBasicClick", false );
+		}
+
+		function onclick( data ) {
+			if( data && data.action === "up" ) {
+				printTestResult( "testBasicClick", true );
+			} else {
+				printTestResult( "testBasicClick", false );
+			}
+			$.offclick( onclick );
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testHitboxClick() {
+		const hitBox = { "x": 200, "y": 135, "width": 50, "height": 50 };
+		$.setColor( 15 );
+		$.rect( hitBox );
+		try {
+			$.onclick( onclick, true, hitBox );
+		} catch( e ) {
+			printTestResult( "testHitboxClick", false );
+		}
+
+		function onclick( data ) {
+			if( data && data.action === "up" ) {
+				printTestResult( "testHitboxClick", true );
+				$.setColor( 2 );
+			} else {
+				printTestResult( "testHitboxClick", false );
+				$.setColor( 4 );
+			}
+			$.rect( hitBox );
+			nextTest( tests, test++ );
+		}
+	}
+
+	function testHitboxClickWithData() {
+		const hitBox = { "x": 100, "y": 135, "width": 50, "height": 50 };
+		$.setColor( 15 );
+		$.rect( hitBox );
+		try {
+			$.onclick( onclick, true, hitBox, { "cool": "beans" } );
+		} catch( e ) {
+			printTestResult( "testHitboxClickWithData", false );
+		}
+
+		function onclick( data, customData ) {
+			if( data && data.action === "up" && customData.cool ) {
+				printTestResult( "testHitboxClickWithData", true );
+				$.setColor( 2 );
+			} else {
+				printTestResult( "testHitboxClickWithData", false );
+				$.setColor( 4 );
+			}
+			$.rect( hitBox );
+			nextTest( tests, test++ );
+		}
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Events Module Tests
+	////////////////////////////////////////////////////////////////////////////////////////////////
+
+	// Events Module Tests
+	function setupEventsModule() {
+		$.setScreen( eventsScreen );
+		$.setBgColor( 1 );
+		$.setColor( 15 );
+		$.setPos( 1, 1 );
+		$.print( "Events Module Tests" );
+
+		nextTest( tests, test++ );
+	}
+
+	function testClearEventsAll() {
+		try {
+			$.clearEvents();
+			printTestResult( "testClearEventsAll", true );
+		} catch( e ) {
+			printTestResult( "testClearEventsAll", false );
+		}
+		nextTest( tests, test++ );
+	}
+
+	function testClearEventsMouse() {
+		try {
+			$.clearEvents( "mouse" );
+			printTestResult( "testClearEventsMouse", true );
+		} catch( e ) {
+			printTestResult( "testClearEventsMouse", false );
+		}
+		nextTest( tests, test++ );
+	}
+
+	function testClearEventsTouch() {
+		try {
+			$.clearEvents( "touch" );
+			printTestResult( "testClearEventsTouch", true );
+		} catch( e ) {
+			printTestResult( "testClearEventsTouch", false );
+		}
+		nextTest( tests, test++ );
+	}
+
+	function testClearEventsPress() {
+		try {
+			$.clearEvents( "press" );
+			printTestResult( "testClearEventsPress", true );
+		} catch( e ) {
+			printTestResult( "testClearEventsPress", false );
+		}
+		nextTest( tests, test++ );
+	}
+
+	function testClearEventsKeyboard() {
+		try {
+			$.clearEvents( "keyboard" );
+			printTestResult( "testClearEventsKeyboard", true );
+		} catch( e ) {
+			printTestResult( "testClearEventsKeyboard", false );
+		}
+		nextTest( tests, test++ );
+	}
+
+	function testClearEventsGamepad() {
+		try {
+			$.clearEvents( "gamepad" );
+			printTestResult( "testClearEventsGamepad", true );
+		} catch( e ) {
+			printTestResult( "testClearEventsGamepad", false );
+		}
+		nextTest( tests, test++ );
+	}
+
+	function testClearEventsInvalid() {
+		try {
+			$.clearEvents( "invalid" );
+			printTestResult( "testClearEventsInvalid", false );
+		} catch( e ) {
+			if( e.code === "INVALID_TYPE" ) {
+				printTestResult( "testClearEventsInvalid", true );
+			} else {
+				printTestResult( "testClearEventsInvalid", false );
+			}
+		}
+		nextTest( tests, test++ );
+	}
+
+</script>
+</body>
+</html>
