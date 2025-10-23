@@ -4,7 +4,6 @@
 		<title>Ready 01</title>
 		<script type="text/toml">
 			[[TOML_START]]
-			test = "screenshot.js"
 			file = "ready_01"
 			name = "ready 01"
 			width = 200
@@ -12,9 +11,7 @@
 			delay = 0
 			[[TOML_END]]
 		</script>
-		<!-- [Pi.js Script]-->
 		<script src="../../../build/pi.js"></script>
-		<!-- [/Pi.js Script]-->
 		<style>
 			html, body {
 				background-color: grey;
@@ -45,7 +42,7 @@
 	} );
 </script>
 <script>
-	$.loadImage( "images/thief.png", "thief" );
+	$.loadImage( "../../media/thief.png", "thief" );
 	$.ready( function () {
 		$.drawImage( "thief", 10, 10 );
 	} );

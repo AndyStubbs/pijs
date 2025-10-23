@@ -11,10 +11,8 @@
 			delay = 0
 			[[TOML_END]]
 		</script>
-		<script src="libs/seedrandom.js"></script>
-		<!-- [Pi.js Script]-->
+		<script src="../../libs/seedrandom.js"></script>
 		<script src="../../../build/pi.js"></script>
-		<!-- [/Pi.js Script]-->
 		<style>
 			html, body {
 				background-color: grey;
@@ -24,7 +22,7 @@
 <body>
 <script>
 Math.seedrandom('constant');
-var font = $.loadFont( "images/font-8x14.png", 8, 14 );
+var font = $.loadFont( "../../media/font-8x14.png", 8, 14 );
 $.set( {
 	"defaultPal": [ "#FFFFFF", "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF" ],
 	"defaultFont": font

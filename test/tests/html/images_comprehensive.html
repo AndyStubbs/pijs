@@ -23,10 +23,10 @@
 <body>
 
 <!-- Test images -->
-<img id="spaceship" src="images/spaceship_0.png" style="display:none"/>
-<img id="thief" src="images/thief.png" style="display:none"/>
-<img id="squares" src="images/squares.png" style="display:none"/>
-<img id="fruits" src="images/Fruits.png" style="display:none"/>
+<img id="spaceship" src="../../media/spaceship_0.png" style="display:none"/>
+<img id="thief" src="../../media/thief.png" style="display:none"/>
+<img id="squares" src="../../media/squares.png" style="display:none"/>
+<img id="fruits" src="../../media/Fruits.png" style="display:none"/>
 
 <script>
 	// Test variables
@@ -77,7 +77,7 @@
 		
 		// Test 1: Load image from URL string
 		try {
-			$.loadImage( "images/spaceship_0.png", "ship_url" );
+			$.loadImage( "../../media/spaceship_0.png", "ship_url" );
 			logTest( "loadImage URL string", true );
 		} catch( e ) {
 			logTest( "loadImage URL string", false );
@@ -94,7 +94,7 @@
 		
 		// Test 3: Load image with auto-generated name
 		try {
-			var autoName = $.loadImage( "images/spaceship_0.png" );
+			var autoName = $.loadImage( "../../media/spaceship_0.png" );
 			logTest( "loadImage auto name", autoName && autoName !== "" );
 		} catch( e ) {
 			logTest( "loadImage auto name", false );
@@ -106,7 +106,7 @@
 		
 		try {
 			$.loadImage( {
-				"src": "images/spaceship_0.png",
+				"src": "../../media/spaceship_0.png",
 				"name": "ship_callbacks",
 				"onLoad": function( img ) {
 					loadCallbackCalled = true;
@@ -130,7 +130,7 @@
 		
 		// Test 6: Error handling - duplicate name
 		try {
-			$.loadImage( "images/spaceship_0.png", "ship_url" );
+			$.loadImage( "../../media/spaceship_0.png", "ship_url" );
 			logTest( "loadImage duplicate name error", false );
 		} catch( e ) {
 			logTest( "loadImage duplicate name error", e.code === "INVALID_NAME" );
@@ -142,7 +142,7 @@
 		
 		// Test 1: Load spritesheet with fixed dimensions
 		try {
-			$.loadSpritesheet( "images/squares.png", "squares_fixed", 32, 32, 0 );
+			$.loadSpritesheet( "../../media/squares.png", "squares_fixed", 32, 32, 0 );
 			logTest( "loadSpritesheet fixed dimensions", true );
 		} catch( e ) {
 			logTest( "loadSpritesheet fixed dimensions", false );
@@ -150,7 +150,7 @@
 		
 		// Test 2: Load spritesheet with margin
 		try {
-			$.loadSpritesheet( "images/thief.png", "thief_margin", 32, 32, 1 );
+			$.loadSpritesheet( "../../media/thief.png", "thief_margin", 32, 32, 1 );
 			logTest( "loadSpritesheet with margin", true );
 		} catch( e ) {
 			logTest( "loadSpritesheet with margin", false );
@@ -158,7 +158,7 @@
 		
 		// Test 3: Load spritesheet with auto-detection
 		try {
-			$.loadSpritesheet( "images/Fruits.png", "fruits_auto" );
+			$.loadSpritesheet( "../../media/Fruits.png", "fruits_auto" );
 			logTest( "loadSpritesheet auto detection", true );
 		} catch( e ) {
 			logTest( "loadSpritesheet auto detection", false );
@@ -175,7 +175,7 @@
 		
 		// Test 5: Error handling - invalid dimensions
 		try {
-			$.loadSpritesheet( "images/squares.png", "invalid_dims", 0, 32 );
+			$.loadSpritesheet( "../../media/squares.png", "invalid_dims", 0, 32 );
 			logTest( "loadSpritesheet invalid dimensions error", false );
 		} catch( e ) {
 			logTest( "loadSpritesheet invalid dimensions error", e.code === "INVALID_DIMENSIONS" );
@@ -183,7 +183,7 @@
 		
 		// Test 6: Error handling - invalid margin
 		try {
-			$.loadSpritesheet( "images/squares.png", "invalid_margin", 32, 32, "invalid" );
+			$.loadSpritesheet( "../../media/squares.png", "invalid_margin", 32, 32, "invalid" );
 			logTest( "loadSpritesheet invalid margin error", false );
 		} catch( e ) {
 			logTest( "loadSpritesheet invalid margin error", e.code === "INVALID_MARGIN" );
@@ -409,7 +409,7 @@
 		
 		// Test 7: Error handling - image still loading
 		try {
-			$.loadImage( "images/spaceship_0.png", "loading_image" );
+			$.loadImage( "../../media/spaceship_0.png", "loading_image" );
 			$.drawImage( "loading_image", 100, 100 );
 			logTest( "drawImage loading error", false );
 		} catch( e ) {
