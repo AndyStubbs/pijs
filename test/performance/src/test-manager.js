@@ -6,13 +6,14 @@
  * @module test-manager
  */
 
-export { init, startTests, getTargetFps, setOnCompleteCallback };
+export { init, startTests, getTargetFps, restartTests };
 
 "use strict";
 
 // Import all available tests
 import * as g_lineTest from "./tests/line.js";
 import * as g_arcTest from "./tests/arc.js";
+import * as g_reportManager from "./report-manager.js";
 
 // Get all test config data
 let m_tests = [];
@@ -23,12 +24,16 @@ m_tests.push( g_arcTest.getConfig() );
 let m_results = [];
 let m_testIndex = -1;
 let m_targetFps = 60;
-let m_onCompleteCallback = null;
+let m_api = null;
 
 /*
  * Initializes the test manager
-*/
-async function init() {
+ * 
+ * @param {Object} api - API object with showMainMenu and other functions
+ * @returns {void}
+ */
+async function init( api ) {
+	m_api = api;
 	await calculateTargetFPS();
 }
 
@@ -51,14 +56,16 @@ function getTargetFps() {
 	return m_targetFps;
 }
 
+
 /**
- * Sets the callback function to call when tests are complete
+ * Restarts the tests from the beginning
  * 
- * @param {Function} callback - Function to call when tests complete
  * @returns {void}
  */
-function setOnCompleteCallback( callback ) {
-	m_onCompleteCallback = callback;
+function restartTests() {
+	m_testIndex = -1;
+	m_results = [];
+	runNextTest();
 }
 
 /**
@@ -107,7 +114,12 @@ function runNextTest() {
 
 	m_testIndex += 1;
 	if( m_testIndex >= m_tests.length ) {
-		showResults();
+		const resultsObject = {
+			"version": $.version || "Unknown",
+			"date": new Date().toISOString(),
+			"tests": m_results
+		};
+		g_reportManager.showResults( resultsObject );
 		return;
 	}
 
@@ -226,55 +238,6 @@ function runNextTest() {
 }
 
 
-/**
- * Displays the test results
- * 
- * @returns {void}
- */
-function showResults() {
-	$.cls();
-	$.setColor( 10 );
-	$.print( "Tests Complete" );
-	$.setColor( 2 );
-
-	for( const result of m_results ) {
-		$.print();
-		$.print( `Test: ${result.name}` );
-		$.print( "-------------------------------------------" );
-		$.print( `Status:           ${result.status}` );
-		$.print( `Items Per Frame:  ${Math.round( result.itemCountAvg )} ` );
-		$.print( `Items Per Second: ${Math.round( result.itemCountPerSecond )}` );
-		$.print( `Test Duration:    ${Math.round( result.testTime / 1000 )}` );
-	}
-
-	$.setColor( 7 );
-	$.print( "Options:" );
-	$.print( "\n-------------------------------------------" );
-	$.print();
-	$.print( "1. Run tests again" );
-	$.print( "2. Post test results" );
-	$.print( "0. Return to main menu" );
-	$.print( "Press # choice" );
-
-	// On key
-	$.onkey( "1", "down", () => {
-		m_testIndex = -1;
-		runNextTest();
-	}, true );
-
-	// Handle a server side request and send it the results data
-	$.onkey( "2", "down", () => {
-		$.cls();
-		$.print( "Feature not implemented" );
-	}, true );
-	
-	// Return to main menu
-	$.onkey( "0", "down", () => {
-		if( m_onCompleteCallback ) {
-			m_onCompleteCallback();
-		}
-	}, true );
-}
 
 /**
  * Calculates the average of an array of numbers

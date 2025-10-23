@@ -6,6 +6,9 @@
  * @module plugins/print-table
  */
 
+// TODO: Refactor print-table into a printf command that handles special formatting for strings.
+// It can include a table formatter that will automatically format tables using special characters
+
 "use strict";
 
 // Predefined border styles

@@ -12,6 +12,7 @@
 Math.seedrandom( "constant" );
 
 import * as g_testManager from "./test-manager.js";
+import * as g_reportManager from "./report-manager.js";
 
 // App-level state for display positioning
 let m_centerY = 0;
@@ -43,14 +44,19 @@ async function initApp() {
 	$.setColor( 15 );
 	$.print( "Loading...", true, true );
 	
-	// Wait for test manager initialization to complete
-	await g_testManager.init();
+	// Create API object for managers
+	const api = {
+		showMainMenu: showMainMenu,
+		restartTests: () => g_testManager.restartTests()
+	};
 	
-	// Set up callback to return to main menu when tests complete
-	g_testManager.setOnCompleteCallback( showMainMenu );
+	// Initialize managers with API
+	g_testManager.init( api );
+	g_reportManager.init( api );
 
 	showMainMenu();
 }
+
 
 /**
  * Shows the main menu with options
