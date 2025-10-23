@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Performance Test 01</title>
+	<script src="../../../build/pi.js"></script>
+	<style>body { background-color: gray; }</style>
+</head>
+<body>
+<script>
+
+const ITEM_COUNT = 50;
+
+$.screen( "800x600" );
+$.setFont( 4 );
+$.setColor( 10 );
+$.setPos( 0, 2 );
+$.print( "Performance Test 01", true, true );
+
+waitForKeyLoop();
+
+function waitForKeyLoop() {
+	let i = 0;
+	let lastT = 0;
+	const phrase = "Press any key to begin";
+	const loop = ( t ) => {
+		$.cls( 300, 280, 200, 30 );
+		$.setColor( 2 );
+		$.rect( 300, 280, 200, 30 );
+		$.setPos( 0, 18 );
+		$.print( phrase, true, true );
+		$.setColor( 10 );
+		$.setPos( 39 + i, 18 );
+		if( i <= phrase.length - 1 ) {
+			$.print( phrase.substring( i, i + 1 ) );
+		}
+		if( t > lastT + 150 ) {
+			i += 1
+			if( i > phrase.length ) {
+				i = 0;
+			}
+			lastT = t;
+		}
+
+		if( $.inkey().length > 0 ) {
+			testArc();
+			return;
+		}
+		requestAnimationFrame( loop );
+	};
+	loop();
+}
+
+function testArc() {
+	const pal = $.getPal();
+	const loop = ( t ) => {
+		$.cls();
+		for( let i = 0; i < ITEM_COUNT; i += 1 ) {
+			$.setColor( Math.floor( Math.random() * pal.length ) );
+			$.arc(
+				Math.floor( Math.random() * $.width() ),
+				Math.floor( Math.random() * $.height() ),
+				Math.floor( Math.random() * $.width() ),
+				Math.floor( Math.random() * 360 ),
+				Math.floor( Math.random() * 360 )
+			);
+		}
+		requestAnimationFrame( loop );
+	};
+	loop();
+}
+
+function testLines() {
+	const pal = $.getPal();
+	const loop = ( t ) => {
+		$.cls();
+		for( let i = 0; i < ITEM_COUNT; i += 1 ) {
+			$.setColor( Math.floor( Math.random() * pal.length ) );
+			$.line(
+				Math.floor( Math.random() * $.width() ),
+				Math.floor( Math.random() * $.height() ),
+				Math.floor( Math.random() * $.width() ),
+				Math.floor( Math.random() * $.height() )
+			);
+		}
+		requestAnimationFrame( loop );
+	};
+	loop();
+}
+
+
+</script>
+</body>
+</html>
+
