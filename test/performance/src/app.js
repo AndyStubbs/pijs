@@ -83,7 +83,7 @@ function showMainMenu() {
 	$.print( "Target FPS: " + g_testManager.getTargetFps().toFixed( 2 ) );
 	
 	// Center the menu vertically
-	const menuStartRow = Math.floor( $.getRows() / 2 ) - 5;
+	const menuStartRow = Math.floor( $.getRows() / 2 ) - 6;
 	$.setPos( 0, menuStartRow );
 
 	// Create the menu title
