@@ -89,7 +89,7 @@ function waitForKeyLoop() {
 			$.print( phrase.substring( i, i + 1 ), true );
 		}
 		if( t > lastT + 150 ) {
-			i += 1
+			i += 1;
 			if( i > phrase.length ) {
 				i = 0;
 			}
@@ -186,10 +186,6 @@ function runNextTest() {
 			extraTime = elapsed + EXTRA_TIME;
 		}
 
-		// Test is completed
-		if( elapsed > MAX_TIME ) {
-			return runNextTest();
-		}
 		if( fps < m_targetFps * 0.95 ) {
 
 			if( elapsed > WARMUP_TIME ) {
@@ -226,7 +222,7 @@ function runNextTest() {
 		$.print( "Target FPS:  " + m_targetFps.toFixed( 0 ).padStart( 6, " " ) );
 		$.print( "FPS:         " + fps.toFixed( 0 ).padStart( 6, " " ) );
 		if( instability !== null ) {
-			if( extraTime === elapsed +EXTRA_TIME ) {
+			if( extraTime === elapsed + EXTRA_TIME ) {
 				$.setColor( 4 );
 			}
 			$.print( "Instability: " + instability.toFixed( 3 ).padStart( 6, " " ) );
@@ -306,7 +302,7 @@ function initTestLine( data ) {
 }
 
 function testLine( itemCount, data ) {
-	pal = data.pal;
+	const pal = data.pal;
 	$.cls();
 	for( let i = 0; i < itemCount; i += 1 ) {
 		$.setColor( Math.floor( Math.random() * pal.length ) );
