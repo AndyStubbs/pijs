@@ -22,6 +22,17 @@ let m_centerPosY = 0;
 $.ready( initApp );
 
 /**
+ * Prints the title header centered at the top of the screen
+ * 
+ * @returns {void}
+ */
+function printTitle() {
+	$.setColor( 10 );
+	$.setPos( 0, 2 );
+	$.print( "Performance Tests", true, true );
+}
+
+/**
  * Initializes the application
  * 
  * @returns {void}
@@ -37,9 +48,7 @@ async function initApp() {
 	m_centerPosY = Math.floor( $.getRows() / 2 ) - 1;
 
 	// Set up display
-	$.setColor( 10 );
-	$.setPos( 0, 2 );
-	$.print( "Performance Tests", true, true );
+	printTitle();
 	$.setPos( 0, m_centerPosY );
 	$.setColor( 15 );
 	$.print( "Loading...", true, true );
@@ -51,12 +60,11 @@ async function initApp() {
 	};
 	
 	// Initialize managers with API
-	g_testManager.init( api );
+	await g_testManager.init( api );
 	g_reportManager.init( api );
 
 	showMainMenu();
 }
-
 
 /**
  * Shows the main menu with options
@@ -67,9 +75,7 @@ function showMainMenu() {
 	$.cls();
 	
 	// Title - centered
-	$.setColor( 10 );
-	$.setPos( 0, 2 );
-	$.print( "Performance Tests", true, true );
+	printTitle();
 	
 	// Target FPS - bottom right
 	$.setColor( 7 );
@@ -77,21 +83,25 @@ function showMainMenu() {
 	$.print( "Target FPS: " + g_testManager.getTargetFps().toFixed( 2 ) );
 	
 	// Center the menu vertically
-	const menuStartRow = Math.floor( $.getRows() / 2 ) - 4;
+	const menuStartRow = Math.floor( $.getRows() / 2 ) - 5;
 	$.setPos( 0, menuStartRow );
 
 	// Create the menu title
 	$.setColor( 10 );
 	$.print( "MAIN MENU", false, true );
+	$.print();
 	
 	// Create main menu table
 	const menuItems = [
 		[ "1. Run Performance Tests" ],
 		[ "2. View Previous Results" ],
-		[ "3. Exit                 " ]
+		[ "3. Recalculate Target FPS" ],
+		[ "4. Exit                 " ]
 	];
 
 	const menuFormat = [
+		"*-------------------------------*",
+		"|                               |",
 		"*-------------------------------*",
 		"|                               |",
 		"*-------------------------------*",
@@ -105,13 +115,15 @@ function showMainMenu() {
 	$.printTable( menuItems, menuFormat, "double", true );
 
 	// Instruction - centered below table
+	$.print();
 	$.setColor( 7 );
-	$.print( "Enter Key (1 - 3)", false, true );
+	$.print( "Enter Key (1 - 4)", false, true );
 	
 	// Set up menu handlers
 	$.onkey( "1", "down", menu1 );
 	$.onkey( "2", "down", menu2 );
 	$.onkey( "3", "down", menu3 );
+	$.onkey( "4", "down", menu4 );
 
 	function menu1() {
 		clearMenuKeys();
@@ -123,16 +135,46 @@ function showMainMenu() {
 		showPreviousResults();
 	}
 
-	function menu3() {
+	async function menu3() {
+		clearMenuKeys();
+		await showRecalculateFps();
+	}
+
+	function menu4() {
 		clearMenuKeys();
 		showExitMessage();
 	}
 
 	function clearMenuKeys() {
 		$.offkey( "1", "down", menu1 );
-		$.offkey( "2", "down", menu2 )
-		$.offkey( "3", "down", menu3 )
+		$.offkey( "2", "down", menu2 );
+		$.offkey( "3", "down", menu3 );
+		$.offkey( "4", "down", menu4 );
 	}
+}
+
+/**
+ * Shows recalculate FPS menu
+ * 
+ * @returns {Promise<void>}
+ */
+async function showRecalculateFps() {
+	$.cls();
+	
+	printTitle();
+
+	// Center the content vertically
+	$.setPos( 0, m_centerPosY );
+	
+	// Show loading message
+	$.setColor( 15 );
+	$.print( "Calculating...", false, true );
+	
+	// Recalculate target FPS
+	await g_testManager.calculateTargetFPS();
+	
+	// Return to main menu
+	showMainMenu();
 }
 
 /**

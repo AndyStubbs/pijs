@@ -6,7 +6,7 @@
  * @module test-manager
  */
 
-export { init, startTests, getTargetFps };
+export { init, startTests, getTargetFps, calculateTargetFPS };
 
 "use strict";
 
@@ -56,6 +56,7 @@ function startTests() {
 function getTargetFps() {
 	return m_targetFps;
 }
+
 
 /**
  * Calculates the target FPS for the current system
