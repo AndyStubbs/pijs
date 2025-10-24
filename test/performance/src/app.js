@@ -12,10 +12,17 @@
 import * as g_testManager from "./test-manager.js";
 import * as g_reportManager from "./report-manager.js";
 
+const PI_VERSIONS = {
+	"2.0.0-alpha.1": "../../build/pi.js",
+	"1.2.4": "../../releases/pi-1.2.4.js",
+	"2.0.0-alpha.0": "../../releases/v2-refactor-1/pi.js"
+};
+
 // App-level state for display positioning
-let m_centerY = 0;
 let m_centerPosY = 0;
 let m_reducedFlashing = false;
+
+let m_piVersion = localStorage.getItem( "piVersion" ) || "2.0.0-alpha.1";
 
 // Initialize the application when the DOM is ready
 $.ready( initApp );
@@ -46,7 +53,6 @@ async function initApp() {
 	m_reducedFlashing = localStorage.getItem( "reducedFlashing" ) === "true";
 	
 	// Calculate display positioning
-	m_centerY = Math.floor( $.height() / 2 ) - 20;
 	m_centerPosY = Math.floor( $.getRows() / 2 ) - 1;
 
 	// Set up display

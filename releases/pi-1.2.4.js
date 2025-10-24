@@ -51,6 +51,7 @@ window.pi = ( function () {
 
 	// PI api
 	m_api = {
+		"version": "1.2.4",
 		"_": {
 			"addCommand": addCommand,
 			"addCommands": addCommands,

@@ -1,7 +1,7 @@
 /*
 * https://www.pijs.org/
 * Pi.js
-* Version: [VERSION_NUMBER]
+* Version: 1.2.4
 * Copyright Andy Stubbs
 * Released under the Apache License 2.0
 * https://www.apache.org/licenses/LICENSE-2.0
@@ -51,6 +51,7 @@ window.pi = ( function () {
 
 	// PI api
 	m_api = {
+		"version": "1.2.4",
 		"_": {
 			"addCommand": addCommand,
 			"addCommands": addCommands,

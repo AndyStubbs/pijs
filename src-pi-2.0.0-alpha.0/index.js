@@ -34,8 +34,8 @@ import * as play from "./modules/play.js";
 import * as draw from "./modules/draw.js";
 import { loadBuiltInFonts } from "./assets/font-data.js";
 
-// Version injected during build from package.json
-const VERSION = __VERSION__;
+// Version not-injected during build from package.json
+const VERSION = "2.0.0-alpha.0";
 
 // Ready system variables
 let waitCount = 0;

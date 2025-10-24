@@ -7286,7 +7286,7 @@
   __name(loadBuiltInFonts, "loadBuiltInFonts");
 
   // src/index.js
-  var VERSION = "2.0.0-alpha.1";
+  var VERSION = "2.0.0-alpha.0";
   var waitCount = 0;
   var waiting = false;
   var readyList = [];
