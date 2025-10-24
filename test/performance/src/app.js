@@ -13,9 +13,9 @@ import * as g_testManager from "./test-manager.js";
 import * as g_reportManager from "./report-manager.js";
 
 const PI_VERSIONS = {
-	"2.0.0-alpha.1": "../../build/pi.js",
-	"1.2.4": "../../releases/pi-1.2.4.js",
-	"2.0.0-alpha.0": "../../releases/v2-refactor-1/pi.js"
+	"2.0.0-alpha.1":  "../../build/pi.js",
+	"2.0.0-alpha.0":  "../../releases/pi-2.0.0-alpha-0/pi.js",
+	"1.2.4":          "../../releases/pi-1.all/pi-1.2.4.js"
 };
 
 // App-level state for display positioning
