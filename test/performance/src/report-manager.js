@@ -203,6 +203,7 @@ function displayResultsList( files ) {
 	$.print( "Previous Results", true, true );
 	
 	if( files.length === 0 ) {
+
 		// No results found
 		$.setColor( 7 );
 		$.setPos( 0, 4 );
@@ -265,7 +266,10 @@ function displayResultsList( files ) {
 	// Set up key handlers for each file
 	for( let i = 0; i < files.length; i++ ) {
 		const key = ( i + 1 ).toString();
-		const handler = () => viewResult( files[ i ].name );
+		const handler = () => {
+			clearAllKeys();
+			viewResult( files[ i ].name );
+		};
 		keyHandlers.push( handler );
 		$.onkey( key, "down", handler );
 	}
@@ -328,6 +332,7 @@ async function viewResult( filename ) {
 		const result = await response.json();
 		
 		if( response.ok && result.success ) {
+			
 			// Display the result using the existing showResults function
 			showResults( result.data );
 		} else {

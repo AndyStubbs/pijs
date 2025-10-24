@@ -242,10 +242,11 @@ const server = http.createServer( ( req, res ) => {
 					"timestamp": new Date().toISOString()
 				};
 				
-				// Merge system info with results
+				// Merge system info with results and mark as posted
 				const resultsWithSystemInfo = {
 					...data,
-					"systemInfo": systemInfo
+					"systemInfo": systemInfo,
+					"posted": true
 				};
 				
 				// Create results directory if it doesn't exist

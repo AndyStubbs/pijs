@@ -67,7 +67,7 @@ function generateRandomOperation() {
 	const colorCount = m_pal.length;
 	
 	// Even distribution of operations
-	const operationType = Math.floor( m_seededRandom() * 9 );
+	const operationType = Math.floor( m_seededRandom() * 10 );
 	
 	switch( operationType ) {
 		case 0: // line
