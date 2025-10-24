@@ -35,6 +35,7 @@ export function init() {
 
 	// Add Render Screen Data
 	screenManager.addScreenDataItem( "imageData", null );
+	screenManager.addScreenDataItem( "imageData2", null );
 	screenManager.addScreenDataItem( "isDirty", false );
 	screenManager.addScreenDataItem( "penData", { "cap": "square", "size": 1 } );
 	screenManager.addScreenDataItem( "blendData", { "noise": null } );
@@ -52,6 +53,7 @@ export function getImageData( screenData ) {
 		screenData.imageData = screenData.context.getImageData(
 			0, 0, screenData.width, screenData.height
 		);
+		screenData.imageData2 = screenData.imageData.data;
 	}
 }
 
@@ -276,7 +278,7 @@ function blendReplace( screenData, x, y, c ) {
 	c = screenData.blendColor( screenData, c );
 
 	// Get the image data
-	const data = screenData.imageData.data
+	const data = screenData.imageData2;
 
 	// Calculate the index
 	const i = ( ( screenData.width * y ) + x ) * 4;
@@ -292,7 +294,7 @@ function blendAlpha( screenData, x, y, c ) {
 	c = screenData.blendColor( screenData, c );
 	
 	// Get the image data
-	const data = screenData.imageData.data
+	const data = screenData.imageData2
 
 	// Calculate the index
 	const i = ( ( screenData.width * y ) + x ) * 4;

@@ -1,0 +1,58 @@
+{
+  "version": "2.0.0-alpha.1",
+  "date": "10/24/2025, 4:29:06 PM",
+  "targetFps": 99.97,
+  "tests": [
+    {
+      "name": "Pset Test",
+      "status": "complete",
+      "itemCountAvg": 29976.885714285716,
+      "itemCountPerSecond": 2996789.264857143,
+      "testTime": 10001.5,
+      "score": 29968
+    },
+    {
+      "name": "Line Test",
+      "status": "complete",
+      "itemCountAvg": 1199.4285714285713,
+      "itemCountPerSecond": 119906.87428571428,
+      "testTime": 10361.599999999991,
+      "score": 1199
+    },
+    {
+      "name": "Graphics Pixel",
+      "status": "complete",
+      "itemCountAvg": 629.9142857142857,
+      "itemCountPerSecond": 62972.531142857144,
+      "testTime": 10131.599999999991,
+      "score": 630
+    },
+    {
+      "name": "Bezier Test",
+      "status": "complete",
+      "itemCountAvg": 4.6571428571428575,
+      "itemCountPerSecond": 465.57457142857146,
+      "testTime": 9991.600000000006,
+      "score": 5
+    }
+  ],
+  "score": 7951,
+  "systemInfo": {
+    "os": {
+      "platform": "win32",
+      "type": "Windows_NT",
+      "release": "10.0.26100",
+      "arch": "x64",
+      "cpus": 16,
+      "cpuModel": "13th Gen Intel(R) Core(TM) i5-13400F",
+      "totalMemory": "32 GB",
+      "freeMemory": "16 GB"
+    },
+    "browser": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+      "language": "en-US,en;q=0.9"
+    },
+    "timestamp": "10/24/2025, 4:29:43 PM"
+  },
+  "posted": true
+}

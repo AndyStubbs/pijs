@@ -232,7 +232,7 @@ function ellipse( screenData, options ) {
 
 				// Set individual pixel for scanline fill
 				const i = ( py * screenData.width + px ) * 4;
-				const data = screenData.imageData.data;
+				const data = screenData.imageData2;
 				data[ i ] = fillColor.r;
 				data[ i + 1 ] = fillColor.g;
 				data[ i + 2 ] = fillColor.b;
@@ -386,7 +386,7 @@ function filterImg( screenData, options ) {
 	}
 
 	renderer.getImageData( screenData );
-	const data = screenData.imageData.data;
+	const data = screenData.imageData2;
 
 	// Apply filter to specified region
 	for( let y = y1; y <= y2; y++ ) {

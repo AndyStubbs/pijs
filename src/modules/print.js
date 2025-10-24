@@ -283,7 +283,7 @@ function shiftImageUp( screenData, yOffset ) {
 			const iSrc = ( ( screenData.width * ( y - yOffset ) ) + x ) * 4;
 
 			// Move the pixel up
-			const data = screenData.imageData.data;
+			const data = screenData.imageData2;
 			data[ iSrc ] = data[ iDest ];
 			data[ iSrc + 1 ] = data[ iDest + 1 ];
 			data[ iSrc + 2 ] = data[ iDest + 2 ];
@@ -295,10 +295,10 @@ function shiftImageUp( screenData, yOffset ) {
 	for( let y = screenData.height - yOffset; y < screenData.height; y++ ) {
 		for( let x = 0; x < screenData.width; x++ ) {
 			const i = ( ( screenData.width * y ) + x ) * 4;
-			screenData.imageData.data[ i ] = 0;
-			screenData.imageData.data[ i + 1 ] = 0;
-			screenData.imageData.data[ i + 2 ] = 0;
-			screenData.imageData.data[ i + 3 ] = 0;
+			screenData.imageData2[ i ] = 0;
+			screenData.imageData2[ i + 1 ] = 0;
+			screenData.imageData2[ i + 2 ] = 0;
+			screenData.imageData2[ i + 3 ] = 0;
 		}
 	}
 

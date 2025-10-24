@@ -61,7 +61,7 @@ function paint( screenData, options ) {
 		throw error;
 	}
 	renderer.getImageData( screenData );
-	const data = screenData.imageData.data;
+	const data = screenData.imageData2;
 	const width = screenData.width;
 	const height = screenData.height;
 

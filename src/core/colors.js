@@ -473,7 +473,7 @@ function replaceColors( screenData, options ) {
 	}
 
 	renderer.getImageData( screenData );
-	const data = screenData.imageData.data;
+	const data = screenData.imageData2;
 
 	// Replace all the colors
 	for( let y = 0; y < screenData.height; y++ ) {
@@ -565,7 +565,7 @@ function replacePalColors( screenData, options ) {
 	}
 
 	renderer.getImageData( screenData );
-	const data = screenData.imageData.data;
+	const data = screenData.imageData2;
 
 	// Replace all the colors in the screen
 	for( let y = 0; y < screenData.height; y++ ) {

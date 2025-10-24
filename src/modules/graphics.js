@@ -348,7 +348,7 @@ function circle( screenData, options ) {
 
 				// Set individual pixel for scanline fill
 				const i = ( py * screenData.width + px ) * 4;
-				const data = screenData.imageData.data;
+				const data = screenData.imageData2;
 				data[ i ] = fillColor.r;
 				data[ i + 1 ] = fillColor.g;
 				data[ i + 2 ] = fillColor.b;
@@ -519,10 +519,10 @@ function put( screenData, options ) {
 
 			// Put the color in the image data
 			if( c.a > 0 || includeZero ) {
-				screenData.imageData.data[ i ] = c.r;
-				screenData.imageData.data[ i + 1 ] = c.g;
-				screenData.imageData.data[ i + 2 ] = c.b;
-				screenData.imageData.data[ i + 3 ] = c.a;
+				screenData.imageData2[ i ] = c.r;
+				screenData.imageData2[ i + 1 ] = c.g;
+				screenData.imageData2[ i + 2 ] = c.b;
+				screenData.imageData2[ i + 3 ] = c.a;
 			}
 		}
 	}
@@ -572,16 +572,16 @@ function get( screenData, options ) {
 
 	renderer.getImageData( screenData );
 
-	const imageData = screenData.imageData;
+	const imageData2 = screenData.imageData2;
 	const data = [];
 	let colorLookupFn;
 	if( tolerance === 1 ) {
 		colorLookupFn = ( i ) => {
 			const key = utils.generateColorKey(
-				imageData.data[ i ],
-				imageData.data[ i + 1],
-				imageData.data[ i + 2 ],
-				imageData.data[ i + 3 ]
+				imageData2[ i ],
+				imageData2[ i + 1],
+				imageData2[ i + 2 ],
+				imageData2[ i + 3 ]
 			);
 			if( screenData.palMap.has( key ) ) {
 				data[ row ].push( screenData.palMap.get( key ) );
@@ -592,10 +592,10 @@ function get( screenData, options ) {
 	} else {
 		colorLookupFn = ( i ) => {
 			const colorValue = utils.rgbToColor(
-				imageData.data[ i ],
-				imageData.data[ i + 1],
-				imageData.data[ i + 2 ],
-				imageData.data[ i + 3 ]
+				imageData2[ i ],
+				imageData2[ i + 1],
+				imageData2[ i + 2 ],
+				imageData2[ i + 3 ]
 			);
 			const c = colors.findColorIndexByColorValue( screenData, colorValue, tolerance );
 			if( c === null ) {
@@ -642,7 +642,7 @@ function getPixel( screenData, options ) {
 	}
 
 	renderer.getImageData( screenData );
-	const data = screenData.imageData.data;
+	const data = screenData.imageData2;
 
 	// Calculate the index
 	const i = ( ( screenData.width * y ) + x ) * 4;
@@ -672,7 +672,7 @@ function getPixelColor( screenData, options ) {
 	}
 
 	renderer.getImageData( screenData );
-	const data = screenData.imageData.data;
+	const data = screenData.imageData2;
 
 	// Calculate the index
 	const i = ( ( screenData.width * y ) + x ) * 4;
