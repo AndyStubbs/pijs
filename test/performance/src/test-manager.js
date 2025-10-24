@@ -26,8 +26,9 @@ export { init, startTests, getTargetFps, calculateTargetFPS };
 "use strict";
 
 // Import all available tests
+import * as g_psetTest from "./tests/pset.js";
 import * as g_lineTest from "./tests/line.js";
-import * as g_graphicsPixelTest from "./tests/graphicsPixel.js";
+//import * as g_graphicsPixelTest from "./tests/graphicsPixel.js";
 //import * as g_bezierTest from "./tests/bezier.js";
 import * as g_reportManager from "./report-manager.js";
 
@@ -35,8 +36,9 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 
 // Get all test config data
 let m_tests = [];
+m_tests.push( g_psetTest.getConfig() );
 m_tests.push( g_lineTest.getConfig() );
-m_tests.push( g_graphicsPixelTest.getConfig() );
+//m_tests.push( g_graphicsPixelTest.getConfig() );
 //m_tests.push( g_bezierTest.getConfig() );
 
 // Global state for the test manager
