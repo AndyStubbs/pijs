@@ -342,6 +342,100 @@ const server = http.createServer( ( req, res ) => {
 		return;
 	}
 
+	// Handle GET request to list performance test results
+	if( req.method === "GET" && req.url === "/api/list-results" ) {
+		try {
+			const resultsDir = path.join( __dirname, "test", "performance", "data" );
+			
+			if( !fs.existsSync( resultsDir ) ) {
+				res.writeHead( 200, { "Content-Type": "application/json" } );
+				res.end( JSON.stringify( { "success": true, "files": [] } ) );
+				return;
+			}
+			
+			const files = fs.readdirSync( resultsDir )
+				.filter( file => file.endsWith( ".json" ) )
+				.map( file => {
+					const filePath = path.join( resultsDir, file );
+					const stats = fs.statSync( filePath );
+					return {
+						"name": file,
+						"date": stats.mtime.toISOString(),
+						"size": stats.size
+					};
+				} )
+				.sort( ( a, b ) => new Date( b.date ) - new Date( a.date ) ); // Sort by date, newest first
+			
+			res.writeHead( 200, { "Content-Type": "application/json" } );
+			res.end( JSON.stringify( { "success": true, "files": files } ) );
+		} catch( err ) {
+			console.error( "Error listing results:", err );
+			res.writeHead( 500, { "Content-Type": "application/json" } );
+			res.end( JSON.stringify( { "error": err.message } ) );
+		}
+		return;
+	}
+
+	// Handle GET request to get a specific result file
+	if( req.method === "GET" && req.url.startsWith( "/api/get-result/" ) ) {
+		try {
+			const filename = decodeURIComponent( req.url.substring( "/api/get-result/".length ) );
+			
+			// Validate filename to prevent path traversal
+			if( filename.includes( ".." ) || filename.includes( "/" ) || filename.includes( "\\" ) ) {
+				res.writeHead( 400, { "Content-Type": "application/json" } );
+				res.end( JSON.stringify( { "error": "Invalid filename" } ) );
+				return;
+			}
+			
+			const resultsDir = path.join( __dirname, "test", "performance", "data" );
+			const filePath = path.join( resultsDir, filename );
+			
+			if( !fs.existsSync( filePath ) ) {
+				res.writeHead( 404, { "Content-Type": "application/json" } );
+				res.end( JSON.stringify( { "error": "File not found" } ) );
+				return;
+			}
+			
+			const fileContent = fs.readFileSync( filePath, "utf8" );
+			const data = JSON.parse( fileContent );
+			
+			res.writeHead( 200, { "Content-Type": "application/json" } );
+			res.end( JSON.stringify( { "success": true, "data": data } ) );
+		} catch( err ) {
+			console.error( "Error getting result:", err );
+			res.writeHead( 500, { "Content-Type": "application/json" } );
+			res.end( JSON.stringify( { "error": err.message } ) );
+		}
+		return;
+	}
+
+	// Handle POST request to delete all result files
+	if( req.method === "POST" && req.url === "/api/delete-all-results" ) {
+		try {
+			const resultsDir = path.join( __dirname, "test", "performance", "data" );
+			let deletedCount = 0;
+			
+			if( fs.existsSync( resultsDir ) ) {
+				const files = fs.readdirSync( resultsDir ).filter( file => file.endsWith( ".json" ) );
+				
+				for( const file of files ) {
+					const filePath = path.join( resultsDir, file );
+					fs.unlinkSync( filePath );
+					deletedCount++;
+				}
+			}
+			
+			res.writeHead( 200, { "Content-Type": "application/json" } );
+			res.end( JSON.stringify( { "success": true, "deletedCount": deletedCount } ) );
+		} catch( err ) {
+			console.error( "Error deleting results:", err );
+			res.writeHead( 500, { "Content-Type": "application/json" } );
+			res.end( JSON.stringify( { "error": err.message } ) );
+		}
+		return;
+	}
+
 	let urlPath = req.url;
 	
 	// Decode URL and strip query string for file path

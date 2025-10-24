@@ -59,7 +59,9 @@ async function initApp() {
 	const api = {
 		showMainMenu: showMainMenu,
 		startTests: () => g_testManager.startTests(),
-		getReducedFlashing: () => m_reducedFlashing
+		getReducedFlashing: () => m_reducedFlashing,
+		showPreviousResults: () => g_reportManager.showPreviousResults(),
+		showResults: (resultsObject) => g_reportManager.showResults(resultsObject)
 	};
 	
 	// Initialize managers with API
@@ -144,7 +146,7 @@ function showMainMenu() {
 
 	function menu2() {
 		clearMenuKeys();
-		showPreviousResults();
+		g_reportManager.showPreviousResults();
 	}
 
 	async function menu3() {
