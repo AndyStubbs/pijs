@@ -8,8 +8,6 @@
 
 "use strict";
 
-// Set up random seed for consistent test results
-Math.seedrandom( "constant" );
 
 import * as g_testManager from "./test-manager.js";
 import * as g_reportManager from "./report-manager.js";
@@ -17,6 +15,7 @@ import * as g_reportManager from "./report-manager.js";
 // App-level state for display positioning
 let m_centerY = 0;
 let m_centerPosY = 0;
+let m_reducedFlashing = false;
 
 // Initialize the application when the DOM is ready
 $.ready( initApp );
@@ -42,6 +41,9 @@ async function initApp() {
 	// Set up the screen
 	$.screen( "800x600" );
 	$.setFont( 4 );
+
+	// Load reduced flashing setting from localStorage
+	m_reducedFlashing = localStorage.getItem( "reducedFlashing" ) === "true";
 	
 	// Calculate display positioning
 	m_centerY = Math.floor( $.height() / 2 ) - 20;
@@ -56,7 +58,8 @@ async function initApp() {
 	// Create API object for managers
 	const api = {
 		showMainMenu: showMainMenu,
-		startTests: () => g_testManager.startTests()
+		startTests: () => g_testManager.startTests(),
+		getReducedFlashing: () => m_reducedFlashing
 	};
 	
 	// Initialize managers with API
@@ -92,11 +95,17 @@ function showMainMenu() {
 	$.print();
 	
 	// Create main menu table
+	let flashingMenuText = "4. Enable Reduced Flashing";
+	if( m_reducedFlashing ) {
+		flashingMenuText = "4. Disable Reduced Flashing";
+	}
+	let endPadding = flashingMenuText.length;
 	const menuItems = [
-		[ "1. Run Performance Tests" ],
-		[ "2. View Previous Results" ],
-		[ "3. Recalculate Target FPS" ],
-		[ "4. Exit                 " ]
+		[ "1. Run Performance Tests".padEnd( endPadding, " " ) ],
+		[ "2. View Previous Results".padEnd( endPadding, " " ) ],
+		[ "3. Recalculate Target FPS".padEnd( endPadding, " " ) ],
+		[ flashingMenuText.padEnd( endPadding, " " ) ],
+		[ "5. Exit".padEnd( endPadding ) ]
 	];
 
 	const menuFormat = [
@@ -109,6 +118,8 @@ function showMainMenu() {
 		"*-------------------------------*",
 		"|                               |",
 		"*-------------------------------*",
+		"|                               |",
+		"*-------------------------------*"
 	]
 
 	$.setColor( 15 );
@@ -117,13 +128,14 @@ function showMainMenu() {
 	// Instruction - centered below table
 	$.print();
 	$.setColor( 7 );
-	$.print( "Enter Key (1 - 4)", false, true );
+	$.print( "Enter Key (1 - 5)", false, true );
 	
 	// Set up menu handlers
 	$.onkey( "1", "down", menu1 );
 	$.onkey( "2", "down", menu2 );
 	$.onkey( "3", "down", menu3 );
 	$.onkey( "4", "down", menu4 );
+	$.onkey( "5", "down", menu5 );
 
 	function menu1() {
 		clearMenuKeys();
@@ -142,6 +154,11 @@ function showMainMenu() {
 
 	function menu4() {
 		clearMenuKeys();
+		toggleReducedFlashing();
+	}
+
+	function menu5() {
+		clearMenuKeys();
 		showExitMessage();
 	}
 
@@ -150,7 +167,21 @@ function showMainMenu() {
 		$.offkey( "2", "down", menu2 );
 		$.offkey( "3", "down", menu3 );
 		$.offkey( "4", "down", menu4 );
+		$.offkey( "5", "down", menu5 );
 	}
+}
+
+/**
+ * Toggles the reduced flashing setting
+ * 
+ * @returns {void}
+ */
+function toggleReducedFlashing() {
+	m_reducedFlashing = !m_reducedFlashing;
+	localStorage.setItem( "reducedFlashing", m_reducedFlashing.toString() );
+
+	// Return to main menu
+	showMainMenu();
 }
 
 /**

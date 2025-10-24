@@ -6,19 +6,36 @@
  * @module test-manager
  */
 
+/**
+ * Test List:
+ * Line (implemented)
+ * Graphics Pixel (implemented)
+ * Graphics Canvas
+ * Images
+ * Draw
+ * Get/Put
+ * Graphics and Images
+ * Print Pixel
+ * Print Canvas
+ * Print Bitmap
+ * Colors
+ */
+
 export { init, startTests, getTargetFps, calculateTargetFPS };
 
 "use strict";
 
 // Import all available tests
 import * as g_lineTest from "./tests/line.js";
-import * as g_arcTest from "./tests/arc.js";
+import * as g_graphicsPixelTest from "./tests/graphicsPixel.js";
 import * as g_reportManager from "./report-manager.js";
+
+const REDUCED_FLASHING_OPACITY = "0.2";
 
 // Get all test config data
 let m_tests = [];
 m_tests.push( g_lineTest.getConfig() );
-m_tests.push( g_arcTest.getConfig() );
+m_tests.push( g_graphicsPixelTest.getConfig() );
 
 // Global state for the test manager
 let m_results = [];
@@ -43,6 +60,14 @@ async function init( api ) {
  * @returns {void}
  */
 function startTests() {
+
+	// Update screen opacity based on setting
+	if( localStorage.getItem( "reducedFlashing" ) === "true" ) {
+		$.canvas().style.opacity = REDUCED_FLASHING_OPACITY;
+	} else {
+		$.canvas().style.opacity = "";
+	}
+	
 	m_testIndex = -1;
 	m_results = [];
 	runNextTest();
@@ -64,17 +89,18 @@ function getTargetFps() {
  * @returns {Promise<number>} The calculated target FPS
  */
 async function calculateTargetFPS() {
-	const CALC_TIME = 1000;
-	let duration = 0;
-	let frames = 0;
+	const CALC_TIME = 3000;
 	let lt = 0;
 	
 	return new Promise( ( resolve ) => {
 		requestAnimationFrame( loop );
 		
+		let duration = 0;
+		let samples = [];
 		function loop( t ) {
 			if( lt > 0 ) {
 				let dt = t - lt;
+				samples.push( dt );
 				duration += dt;
 				frames += 1;
 			}
@@ -82,7 +108,28 @@ async function calculateTargetFPS() {
 			if( duration < CALC_TIME ) {
 				requestAnimationFrame( loop );
 			} else {
-				const fps = calcFpsFromMs( duration / frames );
+				if( samples.length === 0 ) {
+					return 60;
+				}
+
+				// Remove outliers
+				let originalLength = samples.length;
+				const sum = samples.reduce( ( sum, sample ) => sum += sample, 0 );
+				const avg = sum / samples.length;
+				let minAvg = avg * 0.95;
+				let maxAvg = avg * 1.05;
+				samples = samples.filter( sample => {
+					return sample > minAvg && sample < maxAvg
+				} );
+				const sum2 = samples.reduce( ( sum, sample ) => sum += sample, 0 );
+				
+				let rawFps;
+				if( samples.length === 0 ) {
+					rawFps = calcFpsFromMs( sum / originalLength );
+				} else {
+					rawFps = calcFpsFromMs( sum2 / samples.length );
+				}
+				const fps = Math.round( rawFps * 100 ) / 100;
 				m_targetFps = fps;
 				resolve( fps );
 			}
@@ -110,6 +157,7 @@ function runNextTest() {
 			"targetFps": m_targetFps,
 			"tests": m_results
 		};
+		$.canvas().style.opacity = "";
 		g_reportManager.showResults( resultsObject );
 		return;
 	}
@@ -186,7 +234,7 @@ function runNextTest() {
 			if( elapsed > WARMUP_TIME ) {
 
 				// After warmup time decrement slowly
-				itemCount -= 1;
+				itemCount = Math.max( itemCount - 1, 1 );
 
 				// We have passed the warmup time and have hit a item count maximum
 				if( extraTime === 0 ) {
@@ -211,11 +259,11 @@ function runNextTest() {
 
 		test.run( itemCount, test.data );
 
-		$.cls( 0, 0, 150, 80 );
+		$.cls( 0, 0, 155, 65 );
 		$.setColor( 15 );
-		$.print( "Item Count: " + itemCount.toFixed( 0 ).padStart( 6, " " ) );
-		$.print( "Target FPS: " + m_targetFps.toFixed( 0 ).padStart( 6, " " ) );
-		$.print( "FPS:        " + fps.toFixed( 0 ).padStart( 6, " " ) );
+		$.print( "Item Count:  " + itemCount.toFixed( 0 ).padStart( 6, " " ) );
+		$.print( "Target FPS:  " + m_targetFps.toFixed( 0 ).padStart( 6, " " ) );
+		$.print( "FPS:         " + fps.toFixed( 0 ).padStart( 6, " " ) );
 		if( instability !== null ) {
 			if( extraTime === elapsed + EXTRA_TIME ) {
 				$.setColor( 4 );
