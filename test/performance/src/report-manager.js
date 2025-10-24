@@ -19,8 +19,25 @@ let m_currentResultsObject = null;
  * @param {Object} api - API object with showMainMenu function
  * @returns {void}
  */
-function init( api ) {
+async function init( api ) {
 	m_api = api;
+	
+	// Reset stats to ensure data integrity
+	try {
+		const response = await fetch( "http://localhost:8080/api/reset-stats", {
+			method: "POST"
+		} );
+		
+		const result = await response.json();
+		
+		if( response.ok && result.success ) {
+			console.log( `Report manager initialized: ${result.message}` );
+		} else {
+			console.error( `Failed to reset stats: ${result.error || "Unknown error"}` );
+		}
+	} catch( error ) {
+		console.error( `Error resetting stats: ${error.message}` );
+	}
 }
 
 /**

@@ -65,8 +65,10 @@ async function initApp() {
 	};
 	
 	// Initialize managers with API
-	await g_testManager.init( api );
-	g_reportManager.init( api );
+	await Promise.all( [
+		g_testManager.init( api ),
+		g_reportManager.init( api )
+	] );
 
 	showMainMenu();
 }

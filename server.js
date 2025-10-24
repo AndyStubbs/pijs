@@ -279,6 +279,32 @@ const server = http.createServer( ( req, res ) => {
 				// Write results to file
 				fs.writeFileSync( filepath, JSON.stringify( resultsWithSystemInfo, null, 2 ) );
 				
+				// Update stats.json file
+				const statsFilePath = path.join( resultsDir, "stats.json" );
+				let stats = [];
+				
+				// Load existing stats if file exists
+				if( fs.existsSync( statsFilePath ) ) {
+					try {
+						const statsContent = fs.readFileSync( statsFilePath, "utf8" );
+						stats = JSON.parse( statsContent );
+					} catch( err ) {
+						console.error( "Error loading stats.json:", err );
+						stats = [];
+					}
+				}
+				
+				// Add new entry to stats
+				stats.push( {
+					"filename": filename,
+					"version": data.version || "Unknown",
+					"date": data.date,
+					"targetFps": data.targetFps || 0
+				} );
+				
+				// Save updated stats
+				fs.writeFileSync( statsFilePath, JSON.stringify( stats, null, 2 ) );
+				
 				console.log( `Performance test results saved: ${filename}` );
 				
 				res.writeHead( 200, { "Content-Type": "application/json" } );
@@ -370,20 +396,54 @@ const server = http.createServer( ( req, res ) => {
 				return;
 			}
 			
-			const files = fs.readdirSync( resultsDir )
-				.filter( file => file.endsWith( ".json" ) )
-				.map( file => {
-					const filePath = path.join( resultsDir, file );
-					const stats = fs.statSync( filePath );
-					return {
-						"name": file,
-						"date": stats.mtime.toISOString(),
-						"version": "",
-						"targetFps": "",
-						"size": stats.size
-					};
-				} )
-				.sort( ( a, b ) => new Date( b.date ) - new Date( a.date ) ); // Sort by date, newest first
+			// Load stats from stats.json file
+			const statsFilePath = path.join( resultsDir, "stats.json" );
+			let files = [];
+			
+			if( fs.existsSync( statsFilePath ) ) {
+				try {
+					const statsContent = fs.readFileSync( statsFilePath, "utf8" );
+					const stats = JSON.parse( statsContent );
+					
+					// Convert stats to files array with additional info, filtering out missing files
+					const validStats = [];
+					files = stats.map( stat => {
+						const filePath = path.join( resultsDir, stat.filename );
+						
+						// Check if file actually exists
+						if( fs.existsSync( filePath ) ) {
+							const fileStats = fs.statSync( filePath );
+							validStats.push( stat ); // Keep this stat entry
+							return {
+								"name": stat.filename,
+								"date": stat.date,
+								"version": stat.version,
+								"targetFps": stat.targetFps,
+								"size": fileStats.size
+							};
+						} else {
+							
+							// File is missing, don't include it in results
+							return null;
+						}
+					} ).filter( file => file !== null ); // Remove null entries
+					
+					// Update stats.json if any files were missing
+					if( validStats.length !== stats.length ) {
+						fs.writeFileSync( statsFilePath, JSON.stringify( validStats, null, 2 ) );
+						console.log(
+							`Updated stats.json: removed ${stats.length - validStats.length} ` +
+							`missing files`
+						);
+					}
+				} catch( err ) {
+					console.error( "Error loading stats.json:", err );
+					files = [];
+				}
+			}
+			
+			// Sort by date, newest first
+			files.sort( ( a, b ) => new Date( b.date ) - new Date( a.date ) );
 			
 			res.writeHead( 200, { "Content-Type": "application/json" } );
 			res.end( JSON.stringify( { "success": true, "files": files } ) );
@@ -431,6 +491,122 @@ const server = http.createServer( ( req, res ) => {
 		return;
 	}
 
+	// Handle POST request to reset/rebuild stats.json
+	if( req.method === "POST" && req.url === "/api/reset-stats" ) {
+		try {
+			const resultsDir = path.join( __dirname, "test", "performance", "data" );
+			let stats = [];
+			let addedCount = 0;
+			let removedCount = 0;
+			
+			if( fs.existsSync( resultsDir ) ) {
+				const statsFilePath = path.join( resultsDir, "stats.json" );
+				
+				// Load existing stats if file exists
+				if( fs.existsSync( statsFilePath ) ) {
+					try {
+						const statsContent = fs.readFileSync( statsFilePath, "utf8" );
+						stats = JSON.parse( statsContent );
+					} catch( err ) {
+						console.error( "Error loading existing stats.json:", err );
+						stats = [];
+					}
+				}
+				
+				// Create a map of existing stats for quick lookup
+				const existingStatsMap = new Map();
+				stats.forEach( stat => existingStatsMap.set( stat.filename, stat ) );
+				
+				// Find all results-*.json files
+				const resultFiles = fs.readdirSync( resultsDir )
+					.filter(
+						file => file.startsWith( "results-" ) && file.endsWith( ".json" ) &&
+						file !== "stats.json"
+					);
+				
+				// Process each result file
+				const newStats = [];
+				for( const filename of resultFiles ) {
+					const filePath = path.join( resultsDir, filename );
+					
+					// Check if file exists on disk
+					if( fs.existsSync( filePath ) ) {
+
+						// Check if we already have this file in stats
+						if( existingStatsMap.has( filename ) ) {
+
+							// File exists and is already in stats, keep it
+							newStats.push( existingStatsMap.get( filename ) );
+						} else {
+
+							// File exists but not in stats, read it and add metadata
+							try {
+								const fileContent = fs.readFileSync( filePath, "utf8" );
+								const data = JSON.parse( fileContent );
+								
+								const newStat = {
+									"filename": filename,
+									"version": data.version || "Unknown",
+									"date": data.date || new Date().toISOString(),
+									"targetFps": data.targetFps || 0
+								};
+								
+								newStats.push( newStat );
+								addedCount++;
+							} catch( err ) {
+								
+								// Skip this file if it can't be read
+								console.error( `Error reading result file ${filename}:`, err );
+							}
+						}
+					} else {
+
+						// File doesn't exist on disk, remove from stats
+						removedCount++;
+					}
+				}
+				
+				// Count removed files (files in stats but not on disk)
+				removedCount = stats.length - newStats.length + addedCount;
+				
+				// Sort by date, newest first
+				newStats.sort( ( a, b ) => new Date( b.date ) - new Date( a.date ) );
+				
+				// Write the updated stats.json file
+				fs.writeFileSync( statsFilePath, JSON.stringify( newStats, null, 2 ) );
+				
+				console.log(
+					`Updated stats.json: added ${addedCount} files, removed ${removedCount} ` +
+					`files, total ${newStats.length} files`
+				);
+				
+				res.writeHead( 200, { "Content-Type": "application/json" } );
+				res.end( JSON.stringify( { 
+					"success": true, 
+					"message": `Updated stats.json: added ${addedCount} files, removed ` +
+						`${removedCount} files`,
+					"added": addedCount,
+					"removed": removedCount,
+					"total": newStats.length
+				} ) );
+			} else {
+				res.writeHead( 200, { "Content-Type": "application/json" } );
+				res.end( JSON.stringify( { 
+					"success": true, 
+					"message": "Results directory does not exist",
+					"added": 0,
+					"removed": 0,
+					"total": 0
+				} ) );
+			}
+		} catch( err ) {
+			console.error( "Error rebuilding stats:", err );
+			res.writeHead( 500, { "Content-Type": "application/json" } );
+			res.end( JSON.stringify( { "error": err.message } ) );
+		}
+		return;
+	}
+
 	// Handle POST request to delete all result files
 	if( req.method === "POST" && req.url === "/api/delete-all-results" ) {
 		try {
@@ -444,6 +620,12 @@ const server = http.createServer( ( req, res ) => {
 					const filePath = path.join( resultsDir, file );
 					fs.unlinkSync( filePath );
 					deletedCount++;
+				}
+				
+				// Also delete stats.json if it exists
+				const statsFilePath = path.join( resultsDir, "stats.json" );
+				if( fs.existsSync( statsFilePath ) ) {
+					fs.unlinkSync( statsFilePath );
 				}
 			}
 			
