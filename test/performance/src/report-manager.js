@@ -179,7 +179,7 @@ async function showPreviousResults() {
 		const result = await response.json();
 		
 		if( response.ok && result.success ) {
-			displayResultsList( result.files );
+			displayResultsList( result.files, 0 );
 		} else {
 			showError( "Failed to load results list" );
 		}
@@ -194,7 +194,7 @@ async function showPreviousResults() {
  * @param {Array} files - Array of file objects with name and date
  * @returns {void}
  */
-function displayResultsList( files ) {
+function displayResultsList( files, startIndex ) {
 	$.cls();
 	
 	// Title - centered
@@ -223,29 +223,40 @@ function displayResultsList( files ) {
 	}
 	
 	// Create results list table
-	const resultsData = [ [ "Date/Time", "File Name", "Actions" ] ];
+	const resultsData = [ [ "Key", "Date/Time", "File Name" ] ];
 	
 	// Add each result file to the table
-	for( let i = 0; i < files.length; i++ ) {
-		const file = files[ i ];
+	for( let i = 0; i + startIndex < files.length && i < 9; i++ ) {
+		const fileIndex = i + startIndex;
+		const file = files[ fileIndex  ];
 		const dateTime = new Date( file.date ).toLocaleString();
-		const fileName = file.name.length > 20 ? file.name.substring( 0, 17 ) + "..." : file.name;
+		const fileName = file.name.length > 20 ? file.name.substring( 0, 32 ) + "..." : file.name;
 		
 		resultsData.push( [
+			i + 1,
 			dateTime,
 			fileName,
-			`View (${i + 1})`
+		] );
+	}
+
+	if( files.length > 9 ) {
+		const totalPages = Math.floor( files.length / 9 ) + 1;
+		const currentPage = Math.floor( startIndex / 9 ) + 1;
+		resultsData.push( [
+			"0",
+			"View Next Page",
+			`Page (${currentPage} of ${totalPages})`,
 		] );
 	}
 	
 	// Create table format
-	const borderLine = "*---------------------*----------------------*----------*";
-	const itemLine =   "|                     |                      |          |";
+	const borderLine = "*-----*-------------------------*-----------------------------------------*";
+	const itemLine =   "|     |                         |                                         |";
 	
 	const resultsFormat = [ borderLine, itemLine, borderLine ];
 	
 	// Extend format for each result row
-	for( let i = 0; i < files.length; i++ ) {
+	for( let i = 0; i < resultsData.length - 1; i++ ) {
 		resultsFormat.push( itemLine );
 		resultsFormat.push( borderLine );
 	}
@@ -264,14 +275,28 @@ function displayResultsList( files ) {
 	const keyHandlers = [];
 
 	// Set up key handlers for each file
-	for( let i = 0; i < files.length; i++ ) {
-		const key = ( i + 1 ).toString();
+	for( let i = 0; i < files.length && i < 10; i++ ) {
+		const fileIndex = i + startIndex;
+		const key = ( fileIndex + 1 ).toString();
 		const handler = () => {
 			clearAllKeys();
-			viewResult( files[ i ].name );
+			viewResult( files[ fileIndex ].name );
 		};
 		keyHandlers.push( handler );
 		$.onkey( key, "down", handler );
+	}
+
+	if( files.length > 9 ) {
+		const handler = () => {
+			clearAllKeys();
+			let nextStartIndex = startIndex + 9;
+			if( nextStartIndex > files.length ) {
+				nextStartIndex = 0;
+			}
+			displayResultsList( files, nextStartIndex );
+		}
+		keyHandlers.push( handler );
+		$.onkey( "0", "down", handler );
 	}
 	
 	// Set up menu handlers
@@ -332,7 +357,7 @@ async function viewResult( filename ) {
 		const result = await response.json();
 		
 		if( response.ok && result.success ) {
-			
+
 			// Display the result using the existing showResults function
 			showResults( result.data );
 		} else {
@@ -369,6 +394,7 @@ async function deleteAllResults( files ) {
 	
 	// Define confirmation handlers
 	async function confirmHandler() {
+
 		// Clear the confirmation key handlers
 		$.offkey( "KeyY", "down", confirmHandler );
 		$.offkey( "KeyN", "down", cancelHandler );
