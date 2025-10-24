@@ -18,13 +18,14 @@ let m_seededRandom = null;
  * 
  * @returns {Object} Test configuration
  */
-export function getConfig() {
+export function getConfig( isPixelMode ) {
 	return {
 		"name": "Graphics Pixel",
 		"run": run,
 		"init": init,
 		"cleanUp": cleanUp,
-		"itemCountStart": 500
+		"itemCountStart": 500,
+		"isPixelMode": !!isPixelMode
 	};
 }
 
@@ -33,7 +34,9 @@ export function getConfig() {
  * 
  * @returns {void}
  */
-function init() {
+function init( isPixelMode ) {
+
+	$.setPixelMode( isPixelMode );
 
 	// Set up random seed for consistent test results
 	m_seededRandom = new Math.seedrandom( "graphicsPixel", true );
@@ -236,6 +239,7 @@ function generateRandomOperation() {
 function cleanUp() {
 	m_pal = null;
 	m_operations = [];
+	$.setPixelMode( false );
 }
 
 /**

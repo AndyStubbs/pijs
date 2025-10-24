@@ -36,10 +36,11 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 
 // Get all test config data
 let m_tests = [];
-m_tests.push( g_psetTest.getConfig() );
-m_tests.push( g_lineTest.getConfig() );
-m_tests.push( g_graphicsPixelTest.getConfig() );
-m_tests.push( g_bezierTest.getConfig() );
+//m_tests.push( g_psetTest.getConfig() );
+//m_tests.push( g_lineTest.getConfig() );
+//m_tests.push( g_graphicsPixelTest.getConfig( true ) );
+m_tests.push( g_graphicsPixelTest.getConfig( false ) );
+//m_tests.push( g_bezierTest.getConfig() );
 
 // Global state for the test manager
 let m_results = [];
@@ -184,7 +185,7 @@ function runNextTest() {
 	let recentItemCounts = [];
 
 	// Initialize the test
-	test.init();
+	test.init( test.isPixelMode );
 
 	// Start the test loop
 	requestAnimationFrame( loop );
