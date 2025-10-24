@@ -83,7 +83,7 @@ function showResults( resultsObject ) {
 	$.setPos( 0, resultsStartRow );
 	
 	// Create results table data
-	const resultsData = [ [ "Test Name", "Status", "Items/Frame", "Items/Sec", "Duration" ] ];
+	const resultsData = [ [ "Test Name", "Status", "Score", "Items/Frame", "Items/Sec", "Duration" ] ];
 	const menuOptionsData = [];
 	
 	// Add results to table
@@ -91,14 +91,15 @@ function showResults( resultsObject ) {
 		resultsData.push( [
 			result.name,
 			result.status,
+			result.score || 0,
 			Math.round( result.itemCountAvg ).toString(),
 			Math.round( result.itemCountPerSecond ).toString(),
 			Math.round( result.testTime / 1000 ).toString() + "s"
 		] );
 	}
 	
-	const borderLine = "*---------------*----------*-------------*-----------*----------*";
-	const itemLine =   "|               |          |             |           |          |";
+	const borderLine = "*---------------*-----------*---------*-------------*-----------*----------*";
+	const itemLine =   "|               |           |         |             |           |          |";
 
 	// Create results table format (header + data rows)
 	const resultsFormat = [ borderLine, itemLine, borderLine ];

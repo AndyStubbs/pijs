@@ -100,8 +100,9 @@ function generateRandomOperation() {
  */
 function run( itemCount ) {
 	$.cls();
-	
+
 	for( let i = 0; i < itemCount; i++ ) {
+		
 		// Cycle through the pre-generated operations
 		const operationIndex = i % m_operations.length;
 		const operation = m_operations[ operationIndex ];

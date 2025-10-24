@@ -229,7 +229,8 @@ function runNextTest() {
 					"status": status,
 					"itemCountAvg": itemCountAvg,
 					"itemCountPerSecond": itemCountAvg * m_targetFps,
-					"testTime": elapsed
+					"testTime": elapsed,
+					"score": Math.round( ( itemCountAvg * m_targetFps ) / 100 )
 				} );
 				
 				// Call the test cleanup
@@ -274,7 +275,7 @@ function runNextTest() {
 
 		test.run( itemCount, test.data );
 
-		$.cls( 0, 0, 155, 65 );
+		//$.cls( 0, 0, 155, 65 );
 		$.setColor( 15 );
 		$.print( "Item Count:  " + itemCount.toFixed( 0 ).padStart( 6, " " ) );
 		$.print( "Target FPS:  " + m_targetFps.toFixed( 0 ).padStart( 6, " " ) );
