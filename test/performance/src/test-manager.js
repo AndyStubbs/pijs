@@ -153,11 +153,19 @@ function runNextTest() {
 
 	m_testIndex += 1;
 	if( m_testIndex >= m_tests.length ) {
+		if( m_results.length === 0 ) {
+			throw new Error( "Error, no results found after tests completed." );
+		}
 		const resultsObject = {
 			"version": $.version || "Unknown",
 			"date": new Date().toLocaleString(),
 			"targetFps": m_targetFps,
-			"tests": m_results
+			"tests": m_results,
+			"score": Math.round(
+				m_results.reduce(
+					( score, result ) => score + Math.round( result.itemCountPerSecond / 100 ), 0
+				) / m_results.length
+			)
 		};
 		$.canvas().style.opacity = "";
 		g_reportManager.showResults( resultsObject );

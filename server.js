@@ -299,7 +299,8 @@ const server = http.createServer( ( req, res ) => {
 					"filename": filename,
 					"version": data.version || "Unknown",
 					"date": data.date,
-					"targetFps": data.targetFps || 0
+					"targetFps": data.targetFps || 0,
+					"score": data.score || 0
 				} );
 				
 				// Save updated stats
@@ -412,14 +413,13 @@ const server = http.createServer( ( req, res ) => {
 						
 						// Check if file actually exists
 						if( fs.existsSync( filePath ) ) {
-							const fileStats = fs.statSync( filePath );
-							validStats.push( stat ); // Keep this stat entry
+							validStats.push( stat );
 							return {
 								"name": stat.filename,
 								"date": stat.date,
 								"version": stat.version,
 								"targetFps": stat.targetFps,
-								"size": fileStats.size
+								"score": stat.score
 							};
 						} else {
 							
@@ -548,7 +548,8 @@ const server = http.createServer( ( req, res ) => {
 									"filename": filename,
 									"version": data.version || "Unknown",
 									"date": data.date || new Date().toISOString(),
-									"targetFps": data.targetFps || 0
+									"targetFps": data.targetFps || 0,
+									"score": data.score || 0
 								};
 								
 								newStats.push( newStat );
@@ -566,19 +567,21 @@ const server = http.createServer( ( req, res ) => {
 					}
 				}
 				
-				// Count removed files (files in stats but not on disk)
-				removedCount = stats.length - newStats.length + addedCount;
-				
-				// Sort by date, newest first
-				newStats.sort( ( a, b ) => new Date( b.date ) - new Date( a.date ) );
-				
-				// Write the updated stats.json file
-				fs.writeFileSync( statsFilePath, JSON.stringify( newStats, null, 2 ) );
-				
-				console.log(
-					`Updated stats.json: added ${addedCount} files, removed ${removedCount} ` +
-					`files, total ${newStats.length} files`
-				);
+				if( addedCount > 0 || removedCount > 0 ) {
+
+					// Sort by date, newest first
+					newStats.sort( ( a, b ) => new Date( b.date ) - new Date( a.date ) );
+					
+					// Write the updated stats.json file
+					fs.writeFileSync( statsFilePath, JSON.stringify( newStats, null, 2 ) );
+					
+					console.log(
+						`Updated stats.json: added ${addedCount} files, removed ${removedCount} ` +
+						`files, total ${newStats.length} files`
+					);
+				} else {
+					console.log( "No changes detected in stats.json" );
+				}
 				
 				res.writeHead( 200, { "Content-Type": "application/json" } );
 				res.end( JSON.stringify( { 

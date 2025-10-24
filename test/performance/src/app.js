@@ -281,8 +281,4 @@ function showExitMessage() {
 	$.setColor( 7 );
 	$.setPos( 0, contentStartRow + 6 );
 	$.print( "Press F5 to restart", false, true );
-	
-	$.onkey( "any", "down", () => {
-		showMainMenu();
-	}, true );
 }

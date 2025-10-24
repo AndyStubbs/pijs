@@ -47,7 +47,7 @@ async function init( api ) {
  * @returns {void}
  */
 function showResults( resultsObject ) {
-	const { version, date, tests: results } = resultsObject;
+	const { version, date, score, tests: results } = resultsObject;
 
 	// Store current results object
 	m_currentResultsObject = resultsObject;
@@ -61,16 +61,17 @@ function showResults( resultsObject ) {
 	
 	const summaryData = [
 		[ 
-			`Generated: ${dateTime}`,
-			`Version: ${version}`,
+			`${dateTime}`,
+			`${version}`,
+			`Score: ${score}`,
 			`Completed: ${completedTests} of ${results.length}`,
 		]
 	];
 	
 	const summaryFormat = [
-		"*-------------------------------------*-------------------------*------------------------------*",
-		"|                                     |                         |                              |",
-		"*-------------------------------------*-------------------------*------------------------------*"
+		"*---------------------------*--------------------*-----------------*----------------------*",
+		"|                           |                    |                 |                      |",
+		"*---------------------------*--------------------*-----------------*----------------------*"
 	];
 
 	// Draw the table at the top
@@ -118,7 +119,7 @@ function showResults( resultsObject ) {
 	// Define menu options
 	const menuOptions = [
 		{
-			"title": "Restart Tests",
+			"title": "Run New Tests",
 			"handler": () => {
 				clearMenuKeys();
 				if( m_api && m_api.startTests ) {
@@ -135,6 +136,14 @@ function showResults( resultsObject ) {
 			"handler": () => {
 				clearMenuKeys();
 				postResults( resultsObject );
+			}
+		} );
+	} else {
+		menuOptions.push( {
+			"title": "Return to Results Lists",
+			"handler": () => {
+				clearMenuKeys();
+				showPreviousResults();
 			}
 		} );
 	}
@@ -240,7 +249,7 @@ function displayResultsList( files, startIndex ) {
 	}
 	
 	// Create results list table
-	const resultsData = [ [ "Key", "Date/Time", "Version", "FPS" ] ];
+	const resultsData = [ [ "Key", "Date/Time", "Version", "Score", "FPS" ] ];
 	
 	// Add each result file to the table
 	for( let i = 0; i + startIndex < files.length && i < 9; i++ ) {
@@ -252,7 +261,8 @@ function displayResultsList( files, startIndex ) {
 			i + 1,
 			dateTime,
 			file.version,
-			file.targetFps
+			file.score,
+			file.targetFps,
 		] );
 	}
 
@@ -263,13 +273,14 @@ function displayResultsList( files, startIndex ) {
 			"0",
 			"View Next Page",
 			`Page (${currentPage} of ${totalPages})`,
+			"",
 			""
 		] );
 	}
 	
 	// Create table format
-	const borderLine = "*-----*-------------------------*---------------------------------*--------*";
-	const itemLine =   "|     |                         |                                 |        |";
+	const borderLine = "*-----*-------------------------*------------------------*----------*---------*";
+	const itemLine =   "|     |                         |                        |          |         |";
 	
 	const resultsFormat = [ borderLine, itemLine, borderLine ];
 	
@@ -455,12 +466,13 @@ async function deleteAllResults( files ) {
 	}
 
 	function cancelHandler() {
+
 		// Clear the confirmation key handlers
 		$.offkey( "KeyY", "down", confirmHandler );
 		$.offkey( "KeyN", "down", cancelHandler );
 
 		// Return to results list
-		displayResultsList( files );
+		showPreviousResults();
 	}
 
 	$.onkey( "KeyY", "down", confirmHandler );
@@ -568,6 +580,7 @@ async function postResults( resultsObject ) {
 	$.print( "Press any key to return to results", false, true );
 	
 	$.onkey( "any", "down", () => {
+
 		// Return to results display (which will now show updated menu without "Post Results")
 		if( m_currentResultsObject ) {
 			showResults( m_currentResultsObject );
