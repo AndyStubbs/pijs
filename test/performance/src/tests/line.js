@@ -22,6 +22,7 @@ export function getConfig() {
 		"name": "Line Test",
 		"run": run,
 		"init": init,
+		"cleanUp": cleanUp,
 		"itemCountStart": 500
 	};
 }
@@ -52,6 +53,16 @@ function generateOperationList() {
 		const operation = generateRandomOperation();
 		m_operations.push( operation );
 	}
+}
+
+/**
+ * Deletes the operations data
+ * 
+ * @returns {void}
+ */
+function cleanUp() {
+	m_pal = null;
+	m_operations = [];
 }
 
 /**

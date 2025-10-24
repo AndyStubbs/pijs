@@ -221,6 +221,11 @@ function runNextTest() {
 					"itemCountPerSecond": itemCountAvg * m_targetFps,
 					"testTime": elapsed
 				} );
+				
+				// Call the test cleanup
+				test.cleanUp();
+
+				// Run the next test
 				return runNextTest();
 			}
 		} else {

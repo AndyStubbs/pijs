@@ -23,6 +23,7 @@ export function getConfig() {
 		"name": "Graphics Pixel",
 		"run": run,
 		"init": init,
+		"cleanUp": cleanUp,
 		"itemCountStart": 300
 	};
 }
@@ -249,6 +250,16 @@ function generateRandomOperation() {
 				]
 			};
 	}
+}
+
+/**
+ * Deletes the operations data
+ * 
+ * @returns {void}
+ */
+function cleanUp() {
+	m_pal = null;
+	m_operations = [];
 }
 
 /**
