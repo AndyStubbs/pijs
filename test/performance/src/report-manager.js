@@ -83,13 +83,16 @@ function showResults( resultsObject ) {
 	$.setPos( 0, resultsStartRow );
 	
 	// Create results table data
-	const resultsData = [ [ "Test Name", "Status", "Score", "Items/Frame", "Items/Sec", "Duration" ] ];
+	let namePadding = "------------------------".length;
+	const resultsData = [ [
+		"Test Name".padEnd( namePadding ), "Status", "Score", "Items/Frame", "Items/Sec", "Duration"
+	] ];
 	const menuOptionsData = [];
-	
+
 	// Add results to table
 	for( const result of results ) {
 		resultsData.push( [
-			result.name,
+			result.name.padEnd( namePadding, " " ),
 			result.status,
 			result.score || 0,
 			Math.round( result.itemCountAvg ).toString(),
@@ -98,8 +101,8 @@ function showResults( resultsObject ) {
 		] );
 	}
 	
-	const borderLine = "*---------------*-----------*---------*-------------*-----------*----------*";
-	const itemLine =   "|               |           |         |             |           |          |";
+	const borderLine = "*--------------------------*------------*-----------*-------------*------------*----------*";
+	const itemLine =   "|                          |            |           |             |            |          |";
 
 	// Create results table format (header + data rows)
 	const resultsFormat = [ borderLine, itemLine, borderLine ];
