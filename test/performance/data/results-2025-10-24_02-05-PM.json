@@ -1,24 +1,26 @@
 {
-  "version": "2.0.0-alpha.1",
-  "date": "10/24/2025, 9:38:07 AM",
+  "version": "1.2.4",
+  "date": "10/24/2025, 2:05:38 PM",
   "targetFps": 99.98,
   "tests": [
     {
       "name": "Line Test",
       "status": "complete",
-      "itemCountAvg": 680.5714285714286,
-      "itemCountPerSecond": 68043.53142857143,
-      "testTime": 10431.499999999998
+      "itemCountAvg": 1722.4857142857143,
+      "itemCountPerSecond": 172214.12171428572,
+      "testTime": 9998.554,
+      "score": 1722
     },
     {
       "name": "Graphics Pixel",
       "status": "complete",
-      "itemCountAvg": 407.34285714285716,
-      "itemCountPerSecond": 40726.13885714286,
-      "testTime": 10391.7
+      "itemCountAvg": 44.371428571428574,
+      "itemCountPerSecond": 4436.255428571429,
+      "testTime": 10021.7,
+      "score": 44
     }
   ],
-  "score": 544,
+  "score": 883,
   "systemInfo": {
     "os": {
       "platform": "win32",
@@ -34,7 +36,7 @@
       "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
       "language": "en-US,en;q=0.9"
     },
-    "timestamp": "10/24/2025, 9:38:20 AM"
+    "timestamp": "10/24/2025, 2:05:53 PM"
   },
   "posted": true
 }

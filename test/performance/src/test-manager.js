@@ -259,7 +259,13 @@ function runNextTest() {
 			} else {
 
 				// During warmup time decrement quicker
-				itemCount = Math.max( itemCount - 10, 1 );
+
+				// If a big miss decrement even quicker
+				if( fps < m_targetFps * 0.3 ) {
+					itemCount = Math.max( itemCount - 30, 1 );
+				} else {
+					itemCount = Math.max( itemCount - 10, 1 );
+				}
 			}
 		} else {
 
@@ -276,6 +282,8 @@ function runNextTest() {
 		test.run( itemCount, test.data );
 
 		//$.cls( 0, 0, 155, 65 );
+		$.setColor( "black" );
+		$.rect( 0, 0, 155, 65, "black" );
 		$.setColor( 15 );
 		$.print( "Item Count:  " + itemCount.toFixed( 0 ).padStart( 6, " " ) );
 		$.print( "Target FPS:  " + m_targetFps.toFixed( 0 ).padStart( 6, " " ) );

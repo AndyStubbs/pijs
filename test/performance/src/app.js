@@ -166,7 +166,7 @@ function printTitle() {
 async function initApp() {
 
 	// Set up the screen
-	$.screen( "800x600" );
+	$.screen( { "aspect": "800x600", "willReadFrequently": true } );
 	$.setFont( 4 );
 
 	// Load reduced flashing setting from localStorage
@@ -351,42 +351,6 @@ async function showRecalculateFps() {
 	
 	// Return to main menu
 	showMainMenu();
-}
-
-/**
- * Shows previous results menu (placeholder)
- * 
- * @returns {void}
- */
-function showPreviousResults() {
-	$.cls();
-	
-	// Title - centered
-	$.setColor( 10 );
-	$.setPos( 0, 2 );
-	$.print( "Previous Results", true, true );
-	
-	// Center the content vertically
-	const contentStartRow = Math.floor( $.getRows() / 2 ) - 1;
-	$.setPos( 0, contentStartRow );
-	
-	// Create placeholder message table
-	const placeholderItems = [
-		[ "Feature not implemented yet" ],
-		[ "Coming soon..." ]
-	];
-	
-	$.setColor( 7 );
-	$.printTable( placeholderItems, null, "single", true );
-	
-	// Instruction - centered below table
-	$.setColor( 7 );
-	$.setPos( 0, contentStartRow + 6 );
-	$.print( "Press any key to return to main menu", false, true );
-	
-	$.onkey( "any", "down", () => {
-		showMainMenu();
-	}, true );
 }
 
 /**
