@@ -136,6 +136,22 @@ function generateDirectoryListing( dirPath, urlPath ) {
 </html>`;
 }
 
+function getFormattedDate( date ) {
+	const year = date.getFullYear();
+	const month = (date.getMonth() + 1).toString().padStart(2, "0");
+	const day = date.getDate().toString().padStart(2, "0");
+
+	let hours = date.getHours();
+	const minutes = date.getMinutes().toString().padStart(2, "0");
+	const ampm = hours >= 12 ? "PM" : "AM";
+
+	hours = hours % 12;
+	hours = hours ? hours : 12; // the hour "0" should be "12"
+	const formattedHours = hours.toString().padStart(2, "0");
+
+	return `${year}-${month}-${day}_${formattedHours}-${minutes}-${ampm}`;
+}
+
 const server = http.createServer( ( req, res ) => {
 	console.log( `${req.method} ${req.url}` );
 
@@ -239,7 +255,7 @@ const server = http.createServer( ( req, res ) => {
 						"userAgent": req.headers[ "user-agent" ] || "Unknown",
 						"language": req.headers[ "accept-language" ] || "Unknown"
 					},
-					"timestamp": new Date().toISOString()
+					"timestamp": new Date().toLocaleString()
 				};
 				
 				// Merge system info with results and mark as posted
@@ -256,7 +272,7 @@ const server = http.createServer( ( req, res ) => {
 				}
 				
 				// Generate filename with timestamp
-				const timestamp = new Date().toISOString().replace( /[:.]/g, "-" );
+				const timestamp = getFormattedDate( new Date( data.date ) );
 				const filename = `results-${timestamp}.json`;
 				const filepath = path.join( resultsDir, filename );
 				
@@ -362,6 +378,8 @@ const server = http.createServer( ( req, res ) => {
 					return {
 						"name": file,
 						"date": stats.mtime.toISOString(),
+						"version": "",
+						"targetFps": "",
 						"size": stats.size
 					};
 				} )
@@ -383,7 +401,9 @@ const server = http.createServer( ( req, res ) => {
 			const filename = decodeURIComponent( req.url.substring( "/api/get-result/".length ) );
 			
 			// Validate filename to prevent path traversal
-			if( filename.includes( ".." ) || filename.includes( "/" ) || filename.includes( "\\" ) ) {
+			if(
+				filename.includes( ".." ) || filename.includes( "/" ) || filename.includes( "\\" )
+			) {
 				res.writeHead( 400, { "Content-Type": "application/json" } );
 				res.end( JSON.stringify( { "error": "Invalid filename" } ) );
 				return;

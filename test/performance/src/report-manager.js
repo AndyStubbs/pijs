@@ -223,19 +223,19 @@ function displayResultsList( files, startIndex ) {
 	}
 	
 	// Create results list table
-	const resultsData = [ [ "Key", "Date/Time", "File Name" ] ];
+	const resultsData = [ [ "Key", "Date/Time", "Version", "FPS" ] ];
 	
 	// Add each result file to the table
 	for( let i = 0; i + startIndex < files.length && i < 9; i++ ) {
 		const fileIndex = i + startIndex;
 		const file = files[ fileIndex  ];
 		const dateTime = new Date( file.date ).toLocaleString();
-		const fileName = file.name.length > 20 ? file.name.substring( 0, 32 ) + "..." : file.name;
 		
 		resultsData.push( [
 			i + 1,
 			dateTime,
-			fileName,
+			file.version,
+			file.targetFps
 		] );
 	}
 
@@ -246,12 +246,13 @@ function displayResultsList( files, startIndex ) {
 			"0",
 			"View Next Page",
 			`Page (${currentPage} of ${totalPages})`,
+			""
 		] );
 	}
 	
 	// Create table format
-	const borderLine = "*-----*-------------------------*-----------------------------------------*";
-	const itemLine =   "|     |                         |                                         |";
+	const borderLine = "*-----*-------------------------*---------------------------------*--------*";
+	const itemLine =   "|     |                         |                                 |        |";
 	
 	const resultsFormat = [ borderLine, itemLine, borderLine ];
 	
@@ -282,11 +283,12 @@ function displayResultsList( files, startIndex ) {
 			clearAllKeys();
 			viewResult( files[ fileIndex ].name );
 		};
-		keyHandlers.push( handler );
+		keyHandlers.push( { key, handler } );
 		$.onkey( key, "down", handler );
 	}
 
 	if( files.length > 9 ) {
+		const key = "0";
 		const handler = () => {
 			clearAllKeys();
 			let nextStartIndex = startIndex + 9;
@@ -295,8 +297,8 @@ function displayResultsList( files, startIndex ) {
 			}
 			displayResultsList( files, nextStartIndex );
 		}
-		keyHandlers.push( handler );
-		$.onkey( "0", "down", handler );
+		keyHandlers.push( { key, handler } );
+		$.onkey( key, "down", handler );
 	}
 	
 	// Set up menu handlers
@@ -306,9 +308,8 @@ function displayResultsList( files, startIndex ) {
 	function clearAllKeys() {
 
 		// Clear numbered keys
-		for( let i = 0; i < files.length; i++ ) {
-			const key = ( i + 1 ).toString();
-			$.offkey( key, "down", keyHandlers[ i ] );
+		for( const keyHandler of keyHandlers ) {
+			$.offkey( keyHandler.key, "down", keyHandler.handler );
 		}
 		
 		// Clear menu keys

@@ -155,7 +155,7 @@ function runNextTest() {
 	if( m_testIndex >= m_tests.length ) {
 		const resultsObject = {
 			"version": $.version || "Unknown",
-			"date": new Date().toISOString(),
+			"date": new Date().toLocaleString(),
 			"targetFps": m_targetFps,
 			"tests": m_results
 		};
