@@ -76,7 +76,12 @@ function showResults( resultsObject ) {
 
 	// Draw the table at the top
 	$.setColor( 10 );
-	$.printTable( summaryData, summaryFormat, "single", true );
+
+	if( $.printTable) {
+		$.printTable( summaryData, summaryFormat, "single", true );
+	} else {
+		$.print( summaryData[ 0 ].join( " | " ) );
+	}
 	
 	// Position the detailed results table below the compact summary
 	const resultsStartRow = 4;
@@ -115,8 +120,27 @@ function showResults( resultsObject ) {
 	
 	// Display results table
 	$.setColor( 7 );
-	$.printTable( resultsData, resultsFormat, "double", true );
-	
+	if( $.printTable) {
+		$.printTable( resultsData, resultsFormat, "double", true );
+	} else {
+		for( let i = 0; i < resultsData.length; i += 1 ) {
+			for( let j = 0; j < resultsData[ i ].length; j += 1 ) {
+				let msg = ( resultsData[ i ][ j ] + "" );
+				if( j === 0 ) {
+					msg = msg.padEnd( namePadding );
+				} else {
+					msg = msg.trim().padEnd( 11, " " );
+				}
+				$.print( msg + " | ", true );
+			}
+			if( i === 0 ) {
+				$.print( "\n------------------------------------------------------------------------------------------------" );
+			} else {
+				$.print();
+			}
+		}
+	}
+
 	// Add some spacing
 	$.setPos( 0, $.getRows() - 3 );
 	
@@ -168,8 +192,12 @@ function showResults( resultsObject ) {
 	menuOptionsData.push( menuItems );
 	
 	$.setColor( 15 );
-	$.printTable( menuOptionsData, null, "single", true );
-	
+	if( $.printTable) {
+		$.printTable( menuOptionsData, null, "single", true );
+	} else {
+		$.print( menuOptionsData[ 0 ].join( " | " ) );
+	}
+
 	// Set up menu handlers
 	menuOptions.forEach( ( option, index ) => {
 		const key = ( index + 1 ).toString();
@@ -297,7 +325,23 @@ function displayResultsList( files, startIndex ) {
 	// Display results table
 	$.setColor( 7 );
 	$.setPos( 0, 4 );
-	$.printTable( resultsData, resultsFormat, "double", true );
+	if( $.printTable ) {
+		$.printTable( resultsData, resultsFormat, "double", true );
+	} else {
+		const padding = [ 3, 22, 15, 8, 8 ];
+		for( let i = 0; i < resultsData.length; i += 1 ) {
+			for( let j = 0; j < resultsData[ i ].length; j += 1 ) {
+				let msg = ( resultsData[ i ][ j ] + "" );
+				msg = msg.padEnd( padding[ j ], " " );
+				$.print( msg + " | ", true );
+			}
+			if( i === 0 ) {
+				$.print( "\n----------------------------------------------------------------------" );
+			} else {
+				$.print();
+			}
+		}
+	}
 	
 	// Add menu options
 	$.setColor( 15 );

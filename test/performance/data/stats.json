@@ -19,5 +19,26 @@
     "date": "10/24/2025, 2:07:57 PM",
     "targetFps": 99.98,
     "score": 856
+  },
+  {
+    "filename": "results-2025-10-24_03-01-PM.json",
+    "version": "2.0.0-alpha.0",
+    "date": "10/24/2025, 3:01:46 PM",
+    "targetFps": 99.99,
+    "score": 1248
+  },
+  {
+    "filename": "results-2025-10-24_03-03-PM.json",
+    "version": "2.0.0-alpha.1",
+    "date": "10/24/2025, 3:03:06 PM",
+    "targetFps": 99.98,
+    "score": 953
+  },
+  {
+    "filename": "results-2025-10-24_03-05-PM.json",
+    "version": "2.0.0-alpha.0",
+    "date": "10/24/2025, 3:05:46 PM",
+    "targetFps": 99.99,
+    "score": 1251
   }
 ]

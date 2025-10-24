@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0-alpha.1",
+  "date": "10/24/2025, 3:03:06 PM",
+  "targetFps": 99.98,
+  "tests": [
+    {
+      "name": "Line Test",
+      "status": "complete",
+      "itemCountAvg": 1250.0857142857142,
+      "itemCountPerSecond": 124983.56971428571,
+      "testTime": 10071.6,
+      "score": 1250
+    },
+    {
+      "name": "Graphics Pixel",
+      "status": "complete",
+      "itemCountAvg": 655.8857142857142,
+      "itemCountPerSecond": 65575.45371428572,
+      "testTime": 9991.5,
+      "score": 656
+    }
+  ],
+  "score": 953,
+  "systemInfo": {
+    "os": {
+      "platform": "win32",
+      "type": "Windows_NT",
+      "release": "10.0.26100",
+      "arch": "x64",
+      "cpus": 16,
+      "cpuModel": "13th Gen Intel(R) Core(TM) i5-13400F",
+      "totalMemory": "32 GB",
+      "freeMemory": "16 GB"
+    },
+    "browser": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+      "language": "en-US,en;q=0.9"
+    },
+    "timestamp": "10/24/2025, 3:03:09 PM"
+  },
+  "posted": true
+}

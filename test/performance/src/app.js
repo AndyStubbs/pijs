@@ -261,7 +261,11 @@ function showMainMenu() {
 	]
 
 	$.setColor( 15 );
-	$.printTable( menuItems, menuFormat, "double", true );
+	if( $.printTable ){
+		$.printTable( menuItems, menuFormat, "double", true );
+	} else {
+		menuItems.forEach( item => $.print( item, false, true ) );
+	}
 
 	// Instruction - centered below table
 	$.print();
@@ -369,11 +373,12 @@ function showPiVersionMenu() {
 	$.setPos( 0, contentStartRow );
 	
 	// Create version selection table
+	const padding = 33;
 	const versionKeys = Object.keys( PI_VERSIONS );
 	const versionItems = versionKeys.map( ( key, index ) => [
-		`${index + 1}. ${PI_VERSIONS[ key ].menuName}`
+		`${index + 1}. ${PI_VERSIONS[ key ].menuName}`.padEnd( padding )
 	] );
-	versionItems.push( [ `${versionKeys.length + 1}. Return to Main Menu` ] );
+	versionItems.push( [ `${versionKeys.length + 1}. Return to Main Menu`.padEnd( padding ) ] );
 
 	const format = [
 		"*-----------------------------------*",
@@ -388,12 +393,16 @@ function showPiVersionMenu() {
 	];
 	
 	$.setColor( 15 );
-	$.printTable( versionItems, format, "double", true );
+	if( $.printTable) {
+		$.printTable( versionItems, format, "double", true );
+	} else {
+		versionItems.forEach( item => $.print( item, false, true ) );
+	}
 	
 	// Show current version
 	$.print();
 	$.setColor( 7 );
-	$.print( `Current Version: ${m_piVersion}`, false, true );
+	$.print( `Current Version: ${m_piVersion}`.padEnd( padding ), false, true );
 	
 	// Instruction - centered below table
 	$.print();
@@ -470,7 +479,7 @@ function showExitMessage() {
 	// Create exit message table
 	const exitItems = [
 		[ "Thank you for using" ],
-		[ "Performance Tests!" ]
+		[ "Performance Tests! " ]
 	];
 
 	const format = [
@@ -482,7 +491,11 @@ function showExitMessage() {
 	];
 	
 	$.setColor( 15 );
-	$.printTable( exitItems, format, "double", true );
+	if( $.printTable ){
+		$.printTable( exitItems, format, "double", true );
+	} else {
+		exitItems.forEach( item => $.print( item, false, true ) );
+	}
 	
 	// Instruction - centered below table
 	$.setColor( 7 );
