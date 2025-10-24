@@ -1,6 +1,6 @@
 /**
  * Pi.js - Graphics and Sound Library
- * @version 2.0.0-alpha.1
+ * @version 2.0.0-alpha.0
  * @author Andy Stubbs
  * @license Apache-2.0
  * @preserve
