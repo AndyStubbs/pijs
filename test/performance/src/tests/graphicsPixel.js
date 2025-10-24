@@ -24,7 +24,7 @@ export function getConfig() {
 		"run": run,
 		"init": init,
 		"cleanUp": cleanUp,
-		"itemCountStart": 300
+		"itemCountStart": 500
 	};
 }
 
@@ -211,30 +211,6 @@ function generateRandomOperation() {
 					arcRadius + Math.floor( Math.random() * 3 ) - 1,
 					arcAngle1 + Math.floor( Math.random() * 3 ) - 1,
 					arcAngle2 + Math.floor( Math.random() * 3 ) - 1
-				]
-			};
-			
-		case 9: // bezier
-			const bezierX1 = Math.floor( m_seededRandom() * width );
-			const bezierY1 = Math.floor( m_seededRandom() * height );
-			const bezierX2 = Math.floor( m_seededRandom() * width );
-			const bezierY2 = Math.floor( m_seededRandom() * height );
-			const bezierX3 = Math.floor( m_seededRandom() * width );
-			const bezierY3 = Math.floor( m_seededRandom() * height );
-			const bezierX4 = Math.floor( m_seededRandom() * width );
-			const bezierY4 = Math.floor( m_seededRandom() * height );
-			return {
-				"func": $.bezier,
-				"params": [ bezierX1, bezierY1, bezierX2, bezierY2, bezierX3, bezierY3, bezierX4, bezierY4 ],
-				"getParams": () => [
-					bezierX1 + Math.floor( Math.random() * 3 ) - 1,
-					bezierY1 + Math.floor( Math.random() * 3 ) - 1,
-					bezierX2 + Math.floor( Math.random() * 3 ) - 1,
-					bezierY2 + Math.floor( Math.random() * 3 ) - 1,
-					bezierX3 + Math.floor( Math.random() * 3 ) - 1,
-					bezierY3 + Math.floor( Math.random() * 3 ) - 1,
-					bezierX4 + Math.floor( Math.random() * 3 ) - 1,
-					bezierY4 + Math.floor( Math.random() * 3 ) - 1
 				]
 			};
 			
