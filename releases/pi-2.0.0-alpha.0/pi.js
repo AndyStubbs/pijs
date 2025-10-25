@@ -8,13 +8,12 @@
 "use strict";
 (() => {
   var __defProp = Object.defineProperty;
-  var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
   var __export = (target, all) => {
     for (var name in all)
       __defProp(target, name, { get: all[name], enumerable: true });
   };
 
-  // src/core/pi-data.js
+  // src-pi-2.0.0-alpha.0/core/pi-data.js
   var defaultPaletteHex = [
     "#000000",
     "#0000AA",
@@ -300,7 +299,7 @@
   };
   var commandList = [];
 
-  // src/modules/utils.js
+  // src-pi-2.0.0-alpha.0/modules/utils.js
   var utils_exports = {};
   __export(utils_exports, {
     binarySearch: () => binarySearch,
@@ -337,13 +336,13 @@
     rgbToHex: () => rgbToHex,
     rndRange: () => rndRange
   });
-  var isFunction = /* @__PURE__ */ __name((fn) => typeof fn === "function", "isFunction");
-  var isDomElement = /* @__PURE__ */ __name((el) => el instanceof Element, "isDomElement");
+  var isFunction = (fn) => typeof fn === "function";
+  var isDomElement = (el) => el instanceof Element;
   var isArray = Array.isArray;
   var isInteger = Number.isInteger;
-  var canAddEventListeners = /* @__PURE__ */ __name((el) => {
+  var canAddEventListeners = (el) => {
     return typeof el.addEventListener === "function" && typeof el.removeEventListener === "function";
-  }, "canAddEventListeners");
+  };
   function hexToColor(hex) {
     let r, g, b, a, s2;
     s2 = hex;
@@ -371,7 +370,6 @@
       "s2": s2
     };
   }
-  __name(hexToColor, "hexToColor");
   function cToHex(c) {
     if (!isInteger(c)) {
       c = Math.round(c);
@@ -380,18 +378,15 @@
     const hex = Number(c).toString(16);
     return hex.length < 2 ? "0" + hex : hex.toUpperCase();
   }
-  __name(cToHex, "cToHex");
   function rgbToHex(r, g, b, a) {
     if (isNaN(a)) {
       a = 255;
     }
     return "#" + cToHex(r) + cToHex(g) + cToHex(b) + cToHex(a);
   }
-  __name(rgbToHex, "rgbToHex");
   function rgbToColor(r, g, b, a) {
     return hexToColor(rgbToHex(r, g, b, a));
   }
-  __name(rgbToColor, "rgbToColor");
   function colorStringToColor(colorStr) {
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d", { "willReadFrequently": true });
@@ -400,11 +395,9 @@
     const data = context.getImageData(0, 0, 1, 1).data;
     return rgbToColor(data[0], data[1], data[2], data[3]);
   }
-  __name(colorStringToColor, "colorStringToColor");
   function colorStringToHex(colorStr) {
     return colorStringToColor(colorStr).s2;
   }
-  __name(colorStringToHex, "colorStringToHex");
   function splitRgb(s) {
     s = s.slice(s.indexOf("(") + 1, s.indexOf(")"));
     const parts = s.split(",");
@@ -420,7 +413,6 @@
     }
     return colors;
   }
-  __name(splitRgb, "splitRgb");
   function convertToColor(color) {
     if (color === void 0) {
       return null;
@@ -447,17 +439,14 @@
     }
     return colorStringToColor(color);
   }
-  __name(convertToColor, "convertToColor");
   function checkColor(strColor) {
     const s = new Option().style;
     s.color = strColor;
     return s.color !== "";
   }
-  __name(checkColor, "checkColor");
   function compareColors(color1, color2) {
     return color1.r === color2.r && color1.g === color2.g && color1.b === color2.b && color1.a === color2.a;
   }
-  __name(compareColors, "compareColors");
   function hexToData(hex, width, height) {
     hex = hex.toUpperCase();
     const data = [];
@@ -482,7 +471,6 @@
     }
     return data;
   }
-  __name(hexToData, "hexToData");
   function dataToHex(data) {
     let hex = "";
     let digits = "";
@@ -497,31 +485,24 @@
     }
     return hex;
   }
-  __name(dataToHex, "dataToHex");
   function clamp(num, min, max) {
     return Math.min(Math.max(num, min), max);
   }
-  __name(clamp, "clamp");
   function inRange(point, hitBox) {
     return point.x >= hitBox.x && point.x < hitBox.x + hitBox.width && point.y >= hitBox.y && point.y < hitBox.y + hitBox.height;
   }
-  __name(inRange, "inRange");
   function inRange2(x1, y1, x2, y2, width, height) {
     return x1 >= x2 && x1 < x2 + width && y1 >= y2 && y1 < y2 + height;
   }
-  __name(inRange2, "inRange2");
   function rndRange(min, max) {
     return Math.random() * (max - min) + min;
   }
-  __name(rndRange, "rndRange");
   function degreesToRadian(deg) {
     return deg * (Math.PI / 180);
   }
-  __name(degreesToRadian, "degreesToRadian");
   function radiansToDegrees(rad) {
     return rad * (180 / Math.PI);
   }
-  __name(radiansToDegrees, "radiansToDegrees");
   function padL(str, len, c) {
     if (typeof c !== "string") {
       c = " ";
@@ -533,7 +514,6 @@
     }
     return pad2 + str;
   }
-  __name(padL, "padL");
   function padR(str, len, c) {
     if (typeof c !== "string") {
       c = " ";
@@ -544,7 +524,6 @@
     }
     return str;
   }
-  __name(padR, "padR");
   function pad(str, len, c) {
     if (typeof c !== "string" || c.length === 0) {
       c = " ";
@@ -558,7 +537,6 @@
     }
     return str;
   }
-  __name(pad, "pad");
   function copyProperties(dest, src) {
     for (const prop in src) {
       if (src.hasOwnProperty(prop)) {
@@ -566,7 +544,6 @@
       }
     }
   }
-  __name(copyProperties, "copyProperties");
   function convertToArray(src) {
     const arr = [];
     for (const prop in src) {
@@ -576,7 +553,6 @@
     }
     return arr;
   }
-  __name(convertToArray, "convertToArray");
   function deleteProperties(obj) {
     for (const prop in obj) {
       if (obj.hasOwnProperty(prop)) {
@@ -584,13 +560,11 @@
       }
     }
   }
-  __name(deleteProperties, "deleteProperties");
   function getWindowSize() {
     const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
     const height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
     return { "width": width, "height": height };
   }
-  __name(getWindowSize, "getWindowSize");
   function binarySearch(data, search, compareFn) {
     let m = 0;
     let n = data.length - 1;
@@ -607,7 +581,6 @@
     }
     return -m - 1;
   }
-  __name(binarySearch, "binarySearch");
   function getInt(val, def) {
     val = parseInt(val);
     if (isNaN(val)) {
@@ -615,7 +588,6 @@
     }
     return val;
   }
-  __name(getInt, "getInt");
   var math = Object.freeze({
     "deg30": Math.PI / 6,
     "deg45": Math.PI / 4,
@@ -634,15 +606,15 @@
     "deg330": 11 * Math.PI / 6,
     "deg360": Math.PI * 2
   });
-  var queueMicrotask = /* @__PURE__ */ __name((callback) => {
+  var queueMicrotask = (callback) => {
     if (window.queueMicrotask) {
       window.queueMicrotask(callback);
     } else {
       setTimeout(callback, 0);
     }
-  }, "queueMicrotask");
+  };
 
-  // src/core/command-system.js
+  // src-pi-2.0.0-alpha.0/core/command-system.js
   function addCommand(name, fn, isInternal, isScreen, parameters, isSet) {
     piData.commands[name] = fn;
     if (!isInternal) {
@@ -656,7 +628,6 @@
       });
     }
   }
-  __name(addCommand, "addCommand");
   function addCommands(name, fnPx, fnAa, parameters) {
     addCommand(name, function(screenData, args) {
       if (screenData.pixelMode) {
@@ -666,7 +637,6 @@
       }
     }, false, true, parameters);
   }
-  __name(addCommands, "addCommands");
   function addSetting(name, fn, isScreen, parameters) {
     piData.settings[name] = {
       "name": name,
@@ -676,7 +646,6 @@
     };
     piData.settingsList.push(name);
   }
-  __name(addSetting, "addSetting");
   function parseOptions(cmd, args) {
     if (cmd.noParse) {
       return args;
@@ -699,7 +668,6 @@
     }
     return args;
   }
-  __name(parseOptions, "parseOptions");
   function addPen(name, fn, cap) {
     piData.penList.push(name);
     piData.pens[name] = {
@@ -707,12 +675,10 @@
       "cap": cap
     };
   }
-  __name(addPen, "addPen");
   function addBlendCommand(name, fn) {
     piData.blendCommandsList.push(name);
     piData.blendCommands[name] = fn;
   }
-  __name(addBlendCommand, "addBlendCommand");
   function processCommands(api) {
     commandList.sort((a, b) => {
       const nameA = a.name.toUpperCase();
@@ -729,7 +695,6 @@
       processCommand(api, cmd);
     }
   }
-  __name(processCommands, "processCommands");
   function processCommand(api, cmd) {
     if (cmd.isSet) {
       piData.screenCommands[cmd.name] = cmd;
@@ -755,7 +720,6 @@
       };
     }
   }
-  __name(processCommand, "processCommand");
   function getScreenData(screenId, commandName) {
     if (piData.activeScreen === null) {
       if (commandName === "set") {
@@ -775,9 +739,8 @@
     }
     return piData.screens[screenId];
   }
-  __name(getScreenData, "getScreenData");
 
-  // src/modules/core-commands.js
+  // src-pi-2.0.0-alpha.0/modules/core-commands.js
   function init(pi2) {
     const piData2 = pi2._.data;
     pi2._.addCommand("setScreen", setScreen, false, false, ["screen"]);
@@ -797,7 +760,6 @@
       }
       piData2.activeScreen = piData2.screens[screenId];
     }
-    __name(setScreen, "setScreen");
     pi2._.addCommand("removeAllScreens", removeAllScreens, false, false, []);
     function removeAllScreens() {
       for (const i in piData2.screens) {
@@ -806,14 +768,12 @@
       }
       piData2.nextScreenId = 0;
     }
-    __name(removeAllScreens, "removeAllScreens");
     pi2._.addCommand("getScreen", getScreen, false, false, ["screenId"]);
     function getScreen(args) {
       const screenId = args[0];
       const screen = getScreenData(screenId, "getScreen");
       return screen.screenObj;
     }
-    __name(getScreen, "getScreen");
     pi2._.addCommand("setDefaultColor", setDefaultColor, false, false, ["color"]);
     pi2._.addSetting("defaultColor", setDefaultColor, false, ["color"]);
     function setDefaultColor(args) {
@@ -832,7 +792,6 @@
         piData2.defaultColor = c;
       }
     }
-    __name(setDefaultColor, "setDefaultColor");
     pi2._.addCommand("setDefaultPal", setDefaultPal, false, false, ["pal"]);
     pi2._.addSetting("defaultPal", setDefaultPal, false, ["pal"]);
     function setDefaultPal(args) {
@@ -872,7 +831,6 @@
         0
       ]);
     }
-    __name(setDefaultPal, "setDefaultPal");
     pi2._.addCommand("getDefaultPal", getDefaultPal, false, false, []);
     function getDefaultPal() {
       const colors = [];
@@ -881,7 +839,6 @@
       }
       return colors;
     }
-    __name(getDefaultPal, "getDefaultPal");
     pi2._.addCommand("setDefaultInputFocus", setDefaultInputFocus, false, false, ["element"]);
     pi2._.addSetting("defaultInputFocus", setDefaultInputFocus, false, ["element"]);
     function setDefaultInputFocus(args) {
@@ -904,7 +861,6 @@
         piData2.commands["reinitKeyboard"]();
       }
     }
-    __name(setDefaultInputFocus, "setDefaultInputFocus");
     pi2._.addCommand("set", set, false, true, piData2.settingsList, true);
     function set(screenData, args) {
       const options = args[0];
@@ -928,11 +884,9 @@
         }
       }
     }
-    __name(set, "set");
   }
-  __name(init, "init");
 
-  // src/modules/screen-helper.js
+  // src-pi-2.0.0-alpha.0/modules/screen-helper.js
   function init2(pi2) {
     const piData2 = pi2._.data;
     pi2._.addBlendCommand("normal", normalBlend);
@@ -944,7 +898,6 @@
       data[i + 2] = c.b;
       data[i + 3] = c.a;
     }
-    __name(normalBlend, "normalBlend");
     pi2._.addBlendCommand("blend", blendPixel);
     function blendPixel(screenData, x, y, c) {
       const data = screenData.imageData.data;
@@ -956,7 +909,6 @@
       data[i + 2] = c.b * pct + data[i + 2] * pct2;
       data[i + 3] = c.a + data[i + 3] * pct2;
     }
-    __name(blendPixel, "blendPixel");
     pi2._.addCommand("getImageData", getImageData, true, false);
     function getImageData(screenData) {
       if (screenData.dirty === false || screenData.imageData === null) {
@@ -968,12 +920,10 @@
         );
       }
     }
-    __name(getImageData, "getImageData");
     pi2._.addCommand("resetImageData", resetImageData, true, false);
     function resetImageData(screenData) {
       screenData.imageData = null;
     }
-    __name(resetImageData, "resetImageData");
     pi2._.addCommand("setImageDirty", setImageDirty, true, false);
     function setImageDirty(screenData) {
       if (screenData.dirty === false) {
@@ -989,12 +939,10 @@
         }
       }
     }
-    __name(setImageDirty, "setImageDirty");
     pi2._.addCommand("setPixel", setPixel, true, false);
     function setPixel(screenData, x, y, c) {
       screenData.blendPixelCmd(screenData, x, y, c);
     }
-    __name(setPixel, "setPixel");
     pi2._.addCommand("setPixelSafe", setPixelSafe, true, false);
     pi2._.addPen("pixel", setPixelSafe, "square");
     function setPixelSafe(screenData, x, y, c) {
@@ -1006,7 +954,6 @@
       screenData.blendPixelCmd(screenData, x, y, c);
       piData2.commands.setImageDirty(screenData);
     }
-    __name(setPixelSafe, "setPixelSafe");
     pi2._.addCommand("getPixelColor", getPixelColor, true, false);
     function getPixelColor(screenData, c) {
       const noise = screenData.pen.noise;
@@ -1044,7 +991,6 @@
       }
       return c2;
     }
-    __name(getPixelColor, "getPixelColor");
     pi2._.addCommand("drawSquarePen", drawSquarePen, true, false);
     pi2._.addPen("square", drawSquarePen, "square");
     function drawSquarePen(screenData, x, y, c) {
@@ -1062,7 +1008,6 @@
       }
       piData2.commands.setImageDirty(screenData);
     }
-    __name(drawSquarePen, "drawSquarePen");
     pi2._.addCommand("drawCirclePen", drawCirclePen, true, false);
     pi2._.addPen("circle", drawCirclePen, "round");
     function drawCirclePen(screenData, x, y, c) {
@@ -1090,7 +1035,6 @@
       }
       piData2.commands.setImageDirty(screenData);
     }
-    __name(drawCirclePen, "drawCirclePen");
     pi2._.addCommand("getPixelInternal", getPixelInternal, true, false);
     function getPixelInternal(screenData, x, y) {
       const data = screenData.imageData.data;
@@ -1102,13 +1046,11 @@
         "a": data[i + 3]
       };
     }
-    __name(getPixelInternal, "getPixelInternal");
     pi2._.addCommand("getPixelSafe", getPixelSafe, true, false);
     function getPixelSafe(screenData, x, y) {
       piData2.commands.getImageData(screenData);
       return getPixelInternal(screenData, x, y);
     }
-    __name(getPixelSafe, "getPixelSafe");
     pi2._.addCommand("findColorValue", findColorValue, true, false);
     function findColorValue(screenData, colorInput, commandName) {
       let colorValue;
@@ -1133,7 +1075,6 @@
       }
       return colorValue;
     }
-    __name(findColorValue, "findColorValue");
     pi2._.addCommand("put", put, false, true, ["data", "x", "y", "includeZero"]);
     function put(screenData, args) {
       const data = args[0];
@@ -1186,13 +1127,11 @@
       }
       piData2.commands.setImageDirty(screenData);
     }
-    __name(put, "put");
     piData2.defaultPenDraw = setPixelSafe;
     piData2.defaultBlendCmd = normalBlend;
   }
-  __name(init2, "init");
 
-  // src/modules/screen.js
+  // src-pi-2.0.0-alpha.0/modules/screen.js
   function init3(pi2) {
     const piData2 = pi2._.data;
     pi2._.addCommand(
@@ -1286,14 +1225,12 @@
       screenObj.screen = true;
       return screenObj;
     }
-    __name(screen, "screen");
     function setupApiCommand(screenObj, name, screenData, cmd) {
       screenObj[name] = function(...args) {
         const parsedArgs = pi2._.parseOptions(cmd, args);
         return screenData.commands[name](screenData, parsedArgs);
       };
     }
-    __name(setupApiCommand, "setupApiCommand");
     function parseAspect(aspect) {
       let width, height, parts, splitter;
       if (aspect.indexOf(":") > -1) {
@@ -1320,7 +1257,6 @@
         "splitter": splitter
       };
     }
-    __name(parseAspect, "parseAspect");
     function createOffscreenScreen(aspectData, willReadFrequently) {
       const canvas = document.createElement("canvas");
       canvas.width = aspectData.width;
@@ -1339,7 +1275,6 @@
         willReadFrequently
       );
     }
-    __name(createOffscreenScreen, "createOffscreenScreen");
     function createScreen(aspectData, container, resizeCallback, willReadFrequently) {
       const canvas = document.createElement("canvas");
       const bufferCanvas = document.createElement("canvas");
@@ -1391,7 +1326,6 @@
         willReadFrequently
       );
     }
-    __name(createScreen, "createScreen");
     function createNoStyleScreen(aspectData, container, willReadFrequently) {
       const canvas = document.createElement("canvas");
       const bufferCanvas = document.createElement("canvas");
@@ -1420,7 +1354,6 @@
         willReadFrequently
       );
     }
-    __name(createNoStyleScreen, "createNoStyleScreen");
     function createScreenData(canvas, bufferCanvas, container, aspectData, isOffscreen, isNoStyles, resizeCallback, willReadFrequently) {
       const screenData = {};
       screenData.id = piData2.nextScreenId;
@@ -1511,7 +1444,6 @@
       piData2.screens[screenData.id] = screenData;
       return screenData;
     }
-    __name(createScreenData, "createScreenData");
     function setCanvasSize(aspectData, canvas, maxWidth, maxHeight) {
       let width = aspectData.width;
       let height = aspectData.height;
@@ -1562,18 +1494,15 @@
         canvas.height = Math.floor(newHeight);
       }
     }
-    __name(setCanvasSize, "setCanvasSize");
     function getSize(element) {
       return {
         "width": element.offsetWidth || element.clientWidth || element.width,
         "height": element.offsetHeight || element.clientHeight || element.height
       };
     }
-    __name(getSize, "getSize");
   }
-  __name(init3, "init");
 
-  // src/modules/screen-commands.js
+  // src-pi-2.0.0-alpha.0/modules/screen-commands.js
   function init4(pi2) {
     const piData2 = pi2._.data;
     pi2._.addCommand("onevent", onevent, true, true, []);
@@ -1616,10 +1545,10 @@
           newMode = mode;
         }
         if (once) {
-          fn = /* @__PURE__ */ __name(function(data, customData2) {
+          fn = function(data, customData2) {
             offevent(mode, originalFn, modes, name, listenerArr, extraId);
             originalFn(data, customData2);
-          }, "fn");
+          };
         }
         if (!listenerArr[newMode]) {
           listenerArr[newMode] = [];
@@ -1635,7 +1564,6 @@
       }, 1);
       return true;
     }
-    __name(onevent, "onevent");
     pi2._.addCommand("offevent", offevent, true, true, []);
     function offevent(mode, fn, modes, name, listenerArr, extraId) {
       let modeFound = false;
@@ -1678,7 +1606,6 @@
       }
       return false;
     }
-    __name(offevent, "offevent");
     pi2._.addCommand("clearEvents", clearEvents, false, true, []);
     function clearEvents(screenData) {
       screenData.onMouseEventListeners = {};
@@ -1691,7 +1618,6 @@
       screenData.clickEventListenersActive = 0;
       screenData.lastEvent = null;
     }
-    __name(clearEvents, "clearEvents");
     pi2._.addCommand("setAutoRender", setAutoRender, false, true, ["isAutoRender"]);
     pi2._.addSetting("autoRender", setAutoRender, true, ["isAutoRender"]);
     function setAutoRender(screenData, args) {
@@ -1700,7 +1626,6 @@
         screenData.screenObj.render();
       }
     }
-    __name(setAutoRender, "setAutoRender");
     pi2._.addCommand("removeScreen", removeScreen, false, true, []);
     function removeScreen(screenData) {
       const screenId = screenData.id;
@@ -1730,7 +1655,6 @@
       screenData.screenObj = null;
       delete piData2.screens[screenId];
     }
-    __name(removeScreen, "removeScreen");
     pi2._.addCommand("render", render, false, true, []);
     function render(screenData) {
       if (screenData.dirty === true) {
@@ -1742,22 +1666,18 @@
         screenData.dirty = false;
       }
     }
-    __name(render, "render");
     pi2._.addCommand("width", getWidth, false, true, []);
     function getWidth(screenData) {
       return screenData.width;
     }
-    __name(getWidth, "getWidth");
     pi2._.addCommand("height", getHeight, false, true, []);
     function getHeight(screenData) {
       return screenData.height;
     }
-    __name(getHeight, "getHeight");
     pi2._.addCommand("canvas", getCanvas, false, true, []);
     function getCanvas(screenData) {
       return screenData.canvas;
     }
-    __name(getCanvas, "getCanvas");
     pi2._.addCommand("setBgColor", setBgColor, false, true, ["color"]);
     pi2._.addSetting("bgColor", setBgColor, true, ["color"]);
     function setBgColor(screenData, args) {
@@ -1776,7 +1696,6 @@
         throw error;
       }
     }
-    __name(setBgColor, "setBgColor");
     pi2._.addCommand("setContainerBgColor", setContainerBgColor, false, true, ["color"]);
     pi2._.addSetting("containerBgColor", setContainerBgColor, true, ["color"]);
     function setContainerBgColor(screenData, args) {
@@ -1799,7 +1718,6 @@
         }
       }
     }
-    __name(setContainerBgColor, "setContainerBgColor");
     pi2._.addCommand(
       "findColor",
       findColor,
@@ -1851,7 +1769,6 @@
       }
       return 0;
     }
-    __name(findColor, "findColor");
     pi2._.addCommand("setColor", setColor, false, true, ["color", "isAddToPalette"]);
     pi2._.addSetting("color", setColor, true, ["color", "isAddToPalette"]);
     function setColor(screenData, args) {
@@ -1877,7 +1794,6 @@
       screenData.context.fillStyle = screenData.fColor.s;
       screenData.context.strokeStyle = screenData.fColor.s;
     }
-    __name(setColor, "setColor");
     pi2._.addCommand("setPenSize", setPenSize, false, true, ["size"]);
     pi2._.addSetting("penSize", setPenSize, true, ["size"]);
     function setPenSize(screenData, args) {
@@ -1893,7 +1809,6 @@
       screenData.pen.size = size;
       screenData.context.lineWidth = size;
     }
-    __name(setPenSize, "setPenSize");
     pi2._.addCommand("getPal", getPal, false, true, []);
     function getPal(screenData) {
       const colors = [];
@@ -1909,7 +1824,6 @@
       }
       return colors;
     }
-    __name(getPal, "getPal");
     pi2._.addCommand("setPalColor", setPalColor, false, true, ["index", "color"]);
     pi2._.addSetting("palColor", setPalColor, true, ["index", "color"]);
     function setPalColor(screenData, args) {
@@ -1936,7 +1850,6 @@
       }
       screenData.pal[index] = colorValue;
     }
-    __name(setPalColor, "setPalColor");
     pi2._.addCommand("swapColor", swapColor, false, true, ["oldColor", "newColor"]);
     function swapColor(screenData, args) {
       let oldColor = args[0];
@@ -1984,7 +1897,6 @@
       piData2.commands.setImageDirty(screenData);
       screenData.pal[index] = newColor;
     }
-    __name(swapColor, "swapColor");
     pi2._.addCommand("setPixelMode", setPixelMode, false, true, ["isEnabled"]);
     pi2._.addSetting("pixelMode", setPixelMode, true, ["isEnabled"]);
     function setPixelMode(screenData, args) {
@@ -1997,7 +1909,6 @@
         screenData.pixelMode = false;
       }
     }
-    __name(setPixelMode, "setPixelMode");
     pi2._.addCommand("setPen", setPen, false, true, ["pen", "size", "noise"]);
     pi2._.addSetting("pen", setPen, true, ["pen", "size", "noise"]);
     function setPen(screenData, args) {
@@ -2050,7 +1961,6 @@
       screenData.pen.size = size;
       screenData.context.lineCap = piData2.pens[pen].cap;
     }
-    __name(setPen, "setPen");
     pi2._.addCommand("setBlendMode", setBlendMode, false, true, ["mode"]);
     pi2._.addSetting("blendMode", setBlendMode, true, ["mode"]);
     function setBlendMode(screenData, args) {
@@ -2064,7 +1974,6 @@
       }
       screenData.blendPixelCmd = piData2.blendCommands[mode];
     }
-    __name(setBlendMode, "setBlendMode");
     pi2._.addCommand("getPixel", getPixel, false, true, ["x", "y"]);
     function getPixel(screenData, args) {
       const x = Math.round(args[0]);
@@ -2084,7 +1993,6 @@
         "a": data[i + 3]
       });
     }
-    __name(getPixel, "getPixel");
     pi2._.addCommand("filterImg", filterImg, false, true, ["filter"]);
     function filterImg(screenData, args) {
       const filter = args[0];
@@ -2114,7 +2022,6 @@
       }
       piData2.commands.setImageDirty(screenData);
     }
-    __name(filterImg, "filterImg");
     pi2._.addCommand(
       "get",
       get,
@@ -2176,11 +2083,9 @@
       }
       return data;
     }
-    __name(get, "get");
   }
-  __name(init4, "init");
 
-  // src/modules/graphics-pixel.js
+  // src-pi-2.0.0-alpha.0/modules/graphics-pixel.js
   function init5(pi2) {
     const piData2 = pi2._.data;
     pi2._.addCommand("cls", cls, false, true, ["x", "y", "width", "height"]);
@@ -2203,7 +2108,6 @@
       }
       piData2.commands.resetImageData(screenData);
     }
-    __name(cls, "cls");
     pi2._.addCommands("pset", pset, aaPset, ["x", "y"]);
     function pset(screenData, args) {
       let x = Math.round(args[0]);
@@ -2223,7 +2127,6 @@
       screenData.pen.draw(screenData, x, y, color);
       piData2.commands.setImageDirty(screenData);
     }
-    __name(pset, "pset");
     function aaPset(screenData, args) {
       const x = args[0];
       const y = args[1];
@@ -2234,7 +2137,6 @@
       }
       screenData.context.fillRect(x, y, 1, 1);
     }
-    __name(aaPset, "aaPset");
     pi2._.addCommands("line", pxLine, aaLine, ["x1", "y1", "x2", "y2"]);
     function pxLine(screenData, args) {
       let x1 = Math.round(args[0]);
@@ -2270,7 +2172,6 @@
       }
       piData2.commands.setImageDirty(screenData);
     }
-    __name(pxLine, "pxLine");
     function aaLine(screenData, args) {
       const x1 = args[0];
       const y1 = args[1];
@@ -2290,7 +2191,6 @@
       ctx.lineTo(x2, y2);
       ctx.stroke();
     }
-    __name(aaLine, "aaLine");
     pi2._.addCommands("circle", pxCircle, aaCircle, ["x", "y", "radius", "fillColor"]);
     function pxCircle(screenData, args) {
       let x = Math.round(args[0]);
@@ -2369,7 +2269,6 @@
       }
       piData2.commands.setImageDirty(screenData);
     }
-    __name(pxCircle, "pxCircle");
     function aaCircle(screenData, args) {
       let x = args[0] + 0.5;
       let y = args[1] + 0.5;
@@ -2403,7 +2302,6 @@
       ctx.strokeStyle = strokeColor;
       ctx.stroke();
     }
-    __name(aaCircle, "aaCircle");
     pi2._.addCommands("rect", pxRect, aaRect, ["x", "y", "width", "height", "fillColor"]);
     function pxRect(screenData, args) {
       let x = Math.round(args[0]);
@@ -2442,7 +2340,6 @@
       }
       piData2.commands.setImageDirty(screenData);
     }
-    __name(pxRect, "pxRect");
     function aaRect(screenData, args) {
       const x = args[0];
       const y = args[1];
@@ -2470,7 +2367,6 @@
         ctx.strokeRect(x, y, width, height);
       }
     }
-    __name(aaRect, "aaRect");
     pi2._.addCommands(
       "ellipse",
       pxEllipse,
@@ -2564,7 +2460,6 @@
       }
       piData2.commands.setImageDirty(screenData);
     }
-    __name(pxEllipse, "pxEllipse");
     function aaEllipse(screenData, args) {
       const cx = args[0];
       const cy = args[1];
@@ -2599,7 +2494,6 @@
       ctx.stroke();
       piData2.commands.resetImageData(screenData);
     }
-    __name(aaEllipse, "aaEllipse");
     pi2._.addCommands("arc", pxArc, aaArc, ["x", "y", "radius", "angle1", "angle2"]);
     function pxArc(screenData, args) {
       let x = Math.round(args[0]);
@@ -2625,7 +2519,6 @@
         }
         return a >= angle1 && a <= angle2;
       }
-      __name(shouldDrawPixel, "shouldDrawPixel");
       radius -= 1;
       if (radius < 0) {
         radius = 0;
@@ -2695,7 +2588,6 @@
       }
       piData2.commands.setImageDirty(screenData);
     }
-    __name(pxArc, "pxArc");
     function aaArc(screenData, args) {
       let x = args[0];
       let y = args[1];
@@ -2724,11 +2616,9 @@
       ctx.stroke();
       piData2.commands.resetImageData(screenData);
     }
-    __name(aaArc, "aaArc");
   }
-  __name(init5, "init");
 
-  // src/modules/paint.js
+  // src-pi-2.0.0-alpha.0/modules/paint.js
   function init6(pi2) {
     const piData2 = pi2._.data;
     const m_maxDifference = 255 * 255 * 3.25;
@@ -2833,12 +2723,10 @@
       m_pixels = null;
       piData2.commands.setImageDirty(screenData);
     }
-    __name(paint, "paint");
     function setPixelNoise(screenData, x, y, fillColor) {
       fillColor = piData2.commands.getPixelColor(screenData, fillColor);
       piData2.commands.setPixel(screenData, x, y, fillColor);
     }
-    __name(setPixelNoise, "setPixelNoise");
     function checkPixel(x, y) {
       const key = x + " " + y;
       if (m_pixels[key]) {
@@ -2847,7 +2735,6 @@
       m_pixels[key] = true;
       return false;
     }
-    __name(checkPixel, "checkPixel");
     function addFill(screenData, x, y, fills, fillColor, backgroundColor, tolerance) {
       if (floodCheck(screenData, x, y, fillColor, backgroundColor, tolerance)) {
         m_setPixel(screenData, x, y, fillColor);
@@ -2855,7 +2742,6 @@
         fills.push(fill);
       }
     }
-    __name(addFill, "addFill");
     function floodCheck(screenData, x, y, fillColor, backgroundColor, tolerance) {
       if (x < 0 || x >= screenData.width || y < 0 || y >= screenData.height) {
         return false;
@@ -2872,11 +2758,9 @@
       }
       return false;
     }
-    __name(floodCheck, "floodCheck");
   }
-  __name(init6, "init");
 
-  // src/modules/bezier.js
+  // src-pi-2.0.0-alpha.0/modules/bezier.js
   function init7(pi2) {
     const piData2 = pi2._.data;
     pi2._.addCommands(
@@ -2930,7 +2814,6 @@
       screenData.pen.draw(screenData, point.x, point.y, color);
       piData2.commands.setImageDirty(screenData);
     }
-    __name(pxBezier, "pxBezier");
     function aaBezier(screenData, args) {
       let xStart = args[0] + 0.5;
       let yStart = args[1] + 0.5;
@@ -2956,13 +2839,11 @@
       ctx.stroke();
       piData2.commands.resetImageData(screenData);
     }
-    __name(aaBezier, "aaBezier");
     function calcDistance(p1, p2) {
       const dx = p1.x - p2.x;
       const dy = p1.y - p2.y;
       return dx * dx + dy * dy;
     }
-    __name(calcDistance, "calcDistance");
     function calcStep(t, points) {
       const a = 1 - t;
       const a2 = a * a;
@@ -2978,11 +2859,9 @@
         )
       };
     }
-    __name(calcStep, "calcStep");
   }
-  __name(init7, "init");
 
-  // src/modules/images.js
+  // src-pi-2.0.0-alpha.0/modules/images.js
   function init8(pi2) {
     const piData2 = pi2._.data;
     const m_piWait = pi2._.wait;
@@ -3041,7 +2920,6 @@
       }
       return name;
     }
-    __name(loadImage, "loadImage");
     pi2._.addCommand(
       "loadSpritesheet",
       loadSpritesheet,
@@ -3091,7 +2969,7 @@
         name = "" + piData2.imageCount;
         piData2.imageCount += 1;
       }
-      m_callback = /* @__PURE__ */ __name(function() {
+      m_callback = function() {
         const imageData = piData2.images[name];
         imageData.type = "spritesheet";
         imageData.spriteWidth = spriteWidth;
@@ -3134,7 +3012,6 @@
               }
             }
           };
-          __name(getCluster, "getCluster");
           const searched = {};
           const canvas = document.createElement("canvas");
           canvas.width = width;
@@ -3195,11 +3072,10 @@
             y2 = y1 + imageData.spriteHeight;
           }
         }
-      }, "m_callback");
+      };
       loadImage([src, name]);
       return name;
     }
-    __name(loadSpritesheet, "loadSpritesheet");
     pi2._.addCommand("getSpritesheetData", getSpritesheetData, false, true, ["name"]);
     function getSpritesheetData(screenData, args) {
       const name = args[0];
@@ -3233,7 +3109,6 @@
       }
       return spriteData;
     }
-    __name(getSpritesheetData, "getSpritesheetData");
     pi2._.addCommand("getImage", getImage, false, true, ["name", "x1", "y1", "x2", "y2"]);
     function getImage(screenData, args) {
       let name = args[0];
@@ -3270,7 +3145,6 @@
       };
       return name;
     }
-    __name(getImage, "getImage");
     pi2._.addCommand("removeImage", removeImage, false, false, ["name"]);
     function removeImage(args) {
       const name = args[0];
@@ -3281,7 +3155,6 @@
       }
       delete piData2.images[name];
     }
-    __name(removeImage, "removeImage");
     pi2._.addCommand(
       "drawImage",
       drawImage,
@@ -3328,7 +3201,6 @@
       }
       drawItem(screenData, img, x, y, angle, anchorX, anchorY, alpha, null, scaleX, scaleY);
     }
-    __name(drawImage, "drawImage");
     pi2._.addCommand(
       "drawSprite",
       drawSprite,
@@ -3388,7 +3260,6 @@
         scaleY
       );
     }
-    __name(drawSprite, "drawSprite");
     function drawItem(screenData, img, x, y, angle, anchorX, anchorY, alpha, spriteData, scaleX, scaleY) {
       if (scaleX == null || isNaN(Number(scaleX))) {
         scaleX = 1;
@@ -3444,11 +3315,9 @@
       context.globalAlpha = oldAlpha;
       piData2.commands.resetImageData(screenData);
     }
-    __name(drawItem, "drawItem");
   }
-  __name(init8, "init");
 
-  // src/modules/font.js
+  // src-pi-2.0.0-alpha.0/modules/font.js
   function init9(pi2) {
     const piData2 = pi2._.data;
     const m_piWait = pi2._.wait;
@@ -3521,11 +3390,9 @@
       }
       return font.id;
     }
-    __name(loadFont, "loadFont");
     function loadFontFromBase32Encoded(fontSrc, width, height, font) {
       font.data = decompressFont(fontSrc, width, height);
     }
-    __name(loadFontFromBase32Encoded, "loadFontFromBase32Encoded");
     function decompressFont(numStr, width, height) {
       const size = 32;
       const base = 32;
@@ -3567,7 +3434,6 @@
       }
       return data;
     }
-    __name(decompressFont, "decompressFont");
     function loadFontFromImg(fontSrc, font) {
       let img;
       if (typeof fontSrc === "string") {
@@ -3596,7 +3462,6 @@
         font.image = img;
       }
     }
-    __name(loadFontFromImg, "loadFontFromImg");
     pi2._.addCommand("setDefaultFont", setDefaultFont, false, false, ["fontId"]);
     pi2._.addSetting("defaultFont", setDefaultFont, false, ["fontId"]);
     function setDefaultFont(args) {
@@ -3608,7 +3473,6 @@
       }
       piData2.defaultFont = piData2.fonts[fontId];
     }
-    __name(setDefaultFont, "setDefaultFont");
     pi2._.addCommand("setFont", setFont, false, true, ["fontId"]);
     pi2._.addSetting("font", setFont, true, ["fontId"]);
     function setFont(screenData, args) {
@@ -3634,7 +3498,6 @@
         screenData.printCursor.rows = Math.floor(screenData.height / size.height);
       }
     }
-    __name(setFont, "setFont");
     function calcFontSize(context) {
       let px = context.measureText("M").width;
       px = Math.round(px * 1.5);
@@ -3668,13 +3531,11 @@
       size.height += 1;
       return size;
     }
-    __name(calcFontSize, "calcFontSize");
     pi2._.addCommand("canvasPrint", canvasPrint, true, false);
     function canvasPrint(screenData, msg, x, y) {
       screenData.context.fillStyle = screenData.fColor.s;
       screenData.context.fillText(msg, x, y);
     }
-    __name(canvasPrint, "canvasPrint");
     pi2._.addCommand("bitmapPrint", bitmapPrint, true, false);
     function bitmapPrint(screenData, msg, x, y) {
       screenData.screenObj.render();
@@ -3698,7 +3559,6 @@
         );
       }
     }
-    __name(bitmapPrint, "bitmapPrint");
     pi2._.addCommand("getAvailableFonts", getAvailableFonts, false, false, []);
     function getAvailableFonts() {
       const data = [];
@@ -3711,7 +3571,6 @@
       }
       return data;
     }
-    __name(getAvailableFonts, "getAvailableFonts");
     pi2._.addCommand("setFontSize", setFontSize, false, true, ["width", "height"]);
     pi2._.addSetting("fontSize", setFontSize, true, ["width", "height"]);
     function setFontSize(screenData, args) {
@@ -3736,7 +3595,6 @@
       screenData.printCursor.cols = Math.floor(screenData.width / width);
       screenData.printCursor.rows = Math.floor(screenData.height / height);
     }
-    __name(setFontSize, "setFontSize");
     pi2._.addCommand("setChar", setChar, false, true, ["code", "data"]);
     pi2._.addSetting("char", setChar, true, ["code", "data"]);
     function setChar(screenData, args) {
@@ -3789,11 +3647,9 @@
       }
       screenData.printCursor.font.data[code] = data;
     }
-    __name(setChar, "setChar");
   }
-  __name(init9, "init");
 
-  // src/modules/print.js
+  // src-pi-2.0.0-alpha.0/modules/print.js
   function init10(pi2) {
     const piData2 = pi2._.data;
     pi2._.addCommand("print", print, false, true, ["msg", "inLine", "isCentered"]);
@@ -3815,7 +3671,6 @@
         startPrint(screenData, parts[i], inLine, isCentered);
       }
     }
-    __name(print, "print");
     function startPrint(screenData, msg, inLine, isCentered) {
       const printCursor = screenData.printCursor;
       let width = printCursor.font.calcWidth(screenData, msg);
@@ -3861,7 +3716,6 @@
         }
       }
     }
-    __name(startPrint, "startPrint");
     function shiftImageUp(screenData, yOffset) {
       if (yOffset <= 0) {
         return;
@@ -3890,23 +3744,19 @@
       }
       piData2.commands.setImageDirty(screenData);
     }
-    __name(shiftImageUp, "shiftImageUp");
     pi2._.addCommand("piCalcWidth", piCalcWidth, true, false);
     function piCalcWidth(screenData, msg) {
       return screenData.printCursor.font.width * msg.length;
     }
-    __name(piCalcWidth, "piCalcWidth");
     pi2._.addCommand("canvasCalcWidth", canvasCalcWidth, true, false);
     function canvasCalcWidth(screenData, msg) {
       return screenData.context.measureText(msg).width;
     }
-    __name(canvasCalcWidth, "canvasCalcWidth");
     pi2._.addCommand("setWordBreak", setWordBreak, false, true, ["isEnabled"]);
     pi2._.addSetting("wordBreak", setWordBreak, true, ["isEnabled"]);
     function setWordBreak(screenData, args) {
       screenData.printCursor.breakWord = !!args[0];
     }
-    __name(setWordBreak, "setWordBreak");
     pi2._.addCommand("piPrint", piPrint, true, false);
     function piPrint(screenData, msg, x, y) {
       const printCursor = screenData.printCursor;
@@ -3925,7 +3775,6 @@
       }
       screenData.pal = defaultPal;
     }
-    __name(piPrint, "piPrint");
     pi2._.addCommand("setPos", setPos, false, true, ["col", "row"]);
     pi2._.addSetting("pos", setPos, true, ["col", "row"]);
     function setPos(screenData, args) {
@@ -3956,7 +3805,6 @@
         screenData.printCursor.y = y;
       }
     }
-    __name(setPos, "setPos");
     pi2._.addCommand("setPosPx", setPosPx, false, true, ["x", "y"]);
     pi2._.addSetting("posPx", setPosPx, true, ["x", "y"]);
     function setPosPx(screenData, args) {
@@ -3979,7 +3827,6 @@
         screenData.printCursor.y = Math.round(y);
       }
     }
-    __name(setPosPx, "setPosPx");
     pi2._.addCommand("getPos", getPos, false, true, []);
     function getPos(screenData) {
       return {
@@ -3991,17 +3838,14 @@
         )
       };
     }
-    __name(getPos, "getPos");
     pi2._.addCommand("getCols", getCols, false, true, []);
     function getCols(screenData) {
       return screenData.printCursor.cols;
     }
-    __name(getCols, "getCols");
     pi2._.addCommand("getRows", getRows, false, true, []);
     function getRows(screenData) {
       return screenData.printCursor.rows;
     }
-    __name(getRows, "getRows");
     pi2._.addCommand("getPosPx", getPosPx, false, true, []);
     function getPosPx(screenData) {
       return {
@@ -4009,11 +3853,9 @@
         "y": screenData.printCursor.y
       };
     }
-    __name(getPosPx, "getPosPx");
   }
-  __name(init10, "init");
 
-  // src/modules/table.js
+  // src-pi-2.0.0-alpha.0/modules/table.js
   function init11(pi2) {
     const piData2 = pi2._.data;
     const m_borderStyles = {
@@ -4109,7 +3951,6 @@
         return buildStandardTable(screenData, items, width, borderStyle);
       }
     }
-    __name(printTable, "printTable");
     function buildStandardTable(screenData, items, width, borders) {
       let msg = "";
       const boxes = [];
@@ -4199,7 +4040,6 @@
       piData2.commands.print(screenData, [msg]);
       return boxes;
     }
-    __name(buildStandardTable, "buildStandardTable");
     function buildFormatedTable(screenData, items, borders, tableFormat, isCentered) {
       let msg = "";
       const boxes = [];
@@ -4280,7 +4120,6 @@
       );
       return boxes;
     }
-    __name(buildFormatedTable, "buildFormatedTable");
     function printItem(screenData, box, msg) {
       if (!box) {
         return;
@@ -4319,7 +4158,6 @@
       }
       piData2.commands.setPos(screenData, [pos.col, pos.row]);
     }
-    __name(printItem, "printItem");
     function createBox(col, row, boxes, font) {
       boxes.push({
         "pos": {
@@ -4337,7 +4175,6 @@
         "format": " "
       });
     }
-    __name(createBox, "createBox");
     function completeBoxes(boxes, tableFormat, font, pos) {
       for (let i = 0; i < boxes.length; i += 1) {
         const box = boxes[i];
@@ -4380,7 +4217,6 @@
         }
       }
     }
-    __name(completeBoxes, "completeBoxes");
     function lookCell(x, y, dir, tableFormat) {
       if (dir === "left") {
         x -= 1;
@@ -4405,11 +4241,9 @@
       }
       return tableFormat[y].charAt(x);
     }
-    __name(lookCell, "lookCell");
   }
-  __name(init11, "init");
 
-  // src/modules/keyboard.js
+  // src-pi-2.0.0-alpha.0/modules/keyboard.js
   function init12(pi2) {
     const piData2 = pi2._.data;
     let m_inKeys = {};
@@ -4445,7 +4279,6 @@
       target.addEventListener("blur", clearPressedKeys);
       m_keyboardStarted = true;
     }
-    __name(startKeyboard, "startKeyboard");
     pi2._.addCommand("stopKeyboard", stopKeyboard, false, false, []);
     function stopKeyboard() {
       m_inKeys = {};
@@ -4465,7 +4298,6 @@
       }
       m_keyboardStarted = false;
     }
-    __name(stopKeyboard, "stopKeyboard");
     function onKeyDown(e) {
       const key = e.key;
       const code = e.code;
@@ -4487,7 +4319,6 @@
         triggerKeyEventListeners("down", key, code);
       }
     }
-    __name(onKeyDown, "onKeyDown");
     function onKeyUp(e) {
       const key = e.key;
       const code = e.code;
@@ -4499,7 +4330,6 @@
         triggerKeyEventListeners("up", key, code);
       }
     }
-    __name(onKeyUp, "onKeyUp");
     function clearPressedKeys() {
       for (const i in m_inKeys) {
         m_inKeys[i] = false;
@@ -4511,7 +4341,6 @@
         m_inCodes[i] = false;
       }
     }
-    __name(clearPressedKeys, "clearPressedKeys");
     function triggerKeyEventListeners(mode, key, code) {
       const keyListeners = m_onKeyEventListeners[key];
       if (keyListeners && keyListeners[mode]) {
@@ -4545,7 +4374,6 @@
         }
       }
     }
-    __name(triggerKeyEventListeners, "triggerKeyEventListeners");
     pi2._.addCommand("inkey", inkey, false, false, ["key"]);
     function inkey(args) {
       const key = args[0];
@@ -4567,7 +4395,6 @@
       }
       return keysReturn;
     }
-    __name(inkey, "inkey");
     pi2._.addCommand("onkey", onkey, false, false, ["key", "mode", "fn", "once"]);
     function onkey(args) {
       const key = args[0];
@@ -4596,7 +4423,6 @@
       }
       m_onKeyEventListeners[key][mode].push({ "fn": fn, "once": once });
     }
-    __name(onkey, "onkey");
     pi2._.addCommand("offkey", offkey, false, false, ["key", "mode", "fn"]);
     function offkey(args) {
       const key = args[0];
@@ -4624,7 +4450,6 @@
         }
       }
     }
-    __name(offkey, "offkey");
     pi2._.addCommand("preventKey", preventKey, false, false, ["key", "isPrevent"]);
     function preventKey(args) {
       const key = args[0];
@@ -4635,7 +4460,6 @@
         delete m_preventKeys[key];
       }
     }
-    __name(preventKey, "preventKey");
     pi2._.addCommand("clearKeys", clearKeys, false, false, []);
     function clearKeys() {
       m_inKeys = {};
@@ -4644,7 +4468,6 @@
       m_inputs = [];
       m_inputIndex = 0;
     }
-    __name(clearKeys, "clearKeys");
     pi2._.addCommand("reinitKeyboard", reinitKeyboard, true, false);
     function reinitKeyboard() {
       if (m_keyboardStarted) {
@@ -4653,7 +4476,6 @@
         startKeyboard();
       }
     }
-    __name(reinitKeyboard, "reinitKeyboard");
     pi2._.addCommand("setInputFocus", setInputFocus, false, true, ["element"]);
     function setInputFocus(screenData, args) {
       let element = args[0];
@@ -4673,7 +4495,6 @@
         startKeyboard();
       }
     }
-    __name(setInputFocus, "setInputFocus");
     pi2._.addCommand("onkeyCombo", onkeyCombo, false, false, ["keys", "fn", "once"]);
     function onkeyCombo(args) {
       const keys = args[0];
@@ -4706,7 +4527,6 @@
         addKeyCombo(keys[i], i, allKeys, fn, once, comboData);
       }
     }
-    __name(onkeyCombo, "onkeyCombo");
     function addKeyCombo(key, i, allKeys, fn, once, comboData) {
       comboData.keyData.push({
         "key": key,
@@ -4726,13 +4546,10 @@
           fn(e);
         }
       }
-      __name(keyComboDown, "keyComboDown");
       function keyComboUp(e) {
         allKeys[i] = false;
       }
-      __name(keyComboUp, "keyComboUp");
     }
-    __name(addKeyCombo, "addKeyCombo");
     pi2._.addCommand("offkeyCombo", offkeyCombo, false, false, ["keys", "fn"]);
     function offkeyCombo(args) {
       const keys = args[0];
@@ -4759,7 +4576,6 @@
         delete m_onKeyCombos[comboId];
       }
     }
-    __name(offkeyCombo, "offkeyCombo");
     pi2._.addCommand("input", input, false, true, [
       "prompt",
       "callback",
@@ -4805,7 +4621,6 @@
       }
       return promise;
     }
-    __name(input, "input");
     function startInputCollection() {
       startKeyboard();
       const input2 = m_inputQueue[m_inputQueueIndex];
@@ -4820,7 +4635,6 @@
       }
       onkey([null, "down", collectInput, false]);
     }
-    __name(startInputCollection, "startInputCollection");
     function collectInput(event) {
       const input2 = m_inputQueue[m_inputQueueIndex];
       if (!input2) {
@@ -4857,7 +4671,6 @@
       }
       showPrompt();
     }
-    __name(collectInput, "collectInput");
     function showPrompt(hideCursor) {
       if (m_inputQueue.length === 0 || m_inputQueueIndex >= m_inputQueue.length) {
         return;
@@ -4907,7 +4720,6 @@
       piData2.commands.setPos(screenData, [pos.col, pos.row]);
       piData2.commands.render(screenData);
     }
-    __name(showPrompt, "showPrompt");
     function finishInput(input2) {
       showPrompt(true);
       if (m_promptInterval) {
@@ -4931,7 +4743,6 @@
         startInputCollection();
       }
     }
-    __name(finishInput, "finishInput");
     function processInputValue(input2) {
       if (input2.isNumber) {
         if (input2.val === "" || input2.val === "-") {
@@ -4944,7 +4755,6 @@
         }
       }
     }
-    __name(processInputValue, "processInputValue");
     pi2._.addCommand("cancelInput", cancelInput, false, true, []);
     function cancelInput(screenData) {
       for (let i = m_inputQueue.length - 1; i >= 0; i--) {
@@ -4960,7 +4770,6 @@
       offkey([null, "down", collectInput]);
       m_inputQueueIndex = 0;
     }
-    __name(cancelInput, "cancelInput");
     pi2._.addCommand("setInputCursor", setInputCursor, false, true, ["cursor"]);
     pi2._.addSetting("inputCursor", setInputCursor, true, ["cursor"]);
     function setInputCursor(screenData, args) {
@@ -4993,11 +4802,9 @@
       }
       screenData.printCursor.prompt = cursor;
     }
-    __name(setInputCursor, "setInputCursor");
   }
-  __name(init12, "init");
 
-  // src/modules/mouse.js
+  // src-pi-2.0.0-alpha.0/modules/mouse.js
   function init13(pi2) {
     const piData2 = pi2._.data;
     pi2._.addCommand("startMouse", startMouse, false, true, []);
@@ -5010,7 +4817,6 @@
         screenData.mouseStarted = true;
       }
     }
-    __name(startMouse, "startMouse");
     pi2._.addCommand("stopMouse", stopMouse, false, true, []);
     function stopMouse(screenData) {
       if (screenData.mouseStarted) {
@@ -5021,7 +4827,6 @@
         screenData.mouseStarted = false;
       }
     }
-    __name(stopMouse, "stopMouse");
     function mouseMove(e) {
       const screenData = piData2.screens[e.target.dataset.screenId];
       if (!screenData) return;
@@ -5041,7 +4846,6 @@
         );
       }
     }
-    __name(mouseMove, "mouseMove");
     function mouseDown(e) {
       const screenData = piData2.screens[e.target.dataset.screenId];
       if (!screenData) return;
@@ -5069,7 +4873,6 @@
         );
       }
     }
-    __name(mouseDown, "mouseDown");
     function mouseUp(e) {
       const screenData = piData2.screens[e.target.dataset.screenId];
       if (!screenData) return;
@@ -5097,12 +4900,10 @@
         );
       }
     }
-    __name(mouseUp, "mouseUp");
     function onContextMenu(e) {
       e.preventDefault();
       return false;
     }
-    __name(onContextMenu, "onContextMenu");
     function updateMouse(screenData, e, eventType) {
       const rect = screenData.canvas.getBoundingClientRect();
       const scaleX = screenData.width / rect.width;
@@ -5116,7 +4917,6 @@
       screenData.mouse.eventType = eventType;
       screenData.lastEvent = "mouse";
     }
-    __name(updateMouse, "updateMouse");
     function getMouse(screenData) {
       return {
         "x": screenData.mouse.x,
@@ -5128,13 +4928,11 @@
         "eventType": screenData.mouse.eventType
       };
     }
-    __name(getMouse, "getMouse");
     pi2._.addCommand("inmouse", inmouse, false, true, []);
     function inmouse(screenData) {
       piData2.commands.startMouse(screenData);
       return getMouse(screenData);
     }
-    __name(inmouse, "inmouse");
     pi2._.addCommand("onmouse", onmouse, false, true, ["mode", "fn", "once"]);
     function onmouse(screenData, args) {
       const mode = args[0] || "down";
@@ -5156,7 +4954,6 @@
       screenData.onMouseEventListeners[mode].push({ "fn": fn, "once": once });
       screenData.mouseEventListenersActive++;
     }
-    __name(onmouse, "onmouse");
     pi2._.addCommand("offmouse", offmouse, false, true, ["mode", "fn"]);
     function offmouse(screenData, args) {
       const mode = args[0] || "down";
@@ -5174,7 +4971,6 @@
         }
       }
     }
-    __name(offmouse, "offmouse");
     pi2._.addCommand("triggerEventListeners", triggerEventListeners, true, false);
     function triggerEventListeners(mode, data, listeners, extraMode) {
       if (!listeners || !listeners[mode]) {
@@ -5188,7 +4984,6 @@
         }
       }
     }
-    __name(triggerEventListeners, "triggerEventListeners");
     pi2._.addCommand("getMouse", getMouse, true, true, []);
     function getMouse(screenData) {
       return {
@@ -5201,7 +4996,6 @@
         "type": "mouse"
       };
     }
-    __name(getMouse, "getMouse");
     pi2._.addCommand("inpress", inpress, false, true, []);
     function inpress(screenData) {
       piData2.commands.startMouse(screenData);
@@ -5211,7 +5005,6 @@
       }
       return piData2.commands.getMouse(screenData);
     }
-    __name(inpress, "inpress");
     pi2._.addCommand(
       "onpress",
       onpress,
@@ -5243,7 +5036,6 @@
         screenData.pressEventListenersActive += 1;
       }
     }
-    __name(onpress, "onpress");
     pi2._.addCommand("offpress", offpress, false, true, ["mode", "fn"]);
     function offpress(screenData, args) {
       const mode = args[0];
@@ -5266,7 +5058,6 @@
         }
       }
     }
-    __name(offpress, "offpress");
     pi2._.addCommand(
       "onclick",
       onclick,
@@ -5305,7 +5096,6 @@
         screenData.clickEventListenersActive += 1;
       }
     }
-    __name(onclick, "onclick");
     pi2._.addCommand("offclick", offclick, false, true, ["fn"]);
     function offclick(screenData, args) {
       const fn = args[0];
@@ -5327,18 +5117,15 @@
         }
       }
     }
-    __name(offclick, "offclick");
     pi2._.addCommand("setEnableContextMenu", setEnableContextMenu, false, true, ["isEnabled"]);
     pi2._.addSetting("enableContextMenu", setEnableContextMenu, true, ["isEnabled"]);
     function setEnableContextMenu(screenData, args) {
       screenData.isContextMenuEnabled = !!args[0];
       startMouse(screenData);
     }
-    __name(setEnableContextMenu, "setEnableContextMenu");
   }
-  __name(init13, "init");
 
-  // src/modules/touch.js
+  // src-pi-2.0.0-alpha.0/modules/touch.js
   function init14(pi2) {
     const piData2 = pi2._.data;
     pi2._.addCommand("startTouch", startTouch, false, true, []);
@@ -5351,7 +5138,6 @@
         screenData.touchStarted = true;
       }
     }
-    __name(startTouch, "startTouch");
     pi2._.addCommand("stopTouch", stopTouch, false, true, []);
     function stopTouch(screenData) {
       if (screenData.touchStarted) {
@@ -5362,7 +5148,6 @@
         screenData.touchStarted = false;
       }
     }
-    __name(stopTouch, "stopTouch");
     function touchStart(e) {
       piData2.isTouchScreen = true;
       const screenData = piData2.screens[e.target.dataset.screenId];
@@ -5394,7 +5179,6 @@
         );
       }
     }
-    __name(touchStart, "touchStart");
     function touchMove(e) {
       const screenData = piData2.screens[e.target.dataset.screenId];
       if (!screenData) {
@@ -5417,7 +5201,6 @@
         e.preventDefault();
       }
     }
-    __name(touchMove, "touchMove");
     function touchEnd(e) {
       const screenData = piData2.screens[e.target.dataset.screenId];
       if (!screenData) {
@@ -5447,7 +5230,6 @@
         );
       }
     }
-    __name(touchEnd, "touchEnd");
     function updateTouch(screenData, e, eventType) {
       const rect = screenData.canvas.getBoundingClientRect();
       const scaleX = screenData.width / rect.width;
@@ -5469,7 +5251,6 @@
       }
       screenData.lastEvent = "touch";
     }
-    __name(updateTouch, "updateTouch");
     function getTouch(screenData) {
       return {
         "x": screenData.touch.x,
@@ -5479,7 +5260,6 @@
         "eventType": screenData.touch.eventType
       };
     }
-    __name(getTouch, "getTouch");
     function getTouchPress(screenData) {
       return {
         "x": screenData.touch.x,
@@ -5488,13 +5268,11 @@
         "inputType": "touch"
       };
     }
-    __name(getTouchPress, "getTouchPress");
     pi2._.addCommand("intouch", intouch, false, true, []);
     function intouch(screenData) {
       piData2.commands.startTouch(screenData);
       return getTouch(screenData);
     }
-    __name(intouch, "intouch");
     pi2._.addCommand("ontouch", ontouch, false, true, ["mode", "fn", "once"]);
     function ontouch(screenData, args) {
       const mode = args[0] || "start";
@@ -5516,7 +5294,6 @@
       screenData.onTouchEventListeners[mode].push({ "fn": fn, "once": once });
       screenData.touchEventListenersActive++;
     }
-    __name(ontouch, "ontouch");
     pi2._.addCommand("offtouch", offtouch, false, true, ["mode", "fn"]);
     function offtouch(screenData, args) {
       const mode = args[0] || "start";
@@ -5534,7 +5311,6 @@
         }
       }
     }
-    __name(offtouch, "offtouch");
     pi2._.addCommand("getTouchPress", getTouchPress, true, true, []);
     function getTouchPress(screenData) {
       function copyTouches(touches, touchArr2, action) {
@@ -5555,7 +5331,6 @@
           touchArr2.push(touchData);
         }
       }
-      __name(copyTouches, "copyTouches");
       const touchArr = [];
       copyTouches(screenData.touches, touchArr);
       if (touchArr.length === 0) {
@@ -5582,7 +5357,6 @@
         "type": "touch"
       };
     }
-    __name(getTouchPress, "getTouchPress");
     pi2._.addCommand("setPinchZoom", setPinchZoom, false, false, ["isEnabled"]);
     pi2._.addSetting("pinchZoom", setPinchZoom, false, ["isEnabled"]);
     function setPinchZoom(args) {
@@ -5593,11 +5367,9 @@
         document.body.style.touchAction = "none";
       }
     }
-    __name(setPinchZoom, "setPinchZoom");
   }
-  __name(init14, "init");
 
-  // src/modules/gamepad.js
+  // src-pi-2.0.0-alpha.0/modules/gamepad.js
   function init15(pi2) {
     const piData2 = pi2._.data;
     let m_controllers = {};
@@ -5622,7 +5394,6 @@
       window.addEventListener("gamepaddisconnected", gamepadDisconnected);
       m_init = true;
     }
-    __name(initGamepads, "initGamepads");
     function gamepadConnected(e) {
       m_controllers[e.gamepad.index] = e.gamepad;
       e.gamepad.controllerIndex = m_controllerArr.length;
@@ -5630,7 +5401,6 @@
       updateController(e.gamepad);
       triggerGamepadEvent("connect", e.gamepad.index);
     }
-    __name(gamepadConnected, "gamepadConnected");
     function gamepadDisconnected(e) {
       triggerGamepadEvent("disconnect", e.gamepad.index);
       m_controllerArr.splice(
@@ -5639,7 +5409,6 @@
       );
       delete m_controllers[e.gamepad.index];
     }
-    __name(gamepadDisconnected, "gamepadDisconnected");
     function updateControllers() {
       const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
       for (let i = 0; i < gamepads.length; i++) {
@@ -5648,7 +5417,6 @@
         }
       }
     }
-    __name(updateControllers, "updateControllers");
     function updateController(gamepad) {
       const oldGamepad = m_controllers[gamepad.index];
       if (!oldGamepad.buttons) {
@@ -5688,7 +5456,6 @@
       }
       m_controllers[gamepad.index] = oldGamepad;
     }
-    __name(updateController, "updateController");
     function triggerGamepadEvent(mode, gamepadIndex, item, value) {
       if (!m_events[gamepadIndex]) {
         return;
@@ -5728,7 +5495,6 @@
         }
       }
     }
-    __name(triggerGamepadEvent, "triggerGamepadEvent");
     pi2._.addCommand("ingamepads", ingamepads, false, false, []);
     function ingamepads() {
       if (!m_init) {
@@ -5739,7 +5505,6 @@
       }
       return m_controllerArr;
     }
-    __name(ingamepads, "ingamepads");
     pi2._.addCommand(
       "ongamepad",
       ongamepad,
@@ -5786,7 +5551,6 @@
         startGamepadLoop();
       }
     }
-    __name(ongamepad, "ongamepad");
     pi2._.addCommand(
       "offgamepad",
       offgamepad,
@@ -5813,7 +5577,6 @@
         }
       }
     }
-    __name(offgamepad, "offgamepad");
     function startGamepadLoop() {
       if (m_isLooping) {
         return;
@@ -5826,10 +5589,8 @@
         updateControllers();
         m_gamepadLoopId = setTimeout(loop, m_loopInterval);
       }
-      __name(loop, "loop");
       loop();
     }
-    __name(startGamepadLoop, "startGamepadLoop");
     function stopGamepadLoop() {
       m_isLooping = false;
       if (m_gamepadLoopId) {
@@ -5837,7 +5598,6 @@
         m_gamepadLoopId = null;
       }
     }
-    __name(stopGamepadLoop, "stopGamepadLoop");
     pi2._.addCommand(
       "setGamepadSensitivity",
       setGamepadSensitivity,
@@ -5856,11 +5616,9 @@
       }
       m_axesSensitivity = sensitivity;
     }
-    __name(setGamepadSensitivity, "setGamepadSensitivity");
   }
-  __name(init15, "init");
 
-  // src/modules/sound.js
+  // src-pi-2.0.0-alpha.0/modules/sound.js
   function init16(pi2) {
     const piData2 = pi2._.data;
     const m_piWait = pi2._.wait;
@@ -5909,7 +5667,6 @@
       m_nextAudioId += 1;
       return audioId;
     }
-    __name(createAudioPool, "createAudioPool");
     function loadAudio(audioItem, audio, retryCount) {
       if (retryCount == null) {
         retryCount = 3;
@@ -5923,7 +5680,6 @@
         audio.removeEventListener("canplay", audioReady);
         m_piResume();
       }
-      __name(audioReady, "audioReady");
       function audioError() {
         const errors = [
           "MEDIA_ERR_ABORTED - fetching process aborted by user",
@@ -5951,14 +5707,12 @@
           m_piResume();
         }
       }
-      __name(audioError, "audioError");
       if (retryCount === 3) {
         m_piWait();
       }
       audio.addEventListener("canplay", audioReady);
       audio.addEventListener("error", audioError);
     }
-    __name(loadAudio, "loadAudio");
     pi2._.addCommand("deleteAudioPool", deleteAudioPool, false, false, ["audioId"]);
     function deleteAudioPool(args) {
       const audioId = args[0];
@@ -5974,7 +5728,6 @@
       }
       delete m_audioPools[audioId];
     }
-    __name(deleteAudioPool, "deleteAudioPool");
     pi2._.addCommand(
       "playAudioPool",
       playAudioPool,
@@ -6040,7 +5793,6 @@
         audioItem.index = 0;
       }
     }
-    __name(playAudioPool, "playAudioPool");
     pi2._.addCommand("stopAudioPool", stopAudioPool, false, false, ["audioId"]);
     function stopAudioPool(args) {
       const audioId = args[0];
@@ -6060,7 +5812,6 @@
         m_audioPools[audioId].pool[i].audio.pause();
       }
     }
-    __name(stopAudioPool, "stopAudioPool");
     pi2._.addCommand("sound", sound, false, false, [
       "frequency",
       "duration",
@@ -6187,7 +5938,6 @@
         delay
       );
     }
-    __name(sound, "sound");
     pi2._.addCommand("createSound", createSound, true, false, []);
     function createSound(cmdName, audioContext, frequency, volume, attackTime, sustainTime, decayTime, stopTime, oType, waveTables, delay) {
       const oscillator = audioContext.createOscillator();
@@ -6247,7 +5997,6 @@
       }, (currentTime + stopTime) * 1e3);
       return soundId;
     }
-    __name(createSound, "createSound");
     pi2._.addCommand("stopSound", stopSound, false, false, ["soundId"]);
     function stopSound(args) {
       const soundId = args[0];
@@ -6262,7 +6011,6 @@
       }
       m_soundPool[soundId].oscillator.stop(0);
     }
-    __name(stopSound, "stopSound");
     pi2._.addCommand("setVolume", setVolume, false, false, ["volume"]);
     pi2._.addSetting("volume", setVolume, false, ["volume"]);
     function setVolume(args) {
@@ -6299,11 +6047,9 @@
         }
       }
     }
-    __name(setVolume, "setVolume");
   }
-  __name(init16, "init");
 
-  // src/modules/play.js
+  // src-pi-2.0.0-alpha.0/modules/play.js
   function init17(pi2) {
     const piData2 = pi2._.data;
     const m_notesData = {
@@ -6481,7 +6227,6 @@
         );
       }
     }
-    __name(play, "play");
     function createTrack(playString) {
       playString = playString.split(/\s+/).join("").toUpperCase();
       const trackId = "track_" + m_lastTrackId;
@@ -6724,7 +6469,6 @@
       }
       return trackId;
     }
-    __name(createTrack, "createTrack");
     function playTrack(trackId) {
       const track = m_tracks[trackId];
       if (!track || track.noteId >= track.notes.length) {
@@ -6815,7 +6559,6 @@
         track.noteId++;
       }
     }
-    __name(playTrack, "playTrack");
     function getNoteFrequency(track, note) {
       note = note.replace(/\+/g, "#");
       note = note.replace("C-", "B");
@@ -6835,7 +6578,6 @@
       }
       return noteData[octave];
     }
-    __name(getNoteFrequency, "getNoteFrequency");
     function getNoteDuration(track, length, dots) {
       if (length == null) {
         length = track.noteLength;
@@ -6858,7 +6600,6 @@
       }
       return duration;
     }
-    __name(getNoteDuration, "getNoteDuration");
     function playNote(track, frequency, time) {
       const volume = track.volume;
       const interval = getNoteDuration(track, null, 0);
@@ -6885,7 +6626,6 @@
       };
       m_playData.push(soundData);
     }
-    __name(playNote, "playNote");
     const m_allNotes = [
       0,
       16.35,
@@ -7034,7 +6774,6 @@
         removeTrack(trackId);
       }
     }
-    __name(stopPlay, "stopPlay");
     function removeTrack(trackId) {
       for (let i = 0; i < m_allTracks.length; i++) {
         if (m_allTracks[i].id === trackId) {
@@ -7044,11 +6783,9 @@
       }
       delete m_tracks[trackId];
     }
-    __name(removeTrack, "removeTrack");
   }
-  __name(init17, "init");
 
-  // src/modules/draw.js
+  // src-pi-2.0.0-alpha.0/modules/draw.js
   function init18(pi2) {
     const piData2 = pi2._.data;
     pi2._.addCommand("draw", draw, false, true, ["drawString"]);
@@ -7240,11 +6977,9 @@
         }
       }
     }
-    __name(draw, "draw");
   }
-  __name(init18, "init");
 
-  // src/assets/font-data.js
+  // src-pi-2.0.0-alpha.0/assets/font-data.js
   function loadBuiltInFonts(pi2) {
     pi2.loadFont(
       "0,14004,2602800,oidnrt,3po8cff,3vnhgs4,1uv77og,3hpuv70,73g00,3vjgoef,3o00000,0,71ji,k9o000,1sg,1ogoc3p,jp4ir8,19fvt51,31ovfn3,cevfh,31vrooc,1tv52h8,2g0kula,2d2hcsp,8r2jg0,3vvvj,f33opv,8efh0g,3ho84fj,2200idv,2c40237,3r4g000,87000i,3vv901h,3jptvvv,3vnjpsc,0,g8420,22h800,57p9,3p80ea7,237000i,889019,111cc02,0,88420g,g4211,28oc,140011o,1000000,11000,1s00000,400,3333100,sjam9o,1g8423,203i888,1s060ho,hg0654,2fgg1sg,1o2e01p,3p4e07,211hgg0,oi64hg,1h4e13,31g0c,o00100,gg444,41000v,v0010,1088803,2110080,sqb41o,1h4if4,20729oi,1o07421,1o0s94,19701sg,1sgf03p,3p0g03,384p4c0,14if4i8,1o8423,201o84i,s04ihg,2h40842,43o12r,1ul8g25,2blej03,28ka4s0,s97i10,1h4ib3,10729oi,140321g,ho0v21,21014i,14i6025,a4k404,1al9ok0,12a22i4,24k421,7g8og,1s06210,21g1gc3,30g0c2,42300g,2g00000,1v,o40000,1o2f3,10210s9,s003i1,1o0211,251g00c,14s700g,23gg800,6kjo4s,ge4i94,8021,g04,1884218,3180421,21000a,1ul8g01,3294i00,64i8o0,c5310,200ca30,2102ok8,g003j0,3jo0023,221000i,14i6g00,24k400,8lbsk0,a2118,14i70,2e01s44,u02230,20g0630,31g082,622019,1000001,74a5u0,sg83go,3i80i93,30110oi,1oe22jg,joqh07,17hlg4,1o2f39g,33g4u6j,2841o66,gkc971,34g0oie,e411h4,3gsi030,211osh6,423hg0,1g84720,230g8e9,c94jp4,1goi97i,133p0u8,u06pmr,1sjf94j,34i8c93,94hg0c,14i604l,3inbvgk,2603ooc,1tdvstn,3phsif4,2prfurv,2qc67i1,3ooe4n,42rp8k,gs473h,jh8ua3,561igo,ggc231,30gg842,e110oi,14c2229,i8o887,94i9si,1km94jh,301s003,2703o00,40108,3g000f4,u,40g951,108d0kc,630gg0,g84000,2a8i000,92a800,1404g28,2mkll5,1lbfvdv,2rv210g,10g8421,u10g9s,84u118,2hbka50,7oka,1s217g,11bka5e,252h8ka,ka0fg8,n8kat0,21fg0ka,lu000j,30g9s00,7g84,8421o0,g84vg,1v,84210g,1og8000,vg0084,9v210g,1og8722,252hcka,kb421s,u842,352nc00,3u00fo0,7cka5i,42p81v,vg1b,2o01r51,vg03u0,ka5fo0,3u00f,320001v,ka52h8,3o0043h,21o007,843h00,ua52,252nska,9v217s,10g84u0,7,84vvvv,3vvu000,vvvtgo,1goc60o,1goc63f,3vvo000,2e53g,hp5upf,287i90g,10g003s,2h81uh4,44no00,1ska200,18s880,etgg84,1sc94hh,3hh4u94,267k631,15jfk3p,2i9s0fb,1f0004u,2iuo01p,221so70,64i94i,3u0vg7s,gs40,e01088,1o0020g,23g0452,421042,425110,3g0800,5500kk,oi6000,400,c,1gg,12go062,252g1o2,88f000,1ose00",
@@ -7283,9 +7018,8 @@
     );
     pi2.setDefaultFont(1);
   }
-  __name(loadBuiltInFonts, "loadBuiltInFonts");
 
-  // src/index.js
+  // src-pi-2.0.0-alpha.0/index.js
   var VERSION = "2.0.0-alpha.0";
   var waitCount = 0;
   var waiting = false;
@@ -7295,14 +7029,12 @@
     waitCount++;
     waiting = true;
   }
-  __name(wait, "wait");
   function resume() {
     waitCount--;
     if (waitCount === 0) {
       startReadyList();
     }
   }
-  __name(resume, "resume");
   function startReadyList() {
     if (document.readyState !== "loading" && waitCount === 0) {
       waiting = false;
@@ -7316,7 +7048,6 @@
       startReadyListTimeout = setTimeout(startReadyList, 10);
     }
   }
-  __name(startReadyList, "startReadyList");
   var pi = {
     "version": VERSION,
     "_": {
@@ -7347,7 +7078,6 @@
       }
     }
   }
-  __name(ready, "ready");
   init2(pi);
   init3(pi);
   init4(pi);

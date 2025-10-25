@@ -12,9 +12,23 @@ const path = require( "path" );
 const pkg = require( "../package.json" );
 const version = pkg.version;
 
+// Determine source directory and version from command line args
+const args = process.argv.slice( 2 );
+const buildType = args[ 0 ] || "default";
+let sourceDir = "src";
+let buildVersion = version;
+
+if( buildType === "alpha-0" ) {
+	sourceDir = "src-pi-2.0.0-alpha.0";
+	buildVersion = "2.0.0-alpha.0";
+} else if( buildType === "alpha-1" ) {
+	sourceDir = "src-pi-2.0.0-alpha.1";
+	buildVersion = "2.0.0-alpha.1";
+}
+
 const banner = `/**
  * Pi.js - Graphics and Sound Library
- * @version ${version}
+ * @version ${buildVersion}
  * @author Andy Stubbs
  * @license Apache-2.0
  * @preserve
@@ -33,21 +47,21 @@ const injectVersionPlugin = {
 		build.onLoad( { "filter": /index\.js$/ }, async ( args ) => {
 			const contents = await fs.promises.readFile( args.path, "utf8" );
 			// Replace __VERSION__ with actual version
-			const transformed = contents.replace( /__VERSION__/g, `"${version}"` );
+			const transformed = contents.replace( /__VERSION__/g, `"${buildVersion}"` );
 			return { "contents": transformed, "loader": "js" };
 		} );
 	}
 };
 
 const buildOptions = {
-	"entryPoints": [ path.join( __dirname, "../src/index.js" ) ],
+	"entryPoints": [ path.join( __dirname, "..", sourceDir, "index.js" ) ],
 	"bundle": true,
 	"sourcemap": true,
 	"banner": { "js": banner },
 	"target": "es2020",
 	"platform": "browser",
 	"plugins": [ injectVersionPlugin ],
-	"sourceRoot": "../src/"
+	"sourceRoot": `../${sourceDir}/`
 };
 
 async function buildPlugin( pluginName, pluginDir ) {
@@ -176,7 +190,7 @@ async function buildAllPlugins() {
 }
 
 async function build() {
-	console.log( `Building Pi.js v${version}...` );
+	console.log( `Building Pi.js v${buildVersion} from ${sourceDir}...` );
 
 	try {
 		// Build all plugins first
