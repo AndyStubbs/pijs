@@ -37,6 +37,11 @@ const m_observedContainers = new Set();
 
 export function init() {
 	
+	// TODO: Add matchMedia to watch for DPR changes - if a user moves a browser to a new monitor
+	// it could cause the canvas image to become blury, even if the actual CSS size of the canvas.
+	// doesn't change.
+	// matchMedia( `(resolution: ${dpr}dppx)` ).addEventListener( "change", resizeCanvases );
+
 	// Create a single ResizeObserver for all screen containers
 	m_resizeObserver = new ResizeObserver( ( entries ) => {
 		for( const entry of entries ) {
