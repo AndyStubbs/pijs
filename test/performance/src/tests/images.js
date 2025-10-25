@@ -170,8 +170,8 @@ function generateRandomOperation() {
 		const x = Math.floor( m_seededRandom() * width );
 		const y = Math.floor( m_seededRandom() * height );
 		
-		// Random rotation (0-360 degrees)
-		const rotation = Math.floor( m_seededRandom() * 360 );
+		// Random angle (0-360 degrees)
+		const angle = Math.floor( m_seededRandom() * 360 );
 		
 		// Random anchor points (0-1)
 		const anchorX = m_seededRandom();
@@ -198,7 +198,7 @@ function generateRandomOperation() {
 			"x": x,
 			"y": y
 		};
-		if( includeAngle ) params.rotation = rotation;
+		if( includeAngle ) params.angle = angle;
 		if( includeAnchor ) {
 			params.anchorX = anchorX;
 			params.anchorY = anchorY;
@@ -218,7 +218,7 @@ function generateRandomOperation() {
 				//const newFrame = Math.max( 0, Math.min( frame + Math.floor( Math.random() * 3 ) - 1, 1 ) );
 				const newX = Math.max( 0, Math.min( x + Math.floor( Math.random() * 6 ) - 3, width ) );
 				const newY = Math.max( 0, Math.min( y + Math.floor( Math.random() * 6 ) - 3, height ) );
-				const newRotation = rotation + Math.floor( Math.random() * 6 ) - 3;
+				const newAngle = angle + Math.floor( Math.random() * 6 ) - 3;
 				const newAnchorX = Math.max( 0, Math.min( anchorX + ( Math.random() * 0.2 ) - 0.1, 1 ) );
 				const newAnchorY = Math.max( 0, Math.min( anchorY + ( Math.random() * 0.2 ) - 0.1, 1 ) );
 				const newAlpha = Math.max( 0, Math.min( alpha + ( Math.random() * 0.2 ) - 0.1, 1 ) );
@@ -232,7 +232,7 @@ function generateRandomOperation() {
 					"x": newX,
 					"y": newY
 				};
-				if( includeAngle ) newParams.rotation = newRotation;
+				if( includeAngle ) newParams.angle = newAngle;
 				if( includeAnchor ) {
 					newParams.anchorX = newAnchorX;
 					newParams.anchorY = newAnchorY;
@@ -255,8 +255,8 @@ function generateRandomOperation() {
 		const x = Math.floor( m_seededRandom() * width );
 		const y = Math.floor( m_seededRandom() * height );
 		
-		// Random rotation (0-360 degrees)
-		const rotation = Math.floor( m_seededRandom() * 360 );
+		// Random angle (0-360 degrees)
+		const angle = Math.floor( m_seededRandom() * 360 );
 		
 		// Random anchor points (0-1)
 		const anchorX = m_seededRandom();
@@ -280,7 +280,7 @@ function generateRandomOperation() {
 			"x": x,
 			"y": y
 		};
-		if( includeAngle ) params.rotation = rotation;
+		if( includeAngle ) params.angle = angle;
 		if( includeAnchor ) {
 			params.anchorX = anchorX;
 			params.anchorY = anchorY;
@@ -297,7 +297,7 @@ function generateRandomOperation() {
 			"getParams": () => {
 				const newX = Math.max( 0, Math.min( x + Math.floor( Math.random() * 6 ) - 3, width ) );
 				const newY = Math.max( 0, Math.min( y + Math.floor( Math.random() * 6 ) - 3, height ) );
-				const newRotation = rotation + Math.floor( Math.random() * 6 ) - 3;
+				const newAngle = angle + Math.floor( Math.random() * 6 ) - 3;
 				const newAnchorX = Math.max( 0, Math.min( anchorX + ( Math.random() * 0.2 ) - 0.1, 1 ) );
 				const newAnchorY = Math.max( 0, Math.min( anchorY + ( Math.random() * 0.2 ) - 0.1, 1 ) );
 				const newAlpha = Math.max( 0, Math.min( alpha + ( Math.random() * 0.2 ) - 0.1, 1 ) );
@@ -310,7 +310,7 @@ function generateRandomOperation() {
 					"x": newX,
 					"y": newY
 				};
-				if( includeAngle ) newParams.rotation = newRotation;
+				if( includeAngle ) newParams.angle = newAngle;
 				if( includeAnchor ) {
 					newParams.anchorX = newAnchorX;
 					newParams.anchorY = newAnchorY;

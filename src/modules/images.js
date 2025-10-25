@@ -369,13 +369,13 @@ function getSpritesheetData( screenData, options ) {
 screenManager.addCommand(
 	"drawImage",
 	drawImage,
-	[ "name", "x", "y", "rotation", "anchorX", "anchorY", "alpha", "scaleX", "scaleY" ]
+	[ "name", "x", "y", "angle", "anchorX", "anchorY", "alpha", "scaleX", "scaleY" ]
 );
 function drawImage( screenData, options ) {
 	const name = options.name;
 	const x = options.x || 0;
 	const y = options.y || 0;
-	const rotation = options.rotation;
+	const angle = options.angle;
 	const anchorX = options.anchorX;
 	const anchorY = options.anchorY;
 	const alpha = options.alpha;
@@ -450,21 +450,21 @@ function drawImage( screenData, options ) {
 	}
 
 	drawItem(
-		screenData, image, x, y, rotation, anchorX, anchorY, alpha, null, scaleX, scaleY
+		screenData, image, x, y, angle, anchorX, anchorY, alpha, null, scaleX, scaleY
 	);
 }
 
 // drawSprite command
 screenManager.addCommand(
 	"drawSprite", drawSprite,
-	[ "name", "frame", "x", "y", "rotation", "anchorX", "anchorY", "alpha", "scaleX", "scaleY" ]
+	[ "name", "frame", "x", "y", "angle", "anchorX", "anchorY", "alpha", "scaleX", "scaleY" ]
 );
 function drawSprite( screenData, options ) {
 	const name = options.name;
 	const frame = options.frame || 0;
 	const x = options.x || 0;
 	const y = options.y || 0;
-	const rotation = options.rotation;
+	const angle = options.angle;
 	const anchorX = options.anchorX;
 	const anchorY = options.anchorY;
 	const alpha = options.alpha;
@@ -503,7 +503,7 @@ function drawSprite( screenData, options ) {
 	const img = spriteData.image;
 	const frameData = spriteData.frames[ frame ];
 
-	drawItem( screenData, img, x, y, rotation, anchorX, anchorY, alpha, frameData, scaleX, scaleY );
+	drawItem( screenData, img, x, y, angle, anchorX, anchorY, alpha, frameData, scaleX, scaleY );
 }
 
 
@@ -514,7 +514,7 @@ function drawSprite( screenData, options ) {
 
 // Shared function to draw images and sprites with transformations
 function drawItem(
-	screenData, img, x, y, rotation, anchorX, anchorY, alpha, frameData, scaleX, scaleY
+	screenData, img, x, y, angle, anchorX, anchorY, alpha, frameData, scaleX, scaleY
 ) {
 
 	// Default values for scale
@@ -526,13 +526,13 @@ function drawItem(
 		scaleY = 1;
 	}
 
-	// Default value for rotation
-	if( rotation == null ) {
-		rotation = 0;
+	// Default value for angle
+	if( angle == null ) {
+		angle = 0;
 	}
 
-	// Convert rotation from degrees to radians
-	rotation = utils.degreesToRadian( rotation );
+	// Convert angle from degrees to radians
+	angle = utils.degreesToRadian( angle );
 
 	// Default values for anchor
 	if( !anchorX ) {
@@ -567,7 +567,7 @@ function drawItem(
 
 	// Apply transformations
 	context.translate( x, y );
-	context.rotate( rotation );
+	context.rotate( angle );
 	context.scale( scaleX, scaleY );
 
 	// Draw image or sprite frame
@@ -593,7 +593,7 @@ function drawItem(
 
 	// Restore transformations
 	context.scale( 1 / scaleX, 1 / scaleY );
-	context.rotate( -rotation );
+	context.rotate( -angle );
 	context.translate( -x, -y );
 
 	// Restore alpha
