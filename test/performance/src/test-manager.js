@@ -29,6 +29,7 @@ export { init, startTests, getTargetFps, calculateTargetFPS };
 import * as g_psetTest from "./tests/pset.js";
 import * as g_lineTest from "./tests/line.js";
 import * as g_graphicsPixelTest from "./tests/graphicsPixel.js";
+import * as g_imagesTest from "./tests/images.js";
 import * as g_bezierTest from "./tests/bezier.js";
 import * as g_reportManager from "./report-manager.js";
 
@@ -39,7 +40,8 @@ let m_tests = [];
 //m_tests.push( g_psetTest.getConfig() );
 //m_tests.push( g_lineTest.getConfig() );
 //m_tests.push( g_graphicsPixelTest.getConfig( true ) );
-m_tests.push( g_graphicsPixelTest.getConfig( false ) );
+//m_tests.push( g_graphicsPixelTest.getConfig( false ) );
+m_tests.push( g_imagesTest.getConfig() );
 //m_tests.push( g_bezierTest.getConfig() );
 
 // Global state for the test manager
@@ -62,9 +64,9 @@ async function init( api ) {
 /**
  * Starts the test suite from the beginning
  * 
- * @returns {void}
+ * @returns {Promise<void>}
  */
-function startTests() {
+async function startTests() {
 
 	// Update screen opacity based on setting
 	if( localStorage.getItem( "reducedFlashing" ) === "true" ) {
@@ -75,7 +77,7 @@ function startTests() {
 	
 	m_testIndex = -1;
 	m_results = [];
-	runNextTest();
+	await runNextTest();
 }
 
 /**
@@ -145,9 +147,9 @@ async function calculateTargetFPS() {
 /**
  * Runs the next test in the queue
  * 
- * @returns {void}
+ * @returns {Promise<void>}
  */
-function runNextTest() {
+async function runNextTest() {
 	const WARMUP_TIME = 5000;
 	const MAX_TIME = 30000;
 	const EXTRA_TIME = 5000;
@@ -185,13 +187,13 @@ function runNextTest() {
 	let recentItemCounts = [];
 
 	// Initialize the test
-	test.init( test.isPixelMode );
+	await test.init( test.isPixelMode );
 
 	// Start the test loop
 	requestAnimationFrame( loop );
 
 	// Test Loop Function
-	function loop( t ) {
+	async function loop( t ) {
 		if( !startTime ) {
 			startTime = t;
 		}
@@ -240,7 +242,7 @@ function runNextTest() {
 				test.cleanUp();
 
 				// Run the next test
-				return runNextTest();
+				return await runNextTest();
 			}
 		} else {
 

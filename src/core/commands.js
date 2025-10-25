@@ -166,7 +166,6 @@ export function getApi() {
  * External API Commands
  **************************************************************************************************/
 
-
 /**
  * ready command - waits for document ready and all pending resources
  * 
