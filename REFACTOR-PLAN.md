@@ -50,9 +50,9 @@ with v1.2.4 and full **pixel-mode support** for retro graphics.
 
 ## Legacy Code
 
-- There are two legacy code bases to use for the refactor (./legacy and ./src-v2-refactor-1)
+- There are two legacy code bases to use for the refactor (./legacy and ./src-pi-2.0.0-alpha.0)
 - ./legacy is the primary legacy source code
-- ./src-v2-refactor-1 is a first attempt at refactor but I didn't like the architecture so I started
+- ./src-pi-2.0.0-alpha.0 is a first attempt at refactor but I didn't like the architecture so I started
 	over. But there are still some good things in there so it might be good to keep as a reference.
 ---
 
