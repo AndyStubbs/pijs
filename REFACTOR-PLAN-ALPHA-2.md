@@ -3,7 +3,8 @@
 ## Overview
 
 Migrate Pi.js from 2D Canvas ImageData rendering to WebGL2 for improved performance, while 
-simplifying the architecture by removing non-pixel mode and canvas font support. Implement incrementally, starting with a minimal shell and building up feature by feature.
+simplifying the architecture by removing non-pixel mode and canvas font support. Implement 
+incrementally, starting with a minimal shell and building up feature by feature.
 
 ## Goals
 
