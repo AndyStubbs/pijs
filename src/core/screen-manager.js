@@ -11,12 +11,12 @@
 
 import * as commands from "./commands";
 import * as utils from "./utils";
+import * as webglRenderer from "./webgl-renderer";
+import * as canvas2dRenderer from "./canvas2d-renderer";
 
 const SCREEN_API_PROTO = { "screen": true };
 const m_screens = {};
 const m_commandList = [];
-const m_pixelCommands = {};
-const m_aaCommands = {};
 const m_screenDataItems = {};
 const m_screenDataItemGetters = [];
 const m_screenInternalCommands = [];
@@ -36,7 +36,7 @@ const m_observedContainers = new Set();
 
 
 export function init() {
-	
+
 	// TODO: Add matchMedia to watch for DPR changes - if a user moves a browser to a new monitor
 	// it could cause the canvas image to become blury, even if the actual CSS size of the canvas.
 	// doesn't change.
@@ -80,39 +80,6 @@ export function addCommand( name, fn, parameterNames, screenOptional = false ) {
 	commands.addCommand( name, fn, parameterNames, true, screenOptional );
 }
 
-export function addPixelCommand( name, fn, parameterNames ) {
-
-	const cmd = {
-		"name": name,
-		"fn": fn,
-		"parameterNames": parameterNames,
-		"isScreen": true
-	};
-
-	// Add the command to the command list
-	m_commandList.push( cmd );
-
-	// Add the command to the global command list
-	commands.addCommand( name, fn, parameterNames, true );
-	
-	// Add the command to the pixel command list
-	m_pixelCommands[ name ] = cmd;
-
-}
-
-export function addAACommand( name, fn, parameterNames ) {
-
-	const cmd = {
-		"name": name,
-		"fn": fn,
-		"parameterNames": parameterNames,
-		"isScreen": true
-	};
-
-	// Add the command to the pixel command list
-	m_aaCommands[ name ] = cmd;
-}
-
 export function sortScreenCommands() {
 	m_commandList.sort( ( a, b ) => a.name.localeCompare( b.name ) );
 }
@@ -149,7 +116,7 @@ export function addScreenCleanupFunction( fn ) {
 
 // screen command
 commands.addCommand( "screen", screen, [
-	"aspect", "container", "isOffscreen", "willReadFrequently", "noStyles", "resizeCallback"
+	"aspect", "container", "isOffscreen", "noStyles", "resizeCallback"
 ] );
 function screen( options ) {
 
@@ -228,7 +195,7 @@ function removeScreen( screenData ) {
 	}
 
 	// Unobserve the container from the global resize observer if no other screens use it
-	if( screenData.container && m_resizeObserver && m_observedContainers.has( screenData.container ) ) {
+	if( screenData.container && m_observedContainers.has( screenData.container ) ) {
 		
 		// Check if any other screens are using this container
 		let hasOtherScreens = false;
@@ -249,9 +216,6 @@ function removeScreen( screenData ) {
 
 	// Clean up all references to prevent memory leaks
 	screenData.canvas = null;
-	screenData.bufferCanvas = null;
-	screenData.context = null;
-	screenData.bufferContext = null;
 	screenData.commands = null;
 	screenData.resizeCallback = null;
 	screenData.container = null;
@@ -347,37 +311,6 @@ function canvas( screenData ) {
 
 // TODO: Consider simplifying api commands. This fancy processApiCommand is complex and it only
 // saves 1 if statement per command call. It might be worth it to simplify it.
-// TODO: When pixel mode is set it's setting it in a mixed state. The global $ will get set for
-// all screens, but only the current screen on the screen state will get updated.
-// Preferred fix is to not set the global $ pixel mode but only for active screen. Or just
-// set pixel mode for global $ and all screens - make this a global command only.
-
-// Set pixel mode command
-addCommand( "setPixelMode", setPixelMode, [ "isEnabled" ] );
-function setPixelMode( screenData, options ) {
-	const isEnabled = !!options.isEnabled;
-
-	// If we are enabling pixel mode and it's not already set then we setup pixel mode
-	if( isEnabled ) {
-		screenData.context.imageSmoothingEnabled = false;
-		for( const name in m_pixelCommands ) {
-			processApiCommand( screenData, m_pixelCommands[ name ] );
-			commands.processApiCommand( m_pixelCommands[ name ] );
-		}
-	} else {
-		screenData.context.imageSmoothingEnabled = true;
-		for( const name in m_aaCommands ) {
-			processApiCommand( screenData, m_aaCommands[ name ] );
-			commands.processApiCommand( m_aaCommands[ name ] );
-		}
-	}
-}
-
-// Set pixel mode command
-addCommand( "getPixelMode", getPixelMode, [] );
-function getPixelMode( screenData ) {
-	return !screenData.context.imageSmoothingEnabled;
-}
 
 
 /***************************************************************************************************
@@ -443,7 +376,7 @@ function createScreen( options ) {
 			error.code = "INVALID_OFFSCREEN_ASPECT";
 			throw error;
 		}
-		return createOffscreenScreen( options );
+		return createOffscreenCanvas( options );
 	}
 
 	// Get the container element from the dom if it's available
@@ -462,25 +395,20 @@ function createScreen( options ) {
 
 	// Return a no style screen
 	if( options.noStyles ) {
-		return createNoStyleScreen( options );
+		return createNoStyleCanvas( options );
 	}
 
 	// Return the default screen
-	return createDefaultScreen( options );
+	return createDefaultCanvas( options );
 }
 
 // Create offscreen canvas
-function createOffscreenScreen( options ) {
+function createOffscreenCanvas( options ) {
 
 	// Add the canvas
 	options.canvas = document.createElement( "canvas" );
 	options.canvas.width = options.aspectData.width;
 	options.canvas.height = options.aspectData.height;
-
-	// Add the buffer canvas
-	options.bufferCanvas = document.createElement( "canvas" );
-	options.bufferCanvas.width = options.aspectData.width;
-	options.bufferCanvas.height = options.aspectData.height;
 
 	// Set additional options
 	options.container = null;
@@ -493,11 +421,10 @@ function createOffscreenScreen( options ) {
 }
 
 // Create screen with default styling
-function createDefaultScreen( options ) {
+function createDefaultCanvas( options ) {
 
 	// Create the canvases
 	options.canvas = document.createElement( "canvas" );
-	options.bufferCanvas = document.createElement( "canvas" );
 
 	// Style the canvas
 	options.canvas.tabIndex = 0;
@@ -536,9 +463,6 @@ function createDefaultScreen( options ) {
 		// Set the canvas size
 		setCanvasSize( options.aspectData, options.canvas, size.width, size.height );
 
-		// Set the buffer size
-		options.bufferCanvas.width = options.canvas.width;
-		options.bufferCanvas.height = options.canvas.height;
 	} else {
 
 		// If canvas is inside an element, use static position
@@ -552,8 +476,6 @@ function createDefaultScreen( options ) {
 		const size = getSize( options.canvas );
 		options.canvas.width = size.width;
 		options.canvas.height = size.height;
-		options.bufferCanvas.width = size.width;
-		options.bufferCanvas.height = size.height;
 	}
 
 	// Store initial offset size for resize callback
@@ -575,9 +497,8 @@ function createDefaultScreen( options ) {
 }
 
 // Create screen without styles
-function createNoStyleScreen( options ) {
+function createNoStyleCanvas( options ) {
 	options.canvas = document.createElement( "canvas" );
-	options.bufferCanvas = document.createElement( "canvas" );
 
 	// Append canvas to container
 	options.container.appendChild( options.canvas );
@@ -590,12 +511,6 @@ function createNoStyleScreen( options ) {
 		// Set the canvases size to the exact sizes specified
 		options.canvas.width = options.aspectData.width;
 		options.canvas.height = options.aspectData.height;
-		options.bufferCanvas.width = options.canvas.width;
-		options.bufferCanvas.height = options.canvas.height;
-	} else {
-		const size = getSize( options.canvas );
-		options.bufferCanvas.width = size.width;
-		options.bufferCanvas.height = size.height;
 	}
 
 	// Store initial offset size for resize callback (not used for noStyles, but for consistency)
@@ -607,9 +522,6 @@ function createNoStyleScreen( options ) {
 // Create the screen data object
 function createScreenData( options ) {
 	
-	// Set the will read frequently attribute to improve speed of primative graphics
-	const contextAttributes = { "willReadFrequently": !!options.willReadFrequently };
-
 	const screenApi = Object.create( SCREEN_API_PROTO );
 	screenApi.id = m_nextScreenId;
 
@@ -623,14 +535,31 @@ function createScreenData( options ) {
 		"aspectData": options.aspectData,
 		"isOffscreen": options.isOffscreen,
 		"isNoStyles": options.isNoStyles,
-		"context": options.canvas.getContext( "2d", contextAttributes ),
-		"bufferCanvas": options.bufferCanvas,
-		"bufferContext": options.bufferCanvas.getContext( "2d", contextAttributes ),
 		"clientRect": options.canvas.getBoundingClientRect(),
 		"resizeCallback": options.resizeCallback,
 		"previousOffsetSize": options.previousOffsetSize || null,
 		"api": screenApi
 	};
+
+	// Try WebGL2 first, fall back to Canvas2D
+	const webglRender = webglRenderer.initWebGL( screenData );
+
+	if( webglRender ) {
+		screenData.renderMode = "webgl";
+		screenData.renderer = webglRenderer;
+	} else {
+
+		// Canvas2D renderer (fallback)
+		const canvas2dRender = canvas2dRenderer.initCanvas2D( screenData );
+		if( !canvas2dRender ) {
+			const error = new Error( "screen: Failed to create rendering context." );
+			error.code = "NO_RENDERING_CONTEXT";
+			throw error;
+		}
+
+		screenData.renderMode = "canvas2d";
+		screenData.renderer = canvas2dRender;
+	}
 
 	// Append additional items onto the screendata
 	Object.assign( screenData, structuredClone( m_screenDataItems ) );
@@ -648,10 +577,7 @@ function createScreenData( options ) {
 	// Additional setup for screen data
 	m_nextScreenId += 1;
 	options.canvas.dataset.screenId = screenData.id;
-	screenData.context.imageSmoothingEnabled = false;
-	screenData.context.fillStyle = screenData.color.hex;
-	screenData.context.strokeStyle = screenData.color.hex;
-
+	
 	return screenData;
 }
 
@@ -751,9 +677,10 @@ function resizeScreen( screenData ) {
 		"height": screenData.canvas.offsetHeight
 	};
 
-	// Draw the canvas to the buffer
-	screenData.bufferContext.clearRect( 0, 0, screenData.width, screenData.height );
-	screenData.bufferContext.drawImage( screenData.canvas, 0, 0 );
+	// Let the renderer adjust to the new size
+	if( screenData.renderMode === "canvas2d" ) {
+		canvas2dRenderer.beforeResize( screenData, fromSize, toSize );
+	}
 
 	let size;
 
@@ -775,15 +702,6 @@ function resizeScreen( screenData ) {
 	// Resize the client rectangle
 	screenData.clientRect = screenData.canvas.getBoundingClientRect();
 
-	// Draw the buffer back onto the canvas
-	screenData.context.drawImage(
-		screenData.bufferCanvas, 0, 0, screenData.width, screenData.height
-	);
-
-	// Set the new buffer size
-	screenData.bufferCanvas.width = screenData.canvas.width;
-	screenData.bufferCanvas.height = screenData.canvas.height;
-
 	// Set the new screen size
 	screenData.width = screenData.canvas.width;
 	screenData.height = screenData.canvas.height;
@@ -793,6 +711,11 @@ function resizeScreen( screenData ) {
 		"width": screenData.canvas.offsetWidth,
 		"height": screenData.canvas.offsetHeight
 	};
+
+	// Let the renderer adjust to the new size
+	if( screenData.renderMode === "canvas2d" ) {
+		canvas2dRenderer.afterResize( screenData, fromSize, toSize );
+	}
 
 	// Send the resize data to the client
 	if( screenData.resizeCallback ) {

@@ -15,6 +15,8 @@ import * as commands from "./core/commands.js";
 import * as screenManager from "./core/screen-manager.js";
 import * as events from "./core/events.js";
 import * as plugins from "./core/plugins.js";
+import * as webglRenderer from "./core/webgl-renderer.js";
+import * as canvas2dRenderer from "./core/canvas2d-renderer.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -27,6 +29,8 @@ const api = {
 // Initialize the core modules
 commands.init( api, screenManager );
 screenManager.init();
+webglRenderer.init();
+canvas2dRenderer.init();
 events.init();
 plugins.init();
 

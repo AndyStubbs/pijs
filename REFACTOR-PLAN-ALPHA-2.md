@@ -683,11 +683,11 @@ Rebuild:
 - [x] Step 1.1-1.4: Setup minimal shell - copy alpha.1 to src/, create REFACTOR-PLAN-ALPHA-2.md, strip down to core only
 
 ### Phase 2: WebGL2 Core Architecture
-- [ ] Step 2.1: Create WebGL Renderer Core (webgl-renderer.js) and Canvas2D Renderer (canvas2d-renderer.js)
-- [ ] Step 2.2: Create Simple Shaders (shaders.js)
-- [ ] Step 2.3: Update Screen Manager for Renderer Delegation
-- [ ] Step 2.4: Implement Blank Screen
-- [ ] Step 2.5: Create Canvas2D Renderer
+- [x] Step 2.1: Create WebGL Renderer Core (webgl-renderer.js) and Canvas2D Renderer (canvas2d-renderer.js)
+- [x] Step 2.2: Create Simple Shaders (shaders.js) - Integrated into webgl-renderer.js
+- [x] Step 2.3: Update Screen Manager for Renderer Delegation
+- [x] Step 2.4: Implement Blank Screen
+- [x] Step 2.5: Create Canvas2D Renderer
 
 ### Phase 3: Command System Optimization
 - [ ] Step 3.1: Implement Fast Path Architecture

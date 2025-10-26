@@ -403,7 +403,6 @@ function createColor( r, g, b, a, hex ) {
 	color.a = a;
 	color.rgba = `rgba(${r},${g},${b},${( a / 255 ).toFixed( 3 )})`;
 	color.hex = hex;
-
 	return color;
 }
 
