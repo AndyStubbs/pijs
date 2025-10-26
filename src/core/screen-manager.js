@@ -135,7 +135,7 @@ function screen( options ) {
 
 	// Validate resize callback
 	if( options.resizeCallback != null && !g_utils.isFunction( options.resizeCallback ) ) {
-		const error = new TypeError( "screen: resizeCallback must be a function." );
+		const error = new TypeError( "screen: Parameter resizeCallback must be a function." );
 		error.code = "INVALID_CALLBACK";
 		throw error;
 	}
@@ -144,7 +144,7 @@ function screen( options ) {
 	if( typeof options.aspect === "string" && options.aspect !== "" ) {
 		options.aspectData = parseAspect( options.aspect.toLowerCase() );
 		if( !options.aspectData ) {
-			const error = new Error( "screen: invalid value for aspect." );
+			const error = new Error( "screen: Parameter aspect is not valid." );
 			error.code = "INVALID_ASPECT";
 			throw error;
 		}

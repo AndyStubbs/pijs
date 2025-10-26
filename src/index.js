@@ -17,7 +17,7 @@ import * as events from "./core/events.js";
 import * as plugins from "./core/plugins.js";
 import * as webglRenderer from "./core/renderer-webgl2.js";
 import * as canvas2dRenderer from "./core/renderer-canvas2d.js";
-import * as renderer from "./modules/renderer.js";
+import * as renderer from "./core/renderer.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;

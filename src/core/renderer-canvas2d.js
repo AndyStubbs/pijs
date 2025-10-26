@@ -129,9 +129,21 @@ export function afterResize( screenData, fromSize, toSize ) {
 }
 
 
+export function blendModeChanged( screenData, mode ) {
+
+	// TODO: implement if necessary
+}
+
+
 /***************************************************************************************************
  * Batch Operations
  **************************************************************************************************/
+
+
+export function cls( screenData, x, y, width, height ) {
+	
+	// TODO: Implement clear screen command
+}
 
 
 /**

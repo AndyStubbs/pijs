@@ -9,8 +9,8 @@
 
 "use strict";
 
-import * as g_screenManager from "../core/screen-manager";
-import * as g_utils from "../core/utils";
+import * as g_screenManager from "./screen-manager";
+import * as g_utils from "./utils";
 
 
 // Pens
@@ -144,9 +144,12 @@ function setBlend( screenData, options ) {
 	}
 
 	// Set blendData on screen
-	screenData.blendData.plend = mode;
+	screenData.blendData.blend = mode;
 	screenData.blendData.hasNoise = noise !== null;
 	screenData.blendData.noise = noise;
+
+	// Notify renderer that blend mode has changed
+	screenData.renderer.blendModeChanged( screenData );
 }
 
 

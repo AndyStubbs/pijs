@@ -9,8 +9,14 @@
 
 "use strict";
 
+import * as g_renderer from "./renderer";
 import * as g_screenManager from "./screen-manager";
 import * as g_utils from "./utils";
+
+const MAX_BATCH_SIZE = 1_000_000;
+
+// TODO: Consider adding MAX_FLUSH_SIZE, but it's complicated so test first
+//const MAX_FLUSH_SIZE =    50_000;
 
 // Batch systems
 const m_batchProto = {
@@ -18,7 +24,8 @@ const m_batchProto = {
 	"vertices": null,
 	"colors": null,
 	"count": 0,
-	"maxCount": 1000,
+	"capacity": 1000,
+	"capacityChanged": true,
 
 	// WebGL resources
 	"vertexVBO": null,
@@ -28,14 +35,16 @@ const m_batchProto = {
 	"locations": null
 };
 
-// Point shader
+// Point vertex shader
 const m_pointVertSrc = `
-	attribute vec2 a_position;  // Screen coordinates (0,0 to width,height)
-	attribute vec4 a_color;
-	uniform vec2 u_resolution;  // Screen resolution
-	varying vec4 v_color;
-	
+	#version 300 es
+	in vec2 a_position;
+	in vec4 a_color;
+	uniform vec2 u_resolution;
+	out vec4 v_color;
+
 	void main() {
+
 		// Convert screen coords to NDC with Y-flip in operation
 		vec2 ndc = ((a_position / u_resolution) * 2.0 - 1.0) * vec2(1.0, -1.0);
 		gl_Position = vec4(ndc, 0.0, 1.0);
@@ -44,12 +53,15 @@ const m_pointVertSrc = `
 	}
 `;
 
+// Point fragment shader
 const m_pointFragSrc = `
+	#version 300 es
 	precision mediump float;
-	varying vec4 v_color;
-	
+	in vec4 v_color;
+	out vec4 fragColor;
+
 	void main() {
-		gl_FragColor = v_color;
+		fragColor = v_color;
 	}
 `;
 
@@ -60,6 +72,7 @@ const m_pointFragSrc = `
 
 
 export function init() {
+	g_screenManager.addScreenDataItem( "contextLost", false );
 	g_screenManager.addScreenCleanupFunction( cleanup );
 }
 
@@ -72,6 +85,7 @@ export function cleanup( screenData ) {
 	if( pointBatch.vertexVBO ) {
 		gl.deleteBuffer( pointBatch.vertexVBO );
 		gl.deleteBuffer( pointBatch.colorVBO );
+		gl.deleteVertexArray( pointBatch.vao );
 	}
 	
 	// Cleanup shaders and FBO
@@ -135,6 +149,25 @@ export function initWebGL( screenData ) {
 		}
 	}
 	
+	// Track if webglcontext gets lost
+	screenData.canvas.addEventListener( "webglcontextlost", ( e ) => {
+		e.preventDefault();
+		console.warn( "WebGL context lost" );
+		screenData.contextLost = true;
+	} );
+	
+	// Reinit canvas when webglcontext gets restored
+	screenData.canvas.addEventListener( "webglcontextrestored", () => {
+		console.log( "WebGL context restored" );
+
+		// Reinitialize WebGL resources
+		initWebGL( screenData );
+		screenData.contextLost = false;
+
+		// Reset blend mode
+		blendModeChanged( screenData );
+	} );
+
 	// Return successful
 	return true;
 }
@@ -163,8 +196,8 @@ function createBatchSystem( screenData, vertSrc, fragSrc ) {
 		"resolution": gl.getUniformLocation( batch.program, "u_resolution" )
 	};
 
-	batch.vertices = new Float32Array( 1000 * 2 );
-	batch.colors = new Uint8Array( 1000 * 4 );
+	batch.vertices = new Float32Array( batch.capacity * 2 );
+	batch.colors = new Uint8Array( batch.capacity * 4 );
 	batch.vertexVBO = gl.createBuffer();
 	batch.colorVBO = gl.createBuffer();
 
@@ -201,6 +234,11 @@ function createTextureAndFBO( screenData ) {
 	
 	// Create texture
 	screenData.texture = gl.createTexture();
+	if( !screenData.texture ) {
+		console.error( "Failed to create WebGL2 texture." );
+		return false;
+	}
+
 	gl.bindTexture( gl.TEXTURE_2D, screenData.texture );
 	gl.texImage2D( 
 		gl.TEXTURE_2D, 0, gl.RGBA8, 
@@ -227,7 +265,7 @@ function createTextureAndFBO( screenData ) {
 	// Make sure that framebuffer is complete
 	const status = gl.checkFramebufferStatus( gl.FRAMEBUFFER );
 	if( status !== gl.FRAMEBUFFER_COMPLETE ) {
-		console.error( "Framebuffer incomplete:", status );
+		console.error( "WebGL2 Framebuffer incomplete:", status );
 		return false;
 	}
 
@@ -253,18 +291,26 @@ function createShaderProgram( screenData, vertexSource, fragmentSource ) {
 	const fragmentShader = compileShader( screenData, gl.FRAGMENT_SHADER, fragmentSource );
 	
 	if( !vertexShader || !fragmentShader ) {
-		return null;
+		const error = new Error( "screen: Unable to compile shaders." );
+		error.code = "INVALID_SHADERS";
+		throw error;
 	}
 	
 	const program = gl.createProgram();
 	gl.attachShader( program, vertexShader );
 	gl.attachShader( program, fragmentShader );
 	gl.linkProgram( program );
+
+	// Cleanup shader programs
+	gl.deleteShader( vertexShader );
+	gl.deleteShader( fragmentShader );
 	
 	if( !gl.getProgramParameter( program, gl.LINK_STATUS ) ) {
-		console.error( "Shader program error:", gl.getProgramInfoLog( program ) );
+		const errLog =  gl.getProgramInfoLog( program );
 		gl.deleteProgram( program );
-		return null;
+		const error = new Error( `screen: Shader program error:, ${errLog}.` );
+		error.code = "SHADER_PROGRAM_ERROR";
+		throw error;
 	}
 	
 	return program;
@@ -300,15 +346,24 @@ function compileShader( screenData, type, source ) {
  * Ensure batch has enough capacity
  * 
  * @param {Object} batch - Batch system object
- * @param {string} requiredCount - Number of potential batch operations supported
+ * @param {string} newItemCount - Number of new items that will be added
  */
-function ensureBatchCapacity( batch, requiredCount ) {
-	if( requiredCount > batch.maxCount ) {
-		const newCapacity = Math.max( requiredCount, batch.maxCount * 2 );
+export function ensureBatchCapacity( batch, newItemCount ) {
+
+	const requiredCount = batch.count + newItemCount;
+	if( requiredCount >= batch.capacity ) {
+
+		// Make sure we don't exceed max batch size
+		if( requiredCount > MAX_BATCH_SIZE ) {
+			return false;
+		}
+
+		// Get new capacity
+		const newCapacity = Math.max( requiredCount, batch.capacity * 2 );
 		
 		// Resize arrays
 		const newVertices = new Float32Array( newCapacity * 2 );
-		const newColors = new Float32Array( newCapacity * 4 );
+		const newColors = new Uint8Array( newCapacity * 4 );
 		
 		// Copy existing data
 		newVertices.set( batch.vertices );
@@ -317,8 +372,11 @@ function ensureBatchCapacity( batch, requiredCount ) {
 		// Update batch
 		batch.vertices = newVertices;
 		batch.colors = newColors;
-		batch.maxCount = newCapacity;
+		batch.capacity = newCapacity;
+		batch.capacityChanged = true;
 	}
+
+	return true;
 }
 
 
@@ -337,6 +395,11 @@ export function setImageDirty( screenData ) {
 	}
 }
 
+
+export function cls( screenData, x, y, width, height ) {
+	
+	// TODO: Implement clear screen command
+}
 
 /***************************************************************************************************
  * Batch Operations
@@ -361,7 +424,10 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
 	// like for a line command we could count the length of the line and ensure batch capacity
 	// before drawing the individual pixels. But should test before implementing to see if its
 	// needed
-	ensureBatchCapacity( pointBatch, pointBatch.count + 1 );
+	if( !ensureBatchCapacity( pointBatch, 1 ) ) {
+		console.warn( "Exceeded maximum drawing capacity on screen" );
+		return;
+	}
 
 	const idx = pointBatch.count * 2;
 	const cidx = pointBatch.count * 4;
@@ -397,6 +463,20 @@ export function drawPixelDirect( screenData, x, y, color ) {
 }
 
 
+export function blendModeChanged( screenData ) {
+	const gl = screenData.gl;
+	if( screenData.blendData.blend === g_renderer.BLEND_REPLACE ) {
+		gl.disable( gl.BLEND );
+	} else {
+		
+		// TODO: Actually figure out how to do proper blending - support more blending modes
+		// https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
+		gl.enable( gl.BLEND );
+		gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA );
+	}
+}
+
+
 /**
  * Flush all batches to FBO
  * 
@@ -405,6 +485,14 @@ export function drawPixelDirect( screenData, x, y, color ) {
 function flushBatches( screenData ) {
 	
 	const gl = screenData.gl;
+
+	if( screenData.contextLost ) {
+
+		// TODO: Maybe add warning here?
+		// console.warn( "WebGL context lost unable to render screen." );
+		return;
+	}
+
 	const pointBatch = screenData.pointBatch;
 
 	if( pointBatch.count === 0 ) {
@@ -431,32 +519,31 @@ function flushBatches( screenData ) {
 	// Bind VAO - all attributes already configured!
 	gl.bindVertexArray( pointBatch.vao );
 	
-	// Set positions -- only copy buffer data used (subarray)
+	// on first use or resize
+	if( pointBatch.capacityChanged ) {
+
+		// Allocate position vertices
+		gl.bindBuffer( gl.ARRAY_BUFFER, pointBatch.vertexVBO );
+		gl.bufferData( gl.ARRAY_BUFFER, pointBatch.vertices.byteLength, gl.STREAM_DRAW );
+		
+		// Allocate color vertices
+		gl.bindBuffer( gl.ARRAY_BUFFER, pointBatch.colorVBO );
+		gl.bufferData( gl.ARRAY_BUFFER, pointBatch.colors.byteLength, gl.STREAM_DRAW );
+
+		// Reset capacity changed flag
+		pointBatch.capacityChanged = false;
+	}
+
+	// Set positions
 	gl.bindBuffer( gl.ARRAY_BUFFER, pointBatch.vertexVBO );
-	gl.bufferData(
-		gl.ARRAY_BUFFER, pointBatch.vertices.subarray( 0, pointBatch.count * 2 ), gl.STREAM_DRAW
-	);
+	gl.bufferSubData( gl.ARRAY_BUFFER, 0, pointBatch.vertices.subarray( 0, pointBatch.count * 2 ) );
 
 	// Set colors
 	gl.bindBuffer( gl.ARRAY_BUFFER, pointBatch.colorVBO );
-	gl.bufferData(
-		gl.ARRAY_BUFFER, pointBatch.colors.subarray( 0, pointBatch.count * 4 ), gl.STREAM_DRAW
-	);
+	gl.bufferSubData( gl.ARRAY_BUFFER, 0, pointBatch.colors.subarray( 0, pointBatch.count * 4 ) );
 
-	// Set Enable blending based on the blend mode
-	if( screenData.blendData.isAlpha ) {
-		gl.enable( gl.BLEND );
-		gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA );
-
-		// Draw points
-		gl.drawArrays( gl.POINTS, 0, pointBatch.count );
-
-		gl.disable( gl.BLEND );
-	} else {
-
-		// Draw points
-		gl.drawArrays( gl.POINTS, 0, pointBatch.count );
-	}
+	// Draw points
+	gl.drawArrays( gl.POINTS, 0, pointBatch.count );
 	
 	// Reset batch count
 	pointBatch.count = 0;
