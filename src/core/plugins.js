@@ -135,8 +135,6 @@ function initializePlugin( pluginInfo ) {
 	const pluginApi = {
 		"addCommand": commands.addCommand,
 		"addScreenCommand": screenManager.addCommand,
-		"addPixelCommand": screenManager.addPixelCommand,
-		"addAACommand": screenManager.addAACommand,
 		"addScreenDataItem": screenManager.addScreenDataItem,
 		"addScreenDataItemGetter": screenManager.addScreenDataItemGetter,
 		"addScreenInternalCommands": screenManager.addScreenInternalCommands,
