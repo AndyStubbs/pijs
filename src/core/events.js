@@ -8,8 +8,8 @@
 
 "use strict";
 
-import * as utils from "./utils";
-import * as screenManager from "./screen-manager";
+import * as g_utils from "./utils";
+import * as g_screenManager from "./screen-manager";
 
 // Import clear functions from input modules (TODO: Re-enable when input modules are reimplemented)
 // import { clearKeyboardEvents } from "../modules/keyboard";
@@ -53,7 +53,7 @@ export function init() {
 
 	// Register clearEvents command
 	// Screen is optional since keyboard and gamepad don't require a screen
-	screenManager.addCommand( "clearEvents", clearEvents, [ "type" ], true );
+	g_screenManager.addCommand( "clearEvents", clearEvents, [ "type" ], true );
 }
 
 
@@ -177,7 +177,7 @@ export function onevent(
 	once = !!( once );
 
 	// Validate callback function
-	if( !utils.isFunction( fn ) ) {
+	if( !g_utils.isFunction( fn ) ) {
 		const error = new Error( `${name}: fn is not a valid function.` );
 		error.code = "INVALID_FUNCTION";
 		throw error;
@@ -276,7 +276,7 @@ export function offevent( mode, fn, modes, name, listenerArr, extraId ) {
 	// Determine if clearing all listeners or specific function
 	const isClear = fn == null;
 
-	if( !isClear && !utils.isFunction( fn ) ) {
+	if( !isClear && !g_utils.isFunction( fn ) ) {
 		const error = new Error( `${name}: fn is not a valid function.` );
 		error.code = "INVALID_FUNCTION";
 		throw error;
@@ -343,7 +343,7 @@ export function triggerEventListeners( mode, data, listenerArr, clickStatus ) {
 				newData = [];
 				for( let j = 0; j < data.length; j++ ) {
 					const pos = data[ j ];
-					if( utils.inRange( pos, listener.hitBox ) ) {
+					if( g_utils.inRange( pos, listener.hitBox ) ) {
 						newData.push( pos );
 					}
 				}
@@ -354,7 +354,7 @@ export function triggerEventListeners( mode, data, listenerArr, clickStatus ) {
 
 				// Handle single data point (mouse)
 				newData = data;
-				if( utils.inRange( data, listener.hitBox ) ) {
+				if( g_utils.inRange( data, listener.hitBox ) ) {
 					isHit = true;
 				}
 			}

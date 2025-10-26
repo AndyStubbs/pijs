@@ -43,6 +43,9 @@ export function init( api, screenManager ) {
 		// Not in browser environment, mark as ready immediately
 		m_isDocumentReady = true;
 	}
+
+	// External API commands
+	addCommand( "ready", ready, [ "callback" ] );
 }
 
 /**
@@ -186,7 +189,6 @@ export function getApi() {
  *   $.ready( () => console.log( "Both loaded" ) );
  *   // Waits for both a and b, triggers once
  */
-addCommand( "ready", ready, [ "callback" ] );
 function ready( options ) {
 	const callback = options.callback;
 
