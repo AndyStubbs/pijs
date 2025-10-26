@@ -679,21 +679,73 @@ Rebuild:
 
 ## To-dos
 
-- [x] Setup minimal shell - copy alpha.1 to src/, create REFACTOR-PLAN-ALPHA-2.md, strip down to 
-core only
-- [ ] Create WebGL2 renderer core - context, FBO, shaders, batch system
-- [ ] Implement blank screen rendering with WebGL2
-- [ ] Optimize command system per STRUCTURE-UPGRADE.md
-- [ ] Rebuild color system for WebGL (palette, setColor)
-- [ ] Implement pset command with fast path
-- [ ] Implement line command with Bresenham algorithm
-- [ ] Implement rect and circle commands
-- [ ] Implement ellipse, arc, bezier commands
-- [ ] Rebuild image loading and drawing with WebGL textures
-- [ ] Convert fonts to bitmaps and implement text rendering
-- [ ] Implement get/getPixel (sync), getAsync/getPixelAsync, put commands
-- [ ] Implement paint (with Worker TODOs) and filterImg
-- [ ] Rebuild input modules (keyboard, mouse, touch, gamepad, press)
-- [ ] Rebuild sound modules (sound, play)
-- [ ] Run visual regression tests, performance benchmarks, optimize
-- [ ] Update API docs and create migration guide
+### Phase 1: Setup and Minimal Shell
+- [x] Step 1.1-1.4: Setup minimal shell - copy alpha.1 to src/, create REFACTOR-PLAN-ALPHA-2.md, strip down to core only
+
+### Phase 2: WebGL2 Core Architecture
+- [ ] Step 2.1: Create WebGL Renderer Core (webgl-renderer.js) and Canvas2D Renderer (canvas2d-renderer.js)
+- [ ] Step 2.2: Create Simple Shaders (shaders.js)
+- [ ] Step 2.3: Update Screen Manager for Renderer Delegation
+- [ ] Step 2.4: Implement Blank Screen
+- [ ] Step 2.5: Create Canvas2D Renderer
+
+### Phase 3: Command System Optimization
+- [ ] Step 3.1: Implement Fast Path Architecture
+- [ ] Step 3.2: Optimize Command Wrappers
+- [ ] Step 3.3: Remove Pen/Blend Function Pointers
+
+### Phase 4: Color System
+- [ ] Step 4.1: Rebuild Color Module
+- [ ] Step 4.2: Add Color to Screen Data
+- [ ] Step 4.3: Implement setColor Command
+
+### Phase 5: First Drawing Command - pset
+- [ ] Step 5.1: Create Graphics Module
+- [ ] Step 5.2: Test pset
+
+### Phase 6: Line Drawing
+- [ ] Step 6.1: Implement line Command
+- [ ] Step 6.2: Test line
+
+### Phase 7: Additional Graphics Primitives
+- [ ] Step 7.1: Implement rect (filled and outlined)
+- [ ] Step 7.2: Implement circle (filled and outlined)
+- [ ] Step 7.3: Implement ellipse
+- [ ] Step 7.4: Implement arc
+- [ ] Step 7.5: Implement bezier
+
+### Phase 8: Image Support
+- [ ] Step 8.1: Rebuild Images Module
+- [ ] Step 8.2: Implement drawImage
+
+### Phase 9: Text Rendering (Bitmap Fonts Only)
+- [ ] Step 9.1: Convert Default Fonts to Bitmaps
+- [ ] Step 9.2: Rebuild Font Module
+- [ ] Step 9.3: Rebuild Print Module
+
+### Phase 10: Advanced Features
+- [ ] Step 10.1: Implement get/getPixel (Synchronous)
+- [ ] Step 10.2: Implement getAsync/getPixelAsync
+- [ ] Step 10.3: Implement put Command
+- [ ] Step 10.4: Implement paint (Flood Fill)
+- [ ] Step 10.5: Implement filterImg
+
+### Phase 11: Input Systems
+- [ ] Rebuild keyboard.js
+- [ ] Rebuild mouse.js
+- [ ] Rebuild touch.js
+- [ ] Rebuild gamepad.js
+- [ ] Rebuild press.js
+
+### Phase 12: Sound System
+- [ ] Rebuild sound.js
+- [ ] Rebuild play.js
+
+### Phase 13: Testing and Optimization
+- [ ] Step 13.1: Run Visual Regression Tests
+- [ ] Step 13.2: Performance Benchmarking
+- [ ] Step 13.3: Optimize Batch Sizes
+
+### Phase 14: Documentation
+- [ ] Step 14.1: Update API Documentation
+- [ ] Step 14.2: Create Migration Guide
