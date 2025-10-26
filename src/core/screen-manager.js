@@ -11,8 +11,11 @@
 
 import * as g_commands from "./commands";
 import * as g_utils from "./utils";
-import * as g_webglRenderer from "./renderer-webgl2";
+import * as g_webgl2Renderer from "./renderer-webgl2";
 import * as g_canvas2dRenderer from "./renderer-canvas2d";
+
+const WEBGL2_RENDER_MODE = "webgl2";
+const CANVAS2D_RENDER_MODE = "canvas2d";
 
 const SCREEN_API_PROTO = { "screen": true };
 const m_screens = {};
@@ -547,23 +550,22 @@ function createScreenData( options ) {
 	};
 
 	// Try WebGL2 first, fall back to Canvas2D
-	const webglRender = g_webglRenderer.initWebGL( screenData );
-
-	if( webglRender ) {
-		screenData.renderMode = "webgl";
-		screenData.renderer = g_webglRenderer;
+	const webgl2Status = g_webgl2Renderer.initWebGL( screenData );
+	if( webgl2Status ) {
+		screenData.renderMode = WEBGL2_RENDER_MODE;
+		screenData.renderer = g_webgl2Renderer;
 	} else {
 
 		// Canvas2D renderer (fallback)
-		const canvas2dRender = g_canvas2dRenderer.initCanvas2D( screenData );
-		if( !canvas2dRender ) {
+		const canvas2dStatus = g_canvas2dRenderer.initCanvas2D( screenData );
+		if( !canvas2dStatus ) {
 			const error = new Error( "screen: Failed to create rendering context." );
 			error.code = "NO_RENDERING_CONTEXT";
 			throw error;
 		}
 
-		screenData.renderMode = "canvas2d";
-		screenData.renderer = canvas2dRender;
+		screenData.renderMode = CANVAS2D_RENDER_MODE;
+		screenData.renderer = canvas2dStatus;
 	}
 
 	// Append additional items onto the screendata
@@ -683,7 +685,7 @@ function resizeScreen( screenData ) {
 	};
 
 	// Let the renderer adjust to the new size
-	if( screenData.renderMode === "canvas2d" ) {
+	if( screenData.renderMode === CANVAS2D_RENDER_MODE ) {
 		g_canvas2dRenderer.beforeResize( screenData, fromSize, toSize );
 	}
 
@@ -718,7 +720,7 @@ function resizeScreen( screenData ) {
 	};
 
 	// Let the renderer adjust to the new size
-	if( screenData.renderMode === "canvas2d" ) {
+	if( screenData.renderMode === CANVAS2D_RENDER_MODE ) {
 		g_canvas2dRenderer.afterResize( screenData, fromSize, toSize );
 	}
 

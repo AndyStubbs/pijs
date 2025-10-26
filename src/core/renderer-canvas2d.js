@@ -155,7 +155,9 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
 	data[ idx + 2 ] = color.b;
 	data[ idx + 3 ] = color.a;
 	
-	queueAutoRender( screenData );
+	// TODO: Remove per pixel check, should be done after draw but in actual graphics commands like
+	// after the line draw is complete
+	setImageDirty( screenData );
 }
 
 

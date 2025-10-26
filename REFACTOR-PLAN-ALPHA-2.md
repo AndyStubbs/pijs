@@ -82,10 +82,16 @@ export { api as pi };
 
 ## Phase 2: WebGL2 Core Architecture
 
-### Step 2.1: Split Renderer into Two Files
-Replace `src/core/renderer.js` with two specialized renderers:
+### Step 2.1: Split Renderer into Three Files
+Replace `src/core/renderer.js` with three specialized renderers:
 
-**Create `src/core/webgl-renderer.js`:**
+**Create `src/modules/renderer.js`:**
+
+**Key responsibilities:**
+- Manage shared screenData between the two renderers
+- Create the external API commands related to rendering for (cls, setPen, and setBlend)
+
+**Create `src/core/renderer-webgl2.js`:**
 
 **Key responsibilities:**
 - WebGL2 context creation and management
@@ -94,13 +100,13 @@ Replace `src/core/renderer.js` with two specialized renderers:
 - Batch rendering system (point batch, line batch, triangle batch)
 - Automatic render queue (microtask-based)
 
-**Create `src/core/canvas2d-renderer.js`:**
+**Create `src/core/renderer-canvas2d.js`:**
 
 **Key responsibilities:**
 - 2D Canvas context creation and management
 - ImageData manipulation for pixel-perfect rendering
 - Fallback rendering when WebGL2 is not available
-- Compatible API with webgl-renderer for seamless switching
+- Compatible API with renderer-webgl2 for seamless switching
 
 **Initial structure:**
 ```javascript
@@ -157,8 +163,7 @@ export function displayToCanvas() {
 }
 ```
 
-### Step 2.2: Create Simple Shaders
-Create `src/core/shaders.js`:
+### Step 2.2: Create Simple Shaders inside renderer-webgl2.js
 
 **Point shader (for pixel-perfect rendering):**
 ```glsl
@@ -191,29 +196,31 @@ Modify `src/core/screen-manager.js`:
 - Remove direct `getContext( "2d" )` calls
 - Add renderer initialization logic that tries WebGL2 first, falls back to Canvas2D
 - Delegate context creation to the appropriate renderer
-- Add renderer-specific screenData properties
 
 **New screen creation flow:**
 ```javascript
 function screen( options ) {
     // ... existing screen setup ...
     
-    // Try WebGL2 first
-    const webglRenderer = webglRenderer.initWebGL( canvas, width, height );
-    if( webglRenderer ) {
-        screenData.renderer = webglRenderer;
-        screenData.renderMode = "webgl2";
-        screenData.gl = webglRenderer.getGL();
-        screenData.fbo = webglRenderer.getFBO();
-    } else {
-        // Fallback to Canvas2D
-        const canvas2dRenderer = canvas2dRenderer.initCanvas2D( canvas, width, height );
-        screenData.renderer = canvas2dRenderer;
-        screenData.renderMode = "canvas2d";
-        screenData.context = canvas2dRenderer.getContext();
-        screenData.imageData = canvas2dRenderer.getImageData();
-    }
-    
+	// Try WebGL2 first, fall back to Canvas2D
+	const webgl2Status = g_webgl2Renderer.initWebGL( screenData );
+	if( webgl2Status ) {
+		screenData.renderMode = "webgl";
+		screenData.renderer = g_webgl2Renderer;
+	} else {
+
+		// Canvas2D renderer (fallback)
+		const canvas2dStatus = g_canvas2dRenderer.initCanvas2D( screenData );
+		if( !canvas2dStatus ) {
+			const error = new Error( "screen: Failed to create rendering context." );
+			error.code = "NO_RENDERING_CONTEXT";
+			throw error;
+		}
+
+		screenData.renderMode = "canvas2d";
+		screenData.renderer = canvas2dStatus;
+	}
+
     // ... rest of screen setup ...
 }
 ```
@@ -229,14 +236,10 @@ function screen( options ) {
 **Add these screenData items:**
 - `renderer` - The active renderer instance
 - `renderMode` - "webgl2" or "canvas2d"
-- `gl` - WebGL2 context (if WebGL2)
-- `fbo` - Framebuffer object (if WebGL2)
-- `context` - 2D context (if Canvas2D)
-- `imageData` - ImageData (if Canvas2D)
 
 
 ### Step 2.4: Implement Blank Screen
-Goal: Create a screen that displays a solid color (black by default)
+Goal: Create a screen that displays a solid color (black/transparent by default)
 
 **Update screen creation:**
 - Try WebGL2 renderer first
@@ -254,7 +257,7 @@ $.ready(() => {
 ```
 
 ### Step 2.5: Create Canvas2D Renderer
-Create `src/core/canvas2d-renderer.js`:
+Create `src/core/renderer-canvas2d.js`:
 
 **Key responsibilities:**
 - 2D Canvas context creation and management
@@ -330,24 +333,25 @@ export function drawPixelDirect( screenData, x, y, r, g, b, a ) {
 **`src/core/canvas2d-renderer.js`:**
 ```javascript
 // Fast path for direct pixel writes (no bounds check, no blending)
-export function drawPixelUnsafe( screenData, x, y, r, g, b, a ) {
-    const imageData = screenData.imageData;
-    const idx = ( ( screenData.width * y ) + x ) * 4;
-    
-    imageData.data[idx] = r;
-    imageData.data[idx + 1] = g;
-    imageData.data[idx + 2] = b;
-    imageData.data[idx + 3] = a;
-    
-    queueAutoRender( screenData );
+export function drawPixelUnsafe( screenData, x, y, color ) {
+	const imageData = screenData.imageData;
+	const data = imageData.data;
+	const idx = ( ( screenData.width * y ) + x ) * 4;
+	
+	data[ idx ] = color.r;
+	data[ idx + 1 ] = color.g;
+	data[ idx + 2 ] = color.b;
+	data[ idx + 3 ] = color.a;
+	
+	setImageDirty( screenData );
 }
 
 // Fast path with bounds checking
-export function drawPixelDirect( screenData, x, y, r, g, b, a ) {
-    if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
-        return;
-    }
-    drawPixelUnsafe( screenData, x, y, r, g, b, a );
+export function drawPixelDirect( screenData, x, y, color ) {
+	if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
+		return;
+	}
+	drawPixelUnsafe( screenData, x, y, color );
 }
 ```
 

@@ -375,6 +375,8 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
 	
 	pointBatch.count++;
 	
+	// TODO: Remove per pixel check, should be done after draw but in actual graphics commands like
+	// after the line draw is complete
 	setImageDirty( screenData );
 }
 
