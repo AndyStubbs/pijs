@@ -64,6 +64,19 @@ export function init() {
 			}
 		}
 	} );
+
+	// Add global external API Commands
+	g_commands.addCommand( "screen", screen, [
+		"aspect", "container", "isOffscreen", "noStyles", "resizeCallback"
+	] );
+	g_commands.addCommand( "setScreen", setScreen, [ "screen" ] );
+	g_commands.addCommand( "getScreen", getScreen, [ "screenId" ] );
+
+	// Add screen external API commands
+	addCommand( "removeScreen", removeScreen, [] );
+	addCommand( "width", width, [] );
+	addCommand( "height", height, [] );
+	addCommand( "canvas", canvas, [] );
 }
 
 export function addCommand( name, fn, parameterNames, screenOptional = false ) {
@@ -115,9 +128,6 @@ export function addScreenCleanupFunction( fn ) {
 
 
 // screen command
-g_commands.addCommand( "screen", screen, [
-	"aspect", "container", "isOffscreen", "noStyles", "resizeCallback"
-] );
 function screen( options ) {
 
 	// Validate resize callback
@@ -161,7 +171,6 @@ function screen( options ) {
 }
 
 // Remove the screen from the page and memory
-addCommand( "removeScreen", removeScreen, [] );
 function removeScreen( screenData ) {
 	const screenId = screenData.id;
 
@@ -256,7 +265,6 @@ function removeScreen( screenData ) {
 }
 
 // Set the active screen on pi
-g_commands.addCommand( "setScreen", setScreen, [ "screen" ] );
 function setScreen( options ) {
 	const screenObj = options.screen;
 	let screenId;
@@ -274,7 +282,7 @@ function setScreen( options ) {
 	m_activeScreen = m_screens[ screenId ];
 }
 
-g_commands.addCommand( "getScreen", getScreen, [ "screenId" ] );
+// Get screen
 function getScreen( options ) {
 	const screenId = g_utils.getInt( options.screenId, null );
 	if( screenId === null ) {
@@ -292,19 +300,16 @@ function getScreen( options ) {
 }
 
 // width command
-addCommand( "width", width, [] );
 function width( screenData ) {
 	return screenData.width;
 }
 
 // Height Command
-addCommand( "height", height, [] );
 function height( screenData ) {
 	return screenData.height;
 }
 
 // Canvas Command
-addCommand( "canvas", canvas, [] );
 function canvas( screenData ) {
 	return screenData.canvas;
 }

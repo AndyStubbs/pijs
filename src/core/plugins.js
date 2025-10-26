@@ -8,13 +8,11 @@
 
 "use strict";
 
-import * as commands from "./commands.js";
-import * as screenManager from "./screen-manager.js";
-import * as utils from "./utils.js";
+import * as g_commands from "./commands.js";
+import * as g_screenManager from "./screen-manager.js";
+import * as g_utils from "./utils.js";
 
 const m_plugins = [];
-let m_api = null;
-let m_isInitialized = false;
 
 
 /***************************************************************************************************
@@ -23,11 +21,12 @@ let m_isInitialized = false;
 
 
 export function init() {
-	m_api = commands.getApi();
-	m_isInitialized = true;
 
-	// Process any plugins that were registered before init
-	processEarlyRegistrations();
+	// Add external API commands
+	g_commands.addCommand(
+		"registerPlugin", registerPlugin, [ "name", "version", "description", "init" ]
+	);
+	g_commands.addCommand( "getPlugins", getPlugins, [] );
 }
 
 
@@ -56,7 +55,6 @@ export function init() {
  *   }
  * } );
  */
-commands.addCommand( "registerPlugin", registerPlugin, [ "name", "version", "description", "init" ] );
 function registerPlugin( options ) {
 
 	// Validate required parameters
@@ -93,11 +91,7 @@ function registerPlugin( options ) {
 	};
 
 	m_plugins.push( pluginInfo );
-
-	// If system is initialized, process immediately
-	if( m_isInitialized ) {
-		initializePlugin( pluginInfo );
-	}
+	initializePlugin( pluginInfo );
 }
 
 /**
@@ -109,7 +103,6 @@ function registerPlugin( options ) {
  * const plugins = pi.getPlugins();
  * console.log( plugins ); // [{ name: "my-plugin", version: "1.0.0", ... }]
  */
-commands.addCommand( "getPlugins", getPlugins, [] );
 function getPlugins() {
 	return m_plugins.map( p => ( {
 		"name": p.name,
@@ -133,15 +126,14 @@ function initializePlugin( pluginInfo ) {
 
 	// Create plugin API
 	const pluginApi = {
-		"addCommand": commands.addCommand,
-		"addScreenCommand": screenManager.addCommand,
-		"addScreenDataItem": screenManager.addScreenDataItem,
-		"addScreenDataItemGetter": screenManager.addScreenDataItemGetter,
-		"addScreenInternalCommands": screenManager.addScreenInternalCommands,
-		"addScreenInitFunction": screenManager.addScreenInitFunction,
-		"addScreenCleanupFunction": screenManager.addScreenCleanupFunction,
-		"getApi": () => m_api,
-		"utils": utils
+		"addCommand": g_commands.addCommand,
+		"addScreenCommand": g_screenManager.addCommand,
+		"addScreenDataItem": g_screenManager.addScreenDataItem,
+		"addScreenDataItemGetter": g_screenManager.addScreenDataItemGetter,
+		"addScreenInternalCommands": g_screenManager.addScreenInternalCommands,
+		"addScreenInitFunction": g_screenManager.addScreenInitFunction,
+		"addScreenCleanupFunction": g_screenManager.addScreenCleanupFunction,
+		"utils": g_utils
 	};
 
 	// Initialize plugin
@@ -158,15 +150,6 @@ function initializePlugin( pluginInfo ) {
 	}
 
 	// Reprocess API to include new commands
-	commands.processApi();
-}
-
-// Process plugins that were registered before system was initialized
-function processEarlyRegistrations() {
-	for( const pluginInfo of m_plugins ) {
-		if( !pluginInfo.initialized ) {
-			initializePlugin( pluginInfo );
-		}
-	}
+	g_commands.processApi();
 }
 

@@ -22,6 +22,7 @@ export const BLEND_REPLACE = "replace";
 export const BLEND_ALPHA = "alpha";
 export const BLENDS = new Set( [ BLEND_REPLACE, BLEND_ALPHA ] );
 
+
 /***************************************************************************************************
  * Module Commands
  **************************************************************************************************/
@@ -40,6 +41,11 @@ export function init() {
 
 	// Add renderer cleanup
 	g_screenManager.addScreenCleanupFunction( cleanup );
+
+	// Add external API commands
+	g_screenManager.addCommand( "cls", cls, [ "x", "y", "width", "height" ] );
+	g_screenManager.addCommand( "setPen", setPen, [ "pen", "size" ] );
+	g_screenManager.addCommand( "setBlend", setBlend, [ "mode", "noise" ] );
 }
 
 function cleanup( screenData ) {
@@ -55,7 +61,6 @@ function cleanup( screenData ) {
 
 
 // cls (clear screen) command
-g_screenManager.addCommand( "cls", cls, [ "x", "y", "width", "height" ] );
 function cls( screenData, options ) {
 	const x = g_utils.getInt( options.x, 0 );
 	const y = g_utils.getInt( options.y, 0 );
@@ -66,7 +71,6 @@ function cls( screenData, options ) {
 }
 
 // Set Pen Command
-g_screenManager.addCommand( "setPen", setPen, [ "pen", "size" ] );
 function setPen( screenData, options ) {
 	let pen = options.pen;
 	let size = g_utils.getFloat( options.size, 1 );
@@ -103,7 +107,6 @@ function setPen( screenData, options ) {
 }
 
 // Set blend mode
-g_screenManager.addCommand( "setBlend", setBlend, [ "mode", "noise" ] );
 function setBlend( screenData, options ) {
 	const mode = options.mode;
 	let noise = options.noise;
