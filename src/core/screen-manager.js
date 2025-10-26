@@ -1,5 +1,5 @@
 /**
- * Pi.js - Screen Manager Module
+ * Pi.js - Screen Manager Core Module
  * 
  * Screen creation and management for Pi.js.
  * Creates canvas elements, manages multiple screens, handles aspect ratios.

@@ -1,5 +1,5 @@
 /**
- * Pi.js - Plugin System
+ * Pi.js - Plugin System Core Module
  * 
  * Plugin registration and management for extending Pi.js functionality.
  * 

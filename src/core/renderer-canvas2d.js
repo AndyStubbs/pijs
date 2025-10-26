@@ -1,5 +1,5 @@
 /**
- * Pi.js - Canvas2D Renderer Module
+ * Pi.js - Canvas2D Renderer Core Module
  * 
  * 2D Canvas rendering with ImageData manipulation for pixel-perfect rendering.
  * Fallback renderer when WebGL2 is not available.

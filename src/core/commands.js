@@ -1,5 +1,5 @@
 /**
- * Pi.js - Command System Module
+ * Pi.js - Command System Core Module
  * 
  * Command registration and processing.
  * 

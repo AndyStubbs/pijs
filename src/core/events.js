@@ -1,5 +1,5 @@
 /**
- * Pi.js - Event Management Module
+ * Pi.js - Event Management Core Module
  * 
  * Centralized event listener management for input events (mouse, touch, keyboard, etc.)
  * 

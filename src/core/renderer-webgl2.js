@@ -1,5 +1,5 @@
 /**
- * Pi.js - WebGL2 Renderer Module
+ * Pi.js - WebGL2 Renderer Core Module
  * 
  * WebGL2 rendering with Framebuffer Object (FBO) for offscreen rendering
  * and automatic batch rendering system.
