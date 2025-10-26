@@ -4,12 +4,12 @@
  * 2D Canvas rendering with ImageData manipulation for pixel-perfect rendering.
  * Fallback renderer when WebGL2 is not available.
  * 
- * @module core/canvas2d-renderer
+ * @module core/renderer-canvas2d
  */
 
 "use strict";
 
-import * as utils from "./utils";
+import * as g_utils from "./utils";
 
 // Auto-render state
 let m_autoRenderScheduled = false;
@@ -23,6 +23,14 @@ let m_autoRenderScheduled = false;
 export function init() {
 	
 	// Initialize will be called per screen
+}
+
+export function cleanup( screenData ) {
+	screenData.context = null;
+	screenData.canvas = null;
+	screenData.imageData = null;
+	screenData.bufferCanvas = null;
+	screenData.bufferContext = null;
 }
 
 
@@ -68,7 +76,7 @@ export function initCanvas2D( screenData ) {
 export function setImageDirty( screenData ) {
 	if( !m_autoRenderScheduled ) {
 		m_autoRenderScheduled = true;
-		utils.queueMicrotask( () => {
+		g_utils.queueMicrotask( () => {
 			screenData.context.putImageData( screenData.imageData, 0, 0 );
 			m_autoRenderScheduled = false;
 		} );

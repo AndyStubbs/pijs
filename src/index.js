@@ -15,8 +15,9 @@ import * as commands from "./core/commands.js";
 import * as screenManager from "./core/screen-manager.js";
 import * as events from "./core/events.js";
 import * as plugins from "./core/plugins.js";
-import * as webglRenderer from "./core/webgl-renderer.js";
-import * as canvas2dRenderer from "./core/canvas2d-renderer.js";
+import * as webglRenderer from "./core/renderer-webgl2.js";
+import * as canvas2dRenderer from "./core/renderer-canvas2d.js";
+import * as renderer from "./modules/renderer.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -33,6 +34,7 @@ webglRenderer.init();
 canvas2dRenderer.init();
 events.init();
 plugins.init();
+renderer.init();
 
 // Append all the commands to the api
 commands.processApi();

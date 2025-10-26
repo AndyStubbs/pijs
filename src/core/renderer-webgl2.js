@@ -4,13 +4,13 @@
  * WebGL2 rendering with Framebuffer Object (FBO) for offscreen rendering
  * and automatic batch rendering system.
  * 
- * @module core/webgl-renderer
+ * @module core/renderer-webgl2
  */
 
 "use strict";
 
 import * as g_screenManager from "./screen-manager";
-import * as utils from "./utils";
+import * as g_utils from "./utils";
 
 // Batch systems
 const m_batchProto = {
@@ -63,7 +63,7 @@ export function init() {
 	g_screenManager.addScreenCleanupFunction( cleanup );
 }
 
-function cleanup( screenData ) {
+export function cleanup( screenData ) {
 
 	const gl = screenData.gl;
 	const pointBatch = screenData.pointBatch;
@@ -327,12 +327,12 @@ function ensureBatchCapacity( batch, requiredCount ) {
  * @param {Object} screenData - Global screen data object container
  */
 export function setImageDirty( screenData ) {
-	if( !screenData.autoRenderScheduled ) {
-		screenData.autoRenderScheduled = true;
-		utils.queueMicrotask( () => {
+	if( !screenData.isRenderScheduled ) {
+		screenData.isRenderScheduled = true;
+		g_utils.queueMicrotask( () => {
 			flushBatches( screenData );
 			displayToCanvas( screenData );
-			screenData.autoRenderScheduled = false;
+			screenData.isRenderScheduled = false;
 		} );
 	}
 }
@@ -432,17 +432,17 @@ function flushBatches( screenData ) {
 	// Set positions -- only copy buffer data used (subarray)
 	gl.bindBuffer( gl.ARRAY_BUFFER, pointBatch.vertexVBO );
 	gl.bufferData(
-		gl.ARRAY_BUFFER, pointBatch.vertices.subarray( 0, pointBatch.count * 2 ), gl.DYNAMIC_DRAW
+		gl.ARRAY_BUFFER, pointBatch.vertices.subarray( 0, pointBatch.count * 2 ), gl.STREAM_DRAW
 	);
 
 	// Set colors
 	gl.bindBuffer( gl.ARRAY_BUFFER, pointBatch.colorVBO );
 	gl.bufferData(
-		gl.ARRAY_BUFFER, pointBatch.colors.subarray( 0, pointBatch.count * 4 ), gl.DYNAMIC_DRAW
+		gl.ARRAY_BUFFER, pointBatch.colors.subarray( 0, pointBatch.count * 4 ), gl.STREAM_DRAW
 	);
 
 	// Set Enable blending based on the blend mode
-	if( screenData.isBlendAlpha ) {
+	if( screenData.blendData.isAlpha ) {
 		gl.enable( gl.BLEND );
 		gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA );
 

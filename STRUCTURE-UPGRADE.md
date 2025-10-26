@@ -28,6 +28,7 @@ runtime, preventing V8 inline optimization
 - Pixel operations: Significant overhead from pen/blend indirection
 - alpha.0 implementation with different pen handling: 1.7x faster
 
+
 ## Root Causes
 
 ### 1. Dynamic Function Assignment

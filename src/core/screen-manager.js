@@ -9,10 +9,10 @@
 
 "use strict";
 
-import * as commands from "./commands";
-import * as utils from "./utils";
-import * as webglRenderer from "./webgl-renderer";
-import * as canvas2dRenderer from "./canvas2d-renderer";
+import * as g_commands from "./commands";
+import * as g_utils from "./utils";
+import * as g_webglRenderer from "./renderer-webgl2";
+import * as g_canvas2dRenderer from "./renderer-canvas2d";
 
 const SCREEN_API_PROTO = { "screen": true };
 const m_screens = {};
@@ -77,7 +77,7 @@ export function addCommand( name, fn, parameterNames, screenOptional = false ) {
 	} );
 
 	// Add the command to the global command list
-	commands.addCommand( name, fn, parameterNames, true, screenOptional );
+	g_commands.addCommand( name, fn, parameterNames, true, screenOptional );
 }
 
 export function sortScreenCommands() {
@@ -115,13 +115,13 @@ export function addScreenCleanupFunction( fn ) {
 
 
 // screen command
-commands.addCommand( "screen", screen, [
+g_commands.addCommand( "screen", screen, [
 	"aspect", "container", "isOffscreen", "noStyles", "resizeCallback"
 ] );
 function screen( options ) {
 
 	// Validate resize callback
-	if( options.resizeCallback != null && !utils.isFunction( options.resizeCallback ) ) {
+	if( options.resizeCallback != null && !g_utils.isFunction( options.resizeCallback ) ) {
 		const error = new TypeError( "screen: resizeCallback must be a function." );
 		error.code = "INVALID_CALLBACK";
 		throw error;
@@ -256,7 +256,7 @@ function removeScreen( screenData ) {
 }
 
 // Set the active screen on pi
-commands.addCommand( "setScreen", setScreen, [ "screen" ] );
+g_commands.addCommand( "setScreen", setScreen, [ "screen" ] );
 function setScreen( options ) {
 	const screenObj = options.screen;
 	let screenId;
@@ -274,9 +274,9 @@ function setScreen( options ) {
 	m_activeScreen = m_screens[ screenId ];
 }
 
-commands.addCommand( "getScreen", getScreen, [ "screenId" ] );
+g_commands.addCommand( "getScreen", getScreen, [ "screenId" ] );
 function getScreen( options ) {
-	const screenId = utils.getInt( options.screenId, null );
+	const screenId = g_utils.getInt( options.screenId, null );
 	if( screenId === null ) {
 		const error = new Error( "screen: Invalid screen id." );
 		error.code = "INVALID_SCREEN_ID";
@@ -321,7 +321,7 @@ function canvas( screenData ) {
 // Process api command
 function processApiCommand( screenData, command ) {
 	screenData.api[ command.name ] = ( ...args ) => {
-		const options = utils.parseOptions( args, command.parameterNames );
+		const options = g_utils.parseOptions( args, command.parameterNames );
 		return command.fn( screenData, options );
 	};
 }
@@ -384,7 +384,7 @@ function createScreen( options ) {
 		options.container = document.getElementById( options.container );
 	} else if( !options.container ) {
 		options.container = document.body;
-	} else if( !utils.isDomElement( options.container ) ) {
+	} else if( !g_utils.isDomElement( options.container ) ) {
 		const error = new TypeError(
 			"screen: Invalid argument container. Container must be a DOM element " +
 			"or a string id of a DOM element."
@@ -542,15 +542,15 @@ function createScreenData( options ) {
 	};
 
 	// Try WebGL2 first, fall back to Canvas2D
-	const webglRender = webglRenderer.initWebGL( screenData );
+	const webglRender = g_webglRenderer.initWebGL( screenData );
 
 	if( webglRender ) {
 		screenData.renderMode = "webgl";
-		screenData.renderer = webglRenderer;
+		screenData.renderer = g_webglRenderer;
 	} else {
 
 		// Canvas2D renderer (fallback)
-		const canvas2dRender = canvas2dRenderer.initCanvas2D( screenData );
+		const canvas2dRender = g_canvas2dRenderer.initCanvas2D( screenData );
 		if( !canvas2dRender ) {
 			const error = new Error( "screen: Failed to create rendering context." );
 			error.code = "NO_RENDERING_CONTEXT";
@@ -679,7 +679,7 @@ function resizeScreen( screenData ) {
 
 	// Let the renderer adjust to the new size
 	if( screenData.renderMode === "canvas2d" ) {
-		canvas2dRenderer.beforeResize( screenData, fromSize, toSize );
+		g_canvas2dRenderer.beforeResize( screenData, fromSize, toSize );
 	}
 
 	let size;
@@ -714,7 +714,7 @@ function resizeScreen( screenData ) {
 
 	// Let the renderer adjust to the new size
 	if( screenData.renderMode === "canvas2d" ) {
-		canvas2dRenderer.afterResize( screenData, fromSize, toSize );
+		g_canvas2dRenderer.afterResize( screenData, fromSize, toSize );
 	}
 
 	// Send the resize data to the client
