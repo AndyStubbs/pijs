@@ -13,11 +13,13 @@ import * as g_screenManager from "../core/screen-manager";
 import * as g_utils from "../core/utils";
 
 
+// Pens
 export const PEN_PIXEL = "pixel";
 export const PEN_SQUARE = "square";
 export const PEN_CIRCLE = "circle";
 export const PENS = new Set( [ PEN_PIXEL, PEN_SQUARE, PEN_CIRCLE ] );
 
+// Blends
 export const BLEND_REPLACE = "replace";
 export const BLEND_ALPHA = "alpha";
 export const BLENDS = new Set( [ BLEND_REPLACE, BLEND_ALPHA ] );
