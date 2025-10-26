@@ -16,6 +16,7 @@ import * as g_canvas2dRenderer from "./renderer-canvas2d";
 
 const WEBGL2_RENDER_MODE = "webgl2";
 const CANVAS2D_RENDER_MODE = "canvas2d";
+const MAX_CANVAS_DIMENSION = 16384;
 
 const SCREEN_API_PROTO = { "screen": true };
 const m_screens = {};
@@ -24,7 +25,7 @@ const m_screenDataItems = {};
 const m_screenDataItemGetters = [];
 const m_screenInternalCommands = [];
 const m_screenDataInitFunctions = [];
-const m_sceenDataCleanupFunctions = [];
+const m_screenDataCleanupFunctions = [];
 
 
 let m_nextScreenId = 0;
@@ -121,7 +122,7 @@ export function addScreenInitFunction( fn ) {
 }
 
 export function addScreenCleanupFunction( fn ) {
-	m_sceenDataCleanupFunctions.push( fn );
+	m_screenDataCleanupFunctions.push( fn );
 }
 
 
@@ -148,6 +149,11 @@ function screen( options ) {
 			error.code = "INVALID_ASPECT";
 			throw error;
 		}
+
+		// If it's not a ratio validate the dimensions
+		if( options.aspectData.splitter !== ":" ) {
+			validateDimensions( options.aspectData.width, options.aspectData.height );
+		}
 	}
 
 	// Create appropriate screen type
@@ -163,7 +169,7 @@ function screen( options ) {
 	m_screens[ screenData.id ] = screenData;
 
 	// Setup the initial font for the screen
-	screenData.api.setFont( screenData.font.id );
+	//screenData.api.setFont( screenData.font.id );
 
 	// Call init functions for all modules that need initialization
 	for( const fn of m_screenDataInitFunctions ) {
@@ -184,20 +190,23 @@ function removeScreen( screenData ) {
 	screenData.api.clearEvents();
 
 	// Store the screen ID before we start nullifying properties
-	const errorMessage = `Cannot call {METHOD}() on removed screen (id: ${screenId}). ` +
-		`The screen has been removed from the page.`;
+	const createdDeletedMethodErrorFn = ( key, screenId ) => {
+		screenData.api[ key ] = () => {
+			const errorMessage = `Cannot call ${key}() on removed screen (id: ${screenId}). ` +
+				`The screen has been removed from the page.`;
+			const error = new TypeError( errorMessage );
+			error.code = "DELETED_METHOD";
+			throw error;
+		};
+	};
 
 	// Replace all commands from screen object - prevents outside reference to screen from calling
 	// screen functions on screen that doesn't exist
 	for( const key in screenData.api ) {
 		if( typeof screenData.api[ key ] === "function" ) {
-
-			// Use string replacement to avoid capturing screenData in closure
-			screenData.api[ key ] = () => {
-				const error = new TypeError( errorMessage.replace( "{METHOD}", key ) );
-				error.code = "DELETED_METHOD";
-				throw error;
-			};
+			
+			// Set the api method to a method that throws an error
+			createdDeletedMethodErrorFn( key, screenId );
 		}
 	}
 
@@ -259,7 +268,7 @@ function removeScreen( screenData ) {
 	}
 
 	// Call cleanup functions for all modules that need cleanup
-	for( const fn of m_sceenDataCleanupFunctions ) {
+	for( const fn of m_screenDataCleanupFunctions ) {
 		fn( screenData );
 	}
 
@@ -288,14 +297,14 @@ function setScreen( options ) {
 // Get screen
 function getScreen( options ) {
 	const screenId = g_utils.getInt( options.screenId, null );
-	if( screenId === null ) {
+	if( screenId === null || screenId < 0 ) {
 		const error = new Error( "screen: Invalid screen id." );
 		error.code = "INVALID_SCREEN_ID";
 		throw error;
 	}
 	const screen = m_screens[ screenId ];
 	if( !screen ) {
-		const error = new Error( `screen: Screen "${screenId} not found.` );
+		const error = new Error( `screen: Screen "${screenId}" not found.` );
 		error.code = "SCREEN_NOT_FOUND";
 		throw error;
 	}
@@ -343,8 +352,9 @@ function processApiCommand( screenData, command ) {
  * 						  null if the input is invalid.
  */
 function parseAspect( aspect ) {
-	const match = aspect.replaceAll( " ", "" ).match( /^(\d+)(:|x|e|m)(\d+)$/ );
 
+	//const match = aspect.replaceAll( " ", "" ).match( /^(\d+)(:|x|e|m)(\d+)$/ );
+	const match = aspect.replaceAll( " ", "" ).match( /^(\d+(?:\.\d+)?)(:|x|e|m)(\d+(?:\.\d+)?)$/ );
 	if( !match ) {
 		return null;
 	}
@@ -439,13 +449,21 @@ function createDefaultCanvas( options ) {
 	options.canvas.style.outline = "none";
 	options.canvas.style.backgroundColor = "black";
 	options.canvas.style.position = "absolute";
+
+	// Apply image rendering value
 	options.canvas.style.imageRendering = "pixelated";
-	options.canvas.style.imageRendering = "crisp-edges";
+	const imageRenderingValues = [ "pixelated", "crisp-edges", "-webkit-crisp-edges" ];
+	for( let i = 1; i < imageRenderingValues; i += 1 ) {
+		if( options.canvas.styles.imageRendering === imageRenderingValues[ i - 1 ] ) {
+			break;
+		}
+		options.canvas.style.imageRendering = value;
+	}
 
 	// Check if the container is document.body
-	let isContainerBody = true;
+	let isContainerBody = false;
 	if( options.container === document.body ) {
-		isContainerBody = false;
+		isContainerBody = true;
 		document.documentElement.style.height = "100%";
 		document.documentElement.style.margin = "0";
 		document.body.style.height = "100%";
@@ -474,7 +492,7 @@ function createDefaultCanvas( options ) {
 	} else {
 
 		// If canvas is inside an element, use static position
-		if( isContainerBody ) {
+		if( !isContainerBody ) {
 			options.canvas.style.position = "static";
 		}
 
@@ -482,8 +500,8 @@ function createDefaultCanvas( options ) {
 		options.canvas.style.width = "100%";
 		options.canvas.style.height = "100%";
 		const size = getSize( options.canvas );
-		options.canvas.width = size.width;
-		options.canvas.height = size.height;
+		options.canvas.width = Math.min( size.width, MAX_CANVAS_DIMENSION );
+		options.canvas.height = Math.min( size.height, MAX_CANVAS_DIMENSION );
 	}
 
 	// Store initial offset size for resize callback
@@ -517,8 +535,8 @@ function createNoStyleCanvas( options ) {
 	if( options.aspectData && options.aspectData.splitter === "x" ) {
 
 		// Set the canvases size to the exact sizes specified
-		options.canvas.width = options.aspectData.width;
-		options.canvas.height = options.aspectData.height;
+		options.canvas.width = Math.min( options.aspectData.width, MAX_CANVAS_DIMENSION );
+		options.canvas.height = Math.min( options.aspectData.height, MAX_CANVAS_DIMENSION );
 	}
 
 	// Store initial offset size for resize callback (not used for noStyles, but for consistency)
@@ -565,7 +583,7 @@ function createScreenData( options ) {
 		}
 
 		screenData.renderMode = CANVAS2D_RENDER_MODE;
-		screenData.renderer = canvas2dStatus;
+		screenData.renderer = g_canvas2dRenderer;
 	}
 
 	// Append additional items onto the screendata
@@ -648,13 +666,13 @@ function setCanvasSize( aspectData, canvas, maxWidth, maxHeight ) {
 
 	// Set the actual canvas dimensions
 	if( splitter !== ":" ) {
-		canvas.width = width;
-		canvas.height = height;
+		canvas.width = Math.min( width, MAX_CANVAS_DIMENSION );
+		canvas.height = Math.min( height, MAX_CANVAS_DIMENSION );
 	} else {
 
 		// For ratio mode, set to container size
-		canvas.width = Math.floor( newWidth );
-		canvas.height = Math.floor( newHeight );
+		canvas.width = Math.min( Math.floor( newWidth ), MAX_CANVAS_DIMENSION );
+		canvas.height = Math.min( Math.floor( newHeight ), MAX_CANVAS_DIMENSION );
 	}
 }
 
@@ -686,7 +704,7 @@ function resizeScreen( screenData ) {
 
 	// Let the renderer adjust to the new size
 	if( screenData.renderMode === CANVAS2D_RENDER_MODE ) {
-		g_canvas2dRenderer.beforeResize( screenData, fromSize, toSize );
+		g_canvas2dRenderer.beforeResize( screenData, fromSize );
 	}
 
 	let size;
@@ -701,8 +719,8 @@ function resizeScreen( screenData ) {
 
 		// Update canvas to fullscreen absolute pixels
 		size = getSize( screenData.canvas );
-		screenData.canvas.width = size.width;
-		screenData.canvas.height = size.height;
+		screenData.canvas.width = Math.min( size.width, MAX_CANVAS_DIMENSION );
+		screenData.canvas.height = Math.min( size.height, MAX_CANVAS_DIMENSION );
 
 	}
 
@@ -736,4 +754,19 @@ function resizeScreen( screenData ) {
 
 	// Store the new size for next time
 	screenData.previousOffsetSize = toSize;
+}
+
+function validateDimensions( width, height ) {
+	if( width <= 0 || height <= 0 ) {
+		const error = new Error( "screen: Canvas dimensions must be positive." );
+		error.code = "INVALID_DIMENSIONS";
+		throw error;
+	}
+	if( width > MAX_CANVAS_DIMENSION || height > MAX_CANVAS_DIMENSION ) {
+		const error = new Error(
+			`screen: Canvas dimensions exceed maximum of ${MAX_CANVAS_DIMENSION}px.`
+		);
+		error.code = "DIMENSION_TOO_LARGE";
+		throw error;
+	}
 }

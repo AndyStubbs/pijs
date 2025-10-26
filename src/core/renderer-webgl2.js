@@ -36,33 +36,54 @@ const m_batchProto = {
 };
 
 // Point vertex shader
-const m_pointVertSrc = `
-	#version 300 es
-	in vec2 a_position;
-	in vec4 a_color;
-	uniform vec2 u_resolution;
-	out vec4 v_color;
+const m_pointVertSrc = `#version 300 es
+in vec2 a_position;
+in vec4 a_color;
+uniform vec2 u_resolution;
+out vec4 v_color;
 
-	void main() {
+void main() {
 
-		// Convert screen coords to NDC with Y-flip in operation
-		vec2 ndc = ((a_position / u_resolution) * 2.0 - 1.0) * vec2(1.0, -1.0);
-		gl_Position = vec4(ndc, 0.0, 1.0);
-		gl_PointSize = 1.0;
-		v_color = a_color;
-	}
-`;
+	// Convert screen coords to NDC with Y-flip in operation
+	vec2 ndc = ((a_position / u_resolution) * 2.0 - 1.0) * vec2(1.0, -1.0);
+	gl_Position = vec4(ndc, 0.0, 1.0);
+	gl_PointSize = 1.0;
+	v_color = a_color;
+}
+`.trim();
 
 // Point fragment shader
-const m_pointFragSrc = `
-	#version 300 es
-	precision mediump float;
-	in vec4 v_color;
-	out vec4 fragColor;
+const m_pointFragSrc = `#version 300 es
+precision mediump float;
+in vec4 v_color;
+out vec4 fragColor;
 
-	void main() {
-		fragColor = v_color;
-	}
+void main() {
+	fragColor = v_color;
+}
+`;
+
+// Display vertex shader (fullscreen quad)
+const m_displayVertSrc = `#version 300 es
+in vec2 a_position;
+out vec2 v_texCoord;
+
+void main() {
+	gl_Position = vec4(a_position, 0.0, 1.0);
+	v_texCoord = (a_position + 1.0) * 0.5;
+}
+`;
+
+// Display fragment shader (texture lookup)
+const m_displayFragSrc = `#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+out vec4 fragColor;
+
+void main() {
+	fragColor = texture(u_texture, v_texCoord);
+}
 `;
 
 
@@ -86,6 +107,13 @@ export function cleanup( screenData ) {
 		gl.deleteBuffer( pointBatch.vertexVBO );
 		gl.deleteBuffer( pointBatch.colorVBO );
 		gl.deleteVertexArray( pointBatch.vao );
+		gl.deleteProgram( pointBatch.program );
+	}
+	
+	// Cleanup display shader
+	if( screenData.displayProgram ) {
+		gl.deleteProgram( screenData.displayProgram );
+		gl.deleteBuffer( screenData.displayPositionBuffer );
 	}
 	
 	// Cleanup shaders and FBO
@@ -140,6 +168,9 @@ export function initWebGL( screenData ) {
 	
 	// Setup batch buffers
 	screenData.pointBatch = createBatchSystem( screenData, m_pointVertSrc, m_pointFragSrc );
+	
+	// Setup display shader
+	setupDisplayShader( screenData );
 
 	// Enable WebGL debugging extensions
 	if( typeof window !== "undefined" && window.location.search.includes( "webgl-debug" ) ) {
@@ -159,6 +190,8 @@ export function initWebGL( screenData ) {
 	// Reinit canvas when webglcontext gets restored
 	screenData.canvas.addEventListener( "webglcontextrestored", () => {
 		console.log( "WebGL context restored" );
+
+		// TODO: Screen gets lost but maybe we can restore it from the FBO?
 
 		// Reinitialize WebGL resources
 		initWebGL( screenData );
@@ -464,6 +497,11 @@ export function drawPixelDirect( screenData, x, y, color ) {
 
 
 export function blendModeChanged( screenData ) {
+
+	// Flush existing batch with old blend mode
+	flushBatches( screenData );
+	displayToCanvas( screenData );
+
 	const gl = screenData.gl;
 	if( screenData.blendData.blend === g_renderer.BLEND_REPLACE ) {
 		gl.disable( gl.BLEND );
@@ -561,13 +599,81 @@ function flushBatches( screenData ) {
 
 
 /**
+ * Setup display shader for rendering FBO to screen
+ * 
+ * @param {Object} screenData - Screen data object
+ */
+function setupDisplayShader( screenData ) {
+	
+	const gl = screenData.gl;
+	
+	// Create shader program
+	const program = createShaderProgram( screenData, m_displayVertSrc, m_displayFragSrc );
+	
+	// Create fullscreen quad vertices (NDC: -1 to 1)
+	const positions = new Float32Array( [
+		-1, -1, // Bottom left
+		 1, -1, // Bottom right
+		-1,  1, // Top left
+		-1,  1, // Top left
+		 1, -1, // Bottom right
+		 1,  1  // Top right
+	] );
+	
+	// Create vertex buffer
+	const positionBuffer = gl.createBuffer();
+	gl.bindBuffer( gl.ARRAY_BUFFER, positionBuffer );
+	gl.bufferData( gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW );
+	
+	// Get attribute/uniform locations
+	const positionLoc = gl.getAttribLocation( program, "a_position" );
+	const textureLoc = gl.getUniformLocation( program, "u_texture" );
+	
+	// Store in screen data
+	screenData.displayProgram = program;
+	screenData.displayPositionBuffer = positionBuffer;
+	screenData.displayLocations = {
+		"position": positionLoc,
+		"texture": textureLoc
+	};
+}
+
+
+/**
  * Display FBO texture to visible canvas
  * 
  * @param {Object} screenData - Screen data object
  */
 function displayToCanvas( screenData ) {
 	
-	// TODO: Implement display to canvas
-	// For now, this is a placeholder
-	// Will implement fullscreen quad rendering later
+	const gl = screenData.gl;
+	const program = screenData.displayProgram;
+	const locations = screenData.displayLocations;
+	
+	// Bind default framebuffer (screen)
+	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+	
+	// Set viewport to full canvas
+	gl.viewport( 0, 0, screenData.canvas.width, screenData.canvas.height );
+	
+	// Use display shader
+	gl.useProgram( program );
+	
+	// Enable position attribute
+	gl.enableVertexAttribArray( locations.position );
+	
+	// Bind position buffer
+	gl.bindBuffer( gl.ARRAY_BUFFER, screenData.displayPositionBuffer );
+	gl.vertexAttribPointer( locations.position, 2, gl.FLOAT, false, 0, 0 );
+	
+	// Bind FBO texture
+	gl.activeTexture( gl.TEXTURE0 );
+	gl.bindTexture( gl.TEXTURE_2D, screenData.texture );
+	gl.uniform1i( locations.texture, 0 );
+	
+	// Draw fullscreen quad
+	gl.drawArrays( gl.TRIANGLES, 0, 6 );
+	
+	// Cleanup
+	gl.disableVertexAttribArray( locations.position );
 }
