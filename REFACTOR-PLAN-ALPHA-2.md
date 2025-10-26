@@ -679,7 +679,7 @@ Rebuild:
 
 ## To-dos
 
-- [ ] Setup minimal shell - copy alpha.1 to src/, create REFACTOR-PLAN-ALPHA-2.md, strip down to 
+- [x] Setup minimal shell - copy alpha.1 to src/, create REFACTOR-PLAN-ALPHA-2.md, strip down to 
 core only
 - [ ] Create WebGL2 renderer core - context, FBO, shaders, batch system
 - [ ] Implement blank screen rendering with WebGL2
