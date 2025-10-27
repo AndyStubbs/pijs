@@ -255,54 +255,6 @@ export function initWebGL( screenData ) {
 	return true;
 }
 
-/**
- * Create batch shader program and buffers
- * 
- * @param {Object} screenData - Global screen data object container
- * @param {string} vertSrc - Vertex shader program source code
- * @param {string} fragSrc - Fragment shader program source code
- * 
- * @returns {Object} The batch system object
- */
-function createBatchSystem( screenData, vertSrc, fragSrc ) {
-
-	const gl = screenData.gl;
-	const batch = Object.create( m_batchProto );
-
-	// Create the batch shader program
-	batch.program = createShaderProgram( screenData, vertSrc, fragSrc );
-
-	// Cache shader locations for efficiency
-	batch.locations = {
-		"position": gl.getAttribLocation( batch.program, "a_position" ),
-		"color": gl.getAttribLocation( batch.program, "a_color" ),
-		"resolution": gl.getUniformLocation( batch.program, "u_resolution" )
-	};
-
-	batch.vertices = new Float32Array( batch.capacity * 2 );
-	batch.colors = new Uint8Array( batch.capacity * 4 );
-	batch.vertexVBO = gl.createBuffer();
-	batch.colorVBO = gl.createBuffer();
-
-	// Create VAO (WebGL2 only)
-	batch.vao = gl.createVertexArray();
-	gl.bindVertexArray( batch.vao );
-
-	// Setup position attibute
-	gl.bindBuffer( gl.ARRAY_BUFFER, batch.vertexVBO );
-	gl.enableVertexAttribArray( batch.locations.position );
-	gl.vertexAttribPointer( batch.locations.position, 2, gl.FLOAT, false, 0, 0 );
-
-	// Setup color attribute
-	gl.bindBuffer( gl.ARRAY_BUFFER, batch.colorVBO );
-	gl.enableVertexAttribArray( batch.locations.color );
-	gl.vertexAttribPointer( batch.locations.color, 4, gl.UNSIGNED_BYTE, true, 0, 0 );
-	
-	gl.bindVertexArray( null );
-
-	return batch;
-}
-
 
 /**
  * Create Framebuffer Object for offscreen rendering
@@ -424,6 +376,144 @@ function compileShader( screenData, type, source ) {
 	return shader;
 }
 
+/**
+ * Setup display shader for rendering FBO to screen
+ * 
+ * @param {Object} screenData - Screen data object
+ */
+function setupDisplayShader( screenData ) {
+	
+	const gl = screenData.gl;
+	
+	// Create shader program
+	const program = createShaderProgram( screenData, m_displayVertSrc, m_displayFragSrc );
+	
+	// Create fullscreen quad vertices (NDC: -1 to 1)
+	const positions = new Float32Array( [
+		-1, -1, // Bottom left
+		 1, -1, // Bottom right
+		-1,  1, // Top left
+		-1,  1, // Top left
+		 1, -1, // Bottom right
+		 1,  1  // Top right
+	] );
+	
+	// Create vertex buffer
+	const positionBuffer = gl.createBuffer();
+	gl.bindBuffer( gl.ARRAY_BUFFER, positionBuffer );
+	gl.bufferData( gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW );
+	
+	// Get attribute/uniform locations
+	const positionLoc = gl.getAttribLocation( program, "a_position" );
+	const textureLoc = gl.getUniformLocation( program, "u_texture" );
+	
+	// Store in screen data
+	screenData.displayProgram = program;
+	screenData.displayPositionBuffer = positionBuffer;
+	screenData.displayLocations = {
+		"position": positionLoc,
+		"texture": textureLoc
+	};
+}
+
+
+
+/***************************************************************************************************
+ * Render Management
+ **************************************************************************************************/
+
+
+/**
+ * Sets the image dirty / Queue automatic render
+ * @param {Object} screenData - Global screen data object container
+ */
+export function setImageDirty( screenData ) {
+	if( !screenData.isRenderScheduled ) {
+		screenData.isRenderScheduled = true;
+		g_utils.queueMicrotask( () => {
+			flushBatches( screenData );
+			displayToCanvas( screenData );
+			screenData.isRenderScheduled = false;
+		} );
+	}
+}
+
+export function cls( screenData, x, y, width, height ) {
+	
+	// TODO: Implement clear screen command
+}
+
+export function blendModeChanged( screenData ) {
+
+	// Flush existing batch with old blend mode
+	flushBatches( screenData );
+	displayToCanvas( screenData );
+
+	const gl = screenData.gl;
+	if( screenData.blendData.blend === g_renderer.BLEND_REPLACE ) {
+		gl.disable( gl.BLEND );
+	} else {
+		
+		// TODO: Actually figure out how to do proper blending - support more blending modes
+		// https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
+		gl.enable( gl.BLEND );
+		gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA );
+	}
+}
+
+
+/***************************************************************************************************
+ * Batch Operations
+ **************************************************************************************************/
+
+
+/**
+ * Create batch shader program and buffers
+ * 
+ * @param {Object} screenData - Global screen data object container
+ * @param {string} vertSrc - Vertex shader program source code
+ * @param {string} fragSrc - Fragment shader program source code
+ * 
+ * @returns {Object} The batch system object
+ */
+function createBatchSystem( screenData, vertSrc, fragSrc ) {
+
+	const gl = screenData.gl;
+	const batch = Object.create( m_batchProto );
+
+	// Create the batch shader program
+	batch.program = createShaderProgram( screenData, vertSrc, fragSrc );
+
+	// Cache shader locations for efficiency
+	batch.locations = {
+		"position": gl.getAttribLocation( batch.program, "a_position" ),
+		"color": gl.getAttribLocation( batch.program, "a_color" ),
+		"resolution": gl.getUniformLocation( batch.program, "u_resolution" )
+	};
+
+	batch.vertices = new Float32Array( batch.capacity * 2 );
+	batch.colors = new Uint8Array( batch.capacity * 4 );
+	batch.vertexVBO = gl.createBuffer();
+	batch.colorVBO = gl.createBuffer();
+
+	// Create VAO (WebGL2 only)
+	batch.vao = gl.createVertexArray();
+	gl.bindVertexArray( batch.vao );
+
+	// Setup position attibute
+	gl.bindBuffer( gl.ARRAY_BUFFER, batch.vertexVBO );
+	gl.enableVertexAttribArray( batch.locations.position );
+	gl.vertexAttribPointer( batch.locations.position, 2, gl.FLOAT, false, 0, 0 );
+
+	// Setup color attribute
+	gl.bindBuffer( gl.ARRAY_BUFFER, batch.colorVBO );
+	gl.enableVertexAttribArray( batch.locations.color );
+	gl.vertexAttribPointer( batch.locations.color, 4, gl.UNSIGNED_BYTE, true, 0, 0 );
+	
+	gl.bindVertexArray( null );
+
+	return batch;
+}
 
 /**
  * Ensure batch has enough capacity
@@ -463,114 +553,6 @@ export function ensureBatchCapacity( batch, newItemCount ) {
 
 	return true;
 }
-
-
-/**
- * Sets the image dirty / Queue automatic render
- * @param {Object} screenData - Global screen data object container
- */
-export function setImageDirty( screenData ) {
-	if( !screenData.isRenderScheduled ) {
-		screenData.isRenderScheduled = true;
-		g_utils.queueMicrotask( () => {
-			flushBatches( screenData );
-			displayToCanvas( screenData );
-			screenData.isRenderScheduled = false;
-		} );
-	}
-}
-
-
-export function cls( screenData, x, y, width, height ) {
-	
-	// TODO: Implement clear screen command
-}
-
-/***************************************************************************************************
- * Batch Operations
- **************************************************************************************************/
-
-
-/**
- * Fast path for direct pixel writes (no bounds check, no blending)
- * 
- * @param {Object} screenData - Screen data object
- * @param {number} x - X coordinate
- * @param {number} y - Y coordinate
- * @param {Object} color - Color object includes r/g/b/a components (0-255)
- */
-export function drawPixelUnsafe( screenData, x, y, color ) {
-	
-	// Add directly to point batch
-	const pointBatch = screenData.pointBatch;
-
-	// Make sure batch can handle the new capacity
-	// TODO: Something to watch out for a per pixel check - maybe we could check before calling
-	// like for a line command we could count the length of the line and ensure batch capacity
-	// before drawing the individual pixels. But should test before implementing to see if its
-	// needed
-	if( !ensureBatchCapacity( pointBatch, 1 ) ) {
-		console.warn( "Exceeded maximum drawing capacity on screen" );
-		return;
-	}
-
-	const idx = pointBatch.count * 2;
-	const cidx = pointBatch.count * 4;
-	
-	pointBatch.vertices[ idx ] = x;
-	pointBatch.vertices[ idx + 1 ] = y;
-	pointBatch.colors[ cidx ] = color.r;
-	pointBatch.colors[ cidx + 1 ] = color.g;
-	pointBatch.colors[ cidx + 2 ] = color.b;
-	pointBatch.colors[ cidx + 3 ] = color.a;
-	
-	pointBatch.count++;
-	
-	// Debug logging
-	if( pointBatch.count <= 10 ) {
-		console.log( `WebGL2: Added pixel ${pointBatch.count} at (${x}, ${y}) color:`, color );
-	}
-	
-	// TODO: Remove per pixel check, should be done after draw but in actual graphics commands like
-	// after the line draw is complete
-	setImageDirty( screenData );
-}
-
-
-/**
- * Fast path with bounds checking
- * 
- * @param {Object} screenData - Screen data object
- * @param {number} x - X coordinate
- * @param {number} y - Y coordinate
- * @param {Object} color - Color object includes r/g/b/a components (0-255)
- */
-export function drawPixelDirect( screenData, x, y, color ) {
-	if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
-		return;
-	}
-	drawPixelUnsafe( screenData, x, y, color );
-}
-
-
-export function blendModeChanged( screenData ) {
-
-	// Flush existing batch with old blend mode
-	flushBatches( screenData );
-	displayToCanvas( screenData );
-
-	const gl = screenData.gl;
-	if( screenData.blendData.blend === g_renderer.BLEND_REPLACE ) {
-		gl.disable( gl.BLEND );
-	} else {
-		
-		// TODO: Actually figure out how to do proper blending - support more blending modes
-		// https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
-		gl.enable( gl.BLEND );
-		gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA );
-	}
-}
-
 
 /**
  * Flush all batches to FBO
@@ -656,48 +638,6 @@ function flushBatches( screenData ) {
 	// Better to do it here than per pixel
 }
 
-
-/**
- * Setup display shader for rendering FBO to screen
- * 
- * @param {Object} screenData - Screen data object
- */
-function setupDisplayShader( screenData ) {
-	
-	const gl = screenData.gl;
-	
-	// Create shader program
-	const program = createShaderProgram( screenData, m_displayVertSrc, m_displayFragSrc );
-	
-	// Create fullscreen quad vertices (NDC: -1 to 1)
-	const positions = new Float32Array( [
-		-1, -1, // Bottom left
-		 1, -1, // Bottom right
-		-1,  1, // Top left
-		-1,  1, // Top left
-		 1, -1, // Bottom right
-		 1,  1  // Top right
-	] );
-	
-	// Create vertex buffer
-	const positionBuffer = gl.createBuffer();
-	gl.bindBuffer( gl.ARRAY_BUFFER, positionBuffer );
-	gl.bufferData( gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW );
-	
-	// Get attribute/uniform locations
-	const positionLoc = gl.getAttribLocation( program, "a_position" );
-	const textureLoc = gl.getUniformLocation( program, "u_texture" );
-	
-	// Store in screen data
-	screenData.displayProgram = program;
-	screenData.displayPositionBuffer = positionBuffer;
-	screenData.displayLocations = {
-		"position": positionLoc,
-		"texture": textureLoc
-	};
-}
-
-
 /**
  * Display FBO texture to visible canvas
  * 
@@ -742,4 +682,71 @@ function displayToCanvas( screenData ) {
 	
 	// Cleanup
 	gl.disableVertexAttribArray( locations.position );
+}
+
+
+
+/***************************************************************************************************
+ * Drawing Operations
+ **************************************************************************************************/
+
+
+/**
+ * Fast path for direct pixel writes (no bounds check, no blending)
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {Object} color - Color object includes r/g/b/a components (0-255)
+ */
+export function drawPixelUnsafe( screenData, x, y, color ) {
+	
+	// Add directly to point batch
+	const pointBatch = screenData.pointBatch;
+
+	// Make sure batch can handle the new capacity
+	// TODO: Something to watch out for a per pixel check - maybe we could check before calling
+	// like for a line command we could count the length of the line and ensure batch capacity
+	// before drawing the individual pixels. But should test before implementing to see if its
+	// needed
+	if( !ensureBatchCapacity( pointBatch, 1 ) ) {
+		console.warn( "Exceeded maximum drawing capacity on screen" );
+		return;
+	}
+
+	const idx = pointBatch.count * 2;
+	const cidx = pointBatch.count * 4;
+	
+	pointBatch.vertices[ idx ] = x;
+	pointBatch.vertices[ idx + 1 ] = y;
+	pointBatch.colors[ cidx ] = color.r;
+	pointBatch.colors[ cidx + 1 ] = color.g;
+	pointBatch.colors[ cidx + 2 ] = color.b;
+	pointBatch.colors[ cidx + 3 ] = color.a;
+	
+	pointBatch.count++;
+	
+	// Debug logging
+	if( pointBatch.count <= 10 ) {
+		console.log( `WebGL2: Added pixel ${pointBatch.count} at (${x}, ${y}) color:`, color );
+	}
+	
+	// TODO: Remove per pixel check, should be done after draw but in actual graphics commands like
+	// after the line draw is complete
+	setImageDirty( screenData );
+}
+
+/**
+ * Fast path with bounds checking
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {Object} color - Color object includes r/g/b/a components (0-255)
+ */
+export function drawPixelDirect( screenData, x, y, color ) {
+	if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
+		return;
+	}
+	drawPixelUnsafe( screenData, x, y, color );
 }
