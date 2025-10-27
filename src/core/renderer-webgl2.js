@@ -557,6 +557,9 @@ function flushBatches( screenData ) {
 	// Bind VAO - all attributes already configured!
 	gl.bindVertexArray( pointBatch.vao );
 	
+	// TODO: Make sure this is optimized recieved different advice on how to copy buffer data
+	// efficiently so need to resarch STREAM_DRAW to make sure it's efficient for streaming
+	// to a persistant texture that acts as "screen memory".
 	// on first use or resize
 	if( pointBatch.capacityChanged ) {
 
