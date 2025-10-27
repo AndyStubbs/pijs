@@ -161,7 +161,7 @@ function screen( options ) {
 
 	// Add all the screen commands to the screenData api
 	for( const command of m_commandList ) {
-		processApiCommand( screenData, command );
+		generateCommandWrapper( screenData, command );
 	}
 
 	// Assign screen to active screen
@@ -336,11 +336,47 @@ function canvas( screenData ) {
 
 
 // Process api command
-function processApiCommand( screenData, command ) {
-	screenData.api[ command.name ] = ( ...args ) => {
-		const options = g_utils.parseOptions( args, command.parameterNames );
-		return command.fn( screenData, options );
-	};
+function generateCommandWrapper( screenData, command ) {
+	const paramCount = command.parameterNames.length;
+	const params = command.parameterNames;
+
+	if( paramCount === 0 ) {
+		screenData.api[ command.name ] = () => {
+			return command.fn( screenData, {} );
+		};
+	} else if( paramCount === 1 ) {
+		const paramName = command.parameterNames[ 0 ];
+		screenData.api[ command.name ] = ( a1 ) => {
+			if( g_utils.isObjectLiteral( a1 ) ) {
+				return command.fn( screenData, a1 );
+			}
+			return command.fn( screenData, { [ paramName ]: a1 } );
+		};
+	} else if( paramCount === 2 ) {
+		screenData.api[ command.name ] = ( a1, a2 ) => {
+			const args = [ a1, a2 ].slice( 0, arguments.length - 1 );
+			const options = g_utils.parseOptions( args, params );
+			return command.fn( screenData, options );
+		};
+	} else if( paramCount === 3 ) {
+		screenData.api[ command.name ] = ( a1, a2, a3 ) => {
+			const args = [ a1, a2, a3 ].slice( 0, arguments.length - 1 );
+			const options = g_utils.parseOptions( args, params );
+			return command.fn( screenData, options );
+		};
+	} else if( paramCount === 4 ) {
+		screenData.api[ command.name ] = ( a1, a2, a3, a4 ) => {
+			const args = [ a1, a2, a3, a4 ].slice( 0, arguments.length - 1 );
+			const options = g_utils.parseOptions( args, params );
+			return command.fn( screenData, options );
+		};
+	} else {
+		screenData.api[ command.name ] = ( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11 ) => {
+			const args = [ a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11 ].slice( 0, arguments.length - 1 );
+			const options = g_utils.parseOptions( args, params );
+			return command.fn( screenData, options );
+		};
+	}
 }
 
 /**

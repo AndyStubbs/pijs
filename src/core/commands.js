@@ -8,7 +8,7 @@
 
 "use strict";
 
-import * as utils from "./utils";
+import * as g_utils from "./utils";
 
 const m_commandList = [];
 const m_settings = {};
@@ -134,26 +134,112 @@ export function processApi() {
 
 	// Add all commands to API
 	for( const command of m_commandList ) {
-		processApiCommand( command );
+		if( command.isScreen ) {
+			m_api[ command.name ] = generateCommandWrapper( command, true );
+		} else {
+			m_api[ command.name ] = generateCommandWrapper( command, false );
+		}
 	}
 }
 
-// Process an api command
-export function processApiCommand( command ) {
-	if( command.isScreen ) {
-		m_api[ command.name ] = ( ...args ) => {
-			const options = utils.parseOptions( args, command.parameterNames );
-			const screenData = m_screenManager.getActiveScreen();
-			if( !screenData && !command.screenOptional ) {
-				const error = new Error( `${command.name}: No screens available for command.` );
-				error.code = "NO_SCREEN";
-				throw error;
+function generateCommandWrapper( command, isScreen ) {
+
+	const paramCount = command.parameterNames.length;
+	const params = command.parameterNames;
+
+	// No parameters - direct call, no parsing needed
+	if( paramCount === 0 ) {
+		if( isScreen ) {
+			return () => {
+				const screenData = m_screenManager.getActiveScreen();
+				return command.fn( screenData, {} );
+			};
+		}
+		return () => {
+			return command.fn( {} );
+		};
+	}
+
+	// One parameters - direct call, manual parsing
+	if( paramCount === 1 ) {
+		const paramName = command.parameterNames[ 0 ];
+		if( isScreen ) {
+			return ( a1 ) => {
+				if( g_utils.isObjectLiteral( a1 ) ) {
+					return command.fn( screenData, a1 );
+				}
+				const screenData = m_screenManager.getActiveScreen();
+				return command.fn( screenData, { [ paramName ]: a1 } );
+			};
+		}
+		return ( a1 ) => {
+			if( g_utils.isObjectLiteral( a1 ) ) {
+				return command.fn( screenData, a1 );
 			}
-			return command.fn( screenData, options );
+			return command.fn( screenData, { [ paramName ]: a1 } );
+		};
+	}
+	if( paramCount === 2 ) {
+		if( isScreen ) {
+			return ( a1, a2 ) => {
+				const args = [ a1, a2 ].slice( 0, arguments.length - 1 );
+				const options = g_utils.parseOptions( args, params );
+				const screenData = m_screenManager.getActiveScreen();
+				return command.fn( screenData, options );
+			};
+		}
+		return ( a1, a2 ) => {
+			const args = [ a1, a2 ].slice( 0, arguments.length - 1 );
+			const options = g_utils.parseOptions( args, params );
+			return command.fn( options );
+		};
+	}
+	if( paramCount === 3 ) {
+		if( isScreen ) {
+			return ( a1, a2, a3 ) => {
+				const args = [ a1, a2, a3 ].slice( 0, arguments.length - 1 );
+				const options = g_utils.parseOptions( args, params );
+				const screenData = m_screenManager.getActiveScreen();
+				return command.fn( screenData, options );
+			};
+		}
+		return ( a1, a2, a3 ) => {
+			const args = [ a1, a2, a3 ].slice( 0, arguments.length - 1 );
+			const options = g_utils.parseOptions( args, params );
+			return command.fn( options );
+		};
+	} 
+	
+	if( paramCount === 4 ) {
+		if( isScreen ) {
+			return ( a1, a2, a3, a4 ) => {
+				const args = [ a1, a2, a3, a4 ].slice( 0, arguments.length - 1 );
+				const options = g_utils.parseOptions( args, params );
+				const screenData = m_screenManager.getActiveScreen();
+				return command.fn( screenData, options );
+			};
+		}
+		return ( a1, a2, a3, a4 ) => {
+			const args = [ a1, a2, a3, a4 ].slice( 0, arguments.length - 1 );
+			const options = g_utils.parseOptions( args, params );
+			return command.fn( options );
 		};
 	} else {
-		m_api[ command.name ] = ( ...args ) => {
-			const options = utils.parseOptions( args, command.parameterNames );
+		if( isScreen ) {
+			return ( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11 ) => {
+				const args = [ 
+					a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11
+				].slice( 0, arguments.length - 1 );
+				const options = g_utils.parseOptions( args, params );
+				const screenData = m_screenManager.getActiveScreen();
+				return command.fn( screenData, options );
+			};
+		}
+		return ( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11 ) => {
+			const args = [
+				a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11
+			].slice( 0, arguments.length - 1 );
+			const options = g_utils.parseOptions( args, params );
 			return command.fn( options );
 		};
 	}
@@ -193,7 +279,7 @@ function ready( options ) {
 	const callback = options.callback;
 
 	// Validate callback if provided
-	if( callback != null && !utils.isFunction( callback ) ) {
+	if( callback != null && !g_utils.isFunction( callback ) ) {
 		const error = new TypeError( "ready: Parameter callback must be a function." );
 		error.code = "INVALID_CALLBACK";
 		throw error;
@@ -237,7 +323,7 @@ function set( screenData, options ) {
 			// Wrap optionValues in array if not already an array
 			//const argsArray = Array.isArray( optionValues ) ? optionValues : [ optionValues ];
 			const argsArray = [ optionValues ];
-			const parsedOptions = utils.parseOptions( argsArray, setting.parameterNames );
+			const parsedOptions = g_utils.parseOptions( argsArray, setting.parameterNames );
 
 			// Call the setting function
 			if( setting.isScreen ) {
