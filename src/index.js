@@ -19,6 +19,10 @@ import * as g_webglRenderer from "./core/renderer-webgl2.js";
 import * as g_canvas2dRenderer from "./core/renderer-canvas2d.js";
 import * as g_renderer from "./core/renderer.js";
 
+// Feature Modules
+import * as g_colors from "./modules/colors.js";
+import * as g_graphics from "./modules/graphics.js";
+
 // Version injected during build from package.json
 const VERSION = __VERSION__;
 
@@ -35,6 +39,10 @@ g_canvas2dRenderer.init();
 g_events.init();
 g_plugins.init();
 g_renderer.init();
+
+// Initialize feature modules
+g_colors.init();
+g_graphics.init();
 
 // Append all the commands to the api
 g_commands.processApi();

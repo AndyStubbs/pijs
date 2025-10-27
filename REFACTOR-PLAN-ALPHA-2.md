@@ -699,9 +699,9 @@ Rebuild:
 - [x] Step 3.3: Remove Pen/Blend Function Pointers
 
 ### Phase 4: Color System
-- [ ] Step 4.1: Rebuild Color Module
-- [ ] Step 4.2: Add Color to Screen Data
-- [ ] Step 4.3: Implement setColor Command
+- [x] Step 4.1: Rebuild Color Module
+- [x] Step 4.2: Add Color to Screen Data
+- [x] Step 4.3: Implement setColor Command
 
 ### Phase 5: First Drawing Command - pset
 - [ ] Step 5.1: Create Graphics Module
