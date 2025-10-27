@@ -603,6 +603,8 @@ function createScreenData( options ) {
 		"api": screenApi
 	};
 
+	// TODO: Added canvas2d first mode for testing, use window.location parameter flag
+	
 	// Try WebGL2 first, fall back to Canvas2D
 	const webgl2Status = g_webgl2Renderer.initWebGL( screenData );
 	if( webgl2Status ) {
