@@ -71,7 +71,7 @@ export function init() {
 
 	// Add global external API Commands
 	g_commands.addCommand( "screen", screen, [
-		"aspect", "container", "isOffscreen", "noStyles", "resizeCallback"
+		"aspect", "container", "isOffscreen", "isNoStyles", "resizeCallback", "useCanvas2d"
 	] );
 	g_commands.addCommand( "setScreen", setScreen, [ "screen" ] );
 	g_commands.addCommand( "getScreen", getScreen, [ "screenId" ] );
@@ -127,17 +127,11 @@ export function addScreenCleanupFunction( fn ) {
 
 
 /***************************************************************************************************
- * External API Commands
+ * Screen Command
  **************************************************************************************************/
 
 
-// screen command
 function screen( options ) {
-
-	// Sanitize booleans
-	options.useCanvas2d = !!options.useCanvas2d;
-	options.isOffscreen = !!options.isOffscreen;
-	options.noStyles = !!options.noStyles;
 
 	// Validate resize callback
 	if( options.resizeCallback != null && !g_utils.isFunction( options.resizeCallback ) ) {
@@ -146,28 +140,137 @@ function screen( options ) {
 		throw error;
 	}
 
+	const screenData = {
+		"id": m_nextScreenId,
+		"useCanvas2d": !!options.useCanvas2d,
+		"isOffscreen": !!options.isOffscreen,
+		"isNoStyles": !!options.isNoStyles,
+		"resizeCallback": options.resizeCallback,
+		"api":  Object.create( SCREEN_API_PROTO ),
+		"canvas": null,
+		"width": null,
+		"height": null,
+		"container": null,
+		"aspectData": null,
+		"clientRect": null,
+		"previousOffsetSize": null
+	};
+
+	// Force canvas2d use if not webgl2Capable
+	if( !g_webgl2Renderer.isWebgl2Capable ) {
+		screenData.useCanvas2d = true;
+	}
+
+	// Append additional items onto the screendata
+	Object.assign( screenData, structuredClone( m_screenDataItems ) );
+
+	// Append dynamic screendata items
+	for( const itemGetter of m_screenDataItemGetters ) {
+		screenData[ itemGetter.name ] = structuredClone( itemGetter.fn() );
+	}
+
+	// Append internal screen commands to screen data
+	for( const cmd of m_screenInternalCommands ) {
+		screenData[ cmd.name ] = cmd.fn;
+	}
+
+	// Increment to the next screen id
+	m_nextScreenId += 1;
+
+	if( !options.aspect ) {
+		screenData.aspectData = {
+			"width": null,
+			"height": null,
+			"splitter": "",
+			"isFixedSize": false
+		};
+	}
 	// Parse aspect ratio
 	if( typeof options.aspect === "string" && options.aspect !== "" ) {
-		options.aspectData = parseAspect( options.aspect.toLowerCase() );
-		if( !options.aspectData ) {
+		screenData.aspectData = parseAspect( options.aspect.toLowerCase() );
+		if( !screenData.aspectData ) {
 			const error = new Error( "screen: Parameter aspect is not valid." );
 			error.code = "INVALID_ASPECT";
 			throw error;
 		}
 
 		// If it's not a ratio validate the dimensions
-		if( options.aspectData.splitter !== ":" ) {
-			validateDimensions( options.aspectData.width, options.aspectData.height );
+		if( screenData.aspectData.splitter !== ":" ) {
+			validateDimensions( screenData.aspectData.width, screenData.aspectData.height );
 		}
 	}
 
 	// Force canvas2d if not capable of webgl2
 	if( !g_webgl2Renderer.isWebgl2Capable ) {
-		options.useCanvas2d = true;
+		screenData.useCanvas2d = true;
 	}
 
-	// Create appropriate screen type
-	let screenData = createScreen( options );
+	// Create the canvas
+	screenData.canvas = document.createElement( "canvas" );
+
+	// Setup options for offscreen canvas
+	if( screenData.isOffscreen ) {
+		if( !screenData.aspectData ) {
+			const error = new Error(
+				"screen: You must supply an aspect ratio with exact dimensions " +
+				"for offscreen screens."
+			);
+			error.code = "NO_ASPECT_OFFSCREEN";
+			throw error;
+		}
+		if( screenData.aspectData.splitter !== "x" ) {
+			const error = new Error(
+				"screen: You must use aspect ratio with e(x)act pixel dimensions for offscreen " +
+				"screens. For example: 320x200 for width of 320 and height of 200 pixels."
+			);
+			error.code = "INVALID_OFFSCREEN_ASPECT";
+			throw error;
+		}
+		setupOffscreenCanvasOptions( screenData );
+	} else {
+
+		// Setup options for onscreen canvas
+		screenData.canvas.tabIndex = 0;
+
+		// Get the container element from the dom if it's available
+		if( typeof options.container === "string" ) {
+			screenData.container = document.getElementById( options.container );
+		} else if( !options.container ) {
+			screenData.container = document.body;
+		} else {
+			screenData.container = options.container;
+		}
+
+		if( !g_utils.isDomElement( screenData.container ) ) {
+			const error = new TypeError(
+				"screen: Invalid argument container. Container must be a DOM element or a string " +
+				"id of a DOM element."
+			);
+			error.code = "INVALID_CONTAINER";
+			throw error;
+		}
+
+		// Create a no style canvas or default canvas
+		if( !screenData.isNoStyles ) {
+			setDefaultCanvasOptions( screenData );
+		}
+
+		// Append the canvas to the container
+		screenData.container.appendChild( screenData.canvas );
+
+		// Add container to the global resize observer (only if not already observed)
+		if(
+			m_resizeObserver && screenData.container &&
+			!m_observedContainers.has( screenData.container )
+		) {
+			m_resizeObserver.observe( screenData.container );
+			m_observedContainers.add( screenData.container );
+		}
+	}
+	
+	if( !screenData.isOffscreen ) {
+		resizeScreen( screenData );
+	}
 
 	// Add all the screen commands to the screenData api
 	for( const command of m_commandList ) {
@@ -180,6 +283,7 @@ function screen( options ) {
 
 	// Setup the initial font for the screen
 	//screenData.api.setFont( screenData.font.id );
+	setupScreenRenderer( screenData );
 
 	// Call init functions for all modules that need initialization
 	for( const fn of m_screenDataInitFunctions ) {
@@ -188,6 +292,125 @@ function screen( options ) {
 
 	return screenData.api;
 }
+
+function parseAspect( aspect ) {
+
+	const match = aspect.replaceAll( " ", "" ).match( /^(\d+(?:\.\d+)?)(:|x|e|m)(\d+(?:\.\d+)?)$/ );
+	if( !match ) {
+		return null;
+	}
+
+	const width = Number( match[ 1 ] );
+	const splitter = match[ 2 ];
+	const height = Number( match[ 3 ] );
+
+	if( isNaN( width ) || width === 0 || isNaN( height ) || height === 0 ) {
+		return null;
+	}
+
+	return {
+		"width": width,
+		"height": height,
+		"splitter": splitter,
+		"isFixedSize": splitter === "m" || splitter === "x"
+	};
+}
+
+function setupOffscreenCanvasOptions( screenData ) {
+	screenData.canvas.width = screenData.aspectData.width;
+	screenData.canvas.height = screenData.aspectData.height;
+	screenData.container = null;
+	screenData.isOffscreen = true;
+	screenData.isNoStyles = false;
+	screenData.resizeCallback = null;
+	screenData.previousOffsetSize = null;
+}
+
+function setDefaultCanvasOptions( screenData ) {
+	screenData.canvas.style.outline = "none";
+	screenData.canvas.style.backgroundColor = "black";
+	screenData.canvas.style.position = "absolute";
+
+	// Apply image rendering value
+	screenData.canvas.style.imageRendering = "pixelated";
+	const imageRenderingValues = [ "pixelated", "crisp-edges", "-webkit-crisp-edges" ];
+	for( let i = 1; i < imageRenderingValues; i += 1 ) {
+		if( screenData.canvas.styles.imageRendering === imageRenderingValues[ i - 1 ] ) {
+			break;
+		}
+		screenData.canvas.style.imageRendering = imageRenderingValues[ i ];
+	}
+
+	// Check if the container is document.body
+	if( screenData.container === document.body ) {
+		document.documentElement.style.height = "100%";
+		document.documentElement.style.margin = "0";
+		document.body.style.height = "100%";
+		document.body.style.margin = "0";
+		document.body.style.overflow = "hidden";
+		screenData.canvas.style.left = "0";
+		screenData.canvas.style.top = "0";
+	}
+}
+
+function setupScreenRenderer( screenData ) {
+
+	let webgl2Status = null;
+	if( !screenData.useCanvas2d ) {
+		webgl2Status = g_webgl2Renderer.initWebGL( screenData );
+		
+		// If webgl2 failed
+		if( !webgl2Status ) {
+			console.error( "Failed to create WebGL 2 canvas, falling back to canvas2d renderer" );
+			
+			screenData.useCanvas2d = true;
+			
+			// Need to resize screen because we webgl2canvas uses different canvas dimensions
+			if( screenData.aspect !== ":" ) {
+				resizeScreen( screenData );
+			}
+		}
+	}
+
+	// If webgl2 is not working or disabled then use canvas
+	if( webgl2Status !== null ) {
+		screenData.renderMode = WEBGL2_RENDER_MODE;
+		screenData.renderer = g_webgl2Renderer;
+	} else {
+
+		// Canvas2D renderer (fallback)
+		const canvas2dStatus = g_canvas2dRenderer.initCanvas2D( screenData );
+		if( !canvas2dStatus ) {
+			const error = new Error( "screen: Failed to create rendering context." );
+			error.code = "NO_RENDERING_CONTEXT";
+			throw error;
+		}
+
+		screenData.renderMode = CANVAS2D_RENDER_MODE;
+		screenData.renderer = g_canvas2dRenderer;
+	}
+}
+
+function validateDimensions( width, height ) {
+	if( width <= 0 || height <= 0 ) {
+		const error = new Error( "screen: Canvas dimensions must be positive." );
+		error.code = "INVALID_DIMENSIONS";
+		throw error;
+	}
+	if( width > MAX_CANVAS_DIMENSION || height > MAX_CANVAS_DIMENSION ) {
+		const error = new Error(
+			`screen: Canvas dimensions exceed maximum of ${MAX_CANVAS_DIMENSION}px.`
+		);
+		error.code = "DIMENSION_TOO_LARGE";
+		throw error;
+	}
+}
+
+
+/***************************************************************************************************
+ * Other External API Commands
+ **************************************************************************************************/
+
 
 // Remove the screen from the page and memory
 function removeScreen( screenData ) {
@@ -389,286 +612,108 @@ function generateCommandWrapper( screenData, command ) {
 	}
 }
 
-/**
- * Parses an aspect ratio string into an object containing width, height, and splitter information.
- * Supports "width:height", "widthxheight", "widtheheight", and "widthmheight" formats.
- *
- * @param {string} aspect The aspect ratio string to parse.
- * @returns {object|null} An object with width, height, splitter, and isMultiple properties, or 
- * 						  null if the input is invalid.
- */
-function parseAspect( aspect ) {
 
-	const match = aspect.replaceAll( " ", "" ).match( /^(\d+(?:\.\d+)?)(:|x|e|m)(\d+(?:\.\d+)?)$/ );
-	if( !match ) {
-		return null;
+/***************************************************************************************************
+ * Resize Screen
+ **************************************************************************************************/
+
+
+function resizeScreen( screenData ) {
+
+	// Skip if screen is not visible or should not be resized
+	if(
+		screenData.isOffscreen ||
+		screenData.isNoStyles ||
+		screenData.canvas.offsetParent === null
+	) {
+		return;
 	}
 
-	const width = Number( match[ 1 ] );
-	const splitter = match[ 2 ];
-	const height = Number( match[ 3 ] );
+	// Get the previous size (if stored from last time)
+	let fromSize = screenData.previousOffsetSize
 
-	if( isNaN( width ) || width === 0 || isNaN( height ) || height === 0 ) {
-		return null;
+	// Let the renderer adjust to the new size
+	if( screenData.renderMode === CANVAS2D_RENDER_MODE && fromSize !== null ) {
+		g_canvas2dRenderer.beforeResize( screenData, fromSize );
 	}
 
-	return {
-		"width": width,
-		"height": height,
-		"splitter": splitter,
-		"isMultiple": splitter === "m" || splitter === "e",
-	};
-}
+	// If 100% canvas size mode
+	if( screenData.aspectData.splitter !== "" ) {
 
-// Determines the type of screen to create and returns the created screen
-function createScreen( options ) {
-	if( options.isOffscreen ) {
-		if( !options.aspectData ) {
-			const error = new Error(
-				"screen: You must supply an aspect ratio with exact dimensions " +
-				"for offscreen screens."
-			);
-			error.code = "NO_ASPECT_OFFSCREEN";
-			throw error;
-		}
-		if( options.aspectData.splitter !== "x" ) {
-			const error = new Error(
-				"screen: You must use aspect ratio with e(x)act pixel dimensions for offscreen" +
-				"screens. For example: 320x200 for width of 320 and height of 200 pixels."
-			);
-			error.code = "INVALID_OFFSCREEN_ASPECT";
-			throw error;
-		}
-		return createOffscreenCanvas( options );
-	}
-
-	// Get the container element from the dom if it's available
-	if( typeof options.container === "string" ) {
-		options.container = document.getElementById( options.container );
-	} else if( !options.container ) {
-		options.container = document.body;
-	} else if( !g_utils.isDomElement( options.container ) ) {
-		const error = new TypeError(
-			"screen: Invalid argument container. Container must be a DOM element " +
-			"or a string id of a DOM element."
-		);
-		error.code = "INVALID_CONTAINER";
-		throw error;
-	}
-
-	// Return a no style screen
-	if( options.noStyles ) {
-		return createNoStyleCanvas( options );
-	}
-
-	// Return the default screen
-	return createDefaultCanvas( options );
-}
-
-// Create offscreen canvas
-function createOffscreenCanvas( options ) {
-
-	// Add the canvas
-	options.canvas = document.createElement( "canvas" );
-	options.canvas.width = options.aspectData.width;
-	options.canvas.height = options.aspectData.height;
-
-	// Set additional options
-	options.container = null;
-	options.isOffscreen = true;
-	options.isNoStyles = false;
-	options.resizeCallback = null;
-	options.previousOffsetSize = null;
-
-	return createScreenData( options );
-}
-
-// Create screen with default styling
-function createDefaultCanvas( options ) {
-
-	// Create the canvases
-	options.canvas = document.createElement( "canvas" );
-
-	// Style the canvas
-	options.canvas.tabIndex = 0;
-	options.canvas.style.outline = "none";
-	options.canvas.style.backgroundColor = "black";
-	options.canvas.style.position = "absolute";
-
-	// Apply image rendering value
-	options.canvas.style.imageRendering = "pixelated";
-	const imageRenderingValues = [ "pixelated", "crisp-edges", "-webkit-crisp-edges" ];
-	for( let i = 1; i < imageRenderingValues; i += 1 ) {
-		if( options.canvas.styles.imageRendering === imageRenderingValues[ i - 1 ] ) {
-			break;
-		}
-		options.canvas.style.imageRendering = imageRenderingValues[ i ];
-	}
-
-	// Check if the container is document.body
-	let isContainerBody = false;
-	if( options.container === document.body ) {
-		isContainerBody = true;
-		document.documentElement.style.height = "100%";
-		document.documentElement.style.margin = "0";
-		document.body.style.height = "100%";
-		document.body.style.margin = "0";
-		document.body.style.overflow = "hidden";
-		options.canvas.style.left = "0";
-		options.canvas.style.top = "0";
-	}
-
-	// Make sure container is not blank
-	if( options.container.offsetHeight === 0 ) {
-		options.container.style.height = "200px";
-	}
-
-	// Append canvas to container
-	options.container.appendChild( options.canvas );
-
-	if( options.aspectData ) {
-
-		// Calculate container size
-		const size = getSize( options.container );
-
-		// Set the canvas size
-		setCanvasSize( options.aspectData, options.canvas, size.width, size.height );
+		// Update the canvas to the new size
+		const size = getSize( screenData.container );
+		setCanvasSize( screenData, size.width, size.height );
 
 	} else {
 
-		// If canvas is inside an element, use static position
-		if( !isContainerBody ) {
-			options.canvas.style.position = "static";
+		if( screenData.container === document.body ) {
+			screenData.canvas.style.position = "static";
 		}
-
-		// Set canvas to fullscreen
-		options.canvas.style.width = "100%";
-		options.canvas.style.height = "100%";
-		const size = getSize( options.canvas );
-		options.canvas.width = Math.min( size.width, MAX_CANVAS_DIMENSION );
-		options.canvas.height = Math.min( size.height, MAX_CANVAS_DIMENSION );
+		
+		// Update canvas to fullscreen absolute pixels
+		screenData.canvas.style.width = "100%";
+		screenData.canvas.style.height = "100%";
+		const size = getSize( screenData.canvas );
+		screenData.canvas.width = Math.min( size.width, MAX_CANVAS_DIMENSION );
+		screenData.canvas.height = Math.min( size.height, MAX_CANVAS_DIMENSION );
 	}
 
-	// Store initial offset size for resize callback
-	options.previousOffsetSize = {
-		"width": options.canvas.offsetWidth,
-		"height": options.canvas.offsetHeight
-	};
+	// Resize the client rectangle
+	screenData.clientRect = screenData.canvas.getBoundingClientRect();
 
-	// Create screen data first
-	const screenData = createScreenData( options );
-
-	// Add container to the global resize observer (only if not already observed)
-	if( m_resizeObserver && options.container && !m_observedContainers.has( options.container ) ) {
-		m_resizeObserver.observe( options.container );
-		m_observedContainers.add( options.container );
-	}
-
-	return screenData;
-}
-
-// Create screen without styles
-function createNoStyleCanvas( options ) {
-	options.canvas = document.createElement( "canvas" );
-
-	// Append canvas to container
-	options.container.appendChild( options.canvas );
-
-	// Add tabindex to canvas
-	options.canvas.tabIndex = 0;
-
-	if( options.aspectData && options.aspectData.splitter === "x" ) {
-
-		// Set the canvases size to the exact sizes specified
-		options.canvas.width = Math.min( options.aspectData.width, MAX_CANVAS_DIMENSION );
-		options.canvas.height = Math.min( options.aspectData.height, MAX_CANVAS_DIMENSION );
-	}
-
-	// Store initial offset size for resize callback (not used for noStyles, but for consistency)
-	options.previousOffsetSize = null;
-
-	return createScreenData( options );
-}
-
-// Create the screen data object
-function createScreenData( options ) {
-	
-	const screenApi = Object.create( SCREEN_API_PROTO );
-	screenApi.id = m_nextScreenId;
-
-	// Create the screen data object
-	const screenData = {
-		"id": m_nextScreenId,
-		"canvas": options.canvas,
-		"width": options.canvas.width,
-		"height": options.canvas.height,
-		"container": options.container,
-		"aspectData": options.aspectData,
-		"isOffscreen": options.isOffscreen,
-		"isNoStyles": options.isNoStyles,
-		"clientRect": options.canvas.getBoundingClientRect(),
-		"resizeCallback": options.resizeCallback,
-		"previousOffsetSize": options.previousOffsetSize || null,
-		"api": screenApi
-	};
-
-	// Check window location for webgl-disable flag
-	const disableWebgl2 = (
-		typeof window !== "undefined" && window.location.search.includes( "webgl-disable" )
-	);
-
-	let webgl2Status = null;
-	if( !disableWebgl2 ) {
-		webgl2Status = g_webgl2Renderer.initWebGL( screenData );
-	}
-
-	// If webgl2 is not working or disabled then use canvas
-	if( webgl2Status !== null ) {
-		screenData.renderMode = WEBGL2_RENDER_MODE;
-		screenData.renderer = g_webgl2Renderer;
+	// Set the new screen data size
+	if( screenData.aspectData.isFixedSize ) {
+		screenData.width = screenData.aspectData.width;
+		screenData.height = screenData.aspectData.height;
 	} else {
 
-		// Canvas2D renderer (fallback)
-		const canvas2dStatus = g_canvas2dRenderer.initCanvas2D( screenData );
-		if( !canvas2dStatus ) {
-			const error = new Error( "screen: Failed to create rendering context." );
-			error.code = "NO_RENDERING_CONTEXT";
-			throw error;
+		// If using ratios or full 100% size then set screenData to css size
+		if( screenData.splitter === "" || screenData.splitter === ":" ) {
+			screenData.width = newCssWidth;
+			screenData.height = newCssHeight;
+		} else {
+
+			// Extend mode -- only mode left is set setCanvasSize
 		}
-
-		screenData.renderMode = CANVAS2D_RENDER_MODE;
-		screenData.renderer = g_canvas2dRenderer;
 	}
 
-	// Append additional items onto the screendata
-	Object.assign( screenData, structuredClone( m_screenDataItems ) );
+	// Get the new size after resize
+	const toSize = {
+		"width": screenData.canvas.offsetWidth,
+		"height": screenData.canvas.offsetHeight
+	};
 
-	// Append dynamic screendata items
-	for( const itemGetter of m_screenDataItemGetters ) {
-		screenData[ itemGetter.name ] = structuredClone( itemGetter.fn() );
+	// Let the renderer adjust to the new size
+	if( screenData.renderMode === CANVAS2D_RENDER_MODE && fromSize !== null ) {
+		g_canvas2dRenderer.afterResize( screenData, fromSize, toSize );
 	}
 
-	// Append internal screen commands to screen data
-	for( const cmd of m_screenInternalCommands ) {
-		screenData[ cmd.name ] = cmd.fn;
+	// Send the resize data to the client
+	if( screenData.resizeCallback ) {
+		if(
+			fromSize !== null &&
+			( fromSize.width !== toSize.width || fromSize.height !== toSize.height )
+		) {
+			screenData.resizeCallback( screenData.api, fromSize, toSize );
+		}
 	}
 
-	// Additional setup for screen data
-	m_nextScreenId += 1;
-	options.canvas.dataset.screenId = screenData.id;
-	
-	return screenData;
+	// Store the new size for next time
+	screenData.previousOffsetSize = toSize;
 }
 
 // Set canvas size based on aspect ratio
-function setCanvasSize( aspectData, canvas, maxWidth, maxHeight ) {
+function setCanvasSize( screenData, maxWidth, maxHeight ) {
+
+	const aspectData = screenData.aspectData;
+	const canvas = screenData.canvas;
 	let width = aspectData.width;
 	let height = aspectData.height;
 	const splitter = aspectData.splitter;
 	let newCssWidth, newCssHeight;
 
-	// If set size to exact multiple
-	if( aspectData.isMultiple && splitter !== ":" ) {
+	// If set size to multiple or extend
+	if( splitter === "m" || splitter === "e" ) {
 		const factorX = Math.floor( maxWidth / width );
 		const factorY = Math.floor( maxHeight / height );
 		let factor = factorX > factorY ? factorY : factorX;
@@ -684,6 +729,10 @@ function setCanvasSize( aspectData, canvas, maxWidth, maxHeight ) {
 			height = Math.floor( maxHeight / factor );
 			newCssWidth = width * factor;
 			newCssHeight = height * factor;
+
+			// Set screen data width/height here
+			screenData.width = width;
+			screenData.height = height;
 		}
 	} else {
 
@@ -700,14 +749,6 @@ function setCanvasSize( aspectData, canvas, maxWidth, maxHeight ) {
 		} else {
 			newCssHeight = maxHeight;
 		}
-
-		// Extending canvas
-		if( splitter === "e" ) {
-			width += Math.round( ( maxWidth - newCssWidth ) * ( width / newCssWidth ) );
-			height += Math.round( ( maxHeight - newCssHeight ) * ( height / newCssHeight ) );
-			newCssWidth = maxWidth;
-			newCssHeight = maxHeight;
-		}
 	}
 
 	// Set the size
@@ -718,13 +759,13 @@ function setCanvasSize( aspectData, canvas, maxWidth, maxHeight ) {
 	canvas.style.marginLeft = Math.floor( ( maxWidth - newCssWidth ) / 2 ) + "px";
 	canvas.style.marginTop = Math.floor( ( maxHeight - newCssHeight ) / 2 ) + "px";
 
-	// Set the actual canvas dimensions
-	if( splitter !== ":" ) {
+	// Set the actual canvas pixel dimensions
+	if( screenData.useCanvas2d && splitter !== ":" ) {
 		canvas.width = Math.min( width, MAX_CANVAS_DIMENSION );
 		canvas.height = Math.min( height, MAX_CANVAS_DIMENSION );
 	} else {
 
-		// For ratio mode, set to container size
+		// For ratio mode, set to CSS size
 		canvas.width = Math.min( Math.floor( newCssWidth ), MAX_CANVAS_DIMENSION );
 		canvas.height = Math.min( Math.floor( newCssHeight ), MAX_CANVAS_DIMENSION );
 	}
@@ -736,91 +777,4 @@ function getSize( element ) {
 		"width": element.offsetWidth || element.clientWidth || element.width,
 		"height": element.offsetHeight || element.clientHeight || element.height
 	};
-}
-
-// Resizes a single screen
-function resizeScreen( screenData ) {
-
-	// Skip if screen is not visible or should not be resized
-	if(
-		screenData.isOffscreen ||
-		screenData.isNoStyles ||
-		screenData.canvas.offsetParent === null
-	) {
-		return;
-	}
-
-	// Get the previous size (stored from last time)
-	const fromSize = screenData.previousOffsetSize || {
-		"width": screenData.canvas.offsetWidth,
-		"height": screenData.canvas.offsetHeight
-	};
-
-	// Let the renderer adjust to the new size
-	if( screenData.renderMode === CANVAS2D_RENDER_MODE ) {
-		g_canvas2dRenderer.beforeResize( screenData, fromSize );
-	}
-
-	let size;
-
-	if( screenData.aspectData ) {
-
-		// Update the canvas to the new size
-		size = getSize( screenData.container );
-		setCanvasSize( screenData.aspectData, screenData.canvas, size.width, size.height );
-
-	} else {
-
-		// Update canvas to fullscreen absolute pixels
-		size = getSize( screenData.canvas );
-		screenData.canvas.width = Math.min( size.width, MAX_CANVAS_DIMENSION );
-		screenData.canvas.height = Math.min( size.height, MAX_CANVAS_DIMENSION );
-
-	}
-
-	// Resize the client rectangle
-	screenData.clientRect = screenData.canvas.getBoundingClientRect();
-
-	// Set the new screen size
-	screenData.width = screenData.canvas.width;
-	screenData.height = screenData.canvas.height;
-
-	// Get the new size after resize
-	const toSize = {
-		"width": screenData.canvas.offsetWidth,
-		"height": screenData.canvas.offsetHeight
-	};
-
-	// Let the renderer adjust to the new size
-	if( screenData.renderMode === CANVAS2D_RENDER_MODE ) {
-		g_canvas2dRenderer.afterResize( screenData, fromSize, toSize );
-	}
-
-	// Send the resize data to the client
-	if( screenData.resizeCallback ) {
-		if(
-			fromSize.width !== toSize.width ||
-			fromSize.height !== toSize.height
-		) {
-			screenData.resizeCallback( screenData.api, fromSize, toSize );
-		}
-	}
-
-	// Store the new size for next time
-	screenData.previousOffsetSize = toSize;
-}
-
-function validateDimensions( width, height ) {
-	if( width <= 0 || height <= 0 ) {
-		const error = new Error( "screen: Canvas dimensions must be positive." );
-		error.code = "INVALID_DIMENSIONS";
-		throw error;
-	}
-	if( width > MAX_CANVAS_DIMENSION || height > MAX_CANVAS_DIMENSION ) {
-		const error = new Error(
-			`screen: Canvas dimensions exceed maximum of ${MAX_CANVAS_DIMENSION}px.`
-		);
-		error.code = "DIMENSION_TOO_LARGE";
-		throw error;
-	}
 }

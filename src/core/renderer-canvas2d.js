@@ -46,10 +46,7 @@ export function cleanup( screenData ) {
  */
 export function initCanvas2D( screenData ) {
 	
-	const context = screenData.canvas.getContext( "2d", {
-		"willReadFrequently": true,
-		"desynchronized": false
-	} );
+	const context = screenData.canvas.getContext( "2d", { "willReadFrequently": true } );
 	
 	if( !context ) {
 		return null;
