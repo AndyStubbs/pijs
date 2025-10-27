@@ -15,8 +15,10 @@ import * as g_utils from "./utils";
 
 const MAX_BATCH_SIZE = 1_000_000;
 
-// TODO: Consider adding MAX_FLUSH_SIZE, but it's complicated so test first
-//const MAX_FLUSH_SIZE =    50_000;
+// TODO: Need to keep an eye on memory usage and memory caps. Maybe make max_batch_size a variable
+// maybe let user update max batch sizes.  Need to handle out of memory issues or prevent them
+// from happening.  Needs research.
+
 
 // Batch systems
 const m_batchProto = {
@@ -436,6 +438,8 @@ export function ensureBatchCapacity( batch, newItemCount ) {
 
 		// Make sure we don't exceed max batch size
 		if( requiredCount > MAX_BATCH_SIZE ) {
+			flushBatches();
+			displayToCanvas();
 			return false;
 		}
 
