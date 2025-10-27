@@ -603,11 +603,18 @@ function createScreenData( options ) {
 		"api": screenApi
 	};
 
-	// TODO: Add canvas2d mode for testing, use window.location parameter flag
+	// Check window location for webgl-disable flag
+	const disableWebgl2 = (
+		typeof window !== "undefined" && window.location.search.includes( "webgl-disable" )
+	);
 
-	// Try WebGL2 first, fall back to Canvas2D
-	const webgl2Status = g_webgl2Renderer.initWebGL( screenData );
-	if( webgl2Status ) {
+	let webgl2Status = null;
+	if( !disableWebgl2 ) {
+		webgl2Status = g_webgl2Renderer.initWebGL( screenData );
+	}
+
+	// If webgl2 is not working or disabled then use canvas
+	if( webgl2Status !== null ) {
 		screenData.renderMode = WEBGL2_RENDER_MODE;
 		screenData.renderer = g_webgl2Renderer;
 	} else {

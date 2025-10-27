@@ -48,7 +48,7 @@ export function initCanvas2D( screenData ) {
 	
 	const context = screenData.canvas.getContext( "2d", {
 		"willReadFrequently": true,
-		"desynchronized": true
+		"desynchronized": false
 	} );
 	
 	if( !context ) {

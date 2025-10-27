@@ -160,7 +160,7 @@ export function initWebGL( screenData ) {
 		"premultipliedAlpha": true,
 		"antialias": false,
 		"preserveDrawingBuffer": true,
-		"desynchronized": true,
+		"desynchronized": false,
 		"colorType": "unorm8"
 	} );
 	
