@@ -143,7 +143,6 @@ export function processApi() {
 }
 
 function generateCommandWrapper( command, isScreen ) {
-
 	const paramCount = command.parameterNames.length;
 	const params = command.parameterNames;
 
@@ -152,6 +151,11 @@ function generateCommandWrapper( command, isScreen ) {
 		if( isScreen ) {
 			return () => {
 				const screenData = m_screenManager.getActiveScreen();
+				if( !screenData && !command.screenOptional ) {
+					const error = new Error( `${command.name}: No screens available for command.` );
+					error.code = "NO_SCREEN";
+					throw error;
+				}
 				return command.fn( screenData, {} );
 			};
 		}
@@ -160,89 +164,116 @@ function generateCommandWrapper( command, isScreen ) {
 		};
 	}
 
-	// One parameters - direct call, manual parsing
+	// Single parameter - skip parseOptions overhead
 	if( paramCount === 1 ) {
 		const paramName = command.parameterNames[ 0 ];
 		if( isScreen ) {
 			return ( a1 ) => {
+				const screenData = m_screenManager.getActiveScreen();
+				if( !screenData && !command.screenOptional ) {
+					const error = new Error( `${command.name}: No screens available for command.` );
+					error.code = "NO_SCREEN";
+					throw error;
+				}
 				if( g_utils.isObjectLiteral( a1 ) ) {
 					return command.fn( screenData, a1 );
 				}
-				const screenData = m_screenManager.getActiveScreen();
 				return command.fn( screenData, { [ paramName ]: a1 } );
 			};
 		}
 		return ( a1 ) => {
 			if( g_utils.isObjectLiteral( a1 ) ) {
-				return command.fn( screenData, a1 );
+				return command.fn( a1 );
 			}
-			return command.fn( screenData, { [ paramName ]: a1 } );
+			return command.fn( { [ paramName ]: a1 } );
 		};
 	}
+
+	// Two parameters - optimized path
 	if( paramCount === 2 ) {
 		if( isScreen ) {
 			return ( a1, a2 ) => {
-				const args = [ a1, a2 ].slice( 0, arguments.length - 1 );
-				const options = g_utils.parseOptions( args, params );
 				const screenData = m_screenManager.getActiveScreen();
+				if( !screenData && !command.screenOptional ) {
+					const error = new Error( `${command.name}: No screens available for command.` );
+					error.code = "NO_SCREEN";
+					throw error;
+				}
+				const args = [ a1, a2 ].slice( 0, arguments.length );
+				const options = g_utils.parseOptions( args, params );
 				return command.fn( screenData, options );
 			};
 		}
 		return ( a1, a2 ) => {
-			const args = [ a1, a2 ].slice( 0, arguments.length - 1 );
+			const args = [ a1, a2 ].slice( 0, arguments.length );
 			const options = g_utils.parseOptions( args, params );
 			return command.fn( options );
 		};
 	}
+
+	// Three parameters
 	if( paramCount === 3 ) {
 		if( isScreen ) {
 			return ( a1, a2, a3 ) => {
-				const args = [ a1, a2, a3 ].slice( 0, arguments.length - 1 );
-				const options = g_utils.parseOptions( args, params );
 				const screenData = m_screenManager.getActiveScreen();
+				if( !screenData && !command.screenOptional ) {
+					const error = new Error( `${command.name}: No screens available for command.` );
+					error.code = "NO_SCREEN";
+					throw error;
+				}
+				const args = [ a1, a2, a3 ].slice( 0, arguments.length );
+				const options = g_utils.parseOptions( args, params );
 				return command.fn( screenData, options );
 			};
 		}
 		return ( a1, a2, a3 ) => {
-			const args = [ a1, a2, a3 ].slice( 0, arguments.length - 1 );
-			const options = g_utils.parseOptions( args, params );
-			return command.fn( options );
-		};
-	} 
-	
-	if( paramCount === 4 ) {
-		if( isScreen ) {
-			return ( a1, a2, a3, a4 ) => {
-				const args = [ a1, a2, a3, a4 ].slice( 0, arguments.length - 1 );
-				const options = g_utils.parseOptions( args, params );
-				const screenData = m_screenManager.getActiveScreen();
-				return command.fn( screenData, options );
-			};
-		}
-		return ( a1, a2, a3, a4 ) => {
-			const args = [ a1, a2, a3, a4 ].slice( 0, arguments.length - 1 );
-			const options = g_utils.parseOptions( args, params );
-			return command.fn( options );
-		};
-	} else {
-		if( isScreen ) {
-			return ( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11 ) => {
-				const args = [ 
-					a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11
-				].slice( 0, arguments.length - 1 );
-				const options = g_utils.parseOptions( args, params );
-				const screenData = m_screenManager.getActiveScreen();
-				return command.fn( screenData, options );
-			};
-		}
-		return ( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11 ) => {
-			const args = [
-				a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11
-			].slice( 0, arguments.length - 1 );
+			const args = [ a1, a2, a3 ].slice( 0, arguments.length );
 			const options = g_utils.parseOptions( args, params );
 			return command.fn( options );
 		};
 	}
+
+	// Four parameters
+	if( paramCount === 4 ) {
+		if( isScreen ) {
+			return ( a1, a2, a3, a4 ) => {
+				const screenData = m_screenManager.getActiveScreen();
+				if( !screenData && !command.screenOptional ) {
+					const error = new Error( `${command.name}: No screens available for command.` );
+					error.code = "NO_SCREEN";
+					throw error;
+				}
+				const args = [ a1, a2, a3, a4 ].slice( 0, arguments.length );
+				const options = g_utils.parseOptions( args, params );
+				return command.fn( screenData, options );
+			};
+		}
+		return ( a1, a2, a3, a4 ) => {
+			const args = [ a1, a2, a3, a4 ].slice( 0, arguments.length );
+			const options = g_utils.parseOptions( args, params );
+			return command.fn( options );
+		};
+	}
+
+	// Multiple parameters - use parseOptions but avoid spread operator
+	if( isScreen ) {
+		return ( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ) => {
+			const screenData = m_screenManager.getActiveScreen();
+			if( !screenData && !command.screenOptional ) {
+				const error = new Error( `${command.name}: No screens available for command.` );
+				error.code = "NO_SCREEN";
+				throw error;
+			}
+			const args = [ a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ].slice( 0, arguments.length );
+			const options = g_utils.parseOptions( args, params );
+			return command.fn( screenData, options );
+		};
+	}
+	return ( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ) => {
+		const args = [ a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ].slice( 0, arguments.length );
+		const options = g_utils.parseOptions( args, params );
+		return command.fn( options );
+	};
 }
 
 
