@@ -493,7 +493,7 @@ function createDefaultCanvas( options ) {
 		if( options.canvas.styles.imageRendering === imageRenderingValues[ i - 1 ] ) {
 			break;
 		}
-		options.canvas.style.imageRendering = value;
+		options.canvas.style.imageRendering = imageRenderingValues[ i ];
 	}
 
 	// Check if the container is document.body
