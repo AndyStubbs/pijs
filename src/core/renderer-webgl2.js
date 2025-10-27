@@ -59,7 +59,8 @@ in vec4 v_color;
 out vec4 fragColor;
 
 void main() {
-	fragColor = v_color;
+	// Premultiply alpha for correct blending
+	fragColor = vec4(v_color.rgb * v_color.a, v_color.a);
 }
 `;
 
@@ -70,6 +71,8 @@ out vec2 v_texCoord;
 
 void main() {
 	gl_Position = vec4(a_position, 0.0, 1.0);
+
+	// Flip Y coordinate when sampling texture
 	v_texCoord = (a_position + 1.0) * 0.5;
 }
 `;
@@ -82,7 +85,13 @@ uniform sampler2D u_texture;
 out vec4 fragColor;
 
 void main() {
-	fragColor = texture(u_texture, v_texCoord);
+	vec4 texColor = texture(u_texture, v_texCoord);
+	// Unpremultiply alpha for display
+	if (texColor.a > 0.0) {
+		fragColor = vec4(texColor.rgb / texColor.a, texColor.a);
+	} else {
+		fragColor = texColor;
+	}
 }
 `;
 
@@ -94,6 +103,8 @@ void main() {
 
 export function init() {
 	g_screenManager.addScreenDataItem( "contextLost", false );
+	g_screenManager.addScreenDataItemGetter( "isRenderScheduled", () => false );
+	g_screenManager.addScreenDataItemGetter( "isFirstRender", () => true );
 	g_screenManager.addScreenCleanupFunction( cleanup );
 }
 
@@ -146,7 +157,9 @@ export function initWebGL( screenData ) {
 	// Try WebGL2 first
 	screenData.gl = canvas.getContext( "webgl2", { 
 		"alpha": true, 
-		"premultipliedAlpha": false,
+		"premultipliedAlpha": true,
+		"antialias": false,
+		"preserveDrawingBuffer": true,
 		"desynchronized": true,
 		"colorType": "unorm8"
 	} );
@@ -474,6 +487,11 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
 	
 	pointBatch.count++;
 	
+	// Debug logging
+	if( pointBatch.count <= 10 ) {
+		console.log( `WebGL2: Added pixel ${pointBatch.count} at (${x}, ${y}) color:`, color );
+	}
+	
 	// TODO: Remove per pixel check, should be done after draw but in actual graphics commands like
 	// after the line draw is complete
 	setImageDirty( screenData );
@@ -533,20 +551,19 @@ function flushBatches( screenData ) {
 
 	const pointBatch = screenData.pointBatch;
 
-	if( pointBatch.count === 0 ) {
-		return;
-	}
-
 	// Bind FBO
 	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
 	
 	// Set viewport
 	gl.viewport( 0, 0, screenData.width, screenData.height );
 	
-	// This is supposed to be the "video memory" so we are not clearing the back buffer
-	// Clear to black/transparent
-	// gl.clearColor( 0, 0, 0, 0 );
-	// gl.clear( gl.COLOR_BUFFER_BIT );
+	// Clear FBO on first render only
+	if( screenData.isFirstRender ) {
+		gl.clearColor( 0, 0, 0, 0 );
+		gl.clear( gl.COLOR_BUFFER_BIT );
+		screenData.isFirstRender = false;
+		console.log( "WebGL2: Cleared FBO on first render" );
+	}
 	
 	// Render point batch if it has data
 	gl.useProgram( pointBatch.program );
@@ -652,13 +669,20 @@ function displayToCanvas( screenData ) {
 	const gl = screenData.gl;
 	const program = screenData.displayProgram;
 	const locations = screenData.displayLocations;
-	
+
 	// Bind default framebuffer (screen)
 	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
 	
 	// Set viewport to full canvas
 	gl.viewport( 0, 0, screenData.canvas.width, screenData.canvas.height );
 	
+	// Clear the canvas before drawing the FBO texture
+	gl.clearColor( 0, 0, 0, 0 );
+	gl.clear( gl.COLOR_BUFFER_BIT );
+	
+	// Disable blend for render to display
+	gl.disable( gl.BLEND );
+
 	// Use display shader
 	gl.useProgram( program );
 	
