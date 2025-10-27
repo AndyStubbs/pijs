@@ -353,25 +353,25 @@ function generateCommandWrapper( screenData, command ) {
 			return command.fn( screenData, { [ paramName ]: a1 } );
 		};
 	} else if( paramCount === 2 ) {
-		screenData.api[ command.name ] = ( a1, a2 ) => {
+		screenData.api[ command.name ] = function( a1, a2 ) {
 			const args = [ a1, a2 ].slice( 0, arguments.length );
 			const options = g_utils.parseOptions( args, params );
 			return command.fn( screenData, options );
 		};
 	} else if( paramCount === 3 ) {
-		screenData.api[ command.name ] = ( a1, a2, a3 ) => {
+		screenData.api[ command.name ] = function( a1, a2, a3 ) {
 			const args = [ a1, a2, a3 ].slice( 0, arguments.length );
 			const options = g_utils.parseOptions( args, params );
 			return command.fn( screenData, options );
 		};
 	} else if( paramCount === 4 ) {
-		screenData.api[ command.name ] = ( a1, a2, a3, a4 ) => {
+		screenData.api[ command.name ] = function( a1, a2, a3, a4 ) {
 			const args = [ a1, a2, a3, a4 ].slice( 0, arguments.length );
 			const options = g_utils.parseOptions( args, params );
 			return command.fn( screenData, options );
 		};
 	} else {
-		screenData.api[ command.name ] = ( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ) => {
+		screenData.api[ command.name ] = function( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ) {
 			const args = [ a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ].slice( 0, arguments.length );
 			const options = g_utils.parseOptions( args, params );
 			return command.fn( screenData, options );

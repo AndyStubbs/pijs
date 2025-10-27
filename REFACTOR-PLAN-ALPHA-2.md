@@ -703,9 +703,9 @@ Rebuild:
 - [x] Step 4.2: Add Color to Screen Data
 - [x] Step 4.3: Implement setColor Command
 
-### Phase 5: First Drawing Command - pset
-- [ ] Step 5.1: Create Graphics Module
-- [ ] Step 5.2: Test pset
+### Phase 5: First Drawing Command - pset ✅ COMPLETE
+- [x] Step 5.1: Create Graphics Module
+- [x] Step 5.2: Test pset
 
 ### Phase 6: Line Drawing
 - [ ] Step 6.1: Implement line Command

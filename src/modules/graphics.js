@@ -11,6 +11,7 @@
 
 import * as g_screenManager from "../core/screen-manager";
 import * as g_utils from "../core/utils";
+import { getColorValueByRawInput } from "./colors";
 
 
 /***************************************************************************************************
@@ -41,8 +42,9 @@ function pset( screenData, options ) {
 	if( color === null || color === undefined ) {
 		color = screenData.color;
 	} else {
-		// Convert color if provided
-		const colorValue = g_utils.convertToColor( color );
+		
+		// Convert color if provided using colors module
+		const colorValue = getColorValueByRawInput( screenData, color );
 		if( colorValue === null ) {
 			const error = new TypeError( "pset: Parameter color is not a valid color format." );
 			error.code = "INVALID_COLOR";

@@ -192,7 +192,7 @@ function generateCommandWrapper( command, isScreen ) {
 	// Two parameters - optimized path
 	if( paramCount === 2 ) {
 		if( isScreen ) {
-			return ( a1, a2 ) => {
+			return function( a1, a2 ) {
 				const screenData = m_screenManager.getActiveScreen();
 				if( !screenData && !command.screenOptional ) {
 					const error = new Error( `${command.name}: No screens available for command.` );
@@ -204,7 +204,7 @@ function generateCommandWrapper( command, isScreen ) {
 				return command.fn( screenData, options );
 			};
 		}
-		return ( a1, a2 ) => {
+		return function( a1, a2 ) {
 			const args = [ a1, a2 ].slice( 0, arguments.length );
 			const options = g_utils.parseOptions( args, params );
 			return command.fn( options );
@@ -214,7 +214,7 @@ function generateCommandWrapper( command, isScreen ) {
 	// Three parameters
 	if( paramCount === 3 ) {
 		if( isScreen ) {
-			return ( a1, a2, a3 ) => {
+			return function( a1, a2, a3 ) {
 				const screenData = m_screenManager.getActiveScreen();
 				if( !screenData && !command.screenOptional ) {
 					const error = new Error( `${command.name}: No screens available for command.` );
@@ -226,7 +226,7 @@ function generateCommandWrapper( command, isScreen ) {
 				return command.fn( screenData, options );
 			};
 		}
-		return ( a1, a2, a3 ) => {
+		return function( a1, a2, a3 ) {
 			const args = [ a1, a2, a3 ].slice( 0, arguments.length );
 			const options = g_utils.parseOptions( args, params );
 			return command.fn( options );
@@ -236,7 +236,7 @@ function generateCommandWrapper( command, isScreen ) {
 	// Four parameters
 	if( paramCount === 4 ) {
 		if( isScreen ) {
-			return ( a1, a2, a3, a4 ) => {
+			return function( a1, a2, a3, a4 ) {
 				const screenData = m_screenManager.getActiveScreen();
 				if( !screenData && !command.screenOptional ) {
 					const error = new Error( `${command.name}: No screens available for command.` );
@@ -248,7 +248,7 @@ function generateCommandWrapper( command, isScreen ) {
 				return command.fn( screenData, options );
 			};
 		}
-		return ( a1, a2, a3, a4 ) => {
+		return function( a1, a2, a3, a4 ) {
 			const args = [ a1, a2, a3, a4 ].slice( 0, arguments.length );
 			const options = g_utils.parseOptions( args, params );
 			return command.fn( options );
@@ -257,7 +257,7 @@ function generateCommandWrapper( command, isScreen ) {
 
 	// Multiple parameters - use parseOptions but avoid spread operator
 	if( isScreen ) {
-		return ( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ) => {
+		return function( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ) {
 			const screenData = m_screenManager.getActiveScreen();
 			if( !screenData && !command.screenOptional ) {
 				const error = new Error( `${command.name}: No screens available for command.` );
@@ -269,7 +269,7 @@ function generateCommandWrapper( command, isScreen ) {
 			return command.fn( screenData, options );
 		};
 	}
-	return ( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ) => {
+	return function( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ) {
 		const args = [ a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ].slice( 0, arguments.length );
 		const options = g_utils.parseOptions( args, params );
 		return command.fn( options );
