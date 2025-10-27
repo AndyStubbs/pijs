@@ -11,13 +11,13 @@
 "use strict";
 
 // Core Modules
-import * as commands from "./core/commands.js";
-import * as screenManager from "./core/screen-manager.js";
-import * as events from "./core/events.js";
-import * as plugins from "./core/plugins.js";
-import * as webglRenderer from "./core/renderer-webgl2.js";
-import * as canvas2dRenderer from "./core/renderer-canvas2d.js";
-import * as renderer from "./core/renderer.js";
+import * as g_commands from "./core/commands.js";
+import * as g_screenManager from "./core/screen-manager.js";
+import * as g_events from "./core/events.js";
+import * as g_plugins from "./core/plugins.js";
+import * as g_webglRenderer from "./core/renderer-webgl2.js";
+import * as g_canvas2dRenderer from "./core/renderer-canvas2d.js";
+import * as g_renderer from "./core/renderer.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -28,16 +28,16 @@ const api = {
 };
 
 // Initialize the core modules
-commands.init( api, screenManager );
-screenManager.init();
-webglRenderer.init();
-canvas2dRenderer.init();
-events.init();
-plugins.init();
-renderer.init();
+g_commands.init( api, g_screenManager );
+g_screenManager.init();
+g_webglRenderer.init();
+g_canvas2dRenderer.init();
+g_events.init();
+g_plugins.init();
+g_renderer.init();
 
 // Append all the commands to the api
-commands.processApi();
+g_commands.processApi();
 
 // Set window.pi for browser environments
 if( typeof window !== "undefined" ) {
