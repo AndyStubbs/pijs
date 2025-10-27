@@ -49,8 +49,7 @@ void main() {
 	gl_Position = vec4(ndc, 0.0, 1.0);
 	gl_PointSize = 1.0;
 	v_color = a_color;
-}
-`.trim();
+}`;
 
 // Point fragment shader
 const m_pointFragSrc = `#version 300 es
@@ -61,8 +60,7 @@ out vec4 fragColor;
 void main() {
 	// Premultiply alpha for correct blending
 	fragColor = vec4(v_color.rgb * v_color.a, v_color.a);
-}
-`;
+}`;
 
 // Display vertex shader (fullscreen quad)
 const m_displayVertSrc = `#version 300 es
@@ -74,8 +72,7 @@ void main() {
 
 	// Flip Y coordinate when sampling texture
 	v_texCoord = (a_position + 1.0) * 0.5;
-}
-`;
+}`;
 
 // Display fragment shader (texture lookup)
 const m_displayFragSrc = `#version 300 es
@@ -92,20 +89,24 @@ void main() {
 	} else {
 		fragColor = texColor;
 	}
-}
-`;
+}`;
 
+let m_isWebgl2Capable = false;
 
 /***************************************************************************************************
  * Module Commands
  **************************************************************************************************/
 
 
+export { m_isWebgl2Capable as isWebgl2Capable };
+
 export function init() {
 	g_screenManager.addScreenDataItem( "contextLost", false );
-	g_screenManager.addScreenDataItemGetter( "isRenderScheduled", () => false );
-	g_screenManager.addScreenDataItemGetter( "isFirstRender", () => true );
+	g_screenManager.addScreenDataItem( "isRenderScheduled", false );
+	g_screenManager.addScreenDataItem( "isFirstRender", true );
 	g_screenManager.addScreenCleanupFunction( cleanup );
+
+	m_isWebgl2Capable = testWebGL2Capability();
 }
 
 export function cleanup( screenData ) {
@@ -143,6 +144,37 @@ export function cleanup( screenData ) {
 
 
 /**
+ * Test if WebGL2 is available and working properly
+ * 
+ * @returns {boolean} True if WebGL2 is available and functional
+ */
+function testWebGL2Capability() {
+	
+	// Create a temporary offscreen canvas for testing
+	const testCanvas = document.createElement( "canvas" );
+	testCanvas.width = 1;
+	testCanvas.height = 1;
+	
+	// Create a minimal screen data object for testing
+	const testScreenData = {
+		"canvas": testCanvas,
+		"width": 1,
+		"height": 1
+	};
+	
+	// Use the existing initWebGL function to test capability
+	const result = initWebGL( testScreenData );
+	
+	// Cleanup test resources if WebGL2 was initialized
+	if( result && testScreenData.gl ) {
+		cleanup( testScreenData );
+	}
+	
+	return result;
+}
+
+
+/**
  * Initialize WebGL2 context for a canvas
  * 
  * @param {Object} screenData - Screen Data Object
@@ -160,7 +192,7 @@ export function initWebGL( screenData ) {
 		"premultipliedAlpha": true,
 		"antialias": false,
 		"preserveDrawingBuffer": true,
-		"desynchronized": false,
+		"desynchronized": true,
 		"colorType": "unorm8"
 	} );
 	

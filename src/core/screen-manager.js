@@ -134,6 +134,11 @@ export function addScreenCleanupFunction( fn ) {
 // screen command
 function screen( options ) {
 
+	// Sanitize booleans
+	options.useCanvas2d = !!options.useCanvas2d;
+	options.isOffscreen = !!options.isOffscreen;
+	options.noStyles = !!options.noStyles;
+
 	// Validate resize callback
 	if( options.resizeCallback != null && !g_utils.isFunction( options.resizeCallback ) ) {
 		const error = new TypeError( "screen: Parameter resizeCallback must be a function." );
@@ -154,6 +159,11 @@ function screen( options ) {
 		if( options.aspectData.splitter !== ":" ) {
 			validateDimensions( options.aspectData.width, options.aspectData.height );
 		}
+	}
+
+	// Force canvas2d if not capable of webgl2
+	if( !g_webgl2Renderer.isWebgl2Capable ) {
+		options.useCanvas2d = true;
 	}
 
 	// Create appropriate screen type
@@ -389,7 +399,6 @@ function generateCommandWrapper( screenData, command ) {
  */
 function parseAspect( aspect ) {
 
-	//const match = aspect.replaceAll( " ", "" ).match( /^(\d+)(:|x|e|m)(\d+)$/ );
 	const match = aspect.replaceAll( " ", "" ).match( /^(\d+(?:\.\d+)?)(:|x|e|m)(\d+(?:\.\d+)?)$/ );
 	if( !match ) {
 		return null;
@@ -656,7 +665,7 @@ function setCanvasSize( aspectData, canvas, maxWidth, maxHeight ) {
 	let width = aspectData.width;
 	let height = aspectData.height;
 	const splitter = aspectData.splitter;
-	let newWidth, newHeight;
+	let newCssWidth, newCssHeight;
 
 	// If set size to exact multiple
 	if( aspectData.isMultiple && splitter !== ":" ) {
@@ -666,48 +675,48 @@ function setCanvasSize( aspectData, canvas, maxWidth, maxHeight ) {
 		if( factor < 1 ) {
 			factor = 1;
 		}
-		newWidth = width * factor;
-		newHeight = height * factor;
+		newCssWidth = width * factor;
+		newCssHeight = height * factor;
 
 		// Extending the canvas to match container size
 		if( splitter === "e" ) {
 			width = Math.floor( maxWidth / factor );
 			height = Math.floor( maxHeight / factor );
-			newWidth = width * factor;
-			newHeight = height * factor;
+			newCssWidth = width * factor;
+			newCssHeight = height * factor;
 		}
 	} else {
 
 		// Calculate the screen ratios
 		const ratio1 = height / width;
 		const ratio2 = width / height;
-		newWidth = maxHeight * ratio2;
-		newHeight = maxWidth * ratio1;
+		newCssWidth = maxHeight * ratio2;
+		newCssHeight = maxWidth * ratio1;
 
 		// Calculate the best fit
-		if( newWidth > maxWidth ) {
-			newWidth = maxWidth;
-			newHeight = newWidth * ratio1;
+		if( newCssWidth > maxWidth ) {
+			newCssWidth = maxWidth;
+			newCssHeight = newCssWidth * ratio1;
 		} else {
-			newHeight = maxHeight;
+			newCssHeight = maxHeight;
 		}
 
 		// Extending canvas
 		if( splitter === "e" ) {
-			width += Math.round( ( maxWidth - newWidth ) * ( width / newWidth ) );
-			height += Math.round( ( maxHeight - newHeight ) * ( height / newHeight ) );
-			newWidth = maxWidth;
-			newHeight = maxHeight;
+			width += Math.round( ( maxWidth - newCssWidth ) * ( width / newCssWidth ) );
+			height += Math.round( ( maxHeight - newCssHeight ) * ( height / newCssHeight ) );
+			newCssWidth = maxWidth;
+			newCssHeight = maxHeight;
 		}
 	}
 
 	// Set the size
-	canvas.style.width = Math.floor( newWidth ) + "px";
-	canvas.style.height = Math.floor( newHeight ) + "px";
+	canvas.style.width = Math.floor( newCssWidth ) + "px";
+	canvas.style.height = Math.floor( newCssHeight ) + "px";
 
 	// Set the margins
-	canvas.style.marginLeft = Math.floor( ( maxWidth - newWidth ) / 2 ) + "px";
-	canvas.style.marginTop = Math.floor( ( maxHeight - newHeight ) / 2 ) + "px";
+	canvas.style.marginLeft = Math.floor( ( maxWidth - newCssWidth ) / 2 ) + "px";
+	canvas.style.marginTop = Math.floor( ( maxHeight - newCssHeight ) / 2 ) + "px";
 
 	// Set the actual canvas dimensions
 	if( splitter !== ":" ) {
@@ -716,8 +725,8 @@ function setCanvasSize( aspectData, canvas, maxWidth, maxHeight ) {
 	} else {
 
 		// For ratio mode, set to container size
-		canvas.width = Math.min( Math.floor( newWidth ), MAX_CANVAS_DIMENSION );
-		canvas.height = Math.min( Math.floor( newHeight ), MAX_CANVAS_DIMENSION );
+		canvas.width = Math.min( Math.floor( newCssWidth ), MAX_CANVAS_DIMENSION );
+		canvas.height = Math.min( Math.floor( newCssHeight ), MAX_CANVAS_DIMENSION );
 	}
 }
 
