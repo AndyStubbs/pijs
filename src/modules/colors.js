@@ -91,9 +91,13 @@ function addApiCommands( api ) {
 	api.setDefaultColor = ( color ) => setDefaultColor(
 		g_utils.parseOptions( [ color ], [ "color" ] )
 	);
-	
 
 	// Add screen commands
+	api.setColor = ( color, isAddToPalette ) => setColor(
+		g_screenManager.activeScreenData, g_utils.parseOptions( [ "color", "isAddToPalette" ] )
+	);
+
+	// Add screen commands to screens
 	g_screenManager.addScreenInitFunction( ( screenData ) => {
 		screenData.api.setColor = ( color, isAddToPalette ) => {
 			setColor( screenData, g_utils.parseOptions(
