@@ -25,6 +25,7 @@ const m_screenDataItems = {};
 const m_screenDataItemGetters = [];
 const m_screenInternalCommands = [];
 const m_screenDataInitFunctions = [];
+const m_screenDataResizeFunctions = [];
 const m_screenDataCleanupFunctions = [];
 
 
@@ -65,7 +66,7 @@ export function init() {
 				const screenData = m_screens[ screenId ];
 				
 				if( screenData ) {
-					resizeScreen( screenData );
+					resizeScreen( screenData, false );
 				}
 			}
 		}
@@ -117,6 +118,10 @@ export function addScreenDataItemGetter( name, fn ) {
 
 export function addScreenInitFunction( fn ) {
 	m_screenDataInitFunctions.push( fn );
+}
+
+export function addScreenResizeFunction( fn ) {
+	m_screenDataResizeFunctions.push( fn );
 }
 
 export function addScreenCleanupFunction( fn ) {
@@ -267,7 +272,7 @@ function screen( options ) {
 	}
 	
 	if( !screenData.isOffscreen ) {
-		resizeScreen( screenData );
+		resizeScreen( screenData, true );
 	}
 
 	// Add all the screen commands to the screenData api
@@ -366,7 +371,9 @@ function setupScreenRenderer( screenData ) {
 			
 			// Need to resize screen because we webgl2canvas uses different canvas dimensions
 			if( screenData.aspect !== ":" ) {
-				resizeScreen( screenData );
+
+				// Set init to true because initialization is not completed
+				resizeScreen( screenData, true );
 			}
 		}
 	}
@@ -620,7 +627,7 @@ function generateCommandWrapper( screenData, command ) {
  **************************************************************************************************/
 
 
-function resizeScreen( screenData ) {
+function resizeScreen( screenData, isInit ) {
 
 	// Skip if screen is not visible or should not be resized
 	if(
@@ -635,7 +642,7 @@ function resizeScreen( screenData ) {
 	let fromSize = screenData.previousOffsetSize
 
 	// Let the renderer adjust to the new size
-	if( screenData.renderMode === CANVAS2D_RENDER_MODE && fromSize !== null ) {
+	if( !isInit && screenData.renderMode === CANVAS2D_RENDER_MODE ) {
 		g_canvas2dRenderer.beforeResize( screenData, fromSize );
 	}
 
@@ -675,7 +682,8 @@ function resizeScreen( screenData ) {
 			screenData.height = newCssHeight;
 		} else {
 
-			// Extend mode -- only mode left is set setCanvasSize
+			// Extend mode -- only mode left
+			// TODO: Figure out what to put here if anything
 		}
 	}
 
@@ -685,11 +693,19 @@ function resizeScreen( screenData ) {
 		"height": screenData.canvas.offsetHeight
 	};
 
-	// Let the renderer adjust to the new size
-	if( screenData.renderMode === CANVAS2D_RENDER_MODE && fromSize !== null ) {
-		g_canvas2dRenderer.afterResize( screenData, fromSize, toSize );
-	}
+	if( !isInit ) {
 
+		// Let the renderer adjust to the new size
+		if( screenData.renderMode === CANVAS2D_RENDER_MODE ) {
+			g_canvas2dRenderer.afterResize( screenData, fromSize, toSize );
+		}
+
+		// Call resize functions for all modules that need special handling on resize
+		for( const fn of m_screenDataResizeFunctions ) {
+			fn( screenData );
+		}
+	}
+	
 	// Send the resize data to the client
 	if( screenData.resizeCallback ) {
 		if(

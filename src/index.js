@@ -22,11 +22,14 @@ import * as g_renderer from "./core/pens.js";
 // Feature Modules
 import * as g_colors from "./modules/colors.js";
 import * as g_graphics from "./modules/graphics.js";
+import * as g_pens from "./core/pens.js";
+
+
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
 
-// Create the pi object with _ (internal API for plugins) and util namespaces
+// Create the main api for all external commands later assinged to globals pi or $
 const api = {
 	"version": VERSION
 };

@@ -52,6 +52,10 @@ export function init( api, internalApi ) {
 		screenData.api.setPen( PEN_PIXEL );
 	} );
 
+	g_screenManager.addScreenResizeFunction( ( screenData ) => {
+		buildPenFn( screenData );
+	} );
+
 	// Add api for non "hot" path commands
 	api.setPen = ( pen, size ) => {
 		const screenData = g_screenManager.activeScreenData;

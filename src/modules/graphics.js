@@ -31,7 +31,8 @@ export function init( api, internalApi ) {
 // that handle input parsing/validation, then call optimized internal drawing routines. By closing
 // over specific, already-optimized functions (like penFn), it provides highly performant, 
 // monomorphic call sites in hot loops. Note that this gets from buildPenFn when a pen or blend
-// changes or when screen the screen resizes. Also gets called when inits but just to setup errors.
+// changes or when screen the screen resizes. Also gets called when inits but just to setup 
+// pre-screen calls with error returns.
 function buildGraphicsApi() {
 	const s_screenData = g_screenManager.activeScreenData;
 
