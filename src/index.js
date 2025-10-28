@@ -11,7 +11,7 @@
 "use strict";
 
 // Core Modules
-import * as commands from "./core/commands.js";
+import * as settings from "./core/settings.js";
 import * as screenManager from "./core/screen-manager.js";
 import * as events from "./core/events.js";
 import * as plugins from "./core/plugins.js";
@@ -33,7 +33,7 @@ const api = {
 
 // Store modules in object so that we can pass them into other modules and avoid circular references
 const mods = {
-	commands, screenManager, events, plugins, webglRenderer, canvas2dRenderer, pens, colors,
+	settings, screenManager, events, plugins, webglRenderer, canvas2dRenderer, pens, colors,
 	graphics
 };
 

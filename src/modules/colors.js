@@ -9,9 +9,9 @@
 
 "use strict";
 
-import * as g_commands from "../core/commands";
-import * as g_utils from "../core/utils";
-import * as g_screenManager from "../core/screen-manager";
+let g_settings;
+let g_utils;
+let g_screenManager;
 
 let m_defaultPal = [];
 let m_defaultPalMap = new Map();
@@ -24,7 +24,11 @@ let m_defaultColor = -1;
 
 
 // Initialize color defaults
-export function init() {
+export function init( api, mods ) {
+
+	g_settings = mods.settings;
+	g_utils = mods.utils;
+	g_screenManager = mods.screenManager;
 
 	// Default 256-color palette (CGA + extended colors) - raw hex strings
 	const defaultPaletteHex = [
@@ -72,8 +76,32 @@ export function init() {
 	g_screenManager.addScreenDataItemGetter( "palMap", () => m_defaultPalMap );
 
 	// Add external API commands
-	g_commands.addCommand( "setDefaultPal", setDefaultPal, [ "pal" ] );
-	g_commands.addCommand( "setDefaultColor", setDefaultColor, [ "color" ] );
+	addApiCommands( api );
+}
+
+
+/***************************************************************************************************
+ * External API Commands
+ **************************************************************************************************/
+
+function addApiCommands( api ) {
+
+	// Add global api commands
+	api.setDefaultPal = ( pal ) => setDefaultPal( g_utils.parseOptions( [ pal ], [ "pal" ] ) );
+	api.setDefaultColor = ( color ) => setDefaultColor(
+		g_utils.parseOptions( [ color ], [ "color" ] )
+	);
+	
+
+	// Add screen commands
+	g_screenManager.addScreenInitFunction( ( screenData ) => {
+		screenData.api.setColor = ( color, isAddToPalette ) => {
+			setColor( screenData, g_utils.parseOptions(
+				[ color, isAddToPalette ], [ "color", "isAddToPalette" ]
+			) );
+		}
+	} );
+
 	g_screenManager.addCommand( "setColor", setColor, [ "color", "isAddToPalette" ] );
 	g_screenManager.addCommand( "getPal", getPal, [] );
 	g_screenManager.addCommand( "setPal", setPal, [ "pal" ] );
@@ -82,13 +110,6 @@ export function init() {
 	g_screenManager.addCommand( "setContainerBgColor", setContainerBgColor, [ "color" ] );
 	g_screenManager.addCommand( "setPalColor", setPalColor, [ "index", "color" ] );
 }
-
-export { findColorIndexByColorValue, getColorValueByRawInput };
-
-
-/***************************************************************************************************
- * External API Commands
- **************************************************************************************************/
 
 // TODO: Add getColor command to get the active screen color
 
@@ -404,7 +425,7 @@ function setPalColor( screenData, options ) {
  **************************************************************************************************/
 
 
-function getColorValueByRawInput( screenData, rawInput ) {
+export function getColorValueByRawInput( screenData, rawInput ) {
 	let colorValue;
 
 	// If it is an integer than get from pal array
@@ -423,7 +444,7 @@ function getColorValueByRawInput( screenData, rawInput ) {
 
 
 // Finds a color index without adding it to palette
-function findColorIndexByColorValue( screenData, color, tolerance = 1 ) {
+export function findColorIndexByColorValue( screenData, color, tolerance = 1 ) {
 
 	// First check by key - fastest lookup
 	if( screenData.palMap.has( color.key ) ) {

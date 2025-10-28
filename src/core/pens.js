@@ -33,13 +33,19 @@ let g_graphics;
 
 
 // Initialize the pens
-export function init( api, mods ) {
+export async function init( api, mods ) {
 
 	// Setup references to global modules
 	g_screenManager = mods.screenManager;
 	g_utils = mods.utils;
 	g_graphics = mods.graphics;
 	g_settings = mods.settings;
+
+	addScreenDataItems();
+	addApiCommands( api );
+}
+
+function addScreenDataItems() {
 
 	// Add Render Screen Data
 	g_screenManager.addScreenDataItem( "blends", {
@@ -58,6 +64,9 @@ export function init( api, mods ) {
 	g_screenManager.addScreenResizeFunction( ( screenData ) => {
 		buildPenFn( screenData );
 	} );
+}
+
+function addApiCommands( api ) {
 
 	// Add api for non "hot" path commands
 	api.setPen = ( pen, size ) => {

@@ -126,12 +126,6 @@ export function afterResize( screenData, fromSize, toSize ) {
 }
 
 
-export function blendModeChanged( screenData, mode ) {
-
-	// TODO: implement if necessary
-}
-
-
 /***************************************************************************************************
  * Batch Operations
  **************************************************************************************************/

@@ -43,6 +43,11 @@ export function init( api, mods ) {
 		m_isDocumentReady = true;
 	}
 
+	addApiCommands( api );
+}
+
+function addApiCommands( api ) {
+
 	// Setup External API commands
 	api.ready = ( callback ) => {
 		if( g_utils.isObjectLiteral( ready ) ) {

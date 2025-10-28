@@ -8,8 +8,8 @@
 
 "use strict";
 
-import * as g_utils from "./utils";
-import * as g_screenManager from "./screen-manager";
+let g_utils;
+let g_screenManager;
 
 // Import clear functions from input modules (TODO: Re-enable when input modules are reimplemented)
 // import { clearKeyboardEvents } from "../modules/keyboard";
@@ -49,13 +49,29 @@ function clearGamepadEvents() {
  **************************************************************************************************/
 
 
-export function init() {
+export function init( api, mods ) {
+
+	g_screenManager = mods.screenManager;
+	g_utils = mods.utils;
+
+	addApiCommands( api );
+}
+
+function addApiCommands( api ) {
 
 	// Register clearEvents command
 	// Screen is optional since keyboard and gamepad don't require a screen
-	g_screenManager.addCommand( "clearEvents", clearEvents, [ "type" ], true );
+	api.clearEvents = ( type ) => {
+		clearEvents(
+			g_screenManager.activeScreenData, g_utils.parseOptions( [ type ], [ "type" ] )
+		);
+	};
+	g_screenManager.addScreenInitFunction( ( screenData ) => {
+		screenData.api.clearEvents = ( type ) => {
+			clearEvents( screenData, g_utils.parseOptions( [ type ], [ "type" ] ) );
+		}
+	} );
 }
-
 
 /***************************************************************************************************
  * External API Commands
