@@ -56,3 +56,10 @@ function pset( screenData, options ) {
 	// Use the renderer's drawPixelDirect function
 	screenData.renderer.drawPixelDirect( screenData, x, y, color );
 }
+
+function line( x1, y1, x2, y2 ) {
+	
+	g_activeScreen.line( x1, y1, x2, y2 );
+
+	// Draw line code goes here...
+}

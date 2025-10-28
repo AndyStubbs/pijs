@@ -154,6 +154,100 @@ function setBlend( screenData, options ) {
 
 
 /***************************************************************************************************
- * Internal Functions
+ * Draw Functions
  **************************************************************************************************/
 
+
+export function drawPen( screenData, x, y, color ) {
+	if( screenData.penData.pen === PEN_SQUARE ) {
+		drawPenSquare( screenData, x, y, color );
+	} else {
+		drawPenCircle( screenData, x, y, color );
+	}
+}
+
+
+export function drawPenSquare( screenData, x, y, color ) {
+
+	// Size must always be an odd integer
+	const size = Math.round( screenData.penData.size ) | 1;
+
+	// Compute the center offset of the square
+	const offset = Math.round( size / 2 ) - 1;
+
+	// Calculate bounds and clip to screen
+	const startX = g_utils.clamp( x - offset, 0, screenData.width );
+	const endX = g_utils.clamp( x - offset + size, 0, screenData.width );
+	const startY = g_utils.clamp( y - offset, 0, screenData.height );
+	const endY = g_utils.clamp( y - offset + size, 0, screenData.height );
+
+	// Draw the clipped square
+	for( let py = startY; py < endY; py++ ) {
+		for( let px = startX; px < endX; px++ ) {
+			screenData.blend( screenData, px, py, color );
+		}
+	}
+}
+
+
+export function drawPenCircle( screenData, x, y, color ) {
+
+	// Pen circle size must be an integer
+	const baseSize = Math.round( screenData.penData.size );
+
+	// Special case for pen size 2
+	if( baseSize === 2 ) {
+		if( x >= 0 && x < screenData.width && y >= 0 && y < screenData.height ) {
+			screenData.blend( screenData, x, y, color );
+		}
+		if( x + 1 >= 0 && x + 1 < screenData.width && y >= 0 && y < screenData.height ) {
+			screenData.blend( screenData, x + 1, y, color );
+		}
+		if( x - 1 >= 0 && x - 1 < screenData.width && y >= 0 && y < screenData.height ) {
+			screenData.blend( screenData, x - 1, y, color );
+		}
+		if( x >= 0 && x < screenData.width && y + 1 >= 0 && y + 1 < screenData.height ) {
+			screenData.blend( screenData, x, y + 1, color );
+		}
+		if( x >= 0 && x < screenData.width && y - 1 >= 0 && y - 1 < screenData.height ) {
+			screenData.blend( screenData, x, y - 1, color );
+		}
+		return;
+	}
+
+	// Double size to get the size of the outer box
+	const diameter = baseSize * 2;
+
+	// Half is size of radius
+	const half = baseSize;
+
+	// Calculate the center of circle
+	const offset = half - 1;
+
+	// Pre-calculate squared radius threshold
+	// We compare squared distance to (half - 0.5)^2
+	const radiusThresholdSq = ( half - 0.5 ) * ( half - 0.5 );
+
+	// Calculate bounds and clip to screen
+	const startX = utils.clamp( x - offset, 0, screenData.width );
+	const endX = utils.clamp( x - offset + diameter, 0, screenData.width );
+	const startY = utils.clamp( y - offset, 0, screenData.height );
+	const endY = utils.clamp( y - offset + diameter, 0, screenData.height );
+
+	// Loop through the clipped square boundary
+	for( let py = startY; py < endY; py++ ) {
+		const dy = py - y;
+
+		for( let px = startX; px < endX; px++ ) {
+			const dx = px - x;
+
+			// Compute the squared distance from the center
+			const distSq = dx * dx + dy * dy;
+
+			// Only draw the pixel if its squared distance is less than the threshold
+			if( distSq < radiusThresholdSq ) {
+				screenData.blend( screenData, px, py, color );
+			}
+		}
+	}
+}
