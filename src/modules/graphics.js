@@ -65,7 +65,7 @@ export function buildGraphicsApi( s_screenData ) {
 
 	// Set the preprocess method
 	let preprocessPset;
-	if( s_screenData.renderer.mode === g_screenManager.CANVAS2D_RENDER_MODE ) {
+	if( s_screenData.renderMode === g_screenManager.CANVAS2D_RENDER_MODE ) {
 		preprocessPset = s_screenData.renderer.getImageData;
 	} else {
 		preprocessPset = () => s_ensureBatchCapacity( s_screenData, s_pointBatch, s_pixelsPerPen );
@@ -102,7 +102,7 @@ export function buildGraphicsApi( s_screenData ) {
 	 **********************************************************/
 	
 	let preprocessLine;
-	if( s_screenData.renderer.mode === g_screenManager.CANVAS2D_RENDER_MODE ) {
+	if( s_screenData.renderMode === g_screenManager.CANVAS2D_RENDER_MODE ) {
 		preprocessLine = s_screenData.renderer.getImageData;
 	} else {
 		preprocessLine = ( screenData, x1, y1, x2, y2 ) => {

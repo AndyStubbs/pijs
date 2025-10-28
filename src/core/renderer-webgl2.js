@@ -9,9 +9,9 @@
 
 "use strict";
 
-import * as g_renderer from "./pens";
-import * as g_screenManager from "./screen-manager";
-import * as g_utils from "./utils";
+let g_pens;
+let g_screenManager;
+let g_utils;
 
 const MAX_BATCH_SIZE = 1_000_000;
 
@@ -105,7 +105,12 @@ let m_isWebgl2Capable = false;
 
 export { m_isWebgl2Capable as isWebgl2Capable };
 
-export function init() {
+export function init( api, mods ) {
+
+	g_pens = mods.pens;
+	g_screenManager = mods.screenManager;
+	g_utils = mods.utils;
+	
 	g_screenManager.addScreenDataItem( "contextLost", false );
 	g_screenManager.addScreenDataItem( "isRenderScheduled", false );
 	g_screenManager.addScreenDataItem( "isFirstRender", true );
@@ -446,7 +451,7 @@ export function blendModeChanged( screenData ) {
 	displayToCanvas( screenData );
 
 	const gl = screenData.gl;
-	if( screenData.blendData.blend === g_renderer.BLEND_REPLACE ) {
+	if( screenData.blendData.blend === g_pens.BLEND_REPLACE ) {
 		gl.disable( gl.BLEND );
 	} else {
 		

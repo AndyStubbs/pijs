@@ -9,15 +9,16 @@
 "use strict";
 
 // Pens
-const PEN_PIXEL = "pixel";
-const PEN_SQUARE = "square";
-const PEN_CIRCLE = "circle";
-const PENS = new Set( [ PEN_PIXEL, PEN_SQUARE, PEN_CIRCLE ] );
+export const PEN_PIXEL = "pixel";
+export const PEN_SQUARE = "square";
+export const PEN_CIRCLE = "circle";
+export const PENS = new Set( [ PEN_PIXEL, PEN_SQUARE, PEN_CIRCLE ] );
 
 // Blends
-const BLEND_REPLACE = "replace";
-const BLEND_ALPHA = "alpha";
-const BLENDS = new Set( [ BLEND_REPLACE, BLEND_ALPHA ] );
+export const BLEND_REPLACE = "replace";
+export const BLEND_ALPHA = "alpha";
+export const BLENDS = new Set( [ BLEND_REPLACE, BLEND_ALPHA ] );
+
 const m_noiseColor = { "r": 0, "g": 0, "b": 0, "a": 0 };
 
 // Global Modules
@@ -55,11 +56,6 @@ function addScreenDataItems() {
 		"pen": PEN_PIXEL, "penFn": null, "size": 1, "pixelsPerPen": 1
 	} );
 
-	// When a screen gets initialized set the pen to pixel
-	g_screenManager.addScreenInitFunction( ( screenData ) => {
-		screenData.api.setPen( PEN_PIXEL );
-	} );
-
 	// Need to rebuild Pen Fn on screen resize
 	g_screenManager.addScreenResizeFunction( ( screenData ) => {
 		buildPenFn( screenData );
@@ -81,8 +77,18 @@ function addApiCommands( api ) {
 	};
 
 	// Add settings to set command
-	g_settings.addSettings( "pen", api.setPen, true );
-	g_settings.addSettings( "blend", api.setBlend, true );
+	g_settings.addSetting( "pen", api.setPen, true );
+	g_settings.addSetting( "blend", api.setBlend, true );
+
+	// Add screen commands when screen is created
+	g_screenManager.addScreenInitFunction( ( screenData ) => {
+
+		// First assign the setPen functions
+		screenData.api.setPen = ( pen, size ) => {
+			const options = g_utils.parseOptions( [ pen, size ], [ "pen", "size" ] );
+			return setPen( screenData, options );
+		};
+	} );
 }
 
 // Function to dynamically build the optimal penFn and blendFn for the current screen, renderer,
@@ -108,7 +114,7 @@ function buildPenFn( s_screenData ) {
 	let s_blendFn;
 	if(
 		s_screenData.blends.noise === null && (
-			s_screenData.renderer.mode === g_screenManager.WEBGL2_RENDER_MODE ||
+			s_screenData.renderMode === g_screenManager.WEBGL2_RENDER_MODE ||
 			s_screenData.blends.blend === BLEND_REPLACE
 		)
 	) {
@@ -124,7 +130,7 @@ function buildPenFn( s_screenData ) {
 	
 	// BLEND_ALPHA without noise
 	} else if( s_screenData.blends.blend === BLEND_ALPHA && s_screenData.blends.noise === null ) {
-		if( s_screenData.renderer.mode === g_screenManager.WEBGL2_RENDER_MODE ) {
+		if( s_screenData.renderMode === g_screenManager.WEBGL2_RENDER_MODE ) {
 			s_blendFn = s_drawPixelunsafe;
 		} else {
 			s_blendFn = s_blendPixelUnsafe;
@@ -133,7 +139,7 @@ function buildPenFn( s_screenData ) {
 	// BLEND_ALPHA with noise
 	} else {
 
-		if( s_screenData.renderer.mode === g_screenManager.WEBGL2_RENDER_MODE ) {
+		if( s_screenData.renderMode === g_screenManager.WEBGL2_RENDER_MODE ) {
 			s_blendFn = ( screenData, x, y, color ) => {
 				s_drawPixelunsafe(screenData, x, y, getColorNoise( s_noise, color, s_clamp ) );
 			};
@@ -226,8 +232,8 @@ function buildPenFn( s_screenData ) {
 
 // Set Pen Command
 function setPen( screenData, options ) {
-	const pen = options.pen;
-	let size = g_utils.getInt( size, 1 );
+	let pen = options.pen;
+	let size = g_utils.getInt( options.size, 1 );
 
 	if( !PENS.has( pen ) ) {
 		const error = new TypeError(
@@ -265,7 +271,7 @@ function setPen( screenData, options ) {
 		screenData.pens.pixelsPerPen = 1;
 	}
 
-	buildPenFn();
+	buildPenFn( screenData );
 }
 
 // Set blend mode
@@ -306,10 +312,10 @@ function setBlend( screenData, options ) {
 	screenData.blendData.noise = noise;
 
 	// Reset the pen function so it can get the new blend function
-	buildPenFn();
+	buildPenFn( screenData );
 
 	// Notify renderer that blend mode has changed for webgl2 renderer
-	if( screenData.renderer.mode === g_screenManager.WEBGL2_RENDER_MODE ) {
+	if( screenData.renderMode === g_screenManager.WEBGL2_RENDER_MODE ) {
 		screenData.renderer.blendModeChanged( screenData );
 	}
 }

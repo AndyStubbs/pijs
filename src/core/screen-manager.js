@@ -14,6 +14,7 @@ let g_utils;
 let g_webgl2Renderer;
 let g_canvas2dRenderer;
 let g_settings;
+let g_pens;
 
 const WEBGL2_RENDER_MODE = "webgl2";
 const CANVAS2D_RENDER_MODE = "canvas2d";
@@ -45,9 +46,10 @@ export function init( api, mods ) {
 
 	// Set Global Module References
 	g_utils = mods.utils;
-	g_webgl2Renderer = mods.g_webgl2Renderer;
+	g_webgl2Renderer = mods.webgl2Renderer;
 	g_canvas2dRenderer = mods.canvas2dRenderer;
 	g_settings = mods.settings;
+	g_pens = mods.pens;
 
 	// TODO: Add matchMedia to watch for DPR changes - if a user moves a browser to a new monitor
 	// it could cause the canvas image to become blury, even if the actual CSS size of the canvas.
@@ -328,6 +330,11 @@ function screen( options ) {
 
 	// Setup the initial font for the screen
 	//screenData.api.setFont( screenData.font.id );
+
+	// Now call it to set the default pen
+	// This will also trigger buildPenFn and buildGraphicsApi that are needed when a screen
+	// is created.
+	screenData.api.setPen( g_pens.PEN_PIXEL );
 
 	return screenData.api;
 }

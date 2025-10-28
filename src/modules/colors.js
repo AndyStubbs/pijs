@@ -99,8 +99,8 @@ function addApiCommands( api ) {
 	};
 
 	// Add settings to set command
-	g_settings.addSettings( "setDefaultPal", api.setDefaultPal, false );
-	g_settings.addSettings( "setDefaultColor", api.setDefaultColor, false );
+	g_settings.addSetting( "setDefaultPal", api.setDefaultPal, false );
+	g_settings.addSetting( "setDefaultColor", api.setDefaultColor, false );
 
 	// SCREEN COMMANDS
 
@@ -155,11 +155,11 @@ function addApiCommands( api ) {
 	};
 
 	// Add settings to set command
-	g_settings.addSettings( "setColor", api.setColor, true );
-	g_settings.addSettings( "setPal", api.setPal, true );
-	g_settings.addSettings( "setBgColor", api.setBgColor, true );
-	g_settings.addSettings( "setContainerBgColor", api.setContainerBgColor, true );
-	g_settings.addSettings( "setPalColor", api.setPalColor, true );
+	g_settings.addSetting( "setColor", api.setColor, true );
+	g_settings.addSetting( "setPal", api.setPal, true );
+	g_settings.addSetting( "setBgColor", api.setBgColor, true );
+	g_settings.addSetting( "setContainerBgColor", api.setContainerBgColor, true );
+	g_settings.addSetting( "setPalColor", api.setPalColor, true );
 
 	// Add screen commands to screens
 	g_screenManager.addScreenInitFunction( ( screenData ) => {

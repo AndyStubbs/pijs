@@ -15,9 +15,10 @@ import * as settings from "./core/settings.js";
 import * as screenManager from "./core/screen-manager.js";
 import * as events from "./core/events.js";
 import * as plugins from "./core/plugins.js";
-import * as webglRenderer from "./core/renderer-webgl2.js";
+import * as webgl2Renderer from "./core/renderer-webgl2.js";
 import * as canvas2dRenderer from "./core/renderer-canvas2d.js";
 import * as pens from "./core/pens.js";
+import * as utils from "./core/utils";
 
 // Feature Modules
 import * as colors from "./modules/colors.js";
@@ -33,13 +34,15 @@ const api = {
 
 // Store modules in object so that we can pass them into other modules and avoid circular references
 const mods = {
-	settings, screenManager, events, plugins, webglRenderer, canvas2dRenderer, pens, colors,
-	graphics
+	settings, screenManager, events, plugins, webgl2Renderer, canvas2dRenderer, pens, colors,
+	graphics, utils
 };
 
 // Initialize the core modules
 for( const mod in mods ) {
-	mods[ mod ].init( api, mods );
+	if( mods[ mod ].init ) {
+		mods[ mod ].init( api, mods );
+	}
 }
 
 // Set window.pi for browser environments
