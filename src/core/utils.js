@@ -406,6 +406,16 @@ function createColor( r, g, b, a, hex ) {
 	return color;
 }
 
+export function setColor( colorSrc, colorDest ) {
+	colorDest.key = colorSrc.key;
+	colorDest.r = colorSrc.r;
+	colorDest.g = colorSrc.g;
+	colorDest.b = colorSrc.b;
+	colorDest.a = colorSrc.a;
+	colorDest.rgba = colorSrc.rgba;
+	colorDest.hex = colorSrc.hex;
+}
+
 /**
  * Convert hex color to color object
  * 

@@ -315,7 +315,7 @@ function setColor( screenData, options ) {
 	}
 
 	// Update the color values
-	screenData.color = colorValue;
+	g_utils.setColor( colorValue, screenData.color );
 
 	return true;
 }
