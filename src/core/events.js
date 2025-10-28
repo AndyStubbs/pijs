@@ -62,13 +62,17 @@ function addApiCommands( api ) {
 	// Register clearEvents command
 	// Screen is optional since keyboard and gamepad don't require a screen
 	api.clearEvents = ( type ) => {
-		clearEvents(
-			g_screenManager.activeScreenData, g_utils.parseOptions( [ type ], [ "type" ] )
-		);
+		const options = g_utils.parseOptions( [ type ], [ "type" ] );
+		return clearEvents( g_screenManager.activeScreenData, options );
 	};
+
+	// Screen API Commands
 	g_screenManager.addScreenInitFunction( ( screenData ) => {
+
+		// clearEvents
 		screenData.api.clearEvents = ( type ) => {
-			clearEvents( screenData, g_utils.parseOptions( [ type ], [ "type" ] ) );
+			const options = g_utils.parseOptions( [ type ], [ "type" ] );
+			clearEvents( screenData, options );
 		}
 	} );
 }

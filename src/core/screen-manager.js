@@ -144,6 +144,18 @@ export function addScreenCleanupFunction( fn ) {
 	m_screenDataCleanupFunctions.push( fn );
 }
 
+export function getActiveScreen( fnName ) {
+	if( m_activeScreenData === null ) {
+		const error = new Error(
+			fnName + ": You are attempting to call a method that requires a screen but there " +
+			"there is currently no active screen. Call $.screen() before calling any graphics " +
+			"commands."
+		);
+		error.code = "NO_ACTIVE_SCREEN";
+		throw error;
+	}
+	return m_activeScreenData;
+}
 
 /***************************************************************************************************
  * Screen Command

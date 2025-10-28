@@ -86,8 +86,6 @@ export function init( api, mods ) {
 
 function addApiCommands( api ) {
 
-	const screenData = g_screenManager.activeScreenData;
-
 	// Add global api commands
 	api.setDefaultPal = ( pal ) => {
 		const options = g_utils.parseOptions( [ pal ], [ "pal" ] ); 
@@ -104,6 +102,7 @@ function addApiCommands( api ) {
 
 	// setColor
 	api.setColor = ( color, isAddToPalette ) => {
+		const screenData = g_screenManager.getActiveScreen( "setColor" );
 		const options = g_utils.parseOptions(
 			[ color, isAddToPalette ], [ "color", "isAddToPalette" ]
 		);
@@ -111,34 +110,42 @@ function addApiCommands( api ) {
 	};
 
 	// getPal
-	api.getPal = () => getPal( screenData );
+	api.getPal = () => {
+		const screenData = g_screenManager.getActiveScreen( "getPal" );
+		return getPal( screenData );
+	}
 
 	// setPal
 	api.setPal = ( pal ) => {
+		const screenData = g_screenManager.getActiveScreen( "setPal" );
 		const options = g_utils.parseOptions( [ pal ], [ "pal" ] );
 		setPal( screenData, options );
 	};
 
 	// getPalIndex
 	api.getPalIndex = ( color, tolerance ) => {
+		const screenData = g_screenManager.getActiveScreen( "getPalIndex" );
 		const options = g_utils.parseOptions( [ color, tolerance ], [ "color", "tolerance" ] );
 		return getPalIndex( screenData, options );
 	};
 
 	// setBgColor
 	api.setBgColor = ( color ) => {
+		const screenData = g_screenManager.getActiveScreen( "setBgColor" );
 		const options = g_utils.parseOptions( [ color ], [ "color" ] );
 		return setBgColor( screenData, options );
 	};
 
 	// setContainerBgColor
 	api.setContainerBgColor = ( color ) => {
+		const screenData = g_screenManager.getActiveScreen( "setContainerBgColor" );
 		const options = g_utils.parseOptions( [ color ], [ "color" ] );
 		return setContainerBgColor( screenData, options );
 	};
 
 	// setPalColor
 	api.setPalColor = ( index, color ) => {
+		const screenData = g_screenManager.getActiveScreen( "setPalColor" );
 		const options = g_utils.parseOptions( [ index, color ], [ "index", "color" ] );
 		return setPalColor( screenData, options );
 	};
