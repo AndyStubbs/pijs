@@ -127,10 +127,8 @@ function initializePlugin( pluginInfo ) {
 	// Create plugin API
 	const pluginApi = {
 		"addCommand": g_commands.addCommand,
-		"addScreenCommand": g_screenManager.addCommand,
 		"addScreenDataItem": g_screenManager.addScreenDataItem,
 		"addScreenDataItemGetter": g_screenManager.addScreenDataItemGetter,
-		"addScreenInternalCommands": g_screenManager.addScreenInternalCommands,
 		"addScreenInitFunction": g_screenManager.addScreenInitFunction,
 		"addScreenCleanupFunction": g_screenManager.addScreenCleanupFunction,
 		"utils": g_utils

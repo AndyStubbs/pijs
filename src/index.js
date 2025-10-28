@@ -11,20 +11,17 @@
 "use strict";
 
 // Core Modules
-import * as g_commands from "./core/commands.js";
-import * as g_screenManager from "./core/screen-manager.js";
-import * as g_events from "./core/events.js";
-import * as g_plugins from "./core/plugins.js";
-import * as g_webglRenderer from "./core/renderer-webgl2.js";
-import * as g_canvas2dRenderer from "./core/renderer-canvas2d.js";
-import * as g_renderer from "./core/pens.js";
+import * as commands from "./core/commands.js";
+import * as screenManager from "./core/screen-manager.js";
+import * as events from "./core/events.js";
+import * as plugins from "./core/plugins.js";
+import * as webglRenderer from "./core/renderer-webgl2.js";
+import * as canvas2dRenderer from "./core/renderer-canvas2d.js";
+import * as pens from "./core/pens.js";
 
 // Feature Modules
-import * as g_colors from "./modules/colors.js";
-import * as g_graphics from "./modules/graphics.js";
-import * as g_pens from "./core/pens.js";
-
-
+import * as colors from "./modules/colors.js";
+import * as graphics from "./modules/graphics.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -34,21 +31,16 @@ const api = {
 	"version": VERSION
 };
 
+// Store modules in object so that we can pass them into other modules and avoid circular references
+const mods = {
+	commands, screenManager, events, plugins, webglRenderer, canvas2dRenderer, pens, colors,
+	graphics
+};
+
 // Initialize the core modules
-g_commands.init( api, g_screenManager );
-g_screenManager.init();
-g_webglRenderer.init();
-g_canvas2dRenderer.init();
-g_events.init();
-g_plugins.init();
-g_renderer.init();
-
-// Initialize feature modules
-g_colors.init();
-g_graphics.init();
-
-// Append all the commands to the api
-g_commands.processApi();
+for( const mod in mods ) {
+	mods[ mod ].init( api, mods );
+}
 
 // Set window.pi for browser environments
 if( typeof window !== "undefined" ) {

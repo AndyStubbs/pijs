@@ -8,10 +8,6 @@
 
 "use strict";
 
-import * as g_screenManager from "./screen-manager";
-import * as g_utils from "./utils";
-
-
 // Pens
 const PEN_PIXEL = "pixel";
 const PEN_SQUARE = "square";
@@ -24,8 +20,11 @@ const BLEND_ALPHA = "alpha";
 const BLENDS = new Set( [ BLEND_REPLACE, BLEND_ALPHA ] );
 const m_noiseColor = { "r": 0, "g": 0, "b": 0, "a": 0 };
 
-// Internal api
-let m_internalApi = null;
+// Global Modules
+let g_screenManager;
+let g_settings;
+let g_utils;
+let g_graphics;
 
 
 /***************************************************************************************************
@@ -34,7 +33,13 @@ let m_internalApi = null;
 
 
 // Initialize the pens
-export function init( api, internalApi ) {
+export function init( api, mods ) {
+
+	// Setup references to global modules
+	g_screenManager = mods.screenManager;
+	g_utils = mods.utils;
+	g_graphics = mods.graphics;
+	g_settings = mods.settings;
 
 	// Add Render Screen Data
 	g_screenManager.addScreenDataItem( "blends", {
@@ -44,14 +49,12 @@ export function init( api, internalApi ) {
 		"pen": PEN_PIXEL, "penFn": null, "size": 1, "pixelsPerPen": 1
 	} );
 
-	// Add reference to internal api
-	m_internalApi = internalApi;
-
 	// When a screen gets initialized set the pen to pixel
 	g_screenManager.addScreenInitFunction( ( screenData ) => {
 		screenData.api.setPen( PEN_PIXEL );
 	} );
 
+	// Need to rebuild Pen Fn on screen resize
 	g_screenManager.addScreenResizeFunction( ( screenData ) => {
 		buildPenFn( screenData );
 	} );
@@ -73,6 +76,10 @@ export function init( api, internalApi ) {
 			setBlend( screenData, { blend, noise } );
 		}
 	};
+
+	// Add settings to set command
+	g_settings.addSettings( "pen", api.setPen, true );
+	g_settings.addSettings( "blend", api.setBlend, true );
 }
 
 // Function to dynamically build the optimal penFn and blendFn for the current screen, renderer,
@@ -82,13 +89,13 @@ export function init( api, internalApi ) {
 // Note that this gets called anytime a blend or pen get changed on the active screen.
 // Also this gets called when the screen resizes in order to reset the s_width and s_height 
 // variables.
-function buildPenFn( screenData ) {
+function buildPenFn( s_screenData ) {
 
-	const s_drawPixelunsafe = screenData.renderer.drawPixelUnsafe;
-	const s_blendPixelUnsafe = screenData.renderer.blendPixelUnsafe;
-	const s_width = screenData.width;
-	const s_height = screenData.height;
-	const s_noise = screenData.blends.noise;
+	const s_drawPixelunsafe = s_screenData.renderer.drawPixelUnsafe;
+	const s_blendPixelUnsafe = s_screenData.renderer.blendPixelUnsafe;
+	const s_width = s_screenData.width;
+	const s_height = s_screenData.height;
+	const s_noise = s_screenData.blends.noise;
 	const s_clamp = g_utils.clamp;
 
 	// Special fast path for blending we can skip the blend function and just call drawPixelUnsafe
@@ -97,15 +104,15 @@ function buildPenFn( screenData ) {
 	// Pens should handle bounds checking so we can call drawPixelUnsafe instead of drawPixelDirect
 	let s_blendFn;
 	if(
-		screenData.blends.noise === null && (
-			screenData.renderer.mode === g_screenManager.WEBGL2_RENDER_MODE ||
-			screenData.blends.blend === BLEND_REPLACE
+		s_screenData.blends.noise === null && (
+			s_screenData.renderer.mode === g_screenManager.WEBGL2_RENDER_MODE ||
+			s_screenData.blends.blend === BLEND_REPLACE
 		)
 	) {
 		s_blendFn = s_drawPixelunsafe;
 
 	// BLEND_REPLACE with noise
-	} else if( screenData.blends.blend === BLEND_REPLACE ) {
+	} else if( s_screenData.blends.blend === BLEND_REPLACE ) {
 
 		// Draw pixel direct with some random noise data
 		s_blendFn = ( screenData, x, y, color ) => {
@@ -113,8 +120,8 @@ function buildPenFn( screenData ) {
 		};
 	
 	// BLEND_ALPHA without noise
-	} else if( screenData.blends.blend === BLEND_ALPHA && screenData.blends.noise === null ) {
-		if( screenData.renderer.mode === g_screenManager.WEBGL2_RENDER_MODE ) {
+	} else if( s_screenData.blends.blend === BLEND_ALPHA && s_screenData.blends.noise === null ) {
+		if( s_screenData.renderer.mode === g_screenManager.WEBGL2_RENDER_MODE ) {
 			s_blendFn = s_drawPixelunsafe;
 		} else {
 			s_blendFn = s_blendPixelUnsafe;
@@ -123,7 +130,7 @@ function buildPenFn( screenData ) {
 	// BLEND_ALPHA with noise
 	} else {
 
-		if( screenData.renderer.mode === g_screenManager.WEBGL2_RENDER_MODE ) {
+		if( s_screenData.renderer.mode === g_screenManager.WEBGL2_RENDER_MODE ) {
 			s_blendFn = ( screenData, x, y, color ) => {
 				s_drawPixelunsafe(screenData, x, y, getColorNoise( s_noise, color, s_clamp ) );
 			};
@@ -135,10 +142,10 @@ function buildPenFn( screenData ) {
 	}
 
 	// PEN_PIXEL
-	if( screenData.pens.pen === PEN_PIXEL ) {
+	if( s_screenData.pens.pen === PEN_PIXEL ) {
 
 		// For a single pixel check the bounds and call blendFn
-		screenData.pens.penFn = ( screenData, x, y, color ) => {
+		s_screenData.pens.penFn = ( screenData, x, y, color ) => {
 			if( x < 0 || x >= s_width || y < 0 || y >= s_height ) {
 				return;
 			}
@@ -146,15 +153,15 @@ function buildPenFn( screenData ) {
 		};
 	
 	// PEN_SQUARE
-	} else if( screenData.pens.pen === PEN_SQUARE ) {
+	} else if( s_screenData.pens.pen === PEN_SQUARE ) {
 
 		// Size must always be an odd integer
-		const squareSize = screenData.penData.size | 1;
+		const squareSize = s_screenData.penData.size | 1;
 
 		// Compute the center offset of the square
 		const offset = Math.round( squareSize / 2 ) - 1;
 
-		screenData.pens.penFn = ( screenData, x, y, color ) => {
+		s_screenData.pens.penFn = ( screenData, x, y, color ) => {
 
 			// Calculate bounds and clip to screen
 			const x1 = s_clamp( x - offset, 0, s_width );
@@ -166,20 +173,20 @@ function buildPenFn( screenData ) {
 		};
 	
 	// PEN_CIRCLE
-	} else if( screenData.pens.pen === PEN_CIRCLE ) {
+	} else if( s_screenData.pens.pen === PEN_CIRCLE ) {
 
 		// Special case for size two draw a 5 pixel cross
-		if( screenData.penData.size === 2 ) {
-			screenData.pens.penFn = ( screenData, x, y, color ) => {
+		if( s_screenData.penData.size === 2 ) {
+			s_screenData.pens.penFn = ( screenData, x, y, color ) => {
 				drawPenCross( screenData, x, y, color, s_width, s_height, s_blendFn );
 			};
 		} else {
 
 			// Double size to get the size of the outer box
-			const diameter = screenData.penData.size * 2;
+			const diameter = s_screenData.penData.size * 2;
 
 			// Half is size of radius
-			const half = screenData.penData.size;
+			const half = s_screenData.penData.size;
 
 			// Calculate the center of circle
 			const offset = half - 1;
@@ -188,7 +195,7 @@ function buildPenFn( screenData ) {
 			// We compare squared distance to (half - 0.5)^2
 			const radiusThresholdSq = ( half - 0.5 ) * ( half - 0.5 );
 
-			screenData.pens.penFn = ( screenData, x, y, color ) => {
+			s_screenData.pens.penFn = ( screenData, x, y, color ) => {
 			
 				// Calculate bounds and clip to screen
 				const x1 = s_clamp( x - offset, 0, s_width );
@@ -205,8 +212,9 @@ function buildPenFn( screenData ) {
 	}
 	
 	// Rebuild graphis api to get the new pen functions
-	m_internalApi.buildGrapicsApi();
+	g_graphics.buildGraphicsApi( s_screenData );
 }
+
 
 /***************************************************************************************************
  * External API Commands

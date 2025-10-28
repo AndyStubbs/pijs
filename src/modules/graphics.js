@@ -8,9 +8,9 @@
 
 "use strict";
 
-import * as g_screenManager from "../core/screen-manager";
-import * as g_utils from "../core/utils";
-
+// Modules
+let g_screenManager;
+let g_utils;
 
 let m_api = null;
 
@@ -20,10 +20,11 @@ let m_api = null;
 
 
 // Initialize graphics module - only gets called on page load
-export function init( api, internalApi ) {
+export function init( api, mods ) {
 	m_api = api;
-	internalApi.buildGraphicsApi = buildGraphicsApi;
-	buildGraphicsApi();
+	g_screenManager = mods.screenManager;
+	g_utils = mods.utils;
+	buildGraphicsApi( null );
 }
 
 // Function to dynamically build the external API drawing commands (e.g., pset, line, etc...)
@@ -31,10 +32,9 @@ export function init( api, internalApi ) {
 // that handle input parsing/validation, then call optimized internal drawing routines. By closing
 // over specific, already-optimized functions (like penFn), it provides highly performant, 
 // monomorphic call sites in hot loops. Note that this gets from buildPenFn when a pen or blend
-// changes or when screen the screen resizes. Also gets called when inits but just to setup 
-// pre-screen calls with error returns.
-function buildGraphicsApi() {
-	const s_screenData = g_screenManager.activeScreenData;
+// changes or when screen the screen resizes or there is a new screen. Also gets called when on
+// init but just to setup pre-screen calls with error returns.
+export function buildGraphicsApi( s_screenData ) {
 
 	if( s_screenData === null ) {
 		const errFn = ( commandName ) => {
@@ -71,26 +71,27 @@ function buildGraphicsApi() {
 		preprocessPset = () => s_ensureBatchCapacity( s_screenData, s_pointBatch, s_pixelsPerPen );
 	}
 
-	const psetFn = ( a1, a2 ) => {
-		let x, y;
+	const psetFn = ( x, y ) => {
+
+		let px, py;
 
 		// Parse object if needed
-		if( s_isObjectLiteral( a1 ) ) {
-			x = s_getInt( a1.x1, null );
-			y = s_getInt( a1.y1, null );
+		if( s_isObjectLiteral( x ) ) {
+			px = s_getInt( x.x1, null );
+			py = s_getInt( x.y1, null );
 		} else {
-			x = s_getInt( a1, null );
-			y = s_getInt( a2, null );
+			px = s_getInt( x, null );
+			py = s_getInt( y, null );
 		}
 
 		// Make sure x and y are integers
-		if( x === null || y === null ) {
+		if( px === null || py === null ) {
 			const error = new TypeError( "pset: Parameters x and y must be integers." );
 			error.code = "INVALID_PARAMETER";
 			throw error;
 		}
 		preprocessPset( s_screenData );
-		s_penFn( s_screenData, x, y, s_color );
+		s_penFn( s_screenData, px, py, s_color );
 		s_setImageDirty( s_screenData );
 	};
 	m_api.pset = psetFn
@@ -114,30 +115,30 @@ function buildGraphicsApi() {
 		};
 	}
 	
-	const lineFn = ( a1, a2, a3, a4 ) => {
-		let x1, y1, x2, y2;
+	const lineFn = ( x1, y1, x2, y2 ) => {
+		let px1, py1, px2, py2;
 
-		if( s_isObjectLiteral( a1 ) ) {
-			x1 = s_getInt( a1.x1, null );
-			y1 = s_getInt( a1.y1, null );
-			x2 = s_getInt( a1.x2, null );
-			y2 = s_getInt( a1.y2, null );
+		if( s_isObjectLiteral( x1 ) ) {
+			px1 = s_getInt( x1.x1, null );
+			py1 = s_getInt( x1.y1, null );
+			px2 = s_getInt( x1.x2, null );
+			py2 = s_getInt( x1.y2, null );
 		} else {
-			x1 = s_getInt( a1, null );
-			y1 = s_getInt( a2, null );
-			x2 = s_getInt( a3, null );
-			y2 = s_getInt( a4, null );
+			px1 = s_getInt( x1, null );
+			py1 = s_getInt( y1, null );
+			px2 = s_getInt( x2, null );
+			py2 = s_getInt( y2, null );
 		}
 
 		// Make sure x and y are integers
-		if( x1 === null || y1 === null || x2 === null || y2 === null ) {
+		if( px1 === null || py1 === null || px2 === null || py2 === null ) {
 			const error = new TypeError( "line: Parameters x1, y1, x2, and y2 must be integers." );
 			error.code = "INVALID_COORDINATES";
 			throw error;
 		}
 
-		preprocessLine( s_screenData, x1, y1, x2, y2 );
-		line( s_screenData, x1, y1, x2, y2, s_color, s_penFn );
+		preprocessLine( s_screenData, px1, py1, px2, py2 );
+		line( s_screenData, px1, py1, px2, py2, s_color, s_penFn );
 		s_setImageDirty( s_screenData );
 	};
 	m_api.line = lineFn;

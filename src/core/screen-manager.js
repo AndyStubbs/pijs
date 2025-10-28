@@ -9,10 +9,10 @@
 
 "use strict";
 
-import * as g_commands from "./commands";
-import * as g_utils from "./utils";
-import * as g_webgl2Renderer from "./renderer-webgl2";
-import * as g_canvas2dRenderer from "./renderer-canvas2d";
+// Modules
+let g_utils;
+let g_webgl2Renderer;
+let g_canvas2dRenderer;
 
 const WEBGL2_RENDER_MODE = "webgl2";
 const CANVAS2D_RENDER_MODE = "canvas2d";
@@ -20,10 +20,8 @@ const MAX_CANVAS_DIMENSION = 16384;
 
 const SCREEN_API_PROTO = { "screen": true };
 const m_screens = {};
-const m_commandList = [];
 const m_screenDataItems = {};
 const m_screenDataItemGetters = [];
-const m_screenInternalCommands = [];
 const m_screenDataInitFunctions = [];
 const m_screenDataResizeFunctions = [];
 const m_screenDataCleanupFunctions = [];
@@ -42,7 +40,12 @@ const m_observedContainers = new Set();
 export { m_activeScreenData as activeScreenData };
 export { WEBGL2_RENDER_MODE, CANVAS2D_RENDER_MODE };
 
-export function init() {
+export function init( api, mods ) {
+
+	// Set Global Module References
+	g_utils = mods.utils;
+	g_webgl2Renderer = mods.g_webgl2Renderer;
+	g_canvas2dRenderer = mods.canvas2dRenderer;
 
 	// TODO: Add matchMedia to watch for DPR changes - if a user moves a browser to a new monitor
 	// it could cause the canvas image to become blury, even if the actual CSS size of the canvas.
@@ -72,44 +75,57 @@ export function init() {
 		}
 	} );
 
-	// Add global external API Commands
-	g_commands.addCommand( "screen", screen, [
-		"aspect", "container", "isOffscreen", "isNoStyles", "resizeCallback", "useCanvas2d"
-	] );
-	g_commands.addCommand( "setScreen", setScreen, [ "screen" ] );
-	g_commands.addCommand( "getScreen", getScreen, [ "screenId" ] );
-
-	// Add screen external API commands
-	addCommand( "removeScreen", removeScreen, [] );
-	addCommand( "width", width, [] );
-	addCommand( "height", height, [] );
-	addCommand( "canvas", canvas, [] );
+	addApiCommands( api );
 }
 
-export function addCommand( name, fn, parameterNames, screenOptional = false ) {
+function addApiCommands( api ) {
 
-	// Add the command to the command list
-	m_commandList.push( {
-		"name": name,
-		"fn": fn,
-		"parameterNames": parameterNames,
-		"screenOptional": screenOptional
+	// Add global API Commands
+	api.screen = ( aspect, container, isOffscreen, isNoStyles, resizeCallback, useCanvas2d ) => {
+		if( g_utils.isObjectLiteral( aspect ) ) {
+			return screen( options );
+		} else {
+			return screen(
+				{ aspect, container, isOffscreen, isNoStyles, resizeCallback, useCanvas2d }
+			);
+		}
+	};
+	api.setScreen = ( screen ) => {
+		if( g_utils.isObjectLiteral( screen ) ) {
+			return setScreen( screen );
+		} else {
+			return setScreen( { screen } );
+		}
+	};
+	api.getScreen = ( screenId ) => {
+		if( g_utils.isObjectLiteral( screenId ) ) {
+			getScreen( screenId );
+		} else {
+			getScreen( { screenId } );
+		}
+	};
+	api.removeScreen = ( screenId ) => {
+		if( g_utils.isObjectLiteral( screenId ) ) {
+			removeScreen( screenId );
+		} else {
+			removeScreen( { screenId } );
+		}
+	};
+	api.width = () => m_activeScreenData.width;
+	api.height = () => m_activeScreenData.height;
+	api.canvas = () => m_activeScreenData.canvas;
+
+	// Add screen API commands
+	addScreenInitFunction( ( screenData ) => {
+		screenData.api.removeScreen = ( screenId ) => api.removeScreen( screenData.id );
+		screenData.api.width = () => screenData.width;
+		screenData.api.height = () => screenData.height;
+		screenData.api.canvas = () => screenData.canvas;
 	} );
-
-	// Add the command to the global command list
-	g_commands.addCommand( name, fn, parameterNames, true, screenOptional );
-}
-
-export function sortScreenCommands() {
-	m_commandList.sort( ( a, b ) => a.name.localeCompare( b.name ) );
 }
 
 export function addScreenDataItem( name, val ) {
 	m_screenDataItems[ name ] = val;
-}
-
-export function addScreenInternalCommands( name, fn ) {
-	m_screenInternalCommands.push( { name, fn } );
 }
 
 export function addScreenDataItemGetter( name, fn ) {
@@ -170,11 +186,6 @@ function screen( options ) {
 	// Append dynamic screendata items
 	for( const itemGetter of m_screenDataItemGetters ) {
 		screenData[ itemGetter.name ] = structuredClone( itemGetter.fn() );
-	}
-
-	// Append internal screen commands to screen data
-	for( const cmd of m_screenInternalCommands ) {
-		screenData[ cmd.name ] = cmd.fn;
 	}
 
 	// Increment to the next screen id
@@ -273,11 +284,6 @@ function screen( options ) {
 	
 	if( !screenData.isOffscreen ) {
 		resizeScreen( screenData, true );
-	}
-
-	// Add all the screen commands to the screenData api
-	for( const command of m_commandList ) {
-		generateCommandWrapper( screenData, command );
 	}
 
 	// Assign screen to active screen
@@ -418,9 +424,17 @@ function validateDimensions( width, height ) {
  **************************************************************************************************/
 
 
-// Remove the screen from the page and memory
-function removeScreen( screenData ) {
-	const screenId = screenData.id;
+// Remove the screen from the page and memory -- even though this is a screen command it only needs
+function removeScreen( options ) {
+
+	let screenId = options.id;
+
+	// Fail silently - user may want redundancy without try/catch block
+	if( !m_screens[ screenId ] ) {
+		return;
+	}
+
+	const screenData = m_screens [ screenId ];
 
 	// Cancel any inputs
 	screenData.api.cancelInput();
@@ -498,9 +512,6 @@ function removeScreen( screenData ) {
 	for( const getter of m_screenDataItemGetters ) {
 		screenData[ getter.name ] = null;
 	}
-	for( const internal of m_screenInternalCommands ) {
-		screenData[ internal.name ] = null;
-	}
 
 	// If the current screen is the active screen then we should set the active screen to the next
 	// screen available, or null if no screens remain.
@@ -551,74 +562,6 @@ function getScreen( options ) {
 		throw error;
 	}
 	return screen.api;
-}
-
-// width command
-function width( screenData ) {
-	return screenData.width;
-}
-
-// Height Command
-function height( screenData ) {
-	return screenData.height;
-}
-
-// Canvas Command
-function canvas( screenData ) {
-	return screenData.canvas;
-}
-
-// TODO: Consider simplifying api commands. This fancy processApiCommand is complex and it only
-// saves 1 if statement per command call. It might be worth it to simplify it.
-
-
-/***************************************************************************************************
- * Internal Commands
- **************************************************************************************************/
-
-
-// Process api command
-function generateCommandWrapper( screenData, command ) {
-	const paramCount = command.parameterNames.length;
-	const params = command.parameterNames;
-
-	if( paramCount === 0 ) {
-		screenData.api[ command.name ] = () => {
-			return command.fn( screenData, {} );
-		};
-	} else if( paramCount === 1 ) {
-		const paramName = command.parameterNames[ 0 ];
-		screenData.api[ command.name ] = ( a1 ) => {
-			if( g_utils.isObjectLiteral( a1 ) ) {
-				return command.fn( screenData, a1 );
-			}
-			return command.fn( screenData, { [ paramName ]: a1 } );
-		};
-	} else if( paramCount === 2 ) {
-		screenData.api[ command.name ] = function( a1, a2 ) {
-			const args = [ a1, a2 ].slice( 0, arguments.length );
-			const options = g_utils.parseOptions( args, params );
-			return command.fn( screenData, options );
-		};
-	} else if( paramCount === 3 ) {
-		screenData.api[ command.name ] = function( a1, a2, a3 ) {
-			const args = [ a1, a2, a3 ].slice( 0, arguments.length );
-			const options = g_utils.parseOptions( args, params );
-			return command.fn( screenData, options );
-		};
-	} else if( paramCount === 4 ) {
-		screenData.api[ command.name ] = function( a1, a2, a3, a4 ) {
-			const args = [ a1, a2, a3, a4 ].slice( 0, arguments.length );
-			const options = g_utils.parseOptions( args, params );
-			return command.fn( screenData, options );
-		};
-	} else {
-		screenData.api[ command.name ] = function( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ) {
-			const args = [ a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ].slice( 0, arguments.length );
-			const options = g_utils.parseOptions( args, params );
-			return command.fn( screenData, options );
-		};
-	}
 }
 
 

@@ -1,19 +1,16 @@
 /**
- * Pi.js - Command System Core Module
+ * Pi.js - Settings Module - Handles set and ready command
  * 
- * Command registration and processing.
- * 
- * @module core/commands
+ * @module core/settings
  */
 
 "use strict";
 
-import * as g_utils from "./utils";
+// Modules
+let g_utils;
+let g_screenManager;
 
-const m_commandList = [];
 const m_settings = {};
-let m_api;
-let m_screenManager;
 let m_readyCallbacks = [];
 let m_isDocumentReady = false;
 let m_waitCount = 0;
@@ -25,9 +22,11 @@ let m_checkReadyTimeout = null;
  **************************************************************************************************/
 
 
-export function init( api, screenManager ) {
-	m_api = api;
-	m_screenManager = screenManager;
+export function init( api, mods ) {
+
+	// Setup module references
+	g_utils = mods.utils;
+	g_screenManager = mods.screenManager;
 
 	// Set up document ready detection
 	if( typeof document !== "undefined" ) {
@@ -44,8 +43,18 @@ export function init( api, screenManager ) {
 		m_isDocumentReady = true;
 	}
 
-	// External API commands
-	addCommand( "ready", ready, [ "callback" ] );
+	// Setup External API commands
+	api.ready = ( callback ) => {
+		if( g_utils.isObjectLiteral( ready ) ) {
+			return ready( callback.callback );
+		} else {
+			return ready( callback );
+		}
+	};
+	api.set = ( options ) => {
+		const screenData = g_screenManager.activeScreenData;
+		set( screenData, options );
+	};
 }
 
 /**
@@ -68,217 +77,9 @@ export function done() {
 	scheduleReadyCheck();
 }
 
-/**
- * Add a command to the system
- * 
- * @param {string} name - Command name
- * @param {Function} fn - Command function
- * @param {Array<string>} parameterNames - Parameter names
- * @param {boolean} isScreen - If true, command requires screen
- * @param {boolean} screenOptional - If true, screen is optional (only valid if isScreen is true)
- */
-export function addCommand( name, fn, parameterNames, isScreen = false, screenOptional = false ) {
-	const cmd = {
-		"name": name,
-		"fn": fn,
-		"parameterNames": parameterNames,
-		"isScreen": isScreen,
-		"screenOptional": screenOptional
-	};
-	m_commandList.push( cmd );
 
-	// Add to settings item if starts with set
-	if( name.startsWith( "set" ) && name !== "set" ) {
-
-		const settingName = cmd.name.substring( 3, 4 ).toLowerCase() + cmd.name.substring( 4 );
-		m_settings[ settingName ] = cmd;
-	}
-}
-
-/**
- * Sorts then sets commands on the api
- */
-export function processApi() {
-
-	// Get the settings list
-	const setList = []
-	for( const cmd of m_commandList ) {
-		if( cmd.name.startsWith( "set" ) ) {
-			const settingName = cmd.name.substring( 3, 4 ).toLowerCase() + cmd.name.substring( 4 );
-			setList.push( settingName );
-		}
-	}
-
-	// Sort the settings list
-	setList.sort( ( settingNameA, settingNameB ) => {
-
-		// Screen should always go first
-		if( settingNameA === "screen" ) {
-			return -1;
-		} else if( settingNameB === "screen" ) {
-			return 1;
-		}
-		return settingNameA.localeCompare( settingNameB );
-	} );
-	
-	// Add the set commands -- not all set commands are screen commands but some are so use
-	// screenManager to add command. Set is screen-optional since it handles both screen and
-	// non-screen settings.
-	m_screenManager.addCommand( "set", set, setList, true );
-
-	// Sort global command list
-	m_commandList.sort( ( a, b ) => a.name.localeCompare( b.name ) );
-
-	// Sort screen commands
-	m_screenManager.sortScreenCommands();
-
-	// Add all commands to API
-	for( const command of m_commandList ) {
-		if( command.isScreen ) {
-			m_api[ command.name ] = generateCommandWrapper( command, true );
-		} else {
-			m_api[ command.name ] = generateCommandWrapper( command, false );
-		}
-	}
-}
-
-function generateCommandWrapper( command, isScreen ) {
-	const paramCount = command.parameterNames.length;
-	const params = command.parameterNames;
-
-	// No parameters - direct call, no parsing needed
-	if( paramCount === 0 ) {
-		if( isScreen ) {
-			return () => {
-				const screenData = m_screenManager.getActiveScreen();
-				if( !screenData && !command.screenOptional ) {
-					const error = new Error( `${command.name}: No screens available for command.` );
-					error.code = "NO_SCREEN";
-					throw error;
-				}
-				return command.fn( screenData, {} );
-			};
-		}
-		return () => {
-			return command.fn( {} );
-		};
-	}
-
-	// Single parameter - skip parseOptions overhead
-	if( paramCount === 1 ) {
-		const paramName = command.parameterNames[ 0 ];
-		if( isScreen ) {
-			return ( a1 ) => {
-				const screenData = m_screenManager.getActiveScreen();
-				if( !screenData && !command.screenOptional ) {
-					const error = new Error( `${command.name}: No screens available for command.` );
-					error.code = "NO_SCREEN";
-					throw error;
-				}
-				if( g_utils.isObjectLiteral( a1 ) ) {
-					return command.fn( screenData, a1 );
-				}
-				return command.fn( screenData, { [ paramName ]: a1 } );
-			};
-		}
-		return ( a1 ) => {
-			if( g_utils.isObjectLiteral( a1 ) ) {
-				return command.fn( a1 );
-			}
-			return command.fn( { [ paramName ]: a1 } );
-		};
-	}
-
-	// Two parameters - optimized path
-	if( paramCount === 2 ) {
-		if( isScreen ) {
-			return function( a1, a2 ) {
-				const screenData = m_screenManager.getActiveScreen();
-				if( !screenData && !command.screenOptional ) {
-					const error = new Error( `${command.name}: No screens available for command.` );
-					error.code = "NO_SCREEN";
-					throw error;
-				}
-				const args = [ a1, a2 ].slice( 0, arguments.length );
-				const options = g_utils.parseOptions( args, params );
-				return command.fn( screenData, options );
-			};
-		}
-		return function( a1, a2 ) {
-			const args = [ a1, a2 ].slice( 0, arguments.length );
-			const options = g_utils.parseOptions( args, params );
-			return command.fn( options );
-		};
-	}
-
-	// Three parameters
-	if( paramCount === 3 ) {
-		if( isScreen ) {
-			return function( a1, a2, a3 ) {
-				const screenData = m_screenManager.getActiveScreen();
-				if( !screenData && !command.screenOptional ) {
-					const error = new Error( `${command.name}: No screens available for command.` );
-					error.code = "NO_SCREEN";
-					throw error;
-				}
-				const args = [ a1, a2, a3 ].slice( 0, arguments.length );
-				const options = g_utils.parseOptions( args, params );
-				return command.fn( screenData, options );
-			};
-		}
-		return function( a1, a2, a3 ) {
-			const args = [ a1, a2, a3 ].slice( 0, arguments.length );
-			const options = g_utils.parseOptions( args, params );
-			return command.fn( options );
-		};
-	}
-
-	// Four parameters
-	if( paramCount === 4 ) {
-		if( isScreen ) {
-			return function( a1, a2, a3, a4 ) {
-				const screenData = m_screenManager.getActiveScreen();
-				if( !screenData && !command.screenOptional ) {
-					const error = new Error( `${command.name}: No screens available for command.` );
-					error.code = "NO_SCREEN";
-					throw error;
-				}
-				const args = [ a1, a2, a3, a4 ].slice( 0, arguments.length );
-				const options = g_utils.parseOptions( args, params );
-				return command.fn( screenData, options );
-			};
-		}
-		return function( a1, a2, a3, a4 ) {
-			const args = [ a1, a2, a3, a4 ].slice( 0, arguments.length );
-			const options = g_utils.parseOptions( args, params );
-			return command.fn( options );
-		};
-	}
-
-	// Multiple parameters - use parseOptions but avoid spread operator
-	if( isScreen ) {
-		return function( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ) {
-			const screenData = m_screenManager.getActiveScreen();
-			if( !screenData && !command.screenOptional ) {
-				const error = new Error( `${command.name}: No screens available for command.` );
-				error.code = "NO_SCREEN";
-				throw error;
-			}
-			const args = [ a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ].slice( 0, arguments.length );
-			const options = g_utils.parseOptions( args, params );
-			return command.fn( screenData, options );
-		};
-	}
-	return function( a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ) {
-		const args = [ a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 ].slice( 0, arguments.length );
-		const options = g_utils.parseOptions( args, params );
-		return command.fn( options );
-	};
-}
-
-
-export function getApi() {
-	return m_api;
+export function addSetting( name, fn, isScreen ) {
+	m_settings[ name ] = { fn, isScreen };
 }
 
 
@@ -306,8 +107,7 @@ export function getApi() {
  *   $.ready( () => console.log( "Both loaded" ) );
  *   // Waits for both a and b, triggers once
  */
-function ready( options ) {
-	const callback = options.callback;
+function ready( callback ) {
 
 	// Validate callback if provided
 	if( callback != null && !g_utils.isFunction( callback ) ) {
@@ -331,9 +131,9 @@ function ready( options ) {
 
 
 // Global settings command
-// -- (Command added in processApi) after all settings have been added as commands
-// -- Note: screenData will be null if the setting is not a screen setting
-function set( screenData, options ) {
+// This can get called from either the global api or directly from a screenData.api.
+// screenData can be null if no screen is available
+export function set( screenData, options ) {
 
 	// Loop through all the options
 	for( const optionName in options ) {
@@ -356,6 +156,13 @@ function set( screenData, options ) {
 			const argsArray = [ optionValues ];
 			const parsedOptions = g_utils.parseOptions( argsArray, setting.parameterNames );
 
+			// TODO: Need to handle when setting multiple commands that trigger api rebuilds so that
+			// we can defer the api rebuilds until after settings are done. This will allow the 
+			// user to do things like set both a pen and a blend and the api will only rebuild one
+			// time. But since the rebuild will have to be completed before any new graphics 
+			// commands get called this will be tricky. It would be nice to implement in the
+			// build functions themselves but probably best to handle it here.
+
 			// Call the setting function
 			if( setting.isScreen ) {
 				setting.fn( screenData, parsedOptions );
@@ -364,8 +171,9 @@ function set( screenData, options ) {
 			}
 
 			// If we just set the screen then refresh the active screen
+			// This allows for setting of multiple different screens in one call
 			if( optionName === "screen" ) {
-				screenData = m_screenManager.getActiveScreen();
+				screenData = g_screenManager.getActiveScreen();
 			}
 		}
 	}
