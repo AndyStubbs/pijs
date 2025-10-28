@@ -86,33 +86,110 @@ export function init( api, mods ) {
 
 function addApiCommands( api ) {
 
-	// Add global api commands
-	api.setDefaultPal = ( pal ) => setDefaultPal( g_utils.parseOptions( [ pal ], [ "pal" ] ) );
-	api.setDefaultColor = ( color ) => setDefaultColor(
-		g_utils.parseOptions( [ color ], [ "color" ] )
-	);
+	const screenData = g_screenManager.activeScreenData;
 
-	// Add screen commands
-	api.setColor = ( color, isAddToPalette ) => setColor(
-		g_screenManager.activeScreenData, g_utils.parseOptions( [ "color", "isAddToPalette" ] )
-	);
+	// Add global api commands
+	api.setDefaultPal = ( pal ) => {
+		const options = g_utils.parseOptions( [ pal ], [ "pal" ] ); 
+		return setDefaultPal( options );
+	};
+
+	// setDefaultColor
+	api.setDefaultColor = ( color ) => {
+		const options = g_utils.parseOptions( [ color ], [ "color" ] );
+		return setDefaultColor( options );
+	};
+
+	// SCREEN COMMANDS
+
+	// setColor
+	api.setColor = ( color, isAddToPalette ) => {
+		const options = g_utils.parseOptions(
+			[ color, isAddToPalette ], [ "color", "isAddToPalette" ]
+		);
+		return setColor( screenData, options );
+	};
+
+	// getPal
+	api.getPal = () => getPal( screenData );
+
+	// setPal
+	api.setPal = ( pal ) => {
+		const options = g_utils.parseOptions( [ pal ], [ "pal" ] );
+		setPal( screenData, options );
+	};
+
+	// getPalIndex
+	api.getPalIndex = ( color, tolerance ) => {
+		const options = g_utils.parseOptions( [ color, tolerance ], [ "color", "tolerance" ] );
+		return getPalIndex( screenData, options );
+	};
+
+	// setBgColor
+	api.setBgColor = ( color ) => {
+		const options = g_utils.parseOptions( [ color ], [ "color" ] );
+		return setBgColor( screenData, options );
+	};
+
+	// setContainerBgColor
+	api.setContainerBgColor = ( color ) => {
+		const options = g_utils.parseOptions( [ color ], [ "color" ] );
+		return setContainerBgColor( screenData, options );
+	};
+
+	// setPalColor
+	api.setPalColor = ( index, color ) => {
+		const options = g_utils.parseOptions( [ index, color ], [ "index", "color" ] );
+		return setPalColor( screenData, options );
+	};
 
 	// Add screen commands to screens
 	g_screenManager.addScreenInitFunction( ( screenData ) => {
-		screenData.api.setColor = ( color, isAddToPalette ) => {
-			setColor( screenData, g_utils.parseOptions(
-				[ color, isAddToPalette ], [ "color", "isAddToPalette" ]
-			) );
-		}
-	} );
 
-	g_screenManager.addCommand( "setColor", setColor, [ "color", "isAddToPalette" ] );
-	g_screenManager.addCommand( "getPal", getPal, [] );
-	g_screenManager.addCommand( "setPal", setPal, [ "pal" ] );
-	g_screenManager.addCommand( "getPalIndex", getPalIndex, [ "color", "tolerance" ] );
-	g_screenManager.addCommand( "setBgColor", setBgColor, [ "color" ] );
-	g_screenManager.addCommand( "setContainerBgColor", setContainerBgColor, [ "color" ] );
-	g_screenManager.addCommand( "setPalColor", setPalColor, [ "index", "color" ] );
+		// setColor
+		screenData.api.setColor = ( color, isAddToPalette ) => {
+			const options = g_utils.parseOptions( 
+				[ color, isAddToPalette ], [ "color", "isAddToPalette" ]
+			);
+			setColor( screenData, options );
+		};
+
+		// getPal
+		screenData.api.getPal = () => {
+			return getPal( screenData );
+		};
+
+		// setPal
+		screenData.api.setPal = ( pal ) => {
+			const options = g_utils.parseOptions( [ pal ], [ "pal" ] );
+			return setPal( screenData, options );
+		};
+
+		// getPalIndex
+		screenData.api.getPalIndex = ( color, tolerance ) => {
+			const options = g_utils.parseOptions( [ color, tolerance ], [ "color", "tolerance" ] );
+			return getPalIndex( screenData, options );
+		};
+
+		// setBgColor
+		screenData.api.setBgColor = ( color ) => {
+			const options = g_utils.parseOptions( [ color ], [ "color" ] );
+			return setBgColor( screenData, options );
+		};
+
+		// setContainerBgColor
+		screenData.api.setContainerBgColor = ( color ) => {
+			const options = g_utils.parseOptions( [ color ], [ "color" ] );
+			return setContainerBgColor( screenData, options );
+		};
+
+		// setPalColor
+		screenData.api.setPalColor = ( index, color ) => {
+			return setPalColor( screenData, g_utils.parseOptions(
+				[ index, color ], [ "index", "color" ]
+			) );
+		};
+	} );
 }
 
 // TODO: Add getColor command to get the active screen color
