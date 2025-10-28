@@ -9,7 +9,7 @@
 
 "use strict";
 
-import * as g_renderer from "./renderer";
+import * as g_renderer from "./pens";
 import * as g_screenManager from "./screen-manager";
 import * as g_utils from "./utils";
 
@@ -178,7 +178,6 @@ function testWebGL2Capability() {
 	return result;
 }
 
-
 /**
  * Initialize WebGL2 context for a canvas
  * 
@@ -254,7 +253,6 @@ export function initWebGL( screenData ) {
 	// Return successful
 	return true;
 }
-
 
 /**
  * Create Framebuffer Object for offscreen rendering
@@ -351,7 +349,6 @@ function createShaderProgram( screenData, vertexSource, fragmentSource ) {
 	return program;
 }
 
-
 /**
  * Compile a single shader
  * 
@@ -415,7 +412,6 @@ function setupDisplayShader( screenData ) {
 		"texture": textureLoc
 	};
 }
-
 
 
 /***************************************************************************************************
@@ -521,16 +517,15 @@ function createBatchSystem( screenData, vertSrc, fragSrc ) {
  * @param {Object} batch - Batch system object
  * @param {string} newItemCount - Number of new items that will be added
  */
-export function ensureBatchCapacity( batch, newItemCount ) {
+export function ensureBatchCapacity( screenData, batch, newItemCount ) {
 
 	const requiredCount = batch.count + newItemCount;
 	if( requiredCount >= batch.capacity ) {
 
 		// Make sure we don't exceed max batch size
 		if( requiredCount > MAX_BATCH_SIZE ) {
-			flushBatches();
-			displayToCanvas();
-			return false;
+			flushBatches( screenData );
+			displayToCanvas( screenData );
 		}
 
 		// Get new capacity
@@ -703,23 +698,12 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
 	
 	// Add directly to point batch
 	const pointBatch = screenData.pointBatch;
-
-	// Make sure batch can handle the new capacity
-	// TODO: Something to watch out for a per pixel check - maybe we could check before calling
-	// like for a line command we could count the length of the line and ensure batch capacity
-	// before drawing the individual pixels. But should test before implementing to see if its
-	// needed
-	if( !ensureBatchCapacity( pointBatch, 1 ) ) {
-		console.warn( "Exceeded maximum drawing capacity on screen" );
-		return;
-	}
-
 	const idx = pointBatch.count * 2;
 	const cidx = pointBatch.count * 4;
 	
-	pointBatch.vertices[ idx ] = x;
+	pointBatch.vertices[ idx     ] = x;
 	pointBatch.vertices[ idx + 1 ] = y;
-	pointBatch.colors[ cidx ] = color.r;
+	pointBatch.colors[ cidx     ] = color.r;
 	pointBatch.colors[ cidx + 1 ] = color.g;
 	pointBatch.colors[ cidx + 2 ] = color.b;
 	pointBatch.colors[ cidx + 3 ] = color.a;

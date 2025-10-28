@@ -29,7 +29,7 @@ const m_screenDataCleanupFunctions = [];
 
 
 let m_nextScreenId = 0;
-let m_activeScreen = null;
+let m_activeScreenData = null;
 let m_resizeObserver = null;
 const m_observedContainers = new Set();
 
@@ -38,6 +38,8 @@ const m_observedContainers = new Set();
  * Module Commands
  **************************************************************************************************/
 
+export { m_activeScreenData as activeScreenData };
+export { WEBGL2_RENDER_MODE, CANVAS2D_RENDER_MODE };
 
 export function init() {
 
@@ -111,10 +113,6 @@ export function addScreenInternalCommands( name, fn ) {
 
 export function addScreenDataItemGetter( name, fn ) {
 	m_screenDataItemGetters.push( { name, fn } );
-}
-
-export function getActiveScreen() {
-	return m_activeScreen;
 }
 
 export function addScreenInitFunction( fn ) {
@@ -278,17 +276,18 @@ function screen( options ) {
 	}
 
 	// Assign screen to active screen
-	m_activeScreen = screenData;
+	m_activeScreenData = screenData;
 	m_screens[ screenData.id ] = screenData;
 
-	// Setup the initial font for the screen
-	//screenData.api.setFont( screenData.font.id );
 	setupScreenRenderer( screenData );
 
 	// Call init functions for all modules that need initialization
 	for( const fn of m_screenDataInitFunctions ) {
 		fn( screenData );
 	}
+
+	// Setup the initial font for the screen
+	//screenData.api.setFont( screenData.font.id );
 
 	return screenData.api;
 }
@@ -422,6 +421,14 @@ function removeScreen( screenData ) {
 	// Clear all events
 	screenData.api.clearEvents();
 
+	// Cleanup renderer
+	screenData.renderer.cleanup( screenData );
+
+	// Call cleanup functions for all modules that need cleanup
+	for( const fn of m_screenDataCleanupFunctions ) {
+		fn( screenData );
+	}
+
 	// Store the screen ID before we start nullifying properties
 	const createdDeletedMethodErrorFn = ( key, screenId ) => {
 		screenData.api[ key ] = () => {
@@ -490,19 +497,14 @@ function removeScreen( screenData ) {
 
 	// If the current screen is the active screen then we should set the active screen to the next
 	// screen available, or null if no screens remain.
-	if( screenData === m_activeScreen ) {
-		m_activeScreen = null;
+	if( screenData === m_activeScreenData ) {
+		m_activeScreenData = null;
 		for( const i in m_screens ) {
 			if( m_screens[ i ] !== screenData ) {
-				m_activeScreen = m_screens[ i ];
+				m_activeScreenData = m_screens[ i ];
 				break;
 			}
 		}
-	}
-
-	// Call cleanup functions for all modules that need cleanup
-	for( const fn of m_screenDataCleanupFunctions ) {
-		fn( screenData );
 	}
 
 	// Delete the screen from the screens container
@@ -524,7 +526,7 @@ function setScreen( options ) {
 		error.code = "INVALID_SCREEN";
 		throw error;
 	}
-	m_activeScreen = m_screens[ screenId ];
+	m_activeScreenData = m_screens[ screenId ];
 }
 
 // Get screen
@@ -649,7 +651,7 @@ function resizeScreen( screenData ) {
 		if( screenData.container === document.body ) {
 			screenData.canvas.style.position = "static";
 		}
-		
+
 		// Update canvas to fullscreen absolute pixels
 		screenData.canvas.style.width = "100%";
 		screenData.canvas.style.height = "100%";

@@ -17,7 +17,7 @@ import * as g_events from "./core/events.js";
 import * as g_plugins from "./core/plugins.js";
 import * as g_webglRenderer from "./core/renderer-webgl2.js";
 import * as g_canvas2dRenderer from "./core/renderer-canvas2d.js";
-import * as g_renderer from "./core/renderer.js";
+import * as g_renderer from "./core/pens.js";
 
 // Feature Modules
 import * as g_colors from "./modules/colors.js";

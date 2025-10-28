@@ -155,18 +155,34 @@ export function cls( screenData, x, y, width, height ) {
  * @param {number} a - Alpha component (0-255)
  */
 export function drawPixelUnsafe( screenData, x, y, color ) {
-	const imageData = screenData.imageData;
-	const data = imageData.data;
-	const idx = ( ( screenData.width * y ) + x ) * 4;
+	const data = screenData.imageData.data;
+	const i = ( ( screenData.width * y ) + x ) * 4;
 	
-	data[ idx ] = color.r;
-	data[ idx + 1 ] = color.g;
-	data[ idx + 2 ] = color.b;
-	data[ idx + 3 ] = color.a;
-	
-	// TODO: Remove per pixel check, should be done after draw but in actual graphics commands like
-	// after the line draw is complete
-	setImageDirty( screenData );
+	data[ i ] = color.r;
+	data[ i + 1 ] = color.g;
+	data[ i + 2 ] = color.b;
+	data[ i + 3 ] = color.a;
+}
+
+
+export function blendPixelUnsafe( screenData, x, y, color ) {
+	const data = screenData.imageData.data;
+
+	// Calculate the index
+	const i = ( ( width * y ) + x ) * 4;
+
+	// Normalize alpha to [ 0, 1 ]
+	const srcA = color.a / 255;
+	const dstA = data[ i + 3 ] / 255;
+	const outA = srcA + dstA * ( 1 - srcA );
+
+	// Blend the RGB channels
+	data[ i ] = Math.round( ( color.r * srcA + data[ i ] * dstA * ( 1 - srcA ) ) / outA );
+	data[ i + 1 ] = Math.round( ( color.g * srcA + data[ i + 1 ] * dstA * ( 1 - srcA ) ) / outA );
+	data[ i + 2 ] = Math.round( ( color.b * srcA + data[ i + 2 ] * dstA * ( 1 - srcA ) ) / outA );
+
+	// Update alpha channel
+	data[ i + 3 ] = Math.round( outA * 255 );
 }
 
 
