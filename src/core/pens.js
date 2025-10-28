@@ -70,20 +70,14 @@ function addApiCommands( api ) {
 
 	// Add api for non "hot" path commands
 	api.setPen = ( pen, size ) => {
-		const screenData = g_screenManager.activeScreenData;
-		if( g_utils.isObjectLiteral( pen ) ) {
-			setPen( screenData, pen );
-		} else {
-			setPen( screenData, { pen, size } );
-		}
+		const screenData = g_screenManager.getActiveScreen( "setPen" );
+		const options = g_utils.parseOptions( [ pen, size ], [ "pen", "size" ] );
+		return setPen( screenData, options );
 	};
 	api.setBlend = ( blend, noise ) => {
-		const screenData = g_screenManager.activeScreenData;
-		if( g_utils.isObjectLiteral( blend ) ) {
-			setBlend( screenData, blend );
-		} else {
-			setBlend( screenData, { blend, noise } );
-		}
+		const screenData = g_screenManager.getActiveScreen( "setBlend" );
+		const options = g_utils.parseOptions( [ blend, noise ], [ "blend", "noise" ] );
+		return setBlend( screenData, options );
 	};
 
 	// Add settings to set command

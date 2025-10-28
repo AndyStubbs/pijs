@@ -30,10 +30,11 @@ export function init( api, mods ) {
 
 	// Add external API commands
 	api.registerPlugin = ( name, version, description, init ) => {
-		registerPlugin( g_utils.parseOptions(
+		const options = g_utils.parseOptions(
 			[ name, version, description, init ],
 			[ "name", "version", "description", "init" ]
-		) );
+		);
+		return registerPlugin( options );
 	};
 	api.getPlugins = getPlugins;
 }

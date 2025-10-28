@@ -73,7 +73,7 @@ function addApiCommands( api ) {
 		screenData.api.clearEvents = ( type ) => {
 			const options = g_utils.parseOptions( [ type ], [ "type" ] );
 			clearEvents( screenData, options );
-		}
+		};
 	} );
 }
 

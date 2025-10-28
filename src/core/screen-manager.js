@@ -13,6 +13,7 @@
 let g_utils;
 let g_webgl2Renderer;
 let g_canvas2dRenderer;
+let g_settings;
 
 const WEBGL2_RENDER_MODE = "webgl2";
 const CANVAS2D_RENDER_MODE = "canvas2d";
@@ -46,6 +47,7 @@ export function init( api, mods ) {
 	g_utils = mods.utils;
 	g_webgl2Renderer = mods.g_webgl2Renderer;
 	g_canvas2dRenderer = mods.canvas2dRenderer;
+	g_settings = mods.settings;
 
 	// TODO: Add matchMedia to watch for DPR changes - if a user moves a browser to a new monitor
 	// it could cause the canvas image to become blury, even if the actual CSS size of the canvas.
@@ -81,39 +83,54 @@ export function init( api, mods ) {
 function addApiCommands( api ) {
 
 	// Add global API Commands
+
+	// screen
 	api.screen = ( aspect, container, isOffscreen, isNoStyles, resizeCallback, useCanvas2d ) => {
-		if( g_utils.isObjectLiteral( aspect ) ) {
-			return screen( options );
-		} else {
-			return screen(
-				{ aspect, container, isOffscreen, isNoStyles, resizeCallback, useCanvas2d }
-			);
-		}
+		const options = g_utils.parseOptions(
+			[ aspect, container, isOffscreen, isNoStyles, resizeCallback, useCanvas2d ],
+			[ "aspect", "container", "isOffscreen", "isNoStyles", "resizeCallback", "useCanvas2d" ],
+		);
+		return screen( options );
 	};
-	api.setScreen = ( screen ) => {
-		if( g_utils.isObjectLiteral( screen ) ) {
-			return setScreen( screen );
-		} else {
-			return setScreen( { screen } );
-		}
+
+	// setScreen
+	api.setScreen = ( screenId ) => {
+		const options = g_utils.parseOptions( [ screenId ], [ "screenId" ] );
+		return setScreen( options );
 	};
+
+	// getScreen
 	api.getScreen = ( screenId ) => {
-		if( g_utils.isObjectLiteral( screenId ) ) {
-			getScreen( screenId );
-		} else {
-			getScreen( { screenId } );
-		}
+		const options = g_utils.parseOptions( [ screenId ], [ "screenId" ] );
+		return getScreen( options );
 	};
+
+	// removeScreen
 	api.removeScreen = ( screenId ) => {
-		if( g_utils.isObjectLiteral( screenId ) ) {
-			removeScreen( screenId );
-		} else {
-			removeScreen( { screenId } );
-		}
+		const options = g_utils.parseOptions( [ screenId ], [ "screenId" ] );
+		return removeScreen( options );
 	};
-	api.width = () => m_activeScreenData.width;
-	api.height = () => m_activeScreenData.height;
-	api.canvas = () => m_activeScreenData.canvas;
+
+	// width
+	api.width = () => {
+		const screenData = getActiveScreen( "width" );
+		return screenData.width;
+	}
+
+	// height
+	api.height = () => {
+		const screenData = getActiveScreen( "height" );
+		return screenData.height;
+	};
+
+	// canvas
+	api.canvas = () => {
+		const screenData = getActiveScreen( "canvas" );
+		return screenData.canvas;
+	};
+
+	// Add setting
+	g_settings.addSetting( "screen", setScreen, false );
 
 	// Add screen API commands
 	addScreenInitFunction( ( screenData ) => {

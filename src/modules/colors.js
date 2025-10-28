@@ -98,6 +98,10 @@ function addApiCommands( api ) {
 		return setDefaultColor( options );
 	};
 
+	// Add settings to set command
+	g_settings.addSettings( "setDefaultPal", api.setDefaultPal, false );
+	g_settings.addSettings( "setDefaultColor", api.setDefaultColor, false );
+
 	// SCREEN COMMANDS
 
 	// setColor
@@ -149,6 +153,13 @@ function addApiCommands( api ) {
 		const options = g_utils.parseOptions( [ index, color ], [ "index", "color" ] );
 		return setPalColor( screenData, options );
 	};
+
+	// Add settings to set command
+	g_settings.addSettings( "setColor", api.setColor, true );
+	g_settings.addSettings( "setPal", api.setPal, true );
+	g_settings.addSettings( "setBgColor", api.setBgColor, true );
+	g_settings.addSettings( "setContainerBgColor", api.setContainerBgColor, true );
+	g_settings.addSettings( "setPalColor", api.setPalColor, true );
 
 	// Add screen commands to screens
 	g_screenManager.addScreenInitFunction( ( screenData ) => {
