@@ -40,16 +40,16 @@ const api = {
 	"version": VERSION
 };
 
-// Store modules in object so that we can pass them into other modules and avoid circular references
-const mods = {
+// Store modules in array for orderered initialization
+const mods = [
 	g_utils, g_state, g_screenManager, g_plugins, g_webgl2Renderer, g_canvas2dRenderer, g_pens,
 	g_colors, g_basic, g_events
-};
+];
 
-// Initialize the core modules
-for( const mod in mods ) {
-	if( mods[ mod ].init ) {
-		mods[ mod ].init( api );
+// Initialize the modules
+for( const mod of mods ) {
+	if( mod.init ) {
+		mod.init( api );
 	}
 }
 

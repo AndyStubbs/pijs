@@ -69,18 +69,16 @@ import * as g_events from "./inputs/events.js";
 const VERSION = __VERSION__;
 const api = { "version": VERSION };
 
-// Store modules in object to avoid circular references
-const mods = {
-    g_utils, g_state, g_screenManager, g_plugins, g_webgl2Renderer, g_canvas2dRenderer, g_pens,
-    g_colors, g_basic, g_events
+// Create the main api for all external commands later assinged to globals pi or $
+const api = {
+	"version": VERSION
 };
 
-// Initialize the core modules
-for( const mod in mods ) {
-    if( mods[ mod ].init ) {
-        mods[ mod ].init( api );
-    }
-}
+// Store modules in array for orderered initialization
+const mods = [
+	g_utils, g_state, g_screenManager, g_plugins, g_webgl2Renderer, g_canvas2dRenderer, g_pens,
+	g_colors, g_basic, g_events
+];
 
 if( typeof window !== "undefined" ) {
     window.pi = api;
