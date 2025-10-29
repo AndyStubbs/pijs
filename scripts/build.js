@@ -61,6 +61,7 @@ const buildOptions = {
 	"target": "es2020",
 	"platform": "browser",
 	"plugins": [ injectVersionPlugin ],
+	"loader": { ".vert": "text", ".frag": "text" },
 	"sourceRoot": `../${sourceDir}/`
 };
 
@@ -85,7 +86,8 @@ async function buildPlugin( pluginName, pluginDir ) {
 		"bundle": true,
 		"sourcemap": true,
 		"target": "es2020",
-		"platform": "browser"
+		"platform": "browser",
+		"loader": { ".vert": "text", ".frag": "text" }
 	};
 
 	try {

@@ -5,6 +5,10 @@
 	"editor.detectIndentation": false,
 	"editor.wordWrap": "off",
 	"files.eol": "\n",
+	"files.associations": {
+		"*.vert": "glsl",
+		"*.frag": "glsl"
+	},
 
 	// Prefer ESLint for fixes, avoid Prettier fighting your spacing rules
 	"editor.formatOnSave": false,
@@ -28,4 +32,5 @@
 
 	// ESLint
 	"eslint.enable": false,
+
 }

@@ -42,7 +42,8 @@ async function buildPlugin( pluginName ) {
 		"bundle": true,
 		"sourcemap": true,
 		"target": "es2020",
-		"platform": "browser"
+	"platform": "browser",
+	"loader": { ".vert": "text", ".frag": "text" }
 	};
 
 	try {
