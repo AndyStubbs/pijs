@@ -10,7 +10,7 @@
 "use strict";
 
 // Import modules directly
-import * as g_settings from "../core/settings.js";
+import * as g_state from "../core/state-settings.js";
 import * as g_utils from "../core/utils.js";
 import * as g_screenManager from "../core/screen-manager.js";
 
@@ -96,8 +96,8 @@ function addApiCommands( api ) {
 	};
 
 	// Add settings to set command
-	g_settings.addSetting( "setDefaultPal", api.setDefaultPal, false );
-	g_settings.addSetting( "setDefaultColor", api.setDefaultColor, false );
+	g_state.addSetting( "setDefaultPal", api.setDefaultPal, false );
+	g_state.addSetting( "setDefaultColor", api.setDefaultColor, false );
 
 	// SCREEN COMMANDS
 
@@ -152,11 +152,11 @@ function addApiCommands( api ) {
 	};
 
 	// Add settings to set command
-	g_settings.addSetting( "setColor", api.setColor, true );
-	g_settings.addSetting( "setPal", api.setPal, true );
-	g_settings.addSetting( "setBgColor", api.setBgColor, true );
-	g_settings.addSetting( "setContainerBgColor", api.setContainerBgColor, true );
-	g_settings.addSetting( "setPalColor", api.setPalColor, true );
+	g_state.addSetting( "setColor", api.setColor, true );
+	g_state.addSetting( "setPal", api.setPal, true );
+	g_state.addSetting( "setBgColor", api.setBgColor, true );
+	g_state.addSetting( "setContainerBgColor", api.setContainerBgColor, true );
+	g_state.addSetting( "setPalColor", api.setPalColor, true );
 
 	// Add screen commands to screens
 	g_screenManager.addScreenInitFunction( ( screenData ) => {

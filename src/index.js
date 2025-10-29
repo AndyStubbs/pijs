@@ -11,18 +11,26 @@
 "use strict";
 
 // Core Modules
-import * as g_settings from "./core/settings.js";
-import * as g_screenManager from "./core/screen-manager.js";
-import * as g_events from "./core/events.js";
-import * as g_plugins from "./core/plugins.js";
-import * as g_webgl2Renderer from "./core/renderer-webgl2.js";
-import * as g_canvas2dRenderer from "./core/renderer-canvas2d.js";
-import * as g_pens from "./core/pens.js";
 import * as g_utils from "./core/utils";
+import * as g_state from "./core/state-settings.js";
+import * as g_screenManager from "./core/screen-manager.js";
+import * as g_plugins from "./core/plugins.js";
 
-// Feature Modules
-import * as g_colors from "./modules/colors.js";
-import * as g_graphics from "./modules/graphics.js";
+// Graphics
+import * as g_webgl2Renderer from "./graphics/renderer-webgl2.js";
+import * as g_canvas2dRenderer from "./graphics/renderer-canvas2d.js";
+import * as g_pens from "./graphics/pens.js";
+import * as g_colors from "./graphics/colors.js";
+import * as g_basic from "./graphics/basic.js";
+
+// Text
+// TODO: Import text modules
+
+// Inputs
+import * as g_events from "./input/events.js";
+
+// Audio
+// TODO: Import audio modules
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -34,8 +42,8 @@ const api = {
 
 // Store modules in object so that we can pass them into other modules and avoid circular references
 const mods = {
-	g_settings, g_screenManager, g_events, g_plugins, g_webgl2Renderer, g_canvas2dRenderer, g_pens,
-	g_colors, g_graphics, g_utils
+	g_utils, g_state, g_screenManager, g_plugins, g_webgl2Renderer, g_canvas2dRenderer, g_pens,
+	g_colors, g_basic, g_events
 };
 
 // Initialize the core modules

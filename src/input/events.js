@@ -9,8 +9,8 @@
 "use strict";
 
 // Import modules directly
-import * as g_utils from "./utils.js";
-import * as g_screenManager from "./screen-manager.js";
+import * as g_utils from "../core/utils.js";
+import * as g_screenManager from "../core/screen-manager.js";
 
 
 // Import clear functions from input modules (TODO: Re-enable when input modules are reimplemented)

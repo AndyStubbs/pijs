@@ -11,8 +11,8 @@
 
 // Import modules directly
 import * as g_pens from "./pens.js";
-import * as g_screenManager from "./screen-manager.js";
-import * as g_utils from "./utils.js";
+import * as g_screenManager from "../core/screen-manager.js";
+import * as g_utils from "../core/utils.js";
 
 const MAX_BATCH_SIZE = 1_000_000;
 

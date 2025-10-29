@@ -1,7 +1,7 @@
 /**
- * Pi.js - Settings Module - Handles set and ready command
+ * Pi.js - State/Settings Module - Handles set and ready command
  * 
- * @module core/settings
+ * @module core/state-settings
  */
 
 "use strict";

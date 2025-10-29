@@ -9,10 +9,10 @@
 "use strict";
 
 // Import modules directly
-import * as g_screenManager from "./screen-manager.js";
-import * as g_settings from "./settings.js";
-import * as g_utils from "./utils.js";
-import * as g_graphics from "../modules/graphics.js";
+import * as g_screenManager from "../core/screen-manager.js";
+import * as g_state from "../core/state-settings.js";
+import * as g_utils from "../core/utils.js";
+import * as g_graphics from "./basic.js";
 
 // Pens
 export const PEN_PIXEL = "pixel";
@@ -70,8 +70,8 @@ function addApiCommands( api ) {
 	};
 
 	// Add settings to set command
-	g_settings.addSetting( "pen", api.setPen, true );
-	g_settings.addSetting( "blend", api.setBlend, true );
+	g_state.addSetting( "pen", api.setPen, true );
+	g_state.addSetting( "blend", api.setBlend, true );
 
 	// Add screen commands when screen is created
 	g_screenManager.addScreenInitFunction( ( screenData ) => {

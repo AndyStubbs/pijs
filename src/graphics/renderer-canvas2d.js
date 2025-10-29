@@ -9,7 +9,7 @@
 
 "use strict";
 
-import * as g_utils from "./utils.js";
+import * as g_utils from "../core/utils.js";
 
 // Auto-render state
 let m_autoRenderScheduled = false;

@@ -11,10 +11,10 @@
 
 // Import modules directly
 import * as g_utils from "./utils.js";
-import * as g_webgl2Renderer from "./renderer-webgl2.js";
-import * as g_canvas2dRenderer from "./renderer-canvas2d.js";
-import * as g_settings from "./settings.js";
-import * as g_pens from "./pens.js";
+import * as g_webgl2Renderer from "../graphics/renderer-webgl2.js";
+import * as g_canvas2dRenderer from "../graphics/renderer-canvas2d.js";
+import * as g_state from "./state-settings.js";
+import * as g_pens from "../graphics/pens.js";
 
 const WEBGL2_RENDER_MODE = "webgl2";
 const CANVAS2D_RENDER_MODE = "canvas2d";
@@ -125,7 +125,7 @@ function addApiCommands( api ) {
 	};
 
 	// Add setting
-	g_settings.addSetting( "screen", setScreen, false );
+	g_state.addSetting( "screen", setScreen, false );
 
 	// Add screen API commands
 	addScreenInitFunction( ( screenData ) => {
