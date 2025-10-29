@@ -8,6 +8,12 @@
 
 "use strict";
 
+// Import modules directly
+import * as g_screenManager from "./screen-manager.js";
+import * as g_settings from "./settings.js";
+import * as g_utils from "./utils.js";
+import * as g_graphics from "../modules/graphics.js";
+
 // Pens
 export const PEN_PIXEL = "pixel";
 export const PEN_SQUARE = "square";
@@ -21,12 +27,6 @@ export const BLENDS = new Set( [ BLEND_REPLACE, BLEND_ALPHA ] );
 
 const m_noiseColor = { "r": 0, "g": 0, "b": 0, "a": 0 };
 
-// Global Modules
-let g_screenManager;
-let g_settings;
-let g_utils;
-let g_graphics;
-
 
 /***************************************************************************************************
  * Module Commands
@@ -34,14 +34,7 @@ let g_graphics;
 
 
 // Initialize the pens
-export async function init( api, mods ) {
-
-	// Setup references to global modules
-	g_screenManager = mods.screenManager;
-	g_utils = mods.utils;
-	g_graphics = mods.graphics;
-	g_settings = mods.settings;
-
+export async function init( api ) {
 	addScreenDataItems();
 	addApiCommands( api );
 }

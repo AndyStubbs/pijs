@@ -9,7 +9,7 @@
 
 "use strict";
 
-import * as g_utils from "./utils";
+import * as g_utils from "./utils.js";
 
 // Auto-render state
 let m_autoRenderScheduled = false;
@@ -20,7 +20,7 @@ let m_autoRenderScheduled = false;
  **************************************************************************************************/
 
 
-export function init() {
+export function init( api ) {
 	
 	// Initialize will be called per screen
 }

@@ -9,9 +9,10 @@
 
 "use strict";
 
-let g_pens;
-let g_screenManager;
-let g_utils;
+// Import modules directly
+import * as g_pens from "./pens.js";
+import * as g_screenManager from "./screen-manager.js";
+import * as g_utils from "./utils.js";
 
 const MAX_BATCH_SIZE = 1_000_000;
 
@@ -105,12 +106,7 @@ let m_isWebgl2Capable = false;
 
 export { m_isWebgl2Capable as isWebgl2Capable };
 
-export function init( api, mods ) {
-
-	g_pens = mods.pens;
-	g_screenManager = mods.screenManager;
-	g_utils = mods.utils;
-	
+export function init( api ) {
 	g_screenManager.addScreenDataItem( "contextLost", false );
 	g_screenManager.addScreenDataItem( "isRenderScheduled", false );
 	g_screenManager.addScreenDataItem( "isFirstRender", true );

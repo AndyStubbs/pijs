@@ -8,8 +8,10 @@
 
 "use strict";
 
-let g_utils;
-let g_screenManager;
+// Import modules directly
+import * as g_utils from "./utils.js";
+import * as g_screenManager from "./screen-manager.js";
+
 
 // Import clear functions from input modules (TODO: Re-enable when input modules are reimplemented)
 // import { clearKeyboardEvents } from "../modules/keyboard";
@@ -49,11 +51,7 @@ function clearGamepadEvents() {
  **************************************************************************************************/
 
 
-export function init( api, mods ) {
-
-	g_screenManager = mods.screenManager;
-	g_utils = mods.utils;
-
+export function init( api ) {
 	addApiCommands( api );
 }
 

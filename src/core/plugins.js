@@ -8,11 +8,11 @@
 
 "use strict";
 
-let g_utils;
+// Import modules directly
+import * as g_utils from "./utils.js";
 
 const m_plugins = [];
 let m_api;
-let m_mods;
 
 
 /***************************************************************************************************
@@ -20,13 +20,8 @@ let m_mods;
  **************************************************************************************************/
 
 
-export function init( api, mods ) {
-
+export function init( api ) {
 	m_api = api;
-	m_mods = mods;
-
-	// Add Global Module References
-	g_utils = mods.utils;
 
 	// Add external API commands
 	api.registerPlugin = ( name, version, description, init ) => {

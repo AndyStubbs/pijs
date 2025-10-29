@@ -6,9 +6,9 @@
 
 "use strict";
 
-// Modules
-let g_utils;
-let g_screenManager;
+// Import modules directly
+import * as g_utils from "./utils.js";
+import * as g_screenManager from "./screen-manager.js";
 
 const m_settings = {};
 let m_readyCallbacks = [];
@@ -22,11 +22,7 @@ let m_checkReadyTimeout = null;
  **************************************************************************************************/
 
 
-export function init( api, mods ) {
-
-	// Setup module references
-	g_utils = mods.utils;
-	g_screenManager = mods.screenManager;
+export function init( api ) {
 
 	// Set up document ready detection
 	if( typeof document !== "undefined" ) {

@@ -9,12 +9,12 @@
 
 "use strict";
 
-// Modules
-let g_utils;
-let g_webgl2Renderer;
-let g_canvas2dRenderer;
-let g_settings;
-let g_pens;
+// Import modules directly
+import * as g_utils from "./utils.js";
+import * as g_webgl2Renderer from "./renderer-webgl2.js";
+import * as g_canvas2dRenderer from "./renderer-canvas2d.js";
+import * as g_settings from "./settings.js";
+import * as g_pens from "./pens.js";
 
 const WEBGL2_RENDER_MODE = "webgl2";
 const CANVAS2D_RENDER_MODE = "canvas2d";
@@ -42,14 +42,7 @@ const m_observedContainers = new Set();
 export { m_activeScreenData as activeScreenData };
 export { WEBGL2_RENDER_MODE, CANVAS2D_RENDER_MODE };
 
-export function init( api, mods ) {
-
-	// Set Global Module References
-	g_utils = mods.utils;
-	g_webgl2Renderer = mods.webgl2Renderer;
-	g_canvas2dRenderer = mods.canvas2dRenderer;
-	g_settings = mods.settings;
-	g_pens = mods.pens;
+export function init( api ) {
 
 	// TODO: Add matchMedia to watch for DPR changes - if a user moves a browser to a new monitor
 	// it could cause the canvas image to become blury, even if the actual CSS size of the canvas.

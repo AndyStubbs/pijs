@@ -8,9 +8,9 @@
 
 "use strict";
 
-// Modules
-let g_screenManager;
-let g_utils;
+// Import modules directly
+import * as g_screenManager from "../core/screen-manager.js";
+import * as g_utils from "../core/utils.js";
 
 let m_api = null;
 
@@ -20,10 +20,8 @@ let m_api = null;
 
 
 // Initialize graphics module - only gets called on page load
-export function init( api, mods ) {
+export function init( api ) {
 	m_api = api;
-	g_screenManager = mods.screenManager;
-	g_utils = mods.utils;
 	buildGraphicsApi( null );
 }
 

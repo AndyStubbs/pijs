@@ -9,9 +9,10 @@
 
 "use strict";
 
-let g_settings;
-let g_utils;
-let g_screenManager;
+// Import modules directly
+import * as g_settings from "../core/settings.js";
+import * as g_utils from "../core/utils.js";
+import * as g_screenManager from "../core/screen-manager.js";
 
 let m_defaultPal = [];
 let m_defaultPalMap = new Map();
@@ -24,11 +25,7 @@ let m_defaultColor = -1;
 
 
 // Initialize color defaults
-export function init( api, mods ) {
-
-	g_settings = mods.settings;
-	g_utils = mods.utils;
-	g_screenManager = mods.screenManager;
+export function init( api ) {
 
 	// Default 256-color palette (CGA + extended colors) - raw hex strings
 	const defaultPaletteHex = [
