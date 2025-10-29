@@ -183,3 +183,4 @@ function line( screenData, x1, y1, x2, y2, color, penFn ) {
 		penFn( screenData, x1, y1, color );
 	}
 }
+

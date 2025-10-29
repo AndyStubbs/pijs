@@ -158,7 +158,7 @@ function buildPenFn( s_screenData ) {
 	} else if( s_screenData.pens.pen === PEN_SQUARE ) {
 
 		// Size must always be an odd integer
-		const squareSize = s_screenData.penData.size | 1;
+		const squareSize = s_screenData.pens.size | 1;
 
 		// Compute the center offset of the square
 		const offset = Math.round( squareSize / 2 ) - 1;
@@ -178,17 +178,17 @@ function buildPenFn( s_screenData ) {
 	} else if( s_screenData.pens.pen === PEN_CIRCLE ) {
 
 		// Special case for size two draw a 5 pixel cross
-		if( s_screenData.penData.size === 2 ) {
+		if( s_screenData.pens.size === 2 ) {
 			s_screenData.pens.penFn = ( screenData, x, y, color ) => {
 				drawPenCross( screenData, x, y, color, s_width, s_height, s_blendFn );
 			};
 		} else {
 
 			// Double size to get the size of the outer box
-			const diameter = s_screenData.penData.size * 2;
+			const diameter = s_screenData.pens.size * 2;
 
 			// Half is size of radius
-			const half = s_screenData.penData.size;
+			const half = s_screenData.pens.size;
 
 			// Calculate the center of circle
 			const offset = half - 1;
