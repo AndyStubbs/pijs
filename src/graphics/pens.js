@@ -76,10 +76,16 @@ function addApiCommands( api ) {
 	// Add screen commands when screen is created
 	g_screenManager.addScreenInitFunction( ( screenData ) => {
 
-		// First assign the setPen functions
+		// Assign the setPen function to the screen
 		screenData.api.setPen = ( pen, size ) => {
 			const options = g_utils.parseOptions( [ pen, size ], [ "pen", "size" ] );
 			return setPen( screenData, options );
+		};
+
+		// Assign the setBlend function to the screen
+		screenData.api.setBlend = ( blend, noise ) => {
+			const options = g_utils.parseOptions( [ blend, noise ], [ "blend", "noise" ] );
+			return setBlend( screenData, options );
 		};
 	} );
 }
@@ -259,7 +265,7 @@ function setPen( screenData, options ) {
 	if( pen === PEN_SQUARE ) {
 		screenData.pens.pixelsPerPen = size * size;
 	} else if( pen === PEN_CIRCLE ) {
-		screenData.pens.pixelsPerPen = Math.PI * ( size + 1 ) * ( size + 1 );
+		screenData.pens.pixelsPerPen = Math.round( Math.PI * ( size + 1 ) * ( size + 1 ) ) + 1;
 	} else {
 		screenData.pens.pixelsPerPen = 1;
 	}
@@ -301,15 +307,16 @@ function setBlend( screenData, options ) {
 	}
 
 	// Set blend data on screen
+	const previousBlend = screenData.blends.blend;
 	screenData.blends.blend = blend;
-	screenData.blendData.noise = noise;
+	screenData.blends.noise = noise;
 
 	// Reset the pen function so it can get the new blend function
 	buildPenFn( screenData );
 
 	// Notify renderer that blend mode has changed for webgl2 renderer
 	if( screenData.renderMode === g_screenManager.WEBGL2_RENDER_MODE ) {
-		screenData.renderer.blendModeChanged( screenData );
+		screenData.renderer.blendModeChanged( screenData, previousBlend );
 	}
 }
 

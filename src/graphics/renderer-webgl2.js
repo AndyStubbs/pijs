@@ -147,7 +147,7 @@ export function initWebGL( screenData ) {
 	// Try WebGL2 first
 	screenData.gl = canvas.getContext( "webgl2", { 
 		"alpha": true, 
-		"premultipliedAlpha": true,
+		"premultipliedAlpha": false,
 		"antialias": false,
 		"preserveDrawingBuffer": true,
 		"desynchronized": false,
@@ -395,22 +395,12 @@ export function cls( screenData, x, y, width, height ) {
 	// TODO: Implement clear screen command
 }
 
-export function blendModeChanged( screenData ) {
+export function blendModeChanged( screenData, previousBlend ) {
 
 	// Flush existing batch with old blend mode
-	flushBatches( screenData );
+	flushBatches( screenData, previousBlend );
 	displayToCanvas( screenData );
 
-	const gl = screenData.gl;
-	if( screenData.blendData.blend === g_pens.BLEND_REPLACE ) {
-		gl.disable( gl.BLEND );
-	} else {
-		
-		// TODO: Actually figure out how to do proper blending - support more blending modes
-		// https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc
-		gl.enable( gl.BLEND );
-		gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA );
-	}
 }
 
 
@@ -456,12 +446,12 @@ function createBatchSystem( screenData, vertSrc, fragSrc, mode ) {
 	// Setup position attibute
 	gl.bindBuffer( gl.ARRAY_BUFFER, batch.vertexVBO );
 	gl.enableVertexAttribArray( batch.locations.position );
-	gl.vertexAttribPointer( batch.locations.position, 2, gl.FLOAT, false, 0, 0 );
+	gl.vertexAttribPointer( batch.locations.position, batch.vertexComponents, gl.FLOAT, false, 0, 0 );
 
 	// Setup color attribute
 	gl.bindBuffer( gl.ARRAY_BUFFER, batch.colorVBO );
 	gl.enableVertexAttribArray( batch.locations.color );
-	gl.vertexAttribPointer( batch.locations.color, 4, gl.UNSIGNED_BYTE, true, 0, 0 );
+	gl.vertexAttribPointer( batch.locations.color, batch.colorComponents, gl.UNSIGNED_BYTE, true, 0, 0 );
 	
 	gl.bindVertexArray( null );
 
@@ -511,7 +501,11 @@ export function ensureBatchCapacity( screenData, batch, newItemCount ) {
  * 
  * @param {Object} screenData - Screen data object
  */
-function flushBatches( screenData ) {
+function flushBatches( screenData, blend = null ) {
+
+	if( blend === null ) {
+		blend = screenData.blends.blend;
+	}
 	
 	const gl = screenData.gl;
 
@@ -535,7 +529,19 @@ function flushBatches( screenData ) {
 		gl.clearColor( 0, 0, 0, 0 );
 		gl.clear( gl.COLOR_BUFFER_BIT );
 		screenData.isFirstRender = false;
-		//console.log( "WebGL2: Cleared FBO on first render" );
+	}
+
+	// Update the blend mode
+	if( blend === g_pens.BLEND_REPLACE ) {
+		gl.disable( gl.BLEND );
+	} else {
+		gl.enable( gl.BLEND );
+		gl.blendFuncSeparate(
+			gl.SRC_ALPHA,           // srcRGBFactor
+			gl.ONE_MINUS_SRC_ALPHA, // dstRGBFactor
+			gl.ONE,                 // srcAlphaFactor  <--- Make src alpha factor 1.0 (no scaling)
+			gl.ONE_MINUS_SRC_ALPHA  // dstAlphaFactor  <--- Make dst alpha factor (1-src.a)
+		);
 	}
 	
 	// TODO: Make sure this is optimized recieved different advice on how to copy buffer data
@@ -544,6 +550,7 @@ function flushBatches( screenData ) {
 	// on first use or resize
 	// Render point batch if it has data
 	if( batch.count > 0 ) {
+
 		gl.useProgram( batch.program );
 		gl.uniform2f( batch.locations.resolution, screenData.width, screenData.height );
 		gl.bindVertexArray( batch.vao );
@@ -559,11 +566,15 @@ function flushBatches( screenData ) {
 
 		// Upload positions
 		gl.bindBuffer( gl.ARRAY_BUFFER, batch.vertexVBO );
-		gl.bufferSubData( gl.ARRAY_BUFFER, 0, batch.vertices.subarray( 0, batch.count * batch.vertexComponents ) );
+		gl.bufferSubData( 
+			gl.ARRAY_BUFFER, 0, batch.vertices.subarray( 0, batch.count * batch.vertexComponents )
+		);
 		
 		// Upload colors
 		gl.bindBuffer( gl.ARRAY_BUFFER, batch.colorVBO );
-		gl.bufferSubData( gl.ARRAY_BUFFER, 0, batch.colors.subarray( 0, batch.count * batch.colorComponents ) );
+		gl.bufferSubData(
+			gl.ARRAY_BUFFER, 0, batch.colors.subarray( 0, batch.count * batch.colorComponents )
+		);
 
 		// Draw points
 		gl.drawArrays( batch.mode, 0, batch.count );
@@ -656,11 +667,6 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
 	pointBatch.colors[ cidx + 1 ] = color.g;
 	pointBatch.colors[ cidx + 2 ] = color.b;
 	pointBatch.colors[ cidx + 3 ] = color.a;
-	
+
 	pointBatch.count++;
-	
-	// Debug logging
-	// if( pointBatch.count <= 10 ) {
-	// 	console.log( `WebGL2: Added pixel ${pointBatch.count} at (${x}, ${y}) color:`, color );
-	// }
 }
