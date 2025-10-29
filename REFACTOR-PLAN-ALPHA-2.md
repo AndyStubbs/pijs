@@ -6,6 +6,10 @@ Migrate Pi.js from 2D Canvas ImageData rendering to WebGL2 for improved performa
 simplifying the architecture by removing non-pixel mode and canvas font support. Implement 
 incrementally, starting with a minimal shell and building up feature by feature.
 
+**Note:** This refactor uses a functional folder layout (see `REFACTOR-FOLDER-LAYOUT.md`) 
+instead of the previous `modules/` approach, organizing code by functionality rather than 
+by feature type.
+
 ## Goals
 
 - Migrate from 2D Canvas `putImageData` to WebGL2 rendering
@@ -17,52 +21,66 @@ incrementally, starting with a minimal shell and building up feature by feature.
 - WebGL2 with fallback to 2D Canvas (no WebGL1)
 - Prepare for future Web Worker integration (TODO comments)
 
-## Phase 1: Setup and Minimal Shell
+## Phase 1: Setup and Minimal Shell ✅ COMPLETE
 
-### Step 1.1: Copy Alpha 1 to src/
-- Copy all files from `src-pi-2.0.0-alpha.1/` to `src/`
-- This becomes the working directory for Alpha 2
+### Step 1.1: Copy Alpha 1 to src/ ✅ COMPLETE
+- Copied all files from `src-pi-2.0.0-alpha.1/` to `src/`
+- This became the working directory for Alpha 2
 
-### Step 1.2: Create REFACTOR-PLAN-ALPHA-2.md
-- Document the Alpha 2 goals and architecture
-- Reference WEBGL-UPGRADE.md and STRUCTURE-UPGRADE.md
-- Outline WebGL2 rendering approach
-- Document removed features (non-pixel mode, canvas fonts, render())
-- Include incremental implementation strategy
+### Step 1.2: Create REFACTOR-PLAN-ALPHA-2.md ✅ COMPLETE
+- Documented the Alpha 2 goals and architecture
+- Referenced WEBGL-UPGRADE.md and STRUCTURE-UPGRADE.md
+- Outlined WebGL2 rendering approach
+- Documented removed features (non-pixel mode, canvas fonts, render())
+- Included incremental implementation strategy
 
-### Step 1.3: Strip Down to Minimal Shell
-Remove all feature modules, keeping only core infrastructure:
+### Step 1.3: Strip Down to Minimal Shell ✅ COMPLETE
+Removed all feature modules, keeping only core infrastructure:
 
-**Keep:**
+**Kept:**
 - `src/index.js` (minimal - only core imports)
-- `src/core/commands.js` (command registration system)
 - `src/core/screen-manager.js` (screen creation only)
 - `src/core/utils.js` (utility functions)
+- `src/core/state-settings.js` (state management)
+- `src/core/plugins.js` (plugin system)
 
-**Remove/Gut (will rebuild incrementally):**
-- `src/core/renderer.js` - will rebuild for WebGL
-- `src/core/colors.js` - will rebuild
-- `src/core/events.js` - keep for plugins
-- `src/core/plugins.js` - keep
-- All `src/modules/*` files - remove temporarily
-- `src/assets/font-data.js` - remove temporarily
+**Removed/Gutted (will rebuild incrementally):**
+- All `src/modules/*` files - removed temporarily (replaced with functional layout)
+- `src/assets/font-data.js` - removed temporarily (will be `src/text/font-data.js`)
 
-**Update `src/index.js`:**
+**Updated `src/index.js`:**
 ```javascript
-import * as commands from "./core/commands.js";
-import * as screenManager from "./core/screen-manager.js";
-import * as events from "./core/events.js";
-import * as plugins from "./core/plugins.js";
+// Core Modules
+import * as g_utils from "./core/utils";
+import * as g_state from "./core/state-settings.js";
+import * as g_screenManager from "./core/screen-manager.js";
+import * as g_plugins from "./core/plugins.js";
+
+// Graphics
+import * as g_webgl2Renderer from "./graphics/renderer-webgl2.js";
+import * as g_canvas2dRenderer from "./graphics/renderer-canvas2d.js";
+import * as g_pens from "./graphics/pens.js";
+import * as g_colors from "./graphics/colors.js";
+import * as g_basic from "./graphics/basic.js";
+
+// Inputs
+import * as g_events from "./inputs/events.js";
 
 const VERSION = __VERSION__;
 const api = { "version": VERSION };
 
-commands.init( api, screenManager );
-screenManager.init();
-events.init();
-plugins.init();
+// Store modules in object to avoid circular references
+const mods = {
+    g_utils, g_state, g_screenManager, g_plugins, g_webgl2Renderer, g_canvas2dRenderer, g_pens,
+    g_colors, g_basic, g_events
+};
 
-commands.processApi();
+// Initialize the core modules
+for( const mod in mods ) {
+    if( mods[ mod ].init ) {
+        mods[ mod ].init( api );
+    }
+}
 
 if( typeof window !== "undefined" ) {
     window.pi = api;
@@ -75,23 +93,17 @@ export default api;
 export { api as pi };
 ```
 
-### Step 1.4: Test Minimal Build
-- Run `npm run build`
-- Verify it builds without errors
-- Create simple test HTML that loads Pi.js (should do nothing yet)
+### Step 1.4: Test Minimal Build ✅ COMPLETE
+- Built successfully with `npm run build`
+- Verified it builds without errors
+- Created simple test HTML that loads Pi.js
 
-## Phase 2: WebGL2 Core Architecture
+## Phase 2: WebGL2 Core Architecture ✅ COMPLETE
 
-### Step 2.1: Split Renderer into Three Files
-Replace `src/core/renderer.js` with three specialized renderers:
+### Step 2.1: Split Renderer into Three Files ✅ COMPLETE
+Created specialized renderers in the graphics directory:
 
-**Create `src/modules/renderer.js`:**
-
-**Key responsibilities:**
-- Manage shared screenData between the two renderers
-- Create the external API commands related to rendering for (cls, setPen, and setBlend)
-
-**Create `src/core/renderer-webgl2.js`:**
+**Created `src/graphics/renderer-webgl2.js`:**
 
 **Key responsibilities:**
 - WebGL2 context creation and management
@@ -100,7 +112,7 @@ Replace `src/core/renderer.js` with three specialized renderers:
 - Batch rendering system (point batch, line batch, triangle batch)
 - Automatic render queue (microtask-based)
 
-**Create `src/core/renderer-canvas2d.js`:**
+**Created `src/graphics/renderer-canvas2d.js`:**
 
 **Key responsibilities:**
 - 2D Canvas context creation and management
@@ -108,124 +120,53 @@ Replace `src/core/renderer.js` with three specialized renderers:
 - Fallback rendering when WebGL2 is not available
 - Compatible API with renderer-webgl2 for seamless switching
 
-**Initial structure:**
-```javascript
-// WebGL2 context and FBO
-let m_gl = null;
-let m_screenFBO = null;
-let m_screenTexture = null;
+**Note:** The external API commands (cls, setPen, setBlend) are handled by individual modules rather than a central renderer module.
 
-// Batch systems
-const m_pointBatch = { vertices: [], colors: [], count: 0 };
-const m_lineBatch = { vertices: [], colors: [], count: 0 };
-const m_triangleBatch = { vertices: [], colors: [], uvs: [], count: 0 };
-
-// Shader programs
-let m_pointShader = null;
-let m_lineShader = null;
-let m_triangleShader = null;
-
-export function init() {
-    // Initialize WebGL2 or fallback
-    // Create FBO for offscreen rendering
-    // Compile shaders
-    // Setup batch buffers
-}
-
-export function initWebGL( canvas, width, height ) {
-    // Try WebGL2 first
-    m_gl = canvas.getContext( "webgl2", { 
-        alpha: false, 
-        premultipliedAlpha: false 
-    } );
-    
-    if( !m_gl ) {
-        // Return null to indicate fallback needed
-        return null;
-    }
-    
-    // Create FBO and texture
-    // Compile shaders
-    // Return WebGL renderer interface
-}
-
-export function addPoint( x, y, color ) {
-    // Add to point batch
-    // Queue automatic render if needed
-}
-
-export function flushBatches() {
-    // Render all batches to FBO
-}
-
-export function displayToCanvas() {
-    // Draw FBO texture to visible canvas
-}
-```
-
-### Step 2.2: Create Simple Shaders inside renderer-webgl2.js
+### Step 2.2: Create Simple Shaders inside renderer-webgl2.js ✅ COMPLETE
 
 **Point shader (for pixel-perfect rendering):**
 ```glsl
 // Vertex shader
-attribute vec2 a_position;
-attribute vec4 a_color;
-varying vec4 v_color;
+#version 300 es
+in vec2 a_position;
+in vec4 a_color;
+uniform vec2 u_resolution;
+out vec4 v_color;
 
 void main() {
-    gl_Position = vec4(a_position, 0.0, 1.0);
+    // Convert screen coords to NDC with pixel center adjustment
+    vec2 clipSpace = ((a_position + 0.5) / u_resolution) * 2.0 - 1.0;
+    gl_Position = vec4(clipSpace * vec2(1, -1), 0.0, 1.0);
     gl_PointSize = 1.0;
     v_color = a_color;
 }
 
 // Fragment shader
 precision mediump float;
-varying vec4 v_color;
+in vec4 v_color;
+out vec4 fragColor;
 
 void main() {
-    gl_FragColor = v_color;
+    fragColor = v_color;
 }
 ```
 
-**Similar shaders for lines and triangles**
+**Similar shaders for lines and triangles implemented**
 
-### Step 2.3: Update Screen Manager for Renderer Delegation
-Modify `src/core/screen-manager.js`:
+### Step 2.3: Update Screen Manager for Renderer Delegation ✅ COMPLETE
+Modified `src/core/screen-manager.js`:
 
 **Key changes:**
-- Remove direct `getContext( "2d" )` calls
-- Add renderer initialization logic that tries WebGL2 first, falls back to Canvas2D
-- Delegate context creation to the appropriate renderer
+- Removed direct `getContext( "2d" )` calls
+- Added renderer initialization logic that tries WebGL2 first, falls back to Canvas2D
+- Delegated context creation to the appropriate renderer
 
-**New screen creation flow:**
-```javascript
-function screen( options ) {
-    // ... existing screen setup ...
-    
-	// Try WebGL2 first, fall back to Canvas2D
-	const webgl2Status = g_webgl2Renderer.initWebGL( screenData );
-	if( webgl2Status ) {
-		screenData.renderMode = "webgl";
-		screenData.renderer = g_webgl2Renderer;
-	} else {
+**Screen creation flow implemented:**
+- Try WebGL2 first, fall back to Canvas2D
+- Set `screenData.renderMode` to "webgl2" or "canvas2d"
+- Set `screenData.renderer` to the active renderer instance
 
-		// Canvas2D renderer (fallback)
-		const canvas2dStatus = g_canvas2dRenderer.initCanvas2D( screenData );
-		if( !canvas2dStatus ) {
-			const error = new Error( "screen: Failed to create rendering context." );
-			error.code = "NO_RENDERING_CONTEXT";
-			throw error;
-		}
-
-		screenData.renderMode = "canvas2d";
-		screenData.renderer = canvas2dStatus;
-	}
-
-    // ... rest of screen setup ...
-}
-```
-
-**Remove these screenData items:**
+**Removed screenData items:**
 - Direct context creation
 - `imageData` and `imageData2` (moved to canvas2d-renderer)
 - `isDirty` (handled by renderers)
@@ -233,31 +174,30 @@ function screen( options ) {
 - `autoRenderMicrotaskScheduled` (handled by renderers)
 - `pixelMode` (always pixel mode now)
 
-**Add these screenData items:**
+**Added screenData items:**
 - `renderer` - The active renderer instance
 - `renderMode` - "webgl2" or "canvas2d"
 
-
-### Step 2.4: Implement Blank Screen
+### Step 2.4: Implement Blank Screen ✅ COMPLETE
 Goal: Create a screen that displays a solid color (black/transparent by default)
 
-**Update screen creation:**
+**Screen creation implemented:**
 - Try WebGL2 renderer first
 - If WebGL2 fails, fall back to Canvas2D renderer
 - Clear to black using appropriate renderer
 - Display to canvas using renderer's display method
-- Verify screen appears
+- Screen appears correctly
 
-**Test:**
+**Test working:**
 ```javascript
 $.ready(() => {
     $.screen({ width: 320, height: 240 });
-    // Should show black screen (WebGL2 or Canvas2D)
+    // Shows black screen (WebGL2 or Canvas2D)
 });
 ```
 
-### Step 2.5: Create Canvas2D Renderer
-Create `src/core/renderer-canvas2d.js`:
+### Step 2.5: Create Canvas2D Renderer ✅ COMPLETE
+Created `src/graphics/renderer-canvas2d.js`:
 
 **Key responsibilities:**
 - 2D Canvas context creation and management
@@ -265,117 +205,54 @@ Create `src/core/renderer-canvas2d.js`:
 - Compatible API with webgl-renderer
 - Fallback rendering when WebGL2 is not available
 
-**Initial structure:**
-```javascript
-export function initCanvas2D( canvas, width, height ) {
-    const context = canvas.getContext( "2d", {
-        alpha: false,
-        desynchronized: true
-    } );
-    
-    if( !context ) {
-        return null;
-    }
-    
-    // Setup canvas for pixel-perfect rendering
-    context.imageSmoothingEnabled = false;
-    
-    // Create ImageData for pixel manipulation
-    const imageData = context.createImageData( width, height );
-    
-    return {
-        getContext: () => context,
-        getImageData: () => imageData,
-        clear: () => clearToBlack( context, width, height ),
-        display: () => context.putImageData( imageData, 0, 0 ),
-        drawPixel: ( x, y, r, g, b, a ) => setPixel( imageData, x, y, r, g, b, a )
-    };
-}
-```
+**Structure implemented:**
+- `initCanvas2D()` function for context creation
+- ImageData manipulation for pixel-perfect rendering
+- Compatible API with WebGL2 renderer
+- Proper fallback handling
 
-## Phase 3: Command System Optimization
+## Phase 3: Command System Optimization ✅ COMPLETE
 
-### Step 3.1: Implement Fast Path Architecture
+### Step 3.1: Implement Fast Path Architecture ✅ COMPLETE
 Following STRUCTURE-UPGRADE.md recommendations:
 
-**Add to both renderers:**
+**Added to both renderers:**
 
-**`src/core/webgl-renderer.js`:**
-```javascript
-// Fast path for direct pixel writes (no bounds check, no blending)
-export function drawPixelUnsafe( screenData, x, y, r, g, b, a ) {
-    // Add directly to point batch
-    const batch = m_pointBatch;
-    const idx = batch.count * 2;
-    const cidx = batch.count * 4;
-    
-    batch.vertices[idx] = x;
-    batch.vertices[idx + 1] = y;
-    batch.colors[cidx] = r / 255;
-    batch.colors[cidx + 1] = g / 255;
-    batch.colors[cidx + 2] = b / 255;
-    batch.colors[cidx + 3] = a / 255;
-    
-    batch.count++;
-    
-    queueAutoRender( screenData );
-}
+**`src/graphics/renderer-webgl2.js`:**
+- Implemented fast path for direct pixel writes (no bounds check, no blending)
+- Added `drawPixelUnsafe()` and `drawPixelDirect()` functions
+- Batch system for efficient rendering
+- Automatic render queue management
 
-// Fast path with bounds checking
-export function drawPixelDirect( screenData, x, y, r, g, b, a ) {
-    if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
-        return;
-    }
-    drawPixelUnsafe( screenData, x, y, r, g, b, a );
-}
-```
+**`src/graphics/renderer-canvas2d.js`:**
+- Implemented fast path for direct pixel writes (no bounds check, no blending)
+- Added `drawPixelUnsafe()` and `drawPixelDirect()` functions
+- ImageData manipulation for pixel-perfect rendering
+- Dirty flag management for efficient updates
 
-**`src/core/canvas2d-renderer.js`:**
-```javascript
-// Fast path for direct pixel writes (no bounds check, no blending)
-export function drawPixelUnsafe( screenData, x, y, color ) {
-	const imageData = screenData.imageData;
-	const data = imageData.data;
-	const idx = ( ( screenData.width * y ) + x ) * 4;
-	
-	data[ idx ] = color.r;
-	data[ idx + 1 ] = color.g;
-	data[ idx + 2 ] = color.b;
-	data[ idx + 3 ] = color.a;
-	
-	setImageDirty( screenData );
-}
-
-// Fast path with bounds checking
-export function drawPixelDirect( screenData, x, y, color ) {
-	if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
-		return;
-	}
-	drawPixelUnsafe( screenData, x, y, color );
-}
-```
-
-### Step 3.2: Optimize Command Wrappers
+### Step 3.2: Optimize Command Wrappers ✅ COMPLETE
 Following STRUCTURE-UPGRADE.md Section 2.1:
 
-**Update `src/core/commands.js`:**
-- Implement `generateOptimizedWrapper()` function
-- Avoid spread operators
-- Skip `parseOptions` for 0-1 parameter commands
-- Use fixed parameter lists instead of `...args`
+**Graphics commands optimized:**
+- Implemented in `src/graphics/basic.js`
+- Avoid spread operators in hot paths
+- Skip `parseOptions` for simple commands
+- Use fixed parameter lists for better JIT performance
+- Monomorphic call sites for optimization
 
-### Step 3.3: Remove Pen/Blend Function Pointers
+### Step 3.3: Remove Pen/Blend Function Pointers ✅ COMPLETE
 Since we're removing non-pixel mode and simplifying:
 
-- Remove `screenData.pen` function pointer
-- Remove `screenData.blend` function pointer
-- Remove `m_pens` and `m_blends` registries
-- All drawing uses direct pixel writes to WebGL batches
+**Implemented in `src/graphics/pens.js`:**
+- Kept pen/blend system but simplified
+- All drawing uses direct pixel writes to renderer batches
+- Pen system now focuses on pixel mode only
+- Blend modes simplified to replace and alpha
 
-## Phase 4: Color System
+## Phase 4: Color System ✅ COMPLETE
 
-### Step 4.1: Rebuild Color Module
-Create simplified `src/core/colors.js`:
+### Step 4.1: Rebuild Color Module ✅ COMPLETE
+Created simplified `src/graphics/colors.js`:
 
 **Focus on:**
 - Palette management (256 colors)
@@ -383,19 +260,19 @@ Create simplified `src/core/colors.js`:
 - RGB/Hex conversion utilities
 - No AA mode, no canvas context colors
 
-**Remove:**
+**Removed:**
 - Canvas context color setting
 - AA mode color handling
 - Non-pixel mode support
 
-### Step 4.2: Add Color to Screen Data
+### Step 4.2: Add Color to Screen Data ✅ COMPLETE
 ```javascript
 screenManager.addScreenDataItem( "color", { r: 255, g: 255, b: 255, a: 255 } );
 screenManager.addScreenDataItem( "palette", defaultPalette );
 screenManager.addScreenDataItem( "colorCache", {} );
 ```
 
-### Step 4.3: Implement setColor Command
+### Step 4.3: Implement setColor Command ✅ COMPLETE
 ```javascript
 function setColor( screenData, options ) {
     const color = parseColor( options.color );
@@ -403,18 +280,19 @@ function setColor( screenData, options ) {
 }
 ```
 
-## Phase 5: First Drawing Command - pset
+## Phase 5: First Drawing Command - pset ✅ COMPLETE
 
-### Step 5.1: Create Graphics Module
-Create new `src/modules/graphics.js`:
+### Step 5.1: Create Graphics Module ✅ COMPLETE
+Created `src/graphics/basic.js`:
 
 ```javascript
 import * as screenManager from "../core/screen-manager.js";
-import * as webglRenderer from "../core/webgl-renderer.js";
-import * as canvas2dRenderer from "../core/canvas2d-renderer.js";
+import * as webglRenderer from "./renderer-webgl2.js";
+import * as canvas2dRenderer from "./renderer-canvas2d.js";
 
 export function init() {
-    screenManager.addCommand( "pset", pset, [ "x", "y", "color" ] );
+    // Graphics commands are built dynamically based on screen data
+    buildGraphicsApi( null );
 }
 
 function pset( screenData, options ) {
@@ -442,7 +320,7 @@ function pset( screenData, options ) {
 }
 ```
 
-### Step 5.2: Test pset
+### Step 5.2: Test pset ✅ COMPLETE
 ```javascript
 $.ready(() => {
     $.screen({ width: 320, height: 240 });
@@ -452,10 +330,10 @@ $.ready(() => {
 });
 ```
 
-## Phase 6: Line Drawing
+## Phase 6: Line Drawing ✅ COMPLETE
 
-### Step 6.1: Implement line Command
-Add to `src/modules/graphics.js`:
+### Step 6.1: Implement line Command ✅ COMPLETE
+Added to `src/graphics/basic.js`:
 
 ```javascript
 function line( screenData, options ) {
@@ -509,7 +387,7 @@ function drawLineFast( screenData, x1, y1, x2, y2, color ) {
 }
 ```
 
-### Step 6.2: Test line
+### Step 6.2: Test line ✅ COMPLETE
 ```javascript
 $.ready(() => {
     $.screen({ width: 320, height: 240 });
@@ -544,7 +422,7 @@ Implement incrementally, one at a time:
 ## Phase 8: Image Support
 
 ### Step 8.1: Rebuild Images Module
-Create new `src/modules/images.js`:
+Create new `src/graphics/images.js`:
 
 - Load images as WebGL textures
 - Use textured quad batch for drawing
@@ -560,15 +438,18 @@ Create new `src/modules/images.js`:
 - Take existing base32-encoded fonts
 - Convert to bitmap texture atlas at init time
 - Store as WebGL texture
+- Create `src/text/font-data.js`
 
 ### Step 9.2: Rebuild Font Module
 - Load bitmap fonts as textures
 - Character atlas mapping
+- Create `src/text/font.js`
 
 ### Step 9.3: Rebuild Print Module
 - Render text as textured quads
 - Add to textured triangle batch
 - Cursor positioning, word wrap
+- Create `src/text/print.js`
 
 ## Phase 10: Advanced Features
 
@@ -596,20 +477,20 @@ Create new `src/modules/images.js`:
 
 ## Phase 11: Input Systems
 
-Rebuild incrementally:
-- keyboard.js
-- mouse.js
-- touch.js
-- gamepad.js
-- press.js
+Rebuild incrementally in `src/inputs/`:
+- `keyboard.js`
+- `mouse.js`
+- `touch.js`
+- `gamepad.js`
+- `press.js`
 
 (These should need minimal changes since they don't interact with rendering)
 
 ## Phase 12: Sound System
 
-Rebuild:
-- sound.js
-- play.js
+Rebuild in `src/audio/`:
+- `sound.js`
+- `play.js`
 
 (Should need minimal changes)
 
@@ -640,6 +521,43 @@ Rebuild:
 - Breaking changes list
 - Performance tips
 
+## Target Folder Structure (from REFACTOR-FOLDER-LAYOUT.md)
+
+```
+src/
+├── index.js                    # Main entry point
+├── core/                       # Core system modules
+│   ├── utils.js               # Utility functions
+│   ├── state-settings.js      # State and settings management
+│   ├── screen-manager.js      # Screen creation and management
+│   └── plugins.js             # Plugin system
+├── graphics/                   # Graphics rendering modules
+│   ├── renderer-webgl2.js     # WebGL2 primary renderer
+│   ├── renderer-canvas2d.js   # Canvas2D fallback renderer
+│   ├── pens.js                # Pen and blend mode system
+│   ├── colors.js              # Color palette and management
+│   ├── basic.js               # Basic graphics commands (pset, line, etc.)
+│   ├── (images.js)            # Image loading and drawing (planned)
+│   ├── (paint.js)             # Paint/flood fill operations (planned)
+│   └── (draw.js)              # Advanced drawing primitives (planned)
+├── text/                       # Text rendering modules
+│   ├── (font-data.js)         # Font data and bitmaps (planned)
+│   ├── (font.js)              # Font management (planned)
+│   └── (print.js)             # Text printing commands (planned)
+├── inputs/                     # Input handling modules
+│   ├── events.js              # Event management system
+│   ├── (keyboard.js)          # Keyboard input (planned)
+│   ├── (mouse.js)             # Mouse input (planned)
+│   ├── (touch.js)             # Touch input (planned)
+│   ├── (gamepad.js)           # Gamepad input (planned)
+│   └── (press.js)             # Press/click detection (planned)
+└── audio/                      # Audio modules
+    ├── (sound.js)             # Sound management (planned)
+    └── (play.js)              # Audio playback (planned)
+```
+
+**Note:** Files in parentheses `()` are planned modules not yet implemented.
+
 ## Key Architectural Changes
 
 ### Removed Features
@@ -656,7 +574,7 @@ Rebuild:
 2. Automatic batch rendering
 3. Optimized command wrappers
 4. Fast path for hot operations
-5. `getAsync()`/`getPixelAsync()` for non-blocking reads
+5. `getAsync()`/`getPixelAsync()` for non-blocking reads (planned)
 
 ### Performance Improvements
 1. GPU-accelerated rendering
@@ -683,22 +601,22 @@ Rebuild:
 
 ## To-dos
 
-### Phase 1: Setup and Minimal Shell
+### Phase 1: Setup and Minimal Shell ✅ COMPLETE
 - [x] Step 1.1-1.4: Setup minimal shell - copy alpha.1 to src/, create REFACTOR-PLAN-ALPHA-2.md, strip down to core only
 
-### Phase 2: WebGL2 Core Architecture
-- [x] Step 2.1: Create WebGL Renderer Core (webgl-renderer.js) and Canvas2D Renderer (canvas2d-renderer.js)
-- [x] Step 2.2: Create Simple Shaders (shaders.js) - Integrated into webgl-renderer.js
+### Phase 2: WebGL2 Core Architecture ✅ COMPLETE
+- [x] Step 2.1: Create WebGL Renderer Core (renderer-webgl2.js) and Canvas2D Renderer (renderer-canvas2d.js)
+- [x] Step 2.2: Create Simple Shaders - Integrated into renderer-webgl2.js
 - [x] Step 2.3: Update Screen Manager for Renderer Delegation
 - [x] Step 2.4: Implement Blank Screen
 - [x] Step 2.5: Create Canvas2D Renderer
 
-### Phase 3: Command System Optimization
+### Phase 3: Command System Optimization ✅ COMPLETE
 - [x] Step 3.1: Implement Fast Path Architecture
 - [x] Step 3.2: Optimize Command Wrappers
 - [x] Step 3.3: Remove Pen/Blend Function Pointers
 
-### Phase 4: Color System
+### Phase 4: Color System ✅ COMPLETE
 - [x] Step 4.1: Rebuild Color Module
 - [x] Step 4.2: Add Color to Screen Data
 - [x] Step 4.3: Implement setColor Command
@@ -707,9 +625,9 @@ Rebuild:
 - [x] Step 5.1: Create Graphics Module
 - [x] Step 5.2: Test pset
 
-### Phase 6: Line Drawing
-- [ ] Step 6.1: Implement line Command
-- [ ] Step 6.2: Test line
+### Phase 6: Line Drawing ✅ COMPLETE
+- [x] Step 6.1: Implement line Command
+- [x] Step 6.2: Test line
 
 ### Phase 7: Additional Graphics Primitives
 - [ ] Step 7.1: Implement rect (filled and outlined)
@@ -735,15 +653,15 @@ Rebuild:
 - [ ] Step 10.5: Implement filterImg
 
 ### Phase 11: Input Systems
-- [ ] Rebuild keyboard.js
-- [ ] Rebuild mouse.js
-- [ ] Rebuild touch.js
-- [ ] Rebuild gamepad.js
-- [ ] Rebuild press.js
+- [ ] Rebuild `src/inputs/keyboard.js`
+- [ ] Rebuild `src/inputs/mouse.js`
+- [ ] Rebuild `src/inputs/touch.js`
+- [ ] Rebuild `src/inputs/gamepad.js`
+- [ ] Rebuild `src/inputs/press.js`
 
 ### Phase 12: Sound System
-- [ ] Rebuild sound.js
-- [ ] Rebuild play.js
+- [ ] Rebuild `src/audio/sound.js`
+- [ ] Rebuild `src/audio/play.js`
 
 ### Phase 13: Testing and Optimization
 - [ ] Step 13.1: Run Visual Regression Tests
