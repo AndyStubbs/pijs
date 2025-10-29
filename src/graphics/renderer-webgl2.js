@@ -579,7 +579,7 @@ function flushBatches( screenData ) {
 		gl.clearColor( 0, 0, 0, 0 );
 		gl.clear( gl.COLOR_BUFFER_BIT );
 		screenData.isFirstRender = false;
-		console.log( "WebGL2: Cleared FBO on first render" );
+		//console.log( "WebGL2: Cleared FBO on first render" );
 	}
 	
 	// Render point batch if it has data
@@ -711,9 +711,9 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
 	pointBatch.count++;
 	
 	// Debug logging
-	if( pointBatch.count <= 10 ) {
-		console.log( `WebGL2: Added pixel ${pointBatch.count} at (${x}, ${y}) color:`, color );
-	}
+	// if( pointBatch.count <= 10 ) {
+	// 	console.log( `WebGL2: Added pixel ${pointBatch.count} at (${x}, ${y}) color:`, color );
+	// }
 	
 	// TODO: Remove per pixel check, should be done after draw but in actual graphics commands like
 	// after the line draw is complete
