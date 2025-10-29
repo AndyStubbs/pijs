@@ -185,22 +185,3 @@ export function blendPixelUnsafe( screenData, x, y, color ) {
 	// Update alpha channel
 	data[ i + 3 ] = Math.round( outA * 255 );
 }
-
-
-/**
- * Fast path with bounds checking
- * 
- * @param {Object} screenData - Screen data object
- * @param {number} x - X coordinate
- * @param {number} y - Y coordinate
- * @param {number} r - Red component (0-255)
- * @param {number} g - Green component (0-255)
- * @param {number} b - Blue component (0-255)
- * @param {number} a - Alpha component (0-255)
- */
-export function drawPixelDirect( screenData, x, y, color ) {
-	if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
-		return;
-	}
-	drawPixelUnsafe( screenData, x, y, color );
-}

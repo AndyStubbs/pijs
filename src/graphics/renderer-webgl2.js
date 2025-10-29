@@ -13,6 +13,8 @@
 import * as g_pens from "./pens.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
+
+// Shaders are imported from external files via esbuild text loader
 import m_pointVertSrc from "./shaders/point.vert";
 import m_pointFragSrc from "./shaders/point.frag";
 import m_displayVertSrc from "./shaders/display.vert";
@@ -33,16 +35,20 @@ const m_batchProto = {
 	"count": 0,
 	"capacity": 1000,
 	"capacityChanged": true,
+	"vertexComponents": 2,
+	"colorComponents": 4,
 
 	// WebGL resources
 	"vertexVBO": null,
 	"colorVBO": null,
+	"vao": null,
+
+	// Drawing mode, e.g., gl.POINTS or gl.LINES
+	"mode": null,
 
 	// Cached shader locations
 	"locations": null
 };
-
-// Shaders are imported from external files via esbuild text loader
 
 let m_isWebgl2Capable = false;
 
@@ -144,7 +150,7 @@ export function initWebGL( screenData ) {
 		"premultipliedAlpha": true,
 		"antialias": false,
 		"preserveDrawingBuffer": true,
-		"desynchronized": true,
+		"desynchronized": false,
 		"colorType": "unorm8"
 	} );
 	
@@ -164,7 +170,9 @@ export function initWebGL( screenData ) {
 	}
 	
 	// Setup batch buffers
-	screenData.pointBatch = createBatchSystem( screenData, m_pointVertSrc, m_pointFragSrc );
+	screenData.pointBatch = createBatchSystem( 
+		screenData, m_pointVertSrc, m_pointFragSrc, screenData.gl.POINTS 
+	);
 	
 	// Setup display shader
 	setupDisplayShader( screenData );
@@ -420,13 +428,14 @@ export function blendModeChanged( screenData ) {
  * 
  * @returns {Object} The batch system object
  */
-function createBatchSystem( screenData, vertSrc, fragSrc ) {
+function createBatchSystem( screenData, vertSrc, fragSrc, mode ) {
 
 	const gl = screenData.gl;
 	const batch = Object.create( m_batchProto );
 
 	// Create the batch shader program
 	batch.program = createShaderProgram( screenData, vertSrc, fragSrc );
+	batch.mode = mode;
 
 	// Cache shader locations for efficiency
 	batch.locations = {
@@ -435,8 +444,8 @@ function createBatchSystem( screenData, vertSrc, fragSrc ) {
 		"resolution": gl.getUniformLocation( batch.program, "u_resolution" )
 	};
 
-	batch.vertices = new Float32Array( batch.capacity * 2 );
-	batch.colors = new Uint8Array( batch.capacity * 4 );
+	batch.vertices = new Float32Array( batch.capacity * batch.vertexComponents );
+	batch.colors = new Uint8Array( batch.capacity * batch.colorComponents );
 	batch.vertexVBO = gl.createBuffer();
 	batch.colorVBO = gl.createBuffer();
 
@@ -473,15 +482,15 @@ export function ensureBatchCapacity( screenData, batch, newItemCount ) {
 		// Make sure we don't exceed max batch size
 		if( requiredCount > MAX_BATCH_SIZE ) {
 			flushBatches( screenData );
-			displayToCanvas( screenData );
+			return ensureBatchCapacity( screenData, batch, newItemCount );
 		}
 
-		// Get new capacity
+		// Get new capacity by doubling current capacity
 		const newCapacity = Math.max( requiredCount, batch.capacity * 2 );
 		
 		// Resize arrays
-		const newVertices = new Float32Array( newCapacity * 2 );
-		const newColors = new Uint8Array( newCapacity * 4 );
+		const newVertices = new Float32Array( newCapacity * batch.vertexComponents );
+		const newColors = new Uint8Array( newCapacity * batch.colorComponents );
 		
 		// Copy existing data
 		newVertices.set( batch.vertices );
@@ -513,7 +522,7 @@ function flushBatches( screenData ) {
 		return;
 	}
 
-	const pointBatch = screenData.pointBatch;
+	const batch = screenData.pointBatch;
 
 	// Bind FBO
 	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
@@ -529,46 +538,39 @@ function flushBatches( screenData ) {
 		//console.log( "WebGL2: Cleared FBO on first render" );
 	}
 	
-	// Render point batch if it has data
-	gl.useProgram( pointBatch.program );
-	
-	// Set screen resolution
-	gl.uniform2f( pointBatch.locations.resolution, screenData.width, screenData.height );
-
-	// Bind VAO - all attributes already configured!
-	gl.bindVertexArray( pointBatch.vao );
-	
 	// TODO: Make sure this is optimized recieved different advice on how to copy buffer data
 	// efficiently so need to resarch STREAM_DRAW to make sure it's efficient for streaming
 	// to a persistant texture that acts as "screen memory".
 	// on first use or resize
-	if( pointBatch.capacityChanged ) {
-
-		// Allocate position vertices
-		gl.bindBuffer( gl.ARRAY_BUFFER, pointBatch.vertexVBO );
-		gl.bufferData( gl.ARRAY_BUFFER, pointBatch.vertices.byteLength, gl.STREAM_DRAW );
+	// Render point batch if it has data
+	if( batch.count > 0 ) {
+		gl.useProgram( batch.program );
+		gl.uniform2f( batch.locations.resolution, screenData.width, screenData.height );
+		gl.bindVertexArray( batch.vao );
 		
-		// Allocate color vertices
-		gl.bindBuffer( gl.ARRAY_BUFFER, pointBatch.colorVBO );
-		gl.bufferData( gl.ARRAY_BUFFER, pointBatch.colors.byteLength, gl.STREAM_DRAW );
+		// Allocate or resize buffers on capacity change
+		if( batch.capacityChanged ) {
+			gl.bindBuffer( gl.ARRAY_BUFFER, batch.vertexVBO );
+			gl.bufferData( gl.ARRAY_BUFFER, batch.vertices.byteLength, gl.STREAM_DRAW );
+			gl.bindBuffer( gl.ARRAY_BUFFER, batch.colorVBO );
+			gl.bufferData( gl.ARRAY_BUFFER, batch.colors.byteLength, gl.STREAM_DRAW );
+			batch.capacityChanged = false;
+		}
 
-		// Reset capacity changed flag
-		pointBatch.capacityChanged = false;
+		// Upload positions
+		gl.bindBuffer( gl.ARRAY_BUFFER, batch.vertexVBO );
+		gl.bufferSubData( gl.ARRAY_BUFFER, 0, batch.vertices.subarray( 0, batch.count * batch.vertexComponents ) );
+		
+		// Upload colors
+		gl.bindBuffer( gl.ARRAY_BUFFER, batch.colorVBO );
+		gl.bufferSubData( gl.ARRAY_BUFFER, 0, batch.colors.subarray( 0, batch.count * batch.colorComponents ) );
+
+		// Draw points
+		gl.drawArrays( batch.mode, 0, batch.count );
+		
+		// Reset batch count
+		batch.count = 0;
 	}
-
-	// Set positions
-	gl.bindBuffer( gl.ARRAY_BUFFER, pointBatch.vertexVBO );
-	gl.bufferSubData( gl.ARRAY_BUFFER, 0, pointBatch.vertices.subarray( 0, pointBatch.count * 2 ) );
-
-	// Set colors
-	gl.bindBuffer( gl.ARRAY_BUFFER, pointBatch.colorVBO );
-	gl.bufferSubData( gl.ARRAY_BUFFER, 0, pointBatch.colors.subarray( 0, pointBatch.count * 4 ) );
-
-	// Draw points
-	gl.drawArrays( gl.POINTS, 0, pointBatch.count );
-	
-	// Reset batch count
-	pointBatch.count = 0;
 
 	// Unbind VAO
 	gl.bindVertexArray( null );
@@ -645,8 +647,8 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
 	
 	// Add directly to point batch
 	const pointBatch = screenData.pointBatch;
-	const idx = pointBatch.count * 2;
-	const cidx = pointBatch.count * 4;
+	const idx = pointBatch.count * pointBatch.vertexComponents;
+	const cidx = pointBatch.count * pointBatch.colorComponents;
 	
 	pointBatch.vertices[ idx     ] = x;
 	pointBatch.vertices[ idx + 1 ] = y;
@@ -661,23 +663,4 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
 	// if( pointBatch.count <= 10 ) {
 	// 	console.log( `WebGL2: Added pixel ${pointBatch.count} at (${x}, ${y}) color:`, color );
 	// }
-	
-	// TODO: Remove per pixel check, should be done after draw but in actual graphics commands like
-	// after the line draw is complete
-	setImageDirty( screenData );
-}
-
-/**
- * Fast path with bounds checking
- * 
- * @param {Object} screenData - Screen data object
- * @param {number} x - X coordinate
- * @param {number} y - Y coordinate
- * @param {Object} color - Color object includes r/g/b/a components (0-255)
- */
-export function drawPixelDirect( screenData, x, y, color ) {
-	if( x < 0 || x >= screenData.width || y < 0 || y >= screenData.height ) {
-		return;
-	}
-	drawPixelUnsafe( screenData, x, y, color );
 }

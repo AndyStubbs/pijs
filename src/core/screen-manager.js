@@ -618,7 +618,7 @@ function resizeScreen( screenData, isInit ) {
 		g_canvas2dRenderer.beforeResize( screenData, fromSize );
 	}
 
-	// If 100% canvas size mode
+	// If Not 100% canvas size mode
 	if( screenData.aspectData.splitter !== "" ) {
 
 		// Update the canvas to the new size
@@ -750,7 +750,13 @@ function setCanvasSize( screenData, maxWidth, maxHeight ) {
 	canvas.style.marginTop = Math.floor( ( maxHeight - newCssHeight ) / 2 ) + "px";
 
 	// Set the actual canvas pixel dimensions
-	if( screenData.useCanvas2d && splitter !== ":" ) {
+	// Note: If using webgl2 and desynchronized is set then only apply native size for canvas2d as
+	// it will produce blurry results. Currently I'm setting desynchronized to false so we can
+	// use the native resolution on the canvas for both canvas2d and webgl2. This means when we 
+	// copy the image from the browser right click menu, it will produce the actual size image and
+	// not the upscaled one.
+	//if( screenData.useCanvas2d && splitter !== ":" ) {
+	if( splitter !== ":" ) {
 		canvas.width = Math.min( width, MAX_CANVAS_DIMENSION );
 		canvas.height = Math.min( height, MAX_CANVAS_DIMENSION );
 	} else {

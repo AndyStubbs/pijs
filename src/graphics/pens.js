@@ -103,7 +103,7 @@ function buildPenFn( s_screenData ) {
 	// Special fast path for blending we can skip the blend function and just call drawPixelUnsafe
 	// WebGl2 can handle blending in the GPU so we can just use drawPixelUnsafe
 	// BLEND_REPLACE also doesn't do any blending if there is no noise
-	// Pens should handle bounds checking so we can call drawPixelUnsafe instead of drawPixelDirect
+	// Pens should handle bounds checking so we can call drawPixelUnsafe
 	let s_blendFn;
 	if(
 		s_screenData.blends.noise === null && (
