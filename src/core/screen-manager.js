@@ -18,7 +18,7 @@ import * as g_pens from "../graphics/pens.js";
 
 const WEBGL2_RENDER_MODE = "webgl2";
 const CANVAS2D_RENDER_MODE = "canvas2d";
-const MAX_CANVAS_DIMENSION = 16384;
+const MAX_CANVAS_DIMENSION = 8192;
 
 const SCREEN_API_PROTO = { "screen": true };
 const m_screens = {};

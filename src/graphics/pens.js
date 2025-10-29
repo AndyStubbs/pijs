@@ -326,6 +326,16 @@ function setBlend( screenData, options ) {
  **************************************************************************************************/
 
 
+// TODO: These pen functions are obviously flawed for use in lines and shapes as they will write
+// over the same pixel multiple times.  Find a better way to draw shapes with a pen might be 
+// complicated so it's not a high priority, this will get the job done for now. This is especially
+// problematic when combined with alpha blends because it will perform blends multiple times in
+// canvas2d mode, but not really a problem with webgl2
+// One solution could be to have a Set with all the pixel values and use a key lookup to make sure
+// the pixel hasn't already been set. It would use a lot of memory and be slower but it wouldn't 
+// cause issues with alpha blend mode.  Of course it would add branching to my "hot path" so maybe
+// only use it in alpha mode.
+
 function drawPenSquare( screenData, x1, y1, x2, y2, color, blendFn ) {
 	for( let py = y1; py < y2; py++ ) {
 		for( let px = x1; px < x2; px++ ) {
