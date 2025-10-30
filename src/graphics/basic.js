@@ -70,7 +70,6 @@ export function buildGraphicsApi( s_screenData ) {
 	}
 
 	const psetFn = ( x, y ) => {
-
 		let px, py;
 
 		// Parse object if needed

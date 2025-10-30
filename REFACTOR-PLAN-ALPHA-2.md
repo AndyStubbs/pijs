@@ -16,10 +16,9 @@ by feature type.
 - Remove `render()` command - automatic rendering only
 - Remove non-pixel mode support (pixel mode only)
 - Remove canvas font support (bitmap fonts only)
-- Optimize command system for better JIT performance (per STRUCTURE-UPGRADE.md)
+- Optimize command system for better JIT performance
 - Implement features incrementally (shell → screen → pset → line → etc.)
 - WebGL2 with fallback to 2D Canvas (no WebGL1)
-- Prepare for future Web Worker integration (TODO comments)
 
 ## Phase 1: Setup and Minimal Shell ✅ COMPLETE
 
@@ -29,7 +28,6 @@ by feature type.
 
 ### Step 1.2: Create REFACTOR-PLAN-ALPHA-2.md ✅ COMPLETE
 - Documented the Alpha 2 goals and architecture
-- Referenced WEBGL-UPGRADE.md and STRUCTURE-UPGRADE.md
 - Outlined WebGL2 rendering approach
 - Documented removed features (non-pixel mode, canvas fonts, render())
 - Included incremental implementation strategy
@@ -45,7 +43,7 @@ Removed all feature modules, keeping only core infrastructure:
 - `src/core/plugins.js` (plugin system)
 
 **Removed/Gutted (will rebuild incrementally):**
-- All `src/modules/*` files - removed temporarily (replaced with functional layout)
+- All `src/modules/*` files - removed (replaced with functional layout)
 - `src/assets/font-data.js` - removed temporarily (will be `src/text/font-data.js`)
 
 **Updated `src/index.js`:**
@@ -81,10 +79,10 @@ const mods = [
 ];
 
 if( typeof window !== "undefined" ) {
-    window.pi = api;
-    if( window.$ === undefined ) {
-        window.$ = api;
-    }
+	window.pi = api;
+	if( window.$ === undefined ) {
+		window.$ = api;
+	}
 }
 
 export default api;
@@ -120,11 +118,10 @@ Created specialized renderers in the graphics directory:
 
 **Note:** The external API commands (cls, setPen, setBlend) are handled by individual modules rather than a central renderer module.
 
-### Step 2.2: Create Simple Shaders inside renderer-webgl2.js ✅ COMPLETE
+### Step 2.2: Create Simple Shaders inside src/graphics/shaders ✅ COMPLETE
 
 **Point shader (for pixel-perfect rendering):**
 ```glsl
-// Vertex shader
 #version 300 es
 in vec2 a_position;
 in vec4 a_color;
@@ -132,24 +129,18 @@ uniform vec2 u_resolution;
 out vec4 v_color;
 
 void main() {
-    // Convert screen coords to NDC with pixel center adjustment
-    vec2 clipSpace = ((a_position + 0.5) / u_resolution) * 2.0 - 1.0;
-    gl_Position = vec4(clipSpace * vec2(1, -1), 0.0, 1.0);
-    gl_PointSize = 1.0;
-    v_color = a_color;
-}
 
-// Fragment shader
-precision mediump float;
-in vec4 v_color;
-out vec4 fragColor;
-
-void main() {
-    fragColor = v_color;
+	// Convert screen coords to NDC with pixel center adjustment
+	// Add 0.5 to center the pixel, then convert to NDC
+	vec2 pixelCenter = a_position + 0.5;
+	vec2 ndc = ((pixelCenter / u_resolution) * 2.0 - 1.0) * vec2(1.0, -1.0);
+	gl_Position = vec4(ndc, 0.0, 1.0);
+	gl_PointSize = 1.0;
+	v_color = a_color;
 }
 ```
 
-**Similar shaders for lines and triangles implemented**
+**Similar shaders for rendering from FBO to canvas implemented**
 
 ### Step 2.3: Update Screen Manager for Renderer Delegation ✅ COMPLETE
 Modified `src/core/screen-manager.js`:
@@ -166,7 +157,7 @@ Modified `src/core/screen-manager.js`:
 
 **Removed screenData items:**
 - Direct context creation
-- `imageData` and `imageData2` (moved to canvas2d-renderer)
+- `imageData` (moved to canvas2d-renderer)
 - `isDirty` (handled by renderers)
 - `isAutoRender` (always auto-render now)
 - `autoRenderMicrotaskScheduled` (handled by renderers)
@@ -189,7 +180,7 @@ Goal: Create a screen that displays a solid color (black/transparent by default)
 **Test working:**
 ```javascript
 $.ready(() => {
-    $.screen({ width: 320, height: 240 });
+    $.screen("320x240");
     // Shows black screen (WebGL2 or Canvas2D)
 });
 ```
@@ -212,24 +203,22 @@ Created `src/graphics/renderer-canvas2d.js`:
 ## Phase 3: Command System Optimization ✅ COMPLETE
 
 ### Step 3.1: Implement Fast Path Architecture ✅ COMPLETE
-Following STRUCTURE-UPGRADE.md recommendations:
 
 **Added to both renderers:**
 
 **`src/graphics/renderer-webgl2.js`:**
 - Implemented fast path for direct pixel writes (no bounds check, no blending)
-- Added `drawPixelUnsafe()` and `drawPixelDirect()` functions
+- Added `drawPixelUnsafe()` functions
 - Batch system for efficient rendering
 - Automatic render queue management
 
 **`src/graphics/renderer-canvas2d.js`:**
 - Implemented fast path for direct pixel writes (no bounds check, no blending)
-- Added `drawPixelUnsafe()` and `drawPixelDirect()` functions
+- Added `drawPixelUnsafe()` functions
 - ImageData manipulation for pixel-perfect rendering
 - Dirty flag management for efficient updates
 
 ### Step 3.2: Optimize Command Wrappers ✅ COMPLETE
-Following STRUCTURE-UPGRADE.md Section 2.1:
 
 **Graphics commands optimized:**
 - Implemented in `src/graphics/basic.js`
@@ -273,8 +262,8 @@ screenManager.addScreenDataItem( "colorCache", {} );
 ### Step 4.3: Implement setColor Command ✅ COMPLETE
 ```javascript
 function setColor( screenData, options ) {
-    const color = parseColor( options.color );
-    screenData.color = color;
+	const color = parseColor( options.color );
+	screenData.color = color;
 }
 ```
 
@@ -289,43 +278,44 @@ import * as webglRenderer from "./renderer-webgl2.js";
 import * as canvas2dRenderer from "./renderer-canvas2d.js";
 
 export function init() {
-    // Graphics commands are built dynamically based on screen data
-    buildGraphicsApi( null );
+
+	// Graphics commands are built dynamically based on screen data
+	buildGraphicsApi( null );
 }
 
-function pset( screenData, options ) {
-    const x = Math.floor( options.x );
-    const y = Math.floor( options.y );
-    
-    // Use current color if not specified
-    let color = screenData.color;
-    if( options.color !== null ) {
-        color = parseColor( options.color );
-    }
-    
-    // Use appropriate renderer based on screen mode
-    if( screenData.renderMode === "webgl2" ) {
-        webglRenderer.drawPixelDirect( 
-            screenData, x, y, 
-            color.r, color.g, color.b, color.a 
-        );
-    } else {
-        canvas2dRenderer.drawPixelDirect( 
-            screenData, x, y, 
-            color.r, color.g, color.b, color.a 
-        );
-    }
-}
+// ... inside buildGraphicsApi
+const psetFn = ( x, y ) => {
+	let px, py;
+
+	// Parse object if needed
+	if( s_isObjectLiteral( x ) ) {
+		px = s_getInt( x.x1, null );
+		py = s_getInt( x.y1, null );
+	} else {
+		px = s_getInt( x, null );
+		py = s_getInt( y, null );
+	}
+
+	// Make sure x and y are integers
+	if( px === null || py === null ) {
+		const error = new TypeError( "pset: Parameters x and y must be integers." );
+		error.code = "INVALID_PARAMETER";
+		throw error;
+	}
+	preprocessPset( s_screenData );
+	s_penFn( s_screenData, px, py, s_color );
+	s_setImageDirty( s_screenData );
+};
 ```
 
 ### Step 5.2: Test pset ✅ COMPLETE
 ```javascript
-$.ready(() => {
-    $.screen({ width: 320, height: 240 });
-    $.setColor( 255 ); // White
-    $.pset( 160, 120 ); // Center pixel
-    // Should see white pixel in center
-});
+$.ready( () => {
+	$.screen( "320x240" );
+	$.setColor( 15 ); // White
+	$.pset( 160, 120 ); // Center pixel
+	// Should see white pixel in center
+} );
 ```
 
 ## Phase 6: Line Drawing ✅ COMPLETE
@@ -334,94 +324,89 @@ $.ready(() => {
 Added to `src/graphics/basic.js`:
 
 ```javascript
-function line( screenData, options ) {
-    const x1 = Math.floor( options.x1 );
-    const y1 = Math.floor( options.y1 );
-    const x2 = Math.floor( options.x2 );
-    const y2 = Math.floor( options.y2 );
-    
-    const color = screenData.color;
-    
-    // Bresenham's line algorithm with fast path
-    drawLineFast( screenData, x1, y1, x2, y2, color );
-}
+// ... inside buildGraphicsApi
+const lineFn = ( x1, y1, x2, y2 ) => {
+	let px1, py1, px2, py2;
 
-function drawLineFast( screenData, x1, y1, x2, y2, color ) {
-    const dx = Math.abs( x2 - x1 );
-    const dy = Math.abs( y2 - y1 );
-    const sx = x1 < x2 ? 1 : -1;
-    const sy = y1 < y2 ? 1 : -1;
-    let err = dx - dy;
-    
-    let x = x1;
-    let y = y1;
-    
-    while( true ) {
-        // Use appropriate renderer based on screen mode
-        if( screenData.renderMode === "webgl2" ) {
-            webglRenderer.drawPixelDirect( 
-                screenData, x, y, 
-                color.r, color.g, color.b, color.a 
-            );
-        } else {
-            canvas2dRenderer.drawPixelDirect( 
-                screenData, x, y, 
-                color.r, color.g, color.b, color.a 
-            );
-        }
-        
-        if( x === x2 && y === y2 ) break;
-        
-        const e2 = 2 * err;
-        if( e2 > -dy ) {
-            err -= dy;
-            x += sx;
-        }
-        if( e2 < dx ) {
-            err += dx;
-            y += sy;
-        }
-    }
-}
+	if( s_isObjectLiteral( x1 ) ) {
+		px1 = s_getInt( x1.x1, null );
+		py1 = s_getInt( x1.y1, null );
+		px2 = s_getInt( x1.x2, null );
+		py2 = s_getInt( x1.y2, null );
+	} else {
+		px1 = s_getInt( x1, null );
+		py1 = s_getInt( y1, null );
+		px2 = s_getInt( x2, null );
+		py2 = s_getInt( y2, null );
+	}
+
+	// Make sure x and y are integers
+	if( px1 === null || py1 === null || px2 === null || py2 === null ) {
+		const error = new TypeError( "line: Parameters x1, y1, x2, and y2 must be integers." );
+		error.code = "INVALID_COORDINATES";
+		throw error;
+	}
+
+	preprocessLine( s_screenData, px1, py1, px2, py2 );
+	line( s_screenData, px1, py1, px2, py2, s_color, s_penFn );
+	s_setImageDirty( s_screenData );
+};
 ```
 
 ### Step 6.2: Test line ✅ COMPLETE
 ```javascript
 $.ready(() => {
-    $.screen({ width: 320, height: 240 });
-    $.setColor( 255 );
-    $.line( 0, 0, 319, 239 ); // Diagonal line
+	$.screen( "320x240" );
+	$.setColor( 255 );
+	$.line( 0, 0, 319, 239 ); // Diagonal line
 });
 ```
 
 ## Phase 7: Additional Graphics Primitives
 
 Implement incrementally, one at a time:
+In this stage we are going to do everything use CPU rasterization. In a later refactor version we
+may look into using shapes and triangles on the GPU but it may be performant enough for now.
+May consider this for an updated version of pi.js, but for now it would add a lot of complications
+due to drawing order of the batches and requiring multiple shaders.
 
 ### Step 7.1: rect (filled and outlined)
-- Use triangle batch for filled rectangles
-- Use line batch for outlined rectangles
+- Use points and CPU rasterization event with webgl2
 
 ### Step 7.2: circle (filled and outlined)
-- Midpoint circle algorithm
-- Use point batch for pixels
-- Use triangle batch for filled circles
+- Use points and CPU rasterization event with webgl2
 
 ### Step 7.3: ellipse
+- Use points and CPU rasterization event with webgl2
 - Midpoint ellipse algorithm
 
 ### Step 7.4: arc
+- Use points and CPU rasterization event with webgl2
 - Partial circle rendering
 
 ### Step 7.5: bezier
+- Use points and CPU rasterization event with webgl2
 - Tessellation to line segments
 - Add to line batch
+
+### Step 7.6: get/getAsync
+- Use gl.readPixels to capture an area of pixels and convert them to pal colors
+- Will require a flush before readPixels this is a blocking operation, will not recommend for use
+- in an animation frame
+- getAsync can be used in animation from and will call readPixels after frame completes and flush is
+- called
+
+### Step 7.6: put
+- Use points and CPU rasterization event with webgl2
+- Uses palette indices instead of raw color values.
+- Required for canvas2d piPrint mode.
 
 ## Phase 8: Image Support
 
 ### Step 8.1: Rebuild Images Module
 Create new `src/graphics/images.js`:
 
+- Don't use points for images but will flushbatch before drawing images to the FBO.
 - Load images as WebGL textures
 - Use textured quad batch for drawing
 - Sprite sheet support with texture atlases
@@ -434,8 +419,10 @@ Create new `src/graphics/images.js`:
 
 ### Step 9.1: Convert Default Fonts to Bitmaps
 - Take existing base32-encoded fonts
-- Convert to bitmap texture atlas at init time
-- Store as WebGL texture
+- Keep existing print using put command
+- For testing also convert to bitmap texture atlas/canvas2d image at init time.
+- Compare results and may consider using bitmap. It may be faster but I'm not sure because images
+- require flush before being able to render an image.
 - Create `src/text/font-data.js`
 
 ### Step 9.2: Rebuild Font Module
@@ -444,30 +431,28 @@ Create new `src/graphics/images.js`:
 - Create `src/text/font.js`
 
 ### Step 9.3: Rebuild Print Module
-- Render text as textured quads
+- Render text as textured quads for bitmap mode.
 - Add to textured triangle batch
+- Use put command for non-bitmap mode.
+- Canvas print mode is no longer supported.
 - Cursor positioning, word wrap
 - Create `src/text/print.js`
 
 ## Phase 10: Advanced Features
 
-### Step 10.1: get/getPixel (Synchronous)
-- Implement `gl.readPixels()` from FBO
-- Add console warning about blocking
-- Document as slow operation
-
-### Step 10.2: getAsync/getPixelAsync
-- Asynchronous `gl.readPixels()`
+### Step 10.2: getPixel/getPixelAsync
+- `gl.readPixels()`
+- Synchrounous - blocking is fine
+- Asynchronous - will run after flush at end of frame
 - Return Promises
 
-### Step 10.3: put Command
-- Upload pixel data to texture
-- Render textured quad
-
-### Step 10.4: paint (Flood Fill)
-- Add TODO comments for Web Worker integration
+### Step 10.3: paint (Flood Fill)
 - Initial CPU implementation
-- Plan for Worker offload in future
+- Not going to use a Worker here, I think blocking is ok because
+- worker would be difficult because future draw operations would conflict it's probably not worth
+- the worker overhead.  Maybe in a future version I could add a worker but would still have to
+- prevent any draw operations until the worker is finished but at least it would be a cleaner
+- wait then a sync block.  But not this version.
 
 ### Step 10.5: filterImg
 - GPU post-processing shader
