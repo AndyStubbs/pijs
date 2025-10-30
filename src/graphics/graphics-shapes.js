@@ -157,7 +157,9 @@ export function buildApi(
 
 		// Single point
 		if( pRadius === 0 ) {
-			preprocessPset( s_screenData );
+			
+			// Reusing this for a single pixel
+			s_preprocessRectFilled( s_screenData, 1, 1 );
 			s_penFn( s_screenData, pX, pY, s_color );
 			s_setImageDirty( s_screenData );
 			return;
@@ -479,7 +481,7 @@ function m_ellipseFilled( screenData, cx, cy, rx, ry, color, blendFn, maxX, maxY
 		if( y < 0 || y > maxY ) {
 			continue;
 		}
-		
+
 		// Compute x extent for this scanline
 		const t = 1 - ( dy * dy ) / ( ry * ry );
 		const dxMax = t <= 0 ? 0 : Math.floor( rx * Math.sqrt( t ) );
