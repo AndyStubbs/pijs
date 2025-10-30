@@ -52,6 +52,8 @@ export function buildGraphicsApi( s_screenData ) {
 	const s_penFn = s_screenData.pens.penFn;
 	const s_penSize = s_screenData.pens.size;
 	const s_penHalfSize = Math.round( s_penSize / 2 );
+	const s_screenWidth = s_screenData.width;
+	const s_screenHeight = s_screenData.height;
 	const s_blendFn = s_screenData.blends.blendFn;
 	const s_setImageDirty = s_screenData.renderer.setImageDirty;
 	const s_pointBatch = s_screenData.pointBatch;
@@ -212,9 +214,12 @@ export function buildGraphicsApi( s_screenData ) {
 			preprocessRectFilled( s_screenData, pwidth, pheight );
 			rectFilled(
 				s_screenData,
-				px + s_penHalfSize, py + s_penHalfSize,
-				x2 - s_penHalfSize, y2 - s_penHalfSize,
-				fillColorValue, s_blendFn
+				Math.max( px + s_penHalfSize, 0 ),
+				Math.max( py + s_penHalfSize, 0 ),
+				Math.min( x2 - s_penHalfSize, s_screenWidth - 1 ),
+				Math.min( y2 - s_penHalfSize, s_screenHeight - 1 ),
+				fillColorValue,
+				s_blendFn
 			);
 		}
 		preprocessRectOutline( s_screenData, pwidth, pheight );
@@ -223,6 +228,85 @@ export function buildGraphicsApi( s_screenData ) {
 	};
 	m_api.rect = rectFn;
 	s_screenData.api.rect = rectFn;
+
+	/**********************************************************
+	 * CIRCLE (outlined and filled)
+	 **********************************************************/
+
+	let preprocessCircleOutline;
+	let preprocessCircleFilled;
+	if( s_screenData.renderMode === g_screenManager.CANVAS2D_RENDER_MODE ) {
+		preprocessCircleOutline = s_screenData.renderer.getImageData;
+		preprocessCircleFilled = s_screenData.renderer.getImageData;
+	} else {
+
+		// Keep signature parity with canvas2d path
+		preprocessCircleOutline = ( screenData, radius ) => {
+			const perimeterPixels = Math.round( 2 * Math.PI * radius );
+			s_ensureBatchCapacity(
+				screenData, s_pointBatch, perimeterPixels * s_pixelsPerPen
+			);
+		};
+		preprocessCircleFilled = ( screenData, radius ) => {
+			const areaPixels = Math.round( Math.PI * radius * radius );
+			s_ensureBatchCapacity(
+				screenData, s_pointBatch, areaPixels * s_pixelsPerPen
+			);
+		};
+	}
+
+	const circleFn = ( x, y, radius, fillColor ) => {
+		let px, py, pradius, pfillColor;
+
+		if( s_isObjectLiteral( x ) ) {
+			px = s_getInt( x.x1, null );
+			py = s_getInt( x.y1, null );
+			pradius = s_getInt( x.radius, null );
+			pfillColor = x.pFillColor;
+		} else {
+			px = s_getInt( x, null );
+			py = s_getInt( y, null );
+			pradius = s_getInt( radius, null );
+			pfillColor = fillColor;
+		}
+
+		if( px === null || py === null || pradius === null ) {
+			const error = new TypeError(
+				"circle: Parameters x1, y1, and radius must be integers."
+			);
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		// Nothing to draw
+		if( pradius < 0 ) {
+			return;
+		}
+
+		// Single point
+		if( pradius === 0 ) {
+			preprocessPset( s_screenData );
+			s_penFn( s_screenData, px, py, s_color );
+			s_setImageDirty( s_screenData );
+			return;
+		}
+
+		const fillColorValue = s_getColorValueByRawInput( s_screenData, pfillColor );
+
+		if( fillColorValue !== null && pradius > s_penSize ) {
+			preprocessCircleFilled( s_screenData, pradius );
+			circleFilled(
+				s_screenData, px, py, pradius, fillColorValue,
+				s_blendFn, s_screenWidth - 1, s_screenHeight - 1
+			);
+		}
+
+		preprocessCircleOutline( s_screenData, pradius );
+		circleOutline( s_screenData, px, py, pradius, s_color, s_penFn );
+		s_setImageDirty( s_screenData );
+	};
+	m_api.circle = circleFn;
+	s_screenData.api.circle = circleFn;
 }
 
 
@@ -325,6 +409,49 @@ function rectFilled( screenData, x1, y1, x2, y2, color, blendFn ) {
 			x++;
 		}
 		y++;
+	}
+}
+
+function circleOutline( screenData, cx, cy, radius, color, penFn ) {
+
+	// Midpoint circle algorithm (8-way symmetry)
+	let x = radius;
+	let y = 0;
+	let err = 1 - x;
+
+	while( x >= y ) {
+		penFn( screenData, cx + x, cy + y, color );
+		penFn( screenData, cx + y, cy + x, color );
+		penFn( screenData, cx - y, cy + x, color );
+		penFn( screenData, cx - x, cy + y, color );
+		penFn( screenData, cx - x, cy - y, color );
+		penFn( screenData, cx - y, cy - x, color );
+		penFn( screenData, cx + y, cy - x, color );
+		penFn( screenData, cx + x, cy - y, color );
+
+		y++;
+		if( err < 0 ) {
+			err += 2 * y + 1;
+		} else {
+			x--;
+			err += 2 * ( y - x ) + 1;
+		}
+	}
+}
+
+function circleFilled( screenData, cx, cy, radius, color, blendFn, maxX, maxY ) {
+	for( let dy = -radius; dy <= radius; dy++ ) {
+		const y = cy + dy;
+		if( y < 0 || y > maxY ) {
+			continue;
+		}
+		const dxMax = Math.floor( Math.sqrt( radius * radius - dy * dy ) );
+		let x = Math.max( cx - dxMax, 0 );
+		const xEnd = Math.min( cx + dxMax, maxX );
+		while( x <= xEnd ) {
+			blendFn( screenData, x, y, color );
+			x++;
+		}
 	}
 }
 
