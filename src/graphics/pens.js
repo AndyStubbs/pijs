@@ -284,7 +284,7 @@ function setPen( screenData, options ) {
 	} else {
 		noise = g_utils.getInt( noise, null );
 		if( noise !== null ) {
-			noise = g_utils.clamp( noise, 0, 255 );
+			noise = [ noise, noise, noise, 0 ];
 		}
 	}
 
@@ -402,17 +402,10 @@ function getColorNoise( noise, color, clamp ) {
 	const half = noise / 2;
 
 	// Generate random noise
-	if( Array.isArray( noise ) ) {
-		c2.r = clamp( Math.round( c2.r + g_utils.rndRange( -noise[ 0 ], noise[ 0 ] ) ), 0, 255 );
-		c2.g = clamp( Math.round( c2.g + g_utils.rndRange( -noise[ 1 ], noise[ 1 ] ) ), 0, 255 );
-		c2.b = clamp( Math.round( c2.b + g_utils.rndRange( -noise[ 2 ], noise[ 2 ] ) ), 0, 255 );
-		c2.a = clamp( Math.round( c2.a + g_utils.rndRange( -noise[ 3 ], noise[ 3 ] ), 0, 255 ) );
-	} else {
-		const change = Math.round( Math.random() * noise - half );
-		c2.r = clamp( c2.r + change, 0, 255 );
-		c2.g = clamp( c2.g + change, 0, 255 );
-		c2.b = clamp( c2.b + change, 0, 255 );
-	}
+	c2.r = clamp( Math.round( c2.r + g_utils.rndRange( -noise[ 0 ], noise[ 0 ] ) ), 0, 255 );
+	c2.g = clamp( Math.round( c2.g + g_utils.rndRange( -noise[ 1 ], noise[ 1 ] ) ), 0, 255 );
+	c2.b = clamp( Math.round( c2.b + g_utils.rndRange( -noise[ 2 ], noise[ 2 ] ) ), 0, 255 );
+	c2.a = clamp( Math.round( c2.a + g_utils.rndRange( -noise[ 3 ], noise[ 3 ] ) ), 0, 255 );
 
 	return c2;
 }
