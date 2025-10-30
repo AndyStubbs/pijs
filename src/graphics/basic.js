@@ -46,6 +46,8 @@ export function buildGraphicsApi( s_screenData ) {
 		};
 		m_api.pset = () => errFn( "pset" );
 		m_api.line = () => errFn( "line" );
+		m_api.rect = () => errFn( "rect" );
+		m_api.circle = () => errFn( "circle" );
 		return;
 	}
 
