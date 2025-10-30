@@ -440,11 +440,13 @@ Create new `src/graphics/images.js`:
 
 ## Phase 10: Advanced Features
 
-### Step 10.2: getPixel/getPixelAsync
+### Step 10.1: getPixel/getPixelAsync
 - `gl.readPixels()`
 - Synchrounous - blocking is fine
 - Asynchronous - will run after flush at end of frame
 - Return Promises
+
+### Step 10.2: getPixelColor/getPixelColorAsync
 
 ### Step 10.3: paint (Flood Fill)
 - Initial CPU implementation
@@ -454,7 +456,7 @@ Create new `src/graphics/images.js`:
 - prevent any draw operations until the worker is finished but at least it would be a cleaner
 - wait then a sync block.  But not this version.
 
-### Step 10.5: filterImg
+### Step 10.4: filterImg
 - GPU post-processing shader
 - Apply to FBO texture
 
@@ -546,11 +548,11 @@ src/
 ### Removed Features
 1. `render()` command - automatic rendering only
 2. Non-pixel mode - pixel mode only
-3. Canvas fonts - bitmap fonts only
+3. Canvas fonts - bitmap/put fonts only
 4. `setPixelMode()` - always pixel mode
 5. `setAutoRender()` - always auto-render
 6. Pen system - simplified to direct pixel writes
-7. Blend modes - simplified (may add back later)
+7. Blend modes - simplified
 
 ### New Features
 1. WebGL2 rendering with FBO
@@ -618,6 +620,8 @@ src/
 - [ ] Step 7.3: Implement ellipse
 - [ ] Step 7.4: Implement arc
 - [ ] Step 7.5: Implement bezier
+- [ ] Step 7.6: Implement get/getAsync
+- [ ] Step 7.7: Implement put Command
 
 ### Phase 8: Image Support
 - [ ] Step 8.1: Rebuild Images Module
@@ -629,11 +633,10 @@ src/
 - [ ] Step 9.3: Rebuild Print Module
 
 ### Phase 10: Advanced Features
-- [ ] Step 10.1: Implement get/getPixel (Synchronous)
-- [ ] Step 10.2: Implement getAsync/getPixelAsync
-- [ ] Step 10.3: Implement put Command
-- [ ] Step 10.4: Implement paint (Flood Fill)
-- [ ] Step 10.5: Implement filterImg
+- [ ] Step 10.1: Implement getPixel (Synchronous)/getPixelAsync
+- [ ] Step 10.2: Implement getPixelColor (Synchronous)/getPixelColorAsync
+- [ ] Step 10.3: Implement paint (Flood Fill)
+- [ ] Step 10.4: Implement filterImg
 
 ### Phase 11: Input Systems
 - [ ] Rebuild `src/inputs/keyboard.js`
