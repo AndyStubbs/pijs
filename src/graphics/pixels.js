@@ -109,7 +109,9 @@ function get( screenData, xIn, yIn, widthIn, heightIn, asIndex, tolerance ) {
 		for( let col = 0; col < w; col++ ) {
 			const colorValue = colors[ row * w + col ];
 			if( asIndex ) {
-				const idx = g_colors.findColorIndexByColorValue( screenData, colorValue, tolerance );
+				const idx = g_colors.findColorIndexByColorValue(
+					screenData, colorValue, tolerance
+				);
 				arr[ col ] = ( idx === null ? 0 : idx );
 			} else {
 				arr[ col ] = colorValue;
