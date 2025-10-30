@@ -458,7 +458,7 @@ function splitRgb( s ) {
 		let val;
 		if( i === 3 ) {
 			val = parseFloat( parts[ i ].trim() );
-			if( val < 1 ) {
+			if( val <= 1 ) {
 				val *= 255;
 			}
 		} else {

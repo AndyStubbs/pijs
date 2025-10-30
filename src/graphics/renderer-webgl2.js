@@ -13,6 +13,7 @@
 import * as g_pens from "./pens.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
+import * as g_colors from "./colors.js";
 
 // Shaders are imported from external files via esbuild text loader
 import m_pointVertSrc from "./shaders/point.vert";
@@ -676,4 +677,83 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
 	pointBatch.colors[ cidx + 3 ] = color.a;
 
 	pointBatch.count++;
+}
+
+
+/***************************************************************************************************
+ * Readback Operations
+ **************************************************************************************************/
+
+
+export function readPixels( screenData, coords ) {
+
+	// Flush any pending batches to the FBO to ensure the latest contents
+	flushBatches( screenData );
+
+	if( coords.length === 0 ) {
+		return [];
+	}
+
+	const gl = screenData.gl;
+	const w = screenData.width;
+	const h = screenData.height;
+
+	// Compute bounding box of valid coords
+	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+	const valid = new Array( coords.length );
+	for( let i = 0; i < coords.length; i++ ) {
+		const cx = coords[ i ][ 0 ];
+		const cy = coords[ i ][ 1 ];
+		if( cx < 0 || cy < 0 || cx >= w || cy >= h ) {
+			valid[ i ] = false;
+			continue;
+		}
+		valid[ i ] = true;
+		if( cx < minX ) minX = cx;
+		if( cy < minY ) minY = cy;
+		if( cx > maxX ) maxX = cx;
+		if( cy > maxY ) maxY = cy;
+	}
+
+	const out = new Array( coords.length );
+	if( minX === Infinity ) {
+		
+		// All out of bounds
+		for( let i = 0; i < coords.length; i++ ) out[ i ] = null;
+		return out;
+	}
+
+	const rectW = ( maxX - minX + 1 );
+	const rectH = ( maxY - minY + 1 );
+	const buf = new Uint8Array( rectW * rectH * 4 );
+
+	// Read single rectangle covering all pixels. WebGL origin is bottom-left;
+	// convert to top-left by starting read at y = (h - 1 - maxY)
+	const readY = ( h - 1 ) - maxY;
+	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
+	gl.readPixels( minX, readY, rectW, rectH, gl.RGBA, gl.UNSIGNED_BYTE, buf );
+	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+
+	// Map back to requested points
+	for( let i = 0; i < coords.length; i++ ) {
+		if( !valid[ i ] ) {
+			out[ i ] = null;
+			continue;
+		}
+		const cx = coords[ i ][ 0 ] - minX;
+		const cyTop = coords[ i ][ 1 ] - minY; // 0 at top row of rect
+		const cyBuf = ( rectH - 1 ) - cyTop;   // flip to bottom-origin row index
+		const idx = ( ( rectW * cyBuf ) + cx ) * 4;
+		out[ i ] = g_utils.rgbToColor( buf[ idx ], buf[ idx + 1 ], buf[ idx + 2 ], buf[ idx + 3 ] );
+	}
+
+	return out;
+}
+
+export function readPixelsAsync( screenData, coords ) {
+	return new Promise( ( resolve ) => {
+		g_utils.queueMicrotask( () => {
+			resolve( readPixels( screenData, coords ) );
+		} );
+	} );
 }

@@ -22,6 +22,7 @@ import * as g_canvas2dRenderer from "./graphics/renderer-canvas2d.js";
 import * as g_pens from "./graphics/pens.js";
 import * as g_colors from "./graphics/colors.js";
 import * as g_graphicsApi from "./graphics/graphics-api.js";
+import * as g_pixels from "./graphics/pixels.js";
 
 // Text
 // TODO: Import text modules
@@ -43,7 +44,7 @@ const api = {
 // Store modules in array for orderered initialization
 const mods = [
 	g_utils, g_state, g_screenManager, g_plugins, g_webgl2Renderer, g_canvas2dRenderer, g_pens,
-	g_colors, g_graphicsApi, g_events
+	g_colors, g_graphicsApi, g_pixels, g_events
 ];
 
 // Initialize the modules

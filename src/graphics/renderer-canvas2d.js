@@ -10,6 +10,7 @@
 "use strict";
 
 import * as g_utils from "../core/utils.js";
+import * as g_colors from "./colors.js";
 
 // Auto-render state
 let m_autoRenderScheduled = false;
@@ -181,4 +182,57 @@ export function blendPixelUnsafe( screenData, x, y, color ) {
 	data[ i + 1 ] = Math.round( color.g * srcA + data[ i + 1 ] * ( 1 - srcA ) );
 	data[ i + 2 ] = Math.round(color.b * srcA + data[ i + 2 ] * ( 1 - srcA ) );
 	data[ i + 3 ] = Math.round( ( srcA + dstA * ( 1 - srcA ) ) * 255 );
+}
+
+
+/***************************************************************************************************
+ * Readback Operations
+ **************************************************************************************************/
+
+
+export function readPixel( screenData, x, y ) {
+
+	// Bounds check
+	if( x < 0 || y < 0 || x >= screenData.width || y >= screenData.height ) {
+		return null;
+	}
+
+	// For Canvas2D path, screenData.imageData is the source of truth.
+	const data = screenData.imageData.data;
+	const i = ( ( screenData.width * y ) + x ) * 4;
+	return g_utils.rgbToColor( data[ i ], data[ i + 1 ], data[ i + 2 ], data[ i + 3 ] );
+}
+
+export function readPixelAsync( screenData, x, y ) {
+	return Promise.resolve( readPixel( screenData, x, y ) );
+}
+
+export function readPixels( screenData, coords ) {
+
+	// Ensure imageData reflects latest CPU buffer (we render from imageData)
+	getImageData( screenData );
+
+	const out = new Array( coords.length );
+	const w = screenData.width;
+	const h = screenData.height;
+	const data = screenData.imageData.data;
+
+	for( let i = 0; i < coords.length; i++ ) {
+		const cx = coords[ i ][ 0 ];
+		const cy = coords[ i ][ 1 ];
+		if( cx < 0 || cy < 0 || cx >= w || cy >= h ) {
+			out[ i ] = null;
+			continue;
+		}
+		const idx = ( ( w * cy ) + cx ) * 4;
+		out[ i ] = g_utils.rgbToColor(
+			data[ idx ], data[ idx + 1 ], data[ idx + 2 ], data[ idx + 3 ]
+		);
+	}
+
+	return out;
+}
+
+export function readPixelsAsync( screenData, coords ) {
+	return Promise.resolve( readPixels( screenData, coords ) );
 }
