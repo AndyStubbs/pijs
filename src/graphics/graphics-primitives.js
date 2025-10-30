@@ -111,6 +111,90 @@ export function buildApi(
 	};
 	s_api.line = lineFn;
 	s_screenData.api.line = lineFn;
+
+
+	/**********************************************************
+	 * ARC (outline only)
+	 **********************************************************/
+
+	let s_preprocessArcOutline;
+	if( s_screenData.renderMode === g_screenManager.CANVAS2D_RENDER_MODE ) {
+		s_preprocessArcOutline = s_getImageData;
+	} else {
+
+		// screenData passed in for consistency
+		s_preprocessArcOutline = ( screenData, radius, spanDeg ) => {
+			
+			// Estimate number of pixels as portion of circumference
+			const span = Math.max( 0, Math.min( 360, spanDeg ) );
+			const perimeterPixels = Math.max(
+				1,
+				Math.round( 2 * Math.PI * radius * ( span / 360 ) )
+			);
+			s_prepareBatch( screenData, s_pointBatch, perimeterPixels * s_pixelsPerPen );
+		};
+	}
+
+	const arcFn = ( x, y, radius, angle1, angle2 ) => {
+		let pX, pY, pRadius, pAngle1, pAngle2;
+
+		if( s_isObjectLiteral( x ) ) {
+			pX = s_getInt( x.x1, null );
+			pY = s_getInt( x.y1, null );
+			pRadius = s_getInt( x.radius, null );
+			pAngle1 = s_getInt( x.angle1, null );
+			pAngle2 = s_getInt( x.angle2, null );
+		} else {
+			pX = s_getInt( x, null );
+			pY = s_getInt( y, null );
+			pRadius = s_getInt( radius, null );
+			pAngle1 = s_getInt( angle1, null );
+			pAngle2 = s_getInt( angle2, null );
+		}
+
+		if(
+			pX === null || pY === null || pRadius === null ||
+			pAngle1 === null || pAngle2 === null
+		) {
+			const error = new TypeError(
+				"arc: Parameters x1, y1, radius, angle1, and angle2 must be integers."
+			);
+			error.code = "INVALID_PARAMETERS";
+			throw error;
+		}
+
+		// Normalize angles to 0..360
+		pAngle1 = ( pAngle1 + 360 ) % 360;
+		pAngle2 = ( pAngle2 + 360 ) % 360;
+		const winding = pAngle1 > pAngle2;
+
+		// Nothing to draw
+		if( pRadius < 0 ) {
+			return;
+		}
+
+		// Single point
+		if( pRadius === 0 ) {
+			s_preprocessArcOutline( s_screenData, 1, 0 );
+			s_penFn( s_screenData, pX, pY, s_color );
+			s_setImageDirty( s_screenData );
+			return;
+		}
+
+		// Compute angle span for batching (approximate)
+		let spanDeg;
+		if( winding ) {
+			spanDeg = ( 360 - pAngle1 ) + pAngle2;
+		} else {
+			spanDeg = pAngle2 - pAngle1;
+		}
+
+		s_preprocessArcOutline( s_screenData, pRadius, spanDeg );
+		m_arcOutline( s_screenData, pX, pY, pRadius, pAngle1, pAngle2, winding, s_color, s_penFn );
+		s_setImageDirty( s_screenData );
+	};
+	s_api.arc = arcFn;
+	s_screenData.api.arc = arcFn;
 }
 
 
@@ -150,5 +234,54 @@ function m_line( screenData, x1, y1, x2, y2, color, penFn ) {
 
 		// Set the next pixel
 		penFn( screenData, x1, y1, color );
+	}
+}
+
+
+function m_arcOutline(
+	screenData, cx, cy, radius, angle1, angle2, winding, color, penFn
+) {
+
+	// Helper to test angle gate and set pixel
+	function setPixel( px, py ) {
+		let a = Math.atan2( py - cy, px - cx ) * ( 180 / Math.PI );
+		a = ( a + 360 ) % 360;
+		if( winding ) {
+			if( a >= angle1 || a <= angle2 ) {
+				penFn( screenData, px, py, color );
+			}
+		} else if( a >= angle1 && a <= angle2 ) {
+			penFn( screenData, px, py, color );
+		}
+	}
+
+	// Midpoint circle algorithm drawing only points within arc angles
+	let x = radius;
+	let y = 0;
+	let err = 1 - x;
+
+	// Draw initial symmetrical points
+	setPixel( cx + x, cy + y );
+	setPixel( cx - x, cy + y );
+	setPixel( cx + y, cy + x );
+	setPixel( cx + y, cy - x );
+
+	while( x >= y ) {
+		y++;
+		if( err < 0 ) {
+			err += 2 * y + 1;
+		} else {
+			x--;
+			err += 2 * ( y - x ) + 1;
+		}
+
+		setPixel( cx + x, cy + y );
+		setPixel( cx + y, cy + x );
+		setPixel( cx - y, cy + x );
+		setPixel( cx - x, cy + y );
+		setPixel( cx - x, cy - y );
+		setPixel( cx - y, cy - x );
+		setPixel( cx + y, cy - x );
+		setPixel( cx + x, cy - y );
 	}
 }

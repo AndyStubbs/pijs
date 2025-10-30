@@ -618,8 +618,8 @@ src/
 ### Phase 7: Additional Graphics Primitives
 - [x] Step 7.1: Implement rect (filled and outlined)
 - [x] Step 7.2: Implement circle (filled and outlined)
-- [ ] Step 7.3: Implement ellipse
-- [ ] Step 7.4: Implement arc
+- [x] Step 7.3: Implement ellipse
+- [x] Step 7.4: Implement arc
 - [ ] Step 7.5: Implement bezier
 - [ ] Step 7.6: Implement getPixel (Synchronous)/getPixelAsync
 - [ ] Step 7.7: Implement getPixelColor (Synchronous)/getPixelColorAsync
