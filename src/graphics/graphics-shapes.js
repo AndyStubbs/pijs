@@ -189,6 +189,11 @@ export function buildApi(
  **************************************************************************************************/
 
 
+/**********************************************************
+ * RECT
+ **********************************************************/
+
+
 function m_rectOutline( screenData, x1, y1, x2, y2, color, penFn ) {
 
 	// Single point
@@ -251,6 +256,11 @@ function m_rectFilled( screenData, x1, y1, x2, y2, color, blendFn ) {
 		y++;
 	}
 }
+
+
+/**********************************************************
+ * CIRCLE
+ **********************************************************/
 
 
 function m_circleOutline( screenData, cx, cy, radius, color, penFn ) {
