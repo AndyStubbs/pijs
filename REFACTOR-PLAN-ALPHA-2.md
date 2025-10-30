@@ -621,12 +621,20 @@ src/
 - [ ] Step 7.3: Implement ellipse
 - [ ] Step 7.4: Implement arc
 - [ ] Step 7.5: Implement bezier
-- [ ] Step 7.6: Implement get/getAsync
-- [ ] Step 7.7: Implement put Command
+- [ ] Step 7.6: Implement getPixel (Synchronous)/getPixelAsync
+- [ ] Step 7.7: Implement getPixelColor (Synchronous)/getPixelColorAsync
+- [ ] Step 7.8: Implement get/getAsync
+- [ ] Step 7.9: Implement put Command
+- [ ] Step 7.10: Implement getColor (new) - should return the active color on the activeScreen
 
 ### Phase 8: Image Support
 - [ ] Step 8.1: Rebuild Images Module
-- [ ] Step 8.2: Implement drawImage
+- [ ] Step 8.2: Implement loadImage
+- [ ] Step 8.3: Implement drawImage
+- [ ] Step 8.4: Implement loadSprite
+- [ ] Step 8.5: Implement drawSprite
+- [ ] Step 8.6: Implement getSpritesheetData
+- [ ] Step 8.7: Implement getImage
 
 ### Phase 9: Text Rendering (Bitmap Fonts Only)
 - [ ] Step 9.1: Convert Default Fonts to Bitmaps
@@ -634,10 +642,12 @@ src/
 - [ ] Step 9.3: Rebuild Print Module
 
 ### Phase 10: Advanced Features
-- [ ] Step 10.1: Implement getPixel (Synchronous)/getPixelAsync
-- [ ] Step 10.2: Implement getPixelColor (Synchronous)/getPixelColorAsync
-- [ ] Step 10.3: Implement paint (Flood Fill)
-- [ ] Step 10.4: Implement filterImg
+- [ ] Step 10.1: Implement paint (Flood Fill)
+- [ ] Step 10.2: Implement filterImg
+- [ ] Step 10.3: Implement replaceColors
+- [ ] Step 10.4: Implement *replacePalColors
+- *: replacePalColors should be simplified, it should replace the pal then call replaceColors
+	 reduce the amount of code required
 
 ### Phase 11: Input Systems
 - [ ] Rebuild `src/inputs/keyboard.js`
