@@ -4,7 +4,7 @@
  * 2D Canvas rendering with ImageData manipulation for pixel-perfect rendering.
  * Fallback renderer when WebGL2 is not available.
  * 
- * @module core/renderer-canvas2d
+ * @module graphics/renderer-canvas2d
  */
 
 "use strict";

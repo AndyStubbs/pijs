@@ -3,7 +3,7 @@
  * 
  * Basic Graphics Commands: pset, line, and more to come
  * 
- * @module modules/basic
+ * @module graphics/graphics-api
  */
 
 "use strict";

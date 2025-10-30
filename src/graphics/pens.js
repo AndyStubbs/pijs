@@ -3,7 +3,7 @@
  * 
  * Manages pens and blends
  * 
- * @module core/pens
+ * @module graphics/pens
  */
 
 "use strict";
@@ -12,7 +12,7 @@
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_state from "../core/state-settings.js";
 import * as g_utils from "../core/utils.js";
-import * as g_graphics from "./basic.js";
+import * as g_graphicsApi from "./graphics-api.js";
 
 // Pens
 export const PEN_PIXEL = "pixel";
@@ -215,7 +215,7 @@ function buildPenFn( s_screenData ) {
 	s_screenData.blends.blendFn = s_blendFn;
 
 	// Rebuild graphics api to get the new pen functions
-	g_graphics.buildGraphicsApi( s_screenData );
+	g_graphicsApi.buildGraphicsApi( s_screenData );
 }
 
 

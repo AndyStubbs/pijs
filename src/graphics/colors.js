@@ -4,7 +4,7 @@
  * Manages the color palettes and color values for Alpha 2.
  * Simplified version focused on WebGL2 rendering.
  * 
- * @module modules/colors
+ * @module graphics/colors
  */
 
 "use strict";

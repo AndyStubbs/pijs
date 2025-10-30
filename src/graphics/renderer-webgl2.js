@@ -4,7 +4,7 @@
  * WebGL2 rendering with Framebuffer Object (FBO) for offscreen rendering
  * and automatic batch rendering system.
  * 
- * @module core/renderer-webgl2
+ * @module graphics/renderer-webgl2
  */
 
 "use strict";
@@ -59,16 +59,16 @@ let m_isWebgl2Capable = false;
 
 export { m_isWebgl2Capable as isWebgl2Capable };
 
-export function init( api ) {
-	g_screenManager.addScreenDataItem( "contextLost", false );
-	g_screenManager.addScreenDataItem( "isRenderScheduled", false );
-	g_screenManager.addScreenDataItem( "isFirstRender", true );
+export function init() {
 	g_screenManager.addScreenCleanupFunction( cleanup );
-
 	m_isWebgl2Capable = testWebGL2Capability();
 }
 
 export function cleanup( screenData ) {
+
+	if( screenData.renderMode === g_screenManager.CANVAS2D_RENDER_MODE ) {
+		return;
+	}
 
 	const gl = screenData.gl;
 	const pointBatch = screenData.pointBatch;
@@ -140,6 +140,11 @@ function testWebGL2Capability() {
  */
 export function initWebGL( screenData ) {
 
+	// Setup initial screen data items
+	screenData.contextLost = false;
+	screenData.isRenderScheduled = false;
+	screenData.isFirstRender = true;
+
 	const canvas = screenData.canvas;
 	const width = screenData.width;
 	const height = screenData.height;
@@ -205,6 +210,8 @@ export function initWebGL( screenData ) {
 		// Reset blend mode
 		blendModeChanged( screenData );
 	} );
+
+
 
 	// Return successful
 	return true;

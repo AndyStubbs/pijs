@@ -3,7 +3,7 @@
  * 
  * Centralized event listener management for input events (mouse, touch, keyboard, etc.)
  * 
- * @module core/events
+ * @module input/events
  */
 
 "use strict";

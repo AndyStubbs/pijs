@@ -3,7 +3,7 @@
  * 
  * Common utility functions for math, colors, types, and data manipulation.
  * 
- * @module modules/utils
+ * @module core/utils
  */
 
 "use strict";
