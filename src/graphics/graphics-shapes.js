@@ -181,6 +181,113 @@ export function buildApi(
 	s_screenData.api.circle = circleFn;
 
 
+	/**********************************************************
+	 * ELLIPSE
+	 **********************************************************/
+
+
+	let s_preprocessEllipseOutline;
+	let s_preprocessEllipseFilled;
+	if( s_screenData.renderMode === g_screenManager.CANVAS2D_RENDER_MODE ) {
+		s_preprocessEllipseOutline = s_getImageData;
+		s_preprocessEllipseFilled = s_getImageData;
+	} else {
+
+		// Keep signature parity with canvas2d path
+		s_preprocessEllipseOutline = ( screenData, rx, ry ) => {
+
+			// Ramanujan perimeter approximation P ≈ 2π * sqrt( (rx^2 + ry^2) / 2 )
+			const perimeterPixels = Math.round(
+				2 * Math.PI * Math.sqrt( ( rx * rx + ry * ry ) / 2 )
+			);
+			s_prepareBatch( screenData, s_pointBatch, perimeterPixels * s_pixelsPerPen );
+		};
+		s_preprocessEllipseFilled = ( screenData, rx, ry ) => {
+			const areaPixels = Math.round( Math.PI * rx * ry );
+			s_prepareBatch( screenData, s_pointBatch, areaPixels * s_pixelsPerPen );
+		};
+	}
+
+	const ellipseFn = ( x, y, rx, ry, fillColor ) => {
+		let pX, pY, pRx, pRy, pFillColor;
+
+		if( s_isObjectLiteral( x ) ) {
+			pX = s_getInt( x.x1, null );
+			pY = s_getInt( x.y1, null );
+			pRx = s_getInt( x.rx, null );
+			pRy = s_getInt( x.ry, null );
+			pFillColor = x.pFillColor;
+		} else {
+			pX = s_getInt( x, null );
+			pY = s_getInt( y, null );
+			pRx = s_getInt( rx, null );
+			pRy = s_getInt( ry, null );
+			pFillColor = fillColor;
+		}
+
+		if( pX === null || pY === null || pRx === null || pRy === null ) {
+			const error = new TypeError(
+				"ellipse: Parameters x1, y1, rx, and ry must be integers."
+			);
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		// Nothing to draw
+		if( pRx < 0 || pRy < 0 ) {
+			return;
+		}
+
+		// Single point
+		if( pRx === 0 && pRy === 0 ) {
+			s_preprocessEllipseOutline( s_screenData, 1, 1 );
+			s_penFn( s_screenData, pX, pY, s_color );
+			s_setImageDirty( s_screenData );
+			return;
+		}
+
+		// Degenerate into line when one radius is 0
+		if( pRx === 0 ) {
+			s_preprocessEllipseOutline( s_screenData, 1, pRy );
+			let y1 = pY - pRy;
+			const y2 = pY + pRy;
+			while( y1 <= y2 ) {
+				s_penFn( s_screenData, pX, y1, s_color );
+				y1++;
+			}
+			s_setImageDirty( s_screenData );
+			return;
+		}
+
+		if( pRy === 0 ) {
+			s_preprocessEllipseOutline( s_screenData, pRx, 1 );
+			let x1 = pX - pRx;
+			const x2 = pX + pRx;
+			while( x1 <= x2 ) {
+				s_penFn( s_screenData, x1, pY, s_color );
+				x1++;
+			}
+			s_setImageDirty( s_screenData );
+			return;
+		}
+
+		const fillColorValue = s_getColorValueByRawInput( s_screenData, pFillColor );
+
+		if( fillColorValue !== null && pRx > s_penSize && pRy > s_penSize ) {
+			s_preprocessEllipseFilled( s_screenData, pRx, pRy );
+			m_ellipseFilled(
+				s_screenData, pX, pY, pRx, pRy, fillColorValue, s_blendFn,
+				s_screenWidth - 1, s_screenHeight - 1
+			);
+		}
+
+		s_preprocessEllipseOutline( s_screenData, pRx, pRy );
+		m_ellipseOutline( s_screenData, pX, pY, pRx, pRy, s_color, s_penFn );
+		s_setImageDirty( s_screenData );
+	};
+	s_api.ellipse = ellipseFn;
+	s_screenData.api.ellipse = ellipseFn;
+
 }
 
 
@@ -306,3 +413,81 @@ function m_circleFilled( screenData, cx, cy, radius, color, blendFn, maxX, maxY 
 	}
 }
 
+
+/**
+ * ELLIPSE
+ */
+
+
+function m_ellipseOutline( screenData, cx, cy, rx, ry, color, penFn ) {
+
+	// Midpoint ellipse algorithm
+	let x = 0;
+	let y = ry;
+
+	const rx2 = rx * rx;
+	const ry2 = ry * ry;
+	let dx = 2 * ry2 * x;
+	let dy = 2 * rx2 * y;
+
+	// Region 1
+	let p1 = ry2 - rx2 * ry + 0.25 * rx2;
+	while( dx < dy ) {
+
+		// 4-way symmetry
+		penFn( screenData, cx + x, cy + y, color );
+		penFn( screenData, cx - x, cy + y, color );
+		penFn( screenData, cx - x, cy - y, color );
+		penFn( screenData, cx + x, cy - y, color );
+
+		x++;
+		dx += 2 * ry2;
+		if( p1 < 0 ) {
+			p1 += ry2 + dx;
+		} else {
+			y--;
+			dy -= 2 * rx2;
+			p1 += ry2 + dx - dy;
+		}
+	}
+
+	// Region 2
+	let p2 = ry2 * ( x + 0.5 ) * ( x + 0.5 ) + rx2 * ( y - 1 ) * ( y - 1 ) - rx2 * ry2;
+	while( y >= 0 ) {
+
+		// 4-way symmetry
+		penFn( screenData, cx + x, cy + y, color );
+		penFn( screenData, cx - x, cy + y, color );
+		penFn( screenData, cx - x, cy - y, color );
+		penFn( screenData, cx + x, cy - y, color );
+
+		y--;
+		dy -= 2 * rx2;
+		if( p2 > 0 ) {
+			p2 += rx2 - dy;
+		} else {
+			x++;
+			dx += 2 * ry2;
+			p2 += rx2 - dy + dx;
+		}
+	}
+}
+
+function m_ellipseFilled( screenData, cx, cy, rx, ry, color, blendFn, maxX, maxY ) {
+	for( let dy = -ry; dy <= ry; dy++ ) {
+		const y = cy + dy;
+		if( y < 0 || y > maxY ) {
+			continue;
+		}
+		
+		// Compute x extent for this scanline
+		const t = 1 - ( dy * dy ) / ( ry * ry );
+		const dxMax = t <= 0 ? 0 : Math.floor( rx * Math.sqrt( t ) );
+		let x = Math.max( cx - dxMax, 0 );
+		const xEnd = Math.min( cx + dxMax, maxX );
+		while( x <= xEnd ) {
+			blendFn( screenData, x, y, color );
+			x++;
+		}
+	}
+}
