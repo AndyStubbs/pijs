@@ -335,6 +335,14 @@ function setBlend( screenData, options ) {
 // the pixel hasn't already been set. It would use a lot of memory and be slower but it wouldn't 
 // cause issues with alpha blend mode.  Of course it would add branching to my "hot path" so maybe
 // only use it in alpha mode.
+// Use this function to generate a key that is safe for a 8192x8192 max screen size.
+// export function getPixelKey( x, y ) {
+// 	return ( y << 13 ) | x; 
+// }
+// Another potential solution is to draw multiple lines 1 pixel in size of the pen in parallel.
+// Cool trick would be to use trig to calc the size of the lines so you don't have to draw caps
+// separatly. But that might be tough with integer math.
+
 
 function drawPenSquare( screenData, x1, y1, x2, y2, color, blendFn ) {
 	for( let py = y1; py < y2; py++ ) {
