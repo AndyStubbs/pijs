@@ -617,7 +617,7 @@ src/
 
 ### Phase 7: Additional Graphics Primitives
 - [x] Step 7.1: Implement rect (filled and outlined)
-- [ ] Step 7.2: Implement circle (filled and outlined)
+- [x] Step 7.2: Implement circle (filled and outlined)
 - [ ] Step 7.3: Implement ellipse
 - [ ] Step 7.4: Implement arc
 - [ ] Step 7.5: Implement bezier
