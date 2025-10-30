@@ -296,7 +296,11 @@ function setPen( screenData, options ) {
 	if( pen === PEN_SQUARE ) {
 		screenData.pens.pixelsPerPen = size * size;
 	} else if( pen === PEN_CIRCLE ) {
-		screenData.pens.pixelsPerPen = Math.round( Math.PI * ( size + 1 ) * ( size + 1 ) ) + 1;
+		if( size === 2 ) {
+			screenData.pens.pixelsPerPen = 5;
+		} else {
+			screenData.pens.pixelsPerPen = Math.round( Math.PI * ( size + 1 ) * ( size + 1 ) ) + 1;
+		}
 	} else {
 		screenData.pens.pixelsPerPen = 1;
 	}
@@ -323,8 +327,7 @@ function setPen( screenData, options ) {
 // TODO: These pen functions are obviously flawed for use in lines and shapes as they will write
 // over the same pixel multiple times.  Find a better way to draw shapes with a pen might be 
 // complicated so it's not a high priority, this will get the job done for now. This is especially
-// problematic when combined with alpha blends because it will perform blends multiple times in
-// canvas2d mode, but not really a problem with webgl2
+// problematic when combined with alpha blends because it will perform blends multiple times.
 // One solution could be to have a Set with all the pixel values and use a key lookup to make sure
 // the pixel hasn't already been set. It would use a lot of memory and be slower but it wouldn't 
 // cause issues with alpha blend mode.  Of course it would add branching to my "hot path" so maybe
@@ -333,9 +336,9 @@ function setPen( screenData, options ) {
 // export function getPixelKey( x, y ) {
 // 	return ( y << 13 ) | x; 
 // }
-// Another potential solution is to draw multiple lines 1 pixel in size of the pen in parallel.
-// Cool trick would be to use trig to calc the size of the lines so you don't have to draw caps
-// separatly. But that might be tough with integer math.
+// The ideal solution is to implement the pen shape in the draw commands as vector shapes
+// but kind of a challenge. When moving to using shaders to draw shapes in webgl2 this should be
+// managable but for canvas2d probably best to use the "Set" solution.
 
 
 function drawPenSquare( screenData, x1, y1, x2, y2, color, blendFn ) {

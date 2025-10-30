@@ -466,12 +466,12 @@ function createBatchSystem( screenData, vertSrc, fragSrc, mode ) {
 }
 
 /**
- * Ensure batch has enough capacity
+ * Prepare batch and make sure has enough capacity
  * 
  * @param {Object} batch - Batch system object
  * @param {string} newItemCount - Number of new items that will be added
  */
-export function ensureBatchCapacity( screenData, batch, newItemCount ) {
+export function prepareBatch( screenData, batch, newItemCount ) {
 
 	const requiredCount = batch.count + newItemCount;
 	if( requiredCount >= batch.capacity ) {
@@ -479,7 +479,7 @@ export function ensureBatchCapacity( screenData, batch, newItemCount ) {
 		// Make sure we don't exceed max batch size
 		if( requiredCount > MAX_BATCH_SIZE ) {
 			flushBatches( screenData );
-			return ensureBatchCapacity( screenData, batch, newItemCount );
+			return prepareBatch( screenData, batch, newItemCount );
 		}
 
 		// Get new capacity by doubling current capacity
