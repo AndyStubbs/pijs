@@ -58,34 +58,26 @@ function addScreenDataItems() {
 function addApiCommands( api ) {
 
 	// Add api for non "hot" path commands
-	api.setPen = ( pen, size ) => {
+	api.setPen = ( pen, size, blend, noise ) => {
 		const screenData = g_screenManager.getActiveScreen( "setPen" );
-		const options = g_utils.parseOptions( [ pen, size ], [ "pen", "size" ] );
+		const options = g_utils.parseOptions(
+			[ pen, size, blend, noise ], [ "pen", "size", "blend", "noise" ]
+		);
 		return setPen( screenData, options );
-	};
-	api.setBlend = ( blend, noise ) => {
-		const screenData = g_screenManager.getActiveScreen( "setBlend" );
-		const options = g_utils.parseOptions( [ blend, noise ], [ "blend", "noise" ] );
-		return setBlend( screenData, options );
 	};
 
 	// Add settings to set command
 	g_state.addSetting( "pen", api.setPen, true );
-	g_state.addSetting( "blend", api.setBlend, true );
 
 	// Add screen commands when screen is created
 	g_screenManager.addScreenInitFunction( ( screenData ) => {
 
 		// Assign the setPen function to the screen
-		screenData.api.setPen = ( pen, size ) => {
-			const options = g_utils.parseOptions( [ pen, size ], [ "pen", "size" ] );
+		screenData.api.setPen = ( pen, size, blend, noise ) => {
+			const options = g_utils.parseOptions(
+				[ pen, size, blend, noise ], [ "pen", "size", "blend", "noise" ]
+			);
 			return setPen( screenData, options );
-		};
-
-		// Assign the setBlend function to the screen
-		screenData.api.setBlend = ( blend, noise ) => {
-			const options = g_utils.parseOptions( [ blend, noise ], [ "blend", "noise" ] );
-			return setBlend( screenData, options );
 		};
 	} );
 }
@@ -219,7 +211,10 @@ function buildPenFn( s_screenData ) {
 		}
 	}
 	
-	// Rebuild graphis api to get the new pen functions
+	// Set the blendFn - used in filled shapes and paint
+	s_screenData.blends.blendFn = s_blendFn;
+
+	// Rebuild graphics api to get the new pen functions
 	g_graphics.buildGraphicsApi( s_screenData );
 }
 
@@ -233,7 +228,13 @@ function buildPenFn( s_screenData ) {
 function setPen( screenData, options ) {
 	let pen = options.pen;
 	let size = g_utils.getInt( options.size, 1 );
+	let blend = options.blend;
+	let noise = options.noise;
 
+	// Validate pen option
+	if( !pen ) {
+		pen = screenData.pens.pen;
+	}
 	if( !PENS.has( pen ) ) {
 		const error = new TypeError(
 			"setPen: Parameter pen is not a valid pen. Valid pens are (" +
@@ -242,7 +243,6 @@ function setPen( screenData, options ) {
 		error.code = "INVALID_PEN";
 		throw error;
 	}
-
 	if( pen === PEN_PIXEL ) {
 		size = 1;
 	}
@@ -257,31 +257,13 @@ function setPen( screenData, options ) {
 		pen = PEN_PIXEL;
 	}
 
-	// Set the pen on screen data
-	screenData.pens.pen = pen;
-	screenData.pens.size = size;
-
-	// Set the amount of points that will be drawn by the pen
-	if( pen === PEN_SQUARE ) {
-		screenData.pens.pixelsPerPen = size * size;
-	} else if( pen === PEN_CIRCLE ) {
-		screenData.pens.pixelsPerPen = Math.round( Math.PI * ( size + 1 ) * ( size + 1 ) ) + 1;
-	} else {
-		screenData.pens.pixelsPerPen = 1;
+	// Validate the blend option
+	if( !blend ) {
+		blend = screenData.blends.blend;
 	}
-
-	buildPenFn( screenData );
-}
-
-// Set blend mode
-function setBlend( screenData, options ) {
-	const blend = options.blend;
-	let noise = options.noise;
-
-	// Validate the blend mode option
 	if( !BLENDS.has( blend ) ) {
 		const error = new TypeError(
-			`setBlend: Parameter blend is not a valid blend mode. Valid blends are (` +
+			`setBlend: Parameter blend is not a valid blend. Valid blends are (` +
 			`${Array.from( BLENDS ).join( ", " )}).`
 		);
 		error.code = "INVALID_BLEND_MODE";
@@ -306,16 +288,28 @@ function setBlend( screenData, options ) {
 		}
 	}
 
+	// Set the pen on screen data
+	screenData.pens.pen = pen;
+	screenData.pens.size = size;
+
+	// Set the amount of points that will be drawn by the pen
+	if( pen === PEN_SQUARE ) {
+		screenData.pens.pixelsPerPen = size * size;
+	} else if( pen === PEN_CIRCLE ) {
+		screenData.pens.pixelsPerPen = Math.round( Math.PI * ( size + 1 ) * ( size + 1 ) ) + 1;
+	} else {
+		screenData.pens.pixelsPerPen = 1;
+	}
+
 	// Set blend data on screen
 	const previousBlend = screenData.blends.blend;
 	screenData.blends.blend = blend;
 	screenData.blends.noise = noise;
 
-	// Reset the pen function so it can get the new blend function
 	buildPenFn( screenData );
 
 	// Notify renderer that blend mode has changed for webgl2 renderer
-	if( screenData.renderMode === g_screenManager.WEBGL2_RENDER_MODE ) {
+	if( previousBlend !== blend && screenData.renderMode === g_screenManager.WEBGL2_RENDER_MODE ) {
 		screenData.renderer.blendModeChanged( screenData, previousBlend );
 	}
 }

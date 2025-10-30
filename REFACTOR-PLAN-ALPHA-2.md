@@ -232,6 +232,7 @@ Since we're removing non-pixel mode and simplifying:
 
 **Implemented in `src/graphics/pens.js`:**
 - Kept pen/blend system but simplified
+- Merged setBlend into setPen and removed setBlend
 - All drawing uses direct pixel writes to renderer batches
 - Pen system now focuses on pixel mode only
 - Blend modes simplified to replace and alpha
@@ -615,7 +616,7 @@ src/
 - [x] Step 6.2: Test line
 
 ### Phase 7: Additional Graphics Primitives
-- [ ] Step 7.1: Implement rect (filled and outlined)
+- [x] Step 7.1: Implement rect (filled and outlined)
 - [ ] Step 7.2: Implement circle (filled and outlined)
 - [ ] Step 7.3: Implement ellipse
 - [ ] Step 7.4: Implement arc

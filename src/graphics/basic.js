@@ -11,6 +11,7 @@
 // Import modules directly
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
+import * as g_colors from "./colors.js";
 
 let m_api = null;
 
@@ -49,6 +50,9 @@ export function buildGraphicsApi( s_screenData ) {
 	}
 
 	const s_penFn = s_screenData.pens.penFn;
+	const s_penSize = s_screenData.pens.size;
+	const s_penHalfSize = Math.round( s_penSize / 2 );
+	const s_blendFn = s_screenData.blends.blendFn;
 	const s_setImageDirty = s_screenData.renderer.setImageDirty;
 	const s_pointBatch = s_screenData.pointBatch;
 	const s_pixelsPerPen = s_screenData.pens.pixelsPerPen;
@@ -56,6 +60,7 @@ export function buildGraphicsApi( s_screenData ) {
 	const s_isObjectLiteral = g_utils.isObjectLiteral;
 	const s_getInt = g_utils.getInt;
 	const s_color = s_screenData.color;
+	const s_getColorValueByRawInput = g_colors.getColorValueByRawInput;
 	
 	/**********************************************************
 	 * PSET
@@ -102,6 +107,10 @@ export function buildGraphicsApi( s_screenData ) {
 	if( s_screenData.renderMode === g_screenManager.CANVAS2D_RENDER_MODE ) {
 		preprocessLine = s_screenData.renderer.getImageData;
 	} else {
+		
+		// Note that screenData is passed in even though there is closure here, but it needs to
+		// stay consistant with the canvas2d render mode so therefore it needs to be passed in as
+		// a parameter
 		preprocessLine = ( screenData, x1, y1, x2, y2 ) => {
 			const dx = x2 - x1;
 			const dy = y2 - y1;
@@ -141,11 +150,84 @@ export function buildGraphicsApi( s_screenData ) {
 	m_api.line = lineFn;
 	s_screenData.api.line = lineFn;
 
+	/**********************************************************
+	 * RECT (outlined)
+	 **********************************************************/
+
+	let preprocessRectOutline;
+	let preprocessRectFilled;
+	if( s_screenData.renderMode === g_screenManager.CANVAS2D_RENDER_MODE ) {
+		preprocessRectOutline = s_screenData.renderer.getImageData;
+		preprocessRectFilled = s_screenData.renderer.getImageData;
+	} else {
+
+		// Note that screenData is passed in even though there is closure here, but it needs to
+		// stay consistant with the canvas2d render mode so therefore it needs to be passed in as
+		// a parameter
+		preprocessRectOutline = ( screenData, width, height ) => {
+			let perimeterPixels = width * 2 + height * 2;
+			s_ensureBatchCapacity( screenData, s_pointBatch, perimeterPixels * s_pixelsPerPen );
+		};
+		preprocessRectFilled = ( screenData, width, height ) => {
+			const areaPixels = width * height;
+			s_ensureBatchCapacity( screenData, s_pointBatch, areaPixels * s_pixelsPerPen );
+		};
+	}
+
+	const rectFn = ( x, y, width, height, fillColor ) => {
+		let px, py, pfillColor, pwidth, pheight;
+
+		if( s_isObjectLiteral( x ) ) {
+			px = s_getInt( x.x1, null );
+			py = s_getInt( x.y1, null );
+			pwidth = s_getInt( x.width, null );
+			pheight = s_getInt( x.height, null );
+			pfillColor = x.pFillColor;
+		} else {
+			px = s_getInt( x, null );
+			py = s_getInt( y, null );
+			pwidth = s_getInt( width, null );
+			pheight = s_getInt( height, null );
+			pfillColor = fillColor;
+		}
+
+		if( px === null || py === null || pwidth === null || pheight === null ) {
+			const error = new TypeError(
+				"rect: Parameters x1, y1, width, and height must be integers."
+			);
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		// Return if nothing to draw
+		if( pwidth < 1 || pheight < 1 ) {
+			return;
+		}
+
+		const x2 = px + pwidth;
+		const y2 = py + pheight;
+		const fillColorValue = s_getColorValueByRawInput( s_screenData, pfillColor );
+
+		if( fillColorValue !== null && width > s_penSize && height > s_penSize ) {
+			preprocessRectFilled( s_screenData, pwidth, pheight );
+			rectFilled(
+				s_screenData,
+				px + s_penHalfSize, py + s_penHalfSize,
+				x2 - s_penHalfSize, y2 - s_penHalfSize,
+				fillColorValue, s_blendFn
+			);
+		}
+		preprocessRectOutline( s_screenData, pwidth, pheight );
+		rectOutline( s_screenData, px, py, x2, y2, s_color, s_penFn );
+		s_setImageDirty( s_screenData );
+	};
+	m_api.rect = rectFn;
+	s_screenData.api.rect = rectFn;
 }
 
 
 /***************************************************************************************************
- * External API Commands
+ * External API Commands - Hot Paths
  **************************************************************************************************/
 
 
@@ -180,6 +262,69 @@ function line( screenData, x1, y1, x2, y2, color, penFn ) {
 
 		// Set the next pixel
 		penFn( screenData, x1, y1, color );
+	}
+}
+
+function rectOutline( screenData, x1, y1, x2, y2, color, penFn ) {
+
+	// Single point
+	if( x1 === x2 && y1 === y2 ) {
+		penFn( screenData, x1, y1, color );
+		return;
+	}
+
+	// Horizontal line
+	if( y1 === y2 ) {
+		let x = x1;
+		while( x <= x2 ) {
+			penFn( screenData, x, y1, color );
+			x++;
+		}
+		return;
+	}
+
+	// Verticle line
+	if( x1 === x2 ) {
+		let y = y1;
+		while( y <= y2 ) {
+			penFn( screenData, x1, y, color );
+			y++;
+		}
+		return;
+	}
+
+	let x;
+	let y;
+
+	x = x1;
+	while( x <= x2 ) {
+		penFn( screenData, x, y1, color );
+		x++;
+	}
+
+	x = x1;
+	while( x <= x2 ) {
+		penFn( screenData, x, y2, color );
+		x++;
+	}
+
+	y = y1 + 1;
+	while( y < y2 ) {
+		penFn( screenData, x1, y, color );
+		penFn( screenData, x2, y, color );
+		y++;
+	}
+}
+
+function rectFilled( screenData, x1, y1, x2, y2, color, blendFn ) {
+	let y = y1;
+	while( y <= y2 ) {
+		let x = x1;
+		while( x <= x2 ) {
+			blendFn( screenData, x, y, color );
+			x++;
+		}
+		y++;
 	}
 }
 
