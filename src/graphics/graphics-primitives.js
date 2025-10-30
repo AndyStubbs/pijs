@@ -246,7 +246,8 @@ export function buildApi(
 			p2x === null || p2y === null || p3x === null || p3y === null
 		) {
 			const error = new TypeError(
-				"bezier: Parameters xStart, yStart, x1, y1, x2, y2, xEnd, and yEnd must be integers."
+				"bezier: Parameters xStart, yStart, x1, y1, x2, y2, xEnd, and yEnd must be " +
+				"integers."
 			);
 			error.code = "INVALID_PARAMETERS";
 			throw error;
