@@ -195,6 +195,71 @@ export function buildApi(
 	};
 	s_api.arc = arcFn;
 	s_screenData.api.arc = arcFn;
+
+
+	/**********************************************************
+	 * BEZIER (cubic, outline)
+	 **********************************************************/
+
+	let s_preprocessBezierOutline;
+	if( s_screenData.renderMode === g_screenManager.CANVAS2D_RENDER_MODE ) {
+		s_preprocessBezierOutline = s_getImageData;
+	} else {
+
+		// screenData passed in for consistency
+		s_preprocessBezierOutline = ( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y ) => {
+
+			// Approximate curve length by control polygon length
+			const d01 = Math.hypot( p1x - p0x, p1y - p0y );
+			const d12 = Math.hypot( p2x - p1x, p2y - p1y );
+			const d23 = Math.hypot( p3x - p2x, p3y - p2y );
+			const approxLen = Math.max( 1, Math.round( d01 + d12 + d23 ) );
+			s_prepareBatch( screenData, s_pointBatch, approxLen * s_pixelsPerPen );
+		};
+	}
+
+	const bezierFn = ( xStart, yStart, x1, y1, x2, y2, xEnd, yEnd ) => {
+		let p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y;
+
+		if( s_isObjectLiteral( xStart ) ) {
+			p0x = s_getInt( xStart.xStart, null );
+			p0y = s_getInt( xStart.yStart, null );
+			p1x = s_getInt( xStart.x1, null );
+			p1y = s_getInt( xStart.y1, null );
+			p2x = s_getInt( xStart.x2, null );
+			p2y = s_getInt( xStart.y2, null );
+			p3x = s_getInt( xStart.xEnd, null );
+			p3y = s_getInt( xStart.yEnd, null );
+		} else {
+			p0x = s_getInt( xStart, null );
+			p0y = s_getInt( yStart, null );
+			p1x = s_getInt( x1, null );
+			p1y = s_getInt( y1, null );
+			p2x = s_getInt( x2, null );
+			p2y = s_getInt( y2, null );
+			p3x = s_getInt( xEnd, null );
+			p3y = s_getInt( yEnd, null );
+		}
+
+		if(
+			p0x === null || p0y === null || p1x === null || p1y === null ||
+			p2x === null || p2y === null || p3x === null || p3y === null
+		) {
+			const error = new TypeError(
+				"bezier: Parameters xStart, yStart, x1, y1, x2, y2, xEnd, and yEnd must be integers."
+			);
+			error.code = "INVALID_PARAMETERS";
+			throw error;
+		}
+
+		s_preprocessBezierOutline(
+			s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y
+		);
+		m_bezierOutline( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, s_color, s_penFn );
+		s_setImageDirty( s_screenData );
+	};
+	s_api.bezier = bezierFn;
+	s_screenData.api.bezier = bezierFn;
 }
 
 
@@ -202,6 +267,9 @@ export function buildApi(
  * Hot Paths
  **************************************************************************************************/
 
+/**********************************************************
+ * LINE
+ **********************************************************/
 
 function m_line( screenData, x1, y1, x2, y2, color, penFn ) {
 	
@@ -237,6 +305,9 @@ function m_line( screenData, x1, y1, x2, y2, color, penFn ) {
 	}
 }
 
+/**********************************************************
+ * ARC
+ **********************************************************/
 
 function m_arcOutline(
 	screenData, cx, cy, radius, angle1, angle2, winding, color, penFn
@@ -284,4 +355,59 @@ function m_arcOutline(
 		setPixel( cx + y, cy - x );
 		setPixel( cx + x, cy - y );
 	}
+}
+
+/**********************************************************
+ * BEZIER (cubic, outline)
+ **********************************************************/
+
+function m_bezierOutline(
+	screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, penFn
+) {
+
+	function bezierPoint( t ) {
+		const u = 1 - t;
+		const uu = u * u;
+		const uuu = uu * u;
+		const tt = t * t;
+		const ttt = tt * t;
+
+		const x = Math.round(
+			uuu * p0x + 3 * uu * t * p1x + 3 * u * tt * p2x + ttt * p3x
+		);
+		const y = Math.round(
+			uuu * p0y + 3 * uu * t * p1y + 3 * u * tt * p2y + ttt * p3y
+		);
+		return { "x": x, "y": y };
+	}
+
+	function distance( a, b ) {
+		const dx = a.x - b.x;
+		const dy = a.y - b.y;
+		return Math.sqrt( dx * dx + dy * dy );
+	}
+
+	let lastPoint = bezierPoint( 0 );
+	penFn( screenData, lastPoint.x, lastPoint.y, color );
+
+	let t = 0.1;
+	let dt = 0.1;
+	const minDistance = 1;
+
+	while( t < 1 ) {
+		const point = bezierPoint( t );
+		const d = distance( point, lastPoint );
+
+		if( d > minDistance && dt > 0.00001 ) {
+			t -= dt;
+			dt = dt * 0.75;
+		} else {
+			penFn( screenData, point.x, point.y, color );
+			lastPoint = point;
+		}
+		t += dt;
+	}
+
+	const endPoint = bezierPoint( 1 );
+	penFn( screenData, endPoint.x, endPoint.y, color );
 }

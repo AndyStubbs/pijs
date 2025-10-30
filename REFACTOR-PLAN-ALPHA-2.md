@@ -626,6 +626,7 @@ src/
 - [ ] Step 7.8: Implement get/getAsync
 - [ ] Step 7.9: Implement put Command
 - [ ] Step 7.10: Implement getColor (new) - should return the active color on the activeScreen
+- [ ] Step 7.11: Implement getPalColor (new) - Given an index return the pal color value
 
 ### Phase 8: Image Support
 - [ ] Step 8.1: Rebuild Images Module
@@ -636,8 +637,8 @@ src/
 - [ ] Step 8.6: Implement getSpritesheetData
 - [ ] Step 8.7: Implement getImage
 
-### Phase 9: Text Rendering (Bitmap Fonts Only)
-- [ ] Step 9.1: Convert Default Fonts to Bitmaps
+### Phase 9: Text Rendering (Bitmap/Put Fonts Only)
+- [ ] Step 9.1: Convert Default Fonts to Bitmaps and Put Arrays
 - [ ] Step 9.2: Rebuild Font Module
 - [ ] Step 9.3: Rebuild Print Module
 
