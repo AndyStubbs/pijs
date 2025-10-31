@@ -13,6 +13,7 @@ import * as g_utils from "../core/utils.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_colors from "./colors.js";
 import * as g_state from "../core/state-settings.js";
+import * as g_webgl2Renderer from "./renderer-webgl2.js";
 
 
 /***************************************************************************************************
@@ -218,7 +219,7 @@ function putWrapper( screenData, data, x, y, include0 = false ) {
 			}
 		}
 
-		screenData.renderer.prepareBatch( screenData, screenData.pointBatch, pixelCount );
+		screenData.renderer.prepareBatch( screenData, g_webgl2Renderer.POINTS_BATCH, pixelCount );
 	}
 
 	put( screenData, pData, pX, pY, pInclude0, startY, startX, width, height );

@@ -18,7 +18,7 @@ export const commandNames = [ "pset", "lines", "arc", "bezier" ];
 // Build the Primitives API
 export function buildApi(
 	s_api, s_screenData, s_penFn, s_isObjectLiteral, s_getInt, s_getImageData, s_color,
-	s_setImageDirty, s_prepareBatch, s_pointBatch, s_pixelsPerPen
+	s_setImageDirty, s_prepareBatch, s_batchType, s_pixelsPerPen
 ) {
 
 
@@ -35,7 +35,7 @@ export function buildApi(
 
 		// screenData passed in for consistency
 		s_preprocessPset = ( screenData ) => s_prepareBatch(
-			screenData, s_pointBatch, s_pixelsPerPen
+			screenData, s_batchType, s_pixelsPerPen
 		);
 	}
 
@@ -79,7 +79,7 @@ export function buildApi(
 			const dx = x2 - x1;
 			const dy = y2 - y1;
 			const lineLen = Math.round( Math.sqrt( dx * dx + dy * dy ) ) + 1;
-			s_prepareBatch( screenData, s_pointBatch, lineLen * s_pixelsPerPen );
+			s_prepareBatch( screenData, s_batchType, lineLen * s_pixelsPerPen );
 		};
 	}
 	
@@ -131,7 +131,7 @@ export function buildApi(
 				1,
 				Math.round( 2 * Math.PI * radius * ( span / 360 ) )
 			);
-			s_prepareBatch( screenData, s_pointBatch, perimeterPixels * s_pixelsPerPen );
+			s_prepareBatch( screenData, s_batchType, perimeterPixels * s_pixelsPerPen );
 		};
 	}
 
@@ -214,7 +214,7 @@ export function buildApi(
 			const d12 = Math.hypot( p2x - p1x, p2y - p1y );
 			const d23 = Math.hypot( p3x - p2x, p3y - p2y );
 			const approxLen = Math.max( 1, Math.round( d01 + d12 + d23 ) );
-			s_prepareBatch( screenData, s_pointBatch, approxLen * s_pixelsPerPen );
+			s_prepareBatch( screenData, s_batchType, approxLen * s_pixelsPerPen );
 		};
 	}
 

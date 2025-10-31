@@ -13,6 +13,7 @@ import * as g_utils from "../core/utils.js";
 import * as g_colors from "./colors.js";
 
 // Graphics Modules
+import * as g_webgl2Renderer from "./renderer-webgl2.js";
 import * as g_primitives from "./graphics-primitives.js";
 import * as g_shapes from "./graphics-shapes.js";
 
@@ -62,7 +63,7 @@ export function buildGraphicsApi( s_screenData ) {
 	const s_blendFn = s_screenData.blends.blendFn;
 	const s_setImageDirty = s_screenData.renderer.setImageDirty;
 	const s_getImageData = s_screenData.renderer.getImageData;
-	const s_pointBatch = s_screenData.pointBatch;
+	const s_batchType = g_webgl2Renderer.POINTS_BATCH;
 	const s_pixelsPerPen = s_screenData.pens.pixelsPerPen;
 	const s_prepareBatch = s_screenData.renderer.prepareBatch;
 	const s_isObjectLiteral = g_utils.isObjectLiteral;
@@ -73,13 +74,13 @@ export function buildGraphicsApi( s_screenData ) {
 	// Build primitives api
 	g_primitives.buildApi(
 		m_api, s_screenData, s_penFn, s_isObjectLiteral, s_getInt, s_getImageData, s_color,
-		s_setImageDirty, s_prepareBatch, s_pointBatch, s_pixelsPerPen
+		s_setImageDirty, s_prepareBatch, s_batchType, s_pixelsPerPen
 	);
 
 	// build shapes api
 	g_shapes.buildApi(
 		m_api, s_screenData, s_penFn, s_blendFn, s_isObjectLiteral, s_getInt, s_getImageData,
-		s_color, s_setImageDirty, s_prepareBatch, s_pointBatch, s_pixelsPerPen, s_screenWidth,
+		s_color, s_setImageDirty, s_prepareBatch, s_batchType, s_pixelsPerPen, s_screenWidth,
 		s_screenHeight, s_penSize, s_penHalfSize, s_getColorValueByRawInput
 	);
 }

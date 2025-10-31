@@ -16,7 +16,7 @@ export const commandNames = [ "rect", "circle", "ellipse" ];
 // Build the Shapes API
 export function buildApi(
 	s_api, s_screenData, s_penFn, s_blendFn, s_isObjectLiteral, s_getInt, s_getImageData, s_color,
-	s_setImageDirty, s_prepareBatch, s_pointBatch, s_pixelsPerPen, s_screenWidth, s_screenHeight,
+	s_setImageDirty, s_prepareBatch, s_batchType, s_pixelsPerPen, s_screenWidth, s_screenHeight,
 	s_penSize, s_penHalfSize, s_getColorValueByRawInput
 ) {
 
@@ -36,13 +36,13 @@ export function buildApi(
 		// screenData passed in for consistency
 		s_preprocessRectOutline = ( screenData, width, height ) => {
 			let perimeterPixels = width * 2 + height * 2;
-			s_prepareBatch( screenData, s_pointBatch, perimeterPixels * s_pixelsPerPen );
+			s_prepareBatch( screenData, s_batchType, perimeterPixels * s_pixelsPerPen );
 		};
 
 		// screenData passed in for consistency
 		s_preprocessRectFilled = ( screenData, width, height ) => {
 			const areaPixels = width * height;
-			s_prepareBatch( screenData, s_pointBatch, areaPixels * s_pixelsPerPen );
+			s_prepareBatch( screenData, s_batchType, areaPixels * s_pixelsPerPen );
 		};
 	}
 
@@ -116,13 +116,13 @@ export function buildApi(
 		s_preprocessCircleOutline = ( screenData, radius ) => {
 			const perimeterPixels = Math.round( 2 * Math.PI * radius );
 			s_prepareBatch(
-				screenData, s_pointBatch, perimeterPixels * s_pixelsPerPen
+				screenData, s_batchType, perimeterPixels * s_pixelsPerPen
 			);
 		};
 		s_preprocessCircleFilled = ( screenData, radius ) => {
 			const areaPixels = Math.round( Math.PI * radius * radius );
 			s_prepareBatch(
-				screenData, s_pointBatch, areaPixels * s_pixelsPerPen
+				screenData, s_batchType, areaPixels * s_pixelsPerPen
 			);
 		};
 	}
@@ -202,11 +202,11 @@ export function buildApi(
 			const perimeterPixels = Math.round(
 				2 * Math.PI * Math.sqrt( ( rx * rx + ry * ry ) / 2 )
 			);
-			s_prepareBatch( screenData, s_pointBatch, perimeterPixels * s_pixelsPerPen );
+			s_prepareBatch( screenData, s_batchType, perimeterPixels * s_pixelsPerPen );
 		};
 		s_preprocessEllipseFilled = ( screenData, rx, ry ) => {
 			const areaPixels = Math.round( Math.PI * rx * ry );
-			s_prepareBatch( screenData, s_pointBatch, areaPixels * s_pixelsPerPen );
+			s_prepareBatch( screenData, s_batchType, areaPixels * s_pixelsPerPen );
 		};
 	}
 
