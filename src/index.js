@@ -54,6 +54,9 @@ for( const mod of mods ) {
 	}
 }
 
+// Process API commands
+g_state.processCommands( api );
+
 // Set window.pi for browser environments
 if( typeof window !== "undefined" ) {
 	window.pi = api;

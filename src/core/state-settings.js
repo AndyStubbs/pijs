@@ -15,6 +15,7 @@ let m_readyCallbacks = [];
 let m_isDocumentReady = false;
 let m_waitCount = 0;
 let m_checkReadyTimeout = null;
+let m_commands = [];
 
 
 /***************************************************************************************************
@@ -40,6 +41,7 @@ export function init( api ) {
 	}
 
 	addApiCommands( api );
+	g_screenManager.addScreenInitFunction( processScreenCommands );
 }
 
 function addApiCommands( api ) {
@@ -81,6 +83,44 @@ export function done() {
 
 export function addSetting( name, fn, isScreen ) {
 	m_settings[ name ] = { fn, isScreen };
+}
+
+export function addCommand( name, fn, isScreen, parameterNames, isScreenOptional ) {
+	m_commands.push( { name, fn, isScreen, parameterNames, isScreenOptional } );
+	if( name.startsWith( "set" ) && name !== "set" ) {
+		const settingName = cmd.name.substring( 3, 4 ).toLowerCase() + cmd.name.substring( 4 );
+		m_settings[ settingName ] = { fn, isScreen };
+	}
+}
+
+export function processCommands( api ) {
+	for( const command of m_commands ) {
+		const { name, fn, isScreen, parameterNames, isScreenOptional } = command;
+		if( isScreen ) {
+			api[ name ] = ( ...args ) => {
+				const options = g_utils.parseOptions( args, parameterNames );
+				const screenData = g_screenManager.getActiveScreen( name, isScreenOptional );
+				return fn( screenData, options );
+			};
+		} else {
+			api[ name ] = ( ...args ) => {
+				const options = g_utils.parseOptions( args, parameterNames );
+				return fn( screenData, options );
+			};
+		}
+	}
+}
+
+function processScreenCommands( screenData ) {
+	for( const command of m_commands ) {
+		const { name, fn, isScreen, parameterNames } = command;
+		if( isScreen ) {
+			screenData.api[ name ] = ( ...args ) => {
+				const options = g_utils.parseOptions( args, parameterNames );
+				return fn( screenData, options );
+			};
+		}
+	}
 }
 
 

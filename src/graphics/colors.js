@@ -83,11 +83,13 @@ export function init( api ) {
 
 function addApiCommands( api ) {
 
-	// Add global api commands
-	api.setDefaultPal = ( pal ) => {
-		const options = g_utils.parseOptions( [ pal ], [ "pal" ] ); 
-		return setDefaultPal( options );
-	};
+	g_state.addCommand( "setDefaultPal", setDefaultPal, false, [ "pal" ] );
+
+	// // Add global api commands
+	// api.setDefaultPal = ( pal ) => {
+	// 	const options = g_utils.parseOptions( [ pal ], [ "pal" ] ); 
+	// 	return setDefaultPal( options );
+	// };
 
 	// setDefaultColor
 	api.setDefaultColor = ( color ) => {
@@ -221,8 +223,6 @@ function addApiCommands( api ) {
 		};
 	} );
 }
-
-// TODO: Add getColor command to get the active screen color
 
 // Set default pal
 function setDefaultPal( options ) {
