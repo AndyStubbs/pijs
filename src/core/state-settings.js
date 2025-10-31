@@ -40,24 +40,15 @@ export function init( api ) {
 		m_isDocumentReady = true;
 	}
 
-	addApiCommands( api );
+	registerCommands( api );
 	g_screenManager.addScreenInitFunction( processScreenCommands );
 }
 
-function addApiCommands( api ) {
+function registerCommands( api ) {
 
-	// Setup External API commands
-	api.ready = ( callback ) => {
-		if( g_utils.isObjectLiteral( ready ) ) {
-			return ready( callback.callback );
-		} else {
-			return ready( callback );
-		}
-	};
-	api.set = ( options ) => {
-		const screenData = g_screenManager.activeScreenData;
-		set( screenData, options );
-	};
+	// Register non screen commands
+	addCommand( "ready", ready, false, [ "callback" ] );
+	addCommand( "set", set, true, [ "options" ], true );
 }
 
 /**
@@ -80,7 +71,6 @@ export function done() {
 	scheduleReadyCheck();
 }
 
-
 export function addSetting( name, fn, isScreen ) {
 	m_settings[ name ] = { fn, isScreen };
 }
@@ -88,8 +78,8 @@ export function addSetting( name, fn, isScreen ) {
 export function addCommand( name, fn, isScreen, parameterNames, isScreenOptional ) {
 	m_commands.push( { name, fn, isScreen, parameterNames, isScreenOptional } );
 	if( name.startsWith( "set" ) && name !== "set" ) {
-		const settingName = cmd.name.substring( 3, 4 ).toLowerCase() + cmd.name.substring( 4 );
-		m_settings[ settingName ] = { fn, isScreen };
+		const settingName = name.substring( 3, 4 ).toLowerCase() + name.substring( 4 );
+		m_settings[ settingName ] = { fn, isScreen, "parameterNames": parameterNames };
 	}
 }
 
@@ -105,7 +95,7 @@ export function processCommands( api ) {
 		} else {
 			api[ name ] = ( ...args ) => {
 				const options = g_utils.parseOptions( args, parameterNames );
-				return fn( screenData, options );
+				return fn( options );
 			};
 		}
 	}

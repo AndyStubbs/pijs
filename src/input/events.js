@@ -11,6 +11,7 @@
 // Import modules directly
 import * as g_utils from "../core/utils.js";
 import * as g_screenManager from "../core/screen-manager.js";
+import * as g_state from "../core/state-settings.js";
 
 
 // Import clear functions from input modules (TODO: Re-enable when input modules are reimplemented)
@@ -52,28 +53,9 @@ function clearGamepadEvents() {
 
 
 export function init( api ) {
-	addApiCommands( api );
+	g_state.addCommand( "clearEvents", clearEvents, true, [ "clearEvents" ], true );
 }
 
-function addApiCommands( api ) {
-
-	// Register clearEvents command
-	// Screen is optional since keyboard and gamepad don't require a screen
-	api.clearEvents = ( type ) => {
-		const options = g_utils.parseOptions( [ type ], [ "type" ] );
-		return clearEvents( g_screenManager.activeScreenData, options );
-	};
-
-	// Screen API Commands
-	g_screenManager.addScreenInitFunction( ( screenData ) => {
-
-		// clearEvents
-		screenData.api.clearEvents = ( type ) => {
-			const options = g_utils.parseOptions( [ type ], [ "type" ] );
-			clearEvents( screenData, options );
-		};
-	} );
-}
 
 /***************************************************************************************************
  * External API Commands

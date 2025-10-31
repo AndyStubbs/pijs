@@ -26,6 +26,8 @@ let m_api = null;
 // Initialize graphics module - only gets called on page load
 export function init( api ) {
 	m_api = api;
+
+	// Build the null graphics commands - basically will throw an error since no screen is available
 	buildGraphicsApi( null );
 }
 

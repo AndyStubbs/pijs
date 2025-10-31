@@ -10,6 +10,7 @@
 
 // Import modules directly
 import * as g_utils from "./utils.js";
+import * as g_state from "./state-settings.js";
 
 const m_plugins = [];
 let m_api;
@@ -23,15 +24,13 @@ let m_api;
 export function init( api ) {
 	m_api = api;
 
-	// Add external API commands
-	api.registerPlugin = ( name, version, description, init ) => {
-		const options = g_utils.parseOptions(
-			[ name, version, description, init ],
-			[ "name", "version", "description", "init" ]
-		);
-		return registerPlugin( options );
-	};
-	api.getPlugins = getPlugins;
+	// Register external API commands
+	g_state.addCommand(
+		"registerPlugin", registerPlugin, false, [ "name", "version", "description", "init"]
+	);
+	g_state.addCommand(
+		"getPlugins", getPlugins, false, []
+	);
 }
 
 

@@ -72,68 +72,26 @@ export function init( api ) {
 		}
 	} );
 
-	addApiCommands( api );
+	registerCommands();
 }
 
-function addApiCommands( api ) {
+function registerCommands() {
 
-	// Add global API Commands
+	// Global commands
+	g_state.addCommand(
+		"screen",
+		screen,
+		false,
+		[ "aspect", "container", "isOffscreen", "isNoStyles", "resizeCallback", "useCanvas2d" ]
+	);
+	g_state.addCommand( "setScreen", setScreen, false, [ "screen" ] );
+	g_state.addCommand( "getScreen", getScreen, false, [ "screenId" ] );
+	g_state.addCommand( "removeScreen", removeScreen, false, [ "screenId" ] );
 
-	// screen
-	api.screen = ( aspect, container, isOffscreen, isNoStyles, resizeCallback, useCanvas2d ) => {
-		const options = g_utils.parseOptions(
-			[ aspect, container, isOffscreen, isNoStyles, resizeCallback, useCanvas2d ],
-			[ "aspect", "container", "isOffscreen", "isNoStyles", "resizeCallback", "useCanvas2d" ],
-		);
-		return screen( options );
-	};
-
-	// setScreen
-	api.setScreen = ( screenId ) => {
-		const options = g_utils.parseOptions( [ screenId ], [ "screenId" ] );
-		return setScreen( options );
-	};
-
-	// getScreen
-	api.getScreen = ( screenId ) => {
-		const options = g_utils.parseOptions( [ screenId ], [ "screenId" ] );
-		return getScreen( options );
-	};
-
-	// removeScreen
-	api.removeScreen = ( screenId ) => {
-		const options = g_utils.parseOptions( [ screenId ], [ "screenId" ] );
-		return removeScreen( options );
-	};
-
-	// width
-	api.width = () => {
-		const screenData = getActiveScreen( "width" );
-		return screenData.width;
-	}
-
-	// height
-	api.height = () => {
-		const screenData = getActiveScreen( "height" );
-		return screenData.height;
-	};
-
-	// canvas
-	api.canvas = () => {
-		const screenData = getActiveScreen( "canvas" );
-		return screenData.canvas;
-	};
-
-	// Add setting
-	g_state.addSetting( "screen", setScreen, false );
-
-	// Add screen API commands
-	addScreenInitFunction( ( screenData ) => {
-		screenData.api.removeScreen = ( screenId ) => api.removeScreen( screenData.id );
-		screenData.api.width = () => screenData.width;
-		screenData.api.height = () => screenData.height;
-		screenData.api.canvas = () => screenData.canvas;
-	} );
+	// Screen-scoped info commands
+	g_state.addCommand( "width", widthCmd, true, [] );
+	g_state.addCommand( "height", heightCmd, true, [] );
+	g_state.addCommand( "canvas", canvasCmd, true, [] );
 }
 
 export function addScreenDataItem( name, val ) {
@@ -593,6 +551,17 @@ function getScreen( options ) {
 	return screen.api;
 }
 
+function widthCmd( screenData ) {
+	return screenData.width;
+}
+
+function heightCmd( screenData ) {
+	return screenData.height;
+}
+
+function canvasCmd( screenData ) {
+	return screenData.canvas;
+}
 
 /***************************************************************************************************
  * Resize Screen

@@ -12,8 +12,7 @@
 import * as g_utils from "../core/utils.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_colors from "./colors.js";
-
-let m_api = null;
+import * as g_state from "../core/state-settings.js";
 
 
 /***************************************************************************************************
@@ -22,37 +21,30 @@ let m_api = null;
 
 
 export function init( api ) {
-	m_api = api;
+	registerCommands();
 
-	// Stable API - do not rebuild with graphics-api
-	api.getPixel = ( x, y, asIndex  ) => {
-		return getPixel( g_screenManager.getActiveScreen( "getPixel" ), x, y, asIndex );
-	};
-	api.getPixelAsync = ( x, y, asIndex ) => {
-		return getPixelAsync( g_screenManager.getActiveScreen( "getPixel" ), x, y, asIndex );
-	};
-	api.get = ( x, y, width, height, tolerance, asIndex ) => {
-		return get(
-			g_screenManager.getActiveScreen( "getPixel" ), x, y, width, height, tolerance, asIndex
-		);
-	};
+	// Stable API - do not route through addCommand for hot path put
 	api.put = ( data, x, y, include0 ) => {
-		return putWrapper( g_screenManager.getActiveScreen( "getPixel" ), data, x, y, include0 );
+		return putWrapper( g_screenManager.getActiveScreen( "put" ), data, x, y, include0 );
 	};
 
 	// Also add to each screen's api for convenience
 	g_screenManager.addScreenInitFunction( ( screenData ) => {
-		screenData.api.getPixel = ( x, y, asIndex ) => getPixel( screenData, x, y, asIndex );
-		screenData.api.getPixelAsync = ( x, y, asIndex ) => {
-			return getPixelAsync( screenData, x, y, asIndex );
-		};
-		screenData.api.get = ( x, y, width, height, tolerance, asIndex ) => {
-			return get( screenData, x, y, width, height, tolerance, asIndex );
-		};
 		screenData.api.put = ( data, x, y, include0 ) => {
 			return putWrapper( screenData, data, x, y, include0 );
 		};
 	} );
+}
+
+
+function registerCommands() {
+	
+	// Register screen commands via state
+	g_state.addCommand( "getPixel", getPixel, true, [ "x", "y", "asIndex" ] );
+	g_state.addCommand( "getPixelAsync", getPixelAsync, true, [ "x", "y", "asIndex" ] );
+	g_state.addCommand(
+		"get", get, true, [ "x", "y", "width", "height", "tolerance", "asIndex" ]
+	);
 }
 
 
@@ -62,8 +54,15 @@ export function init( api ) {
 
 
 // getPixel: Returns RGBA color object by default; if asIndex===true, returns palette index
-function getPixel( screenData, x, y, asIndex = false ) {
-	const { x: px, y: py } = parseXY( "getPixel", x, y );
+function getPixel( screenData, options ) {
+	const px = g_utils.getInt( options.x, null );
+	const py = g_utils.getInt( options.y, null );
+	if( px === null || py === null ) {
+		const error = new TypeError( "getPixel: Parameters x and y must be integers." );
+		error.code = "INVALID_PARAMETER";
+		throw error;
+	}
+	const asIndex = options.asIndex === true ? true : false;
 	const colorValue = screenData.renderer.readPixel( screenData, px, py );
 	if( asIndex ) {
 		return g_colors.findColorIndexByColorValue( screenData, colorValue );
@@ -71,9 +70,16 @@ function getPixel( screenData, x, y, asIndex = false ) {
 	return colorValue;
 }
 
-function getPixelAsync( screenData, x, y, asIndex = false ) {
-	const { x: px, y: py } = parseXY( "getPixelAsync", x, y );
-	return screenData.renderer.readPixelsAsync( screenData, x, y ).then( ( arr ) => {
+function getPixelAsync( screenData, options ) {
+	const px = g_utils.getInt( options.x, null );
+	const py = g_utils.getInt( options.y, null );
+	if( px === null || py === null ) {
+		const error = new TypeError( "getPixelAsync: Parameters x and y must be integers." );
+		error.code = "INVALID_PARAMETER";
+		throw error;
+	}
+	const asIndex = options.asIndex === true ? true : false;
+	return screenData.renderer.readPixelsAsync( screenData, px, py ).then( ( arr ) => {
 		const colorValue = arr[ 0 ];
 		if( asIndex ) {
 			return g_colors.findColorIndexByColorValue( screenData, colorValue );
@@ -85,11 +91,13 @@ function getPixelAsync( screenData, x, y, asIndex = false ) {
 // get: Returns a 2D array [height][width] of palette indices by default.
 // Set asIndex=false to return colorValue objects instead.
 // Optional tolerance passed to findColorIndexByColorValue.
-function get( screenData, x, y, width, height, tolerance, asIndex = true ) {
-	const pX = g_utils.getInt( x, null );
-	const pY = g_utils.getInt( y, null );
-	const pWidth = g_utils.getInt( width, null );
-	const pHeight = g_utils.getInt( height, null );
+function get( screenData, options ) {
+	const pX = g_utils.getInt( options.x, null );
+	const pY = g_utils.getInt( options.y, null );
+	const pWidth = g_utils.getInt( options.width, null );
+	const pHeight = g_utils.getInt( options.height, null );
+	const tolerance = options.tolerance;
+	const asIndex = ( options.asIndex === null ? true : !!options.asIndex );
 
 	if( pX === null || pY === null || pWidth === null || pHeight === null ) {
 		const error = new TypeError(
@@ -128,21 +136,7 @@ function get( screenData, x, y, width, height, tolerance, asIndex = true ) {
 }
 
 
-/***************************************************************************************************
- * Internal Helper Functions
- **************************************************************************************************/
-
-
-function parseXY( commandName, x, y ) {
-	const px = g_utils.getInt( x, null );
-	const py = g_utils.getInt( y, null );
-	if( px === null || py === null ) {
-		const error = new TypeError( `${commandName}: Parameters x and y must be integers.` );
-		error.code = "INVALID_PARAMETER";
-		throw error;
-	}
-	return { x: px, y: py };
-}
+// (no internal helper functions)
 
 
 /***************************************************************************************************
@@ -227,7 +221,7 @@ function putWrapper( screenData, data, x, y, include0 = false ) {
 		screenData.renderer.prepareBatch( screenData, screenData.pointBatch, pixelCount );
 	}
 
-	put( screenData, data, pX, pY, pInclude0, startY, startX, width, height );
+	put( screenData, pData, pX, pY, pInclude0, startY, startX, width, height );
 
 	// Mark image as dirty
 	screenData.renderer.setImageDirty( screenData );

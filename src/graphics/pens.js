@@ -36,7 +36,7 @@ const m_noiseColor = { "r": 0, "g": 0, "b": 0, "a": 0 };
 // Initialize the pens
 export async function init( api ) {
 	addScreenDataItems();
-	addApiCommands( api );
+	registerCommands();
 }
 
 function addScreenDataItems() {
@@ -55,31 +55,9 @@ function addScreenDataItems() {
 	} );
 }
 
-function addApiCommands( api ) {
+function registerCommands() {
 
-	// Add api for non "hot" path commands
-	api.setPen = ( pen, size, blend, noise ) => {
-		const screenData = g_screenManager.getActiveScreen( "setPen" );
-		const options = g_utils.parseOptions(
-			[ pen, size, blend, noise ], [ "pen", "size", "blend", "noise" ]
-		);
-		return setPen( screenData, options );
-	};
-
-	// Add settings to set command
-	g_state.addSetting( "pen", api.setPen, true );
-
-	// Add screen commands when screen is created
-	g_screenManager.addScreenInitFunction( ( screenData ) => {
-
-		// Assign the setPen function to the screen
-		screenData.api.setPen = ( pen, size, blend, noise ) => {
-			const options = g_utils.parseOptions(
-				[ pen, size, blend, noise ], [ "pen", "size", "blend", "noise" ]
-			);
-			return setPen( screenData, options );
-		};
-	} );
+	g_state.addCommand( "setPen", setPen, true, [ "pen", "size", "blend", "noise" ] );
 }
 
 // Function to dynamically build the optimal penFn and blendFn for the current screen, renderer,
