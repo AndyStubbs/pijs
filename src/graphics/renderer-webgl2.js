@@ -684,76 +684,98 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
  * Readback Operations
  **************************************************************************************************/
 
+export function readPixel( screenData, x, y ) {
 
-export function readPixels( screenData, coords ) {
-
-	// Flush any pending batches to the FBO to ensure the latest contents
+	// Ensure latest contents are in the FBO
 	flushBatches( screenData );
 
-	if( coords.length === 0 ) {
+	const gl = screenData.gl;
+	const screenWidth = screenData.width;
+	const screenHeight = screenData.height;
+
+	// Bounds check
+	if( x < 0 || y < 0 || x >= screenWidth || y >= screenHeight ) {
+		return null;
+	}
+
+	// WebGL uses bottom-left origin; flip Y
+	const glY = ( screenHeight - 1 ) - y;
+	const buf = new Uint8Array( 4 );
+
+	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
+	gl.readPixels( x, glY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf );
+	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+
+	return g_utils.rgbToColor( buf[ 0 ], buf[ 1 ], buf[ 2 ], buf[ 3 ] );
+}
+
+export function readPixelAsync( screenData, x, y ) {
+	return new Promise( ( resolve ) => {
+		g_utils.queueMicrotask( () => {
+			resolve( readPixel( screenData, x, y ) );
+		} );
+	} );
+}
+
+
+export function readPixels( screenData, x, y, width, height ) {
+	const gl = screenData.gl;
+	const screenWidth = screenData.width;
+	const screenHeight = screenData.height;
+
+	// Clamp to screen bounds for robustness if not fully clipped by pixels.js
+	const clampedX = Math.max( 0, x );
+	const clampedY = Math.max( 0, y );
+	const clampedWidth = Math.min( width, screenWidth - clampedX );
+	const clampedHeight = Math.min( height, screenHeight - clampedY );
+
+	// If after clamping, nothing left to read
+	if( clampedWidth <= 0 || clampedHeight <= 0 ) {
 		return [];
 	}
 
-	const gl = screenData.gl;
-	const w = screenData.width;
-	const h = screenData.height;
+	// Flush batches before reading
+	flushBatches( screenData );
 
-	// Compute bounding box of valid coords
-	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-	const valid = new Array( coords.length );
-	for( let i = 0; i < coords.length; i++ ) {
-		const cx = coords[ i ][ 0 ];
-		const cy = coords[ i ][ 1 ];
-		if( cx < 0 || cy < 0 || cx >= w || cy >= h ) {
-			valid[ i ] = false;
-			continue;
-		}
-		valid[ i ] = true;
-		if( cx < minX ) minX = cx;
-		if( cy < minY ) minY = cy;
-		if( cx > maxX ) maxX = cx;
-		if( cy > maxY ) maxY = cy;
-	}
+	// Allocate buffer for the exact rectangle to read
+	const buf = new Uint8Array( clampedWidth * clampedHeight * 4 );
 
-	const out = new Array( coords.length );
-	if( minX === Infinity ) {
-		
-		// All out of bounds
-		for( let i = 0; i < coords.length; i++ ) out[ i ] = null;
-		return out;
-	}
+	// WebGL origin is bottom-left; convert to top-left for `gl.readPixels`
+	// The Y coordinate for `gl.readPixels` is the bottom edge of the rectangle.
+	// Bottom-left corner Y of the rectangle
+	const glReadY = ( screenHeight - ( clampedY + clampedHeight ) );
 
-	const rectW = ( maxX - minX + 1 );
-	const rectH = ( maxY - minY + 1 );
-	const buf = new Uint8Array( rectW * rectH * 4 );
-
-	// Read single rectangle covering all pixels. WebGL origin is bottom-left;
-	// convert to top-left by starting read at y = (h - 1 - maxY)
-	const readY = ( h - 1 ) - maxY;
 	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
-	gl.readPixels( minX, readY, rectW, rectH, gl.RGBA, gl.UNSIGNED_BYTE, buf );
+	gl.readPixels( clampedX, glReadY, clampedWidth, clampedHeight, gl.RGBA, gl.UNSIGNED_BYTE, buf );
 	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
 
-	// Map back to requested points
-	for( let i = 0; i < coords.length; i++ ) {
-		if( !valid[ i ] ) {
-			out[ i ] = null;
-			continue;
+	// Map back to output structure expected by graphics/pixels.js
+	// This function will return a flat array of color objects
+	const resultColors = new Array( clampedHeight );
+	for( let row = 0; row < clampedHeight; row++ ) {
+
+		const resultsRow = new Array( clampedWidth );
+		for( let col = 0; col < clampedWidth; col++ ) {
+
+			// Convert gl.readPixels' bottom-origin Y to top-origin Y for the buffer index
+			// `buf` itself is ordered from glReadY up to glReadY + clampedHeight - 1
+			// Flip row index
+			const bufRow = ( clampedHeight - 1 ) - row;
+			const idx = ( ( clampedWidth * bufRow ) + col ) * 4;
+			resultsRow[ col ] = g_utils.rgbToColor(
+				buf[ idx ], buf[ idx + 1 ], buf[ idx + 2 ], buf[ idx + 3 ]
+			);
 		}
-		const cx = coords[ i ][ 0 ] - minX;
-		const cyTop = coords[ i ][ 1 ] - minY; // 0 at top row of rect
-		const cyBuf = ( rectH - 1 ) - cyTop;   // flip to bottom-origin row index
-		const idx = ( ( rectW * cyBuf ) + cx ) * 4;
-		out[ i ] = g_utils.rgbToColor( buf[ idx ], buf[ idx + 1 ], buf[ idx + 2 ], buf[ idx + 3 ] );
+		resultColors[ row ] = resultsRow;
 	}
 
-	return out;
+	return resultColors;
 }
 
-export function readPixelsAsync( screenData, coords ) {
+export function readPixelsAsync( screenData, x, y, width, height ) {
 	return new Promise( ( resolve ) => {
 		g_utils.queueMicrotask( () => {
-			resolve( readPixels( screenData, coords ) );
+			resolve( readPixels( screenData, x, y, width, height ) );
 		} );
 	} );
 }

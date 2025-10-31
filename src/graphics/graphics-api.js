@@ -39,23 +39,15 @@ export function init( api ) {
 export function buildGraphicsApi( s_screenData ) {
 
 	if( s_screenData === null ) {
-		const errFn = ( commandName ) => {
-			const error = new Error(
-				`${commandName}: No screens available for command. You must first create a ` +
-				`screen with $.screen command.`
-			);
-			error.code = "NO_SCREEN";
-			throw error;
-		};
 
 		// Set error fn for primitives
 		for( const commandName of g_primitives.commandNames ) {
-			m_api[ commandName ] = () => errFn( commandName );
+			m_api[ commandName ] = () => g_utils.errFn( commandName );
 		}
 
 		// Set error fn for primitives
 		for( const commandName of g_shapes.commandNames ) {
-			m_api[ commandName ] = () => errFn( commandName );
+			m_api[ commandName ] = () => g_utils.errFn( commandName );
 		}
 		return;
 	}

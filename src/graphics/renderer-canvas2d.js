@@ -180,7 +180,7 @@ export function blendPixelUnsafe( screenData, x, y, color ) {
 	// Apply the blend to the data
 	data[ i ]     = Math.round( color.r * srcA + data[ i ] * ( 1 - srcA ) );
 	data[ i + 1 ] = Math.round( color.g * srcA + data[ i + 1 ] * ( 1 - srcA ) );
-	data[ i + 2 ] = Math.round(color.b * srcA + data[ i + 2 ] * ( 1 - srcA ) );
+	data[ i + 2 ] = Math.round( color.b * srcA + data[ i + 2 ] * ( 1 - srcA ) );
 	data[ i + 3 ] = Math.round( ( srcA + dstA * ( 1 - srcA ) ) * 255 );
 }
 
@@ -207,32 +207,39 @@ export function readPixelAsync( screenData, x, y ) {
 	return Promise.resolve( readPixel( screenData, x, y ) );
 }
 
-export function readPixels( screenData, coords ) {
+
+export function readPixels( screenData, x, y, width, height ) {
 
 	// Ensure imageData reflects latest CPU buffer (we render from imageData)
 	getImageData( screenData );
 
-	const out = new Array( coords.length );
-	const w = screenData.width;
-	const h = screenData.height;
+	const screenWidth = screenData.width;
+	const screenHeight = screenData.height;
 	const data = screenData.imageData.data;
 
-	for( let i = 0; i < coords.length; i++ ) {
-		const cx = coords[ i ][ 0 ];
-		const cy = coords[ i ][ 1 ];
-		if( cx < 0 || cy < 0 || cx >= w || cy >= h ) {
-			out[ i ] = null;
-			continue;
+	// Build a 2D array [height][width], null for out-of-bounds
+	const results = new Array( height );
+	for( let row = 0; row < height; row++ ) {
+		const sy = y + row;
+		const inY = ( sy >= 0 && sy < screenHeight );
+		const resultRow = new Array( width );
+		for( let col = 0; col < width; col++ ) {
+			const sx = x + col;
+			if( inY && sx >= 0 && sx < screenWidth ) {
+				const idx = ( ( screenWidth * sy ) + sx ) * 4;
+				resultRow[ col ] = g_utils.rgbToColor(
+					data[ idx ], data[ idx + 1 ], data[ idx + 2 ], data[ idx + 3 ]
+				);
+			} else {
+				resultRow[ col ] = null;
+			}
 		}
-		const idx = ( ( w * cy ) + cx ) * 4;
-		out[ i ] = g_utils.rgbToColor(
-			data[ idx ], data[ idx + 1 ], data[ idx + 2 ], data[ idx + 3 ]
-		);
+		results[ row ] = resultRow;
 	}
 
-	return out;
+	return results;
 }
 
-export function readPixelsAsync( screenData, coords ) {
-	return Promise.resolve( readPixels( screenData, coords ) );
+export function readPixelsAsync( screenData, x, y, width, height ) {
+	return Promise.resolve( readPixels( screenData, x, y, width, height ) );
 }

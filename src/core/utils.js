@@ -14,6 +14,15 @@
  **************************************************************************************************/
 
 
+export const errFn = ( commandName ) => {
+	const error = new Error(
+		`${commandName}: No screens available for command. You must first create a ` +
+		`screen with $.screen command.`
+	);
+	error.code = "NO_SCREEN";
+	throw error;
+};
+
 /**
  * Parse options - normalizes input arguments into an object with named parameters.
  *

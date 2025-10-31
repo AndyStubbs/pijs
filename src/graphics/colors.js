@@ -538,7 +538,6 @@ export function getColorValueByRawInput( screenData, rawInput ) {
 	return colorValue;
 }
 
-
 // Finds a color index without adding it to palette
 export function findColorIndexByColorValue( screenData, color, tolerance = 1 ) {
 
@@ -549,31 +548,51 @@ export function findColorIndexByColorValue( screenData, color, tolerance = 1 ) {
 
 	// Max color difference constant
 	const maxDifference = ( 255 * 255 ) * 3.25;
-	tolerance = tolerance * ( 2 - tolerance ) * maxDifference;
+	const targetSimularity = tolerance * ( 2 - tolerance ) * maxDifference;
 
-	// Find exact match or closest color in palette
+	// Collect all matches meeting the target similarity, then return the most similar
+	const matches = [];
 	for( let i = 0; i < screenData.pal.length; i++ ) {
-		if( screenData.pal[ i ].key === color.key ) {
+		const palColor = screenData.pal[ i ];
+		if( palColor.key === color.key ) {
+			
+			// Exact match found; this is the best possible
 			return i;
+		}
+
+		let difference;
+
+		// Special case for color 0: weight alpha higher for transparent color
+		if( i === 0 ) {
+			difference = g_utils.calcColorDifference( palColor, color, [ 0.2, 0.2, 0.2, 0.4 ] );
 		} else {
-			let difference;
+			difference = g_utils.calcColorDifference( palColor, color );
+		}
 
-			//Special case for color 0 we care more about alpha values for 0 - transparent color
-			if( i === 0 ) {
-				difference = g_utils.calcColorDifference(
-					screenData.pal[ i ], color, [ 0.2, 0.2, 0.2, 0.4 ]
-				);
-			} else {
-				difference = g_utils.calcColorDifference( screenData.pal[ i ], color );
-			}
-
-			// Compare the similarity with the tolerance level
-			const similarity = maxDifference - difference;
-			if( similarity >= tolerance ) {
-				return i;
-			}
+		const similarity = maxDifference - difference;
+		if( similarity >= targetSimularity ) {
+			matches.push( { i, similarity } );
 		}
 	}
 
-	return null;
+	if( matches.length === 0 ) {
+		return null;
+	}
+
+	// Sort by most similar first; stable tie-breaker by lower index
+	matches.sort( ( a, b ) => {
+		if( b.similarity !== a.similarity ) {
+			return b.similarity - a.similarity;
+		}
+		return a.i - b.i;
+	} );
+
+	return matches[ 0 ].i;
+}
+
+export function getColorValueByIndex( screenData, palIndex ) {
+	if( palIndex >= screenData.pal.length ) {
+		return null;
+	}
+	return screenData.pal[ palIndex ];
 }
