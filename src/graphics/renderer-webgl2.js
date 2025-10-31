@@ -21,8 +21,12 @@ import m_displayVertSrc from "./shaders/display.vert";
 import m_displayFragSrc from "./shaders/display.frag";
 
 const MAX_BATCH_SIZE = 1_000_000;
-const DEFAULT_BATCH_SIZE = 5000;
+const DEFAULT_BATCH_SIZE = 50;
 const BATCH_CAPACITY_SHRINK_INTERVAL = 5000;
+
+// Add this helper object near the top of your module, perhaps after your imports
+// or near the `BATCH_CAPACITY_SHRINK_INTERVAL` constant.
+
 
 // TODO: Need to keep an eye on memory usage and memory caps. Maybe make max_batch_size a variable
 // maybe let user update max batch sizes.  Need to handle out of memory issues or prevent them
@@ -55,6 +59,7 @@ const m_batchProto = {
 };
 
 let m_isWebgl2Capable = false;
+
 
 /***************************************************************************************************
  * Module Commands
@@ -506,6 +511,8 @@ function resizeBatch( batch, newCapacity ) {
 	// Copy existing data
 	newVertices.set( batch.vertices );
 	newColors.set( batch.colors );
+
+	console.log( `Batch ${batch.mode} resized from ${batch.capacity} to ${newCapacity}` );
 	
 	// Update batch
 	batch.vertices = newVertices;
