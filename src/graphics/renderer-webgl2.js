@@ -13,7 +13,6 @@
 import * as g_pens from "./pens.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
-import * as g_colors from "./colors.js";
 
 // Shaders are imported from external files via esbuild text loader
 import m_pointVertSrc from "./shaders/point.vert";
@@ -22,6 +21,8 @@ import m_displayVertSrc from "./shaders/display.vert";
 import m_displayFragSrc from "./shaders/display.frag";
 
 const MAX_BATCH_SIZE = 1_000_000;
+const DEFAULT_BATCH_SIZE = 5000;
+const BATCH_CAPACITY_SHRINK_INTERVAL = 5000;
 
 // TODO: Need to keep an eye on memory usage and memory caps. Maybe make max_batch_size a variable
 // maybe let user update max batch sizes.  Need to handle out of memory issues or prevent them
@@ -34,8 +35,10 @@ const m_batchProto = {
 	"vertices": null,
 	"colors": null,
 	"count": 0,
-	"capacity": 1000,
+	"capacity": DEFAULT_BATCH_SIZE,
 	"capacityChanged": true,
+	"capacityLocalMax": 0,
+	"capacityShrinkCheckTime": 0,
 	"vertexComponents": 2,
 	"colorComponents": 4,
 
@@ -463,6 +466,9 @@ function createBatchSystem( screenData, vertSrc, fragSrc, mode ) {
 	
 	gl.bindVertexArray( null );
 
+	// Set the next shrink check time
+	batch.capacityShrinkCheckTime = Date.now() + BATCH_CAPACITY_SHRINK_INTERVAL;
+
 	return batch;
 }
 
@@ -483,26 +489,34 @@ export function prepareBatch( screenData, batch, newItemCount ) {
 			return prepareBatch( screenData, batch, newItemCount );
 		}
 
-		// Get new capacity by doubling current capacity
+		// Resize to new capacity by doubling current capacity
 		const newCapacity = Math.max( requiredCount, batch.capacity * 2 );
-		
-		// Resize arrays
-		const newVertices = new Float32Array( newCapacity * batch.vertexComponents );
-		const newColors = new Uint8Array( newCapacity * batch.colorComponents );
-		
-		// Copy existing data
-		newVertices.set( batch.vertices );
-		newColors.set( batch.colors );
-		
-		// Update batch
-		batch.vertices = newVertices;
-		batch.colors = newColors;
-		batch.capacity = newCapacity;
-		batch.capacityChanged = true;
+		resizeBatch( batch, newCapacity );
 	}
 
 	return true;
 }
+
+function resizeBatch( batch, newCapacity ) {
+
+	// Resize arrays
+	const newVertices = new Float32Array( newCapacity * batch.vertexComponents );
+	const newColors = new Uint8Array( newCapacity * batch.colorComponents );
+	
+	// Copy existing data
+	newVertices.set( batch.vertices );
+	newColors.set( batch.colors );
+	
+	// Update batch
+	batch.vertices = newVertices;
+	batch.colors = newColors;
+	batch.capacity = newCapacity;
+	batch.capacityChanged = true;
+
+	// Set the time capacity last changed
+	batch.capacityShrinkCheckTime = Date.now() + BATCH_CAPACITY_SHRINK_INTERVAL;
+}
+
 
 /**
  * Flush all batches to FBO
@@ -552,10 +566,6 @@ function flushBatches( screenData, blend = null ) {
 		);
 	}
 	
-	// TODO: Make sure this is optimized recieved different advice on how to copy buffer data
-	// efficiently so need to resarch STREAM_DRAW to make sure it's efficient for streaming
-	// to a persistant texture that acts as "screen memory".
-	// on first use or resize
 	// Render point batch if it has data
 	if( batch.count > 0 ) {
 
@@ -587,6 +597,9 @@ function flushBatches( screenData, blend = null ) {
 		// Draw points
 		gl.drawArrays( batch.mode, 0, batch.count );
 		
+		// Set the batch local max
+		batch.capacityLocalMax = Math.max( batch.count, batch.capacityLocalMax );
+
 		// Reset batch count
 		batch.count = 0;
 	}
@@ -600,6 +613,20 @@ function flushBatches( screenData, blend = null ) {
 	// TODO: batch size never shrinks - could waste memory
 	// Should check recent batch sizes and shrink if too large - make sure to keep minimum
 	// Better to do it here than per pixel
+	
+	// Check if should shrink capacity
+	if( Date.now() > batch.capacityShrinkCheckTime ) {
+
+		// This will resize the batch slowly over time - cutting in half every 5 seconds
+		if( batch.capacity > DEFAULT_BATCH_SIZE && batch.capacityLocalMax < batch.capacity * 0.5 ) {
+
+			// Resize the batch
+			resizeBatch( batch, Math.max( batch.capacity * 0.5, DEFAULT_BATCH_SIZE ) );
+		}
+
+		batch.capacityShrinkCheckTime = Date.now() + BATCH_CAPACITY_SHRINK_INTERVAL;
+		batch.capacityLocalMax = 0;
+	}
 }
 
 /**
