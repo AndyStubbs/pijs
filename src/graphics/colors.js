@@ -110,6 +110,13 @@ function addApiCommands( api ) {
 		return setColor( screenData, options );
 	};
 
+	// getColor
+	api.getColor = ( asIndex = false ) => {
+		const screenData = g_screenManager.getActiveScreen( "getColor" );
+		const options = g_utils.parseOptions( [ asIndex ], [ "asIndex" ] );
+		return getColor( screenData, options );
+	};
+
 	// getPal
 	api.getPal = () => {
 		const screenData = g_screenManager.getActiveScreen( "getPal" );
@@ -120,7 +127,7 @@ function addApiCommands( api ) {
 	api.setPal = ( pal ) => {
 		const screenData = g_screenManager.getActiveScreen( "setPal" );
 		const options = g_utils.parseOptions( [ pal ], [ "pal" ] );
-		setPal( screenData, options );
+		return setPal( screenData, options );
 	};
 
 	// getPalIndex
@@ -166,7 +173,15 @@ function addApiCommands( api ) {
 			const options = g_utils.parseOptions( 
 				[ color, isAddToPalette ], [ "color", "isAddToPalette" ]
 			);
-			setColor( screenData, options );
+			return setColor( screenData, options );
+		};
+
+		// getColor
+		screenData.api.getColor = ( asIndex = false ) => {
+			const options = g_utils.parseOptions( 
+				[ asIndex ], [ "asIndex" ]
+			);
+			return getColor( screenData, options );
 		};
 
 		// getPal
@@ -315,6 +330,16 @@ function setColor( screenData, options ) {
 	g_utils.setColor( colorValue, screenData.color );
 
 	return true;
+}
+
+function getColor( screenData, options ) {
+	const asIndex = !!options.asIndex;
+	if( asIndex ) {
+		return findColorIndexByColorValue( screenData, screenData.color );
+	}
+	return g_utils.rgbToColor(
+		screenData.color.r, screenData.color.g, screenData.color.b, screenData.color.a
+	);
 }
 
 // TODO: Add parameter (include0) to return the 0 item from the pal.
