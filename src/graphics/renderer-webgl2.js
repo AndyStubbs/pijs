@@ -24,9 +24,6 @@ const MAX_BATCH_SIZE = 1_000_000;
 const DEFAULT_BATCH_SIZE = 50;
 const BATCH_CAPACITY_SHRINK_INTERVAL = 5000;
 
-// Add this helper object near the top of your module, perhaps after your imports
-// or near the `BATCH_CAPACITY_SHRINK_INTERVAL` constant.
-
 
 // TODO: Need to keep an eye on memory usage and memory caps. Maybe make max_batch_size a variable
 // maybe let user update max batch sizes.  Need to handle out of memory issues or prevent them
