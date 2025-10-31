@@ -761,9 +761,9 @@ export function readPixels( screenData, x, y, width, height ) {
 			// `buf` itself is ordered from glReadY up to glReadY + clampedHeight - 1
 			// Flip row index
 			const bufRow = ( clampedHeight - 1 ) - row;
-			const idx = ( ( clampedWidth * bufRow ) + col ) * 4;
+			const i = ( ( clampedWidth * bufRow ) + col ) * 4;
 			resultsRow[ col ] = g_utils.rgbToColor(
-				buf[ idx ], buf[ idx + 1 ], buf[ idx + 2 ], buf[ idx + 3 ]
+				buf[ i ], buf[ i + 1 ], buf[ i + 2 ], buf[ i + 3 ]
 			);
 		}
 		resultColors[ row ] = resultsRow;

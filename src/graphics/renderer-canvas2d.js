@@ -219,15 +219,15 @@ export function readPixels( screenData, x, y, width, height ) {
 	// Build a 2D array [height][width], null for out-of-bounds
 	const results = new Array( height );
 	for( let row = 0; row < height; row++ ) {
-		const sy = y + row;
-		const inY = ( sy >= 0 && sy < screenHeight );
+		const screenY = y + row;
+		const isRowOnScreen = ( screenY >= 0 && screenY < screenHeight );
 		const resultRow = new Array( width );
 		for( let col = 0; col < width; col++ ) {
-			const sx = x + col;
-			if( inY && sx >= 0 && sx < screenWidth ) {
-				const idx = ( ( screenWidth * sy ) + sx ) * 4;
+			const screenX = x + col;
+			if( isRowOnScreen && screenX >= 0 && screenX < screenWidth ) {
+				const i = ( ( screenWidth * screenY ) + screenX ) * 4;
 				resultRow[ col ] = g_utils.rgbToColor(
-					data[ idx ], data[ idx + 1 ], data[ idx + 2 ], data[ idx + 3 ]
+					data[ i ], data[ i + 1 ], data[ i + 2 ], data[ i + 3 ]
 				);
 			} else {
 				resultRow[ col ] = null;
