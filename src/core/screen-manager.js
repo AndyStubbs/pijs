@@ -42,6 +42,19 @@ const m_observedContainers = new Set();
 export { m_activeScreenData as activeScreenData };
 export { WEBGL2_RENDER_MODE, CANVAS2D_RENDER_MODE };
 
+/**
+ * Get all active screens
+ * 
+ * @returns {Array<Object>} Array of all screen data objects
+ */
+export function getAllScreens() {
+	const screens = [];
+	for( const id in m_screens ) {
+		screens.push( m_screens[ id ] );
+	}
+	return screens;
+}
+
 export function init( api ) {
 
 	// TODO: Add matchMedia to watch for DPR changes - if a user moves a browser to a new monitor

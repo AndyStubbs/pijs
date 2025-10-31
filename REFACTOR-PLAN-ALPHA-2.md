@@ -407,8 +407,9 @@ due to drawing order of the batches and requiring multiple shaders.
 ### Step 8.1: Rebuild Images Module
 Create new `src/graphics/images.js`:
 
-- Don't use points for images but will flushbatch before drawing images to the FBO.
-- Load images as WebGL textures
+- Don't use points for images will use a batch order system to swap programs to draw drawing images
+	to the FBO.
+- Load images and store a we
 - Use textured quad batch for drawing
 - Sprite sheet support with texture atlases
 
@@ -416,7 +417,7 @@ Create new `src/graphics/images.js`:
 - Add to textured triangle batch
 - Support rotation, scaling, anchors
 
-## Phase 9: Text Rendering (Bitmap Fonts Only)
+## Phase 9: Text Rendering (Bitmap Fonts & Put Fonts Only)
 
 ### Step 9.1: Convert Default Fonts to Bitmaps
 - Take existing base32-encoded fonts
@@ -441,15 +442,7 @@ Create new `src/graphics/images.js`:
 
 ## Phase 10: Advanced Features
 
-### Step 10.1: getPixel/getPixelAsync
-- `gl.readPixels()`
-- Synchrounous - blocking is fine
-- Asynchronous - will run after flush at end of frame
-- Return Promises
-
-### Step 10.2: getPixelColor/getPixelColorAsync
-
-### Step 10.3: paint (Flood Fill)
+### Step 10.1: paint (Flood Fill)
 - Initial CPU implementation
 - Not going to use a Worker here, I think blocking is ok because
 - worker would be difficult because future draw operations would conflict it's probably not worth
@@ -457,7 +450,7 @@ Create new `src/graphics/images.js`:
 - prevent any draw operations until the worker is finished but at least it would be a cleaner
 - wait then a sync block.  But not this version.
 
-### Step 10.4: filterImg
+### Step 10.2: filterImg
 - GPU post-processing shader
 - Apply to FBO texture
 
