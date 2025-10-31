@@ -10,7 +10,6 @@
 "use strict";
 
 import * as g_utils from "../core/utils.js";
-import * as g_colors from "./colors.js";
 
 // Auto-render state
 let m_autoRenderScheduled = false;

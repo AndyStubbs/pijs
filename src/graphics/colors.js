@@ -548,14 +548,15 @@ export function findColorIndexByColorValue( screenData, color, tolerance = 1 ) {
 
 	// Max color difference constant
 	const maxDifference = ( 255 * 255 ) * 3.25;
-	const targetSimularity = tolerance * ( 2 - tolerance ) * maxDifference;
+	const minSimularity = tolerance * ( 2 - tolerance ) * maxDifference;
 
 	// Collect all matches meeting the target similarity, then return the most similar
-	const matches = [];
+	let bestMatchIndex = null;
+	let bestMatchSimularity = 0;
 	for( let i = 0; i < screenData.pal.length; i++ ) {
 		const palColor = screenData.pal[ i ];
 		if( palColor.key === color.key ) {
-			
+
 			// Exact match found; this is the best possible
 			return i;
 		}
@@ -570,24 +571,15 @@ export function findColorIndexByColorValue( screenData, color, tolerance = 1 ) {
 		}
 
 		const similarity = maxDifference - difference;
-		if( similarity >= targetSimularity ) {
-			matches.push( { i, similarity } );
+		if( similarity >= minSimularity ) {
+			if( similarity > bestMatchSimularity ) {
+				bestMatchIndex = i;
+				bestMatchSimularity = similarity;
+			}
 		}
 	}
 
-	if( matches.length === 0 ) {
-		return null;
-	}
-
-	// Sort by most similar first; stable tie-breaker by lower index
-	matches.sort( ( a, b ) => {
-		if( b.similarity !== a.similarity ) {
-			return b.similarity - a.similarity;
-		}
-		return a.i - b.i;
-	} );
-
-	return matches[ 0 ].i;
+	return bestMatchIndex;
 }
 
 export function getColorValueByIndex( screenData, palIndex ) {
