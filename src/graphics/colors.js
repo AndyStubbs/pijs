@@ -96,6 +96,7 @@ function registerCommands() {
 	g_state.addCommand( "setBgColor", setBgColor, true, [ "color" ] );
 	g_state.addCommand( "setContainerBgColor", setContainerBgColor, true, [ "color" ] );
 	g_state.addCommand( "setPalColor", setPalColor, true, [ "index", "color" ] );
+	g_state.addCommand( "getPalColor", getPalColor, true, [ "index" ] );
 }
 
 // Set default pal
@@ -409,6 +410,16 @@ function setPalColor( screenData, options ) {
 	// Update the palMap - remove old color entry and add new one
 	screenData.palMap.delete( oldColor.key );
 	screenData.palMap.set( colorValue.key, index );
+}
+
+function getPalColor( screenData, options ) {
+	const index = options.index;
+
+	if( screenData.pal[ index ] ) {
+		const color = screenData.pal[ index ];
+		return g_utils.rgbToColor( color.r, color.g, color.b, color.a );
+	}
+	return null;
 }
 
 // TODO: Implement replaceColors and replacePalColors commands

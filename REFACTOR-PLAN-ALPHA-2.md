@@ -625,8 +625,8 @@ src/
 - [x] Step 7.7: Implement getPixelColor (Synchronous)/getPixelColorAsync
 - [x] Step 7.8: Implement get/getAsync
 - [x] Step 7.9: Implement put Command
-- [ ] Step 7.10: Implement getColor (new) - should return the active color on the activeScreen
-- [ ] Step 7.11: Implement getPalColor (new) - Given an index return the pal color value
+- [x] Step 7.10: Implement getColor (new) - should return the active color on the activeScreen
+- [x] Step 7.11: Implement getPalColor (new) - Given an index return the pal color value
 
 ### Phase 8: Image Support
 - [ ] Step 8.1: Rebuild Images Module
