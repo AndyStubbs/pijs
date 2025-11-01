@@ -337,7 +337,7 @@ function setDefaultCanvasOptions( screenData ) {
 function setupScreenRenderer( screenData ) {
 
 	// WebGL2 only - no fallback
-	const webgl2Status = g_renderer.initWebGL( screenData );
+	const webgl2Status = g_renderer.createContext( screenData );
 	
 	// If webgl2 failed, throw error
 	if( !webgl2Status ) {

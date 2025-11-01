@@ -66,7 +66,7 @@ export function init( api ) {
  * @param {Object} screenData - Screen data object
  * @returns {boolean} True if context created successfully
  */
-export function initWebGL( screenData ) {
+export function createContext( screenData ) {
 
 	const canvas = screenData.canvas;
 	const width = screenData.width;
