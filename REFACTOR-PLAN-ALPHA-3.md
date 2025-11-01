@@ -408,6 +408,8 @@ Implement basic graphics API wrapper for input parsing and validation:
 - Test `pset()` command - verify it works with various pen sizes/shapes
 - Verify renderer exports unified API through `renderer.js`
 
+
+
 ## Phase 5: Textures and Images
 
 ### Step 5.1: Implement textures.js

@@ -75,8 +75,11 @@ export function rebuildApi( s_screenData ) {
 	} else if( s_penType === g_pens.PEN_SQUARE ) {
 
 		// Square pen
+		const offset = Math.floor( s_penSize / 2 );
 		s_psetDrawFn = ( x, y, color ) => {
-			s_drawFilledRectUnsafe( s_screenData, x, y, s_penSize, s_penSize, color );
+			s_drawFilledRectUnsafe(
+				s_screenData, x - offset, y - offset, s_penSize, s_penSize, color
+			);
 		};
 	} else if( s_penType === g_pens.PEN_CIRCLE ) {
 
