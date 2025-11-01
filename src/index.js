@@ -19,7 +19,9 @@ import * as g_plugins from "./core/plugins.js";
 
 // Graphics
 import * as g_renderer from "./graphics/renderer/renderer.js";
+import * as g_colors from "./graphics/colors.js";
 import * as g_pens from "./graphics/pens.js";
+import * as g_graphicsApi from "./graphics/graphics-api.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -31,7 +33,7 @@ const api = {
 
 // Store modules in array for ordered initialization
 const mods = [
-	g_utils, g_commands, g_screenManager, g_plugins, g_renderer, g_pens
+	g_utils, g_commands, g_screenManager, g_plugins, g_renderer, g_colors, g_pens, g_graphicsApi
 ];
 
 // Initialize the modules

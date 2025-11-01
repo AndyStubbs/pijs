@@ -345,9 +345,6 @@ function setupScreenRenderer( screenData ) {
 		error.code = "NO_RENDERING_CONTEXT";
 		throw error;
 	}
-
-	// Store renderer reference
-	screenData.renderer = g_renderer;
 }
 
 function validateDimensions( width, height ) {

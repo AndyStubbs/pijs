@@ -12,6 +12,8 @@
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_commands from "../core/commands.js";
 import * as g_utils from "../core/utils.js";
+import * as g_graphicsApi from "./graphics-api.js";
+import * as g_renderer from "./renderer/renderer.js";
 
 // Pens
 export const PEN_PIXEL = "pixel";
@@ -123,6 +125,7 @@ function setPen( screenData, options ) {
 	}
 
 	// Set the pen on screen data
+	const previousPen = screenData.pens.pen + screenData.pens.size;
 	screenData.pens.pen = pen;
 	screenData.pens.size = size;
 
@@ -144,17 +147,13 @@ function setPen( screenData, options ) {
 	screenData.blends.blend = blend;
 	screenData.blends.noise = noise;
 
-	// TODO: Need to rebuild graphicsAPI after pen change because the drawing path will change for
-	// primitive drawing functions. Which means that pset will no longer be setting a single pixel
-	// but instead it will be creating the geometry for drawing the pen shape, either a square or
-	// a circle. If we want to avoid branching in "hot paths" we will need to rebuild the api
-	// with a fixed path that leads to the correct drawing function in the renderer.
-	// This is only when pen changes, not when blend changes. Blend changes don't require
-	// conditionals on the "hot paths" only when the batch flushes so it's not a "hot path"
+	// Rebuild graphics API to get the new pen drawing function - when pen changes
+	if( previousPen !== pen + size ) {
+		g_graphicsApi.rebuildApi( screenData );
+	}
 
 	// Notify renderer that blend mode has changed
-	if( previousBlend !== blend && screenData.renderer ) {
-		screenData.renderer.blendModeChanged( screenData, previousBlend );
+	if( previousBlend !== blend ) {
+		g_renderer.blendModeChanged( screenData, previousBlend );
 	}
 }
-

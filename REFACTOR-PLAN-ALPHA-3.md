@@ -369,14 +369,13 @@ Implement pen and blend mode state management:
 **Implementation notes:**
 - No longer builds `penFn` - that logic moves to graphics-api.js
 - Simply stores pen/blend configuration on screenData
-- Blend modes handled entirely on GPU in batches.js - Remove `blendFn` as its not needed
+- Blend modes and noise handled entirely on GPU in batches.js - no CPU-side noise/blend functions needed
 - Each graphics command builds its own optimized drawing function
-- **TODO:** After implementing graphics-api.js, need to call `graphicsApi.rebuildApi(screenData)`
-	when pen changes
+- Calls `graphicsApi.rebuildApi(screenData)` when pen/size changes (not blend changes)
   - This rebuilds specialized drawing functions to avoid branching in hot paths
-  - `pset` changes from single-pixel to pen-shape geometry based on current pen config
+  - `pset` behavior changes based on current pen config: pixel vs square vs circle
 
-### Step 4.3: Implement graphics-api.js - Basic Commands
+### Step 4.3: Implement graphics-api.js - Basic Commands ✅ COMPLETE
 Implement basic graphics API wrapper for input parsing and validation:
 
 **Responsibilities:**
@@ -392,12 +391,17 @@ Implement basic graphics API wrapper for input parsing and validation:
   - Draws square/circle shapes for larger pens
 
 **Key changes:**
+- Removed screenData.render, this is no longer needed since there is only one render and we can
+  acess it directly.
+- No longer rasterizing graphics on the CPU calling renderer commands will generate the geometry
+- No longer bounds checking. Instead relying on GPU clipping
+- Removing objectLiteral option for parameter passing (primitives only)
 - Thin wrapper layer that calls renderer functions
 - Build optimized closures that close over screen data and pen configuration
 - Handle object literal syntax: `pset({ x: 10, y: 20 })`
 - Each command builds its own specialized drawing function
 
-### Step 4.4: Test Basic Drawing
+### Step 4.4: Test Basic Drawing ✅ COMPLETE
 - Test `drawPixelUnsafe()` - draw single pixels
 - Test color system - verify palette and color parsing works
 - Test pen system - verify `setPen()` stores correct configuration
@@ -600,18 +604,19 @@ Move ellipse drawing from `graphics-shapes.js`:
 
 ## Phase 8: Complete Graphics API
 
-### Step 8.1: Add Rebuild API Function to graphics-api.js
+### Step 8.1: Add Rebuild API Function to graphics-api.js ✅ COMPLETE
 Implement `rebuildApi()` function and wire it up to `setPen()`:
 
 **Key functions:**
 - `export function rebuildApi( screenData )` - Rebuild all graphics API functions
-- Called from `pens.js` when pen/blend changes
-- Called from `screen-manager.js` after screen creation
+- Called from `pens.js` when pen/size changes (not blend changes)
+- Called from `screen-manager.js` after screen creation via `rebuildApiOnScreenInit()`
 
 **Implementation notes:**
 - Creates specialized drawing functions based on current pen configuration
 - Avoids branching in hot paths by pre-specializing at configuration time
-- `pset` behavior changes dynamically: single pixel vs pen shape geometry
+- `pset` behavior changes dynamically: pixel, square, circle (size 2 = cross)
+- No noise/blend handling in graphics-api - all blending handled on GPU
 
 ### Step 8.2: Extend graphics-api.js - Add Remaining Commands
 Add remaining graphics commands to the API layer:

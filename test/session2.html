@@ -48,22 +48,38 @@
 				<div id="stats2" class="stats">Stats 2</div>
 			</div>
 		</div>
-		
+	
+	<!--
+		<script src="../releases/pi-1.all/pi-1.2.4.js"></script>
+		<script src="../releases/pi-2.0.0-alpha.1/pi.js"></script>
+		<script src="../releases/pi-2.0.0-alpha.2/pi.js"></script>
+		<script src="../build/pi.js"></script>
+	-->
 	<script src="../build/pi.js"></script>
-	<!--script src="../releases/pi-2.0.0-alpha.1/pi.js"></script-->
 	<script>
 		console.log( "Pi.js Version", $.version );
 		
 		// Create a screen (will use WebGL2 if available)
-		const screen = $.screen( { "aspect": "90x90", "container": "container1" } );
+		const screen = $.screen(
+			{ "aspect": "90x90", "container": "container1", "useCanvas2d": true }
+		);
 
 		const stats1 = document.getElementById( "stats1" );
 		stats1.innerHTML = `Canvas Size: ${screen.canvas().width}x${screen.canvas().height}\n` +
 			`Screen Size: ${screen.width()}x${screen.height()}\n` +
 			`Acual Size: ${screen.canvas().offsetWidth}x${screen.canvas().offsetHeight}\n`;
 		
+		const startTime = Date.now();
+		$.setColor( 2 );
+		$.pset( 5, 5 );
 
+		$.setPen( "circle", 2 );
+		for( let i = 0; i < 500; i += 1 ) {
+			$.setColor( Math.floor( Math.random() * 8 ) + 1 );
+			$.pset( Math.floor( Math.random() * 90 ), Math.floor( Math.random() * 90 ) );
+		}
 
+		console.log( Date.now() - startTime );
 	</script>
 </body>
 </html>

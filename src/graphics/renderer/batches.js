@@ -274,12 +274,19 @@ export function prepareBatch( screenData, batchType, itemCount ) {
 
 		// Make sure we don't exceed max batch size
 		if( requiredCount > batch.maxCapacity ) {
+			console.log(
+				`Batch ${BATCH_TYPES[ batch.type ]} exceeded maxCapacity ${batch.maxCapacity}, ` +
+				`requested ${requiredCount}.  Flushing batch to reset count to 0.`
+			);
+		
 			flushBatches( screenData );
 			return prepareBatch( screenData, batchType, itemCount );
 		}
 
-		// Resize to new capacity by doubling current capacity
-		const newCapacity = Math.max( requiredCount, batch.capacity * 2 );
+		// Resize to new capacity by doubling current capacity up to maxCapacity
+		const newCapacity = Math.max(
+			requiredCount, Math.min( batch.capacity * 2, batch.maxCapacity )
+		);
 		resizeBatch( batch, newCapacity );
 	}
 
