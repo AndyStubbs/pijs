@@ -282,7 +282,7 @@ Implement color palette management module (renderer-agnostic, can be done early)
 
 ## Phase 3: Shaders and Batch System
 
-### Step 3.1: Implement shaders.js
+### Step 3.1: Implement shaders.js ✅ COMPLETE
 Move shader compilation logic from `renderer-webgl2.js` to `shaders.js`:
 
 **Note:** Shader files are already in `renderer/shaders/` (moved in Phase 1, Step 1.3).
@@ -298,7 +298,7 @@ Move shader compilation logic from `renderer-webgl2.js` to `shaders.js`:
 - `export function createShaderProgram( screenData, vertexSrc, fragSrc )`
 - `export function setupDisplayShader( screenData )`
 
-### Step 3.2: Implement batches.js (Part 1 - Batches)
+### Step 3.2: Implement batches.js (Part 1 - Batches) ✅ COMPLETE
 Move batch creation and management from `renderer-webgl2.js`:
 
 **Batch creation:**
@@ -314,7 +314,7 @@ Move batch creation and management from `renderer-webgl2.js`:
 - `export function createBatch( screenData, type, vertSrc, fragSrc )`
 - `export function prepareBatch( screenData, batchType, itemCount )`
 
-### Step 3.3: Implement batches.js (Part 2 - Rendering)
+### Step 3.3: Implement batches.js (Part 2 - Rendering) ✅ COMPLETE
 Move rendering logic from `renderer-webgl2.js`:
 
 **Rendering:**
@@ -331,7 +331,7 @@ Move rendering logic from `renderer-webgl2.js`:
 - `function uploadBatch( gl, batch, width, height )`
 - `function drawBatch( gl, batch, startIndex, endIndex, texture )`
 
-### Step 3.4: Test Batch System
+### Step 3.4: Test Batch System ✅ COMPLETE
 - Test point batch creation
 - Test batch rendering to FBO
 - Test display to canvas

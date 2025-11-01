@@ -12,11 +12,11 @@
 import * as g_screenManager from "../../core/screen-manager";
 
 // Import renderer modules
-import * as fbo from "./fbo.js";
-import * as shaders from "./shaders.js";
+import * as g_fbo from "./fbo.js";
+import * as g_shaders from "./shaders.js";
 
 // TODO: Import renderer modules when implemented
-// import * as batches from "./batches.js";
+// import * as g_batches from "./batches.js";
 // import * as textures from "./textures.js";
 // import * as draw from "./draw.js";
 // import * as primitives from "./primitives.js";
@@ -52,9 +52,9 @@ export function init( api ) {
 	g_screenManager.addScreenCleanupFunction( cleanup );
 
 	// Initialize renderer modules in order
-	fbo.init();
-	shaders.init();
-	// TODO: 3. batches.init()
+	g_fbo.init();
+	g_shaders.init();
+	// TODO: 3. g_batches.init();
 	// TODO: 4. textures.init()
 	// TODO: 5. draw.init()
 	// TODO: 6. primitives.init()
@@ -94,7 +94,7 @@ export function createContext( screenData ) {
 	screenData.gl.viewport( 0, 0, width, height );
 	
 	// Create texture and FBO
-	if( !fbo.createFBO( screenData ) ) {
+	if( !g_fbo.createFBO( screenData ) ) {
 		screenData.gl = null;
 		return false;
 	}
@@ -110,7 +110,7 @@ export function createContext( screenData ) {
 	// );
 	
 	// Setup display shader
-	shaders.setupDisplayShader( screenData );
+	g_shaders.setupDisplayShader( screenData );
 
 	// Enable WebGL debugging extensions
 	if( typeof window !== "undefined" && window.location.search.includes( "webgl-debug" ) ) {
@@ -184,6 +184,6 @@ export function cleanup( screenData ) {
 	}
 	
 	// Cleanup FBO
-	fbo.cleanup( screenData );
+	g_fbo.cleanup( screenData );
 }
 

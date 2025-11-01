@@ -17,10 +17,9 @@
 /**
  * Initialize textures module
  * 
- * @param {Object} api - The main Pi.js API object
  * @returns {void}
  */
-export function init( api ) {
+export function init() {
 
 	// TODO: Initialize texture cache
 }

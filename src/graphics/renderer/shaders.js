@@ -23,10 +23,9 @@ import m_displayFragSrc from "./shaders/display.frag";
 /**
  * Initialize shaders module
  * 
- * @param {Object} api - The main Pi.js API object
  * @returns {void}
  */
-export function init( api ) {
+export function init() {
 
 	g_screenManager.addScreenDataItem( "displayProgram", null );
 	g_screenManager.addScreenDataItem( "displayPositionBuffer", null );

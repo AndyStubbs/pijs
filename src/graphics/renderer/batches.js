@@ -9,8 +9,12 @@
 
 "use strict";
 
-import * as shaders from "./shaders.js";
+import * as g_shaders from "./shaders.js";
 import * as g_screenManager from "../../core/screen-manager.js";
+
+// Import pens for blend mode constants
+// Note: This is safe because of lazy initialization - pens isn't initialized until later
+import * as g_pens from "../pens.js";
 
 // Shaders are imported from external files via esbuild text loader
 import m_pointVertSrc from "./shaders/point.vert";
@@ -86,10 +90,9 @@ const m_batchProto = {
 /**
  * Initialize batch and rendering module
  * 
- * @param {Object} api - The main Pi.js API object
  * @returns {void}
  */
-export function init( api ) {
+export function init() {
 
 	g_screenManager.addScreenCleanupFunction( cleanup );
 }
@@ -109,7 +112,7 @@ export function createBatch( screenData, type, vertSrc, fragSrc ) {
 	const batch = Object.create( m_batchProto );
 
 	// Create the batch shader program
-	batch.program = shaders.createShaderProgram( gl, vertSrc, fragSrc );
+	batch.program = g_shaders.createShaderProgram( gl, vertSrc, fragSrc );
 
 	// Cache shader locations for efficiency
 	batch.locations = {
@@ -313,6 +316,117 @@ function cleanup( screenData ) {
 }
 
 /**
+ * Upload batch data to GPU
+ * 
+ * @param {WebGL2RenderingContext} gl - WebGL2 context
+ * @param {Object} batch - Batch object
+ * @param {number} width - Screen width
+ * @param {number} height - Screen height
+ * @returns {void}
+ */
+function uploadBatch( gl, batch, width, height ) {
+
+	gl.useProgram( batch.program );
+	gl.uniform2f( batch.locations.resolution, width, height );
+	gl.bindVertexArray( batch.vao );
+	
+	// Allocate or resize buffers on capacity change
+	if( batch.capacityChanged ) {
+		gl.bindBuffer( gl.ARRAY_BUFFER, batch.vertexVBO );
+		gl.bufferData( gl.ARRAY_BUFFER, batch.vertices.byteLength, gl.STREAM_DRAW );
+		gl.bindBuffer( gl.ARRAY_BUFFER, batch.colorVBO );
+		gl.bufferData( gl.ARRAY_BUFFER, batch.colors.byteLength, gl.STREAM_DRAW );
+
+		if( batch.type === IMAGE_BATCH ) {
+			gl.bindBuffer( gl.ARRAY_BUFFER, batch.texCoordVBO );
+			gl.bufferData( gl.ARRAY_BUFFER, batch.texCoords.byteLength, gl.STREAM_DRAW );
+		}
+
+		batch.capacityChanged = false;
+	}
+
+	// Upload positions
+	gl.bindBuffer( gl.ARRAY_BUFFER, batch.vertexVBO );
+	gl.bufferSubData( 
+		gl.ARRAY_BUFFER, 0, batch.vertices.subarray( 0, batch.count * batch.vertexComps )
+	);
+	
+	// Upload colors
+	gl.bindBuffer( gl.ARRAY_BUFFER, batch.colorVBO );
+	gl.bufferSubData(
+		gl.ARRAY_BUFFER, 0, batch.colors.subarray( 0, batch.count * batch.colorComps )
+	);
+
+	// Upload texture coordinates
+	if( batch.type === IMAGE_BATCH ) {
+		gl.bindBuffer( gl.ARRAY_BUFFER, batch.texCoordVBO );
+		gl.bufferSubData(
+			gl.ARRAY_BUFFER, 0, batch.texCoords.subarray( 0, batch.count * batch.texCoordComps )
+		);
+	}
+}
+
+/**
+ * Draw batch to FBO
+ * 
+ * @param {WebGL2RenderingContext} gl - WebGL2 context
+ * @param {Object} batch - Batch object
+ * @param {number} startIndex - Start index in batch
+ * @param {number} endIndex - End index in batch
+ * @param {WebGLTexture|null} texture - Texture for IMAGE_BATCH or null
+ * @returns {void}
+ */
+function drawBatch( gl, batch, startIndex, endIndex, texture = null ) {
+
+	gl.useProgram( batch.program );
+	gl.bindVertexArray( batch.vao );
+
+	// For IMAGE_BATCH, bind the texture and set uniform
+	if( batch.type === IMAGE_BATCH && texture ) {
+		gl.activeTexture( gl.TEXTURE0 );
+		gl.bindTexture( gl.TEXTURE_2D, texture );
+		gl.uniform1i( batch.locations.texture, 0 );
+	}
+
+	// Draw based on batch mode
+	gl.drawArrays( batch.mode, startIndex, endIndex - startIndex );
+}
+
+/**
+ * Reset batch after flush
+ * 
+ * @param {Object} batch - Batch object
+ * @returns {void}
+ */
+function resetBatch( batch ) {
+
+	// Update the batch local max
+	batch.capacityLocalMax = Math.max( batch.count, batch.capacityLocalMax );
+
+	// Reset batch count
+	batch.count = 0;
+
+	if( batch.type === IMAGE_BATCH ) {
+		batch.texture = null;
+		batch.image = null;
+	}
+
+	// Check if should shrink capacity
+	if( Date.now() > batch.capacityShrinkCheckTime ) {
+
+		// This will resize the batch slowly over time - cutting in half every 5 seconds
+		if( batch.capacity > batch.minCapacity && batch.capacityLocalMax < batch.capacity * 0.5 ) {
+
+			// Resize the batch
+			resizeBatch( batch, Math.max( batch.capacity * 0.5, batch.minCapacity ) );
+		}
+
+		batch.capacityShrinkCheckTime = Date.now() + BATCH_CAPACITY_SHRINK_INTERVAL;
+		batch.capacityLocalMax = 0;
+	}
+}
+
+/**
  * Flush all batches to FBO
  * 
  * @param {Object} screenData - Screen data object
@@ -321,7 +435,82 @@ function cleanup( screenData ) {
  */
 export function flushBatches( screenData, blend = null ) {
 
-	// TODO: Implement batch flushing
+	if( blend === null ) {
+		blend = screenData.blends.blend;
+	}
+	
+	const gl = screenData.gl;
+
+	if( screenData.contextLost ) {
+
+		// TODO: Maybe add warning here?
+		// console.warn( "WebGL context lost unable to render screen." );
+		return;
+	}
+
+	// Bind FBO
+	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
+	
+	// Set viewport
+	gl.viewport( 0, 0, screenData.width, screenData.height );
+	
+	// Clear FBO on first render only
+	if( screenData.isFirstRender ) {
+		gl.clearColor( 0, 0, 0, 0 );
+		gl.clear( gl.COLOR_BUFFER_BIT );
+		screenData.isFirstRender = false;
+	}
+
+	// TODO: Images should not share the same blend mode as other drawItems.
+	// Update the blend mode
+	if( blend === g_pens.BLEND_REPLACE ) {
+		gl.disable( gl.BLEND );
+	} else {
+		gl.enable( gl.BLEND );
+		gl.blendFuncSeparate(
+			gl.SRC_ALPHA,           // srcRGBFactor
+			gl.ONE_MINUS_SRC_ALPHA, // dstRGBFactor
+			gl.ONE,                 // srcAlphaFactor  <--- Make src alpha factor 1.0 (no scaling)
+			gl.ONE_MINUS_SRC_ALPHA  // dstAlphaFactor  <--- Make dst alpha factor (1-src.a)
+		);
+	}
+
+	// Upload batch buffers
+	for( const batchType in screenData.batches ) {
+		const batch = screenData.batches[ batchType ];
+		if( batch.count > 0 ) {
+			uploadBatch( gl, batch, screenData.width, screenData.height );
+		}
+	}
+
+	// Draw items
+	for( const drawOrderItem of screenData.batchInfo.drawOrder ) {
+		if( drawOrderItem.endIndex === null ) {
+			drawOrderItem.endIndex = drawOrderItem.batch.count;
+		}
+
+		// Only draw the batch if there is something to draw
+		if( drawOrderItem.endIndex - drawOrderItem.startIndex > 0 ) {
+			const texture = ( drawOrderItem.batch.type === IMAGE_BATCH ) ? drawOrderItem.texture : null;
+			drawBatch( gl, drawOrderItem.batch, drawOrderItem.startIndex, drawOrderItem.endIndex, texture );
+		}
+	}
+
+	// Reset Batches
+	for( const batchType in screenData.batches ) {
+		const batch = screenData.batches[ batchType ];
+		resetBatch( batch );
+	}
+
+	// Reset drawOrder object
+	screenData.batchInfo.drawOrder = [];
+	screenData.batchInfo.currentBatch = null;
+
+	// Unbind VAO
+	gl.bindVertexArray( null );
+
+	// Unbind FBO
+	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
 }
 
 /**
@@ -331,7 +520,43 @@ export function flushBatches( screenData, blend = null ) {
  * @returns {void}
  */
 export function displayToCanvas( screenData ) {
+	
+	const gl = screenData.gl;
+	const program = screenData.displayProgram;
+	const locations = screenData.displayLocations;
 
-	// TODO: Implement display to canvas
+	// Bind default framebuffer (screen)
+	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+	
+	// Set viewport to full canvas
+	gl.viewport( 0, 0, screenData.canvas.width, screenData.canvas.height );
+	
+	// Clear the canvas before drawing the FBO texture
+	gl.clearColor( 0, 0, 0, 0 );
+	gl.clear( gl.COLOR_BUFFER_BIT );
+	
+	// Disable blend for render to display
+	gl.disable( gl.BLEND );
+
+	// Use display shader
+	gl.useProgram( program );
+	
+	// Enable position attribute
+	gl.enableVertexAttribArray( locations.position );
+	
+	// Bind position buffer
+	gl.bindBuffer( gl.ARRAY_BUFFER, screenData.displayPositionBuffer );
+	gl.vertexAttribPointer( locations.position, 2, gl.FLOAT, false, 0, 0 );
+	
+	// Bind FBO texture
+	gl.activeTexture( gl.TEXTURE0 );
+	gl.bindTexture( gl.TEXTURE_2D, screenData.fboTexture );
+	gl.uniform1i( locations.texture, 0 );
+	
+	// Draw fullscreen quad
+	gl.drawArrays( gl.TRIANGLES, 0, 6 );
+	
+	// Cleanup
+	gl.disableVertexAttribArray( locations.position );
 }
 
