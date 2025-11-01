@@ -221,15 +221,15 @@ Remove Canvas2D renderer import. Update module initialization array.
 Move WebGL2 context creation from `renderer-webgl2.js` to `renderer.js`:
 
 **Responsibilities:**
-- `testWebGL2Capability()` - Do not implement, no longer needed as we can check if initWebGL fails
-- `initWebGL(screenData)` - Create WebGL2 context, set viewport
+- `testWebGL2Capability()` - Do not implement, no longer needed as we can check if createContext fails
+- `createContext(screenData)` - Create WebGL2 context, set viewport
 - Context lost/restored event handlers
 - Module orchestration and initialization
 - Public API exports
 
 **Key functions:**
 - `export function init( api )` - Initialize all renderer modules
-- `export function initWebGL( screenData )` - Create context for screen
+- `export function createContext( screenData )` - Create context for screen
 - `export function cleanup( screenData )` - Cleanup resources
 
 **Module initialization order:**
@@ -602,7 +602,7 @@ Update `core/screen-manager.js`:
 - Remove `CANVAS2D_RENDER_MODE` constant
 - Remove `WEBGL2_RENDER_MODE` constant (always WebGL2 now)
 - Remove `setupScreenRenderer()` fallback logic
-- Simplify to only call `renderer.initWebGL()`
+- Simplify to only call `renderer.createContext()`
 - Remove render mode checks throughout
 
 ### Step 8.2: Update Screen Data
