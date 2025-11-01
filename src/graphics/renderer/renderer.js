@@ -11,8 +11,10 @@
 
 import * as g_screenManager from "../../core/screen-manager";
 
+// Import renderer modules
+import * as fbo from "./fbo.js";
+
 // TODO: Import renderer modules when implemented
-// import * as fbo from "./fbo.js";
 // import * as shaders from "./shaders.js";
 // import * as batches from "./batches.js";
 // import * as textures from "./textures.js";
@@ -49,15 +51,15 @@ export function init( api ) {
 	// Register renderer cleanup function
 	g_screenManager.addScreenCleanupFunction( cleanup );
 
-	// TODO: Initialize renderer modules in order
-	// 1. fbo.init()
-	// 2. shaders.init()
-	// 3. batches.init()
-	// 4. textures.init()
-	// 5. draw.init()
-	// 6. primitives.init()
-	// 7. shapes.init()
-	// 8. readback.init()
+	// Initialize renderer modules in order
+	fbo.init();
+	// TODO: 2. shaders.init()
+	// TODO: 3. batches.init()
+	// TODO: 4. textures.init()
+	// TODO: 5. draw.init()
+	// TODO: 6. primitives.init()
+	// TODO: 7. shapes.init()
+	// TODO: 8. readback.init()
 }
 
 /**
@@ -91,18 +93,18 @@ export function createContext( screenData ) {
 	// Setup viewport
 	screenData.gl.viewport( 0, 0, width, height );
 	
-	// TODO: Create texture and FBO (will be in fbo.js)
-	// if( !fbo.createFBO( screenData ) ) {
-	// 	screenData.gl = null;
-	// 	return false;
-	// }
+	// Create texture and FBO
+	if( !fbo.createFBO( screenData ) ) {
+		screenData.gl = null;
+		return false;
+	}
 	
-	// TODO: Create the point batch (will be in batches-rendering.js)
+	// TODO: Create the point batch (will be in batches.js)
 	// screenData.batches[ batches.POINTS_BATCH ] = batches.createBatchSystem( 
 	// 	screenData, pointVertSrc, pointFragSrc, batches.POINTS_BATCH 
 	// );
 
-	// TODO: Create the images batch (will be in batches-rendering.js)
+	// TODO: Create the images batch (will be in batches.js)
 	// screenData.batches[ batches.IMAGE_BATCH ] = batches.createBatchSystem( 
 	// 	screenData, imageVertSrc, imageFragSrc, batches.IMAGE_BATCH 
 	// );
@@ -156,7 +158,7 @@ export function cleanup( screenData ) {
 
 	const gl = screenData.gl;
 
-	// TODO: Cleanup batches (will be in batches-rendering.js)
+	// TODO: Cleanup batches (will be in batches.js)
 	// for( const batchType in screenData.batches ) {
 	// 	const batch = screenData.batches[ batchType ];
 	// 	if( batch.texCoordVBO ) {
@@ -181,10 +183,7 @@ export function cleanup( screenData ) {
 	// 	gl.deleteBuffer( screenData.displayPositionBuffer );
 	// }
 	
-	// TODO: Cleanup FBO (will be in fbo.js)
-	// if( screenData.FBO ) {
-	// 	gl.deleteFramebuffer( screenData.FBO );
-	// 	gl.deleteTexture( screenData.texture );
-	// }
+	// Cleanup FBO
+	fbo.cleanup( screenData );
 }
 
