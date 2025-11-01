@@ -371,6 +371,9 @@ Implement pen and blend mode state management:
 - Simply stores pen/blend configuration on screenData
 - Blend modes handled entirely on GPU in batches.js - Remove `blendFn` as its not needed
 - Each graphics command builds its own optimized drawing function
+- **TODO:** After implementing graphics-api.js, need to call `graphicsApi.rebuildApi(screenData)` when pen/blend changes
+  - This rebuilds specialized drawing functions to avoid branching in hot paths
+  - `pset` changes from single-pixel to pen-shape geometry based on current pen config
 
 ### Step 4.3: Implement graphics-api.js - Basic Commands
 Implement basic graphics API wrapper for input parsing and validation:
@@ -596,7 +599,20 @@ Move ellipse drawing from `graphics-shapes.js`:
 
 ## Phase 8: Complete Graphics API
 
-### Step 8.1: Extend graphics-api.js
+### Step 8.1: Add Rebuild API Function to graphics-api.js
+Implement `rebuildApi()` function and wire it up to `setPen()`:
+
+**Key functions:**
+- `export function rebuildApi( screenData )` - Rebuild all graphics API functions
+- Called from `pens.js` when pen/blend changes
+- Called from `screen-manager.js` after screen creation
+
+**Implementation notes:**
+- Creates specialized drawing functions based on current pen configuration
+- Avoids branching in hot paths by pre-specializing at configuration time
+- `pset` behavior changes dynamically: single pixel vs pen shape geometry
+
+### Step 8.2: Extend graphics-api.js - Add Remaining Commands
 Add remaining graphics commands to the API layer:
 
 **Commands to implement:**
@@ -607,7 +623,7 @@ Add remaining graphics commands to the API layer:
 - `circle` - calls `renderer.drawCircle()`
 - `ellipse` - calls `renderer.drawEllipse()`
 
-### Step 8.2: Update Renderer Exports
+### Step 8.3: Update Renderer Exports
 Ensure `renderer/renderer.js` exports all necessary functions:
 
 **Exports needed:**
@@ -621,11 +637,12 @@ Ensure `renderer/renderer.js` exports all necessary functions:
 - `getWebGL2Texture()`, `deleteWebGL2Texture()` (from textures)
 - `setImageDirty()`, `cls()`, `blendModeChanged()` (from renderer)
 
-### Step 8.3: Test Complete Graphics API
+### Step 8.4: Test Complete Graphics API
 - Test all graphics commands (`pset`, `line`, `rect`, `circle`, etc.)
 - Verify object literal syntax works
 - Test error handling for invalid parameters
 - Verify all commands render correctly
+- Test that changing pen triggers API rebuild correctly
 
 ## Phase 9: Screen Manager Simplification
 

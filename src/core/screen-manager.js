@@ -13,7 +13,6 @@
 import * as g_utils from "./utils.js";
 import * as g_commands from "./commands.js";
 import * as g_renderer from "../graphics/renderer/renderer.js";
-import * as g_pens from "../graphics/pens.js";
 
 const SCREEN_API_PROTO = { "screen": true };
 const m_screens = {};
@@ -275,10 +274,6 @@ function screen( options ) {
 	for( const fn of m_screenDataInitFunctions ) {
 		fn( screenData );
 	}
-
-	// Set default pen to trigger buildPenFn
-	// This needs to happen after the renderer is set up
-	screenData.api.setPen( g_pens.PEN_PIXEL );
 
 	return screenData.api;
 }
