@@ -242,3 +242,54 @@ export function readPixels( screenData, x, y, width, height ) {
 export function readPixelsAsync( screenData, x, y, width, height ) {
 	return Promise.resolve( readPixels( screenData, x, y, width, height ) );
 }
+
+
+/***************************************************************************************************
+ * Image Drawing Operations
+ **************************************************************************************************/
+
+
+/**
+ * Draw an image on the screen
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {HTMLImageElement|HTMLCanvasElement} img - Image or Canvas element
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {number} angleRad - Rotation angle in radians
+ * @param {number} anchorX - Anchor point X (0-1)
+ * @param {number} anchorY - Anchor point Y (0-1)
+ * @param {number} alpha - Alpha value (0-255)
+ * @param {number} scaleX - Scale X
+ * @param {number} scaleY - Scale Y
+ */
+export function drawImage(
+	screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY
+) {
+
+	const context = screenData.context;
+
+	// Calculate anchor position in pixels
+	const anchorXPx = Math.round( img.width * anchorX );
+	const anchorYPx = Math.round( img.height * anchorY );
+
+	// Save current context state
+	context.save();
+
+	// Set alpha
+	context.globalAlpha = alpha / 255;
+
+	// Apply transformations
+	context.translate( x, y );
+	context.rotate( angleRad );
+	context.scale( scaleX, scaleY );
+
+	// Draw image
+	context.drawImage( img, -anchorXPx, -anchorYPx );
+
+	// Restore context state
+	context.restore();
+
+	// Mark screen as dirty
+	setImageDirty( screenData );
+}

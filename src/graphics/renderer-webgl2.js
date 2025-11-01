@@ -589,7 +589,13 @@ export function prepareBatch( screenData, batchType, newItemCount ) {
 		}
 
 		// Add the new batch to the drawOrder array
-		batchInfo.drawOrder.push( { batch, "startIndex": batch.count, "endIndex": null } );
+		// For IMAGE_BATCH, track the current image/texture for this segment
+		const drawOrderItem = { batch, "startIndex": batch.count, "endIndex": null };
+		if( batch.type === IMAGE_BATCH ) {
+			drawOrderItem.image = batch.image;
+			drawOrderItem.texture = batch.texture;
+		}
+		batchInfo.drawOrder.push( drawOrderItem );
 		batchInfo.currentBatch = batch;
 	}
 
@@ -674,6 +680,7 @@ function flushBatches( screenData, blend = null ) {
 		screenData.isFirstRender = false;
 	}
 
+	// TODO: Images should not share the same blend mode as other drawItems.
 	// Update the blend mode
 	if( blend === g_pens.BLEND_REPLACE ) {
 		gl.disable( gl.BLEND );
@@ -703,7 +710,8 @@ function flushBatches( screenData, blend = null ) {
 
 		// Only draw the batch if there is something to draw
 		if( drawOrderItem.endIndex - drawOrderItem.startIndex > 0 ) {
-			drawBatch( gl, drawOrderItem.batch, drawOrderItem.startIndex, drawOrderItem.endIndex );
+			const texture = ( drawOrderItem.batch.type === IMAGE_BATCH ) ? drawOrderItem.texture : null;
+			drawBatch( gl, drawOrderItem.batch, drawOrderItem.startIndex, drawOrderItem.endIndex, texture );
 		}
 	}
 
@@ -766,12 +774,19 @@ function uploadBatch( gl, batch, width, height ) {
 	}
 }
 
-function drawBatch( gl, batch, startIndex, endIndex ) {
+function drawBatch( gl, batch, startIndex, endIndex, texture = null ) {
 	gl.useProgram( batch.program );
 	gl.bindVertexArray( batch.vao );
 
-	// Draw points
-	gl.drawArrays( batch.mode, startIndex, endIndex );
+	// For IMAGE_BATCH, bind the texture and set uniform
+	if( batch.type === IMAGE_BATCH && texture ) {
+		gl.activeTexture( gl.TEXTURE0 );
+		gl.bindTexture( gl.TEXTURE_2D, texture );
+		gl.uniform1i( batch.locations.texture, 0 );
+	}
+
+	// Draw based on batch mode
+	gl.drawArrays( batch.mode, startIndex, endIndex - startIndex );
 }
 
 function resetBatch( batch ) {
@@ -1074,4 +1089,203 @@ export function deleteWebGL2Texture( img ) {
 	if( contextMap.size === 0 ) {
 		m_webgl2Textures.delete( img );
 	}
+}
+
+
+/***************************************************************************************************
+ * Image Drawing Operations
+ **************************************************************************************************/
+
+
+/**
+ * Draw an image on the screen
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {HTMLImageElement|HTMLCanvasElement} img - Image or Canvas element
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {number} angleRad - Rotation angle in radians
+ * @param {number} anchorX - Anchor point X (0-1)
+ * @param {number} anchorY - Anchor point Y (0-1)
+ * @param {number} alpha - Alpha value (0-255)
+ * @param {number} scaleX - Scale X
+ * @param {number} scaleY - Scale Y
+ */
+export function drawImage(
+	screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY
+) {
+
+	// Get or create texture
+	const texture = getWebGL2Texture( screenData, img );
+	if( !texture ) {
+		return;
+	}
+
+	// Calculate image dimensions
+	const imgWidth = img.width;
+	const imgHeight = img.height;
+
+	// Calculate anchor position in pixels
+	const anchorXPx = Math.round( imgWidth * anchorX );
+	const anchorYPx = Math.round( imgHeight * anchorY );
+
+	// Calculate scaled dimensions
+	const scaledWidth = imgWidth * scaleX;
+	const scaledHeight = imgHeight * scaleY;
+
+	// Calculate corner positions relative to anchor point (top-left at -anchor, bottom-right at size-anchor)
+	const corners = [
+		{ "x": -anchorXPx, "y": -anchorYPx },                    // Top-left
+		{ "x": scaledWidth - anchorXPx, "y": -anchorYPx },      // Top-right
+		{ "x": -anchorXPx, "y": scaledHeight - anchorYPx },     // Bottom-left
+		{ "x": scaledWidth - anchorXPx, "y": scaledHeight - anchorYPx } // Bottom-right
+	];
+
+	// Rotate corners around (0,0) then translate to (x,y)
+	const cos = Math.cos( angleRad );
+	const sin = Math.sin( angleRad );
+	for( let i = 0; i < corners.length; i++ ) {
+		const corner = corners[ i ];
+		const rx = corner.x * cos - corner.y * sin;
+		const ry = corner.x * sin + corner.y * cos;
+		corner.x = rx + x;
+		corner.y = ry + y;
+	}
+
+	// Texture coordinates (full image)
+	const texCoords = [
+		0, 0,  // Top-left
+		1, 0,  // Top-right
+		0, 1,  // Bottom-left
+		1, 0,  // Top-right (repeat for second triangle)
+		1, 1,  // Bottom-right
+		0, 1   // Bottom-left (repeat for second triangle)
+	];
+
+	// Prepare batch for 6 vertices (2 triangles)
+	const batch = screenData.batches[ IMAGE_BATCH ];
+
+	// Check if we need a new batch segment due to texture change
+	const batchInfo = screenData.batchInfo;
+	if(
+		batchInfo.currentBatch === batch &&
+		( batch.image !== img || batch.texture !== texture )
+	) {
+
+		// Texture changed - finalize current segment and start new one
+		if( batchInfo.drawOrder.length > 0 ) {
+			const lastDrawOrderItem = batchInfo.drawOrder[ batchInfo.drawOrder.length - 1 ];
+			lastDrawOrderItem.endIndex = batch.count;
+		}
+
+		// Create new drawOrder item for this texture
+		const drawOrderItem = {
+			batch,
+			"startIndex": batch.count,
+			"endIndex": null,
+			image: img,
+			texture: texture
+		};
+		batchInfo.drawOrder.push( drawOrderItem );
+	}
+
+	// Prepare batch (will create new segment if batch type changed)
+	prepareBatch( screenData, IMAGE_BATCH, 6 );
+
+	// Update current image and texture
+	batch.image = img;
+	batch.texture = texture;
+
+	// Update drawOrder item texture if this is a new segment
+	if( batchInfo.drawOrder.length > 0 ) {
+		const lastDrawOrderItem = batchInfo.drawOrder[ batchInfo.drawOrder.length - 1 ];
+		if( lastDrawOrderItem.endIndex === null ) {
+			lastDrawOrderItem.image = img;
+			lastDrawOrderItem.texture = texture;
+		}
+	}
+
+	// Color with alpha
+	const r = Math.round( 255 );
+	const g = Math.round( 255 );
+	const b = Math.round( 255 );
+	const a = Math.round( alpha );
+
+	// Add two triangles (6 vertices)
+	const baseIdx = batch.count;
+	const vertexBase = baseIdx * batch.vertexComps;
+	const colorBase = baseIdx * batch.colorComps;
+	const texBase = baseIdx * batch.texCoordComps;
+
+	// Triangle 1: Top-left, Top-right, Bottom-left
+	let vIdx = vertexBase;
+	let cIdx = colorBase;
+	let tIdx = texBase;
+
+	// Vertex 0: Top-left
+	batch.vertices[ vIdx++ ] = corners[ 0 ].x;
+	batch.vertices[ vIdx++ ] = corners[ 0 ].y;
+	batch.colors[ cIdx++ ] = r;
+	batch.colors[ cIdx++ ] = g;
+	batch.colors[ cIdx++ ] = b;
+	batch.colors[ cIdx++ ] = a;
+	batch.texCoords[ tIdx++ ] = texCoords[ 0 ];
+	batch.texCoords[ tIdx++ ] = texCoords[ 1 ];
+
+	// Vertex 1: Top-right
+	batch.vertices[ vIdx++ ] = corners[ 1 ].x;
+	batch.vertices[ vIdx++ ] = corners[ 1 ].y;
+	batch.colors[ cIdx++ ] = r;
+	batch.colors[ cIdx++ ] = g;
+	batch.colors[ cIdx++ ] = b;
+	batch.colors[ cIdx++ ] = a;
+	batch.texCoords[ tIdx++ ] = texCoords[ 2 ];
+	batch.texCoords[ tIdx++ ] = texCoords[ 3 ];
+
+	// Vertex 2: Bottom-left
+	batch.vertices[ vIdx++ ] = corners[ 2 ].x;
+	batch.vertices[ vIdx++ ] = corners[ 2 ].y;
+	batch.colors[ cIdx++ ] = r;
+	batch.colors[ cIdx++ ] = g;
+	batch.colors[ cIdx++ ] = b;
+	batch.colors[ cIdx++ ] = a;
+	batch.texCoords[ tIdx++ ] = texCoords[ 4 ];
+	batch.texCoords[ tIdx++ ] = texCoords[ 5 ];
+
+	// Triangle 2: Top-right, Bottom-right, Bottom-left
+	// Vertex 3: Top-right
+	batch.vertices[ vIdx++ ] = corners[ 1 ].x;
+	batch.vertices[ vIdx++ ] = corners[ 1 ].y;
+	batch.colors[ cIdx++ ] = r;
+	batch.colors[ cIdx++ ] = g;
+	batch.colors[ cIdx++ ] = b;
+	batch.colors[ cIdx++ ] = a;
+	batch.texCoords[ tIdx++ ] = texCoords[ 6 ];
+	batch.texCoords[ tIdx++ ] = texCoords[ 7 ];
+
+	// Vertex 4: Bottom-right
+	batch.vertices[ vIdx++ ] = corners[ 3 ].x;
+	batch.vertices[ vIdx++ ] = corners[ 3 ].y;
+	batch.colors[ cIdx++ ] = r;
+	batch.colors[ cIdx++ ] = g;
+	batch.colors[ cIdx++ ] = b;
+	batch.colors[ cIdx++ ] = a;
+	batch.texCoords[ tIdx++ ] = texCoords[ 8 ];
+	batch.texCoords[ tIdx++ ] = texCoords[ 9 ];
+
+	// Vertex 5: Bottom-left
+	batch.vertices[ vIdx++ ] = corners[ 2 ].x;
+	batch.vertices[ vIdx++ ] = corners[ 2 ].y;
+	batch.colors[ cIdx++ ] = r;
+	batch.colors[ cIdx++ ] = g;
+	batch.colors[ cIdx++ ] = b;
+	batch.colors[ cIdx++ ] = a;
+	batch.texCoords[ tIdx++ ] = texCoords[ 10 ];
+	batch.texCoords[ tIdx++ ] = texCoords[ 11 ];
+
+	// Update batch count
+	batch.count += 6;
+
+	// Mark screen as dirty
+	setImageDirty( screenData );
 }

@@ -622,8 +622,8 @@ src/
 - [x] Step 7.11: Implement getPalColor (new) - Given an index return the pal color value
 
 ### Phase 8: Image Support
-- [ ] Step 8.1: Rebuild Images Module
-- [ ] Step 8.2: Implement loadImage
+- [x] Step 8.1: Rebuild Images Module
+- [x] Step 8.2: Implement loadImage
 - [ ] Step 8.3: Implement drawImage
 - [ ] Step 8.4: Implement loadSprite
 - [ ] Step 8.5: Implement drawSprite

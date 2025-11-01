@@ -40,6 +40,12 @@ function registerCommands() {
 	g_state.addCommand(
 		"loadImage", loadImage, false, [ "src", "name", "onLoad", "onError" ]
 	);
+
+	// Register screen commands
+	g_state.addCommand(
+		"drawImage", drawImage, true,
+		[ "name", "x", "y", "angle", "anchorX", "anchorY", "alpha", "scaleX", "scaleY" ]
+	);
 }
 
 
@@ -199,6 +205,131 @@ function loadImage( options ) {
 	return name;
 }
 
+/**
+ * Draw an image on the screen
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {Object} options - Draw options
+ * @param {string|Object} options.name - Image name, screen object, or Image/Canvas element
+ * @param {number} options.x - X coordinate
+ * @param {number} options.y - Y coordinate
+ * @param {number} [options.angle] - Rotation angle in degrees
+ * @param {number} [options.anchorX] - Anchor point X (0-1)
+ * @param {number} [options.anchorY] - Anchor point Y (0-1)
+ * @param {number} [options.alpha] - Alpha value (0-255)
+ * @param {number} [options.scaleX] - Scale X
+ * @param {number} [options.scaleY] - Scale Y
+ */
+function drawImage( screenData, options ) {
+	const name = options.name;
+	let x = options.x || 0;
+	let y = options.y || 0;
+	let angle = options.angle;
+	let anchorX = options.anchorX;
+	let anchorY = options.anchorY;
+	let alpha = options.alpha;
+	let scaleX = options.scaleX;
+	let scaleY = options.scaleY;
+
+	let img;
+
+	// Resolve image from name parameter
+	if( typeof name === "string" ) {
+
+		// Handle string image name
+		const imageData = getStoredImage( name );
+		if( !imageData ) {
+			const error = new Error( `drawImage: Image "${name}" not found.` );
+			error.code = "IMAGE_NOT_FOUND";
+			throw error;
+		}
+
+		if( imageData.status === "loading" ) {
+			const error = new Error(
+				`drawImage: Image "${name}" is still loading. Use $.ready() to wait for it.`
+			);
+			error.code = "IMAGE_NOT_READY";
+			throw error;
+		}
+
+		if( imageData.status === "error" ) {
+			const error = new Error( `drawImage: Image "${name}" failed to load.` );
+			error.code = "IMAGE_LOAD_FAILED";
+			throw error;
+		}
+
+		img = imageData.image;
+	} else if( name && typeof name === "object" ) {
+
+		// Handle screen API object
+		if( name.screen === true ) {
+			if( typeof name.canvas === "function" ) {
+				img = name.canvas();
+			} else {
+				img = name.canvas;
+			}
+			if( !img ) {
+				const error = new Error( "drawImage: Screen has no canvas." );
+				error.code = "INVALID_SCREEN";
+				throw error;
+			}
+		} else if( name.tagName === "CANVAS" || name.tagName === "IMG" ) {
+
+			// Handle Canvas or Image element
+			img = name;
+		} else {
+			const error = new TypeError(
+				"drawImage: Parameter name must be a string, screen object, Canvas element, " +
+				"or Image element."
+			);
+			error.code = "INVALID_NAME";
+			throw error;
+		}
+	} else {
+		const error = new TypeError(
+			"drawImage: Parameter name must be a string, screen object, Canvas element, " +
+			"or Image element."
+		);
+		error.code = "INVALID_NAME";
+		throw error;
+	}
+
+	// Validate coordinates
+	if( isNaN( x ) || isNaN( y ) ) {
+		const error = new TypeError( "drawImage: Parameters x and y must be numbers." );
+		error.code = "INVALID_COORDINATES";
+		throw error;
+	}
+
+	// Default values
+	if( scaleX == null || isNaN( Number( scaleX ) ) ) {
+		scaleX = 1;
+	}
+	if( scaleY == null || isNaN( Number( scaleY ) ) ) {
+		scaleY = 1;
+	}
+	if( angle == null ) {
+		angle = 0;
+	}
+	if( anchorX == null ) {
+		anchorX = 0;
+	}
+	if( anchorY == null ) {
+		anchorY = 0;
+	}
+	if( alpha == null && alpha !== 0 ) {
+		alpha = 255;
+	}
+
+	// Convert angle from degrees to radians
+	const angleRad = g_utils.degreesToRadian( angle );
+
+	// Draw using renderer-specific implementation
+	screenData.renderer.drawImage(
+		screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY
+	);
+}
+
 
 /***************************************************************************************************
  * Internal Commands
@@ -231,12 +362,12 @@ export function getCanvas2DImage( img ) {
 }
 
 /**
- * Get image data by name
+ * Get stored image by name
  * 
  * @param {string} name - Image name
  * @returns {Object|null} Image data object or null if not found
  */
-export function getImageData( name ) {
+export function getStoredImage( name ) {
 	if( typeof name !== "string" ) {
 		return null;
 	}
@@ -268,4 +399,9 @@ export function removeImage( name ) {
 		delete m_images[ name ];
 	}
 }
+
+
+/***************************************************************************************************
+ * Internal Commands
+ **************************************************************************************************/
 
