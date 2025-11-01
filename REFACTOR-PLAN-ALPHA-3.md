@@ -352,7 +352,7 @@ Move low-level drawing functions from `renderer-webgl2.js`:
 
 **Note:** `drawImage()` will be added later when implementing image support.
 
-### Step 4.2: Implement pens.js
+### Step 4.2: Implement pens.js ✅ COMPLETE
 Implement pen and blend mode state management:
 
 **Responsibilities:**
@@ -371,7 +371,8 @@ Implement pen and blend mode state management:
 - Simply stores pen/blend configuration on screenData
 - Blend modes handled entirely on GPU in batches.js - Remove `blendFn` as its not needed
 - Each graphics command builds its own optimized drawing function
-- **TODO:** After implementing graphics-api.js, need to call `graphicsApi.rebuildApi(screenData)` when pen/blend changes
+- **TODO:** After implementing graphics-api.js, need to call `graphicsApi.rebuildApi(screenData)`
+	when pen changes
   - This rebuilds specialized drawing functions to avoid branching in hot paths
   - `pset` changes from single-pixel to pen-shape geometry based on current pen config
 
