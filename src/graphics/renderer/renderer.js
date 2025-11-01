@@ -9,19 +9,40 @@
 
 "use strict";
 
-import * as g_screenManager from "../../core/screen-manager";
+import * as g_screenManager from "../../core/screen-manager.js";
+import * as g_utils from "../../core/utils.js";
 
 // Import renderer modules
 import * as g_fbo from "./fbo.js";
 import * as g_shaders from "./shaders.js";
+import * as g_batches from "./batches.js";
+import * as g_draw from "./draw.js";
 
 // TODO: Import renderer modules when implemented
-// import * as g_batches from "./batches.js";
 // import * as textures from "./textures.js";
-// import * as draw from "./draw.js";
 // import * as primitives from "./primitives.js";
 // import * as shapes from "./shapes.js";
 // import * as readback from "./readback.js";
+
+
+/***************************************************************************************************
+ * Public API Exports
+ ***************************************************************************************************/
+
+
+// Re-export batch constants
+export { POINTS_BATCH } from "./batches.js";
+export { IMAGE_BATCH } from "./batches.js";
+
+// Re-export drawing functions
+export { drawPixelUnsafe } from "./draw.js";
+
+// Re-export batch management
+export { prepareBatch } from "./batches.js";
+
+// Re-export rendering functions
+export { flushBatches } from "./batches.js";
+export { displayToCanvas } from "./batches.js";
 
 
 /***************************************************************************************************
@@ -54,9 +75,9 @@ export function init( api ) {
 	// Initialize renderer modules in order
 	g_fbo.init();
 	g_shaders.init();
-	// TODO: 3. g_batches.init();
+	g_batches.init();
+	g_draw.init();
 	// TODO: 4. textures.init()
-	// TODO: 5. draw.init()
 	// TODO: 6. primitives.init()
 	// TODO: 7. shapes.init()
 	// TODO: 8. readback.init()
@@ -99,15 +120,15 @@ export function createContext( screenData ) {
 		return false;
 	}
 	
-	// TODO: Create the point batch (will be in batches.js)
-	// screenData.batches[ batches.POINTS_BATCH ] = batches.createBatchSystem( 
-	// 	screenData, pointVertSrc, pointFragSrc, batches.POINTS_BATCH 
-	// );
+	// Create the point batch
+	screenData.batches[ g_batches.POINTS_BATCH ] = g_batches.createBatch(
+		screenData, g_batches.POINTS_BATCH
+	);
 
-	// TODO: Create the images batch (will be in batches.js)
-	// screenData.batches[ batches.IMAGE_BATCH ] = batches.createBatchSystem( 
-	// 	screenData, imageVertSrc, imageFragSrc, batches.IMAGE_BATCH 
-	// );
+	// Create the images batch
+	screenData.batches[ g_batches.IMAGE_BATCH ] = g_batches.createBatch(
+		screenData, g_batches.IMAGE_BATCH
+	);
 	
 	// Setup display shader
 	g_shaders.setupDisplayShader( screenData );
@@ -185,5 +206,35 @@ export function cleanup( screenData ) {
 	
 	// Cleanup FBO
 	g_fbo.cleanup( screenData );
+}
+
+/**
+ * Sets the image dirty / Queue automatic render
+ * @param {Object} screenData - Screen data object
+ * @returns {void}
+ */
+export function setImageDirty( screenData ) {
+
+	if( !screenData.isRenderScheduled ) {
+		screenData.isRenderScheduled = true;
+		g_utils.queueMicrotask( () => {
+			g_batches.flushBatches( screenData );
+			g_batches.displayToCanvas( screenData );
+			screenData.isRenderScheduled = false;
+		} );
+	}
+}
+
+/**
+ * Called when blend mode changes, flush current batch with old blend mode
+ * @param {Object} screenData - Screen data object
+ * @param {string} previousBlend - Previous blend mode
+ * @returns {void}
+ */
+export function blendModeChanged( screenData, previousBlend ) {
+
+	// Flush existing batch with old blend mode
+	g_batches.flushBatches( screenData, previousBlend );
+	g_batches.displayToCanvas( screenData );
 }
 

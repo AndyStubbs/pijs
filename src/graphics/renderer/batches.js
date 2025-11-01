@@ -102,14 +102,25 @@ export function init() {
  * 
  * @param {Object} screenData - Screen data object
  * @param {number} type - Batch type (POINTS_BATCH or IMAGE_BATCH)
- * @param {string} vertSrc - Vertex shader source
- * @param {string} fragSrc - Fragment shader source
  * @returns {Object|null} Batch object or null on error
  */
-export function createBatch( screenData, type, vertSrc, fragSrc ) {
+export function createBatch( screenData, type ) {
 
 	const gl = screenData.gl;
 	const batch = Object.create( m_batchProto );
+
+	// Get shader sources based on batch type
+	let vertSrc, fragSrc;
+	if( type === POINTS_BATCH ) {
+		vertSrc = m_pointVertSrc;
+		fragSrc = m_pointFragSrc;
+	} else if( type === IMAGE_BATCH ) {
+		vertSrc = m_imageVertSrc;
+		fragSrc = m_imageFragSrc;
+	} else {
+		console.error( `createBatch: Unknown batch type ${type}` );
+		return null;
+	}
 
 	// Create the batch shader program
 	batch.program = g_shaders.createShaderProgram( gl, vertSrc, fragSrc );

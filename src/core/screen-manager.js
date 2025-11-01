@@ -13,6 +13,7 @@
 import * as g_utils from "./utils.js";
 import * as g_commands from "./commands.js";
 import * as g_renderer from "../graphics/renderer/renderer.js";
+import * as g_pens from "../graphics/pens.js";
 
 const SCREEN_API_PROTO = { "screen": true };
 const m_screens = {};
@@ -275,6 +276,10 @@ function screen( options ) {
 		fn( screenData );
 	}
 
+	// Set default pen to trigger buildPenFn
+	// This needs to happen after the renderer is set up
+	screenData.api.setPen( g_pens.PEN_PIXEL );
+
 	return screenData.api;
 }
 
@@ -345,6 +350,9 @@ function setupScreenRenderer( screenData ) {
 		error.code = "NO_RENDERING_CONTEXT";
 		throw error;
 	}
+
+	// Store renderer reference
+	screenData.renderer = g_renderer;
 }
 
 function validateDimensions( width, height ) {

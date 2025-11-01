@@ -107,7 +107,7 @@ src/
 - `graphics-api.js`: Input parsing, validation, object literal handling, calls renderer functions
 
 **Support Modules:**
-- `pens.js`: Pen types, blend modes, builds optimized `penFn`
+- `pens.js`: Pen types, blend modes, state management
 - `colors.js`: Palette management, color conversion
 
 **Feature Modules:**
@@ -353,25 +353,24 @@ Move low-level drawing functions from `renderer-webgl2.js`:
 **Note:** `drawImage()` will be added later when implementing image support.
 
 ### Step 4.2: Implement pens.js
-Implement pen and blend mode system (essential for all primitives):
+Implement pen and blend mode state management:
 
 **Responsibilities:**
 - Pen types: pixel, square, circle
 - Blend modes: replace, alpha
-- Build optimized `penFn` that calls `renderer.drawPixelUnsafe()`
-- Handle pen size and noise
+- Store pen/blend state on screenData
+- Validation and command registration
 
 **Key functions:**
 - `export function init( api )` - Initialize module, register commands
-- `function buildPenFn( screenData )` - Build optimized pen function
 - `function setPen( screenData, options )` - SetPen command
 - Constants: `PEN_PIXEL`, `PEN_SQUARE`, `PEN_CIRCLE`, `BLEND_REPLACE`, `BLEND_ALPHA`
 
 **Implementation notes:**
-- Requires `renderer.drawPixelUnsafe()` (from draw.js)
-- Builds optimized closures that close over screen data
-- WebGL2 only - no Canvas2D blend paths
-- `penFn` is used by all primitive drawing operations
+- No longer builds `penFn` - that logic moves to graphics-api.js
+- Simply stores pen/blend configuration on screenData
+- Blend modes handled entirely on GPU in batches.js - Remove `blendFn` as its not needed
+- Each graphics command builds its own optimized drawing function
 
 ### Step 4.3: Implement graphics-api.js - Basic Commands
 Implement basic graphics API wrapper for input parsing and validation:
@@ -380,21 +379,25 @@ Implement basic graphics API wrapper for input parsing and validation:
 - Input parsing and validation
 - Object literal handling
 - Parameter extraction
-- Call renderer low-level functions
+- Build optimized drawing functions that close over screen data
+- Handle pen size/shape logic for each command
 
 **Commands to implement:**
-- `pset` - calls `renderer.drawPixelUnsafe()` via `penFn`
+- `pset` - Build optimized pen drawing function based on current pen settings
+  - Calls `renderer.drawPixelUnsafe()` for pixel pen
+  - Draws square/circle shapes for larger pens
 
 **Key changes:**
 - Thin wrapper layer that calls renderer functions
-- Build optimized closures that close over screen data
-- Handle object literal syntax: `pset({ x: 10, y: 20, c: 1 })`
+- Build optimized closures that close over screen data and pen configuration
+- Handle object literal syntax: `pset({ x: 10, y: 20 })`
+- Each command builds its own specialized drawing function
 
 ### Step 4.4: Test Basic Drawing
 - Test `drawPixelUnsafe()` - draw single pixels
 - Test color system - verify palette and color parsing works
-- Test pen system - verify `setPen()` builds correct `penFn`
-- Test `pset()` command - verify it works with various inputs
+- Test pen system - verify `setPen()` stores correct configuration
+- Test `pset()` command - verify it works with various pen sizes/shapes
 - Verify renderer exports unified API through `renderer.js`
 
 ## Phase 5: Textures and Images
@@ -470,7 +473,7 @@ Move pixel readback from `renderer-webgl2.js` to `readback.js`:
 
 ## Phase 6: High-Level Primitives
 
-**Note:** Primitives use `penFn` from `pens.js` (implemented in Phase 4, Step 4.2).
+**Note:** Primitives use pen configuration from `pens.js` (implemented in Phase 4, Step 4.2).
 
 ### Step 6.1: Implement primitives.js - Line Drawing
 Move line drawing from `graphics-primitives.js` to `renderer/primitives.js`:
@@ -481,13 +484,15 @@ Move line drawing from `graphics-primitives.js` to `renderer/primitives.js`:
 
 **Key functions:**
 - `export function init( api )` - Initialize module
-- `export function drawLine( screenData, x1, y1, x2, y2, color, penFn )`
+- `export function drawLine( screenData, x1, y1, x2, y2, color, penConfig )`
+  - `penConfig` contains pen type, size, and other settings from `screenData.pens`
 
 **Implementation notes:**
-- Uses `penFn` from `screenData.pens.penFn` (built by pens.js)
+- Reads pen configuration from `screenData.pens` instead of using pre-built `penFn`
 - Move `m_line()` function from `graphics-primitives.js`
-- Call `penFn` for each pixel (which calls `drawPixelUnsafe`)
-- Estimate batch size based on line length
+- Draws pixels using `drawPixelUnsafe()` with pen shape logic inline
+- Each pixel drawn with pen size/shape applied
+- Estimate batch size based on line length and pen size
 
 ### Step 6.2: Implement primitives.js - Arc Drawing
 Move arc drawing from `graphics-primitives.js`:
@@ -497,12 +502,14 @@ Move arc drawing from `graphics-primitives.js`:
 - Handle angle ranges, winding
 
 **Key functions:**
-- `export function drawArc( screenData, cx, cy, radius, angle1, angle2, color, penFn )`
+- `export function drawArc( screenData, cx, cy, radius, angle1, angle2, color, penConfig )`
 
 **Implementation notes:**
 - Move `m_arcOutline()` function from `graphics-primitives.js`
+- Reads pen configuration from `screenData.pens`
+- Draws pixels using `drawPixelUnsafe()` with pen shape logic inline
 - Filter pixels by angle range
-- Estimate batch size based on arc circumference
+- Estimate batch size based on arc circumference and pen size
 
 ### Step 6.3: Implement primitives.js - Bezier Drawing
 Move bezier drawing from `graphics-primitives.js`:
@@ -511,12 +518,14 @@ Move bezier drawing from `graphics-primitives.js`:
 - `drawBezier()` - Cubic bezier curve with adaptive tessellation
 
 **Key functions:**
-- `export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, penFn )`
+- `export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, penConfig )`
 
 **Implementation notes:**
 - Move `m_bezierOutline()` function from `graphics-primitives.js`
+- Reads pen configuration from `screenData.pens`
+- Draws pixels using `drawPixelUnsafe()` with pen shape logic inline
 - Adaptive tessellation based on curve length
-- Estimate batch size based on control polygon length
+- Estimate batch size based on control polygon length and pen size
 
 ### Step 6.4: Test Primitives
 - Test `drawLine()` - various angles and lengths
@@ -535,12 +544,15 @@ Move rectangle drawing from `graphics-shapes.js` to `renderer/shapes.js`:
 
 **Key functions:**
 - `export function init( api )` - Initialize module
-- `export function drawRect( screenData, x, y, width, height, color, fillColor, penFn, blendFn )`
+- `export function drawRect( screenData, x, y, width, height, color, fillColor, penConfig )`
+  - `penConfig` contains pen/blend settings from `screenData.pens` and `screenData.blends`
 
 **Implementation notes:**
 - Move `m_rectOutline()` and `m_rectFilled()` from `graphics-shapes.js`
 - Handle both outline and filled modes
-- Use `blendFn` for filled areas, `penFn` for outline
+- Reads pen/blend configuration from `screenData.pens` and `screenData.blends`
+- Draws pixels using `drawPixelUnsafe()` with pen shape logic inline
+- All blending handled on GPU via batches.js
 
 ### Step 7.2: Implement shapes.js - Circle Drawing
 Move circle drawing from `graphics-shapes.js`:
@@ -550,10 +562,12 @@ Move circle drawing from `graphics-shapes.js`:
 - Handle pen size, fill color, blending
 
 **Key functions:**
-- `export function drawCircle( screenData, cx, cy, radius, color, fillColor, penFn, blendFn )`
+- `export function drawCircle( screenData, cx, cy, radius, color, fillColor, penConfig )`
 
 **Implementation notes:**
 - Move `m_circleOutline()` and `m_circleFilled()` from `graphics-shapes.js`
+- Reads pen/blend configuration from screenData
+- Draws pixels using `drawPixelUnsafe()` with pen shape logic inline
 - Use midpoint circle algorithm
 - Estimate batch size based on circumference (outline) or area (filled)
 
@@ -565,10 +579,12 @@ Move ellipse drawing from `graphics-shapes.js`:
 - Handle pen size, fill color, blending
 
 **Key functions:**
-- `export function drawEllipse( screenData, cx, cy, rx, ry, color, fillColor, penFn, blendFn )`
+- `export function drawEllipse( screenData, cx, cy, rx, ry, color, fillColor, penConfig )`
 
 **Implementation notes:**
 - Move `m_ellipseOutline()` and `m_ellipseFilled()` from `graphics-shapes.js`
+- Reads pen/blend configuration from screenData
+- Draws pixels using `drawPixelUnsafe()` with pen shape logic inline
 - Use midpoint ellipse algorithm
 - Estimate batch size based on perimeter (outline) or area (filled)
 
@@ -634,8 +650,9 @@ Remove Canvas2D-specific screen data items:
 ### Step 9.3: Update Other Modules
 Remove Canvas2D render mode checks from:
 - `graphics-api.js` - Remove `CANVAS2D_RENDER_MODE` checks
-- `pens.js` - Remove Canvas2D blend path (if any)
+- `pens.js` - Already updated (GPU-only blending)
 - Any other modules that check render mode
+- All blend modes handled on GPU via batches.js
 
 ### Step 9.4: Test Screen Manager
 - Test screen creation (should always use WebGL2)
