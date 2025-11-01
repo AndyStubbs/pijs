@@ -62,7 +62,7 @@
 		
 		// Create a screen (will use WebGL2 if available)
 		const screen = $.screen(
-			{ "aspect": "290x290", "container": "container1", "useCanvas2d": true }
+			{ "aspect": "90x90", "container": "container1", "useCanvas2d": true }
 		);
 
 		const stats1 = document.getElementById( "stats1" );
@@ -84,7 +84,7 @@
 		let y = 18;
 		for( let r = 1; r < 25; r += 1 ) {
 			$.setColor( 2 );
-			$.setPen( "circle", r );
+			$.setPen( "square", r );
 			$.pset( x, y );
 			$.setPen( "pixel", 1 );
 			$.setColor( 15 );
