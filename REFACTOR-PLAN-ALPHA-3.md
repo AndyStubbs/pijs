@@ -151,7 +151,7 @@ readback.js
 
 ## Phase 1: Setup and Minimal Shell
 
-### Step 1.1: Create Starting Shell Files  ✅ COMPLETE
+### Step 1.1: Create Starting Shell Files ✅ COMPLETE
 Create minimal core infrastructure in `src/`:
 
 **Files to create:**
@@ -167,7 +167,7 @@ Create minimal core infrastructure in `src/`:
 - Remove render mode checks
 - Simplify screen creation flow
 
-### Step 1.2: Create Renderer Module Structure
+### Step 1.2: Create Renderer Module Structure ✅ COMPLETE
 Create the renderer directory structure:
 
 ```
