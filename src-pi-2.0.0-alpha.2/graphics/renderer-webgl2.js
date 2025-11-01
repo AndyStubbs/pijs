@@ -329,7 +329,6 @@ function createTextureAndFBO( screenData ) {
 	return true;
 }
 
-
 /**
  * Create a shader program from vertex and fragment sources
  * 
