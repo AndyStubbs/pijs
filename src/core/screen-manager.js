@@ -12,9 +12,7 @@
 
 import * as g_utils from "./utils.js";
 import * as g_commands from "./commands.js";
-
-// TODO: Import renderer modules when available
-// import * as g_webgl2Renderer from "../graphics/renderer/context.js";
+import * as g_renderer from "../graphics/renderer/renderer.js";
 
 const SCREEN_API_PROTO = { "screen": true };
 const m_screens = {};
@@ -166,7 +164,7 @@ function screen( options ) {
 	// Append additional items onto the screendata
 	Object.assign( screenData, structuredClone( m_screenDataItems ) );
 
-	// Append dynamic screendata items
+	// Append dynamic screendata items (items with dynamic defaults)
 	for( const itemGetter of m_screenDataItemGetters ) {
 		screenData[ itemGetter.name ] = structuredClone( itemGetter.fn() );
 	}
@@ -269,8 +267,8 @@ function screen( options ) {
 	m_activeScreenData = screenData;
 	m_screens[ screenData.id ] = screenData;
 
-	// TODO: Setup WebGL2 renderer when available
-	// setupScreenRenderer( screenData );
+	// Setup WebGL2 renderer
+	setupScreenRenderer( screenData );
 
 	// Call init functions for all modules that need initialization
 	for( const fn of m_screenDataInitFunctions ) {
@@ -333,6 +331,19 @@ function setDefaultCanvasOptions( screenData ) {
 	// Make sure container is not blank
 	if( screenData.container.offsetHeight === 0 ) {
 		screenData.container.style.height = "200px";
+	}
+}
+
+function setupScreenRenderer( screenData ) {
+
+	// WebGL2 only - no fallback
+	const webgl2Status = g_renderer.initWebGL( screenData );
+	
+	// If webgl2 failed, throw error
+	if( !webgl2Status ) {
+		const error = new Error( "screen: Failed to create WebGL2 context. WebGL2 is required." );
+		error.code = "NO_RENDERING_CONTEXT";
+		throw error;
 	}
 }
 
@@ -561,8 +572,8 @@ function resizeScreen( screenData, isInit ) {
 	if( !isInit ) {
 
 		// TODO: Let the renderer adjust to the new size
-		// if( screenData.renderer ) {
-		// 	screenData.renderer.handleResize( screenData, fromSize, toSize );
+		// if( g_renderer ) {
+		// 	g_renderer.handleResize( screenData, fromSize, toSize );
 		// }
 
 		// Call resize functions for all modules that need special handling on resize

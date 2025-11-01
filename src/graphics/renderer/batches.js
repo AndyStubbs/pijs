@@ -4,7 +4,7 @@
  * Batch system for rendering points and images efficiently.
  * Combines batch management and rendering operations.
  * 
- * @module graphics/renderer/batches-rendering
+ * @module graphics/renderer/batches
  */
 
 "use strict";

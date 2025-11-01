@@ -46,10 +46,10 @@ src/
 │
 ├── graphics/                          # Graphics rendering modules
 │   ├── renderer/                     # Complete rendering system
-│   │   ├── context.js                # Main orchestrator + WebGL context creation
+│   │   ├── renderer.js               # Main orchestrator + WebGL context creation
 │   │   ├── fbo.js                    # Framebuffer Object management
 │   │   ├── shaders.js                # Shader compilation and program creation
-│   │   ├── batches-rendering.js      # Batch system + rendering (COMBINED)
+│   │   ├── batches.js                # Batch system + rendering (COMBINED)
 │   │   ├── textures.js               # Texture management (getWebGL2Texture, etc.)
 │   │   ├── draw.js                   # Low-level: drawPixelUnsafe, drawImage
 │   │   ├── primitives.js             # High-level: drawLine, drawArc, drawBezier
@@ -93,10 +93,10 @@ src/
 ### Module Responsibilities
 
 **Renderer Layer (`graphics/renderer/`):**
-- `context.js`: WebGL2 context creation, module orchestration, public API exports
+- `renderer.js`: WebGL2 context creation, module orchestration, public API exports
 - `fbo.js`: Framebuffer Object creation and management
 - `shaders.js`: Shader compilation, program creation, display shader setup
-- `batches-rendering.js`: Batch creation, management, flushing, rendering to FBO/canvas
+- `batches.js`: Batch creation, management, flushing, rendering to FBO/canvas
 - `textures.js`: Texture cache management (nested Map), get/delete operations
 - `draw.js`: Low-level drawing (`drawPixelUnsafe`, `drawImage` with textured quads)
 - `primitives.js`: High-level primitives (`drawLine`, `drawArc`, `drawBezier`)
@@ -116,36 +116,36 @@ src/
 
 ### Dependency Graph
 
-All modules use lazy initialization - no code executes until `init()` is called from `context.js`. This allows circular imports (function references only) without circular dependency issues.
+All modules use lazy initialization - no code executes until `init()` is called from `renderer.js`. This allows circular imports (function references only) without circular dependency issues.
 
 ```
 src/index.js
   └─ imports: graphics/graphics-api.js
-     └─ imports: graphics/renderer/context.js
+     └─ imports: graphics/renderer/renderer.js
         └─ orchestrates: all renderer/* modules
 
-renderer/context.js
-  ├─ imports: fbo.js, shaders.js, batches-rendering.js, textures.js
+renderer/renderer.js
+  ├─ imports: fbo.js, shaders.js, batches.js, textures.js
   ├─ imports: draw.js, primitives.js, shapes.js, readback.js
   └─ exports: unified public API
 
-batches-rendering.js
+batches.js
   └─ imports: shaders.js, pens.js (external)
 
 draw.js
-  ├─ imports: batches-rendering.js, textures.js
+  ├─ imports: batches.js, textures.js
   └─ exports: drawPixelUnsafe, drawImage
 
 primitives.js
-  ├─ imports: batches-rendering.js (for prepareBatch, drawPixelUnsafe via context)
+  ├─ imports: batches.js (for prepareBatch, drawPixelUnsafe via renderer)
   └─ exports: drawLine, drawArc, drawBezier
 
 shapes.js
-  ├─ imports: batches-rendering.js (for prepareBatch, drawPixelUnsafe via context)
+  ├─ imports: batches.js (for prepareBatch, drawPixelUnsafe via renderer)
   └─ exports: drawRect, drawCircle, drawEllipse
 
 readback.js
-  ├─ imports: batches-rendering.js (for flushBatches)
+  ├─ imports: batches.js (for flushBatches)
   └─ exports: readPixel, readPixels
 ```
 
@@ -172,10 +172,10 @@ Create the renderer directory structure:
 
 ```
 src/graphics/renderer/
-├── context.js (empty shell)
+├── renderer.js (empty shell)
 ├── fbo.js (empty shell)
 ├── shaders.js (empty shell)
-├── batches-rendering.js (empty shell)
+├── batches.js (empty shell)
 ├── textures.js (empty shell)
 ├── draw.js (empty shell)
 ├── primitives.js (empty shell)
@@ -205,7 +205,7 @@ graphics/shaders/* → graphics/renderer/shaders/*
 Update `src/index.js` to import renderer from new location:
 
 ```javascript
-import * as g_webgl2Renderer from "./graphics/renderer/context.js";
+import * as g_webgl2Renderer from "./graphics/renderer/renderer.js";
 ```
 
 Remove Canvas2D renderer import. Update module initialization array.
@@ -217,8 +217,8 @@ Remove Canvas2D renderer import. Update module initialization array.
 
 ## Phase 2: Renderer Core - Context and FBO
 
-### Step 2.1: Implement context.js - Context Creation
-Move WebGL2 context creation from `renderer-webgl2.js` to `context.js`:
+### Step 2.1: Implement renderer.js - Context Creation ✅ COMPLETE
+Move WebGL2 context creation from `renderer-webgl2.js` to `renderer.js`:
 
 **Responsibilities:**
 - `testWebGL2Capability()` - Do not implement, no longer needed as we can check if initWebGL fails
@@ -230,13 +230,12 @@ Move WebGL2 context creation from `renderer-webgl2.js` to `context.js`:
 **Key functions:**
 - `export function init( api )` - Initialize all renderer modules
 - `export function initWebGL( screenData )` - Create context for screen
-- `export { isWebgl2Capable }` - Capability flag
 - `export function cleanup( screenData )` - Cleanup resources
 
 **Module initialization order:**
 1. fbo.init()
 2. shaders.init()
-3. batches-rendering.init()
+3. batches.init()
 4. textures.init()
 5. draw.init()
 6. primitives.init()
@@ -299,7 +298,7 @@ Move shader compilation logic from `renderer-webgl2.js` to `shaders.js`:
 - `export function createShaderProgram( screenData, vertexSrc, fragSrc )`
 - `export function setupDisplayShader( screenData )`
 
-### Step 3.2: Implement batches-rendering.js (Part 1 - Batches)
+### Step 3.2: Implement batches.js (Part 1 - Batches)
 Move batch creation and management from `renderer-webgl2.js`:
 
 **Batch creation:**
@@ -315,7 +314,7 @@ Move batch creation and management from `renderer-webgl2.js`:
 - `export function createBatch( screenData, type, vertSrc, fragSrc )`
 - `export function prepareBatch( screenData, batchType, itemCount )`
 
-### Step 3.3: Implement batches-rendering.js (Part 2 - Rendering)
+### Step 3.3: Implement batches.js (Part 2 - Rendering)
 Move rendering logic from `renderer-webgl2.js`:
 
 **Rendering:**
@@ -425,7 +424,7 @@ Move pixel readback from `renderer-webgl2.js` to `readback.js`:
 - `export function readPixels( screenData, x, y, width, height )`
 - `export function readPixelsAsync( screenData, x, y, width, height )`
 
-**Note:** `readback.js` imports `flushBatches` from `batches-rendering.js` - this works because of lazy initialization pattern.
+**Note:** `readback.js` imports `flushBatches` from `batches.js` - this works because of lazy initialization pattern.
 
 ### Step 4.6: Test Low-Level Drawing, Images, and Pens
 - Test `drawPixelUnsafe()` - draw single pixels
@@ -435,7 +434,7 @@ Move pixel readback from `renderer-webgl2.js` to `readback.js`:
 - Test `drawImage()` command - draw images with transformations
 - Test renderer's low-level `drawImage()` function
 - Test `readPixel()` / `readPixels()` - verify readback works
-- Verify renderer exports unified API through `context.js`
+- Verify renderer exports unified API through `renderer.js`
 
 ## Phase 5: High-Level Primitives
 
@@ -574,18 +573,18 @@ Refactor `graphics-api.js` to be a thin input parsing layer:
 - Build optimized closures that close over screen data
 
 ### Step 7.2: Update Renderer Exports
-Ensure `renderer/context.js` exports all necessary functions:
+Ensure `renderer/renderer.js` exports all necessary functions:
 
 **Exports needed:**
-- `POINTS_BATCH`, `IMAGE_BATCH` (from batches-rendering)
-- `prepareBatch()` (from batches-rendering)
+- `POINTS_BATCH`, `IMAGE_BATCH` (from batches)
+- `prepareBatch()` (from batches)
 - `drawPixelUnsafe()` (from draw)
 - `drawImage()` (from draw)
 - `drawLine()`, `drawArc()`, `drawBezier()` (from primitives)
 - `drawRect()`, `drawCircle()`, `drawEllipse()` (from shapes)
 - `readPixel()`, `readPixels()` (from readback)
 - `getWebGL2Texture()`, `deleteWebGL2Texture()` (from textures)
-- `setImageDirty()`, `cls()`, `blendModeChanged()` (from context)
+- `setImageDirty()`, `cls()`, `blendModeChanged()` (from renderer)
 
 ### Step 7.3: Test Graphics API
 - Test all graphics commands (`pset`, `line`, `rect`, `circle`, etc.)
