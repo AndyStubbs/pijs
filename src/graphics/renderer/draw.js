@@ -8,9 +8,7 @@
 
 "use strict";
 
-// TODO: Import required modules
-// import * as batches from "./batches-rendering.js";
-// import * as textures from "./textures.js";
+import * as g_batches from "./batches.js";
 
 
 /***************************************************************************************************
@@ -25,7 +23,7 @@
  */
 export function init() {
 
-	// TODO: Initialize draw module
+	// Nothing to initialize yet
 }
 
 /**
@@ -34,12 +32,24 @@ export function init() {
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
- * @param {number} color - Color value
+ * @param {Object} color - Color object with r/g/b/a components (0-255)
  * @returns {void}
  */
 export function drawPixelUnsafe( screenData, x, y, color ) {
 
-	// TODO: Implement drawPixelUnsafe
+	// Add directly to point batch
+	const batch = screenData.batches[ g_batches.POINTS_BATCH ];
+	const idx = batch.count * batch.vertexComps;
+	const cidx = batch.count * batch.colorComps;
+	
+	batch.vertices[ idx     ] = x;
+	batch.vertices[ idx + 1 ] = y;
+	batch.colors[ cidx     ] = color.r;
+	batch.colors[ cidx + 1 ] = color.g;
+	batch.colors[ cidx + 2 ] = color.b;
+	batch.colors[ cidx + 3 ] = color.a;
+
+	batch.count++;
 }
 
 /**
