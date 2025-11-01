@@ -337,43 +337,9 @@ Move rendering logic from `renderer-webgl2.js`:
 - Test display to canvas
 - Verify batches render correctly
 
-## Phase 4: Textures and Low-Level Drawing
+## Phase 4: Low-Level Drawing and Core APIs
 
-### Step 4.1: Implement textures.js
-Move texture management from `renderer-webgl2.js` to `textures.js`:
-
-**Responsibilities:**
-- Texture cache (nested Map: Image → GL context → Texture)
-- `getWebGL2Texture()` - Get or create texture for image
-- `deleteWebGL2Texture()` - Delete texture and free memory
-
-**Key functions:**
-- `export function init( api )` - Initialize module
-- `export function getWebGL2Texture( screenData, img )`
-- `export function deleteWebGL2Texture( img )`
-
-### Step 4.2: Implement images.js
-Implement image loading and management module:
-
-**Responsibilities:**
-- Image loading from URL or provided Image/Canvas element
-- Image storage and name management
-- `loadImage()` command - Load images
-- `drawImage()` command - User-facing drawImage command
-
-**Key functions:**
-- `export function init( api )` - Initialize module, register commands
-- `function loadImage( options )` - Load image from URL or element
-- `function drawImage( options )` - User-facing drawImage command
-
-**Implementation notes:**
-- Use `renderer.getWebGL2Texture()` for texture management
-- Use `renderer.drawImage()` for actual drawing
-- Store images in internal map by name
-- Support Image elements, Canvas elements, and URL strings
-- Handle onLoad and onError callbacks
-
-### Step 4.3: Implement draw.js - Low-Level Drawing
+### Step 4.1: Implement draw.js - Low-Level Drawing
 Move low-level drawing functions from `renderer-webgl2.js`:
 
 **Responsibilities:**
@@ -383,11 +349,10 @@ Move low-level drawing functions from `renderer-webgl2.js`:
 **Key functions:**
 - `export function init( api )` - Initialize module
 - `export function drawPixelUnsafe( screenData, x, y, color )`
-- `export function drawImage( screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY )`
 
-**Note:** The renderer's `drawImage()` is the low-level function called by `images.js`'s `drawImage()` command.
+**Note:** `drawImage()` will be added later when implementing image support.
 
-### Step 4.4: Implement pens.js
+### Step 4.2: Implement pens.js
 Implement pen and blend mode system (essential for all primitives):
 
 **Responsibilities:**
@@ -408,7 +373,78 @@ Implement pen and blend mode system (essential for all primitives):
 - WebGL2 only - no Canvas2D blend paths
 - `penFn` is used by all primitive drawing operations
 
-### Step 4.5: Implement readback.js
+### Step 4.3: Implement graphics-api.js - Basic Commands
+Implement basic graphics API wrapper for input parsing and validation:
+
+**Responsibilities:**
+- Input parsing and validation
+- Object literal handling
+- Parameter extraction
+- Call renderer low-level functions
+
+**Commands to implement:**
+- `pset` - calls `renderer.drawPixelUnsafe()` via `penFn`
+
+**Key changes:**
+- Thin wrapper layer that calls renderer functions
+- Build optimized closures that close over screen data
+- Handle object literal syntax: `pset({ x: 10, y: 20, c: 1 })`
+
+### Step 4.4: Test Basic Drawing
+- Test `drawPixelUnsafe()` - draw single pixels
+- Test color system - verify palette and color parsing works
+- Test pen system - verify `setPen()` builds correct `penFn`
+- Test `pset()` command - verify it works with various inputs
+- Verify renderer exports unified API through `renderer.js`
+
+## Phase 5: Textures and Images
+
+### Step 5.1: Implement textures.js
+Move texture management from `renderer-webgl2.js` to `textures.js`:
+
+**Responsibilities:**
+- Texture cache (nested Map: Image → GL context → Texture)
+- `getWebGL2Texture()` - Get or create texture for image
+- `deleteWebGL2Texture()` - Delete texture and free memory
+
+**Key functions:**
+- `export function init( api )` - Initialize module
+- `export function getWebGL2Texture( screenData, img )`
+- `export function deleteWebGL2Texture( img )`
+
+### Step 5.2: Extend draw.js - Add drawImage()
+Add image drawing functionality to `draw.js`:
+
+**Responsibilities:**
+- `drawImage()` - Draw image as textured quad (rotation, scaling, anchor)
+
+**Key functions:**
+- `export function drawImage( screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY )`
+
+**Note:** The renderer's `drawImage()` is the low-level function called by `images.js`'s `drawImage()` command.
+
+### Step 5.3: Implement images.js
+Implement image loading and management module:
+
+**Responsibilities:**
+- Image loading from URL or provided Image/Canvas element
+- Image storage and name management
+- `loadImage()` command - Load images
+- `drawImage()` command - User-facing drawImage command
+
+**Key functions:**
+- `export function init( api )` - Initialize module, register commands
+- `function loadImage( options )` - Load image from URL or element
+- `function drawImage( options )` - User-facing drawImage command
+
+**Implementation notes:**
+- Use `renderer.getWebGL2Texture()` for texture management
+- Use `renderer.drawImage()` for actual drawing
+- Store images in internal map by name
+- Support Image elements, Canvas elements, and URL strings
+- Handle onLoad and onError callbacks
+
+### Step 5.4: Implement readback.js
 Move pixel readback from `renderer-webgl2.js` to `readback.js`:
 
 **Responsibilities:**
@@ -426,21 +462,17 @@ Move pixel readback from `renderer-webgl2.js` to `readback.js`:
 
 **Note:** `readback.js` imports `flushBatches` from `batches.js` - this works because of lazy initialization pattern.
 
-### Step 4.6: Test Low-Level Drawing, Images, and Pens
-- Test `drawPixelUnsafe()` - draw single pixels
-- Test color system - verify palette and color parsing works
-- Test pen system - verify `setPen()` builds correct `penFn`
+### Step 5.5: Test Images and Readback
 - Test image loading (`loadImage()` command)
 - Test `drawImage()` command - draw images with transformations
 - Test renderer's low-level `drawImage()` function
 - Test `readPixel()` / `readPixels()` - verify readback works
-- Verify renderer exports unified API through `renderer.js`
 
-## Phase 5: High-Level Primitives
+## Phase 6: High-Level Primitives
 
-**Note:** Primitives use `penFn` from `pens.js` (implemented in Phase 4, Step 4.4).
+**Note:** Primitives use `penFn` from `pens.js` (implemented in Phase 4, Step 4.2).
 
-### Step 5.1: Implement primitives.js - Line Drawing
+### Step 6.1: Implement primitives.js - Line Drawing
 Move line drawing from `graphics-primitives.js` to `renderer/primitives.js`:
 
 **Responsibilities:**
@@ -457,7 +489,7 @@ Move line drawing from `graphics-primitives.js` to `renderer/primitives.js`:
 - Call `penFn` for each pixel (which calls `drawPixelUnsafe`)
 - Estimate batch size based on line length
 
-### Step 5.2: Implement primitives.js - Arc Drawing
+### Step 6.2: Implement primitives.js - Arc Drawing
 Move arc drawing from `graphics-primitives.js`:
 
 **Responsibilities:**
@@ -472,7 +504,7 @@ Move arc drawing from `graphics-primitives.js`:
 - Filter pixels by angle range
 - Estimate batch size based on arc circumference
 
-### Step 5.3: Implement primitives.js - Bezier Drawing
+### Step 6.3: Implement primitives.js - Bezier Drawing
 Move bezier drawing from `graphics-primitives.js`:
 
 **Responsibilities:**
@@ -486,15 +518,15 @@ Move bezier drawing from `graphics-primitives.js`:
 - Adaptive tessellation based on curve length
 - Estimate batch size based on control polygon length
 
-### Step 5.4: Test Primitives
+### Step 6.4: Test Primitives
 - Test `drawLine()` - various angles and lengths
 - Test `drawArc()` - different angles and radii
 - Test `drawBezier()` - various curve shapes
 - Verify all primitives render correctly
 
-## Phase 6: High-Level Shapes
+## Phase 7: High-Level Shapes
 
-### Step 6.1: Implement shapes.js - Rectangle Drawing
+### Step 7.1: Implement shapes.js - Rectangle Drawing
 Move rectangle drawing from `graphics-shapes.js` to `renderer/shapes.js`:
 
 **Responsibilities:**
@@ -510,7 +542,7 @@ Move rectangle drawing from `graphics-shapes.js` to `renderer/shapes.js`:
 - Handle both outline and filled modes
 - Use `blendFn` for filled areas, `penFn` for outline
 
-### Step 6.2: Implement shapes.js - Circle Drawing
+### Step 7.2: Implement shapes.js - Circle Drawing
 Move circle drawing from `graphics-shapes.js`:
 
 **Responsibilities:**
@@ -525,7 +557,7 @@ Move circle drawing from `graphics-shapes.js`:
 - Use midpoint circle algorithm
 - Estimate batch size based on circumference (outline) or area (filled)
 
-### Step 6.3: Implement shapes.js - Ellipse Drawing
+### Step 7.3: Implement shapes.js - Ellipse Drawing
 Move ellipse drawing from `graphics-shapes.js`:
 
 **Responsibilities:**
@@ -540,25 +572,18 @@ Move ellipse drawing from `graphics-shapes.js`:
 - Use midpoint ellipse algorithm
 - Estimate batch size based on perimeter (outline) or area (filled)
 
-### Step 6.4: Test Shapes
+### Step 7.4: Test Shapes
 - Test `drawRect()` - outline and filled modes
 - Test `drawCircle()` - outline and filled modes
 - Test `drawEllipse()` - outline and filled modes
 - Verify all shapes render correctly with different pen sizes
 
-## Phase 7: Graphics API Layer
+## Phase 8: Complete Graphics API
 
-### Step 7.1: Simplify graphics-api.js
-Refactor `graphics-api.js` to be a thin input parsing layer:
-
-**Responsibilities:**
-- Input parsing and validation
-- Object literal handling
-- Parameter extraction
-- Call renderer high-level functions
+### Step 8.1: Extend graphics-api.js
+Add remaining graphics commands to the API layer:
 
 **Commands to implement:**
-- `pset` - calls `renderer.drawPixelUnsafe()` via `penFn`
 - `line` - calls `renderer.drawLine()`
 - `arc` - calls `renderer.drawArc()`
 - `bezier` - calls `renderer.drawBezier()`
@@ -566,13 +591,7 @@ Refactor `graphics-api.js` to be a thin input parsing layer:
 - `circle` - calls `renderer.drawCircle()`
 - `ellipse` - calls `renderer.drawEllipse()`
 
-**Key changes:**
-- Remove all rasterization algorithms (moved to renderer)
-- Keep only input parsing logic from `graphics-primitives.js` and `graphics-shapes.js`
-- Call renderer functions directly
-- Build optimized closures that close over screen data
-
-### Step 7.2: Update Renderer Exports
+### Step 8.2: Update Renderer Exports
 Ensure `renderer/renderer.js` exports all necessary functions:
 
 **Exports needed:**
@@ -586,15 +605,15 @@ Ensure `renderer/renderer.js` exports all necessary functions:
 - `getWebGL2Texture()`, `deleteWebGL2Texture()` (from textures)
 - `setImageDirty()`, `cls()`, `blendModeChanged()` (from renderer)
 
-### Step 7.3: Test Graphics API
+### Step 8.3: Test Complete Graphics API
 - Test all graphics commands (`pset`, `line`, `rect`, `circle`, etc.)
 - Verify object literal syntax works
 - Test error handling for invalid parameters
 - Verify all commands render correctly
 
-## Phase 8: Screen Manager Simplification
+## Phase 9: Screen Manager Simplification
 
-### Step 8.1: Remove Canvas2D Support from Screen Manager
+### Step 9.1: Remove Canvas2D Support from Screen Manager
 Update `core/screen-manager.js`:
 
 **Changes:**
@@ -605,73 +624,73 @@ Update `core/screen-manager.js`:
 - Simplify to only call `renderer.createContext()`
 - Remove render mode checks throughout
 
-### Step 8.2: Update Screen Data
+### Step 9.2: Update Screen Data
 Remove Canvas2D-specific screen data items:
 - Remove `renderMode` (always WebGL2)
 - Remove `useCanvas2d` flag
 - Keep `renderer` reference (points to WebGL2 renderer)
 - Remove all Canvas2D path checks
 
-### Step 8.3: Update Other Modules
+### Step 9.3: Update Other Modules
 Remove Canvas2D render mode checks from:
 - `graphics-api.js` - Remove `CANVAS2D_RENDER_MODE` checks
 - `pens.js` - Remove Canvas2D blend path (if any)
 - Any other modules that check render mode
 
-### Step 8.4: Test Screen Manager
+### Step 9.4: Test Screen Manager
 - Test screen creation (should always use WebGL2)
 - Test screen removal/cleanup
 - Test multiple screens
 - Verify no Canvas2D code paths remain
 
-## Phase 9: Update Supporting Modules
+## Phase 10: Update Supporting Modules
 
 **Note:** `pens.js` and `colors.js` were implemented earlier (Phase 2 and Phase 4) and are already WebGL2-only.
 
-### Step 9.1: Update pixels.js
+### Step 10.1: Update pixels.js
 Update pixel module for WebGL2 only:
 - Use only `renderer.readPixel()` / `renderer.readPixels()`
 - Remove Canvas2D readback path
 - Remove render mode checks
 
-### Step 9.2: Test Supporting Modules
+### Step 10.2: Test Supporting Modules
 - Test pixel readback commands
 - Verify pen/blend system still works correctly
 - Verify color system still works correctly
 - Verify image loading/drawing still works correctly
 
-## Phase 10: Testing and Validation
+## Phase 11: Testing and Validation
 
-### Step 10.1: Visual Regression Tests
+### Step 11.1: Visual Regression Tests
 - Run all visual regression tests
 - Compare against Alpha 2 output
 - Fix any rendering differences
 
-### Step 10.2: Performance Testing
+### Step 11.2: Performance Testing
 - Compare performance against Alpha 2
 - Profile hot paths (pset, line, etc.)
 - Verify batch system is working efficiently
 
-### Step 10.3: Memory Testing
+### Step 11.3: Memory Testing
 - Verify no memory leaks
 - Test batch capacity management
 - Verify texture cleanup works correctly
 
-### Step 10.4: Edge Case Testing
+### Step 11.4: Edge Case Testing
 - Test with various screen sizes
 - Test multiple screens
 - Test context lost/restored
 - Test rapid drawing operations
 
-## Phase 11: Code Cleanup and Documentation
+## Phase 12: Code Cleanup and Documentation
 
-### Step 11.1: Code Cleanup
+### Step 12.1: Code Cleanup
 - Remove all TODO comments that are addressed
 - Remove commented-out Canvas2D code
 - Ensure consistent code style
 - Verify JSDoc comments are complete
 
-### Step 11.2: Update Documentation
+### Step 12.2: Update Documentation
 - Update API documentation
 - Document new module structure
 - Document removed features (Canvas2D)
