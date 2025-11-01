@@ -186,7 +186,7 @@ src/graphics/renderer/
 
 Each file should have basic JSDoc header and `export function init() {}` stub.
 
-### Step 1.3: Move Shader Files
+### Step 1.3: Move Shader Files ✅ COMPLETE
 Move shader source files to renderer directory structure:
 
 **Files to move:**
@@ -201,7 +201,7 @@ graphics/shaders/* → graphics/renderer/shaders/*
 
 **Note:** Shaders will be imported by `renderer/shaders.js` using paths like `./shaders/point.vert`. Ensure build system can handle these paths.
 
-### Step 1.4: Update Main Index
+### Step 1.4: Update Main Index ✅ COMPLETE
 Update `src/index.js` to import renderer from new location:
 
 ```javascript

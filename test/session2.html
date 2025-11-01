@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pi.js Session Test</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 20px;
+			font-family: Arial, sans-serif;
+			background: #222;
+		}
+		.title {
+			color: white;
+			padding: 5px;
+		}
+		.container {
+			width: 640px;
+			height: 360px;
+			background-color: rgba(0, 0, 0, 0);
+		}
+		.box {
+			display: flex;
+			flex-direction: row;
+			justify-content: space-around;
+		}
+		.stats {
+			color: white;
+			width: 120px;
+			height: 360px;
+			white-space: pre;
+		}
+	</style>
+</head>
+	<body>
+		<div class="outer">
+			<div class="title">WebGL2 Mode (if available)</div>
+			<div class="box">
+				<div id="container1" class="container"></div>
+				<div id="stats1" class="stats">Stats 1</div>
+			</div>
+		</div>
+		<div class="outer">
+			<div class="title">Canvas2D Mode (forced)</div>
+			<div class="box">
+				<div id="container2" class="container"></div>
+				<div id="stats2" class="stats">Stats 2</div>
+			</div>
+		</div>
+		
+	<script src="../build/pi.js"></script>
+	<!--script src="../releases/pi-2.0.0-alpha.1/pi.js"></script-->
+	<script>
+		console.log( "Pi.js Version", $.version );
+		
+		// Create a screen (will use WebGL2 if available)
+		const screen = $.screen( { "aspect": "90x90", "container": "container1" } );
+
+		const stats1 = document.getElementById( "stats1" );
+		stats1.innerHTML = `Canvas Size: ${screen.canvas().width}x${screen.canvas().height}\n` +
+			`Screen Size: ${screen.width()}x${screen.height()}\n` +
+			`Acual Size: ${screen.canvas().offsetWidth}x${screen.canvas().offsetHeight}\n`;
+		
+
+
+	</script>
+</body>
+</html>
+

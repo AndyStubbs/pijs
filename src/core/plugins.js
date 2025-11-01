@@ -10,9 +10,12 @@
 
 // Import modules directly
 import * as g_commands from "./commands.js";
+import * as g_screenManager from "./screen-manager.js";
+import * as g_utils from "./utils.js";
 
 const m_plugins = [];
-let m_api;
+let m_api = null;
+let m_isInitialized = false;
 
 
 /***************************************************************************************************
@@ -22,10 +25,11 @@ let m_api;
 
 export function init( api ) {
 	m_api = api;
+	m_isInitialized = true;
 
 	// Register external API commands
 	g_commands.addCommand(
-		"registerPlugin", registerPlugin, false, [ "name", "version", "description", "init"]
+		"registerPlugin", registerPlugin, false, [ "name", "version", "description", "init" ]
 	);
 	g_commands.addCommand(
 		"getPlugins", getPlugins, false, []
@@ -94,7 +98,11 @@ function registerPlugin( options ) {
 	};
 
 	m_plugins.push( pluginInfo );
-	initializePlugin( pluginInfo );
+
+	// If system is initialized, process immediately
+	if( m_isInitialized ) {
+		initializePlugin( pluginInfo );
+	}
 }
 
 /**
@@ -127,9 +135,20 @@ function initializePlugin( pluginInfo ) {
 		return;
 	}
 
+	// Create plugin API
+	const pluginApi = {
+		"addCommand": g_commands.addCommand,
+		"addScreenDataItem": g_screenManager.addScreenDataItem,
+		"addScreenDataItemGetter": g_screenManager.addScreenDataItemGetter,
+		"addScreenInitFunction": g_screenManager.addScreenInitFunction,
+		"addScreenCleanupFunction": g_screenManager.addScreenCleanupFunction,
+		"getApi": () => m_api,
+		"utils": g_utils
+	};
+
 	// Initialize plugin
 	try {
-		pluginInfo.config.init( m_api, m_mods );
+		pluginInfo.config.init( pluginApi );
 		pluginInfo.initialized = true;
 	} catch( error ) {
 		const pluginError = new Error(
@@ -140,3 +159,4 @@ function initializePlugin( pluginInfo ) {
 		throw pluginError;
 	}
 }
+

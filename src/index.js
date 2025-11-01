@@ -17,8 +17,8 @@ import * as g_commands from "./core/commands.js";
 import * as g_screenManager from "./core/screen-manager.js";
 import * as g_plugins from "./core/plugins.js";
 
-// Graphics (will be added in later phases)
-// TODO: Import renderer modules when implemented
+// Graphics
+import * as g_webgl2Renderer from "./graphics/renderer/context.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -30,7 +30,7 @@ const api = {
 
 // Store modules in array for ordered initialization
 const mods = [
-	g_utils, g_commands, g_screenManager, g_plugins
+	g_utils, g_commands, g_screenManager, g_plugins, g_webgl2Renderer
 ];
 
 // Initialize the modules
