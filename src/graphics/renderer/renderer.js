@@ -13,9 +13,9 @@ import * as g_screenManager from "../../core/screen-manager";
 
 // Import renderer modules
 import * as fbo from "./fbo.js";
+import * as shaders from "./shaders.js";
 
 // TODO: Import renderer modules when implemented
-// import * as shaders from "./shaders.js";
 // import * as batches from "./batches.js";
 // import * as textures from "./textures.js";
 // import * as draw from "./draw.js";
@@ -53,7 +53,7 @@ export function init( api ) {
 
 	// Initialize renderer modules in order
 	fbo.init();
-	// TODO: 2. shaders.init()
+	shaders.init();
 	// TODO: 3. batches.init()
 	// TODO: 4. textures.init()
 	// TODO: 5. draw.init()
@@ -109,8 +109,8 @@ export function createContext( screenData ) {
 	// 	screenData, imageVertSrc, imageFragSrc, batches.IMAGE_BATCH 
 	// );
 	
-	// TODO: Setup display shader (will be in shaders.js)
-	// shaders.setupDisplayShader( screenData );
+	// Setup display shader
+	shaders.setupDisplayShader( screenData );
 
 	// Enable WebGL debugging extensions
 	if( typeof window !== "undefined" && window.location.search.includes( "webgl-debug" ) ) {
@@ -177,11 +177,11 @@ export function cleanup( screenData ) {
 	screenData.batches = {};
 	screenData.batchInfo = {};
 	
-	// TODO: Cleanup display shader (will be in shaders.js)
-	// if( screenData.displayProgram ) {
-	// 	gl.deleteProgram( screenData.displayProgram );
-	// 	gl.deleteBuffer( screenData.displayPositionBuffer );
-	// }
+	// Cleanup display shader
+	if( screenData.displayProgram ) {
+		gl.deleteProgram( screenData.displayProgram );
+		gl.deleteBuffer( screenData.displayPositionBuffer );
+	}
 	
 	// Cleanup FBO
 	fbo.cleanup( screenData );
