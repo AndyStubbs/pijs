@@ -55,14 +55,14 @@
 		<script src="../releases/pi-2.0.0-alpha.2/pi.js"></script>
 		<script src="../build/pi.js"></script>
 	-->
-	<script src="../build/pi.js"></script>
-	
+	<script src="../releases/pi-2.0.0-alpha.2/pi.js"></script>
+		
 	<script>
 		console.log( "Pi.js Version", $.version );
 		
 		// Create a screen (will use WebGL2 if available)
 		const screen = $.screen(
-			{ "aspect": "90x90", "container": "container1", "useCanvas2d": true }
+			{ "aspect": "390x390", "container": "container1", "useCanvas2d": true }
 		);
 
 		const stats1 = document.getElementById( "stats1" );
@@ -82,9 +82,9 @@
 
 		let x = 6;
 		let y = 18;
-		for( let r = 1; r < 25; r += 1 ) {
+		for( let r = 1; r < 35; r += 1 ) {
 			$.setColor( 2 );
-			$.setPen( "square", r );
+			$.setPen( "circle", r );
 			$.pset( x, y );
 			$.setPen( "pixel", 1 );
 			$.setColor( 15 );
