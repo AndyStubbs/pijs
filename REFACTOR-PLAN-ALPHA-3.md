@@ -408,7 +408,110 @@ Implement basic graphics API wrapper for input parsing and validation:
 - Test `pset()` command - verify it works with various pen sizes/shapes
 - Verify renderer exports unified API through `renderer.js`
 
+## Phase 4A: Complete pset - Geometry Batch System
 
+### Step 4A.1: Add Geometry Batch Type to batches.js
+Add new batch type for drawing filled geometry (rectangles, circles):
+
+**Changes to `batches.js`:**
+- Add `GEOMETRY_BATCH = 2` constant
+- Update `BATCH_TYPES` array to include "GEOMETRY"
+- Create geometry batch in `createBatch()` with appropriate shader setup
+- Geometry batch uses `gl.TRIANGLES` mode instead of `gl.POINTS`
+- Add vertex/index buffer setup for triangles
+- Implement `drawFilledRect()` and `drawFilledCircle()` batch appending functions
+
+**Key functions:**
+- `export const GEOMETRY_BATCH = 2`
+- Modify `createBatch()` to handle `GEOMETRY_BATCH` type
+- Add geometry batch to `createContext()` in renderer.js
+- Create geometry vertex/index buffers for triangle rendering
+
+**Implementation notes:**
+- Geometry batch uses triangle primitives for filled shapes
+- Each filled rectangle = 2 triangles (6 vertices)
+- Each filled circle = tessellated triangles (adaptive based on radius)
+- Shares point shader or creates dedicated geometry shader
+
+### Step 4A.2: Implement drawFilledRect in shapes.js
+Implement `drawFilledRectUnsafe()` function in `shapes.js`:
+
+**Responsibilities:**
+- Generate triangle vertices for filled rectangle
+- Append vertices to `GEOMETRY_BATCH`
+- Handle color per-vertex
+
+**Key functions:**
+- `export function drawFilledRectUnsafe( screenData, x, y, width, height, color )`
+  - Generates 6 vertices (2 triangles) for rectangle
+  - Adds vertices to geometry batch with uniform color
+  - No bounds checking (GPU clipping)
+
+**Implementation notes:**
+- Rectangle: [(x,y), (x+width,y), (x,y+height)], [(x+width,y), (x+width,y+height), (x,y+height)]
+- Each vertex has 2D position and 4D color
+- Uses `prepareBatch()` to ensure capacity
+
+### Step 4A.3: Implement drawFilledCircle in shapes.js
+Implement `drawFilledCircleUnsafe()` function in `shapes.js`:
+
+**Responsibilities:**
+- Generate triangle vertices for filled circle
+- Tessellate circle into triangles
+- Append vertices to `GEOMETRY_BATCH`
+
+**Key functions:**
+- `export function drawFilledCircleUnsafe( screenData, cx, cy, radius, color )`
+  - Center vertex + ring vertices
+  - Adaptive tessellation (more segments for larger radius)
+  - Triangle fan or triangle strip
+
+**Implementation notes:**
+- Use center vertex + ring of vertices around circumference
+- Calculate vertex count based on radius
+- Generate triangle indices for circle tessellation
+- Reuse center vertex for all triangles
+
+### Step 4A.4: Export Functions from renderer.js
+Add exports to `renderer.js` for new functions:
+
+**Functions to export:**
+- `drawFilledRectUnsafe` from `shapes.js`
+- `drawFilledCircleUnsafe` from `shapes.js`
+- `GEOMETRY_BATCH` constant from `batches.js`
+
+**Implementation notes:**
+- Add `export { drawFilledRectUnsafe, drawFilledCircleUnsafe }` from shapes.js
+- Add `export { GEOMETRY_BATCH }` from batches.js
+- Ensure lazy initialization doesn't break circular imports
+
+### Step 4A.5: Wire Up graphics-api.js
+Update `graphics-api.js` to use new renderer functions:
+
+**Changes:**
+- Replace stub `s_drawFilledRectUnsafe` with actual `g_renderer.drawFilledRectUnsafe`
+- Replace stub `s_drawFilledCircleUnsafe` with actual `g_renderer.drawFilledCircleUnsafe`
+- Update `s_psetDrawFn` for square pen to call `drawFilledRectUnsafe`
+- Update `s_psetDrawFn` for circle pen to call `drawFilledCircleUnsafe`
+- Remove TODOs and placeholder implementations
+
+**Key changes:**
+- Square pen: `drawFilledRectUnsafe( screenData, x - offset, y - offset, size, size, color )`
+- Circle pen: `drawFilledCircleUnsafe( screenData, x, y, size, color )`
+- Cross pen (size 2): Use multiple `drawPixelUnsafe` calls
+
+### Step 4A.6: Test Complete pset Implementation
+Test full `pset` functionality with all pen types:
+
+**Test Cases:**
+- `pset()` with pixel pen - verify single pixel renders correctly
+- `pset()` with square pen - verify filled rectangle renders correctly
+- `pset()` with circle pen size 2 - verify cross renders correctly
+- `pset()` with circle pen size 5 - verify filled circle renders correctly
+- `pset()` with large circle pen - verify tessellation is adequate
+- Test with different colors and blend modes
+- Verify batch capacity management works correctly
+- Test rendering with GPU clipping (draw off-screen)
 
 ## Phase 5: Textures and Images
 
