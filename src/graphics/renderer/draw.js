@@ -53,6 +53,25 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
 }
 
 /**
+ * Fast path for single pixel write with batch preparation
+ * Used when you need to ensure batch capacity before drawing
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {Object} color - Color object with r/g/b/a components (0-255)
+ * @returns {void}
+ */
+export function drawPixelUnsafeWithPrepare( screenData, x, y, color ) {
+
+	// Prepare batch for 1 vertex
+	g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, 1 );
+
+	// Draw pixel
+	drawPixelUnsafe( screenData, x, y, color );
+}
+
+/**
  * Draw image as textured quad with optional transform
  * 
  * @param {Object} screenData - Screen data object

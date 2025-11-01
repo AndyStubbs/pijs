@@ -410,7 +410,7 @@ Implement basic graphics API wrapper for input parsing and validation:
 
 ## Phase 4A: Complete pset - Geometry Batch System
 
-### Step 4A.1: Add Geometry Batch Type to batches.js
+### Step 4A.1: Add Geometry Batch Type to batches.js ✅ COMPLETE
 Add new batch type for drawing filled geometry (rectangles, circles):
 
 **Changes to `batches.js`:**
@@ -433,7 +433,7 @@ Add new batch type for drawing filled geometry (rectangles, circles):
 - Each filled circle = tessellated triangles (adaptive based on radius)
 - Shares point shader or creates dedicated geometry shader
 
-### Step 4A.2: Implement drawFilledRect in shapes.js
+### Step 4A.2: Implement drawFilledRect in shapes.js ✅ COMPLETE
 Implement `drawFilledRectUnsafe()` function in `shapes.js`:
 
 **Responsibilities:**
@@ -452,7 +452,7 @@ Implement `drawFilledRectUnsafe()` function in `shapes.js`:
 - Each vertex has 2D position and 4D color
 - Uses `prepareBatch()` to ensure capacity
 
-### Step 4A.3: Implement drawFilledCircle in shapes.js
+### Step 4A.3: Implement drawFilledCircle in shapes.js ✅ COMPLETE
 Implement `drawFilledCircleUnsafe()` function in `shapes.js`:
 
 **Responsibilities:**
@@ -472,7 +472,7 @@ Implement `drawFilledCircleUnsafe()` function in `shapes.js`:
 - Generate triangle indices for circle tessellation
 - Reuse center vertex for all triangles
 
-### Step 4A.4: Export Functions from renderer.js
+### Step 4A.4: Export Functions from renderer.js ✅ COMPLETE
 Add exports to `renderer.js` for new functions:
 
 **Functions to export:**
@@ -485,7 +485,7 @@ Add exports to `renderer.js` for new functions:
 - Add `export { GEOMETRY_BATCH }` from batches.js
 - Ensure lazy initialization doesn't break circular imports
 
-### Step 4A.5: Wire Up graphics-api.js
+### Step 4A.5: Wire Up graphics-api.js ✅ COMPLETE
 Update `graphics-api.js` to use new renderer functions:
 
 **Changes:**

@@ -18,10 +18,12 @@ import * as g_shaders from "./shaders.js";
 import * as g_batches from "./batches.js";
 import * as g_draw from "./draw.js";
 
+// Import shapes module for geometry drawing
+import * as g_shapes from "./shapes.js";
+
 // TODO: Import renderer modules when implemented
 // import * as textures from "./textures.js";
 // import * as primitives from "./primitives.js";
-// import * as shapes from "./shapes.js";
 // import * as readback from "./readback.js";
 
 
@@ -33,9 +35,11 @@ import * as g_draw from "./draw.js";
 // Re-export batch constants
 export { POINTS_BATCH } from "./batches.js";
 export { IMAGE_BATCH } from "./batches.js";
+export { GEOMETRY_BATCH } from "./batches.js";
 
 // Re-export drawing functions
 export { drawPixelUnsafe } from "./draw.js";
+export { drawFilledRectUnsafe, drawFilledCircleUnsafe } from "./shapes.js";
 
 // Re-export batch management
 export { prepareBatch } from "./batches.js";
@@ -77,9 +81,9 @@ export function init( api ) {
 	g_shaders.init();
 	g_batches.init();
 	g_draw.init();
+	g_shapes.init();
 	// TODO: 4. textures.init()
 	// TODO: 6. primitives.init()
-	// TODO: 7. shapes.init()
 	// TODO: 8. readback.init()
 }
 
@@ -128,6 +132,11 @@ export function createContext( screenData ) {
 	// Create the images batch
 	screenData.batches[ g_batches.IMAGE_BATCH ] = g_batches.createBatch(
 		screenData, g_batches.IMAGE_BATCH
+	);
+
+	// Create the geometry batch
+	screenData.batches[ g_batches.GEOMETRY_BATCH ] = g_batches.createBatch(
+		screenData, g_batches.GEOMETRY_BATCH
 	);
 	
 	// Setup display shader

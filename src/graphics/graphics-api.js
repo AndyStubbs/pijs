@@ -50,15 +50,14 @@ export function rebuildApi( s_screenData ) {
 	}
 
 	const s_drawPixelUnsafe = g_renderer.drawPixelUnsafe;
-
-	// TODO: implement other draw commands on the webgl2 renderer
-	const s_drawFilledRectUnsafe = () => {};
-	const s_drawFilledCircleUnsafe = () => {};
+	const s_drawFilledRectUnsafe = g_renderer.drawFilledRectUnsafe;
+	const s_drawFilledCircleUnsafe = g_renderer.drawFilledCircleUnsafe;
 
 	const s_setImageDirty = g_renderer.setImageDirty;
 	const s_prepareBatch = g_renderer.prepareBatch;
 	const s_getInt = g_utils.getInt;
 	const s_color = s_screenData.color;
+	const s_pointsBatch = g_renderer.POINTS_BATCH;
 
 	// Get pen configuration
 	const s_penConfig = s_screenData.pens;
@@ -71,7 +70,10 @@ export function rebuildApi( s_screenData ) {
 	if( s_penType === g_pens.PEN_PIXEL ) {
 
 		// Pixel pen - draw single pixel
-		s_psetDrawFn = ( x, y, color ) => s_drawPixelUnsafe( s_screenData, x, y, color );
+		s_psetDrawFn = ( x, y, color ) => {
+			s_prepareBatch( s_screenData, s_pointsBatch, 1 );
+			s_drawPixelUnsafe( s_screenData, x, y, color );
+		};
 	} else if( s_penType === g_pens.PEN_SQUARE ) {
 
 		// Square pen
@@ -86,8 +88,9 @@ export function rebuildApi( s_screenData ) {
 		// Circle pen
 		if( s_penSize === 2 ) {
 
-			// Special case: size 2 draws a cross
+			// Special case: size 2 draws a cross (5 pixels)
 			s_psetDrawFn = ( x, y, color ) => {
+				s_prepareBatch( s_screenData, s_pointsBatch, 5 );
 				s_drawPixelUnsafe( s_screenData, x, y, color );
 				s_drawPixelUnsafe( s_screenData, x + 1, y, color );
 				s_drawPixelUnsafe( s_screenData, x - 1, y, color );
@@ -105,11 +108,6 @@ export function rebuildApi( s_screenData ) {
 	 * PSET Command
 	 **********************************************************************************************/
 
-	// Preprocess prepares the batch for drawing
-	const s_preprocessPset = ( screenData ) => s_prepareBatch(
-		screenData, g_renderer.POINTS_BATCH, s_pixelsPerPen
-	);
-
 	const psetFn = ( x, y ) => {
 		const pX = s_getInt( x, null );
 		const pY = s_getInt( y, null );
@@ -121,8 +119,7 @@ export function rebuildApi( s_screenData ) {
 			throw error;
 		}
 
-		// Prepare batch and draw
-		s_preprocessPset( s_screenData );
+		// Draw (drawing functions handle their own batch preparation)
 		s_psetDrawFn( pX, pY, s_color );
 		s_setImageDirty( s_screenData );
 	};

@@ -56,12 +56,13 @@
 		<script src="../build/pi.js"></script>
 	-->
 	<script src="../build/pi.js"></script>
+	
 	<script>
 		console.log( "Pi.js Version", $.version );
 		
 		// Create a screen (will use WebGL2 if available)
 		const screen = $.screen(
-			{ "aspect": "90x90", "container": "container1", "useCanvas2d": true }
+			{ "aspect": "290x290", "container": "container1", "useCanvas2d": true }
 		);
 
 		const stats1 = document.getElementById( "stats1" );
@@ -70,16 +71,40 @@
 			`Acual Size: ${screen.canvas().offsetWidth}x${screen.canvas().offsetHeight}\n`;
 		
 		const startTime = Date.now();
-		$.setColor( 2 );
+		$.setColor( 15 );
+		$.pset( 0, 0 );
+		$.setColor( 7 );
+		$.pset( 1, 1 );
+		$.pset( 2, 2 );
+		$.pset( 3, 3 );
+		$.pset( 4, 4 );
 		$.pset( 5, 5 );
 
-		$.setPen( "circle", 2 );
-		for( let i = 0; i < 500; i += 1 ) {
-			$.setColor( Math.floor( Math.random() * 8 ) + 1 );
-			$.pset( Math.floor( Math.random() * 90 ), Math.floor( Math.random() * 90 ) );
+		let x = 6;
+		let y = 18;
+		for( let r = 1; r < 25; r += 1 ) {
+			$.setColor( 2 );
+			$.setPen( "circle", r );
+			$.pset( x, y );
+			$.setPen( "pixel", 1 );
+			$.setColor( 15 );
+			$.pset( x, y );
+			x += Math.floor( r * 2.5 ) + 1;
+			if( x > $.width() - r * 2 ) {
+				x = r * 2;
+				y += r * 3;
+			}
 		}
+		
+		
 
-		console.log( Date.now() - startTime );
+		
+		// for( let i = 0; i < 500; i += 1 ) {
+		// 	$.setColor( Math.floor( Math.random() * 8 ) + 1 );
+		// 	$.pset( Math.floor( Math.random() * 90 ), Math.floor( Math.random() * 90 ) );
+		// }
+
+		console.log( "Run Time: ", Date.now() - startTime );
 	</script>
 </body>
 </html>

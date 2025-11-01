@@ -30,15 +30,18 @@ import m_imageFragSrc from "./shaders/image.frag";
 
 export const POINTS_BATCH = 0;
 export const IMAGE_BATCH = 1;
+export const GEOMETRY_BATCH = 2;
 
 const MAX_POINT_BATCH_SIZE = 1_000_000;
 const DEFAULT_POINT_BATCH_SIZE = 5000;
 const MAX_IMAGE_BATCH_SIZE = 10_000;
 const DEFAULT_IMAGE_BATCH_SIZE = 50;
+const MAX_GEOMETRY_BATCH_SIZE = 100_000;
+const DEFAULT_GEOMETRY_BATCH_SIZE = 1000;
 const BATCH_CAPACITY_SHRINK_INTERVAL = 5000;
 
 // String constants to identify batch system names
-const BATCH_TYPES = [ "POINTS", "IMAGE" ];
+const BATCH_TYPES = [ "POINTS", "IMAGE", "GEOMETRY" ];
 
 // Batch prototype
 const m_batchProto = {
@@ -117,6 +120,11 @@ export function createBatch( screenData, type ) {
 	} else if( type === IMAGE_BATCH ) {
 		vertSrc = m_imageVertSrc;
 		fragSrc = m_imageFragSrc;
+	} else if( type === GEOMETRY_BATCH ) {
+
+		// Geometry uses same shaders as points (triangles, not points)
+		vertSrc = m_pointVertSrc;
+		fragSrc = m_pointFragSrc;
 	} else {
 		console.error( `createBatch: Unknown batch type ${type}` );
 		return null;
@@ -161,6 +169,11 @@ export function createBatch( screenData, type ) {
 		gl.vertexAttribPointer(
 			batch.locations.texCoord, batch.texCoordComps, gl.FLOAT, false, 0, 0
 		);
+	} else if( batch.type === GEOMETRY_BATCH ) {
+		batch.capacity = DEFAULT_GEOMETRY_BATCH_SIZE;
+		batch.minCapacity = DEFAULT_GEOMETRY_BATCH_SIZE;
+		batch.maxCapacity = MAX_GEOMETRY_BATCH_SIZE;
+		batch.mode = gl.TRIANGLES;
 	} else {
 		throw new Error( "Invalid batch type." );
 	}
