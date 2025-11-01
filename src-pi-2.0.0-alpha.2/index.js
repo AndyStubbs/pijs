@@ -11,7 +11,7 @@
 "use strict";
 
 // Core Modules
-import * as g_utils from "./core/utils";
+import * as g_utils from "./core/utils.js";
 import * as g_state from "./core/state-settings.js";
 import * as g_screenManager from "./core/screen-manager.js";
 import * as g_plugins from "./core/plugins.js";

@@ -1,5 +1,10 @@
 # Pi.js Alpha 2 - WebGL Migration Plan
 
+*** DEPRECIATED ***
+
+Alpha 2 will not be completed as is. Will stop here semi-working state for most primatives,
+but will be dropping support for canvas 2d and supporting only WebGL2 going forward.
+
 ## Overview
 
 Migrate Pi.js from 2D Canvas ImageData rendering to WebGL2 for improved performance, while 
