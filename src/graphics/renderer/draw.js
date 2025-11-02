@@ -55,7 +55,9 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
 }
 
 /**
- * Write a pixel where blending is always disabled regardless of blend mode
+ * Write a pixel where blending is always disabled regardless of blend mode. This is needed for the
+ * put command because it allows writing of 0 - fully transparent pixel even when pen is set to
+ * alpha.
  * 
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
