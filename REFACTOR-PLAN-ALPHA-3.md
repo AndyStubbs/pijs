@@ -611,23 +611,23 @@ Move pixel reading/writing commands from `graphics-pixels.js` to `graphics/pixel
 **Note:** Primitives use pen configuration from `pens.js` (implemented in Phase 4, Step 4.2).
 
 ### Step 6.1: Implement primitives.js - Line Drawing
-Move line drawing from `graphics-primitives.js` to `renderer/primitives.js`:
+Implement line drawing in `renderer/primitives.js`:
 
 **Responsibilities:**
-- `drawLine()` - Bresenham line algorithm
-- Handle pen size, batch preparation
+- `drawLine()` - Draw line using WebGL2 `gl.LINES`
+- For pen size 1: Use new `LINES_BATCH` (2 vertices per line)
+- For pen size 2+: Use `GEOMETRY_BATCH` with geometry generation
 
 **Key functions:**
 - `export function init( api )` - Initialize module
-- `export function drawLine( screenData, x1, y1, x2, y2, color, penConfig )`
-  - `penConfig` contains pen type, size, and other settings from `screenData.pens`
+- `export function drawLineUnsafe( screenData, x1, y1, x2, y2, color )`
+  - Low-level function that draws line based on pen configuration
 
 **Implementation notes:**
-- Reads pen configuration from `screenData.pens` instead of using pre-built `penFn`
-- Move `m_line()` function from `graphics-primitives.js`
-- Draws pixels using `drawPixelUnsafe()` with pen shape logic inline
-- Each pixel drawn with pen size/shape applied
-- Estimate batch size based on line length and pen size
+- Use `graphics-api.js` `rebuildApi()` to build line function
+- Size 1: Create `LINES_BATCH` batch, add 2 vertices for line segment
+- Size 2+: Generate geometry for line (rectangles or other shapes based on pen type)
+- Handles vertex data population based on pen configuration
 
 ### Step 6.2: Implement primitives.js - Arc Drawing
 Move arc drawing from `graphics-primitives.js`:

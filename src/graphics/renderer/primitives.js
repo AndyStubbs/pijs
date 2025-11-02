@@ -8,8 +8,9 @@
 
 "use strict";
 
-// TODO: Import required modules
-// import * as batches from "./batches-rendering.js";
+// Import required modules
+import * as g_batches from "./batches.js";
+import * as g_shapes from "./shapes.js";
 
 
 /***************************************************************************************************
@@ -23,25 +24,51 @@
  * @returns {void}
  */
 export function init() {
-
-	// TODO: Initialize primitives module
+	// No initialization needed
 }
 
 /**
- * Draw line using Bresenham algorithm
+ * Draw line using WebGL2 LINES or geometry based on pen size
  * 
  * @param {Object} screenData - Screen data object
  * @param {number} x1 - Start X coordinate
  * @param {number} y1 - Start Y coordinate
  * @param {number} x2 - End X coordinate
  * @param {number} y2 - End Y coordinate
- * @param {number} color - Color value
- * @param {Function} penFn - Pen function for drawing pixels
+ * @param {Object} color - Color object with r, g, b, a
  * @returns {void}
  */
-export function drawLine( screenData, x1, y1, x2, y2, color, penFn ) {
+export function drawLinePixel( screenData, x1, y1, x2, y2, color ) {
+	const batch = screenData.batches[ g_batches.LINES_BATCH ];
+	const baseIdx = batch.count;
+	const vertexBase = baseIdx * batch.vertexComps;
+	const colorBase = baseIdx * batch.colorComps;
 
-	// TODO: Implement drawLine using Bresenham algorithm
+	// Vertex 0
+	batch.vertices[ vertexBase ] = x1;
+	batch.vertices[ vertexBase + 1 ] = y1;
+	batch.colors[ colorBase ] = color.r;
+	batch.colors[ colorBase + 1 ] = color.g;
+	batch.colors[ colorBase + 2 ] = color.b;
+	batch.colors[ colorBase + 3 ] = color.a;
+
+	// Vertex 1
+	batch.vertices[ vertexBase + 2 ] = x2;
+	batch.vertices[ vertexBase + 3 ] = y2;
+	batch.colors[ colorBase + 4 ] = color.r;
+	batch.colors[ colorBase + 5 ] = color.g;
+	batch.colors[ colorBase + 6 ] = color.b;
+	batch.colors[ colorBase + 7 ] = color.a;
+
+	batch.count += 2;
+}
+
+export function drawLinePen( screenData, x1, y1, x2, y2, color, penSize, penType ) {
+
+	// TODO: Implement geometry generation for lines with pen size >= 2
+	// This will generate quads/geometry based on pen type and size
+
+	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
 }
 
 /**

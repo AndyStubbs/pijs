@@ -32,6 +32,7 @@ export const POINTS_BATCH = 0;
 export const IMAGE_BATCH = 1;
 export const GEOMETRY_BATCH = 2;
 export const POINTS_REPLACE_BATCH = 3;
+export const LINES_BATCH = 4;
 
 const MAX_POINT_BATCH_SIZE = 1_000_000;
 const DEFAULT_POINT_BATCH_SIZE = 5000;
@@ -39,10 +40,12 @@ const MAX_IMAGE_BATCH_SIZE = 10_000;
 const DEFAULT_IMAGE_BATCH_SIZE = 50;
 const MAX_GEOMETRY_BATCH_SIZE = 100_000;
 const DEFAULT_GEOMETRY_BATCH_SIZE = 1000;
+const MAX_LINES_BATCH_SIZE = 50_000;
+const DEFAULT_LINES_BATCH_SIZE = 500;
 const BATCH_CAPACITY_SHRINK_INTERVAL = 5000;
 
 // String constants to identify batch system names
-const BATCH_TYPES = [ "POINTS", "IMAGE", "GEOMETRY", "POINTS_REPLACE" ];
+const BATCH_TYPES = [ "POINTS", "IMAGE", "GEOMETRY", "POINTS_REPLACE", "LINES" ];
 
 // Batch prototype
 const m_batchProto = {
@@ -113,6 +116,7 @@ export function createBatches( screenData ) {
 	screenData.batches[ IMAGE_BATCH ] = createBatch( screenData, IMAGE_BATCH );
 	screenData.batches[ GEOMETRY_BATCH ] = createBatch( screenData, GEOMETRY_BATCH );
 	screenData.batches[ POINTS_REPLACE_BATCH ] = createBatch( screenData, POINTS_REPLACE_BATCH );
+	screenData.batches[ LINES_BATCH ] = createBatch( screenData, LINES_BATCH );
 }
 
 /**
@@ -159,6 +163,13 @@ export function createBatch( screenData, type ) {
 		batch.maxCapacity = MAX_POINT_BATCH_SIZE;
 		batch.mode = gl.POINTS;
 		batch.overrideGlobalBlend = false;
+	} else if( type === LINES_BATCH ) {
+		vertSrc = m_pointVertSrc;
+		fragSrc = m_pointFragSrc;
+		batch.capacity = DEFAULT_LINES_BATCH_SIZE;
+		batch.minCapacity = DEFAULT_LINES_BATCH_SIZE;
+		batch.maxCapacity = MAX_LINES_BATCH_SIZE;
+		batch.mode = gl.LINES;
 	} else {
 		throw `createBatch: Unknown batch type ${type}`;
 	}

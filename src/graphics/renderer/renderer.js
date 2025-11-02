@@ -23,9 +23,7 @@ import * as g_shapes from "./shapes.js";
 import * as g_geometry from "./geometry.js";
 import * as g_textures from "./textures.js";
 import * as g_readback from "./readback.js";
-
-// TODO: Import renderer modules when implemented
-// import * as primitives from "./primitives.js";
+import * as g_primitives from "./primitives.js";
 
 
 /***************************************************************************************************
@@ -34,11 +32,14 @@ import * as g_readback from "./readback.js";
 
 
 // Re-export batch constants
-export { POINTS_BATCH, IMAGE_BATCH, GEOMETRY_BATCH, POINTS_REPLACE_BATCH } from "./batches.js";
+export {
+	POINTS_BATCH, IMAGE_BATCH, GEOMETRY_BATCH, POINTS_REPLACE_BATCH, LINES_BATCH
+} from "./batches.js";
 
 // Re-export drawing functions
 export { drawPixelUnsafe, drawImage, drawPixelUnsafeReplace } from "./draw.js";
 export { drawFilledRectUnsafe, drawFilledCircleUnsafe } from "./shapes.js";
+export { drawLinePixel, drawLinePen } from "./primitives.js";
 export { drawCachedGeometry } from "./geometry.js";
 
 // Re-export batch management
@@ -91,7 +92,7 @@ export function init( api ) {
 	g_geometry.init();
 	g_textures.init();
 	g_readback.init();
-	// TODO: 6. primitives.init()
+	g_primitives.init();
 }
 
 /**
