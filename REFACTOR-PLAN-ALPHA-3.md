@@ -578,7 +578,7 @@ Move pixel readback from `renderer-webgl2.js` to `readback.js`:
 
 **Note:** `readback.js` imports `flushBatches` from `batches.js` - this works because of lazy initialization pattern.
 
-### Step 5.5: Implement pixels.js
+### Step 5.5: Implement pixels.js ✅ COMPLETE
 Move pixel reading/writing commands from `graphics-pixels.js` to `graphics/pixels.js`:
 
 **Responsibilities:**
@@ -600,7 +600,7 @@ Move pixel reading/writing commands from `graphics-pixels.js` to `graphics/pixel
 - `put()` supports `include0` option to skip transparent pixels
 - Writes directly to `m_api.put` (stable API, no command routing)
 
-### Step 5.6: Test Images and Readback
+### Step 5.6: Test Images and Readback ✅ COMPLETE
 - Test image loading (`loadImage()` command)
 - Test `drawImage()` command - draw images with transformations
 - Test renderer's low-level `drawImage()` function
@@ -779,7 +779,7 @@ Ensure `renderer/renderer.js` exports all necessary functions:
 
 ## Phase 9: Screen Manager Simplification
 
-### Step 9.1: Remove Canvas2D Support from Screen Manager
+### Step 9.1: Remove Canvas2D Support from Screen Manager ✅ COMPLETE
 Update `core/screen-manager.js`:
 
 **Changes:**
@@ -790,14 +790,14 @@ Update `core/screen-manager.js`:
 - Simplify to only call `renderer.createContext()`
 - Remove render mode checks throughout
 
-### Step 9.2: Update Screen Data
+### Step 9.2: Update Screen Data ✅ COMPLETE
 Remove Canvas2D-specific screen data items:
 - Remove `renderMode` (always WebGL2)
 - Remove `useCanvas2d` flag
 - Keep `renderer` reference (points to WebGL2 renderer)
 - Remove all Canvas2D path checks
 
-### Step 9.3: Update Other Modules
+### Step 9.3: Update Other Modules ✅ COMPLETE
 Remove Canvas2D render mode checks from:
 - `graphics-api.js` - Remove `CANVAS2D_RENDER_MODE` checks
 - `pens.js` - Already updated (GPU-only blending)
@@ -814,7 +814,7 @@ Remove Canvas2D render mode checks from:
 
 **Note:** `pens.js` and `colors.js` were implemented earlier (Phase 2 and Phase 4) and are already WebGL2-only.
 
-### Step 10.1: Update pixels.js
+### Step 10.1: Update pixels.js ✅ COMPLETE
 Update pixel module for WebGL2 only:
 - Use only `renderer.readPixel()` / `renderer.readPixels()`
 - Remove Canvas2D readback path
