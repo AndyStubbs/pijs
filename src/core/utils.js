@@ -300,6 +300,18 @@ const m_colorCheckerContext = document.createElement( "canvas" ).getContext(
 	"2d", { "willReadFrequently": true }
 );
 
+function createColor( r, g, b, a, hex ) {
+	const color = Object.create( COLOR_PROTO );
+	color.key = generateColorKey( r, g, b, a, hex );
+	color.r = r;
+	color.g = g;
+	color.b = b;
+	color.a = a;
+	color.rgba = `rgba(${r},${g},${b},${( a / 255 ).toFixed( 3 )})`;
+	color.hex = hex;
+	return color;
+}
+
 /**
  * Generates a unique 32-bit integer key for an opaque RGB color.
  * Each color component (R, G, B) is assumed to be an 8-bit integer (0-255).
@@ -401,18 +413,6 @@ export function calcColorDifference( c1, c2, w = [ 0.2, 0.68, 0.07, 0.05 ] ) {
 	const da = c1.a - c2.a;
 
 	return ( dr * dr * w[ 0 ] + dg * dg * w[ 1 ] + db * db * w[ 2 ] + da * da * w[ 3 ] );
-}
-
-function createColor( r, g, b, a, hex ) {
-	const color = Object.create( COLOR_PROTO );
-	color.key = generateColorKey( r, g, b, a, hex );
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
-	color.rgba = `rgba(${r},${g},${b},${( a / 255 ).toFixed( 3 )})`;
-	color.hex = hex;
-	return color;
 }
 
 export function setColor( colorSrc, colorDest ) {

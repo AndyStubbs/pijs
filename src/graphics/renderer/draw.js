@@ -80,16 +80,16 @@ export function drawPixelUnsafeWithPrepare( screenData, x, y, color ) {
  * @param {Image|Canvas|WebGLTexture} img - Image, Canvas, or Texture
  * @param {number} x - X position
  * @param {number} y - Y position
- * @param {number} angleRad - Rotation angle in radians
  * @param {number} anchorX - Anchor point X (0-1)
  * @param {number} anchorY - Anchor point Y (0-1)
- * @param {number} alpha - Alpha value (0-1)
+ * @param {number} color - Color value with {r, g, b, a}
  * @param {number} scaleX - Scale X factor
  * @param {number} scaleY - Scale Y factor
+ * @param {number} angleRad - Rotation angle in radians
  * @returns {void}
  */
 export function drawImage( 
-	screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY 
+	screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
 ) {
 
 	// Get or create texture
@@ -151,10 +151,10 @@ export function drawImage(
 	const batchTexCoords = batch.texCoords;
 
 	// Color with alpha
-	const r = Math.round( 255 );
-	const g = Math.round( 255 );
-	const b = Math.round( 255 );
-	const a = Math.round( alpha );
+	const r = color.r;
+	const g = color.g;
+	const b = color.b;
+	const a = color.a;
 
 	// Add two triangles (6 vertices)
 	const baseIdx = batch.count;

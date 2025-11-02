@@ -12,6 +12,9 @@ import * as g_utils from "../core/utils.js";
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "./renderer/renderer.js";
+import * as g_colors from "./colors.js";
+
+const DEFAULT_BLIT_COLOR = Object.freeze( g_utils.rgbToColor( 255, 255, 255, 255 ) );
 
 // Image storage by name
 const m_images = {};
@@ -31,6 +34,9 @@ let m_imageCount = 0;
  */
 export function init( api ) {
 	registerCommands( api );
+
+	g_screenManager.addScreenDataItem( "defaultAnchorX", 0 );
+	g_screenManager.addScreenDataItem( "defaultAnchorY", 0 );
 }
 
 /**
@@ -47,7 +53,7 @@ function registerCommands( api ) {
 	// Register screen commands
 	g_commands.addCommand(
 		"drawImage", drawImage, true,
-		[ "name", "x", "y", "angle", "anchorX", "anchorY", "alpha", "scaleX", "scaleY" ]
+		[ "image", "x", "y", "color", "anchorX", "anchorY", "scaleX", "scaleY", "angle" ]
 	);
 
 	// Special handling for blit image because it doesn't support object literal parsing
@@ -55,16 +61,18 @@ function registerCommands( api ) {
 		img,
 		x = 0,
 		y = 0,
-		angleRad = 0,
-		anchorX = 0.5,
-		anchorY = 0.5,
-		alpha = 255,
+		color = DEFAULT_BLIT_COLOR,
+		anchorX,
+		anchorY,
 		scaleX = 1,
-		scaleY = 1
+		scaleY = 1,
+		angleRad = 0
 	) => {
 		const screenData = g_screenManager.getActiveScreen( "setBlitImage" );
+		const finalAnchorX = anchorX ?? screenData.defaultAnchorX;
+		const finalAnchorY = anchorY ?? screenData.defaultAnchorY;
 		g_renderer.drawImage(
-			screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY
+			screenData, img, x, y, color, finalAnchorX, finalAnchorY, scaleX, scaleY, angleRad
 		);
 		g_renderer.setImageDirty( screenData );
 	};
@@ -75,15 +83,15 @@ function registerCommands( api ) {
 			img,
 			x = 0,
 			y = 0,
-			angleRad = 0,
-			anchorX = 0.5,
-			anchorY = 0.5,
-			alpha = 255,
+			color = DEFAULT_BLIT_COLOR,
+			anchorX = screenData.defaultAnchorX,
+			anchorY = screenData.defaultAnchorY,
 			scaleX = 1,
-			scaleY = 1
+			scaleY = 1,
+			angleRad = 0
 		) => {
 			g_renderer.drawImage(
-				screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY
+				screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
 			);
 			g_renderer.setImageDirty( screenData );
 		};
@@ -250,28 +258,28 @@ function getImage( options ) {
  * 
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Draw options
- * @param {string|Object} options.name - Image name, screen object, or Image/Canvas element
+ * @param {string|Object} options.image - Image name, screen object, or Image/Canvas element
  * @param {number} options.x - X coordinate
  * @param {number} options.y - Y coordinate
- * @param {number} [options.angle] - Rotation angle in degrees
+ * @param {number} [options.color] - Raw color input
  * @param {number} [options.anchorX] - Anchor point X (0-1)
  * @param {number} [options.anchorY] - Anchor point Y (0-1)
- * @param {number} [options.alpha] - Alpha value (0-255)
  * @param {number} [options.scaleX] - Scale X
  * @param {number} [options.scaleY] - Scale Y
+ * @param {number} [options.angle] - Rotation angle in degrees
  */
 function drawImage( screenData, options ) {
-	const name = options.name;
+	const imageRaw = options.image;
 	const x = g_utils.getInt( options.x, null );
 	const y = g_utils.getInt( options.y, null );
+	const colorRaw = options.color ?? DEFAULT_BLIT_COLOR;
+	const anchorX = g_utils.getFloat( options.anchorX, screenData.defaultAnchorX );
+	const anchorY = g_utils.getFloat( options.anchorY, screenData.defaultAnchorY );
 	const angle = g_utils.getFloat( options.angle, 0 );
-	const anchorX = g_utils.getFloat( options.anchorX, 0 );
-	const anchorY = g_utils.getFloat( options.anchorY, 0 );
-	const alpha = g_utils.getInt( options.alpha, 255 );
 	const scaleX = g_utils.getFloat( options.scaleX, 1 );
-	const scaleY = g_utils.getFloat( options.scaleY, 1 );
+	const scaleY = g_utils.getFloat( options.scaleY, 1 );	
 
-	const img = getImageFromRawInput( name, "drawImage" );
+	const img = getImageFromRawInput( imageRaw, "drawImage" );
 
 	// Validate coordinates
 	if( x === null || y === null ) {
@@ -280,12 +288,15 @@ function drawImage( screenData, options ) {
 		throw error;
 	}
 
+	// Parses the color and makes sure it's in a valid format
+	const color = g_colors.getColorValueByRawInput( screenData, colorRaw );
+
 	// Convert angle from degrees to radians
 	const angleRad = g_utils.degreesToRadian( angle );
 
 	// Draw using renderer-specific implementation
 	g_renderer.drawImage(
-		screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY
+		screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
 	);
 
 	// Mark screen as dirty
