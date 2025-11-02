@@ -51,7 +51,17 @@ function registerCommands( api ) {
 	);
 
 	// Special handling for blit image because it doesn't support object literal parsing
-	api.blitImage = ( img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY ) => {
+	api.blitImage = (
+		img,
+		x = 0,
+		y = 0,
+		angleRad = 0,
+		anchorX = 0.5,
+		anchorY = 0.5,
+		alpha = 255,
+		scaleX = 1,
+		scaleY = 1
+	) => {
 		const screenData = g_screenManager.getActiveScreen( "setBlitImage" );
 		g_renderer.drawImage(
 			screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY
@@ -62,7 +72,15 @@ function registerCommands( api ) {
 	// Add blitImage to screens when they get created
 	g_screenManager.addScreenInitFunction( ( screenData ) => {
 		screenData.api.blitImage = (
-			img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY
+			img,
+			x = 0,
+			y = 0,
+			angleRad = 0,
+			anchorX = 0.5,
+			anchorY = 0.5,
+			alpha = 255,
+			scaleX = 1,
+			scaleY = 1
 		) => {
 			g_renderer.drawImage(
 				screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY
@@ -243,39 +261,21 @@ function getImage( options ) {
  * @param {number} [options.scaleY] - Scale Y
  */
 function drawImage( screenData, options ) {
-	const {
-		name,
-		x = 0,
-		y = 0,
-		angle = 0,
-		anchorX = 0,
-		anchorY = 0,
-		alpha = 255,
-		scaleX = 1,
-		scaleY = 1
-	} = options;
+	const name = options.name;
+	const x = g_utils.getInt( options.x, null );
+	const y = g_utils.getInt( options.y, null );
+	const angle = g_utils.getFloat( options.angle, 0 );
+	const anchorX = g_utils.getFloat( options.anchorX, 0 );
+	const anchorY = g_utils.getFloat( options.anchorY, 0 );
+	const alpha = g_utils.getInt( options.alpha, 255 );
+	const scaleX = g_utils.getFloat( options.scaleX, 1 );
+	const scaleY = g_utils.getFloat( options.scaleY, 1 );
 
 	const img = getImageFromRawInput( name, "drawImage" );
 
 	// Validate coordinates
-	if( typeof x !== "number" || typeof y !== "number" || isNaN( x ) || isNaN( y ) ) {
+	if( x === null || y === null ) {
 		const error = new TypeError( "drawImage: Parameters x and y must be numbers." );
-		error.code = "INVALID_PARAMETER_TYPE";
-		throw error;
-	}
-
-	// Unified validation for all numeric parameters
-	if( typeof angle !== "number" || isNaN( angle ) ||
-		typeof anchorX !== "number" || isNaN( anchorX ) ||
-		typeof anchorY !== "number" || isNaN( anchorY ) ||
-		typeof alpha !== "number" || isNaN( alpha ) ||
-		typeof scaleX !== "number" || isNaN( scaleX ) ||
-		typeof scaleY !== "number" || isNaN( scaleY )
-	) {
-		const error = new TypeError(
-			"drawImage: Parameters (x, y, angle, anchorX, anchorY, alpha, scaleX, scaleY) " +
-			"must be numbers if provided."
-		);
 		error.code = "INVALID_PARAMETER_TYPE";
 		throw error;
 	}

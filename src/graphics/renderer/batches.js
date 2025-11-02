@@ -325,7 +325,6 @@ export function prepareBatch( screenData, batchType, itemCount, img, texture ) {
  * @returns {void}
  */
 export function flushBatches( screenData, blend = null ) {
-
 	if( blend === null ) {
 		blend = screenData.blends.blend;
 	}
@@ -419,6 +418,15 @@ export function flushBatches( screenData, blend = null ) {
  * @returns {void}
  */
 function uploadBatch( gl, batch, width, height ) {
+
+	// TODO: Consider refactoring rendering to use a temporary FBO with depth testing for each 
+	// frame. This would allow drawing all batches of the same type (e.g., all POINTS, then all 
+	// GEOMETRY, then all IMAGES) with a single useProgram call per type. The temporary FBO's 
+	// contents would then be blitted to the persistent FBO, significantly reducing frequent 
+	// useProgram calls at the cost of one additional FBO and a blit operation per frame. This 
+	// is expected to improve performance by minimizing GPU state changes.
+	// This would use a lot of extra memory and I would have to change my shaders and the # of
+	// vertex components in addition of an extre FBO and texture.  It might not be worth it.
 
 	gl.useProgram( batch.program );
 	gl.uniform2f( batch.locations.resolution, width, height );
