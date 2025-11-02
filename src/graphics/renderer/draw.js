@@ -55,8 +55,7 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
 }
 
 /**
- * Fast path for single pixel write with batch preparation
- * Used when you need to ensure batch capacity before drawing
+ * Write a pixel where blending is always disabled regardless of blend mode
  * 
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
@@ -64,13 +63,21 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
  * @param {Object} color - Color object with r/g/b/a components (0-255)
  * @returns {void}
  */
-export function drawPixelUnsafeWithPrepare( screenData, x, y, color ) {
+export function drawPixelUnsafeReplace( screenData, x, y, color ) {
 
-	// Prepare batch for 1 vertex
-	g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, 1 );
+	// Add directly to point batch
+	const batch = screenData.batches[ g_batches.POINTS_REPLACE_BATCH ];
+	const idx = batch.count * batch.vertexComps;
+	const cidx = batch.count * batch.colorComps;
+	
+	batch.vertices[ idx     ] = x;
+	batch.vertices[ idx + 1 ] = y;
+	batch.colors[ cidx     ] = color.r;
+	batch.colors[ cidx + 1 ] = color.g;
+	batch.colors[ cidx + 2 ] = color.b;
+	batch.colors[ cidx + 3 ] = color.a;
 
-	// Draw pixel
-	drawPixelUnsafe( screenData, x, y, color );
+	batch.count++;
 }
 
 /**

@@ -31,6 +31,7 @@ import m_imageFragSrc from "./shaders/image.frag";
 export const POINTS_BATCH = 0;
 export const IMAGE_BATCH = 1;
 export const GEOMETRY_BATCH = 2;
+export const POINTS_REPLACE_BATCH = 3;
 
 const MAX_POINT_BATCH_SIZE = 1_000_000;
 const DEFAULT_POINT_BATCH_SIZE = 5000;
@@ -41,13 +42,14 @@ const DEFAULT_GEOMETRY_BATCH_SIZE = 1000;
 const BATCH_CAPACITY_SHRINK_INTERVAL = 5000;
 
 // String constants to identify batch system names
-const BATCH_TYPES = [ "POINTS", "IMAGE", "GEOMETRY" ];
+const BATCH_TYPES = [ "POINTS", "IMAGE", "GEOMETRY", "POINTS_REPLACE" ];
 
 // Batch prototype
 const m_batchProto = {
 	
 	// Type of batch POINTS_BATCH, IMAGE_BATCH, etc...
 	"type": null,
+	"overrideGlobalBlend": null,   // Tri-state: null = use default, true = alpha, false = replace
 
 	"program": null,
 	"vertices": null,
@@ -100,6 +102,20 @@ export function init() {
 }
 
 /**
+ * Creates all the batches
+ * 
+ * @returns {void}
+ */
+export function createBatches( screenData ) {
+
+	// Create the point batch
+	screenData.batches[ POINTS_BATCH ] = createBatch( screenData, POINTS_BATCH );
+	screenData.batches[ IMAGE_BATCH ] = createBatch( screenData, IMAGE_BATCH );
+	screenData.batches[ GEOMETRY_BATCH ] = createBatch( screenData, GEOMETRY_BATCH );
+	screenData.batches[ POINTS_REPLACE_BATCH ] = createBatch( screenData, POINTS_REPLACE_BATCH );
+}
+
+/**
  * Create batch system for points or images
  * 
  * @param {Object} screenData - Screen data object
@@ -116,17 +132,35 @@ export function createBatch( screenData, type ) {
 	if( type === POINTS_BATCH ) {
 		vertSrc = m_pointVertSrc;
 		fragSrc = m_pointFragSrc;
+		batch.capacity = DEFAULT_POINT_BATCH_SIZE;
+		batch.minCapacity = DEFAULT_POINT_BATCH_SIZE;
+		batch.maxCapacity = MAX_POINT_BATCH_SIZE;
+		batch.mode = gl.POINTS;
 	} else if( type === IMAGE_BATCH ) {
 		vertSrc = m_imageVertSrc;
 		fragSrc = m_imageFragSrc;
+		batch.capacity = DEFAULT_IMAGE_BATCH_SIZE;
+		batch.minCapacity = DEFAULT_IMAGE_BATCH_SIZE;
+		batch.maxCapacity = MAX_IMAGE_BATCH_SIZE;
+		batch.mode = gl.TRIANGLES;
+		batch.overrideGlobalBlend = true;
 	} else if( type === GEOMETRY_BATCH ) {
-
-		// Geometry uses same shaders as points (triangles, not points)
 		vertSrc = m_pointVertSrc;
 		fragSrc = m_pointFragSrc;
+		batch.capacity = DEFAULT_GEOMETRY_BATCH_SIZE;
+		batch.minCapacity = DEFAULT_GEOMETRY_BATCH_SIZE;
+		batch.maxCapacity = MAX_GEOMETRY_BATCH_SIZE;
+		batch.mode = gl.TRIANGLES;
+	} else if( type === POINTS_REPLACE_BATCH ) {
+		vertSrc = m_pointVertSrc;
+		fragSrc = m_pointFragSrc;
+		batch.capacity = DEFAULT_POINT_BATCH_SIZE;
+		batch.minCapacity = DEFAULT_POINT_BATCH_SIZE;
+		batch.maxCapacity = MAX_POINT_BATCH_SIZE;
+		batch.mode = gl.POINTS;
+		batch.overrideGlobalBlend = false;
 	} else {
-		console.error( `createBatch: Unknown batch type ${type}` );
-		return null;
+		throw `createBatch: Unknown batch type ${type}`;
 	}
 
 	// Create the batch shader program
@@ -141,16 +175,9 @@ export function createBatch( screenData, type ) {
 
 	// Setup batch type and capacity
 	batch.type = type;
-	if( batch.type === POINTS_BATCH ) {
-		batch.capacity = DEFAULT_POINT_BATCH_SIZE;
-		batch.minCapacity = DEFAULT_POINT_BATCH_SIZE;
-		batch.maxCapacity = MAX_POINT_BATCH_SIZE;
-		batch.mode = gl.POINTS;
-	} else if( batch.type === IMAGE_BATCH ) {
-		batch.capacity = DEFAULT_IMAGE_BATCH_SIZE;
-		batch.minCapacity = DEFAULT_IMAGE_BATCH_SIZE;
-		batch.maxCapacity = MAX_IMAGE_BATCH_SIZE;
-		batch.mode = gl.TRIANGLES;
+
+	// Setup image specific webgl variables
+	if( batch.type === IMAGE_BATCH ) {
 
 		// Image-specific shader locations
 		batch.locations.texCoord = gl.getAttribLocation( batch.program, "a_texCoord" );
@@ -161,14 +188,6 @@ export function createBatch( screenData, type ) {
 
 		// Image-specific VBO
 		batch.texCoordVBO = gl.createBuffer();
-
-	} else if( batch.type === GEOMETRY_BATCH ) {
-		batch.capacity = DEFAULT_GEOMETRY_BATCH_SIZE;
-		batch.minCapacity = DEFAULT_GEOMETRY_BATCH_SIZE;
-		batch.maxCapacity = MAX_GEOMETRY_BATCH_SIZE;
-		batch.mode = gl.TRIANGLES;
-	} else {
-		throw new Error( "Invalid batch type." );
 	}
 
 	// These are created for all batches
@@ -283,14 +302,13 @@ export function prepareBatch( screenData, batchType, itemCount, img, texture ) {
 			"batch": batch,
 			"startIndex": batch.count,
 			"endIndex": null,
-			"useGlobalBlend": true
+			"overrideGlobalBlend": batch.overrideGlobalBlend
 		};
 		
 		// For IMAGE_BATCH, track the current image/texture for this segment
 		if( batch.type === IMAGE_BATCH ) {
 			batch.texture = texture;
 			drawOrderItem.texture = texture;
-			drawOrderItem.useGlobalBlend = false;
 		}
 
 		// Add the draw order item
@@ -375,7 +393,7 @@ export function flushBatches( screenData, blend = null ) {
 		if( drawOrderItem.endIndex - drawOrderItem.startIndex > 0 ) {
 
 			// Set blend mode for this item
-			if( drawOrderItem.useGlobalBlend ) {
+			if( drawOrderItem.overrideGlobalBlend === null ) {
 
 				// Other batches use global blend mode
 				if( blend === g_pens.BLEND_REPLACE ) {
@@ -390,7 +408,7 @@ export function flushBatches( screenData, blend = null ) {
 					);
 				}
 
-			} else {
+			} else if( drawOrderItem.overrideGlobalBlend === true ) {
 
 				// IMAGE_BATCH always uses alpha blending
 				gl.enable( gl.BLEND );
@@ -400,6 +418,8 @@ export function flushBatches( screenData, blend = null ) {
 					gl.ONE,                 // srcAlphaFactor - src alpha factor 1.0 (no scale)
 					gl.ONE_MINUS_SRC_ALPHA  // dstAlphaFactor - dst alpha factor (1-src.a)
 				);
+			} else {
+				gl.disable( gl.BLEND );
 			}
 
 			let texture = null;

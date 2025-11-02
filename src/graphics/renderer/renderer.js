@@ -34,12 +34,10 @@ import * as g_readback from "./readback.js";
 
 
 // Re-export batch constants
-export { POINTS_BATCH } from "./batches.js";
-export { IMAGE_BATCH } from "./batches.js";
-export { GEOMETRY_BATCH } from "./batches.js";
+export { POINTS_BATCH, IMAGE_BATCH, GEOMETRY_BATCH, POINTS_REPLACE_BATCH } from "./batches.js";
 
 // Re-export drawing functions
-export { drawPixelUnsafe, drawImage } from "./draw.js";
+export { drawPixelUnsafe, drawImage, drawPixelUnsafeReplace } from "./draw.js";
 export { drawFilledRectUnsafe, drawFilledCircleUnsafe } from "./shapes.js";
 export { drawCachedGeometry } from "./geometry.js";
 
@@ -133,21 +131,9 @@ export function createContext( screenData ) {
 		return false;
 	}
 	
-	// Create the point batch
-	screenData.batches[ g_batches.POINTS_BATCH ] = g_batches.createBatch(
-		screenData, g_batches.POINTS_BATCH
-	);
+	// Create all the batches
+	g_batches.createBatches( screenData );
 
-	// Create the images batch
-	screenData.batches[ g_batches.IMAGE_BATCH ] = g_batches.createBatch(
-		screenData, g_batches.IMAGE_BATCH
-	);
-
-	// Create the geometry batch
-	screenData.batches[ g_batches.GEOMETRY_BATCH ] = g_batches.createBatch(
-		screenData, g_batches.GEOMETRY_BATCH
-	);
-	
 	// Setup display shader
 	g_shaders.setupDisplayShader( screenData );
 
