@@ -279,12 +279,18 @@ export function prepareBatch( screenData, batchType, itemCount, img, texture ) {
 		}
 
 		// Create a new draw order item
-		const drawOrderItem = { "batch": batch, "startIndex": batch.count, "endIndex": null };
+		const drawOrderItem = {
+			"batch": batch,
+			"startIndex": batch.count,
+			"endIndex": null,
+			"useGlobalBlend": true
+		};
 		
 		// For IMAGE_BATCH, track the current image/texture for this segment
 		if( batch.type === IMAGE_BATCH ) {
 			batch.texture = texture;
 			drawOrderItem.texture = texture;
+			drawOrderItem.useGlobalBlend = false;
 		}
 
 		// Add the draw order item
@@ -351,20 +357,6 @@ export function flushBatches( screenData, blend = null ) {
 		screenData.isFirstRender = false;
 	}
 
-	// TODO: Images should not share the same blend mode as other drawItems.
-	// Update the blend mode
-	if( blend === g_pens.BLEND_REPLACE ) {
-		gl.disable( gl.BLEND );
-	} else {
-		gl.enable( gl.BLEND );
-		gl.blendFuncSeparate(
-			gl.SRC_ALPHA,           // srcRGBFactor
-			gl.ONE_MINUS_SRC_ALPHA, // dstRGBFactor
-			gl.ONE,                 // srcAlphaFactor  <--- Make src alpha factor 1.0 (no scaling)
-			gl.ONE_MINUS_SRC_ALPHA  // dstAlphaFactor  <--- Make dst alpha factor (1-src.a)
-		);
-	}
-
 	// Upload batch buffers
 	for( const batchType in screenData.batches ) {
 		const batch = screenData.batches[ batchType ];
@@ -381,6 +373,35 @@ export function flushBatches( screenData, blend = null ) {
 
 		// Only draw the batch if there is something to draw
 		if( drawOrderItem.endIndex - drawOrderItem.startIndex > 0 ) {
+
+			// Set blend mode for this item
+			if( drawOrderItem.useGlobalBlend ) {
+
+				// Other batches use global blend mode
+				if( blend === g_pens.BLEND_REPLACE ) {
+					gl.disable( gl.BLEND );
+				} else {
+					gl.enable( gl.BLEND );
+					gl.blendFuncSeparate(
+						gl.SRC_ALPHA,           // srcRGBFactor
+						gl.ONE_MINUS_SRC_ALPHA, // dstRGBFactor
+						gl.ONE,                 // srcAlphaFactor - src alpha factor 1.0 (no scale)
+						gl.ONE_MINUS_SRC_ALPHA  // dstAlphaFactor - dst alpha factor (1-src.a)
+					);
+				}
+
+			} else {
+
+				// IMAGE_BATCH always uses alpha blending
+				gl.enable( gl.BLEND );
+				gl.blendFuncSeparate(
+					gl.SRC_ALPHA,           // srcRGBFactor
+					gl.ONE_MINUS_SRC_ALPHA, // dstRGBFactor
+					gl.ONE,                 // srcAlphaFactor - src alpha factor 1.0 (no scale)
+					gl.ONE_MINUS_SRC_ALPHA  // dstAlphaFactor - dst alpha factor (1-src.a)
+				);
+			}
+
 			let texture = null;
 			if( drawOrderItem.batch.type === IMAGE_BATCH ) {
 				texture = drawOrderItem.texture;
