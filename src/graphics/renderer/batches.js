@@ -307,43 +307,90 @@ export function prepareBatch( screenData, batchType, itemCount ) {
 }
 
 /**
- * Cleanup batch resources for screen
+ * Flush all batches to FBO
  * 
  * @param {Object} screenData - Screen data object
+ * @param {string|null} blend - Blend mode or null for default
  * @returns {void}
  */
-function cleanup( screenData ) {
+export function flushBatches( screenData, blend = null ) {
 
-	if( !screenData.gl ) {
+	if( blend === null ) {
+		blend = screenData.blends.blend;
+	}
+	
+	const gl = screenData.gl;
+
+	if( screenData.contextLost ) {
+
+		// TODO: Maybe add warning here?
+		// console.warn( "WebGL context lost unable to render screen." );
 		return;
 	}
 
-	const gl = screenData.gl;
+	// Bind FBO
+	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
+	
+	// Set viewport
+	gl.viewport( 0, 0, screenData.width, screenData.height );
+	
+	// Clear FBO on first render only
+	if( screenData.isFirstRender ) {
+		gl.clearColor( 0, 0, 0, 0 );
+		gl.clear( gl.COLOR_BUFFER_BIT );
+		screenData.isFirstRender = false;
+	}
 
-	// Cleanup batches
+	// TODO: Images should not share the same blend mode as other drawItems.
+	// Update the blend mode
+	if( blend === g_pens.BLEND_REPLACE ) {
+		gl.disable( gl.BLEND );
+	} else {
+		gl.enable( gl.BLEND );
+		gl.blendFuncSeparate(
+			gl.SRC_ALPHA,           // srcRGBFactor
+			gl.ONE_MINUS_SRC_ALPHA, // dstRGBFactor
+			gl.ONE,                 // srcAlphaFactor  <--- Make src alpha factor 1.0 (no scaling)
+			gl.ONE_MINUS_SRC_ALPHA  // dstAlphaFactor  <--- Make dst alpha factor (1-src.a)
+		);
+	}
+
+	// Upload batch buffers
 	for( const batchType in screenData.batches ) {
-
-		// Get the batch
 		const batch = screenData.batches[ batchType ];
-
-		// Delete texCoord items
-		if( batch.texCoordVBO ) {
-			gl.deleteBuffer( batch.texCoordVBO );
-		}
-
-		gl.deleteBuffer( batch.vertexVBO );
-		gl.deleteBuffer( batch.colorVBO );
-		gl.deleteVertexArray( batch.vao );
-		gl.deleteProgram( batch.program );
-
-		if( batch.texture ) {
-			gl.deleteTexture( batch.texture );
+		if( batch.count > 0 ) {
+			uploadBatch( gl, batch, screenData.width, screenData.height );
 		}
 	}
 
-	// Clear batches array
-	screenData.batches = {};
-	screenData.batchInfo = {};
+	// Draw items
+	for( const drawOrderItem of screenData.batchInfo.drawOrder ) {
+		if( drawOrderItem.endIndex === null ) {
+			drawOrderItem.endIndex = drawOrderItem.batch.count;
+		}
+
+		// Only draw the batch if there is something to draw
+		if( drawOrderItem.endIndex - drawOrderItem.startIndex > 0 ) {
+			const texture = ( drawOrderItem.batch.type === IMAGE_BATCH ) ? drawOrderItem.texture : null;
+			drawBatch( gl, drawOrderItem.batch, drawOrderItem.startIndex, drawOrderItem.endIndex, texture );
+		}
+	}
+
+	// Reset Batches
+	for( const batchType in screenData.batches ) {
+		const batch = screenData.batches[ batchType ];
+		resetBatch( batch );
+	}
+
+	// Reset drawOrder object
+	screenData.batchInfo.drawOrder = [];
+	screenData.batchInfo.currentBatch = null;
+
+	// Unbind VAO
+	gl.bindVertexArray( null );
+
+	// Unbind FBO
+	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
 }
 
 /**
@@ -458,93 +505,6 @@ function resetBatch( batch ) {
 }
 
 /**
- * Flush all batches to FBO
- * 
- * @param {Object} screenData - Screen data object
- * @param {string|null} blend - Blend mode or null for default
- * @returns {void}
- */
-export function flushBatches( screenData, blend = null ) {
-
-	if( blend === null ) {
-		blend = screenData.blends.blend;
-	}
-	
-	const gl = screenData.gl;
-
-	if( screenData.contextLost ) {
-
-		// TODO: Maybe add warning here?
-		// console.warn( "WebGL context lost unable to render screen." );
-		return;
-	}
-
-	// Bind FBO
-	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
-	
-	// Set viewport
-	gl.viewport( 0, 0, screenData.width, screenData.height );
-	
-	// Clear FBO on first render only
-	if( screenData.isFirstRender ) {
-		gl.clearColor( 0, 0, 0, 0 );
-		gl.clear( gl.COLOR_BUFFER_BIT );
-		screenData.isFirstRender = false;
-	}
-
-	// TODO: Images should not share the same blend mode as other drawItems.
-	// Update the blend mode
-	if( blend === g_pens.BLEND_REPLACE ) {
-		gl.disable( gl.BLEND );
-	} else {
-		gl.enable( gl.BLEND );
-		gl.blendFuncSeparate(
-			gl.SRC_ALPHA,           // srcRGBFactor
-			gl.ONE_MINUS_SRC_ALPHA, // dstRGBFactor
-			gl.ONE,                 // srcAlphaFactor  <--- Make src alpha factor 1.0 (no scaling)
-			gl.ONE_MINUS_SRC_ALPHA  // dstAlphaFactor  <--- Make dst alpha factor (1-src.a)
-		);
-	}
-
-	// Upload batch buffers
-	for( const batchType in screenData.batches ) {
-		const batch = screenData.batches[ batchType ];
-		if( batch.count > 0 ) {
-			uploadBatch( gl, batch, screenData.width, screenData.height );
-		}
-	}
-
-	// Draw items
-	for( const drawOrderItem of screenData.batchInfo.drawOrder ) {
-		if( drawOrderItem.endIndex === null ) {
-			drawOrderItem.endIndex = drawOrderItem.batch.count;
-		}
-
-		// Only draw the batch if there is something to draw
-		if( drawOrderItem.endIndex - drawOrderItem.startIndex > 0 ) {
-			const texture = ( drawOrderItem.batch.type === IMAGE_BATCH ) ? drawOrderItem.texture : null;
-			drawBatch( gl, drawOrderItem.batch, drawOrderItem.startIndex, drawOrderItem.endIndex, texture );
-		}
-	}
-
-	// Reset Batches
-	for( const batchType in screenData.batches ) {
-		const batch = screenData.batches[ batchType ];
-		resetBatch( batch );
-	}
-
-	// Reset drawOrder object
-	screenData.batchInfo.drawOrder = [];
-	screenData.batchInfo.currentBatch = null;
-
-	// Unbind VAO
-	gl.bindVertexArray( null );
-
-	// Unbind FBO
-	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
-}
-
-/**
  * Display FBO texture to canvas
  * 
  * @param {Object} screenData - Screen data object
@@ -591,3 +551,42 @@ export function displayToCanvas( screenData ) {
 	gl.disableVertexAttribArray( locations.position );
 }
 
+/**
+ * Cleanup batch resources for screen
+ * 
+ * @param {Object} screenData - Screen data object
+ * @returns {void}
+ */
+function cleanup( screenData ) {
+
+	if( !screenData.gl ) {
+		return;
+	}
+
+	const gl = screenData.gl;
+
+	// Cleanup batches
+	for( const batchType in screenData.batches ) {
+
+		// Get the batch
+		const batch = screenData.batches[ batchType ];
+
+		// Delete texCoord items
+		if( batch.texCoordVBO ) {
+			gl.deleteBuffer( batch.texCoordVBO );
+		}
+
+		gl.deleteBuffer( batch.vertexVBO );
+		gl.deleteBuffer( batch.colorVBO );
+		gl.deleteVertexArray( batch.vao );
+		gl.deleteProgram( batch.program );
+
+		if( batch.texture ) {
+			gl.deleteTexture( batch.texture );
+		}
+	}
+
+	// Clear batches array
+	screenData.batches = {};
+	screenData.batchInfo = {};
+}
