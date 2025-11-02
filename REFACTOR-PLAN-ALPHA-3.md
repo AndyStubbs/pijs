@@ -528,7 +528,7 @@ Move texture management from `renderer-webgl2.js` to `textures.js`:
 - `export function getWebGL2Texture( screenData, img )`
 - `export function deleteWebGL2Texture( img )`
 
-### Step 5.2: Extend draw.js - Add drawImage()
+### Step 5.2: Extend draw.js - Add drawImage() ✅ COMPLETE
 Add image drawing functionality to `draw.js`:
 
 **Responsibilities:**
@@ -539,7 +539,7 @@ Add image drawing functionality to `draw.js`:
 
 **Note:** The renderer's `drawImage()` is the low-level function called by `images.js`'s `drawImage()` command.
 
-### Step 5.3: Implement images.js
+### Step 5.3: Implement images.js ✅ COMPLETE
 Implement image loading and management module:
 
 **Responsibilities:**

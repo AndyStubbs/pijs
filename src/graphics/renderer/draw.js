@@ -9,6 +9,8 @@
 "use strict";
 
 import * as g_batches from "./batches.js";
+import * as g_textures from "./textures.js";
+import * as g_utils from "../../core/utils.js";
 
 
 /***************************************************************************************************
@@ -90,6 +92,138 @@ export function drawImage(
 	screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY 
 ) {
 
-	// TODO: Implement drawImage with textured quads
+	// Get or create texture
+	const texture = g_textures.getWebGL2Texture( screenData, img );
+	if( !texture ) {
+		console.error( "Failed to get/create texture for image" );
+		return;
+	}
+
+	// Calculate image dimensions
+	const imgWidth = img.width;
+	const imgHeight = img.height;
+
+	// Calculate anchor position in pixels
+	const anchorXPx = Math.round( imgWidth * anchorX );
+	const anchorYPx = Math.round( imgHeight * anchorY );
+
+	// Calculate scaled dimensions
+	const scaledWidth = imgWidth * scaleX;
+	const scaledHeight = imgHeight * scaleY;
+
+	// Calculate corner positions relative to anchor point (top-left at -anchor, bottom-right at size-anchor)
+	const corners = [
+		{ "x": -anchorXPx, "y": -anchorYPx },                    // Top-left
+		{ "x": scaledWidth - anchorXPx, "y": -anchorYPx },      // Top-right
+		{ "x": -anchorXPx, "y": scaledHeight - anchorYPx },     // Bottom-left
+		{ "x": scaledWidth - anchorXPx, "y": scaledHeight - anchorYPx } // Bottom-right
+	];
+
+	// Rotate corners around (0,0) then translate to (x,y)
+	const cos = Math.cos( angleRad );
+	const sin = Math.sin( angleRad );
+	for( let i = 0; i < corners.length; i++ ) {
+		const corner = corners[ i ];
+		const rx = corner.x * cos - corner.y * sin;
+		const ry = corner.x * sin + corner.y * cos;
+		corner.x = rx + x;
+		corner.y = ry + y;
+	}
+
+	// Texture coordinates (full image)
+	const texCoords = [
+		0, 0,  // Top-left
+		1, 0,  // Top-right
+		0, 1,  // Bottom-left
+		1, 0,  // Top-right (repeat for second triangle)
+		1, 1,  // Bottom-right
+		0, 1   // Bottom-left (repeat for second triangle)
+	];
+
+	// Prepare batch for 6 vertices (2 triangles)
+	// prepareBatch will handle texture change detection and segment creation
+	const batch = screenData.batches[ g_batches.IMAGE_BATCH ];
+	g_batches.prepareBatch( screenData, g_batches.IMAGE_BATCH, 6, img, texture );
+
+	// Color with alpha
+	const r = Math.round( 255 );
+	const g = Math.round( 255 );
+	const b = Math.round( 255 );
+	const a = Math.round( alpha );
+
+	// Add two triangles (6 vertices)
+	const baseIdx = batch.count;
+	const vertexBase = baseIdx * batch.vertexComps;
+	const colorBase = baseIdx * batch.colorComps;
+	const texBase = baseIdx * batch.texCoordComps;
+
+	// Triangle 1: Top-left, Top-right, Bottom-left
+	let vIdx = vertexBase;
+	let cIdx = colorBase;
+	let tIdx = texBase;
+
+	// Vertex 0: Top-left
+	batch.vertices[ vIdx++ ] = corners[ 0 ].x;
+	batch.vertices[ vIdx++ ] = corners[ 0 ].y;
+	batch.colors[ cIdx++ ] = r;
+	batch.colors[ cIdx++ ] = g;
+	batch.colors[ cIdx++ ] = b;
+	batch.colors[ cIdx++ ] = a;
+	batch.texCoords[ tIdx++ ] = texCoords[ 0 ];
+	batch.texCoords[ tIdx++ ] = texCoords[ 1 ];
+
+	// Vertex 1: Top-right
+	batch.vertices[ vIdx++ ] = corners[ 1 ].x;
+	batch.vertices[ vIdx++ ] = corners[ 1 ].y;
+	batch.colors[ cIdx++ ] = r;
+	batch.colors[ cIdx++ ] = g;
+	batch.colors[ cIdx++ ] = b;
+	batch.colors[ cIdx++ ] = a;
+	batch.texCoords[ tIdx++ ] = texCoords[ 2 ];
+	batch.texCoords[ tIdx++ ] = texCoords[ 3 ];
+
+	// Vertex 2: Bottom-left
+	batch.vertices[ vIdx++ ] = corners[ 2 ].x;
+	batch.vertices[ vIdx++ ] = corners[ 2 ].y;
+	batch.colors[ cIdx++ ] = r;
+	batch.colors[ cIdx++ ] = g;
+	batch.colors[ cIdx++ ] = b;
+	batch.colors[ cIdx++ ] = a;
+	batch.texCoords[ tIdx++ ] = texCoords[ 4 ];
+	batch.texCoords[ tIdx++ ] = texCoords[ 5 ];
+
+	// Triangle 2: Top-right, Bottom-right, Bottom-left
+	// Vertex 3: Top-right
+	batch.vertices[ vIdx++ ] = corners[ 1 ].x;
+	batch.vertices[ vIdx++ ] = corners[ 1 ].y;
+	batch.colors[ cIdx++ ] = r;
+	batch.colors[ cIdx++ ] = g;
+	batch.colors[ cIdx++ ] = b;
+	batch.colors[ cIdx++ ] = a;
+	batch.texCoords[ tIdx++ ] = texCoords[ 6 ];
+	batch.texCoords[ tIdx++ ] = texCoords[ 7 ];
+
+	// Vertex 4: Bottom-right
+	batch.vertices[ vIdx++ ] = corners[ 3 ].x;
+	batch.vertices[ vIdx++ ] = corners[ 3 ].y;
+	batch.colors[ cIdx++ ] = r;
+	batch.colors[ cIdx++ ] = g;
+	batch.colors[ cIdx++ ] = b;
+	batch.colors[ cIdx++ ] = a;
+	batch.texCoords[ tIdx++ ] = texCoords[ 8 ];
+	batch.texCoords[ tIdx++ ] = texCoords[ 9 ];
+
+	// Vertex 5: Bottom-left
+	batch.vertices[ vIdx++ ] = corners[ 2 ].x;
+	batch.vertices[ vIdx++ ] = corners[ 2 ].y;
+	batch.colors[ cIdx++ ] = r;
+	batch.colors[ cIdx++ ] = g;
+	batch.colors[ cIdx++ ] = b;
+	batch.colors[ cIdx++ ] = a;
+	batch.texCoords[ tIdx++ ] = texCoords[ 10 ];
+	batch.texCoords[ tIdx++ ] = texCoords[ 11 ];
+
+	// Update batch count
+	batch.count += 6;
 }
 

@@ -39,7 +39,7 @@ export { IMAGE_BATCH } from "./batches.js";
 export { GEOMETRY_BATCH } from "./batches.js";
 
 // Re-export drawing functions
-export { drawPixelUnsafe } from "./draw.js";
+export { drawPixelUnsafe, drawImage } from "./draw.js";
 export { drawFilledRectUnsafe, drawFilledCircleUnsafe } from "./shapes.js";
 export { drawCachedGeometry } from "./geometry.js";
 

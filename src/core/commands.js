@@ -114,8 +114,10 @@ function processScreenCommands( screenData ) {
  *   - await $.ready()            // Promise style
  *   - $.ready().then( ... )      // Promise .then() style
  */
-function ready( callback ) {
+function ready( options ) {
 
+	const callback = options.callback;
+	
 	// Validate callback if provided
 	if( callback != null && !g_utils.isFunction( callback ) ) {
 		const error = new TypeError( "ready: Parameter callback must be a function." );

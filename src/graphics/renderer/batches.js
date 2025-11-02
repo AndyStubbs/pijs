@@ -75,7 +75,6 @@ const m_batchProto = {
 
 	// Image Specific items
 	"texture": null,
-	"image": null,
 
 	// Drawing mode, e.g., gl.POINTS or gl.TRIANGLES
 	"mode": null,
@@ -163,12 +162,6 @@ export function createBatch( screenData, type ) {
 		// Image-specific VBO
 		batch.texCoordVBO = gl.createBuffer();
 
-		// Setup texCoord attribute
-		gl.bindBuffer( gl.ARRAY_BUFFER, batch.texCoordVBO );
-		gl.enableVertexAttribArray( batch.locations.texCoord );
-		gl.vertexAttribPointer(
-			batch.locations.texCoord, batch.texCoordComps, gl.FLOAT, false, 0, 0
-		);
 	} else if( batch.type === GEOMETRY_BATCH ) {
 		batch.capacity = DEFAULT_GEOMETRY_BATCH_SIZE;
 		batch.minCapacity = DEFAULT_GEOMETRY_BATCH_SIZE;
@@ -201,7 +194,16 @@ export function createBatch( screenData, type ) {
 	gl.vertexAttribPointer(
 		batch.locations.color, batch.colorComps, gl.UNSIGNED_BYTE, true, 0, 0
 	);
-	
+
+	// Setup texCoord attribute for IMAGE_BATCH
+	if( batch.type === IMAGE_BATCH ) {
+		gl.bindBuffer( gl.ARRAY_BUFFER, batch.texCoordVBO );
+		gl.enableVertexAttribArray( batch.locations.texCoord );
+		gl.vertexAttribPointer(
+			batch.locations.texCoord, batch.texCoordComps, gl.FLOAT, false, 0, 0
+		);
+	}
+
 	gl.bindVertexArray( null );
 
 	// Set the next shrink check time
@@ -253,16 +255,22 @@ function resizeBatch( batch, newCapacity ) {
  * @param {Object} screenData - Screen data object
  * @param {number} batchType - Batch type
  * @param {number} itemCount - Number of items needed
+ * @param {HTMLImageElement|HTMLCanvasElement} [img] - Image for IMAGE_BATCH
+ * @param {WebGLTexture} [texture] - Texture for IMAGE_BATCH
  * @returns {void}
  */
-export function prepareBatch( screenData, batchType, itemCount ) {
+export function prepareBatch( screenData, batchType, itemCount, img, texture ) {
 
 	// Get the batch
 	const batch = screenData.batches[ batchType ];
 
-	// Track if the batch type is changing
+	// Track if the batch type is changing or texture is changing (for IMAGE_BATCH)
 	const batchInfo = screenData.batchInfo;
-	if( batchInfo.currentBatch !== batch ) {
+	const batchTypeChanging = batchInfo.currentBatch !== batch;
+	const textureChanging = batchType === IMAGE_BATCH && batchInfo.currentBatch === batch &&
+		batch.texture !== texture;
+
+	if( batchTypeChanging || textureChanging ) {
 		
 		// Set the end index for the last drawOrderItem to it's current count
 		if( batchInfo.drawOrder.length > 0 ) {
@@ -270,13 +278,16 @@ export function prepareBatch( screenData, batchType, itemCount ) {
 			lastDrawOrderItem.endIndex = lastDrawOrderItem.batch.count;
 		}
 
-		// Add the new batch to the drawOrder array
-		// For IMAGE_BATCH, track the current image/texture for this segment
+		// Create a new draw order item
 		const drawOrderItem = { "batch": batch, "startIndex": batch.count, "endIndex": null };
+		
+		// For IMAGE_BATCH, track the current image/texture for this segment
 		if( batch.type === IMAGE_BATCH ) {
-			drawOrderItem.image = batch.image;
-			drawOrderItem.texture = batch.texture;
+			batch.texture = texture;
+			drawOrderItem.texture = texture;
 		}
+
+		// Add the draw order item
 		batchInfo.drawOrder.push( drawOrderItem );
 		batchInfo.currentBatch = batch;
 	}
@@ -293,7 +304,7 @@ export function prepareBatch( screenData, batchType, itemCount ) {
 			);
 		
 			flushBatches( screenData );
-			return prepareBatch( screenData, batchType, itemCount );
+			return prepareBatch( screenData, batchType, itemCount, img, texture );
 		}
 
 		// Resize to new capacity by doubling current capacity up to maxCapacity
@@ -371,8 +382,13 @@ export function flushBatches( screenData, blend = null ) {
 
 		// Only draw the batch if there is something to draw
 		if( drawOrderItem.endIndex - drawOrderItem.startIndex > 0 ) {
-			const texture = ( drawOrderItem.batch.type === IMAGE_BATCH ) ? drawOrderItem.texture : null;
-			drawBatch( gl, drawOrderItem.batch, drawOrderItem.startIndex, drawOrderItem.endIndex, texture );
+			let texture = null;
+			if( drawOrderItem.batch.type === IMAGE_BATCH ) {
+				texture = drawOrderItem.texture;
+			}
+			drawBatch(
+				gl, drawOrderItem.batch, drawOrderItem.startIndex, drawOrderItem.endIndex, texture
+			);
 		}
 	}
 
