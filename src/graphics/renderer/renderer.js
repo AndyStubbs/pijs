@@ -20,6 +20,7 @@ import * as g_draw from "./draw.js";
 
 // Import shapes module for geometry drawing
 import * as g_shapes from "./shapes.js";
+import * as g_geometry from "./geometry.js";
 
 // TODO: Import renderer modules when implemented
 // import * as textures from "./textures.js";
@@ -40,6 +41,7 @@ export { GEOMETRY_BATCH } from "./batches.js";
 // Re-export drawing functions
 export { drawPixelUnsafe } from "./draw.js";
 export { drawFilledRectUnsafe, drawFilledCircleUnsafe } from "./shapes.js";
+export { drawCachedGeometry } from "./geometry.js";
 
 // Re-export batch management
 export { prepareBatch } from "./batches.js";
@@ -82,6 +84,7 @@ export function init( api ) {
 	g_batches.init();
 	g_draw.init();
 	g_shapes.init();
+	g_geometry.init();
 	// TODO: 4. textures.init()
 	// TODO: 6. primitives.init()
 	// TODO: 8. readback.init()

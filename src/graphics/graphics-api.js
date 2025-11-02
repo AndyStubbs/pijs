@@ -52,6 +52,7 @@ export function rebuildApi( s_screenData ) {
 	const s_drawPixelUnsafe = g_renderer.drawPixelUnsafe;
 	const s_drawFilledRectUnsafe = g_renderer.drawFilledRectUnsafe;
 	const s_drawFilledCircleUnsafe = g_renderer.drawFilledCircleUnsafe;
+	const s_drawCachedGeometry = g_renderer.drawCachedGeometry;
 
 	const s_setImageDirty = g_renderer.setImageDirty;
 	const s_prepareBatch = g_renderer.prepareBatch;
@@ -105,7 +106,18 @@ export function rebuildApi( s_screenData ) {
 				s_drawPixelUnsafe( s_screenData, x, y + 1, color );
 				s_drawPixelUnsafe( s_screenData, x, y - 1, color );
 			};
+		} else if( s_penSize >= 3 && s_penSize <= 30 ) {
+
+			// Use cached geometry for better appearance
+			const cacheKey = `circle:${s_penSize}`;
+			s_psetDrawFn = ( x, y, color ) => {
+				
+				// Apply MCA consistency adjustment
+				s_drawCachedGeometry( s_screenData, cacheKey, x, y - 1, color );
+			};
 		} else {
+
+			// Use drawFilledCircleUnsafe for sizes > 30
 			s_psetDrawFn = ( x, y, color ) => {
 				s_drawFilledCircleUnsafe( s_screenData, x, y, s_penSize, color );
 			};
