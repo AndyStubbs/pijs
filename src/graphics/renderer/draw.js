@@ -145,6 +145,10 @@ export function drawImage(
 	const batch = screenData.batches[ g_batches.IMAGE_BATCH ];
 	g_batches.prepareBatch( screenData, g_batches.IMAGE_BATCH, 6, img, texture );
 
+	const batchVertices = batch.vertices;
+	const batchColors = batch.colors;
+	const batchTexCoords = batch.texCoords;
+
 	// Color with alpha
 	const r = Math.round( 255 );
 	const g = Math.round( 255 );
@@ -163,65 +167,65 @@ export function drawImage(
 	let tIdx = texBase;
 
 	// Vertex 0: Top-left
-	batch.vertices[ vIdx++ ] = corners[ 0 ].x;
-	batch.vertices[ vIdx++ ] = corners[ 0 ].y;
-	batch.colors[ cIdx++ ] = r;
-	batch.colors[ cIdx++ ] = g;
-	batch.colors[ cIdx++ ] = b;
-	batch.colors[ cIdx++ ] = a;
-	batch.texCoords[ tIdx++ ] = texCoords[ 0 ];
-	batch.texCoords[ tIdx++ ] = texCoords[ 1 ];
+	batchVertices[ vIdx++ ] = corners[ 0 ].x;
+	batchVertices[ vIdx++ ] = corners[ 0 ].y;
+	batchColors[ cIdx++ ] = r;
+	batchColors[ cIdx++ ] = g;
+	batchColors[ cIdx++ ] = b;
+	batchColors[ cIdx++ ] = a;
+	batchTexCoords[ tIdx++ ] = texCoords[ 0 ];
+	batchTexCoords[ tIdx++ ] = texCoords[ 1 ];
 
 	// Vertex 1: Top-right
-	batch.vertices[ vIdx++ ] = corners[ 1 ].x;
-	batch.vertices[ vIdx++ ] = corners[ 1 ].y;
-	batch.colors[ cIdx++ ] = r;
-	batch.colors[ cIdx++ ] = g;
-	batch.colors[ cIdx++ ] = b;
-	batch.colors[ cIdx++ ] = a;
-	batch.texCoords[ tIdx++ ] = texCoords[ 2 ];
-	batch.texCoords[ tIdx++ ] = texCoords[ 3 ];
+	batchVertices[ vIdx++ ] = corners[ 1 ].x;
+	batchVertices[ vIdx++ ] = corners[ 1 ].y;
+	batchColors[ cIdx++ ] = r;
+	batchColors[ cIdx++ ] = g;
+	batchColors[ cIdx++ ] = b;
+	batchColors[ cIdx++ ] = a;
+	batchTexCoords[ tIdx++ ] = texCoords[ 2 ];
+	batchTexCoords[ tIdx++ ] = texCoords[ 3 ];
 
 	// Vertex 2: Bottom-left
-	batch.vertices[ vIdx++ ] = corners[ 2 ].x;
-	batch.vertices[ vIdx++ ] = corners[ 2 ].y;
-	batch.colors[ cIdx++ ] = r;
-	batch.colors[ cIdx++ ] = g;
-	batch.colors[ cIdx++ ] = b;
-	batch.colors[ cIdx++ ] = a;
-	batch.texCoords[ tIdx++ ] = texCoords[ 4 ];
-	batch.texCoords[ tIdx++ ] = texCoords[ 5 ];
+	batchVertices[ vIdx++ ] = corners[ 2 ].x;
+	batchVertices[ vIdx++ ] = corners[ 2 ].y;
+	batchColors[ cIdx++ ] = r;
+	batchColors[ cIdx++ ] = g;
+	batchColors[ cIdx++ ] = b;
+	batchColors[ cIdx++ ] = a;
+	batchTexCoords[ tIdx++ ] = texCoords[ 4 ];
+	batchTexCoords[ tIdx++ ] = texCoords[ 5 ];
 
 	// Triangle 2: Top-right, Bottom-right, Bottom-left
 	// Vertex 3: Top-right
-	batch.vertices[ vIdx++ ] = corners[ 1 ].x;
-	batch.vertices[ vIdx++ ] = corners[ 1 ].y;
-	batch.colors[ cIdx++ ] = r;
-	batch.colors[ cIdx++ ] = g;
-	batch.colors[ cIdx++ ] = b;
-	batch.colors[ cIdx++ ] = a;
-	batch.texCoords[ tIdx++ ] = texCoords[ 6 ];
-	batch.texCoords[ tIdx++ ] = texCoords[ 7 ];
+	batchVertices[ vIdx++ ] = corners[ 1 ].x;
+	batchVertices[ vIdx++ ] = corners[ 1 ].y;
+	batchColors[ cIdx++ ] = r;
+	batchColors[ cIdx++ ] = g;
+	batchColors[ cIdx++ ] = b;
+	batchColors[ cIdx++ ] = a;
+	batchTexCoords[ tIdx++ ] = texCoords[ 6 ];
+	batchTexCoords[ tIdx++ ] = texCoords[ 7 ];
 
 	// Vertex 4: Bottom-right
-	batch.vertices[ vIdx++ ] = corners[ 3 ].x;
-	batch.vertices[ vIdx++ ] = corners[ 3 ].y;
-	batch.colors[ cIdx++ ] = r;
-	batch.colors[ cIdx++ ] = g;
-	batch.colors[ cIdx++ ] = b;
-	batch.colors[ cIdx++ ] = a;
-	batch.texCoords[ tIdx++ ] = texCoords[ 8 ];
-	batch.texCoords[ tIdx++ ] = texCoords[ 9 ];
+	batchVertices[ vIdx++ ] = corners[ 3 ].x;
+	batchVertices[ vIdx++ ] = corners[ 3 ].y;
+	batchColors[ cIdx++ ] = r;
+	batchColors[ cIdx++ ] = g;
+	batchColors[ cIdx++ ] = b;
+	batchColors[ cIdx++ ] = a;
+	batchTexCoords[ tIdx++ ] = texCoords[ 8 ];
+	batchTexCoords[ tIdx++ ] = texCoords[ 9 ];
 
 	// Vertex 5: Bottom-left
-	batch.vertices[ vIdx++ ] = corners[ 2 ].x;
-	batch.vertices[ vIdx++ ] = corners[ 2 ].y;
-	batch.colors[ cIdx++ ] = r;
-	batch.colors[ cIdx++ ] = g;
-	batch.colors[ cIdx++ ] = b;
-	batch.colors[ cIdx++ ] = a;
-	batch.texCoords[ tIdx++ ] = texCoords[ 10 ];
-	batch.texCoords[ tIdx++ ] = texCoords[ 11 ];
+	batchVertices[ vIdx++ ] = corners[ 2 ].x;
+	batchVertices[ vIdx++ ] = corners[ 2 ].y;
+	batchColors[ cIdx++ ] = r;
+	batchColors[ cIdx++ ] = g;
+	batchColors[ cIdx++ ] = b;
+	batchColors[ cIdx++ ] = a;
+	batchTexCoords[ tIdx++ ] = texCoords[ 10 ];
+	batchTexCoords[ tIdx++ ] = texCoords[ 11 ];
 
 	// Update batch count
 	batch.count += 6;

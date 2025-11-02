@@ -67,7 +67,6 @@ function registerCommands() {
  * @returns {string} Image name
  */
 function loadImage( options ) {
-	console.log( "loadImage called with options:", options );
 	const src = options.src;
 	let name = options.name;
 	const onLoadCallback = options.onLoad;
@@ -218,7 +217,6 @@ function loadImage( options ) {
  * @param {number} [options.scaleY] - Scale Y
  */
 function drawImage( screenData, options ) {
-	console.log( "drawImage called with options:", options );
 	const name = options.name;
 	let x = options.x || 0;
 	let y = options.y || 0;
