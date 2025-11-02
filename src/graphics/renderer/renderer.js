@@ -21,9 +21,9 @@ import * as g_draw from "./draw.js";
 // Import shapes module for geometry drawing
 import * as g_shapes from "./shapes.js";
 import * as g_geometry from "./geometry.js";
+import * as g_textures from "./textures.js";
 
 // TODO: Import renderer modules when implemented
-// import * as textures from "./textures.js";
 // import * as primitives from "./primitives.js";
 // import * as readback from "./readback.js";
 
@@ -49,6 +49,9 @@ export { prepareBatch } from "./batches.js";
 // Re-export rendering functions
 export { flushBatches } from "./batches.js";
 export { displayToCanvas } from "./batches.js";
+
+// Re-export texture management
+export { getWebGL2Texture, deleteWebGL2Texture } from "./textures.js";
 
 
 /***************************************************************************************************
@@ -85,7 +88,7 @@ export function init( api ) {
 	g_draw.init();
 	g_shapes.init();
 	g_geometry.init();
-	// TODO: 4. textures.init()
+	g_textures.init();
 	// TODO: 6. primitives.init()
 	// TODO: 8. readback.init()
 }
