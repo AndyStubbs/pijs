@@ -129,6 +129,7 @@ function setPen( screenData, options ) {
 	screenData.pens.pen = pen;
 	screenData.pens.size = size;
 
+	// TODO: Verify if we still need pixels per pen after completing all primitive draw commands
 	// Set the amount of points that will be drawn by the pen
 	if( pen === PEN_SQUARE ) {
 		screenData.pens.pixelsPerPen = size * size;

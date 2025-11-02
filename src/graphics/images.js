@@ -30,7 +30,7 @@ let m_imageCount = 0;
  * @returns {void}
  */
 export function init( api ) {
-	registerCommands();
+	registerCommands( api );
 }
 
 /**
@@ -38,16 +38,38 @@ export function init( api ) {
  * 
  * @returns {void}
  */
-function registerCommands() {
+function registerCommands( api ) {
 
 	// Register non-screen commands
 	g_commands.addCommand( "loadImage", loadImage, false, [ "src", "name", "onLoad", "onError" ] );
+	g_commands.addCommand( "getImage", getImage,  false, [ "name" ] );
 
 	// Register screen commands
 	g_commands.addCommand(
 		"drawImage", drawImage, true,
 		[ "name", "x", "y", "angle", "anchorX", "anchorY", "alpha", "scaleX", "scaleY" ]
 	);
+
+	// Special handling for blit image because it doesn't support object literal parsing
+	api.blitImage = ( img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY ) => {
+		const screenData = g_screenManager.getActiveScreen( "setBlitImage" );
+		g_renderer.drawImage(
+			screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY
+		);
+		g_renderer.setImageDirty( screenData );
+	};
+
+	// Add blitImage to screens when they get created
+	g_screenManager.addScreenInitFunction( ( screenData ) => {
+		screenData.api.blitImage = (
+			img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY
+		) => {
+			g_renderer.drawImage(
+				screenData, img, x, y, angleRad, anchorX, anchorY, alpha, scaleX, scaleY
+			);
+			g_renderer.setImageDirty( screenData );
+		};
+	} );
 }
 
 
@@ -201,6 +223,10 @@ function loadImage( options ) {
 	return name;
 }
 
+function getImage( options ) {
+	return getImageFromRawInput( options.name, "getImage" );
+}
+
 /**
  * Draw an image on the screen
  * 
@@ -217,104 +243,41 @@ function loadImage( options ) {
  * @param {number} [options.scaleY] - Scale Y
  */
 function drawImage( screenData, options ) {
-	const name = options.name;
-	let x = options.x || 0;
-	let y = options.y || 0;
-	let angle = options.angle;
-	let anchorX = options.anchorX;
-	let anchorY = options.anchorY;
-	let alpha = options.alpha;
-	let scaleX = options.scaleX;
-	let scaleY = options.scaleY;
+	const {
+		name,
+		x = 0,
+		y = 0,
+		angle = 0,
+		anchorX = 0,
+		anchorY = 0,
+		alpha = 255,
+		scaleX = 1,
+		scaleY = 1
+	} = options;
 
-	let img;
-
-	// Resolve image from name parameter
-	if( typeof name === "string" ) {
-
-		// Handle string image name
-		const imageData = getStoredImage( name );
-		if( !imageData ) {
-			const error = new Error( `drawImage: Image "${name}" not found.` );
-			error.code = "IMAGE_NOT_FOUND";
-			throw error;
-		}
-
-		if( imageData.status === "loading" ) {
-			const error = new Error(
-				`drawImage: Image "${name}" is still loading. Use $.ready() to wait for it.`
-			);
-			error.code = "IMAGE_NOT_READY";
-			throw error;
-		}
-
-		if( imageData.status === "error" ) {
-			const error = new Error( `drawImage: Image "${name}" failed to load.` );
-			error.code = "IMAGE_LOAD_FAILED";
-			throw error;
-		}
-
-		img = imageData.image;
-	} else if( name && typeof name === "object" ) {
-
-		// Handle screen API object
-		if( name.screen === true ) {
-			if( typeof name.canvas === "function" ) {
-				img = name.canvas();
-			} else {
-				img = name.canvas;
-			}
-			if( !img ) {
-				const error = new Error( "drawImage: Screen has no canvas." );
-				error.code = "INVALID_SCREEN";
-				throw error;
-			}
-		} else if( name.tagName === "CANVAS" || name.tagName === "IMG" ) {
-
-			// Handle Canvas or Image element
-			img = name;
-		} else {
-			const error = new TypeError(
-				"drawImage: Parameter name must be a string, screen object, Canvas element, " +
-				"or Image element."
-			);
-			error.code = "INVALID_NAME";
-			throw error;
-		}
-	} else {
-		const error = new TypeError(
-			"drawImage: Parameter name must be a string, screen object, Canvas element, " +
-			"or Image element."
-		);
-		error.code = "INVALID_NAME";
-		throw error;
-	}
+	const img = getImageFromRawInput( name, "drawImage" );
 
 	// Validate coordinates
-	if( isNaN( x ) || isNaN( y ) ) {
+	if( typeof x !== "number" || typeof y !== "number" || isNaN( x ) || isNaN( y ) ) {
 		const error = new TypeError( "drawImage: Parameters x and y must be numbers." );
-		error.code = "INVALID_COORDINATES";
+		error.code = "INVALID_PARAMETER_TYPE";
 		throw error;
 	}
 
-	// Default values
-	if( scaleX == null || isNaN( Number( scaleX ) ) ) {
-		scaleX = 1;
-	}
-	if( scaleY == null || isNaN( Number( scaleY ) ) ) {
-		scaleY = 1;
-	}
-	if( angle == null ) {
-		angle = 0;
-	}
-	if( anchorX == null ) {
-		anchorX = 0;
-	}
-	if( anchorY == null ) {
-		anchorY = 0;
-	}
-	if( alpha == null && alpha !== 0 ) {
-		alpha = 255;
+	// Unified validation for all numeric parameters
+	if( typeof angle !== "number" || isNaN( angle ) ||
+		typeof anchorX !== "number" || isNaN( anchorX ) ||
+		typeof anchorY !== "number" || isNaN( anchorY ) ||
+		typeof alpha !== "number" || isNaN( alpha ) ||
+		typeof scaleX !== "number" || isNaN( scaleX ) ||
+		typeof scaleY !== "number" || isNaN( scaleY )
+	) {
+		const error = new TypeError(
+			"drawImage: Parameters (x, y, angle, anchorX, anchorY, alpha, scaleX, scaleY) " +
+			"must be numbers if provided."
+		);
+		error.code = "INVALID_PARAMETER_TYPE";
+		throw error;
 	}
 
 	// Convert angle from degrees to radians
@@ -334,6 +297,76 @@ function drawImage( screenData, options ) {
  * Internal Helper Functions
  ***************************************************************************************************/
 
+
+function getImageFromRawInput( imageOrName, fnName ) {
+	let img;
+
+	// Resolve image from name parameter
+	if( typeof imageOrName === "string" ) {
+
+		// Handle string image name
+		const imageData = getStoredImage( imageOrName );
+		if( !imageData ) {
+			const error = new Error( `${fnName}: Image "${imageOrName}" not found.` );
+			error.code = "IMAGE_NOT_FOUND"
+			throw error;
+		}
+
+		if( imageData.status !== "ready" ) {
+			const imgName = `Image "${imageOrName}"`;
+			if( imageData.status === "loading" ) {
+				const error = new Error(
+					`${fnName}: "${imgName}" is still loading. Use $.ready() to wait for it.`
+				);
+				error.code = "IMAGE_NOT_READY";
+				throw error;
+			}
+	
+			if( imageData.status === "error" ) {
+				const error = new Error( `${fnName}: "${imgName}" failed to load.` );
+				error.code = "IMAGE_LOAD_FAILED";
+				throw error;
+			}
+		}
+
+		img = imageData.image;
+	} else if( imageOrName && typeof imageOrName === "object" ) {
+
+		// Handle screen API object
+		if( imageOrName.screen === true ) {
+			if( typeof imageOrName.canvas === "function" ) {
+				img = imageOrName.canvas();
+			} else {
+				img = imageOrName.canvas;
+			}
+			if( !img ) {
+				const error = new Error( `${fnName}: Screen has no canvas.` );
+				error.code = "INVALID_SCREEN";
+				throw error;
+			}
+		} else if( imageOrName.tagName === "CANVAS" || imageOrName.tagName === "IMG" ) {
+
+			// Handle Canvas or Image element
+			img = imageOrName;
+		} else {
+			const error = new TypeError(
+				`${fnName}: Parameter name must be a string, screen object, Canvas element, ` +
+				"or Image element."
+			);
+			error.code = "INVALID_NAME";
+			throw error;
+		}
+	} else {
+		const error = new TypeError(
+			`${fnName}: Parameter name must be a string, screen object, Canvas element, ` +
+			"or Image element."
+		);
+		error.code = "INVALID_NAME";
+		throw error;
+	}
+
+	return img;
+}
 
 /**
  * Get stored image by name

@@ -64,6 +64,8 @@ export function rebuildApi( s_screenData ) {
 	const s_penConfig = s_screenData.pens;
 	const s_penType = s_penConfig.pen;
 	const s_penSize = s_penConfig.size;
+
+	// TODO: Verify if we still need pixels per pen after completing all primitive draw commands
 	const s_pixelsPerPen = s_penConfig.pixelsPerPen;
 
 	// Build drawing function based on pen type

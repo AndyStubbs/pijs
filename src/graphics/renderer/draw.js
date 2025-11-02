@@ -111,7 +111,8 @@ export function drawImage(
 	const scaledWidth = imgWidth * scaleX;
 	const scaledHeight = imgHeight * scaleY;
 
-	// Calculate corner positions relative to anchor point (top-left at -anchor, bottom-right at size-anchor)
+	// Calculate corner positions relative to anchor point
+	// (top-left at -anchor, bottom-right at size-anchor)
 	const corners = [
 		{ "x": -anchorXPx, "y": -anchorYPx },                    // Top-left
 		{ "x": scaledWidth - anchorXPx, "y": -anchorYPx },      // Top-right
