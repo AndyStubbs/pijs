@@ -123,7 +123,8 @@ function generateCircleGeometry( radiusThresholdSq ) {
 		const xStart = mm.min;
 		const xEnd = mm.max;
 
-		// Quad as two triangles: (xStart,y), (xEnd+1,y), (xStart,y+1) and (xEnd+1,y), (xEnd+1,y+1), (xStart,y+1)
+		// Quad as two triangles: (xStart,y), (xEnd+1,y), (xStart,y+1) and (xEnd+1,y), (xEnd+1,y+1), 
+		// (xStart,y+1)
 		vertices[ vIdx++ ] = xStart;
 		vertices[ vIdx++ ] = currentY;
 		vertices[ vIdx++ ] = xEnd + 1;
