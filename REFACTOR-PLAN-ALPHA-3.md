@@ -560,7 +560,7 @@ Implement image loading and management module:
 - Support Image elements, Canvas elements, and URL strings
 - Handle onLoad and onError callbacks
 
-### Step 5.4: Implement readback.js
+### Step 5.4: Implement readback.js ✅ COMPLETE
 Move pixel readback from `renderer-webgl2.js` to `readback.js`:
 
 **Responsibilities:**
@@ -578,7 +578,29 @@ Move pixel readback from `renderer-webgl2.js` to `readback.js`:
 
 **Note:** `readback.js` imports `flushBatches` from `batches.js` - this works because of lazy initialization pattern.
 
-### Step 5.5: Test Images and Readback
+### Step 5.5: Implement pixels.js
+Move pixel reading/writing commands from `graphics-pixels.js` to `graphics/pixels.js`:
+
+**Responsibilities:**
+- `getPixel()` / `getPixelAsync()` - Read single pixel (synchronous/async)
+- `get()` - Read pixel rectangle
+- `put()` - Write pixel data from 2D array
+
+**Key functions:**
+- `export function init( api )` - Initialize module, register commands
+- Wrapper functions for read/write operations
+- Handles `asIndex` option for palette index vs color value
+- `put()` accepts 2D array of palette indices and draws pixels
+
+**Implementation notes:**
+- Read operations call `screenData.renderer.readPixel()` / `readPixels()`
+- `put()` calls `screenData.renderer.drawPixelUnsafe()` for each pixel
+- Uses `g_colors.getColorValueByIndex()` to convert palette indices to colors
+- Uses `g_colors.findColorIndexByColorValue()` to convert colors to palette indices
+- `put()` supports `include0` option to skip transparent pixels
+- Writes directly to `m_api.put` (stable API, no command routing)
+
+### Step 5.6: Test Images and Readback
 - Test image loading (`loadImage()` command)
 - Test `drawImage()` command - draw images with transformations
 - Test renderer's low-level `drawImage()` function

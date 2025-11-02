@@ -22,10 +22,10 @@ import * as g_draw from "./draw.js";
 import * as g_shapes from "./shapes.js";
 import * as g_geometry from "./geometry.js";
 import * as g_textures from "./textures.js";
+import * as g_readback from "./readback.js";
 
 // TODO: Import renderer modules when implemented
 // import * as primitives from "./primitives.js";
-// import * as readback from "./readback.js";
 
 
 /***************************************************************************************************
@@ -52,6 +52,9 @@ export { displayToCanvas } from "./batches.js";
 
 // Re-export texture management
 export { getWebGL2Texture, deleteWebGL2Texture } from "./textures.js";
+
+// Re-export readback functions
+export { readPixel, readPixelAsync, readPixels, readPixelsAsync } from "./readback.js";
 
 
 /***************************************************************************************************
@@ -89,8 +92,8 @@ export function init( api ) {
 	g_shapes.init();
 	g_geometry.init();
 	g_textures.init();
+	g_readback.init();
 	// TODO: 6. primitives.init()
-	// TODO: 8. readback.init()
 }
 
 /**
