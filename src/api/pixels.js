@@ -290,7 +290,7 @@ function put( screenData, data, x, y, include0, startY, startX, width, height ) 
 			const sx = x + dataX;
 			const sy = y + dataY;
 
-			g_renderer.drawPixelReplace( screenData, sx, sy, colorValue );
+			g_renderer.drawPixel( screenData, sx, sy, colorValue, g_renderer.POINTS_REPLACE_BATCH );
 		}
 	}
 }

@@ -79,7 +79,7 @@ export function rebuildApi( s_screenData ) {
 		// Pixel pen - draw single pixel
 		s_psetDrawFn = ( x, y, color ) => {
 			s_prepareBatch( s_screenData, s_pointsBatch, 1 );
-			s_drawPixel( s_screenData, x, y, color );
+			s_drawPixel( s_screenData, x, y, color, s_pointsBatch );
 		};
 
 		// Pixel line drawLinePixel for size 1
@@ -120,11 +120,11 @@ export function rebuildApi( s_screenData ) {
 			// Special case: size 2 draws a cross (5 pixels)
 			s_psetDrawFn = ( x, y, color ) => {
 				s_prepareBatch( s_screenData, s_pointsBatch, 5 );
-				s_drawPixel( s_screenData, x, y, color );
-				s_drawPixel( s_screenData, x + 1, y, color );
-				s_drawPixel( s_screenData, x - 1, y, color );
-				s_drawPixel( s_screenData, x, y + 1, color );
-				s_drawPixel( s_screenData, x, y - 1, color );
+				s_drawPixel( s_screenData, x, y, color, s_pointsBatch );
+				s_drawPixel( s_screenData, x + 1, y, color, s_pointsBatch );
+				s_drawPixel( s_screenData, x - 1, y, color, s_pointsBatch );
+				s_drawPixel( s_screenData, x, y + 1, color, s_pointsBatch );
+				s_drawPixel( s_screenData, x, y - 1, color, s_pointsBatch );
 			};
 		} else if( s_penSize >= 3 && s_penSize <= 30 ) {
 
