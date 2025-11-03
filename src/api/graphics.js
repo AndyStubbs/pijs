@@ -46,6 +46,7 @@ export function rebuildApi( s_screenData ) {
 		// Set error functions for when no screen is available
 		m_api.pset = () => g_utils.errFn( "pset" );
 		m_api.line = () => g_utils.errFn( "line" );
+		m_api.arc = () => g_utils.errFn( "arc" );
 		return;
 	}
 
@@ -81,17 +82,19 @@ export function rebuildApi( s_screenData ) {
 	let s_lineDrawFn;
 	if( s_penType === g_pens.PEN_PIXEL ) {
 
-		// Pixel pen - draw single pixel
+		// Pixel pen
 		s_psetDrawFn = ( x, y, color ) => {
 			s_prepareBatch( s_screenData, s_pointsBatch, 1 );
 			s_drawPixel( s_screenData, x, y, color, s_pointsBatch );
 		};
 
-		// Pixel line drawLinePixel for size 1
+		// Pixel line
 		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
 			s_prepareBatch( s_screenData, g_renderer.LINES_BATCH, 2 );
 			s_drawLinePixel( s_screenData, x1, y1, x2, y2, color );
 		};
+
+		
 	} else if( s_penType === g_pens.PEN_SQUARE ) {
 
 		// Square pen - prefer top/left for even sizes, MCA consistency for odd
@@ -204,6 +207,44 @@ export function rebuildApi( s_screenData ) {
 
 	m_api.line = lineFn;
 	s_screenData.api.line = lineFn;
+
+	/**********************************************************************************************
+	 * ARC Command
+	 **********************************************************************************************/
+
+	const arcFn = ( cx, cy, radius, angle1, angle2 ) => {
+		const pCx = s_getInt( cx, null );
+		const pCy = s_getInt( cy, null );
+		const pRadius = s_getInt( radius, null );
+
+		// Validate integer parameters
+		if( pCx === null || pCy === null || pRadius === null ) {
+			const error = new TypeError( "arc: Parameters cx, cy, and radius must be integers." );
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
+
+		// Validate angle parameters (numbers in radians)
+		if(
+			typeof angle1 !== "number" || isNaN( angle1 ) ||
+			typeof angle2 !== "number" || isNaN( angle2 )
+		) {
+			const error = new TypeError( "arc: Parameters angle1 and angle2 must be numbers (in radians)." );
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
+
+		// Prepare batch for arc pixels (estimate: approximately 2 * PI * radius pixels)
+		const estimatedPixels = Math.max( 4, Math.ceil( 2 * Math.PI * pRadius ) );
+		s_prepareBatch( s_screenData, s_pointsBatch, estimatedPixels );
+
+		// Draw
+		s_drawArcPixel( s_screenData, pCx, pCy, pRadius, angle1, angle2, s_color );
+		s_setImageDirty( s_screenData );
+	};
+
+	m_api.arc = arcFn;
+	s_screenData.api.arc = arcFn;
 }
 
 
