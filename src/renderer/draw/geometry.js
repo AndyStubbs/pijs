@@ -10,6 +10,7 @@
 "use strict";
 
 import * as g_batches from "../batches.js";
+import * as g_batchHelpers from "./batch-helpers.js";
 
 
 /***************************************************************************************************
@@ -209,21 +210,12 @@ export function drawCachedGeometry( screenData, cacheKey, x, y, color ) {
 	// Copy vertices to batch with offset and generate colors
 	const vertices = geometry.vertices;
 	let vIdx = 0;
-	let idx, cidx;
 
 	for( let i = 0; i < geometry.vertexCount; i++ ) {
 
-		idx = batch.count * batch.vertexComps;
-		cidx = batch.count * batch.colorComps;
-
-		batch.vertices[ idx     ] = vertices[ vIdx++ ] + x;
-		batch.vertices[ idx + 1 ] = vertices[ vIdx++ ] + y;
-		batch.colors[ cidx     ] = color.r;
-		batch.colors[ cidx + 1 ] = color.g;
-		batch.colors[ cidx + 2 ] = color.b;
-		batch.colors[ cidx + 3 ] = color.a;
-
-		batch.count++;
+		const vx = vertices[ vIdx++ ] + x;
+		const vy = vertices[ vIdx++ ] + y;
+		g_batchHelpers.addVertexToBatch( batch, vx, vy, color );
 	}
 }
 

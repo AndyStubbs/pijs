@@ -8,9 +8,7 @@
 
 "use strict";
 
-import * as g_batches from "../batches.js";
-import * as g_textures from "../textures.js";
-import * as g_utils from "../../core/utils.js";
+import * as g_batchHelpers from "./batch-helpers.js";
 
 
 /***************************************************************************************************
@@ -41,15 +39,5 @@ export function drawPixel( screenData, x, y, color, batchType ) {
 
 	// Add directly to point batch
 	const batch = screenData.batches[ batchType ];
-	const idx = batch.count * batch.vertexComps;
-	const cidx = batch.count * batch.colorComps;
-	
-	batch.vertices[ idx     ] = x;
-	batch.vertices[ idx + 1 ] = y;
-	batch.colors[ cidx     ] = color.r;
-	batch.colors[ cidx + 1 ] = color.g;
-	batch.colors[ cidx + 2 ] = color.b;
-	batch.colors[ cidx + 3 ] = color.a;
-
-	batch.count++;
+	g_batchHelpers.addVertexToBatch( batch, x, y, color );
 }

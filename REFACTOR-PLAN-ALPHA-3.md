@@ -685,7 +685,7 @@ Move pixel reading/writing commands from `graphics-pixels.js` to `api/pixels.js`
 
 **Note:** Primitives use pen configuration from `api/pens.js` (implemented in Phase 4, Step 4.2).
 
-### Step 6.1: Implement draw/lines.js - Line Drawing
+### Step 6.1: Implement draw/lines.js - Line Drawing ✅ COMPLETE
 Implement line drawing in `renderer/draw/lines.js`:
 
 **Responsibilities:**

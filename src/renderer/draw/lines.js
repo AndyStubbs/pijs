@@ -12,6 +12,7 @@
 
 // Import required modules
 import * as g_batches from "../batches.js";
+import * as g_batchHelpers from "./batch-helpers.js";
 import * as g_shapes from "./filled-shapes.js";
 
 
@@ -46,27 +47,7 @@ export function drawLinePixel( screenData, x1, y1, x2, y2, color ) {
 	const batch = screenData.batches[ g_batches.LINES_BATCH ];
 	g_batches.prepareBatch( screenData, g_batches.LINES_BATCH, 2, null, null );
 
-	const baseIdx = batch.count;
-	const vertexBase = baseIdx * batch.vertexComps;
-	const colorBase = baseIdx * batch.colorComps;
-
-	// Vertex 0
-	batch.vertices[ vertexBase ] = x1;
-	batch.vertices[ vertexBase + 1 ] = y1;
-	batch.colors[ colorBase ] = color.r;
-	batch.colors[ colorBase + 1 ] = color.g;
-	batch.colors[ colorBase + 2 ] = color.b;
-	batch.colors[ colorBase + 3 ] = color.a;
-
-	// Vertex 1
-	batch.vertices[ vertexBase + 2 ] = x2;
-	batch.vertices[ vertexBase + 3 ] = y2;
-	batch.colors[ colorBase + 4 ] = color.r;
-	batch.colors[ colorBase + 5 ] = color.g;
-	batch.colors[ colorBase + 6 ] = color.b;
-	batch.colors[ colorBase + 7 ] = color.a;
-
-	batch.count += 2;
+	g_batchHelpers.addLineToBatch( batch, x1, y1, x2, y2, color );
 }
 
 /**
@@ -96,12 +77,47 @@ export function drawLinePenSquare( screenData, x1, y1, x2, y2, color, penSize, p
 	drawLineBody( batch, x1, y1, x2, y2, halfWidth, extension, color );
 }
 
+/**
+ * Draw line with circle pen (geometry-based, for pen size >= 2)
+ * Draws a line body and adds circular caps at both endpoints
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {number} x1 - Start X coordinate
+ * @param {number} y1 - Start Y coordinate
+ * @param {number} x2 - End X coordinate
+ * @param {number} y2 - End Y coordinate
+ * @param {Object} color - Color object with r, g, b, a
+ * @param {number} penSize - Pen size
+ * @param {number} penType - Pen type (unused for circle pen)
+ * @returns {void}
+ */
 export function drawLinePenCircle( screenData, x1, y1, x2, y2, color, penSize, penType ) {
 
-	// TODO: Implement geometry generation for lines with pen size >= 2
-	// This will generate quads/geometry based on pen type and size
-
 	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
+	const halfWidth = penSize / 2;
+	const radius = halfWidth;
+
+	// Calculate line direction vector to check for degenerate lines
+	const dx = x2 - x1;
+	const dy = y2 - y1;
+	const length = Math.sqrt( dx * dx + dy * dy );
+
+	// For degenerate lines (essentially a point), just draw a single circle
+	if( length < 0.001 ) {
+		g_shapes.drawFilledCircle( screenData, x1, y1, radius, color );
+		return;
+	}
+
+	// Draw line body without extension (caps will cover the ends)
+	const extension = 0;
+	const vertexCount = 6;
+	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, vertexCount );
+
+	drawLineBody( batch, x1, y1, x2, y2, halfWidth, extension, color );
+
+	// Draw circular caps at both endpoints
+	g_shapes.drawFilledCircle( screenData, x1, y1, radius, color );
+	g_shapes.drawFilledCircle( screenData, x2, y2, radius, color );
 }
 
 
@@ -157,25 +173,8 @@ function drawLineBody( batch, x1, y1, x2, y2, halfWidth, extension, color ) {
 
 	// Add the rectangle as two triangles
 	// First triangle: p1, p4, p2
-	const addVertex = ( vx, vy ) => {
-		const idx = batch.count * batch.vertexComps;
-		const cidx = batch.count * batch.colorComps;
-
-		batch.vertices[ idx     ] = vx;
-		batch.vertices[ idx + 1 ] = vy;
-		batch.colors[ cidx     ] = color.r;
-		batch.colors[ cidx + 1 ] = color.g;
-		batch.colors[ cidx + 2 ] = color.b;
-		batch.colors[ cidx + 3 ] = color.a;
-		batch.count++;
-	};
-
-	addVertex( p1x, p1y );
-	addVertex( p4x, p4y );
-	addVertex( p2x, p2y );
+	g_batchHelpers.addTriangleToBatch( batch, p1x, p1y, p4x, p4y, p2x, p2y, color );
 
 	// Second triangle: p4, p3, p2
-	addVertex( p4x, p4y );
-	addVertex( p3x, p3y );
-	addVertex( p2x, p2y );
+	g_batchHelpers.addTriangleToBatch( batch, p4x, p4y, p3x, p3y, p2x, p2y, color );
 }

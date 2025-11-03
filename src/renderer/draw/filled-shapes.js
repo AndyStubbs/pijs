@@ -11,6 +11,7 @@
 "use strict";
 
 import * as g_batches from "../batches.js";
+import * as g_batchHelpers from "./batch-helpers.js";
 
 
 /***************************************************************************************************
@@ -47,29 +48,13 @@ export function drawFilledRect( screenData, x, y, width, height, color ) {
 	// Prepare batch for 6 vertices (2 triangles)
 	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, 6 );
 
-	// Helper function to add a vertex
-	const addVertex = ( vx, vy ) => {
-		const idx = batch.count * batch.vertexComps;
-		const cidx = batch.count * batch.colorComps;
-
-		batch.vertices[ idx     ] = vx;
-		batch.vertices[ idx + 1 ] = vy;
-		batch.colors[ cidx     ] = color.r;
-		batch.colors[ cidx + 1 ] = color.g;
-		batch.colors[ cidx + 2 ] = color.b;
-		batch.colors[ cidx + 3 ] = color.a;
-		batch.count++;
-	};
-
 	// First triangle: (x,y), (x+width,y), (x,y+height)
-	addVertex( x, y );
-	addVertex( x + width, y );
-	addVertex( x, y + height );
+	g_batchHelpers.addTriangleToBatch( batch, x, y, x + width, y, x, y + height, color );
 
 	// Second triangle: (x+width,y), (x+width,y+height), (x,y+height)
-	addVertex( x + width, y );
-	addVertex( x + width, y + height );
-	addVertex( x, y + height );
+	g_batchHelpers.addTriangleToBatch(
+		batch, x + width, y, x + width, y + height, x, y + height, color
+	);
 }
 
 /**
@@ -168,79 +153,6 @@ export function drawFilledCircle( screenData, cx, cy, radius, color ) {
 	sortedYCoords.sort( ( a, b ) => a - b );
 	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, estimatedVertexCount );
 
-	// Helper to add a quad efficiently
-	const addQuad = ( x1, y1, x2, y2, quadColor ) => {
-
-		const vx1 = x1 | 0;
-		const vy1 = y1 | 0;
-		const vx2 = x2 | 0;
-		const vy2 = y2 | 0;
-
-		let idx, cidx;
-
-		// Triangle 1: (x1,y1), (x2,y1), (x1,y2)
-		idx = batch.count * batch.vertexComps;
-		cidx = batch.count * batch.colorComps;
-		batch.vertices[ idx     ] = vx1;
-		batch.vertices[ idx + 1 ] = vy1;
-		batch.colors[ cidx     ] = quadColor.r;
-		batch.colors[ cidx + 1 ] = quadColor.g;
-		batch.colors[ cidx + 2 ] = quadColor.b;
-		batch.colors[ cidx + 3 ] = quadColor.a;
-		batch.count++;
-
-		idx = batch.count * batch.vertexComps;
-		cidx = batch.count * batch.colorComps;
-		batch.vertices[ idx     ] = vx2;
-		batch.vertices[ idx + 1 ] = vy1;
-		batch.colors[ cidx     ] = quadColor.r;
-		batch.colors[ cidx + 1 ] = quadColor.g;
-		batch.colors[ cidx + 2 ] = quadColor.b;
-		batch.colors[ cidx + 3 ] = quadColor.a;
-		batch.count++;
-
-		idx = batch.count * batch.vertexComps;
-		cidx = batch.count * batch.colorComps;
-		batch.vertices[ idx     ] = vx1;
-		batch.vertices[ idx + 1 ] = vy2;
-		batch.colors[ cidx     ] = quadColor.r;
-		batch.colors[ cidx + 1 ] = quadColor.g;
-		batch.colors[ cidx + 2 ] = quadColor.b;
-		batch.colors[ cidx + 3 ] = quadColor.a;
-		batch.count++;
-
-		// Triangle 2: (x2,y1), (x2,y2), (x1,y2)
-		idx = batch.count * batch.vertexComps;
-		cidx = batch.count * batch.colorComps;
-		batch.vertices[ idx     ] = vx2;
-		batch.vertices[ idx + 1 ] = vy1;
-		batch.colors[ cidx     ] = quadColor.r;
-		batch.colors[ cidx + 1 ] = quadColor.g;
-		batch.colors[ cidx + 2 ] = quadColor.b;
-		batch.colors[ cidx + 3 ] = quadColor.a;
-		batch.count++;
-
-		idx = batch.count * batch.vertexComps;
-		cidx = batch.count * batch.colorComps;
-		batch.vertices[ idx     ] = vx2;
-		batch.vertices[ idx + 1 ] = vy2;
-		batch.colors[ cidx     ] = quadColor.r;
-		batch.colors[ cidx + 1 ] = quadColor.g;
-		batch.colors[ cidx + 2 ] = quadColor.b;
-		batch.colors[ cidx + 3 ] = quadColor.a;
-		batch.count++;
-
-		idx = batch.count * batch.vertexComps;
-		cidx = batch.count * batch.colorComps;
-		batch.vertices[ idx     ] = vx1;
-		batch.vertices[ idx + 1 ] = vy2;
-		batch.colors[ cidx     ] = quadColor.r;
-		batch.colors[ cidx + 1 ] = quadColor.g;
-		batch.colors[ cidx + 2 ] = quadColor.b;
-		batch.colors[ cidx + 3 ] = quadColor.a;
-		batch.count++;
-	};
-
 	// Add quads for all valid scanlines
 	for( const currentY of sortedYCoords ) {
 
@@ -248,6 +160,6 @@ export function drawFilledCircle( screenData, cx, cy, radius, color ) {
 		const xStart = Math.max( mm.min, 0 );
 		const xEnd = Math.min( mm.max, maxX - 1 );
 
-		addQuad( xStart, currentY, xEnd + 1, currentY + 1, color );
+		g_batchHelpers.addQuadToBatch( batch, xStart, currentY, xEnd + 1, currentY + 1, color );
 	}
 }
