@@ -65,6 +65,12 @@ export function rebuildApi( s_screenData ) {
 	const s_drawArcSquare = g_renderer.drawArcSquare;
 	const s_drawArcCircle = g_renderer.drawArcCircle;
 
+	// Bezier
+	const s_drawBezierPixel = g_renderer.drawBezierPixel;
+	//const s_drawBezierSquare = g_renderer.drawArcSquare;
+	//const s_drawBezierCircle = g_renderer.drawArcCircle;
+
+
 	const s_setImageDirty = g_renderer.setImageDirty;
 	const s_prepareBatch = g_renderer.prepareBatch;
 	const s_getInt = g_utils.getInt;
@@ -83,6 +89,7 @@ export function rebuildApi( s_screenData ) {
 	let s_psetDrawFn;
 	let s_lineDrawFn;
 	let s_arcDrawFn;
+	let s_bezierDrawFn;
 	if( s_penType === g_pens.PEN_PIXEL ) {
 
 		// Pixel pen
@@ -99,6 +106,11 @@ export function rebuildApi( s_screenData ) {
 		// Pixel arc
 		s_arcDrawFn = ( cx, cy, radius, angle1, angle2, color ) => {
 			s_drawArcPixel( s_screenData, cx, cy, radius, angle1, angle2, color );
+		};
+
+		// Pixel bezier
+		s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
+			s_drawBezierPixel( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color );
 		};
 
 		
@@ -132,6 +144,11 @@ export function rebuildApi( s_screenData ) {
 			s_drawArcSquare( s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType );
 		};
 
+		// bezier (fallback to pixel tessellation for now)
+		s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
+			s_drawBezierPixel( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color );
+		};
+
 	} else if( s_penType === g_pens.PEN_CIRCLE ) {
 
 		// Circle pen
@@ -162,6 +179,11 @@ export function rebuildApi( s_screenData ) {
 		// arc circle pen
 		s_arcDrawFn = ( cx, cy, radius, angle1, angle2, color ) => {
 			s_drawArcCircle( s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType );
+		};
+
+		// bezier (fallback to pixel tessellation for now)
+		s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
+			s_drawBezierPixel( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color );
 		};
 	}
 
@@ -249,6 +271,39 @@ export function rebuildApi( s_screenData ) {
 
 	m_api.arc = arcFn;
 	s_screenData.api.arc = arcFn;
+
+	/**********************************************************************************************
+	 * BEZIER Command
+	 **********************************************************************************************/
+
+	const bezierFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y ) => {
+		const v0x = s_getInt( p0x, null );
+		const v0y = s_getInt( p0y, null );
+		const v1x = s_getInt( p1x, null );
+		const v1y = s_getInt( p1y, null );
+		const v2x = s_getInt( p2x, null );
+		const v2y = s_getInt( p2y, null );
+		const v3x = s_getInt( p3x, null );
+		const v3y = s_getInt( p3y, null );
+
+		if(
+			v0x === null || v0y === null || v1x === null || v1y === null ||
+			v2x === null || v2y === null || v3x === null || v3y === null
+		) {
+			const error = new TypeError(
+				"bezier: All control point coordinates must be integers."
+			);
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
+
+		// Draw
+		s_bezierDrawFn( v0x, v0y, v1x, v1y, v2x, v2y, v3x, v3y, s_color );
+		s_setImageDirty( s_screenData );
+	};
+
+	m_api.bezier = bezierFn;
+	s_screenData.api.bezier = bezierFn;
 }
 
 

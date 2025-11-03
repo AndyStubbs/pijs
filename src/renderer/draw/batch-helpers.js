@@ -186,3 +186,74 @@ export function drawHalfCircleCap( screenData, cx, cy, radius, color, tanX, tanY
 	}
 }
 
+/**
+ * Tessellate a cubic Bezier curve into a polyline using an adaptive flatness criterion.
+ * Returns an array of points [x0, y0, x1, y1, ..., xn, yn] including endpoints.
+ * 
+ * @param {number} x0
+ * @param {number} y0
+ * @param {number} x1
+ * @param {number} y1
+ * @param {number} x2
+ * @param {number} y2
+ * @param {number} x3
+ * @param {number} y3
+ * @param {number} maxError - Max perpendicular error in pixels
+ * @returns {number[]}
+ */
+export function tessellateCubicBezier( x0, y0, x1, y1, x2, y2, x3, y3, maxError ) {
+
+	const out = [];
+
+	// Distance from point to line segment (squared)
+	function pointLineDistanceSq( px, py, ax, ay, bx, by ) {
+		const abx = bx - ax;
+		const aby = by - ay;
+		const apx = px - ax;
+		const apy = py - ay;
+		const abLenSq = abx * abx + aby * aby;
+		if( abLenSq === 0 ) return apx * apx + apy * apy;
+		let t = ( apx * abx + apy * aby ) / abLenSq;
+		if( t < 0 ) t = 0; else if( t > 1 ) t = 1;
+		const cx = ax + t * abx;
+		const cy = ay + t * aby;
+		const dx = px - cx;
+		const dy = py - cy;
+		return dx * dx + dy * dy;
+	}
+
+	const maxErrorSq = maxError * maxError;
+	const maxDepth = 12;
+
+	function subdivide( ax, ay, bx, by, cx, cy, dx, dy, depth ) {
+
+		// Flatness test: max distance of control points to chord (a-d)
+		const d1 = pointLineDistanceSq( bx, by, ax, ay, dx, dy );
+		const d2 = pointLineDistanceSq( cx, cy, ax, ay, dx, dy );
+		if( depth >= maxDepth || ( d1 <= maxErrorSq && d2 <= maxErrorSq ) ) {
+			// Accept segment
+			if( out.length === 0 ) {
+				out.push( ax, ay );
+			}
+			out.push( dx, dy );
+			return;
+		}
+
+		// De Casteljau subdivision at t=0.5
+		const abx = ( ax + bx ) * 0.5; const aby = ( ay + by ) * 0.5;
+		const bcx = ( bx + cx ) * 0.5; const bcy = ( by + cy ) * 0.5;
+		const cdx = ( cx + dx ) * 0.5; const cdy = ( cy + dy ) * 0.5;
+
+		const abbcx = ( abx + bcx ) * 0.5; const abbcy = ( aby + bcy ) * 0.5;
+		const bccdx = ( bcx + cdx ) * 0.5; const bccdy = ( bcy + cdy ) * 0.5;
+
+		const midx = ( abbcx + bccdx ) * 0.5; const midy = ( abbcy + bccdy ) * 0.5;
+
+		subdivide( ax, ay, abx, aby, abbcx, abbcy, midx, midy, depth + 1 );
+		subdivide( midx, midy, bccdx, bccdy, cdx, cdy, dx, dy, depth + 1 );
+	}
+
+	subdivide( x0, y0, x1, y1, x2, y2, x3, y3, 0 );
+	return out;
+}
+

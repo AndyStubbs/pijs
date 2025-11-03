@@ -40,6 +40,7 @@ export {
 export { drawImage } from "./draw/images.js";
 export { drawPixel } from "./draw/primitives.js";
 export { drawArcPixel, drawArcSquare, drawArcCircle } from "./draw/arcs.js";
+export { drawBezierPixel } from "./draw/bezier.js";
 export { drawFilledRect, drawFilledCircle } from "./draw/filled-shapes.js";
 export { drawLinePixel, drawLineSquare, drawLineCircle } from "./draw/lines.js";
 export { drawCachedGeometry } from "./draw/geometry.js";
