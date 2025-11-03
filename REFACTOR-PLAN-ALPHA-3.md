@@ -703,7 +703,7 @@ Implement line drawing in `renderer/draw/lines.js`:
 - Square pen: Extended rectangle with square caps
 - Circle pen: Extended rectangle with circular caps
 
-### Step 6.2: Implement draw/arcs.js - Arc Drawing
+### Step 6.2: Implement draw/arcs.js - Arc Drawing 
 Move arc drawing from `graphics-primitives.js`:
 
 **Responsibilities:**

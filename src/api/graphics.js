@@ -62,6 +62,8 @@ export function rebuildApi( s_screenData ) {
 
 	// Arcs
 	const s_drawArcPixel = g_renderer.drawArcPixel;
+	const s_drawArcSquare = g_renderer.drawArcSquare;
+	const s_drawArcCircle = g_renderer.drawArcCircle;
 
 	const s_setImageDirty = g_renderer.setImageDirty;
 	const s_prepareBatch = g_renderer.prepareBatch;
@@ -80,6 +82,7 @@ export function rebuildApi( s_screenData ) {
 	// Build drawing functions based on pen type
 	let s_psetDrawFn;
 	let s_lineDrawFn;
+	let s_arcDrawFn;
 	if( s_penType === g_pens.PEN_PIXEL ) {
 
 		// Pixel pen
@@ -91,6 +94,11 @@ export function rebuildApi( s_screenData ) {
 		// Pixel line
 		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
 			s_drawLinePixel( s_screenData, x1, y1, x2, y2, color );
+		};
+
+		// Pixel arc
+		s_arcDrawFn = ( cx, cy, radius, angle1, angle2, color ) => {
+			s_drawArcPixel( s_screenData, cx, cy, radius, angle1, angle2, color );
 		};
 
 		
@@ -117,6 +125,11 @@ export function rebuildApi( s_screenData ) {
 		// line square pen
 		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
 			s_drawLineSquare( s_screenData, x1, y1, x2, y2, color, s_penSize, s_penType );
+		};
+
+		// arc square pen
+		s_arcDrawFn = ( cx, cy, radius, angle1, angle2, color ) => {
+			s_drawArcSquare( s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType );
 		};
 
 	} else if( s_penType === g_pens.PEN_CIRCLE ) {
@@ -156,6 +169,11 @@ export function rebuildApi( s_screenData ) {
 		// line circle pen
 		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
 			s_drawLineCircle( s_screenData, x1, y1, x2, y2, color, s_penSize, s_penType );
+		};
+
+		// arc circle pen
+		s_arcDrawFn = ( cx, cy, radius, angle1, angle2, color ) => {
+			s_drawArcCircle( s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType );
 		};
 	}
 
@@ -233,8 +251,8 @@ export function rebuildApi( s_screenData ) {
 			throw error;
 		}
 
-		// Draw
-		s_drawArcPixel( s_screenData, pCx, pCy, pRadius, angle1, angle2, s_color );
+		// Draw (using pen-based drawing function)
+		s_arcDrawFn( pCx, pCy, pRadius, angle1, angle2, s_color );
 		s_setImageDirty( s_screenData );
 	};
 
