@@ -14,6 +14,7 @@ import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_pens from "./pens.js";
+import * as g_colors from "./colors.js";
 
 let m_api = null;
 
@@ -47,6 +48,7 @@ export function rebuildApi( s_screenData ) {
 		m_api.pset = () => g_utils.errFn( "pset" );
 		m_api.line = () => g_utils.errFn( "line" );
 		m_api.arc = () => g_utils.errFn( "arc" );
+		m_api.rect = () => g_utils.errFn( "rect" );
 		return;
 	}
 
@@ -65,10 +67,10 @@ export function rebuildApi( s_screenData ) {
 	const s_drawArcSquare = g_renderer.drawArcSquare;
 	const s_drawArcCircle = g_renderer.drawArcCircle;
 
-    // Bezier
-    const s_drawBezierPixel = g_renderer.drawBezierPixel;
-    const s_drawBezierSquare = g_renderer.drawBezierSquare;
-    const s_drawBezierCircle = g_renderer.drawBezierCircle;
+	// Bezier
+	const s_drawBezierPixel = g_renderer.drawBezierPixel;
+	const s_drawBezierSquare = g_renderer.drawBezierSquare;
+	const s_drawBezierCircle = g_renderer.drawBezierCircle;
 
 
 	const s_setImageDirty = g_renderer.setImageDirty;
@@ -81,15 +83,30 @@ export function rebuildApi( s_screenData ) {
 	const s_penConfig = s_screenData.pens;
 	const s_penType = s_penConfig.pen;
 	const s_penSize = s_penConfig.size;
+	const s_inset = Math.floor( s_penSize / 2 );
 
 	// TODO: Verify if we still need pixels per pen after completing all primitive draw commands
 	const s_pixelsPerPen = s_penConfig.pixelsPerPen;
+
+	// Helper to fill inner rectangle with specified inset (avoids border overlap)
+	const s_rectInnerFillFn = ( x, y, width, height, fillColorValue, inset ) => {
+		if( fillColorValue !== null && width > 0 && height > 0 ) {
+			const fx = x + inset;
+			const fy = y + inset;
+			const fw = width - inset * 2;
+			const fh = height - inset * 2;
+			if( fw > 0 && fh > 0 ) {
+				g_renderer.drawFilledRect( s_screenData, fx, fy, fw, fh, fillColorValue );
+			}
+		}
+	};
 
 	// Build drawing functions based on pen type
 	let s_psetDrawFn;
 	let s_lineDrawFn;
 	let s_arcDrawFn;
 	let s_bezierDrawFn;
+	let s_rectDrawFn;
 	if( s_penType === g_pens.PEN_PIXEL ) {
 
 		// Pixel pen
@@ -111,6 +128,14 @@ export function rebuildApi( s_screenData ) {
 		// Pixel bezier
 		s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
 			s_drawBezierPixel( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color );
+		};
+
+
+
+		// Pixel rect: fill interior with 1px inset, then outline
+		s_rectDrawFn = ( x, y, width, height, outlineColor, fillColorValue ) => {
+			s_rectInnerFillFn( x, y, width, height, fillColorValue, 1 );
+			g_renderer.drawRectPixel( s_screenData, x, y, width, height, outlineColor );
 		};
 
 		
@@ -144,10 +169,26 @@ export function rebuildApi( s_screenData ) {
 			s_drawArcSquare( s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType );
 		};
 
-        // bezier with square pen
-        s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
-            s_drawBezierSquare( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, s_penSize, s_penType );
-        };
+		// bezier with square pen
+		s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
+			s_drawBezierSquare( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, s_penSize, s_penType );
+		};
+
+		// Rect with square pen: fill inset by half pen, then outline via thick lines
+		s_rectDrawFn = ( x, y, width, height, outlineColor, fillColorValue ) => {
+			s_rectInnerFillFn( x, y, width, height, fillColorValue, s_inset );
+
+			const x2 = x + width - 1;
+			const y2 = y + height - 1;
+			s_drawLineSquare( s_screenData, x, y, x2, y, outlineColor, s_penSize, s_penType );
+			if( height > 1 ) {
+				s_drawLineSquare( s_screenData, x2, y, x2, y2, outlineColor, s_penSize, s_penType );
+				s_drawLineSquare( s_screenData, x2, y2, x, y2, outlineColor, s_penSize, s_penType );
+			}
+			if( width > 1 ) {
+				s_drawLineSquare( s_screenData, x, y2, x, y, outlineColor, s_penSize, s_penType );
+			}
+		};
 
 	} else if( s_penType === g_pens.PEN_CIRCLE ) {
 
@@ -181,10 +222,26 @@ export function rebuildApi( s_screenData ) {
 			s_drawArcCircle( s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType );
 		};
 
-        // bezier with circle pen
-        s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
-            s_drawBezierCircle( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, s_penSize, s_penType );
-        };
+		// bezier with circle pen
+		s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
+			s_drawBezierCircle( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, s_penSize, s_penType );
+		};
+
+		// Rect with circle pen: fill inset by half pen, then outline via thick lines
+		s_rectDrawFn = ( x, y, width, height, outlineColor, fillColorValue ) => {
+			s_rectInnerFillFn( x, y, width, height, fillColorValue, s_inset );
+
+			const x2 = x + width - 1;
+			const y2 = y + height - 1;
+			s_drawLineCircle( s_screenData, x, y, x2, y, outlineColor, s_penSize, s_penType );
+			if( height > 1 ) {
+				s_drawLineCircle( s_screenData, x2, y, x2, y2, outlineColor, s_penSize, s_penType );
+				s_drawLineCircle( s_screenData, x2, y2, x, y2, outlineColor, s_penSize, s_penType );
+			}
+			if( width > 1 ) {
+				s_drawLineCircle( s_screenData, x, y2, x, y, outlineColor, s_penSize, s_penType );
+			}
+		};
 	}
 
 	/**********************************************************************************************
@@ -304,6 +361,45 @@ export function rebuildApi( s_screenData ) {
 
 	m_api.bezier = bezierFn;
 	s_screenData.api.bezier = bezierFn;
+
+	/**********************************************************************************************
+	 * RECT Command
+	 **********************************************************************************************/
+
+	const rectFn = ( x, y, width, height, fillColor ) => {
+		const pX = s_getInt( x, null );
+		const pY = s_getInt( y, null );
+		const pW = s_getInt( width, null );
+		const pH = s_getInt( height, null );
+
+		if( pX === null || pY === null || pW === null || pH === null ) {
+			const error = new TypeError( "rect: Parameters x, y, width, height must be integers." );
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
+
+		if( pW < 1 || pH < 1 ) {
+			return;
+		}
+
+		// Parse and validate fillColor here (single source of truth)
+		let fillColorValue = null;
+		if( fillColor != null ) {
+			fillColorValue = g_colors.getColorValueByRawInput( s_screenData, fillColor );
+			if( fillColorValue === null ) {
+				const error = new TypeError( "rect: Parameter 'fillColor' must be a valid color." );
+				error.code = "INVALID_PARAMETER";
+				throw error;
+			}
+		}
+
+		// Draw via configured pen strategy
+		s_rectDrawFn( pX, pY, pW, pH, s_color, fillColorValue );
+		s_setImageDirty( s_screenData );
+	};
+
+	m_api.rect = rectFn;
+	s_screenData.api.rect = rectFn;
 }
 
 

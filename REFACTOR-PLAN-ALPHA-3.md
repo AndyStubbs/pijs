@@ -724,7 +724,7 @@ Move arc drawing from `graphics-primitives.js`:
 - Filter pixels by angle range
 - Estimate batch size based on arc circumference and pen size
 
-### Step 6.3: Implement draw/bezier.js - Bezier Drawing
+### Step 6.3: Implement draw/bezier.js - Bezier Drawing ✅ COMPLETE
 Move bezier drawing from `graphics-primitives.js`:
 
 **Responsibilities:**
@@ -744,7 +744,7 @@ Move bezier drawing from `graphics-primitives.js`:
 - Adaptive tessellation based on curve length
 - Estimate batch size based on control polygon length and pen size
 
-### Step 6.4: Test Primitives
+### Step 6.4: Test Primitives ✅ COMPLETE
 - Test `drawLinePixel()`, `drawLineSquare()`, `drawLineCircle()` - various angles and lengths
 - Test `drawArcPixel()`, `drawArcSquare()`, `drawArcCircle()` - different angles and radii
 - Test `drawBezierPixel()`, `drawBezierSquare()`, `drawBezierCircle()` - various curve shapes
