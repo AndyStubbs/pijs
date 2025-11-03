@@ -51,13 +51,13 @@ src/
 │   ├── batches.js                    # Batch system + rendering (COMBINED)
 │   ├── textures.js                   # Texture management (getWebGL2Texture, etc.)
 │   ├── draw/                         # Internal drawing primitives and shapes
-│   │   ├── primitives.js             # Core: drawPixel, drawPixelReplace
-│   │   ├── lines.js                  # Lines: drawLinePixel, drawLinePenSquare, drawLinePenCircle
-│   │   ├── rects.js                  # Rectangles: drawRectPenPixel, drawRectPenSquare, drawRectPenCircle
-│   │   ├── circles.js                # Circles: drawCirclePenPixel, drawCirclePenSquare, drawCirclePenCircle
-│   │   ├── ellipses.js               # Ellipses: drawEllipsePenPixel, drawEllipsePenSquare, drawEllipsePenCircle
-│   │   ├── arcs.js                   # Arcs: drawArcPenPixel, drawArcPenSquare, drawArcPenCircle
-│   │   ├── bezier.js                 # Bezier: drawBezierPenPixel, drawBezierPenSquare, drawBezierPenCircle
+│   │   ├── primitives.js             # Core: drawPixel
+│   │   ├── lines.js                  # Lines: drawLinePixel, drawLineSquare, drawLineCircle
+│   │   ├── rects.js                  # Rectangles: drawRectPixel, drawRectSquare, drawRectCircle
+│   │   ├── circles.js                # Circles: drawCirclePixel, drawCircleSquare, drawCircleCircle
+│   │   ├── ellipses.js               # Ellipses: drawEllipsePixel, drawEllipseSquare, drawEllipseCircle
+│   │   ├── arcs.js                   # Arcs: drawArcPixel, drawArcSquare, drawArcCircle
+│   │   ├── bezier.js                 # Bezier: drawBezierPixel, drawBezierSquare, drawBezierCircle
 │   │   ├── filledShapes.js           # Filled: drawFilledRect, drawFilledCircle, drawFilledEllipse
 │   │   └── images.js                 # Images: drawImage
 │   ├── readback.js                   # readPixel, readPixels (sync/async) (internal WebGL readback)
@@ -113,13 +113,13 @@ src/
 - `readback.js`: Pixel readback operations (`readPixel`, `readPixels`) (internal WebGL readback)
 
 **Drawing Layer (`renderer/draw/`):**
-- `primitives.js`: Core drawing (`drawPixel`, `drawPixelReplace`)
-- `lines.js`: Line drawing (`drawLinePixel`, `drawLinePenSquare`, `drawLinePenCircle`)
-- `rects.js`: Rectangle drawing (`drawRectPenPixel`, `drawRectPenSquare`, `drawRectPenCircle`)
-- `circles.js`: Circle drawing (`drawCirclePenPixel`, `drawCirclePenSquare`, `drawCirclePenCircle`)
-- `ellipses.js`: Ellipse drawing (`drawEllipsePenPixel`, `drawEllipsePenSquare`, `drawEllipsePenCircle`)
-- `arcs.js`: Arc drawing (`drawArcPenPixel`, `drawArcPenSquare`, `drawArcPenCircle`)
-- `bezier.js`: Bezier curve drawing (`drawBezierPenPixel`, `drawBezierPenSquare`, `drawBezierPenCircle`)
+- `primitives.js`: Core drawing (`drawPixel`)
+- `lines.js`: Line drawing (`drawLinePixel`, `drawLineSquare`, `drawLineCircle`)
+- `rects.js`: Rectangle drawing (`drawRectPixel`, `drawRectSquare`, `drawRectCircle`)
+- `circles.js`: Circle drawing (`drawCirclePixel`, `drawCircleSquare`, `drawCircleCircle`)
+- `ellipses.js`: Ellipse drawing (`drawEllipsePixel`, `drawEllipseSquare`, `drawEllipseCircle`)
+- `arcs.js`: Arc drawing (`drawArcPixel`, `drawArcSquare`, `drawArcCircle`)
+- `bezier.js`: Bezier curve drawing (`drawBezierPixel`, `drawBezierSquare`, `drawBezierCircle`)
 - `filledShapes.js`: Filled shapes (`drawFilledRect`, `drawFilledCircle`, `drawFilledEllipse`)
 - `images.js`: Image drawing (`drawImage` with textured quads)
 
@@ -152,31 +152,31 @@ batches.js
 
 draw/primitives.js
   ├─ imports: batches.js
-  └─ exports: drawPixel, drawPixelReplace
+  └─ exports: drawPixel
 
 draw/lines.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawLinePixel, drawLinePenSquare, drawLinePenCircle
+  └─ exports: drawLinePixel, drawLineSquare, drawLineCircle
 
 draw/rects.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawRectPenPixel, drawRectPenSquare, drawRectPenCircle
+  └─ exports: drawRectPixel, drawRectSquare, drawRectCircle
 
 draw/circles.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawCirclePenPixel, drawCirclePenSquare, drawCirclePenCircle
+  └─ exports: drawCirclePixel, drawCircleSquare, drawCircleCircle
 
 draw/ellipses.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawEllipsePenPixel, drawEllipsePenSquare, drawEllipsePenCircle
+  └─ exports: drawEllipsePixel, drawEllipseSquare, drawEllipseCircle
 
 draw/arcs.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawArcPenPixel, drawArcPenSquare, drawArcPenCircle
+  └─ exports: drawArcPixel, drawArcSquare, drawArcCircle
 
 draw/bezier.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawBezierPenPixel, drawBezierPenSquare, drawBezierPenCircle
+  └─ exports: drawBezierPixel, drawBezierSquare, drawBezierCircle
 
 draw/filledShapes.js
   ├─ imports: batches.js
@@ -417,12 +417,10 @@ Move core drawing functions from `renderer-webgl2.js`:
 
 **Responsibilities:**
 - `drawPixel()` - Fast path for single pixel writes
-- `drawPixelReplace()` - Fast path for single pixel writes with replace blend mode
 
 **Key functions:**
 - `export function init( api )` - Initialize module
 - `export function drawPixel( screenData, x, y, color )`
-- `export function drawPixelReplace( screenData, x, y, color )`
 
 **Note:** `drawImage()` will be implemented in `draw/images.js` when implementing image support.
 
@@ -690,14 +688,14 @@ Implement line drawing in `renderer/draw/lines.js`:
 
 **Responsibilities:**
 - `drawLinePixel()` - Draw line using WebGL2 `gl.LINES` (pen size 1)
-- `drawLinePenSquare()` - Draw line with square pen (pen size >= 2)
-- `drawLinePenCircle()` - Draw line with circle pen (pen size >= 2)
+- `drawLineSquare()` - Draw line with square pen (pen size >= 2)
+- `drawLineCircle()` - Draw line with circle pen (pen size >= 2)
 
 **Key functions:**
 - `export function init( api )` - Initialize module
 - `export function drawLinePixel( screenData, x1, y1, x2, y2, color )`
-- `export function drawLinePenSquare( screenData, x1, y1, x2, y2, color, penSize, penType )`
-- `export function drawLinePenCircle( screenData, x1, y1, x2, y2, color, penSize, penType )`
+- `export function drawLineSquare( screenData, x1, y1, x2, y2, color, penSize, penType )`
+- `export function drawLineCircle( screenData, x1, y1, x2, y2, color, penSize, penType )`
 
 **Implementation notes:**
 - Size 1: Use `LINES_BATCH` batch, add 2 vertices for line segment
@@ -709,15 +707,15 @@ Implement line drawing in `renderer/draw/lines.js`:
 Move arc drawing from `graphics-primitives.js`:
 
 **Responsibilities:**
-- `drawArcPenPixel()` - Arc outline using pixel pen
-- `drawArcPenSquare()` - Arc outline using square pen
-- `drawArcPenCircle()` - Arc outline using circle pen
+- `drawArcPixel()` - Arc outline using pixel pen
+- `drawArcSquare()` - Arc outline using square pen
+- `drawArcCircle()` - Arc outline using circle pen
 - Handle angle ranges, winding
 
 **Key functions:**
-- `export function drawArcPenPixel( screenData, cx, cy, radius, angle1, angle2, color )`
-- `export function drawArcPenSquare( screenData, cx, cy, radius, angle1, angle2, color, penSize )`
-- `export function drawArcPenCircle( screenData, cx, cy, radius, angle1, angle2, color, penSize )`
+- `export function drawArcPixel( screenData, cx, cy, radius, angle1, angle2, color )`
+- `export function drawArcSquare( screenData, cx, cy, radius, angle1, angle2, color, penSize )`
+- `export function drawArcCircle( screenData, cx, cy, radius, angle1, angle2, color, penSize )`
 
 **Implementation notes:**
 - Move `m_arcOutline()` function from `graphics-primitives.js`
@@ -730,14 +728,14 @@ Move arc drawing from `graphics-primitives.js`:
 Move bezier drawing from `graphics-primitives.js`:
 
 **Responsibilities:**
-- `drawBezierPenPixel()` - Cubic bezier curve with pixel pen
-- `drawBezierPenSquare()` - Cubic bezier curve with square pen
-- `drawBezierPenCircle()` - Cubic bezier curve with circle pen
+- `drawBezierPixel()` - Cubic bezier curve with pixel pen
+- `drawBezierSquare()` - Cubic bezier curve with square pen
+- `drawBezierCircle()` - Cubic bezier curve with circle pen
 
 **Key functions:**
-- `export function drawBezierPenPixel( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color )`
-- `export function drawBezierPenSquare( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, penSize )`
-- `export function drawBezierPenCircle( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, penSize )`
+- `export function drawBezierPixel( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color )`
+- `export function drawBezierSquare( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, penSize )`
+- `export function drawBezierCircle( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, penSize )`
 
 **Implementation notes:**
 - Move `m_bezierOutline()` function from `graphics-primitives.js`
@@ -747,9 +745,9 @@ Move bezier drawing from `graphics-primitives.js`:
 - Estimate batch size based on control polygon length and pen size
 
 ### Step 6.4: Test Primitives
-- Test `drawLinePixel()`, `drawLinePenSquare()`, `drawLinePenCircle()` - various angles and lengths
-- Test `drawArcPenPixel()`, `drawArcPenSquare()`, `drawArcPenCircle()` - different angles and radii
-- Test `drawBezierPenPixel()`, `drawBezierPenSquare()`, `drawBezierPenCircle()` - various curve shapes
+- Test `drawLinePixel()`, `drawLineSquare()`, `drawLineCircle()` - various angles and lengths
+- Test `drawArcPixel()`, `drawArcSquare()`, `drawArcCircle()` - different angles and radii
+- Test `drawBezierPixel()`, `drawBezierSquare()`, `drawBezierCircle()` - various curve shapes
 - Verify all primitives render correctly with different pen types
 
 ## Phase 7: High-Level Shapes
@@ -758,16 +756,16 @@ Move bezier drawing from `graphics-primitives.js`:
 Move rectangle drawing from `graphics-shapes.js` to `renderer/draw/rects.js`:
 
 **Responsibilities:**
-- `drawRectPenPixel()` - Rectangle outline with pixel pen
-- `drawRectPenSquare()` - Rectangle outline with square pen
-- `drawRectPenCircle()` - Rectangle outline with circle pen
+- `drawRectPixel()` - Rectangle outline with pixel pen
+- `drawRectSquare()` - Rectangle outline with square pen
+- `drawRectCircle()` - Rectangle outline with circle pen
 - Handle pen size, fill color, blending
 
 **Key functions:**
 - `export function init( api )` - Initialize module
-- `export function drawRectPenPixel( screenData, x, y, width, height, color, fillColor )`
-- `export function drawRectPenSquare( screenData, x, y, width, height, color, fillColor, penSize )`
-- `export function drawRectPenCircle( screenData, x, y, width, height, color, fillColor, penSize )`
+- `export function drawRectPixel( screenData, x, y, width, height, color, fillColor )`
+- `export function drawRectSquare( screenData, x, y, width, height, color, fillColor, penSize )`
+- `export function drawRectCircle( screenData, x, y, width, height, color, fillColor, penSize )`
 
 **Implementation notes:**
 - Move `m_rectOutline()` from `graphics-shapes.js`
@@ -780,15 +778,15 @@ Move rectangle drawing from `graphics-shapes.js` to `renderer/draw/rects.js`:
 Move circle drawing from `graphics-shapes.js`:
 
 **Responsibilities:**
-- `drawCirclePenPixel()` - Circle outline with pixel pen
-- `drawCirclePenSquare()` - Circle outline with square pen
-- `drawCirclePenCircle()` - Circle outline with circle pen
+- `drawCirclePixel()` - Circle outline with pixel pen
+- `drawCircleSquare()` - Circle outline with square pen
+- `drawCircleCircle()` - Circle outline with circle pen
 - Handle pen size, fill color, blending
 
 **Key functions:**
-- `export function drawCirclePenPixel( screenData, cx, cy, radius, color, fillColor )`
-- `export function drawCirclePenSquare( screenData, cx, cy, radius, color, fillColor, penSize )`
-- `export function drawCirclePenCircle( screenData, cx, cy, radius, color, fillColor, penSize )`
+- `export function drawCirclePixel( screenData, cx, cy, radius, color, fillColor )`
+- `export function drawCircleSquare( screenData, cx, cy, radius, color, fillColor, penSize )`
+- `export function drawCircleCircle( screenData, cx, cy, radius, color, fillColor, penSize )`
 
 **Implementation notes:**
 - Move `m_circleOutline()` from `graphics-shapes.js`
@@ -802,15 +800,15 @@ Move circle drawing from `graphics-shapes.js`:
 Move ellipse drawing from `graphics-shapes.js`:
 
 **Responsibilities:**
-- `drawEllipsePenPixel()` - Ellipse outline with pixel pen
-- `drawEllipsePenSquare()` - Ellipse outline with square pen
-- `drawEllipsePenCircle()` - Ellipse outline with circle pen
+- `drawEllipsePixel()` - Ellipse outline with pixel pen
+- `drawEllipseSquare()` - Ellipse outline with square pen
+- `drawEllipseCircle()` - Ellipse outline with circle pen
 - Handle pen size, fill color, blending
 
 **Key functions:**
-- `export function drawEllipsePenPixel( screenData, cx, cy, rx, ry, color, fillColor )`
-- `export function drawEllipsePenSquare( screenData, cx, cy, rx, ry, color, fillColor, penSize )`
-- `export function drawEllipsePenCircle( screenData, cx, cy, rx, ry, color, fillColor, penSize )`
+- `export function drawEllipsePixel( screenData, cx, cy, rx, ry, color, fillColor )`
+- `export function drawEllipseSquare( screenData, cx, cy, rx, ry, color, fillColor, penSize )`
+- `export function drawEllipseCircle( screenData, cx, cy, rx, ry, color, fillColor, penSize )`
 
 **Implementation notes:**
 - Move `m_ellipseOutline()` from `graphics-shapes.js`
@@ -821,9 +819,9 @@ Move ellipse drawing from `graphics-shapes.js`:
 - Estimate batch size based on perimeter (outline) or area (filled)
 
 ### Step 7.4: Test Shapes
-- Test `drawRectPenPixel()`, `drawRectPenSquare()`, `drawRectPenCircle()` - outline and filled modes
-- Test `drawCirclePenPixel()`, `drawCirclePenSquare()`, `drawCirclePenCircle()` - outline and filled modes
-- Test `drawEllipsePenPixel()`, `drawEllipsePenSquare()`, `drawEllipsePenCircle()` - outline and filled modes
+- Test `drawRectPixel()`, `drawRectSquare()`, `drawRectCircle()` - outline and filled modes
+- Test `drawCirclePixel()`, `drawCircleSquare()`, `drawCircleCircle()` - outline and filled modes
+- Test `drawEllipsePixel()`, `drawEllipseSquare()`, `drawEllipseCircle()` - outline and filled modes
 - Verify all shapes render correctly with different pen types and sizes
 
 ## Phase 8: Complete Graphics API
@@ -859,13 +857,13 @@ Ensure `renderer/renderer.js` exports all necessary functions:
 **Exports needed:**
 - `POINTS_BATCH`, `IMAGE_BATCH`, `GEOMETRY_BATCH`, `LINES_BATCH` (from batches)
 - `prepareBatch()` (from batches)
-- `drawPixel()`, `drawPixelReplace()` (from draw/primitives)
-- `drawLinePixel()`, `drawLinePenSquare()`, `drawLinePenCircle()` (from draw/lines)
-- `drawRectPenPixel()`, `drawRectPenSquare()`, `drawRectPenCircle()` (from draw/rects)
-- `drawCirclePenPixel()`, `drawCirclePenSquare()`, `drawCirclePenCircle()` (from draw/circles)
-- `drawEllipsePenPixel()`, `drawEllipsePenSquare()`, `drawEllipsePenCircle()` (from draw/ellipses)
-- `drawArcPenPixel()`, `drawArcPenSquare()`, `drawArcPenCircle()` (from draw/arcs)
-- `drawBezierPenPixel()`, `drawBezierPenSquare()`, `drawBezierPenCircle()` (from draw/bezier)
+- `drawPixel()` (from draw/primitives)
+- `drawLinePixel()`, `drawLineSquare()`, `drawLineCircle()` (from draw/lines)
+- `drawRectPixel()`, `drawRectSquare()`, `drawRectCircle()` (from draw/rects)
+- `drawCirclePixel()`, `drawCircleSquare()`, `drawCircleCircle()` (from draw/circles)
+- `drawEllipsePixel()`, `drawEllipseSquare()`, `drawEllipseCircle()` (from draw/ellipses)
+- `drawArcPixel()`, `drawArcSquare()`, `drawArcCircle()` (from draw/arcs)
+- `drawBezierPixel()`, `drawBezierSquare()`, `drawBezierCircle()` (from draw/bezier)
 - `drawFilledRect()`, `drawFilledCircle()`, `drawFilledEllipse()` (from draw/filledShapes)
 - `drawImage()` (from draw/images)
 - `readPixel()`, `readPixels()` (from readback)

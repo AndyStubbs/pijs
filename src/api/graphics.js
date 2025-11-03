@@ -53,9 +53,14 @@ export function rebuildApi( s_screenData ) {
 	const s_drawFilledRect = g_renderer.drawFilledRect;
 	const s_drawFilledCircle = g_renderer.drawFilledCircle;
 	const s_drawCachedGeometry = g_renderer.drawCachedGeometry;
+
+	// Lines
 	const s_drawLinePixel = g_renderer.drawLinePixel;
-	const s_drawLinePenSquare = g_renderer.drawLinePenSquare;
-	const s_drawLinePenCircle = g_renderer.drawLinePenCircle;
+	const s_drawLineSquare = g_renderer.drawLineSquare;
+	const s_drawLineCircle = g_renderer.drawLineCircle;
+
+	// Arcs
+	const s_drawArcPixel = g_renderer.drawArcPixel;
 
 	const s_setImageDirty = g_renderer.setImageDirty;
 	const s_prepareBatch = g_renderer.prepareBatch;
@@ -109,7 +114,7 @@ export function rebuildApi( s_screenData ) {
 
 		// line square pen
 		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
-			s_drawLinePenSquare( s_screenData, x1, y1, x2, y2, color, s_penSize, s_penType );
+			s_drawLineSquare( s_screenData, x1, y1, x2, y2, color, s_penSize, s_penType );
 		};
 
 	} else if( s_penType === g_pens.PEN_CIRCLE ) {
@@ -128,6 +133,9 @@ export function rebuildApi( s_screenData ) {
 			};
 		} else if( s_penSize >= 3 && s_penSize <= 30 ) {
 
+			// TODO: Remove this here, yes it's faster but problably not too bad to just add
+			// a cache check inside the s_drawFilledCircle
+
 			// Use cached geometry for better appearance
 			const cacheKey = `circle:${s_penSize}`;
 			s_psetDrawFn = ( x, y, color ) => {
@@ -145,7 +153,7 @@ export function rebuildApi( s_screenData ) {
 
 		// line circle pen
 		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
-			s_drawLinePenCircle( s_screenData, x1, y1, x2, y2, color, s_penSize, s_penType );
+			s_drawLineCircle( s_screenData, x1, y1, x2, y2, color, s_penSize, s_penType );
 		};
 	}
 

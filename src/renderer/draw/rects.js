@@ -3,7 +3,7 @@
  * 
  * High-level primitive drawing operations: rects
  * 
- * drawRectPenPixel, drawRectPenSquare, drawRectPenCircle
+ * drawRectPenPixel, drawRectSquare, drawRectCircle
  * 
  * @module renderer/draw/rects
  */

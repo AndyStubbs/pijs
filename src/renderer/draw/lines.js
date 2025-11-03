@@ -3,7 +3,7 @@
  * 
  * High-level primitive drawing operations: lines
  * 
- * drawLinePixel, drawLinePenSquare, drawLinePenCircle
+ * drawLinePixel, drawLineSquare, drawLineCircle
  * 
  * @module renderer/draw/lines
  */
@@ -63,7 +63,7 @@ export function drawLinePixel( screenData, x1, y1, x2, y2, color ) {
  * @param {number} penType - Pen type (unused for square pen)
  * @returns {void}
  */
-export function drawLinePenSquare( screenData, x1, y1, x2, y2, color, penSize, penType ) {
+export function drawLineSquare( screenData, x1, y1, x2, y2, color, penSize, penType ) {
 
 	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
 	const halfWidth = penSize / 2;
@@ -91,7 +91,7 @@ export function drawLinePenSquare( screenData, x1, y1, x2, y2, color, penSize, p
  * @param {number} penType - Pen type (unused for circle pen)
  * @returns {void}
  */
-export function drawLinePenCircle( screenData, x1, y1, x2, y2, color, penSize, penType ) {
+export function drawLineCircle( screenData, x1, y1, x2, y2, color, penSize, penType ) {
 
 	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
 	const halfWidth = penSize / 2;

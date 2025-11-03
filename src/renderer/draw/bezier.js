@@ -3,7 +3,7 @@
  * 
  * Low-level drawing operations: bezier drawing.
  * 
- * drawBezierPenPixel, drawBezierPenSquare, drawBezierPenCircle
+ * drawBezierPixel, drawBezierSquare, drawBezierCircle
  * 
  * @module renderer/draw/bezier
  */

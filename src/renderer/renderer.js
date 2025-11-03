@@ -39,8 +39,9 @@ export {
 // Re-export drawing functions
 export { drawImage } from "./draw/images.js";
 export { drawPixel } from "./draw/primitives.js";
+export { drawArcPixel } from "./draw/arcs.js";
 export { drawFilledRect, drawFilledCircle } from "./draw/filled-shapes.js";
-export { drawLinePixel, drawLinePenSquare, drawLinePenCircle } from "./draw/lines.js";
+export { drawLinePixel, drawLineSquare, drawLineCircle } from "./draw/lines.js";
 export { drawCachedGeometry } from "./draw/geometry.js";
 
 // Re-export batch management

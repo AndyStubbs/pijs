@@ -3,7 +3,7 @@
  * 
  * Low-level drawing operations: ellipse drawing.
  * 
- * drawEllipsePenPixel, drawEllipsePenSquare, drawEllipsePenCircle
+ * drawEllipsePixel, drawEllipseSquare, drawEllipseCircle
  * 
  * @module renderer/draw/ellipses
  */

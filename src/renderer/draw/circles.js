@@ -3,7 +3,7 @@
  * 
  * Low-level drawing operations: circle drawing.
  * 
- * drawCirclePenPixel, drawCirclePenSquare, drawCirclePenCircle
+ * drawCirclePixel, drawCirclePenSquare, drawCircleCircle
  * 
  * @module renderer/draw/circles
  */

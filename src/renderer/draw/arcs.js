@@ -3,7 +3,7 @@
  * 
  * Low-level drawing operations: arcs drawing.
  * 
- * drawArcPenPixel, drawArcPenSquare, drawArcPenCircle
+ * drawArcPixel, drawArcSquare, drawArcCircle
  * 
  * @module renderer/draw/arcs
  */
@@ -13,6 +13,7 @@
 import * as g_batches from "../batches.js";
 import * as g_textures from "../textures.js";
 import * as g_utils from "../../core/utils.js";
+import * as g_batchHelpers from "./batch-helpers.js";
 
 
 /**
@@ -24,12 +25,101 @@ import * as g_utils from "../../core/utils.js";
  * @param {number} radius - Arc radius
  * @param {number} angle1 - Start angle in radians
  * @param {number} angle2 - End angle in radians
- * @param {number} color - Color value
- * @param {Function} penFn - Pen function for drawing pixels
+ * @param {Object} color - Color object with r/g/b/a components (0-255)
  * @returns {void}
  */
-export function drawArc( screenData, cx, cy, radius, angle1, angle2, color, penFn ) {
+export function drawArcPixel( screenData, cx, cy, radius, angle1, angle2, color ) {
 
-	// TODO: Implement drawArc using midpoint circle algorithm
+	// Convert angles from radians to degrees and normalize to 0-360
+	let a1 = g_utils.radiansToDegrees( angle1 );
+	let a2 = g_utils.radiansToDegrees( angle2 );
+	a1 = ( a1 + 360 ) % 360;
+	a2 = ( a2 + 360 ) % 360;
+
+	// Check for winding (when angle1 > angle2, arc wraps around 360 degrees)
+	const winding = a1 > a2;
+
+	// Adjust radius (consistent with filled circle implementation)
+	radius -= 1;
+	if( radius < 0 ) {
+		radius = 0;
+	}
+
+	// Get the points batch
+	const batch = screenData.batches[ g_batches.POINTS_BATCH ];
+
+	// Helper function to check if angle is within arc range and draw pixel
+	const setPixel = ( px, py ) => {
+
+		// Calculate angle of this point relative to center
+		let angle = Math.atan2( py - cy, px - cx ) * ( 180 / Math.PI );
+		angle = ( angle + 360 ) % 360;
+
+		// Check if angle is within arc range
+		let shouldDraw = false;
+		if( winding ) {
+
+			// Arc wraps around 360 degrees
+			shouldDraw = angle >= a1 || angle <= a2;
+		} else {
+
+			// Normal arc
+			shouldDraw = angle >= a1 && angle <= a2;
+		}
+
+		if( shouldDraw ) {
+			g_batchHelpers.addVertexToBatch( batch, px, py, color );
+		}
+	};
+
+	// Handle special cases
+	if( radius === 0 ) {
+
+		// Single point
+		setPixel( cx, cy );
+		return;
+	}
+
+	if( radius === 1 ) {
+
+		// Draw 4 cardinal points
+		setPixel( cx + 1, cy );
+		setPixel( cx - 1, cy );
+		setPixel( cx, cy + 1 );
+		setPixel( cx, cy - 1 );
+		return;
+	}
+
+	// Midpoint circle algorithm
+	let x = radius;
+	let y = 0;
+	let err = 1 - x;
+
+	// Draw initial symmetrical points
+	setPixel( cx + x, cy + y );
+	setPixel( cx - x, cy + y );
+	setPixel( cx + y, cy + x );
+	setPixel( cx + y, cy - x );
+
+	while( x >= y ) {
+
+		y++;
+		if( err < 0 ) {
+			err += 2 * y + 1;
+		} else {
+			x--;
+			err += 2 * ( y - x ) + 1;
+		}
+
+		// Apply 8-way symmetry to draw all octants
+		setPixel( cx + x, cy + y );
+		setPixel( cx + y, cy + x );
+		setPixel( cx - y, cy + x );
+		setPixel( cx - x, cy + y );
+		setPixel( cx - x, cy - y );
+		setPixel( cx - y, cy - x );
+		setPixel( cx + y, cy - x );
+		setPixel( cx + x, cy - y );
+	}
 }
 
