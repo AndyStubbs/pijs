@@ -3,7 +3,7 @@
  * 
  * Commands to read and write pixels from the screen.
  * 
- * @module graphics/pixels
+ * @module api/pixels
  */
 
 "use strict";
@@ -13,7 +13,7 @@ import * as g_utils from "../core/utils.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_colors from "./colors.js";
 import * as g_commands from "../core/commands.js";
-import * as g_renderer from "./renderer/renderer.js";
+import * as g_renderer from "../renderer/renderer.js";
 
 
 /***************************************************************************************************

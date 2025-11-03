@@ -3,7 +3,7 @@
  * 
  * Image loading, storage, and management for WebGL2 renderer.
  * 
- * @module graphics/images
+ * @module api/images
  */
 
 "use strict";
@@ -11,7 +11,7 @@
 import * as g_utils from "../core/utils.js";
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
-import * as g_renderer from "./renderer/renderer.js";
+import * as g_renderer from "../renderer/renderer.js";
 import * as g_colors from "./colors.js";
 
 const DEFAULT_BLIT_COLOR = Object.freeze( g_utils.rgbToColor( 255, 255, 255, 255 ) );

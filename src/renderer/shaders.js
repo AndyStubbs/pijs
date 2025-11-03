@@ -3,12 +3,12 @@
  * 
  * Shader compilation, program creation, and display shader setup.
  * 
- * @module graphics/renderer/shaders
+ * @module renderer/shaders
  */
 
 "use strict";
 
-import * as g_screenManager from "../../core/screen-manager.js";
+import * as g_screenManager from "../core/screen-manager.js";
 
 // Shaders are imported from external files via esbuild text loader
 import m_displayVertSrc from "./shaders/display.vert";

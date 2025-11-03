@@ -4,12 +4,12 @@
  * Cached geometry for commonly used shapes.
  * Stores pre-computed vertex data for efficient rendering.
  * 
- * @module graphics/renderer/geometry
+ * @module renderer/draw/geometry
  */
 
 "use strict";
 
-import * as g_batches from "./batches.js";
+import * as g_batches from "../batches.js";
 
 
 /***************************************************************************************************

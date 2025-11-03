@@ -3,12 +3,12 @@
  * 
  * Texture cache management and WebGL2 texture operations.
  * 
- * @module graphics/renderer/textures
+ * @module renderer/textures
  */
 
 "use strict";
 
-import * as g_screenManager from "../../core/screen-manager.js";
+import * as g_screenManager from "../core/screen-manager.js";
 
 
 /***************************************************************************************************

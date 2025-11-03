@@ -17,13 +17,15 @@ import * as g_commands from "./core/commands.js";
 import * as g_screenManager from "./core/screen-manager.js";
 import * as g_plugins from "./core/plugins.js";
 
-// Graphics
-import * as g_renderer from "./graphics/renderer/renderer.js";
-import * as g_colors from "./graphics/colors.js";
-import * as g_pens from "./graphics/pens.js";
-import * as g_graphicsApi from "./graphics/graphics-api.js";
-import * as g_images from "./graphics/images.js";
-import * as g_pixels from "./graphics/pixels.js";
+// Renderer
+import * as g_renderer from "./renderer/renderer.js";
+
+// API
+import * as g_colors from "./api/colors.js";
+import * as g_pens from "./api/pens.js";
+import * as g_graphicsApi from "./api/graphics.js";
+import * as g_images from "./api/images.js";
+import * as g_pixels from "./api/pixels.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;

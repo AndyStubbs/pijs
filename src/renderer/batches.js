@@ -4,17 +4,17 @@
  * Batch system for rendering points and images efficiently.
  * Combines batch management and rendering operations.
  * 
- * @module graphics/renderer/batches
+ * @module api/renderer/batches
  */
 
 "use strict";
 
 import * as g_shaders from "./shaders.js";
-import * as g_screenManager from "../../core/screen-manager.js";
+import * as g_screenManager from "../core/screen-manager.js";
 
 // Import pens for blend mode constants
 // Note: This is safe because of lazy initialization - pens isn't initialized until later
-import * as g_pens from "../pens.js";
+import * as g_pens from "../api/pens.js";
 
 // Shaders are imported from external files via esbuild text loader
 import m_pointVertSrc from "./shaders/point.vert";

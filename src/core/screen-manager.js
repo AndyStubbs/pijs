@@ -12,7 +12,7 @@
 
 import * as g_utils from "./utils.js";
 import * as g_commands from "./commands.js";
-import * as g_renderer from "../graphics/renderer/renderer.js";
+import * as g_renderer from "../renderer/renderer.js";
 
 const SCREEN_API_PROTO = { "screen": true };
 const m_screens = {};

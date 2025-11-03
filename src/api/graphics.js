@@ -4,17 +4,16 @@
  * Thin wrapper layer for graphics commands.
  * Handles input parsing, validation, and builds optimized drawing functions.
  * 
- * @module graphics/graphics-api
+ * @module api/graphics
  */
 
 "use strict";
 
 // Import modules
-import * as g_utils from "../core/utils.js";
-import * as g_colors from "./colors.js";
-import * as g_renderer from "./renderer/renderer.js";
-import * as g_pens from "./pens.js";
 import * as g_screenManager from "../core/screen-manager.js";
+import * as g_utils from "../core/utils.js";
+import * as g_renderer from "../renderer/renderer.js";
+import * as g_pens from "./pens.js";
 
 let m_api = null;
 
@@ -197,7 +196,7 @@ export function rebuildApi( s_screenData ) {
 
 	m_api.line = lineFn;
 	s_screenData.api.line = lineFn;
-	}
+}
 
 
 /**************************************************************************************************

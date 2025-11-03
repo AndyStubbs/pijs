@@ -3,7 +3,7 @@
  * 
  * Manages pens and blends for WebGL2 rendering.
  * 
- * @module graphics/pens
+ * @module api/pens
  */
 
 "use strict";
@@ -12,8 +12,8 @@
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_commands from "../core/commands.js";
 import * as g_utils from "../core/utils.js";
-import * as g_graphicsApi from "./graphics-api.js";
-import * as g_renderer from "./renderer/renderer.js";
+import * as g_graphicsApi from "./graphics.js";
+import * as g_renderer from "../renderer/renderer.js";
 
 // Pens
 export const PEN_PIXEL = "pixel";

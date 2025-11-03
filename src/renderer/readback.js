@@ -3,14 +3,14 @@
  * 
  * Pixel readback operations: single pixel and rectangular regions.
  * 
- * @module graphics/renderer/readback
+ * @module renderer/readback
  */
 
 "use strict";
 
 // Import required modules
 import * as g_batches from "./batches.js";
-import * as g_utils from "../../core/utils.js";
+import * as g_utils from "../core/utils.js";
 
 
 /***************************************************************************************************
@@ -111,7 +111,7 @@ export function readPixels( screenData, x, y, width, height ) {
 	gl.readPixels( clampedX, glReadY, clampedWidth, clampedHeight, gl.RGBA, gl.UNSIGNED_BYTE, buf );
 	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
 
-	// Map back to output structure expected by graphics/pixels.js
+	// Map back to output structure expected by api/pixels.js
 	// This function will return a flat array of color objects
 	const resultColors = new Array( clampedHeight );
 	for( let row = 0; row < clampedHeight; row++ ) {

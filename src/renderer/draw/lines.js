@@ -1,16 +1,18 @@
 /**
- * Pi.js - Primitives Drawing Module
+ * Pi.js - Lines Drawing Module
  * 
- * High-level primitive drawing operations: lines, arcs, bezier curves.
+ * High-level primitive drawing operations: lines
  * 
- * @module graphics/renderer/primitives
+ * drawLinePixel, drawLinePenSquare, drawLinePenCircle
+ * 
+ * @module renderer/draw/lines
  */
 
 "use strict";
 
 // Import required modules
-import * as g_batches from "./batches.js";
-import * as g_shapes from "./shapes.js";
+import * as g_batches from "../batches.js";
+import * as g_shapes from "./filled-shapes.js";
 
 
 /***************************************************************************************************

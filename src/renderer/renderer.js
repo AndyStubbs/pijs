@@ -4,26 +4,26 @@
  * WebGL2 context creation, module orchestration, and public API exports.
  * Main orchestrator for all renderer modules.
  * 
- * @module graphics/renderer/renderer
+ * @module renderer/renderer
  */
 
 "use strict";
 
-import * as g_screenManager from "../../core/screen-manager.js";
-import * as g_utils from "../../core/utils.js";
+import * as g_screenManager from "../core/screen-manager.js";
+import * as g_utils from "../core/utils.js";
 
 // Import renderer modules
 import * as g_fbo from "./fbo.js";
 import * as g_shaders from "./shaders.js";
 import * as g_batches from "./batches.js";
-import * as g_draw from "./draw.js";
+import * as g_draw from "./draw/primitives.js";
 
 // Import shapes module for geometry drawing
-import * as g_shapes from "./shapes.js";
-import * as g_geometry from "./geometry.js";
+import * as g_shapes from "./draw/filled-shapes.js";
+import * as g_geometry from "./draw/geometry.js";
 import * as g_textures from "./textures.js";
 import * as g_readback from "./readback.js";
-import * as g_primitives from "./primitives.js";
+import * as g_primitives from "./draw/lines.js";
 
 
 /***************************************************************************************************
@@ -37,10 +37,11 @@ export {
 } from "./batches.js";
 
 // Re-export drawing functions
-export { drawPixel, drawImage, drawPixelReplace } from "./draw.js";
-export { drawFilledRect, drawFilledCircle } from "./shapes.js";
-export { drawLinePixel, drawLinePenSquare, drawLinePenCircle } from "./primitives.js";
-export { drawCachedGeometry } from "./geometry.js";
+export { drawImage } from "./draw/images.js";
+export { drawPixel, drawPixelReplace } from "./draw/primitives.js";
+export { drawFilledRect, drawFilledCircle } from "./draw/filled-shapes.js";
+export { drawLinePixel, drawLinePenSquare, drawLinePenCircle } from "./draw/lines.js";
+export { drawCachedGeometry } from "./draw/geometry.js";
 
 // Re-export batch management
 export { prepareBatch } from "./batches.js";

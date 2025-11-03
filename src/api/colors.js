@@ -4,7 +4,7 @@
  * Manages the color palettes and color values.
  * Simplified version focused on WebGL2 rendering.
  * 
- * @module graphics/colors
+ * @module api/colors
  */
 
 "use strict";

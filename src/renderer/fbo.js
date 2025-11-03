@@ -3,12 +3,12 @@
  * 
  * Framebuffer Object creation and management for rendering off-screen.
  * 
- * @module graphics/renderer/fbo
+ * @module renderer/fbo
  */
 
 "use strict";
 
-import * as g_screenManager from "../../core/screen-manager";
+import * as g_screenManager from "../core/screen-manager";
 
 /***************************************************************************************************
  * Module Initialization
