@@ -264,6 +264,7 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 			perpX2 = radDx2 / radLength2;
 			perpY2 = radDy2 / radLength2;
 		} else {
+			
 			// Fallback to using segment direction if radius is too small
 			const dx = x2 - x1;
 			const dy = y2 - y1;
@@ -309,8 +310,8 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 		const capRadius = ( penSize / 2 );
 		
 		// Draw circles at the exact same endpoints as the segments
-		//g_shapes.drawFilledCircle( screenData, startX, startY, capRadius, color );
-		//g_shapes.drawFilledCircle( screenData, endX, endY, capRadius, color );
+		g_shapes.drawFilledCircle( screenData, startX, startY, capRadius, color );
+		g_shapes.drawFilledCircle( screenData, endX, endY, capRadius, color );
 	}
 }
 

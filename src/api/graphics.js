@@ -146,21 +146,9 @@ export function rebuildApi( s_screenData ) {
 				s_drawPixel( s_screenData, x, y + 1, color, s_pointsBatch );
 				s_drawPixel( s_screenData, x, y - 1, color, s_pointsBatch );
 			};
-		} else if( s_penSize >= 3 && s_penSize <= 30 ) {
+		} else if( s_penSize >= 3 ) {
 
-			// TODO: Remove this here, yes it's faster but problably not too bad to just add
-			// a cache check inside the s_drawFilledCircle
-
-			// Use cached geometry for better appearance
-			const cacheKey = `circle:${s_penSize}`;
-			s_psetDrawFn = ( x, y, color ) => {
-				
-				// Apply MCA consistency adjustment
-				s_drawCachedGeometry( s_screenData, cacheKey, x, y - 1, color );
-			};
-		} else {
-
-			// Use drawFilledCircle for sizes > 30
+			// Delegate caching decisions to s_drawFilledCircle
 			s_psetDrawFn = ( x, y, color ) => {
 				s_drawFilledCircle( s_screenData, x, y, s_penSize, color );
 			};

@@ -12,6 +12,7 @@
 
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
+import * as g_geometry from "./geometry.js";
 
 
 /***************************************************************************************************
@@ -72,6 +73,11 @@ export function drawFilledCircle( screenData, cx, cy, radius, color ) {
 	// TODO: Attempt to fix the drawFilledCircle so it's the same as pre alpha 3 version which I 
 	// prefer. Right now we are using a cached results, I might want to keep the caching but we
 	// should use the same algorithm and try to reuse code.
+	
+	const cacheKey = `circle:${radius}`;
+	if( g_geometry.geometryCache.has( cacheKey ) ) {
+		return g_geometry.drawCachedGeometry( screenData, cacheKey, cx, cy, color );
+	}
 
 	// Apply input adjustments for MCA consistency
 	radius -= 1;

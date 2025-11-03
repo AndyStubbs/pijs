@@ -33,6 +33,7 @@ const m_geometryCache = new Map();
  * Module Initialization
  ***************************************************************************************************/
 
+export { m_geometryCache as geometryCache };
 
 /**
  * Initialize geometry module
