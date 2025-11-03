@@ -53,6 +53,15 @@ export function init() {
  */
 function prepopulateCache() {
 
+	// Special geometries for small circle sizes
+	// size 1: single pixel as 1x1 quad centered at origin covering [0,0]-[1,1]
+	const circle1 = generateSinglePixelGeometry();
+	m_geometryCache.set( "circle:1", circle1 );
+
+	// size 2: cross (5 pixels): center + 4-neighbors
+	const circle2 = generateCrossGeometry();
+	m_geometryCache.set( "circle:2", circle2 );
+
 	// Pre-generate circles for sizes 3-30
 	for( let size = 3; size <= 30; size++ ) {
 		const cacheKey = `circle:${size}`;
@@ -62,6 +71,71 @@ function prepopulateCache() {
 		const geometry = generateCircleGeometry( radiusThresholdSq );
 		m_geometryCache.set( cacheKey, geometry );
 	}
+}
+
+
+/***************************************************************************************************
+ * Geometry Building Helpers
+ ***************************************************************************************************/
+
+
+/**
+ * Add a single vertex to a geometry vertices array
+ * 
+ * @param {Float32Array} vertices - Vertices array
+ * @param {number} vIdx - Current index into vertices array (will be modified)
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @returns {number} New index after adding vertex
+ */
+function addVertex( vertices, vIdx, x, y ) {
+
+	vertices[ vIdx++ ] = x;
+	vertices[ vIdx++ ] = y;
+	return vIdx;
+}
+
+/**
+ * Add a triangle (3 vertices) to a geometry vertices array
+ * 
+ * @param {Float32Array} vertices - Vertices array
+ * @param {number} vIdx - Current index into vertices array (will be modified)
+ * @param {number} x1 - First vertex X coordinate
+ * @param {number} y1 - First vertex Y coordinate
+ * @param {number} x2 - Second vertex X coordinate
+ * @param {number} y2 - Second vertex Y coordinate
+ * @param {number} x3 - Third vertex X coordinate
+ * @param {number} y3 - Third vertex Y coordinate
+ * @returns {number} New index after adding triangle
+ */
+function addTriangle( vertices, vIdx, x1, y1, x2, y2, x3, y3 ) {
+
+	vIdx = addVertex( vertices, vIdx, x1, y1 );
+	vIdx = addVertex( vertices, vIdx, x2, y2 );
+	vIdx = addVertex( vertices, vIdx, x3, y3 );
+	return vIdx;
+}
+
+/**
+ * Add a quad (rectangle as two triangles) to a geometry vertices array
+ * The quad is defined by two corner points (x1,y1) and (x2,y2) forming a rectangle
+ * 
+ * @param {Float32Array} vertices - Vertices array
+ * @param {number} vIdx - Current index into vertices array (will be modified)
+ * @param {number} x1 - Left/bottom-left X coordinate
+ * @param {number} y1 - Left/bottom-left Y coordinate
+ * @param {number} x2 - Right/top-right X coordinate
+ * @param {number} y2 - Right/top-right Y coordinate
+ * @returns {number} New index after adding quad
+ */
+function addQuad( vertices, vIdx, x1, y1, x2, y2 ) {
+
+	// First triangle: (x1,y1), (x2,y1), (x1,y2)
+	vIdx = addTriangle( vertices, vIdx, x1, y1, x2, y1, x1, y2 );
+
+	// Second triangle: (x2,y1), (x2,y2), (x1,y2)
+	vIdx = addTriangle( vertices, vIdx, x2, y1, x2, y2, x1, y2 );
+	return vIdx;
 }
 
 
@@ -126,22 +200,55 @@ function generateCircleGeometry( radiusThresholdSq ) {
 		const xStart = mm.min;
 		const xEnd = mm.max;
 
-		// Quad as two triangles: (xStart,y), (xEnd+1,y), (xStart,y+1) and (xEnd+1,y), (xEnd+1,y+1), 
-		// (xStart,y+1)
-		vertices[ vIdx++ ] = xStart;
-		vertices[ vIdx++ ] = currentY;
-		vertices[ vIdx++ ] = xEnd + 1;
-		vertices[ vIdx++ ] = currentY;
-		vertices[ vIdx++ ] = xStart;
-		vertices[ vIdx++ ] = currentY + 1;
-
-		vertices[ vIdx++ ] = xEnd + 1;
-		vertices[ vIdx++ ] = currentY;
-		vertices[ vIdx++ ] = xEnd + 1;
-		vertices[ vIdx++ ] = currentY + 1;
-		vertices[ vIdx++ ] = xStart;
-		vertices[ vIdx++ ] = currentY + 1;
+		// Quad from (xStart, currentY) to (xEnd+1, currentY+1)
+		vIdx = addQuad( vertices, vIdx, xStart, currentY, xEnd + 1, currentY + 1 );
 	}
+
+	return { "vertexCount": vertexCount, "vertices": vertices };
+}
+
+
+/**
+ * Generate geometry for a single pixel 1x1 quad at origin.
+ * @returns {Object}
+ */
+function generateSinglePixelGeometry() {
+
+	// Two triangles forming a 1x1 quad with corners (0,0)-(1,1)
+	const vertexCount = 6;
+	const vertices = new Float32Array( vertexCount * 2 );
+	let vIdx = 0;
+
+	// Quad from (0,0) to (1,1)
+	vIdx = addQuad( vertices, vIdx, 0, 0, 1, 1 );
+
+	return { "vertexCount": vertexCount, "vertices": vertices };
+}
+
+/**
+ * Generate geometry for a cross shape of 5 pixels: center and 4-neighbors.
+ * Pixels are 1x1 quads at (-1,0), (1,0), (0,0), (0,-1), (0,1)
+ * @returns {Object}
+ */
+function generateCrossGeometry() {
+
+	// Optimize to 3 quads:
+	// - Vertical bar: 3 pixels tall at x=0 covering y in [-1, 2)
+	// - Left pixel at x=-1, y=0
+	// - Right pixel at x=1, y=0
+
+	const vertexCount = 3 * 6;
+	const vertices = new Float32Array( vertexCount * 2 );
+	let vIdx = 0;
+
+	// Vertical 3-pixel bar centered at origin
+	vIdx = addQuad( vertices, vIdx, 0, -1, 1, 2 );
+
+	// Left pixel
+	vIdx = addQuad( vertices, vIdx, -1, 0, 0, 1 );
+
+	// Right pixel
+	vIdx = addQuad( vertices, vIdx, 1, 0, 2, 1 );
 
 	return { "vertexCount": vertexCount, "vertices": vertices };
 }
@@ -169,7 +276,9 @@ function getCachedGeometry( cacheKey ) {
 	let geometry;
 
 	if( type === "circle" ) {
+
 		const size = parseInt( params[ 0 ], 10 );
+		
 		// Use Alpha 2's radius threshold: (half - 0.5)^2
 		const radiusThresholdSq = ( size - 0.5 ) * ( size - 0.5 );
 		geometry = generateCircleGeometry( radiusThresholdSq );

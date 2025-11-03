@@ -74,14 +74,14 @@ export function drawFilledCircle( screenData, cx, cy, radius, color ) {
 	// prefer. Right now we are using a cached results, I might want to keep the caching but we
 	// should use the same algorithm and try to reuse code.
 	
+	// Apply input adjustments for MCA consistency
+	//radius -= 1;
+	cy -= 1;
+	
 	const cacheKey = `circle:${radius}`;
 	if( g_geometry.geometryCache.has( cacheKey ) ) {
 		return g_geometry.drawCachedGeometry( screenData, cacheKey, cx, cy, color );
 	}
-
-	// Apply input adjustments for MCA consistency
-	radius -= 1;
-	cy -= 1;
 
 	// Radius of 0 is nothing
 	if( radius < 1 ) {

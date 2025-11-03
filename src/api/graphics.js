@@ -166,12 +166,16 @@ export function rebuildApi( s_screenData ) {
 
 		// arc square pen
 		s_arcDrawFn = ( cx, cy, radius, angle1, angle2, color ) => {
-			s_drawArcSquare( s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType );
+			s_drawArcSquare(
+				s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType
+			);
 		};
 
 		// bezier with square pen
 		s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
-			s_drawBezierSquare( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, s_penSize, s_penType );
+			s_drawBezierSquare(
+				s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, s_penSize, s_penType
+			);
 		};
 
 		// Rect with square pen: fill inset by half pen, then outline via thick lines
@@ -192,25 +196,13 @@ export function rebuildApi( s_screenData ) {
 
 	} else if( s_penType === g_pens.PEN_CIRCLE ) {
 
-		// Circle pen
-		if( s_penSize === 2 ) {
+		const s_penRadius = Math.ceil( ( s_penSize + 1 ) / 2 );
 
-			// Special case: size 2 draws a cross (5 pixels)
-			s_psetDrawFn = ( x, y, color ) => {
-				s_prepareBatch( s_screenData, s_pointsBatch, 5 );
-				s_drawPixel( s_screenData, x, y, color, s_pointsBatch );
-				s_drawPixel( s_screenData, x + 1, y, color, s_pointsBatch );
-				s_drawPixel( s_screenData, x - 1, y, color, s_pointsBatch );
-				s_drawPixel( s_screenData, x, y + 1, color, s_pointsBatch );
-				s_drawPixel( s_screenData, x, y - 1, color, s_pointsBatch );
-			};
-		} else if( s_penSize >= 3 ) {
+		// Delegate caching decisions to s_drawFilledCircle
+		s_psetDrawFn = ( x, y, color ) => {
+			s_drawFilledCircle( s_screenData, x, y, s_penRadius, color );
+		};
 
-			// Delegate caching decisions to s_drawFilledCircle
-			s_psetDrawFn = ( x, y, color ) => {
-				s_drawFilledCircle( s_screenData, x, y, s_penSize, color );
-			};
-		}
 
 		// line circle pen
 		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
@@ -219,12 +211,16 @@ export function rebuildApi( s_screenData ) {
 
 		// arc circle pen
 		s_arcDrawFn = ( cx, cy, radius, angle1, angle2, color ) => {
-			s_drawArcCircle( s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType );
+			s_drawArcCircle(
+				s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType
+			);
 		};
 
 		// bezier with circle pen
 		s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
-			s_drawBezierCircle( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, s_penSize, s_penType );
+			s_drawBezierCircle(
+				s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, s_penSize, s_penType
+			);
 		};
 
 		// Rect with circle pen: fill inset by half pen, then outline via thick lines
