@@ -70,42 +70,40 @@ export function drawLinePixel( screenData, x1, y1, x2, y2, color ) {
 }
 
 /**
- * Helper function to add a rectangle (quad) to the geometry batch
+ * Draw line with square pen (geometry-based, for pen size >= 2)
  * 
- * @param {Object} batch - Geometry batch object
- * @param {number} x1 - Left X coordinate
- * @param {number} y1 - Top Y coordinate
- * @param {number} x2 - Right X coordinate
- * @param {number} y2 - Bottom Y coordinate
+ * @param {Object} screenData - Screen data object
+ * @param {number} x1 - Start X coordinate
+ * @param {number} y1 - Start Y coordinate
+ * @param {number} x2 - End X coordinate
+ * @param {number} y2 - End Y coordinate
  * @param {Object} color - Color object with r, g, b, a
+ * @param {number} penSize - Pen size
+ * @param {number} penType - Pen type (unused for square pen)
  * @returns {void}
  */
-function addRectToBatch( batch, x1, y1, x2, y2, color ) {
+export function drawLinePenSquare( screenData, x1, y1, x2, y2, color, penSize, penType ) {
 
-	// Helper to add a vertex
-	const addVertex = ( vx, vy ) => {
-		const idx = batch.count * batch.vertexComps;
-		const cidx = batch.count * batch.colorComps;
+	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
+	const halfWidth = penSize / 2;
+	const extension = halfWidth; // Extend by half penSize for square caps
 
-		batch.vertices[ idx     ] = vx;
-		batch.vertices[ idx + 1 ] = vy;
-		batch.colors[ cidx     ] = color.r;
-		batch.colors[ cidx + 1 ] = color.g;
-		batch.colors[ cidx + 2 ] = color.b;
-		batch.colors[ cidx + 3 ] = color.a;
-		batch.count++;
-	};
+	// Estimate vertex count: 6 for line body (with extended endpoints)
+	const vertexCount = 6;
+	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, vertexCount );
 
-	// First triangle: (x1,y1), (x2,y1), (x1,y2)
-	addVertex( x1, y1 );
-	addVertex( x2, y1 );
-	addVertex( x1, y2 );
-
-	// Second triangle: (x2,y1), (x2,y2), (x1,y2)
-	addVertex( x2, y1 );
-	addVertex( x2, y2 );
-	addVertex( x1, y2 );
+	// Draw line body (rectangle with extended endpoints for square caps)
+	drawLineBody( batch, x1, y1, x2, y2, halfWidth, extension, color );
 }
+
+export function drawLinePenCircle( screenData, x1, y1, x2, y2, color, penSize, penType ) {
+
+	// TODO: Implement geometry generation for lines with pen size >= 2
+	// This will generate quads/geometry based on pen type and size
+
+	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
+}
+
 
 /**
  * Helper function to draw a line segment body (rectangle) for thick lines
@@ -181,80 +179,3 @@ function drawLineBody( batch, x1, y1, x2, y2, halfWidth, extension, color ) {
 	addVertex( p3x, p3y );
 	addVertex( p2x, p2y );
 }
-
-/**
- * Draw line with square pen (geometry-based, for pen size >= 2)
- * 
- * @param {Object} screenData - Screen data object
- * @param {number} x1 - Start X coordinate
- * @param {number} y1 - Start Y coordinate
- * @param {number} x2 - End X coordinate
- * @param {number} y2 - End Y coordinate
- * @param {Object} color - Color object with r, g, b, a
- * @param {number} penSize - Pen size
- * @param {number} penType - Pen type (unused for square pen)
- * @returns {void}
- */
-export function drawLinePenSquare( screenData, x1, y1, x2, y2, color, penSize, penType ) {
-
-	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
-	const halfWidth = penSize / 2;
-	const extension = halfWidth; // Extend by half penSize for square caps
-
-	// Estimate vertex count: 6 for line body (with extended endpoints)
-	const vertexCount = 6;
-	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, vertexCount );
-
-	// Draw line body (rectangle with extended endpoints for square caps)
-	drawLineBody( batch, x1, y1, x2, y2, halfWidth, extension, color );
-}
-
-export function drawLinePenCircle( screenData, x1, y1, x2, y2, color, penSize, penType ) {
-
-	// TODO: Implement geometry generation for lines with pen size >= 2
-	// This will generate quads/geometry based on pen type and size
-
-	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
-}
-
-/**
- * Draw arc outline using midpoint circle algorithm
- * 
- * @param {Object} screenData - Screen data object
- * @param {number} cx - Center X coordinate
- * @param {number} cy - Center Y coordinate
- * @param {number} radius - Arc radius
- * @param {number} angle1 - Start angle in radians
- * @param {number} angle2 - End angle in radians
- * @param {number} color - Color value
- * @param {Function} penFn - Pen function for drawing pixels
- * @returns {void}
- */
-export function drawArc( screenData, cx, cy, radius, angle1, angle2, color, penFn ) {
-
-	// TODO: Implement drawArc using midpoint circle algorithm
-}
-
-/**
- * Draw bezier curve with adaptive tessellation
- * 
- * @param {Object} screenData - Screen data object
- * @param {number} p0x - Control point 0 X
- * @param {number} p0y - Control point 0 Y
- * @param {number} p1x - Control point 1 X
- * @param {number} p1y - Control point 1 Y
- * @param {number} p2x - Control point 2 X
- * @param {number} p2y - Control point 2 Y
- * @param {number} p3x - Control point 3 X
- * @param {number} p3y - Control point 3 Y
- * @param {number} color - Color value
- * @param {Function} penFn - Pen function for drawing pixels
- * @returns {void}
- */
-export function drawBezier( 
-	screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, penFn 
-) {
-
-	// TODO: Implement drawBezier with adaptive tessellation
-}
-
