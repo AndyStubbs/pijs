@@ -65,10 +65,10 @@ export function rebuildApi( s_screenData ) {
 	const s_drawArcSquare = g_renderer.drawArcSquare;
 	const s_drawArcCircle = g_renderer.drawArcCircle;
 
-	// Bezier
-	const s_drawBezierPixel = g_renderer.drawBezierPixel;
-	//const s_drawBezierSquare = g_renderer.drawArcSquare;
-	//const s_drawBezierCircle = g_renderer.drawArcCircle;
+    // Bezier
+    const s_drawBezierPixel = g_renderer.drawBezierPixel;
+    const s_drawBezierSquare = g_renderer.drawBezierSquare;
+    const s_drawBezierCircle = g_renderer.drawBezierCircle;
 
 
 	const s_setImageDirty = g_renderer.setImageDirty;
@@ -144,10 +144,10 @@ export function rebuildApi( s_screenData ) {
 			s_drawArcSquare( s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType );
 		};
 
-		// bezier (fallback to pixel tessellation for now)
-		s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
-			s_drawBezierPixel( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color );
-		};
+        // bezier with square pen
+        s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
+            s_drawBezierSquare( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, s_penSize, s_penType );
+        };
 
 	} else if( s_penType === g_pens.PEN_CIRCLE ) {
 
@@ -181,10 +181,10 @@ export function rebuildApi( s_screenData ) {
 			s_drawArcCircle( s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType );
 		};
 
-		// bezier (fallback to pixel tessellation for now)
-		s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
-			s_drawBezierPixel( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color );
-		};
+        // bezier with circle pen
+        s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
+            s_drawBezierCircle( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, s_penSize, s_penType );
+        };
 	}
 
 	/**********************************************************************************************

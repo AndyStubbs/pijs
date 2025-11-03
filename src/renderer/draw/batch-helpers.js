@@ -187,6 +187,52 @@ export function drawHalfCircleCap( screenData, cx, cy, radius, color, tanX, tanY
 }
 
 /**
+ * Draw a square cap (two triangles) at an endpoint, oriented by tangent.
+ * Prepares batch for 6 vertices.
+ * 
+ * @param {Object} screenData
+ * @param {number} x
+ * @param {number} y
+ * @param {number} dirX
+ * @param {number} dirY
+ * @param {number} halfWidth
+ * @param {Object} color
+ * @returns {void}
+ */
+export function drawSquareCap( screenData, x, y, dirX, dirY, halfWidth, color ) {
+
+	// Normalize tangent
+	const len = Math.sqrt( dirX * dirX + dirY * dirY );
+	let tx = dirX;
+	let ty = dirY;
+	if( len > 0.0001 ) {
+		tx /= len;
+		ty /= len;
+	} else {
+		tx = 1;
+		ty = 0;
+	}
+
+	const perpX = -ty;
+	const perpY = tx;
+	const cap = halfWidth;
+
+	const p1x = x + tx * cap + perpX * cap;
+	const p1y = y + ty * cap + perpY * cap;
+	const p2x = x + tx * cap - perpX * cap;
+	const p2y = y + ty * cap - perpY * cap;
+	const p3x = x - tx * cap - perpX * cap;
+	const p3y = y - ty * cap - perpY * cap;
+	const p4x = x - tx * cap + perpX * cap;
+	const p4y = y - ty * cap + perpY * cap;
+
+	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
+	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, 6 );
+	addTriangleToBatch( batch, p1x, p1y, p4x, p4y, p2x, p2y, color );
+	addTriangleToBatch( batch, p4x, p4y, p3x, p3y, p2x, p2y, color );
+}
+
+/**
  * Tessellate a cubic Bezier curve into a polyline using an adaptive flatness criterion.
  * Returns an array of points [x0, y0, x1, y1, ..., xn, yn] including endpoints.
  * 
