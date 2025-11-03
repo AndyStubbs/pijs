@@ -8,6 +8,23 @@
  * @module core/screen-manager
  */
 
+/**
+ * TODO:
+ * 
+ * Simplify "m" multiple mode to use this formula:
+ * scaleX = floor(canvas.width / FBO_WIDTH)
+ * scaleY = floor(canvas.height / FBO_HEIGHT)
+ * finalScale = min(scaleX, scaleY)
+ *  
+ * Even when I use "m" mode I still see artifacts, maybe handle the upscaling manually by setting
+ * the canvas.width and canvas.height to match the CSS width and height and then when I copy the
+ * FBO to the canvas it will apply gl.NEAREST when display to canvas is run, this is already 
+ * implemented I just need to set canvas.width and canvas.height to match.
+ * 
+ * This might not be necessary. If I find an example of where this is an issue I may attempt to do
+ * this but for now, let's just leave it be.
+ * 
+ */
 "use strict";
 
 import * as g_utils from "./utils.js";
