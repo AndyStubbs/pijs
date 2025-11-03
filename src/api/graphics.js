@@ -252,7 +252,10 @@ export function rebuildApi( s_screenData ) {
 		}
 
 		// Draw (using pen-based drawing function)
-		s_arcDrawFn( pCx, pCy, pRadius, angle1, angle2, s_color );
+		s_arcDrawFn(
+			pCx, pCy, pRadius, g_utils.degreesToRadian( angle1 ), g_utils.degreesToRadian( angle2 ),
+			s_color
+		);
 		s_setImageDirty( s_screenData );
 	};
 

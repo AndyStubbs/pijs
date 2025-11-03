@@ -301,9 +301,15 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 		drawSquareCap( batch, endX, endY, endDirX, endDirY, halfWidth, color );
 	} else {
 
+		// TODO: Fix circle end caps
 		// Draw circular caps
-		g_shapes.drawFilledCircle( screenData, startX, startY, halfWidth, color );
-		g_shapes.drawFilledCircle( screenData, endX, endY, halfWidth, color );
+		// Use penSize / 2 as radius (same as drawLineCircle does)
+		// drawFilledCircle applies radius -= 1 internally, so we add 1 to ensure full coverage
+		const capRadius = ( penSize / 2 );
+		
+		// Draw circles at the exact same endpoints as the segments
+		g_shapes.drawFilledCircle( screenData, startX, startY, capRadius, color );
+		g_shapes.drawFilledCircle( screenData, endX, endY, capRadius, color );
 	}
 }
 
