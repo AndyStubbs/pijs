@@ -319,9 +319,9 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 		// drawFilledCircle applies radius -= 1 internally, so we add 1 to ensure full coverage
 		const capRadius = Math.round( penSize / 2 );
 		
-		// Draw circles at the exact same endpoints as the segments
-		g_shapes.drawFilledCircle( screenData, startX, startY, capRadius, color );
-		g_shapes.drawFilledCircle( screenData, endX, endY, capRadius, color );
+		// Draw half circles oriented along the stroke direction to avoid overlap
+		drawHalfCircleCap( screenData, startX, startY, capRadius, color, startDirX, startDirY, false );
+		drawHalfCircleCap( screenData, endX, endY, capRadius, color, endDirX, endDirY, true );
 	}
 }
 
@@ -359,5 +359,61 @@ function drawSquareCap( batch, x, y, dirX, dirY, halfWidth, color ) {
 	// Draw square as two triangles
 	g_batchHelpers.addTriangleToBatch( batch, p1x, p1y, p4x, p4y, p2x, p2y, color );
 	g_batchHelpers.addTriangleToBatch( batch, p4x, p4y, p3x, p3y, p2x, p2y, color );
+}
+
+/**
+ * Helper to draw a half filled circle used for rounded caps without blending overlap
+ * The half-disk is oriented by the tangent direction; for the start cap it draws the
+ * side opposite the tangent direction (behind), and for the end cap it draws the side
+ * in the tangent direction (ahead).
+ * 
+ * @param {Object} screenData
+ * @param {number} cx
+ * @param {number} cy
+ * @param {number} radius
+ * @param {Object} color
+ * @param {number} tanX - Tangent X (normalized preferred, non-zero)
+ * @param {number} tanY - Tangent Y (normalized preferred, non-zero)
+ * @param {boolean} isEnd - True for end cap (forward half), false for start cap (back half)
+ * @returns {void}
+ */
+function drawHalfCircleCap( screenData, cx, cy, radius, color, tanX, tanY, isEnd ) {
+
+	// Normalize tangent to get orientation
+	const len = Math.sqrt( tanX * tanX + tanY * tanY );
+	let dirX = tanX;
+	let dirY = tanY;
+	if( len > 0.0001 ) {
+		dirX /= len;
+		dirY /= len;
+	} else {
+		dirX = 1;
+		dirY = 0;
+	}
+
+	// Base angle along tangent; for the start cap face backward along the tangent
+	let base = Math.atan2( dirY, dirX );
+	if( !isEnd ) {
+		base += Math.PI; // invert to face outward from the arc start
+	}
+	const start = base - Math.PI / 2;
+	const end = base + Math.PI / 2;
+
+	// Segment count for a smooth semicircle
+	const segments = Math.max( 6, Math.min( Math.round( radius * 3 ), 90 ) );
+	const step = ( end - start ) / segments;
+
+	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
+	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, segments * 3 );
+
+	for( let i = 0; i < segments; i++ ) {
+		const a = start + i * step;
+		const b = a + step;
+		const ax = cx + radius * Math.cos( a );
+		const ay = cy + radius * Math.sin( a );
+		const bx = cx + radius * Math.cos( b );
+		const by = cy + radius * Math.sin( b );
+		g_batchHelpers.addTriangleToBatch( batch, cx, cy, ax, ay, bx, by, color );
+	}
 }
 

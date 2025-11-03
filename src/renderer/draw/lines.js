@@ -94,7 +94,7 @@ export function drawLineSquare( screenData, x1, y1, x2, y2, color, penSize, penT
 export function drawLineCircle( screenData, x1, y1, x2, y2, color, penSize, penType ) {
 
 	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
-	const halfWidth = penSize / 2;
+	const halfWidth = Math.floor( penSize / 2 );
 	const radius = halfWidth;
 
 	// Calculate line direction vector to check for degenerate lines
