@@ -5,6 +5,14 @@
  * Handles input parsing, validation, and builds optimized drawing functions.
  * 
  * @module api/graphics
+ * 
+ * TODO: I removed objectLiteral parameter parsing for primitives to improve the speed, but there
+ * is a problem with this especially when dealing with hitboxes, it was nice to be able to 
+ * create a hit box object literal {x, y, width, height} and to share this with rects and events.
+ * 
+ * Create alternate primitive methods that accept an object literal as a first parameter. Test the
+ * difference, if significant then keep the both methods if not then just always allow object
+ * literals as first parameter.
  */
 
 "use strict";
@@ -107,6 +115,8 @@ export function rebuildApi( s_screenData ) {
 	let s_arcDrawFn;
 	let s_bezierDrawFn;
 	let s_rectDrawFn;
+
+	// Set line offsets
 	if( s_penType === g_pens.PEN_PIXEL ) {
 
 		// Pixel pen
@@ -130,32 +140,29 @@ export function rebuildApi( s_screenData ) {
 			s_drawBezierPixel( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color );
 		};
 
-
-
 		// Pixel rect: fill interior with 1px inset, then outline
 		s_rectDrawFn = ( x, y, width, height, outlineColor, fillColorValue ) => {
 			s_rectInnerFillFn( x, y, width, height, fillColorValue, 1 );
 			g_renderer.drawRectPixel( s_screenData, x, y, width, height, outlineColor );
 		};
-
 		
 	} else if( s_penType === g_pens.PEN_SQUARE ) {
 
 		// Square pen - prefer top/left for even sizes, MCA consistency for odd
-		let s_offsetX;
-		let s_offsetY;
+		let s_psetOffsetX;
+		let s_psetOffsetY;
 		if( s_penSize % 2 === 0 ) {
-			s_offsetX = Math.floor( s_penSize / 2 ) - 1;
-			s_offsetY = Math.floor( s_penSize / 2 );
+			s_psetOffsetX = Math.floor( s_penSize / 2 ) - 1;
+			s_psetOffsetY = Math.floor( s_penSize / 2 );
 		} else {
-			s_offsetX = Math.floor( s_penSize / 2 );
-			s_offsetY = Math.floor( s_penSize / 2 ) + 1;
+			s_psetOffsetX = Math.floor( s_penSize / 2 );
+			s_psetOffsetY = Math.floor( s_penSize / 2 ) + 1;
 		}
 
 		// pset square pen
 		s_psetDrawFn = ( x, y, color ) => {
 			s_drawFilledRect(
-				s_screenData, x - s_offsetX, y - s_offsetY, s_penSize, s_penSize, color
+				s_screenData, x - s_psetOffsetX, y - s_psetOffsetY, s_penSize, s_penSize, color
 			);
 		};
 
@@ -196,7 +203,7 @@ export function rebuildApi( s_screenData ) {
 
 	} else if( s_penType === g_pens.PEN_CIRCLE ) {
 
-		const s_penRadius = Math.ceil( ( s_penSize + 1 ) / 2 );
+		const s_penRadius = Math.floor( ( s_penSize + 1 ) / 2 );
 
 		// Delegate caching decisions to s_drawFilledCircle
 		s_psetDrawFn = ( x, y, color ) => {

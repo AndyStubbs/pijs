@@ -63,18 +63,19 @@ export function drawLinePixel( screenData, x1, y1, x2, y2, color ) {
  * @param {number} penType - Pen type (unused for square pen)
  * @returns {void}
  */
-export function drawLineSquare( screenData, x1, y1, x2, y2, color, penSize, penType ) {
+export function drawLineSquare( screenData, x1, y1, x2, y2, color, penSize ) {
 
 	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
-	const halfWidth = Math.floor( penSize / 2 );
-	const extension = halfWidth; // Extend by half penSize for square caps
+	
+	// Calculate extension for square caps (half penSize, favoring top/left for even)
+	let extension = Math.floor( penSize / 2 );
 
 	// Estimate vertex count: 6 for line body (with extended endpoints)
 	const vertexCount = 6;
 	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, vertexCount );
 
 	// Draw line body (rectangle with extended endpoints for square caps)
-	drawLineBody( batch, x1, y1, x2, y2, halfWidth, extension, color );
+	drawLineBody( batch, x1, y1, x2, y2, penSize, extension, color );
 }
 
 /**
@@ -91,11 +92,19 @@ export function drawLineSquare( screenData, x1, y1, x2, y2, color, penSize, penT
  * @param {number} penType - Pen type (unused for circle pen)
  * @returns {void}
  */
-export function drawLineCircle( screenData, x1, y1, x2, y2, color, penSize, penType ) {
+export function drawLineCircle( screenData, x1, y1, x2, y2, color, penSize ) {
 
 	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
-	const halfWidth = Math.floor( penSize / 2 );
-	const radius = halfWidth;
+	
+	// Calculate radius for circle caps (half penSize, favoring top/left for even)
+	const radius = Math.floor( ( penSize - 1 ) / 2 );
+
+	// let radius;
+	// if( penSize % 2 === 0 ) {
+	// 	radius = penSize / 2;
+	// } else {
+	// 	radius = Math.floor( penSize / 2 );
+	// }
 
 	// Calculate line direction vector to check for degenerate lines
 	const dx = x2 - x1;
@@ -113,7 +122,7 @@ export function drawLineCircle( screenData, x1, y1, x2, y2, color, penSize, penT
 	const vertexCount = 6;
 	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, vertexCount );
 
-	drawLineBody( batch, x1, y1, x2, y2, halfWidth, extension, color );
+	drawLineBody( batch, x1, y1, x2, y2, penSize, extension, color );
 
 	// Draw semicircle caps oriented along the line direction
 	const dirX = dx / length;
@@ -131,12 +140,12 @@ export function drawLineCircle( screenData, x1, y1, x2, y2, color, penSize, penT
  * @param {number} y1 - Start Y coordinate
  * @param {number} x2 - End X coordinate
  * @param {number} y2 - End Y coordinate
- * @param {number} halfWidth - Half the line width (penSize / 2)
+ * @param {number} penSize - Pen size (full width)
  * @param {number} extension - Amount to extend the line in both directions (for caps)
  * @param {Object} color - Color object with r, g, b, a
  * @returns {void}
  */
-function drawLineBody( batch, x1, y1, x2, y2, halfWidth, extension, color ) {
+function drawLineBody( batch, x1, y1, x2, y2, penSize, extension, color ) {
 
 	// Calculate line direction vector
 	const dx = x2 - x1;
@@ -153,25 +162,51 @@ function drawLineBody( batch, x1, y1, x2, y2, halfWidth, extension, color ) {
 	const dirY = dy / length;
 
 	// Extend line endpoints by extension amount in both directions
-	const extX1 = x1 - dirX * extension;
-	const extY1 = y1 - dirY * extension;
-	const extX2 = x2 + dirX * extension;
-	const extY2 = y2 + dirY * extension;
+	let extX1 = x1;
+	let extX2 = x2;
+	let extY1 = y1;
+	let extY2 = y2;
+	if( extension > 0 ) {
+		extX1 = x1 - dirX * ( extension + 1 );
+		extY1 = y1 - dirY * ( extension + 1 );
+		extX2 = x2 + dirX * ( extension - 1 );
+		extY2 = y2 + dirY * ( extension - 1 );
+	}
 
 	// Calculate perpendicular vector (normalized)
 	const perpX = -dirY;
 	const perpY = dirX;
 
+	// Calculate offsets for line width (favor top/left for even penSize)
+	let radius = Math.floor( penSize / 2 );
+	let offsetLeft, offsetRight, offsetTop, offsetBottom;
+
+	offsetTop = radius;
+	offsetBottom = radius;
+
+	if( penSize % 2 === 0 ) {
+
+		// For even sizes, center the line with equal pixels on each side
+		// The white reference line should be centered within the green line body
+		// Total width = penSize, so radius pixels on each side
+		offsetLeft = radius - 1;
+		offsetRight = radius + 1;
+	} else {
+
+		// For odd sizes, center the line (left side gets the extra pixel)
+		offsetLeft = radius;
+		offsetRight = radius + 1;
+	}
+
 	// Calculate the four corners of the line rectangle
-	const halfW = halfWidth;
-	const p1x = extX1 + perpX * halfW;
-	const p1y = extY1 + perpY * halfW;
-	const p2x = extX1 - perpX * halfW;
-	const p2y = extY1 - perpY * halfW;
-	const p3x = extX2 - perpX * halfW;
-	const p3y = extY2 - perpY * halfW;
-	const p4x = extX2 + perpX * halfW;
-	const p4y = extY2 + perpY * halfW;
+	const p1x = extX1 + perpX * offsetLeft;
+	const p1y = extY1 + perpY * offsetTop;
+	const p2x = extX1 - perpX * offsetRight;
+	const p2y = extY1 - perpY * offsetTop;
+	const p3x = extX2 - perpX * offsetRight;
+	const p3y = extY2 - perpY * offsetBottom;
+	const p4x = extX2 + perpX * offsetLeft;
+	const p4y = extY2 + perpY * offsetBottom;
 
 	// Add the rectangle as two triangles
 	// First triangle: p1, p4, p2
