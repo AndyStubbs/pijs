@@ -54,7 +54,10 @@ export function drawArcPixel( screenData, cx, cy, radius, angle1, angle2, color 
 	const batch = screenData.batches[ g_batches.POINTS_BATCH ];
 	g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, estimatedPixels );
 
-	// Helper function to check if angle is within arc range and draw pixel
+	// Track plotted pixels to avoid duplicates from 8-way symmetry
+	const plotted = new Set();
+
+	// Helper function to check if angle is within arc range and draw pixel uniquely
 	const setPixel = ( px, py ) => {
 
 		// Calculate angle of this point relative to center
@@ -74,7 +77,15 @@ export function drawArcPixel( screenData, cx, cy, radius, angle1, angle2, color 
 		}
 
 		if( shouldDraw ) {
-			g_batchHelpers.addVertexToBatch( batch, px, py, color );
+
+			// De-duplicate exact pixel coordinates
+			const keyX = px | 0;
+			const keyY = py | 0;
+			const key = keyX + "," + keyY;
+			if( !plotted.has( key ) ) {
+				plotted.add( key );
+				g_batchHelpers.addVertexToBatch( batch, keyX, keyY, color );
+			}
 		}
 	};
 
@@ -325,40 +336,3 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 		g_batchHelpers.drawHalfCircleCap( screenData, endX, endY, capRadius, color, endDirX, endDirY, true );
 	}
 }
-
-/**
- * Helper function to draw a square cap at an endpoint
- * 
- * @param {Object} batch - Geometry batch object
- * @param {number} x - Endpoint X coordinate
- * @param {number} y - Endpoint Y coordinate
- * @param {number} dirX - Tangent direction X (normalized)
- * @param {number} dirY - Tangent direction Y (normalized)
- * @param {number} halfWidth - Half the pen width
- * @param {Object} color - Color object
- * @returns {void}
- */
-function drawSquareCap( batch, x, y, dirX, dirY, halfWidth, color ) {
-
-	// Perpendicular vector (outward from arc)
-	const perpX = -dirY;
-	const perpY = dirX;
-
-	// Square cap extends halfWidth along the tangent in both directions
-	const capHalfWidth = halfWidth;
-
-	// Calculate four corners of the square cap
-	const p1x = x + dirX * capHalfWidth + perpX * capHalfWidth;
-	const p1y = y + dirY * capHalfWidth + perpY * capHalfWidth;
-	const p2x = x + dirX * capHalfWidth - perpX * capHalfWidth;
-	const p2y = y + dirY * capHalfWidth - perpY * capHalfWidth;
-	const p3x = x - dirX * capHalfWidth - perpX * capHalfWidth;
-	const p3y = y - dirY * capHalfWidth - perpY * capHalfWidth;
-	const p4x = x - dirX * capHalfWidth + perpX * capHalfWidth;
-	const p4y = y - dirY * capHalfWidth + perpY * capHalfWidth;
-
-	// Draw square as two triangles
-	g_batchHelpers.addTriangleToBatch( batch, p1x, p1y, p4x, p4y, p2x, p2y, color );
-	g_batchHelpers.addTriangleToBatch( batch, p4x, p4y, p3x, p3y, p2x, p2y, color );
-}
-
