@@ -54,6 +54,7 @@ function prepopulateCache() {
 	// Pre-generate circles for sizes 3-30
 	for( let size = 3; size <= 30; size++ ) {
 		const cacheKey = `circle:${size}`;
+		
 		// Use Alpha 2's radius threshold: (half - 0.5)^2
 		const radiusThresholdSq = ( size - 0.5 ) * ( size - 0.5 );
 		const geometry = generateCircleGeometry( radiusThresholdSq );
