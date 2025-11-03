@@ -208,21 +208,33 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 	// Let's use a rough estimate based on the full circle segments
 	// TODO: actually figure out good formula for segmentsPerFullCircle
 	const segmentsPerFullCircle = Math.min( Math.round( radius * 5 ), 360 );
-	const numSegments = Math.max( 2, Math.ceil( ( sweepAngle / ( 2 * Math.PI ) ) * segmentsPerFullCircle ) );
 
-	const angleStep = sweepAngle / numSegments;
 	const halfWidth = penSize / 2;
+
+	// For square caps, extend the arc by halfWidth on each end to avoid overlapping cap quads
+	const extensionAngle = ( useSquareCaps && radius > 0 ) ? ( halfWidth / radius ) : 0;
+	const effectiveStartAngle = angle1 - extensionAngle;
+	const effectiveEndAngle = ( angle1 + sweepAngle ) + extensionAngle;
+	const effectiveSweep = effectiveEndAngle - effectiveStartAngle;
+
+	const numSegments = Math.max(
+		2,
+		Math.ceil( ( effectiveSweep / ( 2 * Math.PI ) ) * segmentsPerFullCircle )
+	);
+
+	const angleStep = effectiveSweep / numSegments;
 
 	// Get the geometry batch
 	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
 
-	// Estimate vertex count: 6 per segment + caps
-	const estimatedVertices = numSegments * 6 + ( useSquareCaps ? 12 : 0 );
+	// Estimate vertex count: 6 per rectangular segment
+	// Note: square caps are handled by extending the arc; circle caps draw their own geometry
+	const estimatedVertices = numSegments * 6;
 	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, estimatedVertices );
 
-	// Calculate start and end points for caps
-	const startAngle = angle1;
-	const endAngle = angle1 + sweepAngle;
+	// Calculate start and end points for caps (for circle caps only)
+	const startAngle = effectiveStartAngle;
+	const endAngle = effectiveEndAngle;
 	const startX = cx + radius * Math.cos( startAngle );
 	const startY = cy + radius * Math.sin( startAngle );
 	const endX = cx + radius * Math.cos( endAngle );
@@ -237,8 +249,8 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 	// Draw rectangular segments along the arc
 	for( let i = 0; i < numSegments; i++ ) {
 
-		const angle1Seg = angle1 + i * angleStep;
-		const angle2Seg = angle1 + ( i + 1 ) * angleStep;
+		const angle1Seg = effectiveStartAngle + i * angleStep;
+		const angle2Seg = effectiveStartAngle + ( i + 1 ) * angleStep;
 
 		// Calculate segment endpoints on the arc
 		const x1 = cx + radius * Math.cos( angle1Seg );
@@ -298,9 +310,7 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 	// Draw caps at endpoints
 	if( useSquareCaps ) {
 
-		// Draw square caps
-		drawSquareCap( batch, startX, startY, startDirX, startDirY, halfWidth, color );
-		drawSquareCap( batch, endX, endY, endDirX, endDirY, halfWidth, color );
+		// No separate geometry; arc was extended to produce square ends without overlap
 	} else {
 
 		// TODO: Fix circle end caps
