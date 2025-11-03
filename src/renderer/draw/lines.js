@@ -66,7 +66,7 @@ export function drawLinePixel( screenData, x1, y1, x2, y2, color ) {
 export function drawLineSquare( screenData, x1, y1, x2, y2, color, penSize, penType ) {
 
 	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
-	const halfWidth = penSize / 2;
+	const halfWidth = Math.floor( penSize / 2 );
 	const extension = halfWidth; // Extend by half penSize for square caps
 
 	// Estimate vertex count: 6 for line body (with extended endpoints)
@@ -115,9 +115,11 @@ export function drawLineCircle( screenData, x1, y1, x2, y2, color, penSize, penT
 
 	drawLineBody( batch, x1, y1, x2, y2, halfWidth, extension, color );
 
-	// Draw circular caps at both endpoints
-	g_shapes.drawFilledCircle( screenData, x1, y1, radius, color );
-	g_shapes.drawFilledCircle( screenData, x2, y2, radius, color );
+	// Draw semicircle caps oriented along the line direction
+	const dirX = dx / length;
+	const dirY = dy / length;
+	g_batchHelpers.drawHalfCircleCap( screenData, x1, y1, radius, color, dirX, dirY, false );
+	g_batchHelpers.drawHalfCircleCap( screenData, x2, y2, radius, color, dirX, dirY, true );
 }
 
 

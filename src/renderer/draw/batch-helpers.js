@@ -9,6 +9,8 @@
 
 "use strict";
 
+import * as g_batches from "../batches.js";
+
 
 /***************************************************************************************************
  * Vertex Helpers
@@ -124,5 +126,63 @@ export function addLineToBatch( batch, x1, y1, x2, y2, color ) {
 	batch.colors[ colorBase + 7 ] = color.a;
 
 	batch.count += 2;
+}
+
+/***************************************************************************************************
+ * Caps and Curves Helpers
+ ***************************************************************************************************/
+
+/**
+ * Draw a half-circle cap at a point, oriented by a tangent direction.
+ * Emits a triangle fan approximating a semicircle. Prepares the geometry batch capacity.
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {number} cx - Center X
+ * @param {number} cy - Center Y
+ * @param {number} radius - Cap radius
+ * @param {Object} color - RGBA color
+ * @param {number} tanX - Tangent X
+ * @param {number} tanY - Tangent Y
+ * @param {boolean} isEnd - True for end cap (forward), false for start (backward)
+ * @returns {void}
+ */
+export function drawHalfCircleCap( screenData, cx, cy, radius, color, tanX, tanY, isEnd ) {
+
+	// Normalize tangent
+	const len = Math.sqrt( tanX * tanX + tanY * tanY );
+	let dirX = tanX;
+	let dirY = tanY;
+	if( len > 0.0001 ) {
+		dirX /= len;
+		dirY /= len;
+	} else {
+		dirX = 1;
+		dirY = 0;
+	}
+
+	// Base angle; flip for start to face outward from arc
+	let base = Math.atan2( dirY, dirX );
+	if( !isEnd ) {
+		base += Math.PI;
+	}
+	const start = base - Math.PI / 2;
+	const end = base + Math.PI / 2;
+
+	// Tessellation
+	const segments = Math.max( 6, Math.min( Math.round( radius * 3 ), 90 ) );
+	const step = ( end - start ) / segments;
+
+	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
+	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, segments * 3 );
+
+	for( let i = 0; i < segments; i++ ) {
+		const a = start + i * step;
+		const b = a + step;
+		const ax = cx + radius * Math.cos( a );
+		const ay = cy + radius * Math.sin( a );
+		const bx = cx + radius * Math.cos( b );
+		const by = cy + radius * Math.sin( b );
+		addTriangleToBatch( batch, cx, cy, ax, ay, bx, by, color );
+	}
 }
 
