@@ -206,7 +206,8 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 	// More segments = smoother arc, but more draw calls/vertices
 	// A common heuristic is based on radius or a fixed segment length
 	// Let's use a rough estimate based on the full circle segments
-	const segmentsPerFullCircle = 60; // Adjust for desired smoothness
+	// TODO: actually figure out good formula for segmentsPerFullCircle
+	const segmentsPerFullCircle = Math.min( Math.round( radius * 5 ), 360 );
 	const numSegments = Math.max( 2, Math.ceil( ( sweepAngle / ( 2 * Math.PI ) ) * segmentsPerFullCircle ) );
 
 	const angleStep = sweepAngle / numSegments;
@@ -308,8 +309,8 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 		const capRadius = ( penSize / 2 );
 		
 		// Draw circles at the exact same endpoints as the segments
-		g_shapes.drawFilledCircle( screenData, startX, startY, capRadius, color );
-		g_shapes.drawFilledCircle( screenData, endX, endY, capRadius, color );
+		//g_shapes.drawFilledCircle( screenData, startX, startY, capRadius, color );
+		//g_shapes.drawFilledCircle( screenData, endX, endY, capRadius, color );
 	}
 }
 
