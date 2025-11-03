@@ -90,7 +90,6 @@ export function rebuildApi( s_screenData ) {
 
 		// Pixel line
 		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
-			s_prepareBatch( s_screenData, g_renderer.LINES_BATCH, 2 );
 			s_drawLinePixel( s_screenData, x1, y1, x2, y2, color );
 		};
 
@@ -233,10 +232,6 @@ export function rebuildApi( s_screenData ) {
 			error.code = "INVALID_PARAMETER";
 			throw error;
 		}
-
-		// Prepare batch for arc pixels (estimate: approximately 2 * PI * radius pixels)
-		const estimatedPixels = Math.max( 4, Math.ceil( 2 * Math.PI * pRadius ) );
-		s_prepareBatch( s_screenData, s_pointsBatch, estimatedPixels );
 
 		// Draw
 		s_drawArcPixel( s_screenData, pCx, pCy, pRadius, angle1, angle2, s_color );

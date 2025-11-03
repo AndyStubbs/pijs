@@ -40,13 +40,18 @@ export function drawArcPixel( screenData, cx, cy, radius, angle1, angle2, color 
 	const winding = a1 > a2;
 
 	// Adjust radius (consistent with filled circle implementation)
-	radius -= 1;
-	if( radius < 0 ) {
-		radius = 0;
+	const adjustedRadius = radius - 1;
+	let finalRadius = adjustedRadius;
+	if( finalRadius < 0 ) {
+		finalRadius = 0;
 	}
 
-	// Get the points batch
+	// Estimate pixel count: approximately 2 * PI * radius pixels
+	const estimatedPixels = Math.max( 4, Math.ceil( 2 * Math.PI * radius ) );
+
+	// Get the points batch and prepare it
 	const batch = screenData.batches[ g_batches.POINTS_BATCH ];
+	g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, estimatedPixels );
 
 	// Helper function to check if angle is within arc range and draw pixel
 	const setPixel = ( px, py ) => {
@@ -73,14 +78,14 @@ export function drawArcPixel( screenData, cx, cy, radius, angle1, angle2, color 
 	};
 
 	// Handle special cases
-	if( radius === 0 ) {
+	if( finalRadius === 0 ) {
 
 		// Single point
 		setPixel( cx, cy );
 		return;
 	}
 
-	if( radius === 1 ) {
+	if( finalRadius === 1 ) {
 
 		// Draw 4 cardinal points
 		setPixel( cx + 1, cy );
@@ -91,7 +96,7 @@ export function drawArcPixel( screenData, cx, cy, radius, angle1, angle2, color 
 	}
 
 	// Midpoint circle algorithm
-	let x = radius;
+	let x = finalRadius;
 	let y = 0;
 	let err = 1 - x;
 
