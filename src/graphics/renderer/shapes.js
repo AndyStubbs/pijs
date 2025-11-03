@@ -37,7 +37,7 @@ export function init() {
  * @param {Object} color - Color object with r/g/b/a components (0-255)
  * @returns {void}
  */
-export function drawFilledRectUnsafe( screenData, x, y, width, height, color ) {
+export function drawFilledRect( screenData, x, y, width, height, color ) {
 
 	// Get geometry batch
 	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
@@ -71,7 +71,7 @@ export function drawFilledRectUnsafe( screenData, x, y, width, height, color ) {
 }
 
 /**
- * Draw filled circle (unsafe - no bounds checking, GPU clipping)
+ * Draw filled circle (no bounds checking, GPU clipping)
  * 
  * @param {Object} screenData - Screen data object
  * @param {number} cx - Center X coordinate
@@ -80,7 +80,11 @@ export function drawFilledRectUnsafe( screenData, x, y, width, height, color ) {
  * @param {Object} color - Color object with r/g/b/a components (0-255)
  * @returns {void}
  */
-export function drawFilledCircleUnsafe( screenData, cx, cy, radius, color ) {
+export function drawFilledCircle( screenData, cx, cy, radius, color ) {
+
+	// TODO: Attempt to fix the drawFilledCircle so it's the same as pre alpha 3 version which I 
+	// prefer. Right now we are using a cached results, I might want to keep the caching but we
+	// should use the same algorithm and try to reuse code.
 
 	// Apply input adjustments for MCA consistency
 	radius -= 1;

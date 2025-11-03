@@ -51,7 +51,7 @@ src/
 │   │   ├── shaders.js                # Shader compilation and program creation
 │   │   ├── batches.js                # Batch system + rendering (COMBINED)
 │   │   ├── textures.js               # Texture management (getWebGL2Texture, etc.)
-│   │   ├── draw.js                   # Low-level: drawPixelUnsafe, drawImage
+│   │   ├── draw.js                   # Low-level: drawPixel, drawImage
 │   │   ├── primitives.js             # High-level: drawLine, drawArc, drawBezier
 │   │   ├── shapes.js                 # High-level: drawRect, drawCircle, drawEllipse
 │   │   ├── readback.js               # readPixel, readPixels (sync/async)
@@ -98,7 +98,7 @@ src/
 - `shaders.js`: Shader compilation, program creation, display shader setup
 - `batches.js`: Batch creation, management, flushing, rendering to FBO/canvas
 - `textures.js`: Texture cache management (nested Map), get/delete operations
-- `draw.js`: Low-level drawing (`drawPixelUnsafe`, `drawImage` with textured quads)
+- `draw.js`: Low-level drawing (`drawPixel`, `drawImage` with textured quads)
 - `primitives.js`: High-level primitives (`drawLine`, `drawArc`, `drawBezier`)
 - `shapes.js`: High-level shapes (`drawRect`, `drawCircle`, `drawEllipse`)
 - `readback.js`: Pixel readback operations (`readPixel`, `readPixels`)
@@ -134,14 +134,14 @@ batches.js
 
 draw.js
   ├─ imports: batches.js, textures.js
-  └─ exports: drawPixelUnsafe, drawImage
+  └─ exports: drawPixel, drawImage
 
 primitives.js
-  ├─ imports: batches.js (for prepareBatch, drawPixelUnsafe via renderer)
+  ├─ imports: batches.js (for prepareBatch, drawPixel via renderer)
   └─ exports: drawLine, drawArc, drawBezier
 
 shapes.js
-  ├─ imports: batches.js (for prepareBatch, drawPixelUnsafe via renderer)
+  ├─ imports: batches.js (for prepareBatch, drawPixel via renderer)
   └─ exports: drawRect, drawCircle, drawEllipse
 
 readback.js
@@ -343,12 +343,12 @@ Move rendering logic from `renderer-webgl2.js`:
 Move low-level drawing functions from `renderer-webgl2.js`:
 
 **Responsibilities:**
-- `drawPixelUnsafe()` - Fast path for single pixel writes
+- `drawPixel()` - Fast path for single pixel writes
 - `drawImage()` - Draw image as textured quad (rotation, scaling, anchor)
 
 **Key functions:**
 - `export function init( api )` - Initialize module
-- `export function drawPixelUnsafe( screenData, x, y, color )`
+- `export function drawPixel( screenData, x, y, color )`
 
 **Note:** `drawImage()` will be added later when implementing image support.
 
@@ -387,7 +387,7 @@ Implement basic graphics API wrapper for input parsing and validation:
 
 **Commands to implement:**
 - `pset` - Build optimized pen drawing function based on current pen settings
-  - Calls `renderer.drawPixelUnsafe()` for pixel pen
+  - Calls `renderer.drawPixel()` for pixel pen
   - Draws square/circle shapes for larger pens
 
 **Key changes:**
@@ -402,7 +402,7 @@ Implement basic graphics API wrapper for input parsing and validation:
 - Each command builds its own specialized drawing function
 
 ### Step 4.4: Test Basic Drawing ✅ COMPLETE
-- Test `drawPixelUnsafe()` - draw single pixels
+- Test `drawPixel()` - draw single pixels
 - Test color system - verify palette and color parsing works
 - Test pen system - verify `setPen()` stores correct configuration
 - Test `pset()` command - verify it works with various pen sizes/shapes
@@ -434,7 +434,7 @@ Add new batch type for drawing filled geometry (rectangles, circles):
 - Shares point shader or creates dedicated geometry shader
 
 ### Step 4A.2: Implement drawFilledRect in shapes.js ✅ COMPLETE
-Implement `drawFilledRectUnsafe()` function in `shapes.js`:
+Implement `drawFilledRect()` function in `shapes.js`:
 
 **Responsibilities:**
 - Generate triangle vertices for filled rectangle
@@ -442,7 +442,7 @@ Implement `drawFilledRectUnsafe()` function in `shapes.js`:
 - Handle color per-vertex
 
 **Key functions:**
-- `export function drawFilledRectUnsafe( screenData, x, y, width, height, color )`
+- `export function drawFilledRect( screenData, x, y, width, height, color )`
   - Generates 6 vertices (2 triangles) for rectangle
   - Adds vertices to geometry batch with uniform color
   - No bounds checking (GPU clipping)
@@ -453,7 +453,7 @@ Implement `drawFilledRectUnsafe()` function in `shapes.js`:
 - Uses `prepareBatch()` to ensure capacity
 
 ### Step 4A.3: Implement drawFilledCircle in shapes.js ✅ COMPLETE
-Implement `drawFilledCircleUnsafe()` function in `shapes.js`:
+Implement `drawFilledCircle()` function in `shapes.js`:
 
 **Responsibilities:**
 - Generate triangle vertices for filled circle
@@ -461,7 +461,7 @@ Implement `drawFilledCircleUnsafe()` function in `shapes.js`:
 - Append vertices to `GEOMETRY_BATCH`
 
 **Key functions:**
-- `export function drawFilledCircleUnsafe( screenData, cx, cy, radius, color )`
+- `export function drawFilledCircle( screenData, cx, cy, radius, color )`
   - Center vertex + ring vertices
   - Adaptive tessellation (more segments for larger radius)
   - Triangle fan or triangle strip
@@ -476,12 +476,12 @@ Implement `drawFilledCircleUnsafe()` function in `shapes.js`:
 Add exports to `renderer.js` for new functions:
 
 **Functions to export:**
-- `drawFilledRectUnsafe` from `shapes.js`
-- `drawFilledCircleUnsafe` from `shapes.js`
+- `drawFilledRect` from `shapes.js`
+- `drawFilledCircle` from `shapes.js`
 - `GEOMETRY_BATCH` constant from `batches.js`
 
 **Implementation notes:**
-- Add `export { drawFilledRectUnsafe, drawFilledCircleUnsafe }` from shapes.js
+- Add `export { drawFilledRect, drawFilledCircle }` from shapes.js
 - Add `export { GEOMETRY_BATCH }` from batches.js
 - Ensure lazy initialization doesn't break circular imports
 
@@ -489,16 +489,16 @@ Add exports to `renderer.js` for new functions:
 Update `graphics-api.js` to use new renderer functions:
 
 **Changes:**
-- Replace stub `s_drawFilledRectUnsafe` with actual `g_renderer.drawFilledRectUnsafe`
-- Replace stub `s_drawFilledCircleUnsafe` with actual `g_renderer.drawFilledCircleUnsafe`
-- Update `s_psetDrawFn` for square pen to call `drawFilledRectUnsafe`
-- Update `s_psetDrawFn` for circle pen to call `drawFilledCircleUnsafe`
+- Replace stub `s_drawFilledRect` with actual `g_renderer.drawFilledRect`
+- Replace stub `s_drawFilledCircle` with actual `g_renderer.drawFilledCircle`
+- Update `s_psetDrawFn` for square pen to call `drawFilledRect`
+- Update `s_psetDrawFn` for circle pen to call `drawFilledCircle`
 - Remove TODOs and placeholder implementations
 
 **Key changes:**
-- Square pen: `drawFilledRectUnsafe( screenData, x - offset, y - offset, size, size, color )`
-- Circle pen: `drawFilledCircleUnsafe( screenData, x, y, size, color )`
-- Cross pen (size 2): Use multiple `drawPixelUnsafe` calls
+- Square pen: `drawFilledRect( screenData, x - offset, y - offset, size, size, color )`
+- Circle pen: `drawFilledCircle( screenData, x, y, size, color )`
+- Cross pen (size 2): Use multiple `drawPixel` calls
 
 ### Step 4A.6: Test Complete pset Implementation ✅ COMPLETE
 Test full `pset` functionality with all pen types:
@@ -594,7 +594,7 @@ Move pixel reading/writing commands from `graphics-pixels.js` to `graphics/pixel
 
 **Implementation notes:**
 - Read operations call `screenData.renderer.readPixel()` / `readPixels()`
-- `put()` calls `screenData.renderer.drawPixelUnsafe()` for each pixel
+- `put()` calls `screenData.renderer.drawPixel()` for each pixel
 - Uses `g_colors.getColorValueByIndex()` to convert palette indices to colors
 - Uses `g_colors.findColorIndexByColorValue()` to convert colors to palette indices
 - `put()` supports `include0` option to skip transparent pixels
@@ -620,7 +620,7 @@ Implement line drawing in `renderer/primitives.js`:
 
 **Key functions:**
 - `export function init( api )` - Initialize module
-- `export function drawLineUnsafe( screenData, x1, y1, x2, y2, color )`
+- `export function drawLine( screenData, x1, y1, x2, y2, color )`
   - Low-level function that draws line based on pen configuration
 
 **Implementation notes:**
@@ -642,7 +642,7 @@ Move arc drawing from `graphics-primitives.js`:
 **Implementation notes:**
 - Move `m_arcOutline()` function from `graphics-primitives.js`
 - Reads pen configuration from `screenData.pens`
-- Draws pixels using `drawPixelUnsafe()` with pen shape logic inline
+- Draws pixels using `drawPixel()` with pen shape logic inline
 - Filter pixels by angle range
 - Estimate batch size based on arc circumference and pen size
 
@@ -658,7 +658,7 @@ Move bezier drawing from `graphics-primitives.js`:
 **Implementation notes:**
 - Move `m_bezierOutline()` function from `graphics-primitives.js`
 - Reads pen configuration from `screenData.pens`
-- Draws pixels using `drawPixelUnsafe()` with pen shape logic inline
+- Draws pixels using `drawPixel()` with pen shape logic inline
 - Adaptive tessellation based on curve length
 - Estimate batch size based on control polygon length and pen size
 
@@ -686,7 +686,7 @@ Move rectangle drawing from `graphics-shapes.js` to `renderer/shapes.js`:
 - Move `m_rectOutline()` and `m_rectFilled()` from `graphics-shapes.js`
 - Handle both outline and filled modes
 - Reads pen/blend configuration from `screenData.pens` and `screenData.blends`
-- Draws pixels using `drawPixelUnsafe()` with pen shape logic inline
+- Draws pixels using `drawPixel()` with pen shape logic inline
 - All blending handled on GPU via batches.js
 
 ### Step 7.2: Implement shapes.js - Circle Drawing
@@ -702,7 +702,7 @@ Move circle drawing from `graphics-shapes.js`:
 **Implementation notes:**
 - Move `m_circleOutline()` and `m_circleFilled()` from `graphics-shapes.js`
 - Reads pen/blend configuration from screenData
-- Draws pixels using `drawPixelUnsafe()` with pen shape logic inline
+- Draws pixels using `drawPixel()` with pen shape logic inline
 - Use midpoint circle algorithm
 - Estimate batch size based on circumference (outline) or area (filled)
 
@@ -719,7 +719,7 @@ Move ellipse drawing from `graphics-shapes.js`:
 **Implementation notes:**
 - Move `m_ellipseOutline()` and `m_ellipseFilled()` from `graphics-shapes.js`
 - Reads pen/blend configuration from screenData
-- Draws pixels using `drawPixelUnsafe()` with pen shape logic inline
+- Draws pixels using `drawPixel()` with pen shape logic inline
 - Use midpoint ellipse algorithm
 - Estimate batch size based on perimeter (outline) or area (filled)
 
@@ -762,7 +762,7 @@ Ensure `renderer/renderer.js` exports all necessary functions:
 **Exports needed:**
 - `POINTS_BATCH`, `IMAGE_BATCH` (from batches)
 - `prepareBatch()` (from batches)
-- `drawPixelUnsafe()` (from draw)
+- `drawPixel()` (from draw)
 - `drawImage()` (from draw)
 - `drawLine()`, `drawArc()`, `drawBezier()` (from primitives)
 - `drawRect()`, `drawCircle()`, `drawEllipse()` (from shapes)

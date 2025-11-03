@@ -37,9 +37,9 @@ export {
 } from "./batches.js";
 
 // Re-export drawing functions
-export { drawPixelUnsafe, drawImage, drawPixelUnsafeReplace } from "./draw.js";
-export { drawFilledRectUnsafe, drawFilledCircleUnsafe } from "./shapes.js";
-export { drawLinePixel, drawLinePen } from "./primitives.js";
+export { drawPixel, drawImage, drawPixelReplace } from "./draw.js";
+export { drawFilledRect, drawFilledCircle } from "./shapes.js";
+export { drawLinePixel, drawLinePenSquare, drawLinePenCircle } from "./primitives.js";
 export { drawCachedGeometry } from "./geometry.js";
 
 // Re-export batch management

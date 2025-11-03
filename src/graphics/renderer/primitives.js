@@ -39,7 +39,11 @@ export function init() {
  * @returns {void}
  */
 export function drawLinePixel( screenData, x1, y1, x2, y2, color ) {
+
+	// Prepare batch for 2 vertices (line segment)
 	const batch = screenData.batches[ g_batches.LINES_BATCH ];
+	g_batches.prepareBatch( screenData, g_batches.LINES_BATCH, 2, null, null );
+
 	const baseIdx = batch.count;
 	const vertexBase = baseIdx * batch.vertexComps;
 	const colorBase = baseIdx * batch.colorComps;
@@ -63,7 +67,15 @@ export function drawLinePixel( screenData, x1, y1, x2, y2, color ) {
 	batch.count += 2;
 }
 
-export function drawLinePen( screenData, x1, y1, x2, y2, color, penSize, penType ) {
+export function drawLinePenSquare( screenData, x1, y1, x2, y2, color, penSize, penType ) {
+
+	// TODO: Implement geometry generation for lines with pen size >= 2
+	// This will generate quads/geometry based on pen type and size
+
+	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
+}
+
+export function drawLinePenCircle( screenData, x1, y1, x2, y2, color, penSize, penType ) {
 
 	// TODO: Implement geometry generation for lines with pen size >= 2
 	// This will generate quads/geometry based on pen type and size

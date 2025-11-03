@@ -46,13 +46,17 @@ export function rebuildApi( s_screenData ) {
 
 		// Set error functions for when no screen is available
 		m_api.pset = () => g_utils.errFn( "pset" );
+		m_api.line = () => g_utils.errFn( "line" );
 		return;
 	}
 
-	const s_drawPixelUnsafe = g_renderer.drawPixelUnsafe;
-	const s_drawFilledRectUnsafe = g_renderer.drawFilledRectUnsafe;
-	const s_drawFilledCircleUnsafe = g_renderer.drawFilledCircleUnsafe;
+	const s_drawPixel = g_renderer.drawPixel;
+	const s_drawFilledRect = g_renderer.drawFilledRect;
+	const s_drawFilledCircle = g_renderer.drawFilledCircle;
 	const s_drawCachedGeometry = g_renderer.drawCachedGeometry;
+	const s_drawLinePixel = g_renderer.drawLinePixel;
+	const s_drawLinePenSquare = g_renderer.drawLinePenSquare;
+	const s_drawLinePenCircle = g_renderer.drawLinePenCircle;
 
 	const s_setImageDirty = g_renderer.setImageDirty;
 	const s_prepareBatch = g_renderer.prepareBatch;
@@ -68,14 +72,21 @@ export function rebuildApi( s_screenData ) {
 	// TODO: Verify if we still need pixels per pen after completing all primitive draw commands
 	const s_pixelsPerPen = s_penConfig.pixelsPerPen;
 
-	// Build drawing function based on pen type
+	// Build drawing functions based on pen type
 	let s_psetDrawFn;
+	let s_lineDrawFn;
 	if( s_penType === g_pens.PEN_PIXEL ) {
 
 		// Pixel pen - draw single pixel
 		s_psetDrawFn = ( x, y, color ) => {
 			s_prepareBatch( s_screenData, s_pointsBatch, 1 );
-			s_drawPixelUnsafe( s_screenData, x, y, color );
+			s_drawPixel( s_screenData, x, y, color );
+		};
+
+		// Pixel line drawLinePixel for size 1
+		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
+			s_prepareBatch( s_screenData, g_renderer.LINES_BATCH, 2 );
+			s_drawLinePixel( s_screenData, x1, y1, x2, y2, color );
 		};
 	} else if( s_penType === g_pens.PEN_SQUARE ) {
 
@@ -89,11 +100,19 @@ export function rebuildApi( s_screenData ) {
 			s_offsetX = Math.floor( s_penSize / 2 );
 			s_offsetY = Math.floor( s_penSize / 2 ) + 1;
 		}
+
+		// pset square pen
 		s_psetDrawFn = ( x, y, color ) => {
-			s_drawFilledRectUnsafe(
+			s_drawFilledRect(
 				s_screenData, x - s_offsetX, y - s_offsetY, s_penSize, s_penSize, color
 			);
 		};
+
+		// line square pen
+		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
+			s_drawLinePenSquare( s_screenData, x1, y1, x2, y2, color, s_penSize, s_penType );
+		};
+
 	} else if( s_penType === g_pens.PEN_CIRCLE ) {
 
 		// Circle pen
@@ -102,11 +121,11 @@ export function rebuildApi( s_screenData ) {
 			// Special case: size 2 draws a cross (5 pixels)
 			s_psetDrawFn = ( x, y, color ) => {
 				s_prepareBatch( s_screenData, s_pointsBatch, 5 );
-				s_drawPixelUnsafe( s_screenData, x, y, color );
-				s_drawPixelUnsafe( s_screenData, x + 1, y, color );
-				s_drawPixelUnsafe( s_screenData, x - 1, y, color );
-				s_drawPixelUnsafe( s_screenData, x, y + 1, color );
-				s_drawPixelUnsafe( s_screenData, x, y - 1, color );
+				s_drawPixel( s_screenData, x, y, color );
+				s_drawPixel( s_screenData, x + 1, y, color );
+				s_drawPixel( s_screenData, x - 1, y, color );
+				s_drawPixel( s_screenData, x, y + 1, color );
+				s_drawPixel( s_screenData, x, y - 1, color );
 			};
 		} else if( s_penSize >= 3 && s_penSize <= 30 ) {
 
@@ -119,11 +138,16 @@ export function rebuildApi( s_screenData ) {
 			};
 		} else {
 
-			// Use drawFilledCircleUnsafe for sizes > 30
+			// Use drawFilledCircle for sizes > 30
 			s_psetDrawFn = ( x, y, color ) => {
-				s_drawFilledCircleUnsafe( s_screenData, x, y, s_penSize, color );
+				s_drawFilledCircle( s_screenData, x, y, s_penSize, color );
 			};
 		}
+
+		// line circle pen
+		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
+			s_drawLinePenCircle( s_screenData, x1, y1, x2, y2, color, s_penSize, s_penType );
+		};
 	}
 
 	/**********************************************************************************************
@@ -146,9 +170,34 @@ export function rebuildApi( s_screenData ) {
 		s_setImageDirty( s_screenData );
 	};
 
-	m_api.pset = psetFn;
-	s_screenData.api.pset = psetFn;
-}
+		m_api.pset = psetFn;
+		s_screenData.api.pset = psetFn;
+
+	/**********************************************************************************************
+	 * LINE Command
+	 **********************************************************************************************/
+
+	const lineFn = ( x1, y1, x2, y2 ) => {
+		const pX1 = s_getInt( x1, null );
+		const pY1 = s_getInt( y1, null );
+		const pX2 = s_getInt( x2, null );
+		const pY2 = s_getInt( y2, null );
+
+		// Make sure x1, y1, x2, y2 are integers
+		if( pX1 === null || pY1 === null || pX2 === null || pY2 === null ) {
+			const error = new TypeError( "line: Parameters x1, y1, x2, y2 must be integers." );
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
+
+		// Draw
+		s_lineDrawFn( pX1, pY1, pX2, pY2, s_color );
+		s_setImageDirty( s_screenData );
+	};
+
+	m_api.line = lineFn;
+	s_screenData.api.line = lineFn;
+	}
 
 
 /**************************************************************************************************

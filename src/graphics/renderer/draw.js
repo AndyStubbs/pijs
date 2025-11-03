@@ -37,7 +37,7 @@ export function init() {
  * @param {Object} color - Color object with r/g/b/a components (0-255)
  * @returns {void}
  */
-export function drawPixelUnsafe( screenData, x, y, color ) {
+export function drawPixel( screenData, x, y, color ) {
 
 	// Add directly to point batch
 	const batch = screenData.batches[ g_batches.POINTS_BATCH ];
@@ -65,7 +65,7 @@ export function drawPixelUnsafe( screenData, x, y, color ) {
  * @param {Object} color - Color object with r/g/b/a components (0-255)
  * @returns {void}
  */
-export function drawPixelUnsafeReplace( screenData, x, y, color ) {
+export function drawPixelReplace( screenData, x, y, color ) {
 
 	// Add directly to point batch
 	const batch = screenData.batches[ g_batches.POINTS_REPLACE_BATCH ];
