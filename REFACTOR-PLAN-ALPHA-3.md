@@ -77,9 +77,9 @@ src/
 │   └── pixels.js                     # Pixel readback commands (user-facing, distinct from internal renderer readback)
 │
 └── text/                              # Text rendering modules (planned for future phases)
-    ├── (font-data.js)                # Font data and bitmaps (planned)
-    ├── (font.js)                     # Font management (planned)
-    └── (print.js)                    # Text printing commands (planned)
+	├── (font-data.js)                # Font data and bitmaps (planned)
+	├── (font.js)                     # Font management (planned)
+	└── (print.js)                    # Text printing commands (planned)
 ```
 
 **Note:** Files in parentheses `()` are planned modules not yet implemented in Alpha 3.
@@ -137,8 +137,8 @@ All modules use lazy initialization - no code executes until `init()` is called 
 ```
 src/index.js
   └─ imports: api/graphics.js
-     └─ imports: renderer/renderer.js
-        └─ orchestrates: all renderer/* modules
+	 └─ imports: renderer/renderer.js
+		└─ orchestrates: all renderer/* modules
 
 renderer/renderer.js
   ├─ imports: fbo.js, shaders.js, batches.js, textures.js

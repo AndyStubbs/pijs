@@ -16,6 +16,15 @@ import * as g_batchHelpers from "./batch-helpers.js";
 import * as g_lines from "./lines.js";
 
 /**
+ * TODO: Add performance tests comparing variants for thick Bezier rendering:
+ * - Bevel-only joins vs. miter joins (with/without miter limit)
+ * - Different tessellation errors (e.g., 0.5, 0.75, 1.0) affecting point count
+ * - Triangle strip vs. per-segment quads
+ * - Impact of semicircle vs. square caps
+ * Capture CPU time and vertex counts across representative curves to choose defaults.
+ */
+
+/**
  * Draw bezier curve with adaptive tessellation
  * 
  * @param {Object} screenData - Screen data object
@@ -87,77 +96,116 @@ export function drawBezierSquare( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x,
 	const halfWidth = Math.floor( penSize / 2 );
 	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
 
-	// Estimate vertices: 6 per segment (no separate caps; we extend endpoints)
-	const segments = ( pts.length >> 1 ) - 1;
-	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, segments * 6 );
+	const count = ( pts.length >> 1 );
+	const left = new Array( count * 2 );
+	const right = new Array( count * 2 );
 
-	let firstDirX = 1, firstDirY = 0;
-	for( let i = 0; i < segments; i++ ) {
-		const i0 = i * 2;
-		const i1 = i0 + 2;
-		let x1 = pts[ i0 ];
-		let y1 = pts[ i0 + 1 ];
-		let x2 = pts[ i1 ];
-		let y2 = pts[ i1 + 1 ];
-		const dx = x2 - x1;
-		const dy = y2 - y1;
-		const len = Math.sqrt( dx * dx + dy * dy );
-		if( len < 0.001 ) continue;
-		const dirX = dx / len;
-		const dirY = dy / len;
-		if( i === 0 ) { firstDirX = dirX; firstDirY = dirY; }
-
-		// Extend the first and last segment by halfWidth to create square ends without overlap
-		if( i === 0 ) {
-			x1 -= dirX * halfWidth;
-			y1 -= dirY * halfWidth;
-		}
-		if( i === segments - 1 ) {
-			x2 += dirX * halfWidth;
-			y2 += dirY * halfWidth;
-		}
-		const perpX = -dirY;
-		const perpY = dirX;
-		const p1x = x1 + perpX * halfWidth;
-		const p1y = y1 + perpY * halfWidth;
-		const p2x = x1 - perpX * halfWidth;
-		const p2y = y1 - perpY * halfWidth;
-		const p3x = x2 - perpX * halfWidth;
-		const p3y = y2 - perpY * halfWidth;
-		const p4x = x2 + perpX * halfWidth;
-		const p4y = y2 + perpY * halfWidth;
-		g_batchHelpers.addTriangleToBatch( batch, p1x, p1y, p4x, p4y, p2x, p2y, color );
-		g_batchHelpers.addTriangleToBatch( batch, p4x, p4y, p3x, p3y, p2x, p2y, color );
-
-		// Bevel join to next segment to avoid gaps/overlaps
-		if( i < segments - 1 ) {
-			const nx1 = x2;
-			const ny1 = y2;
-			const nx2 = pts[ i1 + 2 ];
-			const ny2 = pts[ i1 + 3 ];
-			const ndx = nx2 - nx1;
-			const ndy = ny2 - ny1;
-			const nlen = Math.sqrt( ndx * ndx + ndy * ndy );
-			if( nlen >= 0.001 ) {
-				const ndirX = ndx / nlen;
-				const ndirY = ndy / nlen;
-				const nperpX = -ndirY;
-				const nperpY = ndirX;
-				const a1x = x2 + perpX * halfWidth;
-				const a1y = y2 + perpY * halfWidth;
-				const b1x = x2 - perpX * halfWidth;
-				const b1y = y2 - perpY * halfWidth;
-				const a2x = x2 + nperpX * halfWidth;
-				const a2y = y2 + nperpY * halfWidth;
-				const b2x = x2 - nperpX * halfWidth;
-				const b2y = y2 - nperpY * halfWidth;
-				g_batchHelpers.addTriangleToBatch( batch, a1x, a1y, a2x, a2y, b1x, b1y, color );
-				g_batchHelpers.addTriangleToBatch( batch, a2x, a2y, b2x, b2y, b1x, b1y, color );
-			}
-		}
+	// Compute averaged tangent per point for stable normals
+	for( let i = 0; i < count; i++ ) {
+		const iPrev = Math.max( 0, i - 1 );
+		const iNext = Math.min( count - 1, i + 1 );
+		const xPrev = pts[ iPrev * 2 ];
+		const yPrev = pts[ iPrev * 2 + 1 ];
+		const xNext = pts[ iNext * 2 ];
+		const yNext = pts[ iNext * 2 + 1 ];
+		let dx = xNext - xPrev;
+		let dy = yNext - yPrev;
+		let len = Math.sqrt( dx * dx + dy * dy );
+		if( len < 0.0001 ) { dx = 1; dy = 0; len = 1; }
+		dx /= len; dy /= len;
+		const nx = -dy;
+		const ny = dx;
+		const px = pts[ i * 2 ];
+		const py = pts[ i * 2 + 1 ];
+		left[ i * 2 ] = px + nx * halfWidth;
+		left[ i * 2 + 1 ] = py + ny * halfWidth;
+		right[ i * 2 ] = px - nx * halfWidth;
+		right[ i * 2 + 1 ] = py - ny * halfWidth;
 	}
 
-	// No separate caps needed; endpoint extension produces square ends without overlap
+	// Miter joins with limit to reduce overlaps at sharp angles
+	(function applyMiterJoins(){
+		const miterLimit = 2.0; // in multiples of halfWidth
+		function intersect( x1, y1, dx1, dy1, x2, y2, dx2, dy2 ) {
+			const det = dx1 * dy2 - dy1 * dx2;
+			if( Math.abs( det ) < 1e-6 ) return null; // parallel
+			const t = ( ( x2 - x1 ) * dy2 - ( y2 - y1 ) * dx2 ) / det;
+			return { "x": x1 + dx1 * t, "y": y1 + dy1 * t };
+		}
+		for( let i = 1; i < count - 1; i++ ) {
+			const xA = pts[ ( i - 1 ) * 2 ], yA = pts[ ( i - 1 ) * 2 + 1 ];
+			const xB = pts[ i * 2 ], yB = pts[ i * 2 + 1 ];
+			const xC = pts[ ( i + 1 ) * 2 ], yC = pts[ ( i + 1 ) * 2 + 1 ];
+
+			// Directions for segments AB and BC
+			let dx1 = xB - xA, dy1 = yB - yA; let len1 = Math.sqrt( dx1*dx1 + dy1*dy1 );
+			if( len1 < 1e-6 ) { dx1 = 1; dy1 = 0; len1 = 1; }
+			dx1 /= len1; dy1 /= len1;
+			let dx2 = xC - xB, dy2 = yC - yB; let len2 = Math.sqrt( dx2*dx2 + dy2*dy2 );
+			if( len2 < 1e-6 ) { dx2 = 1; dy2 = 0; len2 = 1; }
+			dx2 /= len2; dy2 /= len2;
+
+			// Offset lines (left side)
+			const n1x = -dy1, n1y = dx1;
+			const n2x = -dy2, n2y = dx2;
+			const lAx = xA + n1x * halfWidth, lAy = yA + n1y * halfWidth;
+			const lBx = xB + n1x * halfWidth, lBy = yB + n1y * halfWidth;
+			const lCx = xB + n2x * halfWidth, lCy = yB + n2y * halfWidth;
+			const lDx = xC + n2x * halfWidth, lDy = yC + n2y * halfWidth;
+			const leftIntersect = intersect( lBx, lBy, dx1, dy1, lCx, lCy, dx2, dy2 );
+			if( leftIntersect ) {
+				const mx = leftIntersect.x, my = leftIntersect.y;
+				const mLen = Math.hypot( mx - xB, my - yB );
+				if( mLen <= miterLimit * halfWidth ) {
+					left[ i * 2 ] = mx; left[ i * 2 + 1 ] = my;
+				}
+			}
+
+			// Offset lines (right side)
+			const rAx = xA - n1x * halfWidth, rAy = yA - n1y * halfWidth;
+			const rBx = xB - n1x * halfWidth, rBy = yB - n1y * halfWidth;
+			const rCx = xB - n2x * halfWidth, rCy = yB - n2y * halfWidth;
+			const rDx = xC - n2x * halfWidth, rDy = yC - n2y * halfWidth;
+			const rightIntersect = intersect( rBx, rBy, dx1, dy1, rCx, rCy, dx2, dy2 );
+			if( rightIntersect ) {
+				const mx = rightIntersect.x, my = rightIntersect.y;
+				const mLen = Math.hypot( mx - xB, my - yB );
+				if( mLen <= miterLimit * halfWidth ) {
+					right[ i * 2 ] = mx; right[ i * 2 + 1 ] = my;
+				}
+			}
+		}
+	})();
+
+	// Extend endpoints for square ends
+	{
+		const x0 = pts[ 0 ], y0 = pts[ 1 ];
+		const x1 = pts[ 2 ], y1 = pts[ 3 ];
+		let dx = x1 - x0, dy = y1 - y0; let len = Math.sqrt( dx*dx + dy*dy );
+		if( len < 0.0001 ) { dx = 1; dy = 0; len = 1; }
+		dx /= len; dy /= len;
+		left[ 0 ] -= dx * halfWidth; left[ 1 ] -= dy * halfWidth;
+		right[ 0 ] -= dx * halfWidth; right[ 1 ] -= dy * halfWidth;
+
+		const xn = pts[ ( count - 1 ) * 2 ], yn = pts[ ( count - 1 ) * 2 + 1 ];
+		const xp = pts[ ( count - 2 ) * 2 ], yp = pts[ ( count - 2 ) * 2 + 1 ];
+		dx = xn - xp; dy = yn - yp; len = Math.sqrt( dx*dx + dy*dy );
+		if( len < 0.0001 ) { dx = 1; dy = 0; len = 1; }
+		dx /= len; dy /= len;
+		left[ ( count - 1 ) * 2 ] += dx * halfWidth; left[ ( count - 1 ) * 2 + 1 ] += dy * halfWidth;
+		right[ ( count - 1 ) * 2 ] += dx * halfWidth; right[ ( count - 1 ) * 2 + 1 ] += dy * halfWidth;
+	}
+
+	// Render continuous strip
+	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, ( count - 1 ) * 6 );
+	for( let i = 0; i < count - 1; i++ ) {
+		const l0x = left[ i * 2 ], l0y = left[ i * 2 + 1 ];
+		const r0x = right[ i * 2 ], r0y = right[ i * 2 + 1 ];
+		const l1x = left[ ( i + 1 ) * 2 ], l1y = left[ ( i + 1 ) * 2 + 1 ];
+		const r1x = right[ ( i + 1 ) * 2 ], r1y = right[ ( i + 1 ) * 2 + 1 ];
+		g_batchHelpers.addTriangleToBatch( batch, l0x, l0y, r0x, r0y, l1x, l1y, color );
+		g_batchHelpers.addTriangleToBatch( batch, l1x, l1y, r0x, r0y, r1x, r1y, color );
+	}
 }
 
 /**
@@ -173,71 +221,93 @@ export function drawBezierCircle( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x,
 	const halfWidth = Math.floor( penSize / 2 );
 	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
 
-	const segments = ( pts.length >> 1 ) - 1;
-	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, segments * 6 );
+	const count = ( pts.length >> 1 );
+	const left = new Array( count * 2 );
+	const right = new Array( count * 2 );
 
-	let startDirX = 1, startDirY = 0;
-	let startX = pts[ 0 ], startY = pts[ 1 ];
-	let lastDirX = 1, lastDirY = 0;
-	for( let i = 0; i < segments; i++ ) {
-		const i0 = i * 2;
-		const i1 = i0 + 2;
-		const x1 = pts[ i0 ];
-		const y1 = pts[ i0 + 1 ];
-		const x2 = pts[ i1 ];
-		const y2 = pts[ i1 + 1 ];
-		const dx = x2 - x1;
-		const dy = y2 - y1;
-		const len = Math.sqrt( dx * dx + dy * dy );
-		if( len < 0.001 ) continue;
-		const dirX = dx / len;
-		const dirY = dy / len;
-		if( i === 0 ) { startDirX = dirX; startDirY = dirY; }
-		lastDirX = dirX; lastDirY = dirY;
-		const perpX = -dirY;
-		const perpY = dirX;
-		const p1x = x1 + perpX * halfWidth;
-		const p1y = y1 + perpY * halfWidth;
-		const p2x = x1 - perpX * halfWidth;
-		const p2y = y1 - perpY * halfWidth;
-		const p3x = x2 - perpX * halfWidth;
-		const p3y = y2 - perpY * halfWidth;
-		const p4x = x2 + perpX * halfWidth;
-		const p4y = y2 + perpY * halfWidth;
-		g_batchHelpers.addTriangleToBatch( batch, p1x, p1y, p4x, p4y, p2x, p2y, color );
-		g_batchHelpers.addTriangleToBatch( batch, p4x, p4y, p3x, p3y, p2x, p2y, color );
-
-		// Bevel join with next segment to remove gaps/overlaps
-		if( i < segments - 1 ) {
-			const nx1 = x2;
-			const ny1 = y2;
-			const nx2 = pts[ i1 + 2 ];
-			const ny2 = pts[ i1 + 3 ];
-			const ndx = nx2 - nx1;
-			const ndy = ny2 - ny1;
-			const nlen = Math.sqrt( ndx * ndx + ndy * ndy );
-			if( nlen >= 0.001 ) {
-				const ndirX = ndx / nlen;
-				const ndirY = ndy / nlen;
-				const nperpX = -ndirY;
-				const nperpY = ndirX;
-				const a1x = x2 + perpX * halfWidth;
-				const a1y = y2 + perpY * halfWidth;
-				const b1x = x2 - perpX * halfWidth;
-				const b1y = y2 - perpY * halfWidth;
-				const a2x = x2 + nperpX * halfWidth;
-				const a2y = y2 + nperpY * halfWidth;
-				const b2x = x2 - nperpX * halfWidth;
-				const b2y = y2 - nperpY * halfWidth;
-				g_batchHelpers.addTriangleToBatch( batch, a1x, a1y, a2x, a2y, b1x, b1y, color );
-				g_batchHelpers.addTriangleToBatch( batch, a2x, a2y, b2x, b2y, b1x, b1y, color );
-			}
-		}
+	// Compute averaged tangent per point for stable normals
+	for( let i = 0; i < count; i++ ) {
+		const iPrev = Math.max( 0, i - 1 );
+		const iNext = Math.min( count - 1, i + 1 );
+		const xPrev = pts[ iPrev * 2 ];
+		const yPrev = pts[ iPrev * 2 + 1 ];
+		const xNext = pts[ iNext * 2 ];
+		const yNext = pts[ iNext * 2 + 1 ];
+		let dx = xNext - xPrev;
+		let dy = yNext - yPrev;
+		let len = Math.sqrt( dx * dx + dy * dy );
+		if( len < 0.0001 ) { dx = 1; dy = 0; len = 1; }
+		dx /= len; dy /= len;
+		const nx = -dy;
+		const ny = dx;
+		const px = pts[ i * 2 ];
+		const py = pts[ i * 2 + 1 ];
+		left[ i * 2 ] = px + nx * halfWidth;
+		left[ i * 2 + 1 ] = py + ny * halfWidth;
+		right[ i * 2 ] = px - nx * halfWidth;
+		right[ i * 2 + 1 ] = py - ny * halfWidth;
 	}
 
-	const endX = pts[ ( segments ) * 2 ];
-	const endY = pts[ ( segments ) * 2 + 1 ];
-	const radius = halfWidth;
-	g_batchHelpers.drawHalfCircleCap( screenData, startX, startY, radius, color, startDirX, startDirY, false );
-	g_batchHelpers.drawHalfCircleCap( screenData, endX, endY, radius, color, lastDirX, lastDirY, true );
+	// Miter joins with limit to reduce overlaps at sharp angles
+	(function applyMiterJoins(){
+		const miterLimit = 2.0; // in multiples of halfWidth
+		function intersect( x1, y1, dx1, dy1, x2, y2, dx2, dy2 ) {
+			const det = dx1 * dy2 - dy1 * dx2;
+			if( Math.abs( det ) < 1e-6 ) return null; // parallel
+			const t = ( ( x2 - x1 ) * dy2 - ( y2 - y1 ) * dx2 ) / det;
+			return { "x": x1 + dx1 * t, "y": y1 + dy1 * t };
+		}
+		for( let i = 1; i < count - 1; i++ ) {
+			const xA = pts[ ( i - 1 ) * 2 ], yA = pts[ ( i - 1 ) * 2 + 1 ];
+			const xB = pts[ i * 2 ], yB = pts[ i * 2 + 1 ];
+			const xC = pts[ ( i + 1 ) * 2 ], yC = pts[ ( i + 1 ) * 2 + 1 ];
+			let dx1 = xB - xA, dy1 = yB - yA; let len1 = Math.sqrt( dx1*dx1 + dy1*dy1 );
+			if( len1 < 1e-6 ) { dx1 = 1; dy1 = 0; len1 = 1; }
+			dx1 /= len1; dy1 /= len1;
+			let dx2 = xC - xB, dy2 = yC - yB; let len2 = Math.sqrt( dx2*dx2 + dy2*dy2 );
+			if( len2 < 1e-6 ) { dx2 = 1; dy2 = 0; len2 = 1; }
+			dx2 /= len2; dy2 /= len2;
+			const n1x = -dy1, n1y = dx1;
+			const n2x = -dy2, n2y = dx2;
+			const lBx = xB + n1x * halfWidth, lBy = yB + n1y * halfWidth;
+			const lCx = xB + n2x * halfWidth, lCy = yB + n2y * halfWidth;
+			const li = intersect( lBx, lBy, dx1, dy1, lCx, lCy, dx2, dy2 );
+			if( li ) {
+				const d = Math.hypot( li.x - xB, li.y - yB );
+				if( d <= miterLimit * halfWidth ) { left[ i * 2 ] = li.x; left[ i * 2 + 1 ] = li.y; }
+			}
+			const rBx = xB - n1x * halfWidth, rBy = yB - n1y * halfWidth;
+			const rCx = xB - n2x * halfWidth, rCy = yB - n2y * halfWidth;
+			const ri = intersect( rBx, rBy, dx1, dy1, rCx, rCy, dx2, dy2 );
+			if( ri ) {
+				const d = Math.hypot( ri.x - xB, ri.y - yB );
+				if( d <= miterLimit * halfWidth ) { right[ i * 2 ] = ri.x; right[ i * 2 + 1 ] = ri.y; }
+			}
+		}
+	})();
+
+	// Render continuous strip
+	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, ( count - 1 ) * 6 );
+	for( let i = 0; i < count - 1; i++ ) {
+		const l0x = left[ i * 2 ], l0y = left[ i * 2 + 1 ];
+		const r0x = right[ i * 2 ], r0y = right[ i * 2 + 1 ];
+		const l1x = left[ ( i + 1 ) * 2 ], l1y = left[ ( i + 1 ) * 2 + 1 ];
+		const r1x = right[ ( i + 1 ) * 2 ], r1y = right[ ( i + 1 ) * 2 + 1 ];
+		g_batchHelpers.addTriangleToBatch( batch, l0x, l0y, r0x, r0y, l1x, l1y, color );
+		g_batchHelpers.addTriangleToBatch( batch, l1x, l1y, r0x, r0y, r1x, r1y, color );
+	}
+
+	// Caps
+	const startX = pts[ 0 ], startY = pts[ 1 ];
+	const endX = pts[ ( count - 1 ) * 2 ], endY = pts[ ( count - 1 ) * 2 + 1 ];
+	let sdx = pts[ 2 ] - pts[ 0 ], sdy = pts[ 3 ] - pts[ 1 ];
+	let sl = Math.sqrt( sdx*sdx + sdy*sdy ); if( sl < 0.0001 ) { sdx = 1; sdy = 0; sl = 1; }
+	sdx /= sl; sdy /= sl;
+	let edx = pts[ ( count - 1 ) * 2 ] - pts[ ( count - 2 ) * 2 ];
+	let edy = pts[ ( count - 1 ) * 2 + 1 ] - pts[ ( count - 2 ) * 2 + 1 ];
+	let el = Math.sqrt( edx*edx + edy*edy ); if( el < 0.0001 ) { edx = 1; edy = 0; el = 1; }
+	edx /= el; edy /= el;
+
+	g_batchHelpers.drawHalfCircleCap( screenData, startX, startY, halfWidth, color, sdx, sdy, false );
+	g_batchHelpers.drawHalfCircleCap( screenData, endX, endY, halfWidth, color, edx, edy, true );
 }
