@@ -16,14 +16,11 @@ import * as g_utils from "../core/utils.js";
 import * as g_fbo from "./fbo.js";
 import * as g_shaders from "./shaders.js";
 import * as g_batches from "./batches.js";
-import * as g_draw from "./draw/primitives.js";
 
 // Import shapes module for geometry drawing
-import * as g_shapes from "./draw/filled-shapes.js";
 import * as g_geometry from "./draw/geometry.js";
 import * as g_textures from "./textures.js";
 import * as g_readback from "./readback.js";
-import * as g_primitives from "./draw/lines.js";
 
 
 /***************************************************************************************************
@@ -41,10 +38,9 @@ export { drawImage } from "./draw/images.js";
 export { drawPixel } from "./draw/primitives.js";
 export { drawArcPixel } from "./draw/arcs.js";
 export { drawBezierPixel } from "./draw/bezier.js";
-export { drawFilledRect, drawFilledCircle } from "./draw/filled-shapes.js";
 export { drawLinePixel } from "./draw/lines.js";
 export { drawCachedGeometry } from "./draw/geometry.js";
-export { drawRectPixel } from "./draw/rects.js";
+export { drawRectPixel, drawFilledRect } from "./draw/rects.js";
 
 // Re-export batch management
 export { prepareBatch } from "./batches.js";
@@ -91,12 +87,9 @@ export function init( api ) {
 	g_fbo.init();
 	g_shaders.init();
 	g_batches.init();
-	g_draw.init();
-	g_shapes.init();
 	g_geometry.init();
 	g_textures.init();
 	g_readback.init();
-	g_primitives.init();
 }
 
 /**

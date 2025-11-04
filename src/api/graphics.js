@@ -230,7 +230,7 @@ export function buildApi( s_screenData ) {
 			const fWidth = pWidth - 2;
 			const fHeight = pHeight - 2;
 			if( fWidth > 0 && fHeight > 0 ) {
-				s_drawFilledRect( s_screenData, pX + 1, pY + 1, fWidth, fHeight, fillColorValue );
+				s_drawFilledRect( s_screenData, pX + 1, pY, fWidth, fHeight, fillColorValue );
 			}
 		}
 

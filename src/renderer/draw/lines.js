@@ -13,22 +13,11 @@
 // Import required modules
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
-import * as g_shapes from "./filled-shapes.js";
 
 
 /***************************************************************************************************
  * Module Initialization
  ***************************************************************************************************/
-
-
-/**
- * Initialize primitives module
- * 
- * @returns {void}
- */
-export function init() {
-	// No initialization needed
-}
 
 /**
  * Draw line using WebGL2 LINES or geometry based on pen size
@@ -47,5 +36,6 @@ export function drawLinePixel( screenData, x1, y1, x2, y2, color ) {
 	const batch = screenData.batches[ g_batches.LINES_BATCH ];
 	g_batches.prepareBatch( screenData, g_batches.LINES_BATCH, 2, null, null );
 
+	// Add the line to the batch
 	g_batchHelpers.addLineToBatch( batch, x1, y1, x2, y2, color );
 }

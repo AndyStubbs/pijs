@@ -11,9 +11,10 @@
 "use strict";
 
 // Import required modules
-import * as g_shapes from "./filled-shapes.js";
 import { drawLinePixel } from "./lines.js";
-
+import { GEOMETRY_BATCH  } from "../renderer.js";
+import * as g_batches from "../batches.js";
+import * as g_batchHelpers from "./batch-helpers.js";
 
 /***************************************************************************************************
  * Public API
@@ -60,4 +61,33 @@ export function drawRectPixel( screenData, x, y, width, height, color ) {
 	if( width > 1 ) {
 		drawLinePixel( screenData, x, y2, x, y, color );
 	}
+}
+
+
+/**
+ * Draw filled rectangle (unsafe - no bounds checking, GPU clipping)
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {number} width - Rectangle width
+ * @param {number} height - Rectangle height
+ * @param {Object} color - Color object with r/g/b/a components (0-255)
+ * @returns {void}
+ */
+export function drawFilledRect( screenData, x, y, width, height, color ) {
+
+	// Get geometry batch
+	const batch = screenData.batches[ GEOMETRY_BATCH ];
+
+	// Prepare batch for 6 vertices (2 triangles)
+	g_batches.prepareBatch( screenData, GEOMETRY_BATCH, 6 );
+
+	// First triangle: (x,y), (x+width,y), (x,y+height)
+	g_batchHelpers.addTriangleToBatch( batch, x, y, x + width, y, x, y + height, color );
+
+	// Second triangle: (x+width,y), (x+width,y+height), (x,y+height)
+	g_batchHelpers.addTriangleToBatch(
+		batch, x + width, y, x + width, y + height, x, y + height, color
+	);
 }

@@ -11,21 +11,6 @@
 import * as g_batchHelpers from "./batch-helpers.js";
 
 
-/***************************************************************************************************
- * Module Initialization
- ***************************************************************************************************/
-
-
-/**
- * Initialize draw module
- * 
- * @returns {void}
- */
-export function init() {
-
-	// Nothing to initialize yet
-}
-
 /**
  * Fast path for single pixel write (unsafe - no bounds checking)
  * 
