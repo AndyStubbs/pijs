@@ -165,25 +165,39 @@ function generateCircleGeometry( radius ) {
 		const pixelX = px | 0;
 
 		if( !scanlineMinMax.has( pixelY ) ) {
-			scanlineMinMax.set( pixelY, { "min": pixelX, "max": pixelX } );
+			if( pixelX < 0 ) {
+				scanlineMinMax.set( pixelY, { "left": pixelX, "right": Infinity } );
+			} else if( pixelX > 0 ) {
+				scanlineMinMax.set( pixelY, { "left": -Infinity, "right": pixelX } );	
+			} else {
+				scanlineMinMax.set( pixelY, { "left": pixelX, "right": pixelX } );
+			}
 		} else {
-			const mm = scanlineMinMax.get( pixelY );
-			if( pixelX < mm.min ) mm.min = pixelX;
-			if( pixelX > mm.max ) mm.max = pixelX;
+			const limits = scanlineMinMax.get( pixelY );
+
+			// We want to find interior pixels only not border pixels so we are looking for the
+			// closest interior pixel. We need to account for two horizontal border pixels in a row.
+
+			if( pixelX < 0 && pixelX > limits.left ) {
+				limits.left = pixelX;
+			}
+			if( pixelX > 0 && pixelX < limits.right ) {
+				limits.right = pixelX;
+			}
 		}
 	};
 
 	while( x >= y ) {
 
 		// Apply 8-way symmetry to update scanlines
-		updateScanline( x, y ); // Quadrant 1
-		updateScanline( y, x ); // Quadrant 2
-		updateScanline( -y, x ); // Quadrant 3
-		updateScanline( -x, y ); // Quadrant 4
+		updateScanline(  x,  y ); // Quadrant 1
+		updateScanline(  y,  x ); // Quadrant 2
+		updateScanline( -y,  x ); // Quadrant 3
+		updateScanline( -x,  y ); // Quadrant 4
 		updateScanline( -x, -y ); // Quadrant 5
 		updateScanline( -y, -x ); // Quadrant 6
-		updateScanline( y, -x ); // Quadrant 7
-		updateScanline( x, -y ); // Quadrant 8
+		updateScanline(  y, -x ); // Quadrant 7
+		updateScanline(  x, -y ); // Quadrant 8
 
 		y++;
 		if( err < 0 ) {
@@ -207,12 +221,14 @@ function generateCircleGeometry( radius ) {
 	const vertices = new Float32Array( vertexCount * 2 );
 	let vIdx = 0;
 
-	// Generate quads for each scanline
-	for( const currentY of sortedYCoords ) {
+	// Generate quads for each scanline -- skip the top row as it's border
+	for(let row = 1; row < sortedYCoords.length - 1; row += 1 ) {
+		const currentY = sortedYCoords[ row ];
+		const limits = scanlineMinMax.get( currentY );
 
-		const mm = scanlineMinMax.get( currentY );
-		const xStart = mm.min;
-		const xEnd = mm.max;
+		// Get the interior starts by moving over 1 pixel from border
+		const xStart = limits.left + 1;
+		const xEnd = limits.right - 1;
 
 		// Quad from (xStart, currentY) to (xEnd+1, currentY+1)
 		vIdx = addQuad( vertices, vIdx, xStart, currentY, xEnd + 1, currentY + 1 );
