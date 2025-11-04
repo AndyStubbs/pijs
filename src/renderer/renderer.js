@@ -87,9 +87,9 @@ export function init( api ) {
 	g_fbo.init();
 	g_shaders.init();
 	g_batches.init();
-	g_geometry.init();
 	g_textures.init();
 	g_readback.init();
+	g_geometry.init();
 }
 
 /**

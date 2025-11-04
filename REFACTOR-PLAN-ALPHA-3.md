@@ -52,13 +52,14 @@ src/
 │   ├── textures.js                   # Texture management (getWebGL2Texture, etc.)
 │   ├── draw/                         # Internal drawing primitives and shapes
 │   │   ├── primitives.js             # Core: drawPixel
-│   │   ├── lines.js                  # Lines: drawLinePixel, drawLineSquare, drawLineCircle
-│   │   ├── rects.js                  # Rectangles: drawRectPixel, drawRectSquare, drawRectCircle
-│   │   ├── circles.js                # Circles: drawCirclePixel, drawCircleSquare, drawCircleCircle
-│   │   ├── ellipses.js               # Ellipses: drawEllipsePixel, drawEllipseSquare, drawEllipseCircle
-│   │   ├── arcs.js                   # Arcs: drawArcPixel, drawArcSquare, drawArcCircle
-│   │   ├── bezier.js                 # Bezier: drawBezierPixel, drawBezierSquare, drawBezierCircle
-│   │   ├── filledShapes.js           # Filled: drawFilledRect, drawFilledCircle, drawFilledEllipse
+│   │   ├── geometry.js               # Geometry utilities and helpers
+│   │   ├── batch-helpers.js          # Batch management helper functions
+│   │   ├── lines.js                  # Lines: drawLinePixel
+│   │   ├── rects.js                  # Rectangles: drawRectPixel, drawFilledRect
+│   │   ├── circles.js                # Circles: drawCirclePixel, drawFilledCircle
+│   │   ├── ellipses.js               # Ellipses: drawEllipsePixel, drawFilledEllipse
+│   │   ├── arcs.js                   # Arcs: drawArcPixel
+│   │   ├── bezier.js                 # Bezier: drawBezierPixel
 │   │   └── images.js                 # Images: drawImage
 │   ├── readback.js                   # readPixel, readPixels (sync/async) (internal WebGL readback)
 │   └── shaders/                      # Shader source files (actual GLSL files)
@@ -71,7 +72,6 @@ src/
 │
 ├── api/                               # User-facing API commands (formerly mix of internal/API in 'graphics')
 │   ├── graphics.js                   # High-level graphics commands (formerly graphics-api.js)
-│   ├── pens.js                       # Pen/blend system (from old graphics folder)
 │   ├── colors.js                     # Color palette management (from old graphics folder)
 │   ├── images.js                     # Image loading/drawing commands (from old graphics folder)
 │   └── pixels.js                     # Pixel readback commands (user-facing, distinct from internal renderer readback)
@@ -90,7 +90,7 @@ src/
 - `graphics/graphics-primitives.js` - Moved to renderer/draw/ modules
 - `graphics/graphics-shapes.js` - Moved to renderer/draw/ modules
 - `graphics/graphics-api.js` - Moved to `api/graphics.js`
-- `graphics/pens.js` - Moved to `api/pens.js`
+- `graphics/pens.js` - Removed (pen system removed)
 - `graphics/colors.js` - Moved to `api/colors.js`
 - `graphics/images.js` - Moved to `api/images.js`
 - `graphics/pixels.js` - Moved to `api/pixels.js`
@@ -114,18 +114,18 @@ src/
 
 **Drawing Layer (`renderer/draw/`):**
 - `primitives.js`: Core drawing (`drawPixel`)
-- `lines.js`: Line drawing (`drawLinePixel`, `drawLineSquare`, `drawLineCircle`)
-- `rects.js`: Rectangle drawing (`drawRectPixel`, `drawRectSquare`, `drawRectCircle`)
-- `circles.js`: Circle drawing (`drawCirclePixel`, `drawCircleSquare`, `drawCircleCircle`)
-- `ellipses.js`: Ellipse drawing (`drawEllipsePixel`, `drawEllipseSquare`, `drawEllipseCircle`)
-- `arcs.js`: Arc drawing (`drawArcPixel`, `drawArcSquare`, `drawArcCircle`)
-- `bezier.js`: Bezier curve drawing (`drawBezierPixel`, `drawBezierSquare`, `drawBezierCircle`)
-- `filledShapes.js`: Filled shapes (`drawFilledRect`, `drawFilledCircle`, `drawFilledEllipse`)
+- `geometry.js`: Geometry utilities and helper functions
+- `batch-helpers.js`: Batch management helper functions
+- `lines.js`: Line drawing (`drawLinePixel`)
+- `rects.js`: Rectangle drawing (`drawRectPixel`, `drawFilledRect`)
+- `circles.js`: Circle drawing (`drawCirclePixel`, `drawFilledCircle`)
+- `ellipses.js`: Ellipse drawing (`drawEllipsePixel`, `drawFilledEllipse`)
+- `arcs.js`: Arc drawing (`drawArcPixel`)
+- `bezier.js`: Bezier curve drawing (`drawBezierPixel`)
 - `images.js`: Image drawing (`drawImage` with textured quads)
 
 **API Layer (`api/`):**
 - `graphics.js`: High-level graphics commands - input parsing, validation, object literal handling, calls renderer functions (formerly graphics-api.js)
-- `pens.js`: Pen types, blend modes, state management
 - `colors.js`: Palette management, color conversion
 - `images.js`: Image loading, `drawImage()` command (user-facing)
 - `pixels.js`: `getPixel()`, `get()`, `put()` commands (user-facing, distinct from internal renderer readback)
@@ -142,45 +142,50 @@ src/index.js
 
 renderer/renderer.js
   ├─ imports: fbo.js, shaders.js, batches.js, textures.js
-  ├─ imports: draw/primitives.js, draw/lines.js, draw/rects.js, draw/circles.js
-  ├─ imports: draw/ellipses.js, draw/arcs.js, draw/bezier.js, draw/filledShapes.js
+  ├─ imports: draw/primitives.js, draw/geometry.js, draw/batch-helpers.js
+  ├─ imports: draw/lines.js, draw/rects.js, draw/circles.js
+  ├─ imports: draw/ellipses.js, draw/arcs.js, draw/bezier.js
   ├─ imports: draw/images.js, readback.js
   └─ exports: unified public API
 
 batches.js
-  └─ imports: shaders.js, api/pens.js (external)
+  └─ imports: shaders.js
 
 draw/primitives.js
   ├─ imports: batches.js
   └─ exports: drawPixel
 
+draw/geometry.js
+  ├─ imports: batches.js
+  └─ exports: geometry utility functions
+
+draw/batch-helpers.js
+  ├─ imports: batches.js
+  └─ exports: batch helper functions
+
 draw/lines.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawLinePixel, drawLineSquare, drawLineCircle
+  └─ exports: drawLinePixel
 
 draw/rects.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawRectPixel, drawRectSquare, drawRectCircle
+  └─ exports: drawRectPixel, drawFilledRect
 
 draw/circles.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawCirclePixel, drawCircleSquare, drawCircleCircle
+  └─ exports: drawCirclePixel, drawFilledCircle
 
 draw/ellipses.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawEllipsePixel, drawEllipseSquare, drawEllipseCircle
+  └─ exports: drawEllipsePixel, drawFilledEllipse
 
 draw/arcs.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawArcPixel, drawArcSquare, drawArcCircle
+  └─ exports: drawArcPixel
 
 draw/bezier.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawBezierPixel, drawBezierSquare, drawBezierCircle
-
-draw/filledShapes.js
-  ├─ imports: batches.js
-  └─ exports: drawFilledRect, drawFilledCircle, drawFilledEllipse
+  └─ exports: drawBezierPixel
 
 draw/images.js
   ├─ imports: batches.js, textures.js
@@ -191,11 +196,8 @@ readback.js
   └─ exports: readPixel, readPixels
 
 api/graphics.js
-  ├─ imports: renderer/renderer.js, api/pens.js, api/colors.js
+  ├─ imports: renderer/renderer.js, api/colors.js
   └─ exports: graphics API functions
-
-api/pens.js
-  └─ exports: pen types, blend modes, state management
 
 api/colors.js
   └─ exports: palette management, color conversion
@@ -239,13 +241,14 @@ src/renderer/
 ├── textures.js (empty shell)
 ├── draw/ (directory created)
 │   ├── primitives.js (empty shell)
+│   ├── geometry.js (empty shell)
+│   ├── batch-helpers.js (empty shell)
 │   ├── lines.js (empty shell)
 │   ├── rects.js (empty shell)
 │   ├── circles.js (empty shell)
 │   ├── ellipses.js (empty shell)
 │   ├── arcs.js (empty shell)
 │   ├── bezier.js (empty shell)
-│   ├── filledShapes.js (empty shell)
 │   └── images.js (empty shell)
 ├── readback.js (empty shell)
 └── shaders/ (directory created)
@@ -304,16 +307,8 @@ Move WebGL2 context creation from `renderer-webgl2.js` to `renderer.js`:
 2. shaders.init()
 3. batches.init()
 4. textures.init()
-5. draw/primitives.init()
-6. draw/lines.init()
-7. draw/rects.init()
-8. draw/circles.init()
-9. draw/ellipses.init()
-10. draw/arcs.init()
-11. draw/bezier.init()
-12. draw/filledShapes.init()
-13. draw/images.init()
-14. readback.init()
+5. readback.init()
+6. draw/geometry.init()
 
 ### Step 2.2: Implement fbo.js ✅ COMPLETE
 Move FBO creation logic from `renderer-webgl2.js` to `fbo.js`:
@@ -424,30 +419,7 @@ Move core drawing functions from `renderer-webgl2.js`:
 
 **Note:** `drawImage()` will be implemented in `draw/images.js` when implementing image support.
 
-### Step 4.2: Implement api/pens.js ✅ COMPLETE
-Implement pen and blend mode state management:
-
-**Responsibilities:**
-- Pen types: pixel, square, circle
-- Blend modes: replace, alpha
-- Store pen/blend state on screenData
-- Validation and command registration
-
-**Key functions:**
-- `export function init( api )` - Initialize module, register commands
-- `function setPen( screenData, options )` - SetPen command
-- Constants: `PEN_PIXEL`, `PEN_SQUARE`, `PEN_CIRCLE`, `BLEND_REPLACE`, `BLEND_ALPHA`
-
-**Implementation notes:**
-- No longer builds `penFn` - that logic moves to api/graphics.js
-- Simply stores pen/blend configuration on screenData
-- Blend modes and noise handled entirely on GPU in batches.js - no CPU-side noise/blend functions needed
-- Each graphics command builds its own optimized drawing function
-- Calls `graphicsApi.rebuildApi(screenData)` when pen/size changes (not blend changes)
-  - This rebuilds specialized drawing functions to avoid branching in hot paths
-  - `pset` behavior changes based on current pen config: pixel vs square vs circle
-
-### Step 4.3: Implement api/graphics.js - Basic Commands ✅ COMPLETE
+### Step 4.2: Implement api/graphics.js - Basic Commands ✅ COMPLETE
 Implement basic graphics API wrapper for input parsing and validation:
 
 **Responsibilities:**
@@ -455,12 +427,9 @@ Implement basic graphics API wrapper for input parsing and validation:
 - Object literal handling
 - Parameter extraction
 - Build optimized drawing functions that close over screen data
-- Handle pen size/shape logic for each command
 
 **Commands to implement:**
-- `pset` - Build optimized pen drawing function based on current pen settings
-  - Calls `renderer.drawPixel()` for pixel pen
-  - Draws square/circle shapes for larger pens
+- `pset` - Calls `renderer.drawPixel()` to draw a single pixel
 
 **Key changes:**
 - Removed screenData.render, this is no longer needed since there is only one render and we can
@@ -469,15 +438,13 @@ Implement basic graphics API wrapper for input parsing and validation:
 - No longer bounds checking. Instead relying on GPU clipping
 - Removing objectLiteral option for parameter passing (primitives only)
 - Thin wrapper layer that calls renderer functions
-- Build optimized closures that close over screen data and pen configuration
+- Build optimized closures that close over screen data
 - Handle object literal syntax: `pset({ x: 10, y: 20 })`
-- Each command builds its own specialized drawing function
 
 ### Step 4.4: Test Basic Drawing ✅ COMPLETE
 - Test `drawPixel()` - draw single pixels
 - Test color system - verify palette and color parsing works
-- Test pen system - verify `setPen()` stores correct configuration
-- Test `pset()` command - verify it works with various pen sizes/shapes
+- Test `pset()` command - verify it draws single pixels correctly
 - Verify renderer exports unified API through `renderer.js`
 
 ## Phase 4A: Complete pset - Geometry Batch System
@@ -505,8 +472,8 @@ Add new batch type for drawing filled geometry (rectangles, circles):
 - Each filled circle = tessellated triangles (adaptive based on radius)
 - Shares point shader or creates dedicated geometry shader
 
-### Step 4A.2: Implement drawFilledRect in draw/filledShapes.js ✅ COMPLETE
-Implement `drawFilledRect()` function in `draw/filledShapes.js`:
+### Step 4A.2: Implement drawFilledRect in draw/rects.js ✅ COMPLETE
+Implement `drawFilledRect()` function in `draw/rects.js`:
 
 **Responsibilities:**
 - Generate triangle vertices for filled rectangle
@@ -524,8 +491,8 @@ Implement `drawFilledRect()` function in `draw/filledShapes.js`:
 - Each vertex has 2D position and 4D color
 - Uses `prepareBatch()` to ensure capacity
 
-### Step 4A.3: Implement drawFilledCircle in draw/filledShapes.js ✅ COMPLETE
-Implement `drawFilledCircle()` function in `draw/filledShapes.js`:
+### Step 4A.3: Implement drawFilledCircle in draw/circles.js ✅ COMPLETE
+Implement `drawFilledCircle()` function in `draw/circles.js`:
 
 **Responsibilities:**
 - Generate triangle vertices for filled circle
@@ -548,12 +515,13 @@ Implement `drawFilledCircle()` function in `draw/filledShapes.js`:
 Add exports to `renderer.js` for new functions:
 
 **Functions to export:**
-- `drawFilledRect` from `draw/filledShapes.js`
-- `drawFilledCircle` from `draw/filledShapes.js`
+- `drawFilledRect` from `draw/rects.js`
+- `drawFilledCircle` from `draw/circles.js`
 - `GEOMETRY_BATCH` constant from `batches.js`
 
 **Implementation notes:**
-- Add `export { drawFilledRect, drawFilledCircle }` from draw/filledShapes.js
+- Add `export { drawFilledRect }` from draw/rects.js
+- Add `export { drawFilledCircle }` from draw/circles.js
 - Add `export { GEOMETRY_BATCH }` from batches.js
 - Ensure lazy initialization doesn't break circular imports
 
@@ -563,25 +531,16 @@ Update `api/graphics.js` to use new renderer functions:
 **Changes:**
 - Replace stub `s_drawFilledRect` with actual `g_renderer.drawFilledRect`
 - Replace stub `s_drawFilledCircle` with actual `g_renderer.drawFilledCircle`
-- Update `s_psetDrawFn` for square pen to call `drawFilledRect`
-- Update `s_psetDrawFn` for circle pen to call `drawFilledCircle`
 - Remove TODOs and placeholder implementations
 
-**Key changes:**
-- Square pen: `drawFilledRect( screenData, x - offset, y - offset, size, size, color )`
-- Circle pen: `drawFilledCircle( screenData, x, y, size, color )`
-- Cross pen (size 2): Use multiple `drawPixel` calls
+**Note:** `drawFilledRect` and `drawFilledCircle` are available for use by other commands if needed, but `pset` only draws single pixels.
 
 ### Step 4A.6: Test Complete pset Implementation ✅ COMPLETE
-Test full `pset` functionality with all pen types:
+Test full `pset` functionality:
 
 **Test Cases:**
-- `pset()` with pixel pen - verify single pixel renders correctly
-- `pset()` with square pen - verify filled rectangle renders correctly
-- `pset()` with circle pen size 2 - verify cross renders correctly
-- `pset()` with circle pen size 5 - verify filled circle renders correctly
-- `pset()` with large circle pen - verify tessellation is adequate
-- Test with different colors and blend modes
+- `pset()` - verify single pixel renders correctly
+- Test with different colors
 - Verify batch capacity management works correctly
 - Test rendering with GPU clipping (draw off-screen)
 
@@ -681,118 +640,93 @@ Move pixel reading/writing commands from `graphics-pixels.js` to `api/pixels.js`
 
 ## Phase 6: High-Level Primitives
 
-**Note:** Primitives use pen configuration from `api/pens.js` (implemented in Phase 4, Step 4.2).
-
 ### Step 6.1: Implement draw/lines.js - Line Drawing ✅ COMPLETE
 Implement line drawing in `renderer/draw/lines.js`:
 
 **Responsibilities:**
-- `drawLinePixel()` - Draw line using WebGL2 `gl.LINES` (pen size 1)
-- `drawLineSquare()` - Draw line with square pen (pen size >= 2)
-- `drawLineCircle()` - Draw line with circle pen (pen size >= 2)
+- `drawLinePixel()` - Draw line using WebGL2 `gl.LINES`
 
 **Key functions:**
 - `export function init( api )` - Initialize module
 - `export function drawLinePixel( screenData, x1, y1, x2, y2, color )`
-- `export function drawLineSquare( screenData, x1, y1, x2, y2, color, penSize, penType )`
-- `export function drawLineCircle( screenData, x1, y1, x2, y2, color, penSize, penType )`
 
 **Implementation notes:**
-- Size 1: Use `LINES_BATCH` batch, add 2 vertices for line segment
-- Size 2+: Use `GEOMETRY_BATCH` with geometry generation
-- Square pen: Extended rectangle with square caps
-- Circle pen: Extended rectangle with circular caps
+- Use `LINES_BATCH` batch, add 2 vertices for line segment
+- Draws single-pixel width lines
 
 ### Step 6.2: Implement draw/arcs.js - Arc Drawing ✅ COMPLETE
 Move arc drawing from `graphics-primitives.js`:
 
 **Responsibilities:**
-- `drawArcPixel()` - Arc outline using pixel pen
-- `drawArcSquare()` - Arc outline using square pen
-- `drawArcCircle()` - Arc outline using circle pen
+- `drawArcPixel()` - Arc outline using pixel drawing
 - Handle angle ranges, winding
 
 **Key functions:**
 - `export function drawArcPixel( screenData, cx, cy, radius, angle1, angle2, color )`
-- `export function drawArcSquare( screenData, cx, cy, radius, angle1, angle2, color, penSize )`
-- `export function drawArcCircle( screenData, cx, cy, radius, angle1, angle2, color, penSize )`
 
 **Implementation notes:**
 - Move `m_arcOutline()` function from `graphics-primitives.js`
-- Reads pen configuration from `screenData.pens`
-- Draws pixels using `drawPixel()` with pen shape logic inline
+- Draws pixels using `drawPixel()`
 - Filter pixels by angle range
-- Estimate batch size based on arc circumference and pen size
+- Estimate batch size based on arc circumference
 
 ### Step 6.3: Implement draw/bezier.js - Bezier Drawing ✅ COMPLETE
 Move bezier drawing from `graphics-primitives.js`:
 
 **Responsibilities:**
-- `drawBezierPixel()` - Cubic bezier curve with pixel pen
-- `drawBezierSquare()` - Cubic bezier curve with square pen
-- `drawBezierCircle()` - Cubic bezier curve with circle pen
+- `drawBezierPixel()` - Cubic bezier curve with pixel drawing
 
 **Key functions:**
 - `export function drawBezierPixel( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color )`
-- `export function drawBezierSquare( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, penSize )`
-- `export function drawBezierCircle( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, penSize )`
 
 **Implementation notes:**
 - Move `m_bezierOutline()` function from `graphics-primitives.js`
-- Reads pen configuration from `screenData.pens`
-- Draws pixels using `drawPixel()` with pen shape logic inline
+- Draws pixels using `drawPixel()`
 - Adaptive tessellation based on curve length
-- Estimate batch size based on control polygon length and pen size
+- Estimate batch size based on control polygon length
 
 ### Step 6.4: Test Primitives ✅ COMPLETE
-- Test `drawLinePixel()`, `drawLineSquare()`, `drawLineCircle()` - various angles and lengths
-- Test `drawArcPixel()`, `drawArcSquare()`, `drawArcCircle()` - different angles and radii
-- Test `drawBezierPixel()`, `drawBezierSquare()`, `drawBezierCircle()` - various curve shapes
-- Verify all primitives render correctly with different pen types
+- Test `drawLinePixel()` - various angles and lengths
+- Test `drawArcPixel()` - different angles and radii
+- Test `drawBezierPixel()` - various curve shapes
+- Verify all primitives render correctly
 
 ## Phase 7: High-Level Shapes
 
-### Step 7.1: Implement draw/rects.js - Rectangle Drawing
+### Step 7.1: Implement draw/rects.js - Rectangle Drawing ✅ COMPLETE
 Move rectangle drawing from `graphics-shapes.js` to `renderer/draw/rects.js`:
 
 **Responsibilities:**
-- `drawRectPixel()` - Rectangle outline with pixel pen
-- `drawRectSquare()` - Rectangle outline with square pen
-- `drawRectCircle()` - Rectangle outline with circle pen
-- Handle pen size, fill color, blending
+- `drawRectPixel()` - Rectangle outline with pixel drawing
+- `drawFilledRect()` - Already implemented in Phase 4A (geometry batch)
+- Handle fill color, blending
 
 **Key functions:**
-- `export function init( api )` - Initialize module
 - `export function drawRectPixel( screenData, x, y, width, height, color, fillColor )`
-- `export function drawRectSquare( screenData, x, y, width, height, color, fillColor, penSize )`
-- `export function drawRectCircle( screenData, x, y, width, height, color, fillColor, penSize )`
+- `export function drawFilledRect( screenData, x, y, width, height, color )` - Already implemented
 
 **Implementation notes:**
 - Move `m_rectOutline()` from `graphics-shapes.js`
-- Handle both outline and filled modes (filled uses `drawFilledRect` from `draw/filledShapes.js`)
-- Reads pen/blend configuration from `screenData.pens` and `screenData.blends`
-- Draws pixels using `drawPixel()` with pen shape logic inline
+- Handle both outline and filled modes (filled uses `drawFilledRect()` in same module)
+- Draws pixels using `drawPixel()` for outline
 - All blending handled on GPU via batches.js
 
 ### Step 7.2: Implement draw/circles.js - Circle Drawing
 Move circle drawing from `graphics-shapes.js`:
 
 **Responsibilities:**
-- `drawCirclePixel()` - Circle outline with pixel pen
-- `drawCircleSquare()` - Circle outline with square pen
-- `drawCircleCircle()` - Circle outline with circle pen
-- Handle pen size, fill color, blending
+- `drawCirclePixel()` - Circle outline with pixel drawing
+- `drawFilledCircle()` - Already implemented in Phase 4A (geometry batch)
+- Handle fill color, blending
 
 **Key functions:**
 - `export function drawCirclePixel( screenData, cx, cy, radius, color, fillColor )`
-- `export function drawCircleSquare( screenData, cx, cy, radius, color, fillColor, penSize )`
-- `export function drawCircleCircle( screenData, cx, cy, radius, color, fillColor, penSize )`
+- `export function drawFilledCircle( screenData, cx, cy, radius, color )` - Already implemented
 
 **Implementation notes:**
 - Move `m_circleOutline()` from `graphics-shapes.js`
-- Filled mode uses `drawFilledCircle` from `draw/filledShapes.js`
-- Reads pen/blend configuration from screenData
-- Draws pixels using `drawPixel()` with pen shape logic inline
+- Filled mode uses `drawFilledCircle()` in same module
+- Draws pixels using `drawPixel()` for outline
 - Use midpoint circle algorithm
 - Estimate batch size based on circumference (outline) or area (filled)
 
@@ -800,56 +734,53 @@ Move circle drawing from `graphics-shapes.js`:
 Move ellipse drawing from `graphics-shapes.js`:
 
 **Responsibilities:**
-- `drawEllipsePixel()` - Ellipse outline with pixel pen
-- `drawEllipseSquare()` - Ellipse outline with square pen
-- `drawEllipseCircle()` - Ellipse outline with circle pen
-- Handle pen size, fill color, blending
+- `drawEllipsePixel()` - Ellipse outline with pixel drawing
+- `drawFilledEllipse()` - Filled ellipse using geometry batch
+- Handle fill color, blending
 
 **Key functions:**
 - `export function drawEllipsePixel( screenData, cx, cy, rx, ry, color, fillColor )`
-- `export function drawEllipseSquare( screenData, cx, cy, rx, ry, color, fillColor, penSize )`
-- `export function drawEllipseCircle( screenData, cx, cy, rx, ry, color, fillColor, penSize )`
+- `export function drawFilledEllipse( screenData, cx, cy, rx, ry, color )`
 
 **Implementation notes:**
 - Move `m_ellipseOutline()` from `graphics-shapes.js`
-- Filled mode uses `drawFilledEllipse` from `draw/filledShapes.js`
-- Reads pen/blend configuration from screenData
-- Draws pixels using `drawPixel()` with pen shape logic inline
-- Use midpoint ellipse algorithm
+- Implement `drawFilledEllipse()` using `GEOMETRY_BATCH` (similar to `drawFilledCircle()`)
+- Filled mode uses `drawFilledEllipse()` in same module
+- Draws pixels using `drawPixel()` for outline
+- Use midpoint ellipse algorithm for outline
+- Use tessellated triangles for filled mode
 - Estimate batch size based on perimeter (outline) or area (filled)
 
 ### Step 7.4: Test Shapes
-- Test `drawRectPixel()`, `drawRectSquare()`, `drawRectCircle()` - outline and filled modes
-- Test `drawCirclePixel()`, `drawCircleSquare()`, `drawCircleCircle()` - outline and filled modes
-- Test `drawEllipsePixel()`, `drawEllipseSquare()`, `drawEllipseCircle()` - outline and filled modes
-- Verify all shapes render correctly with different pen types and sizes
+- Test `drawRectPixel()` - outline and filled modes
+- Test `drawCirclePixel()` - outline and filled modes
+- Test `drawEllipsePixel()` - outline and filled modes
+- Verify all shapes render correctly
 
 ## Phase 8: Complete Graphics API
 
 ### Step 8.1: Add Rebuild API Function to api/graphics.js ✅ COMPLETE
-Implement `rebuildApi()` function and wire it up to `setPen()`:
+Implement `buildApi()` function:
 
 **Key functions:**
-- `export function rebuildApi( screenData )` - Rebuild all graphics API functions
-- Called from `api/pens.js` when pen/size changes (not blend changes)
-- Called from `screen-manager.js` after screen creation via `rebuildApiOnScreenInit()`
+- `export function buildApi( screenData )` - Rebuild all graphics API functions
+- Called from `screen-manager.js` after screen creation via `buildApiOnScreenInit()`
 
 **Implementation notes:**
-- Creates specialized drawing functions based on current pen configuration
-- Avoids branching in hot paths by pre-specializing at configuration time
-- `pset` behavior changes dynamically: pixel, square, circle (size 2 = cross)
-- No noise/blend handling in api/graphics.js - all blending handled on GPU
+- Creates optimized drawing functions that close over screen data
+- Avoids branching in hot paths by pre-specializing at initialization time
+- No blend handling in api/graphics.js - all blending handled on GPU
 
 ### Step 8.2: Extend api/graphics.js - Add Remaining Commands
 Add remaining graphics commands to the API layer:
 
 **Commands to implement:**
-- `line` - calls `renderer.drawLine()`
-- `arc` - calls `renderer.drawArc()`
-- `bezier` - calls `renderer.drawBezier()`
-- `rect` - calls `renderer.drawRect()`
-- `circle` - calls `renderer.drawCircle()`
-- `ellipse` - calls `renderer.drawEllipse()`
+- `line` - calls `renderer.drawLinePixel()`
+- `arc` - calls `renderer.drawArcPixel()`
+- `bezier` - calls `renderer.drawBezierPixel()`
+- `rect` - calls `renderer.drawRectPixel()`
+- `circle` - calls `renderer.drawCirclePixel()`
+- `ellipse` - calls `renderer.drawEllipsePixel()`
 
 ### Step 8.3: Update Renderer Exports
 Ensure `renderer/renderer.js` exports all necessary functions:
@@ -858,13 +789,12 @@ Ensure `renderer/renderer.js` exports all necessary functions:
 - `POINTS_BATCH`, `IMAGE_BATCH`, `GEOMETRY_BATCH`, `LINES_BATCH` (from batches)
 - `prepareBatch()` (from batches)
 - `drawPixel()` (from draw/primitives)
-- `drawLinePixel()`, `drawLineSquare()`, `drawLineCircle()` (from draw/lines)
-- `drawRectPixel()`, `drawRectSquare()`, `drawRectCircle()` (from draw/rects)
-- `drawCirclePixel()`, `drawCircleSquare()`, `drawCircleCircle()` (from draw/circles)
-- `drawEllipsePixel()`, `drawEllipseSquare()`, `drawEllipseCircle()` (from draw/ellipses)
-- `drawArcPixel()`, `drawArcSquare()`, `drawArcCircle()` (from draw/arcs)
-- `drawBezierPixel()`, `drawBezierSquare()`, `drawBezierCircle()` (from draw/bezier)
-- `drawFilledRect()`, `drawFilledCircle()`, `drawFilledEllipse()` (from draw/filledShapes)
+- `drawLinePixel()` (from draw/lines)
+- `drawRectPixel()`, `drawFilledRect()` (from draw/rects)
+- `drawCirclePixel()`, `drawFilledCircle()` (from draw/circles)
+- `drawEllipsePixel()`, `drawFilledEllipse()` (from draw/ellipses)
+- `drawArcPixel()` (from draw/arcs)
+- `drawBezierPixel()` (from draw/bezier)
 - `drawImage()` (from draw/images)
 - `readPixel()`, `readPixels()` (from readback)
 - `getWebGL2Texture()`, `deleteWebGL2Texture()` (from textures)
@@ -875,7 +805,6 @@ Ensure `renderer/renderer.js` exports all necessary functions:
 - Verify object literal syntax works
 - Test error handling for invalid parameters
 - Verify all commands render correctly
-- Test that changing pen triggers API rebuild correctly
 
 ## Phase 9: Screen Manager Simplification
 
@@ -900,7 +829,6 @@ Remove Canvas2D-specific screen data items:
 ### Step 9.3: Update Other Modules ✅ COMPLETE
 Remove Canvas2D render mode checks from:
 - `api/graphics.js` - Remove `CANVAS2D_RENDER_MODE` checks
-- `api/pens.js` - Already updated (GPU-only blending)
 - Any other modules that check render mode
 - All blend modes handled on GPU via batches.js
 
@@ -912,7 +840,7 @@ Remove Canvas2D render mode checks from:
 
 ## Phase 10: Update Supporting Modules
 
-**Note:** `api/pens.js` and `api/colors.js` were implemented earlier (Phase 2 and Phase 4) and are already WebGL2-only.
+**Note:** `api/colors.js` was implemented earlier (Phase 2) and is already WebGL2-only.
 
 ### Step 10.1: Update api/pixels.js ✅ COMPLETE
 Update pixel module for WebGL2 only:
@@ -922,7 +850,6 @@ Update pixel module for WebGL2 only:
 
 ### Step 10.2: Test Supporting Modules
 - Test pixel readback commands
-- Verify pen/blend system still works correctly
 - Verify color system still works correctly
 - Verify image loading/drawing still works correctly
 
