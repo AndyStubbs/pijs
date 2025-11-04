@@ -711,7 +711,7 @@ Move rectangle drawing from `graphics-shapes.js` to `renderer/draw/rects.js`:
 - Draws pixels using `drawPixel()` for outline
 - All blending handled on GPU via batches.js
 
-### Step 7.2: Implement draw/circles.js - Circle Drawing
+### Step 7.2: Implement draw/circles.js - Circle Drawing ✅ COMPLETE
 Move circle drawing from `graphics-shapes.js`:
 
 **Responsibilities:**
@@ -759,11 +759,11 @@ Move ellipse drawing from `graphics-shapes.js`:
 
 ## Phase 8: Complete Graphics API
 
-### Step 8.1: Add Rebuild API Function to api/graphics.js ✅ COMPLETE
+### Step 8.1: Add Build API Function to api/graphics.js ✅ COMPLETE
 Implement `buildApi()` function:
 
 **Key functions:**
-- `export function buildApi( screenData )` - Rebuild all graphics API functions
+- `export function buildApi( screenData )` - Build all graphics API functions
 - Called from `screen-manager.js` after screen creation via `buildApiOnScreenInit()`
 
 **Implementation notes:**
