@@ -65,6 +65,8 @@ export function buildApi( s_screenData ) {
 	const s_drawLinePixel = g_renderer.drawLinePixel;
 	const s_drawArcPixel = g_renderer.drawArcPixel;
 	const s_drawBezierPixel = g_renderer.drawBezierPixel;
+	const s_drawCirclePixel = g_renderer.drawCirclePixel;
+	const s_drawFilledCircle = g_renderer.drawFilledCircle;
 
 	// Utility commands
 	const s_setImageDirty = g_renderer.setImageDirty;
@@ -241,4 +243,44 @@ export function buildApi( s_screenData ) {
 
 	m_api.rect = rectFn;
 	s_screenData.api.rect = rectFn;
+
+	/**********************************************************************************************
+	 * Circle Command
+	 **********************************************************************************************/
+
+	const circleFn = ( x, y, radius, fillColor ) => {
+		const pX = s_getInt( x, null );
+		const pY = s_getInt( y, null );
+		const pRadius = s_getInt( radius, null );
+
+		if( pX === null || pY === null || pRadius === null ) {
+			const error = new TypeError( "rect: Parameters x, y, and radius must be integers." );
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
+
+		// Parse and validate fillColor here (single source of truth)
+		let fillColorValue = null;
+		if( fillColor != null ) {
+			fillColorValue = g_colors.getColorValueByRawInput( s_screenData, fillColor );
+			if( fillColorValue === null ) {
+				const error = new TypeError( "rect: Parameter 'fillColor' must be a valid color." );
+				error.code = "INVALID_PARAMETER";
+				throw error;
+			}
+
+			// Fill in the circle
+			const fRadius = pRadius - 1;
+			if( fRadius > 0 ) {
+				s_drawFilledCircle( s_screenData, pX, pY, fRadius, fillColorValue );
+			}
+		}
+
+		// Draw the circle border
+		s_drawCirclePixel( s_screenData, pX, pY, pRadius, s_color );
+		s_setImageDirty( s_screenData );
+	};
+
+	m_api.circle = circleFn;
+	s_screenData.api.rect = circleFn;
 }

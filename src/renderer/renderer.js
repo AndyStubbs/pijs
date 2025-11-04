@@ -41,6 +41,7 @@ export { drawBezierPixel } from "./draw/bezier.js";
 export { drawLinePixel } from "./draw/lines.js";
 export { drawCachedGeometry } from "./draw/geometry.js";
 export { drawRectPixel, drawFilledRect } from "./draw/rects.js";
+export { drawCirclePixel, drawFilledCircle } from "./draw/circles.js";
 
 // Re-export batch management
 export { prepareBatch } from "./batches.js";
