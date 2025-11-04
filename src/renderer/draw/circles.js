@@ -101,10 +101,6 @@ export function drawCirclePixel( screenData, cx, cy, radius, color ) {
  */
 export function drawFilledCircle( screenData, cx, cy, radius, color ) {
 
-	// TODO: Attempt to fix the drawFilledCircle so it's the same as pre alpha 3 version which I 
-	// prefer. Right now we are using a cached results, I might want to keep the caching but we
-	// should use the same algorithm and try to reuse code.
-	
 	// Apply input adjustments for MCA consistency
 	//radius -= 1;
 	cy -= 1;
