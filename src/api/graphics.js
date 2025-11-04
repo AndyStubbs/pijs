@@ -55,6 +55,7 @@ export function buildApi( s_screenData ) {
 		m_api.arc = () => g_utils.errFn( "arc" );
 		m_api.rect = () => g_utils.errFn( "rect" );
 		m_api.bezier = () => g_utils.errFn( "bezier" );
+		m_api.ellipse = () => g_utils.errFn( "ellipse" );
 		return;
 	}
 
@@ -194,6 +195,44 @@ export function buildApi( s_screenData ) {
 	/**********************************************************************************************
 	 * Ellipse Command
 	 **********************************************************************************************/
+
+	const ellipseFn = ( x, y, rx, ry, fillColor ) => {
+		const pX = s_getInt( x, null );
+		const pY = s_getInt( y, null );
+		const pRx = s_getInt( rx, null );
+		const pRy = s_getInt( ry, null );
+
+		if( pX === null || pY === null || pRx === null || pRy === null ) {
+			const error = new TypeError( "ellipse: Parameters x, y, rx, and ry must be integers." );
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
+
+		// Parse and validate fillColor here (single source of truth)
+		let fillColorValue = null;
+		if( fillColor != null ) {
+			fillColorValue = g_colors.getColorValueByRawInput( s_screenData, fillColor );
+			if( fillColorValue === null ) {
+				const error = new TypeError(
+					"ellipse: Parameter 'fillColor' must be a valid color."
+				);
+				error.code = "INVALID_PARAMETER";
+				throw error;
+			}
+
+			// TODO: Implement drawEllipseFilled when filled ellipse support is added
+			// if( pRx > 0 && pRy > 0 ) {
+			// 	s_drawEllipseFilled( s_screenData, pX, pY, pRx, pRy, fillColorValue );
+			// }
+		}
+
+		// Draw the ellipse border
+		s_drawEllipse( s_screenData, pX, pY, pRx, pRy, s_color, null, null, null );
+		s_setImageDirty( s_screenData );
+	};
+
+	m_api.ellipse = ellipseFn;
+	s_screenData.api.ellipse = ellipseFn;
 
 	/**********************************************************************************************
 	 * LINE Command

@@ -26,11 +26,9 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @param {number} ry - Radius Y
  * @param {number} color - Outline color
  * @param {number} fillColor - Fill color (or null for outline only)
- * @param {Function} penFn - Pen function for outline pixels
- * @param {Function} blendFn - Blend function for fill pixels
  * @returns {void}
  */
-export function drawEllipse( screenData, cx, cy, rx, ry, color, fillColor, penFn, blendFn ) {
+export function drawEllipse( screenData, cx, cy, rx, ry, color, fillColor ) {
 
 	// Validate radii
 	if( rx < 0 || ry < 0 ) {
