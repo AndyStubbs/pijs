@@ -28,7 +28,7 @@ import * as g_pixels from "./api/pixels.js";
 import * as g_blends from "./api/blends.js";
 
 // Fonts
-import * as g_fonts from "./text/font.js";
+import * as g_fonts from "./text/fonts.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;

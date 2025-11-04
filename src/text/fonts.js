@@ -1,5 +1,5 @@
 /**
- * Pi.js - Font Module
+ * Pi.js - Fonts Module
  * 
  * Font loading and management for text rendering.
  * 
@@ -8,7 +8,7 @@
 
 "use strict";
 
-import font8x8 from "./fonts/font-8x8.webp";
+import g_font8x8 from "./fonts/font-8x8.webp";
 
 
 /***************************************************************************************************
@@ -19,5 +19,5 @@ import font8x8 from "./fonts/font-8x8.webp";
 // Initialize graphics module - only gets called on page load
 export function init( api ) {
 	
-	console.log( font8x8.length );
+	console.log( g_font8x8.length );
 }

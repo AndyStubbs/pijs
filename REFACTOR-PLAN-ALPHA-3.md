@@ -78,7 +78,7 @@ src/
 │
 └── text/                              # Text rendering modules (planned for future phases)
 	├── (font-data.js)                # Font data and bitmaps (planned)
-	├── (font.js)                     # Font management (planned)
+	├── (fonts.js)                     # Font management (planned)
 	└── (print.js)                    # Text printing commands (planned)
 ```
 
