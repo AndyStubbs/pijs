@@ -59,14 +59,15 @@ export function buildApi( s_screenData ) {
 	}
 
 	// Draw commands
-	const s_drawPixel = g_renderer.drawPixel;
-	const s_drawRect = g_renderer.drawRect;
-	const s_drawRectFilled = g_renderer.drawRectFilled;
-	const s_drawLine = g_renderer.drawLine;
 	const s_drawArc = g_renderer.drawArc;
 	const s_drawBezier = g_renderer.drawBezier;
 	const s_drawCircle = g_renderer.drawCircle;
 	const s_drawCircleFilled = g_renderer.drawCircleFilled;
+	const s_drawEllipse = g_renderer.drawEllipse;
+	const s_drawLine = g_renderer.drawLine;
+	const s_drawPixel = g_renderer.drawPixel;
+	const s_drawRect = g_renderer.drawRect;
+	const s_drawRectFilled = g_renderer.drawRectFilled;
 
 	// Utility commands
 	const s_setImageDirty = g_renderer.setImageDirty;
@@ -76,55 +77,6 @@ export function buildApi( s_screenData ) {
 	// Constants
 	const s_color = s_screenData.color;
 	const s_pointsBatch = g_renderer.POINTS_BATCH;
-
-	/**********************************************************************************************
-	 * PSET Command
-	 **********************************************************************************************/
-
-	const psetFn = ( x, y ) => {
-		const pX = s_getInt( x, null );
-		const pY = s_getInt( y, null );
-
-		// Make sure x and y are integers
-		if( pX === null || pY === null ) {
-			const error = new TypeError( "pset: Parameters x and y must be integers." );
-			error.code = "INVALID_PARAMETER";
-			throw error;
-		}
-
-		// Draw the pixel
-		s_prepareBatch( s_screenData, s_pointsBatch, 1 );
-		s_drawPixel( s_screenData, pX, pY, s_color, s_pointsBatch );
-		s_setImageDirty( s_screenData );
-	};
-
-		m_api.pset = psetFn;
-		s_screenData.api.pset = psetFn;
-
-	/**********************************************************************************************
-	 * LINE Command
-	 **********************************************************************************************/
-
-	const lineFn = ( x1, y1, x2, y2 ) => {
-		const pX1 = s_getInt( x1, null );
-		const pY1 = s_getInt( y1, null );
-		const pX2 = s_getInt( x2, null );
-		const pY2 = s_getInt( y2, null );
-
-		// Make sure x1, y1, x2, y2 are integers
-		if( pX1 === null || pY1 === null || pX2 === null || pY2 === null ) {
-			const error = new TypeError( "line: Parameters x1, y1, x2, y2 must be integers." );
-			error.code = "INVALID_PARAMETER";
-			throw error;
-		}
-
-		// Draw Line
-		s_drawLine( s_screenData, pX1, pY1, pX2, pY2, s_color );
-		s_setImageDirty( s_screenData );
-	};
-
-	m_api.line = lineFn;
-	s_screenData.api.line = lineFn;
 
 	/**********************************************************************************************
 	 * ARC Command
@@ -165,6 +117,7 @@ export function buildApi( s_screenData ) {
 	m_api.arc = arcFn;
 	s_screenData.api.arc = arcFn;
 
+	
 	/**********************************************************************************************
 	 * BEZIER Command
 	 **********************************************************************************************/
@@ -197,6 +150,99 @@ export function buildApi( s_screenData ) {
 
 	m_api.bezier = bezierFn;
 	s_screenData.api.bezier = bezierFn;
+
+	
+	/**********************************************************************************************
+	 * Circle Command
+	 **********************************************************************************************/
+
+	const circleFn = ( x, y, radius, fillColor ) => {
+		const pX = s_getInt( x, null );
+		const pY = s_getInt( y, null );
+		const pRadius = s_getInt( radius, null );
+
+		if( pX === null || pY === null || pRadius === null ) {
+			const error = new TypeError( "rect: Parameters x, y, and radius must be integers." );
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
+
+		// Parse and validate fillColor here (single source of truth)
+		let fillColorValue = null;
+		if( fillColor != null ) {
+			fillColorValue = g_colors.getColorValueByRawInput( s_screenData, fillColor );
+			if( fillColorValue === null ) {
+				const error = new TypeError( "rect: Parameter 'fillColor' must be a valid color." );
+				error.code = "INVALID_PARAMETER";
+				throw error;
+			}
+
+			// Fill in the circle
+			if( pRadius > 0 ) {
+				s_drawCircleFilled( s_screenData, pX, pY, pRadius, fillColorValue );
+			}
+		}
+
+		// Draw the circle border
+		s_drawCircle( s_screenData, pX, pY, pRadius, s_color );
+		s_setImageDirty( s_screenData );
+	};
+
+	m_api.circle = circleFn;
+	s_screenData.api.rect = circleFn;
+
+	/**********************************************************************************************
+	 * Ellipse Command
+	 **********************************************************************************************/
+
+	/**********************************************************************************************
+	 * LINE Command
+	 **********************************************************************************************/
+
+	const lineFn = ( x1, y1, x2, y2 ) => {
+		const pX1 = s_getInt( x1, null );
+		const pY1 = s_getInt( y1, null );
+		const pX2 = s_getInt( x2, null );
+		const pY2 = s_getInt( y2, null );
+
+		// Make sure x1, y1, x2, y2 are integers
+		if( pX1 === null || pY1 === null || pX2 === null || pY2 === null ) {
+			const error = new TypeError( "line: Parameters x1, y1, x2, y2 must be integers." );
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
+
+		// Draw Line
+		s_drawLine( s_screenData, pX1, pY1, pX2, pY2, s_color );
+		s_setImageDirty( s_screenData );
+	};
+
+	m_api.line = lineFn;
+	s_screenData.api.line = lineFn;
+	
+	/**********************************************************************************************
+	 * PSET Command
+	 **********************************************************************************************/
+
+	const psetFn = ( x, y ) => {
+		const pX = s_getInt( x, null );
+		const pY = s_getInt( y, null );
+
+		// Make sure x and y are integers
+		if( pX === null || pY === null ) {
+			const error = new TypeError( "pset: Parameters x and y must be integers." );
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
+
+		// Draw the pixel
+		s_prepareBatch( s_screenData, s_pointsBatch, 1 );
+		s_drawPixel( s_screenData, pX, pY, s_color, s_pointsBatch );
+		s_setImageDirty( s_screenData );
+	};
+
+	m_api.pset = psetFn;
+	s_screenData.api.pset = psetFn;
 
 	/**********************************************************************************************
 	 * RECT Command
@@ -244,42 +290,4 @@ export function buildApi( s_screenData ) {
 	m_api.rect = rectFn;
 	s_screenData.api.rect = rectFn;
 
-	/**********************************************************************************************
-	 * Circle Command
-	 **********************************************************************************************/
-
-	const circleFn = ( x, y, radius, fillColor ) => {
-		const pX = s_getInt( x, null );
-		const pY = s_getInt( y, null );
-		const pRadius = s_getInt( radius, null );
-
-		if( pX === null || pY === null || pRadius === null ) {
-			const error = new TypeError( "rect: Parameters x, y, and radius must be integers." );
-			error.code = "INVALID_PARAMETER";
-			throw error;
-		}
-
-		// Parse and validate fillColor here (single source of truth)
-		let fillColorValue = null;
-		if( fillColor != null ) {
-			fillColorValue = g_colors.getColorValueByRawInput( s_screenData, fillColor );
-			if( fillColorValue === null ) {
-				const error = new TypeError( "rect: Parameter 'fillColor' must be a valid color." );
-				error.code = "INVALID_PARAMETER";
-				throw error;
-			}
-
-			// Fill in the circle
-			if( pRadius > 0 ) {
-				s_drawCircleFilled( s_screenData, pX, pY, pRadius, fillColorValue );
-			}
-		}
-
-		// Draw the circle border
-		s_drawCircle( s_screenData, pX, pY, pRadius, s_color );
-		s_setImageDirty( s_screenData );
-	};
-
-	m_api.circle = circleFn;
-	s_screenData.api.rect = circleFn;
 }

@@ -42,6 +42,7 @@ export { drawLine } from "./draw/lines.js";
 export { drawCachedGeometry } from "./draw/geometry.js";
 export { drawRect, drawRectFilled } from "./draw/rects.js";
 export { drawCircle, drawCircleFilled } from "./draw/circles.js";
+export { drawEllipse } from "./draw/ellipses.js";
 
 // Re-export batch management
 export { prepareBatch } from "./batches.js";
