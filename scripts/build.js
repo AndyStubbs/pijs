@@ -53,6 +53,41 @@ const injectVersionPlugin = {
 	}
 };
 
+// Plugin to import .webp files as BASE64 encoded strings
+const webpBase64Plugin = {
+	"name": "webp-base64",
+	"setup"( build ) {
+		build.onLoad( { "filter": /\.webp$/ }, async ( args ) => {
+			try {
+				// Read the file as a buffer
+				const fileBuffer = await fs.promises.readFile( args.path );
+				
+				// Convert to base64
+				const base64String = fileBuffer.toString( "base64" );
+				
+				// Return as a data URL string
+				const contents = `export default "data:image/webp;base64,${base64String}";`;
+				
+				return {
+					"contents": contents,
+					"loader": "js"
+				};
+			} catch( error ) {
+				return {
+					"errors": [ {
+						"text": `Failed to load .webp file: ${error.message}`,
+						"location": {
+							"file": args.path,
+							"line": 1,
+							"column": 0
+						}
+					} ]
+				};
+			}
+		} );
+	}
+};
+
 const buildOptions = {
 	"entryPoints": [ path.join( __dirname, "..", sourceDir, "index.js" ) ],
 	"bundle": true,
@@ -60,7 +95,7 @@ const buildOptions = {
 	"banner": { "js": banner },
 	"target": "es2020",
 	"platform": "browser",
-	"plugins": [ injectVersionPlugin ],
+	"plugins": [ injectVersionPlugin, webpBase64Plugin ],
 	"loader": { ".vert": "text", ".frag": "text" },
 	"sourceRoot": `../${sourceDir}/`
 };
@@ -87,7 +122,8 @@ async function buildPlugin( pluginName, pluginDir ) {
 		"sourcemap": true,
 		"target": "es2020",
 		"platform": "browser",
-		"loader": { ".vert": "text", ".frag": "text" }
+		"loader": { ".vert": "text", ".frag": "text" },
+		"plugins": [ webpBase64Plugin ]
 	};
 
 	try {

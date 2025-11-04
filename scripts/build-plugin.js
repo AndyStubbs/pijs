@@ -5,6 +5,11 @@
  * 
  * Usage: node scripts/build-plugin.js <plugin-name>
  * Example: node scripts/build-plugin.js my-plugin
+ * 
+ * TODO: Main build script also builds plugins but keeping this to easily build plugins individually
+ * However, it would probably be better to not have to maintain two build scripts so I need to
+ * make this a module and let the main script import this as an export and have a separate launcher
+ * for build plugins.
  */
 
 const esbuild = require( "esbuild" );
