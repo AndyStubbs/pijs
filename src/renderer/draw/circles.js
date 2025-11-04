@@ -11,15 +11,8 @@
 "use strict";
 
 import * as g_batches from "../batches.js";
-import * as g_textures from "../textures.js";
-import * as g_utils from "../../core/utils.js";
 import * as g_geometry from "./geometry.js";
-import * as g_batchHelpers from "./batch-helpers.js";
 import { drawPixel } from "./primitives.js";
-
-
-
-
 
 
 /**
@@ -104,7 +97,7 @@ export function drawFilledCircle( screenData, cx, cy, radius, color ) {
 	// Apply input adjustments for MCA consistency
 	//radius -= 1;
 	cy -= 1;
-	
-	const cacheKey = `circle:${radius}`;
-	return g_geometry.drawCachedGeometry( screenData, cacheKey, cx, cy, color );
+	return g_geometry.drawCachedGeometry(
+		screenData, g_geometry.FILLED_CIRCLE, radius, cx, cy, color
+	);
 }

@@ -12,10 +12,13 @@
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
 
+export const FILLED_CIRCLE = 0;
+export const FILLED_ELLIPSE = 1;
 
 /***************************************************************************************************
  * Geometry Cache
  ***************************************************************************************************/
+
 
 
 // Cache key format: "type:radius"
@@ -56,11 +59,11 @@ function prepopulateCache() {
 	// Special geometries for small circle radius
 	// radius 1: single pixel as 1x1 quad centered at origin covering [0,0]-[1,1]
 	const circle1 = generateSinglePixelGeometry();
-	m_geometryCache.set( "circle:1", circle1 );
+	m_geometryCache.set( `${FILLED_CIRCLE}:1`, circle1 );
 
-	// Pre-generate circles for sizes 3-10
-	for( let radius = 3; radius <= 10; radius++ ) {
-		const cacheKey = `circle:${radius}`;
+	// Pre-generate circles for sizes 2-10
+	for( let radius = 2; radius <= 10; radius++ ) {
+		const cacheKey = `${FILLED_CIRCLE}:${radius}`;
 		
 		// Use Alpha 2's radius threshold: (half - 0.5)^2
 		const geometry = generateCircleGeometry( radius );
@@ -248,22 +251,20 @@ function generateSinglePixelGeometry() {
  * @param {string} cacheKey - Geometry cache key (e.g., "circle:32")
  * @returns {Object} Geometry data with vertexCount and vertices array
  */
-function getCachedGeometry( cacheKey ) {
+function getCachedGeometry( cacheType, unit ) {
 
+	const cacheKey = `${cacheType}:${unit}`;
 	if( m_geometryCache.has( cacheKey ) ) {
 		return m_geometryCache.get( cacheKey );
 	}
 
 	// Parse cache key to determine what to generate
-	const [ type, ...params ] = cacheKey.split( ":" );
 	let geometry;
 
-	if( type === "circle" ) {
-
-		const radius = parseInt( params[ 0 ], 10 );
-		geometry = generateCircleGeometry( radius );
+	if( cacheType === FILLED_CIRCLE ) {
+		geometry = generateCircleGeometry( unit );
 	} else {
-		throw new Error( `Unknown geometry type: ${type}` );
+		throw new Error( `Unknown geometry cache type: ${cacheType}` );
 	}
 
 	// Cache the geometry
@@ -288,10 +289,10 @@ function getCachedGeometry( cacheKey ) {
  * @param {Object} color - Color object with r/g/b/a components (0-255)
  * @returns {void}
  */
-export function drawCachedGeometry( screenData, cacheKey, x, y, color ) {
+export function drawCachedGeometry( screenData, cacheType, unit, x, y, color ) {
 
 	// Get cached geometry
-	const geometry = getCachedGeometry( cacheKey );
+	const geometry = getCachedGeometry( cacheType, unit );
 	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
 
 	// Prepare batch for vertices
