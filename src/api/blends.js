@@ -12,7 +12,6 @@
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_commands from "../core/commands.js";
 import * as g_utils from "../core/utils.js";
-import * as g_graphicsApi from "./graphics.js";
 import * as g_renderer from "../renderer/renderer.js";
 
 // Blends
@@ -62,28 +61,76 @@ function setBlend( screenData, options ) {
 		throw error;
 	}
 
+	const noiseErrorMsg = "setBlend: Parameter noise must either be a number ie: 32, a 1d array " +
+		"with numbers ie: [23, 13, 15, 0], or a 2d array where the inner array is two arrays " +
+		"first array is min values second array is max values for each ie: " +
+		"[[23, 15, 18, 0], [32,18, 12, 0]]. The order of items in the inner array is " +
+		"[red, green, blue, alpha].";
+
+	let noiseResult = null;
+
 	// Validate the noise option
+	const validateNoiseValFn = ( noiseVal ) => {
+		if( noiseVal === null ) {
+			const error = new TypeError( noiseErrorMsg );
+			error.code = "INVALID_NOISE_VALUE";
+			throw error;
+		}
+	};
+
+	// First validate noise if it's an array
 	if( Array.isArray( noise ) ) {
-		for( let i = 0; i < noise.length; i++ ) {
-			if( isNaN( noise[ i ] ) ) {
-				const error = new TypeError(
-					"setBlend: Parameter noise array contains an invalid value."
-				);
-				error.code = "INVALID_NOISE_VALUE";
-				throw error;
+
+		// Create a blank noise result
+		noiseResult = [ new Float32Array( [ 0, 0, 0, 0 ] ), new Float32Array( [ 0, 0, 0, 0 ] ) ];
+
+		// Loop through the array max of 4 items
+		for( let i = 0; i < noise.length && i < 4; i += 1 ) {
+
+			const noiseRow = noise[ i ];
+	
+			// Validate if 2d array
+			if( Array.isArray( noiseRow ) ) {
+
+				// If 2d array ignore any result after 2nd item
+				if( i >= 2 ) {
+					continue;
+				}
+
+				// Loop through inner array max of 4 items
+				for( let j = 0; j < noiseRow.length && j < 4; j += 1 ) {
+					const noiseVal = g_utils.getInt( noiseRow[ j ], null );
+					validateNoiseValFn( noiseVal );
+					noiseResult[ i ][ j ] = noiseVal / 255;
+				}
+			} else {
+				const noiseVal = g_utils.getInt( noiseRow, null );
+				validateNoiseValFn( noiseVal );
+
+				// Update min and max values based on parallel values
+				noiseResult[ 0 ][ i ] = -noiseVal / 255;
+				noiseResult[ 1 ][ i ] = noiseVal / 255;
 			}
 		}
 	} else {
-		noise = g_utils.getInt( noise, null );
-		if( noise !== null ) {
-			noise = [ noise, noise, noise, 0 ];
+
+		// Validate if noise is na integer
+		const noiseVal = g_utils.getInt( noise );
+
+		// If noise is an integer it will not be null
+		if( noiseVal !== null ) {
+			const val = noiseVal / 255;
+			noiseResult = [
+				[ -val, -val, -val, -val ],
+				[  val,  val,  val,  val ],
+			];
 		}
 	}
 
 	// Set blend data on screen
 	const previousBlend = screenData.blends.blend;
 	screenData.blends.blend = blend;
-	screenData.blends.noise = noise;
+	screenData.blends.noise = noiseResult;
 
 	// Notify renderer that blend mode has changed
 	if( previousBlend !== blend ) {

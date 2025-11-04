@@ -183,6 +183,16 @@ export function createBatch( screenData, type ) {
 		"resolution": gl.getUniformLocation( batch.program, "u_resolution" )
 	};
 
+	// Add noise uniform locations for batches that use point shaders
+	if(
+		type === POINTS_BATCH || 		 type === GEOMETRY_BATCH ||
+		type === POINTS_REPLACE_BATCH || type === LINES_BATCH
+	) {
+		batch.locations.noiseMin = gl.getUniformLocation( batch.program, "u_noiseMin" );
+		batch.locations.noiseMax = gl.getUniformLocation( batch.program, "u_noiseMax" );
+		batch.locations.time = gl.getUniformLocation( batch.program, "u_time" );
+	}
+
 	// Setup batch type and capacity
 	batch.type = type;
 
@@ -437,7 +447,8 @@ export function flushBatches( screenData, blend = null ) {
 				texture = drawOrderItem.texture;
 			}
 			drawBatch(
-				gl, drawOrderItem.batch, drawOrderItem.startIndex, drawOrderItem.endIndex, texture
+				gl, screenData, drawOrderItem.batch,
+				drawOrderItem.startIndex, drawOrderItem.endIndex, texture
 			);
 		}
 	}
@@ -523,13 +534,14 @@ function uploadBatch( gl, batch, width, height ) {
  * Draw batch to FBO
  * 
  * @param {WebGL2RenderingContext} gl - WebGL2 context
+ * @param {Object} screenData - Screen data object
  * @param {Object} batch - Batch object
  * @param {number} startIndex - Start index in batch
  * @param {number} endIndex - End index in batch
  * @param {WebGLTexture|null} texture - Texture for IMAGE_BATCH or null
  * @returns {void}
  */
-function drawBatch( gl, batch, startIndex, endIndex, texture = null ) {
+function drawBatch( gl, screenData, batch, startIndex, endIndex, texture = null ) {
 
 	gl.useProgram( batch.program );
 	gl.bindVertexArray( batch.vao );
@@ -539,6 +551,31 @@ function drawBatch( gl, batch, startIndex, endIndex, texture = null ) {
 		gl.activeTexture( gl.TEXTURE0 );
 		gl.bindTexture( gl.TEXTURE_2D, texture );
 		gl.uniform1i( batch.locations.texture, 0 );
+	}
+
+	// Set noise uniforms for batches that use point shaders
+	if( batch.locations.noiseMin !== undefined ) {
+		const noise = screenData.blends.noise;
+		
+		// Calculate noise min and max ranges
+		let noiseMin, noiseMax;
+		if( noise === null ) {
+
+			// No noise - set both to zero
+			noiseMin = new Float32Array( [ 0.0, 0.0, 0.0, 0.0 ] );
+			noiseMax = new Float32Array( [ 0.0, 0.0, 0.0, 0.0 ] );
+		} else {
+
+			noiseMin = noise[ 0 ];
+			noiseMax = noise[ 1 ];
+		}
+		
+		gl.uniform4fv( batch.locations.noiseMin, noiseMin );
+		gl.uniform4fv( batch.locations.noiseMax, noiseMax );
+		
+		// Set time for animated noise (use 0.0 for static noise)
+		// For now, use 0.0 for static noise - can be changed to performance.now() / 1000.0
+		gl.uniform1f( batch.locations.time, performance.now() / 1000.0 );
 	}
 
 	// Draw based on batch mode

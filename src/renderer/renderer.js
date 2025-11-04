@@ -241,4 +241,3 @@ export function blendModeChanged( screenData, previousBlend ) {
 	g_batches.flushBatches( screenData, previousBlend );
 	g_batches.displayToCanvas( screenData );
 }
-
