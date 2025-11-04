@@ -57,8 +57,11 @@ const injectVersionPlugin = {
 const webpBase64Plugin = {
 	"name": "webp-base64",
 	"setup"( build ) {
+
+		// This loader handles modules in our custom namespace
 		build.onLoad( { "filter": /\.webp$/ }, async ( args ) => {
 			try {
+
 				// Read the file as a buffer
 				const fileBuffer = await fs.promises.readFile( args.path );
 				
@@ -66,7 +69,7 @@ const webpBase64Plugin = {
 				const base64String = fileBuffer.toString( "base64" );
 				
 				// Return as a data URL string
-				const contents = `export default "data:image/webp;base64,${base64String}";`;
+				const contents = `export default { "data": "data:image/webp;base64,${base64String}" };`;
 				
 				return {
 					"contents": contents,
