@@ -3,7 +3,7 @@
  * 
  * High-level primitive drawing operations: lines
  * 
- * drawLinePixel, drawLineSquare, drawLineCircle
+ * drawLine, drawLineSquare, drawLineCircle
  * 
  * @module renderer/draw/lines
  */
@@ -30,7 +30,7 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @param {Object} color - Color object with r, g, b, a
  * @returns {void}
  */
-export function drawLinePixel( screenData, x1, y1, x2, y2, color ) {
+export function drawLine( screenData, x1, y1, x2, y2, color ) {
 
 	// Prepare batch for 2 vertices (line segment)
 	const batch = screenData.batches[ g_batches.LINES_BATCH ];

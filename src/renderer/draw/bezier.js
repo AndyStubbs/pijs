@@ -3,7 +3,7 @@
  * 
  * Low-level drawing operations: bezier drawing.
  * 
- * drawBezierPixel, drawBezierSquare, drawBezierCircle
+ * drawBezier, drawBezierSquare, drawBezierCircle
  * 
  * @module renderer/draw/bezier
  */
@@ -16,7 +16,7 @@ import * as g_lines from "./lines.js";
 
 /**
  * Draw cubic Bezier with pixel pen by tessellating into short line segments.
- * Uses adaptive subdivision for smoothness and reuses drawLinePixel for rasterization.
+ * Uses adaptive subdivision for smoothness and reuses drawLine for rasterization.
  * 
  * @param {Object} screenData
  * @param {number} p0x
@@ -30,7 +30,7 @@ import * as g_lines from "./lines.js";
  * @param {Object} color
  * @returns {void}
  */
-export function drawBezierPixel( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) {
+export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) {
 
 	// Tessellate curve into points with ~0.75px max error
 	const maxError = 0.75;
@@ -54,6 +54,6 @@ export function drawBezierPixel( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, 
 		const x2 = pts[ i + 2 ] | 0;
 		const y2 = pts[ i + 3 ] | 0;
 		if( x1 === x2 && y1 === y2 ) continue;
-		g_lines.drawLinePixel( screenData, x1, y1, x2, y2, color );
+		g_lines.drawLine( screenData, x1, y1, x2, y2, color );
 	}
 }

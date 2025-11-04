@@ -60,13 +60,13 @@ export function buildApi( s_screenData ) {
 
 	// Draw commands
 	const s_drawPixel = g_renderer.drawPixel;
-	const s_drawRectPixel = g_renderer.drawRectPixel;
-	const s_drawFilledRect = g_renderer.drawFilledRect;
-	const s_drawLinePixel = g_renderer.drawLinePixel;
-	const s_drawArcPixel = g_renderer.drawArcPixel;
-	const s_drawBezierPixel = g_renderer.drawBezierPixel;
-	const s_drawCirclePixel = g_renderer.drawCirclePixel;
-	const s_drawFilledCircle = g_renderer.drawFilledCircle;
+	const s_drawRect = g_renderer.drawRect;
+	const s_drawRectFilled = g_renderer.drawRectFilled;
+	const s_drawLine = g_renderer.drawLine;
+	const s_drawArc = g_renderer.drawArc;
+	const s_drawBezier = g_renderer.drawBezier;
+	const s_drawCircle = g_renderer.drawCircle;
+	const s_drawCircleFilled = g_renderer.drawCircleFilled;
 
 	// Utility commands
 	const s_setImageDirty = g_renderer.setImageDirty;
@@ -119,7 +119,7 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw Line
-		s_drawLinePixel( s_screenData, pX1, pY1, pX2, pY2, s_color );
+		s_drawLine( s_screenData, pX1, pY1, pX2, pY2, s_color );
 		s_setImageDirty( s_screenData );
 	};
 
@@ -155,7 +155,7 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw Arc
-		s_drawArcPixel(
+		s_drawArc(
 			s_screenData, pCx, pCy, pRadius, g_utils.degreesToRadian( angle1 ),
 			g_utils.degreesToRadian( angle2 ), s_color
 		);
@@ -191,7 +191,7 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw Bezier
-		s_drawBezierPixel( s_screenData, pX1, pY1, pX2, pY2, pX3, pY3, pX4, pY4, s_color );
+		s_drawBezier( s_screenData, pX1, pY1, pX2, pY2, pX3, pY3, pX4, pY4, s_color );
 		s_setImageDirty( s_screenData );
 	};
 
@@ -232,12 +232,12 @@ export function buildApi( s_screenData ) {
 			const fWidth = pWidth - 2;
 			const fHeight = pHeight - 2;
 			if( fWidth > 0 && fHeight > 0 ) {
-				s_drawFilledRect( s_screenData, pX + 1, pY, fWidth, fHeight, fillColorValue );
+				s_drawRectFilled( s_screenData, pX + 1, pY, fWidth, fHeight, fillColorValue );
 			}
 		}
 
 		// Draw the rect border
-		s_drawRectPixel( s_screenData, pX, pY, pWidth, pHeight, s_color );
+		s_drawRect( s_screenData, pX, pY, pWidth, pHeight, s_color );
 		s_setImageDirty( s_screenData );
 	};
 
@@ -271,12 +271,12 @@ export function buildApi( s_screenData ) {
 
 			// Fill in the circle
 			if( pRadius > 0 ) {
-				s_drawFilledCircle( s_screenData, pX, pY, pRadius, fillColorValue );
+				s_drawCircleFilled( s_screenData, pX, pY, pRadius, fillColorValue );
 			}
 		}
 
 		// Draw the circle border
-		s_drawCirclePixel( s_screenData, pX, pY, pRadius, s_color );
+		s_drawCircle( s_screenData, pX, pY, pRadius, s_color );
 		s_setImageDirty( s_screenData );
 	};
 

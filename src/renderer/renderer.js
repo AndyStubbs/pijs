@@ -36,12 +36,12 @@ export {
 // Re-export drawing functions
 export { drawImage } from "./draw/images.js";
 export { drawPixel } from "./draw/primitives.js";
-export { drawArcPixel } from "./draw/arcs.js";
-export { drawBezierPixel } from "./draw/bezier.js";
-export { drawLinePixel } from "./draw/lines.js";
+export { drawArc } from "./draw/arcs.js";
+export { drawBezier } from "./draw/bezier.js";
+export { drawLine } from "./draw/lines.js";
 export { drawCachedGeometry } from "./draw/geometry.js";
-export { drawRectPixel, drawFilledRect } from "./draw/rects.js";
-export { drawCirclePixel, drawFilledCircle } from "./draw/circles.js";
+export { drawRect, drawRectFilled } from "./draw/rects.js";
+export { drawCircle, drawCircleFilled } from "./draw/circles.js";
 
 // Re-export batch management
 export { prepareBatch } from "./batches.js";

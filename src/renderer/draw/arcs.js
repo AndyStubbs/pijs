@@ -3,7 +3,7 @@
  * 
  * Low-level drawing operations: arcs drawing.
  * 
- * drawArcPixel, drawArcSquare, drawArcCircle
+ * drawArc, drawArcSquare, drawArcCircle
  * 
  * @module renderer/draw/arcs
  */
@@ -27,7 +27,7 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @param {Object} color - Color object with r/g/b/a components (0-255)
  * @returns {void}
  */
-export function drawArcPixel( screenData, cx, cy, radius, angle1, angle2, color ) {
+export function drawArc( screenData, cx, cy, radius, angle1, angle2, color ) {
 
 	// Convert angles from radians to degrees and normalize to 0-360
 	let a1 = g_utils.radiansToDegrees( angle1 );

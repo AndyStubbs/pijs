@@ -11,7 +11,7 @@
 "use strict";
 
 // Import required modules
-import { drawLinePixel } from "./lines.js";
+import { drawLine } from "./lines.js";
 import { GEOMETRY_BATCH  } from "../renderer.js";
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
@@ -32,7 +32,7 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @param {Object} color - Outline color { r,g,b,a }
  * @returns {void}
  */
-export function drawRectPixel( screenData, x, y, width, height, color ) {
+export function drawRect( screenData, x, y, width, height, color ) {
 
 	// Nothing to draw
 	if( width <= 0 || height <= 0 ) {
@@ -45,21 +45,21 @@ export function drawRectPixel( screenData, x, y, width, height, color ) {
 	// Outline only for pixel pen rectangles
 
 	// Top edge
-	drawLinePixel( screenData, x, y, x2, y, color );
+	drawLine( screenData, x, y, x2, y, color );
 
 	// Right edge
 	if( height > 1 ) {
-		drawLinePixel( screenData, x2, y, x2, y2, color );
+		drawLine( screenData, x2, y, x2, y2, color );
 	}
 
 	// Bottom edge
 	if( height > 1 ) {
-		drawLinePixel( screenData, x2, y2, x, y2, color );
+		drawLine( screenData, x2, y2, x, y2, color );
 	}
 
 	// Left edge
 	if( width > 1 ) {
-		drawLinePixel( screenData, x, y2, x, y, color );
+		drawLine( screenData, x, y2, x, y, color );
 	}
 }
 
@@ -75,7 +75,7 @@ export function drawRectPixel( screenData, x, y, width, height, color ) {
  * @param {Object} color - Color object with r/g/b/a components (0-255)
  * @returns {void}
  */
-export function drawFilledRect( screenData, x, y, width, height, color ) {
+export function drawRectFilled( screenData, x, y, width, height, color ) {
 
 	// Get geometry batch
 	const batch = screenData.batches[ GEOMETRY_BATCH ];

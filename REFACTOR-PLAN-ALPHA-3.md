@@ -54,12 +54,12 @@ src/
 │   │   ├── primitives.js             # Core: drawPixel
 │   │   ├── geometry.js               # Geometry utilities and helpers
 │   │   ├── batch-helpers.js          # Batch management helper functions
-│   │   ├── lines.js                  # Lines: drawLinePixel
-│   │   ├── rects.js                  # Rectangles: drawRectPixel, drawFilledRect
-│   │   ├── circles.js                # Circles: drawCirclePixel, drawFilledCircle
-│   │   ├── ellipses.js               # Ellipses: drawEllipsePixel, drawFilledEllipse
-│   │   ├── arcs.js                   # Arcs: drawArcPixel
-│   │   ├── bezier.js                 # Bezier: drawBezierPixel
+│   │   ├── lines.js                  # Lines: drawLine
+│   │   ├── rects.js                  # Rectangles: drawRect, drawRectFilled
+│   │   ├── circles.js                # Circles: drawCircle, drawCircleFilled
+│   │   ├── ellipses.js               # Ellipses: drawEllipse, drawEllipseFilled
+│   │   ├── arcs.js                   # Arcs: drawArc
+│   │   ├── bezier.js                 # Bezier: drawBezier
 │   │   └── images.js                 # Images: drawImage
 │   ├── readback.js                   # readPixel, readPixels (sync/async) (internal WebGL readback)
 │   └── shaders/                      # Shader source files (actual GLSL files)
@@ -116,12 +116,12 @@ src/
 - `primitives.js`: Core drawing (`drawPixel`)
 - `geometry.js`: Geometry utilities and helper functions
 - `batch-helpers.js`: Batch management helper functions
-- `lines.js`: Line drawing (`drawLinePixel`)
-- `rects.js`: Rectangle drawing (`drawRectPixel`, `drawFilledRect`)
-- `circles.js`: Circle drawing (`drawCirclePixel`, `drawFilledCircle`)
-- `ellipses.js`: Ellipse drawing (`drawEllipsePixel`, `drawFilledEllipse`)
-- `arcs.js`: Arc drawing (`drawArcPixel`)
-- `bezier.js`: Bezier curve drawing (`drawBezierPixel`)
+- `lines.js`: Line drawing (`drawLine`)
+- `rects.js`: Rectangle drawing (`drawRect`, `drawRectFilled`)
+- `circles.js`: Circle drawing (`drawCircle`, `drawCircleFilled`)
+- `ellipses.js`: Ellipse drawing (`drawEllipse`, `drawEllipseFilled`)
+- `arcs.js`: Arc drawing (`drawArc`)
+- `bezier.js`: Bezier curve drawing (`drawBezier`)
 - `images.js`: Image drawing (`drawImage` with textured quads)
 
 **API Layer (`api/`):**
@@ -165,27 +165,27 @@ draw/batch-helpers.js
 
 draw/lines.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawLinePixel
+  └─ exports: drawLine
 
 draw/rects.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawRectPixel, drawFilledRect
+  └─ exports: drawRect, drawRectFilled
 
 draw/circles.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawCirclePixel, drawFilledCircle
+  └─ exports: drawCircle, drawCircleFilled
 
 draw/ellipses.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawEllipsePixel, drawFilledEllipse
+  └─ exports: drawEllipse, drawEllipseFilled
 
 draw/arcs.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawArcPixel
+  └─ exports: drawArc
 
 draw/bezier.js
   ├─ imports: batches.js, draw/primitives.js
-  └─ exports: drawBezierPixel
+  └─ exports: drawBezier
 
 draw/images.js
   ├─ imports: batches.js, textures.js
@@ -458,7 +458,7 @@ Add new batch type for drawing filled geometry (rectangles, circles):
 - Create geometry batch in `createBatch()` with appropriate shader setup
 - Geometry batch uses `gl.TRIANGLES` mode instead of `gl.POINTS`
 - Add vertex/index buffer setup for triangles
-- Implement `drawFilledRect()` and `drawFilledCircle()` batch appending functions
+- Implement `drawRectFilled()` and `drawCircleFilled()` batch appending functions
 
 **Key functions:**
 - `export const GEOMETRY_BATCH = 2`
@@ -472,8 +472,8 @@ Add new batch type for drawing filled geometry (rectangles, circles):
 - Each filled circle = tessellated triangles (adaptive based on radius)
 - Shares point shader or creates dedicated geometry shader
 
-### Step 4A.2: Implement drawFilledRect in draw/rects.js ✅ COMPLETE
-Implement `drawFilledRect()` function in `draw/rects.js`:
+### Step 4A.2: Implement drawRectFilled in draw/rects.js ✅ COMPLETE
+Implement `drawRectFilled()` function in `draw/rects.js`:
 
 **Responsibilities:**
 - Generate triangle vertices for filled rectangle
@@ -481,7 +481,7 @@ Implement `drawFilledRect()` function in `draw/rects.js`:
 - Handle color per-vertex
 
 **Key functions:**
-- `export function drawFilledRect( screenData, x, y, width, height, color )`
+- `export function drawRectFilled( screenData, x, y, width, height, color )`
   - Generates 6 vertices (2 triangles) for rectangle
   - Adds vertices to geometry batch with uniform color
   - No bounds checking (GPU clipping)
@@ -491,8 +491,8 @@ Implement `drawFilledRect()` function in `draw/rects.js`:
 - Each vertex has 2D position and 4D color
 - Uses `prepareBatch()` to ensure capacity
 
-### Step 4A.3: Implement drawFilledCircle in draw/circles.js ✅ COMPLETE
-Implement `drawFilledCircle()` function in `draw/circles.js`:
+### Step 4A.3: Implement drawCircleFilled in draw/circles.js ✅ COMPLETE
+Implement `drawCircleFilled()` function in `draw/circles.js`:
 
 **Responsibilities:**
 - Generate triangle vertices for filled circle
@@ -500,7 +500,7 @@ Implement `drawFilledCircle()` function in `draw/circles.js`:
 - Append vertices to `GEOMETRY_BATCH`
 
 **Key functions:**
-- `export function drawFilledCircle( screenData, cx, cy, radius, color )`
+- `export function drawCircleFilled( screenData, cx, cy, radius, color )`
   - Center vertex + ring vertices
   - Adaptive tessellation (more segments for larger radius)
   - Triangle fan or triangle strip
@@ -515,13 +515,13 @@ Implement `drawFilledCircle()` function in `draw/circles.js`:
 Add exports to `renderer.js` for new functions:
 
 **Functions to export:**
-- `drawFilledRect` from `draw/rects.js`
-- `drawFilledCircle` from `draw/circles.js`
+- `drawRectFilled` from `draw/rects.js`
+- `drawCircleFilled` from `draw/circles.js`
 - `GEOMETRY_BATCH` constant from `batches.js`
 
 **Implementation notes:**
-- Add `export { drawFilledRect }` from draw/rects.js
-- Add `export { drawFilledCircle }` from draw/circles.js
+- Add `export { drawRectFilled }` from draw/rects.js
+- Add `export { drawCircleFilled }` from draw/circles.js
 - Add `export { GEOMETRY_BATCH }` from batches.js
 - Ensure lazy initialization doesn't break circular imports
 
@@ -529,11 +529,11 @@ Add exports to `renderer.js` for new functions:
 Update `api/graphics.js` to use new renderer functions:
 
 **Changes:**
-- Replace stub `s_drawFilledRect` with actual `g_renderer.drawFilledRect`
-- Replace stub `s_drawFilledCircle` with actual `g_renderer.drawFilledCircle`
+- Replace stub `s_drawRectFilled` with actual `g_renderer.drawRectFilled`
+- Replace stub `s_drawCircleFilled` with actual `g_renderer.drawCircleFilled`
 - Remove TODOs and placeholder implementations
 
-**Note:** `drawFilledRect` and `drawFilledCircle` are available for use by other commands if needed, but `pset` only draws single pixels.
+**Note:** `drawRectFilled` and `drawCircleFilled` are available for use by other commands if needed, but `pset` only draws single pixels.
 
 ### Step 4A.6: Test Complete pset Implementation ✅ COMPLETE
 Test full `pset` functionality:
@@ -644,11 +644,11 @@ Move pixel reading/writing commands from `graphics-pixels.js` to `api/pixels.js`
 Implement line drawing in `renderer/draw/lines.js`:
 
 **Responsibilities:**
-- `drawLinePixel()` - Draw line using WebGL2 `gl.LINES`
+- `drawLine()` - Draw line using WebGL2 `gl.LINES`
 
 **Key functions:**
 - `export function init( api )` - Initialize module
-- `export function drawLinePixel( screenData, x1, y1, x2, y2, color )`
+- `export function drawLine( screenData, x1, y1, x2, y2, color )`
 
 **Implementation notes:**
 - Use `LINES_BATCH` batch, add 2 vertices for line segment
@@ -658,11 +658,11 @@ Implement line drawing in `renderer/draw/lines.js`:
 Move arc drawing from `graphics-primitives.js`:
 
 **Responsibilities:**
-- `drawArcPixel()` - Arc outline using pixel drawing
+- `drawArc()` - Arc outline using pixel drawing
 - Handle angle ranges, winding
 
 **Key functions:**
-- `export function drawArcPixel( screenData, cx, cy, radius, angle1, angle2, color )`
+- `export function drawArc( screenData, cx, cy, radius, angle1, angle2, color )`
 
 **Implementation notes:**
 - Move `m_arcOutline()` function from `graphics-primitives.js`
@@ -674,10 +674,10 @@ Move arc drawing from `graphics-primitives.js`:
 Move bezier drawing from `graphics-primitives.js`:
 
 **Responsibilities:**
-- `drawBezierPixel()` - Cubic bezier curve with pixel drawing
+- `drawBezier()` - Cubic bezier curve with pixel drawing
 
 **Key functions:**
-- `export function drawBezierPixel( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color )`
+- `export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color )`
 
 **Implementation notes:**
 - Move `m_bezierOutline()` function from `graphics-primitives.js`
@@ -686,9 +686,9 @@ Move bezier drawing from `graphics-primitives.js`:
 - Estimate batch size based on control polygon length
 
 ### Step 6.4: Test Primitives ✅ COMPLETE
-- Test `drawLinePixel()` - various angles and lengths
-- Test `drawArcPixel()` - different angles and radii
-- Test `drawBezierPixel()` - various curve shapes
+- Test `drawLine()` - various angles and lengths
+- Test `drawArc()` - different angles and radii
+- Test `drawBezier()` - various curve shapes
 - Verify all primitives render correctly
 
 ## Phase 7: High-Level Shapes
@@ -697,17 +697,17 @@ Move bezier drawing from `graphics-primitives.js`:
 Move rectangle drawing from `graphics-shapes.js` to `renderer/draw/rects.js`:
 
 **Responsibilities:**
-- `drawRectPixel()` - Rectangle outline with pixel drawing
-- `drawFilledRect()` - Already implemented in Phase 4A (geometry batch)
+- `drawRect()` - Rectangle outline with pixel drawing
+- `drawRectFilled()` - Already implemented in Phase 4A (geometry batch)
 - Handle fill color, blending
 
 **Key functions:**
-- `export function drawRectPixel( screenData, x, y, width, height, color, fillColor )`
-- `export function drawFilledRect( screenData, x, y, width, height, color )` - Already implemented
+- `export function drawRect( screenData, x, y, width, height, color, fillColor )`
+- `export function drawRectFilled( screenData, x, y, width, height, color )` - Already implemented
 
 **Implementation notes:**
 - Move `m_rectOutline()` from `graphics-shapes.js`
-- Handle both outline and filled modes (filled uses `drawFilledRect()` in same module)
+- Handle both outline and filled modes (filled uses `drawRectFilled()` in same module)
 - Draws pixels using `drawPixel()` for outline
 - All blending handled on GPU via batches.js
 
@@ -715,17 +715,17 @@ Move rectangle drawing from `graphics-shapes.js` to `renderer/draw/rects.js`:
 Move circle drawing from `graphics-shapes.js`:
 
 **Responsibilities:**
-- `drawCirclePixel()` - Circle outline with pixel drawing
-- `drawFilledCircle()` - Already implemented in Phase 4A (geometry batch)
+- `drawCircle()` - Circle outline with pixel drawing
+- `drawCircleFilled()` - Already implemented in Phase 4A (geometry batch)
 - Handle fill color, blending
 
 **Key functions:**
-- `export function drawCirclePixel( screenData, cx, cy, radius, color, fillColor )`
-- `export function drawFilledCircle( screenData, cx, cy, radius, color )` - Already implemented
+- `export function drawCircle( screenData, cx, cy, radius, color, fillColor )`
+- `export function drawCircleFilled( screenData, cx, cy, radius, color )` - Already implemented
 
 **Implementation notes:**
 - Move `m_circleOutline()` from `graphics-shapes.js`
-- Filled mode uses `drawFilledCircle()` in same module
+- Filled mode uses `drawCircleFilled()` in same module
 - Draws pixels using `drawPixel()` for outline
 - Use midpoint circle algorithm
 - Estimate batch size based on circumference (outline) or area (filled)
@@ -734,27 +734,27 @@ Move circle drawing from `graphics-shapes.js`:
 Move ellipse drawing from `graphics-shapes.js`:
 
 **Responsibilities:**
-- `drawEllipsePixel()` - Ellipse outline with pixel drawing
-- `drawFilledEllipse()` - Filled ellipse using geometry batch
+- `drawEllipse()` - Ellipse outline with pixel drawing
+- `drawEllipseFilled()` - Filled ellipse using geometry batch
 - Handle fill color, blending
 
 **Key functions:**
-- `export function drawEllipsePixel( screenData, cx, cy, rx, ry, color, fillColor )`
-- `export function drawFilledEllipse( screenData, cx, cy, rx, ry, color )`
+- `export function drawEllipse( screenData, cx, cy, rx, ry, color, fillColor )`
+- `export function drawEllipseFilled( screenData, cx, cy, rx, ry, color )`
 
 **Implementation notes:**
 - Move `m_ellipseOutline()` from `graphics-shapes.js`
-- Implement `drawFilledEllipse()` using `GEOMETRY_BATCH` (similar to `drawFilledCircle()`)
-- Filled mode uses `drawFilledEllipse()` in same module
+- Implement `drawEllipseFilled()` using `GEOMETRY_BATCH` (similar to `drawCircleFilled()`)
+- Filled mode uses `drawEllipseFilled()` in same module
 - Draws pixels using `drawPixel()` for outline
 - Use midpoint ellipse algorithm for outline
 - Use tessellated triangles for filled mode
 - Estimate batch size based on perimeter (outline) or area (filled)
 
 ### Step 7.4: Test Shapes
-- Test `drawRectPixel()` - outline and filled modes
-- Test `drawCirclePixel()` - outline and filled modes
-- Test `drawEllipsePixel()` - outline and filled modes
+- Test `drawRect()` - outline and filled modes
+- Test `drawCircle()` - outline and filled modes
+- Test `drawEllipse()` - outline and filled modes
 - Verify all shapes render correctly
 
 ## Phase 8: Complete Graphics API
@@ -775,12 +775,12 @@ Implement `buildApi()` function:
 Add remaining graphics commands to the API layer:
 
 **Commands to implement:**
-- `line` - calls `renderer.drawLinePixel()`
-- `arc` - calls `renderer.drawArcPixel()`
-- `bezier` - calls `renderer.drawBezierPixel()`
-- `rect` - calls `renderer.drawRectPixel()`
-- `circle` - calls `renderer.drawCirclePixel()`
-- `ellipse` - calls `renderer.drawEllipsePixel()`
+- `line` - calls `renderer.drawLine()`
+- `arc` - calls `renderer.drawArc()`
+- `bezier` - calls `renderer.drawBezier()`
+- `rect` - calls `renderer.drawRect()`
+- `circle` - calls `renderer.drawCircle()`
+- `ellipse` - calls `renderer.drawEllipse()`
 
 ### Step 8.3: Update Renderer Exports
 Ensure `renderer/renderer.js` exports all necessary functions:
@@ -789,12 +789,12 @@ Ensure `renderer/renderer.js` exports all necessary functions:
 - `POINTS_BATCH`, `IMAGE_BATCH`, `GEOMETRY_BATCH`, `LINES_BATCH` (from batches)
 - `prepareBatch()` (from batches)
 - `drawPixel()` (from draw/primitives)
-- `drawLinePixel()` (from draw/lines)
-- `drawRectPixel()`, `drawFilledRect()` (from draw/rects)
-- `drawCirclePixel()`, `drawFilledCircle()` (from draw/circles)
-- `drawEllipsePixel()`, `drawFilledEllipse()` (from draw/ellipses)
-- `drawArcPixel()` (from draw/arcs)
-- `drawBezierPixel()` (from draw/bezier)
+- `drawLine()` (from draw/lines)
+- `drawRect()`, `drawRectFilled()` (from draw/rects)
+- `drawCircle()`, `drawCircleFilled()` (from draw/circles)
+- `drawEllipse()`, `drawEllipseFilled()` (from draw/ellipses)
+- `drawArc()` (from draw/arcs)
+- `drawBezier()` (from draw/bezier)
 - `drawImage()` (from draw/images)
 - `readPixel()`, `readPixels()` (from readback)
 - `getWebGL2Texture()`, `deleteWebGL2Texture()` (from textures)

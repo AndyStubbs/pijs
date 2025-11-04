@@ -3,7 +3,7 @@
  * 
  * Low-level drawing operations: circle drawing.
  * 
- * drawCirclePixel, drawCirclePenSquare, drawCircleCircle
+ * drawCircle, drawCirclePenSquare, drawCircleCircle
  * 
  * @module renderer/draw/circles
  */
@@ -26,7 +26,7 @@ import { drawPixel } from "./primitives.js";
  * @param {Object|null} fillColor - Optional fill color object (if provided, draws filled circle first)
  * @returns {void}
  */
-export function drawCirclePixel( screenData, cx, cy, radius, color ) {
+export function drawCircle( screenData, cx, cy, radius, color ) {
 
 	// Nothing to draw
 	if( radius < 0 ) {
@@ -92,7 +92,7 @@ export function drawCirclePixel( screenData, cx, cy, radius, color ) {
  * @param {Object} color - Color object with r/g/b/a components (0-255)
  * @returns {void}
  */
-export function drawFilledCircle( screenData, cx, cy, radius, color ) {
+export function drawCircleFilled( screenData, cx, cy, radius, color ) {
 
 	// Apply input adjustments for MCA consistency
 	//radius -= 1;
