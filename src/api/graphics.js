@@ -21,7 +21,6 @@
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
 import * as g_renderer from "../renderer/renderer.js";
-import * as g_pens from "./pens.js";
 import * as g_colors from "./colors.js";
 
 let m_api = null;
@@ -37,215 +36,44 @@ export function init( api ) {
 	m_api = api;
 
 	// Build the null graphics commands - basically will throw an error since no screen is available
-	rebuildApi( null );
+	buildApi( null );
 
 	// Register screen init function to rebuild API when screen is created
-	g_screenManager.addScreenInitFunction( rebuildApiOnScreenInit );
+	g_screenManager.addScreenInitFunction( ( screenData ) => buildApi( screenData ) );
 }
 
-// Function to dynamically build the external API drawing commands (e.g., pset, line, etc...)
-// for the current active screen, pen, and blend functions. This creates specialized API wrappers
-// that handle input parsing/validation, then call optimized internal drawing routines. By closing
-// over specific, already-optimized functions and configuration, it provides highly performant, 
-// monomorphic call sites in hot loops.
-export function rebuildApi( s_screenData ) {
+// Function to build the external API drawing commands (e.g., pset, line, etc...) for the current
+// active screen. This creates specialized API wrappers that handle input parsing/validation, then
+// call optimized internal drawing routines. By closing over specific, already-optimized functions
+// and screen configuration, it provides highly performant, monomorphic call sites in hot loops.
+export function buildApi( s_screenData ) {
 
+	// Set error functions for when no screen is available
 	if( s_screenData === null ) {
-
-		// Set error functions for when no screen is available
 		m_api.pset = () => g_utils.errFn( "pset" );
 		m_api.line = () => g_utils.errFn( "line" );
 		m_api.arc = () => g_utils.errFn( "arc" );
 		m_api.rect = () => g_utils.errFn( "rect" );
+		m_api.bezier = () => g_utils.errFn( "bezier" );
 		return;
 	}
 
+	// Draw commands
 	const s_drawPixel = g_renderer.drawPixel;
+	const s_drawRectPixel = g_renderer.drawRectPixel;
 	const s_drawFilledRect = g_renderer.drawFilledRect;
-	const s_drawFilledCircle = g_renderer.drawFilledCircle;
-	const s_drawCachedGeometry = g_renderer.drawCachedGeometry;
-
-	// Lines
 	const s_drawLinePixel = g_renderer.drawLinePixel;
-	const s_drawLineSquare = g_renderer.drawLineSquare;
-	const s_drawLineCircle = g_renderer.drawLineCircle;
-
-	// Arcs
 	const s_drawArcPixel = g_renderer.drawArcPixel;
-	const s_drawArcSquare = g_renderer.drawArcSquare;
-	const s_drawArcCircle = g_renderer.drawArcCircle;
-
-	// Bezier
 	const s_drawBezierPixel = g_renderer.drawBezierPixel;
-	const s_drawBezierSquare = g_renderer.drawBezierSquare;
-	const s_drawBezierCircle = g_renderer.drawBezierCircle;
 
-
+	// Utility commands
 	const s_setImageDirty = g_renderer.setImageDirty;
 	const s_prepareBatch = g_renderer.prepareBatch;
 	const s_getInt = g_utils.getInt;
+
+	// Constants
 	const s_color = s_screenData.color;
 	const s_pointsBatch = g_renderer.POINTS_BATCH;
-
-	// Get pen configuration
-	const s_penConfig = s_screenData.pens;
-	const s_penType = s_penConfig.pen;
-	const s_penSize = s_penConfig.size;
-	const s_inset = Math.floor( s_penSize / 2 );
-
-	// TODO: Verify if we still need pixels per pen after completing all primitive draw commands
-	const s_pixelsPerPen = s_penConfig.pixelsPerPen;
-
-	// Helper to fill inner rectangle with specified inset (avoids border overlap)
-	const s_rectInnerFillFn = ( x, y, width, height, fillColorValue, inset ) => {
-		if( fillColorValue !== null && width > 0 && height > 0 ) {
-			const fx = x + inset;
-			const fy = y + inset;
-			const fw = width - inset * 2;
-			const fh = height - inset * 2;
-			if( fw > 0 && fh > 0 ) {
-				g_renderer.drawFilledRect( s_screenData, fx, fy, fw, fh, fillColorValue );
-			}
-		}
-	};
-
-	// Build drawing functions based on pen type
-	let s_psetDrawFn;
-	let s_lineDrawFn;
-	let s_arcDrawFn;
-	let s_bezierDrawFn;
-	let s_rectDrawFn;
-
-	// Set line offsets
-	if( s_penType === g_pens.PEN_PIXEL ) {
-
-		// Pixel pen
-		s_psetDrawFn = ( x, y, color ) => {
-			s_prepareBatch( s_screenData, s_pointsBatch, 1 );
-			s_drawPixel( s_screenData, x, y, color, s_pointsBatch );
-		};
-
-		// Pixel line
-		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
-			s_drawLinePixel( s_screenData, x1, y1, x2, y2, color );
-		};
-
-		// Pixel arc
-		s_arcDrawFn = ( cx, cy, radius, angle1, angle2, color ) => {
-			s_drawArcPixel( s_screenData, cx, cy, radius, angle1, angle2, color );
-		};
-
-		// Pixel bezier
-		s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
-			s_drawBezierPixel( s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color );
-		};
-
-		// Pixel rect: fill interior with 1px inset, then outline
-		s_rectDrawFn = ( x, y, width, height, outlineColor, fillColorValue ) => {
-			s_rectInnerFillFn( x, y, width, height, fillColorValue, 1 );
-			g_renderer.drawRectPixel( s_screenData, x, y, width, height, outlineColor );
-		};
-		
-	} else if( s_penType === g_pens.PEN_SQUARE ) {
-
-		// Square pen - prefer top/left for even sizes, MCA consistency for odd
-		let s_psetOffsetX;
-		let s_psetOffsetY;
-		if( s_penSize % 2 === 0 ) {
-			s_psetOffsetX = Math.floor( s_penSize / 2 ) - 1;
-			s_psetOffsetY = Math.floor( s_penSize / 2 );
-		} else {
-			s_psetOffsetX = Math.floor( s_penSize / 2 );
-			s_psetOffsetY = Math.floor( s_penSize / 2 ) + 1;
-		}
-
-		// pset square pen
-		s_psetDrawFn = ( x, y, color ) => {
-			s_drawFilledRect(
-				s_screenData, x - s_psetOffsetX, y - s_psetOffsetY, s_penSize, s_penSize, color
-			);
-		};
-
-		// line square pen
-		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
-			s_drawLineSquare( s_screenData, x1, y1, x2, y2, color, s_penSize, s_penType );
-		};
-
-		// arc square pen
-		s_arcDrawFn = ( cx, cy, radius, angle1, angle2, color ) => {
-			s_drawArcSquare(
-				s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType
-			);
-		};
-
-		// bezier with square pen
-		s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
-			s_drawBezierSquare(
-				s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, s_penSize, s_penType
-			);
-		};
-
-		// Rect with square pen: fill inset by half pen, then outline via thick lines
-		s_rectDrawFn = ( x, y, width, height, outlineColor, fillColorValue ) => {
-			s_rectInnerFillFn( x, y, width, height, fillColorValue, s_inset );
-
-			const x2 = x + width - 1;
-			const y2 = y + height - 1;
-			s_drawLineSquare( s_screenData, x, y, x2, y, outlineColor, s_penSize, s_penType );
-			if( height > 1 ) {
-				s_drawLineSquare( s_screenData, x2, y, x2, y2, outlineColor, s_penSize, s_penType );
-				s_drawLineSquare( s_screenData, x2, y2, x, y2, outlineColor, s_penSize, s_penType );
-			}
-			if( width > 1 ) {
-				s_drawLineSquare( s_screenData, x, y2, x, y, outlineColor, s_penSize, s_penType );
-			}
-		};
-
-	} else if( s_penType === g_pens.PEN_CIRCLE ) {
-
-		const s_penRadius = Math.floor( ( s_penSize + 1 ) / 2 );
-
-		// Delegate caching decisions to s_drawFilledCircle
-		s_psetDrawFn = ( x, y, color ) => {
-			s_drawFilledCircle( s_screenData, x, y, s_penRadius, color );
-		};
-
-
-		// line circle pen
-		s_lineDrawFn = ( x1, y1, x2, y2, color ) => {
-			s_drawLineCircle( s_screenData, x1, y1, x2, y2, color, s_penSize, s_penType );
-		};
-
-		// arc circle pen
-		s_arcDrawFn = ( cx, cy, radius, angle1, angle2, color ) => {
-			s_drawArcCircle(
-				s_screenData, cx, cy, radius, angle1, angle2, color, s_penSize, s_penType
-			);
-		};
-
-		// bezier with circle pen
-		s_bezierDrawFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) => {
-			s_drawBezierCircle(
-				s_screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, s_penSize, s_penType
-			);
-		};
-
-		// Rect with circle pen: fill inset by half pen, then outline via thick lines
-		s_rectDrawFn = ( x, y, width, height, outlineColor, fillColorValue ) => {
-			s_rectInnerFillFn( x, y, width, height, fillColorValue, s_inset );
-
-			const x2 = x + width - 1;
-			const y2 = y + height - 1;
-			s_drawLineCircle( s_screenData, x, y, x2, y, outlineColor, s_penSize, s_penType );
-			if( height > 1 ) {
-				s_drawLineCircle( s_screenData, x2, y, x2, y2, outlineColor, s_penSize, s_penType );
-				s_drawLineCircle( s_screenData, x2, y2, x, y2, outlineColor, s_penSize, s_penType );
-			}
-			if( width > 1 ) {
-				s_drawLineCircle( s_screenData, x, y2, x, y, outlineColor, s_penSize, s_penType );
-			}
-		};
-	}
 
 	/**********************************************************************************************
 	 * PSET Command
@@ -262,8 +90,9 @@ export function rebuildApi( s_screenData ) {
 			throw error;
 		}
 
-		// Draw (drawing functions handle their own batch preparation)
-		s_psetDrawFn( pX, pY, s_color );
+		// Draw the pixel
+		s_prepareBatch( s_screenData, s_pointsBatch, 1 );
+		s_drawPixel( s_screenData, pX, pY, s_color, s_pointsBatch );
 		s_setImageDirty( s_screenData );
 	};
 
@@ -287,8 +116,8 @@ export function rebuildApi( s_screenData ) {
 			throw error;
 		}
 
-		// Draw
-		s_lineDrawFn( pX1, pY1, pX2, pY2, s_color );
+		// Draw Line
+		s_drawLinePixel( s_screenData, pX1, pY1, pX2, pY2, s_color );
 		s_setImageDirty( s_screenData );
 	};
 
@@ -316,15 +145,17 @@ export function rebuildApi( s_screenData ) {
 			typeof angle1 !== "number" || isNaN( angle1 ) ||
 			typeof angle2 !== "number" || isNaN( angle2 )
 		) {
-			const error = new TypeError( "arc: Parameters angle1 and angle2 must be numbers (in radians)." );
+			const error = new TypeError(
+				"arc: Parameters angle1 and angle2 must be numbers (in radians)."
+			);
 			error.code = "INVALID_PARAMETER";
 			throw error;
 		}
 
-		// Draw (using pen-based drawing function)
-		s_arcDrawFn(
-			pCx, pCy, pRadius, g_utils.degreesToRadian( angle1 ), g_utils.degreesToRadian( angle2 ),
-			s_color
+		// Draw Arc
+		s_drawArcPixel(
+			s_screenData, pCx, pCy, pRadius, g_utils.degreesToRadian( angle1 ),
+			g_utils.degreesToRadian( angle2 ), s_color
 		);
 		s_setImageDirty( s_screenData );
 	};
@@ -336,19 +167,19 @@ export function rebuildApi( s_screenData ) {
 	 * BEZIER Command
 	 **********************************************************************************************/
 
-	const bezierFn = ( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y ) => {
-		const v0x = s_getInt( p0x, null );
-		const v0y = s_getInt( p0y, null );
-		const v1x = s_getInt( p1x, null );
-		const v1y = s_getInt( p1y, null );
-		const v2x = s_getInt( p2x, null );
-		const v2y = s_getInt( p2y, null );
-		const v3x = s_getInt( p3x, null );
-		const v3y = s_getInt( p3y, null );
+	const bezierFn = ( x1, y1, x2, y2, x3, y3, x4, y4 ) => {
+		const pX1 = s_getInt( x1, null );
+		const pY1 = s_getInt( y1, null );
+		const pX2 = s_getInt( x2, null );
+		const pY2 = s_getInt( y2, null );
+		const pX3 = s_getInt( x3, null );
+		const pY3 = s_getInt( y3, null );
+		const pX4 = s_getInt( x4, null );
+		const pY4 = s_getInt( y4, null );
 
 		if(
-			v0x === null || v0y === null || v1x === null || v1y === null ||
-			v2x === null || v2y === null || v3x === null || v3y === null
+			pX1 === null || pY1 === null || pX2 === null || pY2 === null ||
+			pX3 === null || pY3 === null || pX4 === null || pY4 === null
 		) {
 			const error = new TypeError(
 				"bezier: All control point coordinates must be integers."
@@ -357,8 +188,8 @@ export function rebuildApi( s_screenData ) {
 			throw error;
 		}
 
-		// Draw
-		s_bezierDrawFn( v0x, v0y, v1x, v1y, v2x, v2y, v3x, v3y, s_color );
+		// Draw Bezier
+		s_drawBezierPixel( s_screenData, pX1, pY1, pX2, pY2, pX3, pY3, pX4, pY4, s_color );
 		s_setImageDirty( s_screenData );
 	};
 
@@ -372,16 +203,16 @@ export function rebuildApi( s_screenData ) {
 	const rectFn = ( x, y, width, height, fillColor ) => {
 		const pX = s_getInt( x, null );
 		const pY = s_getInt( y, null );
-		const pW = s_getInt( width, null );
-		const pH = s_getInt( height, null );
+		const pWidth = s_getInt( width, null );
+		const pHeight = s_getInt( height, null );
 
-		if( pX === null || pY === null || pW === null || pH === null ) {
+		if( pX === null || pY === null || pWidth === null || pHeight === null ) {
 			const error = new TypeError( "rect: Parameters x, y, width, height must be integers." );
 			error.code = "INVALID_PARAMETER";
 			throw error;
 		}
 
-		if( pW < 1 || pH < 1 ) {
+		if( pWidth < 1 || pHeight < 1 ) {
 			return;
 		}
 
@@ -394,27 +225,20 @@ export function rebuildApi( s_screenData ) {
 				error.code = "INVALID_PARAMETER";
 				throw error;
 			}
+
+			// Fill in the rectangle
+			const fWidth = pWidth - 2;
+			const fHeight = pHeight - 2;
+			if( fWidth > 0 && fHeight > 0 ) {
+				s_drawFilledRect( s_screenData, pX + 1, pY + 1, fWidth, fHeight, fillColorValue );
+			}
 		}
 
-		// Draw via configured pen strategy
-		s_rectDrawFn( pX, pY, pW, pH, s_color, fillColorValue );
+		// Draw the rect border
+		s_drawRectPixel( s_screenData, pX, pY, pWidth, pHeight, s_color );
 		s_setImageDirty( s_screenData );
 	};
 
 	m_api.rect = rectFn;
 	s_screenData.api.rect = rectFn;
 }
-
-
-/**************************************************************************************************
- * Screen Initialization
- **************************************************************************************************/
-
-
-// Rebuild API when screen is created
-function rebuildApiOnScreenInit( screenData ) {
-
-	// Rebuild API with screen data
-	rebuildApi( screenData );
-}
-

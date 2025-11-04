@@ -12,9 +12,8 @@
 import * as g_shaders from "./shaders.js";
 import * as g_screenManager from "../core/screen-manager.js";
 
-// Import pens for blend mode constants
-// Note: This is safe because of lazy initialization - pens isn't initialized until later
-import * as g_pens from "../api/pens.js";
+// Import blend mode constants
+import * as g_blends from "../api/blends.js";
 
 // Shaders are imported from external files via esbuild text loader
 import m_pointVertSrc from "./shaders/point.vert";
@@ -407,7 +406,7 @@ export function flushBatches( screenData, blend = null ) {
 			if( drawOrderItem.overrideGlobalBlend === null ) {
 
 				// Other batches use global blend mode
-				if( blend === g_pens.BLEND_REPLACE ) {
+				if( blend === g_blends.BLEND_REPLACE ) {
 					gl.disable( gl.BLEND );
 				} else {
 					gl.enable( gl.BLEND );
