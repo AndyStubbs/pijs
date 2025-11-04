@@ -270,9 +270,8 @@ export function buildApi( s_screenData ) {
 			}
 
 			// Fill in the circle
-			const fRadius = pRadius - 1;
-			if( fRadius > 0 ) {
-				s_drawFilledCircle( s_screenData, pX, pY, fRadius, fillColorValue );
+			if( pRadius > 0 ) {
+				s_drawFilledCircle( s_screenData, pX, pY, pRadius, fillColorValue );
 			}
 		}
 

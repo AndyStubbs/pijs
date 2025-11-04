@@ -42,8 +42,11 @@ export function drawCirclePixel( screenData, cx, cy, radius, color ) {
 
 	// Single point
 	if( radius <= 1 ) {
-		g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, 1 );
-		drawPixel( screenData, cx, cy, color, g_batches.POINTS_BATCH );
+		g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, 4 );
+		drawPixel( screenData, cx + 1, cy, color, g_batches.POINTS_BATCH );
+		drawPixel( screenData, cx - 1, cy, color, g_batches.POINTS_BATCH );
+		drawPixel( screenData, cx, cy + 1, color, g_batches.POINTS_BATCH );
+		drawPixel( screenData, cx, cy - 1, color, g_batches.POINTS_BATCH );
 		return;
 	}
 
