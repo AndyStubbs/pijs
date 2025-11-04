@@ -220,14 +220,11 @@ export function buildApi( s_screenData ) {
 				throw error;
 			}
 
-			// TODO: Implement drawEllipseFilled when filled ellipse support is added
-			// if( pRx > 0 && pRy > 0 ) {
-			// 	s_drawEllipseFilled( s_screenData, pX, pY, pRx, pRy, fillColorValue );
-			// }
+			// Filled handled inside drawEllipse
 		}
 
 		// Draw the ellipse border
-		s_drawEllipse( s_screenData, pX, pY, pRx, pRy, s_color, null, null, null );
+		s_drawEllipse( s_screenData, pX, pY, pRx, pRy, s_color, fillColorValue );
 		s_setImageDirty( s_screenData );
 	};
 
