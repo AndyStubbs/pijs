@@ -17,14 +17,13 @@ import * as g_screenManager from "../core/screen-manager.js";
 import * as g_textures from "../renderer/textures.js";
 import * as g_print from "./print.js";
 
-import g_ft8x8 from "./fonts/font-8x8.webp";
+import * as g_fnt6x8 from "./fonts/font-6x8.js";
+import g_fnt8x8 from "./fonts/font-8x8.webp";
 
 const m_fontMap = new Map();
 let m_defaultFontId = null;
 let m_nextFontId = 0;
-let m_fontsLoading = 0;
-let m_fontsInitCallback = [];
-let m_isInitialized = false;
+
 
 /***************************************************************************************************
  * Module Initialization
@@ -53,16 +52,26 @@ export function init( api ) {
 // Load the default fonts
 function loadDefaultFonts() {
 
-	// 8x8 font
+	// 6x8 font - default font
 	m_defaultFontId = loadFont( {
-		"src": g_ft8x8.data,
+		"src": g_fnt6x8.getFontImage(),
+		"width": 6,
+		"height": 8,
+		"cellWidth": 8,
+		"cellHeight": 10,
+		"charset": null
+	} );
+
+	// 8x8 font
+	loadFont( {
+		"src": g_fnt8x8.data,
 		"width": 8,
 		"height": 8,
 		"cellWidth": 10,
 		"cellHeight": 10,
 		"charset": null
 	} );
-	g_ft8x8.data = ""; // Clear Base64 string from memory
+	g_fnt8x8.data = ""; // Clear Base64 string from memory
 }
 
 
@@ -90,17 +99,6 @@ function registerCommands( api ) {
 	// Register screen commands
 	g_commands.addCommand( "setFont", setFont, true, [ "fontId" ] );
 	//g_commands.addCommand( "setChar", setChar, true, [ "charCode", "data" ] );
-}
-
-
-/**************************************************************************************************
- * Initial Default fonts loaded callback
- **************************************************************************************************/
-
-
-// Sets the module callback function for initial default fonts loading
-export function onFontsInit( callbackFn ) {
-	m_fontsInitCallback.push( callbackFn );
 }
 
 
@@ -211,39 +209,21 @@ function loadFontFromImage( fontSrc, font ) {
 			font.atlasWidth = img.width;
 			font.atlasHeight = img.height;
 			g_commands.done();
-
-			// Trigger callback when fonts are first initialized
-			if( !m_isInitialized ) {
-				m_fontsLoading -= 1;
-				if( m_fontsLoading === 0 ) {
-					m_isInitialized = true;
-					for( const callbackFn of m_fontsInitCallback ) {
-						callbackFn();
-					}
-				}
-			}
 		};
 
 		img.onerror = function( err ) {
-			if( !m_isInitialized ) {
-				const error = new TypeError( "Unable to load initial font data." );
-				error.code = "CRITICAL_FAILURE";
-				throw error;
-			}
 			console.error( "loadFont: Unable to load image for font." );
 			g_commands.done();
 		};
 
-		if( !m_isInitialized ) {
-			m_fontsLoading += 1;
-		}
-
 		// Set source after handlers
 		img.src = fontSrc;
-	} else if( fontSrc instanceof HTMLImageElement ) {
+	} else if( fontSrc instanceof HTMLImageElement || fontSrc instanceof HTMLCanvasElement ) {
 
 		// Use image element directly
 		font.image = fontSrc;
+		font.atlasWidth = fontSrc.width;
+		font.atlasHeight = fontSrc.height;
 	} else {
 		const error = new TypeError( "loadFont: fontSrc must be a string or Image element." );
 		error.code = "INVALID_FONT_SRC";
