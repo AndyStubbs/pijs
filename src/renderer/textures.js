@@ -140,17 +140,19 @@ export function deleteWebGL2Texture( img ) {
 }
 
 /**
- * Update a sub-rectangle of an existing WebGL2 texture using a small source canvas.
+ * Update a sub-rectangle of an existing WebGL2 texture using pixel data.
  * Creates the texture on-demand if it doesn't yet exist for this context.
  * 
  * @param {Object} screenData - Screen data object
  * @param {HTMLImageElement|HTMLCanvasElement} imgKey - Image element used as cache key
- * @param {HTMLCanvasElement} sourceCanvas - Canvas containing new pixel data
+ * @param {Uint8ClampedArray} pixelData - RGBA pixel data array
+ * @param {number} width - Width of the pixel data
+ * @param {number} height - Height of the pixel data
  * @param {number} dstX - Destination X in the texture
  * @param {number} dstY - Destination Y in the texture
  * @returns {WebGLTexture|null} Updated WebGL texture or null on error
  */
-export function updateWebGL2TextureSubImage( screenData, imgKey, sourceCanvas, dstX, dstY ) {
+export function updateWebGL2TextureSubImage( screenData, imgKey, pixelData, width, height, dstX, dstY ) {
 
 	if( !screenData.gl ) {
 		return null;
@@ -165,10 +167,11 @@ export function updateWebGL2TextureSubImage( screenData, imgKey, sourceCanvas, d
 	const gl = screenData.gl;
 	gl.bindTexture( gl.TEXTURE_2D, texture );
 
-	// Upload only the updated region
+	// Upload only the updated region using pixel data
 	gl.texSubImage2D( 
 		gl.TEXTURE_2D, 0, dstX, dstY,
-		gl.RGBA, gl.UNSIGNED_BYTE, sourceCanvas 
+		width, height,
+		gl.RGBA, gl.UNSIGNED_BYTE, pixelData 
 	);
 
 	// Keep texture parameters consistent

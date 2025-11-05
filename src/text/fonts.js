@@ -402,16 +402,8 @@ function setChar( screenData, options ) {
 	const sw = font.width;
 	const sh = font.height;
 
-	// Create a small canvas for the glyph sub-image only
-	const canvas = document.createElement( "canvas" );
-	canvas.width = sw;
-	canvas.height = sh;
-	const ctx = canvas.getContext( "2d" );
-	ctx.clearRect( 0, 0, sw, sh );
-
-	// Set pixels where data == 1 to white on the small canvas
-	const imageData = ctx.createImageData( sw, sh );
-	const buf = imageData.data;
+	// Create a Uint8ClampedArray for the glyph sub-image pixel data
+	const buf = new Uint8ClampedArray( sw * sh * 4 );
 	for( let y = 0; y < sh; y += 1 ) {
 		for( let x = 0; x < sw; x += 1 ) {
 			const on = data[ y ][ x ] ? 1 : 0;
@@ -424,10 +416,9 @@ function setChar( screenData, options ) {
 			}
 		}
 	}
-	ctx.putImageData( imageData, 0, 0 );
 
 	// Update only the glyph region in the GPU texture
-	g_textures.updateWebGL2TextureSubImage( screenData, font.image, canvas, sx, sy );
+	g_textures.updateWebGL2TextureSubImage( screenData, font.image, buf, sw, sh, sx, sy );
 }
 
 /***************************************************************************************************
