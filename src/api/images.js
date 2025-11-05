@@ -18,6 +18,7 @@ const DEFAULT_BLIT_COLOR = Object.freeze( g_utils.rgbToColor( 255, 255, 255, 255
 
 // Image storage by name
 const m_images = {};
+const m_paletteImages = [];
 let m_imageCount = 0;
 
 
@@ -37,6 +38,9 @@ export function init( api ) {
 
 	g_screenManager.addScreenDataItem( "defaultAnchorX", 0 );
 	g_screenManager.addScreenDataItem( "defaultAnchorY", 0 );
+
+	// Palettize all images when screen is loaded
+	g_screenManager.addScreenInitFunction( palettizeImages );
 }
 
 /**
@@ -47,8 +51,10 @@ export function init( api ) {
 function registerCommands( api ) {
 
 	// Register non-screen commands
-	g_commands.addCommand( "loadImage", loadImage, false, [ "src", "name", "onLoad", "onError" ] );
-	g_commands.addCommand( "getImage", getImage,  false, [ "name" ] );
+	g_commands.addCommand(
+		"loadImage", loadImage, false, [ "src", "name", "usePalette", "onLoad", "onError" ]
+	);
+	g_commands.addCommand( "getImage", getImage,  true, [ "name" ], true );
 
 	// Register screen commands
 	g_commands.addCommand(
@@ -110,6 +116,7 @@ function registerCommands( api ) {
  * @param {Object} options - Load options
  * @param {string|HTMLImageElement|HTMLCanvasElement} options.src - Image source
  * @param {string} [options.name] - Optional name for the image
+ * @param {boolean} [options.usePalette] - Set image colors to be linked to screen canvas
  * @param {Function} [options.onLoad] - Callback when image loads
  * @param {Function} [options.onError] - Callback when image fails to load
  * @returns {string} Image name
@@ -117,6 +124,7 @@ function registerCommands( api ) {
 function loadImage( options ) {
 	const src = options.src;
 	let name = options.name;
+	const usePalette = !!options.usePalette;
 	const onLoadCallback = options.onLoad;
 	const onErrorCallback = options.onError;
 	const srcErrMsg = "loadImage: Parameter src must be a string URL, Image element, or Canvas " +
@@ -140,13 +148,11 @@ function loadImage( options ) {
 		error.code = "INVALID_SRC";
 		throw error;
 	}
-
 	if( name && typeof name !== "string" ) {
 		const error = new TypeError( "loadImage: Parameter name must be a string." );
 		error.code = "INVALID_NAME";
 		throw error;
 	}
-
 	// Generate a name if none is provided
 	if( !name || name === "" ) {
 		m_imageCount += 1;
@@ -172,60 +178,59 @@ function loadImage( options ) {
 		throw error;
 	}
 
-	let img;
+	// Create blank image object
+	m_images[ name ] = {
+		"status": "loading",
+		"image": null,
+		"width": null,
+		"height": null,
+		"usePalette": usePalette
+	};
+
+	// Update function for when image is loaded to update the image object
+	const updateImageFn = ( img ) => {
+
+		// Use the element directly
+		const imageObj = m_images[ name ];
+		imageObj.image = img;
+		imageObj.status = "ready";
+		imageObj.width = img.width;
+		imageObj.height = img.height;
+
+		// If using palette then push the image to the use palette array
+		if( imageObj.usePalette ) {
+			m_paletteImages.push( name );
+		}
+
+		// Call user callback if provided
+		if( onLoadCallback ) {
+			onLoadCallback( name );
+		}
+	};
 
 	// Handle Image or Canvas element passed directly
 	if( typeof src !== "string" ) {
 
 		// Use the element directly
-		img = src;
-
-		// Store immediately since element is already loaded
-		m_images[ name ] = {
-			"status": "ready",
-			"type": "image",
-			"image": img,
-			"width": img.width,
-			"height": img.height
-		};
-
-		// Call user callback if provided
-		if( onLoadCallback ) {
-			onLoadCallback( img );
-		}
-
+		updateImageFn( src );
 		return name;
 	}
 
-	// Handle string URL - requires async loading
-	m_images[ name ] = { "status": "loading" };
-
-	img = new Image();
-
-	// Set up handlers before setting src
+	// Create the new image
+	const img = new Image();
+	
 	// Increment wait count for ready() - will be decremented in onload/onerror
 	g_commands.wait();
 
+	// Setup onload handler
 	img.onload = function() {
-
-		// Store the loaded image
-		m_images[ name ] = {
-			"status": "ready",
-			"type": "image",
-			"image": img,
-			"width": img.width,
-			"height": img.height
-		};
-
-		// Call user callback if provided
-		if( onLoadCallback ) {
-			onLoadCallback( img );
-		}
+		updateImageFn( img );
 
 		// Decrement wait count
 		g_commands.done();
 	};
 
+	// Setup onerror handler
 	img.onerror = function( error ) {
 
 		// Mark image as failed
@@ -249,8 +254,8 @@ function loadImage( options ) {
 	return name;
 }
 
-function getImage( options ) {
-	return getImageFromRawInput( options.name, "getImage" );
+function getImage( screenData, options ) {
+	return getImageFromRawInput( screenData, options.name, "getImage" );
 }
 
 /**
@@ -277,9 +282,9 @@ function drawImage( screenData, options ) {
 	const anchorY = g_utils.getFloat( options.anchorY, screenData.defaultAnchorY );
 	const angle = g_utils.getFloat( options.angle, 0 );
 	const scaleX = g_utils.getFloat( options.scaleX, 1 );
-	const scaleY = g_utils.getFloat( options.scaleY, 1 );	
+	const scaleY = g_utils.getFloat( options.scaleY, 1 );
 
-	const img = getImageFromRawInput( imageRaw, "drawImage" );
+	const img = getImageFromRawInput( screenData, imageRaw, "drawImage" );
 
 	// Validate coordinates
 	if( x === null || y === null ) {
@@ -309,7 +314,7 @@ function drawImage( screenData, options ) {
  ***************************************************************************************************/
 
 
-function getImageFromRawInput( imageOrName, fnName ) {
+function getImageFromRawInput( screenData, imageOrName, fnName ) {
 	let img;
 
 	// Resolve image from name parameter
@@ -417,3 +422,18 @@ export function removeImage( name ) {
 	}
 }
 
+function addPalettizedImage( name ) {
+	const canvas = document.createElement( "canvas" );
+	const context = canvas.getContext( "2d", { "willReadFrequently": true } );
+	const palImageObj = {
+		"name": name,
+		"imageData": null,
+		"canvas": document.createElement( "canvas" ),
+	};
+}
+
+export function palettizeImages( screenData ) {
+	for( const imageObj of m_paletteImages ) {
+
+	}
+}
