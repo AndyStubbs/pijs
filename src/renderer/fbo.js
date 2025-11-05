@@ -8,7 +8,7 @@
 
 "use strict";
 
-import * as g_screenManager from "../core/screen-manager";
+import * as g_screenManager from "../core/screen-manager.js";
 
 /***************************************************************************************************
  * Module Initialization
@@ -39,13 +39,13 @@ export function createFBO( screenData ) {
 	const height = screenData.height;
 	
 	// Create texture
-	screenData.fboTexture = gl.createTexture();
-	if( !screenData.fboTexture ) {
+	const fboTexture = gl.createTexture();
+	if( !fboTexture ) {
 		console.error( "Failed to create WebGL2 texture." );
 		return false;
 	}
 
-	gl.bindTexture( gl.TEXTURE_2D, screenData.fboTexture );
+	gl.bindTexture( gl.TEXTURE_2D, fboTexture );
 	gl.texImage2D( 
 		gl.TEXTURE_2D, 0, gl.RGBA8, 
 		width, height, 0, 
@@ -59,15 +59,15 @@ export function createFBO( screenData ) {
 	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
 	
 	// Create FBO
-	screenData.FBO = gl.createFramebuffer();
-	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
+	const FBO = gl.createFramebuffer();
+	gl.bindFramebuffer( gl.FRAMEBUFFER, FBO );
 	
 	// Attach texture to FBO
 	gl.framebufferTexture2D(
 		gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, 
-		gl.TEXTURE_2D, screenData.fboTexture, 0 
+		gl.TEXTURE_2D, fboTexture, 0 
 	);
-	
+
 	// Make sure that framebuffer is complete
 	const status = gl.checkFramebufferStatus( gl.FRAMEBUFFER );
 	if( status !== gl.FRAMEBUFFER_COMPLETE ) {
@@ -79,7 +79,7 @@ export function createFBO( screenData ) {
 	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
 	gl.bindTexture( gl.TEXTURE_2D, null );
 
-	return true;
+	return { fboTexture, FBO };
 }
 
 /**
@@ -94,25 +94,3 @@ export function resizeFBO( screenData ) {
 	// For now, FBO size matches screen size and doesn't need resizing
 	// All rendering is to the FBO at native resolution
 }
-
-/**
- * Cleanup FBO resources for screen
- * 
- * @param {Object} screenData - Screen data object
- * @returns {void}
- */
-export function cleanup( screenData ) {
-
-	if( !screenData.gl ) {
-		return;
-	}
-
-	const gl = screenData.gl;
-	
-	// Cleanup FBO and texture
-	if( screenData.FBO ) {
-		gl.deleteFramebuffer( screenData.FBO );
-		gl.deleteTexture( screenData.fboTexture );
-	}
-}
-

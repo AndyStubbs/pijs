@@ -126,11 +126,23 @@ export function createContext( screenData ) {
 	screenData.gl.viewport( 0, 0, width, height );
 	
 	// Create texture and FBO
-	if( !g_fbo.createFBO( screenData ) ) {
+	const fboAndTexture = g_fbo.createFBO( screenData );
+	if( !fboAndTexture ) {
 		screenData.gl = null;
 		return false;
 	}
+	screenData.fboTexture = fboAndTexture.fboTexture;
+	screenData.FBO = fboAndTexture.FBO;
 	
+	// Create a buffer texture and FBO
+	const bufferFboAndTexture = g_fbo.createFBO( screenData );
+	if( !bufferFboAndTexture ) {
+		cleanup( screenData );
+		return false;
+	}
+	screenData.bufferFboTexture = bufferFboAndTexture.fboTexture;
+	screenData.bufferFBO = bufferFboAndTexture.FBO;
+
 	// Create all the batches
 	g_batches.createBatches( screenData );
 
@@ -209,7 +221,16 @@ export function cleanup( screenData ) {
 	}
 	
 	// Cleanup FBO
-	g_fbo.cleanup( screenData );
+	if( screenData.FBO ) {
+		gl.deleteFramebuffer( screenData.FBO );
+		gl.deleteTexture( screenData.fboTexture );
+	}
+
+	// Cleanup Buffe FBO
+	if( screenData.bufferFBO ) {
+		gl.deleteFramebuffer( screenData.bufferFBO );
+		gl.deleteTexture( screenData.bufferFboTexture );
+	}
 }
 
 /**
@@ -239,5 +260,145 @@ export function blendModeChanged( screenData, previousBlend ) {
 
 	// Flush existing batch with old blend mode
 	g_batches.flushBatches( screenData, previousBlend );
+	g_batches.displayToCanvas( screenData );
+}
+
+/**
+ * Shift screen image up by yOffset pixels using ping-pong FBO blit
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {number} yOffset - Number of pixels to shift up
+ * @returns {void}
+ */
+export function shiftImageUp( screenData, yOffset ) {
+
+	if( yOffset <= 0 ) {
+		return;
+	}
+
+	const gl = screenData.gl;
+	const width = screenData.width;
+	const height = screenData.height;
+
+	// Ensure the latest content is in screenData.fboTexture
+	g_batches.flushBatches( screenData );
+
+	// Use the IMAGE batch shader/program and VAO for a direct blit
+	const imageBatch = screenData.batches[ g_batches.IMAGE_BATCH ];
+	gl.useProgram( imageBatch.program );
+	gl.uniform2f( imageBatch.locations.resolution, width, height );
+	gl.bindVertexArray( imageBatch.vao );
+
+	// Disable blending (replace)
+	gl.disable( gl.BLEND );
+
+	// Compute geometry for first pass: copy src [0..w, yOffset..h] -> dst [0..w, 0..h-yOffset]
+	const dstBottom = 0;
+	const dstTop = Math.max( 0, height - yOffset );
+	const srcBottomT = ( yOffset ) / height;
+	const srcTopT = 1.0;
+
+	// Triangles (two) covering destination sub-rect in pixel space
+	const verts1 = new Float32Array( [
+		0, dstBottom,
+		width, dstBottom,
+		0, dstTop,
+		0, dstTop,
+		width, dstBottom,
+		width, dstTop
+	] );
+
+	// White (no tint)
+	const colors1 = new Uint8Array( [
+		255, 255, 255, 255,
+		255, 255, 255, 255,
+		255, 255, 255, 255,
+		255, 255, 255, 255,
+		255, 255, 255, 255,
+		255, 255, 255, 255
+	] );
+
+	// Texcoords mapping src sub-rect [0..1 in X, srcBottomT..srcTopT in Y]
+	const tex1 = new Float32Array( [
+		0.0, srcBottomT,
+		1.0, srcBottomT,
+		0.0, srcTopT,
+		0.0, srcTopT,
+		1.0, srcBottomT,
+		1.0, srcTopT
+	] );
+
+	// Bind destination buffer FBO
+	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.bufferFBO );
+	gl.viewport( 0, 0, width, height );
+	gl.clearColor( 0, 0, 0, 0 );
+	gl.clear( gl.COLOR_BUFFER_BIT );
+
+	// Upload vertex data into batch buffers
+	gl.bindBuffer( gl.ARRAY_BUFFER, imageBatch.vertexVBO );
+	gl.bufferData( gl.ARRAY_BUFFER, verts1, gl.STREAM_DRAW );
+	gl.bindBuffer( gl.ARRAY_BUFFER, imageBatch.colorVBO );
+	gl.bufferData( gl.ARRAY_BUFFER, colors1, gl.STREAM_DRAW );
+	gl.bindBuffer( gl.ARRAY_BUFFER, imageBatch.texCoordVBO );
+	gl.bufferData( gl.ARRAY_BUFFER, tex1, gl.STREAM_DRAW );
+
+	// Bind source texture (current screen content)
+	gl.activeTexture( gl.TEXTURE0 );
+	gl.bindTexture( gl.TEXTURE_2D, screenData.fboTexture );
+	gl.uniform1i( imageBatch.locations.texture, 0 );
+
+	// Draw
+	gl.drawArrays( gl.TRIANGLES, 0, 6 );
+
+	// Second pass: copy from buffer to main FBO at y = yOffset..height
+	const dst2Bottom = Math.min( height, yOffset );
+	const dst2Top = height;
+	const src2BottomT = 0.0;
+	const src2TopT = ( height - yOffset ) / height;
+
+	const verts2 = new Float32Array( [
+		0, dst2Bottom,
+		width, dst2Bottom,
+		0, dst2Top,
+		0, dst2Top,
+		width, dst2Bottom,
+		width, dst2Top
+	] );
+
+	const tex2 = new Float32Array( [
+		0.0, src2BottomT,
+		1.0, src2BottomT,
+		0.0, src2TopT,
+		0.0, src2TopT,
+		1.0, src2BottomT,
+		1.0, src2TopT
+	] );
+
+	// Bind destination main FBO and clear to transparent
+	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
+	gl.viewport( 0, 0, width, height );
+	gl.clearColor( 0, 0, 0, 0 );
+	gl.clear( gl.COLOR_BUFFER_BIT );
+
+	// Upload second pass buffers
+	gl.bindBuffer( gl.ARRAY_BUFFER, imageBatch.vertexVBO );
+	gl.bufferData( gl.ARRAY_BUFFER, verts2, gl.STREAM_DRAW );
+	gl.bindBuffer( gl.ARRAY_BUFFER, imageBatch.colorVBO );
+	gl.bufferData( gl.ARRAY_BUFFER, colors1, gl.STREAM_DRAW );
+	gl.bindBuffer( gl.ARRAY_BUFFER, imageBatch.texCoordVBO );
+	gl.bufferData( gl.ARRAY_BUFFER, tex2, gl.STREAM_DRAW );
+
+	// Bind buffer texture as source
+	gl.activeTexture( gl.TEXTURE0 );
+	gl.bindTexture( gl.TEXTURE_2D, screenData.bufferFboTexture );
+	gl.uniform1i( imageBatch.locations.texture, 0 );
+
+	gl.drawArrays( gl.TRIANGLES, 0, 6 );
+
+	// Unbind
+	gl.bindVertexArray( null );
+	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+
+	// Present to canvas
 	g_batches.displayToCanvas( screenData );
 }

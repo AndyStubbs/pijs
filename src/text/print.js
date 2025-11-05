@@ -33,6 +33,10 @@ export function init( api ) {
 		"y": 0,
 		"cols": 0,
 		"rows": 0,
+		"scaleWidth": 1,
+		"scaleHeight": 1,
+		"width": 0,
+		"height": 0,
 		"breakWord": true
 	} );
 
@@ -61,7 +65,7 @@ function registerCommands() {
 	g_commands.addCommand( "getCols", getCols, true, [] );
 	g_commands.addCommand( "getRows", getRows, true, [] );
 	g_commands.addCommand( "setWordBreak", setWordBreak, true, [ "isEnabled" ] );
-	g_commands.addCommand( "setFontSize", setFontSize, true, [ "width", "height" ] );
+	g_commands.addCommand( "setPrintSize", setPrintSize, true, [ "scaleWidth", "scaleHeight" ] );
 	g_commands.addCommand( "calcWidth", calcWidth, true, [ "msg" ] );
 }
 
@@ -94,7 +98,7 @@ function print( screenData, options ) {
 	}
 
 	// Bail if not possible to print an entire line on screen
-	if( screenData.font.cellHeight > screenData.height ) {
+	if( screenData.printCursor.height > screenData.height ) {
 		return;
 	}
 
@@ -133,6 +137,7 @@ function setPos( screenData, options ) {
 		error.code = "NO_FONT_SET";
 		throw error;
 	}
+	const printCursor = screenData.printCursor;
 
 	// Set the x value
 	if( col != null ) {
@@ -141,9 +146,9 @@ function setPos( screenData, options ) {
 			error.code = "INVALID_COL";
 			throw error;
 		}
-		let x = Math.floor( col * font.cellWidth );
+		let x = Math.floor( col * printCursor.width );
 		if( x > screenData.width ) {
-			x = screenData.width - font.cellWidth;
+			x = screenData.width - printCursor.height;
 		}
 		screenData.printCursor.x = x;
 	}
@@ -155,9 +160,9 @@ function setPos( screenData, options ) {
 			error.code = "INVALID_ROW";
 			throw error;
 		}
-		let y = Math.floor( row * font.cellHeight );
+		let y = Math.floor( row * screenData.printCursor.height );
 		if( y > screenData.height ) {
-			y = screenData.height - font.cellHeight;
+			y = screenData.height - screenData.printCursor.height;
 		}
 		screenData.printCursor.y = y;
 	}
@@ -206,10 +211,11 @@ function getPos( screenData ) {
 	if( !font ) {
 		return { "col": 0, "row": 0 };
 	}
+	const printCursor = screenData.printCursor;
 
 	return {
-		"col": Math.floor( screenData.printCursor.x / font.cellWidth ),
-		"row": Math.floor( screenData.printCursor.y / font.cellHeight )
+		"col": Math.floor( printCursor.x / printCursor.width ),
+		"row": Math.floor( printCursor.y / printCursor.height )
 	};
 }
 
@@ -263,31 +269,24 @@ function setWordBreak( screenData, options ) {
  * 
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Options
- * @param {number} options.width - Font width
- * @param {number} options.height - Font height
+ * @param {number} options.scaleWidth - Font scale width
+ * @param {number} options.scaleHeight - Font scale height
  * @returns {void}
  */
-function setFontSize( screenData, options ) {
-	const font = screenData.font;
-	if( !font ) {
-		const error = new Error( "setFontSize: No font set. Call setFont() first." );
-		error.code = "NO_FONT_SET";
-		throw error;
-	}
+function setPrintSize( screenData, options ) {
+	const scaleWidth = g_utils.getInt( options.scaleWidth, null );
+	const scaleHeight = g_utils.getInt( options.scaleHeight, null );
 
-	const width = g_utils.getInt( options.width, null );
-	const height = g_utils.getInt( options.height, null );
-
-	if( !width || width < 1 || !height || height < 1 ) {
+	if( scaleWidth === null || scaleWidth < 1 || scaleHeight === null || scaleHeight < 1 ) {
 		const error = new RangeError(
-			"setFontSize: Parameters width and height must be an integer greater than 0."
+			"setPrintSize: Parameters width and height must be an integer greater than 0."
 		);
 		error.code = "INVALID_SIZE";
 		throw error;
 	}
 
-	font.cellWidth = width;
-	font.cellHeight = height;
+	screenData.printCursor.scaleWidth = scaleWidth;
+	screenData.printCursor.scaleHeight = scaleHeight;
 
 	// Update print cursor dimensions
 	updatePrintCursorDimensions( screenData );
@@ -303,11 +302,9 @@ function setFontSize( screenData, options ) {
  */
 function calcWidth( screenData, options ) {
 	const msg = options.msg || "";
-	const font = screenData.font;
-	if( !font ) {
-		return 0;
-	}
-	return font.cellWidth * msg.length;
+	const printCursor = screenData.printCursor;
+	
+	return printCursor.width * msg.length;
 }
 
 
@@ -334,7 +331,7 @@ function startPrint( screenData, msg, isInline, isCentered ) {
 
 	// Handle centering
 	if( isCentered ) {
-		printCursor.x = Math.floor( ( printCursor.cols - msg.length ) / 2 ) * font.cellWidth;
+		printCursor.x = Math.floor( ( printCursor.cols - msg.length ) / 2 ) * printCursor.width;
 	}
 
 	// Handle text wrapping if text is too wide
@@ -366,13 +363,13 @@ function startPrint( screenData, msg, isInline, isCentered ) {
 	}
 
 	// Handle auto-scroll if text is too tall
-	if( printCursor.y + font.cellHeight > screenData.height ) {
+	if( printCursor.y + printCursor.height > screenData.height ) {
 
 		// Shift image up by font height
-		shiftImageUp( screenData, font.cellHeight );
+		g_renderer.shiftImageUp( screenData, printCursor.height );
 
 		// Move cursor up
-		printCursor.y -= font.cellHeight;
+		printCursor.y -= printCursor.height;
 	}
 
 	// Print the text using bitmap font
@@ -380,33 +377,15 @@ function startPrint( screenData, msg, isInline, isCentered ) {
 
 	// Advance cursor position
 	if( !isInline ) {
-		printCursor.y += font.cellHeight;
+		printCursor.y += printCursor.height;
 		printCursor.x = 0;
 	} else {
-		printCursor.x += font.cellWidth * msg.length;
-		if( printCursor.x > screenData.width - font.cellWidth ) {
+		printCursor.x += printCursor.width * msg.length;
+		if( printCursor.x > screenData.width - printCursor.width ) {
 			printCursor.x = 0;
-			printCursor.y += font.cellHeight;
+			printCursor.y += printCursor.height;
 		}
 	}
-}
-
-/**
- * Shift screen image up by yOffset pixels
- * 
- * @param {Object} screenData - Screen data object
- * @param {number} yOffset - Number of pixels to shift up
- * @returns {void}
- */
-function shiftImageUp( screenData, yOffset ) {
-	if( yOffset <= 0 ) {
-		return;
-	}
-
-	// TODO: Implement screen scrolling using WebGL2
-	// For now, this is a placeholder - screen scrolling would need to be implemented
-	// using the renderer's readback and drawing capabilities
-	console.warn( "shiftImageUp: Screen scrolling not yet implemented in WebGL2 renderer." );
 }
 
 /**
@@ -436,6 +415,10 @@ function bitmapPrint( screenData, msg, x, y ) {
 	const atlasWidth = font.atlasWidth;
 	const fontWidth = font.width;
 	const fontHeight = font.height;
+	const printWidth = screenData.printCursor.width;
+	const printHeight = screenData.printCursor.height;
+	const scaleX = screenData.printCursor.scaleWidth;
+	const scaleY = screenData.printCursor.scaleHeight;
 	const cellWidth = font.cellWidth;
 	const cellHeight = font.cellHeight;
 	const columns = Math.floor( atlasWidth / cellWidth );
@@ -453,7 +436,7 @@ function bitmapPrint( screenData, msg, x, y ) {
 			const sy = Math.floor( charIndex / columns ) * cellHeight + 1;
 
 			// Get the destination x coordinate
-			const dx = x + fontWidth * i;
+			const dx = x + printWidth * i;
 
 			// Draw the character using drawSprite
 			const color = screenData.color || { "r": 255, "g": 255, "b": 255, "a": 255 };
@@ -461,7 +444,7 @@ function bitmapPrint( screenData, msg, x, y ) {
 				screenData, font.image,
 				sx, sy, fontWidth, fontHeight,
 				dx, y, fontWidth, fontHeight,
-				color, 0, 0, 1, 1, 0
+				color, 0, 0, scaleX, scaleY, 0
 			);
 		}
 	}
@@ -481,7 +464,9 @@ export function updatePrintCursorDimensions( screenData ) {
 	if( !font ) {
 		return;
 	}
-
-	screenData.printCursor.cols = Math.floor( screenData.width / font.cellWidth );
-	screenData.printCursor.rows = Math.floor( screenData.height / font.cellHeight );
+	const printCursor = screenData.printCursor;
+	printCursor.width = printCursor.scaleWidth * font.width;
+	printCursor.height = printCursor.scaleHeight * font.height;
+	printCursor.cols = Math.floor( screenData.width / printCursor.width );
+	printCursor.rows = Math.floor( screenData.height / printCursor.height );
 }

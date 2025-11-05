@@ -32,7 +32,9 @@ import * as g_utils from "../../core/utils.js";
  * @param {number} y - Translation Y
  * @returns {Array<Object>} Array of 4 corner objects with x, y properties
  */
-function calculateTransformedCorners( width, height, anchorX, anchorY, scaleX, scaleY, angleRad, x, y ) {
+function calculateTransformedCorners(
+	width, height, anchorX, anchorY, scaleX, scaleY, angleRad, x, y
+) {
 
 	// Calculate anchor position in pixels
 	const anchorXPx = Math.round( width * anchorX );
@@ -62,6 +64,7 @@ function calculateTransformedCorners( width, height, anchorX, anchorY, scaleX, s
 			corner.y = ry + y;
 		}
 	} else {
+		
 		// No rotation, just translate
 		for( let i = 0; i < corners.length; i++ ) {
 			corners[ i ].x += x;
