@@ -43,6 +43,7 @@ export { drawCachedGeometry } from "./draw/geometry.js";
 export { drawRect, drawRectFilled } from "./draw/rects.js";
 export { drawCircle, drawCircleFilled } from "./draw/circles.js";
 export { drawEllipse } from "./draw/ellipses.js";
+export { shiftImageUp } from "./draw/effects.js";
 
 // Re-export batch management
 export { prepareBatch } from "./batches.js";
@@ -260,54 +261,5 @@ export function blendModeChanged( screenData, previousBlend ) {
 
 	// Flush existing batch with old blend mode
 	g_batches.flushBatches( screenData, previousBlend );
-	g_batches.displayToCanvas( screenData );
-}
-
-/**
- * Shift screen image up by yOffset pixels using ping-pong FBO blit
- * 
- * @param {Object} screenData - Screen data object
- * @param {number} yOffset - Number of pixels to shift up
- * @returns {void}
- */
-export function shiftImageUp( screenData, yOffset ) {
-
-	if( yOffset <= 0 ) {
-		return;
-	}
-
-	const gl = screenData.gl;
-	const width = screenData.width;
-	const height = screenData.height;
-
-	// Ensure the latest content is in screenData.fboTexture
-	g_batches.flushBatches( screenData );
-
-	// Pass 1: copy main FBO region [0, yOffset, width, height]
-	// into buffer FBO at [0, 0, width, height - yOffset]
-	gl.bindFramebuffer( gl.READ_FRAMEBUFFER, screenData.FBO );
-	gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, screenData.bufferFBO );
-	gl.blitFramebuffer(
-		0, yOffset, width, height,
-		0, 0, width, Math.max( 0, height - yOffset ),
-		gl.COLOR_BUFFER_BIT, gl.NEAREST
-	);
-
-	// Clear destination region in main FBO, then copy back shifted up
-	gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, screenData.FBO );
-	gl.clearColor( 0, 0, 0, 0 );
-	gl.clear( gl.COLOR_BUFFER_BIT );
-	gl.bindFramebuffer( gl.READ_FRAMEBUFFER, screenData.bufferFBO );
-	gl.blitFramebuffer(
-		0, 0, width, Math.max( 0, height - yOffset ),
-		0, yOffset, width, height,
-		gl.COLOR_BUFFER_BIT, gl.NEAREST
-	);
-
-	// Unbind framebuffers
-	gl.bindFramebuffer( gl.READ_FRAMEBUFFER, null );
-	gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, null );
-
-	// Present to canvas
 	g_batches.displayToCanvas( screenData );
 }
