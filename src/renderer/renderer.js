@@ -76,11 +76,6 @@ export function init( api ) {
 	g_screenManager.addScreenDataItem( "contextLost", false );
 	g_screenManager.addScreenDataItem( "isRenderScheduled", false );
 	g_screenManager.addScreenDataItem( "isFirstRender", true );
-	g_screenManager.addScreenDataItem( "batches", {} );
-	g_screenManager.addScreenDataItem( "batchInfo", {
-		"currentBatch": null,
-		"drawOrder": []
-	} );
 	g_screenManager.addScreenDataItem( "gl", null );
 
 	// Register renderer cleanup function
@@ -196,25 +191,9 @@ export function cleanup( screenData ) {
 
 	const gl = screenData.gl;
 
-	// TODO: Cleanup batches (will be in batches.js)
-	// for( const batchType in screenData.batches ) {
-	// 	const batch = screenData.batches[ batchType ];
-	// 	if( batch.texCoordVBO ) {
-	// 		gl.deleteBuffer( batch.texCoordVBO );
-	// 	}
-	// 	gl.deleteBuffer( batch.vertexVBO );
-	// 	gl.deleteBuffer( batch.colorVBO );
-	// 	gl.deleteVertexArray( batch.vao );
-	// 	gl.deleteProgram( batch.program );
-	// 	if( batch.texture ) {
-	// 		gl.deleteTexture( batch.texture );
-	// 	}
-	// }
+	// Cleanup batches
+	g_batches.cleanup( screenData );
 
-	// Clear batches array
-	screenData.batches = {};
-	screenData.batchInfo = {};
-	
 	// Cleanup display shader
 	if( screenData.displayProgram ) {
 		gl.deleteProgram( screenData.displayProgram );

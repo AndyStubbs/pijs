@@ -100,7 +100,14 @@ const m_batchProto = {
  */
 export function init() {
 
-	g_screenManager.addScreenCleanupFunction( cleanup );
+	// Initialize screenData items owned by the batch system
+	g_screenManager.addScreenDataItem( "batches", {} );
+	g_screenManager.addScreenDataItem( "batchInfo", {
+		"currentBatch": null,
+		"drawOrder": []
+	} );
+
+	// Cleanup is invoked explicitly by renderer.cleanup().
 }
 
 /**
@@ -659,7 +666,7 @@ export function displayToCanvas( screenData ) {
  * @param {Object} screenData - Screen data object
  * @returns {void}
  */
-function cleanup( screenData ) {
+export function cleanup( screenData ) {
 
 	if( !screenData.gl ) {
 		return;
@@ -688,7 +695,7 @@ function cleanup( screenData ) {
 		}
 	}
 
-	// Clear batches array
-	screenData.batches = {};
-	screenData.batchInfo = {};
+	// Clear references for GC and signal uninitialized state
+	screenData.batches = null;
+	screenData.batchInfo = null;
 }
