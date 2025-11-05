@@ -416,7 +416,6 @@ function bitmapPrint( screenData, msg, x, y ) {
 	const fontWidth = font.width;
 	const fontHeight = font.height;
 	const printWidth = screenData.printCursor.width;
-	const printHeight = screenData.printCursor.height;
 	const scaleX = screenData.printCursor.scaleWidth;
 	const scaleY = screenData.printCursor.scaleHeight;
 	const cellWidth = font.cellWidth;
