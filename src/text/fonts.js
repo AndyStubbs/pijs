@@ -14,6 +14,8 @@
 import * as g_utils from "../core/utils.js";
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
+import * as g_textures from "../renderer/textures.js";
+import * as g_print from "./print.js";
 
 import g_ft8x8 from "./fonts/font-8x8.webp";
 
@@ -37,9 +39,6 @@ let m_isInitialized = false;
  */
 export function init( api ) {
 	g_screenManager.addScreenDataItem( "font", null );
-	
-	// TODO move printCursor to print module
-	//g_screenManager.addScreenDataItem( "printCursor", { "cols": 0, "rows": 0 } );
 	
 	// Set the font when a screen is initialized
 	g_screenManager.addScreenInitFunction(
@@ -81,14 +80,16 @@ function loadDefaultFonts() {
 function registerCommands( api ) {
 
 	// Register non-screen commands
-	g_commands.addCommand( "loadFont", loadFont, false, [ "src", "size", "cellSize", "charset" ] );
+	g_commands.addCommand(
+		"loadFont", loadFont, false,
+		[ "src", "width", "height", "cellWidth", "cellHeight", "charset" ]
+	);
 	g_commands.addCommand( "setDefaultFont", setDefaultFont, false, [ "fontId" ] );
 	g_commands.addCommand( "getAvailableFonts", getAvailableFonts, false, [] );
 
 	// Register screen commands
 	g_commands.addCommand( "setFont", setFont, true, [ "fontId" ] );
-	g_commands.addCommand( "setFontSize", setFontSize, true, [ "width", "height" ] );
-	g_commands.addCommand( "setChar", setChar, true, [ "charCode", "data" ] );
+	//g_commands.addCommand( "setChar", setChar, true, [ "charCode", "data" ] );
 }
 
 
@@ -121,7 +122,7 @@ export function onFontsInit( callbackFn ) {
  * @returns {number} Font ID
  */
 function loadFont( options ) {
-	const fontSrc = options.fontSrc;
+	const fontSrc = options.src;
 	const width = g_utils.getInt( options.width, null );
 	const height = g_utils.getInt( options.height, null );
 	const cellWidth = g_utils.getInt( options.cellWidth, width );
@@ -284,29 +285,31 @@ function setDefaultFont( options ) {
  * @returns {void}
  */
 function setFont( screenData, options ) {
-	const fontId = g_utils.getInt( options.font, null );
+	const fontId = g_utils.getInt( options.fontId, null );
 
 	if( fontId === null || !m_fontMap.has( fontId ) ) {
 		const error = new RangeError(
-			"setFont: Parameter font must be an integer and an index in the available fonts."
+			"setFont: Parameter fontId must be an integer and an index in the available fonts."
 		);
 		error.code = "INVALID_FONT_ID";
 		throw error;
 	}
 
-	// Get or create texture
-	if( !texture ) {
-		console.error( "Failed to get/create texture for image" );
-		return;
+	const font = m_fontMap.get( fontId );
+
+	// Get or create texture for font image if it's loaded
+	if( font.image ) {
+		const texture = g_textures.getWebGL2Texture( screenData, font.image );
+		if( !texture ) {
+			console.warn( "setFont: Failed to get/create texture for font image." );
+		}
 	}
 
-	// Set the screenData font and print cursor
-	screenData.font = m_fontMap.get( fontId );
+	// Set the screenData font
+	screenData.font = font;
 
-
-
-	// TODO: Call reference to print module updatePrintCursorDimensions function
-	//updatePrintCursorDimensions( screenData );
+	// Update print cursor dimensions
+	g_print.updatePrintCursorDimensions( screenData );
 }
 
 // TODO: Move set font size to print command this deals with the print cursor so that should
@@ -444,18 +447,3 @@ function getAvailableFonts() {
 /***************************************************************************************************
  * Internal Functions
  ***************************************************************************************************/
-
-
-// TODO: Move this function print module
-// /**
-//  * Update print cursor rows and columns based on font and size
-//  * 
-//  * @param {Object} screenData - Screen data object
-//  * @returns {void}
-//  */
-// function updatePrintCursorDimensions( screenData ) {
-// 	const font = screenData.font;
-// 	screenData.printCursor.cols = Math.floor( screenData.width / font.width );
-// 	screenData.printCursor.rows = Math.floor( screenData.height / font.height );
-// }
-

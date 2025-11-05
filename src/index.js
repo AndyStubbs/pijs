@@ -27,8 +27,9 @@ import * as g_images from "./api/images.js";
 import * as g_pixels from "./api/pixels.js";
 import * as g_blends from "./api/blends.js";
 
-// Fonts
+// Text
 import * as g_fonts from "./text/fonts.js";
+import * as g_print from "./text/print.js";
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;
@@ -41,7 +42,7 @@ const api = {
 // Store modules in array for ordered initialization
 const mods = [
 	g_utils, g_commands, g_screenManager, g_plugins, g_renderer, g_colors, g_graphicsApi, g_images,
-	g_blends, g_pixels, g_fonts
+	g_blends, g_pixels, g_fonts, g_print
 ];
 
 // Initialize the modules
