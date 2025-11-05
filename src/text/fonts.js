@@ -36,8 +36,14 @@ let m_isInitialized = false;
  * @returns {void}
  */
 export function init( api ) {
-	g_screenManager.addScreenDataItemGetter( "font", () => m_fontMap.get( m_defaultFontId ) );
+	g_screenManager.addScreenDataItem( "font", null );
 	g_screenManager.addScreenDataItem( "printCursor", { "cols": 0, "rows": 0 } );
+	
+	// Set the font when a screen is initialized
+	g_screenManager.addScreenInitFunction(
+		( screenData ) => setFont( screenData, { "fontId": m_defaultFontId } )
+	);
+
 	registerCommands( api );
 	loadDefaultFonts();
 }
