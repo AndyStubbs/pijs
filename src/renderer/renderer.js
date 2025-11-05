@@ -34,7 +34,7 @@ export {
 } from "./batches.js";
 
 // Re-export drawing functions
-export { drawImage } from "./draw/images.js";
+export { drawImage } from "./draw/sprites.js";
 export { drawPixel } from "./draw/primitives.js";
 export { drawArc } from "./draw/arcs.js";
 export { drawBezier } from "./draw/bezier.js";
