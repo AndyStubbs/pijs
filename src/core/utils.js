@@ -286,7 +286,9 @@ export const queueMicrotask = ( callback ) => {
  * Color Utility Functions
  **************************************************************************************************/
 
-
+const m_colorCheckerContext = document.createElement( "canvas" ).getContext(
+	"2d", { "willReadFrequently": true }
+);
 const COLOR_PROTO = {
 	"key": 0,
 	"r": 0,
@@ -296,13 +298,10 @@ const COLOR_PROTO = {
 	"rgba": "",
 	"hex": ""
 };
-const m_colorCheckerContext = document.createElement( "canvas" ).getContext(
-	"2d", { "willReadFrequently": true }
-);
 
 function createColor( r, g, b, a, hex ) {
 	const color = Object.create( COLOR_PROTO );
-	color.key = generateColorKey( r, g, b, a, hex );
+	color.key = generateColorKey( r, g, b, a );
 	color.r = r;
 	color.g = g;
 	color.b = b;
