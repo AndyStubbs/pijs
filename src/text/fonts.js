@@ -21,7 +21,7 @@ const m_fontMap = new Map();
 let m_defaultFontId = null;
 let m_nextFontId = 0;
 let m_fontsLoading = 0;
-let m_initialFontsLoadingCallback = null;
+let m_fontsInitCallback = [];
 let m_isInitialized = false;
 
 /***************************************************************************************************
@@ -90,8 +90,8 @@ function registerCommands( api ) {
 
 
 // Sets the module callback function for initial default fonts loading
-export function waitForInitialDefaultFonts( callback ) {
-	m_initialFontsLoadingCallback = callback;
+export function onFontsInit( callbackFn ) {
+	m_fontsInitCallback.push( callbackFn );
 }
 
 
@@ -202,11 +202,15 @@ function loadFontFromImage( fontSrc, font ) {
 			font.atlasWidth = img.width;
 			font.atlasHeight = img.height;
 			g_commands.done();
+
+			// Trigger callback when fonts are first initialized
 			if( !m_isInitialized ) {
 				m_fontsLoading -= 1;
 				if( m_fontsLoading === 0 ) {
 					m_isInitialized = true;
-					m_initialFontsLoadingCallback();
+					for( const callbackFn of m_fontsInitCallback ) {
+						callbackFn();
+					}
 				}
 			}
 		};

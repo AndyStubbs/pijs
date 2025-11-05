@@ -31,7 +31,7 @@ let m_api = null;
  ***************************************************************************************************/
 
 
-// Initialize graphics module - only gets called on page load
+// Initialize graphics module - only gets called on script load
 export function init( api ) {
 	m_api = api;
 
