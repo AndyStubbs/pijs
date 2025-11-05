@@ -90,7 +90,7 @@ function registerCommands() {
 	// Register screen commands
 	g_commands.addCommand( "setColor", setColor, true, [ "color", "isAddToPalette" ] );
 	g_commands.addCommand( "getColor", getColor, true, [ "asIndex" ] );
-	g_commands.addCommand( "getPal", getPal, true, [] );
+	g_commands.addCommand( "getPal", getPal, true, [ "include0" ] );
 	g_commands.addCommand( "setPal", setPal, true, [ "pal" ] );
 	g_commands.addCommand( "getPalIndex", getPalIndex, true, [ "color", "tolerance" ] );
 	g_commands.addCommand( "setBgColor", setBgColor, true, [ "color" ] );
@@ -217,13 +217,21 @@ function getColor( screenData, options ) {
 	);
 }
 
-// TODO: Add parameter (include0) to return the 0 item from the pal.
-// Get palette
-function getPal( screenData ) {
-	const filteredPal = [];
 
-	// Need to explicitly convert each color because they need to have the 
-	for( let i = 1; i < screenData.pal.length; i += 1 ) {
+// Get palette
+function getPal( screenData, options ) {
+	const include0 = options.include0 ?? null;
+	const filteredPal = [];
+	
+	// Set the start index to 0 if including 0 which is the transparent balck color
+	let startIndex = 0;
+	if( include0 === null ) {
+		startIndex = 1;
+	}
+
+	// Need to explicitly convert each color because I don't want the pal to be modified
+	// outside.
+	for( let i = startIndex; i < screenData.pal.length; i += 1 ) {
 		filteredPal.push( { ...screenData.pal[ i ] } );
 	}
 	return filteredPal;
