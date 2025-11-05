@@ -14,6 +14,9 @@ import * as g_commands from "../core/commands.js";
 import * as g_utils from "../core/utils.js";
 import * as g_screenManager from "../core/screen-manager.js";
 
+// Max color difference used in find color by index
+const MAX_DIFFERENCE = ( 255 * 255 ) * 3.25;
+
 let m_defaultPal = [];
 let m_defaultPalMap = new Map();
 let m_defaultColor = -1;
@@ -465,8 +468,7 @@ export function findColorIndexByColorValue( screenData, color, tolerance = 1 ) {
 	}
 
 	// Max color difference constant
-	const maxDifference = ( 255 * 255 ) * 3.25;
-	const minSimularity = tolerance * ( 2 - tolerance ) * maxDifference;
+	const minSimularity = tolerance * ( 2 - tolerance ) * MAX_DIFFERENCE;
 
 	// Collect all matches meeting the target similarity, then return the most similar
 	let bestMatchIndex = null;
@@ -488,7 +490,7 @@ export function findColorIndexByColorValue( screenData, color, tolerance = 1 ) {
 			difference = g_utils.calcColorDifference( palColor, color );
 		}
 
-		const similarity = maxDifference - difference;
+		const similarity = MAX_DIFFERENCE - difference;
 		if( similarity >= minSimularity ) {
 			if( similarity > bestMatchSimularity ) {
 				bestMatchIndex = i;

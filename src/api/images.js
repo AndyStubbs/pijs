@@ -199,7 +199,7 @@ function loadImage( options ) {
 
 		// If using palette then push the image to the use palette array
 		if( imageObj.usePalette ) {
-			m_paletteImages.push( name );
+			addPalettizedImage( name );
 		}
 
 		// Call user callback if provided
@@ -423,17 +423,34 @@ export function removeImage( name ) {
 }
 
 function addPalettizedImage( name ) {
+	const imgObj = m_images[ name ];
+	
+	// Create a temporary canvas just to get the pixel data from original image
 	const canvas = document.createElement( "canvas" );
-	const context = canvas.getContext( "2d", { "willReadFrequently": true } );
+	canvas.width = imgObj.width;
+	canvas.height = imgObj.height;
+
+	// Draw image onto canvas
+	const context = canvas.getContext( "2d" );
+	context.drawImage( imgObj.src, 0, 0 );
+
+	// Store the imageData into pal object
 	const palImageObj = {
 		"name": name,
-		"imageData": null,
-		"canvas": document.createElement( "canvas" ),
+		"data": context.getImageData( 0, 0, imgObj.width, imgObj.height ).data
 	};
+	m_paletteImages[ name ] = palImageObj;
 }
 
 export function palettizeImages( screenData ) {
-	for( const imageObj of m_paletteImages ) {
 
+	const palettizeImageFn = ( data ) => {
+		
+	};
+
+	// Loop through all images to palettize
+	for( const name in m_paletteImages ) {
+		const palImageObj = m_paletteImages[ name ];
+		palettizeImageFn( palImageObj.data )
 	}
 }
