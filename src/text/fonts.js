@@ -37,7 +37,9 @@ let m_isInitialized = false;
  */
 export function init( api ) {
 	g_screenManager.addScreenDataItem( "font", null );
-	g_screenManager.addScreenDataItem( "printCursor", { "cols": 0, "rows": 0 } );
+	
+	// TODO move printCursor to print module
+	//g_screenManager.addScreenDataItem( "printCursor", { "cols": 0, "rows": 0 } );
 	
 	// Set the font when a screen is initialized
 	g_screenManager.addScreenInitFunction(
