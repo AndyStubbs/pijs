@@ -100,7 +100,7 @@
 	} );
 
 	function drawPaletteSwatches( startX, startY ) {
-		const pal = $.getPalInternal();
+		const pal = $.getPal( true );
 		for( let i = 0; i < pal.length; i++ ) {
 			const x = startX + ( i % 9 ) * 20;
 			const y = startY + Math.floor( i / 9 ) * 20;
