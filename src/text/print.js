@@ -13,6 +13,7 @@ import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_textures from "../renderer/textures.js";
+import * as g_sprites from "../renderer/draw/sprites.js";
 
 
 /***************************************************************************************************
@@ -454,73 +455,19 @@ function bitmapPrint( screenData, msg, x, y ) {
 			// Get the destination x coordinate
 			const dx = x + fontWidth * i;
 
-			// Draw the character using drawImage with texture coordinates
-			// We need to create a temporary canvas or use a custom draw function
-			// For now, we'll use drawImage with a sub-image approach
-			drawFontCharacter(
-				screenData, font.image, texture,
+			// Draw the character using drawSprite
+			const color = screenData.color || { "r": 255, "g": 255, "b": 255, "a": 255 };
+			g_sprites.drawSprite(
+				screenData, font.image,
 				sx, sy, fontWidth, fontHeight,
-				dx, y, fontWidth, fontHeight
+				dx, y, fontWidth, fontHeight,
+				color, 0, 0, 1, 1, 0
 			);
 		}
 	}
 
 	// Mark screen as dirty
 	g_renderer.setImageDirty( screenData );
-}
-
-/**
- * Draw a single font character from atlas
- * 
- * @param {Object} screenData - Screen data object
- * @param {HTMLImageElement} img - Font atlas image
- * @param {WebGLTexture} texture - Font texture
- * @param {number} sx - Source X in atlas
- * @param {number} sy - Source Y in atlas
- * @param {number} sw - Source width
- * @param {number} sh - Source height
- * @param {number} dx - Destination X
- * @param {number} dy - Destination Y
- * @param {number} dw - Destination width
- * @param {number} dh - Destination height
- * @returns {void}
- */
-function drawFontCharacter(
-	screenData, img, texture, sx, sy, sw, sh, dx, dy, dw, dh
-) {
-
-	// Get texture dimensions for coordinate conversion
-	const texWidth = img.width;
-	const texHeight = img.height;
-
-	// Convert pixel coordinates to normalized texture coordinates (0-1)
-	const u0 = sx / texWidth;
-	const v0 = sy / texHeight;
-	const u1 = ( sx + sw ) / texWidth;
-	const v1 = ( sy + sh ) / texHeight;
-
-	// Use the renderer's drawImage function but we need to modify it for sub-texture drawing
-	// For now, we'll create a simplified version that draws a sub-region
-	// TODO: This should use a specialized function for drawing sub-textures
-	// For bitmap fonts, we'll need to extend drawImage to support texture sub-regions
-	
-	// Temporary solution: Use drawImage with a temporary canvas containing just this character
-	// This is not optimal but will work until we add proper sub-texture support
-	
-	// Better solution: Extend the renderer to support drawing texture sub-regions
-	// For now, we'll use a workaround by creating a temporary canvas
-	const tempCanvas = document.createElement( "canvas" );
-	tempCanvas.width = sw;
-	tempCanvas.height = sh;
-	const tempCtx = tempCanvas.getContext( "2d" );
-	tempCtx.drawImage( img, sx, sy, sw, sh, 0, 0, sw, sh );
-
-	// Draw using the temporary canvas
-	// Use current drawing color for font rendering (fonts are typically white/monochrome and tinted)
-	const color = screenData.color || { "r": 255, "g": 255, "b": 255, "a": 255 };
-	g_renderer.drawImage(
-		screenData, tempCanvas, dx, dy, color, 0, 0, dw / sw, dh / sh, 0
-	);
 }
 
 /**
