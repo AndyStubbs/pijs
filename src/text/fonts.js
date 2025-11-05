@@ -98,7 +98,7 @@ function registerCommands( api ) {
 
 	// Register screen commands
 	g_commands.addCommand( "setFont", setFont, true, [ "fontId" ] );
-	//g_commands.addCommand( "setChar", setChar, true, [ "charCode", "data" ] );
+	g_commands.addCommand( "setChar", setChar, true, [ "charCode", "data" ] );
 }
 
 
@@ -321,79 +321,115 @@ function getAvailableFonts() {
  **************************************************************************************************/
 
 
-// TODO: Need to draw the new char to the font image and update the texture if it's loaded
-// Simple solution is to use canvas2d to draw it.
-// This as it's a "not safe for animation" function.
-// /**
-//  * Set custom character bitmap
-//  * 
-//  * @param {Object} screenData - Screen data object
-//  * @param {Object} options - Options
-//  * @param {number|string} options.charCode - Character code or string
-//  * @param {Array<Array<number>>|string} options.data - Character bitmap data (2D array or hex string)
-//  * @returns {void}
-//  */
-// function setChar( screenData, options ) {
-// 	let charCode = options.charCode;
-// 	let data = options.data;
+/**
+ * Set custom character bitmap by drawing into a temporary Canvas2D copy of the
+ * font atlas, then updating the existing WebGL texture.
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {Object} options - Options
+ * @param {number|string} options.charCode - Character code or single-character string
+ * @param {Array<Array<number>>|string} options.data - Character bitmap (2D array or hex string)
+ * @returns {void}
+ */
+function setChar( screenData, options ) {
+	let charCode = options.charCode;
+	let data = options.data;
 
-// 	const font = screenData.font;
+	const font = screenData.font;
+	if( !font || !font.image ) {
+		const error = new Error( "setChar: No font image loaded on this screen." );
+		error.code = "NO_FONT_IMAGE";
+		throw error;
+	}
 
-// 	// Convert string to char code
-// 	if( typeof charCode === "string" ) {
-// 		charCode = charCode.charCodeAt( 0 );
-// 	} else {
-// 		charCode = g_utils.getInt( charCode, null );
-// 		if( charCode === null ) {
-// 			const error = new TypeError( "setChar: charCode must be an integer or a string" );
-// 			error.code = "INVALID_CHAR_CODE";
-// 			throw error;
-// 		}
-// 	}
+	// Convert string to char code
+	if( typeof charCode === "string" ) {
+		charCode = charCode.charCodeAt( 0 );
+	} else {
+		charCode = g_utils.getInt( charCode, null );
+		if( charCode === null ) {
+			const error = new TypeError( "setChar: charCode must be an integer or a string" );
+			error.code = "INVALID_CHAR_CODE";
+			throw error;
+		}
+	}
 
-// 	if( !Array.isArray( data ) ) {
-// 		if( typeof data === "string" ) {
-// 			data = g_utils.hexToData( data, font.width, font.height );
-// 		} else {
-// 			const error = new TypeError( "setChar: data must be a 2D array or an encode string" );
-// 			error.code = "INVALID_DATA";
-// 			throw error;
-// 		}
-// 	}
+	// Normalize data to 2D array
+	if( !Array.isArray( data ) ) {
+		if( typeof data === "string" ) {
+			data = g_utils.hexToData( data, font.width, font.height );
+		} else {
+			const error = new TypeError( "setChar: data must be a 2D array or an encoded string" );
+			error.code = "INVALID_DATA";
+			throw error;
+		}
+	}
 
-// 	// Validate data dimensions match font
-// 	if( data.length !== font.height ) {
-// 		const error = new RangeError(
-// 			`setChar: data height (${data.length}) must match font height (${font.height})`
-// 		);
-// 		error.code = "INVALID_DATA_HEIGHT";
-// 		throw error;
-// 	}
+	// Validate dimensions
+	if( data.length !== font.height ) {
+		const error = new RangeError(
+			`setChar: data height (${data.length}) must match font height (${font.height})`
+		);
+		error.code = "INVALID_DATA_HEIGHT";
+		throw error;
+	}
 
-// 	// Validate data items
-// 	for( let i = 0; i < data.length; i++ ) {
-// 		if( !Array.isArray( data[ i ] ) || data[ i ].length !== font.width ) {
-// 			const error = new RangeError(
-// 				`setChar: data width at row ${i} must match font width (${font.width})`
-// 			);
-// 			error.code = "INVALID_DATA_WIDTH";
-// 			throw error;
-// 		}
-// 	}
+	for( let i = 0; i < data.length; i++ ) {
+		if( !Array.isArray( data[ i ] ) || data[ i ].length !== font.width ) {
+			const error = new RangeError(
+				`setChar: data width at row ${i} must match font width (${font.width})`
+			);
+			error.code = "INVALID_DATA_WIDTH";
+			throw error;
+		}
+	}
 
-// 	// Get character index in font
-// 	const charIndex = font.chars[ charCode ];
-// 	if( charIndex === undefined ) {
-// 		const error = new RangeError( "setChar: character not in font character set" );
-// 		error.code = "CHAR_NOT_IN_FONT";
-// 		throw error;
-// 	}
+	// Locate character cell in atlas
+	const charIndex = font.chars[ charCode ];
+	if( charIndex === undefined ) {
+		const error = new RangeError( "setChar: character not in font character set" );
+		error.code = "CHAR_NOT_IN_FONT";
+		throw error;
+	}
 
-// 	// Set the character data
-// 	font.data[ charIndex ] = data;
-// }
+	const columns = Math.floor( font.atlasWidth / font.cellWidth );
+	const cellX = ( charIndex % columns ) * font.cellWidth;
+	const cellY = Math.floor( charIndex / columns ) * font.cellHeight;
 
+	// Inner glyph bounds (skip 1px border like bitmapPrint)
+	const sx = cellX + 1;
+	const sy = cellY + 1;
+	const sw = font.width;
+	const sh = font.height;
+
+	// Create a small canvas for the glyph sub-image only
+	const canvas = document.createElement( "canvas" );
+	canvas.width = sw;
+	canvas.height = sh;
+	const ctx = canvas.getContext( "2d" );
+	ctx.clearRect( 0, 0, sw, sh );
+
+	// Set pixels where data == 1 to white on the small canvas
+	const imageData = ctx.createImageData( sw, sh );
+	const buf = imageData.data;
+	for( let y = 0; y < sh; y += 1 ) {
+		for( let x = 0; x < sw; x += 1 ) {
+			const on = data[ y ][ x ] ? 1 : 0;
+			if( on ) {
+				const i = ( y * sw + x ) * 4;
+				buf[ i + 0 ] = 255;
+				buf[ i + 1 ] = 255;
+				buf[ i + 2 ] = 255;
+				buf[ i + 3 ] = 255;
+			}
+		}
+	}
+	ctx.putImageData( imageData, 0, 0 );
+
+	// Update only the glyph region in the GPU texture
+	g_textures.updateWebGL2TextureSubImage( screenData, font.image, canvas, sx, sy );
+}
 
 /***************************************************************************************************
  * Internal Functions
- ***************************************************************************************************/
+ * **************************************************************************************************/

@@ -9,7 +9,7 @@
 "use strict";
 
 import * as g_screenManager from "../core/screen-manager.js";
-
+import * as g_batches from "./batches.js";
 
 /***************************************************************************************************
  * Module Data
@@ -56,6 +56,10 @@ export function getWebGL2Texture( screenData, img ) {
 	if( !screenData.gl ) {
 		return null;
 	}
+
+	// Ensure the latest content is in screenData.fboTexture - if a texture is scheduled to be drawn
+	// before the change it should drawn with the old texture.
+	g_batches.flushBatches( screenData );
 
 	// Get or create inner Map for this image
 	let contextMap = m_webgl2Textures.get( img );
@@ -133,5 +137,48 @@ export function deleteWebGL2Texture( img ) {
 	if( contextMap.size === 0 ) {
 		m_webgl2Textures.delete( img );
 	}
+}
+
+/**
+ * Update a sub-rectangle of an existing WebGL2 texture using a small source canvas.
+ * Creates the texture on-demand if it doesn't yet exist for this context.
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {HTMLImageElement|HTMLCanvasElement} imgKey - Image element used as cache key
+ * @param {HTMLCanvasElement} sourceCanvas - Canvas containing new pixel data
+ * @param {number} dstX - Destination X in the texture
+ * @param {number} dstY - Destination Y in the texture
+ * @returns {WebGLTexture|null} Updated WebGL texture or null on error
+ */
+export function updateWebGL2TextureSubImage( screenData, imgKey, sourceCanvas, dstX, dstY ) {
+
+	if( !screenData.gl ) {
+		return null;
+	}
+
+	// Ensure texture exists
+	let texture = getWebGL2Texture( screenData, imgKey );
+	if( !texture ) {
+		return null;
+	}
+
+	const gl = screenData.gl;
+	gl.bindTexture( gl.TEXTURE_2D, texture );
+
+	// Upload only the updated region
+	gl.texSubImage2D( 
+		gl.TEXTURE_2D, 0, dstX, dstY,
+		gl.RGBA, gl.UNSIGNED_BYTE, sourceCanvas 
+	);
+
+	// Keep texture parameters consistent
+	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
+	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
+	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
+
+	gl.bindTexture( gl.TEXTURE_2D, null );
+
+	return texture;
 }
 
