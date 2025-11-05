@@ -312,36 +312,6 @@ function setFont( screenData, options ) {
 	g_print.updatePrintCursorDimensions( screenData );
 }
 
-// TODO: Move set font size to print command this deals with the print cursor so that should
-// reside with the print module
-// /**
-//  * Set font size for bitmap fonts
-//  * 
-//  * @param {Object} screenData - Screen data object
-//  * @param {Object} options - Options
-//  * @param {number} options.width - Font width
-//  * @param {number} options.height - Font height
-//  * @returns {void}
-//  */
-// function setFontSize( screenData, options ) {
-// 	const width = g_utils.getInt( options.width, null );
-// 	const height = g_utils.getInt( options.height, null );
-
-// 	if( !width || width < 1 || !height || height < 1 ) {
-// 		const error = new RangeError(
-// 			"setFontSize: width and height must be an integer greater than 0"
-// 		);
-// 		error.code = "INVALID_SIZE";
-// 		throw error;
-// 	}
-
-// 	screenData.font.width = width;
-// 	screenData.font.height = height;
-
-// 	// Update print cursor dimensions
-// 	updatePrintCursorDimensions( screenData );
-// }
-
 
 /**************************************************************************************************
  * Get Available Font Command
