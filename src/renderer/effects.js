@@ -9,7 +9,7 @@
 
 "use strict";
 
-import * as g_batches from "../batches.js";
+import * as g_batches from "./batches.js";
 /**
  * Shift screen image up by yOffset pixels using ping-pong FBO blit
  * 
