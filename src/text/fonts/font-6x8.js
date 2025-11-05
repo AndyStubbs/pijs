@@ -38,12 +38,9 @@ export function getFontImage() {
 	
 	// Clear memory
 	m_font6x8.str = "";
-	const canvas = document.createElement( "canvas" );
-	canvas.width = width;
-	canvas.height = height;
-	const context = canvas.getContext( "2d" );
-	const imageData = context.getImageData( 0, 0, width, height );
-	const data = imageData.data;
+
+	// Create a Uint8ClampedArray for pixel data
+	const data = new Uint8ClampedArray( width * height * 4 );
 
 	let x = 1;
 	let y = 1;
@@ -71,7 +68,14 @@ export function getFontImage() {
 		}
 	}
 
-	// Write the image data
+	// Create ImageData from the array
+	const imageData = new ImageData( data, width, height );
+
+	// Create the canvas and draw the image data
+	const canvas = document.createElement( "canvas" );
+	canvas.width = width;
+	canvas.height = height;
+	const context = canvas.getContext( "2d" );
 	context.putImageData( imageData, 0, 0 );
 
 	return canvas;
