@@ -338,9 +338,10 @@ function setDefaultCanvasOptions( screenData ) {
 	if( screenData.container === document.body ) {
 		document.documentElement.style.height = "100%";
 		document.documentElement.style.margin = "0";
+		document.documentElement.style.padding = "0";
 		document.body.style.height = "100%";
 		document.body.style.margin = "0";
-		document.body.style.overflow = "hidden";
+		document.body.style.padding = "0";
 		screenData.canvas.style.left = "0";
 		screenData.canvas.style.top = "0";
 	}
@@ -570,7 +571,11 @@ function resizeScreen( screenData, isInit ) {
 	} else {
 
 		// If using ratios or full 100% size then set screenData to css size
-		if( !screenData.aspectData || screenData.aspectData.splitter === "" || screenData.aspectData.splitter === ":" ) {
+		if(
+			!screenData.aspectData ||
+			screenData.aspectData.splitter === "" ||
+			screenData.aspectData.splitter === ":"
+		) {
 			screenData.width = screenData.canvas.width;
 			screenData.height = screenData.canvas.height;
 		} else {
