@@ -259,15 +259,24 @@ function resizeBatch( batch, newCapacity ) {
 	const newVertices = new Float32Array( newCapacity * batch.vertexComps );
 	const newColors = new Uint8Array( newCapacity * batch.colorComps );
 	
-	// Copy existing data
-	newVertices.set( batch.vertices );
+	// Copy existing data only if there is data to copy
+	// When shrinking after flush, count is 0 so no copy is needed
+	if( batch.count > 0 ) {
+		newVertices.set( batch.vertices.subarray( 0, batch.count * batch.vertexComps ) );
+		newColors.set( batch.colors.subarray( 0, batch.count * batch.colorComps ) );
+	}
+	
 	batch.vertices = newVertices;
-	newColors.set( batch.colors );
 	batch.colors = newColors;
 	
 	if( batch.type === IMAGE_BATCH ) {
 		const newTexCoords = new Float32Array( newCapacity * batch.texCoordComps );
-		newTexCoords.set( batch.texCoords );
+		
+		// Copy existing texture coordinates only if there is data to copy
+		if( batch.count > 0 ) {
+			newTexCoords.set( batch.texCoords.subarray( 0, batch.count * batch.texCoordComps ) );
+		}
+		
 		batch.texCoords = newTexCoords;
 	}
 
@@ -592,9 +601,6 @@ function resetBatch( batch ) {
 		// This will resize the batch slowly over time - cutting in half every 5 seconds
 		if( batch.capacity > batch.minCapacity && batch.capacityLocalMax < batch.capacity * 0.5 ) {
 
-			// TODO: resizeBatch will error because it tries to copy existing batches
-			// There is no need to copy vertices when shrinking as batch has already flushed and
-			// count is 0.
 			// Resize the batch
 			resizeBatch( batch, Math.max( batch.capacity * 0.5, batch.minCapacity ) );
 		}
