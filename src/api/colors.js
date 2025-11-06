@@ -100,6 +100,7 @@ function registerCommands() {
 	g_commands.addCommand( "setBgColor", setBgColor, true, [ "color" ] );
 	g_commands.addCommand( "setContainerBgColor", setContainerBgColor, true, [ "color" ] );
 	g_commands.addCommand( "setPalColors", setPalColors, true, [ "indices", "colors" ] );
+	g_commands.addCommand( "addPalColors", addPalColors, true, [ "colors" ] );
 	g_commands.addCommand( "getPalColor", getPalColor, true, [ "index" ] );
 }
 
@@ -464,6 +465,60 @@ function setPalColors( screenData, options ) {
 	if( colorSwapped ) {
 		g_images.palettizeImages( screenData );
 	}
+}
+
+// Add palette colors
+function addPalColors( screenData, options ) {
+	const colors = options.colors;
+
+	// Validate colors array
+	if( !Array.isArray( colors ) ) {
+		const error = new TypeError( "addPalColors: Parameter colors must be an array." );
+		error.code = "INVALID_COLORS";
+		throw error;
+	}
+
+	// Array must not be empty
+	if( colors.length === 0 ) {
+		return [];
+	}
+
+	const newIndices = [];
+	let colorsAdded = false;
+
+	// Convert and add each color to the palette
+	for( let i = 0; i < colors.length; i += 1 ) {
+		const color = colors[ i ];
+
+		// Get the color value
+		const colorValue = g_utils.convertToColor( color );
+		if( colorValue === null ) {
+			console.warn( `addPalColors: Parameter colors[${i}] is not a valid color format.` );
+			continue;
+		}
+
+		// Check if color already exists in palette
+		const existingIndex = screenData.palMap.get( colorValue.key );
+		if( existingIndex !== undefined ) {
+			// Color already exists, skip it
+			continue;
+		}
+
+		// Add the new color to the palette
+		const newIndex = screenData.pal.length;
+		screenData.pal.push( colorValue );
+		screenData.palMap.set( colorValue.key, newIndex );
+		newIndices.push( newIndex );
+
+		colorsAdded = true;
+	}
+
+	// Trigger images to update color palletes
+	if( colorsAdded ) {
+		g_images.palettizeImages( screenData );
+	}
+
+	return newIndices;
 }
 
 function getPalColor( screenData, options ) {

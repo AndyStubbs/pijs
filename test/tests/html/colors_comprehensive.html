@@ -45,15 +45,17 @@
 		$.print( `Starting Pal Size: ${$.getPal().length}` );
 
 		// Test setColor by adding two more colors to palette
-		$.setColor( "brown", true );
+		const newIndices = $.addPalColors( [ "brown" ] );
+		$.setColor( newIndices[ 0 ] );
 		$.print( "Added Color: \"brown\"" );
-		$.setColor( "orange", true );
+		$.addPalColors( [ "orange" ] );
+		$.setColor( "orange" );
 		$.print( "Added Color: \"orange\"" );
 		$.print( `Pal Size After Adding 2 Size: ${$.getPal().length}` );
 
 		// Test setColor ithout adding to palette
 		$.setColor( "#f3f300" );	
-		$.print( `Pal Size After setColor Without Adding: ${$.getPal().length}` );
+		$.print( `Pal Size After setColor with non-palette color: ${$.getPal().length}` );
 
 		// Draw palette swatches
 		drawPaletteSwatches( 10, 52 );
@@ -62,10 +64,11 @@
 
 		// Test getPalIndex
 		const brownIndex = $.getPalIndex( "brown" );
+		$.setColor( brownIndex );
 		$.print( `Pal Index of "brown" color: ${brownIndex}` );
 
 		// Test setPalColor
-		$.setPalColor( brownIndex, "HotPink" );
+		$.setPalColors( [ brownIndex ], [ "HotPink" ] );
 		$.setColor( "HotPink" );
 		$.print(
 			`Changed palette color of "brown" to HotPink index: ${$.getPalIndex( "HotPink" )}`
@@ -81,21 +84,15 @@
 		drawPaletteSwatches( 10, 180 );
 
 		// Test swapColor
-		$.replacePalColors( [ 3 ], [ "MidnightBlue" ] );
+		$.setPalColors( [ 3 ], [ "SkyBlue" ] );
 		$.setPosPx( 0, 205 );
 		$.setColor( 3 );
-		$.print( "Swapped Colors \"LawnGreen: 3\" with \"MidnightBlue\"" );
+		$.print( "Swapped Colors \"LawnGreen: 3\" with \"SkyBlue\"" );
 
-		// Test swapColor with a new color not in palette
-		$.replaceColors( [ "LightCoral" ], [ "LightSkyBlue" ] );
-		$.setColor( "LightSkyBlue" );
-		$.print(
-			"Swapped Colors \"LightCoral: 2\" with \"LightSkyBlue\" but didn't change the pal."
-		);
-
-		$.setColor( "black", true );
+		$.addPalColors( [ "black" ] );
+		$.setColor( "black" );
 		$.print( "Added Color: \"black\"" );
-		drawPaletteSwatches( 10, 242 );
+		drawPaletteSwatches( 10, 228 );
 
 	} );
 
