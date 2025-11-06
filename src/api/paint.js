@@ -189,8 +189,10 @@ function paint( screenData, options ) {
 			continue;
 		}
 
-		// Fill this pixel using drawPixel with current blend mode
-		g_renderer.drawPixel( screenData, pixel.x, pixel.y, fillColor, g_renderer.POINTS_BATCH );
+		// Fill this pixel using drawPixelUnsafe
+		g_renderer.drawPixelUnsafe(
+			screenData, pixel.x, pixel.y, fillColor, g_renderer.POINTS_BATCH
+		);
 
 		// Add adjacent pixels to queue if not visited and in bounds
 		addToQueue( queue, visited, px + 1, py, width, height );

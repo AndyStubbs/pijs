@@ -40,24 +40,30 @@ export function drawRect( screenData, x, y, width, height, color ) {
 
 	// Top edge
 	console.log( "top", x, y, x2, y );
-	drawLine( screenData, x, y, x2, y, color );
+	//drawLine( screenData, x, y, x2, y, color );
+	drawRectFilled( screenData, x, y, width, 1, color );
 
+	// Bottom edge
 	if( height > 1 ) {
-
-		// Right edge
-		console.log( "right", x2, y + 1, x2, y2 );
-		drawLine( screenData, x2, y + 1, x2, y2, color );
-
-		// Bottom edge
-		console.log( "bottom", x2 - 1, y2, x, y2 );
-		drawLine( screenData, x2 - 1, y2, x, y2, color );
+		console.log( "bottom", x, y2, x2, y2 );
+		//drawLine( screenData, x, y2, x2, y2, color );
+		drawRectFilled( screenData, x, y + height - 1, width, 1, color );
 	}
 
 	// Left edge
-	if( width > 1 ) {
-		console.log( "left", x, y2 - 1, x, y + 1 );
-		drawLine( screenData, x, y2 - 1, x, y + 1, color );
+	if( width > 1 && height > 2 ) {
+		console.log( "left", x, y - 1, x, y2 + 1 );
+		//drawLine( screenData, x, y - 1, x, y2 + 1, color );
+		drawRectFilled( screenData, x + width - 1, y + 1, 1, height - 2, color );
 	}
+	
+	// Right edge
+	if( height > 2 ) {
+		console.log( "right", x2, y + 1, x2, y2 );
+		//drawLine( screenData, x2, y + 1, x2, y2, color );
+		drawRectFilled( screenData, x, y + 1, 1, height - 2, color );
+	}
+
 }
 
 
@@ -74,6 +80,8 @@ export function drawRect( screenData, x, y, width, height, color ) {
  */
 export function drawRectFilled( screenData, x, y, width, height, color ) {
 
+	console.log( "filled-rect", x, y, width, height );
+
 	// Get geometry batch
 	const batch = screenData.batches[ GEOMETRY_BATCH ];
 
@@ -82,8 +90,8 @@ export function drawRectFilled( screenData, x, y, width, height, color ) {
 
 	const x1 = x;
 	const y1 = y;
-	const x2 = x + width - 1;
-	const y2 = y + height - 1;
+	const x2 = x + width;
+	const y2 = y + height;
 
 	// First triangle: (x,y), (x+width,y), (x,y+height)
 	g_batchHelpers.addTriangleToBatch( batch, x1, y1, x2, y1, x1, y2, color );

@@ -29,13 +29,11 @@ import * as g_readback from "./readback.js";
 
 
 // Re-export batch constants
-export {
-	POINTS_BATCH, IMAGE_BATCH, GEOMETRY_BATCH, POINTS_REPLACE_BATCH, LINES_BATCH
-} from "./batches.js";
+export { POINTS_BATCH, IMAGE_BATCH, GEOMETRY_BATCH, POINTS_REPLACE_BATCH } from "./batches.js";
 
 // Re-export drawing functions
 export { drawImage } from "./draw/sprites.js";
-export { drawPixel } from "./draw/primitives.js";
+export { drawPixel, drawPixelUnsafe } from "./draw/primitives.js";
 export { drawArc } from "./draw/arcs.js";
 export { drawBezier } from "./draw/bezier.js";
 export { drawLine } from "./draw/lines.js";

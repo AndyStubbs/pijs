@@ -9,10 +9,11 @@
 "use strict";
 
 import * as g_batchHelpers from "./batch-helpers.js";
+import * as g_batches from "../batches.js";
 
 
 /**
- * Fast path for single pixel write (unsafe - no bounds checking)
+ * Fast path for single pixel write (safe - prepares batch)
  * 
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
@@ -22,7 +23,27 @@ import * as g_batchHelpers from "./batch-helpers.js";
  */
 export function drawPixel( screenData, x, y, color, batchType ) {
 
+	// Prep for 1 pixel
+	g_batches.prepareBatch( screenData, batchType, 1, null, null );
+
 	// Add directly to point batch
 	const batch = screenData.batches[ batchType ];
 	g_batchHelpers.addVertexToBatch( batch, x, y, color );
 }
+
+/**
+ * Fast path for single pixel write (unsafe - does not prepare batch)
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {Object} color - Color object with r/g/b/a components (0-255)
+ * @returns {void}
+ */
+export function drawPixelUnsafe( screenData, x, y, color, batchType ) {
+
+	// Add directly to point batch
+	const batch = screenData.batches[ batchType ];
+	g_batchHelpers.addVertexToBatch( batch, x, y, color );
+}
+

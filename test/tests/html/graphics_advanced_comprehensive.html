@@ -39,10 +39,6 @@
 		$.setPosPx( 5, 5 );
 		$.print( "ARC" );
 		
-		// Basic arcs - pixel mode
-		$.setPixelMode( true );
-		$.setPen( "pixel", 1 );
-		
 		// Quarter circles at different angles
 		$.setColor( 9 );
 		$.arc( 50, 50, 30, 0, 90 );
@@ -79,10 +75,6 @@
 			ea += 40;
 		}
 		
-		// Anti-aliased arcs
-		$.setPixelMode( false );
-		$.setPen( "circle", 2 );
-		
 		$.setColor( 14 );
 		$.arc( 50, 180, 35, 45, 135 );
 		
@@ -93,25 +85,17 @@
 		$.arc( 210, 180, 35, 225, 315 );
 		
 		// Overlapping arcs
-		$.setPen( "pixel", 1 );
 		$.setColor( 9 );
 		$.arc( 270, 180, 30, 0, 180 );
 		$.setColor( 11 );
 		$.arc( 270, 180, 25, 90, 270 );
 		$.setColor( 13 );
 		$.arc( 270, 180, 20, 180, 360 );
-		
-		// Reset
-		$.setPixelMode( true );
 
 		// === SECTION 2: ELLIPSE Tests (Top Right) ===
 		$.setColor( 15 );
 		$.setPosPx( 325, 5 );
 		$.print( "ELLIPSE" );
-		
-		// Basic ellipses - pixel mode
-		$.setPixelMode( true );
-		$.setPen( "pixel", 1 );
 		
 		// Horizontal ellipses
 		$.setColor( 9 );
@@ -143,9 +127,6 @@
 		$.setColor( 10 );
 		$.ellipse( 550, 180, 40, 30, 11 );
 		
-		// Anti-aliased ellipses
-		$.setPixelMode( false );
-		
 		$.setColor( 2 );
 		$.ellipse( 370, 215, 25, 15 );
 		
@@ -155,18 +136,11 @@
 		// Circle (equal radii)
 		$.setColor( 11 );
 		$.ellipse( 560, 215, 25, 25 );
-		
-		// Reset
-		$.setPixelMode( true );
 
 		// === SECTION 3: BEZIER Tests (Bottom Left) ===
 		$.setColor( 15 );
 		$.setPosPx( 5, 245 );
 		$.print( "BEZIER" );
-		
-		// Simple bezier curves - pixel mode
-		$.setPixelMode( true );
-		$.setPen( "pixel", 1 );
 		
 		// S-curve
 		$.setColor( 9 );
@@ -184,10 +158,6 @@
 		$.setColor( 12 );
 		$.bezier( 240, 270, 240, 300, 280, 300, 280, 330 );
 		
-		// Anti-aliased bezier curves
-		$.setPixelMode( false );
-		$.setPen( "circle", 2 );
-		
 		// Smooth curve
 		$.setColor( 13 );
 		$.bezier( 20, 360, 60, 340, 100, 380, 140, 360 );
@@ -200,28 +170,18 @@
 		$.setColor( 2 );
 		$.bezier( 240, 360, 250, 340, 250, 380, 280, 360 );
 		
-		// Thick bezier with square pen
-		$.setPen( "square", 3 );
 		$.setColor( 11 );
 		$.bezier( 20, 410, 80, 390, 120, 430, 160, 410 );
 		
 		// Thick bezier with circle pen
-		$.setPen( "circle", 3 );
 		$.setColor( 9 );
 		$.bezier( 180, 410, 220, 390, 240, 430, 280, 410 );
 		
-		// Reset
-		$.setPixelMode( true );
-		$.setPen( "pixel", 1 );
-
 		// === SECTION 4: FILTERIMG Tests (Bottom Right) ===
 		$.setColor( 15 );
 		$.setPosPx( 325, 245 );
 		$.print( "FILTERIMG" );
-		
-		// Create a test pattern to filter
-		$.setPixelMode( true );
-		
+
 		// Colorful pattern - 3x2 grid of rectangles
 		$.setColor( 9 );
 		$.rect( 330, 270, 80, 30, 9 );

@@ -12,7 +12,7 @@
 
 import * as g_batches from "../batches.js";
 import * as g_geometry from "./geometry.js";
-import { drawPixel } from "./primitives.js";
+import { drawPixelUnsafe } from "./primitives.js";
 
 
 /**
@@ -36,10 +36,10 @@ export function drawCircle( screenData, cx, cy, radius, color ) {
 	// Single point
 	if( radius <= 1 ) {
 		g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, 4 );
-		drawPixel( screenData, cx + 1, cy, color, g_batches.POINTS_BATCH );
-		drawPixel( screenData, cx - 1, cy, color, g_batches.POINTS_BATCH );
-		drawPixel( screenData, cx, cy + 1, color, g_batches.POINTS_BATCH );
-		drawPixel( screenData, cx, cy - 1, color, g_batches.POINTS_BATCH );
+		drawPixelUnsafe( screenData, cx + 1, cy, color, g_batches.POINTS_BATCH );
+		drawPixelUnsafe( screenData, cx - 1, cy, color, g_batches.POINTS_BATCH );
+		drawPixelUnsafe( screenData, cx, cy + 1, color, g_batches.POINTS_BATCH );
+		drawPixelUnsafe( screenData, cx, cy - 1, color, g_batches.POINTS_BATCH );
 		return;
 	}
 
@@ -56,7 +56,7 @@ export function drawCircle( screenData, cx, cy, radius, color ) {
 	const setPixel = ( pixelX, pixelY ) => {
 		const key = pixelX + "," + pixelY;
 		if( !plotted.has( key ) ) {
-			drawPixel( screenData, pixelX, pixelY, color, g_batches.POINTS_BATCH );
+			drawPixelUnsafe( screenData, pixelX, pixelY, color, g_batches.POINTS_BATCH );
 			plotted.add( key );
 		}
 	};

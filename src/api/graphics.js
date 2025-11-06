@@ -72,7 +72,6 @@ export function buildApi( s_screenData ) {
 
 	// Utility commands
 	const s_setImageDirty = g_renderer.setImageDirty;
-	const s_prepareBatch = g_renderer.prepareBatch;
 	const s_getInt = g_utils.getInt;
 
 	// Constants
@@ -272,7 +271,6 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw the pixel
-		s_prepareBatch( s_screenData, s_pointsBatch, 1 );
 		s_drawPixel( s_screenData, pX, pY, s_color, s_pointsBatch );
 		s_setImageDirty( s_screenData );
 	};
@@ -311,10 +309,10 @@ export function buildApi( s_screenData ) {
 			}
 
 			// Fill in the rectangle
-			const fWidth = pWidth - 1;
-			const fHeight = pHeight - 1;
+			const fWidth = pWidth - 2;
+			const fHeight = pHeight - 2;
 			if( fWidth > 0 && fHeight > 0 ) {
-				s_drawRectFilled( s_screenData, pX + 1, pY, fWidth, fHeight, fillColorValue );
+				s_drawRectFilled( s_screenData, pX + 1, pY + 1, fWidth, fHeight, fillColorValue );
 			}
 		}
 

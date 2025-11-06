@@ -92,44 +92,6 @@ export function addQuadToBatch( batch, x1, y1, x2, y2, color ) {
 	addVertexToBatch( batch, vx1, vy2, color );
 }
 
-/**
- * Add two vertices for a line segment to a lines batch
- * 
- * @param {Object} batch - Lines batch object
- * @param {number} x1 - Start X coordinate
- * @param {number} y1 - Start Y coordinate
- * @param {number} x2 - End X coordinate
- * @param {number} y2 - End Y coordinate
- * @param {Object} color - Color object with r/g/b/a components (0-255)
- * @returns {void}
- */
-export function addLineToBatch( batch, x1, y1, x2, y2, color ) {
-
-	const baseIdx = batch.count;
-	const vertexBase = baseIdx * batch.vertexComps;
-	const colorBase = baseIdx * batch.colorComps;
-
-	const dirX = Math.sign( x2 - x1 );
-	const dirY = Math.sign( y2 - y1 );
-
-	// Vertex 0 (start point)
-	batch.vertices[ vertexBase     ] = x1;
-	batch.vertices[ vertexBase + 1 ] = y1;
-	batch.colors[ colorBase     ] = color.r;
-	batch.colors[ colorBase + 1 ] = color.g;
-	batch.colors[ colorBase + 2 ] = color.b;
-	batch.colors[ colorBase + 3 ] = color.a;
-
-	// Vertex 1 (end point)
-	batch.vertices[ vertexBase + 2 ] = x2 + dirX;
-	batch.vertices[ vertexBase + 3 ] = y2 + dirY;
-	batch.colors[ colorBase + 4 ] = color.r;
-	batch.colors[ colorBase + 5 ] = color.g;
-	batch.colors[ colorBase + 6 ] = color.b;
-	batch.colors[ colorBase + 7 ] = color.a;
-
-	batch.count += 2;
-}
 
 /***************************************************************************************************
  * Caps and Curves Helpers
