@@ -199,7 +199,7 @@
 		for( let i = 0; i < testPixels.length; i++ ) {
 			const px = testPixels[ i ].x;
 			const py = testPixels[ i ].y;
-			const pixelColor = $.getPixelColor( px, py );
+			const pixelColor = $.getPixel( px, py, true );
 			
 			// Draw a small sample of the retrieved color
 			$.setColor( pixelColor );
@@ -214,10 +214,10 @@
 		$.pset( 0, 479 );
 		$.pset( 639, 479 );
 		
-		const corner1 = $.getPixel( 0, 0 );
-		const corner2 = $.getPixel( 639, 0 );
-		const corner3 = $.getPixel( 0, 479 );
-		const corner4 = $.getPixel( 639, 479 );
+		const corner1 = $.getPixel( 0, 0, false );
+		const corner2 = $.getPixel( 639, 0, false );
+		const corner3 = $.getPixel( 0, 479, false );
+		const corner4 = $.getPixel( 639, 479, false );
 		
 		// Display corner test results
 		$.setColor( corner1 );
