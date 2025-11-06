@@ -14,7 +14,7 @@
 import * as g_utils from "../core/utils.js";
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
-import * as g_textures from "../renderer/textures.js";
+import * as g_renderer from "../renderer/renderer.js";
 import * as g_print from "./print.js";
 
 import * as g_fnt6x8 from "./fonts/font-6x8.js";
@@ -279,7 +279,7 @@ function setFont( screenData, options ) {
 
 	// Get or create texture for font image if it's loaded
 	if( font.image ) {
-		const texture = g_textures.getWebGL2Texture( screenData, font.image );
+		const texture = g_renderer.getWebGL2Texture( screenData, font.image );
 		if( !texture ) {
 			console.warn( "setFont: Failed to get/create texture for font image." );
 		}
@@ -418,7 +418,7 @@ function setChar( screenData, options ) {
 	}
 
 	// Update only the glyph region in the GPU texture
-	g_textures.updateWebGL2TextureSubImage( screenData, font.image, buf, sw, sh, sx, sy );
+	g_renderer.updateWebGL2TextureSubImage( screenData, font.image, buf, sw, sh, sx, sy );
 }
 
 /***************************************************************************************************
