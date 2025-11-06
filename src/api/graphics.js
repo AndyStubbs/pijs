@@ -273,6 +273,10 @@ export function buildApi( s_screenData ) {
 		// Draw the pixel
 		s_drawPixel( s_screenData, pX, pY, s_color, s_pointsBatch );
 		s_setImageDirty( s_screenData );
+
+		// Set the cursor after drawing
+		s_screenData.cursor.x = x;
+		s_screenData.cursor.y = y;
 	};
 
 	m_api.pset = psetFn;
