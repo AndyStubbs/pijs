@@ -233,13 +233,12 @@ export function setImageDirty( screenData ) {
 /**
  * Called when blend mode changes, flush current batch with old blend mode
  * @param {Object} screenData - Screen data object
- * @param {string} previousBlend - Previous blend mode
- * @param {Array<Float32Array} previousNoise - 2d Array of noise values
+ * @param {Object} previousBlends - Blends data including blend mode, noise, seed or null default
  * @returns {void}
  */
-export function blendModeChanged( screenData, previousBlend, previousNoise ) {
+export function blendModeChanged( screenData, previousBlends ) {
 
 	// Flush existing batch with old blend mode
-	g_batches.flushBatches( screenData, previousBlend, previousNoise );
+	g_batches.flushBatches( screenData, previousBlends );
 	g_batches.displayToCanvas( screenData );
 }

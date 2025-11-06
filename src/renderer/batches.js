@@ -369,16 +369,13 @@ export function prepareBatch( screenData, batchType, itemCount, img, texture ) {
  * Flush all batches to FBO
  * 
  * @param {Object} screenData - Screen data object
- * @param {string|null} blend - Blend mode or null for default
+ * @param {Object|null} blends - Blends data including blend mode, noise, seed or null for default
  * @param {Array<Float32Array>|null} noise - Noise values
  * @returns {void}
  */
-export function flushBatches( screenData, blend = null, noise = null ) {
-	if( blend === null ) {
-		blend = screenData.blends.blend;
-	}
-	if( noise === null ) {
-		noise = screenData.blends.noise;
+export function flushBatches( screenData, blends = null ) {
+	if( blends === null ) {
+		blends = screenData.blends;
 	}
 	
 	const gl = screenData.gl;
@@ -424,7 +421,7 @@ export function flushBatches( screenData, blend = null, noise = null ) {
 			if( drawOrderItem.overrideGlobalBlend === null ) {
 
 				// Other batches use global blend mode
-				if( blend === g_blends.BLEND_REPLACE ) {
+				if( blends.blend === g_blends.BLEND_REPLACE ) {
 					gl.disable( gl.BLEND );
 				} else {
 					gl.enable( gl.BLEND );
@@ -456,7 +453,7 @@ export function flushBatches( screenData, blend = null, noise = null ) {
 			}
 			drawBatch(
 				gl, screenData, drawOrderItem.batch,
-				drawOrderItem.startIndex, drawOrderItem.endIndex, texture, noise
+				drawOrderItem.startIndex, drawOrderItem.endIndex, texture, blends
 			);
 		}
 	}
@@ -537,9 +534,10 @@ function uploadBatch( gl, batch, width, height ) {
  * @param {number} startIndex - Start index in batch
  * @param {number} endIndex - End index in batch
  * @param {WebGLTexture|null} texture - Texture for IMAGE_BATCH or null
+ * @param {Object} blends - Blends data including blend mode, noise, seed or null default
  * @returns {void}
  */
-function drawBatch( gl, screenData, batch, startIndex, endIndex, texture = null, noise = null ) {
+function drawBatch( gl, screenData, batch, startIndex, endIndex, texture = null, blends = null ) {
 
 	gl.useProgram( batch.program );
 	gl.bindVertexArray( batch.vao );
@@ -553,9 +551,11 @@ function drawBatch( gl, screenData, batch, startIndex, endIndex, texture = null,
 
 	// Set noise uniforms for batches that use point shaders
 	if( batch.locations.noiseMin !== undefined ) {
-		if( noise === null ) {
-			noise = screenData.blends.noise;
+		if( blends === null ) {
+			blends = screenData.blends;
 		}
+		const noise = blends.noise;
+		const noiseSeed = blends.noiseSeed;
 		
 		// Calculate noise min and max ranges
 		let noiseMin, noiseMax;
@@ -573,9 +573,15 @@ function drawBatch( gl, screenData, batch, startIndex, endIndex, texture = null,
 		gl.uniform4fv( batch.locations.noiseMin, noiseMin );
 		gl.uniform4fv( batch.locations.noiseMax, noiseMax );
 		
-		// Set time for animated noise (use 0.0 for static noise)
-		// For now, use 0.0 for static noise - can be changed to performance.now() / 1000.0
-		gl.uniform1f( batch.locations.time, performance.now() / 1000.0 );
+		// Set time for animated noise
+		// Use seed if available, otherwise use current time
+		let timeValue;
+		if( noiseSeed !== null ) {
+			timeValue = noiseSeed / 1000.0;
+		} else {
+			timeValue = performance.now() / 1000.0;
+		}
+		gl.uniform1f( batch.locations.time, timeValue );
 	}
 
 	// Draw based on batch mode

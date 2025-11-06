@@ -30,7 +30,7 @@ $.ready( function () {
 	var color2 = [ 0, 225, 225 ];
 	$.screen( "256x256" );
 	$.setColor( 15 );
-	$.setBlend( "replace", 25 );
+	$.setNoise( 25, 25 );
 	for( i = 0; i < 128; i++ ) {
 		color[ 0 ] = Math.max( color[ 0 ] - 2, 0 );
 		color[ 1 ] = Math.max( color[ 1 ] - 2, 0 );
@@ -39,7 +39,7 @@ $.ready( function () {
 		$.rect( i, i, 255 - i * 2 + 1, 255 - i * 2 + 1 );
 	}
 
-	$.setBlend( "replace" );
+	$.setNoise( null );
 	$.paint( 127, 127, color2, 0.75 );
 } );
 </script>
