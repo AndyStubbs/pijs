@@ -286,6 +286,7 @@ export const queueMicrotask = ( callback ) => {
  * Color Utility Functions
  **************************************************************************************************/
 
+
 const m_colorCheckerContext = document.createElement( "canvas" ).getContext(
 	"2d", { "willReadFrequently": true }
 );
