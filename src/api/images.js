@@ -494,7 +494,7 @@ function addPaletteImage( name ) {
 	const data = imageData.data;
 	for( let i = 0; i < data.length; i += 4 ) {
 		const color = g_utils.rgbToColor( data[ i ], data[ i + 1 ], data[ i + 2 ], data[ i + 3 ] );
-		const index = g_colors.findColorIndexByColorValue( fakeScreenData, color, 0 );
+		const index = g_colors.findColorIndexByColorValue( fakeScreenData, color, 1 );
 		const newColor = fakeScreenData.pal[ index ];
 		if( newColor.key !== color.key ) {
 			data[ i ] = newColor.r;

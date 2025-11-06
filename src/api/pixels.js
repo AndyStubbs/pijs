@@ -108,7 +108,7 @@ function get( screenData, options ) {
 	const pY = g_utils.getInt( options.y, null );
 	const pWidth = g_utils.getInt( options.width, null );
 	const pHeight = g_utils.getInt( options.height, null );
-	const tolerance = options.tolerance;
+	const tolerance = g_utils.getFloat( options.tolerance, 1 );
 	const asIndex = options.asIndex ?? true;
 
 	if( pX === null || pY === null || pWidth === null || pHeight === null ) {
@@ -132,7 +132,7 @@ function getAsync( screenData, options ) {
 	const pY = g_utils.getInt( options.y, null );
 	const pWidth = g_utils.getInt( options.width, null );
 	const pHeight = g_utils.getInt( options.height, null );
-	const tolerance = options.tolerance;
+	const tolerance = g_utils.getFloat( options.tolerance, 1 );
 	const asIndex = options.asIndex ?? true;
 
 	if( pX === null || pY === null || pWidth === null || pHeight === null ) {

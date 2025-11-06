@@ -47,13 +47,14 @@ function registerCommands() {
  * 
  * @param {Object} screenData - The screen data object
  * @param {Object} options - Options object with x, y, fillColor, tolerance, boundaryColor
+ * @param {number} options.tolerance - Color matching tolerance (0 = exact match, 1 = any color)
  * @returns {void}
  */
 function paint( screenData, options ) {
 	const x = g_utils.getInt( options.x, null );
 	const y = g_utils.getInt( options.y, null );
 	let fillColor = options.fillColor;
-	let tolerance = g_utils.getFloat( options.tolerance, 1 );
+	let tolerance = g_utils.getFloat( options.tolerance, 0 );
 	let boundaryColor = options.boundaryColor;
 
 	if( x === null || y === null ) {
@@ -64,7 +65,7 @@ function paint( screenData, options ) {
 
 	if( tolerance < 0 || tolerance > 1 ) {
 		const error = new RangeError(
-			"paint: Parameter tolerance must be a number between 0 and 1."
+			"paint: Parameter tolerance must be a number between 0 and 1 (0 = exact match, 1 = any color)."
 		);
 		error.code = "INVALID_PARAMETER";
 		throw error;
@@ -83,6 +84,13 @@ function paint( screenData, options ) {
 
 	// Check if starting point is in bounds
 	if( x < 0 || x >= width || y < 0 || y >= height ) {
+		return;
+	}
+
+	// Optimization: if tolerance is 1 (any color), just fill the entire screen
+	if( tolerance === 1 ) {
+		g_renderer.drawRectFilled( screenData, 0, 0, width, height, fillColor );
+		g_renderer.setImageDirty( screenData );
 		return;
 	}
 
@@ -119,9 +127,10 @@ function paint( screenData, options ) {
 
 	// Calculate tolerance threshold for color comparison
 	// Using perceptual weights: [0.2, 0.68, 0.07, 0.05] for R, G, B, A
+	// Tolerance: 0 = exact match only, 1 = any color
 	const weights = [ 0.2, 0.68, 0.07, 0.05 ];
 	const maxDifference = ( 255 * 255 ) * weights.reduce( ( a, b ) => a + b );
-	const toleranceThreshold = tolerance * ( 2 - tolerance ) * maxDifference;
+	const toleranceThreshold = ( 1 - tolerance * tolerance ) * maxDifference;
 
 	// Use Uint8Array for efficient visited pixel tracking
 	const visited = new Uint8Array( width * height );

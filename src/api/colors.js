@@ -296,12 +296,12 @@ function setPal( screenData, options ) {
 // Get palette index for a color
 function getPalIndex( screenData, options ) {
 	let color = options.color;
-	let tolerance = g_utils.getFloat( options.tolerance, 1 );
+	let tolerance = g_utils.getFloat( options.tolerance, 0 );
 
 	// Validate tolerance variable
 	if( tolerance < 0 || tolerance > 1 ) {
 		const error = new RangeError(
-			"getPalIndex: Parameter tolerance must be a number between 0 and 1."
+			"getPalIndex: Parameter tolerance must be a number between 0 and 1 (0 = exact match, 1 = any color)."
 		);
 		error.code = "INVALID_PARAMETER";
 		throw error;
@@ -555,18 +555,19 @@ export function getColorValueByRawInput( screenData, rawInput ) {
 }
 
 // Finds a color index without adding it to palette
-export function findColorIndexByColorValue( screenData, color, tolerance = 1 ) {
+// @param {Object} screenData - The screen data object
+// @param {Object} color - Color object to find
+// @param {number} tolerance - Color matching tolerance (0 = exact match, 1 = any color)
+export function findColorIndexByColorValue( screenData, color, tolerance = 0 ) {
 
 	// First check by key - fastest lookup
 	if( screenData.palMap.has( color.key ) ) {
 		return screenData.palMap.get( color.key );
 	}
 
-	// TODO: Reverse tolerance so that 0 is strict no tolerance for differences and 1 means allows
-	// any color differences - current implementation is the opposite
-	// Suggested change: const minSimularity = MAX_DIFFERENCE * ( 1 - tolerance );
-	// Max color difference constant
-	const minSimularity = tolerance * ( 2 - tolerance ) * MAX_DIFFERENCE;
+	// Calculate minimum similarity threshold for color comparison
+	// Tolerance: 0 = exact match only, 1 = any color
+	const minSimularity = ( 1 - tolerance * tolerance ) * MAX_DIFFERENCE;
 
 	// Collect all matches meeting the target similarity, then return the most similar
 	let bestMatchIndex = null;
