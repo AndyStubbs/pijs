@@ -24,6 +24,17 @@
  * This might not be necessary. If I find an example of where this is an issue I may attempt to do
  * this but for now, let's just leave it be.
  * 
+ * 
+ * TODO:
+ * 
+ * Add a hardPalette flag to the screen command. When set it adds a hard requirement on palette
+ * colors. This means that only colors from the palette can be used.
+ * 
+ * Need to find an optimal solution to enforce the hardPalette flag and to update FBO when palette
+ * changes. I can try adding a 1D array or texture with color lookups and try to do it in the
+ * shader. If I have to I can do a CPU filter on the colors when palette changes, but this is not
+ * optimal. I can also enforce the colors in the color lookups but that would require more
+ * complex code in multiple places.  Need to really think about a good strategy for this.
  */
 "use strict";
 
