@@ -558,9 +558,8 @@ function palettizeImage( screenData, name ) {
 		palettizedImageData[ i + 3 ] = newColor.a;
 	}
 
-	// Get the texture for this image
-	const texture = g_renderer.getWebGL2Texture( screenData, imageObj.image );
-	
 	// Update the texture with the palettized imageData
-
+	g_renderer.updateWebGL2TextureImage(
+		screenData, imageObj.image, palettizedImageData, imageObj.width, imageObj.height
+	);
 }

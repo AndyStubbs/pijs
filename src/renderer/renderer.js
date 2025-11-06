@@ -53,7 +53,7 @@ export { flushBatches } from "./batches.js";
 export { displayToCanvas } from "./batches.js";
 
 // Re-export texture management
-export { getWebGL2Texture, deleteWebGL2Texture } from "./textures.js";
+export { getWebGL2Texture, deleteWebGL2Texture, updateWebGL2TextureImage } from "./textures.js";
 
 // Re-export readback functions
 export { readPixel, readPixelAsync, readPixels, readPixelsAsync } from "./readback.js";

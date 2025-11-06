@@ -187,3 +187,47 @@ export function updateWebGL2TextureSubImage(
 	return texture;
 }
 
+/**
+ * Update an entire WebGL2 texture using pixel data.
+ * Creates the texture on-demand if it doesn't yet exist for this context.
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {HTMLImageElement|HTMLCanvasElement} imgKey - Image element used as cache key
+ * @param {Uint8ClampedArray} pixelData - RGBA pixel data array
+ * @param {number} width - Width of the pixel data
+ * @param {number} height - Height of the pixel data
+ * @returns {WebGLTexture|null} Updated WebGL texture or null on error
+ */
+export function updateWebGL2TextureImage( screenData, imgKey, pixelData, width, height ) {
+
+	if( !screenData.gl ) {
+		return null;
+	}
+
+	// Ensure texture exists
+	let texture = getWebGL2Texture( screenData, imgKey );
+	if( !texture ) {
+		return null;
+	}
+
+	const gl = screenData.gl;
+	gl.bindTexture( gl.TEXTURE_2D, texture );
+
+	// Upload the entire texture using pixel data
+	gl.texImage2D( 
+		gl.TEXTURE_2D, 0, gl.RGBA,
+		width, height, 0,
+		gl.RGBA, gl.UNSIGNED_BYTE, pixelData 
+	);
+
+	// Keep texture parameters consistent
+	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
+	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
+	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
+
+	gl.bindTexture( gl.TEXTURE_2D, null );
+
+	return texture;
+}
+
