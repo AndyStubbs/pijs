@@ -96,7 +96,7 @@ export function drawCircleFilled( screenData, cx, cy, radius, color ) {
 
 	// Apply input adjustments for MCA consistency
 	//radius -= 1;
-	cy -= 1;
+	//cy -= 1;
 	return g_geometry.drawCachedGeometry(
 		screenData, g_geometry.FILLED_CIRCLE, radius, cx, cy, color
 	);
