@@ -21,9 +21,13 @@
  * FBO to the canvas it will apply gl.NEAREST when display to canvas is run, this is already 
  * implemented I just need to set canvas.width and canvas.height to match.
  * 
- * This might not be necessary. If I find an example of where this is an issue I may attempt to do
- * this but for now, let's just leave it be.
+ * I did a test 640m480 and even it still has pixels that are uneven in size some pixels are 2x2,
+ * other pixels are 1x2. Even with a css resolution of 1280x960 still resulted in uneven pixel
+ * sizes.
  * 
+ * My main reason for letting CSS handle upscaling was I liked being able to copy and paste the
+ * image and get the image with target resolution. But a work-around could be adding a copy
+ * image that command that copies the canvas to clipboard.
  * 
  * TODO:
  * 
