@@ -152,7 +152,9 @@ export function deleteWebGL2Texture( img ) {
  * @param {number} dstY - Destination Y in the texture
  * @returns {WebGLTexture|null} Updated WebGL texture or null on error
  */
-export function updateWebGL2TextureSubImage( screenData, imgKey, pixelData, width, height, dstX, dstY ) {
+export function updateWebGL2TextureSubImage(
+	screenData, imgKey, pixelData, width, height, dstX, dstY
+) {
 
 	if( !screenData.gl ) {
 		return null;

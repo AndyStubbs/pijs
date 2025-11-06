@@ -467,6 +467,9 @@ export function findColorIndexByColorValue( screenData, color, tolerance = 1 ) {
 		return screenData.palMap.get( color.key );
 	}
 
+	// TODO: Reverse tolerance so that 0 is strict no tolerance for differences and 1 means allows
+	// any color differences - current implementation is the opposite
+	// Suggested change: const minSimularity = MAX_DIFFERENCE * ( 1 - tolerance );
 	// Max color difference constant
 	const minSimularity = tolerance * ( 2 - tolerance ) * MAX_DIFFERENCE;
 
