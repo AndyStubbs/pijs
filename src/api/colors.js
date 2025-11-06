@@ -92,7 +92,7 @@ function registerCommands() {
 	g_commands.addCommand( "setDefaultColor", setDefaultColor, false, [ "color" ] );
 
 	// Register screen commands
-	g_commands.addCommand( "setColor", setColor, true, [ "color", "isAddToPalette" ] );
+	g_commands.addCommand( "setColor", setColor, true, [ "color" ] );
 	g_commands.addCommand( "getColor", getColor, true, [ "asIndex" ] );
 	g_commands.addCommand( "getPal", getPal, true, [ "include0" ] );
 	g_commands.addCommand( "setPal", setPal, true, [ "pal" ] );
@@ -169,7 +169,6 @@ function setDefaultColor( options ) {
 // Set color
 function setColor( screenData, options ) {
 	const colorInput = options.color;
-	const isAddToPalette = !!options.isAddToPalette;
 
 	let colorValue;
 
@@ -195,13 +194,6 @@ function setColor( screenData, options ) {
 			);
 			error.code = "INVALID_PARAMETER";
 			throw error;
-		}
-
-		// If we are adding to palette then we need to do an additional check to see if the color
-		// is already in the palette or not
-		if( isAddToPalette && findColorIndexByColorValue( screenData, colorValue ) === null ) {
-			screenData.pal.push( colorValue );
-			screenData.palMap.set( colorValue.key, screenData.pal.length - 1 );
 		}
 	}
 
@@ -260,7 +252,7 @@ function setPal( screenData, options ) {
 	}
 
 	// Create a new pal with 0'th color set to black transparent
-	const newPal = [ g_utils.convertToColor( [ 0, 0, 0, 0 ] ) ];
+	const newPal = [ g_utils.rgbToColor( 0, 0, 0, 0 ) ];
 
 	// Convert all colors and validate
 	for( let i = 0; i < pal.length; i++ ) {
@@ -289,12 +281,15 @@ function setPal( screenData, options ) {
 	const currentColor = screenData.color;
 	const newIndex = findColorIndexByColorValue( screenData, currentColor );
 	if( newIndex !== null ) {
-		screenData.color = newPal[ newIndex ];
+		g_utils.setColor( screenData.color, newPal[ newIndex ] );
 	} else {
 
 		// If current color not found, default to palette index 1
-		screenData.color = newPal[ 1 ];
+		g_utils.setColor( screenData.color, newPal[ 1 ] );
 	}
+
+	// Trigger images to update color palletes
+	g_images.palettizeImages( screenData );
 }
 
 // Get palette index for a color
@@ -444,12 +439,14 @@ function setPalColors( screenData, options ) {
 		// Store the old color before replacing
 		const oldColor = screenData.pal[ index ];
 
-		if( color.key === oldColor.key ) {
+		// Skip if color is not changing
+		if( colorValue.key === oldColor.key ) {
 			continue;
 		}
+
 		// Check if we are changing the current selected fore color
 		if( screenData.color.key === oldColor.key ) {
-			screenData.color = colorValue;
+			g_utils.setColor( colorValue, screenData.color );
 		}
 
 		// Set the new palette color

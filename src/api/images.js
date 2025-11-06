@@ -200,11 +200,13 @@ function loadImage( options ) {
 
 		// Initialize palColors with 0 for transparent black
 		palColors = [ g_utils.convertToColor( "rgba(0, 0, 0, 0)" ) ];
+		palColorMap.set( palColors[ 0 ].key, 0 );
+
 		for( let i = 0; i < paletteKeys.length; i += 1 ) {
 			const palColorRaw = paletteKeys[ i ];
 			const palColor = g_utils.convertToColor( palColorRaw );
 			palColors.push( palColor );
-			palColorMap.set( palColor.key, i );
+			palColorMap.set( palColor.key, i + 1 );
 		}
 	}
 
@@ -214,7 +216,7 @@ function loadImage( options ) {
 		"image": null,
 		"width": null,
 		"height": null,
-		"usePal": usePalette,
+		"usePalette": usePalette,
 		"palColors": palColors,
 		"palColorMap": palColorMap
 	};
