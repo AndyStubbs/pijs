@@ -30,16 +30,17 @@ $.ready( function () {
 	var color2 = [ 0, 225, 225 ];
 	$.screen( "256x256" );
 	$.setColor( 15 );
-	$.setBlend( "replace", 100 );
+	$.setBlend( "replace", 25 );
 	for( i = 0; i < 128; i++ ) {
-		// color[ 0 ] -= 2;
-		// color[ 1 ] -= 2;
-		// color[ 2 ] -= 2;
-		// $.setColor( color );
+		color[ 0 ] = Math.max( color[ 0 ] - 2, 0 );
+		color[ 1 ] = Math.max( color[ 1 ] - 2, 0 );
+		color[ 2 ] = Math.max( color[ 2 ] - 2, 0 );
+		$.setColor( color );
 		$.rect( i, i, 255 - i * 2 + 1, 255 - i * 2 + 1 );
 	}
+
 	$.setBlend( "replace" );
-	//$.paint( 127, 127, color2, 0.5 );
+	$.paint( 127, 127, color2, 0.75 );
 } );
 </script>
 </body>
