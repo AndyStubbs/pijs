@@ -22,9 +22,26 @@
 	</head>
 <body>
 <script>
+	const defaultPaletteHex = [
+		"#0000AACC", "#00AA00CC", "#00AAAACC", "#AA0000CC", "#AA00AACC", "#AA5500CC", "#AAAAAACC",
+		"#555555CC", "#5555FFCC", "#55FF55CC", "#55FFFFCC", "#FF5555CC", "#FF55FFCC", "#FFFF55CC",
+		"#FFFFFFCC", "#000000CC", "#141414CC", "#202020CC", "#2D2D2DCC", "#393939CC", "#454545CC",
+		"#515151CC", "#616161CC", "#717171CC", "#828282CC", "#929292CC", "#A2A2A2CC", "#B6B6B6CC",
+		"#CACACACC", "#E3E3E3CC", "#FFFFFFCC", "#0000FFCC", "#4100FFCC", "#7D00FFCC", "#BE00FFCC",
+		"#FF00FFCC", "#FF00BECC", "#FF007DCC", "#FF0041CC", "#FF0000CC", "#FF4100CC", "#FF7D00CC",
+		"#FFBE00CC", "#FFFF00CC", "#BEFF00CC", "#7DFF00CC", "#41FF00CC", "#00FF00CC", "#00FF41CC",
+		"#00FF7DCC", "#00FFBECC", "#00FFFFCC", "#00BEFFCC", "#007DFFCC", "#0041FFCC", "#7D7DFFCC",
+		"#9E7DFFCC", "#BE7DFFCC", "#DF7DFFCC", "#FF7DFFCC", "#FF7DDFCC", "#FF7DBECC", "#FF7D9ECC",
+		"#FF7D7DCC", "green", "purple", "blue"
+	];
+	$.setDefaultPal( defaultPaletteHex );
+
 	$.ready( function () {
+
 		$.screen( "640x480" );
 		
+		$.setBlend( "alpha" );
+
 		// Test grid layout:
 		// +------------------+------------------+------------------+
 		// | PSET Tests       | Line Tests       | Rect Tests       |
@@ -78,6 +95,7 @@
 		$.print( "LINE" );
 		
 		// Horizontal lines with different colors
+
 		for( let i = 0; i < 5; i++ ) {
 			$.setColor( i + 9 );
 			$.line( 220, 25 + i * 10, 360, 25 + i * 10 );
@@ -221,17 +239,21 @@
 		
 		// Test getPixel and verify by drawing samples
 		const testPixels = [
-			{ "x": 440, "y": 195 },
-			{ "x": 460, "y": 205 },
-			{ "x": 475, "y": 210 }
+			{ "x": 440, "y": 195, "c": "green" },
+			{ "x": 455, "y": 200, "c": "purple" },
+			{ "x": 475, "y": 216, "c": "blue" }
 		];
 		
+		$.setBlend( "replace" );
+
 		// Draw white boxes around test pixels
-		$.setColor( 15 );
 		for( let i = 0; i < testPixels.length; i++ ) {
 			const px = testPixels[ i ].x;
 			const py = testPixels[ i ].y;
+			$.setColor( 15 );
 			$.rect( px - 2, py - 2, 5, 5 );
+			$.setColor( testPixels[ i ].c );
+			$.pset( px, py );
 		}
 		
 		// Get pixel colors and display them below
@@ -246,6 +268,8 @@
 			$.rect( 440, displayY, 20, 20, pixelColor );
 			displayY += 25;
 		}
+
+		$.setBlend( "alpha" );
 		
 		// Test getPixel with corners
 		$.setColor( 9 );
@@ -292,25 +316,11 @@
 		x = 13;
 		y = 360
 
-		$.ellipse( 5, y, 1, 1, "red" );
+		$.ellipse( 5, y, 1, 1, 4 );
 		for( r = 2; r < 9; r += 1 ) {
-			$.ellipse( x, y, r, Math.round( r / 2 ), "red" );
-			$.ellipse( x + r * 3 + 1, y, Math.round( r / 2 ), r, "green" );
+			$.ellipse( x, y, r, Math.round( r / 2 ), 4 );
+			$.ellipse( x + r * 3 + 1, y, Math.round( r / 2 ), r, 2 );
 			x += r * 5.5 + 2;
-		}
-
-		// Big ellipses
-		$.setColor( 2 );
-
-		x = 13;
-		y = 385
-
-		for( r = 10; r < 15; r += 1 ) {
-			$.ellipse( x, y, r, Math.round( r / 2 ) );
-			if( r < 14 ) {
-				$.ellipse( x + r * 2, y, Math.round( r / 2 ), r );
-			}
-			x += r * 4;
 		}
 
 		// Big ellipses filled
@@ -318,9 +328,9 @@
 		x = 13;
 		y = 385
 		for( r = 10; r < 15; r += 1 ) {
-			$.ellipse( x, y, r, Math.round( r / 2 ), "red" );
+			$.ellipse( x, y, r, Math.round( r / 2 ), 4 );
 			if( r < 14 ) {
-				$.ellipse( x + r * 2, y, Math.round( r / 2 ), r, "green" );
+				$.ellipse( x + r * 2, y, Math.round( r / 2 ), r, 2 );
 			}
 			x += r * 4;
 		}
@@ -329,7 +339,7 @@
 		$.setColor( 2 );
 		$.ellipse( 105, 408, 100, 5 );
 		$.setColor( 15 );
-		$.ellipse( 105, 423, 100, 5, "red" );
+		$.ellipse( 105, 423, 100, 5, 4 );
 
 		// Thin ellipses
 		y = 455;

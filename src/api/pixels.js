@@ -69,7 +69,10 @@ function getPixel( screenData, options ) {
 	const asIndex = options.asIndex ?? false;
 	const colorValue = g_renderer.readPixel( screenData, px, py );
 	if( asIndex ) {
-		return g_colors.findColorIndexByColorValue( screenData, colorValue );
+		const index = g_colors.findColorIndexByColorValue( screenData, colorValue );
+		if( index === null ) {
+			return 0;
+		}
 	}
 	return colorValue;
 }

@@ -39,31 +39,22 @@ export function drawRect( screenData, x, y, width, height, color ) {
 	// Outline only for pixel pen rectangles
 
 	// Top edge
-	console.log( "top", x, y, x2, y );
-	//drawLine( screenData, x, y, x2, y, color );
 	drawRectFilled( screenData, x, y, width, 1, color );
 
 	// Bottom edge
 	if( height > 1 ) {
-		console.log( "bottom", x, y2, x2, y2 );
-		//drawLine( screenData, x, y2, x2, y2, color );
 		drawRectFilled( screenData, x, y + height - 1, width, 1, color );
 	}
 
 	// Left edge
 	if( width > 1 && height > 2 ) {
-		console.log( "left", x, y - 1, x, y2 + 1 );
-		//drawLine( screenData, x, y - 1, x, y2 + 1, color );
 		drawRectFilled( screenData, x + width - 1, y + 1, 1, height - 2, color );
 	}
 	
 	// Right edge
 	if( height > 2 ) {
-		console.log( "right", x2, y + 1, x2, y2 );
-		//drawLine( screenData, x2, y + 1, x2, y2, color );
 		drawRectFilled( screenData, x, y + 1, 1, height - 2, color );
 	}
-
 }
 
 
@@ -79,8 +70,6 @@ export function drawRect( screenData, x, y, width, height, color ) {
  * @returns {void}
  */
 export function drawRectFilled( screenData, x, y, width, height, color ) {
-
-	console.log( "filled-rect", x, y, width, height );
 
 	// Get geometry batch
 	const batch = screenData.batches[ GEOMETRY_BATCH ];

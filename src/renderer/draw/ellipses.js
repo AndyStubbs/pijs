@@ -208,8 +208,8 @@ export function drawEllipse( screenData, cx, cy, rx, ry, color, fillColor ) {
 					continue;
 				}
 
-				// Adjust Y to align fill with outline (circle implementation uses cy -= 1)
-				const yWorld = cy + currentY - 1;
+				// Adjust Y to align fill with outline
+				const yWorld = cy + currentY;
 				const x1 = cx + xStart;
 				const x2 = cx + xEnd + 1;
 
