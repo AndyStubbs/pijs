@@ -12,11 +12,10 @@
 
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
-import * as g_lines from "./lines.js";
 
 /**
  * Draw cubic Bezier with pixel pen by tessellating into short line segments.
- * Uses adaptive subdivision for smoothness and reuses drawLine for rasterization.
+ * Uses adaptive subdivision for smoothness and deduplicates pixels at junctions.
  * 
  * @param {Object} screenData
  * @param {number} p0x
@@ -47,13 +46,49 @@ export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, 
 		return;
 	}
 
-	// Draw consecutive segments using pixel line
+	// Track drawn pixels to avoid duplicates at segment junctions
+	const drawn = new Set();
+	const batch = screenData.batches[ g_batches.POINTS_BATCH ];
+
+	// Draw consecutive segments, skipping duplicate pixels
 	for( let i = 0; i + 3 < pts.length; i += 2 ) {
 		const x1 = pts[ i ] | 0;
 		const y1 = pts[ i + 1 ] | 0;
 		const x2 = pts[ i + 2 ] | 0;
 		const y2 = pts[ i + 3 ] | 0;
 		if( x1 === x2 && y1 === y2 ) continue;
-		g_lines.drawLine( screenData, x1, y1, x2, y2, color );
+
+		const dx = Math.abs( x2 - x1 );
+		const dy = Math.abs( y2 - y1 );
+		const pointCount = Math.max( dx, dy ) + 1;
+		g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, pointCount );
+
+		const sx = x1 < x2 ? 1 : -1;
+		const sy = y1 < y2 ? 1 : -1;
+		let err = dx - dy;
+		let x = x1;
+		let y = y1;
+
+		while( true ) {
+			const key = x + "," + y;
+			if( !drawn.has( key ) ) {
+				drawn.add( key );
+				g_batchHelpers.addVertexToBatch( batch, x, y, color );
+			}
+
+			if( x === x2 && y === y2 ) {
+				break;
+			}
+
+			const e2 = err * 2;
+			if( e2 > -dy ) {
+				err -= dy;
+				x += sx;
+			}
+			if( e2 < dx ) {
+				err += dx;
+				y += sy;
+			}
+		}
 	}
 }
