@@ -53,7 +53,7 @@ function registerCommands() {
 
 
 /***************************************************************************************************
- * External API
+ * Get Pixel and Get Pixel Async
  **************************************************************************************************/
 
 
@@ -91,6 +91,12 @@ function getPixelAsync( screenData, options ) {
 	} );
 }
 
+
+/***************************************************************************************************
+ * Get and Get Async
+ **************************************************************************************************/
+
+
 // get: Returns a 2D array [height][width] of palette indices by default.
 // Set asIndex=false to return colorValue objects instead.
 // Optional tolerance passed to findColorIndexByColorValue.
@@ -115,26 +121,7 @@ function get( screenData, options ) {
 	}
 
 	const colors = g_renderer.readPixels( screenData, pX, pY, pWidth, pHeight );
-	if( !asIndex ) {
-		return colors;
-	}
-	const results = new Array( colors.length );
-	for( let row = 0; row < colors.length; row++ ) {
-		const resultsRow = new Array( colors[ row ].length );
-		for( let col = 0; col < pWidth; col++ ) {
-			const colorValue = colors[ row ][ col ];
-			if( asIndex ) {
-				const idx = g_colors.findColorIndexByColorValue(
-					screenData, colorValue, tolerance
-				);
-				resultsRow[ col ] = ( idx === null ? 0 : idx );
-			} else {
-				resultsRow[ col ] = colorValue;
-			}
-		}
-		results[ row ] = resultsRow;
-	}
-	return results;
+	return convertColorsToIndices( screenData, colors, pWidth, asIndex, tolerance );
 }
 
 function getAsync( screenData, options ) {
@@ -158,27 +145,44 @@ function getAsync( screenData, options ) {
 	}
 
 	return g_renderer.readPixelsAsync( screenData, pX, pY, pWidth, pHeight ).then( ( colors ) => {
-		if( !asIndex ) {
-			return colors;
-		}
-		const results = new Array( colors.length );
-		for( let row = 0; row < colors.length; row++ ) {
-			const resultsRow = new Array( colors[ row ].length );
-			for( let col = 0; col < pWidth; col++ ) {
-				const colorValue = colors[ row ][ col ];
-				if( asIndex ) {
-					const idx = g_colors.findColorIndexByColorValue(
-						screenData, colorValue, tolerance
-					);
-					resultsRow[ col ] = ( idx === null ? 0 : idx );
-				} else {
-					resultsRow[ col ] = colorValue;
-				}
-			}
-			results[ row ] = resultsRow;
-		}
-		return results;
+		return convertColorsToIndices( screenData, colors, pWidth, asIndex, tolerance );
 	} );
+}
+
+/**
+ * Convert colors array to indices array if needed
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {Array} colors - 2D array of color values [height][width]
+ * @param {number} width - Width of the region
+ * @param {boolean} asIndex - Whether to convert to indices
+ * @param {number|undefined} tolerance - Tolerance for color matching
+ * @returns {Array} 2D array of colors or indices
+ */
+function convertColorsToIndices( screenData, colors, width, asIndex, tolerance ) {
+	if( !asIndex ) {
+		return colors;
+	}
+
+	const results = new Array( colors.length );
+	for( let row = 0; row < colors.length; row++ ) {
+		const resultsRow = new Array( width );
+		const rowLength = colors[ row ] ? colors[ row ].length : 0;
+		
+		for( let col = 0; col < width; col++ ) {
+			if( col < rowLength ) {
+				const colorValue = colors[ row ][ col ];
+				const idx = g_colors.findColorIndexByColorValue(
+					screenData, colorValue, tolerance
+				);
+				resultsRow[ col ] = ( idx === null ? 0 : idx );
+			} else {
+				resultsRow[ col ] = 0;
+			}
+		}
+		results[ row ] = resultsRow;
+	}
+	return results;
 }
 
 
