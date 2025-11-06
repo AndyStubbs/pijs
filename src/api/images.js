@@ -450,7 +450,9 @@ export function removeImage( name ) {
 		// Explicitly delete WebGL2 textures to free GPU memory
 		// WebGLTextures hold GPU memory that is NOT automatically freed by JS garbage collection
 		// Must call gl.deleteTexture() explicitly to prevent memory leaks
-		g_renderer.deleteWebGL2Texture( img );
+		for( const screenData of g_screenManager.getAllScreens() ) {
+			g_renderer.deleteWebGL2Texture( screenData, img );
+		}
 
 		// Remove from paletteImages
 		if( imageObj.usePalette ) {

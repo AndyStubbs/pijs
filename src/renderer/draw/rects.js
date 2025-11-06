@@ -33,33 +33,30 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @returns {void}
  */
 export function drawRect( screenData, x, y, width, height, color ) {
-
-	// Nothing to draw
-	if( width <= 0 || height <= 0 ) {
-		return;
-	}
-
 	const x2 = x + width - 1;
 	const y2 = y + height - 1;
 
 	// Outline only for pixel pen rectangles
 
 	// Top edge
+	console.log( "top", x, y, x2, y );
 	drawLine( screenData, x, y, x2, y, color );
 
-	// Right edge
 	if( height > 1 ) {
-		drawLine( screenData, x2, y, x2, y2, color );
-	}
 
-	// Bottom edge
-	if( height > 1 ) {
-		drawLine( screenData, x2, y2, x, y2, color );
+		// Right edge
+		console.log( "right", x2, y + 1, x2, y2 );
+		drawLine( screenData, x2, y + 1, x2, y2, color );
+
+		// Bottom edge
+		console.log( "bottom", x2 - 1, y2, x, y2 );
+		drawLine( screenData, x2 - 1, y2, x, y2, color );
 	}
 
 	// Left edge
 	if( width > 1 ) {
-		drawLine( screenData, x, y2, x, y, color );
+		console.log( "left", x, y2 - 1, x, y + 1 );
+		drawLine( screenData, x, y2 - 1, x, y + 1, color );
 	}
 }
 
@@ -83,11 +80,14 @@ export function drawRectFilled( screenData, x, y, width, height, color ) {
 	// Prepare batch for 6 vertices (2 triangles)
 	g_batches.prepareBatch( screenData, GEOMETRY_BATCH, 6 );
 
+	const x1 = x;
+	const y1 = y;
+	const x2 = x + width - 1;
+	const y2 = y + height - 1;
+
 	// First triangle: (x,y), (x+width,y), (x,y+height)
-	g_batchHelpers.addTriangleToBatch( batch, x, y, x + width, y, x, y + height, color );
+	g_batchHelpers.addTriangleToBatch( batch, x1, y1, x2, y1, x1, y2, color );
 
 	// Second triangle: (x+width,y), (x+width,y+height), (x,y+height)
-	g_batchHelpers.addTriangleToBatch(
-		batch, x + width, y, x + width, y + height, x, y + height, color
-	);
+	g_batchHelpers.addTriangleToBatch( batch, x2, y1, x2, y2, x1, y2, color );
 }

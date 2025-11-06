@@ -311,8 +311,8 @@ export function buildApi( s_screenData ) {
 			}
 
 			// Fill in the rectangle
-			const fWidth = pWidth - 2;
-			const fHeight = pHeight - 2;
+			const fWidth = pWidth - 1;
+			const fHeight = pHeight - 1;
 			if( fWidth > 0 && fHeight > 0 ) {
 				s_drawRectFilled( s_screenData, pX + 1, pY, fWidth, fHeight, fillColorValue );
 			}

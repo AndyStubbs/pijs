@@ -11,16 +11,6 @@
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_batches from "./batches.js";
 
-/***************************************************************************************************
- * Module Data
- ***************************************************************************************************/
-
-
-// Nested Map for WebGL2 texture storage
-// Outer Map: Image element -> Inner Map: GL context -> WebGL texture
-// This allows efficient lookup by image and cleanup when image is removed
-const m_webgl2Textures = new Map();
-
 
 /***************************************************************************************************
  * Module Initialization
@@ -34,7 +24,10 @@ const m_webgl2Textures = new Map();
  */
 export function init() {
 
-	// Texture cache is already initialized as an empty Map
+	// Nested Map for WebGL2 texture storage
+	// Outer Map: Image element -> Inner Map: GL context -> WebGL texture
+	// This allows efficient lookup by image and cleanup when image is removed
+	g_screenManager.addScreenDataItem( "imageTextureMap", new Map() );
 }
 
 
@@ -62,10 +55,10 @@ export function getWebGL2Texture( screenData, img ) {
 	g_batches.flushBatches( screenData );
 
 	// Get or create inner Map for this image
-	let contextMap = m_webgl2Textures.get( img );
+	let contextMap = screenData.imageTextureMap.get( img );
 	if( !contextMap ) {
 		contextMap = new Map();
-		m_webgl2Textures.set( img, contextMap );
+		screenData.imageTextureMap.set( img, contextMap );
 	}
 
 	// Check if texture already exists for this screen's context
@@ -109,33 +102,17 @@ export function getWebGL2Texture( screenData, img ) {
  * @param {HTMLImageElement|HTMLCanvasElement} img - Image or Canvas element
  * @returns {void}
  */
-export function deleteWebGL2Texture( img ) {
+export function deleteWebGL2Texture( screenData, img ) {
 
 	// Get the context Map for this image
-	const contextMap = m_webgl2Textures.get( img );
+	const contextMap = screenData.imageTextureMap.get( img );
 	if( !contextMap ) {
 		return;
 	}
 
-	// Get all active screens
-	const allScreens = g_screenManager.getAllScreens();
-
-	// Iterate through all screens and delete textures for this image
-	for( const screenData of allScreens ) {
-		if( !screenData.gl ) {
-			continue;
-		}
-
-		const texture = contextMap.get( screenData.gl );
-		if( texture ) {
-			screenData.gl.deleteTexture( texture );
-			contextMap.delete( screenData.gl );
-		}
-	}
-
 	// Remove the context Map if empty
 	if( contextMap.size === 0 ) {
-		m_webgl2Textures.delete( img );
+		screenData.imageTextureMap.delete( img );
 	}
 }
 

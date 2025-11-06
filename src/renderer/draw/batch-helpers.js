@@ -109,6 +109,9 @@ export function addLineToBatch( batch, x1, y1, x2, y2, color ) {
 	const vertexBase = baseIdx * batch.vertexComps;
 	const colorBase = baseIdx * batch.colorComps;
 
+	const dirX = Math.sign( x2 - x1 );
+	const dirY = Math.sign( y2 - y1 );
+
 	// Vertex 0 (start point)
 	batch.vertices[ vertexBase     ] = x1;
 	batch.vertices[ vertexBase + 1 ] = y1;
@@ -118,8 +121,8 @@ export function addLineToBatch( batch, x1, y1, x2, y2, color ) {
 	batch.colors[ colorBase + 3 ] = color.a;
 
 	// Vertex 1 (end point)
-	batch.vertices[ vertexBase + 2 ] = x2;
-	batch.vertices[ vertexBase + 3 ] = y2;
+	batch.vertices[ vertexBase + 2 ] = x2 + dirX;
+	batch.vertices[ vertexBase + 3 ] = y2 + dirY;
 	batch.colors[ colorBase + 4 ] = color.r;
 	batch.colors[ colorBase + 5 ] = color.g;
 	batch.colors[ colorBase + 6 ] = color.b;
