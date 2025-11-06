@@ -38,50 +38,30 @@
 		// Test pset with different pen types and pixel modes
 		
 		// Pixel mode pset with different pens
-		$.setPixelMode( true );
 		$.setColor( 15 );
-		$.print( 5, 5, "PSET" );
+		$.setPosPx( 5, 5 );
+		$.print( "PSET" );
 		
 		// Square pens
 		let y = 25;
 		for( let size = 1; size <= 5; size++ ) {
 			$.setColor( 9 );
-			$.setPen( "square", size );
-			$.pset( 20, y );
-			y += size * 2 + 5;
-		}
-		
-		// Circle pens
-		y = 25;
-		for( let size = 1; size <= 5; size++ ) {
-			$.setColor( 10 );
-			$.setPen( "circle", size );
-			$.pset( 60, y );
+			for( let x = 20; x < 20 + size; x += 1 ) {
+				$.pset( x, y );
+			}
 			y += size * 2 + 5;
 		}
 		
 		// Pixel pen
-		$.setPen( "pixel", 1 );
 		$.setColor( 14 );
 		for( let i = 0; i < 20; i++ ) {
 			$.pset( 100 + i, 25 + i );
 		}
 		
-		// Anti-aliased pset
-		$.setPixelMode( false );
-		$.setColor( 12 );
-		$.setPen( "circle", 3 );
-		for( let i = 0; i < 5; i++ ) {
-			$.pset( 140 + i * 12, 30 + i * 8 );
-		}
-		
-		// Reset to pixel mode
-		$.setPixelMode( true );
-		$.setPen( "pixel", 1 );
-
 		// === SECTION 2: LINE Tests (Top Center) ===
 		$.setColor( 15 );
-		$.print( 218, 5, "LINE" );
+		$.setPosPx( 218, 5 );
+		$.print( "LINE" );
 		
 		// Horizontal lines with different colors
 		for( let i = 0; i < 5; i++ ) {
@@ -99,33 +79,13 @@
 		$.setColor( 10 );
 		$.line( 220, 90, 280, 130 );
 		$.line( 280, 90, 220, 130 );
-		
-		// Anti-aliased lines
-		$.setPixelMode( false );
-		$.setPen( "circle", 2 );
-		$.setColor( 12 );
-		$.line( 300, 90, 360, 130 );
-		$.line( 360, 90, 300, 130 );
-		
-		// Thick lines with different pens
-		$.setPixelMode( true );
-		$.setPen( "square", 3 );
-		$.setColor( 14 );
-		$.line( 220, 150, 360, 150 );
-		
-		$.setPen( "circle", 3 );
-		$.setColor( 11 );
-		$.line( 220, 170, 360, 170 );
-		
-		// Reset
-		$.setPen( "pixel", 1 );
 
 		// === SECTION 3: RECT Tests (Top Right) ===
 		$.setColor( 15 );
-		$.print( 431, 5, "RECT" );
+		$.setPosPx( 431, 5 );
+		$.print( "RECT" );
 		
 		// Simple outlined rectangles
-		$.setPixelMode( true );
 		$.setColor( 9 );
 		$.rect( 435, 25, 40, 30 );
 		
@@ -138,34 +98,13 @@
 		
 		$.setColor( 12 );
 		$.rect( 575, 25, 50, 35, 2 );
-		
-		// Rectangles with thick pens
-		$.setPen( "square", 3 );
-		$.setColor( 13 );
-		$.rect( 435, 80, 60, 40 );
-		
-		$.setPen( "circle", 2 );
-		$.setColor( 10 );
-		$.rect( 505, 80, 50, 40, 9 );
-		
-		// Anti-aliased rectangles
-		$.setPixelMode( false );
-		$.setPen( "pixel", 1 );
-		$.setColor( 14 );
-		$.rect( 435, 135, 45, 35 );
-		
-		$.setColor( 12 );
-		$.rect( 490, 135, 55, 40, 10 );
-		
-		// Reset
-		$.setPixelMode( true );
 
 		// === SECTION 4: CIRCLE Tests (Bottom Left) ===
 		$.setColor( 15 );
-		$.print( 5, 245, "CIRCLE" );
+		$.setPosPx( 5, 245 );
+		$.print( "CIRCLE" );
 		
 		// Simple circles - pixel mode
-		$.setPixelMode( true );
 		$.setColor( 9 );
 		$.circle( 35, 285, 15 );
 		
@@ -184,31 +123,11 @@
 		
 		$.setColor( 13 );
 		$.circle( 145, 340, 28, 10 );
-		
-		// Circles with thick pens
-		$.setPen( "circle", 3 );
-		$.setColor( 10 );
-		$.circle( 40, 410, 20 );
-		
-		$.setColor( 14 );
-		$.circle( 100, 410, 25, 11 );
-		
-		// Anti-aliased circles
-		$.setPixelMode( false );
-		$.setPen( "pixel", 1 );
-		$.setColor( 12 );
-		$.circle( 160, 410, 22 );
-		
-		$.setColor( 13 );
-		$.circle( 195, 410, 18, 9 );
-		
-		// Reset
-		$.setPixelMode( true );
-		$.setPen( "pixel", 1 );
 
 		// === SECTION 5: GET/PUT Tests (Bottom Center) ===
 		$.setColor( 15 );
-		$.print( 218, 245, "GET/PUT" );
+		$.setPosPx( 218, 245 );
+		$.print( "GET/PUT" );
 		
 		// Draw a pattern to capture with get
 		$.setColor( 14 );
@@ -248,7 +167,8 @@
 
 		// === SECTION 6: GETPIXEL Tests (Bottom Right) ===
 		$.setColor( 15 );
-		$.print( 431, 245, "GETPIXEL" );
+		$.setPosPx( 431, 245 );
+		$.print( "GETPIXEL" );
 		
 		// Draw a gradient-like pattern to test getPixel
 		for( let x = 0; x < 50; x++ ) {
@@ -314,9 +234,6 @@
 		$.line( 213, 0, 213, 479 );
 		$.line( 426, 0, 426, 479 );
 		$.line( 0, 240, 639, 240 );
-
-		// Final render
-		$.render();
 	} );
 </script>
 </body>

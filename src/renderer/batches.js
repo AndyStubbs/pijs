@@ -592,6 +592,9 @@ function resetBatch( batch ) {
 		// This will resize the batch slowly over time - cutting in half every 5 seconds
 		if( batch.capacity > batch.minCapacity && batch.capacityLocalMax < batch.capacity * 0.5 ) {
 
+			// TODO: resizeBatch will error because it tries to copy existing batches
+			// There is no need to copy vertices when shrinking as batch has already flushed and
+			// count is 0.
 			// Resize the batch
 			resizeBatch( batch, Math.max( batch.capacity * 0.5, batch.minCapacity ) );
 		}
