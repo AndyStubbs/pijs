@@ -25,6 +25,7 @@ import * as g_colors from "./api/colors.js";
 import * as g_graphicsApi from "./api/graphics.js";
 import * as g_images from "./api/images.js";
 import * as g_pixels from "./api/pixels.js";
+import * as g_paint from "./api/paint.js";
 import * as g_blends from "./api/blends.js";
 
 // Text
@@ -42,7 +43,7 @@ const api = {
 // Store modules in array for ordered initialization
 const mods = [
 	g_utils, g_commands, g_screenManager, g_plugins, g_renderer, g_colors, g_graphicsApi, g_images,
-	g_blends, g_pixels, g_fonts, g_print
+	g_blends, g_pixels, g_paint, g_fonts, g_print
 ];
 
 // Initialize the modules
