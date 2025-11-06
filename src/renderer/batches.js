@@ -370,11 +370,15 @@ export function prepareBatch( screenData, batchType, itemCount, img, texture ) {
  * 
  * @param {Object} screenData - Screen data object
  * @param {string|null} blend - Blend mode or null for default
+ * @param {Array<Float32Array>|null} noise - Noise values
  * @returns {void}
  */
-export function flushBatches( screenData, blend = null ) {
+export function flushBatches( screenData, blend = null, noise = null ) {
 	if( blend === null ) {
 		blend = screenData.blends.blend;
+	}
+	if( noise === null ) {
+		noise = screenData.blends.noise;
 	}
 	
 	const gl = screenData.gl;
@@ -452,7 +456,7 @@ export function flushBatches( screenData, blend = null ) {
 			}
 			drawBatch(
 				gl, screenData, drawOrderItem.batch,
-				drawOrderItem.startIndex, drawOrderItem.endIndex, texture
+				drawOrderItem.startIndex, drawOrderItem.endIndex, texture, noise
 			);
 		}
 	}
@@ -535,7 +539,7 @@ function uploadBatch( gl, batch, width, height ) {
  * @param {WebGLTexture|null} texture - Texture for IMAGE_BATCH or null
  * @returns {void}
  */
-function drawBatch( gl, screenData, batch, startIndex, endIndex, texture = null ) {
+function drawBatch( gl, screenData, batch, startIndex, endIndex, texture = null, noise = null ) {
 
 	gl.useProgram( batch.program );
 	gl.bindVertexArray( batch.vao );
@@ -549,7 +553,9 @@ function drawBatch( gl, screenData, batch, startIndex, endIndex, texture = null 
 
 	// Set noise uniforms for batches that use point shaders
 	if( batch.locations.noiseMin !== undefined ) {
-		const noise = screenData.blends.noise;
+		if( noise === null ) {
+			noise = screenData.blends.noise;
+		}
 		
 		// Calculate noise min and max ranges
 		let noiseMin, noiseMax;

@@ -115,25 +115,39 @@ function setBlend( screenData, options ) {
 	} else {
 
 		// Validate if noise is na integer
-		const noiseVal = g_utils.getInt( noise );
+		const noiseVal = g_utils.getInt( noise, null );
 
 		// If noise is an integer it will not be null
 		if( noiseVal !== null ) {
 			const val = noiseVal / 255;
 			noiseResult = [
-				[ -val, -val, -val, -val ],
-				[  val,  val,  val,  val ],
+				new Float32Array( [ -val, -val, -val, -val ] ),
+				new Float32Array( [  val,  val,  val,  val ] ),
 			];
 		}
 	}
 
 	// Set blend data on screen
 	const previousBlend = screenData.blends.blend;
+	const previousNoise = screenData.blends.noise;
 	screenData.blends.blend = blend;
 	screenData.blends.noise = noiseResult;
 
+	// Check if noise has changed
+	let isNoiseChanged ;
+	if( previousNoise === null && noiseResult === null ) {
+		isNoiseChanged = false;
+	} else if(
+		previousNoise === null && noiseResult !== null ||
+		previousNoise !== null && noiseResult === null
+	) {
+		isNoiseChanged = true;
+	} else {
+		isNoiseChanged = JSON.stringify( previousNoise ) !== JSON.stringify( noiseResult );
+	}
+
 	// Notify renderer that blend mode has changed
-	if( previousBlend !== blend ) {
-		g_renderer.blendModeChanged( screenData, previousBlend );
+	if( previousBlend !== blend || isNoiseChanged ) {
+		g_renderer.blendModeChanged( screenData, previousBlend, previousNoise );
 	}
 }
