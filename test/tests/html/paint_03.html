@@ -21,21 +21,18 @@
 	</head>
 <body>
 <script>
-Math.seedrandom('constant');
 $.ready( function () {
 	var color = [ 0, 255, 0 ];
 	var color2 = [ 0, 87, 225 ];
 	$.screen( "256x256" );
 	$.setColor( 15 );
-	$.setPen( "pixel", 1 );
-	$.setBlend( "replace", 35 );
+	$.setNoise( 35, 1 );
 	for( i = 0; i < 128; i++ ) {
-		color[ 1 ] -= 2;
+		color[ 1 ] = Math.max( color[ 1 ] - 2, 0 );
 		$.setColor( color );
 		$.rect( i, i, 255 - i * 2 + 1, 255 - i * 2 + 1 );
 	}
-	$.paint( 127, 127, color2, 0.8 );
-	$.render();
+	$.paint( 127, 127, color2, 0.88 );
 } );
 </script>
 </body>
