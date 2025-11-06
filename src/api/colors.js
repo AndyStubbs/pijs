@@ -13,6 +13,7 @@
 import * as g_commands from "../core/commands.js";
 import * as g_utils from "../core/utils.js";
 import * as g_screenManager from "../core/screen-manager.js";
+import * as g_images from "./images.js";
 
 // Max color difference used in find color by index
 const MAX_DIFFERENCE = ( 255 * 255 ) * 3.25;
@@ -98,7 +99,7 @@ function registerCommands() {
 	g_commands.addCommand( "getPalIndex", getPalIndex, true, [ "color", "tolerance" ] );
 	g_commands.addCommand( "setBgColor", setBgColor, true, [ "color" ] );
 	g_commands.addCommand( "setContainerBgColor", setContainerBgColor, true, [ "color" ] );
-	g_commands.addCommand( "setPalColor", setPalColor, true, [ "index", "color" ] );
+	g_commands.addCommand( "setPalColors", setPalColors, true, [ "indices", "colors" ] );
 	g_commands.addCommand( "getPalColor", getPalColor, true, [ "index" ] );
 }
 
@@ -369,58 +370,103 @@ function setContainerBgColor( screenData, options ) {
 	}
 }
 
-// Set palette color
-function setPalColor( screenData, options ) {
-	const index = options.index;
-	const color = options.color;
+// Set palette colors
+function setPalColors( screenData, options ) {
+	const indices = options.indices;
+	const colors = options.colors;
 
-	// index must be an integer
-	if(
-		!Number.isInteger( index ) ||
-		index < 0 ||
-		index >= screenData.pal.length
-	) {
+	// Validate indices array
+	if( !Array.isArray( indices ) ) {
+		const error = new TypeError( "setPalColors: Parameter indices must be an array." );
+		error.code = "INVALID_INDICES";
+		throw error;
+	}
+
+	// Validate colors array
+	if( !Array.isArray( colors ) ) {
+		const error = new TypeError( "setPalColors: Parameter colors must be an array." );
+		error.code = "INVALID_COLORS";
+		throw error;
+	}
+
+	// Arrays must have the same length
+	if( indices.length !== colors.length ) {
 		const error = new RangeError(
-			"setPalColor: Parameter index must be an integer value."
+			"setPalColors: Parameters indices and colors must have the same length."
 		);
-		error.code = "INVALID_INDEX";
+		error.code = "LENGTH_MISMATCH";
 		throw error;
 	}
 
-	// index cannot be 0
-	if( index === 0 ) {
-		const error = new RangeError(
-			"setPalColor: Parameter index cannot be 0, this is reserved for transparency. To set " +
-			"background color of the screen use the setBgColor command."
-		);
-		error.code = "INVALID_INDEX";
-		throw error;
+	// Arrays must not be empty
+	if( indices.length === 0 ) {
+		return;
 	}
 
-	// Get the color value
-	const colorValue = g_utils.convertToColor( color );
-	if( colorValue === null ) {
-		const error = new TypeError(
-			"setPalColor: Parameter color is not a valid color format."
-		);
-		error.code = "INVALID_COLOR";
-		throw error;
+	let colorSwapped = false;
+
+	// Validate each index and color
+	for( let i = 0; i < indices.length; i += 1 ) {
+		const index = indices[ i ];
+		const color = colors[ i ];
+
+		// index must be an integer
+		if(
+			!Number.isInteger( index ) ||
+			index < 0 ||
+			index >= screenData.pal.length
+		) {
+			console.warn(
+				`setPalColors: Parameter indices[${i}] must be an integer value between 0 and ` +
+				`${screenData.pal.length - 1}.`
+			);
+			continue;
+		}
+
+		// index cannot be 0
+		if( index === 0 ) {
+			console.warn(
+				`setPalColors: Parameter indices[${i}] cannot be 0, this is reserved for ` +
+				"transparency. To set background color of the screen use the setBgColor command."
+			);
+			continue;
+		}
+
+		// Get the color value
+		const colorValue = g_utils.convertToColor( color );
+		if( colorValue === null ) {
+			console.warn(
+				`setPalColors: Parameter colors[${i}] is not a valid color format.`
+			);
+			continue;
+		}
+
+		// Store the old color before replacing
+		const oldColor = screenData.pal[ index ];
+
+		if( color.key === oldColor.key ) {
+			continue;
+		}
+		// Check if we are changing the current selected fore color
+		if( screenData.color.key === oldColor.key ) {
+			screenData.color = colorValue;
+		}
+
+		// Set the new palette color
+		screenData.pal[ index ] = colorValue;
+
+		// Update the palMap - remove old color entry and add new one
+		screenData.palMap.delete( oldColor.key );
+		screenData.palMap.set( colorValue.key, index );
+
+		// Set color swapped to true indicated a palette color has been changed
+		colorSwapped = true;
 	}
 
-	// Store the old color before replacing
-	const oldColor = screenData.pal[ index ];
-
-	// Check if we are changing the current selected fore color
-	if( screenData.color.key === oldColor.key ) {
-		screenData.color = colorValue;
+	// Trigger images to update color palletes
+	if( colorSwapped ) {
+		g_images.palettizeImages( screenData );
 	}
-
-	// Set the new palette color
-	screenData.pal[ index ] = colorValue;
-
-	// Update the palMap - remove old color entry and add new one
-	screenData.palMap.delete( oldColor.key );
-	screenData.palMap.set( colorValue.key, index );
 }
 
 function getPalColor( screenData, options ) {
@@ -432,9 +478,6 @@ function getPalColor( screenData, options ) {
 	}
 	return null;
 }
-
-// TODO: Implement replaceColors and replacePalColors commands
-// These require special planning for WebGL2 implementation
 
 
 /***************************************************************************************************
