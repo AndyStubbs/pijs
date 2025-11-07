@@ -18,6 +18,7 @@
 "use strict";
 
 // Import modules
+import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
 import * as g_renderer from "../renderer/renderer.js";
@@ -38,6 +39,8 @@ export function init( api ) {
 	// Build the null graphics commands - basically will throw an error since no screen is available
 	buildApi( null );
 
+	g_commands.addCommand( "rect2", rect2, true, [ "x", "y", "width", "height", "fillColor" ] );
+
 	// Register screen init function to rebuild API when screen is created
 	g_screenManager.addScreenInitFunction( ( screenData ) => buildApi( screenData ) );
 }
@@ -50,12 +53,13 @@ export function buildApi( s_screenData ) {
 
 	// Set error functions for when no screen is available
 	if( s_screenData === null ) {
-		m_api.pset = () => g_utils.errFn( "pset" );
-		m_api.line = () => g_utils.errFn( "line" );
 		m_api.arc = () => g_utils.errFn( "arc" );
-		m_api.rect = () => g_utils.errFn( "rect" );
 		m_api.bezier = () => g_utils.errFn( "bezier" );
+		m_api.circle = () => g_utils.errFn( "circle" );
 		m_api.ellipse = () => g_utils.errFn( "ellipse" );
+		m_api.line = () => g_utils.errFn( "line" );
+		m_api.pset = () => g_utils.errFn( "pset" );
+		m_api.rect = () => g_utils.errFn( "rect" );
 		return;
 	}
 
@@ -73,6 +77,8 @@ export function buildApi( s_screenData ) {
 	// Utility commands
 	const s_setImageDirty = g_renderer.setImageDirty;
 	const s_getInt = g_utils.getInt;
+	const s_degreesToRadian = g_utils.degreesToRadian;
+	const s_getColorValueByRawInput = g_colors.getColorValueByRawInput;
 
 	// Constants
 	const s_color = s_screenData.color;
@@ -108,8 +114,8 @@ export function buildApi( s_screenData ) {
 
 		// Draw Arc
 		s_drawArc(
-			s_screenData, pCx, pCy, pRadius, g_utils.degreesToRadian( angle1 ),
-			g_utils.degreesToRadian( angle2 ), s_color
+			s_screenData, pCx, pCy, pRadius, s_degreesToRadian( angle1 ),
+			s_degreesToRadian( angle2 ), s_color
 		);
 		s_setImageDirty( s_screenData );
 	};
@@ -170,7 +176,7 @@ export function buildApi( s_screenData ) {
 		// Parse and validate fillColor here (single source of truth)
 		let fillColorValue = null;
 		if( fillColor != null ) {
-			fillColorValue = g_colors.getColorValueByRawInput( s_screenData, fillColor );
+			fillColorValue = s_getColorValueByRawInput( s_screenData, fillColor );
 			if( fillColorValue === null ) {
 				const error = new TypeError( "rect: Parameter 'fillColor' must be a valid color." );
 				error.code = "INVALID_PARAMETER";
@@ -210,7 +216,7 @@ export function buildApi( s_screenData ) {
 		// Parse and validate fillColor here (single source of truth)
 		let fillColorValue = null;
 		if( fillColor != null ) {
-			fillColorValue = g_colors.getColorValueByRawInput( s_screenData, fillColor );
+			fillColorValue = s_getColorValueByRawInput( s_screenData, fillColor );
 			if( fillColorValue === null ) {
 				const error = new TypeError(
 					"ellipse: Parameter 'fillColor' must be a valid color."
@@ -305,7 +311,7 @@ export function buildApi( s_screenData ) {
 		// Parse and validate fillColor here (single source of truth)
 		let fillColorValue = null;
 		if( fillColor != null ) {
-			fillColorValue = g_colors.getColorValueByRawInput( s_screenData, fillColor );
+			fillColorValue = s_getColorValueByRawInput( s_screenData, fillColor );
 			if( fillColorValue === null ) {
 				const error = new TypeError( "rect: Parameter 'fillColor' must be a valid color." );
 				error.code = "INVALID_PARAMETER";
@@ -328,4 +334,49 @@ export function buildApi( s_screenData ) {
 	m_api.rect = rectFn;
 	s_screenData.api.rect = rectFn;
 
+}
+
+// The rect2 command allows object literal as the first parameter, will probably be slower than
+// rect but it will be usefull if you a region defined as an object literal you can pass it to
+// other functions and to rect2.
+function rect2( screenData, options ) {
+
+	// x, y, width, height, fillColor
+	const x = g_utils.getInt( options.x, null );
+	const y = g_utils.getInt( options.y, null );
+	const width = g_utils.getInt( options.width, null );
+	const height = g_utils.getInt( options.height, null );
+	const fillColor = options.fillColor;
+
+	if( x === null || y === null || width === null || height === null ) {
+		const error = new TypeError( "rect: Parameters x, y, width, height must be integers." );
+		error.code = "INVALID_PARAMETER";
+		throw error;
+	}
+
+	if( width < 1 || height < 1 ) {
+		return;
+	}
+
+	// Parse and validate fillColor here (single source of truth)
+	let fillColorValue = null;
+	if( fillColor != null ) {
+		fillColorValue = g_colors.getColorValueByRawInput( screenData, fillColor );
+		if( fillColorValue === null ) {
+			const error = new TypeError( "rect: Parameter 'fillColor' must be a valid color." );
+			error.code = "INVALID_PARAMETER";
+			throw error;
+		}
+
+		// Fill in the rectangle
+		const fWidth = width - 2;
+		const fHeight = height - 2;
+		if( fWidth > 0 && fHeight > 0 ) {
+			g_renderer.drawRectFilled( screenData, x + 1, y + 1, fWidth, fHeight, fillColorValue );
+		}
+	}
+
+	// Draw the rect border
+	g_renderer.drawRect( screenData, x, y, width, height, screenData.color );
+	g_renderer.setImageDirty( screenData );
 }

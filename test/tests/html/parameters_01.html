@@ -29,34 +29,14 @@ $.ready(function () {
 	var data;
 	$.screen( { "aspect": "100x100" } );
 	$.setColor( { "color": 15 } );
-	$.bezier( {
-		"xStart": 5,
-		"yStart": 5,
-		"x1": 10,
-		"y1": 35,
-		"x2": 55,
-		"y2": 10,
-		"xEnd": 95,
-		"yEnd": 95
-	} );
+	$.rect2( { "x": 5, "y": 5, "width": 10, "height": 35 } );
 	$.setColor( { "color": 9 } );
-	$.line( { "x1": 10, "y1": 35, "x2": 55, "y2": 10 } );
+	$.rect2( { "x": 10, "y": 35, "width": 55, "height": 10, "fillColor": "purple" } );
 	$.setColor( { "color": 15 } );
-	$.pset( { "x": 10, "y": 35 } );
-	$.pset( { "x": 55, "y": 10 } );
-	$.setPen( { "pen": "circle", "size": 3 } );
-	$.setBlend( { "mode": "replace", "noise": [ 55, 55, 55, 55 ] } )
-	$.setColor( 2 );
-	$.bezier( {
-		"xStart": 5,
-		"yStart": 95,
-		"x1": 30,
-		"y1": 35,
-		"x2": 55,
-		"y2": 90,
-		"xEnd": 95,
-		"yEnd": 5
-	} );
+	$.setBlend( { "blend": "replace" } );
+	$.setNoise( { "noise": [ 55, 55, 55, 55 ], "seed": 1 } );
+	$.setColor( 10 );
+	$.rect2( { "x": 5, "y": 50, "width": 80, "height": 35, "fillColor": 2 } );
 } );
 </script>
 </body>
