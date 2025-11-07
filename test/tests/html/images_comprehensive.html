@@ -61,7 +61,7 @@
 				$.setColor( 2 );
 			} else {
 				failCount++;
-				$.setColor( 9 );
+				$.setColor( 4 );
 			}
 			$.print( " " + result );
 		}
@@ -70,6 +70,11 @@
 		$.print();
 		$.print( "Total: " + ( passCount + failCount ) + " tests" );
 		$.print( "Passed: " + passCount + ", Failed: " + failCount );
+		if( failCount > 0 ) {
+			$.print();
+			$.setColor( 4 );
+			$.print( "TEST FAILED!" );
+		}
 	}
 
 	// Test loadImage with various input types

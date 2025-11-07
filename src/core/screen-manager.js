@@ -250,6 +250,8 @@ function screen( options ) {
 			throw error;
 		}
 		setupOffscreenCanvasOptions( screenData );
+		screenData.width = screenData.aspectData.width;
+		screenData.height = screenData.aspectData.height;
 	} else {
 
 		// Setup options for onscreen canvas
