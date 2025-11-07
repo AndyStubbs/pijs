@@ -61,8 +61,8 @@ function prepopulateCache() {
 	const circle1 = generateSinglePixelGeometry();
 	m_geometryCache.set( `${FILLED_CIRCLE}:1`, circle1 );
 
-	// Pre-generate circles for sizes 2-10
-	for( let radius = 2; radius <= 10; radius++ ) {
+	// Pre-generate circles for sizes 1-10
+	for( let radius = 1; radius <= 10; radius++ ) {
 		const cacheKey = `${FILLED_CIRCLE}:${radius}`;
 		
 		// Use Alpha 2's radius threshold: (half - 0.5)^2
@@ -150,11 +150,15 @@ function addQuad( vertices, vIdx, x1, y1, x2, y2 ) {
  */
 function generateCircleGeometry( radius ) {
 
+	if( radius <= 0 ) {
+		return { "vertexCount": 0, "vertices": null };
+	}
+	
 	// Store min/max X for each Y scanline as we discover them during MCA
 	const scanlineMinMax = new Map(); // Map<y, {min: x, max: x}>
 
 	// --- Midpoint Circle Algorithm to find outline pixels ---
-	let x = radius;
+	let x = radius - 1;  // Radius adjustment - due to integer rounding it looks better this way
 	let y = 0;
 	let err = 1 - x;
 

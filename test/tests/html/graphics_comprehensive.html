@@ -161,6 +161,9 @@
 		// Outline circles big
 		x = 15;
 		for( r = 10; r < 15; r += 1 ) {
+			$.setColor( 25 );
+			$.pset( x, 215 );
+			$.rect( x - r, 215 - r, r * 2, r * 2 );
 			$.setColor( r + 1 );
 			$.circle( x, 215, r );
 			x += 40;

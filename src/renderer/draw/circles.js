@@ -12,7 +12,7 @@
 
 import * as g_batches from "../batches.js";
 import * as g_geometry from "./geometry.js";
-import { drawPixelUnsafe } from "./primitives.js";
+import { drawPixel, drawPixelUnsafe } from "./primitives.js";
 
 
 /**
@@ -29,12 +29,20 @@ import { drawPixelUnsafe } from "./primitives.js";
 export function drawCircle( screenData, cx, cy, radius, color ) {
 
 	// Nothing to draw
-	if( radius < 0 ) {
+	if( radius <= 0 ) {
 		return;
 	}
 
+	if( radius === 1 ) {
+		drawPixel( screenData, cx, cy, color, g_batches.POINTS_BATCH );
+		return;
+	}
+
+	// Radius adjustment
+	radius -= 1;
+
 	// Single point
-	if( radius <= 1 ) {
+	if( radius === 1 ) {
 		g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, 4 );
 		drawPixelUnsafe( screenData, cx + 1, cy, color, g_batches.POINTS_BATCH );
 		drawPixelUnsafe( screenData, cx - 1, cy, color, g_batches.POINTS_BATCH );
@@ -95,8 +103,6 @@ export function drawCircle( screenData, cx, cy, radius, color ) {
 export function drawCircleFilled( screenData, cx, cy, radius, color ) {
 
 	// Apply input adjustments for MCA consistency
-	//radius -= 1;
-	//cy -= 1;
 	return g_geometry.drawCachedGeometry(
 		screenData, g_geometry.FILLED_CIRCLE, radius, cx, cy, color
 	);
