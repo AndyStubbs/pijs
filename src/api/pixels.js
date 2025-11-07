@@ -14,6 +14,7 @@ import * as g_screenManager from "../core/screen-manager.js";
 import * as g_colors from "./colors.js";
 import * as g_commands from "../core/commands.js";
 import * as g_renderer from "../renderer/renderer.js";
+import * as g_textures from "../renderer/textures.js";
 
 
 /***************************************************************************************************
@@ -48,6 +49,9 @@ function registerCommands() {
 	);
 	g_commands.addCommand(
 		"getAsync", getAsync, true, [ "x", "y", "width", "height", "tolerance", "asIndex" ]
+	);
+	g_commands.addCommand(
+		"filterImg", filterImg, true, [ "filter", "x1", "y1", "x2", "y2" ]
 	);
 }
 
@@ -186,6 +190,162 @@ function convertColorsToIndices( screenData, colors, width, asIndex, tolerance )
 		results[ row ] = resultsRow;
 	}
 	return results;
+}
+
+
+/***************************************************************************************************
+ * Filter Image
+ **************************************************************************************************/
+
+
+/**
+ * Apply a filter function to a region of the screen
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {Object} options - Options object with filter, x1, y1, x2, y2
+ * @returns {void}
+ */
+function filterImg( screenData, options ) {
+	const filter = options.filter;
+
+	// Get optional clipping bounds (default to full screen)
+	let x1 = g_utils.getInt( options.x1, 0 );
+	let y1 = g_utils.getInt( options.y1, 0 );
+	let x2 = g_utils.getInt( options.x2, screenData.width - 1 );
+	let y2 = g_utils.getInt( options.y2, screenData.height - 1 );
+
+	if( !g_utils.isFunction( filter ) ) {
+		const error = new TypeError( "filterImg: Argument filter must be a callback function." );
+		error.code = "INVALID_CALLBACK";
+		throw error;
+	}
+
+	// Validate and clamp bounds to screen dimensions
+	x1 = g_utils.clamp( x1, 0, screenData.width - 1 );
+	y1 = g_utils.clamp( y1, 0, screenData.height - 1 );
+	x2 = g_utils.clamp( x2, 0, screenData.width - 1 );
+	y2 = g_utils.clamp( y2, 0, screenData.height - 1 );
+
+	// Ensure x1 <= x2 and y1 <= y2
+	if( x1 > x2 ) {
+		const temp = x1;
+		x1 = x2;
+		x2 = temp;
+	}
+	if( y1 > y2 ) {
+		const temp = y1;
+		y1 = y2;
+		y2 = temp;
+	}
+
+	const width = x2 - x1 + 1;
+	const height = y2 - y1 + 1;
+
+	// Queue filter operation to run at end of frame
+	// Use double microtask to ensure it runs after any current render operations
+	g_utils.queueMicrotask( () => {
+		g_utils.queueMicrotask( () => {
+			applyFilter( screenData, filter, x1, y1, width, height );
+		} );
+	} );
+}
+
+/**
+ * Apply filter to pixel region (called at end of frame)
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {Function} filter - Filter callback function (r, g, b, a, x, y) => color object or null
+ * @param {number} x1 - Left coordinate
+ * @param {number} y1 - Top coordinate
+ * @param {number} width - Region width
+ * @param {number} height - Region height
+ * @returns {void}
+ */
+function applyFilter( screenData, filter, x1, y1, width, height ) {
+
+	// Ensure batches are flushed before reading
+	g_renderer.flushBatches( screenData );
+
+	// Read pixels as raw Uint8Array (bottom-left origin from WebGL)
+	const pixelData = g_renderer.readPixelsRaw( screenData, x1, y1, width, height );
+
+	if( !pixelData ) {
+		return;
+	}
+
+	const screenHeight = screenData.height;
+
+	// Build filtered pixel data in bottom-left origin format (for WebGL texSubImage2D)
+	// The input pixelData is in bottom-left origin, so we need to flip Y when accessing
+	// for the filter callback (which expects top-left coordinates), then flip back for output
+	const filteredData = new Uint8Array( width * height * 4 );
+
+	for( let y = 0; y < height; y++ ) {
+		for( let x = 0; x < width; x++ ) {
+
+			// Convert top-left y to bottom-left y for reading from pixelData
+			// pixelData is ordered from bottom row to top row
+			const srcRow = ( height - 1 ) - y;
+			const srcIndex = ( srcRow * width + x ) * 4;
+
+			const r = pixelData[ srcIndex ];
+			const g = pixelData[ srcIndex + 1 ];
+			const b = pixelData[ srcIndex + 2 ];
+			const a = pixelData[ srcIndex + 3 ];
+
+			// Call filter with r, g, b, a, x, y as separate parameters
+			// x and y are in top-left coordinate system for the filter callback
+			const filteredColor = filter( g_utils.rgbToColor( r, g, b, a ), x1 + x, y1 + y );
+
+			// Output index is in bottom-left origin format (same as pixelData)
+			const dstIndex = ( srcRow * width + x ) * 4;
+
+			// If filter returns null/undefined, keep original pixel
+			if( filteredColor === null || filteredColor === undefined ) {
+				filteredData[ dstIndex     ] = r;
+				filteredData[ dstIndex + 1 ] = g;
+				filteredData[ dstIndex + 2 ] = b;
+				filteredData[ dstIndex + 3 ] = a;
+				continue;
+			}
+
+			// Validate filtered color
+			if(
+				filteredColor &&
+				Number.isInteger( filteredColor.r ) &&
+				Number.isInteger( filteredColor.g ) &&
+				Number.isInteger( filteredColor.b ) &&
+				Number.isInteger( filteredColor.a )
+			) {
+
+				// Clamp color values to valid range
+				filteredData[ dstIndex     ] = g_utils.clamp( filteredColor.r, 0, 255 );
+				filteredData[ dstIndex + 1 ] = g_utils.clamp( filteredColor.g, 0, 255 );
+				filteredData[ dstIndex + 2 ] = g_utils.clamp( filteredColor.b, 0, 255 );
+				filteredData[ dstIndex + 3 ] = g_utils.clamp( filteredColor.a, 0, 255 );
+			} else {
+
+				// Invalid color format, keep original pixel
+				filteredData[ dstIndex     ] = r;
+				filteredData[ dstIndex + 1 ] = g;
+				filteredData[ dstIndex + 2 ] = b;
+				filteredData[ dstIndex + 3 ] = a;
+			}
+		}
+	}
+
+	// Calculate destination Y in WebGL texture coordinates (bottom-left origin)
+	// The texture Y coordinate is the bottom edge of the region
+	const dstY = screenHeight - ( y1 + height );
+
+	// Update FBO texture directly using texSubImage2D
+	// Pass null as imgKey to use screenData.fboTexture directly
+	g_textures.updateWebGL2TextureSubImage(
+		screenData, null, filteredData, width, height, x1, dstY
+	);
+
+	// Mark image as dirty to trigger render
+	g_renderer.setImageDirty( screenData );
 }
 
 

@@ -56,7 +56,7 @@ export {
 } from "./textures.js";
 
 // Re-export readback functions
-export { readPixel, readPixelAsync, readPixels, readPixelsAsync } from "./readback.js";
+export { readPixel, readPixelAsync, readPixels, readPixelsAsync, readPixelsRaw } from "./readback.js";
 
 
 /***************************************************************************************************

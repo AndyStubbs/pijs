@@ -158,3 +158,51 @@ export function readPixelsAsync( screenData, x, y, width, height ) {
 	} );
 }
 
+/**
+ * Read pixel rectangle as raw Uint8Array (synchronous)
+ * Returns RGBA data in a Uint8Array with WebGL bottom-left origin ordering.
+ * Format: [r0, g0, b0, a0, r1, g1, b1, a1, ...] where pixels are ordered
+ * row by row from bottom to top, left to right (WebGL native format).
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {number} width - Rectangle width
+ * @param {number} height - Rectangle height
+ * @returns {Uint8Array|null} Raw RGBA pixel data (width * height * 4 bytes) or null if invalid
+ */
+export function readPixelsRaw( screenData, x, y, width, height ) {
+	const gl = screenData.gl;
+	const screenWidth = screenData.width;
+	const screenHeight = screenData.height;
+
+	// Clamp to screen bounds for robustness
+	const clampedX = Math.max( 0, x );
+	const clampedY = Math.max( 0, y );
+	const clampedWidth = Math.min( width, screenWidth - clampedX );
+	const clampedHeight = Math.min( height, screenHeight - clampedY );
+
+	// If after clamping, nothing left to read
+	if( clampedWidth <= 0 || clampedHeight <= 0 ) {
+		return null;
+	}
+
+	// Flush batches before reading
+	g_batches.flushBatches( screenData );
+
+	// Allocate buffer for the exact rectangle to read
+	const buf = new Uint8Array( clampedWidth * clampedHeight * 4 );
+
+	// WebGL origin is bottom-left; convert to top-left for `gl.readPixels`
+	// The Y coordinate for `gl.readPixels` is the bottom edge of the rectangle.
+	// Bottom-left corner Y of the rectangle
+	const glReadY = ( screenHeight - ( clampedY + clampedHeight ) );
+
+	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
+	gl.readPixels( clampedX, glReadY, clampedWidth, clampedHeight, gl.RGBA, gl.UNSIGNED_BYTE, buf );
+	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+
+	// Return raw WebGL data (bottom-left origin) - flipping will be done in applyFilter
+	return buf;
+}
+

@@ -119,10 +119,11 @@ export function deleteWebGL2Texture( screenData, img ) {
 /**
  * Update a sub-rectangle of an existing WebGL2 texture using pixel data.
  * Creates the texture on-demand if it doesn't yet exist for this context.
+ * If imgKey is null, uses screenData.fboTexture directly (for FBO updates).
  * 
  * @param {Object} screenData - Screen data object
- * @param {HTMLImageElement|HTMLCanvasElement} imgKey - Image element used as cache key
- * @param {Uint8ClampedArray} pixelData - RGBA pixel data array
+ * @param {HTMLImageElement|HTMLCanvasElement|null} imgKey - Image element used as cache key, or null for FBO texture
+ * @param {Uint8ClampedArray|Uint8Array} pixelData - RGBA pixel data array
  * @param {number} width - Width of the pixel data
  * @param {number} height - Height of the pixel data
  * @param {number} dstX - Destination X in the texture
@@ -137,13 +138,24 @@ export function updateWebGL2TextureSubImage(
 		return null;
 	}
 
-	// Ensure texture exists
-	let texture = getWebGL2Texture( screenData, imgKey );
-	if( !texture ) {
-		return null;
+	const gl = screenData.gl;
+	let texture;
+
+	// If imgKey is null, use FBO texture directly
+	if( imgKey === null ) {
+		texture = screenData.fboTexture;
+		if( !texture ) {
+			return null;
+		}
+	} else {
+		
+		// Ensure texture exists for the image key
+		texture = getWebGL2Texture( screenData, imgKey );
+		if( !texture ) {
+			return null;
+		}
 	}
 
-	const gl = screenData.gl;
 	gl.bindTexture( gl.TEXTURE_2D, texture );
 
 	// Upload only the updated region using pixel data
