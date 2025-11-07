@@ -60,9 +60,13 @@ function registerCommands( api ) {
 		"loadSpritesheet", loadSpritesheet, false,
 		[ "src", "name", "width", "height", "margin", "usePalette", "paletteKeys", "onLoad", "onError" ]
 	);
-	g_commands.addCommand( "getImage", getImage,  true, [ "name" ], true );
+	g_commands.addCommand( "getImage", getImage, false, [ "name" ] );
 	g_commands.addCommand( "getSpritesheetData", getSpritesheetData, true, [ "name" ], true );
 	g_commands.addCommand( "removeImage", removeImage, false, [ "name" ] );
+	g_commands.addCommand(
+		"createImageFromScreen", createImageFromScreen, true,
+		[ "name", "x1", "y1", "x2", "y2" ]
+	);
 
 	// Register screen commands
 	g_commands.addCommand(
@@ -559,8 +563,127 @@ function loadSpritesheet( options ) {
 	return name;
 }
 
-function getImage( screenData, options ) {
-	return getImageFromRawInput( screenData, options.name, "getImage" );
+function getImage( options ) {
+	return getImageFromRawInput( options.name, "getImage" );
+}
+
+/**
+ * Create an image from a region of the screen (FBO)
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {Object} options - Options
+ * @param {string} [options.name] - Optional name for the image
+ * @param {number} options.x1 - Left coordinate
+ * @param {number} options.y1 - Top coordinate
+ * @param {number} options.x2 - Right coordinate
+ * @param {number} options.y2 - Bottom coordinate
+ * @returns {string} Image name
+ */
+function createImageFromScreen( screenData, options ) {
+	let name = options.name;
+	const x1 = g_utils.getInt( options.x1, null );
+	const y1 = g_utils.getInt( options.y1, null );
+	const x2 = g_utils.getInt( options.x2, null );
+	const y2 = g_utils.getInt( options.y2, null );
+
+	// Validate coordinates
+	if( x1 === null || y1 === null || x2 === null || y2 === null ) {
+		const error = new TypeError(
+			"createImageFromScreen: Parameters x1, y1, x2, y2 must be numbers."
+		);
+		error.code = "INVALID_COORDINATES";
+		throw error;
+	}
+
+	// Calculate dimensions
+	const width = Math.abs( x2 - x1 );
+	const height = Math.abs( y2 - y1 );
+
+	if( width === 0 || height === 0 ) {
+		const error = new RangeError(
+			"createImageFromScreen: Region width and height must be greater than 0."
+		);
+		error.code = "INVALID_DIMENSIONS";
+		throw error;
+	}
+
+	// Calculate actual coordinates (top-left corner)
+	const actualX = Math.min( x1, x2 );
+	const actualY = Math.min( y1, y2 );
+
+	// Generate a name if none is provided
+	if( !name || name === "" ) {
+		m_imageCount += 1;
+		name = "" + m_imageCount;
+	} else if( typeof name !== "string" ) {
+		const error = new TypeError( "createImageFromScreen: Parameter name must be a string." );
+		error.code = "INVALID_NAME";
+		throw error;
+	} else if( m_images[ name ] ) {
+		const error = new Error(
+			`createImageFromScreen: name "${name}" is already used; name must be unique.`
+		);
+		error.code = "DUPLICATE_NAME";
+		throw error;
+	}
+
+	// Read pixel data from FBO using readPixelsRaw
+	const pixelData = g_renderer.readPixelsRaw( screenData, actualX, actualY, width, height );
+
+	if( !pixelData ) {
+		const error = new Error(
+			"createImageFromScreen: Failed to read pixel data from screen."
+		);
+		error.code = "READ_FAILED";
+		throw error;
+	}
+
+	// Create canvas
+	const canvas = document.createElement( "canvas" );
+	canvas.width = width;
+	canvas.height = height;
+	const context = canvas.getContext( "2d" );
+
+	// Create ImageData for canvas (top-left origin)
+	const imageData = context.createImageData( width, height );
+	const canvasData = imageData.data;
+
+	// Convert from bottom-left origin (WebGL) to top-left origin (Canvas)
+	// pixelData is ordered from bottom row to top row
+	// canvasData needs to be ordered from top row to bottom row
+	for( let y = 0; y < height; y++ ) {
+		for( let x = 0; x < width; x++ ) {
+
+			// Source row in bottom-left origin (pixelData)
+			const srcRow = ( height - 1 ) - y;
+			const srcIndex = ( srcRow * width + x ) * 4;
+
+			// Destination row in top-left origin (canvasData)
+			const dstIndex = ( y * width + x ) * 4;
+
+			// Copy RGBA values
+			canvasData[ dstIndex     ] = pixelData[ srcIndex     ];
+			canvasData[ dstIndex + 1 ] = pixelData[ srcIndex + 1 ];
+			canvasData[ dstIndex + 2 ] = pixelData[ srcIndex + 2 ];
+			canvasData[ dstIndex + 3 ] = pixelData[ srcIndex + 3 ];
+		}
+	}
+
+	// Put image data into canvas
+	context.putImageData( imageData, 0, 0 );
+
+	// Store in m_images
+	m_images[ name ] = {
+		"status": "ready",
+		"image": canvas,
+		"width": width,
+		"height": height,
+		"usePalette": false,
+		"palColors": null,
+		"palColorMap": null
+	};
+
+	return name;
 }
 
 /**
@@ -589,7 +712,7 @@ function drawImage( screenData, options ) {
 	const scaleX = g_utils.getFloat( options.scaleX, 1 );
 	const scaleY = g_utils.getFloat( options.scaleY, 1 );
 
-	const img = getImageFromRawInput( screenData, imageRaw, "drawImage" );
+	const img = getImageFromRawInput( imageRaw, "drawImage" );
 
 	// Validate coordinates
 	if( x === null || y === null ) {
@@ -776,7 +899,7 @@ function getSpritesheetData( screenData, options ) {
  ***************************************************************************************************/
 
 
-function getImageFromRawInput( screenData, imageOrName, fnName ) {
+function getImageFromRawInput( imageOrName, fnName ) {
 	let img;
 
 	// Resolve image from name parameter

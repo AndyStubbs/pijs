@@ -249,7 +249,7 @@
 		
 		// Test 1: Capture screen region
 		try {
-			var captureName = $.getImage( "screen_capture", 300, 25, 400, 125 );
+			var captureName = $.createImageFromScreen( "screen_capture", 300, 25, 400, 125 );
 			logTest( "getImage screen capture", captureName === "screen_capture" );
 		} catch( e ) {
 			logTest( "getImage screen capture", false );
@@ -257,7 +257,7 @@
 		
 		// Test 2: Capture with auto-generated name
 		try {
-			var autoName = $.getImage( null, 450, 25, 600, 125 );
+			var autoName = $.createImageFromScreen( null, 450, 25, 600, 125 );
 			logTest( "getImage auto name", autoName && autoName !== "" );
 		} catch( e ) {
 			logTest( "getImage auto name", false );
@@ -265,7 +265,7 @@
 		
 		// Test 3: Error handling - invalid coordinates
 		try {
-			$.getImage( "invalid_coords", "invalid", 50, 150, 100 );
+			$.createImageFromScreen( "invalid_coords", "invalid", 50, 150, 100 );
 			logTest( "getImage invalid coordinates error", false );
 		} catch( e ) {
 			logTest( "getImage invalid coordinates error", e.code === "INVALID_COORDINATES" );
@@ -273,7 +273,7 @@
 		
 		// Test 4: Error handling - duplicate name
 		try {
-			$.getImage( "screen_capture", 300, 300, 350, 350 );
+			$.createImageFromScreen( "screen_capture", 300, 300, 350, 350 );
 			logTest( "getImage duplicate name error", false );
 		} catch( e ) {
 			logTest( "getImage duplicate name error", e.code === "DUPLICATE_NAME" );
