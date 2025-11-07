@@ -36,13 +36,13 @@ function calculateTransformedCorners(
 	width, height, anchorX, anchorY, scaleX, scaleY, angleRad, x, y
 ) {
 
-	// Calculate anchor position in pixels
-	const anchorXPx = Math.round( width * anchorX );
-	const anchorYPx = Math.round( height * anchorY );
-
-	// Calculate scaled dimensions
+	// Calculate scaled dimensions first
 	const scaledWidth = width * scaleX;
 	const scaledHeight = height * scaleY;
+
+	// Calculate anchor position in pixels from scaled dimensions
+	const anchorXPx = Math.round( scaledWidth * anchorX );
+	const anchorYPx = Math.round( scaledHeight * anchorY );
 
 	// Calculate corner positions relative to anchor point
 	const corners = [
