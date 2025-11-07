@@ -46,7 +46,7 @@ import * as g_utils from "./utils.js";
 import * as g_commands from "./commands.js";
 import * as g_renderer from "../renderer/renderer.js";
 
-const SCREEN_API_PROTO = { "screen": true };
+const SCREEN_API_PROTO = { "screen": true, "id": 0 };
 const m_screens = {};
 const m_screenDataItems = {};
 const m_screenDataItemGetters = [];
@@ -191,6 +191,8 @@ function screen( options ) {
 		"clientRect": null,
 		"previousOffsetSize": null
 	};
+
+	screenData.api.id = screenData.id;
 
 	// Append additional items onto the screendata
 	Object.assign( screenData, structuredClone( m_screenDataItems ) );
