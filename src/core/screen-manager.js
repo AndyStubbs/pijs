@@ -29,7 +29,7 @@
  * image and get the image with target resolution. But a work-around could be adding a copy
  * image that command that copies the canvas to clipboard.
  * 
- * TODO:
+ * IDEA:
  * 
  * Add a hardPalette flag to the screen command. When set it adds a hard requirement on palette
  * colors. This means that only colors from the palette can be used.
