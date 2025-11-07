@@ -391,7 +391,6 @@
 
 			const tempScreen = $.screen( "35x35", null, true );
 			$.print( "ABCDEFGHIJ" );
-			tempScreen.render();
 			$.setScreen( 0 );
 			$.drawImage( tempScreen, 650, 350 );
 			logTest( "drawImage Canvas element", true );
