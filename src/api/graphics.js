@@ -5,14 +5,6 @@
  * Handles input parsing, validation, and builds optimized drawing functions.
  * 
  * @module api/graphics
- * 
- * TODO: I removed objectLiteral parameter parsing for primitives to improve the speed, but there
- * is a problem with this especially when dealing with hitboxes, it was nice to be able to 
- * create a hit box object literal {x, y, width, height} and to share this with rects and events.
- * 
- * Create alternate primitive methods that accept an object literal as a first parameter. Test the
- * difference, if significant then keep the both methods if not then just always allow object
- * literals as first parameter.
  */
 
 "use strict";
