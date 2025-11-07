@@ -263,15 +263,7 @@
 			logTest( "getImage auto name", false );
 		}
 		
-		// Test 3: Error handling - invalid coordinates
-		try {
-			$.createImageFromScreen( "invalid_coords", "invalid", 50, 150, 100 );
-			logTest( "getImage invalid coordinates error", false );
-		} catch( e ) {
-			logTest( "getImage invalid coordinates error", e.code === "INVALID_COORDINATES" );
-		}
-		
-		// Test 4: Error handling - duplicate name
+		// Test 3: Error handling - duplicate name
 		try {
 			$.createImageFromScreen( "screen_capture", 300, 300, 350, 350 );
 			logTest( "getImage duplicate name error", false );
@@ -281,7 +273,7 @@
 		
 		for( let i = 0; i < 2; i += 1 ) {
 
-			// Test 5i: Draw captured image in quadrant 2 (top-right)
+			// Test 4i: Draw captured image in quadrant 2 (top-right)
 			try {
 				$.drawImage( "screen_capture", 300 + i * 300, 175 );
 				logTest( `getImage draw captured (${i})`, true );
@@ -289,7 +281,7 @@
 				logTest( `getImage draw captured (${i})`, false );
 			}
 
-			// Test 6i: Draw captured image in quadrant 2 (top-right)
+			// Test 5i: Draw captured image in quadrant 2 (top-right)
 			try {
 				$.drawImage( autoName, 450 + i * 300, 175 );
 				logTest( `getImage draw captured auto name (${i})`, true );
@@ -396,8 +388,9 @@
 
 			const tempScreen = $.screen( "35x35", null, true );
 			$.print( "ABCDEFGHIJ" );
+			const tempScreenCanvas = $.createImageFromScreen();
 			$.setScreen( 0 );
-			$.drawImage( tempScreen, 650, 350 );
+			$.drawImage( tempScreenCanvas, 650, 350 );
 			logTest( "drawImage Canvas element", true );
 		} catch( e ) {
 			logTest( "drawImage Canvas element", false );
