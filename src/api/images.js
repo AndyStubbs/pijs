@@ -717,7 +717,7 @@ function drawImage( screenData, options ) {
 	// Validate coordinates
 	if( x === null || y === null ) {
 		const error = new TypeError( "drawImage: Parameters x and y must be numbers." );
-		error.code = "INVALID_PARAMETER_TYPE";
+		error.code = "INVALID_COORDINATES";
 		throw error;
 	}
 
@@ -814,7 +814,7 @@ function drawSprite( screenData, options ) {
 	// Validate coordinates
 	if( x === null || y === null ) {
 		const error = new TypeError( "drawSprite: Parameters x and y must be numbers." );
-		error.code = "INVALID_PARAMETER_TYPE";
+		error.code = "INVALID_COORDINATES";
 		throw error;
 	}
 

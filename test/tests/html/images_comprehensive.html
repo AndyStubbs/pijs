@@ -328,7 +328,7 @@
 			$.getSpritesheetData( "non_existent" );
 			logTest( "getSpritesheetData invalid name error", false );
 		} catch( e ) {
-			logTest( "getSpritesheetData invalid name error", e.code === "INVALID_NAME" );
+			logTest( "getSpritesheetData invalid name error", e.code === "IMAGE_NOT_FOUND" );
 		}
 		
 		// Test 4: Error handling - not a spritesheet
@@ -470,7 +470,7 @@
 			$.drawSprite( "non_existent", 0, 100, 100 );
 			logTest( "drawSprite invalid name error", false );
 		} catch( e ) {
-			logTest( "drawSprite invalid name error", e.code === "INVALID_NAME" );
+			logTest( "drawSprite invalid name error", e.code === "IMAGE_NOT_FOUND" );
 		}
 		
 		// Test 6: Error handling - not a spritesheet
