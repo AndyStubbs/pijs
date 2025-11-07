@@ -62,6 +62,7 @@ function registerCommands( api ) {
 	);
 	g_commands.addCommand( "getImage", getImage,  true, [ "name" ], true );
 	g_commands.addCommand( "getSpritesheetData", getSpritesheetData, true, [ "name" ], true );
+	g_commands.addCommand( "removeImage", removeImage, false, [ "name" ] );
 
 	// Register screen commands
 	g_commands.addCommand(
@@ -354,6 +355,43 @@ function loadImage( options ) {
 	img.src = src;
 
 	return name;
+}
+
+
+/**
+ * Remove an image from storage
+ * 
+ * @param {Object} options - Load options
+ * @param {string} [options.name] - Name of the image to remove
+ */
+function removeImage( options ) {
+	const name = options.name;
+	if( typeof name !== "string" ) {
+		const error = new TypeError( "removeImage: Parameter name must be a string." );
+		error.code = "INVALID_NAME";
+		throw error;
+	}
+
+	const imageObj = m_images[ name ];
+	if( imageObj && imageObj.image ) {
+
+		const img = imageObj.image;
+
+		// Explicitly delete WebGL2 textures to free GPU memory
+		// WebGLTextures hold GPU memory that is NOT automatically freed by JS garbage collection
+		// Must call gl.deleteTexture() explicitly to prevent memory leaks
+		for( const screenData of g_screenManager.getAllScreens() ) {
+			g_renderer.deleteWebGL2Texture( screenData, img );
+		}
+
+		// Remove from paletteImages
+		if( imageObj.usePalette ) {
+			m_paletteImages.splice( m_paletteImages.indexOf( name ), 1 );
+		}
+
+		// Delete the image object
+		delete m_images[ name ];
+	}
 }
 
 /**
@@ -821,38 +859,6 @@ export function getStoredImage( name ) {
 	return m_images[ name ] || null;
 }
 
-/**
- * Remove an image from storage
- * 
- * @param {string} name - Image name
- * @returns {void}
- */
-export function removeImage( name ) {
-	if( typeof name !== "string" ) {
-		return;
-	}
-
-	const imageObj = m_images[ name ];
-	if( imageObj && imageObj.image ) {
-
-		const img = imageObj.image;
-
-		// Explicitly delete WebGL2 textures to free GPU memory
-		// WebGLTextures hold GPU memory that is NOT automatically freed by JS garbage collection
-		// Must call gl.deleteTexture() explicitly to prevent memory leaks
-		for( const screenData of g_screenManager.getAllScreens() ) {
-			g_renderer.deleteWebGL2Texture( screenData, img );
-		}
-
-		// Remove from paletteImages
-		if( imageObj.usePalette ) {
-			m_paletteImages.splice( m_paletteImages.indexOf( name ), 1 );
-		}
-
-		// Delete the image object
-		delete m_images[ name ];
-	}
-}
 
 function addPaletteImage( name ) {
 	m_paletteImages.push( name );
