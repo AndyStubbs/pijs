@@ -389,60 +389,60 @@
 			logTest( "drawImage with transformations", false );
 		}
 		
-		// // Test 3: Draw captured image
-		// try {
-		// 	$.drawImage( "screen_capture", 450, 315 );
-		// 	logTest( "drawImage captured image", true );
-		// } catch( e ) {
-		// 	logTest( "drawImage captured image", false );
-		// }
+		// Test 3: Draw captured image
+		try {
+			$.drawImage( "screen_capture", 450, 315 );
+			logTest( "drawImage captured image", true );
+		} catch( e ) {
+			logTest( "drawImage captured image", false );
+		}
 		
-		// // Test 4: Draw from Image element directly
-		// try {
-		// 	var imgElement = document.getElementById( "spaceship" );
-		// 	$.drawImage( imgElement, 580, 350 );
-		// 	logTest( "drawImage Image element", true );
-		// } catch( e ) {
-		// 	logTest( "drawImage Image element", false );
-		// }
+		// Test 4: Draw from Image element directly
+		try {
+			var imgElement = document.getElementById( "spaceship" );
+			$.drawImage( imgElement, 580, 350 );
+			logTest( "drawImage Image element", true );
+		} catch( e ) {
+			logTest( "drawImage Image element", false );
+		}
 		
-		// // Test 5: Draw from Screen element (screen)
-		// try {
+		// Test 5: Draw from Screen element (screen)
+		try {
 
-		// 	const tempScreen = $.screen( "35x35", null, true );
-		// 	$.print( "ABCDEFGHIJ" );
-		// 	const tempScreenCanvas = $.createImageFromScreen();
-		// 	$.setScreen( 0 );
-		// 	$.drawImage( tempScreenCanvas, 650, 350 );
-		// 	logTest( "drawImage Canvas element", true );
-		// } catch( e ) {
-		// 	logTest( "drawImage Canvas element", false );
-		// }
+			const tempScreen = $.screen( "35x35", null, true );
+			$.print( "ABCDEFGHIJ" );
+			const tempScreenCanvas = $.createImageFromScreen();
+			$.setScreen( 0 );
+			$.drawImage( tempScreenCanvas, 650, 350 );
+			logTest( "drawImage Canvas element", true );
+		} catch( e ) {
+			logTest( "drawImage Canvas element", false );
+		}
 		
-		// // Test 6: Error handling - image not found
-		// try {
-		// 	$.drawImage( "non_existent", 100, 100 );
-		// 	logTest( "drawImage not found error", false );
-		// } catch( e ) {
-		// 	logTest( "drawImage not found error", e.code === "IMAGE_NOT_FOUND" );
-		// }
+		// Test 6: Error handling - image not found
+		try {
+			$.drawImage( "non_existent", 100, 100 );
+			logTest( "drawImage not found error", false );
+		} catch( e ) {
+			logTest( "drawImage not found error", e.code === "IMAGE_NOT_FOUND" );
+		}
 		
-		// // Test 7: Error handling - image still loading
-		// try {
-		// 	$.loadImage( "../../media/spaceship_0.png", "loading_image" );
-		// 	$.drawImage( "loading_image", 100, 100 );
-		// 	logTest( "drawImage loading error", false );
-		// } catch( e ) {
-		// 	logTest( "drawImage loading error", e.code === "IMAGE_NOT_READY" );
-		// }
+		// Test 7: Error handling - image still loading
+		try {
+			$.loadImage( "../../media/spaceship_0.png", "loading_image" );
+			$.drawImage( "loading_image", 100, 100 );
+			logTest( "drawImage loading error", false );
+		} catch( e ) {
+			logTest( "drawImage loading error", e.code === "IMAGE_NOT_READY" );
+		}
 		
-		// // Test 8: Error handling - invalid coordinates
-		// try {
-		// 	$.drawImage( "ship_element", "invalid", 100 );
-		// 	logTest( "drawImage invalid coordinates error", false );
-		// } catch( e ) {
-		// 	logTest( "drawImage invalid coordinates error", e.code === "INVALID_COORDINATES" );
-		// }
+		// Test 8: Error handling - invalid coordinates
+		try {
+			$.drawImage( "ship_element", "invalid", 100 );
+			logTest( "drawImage invalid coordinates error", false );
+		} catch( e ) {
+			logTest( "drawImage invalid coordinates error", e.code === "INVALID_COORDINATES" );
+		}
 	}
 
 	// Test drawSprite functionality
@@ -458,7 +458,7 @@
 		
 		// Test 2: Draw sprite with transformations
 		try {
-			$.drawSprite( "squares_fixed", 1, 400, 515, 45, 0.5, 0.5, 128, 2, 2 );
+			$.drawSprite( "squares_fixed", 1, 400, 515, 45, 0.5, 0.5, 2, 2, 128 );
 			logTest( "drawSprite with transformations", true );
 		} catch( e ) {
 			logTest( "drawSprite with transformations", false );
@@ -554,7 +554,7 @@
 		testGetImage();
 		testGetSpritesheetData();
 		testDrawImage();
-		//testDrawSprite();
+		testDrawSprite();
 		
 		// Draw test results
 		drawTestResults();

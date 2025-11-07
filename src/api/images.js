@@ -761,9 +761,9 @@ function drawSprite( screenData, options ) {
 	const colorRaw = options.color ?? DEFAULT_BLIT_COLOR;
 	const anchorX = g_utils.getFloat( options.anchorX, screenData.defaultAnchorX );
 	const anchorY = g_utils.getFloat( options.anchorY, screenData.defaultAnchorY );
-	const angle = g_utils.getFloat( options.angle, 0 );
 	const scaleX = g_utils.getFloat( options.scaleX, 1 );
 	const scaleY = g_utils.getFloat( options.scaleY, 1 );
+	const angle = g_utils.getFloat( options.angle, 0 );
 
 	// Validate name
 	if( typeof name !== "string" ) {
