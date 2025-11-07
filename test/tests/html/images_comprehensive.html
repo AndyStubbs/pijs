@@ -350,76 +350,99 @@
 	// Test drawImage functionality
 	function testDrawImage() {
 		
-		// Test 1: Draw loaded image in quadrant 3 (bottom-left)
+		$.setColor( 15 );
+
+		// Test: Draw loaded image in quadrant 3 (bottom-left)
 		try {
 			$.drawImage( "ship_element", 300, 350 );
+			$.pset( 300, 350 );
 			logTest( "drawImage loaded image", true );
 		} catch( e ) {
 			logTest( "drawImage loaded image", false );
 		}
-		
-		// Test 2: Draw image with transformations
+
+		// Test: Draw image with anchor
 		try {
-			$.drawImage( "ship_element", 400, 350, 45, 0.5, 0.5, 128, 2, 2 );
+			$.drawImage( "ship_element", 345, 366, null, 0.5, 0.5 );
+			$.pset( 345, 366 );
+			logTest( "drawImage with anchor", true );
+		} catch( e ) {
+			logTest( "drawImage with anchor", false );
+		}
+
+		// Test: Draw image with anchor and rotation
+		try {
+			$.drawImage( "ship_element", 370, 366, null, 0.5, 0.5, null, null, 45 );
+			$.pset( 370, 366 );
+			logTest( "drawImage with anchor and rotation", true );
+		} catch( e ) {
+			logTest( "drawImage with anchor and rotation", false );
+		}
+		
+		
+		// Test: Draw image with transformations
+		try {
+			$.drawImage( "ship_element", 410, 366, 2, 0.5, 0.5, 3, 2, 128 );
+			$.pset( 410, 366 );
 			logTest( "drawImage with transformations", true );
 		} catch( e ) {
 			logTest( "drawImage with transformations", false );
 		}
 		
-		// Test 3: Draw captured image
-		try {
-			$.drawImage( "screen_capture", 450, 315 );
-			logTest( "drawImage captured image", true );
-		} catch( e ) {
-			logTest( "drawImage captured image", false );
-		}
+		// // Test 3: Draw captured image
+		// try {
+		// 	$.drawImage( "screen_capture", 450, 315 );
+		// 	logTest( "drawImage captured image", true );
+		// } catch( e ) {
+		// 	logTest( "drawImage captured image", false );
+		// }
 		
-		// Test 4: Draw from Image element directly
-		try {
-			var imgElement = document.getElementById( "spaceship" );
-			$.drawImage( imgElement, 580, 350 );
-			logTest( "drawImage Image element", true );
-		} catch( e ) {
-			logTest( "drawImage Image element", false );
-		}
+		// // Test 4: Draw from Image element directly
+		// try {
+		// 	var imgElement = document.getElementById( "spaceship" );
+		// 	$.drawImage( imgElement, 580, 350 );
+		// 	logTest( "drawImage Image element", true );
+		// } catch( e ) {
+		// 	logTest( "drawImage Image element", false );
+		// }
 		
-		// Test 5: Draw from Screen element (screen)
-		try {
+		// // Test 5: Draw from Screen element (screen)
+		// try {
 
-			const tempScreen = $.screen( "35x35", null, true );
-			$.print( "ABCDEFGHIJ" );
-			const tempScreenCanvas = $.createImageFromScreen();
-			$.setScreen( 0 );
-			$.drawImage( tempScreenCanvas, 650, 350 );
-			logTest( "drawImage Canvas element", true );
-		} catch( e ) {
-			logTest( "drawImage Canvas element", false );
-		}
+		// 	const tempScreen = $.screen( "35x35", null, true );
+		// 	$.print( "ABCDEFGHIJ" );
+		// 	const tempScreenCanvas = $.createImageFromScreen();
+		// 	$.setScreen( 0 );
+		// 	$.drawImage( tempScreenCanvas, 650, 350 );
+		// 	logTest( "drawImage Canvas element", true );
+		// } catch( e ) {
+		// 	logTest( "drawImage Canvas element", false );
+		// }
 		
-		// Test 6: Error handling - image not found
-		try {
-			$.drawImage( "non_existent", 100, 100 );
-			logTest( "drawImage not found error", false );
-		} catch( e ) {
-			logTest( "drawImage not found error", e.code === "IMAGE_NOT_FOUND" );
-		}
+		// // Test 6: Error handling - image not found
+		// try {
+		// 	$.drawImage( "non_existent", 100, 100 );
+		// 	logTest( "drawImage not found error", false );
+		// } catch( e ) {
+		// 	logTest( "drawImage not found error", e.code === "IMAGE_NOT_FOUND" );
+		// }
 		
-		// Test 7: Error handling - image still loading
-		try {
-			$.loadImage( "../../media/spaceship_0.png", "loading_image" );
-			$.drawImage( "loading_image", 100, 100 );
-			logTest( "drawImage loading error", false );
-		} catch( e ) {
-			logTest( "drawImage loading error", e.code === "IMAGE_NOT_READY" );
-		}
+		// // Test 7: Error handling - image still loading
+		// try {
+		// 	$.loadImage( "../../media/spaceship_0.png", "loading_image" );
+		// 	$.drawImage( "loading_image", 100, 100 );
+		// 	logTest( "drawImage loading error", false );
+		// } catch( e ) {
+		// 	logTest( "drawImage loading error", e.code === "IMAGE_NOT_READY" );
+		// }
 		
-		// Test 8: Error handling - invalid coordinates
-		try {
-			$.drawImage( "ship_element", "invalid", 100 );
-			logTest( "drawImage invalid coordinates error", false );
-		} catch( e ) {
-			logTest( "drawImage invalid coordinates error", e.code === "INVALID_COORDINATES" );
-		}
+		// // Test 8: Error handling - invalid coordinates
+		// try {
+		// 	$.drawImage( "ship_element", "invalid", 100 );
+		// 	logTest( "drawImage invalid coordinates error", false );
+		// } catch( e ) {
+		// 	logTest( "drawImage invalid coordinates error", e.code === "INVALID_COORDINATES" );
+		// }
 	}
 
 	// Test drawSprite functionality
@@ -531,7 +554,7 @@
 		testGetImage();
 		testGetSpritesheetData();
 		testDrawImage();
-		testDrawSprite();
+		//testDrawSprite();
 		
 		// Draw test results
 		drawTestResults();

@@ -69,6 +69,7 @@ function registerCommands( api ) {
 	);
 
 	// Register screen commands
+	g_commands.addCommand( "setDefaultAnchor", setDefaultAnchor, true, [ "x", "y" ] );
 	g_commands.addCommand(
 		"drawImage", drawImage, true,
 		[ "image", "x", "y", "color", "anchorX", "anchorY", "scaleX", "scaleY", "angle" ]
@@ -651,6 +652,42 @@ function createImageFromScreen( screenData, options ) {
 }
 
 /**
+ * Set the default anchor point for images on this screen
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {Object} options - Options
+ * @param {number} options.anchorX - Anchor point X (0-1)
+ * @param {number} options.anchorY - Anchor point Y (0-1)
+ * @returns {void}
+ */
+function setDefaultAnchor( screenData, options ) {
+	const anchorX = g_utils.getFloat( options.x, null );
+	const anchorY = g_utils.getFloat( options.y, null );
+
+	// Validate anchorX
+	if( anchorX === null || anchorX < 0 || anchorX > 1 ) {
+		const error = new TypeError(
+			"setDefaultAnchor: Parameter x must be a number between 0 and 1."
+		);
+		error.code = "INVALID_ANCHOR";
+		throw error;
+	}
+
+	// Validate anchorY
+	if( anchorY === null || anchorY < 0 || anchorY > 1 ) {
+		const error = new TypeError(
+			"setDefaultAnchor: Parameter y must be a number between 0 and 1."
+		);
+		error.code = "INVALID_ANCHOR";
+		throw error;
+	}
+
+	// Update default anchor values
+	screenData.defaultAnchorX = anchorX;
+	screenData.defaultAnchorY = anchorY;
+}
+
+/**
  * Draw an image on the screen
  * 
  * @param {Object} screenData - Screen data object
@@ -672,9 +709,9 @@ function drawImage( screenData, options ) {
 	const colorRaw = options.color ?? DEFAULT_BLIT_COLOR;
 	const anchorX = g_utils.getFloat( options.anchorX, screenData.defaultAnchorX );
 	const anchorY = g_utils.getFloat( options.anchorY, screenData.defaultAnchorY );
-	const angle = g_utils.getFloat( options.angle, 0 );
 	const scaleX = g_utils.getFloat( options.scaleX, 1 );
 	const scaleY = g_utils.getFloat( options.scaleY, 1 );
+	const angle = g_utils.getFloat( options.angle, 0 );
 
 	const img = getImageFromRawInput( imageRaw, "drawImage" );
 
