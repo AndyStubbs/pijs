@@ -32,7 +32,7 @@ import * as g_readback from "./readback.js";
 export { POINTS_BATCH, IMAGE_BATCH, GEOMETRY_BATCH, POINTS_REPLACE_BATCH } from "./batches.js";
 
 // Re-export drawing functions
-export { drawImage } from "./draw/sprites.js";
+export { drawImage, drawSprite } from "./draw/sprites.js";
 export { drawPixel, drawPixelUnsafe } from "./draw/primitives.js";
 export { drawArc } from "./draw/arcs.js";
 export { drawBezier } from "./draw/bezier.js";

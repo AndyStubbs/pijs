@@ -56,12 +56,21 @@ function registerCommands( api ) {
 		"loadImage", loadImage, false,
 		[ "src", "name", "usePalette", "paletteKeys", "onLoad", "onError" ]
 	);
+	g_commands.addCommand(
+		"loadSpritesheet", loadSpritesheet, false,
+		[ "src", "name", "width", "height", "margin", "usePalette", "paletteKeys", "onLoad", "onError" ]
+	);
 	g_commands.addCommand( "getImage", getImage,  true, [ "name" ], true );
+	g_commands.addCommand( "getSpritesheetData", getSpritesheetData, true, [ "name" ], true );
 
 	// Register screen commands
 	g_commands.addCommand(
 		"drawImage", drawImage, true,
 		[ "image", "x", "y", "color", "anchorX", "anchorY", "scaleX", "scaleY", "angle" ]
+	);
+	g_commands.addCommand(
+		"drawSprite", drawSprite, true,
+		[ "name", "frame", "x", "y", "color", "anchorX", "anchorY", "scaleX", "scaleY", "angle" ]
 	);
 
 	// Special handling for blit image because it doesn't support object literal parsing
@@ -76,7 +85,7 @@ function registerCommands( api ) {
 		scaleY = 1,
 		angleRad = 0
 	) => {
-		const screenData = g_screenManager.getActiveScreen( "setBlitImage" );
+		const screenData = g_screenManager.getActiveScreen( "blitImage" );
 		const finalAnchorX = anchorX ?? screenData.defaultAnchorX;
 		const finalAnchorY = anchorY ?? screenData.defaultAnchorY;
 		g_renderer.drawImage(
@@ -100,6 +109,65 @@ function registerCommands( api ) {
 		) => {
 			g_renderer.drawImage(
 				screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
+			);
+			g_renderer.setImageDirty( screenData );
+		};
+	} );
+
+	// Special handling for blit sprite because it doesn't support object literal parsing
+	api.blitSprite = (
+		name,
+		frame = 0,
+		x = 0,
+		y = 0,
+		color = DEFAULT_BLIT_COLOR,
+		anchorX,
+		anchorY,
+		scaleX = 1,
+		scaleY = 1,
+		angleRad = 0
+	) => {
+		const screenData = g_screenManager.getActiveScreen( "blitSprite" );
+		const finalAnchorX = anchorX ?? screenData.defaultAnchorX;
+		const finalAnchorY = anchorY ?? screenData.defaultAnchorY;
+		const spriteData = getStoredImage( name );
+		const frameData = spriteData.frames[ frame ];
+		const img = spriteData.image;
+
+		// Draw using renderer-specific implementation
+		g_renderer.drawSprite(
+			screenData, img,
+			frameData.x, frameData.y, frameData.width, frameData.height,
+			x, y, frameData.width, frameData.height,
+			color, finalAnchorX, finalAnchorY, scaleX, scaleY, angleRad
+		);
+		g_renderer.setImageDirty( screenData );
+	};
+
+	// Add blitSprite to screens when they get created
+	g_screenManager.addScreenInitFunction( ( screenData ) => {
+		screenData.api.blitSprite = (
+			name,
+			frame = 0,
+			x = 0,
+			y = 0,
+			color = DEFAULT_BLIT_COLOR,
+			anchorX = screenData.defaultAnchorX,
+			anchorY = screenData.defaultAnchorY,
+			scaleX = 1,
+			scaleY = 1,
+			angleRad = 0
+		) => {
+			const spriteData = getStoredImage( name );
+			const frameData = spriteData.frames[ frame ];
+			const img = spriteData.image;
+
+			// Draw using renderer-specific implementation
+			g_renderer.drawSprite(
+				screenData, img,
+				frameData.x, frameData.y, frameData.width, frameData.height,
+				x, y, frameData.width, frameData.height,
+				color, anchorX, anchorY, scaleX, scaleY, angleRad
 			);
 			g_renderer.setImageDirty( screenData );
 		};
@@ -288,6 +356,171 @@ function loadImage( options ) {
 	return name;
 }
 
+/**
+ * Load a spritesheet from URL or use provided Image/Canvas element
+ * 
+ * @param {Object} options - Load options
+ * @param {string|HTMLImageElement|HTMLCanvasElement} options.src - Image source
+ * @param {string} [options.name] - Optional name for the spritesheet
+ * @param {number} [options.width] - Sprite width (required for fixed grid mode)
+ * @param {number} [options.height] - Sprite height (required for fixed grid mode)
+ * @param {number} [options.margin] - Margin between sprites (default: 0)
+ * @param {boolean} [options.usePalette] - Set image colors to be linked to screen canvas
+ * @param {Array} [options.paletteKeys] - An array of colors used as key colors from the image to
+ * 										  use as indices to look up palette colors
+ * @param {Function} [options.onLoad] - Callback when spritesheet loads
+ * @param {Function} [options.onError] - Callback when spritesheet fails to load
+ * @returns {string} Spritesheet name
+ */
+function loadSpritesheet( options ) {
+	const src = options.src;
+	let name = options.name;
+	let spriteWidth = options.width;
+	let spriteHeight = options.height;
+	let margin = options.margin;
+	const usePalette = !!options.usePalette;
+	const paletteKeys = options.paletteKeys;
+	const onLoadCallback = options.onLoad;
+	const onErrorCallback = options.onError;
+	let isAuto = false;
+
+	if( margin == null ) {
+		margin = 0;
+	}
+
+	if( spriteWidth == null && spriteHeight == null ) {
+		isAuto = true;
+		spriteWidth = 0;
+		spriteHeight = 0;
+		margin = 0;
+	} else {
+		spriteWidth = Math.round( spriteWidth );
+		spriteHeight = Math.round( spriteHeight );
+		margin = Math.round( margin );
+	}
+
+	// Validate spriteWidth and spriteHeight for fixed mode
+	if( !isAuto && ( !Number.isInteger( spriteWidth ) || !Number.isInteger( spriteHeight ) ) ) {
+		const error = new TypeError( "loadSpritesheet: width and height must be integers." );
+		error.code = "INVALID_DIMENSIONS";
+		throw error;
+	}
+
+	// Size cannot be less than 1
+	if( !isAuto && ( spriteWidth < 1 || spriteHeight < 1 ) ) {
+		const error = new RangeError(
+			"loadSpritesheet: width and height must be greater than 0."
+		);
+		error.code = "INVALID_DIMENSIONS";
+		throw error;
+	}
+
+	// Validate margin
+	if( !Number.isInteger( margin ) ) {
+		const error = new TypeError( "loadSpritesheet: margin must be an integer." );
+		error.code = "INVALID_MARGIN";
+		throw error;
+	}
+
+	// Generate a name if none is provided
+	if( !name || name === "" ) {
+		m_imageCount += 1;
+		name = "" + m_imageCount;
+	}
+
+	// Validate name
+	if( typeof name !== "string" ) {
+		const error = new TypeError( "loadSpritesheet: Parameter name must be a string." );
+		error.code = "INVALID_NAME";
+		throw error;
+	}
+	if( m_images[ name ] ) {
+		const error = new TypeError( "loadSpritesheet: Parameter name must be unique." );
+		error.code = "INVALID_NAME";
+		throw error;
+	}
+
+	// Validate callbacks if provided
+	if( onLoadCallback != null && !g_utils.isFunction( onLoadCallback ) ) {
+		const error = new TypeError( "loadSpritesheet: Parameter onLoad must be a function." );
+		error.code = "INVALID_CALLBACK";
+		throw error;
+	}
+	if( onErrorCallback != null && !g_utils.isFunction( onErrorCallback ) ) {
+		const error = new TypeError( "loadSpritesheet: Parameter onError must be a function." );
+		error.code = "INVALID_CALLBACK";
+		throw error;
+	}
+
+	// Validate paletteKeys
+	let palColors = null;
+	let palColorMap = null;
+	if( usePalette ) {
+		if( !Array.isArray( paletteKeys ) || paletteKeys.length === 0 ) {
+			const error = new TypeError(
+				"loadSpritesheet: Parameter paletteKeys must be non empty Array when usePalette " +
+				"is set."
+			);
+			error.code = "INVALID_PALETTE";
+			throw error;
+		}
+
+		// Create a color map
+		palColorMap = new Map();
+
+		// Initialize palColors with 0 for transparent black
+		palColors = [ g_utils.convertToColor( "rgba(0, 0, 0, 0)" ) ];
+		palColorMap.set( palColors[ 0 ].key, 0 );
+
+		for( let i = 0; i < paletteKeys.length; i += 1 ) {
+			const palColorRaw = paletteKeys[ i ];
+			const palColor = g_utils.convertToColor( palColorRaw );
+			palColors.push( palColor );
+			palColorMap.set( palColor.key, i + 1 );
+		}
+	}
+
+	// Load the image first, then process frames in callback
+	loadImage( {
+		"src": src,
+		"name": name,
+		"usePalette": usePalette,
+		"paletteKeys": paletteKeys,
+		"onLoad": function( imageName ) {
+
+			// Update the image data to spritesheet type
+			const imageData = m_images[ imageName ];
+			imageData.type = "spritesheet";
+			imageData.spriteWidth = spriteWidth;
+			imageData.spriteHeight = spriteHeight;
+			imageData.margin = margin;
+			imageData.frames = [];
+			imageData.isAuto = isAuto;
+
+			const width = imageData.width;
+			const height = imageData.height;
+
+			if( isAuto ) {
+
+				// Auto-detect sprites using connected component analysis
+				processSpriteSheetAuto( imageData, width, height );
+			} else {
+
+				// Fixed grid of sprites
+				processSpriteSheetFixed( imageData, width, height );
+			}
+
+			// Call user callback if provided
+			if( onLoadCallback ) {
+				onLoadCallback( imageName );
+			}
+		},
+		"onError": onErrorCallback
+	} );
+
+	return name;
+}
+
 function getImage( screenData, options ) {
 	return getImageFromRawInput( screenData, options.name, "getImage" );
 }
@@ -340,6 +573,163 @@ function drawImage( screenData, options ) {
 
 	// Mark screen as dirty
 	g_renderer.setImageDirty( screenData );
+}
+
+/**
+ * Draw a sprite (frame) from a spritesheet on the screen
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {Object} options - Draw options
+ * @param {string} options.name - Spritesheet name
+ * @param {number} options.frame - Frame index to draw
+ * @param {number} options.x - X coordinate
+ * @param {number} options.y - Y coordinate
+ * @param {number} [options.color] - Raw color input
+ * @param {number} [options.anchorX] - Anchor point X (0-1)
+ * @param {number} [options.anchorY] - Anchor point Y (0-1)
+ * @param {number} [options.scaleX] - Scale X
+ * @param {number} [options.scaleY] - Scale Y
+ * @param {number} [options.angle] - Rotation angle in degrees
+ */
+function drawSprite( screenData, options ) {
+	const name = options.name;
+	const frame = options.frame ?? 0;
+	const x = g_utils.getInt( options.x, null );
+	const y = g_utils.getInt( options.y, null );
+	const colorRaw = options.color ?? DEFAULT_BLIT_COLOR;
+	const anchorX = g_utils.getFloat( options.anchorX, screenData.defaultAnchorX );
+	const anchorY = g_utils.getFloat( options.anchorY, screenData.defaultAnchorY );
+	const angle = g_utils.getFloat( options.angle, 0 );
+	const scaleX = g_utils.getFloat( options.scaleX, 1 );
+	const scaleY = g_utils.getFloat( options.scaleY, 1 );
+
+	// Validate name
+	if( typeof name !== "string" ) {
+		const error = new TypeError( "drawSprite: Parameter name must be a string." );
+		error.code = "INVALID_NAME";
+		throw error;
+	}
+
+	const spriteData = getStoredImage( name );
+	if( !spriteData ) {
+		const error = new Error( `drawSprite: Spritesheet "${name}" not found.` );
+		error.code = "IMAGE_NOT_FOUND";
+		throw error;
+	}
+
+	// Validate it's a spritesheet
+	if( spriteData.type !== "spritesheet" ) {
+		const error = new Error( `drawSprite: Image "${name}" is not a spritesheet.` );
+		error.code = "NOT_A_SPRITESHEET";
+		throw error;
+	}
+
+	if( spriteData.status !== "ready" ) {
+		const imgName = `Spritesheet "${name}"`;
+		if( spriteData.status === "loading" ) {
+			const error = new Error(
+				`drawSprite: ${imgName} is still loading. Use $.ready() to wait for it.`
+			);
+			error.code = "IMAGE_NOT_READY";
+			throw error;
+		}
+
+		if( spriteData.status === "error" ) {
+			const error = new Error( `drawSprite: ${imgName} failed to load.` );
+			error.code = "IMAGE_LOAD_FAILED";
+			throw error;
+		}
+	}
+
+	// Validate frame
+	if( !Number.isInteger( frame ) || frame >= spriteData.frames.length || frame < 0 ) {
+		const error = new RangeError(
+			`drawSprite: Frame ${frame} is not valid. Spritesheet has ${spriteData.frames.length} frames.`
+		);
+		error.code = "INVALID_FRAME";
+		throw error;
+	}
+
+	// Validate coordinates
+	if( x === null || y === null ) {
+		const error = new TypeError( "drawSprite: Parameters x and y must be numbers." );
+		error.code = "INVALID_PARAMETER_TYPE";
+		throw error;
+	}
+
+	// Parses the color and makes sure it's in a valid format
+	const color = g_colors.getColorValueByRawInput( screenData, colorRaw );
+
+	// Convert angle from degrees to radians
+	const angleRad = g_utils.degreesToRadian( angle );
+
+	// Get frame data
+	const frameData = spriteData.frames[ frame ];
+	const img = spriteData.image;
+
+	// Draw using renderer-specific implementation
+	g_renderer.drawSprite(
+		screenData, img,
+		frameData.x, frameData.y, frameData.width, frameData.height,
+		x, y, frameData.width, frameData.height,
+		color, anchorX, anchorY, scaleX, scaleY, angleRad
+	);
+
+	// Mark screen as dirty
+	g_renderer.setImageDirty( screenData );
+}
+
+/**
+ * Get spritesheet data including frame information
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {Object} options - Options
+ * @param {string} options.name - Spritesheet name
+ * @returns {Object} Spritesheet data with frameCount and frames array
+ */
+function getSpritesheetData( screenData, options ) {
+	const name = options.name;
+
+	// Validate name
+	if( typeof name !== "string" ) {
+		const error = new TypeError( "getSpritesheetData: Parameter name must be a string." );
+		error.code = "INVALID_NAME";
+		throw error;
+	}
+
+	const spriteData = getStoredImage( name );
+	if( !spriteData ) {
+		const error = new Error( `getSpritesheetData: Spritesheet "${name}" not found.` );
+		error.code = "IMAGE_NOT_FOUND";
+		throw error;
+	}
+
+	if( spriteData.type !== "spritesheet" ) {
+		const error = new Error( `getSpritesheetData: Image "${name}" is not a spritesheet.` );
+		error.code = "NOT_A_SPRITESHEET";
+		throw error;
+	}
+
+	const spriteDataResult = {
+		"frameCount": spriteData.frames.length,
+		"frames": []
+	};
+
+	for( let i = 0; i < spriteData.frames.length; i++ ) {
+		spriteDataResult.frames.push( {
+			"index": i,
+			"x": spriteData.frames[ i ].x,
+			"y": spriteData.frames[ i ].y,
+			"width": spriteData.frames[ i ].width,
+			"height": spriteData.frames[ i ].height,
+			"left": spriteData.frames[ i ].x,
+			"top": spriteData.frames[ i ].y,
+			"right": spriteData.frames[ i ].right,
+			"bottom": spriteData.frames[ i ].bottom
+		} );
+	}
+
+	return spriteDataResult;
 }
 
 
@@ -529,8 +919,8 @@ function palettizeImage( screenData, name ) {
 	// Get the global image object
 	const imageObj = m_images[ name ];
 
-	// Make sure there are not enough colors in the screen palette for this image
-	if( imageObj.palColorMap.length > screenData.pal.length ) {
+	// Make sure there are enough colors in the screen palette for this image
+	if( imageObj.palColors.length > screenData.pal.length ) {
 		console.warn(
 			`There are too many palette colors in image: ${name}. Unable to swap colors for this ` +
 			"palette."
@@ -566,4 +956,144 @@ function palettizeImage( screenData, name ) {
 	g_renderer.updateWebGL2TextureImage(
 		screenData, imageObj.image, palettizedImageData, imageObj.width, imageObj.height
 	);
+}
+
+/**
+ * Process spritesheet with fixed grid dimensions
+ * 
+ * @param {Object} imageData - Image data object
+ * @param {number} width - Image width
+ * @param {number} height - Image height
+ * @returns {void}
+ */
+function processSpriteSheetFixed( imageData, width, height ) {
+	let x1 = imageData.margin;
+	let y1 = imageData.margin;
+	let x2 = x1 + imageData.spriteWidth;
+	let y2 = y1 + imageData.spriteHeight;
+
+	// Loop through all the frames in a grid pattern
+	while( y2 <= height - imageData.margin ) {
+		while( x2 <= width - imageData.margin ) {
+			imageData.frames.push( {
+				"x": x1,
+				"y": y1,
+				"width": imageData.spriteWidth,
+				"height": imageData.spriteHeight,
+				"right": x1 + imageData.spriteWidth - 1,
+				"bottom": y1 + imageData.spriteHeight - 1
+			} );
+			x1 += imageData.spriteWidth + imageData.margin;
+			x2 = x1 + imageData.spriteWidth;
+		}
+		x1 = imageData.margin;
+		x2 = x1 + imageData.spriteWidth;
+		y1 += imageData.spriteHeight + imageData.margin;
+		y2 = y1 + imageData.spriteHeight;
+	}
+}
+
+/**
+ * Process spritesheet with auto-detection (finds connected pixel clusters)
+ * 
+ * @param {Object} imageData - Image data object
+ * @param {number} width - Image width
+ * @param {number} height - Image height
+ * @returns {void}
+ */
+function processSpriteSheetAuto( imageData, width, height ) {
+
+	// Create canvas to read pixel data
+	const canvas = document.createElement( "canvas" );
+	canvas.width = width;
+	canvas.height = height;
+	const context = canvas.getContext( "2d", { "willReadFrequently": true } );
+	context.drawImage( imageData.image, 0, 0 );
+
+	const data = context.getImageData( 0, 0, width, height ).data;
+	const searched = new Uint8Array( width * height );
+
+	// 8-directional neighbors
+	const dirs = [
+		[ -1, -1 ], [ 0, -1 ], [ 1, -1 ],
+		[ -1,  0 ],            [ 1,  0 ],
+		[ -1,  1 ], [ 0,  1 ], [ 1,  1 ]
+	];
+
+	// Find clusters of non-transparent pixels
+	for( let i = 3; i < data.length; i += 4 ) {
+		if( data[ i ] > 0 ) {
+			const index = ( i - 3 ) / 4;
+			const x1 = index % width;
+			const y1 = Math.floor( index / width );
+			const pixelIndex = y1 * width + x1;
+
+			// Skip if already searched
+			if( searched[ pixelIndex ] ) {
+				continue;
+			}
+
+			// Find bounding box of this cluster
+			const frameData = {
+				"x": width,
+				"y": height,
+				"width": 0,
+				"height": 0,
+				"right": 0,
+				"bottom": 0
+			};
+
+			// BFS to find all connected pixels
+			const queue = [];
+			queue.push( { "x": x1, "y": y1 } );
+			searched[ pixelIndex ] = 1;
+
+			let head = 0;
+			while( head < queue.length ) {
+				const pixel = queue[ head++ ];
+				const px = pixel.x;
+				const py = pixel.y;
+
+				// Update bounding box
+				frameData.x = Math.min( frameData.x, px );
+				frameData.y = Math.min( frameData.y, py );
+				frameData.right = Math.max( frameData.right, px );
+				frameData.bottom = Math.max( frameData.bottom, py );
+
+				// Check all 8 neighbors
+				for( const dir of dirs ) {
+					const nx = px + dir[ 0 ];
+					const ny = py + dir[ 1 ];
+
+					// Skip if out of bounds
+					if( nx < 0 || nx >= width || ny < 0 || ny >= height ) {
+						continue;
+					}
+
+					const nIndex = ny * width + nx;
+
+					// Skip if already searched
+					if( searched[ nIndex ] ) {
+						continue;
+					}
+
+					// Check if pixel is non-transparent
+					const dataIndex = nIndex * 4;
+					if( data[ dataIndex + 3 ] > 0 ) {
+						searched[ nIndex ] = 1;
+						queue.push( { "x": nx, "y": ny } );
+					}
+				}
+			}
+
+			// Calculate final dimensions
+			frameData.width = frameData.right - frameData.x + 1;
+			frameData.height = frameData.bottom - frameData.y + 1;
+
+			// Only add frames larger than 4 pixels (filters out noise)
+			if( ( frameData.width + frameData.height ) > 4 ) {
+				imageData.frames.push( frameData );
+			}
+		}
+	}
 }
