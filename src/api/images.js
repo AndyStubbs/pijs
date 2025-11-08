@@ -974,6 +974,7 @@ function getImageFromRawInput( imageOrName, fnName ) {
 			throw error;
 		}
 
+		// Make sure image is ready
 		if( imageData.status !== "ready" ) {
 			const imgName = `Image "${imageOrName}"`;
 			if( imageData.status === "loading" ) {
@@ -991,11 +992,13 @@ function getImageFromRawInput( imageOrName, fnName ) {
 			}
 		}
 
+		// Set the image
 		img = imageData.image;
 	} else if( imageOrName && typeof imageOrName === "object" ) {
-		
 		if( imageOrName.tagName === "CANVAS" || imageOrName.tagName === "IMG" ) {
 			img = imageOrName;
+		} else if( imageOrName.screen === true && typeof imageOrName.canvas === "function" ) {
+			img = imageOrName.canvas();
 		}
 	}
 

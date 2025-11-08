@@ -4,7 +4,7 @@
 		<title>Screen Comprehensive Test</title>
 		<script type="text/toml">
 			[[TOML_START]]
-			file = "screen_comprehensive"
+			file = "screen_comprehensive_01"
 			name = "Screen Comprehensive Test"
 			width = 820
 			height = 620
@@ -128,7 +128,6 @@
 		$.setFont( 1 );
 		$.print( "Offscreen" );
 		$.circle( 40, 30, 25 );
-		$.render();
 
 		// Test 7: Display offscreen canvas
 		const s6 = $.screen( {
@@ -196,7 +195,6 @@
 		retrievedScreen.setFont( 1 );
 		retrievedScreen.print( "getScreen test" );
 		retrievedScreen.print( "id=" + s8.id );
-		retrievedScreen.render();
 
 		// Test 11: Test canvas() method
 		const s9 = $.screen( {
@@ -206,7 +204,6 @@
 		$.setColor( 5 );
 		$.setFont( 1 );
 		$.print( "canvas() test" );
-		$.render();
 		const canvasElem = $.canvas();
 		const ctx = canvasElem.getContext( "2d" );
 		ctx.strokeStyle = "#ff0";

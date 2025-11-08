@@ -411,11 +411,7 @@ function bitmapPrint( screenData, msg, x, y ) {
 	}
 
 	// Get or create texture for font image
-	const texture = g_textures.getWebGL2Texture( screenData, font.image );
-	if( !texture ) {
-		console.error( "bitmapPrint: Failed to get/create texture for font image." );
-		return;
-	}
+	g_textures.getWebGL2Texture( screenData, font.image );
 
 	const atlasWidth = font.atlasWidth;
 	const fontWidth = font.width;

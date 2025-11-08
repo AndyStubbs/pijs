@@ -79,18 +79,17 @@ function calculateTransformedCorners(
  * Add a textured quad (2 triangles, 6 vertices) to IMAGE_BATCH
  * 
  * @param {Object} screenData - Screen data object
- * @param {Image|Canvas|WebGLTexture} img - Image or Canvas element
  * @param {WebGLTexture} texture - WebGL texture
  * @param {Array<Object>} corners - Array of 4 corner objects with x, y properties
  * @param {Array<number>} texCoords - Array of 12 texture coordinates (2 per vertex for 6 vertices)
  * @param {Object} color - Color object with {r, g, b, a}
  * @returns {void}
  */
-function addTexturedQuadToBatch( screenData, img, texture, corners, texCoords, color ) {
+function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color ) {
 
 	// Prepare batch for 6 vertices (2 triangles)
 	const batch = screenData.batches[ g_batches.IMAGE_BATCH ];
-	g_batches.prepareBatch( screenData, g_batches.IMAGE_BATCH, 6, img, texture );
+	g_batches.prepareBatch( screenData, g_batches.IMAGE_BATCH, 6, texture );
 
 	const batchVertices = batch.vertices;
 	const batchColors = batch.colors;
@@ -178,7 +177,6 @@ function addTexturedQuadToBatch( screenData, img, texture, corners, texCoords, c
 	batch.count += 6;
 }
 
-
 /**
  * Draw image as textured quad with optional transform
  * 
@@ -200,10 +198,6 @@ export function drawImage(
 
 	// Get or create texture
 	const texture = g_textures.getWebGL2Texture( screenData, img );
-	if( !texture ) {
-		console.error( "Failed to get/create texture for image" );
-		return;
-	}
 
 	// Calculate image dimensions
 	const imgWidth = img.width;
@@ -225,7 +219,7 @@ export function drawImage(
 	];
 
 	// Add textured quad to batch
-	addTexturedQuadToBatch( screenData, img, texture, corners, texCoords, color );
+	addTexturedQuadToBatch( screenData, texture, corners, texCoords, color );
 }
 
 /**
@@ -256,10 +250,6 @@ export function drawSprite(
 
 	// Get or create texture
 	const texture = g_textures.getWebGL2Texture( screenData, img );
-	if( !texture ) {
-		console.error( "Failed to get/create texture for sprite" );
-		return;
-	}
 
 	// Get texture dimensions for coordinate conversion
 	const texWidth = img.width;
@@ -287,6 +277,6 @@ export function drawSprite(
 	];
 
 	// Add textured quad to batch
-	addTexturedQuadToBatch( screenData, img, texture, corners, texCoords, color );
+	addTexturedQuadToBatch( screenData, texture, corners, texCoords, color );
 }
 

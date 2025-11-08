@@ -114,6 +114,8 @@ function registerCommands() {
 	// Screen-scoped info commands
 	g_commands.addCommand( "width", widthCmd, true, [] );
 	g_commands.addCommand( "height", heightCmd, true, [] );
+	g_commands.addCommand( "canvas", canvasCmd, true, [] );
+
 }
 
 export function addScreenDataItem( name, val ) {
@@ -532,6 +534,10 @@ function widthCmd( screenData ) {
 
 function heightCmd( screenData ) {
 	return screenData.height;
+}
+
+function canvasCmd( screenData ) {
+	return screenData.canvas;
 }
 
 

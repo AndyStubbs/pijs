@@ -299,11 +299,10 @@ function resizeBatch( batch, newCapacity ) {
  * @param {Object} screenData - Screen data object
  * @param {number} batchType - Batch type
  * @param {number} itemCount - Number of items needed
- * @param {HTMLImageElement|HTMLCanvasElement} [img] - Image for IMAGE_BATCH
  * @param {WebGLTexture} [texture] - Texture for IMAGE_BATCH
  * @returns {void}
  */
-export function prepareBatch( screenData, batchType, itemCount, img, texture ) {
+export function prepareBatch( screenData, batchType, itemCount, texture ) {
 
 	// Get the batch
 	const batch = screenData.batches[ batchType ];
@@ -353,7 +352,7 @@ export function prepareBatch( screenData, batchType, itemCount, img, texture ) {
 			);
 		
 			flushBatches( screenData );
-			return prepareBatch( screenData, batchType, itemCount, img, texture );
+			return prepareBatch( screenData, batchType, itemCount, texture );
 		}
 
 		// Resize to new capacity by doubling current capacity up to maxCapacity
@@ -474,6 +473,11 @@ export function flushBatches( screenData, blends = null ) {
 
 	// Unbind FBO
 	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+
+	// Delete temporary textures
+	for( const texture of screenData.tempTextures ) {
+		gl.deleteTexture( texture );
+	}
 }
 
 /**

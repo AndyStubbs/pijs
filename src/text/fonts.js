@@ -308,10 +308,7 @@ export function setFont( screenData, options ) {
 
 	// Get or create texture for font image if it's loaded
 	if( font.image ) {
-		const texture = g_renderer.getWebGL2Texture( screenData, font.image );
-		if( !texture ) {
-			console.warn( "setFont: Failed to get/create texture for font image." );
-		}
+		g_renderer.getWebGL2Texture( screenData, font.image );
 	}
 
 	// Set the screenData font

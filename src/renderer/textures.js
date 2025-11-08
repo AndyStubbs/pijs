@@ -28,6 +28,7 @@ export function init() {
 	// Outer Map: Image element -> Inner Map: GL context -> WebGL texture
 	// This allows efficient lookup by image and cleanup when image is removed
 	g_screenManager.addScreenDataItem( "imageTextureMap", new Map() );
+	g_screenManager.addScreenDataItem( "tempTextures", [] );
 }
 
 
@@ -46,14 +47,6 @@ export function init() {
  */
 export function getWebGL2Texture( screenData, img ) {
 
-	if( !screenData.gl ) {
-		return null;
-	}
-
-	// Ensure the latest content is in screenData.fboTexture - if a texture is scheduled to be drawn
-	// before the change it should drawn with the old texture.
-	g_batches.flushBatches( screenData );
-
 	// Get or create inner Map for this image
 	let contextMap = screenData.imageTextureMap.get( img );
 	if( !contextMap ) {
@@ -68,11 +61,12 @@ export function getWebGL2Texture( screenData, img ) {
 		return texture;
 	}
 
-	// Create new texture
+	// Create the texture
 	texture = gl.createTexture();
 	if( !texture ) {
-		console.error( "Failed to create WebGL2 texture for image." );
-		return null;
+		const error = new Error( "Failed to create WebGL2 texture for image." );
+		error.code = "WEBGL2_ERROR";
+		throw error;
 	}
 
 	gl.bindTexture( gl.TEXTURE_2D, texture );
@@ -151,9 +145,6 @@ export function updateWebGL2TextureSubImage(
 		
 		// Ensure texture exists for the image key
 		texture = getWebGL2Texture( screenData, imgKey );
-		if( !texture ) {
-			return null;
-		}
 	}
 
 	gl.bindTexture( gl.TEXTURE_2D, texture );
@@ -189,16 +180,8 @@ export function updateWebGL2TextureSubImage(
  */
 export function updateWebGL2TextureImage( screenData, imgKey, pixelData, width, height ) {
 
-	if( !screenData.gl ) {
-		return null;
-	}
-
-	// Ensure texture exists
+	// Get the texture
 	let texture = getWebGL2Texture( screenData, imgKey );
-	if( !texture ) {
-		return null;
-	}
-
 	const gl = screenData.gl;
 	gl.bindTexture( gl.TEXTURE_2D, texture );
 
