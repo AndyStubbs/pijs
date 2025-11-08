@@ -7,6 +7,7 @@
 const esbuild = require( "esbuild" );
 const fs = require( "fs" );
 const path = require( "path" );
+const zlib = require( "zlib" );
 
 // Read version from package.json (single source of truth)
 const pkg = require( "../package.json" );
@@ -288,9 +289,18 @@ async function build() {
 		files.forEach( file => {
 			const filePath = path.join( buildDir, file );
 			if( fs.existsSync( filePath ) ) {
-				const stats = fs.statSync( filePath );
-				const sizeKB = ( stats.size / 1024 ).toFixed( 2 );
-				console.log( `  ${file}: ${sizeKB} KB` );
+				const buffer = fs.readFileSync( filePath );
+				const sizeKB = ( buffer.length / 1024 ).toFixed( 2 );
+				let gzipKB = "n/a";
+				try {
+					const gzipBuffer = zlib.gzipSync(
+						buffer, { "level": zlib.constants.Z_BEST_COMPRESSION }
+					);
+					gzipKB = ( gzipBuffer.length / 1024 ).toFixed( 2 );
+				} catch( gzipError ) {
+					console.warn( `  ⚠️ Unable to gzip ${file}: ${gzipError.message}` );
+				}
+				console.log( `  ${file}: ${sizeKB} KB (gzip ≈ ${gzipKB} KB)` );
 			}
 		} );
 
