@@ -35,34 +35,48 @@
 		<!-- Screen 1: Built-in Fonts -->
 		<div id="screen1" class="screen" style="width: 200px; height: 150px;"></div>
 		
-		<!-- Screen 2: Canvas Fonts -->
+		<!-- Screen 2: Bitmap Fonts -->
 		<div id="screen2" class="screen" style="width: 200px; height: 150px;"></div>
 		
-		<!-- Screen 3: Bitmap Fonts -->
+		<!-- Screen 3: Cursor Positioning -->
 		<div id="screen3" class="screen" style="width: 200px; height: 150px;"></div>
 		
-		<!-- Screen 4: Cursor Positioning -->
+		<!-- Screen 4: Word Wrapping -->
 		<div id="screen4" class="screen" style="width: 200px; height: 150px;"></div>
 		
-		<!-- Screen 5: Word Wrapping -->
+		<!-- Screen 5: Vertical Scrolling -->
 		<div id="screen5" class="screen" style="width: 200px; height: 150px;"></div>
 		
-		<!-- Screen 6: Vertical Scrolling -->
+		<!-- Screen 6: Custom Characters -->
 		<div id="screen6" class="screen" style="width: 200px; height: 150px;"></div>
 		
-		<!-- Screen 7: Custom Characters -->
+		<!-- Screen 7: Font Size Changes -->
 		<div id="screen7" class="screen" style="width: 200px; height: 150px;"></div>
-		
-		<!-- Screen 8: Font Size Changes -->
+
+		<!-- Screen 8: Font Colors -->
 		<div id="screen8" class="screen" style="width: 200px; height: 150px;"></div>
+
+		<!-- Screen 9: Font Padding -->
+		<div id="screen9" class="screen" style="width: 200px; height: 150px;"></div>
 	</div>
 	
 	<!-- Font Images -->
-	<img src="../../media/font-8x14.png" id="font-image" style="display: none;"></img>
-	<img src="../../media/gnsh-bitmapfont-colour2.png" id="font-gnsh" style="display: none;"></img>
-	<img src="../../media/font-block.png" id="font-block" style="display: none;"></img>
+	<img src="../../media/font-6x8-1.webp" id="font-image" style="display: none;"></img>
 	
 <script>
+
+	// Load margin font
+	const marginFont = $.loadFont( document.getElementById( "font-image" ), 6, 8, 1 );
+
+	// gnsh font
+	const charset = " ~\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`" +
+		"abcdefghijklmnopqrstuvwxyz{|}~";
+	const gnshFont = $.loadFont( "../../media/gnsh-bitmapfont-colour2.png", 5, 12, 0, charset );
+	
+	// Load block font
+	const fontBlock = $.loadFont( "../../media/font-block.png", 10, 10, null, "ABCDFGHI" );
+
+	// Wait for fonts to load
 	$.ready( function() {
 		
 		// ============================================================
@@ -91,67 +105,38 @@
 		}
 		
 		// ============================================================
-		// Screen 2: Canvas Fonts (CSS fonts)
+		// Screen 2: Loaded Fonts (loaded from images)
 		// ============================================================
 		$.screen( "200x150", "screen2" );
 		$.setColor( 15 );
 		$.setPosPx( 5, 5 );
-		$.print( "2: CANVAS FONTS" );
-		
-		// Test various canvas fonts
-		const canvasFonts = [
-			"12px Arial",
-			"bold 14px serif", 
-			"italic 10px monospace",
-			"16px sans-serif",
-			"20px Times"
-		];
-		
-		y = 20;
-		for( const fontStr of canvasFonts ) {
-			$.setFont( fontStr );
-			$.setPosPx( 5, y );
-			$.print( fontStr );
-			y += 20;
-		}
+		$.print( "2: LOADED FONTS" );
+		$.print();
+
+		// 6x8 font with a margin of 1
+		$.setFont( marginFont );
+		$.print( "Margin Font" );
+		$.print( "ABC 123 !@#" );
+		$.print( "The quick brown fox\n" );
+
+		$.setFont( gnshFont );
+		$.print( "Custom Font" );
+		$.print( "ABC 123 !@#" );
+		$.print( "The quick brown fox jumped over the lazy dogs." );
+
+		$.setFont( 1 );
+		$.print();
+		$.print( "Block Font" );
+		$.setFont( fontBlock );
+		$.print( "ABCDFGHI" );
 		
 		// ============================================================
-		// Screen 3: Bitmap Fonts (loaded from images)
+		// Screen 3: Cursor Positioning
 		// ============================================================
 		$.screen( "200x150", "screen3" );
 		$.setColor( 15 );
 		$.setPosPx( 5, 5 );
-		$.print( "3: BITMAP FONTS" );
-		
-		// Load bitmap font
-		const bitmapFont = $.loadFont( document.getElementById( "font-image" ), 8, 14 );
-
-		const charset = " ~\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`" +
-			"abcdefghijklmnopqrstuvwxyz{|}~";
-		const gnshFont = $.loadFont( document.getElementById( "font-gnsh" ), 5, 12, charset );
-		
-		// 8x14 font
-		$.setFont( bitmapFont );
-		$.setPosPx( 5, 20 );
-		$.print( "Bitmap Font" );
-		$.setPosPx( 5, 35 );
-		$.print( "ABC 123 !@#" );
-		$.setPosPx( 5, 50 );
-		$.print( "The quick brown fox\n" );
-
-		$.setFont( gnshFont );
-		$.print( "Bitmap Font2");
-		$.print( "ABC 123 !@#" );
-		$.print( "The quick brown fox jumped over the lazy dogs." );
-
-		
-		// ============================================================
-		// Screen 4: Cursor Positioning
-		// ============================================================
-		$.screen( "200x150", "screen4" );
-		$.setColor( 15 );
-		$.setPosPx( 5, 5 );
-		$.print( "4: CURSOR POSITION" );
+		$.print( "3: CURSOR POSITION" );
 		
 		$.setFont( 2 ); // 8x8 font
 		
@@ -178,12 +163,12 @@
 		$.print( `getPosPx: ${posPx.x},${posPx.y}` );
 		
 		// ============================================================
-		// Screen 5: Word Wrapping
+		// Screen 4: Word Wrapping
 		// ============================================================
-		$.screen( "200x150", "screen5" );
+		$.screen( "200x150", "screen4" );
 		$.setColor( 15 );
 		$.setPosPx( 5, 5 );
-		$.print( "5: WORD WRAPPING" );
+		$.print( "4: WORD WRAPPING" );
 		
 		$.setFont( 2 ); // 8x8 font
 		$.setWordBreak( true );
@@ -198,12 +183,12 @@
 		$.print( "This line should not wrap and will be cut off at the edge." );
 		
 		// ============================================================
-		// Screen 6: Vertical Scrolling
+		// Screen 5: Vertical Scrolling
 		// ============================================================
-		$.screen( "200x150", "screen6" );
+		$.screen( "200x150", "screen5" );
 		$.setColor( 15 );
 		$.setPosPx( 5, 5 );
-		$.print( "6: VERTICAL SCROLL" );
+		$.print( "5: VERTICAL SCROLL" );
 		
 		$.setFont( 2 ); // 8x8 font
 		
@@ -216,12 +201,12 @@
 		}
 		
 		// ============================================================
-		// Screen 7: Custom Characters
+		// Screen 6: Custom Characters
 		// ============================================================
-		$.screen( "200x150", "screen7" );
+		$.screen( "200x150", "screen6" );
 		$.setColor( 15 );
 		$.setPosPx( 5, 5 );
-		$.print( "7: CUSTOM CHARS" );
+		$.print( "6: CUSTOM CHARS" );
 		
 		$.setFont( 2 ); // 8x8 font
 		
@@ -238,41 +223,35 @@
 		$.print( "Mixed: A1B2C3D4E5" );
 		
 		// ============================================================
-		// Screen 8: Font Size Changes
+		// Screen 7: Font Size Changes
 		// ============================================================
-		$.screen( "200x150", "screen8" );
+		$.screen( "200x150", "screen7" );
 		$.setColor( 15 );
 		$.setPosPx( 5, 5 );
-		$.print( "8: FONT SIZES" );
+		$.print( "7: FONT SIZES" );
 		
 		// Load bitmap font for size testing
-		const blockFont = $.loadFont(
-			document.getElementById( "font-block" ), 10, 10, "ABCDEFGHI"
-		);
-		$.setFont( blockFont );
+		$.setFont( 1 );
 		
 		$.setPosPx( 5, 20 );
 		$.print( "ABCDFGHI" );
 		
-		$.setFontSize( 15, 15 );
+		$.setPrintSize( 2, 2 );
 		$.setPosPx( 5, 40 );
 		$.print( "ABCDFGHI" );
 		
-		$.setFontSize( 20, 20 );
+		$.setPrintSize( 4, 3 );
 		$.setPosPx( 5, 70 );
 		$.print( "ABCDFGHI" );
-		
-		$.setFontSize( 8, 8 );
-		$.setPosPx( 5, 100 );
-		$.print( "ABCDFGHI" );
-		
+
+
 		// ============================================================
 		// Test getCols and getRows
 		// ============================================================
-		$.setFont( 2 ); // 8x8 font
 		const cols = $.getCols();
 		const rows = $.getRows();
 		
+		$.setPrintSize( 1, 1 );
 		$.setPosPx( 5, 120 );
 		$.print( `Cols: ${cols}, Rows: ${rows}` );
 		
@@ -282,8 +261,77 @@
 		const availableFonts = $.getAvailableFonts();
 		$.setPosPx( 5, 135 );
 		$.print( `Fonts: ${availableFonts.length}` );
+
+
+		// ============================================================
+		// Screen 8: Loaded Fonts (loaded from images)
+		// ============================================================
+		$.screen( "200x150", "screen8" );
+		$.setFont( 1 );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "8: Font Colors" );
+		$.print();
+
+		// Basic colors
+		for( let i = 2; i < 5; i += 1 ) {
+			$.setColor( i );
+			$.print( "The quick brown fox\n" );
+		}
+
+
+		// 6x8 font with a margin of 1
+		$.setColor( 9 );
+		$.setFont( marginFont );
+		$.print( "The quick brown fox\n" );
+
+		$.setColor( 10 );
+		$.setFont( gnshFont );
+		$.print( "The quick brown fox\n" );
+
+		$.setColor( 11 );
+		$.setFont( fontBlock );
+		$.print( "ABCDFGHI" );
+
+
+		// ============================================================
+		// Screen 9: Print padding
+		// ============================================================
+		$.screen( "200x150", "screen9" );
+		$.setFont( 1 );
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "9: Print Padding" );
+		$.print();
+
+		$.setFont( 1 );
+		$.print( "Font 1 with 0px padding" );
+		$.setFont( 1, 1, 1 );
+		$.print( "Font 1 with 1px padding" );
+		$.setFont( 1, 3, 1 );
+		$.print( "Font 1 with 3,1px" );
 		
-		$.render();
+		$.print( "Font 2 with 0px padding" );
+		$.setFont( 2 );
+		$.setFont( 2, 2, 2 );
+		$.print( "Font 2 with 2px padding" );
+
+		$.setFont( gnshFont );
+		$.setPos( 0, $.getPos().row );
+		$.print( "Font with 0px padding" );
+		$.setPos( 5, $.getPos().row );
+		$.print( "Test", true );
+
+		$.setFont( gnshFont, 3, 2 );
+		$.setPos( 0, $.getPos().row + 2 );
+		console.log( $.getPosPx() );
+		$.print( "Font with 3,2px" );
+		console.log( $.getPosPx() );
+		$.setPos( 5, $.getPos().row );
+		console.log( $.getPosPx() );
+		$.print( "Test", true );
+		console.log( $.getPosPx() );
+		
 	} );
 </script>
 </body>

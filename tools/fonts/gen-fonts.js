@@ -7,10 +7,11 @@ const images = document.querySelectorAll( "#images img" );
 for( let i = 0; i < images.length; i++ ) {
 	const width = parseInt( images[ i ].dataset.width );
 	const height = parseInt( images[ i ].dataset.height );
-	loadFont( images[ i ], width, height );
+	const margin = parseInt( images[ i ].dataset.margin );
+	loadFont( images[ i ], width, height, margin );
 }
 
-function loadFont( img, width, height ) {
+function loadFont( img, width, height, margin ) {
 	const previewCanvas = document.createElement( "canvas" );
 	previewCanvas.width = img.width;
 	previewCanvas.height = img.height;
@@ -22,6 +23,7 @@ function loadFont( img, width, height ) {
 		"id": g_FontId++,
 		"width": width,
 		"height": height,
+		"margin": margin,
 		"img": img,
 		"data": [],
 		"previewCanvas": previewCanvas
@@ -218,6 +220,7 @@ function writeCompressedFont() {
 		msg += `\t"byteBase": ${bestByteBase},\n`;
 		msg += `\t"width": ${font.width},\n`;
 		msg += `\t"height": ${font.height},\n`;
+		msg += `\t"margin": ${font.margin},\n`;
 		msg += `\t"str": "${bestFontStr}"\n`;
 		msg += "};\n\n";
 

@@ -6,6 +6,9 @@
  * @module text/print
  */
 
+// TODO: Add optional spacing around fonts when printing -- Maybe add parameter to setFont?
+// Maybe move setFont to print.js from fonts.js?
+
 "use strict";
 
 import * as g_utils from "../core/utils.js";
@@ -37,7 +40,9 @@ export function init( api ) {
 		"scaleHeight": 1,
 		"width": 0,
 		"height": 0,
-		"breakWord": true
+		"breakWord": true,
+		"padX": 0,
+		"padY": 0
 	} );
 
 	registerCommands();
@@ -140,7 +145,7 @@ function setPos( screenData, options ) {
 	const printCursor = screenData.printCursor;
 
 	// Set the x value
-	if( col != null ) {
+	if( col !== null ) {
 		if( isNaN( col ) ) {
 			const error = new TypeError( "setPos: parameter col must be a number" );
 			error.code = "INVALID_COL";
@@ -154,7 +159,7 @@ function setPos( screenData, options ) {
 	}
 
 	// Set the y value
-	if( row != null ) {
+	if( row !== null ) {
 		if( isNaN( row ) ) {
 			const error = new TypeError( "setPos: parameter row must be a number" );
 			error.code = "INVALID_ROW";
@@ -418,6 +423,7 @@ function bitmapPrint( screenData, msg, x, y ) {
 	const printWidth = screenData.printCursor.width;
 	const scaleX = screenData.printCursor.scaleWidth;
 	const scaleY = screenData.printCursor.scaleHeight;
+	const margin = font.margin;
 	const cellWidth = font.cellWidth;
 	const cellHeight = font.cellHeight;
 	const columns = Math.floor( atlasWidth / cellWidth );
@@ -431,14 +437,14 @@ function bitmapPrint( screenData, msg, x, y ) {
 		if( charIndex !== undefined ) {
 
 			// Get the source x & y coordinates in the atlas
-			const sx = ( charIndex % columns ) * cellWidth + 1;
-			const sy = Math.floor( charIndex / columns ) * cellHeight + 1;
+			const sx = ( charIndex % columns ) * cellWidth + margin;
+			const sy = Math.floor( charIndex / columns ) * cellHeight + margin;
 
 			// Get the destination x coordinate
 			const dx = x + printWidth * i;
 
 			// Draw the character using drawSprite
-			const color = screenData.color || { "r": 255, "g": 255, "b": 255, "a": 255 };
+			const color = screenData.color;
 			g_sprites.drawSprite(
 				screenData, font.image,
 				sx, sy, fontWidth, fontHeight,
@@ -458,14 +464,23 @@ function bitmapPrint( screenData, msg, x, y ) {
  * @param {Object} screenData - Screen data object
  * @returns {void}
  */
-export function updatePrintCursorDimensions( screenData ) {
+export function updatePrintCursorDimensions( screenData, padX = null, padY = null ) {
 	const font = screenData.font;
 	if( !font ) {
 		return;
 	}
+
 	const printCursor = screenData.printCursor;
-	printCursor.width = printCursor.scaleWidth * font.width;
-	printCursor.height = printCursor.scaleHeight * font.height;
+
+	// Update the padding
+	if( padX !== null ) {
+		printCursor.padX = padX;
+	}
+	if( padY !== null ) {
+		printCursor.padY = padY;
+	}
+	printCursor.width = printCursor.scaleWidth * ( font.width + printCursor.padX );
+	printCursor.height = printCursor.scaleHeight * ( font.height + printCursor.padY );
 	printCursor.cols = Math.floor( screenData.width / printCursor.width );
 	printCursor.rows = Math.floor( screenData.height / printCursor.height );
 }

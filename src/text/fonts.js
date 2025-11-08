@@ -42,79 +42,14 @@ let m_nextFontId = 0;
 export function init( api ) {
 	g_screenManager.addScreenDataItem( "font", null );
 	
+	registerCommands( api );
+	loadDefaultFonts();
+
 	// Set the font when a screen is initialized
 	g_screenManager.addScreenInitFunction(
 		( screenData ) => setFont( screenData, { "fontId": m_defaultFontId } )
 	);
-
-	registerCommands( api );
-	loadDefaultFonts();
 }
-
-
-// Load the default fonts
-function loadDefaultFonts() {
-
-	// 6x6 font
-	loadFont( {
-		"src": g_fnt6x6.data,
-		"width": 8,
-		"height": 8,
-		"cellWidth": 10,
-		"cellHeight": 10,
-		"charset": null
-	} );
-	g_fnt6x6.data = "";
-
-	// 6x8 font - default font
-	m_defaultFontId = loadFont( {
-		"src": g_fnt6x8.getFontImage(),
-		"width": 6,
-		"height": 8,
-		"cellWidth": 8,
-		"cellHeight": 10,
-		"charset": null
-	} );
-
-	// 8x8 font
-	loadFont( {
-		"src": g_fnt8x8.data,
-		"width": 8,
-		"height": 8,
-		"cellWidth": 10,
-		"cellHeight": 10,
-		"charset": null
-	} );
-	g_fnt8x8.data = "";
-
-	// 8x14 font
-	loadFont( {
-		"src": g_fnt8x14.data,
-		"width": 8,
-		"height": 14,
-		"cellWidth": 10,
-		"cellHeight": 16,
-		"charset": null
-	} );
-	g_fnt8x14.data = "";
-
-	// 8x16 font
-	loadFont( {
-		"src": g_fnt8x16.data,
-		"width": 8,
-		"height": 16,
-		"cellWidth": 10,
-		"cellHeight": 18,
-		"charset": null
-	} );
-	g_fnt8x16.data = "";
-}
-
-
-/***************************************************************************************************
- * Command Registration
- ***************************************************************************************************/
-
 
 /**
  * Register font commands
@@ -127,14 +62,69 @@ function registerCommands( api ) {
 	// Register non-screen commands
 	g_commands.addCommand(
 		"loadFont", loadFont, false,
-		[ "src", "width", "height", "cellWidth", "cellHeight", "charset" ]
+		[ "src", "width", "height", "margin", "charset" ]
 	);
 	g_commands.addCommand( "setDefaultFont", setDefaultFont, false, [ "fontId" ] );
 	g_commands.addCommand( "getAvailableFonts", getAvailableFonts, false, [] );
 
 	// Register screen commands
-	g_commands.addCommand( "setFont", setFont, true, [ "fontId" ] );
 	g_commands.addCommand( "setChar", setChar, true, [ "charCode", "data" ] );
+	g_commands.addCommand( "setFont", setFont, true, [ "fontId", "padX", "padY" ] );
+}
+
+
+
+// Load the default fonts
+function loadDefaultFonts() {
+
+	// 6x6 font
+	loadFont( {
+		"src": g_fnt6x6.data,
+		"width": 6,
+		"height": 6,
+		"margin": 0,
+		"charset": null
+	} );
+	g_fnt6x6.data = "";
+
+	// 6x8 font - default font
+	m_defaultFontId = loadFont( {
+		"src": g_fnt6x8.getFontImage(),
+		"width": 6,
+		"height": 8,
+		"margin": 0,
+		"charset": null
+	} );
+
+	// 8x8 font
+	loadFont( {
+		"src": g_fnt8x8.data,
+		"width": 8,
+		"height": 8,
+		"margin": 0,
+		"charset": null
+	} );
+	g_fnt8x8.data = "";
+
+	// 8x14 font
+	loadFont( {
+		"src": g_fnt8x14.data,
+		"width": 8,
+		"height": 14,
+		"margin": 0,
+		"charset": null
+	} );
+	g_fnt8x14.data = "";
+
+	// 8x16 font
+	loadFont( {
+		"src": g_fnt8x16.data,
+		"width": 8,
+		"height": 16,
+		"margin": 0,
+		"charset": null
+	} );
+	g_fnt8x16.data = "";
 }
 
 
@@ -150,8 +140,7 @@ function registerCommands( api ) {
  * @param {string|HTMLImageElement} options.src - Font image source (URL or Image element)
  * @param {number} options.width - Character width in pixels
  * @param {number} options.height - Character height in pixels
- * @param {number} options.cellWidth - Individual character cell width in pixels
- * @param {number} options.cellHeight - Individual character cell height in pixels
+ * @param {number} options.margin - Individual character cell width in pixels
  * @param {Array<number>|string} [options.charset] - Character set array or string
  * @returns {number} Font ID
  */
@@ -159,8 +148,9 @@ function loadFont( options ) {
 	const fontSrc = options.src;
 	const width = g_utils.getInt( options.width, null );
 	const height = g_utils.getInt( options.height, null );
-	const cellWidth = g_utils.getInt( options.cellWidth, width );
-	const cellHeight = g_utils.getInt( options.cellHeight, height );
+	const margin = g_utils.getInt( options.margin, 0 );
+	const cellWidth = width + margin * 2;
+	const cellHeight = height + margin * 2;
 	let charset = options.charset;
 
 	if( width === null || height === null ) {
@@ -203,6 +193,7 @@ function loadFont( options ) {
 		"id": m_nextFontId,
 		"width": width,
 		"height": height,
+		"margin": margin,
 		"cellWidth": cellWidth,
 		"cellHeight": cellHeight,
 		"chars": chars,
@@ -269,7 +260,7 @@ function loadFontFromImage( fontSrc, font ) {
 
 
 /**************************************************************************************************
- * Set Font Commands
+ * Set Defaault Font Commands
  **************************************************************************************************/
 
 
@@ -300,8 +291,10 @@ function setDefaultFont( options ) {
  * @param {number} options.fontId - Font ID or CSS font string
  * @returns {void}
  */
-function setFont( screenData, options ) {
+export function setFont( screenData, options ) {
 	const fontId = g_utils.getInt( options.fontId, null );
+	const padX = g_utils.getInt( options.padX, 0 );
+	const padY = g_utils.getInt( options.padY, 0 );
 
 	if( fontId === null || !m_fontMap.has( fontId ) ) {
 		const error = new RangeError(
@@ -325,7 +318,7 @@ function setFont( screenData, options ) {
 	screenData.font = font;
 
 	// Update print cursor dimensions
-	g_print.updatePrintCursorDimensions( screenData );
+	g_print.updatePrintCursorDimensions( screenData, padX, padY );
 }
 
 
@@ -432,9 +425,9 @@ function setChar( screenData, options ) {
 	const cellX = ( charIndex % columns ) * font.cellWidth;
 	const cellY = Math.floor( charIndex / columns ) * font.cellHeight;
 
-	// Inner glyph bounds (skip 1px border like bitmapPrint)
-	const sx = cellX + 1;
-	const sy = cellY + 1;
+	// Inner glyph bounds
+	const sx = cellX + font.margin;
+	const sy = cellY + font.margin;
 	const sw = font.width;
 	const sh = font.height;
 
