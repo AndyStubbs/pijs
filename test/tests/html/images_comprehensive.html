@@ -400,7 +400,7 @@
 		// Test 4: Draw from Image element directly
 		try {
 			var imgElement = document.getElementById( "spaceship" );
-			$.drawImage( imgElement, 580, 350 );
+			$.drawImage( imgElement, 565, 350 );
 			logTest( "drawImage Image element", true );
 		} catch( e ) {
 			logTest( "drawImage Image element", false );
@@ -413,7 +413,7 @@
 			$.print( "ABCDEFGHIJ" );
 			const tempScreenCanvas = $.createImageFromScreen();
 			$.setScreen( 0 );
-			$.drawImage( tempScreenCanvas, 650, 350 );
+			$.drawImage( tempScreenCanvas, 625, 350 );
 			logTest( "drawImage Canvas element", true );
 		} catch( e ) {
 			logTest( "drawImage Canvas element", false );
@@ -443,6 +443,24 @@
 		} catch( e ) {
 			logTest( "drawImage invalid coordinates error", e.code === "INVALID_COORDINATES" );
 		}
+
+		// Test 9: Canvas test - draw image from canvas
+		try {
+			const htmlCanvas = document.createElement( "canvas" );
+			htmlCanvas.width = 50;
+			htmlCanvas.height = 50;
+			const htmlContext = htmlCanvas.getContext( "2d" );
+			htmlContext.fillStyle = "red";
+			htmlContext.fillRect( 5, 5, 25, 25 );
+			$.drawImage( htmlCanvas, 675, 340 );
+			htmlContext.fillStyle = "blue";
+			htmlContext.fillRect( 20, 20, 25, 25 )
+			$.drawImage( htmlCanvas, 725, 340 );
+			logTest( "drawImage draw from canvas2d", true );
+		} catch( e ) {
+			logTest( "drawImage draw from canvas2d", false );
+		}
+
 	}
 
 	// Test drawSprite functionality

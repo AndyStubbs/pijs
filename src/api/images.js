@@ -984,7 +984,6 @@ function getImageFromRawInput( imageOrName, fnName ) {
 				error.code = "IMAGE_NOT_READY";
 				throw error;
 			}
-	
 			if( imageData.status === "error" ) {
 				const error = new Error( `${fnName}: "${imgName}" failed to load.` );
 				error.code = "IMAGE_LOAD_FAILED";
@@ -995,7 +994,7 @@ function getImageFromRawInput( imageOrName, fnName ) {
 		// Set the image
 		img = imageData.image;
 	} else if( imageOrName && typeof imageOrName === "object" ) {
-		if( imageOrName.tagName === "CANVAS" || imageOrName.tagName === "IMG" ) {
+		if( isTexImageCompatible( imageOrName ) ) {
 			img = imageOrName;
 		} else if( imageOrName.screen === true && typeof imageOrName.canvas === "function" ) {
 			img = imageOrName.canvas();
@@ -1013,6 +1012,17 @@ function getImageFromRawInput( imageOrName, fnName ) {
 	return img;
 }
 
+function isTexImageCompatible( img ) {
+	return (
+		img instanceof HTMLImageElement ||
+		img instanceof HTMLVideoElement ||
+		img instanceof HTMLCanvasElement ||
+		img instanceof ImageBitmap ||
+		img instanceof ImageData ||
+		( typeof OffscreenCanvas !== "undefined" && img instanceof OffscreenCanvas )
+	);
+}
+
 /**
  * Get stored image by name
  * 
@@ -1025,7 +1035,6 @@ export function getStoredImage( name ) {
 	}
 	return m_images[ name ] || null;
 }
-
 
 function addPaletteImage( name ) {
 	m_paletteImages.push( name );

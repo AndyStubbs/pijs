@@ -48,6 +48,7 @@ import * as g_renderer from "../renderer/renderer.js";
 
 const SCREEN_API_PROTO = { "screen": true, "id": 0 };
 const m_screens = {};
+const m_screenCanvasMap = new Map();
 const m_screenDataItems = {};
 const m_screenDataItemGetters = [];
 const m_screenDataInitFunctions = [];
@@ -67,6 +68,7 @@ const m_observedContainers = new Set();
 
 
 export { m_activeScreenData as activeScreenData };
+export { m_screenCanvasMap as screenCanvasMap };
 
 export function init( api ) {
 
@@ -233,6 +235,7 @@ function screen( options ) {
 
 	// Create the canvas
 	screenData.canvas = document.createElement( "canvas" );
+	m_screenCanvasMap.set( screenData.canvas, screenData );
 
 	// Setup options for offscreen canvas
 	if( screenData.isOffscreen ) {
@@ -437,6 +440,9 @@ function removeScreen( options ) {
 			};
 		}
 	}
+
+	// Remove from the screenCanvasMap
+	m_screenCanvasMap.delete( screenData.canvas );
 
 	// Remove the canvas from the page
 	if( screenData.canvas && screenData.canvas.parentElement ) {

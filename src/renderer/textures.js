@@ -27,8 +27,7 @@ export function init() {
 	// Nested Map for WebGL2 texture storage
 	// Outer Map: Image element -> Inner Map: GL context -> WebGL texture
 	// This allows efficient lookup by image and cleanup when image is removed
-	g_screenManager.addScreenDataItem( "imageTextureMap", new Map() );
-	g_screenManager.addScreenDataItem( "tempTextures", [] );
+	g_screenManager.addScreenDataItem( "imageContextMap", new Map() );
 }
 
 
@@ -47,17 +46,43 @@ export function init() {
  */
 export function getWebGL2Texture( screenData, img ) {
 
+	// imageContextMap is a map (image -> context) containing a map (context -> texture)
 	// Get or create inner Map for this image
-	let contextMap = screenData.imageTextureMap.get( img );
-	if( !contextMap ) {
-		contextMap = new Map();
-		screenData.imageTextureMap.set( img, contextMap );
+	let contextTextureMap = screenData.imageContextMap.get( img );
+	if( !contextTextureMap ) {
+		contextTextureMap = new Map();
+		screenData.imageContextMap.set( img, contextTextureMap );
+	}
+
+	// Check if texture is another screen
+	const otherScreenData = g_screenManager.screenCanvasMap.get( img );
+	if( otherScreenData ) {
+
+		// Make sure the other screen is up to date
+		g_batches.flushBatches( otherScreenData );
+		g_batches.displayToCanvas( otherScreenData );
 	}
 
 	// Check if texture already exists for this screen's context
 	const gl = screenData.gl;
-	let texture = contextMap.get( gl );
+	let texture = contextTextureMap.get( gl );
 	if( texture ) {
+
+		// If image is a canvas, update the texture so that it has the latest data
+		if( img instanceof HTMLCanvasElement ) {
+
+			// If a texture is currently scheduled to be drawn we need to flush the batch so that
+			// the texture will appear as it was when the draw command was issued
+			if( screenData.batchInfo.textureBatchSet.has( texture ) ) {
+				g_batches.flushBatches( screenData );
+			}
+
+			// Copy the content of the source canvas to the texture
+			const gl = screenData.gl;
+			gl.bindTexture( gl.TEXTURE_2D, texture );
+			gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img );
+			gl.bindTexture( gl.TEXTURE_2D, null );
+		}
 		return texture;
 	}
 
@@ -69,9 +94,8 @@ export function getWebGL2Texture( screenData, img ) {
 		throw error;
 	}
 
-	gl.bindTexture( gl.TEXTURE_2D, texture );
-
 	// Upload image data to texture
+	gl.bindTexture( gl.TEXTURE_2D, texture );
 	gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img );
 
 	// Set texture parameters for pixel-perfect rendering
@@ -80,10 +104,11 @@ export function getWebGL2Texture( screenData, img ) {
 	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
 	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
 
+	// Unbind the texture
 	gl.bindTexture( gl.TEXTURE_2D, null );
 
 	// Store texture in nested Map
-	contextMap.set( gl, texture );
+	contextTextureMap.set( gl, texture );
 
 	return texture;
 }
@@ -99,14 +124,14 @@ export function getWebGL2Texture( screenData, img ) {
 export function deleteWebGL2Texture( screenData, img ) {
 
 	// Get the context Map for this image
-	const contextMap = screenData.imageTextureMap.get( img );
+	const contextMap = screenData.imageContextMap.get( img );
 	if( !contextMap ) {
 		return;
 	}
 
 	// Remove the context Map if empty
 	if( contextMap.size === 0 ) {
-		screenData.imageTextureMap.delete( img );
+		screenData.imageContextMap.delete( img );
 	}
 }
 
@@ -147,6 +172,12 @@ export function updateWebGL2TextureSubImage(
 		texture = getWebGL2Texture( screenData, imgKey );
 	}
 
+	// If a texture is currently scheduled to be drawn we need to flush the batch so that
+	// the texture will appear as it was when the draw command was issued
+	if( screenData.batchInfo.textureBatchSet.has( texture ) ) {
+		g_batches.flushBatches( screenData );
+	}
+
 	gl.bindTexture( gl.TEXTURE_2D, texture );
 
 	// Upload only the updated region using pixel data
@@ -182,6 +213,13 @@ export function updateWebGL2TextureImage( screenData, imgKey, pixelData, width, 
 
 	// Get the texture
 	let texture = getWebGL2Texture( screenData, imgKey );
+
+	// If a texture is currently scheduled to be drawn we need to flush the batch so that
+	// the texture will appear as it was when the draw command was issued
+	if( screenData.batchInfo.textureBatchSets.has( texture ) ) {
+		g_batches.flushBatches( screenData );
+	}
+	
 	const gl = screenData.gl;
 	gl.bindTexture( gl.TEXTURE_2D, texture );
 
@@ -193,13 +231,12 @@ export function updateWebGL2TextureImage( screenData, imgKey, pixelData, width, 
 	);
 
 	// Keep texture parameters consistent
-	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
-	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
-	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
-	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
+	// gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
+	// gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+	// gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
+	// gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
 
 	gl.bindTexture( gl.TEXTURE_2D, null );
 
 	return texture;
 }
-

@@ -102,10 +102,9 @@ export function init() {
 	g_screenManager.addScreenDataItem( "batches", {} );
 	g_screenManager.addScreenDataItem( "batchInfo", {
 		"currentBatch": null,
-		"drawOrder": []
+		"drawOrder": [],
+		"textureBatchSet": new Set()
 	} );
-
-	// Cleanup is invoked explicitly by renderer.cleanup().
 }
 
 /**
@@ -333,6 +332,7 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
 		if( batch.type === IMAGE_BATCH ) {
 			batch.texture = texture;
 			drawOrderItem.texture = texture;
+			batchInfo.textureBatchSet.add( texture );
 		}
 
 		// Add the draw order item
@@ -467,17 +467,13 @@ export function flushBatches( screenData, blends = null ) {
 	// Reset drawOrder object
 	screenData.batchInfo.drawOrder = [];
 	screenData.batchInfo.currentBatch = null;
+	screenData.batchInfo.textureBatchSet.clear();
 
 	// Unbind VAO
 	gl.bindVertexArray( null );
 
 	// Unbind FBO
 	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
-
-	// Delete temporary textures
-	for( const texture of screenData.tempTextures ) {
-		gl.deleteTexture( texture );
-	}
 }
 
 /**
@@ -611,6 +607,7 @@ export function resetBatches( screenData ) {
 	// Reset drawOrder object
 	screenData.batchInfo.drawOrder = [];
 	screenData.batchInfo.currentBatch = null;
+	screenData.batchInfo.textureBatchSet.clear();
 }
 
 /**

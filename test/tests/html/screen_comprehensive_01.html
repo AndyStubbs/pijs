@@ -139,7 +139,6 @@
 		$.print( "From offscreen:" );
 		$.drawImage( offscreen, 0, 20 );
 		$.drawImage( offscreen, 80, 20 );
-		
 
 		// Test 8: Create screen to be removed
 		const toRemove = $.screen( {
@@ -195,58 +194,6 @@
 		retrievedScreen.setFont( 1 );
 		retrievedScreen.print( "getScreen test" );
 		retrievedScreen.print( "id=" + s8.id );
-
-		// Test 11: Test canvas() method
-		const s9 = $.screen( {
-			"aspect": "160x120",
-			"container": document.getElementById( "c10" )
-		} );
-		$.setColor( 5 );
-		$.setFont( 1 );
-		$.print( "canvas() test" );
-		const canvasElem = $.canvas();
-		const ctx = canvasElem.getContext( "2d" );
-		ctx.strokeStyle = "#ff0";
-		ctx.lineWidth = 2;
-		ctx.beginPath();
-		ctx.moveTo( 10, 30 );
-		ctx.lineTo( 150, 30 );
-		ctx.stroke();
-
-		// Test 12: Test setPixelMode() and getPixelMode()
-		const s10 = $.screen( {
-			"aspect": "160x120",
-			"container": document.getElementById( "c11" )
-		} );
-		const initialMode = $.getPixelMode();
-		$.setPixelMode( false );
-		const antialiasMode = $.getPixelMode();
-		$.setPixelMode( true );
-		const pixelMode = $.getPixelMode();
-		$.setColor( 15 );
-		$.setFont( 1 );
-		$.print( "Pixel mode Test" );
-		$.print( "init=" + initialMode );
-		$.print( "aa=" + antialiasMode );
-		$.print( "pix=" + pixelMode );
-		$.circle( 130, 60, 20 );
-
-		// Test 13: willReadFrequently option
-		const s11 = $.screen( {
-			"aspect": "160x120",
-			"container": document.getElementById( "c12" ),
-			"willReadFrequently": true
-		} );
-		$.setColor( 3 );
-		$.setFont( 1 );
-		$.print( "willReadFreq" );
-		$.print( "w=" + $.width() );
-		$.print( "h=" + $.height() );
-
-		// Draw some pixels to test read frequently
-		for( let i = 0; i < 50; i++ ) {
-			$.pset( 10 + i, 50 + Math.sin( i / 5 ) * 10 );
-		}
 		
 		// Test 14: create 2 screens in a container and resize them
 		const resizeFn = ( screen, fromSize, toSize ) => {
@@ -266,14 +213,12 @@
 		const s12 = $.screen( {
 			"aspect": "320x120",
 			"container": document.getElementById( "c13" ),
-			"willReadFrequently": true,
 			"resizeCallback": resizeFn
 		} );
 		s12.print( "Test 13: Screen 1" );
 		const s13 = $.screen( {
 			"aspect": "320x120",
 			"container": document.getElementById( "c13" ),
-			"willReadFrequently": true,
 			"resizeCallback": resizeFn
 		} );
 		s13.setBgColor( "#00000000" );

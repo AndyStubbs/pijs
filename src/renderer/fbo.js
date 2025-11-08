@@ -21,7 +21,6 @@ import * as g_screenManager from "../core/screen-manager.js";
  * @returns {void}
  */
 export function init() {
-
 	g_screenManager.addScreenDataItem( "FBO", null );
 	g_screenManager.addScreenDataItem( "fboTexture", null );
 }
