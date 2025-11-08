@@ -17,8 +17,11 @@ import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_print from "./print.js";
 
+import g_fnt6x6 from "./fonts/font-6x6.webp";
 import * as g_fnt6x8 from "./fonts/font-6x8.js";
 import g_fnt8x8 from "./fonts/font-8x8.webp";
+import g_fnt8x14 from "./fonts/font-8x14.webp";
+import g_fnt8x16 from "./fonts/font-8x16.webp";
 
 const m_fontMap = new Map();
 let m_defaultFontId = null;
@@ -52,6 +55,17 @@ export function init( api ) {
 // Load the default fonts
 function loadDefaultFonts() {
 
+	// 6x6 font
+	loadFont( {
+		"src": g_fnt6x6.data,
+		"width": 8,
+		"height": 8,
+		"cellWidth": 10,
+		"cellHeight": 10,
+		"charset": null
+	} );
+	g_fnt6x6.data = "";
+
 	// 6x8 font - default font
 	m_defaultFontId = loadFont( {
 		"src": g_fnt6x8.getFontImage(),
@@ -71,7 +85,29 @@ function loadDefaultFonts() {
 		"cellHeight": 10,
 		"charset": null
 	} );
-	g_fnt8x8.data = ""; // Clear Base64 string from memory
+	g_fnt8x8.data = "";
+
+	// 8x14 font
+	loadFont( {
+		"src": g_fnt8x14.data,
+		"width": 8,
+		"height": 14,
+		"cellWidth": 10,
+		"cellHeight": 16,
+		"charset": null
+	} );
+	g_fnt8x14.data = "";
+
+	// 8x16 font
+	loadFont( {
+		"src": g_fnt8x16.data,
+		"width": 8,
+		"height": 16,
+		"cellWidth": 10,
+		"cellHeight": 18,
+		"charset": null
+	} );
+	g_fnt8x16.data = "";
 }
 
 
@@ -420,7 +456,3 @@ function setChar( screenData, options ) {
 	// Update only the glyph region in the GPU texture
 	g_renderer.updateWebGL2TextureSubImage( screenData, font.image, buf, sw, sh, sx, sy );
 }
-
-/***************************************************************************************************
- * Internal Functions
- * **************************************************************************************************/

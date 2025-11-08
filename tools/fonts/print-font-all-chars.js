@@ -1,20 +1,19 @@
-$.screen("640x72" );
+$.screen("512x56" );
 $.setColor( "#ffffff" );
 
-$.setFont( 4 );
+$.setFont( 3 );
 
-const w = 10;
-const h = 18;
-let x = 1;
-let y = 1;
+const w = 8;
+const h = 14;
+let x = 0;
+let y = 0;
 for( let c = 0; c < 255; c += 1 ) {
-	$.setPosPx( x, y );
+	$.setPos( x, y );
 	$.print( String.fromCharCode( c ), true );
-	x += w;
-
-	if( x >= $.width() ) {
-		x = 1;
-		y += h;
+	x += 1;
+	if( x > 63 ) {
+		x = 0;
+		y += 1;
 	}
 }
 

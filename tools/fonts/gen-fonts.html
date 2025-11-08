@@ -7,17 +7,38 @@
 			width: 800px;
 			height: 600px;
 		}
+	
+		canvas {
+			background-color: black;
+		}
+		img {
+			background-color: rgb(88, 88, 88);
+			display: block;
+			margin-bottom: 6px;
+		}
 	</style>
 </head>
 <body>
 	<h3>Font Data</h3>
 	<textarea id="fontTextArea"></textarea>
 	<div id="images">
-		<img src="font-6x6.png" data-width="6" data-height="6" />
-		<img src="font-6x8.png" data-width="6" data-height="8" />
-		<img src="font-8x8.png" data-width="8" data-height="8" />
-		<img src="font-8x14.png" data-width="8" data-height="14" />
-		<img src="font-8x16.png" data-width="8" data-height="16" />
+		<!--
+		<img src="font-6x8-1.webp" data-width="6" data-height="8" />
+		<img src="font-6x8-2.webp" data-width="6" data-height="8" />
+		<img src="font-6x8-3.webp" data-width="6" data-height="8" />
+		<img src="font-6x8-4.webp" data-width="6" data-height="8" />
+		<img src="font-6x8-5.webp" data-width="6" data-height="8" />
+		-->
+		<h3>6x6</h3>
+		<img src="font-6x6.webp" data-width="6" data-height="6" />
+		<h3>6x8</h3>
+		<img src="font-6x8.webp" data-width="6" data-height="8" />
+		<h3>8x8</h3>
+		<img src="font-8x8.webp" data-width="8" data-height="8" />
+		<h3>8x14</h3>
+		<img src="font-8x14.webp" data-width="8" data-height="14" />
+		<h3>8x16</h3>
+		<img src="font-8x16.webp" data-width="8" data-height="16" />
 	</div>
 	<script src="gen-fonts.js"></script>
 </body>
