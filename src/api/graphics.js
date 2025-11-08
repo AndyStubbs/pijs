@@ -32,6 +32,7 @@ export function init( api ) {
 	buildApi( null );
 
 	g_commands.addCommand( "rect2", rect2, true, [ "x", "y", "width", "height", "fillColor" ] );
+	g_commands.addCommand( "cls", cls, true, [ "x", "y", "width", "height" ] );
 
 	// Register screen init function to rebuild API when screen is created
 	g_screenManager.addScreenInitFunction( ( screenData ) => buildApi( screenData ) );
@@ -280,6 +281,7 @@ export function buildApi( s_screenData ) {
 	m_api.pset = psetFn;
 	s_screenData.api.pset = psetFn;
 
+
 	/**********************************************************************************************
 	 * RECT Command
 	 **********************************************************************************************/
@@ -370,5 +372,30 @@ function rect2( screenData, options ) {
 
 	// Draw the rect border
 	g_renderer.drawRect( screenData, x, y, width, height, screenData.color );
+	g_renderer.setImageDirty( screenData );
+}
+
+/**
+ * Clear the screen or a rectangular region
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {Object} options - Options containing x, y, width, height
+ * @returns {void}
+ */
+function cls( screenData, options ) {
+	const x = g_utils.clamp( g_utils.getInt( options.x, 0 ), 0, screenData.width );
+	const y = g_utils.clamp( g_utils.getInt( options.y, 0 ), 0, screenData.height );
+	const width = g_utils.clamp(
+		g_utils.getInt( options.width, screenData.width - x ), 0, screenData.width
+	);
+	const height = g_utils.clamp(
+		g_utils.getInt( options.height, screenData.height - y ), 0, screenData.height
+	);
+
+	if( width <= 0 || height <= 0 ) {
+		return;
+	}
+
+	g_renderer.cls( screenData, x, y, width, height );
 	g_renderer.setImageDirty( screenData );
 }

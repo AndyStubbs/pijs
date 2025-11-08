@@ -41,7 +41,7 @@ export { drawCachedGeometry } from "./draw/geometry.js";
 export { drawRect, drawRectFilled } from "./draw/rects.js";
 export { drawCircle, drawCircleFilled } from "./draw/circles.js";
 export { drawEllipse } from "./draw/ellipses.js";
-export { shiftImageUp } from "./effects.js";
+export { shiftImageUp, cls } from "./effects.js";
 
 // Re-export batch management
 export { prepareBatch } from "./batches.js";

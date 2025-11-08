@@ -10,6 +10,7 @@
 "use strict";
 
 import * as g_batches from "./batches.js";
+
 /**
  * Shift screen image up by yOffset pixels using ping-pong FBO blit
  * 
@@ -65,4 +66,49 @@ export function shiftImageUp( screenData, yOffset ) {
 	gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, null );
 
 	// No need to call g_batches.displayToCanvas as caller should setImageDirty. 
+}
+
+
+/**
+ * Clear a region of the screen framebuffer
+ * 
+ * @param {Object} screenData - Screen data object
+ * @param {number} x - Left coordinate
+ * @param {number} y - Top coordinate
+ * @param {number} width - Region width
+ * @param {number} height - Region height
+ * @returns {void}
+ */
+export function cls( screenData, x, y, width, height ) {
+
+	// Ensure the FBO contains all pending draws before clearing
+	if( x === 0 && y === 0 && width === screenData.width && height === screenData.height ) {
+		g_batches.resetBatches( screenData );
+	} else {
+		g_batches.flushBatches( screenData );
+	}
+
+	const gl = screenData.gl;
+
+	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
+	gl.viewport( 0, 0, screenData.width, screenData.height );
+
+	if(
+		x === 0 &&
+		y === 0 &&
+		width === screenData.width &&
+		height === screenData.height
+	) {
+		gl.clearColor( 0, 0, 0, 0 );
+		gl.clear( gl.COLOR_BUFFER_BIT );
+	} else {
+		gl.enable( gl.SCISSOR_TEST );
+		const scissorY = screenData.height - ( y + height );
+		gl.scissor( x, scissorY, width, height );
+		gl.clearColor( 0, 0, 0, 0 );
+		gl.clear( gl.COLOR_BUFFER_BIT );
+		gl.disable( gl.SCISSOR_TEST );
+	}
+
+	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
 }

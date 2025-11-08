@@ -211,7 +211,6 @@
 		$.print( "8: COMPLEX" );
 		
 		// Background with noise
-		$.setPixelMode( true );
 		$.setBlend( "replace" );
 		$.setNoise( 20 );
 		$.setColor( 1 );
@@ -226,7 +225,6 @@
 		$.rect( 50, 50, 16, 16, "rgba(0,255,0,0.5)" );
 		
 		$.setColor( "rgba(0,0,255,0.8)" );
-		$.setPen( "circle", 4 );
 		$.circle( 70, 50, 8, "rgba(0,0,255,0.8)" );
 		
 		// Lines with different modes
@@ -234,22 +232,20 @@
 		$.setNoise( 30 );
 		$.setColor( 14 );
 		y = 80;
-		for( x = 20; x < 80; x += 2 ) {
-			y += 1;
-			$.circle( x, y, 2, 14 );
+		for( x = 20; x < 80; x += 6 ) {
+			y += 4;
+			$.circle( x, y, 4, 14 );
 		}
 		
 		$.setBlend( "alpha" );
 		$.setColor( "rgba(255,255,0,0.6)" );
-		$.setPen( "square", 3 );
 		x = 20;
-		for( x = 20; x < 80; x += 3 ) {
-			$.rect( x, y, 6, 6, "rgba(255,255,0,0.6)" );
-			y += 1;
+		for( x = 20; x < 80; x += 6 ) {
+			$.rect( x, y, 4, 4, "rgba(255,255,0,0.6)" );
+			y -= 4;
 		}
 		
 		// Final render
-		$.render();
 		$.setPosPx( 5, 130 );
 		$.print( "Complex blend test" );
 		

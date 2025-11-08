@@ -589,6 +589,26 @@ function drawBatch( gl, screenData, batch, startIndex, endIndex, texture = null,
 	gl.drawArrays( batch.mode, startIndex, endIndex - startIndex );
 }
 
+
+/**
+ * Reset batches and draw order items
+ * 
+ * @param {Object} batch - Batch object
+ * @returns {void}
+ */
+export function resetBatches( screenData ) {
+
+	// Reset Batches
+	for( const batchType in screenData.batches ) {
+		const batch = screenData.batches[ batchType ];
+		resetBatch( batch );
+	}
+
+	// Reset drawOrder object
+	screenData.batchInfo.drawOrder = [];
+	screenData.batchInfo.currentBatch = null;
+}
+
 /**
  * Reset batch after flush
  * 
