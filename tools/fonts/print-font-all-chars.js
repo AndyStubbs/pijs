@@ -1,25 +1,26 @@
-$.screen("512x56" );
+$.screen("512x40" );
 $.setColor( "#ffffff" );
 
-$.setFont( 3 );
+$.setFont( 1 );
 
-const w = 8;
-const h = 14;
-let x = 0;
-let y = 0;
+const margin = 1;
+const w = 6 + margin * 2;
+const h = 8 + margin * 2;
+let x = margin;
+let y = margin;
 for( let c = 0; c < 255; c += 1 ) {
-	$.setPos( x, y );
+	$.setPosPx( x, y );
 	$.print( String.fromCharCode( c ), true );
-	x += 1;
-	if( x > 63 ) {
-		x = 0;
-		y += 1;
+	x += w;
+	if( x >= $.width() ) {
+		x = margin;
+		y += h;
 	}
 }
 
 let isWhite = true;
-for( let y = 0; y < $.height(); y += h ) {
-	for( let x = 0; x < $.width(); x += w ) {
+for( let y = margin; y < $.height(); y += h ) {
+	for( let x = margin; x < $.width(); x += w ) {
 		const color = isWhite ? "#888888": "#000000";
 		$.setColor( color );
 		//$.rect( x, y, w, h, color );
