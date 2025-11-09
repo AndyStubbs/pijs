@@ -33,9 +33,10 @@
 				width: 320px;
 			}
 			#removed-indicator {
+				font-weight: bold;
 				color: #0f0;
 				font-family: monospace;
-				font-size: 10px;
+				font-size: 12px;
 			}
 		</style>
 	</head>
@@ -62,26 +63,39 @@
 			"aspect": "120x120",
 			"container": document.getElementById( "c1" )
 		} );
-		$.setColor( 12 );
+		$.setColor( 8 );
 		$.setFont( 1 );
 		$.print( "120x120 exact" );
 		$.print( "w=" + $.width() + " h=" + $.height() );
 		$.rect( 5, 5, $.width() - 10, $.height() - 10 );
-		
+		if( $.width() === 120 && $.width() === 120 ) {
+			$.setColor( 2 );
+			$.print( "Success!" );
+		} else {
+			$.setColor( 4 );
+			$.print( "Failed" );
+		}
 
 		// Test 2: 4:3 aspect ratio (: format)
 		const s2 = $.screen( {
 			"aspect": "4:3",
 			"container": document.getElementById( "c2" )
 		} );
-		$.setColor( 10 );
+		$.setColor( 7 );
 		$.setFont( 1 );
 		$.print( "4:3 ratio" );
 		$.print( "w=" + $.width() + " h=" + $.height() );
 		$.circle( $.width() / 2, $.height() / 2, 20 );
-		
+		const ratio = ( $.width() / $.height() ).toFixed( 2 );
+		if( ratio === ( 4 / 3 ).toFixed( 2 ) ) {
+			$.setColor( 2 );
+			$.print( "4:3 ratio success!" );
+		} else {
+			$.setColor( 4 );
+			$.print( "4:3 ratio failed" );
+		}
 
-		// Test 3: 80m60 exact multiples (m format)
+		// Test 3: 70m60 exact multiples (m format)
 		const s3 = $.screen( {
 			"aspect": "70m60",
 			"container": document.getElementById( "c3" )
@@ -92,24 +106,43 @@
 		$.print( "w=" + $.width() + " h=" + $.height() );
 		$.line( 0, 0, $.width() - 1, $.height() - 1 );
 		$.line( $.width() - 1, 0, 0, $.height() - 1 );
-		
+		if( $.width() === 70 && $.height() == 60 ) {
+			$.setColor( 2 );
+			$.print( "Success!" );
+		} else {
+			$.setColor( 4 );
+			$.print( "Failed" );
+		}
 
 		// Test 4: 50e50 extend (e format)
+		const c4 = document.getElementById( "c4" );
 		const s4 = $.screen( {
 			"aspect": "50e50",
-			"container": document.getElementById( "c4" )
+			"container": c4
 		} );
 		$.setColor( 14 );
 		$.setFont( 1 );
 		$.print( "50e50 extend" );
 		$.print( "w=" + $.width() + " h=" + $.height() );
 		$.rect( 0, 0, $.width() - 1, $.height() - 1 );
-		
+		const pw = c4.offsetWidth / $.width();
+		const ph = c4.offsetHeight / $.height();
+		$.print( `PW: ${pw} PH: ${ph}` );
+
+		// Check if pixels are integers
+		if( pw === Math.round( pw ) && ph === Math.round( ph ) ) {
+			$.setColor( 2 );
+			$.print( "Success!" );
+		} else {
+			$.setColor( 4 );
+			$.print( "Failed" );
+		}
 
 		// Test 5: noStyles option
+		const c5 = document.getElementById( "c5" );
 		const s5 = $.screen( {
 			"aspect": "160x120",
-			"container": document.getElementById( "c5" ),
+			"container": c5,
 			"noStyles": true
 		} );
 		$.setColor( 10 );
@@ -117,7 +150,13 @@
 		$.print( "noStyles" );
 		$.print( "w=" + $.width() + " h=" + $.height() );
 		$.pset( 80, 60 );
-		
+		if( c5.offsetWidth === $.width() && c5.offsetHeight === $.height() ) {
+			$.setColor( 2 );
+			$.print( "Success!" );
+		} else {
+			$.setColor( 4 );
+			$.print( "Failed" );
+		}
 
 		// Test 6: Offscreen canvas - draw to it then display
 		const offscreen = $.screen( {
@@ -138,6 +177,7 @@
 		$.setFont( 1 );
 		$.print( "From offscreen:" );
 		$.drawImage( offscreen, 0, 20 );
+		offscreen.print( "Updated!" );
 		$.drawImage( offscreen, 80, 20 );
 
 		// Test 8: Create screen to be removed
@@ -152,19 +192,19 @@
 		
 
 		// Test removeScreen() and verify it throws errors after removal
+		const divRemoved = document.getElementById( "removed-indicator" );
 		$.removeScreen( toRemove );
-		let errorCaught = false;
+		//toRemove.removeScreen();
 		try {
 			toRemove.print( "Should fail" );
+			divRemoved.style.color = "red";
+			divRemoved.innerHTML = "Removed - Failed";
 		} catch( e ) {
 			errorCaught = true;
+			divRemoved.innerHTML = "Removed - Success!";
 		}
 
-		// Show visual indicator that screen was removed
-		document.getElementById( "removed-indicator" ).innerHTML = 
-			"REMOVED<br>Screen removed<br>Error caught: " + errorCaught;
-
-		// Test 9: Test setScreen() and getScreen()
+		// Test setScreen() and getScreen()
 		const s7 = $.screen( {
 			"aspect": "160x120",
 			"container": document.getElementById( "c8" )
@@ -177,9 +217,9 @@
 
 		// Switch to s1 and back using setScreen
 		$.setScreen( s1 );
-		$.print( "Switched To Screen" );
+		$.print( "Switched To Screen Success" );
 		$.setScreen( s7 );
-		$.print( "Switched back" );
+		$.print( "Switched back success" );
 		
 
 		// Test 10: Test getScreen()

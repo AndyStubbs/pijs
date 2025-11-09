@@ -44,11 +44,7 @@ export { drawEllipse } from "./draw/ellipses.js";
 export { shiftImageUp, cls } from "./effects.js";
 
 // Re-export batch management
-export { prepareBatch } from "./batches.js";
-
-// Re-export rendering functions
-export { flushBatches } from "./batches.js";
-export { displayToCanvas } from "./batches.js";
+export { prepareBatch, flushBatches, displayToCanvas } from "./batches.js";
 
 // Re-export texture management
 export {
@@ -183,14 +179,11 @@ export function createContext( screenData ) {
  * @returns {void}
  */
 export function cleanup( screenData ) {
-
-	// TODO: Check if WebGL context exists
-	if( !screenData.gl ) {
-		return;
-	}
-
 	const gl = screenData.gl;
 
+	// Make sure no render gets executed in the microtask
+	screenData.isRenderScheduled = false;
+	
 	// Cleanup batches
 	g_batches.cleanup( screenData );
 
@@ -223,6 +216,11 @@ export function setImageDirty( screenData ) {
 	if( !screenData.isRenderScheduled ) {
 		screenData.isRenderScheduled = true;
 		g_utils.queueMicrotask( () => {
+			
+			// Make sure render hasn't been cancelled
+			if( !screenData.isRenderScheduled ) {
+				return;
+			}
 			g_batches.flushBatches( screenData );
 			g_batches.displayToCanvas( screenData );
 			screenData.isRenderScheduled = false;

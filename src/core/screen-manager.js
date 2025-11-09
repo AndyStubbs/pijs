@@ -98,6 +98,21 @@ export function init( api ) {
 	} );
 
 	registerCommands();
+
+	// Special command removeScreen
+	api.removeScreen = ( screenId ) => {
+		if( Object.getPrototypeOf( screenId ) === SCREEN_API_PROTO ) {
+			screenId = screenId.id;
+		}
+		if( m_screens[ screenId ] ) {
+			return removeScreen( m_screens[ screenId ] );
+		}
+	};
+
+	// Add screenObj remove screen command
+	addScreenInitFunction( ( screenData ) => {
+		screenData.api.removeScreen = () => removeScreen( screenData );
+	} );
 }
 
 function registerCommands() {
@@ -111,7 +126,6 @@ function registerCommands() {
 	);
 	g_commands.addCommand( "setScreen", setScreen, false, [ "screen" ] );
 	g_commands.addCommand( "getScreen", getScreen, false, [ "screenId" ] );
-	g_commands.addCommand( "removeScreen", removeScreen, false, [ "screenId" ] );
 
 	// Screen-scoped info commands
 	g_commands.addCommand( "width", widthCmd, true, [] );
@@ -409,16 +423,10 @@ function validateDimensions( width, height ) {
  ***************************************************************************************************/
 
 
-function removeScreen( options ) {
+function removeScreen( screenData ) {
 
-	let screenId = options.id;
-
-	// Fail silently - user may want redundancy without try/catch block
-	if( !m_screens[ screenId ] ) {
-		return;
-	}
-
-	const screenData = m_screens[ screenId ];
+	// Get the id for reference
+	const screenId = screenData.id;
 
 	// Call cleanup functions for all modules that need cleanup
 	for( const fn of m_screenDataCleanupFunctions ) {

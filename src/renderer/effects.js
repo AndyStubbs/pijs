@@ -81,7 +81,7 @@ export function shiftImageUp( screenData, yOffset ) {
  */
 export function cls( screenData, x, y, width, height ) {
 
-	// Ensure the FBO contains all pending draws before clearing
+	// If clearing entire screen remove all batches, if not flush before clearing area
 	if( x === 0 && y === 0 && width === screenData.width && height === screenData.height ) {
 		g_batches.resetBatches( screenData );
 	} else {

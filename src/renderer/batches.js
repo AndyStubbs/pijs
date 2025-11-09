@@ -698,11 +698,6 @@ export function displayToCanvas( screenData ) {
  * @returns {void}
  */
 export function cleanup( screenData ) {
-
-	if( !screenData.gl ) {
-		return;
-	}
-
 	const gl = screenData.gl;
 
 	// Cleanup batches
