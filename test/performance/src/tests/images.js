@@ -28,7 +28,8 @@ export function getConfig() {
 		"run": run,
 		"init": init,
 		"cleanUp": cleanUp,
-		"itemCountStart": 200
+		"itemCountStart": 200,
+		"itemFactor": 10
 	};
 }
 

@@ -20,11 +20,12 @@ let m_seededRandom = null;
  */
 export function getConfig() {
 	return {
-		"name": "Graphics Pixel",
+		"name": "Graphics Test",
 		"run": run,
 		"init": init,
 		"cleanUp": cleanUp,
-		"itemCountStart": 500
+		"itemCountStart": 500,
+		"itemFactor": 10
 	};
 }
 

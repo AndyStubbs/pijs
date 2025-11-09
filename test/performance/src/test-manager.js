@@ -23,9 +23,9 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 
 // Get all test config data
 let m_tests = [];
- m_tests.push( g_psetTest.getConfig() );
- m_tests.push( g_lineTest.getConfig() );
- m_tests.push( g_graphicsPixelTest.getConfig() );
+m_tests.push( g_psetTest.getConfig() );
+m_tests.push( g_lineTest.getConfig() );
+m_tests.push( g_graphicsPixelTest.getConfig() );
 m_tests.push( g_imagesTest.getConfig() );
 m_tests.push( g_bezierTest.getConfig() );
 
@@ -135,12 +135,16 @@ async function calculateTargetFPS() {
  * @returns {Promise<void>}
  */
 async function runNextTest() {
-	const WARMUP_TIME = 5000;
-	const WARMUP_RAMP_DOWN_TIME = 4000;
-	const MAX_TIME = 30000;
+	const MIN_WARMUP_TIME = 5000;
+	const MAX_WARMUP_TIME = 15000;
+	const MAX_TIME = 60000;
 	const EXTRA_TIME = 5000;
 	const MAX_INSTABILITY = 0.5;
 	const SLOPE_CALC_SIZE = 35;
+
+	let s_warmupTime = MIN_WARMUP_TIME;
+	let s_warmupRampDownTime = s_warmupTime * 0.8;
+	let s_warmupRampUpTime = s_warmupTime * 0.2;
 
 	m_testIndex += 1;
 	if( m_testIndex >= m_tests.length ) {
@@ -165,6 +169,7 @@ async function runNextTest() {
 
 	let test = m_tests[ m_testIndex ];
 	let itemCount = test.itemCountStart;
+	let itemFactor = test.itemFactor;
 	let startTime = 0;
 	let lt = 0;
 	let extraTime = 0;
@@ -196,7 +201,7 @@ async function runNextTest() {
 		recentItemCounts.push( itemCount );
 		let instability = Math.abs( calcSlope( recentItemCounts ) );
 
-		if( elapsed > WARMUP_TIME ) {
+		if( elapsed > s_warmupTime ) {
 
 			// Extend extra time because the calculation are stable
 			if( instability > MAX_INSTABILITY ) {
@@ -211,17 +216,19 @@ async function runNextTest() {
 				( instability <= MAX_INSTABILITY && elapsed > extraTime )
 			) {
 				let status = "complete";
+				const itemCountAvg = calcAvg( recentItemCounts );
+				let score = Math.round( ( itemCountAvg * m_targetFps ) / 100 );
 				if( instability > MAX_INSTABILITY ) {
 					status = "incomplete";
+					score = 0;
 				}
-				const itemCountAvg = calcAvg( recentItemCounts );
 				m_results.push( {
 					"name": test.name,
 					"status": status,
 					"itemCountAvg": itemCountAvg,
 					"itemCountPerSecond": itemCountAvg * m_targetFps,
 					"testTime": elapsed,
-					"score": Math.round( ( itemCountAvg * m_targetFps ) / 100 )
+					"score": score
 				} );
 				
 				// Call the test cleanup
@@ -238,10 +245,10 @@ async function runNextTest() {
 
 		if( fps < m_targetFps * 0.95 ) {
 
-			if( elapsed > WARMUP_TIME ) {
+			if( elapsed > s_warmupTime ) {
 
 				// After warmup time decrement slowly
-				itemCount = Math.max( itemCount - 1, 1 );
+				itemCount = Math.max( itemCount - itemFactor, 1 );
 
 				// We have passed the warmup time and have hit a item count maximum
 				if( extraTime === 0 ) {
@@ -250,12 +257,20 @@ async function runNextTest() {
 			} else {
 
 				// During warmup time decrement quicker
+				let factor = 1;
+				if( elapsed > s_warmupRampDownTime ) {
+					factor = 1;
+				} else if( elapsed > s_warmupRampUpTime ) {
+					factor = 2;
+				} else {
+					factor = 3;
+				}
 
 				// If a big miss decrement even quicker
 				if( fps < m_targetFps * 0.3 ) {
-					itemCount = Math.max( itemCount - 25, 1 );
+					itemCount = Math.max( itemCount - ( 25 * factor * itemFactor ), 1 );
 				} else {
-					itemCount = Math.max( itemCount - 10, 1 );
+					itemCount = Math.max( itemCount - ( 10 * factor * itemFactor ), 1 );
 				}
 			}
 		} else {
@@ -263,13 +278,19 @@ async function runNextTest() {
 			// Running at framerate
 
 			// During warmup time increment quicker
-			if( elapsed > WARMUP_TIME ) {
-				itemCount += 1;
-			} else if( elapsed > WARMUP_RAMP_DOWN_TIME ) {
-				itemCount += 10;
+			if( elapsed > s_warmupTime ) {
+				itemCount += 1 * itemFactor;
+			} else if( elapsed > s_warmupRampDownTime ) {
+				itemCount += 10 * itemFactor;
+			} else if( elapsed > s_warmupRampUpTime ) {
+				itemCount += 50 * itemFactor;
 			} else {
-				itemCount += 50;
+				itemCount += 100 * itemFactor;
 			}
+
+			s_warmupTime = Math.min( s_warmupTime + 100, MAX_WARMUP_TIME );
+			s_warmupRampDownTime = s_warmupTime * 0.8;
+			s_warmupRampUpTime = s_warmupTime * 0.2;
 		}
 
 		test.run( itemCount, test.data );
