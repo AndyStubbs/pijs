@@ -52,9 +52,6 @@
 	<div class="container" id="c8"></div>
 	<div class="container" id="c9"></div>
 	<div class="container" id="c10"></div>
-	<div class="container" id="c11"></div>
-	<div class="container" id="c12"></div>
-	<div class="container" id="c13"></div>
 <script>
 	$.ready( function () {
 
@@ -168,7 +165,7 @@
 		$.print( "Offscreen" );
 		$.circle( 40, 30, 25 );
 
-		// Test 7: Display offscreen canvas
+		// Test 6: Display offscreen canvas
 		const s6 = $.screen( {
 			"aspect": "160x120",
 			"container": document.getElementById( "c6" )
@@ -180,7 +177,7 @@
 		offscreen.print( "Updated!" );
 		$.drawImage( offscreen, 80, 20 );
 
-		// Test 8: Create screen to be removed
+		// Test 7: Create screen to be removed
 		const toRemove = $.screen( {
 			"aspect": "160x120",
 			"container": document.getElementById( "c7" )
@@ -205,66 +202,66 @@
 		}
 
 		// Test setScreen() and getScreen()
-		const s7 = $.screen( {
+		const s8 = $.screen( {
 			"aspect": "160x120",
 			"container": document.getElementById( "c8" )
 		} );
 		$.setColor( 2 );
 		$.setFont( 1 );
 		$.print( "setScreen test" );
-		const s7id = s7.id;
+		const s7id = s8.id;
 		
 
 		// Switch to s1 and back using setScreen
 		$.setScreen( s1 );
 		$.print( "Switched To Screen Success" );
-		$.setScreen( s7 );
+		$.setScreen( s8 );
 		$.print( "Switched back success" );
 		
 
-		// Test 10: Test getScreen()
-		const s8 = $.screen( {
+		// Test 9: Test getScreen()
+		const s9 = $.screen( {
 			"aspect": "160x120",
 			"container": document.getElementById( "c9" )
 		} );
 
 		$.setScreen( 0 );
-		const retrievedScreen = $.getScreen( s8.id );
+		const retrievedScreen = $.getScreen( s9.id );
 		retrievedScreen.setColor( 6 );
 		retrievedScreen.setFont( 1 );
 		retrievedScreen.print( "getScreen test" );
-		retrievedScreen.print( "id=" + s8.id );
+		retrievedScreen.print( "id=" + s9.id );
 		
-		// Test 14: create 2 screens in a container and resize them
+		// Test 10: create 2 screens in a container and resize them
 		const resizeFn = ( screen, fromSize, toSize ) => {
 			const fromDim = `${fromSize.width}x${fromSize.height}`;
 			const toDim = `${toSize.width}x${toSize.height}`;
 			let screenNum;
-			if( screen === s12 ) {
+			if( screen === s10 ) {
 				screen.setPos( 0, 1 );
 				screenNum = 1;
-			} else if ( screen === s13 ) {
+			} else if ( screen === s11 ) {
 				screen.setPos( 0, 5 );
 				screenNum = 2;
 			}
 			screen.setColor( 2 );
 			screen.print( `Screen ${screenNum} resized from ${fromDim} to ${toDim}` );
 		};
-		const s12 = $.screen( {
+		const s10 = $.screen( {
 			"aspect": "320x120",
-			"container": document.getElementById( "c13" ),
+			"container": document.getElementById( "c10" ),
 			"resizeCallback": resizeFn
 		} );
-		s12.print( "Test 13: Screen 1" );
-		const s13 = $.screen( {
+		s10.print( "Test 10: Screen 10" );
+		const s11 = $.screen( {
 			"aspect": "320x120",
-			"container": document.getElementById( "c13" ),
+			"container": document.getElementById( "c10" ),
 			"resizeCallback": resizeFn
 		} );
-		s13.setBgColor( "#00000000" );
-		s13.print( "\n\n\n" );
-		s13.print( "Test 13: Screen 2" );
-		s13.canvas().parentElement.classList.add( "wide" );
+		s11.setBgColor( "#00000000" );
+		s11.print( "\n\n\n" );
+		s11.print( "Test 10: Screen 11" );
+		s11.canvas().parentElement.classList.add( "wide" );
 
 	} );
 </script>
