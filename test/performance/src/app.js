@@ -13,12 +13,17 @@ import * as g_testManager from "./test-manager.js";
 import * as g_reportManager from "./report-manager.js";
 
 const PI_VERSIONS = {
-	"2.0.0-alpha.1": {
+	"2.0.0-alpha.3": {
 		"path": "../../build/pi.js",
-		"plugins": [
-			"../../plugins/print-table/dist/print-table.js"
-		],
-		"menuName": "2.0.0-alpha.1 (Current Build)"
+		"menuName": "2.0.0-alpha.3 (Current Build)"
+	},
+	"2.0.0-alpha.2": {
+		"path": "../../releases/pi-2.0.0-alpha.2/pi.js",
+		"menuName": "2.0.0-alpha.2"
+	},
+	"2.0.0-alpha.1": {
+		"path": "../../releases/pi-2.0.0-alpha.1/pi.js",
+		"menuName": "2.0.0-alpha.1"
 	},
 	"2.0.0-alpha.0": {
 		"path": "../../releases/pi-2.0.0-alpha.0/pi.js",
@@ -35,6 +40,65 @@ let m_centerPosY = 0;
 let m_reducedFlashing = false;
 let m_piVersion = localStorage.getItem( "piVersion" ) || "2.0.0-alpha.1";
 
+/**
+ * Adds a DOM keydown listener that matches the specified key.
+ * 
+ * @param {string} key - Key identifier or "any" for all keys
+ * @param {Function} handler - Handler function to execute on key match
+ * @param {Object} [options] - Listener options
+ * @param {boolean} [options.once=false] - If true, listener removes itself after firing
+ * @param {boolean} [options.preventDefault=true] - Prevent default browser behaviour
+ * @returns {Function} Cleanup function to remove the listener
+ */
+function addKeyListener( key, handler, options = {} ) {
+	const settings = {
+		"once": false,
+		"preventDefault": true,
+		...options
+	};
+	
+	const listener = function( event ) {
+		if( !keyMatchesEvent( key, event ) ) {
+			return;
+		}
+		
+		if( settings.preventDefault ) {
+			event.preventDefault();
+		}
+		
+		handler( event );
+		
+		if( settings.once ) {
+			document.removeEventListener( "keydown", listener );
+		}
+	};
+	
+	document.addEventListener( "keydown", listener );
+	
+	return function removeListener() {
+		document.removeEventListener( "keydown", listener );
+	};
+}
+
+/**
+ * Determines if the provided key identifier matches the keyboard event.
+ * 
+ * @param {string} key - Key identifier or "any"
+ * @param {KeyboardEvent} event - Keyboard event to evaluate
+ * @returns {boolean} True if the event matches the key identifier
+ */
+function keyMatchesEvent( key, event ) {
+	if( key === "any" ) {
+		return true;
+	}
+	
+	if( key.length === 1 ) {
+		return event.key === key;
+	}
+	
+	return event.code === key;
+}
+
 // Load Pi.js dynamically before initializing the app
 loadPiJsVersion();
 
@@ -50,75 +114,23 @@ function loadPiJsVersion() {
 	console.log( "Loading Pi.js version:", m_piVersion, "from:", scriptPath );
 	console.log( "Available versions:", Object.keys( PI_VERSIONS ) );
 	
-	// Load Pi.js first, then plugins if they exist for this version
-	loadPiJsScript( scriptPath, versionInfo.plugins );
-}
-
-/**
- * Loads plugins in sequence
- * 
- * @param {Array<string>} pluginPaths - Array of plugin script paths
- * @param {Function} onComplete - Callback when all plugins are loaded
- * @returns {void}
- */
-function loadPlugins( pluginPaths, onComplete ) {
-	let loadedCount = 0;
-	const totalPlugins = pluginPaths.length;
-	
-	if( totalPlugins === 0 ) {
-		onComplete();
-		return;
-	}
-	
-	pluginPaths.forEach( ( pluginPath, index ) => {
-		const script = document.createElement( "script" );
-		script.src = pluginPath;
-		script.onload = function() {
-			loadedCount++;
-			console.log( `Plugin ${index + 1}/${totalPlugins} loaded: ${pluginPath}` );
-			
-			if( loadedCount === totalPlugins ) {
-				console.log( "All plugins loaded successfully" );
-				onComplete();
-			}
-		};
-		script.onerror = function() {
-			console.error( `Failed to load plugin: ${pluginPath}` );
-			loadedCount++;
-			
-			if( loadedCount === totalPlugins ) {
-				console.log( "Plugin loading completed (with errors)" );
-				onComplete();
-			}
-		};
-		document.head.appendChild( script );
-	} );
+	// Load Pi.js
+	loadPiJsScript( scriptPath );
 }
 
 /**
  * Loads the Pi.js script
  * 
  * @param {string} scriptPath - Path to the Pi.js script
- * @param {Array<string>} plugins - Array of plugin paths to load after Pi.js
  * @returns {void}
  */
-function loadPiJsScript( scriptPath, plugins ) {
+function loadPiJsScript( scriptPath ) {
 	const script = document.createElement( "script" );
 	script.src = scriptPath;
 	script.onload = function() {
 		console.log( "Pi.js loaded successfully, version:", m_piVersion );
 		
-		// Load plugins after Pi.js if they exist
-		if( plugins && plugins.length > 0 ) {
-			console.log( "Loading plugins for version:", m_piVersion );
-			loadPlugins( plugins, () => {
-				// Initialize the app after all plugins are loaded
-				$.ready( initApp );
-			} );
-		} else {
-			// No plugins, initialize the app directly
-			$.ready( initApp );
-		}
+		$.ready( initApp );
 	};
 	script.onerror = function() {
 		console.error( "Failed to load Pi.js version:", m_piVersion, "from:", scriptPath );
@@ -129,14 +141,7 @@ function loadPiJsScript( scriptPath, plugins ) {
 		fallbackScript.src = fallbackVersion.path;
 		fallbackScript.onload = function() {
 			console.log( "Fallback Pi.js loaded successfully" );
-			// Load plugins for fallback version if they exist
-			if( fallbackVersion.plugins && fallbackVersion.plugins.length > 0 ) {
-				loadPlugins( fallbackVersion.plugins, () => {
-					$.ready( initApp );
-				} );
-			} else {
-				$.ready( initApp );
-			}
+			$.ready( initApp );
 		};
 		fallbackScript.onerror = function() {
 			console.error( "Failed to load fallback Pi.js version" );
@@ -236,36 +241,16 @@ function showMainMenu() {
 	}
 	let endPadding = flashingMenuText.length;
 	const menuItems = [
-		[ "1. Run Performance Tests".padEnd( endPadding, " " ) ],
-		[ "2. View Previous Results".padEnd( endPadding, " " ) ],
-		[ "3. Recalculate Target FPS".padEnd( endPadding, " " ) ],
-		[ flashingMenuText.padEnd( endPadding, " " ) ],
-		[ "5. Change Pi.js Version".padEnd( endPadding, " " ) ],
-		[ "6. Exit".padEnd( endPadding ) ]
+		"1. Run Performance Tests".padEnd( endPadding, " " ),
+		"2. View Previous Results".padEnd( endPadding, " " ),
+		"3. Recalculate Target FPS".padEnd( endPadding, " " ),
+		flashingMenuText.padEnd( endPadding, " " ),
+		"5. Change Pi.js Version".padEnd( endPadding, " " ),
+		"6. Exit".padEnd( endPadding )
 	];
 
-	const menuFormat = [
-		"*-------------------------------*",
-		"|                               |",
-		"*-------------------------------*",
-		"|                               |",
-		"*-------------------------------*",
-		"|                               |",
-		"*-------------------------------*",
-		"|                               |",
-		"*-------------------------------*",
-		"|                               |",
-		"*-------------------------------*",
-		"|                               |",
-		"*-------------------------------*"
-	]
-
 	$.setColor( 15 );
-	if( $.printTable ){
-		$.printTable( menuItems, menuFormat, "double", true );
-	} else {
-		menuItems.forEach( item => $.print( item, false, true ) );
-	}
+	menuItems.forEach( ( item ) => $.print( item, false, true ) );
 
 	// Instruction - centered below table
 	$.print();
@@ -273,12 +258,13 @@ function showMainMenu() {
 	$.print( "Enter Key (1 - 6)", false, true );
 	
 	// Set up menu handlers
-	$.onkey( "1", "down", menu1 );
-	$.onkey( "2", "down", menu2 );
-	$.onkey( "3", "down", menu3 );
-	$.onkey( "4", "down", menu4 );
-	$.onkey( "5", "down", menu5 );
-	$.onkey( "6", "down", menu6 );
+	const menuKeyCleanups = [];
+	menuKeyCleanups.push( addKeyListener( "1", menu1 ) );
+	menuKeyCleanups.push( addKeyListener( "2", menu2 ) );
+	menuKeyCleanups.push( addKeyListener( "3", menu3 ) );
+	menuKeyCleanups.push( addKeyListener( "4", menu4 ) );
+	menuKeyCleanups.push( addKeyListener( "5", menu5 ) );
+	menuKeyCleanups.push( addKeyListener( "6", menu6 ) );
 
 	function menu1() {
 		clearMenuKeys();
@@ -311,12 +297,10 @@ function showMainMenu() {
 	}
 
 	function clearMenuKeys() {
-		$.offkey( "1", "down", menu1 );
-		$.offkey( "2", "down", menu2 );
-		$.offkey( "3", "down", menu3 );
-		$.offkey( "4", "down", menu4 );
-		$.offkey( "5", "down", menu5 );
-		$.offkey( "6", "down", menu6 );
+		while( menuKeyCleanups.length > 0 ) {
+			const removeListener = menuKeyCleanups.pop();
+			removeListener();
+		}
 	}
 }
 
@@ -375,29 +359,13 @@ function showPiVersionMenu() {
 	// Create version selection table
 	const padding = 33;
 	const versionKeys = Object.keys( PI_VERSIONS );
-	const versionItems = versionKeys.map( ( key, index ) => [
-		`${index + 1}. ${PI_VERSIONS[ key ].menuName}`.padEnd( padding )
-	] );
-	versionItems.push( [ `${versionKeys.length + 1}. Return to Main Menu`.padEnd( padding ) ] );
-
-	const format = [
-		"*-----------------------------------*",
-		"|                                   |",
-		"*-----------------------------------*",
-		"|                                   |",
-		"*-----------------------------------*",
-		"|                                   |",
-		"*-----------------------------------*",
-		"|                                   |",
-		"*-----------------------------------*"
-	];
+	const versionItems = versionKeys.map( ( key, index ) => {
+		return `${index + 1}. ${PI_VERSIONS[ key ].menuName}`.padEnd( padding );
+	} );
+	versionItems.push( `${versionKeys.length + 1}. Return to Main Menu`.padEnd( padding ) );
 	
 	$.setColor( 15 );
-	if( $.printTable) {
-		$.printTable( versionItems, format, "double", true );
-	} else {
-		versionItems.forEach( item => $.print( item, false, true ) );
-	}
+	versionItems.forEach( ( item ) => $.print( item, false, true ) );
 	
 	// Show current version
 	$.print();
@@ -409,59 +377,50 @@ function showPiVersionMenu() {
 	$.setColor( 7 );
 	$.print( `Enter Key (1 - ${versionKeys.length + 1})`, false, true );
 	
-	// Set up menu handlers
+	const versionKeyCleanups = [];
+	
 	versionKeys.forEach( ( key, index ) => {
 		const keyNum = ( index + 1 ).toString();
-		$.onkey( keyNum, "down", () => changePiVersion( key ) );
+		versionKeyCleanups.push( addKeyListener( keyNum, () => changePiVersion( key ) ) );
 	} );
 	
-	// Return to main menu handler
 	const returnKey = ( versionKeys.length + 1 ).toString();
-	$.onkey( returnKey, "down", () => {
-		// Clear all version menu keys
-		versionKeys.forEach( ( key, index ) => {
-			$.offkey( ( index + 1 ).toString(), "down" );
-		} );
-		$.offkey( returnKey, "down" );
+	versionKeyCleanups.push( addKeyListener( returnKey, () => {
+		clearVersionKeys();
 		showMainMenu();
-	} );
-}
-
-/**
- * Changes the Pi.js version and reloads the page
- * 
- * @param {string} version - The version to switch to
- * @returns {void}
- */
-function changePiVersion( version ) {
-	if( version === m_piVersion ) {
-		// Already using this version, just return to main menu
-		$.offkey( "1", "down" );
-		$.offkey( "2", "down" );
-		$.offkey( "3", "down" );
-		$.offkey( "4", "down" );
-		showMainMenu();
-		return;
+	} ) );
+	
+	function clearVersionKeys() {
+		while( versionKeyCleanups.length > 0 ) {
+			const removeListener = versionKeyCleanups.pop();
+			removeListener();
+		}
 	}
 	
-	// Save the new version
-	localStorage.setItem( "piVersion", version );
-	
-	// Show loading message
-	$.cls();
-	printTitle();
-	$.setPos( 0, m_centerPosY );
-	$.setColor( 15 );
-	$.print( "Switching to Pi.js version:", false, true );
-	$.print( version, false, true );
-	$.print();
-	$.setColor( 7 );
-	$.print( "Reloading page...", false, true );
-	
-	// Reload the page to load the new version
-	setTimeout( () => {
-		window.location.reload();
-	}, 1000 );
+	function changePiVersion( version ) {
+		clearVersionKeys();
+		
+		if( version === m_piVersion ) {
+			showMainMenu();
+			return;
+		}
+		
+		localStorage.setItem( "piVersion", version );
+		
+		$.cls();
+		printTitle();
+		$.setPos( 0, m_centerPosY );
+		$.setColor( 15 );
+		$.print( "Switching to Pi.js version:", false, true );
+		$.print( version, false, true );
+		$.print();
+		$.setColor( 7 );
+		$.print( "Reloading page...", false, true );
+		
+		setTimeout( () => {
+			window.location.reload();
+		}, 1000 );
+	}
 }
 
 /**
@@ -478,24 +437,12 @@ function showExitMessage() {
 	
 	// Create exit message table
 	const exitItems = [
-		[ "Thank you for using" ],
-		[ "Performance Tests! " ]
-	];
-
-	const format = [
-		"*-----------------------*",
-		"|                       |",
-		"*-----------------------*",
-		"|                       |",
-		"*-----------------------*"
+		"Thank you for using",
+		"Performance Tests! "
 	];
 	
 	$.setColor( 15 );
-	if( $.printTable ){
-		$.printTable( exitItems, format, "double", true );
-	} else {
-		exitItems.forEach( item => $.print( item, false, true ) );
-	}
+	exitItems.forEach( ( item ) => $.print( item, false, true ) );
 	
 	// Instruction - centered below table
 	$.setColor( 7 );

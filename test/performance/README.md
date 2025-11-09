@@ -38,6 +38,7 @@ class MyNewTest {
 	 * @returns {void}
 	 */
 	init( data ) {
+		
 		// Initialize any test-specific data
 		data.pal = $.getPal();
 		this.m_data = data;

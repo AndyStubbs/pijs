@@ -23,10 +23,9 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 
 // Get all test config data
 let m_tests = [];
-m_tests.push( g_psetTest.getConfig() );
-m_tests.push( g_lineTest.getConfig() );
-m_tests.push( g_graphicsPixelTest.getConfig( true ) );
-m_tests.push( g_graphicsPixelTest.getConfig( false ) );
+ m_tests.push( g_psetTest.getConfig() );
+ m_tests.push( g_lineTest.getConfig() );
+ m_tests.push( g_graphicsPixelTest.getConfig() );
 m_tests.push( g_imagesTest.getConfig() );
 m_tests.push( g_bezierTest.getConfig() );
 
@@ -137,6 +136,7 @@ async function calculateTargetFPS() {
  */
 async function runNextTest() {
 	const WARMUP_TIME = 5000;
+	const WARMUP_RAMP_DOWN_TIME = 4000;
 	const MAX_TIME = 30000;
 	const EXTRA_TIME = 5000;
 	const MAX_INSTABILITY = 0.5;
@@ -173,7 +173,7 @@ async function runNextTest() {
 	let recentItemCounts = [];
 
 	// Initialize the test
-	await test.init( test.isPixelMode );
+	await test.init();
 
 	// Start the test loop
 	requestAnimationFrame( loop );
@@ -253,7 +253,7 @@ async function runNextTest() {
 
 				// If a big miss decrement even quicker
 				if( fps < m_targetFps * 0.3 ) {
-					itemCount = Math.max( itemCount - 30, 1 );
+					itemCount = Math.max( itemCount - 25, 1 );
 				} else {
 					itemCount = Math.max( itemCount - 10, 1 );
 				}
@@ -265,8 +265,10 @@ async function runNextTest() {
 			// During warmup time increment quicker
 			if( elapsed > WARMUP_TIME ) {
 				itemCount += 1;
-			} else {
+			} else if( elapsed > WARMUP_RAMP_DOWN_TIME ) {
 				itemCount += 10;
+			} else {
+				itemCount += 50;
 			}
 		}
 
@@ -276,6 +278,7 @@ async function runNextTest() {
 		$.setColor( "black" );
 		$.rect( 0, 0, 155, 65, "black" );
 		$.setColor( 15 );
+		$.setPos( 0, 0 );
 		$.print( "Item Count:  " + itemCount.toFixed( 0 ).padStart( 6, " " ) );
 		$.print( "Target FPS:  " + m_targetFps.toFixed( 0 ).padStart( 6, " " ) );
 		$.print( "FPS:         " + fps.toFixed( 0 ).padStart( 6, " " ) );

@@ -14,6 +14,65 @@ let m_api = null;
 let m_currentResultsObject = null;
 
 /**
+ * Adds a DOM keydown listener that matches the specified key.
+ * 
+ * @param {string} key - Key identifier or "any" to match all keys
+ * @param {Function} handler - Handler to invoke when key matches
+ * @param {Object} [options] - Listener options
+ * @param {boolean} [options.once=false] - Remove listener after first invocation
+ * @param {boolean} [options.preventDefault=true] - Prevent default browser behaviour
+ * @returns {Function} Cleanup function to remove the listener
+ */
+function addKeyListener( key, handler, options = {} ) {
+	const settings = {
+		"once": false,
+		"preventDefault": true,
+		...options
+	};
+	
+	const listener = function( event ) {
+		if( !keyMatchesEvent( key, event ) ) {
+			return;
+		}
+		
+		if( settings.preventDefault ) {
+			event.preventDefault();
+		}
+		
+		handler( event );
+		
+		if( settings.once ) {
+			document.removeEventListener( "keydown", listener );
+		}
+	};
+	
+	document.addEventListener( "keydown", listener );
+	
+	return function removeListener() {
+		document.removeEventListener( "keydown", listener );
+	};
+}
+
+/**
+ * Determines if a keyboard event matches the provided key identifier.
+ * 
+ * @param {string} key - Key identifier or "any"
+ * @param {KeyboardEvent} event - Keyboard event to evaluate
+ * @returns {boolean} True if the event matches the key identifier
+ */
+function keyMatchesEvent( key, event ) {
+	if( key === "any" ) {
+		return true;
+	}
+	
+	if( key.length === 1 ) {
+		return event.key === key;
+	}
+	
+	return event.code === key;
+}
+
+/**
  * Initializes the report manager with an API object
  * 
  * @param {Object} api - API object with showMainMenu function
@@ -68,23 +127,13 @@ function showResults( resultsObject ) {
 		]
 	];
 	
-	const summaryFormat = [
-		"*---------------------------*--------------------*-----------------*----------------------*",
-		"|                           |                    |                 |                      |",
-		"*---------------------------*--------------------*-----------------*----------------------*"
-	];
-
 	// Draw the table at the top
 	$.setColor( 10 );
 
-	if( $.printTable) {
-		$.printTable( summaryData, summaryFormat, "single", true );
-	} else {
-		$.print( summaryData[ 0 ].join( " | " ) );
-	}
+	$.print( summaryData[ 0 ].join( " | " ) );
 	
 	// Position the detailed results table below the compact summary
-	const resultsStartRow = 4;
+	const resultsStartRow = 6;
 	$.setPos( 0, resultsStartRow );
 	
 	// Create results table data
@@ -106,38 +155,22 @@ function showResults( resultsObject ) {
 		] );
 	}
 	
-	const borderLine = "*--------------------------*------------*-----------*-------------*------------*----------*";
-	const itemLine =   "|                          |            |           |             |            |          |";
-
-	// Create results table format (header + data rows)
-	const resultsFormat = [ borderLine, itemLine, borderLine ];
-	
-	// Extend format for each result row (header + data rows)
-	for( let i = 0; i < results.length; i++ ) {
-		resultsFormat.push( itemLine );
-		resultsFormat.push( borderLine );
-	}
-	
 	// Display results table
 	$.setColor( 7 );
-	if( $.printTable) {
-		$.printTable( resultsData, resultsFormat, "double", true );
-	} else {
-		for( let i = 0; i < resultsData.length; i += 1 ) {
-			for( let j = 0; j < resultsData[ i ].length; j += 1 ) {
-				let msg = ( resultsData[ i ][ j ] + "" );
-				if( j === 0 ) {
-					msg = msg.padEnd( namePadding );
-				} else {
-					msg = msg.trim().padEnd( 11, " " );
-				}
-				$.print( msg + " | ", true );
-			}
-			if( i === 0 ) {
-				$.print( "\n------------------------------------------------------------------------------------------------" );
+	for( let i = 0; i < resultsData.length; i += 1 ) {
+		for( let j = 0; j < resultsData[ i ].length; j += 1 ) {
+			let msg = ( resultsData[ i ][ j ] + "" );
+			if( j === 0 ) {
+				msg = msg.padEnd( namePadding );
 			} else {
-				$.print();
+				msg = msg.trim().padEnd( 11, " " );
 			}
+			$.print( msg + " | ", true );
+		}
+		if( i === 0 ) {
+			$.print( "\n------------------------------------------------------------------------------------------------" );
+		} else {
+			$.print();
 		}
 	}
 
@@ -192,23 +225,20 @@ function showResults( resultsObject ) {
 	menuOptionsData.push( menuItems );
 	
 	$.setColor( 15 );
-	if( $.printTable) {
-		$.printTable( menuOptionsData, null, "single", true );
-	} else {
-		$.print( menuOptionsData[ 0 ].join( " | " ) );
-	}
+	$.print( menuOptionsData[ 0 ].join( " | " ) );
 
 	// Set up menu handlers
+	const menuKeyCleanups = [];
 	menuOptions.forEach( ( option, index ) => {
 		const key = ( index + 1 ).toString();
-		$.onkey( key, "down", option.handler );
+		menuKeyCleanups.push( addKeyListener( key, option.handler ) );
 	} );
 
 	function clearMenuKeys() {
-		menuOptions.forEach( ( option, index ) => {
-			const key = ( index + 1 ).toString();
-			$.offkey( key, "down", option.handler );
-		} );
+		while( menuKeyCleanups.length > 0 ) {
+			const removeListener = menuKeyCleanups.pop();
+			removeListener();
+		}
 	}
 
 }
@@ -272,11 +302,11 @@ function displayResultsList( files, startIndex ) {
 		$.setPos( 0, 6 );
 		$.print( "Press any key to return to main menu", false, true );
 		
-		$.onkey( "any", "down", () => {
+		addKeyListener( "any", () => {
 			if( m_api && m_api.showMainMenu ) {
 				m_api.showMainMenu();
 			}
-		}, true );
+		}, { "once": true } );
 		return;
 	}
 	
@@ -311,35 +341,20 @@ function displayResultsList( files, startIndex ) {
 	}
 	
 	// Create table format
-	const borderLine = "*-----*-------------------------*------------------------*----------*---------*";
-	const itemLine =   "|     |                         |                        |          |         |";
-	
-	const resultsFormat = [ borderLine, itemLine, borderLine ];
-	
-	// Extend format for each result row
-	for( let i = 0; i < resultsData.length - 1; i++ ) {
-		resultsFormat.push( itemLine );
-		resultsFormat.push( borderLine );
-	}
-	
 	// Display results table
 	$.setColor( 7 );
 	$.setPos( 0, 4 );
-	if( $.printTable ) {
-		$.printTable( resultsData, resultsFormat, "double", true );
-	} else {
-		const padding = [ 3, 22, 15, 8, 8 ];
-		for( let i = 0; i < resultsData.length; i += 1 ) {
-			for( let j = 0; j < resultsData[ i ].length; j += 1 ) {
-				let msg = ( resultsData[ i ][ j ] + "" );
-				msg = msg.padEnd( padding[ j ], " " );
-				$.print( msg + " | ", true );
-			}
-			if( i === 0 ) {
-				$.print( "\n----------------------------------------------------------------------" );
-			} else {
-				$.print();
-			}
+	const padding = [ 3, 22, 15, 8, 8 ];
+	for( let i = 0; i < resultsData.length; i += 1 ) {
+		for( let j = 0; j < resultsData[ i ].length; j += 1 ) {
+			let msg = ( resultsData[ i ][ j ] + "" );
+			msg = msg.padEnd( padding[ j ], " " );
+			$.print( msg + " | ", true );
+		}
+		if( i === 0 ) {
+			$.print( "\n----------------------------------------------------------------------" );
+		} else {
+			$.print();
 		}
 	}
 	
@@ -348,8 +363,13 @@ function displayResultsList( files, startIndex ) {
 	$.setPos( 0, $.getRows() - 3 );
 	$.print( "Press number to view result, 'D' to delete all, 'R' to return", false, true );
 	
-	// Define key handler functions
-	const keyHandlers = [];
+	// Define key handler cleanup list
+	const keyListenerCleanups = [];
+	
+	function registerKeyHandler( key, handler, options ) {
+		const cleanup = addKeyListener( key, handler, options );
+		keyListenerCleanups.push( cleanup );
+	}
 
 	// Set up key handlers for each file
 	for( let i = 0; i < files.length && i < 10; i++ ) {
@@ -359,8 +379,7 @@ function displayResultsList( files, startIndex ) {
 			clearAllKeys();
 			viewResult( files[ fileIndex ].name );
 		};
-		keyHandlers.push( { key, handler } );
-		$.onkey( key, "down", handler );
+		registerKeyHandler( key, handler );
 	}
 
 	if( files.length > 9 ) {
@@ -372,25 +391,19 @@ function displayResultsList( files, startIndex ) {
 				nextStartIndex = 0;
 			}
 			displayResultsList( files, nextStartIndex );
-		}
-		keyHandlers.push( { key, handler } );
-		$.onkey( key, "down", handler );
+		};
+		registerKeyHandler( key, handler );
 	}
 	
 	// Set up menu handlers
-	$.onkey( "KeyD", "down", deleteHandler );
-	$.onkey( "KeyR", "down", returnHandler );
+	registerKeyHandler( "KeyD", deleteHandler );
+	registerKeyHandler( "KeyR", returnHandler );
 	
 	function clearAllKeys() {
-
-		// Clear numbered keys
-		for( const keyHandler of keyHandlers ) {
-			$.offkey( keyHandler.key, "down", keyHandler.handler );
+		while( keyListenerCleanups.length > 0 ) {
+			const removeListener = keyListenerCleanups.pop();
+			removeListener();
 		}
-		
-		// Clear menu keys
-		$.offkey( "KeyD", "down", deleteHandler );
-		$.offkey( "KeyR", "down", returnHandler );
 	}
 
 	function returnHandler() {
@@ -469,12 +482,24 @@ async function deleteAllResults( files ) {
 	$.setPos( 0, 6 );
 	$.print( "Press 'Y' to confirm, 'N' to cancel", false, true );
 	
+	const confirmationKeyCleanups = [];
+	
+	function registerConfirmationKey( key, handler ) {
+		const cleanup = addKeyListener( key, handler );
+		confirmationKeyCleanups.push( cleanup );
+	}
+	
+	function clearConfirmationKeys() {
+		while( confirmationKeyCleanups.length > 0 ) {
+			const removeListener = confirmationKeyCleanups.pop();
+			removeListener();
+		}
+	}
+	
 	// Define confirmation handlers
 	async function confirmHandler() {
 
-		// Clear the confirmation key handlers
-		$.offkey( "KeyY", "down", confirmHandler );
-		$.offkey( "KeyN", "down", cancelHandler );
+		clearConfirmationKeys();
 		
 		$.cls();
 		$.setColor( 10 );
@@ -503,11 +528,11 @@ async function deleteAllResults( files ) {
 			$.setPos( 0, 6 );
 			$.print( "Press any key to return to main menu", false, true );
 			
-			$.onkey( "any", "down", () => {
+			addKeyListener( "any", () => {
 				if( m_api && m_api.showMainMenu ) {
 					m_api.showMainMenu();
 				}
-			}, true );
+			}, { "once": true } );
 		} catch( error ) {
 			showError( `Error: ${error.message}` );
 		}
@@ -515,16 +540,14 @@ async function deleteAllResults( files ) {
 
 	function cancelHandler() {
 
-		// Clear the confirmation key handlers
-		$.offkey( "KeyY", "down", confirmHandler );
-		$.offkey( "KeyN", "down", cancelHandler );
+		clearConfirmationKeys();
 
 		// Return to results list
 		showPreviousResults();
 	}
 
-	$.onkey( "KeyY", "down", confirmHandler );
-	$.onkey( "KeyN", "down", cancelHandler );
+	registerConfirmationKey( "KeyY", confirmHandler );
+	registerConfirmationKey( "KeyN", cancelHandler );
 }
 
 /**
@@ -544,25 +567,11 @@ function showError( message ) {
 	$.setPos( 0, 6 );
 	$.print( "Press any key to return to main menu", false, true );
 	
-	$.onkey( "any", "down", () => {
+	addKeyListener( "any", () => {
 		if( m_api && m_api.showMainMenu ) {
 			m_api.showMainMenu();
 		}
-	}, true );
-}
-
-/**
- * Clears all key handlers for the results list
- * 
- * @param {number} fileCount - Number of files (for numbered keys)
- * @returns {void}
- */
-function clearAllKeys( fileCount ) {
-	for( let i = 1; i <= fileCount; i++ ) {
-		$.offkey( i.toString(), "down", () => {} );
-	}
-	$.offkey( "KeyD", "down", () => {} );
-	$.offkey( "KeyR", "down", () => {} );
+	}, { "once": true } );
 }
 
 /**
@@ -627,7 +636,7 @@ async function postResults( resultsObject ) {
 	$.setPos( 0, contentStartRow + 4 );
 	$.print( "Press any key to return to results", false, true );
 	
-	$.onkey( "any", "down", () => {
+	addKeyListener( "any", () => {
 
 		// Return to results display (which will now show updated menu without "Post Results")
 		if( m_currentResultsObject ) {
@@ -638,5 +647,5 @@ async function postResults( resultsObject ) {
 				m_api.showMainMenu();
 			}
 		}
-	}, true );
+	}, { "once": true } );
 }

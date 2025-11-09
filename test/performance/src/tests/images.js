@@ -152,6 +152,23 @@ function generateRandomOperation() {
 	const width = $.width();
 	const height = $.height();
 	
+	const parameterNames = {
+		"name": "name",
+		"x": "x",
+		"y": "y",
+		"color": "color",
+		"anchorX": "anchorX",
+		"anchorY": "anchorY",
+		"angle": "angle",
+		"frame": "frame",
+		"spriteName": "name"
+	};
+
+	// Update parameter names
+	if( $.version === "2.0.0-alpha.3" ) {
+		parameterNames.name = "image";
+	}
+
 	// Choose between image and sprite operation
 	const useSprite = m_spriteNames.length > 0 && m_seededRandom() > 0.5;
 	
@@ -192,21 +209,23 @@ function generateRandomOperation() {
 		const includeScale = m_seededRandom() > 0.2;
 		
 		// Build parameters object for drawSprite
-		const params = {
-			"name": spriteName,
-			"frame": frame,
-			"x": x,
-			"y": y
-		};
+		const params = {};
+		params[ parameterNames.spriteName ] = spriteName;
+		params[ parameterNames.frame ] = frame;
+		params[ parameterNames.x ] = x;
+		params[ parameterNames.y ] = y;
+
 		if( includeAngle ) params.angle = angle;
 		if( includeAnchor ) {
-			params.anchorX = anchorX;
-			params.anchorY = anchorY;
+			params[ parameterNames.anchorX ] = anchorX;
+			params[ parameterNames.anchorY ] = anchorY;
 		}
-		if( includeAlpha ) params.alpha = alpha;
+		if( includeAlpha ) {
+			params[ parameterNames.alpha ] = alpha;
+		}
 		if( includeScale ) {
-			params.scaleX = scaleX;
-			params.scaleY = scaleY;
+			params[ parameterNames.scaleX ] = scaleX;
+			params[ parameterNames.scaleY ] = scaleY;
 		}
 		
 		return {
@@ -226,21 +245,23 @@ function generateRandomOperation() {
 				const newScaleY = Math.max( 0.1, Math.min( scaleY + ( Math.random() * 0.4 ) - 0.2, 3.0 ) );
 				
 				// Rebuild parameters object with variations
-				const newParams = {
-					"name": spriteName,
-					"frame": frame,
-					"x": newX,
-					"y": newY
-				};
-				if( includeAngle ) newParams.angle = newAngle;
+				const newParams = {};
+				newParams[ parameterNames.spriteName ] = spriteName;
+				newParams[ parameterNames.frame ] = frame;
+				newParams[ parameterNames.x ] = newX;
+				newParams[ parameterNames.y ] = newY;
+
+				if( includeAngle ) {
+					newParams[ parameterNames.angle ] = newAngle;
+				}
 				if( includeAnchor ) {
-					newParams.anchorX = newAnchorX;
-					newParams.anchorY = newAnchorY;
+					newParams[ parameterNames.anchorX ] = newAnchorX;
+					newParams[ parameterNames.anchorY ] = newAnchorY;
 				}
 				if( includeAlpha ) newParams.alpha = newAlpha;
 				if( includeScale ) {
-					newParams.scaleX = newScaleX;
-					newParams.scaleY = newScaleY;
+					newParams[ parameterNames.scaleX ] = newScaleX;
+					newParams[ parameterNames.scaleY ] = newScaleY;
 				}
 				
 				return newParams;
@@ -275,20 +296,24 @@ function generateRandomOperation() {
 		const includeScale = m_seededRandom() > 0.2;
 		
 		// Build parameters object for drawImage
-		const params = {
-			"name": imageName,
-			"x": x,
-			"y": y
-		};
-		if( includeAngle ) params.angle = angle;
-		if( includeAnchor ) {
-			params.anchorX = anchorX;
-			params.anchorY = anchorY;
+		const params = {};
+		params[ parameterNames.name ] = imageName;
+		params[ parameterNames.x ] = x;
+		params[ parameterNames.y ] = y;
+			
+		if( includeAngle ) {
+			params[ parameterNames.angle ] = angle;
 		}
-		if( includeAlpha ) params.alpha = alpha;
+		if( includeAnchor ) {
+			params[ parameterNames.anchorX ] = anchorX;
+			params[ parameterNames.anchorY ] = anchorY;
+		}
+		if( includeAlpha ) {
+			params.alpha = alpha;
+		}
 		if( includeScale ) {
-			params.scaleX = scale;
-			params.scaleY = scale;
+			params[ parameterNames.scaleX ] = scale;
+			params[ parameterNames.scaleY ] = scale;
 		}
 		
 		return {
@@ -305,22 +330,25 @@ function generateRandomOperation() {
 				const newScaleY = Math.max( 0.1, Math.min( scale + ( Math.random() * 0.4 ) - 0.2, 3.0 ) );
 				
 				// Rebuild parameters object with variations
-				const newParams = {
-					"name": imageName,
-					"x": newX,
-					"y": newY
-				};
-				if( includeAngle ) newParams.angle = newAngle;
+				const newParams = {};
+				newParams[ parameterNames.name ] = imageName;
+				newParams[ parameterNames.x ] = newX;
+				newParams[ parameterNames.y ] = newY;
+
+				if( includeAngle ) {
+					newParams[ parameterNames.angle ] = newAngle;
+				}
 				if( includeAnchor ) {
-					newParams.anchorX = newAnchorX;
-					newParams.anchorY = newAnchorY;
+					newParams[ parameterNames.anchorX ] = newAnchorX;
+					newParams[ parameterNames.anchorY ] = newAnchorY;
 				}
-				if( includeAlpha ) newParams.alpha = newAlpha;
+				if( includeAlpha ) {
+					newParams[ parameterNames.alpha ] = newAlpha;
+				}
 				if( includeScale ) {
-					newParams.scaleX = newScaleX;
-					newParams.scaleY = newScaleY;
+					newParams[ parameterNames.scaleX ] = newScaleX;
+					newParams[ parameterNames.scaleY ] = newScaleY;
 				}
-				
 				return newParams;
 			}
 		};
@@ -348,6 +376,7 @@ function run( itemCount ) {
 	$.cls();
 	
 	for( let i = 0; i < itemCount; i++ ) {
+
 		// Cycle through the pre-generated operations
 		const operationIndex = i % m_operations.length;
 		const operation = m_operations[ operationIndex ];
