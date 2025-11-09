@@ -570,7 +570,7 @@ function resizeScreen( screenData, isInit ) {
 
 		// Handle "e"xtend mode resize the renderer
 		if( lastScreenWidth !== screenData.width || lastScreenHeight !== screenData.height ) {
-			g_renderer.resizeScreen( screenData, false );
+			g_renderer.resizeScreen( screenData );
 		}
 	}
 	
