@@ -233,6 +233,12 @@
 		};
 		const c9 = document.getElementById( "c9" );
 		const s10 = $.screen( { "aspect": "80e80", "container": c9, "resizeCallback": c9Resized } );
+		
+		s10.setColor( 5 );
+		s10.line( 0, 0, s10.width() - 1, s10.height() - 1 );
+		s10.line( 0, s10.height() - 1, s10.width() - 1, 0 );
+		s10.rect( 0, 0, s10.width(), s10.height() );
+		s10.setColor( 7 );
 		s10.print( "Test 10: Resize 80e80" );
 		c9.classList.add( "big" );
 	} );

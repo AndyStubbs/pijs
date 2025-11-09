@@ -301,24 +301,58 @@ export function blendModeChanged( screenData, previousBlends ) {
 	g_batches.displayToCanvas( screenData );
 }
 
-export function resizeScreen( screenData ) {
+export function resizeScreen( screenData, oldWidth, oldHeight ) {
 
 	// Finish rendering to the FBO before resizing
 	g_batches.flushBatches( screenData );
 
-	// Resize the textures
 	const gl = screenData.gl;
+	const newWidth = screenData.width;
+	const newHeight = screenData.height;
+
+	// Preserve the current contents in the buffer FBO before reallocating
+	gl.bindFramebuffer( gl.READ_FRAMEBUFFER, screenData.FBO );
+	gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, screenData.bufferFBO );
+	gl.clearColor( 0, 0, 0, 0 );
+	gl.clear( gl.COLOR_BUFFER_BIT );
+	gl.blitFramebuffer(
+		0, 0, oldWidth, oldHeight,
+		0, 0, oldWidth, oldHeight,
+		gl.COLOR_BUFFER_BIT, gl.NEAREST
+	);
+
+	// Resize the primary FBO texture
 	gl.bindTexture( gl.TEXTURE_2D, screenData.fboTexture );
 	gl.texImage2D( 
 		gl.TEXTURE_2D, 0, gl.RGBA8, 
-		screenData.width, screenData.height, 0,
-		gl.RGBA, gl.UNSIGNED_BYTE, screenData.fboTexture 
+		newWidth, newHeight, 0,
+		gl.RGBA, gl.UNSIGNED_BYTE, null 
 	);
+	gl.bindTexture( gl.TEXTURE_2D, null );
+
+	// Copy the preserved pixels back into the resized primary FBO
+	const copyWidth = Math.min( oldWidth, newWidth );
+	const copyHeight = Math.min( oldHeight, newHeight );
+	gl.bindFramebuffer( gl.READ_FRAMEBUFFER, screenData.bufferFBO );
+	gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, screenData.FBO );
+
+	// Need to flip the y-index so the top-left of the screen is preserved if the screen is smaller
+	const srcY = Math.max( 0, oldHeight - newHeight );
+	gl.blitFramebuffer(
+		0, srcY, copyWidth, srcY + copyHeight,
+		0, 0, copyWidth, copyHeight,
+		gl.COLOR_BUFFER_BIT, gl.NEAREST
+	);
+
+	// Resize the buffer FBO texture to match the new dimensions
 	gl.bindTexture( gl.TEXTURE_2D, screenData.bufferFboTexture );
 	gl.texImage2D( 
 		gl.TEXTURE_2D, 0, gl.RGBA8, 
-		screenData.width, screenData.height, 0,
-		gl.RGBA, gl.UNSIGNED_BYTE, screenData.bufferFboTexture 
+		newWidth, newHeight, 0,
+		gl.RGBA, gl.UNSIGNED_BYTE, null 
 	);
 	gl.bindTexture( gl.TEXTURE_2D, null );
+
+	gl.bindFramebuffer( gl.READ_FRAMEBUFFER, null );
+	gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, null );
 }
