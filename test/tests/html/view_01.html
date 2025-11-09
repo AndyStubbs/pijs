@@ -24,19 +24,19 @@
 <body>
 <script>
 	$.ready(function () {
-		var screen0 = $.screen("150x100");
-		$.setContainerBgColor("#000000");
-		$.paint(1, 1, 1);
-		$.render();
-		var screen1 = $.screen("120x70", null, true);
-		$.setWordBreak(false);
-		$.setColor(15);
-		$.paint(1, 1, 8);
-		$.print("This is an excellent time to be alive; don't you think so? I like chocolate ice-cream!");
-		$.print("The quick brown fox jumped over the lazy dog.");
-		$.render();
-		$.setScreen(screen0);
-		$.drawImage(screen1, 15, 15);
+		var screen0 = $.screen( "150x100" );
+		$.setContainerBgColor( "#000000" );
+		$.paint( 1, 1, 1 );
+		var screen1 = $.screen( "120x70", null, true );
+		$.setWordBreak( false );
+		$.setColor( 15 );
+		$.paint( 1, 1, 8 );
+		$.print(
+			"This is an excellent time to be alive; don't you think so? I like chocolate ice-cream!"
+		);
+		$.print( "The quick brown fox jumped over the lazy dog." );
+		$.setScreen( screen0 );
+		$.drawImage( screen1, 15, 15 );
 	});
 </script>
 </body>
