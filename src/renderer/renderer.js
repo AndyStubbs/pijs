@@ -112,10 +112,11 @@ export function createContext( screenData ) {
 		"colorType": "unorm8"
 	} );
 	
+	// WebGL2 not available
 	if( !screenData.gl ) {
-
-		// WebGL2 not available
-		return false;
+		const error = new Error( "screen: Failed to create WebGL2 context. WebGL2 is required." );
+		error.code = "WEBGL_ERROR";
+		throw error;
 	}
 
 	// Setup viewport
@@ -123,19 +124,11 @@ export function createContext( screenData ) {
 	
 	// Create texture and FBO
 	const fboAndTexture = createTextureAndFBO( screenData );
-	if( !fboAndTexture ) {
-		screenData.gl = null;
-		return false;
-	}
 	screenData.fboTexture = fboAndTexture.fboTexture;
 	screenData.FBO = fboAndTexture.FBO;
 	
 	// Create a buffer texture and FBO
 	const bufferFboAndTexture = createTextureAndFBO( screenData );
-	if( !bufferFboAndTexture ) {
-		cleanup( screenData );
-		return false;
-	}
 	screenData.bufferFboTexture = bufferFboAndTexture.fboTexture;
 	screenData.bufferFBO = bufferFboAndTexture.FBO;
 
@@ -171,9 +164,6 @@ export function createContext( screenData ) {
 		// TODO: Reset blend mode
 		// blendModeChanged( screenData );
 	} );
-
-	// Return successful
-	return true;
 }
 
 /**
@@ -191,8 +181,9 @@ function createTextureAndFBO( screenData ) {
 	// Create texture
 	const fboTexture = gl.createTexture();
 	if( !fboTexture ) {
-		console.error( "Failed to create WebGL2 texture." );
-		return false;
+		const error = new Error( "screen: Failed to create WebGL2 texture." );
+		error.code = "WEBGL_ERROR";
+		throw error;
 	}
 
 	gl.bindTexture( gl.TEXTURE_2D, fboTexture );
@@ -221,8 +212,9 @@ function createTextureAndFBO( screenData ) {
 	// Make sure that framebuffer is complete
 	const status = gl.checkFramebufferStatus( gl.FRAMEBUFFER );
 	if( status !== gl.FRAMEBUFFER_COMPLETE ) {
-		console.error( "WebGL2 Framebuffer incomplete:", status );
-		return false;
+		const error = new Error( `screen: WebGL2 Framebuffer incomplete. ${status}` );
+		error.code = "WEBGL_ERROR";
+		throw error;
 	}
 
 	// Unbind

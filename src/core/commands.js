@@ -220,6 +220,9 @@ function checkReady() {
  */
 export function set( screenData, options ) {
 
+	// Unpack options
+	options = options.options;
+
 	// Loop through all the options
 	for( const optionName in options ) {
 
@@ -246,7 +249,7 @@ export function set( screenData, options ) {
 				setting.fn( parsedOptions );
 			}
 
-			// If we just set the screen then refresh the active screen
+			// If we just set the screen then update the screenData to the new active screen
 			if( optionName === "screen" ) {
 				screenData = g_screenManager.getActiveScreen();
 			}

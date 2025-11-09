@@ -45,6 +45,7 @@
 import * as g_utils from "./utils.js";
 import * as g_commands from "./commands.js";
 import * as g_renderer from "../renderer/renderer.js";
+import * as g_graphics from "../api/graphics.js";
 
 const SCREEN_API_PROTO = { "screen": true, "id": 0 };
 const m_screens = {};
@@ -52,7 +53,6 @@ const m_screenCanvasMap = new Map();
 const m_screenDataItems = {};
 const m_screenDataItemGetters = [];
 const m_screenDataInitFunctions = [];
-const m_screenDataResizeFunctions = [];
 const m_screenDataCleanupFunctions = [];
 const MAX_CANVAS_DIMENSION = 8192;
 
@@ -299,7 +299,7 @@ function screen( options ) {
 	m_screens[ screenData.id ] = screenData;
 
 	// Setup WebGL2 renderer
-	setupScreenRenderer( screenData );
+	g_renderer.createContext( screenData )
 
 	// Call init functions for all modules that need initialization
 	for( const fn of m_screenDataInitFunctions ) {
@@ -365,19 +365,6 @@ function setDefaultCanvasOptions( screenData ) {
 	// Make sure container is not blank
 	if( screenData.container.offsetHeight === 0 ) {
 		screenData.container.style.height = "200px";
-	}
-}
-
-function setupScreenRenderer( screenData ) {
-
-	// WebGL2 only - no fallback
-	const webgl2Status = g_renderer.createContext( screenData );
-	
-	// If webgl2 failed, throw error
-	if( !webgl2Status ) {
-		const error = new Error( "screen: Failed to create WebGL2 context. WebGL2 is required." );
-		error.code = "NO_RENDERING_CONTEXT";
-		throw error;
 	}
 }
 
@@ -502,7 +489,13 @@ function setScreen( options ) {
 		error.code = "INVALID_SCREEN";
 		throw error;
 	}
+
+	const previousScreenId = m_activeScreenData.id;
 	m_activeScreenData = m_screens[ screenId ];
+
+	if( previousScreenId !== m_activeScreenData.id  ) {
+		g_graphics.buildApi( m_activeScreenData );
+	}
 }
 
 function getScreen( options ) {

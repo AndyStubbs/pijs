@@ -200,8 +200,6 @@ function setColor( screenData, options ) {
 
 	// Update the color values
 	g_utils.setColor( colorValue, screenData.color );
-
-	return true;
 }
 
 function getColor( screenData, options ) {
@@ -318,9 +316,6 @@ function getPalIndex( screenData, options ) {
 	}
 
 	const index = findColorIndexByColorValue( screenData, colorValue, tolerance );
-	if( index === null ) {
-		return false;
-	}
 	return index;
 }
 

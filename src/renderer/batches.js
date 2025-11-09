@@ -361,8 +361,6 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
 		);
 		resizeBatch( batch, newCapacity );
 	}
-
-	return true;
 }
 
 /**
