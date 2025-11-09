@@ -18,7 +18,7 @@
 				margin: 0;
 				padding: 10px;
 				width: 800px;
-				height: 600px;
+				height: 800px;
 			}
 			.container {
 				display: inline-block;
@@ -31,6 +31,10 @@
 			}
 			.container.wide {
 				width: 320px;
+			}
+			.container.big {
+				width: 200px;
+				height: 150px;
 			}
 			#removed-indicator {
 				font-weight: bold;
@@ -46,12 +50,11 @@
 	<div class="container" id="c3"></div>
 	<div class="container" id="c4"></div>
 	<div class="container" id="c5"></div>
+	<div  class="container" id="removed-indicator"></div>
 	<div class="container" id="c6"></div>
 	<div class="container" id="c7"></div>
-	<div  class="container" id="removed-indicator"></div>
 	<div class="container" id="c8"></div>
 	<div class="container" id="c9"></div>
-	<div class="container" id="c10"></div>
 <script>
 	$.ready( function () {
 
@@ -73,29 +76,10 @@
 			$.print( "Failed" );
 		}
 
-		// Test 2: 4:3 aspect ratio (: format)
+		// Test 2: 70m60 exact multiples (m format)
 		const s2 = $.screen( {
-			"aspect": "4:3",
-			"container": document.getElementById( "c2" )
-		} );
-		$.setColor( 7 );
-		$.setFont( 1 );
-		$.print( "4:3 ratio" );
-		$.print( "w=" + $.width() + " h=" + $.height() );
-		$.circle( $.width() / 2, $.height() / 2, 20 );
-		const ratio = ( $.width() / $.height() ).toFixed( 2 );
-		if( ratio === ( 4 / 3 ).toFixed( 2 ) ) {
-			$.setColor( 2 );
-			$.print( "4:3 ratio success!" );
-		} else {
-			$.setColor( 4 );
-			$.print( "4:3 ratio failed" );
-		}
-
-		// Test 3: 70m60 exact multiples (m format)
-		const s3 = $.screen( {
 			"aspect": "70m60",
-			"container": document.getElementById( "c3" )
+			"container": document.getElementById( "c2" )
 		} );
 		$.setColor( 11 );
 		$.setFont( 1 );
@@ -111,19 +95,19 @@
 			$.print( "Failed" );
 		}
 
-		// Test 4: 50e50 extend (e format)
-		const c4 = document.getElementById( "c4" );
-		const s4 = $.screen( {
+		// Test 3: 50e50 extend (e format)
+		const c3 = document.getElementById( "c3" );
+		const s3 = $.screen( {
 			"aspect": "50e50",
-			"container": c4
+			"container": c3
 		} );
 		$.setColor( 14 );
 		$.setFont( 1 );
 		$.print( "50e50 extend" );
 		$.print( "w=" + $.width() + " h=" + $.height() );
 		$.rect( 0, 0, $.width() - 1, $.height() - 1 );
-		const pw = c4.offsetWidth / $.width();
-		const ph = c4.offsetHeight / $.height();
+		const pw = c3.offsetWidth / $.width();
+		const ph = c3.offsetHeight / $.height();
 		$.print( `PW: ${pw} PH: ${ph}` );
 
 		// Check if pixels are integers
@@ -135,27 +119,7 @@
 			$.print( "Failed" );
 		}
 
-		// Test 5: noStyles option
-		const c5 = document.getElementById( "c5" );
-		const s5 = $.screen( {
-			"aspect": "160x120",
-			"container": c5,
-			"noStyles": true
-		} );
-		$.setColor( 10 );
-		$.setFont( 1 );
-		$.print( "noStyles" );
-		$.print( "w=" + $.width() + " h=" + $.height() );
-		$.pset( 80, 60 );
-		if( c5.offsetWidth === $.width() && c5.offsetHeight === $.height() ) {
-			$.setColor( 2 );
-			$.print( "Success!" );
-		} else {
-			$.setColor( 4 );
-			$.print( "Failed" );
-		}
-
-		// Test 6: Offscreen canvas - draw to it then display
+		// Test 4: Offscreen canvas - draw to it then display
 		const offscreen = $.screen( {
 			"aspect": "80x60",
 			"isOffscreen": true
@@ -165,10 +129,10 @@
 		$.print( "Offscreen" );
 		$.circle( 40, 30, 25 );
 
-		// Test 6: Display offscreen canvas
-		const s6 = $.screen( {
+		// Test 4: Display offscreen canvas
+		const s4 = $.screen( {
 			"aspect": "160x120",
-			"container": document.getElementById( "c6" )
+			"container": document.getElementById( "c4" )
 		} );
 		$.setColor( 15 );
 		$.setFont( 1 );
@@ -177,16 +141,15 @@
 		offscreen.print( "Updated!" );
 		$.drawImage( offscreen, 80, 20 );
 
-		// Test 7: Create screen to be removed
+		// Test 5: Create screen to be removed
 		const toRemove = $.screen( {
 			"aspect": "160x120",
-			"container": document.getElementById( "c7" )
+			"container": document.getElementById( "c5" )
 		} );
 		$.setColor( 8 );
 		$.setFont( 1 );
 		$.print( "Will be removed" );
 		$.rect( 10, 10, 140, 100 );
-		
 
 		// Test removeScreen() and verify it throws errors after removal
 		const divRemoved = document.getElementById( "removed-indicator" );
@@ -202,67 +165,76 @@
 		}
 
 		// Test setScreen() and getScreen()
-		const s8 = $.screen( {
+		const s6 = $.screen( {
 			"aspect": "160x120",
-			"container": document.getElementById( "c8" )
+			"container": document.getElementById( "c6" )
 		} );
 		$.setColor( 2 );
 		$.setFont( 1 );
 		$.print( "setScreen test" );
-		const s7id = s8.id;
-		
+		const s6id = s6.id;
 
 		// Switch to s1 and back using setScreen
 		$.setScreen( s1 );
 		$.print( "Switched To Screen Success" );
-		$.setScreen( s8 );
+		$.setScreen( s6id );
 		$.print( "Switched back success" );
 		
 
-		// Test 9: Test getScreen()
-		const s9 = $.screen( {
+		// Test 7: Test getScreen()
+		const s7 = $.screen( {
 			"aspect": "160x120",
-			"container": document.getElementById( "c9" )
+			"container": document.getElementById( "c7" )
 		} );
 
 		$.setScreen( 0 );
-		const retrievedScreen = $.getScreen( s9.id );
+		const retrievedScreen = $.getScreen( s7.id );
 		retrievedScreen.setColor( 6 );
 		retrievedScreen.setFont( 1 );
 		retrievedScreen.print( "getScreen test" );
-		retrievedScreen.print( "id=" + s9.id );
+		retrievedScreen.print( "id=" + s7.id );
 		
-		// Test 10: create 2 screens in a container and resize them
+		// Test 8: create 2 screens in a container and resize them
 		const resizeFn = ( screen, fromSize, toSize ) => {
 			const fromDim = `${fromSize.width}x${fromSize.height}`;
 			const toDim = `${toSize.width}x${toSize.height}`;
 			let screenNum;
-			if( screen === s10 ) {
+			if( screen === s8 ) {
 				screen.setPos( 0, 1 );
 				screenNum = 1;
-			} else if ( screen === s11 ) {
+			} else if ( screen === s9 ) {
 				screen.setPos( 0, 5 );
 				screenNum = 2;
 			}
 			screen.setColor( 2 );
 			screen.print( `Screen ${screenNum} resized from ${fromDim} to ${toDim}` );
 		};
-		const s10 = $.screen( {
-			"aspect": "320x120",
-			"container": document.getElementById( "c10" ),
+		const s8 = $.screen( {
+			"aspect": "160x60",
+			"container": document.getElementById( "c8" ),
 			"resizeCallback": resizeFn
 		} );
-		s10.print( "Test 10: Screen 10" );
-		const s11 = $.screen( {
-			"aspect": "320x120",
-			"container": document.getElementById( "c10" ),
+		s8.print( "Test 8: Screen 8" );
+		const s9 = $.screen( {
+			"aspect": "160x60",
+			"container": document.getElementById( "c8" ),
 			"resizeCallback": resizeFn
 		} );
-		s11.setBgColor( "#00000000" );
-		s11.print( "\n\n\n" );
-		s11.print( "Test 10: Screen 11" );
-		s11.canvas().parentElement.classList.add( "wide" );
+		s9.setBgColor( "#00000000" );
+		s9.print( "\n\n\n" );
+		s9.print( "Test 8: Screen 9" );
+		s9.canvas().parentElement.classList.add( "wide" );
 
+
+		// Test 10: Resize a non-fixed aspect like "70e50"
+		const c9Resized = ( screen ) => {
+			screen.setColor( 2 );
+			screen.print( "Screen Resized" );
+		};
+		const c9 = document.getElementById( "c9" );
+		const s10 = $.screen( { "aspect": "80e80", "container": c9, "resizeCallback": c9Resized } );
+		s10.print( "Test 10: Resize 80e80" );
+		c9.classList.add( "big" );
 	} );
 </script>
 </body>

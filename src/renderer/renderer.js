@@ -52,7 +52,9 @@ export {
 } from "./textures.js";
 
 // Re-export readback functions
-export { readPixel, readPixelAsync, readPixels, readPixelsAsync, readPixelsRaw } from "./readback.js";
+export {
+	readPixel, readPixelAsync, readPixels, readPixelsAsync, readPixelsRaw
+} from "./readback.js";
 
 
 /***************************************************************************************************
@@ -239,4 +241,9 @@ export function blendModeChanged( screenData, previousBlends ) {
 	// Flush existing batch with old blend mode
 	g_batches.flushBatches( screenData, previousBlends );
 	g_batches.displayToCanvas( screenData );
+}
+
+export function resizeScreen( screenData ) {
+	g_batches.flushBatches( screenData );
+	
 }

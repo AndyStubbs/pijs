@@ -119,10 +119,7 @@ function registerCommands() {
 
 	// Global commands
 	g_commands.addCommand(
-		"screen",
-		screen,
-		false,
-		[ "aspect", "container", "isOffscreen", "isNoStyles", "resizeCallback" ]
+		"screen", screen, false, [ "aspect", "container", "isOffscreen", "resizeCallback" ]
 	);
 	g_commands.addCommand( "setScreen", setScreen, false, [ "screen" ] );
 	g_commands.addCommand( "getScreen", getScreen, false, [ "screenId" ] );
@@ -144,10 +141,6 @@ export function addScreenDataItemGetter( name, fn ) {
 
 export function addScreenInitFunction( fn ) {
 	m_screenDataInitFunctions.push( fn );
-}
-
-export function addScreenResizeFunction( fn ) {
-	m_screenDataResizeFunctions.push( fn );
 }
 
 export function addScreenCleanupFunction( fn ) {
@@ -195,10 +188,16 @@ function screen( options ) {
 		throw error;
 	}
 
+	// Validate aspect - "Now Required"
+	if( typeof options.aspect !== "string" || options.aspect === "" ) {
+		const error = new Error( "screen: Parameter aspect must be a non-empty string." );
+		error.code = "INVALID_ASPECT";
+		throw error;
+	}
+
 	const screenData = {
 		"id": m_nextScreenId,
 		"isOffscreen": !!options.isOffscreen,
-		"isNoStyles": !!options.isNoStyles,
 		"resizeCallback": options.resizeCallback,
 		"api": Object.create( SCREEN_API_PROTO ),
 		"canvas": null,
@@ -223,44 +222,24 @@ function screen( options ) {
 	// Increment to the next screen id
 	m_nextScreenId += 1;
 
-	if( !options.aspect ) {
-		screenData.aspectData = {
-			"width": null,
-			"height": null,
-			"splitter": "",
-			"isFixedSize": false
-		};
-	}
-
 	// Parse aspect ratio
-	if( typeof options.aspect === "string" && options.aspect !== "" ) {
-		screenData.aspectData = parseAspect( options.aspect.toLowerCase() );
-		if( !screenData.aspectData ) {
-			const error = new Error( "screen: Parameter aspect is not valid." );
-			error.code = "INVALID_ASPECT";
-			throw error;
-		}
-
-		// If it's not a ratio validate the dimensions
-		if( screenData.aspectData.splitter !== ":" ) {
-			validateDimensions( screenData.aspectData.width, screenData.aspectData.height );
-		}
+	screenData.aspectData = parseAspect( options.aspect.toLowerCase() );
+	if( !screenData.aspectData ) {
+		const error = new Error( "screen: Parameter aspect is not valid." );
+		error.code = "INVALID_ASPECT";
+		throw error;
 	}
+
+	// If it's not a ratio validate the dimensions
+	validateDimensions( screenData.aspectData.width, screenData.aspectData.height );
 
 	// Create the canvas
 	screenData.canvas = document.createElement( "canvas" );
+	screenData.canvas.dataset.screenId = screenData.id;
 	m_screenCanvasMap.set( screenData.canvas, screenData );
 
 	// Setup options for offscreen canvas
 	if( screenData.isOffscreen ) {
-		if( !screenData.aspectData ) {
-			const error = new Error(
-				"screen: You must supply an aspect ratio with exact dimensions " +
-				"for offscreen screens."
-			);
-			error.code = "NO_ASPECT_OFFSCREEN";
-			throw error;
-		}
 		if( screenData.aspectData.splitter !== "x" ) {
 			const error = new Error(
 				"screen: You must use aspect ratio with e(x)act pixel dimensions for offscreen " +
@@ -295,10 +274,8 @@ function screen( options ) {
 			throw error;
 		}
 
-		// Create a no style canvas or default canvas
-		if( !screenData.isNoStyles ) {
-			setDefaultCanvasOptions( screenData );
-		}
+		// Create a default canvas
+		setDefaultCanvasOptions( screenData );
 
 		// Append the canvas to the container
 		screenData.container.appendChild( screenData.canvas );
@@ -333,8 +310,7 @@ function screen( options ) {
 }
 
 function parseAspect( aspect ) {
-
-	const match = aspect.replaceAll( " ", "" ).match( /^(\d+(?:\.\d+)?)(:|x|e|m)(\d+(?:\.\d+)?)$/ );
+	const match = aspect.replaceAll( " ", "" ).match( /^(\d+)(x|e|m)(\d+)$/ );
 	if( !match ) {
 		return null;
 	}
@@ -351,7 +327,7 @@ function parseAspect( aspect ) {
 		"width": width,
 		"height": height,
 		"splitter": splitter,
-		"isFixedSize": splitter === "m" || splitter === "x"
+		"isFixedSize": splitter !== "e"
 	};
 }
 
@@ -360,7 +336,6 @@ function setupOffscreenCanvasOptions( screenData ) {
 	screenData.canvas.height = screenData.aspectData.height;
 	screenData.container = null;
 	screenData.isOffscreen = true;
-	screenData.isNoStyles = false;
 	screenData.resizeCallback = null;
 	screenData.previousOffsetSize = null;
 }
@@ -382,6 +357,10 @@ function setDefaultCanvasOptions( screenData ) {
 		screenData.canvas.style.left = "0";
 		screenData.canvas.style.top = "0";
 	}
+
+	// No scrolling within a container as canvases fit to size of container and are meant to 
+	// overlap. If scrolling is required use an outer container that scrolls.
+	screenData.container.style.overflow = "hidden";
 
 	// Make sure container is not blank
 	if( screenData.container.offsetHeight === 0 ) {
@@ -563,61 +542,23 @@ function canvasCmd( screenData ) {
 function resizeScreen( screenData, isInit ) {
 
 	// Skip if screen is not visible or should not be resized
-	if(
-		screenData.isOffscreen ||
-		screenData.isNoStyles ||
-		screenData.canvas.offsetParent === null
-	) {
+	if( screenData.isOffscreen || screenData.canvas.offsetParent === null ) {
 		return;
 	}
 
 	// Get the previous size (if stored from last time)
 	let fromSize = screenData.previousOffsetSize;
 
-	// If Not 100% canvas size mode
-	if( screenData.aspectData && screenData.aspectData.splitter !== "" ) {
+	// Track previous screenData dimensions for "e"xtend mode
+	const lastScreenWidth = screenData.width;
+	const lastScreenHeight = screenData.height;
 
-		// Update the canvas to the new size
-		const size = getSize( screenData.container );
-		setCanvasSize( screenData, size.width, size.height );
-
-	} else {
-
-		if( screenData.container === document.body ) {
-			screenData.canvas.style.position = "static";
-		}
-
-		// Update canvas to fullscreen absolute pixels
-		screenData.canvas.style.width = "100%";
-		screenData.canvas.style.height = "100%";
-		const size = getSize( screenData.canvas );
-		screenData.canvas.width = Math.min( size.width, MAX_CANVAS_DIMENSION );
-		screenData.canvas.height = Math.min( size.height, MAX_CANVAS_DIMENSION );
-	}
+	// Update the canvas to the new size
+	const size = getSize( screenData.container );
+	setCanvasSize( screenData, size.width, size.height );
 
 	// Resize the client rectangle
 	screenData.clientRect = screenData.canvas.getBoundingClientRect();
-
-	// Set the new screen data size
-	if( screenData.aspectData && screenData.aspectData.isFixedSize ) {
-		screenData.width = screenData.aspectData.width;
-		screenData.height = screenData.aspectData.height;
-	} else {
-
-		// If using ratios or full 100% size then set screenData to css size
-		if(
-			!screenData.aspectData ||
-			screenData.aspectData.splitter === "" ||
-			screenData.aspectData.splitter === ":"
-		) {
-			screenData.width = screenData.canvas.width;
-			screenData.height = screenData.canvas.height;
-		} else {
-
-			// Extend mode
-			// TODO: Figure out what to put here if anything
-		}
-	}
 
 	// Get the new size after resize
 	const toSize = {
@@ -627,14 +568,9 @@ function resizeScreen( screenData, isInit ) {
 
 	if( !isInit ) {
 
-		// TODO: Let the renderer adjust to the new size
-		// if( g_renderer ) {
-		// 	g_renderer.handleResize( screenData, fromSize, toSize );
-		// }
-
-		// Call resize functions for all modules that need special handling on resize
-		for( const fn of m_screenDataResizeFunctions ) {
-			fn( screenData );
+		// Handle "e"xtend mode resize the renderer
+		if( lastScreenWidth !== screenData.width || lastScreenHeight !== screenData.height ) {
+			g_renderer.resizeScreen( screenData, false );
 		}
 	}
 	
@@ -653,7 +589,6 @@ function resizeScreen( screenData, isInit ) {
 }
 
 function setCanvasSize( screenData, maxWidth, maxHeight ) {
-
 	const aspectData = screenData.aspectData;
 	const canvas = screenData.canvas;
 	let width = aspectData.width;
@@ -678,10 +613,6 @@ function setCanvasSize( screenData, maxWidth, maxHeight ) {
 			height = Math.floor( maxHeight / factor );
 			newCssWidth = width * factor;
 			newCssHeight = height * factor;
-
-			// Set screen data width/height here
-			screenData.width = width;
-			screenData.height = height;
 		}
 	} else {
 
@@ -700,6 +631,10 @@ function setCanvasSize( screenData, maxWidth, maxHeight ) {
 		}
 	}
 
+	// Set screen data width/height
+	screenData.width = width;
+	screenData.height = height;
+
 	// Set the size
 	canvas.style.width = Math.floor( newCssWidth ) + "px";
 	canvas.style.height = Math.floor( newCssHeight ) + "px";
@@ -709,15 +644,11 @@ function setCanvasSize( screenData, maxWidth, maxHeight ) {
 	canvas.style.marginTop = Math.floor( ( maxHeight - newCssHeight ) / 2 ) + "px";
 
 	// Set the actual canvas pixel dimensions
-	if( splitter !== ":" ) {
-		canvas.width = Math.min( width, MAX_CANVAS_DIMENSION );
-		canvas.height = Math.min( height, MAX_CANVAS_DIMENSION );
-	} else {
-
-		// For ratio mode, set to CSS size
-		canvas.width = Math.min( Math.floor( newCssWidth ), MAX_CANVAS_DIMENSION );
-		canvas.height = Math.min( Math.floor( newCssHeight ), MAX_CANVAS_DIMENSION );
-	}
+	// TODO: Change size to css size and use custom upscaling - needs testing
+	// canvas.width = Math.min( Math.floor( newCssWidth ), MAX_CANVAS_DIMENSION );
+	// canvas.height = Math.min( Math.floor( newCssHeight ), MAX_CANVAS_DIMENSION );
+	canvas.width = Math.min( width, MAX_CANVAS_DIMENSION );
+	canvas.height = Math.min( height, MAX_CANVAS_DIMENSION );
 }
 
 function getSize( element ) {
