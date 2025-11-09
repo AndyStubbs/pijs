@@ -17,10 +17,6 @@ const PI_VERSIONS = {
 		"path": "../../build/pi.js",
 		"menuName": "2.0.0-alpha.3 (Current Build)"
 	},
-	"2.0.0-alpha.2": {
-		"path": "../../releases/pi-2.0.0-alpha.2/pi.js",
-		"menuName": "2.0.0-alpha.2"
-	},
 	"2.0.0-alpha.1": {
 		"path": "../../releases/pi-2.0.0-alpha.1/pi.js",
 		"menuName": "2.0.0-alpha.1"
@@ -38,7 +34,7 @@ const PI_VERSIONS = {
 // App-level state for display positioning
 let m_centerPosY = 0;
 let m_reducedFlashing = false;
-let m_piVersion = localStorage.getItem( "piVersion" ) || "2.0.0-alpha.1";
+let m_piVersion = localStorage.getItem( "piVersion" ) || "1.2.4";
 
 /**
  * Adds a DOM keydown listener that matches the specified key.

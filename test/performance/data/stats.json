@@ -1,9 +1,16 @@
 [
   {
-    "filename": "results-2025-10-24_08-50-PM.json",
-    "version": "2.0.0-alpha.1",
-    "date": "10/24/2025, 8:50:35 PM",
+    "filename": "results-2025-11-09_02-42-PM.json",
+    "version": "2.0.0-alpha.3",
+    "date": "11/9/2025, 2:42:03 PM",
     "targetFps": 99.98,
-    "score": 5981
+    "score": 22643
+  },
+  {
+    "filename": "results-2025-11-09_04-53-PM.json",
+    "version": "2.0.0-alpha.3",
+    "date": "11/9/2025, 4:53:05 PM",
+    "targetFps": 99.98,
+    "score": 20168
   }
 ]

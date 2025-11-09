@@ -16,40 +16,58 @@ let m_imageNames = [];
 let m_loadedSprites = [];
 let m_spriteNames = [];
 let m_imagesLoaded = false;
+let m_useSprites = false;
+let m_useAlpha = false;
 
 /**
  * Gets the images test configuration object
  * 
  * @returns {Object} Test configuration
  */
-export function getConfig() {
+export function getConfig( useSprites, useAlpha ) {
+	const exludeVersions = [];
+	let name = "";
+	if( useSprites ) {
+		if( useAlpha ) {
+			name = "Sprites Alpha Test";
+		} else {
+			name = "Sprites Test";
+		}
+		exludeVersions.push( "1.2.4" );
+	} else {
+		if( useAlpha ) {
+			name = "Images Alpha Test";
+		} else {
+			name = "Images Test";
+		}
+	}
 	return {
-		"name": "Images Test",
+		"name": name,
 		"run": run,
 		"init": init,
 		"cleanUp": cleanUp,
 		"itemCountStart": 200,
-		"itemFactor": 10
+		"itemFactor": 10,
+		"exludeVersions": exludeVersions,
+		"useSprites": useSprites,
+		"useAlpha": useAlpha
 	};
 }
+
 
 /**
  * Initializes the images test and loads images from media folder
  * 
  * @returns {Promise<void>}
  */
-async function init() {
+async function init( config ) {
 	
+	m_useSprites =config.useSprites;
+	m_useAlpha = config.useAlpha;
+
 	// Set up random seed for consistent test results
 	m_seededRandom = new Math.seedrandom( "images", true );
-	
 	m_pal = $.getPal();
-	
-	// Only load images once
-	if( !m_imagesLoaded ) {
-		await loadImages();
-		m_imagesLoaded = true;
-	}
 	
 	generateOperationList();
 }
@@ -60,7 +78,7 @@ async function init() {
  * 
  * @returns {Promise<void>}
  */
-async function loadImages() {
+export function loadImages() {
 	m_loadedImages = [];
 	m_imageNames = [];
 	m_loadedSprites = [];
@@ -69,10 +87,17 @@ async function loadImages() {
 	// List of image files from the media folder
 	const imageFiles = [
 		"spaceship_0.png",
-		//"squares.png",
-		//"circle_01.png",
-		//"draw_02.png",
-		//"arc_02.png",
+		"bat_image.png",
+		"bomb.png",
+		"cat_image.png",
+		"cherry_image.png",
+		"dog_image.png",
+		"parrot_image.png",
+		"pirate_image.png",
+		"pirate-sword_image.png",
+		"scorpian_image.png",
+		"shark_image.png",
+		"treasure_image.png"
 	];
 	
 	// Load each image
@@ -100,6 +125,16 @@ async function loadImages() {
 		{ "file": "gnsh-bitmapfont-colour2.png", "width": 5, "height": 12, "margin": 0 },
 		{ "file": "thief.png" },
 		{ "file": "Fruits.png" },
+		{ "file": "shark_sprite.png" },
+		{ "file": "pirate_sprite.png" },
+		{ "file": "scorpian_sprite.png" },
+		{ "file": "parrot_sprite.png" },
+		{ "file": "pirate-sword_sprite.png" },
+		{ "file": "monkey_sprite.png" },
+		{ "file": "dog_sprite.png" },
+		{ "file": "bat_sprite.png" },
+		{ "file": "cat_sprite.png" },
+		{ "file": "bomb_sprite.png" },
 	];
 	
 	for( let i = 0; i < spritesheetFiles.length; i++ ) {
@@ -125,9 +160,6 @@ async function loadImages() {
 	
 	console.log( `Total images loaded: ${m_imageNames.length}` );
 	console.log( `Total sprites loaded: ${m_spriteNames.length}` );
-	
-	// Wait for all images and sprites to load
-	await $.ready();
 }
 
 /**
@@ -157,7 +189,7 @@ function generateRandomOperation() {
 		"name": "name",
 		"x": "x",
 		"y": "y",
-		"color": "color",
+		"alpha": "alpha",
 		"anchorX": "anchorX",
 		"anchorY": "anchorY",
 		"angle": "angle",
@@ -168,11 +200,12 @@ function generateRandomOperation() {
 	// Update parameter names
 	if( $.version === "2.0.0-alpha.3" ) {
 		parameterNames.name = "image";
+		parameterNames.alpha = "color";
 	}
 
 	// Choose between image and sprite operation
-	const useSprite = m_spriteNames.length > 0 && m_seededRandom() > 0.5;
-	
+	//const useSprite = m_spriteNames.length > 0 && m_seededRandom() > 0.5;
+	const useSprite = m_useSprites;
 	if( useSprite ) {
 
 		// Sprite operation
@@ -196,7 +229,10 @@ function generateRandomOperation() {
 		const anchorY = m_seededRandom();
 		
 		// Random alpha (0-1)
-		const alpha = m_seededRandom();
+		let alpha = m_seededRandom() * 255;
+		if( parameterNames.alpha === "color" ) {
+			alpha = [ m_seededRandom() * 255, m_seededRandom() * 255, m_seededRandom() * 255, alpha ];
+		}
 		
 		// Random scale factors (0.1-5.0)
 		const scale = 0.1 + ( m_seededRandom() * 4.9 );
@@ -206,7 +242,6 @@ function generateRandomOperation() {
 		// Randomly decide which optional parameters to include
 		const includeAngle = m_seededRandom() > 0.3;
 		const includeAnchor = m_seededRandom() > 0.4;
-		const includeAlpha = m_seededRandom() > 0.5;
 		const includeScale = m_seededRandom() > 0.2;
 		
 		// Build parameters object for drawSprite
@@ -221,7 +256,7 @@ function generateRandomOperation() {
 			params[ parameterNames.anchorX ] = anchorX;
 			params[ parameterNames.anchorY ] = anchorY;
 		}
-		if( includeAlpha ) {
+		if( m_useAlpha ) {
 			params[ parameterNames.alpha ] = alpha;
 		}
 		if( includeScale ) {
@@ -241,7 +276,6 @@ function generateRandomOperation() {
 				const newAngle = angle + Math.floor( Math.random() * 6 ) - 3;
 				const newAnchorX = Math.max( 0, Math.min( anchorX + ( Math.random() * 0.2 ) - 0.1, 1 ) );
 				const newAnchorY = Math.max( 0, Math.min( anchorY + ( Math.random() * 0.2 ) - 0.1, 1 ) );
-				const newAlpha = Math.max( 0, Math.min( alpha + ( Math.random() * 0.2 ) - 0.1, 1 ) );
 				const newScaleX = Math.max( 0.1, Math.min( scaleX + ( Math.random() * 0.4 ) - 0.2, 3.0 ) );
 				const newScaleY = Math.max( 0.1, Math.min( scaleY + ( Math.random() * 0.4 ) - 0.2, 3.0 ) );
 				
@@ -259,7 +293,9 @@ function generateRandomOperation() {
 					newParams[ parameterNames.anchorX ] = newAnchorX;
 					newParams[ parameterNames.anchorY ] = newAnchorY;
 				}
-				if( includeAlpha ) newParams.alpha = newAlpha;
+				if( m_useAlpha ) {
+					newParams.alpha = alpha;
+				}
 				if( includeScale ) {
 					newParams[ parameterNames.scaleX ] = newScaleX;
 					newParams[ parameterNames.scaleY ] = newScaleY;
@@ -285,15 +321,17 @@ function generateRandomOperation() {
 		const anchorY = m_seededRandom();
 		
 		// Random alpha (0-1)
-		const alpha = m_seededRandom();
-		
+		let alpha = m_seededRandom() * 255;
+		if( parameterNames.alpha === "color" ) {
+			alpha = [ m_seededRandom() * 255, m_seededRandom() * 255, m_seededRandom() * 255, alpha ];
+		}
+
 		// Random scale factors (0.1-2.0)
 		const scale = 0.1 + ( m_seededRandom() * 1.9 );
 		
 		// Randomly decide which optional parameters to include
 		const includeAngle = m_seededRandom() > 0.3;
 		const includeAnchor = m_seededRandom() > 0.4;
-		const includeAlpha = m_seededRandom() > 0.5;
 		const includeScale = m_seededRandom() > 0.2;
 		
 		// Build parameters object for drawImage
@@ -305,12 +343,12 @@ function generateRandomOperation() {
 		if( includeAngle ) {
 			params[ parameterNames.angle ] = angle;
 		}
+		if( m_useAlpha ) {
+			params[ parameterNames.alpha ] = alpha;
+		}
 		if( includeAnchor ) {
 			params[ parameterNames.anchorX ] = anchorX;
 			params[ parameterNames.anchorY ] = anchorY;
-		}
-		if( includeAlpha ) {
-			params.alpha = alpha;
 		}
 		if( includeScale ) {
 			params[ parameterNames.scaleX ] = scale;
@@ -326,7 +364,6 @@ function generateRandomOperation() {
 				const newAngle = angle + Math.floor( Math.random() * 6 ) - 3;
 				const newAnchorX = Math.max( 0, Math.min( anchorX + ( Math.random() * 0.2 ) - 0.1, 1 ) );
 				const newAnchorY = Math.max( 0, Math.min( anchorY + ( Math.random() * 0.2 ) - 0.1, 1 ) );
-				const newAlpha = Math.max( 0, Math.min( alpha + ( Math.random() * 0.2 ) - 0.1, 1 ) );
 				const newScaleX = Math.max( 0.1, Math.min( scale + ( Math.random() * 0.4 ) - 0.2, 3.0 ) );
 				const newScaleY = Math.max( 0.1, Math.min( scale + ( Math.random() * 0.4 ) - 0.2, 3.0 ) );
 				
@@ -343,8 +380,8 @@ function generateRandomOperation() {
 					newParams[ parameterNames.anchorX ] = newAnchorX;
 					newParams[ parameterNames.anchorY ] = newAnchorY;
 				}
-				if( includeAlpha ) {
-					newParams[ parameterNames.alpha ] = newAlpha;
+				if( m_useAlpha ) {
+					newParams[ parameterNames.alpha ] = alpha;
 				}
 				if( includeScale ) {
 					newParams[ parameterNames.scaleX ] = newScaleX;
@@ -375,7 +412,7 @@ function cleanUp() {
  */
 function run( itemCount ) {
 	$.cls();
-	
+
 	for( let i = 0; i < itemCount; i++ ) {
 
 		// Cycle through the pre-generated operations

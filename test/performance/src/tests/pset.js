@@ -24,7 +24,8 @@ export function getConfig() {
 		"init": init,
 		"cleanUp": cleanUp,
 		"itemCountStart": 30000,
-		"itemFactor": 100
+		"itemFactor": 100,
+		"exludeVersions": []
 	};
 }
 

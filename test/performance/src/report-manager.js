@@ -116,14 +116,11 @@ function showResults( resultsObject ) {
 	
 	// Compact summary table - one line of data
 	const dateTime = new Date( date ).toLocaleString();
-	const completedTests = results.filter( r => r.status === "complete" ).length;
-	
 	const summaryData = [
 		[ 
 			`${dateTime}`,
 			`${version}`,
-			`Score: ${score}`,
-			`Completed: ${completedTests} of ${results.length}`,
+			`Score: ${score}`
 		]
 	];
 	
@@ -139,7 +136,7 @@ function showResults( resultsObject ) {
 	// Create results table data
 	let namePadding = "------------------------".length;
 	const resultsData = [ [
-		"Test Name".padEnd( namePadding ), "Status", "Score", "Items/Frame", "Items/Sec", "Duration"
+		"Test Name".padEnd( namePadding ), "Score", "Avg FPS", "Items/Frame", "Items/Sec", "Duration"
 	] ];
 	const menuOptionsData = [];
 
@@ -147,8 +144,8 @@ function showResults( resultsObject ) {
 	for( const result of results ) {
 		resultsData.push( [
 			result.name.padEnd( namePadding, " " ),
-			result.status,
 			result.score || 0,
+			result.avgFps,
 			Math.round( result.itemCountAvg ).toString(),
 			Math.round( result.itemCountPerSecond ).toString(),
 			Math.round( result.testTime / 1000 ).toString() + "s"

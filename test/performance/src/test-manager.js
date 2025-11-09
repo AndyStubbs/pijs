@@ -6,6 +6,7 @@
  * @module test-manager
  */
 
+const TEST_DURATION = 30000;
 
 export { init, startTests, getTargetFps, calculateTargetFPS };
 
@@ -14,7 +15,7 @@ export { init, startTests, getTargetFps, calculateTargetFPS };
 // Import all available tests
 import * as g_psetTest from "./tests/pset.js";
 import * as g_lineTest from "./tests/line.js";
-import * as g_graphicsPixelTest from "./tests/graphicsPixel.js";
+import * as g_graphicsTest from "./tests/graphics.js";
 import * as g_imagesTest from "./tests/images.js";
 import * as g_bezierTest from "./tests/bezier.js";
 import * as g_reportManager from "./report-manager.js";
@@ -25,8 +26,9 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 let m_tests = [];
 m_tests.push( g_psetTest.getConfig() );
 m_tests.push( g_lineTest.getConfig() );
-m_tests.push( g_graphicsPixelTest.getConfig() );
-m_tests.push( g_imagesTest.getConfig() );
+m_tests.push( g_graphicsTest.getConfig() );
+m_tests.push( g_imagesTest.getConfig( true, false ) );
+m_tests.push( g_imagesTest.getConfig( false, true ) );
 m_tests.push( g_bezierTest.getConfig() );
 
 // Global state for the test manager
@@ -44,6 +46,9 @@ let m_api = null;
 async function init( api ) {
 	m_api = api;
 	await calculateTargetFPS();
+	if( g_imagesTest ) {
+		g_imagesTest.loadImages();
+	}
 }
 
 /**
@@ -135,16 +140,7 @@ async function calculateTargetFPS() {
  * @returns {Promise<void>}
  */
 async function runNextTest() {
-	const MIN_WARMUP_TIME = 5000;
-	const MAX_WARMUP_TIME = 15000;
-	const MAX_TIME = 60000;
-	const EXTRA_TIME = 5000;
-	const MAX_INSTABILITY = 0.5;
-	const SLOPE_CALC_SIZE = 35;
-
-	let s_warmupTime = MIN_WARMUP_TIME;
-	let s_warmupRampDownTime = s_warmupTime * 0.8;
-	let s_warmupRampUpTime = s_warmupTime * 0.2;
+	const SAMPLES_COUNT = 500;
 
 	m_testIndex += 1;
 	if( m_testIndex >= m_tests.length ) {
@@ -158,7 +154,7 @@ async function runNextTest() {
 			"tests": m_results,
 			"score": Math.round(
 				m_results.reduce(
-					( score, result ) => score + Math.round( result.itemCountPerSecond / 100 ), 0
+					( score, result ) => score + Math.round( result.score ), 0
 				) / m_results.length
 			)
 		};
@@ -168,17 +164,29 @@ async function runNextTest() {
 	}
 
 	let test = m_tests[ m_testIndex ];
+
+	if( test.exludeVersions.includes( $.version ) ) {
+		m_results.push( {
+			"name": test.name,
+			"avgFps": 0,
+			"itemCountAvg": 0,
+			"itemCountPerSecond": 0,
+			"testTime": 0,
+			"score": 0
+		} );
+		return await runNextTest();
+	}
+
 	let itemCount = test.itemCountStart;
-	let itemFactor = test.itemFactor;
 	let startTime = 0;
 	let lt = 0;
-	let extraTime = 0;
 
 	// Most recent item counts
 	let recentItemCounts = [];
+	let recentFps = [];
 
 	// Initialize the test
-	await test.init();
+	await test.init( test );
 
 	// Start the test loop
 	requestAnimationFrame( loop );
@@ -190,110 +198,81 @@ async function runNextTest() {
 		}
 
 		// Compute Times
-		let dt = t - lt;
-		let fps = calcFpsFromMs( dt );
 		let elapsed = t - startTime;
 
+		if( TEST_DURATION - elapsed <= 0 ) {
+			const itemCountAvg = calcAvg( recentItemCounts );
+			const avgFps = calcAvg( recentFps );
+			let score = Math.round( ( itemCountAvg * avgFps ) / 100 );
+			m_results.push( {
+				"name": test.name,
+				"avgFps": avgFps.toFixed( 2 ),
+				"itemCountAvg": itemCountAvg,
+				"itemCountPerSecond": itemCountAvg * m_targetFps,
+				"testTime": elapsed,
+				"score": score
+			} );
+			
+			// Call the test cleanup
+			test.cleanUp();
+
+			// Run the next test
+			return await runNextTest();
+		}
+
+		let frameStartTime = performance.now();
+		test.run( itemCount, test.data );
+		let frameEndTime = performance.now();
+		let frameDuration = ( frameEndTime - frameStartTime );
+		let currentFps = calcFpsFromMs( frameDuration );
+		
 		// Track the recent frame counts to calculate stability
-		if( recentItemCounts.length >= SLOPE_CALC_SIZE ) {
+		if( recentItemCounts.length >= SAMPLES_COUNT ) {
 			recentItemCounts.shift();
 		}
 		recentItemCounts.push( itemCount );
-		let instability = Math.abs( calcSlope( recentItemCounts ) );
 
-		if( elapsed > s_warmupTime ) {
-
-			// Extend extra time because the calculation are stable
-			if( instability > MAX_INSTABILITY ) {
-				extraTime = elapsed + EXTRA_TIME;
-			}
-
-			if(
-				// If we have reached the MAX_TIME - end test incomplete
-				( elapsed > MAX_TIME ) ||
-
-				// If item count is stable and extra time has been hit then complete the test
-				( instability <= MAX_INSTABILITY && elapsed > extraTime )
-			) {
-				let status = "complete";
-				const itemCountAvg = calcAvg( recentItemCounts );
-				let score = Math.round( ( itemCountAvg * m_targetFps ) / 100 );
-				if( instability > MAX_INSTABILITY ) {
-					status = "incomplete";
-					score = 0;
-				}
-				m_results.push( {
-					"name": test.name,
-					"status": status,
-					"itemCountAvg": itemCountAvg,
-					"itemCountPerSecond": itemCountAvg * m_targetFps,
-					"testTime": elapsed,
-					"score": score
-				} );
-				
-				// Call the test cleanup
-				test.cleanUp();
-
-				// Run the next test
-				return await runNextTest();
-			}
-		} else {
-
-			// Ensure a minimum of extra time after warm up
-			extraTime = elapsed + EXTRA_TIME;
+		// Track the recnet FPS
+		if( recentFps.length >= SAMPLES_COUNT ) {
+			recentFps.shift();
 		}
+		recentFps.push( currentFps );
+		
+		// Adjust item count based on how much we beat target fps
+		if( currentFps > m_targetFps * 1.1 ) {
 
-		if( fps < m_targetFps * 0.95 ) {
+			// Speed up
+			let increment = 1;
+			if( currentFps > m_targetFps * 1.125 ) increment = 5;
+			if( currentFps > m_targetFps * 1.15 ) increment = 15;
+			if( currentFps > m_targetFps * 1.25 ) increment = 25;
+			if( currentFps > m_targetFps * 1.5 )  increment = 50;
+			if( currentFps > m_targetFps * 2 )   increment = 100;
+			if( currentFps > m_targetFps * 3 )   increment = 200;
 
-			if( elapsed > s_warmupTime ) {
-
-				// After warmup time decrement slowly
-				itemCount = Math.max( itemCount - itemFactor, 1 );
-
-				// We have passed the warmup time and have hit a item count maximum
-				if( extraTime === 0 ) {
-					extraTime = elapsed + EXTRA_TIME;
-				}
-			} else {
-
-				// During warmup time decrement quicker
-				let factor = 1;
-				if( elapsed > s_warmupRampDownTime ) {
-					factor = 1;
-				} else if( elapsed > s_warmupRampUpTime ) {
-					factor = 2;
-				} else {
-					factor = 3;
-				}
-
-				// If a big miss decrement even quicker
-				if( fps < m_targetFps * 0.3 ) {
-					itemCount = Math.max( itemCount - ( 25 * factor * itemFactor ), 1 );
-				} else {
-					itemCount = Math.max( itemCount - ( 10 * factor * itemFactor ), 1 );
-				}
+			if( itemCount < 100 ) {
+				increment = 1;
+			} else if( itemCount < 200 ) {
+				increment = Math.min( increment, 50 );
 			}
-		} else {
+			itemCount += increment;
+		} else if( currentFps < m_targetFps ) {
 
-			// Running at framerate
-
-			// During warmup time increment quicker
-			if( elapsed > s_warmupTime ) {
-				itemCount += 1 * itemFactor;
-			} else if( elapsed > s_warmupRampDownTime ) {
-				itemCount += 10 * itemFactor;
-			} else if( elapsed > s_warmupRampUpTime ) {
-				itemCount += 50 * itemFactor;
-			} else {
-				itemCount += 100 * itemFactor;
+			// Slow down
+			let decrement = 1;
+			if( currentFps < m_targetFps * 0.95 ) decrement = 5;
+			if( currentFps < m_targetFps * 0.90 ) decrement = 15;
+			if( currentFps < m_targetFps * 0.85 ) decrement = 25;
+			if( currentFps < m_targetFps * 0.50 )  decrement = 50;
+			if( currentFps < m_targetFps * 0.30 )   decrement = 100;
+			if( currentFps < m_targetFps * 0.20 )   decrement = 200;
+			if( itemCount < 100 ) {
+				decrement = 1;
+			} else if( itemCount < 200 ) {
+				decrement = Math.min( decrement, 50 );
 			}
-
-			s_warmupTime = Math.min( s_warmupTime + 100, MAX_WARMUP_TIME );
-			s_warmupRampDownTime = s_warmupTime * 0.8;
-			s_warmupRampUpTime = s_warmupTime * 0.2;
+			itemCount = Math.max( itemCount - decrement, 1 );
 		}
-
-		test.run( itemCount, test.data );
 
 		//$.cls( 0, 0, 155, 65 );
 		$.setColor( "black" );
@@ -302,13 +281,8 @@ async function runNextTest() {
 		$.setPos( 0, 0 );
 		$.print( "Item Count:  " + itemCount.toFixed( 0 ).padStart( 6, " " ) );
 		$.print( "Target FPS:  " + m_targetFps.toFixed( 0 ).padStart( 6, " " ) );
-		$.print( "FPS:         " + fps.toFixed( 0 ).padStart( 6, " " ) );
-		if( instability !== null ) {
-			if( extraTime === elapsed + EXTRA_TIME ) {
-				$.setColor( 4 );
-			}
-			$.print( "Instability: " + instability.toFixed( 2 ).padStart( 6, " " ) );
-		}
+		$.print( "Frame FPS:   " + currentFps.toFixed( 0 ).padStart( 6, " " ) );
+		$.print( "Test Time:   " + ( ( TEST_DURATION - elapsed ) / 1000 ).toFixed( 2 ).padStart( 6, " " ) );
 
 		lt = t;
 		requestAnimationFrame( loop );
