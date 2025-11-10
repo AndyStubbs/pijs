@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Example Plugin Animation Test (ESM)</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "example_animation_01"
+			name = "Example Plugin Animation Test (ESM)"
+			width = 640
+			height = 360
+			delay = 0
+			[[TOML_END]]
+		</script>
+		<style>
+			html, body {
+				background-color: #222;
+				margin: 0;
+				padding: 10px;
+				font-family: Arial, sans-serif;
+			}
+			#screen-container {
+				display: inline-block;
+				border: 2px solid #666;
+				background-color: #111;
+			}
+			.screen-label {
+				color: white;
+				text-align: center;
+				padding: 5px;
+				font-size: 12px;
+			}
+		</style>
+	</head>
+<body>
+<script src="../../libs/seedrandom.js"></script>
+
+<script type="module">
+
+	// Import Pi.js and the example plugin using ESM
+	import { pi as $ } from "../../../build/pi.esm.min.js";
+	import examplePlugin from "../../../plugins/example-plugin/dist/example-plugin.esm.min.js";
+
+	// Animation state
+	let m_animationFrame = null;
+	let m_circles = [];
+	let m_stars = [];
+
+	const NUM_CIRCLES = 3;
+	const NUM_STARS = 3;
+	const CENTER_X = 320;
+	const CENTER_Y = 180;
+
+	// FPS tracking
+	let m_lastFrameTime = 0;
+	let m_fps = 0;
+	let m_fpsUpdateTime = 0;
+	const m_fpsUpdateInterval = 500;
+	
+	// Initialize Pi.js
+	$.ready( function() {
+		const screen = $.screen( "640x360" );
+
+		// Initialize circles
+		for( let i = 0; i < NUM_CIRCLES; i++ ) {
+			m_circles.push( {
+				"x": Math.random() * 640,
+				"y": Math.random() * 360,
+				"radius": 3 + Math.random() * 10,
+				"speedX": ( Math.random() - 0.5 ) * 2,
+				"speedY": ( Math.random() - 0.5 ) * 2
+			} );
+		}
+
+		// Initialize stars
+		for( let i = 0; i < NUM_STARS; i++ ) {
+			m_stars.push( {
+				"distance": 80 + i * 40,
+				"angle": ( i * Math.PI * 2 ) / NUM_STARS,
+				"points": 5 + i * 2,
+				"radius": 15 + i * 5
+			} );
+		}
+
+		// Display plugin info
+		const info = $.getLibraryInfo();
+		const greeting = $.hello( "Plugin Animation" );
+		console.log( "Plugin Info:", info );
+		console.log( "Greeting:", greeting );
+
+		// Start animation loop
+		animate();
+
+		$.canvas().addEventListener( "mouseup", ( e ) => {
+			const rect = $.canvas().getBoundingClientRect();
+			const clickX = Math.floor( e.offsetX / rect.width * $.width() );
+			const clickY = Math.floor( e.offsetY / rect.height * $.height() );
+			
+			// Track the click
+			$.trackClick( {
+				"x": clickX,
+				"y": clickY
+			} );
+			
+			// Add a new circle at the click location
+			m_circles.push( {
+				"x": clickX,
+				"y": clickY,
+				"radius": 5 + Math.random() * 15,
+				"speedX": ( Math.random() - 0.5 ) * 3,
+				"speedY": ( Math.random() - 0.5 ) * 3
+			} );
+			
+			// Add a new star at the click location
+			// Calculate distance and angle from center to click
+			const dx = clickX - CENTER_X;
+			const dy = clickY - CENTER_Y;
+			const distance = Math.sqrt( dx * dx + dy * dy );
+			const clickAngle = Math.atan2( dy, dx );
+			
+			m_stars.push( {
+				"distance": Math.max( 10, distance ),
+				"angle": clickAngle,
+				"points": 3 + Math.floor( Math.random() * 6 ),
+				"radius": 10 + Math.random() * 20
+			} );
+		} );
+	} );
+
+	// Animation loop
+	function animate() {
+		const currentTime = performance.now();
+		
+		// Initialize timing on first frame
+		if( m_lastFrameTime === 0 ) {
+			m_lastFrameTime = currentTime;
+			m_fpsUpdateTime = currentTime;
+		}
+		
+		const deltaTime = currentTime - m_lastFrameTime;
+		m_lastFrameTime = currentTime;
+
+		// Calculate FPS
+		if( deltaTime > 0 ) {
+			const frameFps = 1000 / deltaTime;
+
+			// Update FPS display periodically to avoid jitter
+			if( currentTime - m_fpsUpdateTime >= m_fpsUpdateInterval ) {
+				m_fps = Math.round( frameFps );
+				m_fpsUpdateTime = currentTime;
+			}
+		}
+
+		Math.seedrandom('constant');
+		
+		// Clear screen
+		$.cls();
+
+		// Update and draw circles
+		for( let i = 0; i < m_circles.length; i++ ) {
+			const circle = m_circles[ i ];
+			
+			// Update position
+			circle.x += circle.speedX;
+			circle.y += circle.speedY;
+
+			// Bounce off walls
+			if( circle.x <= circle.radius || circle.x >= 640 - circle.radius ) {
+				circle.speedX *= -1;
+			}
+			if( circle.y <= circle.radius || circle.y >= 360 - circle.radius ) {
+				circle.speedY *= -1;
+			}
+
+			// Keep in bounds
+			// circle.x = Math.max( circle.radius, Math.min( 640 - circle.radius, circle.x ) );
+			// circle.y = Math.max( circle.radius, Math.min( 360 - circle.radius, circle.y ) );
+
+			// Draw using plugin command (object notation)
+			$.drawRandomCircle( {
+				"x": circle.x,
+				"y": circle.y,
+				"radius": circle.radius
+			} );
+		}
+
+		// Update and draw rotating stars
+		for( let i = 0; i < m_stars.length; i++ ) {
+			const star = m_stars[ i ];
+			star.angle += 0.02;
+			const x = CENTER_X + Math.cos( star.angle ) * star.distance;
+			const y = CENTER_Y + Math.sin( star.angle ) * star.distance;
+			
+			// Draw star using plugin command (object notation)
+			$.setColor( "rgba(255, 255, 255, 200)" );
+			$.star( {
+				"x": x,
+				"y": y,
+				"radius": star.radius,
+				"points": star.points
+			} );
+		}
+
+		// Draw center marker
+		$.setColor( 15 );
+		$.circle( CENTER_X, CENTER_Y, 5 );
+
+		// Display info text
+		$.setColor( 15 );
+		$.setPos( 1, 1 );
+		$.print( "Example Plugin Animation Demo - Click anywhere to track clicks!" );
+		
+		$.setPos( 89, 1 );
+		$.showClicks();
+		
+		$.setPos( 1, 43 );
+		$.print( `Circles: ${m_circles.length} | Stars: ${m_stars.length}` );
+		
+		$.setPos( 1, 44 );
+		const info = $.getLibraryInfo();
+		$.print( `Pi.js v${info.version} | Plugin: ${info.pluginSystem}` );
+		
+		$.setPos( 1, 2 );
+		$.print( `FPS: ${m_fps}` );
+
+		// Continue animation
+		m_animationFrame = requestAnimationFrame( animate );
+	}
+
+	// Cleanup on page unload
+	window.addEventListener( "beforeunload", function() {
+		if( m_animationFrame ) {
+			cancelAnimationFrame( m_animationFrame );
+		}
+	} );
+</script>
+</body>
+</html>
+
