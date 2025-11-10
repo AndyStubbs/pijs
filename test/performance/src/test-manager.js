@@ -12,24 +12,30 @@ export { init, startTests, getTargetFps, calculateTargetFPS };
 
 "use strict";
 
+import * as g_imageLoader from "./image-loader.js";
+
 // Import all available tests
 import * as g_psetTest from "./tests/pset.js";
 import * as g_lineTest from "./tests/line.js";
 import * as g_graphicsTest from "./tests/graphics.js";
 import * as g_imagesTest from "./tests/images.js";
+import * as g_blitImagesTest from "./tests/blit-images.js";
 import * as g_bezierTest from "./tests/bezier.js";
 import * as g_reportManager from "./report-manager.js";
+
 
 const REDUCED_FLASHING_OPACITY = "0.2";
 
 // Get all test config data
 let m_tests = [];
-m_tests.push( g_psetTest.getConfig() );
-m_tests.push( g_lineTest.getConfig() );
-m_tests.push( g_graphicsTest.getConfig() );
-m_tests.push( g_imagesTest.getConfig( true, false ) );
-m_tests.push( g_imagesTest.getConfig( false, true ) );
-m_tests.push( g_bezierTest.getConfig() );
+// m_tests.push( g_psetTest.getConfig() );
+// m_tests.push( g_lineTest.getConfig() );
+// m_tests.push( g_graphicsTest.getConfig() );
+// m_tests.push( g_imagesTest.getConfig( true, false ) );
+m_tests.push( g_blitImagesTest.getConfig( false ) );
+m_tests.push( g_imagesTest.getConfig( false, false ) );
+// m_tests.push( g_imagesTest.getConfig( false, true ) );
+// m_tests.push( g_bezierTest.getConfig() );
 
 // Global state for the test manager
 let m_results = [];
@@ -46,9 +52,7 @@ let m_api = null;
 async function init( api ) {
 	m_api = api;
 	await calculateTargetFPS();
-	if( g_imagesTest ) {
-		g_imagesTest.loadImages();
-	}
+	g_imageLoader.init();
 }
 
 /**
@@ -244,11 +248,11 @@ async function runNextTest() {
 			// Speed up
 			let increment = 1;
 			if( currentFps > m_targetFps * 1.125 ) increment = 5;
-			if( currentFps > m_targetFps * 1.15 ) increment = 15;
-			if( currentFps > m_targetFps * 1.25 ) increment = 25;
-			if( currentFps > m_targetFps * 1.5 )  increment = 50;
-			if( currentFps > m_targetFps * 2 )   increment = 100;
-			if( currentFps > m_targetFps * 3 )   increment = 200;
+			if( currentFps > m_targetFps * 1.15 )  increment = 15;
+			if( currentFps > m_targetFps * 1.25 )  increment = 25;
+			if( currentFps > m_targetFps * 1.5 )   increment = 50;
+			if( currentFps > m_targetFps * 2 )     increment = 100;
+			if( currentFps > m_targetFps * 3 )     increment = 200;
 
 			if( itemCount < 100 ) {
 				increment = 1;
@@ -263,9 +267,9 @@ async function runNextTest() {
 			if( currentFps < m_targetFps * 0.95 ) decrement = 5;
 			if( currentFps < m_targetFps * 0.90 ) decrement = 15;
 			if( currentFps < m_targetFps * 0.85 ) decrement = 25;
-			if( currentFps < m_targetFps * 0.50 )  decrement = 50;
-			if( currentFps < m_targetFps * 0.30 )   decrement = 100;
-			if( currentFps < m_targetFps * 0.20 )   decrement = 200;
+			if( currentFps < m_targetFps * 0.50 ) decrement = 50;
+			if( currentFps < m_targetFps * 0.30 ) decrement = 100;
+			if( currentFps < m_targetFps * 0.20 ) decrement = 200;
 			if( itemCount < 100 ) {
 				decrement = 1;
 			} else if( itemCount < 200 ) {
@@ -276,9 +280,11 @@ async function runNextTest() {
 
 		//$.cls( 0, 0, 155, 65 );
 		$.setColor( "black" );
-		$.rect( 0, 0, 155, 65, "black" );
-		$.setColor( 15 );
+		$.rect( 0, 0, 155, 82, "black" );
+		$.setColor( 14 );
 		$.setPos( 0, 0 );
+		$.print( test.name );
+		$.setColor( 15 );
 		$.print( "Item Count:  " + itemCount.toFixed( 0 ).padStart( 6, " " ) );
 		$.print( "Target FPS:  " + m_targetFps.toFixed( 0 ).padStart( 6, " " ) );
 		$.print( "Frame FPS:   " + currentFps.toFixed( 0 ).padStart( 6, " " ) );
