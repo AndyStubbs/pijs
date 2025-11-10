@@ -4,7 +4,8 @@ Table formatting and printing plugin for Pi.js with customizable borders.
 
 ## Overview
 
-The Print Table plugin provides the `printTable()` command for creating formatted ASCII-style tables with borders. Supports both auto-formatted tables and custom table layouts.
+The Print Table plugin provides the `printTable()` command for creating formatted ASCII-style
+tables with borders. Supports both auto-formatted tables and custom table layouts.
 
 ## Installation
 
