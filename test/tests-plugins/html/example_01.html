@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Example Plugin Test</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "example_01"
+			name = "example 01"
+			width = 320
+			height = 180
+			delay = 0
+			[[TOML_END]]
+		</script>
+		<script src="libs/seedrandom.js"></script>
+		<script src="../../../build/pi.js"></script>
+		<script src="../../../plugins/example-plugin/dist/example-plugin.js"></script>
+		<style>
+			html, body {
+				background-color: #333;
+				margin: 0;
+				padding: 0;
+			}
+		</style>
+	</head>
+<body>
+<script>
+	Math.seedrandom( 1 );
+	const welcome = $.hello( "Example Plugin" );
+	const info = $.getLibraryInfo();
+
+	$.screen( "320x180" );
+	$.ready( function() {
+		
+		// Draw some circles
+		for( let i = 0; i < 30; i += 1 ) {
+			$.drawRandomCircle( getRandomCircle() );
+		}
+
+		// Draw some stars
+		const pal = $.getPal();
+		for( let i = 0; i < 30; i += 1 ) {
+			$.setColor( Math.floor( Math.random() * pal.length ) + 1 );
+			const circle = getRandomCircle();
+			circle.points = getRandomPoints();
+			$.star( circle );
+		}
+
+		// Draw some combos
+		for( let i = 0; i < 15; i += 1 ) {
+			const color = Math.floor( Math.random() * pal.length ) + 1;
+			$.setColor( color );
+			const comboObject = getRandomCircle();
+
+			// First draw the circle
+			$.drawRandomCircle( comboObject );
+
+			// Second draw the star
+			comboObject.radius -= 1;
+			comboObject.points = getRandomPoints();
+			$.star( comboObject );
+
+			// Third fill in the star
+			comboObject.fillColor = color;
+			comboObject.boundryColor = color;
+			$.paint( comboObject );
+		}
+
+		// Track some clicks
+		$.setColor( 8 );
+		for( let i = 0; i < 10; i += 1 ) {
+			const clickLocation = getRandomCircle();
+			$.trackClick( clickLocation.x, clickLocation. y );
+		}
+
+		// Print welcome message
+		$.setColor( 15 );
+		$.print( welcome );
+		$.showClicks();
+		if( info.version !== $.version ) {
+			$.setColor( 4 );
+			$.print( "Test failed" );
+		} else {
+			$.setColor( 2 );
+			$.print( "Test succeeded!" );
+		}
+
+	} );
+
+	function getRandomCircle() {
+		return {
+			"x": Math.floor( Math.random() * ( $.width() - 30 ) ) + 15,
+			"y": Math.floor( Math.random() * ( $.height() - 30 ) ) + 15,
+			"radius": Math.floor( Math.random() * 12 ) + 3
+		};
+	}
+
+	function getRandomPoints() {
+		return Math.floor( Math.random() * 8 ) + 3;
+	}
+</script>
+</body>
+</html>

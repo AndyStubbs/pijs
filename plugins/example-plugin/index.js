@@ -35,8 +35,13 @@ export default function examplePlugin( pluginApi ) {
 		screenData.exampleData = null;
 	} );
 
-	// Add a simple global command
-	pluginApi.addCommand( "hello", hello, [ "name" ] );
+	// Add the commands to the pi.js API
+	pluginApi.addCommand( "hello", hello, false, [ "name" ] );
+	pluginApi.addCommand( "trackClick", trackClick, true, [ "x", "y" ] );
+	pluginApi.addCommand( "showClicks", showClicks, true, [] );
+	pluginApi.addCommand( "getLibraryInfo", getLibraryInfo, false, [] );
+	pluginApi.addCommand( "drawRandomCircle", drawRandomCircle, true, [ "x", "y", "radius" ] );
+	pluginApi.addCommand( "star", star, true, [ "x", "y", "radius", "points" ] );
 
 	/**
 	 * Say hello
@@ -48,12 +53,8 @@ export default function examplePlugin( pluginApi ) {
 	function hello( options ) {
 		const name = options.name || "World";
 		const message = `Hello, ${name}!`;
-		console.log( message );
 		return message;
 	}
-
-	// Add a screen command that uses screen data
-	pluginApi.addScreenCommand( "trackClick", trackClick, [ "x", "y" ] );
 
 	/**
 	 * Track a click on the screen
@@ -68,12 +69,26 @@ export default function examplePlugin( pluginApi ) {
 		screenData.exampleData.clicks++;
 		const x = options.x || 0;
 		const y = options.y || 0;
-		console.log( `Click #${screenData.exampleData.clicks} at (${x}, ${y})` );
+		
+		// Store old cursor position
+		const cursorPx =  screenData.api.getPosPx();
+
+		// Print the word click at the click position
+		screenData.api.setPosPx( x, y );
+		screenData.api.print( "click", true );
+
+		// Restore cursor position
+		screenData.api.setPosPx( cursorPx );
 		return screenData.exampleData.clicks;
 	}
 
-	// Add a command that accesses the main API
-	pluginApi.addCommand( "getLibraryInfo", getLibraryInfo, [] );
+	/**
+	 * Get Pi.js library information
+	 * @param {Object} screenData - Screen data
+	 */
+	function showClicks( screenData ) {
+		screenData.api.print( `Total Clicks: ${screenData.exampleData.clicks}` );
+	}
 
 	/**
 	 * Get Pi.js library information
@@ -88,19 +103,22 @@ export default function examplePlugin( pluginApi ) {
 		};
 	}
 
-	// Add a drawing command that uses utilities
-	pluginApi.addScreenCommand( "drawRandomCircle", drawRandomCircle, [ "x", "y", "radius" ] );
-
 	/**
 	 * Draw a circle with random color
 	 * 
 	 * @param {Object} screenData - Screen data
 	 * @param {Object} options - Command options
+	 * @param {number} options.x - Circle center X coordinate
+	 * @param {number} options.y - Circle center Y coordinate
+	 * @param {number} options.radius - Circle radius
 	 */
 	function drawRandomCircle( screenData, options ) {
 		const x = options.x || 0;
 		const y = options.y || 0;
 		const radius = options.radius || 50;
+
+		// Save current screen color
+		const currentColor = screenData.api.getColor();
 
 		// Use Pi.js utilities to generate random color
 		const utils = pluginApi.utils;
@@ -108,13 +126,51 @@ export default function examplePlugin( pluginApi ) {
 		const g = Math.floor( utils.rndRange( 0, 256 ) );
 		const b = Math.floor( utils.rndRange( 0, 256 ) );
 		const color = utils.rgbToColor( r, g, b, 255 );
+		screenData.api.setColor( color );
 
 		// Draw circle
-		const ctx = screenData.context;
-		ctx.beginPath();
-		ctx.arc( x, y, radius, 0, Math.PI * 2 );
-		ctx.fillStyle = color.s;
-		ctx.fill();
+		screenData.api.circle( x, y, radius, color );
+
+		// Restore current screen color
+		screenData.api.setColor( currentColor );
+	}
+
+	/**
+	 * Draw a star with shape
+	 * 
+	 * @param {Object} screenData - Screen data
+	 * @param {Object} options - Command options
+	 * @param {number} options.x - Star center X coordinate
+	 * @param {number} options.y - Star center Y coordinate
+	 * @param {number} options.radius - Star radius
+	 * @param {number} options.radius - Star number of points
+	 */
+	function star( screenData, options ) {
+		const x = options.x || 0;
+		const y = options.y || 0;
+		const radius = options.radius || 50;
+		const points = options.points || 5;
+		const innerRadius = radius * 0.5;
+		
+		let px0, py0, px1, py1;
+		for( let i = 0; i < points * 2; i++ ) {
+			const r = i % 2 === 0 ? radius : innerRadius;
+			const angle = ( i * Math.PI ) / points;
+			const px2 = x + r * Math.cos( angle - Math.PI / 2 );
+			const py2 = y + r * Math.sin( angle - Math.PI / 2 );
+			
+			if( i === 0 ) {
+				px0 = px2;
+				py0 = py2;
+			} else {
+				screenData.api.line( px1, py1, px2, py2 );
+			}
+			if( i === points * 2 - 1 ) {
+				screenData.api.line( px2, py2, px0, py0 );
+			}
+			px1 = px2;
+			py1 = py2;
+		}
 	}
 }
 
@@ -127,4 +183,3 @@ if( typeof window !== "undefined" && window.pi ) {
 		"init": examplePlugin
 	} );
 }
-

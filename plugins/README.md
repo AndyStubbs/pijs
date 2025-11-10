@@ -433,7 +433,7 @@ function myCommand( options ) {
 export default function drawingTools( pluginApi ) {
 	
 	// Draw a star
-	pluginApi.addScreenCommand( "star", star, [ "x", "y", "radius", "points" ] );
+	pluginApi.addCommand( "star", star, true, [ "x", "y", "radius", "points" ] );
 	
 	function star( screenData, options ) {
 		const x = options.x || 0;
