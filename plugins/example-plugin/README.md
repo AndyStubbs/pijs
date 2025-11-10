@@ -29,7 +29,7 @@ pi.hello();           // "Hello, World!"
 
 ### `trackClick( x, y )`
 
-Tracks clicks on the screen and increments a counter.
+Tracks clicks on the screen and increments a counter. Prints "click" at the specified position.
 
 **Parameters:**
 - `x` (number, optional): Click X coordinate
@@ -41,6 +41,19 @@ Tracks clicks on the screen and increments a counter.
 ```javascript
 pi.trackClick( 100, 200 );  // Click #1 at (100, 200)
 pi.trackClick( 150, 250 );  // Click #2 at (150, 250)
+```
+
+### `showClicks()`
+
+Displays the total number of tracked clicks on the screen.
+
+**Returns:** void
+
+**Example:**
+```javascript
+pi.trackClick( 100, 200 );
+pi.trackClick( 150, 250 );
+pi.showClicks();  // Prints "Total Clicks: 2"
 ```
 
 ### `getLibraryInfo()`
@@ -67,6 +80,22 @@ Draws a circle with a random color.
 **Example:**
 ```javascript
 pi.drawRandomCircle( 200, 150, 75 );
+```
+
+### `star( x, y, radius, points )`
+
+Draws a star shape on the screen.
+
+**Parameters:**
+- `x` (number, optional): Star center X coordinate
+- `y` (number, optional): Star center Y coordinate
+- `radius` (number, optional): Star radius. Defaults to 50.
+- `points` (number, optional): Number of star points. Defaults to 5.
+
+**Example:**
+```javascript
+pi.star( 200, 150, 75, 5 );  // 5-pointed star
+pi.star( 300, 200, 100, 8 ); // 8-pointed star
 ```
 
 ## Usage
