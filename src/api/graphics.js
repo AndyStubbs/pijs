@@ -188,7 +188,7 @@ export function buildApi( s_screenData ) {
 	};
 
 	m_api.circle = circleFn;
-	s_screenData.api.rect = circleFn;
+	s_screenData.api.circle = circleFn;
 
 	/**********************************************************************************************
 	 * Ellipse Command
