@@ -1,0 +1,74 @@
+{
+  "version": "1.2.4",
+  "date": "11/9/2025, 5:05:12 PM",
+  "targetFps": 99.98,
+  "tests": [
+    {
+      "name": "Pset Test",
+      "avgFps": "105.94",
+      "itemCountAvg": 15215.988,
+      "itemCountPerSecond": 1521294.48024,
+      "testTime": 30008.26,
+      "score": 16120
+    },
+    {
+      "name": "Line Test",
+      "avgFps": "106.99",
+      "itemCountAvg": 1079.428,
+      "itemCountPerSecond": 107921.21144000001,
+      "testTime": 30004.700000000004,
+      "score": 1155
+    },
+    {
+      "name": "Graphics Test",
+      "avgFps": "102.30",
+      "itemCountAvg": 31.558,
+      "itemCountPerSecond": 3155.1688400000003,
+      "testTime": 30004.5,
+      "score": 32
+    },
+    {
+      "name": "Sprites Test",
+      "avgFps": 0,
+      "itemCountAvg": 0,
+      "itemCountPerSecond": 0,
+      "testTime": 0,
+      "score": 0
+    },
+    {
+      "name": "Images Alpha Test",
+      "avgFps": "117.77",
+      "itemCountAvg": 3797.846,
+      "itemCountPerSecond": 379708.64308,
+      "testTime": 30034.300000000003,
+      "score": 4473
+    },
+    {
+      "name": "Bezier Test",
+      "avgFps": "110.04",
+      "itemCountAvg": 4.19,
+      "itemCountPerSecond": 418.91620000000006,
+      "testTime": 30004.800000000003,
+      "score": 5
+    }
+  ],
+  "score": 3631,
+  "systemInfo": {
+    "os": {
+      "platform": "win32",
+      "type": "Windows_NT",
+      "release": "10.0.26100",
+      "arch": "x64",
+      "cpus": 16,
+      "cpuModel": "13th Gen Intel(R) Core(TM) i5-13400F",
+      "totalMemory": "32 GB",
+      "freeMemory": "17 GB"
+    },
+    "browser": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+      "language": "en-US,en;q=0.9"
+    },
+    "timestamp": "11/9/2025, 5:05:31 PM"
+  },
+  "posted": true
+}

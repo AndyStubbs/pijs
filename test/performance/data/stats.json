@@ -1,16 +1,30 @@
 [
   {
-    "filename": "results-2025-11-09_02-42-PM.json",
-    "version": "2.0.0-alpha.3",
-    "date": "11/9/2025, 2:42:03 PM",
-    "targetFps": 99.98,
-    "score": 22643
-  },
-  {
     "filename": "results-2025-11-09_04-53-PM.json",
     "version": "2.0.0-alpha.3",
     "date": "11/9/2025, 4:53:05 PM",
     "targetFps": 99.98,
     "score": 20168
+  },
+  {
+    "filename": "results-2025-11-09_04-58-PM.json",
+    "version": "2.0.0-alpha.0",
+    "date": "11/9/2025, 4:58:28 PM",
+    "targetFps": 99.98,
+    "score": 4975
+  },
+  {
+    "filename": "results-2025-11-09_05-02-PM.json",
+    "version": "2.0.0-alpha.1",
+    "date": "11/9/2025, 5:02:09 PM",
+    "targetFps": 99.99,
+    "score": 5052
+  },
+  {
+    "filename": "results-2025-11-09_05-05-PM.json",
+    "version": "1.2.4",
+    "date": "11/9/2025, 5:05:12 PM",
+    "targetFps": 99.98,
+    "score": 3631
   }
 ]
