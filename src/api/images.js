@@ -565,8 +565,7 @@ function loadSpritesheet( options ) {
 }
 
 /**
- * Create an image from a region of the screen (FBO)
- * Defaults to fullscreen if no coordinates are provided
+ * Gets the image by name and returns the DOM element (Image or Canvas).
  * 
  * @param {Object} options - Options
  * @param {string} [options.name] - Optional name for the image

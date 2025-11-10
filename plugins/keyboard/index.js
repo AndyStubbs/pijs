@@ -9,6 +9,8 @@
 
 "use strict";
 
+import { initInput, setPluginApi } from "./input.js";
+
 // Input tags that we don't want to capture
 const INPUT_TAGS = new Set( [ "INPUT", "TEXTAREA", "SELECT", "BUTTON" ] );
 
@@ -29,6 +31,9 @@ let m_isKeyboardActive = false;
 
 export default function keyboardPlugin( pluginApi ) {
 
+	// Set plugin API for input module
+	setPluginApi( pluginApi );
+
 	// Initialize keyboard on plugin load
 	startKeyboard();
 	window.addEventListener( "blur", clearInKeys );
@@ -47,6 +52,9 @@ export default function keyboardPlugin( pluginApi ) {
 	pluginApi.addCommand( "removeActionKeys", removeActionKeys, false, [ "keys" ] );
 	pluginApi.addCommand( "onkey", onkey, false, [ "key", "mode", "fn", "once", "allowRepeat" ] );
 	pluginApi.addCommand( "offkey", offkey, false, [ "key", "mode", "fn", "once", "allowRepeat" ] );
+
+	// Initialize input command
+	initInput( pluginApi );
 
 	// Export clearKeyboardEvents for use by other modules (like events module)
 	// This is done via the plugin API's getApi() method if needed

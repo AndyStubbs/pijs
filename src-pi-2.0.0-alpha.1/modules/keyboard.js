@@ -249,9 +249,6 @@ function offkey( options ) {
 // hitting the backspace. Then If I type in the letter A as the first character I noticed the left
 // side looks like it's getting sliced a little bit. This may be due to the drawing of the cursor
 // and clearing space for the flashing display.
-// FIX: Grabbing the background and drawing the background is a bit messy. I think a better solution
-// would be to draw the input on a separate canvas that is overlaying the current screen canvas.
-// But I don't know. I am refactoring to WebGL so I will address this as part of the refactor.
 screenManager.addCommand(
 	"input", input, [ "prompt", "fn", "cursor", "isNumber", "isInteger", "allowNegative" ]
 );
