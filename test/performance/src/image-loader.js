@@ -35,7 +35,7 @@ export function init() {
 	// Load each image
 	for( let i = 0; i < imageFiles.length; i++ ) {
 		const imageName = `img_${i}`;
-		const imagePath = `/test/media/${imageFiles[i]}`;
+		const imagePath = `../media/${imageFiles[i]}`;
 		
 		try {
 			$.loadImage( imagePath, imageName );
