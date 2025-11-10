@@ -149,6 +149,7 @@ function initializePlugin( pluginInfo ) {
 	// Initialize plugin
 	try {
 		pluginInfo.config.init( pluginApi );
+		g_commands.processCommands( m_api );
 		pluginInfo.initialized = true;
 	} catch( error ) {
 		const pluginError = new Error(

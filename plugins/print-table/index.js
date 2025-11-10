@@ -145,7 +145,6 @@ export default function printTablePlugin( pluginApi ) {
 
 			// Format all the cells
 			for( let col = 0; col < items[ row ].length; col++ ) {
-
 				createBox(
 					( col * ( cellWidth - 1 ) ) + rowPad,
 					( row * 2 ) + startPos.row,

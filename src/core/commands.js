@@ -67,25 +67,33 @@ export function addCommand( name, fn, isScreen, parameterNames, isScreenOptional
 	// Auto-register set commands as settings
 	if( name.startsWith( "set" ) && name !== "set" ) {
 		const settingName = name.substring( 3, 4 ).toLowerCase() + name.substring( 4 );
-		m_settings[ settingName ] = { fn, isScreen, "parameterNames": parameterNames };
+		m_settings[ settingName ] = {
+			fn, isScreen, "parameterNames": parameterNames, isProcessed: false
+		};
 	}
 }
 
 export function processCommands( api ) {
 	for( const command of m_commands ) {
-		const { name, fn, isScreen, parameterNames, isScreenOptional } = command;
-		if( isScreen ) {
-			api[ name ] = ( ...args ) => {
-				const options = g_utils.parseOptions( args, parameterNames );
-				const screenData = g_screenManager.getActiveScreen( name, isScreenOptional );
-				return fn( screenData, options );
-			};
-		} else {
-			api[ name ] = ( ...args ) => {
-				const options = g_utils.parseOptions( args, parameterNames );
-				return fn( options );
-			};
+		if( !command.isProcessed ) {
+			processCommand( api, command );
 		}
+	}
+}
+
+function processCommand( api, command ) {
+	const { name, fn, isScreen, parameterNames, isScreenOptional } = command;
+	if( isScreen ) {
+		api[ name ] = ( ...args ) => {
+			const options = g_utils.parseOptions( args, parameterNames );
+			const screenData = g_screenManager.getActiveScreen( name, isScreenOptional );
+			return fn( screenData, options );
+		};
+	} else {
+		api[ name ] = ( ...args ) => {
+			const options = g_utils.parseOptions( args, parameterNames );
+			return fn( options );
+		};
 	}
 }
 
