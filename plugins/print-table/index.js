@@ -49,9 +49,8 @@ export default function printTablePlugin( pluginApi ) {
 	const utils = pluginApi.utils;
 
 	// Add printTable command
-	pluginApi.addScreenCommand(
-		"printTable",
-		printTable,
+	pluginApi.addCommand(
+		"printTable", printTable, true,
 		[ "items", "tableFormat", "borderStyle", "isCentered" ]
 	);
 
@@ -112,7 +111,7 @@ export default function printTablePlugin( pluginApi ) {
 		if( isFormatted ) {
 			return buildFormattedTable( screenData, items, borderStyle, tableFormat, isCentered );
 		} else {
-			const width = getCols( screenData );
+			const width = m_getCols( screenData );
 			return buildStandardTable( screenData, items, width, borderStyle );
 		}
 	}
@@ -128,7 +127,7 @@ export default function printTablePlugin( pluginApi ) {
 		let msg = "";
 		const boxes = [];
 		const font = screenData.font;
-		const startPos = getPos( screenData );
+		const startPos = m_getPos( screenData );
 
 		for( let row = 0; row < items.length; row++ ) {
 
@@ -239,7 +238,7 @@ export default function printTablePlugin( pluginApi ) {
 		}
 
 		msg = msg.substring( 0, msg.length - 1 );
-		print( screenData, msg );
+		m_print( screenData, msg );
 
 		return boxes;
 	}
@@ -250,17 +249,17 @@ export default function printTablePlugin( pluginApi ) {
 	function buildFormattedTable( screenData, items, borders, tableFormat, isCentered ) {
 		let msg = "";
 		const boxes = [];
-		const pos = getPos( screenData );
+		const pos = m_getPos( screenData );
 		const font = screenData.font;
 
 		// Set padding for centered table
 		if( isCentered ) {
-			pos.col = Math.floor( ( getCols( screenData ) - tableFormat[ 0 ].length ) / 2 );
+			pos.col = Math.floor( ( m_getCols( screenData ) - tableFormat[ 0 ].length ) / 2 );
 		}
 
 		// Create the padding
 		const padding = utils.pad( "", pos.col, " " );
-		setPos( screenData, 0, pos.row );
+		m_setPos( screenData, 0, pos.row );
 
 		for( let row = 0; row < tableFormat.length; row++ ) {
 			msg += padding;
@@ -310,11 +309,11 @@ export default function printTablePlugin( pluginApi ) {
 			msg += "\n";
 		}
 
-		const posAfter = getPos( screenData );
+		const posAfter = m_getPos( screenData );
 		completeBoxes( boxes, tableFormat, font, pos );
 
 		msg = msg.substring( 0, msg.length - 1 );
-		print( screenData, msg );
+		m_print( screenData, msg );
 
 		let i = 0;
 		for( let row = 0; row < items.length; row++ ) {
@@ -331,7 +330,7 @@ export default function printTablePlugin( pluginApi ) {
 			}
 		}
 
-		setPos( screenData, 0, posAfter.row + tableFormat.length );
+		m_setPos( screenData, 0, posAfter.row + tableFormat.length );
 
 		return boxes;
 	}
@@ -357,24 +356,24 @@ export default function printTablePlugin( pluginApi ) {
 			}
 		}
 
-		const pos = getPos( screenData );
+		const pos = m_getPos( screenData );
 
 		if( isVertical ) {
 			let index = 0;
 			const col = box.pos.col + Math.round( width / 2 );
 			const startRow = box.pos.row + 1 + Math.floor( ( height - msg.length ) / 2 );
 			for( let row = startRow; row <= height + startRow; row++ ) {
-				setPos( screenData, col, row );
-				print( screenData, msg.charAt( index ), true );
+				m_setPos( screenData, col, row );
+				m_print( screenData, msg.charAt( index ), true );
 				index++;
 			}
 		} else {
 			const col = box.pos.col + 1 + Math.floor( ( width - msg.length ) / 2 );
 			const row = box.pos.row + Math.round( height / 2 );
-			setPos( screenData, col, row );
-			print( screenData, msg, true );
+			m_setPos( screenData, col, row );
+			m_print( screenData, msg, true );
 		}
-		setPos( screenData, pos.col, pos.row );
+		m_setPos( screenData, pos.col, pos.row );
 	}
 
 	function createBox( col, row, boxes, font ) {
@@ -488,19 +487,19 @@ export default function printTablePlugin( pluginApi ) {
 		return tableFormat[ y ].charAt( x );
 	}
 
-	function print( screenData, msg, isInline ) {
+	function m_print( screenData, msg, isInline ) {
 		screenData.api.print( msg, isInline );
 	}
 
-	function setPos( screenData, col, row ) {
+	function m_setPos( screenData, col, row ) {
 		screenData.api.setPos( col, row );
 	}
 
-	function getPos( screenData ) {
+	function m_getPos( screenData ) {
 		return screenData.api.getPos();
 	}
 
-	function getCols( screenData ) {
+	function m_getCols( screenData ) {
 		return screenData.api.getCols();
 	}
 }

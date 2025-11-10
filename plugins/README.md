@@ -110,7 +110,7 @@ plugins/
 export default function myPlugin( pluginApi ) {
 	
 	// Add a simple command
-	pluginApi.addCommand( "hello", hello, [ "message" ] );
+	pluginApi.addCommand( "hello", hello, false, [ "message" ] );
 	
 	function hello( options ) {
 		const message = options.message || "Hello, Pi.js!";
@@ -119,7 +119,7 @@ export default function myPlugin( pluginApi ) {
 	}
 	
 	// Add a screen command
-	pluginApi.addScreenCommand( "drawCustomShape", drawCustomShape, [ "x", "y", "size" ] );
+	pluginApi.addCommand( "drawCustomShape", drawCustomShape, true, [ "x", "y", "size" ] );
 	
 	function drawCustomShape( screenData, options ) {
 		const x = options.x || 0;
@@ -175,7 +175,7 @@ export default function advancedPlugin( pluginApi ) {
 	} );
 	
 	// Add command that uses screen data
-	pluginApi.addScreenCommand( "incrementCounter", incrementCounter, [] );
+	pluginApi.addCommand( "incrementCounter", incrementCounter, true, [] );
 	
 	function incrementCounter( screenData ) {
 		screenData.myPluginState.counter++;
@@ -183,7 +183,7 @@ export default function advancedPlugin( pluginApi ) {
 	}
 	
 	// Add command that accesses the main API
-	pluginApi.addCommand( "getApiVersion", getApiVersion, [] );
+	pluginApi.addCommand( "getApiVersion", getApiVersion, false, [] );
 	
 	function getApiVersion() {
 		const api = pluginApi.getApi();
@@ -191,7 +191,7 @@ export default function advancedPlugin( pluginApi ) {
 	}
 	
 	// Use utility functions
-	pluginApi.addCommand( "randomColor", randomColor, [] );
+	pluginApi.addCommand( "randomColor", randomColor, false, [] );
 	
 	function randomColor() {
 		const utils = pluginApi.utils;
@@ -221,7 +221,7 @@ The `pluginApi` object passed to your plugin's `init` function provides these me
 
 ### Commands
 
-#### `addCommand( name, fn, parameterNames )`
+#### `addCommand( name, fn, isScreen, parameterNames )`
 
 Add a global command to the Pi.js API.
 
@@ -231,7 +231,7 @@ Add a global command to the Pi.js API.
 
 **Example:**
 ```javascript
-pluginApi.addCommand( "myCommand", myFn, [ "param1", "param2" ] );
+pluginApi.addCommand( "myCommand", myFn, false, [ "param1", "param2" ] );
 
 function myFn( options ) {
 	console.log( options.param1, options.param2 );
@@ -241,34 +241,6 @@ function myFn( options ) {
 pi.myCommand( "a", "b" );  // Positional
 pi.myCommand( { "param1": "a", "param2": "b" } );  // Named
 ```
-
-#### `addScreenCommand( name, fn, parameterNames )`
-
-Add a screen-specific command that operates on the active screen.
-
-- **name** (string): Command name
-- **fn** (function): Command function that receives `screenData` and `options`
-- **parameterNames** (array): Array of parameter names
-
-**Example:**
-```javascript
-pluginApi.addScreenCommand( "drawSpecial", drawSpecial, [ "x", "y" ] );
-
-function drawSpecial( screenData, options ) {
-	const ctx = screenData.context;
-	const x = options.x || 0;
-	const y = options.y || 0;
-	ctx.fillRect( x, y, 10, 10 );
-}
-```
-
-#### `addPixelCommand( name, fn, parameterNames )`
-
-Add a command that's only available in pixel mode.
-
-#### `addAACommand( name, fn, parameterNames )`
-
-Add a command that's only available in anti-aliased mode.
 
 ### Screen Data
 
@@ -292,10 +264,6 @@ function myCommand( screenData ) {
 #### `addScreenDataItemGetter( name, fn )`
 
 Add dynamic screen data that's generated when each screen is created.
-
-#### `addScreenInternalCommands( name, fn )`
-
-Add internal helper functions to screen data.
 
 ### Lifecycle Hooks
 
@@ -472,26 +440,21 @@ export default function drawingTools( pluginApi ) {
 		const y = options.y || 0;
 		const radius = options.radius || 50;
 		const points = options.points || 5;
-		
-		const ctx = screenData.context;
 		const innerRadius = radius * 0.5;
 		
-		ctx.beginPath();
+		let px1, py1;
 		for( let i = 0; i < points * 2; i++ ) {
 			const r = i % 2 === 0 ? radius : innerRadius;
 			const angle = ( i * Math.PI ) / points;
-			const px = x + r * Math.cos( angle - Math.PI / 2 );
-			const py = y + r * Math.sin( angle - Math.PI / 2 );
+			const px2 = x + r * Math.cos( angle - Math.PI / 2 );
+			const py2 = y + r * Math.sin( angle - Math.PI / 2 );
 			
-			if( i === 0 ) {
-				ctx.moveTo( px, py );
-			} else {
-				ctx.lineTo( px, py );
+			if( i !== 0 ) {
+				screenData.api.line( px1, py1, px2, py2 );
 			}
+			px1 = px2;
+			py1 = py2;
 		}
-		ctx.closePath();
-		ctx.fillStyle = screenData.color.s;
-		ctx.fill();
 	}
 }
 
@@ -506,7 +469,7 @@ if( typeof window !== "undefined" && window.pi ) {
 
 **Usage:**
 ```javascript
-pi.screen( { "aspect": "4:3" } );
+pi.screen( { "aspect": "400x300" } );
 pi.color( "yellow" );
 pi.star( 100, 100, 50, 5 );  // Draw a 5-pointed star
 ```
@@ -520,21 +483,21 @@ export default function stateManager( pluginApi ) {
 	pluginApi.addScreenDataItem( "state", {} );
 	
 	// Set state
-	pluginApi.addScreenCommand( "setState", setState, [ "key", "value" ] );
+	pluginApi.addCommand( "setState", setState, true, [ "key", "value" ] );
 	
 	function setState( screenData, options ) {
 		screenData.state[ options.key ] = options.value;
 	}
 	
 	// Get state
-	pluginApi.addScreenCommand( "getState", getState, [ "key" ] );
+	pluginApi.addCommand( "getState", getState, true, [ "key" ] );
 	
 	function getState( screenData, options ) {
 		return screenData.state[ options.key ];
 	}
 	
 	// Clear state
-	pluginApi.addScreenCommand( "clearState", clearState, [] );
+	pluginApi.addCommand( "clearState", clearState, true, [] );
 	
 	function clearState( screenData ) {
 		screenData.state = {};
