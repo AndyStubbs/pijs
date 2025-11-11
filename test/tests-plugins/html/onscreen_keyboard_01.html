@@ -15,11 +15,11 @@
 				MD
 				DL 30
 				MU
-				MV 25,83
+				MV 25,88
 				MD
 				DL 30
 				MU
-				MV 154,86
+				MV 154,95
 				MD
 				DL 30
 				MU
@@ -43,13 +43,11 @@
 				"""
 			[[TOML_END]]
 		</script>
-		<!-- [Pi.js Script]-->
 		<script src="../../../build/pi.js"></script>
 		<script src="../../../plugins/pointer/dist/pointer.js"></script>
 		<script src="../../../plugins/keyboard/dist/keyboard.js"></script>
-		<script src="../../../plugins/print-table/dist/print-table.min.js"></script>
-		<script src="../../../plugins/onscreen-keyboard/dist/onscreen-keyboard.min.js"></script>
-		<!-- [/Pi.js Script]-->
+		<script src="../../../plugins/print-table/dist/print-table.js"></script>
+		<script src="../../../plugins/onscreen-keyboard/dist/onscreen-keyboard.js"></script>
 		<style>
 			html, body {
 				color: white;
@@ -71,24 +69,22 @@ let cnt = $.getCols();
 $.print( "Click keyboard keys:" );
 $.print( "" );
 
+$.setPos( 0, 2 );
 $.showKeyboard( "text" );
-$.render();
-
-setInterval( () => {
-	const keys = $.inkey();
+$.onkey( "any", "down", ( keyData ) => {
 	$.cls( 0, 8, 400, 16 );
-	if( keys && keys.length > 0 ) {
-		for( let key of keys ) {
-			if( key.key !== buffer.charAt( buffer.length - 1 ) ) {
-				buffer += key.key;
-			}
+	if( keyData.key === "Backspace" ) {
+		if( buffer.length > 0 ) {
+			buffer = buffer.substring( 0, buffer.length - 1 );
 		}
+	} else if( keyData.key === "Enter" ) {
+		buffer = "";
+	} else if( keyData.key.length === 1 && keyData.key !== buffer.charAt( buffer.length - 1 ) ) {
+		buffer += keyData.key;
 	}
 	$.setPos( 0, 1 );
-	let start = Math.max( buffer.length - cnt, 0 );
-	$.print( buffer.substring( start ), true );
-	$.setPos( 0, 5 );
-} );
+	$.print( buffer );
+}, false, true );
 
 </script>
 </body>

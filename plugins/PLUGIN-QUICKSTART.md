@@ -78,23 +78,13 @@ export default function myFirstPlugin( pluginApi ) {
 		const y = options.y || 100;
 		const size = options.size || 50;
 		
-		const ctx = screenData.context;
-		ctx.fillStyle = screenData.color.s;
-		
 		// Draw a simple star
-		ctx.beginPath();
 		for( let i = 0; i < 5; i++ ) {
 			const angle = ( i * 4 * Math.PI ) / 5 - Math.PI / 2;
 			const px = x + size * Math.cos( angle );
 			const py = y + size * Math.sin( angle );
-			if( i === 0 ) {
-				ctx.moveTo( px, py );
-			} else {
-				ctx.lineTo( px, py );
-			}
+			screenData.api.line( x, y, px, py );
 		}
-		ctx.closePath();
-		ctx.fill();
 	}
 }
 

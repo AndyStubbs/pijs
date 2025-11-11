@@ -126,9 +126,7 @@ export default function myPlugin( pluginApi ) {
 		const y = options.y || 0;
 		const size = options.size || 10;
 		
-		const ctx = screenData.context;
-		ctx.fillStyle = screenData.color.s;
-		ctx.fillRect( x, y, size, size );
+		screenData.api.rect( x, y, size, size );
 	}
 }
 
