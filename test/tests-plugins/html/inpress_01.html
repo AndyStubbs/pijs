@@ -25,9 +25,8 @@
 			"""
 			[[TOML_END]]
 		</script>
-		<!-- [Pi.js Script]-->
 		<script src="../../../build/pi.js"></script>
-		<!-- [/Pi.js Script]-->
+		<script src="../../../plugins/pointer/dist/pointer.js"></script>
 		<style>
 			html, body {
 				color: white;
@@ -43,9 +42,7 @@
 		var last = { x: 0, y: 0 };
 		var isDrawing = false;
 		$.screen( "160x100" );
-		$.setAutoRender( false );
 		$.set( { "enableContextMenu": false } );
-		$.startMouse();
 		$.setColor( 16 );
 		$.rect( 0, 0, 8, 14 );
 		$.paint( 1, 1, 16 );
@@ -59,7 +56,7 @@
 				$.print( `${mouse.buttons} (${mouse.x}, ${mouse.y})` );
 			}
 			if( mouse.buttons > 0 ) {
-				if( ! isDrawing ) {
+				if( !isDrawing ) {
 					$.pset( mouse.x, mouse.y );
 				} else if( mouse.x !== last.x || mouse.y !== last.y ) {
 					$.line( last.x, last.y, mouse.x, mouse.y );
@@ -69,14 +66,6 @@
 				isDrawing = true;
 			} else {
 				isDrawing = false;
-			}
-			$.render();
-
-			var keys = $.inkey();
-			for( i = 0; i < 10; i++ ) {
-				if( keys && keys[ "Digit" + i ] ) {
-					$.setColor( i );
-				}
 			}
 			requestAnimationFrame( animation );
 		}

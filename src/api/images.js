@@ -389,7 +389,7 @@ function removeImage( options ) {
 		// Explicitly delete WebGL2 textures to free GPU memory
 		// WebGLTextures hold GPU memory that is NOT automatically freed by JS garbage collection
 		// Must call gl.deleteTexture() explicitly to prevent memory leaks
-		for( const screenData of g_screenManager.getAllScreens() ) {
+		for( const screenData of g_screenManager.getAllScreensData() ) {
 			g_renderer.deleteWebGL2Texture( screenData, img );
 		}
 
@@ -1085,7 +1085,7 @@ function addPaletteImage( name ) {
 	imageObj.data = data;
 
 	// Palettize image on all created screens
-	for( const screenData of g_screenManager.getAllScreens() ) {
+	for( const screenData of g_screenManager.getAllScreensData() ) {
 		palettizeImage( screenData, name );
 	}
 }

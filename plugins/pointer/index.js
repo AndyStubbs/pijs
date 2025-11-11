@@ -1,0 +1,110 @@
+/**
+ * Pi.js - Pointer Plugin
+ * 
+ * Mouse, touch, and press handling ported from alpha.1 as a plugin.
+ * 
+ * @module plugins/pointer
+ */
+
+"use strict";
+
+import { createEventHelpers } from "./shared-events.js";
+import { registerMouse } from "./mouse.js";
+import { registerTouch } from "./touch.js";
+import { registerPress } from "./press.js";
+
+
+/***************************************************************************************************
+ * Plugin Initialization
+ **************************************************************************************************/
+
+
+export default function pointerPlugin( pluginApi ) {
+	
+	// Create shared helpers (onevent/offevent/triggerEventListeners)
+	const helpers = createEventHelpers( pluginApi );
+	
+	// Register feature modules
+	const mouseApi = registerMouse( pluginApi, helpers );
+	const touchApi = registerTouch( pluginApi, helpers );
+	const pressApi = registerPress( pluginApi, helpers );
+	
+	// Combined clear command (keeps legacy name for compatibility)
+	pluginApi.addCommand( "clearEventsAlpha1", ( maybeScreenData, options ) => {
+		const type = options.type;
+		const types = Array.isArray( type ) ? type : ( type ? [ type ] : null );
+		const screenData = maybeScreenData || null;
+		
+		if( !types ) {
+			if( screenData ) {
+				mouseApi.clearMouseEvents( screenData );
+				touchApi.clearTouchEvents( screenData );
+				pressApi.clearPressEvents( screenData );
+				pressApi.clearClickEvents( screenData );
+			}
+			return;
+		}
+		
+		for( const t of types ) {
+			const lowerType = String( t ).toLowerCase();
+			if( lowerType === "mouse" ) {
+				if( !screenData ) {
+					const error = new Error( "clearEventsAlpha1: No screen available to clear mouse events." );
+					error.code = "NO_SCREEN";
+					throw error;
+				}
+				mouseApi.clearMouseEvents( screenData );
+			} else if( lowerType === "touch" ) {
+				if( !screenData ) {
+					const error = new Error( "clearEventsAlpha1: No screen available to clear touch events." );
+					error.code = "NO_SCREEN";
+					throw error;
+				}
+				touchApi.clearTouchEvents( screenData );
+			} else if( lowerType === "press" ) {
+				if( !screenData ) {
+					const error = new Error( "clearEventsAlpha1: No screen available to clear press events." );
+					error.code = "NO_SCREEN";
+					throw error;
+				}
+				pressApi.clearPressEvents( screenData );
+			} else if( lowerType === "click" ) {
+				if( !screenData ) {
+					const error = new Error( "clearEventsAlpha1: No screen available to clear click events." );
+					error.code = "NO_SCREEN";
+					throw error;
+				}
+				pressApi.clearClickEvents( screenData );
+			} else {
+				continue;
+			}
+		}
+	}, [ "type" ] );
+	
+	// Screen cleanup
+	pluginApi.addScreenCleanupFunction( ( screenData ) => {
+		if( screenData.mouseStarted ) {
+			mouseApi.stopMouse( screenData );
+		}
+		if( screenData.touchStarted ) {
+			touchApi.stopTouch( screenData );
+		}
+		mouseApi.clearMouseEvents( screenData );
+		touchApi.clearTouchEvents( screenData );
+		pressApi.clearPressEvents( screenData );
+		pressApi.clearClickEvents( screenData );
+	} );
+}
+
+
+// Auto-register in IIFE mode (when loaded via <script> tag)
+if( typeof window !== "undefined" && window.pi ) {
+	window.pi.registerPlugin( {
+		"name": "pointer",
+		"version": "1.0.0",
+		"description": "Mouse, touch, and press handling ported from alpha.1.",
+		"init": pointerPlugin
+	} );
+}
+
+

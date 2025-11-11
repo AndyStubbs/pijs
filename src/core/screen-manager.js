@@ -123,6 +123,7 @@ function registerCommands() {
 	);
 	g_commands.addCommand( "setScreen", setScreen, false, [ "screen" ] );
 	g_commands.addCommand( "getScreen", getScreen, false, [ "screenId" ] );
+	g_commands.addCommand( "getAllScreens", getAllScreens, false, [] );
 
 	// Screen-scoped info commands
 	g_commands.addCommand( "width", widthCmd, true, [] );
@@ -160,12 +161,21 @@ export function getActiveScreen( fnName, isScreenOptional ) {
 	return m_activeScreenData;
 }
 
+export function getScreenData( fnName, screenId ) {
+	if( !m_screens[ screenId ] ) {
+		const error = new Error( `${fnName}: Invalid screen id.` );
+		error.code = "INVALID_SCREEN_ID";
+		throw error;
+	}
+	return m_screens[ screenId ];
+}
+
 /**
  * Get all active screens
  * 
  * @returns {Array<Object>} Array of all screen data objects
  */
-export function getAllScreens() {
+export function getAllScreensData() {
 	const screens = [];
 	for( const id in m_screens ) {
 		screens.push( m_screens[ id ] );
@@ -512,6 +522,14 @@ function getScreen( options ) {
 		throw error;
 	}
 	return screen.api;
+}
+
+function getAllScreens() {
+	const screens = [];
+	for( const id in m_screens ) {
+		screens.push( m_screens[ id ].api );
+	}
+	return screens;
 }
 
 function widthCmd( screenData ) {
