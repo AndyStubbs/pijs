@@ -132,7 +132,8 @@ function loadPiJsScript( scriptPath ) {
 		console.error( "Failed to load Pi.js version:", m_piVersion, "from:", scriptPath );
 		
 		// Fallback to default version
-		const fallbackVersion = PI_VERSIONS[ "2.0.0-alpha.1" ];
+		const fallbackVersion = PI_VERSIONS[ "1.2.4" ];
+		m_piVersion = fallbackVersion;
 		const fallbackScript = document.createElement( "script" );
 		fallbackScript.src = fallbackVersion.path;
 		fallbackScript.onload = function() {

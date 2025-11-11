@@ -15,4 +15,4 @@ test/results-plugins.html
 test/session.html
 test/session*.html
 deploy.bat
-dellssh.bat
+homeshell.bat
