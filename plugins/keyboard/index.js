@@ -304,7 +304,6 @@ function onKeyUp( event ) {
 }
 
 function triggerKeyEventHandlers( event, mode, keyOrCode ) {
-
 	const handlers = m_onKeyHandlers[ keyOrCode ];
 	if( !handlers ) {
 		return;

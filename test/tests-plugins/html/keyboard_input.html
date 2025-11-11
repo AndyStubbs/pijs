@@ -23,6 +23,10 @@
 				DL 15
 				KP "Enter"
 				DL 15
+				KT "ABCDEFGH"
+				DL 15
+				KP "Enter"
+				DL 15
 				KT "This is a test"
 				DL 15
 				KP "Escape"
@@ -96,22 +100,42 @@
 			printError( "Integer error: " + error );
 		}
 		
-		// Test 4: Input cancellation
-		printTitle( "\nTest 4: Input cancellation (Escape key)" );
+		// Test 4: MaxLength input
+		printTitle( "\nTest 4: MaxLength input (maxLength: 5)" );
 		
 		try {
-			const result4 = await $.input( "This will be cancelled: " );
-			printError( "Unexpected result: " + result4 );
+			const result4 = await $.input(
+				"Enter text (max 5): ", null, null, false, false, false, 5
+			);
+			if( result4.length <= 5 ) {
+				printSuccess(
+					"MaxLength result: '" + result4 + "' (length: " + result4.length + ")"
+				);
+			} else {
+				printError(
+					"MaxLength failed: result length " + result4.length + " exceeds maxLength 5"
+				);
+			}
+		} catch( error ) {
+			printError( "MaxLength error: " + error );
+		}
+		
+		// Test 5: Input cancellation
+		printTitle( "\nTest 5: Input cancellation (Escape key)" );
+		
+		try {
+			const result5 = await $.input( "This will be cancelled: " );
+			printError( "Unexpected result: " + result5 );
 		} catch( error ) {
 			printSuccess( "Cancelled as expected: " + error );
 		}
 		
-		// Test 5: Final input
-		printTitle( "\nTest 5: Final input" );
+		// Test 6: Final input
+		printTitle( "\nTest 6: Final input" );
 		
 		try {
-			const result5 = await $.input( "Final test: " );
-			printSuccess( "Final result: '" + result5 + "'" );
+			const result6 = await $.input( "Final test: " );
+			printSuccess( "Final result: '" + result6 + "'" );
 		} catch( error ) {
 			printError( "Final error: " + error );
 		}

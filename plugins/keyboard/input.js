@@ -30,7 +30,7 @@ export function initInput( pluginApi ) {
 	// Register screen commands
 	pluginApi.addCommand(
 		"input", input, true,
-		[ "prompt", "fn", "cursor", "isNumber", "isInteger", "allowNegative" ]
+		[ "prompt", "fn", "cursor", "isNumber", "isInteger", "allowNegative", "maxLength" ]
 	);
 	pluginApi.addCommand( "cancelInput", cancelInput, true, [] );
 }
@@ -52,6 +52,7 @@ export function initInput( pluginApi ) {
  * @param {boolean} [options.isNumber] - If true, only allow numeric input
  * @param {boolean} [options.isInteger] - If true, only allow integer input
  * @param {boolean} [options.allowNegative] - If true, allow negative numbers
+ * @param {number} [options.maxLength] - Maximum length of input string
  * @returns {Promise} Promise that resolves with input value or rejects on cancel
  */
 function input( screenData, options ) {
@@ -61,6 +62,7 @@ function input( screenData, options ) {
 	const isNumber = !!options.isNumber;
 	const isInteger = !!options.isInteger;
 	const allowNegative = !!options.allowNegative;
+	const maxLength = options.maxLength;
 
 	if( typeof prompt !== "string" ) {
 		const error = new TypeError( "input: prompt must be a string" );
@@ -76,6 +78,15 @@ function input( screenData, options ) {
 
 	if( typeof cursor !== "string" ) {
 		const error = new TypeError( "input: cursor must be a string" );
+		error.code = "INVALID_PARAMETERS";
+		throw error;
+	}
+
+	if(
+		maxLength !== null &&
+		( typeof maxLength !== "number" || maxLength < 0 || !Number.isInteger( maxLength ) )
+	) {
+		const error = new TypeError( "input: maxLength must be a non-negative integer" );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
 	}
@@ -100,11 +111,13 @@ function input( screenData, options ) {
 		"isNumber": isNumber,
 		"isInteger": isInteger,
 		"allowNegative": allowNegative,
+		"maxLength": maxLength,
 		"val": "",
 		"fn": fn,
 		"resolve": resolvePromise,
 		"reject": rejectPromise,
-		"backgroundImageName": null
+		"backgroundImageName": null,
+		"bakgroundImage": null
 	};
 
 	startInput();
@@ -159,11 +172,13 @@ function startInput() {
 			"x2": posPx.x + captureWidth,
 			"y2": posPx.y + captureHeight
 		} );
+		m_inputData.bakgroundImage = api.getImage( imageName );
 		m_inputData.captureX = posPx.x;
 		m_inputData.captureY = posPx.y;
 		m_inputData.captureWidth = captureWidth;
 		m_inputData.captureHeight = captureHeight;
 	} catch( error ) {
+
 		// If capture fails, clean up and reject
 		const tempInputData = m_inputData;
 		m_inputData = null;
@@ -172,7 +187,7 @@ function startInput() {
 	}
 
 	// Add input event listener
-	api.onkey( "any", "down", onInputKeyDown );
+	api.onkey( "any", "down", onInputKeyDown, false, true );
 
 	// Add interval for blinking cursor
 	m_inputData.interval = setInterval( showPrompt, 100 );
@@ -212,24 +227,43 @@ function onInputKeyDown( keyData ) {
 				inputHandled = true;
 			
 			// Any time the user enters a "+" key then replace the minus symbol
-			} else if( keyData.key === "+" && m_inputData.val.charAt( 0 ) === "-" ) {
+			} else if(
+				( keyData.key === "+" || keyData.code === "Equal" ) &&
+				m_inputData.val.charAt( 0 ) === "-"
+			) {
 				m_inputData.val = m_inputData.val.substring( 1 );
 				inputHandled = true;
 			}
 		}
 
-		if( !inputHandled ) {
-			m_inputData.val += keyData.key;
+		// Don't allow decimal points for integer number
+		if( m_inputData.isInteger && keyData.code === "Period" ) {
+			inputHandled = true;
+		}
 
-			// Make sure it's a valid number or valid integer
+		// If the input is valid append the next character and validate
+		if( !inputHandled ) {
+			
+			// Check maxLength before appending
 			if(
-				( m_inputData.isNumber && isNaN( Number( m_inputData.val ) ) ) ||
-				( m_inputData.isInteger && !Number.isInteger( Number( m_inputData.val ) ) )
+				m_inputData.maxLength !== null && m_inputData.val.length >= m_inputData.maxLength
 			) {
-				m_inputData.val = m_inputData.val.substring( 0, m_inputData.val.length - 1 );
+				inputHandled = true;
+			} else {
+				m_inputData.val += keyData.key;
+
+				// Make sure it's a valid number or valid integer
+				if(
+					( m_inputData.isNumber && isNaN( Number( m_inputData.val ) ) ) ||
+					( m_inputData.isInteger && !Number.isInteger( Number( m_inputData.val ) ) )
+				) {
+					m_inputData.val = m_inputData.val.substring( 0, m_inputData.val.length - 1 );
+				}
 			}
 		}
 	}
+
+	showPrompt();
 }
 
 function showPrompt( hideCursorOverride ) {
@@ -266,15 +300,11 @@ function showPrompt( hideCursorOverride ) {
 	const height = font.height;
 
 	// Restore the background image over the prompt area
-	if( m_inputData.backgroundImageName ) {
-		screenData.api.drawImage( {
-			"image": m_inputData.backgroundImageName,
-			"x": m_inputData.captureX,
-			"y": m_inputData.captureY,
-			"scaleX": 1,
-			"scaleY": 1
-		} );
-	}
+	screenData.api.blitImage( 
+		m_inputData.bakgroundImage,
+		m_inputData.captureX,
+		m_inputData.captureY
+	);
 	
 	// Print the prompt + input + cursor
 	screenData.api.print( msg, true );
@@ -288,7 +318,7 @@ function finishInput( isCancel ) {
 	const api = pluginApi.getApi();
 
 	// Remove input key handler
-	api.offkey( "any", "down", onInputKeyDown );
+	api.offkey( "any", "down", onInputKeyDown, false, true );
 
 	// Show prompt on complete, without the cursor
 	showPrompt( true );
@@ -313,14 +343,8 @@ function finishInput( isCancel ) {
 	}
 
 	// Clean up background image texture
-	if( m_inputData.backgroundImageName ) {
-		try {
-			api.removeImage( { "name": m_inputData.backgroundImageName } );
-		} catch( error ) {
-			// Ignore errors during cleanup
-		}
-	}
-
+	api.removeImage( { "name": m_inputData.backgroundImageName } );
+	
 	// Clear out the inputData
 	const tempInputData = m_inputData;
 	m_inputData = null;
