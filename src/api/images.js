@@ -95,30 +95,11 @@ function registerCommands( api ) {
 		const finalAnchorX = anchorX ?? screenData.defaultAnchorX;
 		const finalAnchorY = anchorY ?? screenData.defaultAnchorY;
 		g_renderer.drawImage(
-			screenData, img, x, y, color, finalAnchorX, finalAnchorY, scaleX, scaleY, angleRad
+			screenData, img, x, y, color, finalAnchorX, finalAnchorY, scaleX, scaleY, angleRad,
+			g_renderer.IMAGE_REPLACE_BATCH
 		);
 		g_renderer.setImageDirty( screenData );
 	};
-
-	// Add blitImage to screens when they get created
-	g_screenManager.addScreenInitFunction( ( screenData ) => {
-		screenData.api.blitImage = (
-			img,
-			x = 0,
-			y = 0,
-			color = DEFAULT_BLIT_COLOR,
-			anchorX = screenData.defaultAnchorX,
-			anchorY = screenData.defaultAnchorY,
-			scaleX = 1,
-			scaleY = 1,
-			angleRad = 0
-		) => {
-			g_renderer.drawImage(
-				screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
-			);
-			g_renderer.setImageDirty( screenData );
-		};
-	} );
 
 	// Special handling for blit sprite because it doesn't support object literal parsing
 	api.blitSprite = (
@@ -145,13 +126,35 @@ function registerCommands( api ) {
 			screenData, img,
 			frameData.x, frameData.y, frameData.width, frameData.height,
 			x, y, frameData.width, frameData.height,
-			color, finalAnchorX, finalAnchorY, scaleX, scaleY, angleRad
+			color, finalAnchorX, finalAnchorY, scaleX, scaleY, angleRad,
+			g_renderer.IMAGE_REPLACE_BATCH
 		);
 		g_renderer.setImageDirty( screenData );
 	};
 
-	// Add blitSprite to screens when they get created
+	// Add blit commands to screens when they get created
 	g_screenManager.addScreenInitFunction( ( screenData ) => {
+
+		// Blit Image
+		screenData.api.blitImage = (
+			img,
+			x = 0,
+			y = 0,
+			color = DEFAULT_BLIT_COLOR,
+			anchorX = screenData.defaultAnchorX,
+			anchorY = screenData.defaultAnchorY,
+			scaleX = 1,
+			scaleY = 1,
+			angleRad = 0
+		) => {
+			g_renderer.drawImage(
+				screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad,
+				g_renderer.IMAGE_REPLACE_BATCH
+			);
+			g_renderer.setImageDirty( screenData );
+		};
+
+		// Blit Sprite
 		screenData.api.blitSprite = (
 			name,
 			frame = 0,
@@ -173,7 +176,8 @@ function registerCommands( api ) {
 				screenData, img,
 				frameData.x, frameData.y, frameData.width, frameData.height,
 				x, y, frameData.width, frameData.height,
-				color, anchorX, anchorY, scaleX, scaleY, angleRad
+				color, anchorX, anchorY, scaleX, scaleY, angleRad,
+				g_renderer.IMAGE_REPLACE_BATCH
 			);
 			g_renderer.setImageDirty( screenData );
 		};

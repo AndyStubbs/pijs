@@ -28,7 +28,9 @@ import * as g_readback from "./readback.js";
 
 
 // Re-export batch constants
-export { POINTS_BATCH, IMAGE_BATCH, GEOMETRY_BATCH, POINTS_REPLACE_BATCH } from "./batches.js";
+export {
+	POINTS_BATCH, IMAGE_BATCH, GEOMETRY_BATCH, POINTS_REPLACE_BATCH, IMAGE_REPLACE_BATCH
+} from "./batches.js";
 
 // Re-export drawing functions
 export { drawImage, drawSprite } from "./draw/sprites.js";

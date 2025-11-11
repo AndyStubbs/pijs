@@ -32,6 +32,7 @@ export const POINTS_BATCH = 0;
 export const IMAGE_BATCH = 1;
 export const GEOMETRY_BATCH = 2;
 export const POINTS_REPLACE_BATCH = 3;
+export const IMAGE_REPLACE_BATCH = 4;
 
 const MAX_POINT_BATCH_SIZE = 1_000_000;
 const DEFAULT_POINT_BATCH_SIZE = 5000;
@@ -42,7 +43,7 @@ const DEFAULT_GEOMETRY_BATCH_SIZE = 1000;
 const BATCH_CAPACITY_SHRINK_INTERVAL = 5000;
 
 // String constants to identify batch system names
-const BATCH_TYPES = [ "POINTS", "IMAGE", "GEOMETRY", "POINTS_REPLACE" ];
+const BATCH_TYPES = [ "POINTS", "IMAGE", "GEOMETRY", "POINTS_REPLACE", "IMAGE_REPLACE" ];
 
 // Batch prototype
 const m_batchProto = {
@@ -76,6 +77,7 @@ const m_batchProto = {
 	"vao": null,
 
 	// Image Specific items
+	"useTexture": false,
 	"texture": null,
 
 	// Drawing mode, e.g., gl.POINTS or gl.TRIANGLES
@@ -119,13 +121,14 @@ export function createBatches( screenData ) {
 	screenData.batches[ IMAGE_BATCH ] = createBatch( screenData, IMAGE_BATCH );
 	screenData.batches[ GEOMETRY_BATCH ] = createBatch( screenData, GEOMETRY_BATCH );
 	screenData.batches[ POINTS_REPLACE_BATCH ] = createBatch( screenData, POINTS_REPLACE_BATCH );
+	screenData.batches[ IMAGE_REPLACE_BATCH ] = createBatch( screenData, IMAGE_REPLACE_BATCH );
 }
 
 /**
  * Create batch system for points or images
  * 
  * @param {Object} screenData - Screen data object
- * @param {number} type - Batch type (POINTS_BATCH or IMAGE_BATCH)
+ * @param {number} type - Batch type (POINTS_BATCH or IMAGE_BATCH, etc..)
  * @returns {Object|null} Batch object or null on error
  */
 export function createBatch( screenData, type ) {
@@ -142,14 +145,17 @@ export function createBatch( screenData, type ) {
 		batch.minCapacity = DEFAULT_POINT_BATCH_SIZE;
 		batch.maxCapacity = MAX_POINT_BATCH_SIZE;
 		batch.mode = gl.POINTS;
-	} else if( type === IMAGE_BATCH ) {
+	} else if( type === IMAGE_BATCH || type === IMAGE_REPLACE_BATCH ) {
 		vertSrc = m_imageVertSrc;
 		fragSrc = m_imageFragSrc;
 		batch.capacity = DEFAULT_IMAGE_BATCH_SIZE;
 		batch.minCapacity = DEFAULT_IMAGE_BATCH_SIZE;
 		batch.maxCapacity = MAX_IMAGE_BATCH_SIZE;
 		batch.mode = gl.TRIANGLES;
-		batch.overrideGlobalBlend = true;
+		batch.useTexture = true;
+		if( type === IMAGE_BATCH ) {
+			batch.overrideGlobalBlend = true;
+		}
 	} else if( type === GEOMETRY_BATCH ) {
 		vertSrc = m_gemoetryVertSrc;
 		fragSrc = m_pointFragSrc;
@@ -192,7 +198,7 @@ export function createBatch( screenData, type ) {
 	batch.type = type;
 
 	// Setup image specific webgl variables
-	if( batch.type === IMAGE_BATCH ) {
+	if( batch.useTexture === true ) {
 
 		// Image-specific shader locations
 		batch.locations.texCoord = gl.getAttribLocation( batch.program, "a_texCoord" );
@@ -229,8 +235,8 @@ export function createBatch( screenData, type ) {
 		batch.locations.color, batch.colorComps, gl.UNSIGNED_BYTE, true, 0, 0
 	);
 
-	// Setup texCoord attribute for IMAGE_BATCH
-	if( batch.type === IMAGE_BATCH ) {
+	// Setup texCoord attribute for image batches
+	if( batch.useTexture === true ) {
 		gl.bindBuffer( gl.ARRAY_BUFFER, batch.texCoordVBO );
 		gl.enableVertexAttribArray( batch.locations.texCoord );
 		gl.vertexAttribPointer(
@@ -269,7 +275,7 @@ function resizeBatch( batch, newCapacity ) {
 	batch.vertices = newVertices;
 	batch.colors = newColors;
 	
-	if( batch.type === IMAGE_BATCH ) {
+	if( batch.useTexture === true ) {
 		const newTexCoords = new Float32Array( newCapacity * batch.texCoordComps );
 		
 		// Copy existing texture coordinates only if there is data to copy
@@ -298,7 +304,7 @@ function resizeBatch( batch, newCapacity ) {
  * @param {Object} screenData - Screen data object
  * @param {number} batchType - Batch type
  * @param {number} itemCount - Number of items needed
- * @param {WebGLTexture} [texture] - Texture for IMAGE_BATCH
+ * @param {WebGLTexture} [texture] - Texture for images
  * @returns {void}
  */
 export function prepareBatch( screenData, batchType, itemCount, texture ) {
@@ -306,11 +312,11 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
 	// Get the batch
 	const batch = screenData.batches[ batchType ];
 
-	// Track if the batch type is changing or texture is changing (for IMAGE_BATCH)
+	// Track if the batch type is changing or texture is changing (for image batches)
 	const batchInfo = screenData.batchInfo;
 	const batchTypeChanging = batchInfo.currentBatch !== batch;
-	const textureChanging = batchType === IMAGE_BATCH && batchInfo.currentBatch === batch &&
-		batch.texture !== texture;
+	const textureChanging = batch.useTexture === true &&
+		batchInfo.currentBatch === batch && batch.texture !== texture;
 
 	if( batchTypeChanging || textureChanging ) {
 		
@@ -328,8 +334,8 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
 			"overrideGlobalBlend": batch.overrideGlobalBlend
 		};
 		
-		// For IMAGE_BATCH, track the current image/texture for this segment
-		if( batch.type === IMAGE_BATCH ) {
+		// For image batches, track the current image/texture for this segment
+		if( batch.useTexture === true ) {
 			batch.texture = texture;
 			drawOrderItem.texture = texture;
 			batchInfo.textureBatchSet.add( texture );
@@ -446,7 +452,7 @@ export function flushBatches( screenData, blends = null ) {
 			}
 
 			let texture = null;
-			if( drawOrderItem.batch.type === IMAGE_BATCH ) {
+			if( drawOrderItem.batch.useTexture === true ) {
 				texture = drawOrderItem.texture;
 			}
 			drawBatch(
@@ -495,7 +501,7 @@ function uploadBatch( gl, batch, width, height ) {
 		gl.bindBuffer( gl.ARRAY_BUFFER, batch.colorVBO );
 		gl.bufferData( gl.ARRAY_BUFFER, batch.colors.byteLength, gl.STREAM_DRAW );
 
-		if( batch.type === IMAGE_BATCH ) {
+		if( batch.useTexture === true ) {
 			gl.bindBuffer( gl.ARRAY_BUFFER, batch.texCoordVBO );
 			gl.bufferData( gl.ARRAY_BUFFER, batch.texCoords.byteLength, gl.STREAM_DRAW );
 		}
@@ -516,7 +522,7 @@ function uploadBatch( gl, batch, width, height ) {
 	);
 
 	// Upload texture coordinates
-	if( batch.type === IMAGE_BATCH ) {
+	if( batch.useTexture === true ) {
 		gl.bindBuffer( gl.ARRAY_BUFFER, batch.texCoordVBO );
 		gl.bufferSubData(
 			gl.ARRAY_BUFFER, 0, batch.texCoords.subarray( 0, batch.count * batch.texCoordComps )
@@ -532,7 +538,7 @@ function uploadBatch( gl, batch, width, height ) {
  * @param {Object} batch - Batch object
  * @param {number} startIndex - Start index in batch
  * @param {number} endIndex - End index in batch
- * @param {WebGLTexture|null} texture - Texture for IMAGE_BATCH or null
+ * @param {WebGLTexture|null} texture - Texture for image batches or null
  * @param {Object} blends - Blends data including blend mode, noise, seed or null default
  * @returns {void}
  */
@@ -541,8 +547,8 @@ function drawBatch( gl, screenData, batch, startIndex, endIndex, texture = null,
 	gl.useProgram( batch.program );
 	gl.bindVertexArray( batch.vao );
 
-	// For IMAGE_BATCH, bind the texture and set uniform
-	if( batch.type === IMAGE_BATCH && texture ) {
+	// For image batches, bind the texture and set uniform
+	if( batch.useTexture === true && texture ) {
 		gl.activeTexture( gl.TEXTURE0 );
 		gl.bindTexture( gl.TEXTURE_2D, texture );
 		gl.uniform1i( batch.locations.texture, 0 );
@@ -622,7 +628,7 @@ function resetBatch( batch ) {
 	// Reset batch count
 	batch.count = 0;
 
-	if( batch.type === IMAGE_BATCH ) {
+	if( batch.useTexture === true ) {
 		batch.texture = null;
 		batch.image = null;
 	}

@@ -85,11 +85,11 @@ function calculateTransformedCorners(
  * @param {Object} color - Color object with {r, g, b, a}
  * @returns {void}
  */
-function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color ) {
+function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color, batchType ) {
 
 	// Prepare batch for 6 vertices (2 triangles)
-	const batch = screenData.batches[ g_batches.IMAGE_BATCH ];
-	g_batches.prepareBatch( screenData, g_batches.IMAGE_BATCH, 6, texture );
+	const batch = screenData.batches[ batchType ];
+	g_batches.prepareBatch( screenData, batchType, 6, texture );
 
 	const batchVertices = batch.vertices;
 	const batchColors = batch.colors;
@@ -193,7 +193,8 @@ function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color 
  * @returns {void}
  */
 export function drawImage( 
-	screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
+	screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad,
+	batchType = g_batches.IMAGE_BATCH
 ) {
 
 	// Get or create texture
@@ -219,7 +220,7 @@ export function drawImage(
 	];
 
 	// Add textured quad to batch
-	addTexturedQuadToBatch( screenData, texture, corners, texCoords, color );
+	addTexturedQuadToBatch( screenData, texture, corners, texCoords, color, batchType );
 }
 
 /**
@@ -245,7 +246,8 @@ export function drawImage(
  */
 export function drawSprite(
 	screenData, img, sx, sy, sw, sh, x, y, width, height, color,
-	anchorX = 0, anchorY = 0, scaleX = 1, scaleY = 1, angleRad = 0
+	anchorX = 0, anchorY = 0, scaleX = 1, scaleY = 1, angleRad = 0,
+	batchType = g_batches.IMAGE_BATCH
 ) {
 
 	// Get or create texture
@@ -277,6 +279,6 @@ export function drawSprite(
 	];
 
 	// Add textured quad to batch
-	addTexturedQuadToBatch( screenData, texture, corners, texCoords, color );
+	addTexturedQuadToBatch( screenData, texture, corners, texCoords, color, batchType );
 }
 
