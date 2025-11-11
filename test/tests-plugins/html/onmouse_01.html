@@ -20,9 +20,11 @@
 			"""
 			[[TOML_END]]
 		</script>
-		<!-- [Pi.js Script]-->
+
 		<script src="../../../build/pi.js"></script>
-		<!-- [/Pi.js Script]-->
+		<script src="../../../plugins/pointer/dist/pointer.js"></script>
+		<script src="../../../plugins/keyboard/dist/keyboard.js"></script>
+
 		<style>
 			html, body {
 				background-color: grey;
@@ -42,8 +44,6 @@ $.ready( function () {
 	$.setColor( 15 );
 	corner = $.get(0, 0, 8, 14);
 	$.print( 0 );
-	$.render();
-	$.startMouse();
 	$.onmouse( "down", mouseDown );
 	$.onmouse( "move", mouseMove );
 	$.onmouse( "up", mouseUp );
@@ -60,6 +60,7 @@ $.ready( function () {
 			$.render();
 		} else {
 			if( key.code === "Escape" ) {
+
 				// Clear all event listeners
 				$.offkey( "any", "down", anyKey );
 				$.offmouse( "down", mouseDown );
@@ -91,14 +92,11 @@ $.ready( function () {
 	}
 
 	function draw( mouse ) {
-
 		if( last.x !== mouse.x || last.y !== mouse.y ) {
 			$.line( last.x, last.y, mouse.x, mouse.y );
 		} else {
 			$.pset( mouse.x, mouse.y );
 		}
-		$.render();
-
 	}
 } );
 </script>

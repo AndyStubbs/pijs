@@ -33,9 +33,9 @@
 			"""
 			[[TOML_END]]
 		</script>
-		<!-- [Pi.js Script]-->
 		<script src="../../../build/pi.js"></script>
-		<!-- [/Pi.js Script]-->
+		<script src="../../../plugins/pointer/dist/pointer.js"></script>
+		<script src="../../../plugins/keyboard/dist/keyboard.js"></script>
 		<style>
 			html, body {
 				color: white;
@@ -58,7 +58,6 @@
 	$.print( "Click button below to turn on/off press event listeners." );
 
 	function pressDown( data, customData ) {
-		console.log( customData );
 		if( data.buttons > 0 ) {
 			$.pset( data.x, data.y );
 		}

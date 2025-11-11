@@ -24,9 +24,8 @@
 			"""
 			[[TOML_END]]
 		</script>
-		<!-- [Pi.js Script]-->
 		<script src="../../../build/pi.js"></script>
-		<!-- [/Pi.js Script]-->
+		<script src="../../../plugins/pointer/dist/pointer.js"></script>
 		<style>
 			html, body {
 				color: white;
@@ -48,7 +47,6 @@
 	$.screen( "200x100", "screen" );
 	$.print( "Click button below to turn on/off mouse event listeners." );
 	$.onmouse( "down", function ( mouse, customData ) {
-		console.log( customData );
 		$.pset( mouse.x, mouse.y );
 	}, null, null, "My Mouse Down" );
 	$.onmouse( "move", function ( mouse ) {
