@@ -915,6 +915,9 @@ function getSpritesheetData( screenData, options ) {
  */
 function createCanvasFromScreenRegion( screenData, x, y, width, height ) {
 
+	// TODO: Research if it's possible to use blitFrameBuffer or another faster methand that
+	// readPixels.
+	
 	// Read pixel data from FBO using readPixelsRaw
 	const pixelData = g_renderer.readPixelsRaw( screenData, x, y, width, height );
 
