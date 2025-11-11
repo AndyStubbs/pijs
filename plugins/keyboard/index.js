@@ -9,7 +9,7 @@
 
 "use strict";
 
-import { initInput, setPluginApi } from "./input.js";
+import { initInput } from "./input.js";
 
 // Input tags that we don't want to capture
 const INPUT_TAGS = new Set( [ "INPUT", "TEXTAREA", "SELECT", "BUTTON" ] );
@@ -30,9 +30,6 @@ let m_isKeyboardActive = false;
 
 
 export default function keyboardPlugin( pluginApi ) {
-
-	// Set plugin API for input module
-	setPluginApi( pluginApi );
 
 	// Initialize keyboard on plugin load
 	startKeyboard();

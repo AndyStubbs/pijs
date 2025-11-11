@@ -78,9 +78,13 @@ $.onclick( clickThree, true, hitbox3, "button3" );
 $.onclick( clickFour, true, hitbox4, "button4" );
 
 ( async () => {
+	$.setColor( 7 );
+	$.setPos( 0, 0 );
 	await $.input( "Enter your name: ", function ( data ) {
 		$.print( data );
 	} );
+	$.setColor( 7 );
+	$.setPos( 0, 1 );
 	await $.input( "Enter your age: ", function ( data ) {
 		$.print( data );
 	}, null, true, true );
@@ -113,7 +117,8 @@ function clickThree( data, customData ) {
 	$.cancelInput();
 	$.setColor( 4 );
 	drawBox( hitbox3 );
-	$.print( "" );
+	
+	$.setPos( 0, 4 );
 	$.print( "Click boxes are turned off!" );
 }
 
@@ -124,7 +129,8 @@ function clickFour( data, customData ) {
 	$.cancelInput();
 	$.setColor( 4 );
 	drawBox( hitbox4 );
-	$.print( "" );
+	
+	$.setPos( 0, 4 );
 	$.print( "Click boxes are turned off!" );
 	$.print( "All inputs have been cancelled" );
 }

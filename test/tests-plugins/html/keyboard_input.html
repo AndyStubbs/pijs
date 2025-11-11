@@ -125,9 +125,13 @@
 		
 		try {
 			const result5 = await $.input( "This will be cancelled: " );
-			printError( "Unexpected result: " + result5 );
+			if( result5 === null ) {
+				printSuccess( "Cancelled as expected: " + result5 );
+			} else {
+				printError( "Unexpected result: " + result5 );
+			}
 		} catch( error ) {
-			printSuccess( "Cancelled as expected: " + error );
+			printError( "Unexpected result: " + error );
 		}
 		
 		// Test 6: Final input

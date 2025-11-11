@@ -13,6 +13,10 @@ const CURSOR_BLINK = 500;
 // Input state
 let m_inputData = null;
 
+// Store pluginApi reference for use in functions
+let m_pluginApi = null;
+
+
 
 /***************************************************************************************************
  * Input Command Registration
@@ -26,6 +30,8 @@ let m_inputData = null;
  * @returns {void}
  */
 export function initInput( pluginApi ) {
+
+	m_pluginApi = pluginApi;
 
 	// Register screen commands
 	pluginApi.addCommand(
@@ -117,7 +123,9 @@ function input( screenData, options ) {
 		"resolve": resolvePromise,
 		"reject": rejectPromise,
 		"backgroundImageName": null,
-		"bakgroundImage": null
+		"backgroundImage": null,
+		"captureX": null,
+		"captureY": null
 	};
 
 	startInput();
@@ -144,10 +152,32 @@ function cancelInput( screenData ) {
 
 
 function startInput() {
+	const api = m_pluginApi.getApi();
 
+	// Create unique image name for background
+	const key = `${Date.now()}_${Math.random().toString( 36 ).substring( 2, 9 )}`;
+	m_inputData.backgroundImageName = `__input_bg_${key}`;
+
+	// Capture the background image
+	captureBackground();
+
+	// Add input event listener
+	api.onkey( "any", "down", onInputKeyDown, false, true );
+
+	// Add interval for blinking cursor
+	m_inputData.interval = setInterval( showPrompt, 100 );
+}
+
+function captureBackground() {
 	const screenData = m_inputData.screenData;
-	const api = pluginApi.getApi();
 
+	// Check if need to scroll first
+	let pos = screenData.api.getPos();
+	if( pos.row >= screenData.api.getRows() ) {
+		screenData.api.print( "" );
+		screenData.api.setPos( pos.col, pos.row - 1 );
+	}
+	
 	// Get current position to capture background region
 	const posPx = screenData.api.getPosPx();
 	const font = screenData.font;
@@ -155,42 +185,22 @@ function startInput() {
 	const height = font.height;
 
 	// Capture background region using createImageFromScreen
-	// Capture enough width for prompt + reasonable input length
-	const prompt = m_inputData.prompt;
-	const captureWidth = Math.min( width - posPx.x, ( prompt.length + 50 ) * font.width );
+	// Capture from the pixel position until the end the screen
+	const captureWidth = width - posPx.x;
 	const captureHeight = height;
-
-	// Create unique image name for background
-	const imageName = `__input_bg_${Date.now()}_${Math.random().toString( 36 ).substr( 2, 9 )}`;
-
-	// Capture the background region
-	try {
-		m_inputData.backgroundImageName = api.createImageFromScreen( {
-			"name": imageName,
-			"x1": posPx.x,
-			"y1": posPx.y,
-			"x2": posPx.x + captureWidth,
-			"y2": posPx.y + captureHeight
-		} );
-		m_inputData.bakgroundImage = api.getImage( imageName );
-		m_inputData.captureX = posPx.x;
-		m_inputData.captureY = posPx.y;
-		m_inputData.captureWidth = captureWidth;
-		m_inputData.captureHeight = captureHeight;
-	} catch( error ) {
-
-		// If capture fails, clean up and reject
-		const tempInputData = m_inputData;
-		m_inputData = null;
-		tempInputData.reject( error );
-		return;
-	}
-
-	// Add input event listener
-	api.onkey( "any", "down", onInputKeyDown, false, true );
-
-	// Add interval for blinking cursor
-	m_inputData.interval = setInterval( showPrompt, 100 );
+	
+	screenData.api.createImageFromScreen( {
+		"name": m_inputData.backgroundImageName ,
+		"x1": posPx.x,
+		"y1": posPx.y,
+		"x2": posPx.x + captureWidth,
+		"y2": posPx.y + captureHeight
+	} );
+	m_inputData.backgroundImage = m_pluginApi.getApi().getImage( m_inputData.backgroundImageName  );
+	m_inputData.captureX = posPx.x;
+	m_inputData.captureY = posPx.y;
+	m_inputData.captureWidth = captureWidth;
+	m_inputData.captureHeight = captureHeight;
 }
 
 function onInputKeyDown( keyData ) {
@@ -268,7 +278,6 @@ function onInputKeyDown( keyData ) {
 
 function showPrompt( hideCursorOverride ) {
 	const screenData = m_inputData.screenData;
-	const api = pluginApi.getApi();
 	let msg = m_inputData.prompt + m_inputData.val;
 
 	// Blink cursor after every blink duration
@@ -285,37 +294,27 @@ function showPrompt( hideCursorOverride ) {
 		}
 	}
 
-	// Check if need to scroll first
-	let pos = screenData.api.getPos();
-	if( pos.row >= screenData.api.getRows() ) {
-		screenData.api.print( "" );
-		screenData.api.setPos( pos.col, pos.row - 1 );
-		pos = screenData.api.getPos();
-	}
-
-	// Get the background pixels
-	const posPx = screenData.api.getPosPx();
-	const font = screenData.font;
-	const width = ( msg.length + 1 ) * font.width;
-	const height = font.height;
-
 	// Restore the background image over the prompt area
 	screenData.api.blitImage( 
-		m_inputData.bakgroundImage,
+		m_inputData.backgroundImage,
 		m_inputData.captureX,
 		m_inputData.captureY
 	);
 	
+	// Get cursor position
+	const posPx = $.getPosPx();
+
 	// Print the prompt + input + cursor
+	$.setPosPx( m_inputData.captureX, m_inputData.captureY );
 	screenData.api.print( msg, true );
 
 	// Restore the cursor
-	screenData.api.setPos( pos.col, pos.row );
+	screenData.api.setPosPx( posPx );
 }
 
 function finishInput( isCancel ) {
 	const screenData = m_inputData.screenData;
-	const api = pluginApi.getApi();
+	const api = m_pluginApi.getApi();
 
 	// Remove input key handler
 	api.offkey( "any", "down", onInputKeyDown, false, true );
@@ -343,7 +342,7 @@ function finishInput( isCancel ) {
 	}
 
 	// Clean up background image texture
-	api.removeImage( { "name": m_inputData.backgroundImageName } );
+	api.removeImage( m_inputData.backgroundImageName );
 	
 	// Clear out the inputData
 	const tempInputData = m_inputData;
@@ -351,7 +350,7 @@ function finishInput( isCancel ) {
 
 	// Handle cancel input
 	if( isCancel ) {
-		tempInputData.reject( val );
+		tempInputData.resolve( null );
 	
 	// Handle successful input
 	} else {
@@ -363,23 +362,3 @@ function finishInput( isCancel ) {
 		}
 	}
 }
-
-
-/***************************************************************************************************
- * Module Exports
- **************************************************************************************************/
-
-
-// Store pluginApi reference for use in functions
-let pluginApi = null;
-
-/**
- * Set plugin API reference
- * 
- * @param {Object} api - Plugin API object
- * @returns {void}
- */
-export function setPluginApi( api ) {
-	pluginApi = api;
-}
-
