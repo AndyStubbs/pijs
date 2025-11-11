@@ -14,8 +14,8 @@ import * as g_screenManager from "./screen-manager.js";
 import * as g_utils from "./utils.js";
 
 const m_plugins = [];
+const m_waitingForDependencies = [];
 let m_api = null;
-let m_isInitialized = false;
 
 
 /***************************************************************************************************
@@ -25,15 +25,35 @@ let m_isInitialized = false;
 
 export function init( api ) {
 	m_api = api;
-	m_isInitialized = true;
 
 	// Register external API commands
 	g_commands.addCommand(
-		"registerPlugin", registerPlugin, false, [ "name", "version", "description", "init" ]
+		"registerPlugin", registerPlugin, false,
+		[ "name", "init", "version", "description", "dependencies" ]
 	);
 	g_commands.addCommand(
 		"getPlugins", getPlugins, false, []
 	);
+
+	// Resolve plugins waiting on dependencies at end of frame
+	queueMicrotask( () => {
+		for( const pluginInfo of m_waitingForDependencies ) {
+			let missingDependencies = [];
+			for( const dependency of pluginInfo.dependencies ) {
+				if( !m_plugins.includes( pi => pi.name === dependency ) ) {
+					missingDependencies.push( dependency );
+				}
+			}
+			if( missingDependencies.length > 0 ) {
+				console.error(
+					`Unable to initialize plugin "${pluginInfo.name}". Missing the following ` +
+					`dependencies: ` + missingDependencies.join( ", " ) + "."
+				);
+			} else {
+				initializePlugin( pluginInfo );
+			}
+		}
+	} );
 }
 
 
@@ -50,6 +70,7 @@ export function init( api ) {
  * @param {Function} options.init - Initialization function that receives pluginApi
  * @param {string} [options.version] - Optional version string
  * @param {string} [options.description] - Optional description
+ * @param {string} [options.dependencies] - Optional list of dependencies
  * @returns {void}
  * 
  * @example
@@ -79,6 +100,11 @@ function registerPlugin( options ) {
 		throw error;
 	}
 
+	// If dependencies is not defined then create empty array
+	if( options.dependencies === null ) {
+		options.dependencies = [];
+	}
+
 	// Check for duplicate
 	if( m_plugins.find( p => p.name === options.name ) ) {
 		const error = new Error(
@@ -99,8 +125,16 @@ function registerPlugin( options ) {
 
 	m_plugins.push( pluginInfo );
 
-	// If system is initialized, process immediately
-	if( m_isInitialized ) {
+	// If all dependencies loaded then process immediately
+	let isWaitingForDependencies = false;
+	for( const dependency of pluginInfo.config.dependencies ) {
+		if( m_plugins.includes( pi => pi.name === dependency ) ) {
+			isWaitingForDependencies = true;
+		}
+	}
+	if( isWaitingForDependencies ) {
+		m_waitingForDependencies.push( pluginInfo );
+	} else {
 		initializePlugin( pluginInfo );
 	}
 }
