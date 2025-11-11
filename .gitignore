@@ -14,3 +14,5 @@ test/results.html
 test/results-plugins.html
 test/session.html
 test/session*.html
+deploy.bat
+dellssh.bat
