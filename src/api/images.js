@@ -14,7 +14,7 @@ import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_colors from "./colors.js";
 
-const DEFAULT_BLIT_COLOR = Object.freeze( g_utils.rgbToColor( 255, 255, 255, 255 ) );
+const DEFAULT_BLIT_COLOR = g_utils.rgbToColor( 255, 255, 255, 255 );
 
 // Image storage by name
 const m_images = {};
@@ -709,7 +709,7 @@ function drawImage( screenData, options ) {
 	const imageRaw = options.image;
 	const x = g_utils.getInt( options.x, null );
 	const y = g_utils.getInt( options.y, null );
-	const colorRaw = options.color ?? DEFAULT_BLIT_COLOR;
+	const colorRaw = options.color;
 	const anchorX = g_utils.getFloat( options.anchorX, screenData.defaultAnchorX );
 	const anchorY = g_utils.getFloat( options.anchorY, screenData.defaultAnchorY );
 	const scaleX = g_utils.getFloat( options.scaleX, 1 );
@@ -726,7 +726,12 @@ function drawImage( screenData, options ) {
 	}
 
 	// Parses the color and makes sure it's in a valid format
-	const color = g_colors.getColorValueByRawInput( screenData, colorRaw );
+	let color;
+	if( colorRaw === null || colorRaw === undefined ) {
+		color = DEFAULT_BLIT_COLOR;
+	} else {
+		color = g_colors.getColorValueByRawInput( screenData, colorRaw );
+	}
 
 	// Convert angle from degrees to radians
 	const angleRad = g_utils.degreesToRadian( angle );

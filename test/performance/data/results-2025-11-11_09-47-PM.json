@@ -1,0 +1,98 @@
+{
+  "version": "2.0.0-alpha.3",
+  "date": "11/11/2025, 9:47:13 PM",
+  "targetFps": 99.98,
+  "tests": [
+    {
+      "name": "Blit Sprites Colors Test",
+      "avgFps": "102.78",
+      "itemCountAvg": 21310.55,
+      "itemCountPerSecond": 2130628.789,
+      "testTime": 30014.6,
+      "score": 21903
+    },
+    {
+      "name": "Blit Sprites Test",
+      "avgFps": "104.12",
+      "itemCountAvg": 21310.804,
+      "itemCountPerSecond": 2130654.18392,
+      "testTime": 30014.699999999997,
+      "score": 22190
+    },
+    {
+      "name": "Blit Images Colors Test",
+      "avgFps": "102.49",
+      "itemCountAvg": 21315.532,
+      "itemCountPerSecond": 2131126.88936,
+      "testTime": 30014.699999999997,
+      "score": 21845
+    },
+    {
+      "name": "Blit Images Test",
+      "avgFps": "103.95",
+      "itemCountAvg": 21319.19,
+      "itemCountPerSecond": 2131492.6162,
+      "testTime": 30004.699999999997,
+      "score": 22160
+    },
+    {
+      "name": "Draw Sprites Colors Test",
+      "avgFps": "105.20",
+      "itemCountAvg": 13404.102,
+      "itemCountPerSecond": 1340142.1179600002,
+      "testTime": 30004.59999999999,
+      "score": 14101
+    },
+    {
+      "name": "Draw Sprites Test",
+      "avgFps": "104.99",
+      "itemCountAvg": 13420.362,
+      "itemCountPerSecond": 1341767.7927599999,
+      "testTime": 30014.800000000017,
+      "score": 14090
+    },
+    {
+      "name": "Draw Images Colors Test",
+      "avgFps": "105.98",
+      "itemCountAvg": 13603.52,
+      "itemCountPerSecond": 1360079.9296000001,
+      "testTime": 30004.79999999999,
+      "score": 14417
+    },
+    {
+      "name": "Draw Images Test",
+      "avgFps": "106.33",
+      "itemCountAvg": 14021.942,
+      "itemCountPerSecond": 1401913.76116,
+      "testTime": 30004.800000000017,
+      "score": 14910
+    },
+    {
+      "name": "Bezier Test",
+      "avgFps": "105.86",
+      "itemCountAvg": 247.418,
+      "itemCountPerSecond": 24736.85164,
+      "testTime": 30004.70000000001,
+      "score": 262
+    }
+  ],
+  "score": 16209,
+  "systemInfo": {
+    "os": {
+      "platform": "win32",
+      "type": "Windows_NT",
+      "release": "10.0.26100",
+      "arch": "x64",
+      "cpus": 16,
+      "cpuModel": "13th Gen Intel(R) Core(TM) i5-13400F",
+      "totalMemory": "32 GB",
+      "freeMemory": "17 GB"
+    },
+    "browser": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+      "language": "en-US,en;q=0.9"
+    },
+    "timestamp": "11/11/2025, 9:47:28 PM"
+  },
+  "posted": true
+}
