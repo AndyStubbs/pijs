@@ -19,7 +19,7 @@ import * as g_psetTest from "./tests/pset.js";
 import * as g_lineTest from "./tests/line.js";
 import * as g_graphicsTest from "./tests/graphics.js";
 import * as g_imagesTest from "./tests/images.js";
-import * as g_blitImagesTest from "./tests/blit-images.js";
+import * as g_imagesTest2 from "./tests/images2.js";
 import * as g_bezierTest from "./tests/bezier.js";
 import * as g_reportManager from "./report-manager.js";
 
@@ -28,14 +28,23 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 
 // Get all test config data
 let m_tests = [];
-// m_tests.push( g_psetTest.getConfig() );
-// m_tests.push( g_lineTest.getConfig() );
-// m_tests.push( g_graphicsTest.getConfig() );
-// m_tests.push( g_imagesTest.getConfig( true, false ) );
-m_tests.push( g_blitImagesTest.getConfig( false ) );
+m_tests.push( g_psetTest.getConfig() );
+m_tests.push( g_lineTest.getConfig() );
+m_tests.push( g_graphicsTest.getConfig() );
 m_tests.push( g_imagesTest.getConfig( false, false ) );
-// m_tests.push( g_imagesTest.getConfig( false, true ) );
-// m_tests.push( g_bezierTest.getConfig() );
+m_tests.push( g_imagesTest.getConfig( true, false ) );
+m_tests.push( g_imagesTest.getConfig( false, true ) );
+m_tests.push( g_imagesTest.getConfig( true, true ) );
+
+// Images Advanced Test
+for( let i = 0; i < 2; i += 1 ) {
+	for( let j = 0; j < 2; j += 1 ) {
+		for( let k = 0; k < 2; k += 1 ) {
+			m_tests.push( g_imagesTest2.getConfig( i === 0, j === 0, k === 0 ) );
+		}
+	}
+}
+m_tests.push( g_bezierTest.getConfig() );
 
 // Global state for the test manager
 let m_results = [];
@@ -280,15 +289,16 @@ async function runNextTest() {
 
 		//$.cls( 0, 0, 155, 65 );
 		$.setColor( "black" );
-		$.rect( 0, 0, 155, 82, "black" );
+		$.rect( 0, 0, 200, 82, "black" );
 		$.setColor( 14 );
 		$.setPos( 0, 0 );
 		$.print( test.name );
 		$.setColor( 15 );
-		$.print( "Item Count:  " + itemCount.toFixed( 0 ).padStart( 6, " " ) );
-		$.print( "Target FPS:  " + m_targetFps.toFixed( 0 ).padStart( 6, " " ) );
-		$.print( "Frame FPS:   " + currentFps.toFixed( 0 ).padStart( 6, " " ) );
-		$.print( "Test Time:   " + ( ( TEST_DURATION - elapsed ) / 1000 ).toFixed( 2 ).padStart( 6, " " ) );
+		$.print( "Item Count:" + itemCount.toFixed( 0 ).padStart( 13, " " ) );
+		$.print( "Target FPS:" + m_targetFps.toFixed( 0 ).padStart( 13, " " ) );
+		$.print( "Frame FPS:" + currentFps.toFixed( 0 ).padStart( 14, " " ) );
+		$.print( "Test Time:" + ( ( TEST_DURATION - elapsed ) / 1000 ).toFixed( 2 ).padStart( 14, " " )
+		);
 
 		lt = t;
 		requestAnimationFrame( loop );

@@ -26,16 +26,16 @@ export function getConfig( useSprites, useAlpha ) {
 	let name = "";
 	if( useSprites ) {
 		if( useAlpha ) {
-			name = "Sprites Alpha Test";
+			name = "Sprites1 Alpha Test";
 		} else {
-			name = "Sprites Test";
+			name = "Sprites1 Test";
 		}
 		exludeVersions.push( "1.2.4" );
 	} else {
 		if( useAlpha ) {
-			name = "Images Alpha Test";
+			name = "Images1 Alpha Test";
 		} else {
-			name = "Images Test";
+			name = "Images1 Test";
 		}
 	}
 	return {

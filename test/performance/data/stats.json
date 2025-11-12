@@ -26,5 +26,12 @@
     "date": "11/9/2025, 5:05:12 PM",
     "targetFps": 99.98,
     "score": 3631
+  },
+  {
+    "filename": "results-2025-11-11_04-57-PM.json",
+    "version": "2.0.0-alpha.3",
+    "date": "11/11/2025, 4:57:09 PM",
+    "targetFps": 99.99,
+    "score": 12511
   }
 ]

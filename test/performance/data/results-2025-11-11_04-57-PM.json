@@ -1,0 +1,154 @@
+{
+  "version": "2.0.0-alpha.3",
+  "date": "11/11/2025, 4:57:09 PM",
+  "targetFps": 99.99,
+  "tests": [
+    {
+      "name": "Pset Test",
+      "avgFps": "109.21",
+      "itemCountAvg": 89821.2,
+      "itemCountPerSecond": 8981221.787999999,
+      "testTime": 30004.6,
+      "score": 98094
+    },
+    {
+      "name": "Line Test",
+      "avgFps": "105.95",
+      "itemCountAvg": 3852.612,
+      "itemCountPerSecond": 385222.67388,
+      "testTime": 30004.700000000004,
+      "score": 4082
+    },
+    {
+      "name": "Graphics Test",
+      "avgFps": "105.53",
+      "itemCountAvg": 1121.632,
+      "itemCountPerSecond": 112151.98368,
+      "testTime": 30004.699999999997,
+      "score": 1184
+    },
+    {
+      "name": "Images1 Test",
+      "avgFps": "105.38",
+      "itemCountAvg": 8228.64,
+      "itemCountPerSecond": 822781.7135999999,
+      "testTime": 30004.79999999999,
+      "score": 8672
+    },
+    {
+      "name": "Sprites1 Test",
+      "avgFps": "104.80",
+      "itemCountAvg": 8203.106,
+      "itemCountPerSecond": 820228.5689399999,
+      "testTime": 30004.600000000006,
+      "score": 8597
+    },
+    {
+      "name": "Images1 Alpha Test",
+      "avgFps": "105.72",
+      "itemCountAvg": 6453.984,
+      "itemCountPerSecond": 645333.86016,
+      "testTime": 30004.599999999977,
+      "score": 6823
+    },
+    {
+      "name": "Sprites1 Alpha Test",
+      "avgFps": "106.14",
+      "itemCountAvg": 5900.488,
+      "itemCountPerSecond": 589989.79512,
+      "testTime": 30004.800000000017,
+      "score": 6263
+    },
+    {
+      "name": "Blit Sprites Colors Test",
+      "avgFps": "104.77",
+      "itemCountAvg": 9964.434,
+      "itemCountPerSecond": 996343.7556599999,
+      "testTime": 30004.699999999983,
+      "score": 10439
+    },
+    {
+      "name": "Blit Sprites Test",
+      "avgFps": "107.47",
+      "itemCountAvg": 7424.92,
+      "itemCountPerSecond": 742417.7507999999,
+      "testTime": 30004.699999999983,
+      "score": 7980
+    },
+    {
+      "name": "Blit Images Colors Test",
+      "avgFps": "103.19",
+      "itemCountAvg": 9957.742,
+      "itemCountPerSecond": 995674.62258,
+      "testTime": 30004.79999999999,
+      "score": 10275
+    },
+    {
+      "name": "Blit Images Test",
+      "avgFps": "107.84",
+      "itemCountAvg": 7768.72,
+      "itemCountPerSecond": 776794.3128,
+      "testTime": 30004.70000000001,
+      "score": 8378
+    },
+    {
+      "name": "Draw Sprites Colors Test",
+      "avgFps": "103.33",
+      "itemCountAvg": 8357.954,
+      "itemCountPerSecond": 835711.82046,
+      "testTime": 30010,
+      "score": 8636
+    },
+    {
+      "name": "Draw Sprites Test",
+      "avgFps": "108.24",
+      "itemCountAvg": 5880.038,
+      "itemCountPerSecond": 587944.9996199999,
+      "testTime": 30004.800000000047,
+      "score": 6364
+    },
+    {
+      "name": "Draw Images Colors Test",
+      "avgFps": "104.45",
+      "itemCountAvg": 8298.1,
+      "itemCountPerSecond": 829727.019,
+      "testTime": 30004.79999999999,
+      "score": 8667
+    },
+    {
+      "name": "Draw Images Test",
+      "avgFps": "106.92",
+      "itemCountAvg": 5117.272,
+      "itemCountPerSecond": 511676.02728,
+      "testTime": 30004.70000000001,
+      "score": 5471
+    },
+    {
+      "name": "Bezier Test",
+      "avgFps": "106.05",
+      "itemCountAvg": 239.618,
+      "itemCountPerSecond": 23959.40382,
+      "testTime": 30004.70000000001,
+      "score": 254
+    }
+  ],
+  "score": 12511,
+  "systemInfo": {
+    "os": {
+      "platform": "win32",
+      "type": "Windows_NT",
+      "release": "10.0.26100",
+      "arch": "x64",
+      "cpus": 16,
+      "cpuModel": "13th Gen Intel(R) Core(TM) i5-13400F",
+      "totalMemory": "32 GB",
+      "freeMemory": "17 GB"
+    },
+    "browser": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+      "language": "en-US,en;q=0.9"
+    },
+    "timestamp": "11/11/2025, 4:57:21 PM"
+  },
+  "posted": true
+}
