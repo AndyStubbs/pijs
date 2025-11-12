@@ -297,7 +297,8 @@ const COLOR_PROTO = {
 	"b": 0,
 	"a": 0,
 	"rgba": "",
-	"hex": ""
+	"hex": "",
+	"array": null
 };
 
 function createColor( r, g, b, a, hex ) {
@@ -309,6 +310,11 @@ function createColor( r, g, b, a, hex ) {
 	color.a = a;
 	color.rgba = `rgba(${r},${g},${b},${( a / 255 ).toFixed( 3 )})`;
 	color.hex = hex;
+	color.array = new Uint8Array( 4 );
+	color.array[ 0 ] = r;
+	color.array[ 1 ] = g;
+	color.array[ 2 ] = b;
+	color.array[ 3 ] = a;
 	return color;
 }
 

@@ -95,8 +95,8 @@ function registerCommands( api ) {
 		const finalAnchorX = anchorX ?? screenData.defaultAnchorX;
 		const finalAnchorY = anchorY ?? screenData.defaultAnchorY;
 		g_renderer.drawImage(
-			screenData, img, x, y, color, finalAnchorX, finalAnchorY, scaleX, scaleY, angleRad,
-			g_renderer.IMAGE_REPLACE_BATCH
+			screenData, img, x, y, color.array, finalAnchorX, finalAnchorY, scaleX, scaleY,
+			angleRad, g_renderer.IMAGE_REPLACE_BATCH
 		);
 		g_renderer.setImageDirty( screenData );
 	};
@@ -126,7 +126,7 @@ function registerCommands( api ) {
 			screenData, img,
 			frameData.x, frameData.y, frameData.width, frameData.height,
 			x, y, frameData.width, frameData.height,
-			color, finalAnchorX, finalAnchorY, scaleX, scaleY, angleRad,
+			color.array, finalAnchorX, finalAnchorY, scaleX, scaleY, angleRad,
 			g_renderer.IMAGE_REPLACE_BATCH
 		);
 		g_renderer.setImageDirty( screenData );
@@ -148,7 +148,7 @@ function registerCommands( api ) {
 			angleRad = 0
 		) => {
 			g_renderer.drawImage(
-				screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad,
+				screenData, img, x, y, color.array, anchorX, anchorY, scaleX, scaleY, angleRad,
 				g_renderer.IMAGE_REPLACE_BATCH
 			);
 			g_renderer.setImageDirty( screenData );
@@ -176,7 +176,7 @@ function registerCommands( api ) {
 				screenData, img,
 				frameData.x, frameData.y, frameData.width, frameData.height,
 				x, y, frameData.width, frameData.height,
-				color, anchorX, anchorY, scaleX, scaleY, angleRad,
+				color.array, anchorX, anchorY, scaleX, scaleY, angleRad,
 				g_renderer.IMAGE_REPLACE_BATCH
 			);
 			g_renderer.setImageDirty( screenData );
@@ -738,7 +738,7 @@ function drawImage( screenData, options ) {
 
 	// Draw using renderer-specific implementation
 	g_renderer.drawImage(
-		screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
+		screenData, img, x, y, color.array, anchorX, anchorY, scaleX, scaleY, angleRad
 	);
 
 	// Mark screen as dirty
@@ -842,7 +842,7 @@ function drawSprite( screenData, options ) {
 		screenData, img,
 		frameData.x, frameData.y, frameData.width, frameData.height,
 		x, y, frameData.width, frameData.height,
-		color, anchorX, anchorY, scaleX, scaleY, angleRad
+		color.array, anchorX, anchorY, scaleX, scaleY, angleRad
 	);
 
 	// Mark screen as dirty

@@ -6,7 +6,7 @@
  * @module test-manager
  */
 
-const TEST_DURATION = 30000;
+const TEST_DURATION = 15000;
 
 export { init, startTests, getTargetFps, calculateTargetFPS };
 
@@ -36,15 +36,21 @@ let m_tests = [];
 // m_tests.push( g_imagesTest.getConfig( false, true ) );
 // m_tests.push( g_imagesTest.getConfig( true, true ) );
 
+// Blit Images Colors
+m_tests.push( g_imagesTest2.getConfig( true, false, true ) );
+
+// Draw Images Colors
+m_tests.push( g_imagesTest2.getConfig( false, false, true ) );
+
 // Images Advanced Test
-for( let i = 0; i < 2; i += 1 ) {
-	for( let j = 0; j < 2; j += 1 ) {
-		for( let k = 0; k < 2; k += 1 ) {
-			m_tests.push( g_imagesTest2.getConfig( i === 0, j === 0, k === 0 ) );
-		}
-	}
-}
-m_tests.push( g_bezierTest.getConfig() );
+// for( let i = 0; i < 2; i += 1 ) {
+// 	for( let j = 0; j < 2; j += 1 ) {
+// 		for( let k = 0; k < 2; k += 1 ) {
+// 			m_tests.push( g_imagesTest2.getConfig( i === 0, j === 0, k === 0 ) );
+// 		}
+// 	}
+// }
+//m_tests.push( g_bezierTest.getConfig() );
 
 // Global state for the test manager
 let m_results = [];

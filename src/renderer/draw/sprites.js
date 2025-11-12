@@ -82,7 +82,7 @@ function calculateTransformedCorners(
  * @param {WebGLTexture} texture - WebGL texture
  * @param {Array<Object>} corners - Array of 4 corner objects with x, y properties
  * @param {Array<number>} texCoords - Array of 12 texture coordinates (2 per vertex for 6 vertices)
- * @param {Object} color - Color object with {r, g, b, a}
+ * @param {Uint8Array} color - Color array with [r, g, b, a]
  * @returns {void}
  */
 function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color, batchType ) {
@@ -92,86 +92,86 @@ function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color,
 	g_batches.prepareBatch( screenData, batchType, 6, texture );
 
 	const batchVertices = batch.vertices;
-	const batchColors = batch.colors;
 	const batchTexCoords = batch.texCoords;
-
-	// Color with alpha
-	const r = color.r;
-	const g = color.g;
-	const b = color.b;
-	const a = color.a;
+	const batchColors = batch.colors;
 
 	// Add two triangles (6 vertices)
 	const baseIdx = batch.count;
 	const vertexBase = baseIdx * batch.vertexComps;
-	const colorBase = baseIdx * batch.colorComps;
 	const texBase = baseIdx * batch.texCoordComps;
+	const colorBase = baseIdx * batch.colorComps;
 
 	// Triangle 1: Top-left, Top-right, Bottom-left
 	let vIdx = vertexBase;
-	let cIdx = colorBase;
 	let tIdx = texBase;
+	let cIdx = colorBase;
 
 	// Vertex 0: Top-left
 	batchVertices[ vIdx++ ] = corners[ 0 ].x;
 	batchVertices[ vIdx++ ] = corners[ 0 ].y;
-	batchColors[ cIdx++ ] = r;
-	batchColors[ cIdx++ ] = g;
-	batchColors[ cIdx++ ] = b;
-	batchColors[ cIdx++ ] = a;
 	batchTexCoords[ tIdx++ ] = texCoords[ 0 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 1 ];
+	// batchColors.set( color, colorBase );
+	batchColors[ cIdx++ ] = color[ 0 ];
+	batchColors[ cIdx++ ] = color[ 1 ];
+	batchColors[ cIdx++ ] = color[ 2 ];
+	batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Vertex 1: Top-right
 	batchVertices[ vIdx++ ] = corners[ 1 ].x;
 	batchVertices[ vIdx++ ] = corners[ 1 ].y;
-	batchColors[ cIdx++ ] = r;
-	batchColors[ cIdx++ ] = g;
-	batchColors[ cIdx++ ] = b;
-	batchColors[ cIdx++ ] = a;
 	batchTexCoords[ tIdx++ ] = texCoords[ 2 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 3 ];
+	//batchColors.set( color, colorBase + 4 );
+	batchColors[ cIdx++ ] = color[ 0 ];
+	batchColors[ cIdx++ ] = color[ 1 ];
+	batchColors[ cIdx++ ] = color[ 2 ];
+	batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Vertex 2: Bottom-left
 	batchVertices[ vIdx++ ] = corners[ 2 ].x;
 	batchVertices[ vIdx++ ] = corners[ 2 ].y;
-	batchColors[ cIdx++ ] = r;
-	batchColors[ cIdx++ ] = g;
-	batchColors[ cIdx++ ] = b;
-	batchColors[ cIdx++ ] = a;
 	batchTexCoords[ tIdx++ ] = texCoords[ 4 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 5 ];
+	//batchColors.set( color, colorBase + 8 );
+	batchColors[ cIdx++ ] = color[ 0 ];
+	batchColors[ cIdx++ ] = color[ 1 ];
+	batchColors[ cIdx++ ] = color[ 2 ];
+	batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Triangle 2: Top-right, Bottom-right, Bottom-left
 	// Vertex 3: Top-right
 	batchVertices[ vIdx++ ] = corners[ 1 ].x;
 	batchVertices[ vIdx++ ] = corners[ 1 ].y;
-	batchColors[ cIdx++ ] = r;
-	batchColors[ cIdx++ ] = g;
-	batchColors[ cIdx++ ] = b;
-	batchColors[ cIdx++ ] = a;
 	batchTexCoords[ tIdx++ ] = texCoords[ 6 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 7 ];
+	//batchColors.set( color, colorBase + 12 );
+	batchColors[ cIdx++ ] = color[ 0 ];
+	batchColors[ cIdx++ ] = color[ 1 ];
+	batchColors[ cIdx++ ] = color[ 2 ];
+	batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Vertex 4: Bottom-right
 	batchVertices[ vIdx++ ] = corners[ 3 ].x;
 	batchVertices[ vIdx++ ] = corners[ 3 ].y;
-	batchColors[ cIdx++ ] = r;
-	batchColors[ cIdx++ ] = g;
-	batchColors[ cIdx++ ] = b;
-	batchColors[ cIdx++ ] = a;
 	batchTexCoords[ tIdx++ ] = texCoords[ 8 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 9 ];
+	//batchColors.set( color, colorBase + 16 );
+	batchColors[ cIdx++ ] = color[ 0 ];
+	batchColors[ cIdx++ ] = color[ 1 ];
+	batchColors[ cIdx++ ] = color[ 2 ];
+	batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Vertex 5: Bottom-left
 	batchVertices[ vIdx++ ] = corners[ 2 ].x;
 	batchVertices[ vIdx++ ] = corners[ 2 ].y;
-	batchColors[ cIdx++ ] = r;
-	batchColors[ cIdx++ ] = g;
-	batchColors[ cIdx++ ] = b;
-	batchColors[ cIdx++ ] = a;
 	batchTexCoords[ tIdx++ ] = texCoords[ 10 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 11 ];
+	//batchColors.set( color, colorBase + 20 );
+	batchColors[ cIdx++ ] = color[ 0 ];
+	batchColors[ cIdx++ ] = color[ 1 ];
+	batchColors[ cIdx++ ] = color[ 2 ];
+	batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Update batch count
 	batch.count += 6;
@@ -186,7 +186,7 @@ function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color,
  * @param {number} y - Y position
  * @param {number} anchorX - Anchor point X (0-1)
  * @param {number} anchorY - Anchor point Y (0-1)
- * @param {number} color - Color value with {r, g, b, a}
+ * @param {Float32Array} color - Color array with [r, g, b, a]
  * @param {number} scaleX - Scale X factor
  * @param {number} scaleY - Scale Y factor
  * @param {number} angleRad - Rotation angle in radians
@@ -236,7 +236,7 @@ export function drawImage(
  * @param {number} y - Destination Y position
  * @param {number} width - Destination width
  * @param {number} height - Destination height
- * @param {Object} color - Color value with {r, g, b, a}
+ * @param {Float32Array} color - Color value with [r, g, b, a]
  * @param {number} [anchorX=0] - Anchor point X (0-1)
  * @param {number} [anchorY=0] - Anchor point Y (0-1)
  * @param {number} [scaleX=1] - Scale X factor
