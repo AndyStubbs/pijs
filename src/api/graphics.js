@@ -398,4 +398,9 @@ function cls( screenData, options ) {
 
 	g_renderer.cls( screenData, x, y, width, height );
 	g_renderer.setImageDirty( screenData );
+
+	// Reset the cursor position if clearing the full screen
+	if( x === 0 && y === 0 && width === screenData.width && height === screenData.height ) {
+		screenData.api.setPos( 0, 0 );
+	}
 }
