@@ -1,0 +1,16 @@
+[
+  {
+    "filename": "results-2025-11-11_08-13-PM.json",
+    "version": "2.0.0-alpha.3",
+    "date": "11/11/2025, 8:13:03 PM",
+    "targetFps": 99.98,
+    "score": 12696
+  },
+  {
+    "filename": "results-2025-11-11_08-22-PM.json",
+    "version": "2.0.0-alpha.3",
+    "date": "11/11/2025, 8:22:30 PM",
+    "targetFps": 100.01,
+    "score": 16298
+  }
+]

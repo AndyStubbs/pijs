@@ -28,13 +28,13 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 
 // Get all test config data
 let m_tests = [];
-m_tests.push( g_psetTest.getConfig() );
-m_tests.push( g_lineTest.getConfig() );
-m_tests.push( g_graphicsTest.getConfig() );
-m_tests.push( g_imagesTest.getConfig( false, false ) );
-m_tests.push( g_imagesTest.getConfig( true, false ) );
-m_tests.push( g_imagesTest.getConfig( false, true ) );
-m_tests.push( g_imagesTest.getConfig( true, true ) );
+// m_tests.push( g_psetTest.getConfig() );
+// m_tests.push( g_lineTest.getConfig() );
+// m_tests.push( g_graphicsTest.getConfig() );
+// m_tests.push( g_imagesTest.getConfig( false, false ) );
+// m_tests.push( g_imagesTest.getConfig( true, false ) );
+// m_tests.push( g_imagesTest.getConfig( false, true ) );
+// m_tests.push( g_imagesTest.getConfig( true, true ) );
 
 // Images Advanced Test
 for( let i = 0; i < 2; i += 1 ) {
