@@ -377,7 +377,7 @@ export function cancelAllInputs( screenData ) {
 			// Cancel all inputs (there can only be one active at a time)
 			finishInput( true );
 		} else if( m_inputData.screenData === screenData ) {
-			
+
 			// Cancel input for specific screen
 			finishInput( true );
 		}

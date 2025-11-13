@@ -605,9 +605,9 @@ function createImageFromScreen( screenData, options ) {
 	x2 = g_utils.clamp( x2, 0, screenData.width - 1 );
 	y2 = g_utils.clamp( y2, 0, screenData.height - 1 );
 
-	// Calculate dimensions
-	const width = Math.abs( x2 - x1 );
-	const height = Math.abs( y2 - y1 );
+	// Calculate dimensions -- x2, y2 are inclusive so add 1 to width & height here
+	const width = Math.abs( x2 - x1 ) + 1;
+	const height = Math.abs( y2 - y1 ) + 1;
 
 	if( width === 0 || height === 0 ) {
 		const error = new RangeError(
