@@ -11,10 +11,7 @@
 "use strict";
 
 import * as g_batches from "../batches.js";
-import * as g_textures from "../textures.js";
-import * as g_utils from "../../core/utils.js";
 import * as g_batchHelpers from "./batch-helpers.js";
-
 
 /**
  * Draw ellipse outline or filled
