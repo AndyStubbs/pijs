@@ -30,7 +30,7 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 let m_tests = [];
 //m_tests.push( g_psetTest.getConfig() );
 //m_tests.push( g_lineTest.getConfig() );
-m_tests.push( g_graphicsTest.getConfig() );
+//m_tests.push( g_graphicsTest.getConfig() );
 
 // m_tests.push( g_imagesTest.getConfig( false, false ) );
 // m_tests.push( g_imagesTest.getConfig( true, false ) );
@@ -45,14 +45,26 @@ m_tests.push( g_graphicsTest.getConfig() );
 // m_tests.push( g_imagesTest2.getConfig( false, false, true ) );
 // m_tests.push( g_imagesTest2.getConfig( false, false, false ) );
 
-// Images Advanced Test
-// for( let i = 0; i < 2; i += 1 ) {
-// 	for( let j = 0; j < 2; j += 1 ) {
-// 		for( let k = 0; k < 2; k += 1 ) {
-// 			m_tests.push( g_imagesTest2.getConfig( i === 0, j === 0, k === 0 ) );
-// 		}
-// 	}
+// Images Advanced Test - All 8 combinations
+const allImageTestOptions = [
+	"blit",
+	"blit-colors",
+	"blit-sprites",
+	"blit-sprites-colors",
+	"draw",
+	"draw-colors",
+	"draw-sprites",
+	"draw-sprites-colors"
+];
+
+m_tests.push( g_imagesTest2.getConfig( [ "draw" ] ) );
+// Generate separate test for each combination
+// for( let i = 0; i < allImageTestOptions.length; i++ ) {
+// 	m_tests.push( g_imagesTest2.getConfig( [ allImageTestOptions[ i ] ] ) );
 // }
+
+// Or use a single mixed test with all options:
+// m_tests.push( g_imagesTest2.getConfig( allImageTestOptions ) );
 //m_tests.push( g_bezierTest.getConfig() );
 
 // Global state for the test manager

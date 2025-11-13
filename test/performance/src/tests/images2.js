@@ -10,9 +10,7 @@
 
 import { images as g_images, sprites as g_sprites } from "../image-loader.js";
 
-let m_useColor = false;
-let m_useSprite = false;
-let m_useBlit = false;
+let m_testOptions = [];
 let m_seededRandom;
 let m_operations;
 let m_pal;
@@ -20,25 +18,34 @@ let m_pal;
 /**
  * Gets the images test configuration object
  * 
+ * @param {Array<string>} testOptions - Array of test option strings
+ *   Valid options: "blit", "blit-colors", "blit-sprites", "blit-sprites-colors",
+ *                  "draw", "draw-colors", "draw-sprites", "draw-sprites-colors"
  * @returns {Object} Test configuration
  */
-export function getConfig( useBlit, useSprite, useAlpha ) {
-	let exludeVersions =  [ "2.0.0-alpha.1", "2.0.0-alpha.0", "1.2.4" ];
-	let opName = "Draw";
-	let name = "";
-	let testVariantName = "Images";
+export function getConfig( testOptions ) {
+	let exludeVersions = [ "2.0.0-alpha.1", "2.0.0-alpha.0", "1.2.4" ];
+	
+	// Generate test name based on options
+	let name = "Images Mixed Test";
+	if( !testOptions ) {
 
-	if( useBlit ) {
-		opName = "Blit";
-	}
-	if( useSprite ) {
-		testVariantName = "Sprites";
-	}
-	if( useAlpha ) {
-		name = `${opName} ${testVariantName} Colors Test`;
-		exludeVersions = [ "2.0.0-alpha.1", "2.0.0-alpha.0", "1.2.4" ];
+		// Default to all test options if none provided
+		m_testOptions = [
+			"blit", "blit-colors", "blit-sprites", "blit-sprites-colors",
+			"draw", "draw-colors", "draw-sprites", "draw-sprites-colors"
+		];
 	} else {
-		name = `${opName} ${testVariantName} Test`;
+		m_testOptions = testOptions;
+	}
+	
+	if( m_testOptions.length === 1 ) {
+		
+		// Single test option - use descriptive name
+		const option = m_testOptions[ 0 ];
+		name = option.split( "-" ).filter( part => part !== "" ).map(
+			name => name.substring( 0, 1 ).toUpperCase() + name.substring( 1 )
+		).join( " " ) + " Test";
 	}
 
 	return {
@@ -49,9 +56,7 @@ export function getConfig( useBlit, useSprite, useAlpha ) {
 		"itemCountStart": 200,
 		"itemFactor": 10,
 		"exludeVersions": exludeVersions,
-		"useAlpha": useAlpha,
-		"useSprite": useSprite,
-		"useBlit": useBlit
+		"testOptions": testOptions
 	};
 }
 
@@ -62,9 +67,12 @@ export function getConfig( useBlit, useSprite, useAlpha ) {
  */
 async function init( config ) {
 	
-	m_useColor = config.useAlpha;
-	m_useSprite = config.useSprite;
-	m_useBlit = config.useBlit;
+	if( !config.testOptions || config.testOptions.length === 0 ) {
+
+		
+	} else {
+		m_testOptions = config.testOptions;
+	}
 
 	m_pal = $.getPal();
 
@@ -87,19 +95,38 @@ function generateOperationList() {
 	}
 }
 
+/**
+ * Parses a test option string to extract settings
+ * 
+ * @param {string} option - Test option string
+ * @returns {Object} Object with useBlit, useSprite, useColor flags
+ */
+function parseTestOption( option ) {
+	const useBlit = option.startsWith( "blit" );
+	const useSprite = option.includes( "sprites" );
+	const useColor = option.includes( "colors" );
+	return { useBlit, useSprite, useColor };
+}
+
 function generateRandomOperation() {
 	const screen = $.getScreen( 0 );
 	const width = screen.width();
 	const height = screen.height();
+	
+	// Randomly select a test option
+	const optionIndex = Math.floor( m_seededRandom() * m_testOptions.length );
+	const testOption = m_testOptions[ optionIndex ];
+	const { useBlit, useSprite, useColor } = parseTestOption( testOption );
+	
 	let drawFn;
-	if( m_useSprite ) {
-		if( m_useBlit ) {
+	if( useSprite ) {
+		if( useBlit ) {
 			drawFn = screen.blitSprite;
 		} else {
 			drawFn = screen.drawSprite;
 		}
 	} else {
-		if( m_useBlit ) {
+		if( useBlit ) {
 			drawFn = screen.blitImage;
 		} else {
 			drawFn = screen.drawImage;
@@ -126,13 +153,13 @@ function generateRandomOperation() {
 	
 	// Random angle (0-360 degrees)
 	let angle = Math.floor( m_seededRandom() * 360 );
-	if( m_useBlit ) {
+	if( useBlit ) {
 		angle = Math.floor( m_seededRandom() * Math.PI * 2 );
 	}
 
 	// Set random rotation
 	let maxRotationSpeed = 0.25;
-	if( m_useBlit ) {
+	if( useBlit ) {
 		maxRotationSpeed = 0.005;
 	}
 	let da = m_seededRandom() * maxRotationSpeed;
@@ -150,7 +177,7 @@ function generateRandomOperation() {
 	
 	// Random color (0-1)
 	let color = undefined;
-	if( m_useColor ) {
+	if( useColor ) {
 		const colorIndex = Math.floor( m_seededRandom() * m_pal.length + 1 );
 		color = $.getPalColor( colorIndex );
 	}
@@ -166,7 +193,7 @@ function generateRandomOperation() {
 	let params;
 	let moveFn;
 
-	if( m_useSprite ) {
+	if( useSprite ) {
 
 		// Draw a sprite
 		const imageName = g_sprites[ Math.floor( m_seededRandom() * g_sprites.length ) ];
@@ -176,7 +203,7 @@ function generateRandomOperation() {
 		);
 		params = [ imageName, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ];
 		moveFn = ( params ) => {
-			params[ 1 ] = ( params[ 1 ] + 1 ) % spriteData.frameCount
+			params[ 1 ] = ( params[ 1 ] + 1 ) % spriteData.frameCount;
 			params[ 2 ] += dx;
 			params[ 3 ] += dy;
 			params[ 2 ] = Math.max( 0, Math.min( params[ 2 ], width ) );
@@ -223,8 +250,9 @@ function generateRandomOperation() {
  * @returns {void}
  */
 function cleanUp() {
-	m_pal = [];
+	m_pal = null;
 	m_operations = [];
+	m_testOptions = [];
 }
 
 /**
@@ -251,71 +279,3 @@ function run( itemCount ) {
 	}
 }
 
-function run3( itemCount ) {
-	const screen = $.getScreen( 0 );
-	const width = screen.width();
-	const height = screen.height();
-	let drawFn;
-	if( m_useSprite ) {
-		drawFn = screen.blitSprite;
-	} else {
-		drawFn = screen.blitImage;
-	}
-
-	for( let i = 0; i < itemCount; i++ ) {
-
-		// Randomly decide which optional parameters to include
-		const includeAngle = m_seededRandom() > 0.3;
-		const includeAnchor = m_seededRandom() > 0.4;
-		const includeScale = m_seededRandom() > 0.7;
-
-		// Generate random position
-		const x = Math.floor( m_seededRandom() * width );
-		const y = Math.floor( m_seededRandom() * height );
-		
-		// Random angle (0-360 degrees)
-		let angle = undefined;
-		if( includeAngle ) {
-			angle = Math.floor( m_seededRandom() * Math.PI * 2 );
-		}
-		
-		// Random anchor points (0-1)
-		let anchorX = undefined;
-		let anchorY = undefined;
-		if( includeAnchor ) {
-			anchorX = m_seededRandom();
-			anchorY = m_seededRandom();
-		}
-		
-		// Random color (0-1)
-		let color = undefined;
-		if( m_useColor ) {
-			const colorIndex = Math.floor( m_seededRandom() * m_pal.length + 1 );
-			color = $.getPalColor( colorIndex );
-		}
-
-		// Random scale factors (0.1-2.0)
-		let scaleX = undefined;
-		let scaleY = undefined;
-		if( includeScale ) {
-			scaleX = 0.1 + ( m_seededRandom() * 1.9 );
-			scaleY = 0.1 + ( m_seededRandom() * 1.9 );
-		}
-
-		if( m_useSprite ) {
-
-			// Draw a sprite
-			const imageName = g_sprites[ Math.floor( m_seededRandom() * g_sprites.length ) ];
-			const frame = Math.floor(
-				m_seededRandom() * screen.getSpritesheetData( imageName ).frameCount
-			);
-			drawFn( imageName, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angle );
-		} else {
-
-			// Draw an image
-			const imageName = g_images[ Math.floor( m_seededRandom() * g_images.length ) ];
-			const image = $.getImage( imageName );
-			drawFn( image, x, y, color, anchorX, anchorY, scaleX, scaleY, angle );
-		}
-	}
-}
