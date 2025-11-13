@@ -30,25 +30,20 @@ const FULL_CIRCLE_EPSILON = 0.0001;
 export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 	const color = screenData.color;
 
-	// Normalize angles once into [0, 2π)
+	// Normalize angles to [0, 2π)
 	let a1 = normalizeAngle( angle1 );
 	let a2 = normalizeAngle( angle2 );
 
-	// Compute angular span in [0, 2π)
+	// CCW span from a1 to a2 in [0, 2π)
 	let span = a2 - a1;
 	if( span < 0 ) {
 		span += TWO_PI;
 	}
 
 	const isFullCircle = span >= TWO_PI - FULL_CIRCLE_EPSILON;
-	const isWrapped = !isFullCircle && a2 < a1;
+	const isLargeArc = !isFullCircle && span > Math.PI;
 
-	// For wrapped arcs, treat a2 as an extended angle so [a1, a2] never wraps
-	if( isWrapped ) {
-		a2 += TWO_PI;
-	}
-
-	// Estimate number of pixels we will plot, based on span (not always full circle)
+	// Estimate pixel count based on span
 	const estimatedPixels = Math.max(
 		4,
 		Math.ceil( radius * ( isFullCircle ? TWO_PI : span ) )
@@ -59,32 +54,67 @@ export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 	g_batches.prepareBatch( screenData, batchIndex, estimatedPixels );
 	const batch = screenData.batches[ batchIndex ];
 
+	// Precompute start/end direction vectors for angle tests
+	let startX = 0;
+	let startY = 0;
+	let endX = 0;
+	let endY = 0;
+
+	if( !isFullCircle ) {
+		startX = Math.cos( a1 );
+		startY = Math.sin( a1 );
+		endX = Math.cos( a2 );
+		endY = Math.sin( a2 );
+	}
+
+	// Per-pixel plot helper with arc angle filtering (no atan2)
 	let setPixel;
+
 	if( isFullCircle ) {
 		setPixel = function( px, py ) {
 			g_batchHelpers.addVertexToBatch( batch, px, py, color );
 		};
-	} else {
+	} else if( !isLargeArc ) {
+
+		// Small arc: span <= π
+		// Inside if: cross( startDir, w ) >= 0 && cross( endDir, w ) <= 0
 		setPixel = function( px, py ) {
 			const dx = px - cx;
 			const dy = py - cy;
 
-			let angle = Math.atan2( dy, dx ); // [-π, π]
-			if( angle < 0 ) {
-				angle += TWO_PI; // [0, 2π)
+			if( dx === 0 && dy === 0 ) {
+				return;
 			}
 
-			// For wrapped range, map angles below a1 into extended [2π, 4π)
-			if( isWrapped && angle < a1 ) {
-				angle += TWO_PI;
+			const cuw = startX * dy - startY * dx;
+			const cvw = endX * dy - endY * dx;
+
+			if( cuw >= 0 && cvw <= 0 ) {
+				g_batchHelpers.addVertexToBatch( batch, px, py, color );
+			}
+		};
+	} else {
+
+		// Large arc: span > π
+		// The gap is the small arc from endDir to startDir.
+		// w is inside arc if it is NOT in the gap:
+		// gap if: cross( endDir, w ) >= 0 && cross( startDir, w ) <= 0
+		setPixel = function( px, py ) {
+			const dx = px - cx;
+			const dy = py - cy;
+
+			if( dx === 0 && dy === 0 ) {
+				return;
 			}
 
-			if( angle >= a1 && angle <= a2 ) {
+			const cuw = startX * dy - startY * dx;
+			const cvw = endX * dy - endY * dx;
+
+			if( !( cvw >= 0 && cuw <= 0 ) ) {
 				g_batchHelpers.addVertexToBatch( batch, px, py, color );
 			}
 		};
 	}
-
 
 	// Adjust radius (consistent with filled circle implementation)
 	const finalRadius = radius - 1;
@@ -127,8 +157,7 @@ export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 
 		if( x === y ) {
 
-			// On the diagonal, 8-way symmetry collapses to 4 distinct pixels.
-			// Emit each unique coordinate only once so there are no overlaps.
+			// Diagonal: 8-way symmetry collapses to 4 unique pixels
 			setPixel( cx + x, cy + y );
 			setPixel( cx - x, cy + y );
 			setPixel( cx - x, cy - y );

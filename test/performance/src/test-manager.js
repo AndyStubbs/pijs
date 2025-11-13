@@ -30,7 +30,7 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 let m_tests = [];
 //m_tests.push( g_psetTest.getConfig() );
 //m_tests.push( g_lineTest.getConfig() );
-m_tests.push( g_graphicsTest.getConfig( [ "circle" ] ) );
+m_tests.push( g_graphicsTest.getConfig( [ "arc" ] ) );
 // m_tests.push( g_imagesTest.getConfig( false, false ) );
 // m_tests.push( g_imagesTest.getConfig( true, false ) );
 // m_tests.push( g_imagesTest.getConfig( false, true ) );

@@ -60,10 +60,6 @@ export function drawCircle( screenData, cx, cy, radius ) {
 	let y = 0;
 	let err = 1 - x;
 
-	const setPixel = ( pixelX, pixelY ) => {
-		drawPixelUnsafe( screenData, pixelX, pixelY, color, g_batches.POINTS_BATCH );
-	};
-
 	// Initial symmetrical points (no duplicates here)
 	drawPixelUnsafe( screenData, cx + x, cy + y, color, g_batches.POINTS_BATCH );
 	drawPixelUnsafe( screenData, cx - x, cy + y, color, g_batches.POINTS_BATCH );
