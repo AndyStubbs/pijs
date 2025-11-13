@@ -30,50 +30,61 @@ const FULL_CIRCLE_EPSILON = 0.0001;
 export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 	const color = screenData.color;
 
-	// Normalize angles to 0-2π range
+	// Normalize angles once into [0, 2π)
 	let a1 = normalizeAngle( angle1 );
 	let a2 = normalizeAngle( angle2 );
 
-	// Check for winding (when angle1 > angle2, arc wraps around 2π)
-	const winding = a1 > a2;
-
-	let isAngleInArc;
-	if( winding ) {
-		isAngleInArc = ( angle ) => angle >= a1 || angle <= a2;
-	} else {
-		isAngleInArc = ( angle ) => angle >= a1 && angle <= a2;
+	// Compute angular span in [0, 2π)
+	let span = a2 - a1;
+	if( span < 0 ) {
+		span += TWO_PI;
 	}
 
-	// Estimate pixel count: approximately 2 * PI * radius pixels
-	const estimatedPixels = Math.max( 4, Math.ceil( 2 * Math.PI * radius ) );
+	const isFullCircle = span >= TWO_PI - FULL_CIRCLE_EPSILON;
+	const isWrapped = !isFullCircle && a2 < a1;
 
-	// Get the points batch and prepare it
-	const batch = screenData.batches[ g_batches.POINTS_BATCH ];
-	g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, estimatedPixels );
+	// For wrapped arcs, treat a2 as an extended angle so [a1, a2] never wraps
+	if( isWrapped ) {
+		a2 += TWO_PI;
+	}
 
-	// Track plotted pixels to avoid duplicates from 8-way symmetry
-	const plotted = new Set();
+	// Estimate number of pixels we will plot, based on span (not always full circle)
+	const estimatedPixels = Math.max(
+		4,
+		Math.ceil( radius * ( isFullCircle ? TWO_PI : span ) )
+	);
 
-	// Helper function to check if angle is within arc range and draw pixel uniquely
-	const setPixel = ( px, py ) => {
+	// Prepare batch
+	const batchIndex = g_batches.POINTS_BATCH;
+	g_batches.prepareBatch( screenData, batchIndex, estimatedPixels );
+	const batch = screenData.batches[ batchIndex ];
 
-		// Calculate angle of this point relative to center
-		let angle = Math.atan2( py - cy, px - cx );
-		if( angle < 0 ) {
-			angle += TWO_PI;
-		}
-		//angle = normalizeAngle( angle );
-		//const angle = ( Math.atan2( py - cy, px - cx ) + TWO_PI ) % TWO_PI;
-
-		if( isAngleInArc( angle ) ) {
-			const key = ( px << 16 ) | ( py & 0xFFFF );
-			if( plotted.has( key ) ) {
-				return;
-			}
-			plotted.add( key );
+	let setPixel;
+	if( isFullCircle ) {
+		setPixel = function( px, py ) {
 			g_batchHelpers.addVertexToBatch( batch, px, py, color );
-		}
-	};
+		};
+	} else {
+		setPixel = function( px, py ) {
+			const dx = px - cx;
+			const dy = py - cy;
+
+			let angle = Math.atan2( dy, dx ); // [-π, π]
+			if( angle < 0 ) {
+				angle += TWO_PI; // [0, 2π)
+			}
+
+			// For wrapped range, map angles below a1 into extended [2π, 4π)
+			if( isWrapped && angle < a1 ) {
+				angle += TWO_PI;
+			}
+
+			if( angle >= a1 && angle <= a2 ) {
+				g_batchHelpers.addVertexToBatch( batch, px, py, color );
+			}
+		};
+	}
+
 
 	// Adjust radius (consistent with filled circle implementation)
 	const finalRadius = radius - 1;
@@ -98,15 +109,15 @@ export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 	let y = 0;
 	let err = 1 - x;
 
-	// Draw initial symmetrical points
+	// Initial symmetrical points (no duplicates here)
 	setPixel( cx + x, cy + y );
 	setPixel( cx - x, cy + y );
 	setPixel( cx + y, cy + x );
 	setPixel( cx + y, cy - x );
 
 	while( x >= y ) {
-
 		y++;
+
 		if( err < 0 ) {
 			err += 2 * y + 1;
 		} else {
@@ -114,15 +125,26 @@ export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 			err += 2 * ( y - x ) + 1;
 		}
 
-		// Apply 8-way symmetry to draw all octants
-		setPixel( cx + x, cy + y );
-		setPixel( cx + y, cy + x );
-		setPixel( cx - y, cy + x );
-		setPixel( cx - x, cy + y );
-		setPixel( cx - x, cy - y );
-		setPixel( cx - y, cy - x );
-		setPixel( cx + y, cy - x );
-		setPixel( cx + x, cy - y );
+		if( x === y ) {
+
+			// On the diagonal, 8-way symmetry collapses to 4 distinct pixels.
+			// Emit each unique coordinate only once so there are no overlaps.
+			setPixel( cx + x, cy + y );
+			setPixel( cx - x, cy + y );
+			setPixel( cx - x, cy - y );
+			setPixel( cx + x, cy - y );
+		} else {
+
+			// 8-way symmetry, all distinct when x !== y
+			setPixel( cx + x, cy + y );
+			setPixel( cx + y, cy + x );
+			setPixel( cx - y, cy + x );
+			setPixel( cx - x, cy + y );
+			setPixel( cx - x, cy - y );
+			setPixel( cx - y, cy - x );
+			setPixel( cx + y, cy - x );
+			setPixel( cx + x, cy - y );
+		}
 	}
 }
 
