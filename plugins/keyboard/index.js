@@ -54,7 +54,7 @@ export default function keyboardPlugin( pluginApi ) {
 	initInput( pluginApi );
 
 	// Register clearEvents handler
-	pluginApi.registerClearEvents( clearKeyboardEvents );
+	pluginApi.registerClearEvents( "keyboard", clearKeyboardEvents );
 }
 
 

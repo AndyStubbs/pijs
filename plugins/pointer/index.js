@@ -81,22 +81,42 @@ export default function pointerPlugin( pluginApi ) {
 		}
 	}, [ "type" ] );
 	
-	// Register clearEvents handler
-	pluginApi.registerClearEvents( ( screenData ) => {
+	// Register clearEvents handlers for mouse, touch, and press
+	pluginApi.registerClearEvents( "mouse", ( screenData ) => {
 		if( screenData !== null ) {
-
-			// Clear events for specific screen
+			// Clear mouse events for specific screen
 			mouseApi.clearMouseEvents( screenData );
-			touchApi.clearTouchEvents( screenData );
-			pressApi.clearPressEvents( screenData );
-			pressApi.clearClickEvents( screenData );
 		} else {
-
-			// Clear events for all screens
+			// Clear mouse events for all screens
 			const allScreensData = pluginApi.getAllScreensData();
 			for( const sd of allScreensData ) {
 				mouseApi.clearMouseEvents( sd );
+			}
+		}
+	} );
+	
+	pluginApi.registerClearEvents( "touch", ( screenData ) => {
+		if( screenData !== null ) {
+			// Clear touch events for specific screen
+			touchApi.clearTouchEvents( screenData );
+		} else {
+			// Clear touch events for all screens
+			const allScreensData = pluginApi.getAllScreensData();
+			for( const sd of allScreensData ) {
 				touchApi.clearTouchEvents( sd );
+			}
+		}
+	} );
+	
+	pluginApi.registerClearEvents( "press", ( screenData ) => {
+		if( screenData !== null ) {
+			// Clear press and click events for specific screen
+			pressApi.clearPressEvents( screenData );
+			pressApi.clearClickEvents( screenData );
+		} else {
+			// Clear press and click events for all screens
+			const allScreensData = pluginApi.getAllScreensData();
+			for( const sd of allScreensData ) {
 				pressApi.clearPressEvents( sd );
 				pressApi.clearClickEvents( sd );
 			}

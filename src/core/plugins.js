@@ -15,7 +15,7 @@ import * as g_utils from "./utils.js";
 
 const m_plugins = [];
 const m_waitingForDependencies = [];
-const m_clearEventsHandlers = [];
+const m_clearEventsHandlers = {};
 let m_api = null;
 
 
@@ -36,7 +36,7 @@ export function init( api ) {
 		"getPlugins", getPlugins, false, []
 	);
 	g_commands.addCommand(
-		"clearEvents", clearEvents, true, [], true
+		"clearEvents", clearEvents, true, [ "type" ], true
 	);
 
 	// Resolve plugins waiting on dependencies at end of frame
@@ -162,24 +162,60 @@ function getPlugins() {
 }
 
 /**
- * Clear all events from all plugins
+ * Clear all events from all plugins or a specific plugin type
  * 
- * @param {Object} [options] - Options object (not used)
+ * @param {Object} screenData - Screen data object (may be null)
+ * @param {Object} options - Options object
+ * @param {string} [options.type] - Optional type to clear (e.g., "keyboard", "mouse", "touch", "press")
  * @returns {void}
  * 
  * @example
  * $.clearEvents(); // Clear all events from all plugins
+ * $.clearEvents( { "type": "keyboard" } ); // Clear only keyboard events
  */
 function clearEvents( screenData, options ) {
+	const type = options?.type;
 	
-	// Call all registered clearEvents handlers
-	for( const handler of m_clearEventsHandlers ) {
+	if( type ) {
+
+		// Clear events for specific type
+		const lowerType = String( type ).toLowerCase();
+		const handler = m_clearEventsHandlers[ lowerType ];
+		
+		if( !handler ) {
+			const validTypes = Object.keys( m_clearEventsHandlers );
+			let errorMessage = `clearEvents: Invalid type "${type}".`;
+			if( validTypes.length > 0 ) {
+				errorMessage += ` Valid types are: ${validTypes.join( ", " )}.`;
+			} else {
+				errorMessage += " No event handlers are registered.";
+			}
+			const error = new Error( errorMessage );
+			error.code = "INVALID_TYPE";
+			throw error;
+		}
+		
 		try {
 			handler( screenData );
 		} catch( error ) {
 			console.error(
-				`clearEvents: Error calling clearEvents handler: ${error.message}`
+				`clearEvents: Error calling clearEvents handler for type "${type}": ` +
+				`${error.message}`
 			);
+		}
+	} else {
+
+		// Clear events for all registered types
+		for( const handlerName in m_clearEventsHandlers ) {
+			const handler = m_clearEventsHandlers[ handlerName ];
+			try {
+				handler( screenData );
+			} catch( error ) {
+				console.error(
+					`clearEvents: Error calling clearEvents handler for type "${handlerName}": ` +
+					`${error.message}`
+				);
+			}
 		}
 	}
 }
@@ -191,25 +227,42 @@ function clearEvents( screenData, options ) {
 
 
 /**
- * Register a clearEvents handler function
+ * Register a clearEvents handler function with a name
  * 
- * @param {Function} handler - Function to call when clearEvents is invoked
- * @param {Object} [handler.screenData] - Optional screen data passed from clearEvents
- * @param {Object} [handler.options] - Optional options passed from clearEvents
+ * @param {string} name - Name of the event type (e.g., "keyboard", "mouse", "touch", "press")
+ * @param {Function} handler - Function to call when clearEvents is invoked for this type
+ * @param {Object} [handler.screenData] - Screen data passed from clearEvents (may be null)
  * @returns {void}
  * 
  * @example
- * pluginApi.registerClearEvents( ( screenData, options ) => {
- *   // Clear events for this plugin
+ * pluginApi.registerClearEvents( "keyboard", ( screenData ) => {
+ *   // Clear keyboard events for this plugin
  * } );
  */
-function registerClearEvents( handler ) {
+function registerClearEvents( name, handler ) {
+	if( !name || typeof name !== "string" ) {
+		const error = new TypeError( "registerClearEvents: name must be a non-empty string." );
+		error.code = "INVALID_NAME";
+		throw error;
+	}
+	
 	if( typeof handler !== "function" ) {
 		const error = new TypeError( "registerClearEvents: handler must be a function." );
 		error.code = "INVALID_HANDLER";
 		throw error;
 	}
-	m_clearEventsHandlers.push( handler );
+	
+	const lowerName = name.toLowerCase();
+	
+	if( m_clearEventsHandlers[ lowerName ] ) {
+		const error = new Error(
+			`registerClearEvents: Handler with name "${name}" is already registered.`
+		);
+		error.code = "DUPLICATE_HANDLER";
+		throw error;
+	}
+	
+	m_clearEventsHandlers[ lowerName ] = handler;
 }
 
 // Initialize a plugin
