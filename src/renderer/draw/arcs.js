@@ -11,9 +11,10 @@
 "use strict";
 
 import * as g_batches from "../batches.js";
-import * as g_utils from "../../core/utils.js";
 import * as g_batchHelpers from "./batch-helpers.js";
 
+const TWO_PI = 2 * Math.PI;
+const FULL_CIRCLE_EPSILON = 0.0001;
 
 /**
  * Draw arc outline using midpoint circle algorithm
@@ -29,20 +30,18 @@ import * as g_batchHelpers from "./batch-helpers.js";
 export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 	const color = screenData.color;
 
-	// Convert angles from radians to degrees and normalize to 0-360
-	let a1 = g_utils.radiansToDegrees( angle1 );
-	let a2 = g_utils.radiansToDegrees( angle2 );
-	a1 = ( a1 + 360 ) % 360;
-	a2 = ( a2 + 360 ) % 360;
+	// Normalize angles to 0-2π range
+	let a1 = normalizeAngle( angle1 );
+	let a2 = normalizeAngle( angle2 );
 
-	// Check for winding (when angle1 > angle2, arc wraps around 360 degrees)
+	// Check for winding (when angle1 > angle2, arc wraps around 2π)
 	const winding = a1 > a2;
 
-	// Adjust radius (consistent with filled circle implementation)
-	const adjustedRadius = radius - 1;
-	let finalRadius = adjustedRadius;
-	if( finalRadius < 0 ) {
-		finalRadius = 0;
+	let isAngleInArc;
+	if( winding ) {
+		isAngleInArc = ( angle ) => angle >= a1 || angle <= a2;
+	} else {
+		isAngleInArc = ( angle ) => angle >= a1 && angle <= a2;
 	}
 
 	// Estimate pixel count: approximately 2 * PI * radius pixels
@@ -59,39 +58,28 @@ export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 	const setPixel = ( px, py ) => {
 
 		// Calculate angle of this point relative to center
-		let angle = Math.atan2( py - cy, px - cx ) * ( 180 / Math.PI );
-		angle = ( angle + 360 ) % 360;
-
-		// Check if angle is within arc range
-		let shouldDraw = false;
-		if( winding ) {
-
-			// Arc wraps around 360 degrees
-			shouldDraw = angle >= a1 || angle <= a2;
-		} else {
-
-			// Normal arc
-			shouldDraw = angle >= a1 && angle <= a2;
+		let angle = Math.atan2( py - cy, px - cx );
+		if( angle < 0 ) {
+			angle += TWO_PI;
 		}
+		//angle = normalizeAngle( angle );
+		//const angle = ( Math.atan2( py - cy, px - cx ) + TWO_PI ) % TWO_PI;
 
-		if( shouldDraw ) {
-
-			// De-duplicate exact pixel coordinates
-			const keyX = px | 0;
-			const keyY = py | 0;
-			const key = keyX + "," + keyY;
-			if( !plotted.has( key ) ) {
-				plotted.add( key );
-				g_batchHelpers.addVertexToBatch( batch, keyX, keyY, color );
+		if( isAngleInArc( angle ) ) {
+			const key = ( px << 16 ) | ( py & 0xFFFF );
+			if( plotted.has( key ) ) {
+				return;
 			}
+			plotted.add( key );
+			g_batchHelpers.addVertexToBatch( batch, px, py, color );
 		}
 	};
 
-	// Handle special cases
-	if( finalRadius === 0 ) {
+	// Adjust radius (consistent with filled circle implementation)
+	const finalRadius = radius - 1;
 
-		// Single point
-		setPixel( cx, cy );
+	// Handle special cases
+	if( finalRadius < 1 ) {
 		return;
 	}
 
@@ -136,4 +124,12 @@ export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 		setPixel( cx + y, cy - x );
 		setPixel( cx + x, cy - y );
 	}
+}
+
+function normalizeAngle( angle ) {
+	let normalized = angle % TWO_PI;
+	if( normalized < 0 ) {
+		normalized += TWO_PI;
+	}
+	return normalized;
 }

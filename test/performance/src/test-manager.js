@@ -28,8 +28,8 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 
 // Get all test config data
 let m_tests = [];
-m_tests.push( g_psetTest.getConfig() );
-m_tests.push( g_lineTest.getConfig() );
+//m_tests.push( g_psetTest.getConfig() );
+//m_tests.push( g_lineTest.getConfig() );
 m_tests.push( g_graphicsTest.getConfig() );
 // m_tests.push( g_imagesTest.getConfig( false, false ) );
 // m_tests.push( g_imagesTest.getConfig( true, false ) );

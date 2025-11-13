@@ -69,7 +69,9 @@ function generateRandomOperation() {
 	const colorCount = m_pal.length;
 	
 	// Even distribution of operations
-	const operationType = Math.floor( m_seededRandom() * 10 );
+	//const operationType = Math.floor( m_seededRandom() * 10 );
+	let operationType = 8;
+
 	
 	switch( operationType ) {
 		case 0: // line
@@ -199,6 +201,7 @@ function generateRandomOperation() {
 			};
 			
 		case 8: // arc
+			
 			const arcX = Math.floor( m_seededRandom() * width );
 			const arcY = Math.floor( m_seededRandom() * height );
 			const arcRadius = Math.floor( m_seededRandom() * 40 ) + 10;
@@ -260,6 +263,8 @@ function run( itemCount ) {
 		
 		// Execute the operation with variable parameters to prevent JIT optimization
 		const params = operation.getParams ? operation.getParams() : operation.params;
-		operation.func( ...params );
+		operation.func(
+			params[ 0 ], params[ 1 ], params[ 2 ], params[ 3 ], params[ 4 ]
+		);
 	}
 }
