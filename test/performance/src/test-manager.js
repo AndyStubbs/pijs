@@ -30,7 +30,7 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 let m_tests = [];
 //m_tests.push( g_psetTest.getConfig() );
 //m_tests.push( g_lineTest.getConfig() );
-m_tests.push( g_graphicsTest.getConfig() );
+m_tests.push( g_graphicsTest.getConfig( [ "circle" ] ) );
 // m_tests.push( g_imagesTest.getConfig( false, false ) );
 // m_tests.push( g_imagesTest.getConfig( true, false ) );
 // m_tests.push( g_imagesTest.getConfig( false, true ) );
@@ -315,7 +315,8 @@ async function runNextTest() {
 		$.print( "Item Count:" + itemCount.toFixed( 0 ).padStart( 13, " " ) );
 		$.print( "Target FPS:" + m_targetFps.toFixed( 0 ).padStart( 13, " " ) );
 		$.print( "Frame FPS:" + currentFps.toFixed( 0 ).padStart( 14, " " ) );
-		$.print( "Test Time:" + ( ( TEST_DURATION - elapsed ) / 1000 ).toFixed( 2 ).padStart( 14, " " )
+		$.print(
+			"Test Time:" + ( ( TEST_DURATION - elapsed ) / 1000 ).toFixed( 2 ).padStart( 14, " " )
 		);
 
 		lt = t;

@@ -11,6 +11,7 @@
 
 let m_pal = null;
 let m_operations = [];
+let m_operationTypes = [];
 let m_seededRandom = null;
 
 /**
@@ -18,7 +19,7 @@ let m_seededRandom = null;
  * 
  * @returns {Object} Test configuration
  */
-export function getConfig() {
+export function getConfig( operationTypes ) {
 	return {
 		"name": "Graphics Test",
 		"run": run,
@@ -26,7 +27,8 @@ export function getConfig() {
 		"cleanUp": cleanUp,
 		"itemCountStart": 500,
 		"itemFactor": 10,
-		"exludeVersions": []
+		"exludeVersions": [],
+		"operationTypes": operationTypes
 	};
 }
 
@@ -35,10 +37,19 @@ export function getConfig() {
  * 
  * @returns {void}
  */
-function init() {
+function init( config ) {
+
+	if( !config.operationTypes ) {
+		m_operationTypes = [
+			"pset", "line", "circle", "circle-filled", "rect", "rect-filled", "ellipse",
+			"ellipse-filled", "arc", "bezier"
+		];
+	} else {
+		m_operationTypes = config.operationTypes;
+	}
 
 	// Set up random seed for consistent test results
-	m_seededRandom = new Math.seedrandom( "graphicsPixel", true );
+	m_seededRandom = new Math.seedrandom( "graphics", true );
 	
 	m_pal = $.getPal();
 	generateOperationList();
@@ -69,12 +80,11 @@ function generateRandomOperation() {
 	const colorCount = m_pal.length;
 	
 	// Even distribution of operations
-	//const operationType = Math.floor( m_seededRandom() * 10 );
-	let operationType = 8;
-
+	const rnd = Math.floor( m_seededRandom() * m_operationTypes.length );
+	const operationType = m_operationTypes[ rnd ];
 	
 	switch( operationType ) {
-		case 0: // line
+		case "line":
 			const lineX1 = Math.floor( m_seededRandom() * width );
 			const lineY1 = Math.floor( m_seededRandom() * height );
 			const lineX2 = Math.floor( m_seededRandom() * width );
@@ -90,7 +100,7 @@ function generateRandomOperation() {
 				]
 			};
 			
-		case 1: // circle (unfilled)
+		case "circle":
 			const circleX = Math.floor( m_seededRandom() * width );
 			const circleY = Math.floor( m_seededRandom() * height );
 			const circleRadius = Math.floor( m_seededRandom() * 50 ) + 5;
@@ -104,7 +114,7 @@ function generateRandomOperation() {
 				]
 			};
 			
-		case 2: // circle (filled)
+		case "circle-filled":
 			const circleFillX = Math.floor( m_seededRandom() * width );
 			const circleFillY = Math.floor( m_seededRandom() * height );
 			const circleFillRadius = Math.floor( m_seededRandom() * 50 ) + 5;
@@ -120,7 +130,7 @@ function generateRandomOperation() {
 				]
 			};
 			
-		case 3: // ellipse (unfilled)
+		case "ellipse":
 			const ellipseX = Math.floor( m_seededRandom() * width );
 			const ellipseY = Math.floor( m_seededRandom() * height );
 			const ellipseRadiusX = Math.floor( m_seededRandom() * 60 ) + 5;
@@ -136,7 +146,7 @@ function generateRandomOperation() {
 				]
 			};
 			
-		case 4: // ellipse (filled)
+		case "ellipse-filled":
 			const ellipseFillX = Math.floor( m_seededRandom() * width );
 			const ellipseFillY = Math.floor( m_seededRandom() * height );
 			const ellipseFillRadiusX = Math.floor( m_seededRandom() * 60 ) + 5;
@@ -154,7 +164,7 @@ function generateRandomOperation() {
 				]
 			};
 			
-		case 5: // rect (unfilled)
+		case "rect":
 			const rectX = Math.floor( m_seededRandom() * width );
 			const rectY = Math.floor( m_seededRandom() * height );
 			const rectWidth = Math.floor( m_seededRandom() * 100 ) + 10;
@@ -170,7 +180,7 @@ function generateRandomOperation() {
 				]
 			};
 			
-		case 6: // rect (filled)
+		case "rect-filled":
 			const rectFillX = Math.floor( m_seededRandom() * width );
 			const rectFillY = Math.floor( m_seededRandom() * height );
 			const rectFillWidth = Math.floor( m_seededRandom() * 100 ) + 10;
@@ -188,7 +198,7 @@ function generateRandomOperation() {
 				]
 			};
 			
-		case 7: // pset
+		case "pset":
 			const psetX = Math.floor( m_seededRandom() * width );
 			const psetY = Math.floor( m_seededRandom() * height );
 			return {
@@ -200,8 +210,7 @@ function generateRandomOperation() {
 				]
 			};
 			
-		case 8: // arc
-			
+		case "arc":
 			const arcX = Math.floor( m_seededRandom() * width );
 			const arcY = Math.floor( m_seededRandom() * height );
 			const arcRadius = Math.floor( m_seededRandom() * 40 ) + 10;
