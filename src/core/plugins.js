@@ -179,7 +179,9 @@ function initializePlugin( pluginInfo ) {
 		"getScreenData": g_screenManager.getScreenData,
 		"getAllScreensData": g_screenManager.getAllScreensData,
 		"getApi": () => m_api,
-		"utils": g_utils
+		"utils": g_utils,
+		"wait": g_commands.wait,
+		"done": g_commands.done
 	};
 
 	// Initialize plugin

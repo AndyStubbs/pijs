@@ -69,32 +69,109 @@
 	</div>
 
 	<script src="../../../build/pi.js"></script>
+	<script src="../../../plugins/play-sound/dist/play-sound.js"></script>
 	<script>
 		let audioPoolId = null;
 
 		// Generate a simple beep sound as a data URL
-		// This creates a 0.5 second 440Hz beep
+		// This creates a 0.5 second 440Hz beep using Web Audio API
 		function generateBeepDataURL() {
+			const audioContext = new ( window.AudioContext || window.webkitAudioContext )();
+			const sampleRate = audioContext.sampleRate;
+			const duration = 0.5;
+			const frequency = 440;
+			const numSamples = Math.floor( sampleRate * duration );
+			const buffer = audioContext.createBuffer( 1, numSamples, sampleRate );
+			const data = buffer.getChannelData( 0 );
 
-			// For this test, we'll use a silent audio file
-			// In a real application, you would load an actual audio file
-			return "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+			for( let i = 0; i < numSamples; i++ ) {
+				data[ i ] = Math.sin( 2 * Math.PI * frequency * i / sampleRate ) * 0.3;
+			}
+
+			// Convert to WAV format
+			const wav = audioBufferToWav( buffer );
+			const blob = new Blob( [ wav ], { "type": "audio/wav" } );
+			return URL.createObjectURL( blob );
+		}
+
+		// Convert AudioBuffer to WAV format
+		function audioBufferToWav( buffer ) {
+			const numChannels = buffer.numberOfChannels;
+			const sampleRate = buffer.sampleRate;
+			const format = 1;
+			const bitDepth = 16;
+			const bytesPerSample = bitDepth / 8;
+			const blockAlign = numChannels * bytesPerSample;
+
+			const length = buffer.length;
+			const arrayBuffer = new ArrayBuffer( 44 + length * numChannels * bytesPerSample );
+			const view = new DataView( arrayBuffer );
+
+			// WAV header
+			const writeString = ( offset, string ) => {
+				for( let i = 0; i < string.length; i++ ) {
+					view.setUint8( offset + i, string.charCodeAt( i ) );
+				}
+			};
+
+			writeString( 0, "RIFF" );
+			view.setUint32( 4, 36 + length * numChannels * bytesPerSample, true );
+			writeString( 8, "WAVE" );
+			writeString( 12, "fmt " );
+			view.setUint32( 16, 16, true );
+			view.setUint16( 20, format, true );
+			view.setUint16( 22, numChannels, true );
+			view.setUint32( 24, sampleRate, true );
+			view.setUint32( 28, sampleRate * blockAlign, true );
+			view.setUint16( 32, blockAlign, true );
+			view.setUint16( 34, bitDepth, true );
+			writeString( 36, "data" );
+			view.setUint32( 40, length * numChannels * bytesPerSample, true );
+
+			// Convert float samples to 16-bit PCM
+			let offset = 44;
+			for( let i = 0; i < length; i++ ) {
+				for( let channel = 0; channel < numChannels; channel++ ) {
+					const sample = Math.max( -1, Math.min( 1, buffer.getChannelData( channel )[ i ] ) );
+					view.setInt16( offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true );
+					offset += 2;
+				}
+			}
+
+			return arrayBuffer;
 		}
 
 		function loadAudio() {
 			const status = document.getElementById( "status" );
-			status.textContent = "Loading audio pool with 5 instances...";
+			status.textContent = "Generating audio and loading pool with 5 instances...";
 
 			try {
 
 				// Note: In a real application, use an actual audio file URL
 				// audioPoolId = $.createAudioPool( "sounds/beep.mp3", 5 );
 				
-				// For testing without external files, we use a data URL
-				audioPoolId = $.createAudioPool( generateBeepDataURL(), 5 );
+				// For testing without external files, we generate a beep sound
+				const audioUrl = generateBeepDataURL();
+				audioPoolId = $.createAudioPool( audioUrl, 5 );
 
+				// Wait for audio to load and pi to be ready
 				$.ready( () => {
-					status.textContent = "Audio pool loaded successfully! Pool ID: " + audioPoolId;
+
+					// Check if pool is ready by verifying it has loaded audio
+					const checkPoolReady = () => {
+						try {
+
+							// Try to get pool info - if it throws, pool isn't ready
+							// We'll wait a bit more for async loading
+							setTimeout( () => {
+								status.textContent = "Audio pool loaded successfully! Pool ID: " +
+									audioPoolId + " (Click a play button to test)";
+							}, 500 );
+						} catch( error ) {
+							setTimeout( checkPoolReady, 100 );
+						}
+					};
+					checkPoolReady();
 				} );
 			} catch( error ) {
 				status.textContent = "Error: " + error.message;
@@ -109,7 +186,8 @@
 			}
 
 			try {
-				$.playAudioPool( audioPoolId );
+				$.playAudioPool( audioPoolId, 1.0 );
+				console.log( "Playing sound from pool:", audioPoolId );
 			} catch( error ) {
 				alert( "Error: " + error.message );
 				console.error( error );
