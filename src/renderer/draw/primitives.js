@@ -18,17 +18,16 @@ import * as g_batches from "../batches.js";
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
- * @param {Object} color - Color object with r/g/b/a components (0-255)
  * @returns {void}
  */
-export function drawPixel( screenData, x, y, color, batchType ) {
+export function drawPixel( screenData, x, y, batchType ) {
 
 	// Prep for 1 pixel
 	g_batches.prepareBatch( screenData, batchType, 1, null, null );
 
 	// Add directly to point batch
 	const batch = screenData.batches[ batchType ];
-	g_batchHelpers.addVertexToBatch( batch, x, y, color );
+	g_batchHelpers.addVertexToBatch( batch, x, y, screenData.color );
 }
 
 /**
@@ -37,7 +36,7 @@ export function drawPixel( screenData, x, y, color, batchType ) {
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
- * @param {Object} color - Color object with r/g/b/a components (0-255)
+ * @param {Object} color - Color color with [ r, g, b, a ] values (0-255)
  * @returns {void}
  */
 export function drawPixelUnsafe( screenData, x, y, color, batchType ) {
@@ -46,4 +45,3 @@ export function drawPixelUnsafe( screenData, x, y, color, batchType ) {
 	const batch = screenData.batches[ batchType ];
 	g_batchHelpers.addVertexToBatch( batch, x, y, color );
 }
-

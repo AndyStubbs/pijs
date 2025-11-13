@@ -24,10 +24,10 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @param {number} radius - Arc radius
  * @param {number} angle1 - Start angle in radians
  * @param {number} angle2 - End angle in radians
- * @param {Object} color - Color object with r/g/b/a components (0-255)
  * @returns {void}
  */
-export function drawArc( screenData, cx, cy, radius, angle1, angle2, color ) {
+export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
+	const color = screenData.color;
 
 	// Convert angles from radians to degrees and normalize to 0-360
 	let a1 = g_utils.radiansToDegrees( angle1 );

@@ -24,11 +24,11 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @param {number} cy - Center Y coordinate
  * @param {number} rx - Radius X
  * @param {number} ry - Radius Y
- * @param {number} color - Outline color
- * @param {number} fillColor - Fill color (or null for outline only)
+ * @param {Object} fillColor - Fill color object (or null for outline only)
  * @returns {void}
  */
-export function drawEllipse( screenData, cx, cy, rx, ry, color, fillColor ) {
+export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
+	const color = screenData.color;
 
 	// Validate radii
 	if( rx < 0 || ry < 0 ) {
@@ -88,7 +88,7 @@ export function drawEllipse( screenData, cx, cy, rx, ry, color, fillColor ) {
 	plotSymmetric( x, y );
 
 	// Optional: collect scanlines for fill (no caching)
-	const doFill = fillColor != null && rx >= 1 && ry >= 1;
+	const doFill = fillColor !== null && rx >= 1 && ry >= 1;
 	let scanlineMinMax = null;
 	if( doFill ) {
 		scanlineMinMax = new Map(); // Map<y, {left: x, right: x}>

@@ -267,9 +267,9 @@ function applyFilter( screenData, filter, x1, y1, width, height ) {
 	g_renderer.flushBatches( screenData );
 
 	// Read pixels as raw Uint8Array (bottom-left origin from WebGL)
-	const pixelData = g_renderer.readPixelsRaw( screenData, x1, y1, width, height );
+	const imageData = g_renderer.readPixelsRaw( screenData, x1, y1, width, height );
 
-	if( !pixelData ) {
+	if( !imageData ) {
 		return;
 	}
 
@@ -279,6 +279,7 @@ function applyFilter( screenData, filter, x1, y1, width, height ) {
 	// The input pixelData is in bottom-left origin, so we need to flip Y when accessing
 	// for the filter callback (which expects top-left coordinates), then flip back for output
 	const filteredData = new Uint8Array( width * height * 4 );
+	const pixelData = new Uint8ClampedArray( 4 );
 
 	for( let y = 0; y < height; y++ ) {
 		for( let x = 0; x < width; x++ ) {
@@ -288,48 +289,31 @@ function applyFilter( screenData, filter, x1, y1, width, height ) {
 			const srcRow = ( height - 1 ) - y;
 			const srcIndex = ( srcRow * width + x ) * 4;
 
-			const r = pixelData[ srcIndex ];
-			const g = pixelData[ srcIndex + 1 ];
-			const b = pixelData[ srcIndex + 2 ];
-			const a = pixelData[ srcIndex + 3 ];
-
-			// Call filter with r, g, b, a, x, y as separate parameters
-			// x and y are in top-left coordinate system for the filter callback
-			const filteredColor = filter( g_utils.rgbToColor( r, g, b, a ), x1 + x, y1 + y );
+			// Populate the temporary buffer with current pixel's RGBA
+			pixelData[ 0 ] = imageData[ srcIndex ];
+			pixelData[ 1 ] = imageData[ srcIndex + 1 ];
+			pixelData[ 2 ] = imageData[ srcIndex + 2 ];
+			pixelData[ 3 ] = imageData[ srcIndex + 3 ];
 
 			// Output index is in bottom-left origin format (same as pixelData)
 			const dstIndex = ( srcRow * width + x ) * 4;
 
-			// If filter returns null/undefined, keep original pixel
-			if( filteredColor === null || filteredColor === undefined ) {
-				filteredData[ dstIndex     ] = r;
-				filteredData[ dstIndex + 1 ] = g;
-				filteredData[ dstIndex + 2 ] = b;
-				filteredData[ dstIndex + 3 ] = a;
-				continue;
-			}
+			// Call filter with r, g, b, a, x, y as separate parameters
+			// x and y are in top-left coordinate system for the filter callback
+			if( filter( pixelData, x1 + x, y1 + y ) ) {
 
-			// Validate filtered color
-			if(
-				filteredColor &&
-				Number.isInteger( filteredColor.r ) &&
-				Number.isInteger( filteredColor.g ) &&
-				Number.isInteger( filteredColor.b ) &&
-				Number.isInteger( filteredColor.a )
-			) {
-
-				// Clamp color values to valid range
-				filteredData[ dstIndex     ] = g_utils.clamp( filteredColor.r, 0, 255 );
-				filteredData[ dstIndex + 1 ] = g_utils.clamp( filteredColor.g, 0, 255 );
-				filteredData[ dstIndex + 2 ] = g_utils.clamp( filteredColor.b, 0, 255 );
-				filteredData[ dstIndex + 3 ] = g_utils.clamp( filteredColor.a, 0, 255 );
+				// Update the pixeldata 
+				filteredData[ dstIndex     ] = pixelData[ 0 ];
+				filteredData[ dstIndex + 1 ] = pixelData[ 1 ];
+				filteredData[ dstIndex + 2 ] = pixelData[ 2 ];
+				filteredData[ dstIndex + 3 ] = pixelData[ 3 ];
 			} else {
 
 				// Invalid color format, keep original pixel
-				filteredData[ dstIndex     ] = r;
-				filteredData[ dstIndex + 1 ] = g;
-				filteredData[ dstIndex + 2 ] = b;
-				filteredData[ dstIndex + 3 ] = a;
+				filteredData[ dstIndex     ] = 0;
+				filteredData[ dstIndex + 1 ] = 0;
+				filteredData[ dstIndex + 2 ] = 0;
+				filteredData[ dstIndex + 3 ] = 0;
 			}
 		}
 	}
@@ -457,7 +441,9 @@ function put( screenData, data, x, y, include0, startY, startX, width, height ) 
 			const sx = x + dataX;
 			const sy = y + dataY;
 
-			g_renderer.drawPixel( screenData, sx, sy, colorValue, g_renderer.POINTS_REPLACE_BATCH );
+			g_renderer.drawPixelUnsafe(
+				screenData, sx, sy, colorValue, g_renderer.POINTS_REPLACE_BATCH
+			);
 		}
 	}
 }

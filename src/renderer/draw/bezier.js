@@ -29,7 +29,8 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @param {Object} color
  * @returns {void}
  */
-export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color ) {
+export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y ) {
+	const color = screenData.color;
 
 	// Tessellate curve into points with ~0.75px max error
 	const maxError = 0.75;

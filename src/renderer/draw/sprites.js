@@ -10,13 +10,8 @@
 
 import * as g_batches from "../batches.js";
 import * as g_textures from "../textures.js";
-import * as g_utils from "../../core/utils.js";
 
-
-/***************************************************************************************************
- * Internal Helper Functions
- ***************************************************************************************************/
-
+const m_quadColorMap = new Map();
 
 /**
  * Calculate transformed corner positions for a quad
@@ -78,14 +73,18 @@ function calculateTransformedCorners(
 /**
  * Add a textured quad (2 triangles, 6 vertices) to IMAGE_BATCH
  * 
+ * TODO: Move to batch helpers and call addQuadToBatch
+ * 
  * @param {Object} screenData - Screen data object
  * @param {WebGLTexture} texture - WebGL texture
  * @param {Array<Object>} corners - Array of 4 corner objects with x, y properties
  * @param {Array<number>} texCoords - Array of 12 texture coordinates (2 per vertex for 6 vertices)
- * @param {Uint8Array} color - Color array with [r, g, b, a]
+ * @param {Uint8Array} colorQuadArray - Color array with 6 sets of 4 color values (24 values)
  * @returns {void}
  */
-function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color, batchType ) {
+function addTexturedQuadToBatch(
+	screenData, texture, corners, texCoords, colorQuadArray, batchType
+) {
 
 	// Prepare batch for 6 vertices (2 triangles)
 	const batch = screenData.batches[ batchType ];
@@ -104,18 +103,18 @@ function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color,
 	// Triangle 1: Top-left, Top-right, Bottom-left
 	let vIdx = vertexBase;
 	let tIdx = texBase;
-	let cIdx = colorBase;
+	//let cIdx = colorBase;
 
 	// Vertex 0: Top-left
 	batchVertices[ vIdx++ ] = corners[ 0 ].x;
 	batchVertices[ vIdx++ ] = corners[ 0 ].y;
 	batchTexCoords[ tIdx++ ] = texCoords[ 0 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 1 ];
-	// batchColors.set( color, colorBase );
-	batchColors[ cIdx++ ] = color[ 0 ];
-	batchColors[ cIdx++ ] = color[ 1 ];
-	batchColors[ cIdx++ ] = color[ 2 ];
-	batchColors[ cIdx++ ] = color[ 3 ];
+	//batchColors.set( color, colorBase );
+	// batchColors[ cIdx++ ] = color[ 0 ];
+	// batchColors[ cIdx++ ] = color[ 1 ];
+	// batchColors[ cIdx++ ] = color[ 2 ];
+	// batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Vertex 1: Top-right
 	batchVertices[ vIdx++ ] = corners[ 1 ].x;
@@ -123,10 +122,10 @@ function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color,
 	batchTexCoords[ tIdx++ ] = texCoords[ 2 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 3 ];
 	//batchColors.set( color, colorBase + 4 );
-	batchColors[ cIdx++ ] = color[ 0 ];
-	batchColors[ cIdx++ ] = color[ 1 ];
-	batchColors[ cIdx++ ] = color[ 2 ];
-	batchColors[ cIdx++ ] = color[ 3 ];
+	// batchColors[ cIdx++ ] = color[ 0 ];
+	// batchColors[ cIdx++ ] = color[ 1 ];
+	// batchColors[ cIdx++ ] = color[ 2 ];
+	// batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Vertex 2: Bottom-left
 	batchVertices[ vIdx++ ] = corners[ 2 ].x;
@@ -134,10 +133,10 @@ function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color,
 	batchTexCoords[ tIdx++ ] = texCoords[ 4 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 5 ];
 	//batchColors.set( color, colorBase + 8 );
-	batchColors[ cIdx++ ] = color[ 0 ];
-	batchColors[ cIdx++ ] = color[ 1 ];
-	batchColors[ cIdx++ ] = color[ 2 ];
-	batchColors[ cIdx++ ] = color[ 3 ];
+	// batchColors[ cIdx++ ] = color[ 0 ];
+	// batchColors[ cIdx++ ] = color[ 1 ];
+	// batchColors[ cIdx++ ] = color[ 2 ];
+	// batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Triangle 2: Top-right, Bottom-right, Bottom-left
 	// Vertex 3: Top-right
@@ -146,10 +145,10 @@ function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color,
 	batchTexCoords[ tIdx++ ] = texCoords[ 6 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 7 ];
 	//batchColors.set( color, colorBase + 12 );
-	batchColors[ cIdx++ ] = color[ 0 ];
-	batchColors[ cIdx++ ] = color[ 1 ];
-	batchColors[ cIdx++ ] = color[ 2 ];
-	batchColors[ cIdx++ ] = color[ 3 ];
+	// batchColors[ cIdx++ ] = color[ 0 ];
+	// batchColors[ cIdx++ ] = color[ 1 ];
+	// batchColors[ cIdx++ ] = color[ 2 ];
+	// batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Vertex 4: Bottom-right
 	batchVertices[ vIdx++ ] = corners[ 3 ].x;
@@ -157,24 +156,76 @@ function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color,
 	batchTexCoords[ tIdx++ ] = texCoords[ 8 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 9 ];
 	//batchColors.set( color, colorBase + 16 );
-	batchColors[ cIdx++ ] = color[ 0 ];
-	batchColors[ cIdx++ ] = color[ 1 ];
-	batchColors[ cIdx++ ] = color[ 2 ];
-	batchColors[ cIdx++ ] = color[ 3 ];
+	// batchColors[ cIdx++ ] = color[ 0 ];
+	// batchColors[ cIdx++ ] = color[ 1 ];
+	// batchColors[ cIdx++ ] = color[ 2 ];
+	// batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Vertex 5: Bottom-left
 	batchVertices[ vIdx++ ] = corners[ 2 ].x;
 	batchVertices[ vIdx++ ] = corners[ 2 ].y;
 	batchTexCoords[ tIdx++ ] = texCoords[ 10 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 11 ];
-	//batchColors.set( color, colorBase + 20 );
-	batchColors[ cIdx++ ] = color[ 0 ];
-	batchColors[ cIdx++ ] = color[ 1 ];
-	batchColors[ cIdx++ ] = color[ 2 ];
-	batchColors[ cIdx++ ] = color[ 3 ];
+	// batchColors.set( color, colorBase + 20 );
+	// batchColors[ cIdx++ ] = color[ 0 ];
+	// batchColors[ cIdx++ ] = color[ 1 ];
+	// batchColors[ cIdx++ ] = color[ 2 ];
+	// batchColors[ cIdx++ ] = color[ 3 ];
+
+	batchColors.set( colorQuadArray, colorBase );
 
 	// Update batch count
 	batch.count += 6;
+}
+
+function getQuadColorArray( color ) {
+	let quadColorArray = m_quadColorMap.get( color.key );
+
+	if (quadColorArray === undefined) {
+
+		// TODO: Implement Pruning logic BEFORE creating new entry
+		// if (m_quadColorMap.size >= MAX_QUAD_COLOR_MAP_SIZE) {
+		// 	// Simple approach: Clear the entire map. Aggressive but easy.
+		// 	m_quadColorMap.clear();
+		// 	// More sophisticated: Remove oldest N items (requires tracking order/timestamps)
+		// }
+		
+		const r = color.r;
+		const g = color.g;
+		const b = color.b;
+		const a = color.a;
+
+		// Create the quad color array
+		quadColorArray = new Uint8Array( 24 );
+		quadColorArray[ 0 ] = r;
+		quadColorArray[ 1 ] = g;
+		quadColorArray[ 2 ] = b;
+		quadColorArray[ 3 ] = a;
+		quadColorArray[ 4 ] = r;
+		quadColorArray[ 5 ] = g;
+		quadColorArray[ 6 ] = b;
+		quadColorArray[ 7 ] = a;
+		quadColorArray[ 8 ] = r;
+		quadColorArray[ 9 ] = g;
+		quadColorArray[ 10 ] = b;
+		quadColorArray[ 11 ] = a;
+		quadColorArray[ 12 ] = r;
+		quadColorArray[ 13 ] = g;
+		quadColorArray[ 14 ] = b;
+		quadColorArray[ 15 ] = a;
+		quadColorArray[ 16 ] = r;
+		quadColorArray[ 17 ] = g;
+		quadColorArray[ 18 ] = b;
+		quadColorArray[ 19 ] = a;
+		quadColorArray[ 20 ] = r;
+		quadColorArray[ 21 ] = g;
+		quadColorArray[ 22 ] = b;
+		quadColorArray[ 23 ] = a;
+
+		// Add the key to map
+		m_quadColorMap.set( color.key, quadColorArray );
+	}
+	return quadColorArray;
 }
 
 /**
@@ -186,7 +237,7 @@ function addTexturedQuadToBatch( screenData, texture, corners, texCoords, color,
  * @param {number} y - Y position
  * @param {number} anchorX - Anchor point X (0-1)
  * @param {number} anchorY - Anchor point Y (0-1)
- * @param {Float32Array} color - Color array with [r, g, b, a]
+ * @param {Object} color - Color value object with rgba and key for map lookups
  * @param {number} scaleX - Scale X factor
  * @param {number} scaleY - Scale Y factor
  * @param {number} angleRad - Rotation angle in radians
@@ -220,7 +271,9 @@ export function drawImage(
 	];
 
 	// Add textured quad to batch
-	addTexturedQuadToBatch( screenData, texture, corners, texCoords, color, batchType );
+	addTexturedQuadToBatch(
+		screenData, texture, corners, texCoords, getQuadColorArray( color ), batchType
+	);
 }
 
 /**
@@ -236,7 +289,7 @@ export function drawImage(
  * @param {number} y - Destination Y position
  * @param {number} width - Destination width
  * @param {number} height - Destination height
- * @param {Float32Array} color - Color value with [r, g, b, a]
+ * @param {Object} color - Color object with rgba and key for map lookups
  * @param {number} [anchorX=0] - Anchor point X (0-1)
  * @param {number} [anchorY=0] - Anchor point Y (0-1)
  * @param {number} [scaleX=1] - Scale X factor
@@ -279,6 +332,8 @@ export function drawSprite(
 	];
 
 	// Add textured quad to batch
-	addTexturedQuadToBatch( screenData, texture, corners, texCoords, color, batchType );
+	addTexturedQuadToBatch(
+		screenData, texture, corners, texCoords, getQuadColorArray( color ), batchType
+	);
 }
 

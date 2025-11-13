@@ -27,10 +27,10 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @param {number} y1 - Start Y coordinate
  * @param {number} x2 - End X coordinate
  * @param {number} y2 - End Y coordinate
- * @param {Object} color - Color object with r, g, b, a
  * @returns {void}
  */
-export function drawLine( screenData, x1, y1, x2, y2, color ) {
+export function drawLine( screenData, x1, y1, x2, y2 ) {
+	const color = screenData.color;
 
 	// Estimate number of points needed (Manhattan distance)
 	const dx = Math.abs( x2 - x1 );

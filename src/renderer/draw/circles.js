@@ -12,7 +12,7 @@
 
 import * as g_batches from "../batches.js";
 import * as g_geometry from "./geometry.js";
-import { drawPixel, drawPixelUnsafe } from "./primitives.js";
+import { drawPixelUnsafe } from "./primitives.js";
 
 
 /**
@@ -22,11 +22,10 @@ import { drawPixel, drawPixelUnsafe } from "./primitives.js";
  * @param {number} cx - Center X coordinate
  * @param {number} cy - Center Y coordinate
  * @param {number} radius - Circle radius
- * @param {Object} color - Outline color object with r/g/b/a components (0-255)
- * @param {Object|null} fillColor - Optional fill color object (if provided, draws filled circle first)
  * @returns {void}
  */
-export function drawCircle( screenData, cx, cy, radius, color ) {
+export function drawCircle( screenData, cx, cy, radius ) {
+	const color = screenData.color;
 
 	// Nothing to draw
 	if( radius <= 0 ) {
@@ -34,7 +33,8 @@ export function drawCircle( screenData, cx, cy, radius, color ) {
 	}
 
 	if( radius === 1 ) {
-		drawPixel( screenData, cx, cy, color, g_batches.POINTS_BATCH );
+		g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, 1 );
+		drawPixelUnsafe( screenData, cx + 1, cy, color, g_batches.POINTS_BATCH );
 		return;
 	}
 

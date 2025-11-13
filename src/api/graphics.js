@@ -74,7 +74,6 @@ export function buildApi( s_screenData ) {
 	const s_getColorValueByRawInput = g_colors.getColorValueByRawInput;
 
 	// Constants
-	const s_color = s_screenData.color;
 	const s_pointsBatch = g_renderer.POINTS_BATCH;
 
 	/**********************************************************************************************
@@ -108,7 +107,7 @@ export function buildApi( s_screenData ) {
 		// Draw Arc
 		s_drawArc(
 			s_screenData, pCx, pCy, pRadius, s_degreesToRadian( angle1 ),
-			s_degreesToRadian( angle2 ), s_color
+			s_degreesToRadian( angle2 )
 		);
 		s_setImageDirty( s_screenData );
 	};
@@ -143,7 +142,7 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw Bezier
-		s_drawBezier( s_screenData, pX1, pY1, pX2, pY2, pX3, pY3, pX4, pY4, s_color );
+		s_drawBezier( s_screenData, pX1, pY1, pX2, pY2, pX3, pY3, pX4, pY4 );
 		s_setImageDirty( s_screenData );
 	};
 
@@ -183,7 +182,7 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw the circle border
-		s_drawCircle( s_screenData, pX, pY, pRadius, s_color );
+		s_drawCircle( s_screenData, pX, pY, pRadius );
 		s_setImageDirty( s_screenData );
 	};
 
@@ -222,7 +221,7 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw the ellipse border
-		s_drawEllipse( s_screenData, pX, pY, pRx, pRy, s_color, fillColorValue );
+		s_drawEllipse( s_screenData, pX, pY, pRx, pRy, fillColorValue );
 		s_setImageDirty( s_screenData );
 	};
 
@@ -247,7 +246,7 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw Line
-		s_drawLine( s_screenData, pX1, pY1, pX2, pY2, s_color );
+		s_drawLine( s_screenData, pX1, pY1, pX2, pY2 );
 		s_setImageDirty( s_screenData );
 	};
 
@@ -270,7 +269,7 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw the pixel
-		s_drawPixel( s_screenData, pX, pY, s_color, s_pointsBatch );
+		s_drawPixel( s_screenData, pX, pY, s_pointsBatch );
 		s_setImageDirty( s_screenData );
 
 		// Set the cursor after drawing
@@ -321,7 +320,7 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw the rect border
-		s_drawRect( s_screenData, pX, pY, pWidth, pHeight, s_color );
+		s_drawRect( s_screenData, pX, pY, pWidth, pHeight );
 		s_setImageDirty( s_screenData );
 	};
 
@@ -371,7 +370,7 @@ function rect2( screenData, options ) {
 	}
 
 	// Draw the rect border
-	g_renderer.drawRect( screenData, x, y, width, height, screenData.color );
+	g_renderer.drawRect( screenData, x, y, width, height );
 	g_renderer.setImageDirty( screenData );
 }
 

@@ -578,7 +578,7 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 		const pixels = m_keyboardState.hitBoxes[ index ].pixels;
 
 		// Save current color
-		const currentColor = screenData.color.hex;
+		const currentColor = screenData.api.getColor();
 
 		// TODO: This should not be a fixed color - need to specify a key highlight color in
 		// the parameters - or maybe use color 1 since a palette must have at least 2 colors

@@ -445,7 +445,7 @@ function bitmapPrint( screenData, msg, x, y ) {
 				screenData, font.image,
 				sx, sy, fontWidth, fontHeight,
 				dx, y, fontWidth, fontHeight,
-				color.array, 0, 0, scaleX, scaleY, 0
+				color, 0, 0, scaleX, scaleY, 0
 			);
 		}
 	}

@@ -28,19 +28,21 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 
 // Get all test config data
 let m_tests = [];
-// m_tests.push( g_psetTest.getConfig() );
-// m_tests.push( g_lineTest.getConfig() );
-// m_tests.push( g_graphicsTest.getConfig() );
+m_tests.push( g_psetTest.getConfig() );
+m_tests.push( g_lineTest.getConfig() );
+m_tests.push( g_graphicsTest.getConfig() );
 // m_tests.push( g_imagesTest.getConfig( false, false ) );
 // m_tests.push( g_imagesTest.getConfig( true, false ) );
 // m_tests.push( g_imagesTest.getConfig( false, true ) );
 // m_tests.push( g_imagesTest.getConfig( true, true ) );
 
-// Blit Images Colors
+// Blit Images
 m_tests.push( g_imagesTest2.getConfig( true, false, true ) );
+m_tests.push( g_imagesTest2.getConfig( true, false, false ) );
 
-// Draw Images Colors
+// Draw Images
 m_tests.push( g_imagesTest2.getConfig( false, false, true ) );
+m_tests.push( g_imagesTest2.getConfig( false, false, false ) );
 
 // Images Advanced Test
 // for( let i = 0; i < 2; i += 1 ) {
@@ -274,6 +276,11 @@ async function runNextTest() {
 			} else if( itemCount < 200 ) {
 				increment = Math.min( increment, 50 );
 			}
+
+			// Speed up faster in first half of test
+			if( elapsed < TEST_DURATION / 2 ) {
+				increment *= 5;
+			}
 			itemCount += increment;
 		} else if( currentFps < m_targetFps ) {
 
@@ -289,6 +296,11 @@ async function runNextTest() {
 				decrement = 1;
 			} else if( itemCount < 200 ) {
 				decrement = Math.min( decrement, 50 );
+			}
+
+			// Slow down faster in first half of test
+			if( elapsed < TEST_DURATION / 2 ) {
+				decrement *= 5;
 			}
 			itemCount = Math.max( itemCount - decrement, 1 );
 		}

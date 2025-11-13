@@ -23,14 +23,12 @@ import * as g_batches from "../batches.js";
  * @param {Object} batch - Batch object (GEOMETRY_BATCH or POINTS_BATCH)
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
- * @param {Object} color - Color object with r/g/b/a components (0-255)
+ * @param {Object} color - Color Object with array [ r, g, b, a ] values (0-255)
  * @returns {void}
  */
 export function addVertexToBatch( batch, x, y, color ) {
-
 	const idx = batch.count * batch.vertexComps;
 	const cidx = batch.count * batch.colorComps;
-
 	batch.vertices[ idx     ] = x;
 	batch.vertices[ idx + 1 ] = y;
 	batch.colors[ cidx     ] = color.r;
@@ -51,11 +49,10 @@ export function addVertexToBatch( batch, x, y, color ) {
  * @param {number} y2 - Second vertex Y coordinate
  * @param {number} x3 - Third vertex X coordinate
  * @param {number} y3 - Third vertex Y coordinate
- * @param {Object} color - Color object with r/g/b/a components (0-255)
+ * @param {Object} color - Color object with [ r, g, b, a ] values (0-255)
  * @returns {void}
  */
 export function addTriangleToBatch( batch, x1, y1, x2, y2, x3, y3, color ) {
-
 	addVertexToBatch( batch, x1, y1, color );
 	addVertexToBatch( batch, x2, y2, color );
 	addVertexToBatch( batch, x3, y3, color );
@@ -65,12 +62,14 @@ export function addTriangleToBatch( batch, x1, y1, x2, y2, x3, y3, color ) {
  * Add a quad (rectangle as two triangles) to a geometry batch
  * The quad is defined by two corner points (x1,y1) and (x2,y2) forming a rectangle
  * 
+ * TODO: Improve efficiency, this should work more similiarly to addTexturedQuadToBatch
+ * 
  * @param {Object} batch - Geometry batch object
  * @param {number} x1 - Left/bottom-left X coordinate
  * @param {number} y1 - Left/bottom-left Y coordinate
  * @param {number} x2 - Right/top-right X coordinate
  * @param {number} y2 - Right/top-right Y coordinate
- * @param {Object} color - Color object with r/g/b/a components (0-255)
+ * @param {Object} color - Color object with [ r, g, b, a ] values (0-255)
  * @returns {void}
  */
 export function addQuadToBatch( batch, x1, y1, x2, y2, color ) {
@@ -94,112 +93,14 @@ export function addQuadToBatch( batch, x1, y1, x2, y2, color ) {
 
 
 /***************************************************************************************************
- * Caps and Curves Helpers
+ * Curves Helpers - TODO Get out of here
  ***************************************************************************************************/
-
-/**
- * Draw a half-circle cap at a point, oriented by a tangent direction.
- * Emits a triangle fan approximating a semicircle. Prepares the geometry batch capacity.
- * 
- * @param {Object} screenData - Screen data object
- * @param {number} cx - Center X
- * @param {number} cy - Center Y
- * @param {number} radius - Cap radius
- * @param {Object} color - RGBA color
- * @param {number} tanX - Tangent X
- * @param {number} tanY - Tangent Y
- * @param {boolean} isEnd - True for end cap (forward), false for start (backward)
- * @returns {void}
- */
-export function drawHalfCircleCap( screenData, cx, cy, radius, color, tanX, tanY, isEnd ) {
-
-	// Normalize tangent
-	const len = Math.sqrt( tanX * tanX + tanY * tanY );
-	let dirX = tanX;
-	let dirY = tanY;
-	if( len > 0.0001 ) {
-		dirX /= len;
-		dirY /= len;
-	} else {
-		dirX = 1;
-		dirY = 0;
-	}
-
-	// Base angle; flip for start to face outward from arc
-	let base = Math.atan2( dirY, dirX );
-	if( !isEnd ) {
-		base += Math.PI;
-	}
-	const start = base - Math.PI / 2;
-	const end = base + Math.PI / 2;
-
-	// Tessellation
-	const segments = Math.max( 6, Math.min( Math.round( radius * 3 ), 90 ) );
-	const step = ( end - start ) / segments;
-
-	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
-	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, segments * 3 );
-
-	for( let i = 0; i < segments; i++ ) {
-		const a = start + i * step;
-		const b = a + step;
-		const ax = cx + radius * Math.cos( a );
-		const ay = cy + radius * Math.sin( a );
-		const bx = cx + radius * Math.cos( b );
-		const by = cy + radius * Math.sin( b );
-		addTriangleToBatch( batch, cx, cy, ax, ay, bx, by, color );
-	}
-}
-
-/**
- * Draw a square cap (two triangles) at an endpoint, oriented by tangent.
- * Prepares batch for 6 vertices.
- * 
- * @param {Object} screenData
- * @param {number} x
- * @param {number} y
- * @param {number} dirX
- * @param {number} dirY
- * @param {number} halfWidth
- * @param {Object} color
- * @returns {void}
- */
-export function drawSquareCap( screenData, x, y, dirX, dirY, halfWidth, color ) {
-
-	// Normalize tangent
-	const len = Math.sqrt( dirX * dirX + dirY * dirY );
-	let tx = dirX;
-	let ty = dirY;
-	if( len > 0.0001 ) {
-		tx /= len;
-		ty /= len;
-	} else {
-		tx = 1;
-		ty = 0;
-	}
-
-	const perpX = -ty;
-	const perpY = tx;
-	const cap = halfWidth;
-
-	const p1x = x + tx * cap + perpX * cap;
-	const p1y = y + ty * cap + perpY * cap;
-	const p2x = x + tx * cap - perpX * cap;
-	const p2y = y + ty * cap - perpY * cap;
-	const p3x = x - tx * cap - perpX * cap;
-	const p3y = y - ty * cap - perpY * cap;
-	const p4x = x - tx * cap + perpX * cap;
-	const p4y = y - ty * cap + perpY * cap;
-
-	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
-	g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, 6 );
-	addTriangleToBatch( batch, p1x, p1y, p4x, p4y, p2x, p2y, color );
-	addTriangleToBatch( batch, p4x, p4y, p3x, p3y, p2x, p2y, color );
-}
 
 /**
  * Tessellate a cubic Bezier curve into a polyline using an adaptive flatness criterion.
  * Returns an array of points [x0, y0, x1, y1, ..., xn, yn] including endpoints.
+ * 
+ * TODO: Move this function to bezier module
  * 
  * @param {number} x0
  * @param {number} y0

@@ -22,13 +22,13 @@
 <script>
 	$.screen( "200x200" );
 	$.circle( 150, 100, 50, "red" );
-	$.filterImg( function ( color, x, y ) {
+	$.filterImg( function ( colorArray, x, y ) {
 		let z = x + y;
-		color.r = color.r - Math.round( Math.tan( z / 10 ) * 128 );
-		color.g = color.g + Math.round( Math.cos( x / 7 ) * 128 );
-		color.b = color.b + Math.round( Math.sin( y / 5 ) * 128 );
+		colorArray[ 0 ] = colorArray[ 0 ] - Math.round( Math.tan( z / 10 ) * 128 );
+		colorArray[ 1 ] = colorArray[ 1 ] + Math.round( Math.cos( x / 7 ) * 128 );
+		colorArray[ 2 ] = colorArray[ 2 ] + Math.round( Math.sin( y / 5 ) * 128 );
 		
-		return color;
+		return true;
 	} );
 </script>
 <script>

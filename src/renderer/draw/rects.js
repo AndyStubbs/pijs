@@ -29,13 +29,13 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @param {number} y - Top coordinate
  * @param {number} width - Rectangle width (pixels)
  * @param {number} height - Rectangle height (pixels)
- * @param {Object} color - Outline color { r,g,b,a }
  * @returns {void}
  */
-export function drawRect( screenData, x, y, width, height, color ) {
+export function drawRect( screenData, x, y, width, height ) {
 	const x2 = x + width - 1;
 	const y2 = y + height - 1;
-
+	const color = screenData.color;
+	
 	// Outline only for pixel pen rectangles
 
 	// Top edge

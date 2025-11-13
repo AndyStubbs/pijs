@@ -34,14 +34,22 @@ export const GEOMETRY_BATCH = 2;
 export const POINTS_REPLACE_BATCH = 3;
 export const IMAGE_REPLACE_BATCH = 4;
 
-// Resize by doubling 8 times
+// Resize by doubling up to 8 times
 const MAX_SIZE_MULTIPLIER = Math.pow( 2, 8 );
-const DEFAULT_POINT_BATCH_SIZE = 5000;
-const MAX_POINT_BATCH_SIZE = DEFAULT_POINT_BATCH_SIZE * MAX_SIZE_MULTIPLIER;  // 1_280_000;
-const DEFAULT_IMAGE_BATCH_SIZE = 500;
-const MAX_IMAGE_BATCH_SIZE = DEFAULT_IMAGE_BATCH_SIZE * MAX_SIZE_MULTIPLIER; // 128_000;
+
+// Set point batch size to 7500 defautl up to 1_920_000
+const DEFAULT_POINT_BATCH_SIZE = 7500;
+const MAX_POINT_BATCH_SIZE = DEFAULT_POINT_BATCH_SIZE * MAX_SIZE_MULTIPLIER;
+
+// Set image batch size to 700 defautl up to 179_200
+const DEFAULT_IMAGE_BATCH_SIZE = 700;
+const MAX_IMAGE_BATCH_SIZE = DEFAULT_IMAGE_BATCH_SIZE * MAX_SIZE_MULTIPLIER;
+
+// Set geometry batch size to 800 default up to 204_800
 const DEFAULT_GEOMETRY_BATCH_SIZE = 800;
-const MAX_GEOMETRY_BATCH_SIZE = DEFAULT_GEOMETRY_BATCH_SIZE * MAX_SIZE_MULTIPLIER; // 204_800
+const MAX_GEOMETRY_BATCH_SIZE = DEFAULT_GEOMETRY_BATCH_SIZE * MAX_SIZE_MULTIPLIER;
+
+// Batch will automatically shrink by 1/2 every 5 seconds if capacity is not used
 const BATCH_CAPACITY_SHRINK_INTERVAL = 5000;
 
 // String constants to identify batch system names

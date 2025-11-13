@@ -20,7 +20,6 @@ export const FILLED_ELLIPSE = 1;
  ***************************************************************************************************/
 
 
-
 // Cache key format: "type:radius"
 // Example: "circle:32" for a circle of radius 32
 const m_geometryCache = new Map();
@@ -306,7 +305,7 @@ function getCachedGeometry( cacheType, unit ) {
  * @param {string} cacheKey - Geometry cache key (e.g., "circle:32")
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
- * @param {Object} color - Color object with r/g/b/a components (0-255)
+ * @param {Object} color - Color object with [ r, g, b, a ] values (0-255)
  * @returns {void}
  */
 export function drawCachedGeometry( screenData, cacheType, unit, x, y, color ) {

@@ -199,7 +199,7 @@ function setColor( screenData, options ) {
 	}
 
 	// Update the color values
-	g_utils.setColor( colorValue, screenData.color );
+	screenData.color = colorValue;
 }
 
 function getColor( screenData, options ) {
@@ -207,9 +207,7 @@ function getColor( screenData, options ) {
 	if( asIndex ) {
 		return findColorIndexByColorValue( screenData, screenData.color );
 	}
-	return g_utils.rgbToColor(
-		screenData.color.r, screenData.color.g, screenData.color.b, screenData.color.a
-	);
+	return g_utils.createColor( screenData.color.array );
 }
 
 
@@ -280,11 +278,11 @@ function setPal( screenData, options ) {
 	const currentColor = screenData.color;
 	const newIndex = findColorIndexByColorValue( screenData, currentColor );
 	if( newIndex !== null ) {
-		g_utils.setColor( screenData.color, newPal[ newIndex ] );
+		screenData.color = newPal[ newIndex ];
 	} else {
 
 		// If current color not found, default to palette index 1
-		g_utils.setColor( screenData.color, newPal[ 1 ] );
+		screenData.color = newPal[ 1 ];
 	}
 
 	// Trigger images to update color palletes
@@ -321,16 +319,10 @@ function getPalIndex( screenData, options ) {
 
 // Set the background color of the canvas
 function setBgColor( screenData, options ) {
-	const color = options.color;
-	let bc;
-
-	if( Number.isInteger( color ) ) {
-		bc = screenData.pal[ color ];
-	} else {
-		bc = g_utils.convertToColor( color );
-	}
-	if( bc && typeof bc.hex === "string" ) {
-		screenData.canvas.style.backgroundColor = bc.hex;
+	const colorRaw = options.color;
+	const color = getColorValueByRawInput( screenData, colorRaw );
+	if( color !== null ) {
+		screenData.canvas.style.backgroundColor = g_utils.colorToHex( color );
 	} else {
 		const error = new TypeError( "setBgColor: invalid color value for parameter color." );
 		error.code = "INVALID_COLOR";
@@ -340,24 +332,21 @@ function setBgColor( screenData, options ) {
 
 // Set the background color of the container
 function setContainerBgColor( screenData, options ) {
-	const color = options.color;
-	let bc;
-	if( screenData.container ) {
-		if( Number.isInteger( color ) ) {
-			bc = screenData.pal[ color ];
-		} else {
-			bc = g_utils.convertToColor( color );
-		}
-		if( bc && typeof bc.hex === "string" ) {
-			screenData.container.style.backgroundColor = bc.hex;
-			return;
-		} else {
-			const error = new TypeError(
-				"setContainerBgColor: invalid color value for parameter color."
-			);
-			error.code = "INVALID_COLOR";
-			throw error;
-		}
+	if( !screenData.container ) {
+		return;
+	}
+
+	const colorRaw = options.color;
+	const color = getColorValueByRawInput( screenData, colorRaw );
+	
+	if( color !== null ) {
+		screenData.container.style.backgroundColor = g_utils.colorToHex( color );
+	} else {
+		const error = new TypeError(
+			"setContainerBgColor: invalid color value for parameter color."
+		);
+		error.code = "INVALID_COLOR";
+		throw error;
 	}
 }
 
@@ -442,7 +431,7 @@ function setPalColors( screenData, options ) {
 
 		// Check if we are changing the current selected fore color
 		if( screenData.color.key === oldColor.key ) {
-			g_utils.setColor( colorValue, screenData.color );
+			screenData.color = colorValue;
 		}
 
 		// Set the new palette color
@@ -521,7 +510,7 @@ function getPalColor( screenData, options ) {
 
 	if( screenData.pal[ index ] ) {
 		const color = screenData.pal[ index ];
-		return g_utils.rgbToColor( color.r, color.g, color.b, color.a );
+		return g_utils.createColor( color.array );
 	}
 	return null;
 }

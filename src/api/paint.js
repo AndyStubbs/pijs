@@ -65,7 +65,8 @@ function paint( screenData, options ) {
 
 	if( tolerance < 0 || tolerance > 1 ) {
 		const error = new RangeError(
-			"paint: Parameter tolerance must be a number between 0 and 1 (0 = exact match, 1 = any color)."
+			"paint: Parameter tolerance must be a number between 0 and 1 " +
+			"(0 = exact match, 1 = any color)."
 		);
 		error.code = "INVALID_PARAMETER";
 		throw error;
@@ -96,32 +97,12 @@ function paint( screenData, options ) {
 
 	// Read all pixels from screen as 2D array
 	const pixels2D = g_renderer.readPixels( screenData, 0, 0, width, height );
-	
-	// Convert to flat RGBA array for algorithm
-	const data = new Uint8ClampedArray( width * height * 4 );
-	for( let row = 0; row < height; row++ ) {
-		for( let col = 0; col < width; col++ ) {
-			const pixel = pixels2D[ row ][ col ];
-			const index = ( row * width + col ) * 4;
-			data[ index ] = pixel.r;
-			data[ index + 1 ] = pixel.g;
-			data[ index + 2 ] = pixel.b;
-			data[ index + 3 ] = pixel.a;
-		}
-	}
 
 	// Get the starting pixel color
-	const startIndex = ( y * width + x ) * 4;
-	const startR = data[ startIndex ];
-	const startG = data[ startIndex + 1 ];
-	const startB = data[ startIndex + 2 ];
-	const startA = data[ startIndex + 3 ];
+	const startColor = pixels2D[ y ][ x ];
 
 	// Don't fill if the color is the same
-	if(
-		startR === fillColor.r && startG === fillColor.g &&
-		startB === fillColor.b && startA === fillColor.a
-	) {
+	if( startColor.key === fillColor.key ) {
 		return;
 	}
 
@@ -155,11 +136,8 @@ function paint( screenData, options ) {
 			error.code = "INVALID_PARAMETER";
 			throw error;
 		}
-		const refColor = {
-			"r": boundaryColor.r, "g": boundaryColor.g, "b": boundaryColor.b, "a": boundaryColor.a
-		};
 		shouldSkipPixel = ( pixelColor ) => {
-			const difference = g_utils.calcColorDifference( refColor, pixelColor, weights );
+			const difference = g_utils.calcColorDifference( boundaryColor, pixelColor, weights );
 			const similarity = maxDifference - difference;
 			return similarity >= toleranceThreshold;
 		};
@@ -167,7 +145,6 @@ function paint( screenData, options ) {
 	} else {
 
 		// Flood fill mode: skip pixels that don't match start color
-		const startColor = { "r": startR, "g": startG, "b": startB, "a": startA };
 		shouldSkipPixel = ( pixelColor ) => {
 			const difference = g_utils.calcColorDifference( startColor, pixelColor, weights );
 			const similarity = maxDifference - difference;
@@ -186,12 +163,9 @@ function paint( screenData, options ) {
 		const pixel = queue[ head++ ];
 		const px = pixel.x;
 		const py = pixel.y;
-		const i = ( py * width + px ) * 4;
 
 		// Get pixel color
-		const pixelColor = {
-			"r": data[ i ], "g": data[ i + 1 ], "b": data[ i + 2 ], "a": data[ i + 3 ]
-		};
+		const pixelColor = pixels2D[ py ][ px ];
 
 		// Skip if color comparison fails
 		if( shouldSkipPixel( pixelColor ) ) {
