@@ -53,8 +53,8 @@ export default function keyboardPlugin( pluginApi ) {
 	// Initialize input command
 	initInput( pluginApi );
 
-	// Export clearKeyboardEvents for use by other modules (like events module)
-	// This is done via the plugin API's getApi() method if needed
+	// Register clearEvents handler
+	pluginApi.registerClearEvents( clearKeyboardEvents );
 }
 
 
@@ -424,11 +424,12 @@ function clearInKeys() {
 
 /**
  * Clear all keyboard event handlers
- * Called by clearEvents command
+ * Called by clearEvents command and exported for use by other modules
  * 
+ * @param {Object} [screenData] - Screen data (not used for keyboard events)
  * @returns {void}
  */
-export function clearKeyboardEvents() {
+export function clearKeyboardEvents( screenData ) {
 	for( const mode in m_onKeyHandlers ) {
 		delete m_onKeyHandlers[ mode ];
 	}

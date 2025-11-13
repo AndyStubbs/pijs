@@ -15,6 +15,7 @@ import * as g_utils from "./utils.js";
 
 const m_plugins = [];
 const m_waitingForDependencies = [];
+const m_clearEventsHandlers = [];
 let m_api = null;
 
 
@@ -33,6 +34,9 @@ export function init( api ) {
 	);
 	g_commands.addCommand(
 		"getPlugins", getPlugins, false, []
+	);
+	g_commands.addCommand(
+		"clearEvents", clearEvents, true, [], true
 	);
 
 	// Resolve plugins waiting on dependencies at end of frame
@@ -157,11 +161,56 @@ function getPlugins() {
 	} ) );
 }
 
+/**
+ * Clear all events from all plugins
+ * 
+ * @param {Object} [options] - Options object (not used)
+ * @returns {void}
+ * 
+ * @example
+ * $.clearEvents(); // Clear all events from all plugins
+ */
+function clearEvents( screenData, options ) {
+	
+	// Call all registered clearEvents handlers
+	for( const handler of m_clearEventsHandlers ) {
+		try {
+			handler( screenData );
+		} catch( error ) {
+			console.error(
+				`clearEvents: Error calling clearEvents handler: ${error.message}`
+			);
+		}
+	}
+}
+
 
 /***************************************************************************************************
  * Internal Commands
  **************************************************************************************************/
 
+
+/**
+ * Register a clearEvents handler function
+ * 
+ * @param {Function} handler - Function to call when clearEvents is invoked
+ * @param {Object} [handler.screenData] - Optional screen data passed from clearEvents
+ * @param {Object} [handler.options] - Optional options passed from clearEvents
+ * @returns {void}
+ * 
+ * @example
+ * pluginApi.registerClearEvents( ( screenData, options ) => {
+ *   // Clear events for this plugin
+ * } );
+ */
+function registerClearEvents( handler ) {
+	if( typeof handler !== "function" ) {
+		const error = new TypeError( "registerClearEvents: handler must be a function." );
+		error.code = "INVALID_HANDLER";
+		throw error;
+	}
+	m_clearEventsHandlers.push( handler );
+}
 
 // Initialize a plugin
 function initializePlugin( pluginInfo ) {
@@ -181,7 +230,8 @@ function initializePlugin( pluginInfo ) {
 		"getApi": () => m_api,
 		"utils": g_utils,
 		"wait": g_commands.wait,
-		"done": g_commands.done
+		"done": g_commands.done,
+		"registerClearEvents": registerClearEvents
 	};
 
 	// Initialize plugin

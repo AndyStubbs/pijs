@@ -81,6 +81,28 @@ export default function pointerPlugin( pluginApi ) {
 		}
 	}, [ "type" ] );
 	
+	// Register clearEvents handler
+	pluginApi.registerClearEvents( ( screenData ) => {
+		if( screenData !== null ) {
+
+			// Clear events for specific screen
+			mouseApi.clearMouseEvents( screenData );
+			touchApi.clearTouchEvents( screenData );
+			pressApi.clearPressEvents( screenData );
+			pressApi.clearClickEvents( screenData );
+		} else {
+
+			// Clear events for all screens
+			const allScreensData = pluginApi.getAllScreensData();
+			for( const sd of allScreensData ) {
+				mouseApi.clearMouseEvents( sd );
+				touchApi.clearTouchEvents( sd );
+				pressApi.clearPressEvents( sd );
+				pressApi.clearClickEvents( sd );
+			}
+		}
+	} );
+	
 	// Screen cleanup
 	pluginApi.addScreenCleanupFunction( ( screenData ) => {
 		if( screenData.mouseStarted ) {
