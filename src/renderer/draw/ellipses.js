@@ -35,8 +35,8 @@ export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 	// Handle trivial cases
 	if( rx === 0 && ry === 0 ) {
 		g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, 1 );
-		const batch = screenData.batches[ g_batches.POINTS_BATCH ];
-		g_batchHelpers.addVertexToBatch( batch, cx, cy, color );
+		const singleBatch = screenData.batches[ g_batches.POINTS_BATCH ];
+		g_batchHelpers.addVertexToBatch( singleBatch, cx, cy, color );
 		return;
 	}
 
@@ -48,23 +48,39 @@ export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 	const estimatedPixels = Math.max( 8, Math.ceil( perimeter ) );
 
 	// Prepare outline batch
-	const pointsBatch = screenData.batches[ g_batches.POINTS_BATCH ];
-	g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, estimatedPixels );
+	const pointsBatchIndex = g_batches.POINTS_BATCH;
+	g_batches.prepareBatch( screenData, pointsBatchIndex, estimatedPixels );
+	const pointsBatch = screenData.batches[ pointsBatchIndex ];
 
-	// Track plotted pixels to avoid duplicates
-	const plotted = new Set();
-	const plotPoint = ( px, py ) => {
+	const plotPoint = function( px, py ) {
 		const ix = px | 0;
 		const iy = py | 0;
-		const key = ix + "," + iy;
-		if( !plotted.has( key ) ) {
-			plotted.add( key );
-			g_batchHelpers.addVertexToBatch( pointsBatch, ix, iy, color );
-		}
+		g_batchHelpers.addVertexToBatch( pointsBatch, ix, iy, color );
 	};
 
-	// Symmetric plotting for the four quadrants
-	const plotSymmetric = ( x, y ) => {
+	// Symmetric plotting for the four quadrants (no duplicate pixels)
+	const plotSymmetric = function( x, y ) {
+		
+		// x, y are integers from the midpoint algorithm
+		if( x === 0 ) {
+
+			// Vertical axis: top and bottom only
+			plotPoint( cx, cy + y );
+			if( y !== 0 ) {
+				plotPoint( cx, cy - y );
+			}
+			return;
+		}
+
+		if( y === 0 ) {
+
+			// Horizontal axis: left and right only
+			plotPoint( cx + x, cy );
+			plotPoint( cx - x, cy );
+			return;
+		}
+
+		// General case: four distinct points
 		plotPoint( cx + x, cy + y );
 		plotPoint( cx - x, cy + y );
 		plotPoint( cx - x, cy - y );
@@ -87,11 +103,17 @@ export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 	// Optional: collect scanlines for fill (no caching)
 	const doFill = fillColor !== null && rx >= 1 && ry >= 1;
 	let scanlineMinMax = null;
+	let updateScanlineSym = null;
+
 	if( doFill ) {
-		scanlineMinMax = new Map(); // Map<y, {left: x, right: x}>
-		const updateScanline = ( px, py ) => {
+
+		// Map<y, {left: x, right: x}>
+		scanlineMinMax = new Map();
+
+		const updateScanline = function( px, py ) {
 			const pixelY = py | 0;
 			const pixelX = px | 0;
+
 			if( !scanlineMinMax.has( pixelY ) ) {
 				if( pixelX < 0 ) {
 					scanlineMinMax.set( pixelY, { "left": pixelX, "right": Infinity } );
@@ -103,7 +125,7 @@ export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 			} else {
 				const limits = scanlineMinMax.get( pixelY );
 
-				// Find innermost border pixels (closest to center) to handle multiple border pixels
+				// Find innermost border pixels (closest to center)
 				if( pixelX < 0 && pixelX > limits.left ) {
 					limits.left = pixelX;
 				}
@@ -119,8 +141,8 @@ export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 		updateScanline( -x, -y );
 		updateScanline(  x, -y );
 
-		// Wrap symmetric updater for reuse
-		var updateScanlineSym = ( sx, sy ) => {
+		// Symmetric updater for scanlines (can accept any x,y pair)
+		updateScanlineSym = function( sx, sy ) {
 			updateScanline(  sx,  sy );
 			updateScanline( -sx,  sy );
 			updateScanline( -sx, -sy );
@@ -181,7 +203,7 @@ export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 		for( const [ currentY ] of scanlineMinMax.entries() ) {
 			sortedYCoords.push( currentY );
 		}
-		sortedYCoords.sort( ( a, b ) => a - b );
+		sortedYCoords.sort( function( a, b ) { return a - b; } );
 
 		if( sortedYCoords.length >= 3 ) {
 			const interiorRowCount = sortedYCoords.length - 2;
@@ -193,7 +215,7 @@ export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 				const currentY = sortedYCoords[ row ];
 				const limits = scanlineMinMax.get( currentY );
 
-				// Skip if we don't have valid limits (shouldn't happen, but be safe)
+				// Skip if we don't have valid limits (safety)
 				if( limits.left === -Infinity || limits.right === Infinity ) {
 					continue;
 				}
