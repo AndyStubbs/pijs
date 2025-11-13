@@ -36,13 +36,13 @@ m_tests.push( g_graphicsTest.getConfig( [ "circle" ] ) );
 // m_tests.push( g_imagesTest.getConfig( false, true ) );
 // m_tests.push( g_imagesTest.getConfig( true, true ) );
 
-// Blit Images
-m_tests.push( g_imagesTest2.getConfig( true, false, true ) );
-m_tests.push( g_imagesTest2.getConfig( true, false, false ) );
+// // Blit Images
+// m_tests.push( g_imagesTest2.getConfig( true, false, true ) );
+// m_tests.push( g_imagesTest2.getConfig( true, false, false ) );
 
-// Draw Images
-m_tests.push( g_imagesTest2.getConfig( false, false, true ) );
-m_tests.push( g_imagesTest2.getConfig( false, false, false ) );
+// // Draw Images
+// m_tests.push( g_imagesTest2.getConfig( false, false, true ) );
+// m_tests.push( g_imagesTest2.getConfig( false, false, false ) );
 
 // Images Advanced Test
 // for( let i = 0; i < 2; i += 1 ) {

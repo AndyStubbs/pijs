@@ -60,31 +60,44 @@ export function drawCircle( screenData, cx, cy, radius ) {
 	let y = 0;
 	let err = 1 - x;
 
-	const plotted = new Set();
 	const setPixel = ( pixelX, pixelY ) => {
-		const key = pixelX + "," + pixelY;
-		if( !plotted.has( key ) ) {
-			drawPixelUnsafe( screenData, pixelX, pixelY, color, g_batches.POINTS_BATCH );
-			plotted.add( key );
-		}
+		drawPixelUnsafe( screenData, pixelX, pixelY, color, g_batches.POINTS_BATCH );
 	};
 
-	while( x >= y ) {
-		setPixel( cx + x, cy + y );
-		setPixel( cx + y, cy + x );
-		setPixel( cx - y, cy + x );
-		setPixel( cx - x, cy + y );
-		setPixel( cx - x, cy - y );
-		setPixel( cx - y, cy - x );
-		setPixel( cx + y, cy - x );
-		setPixel( cx + x, cy - y );
+	// Initial symmetrical points (no duplicates here)
+	drawPixelUnsafe( screenData, cx + x, cy + y, color, g_batches.POINTS_BATCH );
+	drawPixelUnsafe( screenData, cx - x, cy + y, color, g_batches.POINTS_BATCH );
+	drawPixelUnsafe( screenData, cx + y, cy + x, color, g_batches.POINTS_BATCH );
+	drawPixelUnsafe( screenData, cx + y, cy - x, color, g_batches.POINTS_BATCH );
 
+	while( x >= y ) {
 		y++;
 		if( err < 0 ) {
 			err += 2 * y + 1;
 		} else {
 			x--;
 			err += 2 * ( y - x ) + 1;
+		}
+
+		if( x === y ) {
+
+			// On the diagonal, 8-way symmetry collapses to 4 distinct pixels.
+			// Emit each unique coordinate only once so there are no overlaps.
+			drawPixelUnsafe( screenData, cx + x, cy + y, color, g_batches.POINTS_BATCH );
+			drawPixelUnsafe( screenData, cx - x, cy + y, color, g_batches.POINTS_BATCH );
+			drawPixelUnsafe( screenData, cx - x, cy - y, color, g_batches.POINTS_BATCH );
+			drawPixelUnsafe( screenData, cx + x, cy - y, color, g_batches.POINTS_BATCH );
+		} else {
+
+			// 8-way symmetry, all distinct when x !== y
+			drawPixelUnsafe( screenData, cx + x, cy + y, color, g_batches.POINTS_BATCH );
+			drawPixelUnsafe( screenData, cx + y, cy + x, color, g_batches.POINTS_BATCH );
+			drawPixelUnsafe( screenData, cx - y, cy + x, color, g_batches.POINTS_BATCH );
+			drawPixelUnsafe( screenData, cx - x, cy + y, color, g_batches.POINTS_BATCH );
+			drawPixelUnsafe( screenData, cx - x, cy - y, color, g_batches.POINTS_BATCH );
+			drawPixelUnsafe( screenData, cx - y, cy - x, color, g_batches.POINTS_BATCH );
+			drawPixelUnsafe( screenData, cx + y, cy - x, color, g_batches.POINTS_BATCH );
+			drawPixelUnsafe( screenData, cx + x, cy - y, color, g_batches.POINTS_BATCH );
 		}
 	}
 }
