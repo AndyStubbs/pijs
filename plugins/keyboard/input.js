@@ -362,3 +362,24 @@ function finishInput( isCancel ) {
 		}
 	}
 }
+
+/**
+ * Cancel all active input prompts
+ * Called by clearKeyboardEvents
+ * 
+ * @param {Object} [screenData] - Optional screen data to cancel input for specific screen only
+ * @returns {void}
+ */
+export function cancelAllInputs( screenData ) {
+	if( m_inputData ) {
+		if( screenData === null || screenData === undefined ) {
+
+			// Cancel all inputs (there can only be one active at a time)
+			finishInput( true );
+		} else if( m_inputData.screenData === screenData ) {
+			
+			// Cancel input for specific screen
+			finishInput( true );
+		}
+	}
+}

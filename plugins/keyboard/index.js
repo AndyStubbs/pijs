@@ -9,7 +9,7 @@
 
 "use strict";
 
-import { initInput } from "./input.js";
+import { initInput, cancelAllInputs } from "./input.js";
 
 // Input tags that we don't want to capture
 const INPUT_TAGS = new Set( [ "INPUT", "TEXTAREA", "SELECT", "BUTTON" ] );
@@ -426,13 +426,18 @@ function clearInKeys() {
  * Clear all keyboard event handlers
  * Called by clearEvents command and exported for use by other modules
  * 
- * @param {Object} [screenData] - Screen data (not used for keyboard events)
+ * @param {Object} [screenData] - Screen data to clear events for specific screen
  * @returns {void}
  */
 export function clearKeyboardEvents( screenData ) {
+	
+	// Clear all keyboard event handlers
 	for( const mode in m_onKeyHandlers ) {
 		delete m_onKeyHandlers[ mode ];
 	}
+	
+	// Cancel all active input prompts
+	cancelAllInputs( screenData );
 }
 
 
