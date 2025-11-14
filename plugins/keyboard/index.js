@@ -1,10 +1,12 @@
 /**
+ * @preserve
  * Keyboard Plugin for Pi.js
  * 
  * Provides keyboard input handling including key state tracking, event handlers,
  * and action key management.
  * 
  * @module plugins/keyboard
+ * @version 1.0.0
  */
 
 "use strict";

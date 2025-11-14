@@ -8,6 +8,7 @@ const esbuild = require( "esbuild" );
 const fs = require( "fs" );
 const path = require( "path" );
 const zlib = require( "zlib" );
+const { buildPlugin } = require( "./build-plugin.js" );
 
 // Read version from package.json (single source of truth)
 const pkg = require( "../package.json" );
@@ -28,7 +29,7 @@ if( buildType === "alpha-0" ) {
 }
 
 const banner = `/**
- * Pi.js - Graphics and Sound Library
+ * Pi.js Graphics Library
  * @version ${buildVersion}
  * @author Andy Stubbs
  * @license Apache-2.0
@@ -104,95 +105,6 @@ const buildOptions = {
 	"sourceRoot": `../${sourceDir}/`
 };
 
-async function buildPlugin( pluginName, pluginDir ) {
-	const entryPoint = path.join( pluginDir, "index.js" );
-
-	// Skip if no index.js exists
-	if( !fs.existsSync( entryPoint ) ) {
-		return false;
-	}
-
-	console.log( `  Building plugin: ${pluginName}...` );
-
-	// Create build/plugins/plugin-name directory
-	const pluginBuildDir = path.join( __dirname, "..", "build", "plugins", pluginName );
-	if( !fs.existsSync( pluginBuildDir ) ) {
-		fs.mkdirSync( pluginBuildDir, { "recursive": true } );
-	}
-
-	const pluginBuildOptions = {
-		"entryPoints": [ entryPoint ],
-		"bundle": true,
-		"sourcemap": true,
-		"target": "es2020",
-		"platform": "browser",
-		"loader": { ".vert": "text", ".frag": "text" },
-		"plugins": [ webpBase64Plugin ]
-	};
-
-	try {
-		// Build ESM (unminified)
-		await esbuild.build( {
-			...pluginBuildOptions,
-			"format": "esm",
-			"minify": false,
-			"outfile": path.join( pluginBuildDir, `${pluginName}.esm.js` )
-		} );
-
-		// Build ESM (minified)
-		await esbuild.build( {
-			...pluginBuildOptions,
-			"format": "esm",
-			"minify": true,
-			"outfile": path.join( pluginBuildDir, `${pluginName}.esm.min.js` )
-		} );
-
-		// Build IIFE (unminified)
-		await esbuild.build( {
-			...pluginBuildOptions,
-			"format": "iife",
-			"minify": false,
-			"outfile": path.join( pluginBuildDir, `${pluginName}.js` )
-		} );
-
-		// Build IIFE (minified)
-		await esbuild.build( {
-			...pluginBuildOptions,
-			"format": "iife",
-			"minify": true,
-			"outfile": path.join( pluginBuildDir, `${pluginName}.min.js` )
-		} );
-
-		// Calculate sizes
-		const files = [
-			`${pluginName}.esm.js`,
-			`${pluginName}.esm.min.js`,
-			`${pluginName}.js`,
-			`${pluginName}.min.js`
-		];
-
-		let totalSize = 0;
-		let minifiedSize = 0;
-		files.forEach( file => {
-			const filePath = path.join( pluginBuildDir, file );
-			if( fs.existsSync( filePath ) ) {
-				const size = fs.statSync( filePath ).size;
-				totalSize += size;
-				if( file.includes( ".min." ) ) {
-					minifiedSize += size;
-				}
-			}
-		} );
-
-		const minSizeKB = ( minifiedSize / 1024 ).toFixed( 2 );
-		console.log( `    ✓ ${pluginName} (${minSizeKB} KB minified)` );
-
-		return true;
-	} catch( error ) {
-		console.error( `    ✗ Failed to build ${pluginName}:`, error.message );
-		return false;
-	}
-}
 
 async function buildAllPlugins() {
 	const pluginsDir = path.join( __dirname, "..", "plugins" );
@@ -218,7 +130,11 @@ async function buildAllPlugins() {
 	let builtCount = 0;
 	for( const pluginName of pluginDirs ) {
 		const pluginDir = path.join( pluginsDir, pluginName );
-		const success = await buildPlugin( pluginName, pluginDir );
+		const success = await buildPlugin( pluginName, {
+			"pluginDir": pluginDir,
+			"plugins": [ webpBase64Plugin ],
+			"verbose": false
+		} );
 		if( success ) {
 			builtCount++;
 		}

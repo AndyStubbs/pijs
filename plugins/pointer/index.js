@@ -1,9 +1,11 @@
 /**
+ * @preserve
  * Pi.js - Pointer Plugin
  * 
  * Mouse, touch, and press handling ported from alpha.1 as a plugin.
  * 
  * @module plugins/pointer
+ * @version 1.0.0
  */
 
 "use strict";

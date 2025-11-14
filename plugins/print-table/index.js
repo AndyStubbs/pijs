@@ -1,9 +1,11 @@
 /**
+ * @preserve
  * Print Table Plugin for Pi.js
  * 
  * Table formatting and printing with customizable borders
  * 
  * @module plugins/print-table
+ * @version 1.0.0
  */
 
 // TODO: Refactor print-table into a printf command that handles special formatting for strings.

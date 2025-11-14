@@ -1,4 +1,5 @@
 /**
+ * @preserve
  * Example Plugin for Pi.js
  * 
  * Demonstrates basic plugin functionality including:
@@ -8,6 +9,7 @@
  * - Lifecycle hooks
  * 
  * @module plugins/example-plugin
+ * @version 1.0.0
  */
 
 "use strict";

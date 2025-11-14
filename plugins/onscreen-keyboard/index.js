@@ -1,10 +1,12 @@
 /**
+ * @preserve
  * Onscreen Keyboard Plugin for Pi.js
  * 
  * Provides an onscreen keyboard for touch devices and accessibility.
  * Renders a virtual keyboard and simulates keystrokes.
  * 
  * @module plugins/onscreen-keyboard
+ * @version 1.0.0
  */
 
 "use strict";

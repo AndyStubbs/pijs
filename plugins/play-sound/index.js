@@ -1,10 +1,12 @@
 /**
+ * @preserve
  * Pi.js - Play-Sound Plugin
  * 
  * Music playback and sound effects using Web Audio API.
  * Combines play.js (BASIC-style music notation) and sound.js (sound effects).
  * 
  * @module plugins/play-sound
+ * @version 1.0.0
  */
 
 "use strict";
