@@ -15,7 +15,7 @@ const toml = require( "@iarna/toml" );
 const METADATA_DIR = path.join( __dirname, "..", "metadata" );
 const OUTPUT_DIR = path.join( __dirname, "..", "build", "metadata" );
 const REFERENCE_FILE = path.join( OUTPUT_DIR, "reference.json" );
-const MONACO_FILE = path.join( OUTPUT_DIR, "monaco.json" );
+const TYPE_DEFINITION_FILE = path.join( OUTPUT_DIR, "pi.d.ts" );
 
 function ensureDirectories() {
 	if( !fs.existsSync( METADATA_DIR ) ) {
@@ -54,49 +54,6 @@ function formatReturns( returns = [] ) {
 	} ) );
 }
 
-function buildSignature( name, parameters ) {
-	if( parameters.length === 0 ) {
-		return `${name}()`;
-	}
-
-	const parts = parameters.map( ( parameter ) => {
-		return parameter.optional ? `[${parameter.name}]` : parameter.name;
-	} );
-
-	return `${name}( ${parts.join( ", " )} )`;
-}
-
-function buildSnippet( name, parameters ) {
-	if( parameters.length === 0 ) {
-		return `${name}()`;
-	}
-
-	const parts = parameters.map( ( parameter, index ) => {
-		const placeholder = parameter.optional ? `[${parameter.name}]` : parameter.name;
-		return `\${${index + 1}:${placeholder}}`;
-	} );
-
-	return `${name}( ${parts.join( ", " )} )`;
-}
-
-function buildDocumentation( summary, description, example ) {
-	const sections = [];
-
-	if( summary ) {
-		sections.push( summary.trim() );
-	}
-
-	if( description ) {
-		sections.push( description.trim() );
-	}
-
-	if( example ) {
-		sections.push( `Example:\n${example.trim()}` );
-	}
-
-	return sections.join( "\n\n" );
-}
-
 function parseMetadataFile( filePath ) {
 	const raw = fs.readFileSync( filePath, "utf8" );
 	return toml.parse( raw );
@@ -119,27 +76,129 @@ function buildReferenceEntry( methodName, fileName, metadata ) {
 	};
 }
 
-function buildMonacoEntry( methodName, metadata ) {
-	const parameters = formatParameters( metadata.parameters );
-	const snippet = buildSnippet( methodName, parameters );
-	const signature = buildSignature( methodName, parameters );
-	const documentation = buildDocumentation(
-		metadata.summary,
-		metadata.description,
-		metadata.example
+function formatTypeScriptType( rawType, fallback = "any" ) {
+	if( !rawType ) {
+		return fallback;
+	}
+
+	const parts = rawType.split( "|" ).map( part => part.trim() ).filter( Boolean );
+	if( parts.length === 0 ) {
+		return fallback;
+	}
+
+	const normalized = parts.map( ( part ) => {
+		switch( part.toLowerCase() ) {
+			case "number":
+			case "string":
+			case "boolean":
+			case "void":
+			case "any":
+				return part.toLowerCase();
+			case "string[]":
+			case "number[]":
+			case "boolean[]":
+			case "array":
+				return "any[]";
+			default:
+				return part;
+		}
+	} );
+
+	return normalized.join( " | " );
+}
+
+function buildMethodSignature( method ) {
+	const params = ( method.parameters || [] ).map( ( parameter ) => {
+		const optionalFlag = parameter.optional ? "?" : "";
+		const paramType = formatTypeScriptType( parameter.type, "any" );
+		return `${parameter.name}${optionalFlag}: ${paramType}`;
+	} );
+
+	const returnType = formatTypeScriptType(
+		method.returns?.[ 0 ]?.type || "void",
+		"void"
 	);
 
-	return {
-		"name": methodName,
-		"label": methodName,
-		"kind": "function",
-		"category": metadata.category || "",
-		"insertText": snippet,
-		"signature": signature,
-		"detail": metadata.summary || signature,
-		"documentation": documentation,
-		"parameters": parameters
-	};
+	if( params.length === 0 ) {
+		return `${method.name}(): ${returnType};`;
+	}
+
+	return `${method.name}( ${params.join( ", " )} ): ${returnType};`;
+}
+
+function buildDocCommentLines( method ) {
+	const lines = [ "/**" ];
+	const summary = ( method.summary || "" ).trim();
+	const description = ( method.description || "" ).trim();
+	const parameters = method.parameters || [];
+
+	if( summary ) {
+		summary.split( /\r?\n/ ).forEach( ( line ) => lines.push( ` * ${line}`.trimEnd() ) );
+	}
+
+	if( summary && description ) {
+		lines.push( " *" );
+	}
+
+	if( description ) {
+		description.split( /\r?\n/ ).forEach( ( line ) => lines.push( ` * ${line}`.trimEnd() ) );
+	}
+
+	parameters.forEach( ( parameter ) => {
+		if( parameter.description ) {
+			lines.push( ` * @param ${parameter.name} ${parameter.description}`.trimEnd() );
+		}
+	} );
+
+	const returnInfo = method.returns?.[ 0 ] || {};
+	const returnDescription = returnInfo.description ? returnInfo.description.trim() : "";
+	const returnTypeName = ( returnInfo.type || "void" ).trim();
+	const shouldDocumentReturn = Boolean( returnDescription ) ||
+		( returnTypeName.toLowerCase() !== "void" );
+
+	if( shouldDocumentReturn ) {
+		const fallback = returnTypeName
+			? `Returns ${returnTypeName}.`
+			: "Returns a value.";
+		lines.push( ` * @returns ${returnDescription || fallback}`.trimEnd() );
+	}
+
+	lines.push( " */" );
+	return lines;
+}
+
+function buildInterfaceMethods( lines, methods ) {
+	methods.forEach( ( method, index ) => {
+		if( index > 0 ) {
+			lines.push( "" );
+		}
+
+		const docLines = buildDocCommentLines( method );
+		docLines.forEach( ( line ) => lines.push( `\t\t${line}` ) );
+		lines.push( `\t\t${buildMethodSignature( method )}` );
+	} );
+}
+
+function buildTypeDefinitions( screenMethods, apiMethods ) {
+	const lines = [];
+
+	lines.push( "declare namespace Pi {" );
+	lines.push( "\tinterface Screen {" );
+	buildInterfaceMethods( lines, screenMethods );
+	lines.push( "\t}" );
+	lines.push( "" );
+	lines.push( "\tinterface API extends Screen {" );
+	buildInterfaceMethods( lines, apiMethods );
+	lines.push( "\t}" );
+	lines.push( "}" );
+	lines.push( "" );
+	lines.push( "declare const Pi: Pi.API;" );
+	lines.push( "declare const $: Pi.API;" );
+	lines.push( "" );
+	lines.push( "export { Pi, $ };" );
+	lines.push( "export default Pi;" );
+
+	return lines;
 }
 
 function writeOutput( filePath, data ) {
@@ -155,6 +214,22 @@ function writeOutput( filePath, data ) {
 	);
 }
 
+function writeTypeDefinitions( filePath, lines ) {
+	const header = [
+		"/**",
+		" * Pi.js Type Definitions",
+		` * Generated on ${new Date().toISOString()}`,
+		" */",
+		""
+	].join( "\n" );
+
+	fs.writeFileSync(
+		filePath,
+		`${header}${lines.join( "\n" )}\n`,
+		"utf8"
+	);
+}
+
 function generateMetadata() {
 	ensureDirectories();
 
@@ -165,24 +240,32 @@ function generateMetadata() {
 	}
 
 	const referenceMethods = [];
-	const monacoCompletions = [];
+	const screenMethods = [];
+	const apiMethods = [];
 
 	for( const fileName of files ) {
 		const methodPath = path.join( METADATA_DIR, fileName );
 		const metadata = parseMetadataFile( methodPath );
 		const methodName = metadata.title || path.basename( fileName, ".toml" );
 
-		referenceMethods.push( buildReferenceEntry( methodName, fileName, metadata ) );
-		monacoCompletions.push( buildMonacoEntry( methodName, metadata ) );
+		const methodEntry = buildReferenceEntry( methodName, fileName, metadata );
+		referenceMethods.push( methodEntry );
+
+		if( methodEntry.isScreen ) {
+			screenMethods.push( methodEntry );
+		} else {
+			apiMethods.push( methodEntry );
+		}
 	}
 
 	writeOutput( REFERENCE_FILE, { "methods": referenceMethods } );
-	writeOutput( MONACO_FILE, { "completions": monacoCompletions } );
+	writeTypeDefinitions(
+		TYPE_DEFINITION_FILE,
+		buildTypeDefinitions( screenMethods, apiMethods )
+	);
 
 	console.log( "✓ Generated reference metadata:", REFERENCE_FILE );
-	console.log( "✓ Generated Monaco metadata:", MONACO_FILE );
+	console.log( "✓ Generated type definitions:", TYPE_DEFINITION_FILE );
 }
 
 generateMetadata();
-
-

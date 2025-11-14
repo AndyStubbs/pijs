@@ -5,7 +5,8 @@ summary = "Draws a circle on the screen."
 description = """
 This function renders a circle to the active canvas.
 
-The circle is drawn with a border using the current foreground color. If a fill color is provided, the circle will be filled with that color.
+The circle is drawn with a border using the current foreground color. If a fill color is provided,
+the circle will be filled with that color.
 """
 
 [[parameters]]
