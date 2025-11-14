@@ -114,10 +114,10 @@ async function buildPlugin( pluginName, pluginDir ) {
 
 	console.log( `  Building plugin: ${pluginName}...` );
 
-	// Create dist directory
-	const distDir = path.join( pluginDir, "dist" );
-	if( !fs.existsSync( distDir ) ) {
-		fs.mkdirSync( distDir, { "recursive": true } );
+	// Create build/plugins/plugin-name directory
+	const pluginBuildDir = path.join( __dirname, "..", "build", "plugins", pluginName );
+	if( !fs.existsSync( pluginBuildDir ) ) {
+		fs.mkdirSync( pluginBuildDir, { "recursive": true } );
 	}
 
 	const pluginBuildOptions = {
@@ -136,7 +136,7 @@ async function buildPlugin( pluginName, pluginDir ) {
 			...pluginBuildOptions,
 			"format": "esm",
 			"minify": false,
-			"outfile": path.join( distDir, `${pluginName}.esm.js` )
+			"outfile": path.join( pluginBuildDir, `${pluginName}.esm.js` )
 		} );
 
 		// Build ESM (minified)
@@ -144,7 +144,7 @@ async function buildPlugin( pluginName, pluginDir ) {
 			...pluginBuildOptions,
 			"format": "esm",
 			"minify": true,
-			"outfile": path.join( distDir, `${pluginName}.esm.min.js` )
+			"outfile": path.join( pluginBuildDir, `${pluginName}.esm.min.js` )
 		} );
 
 		// Build IIFE (unminified)
@@ -152,7 +152,7 @@ async function buildPlugin( pluginName, pluginDir ) {
 			...pluginBuildOptions,
 			"format": "iife",
 			"minify": false,
-			"outfile": path.join( distDir, `${pluginName}.js` )
+			"outfile": path.join( pluginBuildDir, `${pluginName}.js` )
 		} );
 
 		// Build IIFE (minified)
@@ -160,7 +160,7 @@ async function buildPlugin( pluginName, pluginDir ) {
 			...pluginBuildOptions,
 			"format": "iife",
 			"minify": true,
-			"outfile": path.join( distDir, `${pluginName}.min.js` )
+			"outfile": path.join( pluginBuildDir, `${pluginName}.min.js` )
 		} );
 
 		// Calculate sizes
@@ -174,7 +174,7 @@ async function buildPlugin( pluginName, pluginDir ) {
 		let totalSize = 0;
 		let minifiedSize = 0;
 		files.forEach( file => {
-			const filePath = path.join( distDir, file );
+			const filePath = path.join( pluginBuildDir, file );
 			if( fs.existsSync( filePath ) ) {
 				const size = fs.statSync( filePath ).size;
 				totalSize += size;

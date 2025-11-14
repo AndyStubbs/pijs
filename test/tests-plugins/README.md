@@ -78,8 +78,8 @@ npm run test:all
 Example HTML header:
 ```html
 <script src="../../../build/pi.js"></script>
-<script src="../../../plugins/print-table/dist/print-table.min.js"></script>
-<script src="../../../plugins/onscreen-keyboard/dist/onscreen-keyboard.min.js"></script>
+<script src="../../../build/plugins/print-table/print-table.min.js"></script>
+<script src="../../../build/plugins/onscreen-keyboard/onscreen-keyboard.min.js"></script>
 ```
 
 ## Creating New Plugin Tests
@@ -106,7 +106,7 @@ All plugin tests follow the same format as core tests:
 	[[TOML_END]]
 </script>
 <script src="../../../build/pi.js"></script>
-<script src="../../../plugins/my-plugin/dist/my-plugin.min.js"></script>
+<script src="../../../build/plugins/my-plugin/my-plugin.min.js"></script>
 ```
 
 ## Test Commands

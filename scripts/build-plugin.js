@@ -36,10 +36,10 @@ async function buildPlugin( pluginName ) {
 
 	console.log( `Building plugin: ${pluginName}...` );
 
-	// Create dist directory
-	const distDir = path.join( pluginDir, "dist" );
-	if( !fs.existsSync( distDir ) ) {
-		fs.mkdirSync( distDir, { "recursive": true } );
+	// Create build/plugins/plugin-name directory
+	const buildDir = path.join( __dirname, "..", "build", "plugins", pluginName );
+	if( !fs.existsSync( buildDir ) ) {
+		fs.mkdirSync( buildDir, { "recursive": true } );
 	}
 
 	const buildOptions = {
@@ -58,7 +58,7 @@ async function buildPlugin( pluginName ) {
 			...buildOptions,
 			"format": "esm",
 			"minify": false,
-			"outfile": path.join( distDir, `${pluginName}.esm.js` )
+			"outfile": path.join( buildDir, `${pluginName}.esm.js` )
 		} );
 
 		// Build ESM (minified)
@@ -67,7 +67,7 @@ async function buildPlugin( pluginName ) {
 			...buildOptions,
 			"format": "esm",
 			"minify": true,
-			"outfile": path.join( distDir, `${pluginName}.esm.min.js` )
+			"outfile": path.join( buildDir, `${pluginName}.esm.min.js` )
 		} );
 
 		// Build IIFE (unminified)
@@ -76,7 +76,7 @@ async function buildPlugin( pluginName ) {
 			...buildOptions,
 			"format": "iife",
 			"minify": false,
-			"outfile": path.join( distDir, `${pluginName}.js` )
+			"outfile": path.join( buildDir, `${pluginName}.js` )
 		} );
 
 		// Build IIFE (minified)
@@ -85,16 +85,16 @@ async function buildPlugin( pluginName ) {
 			...buildOptions,
 			"format": "iife",
 			"minify": true,
-			"outfile": path.join( distDir, `${pluginName}.min.js` )
+			"outfile": path.join( buildDir, `${pluginName}.min.js` )
 		} );
 
 		console.log( `✓ Successfully built plugin: ${pluginName}` );
 		console.log( "" );
 		console.log( "Output files:" );
-		console.log( `  - plugins/${pluginName}/dist/${pluginName}.esm.js (ESM)` );
-		console.log( `  - plugins/${pluginName}/dist/${pluginName}.esm.min.js (ESM, minified)` );
-		console.log( `  - plugins/${pluginName}/dist/${pluginName}.js (IIFE)` );
-		console.log( `  - plugins/${pluginName}/dist/${pluginName}.min.js (IIFE, minified)` );
+		console.log( `  - build/plugins/${pluginName}/${pluginName}.esm.js (ESM)` );
+		console.log( `  - build/plugins/${pluginName}/${pluginName}.esm.min.js (ESM, minified)` );
+		console.log( `  - build/plugins/${pluginName}/${pluginName}.js (IIFE)` );
+		console.log( `  - build/plugins/${pluginName}/${pluginName}.min.js (IIFE, minified)` );
 
 		// Print file sizes
 		const files = [
@@ -107,7 +107,7 @@ async function buildPlugin( pluginName ) {
 		console.log( "" );
 		console.log( "File sizes:" );
 		files.forEach( file => {
-			const filePath = path.join( distDir, file.name );
+			const filePath = path.join( buildDir, file.name );
 			if( fs.existsSync( filePath ) ) {
 				const stats = fs.statSync( filePath );
 				const sizeKB = ( stats.size / 1024 ).toFixed( 2 );
