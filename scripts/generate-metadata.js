@@ -56,14 +56,31 @@ function formatReturns( returns = [] ) {
 	} ) );
 }
 
+function extractExample( metadata ) {
+	if( typeof metadata.example === "string" ) {
+		return metadata.example;
+	}
+
+	if( Array.isArray( metadata.returns ) ) {
+		for( const returnValue of metadata.returns ) {
+			if( typeof returnValue.example === "string" ) {
+				return returnValue.example;
+			}
+		}
+	}
+
+	return "";
+}
+
 function parseMetadataFile( filePath ) {
 	const raw = fs.readFileSync( filePath, "utf8" );
 	return toml.parse( raw );
 }
 
-function buildReferenceEntry( methodName, fileName, metadata ) {
+function buildReferenceEntry( methodName, metadata ) {
 	const parameters = formatParameters( metadata.parameters );
 	const returns = formatReturns( metadata.returns );
+	const example = normalizeMultiline( extractExample( metadata ) );
 
 	return {
 		"name": methodName,
@@ -73,8 +90,7 @@ function buildReferenceEntry( methodName, fileName, metadata ) {
 		"description": normalizeMultiline( metadata.description ),
 		"parameters": parameters,
 		"returns": returns,
-		"example": normalizeMultiline( metadata.example ),
-		"source": `metadata/methods/${fileName}`
+		"example": example
 	};
 }
 
@@ -258,7 +274,7 @@ function generateMetadata() {
 		const metadata = parseMetadataFile( methodPath );
 		const methodName = metadata.title || path.basename( fileName, ".toml" );
 
-		const methodEntry = buildReferenceEntry( methodName, fileName, metadata );
+		const methodEntry = buildReferenceEntry( methodName, metadata );
 		referenceMethods.push( methodEntry );
 
 		if( methodEntry.isScreen ) {
