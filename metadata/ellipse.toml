@@ -5,7 +5,8 @@ summary = "Draws an ellipse on the screen."
 description = """
 This function renders an ellipse to the active canvas.
 
-The ellipse is drawn with a border using the current foreground color. If a fill color is provided, the ellipse will be filled with that color.
+The ellipse is drawn with a border using the current foreground color. If a fill color is provided,
+the ellipse will be filled with that color.
 """
 
 [[parameters]]

@@ -1,0 +1,51 @@
+title = "rect2"
+category = "primitives"
+isScreen = true
+summary = "Draws a rectangle on the screen."
+description = """
+This function renders a rectangle to the active canvas.
+
+The rectangle is drawn with a border using the current foreground color. If a fill color is
+provided, the rectangle will be filled with that color (the fill area is slightly inset from the
+border).
+
+This function is the same as rect except it will allow parameters to be passed as an object
+literal for convience at a slight cost to performance.
+"""
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "The x coordinate of the upper left corner of the rectangle."
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "The y coordinate of the upper left corner of the rectangle."
+
+[[parameters]]
+name = "width"
+type = "number"
+description = "The width of the rectangle."
+
+[[parameters]]
+name = "height"
+type = "number"
+description = "The height of the rectangle."
+
+[[parameters]]
+name = "fillColor"
+type = "string|number"
+description = "The fill color for the rectangle. Can be a color name, hex string, or palette index."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+const rectOptions = { "x": 25, "y": 25, "width": 150, "height": 100, "fillColor": 6 };
+$.screen( "300x200" );
+$.rect2( rectOptions );
+"""
+

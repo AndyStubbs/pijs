@@ -1,0 +1,45 @@
+title = "cls"
+category = "primitives"
+isScreen = true
+summary = "Clears the screen or a rectangular region."
+description = """
+This function clears the entire screen or a rectangular region of the active canvas.
+
+When x, y, width, and height are provided, only that region is cleared. Otherwise the full screen is
+cleared and the cursor is reset.
+"""
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "The horizontal coordinate of the region to clear."
+optional = true
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "The vertical coordinate of the region to clear."
+optional = true
+
+[[parameters]]
+name = "width"
+type = "number"
+description = "The width of the region to clear."
+optional = true
+
+[[parameters]]
+name = "height"
+type = "number"
+description = "The height of the region to clear."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+$.cls();
+$.cls( 25, 25, 100, 50 );
+"""
+

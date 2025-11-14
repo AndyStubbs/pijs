@@ -5,7 +5,7 @@ summary = "Draws a line on the screen."
 description = """
 This function renders a line segment to the active canvas.
 
-The line is drawn from the first point to the second point using the current foreground color and pen settings.
+The line is drawn from the first point to the second point using the current foreground color.
 """
 
 [[parameters]]
