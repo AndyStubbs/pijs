@@ -20,8 +20,12 @@ let m_seededRandom = null;
  * @returns {Object} Test configuration
  */
 export function getConfig( operationTypes ) {
+	let name = "Graphics Test";
+	if( operationTypes && operationTypes.length === 1 ) {
+		name = `Graphics ${operationTypes[ 0 ]} Test`;
+	}
 	return {
-		"name": "Graphics Test",
+		"name": name,
 		"run": run,
 		"init": init,
 		"cleanUp": cleanUp,
@@ -41,8 +45,8 @@ function init( config ) {
 
 	if( !config.operationTypes ) {
 		m_operationTypes = [
-			"pset", "line", "circle", "circle-filled", "rect", "rect-filled", "ellipse",
-			"ellipse-filled", "arc", "bezier"
+			"pset", "line", "circle", "circle-filled", "rect", "rect-filled", "rect2",
+			"rect2-filled", "ellipse", "ellipse-filled", "arc", "bezier"
 		];
 	} else {
 		m_operationTypes = config.operationTypes;
@@ -198,6 +202,43 @@ function generateRandomOperation() {
 				]
 			};
 			
+		case "rect2":
+			const rect2X = Math.floor( m_seededRandom() * width );
+			const rect2Y = Math.floor( m_seededRandom() * height );
+			const rect2Width = Math.floor( m_seededRandom() * 100 ) + 10;
+			const rect2Height = Math.floor( m_seededRandom() * 80 ) + 10;
+			return {
+				"func": $.rect2,
+				"params": [ { "x": rect2X, "y": rect2Y, "width": rect2Width, "height": rect2Height } ],
+				"getParams": () => [ {
+					"x": rect2X + Math.floor( Math.random() * 3 ) - 1,
+					"y": rect2Y + Math.floor( Math.random() * 3 ) - 1,
+					"width": rect2Width + Math.floor( Math.random() * 3 ) - 1,
+					"height": rect2Height + Math.floor( Math.random() * 3 ) - 1
+				} ]
+			};
+			
+		case "rect2-filled":
+			const rect2FillX = Math.floor( m_seededRandom() * width );
+			const rect2FillY = Math.floor( m_seededRandom() * height );
+			const rect2FillWidth = Math.floor( m_seededRandom() * 100 ) + 10;
+			const rect2FillHeight = Math.floor( m_seededRandom() * 80 ) + 10;
+			const rect2FillColor = Math.floor( m_seededRandom() * colorCount );
+			return {
+				"func": $.rect2,
+				"params": [ {
+					"x": rect2FillX, "y": rect2FillY, "width": rect2FillWidth,
+					"height": rect2FillHeight, "fillColor": rect2FillColor
+				} ],
+				"getParams": () => [ {
+					"x": rect2FillX + Math.floor( Math.random() * 3 ) - 1,
+					"y": rect2FillY + Math.floor( Math.random() * 3 ) - 1,
+					"width": rect2FillWidth + Math.floor( Math.random() * 3 ) - 1,
+					"height": rect2FillHeight + Math.floor( Math.random() * 3 ) - 1,
+					"fillColor": rect2FillColor
+				} ]
+			};
+			
 		case "pset":
 			const psetX = Math.floor( m_seededRandom() * width );
 			const psetY = Math.floor( m_seededRandom() * height );
@@ -272,8 +313,14 @@ function run( itemCount ) {
 		
 		// Execute the operation with variable parameters to prevent JIT optimization
 		const params = operation.getParams ? operation.getParams() : operation.params;
-		operation.func(
-			params[ 0 ], params[ 1 ], params[ 2 ], params[ 3 ], params[ 4 ]
-		);
+		
+		// rect2 uses named parameters (object), others use positional parameters
+		if( operation.func === $.rect2 ) {
+			operation.func( params[ 0 ] );
+		} else {
+			operation.func(
+				params[ 0 ], params[ 1 ], params[ 2 ], params[ 3 ], params[ 4 ]
+			);
+		}
 	}
 }

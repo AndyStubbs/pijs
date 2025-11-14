@@ -30,7 +30,10 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 let m_tests = [];
 //m_tests.push( g_psetTest.getConfig() );
 //m_tests.push( g_lineTest.getConfig() );
-//m_tests.push( g_graphicsTest.getConfig() );
+m_tests.push( g_graphicsTest.getConfig( [ "rect2" ] ) );
+m_tests.push( g_graphicsTest.getConfig( [ "rect" ] ) );
+m_tests.push( g_graphicsTest.getConfig( [ "rect2-filled" ] ) );
+m_tests.push( g_graphicsTest.getConfig( [ "rect-filled" ] ) );
 
 // m_tests.push( g_imagesTest.getConfig( false, false ) );
 // m_tests.push( g_imagesTest.getConfig( true, false ) );
@@ -57,7 +60,7 @@ const allImageTestOptions = [
 	"draw-sprites-colors"
 ];
 
-m_tests.push( g_imagesTest2.getConfig( [ "draw-images" ] ) );
+//m_tests.push( g_imagesTest2.getConfig( [ "draw-images" ] ) );
 // Generate separate test for each combination
 // for( let i = 0; i < allImageTestOptions.length; i++ ) {
 // 	m_tests.push( g_imagesTest2.getConfig( [ allImageTestOptions[ i ] ] ) );

@@ -134,7 +134,7 @@ function showResults( resultsObject ) {
 	$.setPos( 0, resultsStartRow );
 	
 	// Create results table data
-	let namePadding = "------------------------".length;
+	let namePadding = "--------------------------".length;
 	const resultsData = [ [
 		"Test Name".padEnd( namePadding ), "Score", "Avg FPS", "Items/Frame", "Items/Sec", "Duration"
 	] ];
@@ -165,7 +165,7 @@ function showResults( resultsObject ) {
 			$.print( msg + " | ", true );
 		}
 		if( i === 0 ) {
-			$.print( "\n------------------------------------------------------------------------------------------------" );
+			$.print( "\n--------------------------------------------------------------------------------------------------" );
 		} else {
 			$.print();
 		}
@@ -341,7 +341,7 @@ function displayResultsList( files, startIndex ) {
 	// Display results table
 	$.setColor( 7 );
 	$.setPos( 0, 4 );
-	const padding = [ 3, 22, 15, 8, 8 ];
+	const padding = [ 3, 24, 15, 8, 8 ];
 	for( let i = 0; i < resultsData.length; i += 1 ) {
 		for( let j = 0; j < resultsData[ i ].length; j += 1 ) {
 			let msg = ( resultsData[ i ][ j ] + "" );
@@ -349,7 +349,7 @@ function displayResultsList( files, startIndex ) {
 			$.print( msg + " | ", true );
 		}
 		if( i === 0 ) {
-			$.print( "\n----------------------------------------------------------------------" );
+			$.print( "\n------------------------------------------------------------------------" );
 		} else {
 			$.print();
 		}
