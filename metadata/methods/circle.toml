@@ -1,0 +1,40 @@
+title = "circle"
+category = "primitives"
+isScreen = true
+summary = "Draws a circle on the screen."
+description = """
+This function renders a circle to the active canvas.
+
+The circle is drawn with a border using the current foreground color. If a fill color is provided, the circle will be filled with that color.
+"""
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "The x coordinate of the center of the circle."
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "The y coordinate of the center of the circle."
+
+[[parameters]]
+name = "radius"
+type = "number"
+description = "The radius of the circle."
+
+[[parameters]]
+name = "fillColor"
+type = "string|number"
+description = "The fill color for the circle. Can be a color name, hex string, or palette index."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+$.circle( 150, 100, 50, "red" );
+"""
+

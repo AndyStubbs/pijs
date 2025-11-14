@@ -12,7 +12,6 @@ The angles are measured in degrees, clockwise from the positive x-axis.
 name = "cx"
 type = "number"
 description = "The x coordinate of the center point of the arc's circle."
-optional = false
 
 [[parameters]]
 name = "cy"

@@ -1,0 +1,34 @@
+title = "pset"
+category = "primitives"
+isScreen = true
+summary = "Sets a pixel on the screen to the current foreground color."
+description = """
+This function sets a single pixel on the active canvas to the current foreground color.
+
+After drawing, the cursor position is updated to the pixel coordinates.
+"""
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "The x coordinate of the pixel to set."
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "The y coordinate of the pixel to set."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+$.setColor( 2 );
+$.pset( 148, 101 );
+$.pset( 149, 100 );
+$.pset( 150, 101 );
+$.pset( 151, 100 );
+$.pset( 152, 101 );
+"""
+
