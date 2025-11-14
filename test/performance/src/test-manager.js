@@ -47,17 +47,17 @@ let m_tests = [];
 
 // Images Advanced Test - All 8 combinations
 const allImageTestOptions = [
-	"blit",
-	"blit-colors",
+	"blit-images",
+	"blit-images-colors",
 	"blit-sprites",
 	"blit-sprites-colors",
-	"draw",
-	"draw-colors",
+	"draw-images",
+	"draw-images-colors",
 	"draw-sprites",
 	"draw-sprites-colors"
 ];
 
-m_tests.push( g_imagesTest2.getConfig( [ "draw" ] ) );
+m_tests.push( g_imagesTest2.getConfig( [ "draw-images" ] ) );
 // Generate separate test for each combination
 // for( let i = 0; i < allImageTestOptions.length; i++ ) {
 // 	m_tests.push( g_imagesTest2.getConfig( [ allImageTestOptions[ i ] ] ) );

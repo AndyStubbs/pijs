@@ -19,8 +19,8 @@ let m_pal;
  * Gets the images test configuration object
  * 
  * @param {Array<string>} testOptions - Array of test option strings
- *   Valid options: "blit", "blit-colors", "blit-sprites", "blit-sprites-colors",
- *                  "draw", "draw-colors", "draw-sprites", "draw-sprites-colors"
+ *   Valid options: "blit-images", "blit-images-colors", "blit-sprites", "blit-sprites-colors",
+ *                  "draw-images", "draw-images-colors", "draw-sprites", "draw-sprites-colors"
  * @returns {Object} Test configuration
  */
 export function getConfig( testOptions ) {
@@ -32,8 +32,8 @@ export function getConfig( testOptions ) {
 
 		// Default to all test options if none provided
 		m_testOptions = [
-			"blit", "blit-colors", "blit-sprites", "blit-sprites-colors",
-			"draw", "draw-colors", "draw-sprites", "draw-sprites-colors"
+			"blit-images", "blit-images-colors", "blit-sprites", "blit-sprites-colors",
+			"draw-images", "draw-images-colors", "draw-sprites", "draw-sprites-colors"
 		];
 	} else {
 		m_testOptions = testOptions;
