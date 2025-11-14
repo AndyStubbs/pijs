@@ -11,11 +11,13 @@
 const fs = require( "fs" );
 const path = require( "path" );
 const toml = require( "@iarna/toml" );
+const pkg = require( "../package.json" );
 
 const METADATA_DIR = path.join( __dirname, "..", "metadata" );
 const OUTPUT_DIR = path.join( __dirname, "..", "build", "metadata" );
 const REFERENCE_FILE = path.join( OUTPUT_DIR, "reference.json" );
 const TYPE_DEFINITION_FILE = path.join( OUTPUT_DIR, "pi.d.ts" );
+const PI_VERSION = pkg.version;
 
 function ensureDirectories() {
 	if( !fs.existsSync( METADATA_DIR ) ) {
@@ -189,6 +191,13 @@ function buildTypeDefinitions( screenMethods, apiMethods ) {
 	lines.push( "" );
 	lines.push( "\tinterface API extends Screen {" );
 	buildInterfaceMethods( lines, apiMethods );
+	if( apiMethods.length > 0 ) {
+		lines.push( "" );
+	}
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Current Pi.js version string." );
+	lines.push( "\t\t */" );
+	lines.push( `\t\treadonly version: "${PI_VERSION}";` );
 	lines.push( "\t}" );
 	lines.push( "}" );
 	lines.push( "" );
@@ -203,6 +212,7 @@ function buildTypeDefinitions( screenMethods, apiMethods ) {
 
 function writeOutput( filePath, data ) {
 	const payload = {
+		"version": PI_VERSION,
 		"generatedAt": new Date().toISOString(),
 		...data
 	};
