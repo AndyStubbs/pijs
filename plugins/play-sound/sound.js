@@ -6,6 +6,9 @@
  * @module plugins/play-sound/sound
  */
 
+// TODO: Rename "audio pool" command names, it's overly complicated. Maybe just make it loadAudio,
+// playAudio or something like that.
+
 "use strict";
 
 let m_audioContext = null;
