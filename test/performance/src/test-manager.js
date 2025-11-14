@@ -30,8 +30,9 @@ const REDUCED_FLASHING_OPACITY = "0.2";
 let m_tests = [];
 //m_tests.push( g_psetTest.getConfig() );
 //m_tests.push( g_lineTest.getConfig() );
-m_tests.push( g_graphicsTest.getConfig( [ "rect2" ] ) );
-m_tests.push( g_graphicsTest.getConfig( [ "rect" ] ) );
+
+//m_tests.push( g_graphicsTest.getConfig( [ "rect2" ] ) );
+//m_tests.push( g_graphicsTest.getConfig( [ "rect" ] ) );
 m_tests.push( g_graphicsTest.getConfig( [ "rect2-filled" ] ) );
 m_tests.push( g_graphicsTest.getConfig( [ "rect-filled" ] ) );
 
@@ -323,7 +324,7 @@ async function runNextTest() {
 
 		//$.cls( 0, 0, 155, 65 );
 		$.setColor( "black" );
-		$.rect( 0, 0, 200, 82, "black" );
+		$.rect( 0, 0, 210, 82, "black" );
 		$.setColor( 14 );
 		$.setPos( 0, 0 );
 		$.print( test.name );

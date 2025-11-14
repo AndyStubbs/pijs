@@ -210,12 +210,12 @@ function generateRandomOperation() {
 			return {
 				"func": $.rect2,
 				"params": [ { "x": rect2X, "y": rect2Y, "width": rect2Width, "height": rect2Height } ],
-				"getParams": () => [ {
-					"x": rect2X + Math.floor( Math.random() * 3 ) - 1,
-					"y": rect2Y + Math.floor( Math.random() * 3 ) - 1,
-					"width": rect2Width + Math.floor( Math.random() * 3 ) - 1,
-					"height": rect2Height + Math.floor( Math.random() * 3 ) - 1
-				} ]
+				"getParams": () => [
+					rect2X + Math.floor( Math.random() * 3 ) - 1,
+					rect2Y + Math.floor( Math.random() * 3 ) - 1,
+					rect2Width + Math.floor( Math.random() * 3 ) - 1,
+					rect2Height + Math.floor( Math.random() * 3 ) - 1
+				]
 			};
 			
 		case "rect2-filled":
@@ -230,13 +230,13 @@ function generateRandomOperation() {
 					"x": rect2FillX, "y": rect2FillY, "width": rect2FillWidth,
 					"height": rect2FillHeight, "fillColor": rect2FillColor
 				} ],
-				"getParams": () => [ {
-					"x": rect2FillX + Math.floor( Math.random() * 3 ) - 1,
-					"y": rect2FillY + Math.floor( Math.random() * 3 ) - 1,
-					"width": rect2FillWidth + Math.floor( Math.random() * 3 ) - 1,
-					"height": rect2FillHeight + Math.floor( Math.random() * 3 ) - 1,
-					"fillColor": rect2FillColor
-				} ]
+				"getParams": () => [
+					rect2FillX + Math.floor( Math.random() * 3 ) - 1,
+					rect2FillY + Math.floor( Math.random() * 3 ) - 1,
+					rect2FillWidth + Math.floor( Math.random() * 3 ) - 1,
+					rect2FillHeight + Math.floor( Math.random() * 3 ) - 1,
+					rect2FillColor
+				]
 			};
 			
 		case "pset":
@@ -312,15 +312,8 @@ function run( itemCount ) {
 		$.setColor( Math.floor( Math.random() * m_pal.length ) );
 		
 		// Execute the operation with variable parameters to prevent JIT optimization
-		const params = operation.getParams ? operation.getParams() : operation.params;
+		const params = operation.getParams();
+		operation.func( params[ 0 ], params[ 1 ], params[ 2 ], params[ 3 ], params[ 4 ] );
 		
-		// rect2 uses named parameters (object), others use positional parameters
-		if( operation.func === $.rect2 ) {
-			operation.func( params[ 0 ] );
-		} else {
-			operation.func(
-				params[ 0 ], params[ 1 ], params[ 2 ], params[ 3 ], params[ 4 ]
-			);
-		}
 	}
 }
