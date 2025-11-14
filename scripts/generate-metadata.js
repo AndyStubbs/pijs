@@ -13,11 +13,11 @@ const path = require( "path" );
 const toml = require( "@iarna/toml" );
 const pkg = require( "../package.json" );
 
+const PI_VERSION = pkg.version;
 const METADATA_DIR = path.join( __dirname, "..", "metadata" );
 const OUTPUT_DIR = path.join( __dirname, "..", "build", "metadata" );
-const REFERENCE_FILE = path.join( OUTPUT_DIR, "reference.json" );
+const REFERENCE_FILE = path.join( OUTPUT_DIR, `reference-${PI_VERSION}.json` );
 const TYPE_DEFINITION_FILE = path.join( OUTPUT_DIR, "pi.d.ts" );
-const PI_VERSION = pkg.version;
 
 function ensureDirectories() {
 	if( !fs.existsSync( METADATA_DIR ) ) {
