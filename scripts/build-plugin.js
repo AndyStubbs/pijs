@@ -77,6 +77,26 @@ async function buildPlugin( pluginName, options = {} ) {
 		console.log( `  Building plugin: ${pluginName}...` );
 	}
 
+	// Read banner.json if it exists
+	let banner = null;
+	const bannerPath = path.join( pluginDir, "banner.json" );
+	if( fs.existsSync( bannerPath ) ) {
+		try {
+			const bannerData = JSON.parse( fs.readFileSync( bannerPath, "utf8" ) );
+			banner = `/**
+ * ${bannerData.name} - ${bannerData.description}
+ * @version ${bannerData.version}
+ * @author ${bannerData.author}
+ * @license ${bannerData.license}
+ * @preserve
+ */`;
+		} catch( error ) {
+			if( verbose ) {
+				console.warn( `  ⚠️  Failed to read banner.json: ${error.message}` );
+			}
+		}
+	}
+
 	const buildOptions = {
 		"entryPoints": [ entryPoint ],
 		"bundle": true,
@@ -87,6 +107,10 @@ async function buildPlugin( pluginName, options = {} ) {
 		"plugins": plugins,
 		"legalComments": "inline"
 	};
+
+	if( banner ) {
+		buildOptions.banner = { "js": banner };
+	}
 
 	try {
 		// Build ESM (unminified)

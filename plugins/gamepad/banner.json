@@ -1,0 +1,7 @@
+{
+	"name": "gamepad",
+	"version": "1.0.0",
+	"description": "Gamepad input handling for Pi.js",
+	"author": "Andy Stubbs",
+	"license": "Apache-2.0"
+}

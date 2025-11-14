@@ -1,5 +1,4 @@
 /**
- * @preserve
  * Keyboard Plugin for Pi.js
  * 
  * Provides keyboard input handling including key state tracking, event handlers,

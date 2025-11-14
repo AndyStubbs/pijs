@@ -1,5 +1,4 @@
 /**
- * @preserve
  * Onscreen Keyboard Plugin for Pi.js
  * 
  * Provides an onscreen keyboard for touch devices and accessibility.

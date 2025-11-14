@@ -1,0 +1,7 @@
+{
+	"name": "print-table",
+	"version": "1.0.0",
+	"description": "Table formatting and printing with customizable borders",
+	"author": "Andy Stubbs",
+	"license": "Apache-2.0"
+}

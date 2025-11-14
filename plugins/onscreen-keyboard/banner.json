@@ -1,0 +1,7 @@
+{
+	"name": "onscreen-keyboard",
+	"version": "1.0.0",
+	"description": "Onscreen keyboard for touch devices and accessibility",
+	"author": "Andy Stubbs",
+	"license": "Apache-2.0"
+}

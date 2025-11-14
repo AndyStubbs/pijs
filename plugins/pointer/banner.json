@@ -1,0 +1,7 @@
+{
+	"name": "pointer",
+	"version": "1.0.0",
+	"description": "Mouse, touch, and press handling ported from alpha.1.",
+	"author": "Andy Stubbs",
+	"license": "Apache-2.0"
+}

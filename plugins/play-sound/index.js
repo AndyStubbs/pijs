@@ -1,5 +1,4 @@
 /**
- * @preserve
  * Pi.js - Play-Sound Plugin
  * 
  * Music playback and sound effects using Web Audio API.

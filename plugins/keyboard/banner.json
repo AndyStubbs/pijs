@@ -1,0 +1,7 @@
+{
+	"name": "keyboard",
+	"version": "1.0.0",
+	"description": "Keyboard input handling for Pi.js",
+	"author": "Andy Stubbs",
+	"license": "Apache-2.0"
+}

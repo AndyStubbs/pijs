@@ -1,5 +1,4 @@
 /**
- * @preserve
  * Print Table Plugin for Pi.js
  * 
  * Table formatting and printing with customizable borders

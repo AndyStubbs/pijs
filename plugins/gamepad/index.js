@@ -1,5 +1,4 @@
 /**
- * @preserve
  * Gamepad Plugin for Pi.js
  * 
  * Provides gamepad input handling including button state tracking, axis handling,

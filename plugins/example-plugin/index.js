@@ -1,5 +1,4 @@
 /**
- * @preserve
  * Example Plugin for Pi.js
  * 
  * Demonstrates basic plugin functionality including:
