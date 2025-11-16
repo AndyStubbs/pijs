@@ -1,5 +1,8 @@
 methods = [
+	"ingamepads",
 	"findColor",
+	"offgamepad",
+	"ongamepad",
 	"setAutoRender",
 	"setBlendMode",
 	"setColors",

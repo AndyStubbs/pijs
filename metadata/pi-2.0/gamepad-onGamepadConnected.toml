@@ -1,0 +1,29 @@
+title = "onGamepadConnected"
+category = "gamepad"
+isScreen = false
+plugin = "gamepad"
+summary = "Registers a callback function for when a gamepad is connected."
+description = """
+Registers a callback function that will be called whenever a gamepad is connected. The callback
+receives a gamepad data object with index, id, mapping, and other properties.
+
+Multiple callbacks can be registered. The callback will also be triggered for any gamepads that
+are already connected when the callback is registered.
+"""
+
+[[parameters]]
+name = "fn"
+type = "function"
+description = "Callback function that receives (gamepad) when a gamepad connects."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.onGamepadConnected( ( gamepad ) => {
+	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
+} );
+$.startGamepad();
+"""
+

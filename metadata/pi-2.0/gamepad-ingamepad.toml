@@ -1,0 +1,52 @@
+title = "ingamepad"
+category = "gamepad"
+isScreen = false
+plugin = "gamepad"
+summary = "Gets gamepad data for a specific gamepad or all gamepads."
+description = """
+Retrieves gamepad data. If gamepadIndex is provided, returns the gamepad object for that index,
+or undefined if not found. If gamepadIndex is null or undefined, returns an array of all
+connected gamepads sorted by index.
+
+The returned gamepad object contains:
+- **index**: Gamepad index
+- **id**: Gamepad identifier string
+- **connected**: Connection status
+- **mapping**: Gamepad mapping type
+- **buttons**: Array of button objects with pressed, value, pressStarted, pressReleased
+- **axes**: Array of axis values (-1.0 to 1.0)
+- **getButton(buttonIndex)**: Get button object by index
+- **getButtonPressed(buttonIndex)**: Get button pressed state
+- **getButtonJustPressed(buttonIndex)**: Get if button was just pressed this frame
+- **getButtonJustReleased(buttonIndex)**: Get if button was just released this frame
+- **getAxis(axisIndex)**: Get axis value
+- **getAxisChanged(axisIndex)**: Get if axis value changed this frame
+"""
+
+[[parameters]]
+name = "gamepadIndex"
+type = "number"
+description = "Gamepad index to retrieve. If null/undefined, returns all gamepads."
+optional = true
+
+[[returns]]
+type = "object|array"
+description = "Gamepad object if index provided, or array of all gamepads if index is null/undefined."
+
+example = """
+setInterval( () => {
+	$.cls();
+	const gamepad = $.ingamepad( 0 );
+	if( gamepad ) {
+		if( gamepad.getButtonJustPressed( 0 ) ) {
+			$.print( "Button 0 pressed!" );
+		}
+		const leftStickX = gamepad.getAxis( 0 );
+		const leftStickY = gamepad.getAxis( 1 );
+	}
+
+	// Get all gamepads
+	const allGamepads = $.ingamepad();
+	$.print( `${allGamepads.length} gamepads connected` );
+} );
+"""

@@ -1,0 +1,25 @@
+title = "startGamepad"
+category = "gamepad"
+isScreen = false
+plugin = "gamepad"
+summary = "Starts the gamepad input loop and begins monitoring for gamepad connections."
+description = """
+Starts the gamepad input monitoring system. This initializes event listeners for gamepad
+connections/disconnections and begins polling gamepad state. The gamepad loop runs automatically
+once started and will continue until stopGamepad is called.
+
+If gamepads are already connected when this is called, they will be automatically detected and
+added to the gamepad list.
+"""
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.startGamepad();
+$.onGamepadConnected( ( gamepad ) => {
+	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
+} );
+"""
+
