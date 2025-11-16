@@ -1,5 +1,5 @@
 title = "setBlendMode"
-category = "primatives"
+category = "primitives"
 isScreen = true
 summary = "Sets the blend mode when drawing. Normal will set the pixel to the exact color. Blended will mix the colors if the alpha channel of the current color is not 100%."
 description = ""

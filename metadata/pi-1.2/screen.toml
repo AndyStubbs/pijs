@@ -50,7 +50,7 @@ optional = true
 [[parameters]]
 name = "willReadFrequently"
 type = "any"
-description = "This sets the image data to not use hardware acceleration. This will help speed things up if you are using a lot of pixel mode primative graphics commands. It won't help with drawImage or drawSprite commands."
+description = "This sets the image data to not use hardware acceleration. This will help speed things up if you are using a lot of pixel mode primitive graphics commands. It won't help with drawImage or drawSprite commands."
 optional = true
 
 [[parameters]]

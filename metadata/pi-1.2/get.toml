@@ -1,5 +1,5 @@
 title = "get"
-category = "primatives"
+category = "primitives"
 isScreen = true
 summary = """
 Gets an area of pixels from the screen and returns an array of color indices.\r

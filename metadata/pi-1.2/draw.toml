@@ -1,5 +1,5 @@
 title = "draw"
-category = "primatives"
+category = "primitives"
 isScreen = true
 summary = "Draws lines on the screen defined by a string."
 description = ""

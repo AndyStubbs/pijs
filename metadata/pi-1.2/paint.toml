@@ -1,5 +1,5 @@
 title = "paint"
-category = "primatives"
+category = "primitives"
 isScreen = true
 summary = "Fills in areas of the screen that are the same color."
 description = ""

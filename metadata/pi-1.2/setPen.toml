@@ -1,5 +1,5 @@
 title = "setPen"
-category = "primatives"
+category = "primitives"
 isScreen = true
 summary = "Sets the pen to use for drawing operations."
 description = ""
