@@ -1,0 +1,46 @@
+title = "setChar"
+category = "text"
+isScreen = true
+summary = "Sets a custom character bitmap in the current font."
+description = """
+Modifies a character in the current screen's font atlas by replacing its bitmap data. The character
+must exist in the font's character set. The data can be provided as a 2D array of 0/1 values or
+as a hex-encoded string.
+
+This updates the WebGL texture for the font, so the change is immediately visible when that
+character is printed.
+"""
+
+[[parameters]]
+name = "charCode"
+type = "number|string"
+description = "Character code (number) or single-character string to modify."
+
+[[parameters]]
+name = "data"
+type = "array|string"
+description = "Character bitmap as 2D array [[row...], ...] where 1=on, 0=off, or hex-encoded string."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+
+// Set character 'A' using 2D array
+$.setChar( "A", [
+	[ 0, 1, 1, 0, 0 ],
+	[ 1, 0, 0, 1, 0 ],
+	[ 1, 1, 1, 1, 0 ],
+	[ 1, 0, 0, 1, 0 ],
+	[ 1, 0, 0, 1, 0 ],
+	[ 0, 0, 0, 0, 0 ],
+	[ 0, 0, 0, 0, 0 ],
+	[ 0, 0, 0, 0, 0 ]
+] );
+$.setChar( 97, "1092ba547cc6fe92" );
+$.print( "Aa" );
+"""
+

@@ -1,5 +1,5 @@
 title = "setChar"
-category = "print"
+category = "text"
 isScreen = true
 summary = "Overwrites a character in the current font set."
 description = ""
@@ -17,12 +17,12 @@ $.print( " abcde f" );\r
 
 [[parameters]]
 name = "code"
-type = "any"
+type = "number"
 description = "The ascii character code you want to replace."
 
 [[parameters]]
 name = "data"
-type = "any"
+type = "array|string"
 description = "Either a 2d array containing numbers or a hex string that when converted to binary represents the character data."
 
 [[returns]]

@@ -22,31 +22,31 @@ $.ready( function () {\r
 
 [[parameters]]
 name = "fontSrc"
-type = "any"
+type = "string|Image|Canvas"
 description = "The source location of the image or the encoded string location."
 
 [[parameters]]
 name = "width"
-type = "any"
+type = "number"
 description = "The width of each character in the font."
 
 [[parameters]]
 name = "height"
-type = "any"
+type = "number"
 description = "The height of each character in the font."
 
 [[parameters]]
 name = "charSet"
-type = "any"
+type = "array|string"
 description = "A string or an array of integers containing the ascii value for each font character in order."
 optional = true
 
 [[parameters]]
 name = "isEncoded"
-type = "any"
+type = "boolean"
 description = "Boolean to load the font from an encoded string."
 optional = true
 
 [[returns]]
-type = "void"
+type = "number"
 description = "The id of the font."

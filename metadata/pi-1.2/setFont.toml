@@ -17,7 +17,7 @@ for( var i = 0; i < 4; i++ ) {\r
 
 [[parameters]]
 name = "fontId"
-type = "any"
+type = "number"
 description = "The id of the font to set. The default fonts loaded are."
 
 [[returns]]

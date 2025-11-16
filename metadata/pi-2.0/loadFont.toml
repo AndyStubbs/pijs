@@ -1,0 +1,60 @@
+title = "loadFont"
+category = "text"
+isScreen = false
+summary = "Loads a bitmap font from an image source."
+description = """
+Loads a bitmap font from an image URL or Image/Canvas element. The font image should contain
+characters arranged in a grid. Each character cell is width+margin*2 by height+margin*2 pixels.
+
+If charset is not provided, defaults to characters 0-255. The charset can be an array of character
+codes or a string of characters.
+
+Returns a font ID that can be used with setFont. After calling loadFont, you should call $.ready()
+to wait for the image to load before using the font.
+"""
+
+[[parameters]]
+name = "src"
+type = "string|Image|Canvas"
+description = "Font image source: URL string, Image element, or Canvas element."
+
+[[parameters]]
+name = "width"
+type = "number"
+description = "Character width in pixels (glyph width, excluding margin)."
+
+[[parameters]]
+name = "height"
+type = "number"
+description = "Character height in pixels (glyph height, excluding margin)."
+
+[[parameters]]
+name = "margin"
+type = "number"
+description = "Margin around each character cell in pixels. Defaults to 0."
+optional = true
+
+[[parameters]]
+name = "charset"
+type = "array|string"
+description = "Character set as array of character codes or string. Defaults to 0-255 (ASCII) if not provided."
+optional = true
+
+[[returns]]
+type = "number"
+description = "Font ID that can be used with setFont."
+
+example = """
+const fontId = $.loadFont( {
+	"src": "font.png",
+	"width": 8,
+	"height": 16,
+	"margin": 1,
+	"charset": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+} );
+$.ready( () => {
+	$.screen( "320x200" );
+	$.setFont( fontId );
+} );
+"""
+

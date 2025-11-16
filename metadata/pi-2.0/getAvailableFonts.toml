@@ -1,0 +1,20 @@
+title = "getAvailableFonts"
+category = "text"
+isScreen = false
+summary = "Returns an array of all loaded fonts with their properties."
+description = """
+Gets information about all fonts that have been loaded. Returns an array of font info objects
+containing id, width, and height for each font.
+"""
+
+[[returns]]
+type = "array"
+description = "Array of font info objects with id, width, and height properties."
+
+example = """
+const fonts = $.getAvailableFonts();
+for( const font of fonts ) {
+	console.log( `Font ${font.id}: ${font.width}x${font.height}` );
+}
+"""
+

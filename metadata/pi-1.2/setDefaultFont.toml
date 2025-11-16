@@ -1,19 +1,25 @@
 title = "setDefaultFont"
-category = "font"
+category = "text"
 isScreen = false
-summary = "Sets the default font for a new screen."
-description = ""
-example = """
-$.setDefaultFont( 3 );\r
-$.screen( "300x200" );\r
-$.print( "Hello World" );\r
+summary = "Sets the default font for new screens."
+description = """
+Sets the default font ID that will be used when new screens are created. The font must already
+be loaded using loadFont.
 """
 
 [[parameters]]
 name = "fontId"
-type = "any"
-description = "Font id for the new default"
+type = "number"
+description = "Font ID from loadFont to use as default for new screens."
 
 [[returns]]
 type = "void"
 description = "This function does not return a value."
+
+example = """
+const fontId = $.loadFont( { "src": "custom-font.png", "width": 8, "height": 16 } );
+$.setDefaultFont( fontId );
+$.screen( "320x200" );
+$.print( "The quck brown fox jumped over the lazy dogs." );
+"""
+
