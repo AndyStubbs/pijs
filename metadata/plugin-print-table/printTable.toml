@@ -1,0 +1,99 @@
+title = "printTable"
+category = "print-table"
+isScreen = true
+plugin = "print-table"
+summary = "Prints a formatted table with customizable borders and layout."
+description = """
+Prints a table to the screen with customizable borders and layout. Supports two modes:
+
+**Auto-format Mode** (when tableFormat is null):
+- Automatically calculates cell widths based on screen width
+- Each row in items becomes a table row
+- Cells are evenly distributed across the screen width
+
+**Custom Format Mode** (when tableFormat is provided):
+- Uses a custom layout defined by format strings
+- Format strings use special characters:
+  - `*`: Table intersection (corner or cross)
+  - `-`: Horizontal line
+  - `|`: Vertical line
+  - ` `: Space (cell content area)
+  - `v` or `V`: Vertical text alignment (in cell content area)
+- Items are placed in cells defined by the format
+- Supports centering the entire table
+
+**Border Styles**:
+- `"single"`: Single-line borders (default)
+- `"double"`: Double-line borders
+- `"singleDouble"`: Single top/bottom, double sides
+- `"doubleSingle"`: Double top/bottom, single sides
+- `"thick"`: Thick block borders
+- Custom: Array of 4 arrays, each with 4 character codes [top, middle, bottom, vertical]
+
+Returns an array of box objects with position and dimension information (useful for hit detection).
+Each box contains:
+- `pos`: { col, row, width, height } in character coordinates
+- `pixels`: { x, y, width, height } in pixel coordinates
+- `format`: Format character for the cell
+"""
+
+[[parameters]]
+name = "items"
+type = "array"
+description = "2D array of items to display. Each row becomes a table row, each element becomes a cell."
+
+[[parameters]]
+name = "tableFormat"
+type = "array"
+description = "Array of format strings defining table layout. Use null for auto-format mode."
+optional = true
+
+[[parameters]]
+name = "borderStyle"
+type = "string|array"
+description = "Border style name ('single', 'double', 'singleDouble', 'doubleSingle', 'thick') or custom array. Defaults to 'single'."
+optional = true
+
+[[parameters]]
+name = "isCentered"
+type = "boolean"
+description = "If true, centers the table horizontally (only applies to custom format mode)."
+optional = true
+
+[[returns]]
+type = "array"
+description = "Array of box objects with position and dimension information for each cell."
+
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+
+// Auto-format table
+const items = [
+	[ "Name", "Age", "City" ],
+	[ "Alice", "25", "NYC" ],
+	[ "Bob", "30", "LA" ]
+];
+$.printTable( items );
+
+// Custom format table
+const format = [
+	"*-*-*-*",
+	"| | | |",
+	"*-*-*-*",
+	"| | | |",
+	"*-*-*-*"
+];
+$.printTable( items, format, "double", true );
+
+// With custom border style
+const customBorders = [
+	[ 218, 196, 194, 191 ],
+	[ 195, 196, 197, 180 ],
+	[ 192, 196, 193, 217 ],
+	[ 179, 32, 179 ]
+];
+const boxes = $.printTable( items, null, customBorders );
+// Use boxes for hit detection
+"""
+
