@@ -3,5 +3,8 @@ methods = [
 	"setBlendMode",
 	"setAutoRender",
 	"render",
-	"swapColor"
+	"swapColor",
+	"setPen",
+	"setDefaultInputFocus",
+	"setErrorMode"
 ]
