@@ -1,28 +1,32 @@
-name = "stopSound"
-description = "Stops sounds made from the sound command. Leave soundId blank to stop all sounds."
-isScreen = false
-parameters = [ "soundId" ]
-pdata = [ "The soundId to be stopped." ]
+title = "stopSound"
 category = "sound"
+isScreen = false
+summary = "Stops sounds made from the sound command. Leave soundId blank to stop all sounds."
+description = ""
 example = """
-var duration = 0.05;
-var volume = 0.5;
-var decay = 0.03;
-var totalDuration = 0;
-var i;
-for( i = 0; i < 30; i++ ) {
-	$.sound(
-		240 + i * 8, duration, volume, "sawtooth", totalDuration, 0,
-		decay
-	);
-	totalDuration += duration + decay;
-}
+var duration = 0.05;\r
+var volume = 0.5;\r
+var decay = 0.03;\r
+var totalDuration = 0;\r
+var i;\r
+for( i = 0; i < 30; i++ ) {\r
+\t$.sound(\r
+\t\t240 + i * 8, duration, volume, "sawtooth", totalDuration, 0,\r
+\t\tdecay\r
+\t);\r
+\ttotalDuration += duration + decay;\r
+}\r
+\r
+var timeout = setTimeout( function () {\r
+\t$.stopSound();\r
+}, 750 );\r
+"""
 
-var timeout = setTimeout( function () {
-	$.stopSound();
-}, 750 );
-"""
-onclose = """
-$.stopSound();
-clearTimeout( timeout );
-"""
+[[parameters]]
+name = "soundId"
+type = "any"
+description = "The soundId to be stopped."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

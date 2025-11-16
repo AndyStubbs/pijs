@@ -1,17 +1,26 @@
-name = "setPalColor"
-description = "Sets a color value in the current screen's palette."
-isScreen = true
-parameters = [ "index", "color" ]
-pdata = [
-	"The index value of the color to change.",
-	"The color value of the new color."
-]
-seeAlso = [ "findColor", "getDefaultPal", "getPal", "getPixel", "setBgColor", "setColor", "swapColor" ]
+title = "setPalColor"
 category = "color"
+isScreen = true
+summary = "Sets a color value in the current screen's palette."
+description = ""
 example = """
-$.screen( "300x200" );
-$.setColor( 2 );
-$.print( "Hello" );
-$.setPalColor( 2, "purple" );
-$.print( "Hello" );
+$.screen( "300x200" );\r
+$.setColor( 2 );\r
+$.print( "Hello" );\r
+$.setPalColor( 2, "purple" );\r
+$.print( "Hello" );\r
 """
+
+[[parameters]]
+name = "index"
+type = "any"
+description = "The index value of the color to change."
+
+[[parameters]]
+name = "color"
+type = "any"
+description = "The color value of the new color."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

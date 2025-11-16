@@ -1,25 +1,46 @@
-name = "ontouch"
-description = """
-Create a touch event.
-"""
-isScreen = true
-parameters = [ "mode", "fn", "once", "hitBox", "customData" ]
-pdata = [
-	"The type of touch event. Must be a string value set to start, end, or move.",
-	"The function to called when touch occurs. The first parameter will contain the touches data.",
-	"[OPTIONAL]. A boolean if true deletes the event after being called one time.",
-	"[OPTIONAL]. A hitBox to restrict events occuring outside the box",
-	"""[OPTIONAL]. This can be used to assign data that will be passed into the callback event. \
-		This is useful if you have multiple onmouse commands that use the same callback function."""
-]
-seeAlso = [ "clearEvents", "intouch", "offtouch", "setPinchZoom", "startTouch", "stopTouch" ]
+title = "ontouch"
 category = "touch"
+isScreen = true
+summary = "Create a touch event."
+description = ""
 example = """
-$.screen( "4x4" );
-$.setPinchZoom( false );
-$.ontouch( "start", function ( touches ) {
-	var touch = touches[ 0 ];
-	$.setColor( Math.floor( Math.random() * 9 ) + 1 );
-	$.pset( touch.x, touch.y );
-} );
+$.screen( "4x4" );\r
+$.setPinchZoom( false );\r
+$.ontouch( "start", function ( touches ) {\r
+\tvar touch = touches[ 0 ];\r
+\t$.setColor( Math.floor( Math.random() * 9 ) + 1 );\r
+\t$.pset( touch.x, touch.y );\r
+} );\r
 """
+
+[[parameters]]
+name = "mode"
+type = "any"
+description = "The type of touch event. Must be a string value set to start, end, or move."
+
+[[parameters]]
+name = "fn"
+type = "any"
+description = "The function to called when touch occurs. The first parameter will contain the touches data."
+
+[[parameters]]
+name = "once"
+type = "any"
+description = ". A boolean if true deletes the event after being called one time."
+optional = true
+
+[[parameters]]
+name = "hitBox"
+type = "any"
+description = ". A hitBox to restrict events occuring outside the box"
+optional = true
+
+[[parameters]]
+name = "customData"
+type = "any"
+description = ". This can be used to assign data that will be passed into the callback event. This is useful if you have multiple onmouse commands that use the same callback function."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

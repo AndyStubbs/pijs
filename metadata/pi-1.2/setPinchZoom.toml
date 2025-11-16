@@ -1,18 +1,23 @@
-name = "setPinchZoom"
-isScreen = false
-parameters = [ "isEnabled" ]
-pdata = [ "Set to true if you want to enable this is the default state. Set to false if you want to disable zoom." ]
-description = """
-Enables or disables pinch zoom. This is recommended when working with touch if you want to disable zoom.
-"""
-seeAlso = [ "intouch", "ontouch", "startTouch", "stopTouch" ]
+title = "setPinchZoom"
 category = "touch"
+isScreen = false
+summary = "Enables or disables pinch zoom. This is recommended when working with touch if you want to disable zoom."
+description = ""
 example = """
-$.screen( "4x4" );
-$.setPinchZoom( false );
-$.ontouch( "start", function ( touches ) {
-	var touch = touches[ 0 ];
-	$.setColor( Math.floor( Math.random() * 9 ) + 1 );
-	$.pset( touch.x, touch.y );
-} );
+$.screen( "4x4" );\r
+$.setPinchZoom( false );\r
+$.ontouch( "start", function ( touches ) {\r
+\tvar touch = touches[ 0 ];\r
+\t$.setColor( Math.floor( Math.random() * 9 ) + 1 );\r
+\t$.pset( touch.x, touch.y );\r
+} );\r
 """
+
+[[parameters]]
+name = "isEnabled"
+type = "any"
+description = "Set to true if you want to enable this is the default state. Set to false if you want to disable zoom."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

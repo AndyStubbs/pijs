@@ -1,38 +1,58 @@
-name = "ongamepad"
-isScreen = false
-parameters = [ "gamepadIndex", "mode", "item", "fn", "once", "customData" ]
-description = """
-Creates a gamepad event listener.
-"""
-pdata = [
-	"The index of the gamepad.",
-	"""The event mode must be one of the following strings: connect, disconnect, axis,\
-		pressed, touched, pressReleased, touchReleased.""",
-	"The index of the button or axis for the event. Use the string 'any' for any button or axis.",
-	"The function to be called back for the event.",
-	"Boolean if set to true the event will be deleted after it is triggered.",
-	"""[OPTIONAL]. This can be used to assign data that will be passed into the callback event. This is \
-		useful if you have multiple ongamepad commands that use the same callback function."""
-]
-seeAlso = [
-	"ingamepads", "ongamepad", "stopGamepads"
-]
+title = "ongamepad"
 category = "gamepad"
+isScreen = false
+summary = "Creates a gamepad event listener."
+description = ""
 example = """
-$.screen( "300x300" );
-$.print( "Press button 3 to stop" );
-$.ongamepad( 0, "pressed", "any", pressButton );
-$.ongamepad( 0, "pressed", 3, stop );
-
-// Press button function
-function pressButton( btn ) {
-	$.print( "Button " + btn.index + " pressed" );
-}
-
-// Stop function
-function stop() {
-	$.offgamepad( 0, "pressed", "any", pressButton );
-	$.offgamepad( 0, "pressed", 3, stop );
-	$.print( "Stopped" );
-}
+$.screen( "300x300" );\r
+$.print( "Press button 3 to stop" );\r
+$.ongamepad( 0, "pressed", "any", pressButton );\r
+$.ongamepad( 0, "pressed", 3, stop );\r
+\r
+// Press button function\r
+function pressButton( btn ) {\r
+\t$.print( "Button " + btn.index + " pressed" );\r
+}\r
+\r
+// Stop function\r
+function stop() {\r
+\t$.offgamepad( 0, "pressed", "any", pressButton );\r
+\t$.offgamepad( 0, "pressed", 3, stop );\r
+\t$.print( "Stopped" );\r
+}\r
 """
+
+[[parameters]]
+name = "gamepadIndex"
+type = "any"
+description = "The index of the gamepad."
+
+[[parameters]]
+name = "mode"
+type = "any"
+description = "The event mode must be one of the following strings: connect, disconnect, axis,pressed, touched, pressReleased, touchReleased."
+
+[[parameters]]
+name = "item"
+type = "any"
+description = "The index of the button or axis for the event. Use the string 'any' for any button or axis."
+
+[[parameters]]
+name = "fn"
+type = "any"
+description = "The function to be called back for the event."
+
+[[parameters]]
+name = "once"
+type = "any"
+description = "Boolean if set to true the event will be deleted after it is triggered."
+
+[[parameters]]
+name = "customData"
+type = "any"
+description = ". This can be used to assign data that will be passed into the callback event. This is useful if you have multiple ongamepad commands that use the same callback function."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

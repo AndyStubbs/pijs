@@ -1,30 +1,35 @@
-name = "inkey"
-description = """Gets the most recent status of keys."""
-returns = """If the first parameter is left blank then it will return an array of key data objects. If not then it returns the
-an object containing data for a single key."""
-isScreen = false
-parameters = [ "key" ]
-pdata = [ "[OPTIONAL] Name (string) or keyCode (integer) of key to return the status. Leave blank for the status of all keys that have been pressed." ]
-seeAlso = [ "input", "inpress", "inmouse", "intouch" ]
+title = "inkey"
 category = "keyboard"
+isScreen = false
+summary = "Gets the most recent status of keys."
+description = ""
 example = """
-$.screen( "300x200" );
-var frame = requestAnimationFrame( run );
-function run() {
-	var keys, key;
-	keys = $.inkey();
-	$.cls();
-	$.print( "Press any key" );
-	for( key in $.inkey() ) {
-		$.print( "--------------------------" );
-		$.print( "key:      " + keys[ key ].key );
-		$.print( "location: " + keys[ key ].location );
-		$.print( "code:     " + keys[ key ].code );
-		$.print( "keyCode:  " + keys[ key ].keyCode );
-	}
-	frame = requestAnimationFrame( run );
-}
+$.screen( "300x200" );\r
+var frame = requestAnimationFrame( run );\r
+function run() {\r
+\tvar keys, key;\r
+\tkeys = $.inkey();\r
+\t$.cls();\r
+\t$.print( "Press any key" );\r
+\tfor( key in $.inkey() ) {\r
+\t\t$.print( "--------------------------" );\r
+\t\t$.print( "key:      " + keys[ key ].key );\r
+\t\t$.print( "location: " + keys[ key ].location );\r
+\t\t$.print( "code:     " + keys[ key ].code );\r
+\t\t$.print( "keyCode:  " + keys[ key ].keyCode );\r
+\t}\r
+\tframe = requestAnimationFrame( run );\r
+}\r
 """
-onclose = """
-cancelAnimationFrame( frame );
-"""
+
+[[parameters]]
+name = "key"
+type = "any"
+description = "Name (string) or keyCode (integer) of key to return the status. Leave blank for the status of all keys that have been pressed."
+optional = true
+
+[[returns]]
+type = "void"
+description = """
+If the first parameter is left blank then it will return an array of key data objects. If not then it returns the\r
+an object containing data for a single key."""

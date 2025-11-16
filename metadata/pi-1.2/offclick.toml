@@ -1,44 +1,45 @@
-name = "offclick"
-isScreen = true
-parameters = [ "fn" ]
-description = """
-Removes a hitbox from the screen created by the onclick command.
-"""
-pdata = [
-	"The function that was used to create the hitbox by the onclick command."
-]
-seeAlso = [
-	"onclick"
-]
+title = "offclick"
 category = "mouse"
+isScreen = true
+summary = "Removes a hitbox from the screen created by the onclick command."
+description = ""
 example = """
-$.screen( "300x200" );
-var hitBox = {
-	"x": 25,
-	"y": 25,
-	"width": 100,
-	"height": 100
-};
-
-// Draw a green box
-$.setColor( 2 );
-$.rect( hitBox );
-
-// Setup the onclick function for the hitBox
-$.onclick( clickBox, false, hitBox );
-
-// Click function
-function clickBox() {
-
-	// Draw a red box
-	$.setColor( 4 );
-	$.rect( hitBox );
-	$.offclick( clickBox );
-
-	// Wait a second then clear the box
-	setTimeout( function () {
-		$.setColor( 0 );
-		$.rect( hitBox );
-	}, 1000 );
-}
+$.screen( "300x200" );\r
+var hitBox = {\r
+\t"x": 25,\r
+\t"y": 25,\r
+\t"width": 100,\r
+\t"height": 100\r
+};\r
+\r
+// Draw a green box\r
+$.setColor( 2 );\r
+$.rect( hitBox );\r
+\r
+// Setup the onclick function for the hitBox\r
+$.onclick( clickBox, false, hitBox );\r
+\r
+// Click function\r
+function clickBox() {\r
+\r
+\t// Draw a red box\r
+\t$.setColor( 4 );\r
+\t$.rect( hitBox );\r
+\t$.offclick( clickBox );\r
+\r
+\t// Wait a second then clear the box\r
+\tsetTimeout( function () {\r
+\t\t$.setColor( 0 );\r
+\t\t$.rect( hitBox );\r
+\t}, 1000 );\r
+}\r
 """
+
+[[parameters]]
+name = "fn"
+type = "any"
+description = "The function that was used to create the hitbox by the onclick command."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

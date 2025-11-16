@@ -1,15 +1,19 @@
-name = "setContainerBgColor"
-description = "Sets the background color of the canvas container."
-isScreen = true
-parameters = [ "color" ]
-pdata = [ "The color to set the new background for the canvas container" ]
-seeAlso = [ "setBgColor", "setColor" ]
+title = "setContainerBgColor"
 category = "color"
+isScreen = true
+summary = "Sets the background color of the canvas container."
+description = ""
 example = """
-$.screen( "300x200" );
-$.print( "Hello" );
-$.setContainerBgColor( 5 );
+$.screen( "300x200" );\r
+$.print( "Hello" );\r
+$.setContainerBgColor( 5 );\r
 """
-onclose = """
-document.getElementById("canvasContainer").style.backgroundColor = "";
-"""
+
+[[parameters]]
+name = "color"
+type = "any"
+description = "The color to set the new background for the canvas container"
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

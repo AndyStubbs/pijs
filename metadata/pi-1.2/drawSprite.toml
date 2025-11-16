@@ -1,51 +1,79 @@
-name = "drawSprite"
-isScreen = true
-description = "Draws a sprite from a spritesheet on to the screen. Note: this method will fail if it gets called before the sprite image is loaded."
-parameters = [
-	"name",
-	"frame",
-	"x",
-	"y",
-	"angle",
-	"anchorX",
-	"anchorY",
-	"alpha",
-	"scaleX",
-	"scaleY"
-]
-pdata = [
-	"Name or id of the spritesheet.",
-	"Frame number of the specific sprite on the spritesheet.",
-	"Horizontal coordiante.",
-	"Vertical coordinate.",
-	"[OPTIONAL] Rotate the image in degrees.",
-	"[OPTIONAL] Horizontal rotation coordinate.",
-	"[OPTIONAL] Vertical rotation coordinate.",
-	"[OPTIONAL] Transparency amount number 0-100.",
-	"[OPTIONAL] Horizontal scaling amount.",
-	"[OPTIONAL] Vertical scaling amount."
-]
-seeAlso = [
-	"drawImage",
-	"getSpritesheetData",
-	"loadSpritesheet",
-	"ready"
-]
+title = "drawSprite"
 category = "images"
+isScreen = true
+summary = "Draws a sprite from a spritesheet on to the screen. Note: this method will fail if it gets called before the sprite image is loaded."
+description = ""
 example = """
-var monkey, frame, interval;
-$.screen( "300x200" );
-monkey = $.loadSpritesheet( "/images/monkey.png", null, 32, 32, 1 );
-$.ready( function () {
-	frame = 0;
-	interval = setInterval( run, 500 );
-	function run() {
-		frame += 1;
-		$.cls();
-		$.drawSprite( monkey, frame % 2, 150, 100, 0, 0.5, 0.5, null, 2, 2 );
-	}
-	run();
+var monkey, frame, interval;\r
+$.screen( "300x200" );\r
+monkey = $.loadSpritesheet( "/images/monkey.png", null, 32, 32, 1 );\r
+$.ready( function () {\r
+\tframe = 0;\r
+\tinterval = setInterval( run, 500 );\r
+\tfunction run() {\r
+\t\tframe += 1;\r
+\t\t$.cls();\r
+\t\t$.drawSprite( monkey, frame % 2, 150, 100, 0, 0.5, 0.5, null, 2, 2 );\r
+\t}\r
+\trun();\r
 } );"""
-onclose = """
-clearInterval( interval );
-"""
+
+[[parameters]]
+name = "name"
+type = "any"
+description = "Name or id of the spritesheet."
+
+[[parameters]]
+name = "frame"
+type = "any"
+description = "Frame number of the specific sprite on the spritesheet."
+
+[[parameters]]
+name = "x"
+type = "any"
+description = "Horizontal coordiante."
+
+[[parameters]]
+name = "y"
+type = "any"
+description = "Vertical coordinate."
+
+[[parameters]]
+name = "angle"
+type = "any"
+description = "Rotate the image in degrees."
+optional = true
+
+[[parameters]]
+name = "anchorX"
+type = "any"
+description = "Horizontal rotation coordinate."
+optional = true
+
+[[parameters]]
+name = "anchorY"
+type = "any"
+description = "Vertical rotation coordinate."
+optional = true
+
+[[parameters]]
+name = "alpha"
+type = "any"
+description = "Transparency amount number 0-100."
+optional = true
+
+[[parameters]]
+name = "scaleX"
+type = "any"
+description = "Horizontal scaling amount."
+optional = true
+
+[[parameters]]
+name = "scaleY"
+type = "any"
+description = "Vertical scaling amount."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

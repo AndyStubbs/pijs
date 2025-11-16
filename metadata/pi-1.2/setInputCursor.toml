@@ -1,12 +1,19 @@
-name = "setInputCursor"
-description = "Sets the cursor for the input command."
-isScreen = true
-parameters = [ "cursor" ]
-pdata = [ "A string character or an ascii value from the current font set." ]
-seeAlso = [ "cancelInput", "input" ]
+title = "setInputCursor"
 category = "keyboard"
+isScreen = true
+summary = "Sets the cursor for the input command."
+description = ""
 example = """
-$.screen( "300x200" );
-$.setInputCursor( "_" );
-$.input( "What is your name? " );
+$.screen( "300x200" );\r
+$.setInputCursor( "_" );\r
+$.input( "What is your name? " );\r
 """
+
+[[parameters]]
+name = "cursor"
+type = "any"
+description = "A string character or an ascii value from the current font set."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

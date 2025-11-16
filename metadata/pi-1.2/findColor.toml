@@ -1,18 +1,32 @@
-name = "findColor"
-isScreen = true
-description = "Given a color value, find the index from the color palette."
-parameters = [ "color", "tolerance", "isAddToPalette" ]
-pdata = [
-	"The color to be found.",
-	"[OPTIONAL] The percentage of how close the color has to be to match. Returns the fist match.",
-	"[OPTIONAL] Add the color to the palette if its not found."
-]
-seeAlso = [ "setColor" ]
+title = "findColor"
 category = "color"
-returns = "The color index of the color found"
+isScreen = true
+summary = "Given a color value, find the index from the color palette."
+description = ""
 example = """
-$.screen("300x200");
-var color = $.findColor("red");
-$.setColor(color);
-$.print("The index of red is " + color + ".");
+$.screen("300x200");\r
+var color = $.findColor("red");\r
+$.setColor(color);\r
+$.print("The index of red is " + color + ".");\r
 """
+
+[[parameters]]
+name = "color"
+type = "any"
+description = "The color to be found."
+
+[[parameters]]
+name = "tolerance"
+type = "any"
+description = "The percentage of how close the color has to be to match. Returns the fist match."
+optional = true
+
+[[parameters]]
+name = "isAddToPalette"
+type = "any"
+description = "Add the color to the palette if its not found."
+optional = true
+
+[[returns]]
+type = "void"
+description = "The color index of the color found"

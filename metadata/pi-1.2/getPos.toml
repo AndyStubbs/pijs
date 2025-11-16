@@ -1,17 +1,19 @@
-name = "getPos"
-description = """
-Gets the position of the print cursor and returns the coordinates. The data
-returned is an object containing a row and a column. Example: { row: 5, col: 5 }. The rows
-and columns are based on a grid system using the size of the font and not on exact pixels.
-"""
-isScreen = true
-parameters = [ ]
-seeAlso = [ "getPosPx", "print", "setPos", "setPosPx" ]
+title = "getPos"
 category = "print"
-returns = "An object containing the row and col of the print cursor."
+isScreen = true
+summary = """
+Gets the position of the print cursor and returns the coordinates. The data\r
+returned is an object containing a row and a column. Example: { row: 5, col: 5 }. The rows\r
+and columns are based on a grid system using the size of the font and not on exact pixels."""
+description = ""
+parameters = [ ]
 example = """
-$.screen( "300x200" );
-$.setPos( 5, 5 );
-var pos = $.getPos();
-$.print( pos.row + ", " + pos.col );
+$.screen( "300x200" );\r
+$.setPos( 5, 5 );\r
+var pos = $.getPos();\r
+$.print( pos.row + ", " + pos.col );\r
 """
+
+[[returns]]
+type = "void"
+description = "An object containing the row and col of the print cursor."

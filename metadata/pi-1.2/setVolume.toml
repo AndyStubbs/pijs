@@ -1,11 +1,18 @@
-name = "setVolume"
-description = "Sets the master volume for all sound commands."
-isScreen = false
-parameters = [ "volume" ]
-pdata = [ "The volume between 0 and 1 that sets the master volume." ]
-seeAlso = [ "play", "playAudioPool", "sound" ]
+title = "setVolume"
 category = "sound"
+isScreen = false
+summary = "Sets the master volume for all sound commands."
+description = ""
 example = """
-$.setVolume( 0.75 );
-$.play( "Q1o3L8ED+ED+Eo2Bo3DCL2o2A" );
+$.setVolume( 0.75 );\r
+$.play( "Q1o3L8ED+ED+Eo2Bo3DCL2o2A" );\r
 """
+
+[[parameters]]
+name = "volume"
+type = "any"
+description = "The volume between 0 and 1 that sets the master volume."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

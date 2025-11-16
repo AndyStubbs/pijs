@@ -1,15 +1,20 @@
-name = "setBgColor"
-description = "Sets the background color of the canvas. Any transparent pixels will appear as this color."
-isScreen = true
-parameters = [ "color" ]
-pdata = [
-	"The color value you want as background color."
-]
-seeAlso = [ "setColor" ]
+title = "setBgColor"
 category = "color"
+isScreen = true
+summary = "Sets the background color of the canvas. Any transparent pixels will appear as this color."
+description = ""
 example = """
-$.screen( "300x200" );
-$.setColor( "white" );
-$.line( 0, 0, 300, 200 );
-$.setBgColor( "blue" );
+$.screen( "300x200" );\r
+$.setColor( "white" );\r
+$.line( 0, 0, 300, 200 );\r
+$.setBgColor( "blue" );\r
 """
+
+[[parameters]]
+name = "color"
+type = "any"
+description = "The color value you want as background color."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

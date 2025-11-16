@@ -1,11 +1,14 @@
-name = "width"
-description = "Gets the width of the screen."
-isScreen = true
-parameters = [ ]
-seeAlso = [ "height", "screen" ]
+title = "width"
 category = "graphics"
-returns = "The width of the screen."
+isScreen = true
+summary = "Gets the width of the screen."
+description = ""
+parameters = [ ]
 example = """
-$.screen( "300x200" );
-$.print( "Width: " + $.width() );
+$.screen( "300x200" );\r
+$.print( "Width: " + $.width() );\r
 """
+
+[[returns]]
+type = "void"
+description = "The width of the screen."

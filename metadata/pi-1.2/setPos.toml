@@ -1,17 +1,26 @@
-name = "setPos"
-description = "Sets the position of the print cursor using columns and rows based on the font size."
-isScreen = true
-parameters = [ "col", "row" ]
-pdata = [
-	"The column value where to move the print cursor.",
-	"The row value where to move the print cursor."
-]
-seeAlso = [ "getPos", "getPosPx", "print", "setPosPx" ]
+title = "setPos"
 category = "print"
+isScreen = true
+summary = "Sets the position of the print cursor using columns and rows based on the font size."
+description = ""
 example = """
-$.screen( "300x200" );
-$.setPos( 5, 10 );
-$.print( "X" );
-$.setPos( 10, 15 );
-$.print( "Y" );
+$.screen( "300x200" );\r
+$.setPos( 5, 10 );\r
+$.print( "X" );\r
+$.setPos( 10, 15 );\r
+$.print( "Y" );\r
 """
+
+[[parameters]]
+name = "col"
+type = "any"
+description = "The column value where to move the print cursor."
+
+[[parameters]]
+name = "row"
+type = "any"
+description = "The row value where to move the print cursor."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

@@ -1,16 +1,25 @@
-name = "point"
+title = "point"
 isScreen = true
-parameters = [ "x", "y" ]
-description = "Gets the pixel color from the screen and returns the color palette index."
-pdata = [ "The horizontal coordinate for the pixel", "The vertical coordinate for the pixel" ]
-seeAlso = [
-	"findColor", "get", "getPixel", "pset", "put", "setColor", "setColors"
-]
-returns = "The color index (integer)."
+summary = "Gets the pixel color from the screen and returns the color palette index."
+description = ""
 example = """
-$.screen( "300x200" );
-$.setColor( 5 );
-$.pset( 55, 55 );
-var pixel = $.point( 55, 55 );
-$.print( pixel );
+$.screen( "300x200" );\r
+$.setColor( 5 );\r
+$.pset( 55, 55 );\r
+var pixel = $.point( 55, 55 );\r
+$.print( pixel );\r
 """
+
+[[parameters]]
+name = "x"
+type = "any"
+description = "The horizontal coordinate for the pixel"
+
+[[parameters]]
+name = "y"
+type = "any"
+description = "The vertical coordinate for the pixel"
+
+[[returns]]
+type = "void"
+description = "The color index (integer)."

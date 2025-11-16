@@ -1,15 +1,17 @@
-name = "deleteAudioPool"
-description = "Deletes an audio pool."
-isScreen = false
-parameters = [ "audioId" ]
-pdata = [ "The id of the audio pool." ]
-seeAlso = [
-  "createAudioPool",
-  "playAudioPool",
-  "setVolume",
-  "stopAudioPool"
-]
+title = "deleteAudioPool"
 category = "sound"
+isScreen = false
+summary = "Deletes an audio pool."
+description = ""
 example = """
-var bombPool = $.createAudioPool("/sounds/bomb.wav", 1);
+var bombPool = $.createAudioPool("/sounds/bomb.wav", 1);\r
 $.deleteAudioPool(bombPool);"""
+
+[[parameters]]
+name = "audioId"
+type = "any"
+description = "The id of the audio pool."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

@@ -1,18 +1,26 @@
-name = "setPosPx"
-description = "Sets the position of the print cursor using pixels."
-isScreen = true
-parameters = [ "x", "y" ]
-pdata = [
-	"The horziontal coordinate for the new print cursor position.",
-	"The vertical coordinate for the new print cursor position."
-]
-seeAlso = [ "getPos", "getPosPx", "print", "setPos" ]
+title = "setPosPx"
 category = "print"
+isScreen = true
+summary = "Sets the position of the print cursor using pixels."
+description = ""
 example = """
-$.screen( "300x200" );
-$.setPosPx( 5, 10 );
-$.print( "X" );
-$.setPosPx( 10, 15 );
-$.print( "Y" );
+$.screen( "300x200" );\r
+$.setPosPx( 5, 10 );\r
+$.print( "X" );\r
+$.setPosPx( 10, 15 );\r
+$.print( "Y" );\r
 """
 
+[[parameters]]
+name = "x"
+type = "any"
+description = "The horziontal coordinate for the new print cursor position."
+
+[[parameters]]
+name = "y"
+type = "any"
+description = "The vertical coordinate for the new print cursor position."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

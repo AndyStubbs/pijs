@@ -1,44 +1,47 @@
-name = "startMouse"
-description = """
-Starts tracking mouse input. This gets automatically called the 
-first time any mouse method (inmouse, onmouse) gets called so
-calling startMouse is not necessary unless you explicitly call
-stopMouse.
-"""
-isScreen = true
-parameters = [ ]
-seeAlso = [ "offmouse", "onmouse", "stopMouse" ]
+title = "startMouse"
 category = "mouse"
+isScreen = true
+summary = """
+Starts tracking mouse input. This gets automatically called the \r
+first time any mouse method (inmouse, onmouse) gets called so\r
+calling startMouse is not necessary unless you explicitly call\r
+stopMouse."""
+description = ""
+parameters = [ ]
 example = """
-var isMouseEnabled = true;
-$.screen( "300x200" );
-$.onkey( "m", "down", function () {
-	isMouseEnabled = !isMouseEnabled;
-	if( isMouseEnabled ) {
-		$.startMouse();
-	} else {
-		$.stopMouse();
-	}
-	drawScreen();
-} );
-$.onmouse( "move", function ( data ) {
-	$.setPosPx( data.x, data.y );
-	var pos = $.getPos();
-	$.setPos( pos.col, pos.row );
-	$.setColor( 1 );
-	$.print( "+", true );
-} );
-
-drawScreen();
-
-function drawScreen() {
-	$.cls();
-	$.setColor( 7 );
-	$.print();
-	$.print( " Press 'm' key to toggle mouse" );
-	$.print( isMouseEnabled ? " Mouse Enabled" : " Mouse Disabled" );
-	$.setPen( "square", 2 );
-	$.setColor( isMouseEnabled ? 2 : 4 );
-	$.rect( 0, 0, 300, 200 );	
-}
+var isMouseEnabled = true;\r
+$.screen( "300x200" );\r
+$.onkey( "m", "down", function () {\r
+\tisMouseEnabled = !isMouseEnabled;\r
+\tif( isMouseEnabled ) {\r
+\t\t$.startMouse();\r
+\t} else {\r
+\t\t$.stopMouse();\r
+\t}\r
+\tdrawScreen();\r
+} );\r
+$.onmouse( "move", function ( data ) {\r
+\t$.setPosPx( data.x, data.y );\r
+\tvar pos = $.getPos();\r
+\t$.setPos( pos.col, pos.row );\r
+\t$.setColor( 1 );\r
+\t$.print( "+", true );\r
+} );\r
+\r
+drawScreen();\r
+\r
+function drawScreen() {\r
+\t$.cls();\r
+\t$.setColor( 7 );\r
+\t$.print();\r
+\t$.print( " Press 'm' key to toggle mouse" );\r
+\t$.print( isMouseEnabled ? " Mouse Enabled" : " Mouse Disabled" );\r
+\t$.setPen( "square", 2 );\r
+\t$.setColor( isMouseEnabled ? 2 : 4 );\r
+\t$.rect( 0, 0, 300, 200 );\t\r
+}\r
 """
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

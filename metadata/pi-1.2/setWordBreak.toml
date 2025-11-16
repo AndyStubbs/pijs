@@ -1,19 +1,24 @@
-name = "setWordBreak"
-description = "Toggle word break setting between breaking on spaces or breaking in the middle of words."
-isScreen = true
-parameters = ["isEnabled"]
-pdata = [
-	"If set to false then break in the middle of words otherwise break on spaces.",
-]
-seeAlso = ["print"]
+title = "setWordBreak"
 category = "print"
+isScreen = true
+summary = "Toggle word break setting between breaking on spaces or breaking in the middle of words."
+description = ""
 example = """
-var msg = "abcdefghijklmnopqrstuvwxyz " +
-	"abcdefghijklmnopqrstuvwxyz " +
-	"abcdefghijklmnopqrstuvwxyz";
-$.screen( "300x200" );
-$.print( msg );
-$.setWordBreak( false );
-$.print();
-$.print( msg );
+var msg = "abcdefghijklmnopqrstuvwxyz " +\r
+\t"abcdefghijklmnopqrstuvwxyz " +\r
+\t"abcdefghijklmnopqrstuvwxyz";\r
+$.screen( "300x200" );\r
+$.print( msg );\r
+$.setWordBreak( false );\r
+$.print();\r
+$.print( msg );\r
 """
+
+[[parameters]]
+name = "isEnabled"
+type = "any"
+description = "If set to false then break in the middle of words otherwise break on spaces."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

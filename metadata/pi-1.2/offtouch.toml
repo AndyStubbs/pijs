@@ -1,38 +1,43 @@
-name = "offtouch"
-isScreen = true
-parameters = [ "mode", "fn" ]
-description = """
-Removes an ontouch event.
-"""
-pdata = [
-	"The mode must be a string and can be start, end, or move.",
-	"The function that was used to create the hitbox by the onpress command."
-]
-seeAlso = [
-	"clearEvents", "intouch", "ontouch", "setPinchZoom", "startTouch", "stopTouch"
-]
+title = "offtouch"
 category = "touch"
+isScreen = true
+summary = "Removes an ontouch event."
+description = ""
 example = """
-$.screen( "300x200" );
-$.print( "Touch and drag to paint screen, touch up to stop." );
-$.ontouch( "move", touchMove );
-$.ontouch( "end", touchStop, true );
-
-// Touch move function
-function touchMove( touches ) {
-	$.setPosPx( touches[ 0 ].x, touches[ 0 ].y );
-	var pos = $.getPos();
-	$.setPos( pos.col, pos.row );
-	$.setColor( 8 );
-	$.print( "+", true );
-}
-
-// Touch stop function
-function touchStop() {
-	$.setColor( 14 );
-	var pos = $.getPos();
-	$.setPos( pos.col - 4, pos.row );
-	$.print( "Stopped!", true );
-	$.offtouch( "move", touchMove );
-}
+$.screen( "300x200" );\r
+$.print( "Touch and drag to paint screen, touch up to stop." );\r
+$.ontouch( "move", touchMove );\r
+$.ontouch( "end", touchStop, true );\r
+\r
+// Touch move function\r
+function touchMove( touches ) {\r
+\t$.setPosPx( touches[ 0 ].x, touches[ 0 ].y );\r
+\tvar pos = $.getPos();\r
+\t$.setPos( pos.col, pos.row );\r
+\t$.setColor( 8 );\r
+\t$.print( "+", true );\r
+}\r
+\r
+// Touch stop function\r
+function touchStop() {\r
+\t$.setColor( 14 );\r
+\tvar pos = $.getPos();\r
+\t$.setPos( pos.col - 4, pos.row );\r
+\t$.print( "Stopped!", true );\r
+\t$.offtouch( "move", touchMove );\r
+}\r
 """
+
+[[parameters]]
+name = "mode"
+type = "any"
+description = "The mode must be a string and can be start, end, or move."
+
+[[parameters]]
+name = "fn"
+type = "any"
+description = "The function that was used to create the hitbox by the onpress command."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

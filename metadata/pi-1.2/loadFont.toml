@@ -1,36 +1,52 @@
-name = "loadFont"
-isScreen = false
-parameters = [
-  "fontSrc",
-  "width",
-  "height",
-  "charSet",
-  "isEncoded"
-]
-description = "Loads a font from an image or encoded string."
-pdata = [
-  "The source location of the image or the encoded string location.",
-  "The width of each character in the font.",
-  "The height of each character in the font.",
-  "[OPTIONAL] A string or an array of integers containing the ascii value for each font character in order.",
-  "[OPTIONAL] Boolean to load the font from an encoded string."
-]
-returns = "The id of the font."
-seeAlso = [ "print", "setDefaultFont", "setFont" ]
+title = "loadFont"
 category = "print"
+isScreen = false
+summary = "Loads a font from an image or encoded string."
+description = ""
 example = """
-var font = $.loadFont( 
-  "/images/gnsh-bitmapfont-colour2.png", 5, 12, 
-  " !\\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]" +
-  "^_`abcdefghijklmnopqrstuvwxyz{|}~"
-);
-$.ready( function () {
-	$.screen( "300x200" );
-  $.setBgColor( "#241c1c" );
-	$.setFont( font );
-  $.print();
-	$.print( " Hello World!" );
-	$.print( " 123456789" );
-	$.print( " #$%&?" );
-} );
+var font = $.loadFont( \r
+  "/images/gnsh-bitmapfont-colour2.png", 5, 12, \r
+  " !\\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]" +\r
+  "^_`abcdefghijklmnopqrstuvwxyz{|}~"\r
+);\r
+$.ready( function () {\r
+\t$.screen( "300x200" );\r
+  $.setBgColor( "#241c1c" );\r
+\t$.setFont( font );\r
+  $.print();\r
+\t$.print( " Hello World!" );\r
+\t$.print( " 123456789" );\r
+\t$.print( " #$%&?" );\r
+} );\r
 """
+
+[[parameters]]
+name = "fontSrc"
+type = "any"
+description = "The source location of the image or the encoded string location."
+
+[[parameters]]
+name = "width"
+type = "any"
+description = "The width of each character in the font."
+
+[[parameters]]
+name = "height"
+type = "any"
+description = "The height of each character in the font."
+
+[[parameters]]
+name = "charSet"
+type = "any"
+description = "A string or an array of integers containing the ascii value for each font character in order."
+optional = true
+
+[[parameters]]
+name = "isEncoded"
+type = "any"
+description = "Boolean to load the font from an encoded string."
+optional = true
+
+[[returns]]
+type = "void"
+description = "The id of the font."

@@ -1,26 +1,27 @@
-name = "loadImage"
-description = """
-Loads an image for later use in the drawImage command. It is recommended to use the ready \
-command after loadImage and before calling the drawImage command.
-"""
-isScreen = false
-parameters = [ "src", "name" ]
-pdata = [
-	"The source location of an image file or an image element.",
-	"""[OPTIONAL]. A name you can use to refer to the image later in the drawImage command. If\
-		left blank then the name will be created automatically."""
-]
-returns = "The name of image to use with the drawImage command."
-seeAlso = [
-	"drawImage",
-	"loadImage",
-	"ready"
-]
+title = "loadImage"
 category = "images"
+isScreen = false
+summary = "Loads an image for later use in the drawImage command. It is recommended to use the ready command after loadImage and before calling the drawImage command."
+description = ""
 example = """
-$.screen( "300x200" );
-$.loadImage( "/images/monkey.png", "monkey" );
-$.ready( function () {
-	$.drawImage( "monkey", 150, 100, 0, 0.5, 0.5 );
-} );
+$.screen( "300x200" );\r
+$.loadImage( "/images/monkey.png", "monkey" );\r
+$.ready( function () {\r
+\t$.drawImage( "monkey", 150, 100, 0, 0.5, 0.5 );\r
+} );\r
 """
+
+[[parameters]]
+name = "src"
+type = "any"
+description = "The source location of an image file or an image element."
+
+[[parameters]]
+name = "name"
+type = "any"
+description = ". A name you can use to refer to the image later in the drawImage command. Ifleft blank then the name will be created automatically."
+optional = true
+
+[[returns]]
+type = "void"
+description = "The name of image to use with the drawImage command."

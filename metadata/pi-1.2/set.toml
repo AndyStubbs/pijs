@@ -1,43 +1,48 @@
-name = "set"
-description = """
-Sets any setting command that starts wirth the word "set".<br /><br />
-Examples: actionKey, bgColor, color, colors, containerBgColor, 
-defaultFont, defaultPal, enableContextMenu, errorMode, font,
-fontSize, inputCursor, palColor, pen, pinchZoom, pixelMode,
-pos, posPx, screen, volume, wordBreak.
-<br /><br />
-Note: Settings are set in the order they appear in the object.
-Certain settings such as pos and font could have different results
-based on the order they get set.
-"""
-isScreen = true
-parameters = [ "settings" ]
-pdata = [ "An object containing the settings to be set." ]
+title = "set"
 category = "graphics"
-isSet = true
-noParse = true
+isScreen = true
+summary = """
+Sets any setting command that starts wirth the word "set".<br /><br />\r
+Examples: actionKey, bgColor, color, colors, containerBgColor, \r
+defaultFont, defaultPal, enableContextMenu, errorMode, font,\r
+fontSize, inputCursor, palColor, pen, pinchZoom, pixelMode,\r
+pos, posPx, screen, volume, wordBreak.\r
+<br /><br />\r
+Note: Settings are set in the order they appear in the object.\r
+Certain settings such as pos and font could have different results\r
+based on the order they get set."""
+description = ""
 example = """
-$.screen( "300x200" );
-
-// First Set
-$.set( {
-  "bgColor": 10,
-  "color": 1,
-  "pos": { "row": 15, "col": 8 },
-  "font": 0
-} );
-$.print( "Hello World 1!" );
-
-// Second Set
-$.set( {
-  "pos": { "row": 16, "col": 8 },
-  "font": 1
-} );
-
-// Note that Hello World 2 is a larger font so
-// it's row and col position should be lower than
-// the above print statement, but because the
-// pos setting gets called first it's using the
-// row size of font 0 instead of font 1
-$.print( "Hello World 2!" );
+$.screen( "300x200" );\r
+\r
+// First Set\r
+$.set( {\r
+  "bgColor": 10,\r
+  "color": 1,\r
+  "pos": { "row": 15, "col": 8 },\r
+  "font": 0\r
+} );\r
+$.print( "Hello World 1!" );\r
+\r
+// Second Set\r
+$.set( {\r
+  "pos": { "row": 16, "col": 8 },\r
+  "font": 1\r
+} );\r
+\r
+// Note that Hello World 2 is a larger font so\r
+// it's row and col position should be lower than\r
+// the above print statement, but because the\r
+// pos setting gets called first it's using the\r
+// row size of font 0 instead of font 1\r
+$.print( "Hello World 2!" );\r
 """
+
+[[parameters]]
+name = "settings"
+type = "any"
+description = "An object containing the settings to be set."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

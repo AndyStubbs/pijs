@@ -1,11 +1,19 @@
-name = "setEnableContextMenu"
-description = "Disables context menu on right click."
-isScreen = true
-parameters = [ "isEnabled" ]
-pdata = [ "If set to true context menu will be enabled." ]
+title = "setEnableContextMenu"
 category = "mouse"
+isScreen = true
+summary = "Disables context menu on right click."
+description = ""
 example = """
-$.screen( "300x200" );
-$.print( "Try right click to see if context menu appears." );
-$.setEnableContextMenu( false );
+$.screen( "300x200" );\r
+$.print( "Try right click to see if context menu appears." );\r
+$.setEnableContextMenu( false );\r
 """
+
+[[parameters]]
+name = "isEnabled"
+type = "any"
+description = "If set to true context menu will be enabled."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

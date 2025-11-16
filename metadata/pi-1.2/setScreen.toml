@@ -1,21 +1,26 @@
-name = "setScreen"
-description = "Sets the default screen for which gaphics operations will get applied."
-isScreen = false
-parameters = [ "screen" ]
-pdata = [
-	"The id or screenObject of the screen to select."
-]
-seeAlso = [ "getScreen", "screen" ]
+title = "setScreen"
 category = "graphics"
+isScreen = false
+summary = "Sets the default screen for which gaphics operations will get applied."
+description = ""
 example = """
-$.screen( "300x200" );
-var spriteScreen = $.screen( "32x32", null, true );
-$.setScreen( 0 );
-$.setColor( 2 );
-$.rect( 134, 84, 33, 33 );
-$.setScreen( spriteScreen );
-$.circle( 16, 16, 16, 9 );
-$.render();
-$.setScreen( 0 );
-$.drawImage( spriteScreen, 134, 84 );
+$.screen( "300x200" );\r
+var spriteScreen = $.screen( "32x32", null, true );\r
+$.setScreen( 0 );\r
+$.setColor( 2 );\r
+$.rect( 134, 84, 33, 33 );\r
+$.setScreen( spriteScreen );\r
+$.circle( 16, 16, 16, 9 );\r
+$.render();\r
+$.setScreen( 0 );\r
+$.drawImage( spriteScreen, 134, 84 );\r
 """
+
+[[parameters]]
+name = "screen"
+type = "any"
+description = "The id or screenObject of the screen to select."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

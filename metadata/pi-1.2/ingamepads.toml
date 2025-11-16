@@ -1,33 +1,31 @@
-name = "ingamepads"
-description = "Gets the most recent gamepad status."
-isScreen = false
-parameters = [ ]
-seeAlso = [ "ongamepad" ]
+title = "ingamepads"
 category = "gamepad"
-returns = """
-An array of gamepad objects.
-"""
+isScreen = false
+summary = "Gets the most recent gamepad status."
+description = ""
+parameters = [ ]
 example = """
-var x, y, frame;
-$.screen( "300x200" );
-$.setColor( 15 );
-x = 150;
-y = 100;
-frame = requestAnimationFrame( run );
-function run( dt ) {
-	var pads, factor;
-	factor = dt / 2500;
-	pads = $.ingamepads();
-	$.cls();
-	if( pads.length > 0 ) {
-		x = $.util.clamp( x + pads[ 0 ].axes2[ 0 ] * factor, 0, 299 );
-		y = $.util.clamp( y + pads[ 0 ].axes2[ 1 ] * factor, 0, 199 );
-		$.circle( Math.floor( x ), Math.floor( y ) , 10 );
-		$.pset( Math.floor( x ), Math.floor( y ) );
-	}
-	frame = requestAnimationFrame( run );
-}
+var x, y, frame;\r
+$.screen( "300x200" );\r
+$.setColor( 15 );\r
+x = 150;\r
+y = 100;\r
+frame = requestAnimationFrame( run );\r
+function run( dt ) {\r
+\tvar pads, factor;\r
+\tfactor = dt / 2500;\r
+\tpads = $.ingamepads();\r
+\t$.cls();\r
+\tif( pads.length > 0 ) {\r
+\t\tx = $.util.clamp( x + pads[ 0 ].axes2[ 0 ] * factor, 0, 299 );\r
+\t\ty = $.util.clamp( y + pads[ 0 ].axes2[ 1 ] * factor, 0, 199 );\r
+\t\t$.circle( Math.floor( x ), Math.floor( y ) , 10 );\r
+\t\t$.pset( Math.floor( x ), Math.floor( y ) );\r
+\t}\r
+\tframe = requestAnimationFrame( run );\r
+}\r
 """
-onclose = """
-cancelAnimationFrame( frame );
-"""
+
+[[returns]]
+type = "void"
+description = "An array of gamepad objects."

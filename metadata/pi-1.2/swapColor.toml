@@ -1,16 +1,25 @@
-name = "swapColor"
-description = "Swaps a color in the screens palette with a new color and updates the screen colors."
-isScreen = true
-parameters = [ "oldColor", "newColor" ]
-pdata = [
-	"The color that needs to be swapped out.",
-	"The new color."
-]
-seeAlso = [ "getPal", "setPalColor" ]
+title = "swapColor"
 category = "color"
+isScreen = true
+summary = "Swaps a color in the screens palette with a new color and updates the screen colors."
+description = ""
 example = """
-$.screen( "300x200" );
-$.setColor( 2 );
-$.print( "HELLO" );
-$.swapColor( 2, "red" );
+$.screen( "300x200" );\r
+$.setColor( 2 );\r
+$.print( "HELLO" );\r
+$.swapColor( 2, "red" );\r
 """
+
+[[parameters]]
+name = "oldColor"
+type = "any"
+description = "The color that needs to be swapped out."
+
+[[parameters]]
+name = "newColor"
+type = "any"
+description = "The new color."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

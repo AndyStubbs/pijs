@@ -1,16 +1,20 @@
-name = "clearKeys"
-description = "Clears event handlers for keyboard events."
-isScreen = false
-parameters = [ ]
-seeAlso = [ "onkey" ]
+title = "clearKeys"
 category = "keyboard"
+isScreen = false
+summary = "Clears event handlers for keyboard events."
+description = ""
+parameters = [ ]
 example = """
-$.screen("300x200");
-$.print("\\n");
-$.onkey( "any", "down", function (key) {
-\t$.print(key.key + " pressed.");
-});
-$.onkey( "Escape", "down", function (key) {
-\t$.print(key.key + " pressed.");
-\t$.clearKeys();
+$.screen("300x200");\r
+$.print("\\n");\r
+$.onkey( "any", "down", function (key) {\r
+\t$.print(key.key + " pressed.");\r
+});\r
+$.onkey( "Escape", "down", function (key) {\r
+\t$.print(key.key + " pressed.");\r
+\t$.clearKeys();\r
 });"""
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

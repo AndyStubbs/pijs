@@ -1,42 +1,49 @@
-name = "setActionKey"
-description = """
-Disables the default behavior for a key.  This is helpful if you 
-want to use a key that has default behaviour that the web browser
-you want to disable.  Such as if you want to use the function keys
-in your game/app you would need to call setActionKey to disable the
-web browser default behaviour.
-"""
-isScreen = false
-parameters = [ "key", "isEnabled" ]
-pdata = [
-	"The key you wish to disable default behaviour.",
-	"[OPTIONAL] If set to true or left blank then it disables default behaviour. False re-enables default behaviour."
-]
+title = "setActionKey"
 category = "keyboard"
+isScreen = false
+summary = """
+Disables the default behavior for a key.  This is helpful if you \r
+want to use a key that has default behaviour that the web browser\r
+you want to disable.  Such as if you want to use the function keys\r
+in your game/app you would need to call setActionKey to disable the\r
+web browser default behaviour."""
+description = ""
 example = """
-$.screen( "200x200" );
-$.setActionKey( 17 );
-$.setActionKey( "KeyS" );
-var interval = setInterval( function () {
-	var keys, key;
-	keys = $.inkey();
-	$.cls();
-	$.print( "Press Ctrl+S." );	
-	key = $.inkey( 17 );
-	if( key ) {
-		$.print( "Control key is pressed." );
-	} else {
-		$.print( "Control key is not pressed." );
-	}
-	for( key in keys ) {
-		$.print( "--------------------------" );
-		$.print( "key:      " + keys[ key ].key );
-		$.print( "location: " + keys[ key ].location );
-		$.print( "code:     " + keys[ key ].code );
-		$.print( "keyCode:  " + keys[ key ].keyCode );
-	}
-}, 60 );
+$.screen( "200x200" );\r
+$.setActionKey( 17 );\r
+$.setActionKey( "KeyS" );\r
+var interval = setInterval( function () {\r
+\tvar keys, key;\r
+\tkeys = $.inkey();\r
+\t$.cls();\r
+\t$.print( "Press Ctrl+S." );\t\r
+\tkey = $.inkey( 17 );\r
+\tif( key ) {\r
+\t\t$.print( "Control key is pressed." );\r
+\t} else {\r
+\t\t$.print( "Control key is not pressed." );\r
+\t}\r
+\tfor( key in keys ) {\r
+\t\t$.print( "--------------------------" );\r
+\t\t$.print( "key:      " + keys[ key ].key );\r
+\t\t$.print( "location: " + keys[ key ].location );\r
+\t\t$.print( "code:     " + keys[ key ].code );\r
+\t\t$.print( "keyCode:  " + keys[ key ].keyCode );\r
+\t}\r
+}, 60 );\r
 """
-onclose = """
-clearInterval( interval );
-"""
+
+[[parameters]]
+name = "key"
+type = "any"
+description = "The key you wish to disable default behaviour."
+
+[[parameters]]
+name = "isEnabled"
+type = "any"
+description = "If set to true or left blank then it disables default behaviour. False re-enables default behaviour."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

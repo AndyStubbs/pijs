@@ -1,11 +1,16 @@
-name = "removeAllScreens"
-description = "Removes all screens from memory and the DOM."
-isScreen = false
-parameters = [ ]
+title = "removeAllScreens"
 category = "graphics"
+isScreen = false
+summary = "Removes all screens from memory and the DOM."
+description = ""
+parameters = [ ]
 example = """
-$.screen( "300x200" );
-$.setColor( 5 );
-$.rect( 25, 25, 150, 100, 2 );
-$.removeAllScreens();
+$.screen( "300x200" );\r
+$.setColor( 5 );\r
+$.rect( 25, 25, 150, 100, 2 );\r
+$.removeAllScreens();\r
 """
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

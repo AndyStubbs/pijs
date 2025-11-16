@@ -1,45 +1,64 @@
-name = "printTable"
-isScreen = true
-parameters = [ "items", "tableFormat", "borderStyle", "isCentered" ]
-description = "Prints a table on the screen."
-pdata = [
-	"An array of strings that get put into the table from top-left to bottom-right order.",
-	"""[OPTIONAL] An array of strings that creates the table shape.
-		<ul style='margin:0'>
-			<li><span class='gray'>"*"</span> Indicates a table corner.</li>
-			<li><span class='gray'>"-"</span> Indicates a table horiztontal line.</li>
-			<li><span class='gray'>"|"</span> Indicates a table vertical line.</li>
-			<li><span class='gray'>"V"</span> Inside a cell for vertical orientation of the cell.</li>
-		</ul>
-		""",
-	"[OPTIONAL] The style of borders. Must be one of the following strings single, double, singleDouble, doubleSingle, or thick.",
-	"[OPTIONAL] Horizontally centers the table."
-]
-seeAlso = [ "print" ]
+title = "printTable"
 category = "print"
-returns = "An array of data with information on each cell. Includes the position of each cell in the table."
+isScreen = true
+summary = "Prints a table on the screen."
+description = ""
 example = """
-var data = [
-	[ "One", "2", "3", "FourSandwhiches", "EggMcMuffins", "6a" ],
-	[ "Hotdogs", "Five", "Six", "7", "8", "9" ],
-	[ "Seven", "Eight", "Nine", "a", "b", "c" ]
-];
-var format = [
-	"*-----------*---*---*---*----*",
-	"|           |   |   |V  |V   |",
-	"*----*------*---*---*   |    |",
-	"|    |      |       |   |    |",
-	"|    *------*       |   |    |",
-	"*----*      |       |   |    |",
-	"|    |      |       |   |    |",
-	"*----*------*-------*---*----*"
-];
-$.screen( "300x210" );
-$.setColor( 2 );
-$.setFont( 1 );
-$.print( "12345678901234567890123456789012345678901234567890" );
-$.setPos( 18, 2 );
-$.printTable( data, format, null, false );
-$.printTable( data, format, null, true );
-$.printTable( data, null, null );
+var data = [\r
+\t[ "One", "2", "3", "FourSandwhiches", "EggMcMuffins", "6a" ],\r
+\t[ "Hotdogs", "Five", "Six", "7", "8", "9" ],\r
+\t[ "Seven", "Eight", "Nine", "a", "b", "c" ]\r
+];\r
+var format = [\r
+\t"*-----------*---*---*---*----*",\r
+\t"|           |   |   |V  |V   |",\r
+\t"*----*------*---*---*   |    |",\r
+\t"|    |      |       |   |    |",\r
+\t"|    *------*       |   |    |",\r
+\t"*----*      |       |   |    |",\r
+\t"|    |      |       |   |    |",\r
+\t"*----*------*-------*---*----*"\r
+];\r
+$.screen( "300x210" );\r
+$.setColor( 2 );\r
+$.setFont( 1 );\r
+$.print( "12345678901234567890123456789012345678901234567890" );\r
+$.setPos( 18, 2 );\r
+$.printTable( data, format, null, false );\r
+$.printTable( data, format, null, true );\r
+$.printTable( data, null, null );\r
 """
+
+[[parameters]]
+name = "items"
+type = "any"
+description = "An array of strings that get put into the table from top-left to bottom-right order."
+
+[[parameters]]
+name = "tableFormat"
+type = "any"
+description = """
+An array of strings that creates the table shape.\r
+\t\t<ul style='margin:0'>\r
+\t\t\t<li><span class='gray'>"*"</span> Indicates a table corner.</li>\r
+\t\t\t<li><span class='gray'>"-"</span> Indicates a table horiztontal line.</li>\r
+\t\t\t<li><span class='gray'>"|"</span> Indicates a table vertical line.</li>\r
+\t\t\t<li><span class='gray'>"V"</span> Inside a cell for vertical orientation of the cell.</li>\r
+\t\t</ul>"""
+optional = true
+
+[[parameters]]
+name = "borderStyle"
+type = "any"
+description = "The style of borders. Must be one of the following strings single, double, singleDouble, doubleSingle, or thick."
+optional = true
+
+[[parameters]]
+name = "isCentered"
+type = "any"
+description = "Horizontally centers the table."
+optional = true
+
+[[returns]]
+type = "void"
+description = "An array of data with information on each cell. Includes the position of each cell in the table."

@@ -1,20 +1,29 @@
-name = "setFontSize"
-description = "Sets the font-size for bitmap fonts. Can only be used in bitmap fonts."
-isScreen = true
-parameters = [ "width", "height" ]
-pdata = [
-	"The width of the font.",
-	"The height of the font."
-]
-seeAlso = [ "loadFont", "print", "setFont" ]
+title = "setFontSize"
 category = "print"
+isScreen = true
+summary = "Sets the font-size for bitmap fonts. Can only be used in bitmap fonts."
+description = ""
 example = """
-var font = $.loadFont( "/images/font-block.png", 10, 10, "ABCDFGHI" );
-$.ready( function () {
-	$.screen( "100x100" );
-	$.setFont( font );
-	$.print( "ABCD" );
-	$.setFontSize( 20, 20 );
-	$.print( "ABCD" );
-} );
+var font = $.loadFont( "/images/font-block.png", 10, 10, "ABCDFGHI" );\r
+$.ready( function () {\r
+\t$.screen( "100x100" );\r
+\t$.setFont( font );\r
+\t$.print( "ABCD" );\r
+\t$.setFontSize( 20, 20 );\r
+\t$.print( "ABCD" );\r
+} );\r
 """
+
+[[parameters]]
+name = "width"
+type = "any"
+description = "The width of the font."
+
+[[parameters]]
+name = "height"
+type = "any"
+description = "The height of the font."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

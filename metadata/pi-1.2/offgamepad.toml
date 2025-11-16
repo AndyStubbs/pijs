@@ -1,36 +1,48 @@
-name = "offgamepad"
-isScreen = false
-parameters = [ "gamepadIndex", "mode", "item", "fn" ]
-description = """
-Removes a gamepad event created by the ongamepad command.
-"""
-pdata = [
-	"The index of the gamepad.",
-	"""The event mode must be one of the following strings: connect, disconnect, axis,\
-		pressed, touched, pressReleased, touchReleased.""",
-	"The index of the button or axis for the event. Use the string 'any' for any button or axis.",
-	"The function to be called back for the event."
-]
-seeAlso = [
-	"ingamepads", "ongamepad", "stopGamepads"
-]
+title = "offgamepad"
 category = "gamepad"
+isScreen = false
+summary = "Removes a gamepad event created by the ongamepad command."
+description = ""
 example = """
-$.screen( "300x300" );
-$.print( "Press button 3 to stop" );
-$.ongamepad( 0, "pressed", "any", pressButton );
-$.ongamepad( 0, "pressed", 3, stop );
-
-// Press button function
-function pressButton( btn ) {
-	console.log( btn );
-	$.print( "Button " + btn.index + " pressed" );
-}
-
-// Stop function
-function stop() {
-	$.offgamepad( 0, "pressed", "any", pressButton );
-	$.offgamepad( 0, "pressed", 3, stop );
-	$.print( "Stopped" );
-}
+$.screen( "300x300" );\r
+$.print( "Press button 3 to stop" );\r
+$.ongamepad( 0, "pressed", "any", pressButton );\r
+$.ongamepad( 0, "pressed", 3, stop );\r
+\r
+// Press button function\r
+function pressButton( btn ) {\r
+\tconsole.log( btn );\r
+\t$.print( "Button " + btn.index + " pressed" );\r
+}\r
+\r
+// Stop function\r
+function stop() {\r
+\t$.offgamepad( 0, "pressed", "any", pressButton );\r
+\t$.offgamepad( 0, "pressed", 3, stop );\r
+\t$.print( "Stopped" );\r
+}\r
 """
+
+[[parameters]]
+name = "gamepadIndex"
+type = "any"
+description = "The index of the gamepad."
+
+[[parameters]]
+name = "mode"
+type = "any"
+description = "The event mode must be one of the following strings: connect, disconnect, axis,pressed, touched, pressReleased, touchReleased."
+
+[[parameters]]
+name = "item"
+type = "any"
+description = "The index of the button or axis for the event. Use the string 'any' for any button or axis."
+
+[[parameters]]
+name = "fn"
+type = "any"
+description = "The function to be called back for the event."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

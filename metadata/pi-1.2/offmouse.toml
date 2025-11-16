@@ -1,38 +1,43 @@
-name = "offmouse"
-isScreen = true
-parameters = [ "mode", "fn" ]
-description = """
-Removes an onmouse event.
-"""
-pdata = [
-	"The mode must be a string and can be up, down, or move.",
-	"The function that was used to create the hitbox by the onclick command."
-]
-seeAlso = [
-	"clearEvents", "inmouse", "onmouse", "startMouse", "stopMouse"
-]
+title = "offmouse"
 category = "mouse"
+isScreen = true
+summary = "Removes an onmouse event."
+description = ""
 example = """
-$.screen( "300x200" );
-$.print( "Move mouse to paint screen, click to stop." );
-$.onmouse( "move", mouseMove );
-$.onmouse( "up", mouseStop, true );
-
-// Mouse move function
-function mouseMove( data ) {
-	$.setPosPx( data.x, data.y );
-	var pos = $.getPos();
-	$.setPos( pos.col, pos.row );
-	$.setColor( 8 );
-	$.print( "+", true );
-}
-
-// Mouse stop function
-function mouseStop() {
-	$.setColor( 14 );
-	var pos = $.getPos();
-	$.setPos( pos.col - 4, pos.row );
-	$.print( "Stopped!", true );
-	$.offmouse( "move", mouseMove );
-}
+$.screen( "300x200" );\r
+$.print( "Move mouse to paint screen, click to stop." );\r
+$.onmouse( "move", mouseMove );\r
+$.onmouse( "up", mouseStop, true );\r
+\r
+// Mouse move function\r
+function mouseMove( data ) {\r
+\t$.setPosPx( data.x, data.y );\r
+\tvar pos = $.getPos();\r
+\t$.setPos( pos.col, pos.row );\r
+\t$.setColor( 8 );\r
+\t$.print( "+", true );\r
+}\r
+\r
+// Mouse stop function\r
+function mouseStop() {\r
+\t$.setColor( 14 );\r
+\tvar pos = $.getPos();\r
+\t$.setPos( pos.col - 4, pos.row );\r
+\t$.print( "Stopped!", true );\r
+\t$.offmouse( "move", mouseMove );\r
+}\r
 """
+
+[[parameters]]
+name = "mode"
+type = "any"
+description = "The mode must be a string and can be up, down, or move."
+
+[[parameters]]
+name = "fn"
+type = "any"
+description = "The function that was used to create the hitbox by the onclick command."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

@@ -1,23 +1,27 @@
-name = "setColors"
-description = """
-Sets an array of color values for use with multi-color fonts
-using the print statement. The first color in the array will
-be used in all drawing commands while the rest are only used
-in multi-color fonts.
-"""
+title = "setColors"
 isScreen = true
-parameters = [ "colors" ]
-pdata = [
-	"An array of color values to be set."
-]
-seeAlso = [ "setBgColor", "setContainerBgColor", "setColor" ]
+summary = """
+Sets an array of color values for use with multi-color fonts\r
+using the print statement. The first color in the array will\r
+be used in all drawing commands while the rest are only used\r
+in multi-color fonts."""
+description = ""
 example = """
-var font = $.loadFont( "font-goofy-2.png", 8, 14 );
-$.ready( function () {
-	$.screen( "300x200" );
-	$.setFont( font );
-	$.print( "Hello World" );
-	$.setColors( [ 1, 2, 3, 4 ] );
-	$.print( "Hello World" );
-} );
+var font = $.loadFont( "font-goofy-2.png", 8, 14 );\r
+$.ready( function () {\r
+\t$.screen( "300x200" );\r
+\t$.setFont( font );\r
+\t$.print( "Hello World" );\r
+\t$.setColors( [ 1, 2, 3, 4 ] );\r
+\t$.print( "Hello World" );\r
+} );\r
 """
+
+[[parameters]]
+name = "colors"
+type = "any"
+description = "An array of color values to be set."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

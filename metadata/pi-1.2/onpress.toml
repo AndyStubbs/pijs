@@ -1,45 +1,64 @@
-name = "onpress"
+title = "onpress"
+category = "touch,mouse"
 isScreen = true
-parameters = [ "mode", "fn", "once", "hitBox", "customData" ]
-description = """
-Creates a press event which activates on mouse or touch.
-"""
-pdata = [
-	"The mode must be a string and can be up, down, or move.",
-	"The function to callback when the event occurs.",
-	"[OPTIONAL]. A boolean if true deletes the event after being called one time.",
-	"[OPTIONAL]. A hitBox to restrict events occuring outside the box",
-	"""[OPTIONAL]. This can be used to assign data that will be passed into the callback event. \
-		This is useful if you have multiple onmouse commands that use the same callback function."""
-]
-seeAlso = [
-	"clearEvents", "inpress", "offpress", "setPinchZoom", "startMouse", "startTouch", "stopMouse", "stopTouch"
-]
-category = [ "touch", "mouse" ]
+summary = "Creates a press event which activates on mouse or touch."
+description = ""
 example = """
-$.screen( "300x200" );
-$.print( 
-	"Move mouse or touch to paint screen," +
-	" click/touch up to stop."
-);
-$.onpress( "move", pressMove );
-$.onpress( "up", pressStop, true );
-
-// Press move function
-function pressMove( data ) {
-	$.setPosPx( data.x, data.y );
-	var pos = $.getPos();
-	$.setPos( pos.col, pos.row );
-	$.setColor( 8 );
-	$.print( "+", true );
-}
-
-// Press stop function
-function pressStop() {
-	$.setColor( 14 );
-	var pos = $.getPos();
-	$.setPos( pos.col - 4, pos.row );
-	$.print( "Stopped!", true );
-	$.offpress( "move", pressMove );
-}
+$.screen( "300x200" );\r
+$.print( \r
+\t"Move mouse or touch to paint screen," +\r
+\t" click/touch up to stop."\r
+);\r
+$.onpress( "move", pressMove );\r
+$.onpress( "up", pressStop, true );\r
+\r
+// Press move function\r
+function pressMove( data ) {\r
+\t$.setPosPx( data.x, data.y );\r
+\tvar pos = $.getPos();\r
+\t$.setPos( pos.col, pos.row );\r
+\t$.setColor( 8 );\r
+\t$.print( "+", true );\r
+}\r
+\r
+// Press stop function\r
+function pressStop() {\r
+\t$.setColor( 14 );\r
+\tvar pos = $.getPos();\r
+\t$.setPos( pos.col - 4, pos.row );\r
+\t$.print( "Stopped!", true );\r
+\t$.offpress( "move", pressMove );\r
+}\r
 """
+
+[[parameters]]
+name = "mode"
+type = "any"
+description = "The mode must be a string and can be up, down, or move."
+
+[[parameters]]
+name = "fn"
+type = "any"
+description = "The function to callback when the event occurs."
+
+[[parameters]]
+name = "once"
+type = "any"
+description = ". A boolean if true deletes the event after being called one time."
+optional = true
+
+[[parameters]]
+name = "hitBox"
+type = "any"
+description = ". A hitBox to restrict events occuring outside the box"
+optional = true
+
+[[parameters]]
+name = "customData"
+type = "any"
+description = ". This can be used to assign data that will be passed into the callback event. This is useful if you have multiple onmouse commands that use the same callback function."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

@@ -1,18 +1,25 @@
-name = "ready"
-description = """
-	Specify a function to execute when Pi.js is fully loaded. This is necessary when loading reasources
-	such as images and sounds.  When the images get fully loaded the ready function will get called.
-	The ready function will only get called once, if more resources are loaded later on a seperate ready
-	method must be called.
-"""
-isScreen = false
-parameters = [ "fn" ]
-pdata = [ "The function you want to execute once loading is completed." ]
+title = "ready"
 category = "functional"
+isScreen = false
+summary = """
+Specify a function to execute when Pi.js is fully loaded. This is necessary when loading reasources\r
+\tsuch as images and sounds.  When the images get fully loaded the ready function will get called.\r
+\tThe ready function will only get called once, if more resources are loaded later on a seperate ready\r
+\tmethod must be called."""
+description = ""
 example = """
-$.screen( "300x200" );
-$.loadImage( "/images/monkey.png", "monkey" );
-$.ready( function () {
-	$.drawImage( "monkey", 150, 100, 0, 0.5, 0.5 );
-} );
+$.screen( "300x200" );\r
+$.loadImage( "/images/monkey.png", "monkey" );\r
+$.ready( function () {\r
+\t$.drawImage( "monkey", 150, 100, 0, 0.5, 0.5 );\r
+} );\r
 """
+
+[[parameters]]
+name = "fn"
+type = "any"
+description = "The function you want to execute once loading is completed."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

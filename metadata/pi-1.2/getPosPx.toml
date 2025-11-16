@@ -1,15 +1,19 @@
-name = "getPosPx"
-description = """Gets the position of the print cursor and returns the coordinates. The data
-returned is an object containing a row and a column. Example: { x: 5, y: 5 }. The x
-and y coordinates are based on top left corner pixel position of the print cursor."""
-isScreen = true
-parameters = [ ]
-seeAlso = [ "getPos", "print", "setPos", "setPosPx" ]
+title = "getPosPx"
 category = "print"
-returns = "An object containing the pixel coordinates of the print cursor."
+isScreen = true
+summary = """
+Gets the position of the print cursor and returns the coordinates. The data\r
+returned is an object containing a row and a column. Example: { x: 5, y: 5 }. The x\r
+and y coordinates are based on top left corner pixel position of the print cursor."""
+description = ""
+parameters = [ ]
 example = """
-$.screen("300x200");
-$.setPosPx(15, 15);
-var pos = $.getPosPx();
-$.print(pos.x + ", " + pos.y);
+$.screen("300x200");\r
+$.setPosPx(15, 15);\r
+var pos = $.getPosPx();\r
+$.print(pos.x + ", " + pos.y);\r
 """
+
+[[returns]]
+type = "void"
+description = "An object containing the pixel coordinates of the print cursor."

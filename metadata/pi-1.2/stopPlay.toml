@@ -1,19 +1,24 @@
-name = "stopPlay"
-description = "Stops music created by the play command. Leave first parameter blank to stop all play tracks."
-isScreen = false
-parameters = [ "trackId" ]
-pdata = [ "[OPTIONAL] the trackId to stop playing." ]
+title = "stopPlay"
 category = "sound"
+isScreen = false
+summary = "Stops music created by the play command. Leave first parameter blank to stop all play tracks."
+description = ""
 example = """
-var song = "sawtooth v80 MO1" + 
-	"t200l4o2mneel2el4eel2el4egl3cl8dl1el4ffl3fl8fl4fel2el8eel4edde" +
-	"l2dgl4eel2el4eel2el4egl3cl8dl1el4ffl3fl8fl4fel2el8efl4ggfdl2c";
-$.play( song );
-var timeout = setTimeout( function () {
-	$.stopPlay();
-}, 3500 );
+var song = "sawtooth v80 MO1" + \r
+\t"t200l4o2mneel2el4eel2el4egl3cl8dl1el4ffl3fl8fl4fel2el8eel4edde" +\r
+\t"l2dgl4eel2el4eel2el4egl3cl8dl1el4ffl3fl8fl4fel2el8efl4ggfdl2c";\r
+$.play( song );\r
+var timeout = setTimeout( function () {\r
+\t$.stopPlay();\r
+}, 3500 );\r
 """
-onclose = """
-$.stopPlay();
-clearTimeout( timeout );
-"""
+
+[[parameters]]
+name = "trackId"
+type = "any"
+description = "the trackId to stop playing."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

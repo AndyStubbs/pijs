@@ -1,31 +1,49 @@
-name = "get"
-description = """
-Gets an area of pixels from the screen and returns an array of color indices.
-It's counterpart, the put method, copies the contents of the array back onto
-the screen.
-"""
-isScreen = true
-parameters = [ "x1", "y1", "x2", "y2", "tolerance" ]
-pdata = [
-	"First horizontal coordiante.",
-	"First vertical coordinate.",
-	"Second horizontal coordiante.",
-	"Second vertical coordinate.",
-	"[OPTIONAL]. If the color is not in the color palette then attempt to find the closest fit color."
-]
-returns = "A 2-dimensional array of color indices."
-seeAlso = [
-	"put"
-]
+title = "get"
 category = "primatives"
+isScreen = true
+summary = """
+Gets an area of pixels from the screen and returns an array of color indices.\r
+It's counterpart, the put method, copies the contents of the array back onto\r
+the screen."""
+description = ""
 example = """
-$.screen( "300x200" );
-$.circle( 150, 110, 50, 4 );
-var colors = $.get( 105, 85, 110, 90 );
-$.print( "[" );
-for( var i = 0; i < colors.length; i++ ) {
-	$.print( "    [ " + colors[ i ].join( ", " ) + " ]," );
-}
-$.print( "]" );
-$.put( colors, 20, 80 );
+$.screen( "300x200" );\r
+$.circle( 150, 110, 50, 4 );\r
+var colors = $.get( 105, 85, 110, 90 );\r
+$.print( "[" );\r
+for( var i = 0; i < colors.length; i++ ) {\r
+\t$.print( "    [ " + colors[ i ].join( ", " ) + " ]," );\r
+}\r
+$.print( "]" );\r
+$.put( colors, 20, 80 );\r
 """
+
+[[parameters]]
+name = "x1"
+type = "any"
+description = "First horizontal coordiante."
+
+[[parameters]]
+name = "y1"
+type = "any"
+description = "First vertical coordinate."
+
+[[parameters]]
+name = "x2"
+type = "any"
+description = "Second horizontal coordiante."
+
+[[parameters]]
+name = "y2"
+type = "any"
+description = "Second vertical coordinate."
+
+[[parameters]]
+name = "tolerance"
+type = "any"
+description = ". If the color is not in the color palette then attempt to find the closest fit color."
+optional = true
+
+[[returns]]
+type = "void"
+description = "A 2-dimensional array of color indices."

@@ -1,30 +1,40 @@
-name = "setColor"
-description = "Sets the foreground color."
-isScreen = true
-parameters = [ "color", "isAddToPalette" ]
-pdata = [
-	"The color value to set the foreground color.",
-	"[OPTIONAL] If set to true and the color is not part of the current color palette then it will add it to the color palette."
-]
-seeAlso = [ "setBgColor" ]
+title = "setColor"
 category = "color"
+isScreen = true
+summary = "Sets the foreground color."
+description = ""
 example = """
-var i, colors, x, y, size;
-
-$.screen( "360x300" );
-colors = $.getPal();
-x = 0;
-y = 0;
-size = 20;
-for( i = 0; i < colors.length; i++ ) {
-	$.setColor( i );
-	$.rect( x, y, size, size );
-	$.setPosPx( x + 1, y + 4 );
-	$.print( i, true );
-	x += size;
-	if( x >= $.width() ) {
-		x = 0;
-		y += size;
-	}
-}
+var i, colors, x, y, size;\r
+\r
+$.screen( "360x300" );\r
+colors = $.getPal();\r
+x = 0;\r
+y = 0;\r
+size = 20;\r
+for( i = 0; i < colors.length; i++ ) {\r
+\t$.setColor( i );\r
+\t$.rect( x, y, size, size );\r
+\t$.setPosPx( x + 1, y + 4 );\r
+\t$.print( i, true );\r
+\tx += size;\r
+\tif( x >= $.width() ) {\r
+\t\tx = 0;\r
+\t\ty += size;\r
+\t}\r
+}\r
 """
+
+[[parameters]]
+name = "color"
+type = "any"
+description = "The color value to set the foreground color."
+
+[[parameters]]
+name = "isAddToPalette"
+type = "any"
+description = "If set to true and the color is not part of the current color palette then it will add it to the color palette."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

@@ -1,34 +1,43 @@
-name = "offkey"
-isScreen = false
-parameters = [ "key", "mode", "fn" ]
-description = """
-Removes an onkey event.
-"""
-pdata = [
-	"The key that was used in the onkey command.",
-	"The mode can be up or down.",
-	"The function that was used to create the hitbox by the onclick command."
-]
-seeAlso = [
-	"onkey"
-]
+title = "offkey"
 category = "keyboard"
+isScreen = false
+summary = "Removes an onkey event."
+description = ""
 example = """
-$.screen( "300x200" );
-$.print( "Press any key." );
-$.print( "Press q to stop" );
-$.onkey( "any", "down", keyPress );
-$.onkey( "Q", "down", stopPress );
-
-// Key press function
-function keyPress( key ) {
-	$.print( "You pressed " + key.key + "!" );
-}
-
-// Stop key press function
-function stopPress() {
-	$.print( "You pressed Q! Stopping." );
-	$.offkey( "any", "down", keyPress );
-	$.offkey( "Q", "down", keyPress );
-}
+$.screen( "300x200" );\r
+$.print( "Press any key." );\r
+$.print( "Press q to stop" );\r
+$.onkey( "any", "down", keyPress );\r
+$.onkey( "Q", "down", stopPress );\r
+\r
+// Key press function\r
+function keyPress( key ) {\r
+\t$.print( "You pressed " + key.key + "!" );\r
+}\r
+\r
+// Stop key press function\r
+function stopPress() {\r
+\t$.print( "You pressed Q! Stopping." );\r
+\t$.offkey( "any", "down", keyPress );\r
+\t$.offkey( "Q", "down", keyPress );\r
+}\r
 """
+
+[[parameters]]
+name = "key"
+type = "any"
+description = "The key that was used in the onkey command."
+
+[[parameters]]
+name = "mode"
+type = "any"
+description = "The mode can be up or down."
+
+[[parameters]]
+name = "fn"
+type = "any"
+description = "The function that was used to create the hitbox by the onclick command."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

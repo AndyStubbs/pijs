@@ -1,24 +1,26 @@
-name = "stopTouch"
-description = """
-Stops the touch event listeners for the screen.
-"""
-isScreen = true
-parameters = [ ]
-seeAlso = [ "intouch", "ontouch", "setPinchZoom", "startTouch" ]
+title = "stopTouch"
 category = "touch"
+isScreen = true
+summary = "Stops the touch event listeners for the screen."
+description = ""
+parameters = [ ]
 example = """
-$.screen( "100x100" );
-$.startTouch();
-$.setPinchZoom( false );
-var count = 5;
-$.print( count + " touches left" );
-$.ontouch( "start", function ( touches ) {
-	$.setColor( Math.floor( Math.random() * 9 ) + 1 );
-	$.print( --count + " touches left" );
-	var touch = touches[ 0 ];
-	$.pset( touch.x, touch.y );
-	if( count === 0 ) {
-		$.stopTouch();
-	}
-} );
+$.screen( "100x100" );\r
+$.startTouch();\r
+$.setPinchZoom( false );\r
+var count = 5;\r
+$.print( count + " touches left" );\r
+$.ontouch( "start", function ( touches ) {\r
+\t$.setColor( Math.floor( Math.random() * 9 ) + 1 );\r
+\t$.print( --count + " touches left" );\r
+\tvar touch = touches[ 0 ];\r
+\t$.pset( touch.x, touch.y );\r
+\tif( count === 0 ) {\r
+\t\t$.stopTouch();\r
+\t}\r
+} );\r
 """
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

@@ -1,15 +1,23 @@
-name = "removeImage"
-description = "Removes an image from memory."
-isScreen = false
-parameters = [ "name" ]
-pdata = [ "The name or id of the image to remove." ]
+title = "removeImage"
 category = "images"
+isScreen = false
+summary = "Removes an image from memory."
+description = ""
 example = """
-$.screen( "300x200" );
-var monkey = $.loadImage( "/images/monkey.png" );
-$.ready( function () {
-	$.drawImage( monkey, 150, 100, 0, 0.5, 0.5 );
-	$.removeImage( monkey );
-	$.drawImage( monkey, 200, 150 );
-} );
+$.screen( "300x200" );\r
+var monkey = $.loadImage( "/images/monkey.png" );\r
+$.ready( function () {\r
+\t$.drawImage( monkey, 150, 100, 0, 0.5, 0.5 );\r
+\t$.removeImage( monkey );\r
+\t$.drawImage( monkey, 200, 150 );\r
+} );\r
 """
+
+[[parameters]]
+name = "name"
+type = "any"
+description = "The name or id of the image to remove."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

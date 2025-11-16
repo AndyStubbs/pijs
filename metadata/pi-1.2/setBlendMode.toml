@@ -1,27 +1,32 @@
-name = "setBlendMode"
-description = "Sets the blend mode when drawing. Normal will set the pixel to the exact color. Blended will mix the colors if the alpha channel of the current color is not 100%."
-isScreen = true
-parameters = [ "mode" ]
-pdata = [
-  "The mode of blend choices are normal or blend."
-]
-seeAlso = [ "setPen", "setPixelMode" ]
+title = "setBlendMode"
 category = "primatives"
+isScreen = true
+summary = "Sets the blend mode when drawing. Normal will set the pixel to the exact color. Blended will mix the colors if the alpha channel of the current color is not 100%."
+description = ""
 example = """
-$.ready(function () {
-	$.screen( "5x5" );
-	// draw 3 red pixels
-	$.setColor( "rgba(255,0,0,1)" );
-	$.pset( 1, 2 );
-	$.pset( 2, 2 );
-	$.pset( 3, 2 );
-	$.render();
-	$.setBlendMode( "blend" );
-	// blend red and green
-	$.setColor( "rgba(0,255,0,0.5)" );
-	$.pset( 2, 2 );
-	// blend red and blue
-	$.setColor( "rgba(0,0,255,0.5)" );
-	$.pset( 3, 2 );
-});
+$.ready(function () {\r
+\t$.screen( "5x5" );\r
+\t// draw 3 red pixels\r
+\t$.setColor( "rgba(255,0,0,1)" );\r
+\t$.pset( 1, 2 );\r
+\t$.pset( 2, 2 );\r
+\t$.pset( 3, 2 );\r
+\t$.render();\r
+\t$.setBlendMode( "blend" );\r
+\t// blend red and green\r
+\t$.setColor( "rgba(0,255,0,0.5)" );\r
+\t$.pset( 2, 2 );\r
+\t// blend red and blue\r
+\t$.setColor( "rgba(0,0,255,0.5)" );\r
+\t$.pset( 3, 2 );\r
+});\r
 """
+
+[[parameters]]
+name = "mode"
+type = "any"
+description = "The mode of blend choices are normal or blend."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

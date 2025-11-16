@@ -1,14 +1,21 @@
-name = "setPixelMode"
-description = "Toggles between pixel mode and anti-aliased drawing modes."
-isScreen = true
-parameters = [ "isEnabled" ]
-pdata = [ "If set to true use the pixel mode otherwise use anit-aliased mode." ]
-seeAlso = [ "setBlendMode", "setPen" ]
+title = "setPixelMode"
 category = "graphics"
+isScreen = true
+summary = "Toggles between pixel mode and anti-aliased drawing modes."
+description = ""
 example = """
-$.screen( "300x200" );
-$.setColor( 4 );
-$.line( 30, 80, 270, 50 );
-$.setPixelMode( false );
-$.line( 30, 120, 270, 90 );
+$.screen( "300x200" );\r
+$.setColor( 4 );\r
+$.line( 30, 80, 270, 50 );\r
+$.setPixelMode( false );\r
+$.line( 30, 120, 270, 90 );\r
 """
+
+[[parameters]]
+name = "isEnabled"
+type = "any"
+description = "If set to true use the pixel mode otherwise use anit-aliased mode."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
