@@ -10,7 +10,6 @@
 	"scripts": {
 		"build": "node scripts/build.js",
 		"metadata": "node scripts/generate-metadata.js",
-		"migrate:pi-1.2": "node scripts/migrate-version.js pi-1.2",
 		"build:alpha-0": "node scripts/build.js alpha-0",
 		"build:alpha-1": "node scripts/build.js alpha-1",
 		"test": "playwright test test/scripts/run-visual-tests.js",
