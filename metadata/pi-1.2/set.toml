@@ -1,48 +1,33 @@
 title = "set"
-category = "graphics"
+category = "core"
 isScreen = true
-summary = """
-Sets any setting command that starts wirth the word "set".<br /><br />\r
-Examples: actionKey, bgColor, color, colors, containerBgColor, \r
-defaultFont, defaultPal, enableContextMenu, errorMode, font,\r
-fontSize, inputCursor, palColor, pen, pinchZoom, pixelMode,\r
-pos, posPx, screen, volume, wordBreak.\r
-<br /><br />\r
-Note: Settings are set in the order they appear in the object.\r
-Certain settings such as pos and font could have different results\r
-based on the order they get set."""
-description = ""
-example = """
-$.screen( "300x200" );\r
-\r
-// First Set\r
-$.set( {\r
-  "bgColor": 10,\r
-  "color": 1,\r
-  "pos": { "row": 15, "col": 8 },\r
-  "font": 0\r
-} );\r
-$.print( "Hello World 1!" );\r
-\r
-// Second Set\r
-$.set( {\r
-  "pos": { "row": 16, "col": 8 },\r
-  "font": 1\r
-} );\r
-\r
-// Note that Hello World 2 is a larger font so\r
-// it's row and col position should be lower than\r
-// the above print statement, but because the\r
-// pos setting gets called first it's using the\r
-// row size of font 0 instead of font 1\r
-$.print( "Hello World 2!" );\r
+summary = "Applies multiple settings in a single call using an options object."
+description = """
+Sets one or more global or screen-scoped settings. Any command registered as a "setX" command
+is available as an option with the lowercased name (e.g., setColor => { "color": ... }).
+
+Behavior:
+- May be called before or after a screen exists; screen-scoped settings are applied to the active
+  screen if available.
+- Settings routed to non-screen commands are applied globally.
 """
 
 [[parameters]]
-name = "settings"
-type = "any"
-description = "An object containing the settings to be set."
+name = "options"
+type = "object"
+description = "Object whose keys map to available settings (e.g., { \"screen\": \"300x200\", \"color\": 2 })."
 
 [[returns]]
 type = "void"
 description = "This function does not return a value."
+
+example = """
+// Create a screen and set multiple options together
+$.set( { "screen": "300x200", "color": 7 } );
+
+// Combine with other settings (examples; actual availability depends on modules loaded)
+$.set( {
+	"color": "#FF00FF",
+	"defaultPal": [ "#000000", "#FFFFFF", "#FF0000" ]
+} );
+"""

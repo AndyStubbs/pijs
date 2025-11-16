@@ -1,5 +1,5 @@
 title = "ready"
-category = "functional"
+category = "core"
 isScreen = false
 summary = """
 Specify a function to execute when Pi.js is fully loaded. This is necessary when loading reasources\r
