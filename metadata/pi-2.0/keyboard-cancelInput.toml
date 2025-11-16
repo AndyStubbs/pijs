@@ -17,4 +17,3 @@ $.input( "Enter name: " );
 // Later, cancel the input
 $.cancelInput();
 """
-
