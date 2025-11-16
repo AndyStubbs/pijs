@@ -11,6 +11,10 @@
 
 "use strict";
 
+// TODO: Create a lite build version which will be what is currently setup. Add a full build
+// the includes plugins: gamepad, keyboard, play-sound, and pointer. Full build will be the pi.js
+// official library. Lite build will be pi-lite.js.
+
 // Core Modules
 import * as g_utils from "./core/utils.js";
 import * as g_commands from "./core/commands.js";
