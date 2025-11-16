@@ -1,0 +1,27 @@
+title = "setPinchZoom"
+category = "pointer"
+isScreen = false
+plugin = "pointer"
+summary = "Enables or disables browser pinch zoom gestures."
+description = """
+Controls whether the browser's default pinch-to-zoom gesture is enabled. When disabled, pinch
+gestures are prevented from zooming the page, allowing them to be handled by touch event handlers
+instead.
+
+This is a global setting that affects the entire document body.
+"""
+
+[[parameters]]
+name = "isEnabled"
+type = "boolean"
+description = "If true, enables pinch zoom. If false, disables it."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.setPinchZoom( false ); // Disable pinch zoom for game controls
+$.setPinchZoom( true ); // Re-enable pinch zoom
+"""
+

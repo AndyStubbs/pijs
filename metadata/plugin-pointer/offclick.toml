@@ -1,0 +1,29 @@
+title = "offclick"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Removes a click event handler."
+description = """
+Removes a previously registered click event handler. If fn is null, removes all click handlers.
+"""
+
+[[parameters]]
+name = "fn"
+type = "function"
+description = "Callback function that matches the original handler. If null, removes all click handlers."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+const handler = ( clickData ) => {
+	$.print( "Clicked!" );
+};
+
+$.onclick( handler );
+// Later...
+$.offclick( handler );
+"""
+

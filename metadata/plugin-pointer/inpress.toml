@@ -1,0 +1,24 @@
+title = "inpress"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Gets the current press state (mouse or touch) and starts tracking if needed."
+description = """
+Returns press data from either mouse or touch, depending on which was used last. If the last
+event was touch, returns touch press data. Otherwise, returns mouse data.
+
+The returned object contains position, buttons, action, and type properties. For touch, it also
+includes a touches array with all active touches.
+"""
+
+[[returns]]
+type = "object"
+description = "Press data object (mouse or touch) with position, buttons, action, and type properties."
+
+example = """
+const press = $.inpress();
+if( press.buttons > 0 ) {
+	$.print( `${press.type} pressed at ${press.x}, ${press.y}` );
+}
+"""
+

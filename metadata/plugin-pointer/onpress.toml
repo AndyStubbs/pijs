@@ -1,0 +1,56 @@
+title = "onpress"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Registers a callback function for press events (mouse or touch)."
+description = """
+Registers a callback function that will be called when a press event occurs. Press events
+unify mouse and touch input, so the callback receives data from either input method.
+
+Supports hit box filtering - if a hitBox is provided, the callback only fires when the press
+is within that rectangular area.
+"""
+
+[[parameters]]
+name = "mode"
+type = "string"
+description = "Event mode: 'down', 'up', or 'move'."
+
+[[parameters]]
+name = "fn"
+type = "function"
+description = "Callback function that receives (pressData, customData) when the event occurs."
+
+[[parameters]]
+name = "once"
+type = "boolean"
+description = "If true, the handler is removed after being called once."
+optional = true
+
+[[parameters]]
+name = "hitBox"
+type = "object"
+description = "Optional hit box object with x, y, width, height properties. Callback only fires if press is within this area."
+optional = true
+
+[[parameters]]
+name = "customData"
+type = "any"
+description = "Optional custom data passed to the callback function."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.onpress( "down", ( pressData ) => {
+	$.print( `${pressData.type} pressed at ${pressData.x}, ${pressData.y}` );
+} );
+
+// With hit box
+$.onpress( "up", ( pressData ) => {
+	$.print( "Released in button area" );
+}, false, { "x": 10, "y": 10, "width": 100, "height": 50 } );
+"""
+

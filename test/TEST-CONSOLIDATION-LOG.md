@@ -244,7 +244,6 @@ Created a comprehensive test for the input modules (mouse.js, touch.js, press.js
 #### Mouse Module Tests:
 - `startMouse()` - Start mouse event listeners
 - `stopMouse()` - Stop mouse event listeners
-- `getMouse()` - Get current mouse state
 - `inmouse()` - Get mouse input with automatic start
 - `setEnableContextMenu()` - Enable/disable context menu
 - `onmouse()` - Register mouse event handlers with hitboxes

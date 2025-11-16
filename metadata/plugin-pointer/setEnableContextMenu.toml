@@ -1,0 +1,25 @@
+title = "setEnableContextMenu"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Enables or disables the right-click context menu."
+description = """
+Controls whether the browser's default right-click context menu is shown. When disabled (default),
+right-clicks are prevented from showing the context menu, allowing them to be handled by mouse
+event handlers instead.
+"""
+
+[[parameters]]
+name = "isEnabled"
+type = "boolean"
+description = "If true, enables the context menu. If false, disables it (default)."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.setEnableContextMenu( true ); // Allow right-click menu
+$.setEnableContextMenu( false ); // Block right-click menu
+"""
+

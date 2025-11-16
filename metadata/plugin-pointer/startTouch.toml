@@ -1,0 +1,20 @@
+title = "startTouch"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Starts touch input tracking for this screen."
+description = """
+Starts touch event listeners on the screen canvas. Touch positions and states will be tracked
+and available via intouch(). This is automatically called when touch event handlers are registered.
+"""
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.startTouch();
+const touches = $.intouch();
+$.print( `${touches.length} touches active` );
+"""
+

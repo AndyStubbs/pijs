@@ -1,0 +1,35 @@
+title = "offpress"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Removes a press event handler."
+description = """
+Removes a previously registered press event handler. If fn is null, removes all handlers for
+the specified mode.
+"""
+
+[[parameters]]
+name = "mode"
+type = "string"
+description = "Event mode ('down', 'up', or 'move') that matches the original handler."
+
+[[parameters]]
+name = "fn"
+type = "function"
+description = "Callback function that matches the original handler. If null, removes all handlers for this mode."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+const handler = ( pressData ) => {
+	$.print( "Press moved" );
+};
+
+$.onpress( "move", handler );
+// Later...
+$.offpress( "move", handler );
+"""
+

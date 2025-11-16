@@ -43,7 +43,7 @@ export function registerPress( pluginApi, helpers ) {
 		if( screenData.lastEvent === "touch" ) {
 			return getTouchPress( screenData );
 		} else {
-			return screenData.api.getMouse();
+			return screenData.api.inmouse();
 		}
 	}
 	

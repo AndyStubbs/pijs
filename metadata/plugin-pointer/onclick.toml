@@ -1,0 +1,51 @@
+title = "onclick"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Registers a callback function for click events (mouse or touch)."
+description = """
+Registers a callback function that will be called when a click event occurs. Click events
+are triggered when a press is released (up) after being pressed (down) in the same location,
+unifying mouse clicks and touch taps.
+
+If no hitBox is provided, the entire screen is used as the hit box.
+"""
+
+[[parameters]]
+name = "fn"
+type = "function"
+description = "Callback function that receives (clickData, customData) when a click occurs."
+
+[[parameters]]
+name = "once"
+type = "boolean"
+description = "If true, the handler is removed after being called once."
+optional = true
+
+[[parameters]]
+name = "hitBox"
+type = "object"
+description = "Optional hit box object with x, y, width, height properties. Click only fires if press is within this area. Defaults to full screen."
+optional = true
+
+[[parameters]]
+name = "customData"
+type = "any"
+description = "Optional custom data passed to the callback function."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.onclick( ( clickData ) => {
+	$.print( `Clicked at ${clickData.x}, ${clickData.y}` );
+} );
+
+// With hit box
+$.onclick( ( clickData ) => {
+	$.print( "Button clicked!" );
+}, false, { "x": 10, "y": 10, "width": 100, "height": 50 } );
+"""
+

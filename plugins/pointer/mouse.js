@@ -29,7 +29,6 @@ export function registerMouse( pluginApi, helpers ) {
 	
 	pluginApi.addCommand( "startMouse", startMouse, true, [] );
 	pluginApi.addCommand( "stopMouse", stopMouse, true, [] );
-	pluginApi.addCommand( "getMouse", getMouse, true, [] );
 	pluginApi.addCommand( "inmouse", inmouse, true, [] );
 	pluginApi.addCommand( "setEnableContextMenu", setEnableContextMenu, true, [ "isEnabled" ] );
 	pluginApi.addCommand( "onmouse", onmouse, true, [ "mode", "fn", "once", "hitBox", "customData" ] );

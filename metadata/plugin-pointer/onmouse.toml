@@ -1,0 +1,61 @@
+title = "onmouse"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Registers a callback function for mouse events."
+description = """
+Registers a callback function that will be called when a mouse event occurs. The callback
+receives mouse data and optional custom data.
+
+Supports hit box filtering - if a hitBox is provided, the callback only fires when the mouse
+is within that rectangular area.
+"""
+
+[[parameters]]
+name = "mode"
+type = "string"
+description = "Event mode: 'down', 'up', or 'move'."
+
+[[parameters]]
+name = "fn"
+type = "function"
+description = "Callback function that receives (mouseData, customData) when the event occurs."
+
+[[parameters]]
+name = "once"
+type = "boolean"
+description = "If true, the handler is removed after being called once."
+optional = true
+
+[[parameters]]
+name = "hitBox"
+type = "object"
+description = "Optional hit box object with x, y, width, height properties. Callback only fires if mouse is within this area."
+optional = true
+
+[[parameters]]
+name = "customData"
+type = "any"
+description = "Optional custom data passed to the callback function."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.onmouse( "down", ( mouseData ) => {
+	$.print( `Mouse clicked at ${mouseData.x}, ${mouseData.y}` );
+} );
+
+// With hit box
+$.onmouse( "move", ( mouseData ) => {
+	$.print( "Mouse in button area" );
+}, false, { "x": 10, "y": 10, "width": 100, "height": 50 } );
+
+// One-time handler
+$.onmouse( "up", () => {
+	$.print( "Mouse released once" );
+}, true );
+"""
+
