@@ -1,6 +1,7 @@
 title = "paint"
 category = "primitives"
 isScreen = true
+isBlocking = true
 summary = "Fills in areas of the screen that are the same color."
 description = ""
 example = """
@@ -25,12 +26,12 @@ $.onclick( function ( mouse ) {\r
 
 [[parameters]]
 name = "x"
-type = "any"
+type = "number"
 description = "The horizontal coordinate from where to start the paint algorithm."
 
 [[parameters]]
 name = "y"
-type = "any"
+type = "number"
 description = "The vertical coordinate from where to start the paint algorithm."
 
 [[parameters]]
@@ -40,8 +41,8 @@ description = "The fill color for floodfill operation. Can be a palette index or
 
 [[parameters]]
 name = "tolerance"
-type = "any"
-description = ". A number between 0 and 1 that allows you to set how sensitive the algorithm isto color differences."
+type = "number"
+description = "A number between 0 and 1 that allows you to set how sensitive the algorithm is to color differences."
 optional = true
 
 [[returns]]

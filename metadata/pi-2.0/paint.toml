@@ -1,0 +1,62 @@
+title = "paint"
+category = "primitives"
+isScreen = true
+isBlocking = true
+summary = "Flood fills an area with a color, with optional tolerance or boundary color."
+description = """
+Performs a flood fill starting at (x, y).
+
+Modes:
+- Tolerance fill: Fills pixels similar to the start pixel. Tolerance 0 = exact match; 1 = any color.
+- Boundary fill: If boundaryColor is provided, fills until pixels similar to the boundary color.
+
+Notes:
+- Coordinates must be within the screen; out-of-bounds start points are ignored.
+- Color inputs accept palette indices or color values (name, hex, RGB[A] array, or color object).
+"""
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "X (horizontal) coordinate to start filling."
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "Y (vertical) coordinate to start filling."
+
+[[parameters]]
+name = "fillColor"
+type = "any"
+description = "Fill color. Palette index or color value (string, array, object, number)."
+
+[[parameters]]
+name = "tolerance"
+type = "number"
+description = "Color matching tolerance [0.0-1.0]. 0 = exact match; 1 = any color."
+optional = true
+
+[[parameters]]
+name = "boundaryColor"
+type = "any"
+description = "Optional boundary color (palette index or color value). Enables boundary fill mode."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+$.rect( 20, 20, 100, 60 );
+
+// Tolerance fill (similar colors to the starting pixel)
+$.paint( 25, 25, "gold", 0.25 );
+
+// Boundary fill (fill until reaching boundary color)
+$.setColor( "red" );
+$.rect( 150, 50, 120, 80 );
+$.paint( 160, 60, "#0080FF", 0.2, "red" );
+"""
+
+
