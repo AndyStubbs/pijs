@@ -1,5 +1,5 @@
 title = "cls"
-category = "primitives"
+category = "effects"
 isScreen = true
 summary = "Clears the screen or a rectangular region."
 description = """

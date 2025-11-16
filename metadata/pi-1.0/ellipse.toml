@@ -1,0 +1,46 @@
+title = "ellipse"
+category = "primitives"
+isScreen = true
+summary = "Draws an ellipse on the screen."
+description = """
+This function renders an ellipse to the active canvas.
+
+The ellipse is drawn with a border using the current foreground color. If a fill color is provided,
+the ellipse will be filled with that color.
+"""
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "The x coordinate of the center of the ellipse."
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "The y coordinate of the center of the ellipse."
+
+[[parameters]]
+name = "radiusX"
+type = "number"
+description = "The horizontal radius of the ellipse."
+
+[[parameters]]
+name = "radiusY"
+type = "number"
+description = "The vertical radius of the ellipse."
+
+[[parameters]]
+name = "fillColor"
+type = "string|number"
+description = "The fill color for the ellipse. Can be a color name, hex string, or palette index."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+$.ellipse( 150, 100, 50, 80, "blue" );
+"""
+

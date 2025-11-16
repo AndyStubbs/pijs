@@ -6,8 +6,7 @@ description = """
 This function renders a rectangle to the active canvas.
 
 The rectangle is drawn with a border using the current foreground color. If a fill color is
-provided, the rectangle will be filled with that color (the fill area is slightly inset from the
-border).
+provided, the rectangle will be filled with that color.
 """
 
 [[parameters]]

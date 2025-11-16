@@ -1,0 +1,59 @@
+title = "bezier"
+category = "primitives"
+isScreen = true
+summary = "Draws a bezier curve on the screen."
+description = """
+This function renders a cubic Bezier curve to the active canvas.
+
+A Bezier curve is defined by four control points: two endpoints and two control points that
+influence the curve's shape.
+"""
+
+[[parameters]]
+name = "xStart"
+type = "number"
+description = "The x coordinate of the first control point (starting point)."
+
+[[parameters]]
+name = "yStart"
+type = "number"
+description = "The y coordinate of the first control point (starting point)."
+
+[[parameters]]
+name = "x1"
+type = "number"
+description = "The x coordinate of the second control point."
+
+[[parameters]]
+name = "y1"
+type = "number"
+description = "The y coordinate of the second control point."
+
+[[parameters]]
+name = "x2"
+type = "number"
+description = "The x coordinate of the third control point."
+
+[[parameters]]
+name = "y2"
+type = "number"
+description = "The y coordinate of the third control point."
+
+[[parameters]]
+name = "xEnd"
+type = "number"
+description = "The x coordinate of the fourth control point (ending point)."
+
+[[parameters]]
+name = "yEnd"
+type = "number"
+description = "The y coordinate of the fourth control point (ending point)."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+$.bezier( 15, 10, 45, 135, 195, 75, 280, 185 );
+"""
