@@ -1,0 +1,78 @@
+title = "sound"
+category = "play-sound"
+isScreen = false
+plugin = "play-sound"
+summary = "Plays a sound by frequency using Web Audio API."
+description = """
+Generates and plays a sound at a specific frequency using Web Audio API oscillators. Supports
+standard waveforms (triangle, sine, square, sawtooth) or custom wavetables.
+
+The sound uses an ADSR envelope (attack, sustain, decay) for natural sound shaping.
+"""
+
+[[parameters]]
+name = "frequency"
+type = "number"
+description = "Frequency in Hz (default: 440)."
+optional = true
+
+[[parameters]]
+name = "duration"
+type = "number"
+description = "Duration in seconds (default: 1)."
+optional = true
+
+[[parameters]]
+name = "volume"
+type = "number"
+description = "Volume 0-1 (default: 1)."
+optional = true
+
+[[parameters]]
+name = "oType"
+type = "string|array"
+description = "Oscillator type: 'triangle', 'sine', 'square', 'sawtooth', or custom wavetable array [[realArray], [imagArray]] (default: 'triangle')."
+optional = true
+
+[[parameters]]
+name = "delay"
+type = "number"
+description = "Delay before playing in seconds (default: 0)."
+optional = true
+
+[[parameters]]
+name = "attack"
+type = "number"
+description = "Attack time in seconds (default: 0)."
+optional = true
+
+[[parameters]]
+name = "decay"
+type = "number"
+description = "Decay time in seconds (default: 0.1)."
+optional = true
+
+[[returns]]
+type = "string"
+description = "Sound ID for use with stopSound."
+
+example = """
+// Simple beep
+const soundId = $.sound( 440, 0.5 );
+
+// Musical note with envelope
+$.sound( {
+	"frequency": 523.25, // C5
+	"duration": 1,
+	"volume": 0.8,
+	"attack": 0.1,
+	"decay": 0.2
+} );
+
+// Custom waveform
+$.sound( 440, 1, 1, "sine" );
+
+// Custom wavetable
+$.sound( 440, 1, 1, [[[0,1,0,-1]], [[0,0,0,0]]] );
+"""
+

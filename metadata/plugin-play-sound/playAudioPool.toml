@@ -1,0 +1,51 @@
+title = "playAudioPool"
+category = "play-sound"
+isScreen = false
+plugin = "play-sound"
+summary = "Plays audio from an audio pool."
+description = """
+Plays an audio instance from the specified audio pool. The pool uses round-robin selection, so
+multiple calls will cycle through available instances, allowing overlapping playback.
+
+Volume is multiplied by the global volume set with setVolume.
+"""
+
+[[parameters]]
+name = "audioId"
+type = "string"
+description = "Audio pool ID returned from createAudioPool."
+
+[[parameters]]
+name = "volume"
+type = "number"
+description = "Volume (0-1, default: 1)."
+optional = true
+
+[[parameters]]
+name = "startTime"
+type = "number"
+description = "Start time in seconds (default: 0)."
+optional = true
+
+[[parameters]]
+name = "duration"
+type = "number"
+description = "Play duration in seconds (default: 0 = play full audio)."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+const poolId = $.createAudioPool( "explosion.wav", 3 );
+
+await $.ready();
+
+// Full volume
+$.playAudioPool( poolId, 1.0 );
+
+// Half volume, play first 2 seconds
+$.playAudioPool( poolId, 0.5, 0, 2.0 );
+"""
+

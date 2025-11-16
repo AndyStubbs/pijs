@@ -1,0 +1,27 @@
+title = "setVolume"
+category = "play-sound"
+isScreen = false
+plugin = "play-sound"
+summary = "Sets the global volume for all sounds and audio pools."
+description = """
+Sets the master volume that affects all sounds and audio pools. Volume changes are applied
+gradually using exponential ramping to avoid clicks and pops.
+
+Volume is a multiplier: 0 = silent, 1 = full volume.
+"""
+
+[[parameters]]
+name = "volume"
+type = "number"
+description = "Volume (0-1, default: 0.75)."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.setVolume( 0.5 ); // 50% volume
+$.sound( 440, 1 );
+$.playAudioPool( poolId ); // Both affected by volume
+"""
+

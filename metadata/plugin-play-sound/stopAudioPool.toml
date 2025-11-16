@@ -1,0 +1,27 @@
+title = "stopAudioPool"
+category = "play-sound"
+isScreen = false
+plugin = "play-sound"
+summary = "Stops audio from an audio pool or all audio pools."
+description = """
+Stops all playing instances in the specified audio pool, or stops all audio pools if audioId is null.
+"""
+
+[[parameters]]
+name = "audioId"
+type = "string"
+description = "Audio pool ID. If null, stops all audio pools."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+const poolId = $.createAudioPool( "music.mp3" );
+$.playAudioPool( poolId );
+// Later...
+$.stopAudioPool( poolId ); // Stop this pool
+$.stopAudioPool(); // Stop all pools
+"""
+

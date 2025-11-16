@@ -1,6 +1,8 @@
 methods = [
 	"cancelInput",
 	"clearKeys",
+	"createAudioPool",
+	"deleteAudioPool",
 	"ingamepads",
 	"inkey",
 	"input",
@@ -9,6 +11,8 @@ methods = [
 	"offkey",
 	"ongamepad",
 	"onkey",
+	"play",
+	"playAudioPool",
 	"setActionKey",
 	"setAutoRender",
 	"setBlendMode",
@@ -17,8 +21,11 @@ methods = [
 	"setErrorMode",
 	"setFontSize",
 	"setPen",
+	"setVolume",
 	"startKeyboard",
 	"stopKeyboard",
+	"stopPlay",
+	"stopSound",
 	"swapColor",
 	"render"
 ]

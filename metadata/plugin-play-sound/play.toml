@@ -1,0 +1,45 @@
+title = "play"
+category = "play-sound"
+isScreen = false
+plugin = "play-sound"
+summary = "Plays music using BASIC-style notation (inspired by QBasic PLAY command)."
+description = """
+Plays music from a notation string. Supports notes, tempo, volume, waveforms, and multiple
+simultaneous tracks separated by commas.
+
+**Notes**: A-G (with sharps # or +, flats -), N[n] for note by number (0-127)
+**Octave**: O[n] (0-9), < (decrease), > (increase)
+**Length**: L[n] (1-64, where 4=quarter note), . (1.5x), .. (1.75x)
+**Tempo**: T[n] (32-255 BPM)
+**Volume**: V[n] (0-100)
+**Pause**: P[n] (pause for note length)
+**Waveforms**: WS (sine), WQ (square), WW (sawtooth), WT (triangle), W[n] (custom wavetable)
+**Style**: MS (staccato), MN (normal), ML (legato), MW (toggle full note)
+**Modifiers**: MU[n] (octave offset), MY[n] (attack 0-100), MX[n] (sustain 0-100), MZ[n] (decay 0-100)
+
+Custom wavetables can be defined using [[realArray, imagArray]] syntax.
+"""
+
+[[parameters]]
+name = "playString"
+type = "string"
+description = "Music notation string with notes and commands."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+// Simple melody
+$.play( "T120 O4 L4 CDEF GAB>C" );
+
+// Multiple tracks (harmony)
+$.play( "T120 O4 L4 CDEF, O3 L4 CEGC" );
+
+// With custom waveform
+$.play( "WS T120 O4 L4 CDEF GAB>C" );
+
+// Custom wavetable
+$.play( "W0 T120 O4 L4 CDEF", [[[0,1,0,-1]], [[0,0,0,0]]] );
+"""
+

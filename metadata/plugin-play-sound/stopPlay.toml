@@ -1,0 +1,25 @@
+title = "stopPlay"
+category = "play-sound"
+isScreen = false
+plugin = "play-sound"
+summary = "Stops playing music tracks."
+description = """
+Stops a specific music track by track ID, or stops all tracks if trackId is null.
+"""
+
+[[parameters]]
+name = "trackId"
+type = "number"
+description = "Track ID to stop. If null, stops all tracks."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.play( "T120 O4 L4 CDEF GAB>C" );
+// Later...
+$.stopPlay(); // Stop all tracks
+"""
+

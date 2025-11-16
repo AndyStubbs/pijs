@@ -1,0 +1,26 @@
+title = "stopSound"
+category = "play-sound"
+isScreen = false
+plugin = "play-sound"
+summary = "Stops a playing sound or all sounds."
+description = """
+Stops a specific sound by sound ID, or stops all sounds if soundId is null.
+"""
+
+[[parameters]]
+name = "soundId"
+type = "string"
+description = "Sound ID returned from sound(). If null, stops all sounds."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+const soundId = $.sound( 440, 5 );
+// Later...
+$.stopSound( soundId ); // Stop specific sound
+$.stopSound(); // Stop all sounds
+"""
+

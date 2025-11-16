@@ -1,0 +1,34 @@
+title = "createAudioPool"
+category = "play-sound"
+isScreen = false
+plugin = "play-sound"
+summary = "Creates an audio pool for playing multiple instances of the same sound file."
+description = """
+Creates a pool of audio instances from a single audio file. This allows playing the same sound
+multiple times simultaneously without waiting for previous instances to finish. The pool uses
+round-robin selection to cycle through available instances.
+
+The audio file will be loaded asynchronously. Use $.ready() to wait for all audio to load.
+"""
+
+[[parameters]]
+name = "src"
+type = "string"
+description = "Audio file URL (e.g., 'sound.mp3', 'audio/beep.wav')."
+
+[[parameters]]
+name = "poolSize"
+type = "number"
+description = "Number of audio instances in the pool (default: 1)."
+optional = true
+
+[[returns]]
+type = "string"
+description = "Audio pool ID for use with playAudioPool and stopAudioPool."
+
+example = """
+const poolId = $.createAudioPool( "explosion.wav", 5 );
+await $.ready();
+$.playAudioPool( poolId );
+"""
+
