@@ -1,0 +1,72 @@
+title = "registerPlugin"
+category = "plugins"
+isScreen = false
+summary = "Registers a plugin to extend Pi.js with custom commands and features."
+description = """
+Registers a plugin with a unique name and an init function. The init callback receives a pluginApi
+object that provides access to Pi.js internals for extending functionality.
+
+The pluginApi object provides the following methods and properties:
+
+- **addCommand**(name, fn, isScreen, parameterNames, isScreenOptional): Register a new command
+- **addScreenDataItem**(name, defaultValue): Add persistent data to each screen
+- **addScreenDataItemGetter**(name, getterFn): Add a dynamic data getter for screens
+- **addScreenInitFunction**(initFn): Register a function to run when screens are created
+- **addScreenCleanupFunction**(cleanupFn): Register a function to run when screens are destroyed
+- **getScreenData**(name): Get data for a specific screen by name
+- **getAllScreensData**(): Get array of all screen data objects
+- **getApi**(): Get the main Pi.js API object
+- **utils**: Access to utility functions
+- **wait**(): Increment resource wait counter (for async operations)
+- **done**(): Decrement resource wait counter
+- **registerClearEvents**(name, handler): Register a clearEvents handler for a specific event type
+
+Optional metadata (version, description) and a list of dependencies can be provided. Plugins with
+dependencies will wait until all dependencies are registered before initialization.
+"""
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "Unique plugin name."
+
+[[parameters]]
+name = "init"
+type = "function"
+description = "Initialization function that receives pluginApi."
+
+[[parameters]]
+name = "version"
+type = "string"
+description = "Optional plugin version."
+optional = true
+
+[[parameters]]
+name = "description"
+type = "string"
+description = "Optional plugin description."
+optional = true
+
+[[parameters]]
+name = "dependencies"
+type = "array"
+description = "Optional list of dependency plugin names."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+pi.registerPlugin( {
+	"name": "my-plugin",
+	"version": "1.0.0",
+	"description": "Example plugin",
+	"dependencies": [],
+	"init": ( pluginApi ) => {
+		pluginApi.addCommand( "hello", ( screenData, options ) => {
+			console.log( "Hello from plugin!" );
+		}, true, [] );
+	}
+} );
+"""

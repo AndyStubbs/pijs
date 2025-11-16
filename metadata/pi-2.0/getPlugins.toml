@@ -1,0 +1,18 @@
+title = "getPlugins"
+category = "plugins"
+isScreen = false
+summary = "Returns a list of registered plugins and their status."
+description = """
+Returns an array of plugin info objects including name, version, description, and initialized state.
+"""
+
+parameters = [ ]
+
+[[returns]]
+type = "array"
+description = "Array of plugin info objects: { name, version, description, initialized }."
+
+example = """
+const plugins = pi.getPlugins();
+console.log( plugins );
+"""

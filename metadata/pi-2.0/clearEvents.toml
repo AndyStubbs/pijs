@@ -1,0 +1,26 @@
+title = "clearEvents"
+category = "core"
+isScreen = true
+summary = "Clears events from all plugins or a specific plugin event type."
+description = """
+Clears queued/registered events. If type is provided, clears only that event type; otherwise clears
+events for all registered types.
+"""
+
+[[parameters]]
+name = "type"
+type = "string"
+description = "Optional type to clear (e.g., \"keyboard\", \"mouse\", \"touch\", \"press\")."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+// Clear all events
+$.clearEvents();
+
+// Clear only keyboard events
+$.clearEvents( { "type": "keyboard" } );
+"""
