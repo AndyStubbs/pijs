@@ -1,0 +1,56 @@
+title = "get"
+category = "pixels"
+isScreen = true
+isBlocking = true
+summary = "Reads a region of pixels as indices (default) or color values."
+description = """
+Returns a 2D array [height][width] for the region. By default returns palette indices. Set
+asIndex=false to return color value objects. Tolerance controls color-to-index matching. If a color
+that doesn't match is not found the index 0 for black/transparent will be set.
+
+Note: if asIndex is set to false then the 2D array cannot be used with the put command.
+"""
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "Left coordinate."
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "Top coordinate."
+
+[[parameters]]
+name = "width"
+type = "number"
+description = "Region width."
+
+[[parameters]]
+name = "height"
+type = "number"
+description = "Region height."
+
+[[parameters]]
+name = "tolerance"
+type = "number"
+description = "Color matching tolerance [0.0-1.0] for index conversion (default 1)."
+optional = true
+
+[[parameters]]
+name = "asIndex"
+type = "boolean"
+description = "If false (default true), return color value objects instead of indices."
+optional = true
+
+[[returns]]
+type = "array"
+description = "2D array [height][width] of palette indices (default) or color values."
+
+example = """
+$.screen( "300x200" );
+const indices = $.get( 0, 0, 16, 16 );           // 2D array of indices
+const colors = $.get( 0, 0, 16, 16, 1, false );  // 2D array of color values
+"""
+
+

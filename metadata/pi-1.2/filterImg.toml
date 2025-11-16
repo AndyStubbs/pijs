@@ -15,8 +15,8 @@ $.filterImg(function (color, x, y) {\r
 
 [[parameters]]
 name = "filter"
-type = "any"
-description = "Function to be called on each pixel."
+type = "function"
+description = "Callback (color, x, y) to be called on each pixel."
 
 [[returns]]
 type = "void"

@@ -1,0 +1,53 @@
+title = "getAsync"
+category = "pixels"
+isScreen = true
+summary = "Asynchronously reads a region of pixels as indices (default) or color values."
+description = """
+Returns a Promise resolving to a 2D array [height][width]. By default resolves to palette indices.
+Set asIndex=false to resolve to color value objects. Tolerance controls color-to-index matching.
+
+Note: if asIndex is set to false then the 2D array cannot be used with the put command.
+"""
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "Left coordinate."
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "Top coordinate."
+
+[[parameters]]
+name = "width"
+type = "number"
+description = "Region width."
+
+[[parameters]]
+name = "height"
+type = "number"
+description = "Region height."
+
+[[parameters]]
+name = "tolerance"
+type = "number"
+description = "Color matching tolerance [0.0-1.0] for index conversion (default 1)."
+optional = true
+
+[[parameters]]
+name = "asIndex"
+type = "boolean"
+description = "If false, resolve to color value objects instead of indices."
+optional = true
+
+[[returns]]
+type = "Promise<array>"
+description = "Promise resolving to 2D array [height][width] of indices (default) or color values."
+
+example = """
+$.screen( "300x200" );
+$.getAsync( 0, 0, 16, 16 ).then( ( indices ) => { /* ... */ } );
+"""
+
+

@@ -1,0 +1,55 @@
+title = "put"
+category = "pixels"
+isScreen = true
+summary = "Writes a 2D array of palette indices to the screen starting at (x, y)."
+description = """
+Draws pixels from a 2D array of palette indices. The array is indexed as [row][col] with
+row = y, col = x. Index 0 is transparent and is skipped unless include0 is true.
+
+You can call this using positional parameters or an object literal:
+
+- Positional: $.put( data, x, y, include0 )
+- Object: $.put( { "data": data, "x": x, "y": y, "include0": true } )
+
+Behavior:
+- Pixels are clipped to screen bounds.
+- Negative x/y start positions are supported; data is clipped accordingly.
+- If no pixels fall within the screen after clipping, nothing is drawn.
+- Data should contain palette indices (typically from $.get with asIndex=true).
+"""
+
+[[parameters]]
+name = "data"
+type = "array"
+description = "2D array [height][width] of palette indices (0..pal.length-1)."
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "X (horizontal) destination coordinate."
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "Y (vertical) destination coordinate."
+
+[[parameters]]
+name = "include0"
+type = "boolean"
+description = "If true, draw index 0 (transparent) pixels; otherwise skip them."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+
+// Read a region as indices, then blit it elsewhere
+const patch = $.get( 10, 10, 32, 16 );	// indices by default
+$.put( patch, 100, 50 );				// draw, skipping 0 (transparent)
+
+// Using object form and including index 0
+$.put( { "data": patch, "x": 140, "y": 80, "include0": true } );
+"""

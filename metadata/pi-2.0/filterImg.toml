@@ -1,0 +1,61 @@
+title = "filterImg"
+category = "pixels"
+isScreen = true
+summary = "Applies a filter function to a rectangular region of the screen."
+description = """
+Queues a filter to run at end of frame. The filter callback receives a mutable pixel buffer
+(RGBA as Uint8ClampedArray) and x, y coordinates; return truthy to apply the modified pixel. If
+true is not returned in the callback the pixel will be filtered out and be set to black/transparent,
+even if it is not modified.
+
+Note: while this function is asynchrounous it will modify the screen image using the image data
+at the time the function is called. So a line drawn after the filterImg command is called will be
+drawn after the filter is applied. Also, this runs on the CPU not the GPU so in large areas it may
+not be suitable to run in an animationFrame.
+"""
+
+[[parameters]]
+name = "filter"
+type = "function"
+description = "Callback (color, x, y) => truthy to accept modified pixel color, falsy to skip."
+
+[[parameters]]
+name = "x1"
+type = "number"
+description = "Left coordinate (default 0)."
+optional = true
+
+[[parameters]]
+name = "y1"
+type = "number"
+description = "Top coordinate (default 0)."
+optional = true
+
+[[parameters]]
+name = "x2"
+type = "number"
+description = "Right coordinate (default screen width - 1)."
+optional = true
+
+[[parameters]]
+name = "y2"
+type = "number"
+description = "Bottom coordinate (default screen height - 1)."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+$.filterImg( function( pixel, x, y ) {
+
+	// Invert red channel in upper-left quadrant
+	if( x < 150 && y < 100 ) {
+		pixel[ 0 ] = 255 - pixel[ 0 ];
+		return true;
+	}
+	return false;
+} );
+"""

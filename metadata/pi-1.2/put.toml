@@ -18,7 +18,7 @@ $.put( data, 1, 1 );\r
 
 [[parameters]]
 name = "data"
-type = "any"
+type = "array"
 description = "The 2d array of color values."
 
 [[parameters]]

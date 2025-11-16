@@ -1,0 +1,35 @@
+title = "getPixelAsync"
+category = "pixels"
+isScreen = true
+summary = "Asynchronously reads the color of a single pixel."
+description = """
+Reads the color at (x, y) asynchronously. If asIndex is true, resolves to the palette index;
+otherwise resolves to a color value object.
+"""
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "X (horizontal) coordinate."
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "Y (vertical) coordinate."
+
+[[parameters]]
+name = "asIndex"
+type = "boolean"
+description = "If true, resolve to palette index instead of color value."
+optional = true
+
+[[returns]]
+type = "Promise<number|object>"
+description = "Promise that resolves to palette index or color value object."
+
+example = """
+$.screen( "300x200" );
+$.getPixelAsync( 10, 10 ).then( ( color ) => { /* ... */ } );
+"""
+
+

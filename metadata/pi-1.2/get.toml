@@ -20,30 +20,30 @@ $.put( colors, 20, 80 );\r
 
 [[parameters]]
 name = "x1"
-type = "any"
+type = "number"
 description = "First horizontal coordiante."
 
 [[parameters]]
 name = "y1"
-type = "any"
+type = "numbervvv"
 description = "First vertical coordinate."
 
 [[parameters]]
 name = "x2"
-type = "any"
+type = "number"
 description = "Second horizontal coordiante."
 
 [[parameters]]
 name = "y2"
-type = "any"
+type = "number"
 description = "Second vertical coordinate."
 
 [[parameters]]
 name = "tolerance"
-type = "any"
-description = ". If the color is not in the color palette then attempt to find the closest fit color."
+type = "number"
+description = "If the color is not in the color palette then attempt to find the closest fit color."
 optional = true
 
 [[returns]]
-type = "void"
+type = "array"
 description = "A 2-dimensional array of color indices."
