@@ -1,8 +1,13 @@
 methods = [
+	"clearKeys",
 	"ingamepads",
+	"inkey",
 	"findColor",
 	"offgamepad",
+	"offkey",
 	"ongamepad",
+	"onkey",
+	"setActionKey",
 	"setAutoRender",
 	"setBlendMode",
 	"setColors",
@@ -10,6 +15,8 @@ methods = [
 	"setErrorMode",
 	"setFontSize",
 	"setPen",
+	"startKeyboard",
+	"stopKeyboard",
 	"swapColor",
 	"render"
 ]

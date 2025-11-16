@@ -1,0 +1,24 @@
+title = "startKeyboard"
+category = "keyboard"
+isScreen = false
+plugin = "keyboard"
+summary = "Starts keyboard input monitoring."
+description = """
+Starts the keyboard input monitoring system. This initializes event listeners for keydown and
+keyup events.
+
+Note: the keyboard plugin automatically starts when loaded, but this command can be used
+to restart it after calling stopKeyboard.
+"""
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.stopKeyboard();
+$.startKeyboard();
+$.onkey( "Enter", "down", () => {
+	$.print( "Enter pressed!" );
+} );
+"""

@@ -1,0 +1,52 @@
+title = "offkey"
+category = "keyboard"
+isScreen = false
+plugin = "keyboard"
+summary = "Removes a key event handler."
+description = """
+Removes a previously registered key event handler. All parameters must match the original onkey
+call exactly for the handler to be removed.
+"""
+
+[[parameters]]
+name = "key"
+type = "string|array"
+description = "Key code/key value string or array of keys that matches the original handler."
+
+[[parameters]]
+name = "mode"
+type = "string"
+description = "Event mode (\"up\" or \"down\") that matches the original handler."
+optional = true
+
+[[parameters]]
+name = "fn"
+type = "function"
+description = "Callback function that matches the original handler."
+
+[[parameters]]
+name = "once"
+type = "boolean"
+description = "Once flag that matches the original handler."
+optional = true
+
+[[parameters]]
+name = "allowRepeat"
+type = "boolean"
+description = "AllowRepeat flag that matches the original handler."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+const handler = ( keyData ) => {
+	$.print( "Key pressed!" );
+};
+
+$.onkey( "Enter", "down", handler );
+// Later...
+$.offkey( "Enter", "down", handler );
+"""
+

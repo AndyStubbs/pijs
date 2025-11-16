@@ -1,0 +1,25 @@
+title = "removeActionKeys"
+category = "keyboard"
+isScreen = false
+plugin = "keyboard"
+summary = "Removes keys from the action keys set."
+description = """
+Removes keys from the action keys set. These keys will no longer have their default browser
+behavior prevented.
+"""
+
+[[parameters]]
+name = "keys"
+type = "array"
+description = "Array of key codes or key values to remove from action keys."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.setActionKeys( [ "ArrowUp", "ArrowDown" ] );
+$.removeActionKeys( [ "ArrowUp" ] );
+// Only ArrowDown remains as an action key
+"""
+

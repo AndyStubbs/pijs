@@ -1,0 +1,87 @@
+title = "input"
+category = "keyboard"
+isScreen = true
+plugin = "keyboard"
+summary = "Prompts the user for text input with a blinking cursor."
+description = """
+Displays a prompt and waits for the user to enter text. The input appears at the current print
+cursor position with a blinking cursor. Supports validation for numbers, integers, and maximum
+length.
+
+The input is completed when Enter is pressed, or cancelled when Escape is pressed. Returns a
+Promise that resolves with the input value (or null if cancelled), and optionally calls a
+callback function.
+
+For numeric input, empty input or just \"-\" returns 0. For integer input, decimal points are
+not allowed.
+"""
+
+[[parameters]]
+name = "prompt"
+type = "string"
+description = "Prompt text to display before the input field."
+
+[[parameters]]
+name = "fn"
+type = "function"
+description = "Optional callback function called with the input value when input completes."
+optional = true
+
+[[parameters]]
+name = "cursor"
+type = "string"
+description = "Cursor character to display. Defaults to block character (█)."
+optional = true
+
+[[parameters]]
+name = "isNumber"
+type = "boolean"
+description = "If true, only allows numeric input."
+optional = true
+
+[[parameters]]
+name = "isInteger"
+type = "boolean"
+description = "If true, only allows integer input (no decimals)."
+optional = true
+
+[[parameters]]
+name = "allowNegative"
+type = "boolean"
+description = "If true, allows negative numbers (for numeric input)."
+optional = true
+
+[[parameters]]
+name = "maxLength"
+type = "number"
+description = "Maximum length of the input string. If null, no limit."
+optional = true
+
+[[returns]]
+type = "Promise"
+description = "Promise that resolves with the input value (string or number) or null if cancelled."
+
+example = """
+// Basic text input
+const name = await $.input( "Enter your name: " );
+$.print( `Hello, ${name}!` );
+
+// Number input with callback
+$.input( {
+	"prompt": "Enter age: ",
+	"isNumber": true,
+	"isInteger": true,
+	"allowNegative": false,
+	"fn": ( age ) => {
+		$.print( `You are ${age} years old.` );
+	}
+} );
+
+// Integer input
+const count = await $.input( {
+	"prompt": "Count: ",
+	"isInteger": true,
+	"maxLength": 3
+} );
+"""
+

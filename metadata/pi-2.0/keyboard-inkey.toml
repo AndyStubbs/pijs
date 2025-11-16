@@ -1,0 +1,37 @@
+title = "inkey"
+category = "keyboard"
+isScreen = false
+plugin = "keyboard"
+summary = "Gets the current state of a key or all pressed keys."
+description = """
+Retrieves key state information. If a key is provided (as a string), returns the key data object
+for that key if it's currently pressed, or null if not pressed. The key can be specified by its
+code (e.g., "KeyA") or key value (e.g., "a").
+
+If no key is provided, returns an array of all currently pressed key data objects.
+
+Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat.
+"""
+
+[[parameters]]
+name = "key"
+type = "string"
+description = "Key code or key value to check. If omitted, returns all pressed keys."
+optional = true
+
+[[returns]]
+type = "object|array|null"
+description = "Key data object if key is pressed, array of all pressed keys if no key specified, or null if key not pressed."
+
+example = """
+$.startKeyboard();
+const spaceKey = $.inkey( "Space" );
+if( spaceKey ) {
+	$.print( "Space is pressed!" );
+}
+
+// Get all pressed keys
+const allKeys = $.inkey();
+$.print( `${allKeys.length} keys pressed` );
+"""
+

@@ -1,0 +1,27 @@
+title = "setActionKeys"
+category = "keyboard"
+isScreen = false
+plugin = "keyboard"
+summary = "Sets keys that should prevent default browser behavior."
+description = """
+Adds keys to the action keys set. Action keys will have their default browser behavior prevented
+(e.g., preventing page scrolling with arrow keys). This is useful for game controls where you
+don't want the browser to handle certain keys.
+
+Keys can be specified by code (e.g., "ArrowUp") or key value (e.g., "Arrow Up").
+"""
+
+[[parameters]]
+name = "keys"
+type = "array"
+description = "Array of key codes or key values to add as action keys."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.setActionKeys( [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight" ] );
+$.setActionKeys( [ "Space", "Enter" ] );
+"""
+

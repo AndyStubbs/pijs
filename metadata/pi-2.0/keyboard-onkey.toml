@@ -1,0 +1,69 @@
+title = "onkey"
+category = "keyboard"
+isScreen = false
+plugin = "keyboard"
+summary = "Registers a callback function for key events."
+description = """
+Registers a callback function that will be called when a key event occurs. Supports single keys
+or key combinations. The callback receives key data object(s) depending on whether it's a single
+key or combination.
+
+For single keys, the callback receives one key data object. For combinations, it receives an
+array of key data objects for all keys in the combination.
+
+Use "any" as the key to listen for any key press. In this case, the callback receives the key
+data for the specific key that was pressed.
+"""
+
+[[parameters]]
+name = "key"
+type = "string|array"
+description = "Key code/key value string, array of keys for combinations, or \"any\" for any key."
+
+[[parameters]]
+name = "mode"
+type = "string"
+description = "Event mode: \"up\" for key release, \"down\" for key press."
+
+[[parameters]]
+name = "fn"
+type = "function"
+description = "Callback function that receives key data object(s) when the event occurs."
+
+[[parameters]]
+name = "once"
+type = "boolean"
+description = "If true, the handler is removed after being called once."
+optional = true
+
+[[parameters]]
+name = "allowRepeat"
+type = "boolean"
+description = "If true, allows the handler to fire on key repeat (when key is held down)."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.onkey( "Enter", "down", ( keyData ) => {
+	$.print( "Enter pressed!" );
+} );
+
+// Key combination
+$.onkey( [ "Control", "c" ], "down", ( keys ) => {
+	$.print( "Ctrl+C pressed!" );
+} );
+
+// One-time handler
+$.onkey( "Space", "down", () => {
+	$.print( "Space pressed once!" );
+}, true );
+
+// Listen for any key
+$.onkey( "any", "down", ( keyData ) => {
+	$.print( `Key ${keyData.key} pressed` );
+} );
+"""
+

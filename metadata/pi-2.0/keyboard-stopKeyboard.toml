@@ -1,0 +1,20 @@
+title = "stopKeyboard"
+category = "keyboard"
+isScreen = false
+plugin = "keyboard"
+summary = "Stops keyboard input monitoring."
+description = """
+Stops the keyboard input monitoring system. This removes event listeners and clears all key
+states. Keyboard events will no longer be tracked until startKeyboard is called again.
+"""
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.stopKeyboard();
+// Keyboard events are no longer tracked
+$.startKeyboard();
+"""
+
