@@ -1,0 +1,47 @@
+title = "draw"
+category = "primitives"
+isScreen = true
+summary = "Draws lines on the screen defined by a string."
+description = """
+Draws using a BASIC-style, case-insensitive draw string composed of commands.
+
+Supported commands:
+
+- "B": Before a line move, hides the line move (blind move).
+- "Cn": Set the color attribute to palette index n.
+- "C#RRGGBB": Set the color using a hex value (e.g., C#FF00FF).
+- "Mn, n": Move to absolute coordinate (x, y) without drawing.
+- "N": Return to the starting position after the next drawn segment.
+- "Pn[, n]": Paint enclosed area from the cursor using color index; optional boundary color index.
+- "Dn": Draw a vertical line DOWN n pixels.
+- "En": Draw a diagonal line UP and RIGHT n pixels each direction (slash /).
+- "Fn": Draw a diagonal line DOWN and RIGHT n pixels each direction.
+- "Gn": Draw a diagonal line DOWN and LEFT n pixels each direction (slash /).
+- "Hn": Draw a diagonal line UP and LEFT n pixels each direction.
+- "Ln": Draw a horizontal line LEFT n pixels.
+- "Rn": Draw a horizontal line RIGHT n pixels.
+- "Un": Draw a vertical line UP n pixels.
+- "Sn": Set scale factor; n in [1..255], actual scale is n/4 (default 1).
+- "An": Set angle by quadrant; n in {0,1,2,3} maps to 0°, 90°, 180°, 270°.
+- "TAn": Turn Angle; set any angle n from -360 to 360 degrees.
+- "ARCn, n, n": Draw an arc with radius, start degrees, end degrees using the cursor as center.
+"""
+
+[[parameters]]
+name = "drawString"
+type = "string"
+description = "Case insensitive string containing draw commands."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+$.pset( 150, 100 );
+$.draw( "C2 R15 D15 L30 U15 R15" );
+$.draw( "B G4 C1 L6 D6 R6 U6 BG3 P1" );
+$.draw( "TA45 R20 ARC10,0,180" );
+"""
+
+

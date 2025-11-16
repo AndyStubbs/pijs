@@ -2,7 +2,28 @@ title = "draw"
 category = "primitives"
 isScreen = true
 summary = "Draws lines on the screen defined by a string."
-description = ""
+description = """
+Draws lines on the screen defined by a case-insensitive draw string made of commands.
+
+Supported commands:
+
+- "B": Before a line move, hides the line move (blind move).
+- "Cn": Set the color attribute to palette index n.
+- "Mn, n": Move to coordinate (x, y) without drawing.
+- "N": Return to the starting position after the line is drawn.
+- "Pn": Paint enclosed objects using color index n.
+- "Sn, n": Paint enclosed objects using color and tolerance.
+- "Dn": Draw a vertical line DOWN n pixels.
+- "En": Draw a diagonal line UP and RIGHT n pixels each direction (slash /).
+- "Fn": Draw a diagonal line DOWN and RIGHT n pixels each direction.
+- "Gn": Draw a diagonal line DOWN and LEFT n pixels each direction (slash /).
+- "Hn": Draw a diagonal line UP and LEFT n pixels each direction.
+- "Ln": Draw a horizontal line LEFT n pixels.
+- "Rn": Draw a horizontal line RIGHT n pixels.
+- "Un": Draw a vertical line UP n pixels.
+- "An, n, n": Draw an arc using cursor as center point (radius, start degree, end degree).
+- "TAn": Turn Angle; rotate by any angle n from -360 to 360 degrees.
+"""
 example = """
 $.screen( "300x200" );\r
 $.pset( 150, 100 );\r
@@ -15,7 +36,7 @@ $.draw( "B E4 B U C6 H15 G15 B R5 P6" );\t\t\t\t// Draw Roof\r
 
 [[parameters]]
 name = "drawString"
-type = "any"
+type = "string"
 description = "Case insensitive string that contains commands for drawing."
 
 [[returns]]
