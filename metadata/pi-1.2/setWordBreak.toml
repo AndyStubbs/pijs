@@ -1,24 +1,28 @@
 title = "setWordBreak"
-category = "print"
+category = "text"
 isScreen = true
-summary = "Toggle word break setting between breaking on spaces or breaking in the middle of words."
-description = ""
-example = """
-var msg = "abcdefghijklmnopqrstuvwxyz " +\r
-\t"abcdefghijklmnopqrstuvwxyz " +\r
-\t"abcdefghijklmnopqrstuvwxyz";\r
-$.screen( "300x200" );\r
-$.print( msg );\r
-$.setWordBreak( false );\r
-$.print();\r
-$.print( msg );\r
+summary = "Enables or disables word breaking for text wrapping."
+description = """
+Controls whether text wrapping breaks at word boundaries (spaces) or at any character. When
+enabled, long words will wrap at the last space before the line end. When disabled, text will
+wrap at any character.
 """
 
 [[parameters]]
 name = "isEnabled"
-type = "any"
-description = "If set to false then break in the middle of words otherwise break on spaces."
+type = "boolean"
+description = "If true, enable word breaking at spaces. If false, break at any character."
 
 [[returns]]
 type = "void"
 description = "This function does not return a value."
+
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+$.setWordBreak( true );
+$.print( "This is a very long line of text that will wrap at word boundaries" );
+$.setWordBreak( false );
+$.print( "This text will break anywhere when it reaches the edge" );
+"""
+

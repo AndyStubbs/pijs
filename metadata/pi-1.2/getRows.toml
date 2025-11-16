@@ -1,20 +1,19 @@
 title = "getRows"
-category = "print"
+category = "text"
 isScreen = true
-summary = "Gets the max number of printable characters in a column on the screen."
-description = ""
-parameters = [ ]
-example = """
-// Print a line of *'s on the left of the screen\r
-$.screen("300x200");\r
-var rows = $.getRows();\r
-var msg = "";\r
-for(var i = 0; i < rows; i++) {\r
-\tmsg += "*\\n";\r
-}\r
-$.print(msg);\r
+summary = "Returns the number of character rows that fit on the screen."
+description = """
+Gets the maximum number of character rows that can fit vertically on the screen based on the
+current font size and print scale.
 """
 
 [[returns]]
-type = "void"
-description = "An integer containing the number of rows of printable characters on a screen."
+type = "number"
+description = "Number of rows that fit on the screen."
+
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+const rows = $.getRows();
+console.log( `Screen fits ${rows} rows` );
+"""

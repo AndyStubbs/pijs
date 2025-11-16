@@ -5,6 +5,7 @@ methods = [
 	"setColors",
 	"setDefaultInputFocus",
 	"setErrorMode",
+	"setFontSize",
 	"setPen",
 	"swapColor",
 	"render"

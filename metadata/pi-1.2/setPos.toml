@@ -1,26 +1,33 @@
 title = "setPos"
-category = "print"
+category = "text"
 isScreen = true
-summary = "Sets the position of the print cursor using columns and rows based on the font size."
-description = ""
-example = """
-$.screen( "300x200" );\r
-$.setPos( 5, 10 );\r
-$.print( "X" );\r
-$.setPos( 10, 15 );\r
-$.print( "Y" );\r
+summary = "Sets the print cursor position using column and row coordinates."
+description = """
+Sets the print cursor position based on character grid coordinates (columns and rows). The grid
+size is determined by the current font size and print scale. Column and row are 0-indexed.
 """
 
 [[parameters]]
 name = "col"
-type = "any"
-description = "The column value where to move the print cursor."
+type = "number"
+description = "Column position (0-indexed)."
+optional = true
 
 [[parameters]]
 name = "row"
-type = "any"
-description = "The row value where to move the print cursor."
+type = "number"
+description = "Row position (0-indexed)."
+optional = true
 
 [[returns]]
 type = "void"
 description = "This function does not return a value."
+
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+$.setPos( 5, 10 );
+$.print( "X" );
+$.setPos( { "col": 10, "row": 15 } );
+$.print( "Y" );
+"""

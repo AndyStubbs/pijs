@@ -1,0 +1,44 @@
+title = "print"
+category = "text"
+isScreen = true
+summary = "Prints text to the screen using the current font and advances the cursor."
+description = """
+Prints text to the screen at the current cursor position using the active bitmap font. The text
+cursor automatically advances after printing. Supports automatic word wrapping, text centering,
+and vertical scrolling when the cursor reaches the bottom of the screen.
+
+Newlines in the message will split the text into multiple lines. Tabs are converted to spaces.
+"""
+
+[[parameters]]
+name = "msg"
+type = "string"
+description = "Text message to print. If omitted, prints an empty line."
+optional = true
+
+[[parameters]]
+name = "isInline"
+type = "boolean"
+description = "If true, cursor stays on the same line after printing instead of advancing to next line."
+optional = true
+
+[[parameters]]
+name = "isCentered"
+type = "boolean"
+description = "If true, centers the text horizontally on the screen."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+$.print( "Welcome to Pi.js" );
+$.print();
+$.print( "Line 1" );
+$.print( "Inline text", true );
+$.print( " more inline", true );
+$.print( "Centered", false, true );
+"""

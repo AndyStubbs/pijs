@@ -1,20 +1,19 @@
 title = "getCols"
-category = "print"
+category = "text"
 isScreen = true
-summary = "Gets the max number of printable characters in a row on the screen."
-description = ""
-parameters = [ ]
-example = """
-// Print a line of *'s on the top of the screen\r
-$.screen( "300x200" );\r
-var cols = $.getCols();\r
-var msg = "";\r
-for( var i = 0; i < cols; i++ ) {\r
-\tmsg += "*";\r
-}\r
-$.print( msg );\r
+summary = "Returns the number of character columns that fit on the screen."
+description = """
+Gets the maximum number of character columns that can fit horizontally on the screen based on
+the current font size and print scale.
 """
 
 [[returns]]
-type = "void"
-description = "An integer containing the max number of printable characters for a row on the screen."
+type = "number"
+description = "Number of columns that fit on the screen."
+
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+const cols = $.getCols();
+$.print( `Screen fits ${cols} columns` );
+"""

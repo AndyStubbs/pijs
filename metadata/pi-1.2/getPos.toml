@@ -1,19 +1,20 @@
 title = "getPos"
-category = "print"
+category = "text"
 isScreen = true
-summary = """
-Gets the position of the print cursor and returns the coordinates. The data\r
-returned is an object containing a row and a column. Example: { row: 5, col: 5 }. The rows\r
-and columns are based on a grid system using the size of the font and not on exact pixels."""
-description = ""
-parameters = [ ]
-example = """
-$.screen( "300x200" );\r
-$.setPos( 5, 5 );\r
-var pos = $.getPos();\r
-$.print( pos.row + ", " + pos.col );\r
+summary = "Gets the current print cursor position as column and row."
+description = """
+Returns the current print cursor position as character grid coordinates (column and row). The
+grid size is determined by the current font size and print scale.
 """
 
 [[returns]]
-type = "void"
-description = "An object containing the row and col of the print cursor."
+type = "object"
+description = "Object with col and row properties (0-indexed)."
+
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+$.print( "Hello" );
+const pos = $.getPos();
+console.log( `Cursor at column ${pos.col}, row ${pos.row}` );
+"""

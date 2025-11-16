@@ -61,6 +61,8 @@ export function init( api ) {
  */
 function registerCommands() {
 
+	// TODO: Change setPrintSize name to setPrintScale
+
 	// Register screen commands
 	g_commands.addCommand( "print", print, true, [ "msg", "isInline", "isCentered" ] );
 	g_commands.addCommand( "setPos", setPos, true, [ "col", "row" ] );

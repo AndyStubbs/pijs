@@ -1,19 +1,19 @@
 title = "getPosPx"
-category = "print"
+category = "text"
 isScreen = true
-summary = """
-Gets the position of the print cursor and returns the coordinates. The data\r
-returned is an object containing a row and a column. Example: { x: 5, y: 5 }. The x\r
-and y coordinates are based on top left corner pixel position of the print cursor."""
-description = ""
-parameters = [ ]
-example = """
-$.screen("300x200");\r
-$.setPosPx(15, 15);\r
-var pos = $.getPosPx();\r
-$.print(pos.x + ", " + pos.y);\r
+summary = "Gets the current print cursor position in pixels."
+description = """
+Returns the current print cursor position as exact pixel coordinates.
 """
 
 [[returns]]
-type = "void"
-description = "An object containing the pixel coordinates of the print cursor."
+type = "object"
+description = "Object with x and y properties in pixels."
+
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+$.print( "Hello" );
+const pos = $.getPosPx();
+$.print( `Cursor at ${pos.x}, ${pos.y} pixels` );
+"""

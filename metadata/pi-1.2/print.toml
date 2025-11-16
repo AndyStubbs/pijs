@@ -1,5 +1,5 @@
 title = "print"
-category = "print"
+category = "text"
 isScreen = true
 summary = """
 Prints text onto the screen and moves the text cursor to the next line. Will automatically\r
@@ -18,19 +18,19 @@ $.print( "The End" );\r
 
 [[parameters]]
 name = "msg"
-type = "any"
+type = "string"
 description = "The text message to print on the screen."
 optional = true
 
 [[parameters]]
 name = "inLine"
-type = "any"
+type = "boolean"
 description = "Does not move the text cursor to the next line."
 optional = true
 
 [[parameters]]
 name = "isCentered"
-type = "any"
+type = "boolean"
 description = "Centers the text horizontally on the screen."
 optional = true
 

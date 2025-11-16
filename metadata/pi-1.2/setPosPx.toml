@@ -1,26 +1,34 @@
 title = "setPosPx"
-category = "print"
+category = "text"
 isScreen = true
-summary = "Sets the position of the print cursor using pixels."
-description = ""
-example = """
-$.screen( "300x200" );\r
-$.setPosPx( 5, 10 );\r
-$.print( "X" );\r
-$.setPosPx( 10, 15 );\r
-$.print( "Y" );\r
+summary = "Sets the print cursor position using pixel coordinates."
+description = """
+Sets the print cursor position using exact pixel coordinates. This allows precise positioning
+independent of the font's character grid.
 """
 
 [[parameters]]
 name = "x"
-type = "any"
-description = "The horziontal coordinate for the new print cursor position."
+type = "number"
+description = "X position in pixels."
+optional = true
 
 [[parameters]]
 name = "y"
-type = "any"
-description = "The vertical coordinate for the new print cursor position."
+type = "number"
+description = "Y position in pixels."
+optional = true
 
 [[returns]]
 type = "void"
 description = "This function does not return a value."
+
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+$.setPosPx( 50, 100 );
+$.print( "At pixel 50, 100" );
+$.setPosPx( { "x": 100, "y": 150 } );
+$.print( "At pixel 100, 150" );
+"""
+

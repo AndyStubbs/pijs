@@ -1,0 +1,26 @@
+title = "calcWidth"
+category = "text"
+isScreen = true
+summary = "Calculates the pixel width of a text message."
+description = """
+Calculates how many pixels wide a text message will be when printed with the current font and
+print scale settings.
+"""
+
+[[parameters]]
+name = "msg"
+type = "string"
+description = "Text message to calculate width for. Defaults to empty string if not provided."
+optional = true
+
+[[returns]]
+type = "number"
+description = "Width of the text in pixels."
+
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+const width = $.calcWidth( "Hello World" );
+$.print( `"Hello World" is ${width} pixels wide` );
+"""
+

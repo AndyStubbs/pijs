@@ -1,0 +1,33 @@
+title = "setPrintSize"
+category = "text"
+isScreen = true
+summary = "Sets the scale factor for printed text."
+description = """
+Sets the horizontal and vertical scale factors for bitmap font rendering. This allows you to
+make text larger or smaller. Scale values must be integers greater than 0.
+"""
+
+[[parameters]]
+name = "scaleWidth"
+type = "number"
+description = "Horizontal scale factor (must be integer >= 1)."
+
+[[parameters]]
+name = "scaleHeight"
+type = "number"
+description = "Vertical scale factor (must be integer >= 1)."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+$.print( "Normal size" );
+$.setPrintSize( 2, 2 );
+$.print( "Double size" );
+$.setPrintSize( { "scaleWidth": 1, "scaleHeight": 1 } );
+$.print( "Back to normal" );
+"""
+
