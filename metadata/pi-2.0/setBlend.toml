@@ -1,5 +1,5 @@
 title = "setBlend"
-category = "graphics"
+category = "blending"
 isScreen = true
 summary = "Sets the current blend mode used for rendering."
 description = """

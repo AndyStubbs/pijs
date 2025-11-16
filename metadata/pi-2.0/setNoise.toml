@@ -1,5 +1,5 @@
 title = "setNoise"
-category = "graphics"
+category = "blending"
 isScreen = true
 summary = "Configures color noise ranges and optional seed for blending."
 description = """
