@@ -1,0 +1,53 @@
+title = "loadImage"
+category = "images"
+isScreen = false
+summary = "Loads an image by URL or from an Image/Canvas element."
+description = """
+Loads an image and stores it by name. Supports optional palette-linking to the screen palette. After
+calling load image you should call $.ready command to wait for image to load before calling drawImage.
+"""
+
+[[parameters]]
+name = "src"
+type = "string|Image|Canvas"
+description = "Image source: URL string, HTMLImageElement, or HTMLCanvasElement."
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "Optional unique name for the image. Auto-generated if omitted."
+optional = true
+
+[[parameters]]
+name = "usePalette"
+type = "boolean"
+description = "If true, link image colors to the active screen palette."
+optional = true
+
+[[parameters]]
+name = "paletteKeys"
+type = "array"
+description = "Key colors used to map image colors to palette indices (required if usePalette)."
+optional = true
+
+[[parameters]]
+name = "onLoad"
+type = "function"
+description = "Callback invoked when the image finishes loading."
+optional = true
+
+[[parameters]]
+name = "onError"
+type = "function"
+description = "Callback invoked if the image fails to load."
+optional = true
+
+[[returns]]
+type = "string"
+description = "The image name."
+
+example = """
+const name = $.loadImage( { "src": "player.png", "name": "player" } );
+"""
+
+

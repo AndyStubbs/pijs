@@ -58,7 +58,10 @@ function registerCommands( api ) {
 	);
 	g_commands.addCommand(
 		"loadSpritesheet", loadSpritesheet, false,
-		[ "src", "name", "width", "height", "margin", "usePalette", "paletteKeys", "onLoad", "onError" ]
+		[
+			"src", "name", "width", "height", "margin", "usePalette", "paletteKeys", "onLoad",
+			"onError"
+		]
 	);
 	g_commands.addCommand( "getImage", getImage, false, [ "name" ] );
 	g_commands.addCommand( "getSpritesheetData", getSpritesheetData, true, [ "name" ], true );

@@ -3,7 +3,11 @@ category = "images"
 isScreen = true
 summary = """
 Gets an area of pixels from the screen and draws it an in-memory image that can be used with the\r
-drawImage function."""
+drawImage function.
+
+Note: This function has been renamed in version 2.0 to createImageFromScreen. The 2.0 getImage
+function returns an imageObject that has been loaded with loadImage.
+"""
 description = ""
 example = """
 $.screen( "300x200" );\r
@@ -14,28 +18,28 @@ $.drawImage( circle, 20, 80 );\r
 
 [[parameters]]
 name = "name"
-type = "any"
+type = "string"
 description = ". The name of the image for reference."
 optional = true
 
 [[parameters]]
 name = "x1"
-type = "any"
+type = "number"
 description = "First horizontal coordiante."
 
 [[parameters]]
 name = "y1"
-type = "any"
+type = "number"
 description = "First vertical coordinate."
 
 [[parameters]]
 name = "x2"
-type = "any"
+type = "number"
 description = "Second horizontal coordiante."
 
 [[parameters]]
 name = "y2"
-type = "any"
+type = "number"
 description = "Second vertical coordinate."
 
 [[returns]]

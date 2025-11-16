@@ -18,47 +18,47 @@ description = "Name or id of the image."
 
 [[parameters]]
 name = "x"
-type = "any"
+type = "number"
 description = "Horizontal coordinate."
 
 [[parameters]]
 name = "y"
-type = "any"
+type = "number"
 description = "Vertical coordinate."
 
 [[parameters]]
 name = "angle"
-type = "any"
+type = "number"
 description = "Rotate the image in degrees."
 optional = true
 
 [[parameters]]
 name = "anchorX"
-type = "any"
-description = "Horizontal rotation coordinate."
+type = "number"
+description = "Horizontal rotation point (0-1) coordinate."
 optional = true
 
 [[parameters]]
 name = "anchorY"
-type = "any"
+type = "number"
 description = "Vertical rotation coordinate."
 optional = true
 
 [[parameters]]
 name = "alpha"
-type = "any"
-description = "Transparency amount number 0-100."
+type = "number"
+description = "Transparency amount number 0-255."
 optional = true
 
 [[parameters]]
 name = "scaleX"
-type = "any"
+type = "number"
 description = "Horizontal scaling amount."
 optional = true
 
 [[parameters]]
 name = "scaleY"
-type = "any"
+type = "number"
 description = "Vertical scaling amount."
 optional = true
 

@@ -23,33 +23,33 @@ $.ready( function () {\r
 
 [[parameters]]
 name = "src"
-type = "any"
+type = "string|Image|Canvas"
 description = "The source location of an image file or an image element."
 
 [[parameters]]
 name = "name"
-type = "any"
+type = "string"
 description = ". The name of the sprite for use in the drawSprite command."
 optional = true
 
 [[parameters]]
 name = "width"
-type = "any"
+type = "number"
 description = ". The width of each sprite in the spritesheet."
 optional = true
 
 [[parameters]]
 name = "height"
-type = "any"
+type = "number"
 description = ". The height of each sprite in the spritesheet."
 optional = true
 
 [[parameters]]
 name = "margin"
-type = "any"
+type = "number"
 description = ". A margin in pixels around each sprite."
 optional = true
 
 [[returns]]
-type = "void"
+type = "string"
 description = "The name of the spritesheet. The name auto generated if it is left blank."

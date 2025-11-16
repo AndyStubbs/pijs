@@ -1,29 +1,21 @@
 title = "getSpritesheetData"
 category = "images"
 isScreen = true
-summary = "Gets information on the spritesheet including the total number of frames, and width and height of each frame."
-description = ""
-example = """
-var frame, interval, frameData, monkeySpritesheet;\r
-$.screen( "300x200" );\r
-monkeySpritesheet = $.loadSpritesheet( "/images/monkey.png" );\r
-$.ready( function () {\r
-\tframeData = $.getSpritesheetData( monkeySpritesheet );\r
-\tframe = 0;\r
-\tinterval = setInterval( run, 500 );\r
-\tfunction run() {\r
-\t\tframe += 1;\r
-\t\t$.cls();\r
-\t\t$.drawSprite( monkeySpritesheet, frame % frameData.frameCount, 150, 100, 0, 0.5, 0.5 );\r
-\t}\r
-\trun();\r
-} );"""
+summary = "Returns frame metadata for a spritesheet."
+description = """
+Gets spritesheet data including frame count and per-frame bounding boxes.
+"""
 
 [[parameters]]
 name = "name"
-type = "any"
-description = "The name of the spritesheet."
+type = "string"
+description = "Spritesheet name."
 
 [[returns]]
-type = "void"
-description = "An object containing the frame count and an array with the width and height of each frame."
+type = "object"
+description = "Object with frameCount and frames array (index, x, y, width, height, left, top, right, bottom)."
+
+example = """
+$.loadSpritesheet( { "src": "sprites.png", "name": "sprites", "width": 16, "height": 16 } );
+const data = $.getSpritesheetData( { "name": "sprites" } );
+"""

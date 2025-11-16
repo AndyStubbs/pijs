@@ -13,15 +13,15 @@ $.ready( function () {\r
 
 [[parameters]]
 name = "src"
-type = "any"
+type = "string|Image|Canvas"
 description = "The source location of an image file or an image element."
 
 [[parameters]]
 name = "name"
-type = "any"
-description = ". A name you can use to refer to the image later in the drawImage command. Ifleft blank then the name will be created automatically."
+type = "string"
+description = "A name you can use to refer to the image later in the drawImage command. If left blank then the name will be created automatically."
 optional = true
 
 [[returns]]
-type = "void"
+type = "string"
 description = "The name of image to use with the drawImage command."

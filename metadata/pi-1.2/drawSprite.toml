@@ -20,57 +20,57 @@ $.ready( function () {\r
 
 [[parameters]]
 name = "name"
-type = "any"
+type = "string"
 description = "Name or id of the spritesheet."
 
 [[parameters]]
 name = "frame"
-type = "any"
+type = "number"
 description = "Frame number of the specific sprite on the spritesheet."
 
 [[parameters]]
 name = "x"
-type = "any"
+type = "number"
 description = "Horizontal coordiante."
 
 [[parameters]]
 name = "y"
-type = "any"
+type = "number"
 description = "Vertical coordinate."
 
 [[parameters]]
 name = "angle"
-type = "any"
+type = "number"
 description = "Rotate the image in degrees."
 optional = true
 
 [[parameters]]
 name = "anchorX"
-type = "any"
+type = "number"
 description = "Horizontal rotation coordinate."
 optional = true
 
 [[parameters]]
 name = "anchorY"
-type = "any"
+type = "number"
 description = "Vertical rotation coordinate."
 optional = true
 
 [[parameters]]
 name = "alpha"
-type = "any"
-description = "Transparency amount number 0-100."
+type = "number"
+description = "Transparency amount number 0-255."
 optional = true
 
 [[parameters]]
 name = "scaleX"
-type = "any"
+type = "number"
 description = "Horizontal scaling amount."
 optional = true
 
 [[parameters]]
 name = "scaleY"
-type = "any"
+type = "number"
 description = "Vertical scaling amount."
 optional = true
 

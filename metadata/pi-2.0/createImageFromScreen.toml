@@ -1,0 +1,47 @@
+title = "createImageFromScreen"
+category = "images"
+isScreen = true
+summary = "Creates an image from a region of the current screen."
+description = """
+Copies a rectangular region from the screen into a new canvas-backed image and stores it by name.
+"""
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "Optional unique name for the image. Auto-generated if omitted."
+optional = true
+
+[[parameters]]
+name = "x1"
+type = "number"
+description = "Left coordinate (defaults to 0)."
+optional = true
+
+[[parameters]]
+name = "y1"
+type = "number"
+description = "Top coordinate (defaults to 0)."
+optional = true
+
+[[parameters]]
+name = "x2"
+type = "number"
+description = "Right coordinate (defaults to screen width - 1)."
+optional = true
+
+[[parameters]]
+name = "y2"
+type = "number"
+description = "Bottom coordinate (defaults to screen height - 1)."
+optional = true
+
+[[returns]]
+type = "string"
+description = "The created image name."
+
+example = """
+$.screen( "300x200" );
+const imgName = $.createImageFromScreen( { "x1": 10, "y1": 10, "x2": 100, "y2": 50 } );
+const imgName2 = $.createImageFromScreen( 10, 10, 100, 50 );
+"""

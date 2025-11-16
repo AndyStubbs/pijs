@@ -1,0 +1,22 @@
+title = "getImage"
+category = "images"
+isScreen = false
+summary = "Gets the image element by name."
+description = """
+Returns the underlying Image or Canvas element for a previously loaded image.
+"""
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "Image name."
+
+[[returns]]
+type = "Image|Canvas"
+description = "The actual Image or Canvas element."
+
+example = """
+const img = $.getImage( { "name": "player" } );
+"""
+
+

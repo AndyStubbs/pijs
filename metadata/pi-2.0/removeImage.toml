@@ -1,0 +1,22 @@
+title = "removeImage"
+category = "images"
+isScreen = false
+summary = "Removes a previously loaded image by name."
+description = """
+Deletes the stored image and frees associated GPU resources (textures) for all screens.
+"""
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "Image name to remove."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.removeImage( { "name": "player" } );
+"""
+
+

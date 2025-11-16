@@ -1,0 +1,77 @@
+title = "drawSprite"
+category = "images"
+isScreen = true
+summary = "Draws a frame from a spritesheet onto the screen."
+description = """
+Draws a specific frame from a previously loaded spritesheet with optional color, anchor, scale,
+and rotation parameters.
+"""
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "Spritesheet name."
+
+[[parameters]]
+name = "frame"
+type = "number"
+description = "Frame index to draw (default 0)."
+optional = true
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "X (horizontal) coordinate."
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "Y (vertical) coordinate."
+
+[[parameters]]
+name = "color"
+type = "any"
+description = "Optional color multiplier.  Can be a palette index or color value (string, array, object, number)."
+optional = true
+
+[[parameters]]
+name = "anchorX"
+type = "number"
+description = "Anchor X (0.0-1.0). Defaults to screen's default anchor."
+optional = true
+
+[[parameters]]
+name = "anchorY"
+type = "number"
+description = "Anchor Y (0.0-1.0). Defaults to screen's default anchor."
+optional = true
+
+[[parameters]]
+name = "scaleX"
+type = "number"
+description = "Scale factor X (default 1)."
+optional = true
+
+[[parameters]]
+name = "scaleY"
+type = "number"
+description = "Scale factor Y (default 1)."
+optional = true
+
+[[parameters]]
+name = "angle"
+type = "number"
+description = "Rotation angle in degrees (default 0)."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+$.loadSpritesheet( { "src": "sprites.png", "name": "sprites", "width": 16, "height": 16 } );
+$.drawSprite( { "name": "sprites", "frame": 0, "x": 20, "y": 20 } );
+"""
+
+

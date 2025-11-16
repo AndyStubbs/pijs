@@ -1,0 +1,72 @@
+title = "loadSpritesheet"
+category = "images"
+isScreen = false
+summary = "Loads a spritesheet by URL or from an Image/Canvas element."
+description = """
+Loads a spritesheet and slices it either automatically (connected components) or by a fixed grid.
+"""
+
+[[parameters]]
+name = "src"
+type = "string|Image|Canvas"
+description = "Spritesheet source: URL string, HTMLImageElement, or HTMLCanvasElement."
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "Optional unique name for the spritesheet. Auto-generated if omitted."
+optional = true
+
+[[parameters]]
+name = "width"
+type = "number"
+description = "Sprite width for fixed grid mode."
+optional = true
+
+[[parameters]]
+name = "height"
+type = "number"
+description = "Sprite height for fixed grid mode."
+optional = true
+
+[[parameters]]
+name = "margin"
+type = "number"
+description = "Margin between sprites in fixed grid mode (default 0)."
+optional = true
+
+[[parameters]]
+name = "usePalette"
+type = "boolean"
+description = "If true, link image colors to the active screen palette."
+optional = true
+
+[[parameters]]
+name = "paletteKeys"
+type = "array"
+description = "Key colors used to map image colors to palette indices (required if usePalette)."
+optional = true
+
+[[parameters]]
+name = "onLoad"
+type = "function"
+description = "Callback invoked when the spritesheet finishes loading."
+optional = true
+
+[[parameters]]
+name = "onError"
+type = "function"
+description = "Callback invoked if the spritesheet fails to load."
+optional = true
+
+[[returns]]
+type = "string"
+description = "The spritesheet name."
+
+example = """
+const name = $.loadSpritesheet( {
+	"src": "tiles.png", "name": "tiles", "width": 16, "height": 16, "margin": 0
+} );
+"""
+
+
