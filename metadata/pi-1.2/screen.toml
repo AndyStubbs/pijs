@@ -31,46 +31,46 @@ $.line( 0, $.height(), $.width(), 0 );\r
 
 [[parameters]]
 name = "aspect"
-type = "any"
+type = "string"
 description = "Specify the dimensions of the screen using string in the format of: (width)(x/:/e)(height). Ie: 300x200."
 optional = true
 
 [[parameters]]
 name = "container"
-type = "any"
+type = "string|HTMLElement"
 description = "A DOM element or a string that contains the id tag of a dom element to use as the container for the canvas."
 optional = true
 
 [[parameters]]
 name = "isOffscreen"
-type = "any"
+type = "boolean"
 description = "Is the canvas an offscreen buffer. If true canvas will not show on screen but can be used as an offscreen buffer."
 optional = true
 
 [[parameters]]
 name = "willReadFrequently"
-type = "any"
+type = "boolean"
 description = "This sets the image data to not use hardware acceleration. This will help speed things up if you are using a lot of pixel mode primitive graphics commands. It won't help with drawImage or drawSprite commands."
 optional = true
 
 [[parameters]]
 name = "noStyles"
-type = "any"
+type = "boolean"
 description = "Create a canvas that has no css applied to it. Just use a default canvas element."
 optional = true
 
 [[parameters]]
 name = "isMultiple"
-type = "any"
+type = "boolean"
 description = "Set the auto size of the canvas to only expand to exact multiples of the target resolution."
 optional = true
 
 [[parameters]]
 name = "resizeCallback"
-type = "any"
+type = "function"
 description = "A function that will get called after any time the canvas gets resized."
 optional = true
 
 [[returns]]
-type = "void"
-description = "This function does not return a value."
+type = "object"
+description = "Screen API object with all graphics command."

@@ -1,14 +1,19 @@
 title = "width"
-category = "graphics"
+category = "core"
 isScreen = true
-summary = "Gets the width of the screen."
-description = ""
-parameters = [ ]
-example = """
-$.screen( "300x200" );\r
-$.print( "Width: " + $.width() );\r
+summary = "Returns the width of the current screen in pixels."
+description = """
+Gets the internal width of the active screen's canvas. This is the logical width used for drawing
+operations, which may differ from the CSS display size.
 """
 
 [[returns]]
-type = "void"
-description = "The width of the screen."
+type = "number"
+description = "Screen width in pixels."
+
+example = """
+$.screen( "320x200" );
+const w = $.width();
+$.print( `Screen Width: ${w} ` );
+$.print( `Canvas CSS width: ${$.canvas().offsetWidth}` );
+"""

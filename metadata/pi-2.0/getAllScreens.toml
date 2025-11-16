@@ -1,0 +1,19 @@
+title = "getAllScreens"
+category = "core"
+isScreen = false
+summary = "Returns an array of all screen API objects."
+description = """
+Gets all created screens as an array of screen API objects. Each object has screen=true and an id
+property.
+"""
+
+[[returns]]
+type = "array"
+description = "Array of screen API objects."
+
+example = """
+$.screen( "320x200" );
+$.screen( "640x480" );
+const screens = $.getAllScreens();
+console.log( screens.length ); // 2
+"""

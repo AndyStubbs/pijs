@@ -1,0 +1,23 @@
+title = "canvas"
+category = "core"
+isScreen = true
+summary = "Returns the HTMLCanvasElement for the current screen."
+description = """
+Gets the underlying HTMLCanvasElement DOM element for the active screen. This can be used for
+direct canvas manipulation or integration with other libraries.
+
+Note: This is for applying CSS styles to the canvas or moving the canvas in the DOM. You cannot
+call getContext( "2d" ) on the returned canvas element as it already has a WebGL context. If you
+want to use a 2d canvas context on a screen you can create a new DOM canvas and draw it as an image
+on the screen.
+"""
+
+[[returns]]
+type = "HTMLCanvasElement"
+description = "The canvas DOM element for the current screen."
+
+example = """
+$.screen( "320x200" );
+const canvas = $.canvas();
+canvas.style.opacity = "0.5";
+"""

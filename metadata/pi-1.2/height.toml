@@ -1,14 +1,19 @@
 title = "height"
-category = "graphics"
+category = "core"
 isScreen = true
-summary = "Returns the height of the screen."
-description = ""
-parameters = [ ]
-example = """
-$.screen( "300x200" );\r
-$.print( "Height: " + $.height() );\r
+summary = "Returns the height of the current screen in pixels."
+description = """
+Gets the internal height of the active screen's framebuffer size. This is the logical height used
+for drawing operations, which may differ from the CSS display size.
 """
 
 [[returns]]
-type = "void"
-description = "A number containing the height of the screen."
+type = "number"
+description = "Screen height in pixels."
+
+example = """
+$.screen( "320x200" );
+const h = $.height();
+$.print( `Screen Height: ${h} ` );
+$.print( `Canvas CSS height: ${$.canvas().offsetHeight}` );
+"""

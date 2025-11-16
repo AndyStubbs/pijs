@@ -1,19 +1,29 @@
 title = "getScreen"
-category = "graphics"
+category = "core"
 isScreen = false
-summary = "Gets the screen based on a screen id."
-description = ""
-example = """
-$.screen( "300x200" );\r
-var $screen = $.getScreen( 0 );\r
-$screen.print( "This is screen 0." );\r
+summary = "Gets a screen API object by screen ID."
+description = """
+Retrieves the screen API object for a specific screen ID. This allows you to call all the graphics
+operations for a specific screen. This means you do not have to call setScreen to set the active
+screen every time you want to draw on a different screen. There is also a tiny performance advantage
+for drawing commands called directly on a screen object.
 """
 
 [[parameters]]
 name = "screenId"
-type = "any"
-description = "An integer that identifies a screen that was previously created using the screen command."
+type = "number"
+description = "The screen ID to retrieve."
 
 [[returns]]
-type = "void"
-description = "A screen object that contains a reference to all the methods that can be called on a screen."
+type = "object"
+description = "Screen API object with all graphics commands and screen=true and id property."
+
+example = """
+$.screen( "320x200" );
+$.screen( "320x200" );
+const screen0 = $.getScreen( 0 );
+const screen1 = $.getScreen( 1 );
+screen0.print( `Screen: ${screen0.id}` );
+screen1.print( `Screen: ${screen1.id}` );
+$.print( "Active Screen" );
+"""

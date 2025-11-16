@@ -1,26 +1,26 @@
 title = "setScreen"
-category = "graphics"
+category = "core"
 isScreen = false
-summary = "Sets the default screen for which gaphics operations will get applied."
-description = ""
-example = """
-$.screen( "300x200" );\r
-var spriteScreen = $.screen( "32x32", null, true );\r
-$.setScreen( 0 );\r
-$.setColor( 2 );\r
-$.rect( 134, 84, 33, 33 );\r
-$.setScreen( spriteScreen );\r
-$.circle( 16, 16, 16, 9 );\r
-$.render();\r
-$.setScreen( 0 );\r
-$.drawImage( spriteScreen, 134, 84 );\r
+summary = "Sets the active screen for graphics commands."
+description = """
+Changes the active screen to the specified screen. All subsequent graphics commands will operate
+on this screen until another screen is set as active.
 """
 
 [[parameters]]
 name = "screen"
-type = "any"
-description = "The id or screenObject of the screen to select."
+type = "number|object"
+description = "Screen ID (number) or screen API object to set as active."
 
 [[returns]]
 type = "void"
 description = "This function does not return a value."
+
+example = """
+const screen0 = $.screen( "320x200" );
+const screen1 = $.screen( "640x480" );
+$.setScreen( screen0 );
+$.line( 0, 0, 320, 200 );
+$.setScreen( { "screen": 1 } );
+$.line( 0, 0, 320, 200 );
+"""

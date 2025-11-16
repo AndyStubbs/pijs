@@ -9,7 +9,7 @@
  */
 
 /**
- * TODO:
+ * IDEA:
  * 
  * Simplify "m" multiple mode to use this formula:
  * scaleX = floor(canvas.width / FBO_WIDTH)
@@ -99,6 +99,8 @@ export function init( api ) {
 
 	registerCommands();
 
+	// TODO: Add remove all screens
+	
 	// Special command removeScreen
 	api.removeScreen = ( screenId ) => {
 		if( Object.getPrototypeOf( screenId ) === SCREEN_API_PROTO ) {
