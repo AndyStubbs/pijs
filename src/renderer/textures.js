@@ -77,6 +77,11 @@ export function getWebGL2Texture( screenData, img ) {
 				g_batches.flushBatches( screenData );
 			}
 
+			// TODO: This might be kind of slow for drawing canvases as images, maybe consider
+			// adding an update texture function that the user can call when a canvas has been
+			// updated or this could be an optional parameter when the texture is loaded to auto
+			// update to texture.
+
 			// Copy the content of the source canvas to the texture
 			const gl = screenData.gl;
 			gl.bindTexture( gl.TEXTURE_2D, texture );
