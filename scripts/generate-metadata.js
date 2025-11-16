@@ -13,11 +13,46 @@ const path = require( "path" );
 const toml = require( "@iarna/toml" );
 const pkg = require( "../package.json" );
 
-const PI_VERSION = pkg.version;
 const METADATA_DIR = path.join( __dirname, "..", "metadata" );
 const OUTPUT_DIR = path.join( __dirname, "..", "build", "metadata" );
-const REFERENCE_FILE = path.join( OUTPUT_DIR, `reference-${PI_VERSION}.json` );
 const TYPE_DEFINITION_FILE = path.join( OUTPUT_DIR, "pi.d.ts" );
+
+function getMajorMinorFromPkgVersion( fullVersion ) {
+	const match = String( fullVersion ).match( /^(\d+)\.(\d+)/ );
+	if( !match ) {
+		return null;
+	}
+	return `${match[ 1 ]}.${match[ 2 ]}`;
+}
+
+// Major.minor string from package.json version
+const TARGET_MAJOR_MINOR = getMajorMinorFromPkgVersion( pkg.version ) ||
+	getMajorMinorFromPkgVersion( pkg.majorVersion ) || "1.0";
+
+function getVersionFolders() {
+	if( !fs.existsSync( METADATA_DIR ) ) {
+		return [];
+	}
+	const entries = fs.readdirSync( METADATA_DIR, { "withFileTypes": true } );
+	return entries
+		.filter( ( d ) => d.isDirectory() && /^pi-\d+\.\d+$/.test( d.name ) )
+		.map( ( d ) => d.name );
+}
+
+function compareMajorMinor( a, b ) {
+	const [ aMaj, aMin ] = a.split( "." ).map( Number );
+	const [ bMaj, bMin ] = b.split( "." ).map( Number );
+	if( aMaj !== bMaj ) return aMaj - bMaj;
+	return aMin - bMin;
+}
+
+function normalizeVersionFolder( folderName ) {
+	// folderName like "pi-2.0" -> "2.0"
+	return folderName.replace( /^pi-/, "" );
+}
+
+// Determine reference output file based on target major.minor
+const REFERENCE_FILE = path.join( OUTPUT_DIR, `reference-${TARGET_MAJOR_MINOR}.json` );
 
 function ensureDirectories() {
 	if( !fs.existsSync( METADATA_DIR ) ) {
@@ -30,8 +65,15 @@ function ensureDirectories() {
 	}
 }
 
-function loadMethodFiles() {
+function loadMethodFilesFlat() {
 	return fs.readdirSync( METADATA_DIR )
+		.filter( ( file ) => file.endsWith( ".toml" ) )
+		.sort();
+}
+
+function listTomlFilesInDir( dir ) {
+	if( !fs.existsSync( dir ) ) return [];
+	return fs.readdirSync( dir )
 		.filter( ( file ) => file.endsWith( ".toml" ) )
 		.sort();
 }
@@ -41,6 +83,9 @@ function normalizeMultiline( value ) {
 }
 
 function formatParameters( parameters = [] ) {
+	if( !Array.isArray( parameters ) ) {
+		return [];
+	}
 	return parameters.map( ( parameter ) => ( {
 		"name": parameter.name,
 		"type": parameter.type || "",
@@ -50,6 +95,9 @@ function formatParameters( parameters = [] ) {
 }
 
 function formatReturns( returns = [] ) {
+	if( !Array.isArray( returns ) ) {
+		return [];
+	}
 	return returns.map( ( returnValue ) => ( {
 		"type": returnValue.type || "",
 		"description": returnValue.description ? returnValue.description.trim() : ""
@@ -213,7 +261,7 @@ function buildTypeDefinitions( screenMethods, apiMethods ) {
 	lines.push( "\t\t/**" );
 	lines.push( "\t\t * Current Pi.js version string." );
 	lines.push( "\t\t */" );
-	lines.push( `\t\treadonly version: "${PI_VERSION}";` );
+	lines.push( `\t\treadonly version: "${TARGET_MAJOR_MINOR}";` );
 	lines.push( "\t}" );
 	lines.push( "}" );
 	lines.push( "" );
@@ -228,7 +276,7 @@ function buildTypeDefinitions( screenMethods, apiMethods ) {
 
 function writeOutput( filePath, data ) {
 	const payload = {
-		"version": PI_VERSION,
+		"version": TARGET_MAJOR_MINOR,
 		"generatedAt": new Date().toISOString(),
 		...data
 	};
@@ -259,30 +307,59 @@ function writeTypeDefinitions( filePath, lines ) {
 function generateMetadata() {
 	ensureDirectories();
 
-	const files = loadMethodFiles();
-	if( files.length === 0 ) {
-		console.warn( "⚠️ No method metadata files found." );
-		return;
-	}
+	const versionFolders = getVersionFolders().map( normalizeVersionFolder );
+	const selectedFolders = versionFolders
+		.filter( ( v ) => compareMajorMinor( v, TARGET_MAJOR_MINOR ) <= 0 )
+		.sort( compareMajorMinor );
 
-	const referenceMethods = [];
-	const screenMethods = [];
-	const apiMethods = [];
+	const methodNameToMetadata = new Map();
 
-	for( const fileName of files ) {
-		const methodPath = path.join( METADATA_DIR, fileName );
-		const metadata = parseMetadataFile( methodPath );
-		const methodName = metadata.title || path.basename( fileName, ".toml" );
+	if( selectedFolders.length > 0 ) {
+		// Layer versions from oldest to target
+		for( const v of selectedFolders ) {
+			const dirPath = path.join( METADATA_DIR, `pi-${v}` );
 
-		const methodEntry = buildReferenceEntry( methodName, metadata );
-		referenceMethods.push( methodEntry );
+			// Handle removals first
+			const removedPath = path.join( dirPath, "_removed.toml" );
+			if( fs.existsSync( removedPath ) ) {
+				try {
+					const removedData = parseMetadataFile( removedPath );
+					const removedMethods = Array.isArray( removedData.methods )
+						? removedData.methods : [];
+					for( const method of removedMethods ) {
+						methodNameToMetadata.delete( method );
+					}
+				} catch {
+					// ignore parse errors for removed file
+				}
+			}
 
-		if( methodEntry.isScreen ) {
-			screenMethods.push( methodEntry );
-		} else {
-			apiMethods.push( methodEntry );
+			// Apply overrides and additions
+			const tomlFiles = listTomlFilesInDir( dirPath )
+				.filter( ( f ) => f.toLowerCase() !== "_removed.toml" );
+			for( const fileName of tomlFiles ) {
+				const filePath = path.join( dirPath, fileName );
+				const metadata = parseMetadataFile( filePath );
+				const methodName = metadata.title || path.basename( fileName, ".toml" );
+				methodNameToMetadata.set( methodName, buildReferenceEntry( methodName, metadata ) );
+			}
+		}
+	} else {
+		// Fallback: flat files in metadata/ (legacy behavior)
+		const files = loadMethodFilesFlat();
+		for( const fileName of files ) {
+			const methodPath = path.join( METADATA_DIR, fileName );
+			const metadata = parseMetadataFile( methodPath );
+			const methodName = metadata.title || path.basename( fileName, ".toml" );
+			methodNameToMetadata.set( methodName, buildReferenceEntry( methodName, metadata ) );
 		}
 	}
+
+	// Build arrays for output
+	const referenceMethods = Array.from( methodNameToMetadata.values() )
+		.sort( ( a, b ) => a.name.localeCompare( b.name ) );
+	const screenMethods = referenceMethods.filter( ( m ) => m.isScreen );
+	const apiMethods = referenceMethods.filter( ( m ) => !m.isScreen );
 
 	writeOutput( REFERENCE_FILE, { "methods": referenceMethods } );
 	writeTypeDefinitions(
