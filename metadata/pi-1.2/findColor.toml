@@ -13,7 +13,7 @@ $.print("The index of red is " + color + ".");\r
 [[parameters]]
 name = "color"
 type = "any"
-description = "The color to be found."
+description = "Palette index or color value (string, array, object, number)."
 
 [[parameters]]
 name = "tolerance"

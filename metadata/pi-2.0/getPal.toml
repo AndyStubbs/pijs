@@ -1,0 +1,26 @@
+title = "getPal"
+category = "colors"
+isScreen = true
+summary = "Returns the current color palette as an array."
+description = """
+Gets the active screen's color palette. By default, index 0 (transparent black) is excluded.
+Note: Color indices may not match exactly because index 0 is strictly reserved for transparent
+black.
+"""
+
+[[parameters]]
+name = "include0"
+type = "boolean"
+description = "If true include palette index 0 (transparent black)."
+optional = true
+
+[[returns]]
+type = "array"
+description = "Array of color value objects representing the current screen palette."
+
+example = """
+$.screen( "300x200" );
+const pal = $.getPal();
+"""
+
+

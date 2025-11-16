@@ -87,6 +87,8 @@ export function init( api ) {
 
 function registerCommands() {
 
+	// TODO: Add getDefaultPal, getDefaultColor, and createColor
+
 	// Register non-screen commands
 	g_commands.addCommand( "setDefaultPal", setDefaultPal, false, [ "pal" ] );
 	g_commands.addCommand( "setDefaultColor", setDefaultColor, false, [ "color" ] );

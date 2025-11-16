@@ -1,0 +1,29 @@
+title = "setPalColors"
+category = "colors"
+isScreen = true
+summary = "Updates one or more palette colors at specific indices."
+description = """
+Sets multiple palette entries by index. Indices must be within the palette range and cannot be 0
+(reserved for transparent black).
+"""
+
+[[parameters]]
+name = "indices"
+type = "array"
+description = "Array of palette indices to change."
+
+[[parameters]]
+name = "colors"
+type = "array"
+description = "Array of color values corresponding to indices."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+$.setPalColors( [ 1, 2, 3 ], [ "white", "#FF00FF", [ 0, 255, 128 ] ] );
+"""
+
+

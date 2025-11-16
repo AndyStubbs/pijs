@@ -1,8 +1,8 @@
 title = "getPal"
 category = "color"
 isScreen = true
-summary = "Gets the current color palette from the screen and returns an array with all the color data."
-description = ""
+summary = "Returns the current color palette as an array."
+description = "Gets the current color palette from the screen and returns an array with all the color data."
 parameters = [ ]
 example = """
 $.screen("300x200");\r

@@ -19,7 +19,7 @@ description = "The index value of the color to change."
 [[parameters]]
 name = "color"
 type = "any"
-description = "The color value of the new color."
+description = "Palette index or color value (string, array, object, number)."
 
 [[returns]]
 type = "void"

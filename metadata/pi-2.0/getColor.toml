@@ -1,0 +1,25 @@
+title = "getColor"
+category = "colors"
+isScreen = true
+summary = "Gets the current foreground color."
+description = """
+Returns the current drawing color. If asIndex is true, returns the palette index; otherwise returns
+the color value object.
+"""
+
+[[parameters]]
+name = "asIndex"
+type = "boolean"
+description = "If true returns the palette index, otherwise returns a color value object."
+optional = true
+
+[[returns]]
+type = "number|object"
+description = "Palette index if asIndex is true; otherwise a color value object."
+
+example = """
+$.screen( "300x200" );
+const idx = $.getColor( true );
+"""
+
+

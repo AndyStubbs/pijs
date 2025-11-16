@@ -1,19 +1,21 @@
 title = "setContainerBgColor"
-category = "color"
+category = "colors"
 isScreen = true
-summary = "Sets the background color of the canvas container."
-description = ""
-example = """
-$.screen( "300x200" );\r
-$.print( "Hello" );\r
-$.setContainerBgColor( 5 );\r
+summary = "Sets the background color of the screen's container element."
+description = """
+Sets the CSS background color of the container element that holds the canvas.
 """
 
 [[parameters]]
 name = "color"
 type = "any"
-description = "The color to set the new background for the canvas container"
+description = "Palette index or color value (string, array, object, number)."
 
 [[returns]]
 type = "void"
 description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+$.setContainerBgColor( "#202040" );
+"""

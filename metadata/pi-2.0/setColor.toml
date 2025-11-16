@@ -1,0 +1,36 @@
+title = "setColor"
+category = "colors"
+isScreen = true
+summary = "Sets the current foreground color used for drawing."
+description = """
+Sets the active foreground color. Accepts a palette index or any supported color value. If a color
+value is provided that is not in the palette, the closest match will be used.
+"""
+
+[[parameters]]
+name = "color"
+type = "any"
+description = "Palette index or color value (string, array, object, number)."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "360x300" );
+let colors = $.getPal();
+let x = 0;
+let y = 0;
+let size = 0;
+for( let i = 0; i < colors.length; i += 1 ) {
+	$.setColor( i );
+	$.rect( x, y, size, size );
+	$.setPosPx( x + 1, y + 4 );
+	$.print( i, true );
+	x += size;
+	if( x >= $.width() ) {
+		x = 0;
+		y += size;
+	}
+}
+"""

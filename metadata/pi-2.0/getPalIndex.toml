@@ -1,0 +1,31 @@
+title = "getPalIndex"
+category = "colors"
+isScreen = true
+summary = "Finds the palette index for a color with optional tolerance."
+description = """
+Finds the best-matching palette index for a given color. Tolerance filters how close the match
+must be: 0 = exact match only, 1 = any color. The closest color that fits in the tolerance range
+will be returned.
+"""
+
+[[parameters]]
+name = "color"
+type = "any"
+description = "Palette index or color value (string, array, object, number)."
+
+[[parameters]]
+name = "tolerance"
+type = "number"
+description = "Number between 0 and 1 indicating acceptable color difference."
+optional = true
+
+[[returns]]
+type = "number|null"
+description = "Palette index if a match is found; otherwise null."
+
+example = """
+$.screen( "300x200" );
+const idx = $.getPalIndex( "#FF0000", 0.25 );
+"""
+
+

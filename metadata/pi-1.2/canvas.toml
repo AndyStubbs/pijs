@@ -10,5 +10,5 @@ $.canvas().className = "purple";\r
 $.print("\\n\\nThe background is now purple.");"""
 
 [[returns]]
-type = "void"
-description = "This function does not return a value."
+type = "HTMLCanvasElement"
+description = "Returns the canvas"

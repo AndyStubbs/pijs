@@ -35,8 +35,8 @@ description = "The height of the rectangle."
 
 [[parameters]]
 name = "fillColor"
-type = "string|number"
-description = "The fill color for the rectangle. Can be a color name, hex string, or palette index."
+type = "any"
+description = "The fill color for the rectangle. Can be a palette index or color value (string, array, object, number)."
 optional = true
 
 [[returns]]

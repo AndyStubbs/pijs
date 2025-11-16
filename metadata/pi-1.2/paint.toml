@@ -36,7 +36,7 @@ description = "The vertical coordinate from where to start the paint algorithm."
 [[parameters]]
 name = "fillColor"
 type = "any"
-description = "The fill color."
+description = "The fill color for floodfill operation. Can be a palette index or color value (string, array, object, number)."
 
 [[parameters]]
 name = "tolerance"

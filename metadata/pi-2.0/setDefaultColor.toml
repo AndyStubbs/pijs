@@ -1,9 +1,9 @@
-title = "setBgColor"
+title = "setDefaultColor"
 category = "colors"
-isScreen = true
-summary = "Sets the canvas background color."
+isScreen = false
+summary = "Sets the default foreground color used by new screens."
 description = """
-Sets the background color of the canvas element. Transparent pixels will show this background color.
+Updates the default drawing color for newly created screens.
 """
 
 [[parameters]]
@@ -16,6 +16,8 @@ type = "void"
 description = "This function does not return a value."
 
 example = """
+$.setDefaultColor( 7 );
 $.screen( "300x200" );
-$.setBgColor( "navy" );
 """
+
+

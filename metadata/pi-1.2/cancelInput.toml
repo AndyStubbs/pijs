@@ -11,12 +11,7 @@ $.onkey( "Escape", "down", function () {  \r
 \t$.print("\\nInput Canceled");\r
 \t$.cancelInput();\r
 }, true );"""
-
-[[parameters]]
-name = "name"
-type = "any"
-description = "The name provided to the input command."
-optional = true
+parameters = [ ]
 
 [[returns]]
 type = "void"

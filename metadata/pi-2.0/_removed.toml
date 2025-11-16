@@ -1,10 +1,11 @@
 methods = [
 	"findColor",
-	"setBlendMode",
 	"setAutoRender",
-	"render",
-	"swapColor",
-	"setPen",
+	"setBlendMode",
+	"setColors",
 	"setDefaultInputFocus",
-	"setErrorMode"
+	"setErrorMode",
+	"setPen",
+	"swapColor",
+	"render"
 ]
