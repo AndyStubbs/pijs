@@ -9,9 +9,7 @@ const path = require( "path" );
 
 // Determine test type and paths
 const TEST_TYPE = process.env.PI_TEST_TYPE || "core";
-const SCREENSHOT_BASE = TEST_TYPE === "plugins" 
-	? "/test/tests-plugins/screenshots" 
-	: "/test/tests/screenshots";
+const SCREENSHOT_BASE = "/test/tests/screenshots";
 const TEST_NAME = TEST_TYPE === "core" ? "Core" : "Plugins";
 
 // Generate HTML results page
@@ -42,8 +40,9 @@ function generateResultsPage( results ) {
 	// Build failed tests HTML
 	let failedHTML = "";
 	if( failed.length > 0 ) {
+
 		// Sort failed tests alphabetically by name
-		const sortedFailed = [...failed].sort( ( a, b ) => a.name.localeCompare( b.name ) );
+		const sortedFailed = [ ...failed ].sort( ( a, b ) => a.name.localeCompare( b.name ) );
 		
 		failedHTML += `
 	<div class="summary">
@@ -54,6 +53,7 @@ function generateResultsPage( results ) {
 		<div class="test-list" id="list-failed">`;
 
 		for( const test of sortedFailed ) {
+
 			// Use screenshotName from test record (preserves camelCase like "loadFont_01")
 			const baseName = test.screenshotName || test.file.replace( ".html", "" );
 			const refPath = `${SCREENSHOT_BASE}/${baseName}.png`;

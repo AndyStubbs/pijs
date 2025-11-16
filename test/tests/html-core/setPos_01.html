@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>SetPos 01</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			test = "screenshot.js"
+			file = "setPos_01"
+			name = "setPos 01"
+			lite = true
+			width = 200
+			height = 200
+			delay = 0
+			commands = """
+				DL 100
+			"""
+			[[TOML_END]]
+		</script>
+		<!-- [Pi.js Script]-->
+		<script src="../../../build/pi.js"></script>
+		<!-- [/Pi.js Script]-->
+		<style>
+			html, body {
+				background-color: grey;
+			}
+		</style>
+	</head>
+<body>
+<script>
+	$.ready(function () {
+		$.screen( "200x200" );
+		$.setFont(1);
+		$.setColor(0);
+		$.pset( 78, 90 );
+		$.draw(
+			"C#FD8483 ARC35,150,307 BR40 ARC35,235,395" +
+			"BR28 BD20 TA135 R68 TA0 TA226 R74 TA0 BR15 P4"
+		);
+		$.setColor(15);
+		$.setPos( 8, 11 );
+		$.print( "Happy Mothers Day" );
+		$.setPos(0, 0);
+		for(var i = 0; i < 25; i++) {
+			$.print(i);
+		}
+	});
+</script>
+</body>
+</html>

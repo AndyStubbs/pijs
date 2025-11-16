@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Keyboard Input Test</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "keyboard_input"
+			name = "keyboard input"
+			width = 640
+			height = 480
+			delay = 0
+			commands = """
+				DL 15
+				KT "Hello World"
+				DL 15
+				KP "Enter"
+				DL 15
+				KT "12-3.75"
+				DL 15
+				KP "Enter"
+				DL 15
+				KT "95"
+				DL 15
+				KP "Enter"
+				DL 15
+				KT "ABCDEFGH"
+				DL 15
+				KP "Enter"
+				DL 15
+				KT "This is a test"
+				DL 15
+				KP "Escape"
+				DL 15
+				KT "Goodbye, for now!"
+				DL 15
+				KP "Enter"
+				DL 100
+			"""
+			[[TOML_END]]
+		</script>
+		<script src="../../../build/pi.js"></script>
+		<style>
+			html, body {
+				background-color: grey;
+				margin: 0;
+				padding: 0;
+			}
+			#screen {
+				border: 2px solid #333;
+				background-color: #000;
+			}
+		</style>
+	</head>
+<body>
+<script>
+
+	$.ready( function() {
+		$.screen( "640x480" );
+		$.setColor( 15 );
+		$.print( "KEYBOARD INPUT TEST" );
+		
+		// Start input tests
+		runInputTests();
+	} );
+
+	async function runInputTests() {
+		$.setColor( 15 );
+		$.print( "\n=== INPUT TESTS ===\n" );
+		
+		// Test 1: Basic input with callback
+		printTitle( "\nTest 1: Basic input with callback" );
+
+		try {
+			const result1 = await $.input( "Enter name: ", function( val ) {
+				printSuccess( "Callback: You entered '" + val + "'" );
+			} );
+			printSuccess( "Result: '" + result1 + "'" );
+		} catch( error ) {
+			printError( "Error: " + error );
+		}
+		
+		// Test 2: Number input
+		printTitle( "\nTest 2: Number input (isNumber: true)" );
+		
+		try {
+			const result2 = await $.input( "Enter number: ", null, null, true, false, true );
+			printSuccess( "Number result: " + result2 );
+		} catch( error ) {
+			printError( "Number error: " + error );
+		}
+		
+		// Test 3: Integer input
+		printTitle( "\nTest 3: Integer input (isInteger: true)" );
+		
+		try {
+			const result3 = await $.input( "Enter integer: ", null, null, true, true, false );
+			printSuccess( "Integer result: " + result3 );
+		} catch( error ) {
+			printError( "Integer error: " + error );
+		}
+		
+		// Test 4: MaxLength input
+		printTitle( "\nTest 4: MaxLength input (maxLength: 5)" );
+		
+		try {
+			const result4 = await $.input(
+				"Enter text (max 5): ", null, null, false, false, false, 5
+			);
+			if( result4.length <= 5 ) {
+				printSuccess(
+					"MaxLength result: '" + result4 + "' (length: " + result4.length + ")"
+				);
+			} else {
+				printError(
+					"MaxLength failed: result length " + result4.length + " exceeds maxLength 5"
+				);
+			}
+		} catch( error ) {
+			printError( "MaxLength error: " + error );
+		}
+		
+		// Test 5: Input cancellation
+		printTitle( "\nTest 5: Input cancellation (Escape key)" );
+		
+		try {
+			const result5 = await $.input( "This will be cancelled: " );
+			if( result5 === null ) {
+				printSuccess( "Cancelled as expected: " + result5 );
+			} else {
+				printError( "Unexpected result: " + result5 );
+			}
+		} catch( error ) {
+			printError( "Unexpected result: " + error );
+		}
+		
+		// Test 6: Final input
+		printTitle( "\nTest 6: Final input" );
+		
+		try {
+			const result6 = await $.input( "Final test: " );
+			printSuccess( "Final result: '" + result6 + "'" );
+		} catch( error ) {
+			printError( "Final error: " + error );
+		}
+		
+		// Input tests complete
+		$.setColor( 15 );
+		$.print( "\n=== INPUT TESTS COMPLETE ===\n" );
+		$.setColor( 7 );
+		$.print( "All input tests finished" );
+	}
+
+	function printTitle( msg ) {
+		$.setColor( 11 );
+		$.print( msg );
+		$.setColor( 7 );
+	}
+	
+	function printSuccess( msg ) {
+		$.setColor( 2 );
+		$.print( msg );
+		$.setColor( 7 );
+	}
+
+	function printError( msg ) {
+		$.setColor( 4 );
+		$.print( msg );
+		$.setColor( 7 );
+	}
+</script>
+</body>
+</html>
+

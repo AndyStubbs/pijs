@@ -369,9 +369,7 @@
 		
 		// Test type from page generation (injected by results-page-generator.js)
 		const TEST_TYPE = "{{TEST_TYPE}}";
-		const SCREENSHOT_BASE = TEST_TYPE === "plugins" 
-			? "/test/tests-plugins/screenshots" 
-			: "/test/tests/screenshots";
+		const SCREENSHOT_BASE = "/test/tests/screenshots";
 		
 		// Check if new screenshots exist for failed tests on page load
 		window.addEventListener( "DOMContentLoaded", function() {

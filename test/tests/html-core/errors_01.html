@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Errors 01</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			test = "screenshot.js"
+			file = "errors_01"
+			name = "errors 01"
+			lite = true
+			width = 200
+			height = 200
+			delay = 0
+			[[TOML_END]]
+		</script>
+		<!-- [Pi.js Script]-->
+		<script src="../../../build/pi.js"></script>
+		<!-- [/Pi.js Script]-->
+		<style>
+			html, body {
+				background-color: grey;
+			}
+		</style>
+	</head>
+<body>
+<script>
+	try {
+		$.draw( "R10U10" );
+	} catch( error ) {
+		$.screen( "200x200" );
+		$.print( error.message );
+	}
+</script>
+</body>
+</html>

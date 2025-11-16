@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Colors Comprehensive Test</title>
+	<script type="text/toml">
+		[[TOML_START]]
+		file = "colors_comprehensive"
+		name = "Colors Comprehensive"
+		lite = true
+		width = 400
+		height = 270
+		delay = 0
+		[[TOML_END]]
+	</script>
+	<script src="../../../build/pi.js"></script>
+	<style>
+		body {
+			background-color: white;	
+		}
+	</style>
+</head>
+<body>
+<script>
+	$.ready( function () {
+		const customPalette = [
+			"#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF", "#FFFFFF", "#800000",
+			"#008000", "#000080", "#808000", "#800080", "#008080", "#808080", "#333"
+		];
+
+		$.setDefaultPal( { "pal": customPalette } );
+		$.setDefaultColor( { "color": 1 } );
+
+		// Create Screen for Testing
+		$.screen( "350x270" );
+
+		// Test setContainerBgColor
+		$.setContainerBgColor( "gray" );
+
+		// Test setBgColor
+		$.setBgColor( "#333" );
+
+		// Start the test
+		$.print( "Starting Colors Test" );
+
+		// Test getPal
+		$.print( `Starting Pal Size: ${$.getPal().length}` );
+
+		// Test setColor by adding two more colors to palette
+		const newIndices = $.addPalColors( [ "brown" ] );
+		$.setColor( newIndices[ 0 ] );
+		$.print( "Added Color: \"brown\"" );
+		$.addPalColors( [ "orange" ] );
+		$.setColor( "orange" );
+		$.print( "Added Color: \"orange\"" );
+		$.print( `Pal Size After Adding 2 Size: ${$.getPal().length}` );
+
+		// Test setColor ithout adding to palette
+		$.setColor( "#f3f300" );	
+		$.print( `Pal Size After setColor with non-palette color: ${$.getPal().length}` );
+
+		// Draw palette swatches
+		drawPaletteSwatches( 10, 52 );
+
+		$.setPosPx( 0, 100 );
+
+		// Test getPalIndex
+		const brownIndex = $.getPalIndex( "brown" );
+		$.setColor( brownIndex );
+		$.print( `Pal Index of "brown" color: ${brownIndex}` );
+
+		// Test setPalColor
+		$.setPalColors( [ brownIndex ], [ "HotPink" ] );
+		$.setColor( "HotPink" );
+		$.print(
+			`Changed palette color of "brown" to HotPink index: ${$.getPalIndex( "HotPink" )}`
+		);
+
+		// Redraw palette
+		drawPaletteSwatches( 10, 120 );
+
+		// Test setPal
+		$.setPal( [ "LightSalmon", "LightCoral", "LawnGreen", "Indigo" ] );
+		$.setPosPx( 0, 165 );
+		$.print( `Pal Size after setPal with new palette: ${$.getPal().length}` );
+		drawPaletteSwatches( 10, 180 );
+
+		// Test swapColor
+		$.setPalColors( [ 3 ], [ "SkyBlue" ] );
+		$.setPosPx( 0, 205 );
+		$.setColor( 3 );
+		$.print( "Swapped Colors \"LawnGreen: 3\" with \"SkyBlue\"" );
+
+		$.addPalColors( [ "black" ] );
+		$.setColor( "black" );
+		$.print( "Added Color: \"black\"" );
+		drawPaletteSwatches( 10, 228 );
+
+	} );
+
+	function drawPaletteSwatches( startX, startY ) {
+		const pal = $.getPal( true );
+		for( let i = 0; i < pal.length; i++ ) {
+			const x = startX + ( i % 9 ) * 20;
+			const y = startY + Math.floor( i / 9 ) * 20;
+			$.setColor( pal[ i ] );
+			$.rect( x, y, 20, 20, i );
+			if( i > 9 ) {
+				$.setPosPx( x + 4, y + 7 );
+			} else {
+				$.setPosPx( x + 7, y + 7 );
+			}
+			if( pal[ i ].r + pal[ i ].g + pal[ i ].b > 400 ) {
+				$.setColor( "black" );
+			} else {
+				$.setColor( "white" );
+			}
+			$.print( i, true );
+		}
+		$.setColor( "white" );
+	}
+
+</script>
+</body>
+</html>
+

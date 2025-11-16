@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Keyboard Commands Test</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "keyboard_commands"
+			name = "keyboard commands"
+			width = 640
+			height = 480
+			delay = 0
+			commands = """
+				KD "KeyA"
+				DL 15
+				KU "KeyA"
+				DL 15
+				KT "The quick brown fox"
+				DL 15
+				KD "Control"
+				DL 15
+				KD "KeyC"
+				DL 15
+				KU "KeyC"
+				DL 15
+				KU "Control"
+				DL 250
+				KP "KeyZ"
+				DL 250
+				KP "KeyZ"
+				DL 250
+				KP "KeyZ"
+				DL 250
+				DL 100
+				KP "KeyA"
+				DL 15
+				KP "KeyS"
+				DL 15
+				KP "KeyD"
+				DL 15
+				KP "KeyW"
+				DL 15
+				KD "Control"
+				DL 15
+				KD "KeyS"
+				DL 15
+				KU "KeyS"
+				DL 15
+				KU "Control"
+				DL 200
+
+
+				KD "a"
+				DL 30
+				KU "a"
+				DL 30
+
+				KD "A"
+				DL 30
+				KU "A"
+				DL 30
+
+				KD "Shift"
+				DL 30
+				KD "A"
+				DL 30
+
+				KU "Shift"
+				DL 30
+				KU "A"
+				DL 30
+
+				KD "KeyS"
+				DL 30
+				KU "KeyS"
+				DL 30
+
+				KD "KeyD"
+				DL 30
+				KU "KeyD"
+				DL 30
+
+				KD "KeyW"
+				DL 30
+				KU "KeyW"
+				DL 30
+
+				KD "KeyE"
+				DL 30
+				KU "KeyE"
+				DL 100
+			"""
+			[[TOML_END]]
+		</script>
+		<script src="../../../build/pi.js"></script>
+		<style>
+			html, body {
+				background-color: grey;
+				margin: 0;
+				padding: 0;
+			}
+			#screen {
+				border: 2px solid #333;
+				background-color: #000;
+			}
+		</style>
+	</head>
+<body>
+<script>
+
+	$.ready( function() {
+		$.screen( "640x480" );
+		$.setColor( 15 );
+		$.print( "KEYBOARD COMMANDS TEST" );
+		
+		// Start keyboard tests
+		startOnkeyTests();
+	} );
+
+	function startOnkeyTests() {
+
+		// Test keyboard start/stop
+		$.setColor( 15 );
+		$.print( "\n=== ONKEY TESTS ===\n" );
+		$.setColor( 7 );
+		
+		// Add action keys to allow event.preventDefault
+		$.setActionKeys( [ "Control", "KeyA", "KeyS", "KeyZ" ] );
+
+		// Set up event handlers
+		$.onkey( "KeyA", "down", aKeyDown );
+		$.onkey( "a", "up", aKeyUp );		
+		$.onkey( "any", "down", anyKeyDown );
+		$.onkey( [ "Control", "KeyC" ], "down", controlPlusCdown );
+
+		$.print( "Event handlers set. Waiting for key events..." );
+
+		function aKeyDown( keyData ) {
+			$.print( "KeyA down event detected!" );
+		}
+
+		function aKeyUp( keyData ) {
+			$.print( "a up event detected!" );
+		}
+
+		function anyKeyDown( keyData ) {
+			if( !keyData ) {
+				debugger;
+			}
+			gridPrint( 0, keyData.key, 300, 0, 200, 30 );
+		}
+
+		function controlPlusCdown( comboData ) {
+			$.print( "Ctrl+C combo detected!" );
+			$.removeActionKeys( [ "KeyC" ] );
+			$.print( "removeActionKeys: [KeyC] removed" );
+			$.print( "Stopping Keyboard for 1 second..." );
+
+			// Add Control + S event
+			$.onkey( [ "Control", "KeyS" ], "up", controlPlusSup );
+
+			// Remove Control + KeyC event
+			$.offkey( [ "Control", "KeyC" ], "down", controlPlusCdown );
+			$.stopKeyboard();
+			setTimeout( () => {
+				$.startKeyboard();
+				$.print( "Keyboard restarted" );
+			}, 1000 );
+		}
+
+		function controlPlusSup( comboData ) {
+			$.print( "Ctrl+S combo detected!" );
+			$.setColor( 15 );
+			$.print( "\n=== ONKEY TESTS COMPLETE ===\n" );
+			$.setColor( 7 );
+			$.print( "Starting inkey tests..." );
+
+			$.removeActionKeys( [ "Control", "KeyS" ] );
+
+			// Remove onkey handlers
+			$.offkey( "KeyA", "down", aKeyDown );
+			$.offkey( "a", "up", aKeyUp );
+			$.offkey( "any", "down", anyKeyDown );
+			$.offkey( [ "Control", "KeyS" ], "up", controlPlusSup );
+
+			// Start the next set of tests
+			setTimeout( startInkeyTesting, 200 );
+		}
+	}
+
+	function startInkeyTesting() {
+		$.setColor( 15 );
+		$.print( "\n=== INKEY TESTS ===\n" );
+		$.setColor( 7 );
+		$.print( "Testing inkey() with setInterval..." );
+		
+		let allKeyLine = 0;
+		let lastLine = "";
+		const inkeyInterval = setInterval( function() {
+			
+			// Test inkey with no parameters - show all pressed keys
+			const allKeys = $.inkey();
+			if( allKeys.length > 0 ) {
+
+				$.setColor( 2 );
+
+				// Print each key to the grid
+				let msg = allKeys.length + ": (";
+				for( let i = 0; i < allKeys.length; i++ ) {
+					msg += allKeys[ i ].code + ", ";
+				}
+				msg = msg.substring( 0, msg.length - 2 );
+				msg += ")";
+
+				if( lastLine !== msg ) {
+					if( allKeyLine >= 32 ) {
+						allKeyLine = 0;
+						$.cls( 300, 40, 640, 300 );
+						$.render();
+					}
+					let pos = $.getPos();
+					$.setPos( 50, 4 + allKeyLine );
+					$.print( msg, true );
+					$.setPos( pos );
+					allKeyLine += 1;
+					lastLine = msg;
+				}
+			}
+			
+			// Test inkey with specific key codes
+			const keyA = $.inkey( "KeyA" );
+			if( keyA ) {
+				$.setColor( 3 );
+				gridPrint( 2, keyA.key, 300, 300, 200, 20 );
+			}
+			
+			// Test inkey with key names
+			const keyLowerA = $.inkey( "a" );
+			if( keyLowerA ) {
+				$.setColor( 5 );
+				gridPrint( 3, keyLowerA.key, 300, 320, 200, 20 );
+			}
+
+			// Test inkey with key names
+			const keyUpperA = $.inkey( "A" );
+			if( keyUpperA ) {
+				$.setColor( 6 );
+				gridPrint( 4, keyUpperA.key, 300, 340, 200, 20 );
+			}
+			
+			// Test inkey with other common keys
+			const keyS = $.inkey( "KeyS" );
+			if( keyS ) {
+				$.setColor( 9 );
+				gridPrint( 5, keyS.key, 300, 360, 200, 20 );
+			}
+			
+			const keyD = $.inkey( "KeyD" );
+			if( keyD ) {
+				$.setColor( 10 );
+				gridPrint( 6, keyD.key, 300, 380, 200, 20 );
+			}
+			
+			const keyW = $.inkey( "KeyW" );
+			if( keyW ) {
+				$.setColor( 11 );
+				gridPrint( 7, keyW.key, 300, 400, 200, 20 );
+			}
+			
+			if( $.inkey( "KeyE" ) ) {
+				clearInterval( inkeyInterval );
+				$.setColor( 15 );
+				$.print( "\n=== ALL TESTS COMPLETE ===\n" );
+				$.setColor( 7 );
+				$.print( "Check results above for test outcomes" );
+			}
+
+		}, 15 );
+	}
+
+	const keyCounts = { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0 };
+	function gridPrint( index, msg, startX, startY, maxWidth, maxHeight ) {
+		let pos = $.getPos();
+
+		// Calculate grid position
+		const charWidth = 8;
+		const charHeight = 10;
+		const charsPerRow = Math.floor( ( ( startX + maxWidth ) - startX ) / charWidth );
+				
+		const row = Math.floor( keyCounts[ index ] / charsPerRow );
+		const col = keyCounts[ index ] % charsPerRow;
+		
+		let x = startX + ( col * charWidth );
+		let y = startY + row * charHeight;
+		
+		// Check if we're still within bounds - Save 240-480 for inkey tests
+		if( y < startY + maxHeight ) {
+			$.setPosPx( x, y );
+			$.print( msg, true );
+			
+			// Move to next position accounting for key length
+			// For multi-character keys like "Enter", "Space", etc.
+			const keyLength = msg.length;
+			if( keyLength > 1 ) {
+				keyCounts[ index ] += msg.length - 1;
+			} else {
+				keyCounts[ index ] += 1;
+			}
+		}
+		
+		$.setPos( pos );
+	}
+</script>
+</body>
+</html>
+

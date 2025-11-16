@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Graphics Comprehensive Test</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "graphics_comprehensive"
+			name = "graphics comprehensive"
+			lite = true
+			width = 640
+			height = 480
+			delay = 0
+			[[TOML_END]]
+		</script>
+		<!-- [Pi.js Script]-->
+		<script src="../../../build/pi.js"></script>
+		<!-- [/Pi.js Script]-->
+		<style>
+			html, body {
+				background-color: grey;
+			}
+		</style>
+	</head>
+<body>
+<script>
+	const defaultPaletteHex = [
+		"#0000AACC", "#00AA00CC", "#00AAAACC", "#AA0000CC", "#AA00AACC", "#AA5500CC", "#AAAAAACC",
+		"#555555CC", "#5555FFCC", "#55FF55CC", "#55FFFFCC", "#FF5555CC", "#FF55FFCC", "#FFFF55CC",
+		"#FFFFFFCC", "#000000CC", "#141414CC", "#202020CC", "#2D2D2DCC", "#393939CC", "#454545CC",
+		"#515151CC", "#616161CC", "#717171CC", "#828282CC", "#929292CC", "#A2A2A2CC", "#B6B6B6CC",
+		"#CACACACC", "#E3E3E3CC", "#FFFFFFCC", "#0000FFCC", "#4100FFCC", "#7D00FFCC", "#BE00FFCC",
+		"#FF00FFCC", "#FF00BECC", "#FF007DCC", "#FF0041CC", "#FF0000CC", "#FF4100CC", "#FF7D00CC",
+		"#FFBE00CC", "#FFFF00CC", "#BEFF00CC", "#7DFF00CC", "#41FF00CC", "#00FF00CC", "#00FF41CC",
+		"#00FF7DCC", "#00FFBECC", "#00FFFFCC", "#00BEFFCC", "#007DFFCC", "#0041FFCC", "#7D7DFFCC",
+		"#9E7DFFCC", "#BE7DFFCC", "#DF7DFFCC", "#FF7DFFCC", "#FF7DDFCC", "#FF7DBECC", "#FF7D9ECC",
+		"#FF7D7DCC", "green", "purple", "blue"
+	];
+	$.setDefaultPal( defaultPaletteHex );
+
+	$.ready( function () {
+
+		$.screen( "640x480" );
+		
+		$.setBlend( "alpha" );
+
+		// Test grid layout:
+		// +-------------------+--------------------+---------------------+
+		// | PSET Tests        | Line Tests         | Rect Tests          |
+		// | (0,0 - 213,160)   | (213,0 - 426,160)  | (426,0 - 640,160)   |
+		// +-------------------+--------------------+---------------------+
+		// | Circle Tests      | Get/Put Tests      | Get Pixel Tests     |
+		// | (0,240 - 213,320) | (213,240-426,320)  | (426,240-640,320)   |
+		// +-------------------+--------------------+---------------------+
+		// | Ellipse Tests     | Arc Tests          | Bezier Tests        |
+		// | (0,320 - 213,480) |(213,320 - 426,480) | (426,320 - 640,480) |
+		// +-------------------+--------------------+---------------------+
+
+		let x, y;
+
+		// === SECTION - PSET Tests (Top Left) ===
+		// Test pset with different pen types and pixel modes
+		
+		// Pixel mode pset with different pens
+		$.setColor( 15 );
+		$.setPosPx( 5, 5 );
+		$.print( "PSET" );
+		
+		// Pixel Lines
+		y = 25;
+		for( let size = 1; size <= 5; size++ ) {
+			$.setColor( 9 );
+			for( let x = 20; x < 20 + size; x += 1 ) {
+				$.pset( x, y );
+			}
+			y += size * 2 + 5;
+		}
+		
+		// Diagonal Line
+		$.setColor( 14 );
+		for( let i = 0; i < 20; i++ ) {
+			$.pset( 100 + i, 25 + i );
+		}
+
+		// Pattern
+		$.setColor( 2 );
+		for( let y = 80; y < 120; y += 1 ) {
+			for( let x = 20; x < 80; x += 1 ) {
+				$.setColor( ( x + y ) % 7 + 2 );
+				$.pset( x, y );
+			}
+		}
+		
+		// === SECTION - LINE Tests (Top Center) ===
+		$.setColor( 15 );
+		$.setPosPx( 218, 5 );
+		$.print( "LINE" );
+		
+		// Horizontal lines with different colors
+
+		for( let i = 0; i < 5; i++ ) {
+			$.setColor( i + 9 );
+			$.line( 220, 25 + i * 10, 360, 25 + i * 10 );
+		}
+		
+		// Vertical lines
+		for( let i = 0; i < 5; i++ ) {
+			$.setColor( i + 2 );
+			$.line( 370 + i * 10, 25, 370 + i * 10, 75 );
+		}
+		
+		// Diagonal lines - pixel mode
+		$.setColor( 10 );
+		$.line( 220, 90, 280, 130 );
+		$.line( 280, 90, 220, 130 );
+
+		// === SECTION - RECT Tests (Top Right) ===
+		$.setColor( 15 );
+		$.setPosPx( 431, 5 );
+		$.print( "RECT" );
+		
+		// Simple outlined rectangles
+		$.setColor( 9 );
+		$.rect( 435, 25, 40, 30 );
+		
+		$.setColor( 10 );
+		$.rect( 480, 25, 50, 40 );
+
+		$.setColor( 35 );
+		$.rect( 435, 85, 10, 30 );
+
+		$.setColor( 45 );
+		$.rect( 475, 85, 30, 10 );
+		
+		// Filled rectangles
+		$.setColor( 14 );
+		$.rect( 535, 25, 35, 45, 11 );
+		
+		$.setColor( 12 );
+		$.rect( 575, 25, 50, 35, 2 );
+
+		$.setColor( 45 );
+		$.rect( 535, 85, 10, 30, 35 );
+
+		$.setColor( 35 );
+		$.rect( 575, 85, 30, 10, 45 );
+
+		// === SECTION 4: CIRCLE Tests (Middle Left) ===
+		$.setColor( 15 );
+		$.setPosPx( 5, 165 );
+		$.print( "CIRCLE" );
+
+		let r = 0;
+		
+		// Outline circles small
+		x = 15;
+		for( r = 1; r < 10; r += 1 ) {
+			$.setColor( r + 1 );
+			$.circle( x, 185, r );
+			x += 20;
+		}
+
+		// Outline circles big
+		x = 15;
+		for( r = 10; r < 15; r += 1 ) {
+			$.setColor( 25 );
+			$.pset( x, 215 );
+			$.rect( x - r, 215 - r, r * 2, r * 2 );
+			$.setColor( r + 1 );
+			$.circle( x, 215, r );
+			x += 40;
+		}
+
+		// Filled circles small
+		x = 15;
+		for( r = 1; r < 10; r += 1 ) {
+			$.setColor( r + 1 );
+			$.circle( x, 245, r, r + 2 );
+			x += 20;
+		}
+
+		// Outline circles big
+		x = 15;
+		for( r = 10; r < 15; r += 1 ) {
+			$.setColor( r + 1 );
+			$.circle( x, 285, r, r + 2 );
+			x += 40;
+		}
+
+		// === SECTION - GET/PUT Tests (Middle Center) ===
+		$.setColor( 15 );
+		$.setPosPx( 218, 165 );
+		$.print( "GET/PUT" );
+		
+		// Draw a pattern to capture with get
+		$.setColor( 14 );
+		$.rect( 225, 190, 30, 30, 11 );
+		$.setColor( 10 );
+		$.circle( 240, 205, 10 );
+		
+		// Get the pattern
+		const pattern = $.get( 225, 190, 30, 30 );
+		
+		// Put the pattern in different locations - results in different colors because of blend
+		// mode - blending is happening twice once in the initial draw and again with the put
+		$.put( pattern, 270, 190 );
+		$.put( pattern, 225, 225 );
+		$.put( pattern, 270, 225 );
+		
+		// Create a simple sprite data manually
+		const spriteData = [
+			[ 0, 9, 9, 9, 0 ],
+			[ 9, 10, 10, 10, 9 ],
+			[ 9, 10, 14, 10, 9 ],
+			[ 9, 10, 10, 10, 9 ],
+			[ 0, 9, 9, 9, 0 ]
+		];
+		
+		// Test put with sprite data
+		$.put( spriteData, 330, 185 );
+		$.put( spriteData, 350, 185 );
+		$.put( spriteData, 370, 185 );
+		
+		// Scale up test - put larger pattern
+		const smallPattern = $.get( 330, 185, 334, 189 );
+		for( let py = 0; py < 3; py++ ) {
+			for( let px = 0; px < 3; px++ ) {
+				$.put( smallPattern, 320 + px * 15, 220 + py * 15 );
+			}
+		}
+
+		// === SECTION - GETPIXEL Tests (Middle Right) ===
+		$.setColor( 15 );
+		$.setPosPx( 431, 165 );
+		$.print( "GETPIXEL" );
+		
+		// Draw a gradient-like pattern to test getPixel
+		for( let x = 0; x < 50; x++ ) {
+			for( let y = 0; y < 30; y++ ) {
+				const colorIndex = Math.floor( ( x + y ) / 8 ) % 14 + 1;
+				$.setColor( colorIndex );
+				$.pset( 435 + x, 190 + y );
+			}
+		}
+		
+		// Test getPixel and verify by drawing samples
+		const testPixels = [
+			{ "x": 440, "y": 195, "c": "green" },
+			{ "x": 455, "y": 200, "c": "purple" },
+			{ "x": 475, "y": 216, "c": "blue" }
+		];
+		
+		$.setBlend( "replace" );
+
+		// Draw white boxes around test pixels
+		for( let i = 0; i < testPixels.length; i++ ) {
+			const px = testPixels[ i ].x;
+			const py = testPixels[ i ].y;
+			$.setColor( 15 );
+			$.rect( px - 2, py - 2, 5, 5 );
+			$.setColor( testPixels[ i ].c );
+			$.pset( px, py );
+		}
+		
+		// Get pixel colors and display them below
+		let displayY = 240;
+		for( let i = 0; i < testPixels.length; i++ ) {
+			const px = testPixels[ i ].x;
+			const py = testPixels[ i ].y;
+			const pixelColor = $.getPixel( px, py, true );
+			
+			// Draw a small sample of the retrieved color
+			$.setColor( pixelColor );
+			$.rect( 440, displayY, 20, 20, pixelColor );
+			displayY += 25;
+		}
+
+		$.setBlend( "alpha" );
+		
+		// Test getPixel with corners
+		$.setColor( 9 );
+		$.pset( 0, 0 );
+		$.pset( 639, 0 );
+		$.pset( 0, 479 );
+		$.pset( 639, 479 );
+		
+		const corner1 = $.getPixel( 0, 0, false );
+		const corner2 = $.getPixel( 639, 0, false );
+		const corner3 = $.getPixel( 0, 479, false );
+		const corner4 = $.getPixel( 639, 479, false );
+		
+		// Display corner test results
+		$.setColor( corner1 );
+		$.rect( 500, 240, 10, 10, corner1 );
+		$.setColor( corner2 );
+		$.rect( 515, 240, 10, 10, corner2 );
+		$.setColor( corner3 );
+		$.rect( 500, 255, 10, 10, corner3 );
+		$.setColor( corner4 );
+		$.rect( 515, 255, 10, 10, corner4 );
+		
+		// === SECTION - Ellipse Tests (Bottom Left) ===
+		$.setColor( 15 );
+		$.setPosPx( 5, 325 );
+		$.print( "ELLIPSE" );
+
+		// Small ellipses
+		$.setColor( 2 );
+
+		x = 13;
+		y = 340
+
+		$.ellipse( 5, y, 1, 1 );
+		for( r = 2; r < 9; r += 1 ) {
+			$.ellipse( x, y, r, Math.round( r / 2 ) );
+			$.ellipse( x + r * 3 + 1, y, Math.round( r / 2 ), r );
+			x += r * 5.5 + 2;
+		}
+
+		// Small ellipses filled
+		$.setColor( 15 );
+		x = 13;
+		y = 360
+
+		$.ellipse( 5, y, 1, 1, 4 );
+		for( r = 2; r < 9; r += 1 ) {
+			$.ellipse( x, y, r, Math.round( r / 2 ), 4 );
+			$.ellipse( x + r * 3 + 1, y, Math.round( r / 2 ), r, 2 );
+			x += r * 5.5 + 2;
+		}
+
+		// Big ellipses filled
+		$.setColor( 15 );
+		x = 13;
+		y = 385
+		for( r = 10; r < 15; r += 1 ) {
+			$.ellipse( x, y, r, Math.round( r / 2 ), 4 );
+			if( r < 14 ) {
+				$.ellipse( x + r * 2, y, Math.round( r / 2 ), r, 2 );
+			}
+			x += r * 4;
+		}
+
+		// Fat ellipses
+		$.setColor( 2 );
+		$.ellipse( 105, 408, 100, 5 );
+		$.setColor( 15 );
+		$.ellipse( 105, 423, 100, 5, 4 );
+
+		// Thin ellipses
+		y = 455;
+		let c = 2;
+		for( x = 10; x < 200; x += 25 ) {
+			$.setColor( c % 15 + 2 );
+			$.ellipse( x, y, 5, 20 );
+			$.ellipse( x + 13, y, 5, 20, c % 15 + 4 );
+			c += 1;
+		}
+
+		// === SECTION - Arc Tests (Bottom Middle) ===
+
+		$.setColor( 15 );
+		$.setPosPx( 218, 325 );
+		$.print( "ARC" );
+		
+		// Quarter circles at different angles
+		$.setColor( 9 );
+		$.arc( 225, 350, 30, 0, 90 );
+		
+		$.setColor( 10 );
+		$.arc( 250, 350, 30, 90, 180 );
+		
+		$.setColor( 11 );
+		$.arc( 280, 380, 30, 180, 270 );
+		
+		$.setColor( 12 );
+		$.arc( 260, 350, 30, 270, 360 );
+		
+		// Half circles
+		$.setColor( 13 );
+		$.arc( 250, 410, 25, 0, 180 );
+		
+		$.setColor( 14 );
+		$.arc( 320, 410, 25, 180, 360 );
+		
+		// Dashed circles (multiple arcs)
+		$.setColor( 2 );
+		for( let a = 0; a < 360; a += 45 ) {
+			$.arc( 290, 410, 25, a, a + 30 );
+		}
+		
+		// Spiral effect - pixel mode
+		let sa = 0;
+		let ea = 60;
+		for( let r = 5; r < 30; r += 3 ) {
+			$.setColor( 9 + ( r % 6 ) );
+			$.arc( 380, 410, r, sa, ea );
+			sa += 40;
+			ea += 40;
+		}
+		
+		$.setColor( 14 );
+		$.arc( 350, 330, 35, 45, 135 );
+		
+		$.setColor( 12 );
+		$.arc( 330, 350, 35, 135, 225 );
+		
+		$.setColor( 10 );
+		$.arc( 250, 480, 35, 225, 315 );
+		
+		// Overlapping arcs
+		$.setColor( 9 );
+		$.arc( 350, 440, 30, 0, 180 );
+		$.setColor( 11 );
+		$.arc( 350, 440, 25, 90, 270 );
+		$.setColor( 13 );
+		$.arc( 350, 440, 20, 180, 360 );
+
+		
+		// === SECTION - Bezier Tests (Bottom Right) ===
+
+
+		$.setColor( 15 );
+		$.setPosPx( 431, 325 );
+		$.print( "BEZIER" );
+		
+		// S-curve
+		$.setColor( 9 );
+		$.bezier( 446, 350, 486, 350, 446, 390, 486, 390 );
+		
+		// Wave
+		$.setColor( 10 );
+		$.bezier( 500, 350, 520, 360, 540, 370, 560, 380 );
+		
+		// Loop
+		$.setColor( 11 );
+		$.bezier( 570, 350, 600, 350, 570, 390, 600, 390 );
+		
+		// Sharp turn
+		$.setColor( 12 );
+		$.bezier( 446, 400, 446, 420, 486, 420, 486, 440 );
+		
+		// Smooth curve
+		$.setColor( 13 );
+		$.bezier( 500, 400, 520, 390, 540, 410, 560, 400 );
+		
+		// Complex curve
+		$.setColor( 14 );
+		$.bezier( 570, 400, 585, 390, 600, 410, 615, 400 );
+		
+		// Sharp bezier
+		$.setColor( 2 );
+		$.bezier( 446, 450, 456, 440, 456, 460, 486, 450 );
+		
+		$.setColor( 11 );
+		$.bezier( 500, 450, 530, 440, 560, 460, 570, 450 );
+		
+		// Thick bezier with circle pen
+		$.setColor( 9 );
+		$.bezier( 580, 450, 610, 440, 620, 460, 630, 450 );
+
+
+		// === Draw section dividers ===
+		$.setColor( 15 );
+		$.line( 213, 0, 213, 479 );
+		$.line( 426, 0, 426, 479 );
+		$.line( 0, 159, 639, 159 );
+		$.line( 0, 319, 639, 319 );
+	} );
+</script>
+</body>
+</html>
+

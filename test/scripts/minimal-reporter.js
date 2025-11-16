@@ -62,12 +62,12 @@ class MinimalReporter {
 		
 		// Create test record
 		const testType = process.env.PI_TEST_TYPE || "core";
-		const testsDir = testType === "plugins" ? "tests-plugins" : "tests";
+		const testsDir = testType === "plugins" ? "html-plugins" : "html-core";
 		const testRecord = {
 			"name": title,
 			"file": htmlFile,
 			"screenshotName": screenshotName, // Used for image paths
-			"url": `/test/${testsDir}/html/${htmlFile}`,
+			"url": `/test/tests/${testsDir}/${htmlFile}`,
 			"status": result.status,
 			"error": errorMessage
 		};
