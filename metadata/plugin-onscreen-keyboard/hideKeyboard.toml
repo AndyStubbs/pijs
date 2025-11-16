@@ -1,0 +1,20 @@
+title = "hideKeyboard"
+category = "onscreen-keyboard"
+isScreen = true
+plugin = "onscreen-keyboard"
+summary = "Hides the onscreen keyboard and restores the background."
+description = """
+Hides the onscreen keyboard if it's currently visible on this screen. Restores the background
+image that was captured when the keyboard was shown, and releases all active key presses.
+"""
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.showKeyboard( "text" );
+// ... user input ...
+$.hideKeyboard();
+"""
+
