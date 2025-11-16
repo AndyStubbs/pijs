@@ -1,12 +1,13 @@
 {
 	"name": "pijs",
-	"version": "2.0-alpha.3",
-	"majorVersion": "2.0-alpha",
+	"version": "2.0",
+	"majorVersion": "2.0",
 	"description": "Graphics and sound library",
 	"main": "build/pi.js",
 	"directories": {
 		"test": "test"
 	},
+	"includePlugins": [ "gamepad", "keyboard", "play-sound", "pointer" ],
 	"scripts": {
 		"build": "node scripts/build.js",
 		"metadata": "node scripts/generate-metadata.js",

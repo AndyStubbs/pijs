@@ -46,7 +46,7 @@ if( !fs.existsSync( buildDir ) ) {
 const injectVersionPlugin = {
 	"name": "inject-version",
 	"setup"( build ) {
-		build.onLoad( { "filter": /index\.js$/ }, async ( args ) => {
+		build.onLoad( { "filter": /index(-full)?\.js$/ }, async ( args ) => {
 			const contents = await fs.promises.readFile( args.path, "utf8" );
 			// Replace __VERSION__ with actual version
 			const transformed = contents.replace( /__VERSION__/g, `"${buildVersion}"` );
@@ -93,17 +93,19 @@ const webpBase64Plugin = {
 	}
 };
 
-const buildOptions = {
-	"entryPoints": [ path.join( __dirname, "..", sourceDir, "index.js" ) ],
-	"bundle": true,
-	"sourcemap": true,
-	"banner": { "js": banner },
-	"target": "es2020",
-	"platform": "browser",
-	"plugins": [ injectVersionPlugin, webpBase64Plugin ],
-	"loader": { ".vert": "text", ".frag": "text" },
-	"sourceRoot": `../${sourceDir}/`
-};
+function getBuildOptions( entryFile ) {
+	return {
+		"entryPoints": [ path.join( __dirname, "..", sourceDir, entryFile ) ],
+		"bundle": true,
+		"sourcemap": true,
+		"banner": { "js": banner },
+		"target": "es2020",
+		"platform": "browser",
+		"plugins": [ injectVersionPlugin, webpBase64Plugin ],
+		"loader": { ".vert": "text", ".frag": "text" },
+		"sourceRoot": `../${sourceDir}/`
+	};
+}
 
 
 async function buildAllPlugins() {
@@ -147,6 +149,34 @@ async function buildAllPlugins() {
 	}
 }
 
+async function buildPiVersion( versionName, entryFile, outputPrefix ) {
+	const buildOptions = getBuildOptions( entryFile );
+
+	console.log( `  Building ${versionName} ESM...` );
+	await esbuild.build( {
+		...buildOptions,
+		"format": "esm",
+		"minify": true,
+		"outfile": path.join( buildDir, `${outputPrefix}.esm.min.js` )
+	} );
+
+	console.log( `  Building ${versionName} IIFE...` );
+	await esbuild.build( {
+		...buildOptions,
+		"format": "iife",
+		"minify": true,
+		"outfile": path.join( buildDir, `${outputPrefix}.min.js` )
+	} );
+
+	console.log( `  Building ${versionName} IIFE (unminified)...` );
+	await esbuild.build( {
+		...buildOptions,
+		"format": "iife",
+		"minify": false,
+		"outfile": path.join( buildDir, `${outputPrefix}.js` )
+	} );
+}
+
 async function build() {
 	console.log( `Building Pi.js v${buildVersion} from ${sourceDir}...` );
 
@@ -154,56 +184,43 @@ async function build() {
 		// Build all plugins first
 		await buildAllPlugins();
 
-		// Build ESM version
+		// Build LITE version (core only, no plugins)
 		console.log( "" );
-		console.log( "Building Pi.js..." );
-		console.log( "Building ESM..." );
-		await esbuild.build( {
-			...buildOptions,
-			"format": "esm",
-			"minify": true,
-			"outfile": path.join( buildDir, "pi.esm.min.js" )
-		} );
+		console.log( "Building Pi.js Lite (core only)..." );
+		await buildPiVersion( "lite", "index.js", "pi-lite" );
 
-		// Build IIFE version (for <script> tags)
-		// Note: No globalName - we set window.pi manually in index.js
-		console.log( "Building IIFE..." );
-		await esbuild.build( {
-			...buildOptions,
-			"format": "iife",
-			"minify": true,
-			"outfile": path.join( buildDir, "pi.min.js" )
-		} );
+		// Build FULL version (core + plugins)
+		console.log( "" );
+		console.log( "Building Pi.js Full (with plugins)..." );
+		await buildPiVersion( "full", "index-full.js", "pi" );
 
-		// Build unminified IIFE version for debugging
-		console.log( "Building IIFE (unminified)..." );
-		const unminifiedOptions = {
-			...buildOptions,
-			"format": "iife",
-			"minify": false,
-			"outfile": path.join( buildDir, "pi.js" ),
-		};
-		await esbuild.build( unminifiedOptions );
-		//console.log( unminifiedOptions );
-
+		console.log( "" );
 		console.log( "✓ Build completed successfully!" );
 		console.log( "" );
 		console.log( "Output files:" );
-		console.log( "  - build/pi.js (IIFE, unminified with sourcemaps)" );
-		console.log( "  - build/pi.min.js (IIFE, minified)" );
-		console.log( "  - build/pi.esm.min.js (ESM)" );
+		console.log( "  Full version (with plugins):" );
+		console.log( "    - build/pi.js (IIFE, unminified with sourcemaps)" );
+		console.log( "    - build/pi.min.js (IIFE, minified)" );
+		console.log( "    - build/pi.esm.min.js (ESM, minified)" );
+		console.log( "  Lite version (core only):" );
+		console.log( "    - build/pi-lite.js (IIFE, unminified with sourcemaps)" );
+		console.log( "    - build/pi-lite.min.js (IIFE, minified)" );
+		console.log( "    - build/pi-lite.esm.min.js (ESM, minified)" );
 
 		// Print file sizes
 		const files = [
-			"pi.js",
-			"pi.min.js",
-			"pi.esm.min.js"
+			{ "name": "pi.js", "label": "Full (unminified)" },
+			{ "name": "pi.min.js", "label": "Full (minified)" },
+			{ "name": "pi.esm.min.js", "label": "Full (ESM)" },
+			{ "name": "pi-lite.js", "label": "Lite (unminified)" },
+			{ "name": "pi-lite.min.js", "label": "Lite (minified)" },
+			{ "name": "pi-lite.esm.min.js", "label": "Lite (ESM)" }
 		];
 
 		console.log( "" );
 		console.log( "File sizes:" );
 		files.forEach( file => {
-			const filePath = path.join( buildDir, file );
+			const filePath = path.join( buildDir, file.name );
 			if( fs.existsSync( filePath ) ) {
 				const buffer = fs.readFileSync( filePath );
 				const sizeKB = ( buffer.length / 1024 ).toFixed( 2 );
@@ -214,9 +231,9 @@ async function build() {
 					);
 					gzipKB = ( gzipBuffer.length / 1024 ).toFixed( 2 );
 				} catch( gzipError ) {
-					console.warn( `  ⚠️ Unable to gzip ${file}: ${gzipError.message}` );
+					console.warn( `  ⚠️ Unable to gzip ${file.name}: ${gzipError.message}` );
 				}
-				console.log( `  ${file}: ${sizeKB} KB (gzip ≈ ${gzipKB} KB)` );
+				console.log( `  ${file.label} (${file.name}): ${sizeKB} KB (gzip ≈ ${gzipKB} KB)` );
 			}
 		} );
 
