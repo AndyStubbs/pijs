@@ -1,3 +1,7 @@
 methods = [
-	"findColor"
+	"findColor",
+	"setBlendMode",
+	"setAutoRender",
+	"render",
+	"swapColor"
 ]

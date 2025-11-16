@@ -1,0 +1,28 @@
+title = "setBlend"
+category = "graphics"
+isScreen = true
+summary = "Sets the current blend mode used for rendering."
+description = """
+Sets how new pixels are blended with existing pixels during rendering.
+
+Supported blend modes:
+- "replace": New pixels overwrite existing pixels.
+- "alpha": New pixels are alpha composited with existing pixels.
+"""
+
+[[parameters]]
+name = "blend"
+type = "string"
+description = "Blend mode to use. One of: \"replace\", \"alpha\"."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+$.setBlend( "alpha" );
+$.line( 20, 20, 280, 180 );
+"""
+
+

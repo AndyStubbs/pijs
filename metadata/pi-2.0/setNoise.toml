@@ -1,0 +1,47 @@
+title = "setNoise"
+category = "graphics"
+isScreen = true
+summary = "Configures color noise ranges and optional seed for blending."
+description = """
+Sets per-channel noise ranges that influence color variation during blending operations.
+
+Noise formats:
+- number: A value [0..255]. Applies symmetric range [-v..+v] to RGBA channels.
+- [r, g, b, a]: Up to 4 values [0..255]. Each applies a symmetric range per channel.
+- [[rMin, gMin, bMin, aMin], [rMax, gMax, bMax, aMax]]:
+  Explicit per-channel min/max ranges [0..255].
+
+Seed:
+- A number used to seed noise generation. If omitted or null, the current time is used.
+"""
+
+[[parameters]]
+name = "noise"
+type = "number|array"
+description = "Noise configuration (number, 1D array, or 2D min/max arrays)."
+optional = true
+
+[[parameters]]
+name = "seed"
+type = "number"
+description = "Optional noise seed used for deterministic noise."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
+example = """
+$.screen( "300x200" );
+
+// Single value (symmetric range on all channels)
+$.setNoise( 24 );
+
+// Per-channel symmetric ranges
+$.setNoise( [ 16, 8, 0, 0 ] );
+
+// Explicit per-channel min/max ranges
+$.setNoise( [ [ 8, 4, 0, 0 ], [ 24, 12, 0, 0 ] ], 1234 );
+"""
+
+
