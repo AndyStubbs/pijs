@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Audio Pool Test 1</title>
+	<title>Audio Test 1</title>
 	<meta charset="utf-8">
 	<style>
 		body {
@@ -38,12 +38,12 @@
 	</style>
 </head>
 <body>
-	<h1>Audio Pool Test</h1>
+	<h1>Audio Test</h1>
 
 	<div class="section">
-		<h2>Audio Pool Info</h2>
-		<p>Audio pools allow you to play the same sound multiple times simultaneously.</p>
-		<p>Each pool maintains multiple instances of the same audio file that can play overlapping.</p>
+		<h2>Audio Info</h2>
+		<p>Audio allow you to play the same sound multiple times simultaneously.</p>
+		<p>Each audio command maintains multiple instances of the same audio file that can play overlapping.</p>
 		<div id="status">Ready to load audio...</div>
 	</div>
 
@@ -58,7 +58,7 @@
 		<button onclick="playSingleSound()">Play Once</button>
 		<button onclick="playRapidFire()">Rapid Fire (5x)</button>
 		<button onclick="playOverlapping()">Overlapping (3x with delay)</button>
-		<button onclick="stopPool()">Stop All</button>
+		<button onclick="stopAll()">Stop All</button>
 	</div>
 
 	<div class="section">
@@ -71,7 +71,7 @@
 	<script src="../../../build/pi.js"></script>
 	<script src="../../../build/plugins/play-sound/play-sound.js"></script>
 	<script>
-		let audioPoolId = null;
+		let audioId = null;
 
 		// Generate a simple beep sound as a data URL
 		// This creates a 0.5 second 440Hz beep using Web Audio API
@@ -143,35 +143,35 @@
 
 		function loadAudio() {
 			const status = document.getElementById( "status" );
-			status.textContent = "Generating audio and loading pool with 5 instances...";
+			status.textContent = "Generating audio and loading with 5 instances...";
 
 			try {
 
 				// Note: In a real application, use an actual audio file URL
-				// audioPoolId = $.createAudioPool( "sounds/beep.mp3", 5 );
+				// audioId = $.loadAudio( "sounds/beep.mp3", 5 );
 				
 				// For testing without external files, we generate a beep sound
 				const audioUrl = generateBeepDataURL();
-				audioPoolId = $.createAudioPool( audioUrl, 5 );
+				audioId = $.loadAudio( audioUrl, 5 );
 
 				// Wait for audio to load and pi to be ready
 				$.ready( () => {
 
-					// Check if pool is ready by verifying it has loaded audio
-					const checkPoolReady = () => {
+					// Check if audio is ready by verifying it has loaded audio
+					const checkAudioReady = () => {
 						try {
 
-							// Try to get pool info - if it throws, pool isn't ready
+							// Try to get audio info - if it throws, audio isn't ready
 							// We'll wait a bit more for async loading
 							setTimeout( () => {
-								status.textContent = "Audio pool loaded successfully! Pool ID: " +
-									audioPoolId + " (Click a play button to test)";
+								status.textContent = "Audio loaded successfully! Audio ID: " +
+									audioId + " (Click a play button to test)";
 							}, 500 );
 						} catch( error ) {
-							setTimeout( checkPoolReady, 100 );
+							setTimeout( checkAudioReady, 100 );
 						}
 					};
-					checkPoolReady();
+					checkAudioReady();
 				} );
 			} catch( error ) {
 				status.textContent = "Error: " + error.message;
@@ -180,14 +180,14 @@
 		}
 
 		function playSingleSound() {
-			if( !audioPoolId ) {
+			if( !audioId ) {
 				alert( "Please load audio first!" );
 				return;
 			}
 
 			try {
-				$.playAudioPool( audioPoolId, 1.0 );
-				console.log( "Playing sound from pool:", audioPoolId );
+				$.playAudio( audioId, 1.0 );
+				console.log( "Playing sound from audio:", audioId );
 			} catch( error ) {
 				alert( "Error: " + error.message );
 				console.error( error );
@@ -195,7 +195,7 @@
 		}
 
 		function playRapidFire() {
-			if( !audioPoolId ) {
+			if( !audioId ) {
 				alert( "Please load audio first!" );
 				return;
 			}
@@ -203,10 +203,10 @@
 			try {
 
 				// Play 5 sounds in rapid succession
-				// The audio pool ensures they can all play simultaneously
+				// The audio ensures they can all play simultaneously
 				for( let i = 0; i < 5; i++ ) {
 					setTimeout( () => {
-						$.playAudioPool( audioPoolId );
+						$.playAudio( audioId );
 					}, i * 100 );
 				}
 			} catch( error ) {
@@ -216,7 +216,7 @@
 		}
 
 		function playOverlapping() {
-			if( !audioPoolId ) {
+			if( !audioId ) {
 				alert( "Please load audio first!" );
 				return;
 			}
@@ -226,7 +226,7 @@
 				// Play 3 sounds with longer delays so they overlap
 				for( let i = 0; i < 3; i++ ) {
 					setTimeout( () => {
-						$.playAudioPool( audioPoolId, 1.0, 0, 1.5 );
+						$.playAudio( audioId, 1.0, 0, 1.5 );
 					}, i * 500 );
 				}
 			} catch( error ) {
@@ -236,27 +236,27 @@
 		}
 
 		function playWithVolume( volume ) {
-			if( !audioPoolId ) {
+			if( !audioId ) {
 				alert( "Please load audio first!" );
 				return;
 			}
 
 			try {
-				$.playAudioPool( audioPoolId, volume );
+				$.playAudio( audioId, volume );
 			} catch( error ) {
 				alert( "Error: " + error.message );
 				console.error( error );
 			}
 		}
 
-		function stopPool() {
-			if( !audioPoolId ) {
+		function stopAll() {
+			if( !audioId ) {
 				alert( "Please load audio first!" );
 				return;
 			}
 
 			try {
-				$.stopAudioPool( audioPoolId );
+				$.stopAudio( audioId );
 			} catch( error ) {
 				alert( "Error: " + error.message );
 				console.error( error );

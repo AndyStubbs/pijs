@@ -23,14 +23,14 @@
 <body>
 <script>
 	var sound;
-	sound = $.createAudioPool( "../../media/star.wav", 6 );
+	sound = $.loadAudio( "../../media/star.wav", 6 );
 	$.ready( function () {
 		$.screen( "300x200" );
 		$.print( "Press any key to make a sound." );
 		$.onkey( "any", "down", start );
 	} );
 	function start() {
-		$.playAudioPool( sound );
+		$.playAudio( sound );
 		$.print( "Sound is playing" );
 	}
 </script>

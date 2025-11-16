@@ -38,8 +38,8 @@
 
 var sound1, sound2;
 var step = 1;
-sound1 = $.createAudioPool( "../../media/RECRUITS.WAV", 3 );
-sound2 = $.createAudioPool( "../../media/TEST.WAV", 3 );
+sound1 = $.loadAudio( "../../media/RECRUITS.WAV", 3 );
+sound2 = $.loadAudio( "../../media/TEST.WAV", 3 );
 
 //sound = $.loadSound( "../../media/star.wav", 6 );
 $.ready( function () {
@@ -52,35 +52,35 @@ $.ready( function () {
 		"2. Two sounds will play but be only the " +
 		" first will stop after 2.5 seconds."
 	);
-	$.print( "3. Any subsequent steps will play the first sound pool." );
+	$.print( "3. Any subsequent steps will play the first sound audio." );
 	$.print( "Press any key to start." );
 	$.onkey( "any", "down", start );
 } );
 function start() {
 	if( step === 1 ) {
 		$.print( "Step 1 - 2 songs playing" );
-		$.playAudioPool( sound1, 0.25, 3.5, 4.5 );
+		$.playAudio( sound1, 0.25, 3.5, 4.5 );
 		setTimeout( function () {
-			$.playAudioPool( sound2, 0.5, 0 );
+			$.playAudio( sound2, 0.5, 0 );
 		}, 500 );
 		setTimeout( function () {
-			$.stopAudioPool();
+			$.stopAudio();
 			step = 2;
 			$.print( "Step 1 - 2 songs stopped" );
 		}, 2500 );
 	} else if( step === 2 ) {
 		$.print( "Step 2 - 2 songs playing" );
-		$.playAudioPool( sound1, 0.25, 3.5, 4.5 );
+		$.playAudio( sound1, 0.25, 3.5, 4.5 );
 		setTimeout( function () {
-			$.playAudioPool( sound2, 0.5, 0 );
+			$.playAudio( sound2, 0.5, 0 );
 		}, 500 );
 		setTimeout( function () {
-			$.stopAudioPool( sound1 );
+			$.stopAudio( sound1 );
 			step = 3;
 			$.print( "Step 2 - 1 song stopped" );
 		}, 2500 );
 	} else {
-		$.playAudioPool( sound1, 0.25, 3.5, 4.5 );
+		$.playAudio( sound1, 0.25, 3.5, 4.5 );
 		$.print( "Sound Started" );
 	}
 }

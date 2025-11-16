@@ -1,4 +1,4 @@
-title = "playAudioPool"
+title = "playAudio"
 category = "play-sound"
 isScreen = false
 plugin = "play-sound"
@@ -13,7 +13,7 @@ Volume is multiplied by the global volume set with setVolume.
 [[parameters]]
 name = "audioId"
 type = "string"
-description = "Audio pool ID returned from createAudioPool."
+description = "Audio pool ID returned from loadAudio."
 
 [[parameters]]
 name = "volume"
@@ -38,14 +38,14 @@ type = "void"
 description = "This function does not return a value."
 
 example = """
-const poolId = $.createAudioPool( "explosion.wav", 3 );
+const poolId = $.loadAudio( "explosion.wav", 3 );
 
 await $.ready();
 
 // Full volume
-$.playAudioPool( poolId, 1.0 );
+$.playAudio( poolId, 1.0 );
 
 // Half volume, play first 2 seconds
-$.playAudioPool( poolId, 0.5, 0, 2.0 );
+$.playAudio( poolId, 0.5, 0, 2.0 );
 """
 

@@ -1,13 +1,10 @@
 /**
  * Pi.js - Sound Module (Plugin)
  * 
- * Sound effects, audio pools, and volume control using Web Audio API.
+ * Sound effects, audio files, and volume control using Web Audio API.
  * 
  * @module plugins/play-sound/sound
  */
-
-// TODO: Rename "audio pool" command names, it's overly complicated. Maybe just make it loadAudio,
-// playAudio or something like that.
 
 "use strict";
 
@@ -32,7 +29,7 @@ let m_volume = 0.75;
  * @param {HTMLAudioElement} audio - Audio element
  * @param {number} retryCount - Number of retries remaining
  */
-function loadAudio( pluginApi, audioItem, audio, retryCount = 3 ) {
+function loadAudioItem( pluginApi, audioItem, audio, retryCount = 3 ) {
 
 	// Audio ready callback
 	function audioReady() {
@@ -58,7 +55,7 @@ function loadAudio( pluginApi, audioItem, audio, retryCount = 3 ) {
 		const index = errorCode - 1;
 
 		if( index >= 0 && index < errors.length ) {
-			console.error( "createAudioPool: " + errors[ index ] );
+			console.error( "loadAudio: " + errors[ index ] );
 
 			// Retry loading if retries remain
 			if( retryCount > 0 ) {
@@ -66,14 +63,14 @@ function loadAudio( pluginApi, audioItem, audio, retryCount = 3 ) {
 					audio.removeEventListener( "canplay", audioReady );
 					audio.removeEventListener( "error", audioError );
 					const newAudio = new Audio( audio.src );
-					loadAudio( pluginApi, audioItem, newAudio, retryCount - 1 );
+					loadAudioItem( pluginApi, audioItem, newAudio, retryCount - 1 );
 				}, 100 );
 			} else {
-				console.error( "createAudioPool: Max retries exceeded for " + audio.src );
+				console.error( "loadAudio: Max retries exceeded for " + audio.src );
 				pluginApi.done();
 			}
 		} else {
-			console.error( "createAudioPool: Unknown error - " + errorCode );
+			console.error( "loadAudio: Unknown error - " + errorCode );
 			pluginApi.done();
 		}
 	}
@@ -223,16 +220,16 @@ export function registerSound( pluginApi ) {
 	 * @param {Object} options - Command options
 	 * @param {string} options.src - Audio file URL
 	 * @param {number} options.poolSize - Number of audio instances (default: 1)
-	 * @returns {string} Audio pool ID for use with playAudioPool
+	 * @returns {string} Audio ID for use with playAudio
 	 */
-	pluginApi.addCommand( "createAudioPool", createAudioPool, false, [ "src", "poolSize" ] );
-	function createAudioPool( options ) {
+	pluginApi.addCommand( "loadAudio", loadAudio, false, [ "src", "poolSize" ] );
+	function loadAudio( options ) {
 		const src = options.src;
 		let poolSize = utils.getInt( options.poolSize, 1 );
 
 		// Validate src
 		if( !src || typeof src !== "string" ) {
-			const error = new TypeError( "createAudioPool: Parameter src must be a non-empty string." );
+			const error = new TypeError( "loadAudio: Parameter src must be a non-empty string." );
 			error.code = "INVALID_SRC";
 			throw error;
 		}
@@ -240,7 +237,7 @@ export function registerSound( pluginApi ) {
 		// Validate poolSize
 		if( poolSize < 1 ) {
 			const error = new RangeError(
-				"createAudioPool: Parameter poolSize must be an integer greater than 0."
+				"loadAudio: Parameter poolSize must be an integer greater than 0."
 			);
 			error.code = "INVALID_POOL_SIZE";
 			throw error;
@@ -255,7 +252,7 @@ export function registerSound( pluginApi ) {
 		// Create each audio instance in the pool
 		for( let i = 0; i < poolSize; i++ ) {
 			const audio = new Audio( src );
-			loadAudio( pluginApi, audioItem, audio );
+			loadAudioItem( pluginApi, audioItem, audio );
 		}
 
 		// Generate unique ID for this pool
@@ -270,15 +267,15 @@ export function registerSound( pluginApi ) {
 	 * Delete an audio pool and free its resources
 	 * 
 	 * @param {Object} options - Command options
-	 * @param {string} options.audioId - Audio pool ID returned from createAudioPool
+	 * @param {string} options.audioId - Audio pool ID returned from loadAudio
 	 */
-	pluginApi.addCommand( "deleteAudioPool", deleteAudioPool, false, [ "audioId" ] );
-	function deleteAudioPool( options ) {
+	pluginApi.addCommand( "removeAudio", removeAudio, false, [ "audioId" ] );
+	function removeAudio( options ) {
 		const audioId = options.audioId;
 
 		// Validate audioId
 		if( !m_audioPools[ audioId ] ) {
-			const error = new Error( `deleteAudioPool: Audio pool "${audioId}" not found.` );
+			const error = new Error( `removeAudio: Audio pool "${audioId}" not found.` );
 			error.code = "AUDIO_POOL_NOT_FOUND";
 			throw error;
 		}
@@ -304,9 +301,9 @@ export function registerSound( pluginApi ) {
 	 * @param {number} options.duration - Play duration in seconds (default: 0 = play full)
 	 */
 	pluginApi.addCommand(
-		"playAudioPool", playAudioPool, false, [ "audioId", "volume", "startTime", "duration" ]
+		"playAudio", playAudio, false, [ "audioId", "volume", "startTime", "duration" ]
 	);
-	function playAudioPool( options ) {
+	function playAudio( options ) {
 		const audioId = options.audioId;
 		const volume = utils.getFloat( options.volume, 1 );
 		const startTime = utils.getFloat( options.startTime, 0 );
@@ -314,7 +311,7 @@ export function registerSound( pluginApi ) {
 
 		// Validate audioId
 		if( !m_audioPools[ audioId ] ) {
-			const error = new Error( `playAudioPool: Audio pool "${audioId}" not found.` );
+			const error = new Error( `playAudio: Audio pool "${audioId}" not found.` );
 			error.code = "AUDIO_POOL_NOT_FOUND";
 			throw error;
 		}
@@ -322,7 +319,7 @@ export function registerSound( pluginApi ) {
 		// Validate volume
 		if( volume < 0 || volume > 1 ) {
 			const error = new RangeError(
-				"playAudioPool: Parameter volume must be a number between 0 and 1."
+				"playAudio: Parameter volume must be a number between 0 and 1."
 			);
 			error.code = "INVALID_VOLUME";
 			throw error;
@@ -331,7 +328,7 @@ export function registerSound( pluginApi ) {
 		// Validate startTime
 		if( startTime < 0 ) {
 			const error = new RangeError(
-				"playAudioPool: Parameter startTime must be a number greater than or equal to 0."
+				"playAudio: Parameter startTime must be a number greater than or equal to 0."
 			);
 			error.code = "INVALID_START_TIME";
 			throw error;
@@ -340,7 +337,7 @@ export function registerSound( pluginApi ) {
 		// Validate duration
 		if( duration < 0 ) {
 			const error = new RangeError(
-				"playAudioPool: Parameter duration must be a number greater than or equal to 0."
+				"playAudio: Parameter duration must be a number greater than or equal to 0."
 			);
 			error.code = "INVALID_DURATION";
 			throw error;
@@ -351,7 +348,7 @@ export function registerSound( pluginApi ) {
 
 		// Make sure pool has sounds loaded
 		if( audioItem.pool.length === 0 ) {
-			const error = new Error( "playAudioPool: Audio pool has no sounds loaded." );
+			const error = new Error( "playAudio: Audio pool has no sounds loaded." );
 			error.code = "EMPTY_POOL";
 			throw error;
 		}
@@ -379,7 +376,7 @@ export function registerSound( pluginApi ) {
 		const playPromise = audio.play();
 		if( playPromise !== undefined ) {
 			playPromise.catch( ( error ) => {
-				console.warn( "playAudioPool: Audio playback failed:", error.message );
+				console.warn( "playAudio: Audio playback failed:", error.message );
 			} );
 		}
 
@@ -396,8 +393,8 @@ export function registerSound( pluginApi ) {
 	 * @param {Object} options - Command options
 	 * @param {string} options.audioId - Audio pool ID (null to stop all pools)
 	 */
-	pluginApi.addCommand( "stopAudioPool", stopAudioPool, false, [ "audioId" ] );
-	function stopAudioPool( options ) {
+	pluginApi.addCommand( "stopAudio", stopAudio, false, [ "audioId" ] );
+	function stopAudio( options ) {
 		const audioId = options.audioId;
 
 		// If no audioId, stop all audio pools
@@ -414,7 +411,7 @@ export function registerSound( pluginApi ) {
 
 		// Validate audioId
 		if( !m_audioPools[ audioId ] ) {
-			const error = new Error( `stopAudioPool: Audio pool "${audioId}" not found.` );
+			const error = new Error( `stopAudio: Audio pool "${audioId}" not found.` );
 			error.code = "AUDIO_POOL_NOT_FOUND";
 			throw error;
 		}

@@ -1,4 +1,4 @@
-title = "createAudioPool"
+title = "loadAudio"
 category = "play-sound"
 isScreen = false
 plugin = "play-sound"
@@ -24,11 +24,11 @@ optional = true
 
 [[returns]]
 type = "string"
-description = "Audio pool ID for use with playAudioPool and stopAudioPool."
+description = "Audio ID for use with playAudio and stopAudio."
 
 example = """
-const poolId = $.createAudioPool( "explosion.wav", 5 );
+const audioId = $.loadAudio( "explosion.wav", 5 );
 await $.ready();
-$.playAudioPool( poolId );
+$.playAudio( audioId );
 """
 

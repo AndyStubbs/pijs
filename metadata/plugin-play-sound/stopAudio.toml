@@ -1,4 +1,4 @@
-title = "stopAudioPool"
+title = "stopAudio"
 category = "play-sound"
 isScreen = false
 plugin = "play-sound"
@@ -18,10 +18,11 @@ type = "void"
 description = "This function does not return a value."
 
 example = """
-const poolId = $.createAudioPool( "music.mp3" );
-$.playAudioPool( poolId );
+const audioId1 = $.loadAudio( "music.mp3" );
+const audioId2 = $.loadAudio( "music.mp3" );
+$.playAudio( audioId1 );
+$.playAudio( audioId2 );
 // Later...
-$.stopAudioPool( poolId ); // Stop this pool
-$.stopAudioPool(); // Stop all pools
+$.stopAudio( audioId1 ); // Stop this audio pool
+$.stopAudio(); // Stop all audio pools
 """
-

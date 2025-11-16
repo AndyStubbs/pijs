@@ -186,22 +186,22 @@ stopLong2.onclick = function () {
 
 stopAll.onclick = function () {
 	$.stopSound();
-	$.stopAudioPool();
+	$.stopAudio();
 }
 
 var sound1;
 
 playAudio.onclick = function () {
-	sound1 = $.createAudioPool(
+	sound1 = $.loadAudio(
 		"../../media/RECRUITS.WAV", 1
 	);
 	$.ready( function () {
-		$.playAudioPool( sound1 );
+		$.playAudio( sound1 );
 	} );
 }
 
 stopAudio.onclick = function () {
-	$.stopAudioPool( sound1 );
+	$.stopAudio( sound1 );
 }
 
 vol.onchange = function () {
