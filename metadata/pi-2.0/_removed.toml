@@ -1,7 +1,9 @@
 methods = [
+	"cancelInput",
 	"clearKeys",
 	"ingamepads",
 	"inkey",
+	"input",
 	"findColor",
 	"offgamepad",
 	"offkey",
