@@ -87,6 +87,7 @@ function logMessage( message ) {
 
 // Test configuration - can be overridden by environment variable
 const TEST_TYPE = process.env.PI_TEST_TYPE || "core";
+const TEST_LITE = process.env.PI_TEST_LITE || false;
 const TEST_CONFIG = {
 	"core": {
 		"testsDir": "../tests/html-core",
@@ -668,12 +669,14 @@ function findTestFiles() {
 			const filePath = path.join( testsDir, file );
 			const content = fs.readFileSync( filePath, "utf8" );
 			const metadata = parseTOML( content );
-			testFiles.push( {
-				"file": file,
-				"path": filePath,
-				"url": `${config.urlPrefix}/${file}`,
-				"metadata": metadata
-			} );
+			if( TEST_LITE && metadata.lite || !TEST_LITE) {
+				testFiles.push( {
+					"file": file,
+					"path": filePath,
+					"url": `${config.urlPrefix}/${file}`,
+					"metadata": metadata
+				} );
+			}
 		}
 	}
 

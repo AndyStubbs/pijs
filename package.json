@@ -15,6 +15,8 @@
 		"build:alpha-1": "node scripts/build.js alpha-1",
 		"test": "playwright test test/scripts/run-visual-tests.js",
 		"test:grep": "playwright test test/scripts/run-visual-tests.js --grep",
+		"test:lite": "set PI_TEST_LITE=true&&playwright test test/scripts/run-visual-tests.js",
+		"test:lite:grep": "set PI_TEST_LITE=true&&playwright test test/scripts/run-visual-tests.js --grep",
 		"test:plugins": "set PI_TEST_TYPE=plugins&& playwright test test/scripts/run-visual-tests.js",
 		"test:plugins:grep": "set PI_TEST_TYPE=plugins&& playwright test test/scripts/run-visual-tests.js --grep",
 		"server": "node server.js"
