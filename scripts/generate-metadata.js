@@ -144,11 +144,19 @@ function formatTypeScriptType( rawType, fallback = "any" ) {
 }
 
 // TODO: Add support of function overloads using object literal style
-// TODO: Ignore optional flag if non-optional parameters come after
+// TODO: If an optional parameter comes before a non-optional use explicit "| undefined" instead of "?"
 
 function buildMethodSignature( method ) {
+
+	// Make sure that optional parameters never come before a non-optional parameter
+	let isNonOptionalAfter = false;
+	for( let i = method.parameters.length - 1; i >= 0; i -= 1 ) {
+		if( !method.parameters[ i ].optional ) {
+			isNonOptionalAfter = true;
+		}
+		method.parameters[ i ].isNonOptionalAfter = isNonOptionalAfter;
+	}
 	const params = ( method.parameters || [] ).map( ( parameter ) => {
-		const optionalFlag = parameter.optional ? "?" : "";
 		
 		// Use signature if available for function types
 		let paramType;
@@ -158,7 +166,13 @@ function buildMethodSignature( method ) {
 			paramType = formatTypeScriptType( parameter.type, "any" );
 		}
 		
-		return `${parameter.name}${optionalFlag}: ${paramType}`;
+		if( parameter.optional ) {
+			if( parameter.isNonOptionalAfter ) {
+				return `${parameter.name}: ${paramType} | undefined`;
+			}
+			return `${parameter.name}?: ${paramType}`;
+		}
+		return `${parameter.name}: ${paramType}`;
 	} );
 
 	const returnType = formatTypeScriptType(
