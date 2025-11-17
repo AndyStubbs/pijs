@@ -1,7 +1,6 @@
 title = "rect"
 category = "primitives"
 isScreen = true
-acceptsObjectLiteral = false
 summary = "Draws a rectangle on the screen."
 description = """
 This function renders a rectangle to the active canvas.

@@ -1,7 +1,6 @@
 title = "bezier"
 category = "primitives"
 isScreen = true
-acceptsObjectLiteral = false
 summary = "Draws a bezier curve on the screen."
 description = """
 This function renders a cubic Bezier curve to the active canvas.

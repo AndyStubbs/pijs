@@ -1,7 +1,6 @@
 title = "blitSprite"
 category = "images"
 isScreen = true
-acceptsObjectLiteral = false
 summary = "Blits a frame from a spritesheet onto the screen using replace batch mode."
 description = """
 Blits a specific frame from a previously loaded spritesheet. Unlike drawSprite, this function uses

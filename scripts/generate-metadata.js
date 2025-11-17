@@ -144,7 +144,6 @@ function formatTypeScriptType( rawType, fallback = "any" ) {
 }
 
 // TODO: Add support of function overloads using object literal style
-// TODO: If an optional parameter comes before a non-optional use explicit "| undefined" instead of "?"
 
 function buildMethodSignature( method ) {
 

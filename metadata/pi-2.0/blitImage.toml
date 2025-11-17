@@ -1,7 +1,6 @@
 title = "blitImage"
 category = "images"
 isScreen = true
-acceptsObjectLiteral = false
 summary = "Blits an image element directly onto the screen using replace batch mode."
 description = """
 Blits an Image or Canvas element directly onto the screen. Unlike drawImage, this function accepts
