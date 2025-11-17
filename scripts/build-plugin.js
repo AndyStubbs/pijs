@@ -105,7 +105,7 @@ async function buildPlugin( pluginName, options = {} ) {
 		"platform": "browser",
 		"loader": { ".vert": "text", ".frag": "text" },
 		"plugins": plugins,
-		"legalComments": "inline"
+		"legalComments": "none"
 	};
 
 	if( banner ) {

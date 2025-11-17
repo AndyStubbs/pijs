@@ -48,6 +48,7 @@ const injectVersionPlugin = {
 	"setup"( build ) {
 		build.onLoad( { "filter": /index(-full)?\.js$/ }, async ( args ) => {
 			const contents = await fs.promises.readFile( args.path, "utf8" );
+
 			// Replace __VERSION__ with actual version
 			const transformed = contents.replace( /__VERSION__/g, `"${buildVersion}"` );
 			return { "contents": transformed, "loader": "js" };
@@ -103,7 +104,8 @@ function getBuildOptions( entryFile ) {
 		"platform": "browser",
 		"plugins": [ injectVersionPlugin, webpBase64Plugin ],
 		"loader": { ".vert": "text", ".frag": "text" },
-		"sourceRoot": `../${sourceDir}/`
+		"sourceRoot": `../${sourceDir}/`,
+		"legalComments": "none"
 	};
 }
 

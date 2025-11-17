@@ -1,6 +1,6 @@
 {
 	"name": "pijs",
-	"version": "2.0",
+	"version": "2.0.0",
 	"majorVersion": "2.0",
 	"description": "Graphics and sound library",
 	"main": "build/pi.js",
@@ -10,9 +10,9 @@
 	"includePlugins": [ "gamepad", "keyboard", "play-sound", "pointer" ],
 	"scripts": {
 		"build": "node scripts/build.js",
-		"metadata": "node scripts/generate-metadata.js",
 		"build:alpha-0": "node scripts/build.js alpha-0",
 		"build:alpha-1": "node scripts/build.js alpha-1",
+		"metadata": "node scripts/generate-metadata.js",
 		"test": "playwright test test/scripts/run-visual-tests.js",
 		"test:grep": "playwright test test/scripts/run-visual-tests.js --grep",
 		"test:lite": "set PI_TEST_LITE=true&&playwright test test/scripts/run-visual-tests.js",

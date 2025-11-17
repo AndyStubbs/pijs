@@ -2,7 +2,6 @@
  * Pi.js - Main Entry Point
  * 
  * Graphics library for retro-style games and demos.
- * WebGL2 only renderer - no Canvas2D fallback.
  * 
  * @module pi.js
  * @author Andy Stubbs
