@@ -47,7 +47,7 @@ description = "Promise resolving to 2D array [height][width] of indices (default
 
 example = """
 $.screen( "300x200" );
-$.getAsync( 0, 0, 16, 16 ).then( ( indices ) => { /* ... */ } );
+$.getAsync( 0, 0, 16, 16 ).then( ( indices ) => {} );
 """
 
 

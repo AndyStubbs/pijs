@@ -8,8 +8,8 @@ have completed loading (e.g., images queued via internal loading). Supports both
 and promise styles.
 
 Usage styles:
-- Callback: $.ready( function() { /* ... */ } );
-- Promise: $.ready().then( function() { /* ... */ } );
+- Callback: $.ready( function() {} );
+- Promise: $.ready().then( function() {} );
 - Async/Await: await $.ready();
 """
 
@@ -35,5 +35,3 @@ $.loadImage( { "src": "tiles.png", "name": "tiles" } );
 await $.ready();
 $.drawSprite( { "name": "tiles", "frame": 0, "x": 10, "y": 10 } );
 """
-
-

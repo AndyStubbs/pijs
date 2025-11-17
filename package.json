@@ -7,7 +7,6 @@
 	"directories": {
 		"test": "test"
 	},
-	"includePlugins": [ "gamepad", "keyboard", "play-sound", "pointer" ],
 	"scripts": {
 		"build": "node scripts/build.js",
 		"build:alpha-0": "node scripts/build.js alpha-0",

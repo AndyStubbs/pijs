@@ -11,23 +11,13 @@
 const fs = require( "fs" );
 const path = require( "path" );
 const toml = require( "@iarna/toml" );
-const pkg = require( "../package.json" );
-
 const METADATA_DIR = path.join( __dirname, "..", "metadata" );
 const OUTPUT_DIR = path.join( __dirname, "..", "build", "metadata" );
-const TYPE_DEFINITION_FILE = path.join( OUTPUT_DIR, "pi.d.ts" );
+const REFERENCE_FILE = path.join( OUTPUT_DIR, `reference-{VERSION}.json` );
+const TYPE_DEFINITION_FILE = path.join( OUTPUT_DIR, "pi-{VERSION}.d.ts" );
 
-function getMajorMinorFromPkgVersion( fullVersion ) {
-	const match = String( fullVersion ).match( /^(\d+)\.(\d+)/ );
-	if( !match ) {
-		return null;
-	}
-	return `${match[ 1 ]}.${match[ 2 ]}`;
-}
-
-// Major.minor string from package.json version
-const TARGET_MAJOR_MINOR = getMajorMinorFromPkgVersion( pkg.version ) ||
-	getMajorMinorFromPkgVersion( pkg.majorVersion ) || "1.0";
+// Generate metadata
+generateMetadata();
 
 function getVersionFolders() {
 	if( !fs.existsSync( METADATA_DIR ) ) {
@@ -39,21 +29,6 @@ function getVersionFolders() {
 		.map( ( d ) => d.name );
 }
 
-function compareMajorMinor( a, b ) {
-	const [ aMaj, aMin ] = a.split( "." ).map( Number );
-	const [ bMaj, bMin ] = b.split( "." ).map( Number );
-	if( aMaj !== bMaj ) return aMaj - bMaj;
-	return aMin - bMin;
-}
-
-function normalizeVersionFolder( folderName ) {
-	// folderName like "pi-2.0" -> "2.0"
-	return folderName.replace( /^pi-/, "" );
-}
-
-// Determine reference output file based on target major.minor
-const REFERENCE_FILE = path.join( OUTPUT_DIR, `reference-${TARGET_MAJOR_MINOR}.json` );
-
 function ensureDirectories() {
 	if( !fs.existsSync( METADATA_DIR ) ) {
 		console.error( `✗ Metadata directory not found: ${METADATA_DIR}` );
@@ -63,12 +38,6 @@ function ensureDirectories() {
 	if( !fs.existsSync( OUTPUT_DIR ) ) {
 		fs.mkdirSync( OUTPUT_DIR, { "recursive": true } );
 	}
-}
-
-function loadMethodFilesFlat() {
-	return fs.readdirSync( METADATA_DIR )
-		.filter( ( file ) => file.endsWith( ".toml" ) )
-		.sort();
 }
 
 function listTomlFilesInDir( dir ) {
@@ -245,7 +214,7 @@ function buildInterfaceMethods( lines, methods ) {
 	} );
 }
 
-function buildTypeDefinitions( screenMethods, apiMethods ) {
+function buildTypeDefinitions( version, screenMethods, apiMethods ) {
 	const lines = [];
 
 	lines.push( "declare namespace Pi {" );
@@ -261,7 +230,7 @@ function buildTypeDefinitions( screenMethods, apiMethods ) {
 	lines.push( "\t\t/**" );
 	lines.push( "\t\t * Current Pi.js version string." );
 	lines.push( "\t\t */" );
-	lines.push( `\t\treadonly version: "${TARGET_MAJOR_MINOR}";` );
+	lines.push( `\t\treadonly version: "pi-${version}";` );
 	lines.push( "\t}" );
 	lines.push( "}" );
 	lines.push( "" );
@@ -274,9 +243,65 @@ function buildTypeDefinitions( screenMethods, apiMethods ) {
 	return lines;
 }
 
-function writeOutput( filePath, data ) {
+function generateMetadata() {
+	ensureDirectories();
+
+	const versionFolders = getVersionFolders();
+
+	// Early exit if no folders found
+	if( versionFolders.length === 0 ) {
+		console.log( "No metadata folders found" );
+		return;
+	}
+
+	const methodNameToMetadata = new Map();
+
+	// Layer versions from oldest to target
+	for( const folderName of versionFolders ) {
+		const dirPath = path.join( METADATA_DIR, folderName );
+
+		// Handle removals first
+		const removedPath = path.join( dirPath, "_removed.toml" );
+		if( fs.existsSync( removedPath ) ) {
+			const removedData = parseMetadataFile( removedPath );
+			const removedMethods = removedData.methods;
+			for( const method of removedMethods ) {
+				methodNameToMetadata.delete( method );
+			}
+		}
+
+		// Apply overrides and additions
+		const tomlFiles = listTomlFilesInDir( dirPath ).filter(
+			( f ) => f.toLowerCase() !== "_removed.toml"
+		);
+		for( const fileName of tomlFiles ) {
+			const filePath = path.join( dirPath, fileName );
+			const metadata = parseMetadataFile( filePath );
+			const methodName = metadata.title || path.basename( fileName, ".toml" );
+			methodNameToMetadata.set( methodName, buildReferenceEntry( methodName, metadata ) );
+		}
+
+		// Write output for current version
+		const version = folderName.substring( folderName.indexOf( "-" ) + 1 );
+		writeOutputFiles( version, methodNameToMetadata );
+	}
+}
+
+function writeOutputFiles( version, methodNameToMetadata ) {
+	const referenceMethods = Array.from( methodNameToMetadata.values() ).sort(
+		( a, b ) => a.name.localeCompare( b.name )
+	);
+	const screenMethods = referenceMethods.filter( ( m ) => m.isScreen );
+	const apiMethods = referenceMethods.filter( ( m ) => !m.isScreen );
+
+	writeReferenceOutput( version, { "methods": referenceMethods } );
+	writeTypeDefinitions( version, buildTypeDefinitions( version, screenMethods, apiMethods ) );
+}
+
+function writeReferenceOutput( version, data ) {
+	const filePath = REFERENCE_FILE.replace( "{VERSION}", version );
 	const payload = {
-		"version": TARGET_MAJOR_MINOR,
+		"version": version,
 		"generatedAt": new Date().toISOString(),
 		...data
 	};
@@ -286,9 +311,11 @@ function writeOutput( filePath, data ) {
 		`${JSON.stringify( payload, null, "\t" )}\n`,
 		"utf8"
 	);
+	console.log( "✓ Generated reference metadata:", filePath );
 }
 
-function writeTypeDefinitions( filePath, lines ) {
+function writeTypeDefinitions( version, lines ) {
+	const filePath = TYPE_DEFINITION_FILE.replace( "{VERSION}", version );
 	const header = [
 		"/**",
 		" * Pi.js Type Definitions",
@@ -302,73 +329,5 @@ function writeTypeDefinitions( filePath, lines ) {
 		`${header}${lines.join( "\n" )}\n`,
 		"utf8"
 	);
+	console.log( "✓ Generated type definitions:", filePath );
 }
-
-function generateMetadata() {
-	ensureDirectories();
-
-	const versionFolders = getVersionFolders().map( normalizeVersionFolder );
-	const selectedFolders = versionFolders
-		.filter( ( v ) => compareMajorMinor( v, TARGET_MAJOR_MINOR ) <= 0 )
-		.sort( compareMajorMinor );
-
-	const methodNameToMetadata = new Map();
-
-	if( selectedFolders.length > 0 ) {
-		// Layer versions from oldest to target
-		for( const v of selectedFolders ) {
-			const dirPath = path.join( METADATA_DIR, `pi-${v}` );
-
-			// Handle removals first
-			const removedPath = path.join( dirPath, "_removed.toml" );
-			if( fs.existsSync( removedPath ) ) {
-				try {
-					const removedData = parseMetadataFile( removedPath );
-					const removedMethods = Array.isArray( removedData.methods )
-						? removedData.methods : [];
-					for( const method of removedMethods ) {
-						methodNameToMetadata.delete( method );
-					}
-				} catch {
-					// ignore parse errors for removed file
-				}
-			}
-
-			// Apply overrides and additions
-			const tomlFiles = listTomlFilesInDir( dirPath )
-				.filter( ( f ) => f.toLowerCase() !== "_removed.toml" );
-			for( const fileName of tomlFiles ) {
-				const filePath = path.join( dirPath, fileName );
-				const metadata = parseMetadataFile( filePath );
-				const methodName = metadata.title || path.basename( fileName, ".toml" );
-				methodNameToMetadata.set( methodName, buildReferenceEntry( methodName, metadata ) );
-			}
-		}
-	} else {
-		// Fallback: flat files in metadata/ (legacy behavior)
-		const files = loadMethodFilesFlat();
-		for( const fileName of files ) {
-			const methodPath = path.join( METADATA_DIR, fileName );
-			const metadata = parseMetadataFile( methodPath );
-			const methodName = metadata.title || path.basename( fileName, ".toml" );
-			methodNameToMetadata.set( methodName, buildReferenceEntry( methodName, metadata ) );
-		}
-	}
-
-	// Build arrays for output
-	const referenceMethods = Array.from( methodNameToMetadata.values() )
-		.sort( ( a, b ) => a.name.localeCompare( b.name ) );
-	const screenMethods = referenceMethods.filter( ( m ) => m.isScreen );
-	const apiMethods = referenceMethods.filter( ( m ) => !m.isScreen );
-
-	writeOutput( REFERENCE_FILE, { "methods": referenceMethods } );
-	writeTypeDefinitions(
-		TYPE_DEFINITION_FILE,
-		buildTypeDefinitions( screenMethods, apiMethods )
-	);
-
-	console.log( "✓ Generated reference metadata:", REFERENCE_FILE );
-	console.log( "✓ Generated type definitions:", TYPE_DEFINITION_FILE );
-}
-
-generateMetadata();

@@ -29,7 +29,7 @@ description = "Promise that resolves to palette index or color value object."
 
 example = """
 $.screen( "300x200" );
-$.getPixelAsync( 10, 10 ).then( ( color ) => { /* ... */ } );
+$.getPixelAsync( 10, 10 ).then( ( color ) => {} );
 """
 
 
