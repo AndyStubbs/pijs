@@ -669,6 +669,8 @@ function findTestFiles() {
 			const filePath = path.join( testsDir, file );
 			const content = fs.readFileSync( filePath, "utf8" );
 			const metadata = parseTOML( content );
+
+			// Add test if lite mode and test is lite or run all tests in non-lite mode
 			if( TEST_LITE && metadata.lite || !TEST_LITE) {
 				testFiles.push( {
 					"file": file,
@@ -676,6 +678,33 @@ function findTestFiles() {
 					"url": `${config.urlPrefix}/${file}`,
 					"metadata": metadata
 				} );
+
+				// Swap out pi.js version with the lite version
+				if(
+					TEST_LITE &&
+					metadata.lite &&
+					content.includes( `<script src="../../../build/pi.js"></script>` )
+				) {
+					fs.writeFileSync(
+						filePath,
+						content.replace(
+							`<script src="../../../build/pi.js"></script>`,
+							`<script src="../../../build/pi-lite.js"></script>`
+						)
+					);
+				
+				// Swap out the lite version with full version
+				} else if(
+					content.includes( `<script src="../../../build/pi-lite.js"></script>` )
+				) {
+					fs.writeFileSync(
+						filePath,
+						content.replace(
+							`<script src="../../../build/pi-lite.js"></script>`,
+							`<script src="../../../build/pi.js"></script>`
+						)
+					);
+				}
 			}
 		}
 	}
