@@ -1,6 +1,7 @@
 title = "arc"
 category = "primitives"
 isScreen = true
+acceptsObjectLiteral = false
 summary = "Draws an arc on the screen."
 description = """
 This function renders a circular arc segment to the active canvas.
