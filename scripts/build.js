@@ -28,13 +28,55 @@ if( buildType === "alpha-0" ) {
 	buildVersion = "2.0.0-alpha.1";
 }
 
-const banner = `/**
- * Pi.js Graphics Library
- * @version ${buildVersion}
+// Generate banner for full version (includes core + plugins)
+function getFullBanner( version ) {
+	return `/**
+ * Pi.js Graphics Library - Full Version
+ * 
+ * A powerful, lightweight JavaScript graphics library for web applications.
+ * This version includes the complete core functionality plus additional
+ * plugins for extended features.
+ * 
+ * @version ${version}
  * @author Andy Stubbs
  * @license Apache-2.0
- * @preserve
+ * 
+ * Features:
+ * - Core graphics rendering engine
+ * - Screen management and canvas operations
+ * - Shape drawing and transformations
+ * - Image loading and manipulation
+ * - Plugin system with bundled plugins:
+ *		gamepad: Gamepad input handling
+ *		keyboard: Keyboard input handling
+ *		play-sound: Music playback and sound effects
+ *		pointer: Mouse, touch, and press handling
+ * 
+ * For the core-only version, use pi-lite.js
  */`;
+}
+
+// Generate banner for lite version (core only, no plugins)
+function getLiteBanner( version ) {
+	return `/**
+ * Pi.js Graphics Library - Lite Version
+ * 
+ * A powerful, lightweight JavaScript graphics library for web applications.
+ * This is the core-only version without plugins for minimal bundle size.
+ * 
+ * @version ${version}
+ * @author Andy Stubbs
+ * @license Apache-2.0
+ * 
+ * Features:
+ * - Core graphics rendering engine
+ * - Screen management and canvas operations
+ * - Shape drawing and transformations
+ * - Image loading and manipulation
+ * 
+ * For the full version with plugins, use pi.js
+ */`;
+}
 
 // Ensure build directory exists
 const buildDir = path.join( __dirname, "../build" );
@@ -94,7 +136,7 @@ const webpBase64Plugin = {
 	}
 };
 
-function getBuildOptions( entryFile ) {
+function getBuildOptions( entryFile, banner ) {
 	return {
 		"entryPoints": [ path.join( __dirname, "..", sourceDir, entryFile ) ],
 		"bundle": true,
@@ -152,7 +194,15 @@ async function buildAllPlugins() {
 }
 
 async function buildPiVersion( versionName, entryFile, outputPrefix ) {
-	const buildOptions = getBuildOptions( entryFile );
+	// Determine which banner to use based on entry file
+	let banner;
+	if( entryFile === "index-full.js" ) {
+		banner = getFullBanner( buildVersion );
+	} else {
+		banner = getLiteBanner( buildVersion );
+	}
+	
+	const buildOptions = getBuildOptions( entryFile, banner );
 
 	console.log( `  Building ${versionName} ESM...` );
 	await esbuild.build( {
