@@ -22,7 +22,7 @@ $.ready( function () {\r
 
 [[parameters]]
 name = "fontSrc"
-type = "string|Image|Canvas"
+type = "string|HTMLImageElement|HTMLCanvasElement"
 description = "The source location of the image or the encoded string location."
 
 [[parameters]]

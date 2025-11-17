@@ -16,6 +16,7 @@ Usage styles:
 [[parameters]]
 name = "callback"
 type = "function"
+signature = "() => void"
 description = "Optional callback to run when ready completes."
 optional = true
 

@@ -8,7 +8,9 @@ export function createEventHelpers( pluginApi ) {
 	
 	const utils = pluginApi.utils;
 	
-	function onevent( mode, fn, once, hitBox, modes, name, listenerArr, extraId, extraData, customData ) {
+	function onevent(
+		mode, fn, once, hitBox, modes, name, listenerArr, extraId, extraData, customData
+	) {
 		let modeFound = false;
 		
 		for( let i = 0; i < modes.length; i++ ) {
@@ -42,7 +44,8 @@ export function createEventHelpers( pluginApi ) {
 				!Number.isInteger( hitBox.height )
 			) {
 				const error = new Error(
-					`${name}: hitBox must have properties x, y, width, and height whose values are integers.`
+					`${name}: hitBox must have properties x, y, width, and height whose values ` +
+					"are integers."
 				);
 				error.code = "INVALID_HITBOX";
 				throw error;

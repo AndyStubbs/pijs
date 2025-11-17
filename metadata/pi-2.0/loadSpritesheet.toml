@@ -8,7 +8,7 @@ Loads a spritesheet and slices it either automatically (connected components) or
 
 [[parameters]]
 name = "src"
-type = "string|Image|Canvas"
+type = "string|HTMLImageElement|HTMLCanvasElement"
 description = "Spritesheet source: URL string, HTMLImageElement, or HTMLCanvasElement."
 
 [[parameters]]
@@ -50,12 +50,14 @@ optional = true
 [[parameters]]
 name = "onLoad"
 type = "function"
+signature = "( name: string ) => void"
 description = "Callback invoked when the spritesheet finishes loading."
 optional = true
 
 [[parameters]]
 name = "onError"
 type = "function"
+signature = "( error: object ) => void"
 description = "Callback invoked if the spritesheet fails to load."
 optional = true
 

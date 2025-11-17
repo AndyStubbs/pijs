@@ -25,7 +25,7 @@ description = "First horizontal coordiante."
 
 [[parameters]]
 name = "y1"
-type = "numbervvv"
+type = "number"
 description = "First vertical coordinate."
 
 [[parameters]]

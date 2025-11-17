@@ -10,6 +10,7 @@ Removes a previously registered click event handler. If fn is null, removes all 
 [[parameters]]
 name = "fn"
 type = "function"
+signature = "( mouseData: object, customData?: object ) => void"
 description = "Callback function that matches the original handler. If null, removes all click handlers."
 optional = true
 

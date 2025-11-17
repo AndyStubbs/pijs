@@ -12,7 +12,7 @@ type = "number"
 description = "Palette index to retrieve."
 
 [[returns]]
-type = "object|null"
+type = "PiColor|null"
 description = "Color value object if found; otherwise null."
 
 example = """

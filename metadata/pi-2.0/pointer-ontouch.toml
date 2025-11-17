@@ -19,6 +19,7 @@ description = "Event mode: 'start', 'end', or 'move'."
 [[parameters]]
 name = "fn"
 type = "function"
+signature = "( touchDataArray: array, customData?: object ) => void"
 description = "Callback function that receives (touchDataArray, customData) when the event occurs."
 
 [[parameters]]

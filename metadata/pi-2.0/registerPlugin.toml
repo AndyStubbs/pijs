@@ -33,6 +33,7 @@ description = "Unique plugin name."
 [[parameters]]
 name = "init"
 type = "function"
+signature = "( pluginApi: PluginAPI ) => void"
 description = "Initialization function that receives pluginApi."
 
 [[parameters]]

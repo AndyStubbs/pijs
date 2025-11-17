@@ -17,6 +17,7 @@ not be suitable to run in an animationFrame.
 [[parameters]]
 name = "filter"
 type = "function"
+signature = "( color: PiColor, x: number, y: number ) => boolean"
 description = "Callback (color, x, y) => truthy to accept modified pixel color, falsy to skip."
 
 [[parameters]]

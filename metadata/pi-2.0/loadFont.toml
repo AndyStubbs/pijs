@@ -15,7 +15,7 @@ to wait for the image to load before using the font.
 
 [[parameters]]
 name = "src"
-type = "string|Image|Canvas"
+type = "string|HTMLImageElement|HTMLCanvasElement"
 description = "Font image source: URL string, Image element, or Canvas element."
 
 [[parameters]]

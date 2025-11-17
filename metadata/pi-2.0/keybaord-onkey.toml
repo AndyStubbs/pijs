@@ -28,6 +28,7 @@ description = "Event mode: \"up\" for key release, \"down\" for key press."
 [[parameters]]
 name = "fn"
 type = "function"
+signature = "( keyData: object ) => void"
 description = "Callback function that receives key data object(s) when the event occurs."
 
 [[parameters]]

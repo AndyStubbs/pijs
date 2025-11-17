@@ -19,7 +19,7 @@ $.drawImage( circle, 20, 80 );\r
 [[parameters]]
 name = "name"
 type = "string"
-description = ". The name of the image for reference."
+description = "The name of the image for reference."
 optional = true
 
 [[parameters]]

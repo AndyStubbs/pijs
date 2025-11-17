@@ -16,6 +16,7 @@ $.filterImg(function (color, x, y) {\r
 [[parameters]]
 name = "filter"
 type = "function"
+signature = "( color: PiColor, x: number, y: number ) => PiColor"
 description = "Callback (color, x, y) to be called on each pixel."
 
 [[returns]]

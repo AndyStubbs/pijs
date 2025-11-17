@@ -19,6 +19,7 @@ description = "Event mode: 'down', 'up', or 'move'."
 [[parameters]]
 name = "fn"
 type = "function"
+signature = "( pressData: object, customData?: object ) => void"
 description = "Callback function that receives (pressData, customData) when the event occurs."
 
 [[parameters]]

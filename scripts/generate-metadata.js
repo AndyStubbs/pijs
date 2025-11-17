@@ -142,6 +142,11 @@ function formatTypeScriptType( rawType, fallback = "any" ) {
 	return normalized.join( " | " );
 }
 
+// TODO: Add support of function overloads using objectl iteral style
+// TODO: Ignore optional flag if non-optional parameters come after
+// TODO: Added callback definitions: resizeCallback?: (width: number, height: number) => void
+// TODO: Define interface for color objects
+
 function buildMethodSignature( method ) {
 	const params = ( method.parameters || [] ).map( ( parameter ) => {
 		const optionalFlag = parameter.optional ? "?" : "";
@@ -214,14 +219,146 @@ function buildInterfaceMethods( lines, methods ) {
 	} );
 }
 
+function buildPluginApiInterface( lines ) {
+	lines.push( "\tinterface PluginApi {" );
+	
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Register a new command" );
+	lines.push( "\t\t */" );
+	lines.push( "\t\taddCommand( name: string, fn: Function, isScreen: boolean, parameterNames: string[], isScreenOptional: boolean ): void;" );
+	lines.push( "" );
+	
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Add persistent data to each screen" );
+	lines.push( "\t\t */" );
+	lines.push( "\t\taddScreenDataItem( name: string, defaultValue: any ): void;" );
+	lines.push( "" );
+	
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Add a dynamic data getter for screens" );
+	lines.push( "\t\t */" );
+	lines.push( "\t\taddScreenDataItemGetter( name: string, getterFn: Function ): void;" );
+	lines.push( "" );
+	
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Register a function to run when screens are created" );
+	lines.push( "\t\t */" );
+	lines.push( "\t\taddScreenInitFunction( initFn: Function ): void;" );
+	lines.push( "" );
+	
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Register a function to run when screens are destroyed" );
+	lines.push( "\t\t */" );
+	lines.push( "\t\taddScreenCleanupFunction( cleanupFn: Function ): void;" );
+	lines.push( "" );
+	
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Get data for a specific screen by name" );
+	lines.push( "\t\t */" );
+	lines.push( "\t\tgetScreenData( fnName: string, screenId: string ): any;" );
+	lines.push( "" );
+	
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Get array of all screen data objects" );
+	lines.push( "\t\t */" );
+	lines.push( "\t\tgetAllScreensData(): any[];" );
+	lines.push( "" );
+	
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Get the main Pi.js API object" );
+	lines.push( "\t\t */" );
+	lines.push( "\t\tgetApi(): Pi.API;" );
+	lines.push( "" );
+	
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Access to utility functions" );
+	lines.push( "\t\t */" );
+	lines.push( "\t\treadonly utils: any;" );
+	lines.push( "" );
+	
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Increment resource wait counter (for async operations)" );
+	lines.push( "\t\t */" );
+	lines.push( "\t\twait(): void;" );
+	lines.push( "" );
+	
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Decrement resource wait counter" );
+	lines.push( "\t\t */" );
+	lines.push( "\t\tdone(): void;" );
+	lines.push( "" );
+	
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Register a clearEvents handler for a specific event type" );
+	lines.push( "\t\t */" );
+	lines.push( "\t\tregisterClearEvents( name: string, handler: Function ): void;" );
+	
+	lines.push( "\t}" );
+}
+
 function buildTypeDefinitions( version, screenMethods, apiMethods ) {
 	const lines = [];
 
 	lines.push( "declare namespace Pi {" );
+
+	// Add PiColor interface
+	lines.push( "\t/**" );
+	lines.push( "\t * Color object representing RGBA color values." );
+	lines.push( "\t */" );
+	lines.push( "\tinterface PiColor {" );
+	if( version !== "1.2" ) {
+		lines.push( "\t\t/**" );
+		lines.push( "\t\t * Unique 32-bit integer key for the color (packed RGBA format)." );
+		lines.push( "\t\t */" );
+		lines.push( "\t\tkey: number" );
+	}
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Red component (0-255)." );
+	lines.push( "\t\t */" );
+	lines.push( "\t\tr: number" );
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Green component (0-255)." );
+	lines.push( "\t\t */" );
+	lines.push( "\t\tg: number" );
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Blue component (0-255)." );
+	lines.push( "\t\t */" );
+	lines.push( "\t\tb: number" );
+	lines.push( "\t\t/**" );
+	lines.push( "\t\t * Alpha component (0-255)." );
+	lines.push( "\t\t */" );
+	lines.push( "\t\ta: number" );
+	if( version === "1.2" ) {
+		lines.push( "\t\t/**" );
+		lines.push( "\t\t * RGBA string representation of the color." );
+		lines.push( "\t\t */" );
+		lines.push( "\t\ts: string" );
+		lines.push( "\t\t/**" );
+		lines.push( "\t\t * Hex string representation of the color." );
+		lines.push( "\t\t */" );
+		lines.push( "\t\ts2: string" );
+	} else {
+		lines.push( "\t\t/**" );
+		lines.push( "\t\t * Array representation [r, g, b, a]." );
+		lines.push( "\t\t */" );
+		lines.push( "\t\tarray: array" );
+	}
+	lines.push( "\t}" );
+	lines.push( "" );
+
+	// Add PluginApi
+	if( version !== "1.2" ) {
+		buildPluginApiInterface( lines );
+		lines.push( "" );
+	}
+
+	// Screen interface
 	lines.push( "\tinterface Screen {" );
 	buildInterfaceMethods( lines, screenMethods );
 	lines.push( "\t}" );
 	lines.push( "" );
+
+	// API interface
 	lines.push( "\tinterface API extends Screen {" );
 	buildInterfaceMethods( lines, apiMethods );
 	if( apiMethods.length > 0 ) {

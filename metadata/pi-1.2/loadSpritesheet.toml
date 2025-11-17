@@ -23,7 +23,7 @@ $.ready( function () {\r
 
 [[parameters]]
 name = "src"
-type = "string|Image|Canvas"
+type = "string|HTMLImageElement|HTMLCanvasElement"
 description = "The source location of an image file or an image element."
 
 [[parameters]]

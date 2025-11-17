@@ -14,7 +14,7 @@ description = "If true returns the palette index, otherwise returns a color valu
 optional = true
 
 [[returns]]
-type = "number|object"
+type = "number|PiColor"
 description = "Palette index if asIndex is true; otherwise a color value object."
 
 example = """

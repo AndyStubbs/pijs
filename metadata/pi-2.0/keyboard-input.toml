@@ -24,6 +24,7 @@ description = "Prompt text to display before the input field."
 [[parameters]]
 name = "fn"
 type = "function"
+signature = "( message: string ) => void"
 description = "Optional callback function called with the input value when input completes."
 optional = true
 

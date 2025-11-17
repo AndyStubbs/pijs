@@ -68,6 +68,7 @@ optional = true
 [[parameters]]
 name = "resizeCallback"
 type = "function"
+signature = "( fromSize: { width: number; height: number }, toSize: { width: number; height: number } ) => void"
 description = "A function that will get called after any time the canvas gets resized."
 optional = true
 

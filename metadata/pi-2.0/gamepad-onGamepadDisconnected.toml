@@ -13,6 +13,7 @@ Multiple callbacks can be registered.
 [[parameters]]
 name = "fn"
 type = "function"
+signature = "( gampadData: object ) => void"
 description = "Callback function that receives (gamepad) when a gamepad disconnects."
 
 [[returns]]
