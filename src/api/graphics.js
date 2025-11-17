@@ -31,7 +31,7 @@ export function init( api ) {
 	// Build the null graphics commands - basically will throw an error since no screen is available
 	buildApi( null );
 
-	g_commands.addCommand( "rect2", rect2, true, [ "x", "y", "width", "height", "fillColor" ] );
+	// CLS doesn't need to be a hot-path item so just use addCommand
 	g_commands.addCommand( "cls", cls, true, [ "x", "y", "width", "height" ] );
 
 	// Register screen init function to rebuild API when screen is created
@@ -66,6 +66,7 @@ export function buildApi( s_screenData ) {
 	const s_drawPixel = g_renderer.drawPixel;
 	const s_drawRect = g_renderer.drawRect;
 	const s_drawRectFilled = g_renderer.drawRectFilled;
+	const s_isObjectLiteral = g_utils.isObjectLiteral;
 
 	// Utility commands
 	const s_setImageDirty = g_renderer.setImageDirty;
@@ -276,7 +277,6 @@ export function buildApi( s_screenData ) {
 		s_screenData.cursor.x = x;
 		s_screenData.cursor.y = y;
 	};
-
 	m_api.pset = psetFn;
 	s_screenData.api.pset = psetFn;
 
@@ -285,6 +285,13 @@ export function buildApi( s_screenData ) {
 	 * RECT Command
 	 **********************************************************************************************/
 
+	const rectFnWrapper = ( x, y, width, height, fillColor ) => {
+		if( s_isObjectLiteral( x ) ) {
+			rectFn( x.x , x.y, x.width, x.height, x.fillColor );
+		} else {
+			rectFn( x, y, width, height, fillColor );
+		}
+	};
 	const rectFn = ( x, y, width, height, fillColor ) => {
 		const pX = s_getInt( x, null );
 		const pY = s_getInt( y, null );
@@ -324,54 +331,8 @@ export function buildApi( s_screenData ) {
 		s_setImageDirty( s_screenData );
 	};
 
-	m_api.rect = rectFn;
-	s_screenData.api.rect = rectFn;
-
-}
-
-// The rect2 command allows object literal as the first parameter, will probably be slower than
-// rect but it will be usefull if you a region defined as an object literal you can pass it to
-// other functions and to rect2.
-function rect2( screenData, options ) {
-
-	// x, y, width, height, fillColor
-	const x = g_utils.getInt( options.x, null );
-	const y = g_utils.getInt( options.y, null );
-	const width = g_utils.getInt( options.width, null );
-	const height = g_utils.getInt( options.height, null );
-	const fillColor = options.fillColor;
-
-	if( x === null || y === null || width === null || height === null ) {
-		const error = new TypeError( "rect: Parameters x, y, width, height must be integers." );
-		error.code = "INVALID_PARAMETER";
-		throw error;
-	}
-
-	if( width < 1 || height < 1 ) {
-		return;
-	}
-
-	// Parse and validate fillColor here (single source of truth)
-	let fillColorValue = null;
-	if( fillColor != null ) {
-		fillColorValue = g_colors.getColorValueByRawInput( screenData, fillColor );
-		if( fillColorValue === null ) {
-			const error = new TypeError( "rect: Parameter 'fillColor' must be a valid color." );
-			error.code = "INVALID_PARAMETER";
-			throw error;
-		}
-
-		// Fill in the rectangle
-		const fWidth = width - 2;
-		const fHeight = height - 2;
-		if( fWidth > 0 && fHeight > 0 ) {
-			g_renderer.drawRectFilled( screenData, x + 1, y + 1, fWidth, fHeight, fillColorValue );
-		}
-	}
-
-	// Draw the rect border
-	g_renderer.drawRect( screenData, x, y, width, height );
-	g_renderer.setImageDirty( screenData );
+	m_api.rect = rectFnWrapper;
+	s_screenData.api.rect = rectFnWrapper;
 }
 
 /**

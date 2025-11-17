@@ -45,8 +45,8 @@ function init( config ) {
 
 	if( !config.operationTypes ) {
 		m_operationTypes = [
-			"pset", "line", "circle", "circle-filled", "rect", "rect-filled", "rect2",
-			"rect2-filled", "ellipse", "ellipse-filled", "arc", "bezier"
+			"arc", "bezier", "circle", "circle-filled",  "ellipse", "ellipse-filled", "line",
+			"pset", "rect", "rect-filled"
 		];
 	} else {
 		m_operationTypes = config.operationTypes;
@@ -199,43 +199,6 @@ function generateRandomOperation() {
 					rectFillWidth + Math.floor( Math.random() * 3 ) - 1,
 					rectFillHeight + Math.floor( Math.random() * 3 ) - 1,
 					rectFillColor
-				]
-			};
-			
-		case "rect2":
-			const rect2X = Math.floor( m_seededRandom() * width );
-			const rect2Y = Math.floor( m_seededRandom() * height );
-			const rect2Width = Math.floor( m_seededRandom() * 100 ) + 10;
-			const rect2Height = Math.floor( m_seededRandom() * 80 ) + 10;
-			return {
-				"func": $.rect2,
-				"params": [ { "x": rect2X, "y": rect2Y, "width": rect2Width, "height": rect2Height } ],
-				"getParams": () => [
-					rect2X + Math.floor( Math.random() * 3 ) - 1,
-					rect2Y + Math.floor( Math.random() * 3 ) - 1,
-					rect2Width + Math.floor( Math.random() * 3 ) - 1,
-					rect2Height + Math.floor( Math.random() * 3 ) - 1
-				]
-			};
-			
-		case "rect2-filled":
-			const rect2FillX = Math.floor( m_seededRandom() * width );
-			const rect2FillY = Math.floor( m_seededRandom() * height );
-			const rect2FillWidth = Math.floor( m_seededRandom() * 100 ) + 10;
-			const rect2FillHeight = Math.floor( m_seededRandom() * 80 ) + 10;
-			const rect2FillColor = Math.floor( m_seededRandom() * colorCount );
-			return {
-				"func": $.rect2,
-				"params": [ {
-					"x": rect2FillX, "y": rect2FillY, "width": rect2FillWidth,
-					"height": rect2FillHeight, "fillColor": rect2FillColor
-				} ],
-				"getParams": () => [
-					rect2FillX + Math.floor( Math.random() * 3 ) - 1,
-					rect2FillY + Math.floor( Math.random() * 3 ) - 1,
-					rect2FillWidth + Math.floor( Math.random() * 3 ) - 1,
-					rect2FillHeight + Math.floor( Math.random() * 3 ) - 1,
-					rect2FillColor
 				]
 			};
 			

@@ -134,38 +134,43 @@ function showResults( resultsObject ) {
 	$.setPos( 0, resultsStartRow );
 	
 	// Create results table data
-	let namePadding = "--------------------------".length;
 	const resultsData = [ [
-		"Test Name".padEnd( namePadding ), "Score", "Avg FPS", "Items/Frame", "Items/Sec", "Duration"
+		"Test Name", "Score", "Avg FPS", "Items/Frame", "Items/Sec", "Duration"
 	] ];
 	const menuOptionsData = [];
+
+	const padding = [];
+	for( const resultData of resultsData[ 0 ] ) {
+		padding.push( resultData.length );
+	}
 
 	// Add results to table
 	for( const result of results ) {
 		resultsData.push( [
-			result.name.padEnd( namePadding, " " ),
-			result.score || 0,
+			result.name,
+			( result.score || 0 ) + "",
 			result.avgFps,
 			Math.round( result.itemCountAvg ).toString(),
 			Math.round( result.itemCountPerSecond ).toString(),
 			Math.round( result.testTime / 1000 ).toString() + "s"
 		] );
+		const resultsIndex = resultsData.length - 1;
+		for( let i = 0; i < padding.length; i += 1 ) {
+			padding[ i ] = Math.max( padding[ i ], resultsData[ resultsIndex ][ i ].length );
+		}
 	}
+
+	const rowLength = padding.reduce( ( acc, val ) => val + acc, 0 ) + padding.length * 3;
 	
 	// Display results table
 	$.setColor( 7 );
 	for( let i = 0; i < resultsData.length; i += 1 ) {
 		for( let j = 0; j < resultsData[ i ].length; j += 1 ) {
-			let msg = ( resultsData[ i ][ j ] + "" );
-			if( j === 0 ) {
-				msg = msg.padEnd( namePadding );
-			} else {
-				msg = msg.trim().padEnd( 11, " " );
-			}
+			let msg = ( resultsData[ i ][ j ] + "" ).trim().padEnd( padding[ j ] );
 			$.print( msg + " | ", true );
 		}
 		if( i === 0 ) {
-			$.print( "\n--------------------------------------------------------------------------------------------------" );
+			$.print( "\n-".padEnd( rowLength, "-" ) );
 		} else {
 			$.print();
 		}
