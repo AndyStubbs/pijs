@@ -66,29 +66,33 @@ export function buildApi( s_screenData ) {
 	const s_drawPixel = g_renderer.drawPixel;
 	const s_drawRect = g_renderer.drawRect;
 	const s_drawRectFilled = g_renderer.drawRectFilled;
-	const s_isObjectLiteral = g_utils.isObjectLiteral;
+	const s_drawPixelUnsafe = g_renderer.drawPixelUnsafe;
+	const s_prepareBatch = g_renderer.prepareBatch;
 
 	// Utility commands
+	const s_isObjectLiteral = g_utils.isObjectLiteral;
 	const s_setImageDirty = g_renderer.setImageDirty;
 	const s_getInt = g_utils.getInt;
 	const s_degreesToRadian = g_utils.degreesToRadian;
 	const s_getColorValueByRawInput = g_colors.getColorValueByRawInput;
+	const s_getColorValueByIndex = g_colors.getColorValueByIndex;
 
 	// Constants
 	const s_pointsBatch = g_renderer.POINTS_BATCH;
+	const s_pointsReplaceBatch = g_renderer.POINTS_REPLACE_BATCH;
 
 	/**********************************************************************************************
 	 * ARC Command
 	 **********************************************************************************************/
 
-	const arcFn = ( cx, cy, radius, angle1, angle2 ) => {
-		const pCx = s_getInt( cx, null );
-		const pCy = s_getInt( cy, null );
+	const arcFn = ( x, y, radius, angle1, angle2 ) => {
+		const pX = s_getInt( x, null );
+		const pY = s_getInt( y, null );
 		const pRadius = s_getInt( radius, null );
 
 		// Validate integer parameters
-		if( pCx === null || pCy === null || pRadius === null ) {
-			const error = new TypeError( "arc: Parameters cx, cy, and radius must be integers." );
+		if( pX === null || pY === null || pRadius === null ) {
+			const error = new TypeError( "arc: Parameters x, y, and radius must be integers." );
 			error.code = "INVALID_PARAMETER";
 			throw error;
 		}
@@ -107,15 +111,20 @@ export function buildApi( s_screenData ) {
 
 		// Draw Arc
 		s_drawArc(
-			s_screenData, pCx, pCy, pRadius, s_degreesToRadian( angle1 ),
+			s_screenData, pX, pY, pRadius, s_degreesToRadian( angle1 ),
 			s_degreesToRadian( angle2 )
 		);
 		s_setImageDirty( s_screenData );
 	};
-
-	m_api.arc = arcFn;
-	s_screenData.api.arc = arcFn;
-
+	const arcFnWrapper = ( x, y, radius, angle1, angle2 ) => {
+		if( s_isObjectLiteral( x ) ) {
+			arcFn( x.x, x.y, x.radius, x.angle1, x.angle2 );
+		} else {
+			arcFn( x, y, radius, angle1, angle2 );
+		}
+	};
+	m_api.arc = arcFnWrapper;
+	s_screenData.api.arc = arcFnWrapper;
 	
 	/**********************************************************************************************
 	 * BEZIER Command
@@ -146,11 +155,16 @@ export function buildApi( s_screenData ) {
 		s_drawBezier( s_screenData, pX1, pY1, pX2, pY2, pX3, pY3, pX4, pY4 );
 		s_setImageDirty( s_screenData );
 	};
+	const bezierFnWrapper = ( x1, y1, x2, y2, x3, y3, x4, y4 ) => {
+		if( s_isObjectLiteral( x1 ) ) {
+			bezierFn( x1.x1, x1.y1, x1.x2, x1.y2, x1.x3, x1.y3, x1.x4, x1.y4 );
+		} else {
+			bezierFn( x1, y1, x2, y2, x3, y3, x4, y4 );
+		}
+	};
+	m_api.bezier = bezierFnWrapper;
+	s_screenData.api.bezier = bezierFnWrapper;
 
-	m_api.bezier = bezierFn;
-	s_screenData.api.bezier = bezierFn;
-
-	
 	/**********************************************************************************************
 	 * Circle Command
 	 **********************************************************************************************/
@@ -186,19 +200,26 @@ export function buildApi( s_screenData ) {
 		s_drawCircle( s_screenData, pX, pY, pRadius );
 		s_setImageDirty( s_screenData );
 	};
+	const circleFnWrapper = ( x, y, radius, fillColor ) => {
+		if( s_isObjectLiteral( x ) ) {
+			circleFn( x.x, x.y, x.radius, x.fillColor );
+		} else {
+			circleFn( x, y, radius, fillColor);
+		}
+	};
 
-	m_api.circle = circleFn;
-	s_screenData.api.circle = circleFn;
+	m_api.circle = circleFnWrapper;
+	s_screenData.api.circle = circleFnWrapper;
 
 	/**********************************************************************************************
 	 * Ellipse Command
 	 **********************************************************************************************/
 
-	const ellipseFn = ( x, y, rx, ry, fillColor ) => {
+	const ellipseFn = ( x, y, radiusX, radiusY, fillColor ) => {
 		const pX = s_getInt( x, null );
 		const pY = s_getInt( y, null );
-		const pRx = s_getInt( rx, null );
-		const pRy = s_getInt( ry, null );
+		const pRx = s_getInt( radiusX, null );
+		const pRy = s_getInt( radiusY, null );
 
 		if( pX === null || pY === null || pRx === null || pRy === null ) {
 			const error = new TypeError( "ellipse: Parameters x, y, rx, and ry must be integers." );
@@ -225,9 +246,16 @@ export function buildApi( s_screenData ) {
 		s_drawEllipse( s_screenData, pX, pY, pRx, pRy, fillColorValue );
 		s_setImageDirty( s_screenData );
 	};
+	const ellipseFnWrapper = ( x, y, radiusX, radiusY, fillColor ) => {
+		if( s_isObjectLiteral( x ) ) {
+			ellipseFn( x.x, x.y, x.radiusX, x.radiusY, x.fillColor );
+		} else {
+			ellipseFn( x, y, radiusX, radiusY, fillColor);
+		}
+	};
 
-	m_api.ellipse = ellipseFn;
-	s_screenData.api.ellipse = ellipseFn;
+	m_api.ellipse = ellipseFnWrapper;
+	s_screenData.api.ellipse = ellipseFnWrapper;
 
 	/**********************************************************************************************
 	 * LINE Command
@@ -250,9 +278,16 @@ export function buildApi( s_screenData ) {
 		s_drawLine( s_screenData, pX1, pY1, pX2, pY2 );
 		s_setImageDirty( s_screenData );
 	};
+	const lineFnWrapper = ( x1, y1, x2, y2 ) => {
+		if( s_isObjectLiteral( x1 ) ) {
+			lineFn( x1.x1 , x1.y1, x1.x2, x1.y2 );
+		} else {
+			lineFn( x1, y1, x2, y2 );
+		}
+	};
 
-	m_api.line = lineFn;
-	s_screenData.api.line = lineFn;
+	m_api.line = lineFnWrapper;
+	s_screenData.api.line = lineFnWrapper;
 	
 	/**********************************************************************************************
 	 * PSET Command
@@ -277,21 +312,28 @@ export function buildApi( s_screenData ) {
 		s_screenData.cursor.x = x;
 		s_screenData.cursor.y = y;
 	};
-	m_api.pset = psetFn;
-	s_screenData.api.pset = psetFn;
-
+	const psetFnWrapper = ( x, y ) => {
+		if( s_isObjectLiteral( x ) ) {
+			psetFn( x.x , x.y );
+		} else {
+			psetFn( x, y );
+		}
+	};
+	m_api.pset = psetFnWrapper;
+	s_screenData.api.pset = psetFnWrapper;
+	m_api.pset2 = ( x, y ) => {
+		s_drawPixel( s_screenData, x, y, s_pointsBatch );
+		s_setImageDirty( s_screenData );
+	};
+	s_screenData.api.pset2 = ( x, y ) => {
+		s_drawPixel( s_screenData, x, y, s_pointsBatch );
+		s_setImageDirty( s_screenData );
+	};
 
 	/**********************************************************************************************
 	 * RECT Command
 	 **********************************************************************************************/
 
-	const rectFnWrapper = ( x, y, width, height, fillColor ) => {
-		if( s_isObjectLiteral( x ) ) {
-			rectFn( x.x , x.y, x.width, x.height, x.fillColor );
-		} else {
-			rectFn( x, y, width, height, fillColor );
-		}
-	};
 	const rectFn = ( x, y, width, height, fillColor ) => {
 		const pX = s_getInt( x, null );
 		const pY = s_getInt( y, null );
@@ -329,6 +371,13 @@ export function buildApi( s_screenData ) {
 		// Draw the rect border
 		s_drawRect( s_screenData, pX, pY, pWidth, pHeight );
 		s_setImageDirty( s_screenData );
+	};
+	const rectFnWrapper = ( x, y, width, height, fillColor ) => {
+		if( s_isObjectLiteral( x ) ) {
+			rectFn( x.x , x.y, x.width, x.height, x.fillColor );
+		} else {
+			rectFn( x, y, width, height, fillColor );
+		}
 	};
 
 	m_api.rect = rectFnWrapper;

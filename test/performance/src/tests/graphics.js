@@ -46,7 +46,7 @@ function init( config ) {
 	if( !config.operationTypes ) {
 		m_operationTypes = [
 			"arc", "bezier", "circle", "circle-filled",  "ellipse", "ellipse-filled", "line",
-			"pset", "rect", "rect-filled"
+			"put", "pset", "pset2", "rect", "rect-filled"
 		];
 	} else {
 		m_operationTypes = config.operationTypes;
@@ -88,19 +88,45 @@ function generateRandomOperation() {
 	const operationType = m_operationTypes[ rnd ];
 	
 	switch( operationType ) {
-		case "line":
-			const lineX1 = Math.floor( m_seededRandom() * width );
-			const lineY1 = Math.floor( m_seededRandom() * height );
-			const lineX2 = Math.floor( m_seededRandom() * width );
-			const lineY2 = Math.floor( m_seededRandom() * height );
+		case "arc":
+			const arcX = Math.floor( m_seededRandom() * width );
+			const arcY = Math.floor( m_seededRandom() * height );
+			const arcRadius = Math.floor( m_seededRandom() * 40 ) + 10;
+			const arcAngle1 = Math.floor( m_seededRandom() * 360 );
+			const arcAngle2 = Math.floor( m_seededRandom() * 360 );
 			return {
-				"func": $.line,
-				"params": [ lineX1, lineY1, lineX2, lineY2 ],
+				"func": $.arc,
+				"params": [ arcX, arcY, arcRadius, arcAngle1, arcAngle2 ],
 				"getParams": () => [
-					lineX1 + Math.floor( Math.random() * 3 ) - 1,
-					lineY1 + Math.floor( Math.random() * 3 ) - 1,
-					lineX2 + Math.floor( Math.random() * 3 ) - 1,
-					lineY2 + Math.floor( Math.random() * 3 ) - 1
+					arcX + Math.floor( Math.random() * 3 ) - 1,
+					arcY + Math.floor( Math.random() * 3 ) - 1,
+					arcRadius + Math.floor( Math.random() * 3 ) - 1,
+					arcAngle1 + Math.floor( Math.random() * 3 ) - 1,
+					arcAngle2 + Math.floor( Math.random() * 3 ) - 1
+				]
+			};
+			
+		case "bezier":
+			const bezierX1 = Math.floor( m_seededRandom() * width );
+			const bezierY1 = Math.floor( m_seededRandom() * height );
+			const bezierX2 = Math.floor( m_seededRandom() * width );
+			const bezierY2 = Math.floor( m_seededRandom() * height );
+			const bezierX3 = Math.floor( m_seededRandom() * width );
+			const bezierY3 = Math.floor( m_seededRandom() * height );
+			const bezierX4 = Math.floor( m_seededRandom() * width );
+			const bezierY4 = Math.floor( m_seededRandom() * height );
+			return {
+				"func": $.bezier,
+				"params": [ bezierX1, bezierY1, bezierX2, bezierY2, bezierX3, bezierY3, bezierX4, bezierY4 ],
+				"getParams": () => [
+					bezierX1 + Math.floor( Math.random() * 3 ) - 1,
+					bezierY1 + Math.floor( Math.random() * 3 ) - 1,
+					bezierX2 + Math.floor( Math.random() * 3 ) - 1,
+					bezierY2 + Math.floor( Math.random() * 3 ) - 1,
+					bezierX3 + Math.floor( Math.random() * 3 ) - 1,
+					bezierY3 + Math.floor( Math.random() * 3 ) - 1,
+					bezierX4 + Math.floor( Math.random() * 3 ) - 1,
+					bezierY4 + Math.floor( Math.random() * 3 ) - 1
 				]
 			};
 			
@@ -168,6 +194,70 @@ function generateRandomOperation() {
 				]
 			};
 			
+		case "line":
+			const lineX1 = Math.floor( m_seededRandom() * width );
+			const lineY1 = Math.floor( m_seededRandom() * height );
+			const lineX2 = Math.floor( m_seededRandom() * width );
+			const lineY2 = Math.floor( m_seededRandom() * height );
+			return {
+				"func": $.line,
+				"params": [ lineX1, lineY1, lineX2, lineY2 ],
+				"getParams": () => [
+					lineX1 + Math.floor( Math.random() * 3 ) - 1,
+					lineY1 + Math.floor( Math.random() * 3 ) - 1,
+					lineX2 + Math.floor( Math.random() * 3 ) - 1,
+					lineY2 + Math.floor( Math.random() * 3 ) - 1
+				]
+			};
+			
+		case "pset":
+			const psetX = Math.floor( m_seededRandom() * width );
+			const psetY = Math.floor( m_seededRandom() * height );
+			return {
+				"func": $.pset,
+				"params": [ psetX, psetY ],
+				"getParams": () => [
+					psetX + Math.floor( Math.random() * 3 ) - 1,
+					psetY + Math.floor( Math.random() * 3 ) - 1
+				]
+			};
+		
+		case "pset2":
+			const pset2X = Math.floor( m_seededRandom() * width );
+			const pset2Y = Math.floor( m_seededRandom() * height );
+			return {
+				"func": $.pset2,
+				"params": [ pset2X, pset2Y ],
+				"getParams": () => [
+					pset2X + Math.floor( Math.random() * 3 ) - 1,
+					pset2Y + Math.floor( Math.random() * 3 ) - 1
+				]
+			};
+
+		case "put":
+			const putX = Math.floor( m_seededRandom() * width );
+			const putY = Math.floor( m_seededRandom() * height );
+			const putWidth = Math.floor( m_seededRandom() * 5 ) + 35;
+			const putHalfWidth = Math.floor( putWidth / 2 );
+			const putHeight = Math.floor( m_seededRandom() * 5 ) + 35;
+			const putHalfHeight = Math.floor( putHeight / 2 );
+			const putData = [];
+			for( let y = 0; y < putHeight; y += 1 ) {
+				putData.push( [] );
+				for( let x = 0; x < putWidth; x += 1 ) {
+					putData[ y ].push( Math.floor( m_seededRandom() * m_pal.length ) );
+				}
+			}
+			return {
+				"func": $.put,
+				"params": [ putData, putX, putY ],
+				"getParams": () => [
+					putData,
+					putX + Math.floor( Math.random() * putWidth ) - putHalfWidth,
+					putY + Math.floor( Math.random() * putHeight ) - putHalfHeight
+				]
+			};
+		
 		case "rect":
 			const rectX = Math.floor( m_seededRandom() * width );
 			const rectY = Math.floor( m_seededRandom() * height );
@@ -199,36 +289,6 @@ function generateRandomOperation() {
 					rectFillWidth + Math.floor( Math.random() * 3 ) - 1,
 					rectFillHeight + Math.floor( Math.random() * 3 ) - 1,
 					rectFillColor
-				]
-			};
-			
-		case "pset":
-			const psetX = Math.floor( m_seededRandom() * width );
-			const psetY = Math.floor( m_seededRandom() * height );
-			return {
-				"func": $.pset,
-				"params": [ psetX, psetY ],
-				"getParams": () => [
-					psetX + Math.floor( Math.random() * 3 ) - 1,
-					psetY + Math.floor( Math.random() * 3 ) - 1
-				]
-			};
-			
-		case "arc":
-			const arcX = Math.floor( m_seededRandom() * width );
-			const arcY = Math.floor( m_seededRandom() * height );
-			const arcRadius = Math.floor( m_seededRandom() * 40 ) + 10;
-			const arcAngle1 = Math.floor( m_seededRandom() * 360 );
-			const arcAngle2 = Math.floor( m_seededRandom() * 360 );
-			return {
-				"func": $.arc,
-				"params": [ arcX, arcY, arcRadius, arcAngle1, arcAngle2 ],
-				"getParams": () => [
-					arcX + Math.floor( Math.random() * 3 ) - 1,
-					arcY + Math.floor( Math.random() * 3 ) - 1,
-					arcRadius + Math.floor( Math.random() * 3 ) - 1,
-					arcAngle1 + Math.floor( Math.random() * 3 ) - 1,
-					arcAngle2 + Math.floor( Math.random() * 3 ) - 1
 				]
 			};
 			
@@ -276,7 +336,7 @@ function run( itemCount ) {
 		
 		// Execute the operation with variable parameters to prevent JIT optimization
 		const params = operation.getParams();
-		operation.func( params[ 0 ], params[ 1 ], params[ 2 ], params[ 3 ], params[ 4 ] );
+		operation.func( ...params );
 		
 	}
 }

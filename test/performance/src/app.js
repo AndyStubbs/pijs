@@ -215,7 +215,7 @@ function showMainMenu() {
 	// Pi.js version - top right
 	$.setColor( 11 );
 	$.setPos( 0, 4 );
-	$.print( `Pi.js: ${m_piVersion}`, true, true );
+	$.print( `Pi.js: ${$.version}`, true, true );
 	
 	// Target FPS - bottom right
 	$.setColor( 7 );
