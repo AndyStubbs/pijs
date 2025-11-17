@@ -58,6 +58,7 @@ function formatParameters( parameters = [] ) {
 	return parameters.map( ( parameter ) => ( {
 		"name": parameter.name,
 		"type": parameter.type || "",
+		"signature": parameter.signature || "",
 		"description": parameter.description ? parameter.description.trim() : "",
 		"optional": Boolean( parameter.optional )
 	} ) );
@@ -142,15 +143,21 @@ function formatTypeScriptType( rawType, fallback = "any" ) {
 	return normalized.join( " | " );
 }
 
-// TODO: Add support of function overloads using objectl iteral style
+// TODO: Add support of function overloads using object literal style
 // TODO: Ignore optional flag if non-optional parameters come after
-// TODO: Added callback definitions: resizeCallback?: (width: number, height: number) => void
-// TODO: Define interface for color objects
 
 function buildMethodSignature( method ) {
 	const params = ( method.parameters || [] ).map( ( parameter ) => {
 		const optionalFlag = parameter.optional ? "?" : "";
-		const paramType = formatTypeScriptType( parameter.type, "any" );
+		
+		// Use signature if available for function types
+		let paramType;
+		if( parameter.type === "function" && parameter.signature ) {
+			paramType = parameter.signature;
+		} else {
+			paramType = formatTypeScriptType( parameter.type, "any" );
+		}
+		
 		return `${parameter.name}${optionalFlag}: ${paramType}`;
 	} );
 
@@ -225,7 +232,7 @@ function buildPluginApiInterface( lines ) {
 	lines.push( "\t\t/**" );
 	lines.push( "\t\t * Register a new command" );
 	lines.push( "\t\t */" );
-	lines.push( "\t\taddCommand( name: string, fn: Function, isScreen: boolean, parameterNames: string[], isScreenOptional: boolean ): void;" );
+	lines.push( "\t\taddCommand( name: string, fn: (...args: any[]) => any, isScreen: boolean, parameterNames: string[], isScreenOptional: boolean ): void;" );
 	lines.push( "" );
 	
 	lines.push( "\t\t/**" );
