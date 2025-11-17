@@ -14,17 +14,15 @@ import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_colors from "./colors.js";
 
-const DEFAULT_BLIT_COLOR = g_utils.rgbToColor( 255, 255, 255, 255 );
-
 // Image storage by name
 const m_images = {};
 const m_paletteImages = [];
 let m_imageCount = 0;
 
 
-/***************************************************************************************************
+/**************************************************************************************************
  * Module Initialization
- ***************************************************************************************************/
+ **************************************************************************************************/
 
 
 /**
@@ -50,8 +48,6 @@ export function init( api ) {
  * @returns {void}
  */
 function registerCommands( api ) {
-
-	// Register non-screen commands
 	g_commands.addCommand(
 		"loadImage", loadImage, false,
 		[ "src", "name", "usePalette", "paletteKeys", "onLoad", "onError" ]
@@ -70,127 +66,13 @@ function registerCommands( api ) {
 		"createImageFromScreen", createImageFromScreen, true,
 		[ "name", "x1", "y1", "x2", "y2" ]
 	);
-
-	// Register screen commands
 	g_commands.addCommand( "setDefaultAnchor", setDefaultAnchor, true, [ "x", "y" ] );
-	g_commands.addCommand(
-		"drawImage", drawImage, true,
-		[ "image", "x", "y", "color", "anchorX", "anchorY", "scaleX", "scaleY", "angle" ]
-	);
-	g_commands.addCommand(
-		"drawSprite", drawSprite, true,
-		[ "name", "frame", "x", "y", "color", "anchorX", "anchorY", "scaleX", "scaleY", "angle" ]
-	);
-
-	// Special handling for blit image because it doesn't support object literal parsing
-	api.blitImage = (
-		img,
-		x = 0,
-		y = 0,
-		color = DEFAULT_BLIT_COLOR,
-		anchorX,
-		anchorY,
-		scaleX = 1,
-		scaleY = 1,
-		angleRad = 0
-	) => {
-		const screenData = g_screenManager.getActiveScreen( "blitImage" );
-		const finalAnchorX = anchorX ?? screenData.defaultAnchorX;
-		const finalAnchorY = anchorY ?? screenData.defaultAnchorY;
-		g_renderer.drawImage(
-			screenData, img, x, y, color, finalAnchorX, finalAnchorY, scaleX, scaleY,
-			angleRad, g_renderer.IMAGE_REPLACE_BATCH
-		);
-		g_renderer.setImageDirty( screenData );
-	};
-
-	// Special handling for blit sprite because it doesn't support object literal parsing
-	api.blitSprite = (
-		name,
-		frame = 0,
-		x = 0,
-		y = 0,
-		color = DEFAULT_BLIT_COLOR,
-		anchorX,
-		anchorY,
-		scaleX = 1,
-		scaleY = 1,
-		angleRad = 0
-	) => {
-		const screenData = g_screenManager.getActiveScreen( "blitSprite" );
-		const finalAnchorX = anchorX ?? screenData.defaultAnchorX;
-		const finalAnchorY = anchorY ?? screenData.defaultAnchorY;
-		const spriteData = getStoredImage( name );
-		const frameData = spriteData.frames[ frame ];
-		const img = spriteData.image;
-
-		// Draw using renderer-specific implementation
-		g_renderer.drawSprite(
-			screenData, img,
-			frameData.x, frameData.y, frameData.width, frameData.height,
-			x, y, frameData.width, frameData.height,
-			color, finalAnchorX, finalAnchorY, scaleX, scaleY, angleRad,
-			g_renderer.IMAGE_REPLACE_BATCH
-		);
-		g_renderer.setImageDirty( screenData );
-	};
-
-	// Add blit commands to screens when they get created
-	g_screenManager.addScreenInitFunction( ( screenData ) => {
-
-		// Blit Image
-		screenData.api.blitImage = (
-			img,
-			x = 0,
-			y = 0,
-			color = DEFAULT_BLIT_COLOR,
-			anchorX = screenData.defaultAnchorX,
-			anchorY = screenData.defaultAnchorY,
-			scaleX = 1,
-			scaleY = 1,
-			angleRad = 0
-		) => {
-			g_renderer.drawImage(
-				screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad,
-				g_renderer.IMAGE_REPLACE_BATCH
-			);
-			g_renderer.setImageDirty( screenData );
-		};
-
-		// Blit Sprite
-		screenData.api.blitSprite = (
-			name,
-			frame = 0,
-			x = 0,
-			y = 0,
-			color = DEFAULT_BLIT_COLOR,
-			anchorX = screenData.defaultAnchorX,
-			anchorY = screenData.defaultAnchorY,
-			scaleX = 1,
-			scaleY = 1,
-			angleRad = 0
-		) => {
-			const spriteData = getStoredImage( name );
-			const frameData = spriteData.frames[ frame ];
-			const img = spriteData.image;
-
-			// Draw using renderer-specific implementation
-			g_renderer.drawSprite(
-				screenData, img,
-				frameData.x, frameData.y, frameData.width, frameData.height,
-				x, y, frameData.width, frameData.height,
-				color, anchorX, anchorY, scaleX, scaleY, angleRad,
-				g_renderer.IMAGE_REPLACE_BATCH
-			);
-			g_renderer.setImageDirty( screenData );
-		};
-	} );
 }
 
 
-/***************************************************************************************************
+/**************************************************************************************************
  * External API Commands
- ***************************************************************************************************/
+ **************************************************************************************************/
 
 
 /**
@@ -694,165 +576,6 @@ function setDefaultAnchor( screenData, options ) {
 }
 
 /**
- * Draw an image on the screen
- * 
- * @param {Object} screenData - Screen data object
- * @param {Object} options - Draw options
- * @param {string|Object} options.image - Image name, screen object, or Image/Canvas element
- * @param {number} options.x - X coordinate
- * @param {number} options.y - Y coordinate
- * @param {number} [options.color] - Raw color input
- * @param {number} [options.anchorX] - Anchor point X (0-1)
- * @param {number} [options.anchorY] - Anchor point Y (0-1)
- * @param {number} [options.scaleX] - Scale X
- * @param {number} [options.scaleY] - Scale Y
- * @param {number} [options.angle] - Rotation angle in degrees
- */
-function drawImage( screenData, options ) {
-	const imageRaw = options.image;
-	const x = g_utils.getInt( options.x, null );
-	const y = g_utils.getInt( options.y, null );
-	const colorRaw = options.color;
-	const anchorX = g_utils.getFloat( options.anchorX, screenData.defaultAnchorX );
-	const anchorY = g_utils.getFloat( options.anchorY, screenData.defaultAnchorY );
-	const scaleX = g_utils.getFloat( options.scaleX, 1 );
-	const scaleY = g_utils.getFloat( options.scaleY, 1 );
-	const angle = g_utils.getFloat( options.angle, 0 );
-
-	const img = getImageFromRawInput( imageRaw, "drawImage" );
-
-	// Validate coordinates
-	if( x === null || y === null ) {
-		const error = new TypeError( "drawImage: Parameters x and y must be numbers." );
-		error.code = "INVALID_COORDINATES";
-		throw error;
-	}
-
-	// Parses the color and makes sure it's in a valid format
-	let color;
-	if( colorRaw === null || colorRaw === undefined ) {
-		color = DEFAULT_BLIT_COLOR;
-	} else {
-		color = g_colors.getColorValueByRawInput( screenData, colorRaw );
-	}
-
-	// Convert angle from degrees to radians
-	const angleRad = g_utils.degreesToRadian( angle );
-
-	// Draw using renderer-specific implementation
-	g_renderer.drawImage(
-		screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
-	);
-
-	// Mark screen as dirty
-	g_renderer.setImageDirty( screenData );
-}
-
-/**
- * Draw a sprite (frame) from a spritesheet on the screen
- * 
- * @param {Object} screenData - Screen data object
- * @param {Object} options - Draw options
- * @param {string} options.name - Spritesheet name
- * @param {number} options.frame - Frame index to draw
- * @param {number} options.x - X coordinate
- * @param {number} options.y - Y coordinate
- * @param {number} [options.color] - Raw color input
- * @param {number} [options.anchorX] - Anchor point X (0-1)
- * @param {number} [options.anchorY] - Anchor point Y (0-1)
- * @param {number} [options.scaleX] - Scale X
- * @param {number} [options.scaleY] - Scale Y
- * @param {number} [options.angle] - Rotation angle in degrees
- */
-function drawSprite( screenData, options ) {
-	const name = options.name;
-	const frame = options.frame ?? 0;
-	const x = g_utils.getInt( options.x, null );
-	const y = g_utils.getInt( options.y, null );
-	const colorRaw = options.color ?? DEFAULT_BLIT_COLOR;
-	const anchorX = g_utils.getFloat( options.anchorX, screenData.defaultAnchorX );
-	const anchorY = g_utils.getFloat( options.anchorY, screenData.defaultAnchorY );
-	const scaleX = g_utils.getFloat( options.scaleX, 1 );
-	const scaleY = g_utils.getFloat( options.scaleY, 1 );
-	const angle = g_utils.getFloat( options.angle, 0 );
-
-	// Validate name
-	if( typeof name !== "string" ) {
-		const error = new TypeError( "drawSprite: Parameter name must be a string." );
-		error.code = "INVALID_NAME";
-		throw error;
-	}
-
-	const spriteData = getStoredImage( name );
-	if( !spriteData ) {
-		const error = new Error( `drawSprite: Spritesheet "${name}" not found.` );
-		error.code = "IMAGE_NOT_FOUND";
-		throw error;
-	}
-
-	// Validate it's a spritesheet
-	if( spriteData.type !== "spritesheet" ) {
-		const error = new Error( `drawSprite: Image "${name}" is not a spritesheet.` );
-		error.code = "NOT_A_SPRITESHEET";
-		throw error;
-	}
-
-	if( spriteData.status !== "ready" ) {
-		const imgName = `Spritesheet "${name}"`;
-		if( spriteData.status === "loading" ) {
-			const error = new Error(
-				`drawSprite: ${imgName} is still loading. Use $.ready() to wait for it.`
-			);
-			error.code = "IMAGE_NOT_READY";
-			throw error;
-		}
-
-		if( spriteData.status === "error" ) {
-			const error = new Error( `drawSprite: ${imgName} failed to load.` );
-			error.code = "IMAGE_LOAD_FAILED";
-			throw error;
-		}
-	}
-
-	// Validate frame
-	if( !Number.isInteger( frame ) || frame >= spriteData.frames.length || frame < 0 ) {
-		const error = new RangeError(
-			`drawSprite: Frame ${frame} is not valid. Spritesheet has ${spriteData.frames.length} frames.`
-		);
-		error.code = "INVALID_FRAME";
-		throw error;
-	}
-
-	// Validate coordinates
-	if( x === null || y === null ) {
-		const error = new TypeError( "drawSprite: Parameters x and y must be numbers." );
-		error.code = "INVALID_COORDINATES";
-		throw error;
-	}
-
-	// Parses the color and makes sure it's in a valid format
-	const color = g_colors.getColorValueByRawInput( screenData, colorRaw );
-
-	// Convert angle from degrees to radians
-	const angleRad = g_utils.degreesToRadian( angle );
-
-	// Get frame data
-	const frameData = spriteData.frames[ frame ];
-	const img = spriteData.image;
-
-	// Draw using renderer-specific implementation
-	g_renderer.drawSprite(
-		screenData, img,
-		frameData.x, frameData.y, frameData.width, frameData.height,
-		x, y, frameData.width, frameData.height,
-		color, anchorX, anchorY, scaleX, scaleY, angleRad
-	);
-
-	// Mark screen as dirty
-	g_renderer.setImageDirty( screenData );
-}
-
-/**
  * Get spritesheet data including frame information
  * 
  * @param {Object} screenData - Screen data object
@@ -906,9 +629,9 @@ function getSpritesheetData( screenData, options ) {
 }
 
 
-/***************************************************************************************************
+/**************************************************************************************************
  * Internal Helper Functions
- ***************************************************************************************************/
+ **************************************************************************************************/
 
 
 /**
@@ -974,7 +697,7 @@ function createCanvasFromScreenRegion( screenData, x, y, width, height ) {
 	return canvas;
 }
 
-function getImageFromRawInput( imageOrName, fnName ) {
+export function getImageFromRawInput( imageOrName, fnName ) {
 	let img = null;
 
 	// Resolve image from name parameter

@@ -39,7 +39,7 @@ let m_tests = [];
 // m_tests.push( g_graphicsTest.getConfig( [ "ellipse" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "ellipse-filled" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "line" ] ) );
-m_tests.push( g_graphicsTest.getConfig( [ "put" ] ) );
+// m_tests.push( g_graphicsTest.getConfig( [ "put" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "pset" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "pset2" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "rect" ] ) );
@@ -50,14 +50,6 @@ m_tests.push( g_graphicsTest.getConfig( [ "put" ] ) );
 // m_tests.push( g_imagesTest.getConfig( true, false ) );
 // m_tests.push( g_imagesTest.getConfig( false, true ) );
 // m_tests.push( g_imagesTest.getConfig( true, true ) );
-
-// // Blit Images
-// m_tests.push( g_imagesTest2.getConfig( true, false, true ) );
-// m_tests.push( g_imagesTest2.getConfig( true, false, false ) );
-
-// // Draw Images
-// m_tests.push( g_imagesTest2.getConfig( false, false, true ) );
-// m_tests.push( g_imagesTest2.getConfig( false, false, false ) );
 
 // Images Advanced Test - All 8 combinations
 const allImageTestOptions = [
@@ -73,13 +65,12 @@ const allImageTestOptions = [
 
 //m_tests.push( g_imagesTest2.getConfig( [ "draw-images" ] ) );
 // Generate separate test for each combination
-// for( let i = 0; i < allImageTestOptions.length; i++ ) {
-// 	m_tests.push( g_imagesTest2.getConfig( [ allImageTestOptions[ i ] ] ) );
-// }
+for( let i = 0; i < allImageTestOptions.length; i++ ) {
+	m_tests.push( g_imagesTest2.getConfig( [ allImageTestOptions[ i ] ] ) );
+}
 
-// Or use a single mixed test with all options:
-// m_tests.push( g_imagesTest2.getConfig( allImageTestOptions ) );
-//m_tests.push( g_bezierTest.getConfig() );
+//m_tests.push( g_imagesTest2.getConfig( [ "draw-images" ] ) );
+//m_tests.push( g_imagesTest2.getConfig( [ "draw-sprites" ] ) );
 
 // Global state for the test manager
 let m_results = [];

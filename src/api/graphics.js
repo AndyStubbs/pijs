@@ -15,7 +15,9 @@ import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_colors from "./colors.js";
+import * as g_images from "./images.js";
 
+const DEFAULT_BLIT_COLOR = g_utils.rgbToColor( 255, 255, 255, 255 );
 let m_api = null;
 
 
@@ -66,20 +68,24 @@ export function buildApi( s_screenData ) {
 	const s_drawPixel = g_renderer.drawPixel;
 	const s_drawRect = g_renderer.drawRect;
 	const s_drawRectFilled = g_renderer.drawRectFilled;
-	const s_drawPixelUnsafe = g_renderer.drawPixelUnsafe;
-	const s_prepareBatch = g_renderer.prepareBatch;
+	const s_drawImage = g_renderer.drawImage;
+	const s_drawSprite = g_renderer.drawSprite;
+	
+	// Other API Commands
+	const s_getImageFromRawInput = g_images.getImageFromRawInput;
+	const s_getStoredImage = g_images.getStoredImage;
 
 	// Utility commands
 	const s_isObjectLiteral = g_utils.isObjectLiteral;
 	const s_setImageDirty = g_renderer.setImageDirty;
 	const s_getInt = g_utils.getInt;
+	const s_getFloat = g_utils.getFloat;
 	const s_degreesToRadian = g_utils.degreesToRadian;
 	const s_getColorValueByRawInput = g_colors.getColorValueByRawInput;
-	const s_getColorValueByIndex = g_colors.getColorValueByIndex;
 
 	// Constants
 	const s_pointsBatch = g_renderer.POINTS_BATCH;
-	const s_pointsReplaceBatch = g_renderer.POINTS_REPLACE_BATCH;
+	const s_imageReplaceBatch = g_renderer.IMAGE_REPLACE_BATCH;
 
 	/**********************************************************************************************
 	 * ARC Command
@@ -374,6 +380,256 @@ export function buildApi( s_screenData ) {
 
 	m_api.rect = rectFnWrapper;
 	s_screenData.api.rect = rectFnWrapper;
+
+	/**********************************************************************************************
+	 * BLIT IMAGE Command
+	 **********************************************************************************************/
+
+	// Draw image with blending disabled
+	const blitImageFn = ( img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad ) => {
+		const pAnchorX = anchorX ?? s_screenData.defaultAnchorX;
+		const pAnchorY = anchorY ?? s_screenData.defaultAnchorY;
+		s_drawImage(
+			s_screenData, img, x, y, color, pAnchorX, pAnchorY, scaleX, scaleY, angleRad,
+			s_imageReplaceBatch
+		);
+		s_setImageDirty( s_screenData );
+	};
+
+	const blitImageFnWrapper = (
+		img,
+		x = 0,
+		y = 0,
+		color = DEFAULT_BLIT_COLOR,
+		anchorX,
+		anchorY,
+		scaleX = 1,
+		scaleY = 1,
+		angleRad = 0
+	) => {
+		if( s_isObjectLiteral( img ) ) {
+			blitImageFn(
+				img.img, img.x, img.y, img.color, img.anchorX, img.anchorY, img.scaleX, img.scaleY,
+				img.angleRad
+			);
+		} else {
+			blitImageFn( img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad );
+		}
+	};
+	m_api.blitImage = blitImageFnWrapper;
+	s_screenData.api.blitImage = blitImageFnWrapper;
+
+	/**********************************************************************************************
+	 * BLIT SPRITE Command
+	 **********************************************************************************************/
+
+	// Draw image with blending disabled
+	const blitSpriteFn = (
+		name, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
+	) => {
+		const spriteData = s_getStoredImage( name );
+		const frameData = spriteData.frames[ frame ];
+		const img = spriteData.image;
+		const pAnchorX = anchorX ?? s_screenData.defaultAnchorX;
+		const pAnchorY = anchorY ?? s_screenData.defaultAnchorY;
+		s_drawSprite(
+			s_screenData, img,
+			frameData.x, frameData.y, frameData.width, frameData.height,
+			x, y, frameData.width, frameData.height,
+			color, pAnchorX, pAnchorY, scaleX, scaleY, angleRad,
+			s_imageReplaceBatch
+		);
+		s_setImageDirty( s_screenData );
+	};
+
+	const blitSpriteFnWrapper = (
+		name,
+		frame = 0,
+		x = 0,
+		y = 0,
+		color = DEFAULT_BLIT_COLOR,
+		anchorX,
+		anchorY,
+		scaleX = 1,
+		scaleY = 1,
+		angleRad = 0
+	) => {
+		if( s_isObjectLiteral( name ) ) {
+			blitSpriteFn(
+				name.name, name.frame, name.x, name.y, name.color, name.anchorX, name.anchorY,
+				name.scaleX, name.scaleY, name.angleRad
+			);
+		} else {
+			blitSpriteFn( name, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad );
+		}
+	};
+	m_api.blitSprite = blitSpriteFnWrapper;
+	s_screenData.api.blitSprite = blitSpriteFnWrapper;
+
+	/**********************************************************************************************
+	 * DRAW IMAGE Command
+	 **********************************************************************************************/
+
+	const drawImageFn = ( image, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ) => {
+		x = s_getInt( x, null );
+		y = s_getInt( y, null );
+		color = color ?? DEFAULT_BLIT_COLOR;
+		anchorX = s_getFloat( anchorX, s_screenData.defaultAnchorX );
+		anchorY = s_getFloat( anchorY, s_screenData.defaultAnchorY );
+		scaleX = s_getFloat( scaleX, 1 );
+		scaleY = s_getFloat( scaleY, 1 );
+		angle = s_getFloat( angle, 0 );
+		image = s_getImageFromRawInput( image, "drawImage" );
+	
+		// Validate coordinates
+		if( x === null || y === null ) {
+			const error = new TypeError( "drawImage: Parameters x and y must be numbers." );
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+	
+		// Parses the color and makes sure it's in a valid format
+		color = s_getColorValueByRawInput( s_screenData, color );
+		if( color === null ) {
+			color = DEFAULT_BLIT_COLOR;
+		}
+			
+		// Convert angle from degrees to radians
+		const angleRad = s_degreesToRadian( angle );
+	
+		// Draw using renderer-specific implementation
+		s_drawImage(
+			s_screenData, image, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
+		);
+	
+		// Mark screen as dirty
+		s_setImageDirty( s_screenData );
+	};
+
+	const drawImageFnWrapper = ( image, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ) => {
+		if( s_isObjectLiteral( image ) ) {
+			drawImageFn(
+				image.image, image.x, image.y, image.color, image.anchorX, image.anchorY,
+				image.scaleX, image.scaleY, image.angle
+			);
+		} else {
+			drawImageFn( image, x, y, color, anchorX, anchorY, scaleX, scaleY, angle );
+		}
+	};
+
+	m_api.drawImage = drawImageFnWrapper;
+	s_screenData.api.drawImage = drawImageFnWrapper;
+
+	/**********************************************************************************************
+	 * DRAW SPRITE Command
+	 **********************************************************************************************/
+
+	const drawSpriteFn = ( name, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ) => {
+		frame = frame ?? 0;
+		x = s_getInt( x, null );
+		y = s_getInt( y, null );
+		color = color ?? DEFAULT_BLIT_COLOR;
+		anchorX = s_getFloat( anchorX, s_screenData.defaultAnchorX );
+		anchorY = s_getFloat( anchorY, s_screenData.defaultAnchorY );
+		scaleX = s_getFloat( scaleX, 1 );
+		scaleY = s_getFloat( scaleY, 1 );
+		angle = s_getFloat( angle, 0 );
+
+		// Validate name
+		if( typeof name !== "string" ) {
+			const error = new TypeError( "drawSprite: Parameter name must be a string." );
+			error.code = "INVALID_NAME";
+			throw error;
+		}
+
+		const spriteData = s_getStoredImage( name );
+		if( !spriteData ) {
+			const error = new Error( `drawSprite: Spritesheet "${name}" not found.` );
+			error.code = "IMAGE_NOT_FOUND";
+			throw error;
+		}
+
+		// Validate it's a spritesheet
+		if( spriteData.type !== "spritesheet" ) {
+			const error = new Error( `drawSprite: Image "${name}" is not a spritesheet.` );
+			error.code = "NOT_A_SPRITESHEET";
+			throw error;
+		}
+
+		if( spriteData.status !== "ready" ) {
+			const imgName = `Spritesheet "${name}"`;
+			if( spriteData.status === "loading" ) {
+				const error = new Error(
+					`drawSprite: ${imgName} is still loading. Use $.ready() to wait for it.`
+				);
+				error.code = "IMAGE_NOT_READY";
+				throw error;
+			}
+
+			if( spriteData.status === "error" ) {
+				const error = new Error( `drawSprite: ${imgName} failed to load.` );
+				error.code = "IMAGE_LOAD_FAILED";
+				throw error;
+			}
+		}
+
+		// Validate frame
+		if( !Number.isInteger( frame ) || frame >= spriteData.frames.length || frame < 0 ) {
+			const error = new RangeError(
+				`drawSprite: Frame ${frame} is not valid. Spritesheet has ` +
+				`${spriteData.frames.length} frames.`
+			);
+			error.code = "INVALID_FRAME";
+			throw error;
+		}
+
+		// Validate coordinates
+		if( x === null || y === null ) {
+			const error = new TypeError( "drawSprite: Parameters x and y must be numbers." );
+			error.code = "INVALID_COORDINATES";
+			throw error;
+		}
+
+		// Parses the color and makes sure it's in a valid format
+		color = s_getColorValueByRawInput( s_screenData, color );
+		if( color === null ) {
+			color = DEFAULT_BLIT_COLOR;
+		}
+
+		// Convert angle from degrees to radians
+		const angleRad = s_degreesToRadian( angle );
+
+		// Get frame data
+		const frameData = spriteData.frames[ frame ];
+		const img = spriteData.image;
+
+		// Draw using renderer-specific implementation
+		g_renderer.drawSprite(
+			s_screenData, img,
+			frameData.x, frameData.y, frameData.width, frameData.height,
+			x, y, frameData.width, frameData.height,
+			color, anchorX, anchorY, scaleX, scaleY, angleRad
+		);
+
+		// Mark screen as dirty
+		s_setImageDirty( s_screenData );
+	};
+
+	const drawSpriteFnWrapper = (
+		name, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angle
+	) => {
+		if( s_isObjectLiteral( name ) ) {
+			drawSpriteFn(
+				name.name, name.frame, name.x, name.y, name.color, name.anchorX, name.anchorY,
+				name.scaleX, name.scaleY, name.angle
+			);
+		} else {
+			drawSpriteFn( name, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angle );
+		}
+	};
+
+	m_api.drawSprite = drawSpriteFnWrapper;
+	s_screenData.api.drawSprite = drawSpriteFnWrapper;
 }
 
 /**
