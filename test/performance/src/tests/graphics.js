@@ -46,7 +46,7 @@ function init( config ) {
 	if( !config.operationTypes ) {
 		m_operationTypes = [
 			"arc", "bezier", "circle", "circle-filled",  "ellipse", "ellipse-filled", "line",
-			"put", "pset", "pset2", "rect", "rect-filled"
+			"put", "pset", "rect", "rect-filled"
 		];
 	} else {
 		m_operationTypes = config.operationTypes;
@@ -219,18 +219,6 @@ function generateRandomOperation() {
 				"getParams": () => [
 					psetX + Math.floor( Math.random() * 3 ) - 1,
 					psetY + Math.floor( Math.random() * 3 ) - 1
-				]
-			};
-		
-		case "pset2":
-			const pset2X = Math.floor( m_seededRandom() * width );
-			const pset2Y = Math.floor( m_seededRandom() * height );
-			return {
-				"func": $.pset2,
-				"params": [ pset2X, pset2Y ],
-				"getParams": () => [
-					pset2X + Math.floor( Math.random() * 3 ) - 1,
-					pset2Y + Math.floor( Math.random() * 3 ) - 1
 				]
 			};
 
