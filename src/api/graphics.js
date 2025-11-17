@@ -321,14 +321,6 @@ export function buildApi( s_screenData ) {
 	};
 	m_api.pset = psetFnWrapper;
 	s_screenData.api.pset = psetFnWrapper;
-	m_api.pset2 = ( x, y ) => {
-		s_drawPixel( s_screenData, x, y, s_pointsBatch );
-		s_setImageDirty( s_screenData );
-	};
-	s_screenData.api.pset2 = ( x, y ) => {
-		s_drawPixel( s_screenData, x, y, s_pointsBatch );
-		s_setImageDirty( s_screenData );
-	};
 
 	/**********************************************************************************************
 	 * RECT Command
