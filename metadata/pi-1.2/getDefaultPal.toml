@@ -14,5 +14,5 @@ $.print( pal[ 4 ].s );\r
 """
 
 [[returns]]
-type = "array"
+type = "Array<PiColor>"
 description = "An array of color data for the default color palette."

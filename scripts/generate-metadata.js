@@ -143,20 +143,48 @@ function formatTypeScriptType( rawType, fallback = "any" ) {
 	return normalized.join( " | " );
 }
 
-// TODO: Add support of function overloads using object literal style
-
 function buildMethodSignature( method ) {
+	const returnType = formatTypeScriptType(
+		method.returns?.[ 0 ]?.type || "void",
+		"void"
+	);
 
+	const parameters = method.parameters || [];
+	const signatures = [];
+
+	// Generate object literal overload if there are parameters
+	if( parameters.length > 0 ) {
+
+		// Build object literal type with all parameters as optional properties
+		const objectProperties = parameters.map( ( parameter ) => {
+
+			// Use signature if available for function types
+			let paramType;
+			if( parameter.type === "function" && parameter.signature ) {
+				paramType = parameter.signature;
+			} else {
+				paramType = formatTypeScriptType( parameter.type, "any" );
+			}
+			if( parameter.optional ) {
+				return `"${parameter.name}"?: ${paramType}`;
+			} else {
+				return `"${parameter.name}": ${paramType}`;
+			}
+		} );
+		const objectType = `{ ${objectProperties.join( "; " )} }`;
+		signatures.push( `${method.name}( params: ${objectType} ): ${returnType};` );
+	}
+
+	// Generate positional parameters signature
 	// Make sure that optional parameters never come before a non-optional parameter
 	let isNonOptionalAfter = false;
-	for( let i = method.parameters.length - 1; i >= 0; i -= 1 ) {
-		if( !method.parameters[ i ].optional ) {
+	for( let i = parameters.length - 1; i >= 0; i -= 1 ) {
+		if( !parameters[ i ].optional ) {
 			isNonOptionalAfter = true;
 		}
-		method.parameters[ i ].isNonOptionalAfter = isNonOptionalAfter;
+		parameters[ i ].isNonOptionalAfter = isNonOptionalAfter;
 	}
-	const params = ( method.parameters || [] ).map( ( parameter ) => {
-		
+	const params = parameters.map( ( parameter ) => {
 		// Use signature if available for function types
 		let paramType;
 		if( parameter.type === "function" && parameter.signature ) {
@@ -174,16 +202,13 @@ function buildMethodSignature( method ) {
 		return `${parameter.name}: ${paramType}`;
 	} );
 
-	const returnType = formatTypeScriptType(
-		method.returns?.[ 0 ]?.type || "void",
-		"void"
-	);
-
 	if( params.length === 0 ) {
-		return `${method.name}(): ${returnType};`;
+		signatures.push( `${method.name}(): ${returnType};` );
+	} else {
+		signatures.push( `${method.name}( ${params.join( ", " )} ): ${returnType};` );
 	}
 
-	return `${method.name}( ${params.join( ", " )} ): ${returnType};`;
+	return signatures;
 }
 
 function buildDocCommentLines( method ) {
@@ -235,7 +260,11 @@ function buildInterfaceMethods( lines, methods ) {
 
 		const docLines = buildDocCommentLines( method );
 		docLines.forEach( ( line ) => lines.push( `\t\t${line}` ) );
-		lines.push( `\t\t${buildMethodSignature( method )}` );
+		
+		const signatures = buildMethodSignature( method );
+		signatures.forEach( ( signature ) => {
+			lines.push( `\t\t${signature}` );
+		} );
 	} );
 }
 
@@ -361,7 +390,7 @@ function buildTypeDefinitions( version, screenMethods, apiMethods ) {
 		lines.push( "\t\t/**" );
 		lines.push( "\t\t * Array representation [r, g, b, a]." );
 		lines.push( "\t\t */" );
-		lines.push( "\t\tarray: array" );
+		lines.push( "\t\tarray: Array<number>" );
 	}
 	lines.push( "\t}" );
 	lines.push( "" );

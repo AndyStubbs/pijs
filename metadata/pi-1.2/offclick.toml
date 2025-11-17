@@ -2,7 +2,24 @@ title = "offclick"
 category = "mouse"
 isScreen = true
 summary = "Removes a hitbox from the screen created by the onclick command."
-description = ""
+description = """
+Removes a click event handler that was previously registered with the onclick command. The function
+reference and signature must exactly match the one passed to the onclick command.
+
+The callback receives (clickData, customData) where clickData contains x, y, buttons, action, type,
+lastX, and lastY properties.
+"""
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( clickData: { x: number, y: number, lastX: number, lastY: number, buttons: number, action: string, type: string }, customData?: object ) => void"
+description = "Callback function used when registering with onclick."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
 example = """
 $.screen( "300x200" );\r
 var hitBox = {\r
@@ -34,12 +51,3 @@ function clickBox() {\r
 \t}, 1000 );\r
 }\r
 """
-
-[[parameters]]
-name = "fn"
-type = "any"
-description = "The function that was used to create the hitbox by the onclick command."
-
-[[returns]]
-type = "void"
-description = "This function does not return a value."

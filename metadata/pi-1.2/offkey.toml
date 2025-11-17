@@ -1,8 +1,34 @@
 title = "offkey"
 category = "keyboard"
 isScreen = false
-summary = "Removes an onkey event."
-description = ""
+summary = "Removes a keyboard event handler registered with the onkey command."
+description = """
+Removes a keyboard event handler that was previously registered with the onkey command. The function
+reference, key, and mode must exactly match the ones used when registering the handler with onkey.
+
+The callback function receives keyData containing key, location, code, and keyCode properties.
+"""
+
+[[parameters]]
+name = "key"
+type = "string|number|array"
+description = "Key identifier used when registering with onkey."
+
+[[parameters]]
+name = "mode"
+type = "string"
+description = "Event mode: 'down' or 'up'."
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( keyData: { key: string, location: number, code: string, keyCode: number } ) => void"
+description = "Callback function used when registering with onkey."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
 example = """
 $.screen( "300x200" );\r
 $.print( "Press any key." );\r
@@ -10,34 +36,15 @@ $.print( "Press q to stop" );\r
 $.onkey( "any", "down", keyPress );\r
 $.onkey( "Q", "down", stopPress );\r
 \r
-// Key press function\r
-function keyPress( key ) {\r
-\t$.print( "You pressed " + key.key + "!" );\r
+// Key press function receives keyData\r
+function keyPress( keyData ) {\r
+\t$.print( "You pressed " + keyData.key + "!" );\r
 }\r
 \r
-// Stop key press function\r
-function stopPress() {\r
+// Stop key press function receives keyData\r
+function stopPress( keyData ) {\r
 \t$.print( "You pressed Q! Stopping." );\r
 \t$.offkey( "any", "down", keyPress );\r
 \t$.offkey( "Q", "down", keyPress );\r
 }\r
 """
-
-[[parameters]]
-name = "key"
-type = "any"
-description = "The key that was used in the onkey command."
-
-[[parameters]]
-name = "mode"
-type = "any"
-description = "The mode can be up or down."
-
-[[parameters]]
-name = "fn"
-type = "any"
-description = "The function that was used to create the hitbox by the onclick command."
-
-[[returns]]
-type = "void"
-description = "This function does not return a value."

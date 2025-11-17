@@ -1,8 +1,23 @@
 title = "onkey"
 category = "keyboard"
 isScreen = false
-summary = "Creates an onkey event."
-description = ""
+summary = "Registers a callback function for keyboard key events (down or up) with support for key combinations."
+description = """
+Registers a callback function that will be called when a keyboard key event occurs. The callback
+receives key data including the key name, code, location, and keyCode.
+
+Supports two event modes:
+- "down": Triggered when a key is pressed down
+- "up": Triggered when a key is released
+
+You can register handlers for single keys (string or keyCode), key combinations (array of keys),
+or use "any" to listen for any key press. For key combinations, the mode must be "down" and all keys
+in the combination must be pressed simultaneously.
+
+The callback function receives (keyData) for single keys or an array of keyData objects for key
+combinations. The keyData object contains: key (the key name), location (key location), code (the
+key code), and keyCode (numeric key code).
+"""
 example = """
 $.screen( "300x200" );\r
 $.print( "Press any key." );\r
@@ -10,13 +25,13 @@ $.print( "Press q to stop" );\r
 $.onkey( "any", "down", keyPress );\r
 $.onkey( "Q", "down", stopPress, true );\r
 \r
-// Key press function\r
-function keyPress( key ) {\r
-\t$.print( "You pressed " + key.key + "!" );\r
+// Key press function receives keyData\r
+function keyPress( keyData ) {\r
+\t$.print( "You pressed " + keyData.key + "!" );\r
 }\r
 \r
-// Stop key press function\r
-function stopPress() {\r
+// Stop key press function receives keyData\r
+function stopPress( keyData ) {\r
 \t$.print( "You pressed Q! Stopping." );\r
 \t$.offkey( "any", "down", keyPress );\r
 }\r
@@ -24,23 +39,24 @@ function stopPress() {\r
 
 [[parameters]]
 name = "key"
-type = "any"
-description = "A string, ascii value, or array of keys to register for an event."
+type = "string|number|array"
+description = "Key identifier: string key name, numeric keyCode, array for combinations, or 'any'."
 
 [[parameters]]
 name = "mode"
-type = "any"
-description = "The mode can be up or down. The mode must be down if using an array for key combination"
+type = "string"
+description = "Event mode: 'down' or 'up'."
 
 [[parameters]]
 name = "fn"
-type = "any"
-description = "The function that was used to create the hitbox by the onclick command."
+type = "function"
+signature = "( keyData: { key: string, location: number, code: string, keyCode: number } ) => void"
+description = "Callback function called when the key event occurs."
 
 [[parameters]]
 name = "once"
-type = "any"
-description = ". Boolean if true will delete event after the first time it is triggered."
+type = "boolean"
+description = "If true, removes the handler after being called once."
 optional = true
 
 [[returns]]

@@ -45,5 +45,5 @@ description = "If the color is not in the color palette then attempt to find the
 optional = true
 
 [[returns]]
-type = "array"
+type = "Array<Array<number>>"
 description = "A 2-dimensional array of color indices."

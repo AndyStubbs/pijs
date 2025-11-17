@@ -1,12 +1,70 @@
 title = "input"
 category = "keyboard"
 isScreen = true
-summary = """
-Shows a prompt on screen and allows a user type in a string. The prompt is ended when the user\r
-presses the return key. There are two ways to get the data returned. The function returns a\r
-promise that will pass the response data. You can also pass a callback function which will get\r
-called when the enter key is pressed."""
-description = ""
+summary = "Displays a text prompt on screen and waits for user input."
+description = """
+Prompts the user to enter text input through the keyboard. The function displays a prompt message on
+screen with a blinking cursor, allowing the user to type their response. Input collection ends when
+the user presses the Enter key.
+
+The function returns a Promise that resolves with the user's input as a string. You can use
+async/await syntax to wait for the input, or you can provide an optional callback function that will
+be called when Enter is pressed.
+
+For numeric input, you can enable validation by setting isNumber to true. When isNumber is enabled,
+only numeric characters (digits, decimal point, and optionally a minus sign) are accepted. If
+isInteger is also true, decimal points are rejected. The allowNegative parameter controls whether
+negative numbers are allowed (defaults to true).
+
+On touch-enabled devices, you can add an onscreen keyboard with the onscreenKeyboard parameter:
+- "auto": Automatically shows the onscreen keyboard if a touch screen is detected
+- "always": Always shows the onscreen keyboard regardless of device type
+- "none": Never shows the onscreen keyboard (default)
+
+The input prompt is displayed at the current text cursor position and updates in real-time as the
+user types. The cursor blinks to indicate the input field is active.
+"""
+
+[[parameters]]
+name = "prompt"
+type = "string"
+description = "The text prompt that will be displayed to the user. Defaults to an empty string if not provided."
+optional = true
+
+[[parameters]]
+name = "callback"
+type = "function"
+description = "An optional callback function that will be called when the user presses Enter. The callback receives the input value as its argument."
+optional = true
+
+[[parameters]]
+name = "isNumber"
+type = "boolean"
+description = "If true, restricts input to numeric characters only (digits, decimal point, and optionally minus sign). Non-numeric characters are rejected as they are typed."
+optional = true
+
+[[parameters]]
+name = "isInteger"
+type = "boolean"
+description = "If true, restricts input to integer values only. Decimal points are rejected. This parameter automatically enables isNumber behavior."
+optional = true
+
+[[parameters]]
+name = "allowNegative"
+type = "boolean"
+description = "Controls whether negative numbers are allowed. Defaults to true. Only applies when isNumber is true."
+optional = true
+
+[[parameters]]
+name = "onscreenKeyboard"
+type = "string"
+description = 'Controls the onscreen keyboard display for touch devices. Valid values: "auto" (show if touch screen detected), "always" (always show), "none" (never show, default).'
+optional = true
+
+[[returns]]
+type = "Promise<string>"
+description = "A promise that resolves with the user's input as a string when Enter is pressed."
+
 example = """
 $.screen( "300x200" );\r
 askQuestions();\r
@@ -16,43 +74,3 @@ async function askQuestions() {\r
 \t$.print( "Your name is " + name + " you are " + age + " years old." );\r
 }\r
 """
-
-[[parameters]]
-name = "prompt"
-type = "any"
-description = "The text that will display when the user is entering text."
-optional = true
-
-[[parameters]]
-name = "callback"
-type = "any"
-description = "A function you can pass which will get called when the user presses the return key."
-optional = true
-
-[[parameters]]
-name = "isNumber"
-type = "any"
-description = "Limit the data to numeric data only."
-optional = true
-
-[[parameters]]
-name = "isInteger"
-type = "any"
-description = "Limit the data to integer values only."
-optional = true
-
-[[parameters]]
-name = "allowNegative"
-type = "any"
-description = "A boolean that indicates if negative numbers are allowed."
-optional = true
-
-[[parameters]]
-name = "onscreenKeyboard"
-type = "any"
-description = 'A string value that can specify an onscreen keyboard valid values include: "auto", "always", "none".'
-optional = true
-
-[[returns]]
-type = "void"
-description = "A promise that will return the users response."

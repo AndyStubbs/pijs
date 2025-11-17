@@ -1,21 +1,34 @@
 title = "ongamepad"
 category = "gamepad"
 isScreen = false
-summary = "Creates a gamepad event listener."
-description = ""
+summary = "Registers a callback function for gamepad events (buttons, axes, connect, disconnect)."
+description = """
+Registers a callback function that will be called when a gamepad event occurs. The callback data
+varies depending on the event mode:
+
+- "connect": Receives gamepad connection data
+- "disconnect": Receives gamepad disconnection data
+- "pressed", "touched", "pressReleased", "touchReleased": Receives button data object with index,
+  pressed, touched, value, gamepadIndex properties
+- "axis" (specific index): Receives axis value as a number
+- "axis" (any/all): Receives array of axis change objects with index, value, lastValue properties
+
+You can listen for specific buttons/axes by index, use "any" to listen for any button/axis, or use
+an array to listen for multiple specific buttons. The customData parameter is optional.
+"""
 example = """
 $.screen( "300x300" );\r
 $.print( "Press button 3 to stop" );\r
 $.ongamepad( 0, "pressed", "any", pressButton );\r
 $.ongamepad( 0, "pressed", 3, stop );\r
 \r
-// Press button function\r
-function pressButton( btn ) {\r
+// Press button function receives button data and optional customData\r
+function pressButton( btn, customData ) {\r
 \t$.print( "Button " + btn.index + " pressed" );\r
 }\r
 \r
-// Stop function\r
-function stop() {\r
+// Stop function receives event data and optional customData\r
+function stop( data, customData ) {\r
 \t$.offgamepad( 0, "pressed", "any", pressButton );\r
 \t$.offgamepad( 0, "pressed", 3, stop );\r
 \t$.print( "Stopped" );\r
@@ -24,33 +37,35 @@ function stop() {\r
 
 [[parameters]]
 name = "gamepadIndex"
-type = "any"
-description = "The index of the gamepad."
+type = "number"
+description = "Gamepad index (0-3)."
 
 [[parameters]]
 name = "mode"
-type = "any"
-description = "The event mode must be one of the following strings: connect, disconnect, axis,pressed, touched, pressReleased, touchReleased."
+type = "string"
+description = "Event mode: 'connect', 'disconnect', 'axis', 'pressed', 'touched', 'pressReleased', or 'touchReleased'."
 
 [[parameters]]
 name = "item"
-type = "any"
-description = "The index of the button or axis for the event. Use the string 'any' for any button or axis."
+type = "number|string|array"
+description = "Button or axis index, array of indices, 'any', or null for all axes."
 
 [[parameters]]
 name = "fn"
-type = "any"
-description = "The function to be called back for the event."
+type = "function"
+signature = "( data: any, customData?: object ) => void"
+description = "Callback function called when the gamepad event occurs."
 
 [[parameters]]
 name = "once"
-type = "any"
-description = "Boolean if set to true the event will be deleted after it is triggered."
+type = "boolean"
+description = "If true, removes the handler after being called once."
+optional = true
 
 [[parameters]]
 name = "customData"
 type = "any"
-description = ". This can be used to assign data that will be passed into the callback event. This is useful if you have multiple ongamepad commands that use the same callback function."
+description = "Optional custom data passed to the callback function."
 optional = true
 
 [[returns]]

@@ -1,12 +1,28 @@
 title = "ontouch"
 category = "touch"
 isScreen = true
-summary = "Create a touch event."
-description = ""
+summary = "Registers a callback function for touch events (start, end, or move) with optional hit box filtering."
+description = """
+Registers a callback function that will be called when a touch event occurs. The callback receives
+an array of touch data objects, one for each active touch point, along with any optional custom
+data passed when registering the handler.
+
+Supports three event modes:
+- "start": Triggered when a touch point starts (finger touches screen)
+- "end": Triggered when a touch point ends (finger leaves screen)
+- "move": Triggered when a touch point moves
+
+If a hitBox is provided, the callback only fires when touches are within that rectangular area.
+Otherwise, events fire regardless of touch position.
+
+The callback function receives (touchDataArray, customData) where touchDataArray is an array of
+touch data objects, one for each active touch point. Each touch data object contains x, y, id (touch
+identifier), lastX, lastY, action, and type properties. The customData parameter is optional.
+"""
 example = """
 $.screen( "4x4" );\r
 $.setPinchZoom( false );\r
-$.ontouch( "start", function ( touches ) {\r
+$.ontouch( "start", function ( touches, customData ) {\r
 \tvar touch = touches[ 0 ];\r
 \t$.setColor( Math.floor( Math.random() * 9 ) + 1 );\r
 \t$.pset( touch.x, touch.y );\r
@@ -15,30 +31,31 @@ $.ontouch( "start", function ( touches ) {\r
 
 [[parameters]]
 name = "mode"
-type = "any"
-description = "The type of touch event. Must be a string value set to start, end, or move."
+type = "string"
+description = "Event mode: 'start', 'end', or 'move'."
 
 [[parameters]]
 name = "fn"
-type = "any"
-description = "The function to called when touch occurs. The first parameter will contain the touches data."
+type = "function"
+signature = "( touchDataArray: Array<{ x: number, y: number, id: number, lastX: number, lastY: number, action: string, type: string }>, customData?: object ) => void"
+description = "Callback function called when the touch event occurs."
 
 [[parameters]]
 name = "once"
-type = "any"
-description = ". A boolean if true deletes the event after being called one time."
+type = "boolean"
+description = "If true, removes the handler after being called once."
 optional = true
 
 [[parameters]]
 name = "hitBox"
-type = "any"
-description = ". A hitBox to restrict events occuring outside the box"
+type = "object"
+description = "Optional hit box object with x, y, width, height properties."
 optional = true
 
 [[parameters]]
 name = "customData"
 type = "any"
-description = ". This can be used to assign data that will be passed into the callback event. This is useful if you have multiple onmouse commands that use the same callback function."
+description = "Optional custom data passed to the callback function."
 optional = true
 
 [[returns]]

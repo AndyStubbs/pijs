@@ -1,10 +1,47 @@
 title = "onclick"
 category = "mouse"
 isScreen = true
-summary = """
-Creates an area on the screen that when the user clicks in that area a function is called. In order for a click event to trigger the user must move the mouse cursor over the hitbox area and\r
-mouse down and mouse up over that area."""
-description = ""
+summary = "Registers a callback function for click events (mouse or touch) within an optional hit box area."
+description = """
+Creates a clickable area on the screen that triggers a callback function when clicked. A click event
+is triggered when the user presses down (mouse down or touch start) and releases (mouse up or touch
+end) within the same hit box area. The mouse cursor or touch point must be within the hit box area
+for both the down and up events to register as a click.
+
+If no hitBox is provided, the entire screen is used as the hit box area. The callback function
+receives (clickData, customData) where clickData contains x, y, buttons, action, type, lastX, and
+lastY properties. The customData parameter is optional and contains any custom data passed when
+registering the handler.
+"""
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( clickData: { x: number, y: number, lastX: number, lastY: number, buttons: number, action: string, type: string }, customData?: object ) => void"
+description = "Callback function called when the area is clicked."
+
+[[parameters]]
+name = "once"
+type = "boolean"
+description = "If true, removes the handler after being called once."
+optional = true
+
+[[parameters]]
+name = "hitBox"
+type = "object"
+description = "Optional hit box object with x, y, width, height properties."
+optional = true
+
+[[parameters]]
+name = "customData"
+type = "any"
+description = "Optional custom data passed to the callback function."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
 example = """
 $.screen( "300x200" );\r
 var hitBox = {\r
@@ -21,8 +58,8 @@ $.rect( hitBox );\r
 // Setup the onclick function for the hitBox\r
 $.onclick( clickBox, true, hitBox );\r
 \r
-// Click function\r
-function clickBox() {\r
+// Click function receives clickData and optional customData\r
+function clickBox( clickData, customData ) {\r
 \r
 \t// Draw a red box\r
 \t$.setColor( 4 );\r
@@ -35,29 +72,3 @@ function clickBox() {\r
 \t}, 1000 );\r
 }\r
 """
-
-[[parameters]]
-name = "fn"
-type = "any"
-description = "The function that gets called when the area is clicked."
-
-[[parameters]]
-name = "once"
-type = "any"
-description = "Boolean if set to true the event will be deleted after it is clicked."
-
-[[parameters]]
-name = "hitBox"
-type = "any"
-description = ". The hitBox area for where the click event will occur. { x, y, width, height }."
-optional = true
-
-[[parameters]]
-name = "customData"
-type = "any"
-description = ". This can be used to assign data that will be passed into the callback event. This is useful if you have multiple onclick commands that use the same callback function."
-optional = true
-
-[[returns]]
-type = "void"
-description = "This function does not return a value."

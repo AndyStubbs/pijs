@@ -59,7 +59,7 @@ description = "Maximum length of the input string. If null, no limit."
 optional = true
 
 [[returns]]
-type = "Promise"
+type = "Promise<string>"
 description = "Promise that resolves with the input value (string or number) or null if cancelled."
 
 example = """

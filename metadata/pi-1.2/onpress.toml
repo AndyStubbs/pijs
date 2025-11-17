@@ -1,8 +1,25 @@
 title = "onpress"
 category = "touch,mouse"
 isScreen = true
-summary = "Creates a press event which activates on mouse or touch."
-description = ""
+summary = "Registers a callback function for press events (mouse or touch) with optional hit box filtering."
+description = """
+Registers a callback function that will be called when a press event occurs. Press events unify
+mouse and touch input, allowing the same handler to work with both input types. The callback
+receives press data including position coordinates, button state, and action type, along with
+any optional custom data passed when registering the handler.
+
+Supports three event modes:
+- "down": Triggered when a mouse button is pressed down or touch starts
+- "up": Triggered when a mouse button is released or touch ends
+- "move": Triggered when the mouse cursor moves or touch moves
+
+If a hitBox is provided, the callback only fires when the press is within that rectangular area.
+Otherwise, events fire regardless of position.
+
+The callback function receives (pressData, customData) where pressData contains x, y, buttons,
+action, type, lastX, and lastY properties. The type will be either "mouse" or "touch" depending
+on the input source. The customData parameter is optional.
+"""
 example = """
 $.screen( "300x200" );\r
 $.print( \r
@@ -12,17 +29,17 @@ $.print( \r
 $.onpress( "move", pressMove );\r
 $.onpress( "up", pressStop, true );\r
 \r
-// Press move function\r
-function pressMove( data ) {\r
-\t$.setPosPx( data.x, data.y );\r
+// Press move function receives pressData and optional customData\r
+function pressMove( pressData, customData ) {\r
+\t$.setPosPx( pressData.x, pressData.y );\r
 \tvar pos = $.getPos();\r
 \t$.setPos( pos.col, pos.row );\r
 \t$.setColor( 8 );\r
 \t$.print( "+", true );\r
 }\r
 \r
-// Press stop function\r
-function pressStop() {\r
+// Press stop function receives pressData and optional customData\r
+function pressStop( pressData, customData ) {\r
 \t$.setColor( 14 );\r
 \tvar pos = $.getPos();\r
 \t$.setPos( pos.col - 4, pos.row );\r
@@ -33,30 +50,31 @@ function pressStop() {\r
 
 [[parameters]]
 name = "mode"
-type = "any"
-description = "The mode must be a string and can be up, down, or move."
+type = "string"
+description = "Event mode: 'down', 'up', or 'move'."
 
 [[parameters]]
 name = "fn"
-type = "any"
-description = "The function to callback when the event occurs."
+type = "function"
+signature = "( pressData: { x: number, y: number, lastX: number, lastY: number, buttons: number, action: string, type: string }, customData?: object ) => void"
+description = "Callback function called when the press event occurs."
 
 [[parameters]]
 name = "once"
-type = "any"
-description = ". A boolean if true deletes the event after being called one time."
+type = "boolean"
+description = "If true, removes the handler after being called once."
 optional = true
 
 [[parameters]]
 name = "hitBox"
-type = "any"
-description = ". A hitBox to restrict events occuring outside the box"
+type = "object"
+description = "Optional hit box object with x, y, width, height properties."
 optional = true
 
 [[parameters]]
 name = "customData"
 type = "any"
-description = ". This can be used to assign data that will be passed into the callback event. This is useful if you have multiple onmouse commands that use the same callback function."
+description = "Optional custom data passed to the callback function."
 optional = true
 
 [[returns]]

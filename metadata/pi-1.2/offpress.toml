@@ -1,25 +1,31 @@
 title = "offpress"
 category = "mouse,touch"
 isScreen = true
-summary = "Removes an onpress event."
-description = ""
+summary = "Removes a press event handler registered with the onpress command."
+description = """
+Removes a press event handler that was previously registered with the onpress command. The function
+reference and mode must exactly match the ones used when registering the handler with onpress.
+
+The callback receives (pressData, customData) where pressData contains x, y, buttons, action, type,
+lastX, and lastY properties.
+"""
 example = """
 $.screen( "300x200" );\r
 $.print( "Move mouse or touch to paint screen, click/touch up to stop." );\r
 $.onpress( "move", pressMove );\r
 $.onpress( "up", pressStop, true );\r
 \r
-// Press move function\r
-function pressMove( data ) {\r
-\t$.setPosPx( data.x, data.y );\r
+// Press move function receives pressData and optional customData\r
+function pressMove( pressData, customData ) {\r
+\t$.setPosPx( pressData.x, pressData.y );\r
 \tvar pos = $.getPos();\r
 \t$.setPos( pos.col, pos.row );\r
 \t$.setColor( 8 );\r
 \t$.print( "+", true );\r
 }\r
 \r
-// Press stop function\r
-function pressStop() {\r
+// Press stop function receives pressData and optional customData\r
+function pressStop( pressData, customData ) {\r
 \t$.setColor( 14 );\r
 \tvar pos = $.getPos();\r
 \t$.setPos( pos.col - 4, pos.row );\r
@@ -30,13 +36,14 @@ function pressStop() {\r
 
 [[parameters]]
 name = "mode"
-type = "any"
-description = "The mode must be a string and can be up, down, or move."
+type = "string"
+description = "Event mode: 'down', 'up', or 'move'."
 
 [[parameters]]
 name = "fn"
-type = "any"
-description = "The function that was used to create the hitbox by the onpress command."
+type = "function"
+signature = "( pressData: { x: number, y: number, lastX: number, lastY: number, buttons: number, action: string, type: string }, customData?: object ) => void"
+description = "Callback function used when registering with onpress."
 
 [[returns]]
 type = "void"

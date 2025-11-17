@@ -1,25 +1,47 @@
 title = "offmouse"
 category = "mouse"
 isScreen = true
-summary = "Removes an onmouse event."
-description = ""
+summary = "Removes a mouse event handler registered with the onmouse command."
+description = """
+Removes a mouse event handler that was previously registered with the onmouse command. The function
+reference and mode must exactly match the ones used when registering the handler with onmouse.
+
+The callback receives (mouseData, customData) where mouseData contains x, y, buttons, action, type,
+lastX, and lastY properties.
+"""
+
+[[parameters]]
+name = "mode"
+type = "string"
+description = "Event mode: 'down', 'up', or 'move'."
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( mouseData: { x: number, y: number, lastX: number, lastY: number, buttons: number, action: string, type: string }, customData?: object ) => void"
+description = "Callback function used when registering with onmouse."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
 example = """
 $.screen( "300x200" );\r
 $.print( "Move mouse to paint screen, click to stop." );\r
 $.onmouse( "move", mouseMove );\r
 $.onmouse( "up", mouseStop, true );\r
 \r
-// Mouse move function\r
-function mouseMove( data ) {\r
-\t$.setPosPx( data.x, data.y );\r
+// Mouse move function receives mouseData and optional customData\r
+function mouseMove( mouseData, customData ) {\r
+\t$.setPosPx( mouseData.x, mouseData.y );\r
 \tvar pos = $.getPos();\r
 \t$.setPos( pos.col, pos.row );\r
 \t$.setColor( 8 );\r
 \t$.print( "+", true );\r
 }\r
 \r
-// Mouse stop function\r
-function mouseStop() {\r
+// Mouse stop function receives mouseData and optional customData\r
+function mouseStop( mouseData, customData ) {\r
 \t$.setColor( 14 );\r
 \tvar pos = $.getPos();\r
 \t$.setPos( pos.col - 4, pos.row );\r
@@ -27,17 +49,3 @@ function mouseStop() {\r
 \t$.offmouse( "move", mouseMove );\r
 }\r
 """
-
-[[parameters]]
-name = "mode"
-type = "any"
-description = "The mode must be a string and can be up, down, or move."
-
-[[parameters]]
-name = "fn"
-type = "any"
-description = "The function that was used to create the hitbox by the onclick command."
-
-[[returns]]
-type = "void"
-description = "This function does not return a value."

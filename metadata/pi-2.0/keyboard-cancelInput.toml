@@ -14,6 +14,7 @@ description = "This function does not return a value."
 
 example = """
 $.input( "Enter name: " );
+
 // Later, cancel the input
 $.cancelInput();
 """

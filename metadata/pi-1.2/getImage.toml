@@ -43,5 +43,5 @@ type = "number"
 description = "Second vertical coordinate."
 
 [[returns]]
-type = "void"
+type = "string"
 description = "The name or id of the image."
