@@ -155,42 +155,50 @@ functionality.
 [[objects.properties]]
 name = "addCommand"
 type = "function"
-description = "Register a new command. Signature: (name, fn, isScreen, parameterNames, isScreenOptional) => void"
+signature = "( name: string, fn: ( ...args: any[] ) => any, isScreen: boolean, parameterNames: string[], isScreenOptional: boolean ) => void"
+description = "Register a new command."
 
 [[objects.properties]]
 name = "addScreenDataItem"
 type = "function"
-description = "Add persistent data to each screen. Signature: (name, defaultValue) => void"
+signature = "( name: string, defaultValue: any ) => void"
+description = "Add persistent data to each screen."
 
 [[objects.properties]]
 name = "addScreenDataItemGetter"
 type = "function"
-description = "Add a dynamic data getter for screens. Signature: (name, getterFn) => void"
+signature = "( name: string, getterFn: Function ) => void"
+description = "Add a dynamic data getter for screens."
 
 [[objects.properties]]
 name = "addScreenInitFunction"
 type = "function"
-description = "Register a function to run when screens are created. Signature: (initFn) => void"
+signature = "( initFn: Function ) => void"
+description = "Register a function to run when screens are created."
 
 [[objects.properties]]
 name = "addScreenCleanupFunction"
 type = "function"
-description = "Register a function to run when screens are destroyed. Signature: (cleanupFn) => void"
+signature = "( cleanupFn: Function ) => void"
+description = "Register a function to run when screens are destroyed."
 
 [[objects.properties]]
 name = "getScreenData"
 type = "function"
-description = "Get data for a specific screen by name. Signature: (fnName, screenId) => any"
+signature = "( fnName: string, screenId: string ) => any"
+description = "Get data for a specific screen by name."
 
 [[objects.properties]]
 name = "getAllScreensData"
 type = "function"
-description = "Get array of all screen data objects. Signature: () => array"
+signature = "() => any[]"
+description = "Get array of all screen data objects."
 
 [[objects.properties]]
 name = "getApi"
 type = "function"
-description = "Get the main Pi.js API object. Signature: () => Pi.API"
+signature = "() => Pi.API"
+description = "Get the main Pi.js API object."
 
 [[objects.properties]]
 name = "utils"
@@ -200,15 +208,18 @@ description = "Access to utility functions."
 [[objects.properties]]
 name = "wait"
 type = "function"
-description = "Increment resource wait counter (for async operations). Signature: () => void"
+signature = "() => void"
+description = "Increment resource wait counter (for async operations)."
 
 [[objects.properties]]
 name = "done"
 type = "function"
-description = "Decrement resource wait counter. Signature: () => void"
+signature = "() => void"
+description = "Decrement resource wait counter."
 
 [[objects.properties]]
 name = "registerClearEvents"
 type = "function"
-description = "Register a clearEvents handler for a specific event type. Signature: (name, handler) => void"
+signature = "( name: string, handler: Function ) => void"
+description = "Register a clearEvents handler for a specific event type."
 

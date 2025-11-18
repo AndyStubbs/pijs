@@ -95,13 +95,13 @@ function parseMetadataFile( filePath ) {
 	return toml.parse( raw );
 }
 
-function buildReferenceEntry( methodName, metadata ) {
+function buildMethodReferenceEntry( name, metadata ) {
 	const parameters = formatParameters( metadata.parameters );
 	const returns = formatReturns( metadata.returns );
 	const example = normalizeMultiline( extractExample( metadata ) );
 
 	return {
-		"name": methodName,
+		"name": name,
 		"category": metadata.category || "",
 		"isScreen": Boolean( metadata.isScreen ),
 		"summary": metadata.summary || "",
@@ -268,136 +268,92 @@ function buildInterfaceMethods( lines, methods ) {
 	} );
 }
 
-function buildPluginApiInterface( lines ) {
-	lines.push( "\tinterface PluginApi {" );
-	
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Register a new command" );
-	lines.push( "\t\t */" );
-	lines.push( "\t\taddCommand( name: string, fn: (...args: any[]) => any, isScreen: boolean, parameterNames: string[], isScreenOptional: boolean ): void;" );
-	lines.push( "" );
-	
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Add persistent data to each screen" );
-	lines.push( "\t\t */" );
-	lines.push( "\t\taddScreenDataItem( name: string, defaultValue: any ): void;" );
-	lines.push( "" );
-	
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Add a dynamic data getter for screens" );
-	lines.push( "\t\t */" );
-	lines.push( "\t\taddScreenDataItemGetter( name: string, getterFn: Function ): void;" );
-	lines.push( "" );
-	
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Register a function to run when screens are created" );
-	lines.push( "\t\t */" );
-	lines.push( "\t\taddScreenInitFunction( initFn: Function ): void;" );
-	lines.push( "" );
-	
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Register a function to run when screens are destroyed" );
-	lines.push( "\t\t */" );
-	lines.push( "\t\taddScreenCleanupFunction( cleanupFn: Function ): void;" );
-	lines.push( "" );
-	
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Get data for a specific screen by name" );
-	lines.push( "\t\t */" );
-	lines.push( "\t\tgetScreenData( fnName: string, screenId: string ): any;" );
-	lines.push( "" );
-	
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Get array of all screen data objects" );
-	lines.push( "\t\t */" );
-	lines.push( "\t\tgetAllScreensData(): any[];" );
-	lines.push( "" );
-	
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Get the main Pi.js API object" );
-	lines.push( "\t\t */" );
-	lines.push( "\t\tgetApi(): Pi.API;" );
-	lines.push( "" );
-	
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Access to utility functions" );
-	lines.push( "\t\t */" );
-	lines.push( "\t\treadonly utils: any;" );
-	lines.push( "" );
-	
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Increment resource wait counter (for async operations)" );
-	lines.push( "\t\t */" );
-	lines.push( "\t\twait(): void;" );
-	lines.push( "" );
-	
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Decrement resource wait counter" );
-	lines.push( "\t\t */" );
-	lines.push( "\t\tdone(): void;" );
-	lines.push( "" );
-	
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Register a clearEvents handler for a specific event type" );
-	lines.push( "\t\t */" );
-	lines.push( "\t\tregisterClearEvents( name: string, handler: Function ): void;" );
-	
-	lines.push( "\t}" );
+function formatObjectPropertyType( property ) {
+	if( property.type === "function" && property.signature ) {
+		return property.signature;
+	}
+	return formatTypeScriptType( property.type, "any" );
 }
 
-function buildTypeDefinitions( version, screenMethods, apiMethods ) {
+function buildObjectInterface( objectData ) {
+	const lines = [];
+	const title = objectData.title || "";
+	const summary = ( objectData.summary || "" ).trim();
+	const description = ( objectData.description || "" ).trim();
+	const properties = objectData.properties || [];
+
+	// JSDoc comment
+	lines.push( "\t/**" );
+	if( summary ) {
+		summary.split( /\r?\n/ ).forEach( ( line ) => {
+			lines.push( `\t * ${line}`.trimEnd() );
+		} );
+	}
+	if( summary && description ) {
+		lines.push( "\t *" );
+	}
+	if( description ) {
+		description.split( /\r?\n/ ).forEach( ( line ) => {
+			lines.push( `\t * ${line}`.trimEnd() );
+		} );
+	}
+	lines.push( "\t */" );
+
+	// Interface declaration
+	lines.push( `\tinterface ${title} {` );
+
+	// Properties
+	properties.forEach( ( property, index ) => {
+		if( index > 0 ) {
+			lines.push( "" );
+		}
+
+		const propName = property.name || "";
+		const propType = formatObjectPropertyType( property );
+		const propDescription = ( property.description || "" ).trim();
+		const isOptional = Boolean( property.optional );
+		const isReadonly = property.type === "object" && property.name === "utils";
+
+		// Property JSDoc
+		if( propDescription ) {
+			lines.push( "\t\t/**" );
+			propDescription.split( /\r?\n/ ).forEach( ( line ) => {
+				lines.push( `\t\t * ${line}`.trimEnd() );
+			} );
+			lines.push( "\t\t */" );
+		}
+
+		// Property declaration
+		const readonlyPrefix = isReadonly ? "readonly " : "";
+		const optionalSuffix = isOptional ? "?" : "";
+		lines.push( `\t\t${readonlyPrefix}${propName}${optionalSuffix}: ${propType};` );
+	} );
+
+	lines.push( "\t}" );
+	return lines;
+}
+
+function buildObjectInterfaces( objects ) {
+	const lines = [];
+	objects.forEach( ( objectData, index ) => {
+		if( index > 0 ) {
+			lines.push( "" );
+		}
+		const interfaceLines = buildObjectInterface( objectData );
+		interfaceLines.forEach( ( line ) => lines.push( line ) );
+	} );
+	return lines;
+}
+
+function buildTypeDefinitions( version, screenMethods, apiMethods, objects ) {
 	const lines = [];
 
 	lines.push( "declare namespace Pi {" );
 
-	// Add PiColor interface
-	lines.push( "\t/**" );
-	lines.push( "\t * Color object representing RGBA color values." );
-	lines.push( "\t */" );
-	lines.push( "\tinterface PiColor {" );
-	if( version !== "1.2" ) {
-		lines.push( "\t\t/**" );
-		lines.push( "\t\t * Unique 32-bit integer key for the color (packed RGBA format)." );
-		lines.push( "\t\t */" );
-		lines.push( "\t\tkey: number" );
-	}
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Red component (0-255)." );
-	lines.push( "\t\t */" );
-	lines.push( "\t\tr: number" );
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Green component (0-255)." );
-	lines.push( "\t\t */" );
-	lines.push( "\t\tg: number" );
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Blue component (0-255)." );
-	lines.push( "\t\t */" );
-	lines.push( "\t\tb: number" );
-	lines.push( "\t\t/**" );
-	lines.push( "\t\t * Alpha component (0-255)." );
-	lines.push( "\t\t */" );
-	lines.push( "\t\ta: number" );
-	if( version === "1.2" ) {
-		lines.push( "\t\t/**" );
-		lines.push( "\t\t * RGBA string representation of the color." );
-		lines.push( "\t\t */" );
-		lines.push( "\t\ts: string" );
-		lines.push( "\t\t/**" );
-		lines.push( "\t\t * Hex string representation of the color." );
-		lines.push( "\t\t */" );
-		lines.push( "\t\ts2: string" );
-	} else {
-		lines.push( "\t\t/**" );
-		lines.push( "\t\t * Array representation [r, g, b, a]." );
-		lines.push( "\t\t */" );
-		lines.push( "\t\tarray: Array<number>" );
-	}
-	lines.push( "\t}" );
-	lines.push( "" );
-
-	// Add PluginApi
-	if( version !== "1.2" ) {
-		buildPluginApiInterface( lines );
+	// Add object interfaces
+	if( objects && objects.length > 0 ) {
+		const objectInterfaces = buildObjectInterfaces( objects );
+		objectInterfaces.forEach( ( line ) => lines.push( line ) );
 		lines.push( "" );
 	}
 
@@ -441,6 +397,7 @@ function generateMetadata() {
 	}
 
 	const methodNameToMetadata = new Map();
+	const objectNameToMetadata = new Map();
 
 	// Layer versions from oldest to target
 	for( const folderName of versionFolders ) {
@@ -450,38 +407,64 @@ function generateMetadata() {
 		const removedPath = path.join( dirPath, "_removed.toml" );
 		if( fs.existsSync( removedPath ) ) {
 			const removedData = parseMetadataFile( removedPath );
-			const removedMethods = removedData.methods;
-			for( const method of removedMethods ) {
-				methodNameToMetadata.delete( method );
+
+			// Remove methods
+			const removedMethods = removedData.methods || [];
+			for( const methodName of removedMethods ) {
+				methodNameToMetadata.delete( methodName );
+			}
+
+			// Remove objects
+			const removedObjects = removedData.objects || [];
+			for( const objectName of removedObjects ) {
+				objectNameToMetadata.delete( objectName );
+			}
+		}
+
+		// Handle objects - layer/override from previous versions
+		const objectsFilePath = path.join( dirPath, "_objects.toml" );
+		if( fs.existsSync( objectsFilePath ) ) {
+			const objectsData = parseMetadataFile( objectsFilePath );
+			const objects = objectsData.objects || [];
+			for( const objectData of objects ) {
+				const objectName = objectData.title;
+				if( objectName ) {
+					objectNameToMetadata.set( objectName, objectData );
+				}
 			}
 		}
 
 		// Apply overrides and additions
-		const tomlFiles = listTomlFilesInDir( dirPath ).filter(
-			( f ) => f.toLowerCase() !== "_removed.toml"
-		);
+		const tomlFiles = listTomlFilesInDir( dirPath ).filter( ( f ) => {
+			const fileName = f.toLowerCase();
+			return fileName !== "_removed.toml" && fileName !== "_objects.toml"
+		} );
 		for( const fileName of tomlFiles ) {
 			const filePath = path.join( dirPath, fileName );
 			const metadata = parseMetadataFile( filePath );
 			const methodName = metadata.title || path.basename( fileName, ".toml" );
-			methodNameToMetadata.set( methodName, buildReferenceEntry( methodName, metadata ) );
+			methodNameToMetadata.set( methodName, buildMethodReferenceEntry( methodName, metadata ) );
 		}
 
 		// Write output for current version
 		const version = folderName.substring( folderName.indexOf( "-" ) + 1 );
-		writeOutputFiles( version, methodNameToMetadata );
+		writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata );
 	}
 }
 
-function writeOutputFiles( version, methodNameToMetadata ) {
+function writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata ) {
 	const referenceMethods = Array.from( methodNameToMetadata.values() ).sort(
 		( a, b ) => a.name.localeCompare( b.name )
 	);
 	const screenMethods = referenceMethods.filter( ( m ) => m.isScreen );
 	const apiMethods = referenceMethods.filter( ( m ) => !m.isScreen );
 
-	writeReferenceOutput( version, { "methods": referenceMethods } );
-	writeTypeDefinitions( version, buildTypeDefinitions( version, screenMethods, apiMethods ) );
+	const objects = Array.from( objectNameToMetadata.values() ).sort(
+		( a, b ) => ( a.title || "" ).localeCompare( b.title || "" )
+	);
+
+	writeReferenceOutput( version, { "methods": referenceMethods, "objects": objects } );
+	writeTypeDefinitions( version, buildTypeDefinitions( version, screenMethods, apiMethods, objects ) );
 }
 
 function writeReferenceOutput( version, data ) {
