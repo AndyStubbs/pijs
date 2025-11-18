@@ -1,0 +1,503 @@
+# Pi.js 1.2 Object Type Definitions
+#
+# This file defines all object types used in Pi.js 1.2.
+# Objects defined here:
+#   - HitBox
+#   - Position
+#   - PositionPx
+#   - MouseData
+#   - PressData
+#   - ClickData
+#   - TouchData
+#   - SpritesheetData
+#   - FrameData
+#   - ScreenApi
+#   - Options
+#   - Error
+#   - PiColor
+
+# ============================================================================
+# HitBox
+# ============================================================================
+[[objects]]
+title = "HitBox"
+summary = "Rectangular area used for hit detection in event handlers."
+description = """
+A rectangular area defined by position and dimensions. Used to restrict event handlers
+(onclick, onmouse, onpress, ontouch) to only fire when the input occurs within this area.
+
+If no hitBox is provided to an event handler, the entire screen is used as the hit box.
+"""
+
+[[objects.properties]]
+name = "x"
+type = "number"
+description = "Left edge X coordinate in pixels."
+
+[[objects.properties]]
+name = "y"
+type = "number"
+description = "Top edge Y coordinate in pixels."
+
+[[objects.properties]]
+name = "width"
+type = "number"
+description = "Width of the rectangle in pixels."
+
+[[objects.properties]]
+name = "height"
+type = "number"
+description = "Height of the rectangle in pixels."
+
+# ============================================================================
+# Position
+# ============================================================================
+[[objects]]
+title = "Position"
+summary = "Character grid position coordinates."
+description = """
+Position coordinates in character grid units (column and row). Used for text cursor
+positioning and character-based operations. The grid size is determined by the current
+font size and print scale.
+"""
+
+[[objects.properties]]
+name = "col"
+type = "number"
+description = "Column position (0-indexed)."
+
+[[objects.properties]]
+name = "row"
+type = "number"
+description = "Row position (0-indexed)."
+
+# ============================================================================
+# PositionPx
+# ============================================================================
+[[objects]]
+title = "PositionPx"
+summary = "Pixel position coordinates."
+description = """
+Exact pixel coordinates for positioning. Used when precise pixel-level positioning
+is required, as opposed to character grid coordinates.
+"""
+
+[[objects.properties]]
+name = "x"
+type = "number"
+description = "X coordinate in pixels."
+
+[[objects.properties]]
+name = "y"
+type = "number"
+description = "Y coordinate in pixels."
+
+# ============================================================================
+# MouseData
+# ============================================================================
+[[objects]]
+title = "MouseData"
+summary = "Mouse state and event data."
+description = """
+Mouse data object containing position, button state, action type, and previous position.
+Returned by inmouse() and passed to mouse event callbacks (onmouse).
+"""
+
+[[objects.properties]]
+name = "x"
+type = "number"
+description = "Current X coordinate in pixels."
+
+[[objects.properties]]
+name = "y"
+type = "number"
+description = "Current Y coordinate in pixels."
+
+[[objects.properties]]
+name = "lastX"
+type = "number"
+description = "Previous X coordinate in pixels."
+
+[[objects.properties]]
+name = "lastY"
+type = "number"
+description = "Previous Y coordinate in pixels."
+
+[[objects.properties]]
+name = "buttons"
+type = "number"
+description = "Button state bitmask (0 = no buttons, 1 = left, 2 = right, 4 = middle, etc.)."
+
+[[objects.properties]]
+name = "action"
+type = "string"
+description = "Action type: 'down', 'up', or 'move'."
+
+[[objects.properties]]
+name = "type"
+type = "string"
+description = "Input type, always 'mouse' for mouse data."
+
+# ============================================================================
+# PressData
+# ============================================================================
+[[objects]]
+title = "PressData"
+summary = "Press state data (mouse or touch)."
+description = """
+Press data object containing position, button state, action type, and input source.
+Returned by inpress() and passed to press event callbacks (onpress). The type property
+indicates whether the data is from mouse or touch input.
+"""
+
+[[objects.properties]]
+name = "x"
+type = "number"
+description = "Current X coordinate in pixels."
+
+[[objects.properties]]
+name = "y"
+type = "number"
+description = "Current Y coordinate in pixels."
+
+[[objects.properties]]
+name = "lastX"
+type = "number"
+description = "Previous X coordinate in pixels."
+
+[[objects.properties]]
+name = "lastY"
+type = "number"
+description = "Previous Y coordinate in pixels."
+
+[[objects.properties]]
+name = "buttons"
+type = "number"
+description = "Button/press state (0 = no press, 1 = pressed)."
+
+[[objects.properties]]
+name = "action"
+type = "string"
+description = "Action type: 'down', 'up', or 'move'."
+
+[[objects.properties]]
+name = "type"
+type = "string"
+description = "Input type: 'mouse' or 'touch'."
+
+# ============================================================================
+# ClickData
+# ============================================================================
+[[objects]]
+title = "ClickData"
+summary = "Click event data (mouse or touch)."
+description = """
+Click data object containing position, button state, and action information. Passed
+to click event callbacks (onclick). Click events unify mouse clicks and touch taps.
+"""
+
+[[objects.properties]]
+name = "x"
+type = "number"
+description = "X coordinate where click occurred in pixels."
+
+[[objects.properties]]
+name = "y"
+type = "number"
+description = "Y coordinate where click occurred in pixels."
+
+[[objects.properties]]
+name = "lastX"
+type = "number"
+description = "Previous X coordinate in pixels."
+
+[[objects.properties]]
+name = "lastY"
+type = "number"
+description = "Previous Y coordinate in pixels."
+
+[[objects.properties]]
+name = "buttons"
+type = "number"
+description = "Button state at time of click."
+
+[[objects.properties]]
+name = "action"
+type = "string"
+description = "Action type, typically 'click'."
+
+[[objects.properties]]
+name = "type"
+type = "string"
+description = "Input type: 'mouse' or 'touch'."
+
+# ============================================================================
+# TouchData
+# ============================================================================
+[[objects]]
+title = "TouchData"
+summary = "Single touch point data."
+description = """
+Data for a single touch point. Touch events can have multiple simultaneous touches,
+so ontouch callbacks receive an array of TouchData objects.
+"""
+
+[[objects.properties]]
+name = "x"
+type = "number"
+description = "Current X coordinate in pixels."
+
+[[objects.properties]]
+name = "y"
+type = "number"
+description = "Current Y coordinate in pixels."
+
+[[objects.properties]]
+name = "id"
+type = "number"
+description = "Unique touch identifier for tracking individual touches."
+
+[[objects.properties]]
+name = "lastX"
+type = "number"
+description = "Previous X coordinate in pixels."
+
+[[objects.properties]]
+name = "lastY"
+type = "number"
+description = "Previous Y coordinate in pixels."
+
+[[objects.properties]]
+name = "action"
+type = "string"
+description = "Action type: 'start', 'end', or 'move'."
+
+[[objects.properties]]
+name = "type"
+type = "string"
+description = "Input type, always 'touch' for touch data."
+
+# ============================================================================
+# SpritesheetData
+# ============================================================================
+[[objects]]
+title = "SpritesheetData"
+summary = "Spritesheet metadata including frame information."
+description = """
+Spritesheet data object containing frame count and detailed frame information.
+Returned by getSpritesheetData().
+"""
+
+[[objects.properties]]
+name = "frameCount"
+type = "number"
+description = "Total number of frames in the spritesheet."
+
+[[objects.properties]]
+name = "frames"
+type = "array"
+description = "Array of FrameData objects, one for each frame in the spritesheet."
+
+# ============================================================================
+# FrameData
+# ============================================================================
+[[objects]]
+title = "FrameData"
+summary = "Individual frame metadata within a spritesheet."
+description = """
+Frame data object containing position, dimensions, and bounding box information
+for a single frame in a spritesheet. Part of the frames array in SpritesheetData.
+"""
+
+[[objects.properties]]
+name = "index"
+type = "number"
+description = "Frame index (0-based)."
+
+[[objects.properties]]
+name = "x"
+type = "number"
+description = "X coordinate of frame in spritesheet image."
+
+[[objects.properties]]
+name = "y"
+type = "number"
+description = "Y coordinate of frame in spritesheet image."
+
+[[objects.properties]]
+name = "width"
+type = "number"
+description = "Width of the frame in pixels."
+
+[[objects.properties]]
+name = "height"
+type = "number"
+description = "Height of the frame in pixels."
+
+[[objects.properties]]
+name = "left"
+type = "number"
+description = "Left edge X coordinate."
+
+[[objects.properties]]
+name = "top"
+type = "number"
+description = "Top edge Y coordinate."
+
+[[objects.properties]]
+name = "right"
+type = "number"
+description = "Right edge X coordinate."
+
+[[objects.properties]]
+name = "bottom"
+type = "number"
+description = "Bottom edge Y coordinate."
+
+# ============================================================================
+# ScreenApi
+# ============================================================================
+[[objects]]
+title = "ScreenApi"
+summary = "Screen API object with graphics commands and properties."
+description = """
+Screen API object returned by screen() and getScreen(). Contains all graphics
+commands and screen-specific properties. Can be used to call graphics operations
+on a specific screen without setting it as the active screen.
+
+The ScreenApi object also contains all graphics commands (rect, circle, print, etc.)
+as methods that operate on this specific screen. These methods have the same
+signatures as their global counterparts.
+"""
+
+[[objects.properties]]
+name = "id"
+type = "number"
+description = "Unique screen identifier."
+
+[[objects.properties]]
+name = "screen"
+type = "boolean"
+description = "Always true, indicates this is a screen object."
+
+# ============================================================================
+# Options
+# ============================================================================
+[[objects]]
+title = "Options"
+summary = "Settings object for the set() command."
+description = """
+Options object used with the set() command to apply multiple settings in a single call.
+Any command registered as a "setX" command is available as an option with the lowercased
+name (e.g., setColor => { "color": ... }).
+
+The available options depend on which modules are loaded. Common options include:
+- screen: Screen dimensions/aspect ratio
+- color: Foreground color
+- bgColor: Background color
+- defaultPal: Default color palette
+- autoRender: Auto-render setting
+- And many more based on loaded modules
+
+Note: The Options object is dynamic and can contain any setting key that corresponds
+to a "setX" command. The properties listed above are common examples, but the actual
+available properties depend on the loaded modules and registered settings.
+"""
+
+[[objects.properties]]
+name = "screen"
+type = "string"
+description = "Screen dimensions/aspect ratio string."
+optional = true
+
+[[objects.properties]]
+name = "color"
+type = "any"
+description = "Foreground color (palette index, color value, etc.)."
+optional = true
+
+[[objects.properties]]
+name = "bgColor"
+type = "any"
+description = "Background color."
+optional = true
+
+[[objects.properties]]
+name = "defaultPal"
+type = "array"
+description = "Default color palette array."
+optional = true
+
+# ============================================================================
+# Error
+# ============================================================================
+[[objects]]
+title = "Error"
+summary = "Standard JavaScript Error object."
+description = """
+Standard JavaScript Error object passed to error callbacks (e.g., onError callbacks
+in loadImage, loadSpritesheet). Contains error information including message and
+potentially other error details.
+
+The Error object may contain additional properties depending on the error source.
+For image loading errors, it may include network-related information.
+"""
+
+[[objects.properties]]
+name = "message"
+type = "string"
+description = "Error message describing what went wrong."
+
+[[objects.properties]]
+name = "name"
+type = "string"
+description = "Error type name (e.g., 'Error', 'TypeError', 'NetworkError')."
+optional = true
+
+[[objects.properties]]
+name = "stack"
+type = "string"
+description = "Error stack trace (if available)."
+optional = true
+
+# ============================================================================
+# PiColor
+# ============================================================================
+[[objects]]
+title = "PiColor"
+summary = "Color object representing RGBA color values."
+description = """
+Color object returned by getPixel() and other color-related functions. Contains
+RGBA color components and string representations.
+"""
+
+[[objects.properties]]
+name = "r"
+type = "number"
+description = "Red component (0-255)."
+
+[[objects.properties]]
+name = "g"
+type = "number"
+description = "Green component (0-255)."
+
+[[objects.properties]]
+name = "b"
+type = "number"
+description = "Blue component (0-255)."
+
+[[objects.properties]]
+name = "a"
+type = "number"
+description = "Alpha component (0-255)."
+
+[[objects.properties]]
+name = "s"
+type = "string"
+description = "RGBA string representation of the color."
+
+[[objects.properties]]
+name = "s2"
+type = "string"
+description = "Hex string representation of the color."
+

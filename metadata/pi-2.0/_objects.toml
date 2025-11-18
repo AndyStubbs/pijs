@@ -1,0 +1,217 @@
+# Pi.js 2.0 Object Type Definitions
+#
+# This file defines object types that are new or changed in Pi.js 2.0.
+# Objects unchanged from 1.2 are not included here (see pi-1.2/_objects.toml).
+# Objects defined here:
+#   - Size
+#   - FontInfo
+#   - PiColor (changed from 1.2)
+#   - GamepadData
+#   - PluginAPI
+
+# ============================================================================
+# Size
+# ============================================================================
+[[objects]]
+title = "Size"
+summary = "Width and height dimensions object."
+description = """
+Size object containing width and height dimensions. Used in resize callbacks
+and other operations that need dimension information.
+"""
+
+[[objects.properties]]
+name = "width"
+type = "number"
+description = "Width in pixels."
+
+[[objects.properties]]
+name = "height"
+type = "number"
+description = "Height in pixels."
+
+# ============================================================================
+# FontInfo
+# ============================================================================
+[[objects]]
+title = "FontInfo"
+summary = "Font information object."
+description = """
+Font information object containing properties of a loaded font. Returned in the
+array from getAvailableFonts().
+"""
+
+[[objects.properties]]
+name = "id"
+type = "number"
+description = "Font identifier/number."
+
+[[objects.properties]]
+name = "width"
+type = "number"
+description = "Character width in pixels."
+
+[[objects.properties]]
+name = "height"
+type = "number"
+description = "Character height in pixels."
+
+# ============================================================================
+# PiColor
+# ============================================================================
+[[objects]]
+title = "PiColor"
+summary = "Color object representing RGBA color values."
+description = """
+Color object returned by getPixel(), getColor(), getPalColor(), and other
+color-related functions. Contains RGBA color components, a unique key, and
+array representation.
+
+Note: This version of PiColor differs from pi-1.2. It includes a key property
+and array property instead of s and s2 string properties.
+"""
+
+[[objects.properties]]
+name = "key"
+type = "number"
+description = "Unique 32-bit integer key for the color (packed RGBA format)."
+
+[[objects.properties]]
+name = "r"
+type = "number"
+description = "Red component (0-255)."
+
+[[objects.properties]]
+name = "g"
+type = "number"
+description = "Green component (0-255)."
+
+[[objects.properties]]
+name = "b"
+type = "number"
+description = "Blue component (0-255)."
+
+[[objects.properties]]
+name = "a"
+type = "number"
+description = "Alpha component (0-255)."
+
+[[objects.properties]]
+name = "array"
+type = "array"
+description = "Array representation [r, g, b, a]."
+
+# ============================================================================
+# GamepadData
+# ============================================================================
+[[objects]]
+title = "GamepadData"
+summary = "Gamepad state and event data."
+description = """
+Gamepad data object containing connection status, button states, axis values,
+and helper methods. Returned by ingamepad() and passed to gamepad event
+callbacks (onGamepadConnected, onGamepadDisconnected).
+"""
+
+[[objects.properties]]
+name = "index"
+type = "number"
+description = "Gamepad index (0-3)."
+
+[[objects.properties]]
+name = "id"
+type = "string"
+description = "Gamepad identifier string."
+
+[[objects.properties]]
+name = "connected"
+type = "boolean"
+description = "Connection status."
+
+[[objects.properties]]
+name = "mapping"
+type = "string"
+description = "Gamepad mapping type."
+
+[[objects.properties]]
+name = "buttons"
+type = "array"
+description = "Array of button objects with pressed, value, pressStarted, pressReleased properties."
+
+[[objects.properties]]
+name = "axes"
+type = "array"
+description = "Array of axis values (-1.0 to 1.0)."
+
+# ============================================================================
+# PluginAPI
+# ============================================================================
+[[objects]]
+title = "PluginAPI"
+summary = "Plugin API object for extending Pi.js functionality."
+description = """
+Plugin API object passed to plugin initialization functions. Provides access
+to Pi.js internals for registering commands, adding screen data, and extending
+functionality.
+"""
+
+[[objects.properties]]
+name = "addCommand"
+type = "function"
+description = "Register a new command. Signature: (name, fn, isScreen, parameterNames, isScreenOptional) => void"
+
+[[objects.properties]]
+name = "addScreenDataItem"
+type = "function"
+description = "Add persistent data to each screen. Signature: (name, defaultValue) => void"
+
+[[objects.properties]]
+name = "addScreenDataItemGetter"
+type = "function"
+description = "Add a dynamic data getter for screens. Signature: (name, getterFn) => void"
+
+[[objects.properties]]
+name = "addScreenInitFunction"
+type = "function"
+description = "Register a function to run when screens are created. Signature: (initFn) => void"
+
+[[objects.properties]]
+name = "addScreenCleanupFunction"
+type = "function"
+description = "Register a function to run when screens are destroyed. Signature: (cleanupFn) => void"
+
+[[objects.properties]]
+name = "getScreenData"
+type = "function"
+description = "Get data for a specific screen by name. Signature: (fnName, screenId) => any"
+
+[[objects.properties]]
+name = "getAllScreensData"
+type = "function"
+description = "Get array of all screen data objects. Signature: () => array"
+
+[[objects.properties]]
+name = "getApi"
+type = "function"
+description = "Get the main Pi.js API object. Signature: () => Pi.API"
+
+[[objects.properties]]
+name = "utils"
+type = "object"
+description = "Access to utility functions."
+
+[[objects.properties]]
+name = "wait"
+type = "function"
+description = "Increment resource wait counter (for async operations). Signature: () => void"
+
+[[objects.properties]]
+name = "done"
+type = "function"
+description = "Decrement resource wait counter. Signature: () => void"
+
+[[objects.properties]]
+name = "registerClearEvents"
+type = "function"
+description = "Register a clearEvents handler for a specific event type. Signature: (name, handler) => void"
+

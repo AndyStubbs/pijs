@@ -73,5 +73,5 @@ description = "A function that will get called after any time the canvas gets re
 optional = true
 
 [[returns]]
-type = "object"
+type = "Screen"
 description = "Screen API object with all graphics command."

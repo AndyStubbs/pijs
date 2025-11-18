@@ -39,7 +39,7 @@ description = "Callback function called when screen is resized. Receives (screen
 optional = true
 
 [[returns]]
-type = "object"
+type = "Screen"
 description = "Screen API object with all graphics command and screen=true and id property."
 
 example = """
