@@ -297,7 +297,7 @@ description = "Total number of frames in the spritesheet."
 
 [[objects.properties]]
 name = "frames"
-type = "array"
+type = "Array<FrameData>"
 description = "Array of FrameData objects, one for each frame in the spritesheet."
 
 # ============================================================================
@@ -376,7 +376,7 @@ optional = true
 
 [[objects.properties]]
 name = "defaultPal"
-type = "array"
+type = "Array<PiColor>"
 description = "Default color palette array."
 optional = true
 

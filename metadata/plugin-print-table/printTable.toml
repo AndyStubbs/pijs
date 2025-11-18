@@ -39,18 +39,18 @@ Each box contains:
 
 [[parameters]]
 name = "items"
-type = "array"
+type = "Array<Array<string>>"
 description = "2D array of items to display. Each row becomes a table row, each element becomes a cell."
 
 [[parameters]]
 name = "tableFormat"
-type = "array"
+type = "Array<string>"
 description = "Array of format strings defining table layout. Use null for auto-format mode."
 optional = true
 
 [[parameters]]
 name = "borderStyle"
-type = "string|array"
+type = "string|Array<number>"
 description = "Border style name ('single', 'double', 'singleDouble', 'doubleSingle', 'thick') or custom array. Defaults to 'single'."
 optional = true
 
@@ -61,7 +61,7 @@ description = "If true, centers the table horizontally (only applies to custom f
 optional = true
 
 [[returns]]
-type = "array"
+type = "Array<object>"
 description = "Array of box objects with position and dimension information for each cell."
 
 example = """

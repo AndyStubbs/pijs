@@ -95,7 +95,7 @@ description = "Alpha component (0-255)."
 
 [[objects.properties]]
 name = "array"
-type = "array"
+type = "Array<number>"
 description = "Array representation [r, g, b, a]."
 
 # ============================================================================
@@ -132,12 +132,12 @@ description = "Gamepad mapping type."
 
 [[objects.properties]]
 name = "buttons"
-type = "array"
+type = "Array<object>"
 description = "Array of button objects with pressed, value, pressStarted, pressReleased properties."
 
 [[objects.properties]]
 name = "axes"
-type = "array"
+type = "Array<number>"
 description = "Array of axis values (-1.0 to 1.0)."
 
 # ============================================================================

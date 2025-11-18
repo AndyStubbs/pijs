@@ -8,7 +8,7 @@ property.
 """
 
 [[returns]]
-type = "array"
+type = "Array<Screen>"
 description = "Array of screen API objects."
 
 example = """

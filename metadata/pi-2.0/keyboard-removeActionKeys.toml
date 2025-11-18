@@ -10,7 +10,7 @@ behavior prevented.
 
 [[parameters]]
 name = "keys"
-type = "array"
+type = "Array<string>"
 description = "Array of key codes or key values to remove from action keys."
 
 [[returns]]

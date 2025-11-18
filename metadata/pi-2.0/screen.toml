@@ -34,7 +34,7 @@ optional = true
 [[parameters]]
 name = "resizeCallback"
 type = "function"
-signature = "( fromSize: { width: number; height: number }, toSize: { width: number; height: number } ) => void"
+signature = "( screenApi: Screen, fromSize: Size, toSize: Size ) => void"
 description = "Callback function called when screen is resized. Receives (screenApi, fromSize, toSize)."
 optional = true
 

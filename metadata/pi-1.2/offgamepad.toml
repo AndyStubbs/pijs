@@ -9,6 +9,32 @@ with ongamepad.
 
 The callback data structure varies by event mode (see ongamepad documentation for details).
 """
+
+[[parameters]]
+name = "gamepadIndex"
+type = "number"
+description = "Gamepad index (0-3)."
+
+[[parameters]]
+name = "mode"
+type = "string"
+description = "Event mode."
+
+[[parameters]]
+name = "item"
+type = "any"
+description = "Button/axis index, array, or 'any'."
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( data: any, customData?: object ) => void"
+description = "Callback function used when registering with ongamepad."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+
 example = """
 $.screen( "300x300" );\r
 $.print( "Press button 3 to stop" );\r
@@ -28,28 +54,3 @@ function stop( data, customData ) {\r
 \t$.print( "Stopped" );\r
 }\r
 """
-
-[[parameters]]
-name = "gamepadIndex"
-type = "number"
-description = "Gamepad index (0-3)."
-
-[[parameters]]
-name = "mode"
-type = "string"
-description = "Event mode."
-
-[[parameters]]
-name = "item"
-type = "number|string|array"
-description = "Button/axis index, array, or 'any'."
-
-[[parameters]]
-name = "fn"
-type = "function"
-signature = "( data: any, customData?: object ) => void"
-description = "Callback function used when registering with ongamepad."
-
-[[returns]]
-type = "void"
-description = "This function does not return a value."

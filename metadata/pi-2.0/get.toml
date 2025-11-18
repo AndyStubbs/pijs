@@ -44,7 +44,7 @@ description = "If false (default true), return color value objects instead of in
 optional = true
 
 [[returns]]
-type = "array"
+type = "Array<Array<number>>"
 description = "2D array [height][width] of palette indices (default) or color values."
 
 example = """

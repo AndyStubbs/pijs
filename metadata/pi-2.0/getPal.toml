@@ -15,7 +15,7 @@ description = "If true include palette index 0 (transparent black)."
 optional = true
 
 [[returns]]
-type = "array"
+type = "Array<PiColor>"
 description = "Array of color value objects representing the current screen palette."
 
 example = """

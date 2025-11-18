@@ -9,7 +9,7 @@ Returns an array of plugin info objects including name, version, description, an
 parameters = [ ]
 
 [[returns]]
-type = "array"
+type = "Array<object>"
 description = "Array of plugin info objects: { name, version, description, initialized }."
 
 example = """

@@ -9,11 +9,11 @@ entries.
 
 [[parameters]]
 name = "colors"
-type = "array"
+type = "Array<any>"
 description = "Array of colors to add (names, hex, RGB[A])."
 
 [[returns]]
-type = "array"
+type = "Array<any>"
 description = "Array of indices for colors that were added to the palette."
 
 example = """

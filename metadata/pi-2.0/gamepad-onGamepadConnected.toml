@@ -14,7 +14,7 @@ are already connected when the callback is registered.
 [[parameters]]
 name = "fn"
 type = "function"
-signature = "( gampadData: object ) => void"
+signature = "( gamepadData: GamepadData ) => void"
 description = "Callback function that receives (gamepad) when a gamepad connects."
 
 [[returns]]

@@ -9,12 +9,12 @@ Sets multiple palette entries by index. Indices must be within the palette range
 
 [[parameters]]
 name = "indices"
-type = "array"
+type = "Array<number>"
 description = "Array of palette indices to change."
 
 [[parameters]]
 name = "colors"
-type = "array"
+type = "Array<any>"
 description = "Array of color values corresponding to indices."
 
 [[returns]]

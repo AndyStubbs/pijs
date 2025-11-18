@@ -42,7 +42,7 @@ description = "Event mode: 'start', 'end', or 'move'."
 [[parameters]]
 name = "fn"
 type = "function"
-signature = "( touchDataArray: Array<{ x: number, y: number, id: number, lastX: number, lastY: number, action: string, type: string }>, customData?: object ) => void"
+signature = "( touchDataArray: Array<TouchData>, customData?: object ) => void"
 description = "Callback function used when registering with ontouch."
 
 [[returns]]

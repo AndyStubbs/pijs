@@ -27,7 +27,7 @@ description = "Event mode: 'down', 'up', or 'move'."
 [[parameters]]
 name = "fn"
 type = "function"
-signature = "( mouseData: { x: number, y: number, lastX: number, lastY: number, buttons: number, action: string, type: string }, customData?: object ) => void"
+signature = "( mouseData: MouseData, customData?: object ) => void"
 description = "Callback function called when the mouse event occurs."
 
 [[parameters]]

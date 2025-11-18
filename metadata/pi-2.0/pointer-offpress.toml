@@ -16,7 +16,7 @@ description = "Event mode ('down', 'up', or 'move') that matches the original ha
 [[parameters]]
 name = "fn"
 type = "function"
-signature = "( pressData: object, customData?: object ) => void"
+signature = "( pressData: PressData, customData?: object ) => void"
 description = "Callback function that matches the original handler. If null, removes all handlers for this mode."
 optional = true
 
