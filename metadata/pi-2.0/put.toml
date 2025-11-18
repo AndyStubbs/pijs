@@ -21,6 +21,7 @@ Behavior:
 [[parameters]]
 name = "data"
 type = "Array<Array<number>>"
+typeDesc = "*Array"
 description = "2D array [height][width] of palette indices (0..pal.length-1)."
 
 [[parameters]]

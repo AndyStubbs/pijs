@@ -9,6 +9,7 @@ property.
 
 [[returns]]
 type = "Array<Screen>"
+typeDesc = "*Array"
 description = "Array of screen API objects."
 
 example = """

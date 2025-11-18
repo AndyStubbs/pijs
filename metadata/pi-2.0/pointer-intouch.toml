@@ -24,6 +24,6 @@ for( const touch of touches ) {
 
 [[returns]]
 type = "Array<object>"
-typeDesc = "Array"
+typeDesc = "*Array"
 description = "Array of touch data objects."
 

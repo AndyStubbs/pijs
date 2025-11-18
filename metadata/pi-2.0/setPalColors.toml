@@ -10,11 +10,13 @@ Sets multiple palette entries by index. Indices must be within the palette range
 [[parameters]]
 name = "indices"
 type = "Array<number>"
+typeDesc = "*Array"
 description = "Array of palette indices to change."
 
 [[parameters]]
 name = "colors"
 type = "Array<any>"
+typeDesc = "*Array"
 description = "Array of color values corresponding to indices."
 
 [[returns]]

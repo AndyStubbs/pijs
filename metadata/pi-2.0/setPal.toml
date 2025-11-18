@@ -11,6 +11,7 @@ reserved for transparent black.
 [[parameters]]
 name = "pal"
 type = "Array<any>"
+typeDesc = "*Array"
 description = "Array of color values (names, hex, RGBA, or palette indices)."
 
 [[returns]]

@@ -46,5 +46,5 @@ optional = true
 
 [[returns]]
 type = "Array<Array<number>>"
-typeDesc = "Array"
-description = "A 2-dimensional array of color indices."
+typeDesc = "*Array"
+description = "A 2D array of color indices."

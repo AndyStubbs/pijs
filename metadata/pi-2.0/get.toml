@@ -50,6 +50,6 @@ optional = true
 
 [[returns]]
 type = "Array<Array<number | PiColor>>"
-typeDesc = "Array"
+typeDesc = "*Array"
 description = "2D array [height][width] of palette indices (default) or color values."
 

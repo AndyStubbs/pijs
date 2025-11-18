@@ -30,5 +30,5 @@ parameters = []
 
 [[returns]]
 type = "Array<object>"
-typeDesc = "Array"
+typeDesc = "*Array"
 description = "An array of touch objects."

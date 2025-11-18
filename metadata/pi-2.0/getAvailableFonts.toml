@@ -9,6 +9,7 @@ containing id, width, and height for each font.
 
 [[returns]]
 type = "Array<FontInfo>"
+typeDesc = "*Array"
 description = "Array of font info objects with id, width, and height properties."
 
 example = """

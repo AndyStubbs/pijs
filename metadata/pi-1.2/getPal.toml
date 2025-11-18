@@ -13,5 +13,5 @@ $.print( pal[ 2 ].s );\r
 parameters = [ ]
 [[returns]]
 type = "Array<number>"
-typeDesc = "Array"
+typeDesc = "*Array"
 description = "An array of color data for the current screen's color palette."

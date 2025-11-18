@@ -11,6 +11,7 @@ behavior prevented.
 [[parameters]]
 name = "keys"
 type = "Array<string>"
+typeDesc = "*Array"
 description = "Array of key codes or key values to remove from action keys."
 
 [[returns]]

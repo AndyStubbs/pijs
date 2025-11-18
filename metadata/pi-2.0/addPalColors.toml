@@ -14,9 +14,10 @@ const indices = $.addPalColors( [ "#112233", "gold", [ 10, 20, 30 ] ] );
 [[parameters]]
 name = "colors"
 type = "Array<any>"
+typeDesc = "*Array"
 description = "Array of colors to add (names, hex, RGB[A])."
 
 [[returns]]
 type = "Array<any>"
-typeDesc = "Array"
+typeDesc = "*Array"
 description = "Array of indices for colors that were added to the palette."

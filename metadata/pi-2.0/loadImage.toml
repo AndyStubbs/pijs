@@ -28,6 +28,7 @@ optional = true
 [[parameters]]
 name = "paletteKeys"
 type = "Array<number>"
+typeDesc = "*Array"
 description = "Key colors used to map image colors to palette indices (required if usePalette)."
 optional = true
 

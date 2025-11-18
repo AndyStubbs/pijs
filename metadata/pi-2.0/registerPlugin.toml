@@ -51,6 +51,7 @@ optional = true
 [[parameters]]
 name = "dependencies"
 type = "Array<string>"
+typeDesc = "*Array"
 description = "Optional list of dependency plugin names."
 optional = true
 
