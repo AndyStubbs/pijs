@@ -11,8 +11,6 @@
 #   - TouchData
 #   - SpritesheetData
 #   - FrameData
-#   - ScreenApi
-#   - Options
 #   - Error
 #   - PiColor
 
@@ -353,56 +351,6 @@ description = "Right edge X coordinate."
 name = "bottom"
 type = "number"
 description = "Bottom edge Y coordinate."
-
-# ============================================================================
-# ScreenApi
-# ============================================================================
-[[objects]]
-title = "ScreenApi"
-summary = "Screen API object with graphics commands and properties."
-description = """
-Screen API object returned by screen() and getScreen(). Contains all graphics
-commands and screen-specific properties. Can be used to call graphics operations
-on a specific screen without setting it as the active screen.
-
-The ScreenApi object also contains all graphics commands (rect, circle, print, etc.)
-as methods that operate on this specific screen. These methods have the same
-signatures as their global counterparts.
-"""
-
-[[objects.properties]]
-name = "id"
-type = "number"
-description = "Unique screen identifier."
-
-[[objects.properties]]
-name = "screen"
-type = "boolean"
-description = "Always true, indicates this is a screen object."
-
-# ============================================================================
-# Options
-# ============================================================================
-[[objects]]
-title = "Options"
-summary = "Settings object for the set() command."
-description = """
-Options object used with the set() command to apply multiple settings in a single call.
-Any command registered as a "setX" command is available as an option with the lowercased
-name (e.g., setColor => { "color": ... }).
-
-The available options depend on which modules are loaded. Common options include:
-- screen: Screen dimensions/aspect ratio
-- color: Foreground color
-- bgColor: Background color
-- defaultPal: Default color palette
-- autoRender: Auto-render setting
-- And many more based on loaded modules
-
-Note: The Options object is dynamic and can contain any setting key that corresponds
-to a "setX" command. The properties listed above are common examples, but the actual
-available properties depend on the loaded modules and registered settings.
-"""
 
 [[objects.properties]]
 name = "screen"

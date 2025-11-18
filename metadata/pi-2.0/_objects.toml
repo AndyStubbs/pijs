@@ -66,9 +66,6 @@ description = """
 Color object returned by getPixel(), getColor(), getPalColor(), and other
 color-related functions. Contains RGBA color components, a unique key, and
 array representation.
-
-Note: This version of PiColor differs from pi-1.2. It includes a key property
-and array property instead of s and s2 string properties.
 """
 
 [[objects.properties]]
