@@ -3,7 +3,6 @@ category = "mouse,touch"
 isScreen = true
 summary = "Gets the most recent mouse or touch status."
 description = ""
-parameters = [ ]
 example = """
 $.screen( "4x4" );\r
 $.startTouch();\r
@@ -17,6 +16,7 @@ var interval = setInterval( function () {\r
 }, 50 );\r
 """
 
+parameters = [ ]
 [[returns]]
 type = "void"
 description = "An object containing data about the mouse or touch position and press status."

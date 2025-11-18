@@ -3,7 +3,6 @@ category = "gamepad"
 isScreen = false
 summary = "Gets the most recent gamepad status."
 description = ""
-parameters = [ ]
 example = """
 var x, y, frame;\r
 $.screen( "300x200" );\r
@@ -26,6 +25,7 @@ function run( dt ) {\r
 }\r
 """
 
+parameters = [ ]
 [[returns]]
 type = "void"
 description = "An array of gamepad objects."

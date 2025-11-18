@@ -8,6 +8,10 @@ This function renders a circle to the active canvas.
 The circle is drawn with a border using the current foreground color. If a fill color is provided,
 the circle will be filled with that color.
 """
+example = """
+$.screen( "300x200" );
+$.circle( 150, 100, 50, "red" );
+"""
 
 [[parameters]]
 name = "x"
@@ -33,8 +37,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-$.circle( 150, 100, 50, "red" );
-"""

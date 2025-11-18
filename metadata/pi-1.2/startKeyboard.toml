@@ -7,7 +7,6 @@ first time any keyboard method (inkey, onkey, input) gets called so\r
 calling startKeyboard is not necessary unless you explicitly call\r
 stopKeyboard."""
 description = ""
-parameters = [ ]
 example = """
 $.screen( "300x200" );\r
 \r
@@ -56,6 +55,7 @@ function clickBox() {\r
 }\r
 """
 
+parameters = [ ]
 [[returns]]
 type = "void"
 description = "This function does not return a value."

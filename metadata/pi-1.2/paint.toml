@@ -4,6 +4,25 @@ isScreen = true
 isBlocking = true
 summary = "Fills in areas of the screen that are the same color."
 description = ""
+example = """
+var color = [ 255, 255, 255 ];\r
+var color2 = [ 25, 85, 125 ];\r
+$.screen( "256x256" );\r
+$.setColor( 15 );\r
+$.setPen( "pixel", 1, 100 );\r
+for( i = 0; i < 128; i++ ) {\r
+\tcolor[ 0 ] -= 2;\r
+\tcolor[ 1 ] -= 2;\r
+\tcolor[ 2 ] -= 2;\r
+\t$.setColor( color );\r
+\t$.rect( i, i, 255 - i * 2 + 1, 255 - i * 2 + 1 );\r
+}\r
+$.setPen( "pixel", 1 );\r
+$.print( "Click screen to paint" );\r
+$.onclick( function ( mouse ) {\r
+\t$.paint( mouse.x, mouse.y, color2, 0.75 );\r
+} );\r
+"""
 
 [[parameters]]
 name = "x"
@@ -29,23 +48,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-var color = [ 255, 255, 255 ];\r
-var color2 = [ 25, 85, 125 ];\r
-$.screen( "256x256" );\r
-$.setColor( 15 );\r
-$.setPen( "pixel", 1, 100 );\r
-for( i = 0; i < 128; i++ ) {\r
-\tcolor[ 0 ] -= 2;\r
-\tcolor[ 1 ] -= 2;\r
-\tcolor[ 2 ] -= 2;\r
-\t$.setColor( color );\r
-\t$.rect( i, i, 255 - i * 2 + 1, 255 - i * 2 + 1 );\r
-}\r
-$.setPen( "pixel", 1 );\r
-$.print( "Click screen to paint" );\r
-$.onclick( function ( mouse ) {\r
-\t$.paint( mouse.x, mouse.y, color2, 0.75 );\r
-} );\r
-"""

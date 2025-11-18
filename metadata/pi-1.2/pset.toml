@@ -7,6 +7,15 @@ This function sets a single pixel on the active canvas to the current foreground
 
 After drawing, the cursor position is updated to the pixel coordinates.
 """
+example = """
+$.screen( "300x200" );
+$.setColor( 2 );
+$.pset( 148, 101 );
+$.pset( 149, 100 );
+$.pset( 150, 101 );
+$.pset( 151, 100 );
+$.pset( 152, 101 );
+"""
 
 [[parameters]]
 name = "x"
@@ -21,13 +30,3 @@ description = "The y coordinate of the pixel to set."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-$.setColor( 2 );
-$.pset( 148, 101 );
-$.pset( 149, 100 );
-$.pset( 150, 101 );
-$.pset( 151, 100 );
-$.pset( 152, 101 );
-"""

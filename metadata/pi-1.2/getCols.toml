@@ -6,14 +6,13 @@ description = """
 Gets the maximum number of character columns that can fit horizontally on the screen based on
 the current font size and print scale.
 """
-
-[[returns]]
-type = "number"
-description = "Number of columns that fit on the screen."
-
 example = """
 $.screen( "320x200" );
 $.setFont( 1 );
 const cols = $.getCols();
 $.print( `Screen fits ${cols} columns` );
 """
+
+[[returns]]
+type = "number"
+description = "Number of columns that fit on the screen."

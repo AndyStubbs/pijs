@@ -3,7 +3,6 @@ category = "core"
 isScreen = false
 summary = "Clears event handlers for mouse and touch events on the screen."
 description = ""
-parameters = [ ]
 example = """
 $.screen( "300x200" );\r
 $.print( \r
@@ -31,6 +30,7 @@ function pressStop() {\r
 \t$.clearEvents();\r
 }"""
 
+parameters = [ ]
 [[returns]]
 type = "void"
 description = "This function does not return a value."

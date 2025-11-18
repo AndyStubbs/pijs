@@ -9,7 +9,6 @@ However, there are some cases you may need to call the\r
 render function. Such as if you are drawing to an offscreen\r
 canvas and then want to draw that canvas onto another canvas."""
 description = ""
-parameters = [ ]
 example = """
 // Create a main screen.\r
 var screen1 = $.screen( "320x200" );\r
@@ -28,6 +27,7 @@ screen2.render();\r
 screen1.drawImage( screen2, 100, 100 );\r
 """
 
+parameters = [ ]
 [[returns]]
 type = "void"
 description = "This function does not return a value."

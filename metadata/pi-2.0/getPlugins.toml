@@ -5,6 +5,10 @@ summary = "Returns a list of registered plugins and their status."
 description = """
 Returns an array of plugin info objects including name, version, description, and initialized state.
 """
+example = """
+const plugins = pi.getPlugins();
+console.log( plugins );
+"""
 
 parameters = [ ]
 
@@ -12,8 +16,3 @@ parameters = [ ]
 type = "Array<object>"
 typeDesc = "Array"
 description = "Array of plugin info objects: { name, version, description, initialized }."
-
-example = """
-const plugins = pi.getPlugins();
-console.log( plugins );
-"""

@@ -14,6 +14,18 @@ Noise formats:
 Seed:
 - A number used to seed noise generation. If omitted or null, the current time is used.
 """
+example = """
+$.screen( "300x200" );
+
+// Single value (symmetric range on all channels)
+$.setNoise( 24 );
+
+// Per-channel symmetric ranges
+$.setNoise( [ 16, 8, 0, 0 ] );
+
+// Explicit per-channel min/max ranges
+$.setNoise( [ [ 8, 4, 0, 0 ], [ 24, 12, 0, 0 ] ], 1234 );
+"""
 
 [[parameters]]
 name = "noise"
@@ -31,18 +43,4 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-
-// Single value (symmetric range on all channels)
-$.setNoise( 24 );
-
-// Per-channel symmetric ranges
-$.setNoise( [ 16, 8, 0, 0 ] );
-
-// Explicit per-channel min/max ranges
-$.setNoise( [ [ 8, 4, 0, 0 ], [ 24, 12, 0, 0 ] ], 1234 );
-"""
-
 

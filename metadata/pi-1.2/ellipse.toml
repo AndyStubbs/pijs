@@ -8,6 +8,10 @@ This function renders an ellipse to the active canvas.
 The ellipse is drawn with a border using the current foreground color. If a fill color is provided,
 the ellipse will be filled with that color.
 """
+example = """
+$.screen( "300x200" );
+$.ellipse( 150, 100, 50, 80, "blue" );
+"""
 
 [[parameters]]
 name = "x"
@@ -38,9 +42,4 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-$.ellipse( 150, 100, 50, 80, "blue" );
-"""
 

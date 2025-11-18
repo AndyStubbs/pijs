@@ -6,14 +6,13 @@ description = """
 Gets the internal width of the active screen's canvas. This is the logical width used for drawing
 operations, which may differ from the CSS display size.
 """
-
-[[returns]]
-type = "number"
-description = "Screen width in pixels."
-
 example = """
 $.screen( "320x200" );
 const w = $.width();
 $.print( `Screen Width: ${w} ` );
 $.print( `Canvas CSS width: ${$.canvas().offsetWidth}` );
 """
+
+[[returns]]
+type = "number"
+description = "Screen width in pixels."

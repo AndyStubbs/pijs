@@ -7,7 +7,6 @@ first time any mouse method (inmouse, onmouse) gets called so\r
 calling startMouse is not necessary unless you explicitly call\r
 stopMouse."""
 description = ""
-parameters = [ ]
 example = """
 var isMouseEnabled = true;\r
 $.screen( "300x200" );\r
@@ -42,6 +41,7 @@ function drawScreen() {\r
 }\r
 """
 
+parameters = [ ]
 [[returns]]
 type = "void"
 description = "This function does not return a value."

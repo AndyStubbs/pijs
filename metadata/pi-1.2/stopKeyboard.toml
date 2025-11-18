@@ -3,7 +3,6 @@ category = "keyboard"
 isScreen = false
 summary = "Stops tracking keyboard input."
 description = ""
-parameters = [ ]
 example = """
 $.screen( "300x200" );\r
 \r
@@ -50,6 +49,7 @@ function clickBox() {\r
 }\r
 """
 
+parameters = [ ]
 [[returns]]
 type = "void"
 description = "This function does not return a value."

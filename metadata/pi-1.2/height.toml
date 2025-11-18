@@ -6,14 +6,13 @@ description = """
 Gets the internal height of the active screen's framebuffer size. This is the logical height used
 for drawing operations, which may differ from the CSS display size.
 """
-
-[[returns]]
-type = "number"
-description = "Screen height in pixels."
-
 example = """
 $.screen( "320x200" );
 const h = $.height();
 $.print( `Screen Height: ${h}` );
 $.print( `Canvas CSS height: ${$.canvas().offsetHeight}` );
 """
+
+[[returns]]
+type = "number"
+description = "Screen height in pixels."

@@ -3,6 +3,17 @@ category = "keyboard"
 isScreen = false
 summary = "Gets the most recent status of keys."
 description = ""
+[[parameters]]
+name = "key"
+type = "any"
+description = "Name (string) or keyCode (integer) of key to return the status. Leave blank for the status of all keys that have been pressed."
+optional = true
+
+[[returns]]
+type = "void"
+description = """
+If the first parameter is left blank then it will return an array of key data objects. If not then it returns the\r
+an object containing data for a single key."""
 example = """
 $.screen( "300x200" );\r
 var frame = requestAnimationFrame( run );\r
@@ -21,15 +32,3 @@ function run() {\r
 \tframe = requestAnimationFrame( run );\r
 }\r
 """
-
-[[parameters]]
-name = "key"
-type = "any"
-description = "Name (string) or keyCode (integer) of key to return the status. Leave blank for the status of all keys that have been pressed."
-optional = true
-
-[[returns]]
-type = "void"
-description = """
-If the first parameter is left blank then it will return an array of key data objects. If not then it returns the\r
-an object containing data for a single key."""

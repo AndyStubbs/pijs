@@ -3,7 +3,6 @@ category = "mouse"
 isScreen = true
 summary = "Gets the most recent mouse status."
 description = ""
-parameters = [ ]
 example = """
 $.screen( "4x4" );\r
 var interval = setInterval( function () {\r
@@ -15,6 +14,7 @@ var interval = setInterval( function () {\r
 }, 50 );\r
 """
 
+parameters = [ ]
 [[returns]]
 type = "void"
 description = "An object containing data about the mouse's position and button status."

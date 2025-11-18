@@ -5,11 +5,6 @@ summary = "Gets the current print cursor position in pixels."
 description = """
 Returns the current print cursor position as exact pixel coordinates.
 """
-
-[[returns]]
-type = "PositionPx"
-description = "Object with x and y properties in pixels."
-
 example = """
 $.screen( "320x200" );
 $.setFont( 1 );
@@ -17,3 +12,7 @@ $.print( "Hello" );
 const pos = $.getPosPx();
 $.print( `Cursor at ${pos.x}, ${pos.y} pixels` );
 """
+
+[[returns]]
+type = "PositionPx"
+description = "Object with x and y properties in pixels."

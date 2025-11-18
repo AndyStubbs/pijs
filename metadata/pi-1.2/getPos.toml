@@ -6,11 +6,6 @@ description = """
 Returns the current print cursor position as character grid coordinates (column and row). The
 grid size is determined by the current font size and print scale.
 """
-
-[[returns]]
-type = "Position"
-description = "Object with col and row properties (0-indexed)."
-
 example = """
 $.screen( "320x200" );
 $.setFont( 1 );
@@ -18,3 +13,7 @@ $.print( "Hello" );
 const pos = $.getPos();
 console.log( `Cursor at column ${pos.col}, row ${pos.row}` );
 """
+
+[[returns]]
+type = "Position"
+description = "Object with col and row properties (0-indexed)."

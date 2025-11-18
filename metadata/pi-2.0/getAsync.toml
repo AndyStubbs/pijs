@@ -8,6 +8,10 @@ Set asIndex=false to resolve to color value objects. Tolerance controls color-to
 
 Note: if asIndex is set to false then the 2D array cannot be used with the put command.
 """
+example = """
+$.screen( "300x200" );
+$.getAsync( 0, 0, 16, 16 ).then( ( indices ) => {} );
+"""
 
 [[parameters]]
 name = "x"
@@ -45,10 +49,4 @@ optional = true
 type = "Promise<Array<Array<number | PiColor>>>"
 typeDesc = "*Promise"
 description = "Promise resolving to 2D array [height][width] of indices (default) or color values."
-
-example = """
-$.screen( "300x200" );
-$.getAsync( 0, 0, 16, 16 ).then( ( indices ) => {} );
-"""
-
 

@@ -9,6 +9,14 @@ After removal, the screen object becomes invalid and calling methods on it will 
 Can be called either as a global function with a screen ID/object, or as a method on a screen API
 object.
 """
+example = """
+const screen1 = $.screen( "320x200" );
+$.removeScreen( screen1 );
+
+// Or call as method on screen object
+const screen2 = $.screen( "640x480" );
+screen2.removeScreen();
+"""
 
 [[parameters]]
 name = "screen"
@@ -20,13 +28,4 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-const screen1 = $.screen( "320x200" );
-$.removeScreen( screen1 );
-
-// Or call as method on screen object
-const screen2 = $.screen( "640x480" );
-screen2.removeScreen();
-"""
 

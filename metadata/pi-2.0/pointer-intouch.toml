@@ -15,16 +15,15 @@ Returns an array of all active touches. Each touch object contains:
 
 If touch tracking is not started, it will be started automatically.
 """
-
-[[returns]]
-type = "Array<object>"
-typeDesc = "Array"
-description = "Array of touch data objects."
-
 example = """
 const touches = $.intouch();
 for( const touch of touches ) {
 	$.print( `Touch ${touch.id} at ${touch.x}, ${touch.y}` );
 }
 """
+
+[[returns]]
+type = "Array<object>"
+typeDesc = "Array"
+description = "Array of touch data objects."
 

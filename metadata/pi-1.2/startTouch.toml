@@ -5,7 +5,6 @@ summary = """
 Starts the touch event listeners for the screen. This will get called automatically when any\r
 touch command gets called."""
 description = ""
-parameters = [ ]
 example = """
 $.screen( "4x4" );\r
 $.startTouch();\r
@@ -17,6 +16,7 @@ $.ontouch( "start", function ( touches ) {\r
 } );\r
 """
 
+parameters = [ ]
 [[returns]]
 type = "void"
 description = "This function does not return a value."

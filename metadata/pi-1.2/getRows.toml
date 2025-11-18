@@ -6,14 +6,13 @@ description = """
 Gets the maximum number of character rows that can fit vertically on the screen based on the
 current font size and print scale.
 """
-
-[[returns]]
-type = "number"
-description = "Number of rows that fit on the screen."
-
 example = """
 $.screen( "320x200" );
 $.setFont( 1 );
 const rows = $.getRows();
 console.log( `Screen fits ${rows} rows` );
 """
+
+[[returns]]
+type = "number"
+description = "Number of rows that fit on the screen."

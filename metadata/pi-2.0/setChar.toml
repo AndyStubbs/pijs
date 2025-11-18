@@ -10,23 +10,6 @@ as a hex-encoded string.
 This updates the WebGL texture for the font, so the change is immediately visible when that
 character is printed.
 """
-
-[[parameters]]
-name = "charCode"
-type = "number | string"
-typeDesc = "*Many"
-description = "Character code (number) or single-character string to modify."
-
-[[parameters]]
-name = "data"
-type = "array | string"
-typeDesc = "*Many"
-description = "Character bitmap as 2D array [[row...], ...] where 1=on, 0=off, or hex-encoded string."
-
-[[returns]]
-type = "void"
-description = "This function does not return a value."
-
 example = """
 $.screen( "320x200" );
 $.setFont( 1 );
@@ -46,3 +29,18 @@ $.setChar( 97, "1092ba547cc6fe92" );
 $.print( "Aa" );
 """
 
+[[parameters]]
+name = "charCode"
+type = "number | string"
+typeDesc = "*Many"
+description = "Character code (number) or single-character string to modify."
+
+[[parameters]]
+name = "data"
+type = "array | string"
+typeDesc = "*Many"
+description = "Character bitmap as 2D array [[row...], ...] where 1=on, 0=off, or hex-encoded string."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

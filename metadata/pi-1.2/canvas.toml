@@ -3,12 +3,12 @@ category = "graphics"
 isScreen = true
 summary = "Returns the canvas element used by the screen."
 description = ""
-parameters = [ ]
 example = """
 $.screen("300x200");\r
 $.canvas().className = "purple";\r
 $.print("\\n\\nThe background is now purple.");"""
 
+parameters = [ ]
 [[returns]]
 type = "HTMLCanvasElement"
 description = "Returns the canvas"

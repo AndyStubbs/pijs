@@ -5,7 +5,6 @@ summary = """
 Gets default palette and returns an array with all the color data. The default color palette defines what colors are\r
 available when a new screen is created."""
 description = ""
-parameters = [ ]
 example = """
 $.screen("300x200");\r
 var pal = $.getDefaultPal();\r
@@ -13,6 +12,7 @@ $.setColor( 4 );\r
 $.print( pal[ 4 ].s );\r
 """
 
+parameters = [ ]
 [[returns]]
 type = "Array<PiColor>"
 description = "An array of color data for the default color palette."

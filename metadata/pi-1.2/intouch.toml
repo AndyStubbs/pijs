@@ -14,13 +14,6 @@ Returns an array of all active touches. Each touch object contains:
 
 If touch tracking is not started, it will be started automatically.
 """
-parameters = []
-
-[[returns]]
-type = "Array<object>"
-typeDesc = "Array"
-description = "An array of touch objects."
-
 example = """
 $.screen( "4x4" );\r
 $.startTouch();\r
@@ -33,3 +26,9 @@ var interval = setInterval( function () {\r
 \t}\r
 }, 50 );\r
 """
+parameters = []
+
+[[returns]]
+type = "Array<object>"
+typeDesc = "Array"
+description = "An array of touch objects."

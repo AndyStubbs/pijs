@@ -28,7 +28,6 @@ $.printTable( data, format, null, false );\r
 $.printTable( data, format, null, true );\r
 $.printTable( data, null, null );\r
 """
-
 [[parameters]]
 name = "items"
 type = "any"

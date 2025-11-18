@@ -10,6 +10,12 @@ parameter is in radians (not degrees).
 This function does not support object literal parameter parsing - all parameters must be passed
 positionally.
 """
+example = """
+$.screen( "300x200" );
+const img = new Image();
+img.src = "player.png";
+$.blitImage( img, 150, 100, null, 0.5, 0.5, 1, 1, 0 );
+"""
 
 [[parameters]]
 name = "img"
@@ -68,11 +74,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-const img = new Image();
-img.src = "player.png";
-$.blitImage( img, 150, 100, null, 0.5, 0.5, 1, 1, 0 );
-"""
-

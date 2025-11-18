@@ -3,7 +3,6 @@ category = "touch"
 isScreen = true
 summary = "Stops the touch event listeners for the screen."
 description = ""
-parameters = [ ]
 example = """
 $.screen( "100x100" );\r
 $.startTouch();\r
@@ -21,6 +20,7 @@ $.ontouch( "start", function ( touches ) {\r
 } );\r
 """
 
+parameters = [ ]
 [[returns]]
 type = "void"
 description = "This function does not return a value."

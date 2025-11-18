@@ -3,7 +3,6 @@ category = "mouse"
 isScreen = true
 summary = "Stops tracking mouse input."
 description = ""
-parameters = [ ]
 example = """
 var isMouseEnabled = true;\r
 $.screen( "300x200" );\r
@@ -38,6 +37,7 @@ function drawScreen() {\r
 }\r
 """
 
+parameters = [ ]
 [[returns]]
 type = "void"
 description = "This function does not return a value."

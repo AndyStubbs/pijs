@@ -10,6 +10,11 @@ that doesn't match is not found the index 0 for black/transparent will be set.
 
 Note: if asIndex is set to false then the 2D array cannot be used with the put command.
 """
+example = """
+$.screen( "300x200" );
+const indices = $.get( 0, 0, 16, 16 );           // 2D array of indices
+const colors = $.get( 0, 0, 16, 16, 1, false );  // 2D array of color values
+"""
 
 [[parameters]]
 name = "x"
@@ -47,11 +52,4 @@ optional = true
 type = "Array<Array<number | PiColor>>"
 typeDesc = "Array"
 description = "2D array [height][width] of palette indices (default) or color values."
-
-example = """
-$.screen( "300x200" );
-const indices = $.get( 0, 0, 16, 16 );           // 2D array of indices
-const colors = $.get( 0, 0, 16, 16, 1, false );  // 2D array of color values
-"""
-
 

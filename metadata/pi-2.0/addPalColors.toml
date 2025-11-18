@@ -6,6 +6,10 @@ description = """
 Adds colors that do not already exist in the palette, returning the indices of the newly added
 entries.
 """
+example = """
+$.screen( "300x200" );
+const indices = $.addPalColors( [ "#112233", "gold", [ 10, 20, 30 ] ] );
+"""
 
 [[parameters]]
 name = "colors"
@@ -15,8 +19,3 @@ description = "Array of colors to add (names, hex, RGB[A])."
 [[returns]]
 type = "Array<any>"
 description = "Array of indices for colors that were added to the palette."
-
-example = """
-$.screen( "300x200" );
-const indices = $.addPalColors( [ "#112233", "gold", [ 10, 20, 30 ] ] );
-"""

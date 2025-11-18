@@ -3,7 +3,6 @@ category = "keyboard"
 isScreen = false
 summary = "Clears event handlers for keyboard events."
 description = ""
-parameters = [ ]
 example = """
 $.screen("300x200");\r
 $.print("\\n");\r
@@ -15,6 +14,7 @@ $.onkey( "Escape", "down", function (key) {\r
 \t$.clearKeys();\r
 });"""
 
+parameters = [ ]
 [[returns]]
 type = "void"
 description = "This function does not return a value."
