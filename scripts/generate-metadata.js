@@ -47,10 +47,6 @@ function listTomlFilesInDir( dir ) {
 		.sort();
 }
 
-function normalizeMultiline( value ) {
-	return typeof value === "string" ? value.trim() : "";
-}
-
 function formatParameters( parameters = [] ) {
 	if( !Array.isArray( parameters ) ) {
 		return [];
@@ -83,14 +79,28 @@ function formatReturns( returns = [] ) {
 	};
 }
 
-function parseMetadataFile( filePath ) {
-	const raw = fs.readFileSync( filePath, "utf8" );
-	return toml.parse( raw );
+function formatDescription( description ) {
+	if( !description ) {
+		return "";
+	}
+	
+	// Replace double newlines with a temporary placeholder
+	const placeholder = "__PARAGRAPH_BREAK__";
+	let formatted = description.replace( /\n\n/g, placeholder );
+	
+	// Replace all remaining single newlines with spaces
+	formatted = formatted.replace( /\n/g, " " );
+	
+	// Replace placeholder back with double newlines
+	formatted = formatted.replace( new RegExp( placeholder, "g" ), "\n\n" );
+	
+	return formatted.trim();
 }
 
 function buildMethodReferenceEntry( name, metadata ) {
 	const parameters = formatParameters( metadata.parameters );
 	const returns = formatReturns( metadata.returns );
+	const description = formatDescription( metadata.description ?? "" );
 	let syntax = `${name}(`;
 	for( const parameter of parameters ) {
 		syntax += ` ${parameter.name},`;
@@ -106,7 +116,7 @@ function buildMethodReferenceEntry( name, metadata ) {
 		"isScreen": Boolean( metadata.isScreen ),
 		"summary": metadata.summary || "",
 		"syntax": syntax,
-		"description": metadata.description || "",
+		"description": description,
 		"parameters": parameters,
 		"returns": returns,
 		"example": metadata.example || ""
@@ -288,7 +298,6 @@ function buildOptionsObject( setMethods ) {
 		// Remove "set" prefix and lowercase first letter
 		const optionName = methodName.substring( 3 );
 		const lowercasedName = optionName.charAt( 0 ).toLowerCase() + optionName.slice( 1 );
-		
 		const parameters = method.parameters || [];
 		
 		// Determine the property type
@@ -312,6 +321,7 @@ function buildOptionsObject( setMethods ) {
 			const allOthersOptional = parameters.slice( 1 ).every( ( p ) => p.optional );
 			
 			if( !firstParam.optional && allOthersOptional ) {
+
 				// First parameter is required, others are optional - use first parameter's type
 				if( firstParam.type === "function" && firstParam.signature ) {
 					propType = firstParam.signature;
@@ -319,6 +329,7 @@ function buildOptionsObject( setMethods ) {
 					propType = formatTypeScriptType( firstParam.type, "any" );
 				}
 			} else {
+
 				// Multiple required parameters or all optional - create object type
 				const objectProperties = parameters.map( ( param ) => {
 					let paramType;
@@ -341,7 +352,7 @@ function buildOptionsObject( setMethods ) {
 		properties.push( {
 			"name": lowercasedName,
 			"type": propType,
-			"description": method.summary || method.description || `Option for ${methodName} command.`,
+			"description": method.summary || method.description || `${methodName} options.`,
 			"optional": true
 		} );
 	}
@@ -352,7 +363,9 @@ function buildOptionsObject( setMethods ) {
 	return {
 		"title": "Options",
 		"summary": "Settings object for the set() command.",
-		"description": `Options object used with the set() command to apply multiple settings in a single call. Any command registered as a "setX" command is available as an option with the lowercased name (e.g., setColor => { "color": ... }).`,
+		"description": `Options object used with the set() command to apply multiple settings in ` +
+			`a single call. Any command registered as a "setX" command is available as an option ` +
+			`with the lowercased name (e.g., setColor => { "color": ... }).`,
 		"properties": properties
 	};
 }
@@ -464,7 +477,16 @@ function buildTypeDefinitions( version, screenMethods, apiMethods, objects ) {
 	lines.push( "export { Pi, $ };" );
 	lines.push( "export default Pi;" );
 
+	// TODO: Research if it makes sense to limit typeDefinition lines count.
+	// If the intellisense works better with 80 or 100 characters per line then it will be
+	// worth it. But if not then just leave it be.
+	
 	return lines;
+}
+
+function parseMetadataFile( filePath ) {
+	const raw = fs.readFileSync( filePath, "utf8" );
+	return toml.parse( raw );
 }
 
 function generateMetadata() {
@@ -510,9 +532,8 @@ function generateMetadata() {
 			const objects = objectsData.objects || [];
 			for( const objectData of objects ) {
 				const objectName = objectData.title;
-				if( objectName ) {
-					objectNameToMetadata.set( objectName, objectData );
-				}
+				objectData.description = formatDescription( objectData.description );
+				objectNameToMetadata.set( objectName, objectData );
 			}
 		}
 
@@ -557,7 +578,9 @@ function writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata )
 	);
 
 	writeReferenceOutput( version, { "methods": referenceMethods, "objects": objects } );
-	writeTypeDefinitions( version, buildTypeDefinitions( version, screenMethods, apiMethods, objects ) );
+	writeTypeDefinitions(
+		version, buildTypeDefinitions( version, screenMethods, apiMethods, objects )
+	);
 }
 
 function writeReferenceOutput( version, data ) {
