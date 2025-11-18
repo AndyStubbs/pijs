@@ -16,7 +16,7 @@ $.setAutoRender( false );\r
 
 [[parameters]]
 name = "isAutoRender"
-type = "any"
+type = "boolean"
 description = "If set to true then autorender will run"
 
 [[returns]]

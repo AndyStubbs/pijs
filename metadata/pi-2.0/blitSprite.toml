@@ -5,9 +5,6 @@ summary = "Blits a frame from a spritesheet onto the screen using replace batch 
 description = """
 Blits a specific frame from a previously loaded spritesheet. Unlike drawSprite, this function uses
 replace batch mode for faster rendering. The angle parameter is in radians (not degrees).
-
-This function does not support object literal parameter parsing - all parameters must be passed
-positionally.
 """
 
 [[parameters]]

@@ -20,7 +20,7 @@ screen2.removeScreen();
 
 [[parameters]]
 name = "screen"
-type = "number | object"
+type = "number | Screen"
 typeDesc = "*Many"
 description = "Screen ID (number) or screen API object to remove."
 optional = true

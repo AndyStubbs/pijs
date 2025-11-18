@@ -17,13 +17,13 @@ description = "Palette index or color value (string, array, object, number)."
 
 [[parameters]]
 name = "tolerance"
-type = "any"
+type = "number"
 description = "The percentage of how close the color has to be to match. Returns the fist match."
 optional = true
 
 [[parameters]]
 name = "isAddToPalette"
-type = "any"
+type = "boolean"
 description = "Add the color to the palette if its not found."
 optional = true
 

@@ -6,9 +6,6 @@ description = """
 Blits an Image or Canvas element directly onto the screen. Unlike drawImage, this function accepts
 an image element directly (not a name) and uses replace batch mode for faster rendering. The angle
 parameter is in radians (not degrees).
-
-This function does not support object literal parameter parsing - all parameters must be passed
-positionally.
 """
 example = """
 $.screen( "300x200" );

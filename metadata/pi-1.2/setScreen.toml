@@ -17,7 +17,7 @@ $.line( 0, 0, 320, 200 );
 
 [[parameters]]
 name = "screen"
-type = "number | object"
+type = "number | Screen"
 typeDesc = "*Many"
 description = "Screen ID (number) or screen API object to set as active."
 

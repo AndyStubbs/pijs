@@ -16,12 +16,12 @@ $.ready( function () {\r
 
 [[parameters]]
 name = "src"
-type = "any"
+type = "string"
 description = "The source of the audio file."
 
 [[parameters]]
 name = "poolSize"
-type = "any"
+type = "number"
 description = "The number of audio players."
 optional = true
 
