@@ -15,7 +15,7 @@ type = "number"
 description = "The screen ID to retrieve."
 
 [[returns]]
-type = "object"
+type = "Screen"
 description = "Screen API object with all graphics commands and screen=true and id property."
 
 example = """

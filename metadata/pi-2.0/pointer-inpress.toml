@@ -12,7 +12,7 @@ includes a touches array with all active touches.
 """
 
 [[returns]]
-type = "object"
+type = "PressData"
 description = "Press data object (mouse or touch) with position, buttons, action, and type properties."
 
 example = """

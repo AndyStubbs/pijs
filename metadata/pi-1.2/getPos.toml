@@ -8,7 +8,7 @@ grid size is determined by the current font size and print scale.
 """
 
 [[returns]]
-type = "object"
+type = "Position"
 description = "Object with col and row properties (0-indexed)."
 
 example = """

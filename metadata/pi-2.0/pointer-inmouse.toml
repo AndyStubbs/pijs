@@ -9,7 +9,7 @@ This is a convenience function that combines startMouse() and getMouse().
 """
 
 [[returns]]
-type = "object"
+type = "MouseData"
 description = "Mouse data object with position, buttons, and action properties."
 
 example = """

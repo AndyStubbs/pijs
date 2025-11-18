@@ -12,7 +12,7 @@ type = "string"
 description = "Spritesheet name."
 
 [[returns]]
-type = "object"
+type = "SpritesheetData"
 description = "Object with frameCount and frames array (index, x, y, width, height, left, top, right, bottom)."
 
 example = """

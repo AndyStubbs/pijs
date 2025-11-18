@@ -25,7 +25,7 @@ optional = true
 
 [[parameters]]
 name = "hitBox"
-type = "object"
+type = "HitBox"
 description = "Optional hit box object with x, y, width, height properties. Click only fires if press is within this area. Defaults to full screen."
 optional = true
 

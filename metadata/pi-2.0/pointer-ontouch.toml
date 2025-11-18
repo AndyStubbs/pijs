@@ -30,7 +30,7 @@ optional = true
 
 [[parameters]]
 name = "hitBox"
-type = "object"
+type = "HitBox"
 description = "Optional hit box object with x, y, width, height properties. Callback only fires if touches are within this area."
 optional = true
 

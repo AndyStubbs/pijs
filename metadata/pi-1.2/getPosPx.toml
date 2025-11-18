@@ -7,7 +7,7 @@ Returns the current print cursor position as exact pixel coordinates.
 """
 
 [[returns]]
-type = "object"
+type = "PositionPx"
 description = "Object with x and y properties in pixels."
 
 example = """

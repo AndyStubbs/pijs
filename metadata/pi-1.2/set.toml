@@ -14,7 +14,7 @@ Behavior:
 
 [[parameters]]
 name = "options"
-type = "object"
+type = "Options"
 description = "Object whose keys map to available settings (e.g., { \"screen\": \"300x200\", \"color\": 2 })."
 
 [[returns]]
