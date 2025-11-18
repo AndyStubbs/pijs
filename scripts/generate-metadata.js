@@ -370,6 +370,81 @@ function buildOptionsObject( setMethods ) {
 	};
 }
 
+function extractFunctionSignature( methodSignature ) {
+	if( !methodSignature ) {
+		return "";
+	}
+	
+	// Extract the function signature part (parameters and return type)
+	// Method signature format: "methodName( params ): returnType;"
+	// We need: "( params ) => returnType"
+	const match = methodSignature.match( /^\w+\((.*?)\):\s*(.+?);$/ );
+	if( match ) {
+		const params = match[ 1 ].trim();
+		const returnType = match[ 2 ].trim();
+		return `( ${params} ) => ${returnType}`;
+	}
+	
+	return "";
+}
+
+function buildScreenObject( screenMethods ) {
+	const properties = [];
+	
+	for( const method of screenMethods ) {
+		const signatures = buildMethodSignature( method );
+		const methodSignature = signatures.length > 0 ? signatures[ 0 ] : "";
+		const functionSignature = extractFunctionSignature( methodSignature );
+		
+		properties.push( {
+			"name": method.name,
+			"type": "function",
+			"signature": functionSignature,
+			"description": method.summary || method.description || "",
+			"optional": false
+		} );
+	}
+	
+	return {
+		"title": "Screen",
+		"summary": "Screen API object for drawing operations.",
+		"description": "Screen API object that provides all drawing and rendering methods. " +
+			"Each screen instance has access to these methods for drawing graphics, handling input, " +
+			"and managing screen state.",
+		"properties": properties
+	};
+}
+
+function buildAPIObject( screenMethods, apiMethods ) {
+	const properties = [];
+	
+	// Include both Screen and API methods since API extends Screen
+	const allMethods = [ ...screenMethods, ...apiMethods ];
+	
+	for( const method of allMethods ) {
+		const signatures = buildMethodSignature( method );
+		const methodSignature = signatures.length > 0 ? signatures[ 0 ] : "";
+		const functionSignature = extractFunctionSignature( methodSignature );
+		
+		properties.push( {
+			"name": method.name,
+			"type": "function",
+			"signature": functionSignature,
+			"description": method.summary || method.description || "",
+			"optional": false
+		} );
+	}
+	
+	return {
+		"title": "API",
+		"summary": "Main Pi.js API object.",
+		"description": "Main Pi.js API object that extends Screen and provides additional " +
+			"API-level methods for screen management, plugin registration, and global utilities. " +
+			"This is the object exposed as `Pi` and `$`.",
+		"properties": properties
+	};
+}
+
 function buildObjectInterface( objectData ) {
 	const lines = [];
 	const title = objectData.title || "";
@@ -445,11 +520,17 @@ function buildTypeDefinitions( version, screenMethods, apiMethods, objects ) {
 
 	lines.push( "declare namespace Pi {" );
 
-	// Add object interfaces
+	// Add object interfaces (excluding Screen and API as they're built separately)
 	if( objects && objects.length > 0 ) {
-		const objectInterfaces = buildObjectInterfaces( objects );
-		objectInterfaces.forEach( ( line ) => lines.push( line ) );
-		lines.push( "" );
+		const filteredObjects = objects.filter( ( obj ) => {
+			const title = obj.title || "";
+			return title !== "Screen" && title !== "API";
+		} );
+		if( filteredObjects.length > 0 ) {
+			const objectInterfaces = buildObjectInterfaces( filteredObjects );
+			objectInterfaces.forEach( ( line ) => lines.push( line ) );
+			lines.push( "" );
+		}
 	}
 
 	// Screen interface
@@ -572,6 +653,15 @@ function writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata )
 	);
 	const screenMethods = referenceMethods.filter( ( m ) => m.isScreen );
 	const apiMethods = referenceMethods.filter( ( m ) => !m.isScreen );
+
+	// Create Screen and API objects
+	const screenObject = buildScreenObject( screenMethods );
+	screenObject.description = formatDescription( screenObject.description );
+	objectNameToMetadata.set( "Screen", screenObject );
+	
+	const apiObject = buildAPIObject( screenMethods, apiMethods );
+	apiObject.description = formatDescription( apiObject.description );
+	objectNameToMetadata.set( "API", apiObject );
 
 	const objects = Array.from( objectNameToMetadata.values() ).sort(
 		( a, b ) => ( a.title || "" ).localeCompare( b.title || "" )
