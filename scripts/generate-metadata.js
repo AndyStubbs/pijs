@@ -275,6 +275,87 @@ function formatObjectPropertyType( property ) {
 	return formatTypeScriptType( property.type, "any" );
 }
 
+function buildOptionsObject( setMethods ) {
+	const properties = [];
+	
+	for( const method of setMethods ) {
+		const methodName = method.name;
+		if( methodName === "set" ) {
+			continue;
+		}
+		
+		// Remove "set" prefix and lowercase first letter
+		const optionName = methodName.substring( 3 );
+		const lowercasedName = optionName.charAt( 0 ).toLowerCase() + optionName.slice( 1 );
+		
+		const parameters = method.parameters || [];
+		
+		// Determine the property type
+		// For Options, we use the first parameter's type, or create an object type
+		// if there are multiple required parameters
+		let propType;
+		if( parameters.length === 0 ) {
+			// No parameters, use any
+			propType = "any";
+		} else if( parameters.length === 1 ) {
+			// Single parameter - use its type directly
+			const param = parameters[ 0 ];
+			if( param.type === "function" && param.signature ) {
+				propType = param.signature;
+			} else {
+				propType = formatTypeScriptType( param.type, "any" );
+			}
+		} else {
+			// Multiple parameters - check if first is required and others are optional
+			const firstParam = parameters[ 0 ];
+			const allOthersOptional = parameters.slice( 1 ).every( ( p ) => p.optional );
+			
+			if( !firstParam.optional && allOthersOptional ) {
+				// First parameter is required, others are optional - use first parameter's type
+				if( firstParam.type === "function" && firstParam.signature ) {
+					propType = firstParam.signature;
+				} else {
+					propType = formatTypeScriptType( firstParam.type, "any" );
+				}
+			} else {
+				// Multiple required parameters or all optional - create object type
+				const objectProperties = parameters.map( ( param ) => {
+					let paramType;
+					if( param.type === "function" && param.signature ) {
+						paramType = param.signature;
+					} else {
+						paramType = formatTypeScriptType( param.type, "any" );
+					}
+					if( param.optional ) {
+						return `"${param.name}"?: ${paramType}`;
+					} else {
+						return `"${param.name}": ${paramType}`;
+					}
+				} );
+				propType = `{ ${objectProperties.join( "; " )} }`;
+			}
+		}
+		
+		// All options properties are optional
+		properties.push( {
+			"name": lowercasedName,
+			"type": propType,
+			"description": method.summary || method.description || `Option for ${methodName} command.`,
+			"optional": true
+		} );
+	}
+	
+	// Sort properties by name
+	properties.sort( ( a, b ) => a.name.localeCompare( b.name ) );
+	
+	return {
+		"title": "Options",
+		"summary": "Settings object for the set() command.",
+		"description": `Options object used with the set() command to apply multiple settings in a single call. Any command registered as a "setX" command is available as an option with the lowercased name (e.g., setColor => { "color": ... }).`,
+		"properties": properties
+	};
+}
+
 function buildObjectInterface( objectData ) {
 	const lines = [];
 	const title = objectData.title || "";
@@ -444,6 +525,15 @@ function generateMetadata() {
 			const metadata = parseMetadataFile( filePath );
 			const methodName = metadata.title || path.basename( fileName, ".toml" );
 			methodNameToMetadata.set( methodName, buildMethodReferenceEntry( methodName, metadata ) );
+		}
+
+		// Create Options object from all set commands
+		const setMethods = Array.from( methodNameToMetadata.values() )
+			.filter( ( method ) => method.name.startsWith( "set" ) && method.name !== "set" );
+		
+		if( setMethods.length > 0 ) {
+			const optionsObject = buildOptionsObject( setMethods );
+			objectNameToMetadata.set( "Options", optionsObject );
 		}
 
 		// Write output for current version

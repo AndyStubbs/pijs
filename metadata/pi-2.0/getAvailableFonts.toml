@@ -8,7 +8,7 @@ containing id, width, and height for each font.
 """
 
 [[returns]]
-type = "Array<screen>"
+type = "Array<FontInfo>"
 description = "Array of font info objects with id, width, and height properties."
 
 example = """
