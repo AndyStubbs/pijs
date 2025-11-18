@@ -15,7 +15,8 @@ to wait for the image to load before using the font.
 
 [[parameters]]
 name = "src"
-type = "string|HTMLImageElement|HTMLCanvasElement"
+type = "string | HTMLImageElement | HTMLCanvasElement"
+typeDesc = "*Many"
 description = "Font image source: URL string, Image element, or Canvas element."
 
 [[parameters]]
@@ -36,7 +37,8 @@ optional = true
 
 [[parameters]]
 name = "charset"
-type = "Array<number>|string"
+type = "Array<number> | string"
+typeDesc = "*Many"
 description = "Character set as array of character codes or string. Defaults to 0-255 (ASCII) if not provided."
 optional = true
 

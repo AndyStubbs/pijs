@@ -17,7 +17,8 @@ Seed:
 
 [[parameters]]
 name = "noise"
-type = "number|array"
+type = "number | array"
+typeDesc = "*Many"
 description = "Noise configuration (number, 1D array, or 2D min/max arrays)."
 optional = true
 

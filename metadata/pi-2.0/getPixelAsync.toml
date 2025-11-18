@@ -24,7 +24,8 @@ description = "If true, resolve to palette index instead of color value."
 optional = true
 
 [[returns]]
-type = "Promise<number|object>"
+type = "Promise<number | object>"
+typeDesc = "*Promise"
 description = "Promise that resolves to palette index or color value object."
 
 example = """

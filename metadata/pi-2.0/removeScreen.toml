@@ -12,7 +12,8 @@ object.
 
 [[parameters]]
 name = "screen"
-type = "number|object"
+type = "number | object"
+typeDesc = "*Many"
 description = "Screen ID (number) or screen API object to remove."
 optional = true
 

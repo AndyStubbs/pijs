@@ -9,7 +9,8 @@ calling load image you should call $.ready command to wait for image to load bef
 
 [[parameters]]
 name = "src"
-type = "string|HTMLImageElement|HTMLCanvasElement"
+type = "string | HTMLImageElement | HTMLCanvasElement"
+typeDesc = "*Many"
 description = "Image source: URL string, HTMLImageElement, or HTMLCanvasElement."
 
 [[parameters]]

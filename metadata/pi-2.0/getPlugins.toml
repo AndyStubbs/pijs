@@ -10,6 +10,7 @@ parameters = [ ]
 
 [[returns]]
 type = "Array<object>"
+typeDesc = "Array"
 description = "Array of plugin info objects: { name, version, description, initialized }."
 
 example = """

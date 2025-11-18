@@ -21,7 +21,8 @@ description = "Aspect ratio string in format (width)(x|e|m)(height), e.g., '320x
 
 [[parameters]]
 name = "container"
-type = "string|HTMLElement"
+type = "string | HTMLElement"
+typeDesc = "*Many"
 description = "DOM element or element ID string to use as container. Defaults to document.body."
 optional = true
 

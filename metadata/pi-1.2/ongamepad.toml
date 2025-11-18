@@ -47,7 +47,8 @@ description = "Event mode: 'connect', 'disconnect', 'axis', 'pressed', 'touched'
 
 [[parameters]]
 name = "item"
-type = "number|string|array"
+type = "number | string | array"
+typeDesc = "*Many"
 description = "Button or axis index, array of indices, 'any', or null for all axes."
 
 [[parameters]]

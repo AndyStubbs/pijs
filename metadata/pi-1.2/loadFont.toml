@@ -22,7 +22,8 @@ $.ready( function () {\r
 
 [[parameters]]
 name = "fontSrc"
-type = "string|HTMLImageElement|HTMLCanvasElement"
+type = "string | HTMLImageElement | HTMLCanvasElement"
+typeDesc = "*Many"
 description = "The source location of the image or the encoded string location."
 
 [[parameters]]
@@ -37,7 +38,8 @@ description = "The height of each character in the font."
 
 [[parameters]]
 name = "charSet"
-type = "Array<number>|string"
+type = "Array<number> | string"
+typeDesc = "*Many"
 description = "A string or an array of integers containing the ascii value for each font character in order."
 optional = true
 

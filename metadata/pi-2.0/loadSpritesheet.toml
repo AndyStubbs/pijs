@@ -8,7 +8,8 @@ Loads a spritesheet and slices it either automatically (connected components) or
 
 [[parameters]]
 name = "src"
-type = "string|HTMLImageElement|HTMLCanvasElement"
+type = "string | HTMLImageElement | HTMLCanvasElement"
+typeDesc = "*Many"
 description = "Spritesheet source: URL string, HTMLImageElement, or HTMLCanvasElement."
 
 [[parameters]]

@@ -30,7 +30,8 @@ optional = true
 
 [[parameters]]
 name = "oType"
-type = "string|array"
+type = "string | array"
+typeDesc = "*Many"
 description = "Oscillator type: 'triangle', 'sine', 'square', 'sawtooth', or custom wavetable array [[realArray], [imagArray]] (default: 'triangle')."
 optional = true
 

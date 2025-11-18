@@ -30,7 +30,8 @@ description = "Gamepad index to retrieve. If null/undefined, returns all gamepad
 optional = true
 
 [[returns]]
-type = "object|array"
+type = "object | array"
+typeDesc = "*Many"
 description = "Gamepad object if index provided, or array of all gamepads if index is null/undefined."
 
 example = """

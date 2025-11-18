@@ -17,7 +17,8 @@ data for the specific key that was pressed.
 
 [[parameters]]
 name = "key"
-type = "string|array"
+type = "string | array"
+typeDesc = "*Many"
 description = "Key code/key value string, array of keys for combinations, or \"any\" for any key."
 
 [[parameters]]

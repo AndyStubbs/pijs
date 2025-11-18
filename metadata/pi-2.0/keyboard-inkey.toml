@@ -20,7 +20,8 @@ description = "Key code or key value to check. If omitted, returns all pressed k
 optional = true
 
 [[returns]]
-type = "object|array|null"
+type = "object | array | null"
+typeDesc = "*Many"
 description = "Key data object if key is pressed, array of all pressed keys if no key specified, or null if key not pressed."
 
 example = """

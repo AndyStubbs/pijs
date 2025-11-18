@@ -23,7 +23,8 @@ $.ready( function () {\r
 
 [[parameters]]
 name = "src"
-type = "string|HTMLImageElement|HTMLCanvasElement"
+type = "string | HTMLImageElement | HTMLCanvasElement"
+typeDesc = "*Many"
 description = "The source location of an image file or an image element."
 
 [[parameters]]

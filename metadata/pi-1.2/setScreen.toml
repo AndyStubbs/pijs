@@ -9,7 +9,8 @@ on this screen until another screen is set as active.
 
 [[parameters]]
 name = "screen"
-type = "number|object"
+type = "number | object"
+typeDesc = "*Many"
 description = "Screen ID (number) or screen API object to set as active."
 
 [[returns]]

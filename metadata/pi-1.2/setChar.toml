@@ -22,7 +22,8 @@ description = "The ascii character code you want to replace."
 
 [[parameters]]
 name = "data"
-type = "array|string"
+type = "array | string"
+typeDesc = "*Many"
 description = "Either a 2d array containing numbers or a hex string that when converted to binary represents the character data."
 
 [[returns]]

@@ -39,7 +39,8 @@ function stopPress( keyData ) {\r
 
 [[parameters]]
 name = "key"
-type = "string|number|array"
+type = "string | number | array"
+typeDesc = "*Many"
 description = "Key identifier: string key name, numeric keyCode, array for combinations, or 'any'."
 
 [[parameters]]

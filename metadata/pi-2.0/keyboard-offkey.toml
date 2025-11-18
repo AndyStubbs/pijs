@@ -10,7 +10,8 @@ call exactly for the handler to be removed.
 
 [[parameters]]
 name = "key"
-type = "string|array"
+type = "string | array"
+typeDesc = "*Many"
 description = "Key code/key value string or array of keys that matches the original handler."
 
 [[parameters]]

@@ -25,7 +25,8 @@ description = "If true, return palette index instead of color value."
 optional = true
 
 [[returns]]
-type = "number|PiColor"
+type = "number | PiColor"
+typeDesc = "*Many"
 description = "Palette index if asIndex is true; otherwise a color value object."
 
 example = """

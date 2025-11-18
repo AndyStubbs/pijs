@@ -18,7 +18,8 @@ $.put( data, 1, 1 );\r
 
 [[parameters]]
 name = "data"
-type = "Array<Array<number|any>>"
+type = "Array<Array<number | any>>"
+typeDesc = "Array"
 description = "The 2d array of color values."
 
 [[parameters]]

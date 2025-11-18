@@ -13,12 +13,14 @@ character is printed.
 
 [[parameters]]
 name = "charCode"
-type = "number|string"
+type = "number | string"
+typeDesc = "*Many"
 description = "Character code (number) or single-character string to modify."
 
 [[parameters]]
 name = "data"
-type = "array|string"
+type = "array | string"
+typeDesc = "*Many"
 description = "Character bitmap as 2D array [[row...], ...] where 1=on, 0=off, or hex-encoded string."
 
 [[returns]]

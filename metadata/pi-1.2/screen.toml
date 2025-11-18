@@ -37,7 +37,8 @@ optional = true
 
 [[parameters]]
 name = "container"
-type = "string|HTMLElement"
+type = "string | HTMLElement"
+typeDesc = "*Many"
 description = "A DOM element or a string that contains the id tag of a dom element to use as the container for the canvas."
 optional = true
 

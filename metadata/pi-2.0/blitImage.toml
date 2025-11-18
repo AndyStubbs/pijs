@@ -13,7 +13,8 @@ positionally.
 
 [[parameters]]
 name = "img"
-type = "HTMLImageElement|HTMLCanvasElement"
+type = "HTMLImageElement | HTMLCanvasElement"
+typeDesc = "*HTMLElement"
 description = "Image or Canvas element to blit (not a name string)."
 
 [[parameters]]

@@ -42,7 +42,8 @@ description = "If false, resolve to color value objects instead of indices."
 optional = true
 
 [[returns]]
-type = "Promise<Array<Array<number>>>|Promise<Array<Array<PiColor>>>"
+type = "Promise<Array<Array<number | PiColor>>>"
+typeDesc = "*Promise"
 description = "Promise resolving to 2D array [height][width] of indices (default) or color values."
 
 example = """

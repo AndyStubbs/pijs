@@ -2,8 +2,25 @@ title = "intouch"
 category = "touch"
 isScreen = true
 summary = "Gets the most recent touch status."
-description = ""
-parameters = [ ]
+description = """
+Returns an array of all active touches. Each touch object contains:
+- **x**: Current X coordinate
+- **y**: Current Y coordinate
+- **id**: Touch identifier
+- **lastX**: Previous X coordinate (or null if first touch)
+- **lastY**: Previous Y coordinate (or null if first touch)
+- **action**: Last action ("start", "end", or "move")
+- **type**: Always "touch"
+
+If touch tracking is not started, it will be started automatically.
+"""
+parameters = []
+
+[[returns]]
+type = "Array<object>"
+typeDesc = "Array"
+description = "An array of touch objects."
+
 example = """
 $.screen( "4x4" );\r
 $.startTouch();\r
@@ -16,7 +33,3 @@ var interval = setInterval( function () {\r
 \t}\r
 }, 50 );\r
 """
-
-[[returns]]
-type = "void"
-description = "An array of touch objects."

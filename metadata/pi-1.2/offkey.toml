@@ -11,7 +11,8 @@ The callback function receives keyData containing key, location, code, and keyCo
 
 [[parameters]]
 name = "key"
-type = "string|number|array"
+type = "string | number | array"
+typeDesc = "*Many"
 description = "Key identifier used when registering with onkey."
 
 [[parameters]]

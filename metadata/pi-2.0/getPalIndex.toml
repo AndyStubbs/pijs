@@ -20,7 +20,8 @@ description = "Number between 0 and 1 indicating acceptable color difference."
 optional = true
 
 [[returns]]
-type = "number|null"
+type = "number | null"
+typeDesc = "*number"
 description = "Palette index if a match is found; otherwise null."
 
 example = """

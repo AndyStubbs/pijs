@@ -12,7 +12,8 @@ type = "string"
 description = "Image name."
 
 [[returns]]
-type = "HTMLImageElement|HTMLCanvasElement"
+type = "HTMLImageElement | HTMLCanvasElement"
+typeDesc = "*HTMLElement"
 description = "The actual Image or Canvas element."
 
 example = """

@@ -50,7 +50,8 @@ optional = true
 
 [[parameters]]
 name = "borderStyle"
-type = "string|Array<number>"
+type = "string | Array<number>"
+typeDesc = "*Many"
 description = "Border style name ('single', 'double', 'singleDouble', 'doubleSingle', 'thick') or custom array. Defaults to 'single'."
 optional = true
 
