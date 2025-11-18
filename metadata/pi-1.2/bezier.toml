@@ -8,6 +8,10 @@ This function renders a cubic Bezier curve to the active canvas.
 A Bezier curve is defined by four control points: two endpoints and two control points that
 influence the curve's shape.
 """
+example = """
+$.screen( "300x200" );
+$.bezier( 15, 10, 45, 135, 195, 75, 280, 185 );
+"""
 
 [[parameters]]
 name = "xStart"
@@ -52,8 +56,3 @@ description = "The y coordinate of the fourth control point (ending point)."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-$.bezier( 15, 10, 45, 135, 195, 75, 280, 185 );
-"""

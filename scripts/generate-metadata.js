@@ -68,32 +68,19 @@ function formatParameters( parameters = [] ) {
 }
 
 function formatReturns( returns = [] ) {
-	if( !Array.isArray( returns ) ) {
-		return [];
-	}
-	return returns.map( ( returnValue ) => {
+	if( !Array.isArray( returns ) || returns.length === 0 ) {
 		return {
-			"type": returnValue.type || "",
-			"typeDesc": returnValue.typeDesc ?? returnValue.type,
-			"description": returnValue.description ? returnValue.description.trim() : ""
+			"type": "void",
+			"typeDesc": "void",
+			"description": ""
 		};
-	} );
-}
-
-function extractExample( metadata ) {
-	if( typeof metadata.example === "string" ) {
-		return metadata.example;
 	}
-
-	if( Array.isArray( metadata.returns ) ) {
-		for( const returnValue of metadata.returns ) {
-			if( typeof returnValue.example === "string" ) {
-				return returnValue.example;
-			}
-		}
-	}
-
-	return "";
+	const returnValue = returns[ 0 ];
+	return {
+		"type": returnValue.type || "",
+		"typeDesc": returnValue.typeDesc ?? returnValue.type,
+		"description": returnValue.description ? returnValue.description.trim() : ""
+	};
 }
 
 function parseMetadataFile( filePath ) {
@@ -104,17 +91,25 @@ function parseMetadataFile( filePath ) {
 function buildMethodReferenceEntry( name, metadata ) {
 	const parameters = formatParameters( metadata.parameters );
 	const returns = formatReturns( metadata.returns );
-	const example = normalizeMultiline( extractExample( metadata ) );
+	let syntax = `${name}(`;
+	for( const parameter of parameters ) {
+		syntax += ` ${parameter.name},`;
+	}
+	if( syntax.endsWith( "," ) ) {
+		syntax = syntax.substring( 0, syntax.length - 1 ) + " ";
+	}
+	syntax += ");";
 
 	return {
 		"name": name,
 		"category": metadata.category || "",
 		"isScreen": Boolean( metadata.isScreen ),
 		"summary": metadata.summary || "",
-		"description": normalizeMultiline( metadata.description ),
+		"syntax": syntax,
+		"description": metadata.description || "",
 		"parameters": parameters,
 		"returns": returns,
-		"example": example
+		"example": metadata.example || ""
 	};
 }
 
@@ -529,8 +524,10 @@ function generateMetadata() {
 		for( const fileName of tomlFiles ) {
 			const filePath = path.join( dirPath, fileName );
 			const metadata = parseMetadataFile( filePath );
-			const methodName = metadata.title || path.basename( fileName, ".toml" );
-			methodNameToMetadata.set( methodName, buildMethodReferenceEntry( methodName, metadata ) );
+			const methodName = metadata.title;
+			methodNameToMetadata.set(
+				methodName, buildMethodReferenceEntry( methodName, metadata )
+			);
 		}
 
 		// Create Options object from all set commands

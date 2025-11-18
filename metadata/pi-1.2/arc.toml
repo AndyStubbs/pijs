@@ -7,6 +7,10 @@ This function renders a circular arc segment to the active canvas.
 
 The angles are measured in degrees, clockwise from the positive x-axis.
 """
+example = """
+$.screen( "300x200" );
+$.arc( 150, 100, 50, 45, 270 );
+"""
 
 [[parameters]]
 name = "x"
@@ -36,9 +40,3 @@ description = "The ending angle in degrees."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-$.arc( 150, 100, 50, 45, 270 );
-"""
-
