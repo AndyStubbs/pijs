@@ -37,7 +37,7 @@ description = "The height of each character in the font."
 
 [[parameters]]
 name = "charSet"
-type = "array|string"
+type = "Array<number>|string"
 description = "A string or an array of integers containing the ascii value for each font character in order."
 optional = true
 

@@ -55,13 +55,26 @@ function formatParameters( parameters = [] ) {
 	if( !Array.isArray( parameters ) ) {
 		return [];
 	}
-	return parameters.map( ( parameter ) => ( {
-		"name": parameter.name,
-		"type": parameter.type || "",
-		"signature": parameter.signature || "",
-		"description": parameter.description ? parameter.description.trim() : "",
-		"optional": Boolean( parameter.optional )
-	} ) );
+	return parameters.map( ( parameter ) => {
+		let typeDesc = parameter.type;
+		if( parameter.type.includes( "Promise" ) ) {
+			typeDesc = "Promise";
+		}
+		if( parameter.type.includes( "Array" ) ) {
+			typeDesc = "Array";
+		}
+		if( parameter.type.length > 20 ) {
+			typeDesc = "Many";
+		}
+		return {
+			"name": parameter.name,
+			"type": parameter.type || "",
+			"typeDesc": typeDesc,
+			"signature": parameter.signature || "",
+			"description": parameter.description ? parameter.description.trim() : "",
+			"optional": Boolean( parameter.optional )
+		};
+	} );
 }
 
 function formatReturns( returns = [] ) {

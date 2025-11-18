@@ -36,7 +36,7 @@ optional = true
 
 [[parameters]]
 name = "charset"
-type = "array|string"
+type = "Array<number>|string"
 description = "Character set as array of character codes or string. Defaults to 0-255 (ASCII) if not provided."
 optional = true
 
