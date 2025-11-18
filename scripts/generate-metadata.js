@@ -56,20 +56,10 @@ function formatParameters( parameters = [] ) {
 		return [];
 	}
 	return parameters.map( ( parameter ) => {
-		let typeDesc = parameter.type;
-		if( parameter.type.includes( "Promise" ) ) {
-			typeDesc = "Promise";
-		}
-		if( parameter.type.includes( "Array" ) ) {
-			typeDesc = "Array";
-		}
-		if( parameter.type.length > 20 ) {
-			typeDesc = "Many";
-		}
 		return {
 			"name": parameter.name,
 			"type": parameter.type || "",
-			"typeDesc": typeDesc,
+			"typeDesc": getTypeDesc( parameter.type ),
 			"signature": parameter.signature || "",
 			"description": parameter.description ? parameter.description.trim() : "",
 			"optional": Boolean( parameter.optional )
@@ -77,14 +67,55 @@ function formatParameters( parameters = [] ) {
 	} );
 }
 
+function getTypeDesc( type ) {
+	let typeDesc = type;
+	if( type.includes( "Promise" ) ) {
+		typeDesc = "*Promise";
+	} else if( type.includes( "Array" ) ) {
+		typeDesc = "*Array";
+	}
+	if( type.includes( "|" ) ) {
+		const parts = type.split( "|" );
+		let startsWithArray = true;
+		let startsWithPromise = true;
+		let startsWithHTML = true;
+		for( const part of parts ) {
+			if( part !== "" ) {
+				if( startsWithArray ) {
+					startsWithArray = part.startsWith( "Array" );
+				}
+				if( startsWithPromise ) {
+					startsWithPromise = part.startsWith( "Promise" );
+				}
+				if( startsWithHTML ) {
+					startsWithHTML = part.startsWith( "HTML" );
+				}
+			}
+		}
+		if( startsWithArray ) {
+			typeDesc = "*Array";
+		} else if( startsWithPromise ) {
+			typeDesc = "*Promise";
+		} else if( startsWithHTML ) {
+			typeDesc = "*HTMLElement";
+		} else if( type.length > 20 ) {
+			typeDesc = "*Many";
+		}
+	}
+	return typeDesc;
+}
+
 function formatReturns( returns = [] ) {
 	if( !Array.isArray( returns ) ) {
 		return [];
 	}
-	return returns.map( ( returnValue ) => ( {
-		"type": returnValue.type || "",
-		"description": returnValue.description ? returnValue.description.trim() : ""
-	} ) );
+	return returns.map( ( returnValue ) => {
+		return {
+			"type": returnValue.type || "",
+			"typeDesc": getTypeDesc( returnValue.type ),
+			"description": returnValue.description ? returnValue.description.trim() : ""
+		};
+	} );
 }
 
 function extractExample( metadata ) {
