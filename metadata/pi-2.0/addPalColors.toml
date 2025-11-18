@@ -18,4 +18,5 @@ description = "Array of colors to add (names, hex, RGB[A])."
 
 [[returns]]
 type = "Array<any>"
+typeDesc = "Array"
 description = "Array of indices for colors that were added to the palette."

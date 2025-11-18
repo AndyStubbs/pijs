@@ -16,6 +16,7 @@ optional = true
 
 [[returns]]
 type = "Array<PiColor>"
+typeDesc = "Array"
 description = "Array of color value objects representing the current screen palette."
 
 example = """
