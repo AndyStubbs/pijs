@@ -6,6 +6,11 @@ description = """
 Blits a specific frame from a previously loaded spritesheet. Unlike drawSprite, this function uses
 replace batch mode for faster rendering. The angle parameter is in radians (not degrees).
 """
+example = """
+$.screen( "300x200" );
+$.loadSpritesheet( { "src": "sprites.png", "name": "sprites", "width": 16, "height": 16 } );
+$.blitSprite( "sprites", 0, 20, 20, null, 0.5, 0.5, 1, 1, 0 );
+"""
 
 [[parameters]]
 name = "name"
@@ -69,10 +74,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-$.loadSpritesheet( { "src": "sprites.png", "name": "sprites", "width": 16, "height": 16 } );
-$.blitSprite( "sprites", 0, 20, 20, null, 0.5, 0.5, 1, 1, 0 );
-"""
-

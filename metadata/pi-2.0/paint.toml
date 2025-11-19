@@ -14,6 +14,18 @@ Notes:
 - Coordinates must be within the screen; out-of-bounds start points are ignored.
 - Color inputs accept palette indices or color values (name, hex, RGB[A] array, or color object).
 """
+example = """
+$.screen( "300x200" );
+$.rect( 20, 20, 100, 60 );
+
+// Tolerance fill (similar colors to the starting pixel)
+$.paint( 25, 25, "gold", 0.25 );
+
+// Boundary fill (fill until reaching boundary color)
+$.setColor( "red" );
+$.rect( 150, 50, 120, 80 );
+$.paint( 160, 60, "#0080FF", 0.2, "red" );
+"""
 
 [[parameters]]
 name = "x"
@@ -45,18 +57,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-$.rect( 20, 20, 100, 60 );
-
-// Tolerance fill (similar colors to the starting pixel)
-$.paint( 25, 25, "gold", 0.25 );
-
-// Boundary fill (fill until reaching boundary color)
-$.setColor( "red" );
-$.rect( 150, 50, 120, 80 );
-$.paint( 160, 60, "#0080FF", 0.2, "red" );
-"""
-
-

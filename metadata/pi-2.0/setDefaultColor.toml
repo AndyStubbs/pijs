@@ -5,6 +5,10 @@ summary = "Sets the default foreground color used by new screens."
 description = """
 Updates the default drawing color for newly created screens.
 """
+example = """
+$.setDefaultColor( 7 );
+$.screen( "300x200" );
+"""
 
 [[parameters]]
 name = "color"
@@ -14,10 +18,3 @@ description = "Palette index or color value (string, array, object, number)."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.setDefaultColor( 7 );
-$.screen( "300x200" );
-"""
-
-

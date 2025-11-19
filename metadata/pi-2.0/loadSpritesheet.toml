@@ -5,6 +5,11 @@ summary = "Loads a spritesheet by URL or from an Image/Canvas element."
 description = """
 Loads a spritesheet and slices it either automatically (connected components) or by a fixed grid.
 """
+example = """
+const name = $.loadSpritesheet( {
+	"src": "tiles.png", "name": "tiles", "width": 16, "height": 16, "margin": 0
+} );
+"""
 
 [[parameters]]
 name = "src"
@@ -66,11 +71,3 @@ optional = true
 [[returns]]
 type = "string"
 description = "The spritesheet name."
-
-example = """
-const name = $.loadSpritesheet( {
-	"src": "tiles.png", "name": "tiles", "width": 16, "height": 16, "margin": 0
-} );
-"""
-
-

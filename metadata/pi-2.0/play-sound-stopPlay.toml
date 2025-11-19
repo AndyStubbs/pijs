@@ -6,6 +6,11 @@ summary = "Stops playing music tracks."
 description = """
 Stops a specific music track by track ID, or stops all tracks if trackId is null.
 """
+example = """
+$.play( "T120 O4 L4 CDEF GAB>C" );
+// Later...
+$.stopPlay(); // Stop all tracks
+"""
 
 [[parameters]]
 name = "trackId"
@@ -16,10 +21,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.play( "T120 O4 L4 CDEF GAB>C" );
-// Later...
-$.stopPlay(); // Stop all tracks
-"""
-

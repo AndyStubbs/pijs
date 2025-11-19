@@ -10,11 +10,6 @@ event was touch, returns touch press data. Otherwise, returns mouse data.
 The returned object contains position, buttons, action, and type properties. For touch, it also
 includes a touches array with all active touches.
 """
-
-[[returns]]
-type = "PressData"
-description = "Press data object (mouse or touch) with position, buttons, action, and type properties."
-
 example = """
 const press = $.inpress();
 if( press.buttons > 0 ) {
@@ -22,3 +17,6 @@ if( press.buttons > 0 ) {
 }
 """
 
+[[returns]]
+type = "PressData"
+description = "Press data object (mouse or touch) with position, buttons, action, and type properties."

@@ -8,14 +8,13 @@ Starts mouse event listeners on the screen canvas. Mouse position and button sta
 tracked and available via getMouse() or inmouse(). This is automatically called when mouse
 event handlers are registered.
 """
-
-[[returns]]
-type = "void"
-description = "This function does not return a value."
-
 example = """
 $.startMouse();
 const mouse = $.getMouse();
 $.print( `Mouse at ${mouse.x}, ${mouse.y}` );
 """
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
 

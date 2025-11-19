@@ -9,6 +9,10 @@ entries.
 example = """
 $.screen( "300x200" );
 const indices = $.addPalColors( [ "#112233", "gold", [ 10, 20, 30 ] ] );
+for( const i of indices ) {
+	$.setColor( i );
+	$.print( `Color: ${i}` );
+}
 """
 
 [[parameters]]
@@ -18,6 +22,6 @@ typeDesc = "*Array"
 description = "Array of colors to add (names, hex, RGB[A])."
 
 [[returns]]
-type = "Array<any>"
+type = "Array<number>"
 typeDesc = "*Array"
 description = "Array of indices for colors that were added to the palette."

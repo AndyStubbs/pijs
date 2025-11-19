@@ -7,6 +7,15 @@ description = """
 Removes a previously registered key event handler. All parameters must match the original onkey
 call exactly for the handler to be removed.
 """
+example = """
+const handler = ( keyData ) => {
+	$.print( "Key pressed!" );
+};
+
+$.onkey( "Enter", "down", handler );
+// Later...
+$.offkey( "Enter", "down", handler );
+"""
 
 [[parameters]]
 name = "key"
@@ -41,14 +50,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-const handler = ( keyData ) => {
-	$.print( "Key pressed!" );
-};
-
-$.onkey( "Enter", "down", handler );
-// Later...
-$.offkey( "Enter", "down", handler );
-"""
-

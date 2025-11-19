@@ -7,6 +7,11 @@ description = """
 Removes keys from the action keys set. These keys will no longer have their default browser
 behavior prevented.
 """
+example = """
+$.setActionKeys( [ "ArrowUp", "ArrowDown" ] );
+$.removeActionKeys( [ "ArrowUp" ] );
+// Only ArrowDown remains as an action key
+"""
 
 [[parameters]]
 name = "keys"
@@ -18,9 +23,4 @@ description = "Array of key codes or key values to remove from action keys."
 type = "void"
 description = "This function does not return a value."
 
-example = """
-$.setActionKeys( [ "ArrowUp", "ArrowDown" ] );
-$.removeActionKeys( [ "ArrowUp" ] );
-// Only ArrowDown remains as an action key
-"""
 

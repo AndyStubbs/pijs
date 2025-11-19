@@ -10,6 +10,10 @@ don't want the browser to handle certain keys.
 
 Keys can be specified by code (e.g., "ArrowUp") or key value (e.g., "Arrow Up").
 """
+example = """
+$.setActionKeys( [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight" ] );
+$.setActionKeys( [ "Space", "Enter" ] );
+"""
 
 [[parameters]]
 name = "keys"
@@ -20,9 +24,3 @@ description = "Array of key codes or key values to add as action keys."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.setActionKeys( [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight" ] );
-$.setActionKeys( [ "Space", "Enter" ] );
-"""
-

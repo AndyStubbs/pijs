@@ -11,11 +11,6 @@ once started and will continue until stopGamepad is called.
 If gamepads are already connected when this is called, they will be automatically detected and
 added to the gamepad list.
 """
-
-[[returns]]
-type = "void"
-description = "This function does not return a value."
-
 example = """
 $.startGamepad();
 $.onGamepadConnected( ( gamepad ) => {
@@ -23,3 +18,6 @@ $.onGamepadConnected( ( gamepad ) => {
 } );
 """
 
+[[returns]]
+type = "void"
+description = "This function does not return a value."

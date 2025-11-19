@@ -5,6 +5,10 @@ summary = "Returns the color value object for a palette index."
 description = """
 Gets the color value for a specific palette index. Returns null if the index is out of range.
 """
+example = """
+$.screen( "300x200" );
+const color = $.getPalColor( 2 );
+"""
 
 [[parameters]]
 name = "index"
@@ -15,10 +19,3 @@ description = "Palette index to retrieve."
 type = "PiColor | null"
 typeDesc = "*PiColor"
 description = "Color value object if found; otherwise null."
-
-example = """
-$.screen( "300x200" );
-const color = $.getPalColor( 2 );
-"""
-
-

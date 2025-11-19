@@ -9,6 +9,16 @@ and vertical scrolling when the cursor reaches the bottom of the screen.
 
 Newlines in the message will split the text into multiple lines. Tabs are converted to spaces.
 """
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+$.print( "Welcome to Pi.js" );
+$.print();
+$.print( "Line 1" );
+$.print( "Inline text", true );
+$.print( " more inline", true );
+$.print( "Centered", false, true );
+"""
 
 [[parameters]]
 name = "msg"
@@ -31,14 +41,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "320x200" );
-$.setFont( 1 );
-$.print( "Welcome to Pi.js" );
-$.print();
-$.print( "Line 1" );
-$.print( "Inline text", true );
-$.print( " more inline", true );
-$.print( "Centered", false, true );
-"""

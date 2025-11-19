@@ -6,6 +6,10 @@ description = """
 Reads the color at (x, y) asynchronously. If asIndex is true, resolves to the palette index;
 otherwise resolves to a color value object.
 """
+example = """
+$.screen( "300x200" );
+$.getPixelAsync( 10, 10 ).then( ( color ) => {} );
+"""
 
 [[parameters]]
 name = "x"
@@ -27,10 +31,3 @@ optional = true
 type = "Promise<number | object>"
 typeDesc = "*Promise"
 description = "Promise that resolves to palette index or color value object."
-
-example = """
-$.screen( "300x200" );
-$.getPixelAsync( 10, 10 ).then( ( color ) => {} );
-"""
-
-

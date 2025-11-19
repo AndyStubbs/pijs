@@ -9,6 +9,25 @@ standard waveforms (triangle, sine, square, sawtooth) or custom wavetables.
 
 The sound uses an ADSR envelope (attack, sustain, decay) for natural sound shaping.
 """
+example = """
+// Simple beep
+const soundId = $.sound( 440, 0.5 );
+
+// Musical note with envelope
+$.sound( {
+	"frequency": 523.25, // C5
+	"duration": 1,
+	"volume": 0.8,
+	"attack": 0.1,
+	"decay": 0.2
+} );
+
+// Custom waveform
+$.sound( 440, 1, 1, "sine" );
+
+// Custom wavetable
+$.sound( 440, 1, 1, [[[0,1,0,-1]], [[0,0,0,0]]] );
+"""
 
 [[parameters]]
 name = "frequency"
@@ -56,24 +75,3 @@ optional = true
 [[returns]]
 type = "string"
 description = "Sound ID for use with stopSound."
-
-example = """
-// Simple beep
-const soundId = $.sound( 440, 0.5 );
-
-// Musical note with envelope
-$.sound( {
-	"frequency": 523.25, // C5
-	"duration": 1,
-	"volume": 0.8,
-	"attack": 0.1,
-	"decay": 0.2
-} );
-
-// Custom waveform
-$.sound( 440, 1, 1, "sine" );
-
-// Custom wavetable
-$.sound( 440, 1, 1, [[[0,1,0,-1]], [[0,0,0,0]]] );
-"""
-

@@ -6,6 +6,12 @@ summary = "Stops a playing sound or all sounds."
 description = """
 Stops a specific sound by sound ID, or stops all sounds if soundId is null.
 """
+example = """
+const soundId = $.sound( 440, 5 );
+// Later...
+$.stopSound( soundId ); // Stop specific sound
+$.stopSound(); // Stop all sounds
+"""
 
 [[parameters]]
 name = "soundId"
@@ -16,11 +22,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-const soundId = $.sound( 440, 5 );
-// Later...
-$.stopSound( soundId ); // Stop specific sound
-$.stopSound(); // Stop all sounds
-"""
-

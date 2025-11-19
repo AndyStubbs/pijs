@@ -7,14 +7,12 @@ description = """
 Stops mouse event listeners on the screen canvas. Mouse tracking will no longer update until
 startMouse() is called again.
 """
-
-[[returns]]
-type = "void"
-description = "This function does not return a value."
-
 example = """
 $.startMouse();
 // ... use mouse ...
 $.stopMouse();
 """
 
+[[returns]]
+type = "void"
+description = "This function does not return a value."

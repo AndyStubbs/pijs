@@ -12,6 +12,19 @@ codes or a string of characters.
 Returns a font ID that can be used with setFont. After calling loadFont, you should call $.ready()
 to wait for the image to load before using the font.
 """
+example = """
+const fontId = $.loadFont( {
+	"src": "font.png",
+	"width": 8,
+	"height": 16,
+	"margin": 1,
+	"charset": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+} );
+$.ready( () => {
+	$.screen( "320x200" );
+	$.setFont( fontId );
+} );
+"""
 
 [[parameters]]
 name = "src"
@@ -45,18 +58,3 @@ optional = true
 [[returns]]
 type = "number"
 description = "Font ID that can be used with setFont."
-
-example = """
-const fontId = $.loadFont( {
-	"src": "font.png",
-	"width": 8,
-	"height": 16,
-	"margin": 1,
-	"charset": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
-} );
-$.ready( () => {
-	$.screen( "320x200" );
-	$.setFont( fontId );
-} );
-"""
-

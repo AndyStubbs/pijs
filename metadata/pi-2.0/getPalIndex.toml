@@ -7,6 +7,10 @@ Finds the best-matching palette index for a given color. Tolerance filters how c
 must be: 0 = exact match only, 1 = any color. The closest color that fits in the tolerance range
 will be returned.
 """
+example = """
+$.screen( "300x200" );
+const idx = $.getPalIndex( "#FF0000", 0.25 );
+"""
 
 [[parameters]]
 name = "color"
@@ -23,10 +27,4 @@ optional = true
 type = "number | null"
 typeDesc = "*number"
 description = "Palette index if a match is found; otherwise null."
-
-example = """
-$.screen( "300x200" );
-const idx = $.getPalIndex( "#FF0000", 0.25 );
-"""
-
 

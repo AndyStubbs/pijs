@@ -8,6 +8,12 @@ using loadFont. Several default fonts are preloaded: 0=6x6, 1=6x8 (default), 2=8
 
 The padX and padY parameters add extra spacing between characters when printing.
 """
+example = """
+$.screen( "320x200" );
+$.setFont( 2 ); // Use 8x8 font
+$.print( "Hello World" );
+$.setFont( { "fontId": 4, "padX": 1, "padY": 2 } );
+"""
 
 [[parameters]]
 name = "fontId"
@@ -29,10 +35,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "320x200" );
-$.setFont( 2 ); // Use 8x8 font
-$.print( "Hello World" );
-$.setFont( { "fontId": 4, "padX": 1, "padY": 2 } );
-"""

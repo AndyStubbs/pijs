@@ -10,6 +10,12 @@ as zero to account for stick drift. The sensitivity value must be between 0 and 
 A value of 0 means no dead zone (all input is registered). A value of 1 means maximum dead zone
 (almost no input registered). Typical values are around 0.1-0.3.
 """
+example = """
+$.startGamepad();
+$.setGamepadSensitivity( 0.2 ); // 20% dead zone
+const gamepad = $.ingamepad( 0 );
+const x = gamepad.getAxis( 0 ); // Will be 0 if stick is within dead zone
+"""
 
 [[parameters]]
 name = "sensitivity"
@@ -19,11 +25,3 @@ description = "Sensitivity threshold between 0 and 1 (0 = no dead zone, 1 = maxi
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.startGamepad();
-$.setGamepadSensitivity( 0.2 ); // 20% dead zone
-const gamepad = $.ingamepad( 0 );
-const x = gamepad.getAxis( 0 ); // Will be 0 if stick is within dead zone
-"""
-

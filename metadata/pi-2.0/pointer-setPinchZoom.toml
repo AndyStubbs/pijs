@@ -10,6 +10,10 @@ instead.
 
 This is a global setting that affects the entire document body.
 """
+example = """
+$.setPinchZoom( false ); // Disable pinch zoom for game controls
+$.setPinchZoom( true ); // Re-enable pinch zoom
+"""
 
 [[parameters]]
 name = "isEnabled"
@@ -19,9 +23,3 @@ description = "If true, enables pinch zoom. If false, disables it."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.setPinchZoom( false ); // Disable pinch zoom for game controls
-$.setPinchZoom( true ); // Re-enable pinch zoom
-"""
-

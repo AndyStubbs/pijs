@@ -7,6 +7,11 @@ description = """
 Returns the color at (x, y). If asIndex is true, returns the palette index; otherwise returns a
 color value object.
 """
+example = """
+$.screen( "300x200" );
+const color = $.getPixel( 10, 10 );
+const idx = $.getPixel( 10, 10, true );
+"""
 
 [[parameters]]
 name = "x"
@@ -28,11 +33,3 @@ optional = true
 type = "number | PiColor"
 typeDesc = "*Many"
 description = "Palette index if asIndex is true; otherwise a color value object."
-
-example = """
-$.screen( "300x200" );
-const color = $.getPixel( 10, 10 );
-const idx = $.getPixel( 10, 10, true );
-"""
-
-

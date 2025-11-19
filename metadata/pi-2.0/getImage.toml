@@ -5,6 +5,9 @@ summary = "Gets the image element by name."
 description = """
 Returns the underlying Image or Canvas element for a previously loaded image.
 """
+example = """
+const img = $.getImage( { "name": "player" } );
+"""
 
 [[parameters]]
 name = "name"
@@ -15,9 +18,3 @@ description = "Image name."
 type = "HTMLImageElement | HTMLCanvasElement"
 typeDesc = "*HTMLElement"
 description = "The actual Image or Canvas element."
-
-example = """
-const img = $.getImage( { "name": "player" } );
-"""
-
-

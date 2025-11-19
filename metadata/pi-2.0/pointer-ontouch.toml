@@ -10,6 +10,17 @@ receives an array of touch data and optional custom data.
 Supports hit box filtering - if a hitBox is provided, the callback only fires when touches
 are within that rectangular area.
 """
+example = """
+$.ontouch( "start", ( touches ) => {
+	$.print( `Touch started: ${touches.length} finger(s)` );
+} );
+
+$.ontouch( "move", ( touches ) => {
+	for( const touch of touches ) {
+		$.print( `Touch ${touch.id} moved to ${touch.x}, ${touch.y}` );
+	}
+} );
+"""
 
 [[parameters]]
 name = "mode"
@@ -43,16 +54,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.ontouch( "start", ( touches ) => {
-	$.print( `Touch started: ${touches.length} finger(s)` );
-} );
-
-$.ontouch( "move", ( touches ) => {
-	for( const touch of touches ) {
-		$.print( `Touch ${touch.id} moved to ${touch.x}, ${touch.y}` );
-	}
-} );
-"""
-

@@ -7,13 +7,12 @@ description = """
 Gets the current mouse state. If mouse tracking is not started, it will be started automatically.
 This is a convenience function that combines startMouse() and getMouse().
 """
-
-[[returns]]
-type = "MouseData"
-description = "Mouse data object with position, buttons, and action properties."
-
 example = """
 const mouse = $.inmouse();
 $.print( `Mouse at ${mouse.x}, ${mouse.y}` );
 """
+
+[[returns]]
+type = "MouseData"
+description = "Mouse data object with position, buttons, and action properties."
 

@@ -11,13 +11,12 @@ call getContext( "2d" ) on the returned canvas element as it already has a WebGL
 want to use a 2d canvas context on a screen you can create a new DOM canvas and draw it as an image
 on the screen.
 """
-
-[[returns]]
-type = "HTMLCanvasElement"
-description = "The canvas DOM element for the current screen."
-
 example = """
 $.screen( "320x200" );
 const canvas = $.canvas();
 canvas.style.opacity = "0.5";
 """
+
+[[returns]]
+type = "HTMLCanvasElement"
+description = "The canvas DOM element for the current screen."

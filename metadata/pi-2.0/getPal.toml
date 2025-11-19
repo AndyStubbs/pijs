@@ -7,6 +7,10 @@ Gets the active screen's color palette. By default, index 0 (transparent black) 
 Note: Color indices may not match exactly because index 0 is strictly reserved for transparent
 black.
 """
+example = """
+$.screen( "300x200" );
+const pal = $.getPal();
+"""
 
 [[parameters]]
 name = "include0"
@@ -18,10 +22,3 @@ optional = true
 type = "Array<PiColor>"
 typeDesc = "*Array"
 description = "Array of color value objects representing the current screen palette."
-
-example = """
-$.screen( "300x200" );
-const pal = $.getPal();
-"""
-
-

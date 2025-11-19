@@ -6,6 +6,15 @@ summary = "Removes a click event handler."
 description = """
 Removes a previously registered click event handler. If fn is null, removes all click handlers.
 """
+example = """
+const handler = ( clickData ) => {
+	$.print( "Clicked!" );
+};
+
+$.onclick( handler );
+// Later...
+$.offclick( handler );
+"""
 
 [[parameters]]
 name = "fn"
@@ -17,14 +26,4 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-const handler = ( clickData ) => {
-	$.print( "Clicked!" );
-};
-
-$.onclick( handler );
-// Later...
-$.offclick( handler );
-"""
 

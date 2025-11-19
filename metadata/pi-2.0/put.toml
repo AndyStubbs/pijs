@@ -17,6 +17,16 @@ Behavior:
 - If no pixels fall within the screen after clipping, nothing is drawn.
 - Data should contain palette indices (typically from $.get with asIndex=true).
 """
+example = """
+$.screen( "300x200" );
+
+// Read a region as indices, then blit it elsewhere
+const patch = $.get( 10, 10, 32, 16 );	// indices by default
+$.put( patch, 100, 50 );				// draw, skipping 0 (transparent)
+
+// Using object form and including index 0
+$.put( { "data": patch, "x": 140, "y": 80, "include0": true } );
+"""
 
 [[parameters]]
 name = "data"
@@ -43,14 +53,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-
-// Read a region as indices, then blit it elsewhere
-const patch = $.get( 10, 10, 32, 16 );	// indices by default
-$.put( patch, 100, 50 );				// draw, skipping 0 (transparent)
-
-// Using object form and including index 0
-$.put( { "data": patch, "x": 140, "y": 80, "include0": true } );
-"""

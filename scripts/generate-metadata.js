@@ -85,14 +85,22 @@ function formatDescription( description ) {
 	}
 	
 	// Replace double newlines with a temporary placeholder
-	const placeholder = "__PARAGRAPH_BREAK__";
-	let formatted = description.replace( /\n\n/g, placeholder );
+	const paragraphPlaceholder = "__PARAGRAPH_BREAK__";
+	const listPlaceholder = "__LIST_BREAK__";
+	let formatted = description.replace( /\n\n/g, paragraphPlaceholder );
+	
+	// Protect newlines that come after list markers (preserve markdown list formatting)
+	// Matches: newline followed by optional whitespace and a list marker (-, *, +, or number.)
+	formatted = formatted.replace( /\n(\s*)([-*+]|\d+\.)\s/g, `${listPlaceholder}$1$2 ` );
 	
 	// Replace all remaining single newlines with spaces
 	formatted = formatted.replace( /\n/g, " " );
 	
+	// Restore protected list newlines
+	formatted = formatted.replace( new RegExp( listPlaceholder, "g" ), "\n" );
+	
 	// Replace placeholder back with double newlines
-	formatted = formatted.replace( new RegExp( placeholder, "g" ), "\n\n" );
+	formatted = formatted.replace( new RegExp( paragraphPlaceholder, "g" ), "\n\n" );
 	
 	return formatted.trim();
 }

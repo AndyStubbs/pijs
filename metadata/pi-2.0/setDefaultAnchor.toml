@@ -5,6 +5,11 @@ summary = "Sets the default anchor point for images on the current screen."
 description = """
 Defines the default normalized anchor (0.0-1.0) used by image and sprite drawing calls on this screen.
 """
+example = """
+$.screen( "300x200" );
+$.setDefaultAnchor( { "x": 0.5, "y": 0.5 } );
+$.setDefaultAnchor( 0.5, 0.5 );
+"""
 
 [[parameters]]
 name = "x"
@@ -19,9 +24,3 @@ description = "Anchor Y in range [0.0-1.0]."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-$.setDefaultAnchor( { "x": 0.5, "y": 0.5 } );
-$.setDefaultAnchor( 0.5, 0.5 );
-"""

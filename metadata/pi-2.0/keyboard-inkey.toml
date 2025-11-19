@@ -12,6 +12,17 @@ If no key is provided, returns an array of all currently pressed key data object
 
 Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat.
 """
+example = """
+$.startKeyboard();
+const spaceKey = $.inkey( "Space" );
+if( spaceKey ) {
+	$.print( "Space is pressed!" );
+}
+
+// Get all pressed keys
+const allKeys = $.inkey();
+$.print( `${allKeys.length} keys pressed` );
+"""
 
 [[parameters]]
 name = "key"
@@ -24,15 +35,4 @@ type = "object | array | null"
 typeDesc = "*Many"
 description = "Key data object if key is pressed, array of all pressed keys if no key specified, or null if key not pressed."
 
-example = """
-$.startKeyboard();
-const spaceKey = $.inkey( "Space" );
-if( spaceKey ) {
-	$.print( "Space is pressed!" );
-}
-
-// Get all pressed keys
-const allKeys = $.inkey();
-$.print( `${allKeys.length} keys pressed` );
-"""
 

@@ -10,6 +10,12 @@ receives a gamepad data object with index, id, mapping, and other properties.
 Multiple callbacks can be registered. The callback will also be triggered for any gamepads that
 are already connected when the callback is registered.
 """
+example = """
+$.onGamepadConnected( ( gamepad ) => {
+	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
+} );
+$.startGamepad();
+"""
 
 [[parameters]]
 name = "fn"
@@ -20,11 +26,3 @@ description = "Callback function that receives (gamepad) when a gamepad connects
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.onGamepadConnected( ( gamepad ) => {
-	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
-} );
-$.startGamepad();
-"""
-

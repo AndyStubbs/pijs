@@ -24,6 +24,19 @@ The pluginApi object provides the following methods and properties:
 Optional metadata (version, description) and a list of dependencies can be provided. Plugins with
 dependencies will wait until all dependencies are registered before initialization.
 """
+example = """
+pi.registerPlugin( {
+	"name": "my-plugin",
+	"version": "1.0.0",
+	"description": "Example plugin",
+	"dependencies": [],
+	"init": ( pluginApi ) => {
+		pluginApi.addCommand( "hello", ( screenData, options ) => {
+			console.log( "Hello from plugin!" );
+		}, true, [] );
+	}
+} );
+"""
 
 [[parameters]]
 name = "name"
@@ -58,17 +71,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-pi.registerPlugin( {
-	"name": "my-plugin",
-	"version": "1.0.0",
-	"description": "Example plugin",
-	"dependencies": [],
-	"init": ( pluginApi ) => {
-		pluginApi.addCommand( "hello", ( screenData, options ) => {
-			console.log( "Hello from plugin!" );
-		}, true, [] );
-	}
-} );
-"""

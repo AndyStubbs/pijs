@@ -9,6 +9,17 @@ multiple calls will cycle through available instances, allowing overlapping play
 
 Volume is multiplied by the global volume set with setVolume.
 """
+example = """
+const poolId = $.loadAudio( "explosion.wav", 3 );
+
+await $.ready();
+
+// Full volume
+$.playAudio( poolId, 1.0 );
+
+// Half volume, play first 2 seconds
+$.playAudio( poolId, 0.5, 0, 2.0 );
+"""
 
 [[parameters]]
 name = "audioId"
@@ -36,16 +47,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-const poolId = $.loadAudio( "explosion.wav", 3 );
-
-await $.ready();
-
-// Full volume
-$.playAudio( poolId, 1.0 );
-
-// Half volume, play first 2 seconds
-$.playAudio( poolId, 0.5, 0, 2.0 );
-"""
-

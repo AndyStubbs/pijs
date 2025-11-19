@@ -7,14 +7,14 @@ description = """
 Cancels any active input prompt on the current screen. The input promise will resolve with null,
 and the callback (if provided) will not be called.
 """
-
-[[returns]]
-type = "void"
-description = "This function does not return a value."
-
 example = """
 $.input( "Enter name: " );
 
 // Later, cancel the input
 $.cancelInput();
 """
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+

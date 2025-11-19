@@ -7,6 +7,11 @@ description = """
 Removes an audio pool, stopping all playing instances and freeing memory. After deletion, the
 audio ID is no longer valid.
 """
+example = """
+const audioId = $.loadAudio( "sound.wav" );
+// ... use audio ...
+$.deleteAudioPool( audioId );
+"""
 
 [[parameters]]
 name = "audioId"
@@ -17,9 +22,4 @@ description = "Audio ID returned from loadAudio."
 type = "void"
 description = "This function does not return a value."
 
-example = """
-const audioId = $.loadAudio( "sound.wav" );
-// ... use audio ...
-$.deleteAudioPool( audioId );
-"""
 

@@ -6,6 +6,11 @@ description = """
 Draws a specific frame from a previously loaded spritesheet with optional color, anchor, scale,
 and rotation parameters.
 """
+example = """
+$.screen( "300x200" );
+$.loadSpritesheet( { "src": "sprites.png", "name": "sprites", "width": 16, "height": 16 } );
+$.drawSprite( { "name": "sprites", "frame": 0, "x": 20, "y": 20 } );
+"""
 
 [[parameters]]
 name = "name"
@@ -67,11 +72,4 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-$.loadSpritesheet( { "src": "sprites.png", "name": "sprites", "width": 16, "height": 16 } );
-$.drawSprite( { "name": "sprites", "frame": 0, "x": 20, "y": 20 } );
-"""
-
 

@@ -14,6 +14,26 @@ array of key data objects for all keys in the combination.
 Use "any" as the key to listen for any key press. In this case, the callback receives the key
 data for the specific key that was pressed.
 """
+example = """
+$.onkey( "Enter", "down", ( keyData ) => {
+	$.print( "Enter pressed!" );
+} );
+
+// Key combination
+$.onkey( [ "Control", "c" ], "down", ( keys ) => {
+	$.print( "Ctrl+C pressed!" );
+} );
+
+// One-time handler
+$.onkey( "Space", "down", () => {
+	$.print( "Space pressed once!" );
+}, true );
+
+// Listen for any key
+$.onkey( "any", "down", ( keyData ) => {
+	$.print( `Key ${keyData.key} pressed` );
+} );
+"""
 
 [[parameters]]
 name = "key"
@@ -48,24 +68,4 @@ optional = true
 type = "void"
 description = "This function does not return a value."
 
-example = """
-$.onkey( "Enter", "down", ( keyData ) => {
-	$.print( "Enter pressed!" );
-} );
-
-// Key combination
-$.onkey( [ "Control", "c" ], "down", ( keys ) => {
-	$.print( "Ctrl+C pressed!" );
-} );
-
-// One-time handler
-$.onkey( "Space", "down", () => {
-	$.print( "Space pressed once!" );
-}, true );
-
-// Listen for any key
-$.onkey( "any", "down", ( keyData ) => {
-	$.print( `Key ${keyData.key} pressed` );
-} );
-"""
 

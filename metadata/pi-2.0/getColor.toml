@@ -6,6 +6,10 @@ description = """
 Returns the current drawing color. If asIndex is true, returns the palette index; otherwise returns
 the color value object.
 """
+example = """
+$.screen( "300x200" );
+const idx = $.getColor( true );
+"""
 
 [[parameters]]
 name = "asIndex"
@@ -17,10 +21,3 @@ optional = true
 type = "number | PiColor"
 typeDesc = "*Many"
 description = "Palette index if asIndex is true; otherwise a color value object."
-
-example = """
-$.screen( "300x200" );
-const idx = $.getColor( true );
-"""
-
-

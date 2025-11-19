@@ -6,6 +6,9 @@ description = """
 Loads an image and stores it by name. Supports optional palette-linking to the screen palette. After
 calling load image you should call $.ready command to wait for image to load before calling drawImage.
 """
+example = """
+const name = $.loadImage( { "src": "player.png", "name": "player" } );
+"""
 
 [[parameters]]
 name = "src"
@@ -49,9 +52,3 @@ optional = true
 [[returns]]
 type = "string"
 description = "The image name."
-
-example = """
-const name = $.loadImage( { "src": "player.png", "name": "player" } );
-"""
-
-

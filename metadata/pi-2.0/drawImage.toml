@@ -5,6 +5,12 @@ summary = "Draws an image onto the screen."
 description = """
 Draws an image (by name or element) using optional color, anchor, scale, and rotation parameters.
 """
+example = """
+$.screen( "300x200" );
+$.loadImage( { "src": "player.png", "name": "player" } );
+$.drawImage( { "image": "player", "x": 150, "y": 100, "anchorX": 0.5, "anchorY": 0.5 } );
+$.drawImage( "player", 100, 100, null, 0.5, 0.5 );
+"""
 
 [[parameters]]
 name = "image"
@@ -60,10 +66,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-$.loadImage( { "src": "player.png", "name": "player" } );
-$.drawImage( { "image": "player", "x": 150, "y": 100, "anchorX": 0.5, "anchorY": 0.5 } );
-$.drawImage( "player", 100, 100, null, 0.5, 0.5 );
-"""

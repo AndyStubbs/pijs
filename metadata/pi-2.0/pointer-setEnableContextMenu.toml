@@ -8,6 +8,10 @@ Controls whether the browser's default right-click context menu is shown. When d
 right-clicks are prevented from showing the context menu, allowing them to be handled by mouse
 event handlers instead.
 """
+example = """
+$.setEnableContextMenu( true ); // Allow right-click menu
+$.setEnableContextMenu( false ); // Block right-click menu
+"""
 
 [[parameters]]
 name = "isEnabled"
@@ -17,9 +21,3 @@ description = "If true, enables the context menu. If false, disables it (default
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.setEnableContextMenu( true ); // Allow right-click menu
-$.setEnableContextMenu( false ); // Block right-click menu
-"""
-

@@ -9,6 +9,12 @@ receives a gamepad data object with index, id, mapping, and connected status.
 
 Multiple callbacks can be registered.
 """
+example = """
+$.onGamepadDisconnected( ( gamepad ) => {
+	$.print( `Gamepad ${gamepad.index} disconnected: ${gamepad.id}` );
+} );
+$.startGamepad();
+"""
 
 [[parameters]]
 name = "fn"
@@ -19,11 +25,3 @@ description = "Callback function that receives (gamepad) when a gamepad disconne
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.onGamepadDisconnected( ( gamepad ) => {
-	$.print( `Gamepad ${gamepad.index} disconnected: ${gamepad.id}` );
-} );
-$.startGamepad();
-"""
-

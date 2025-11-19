@@ -10,6 +10,11 @@ round-robin selection to cycle through available instances.
 
 The audio file will be loaded asynchronously. Use $.ready() to wait for all audio to load.
 """
+example = """
+const audioId = $.loadAudio( "explosion.wav", 5 );
+await $.ready();
+$.playAudio( audioId );
+"""
 
 [[parameters]]
 name = "src"
@@ -25,10 +30,3 @@ optional = true
 [[returns]]
 type = "string"
 description = "Audio ID for use with playAudio and stopAudio."
-
-example = """
-const audioId = $.loadAudio( "explosion.wav", 5 );
-await $.ready();
-$.playAudio( audioId );
-"""
-

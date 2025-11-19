@@ -7,6 +7,10 @@ Sets an entirely new palette for the active screen. Index 0 is reserved for tran
 will be set automatically. Note: Color indices may not match exactly because index 0 is strictly
 reserved for transparent black.
 """
+example = """
+$.screen( "300x200" );
+$.setPal( [ "black", "white", "red", "green", "blue" ] );
+"""
 
 [[parameters]]
 name = "pal"
@@ -17,10 +21,3 @@ description = "Array of color values (names, hex, RGBA, or palette indices)."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-$.setPal( [ "black", "white", "red", "green", "blue" ] );
-"""
-
-

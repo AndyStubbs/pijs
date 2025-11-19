@@ -19,16 +19,6 @@ simultaneous tracks separated by commas.
 
 Custom wavetables can be defined using [[realArray, imagArray]] syntax.
 """
-
-[[parameters]]
-name = "playString"
-type = "string"
-description = "Music notation string with notes and commands."
-
-[[returns]]
-type = "void"
-description = "This function does not return a value."
-
 example = """
 // Simple melody
 $.play( "T120 O4 L4 CDEF GAB>C" );
@@ -43,3 +33,11 @@ $.play( "WS T120 O4 L4 CDEF GAB>C" );
 $.play( "W0 T120 O4 L4 CDEF", [[[0,1,0,-1]], [[0,0,0,0]]] );
 """
 
+[[parameters]]
+name = "playString"
+type = "string"
+description = "Music notation string with notes and commands."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

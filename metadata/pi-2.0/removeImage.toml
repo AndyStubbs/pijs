@@ -5,6 +5,9 @@ summary = "Removes a previously loaded image by name."
 description = """
 Deletes the stored image and frees associated GPU resources (textures) for all screens.
 """
+example = """
+$.removeImage( { "name": "player" } );
+"""
 
 [[parameters]]
 name = "name"
@@ -14,9 +17,3 @@ description = "Image name to remove."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.removeImage( { "name": "player" } );
-"""
-
-

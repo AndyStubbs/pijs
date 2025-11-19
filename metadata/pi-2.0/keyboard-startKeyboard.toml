@@ -10,11 +10,6 @@ keyup events.
 Note: the keyboard plugin automatically starts when loaded, but this command can be used
 to restart it after calling stopKeyboard.
 """
-
-[[returns]]
-type = "void"
-description = "This function does not return a value."
-
 example = """
 $.stopKeyboard();
 $.startKeyboard();
@@ -22,3 +17,8 @@ $.onkey( "Enter", "down", () => {
 	$.print( "Enter pressed!" );
 } );
 """
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
+

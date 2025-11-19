@@ -10,6 +10,16 @@ unify mouse and touch input, so the callback receives data from either input met
 Supports hit box filtering - if a hitBox is provided, the callback only fires when the press
 is within that rectangular area.
 """
+example = """
+$.onpress( "down", ( pressData ) => {
+	$.print( `${pressData.type} pressed at ${pressData.x}, ${pressData.y}` );
+} );
+
+// With hit box
+$.onpress( "up", ( pressData ) => {
+	$.print( "Released in button area" );
+}, false, { "x": 10, "y": 10, "width": 100, "height": 50 } );
+"""
 
 [[parameters]]
 name = "mode"
@@ -43,15 +53,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.onpress( "down", ( pressData ) => {
-	$.print( `${pressData.type} pressed at ${pressData.x}, ${pressData.y}` );
-} );
-
-// With hit box
-$.onpress( "up", ( pressData ) => {
-	$.print( "Released in button area" );
-}, false, { "x": 10, "y": 10, "width": 100, "height": 50 } );
-"""
-

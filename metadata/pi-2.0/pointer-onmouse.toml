@@ -10,6 +10,21 @@ receives mouse data and optional custom data.
 Supports hit box filtering - if a hitBox is provided, the callback only fires when the mouse
 is within that rectangular area.
 """
+example = """
+$.onmouse( "down", ( mouseData ) => {
+	$.print( `Mouse clicked at ${mouseData.x}, ${mouseData.y}` );
+} );
+
+// With hit box
+$.onmouse( "move", ( mouseData ) => {
+	$.print( "Mouse in button area" );
+}, false, { "x": 10, "y": 10, "width": 100, "height": 50 } );
+
+// One-time handler
+$.onmouse( "up", () => {
+	$.print( "Mouse released once" );
+}, true );
+"""
 
 [[parameters]]
 name = "mode"
@@ -43,20 +58,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.onmouse( "down", ( mouseData ) => {
-	$.print( `Mouse clicked at ${mouseData.x}, ${mouseData.y}` );
-} );
-
-// With hit box
-$.onmouse( "move", ( mouseData ) => {
-	$.print( "Mouse in button area" );
-}, false, { "x": 10, "y": 10, "width": 100, "height": 50 } );
-
-// One-time handler
-$.onmouse( "up", () => {
-	$.print( "Mouse released once" );
-}, true );
-"""
-

@@ -10,7 +10,7 @@ const plugins = pi.getPlugins();
 console.log( plugins );
 """
 
-parameters = [ ]
+parameters = []
 
 [[returns]]
 type = "Array<object>"

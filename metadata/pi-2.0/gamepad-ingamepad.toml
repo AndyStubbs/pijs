@@ -22,18 +22,6 @@ The returned gamepad object contains:
 - **getAxis(axisIndex)**: Get axis value
 - **getAxisChanged(axisIndex)**: Get if axis value changed this frame
 """
-
-[[parameters]]
-name = "gamepadIndex"
-type = "number"
-description = "Gamepad index to retrieve. If null/undefined, returns all gamepads."
-optional = true
-
-[[returns]]
-type = "object | array"
-typeDesc = "*Many"
-description = "Gamepad object if index provided, or array of all gamepads if index is null/undefined."
-
 example = """
 setInterval( () => {
 	$.cls();
@@ -51,3 +39,14 @@ setInterval( () => {
 	$.print( `${allGamepads.length} gamepads connected` );
 } );
 """
+
+[[parameters]]
+name = "gamepadIndex"
+type = "number"
+description = "Gamepad index to retrieve. If null/undefined, returns all gamepads."
+optional = true
+
+[[returns]]
+type = "object | array"
+typeDesc = "*Many"
+description = "Gamepad object if index provided, or array of all gamepads if index is null/undefined."

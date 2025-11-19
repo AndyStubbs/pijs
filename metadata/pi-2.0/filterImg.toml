@@ -13,6 +13,18 @@ at the time the function is called. So a line drawn after the filterImg command 
 drawn after the filter is applied. Also, this runs on the CPU not the GPU so in large areas it may
 not be suitable to run in an animationFrame.
 """
+example = """
+$.screen( "300x200" );
+$.filterImg( function( pixel, x, y ) {
+
+	// Invert red channel in upper-left quadrant
+	if( x < 150 && y < 100 ) {
+		pixel[ 0 ] = 255 - pixel[ 0 ];
+		return true;
+	}
+	return false;
+} );
+"""
 
 [[parameters]]
 name = "filter"
@@ -47,16 +59,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-$.filterImg( function( pixel, x, y ) {
-
-	// Invert red channel in upper-left quadrant
-	if( x < 150 && y < 100 ) {
-		pixel[ 0 ] = 255 - pixel[ 0 ];
-		return true;
-	}
-	return false;
-} );
-"""

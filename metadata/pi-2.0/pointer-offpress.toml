@@ -7,6 +7,15 @@ description = """
 Removes a previously registered press event handler. If fn is null, removes all handlers for
 the specified mode.
 """
+example = """
+const handler = ( pressData ) => {
+	$.print( "Press moved" );
+};
+
+$.onpress( "move", handler );
+// Later...
+$.offpress( "move", handler );
+"""
 
 [[parameters]]
 name = "mode"
@@ -23,14 +32,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-const handler = ( pressData ) => {
-	$.print( "Press moved" );
-};
-
-$.onpress( "move", handler );
-// Later...
-$.offpress( "move", handler );
-"""
-

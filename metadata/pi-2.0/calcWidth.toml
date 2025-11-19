@@ -6,6 +6,12 @@ description = """
 Calculates how many pixels wide a text message will be when printed with the current font and
 print scale settings.
 """
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+const width = $.calcWidth( "Hello World" );
+$.print( `"Hello World" is ${width} pixels wide` );
+"""
 
 [[parameters]]
 name = "msg"
@@ -16,11 +22,3 @@ optional = true
 [[returns]]
 type = "number"
 description = "Width of the text in pixels."
-
-example = """
-$.screen( "320x200" );
-$.setFont( 1 );
-const width = $.calcWidth( "Hello World" );
-$.print( `"Hello World" is ${width} pixels wide` );
-"""
-

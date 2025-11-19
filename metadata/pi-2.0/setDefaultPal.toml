@@ -6,6 +6,11 @@ description = """
 Defines the default palette used when a new screen is created. The first color (index 0) is
 reserved for transparent black and will be set automatically.
 """
+example = """
+const pal = [ "#0000FF", "red", [ 0, 255, 0 ], [ 255, 255, 0, 255 ] ];
+$.setDefaultPal( pal );
+$.screen( "300x200" );
+"""
 
 [[parameters]]
 name = "pal"
@@ -16,11 +21,3 @@ description = "Array of color values (names, hex, RGBA, or palette indices)."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-const pal = [ "#0000FF", "red", [ 0, 255, 0 ], [ 255, 255, 0, 255 ] ];
-$.setDefaultPal( pal );
-$.screen( "300x200" );
-"""
-
-
