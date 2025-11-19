@@ -1,5 +1,5 @@
 title = "setDefaultPal"
-category = "color"
+category = "colors"
 isScreen = false
 summary = "Sets the default color palette for new screens."
 description = ""

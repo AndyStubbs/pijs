@@ -1,4 +1,5 @@
 title = "point"
+category = "colors"
 isScreen = true
 summary = "Gets the pixel color from the screen and returns the color palette index."
 description = ""

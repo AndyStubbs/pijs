@@ -1,4 +1,5 @@
 title = "setColors"
+category = "colors"
 isScreen = true
 summary = """
 Sets an array of color values for use with multi-color fonts\r

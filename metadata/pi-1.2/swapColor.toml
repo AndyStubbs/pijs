@@ -1,5 +1,5 @@
 title = "swapColor"
-category = "color"
+category = "colors"
 isScreen = true
 summary = "Swaps a color in the screens palette with a new color and updates the screen colors."
 description = ""

@@ -1,5 +1,5 @@
 title = "setColor"
-category = "color"
+category = "colors"
 isScreen = true
 summary = "Sets the foreground color."
 description = ""

@@ -1,5 +1,5 @@
 title = "findColor"
-category = "color"
+category = "colors"
 isScreen = true
 summary = "Given a color value, find the index from the color palette."
 description = ""
