@@ -389,8 +389,9 @@ export function buildApi( s_screenData ) {
 	const blitImageFn = ( img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad ) => {
 		const pAnchorX = anchorX ?? s_screenData.defaultAnchorX;
 		const pAnchorY = anchorY ?? s_screenData.defaultAnchorY;
+		const pColor = color ?? DEFAULT_BLIT_COLOR;
 		s_drawImage(
-			s_screenData, img, x, y, color, pAnchorX, pAnchorY, scaleX, scaleY, angleRad,
+			s_screenData, img, x, y, pColor, pAnchorX, pAnchorY, scaleX, scaleY, angleRad,
 			s_imageReplaceBatch
 		);
 		s_setImageDirty( s_screenData );
@@ -400,7 +401,7 @@ export function buildApi( s_screenData ) {
 		img,
 		x = 0,
 		y = 0,
-		color = DEFAULT_BLIT_COLOR,
+		color,
 		anchorX,
 		anchorY,
 		scaleX = 1,
@@ -432,11 +433,12 @@ export function buildApi( s_screenData ) {
 		const img = spriteData.image;
 		const pAnchorX = anchorX ?? s_screenData.defaultAnchorX;
 		const pAnchorY = anchorY ?? s_screenData.defaultAnchorY;
+		const pColor = color ?? DEFAULT_BLIT_COLOR;
 		s_drawSprite(
 			s_screenData, img,
 			frameData.x, frameData.y, frameData.width, frameData.height,
 			x, y, frameData.width, frameData.height,
-			color, pAnchorX, pAnchorY, scaleX, scaleY, angleRad,
+			pColor, pAnchorX, pAnchorY, scaleX, scaleY, angleRad,
 			s_imageReplaceBatch
 		);
 		s_setImageDirty( s_screenData );
@@ -447,7 +449,7 @@ export function buildApi( s_screenData ) {
 		frame = 0,
 		x = 0,
 		y = 0,
-		color = DEFAULT_BLIT_COLOR,
+		color,
 		anchorX,
 		anchorY,
 		scaleX = 1,

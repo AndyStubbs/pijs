@@ -6,12 +6,19 @@ description = """
 Blits an Image or Canvas element directly onto the screen. Unlike drawImage, this function accepts
 an image element directly (not a name) and uses replace batch mode for faster rendering. The angle
 parameter is in radians (not degrees).
+
+Note: The official recommended method for drawing images is the drawImage command as it has
+more safety with parameter validation and is still pretty fast.  So unless you really need the
+extra performance boost or you do not want to do any blending with the screen then you should
+stick with the drawImage command.
 """
 example = """
 $.screen( "300x200" );
-const img = new Image();
-img.src = "player.png";
-$.blitImage( img, 150, 100, null, 0.5, 0.5, 1, 1, 0 );
+$.loadImage( "media/player.png", "player" );
+$.ready( () => {
+	const img = $.getImage( "player" );
+	$.blitImage( img, 150, 100, null, 0.5, 0.5, 1, 1, 0 );
+} );
 """
 
 [[parameters]]
