@@ -11,6 +11,7 @@
 const fs = require( "fs" );
 const path = require( "path" );
 const toml = require( "@iarna/toml" );
+const packageJson = require( path.join( __dirname, "..", "package.json" ) );
 const METADATA_DIR = path.join( __dirname, "..", "metadata" );
 const OUTPUT_DIR = path.join( __dirname, "..", "build", "metadata" );
 const REFERENCE_FILE = path.join( OUTPUT_DIR, `reference-{VERSION}.json` );
@@ -702,6 +703,9 @@ function writeTypeDefinitions( version, lines ) {
 	const header = [
 		"/**",
 		" * Pi.js Type Definitions",
+		` * Version: pi-${version}`,
+		` * Author: ${packageJson.author}`,
+		` * License: ${packageJson.license}`,
 		` * Generated on ${new Date().toISOString()}`,
 		" */",
 		""
