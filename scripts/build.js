@@ -52,7 +52,7 @@ function getFullBanner( version ) {
  *		play-sound: Music playback and sound effects
  *		pointer: Mouse, touch, and press handling
  * 
- * For the core-only version, use pi-lite.js
+ * For the core-only version, use pi.lite.js
  */`;
 }
 
@@ -239,7 +239,7 @@ async function build() {
 		// Build LITE version (core only, no plugins)
 		console.log( "" );
 		console.log( "Building Pi.js Lite (core only)..." );
-		await buildPiVersion( "lite", "index.js", "pi-lite" );
+		await buildPiVersion( "lite", "index.js", "pi.lite" );
 
 		// Build FULL version (core + plugins)
 		console.log( "" );
@@ -255,18 +255,18 @@ async function build() {
 		console.log( "    - build/pi.min.js (IIFE, minified)" );
 		console.log( "    - build/pi.esm.min.js (ESM, minified)" );
 		console.log( "  Lite version (core only):" );
-		console.log( "    - build/pi-lite.js (IIFE, unminified with sourcemaps)" );
-		console.log( "    - build/pi-lite.min.js (IIFE, minified)" );
-		console.log( "    - build/pi-lite.esm.min.js (ESM, minified)" );
+		console.log( "    - build/pi.lite.js (IIFE, unminified with sourcemaps)" );
+		console.log( "    - build/pi.lite.min.js (IIFE, minified)" );
+		console.log( "    - build/pi.lite.esm.min.js (ESM, minified)" );
 
 		// Print file sizes
 		const files = [
 			{ "name": "pi.js", "label": "Full (unminified)" },
 			{ "name": "pi.min.js", "label": "Full (minified)" },
 			{ "name": "pi.esm.min.js", "label": "Full (ESM)" },
-			{ "name": "pi-lite.js", "label": "Lite (unminified)" },
-			{ "name": "pi-lite.min.js", "label": "Lite (minified)" },
-			{ "name": "pi-lite.esm.min.js", "label": "Lite (ESM)" }
+			{ "name": "pi.lite.js", "label": "Lite (unminified)" },
+			{ "name": "pi.lite.min.js", "label": "Lite (minified)" },
+			{ "name": "pi.lite.esm.min.js", "label": "Lite (ESM)" }
 		];
 
 		console.log( "" );

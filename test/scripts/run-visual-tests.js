@@ -689,18 +689,18 @@ function findTestFiles() {
 						filePath,
 						content.replace(
 							`<script src="../../../build/pi.js"></script>`,
-							`<script src="../../../build/pi-lite.js"></script>`
+							`<script src="../../../build/pi.lite.js"></script>`
 						)
 					);
 				
 				// Swap out the lite version with full version
 				} else if(
-					content.includes( `<script src="../../../build/pi-lite.js"></script>` )
+					content.includes( `<script src="../../../build/pi.lite.js"></script>` )
 				) {
 					fs.writeFileSync(
 						filePath,
 						content.replace(
-							`<script src="../../../build/pi-lite.js"></script>`,
+							`<script src="../../../build/pi.lite.js"></script>`,
 							`<script src="../../../build/pi.js"></script>`
 						)
 					);
