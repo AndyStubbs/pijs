@@ -193,8 +193,8 @@ function captureBackground() {
 		"name": m_inputData.backgroundImageName ,
 		"x1": posPx.x,
 		"y1": posPx.y,
-		"x2": posPx.x + captureWidth,
-		"y2": posPx.y + captureHeight
+		"x2": posPx.x + captureWidth - 1,
+		"y2": posPx.y + captureHeight - 1
 	} );
 	m_inputData.backgroundImage = m_pluginApi.getApi().getImage( m_inputData.backgroundImageName  );
 	m_inputData.captureX = posPx.x;
@@ -351,6 +351,11 @@ function finishInput( isCancel ) {
 	// Handle cancel input
 	if( isCancel ) {
 		tempInputData.resolve( null );
+
+		// Callback function
+		if( tempInputData.fn ) {
+			tempInputData.fn( null );
+		}
 	
 	// Handle successful input
 	} else {
