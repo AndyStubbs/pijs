@@ -11,9 +11,15 @@ round-robin selection to cycle through available instances.
 The audio file will be loaded asynchronously. Use $.ready() to wait for all audio to load.
 """
 example = """
-const audioId = $.loadAudio( "explosion.wav", 5 );
-await $.ready();
-$.playAudio( audioId );
+$.screen( "300x200" );
+var bombAudio = $.loadAudio( "media/bomb.wav", 5 );
+$.ready( function () {
+	$.print( "Press any key to play bomb sound." );
+	$.onkey( "any", "down", () => {
+		$.print( "BOOM ", true );
+		$.playAudio( bombAudio );
+	}, false, true );
+} );
 """
 
 [[parameters]]

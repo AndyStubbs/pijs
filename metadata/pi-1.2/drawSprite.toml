@@ -5,18 +5,21 @@ summary = "Draws a sprite from a spritesheet on to the screen. Note: this method
 description = ""
 example = """
 var monkey, frame, interval;\r
-$.screen( "300x200" );\r
-monkey = $.loadSpritesheet( "/images/monkey.png", null, 32, 32, 1 );\r
-$.ready( function () {\r
-\tframe = 0;\r
-\tinterval = setInterval( run, 500 );\r
-\tfunction run() {\r
-\t\tframe += 1;\r
-\t\t$.cls();\r
-\t\t$.drawSprite( monkey, frame % 2, 150, 100, 0, 0.5, 0.5, null, 2, 2 );\r
-\t}\r
-\trun();\r
-} );"""
+$.screen( "150x100" );
+$.loadSpritesheet( "media/cat_sprite.png", "cat", 34, 34, 1 );
+let catData;
+$.ready( () => {
+	catData = $.getSpritesheetData( "cat" );
+	requestAnimationFrame( animate );
+} );
+
+function animate( t ) {
+	$.cls();
+	const frame = Math.round( t / 100 ) % catData.frameCount;
+	$.drawSprite( "cat", frame, 75, 50, null, 0.5, 0.5 );
+	requestAnimationFrame( animate );
+}
+"""
 
 [[parameters]]
 name = "name"

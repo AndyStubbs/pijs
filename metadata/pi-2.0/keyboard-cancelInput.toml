@@ -4,14 +4,17 @@ isScreen = true
 plugin = "keyboard"
 summary = "Cancels the current input prompt on this screen."
 description = """
-Cancels any active input prompt on the current screen. The input promise will resolve with null,
-and the callback (if provided) will not be called.
+Cancels the active input prompt on the current screen. The input promise will resolve with null,
+and the callback (if provided) will also be passed in the value null.
 """
 example = """
-$.input( "Enter name: " );
-
-// Later, cancel the input
-$.cancelInput();
+$.screen( "300x200" );
+$.print( "\\n" );
+$.input( "What is your name?", null );
+$.onkey( "Escape", "down", function () {
+	$.print( "\\nInput Canceled" );
+	$.cancelInput();
+}, true );
 """
 
 [[returns]]

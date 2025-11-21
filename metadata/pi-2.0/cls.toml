@@ -3,11 +3,10 @@ category = "effects"
 isScreen = true
 summary = "Clears the screen or a rectangular region."
 description = """
-This function clears the entire screen or a rectangular region of the active canvas and resets the
-print cursor to position (0, 0).
+This function clears the entire screen or a rectangular region of the active canvas.
 
 When x, y, width, and height are provided, only that region is cleared. Otherwise the full screen is
-cleared.
+cleared and the print cursor is reset to position (0, 0).
 """
 example = """
 $.screen( "128x80" );
@@ -17,9 +16,7 @@ $.cls();
 $.print( "The screen is clear" );
 $.paint( 0, 10, 1 );
 $.print( "The screen is blue" );
-$.render();
 $.cls( 0, 16, 128, 80 );
-$.setPos( 0, 2 );
 $.print( "The screen is partially clear" );
 """
 

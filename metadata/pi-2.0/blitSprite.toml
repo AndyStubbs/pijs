@@ -5,11 +5,45 @@ summary = "Blits a frame from a spritesheet onto the screen using replace batch 
 description = """
 Blits a specific frame from a previously loaded spritesheet. Unlike drawSprite, this function uses
 replace batch mode for faster rendering. The angle parameter is in radians (not degrees).
+
+Note: The official recommended method for drawing sprites is the drawSprite command as it has
+more safety with parameter validation and is still pretty fast.  So unless you really need the
+extra performance boost or you do not want to do any blending with the screen then you should
+stick with the drawSprite command.
 """
 example = """
-$.screen( "300x200" );
-$.loadSpritesheet( { "src": "sprites.png", "name": "sprites", "width": 16, "height": 16 } );
-$.blitSprite( "sprites", 0, 20, 20, null, 0.5, 0.5, 1, 1, 0 );
+$.screen( "128x80" );
+$.loadSpritesheet( "media/tiles.png", "tiles", 16, 16, 0 );
+let tilesData;
+let pal;
+$.ready( () => {
+	pal = $.getPal();
+	tilesData = $.getSpritesheetData( "tiles" );
+	let keys = "0123456789abcdefghijkl";
+	let keyMap = {};
+	keys.split( "" ).forEach(
+		( key, val ) => keyMap[ key ] = val
+	);
+	let map = [
+		"00ijk0000",
+		"00001222",
+		"07008999",
+		"0012c996",
+		"e0899d99",
+	];
+	let x = 0;
+	let y = 0;
+	for( const row of map ) {
+		const cols = row.split( "" );
+		for( const tile of cols ) {
+			const frame = keyMap[ tile ];
+			$.blitSprite( "tiles", frame, x, y );
+			x += 16;
+		}
+		x = 0;
+		y += 16;
+	}
+} );
 """
 
 [[parameters]]

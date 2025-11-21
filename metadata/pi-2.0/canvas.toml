@@ -12,9 +12,9 @@ want to use a 2d canvas context on a screen you can create a new DOM canvas and 
 on the screen.
 """
 example = """
-$.screen( "320x200" );
-const canvas = $.canvas();
-canvas.style.opacity = "0.5";
+$.screen( "300x200" );
+$.canvas().style.backgroundColor = "purple";
+$.print( "\\n\\nThe background is now purple." );
 """
 
 [[returns]]

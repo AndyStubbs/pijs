@@ -2,33 +2,30 @@ title = "clearEvents"
 category = "core"
 isScreen = false
 summary = "Clears event handlers for mouse and touch events on the screen."
-description = ""
 example = """
-$.screen( "300x200" );\r
-$.print( \r
-\t"Move mouse or touch to paint screen," +\r
-\t" click/touch up to stop."\r
-);\r
-$.onpress( "move", pressMove );\r
-$.onpress( "up", pressStop );\r
-\r
-// Press move function\r
-function pressMove( data ) {\r
-\t$.setPosPx( data.x, data.y );\r
-\tvar pos = $.getPos();\r
-\t$.setPos( pos.col, pos.row );\r
-\t$.setColor( 8 );\r
-\t$.print( "+", true );\r
-}\r
-\r
-// Press stop function\r
-function pressStop() {\r
-\t$.setColor( 14 );\r
-\tvar pos = $.getPos();\r
-\t$.setPos( pos.col - 4, pos.row );\r
-\t$.print( "Stopped!", true );\r
-\t$.clearEvents();\r
-}"""
+$.screen( "300x200" );
+$.print( "Move mouse or touch to paint screen click/touch up to stop." );
+$.onpress( "move", pressMove );
+$.onpress( "up", pressStop );
+
+// Press move function
+function pressMove( data ) {
+	$.setPosPx( data.x, data.y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 8 );
+	$.print( "+", true );
+}
+
+// Press stop function
+function pressStop() {
+	$.setColor( 14 );
+	var pos = $.getPos();
+	$.setPos( pos.col - 4, pos.row );
+	$.print( "Stopped!", true );
+	$.clearEvents();
+}
+"""
 
 parameters = [ ]
 [[returns]]

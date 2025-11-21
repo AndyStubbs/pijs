@@ -8,9 +8,16 @@ Removes an audio pool, stopping all playing instances and freeing memory. After 
 audio ID is no longer valid.
 """
 example = """
-const audioId = $.loadAudio( "sound.wav" );
-// ... use audio ...
-$.deleteAudioPool( audioId );
+$.screen( "300x200" );
+var bombAudio = $.loadAudio( "media/bomb.wav", 5 );
+$.ready( function () {
+	$.print( "Press any key to try to play bomb sound." );
+	$.removeAudio( bombAudio );
+	$.onkey( "any", "down", () => {
+		$.print( "SILENCE ", true );
+		$.playAudioPool( bombAudio );
+	} );
+} );
 """
 
 [[parameters]]

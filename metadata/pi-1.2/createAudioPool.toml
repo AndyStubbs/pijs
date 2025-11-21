@@ -8,10 +8,15 @@ Creates a group of audio players that can play sounds. Audio pools are useful if
 \tsound at a time set 1 for the poolSize."""
 description = ""
 example = """
-var bombPool = $.createAudioPool( "/sounds/bomb.wav", 1 );\r
-$.ready( function () {\r
-\t$.playAudioPool( bombPool );\r
-} );\r
+$.screen( "300x200" );
+var bombPool = $.createAudioPool( "media/bomb.wav", 5 );
+$.ready( function () {
+	$.print( "Press any key to play bomb sound." );
+	$.onkey( "any", "down", () => {
+		$.print( "BOOM ", true );
+		$.playAudioPool( bombPool );
+	} );
+} );
 """
 
 [[parameters]]

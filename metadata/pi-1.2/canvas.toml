@@ -1,14 +1,21 @@
 title = "canvas"
-category = "graphics"
+category = "core"
 isScreen = true
-summary = "Returns the canvas element used by the screen."
-description = ""
-example = """
-$.screen("300x200");\r
-$.canvas().className = "purple";\r
-$.print("\\n\\nThe background is now purple.");"""
+summary = "Returns the HTMLCanvasElement for the current screen."
+description = """
+Gets the underlying HTMLCanvasElement DOM element for the active screen. This can be used for
+direct canvas manipulation or integration with other libraries.
 
-parameters = [ ]
+Note: This is intended for applying CSS styles to the canvas or moving the canvas in the DOM. You
+can call getContext( "2d" ) on the returned canvas element but this may conflict with internal
+graphics command so it could produce some strange artifacts when drawing to the context.
+"""
+example = """
+$.screen( "300x200" );
+$.canvas().style.backgroundColor = "purple";
+$.print( "\\n\\nThe background is now purple." );
+"""
+
 [[returns]]
 type = "HTMLCanvasElement"
-description = "Returns the canvas"
+description = "The canvas DOM element for the current screen."

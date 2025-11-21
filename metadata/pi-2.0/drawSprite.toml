@@ -7,9 +7,20 @@ Draws a specific frame from a previously loaded spritesheet with optional color,
 and rotation parameters.
 """
 example = """
-$.screen( "300x200" );
-$.loadSpritesheet( { "src": "sprites.png", "name": "sprites", "width": 16, "height": 16 } );
-$.drawSprite( { "name": "sprites", "frame": 0, "x": 20, "y": 20 } );
+$.screen( "150x100" );
+$.loadSpritesheet( "media/cat_sprite.png", "cat", 34, 34, 1 );
+let catData;
+$.ready( () => {
+	catData = $.getSpritesheetData( "cat" );
+	requestAnimationFrame( animate );
+} );
+
+function animate( t ) {
+	$.cls();
+	const frame = Math.round( t / 100 ) % catData.frameCount;
+	$.drawSprite( "cat", frame, 75, 50, null, 0.5, 0.5 );
+	requestAnimationFrame( animate );
+}
 """
 
 [[parameters]]

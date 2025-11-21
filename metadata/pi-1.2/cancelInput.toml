@@ -4,12 +4,12 @@ isScreen = true
 summary = "Cancels all previous input commands."
 description = ""
 example = """
-$.screen("300x200");\r
-$.print("\\n");\r
-$.input("What is your name?", null);\r
-$.onkey( "Escape", "down", function () {  \r
-\t$.print("\\nInput Canceled");\r
-\t$.cancelInput();\r
+$.screen( "300x200" );
+$.print( "\\n" );
+$.input( "What is your name?", null );
+$.onkey( "Escape", "down", function () {
+	$.print( "\\nInput Canceled" );
+	$.cancelInput();
 }, true );"""
 parameters = [ ]
 

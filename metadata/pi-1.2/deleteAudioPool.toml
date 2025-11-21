@@ -4,8 +4,17 @@ isScreen = false
 summary = "Deletes an audio pool."
 description = ""
 example = """
-var bombPool = $.createAudioPool("/sounds/bomb.wav", 1);\r
-$.deleteAudioPool(bombPool);"""
+$.screen( "300x200" );
+var bombPool = $.createAudioPool( "media/bomb.wav", 5 );
+$.ready( function () {
+	$.print( "Press any key to try to play bomb sound." );
+	$.deleteAudioPool( bombPool );
+	$.onkey( "any", "down", () => {
+		$.print( "SILENCE ", true );
+		$.playAudioPool( bombPool );
+	} );
+} );
+"""
 
 [[parameters]]
 name = "audioId"

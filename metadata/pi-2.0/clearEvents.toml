@@ -7,11 +7,28 @@ Clears queued/registered events. If type is provided, clears only that event typ
 events for all registered types.
 """
 example = """
-// Clear all events
-$.clearEvents();
+$.screen( "300x200" );
+$.print( "Move mouse or touch to paint screen click/touch up to stop." );
+$.onpress( "move", pressMove );
+$.onpress( "up", pressStop );
 
-// Clear only keyboard events
-$.clearEvents( { "type": "keyboard" } );
+// Press move function
+function pressMove( data ) {
+	$.setPosPx( data.x, data.y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 8 );
+	$.print( "+", true );
+}
+
+// Press stop function
+function pressStop() {
+	$.setColor( 14 );
+	var pos = $.getPos();
+	$.setPos( pos.col - 4, pos.row );
+	$.print( "Stopped!", true );
+	$.clearEvents();
+}
 """
 
 [[parameters]]
