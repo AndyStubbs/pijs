@@ -91,7 +91,10 @@ function registerCommands() {
 
 	// Register non-screen commands
 	g_commands.addCommand( "setDefaultPal", setDefaultPal, false, [ "pal" ] );
+	g_commands.addCommand( "getDefaultPal", getDefaultPal, false, [ "include0" ] );
 	g_commands.addCommand( "setDefaultColor", setDefaultColor, false, [ "color" ] );
+	g_commands.addCommand( "getDefaultColor", getDefaultColor, false, [ "asIndex" ] );
+	g_commands.addCommand( "createColor", createColor, false, [ "color" ] );
 
 	// Register screen commands
 	g_commands.addCommand( "setColor", setColor, true, [ "color" ] );
@@ -150,6 +153,25 @@ function setDefaultPal( options ) {
 	}
 }
 
+// Get default pal
+function getDefaultPal( options ) {
+	const include0 = options.include0 ?? null;
+	const filteredPal = [];
+	
+	// Set the start index to 0 if including 0 which is the transparent balck color
+	let startIndex = 0;
+	if( include0 === null ) {
+		startIndex = 1;
+	}
+
+	// Need to explicitly convert each color because I don't want the default pal to be modified
+	// outside.
+	for( let i = startIndex; i < m_defaultPal.length; i += 1 ) {
+		filteredPal.push( { ...m_defaultPal[ i ] } );
+	}
+	return filteredPal;
+}
+
 // Set default color
 function setDefaultColor( options ) {
 	let c = options.color;
@@ -167,6 +189,28 @@ function setDefaultColor( options ) {
 		}
 		m_defaultColor = c;
 	}
+}
+
+// Get default color
+function getDefaultColor( options ) {
+	const asIndex = options.asIndex ?? true;
+	if( asIndex ) {
+		const fakeScreenData = { "pal": m_defaultPal, "palMap": m_defaultPalMap };
+		return findColorIndexByColorValue( fakeScreenData, m_defaultColor );
+	}
+	return g_utils.createColor( m_defaultColor.array );
+}
+
+function createColor( options ) {
+	const color = g_utils.convertToColor( options.color );
+	if( color === null ) {
+		const error = new TypeError(
+			`setColor: Parameter color is a valid color format.`
+		);
+		error.code = "INVALID_PARAMETER";
+		throw error;
+	}
+	return color
 }
 
 // Set color

@@ -21,6 +21,7 @@
 </head>
 <body>
 <script>
+
 	$.ready( function () {
 		const customPalette = [
 			"#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF", "#FFFFFF", "#800000",
@@ -39,7 +40,42 @@
 		// Test setBgColor
 		$.setBgColor( "#333" );
 
-		// Start the test
+		// Test get default pal
+		const defaultPal = $.getDefaultPal();
+		if( defaultPal.length !== customPalette.length || defaultPal[ 0 ].array[ 0 ] !== 255 ) {
+			$.print( "getDefaultPal test failed!" );
+			return;
+		}
+		const defaultPal2 = $.getDefaultPal( true );
+		if( defaultPal2.length !== customPalette.length + 1 || defaultPal2[ 0 ].array[ 3 ] !== 0 ) {
+			$.print( "getDefaultPal test 2 failed!" );
+			return;
+		}
+
+		// Test get default color
+		const defaultColor = $.getDefaultColor();
+		if( defaultColor !== 1 ) {
+			$.print( "getDefaultPal test failed" );
+			return;
+		}
+		const defaultColor2 = $.getDefaultColor( false );
+		if( defaultColor2.array[ 0 ] !== 255 ) {
+			$.print( "getDefaultPal test 2 failed" );
+			return;
+		}
+
+		// Test createColor
+		const newColor = $.createColor( "rgba(0, 255, 0, 255)" );
+		if( newColor.array[ 1 ] !== 255 ) {
+			$.print( "newColor test failed" );
+			return;
+		}
+		const newColor2 = $.createColor( "#00F" );
+		if( newColor2.array[ 2 ] !== 255 ) {
+			$.print( "newColor test2 failed" );
+			return;
+		}
+
 		$.print( "Starting Colors Test" );
 
 		// Test getPal
@@ -94,7 +130,6 @@
 		$.setColor( "black" );
 		$.print( "Added Color: \"black\"" );
 		drawPaletteSwatches( 10, 228 );
-
 	} );
 
 	function drawPaletteSwatches( startX, startY ) {
