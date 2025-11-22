@@ -5,6 +5,20 @@ summary = "Returns frame metadata for a spritesheet."
 description = """
 Gets spritesheet data including frame count and per-frame bounding boxes.
 """
+example = """
+$.screen( "300x200" );
+$.loadSpritesheet( {
+	"src": "media/cat_sprite.png",
+	"name": "cat",
+	"width": 34,
+	"height": 34,
+	"margin": 1
+} );
+$.ready( () => {
+	const data = $.getSpritesheetData( { "name": "cat" } );
+	$.print( `Cat sprite has ${data.frameCount} frames` );
+} );
+"""
 
 [[parameters]]
 name = "name"
@@ -14,8 +28,3 @@ description = "Spritesheet name."
 [[returns]]
 type = "SpritesheetData"
 description = "Object with frameCount and frames array (index, x, y, width, height, left, top, right, bottom)."
-
-example = """
-$.loadSpritesheet( { "src": "sprites.png", "name": "sprites", "width": 16, "height": 16 } );
-const data = $.getSpritesheetData( { "name": "sprites" } );
-"""

@@ -10,7 +10,7 @@ example = """
 $.screen( "320x200" );
 $.setFont( 1 );
 const rows = $.getRows();
-console.log( `Screen fits ${rows} rows` );
+$.print( `Screen fits ${rows} rows` );
 """
 
 [[returns]]

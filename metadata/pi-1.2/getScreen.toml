@@ -8,6 +8,19 @@ operations for a specific screen. This means you do not have to call setScreen t
 screen every time you want to draw on a different screen. There is also a tiny performance advantage
 for drawing commands called directly on a screen object.
 """
+example = """
+$.screen( "320x200" );
+$.screen( "320x200" );
+const screen0 = $.getScreen( 0 );
+screen0.print( `Screen: ${screen0.id}` );
+const screen1 = $.getScreen( 1 );
+
+// Set screen1 to have a transparent background so it doesn't cover screen 0
+screen1.setBgColor( 0 );
+screen1.setPosPx( 0, 100 );
+screen1.print( `Screen: ${screen1.id}` );
+$.print( "Active Screen" );
+"""
 
 [[parameters]]
 name = "screenId"
@@ -18,12 +31,3 @@ description = "The screen ID to retrieve."
 type = "Screen"
 description = "Screen API object with all graphics commands and screen=true and id property."
 
-example = """
-$.screen( "320x200" );
-$.screen( "320x200" );
-const screen0 = $.getScreen( 0 );
-const screen1 = $.getScreen( 1 );
-screen0.print( `Screen: ${screen0.id}` );
-screen1.print( `Screen: ${screen1.id}` );
-$.print( "Active Screen" );
-"""

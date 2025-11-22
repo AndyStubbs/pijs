@@ -3,6 +3,24 @@ category = "keyboard"
 isScreen = false
 summary = "Gets the most recent status of keys."
 description = ""
+example = """
+$.screen( "300x200" );
+requestAnimationFrame( run );
+function run() {
+	let keys = $.inkey();
+	$.cls();
+	$.print( "Press any key" );
+	for( let key in $.inkey() ) {
+		$.print( "--------------------------" );
+		$.print( "key:      " + keys[ key ].key );
+		$.print( "location: " + keys[ key ].location );
+		$.print( "code:     " + keys[ key ].code );
+		$.print( "keyCode:  " + keys[ key ].keyCode );
+	}
+	requestAnimationFrame( run );
+}
+"""
+
 [[parameters]]
 name = "key"
 type = "any"
@@ -14,21 +32,3 @@ type = "void"
 description = """
 If the first parameter is left blank then it will return an array of key data objects. If not then it returns the\r
 an object containing data for a single key."""
-example = """
-$.screen( "300x200" );\r
-var frame = requestAnimationFrame( run );\r
-function run() {\r
-\tvar keys, key;\r
-\tkeys = $.inkey();\r
-\t$.cls();\r
-\t$.print( "Press any key" );\r
-\tfor( key in $.inkey() ) {\r
-\t\t$.print( "--------------------------" );\r
-\t\t$.print( "key:      " + keys[ key ].key );\r
-\t\t$.print( "location: " + keys[ key ].location );\r
-\t\t$.print( "code:     " + keys[ key ].code );\r
-\t\t$.print( "keyCode:  " + keys[ key ].keyCode );\r
-\t}\r
-\tframe = requestAnimationFrame( run );\r
-}\r
-"""

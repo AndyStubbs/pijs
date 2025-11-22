@@ -23,21 +23,29 @@ The returned gamepad object contains:
 - **getAxisChanged(axisIndex)**: Get if axis value changed this frame
 """
 example = """
-setInterval( () => {
+$.screen( "300x200" );
+let x = 150;
+let y = 100;
+let lt = 0;
+requestAnimationFrame( run );
+function run( t ) {
+	let gamepads = $.ingamepad();
+	let factor = ( t - lt ) * 0.5;
+	lt = t;
 	$.cls();
-	const gamepad = $.ingamepad( 0 );
-	if( gamepad ) {
-		if( gamepad.getButtonJustPressed( 0 ) ) {
-			$.print( "Button 0 pressed!" );
+	if( gamepads.length > 0 ) {
+		x = Math.min( Math.max( x + gamepads[ 0 ].axes[ 0 ] * factor, 0 ), 299 );
+		y = Math.min( Math.max( y + gamepads[ 0 ].axes[ 1 ] * factor, 0 ), 199 );
+		if( gamepads[ 0 ].getButtonPressed( 0 ) ) {
+			$.setColor( 2 );
+		} else {
+			$.setColor( 15 );
 		}
-		const leftStickX = gamepad.getAxis( 0 );
-		const leftStickY = gamepad.getAxis( 1 );
+		$.circle( Math.floor( x ), Math.floor( y ) , 9 );
+		$.pset( Math.floor( x ), Math.floor( y ) );
 	}
-
-	// Get all gamepads
-	const allGamepads = $.ingamepad();
-	$.print( `${allGamepads.length} gamepads connected` );
-} );
+	requestAnimationFrame( run );
+}
 """
 
 [[parameters]]

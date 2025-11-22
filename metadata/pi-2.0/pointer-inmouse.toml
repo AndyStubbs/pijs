@@ -8,8 +8,38 @@ Gets the current mouse state. If mouse tracking is not started, it will be start
 This is a convenience function that combines startMouse() and getMouse().
 """
 example = """
-const mouse = $.inmouse();
-$.print( `Mouse at ${mouse.x}, ${mouse.y}` );
+$.screen( "300x200" );
+requestAnimationFrame( run );
+let tail = [];
+let c = 7;
+let pal = $.getPal();
+function run() {
+	$.cls();
+	const mouse = $.inmouse();
+	if( mouse.buttons > 0 ) {
+		c = ( c + 1 ) % pal.length;
+		if( c === 1 ) {
+			c = 1;
+		}
+	}
+	if(
+		mouse.lastX !== undefined && mouse.lastY !== undefined
+	) {
+		tail.push( [ mouse.lastX, mouse.lastY, c ] );
+		if( tail.length > 50 ) {
+			tail.shift();
+		}
+	}
+	let lastPt = null;
+	for( const pt of tail ) {
+		if( lastPt !== null ) {
+			$.setColor( pt[ 2 ] );
+			$.line( lastPt[ 0 ], lastPt[ 1 ], pt[ 0 ], pt[ 1 ] );
+		}
+		lastPt = pt;
+	}
+	requestAnimationFrame( run );
+}
 """
 
 [[returns]]
