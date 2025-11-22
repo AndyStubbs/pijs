@@ -4,14 +4,38 @@ isScreen = true
 summary = "Gets the most recent mouse status."
 description = ""
 example = """
-$.screen( "4x4" );\r
-var interval = setInterval( function () {\r
-\tvar mouse = $.inmouse();\r
-\tif( mouse.buttons > 0 ) {\r
-\t\t$.setColor( Math.floor( Math.random() * 9 ) + 1 );\r
-\t\t$.pset( mouse.x, mouse.y );\r
-\t}\r
-}, 50 );\r
+$.screen( "300x200" );
+requestAnimationFrame( run );
+let tail = [];
+let c = 7;
+let pal = $.getPal();
+function run() {
+	$.cls();
+	const mouse = $.inmouse();
+	if( mouse.buttons > 0 ) {
+		c = ( c + 1 ) % pal.length;
+		if( c === 1 ) {
+			c = 1;
+		}
+	}
+	if(
+		mouse.lastX !== undefined && mouse.lastY !== undefined
+	) {
+		tail.push( [ mouse.lastX, mouse.lastY, c ] );
+		if( tail.length > 50 ) {
+			tail.shift();
+		}
+	}
+	let lastPt = null;
+	for( const pt of tail ) {
+		if( lastPt !== null ) {
+			$.setColor( pt[ 2 ] );
+			$.line( lastPt[ 0 ], lastPt[ 1 ], pt[ 0 ], pt[ 1 ] );
+		}
+		lastPt = pt;
+	}
+	requestAnimationFrame( run );
+}
 """
 
 parameters = [ ]

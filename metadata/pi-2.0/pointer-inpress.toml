@@ -11,9 +11,47 @@ The returned object contains position, buttons, action, and type properties. For
 includes a touches array with all active touches.
 """
 example = """
-const press = $.inpress();
-if( press.buttons > 0 ) {
-	$.print( `${press.type} pressed at ${press.x}, ${press.y}` );
+$.screen( "300x200" );
+$.setPinchZoom( false );
+requestAnimationFrame( run );
+let tail = [];
+function run() {
+	const press = $.inpress();
+	$.cls();
+	
+	// Draw press indicator
+	if( press.buttons > 0 ) {
+		$.setColor( 15 );
+		$.circle( press.x, press.y, 10 );
+		
+		// Draw trail while dragging
+		if(
+			press.lastX !== undefined && press.lastY !== undefined &&
+			press.action === "move"
+		) {
+			tail.push( [ press.x, press.y ] );
+			if( tail.length > 50 ) {
+				tail.shift();
+			}
+			let lastPt = null;
+			for( const pt of tail ) {
+				if( lastPt !== null ) {
+					$.setColor( 7 );
+					$.line( lastPt[ 0 ], lastPt[ 1 ], pt[ 0 ], pt[ 1 ] );
+				}
+				lastPt = pt;
+			}
+		}
+		
+		// Show input type
+		$.setColor( 2 );
+		$.print( `Input: ${press.type}` );
+	} else {
+		$.print( "Press and drag to draw" );
+		tail = [];
+	}
+	
+	requestAnimationFrame( run );
 }
 """
 

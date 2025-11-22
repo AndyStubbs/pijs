@@ -16,26 +16,16 @@ For numeric input, empty input or just \"-\" returns 0. For integer input, decim
 not allowed.
 """
 example = """
-// Basic text input
-const name = await $.input( "Enter your name: " );
-$.print( `Hello, ${name}!` );
-
-// Number input with callback
-$.input( {
-	"prompt": "Enter age: ",
-	"isNumber": true,
-	"isInteger": true,
-	"allowNegative": false,
-	"fn": ( age ) => {
-		$.print( `You are ${age} years old.` );
-	}
-} );
-
-// Integer input
-const count = await $.input( {
-	"prompt": "Count: ",
-	"isInteger": true,
-	"maxLength": 3
+$.screen( "300x200" );
+$.input( "Enter your name: ", async ( name ) => {
+	$.print( `Hello, ${name}!` );
+	const age = await $.input( {
+		"prompt": "Enter age: ",
+		"isNumber": true,
+		"isInteger": true,
+		"allowNegative": false
+	} );
+	$.print( `You are ${age} years old.` );
 } );
 """
 
@@ -83,4 +73,5 @@ optional = true
 
 [[returns]]
 type = "Promise<string>"
+typeDesc = "Promise"
 description = "Promise that resolves with the input value (string or number) or null if cancelled."

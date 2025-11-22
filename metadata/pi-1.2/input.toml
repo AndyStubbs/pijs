@@ -24,6 +24,19 @@ On touch-enabled devices, you can add an onscreen keyboard with the onscreenKeyb
 The input prompt is displayed at the current text cursor position and updates in real-time as the
 user types. The cursor blinks to indicate the input field is active.
 """
+example = """
+$.screen( "300x200" );
+$.input( "Enter your name: ", async ( name ) => {
+	$.print( `Hello, ${name}!` );
+	const age = await $.input( {
+		"prompt": "Enter age: ",
+		"isNumber": true,
+		"isInteger": true,
+		"allowNegative": false
+	} );
+	$.print( `You are ${age} years old.` );
+} );
+"""
 
 [[parameters]]
 name = "prompt"
@@ -64,14 +77,5 @@ optional = true
 
 [[returns]]
 type = "Promise<string>"
+typeDesc = "Promise"
 description = "A promise that resolves with the user's input as a string when Enter is pressed."
-
-example = """
-$.screen( "300x200" );\r
-askQuestions();\r
-async function askQuestions() {\r
-\tvar name = await $.input( "What is your name? " );\r
-\tvar age = await $.input( "How old are you? ", null, true, true, false, "always" );\r
-\t$.print( "Your name is " + name + " you are " + age + " years old." );\r
-}\r
-"""

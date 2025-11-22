@@ -14,15 +14,19 @@ to wait for the image to load before using the font.
 """
 example = """
 const fontId = $.loadFont( {
-	"src": "font.png",
-	"width": 8,
-	"height": 16,
-	"margin": 1,
-	"charset": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+	"src": "media/gnsh.png",
+	"width": 5,
+	"height": 12,
+	"margin": 0,
+	"charset": " !\\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]" +
+			   "^_`abcdefghijklmnopqrstuvwxyz{|}~"
 } );
 $.ready( () => {
-	$.screen( "320x200" );
+	$.screen( "300x200" );
 	$.setFont( fontId );
+	$.setBgColor( "#555" );
+	$.setPosPx( 0, 85 );
+	$.print( "The quick brown fox jumped over the lazy dogs! 123456789", true, true );
 } );
 """
 
