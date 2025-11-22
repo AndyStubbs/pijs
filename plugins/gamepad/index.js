@@ -21,6 +21,7 @@ const m_onConnectHandlers = [];
 const m_onDisconnectHandlers = [];
 
 let m_isInitialized = false;
+let m_isStopped = false;
 let m_isLooping = false;
 let m_gamepadLoopId = null;
 let m_axesSensitivity = 0.2;
@@ -69,6 +70,9 @@ function startGamepad() {
 		scanForGamepads();
 	}
 
+	// Remove explicit stops
+	m_isStopped = false;
+
 	if( !m_isLooping ) {
 		m_isLooping = true;
 		m_gamepadLoopId = requestAnimationFrame( gamepadLoop );
@@ -76,6 +80,9 @@ function startGamepad() {
 }
 
 function stopGamepad() {
+
+	// Explicitly stop gamepad to prevent autostart when ingamepad is called
+	m_isStopped = true;
 	if( m_isLooping ) {
 		m_isLooping = false;
 		if( m_gamepadLoopId ) {
@@ -88,6 +95,10 @@ function stopGamepad() {
 function ingamepad( options ) {
 	const gamepadIndex = options.gamepadIndex;
 
+	// If stopped explicitly then return without auto starting
+	if( m_isStopped ) {
+		return null;
+	}
 	startGamepad();
 	updateGamepads();
 
