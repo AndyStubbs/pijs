@@ -8,13 +8,28 @@ Removes a previously registered press event handler. If fn is null, removes all 
 the specified mode.
 """
 example = """
-const handler = ( pressData ) => {
-	$.print( "Press moved" );
-};
+$.screen( "300x200" );
+$.print( "Move mouse or touch to paint screen, click/touch up to stop." );
+$.onpress( "move", pressMove );
+$.onpress( "up", pressStop, true );
 
-$.onpress( "move", handler );
-// Later...
-$.offpress( "move", handler );
+// Press move function receives pressData and optional customData
+function pressMove( pressData, customData ) {
+	$.setPosPx( pressData.x, pressData.y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 8 );
+	$.print( "+", true );
+}
+
+// Press stop function receives pressData and optional customData
+function pressStop( pressData, customData ) {
+	$.setColor( 14 );
+	var pos = $.getPos();
+	$.setPos( pos.col - 4, pos.row );
+	$.print( "Stopped!", true );
+	$.offpress( "move", pressMove );
+}
 """
 
 [[parameters]]

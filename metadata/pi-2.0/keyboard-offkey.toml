@@ -8,13 +8,23 @@ Removes a previously registered key event handler. All parameters must match the
 call exactly for the handler to be removed.
 """
 example = """
-const handler = ( keyData ) => {
-	$.print( "Key pressed!" );
-};
+$.screen( "300x200" );
+$.print( "Press any key." );
+$.print( "Press q to stop" );
+$.onkey( "any", "down", keyPress );
+$.onkey( "q", "down", stopPress );
 
-$.onkey( "Enter", "down", handler );
-// Later...
-$.offkey( "Enter", "down", handler );
+// Key press function receives keyData
+function keyPress( keyData ) {
+	$.print( "You pressed " + keyData.key + "!" );
+}
+
+// Stop key press function receives keyData
+function stopPress( keyData ) {
+	$.print( "You pressed q! Stopping." );
+	$.offkey( "any", "down", keyPress );
+	$.offkey( "q", "down", keyPress );
+}
 """
 
 [[parameters]]

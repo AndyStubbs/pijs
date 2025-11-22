@@ -7,19 +7,21 @@ width and height the frames will be auto generated. Use getSpritesheetData to ge
 frame count and frame dimensions."""
 description = ""
 example = """
-var frame, interval;\r
-$.screen( "300x200" );\r
-$.loadSpritesheet( "/images/monkey.png", "monkey" );\r
-$.ready( function () {\r
-\tframe = 0;\r
-\tinterval = setInterval( run, 500 );\r
-\tfunction run() {\r
-\t\tframe += 1;\r
-\t\t$.cls();\r
-\t\t$.drawSprite( "monkey", frame % 2, 150, 100, 0, 0.5, 0.5 );\r
-\t}\r
-\trun();\r
-} );"""
+$.screen( "150x100" );
+$.loadSpritesheet( "media/cat_sprite.png", "cat", 34, 34, 1 );
+let catData;
+$.ready( () => {
+	catData = $.getSpritesheetData( "cat" );
+	requestAnimationFrame( animate );
+} );
+
+function animate( t ) {
+	$.cls();
+	const frame = Math.round( t / 100 ) % catData.frameCount;
+	$.drawSprite( "cat", frame, 75, 50 );
+	requestAnimationFrame( animate );
+}
+"""
 
 [[parameters]]
 name = "src"

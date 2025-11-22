@@ -11,10 +11,18 @@ A value of 0 means no dead zone (all input is registered). A value of 1 means ma
 (almost no input registered). Typical values are around 0.1-0.3.
 """
 example = """
-$.startGamepad();
-$.setGamepadSensitivity( 0.2 ); // 20% dead zone
-const gamepad = $.ingamepad( 0 );
-const x = gamepad.getAxis( 0 ); // Will be 0 if stick is within dead zone
+$.screen( "300x200" );
+$.setGamepadSensitivity( 0.2 );
+run();
+function run() {
+	const gamepad = $.ingamepad( 0 );
+	if( gamepad ) {
+		const vAxis = gamepad.getAxis( 0 );
+		$.cls();
+		$.circle( Math.floor( 300 * ( vAxis / 2 ) ) + 150, 100, 8 );
+	}
+	requestAnimationFrame( run );
+}
 """
 
 [[parameters]]

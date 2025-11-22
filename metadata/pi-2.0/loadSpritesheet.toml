@@ -6,9 +6,21 @@ description = """
 Loads a spritesheet and slices it either automatically (connected components) or by a fixed grid.
 """
 example = """
-const name = $.loadSpritesheet( {
-	"src": "tiles.png", "name": "tiles", "width": 16, "height": 16, "margin": 0
+$.screen( "150x100" );
+$.setDefaultAnchor( 0.5, 0.5 );
+$.loadSpritesheet( "media/cat_sprite.png", "cat", 34, 34, 1 );
+let catData;
+$.ready( () => {
+	catData = $.getSpritesheetData( "cat" );
+	requestAnimationFrame( animate );
 } );
+
+function animate( t ) {
+	$.cls();
+	const frame = Math.round( t / 100 ) % catData.frameCount;
+	$.drawSprite( "cat", frame, 75, 50 );
+	requestAnimationFrame( animate );
+}
 """
 
 [[parameters]]

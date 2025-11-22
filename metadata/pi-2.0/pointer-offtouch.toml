@@ -8,13 +8,28 @@ Removes a previously registered touch event handler. If fn is null, removes all 
 the specified mode.
 """
 example = """
-const handler = ( touches ) => {
-	$.print( "Touch moved" );
-};
+$.screen( "300x200" );
+$.print( "Touch and drag to paint screen, touch up to stop." );
+$.ontouch( "move", touchMove );
+$.ontouch( "end", touchStop, true );
 
-$.ontouch( "move", handler );
-// Later...
-$.offtouch( "move", handler );
+// Touch move function receives touchDataArray and optional customData
+function touchMove( touches, customData ) {
+	$.setPosPx( touches[ 0 ].x, touches[ 0 ].y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 8 );
+	$.print( "+", true );
+}
+
+// Touch stop function receives touchDataArray and optional customData
+function touchStop( touches, customData ) {
+	$.setColor( 14 );
+	var pos = $.getPos();
+	$.setPos( pos.col - 4, pos.row );
+	$.print( "Stopped!", true );
+	$.offtouch( "move", touchMove );
+}
 """
 
 [[parameters]]

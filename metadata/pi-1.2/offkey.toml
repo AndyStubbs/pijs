@@ -8,6 +8,26 @@ reference, key, and mode must exactly match the ones used when registering the h
 
 The callback function receives keyData containing key, location, code, and keyCode properties.
 """
+example = """
+$.screen( "300x200" );
+$.print( "Press any key." );
+$.print( "Press q to stop" );
+$.onkey( "any", "down", keyPress );
+$.onkey( "Q", "down", stopPress );
+
+// Key press function receives keyData
+function keyPress( keyData ) {
+	$.print( "You pressed " + keyData.key + "!" );
+}
+
+// Stop key press function receives keyData
+function stopPress( keyData ) {
+	$.print( "You pressed Q! Stopping." );
+	$.offkey( "any", "down", keyPress );
+	$.offkey( "Q", "down", keyPress );
+}
+"""
+
 
 [[parameters]]
 name = "key"
@@ -29,23 +49,3 @@ description = "Callback function used when registering with onkey."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );\r
-$.print( "Press any key." );\r
-$.print( "Press q to stop" );\r
-$.onkey( "any", "down", keyPress );\r
-$.onkey( "Q", "down", stopPress );\r
-\r
-// Key press function receives keyData\r
-function keyPress( keyData ) {\r
-\t$.print( "You pressed " + keyData.key + "!" );\r
-}\r
-\r
-// Stop key press function receives keyData\r
-function stopPress( keyData ) {\r
-\t$.print( "You pressed Q! Stopping." );\r
-\t$.offkey( "any", "down", keyPress );\r
-\t$.offkey( "Q", "down", keyPress );\r
-}\r
-"""

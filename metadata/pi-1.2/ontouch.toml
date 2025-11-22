@@ -20,13 +20,28 @@ touch data objects, one for each active touch point. Each touch data object cont
 identifier), lastX, lastY, action, and type properties. The customData parameter is optional.
 """
 example = """
-$.screen( "4x4" );\r
-$.setPinchZoom( false );\r
-$.ontouch( "start", function ( touches, customData ) {\r
-\tvar touch = touches[ 0 ];\r
-\t$.setColor( Math.floor( Math.random() * 9 ) + 1 );\r
-\t$.pset( touch.x, touch.y );\r
-} );\r
+$.screen( "300x200" );
+$.print( "Touch to paint screen, touch end to stop." );
+$.ontouch( "move", touchMove );
+$.ontouch( "end", touchStop, true );
+
+// Touch move function receives touchData and optional customData
+function touchMove( touchData, customData ) {
+	$.setPosPx( touchData[ 0 ].x, touchData[ 0 ].y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 8 );
+	$.print( "+", true );
+}
+
+// touch stop function receives touchData and optional customData
+function touchStop( touchData, customData ) {
+	$.setColor( 14 );
+	var pos = $.getPos();
+	$.setPos( pos.col - 4, pos.row );
+	$.print( "Stopped!", true );
+	$.offtouch( "move", touchMove );
+}
 """
 
 [[parameters]]

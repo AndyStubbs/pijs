@@ -11,10 +11,11 @@ Multiple callbacks can be registered. The callback will also be triggered for an
 are already connected when the callback is registered.
 """
 example = """
+$.screen( "300x200" );
+$.print( "Connect gamepad and press a button or move an axis to connect" );
 $.onGamepadConnected( ( gamepad ) => {
 	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
 } );
-$.startGamepad();
 """
 
 [[parameters]]

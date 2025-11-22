@@ -9,6 +9,24 @@ with ongamepad.
 
 The callback data structure varies by event mode (see ongamepad documentation for details).
 """
+example = """
+$.screen( "300x300" );
+$.print( "Press button 3 to stop" );
+$.ongamepad( 0, "pressed", "any", pressButton );
+$.ongamepad( 0, "pressed", 3, stop );
+
+// Press button function receives button data and optional customData
+function pressButton( btn, customData ) {
+	$.print( "Button " + btn.index + " pressed" );
+}
+
+// Stop function receives event data and optional customData
+function stop( data, customData ) {
+	$.offgamepad( 0, "pressed", "any", pressButton );
+	$.offgamepad( 0, "pressed", 3, stop );
+	$.print( "Stopped" );
+}
+"""
 
 [[parameters]]
 name = "gamepadIndex"
@@ -34,23 +52,3 @@ description = "Callback function used when registering with ongamepad."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x300" );\r
-$.print( "Press button 3 to stop" );\r
-$.ongamepad( 0, "pressed", "any", pressButton );\r
-$.ongamepad( 0, "pressed", 3, stop );\r
-\r
-// Press button function receives button data and optional customData\r
-function pressButton( btn, customData ) {\r
-\tconsole.log( btn );\r
-\t$.print( "Button " + btn.index + " pressed" );\r
-}\r
-\r
-// Stop function receives event data and optional customData\r
-function stop( data, customData ) {\r
-\t$.offgamepad( 0, "pressed", "any", pressButton );\r
-\t$.offgamepad( 0, "pressed", 3, stop );\r
-\t$.print( "Stopped" );\r
-}\r
-"""

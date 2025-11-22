@@ -9,6 +9,37 @@ reference and signature must exactly match the one passed to the onclick command
 The callback receives (clickData, customData) where clickData contains x, y, buttons, action, type,
 lastX, and lastY properties.
 """
+example = """
+$.screen( "300x200" );
+var hitBox = {
+	"x": 25,
+	"y": 25,
+	"width": 100,
+	"height": 100
+};
+
+// Draw a green box
+$.setColor( 2 );
+$.rect( hitBox );
+
+// Setup the onclick function for the hitBox
+$.onclick( clickBox, false, hitBox );
+
+// Click function
+function clickBox() {
+
+	// Draw a red box
+	$.setColor( 4 );
+	$.rect( hitBox );
+	$.offclick( clickBox );
+
+	// Wait a second then clear the box
+	setTimeout( function () {
+		$.setColor( 0 );
+		$.rect( hitBox );
+	}, 1000 );
+}
+"""
 
 [[parameters]]
 name = "fn"
@@ -19,35 +50,3 @@ description = "Callback function used when registering with onclick."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );\r
-var hitBox = {\r
-\t"x": 25,\r
-\t"y": 25,\r
-\t"width": 100,\r
-\t"height": 100\r
-};\r
-\r
-// Draw a green box\r
-$.setColor( 2 );\r
-$.rect( hitBox );\r
-\r
-// Setup the onclick function for the hitBox\r
-$.onclick( clickBox, false, hitBox );\r
-\r
-// Click function\r
-function clickBox() {\r
-\r
-\t// Draw a red box\r
-\t$.setColor( 4 );\r
-\t$.rect( hitBox );\r
-\t$.offclick( clickBox );\r
-\r
-\t// Wait a second then clear the box\r
-\tsetTimeout( function () {\r
-\t\t$.setColor( 0 );\r
-\t\t$.rect( hitBox );\r
-\t}, 1000 );\r
-}\r
-"""

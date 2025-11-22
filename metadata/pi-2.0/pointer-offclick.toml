@@ -7,13 +7,25 @@ description = """
 Removes a previously registered click event handler. If fn is null, removes all click handlers.
 """
 example = """
+$.screen( "300x200" );
 const handler = ( clickData ) => {
-	$.print( "Clicked!" );
+	$.setPosPx( clickData.x, clickData.y );
+	$.setColor( 3 );
+	$.print( "Clicked!", true );
 };
-
 $.onclick( handler );
-// Later...
-$.offclick( handler );
+let countDown = 5;
+const interval = setInterval( () => {
+	$.setColor( 7 );
+	$.setPos( 0, 5 - countDown );
+	$.print( `Count down to offclick: ${countDown}` );
+	countDown -= 1;
+	if( countDown === -1 ) {
+		$.print( "Click is now disabled!" );
+		clearInterval( interval );
+		$.offclick( handler );
+	}
+}, 1000 );
 """
 
 [[parameters]]

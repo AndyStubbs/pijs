@@ -19,22 +19,22 @@ combinations. The keyData object contains: key (the key name), location (key loc
 key code), and keyCode (numeric key code).
 """
 example = """
-$.screen( "300x200" );\r
-$.print( "Press any key." );\r
-$.print( "Press q to stop" );\r
-$.onkey( "any", "down", keyPress );\r
-$.onkey( "Q", "down", stopPress, true );\r
-\r
-// Key press function receives keyData\r
-function keyPress( keyData ) {\r
-\t$.print( "You pressed " + keyData.key + "!" );\r
-}\r
-\r
-// Stop key press function receives keyData\r
-function stopPress( keyData ) {\r
-\t$.print( "You pressed Q! Stopping." );\r
-\t$.offkey( "any", "down", keyPress );\r
-}\r
+$.screen( "300x200" );
+$.print( "Press any key." );
+$.print( "Press q to stop" );
+$.onkey( "any", "down", keyPress );
+$.onkey( "Q", "down", stopPress, true );
+
+// Key press function receives keyData
+function keyPress( keyData ) {
+	$.print( "You pressed " + keyData.key + "!" );
+}
+
+// Stop key press function receives keyData
+function stopPress( keyData ) {
+	$.print( "You pressed Q! Stopping." );
+	$.offkey( "any", "down", keyPress );
+}
 """
 
 [[parameters]]

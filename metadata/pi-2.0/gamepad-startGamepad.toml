@@ -12,10 +12,28 @@ If gamepads are already connected when this is called, they will be automaticall
 added to the gamepad list.
 """
 example = """
-$.startGamepad();
+$.screen( "300x200" );
+$.print( "Connect gamepad and press a button or move an axis to connect" );
 $.onGamepadConnected( ( gamepad ) => {
 	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
+	$.print( "Game is will start in 3 seconds" );
+	$.stopGamepad();
+	setTimeout( () => {
+		$.print( "Gamepad is now started" );
+		$.startGamepad();
+	}, 3000 );
 } );
+
+run();
+function run() {
+	const gamepad = $.ingamepad( 0 );
+	if( gamepad ) {
+		const vAxis = gamepad.getAxis( 0 );
+		$.cls();
+		$.circle( Math.floor( 300 * ( vAxis / 2 ) ) + 150, 100, 8 );
+	}
+	requestAnimationFrame( run );
+}
 """
 
 [[returns]]

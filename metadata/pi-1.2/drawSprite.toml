@@ -4,7 +4,6 @@ isScreen = true
 summary = "Draws a sprite from a spritesheet on to the screen. Note: this method will fail if it gets called before the sprite image is loaded."
 description = ""
 example = """
-var monkey, frame, interval;\r
 $.screen( "150x100" );
 $.loadSpritesheet( "media/cat_sprite.png", "cat", 34, 34, 1 );
 let catData;

@@ -8,13 +8,28 @@ Removes a previously registered mouse event handler. If fn is null, removes all 
 the specified mode.
 """
 example = """
-const handler = ( mouseData ) => {
-	$.print( "Mouse moved" );
-};
+$.screen( "300x200" );
+$.print( "Move mouse to paint screen, click to stop." );
+$.onmouse( "move", mouseMove );
+$.onmouse( "up", mouseStop, true );
 
-$.onmouse( "move", handler );
-// Later...
-$.offmouse( "move", handler );
+// Mouse move function receives mouseData and optional customData
+function mouseMove( mouseData, customData ) {
+	$.setPosPx( mouseData.x, mouseData.y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 8 );
+	$.print( "+", true );
+}
+
+// Mouse stop function receives mouseData and optional customData
+function mouseStop( mouseData, customData ) {
+	$.setColor( 14 );
+	var pos = $.getPos();
+	$.setPos( pos.col - 4, pos.row );
+	$.print( "Stopped!", true );
+	$.offmouse( "move", mouseMove );
+}
 """
 
 [[parameters]]

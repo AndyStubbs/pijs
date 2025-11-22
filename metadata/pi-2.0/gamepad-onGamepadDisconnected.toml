@@ -10,6 +10,11 @@ receives a gamepad data object with index, id, mapping, and connected status.
 Multiple callbacks can be registered.
 """
 example = """
+$.screen( "300x200" );
+$.print( "Connect gamepad and press a button or move an axis to connect" );
+$.onGamepadConnected( ( gamepad ) => {
+	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
+} );
 $.onGamepadDisconnected( ( gamepad ) => {
 	$.print( `Gamepad ${gamepad.index} disconnected: ${gamepad.id}` );
 } );

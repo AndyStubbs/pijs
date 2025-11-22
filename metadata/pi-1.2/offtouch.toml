@@ -10,28 +10,28 @@ The callback receives (touchDataArray, customData) where touchDataArray is an ar
 objects containing x, y, id, lastX, lastY, action, and type properties.
 """
 example = """
-$.screen( "300x200" );\r
-$.print( "Touch and drag to paint screen, touch up to stop." );\r
-$.ontouch( "move", touchMove );\r
-$.ontouch( "end", touchStop, true );\r
-\r
-// Touch move function receives touchDataArray and optional customData\r
-function touchMove( touches, customData ) {\r
-\t$.setPosPx( touches[ 0 ].x, touches[ 0 ].y );\r
-\tvar pos = $.getPos();\r
-\t$.setPos( pos.col, pos.row );\r
-\t$.setColor( 8 );\r
-\t$.print( "+", true );\r
-}\r
-\r
-// Touch stop function receives touchDataArray and optional customData\r
-function touchStop( touches, customData ) {\r
-\t$.setColor( 14 );\r
-\tvar pos = $.getPos();\r
-\t$.setPos( pos.col - 4, pos.row );\r
-\t$.print( "Stopped!", true );\r
-\t$.offtouch( "move", touchMove );\r
-}\r
+$.screen( "300x200" );
+$.print( "Touch and drag to paint screen, touch up to stop." );
+$.ontouch( "move", touchMove );
+$.ontouch( "end", touchStop, true );
+
+// Touch move function receives touchDataArray and optional customData
+function touchMove( touches, customData ) {
+	$.setPosPx( touches[ 0 ].x, touches[ 0 ].y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 8 );
+	$.print( "+", true );
+}
+
+// Touch stop function receives touchDataArray and optional customData
+function touchStop( touches, customData ) {
+	$.setColor( 14 );
+	var pos = $.getPos();
+	$.setPos( pos.col - 4, pos.row );
+	$.print( "Stopped!", true );
+	$.offtouch( "move", touchMove );
+}
 """
 
 [[parameters]]

@@ -11,8 +11,9 @@ Supports hit box filtering - if a hitBox is provided, the callback only fires wh
 is within that rectangular area.
 """
 example = """
+$.screen( "300x200" );
 $.onmouse( "down", ( mouseData ) => {
-	$.print( `Mouse clicked at ${mouseData.x}, ${mouseData.y}` );
+	$.print( `Mouse down at ${mouseData.x}, ${mouseData.y}` );
 } );
 
 // With hit box

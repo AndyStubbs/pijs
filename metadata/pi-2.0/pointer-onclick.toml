@@ -11,14 +11,11 @@ unifying mouse clicks and touch taps.
 If no hitBox is provided, the entire screen is used as the hit box.
 """
 example = """
+$.screen( "300x200" );
 $.onclick( ( clickData ) => {
-	$.print( `Clicked at ${clickData.x}, ${clickData.y}` );
+	$.setPosPx( clickData.x, clickData.y );
+	$.print( `Clicked`, true );
 } );
-
-// With hit box
-$.onclick( ( clickData ) => {
-	$.print( "Button clicked!" );
-}, false, { "x": 10, "y": 10, "width": 100, "height": 50 } );
 """
 
 [[parameters]]

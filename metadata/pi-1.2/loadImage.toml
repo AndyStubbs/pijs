@@ -4,11 +4,11 @@ isScreen = false
 summary = "Loads an image for later use in the drawImage command. It is recommended to use the ready command after loadImage and before calling the drawImage command."
 description = ""
 example = """
-$.screen( "300x200" );\r
-$.loadImage( "/images/monkey.png", "monkey" );\r
-$.ready( function () {\r
-\t$.drawImage( "monkey", 150, 100, 0, 0.5, 0.5 );\r
-} );\r
+$.screen( "300x200" );
+$.loadImage( "media/player.png", "player" );
+$.ready( () => {
+	$.drawImage( "player", 150, 100 );
+} );
 """
 
 [[parameters]]

@@ -4,10 +4,15 @@ isScreen = false
 summary = "Loads an image by URL or from an Image/Canvas element."
 description = """
 Loads an image and stores it by name. Supports optional palette-linking to the screen palette. After
-calling load image you should call $.ready command to wait for image to load before calling drawImage.
+calling load image you should call $.ready command to wait for image to load before calling
+drawImage.
 """
 example = """
-const name = $.loadImage( { "src": "player.png", "name": "player" } );
+$.screen( "300x200" );
+$.loadImage( "media/player.png", "player" );
+$.ready( () => {
+	$.drawImage( "player", 150, 100 );
+} );
 """
 
 [[parameters]]

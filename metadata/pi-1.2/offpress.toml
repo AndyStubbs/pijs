@@ -10,28 +10,28 @@ The callback receives (pressData, customData) where pressData contains x, y, but
 lastX, and lastY properties.
 """
 example = """
-$.screen( "300x200" );\r
-$.print( "Move mouse or touch to paint screen, click/touch up to stop." );\r
-$.onpress( "move", pressMove );\r
-$.onpress( "up", pressStop, true );\r
-\r
-// Press move function receives pressData and optional customData\r
-function pressMove( pressData, customData ) {\r
-\t$.setPosPx( pressData.x, pressData.y );\r
-\tvar pos = $.getPos();\r
-\t$.setPos( pos.col, pos.row );\r
-\t$.setColor( 8 );\r
-\t$.print( "+", true );\r
-}\r
-\r
-// Press stop function receives pressData and optional customData\r
-function pressStop( pressData, customData ) {\r
-\t$.setColor( 14 );\r
-\tvar pos = $.getPos();\r
-\t$.setPos( pos.col - 4, pos.row );\r
-\t$.print( "Stopped!", true );\r
-\t$.offpress( "move", pressMove );\r
-}\r
+$.screen( "300x200" );
+$.print( "Move mouse or touch to paint screen, click/touch up to stop." );
+$.onpress( "move", pressMove );
+$.onpress( "up", pressStop, true );
+
+// Press move function receives pressData and optional customData
+function pressMove( pressData, customData ) {
+	$.setPosPx( pressData.x, pressData.y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 8 );
+	$.print( "+", true );
+}
+
+// Press stop function receives pressData and optional customData
+function pressStop( pressData, customData ) {
+	$.setColor( 14 );
+	var pos = $.getPos();
+	$.setPos( pos.col - 4, pos.row );
+	$.print( "Stopped!", true );
+	$.offpress( "move", pressMove );
+}
 """
 
 [[parameters]]

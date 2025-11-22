@@ -18,6 +18,30 @@ Otherwise, events fire regardless of mouse position.
 The callback function receives (mouseData, customData) where mouseData contains x, y, buttons, action,
 type, lastX, and lastY properties. The customData parameter is optional.
 """
+example = """
+$.screen( "300x200" );
+$.print( "Move mouse to paint screen, click to stop." );
+$.onmouse( "move", mouseMove );
+$.onmouse( "up", mouseStop, true );
+
+// Mouse move function receives mouseData and optional customData
+function mouseMove( mouseData, customData ) {
+	$.setPosPx( mouseData.x, mouseData.y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 8 );
+	$.print( "+", true );
+}
+
+// Mouse stop function receives mouseData and optional customData
+function mouseStop( mouseData, customData ) {
+	$.setColor( 14 );
+	var pos = $.getPos();
+	$.setPos( pos.col - 4, pos.row );
+	$.print( "Stopped!", true );
+	$.offmouse( "move", mouseMove );
+}
+"""
 
 [[parameters]]
 name = "mode"
@@ -51,28 +75,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );\r
-$.print( "Move mouse to paint screen, click to stop." );\r
-$.onmouse( "move", mouseMove );\r
-$.onmouse( "up", mouseStop, true );\r
-\r
-// Mouse move function receives mouseData and optional customData\r
-function mouseMove( mouseData, customData ) {\r
-\t$.setPosPx( mouseData.x, mouseData.y );\r
-\tvar pos = $.getPos();\r
-\t$.setPos( pos.col, pos.row );\r
-\t$.setColor( 8 );\r
-\t$.print( "+", true );\r
-}\r
-\r
-// Mouse stop function receives mouseData and optional customData\r
-function mouseStop( mouseData, customData ) {\r
-\t$.setColor( 14 );\r
-\tvar pos = $.getPos();\r
-\t$.setPos( pos.col - 4, pos.row );\r
-\t$.print( "Stopped!", true );\r
-\t$.offmouse( "move", mouseMove );\r
-}\r
-"""
