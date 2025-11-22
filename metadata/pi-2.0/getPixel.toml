@@ -9,10 +9,11 @@ color value object.
 """
 example = """
 $.screen( "300x200" );
-$.circle( 150, 100, 50, "navy" );
+$.circle( 150, 100, 50, "blue" );
 const color = $.getPixel( 150, 100 );
-$.print( "" );
-const idx = $.getPixel( 10, 10, true );
+$.print( `Circle fill color: [${color.array.join( ", " )}]` );
+const idx = $.getPixel( 150, 100, true );
+$.print( `Circle fill color index: ${idx}` );
 """
 
 [[parameters]]
