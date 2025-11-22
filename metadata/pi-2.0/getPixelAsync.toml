@@ -8,7 +8,15 @@ otherwise resolves to a color value object.
 """
 example = """
 $.screen( "300x200" );
-$.getPixelAsync( 10, 10 ).then( ( color ) => {} );
+$.circle( 150, 100, 50, "blue" );
+getCircleFillColor();
+
+async function getCircleFillColor() {
+	const color = await $.getPixelAsync( 150, 100 );
+	$.print( `Circle fill color: [${color.array.join( ", " )}]` );
+	const idx = await $.getPixelAsync( 150, 100, true );
+	$.print( `Circle fill color index: ${idx}` );
+}
 """
 
 [[parameters]]

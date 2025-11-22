@@ -11,7 +11,7 @@ $.screen( "320x200" );
 $.setFont( 1 );
 $.print( "Hello" );
 const pos = $.getPos();
-console.log( `Cursor at column ${pos.col}, row ${pos.row}` );
+$.print( `Cursor at column ${pos.col}, row ${pos.row}` );
 """
 
 [[returns]]

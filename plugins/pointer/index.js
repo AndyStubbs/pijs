@@ -93,7 +93,7 @@ if( typeof window !== "undefined" && window.pi ) {
 	window.pi.registerPlugin( {
 		"name": "pointer",
 		"version": "1.0.0",
-		"description": "Mouse, touch, and press handling ported from alpha.1.",
+		"description": "Mouse and touch input handling for Pi.js",
 		"init": pointerPlugin
 	} );
 }

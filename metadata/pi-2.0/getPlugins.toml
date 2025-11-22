@@ -6,8 +6,13 @@ description = """
 Returns an array of plugin info objects including name, version, description, and initialized state.
 """
 example = """
-const plugins = pi.getPlugins();
-console.log( plugins );
+const plugins = $.getPlugins();
+$.screen( "300x200" );
+for( const plugin of plugins ) {
+	$.print( `Plugin:      ${plugin.name} (${plugin.version})` );
+	$.print( `Description: ${plugin.description}` );
+	$.print();
+}
 """
 
 parameters = []
