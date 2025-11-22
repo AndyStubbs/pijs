@@ -2,18 +2,20 @@ title = "getImage"
 category = "images"
 isScreen = true
 summary = """
-Gets an area of pixels from the screen and draws it an in-memory image that can be used with the\r
+Gets an image from an area on the current screen.
+"""
+description = """
+Gets an area of pixels from the screen and draws it to an in-memory image that can be used with the
 drawImage function.
 
 Note: This function has been renamed in version 2.0 to createImageFromScreen. The 2.0 getImage
 function returns an imageObject that has been loaded with loadImage.
 """
-description = ""
 example = """
-$.screen( "300x200" );\r
-$.circle( 150, 110, 50, 4 );\r
-var circle = $.getImage( null, 100, 40, 200, 160 );\r
-$.drawImage( circle, 20, 80 );\r
+$.screen( "300x200" );
+$.circle( 150, 110, 50, 4 );
+var circle = $.getImage( null, 100, 40, 200, 160 );
+$.drawImage( circle, 20, 80 );
 """
 
 [[parameters]]

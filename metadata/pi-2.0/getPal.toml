@@ -8,8 +8,12 @@ Note: Color indices may not match exactly because index 0 is strictly reserved f
 black.
 """
 example = """
-$.screen( "300x200" );
-const pal = $.getPal();
+$.screen("300x200");
+var pal = $.getPal();
+$.setColor( 2 );
+
+// Note pal[ 1 ] = $.setColor( 2 ) because of the missing 0 index from $.getPal.
+$.print( "[ " + pal[ 1 ].array.join( ", " ) + " ]" );
 """
 
 [[parameters]]

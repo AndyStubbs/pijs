@@ -8,6 +8,8 @@ Gets the color value for a specific palette index. Returns null if the index is 
 example = """
 $.screen( "300x200" );
 const color = $.getPalColor( 2 );
+$.setColor( color );
+$.print( "Color 2 = [" + color.array.join( ", " ) + "]" );
 """
 
 [[parameters]]

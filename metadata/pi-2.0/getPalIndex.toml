@@ -10,6 +10,8 @@ will be returned.
 example = """
 $.screen( "300x200" );
 const idx = $.getPalIndex( "#FF0000", 0.25 );
+$.setColor( idx );
+$.print( "Color Index = " + idx );
 """
 
 [[parameters]]

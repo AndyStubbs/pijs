@@ -9,7 +9,9 @@ color value object.
 """
 example = """
 $.screen( "300x200" );
-const color = $.getPixel( 10, 10 );
+$.circle( 150, 100, 50, "navy" );
+const color = $.getPixel( 150, 100 );
+$.print( "" );
 const idx = $.getPixel( 10, 10, true );
 """
 

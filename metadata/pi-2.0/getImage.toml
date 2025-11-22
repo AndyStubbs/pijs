@@ -6,7 +6,12 @@ description = """
 Returns the underlying Image or Canvas element for a previously loaded image.
 """
 example = """
-const img = $.getImage( { "name": "player" } );
+$.screen( "300x200" );
+$.loadImage( "media/player.png", "player" );
+$.ready( () => {
+	const img = $.getImage( "player" );
+	$.drawImage( img, 150, 100, null, 0.5, 0.5, 1, 1, 0 );
+} );
 """
 
 [[parameters]]
