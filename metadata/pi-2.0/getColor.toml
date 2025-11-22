@@ -8,7 +8,9 @@ the color value object.
 """
 example = """
 $.screen( "300x200" );
-const idx = $.getColor( true );
+$.setColor( 2)
+$.print( `Current Color Index: ${$.getColor( true )}` );
+$.print( `Current Color Value: [${$.getColor( false ).array.join( ", " )}]` );
 """
 
 [[parameters]]

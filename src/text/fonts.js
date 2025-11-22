@@ -296,6 +296,8 @@ export function setFont( screenData, options ) {
 	const padX = g_utils.getInt( options.padX, 0 );
 	const padY = g_utils.getInt( options.padY, 0 );
 
+	// TODO: setFont should also accept a font object returned by getAvailableFonts
+	
 	if( fontId === null || !m_fontMap.has( fontId ) ) {
 		const error = new RangeError(
 			"setFont: Parameter fontId must be an integer and an index in the available fonts."

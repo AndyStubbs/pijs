@@ -7,9 +7,11 @@ Gets information about all fonts that have been loaded. Returns an array of font
 containing id, width, and height for each font.
 """
 example = """
+$.screen( "300x200" );
 const fonts = $.getAvailableFonts();
 for( const font of fonts ) {
-	console.log( `Font ${font.id}: ${font.width}x${font.height}` );
+	$.setFont( font.id );
+	$.print( `Font ${font.id}: ${font.width}x${font.height}\\n` );
 }
 """
 

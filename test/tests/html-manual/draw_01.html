@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Draw 01</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "contextmenu_01"
+			name = "contextmenu 01"
+			width = 200
+			height = 200
+			[[TOML_END]]
+		</script>
+		<script src="../../../build/pi.js"></script>
+		<style>
+			html, body {
+				background-color: grey;
+			}
+		</style>
+	</head>
+<body>
+<script>
+	$.screen( "200x200" );
+	
+	// Dark blue sky
+	$.setBgColor( 245 );
+	
+	// Draw front face outline of the house
+	$.pset( 80, 110 );
+	$.draw( "C7 U30 E18 F18 D30 L35" );
+	
+	// Draw front-door frame
+	$.draw( "BR11 BU C8 U25 R12 D25 BL11 C20 U24 R10 BR BD" );
+	
+	// Paint the house
+	$.draw( "BU5 P7 BD5" );
+	
+	// Draw front-door face/texture
+	for( let i = 0; i < 5; i += 1 ) {
+		$.draw( "BL C187 D23 L C185 U23" );
+	}
+	
+	// Draw the boarded up frame
+	$.draw( "C115 BD5 F9 D H9 BR9 G9 UE9" );
+	
+	// Add texture to the house
+	$.draw( "BU25 BL6 C26" );
+	$.draw( "R2 BD BL3 BL2 BD R2 BR3 R BR2 BD2 L3 BD3 L6 BL5 BD3 R8 BR6 R BR5 BD3 L8 BL17 BD R8" );
+	$.draw( "BD3 BL L4 BD5 L3 BD BR3 R3 BR BD3 L6 BL2 BD3 R2 BR2 R2 BD2 L3 BL3 BD5 R8 BR16 R5" );
+	$.draw( "BU3 R4 BU2 L3 BL2 L3 BU5 R3 BR3 BU5 L6 BU5 L3" );
+	
+	// Draw the roof
+	$.draw( "BR13 BU2 C23 H19 U F19 BH19 G19 D E19 BL BU C19 G19 C139 L E20 L G19 BE19 R2 F19" );
+	
+	// Draw the side of house
+	$.draw( "C186 TA5 R35 H17 L37 BD5 BR19 P186 BD12 C23 R34 TA0 D25 TA355 L35 BE5 P23" );
+	
+	// Add texture to side of house
+	$.draw( "TA0 BU43 BL18 C185 TA5 R3 BR8 R2 BR9 R5 BR6 BD2 L2 BL12 L BL8 L BL5 BD2 R2 BR20 R" );
+	$.draw( "BR9 BD4 L15 BD2 L5 BL2 BD7 C8 R15 BR8 BD2 R3 BR8 BD4 L5 BL8 BD5 R7 BD5 BL25 L2" );
+	
+	// Draw Window
+	$.draw( "BU12 BR8 C20 R8 TA0 D9 TA355 L8 TA0 U10 BF5 P20" );
+	
+	// Draw Boarded Up Window
+	$.draw( "C186 BU5 BR3 G8 D E8 BD8 H8 U F8" );
+	
+	// Draw the horizon
+	$.setColor( "#020" );
+	$.setNoise( 5, 0 );
+	$.line( 0, 100, 79, 100 );
+	$.line( 153, 100, 320, 100 );
+	$.paint( 19, 199, "#020" );
+	
+	// Create some seeded random values
+	const vals = [
+		0.402, 0.325, 0.876, 0.736, 0.903, 0.478, 0.289, 0.217, 0.633, 0.268, 0.176, 0.512, 0.326,
+		0.515, 0.173, 0.389, 0.181, 0.012, 1.000, 0.234, 0.913, 0.413, 0.430, 0.947, 0.918, 0.852,
+		0.767, 0.918, 0.028, 0.320, 0.447, 0.416, 0.155, 0.087, 0.247, 0.903, 0.727, 0.038, 0.965,
+		0.960, 0.544, 0.851, 0.864, 0.731, 0.274, 0.499, 0.080, 0.345, 0.081, 0.311, 0.864, 0.300,
+		0.900, 0.406, 0.375, 0.644, 0.312, 0.625, 0.207, 0.863, 0.872, 0.303, 0.746, 0.089, 0.166,
+		0.542,
+	];
+	
+	let rnd = 0;
+	
+	// Draw some bushes
+	drawBush( 72, 112, 8, 5, rnd++ );
+	drawBush( 115, 113, 5, 3, rnd++ );
+	drawBush( 117, 111, 7, 5, rnd++ );
+	drawBush( 130, 111, 8, 6, rnd++ );
+	drawBush( 142, 112, 8, 6, rnd++ );
+	
+	// Draw the road
+	let x = 100;
+	$.setColor( 187 );
+	for( let y = 111; y < 200; y += 1 ) {
+		if( y < 130 ) {
+			x += Math.round( vals[ rnd++ % vals.length ] * 5 ) - 3;
+		} else if( y < 150 ) {
+			x += Math.round( vals[ rnd++ % vals.length ] * 5 ) - 1;
+		} else {
+			x += Math.round( vals[ rnd++ % vals.length ] * 5 ) - 4;
+		}
+		const width = vals[ rnd++ % vals.length ] * 2 + Math.round ( y * 0.15 ) - 12;
+		$.line( x - width, y, x + width, y );
+	
+		// Draw some bushes along side the road
+		if( vals[ rnd++ % vals.length ] > 0.7 ) {
+			drawBush( x + width, y, 8, 5, rnd++ );
+			$.setColor( 187 );
+		}
+		if( vals[ rnd++ % vals.length ] > 0.8 ) {
+			drawBush( x - width - 18, y, 8, 5, rnd++ );
+			$.setColor( 187 );
+		}
+	}
+	
+	function drawBush( x, y, baseWidth, baseHeight, rnd ) {
+		$.setColor( "#030" );
+		$.setNoise( 15, 0 );
+		$.pset( x, y );
+	
+		// Draw the left side of the bush, getting progressively taller
+		for (let x2 = 0; x2 < baseWidth; x2 += 1) {
+			const h = Math.floor( vals[ rnd++ % vals.length ] * baseHeight ) + x2;
+			$.draw( `U${h} BD${h} BR` );
+		}
+	
+		// Draw the right side of the bush, getting progressively shorter
+		for( let x2 = baseWidth; x2 >= 0; x2 -= 1 ) {
+			const h = Math.floor( vals[ rnd++ % vals.length ] * baseHeight ) + x2;
+			$.draw( `U${h} BD${h} BR` );
+		}
+		$.setNoise( 5, 0 );
+	}
+</script>
+</body>
+</html>

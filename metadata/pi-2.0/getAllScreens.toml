@@ -8,9 +8,9 @@ property.
 """
 example = """
 $.screen( "320x200" );
-$.screen( "640x480" );
+$.screen( "320x200" );
 const screens = $.getAllScreens();
-console.log( screens.length ); // 2
+$.print( `Number of screens = ${screens.length}` );
 """
 
 [[returns]]

@@ -12,8 +12,33 @@ Note: if asIndex is set to false then the 2D array cannot be used with the put c
 """
 example = """
 $.screen( "300x200" );
-const indices = $.get( 0, 0, 16, 16 );           // 2D array of indices
-const colors = $.get( 0, 0, 16, 16, 1, false );  // 2D array of color values
+$.circle( 150, 110, 50, 4 );
+
+// Get indices
+const indices = $.get( 105, 85, 5, 5 );
+$.print( "indices = [" );
+for( let i = 0; i < indices.length; i++ ) {
+	$.print( "    [ " + indices[ i ].join( ", " ) + " ]," );
+}
+$.print( "]" );
+
+// Get color values
+const colorNames = {
+	"rgba(0, 0, 0, 0)": "black",
+	"rgba(170, 170, 170, 255)": "gray",
+	"rgba(170, 0, 0, 255)": "red",
+};
+const mapColors = c => colorNames[ `rgba(${c.array.join( ", " )})` ];
+const colors = $.get( 105, 85, 5, 5, 1, false );
+$.setPos( 0, 15 );
+$.print( "colors = [" );
+for( let i = 0; i < colors.length; i++ ) {
+	$.print( "    [ " +
+		colors[ i ].map( mapColors ).join( ", " ) + " ],"
+	);
+}
+$.print( "]" );
+$.put( indices, 20, 80 );
 """
 
 [[parameters]]

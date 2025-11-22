@@ -7,9 +7,10 @@ Draws an image (by name or element) using optional color, anchor, scale, and rot
 """
 example = """
 $.screen( "300x200" );
-$.loadImage( { "src": "player.png", "name": "player" } );
-$.drawImage( { "image": "player", "x": 150, "y": 100, "anchorX": 0.5, "anchorY": 0.5 } );
-$.drawImage( "player", 100, 100, null, 0.5, 0.5 );
+$.loadImage( "media/player.png", "player" );
+$.ready( () => {
+	$.drawImage( "player", 150, 100, null, 0.5, 0.5, 1, 1, 0 );
+} );
 """
 
 [[parameters]]

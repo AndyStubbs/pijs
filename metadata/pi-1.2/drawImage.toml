@@ -4,11 +4,11 @@ isScreen = true
 summary = "Draws an image on to the screen.  Note: this method will fail if it gets called before the image is loaded."
 description = ""
 example = """
-$.screen( "300x200" );\r
-var monkey = $.loadImage( "/images/monkey.png" );\r
-$.ready( function () {\r
-\t$.drawImage( monkey, 150, 100, 0, 0.5, 0.5 );\r
-} );\r
+$.screen( "300x200" );
+$.loadImage( "media/player.png", "player" );
+$.ready( () => {
+	$.drawImage( "player", 150, 100 );
+} );
 """
 
 [[parameters]]

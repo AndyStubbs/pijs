@@ -15,14 +15,12 @@ not be suitable to run in an animationFrame.
 """
 example = """
 $.screen( "300x200" );
-$.filterImg( function( pixel, x, y ) {
-
-	// Invert red channel in upper-left quadrant
-	if( x < 150 && y < 100 ) {
-		pixel[ 0 ] = 255 - pixel[ 0 ];
-		return true;
-	}
-	return false;
+$.circle( 150, 100, 50, "red" );
+$.filterImg( function ( color, x, y ) {
+	color[ 0 ] = color[ 0 ] - Math.round( Math.tan( ( x + y ) / 10 ) * 128 );
+	color[ 1 ] = color[ 1 ] + Math.round( Math.cos( x / 7 ) * 128 );
+	color[ 2 ] = color[ 2 ] + Math.round( Math.sin( y / 5 ) * 128 );
+	return color;
 } );
 """
 

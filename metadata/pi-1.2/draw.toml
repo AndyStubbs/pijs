@@ -25,13 +25,13 @@ Supported commands:
 - **"TAn**": Turn Angle; rotate by any angle n from -360 to 360 degrees.
 """
 example = """
-$.screen( "300x200" );\r
-$.pset( 150, 100 );\r
-$.draw( "C2 R15 D15 L30 U15 R15" );\t\t\t\t\t\t// Draw House\r
-$.draw( "B G4 C1 L6 D6 R6 U6 BG3 P1" ); \t\t\t\t// Draw Window\r
-$.draw( "B E3 B R14 C1 L6 D6 R6 U6 BG3 P1" ); \t// Draw Window\r
-$.draw( "B E3 B R1 P2" );\t\t\t\t\t\t\t\t\t\t// Paint House\r
-$.draw( "B E4 B U C6 H15 G15 B R5 P6" );\t\t\t\t// Draw Roof\r
+$.screen( "300x200" );
+$.pset( 150, 100 );
+$.draw( "C2 R15 D15 L30 U15 R15" );				// Draw House
+$.draw( "B G4 C1 L6 D6 R6 U6 BG3 P1" ); 		// Draw Window
+$.draw( "B E3 B R14 C1 L6 D6 R6 U6 BG3 P1" ); 	// Draw Window
+$.draw( "B E3 B R1 P2" );						// Paint House
+$.draw( "B E4 B U C6 H15 G15 B R5 P6" );		// Draw Roof
 """
 
 [[parameters]]

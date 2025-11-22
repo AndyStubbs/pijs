@@ -9,7 +9,7 @@ example = """
 $.screen( "300x200" );
 var pal = $.getDefaultPal();
 $.setColor( 4 );
-$.print( pal[ 4 ].s );
+$.print( `Color 4 in default pal = [ ${pal[ 4 ].array.join( ", " )} ]` );
 """
 
 parameters = [ ]

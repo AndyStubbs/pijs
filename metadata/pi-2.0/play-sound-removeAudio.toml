@@ -16,7 +16,7 @@ $.ready( function () {
 	$.onkey( "any", "down", () => {
 		$.print( "SILENCE ", true );
 		$.playAudioPool( bombAudio );
-	} );
+	}, false, true );
 } );
 """
 

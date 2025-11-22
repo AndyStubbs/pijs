@@ -29,9 +29,11 @@ Supported commands:
 example = """
 $.screen( "300x200" );
 $.pset( 150, 100 );
-$.draw( "C2 R15 D15 L30 U15 R15" );
-$.draw( "B G4 C1 L6 D6 R6 U6 BG3 P1" );
-$.draw( "TA45 R20 ARC10,0,180" );
+$.draw( "C2 R15 D15 L30 U15 R15" );				// Draw House
+$.draw( "B G4 C1 L6 D6 R6 U6 BG3 P1" ); 		// Draw Window
+$.draw( "B E3 B R14 C1 L6 D6 R6 U6 BG3 P1" ); 	// Draw Window
+$.draw( "B E3 B R1 P2" );						// Paint House
+$.draw( "B E4 B U C6 H15 G15 B R5 P6" );		// Draw Roof
 """
 
 [[parameters]]

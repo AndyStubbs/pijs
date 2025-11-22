@@ -10,7 +10,39 @@ Note: if asIndex is set to false then the 2D array cannot be used with the put c
 """
 example = """
 $.screen( "300x200" );
-$.getAsync( 0, 0, 16, 16 ).then( ( indices ) => {} );
+$.circle( 150, 110, 50, 4 );
+
+getStuff( true );
+getStuff( false );
+
+async function getStuff( asIndex ) {
+
+	// Color value names
+	const colorNames = {
+		"rgba(0, 0, 0, 0)": "black",
+		"rgba(170, 170, 170, 255)": " gray",
+		"rgba(170, 0, 0, 255)": "  red",
+	};
+	const mapColors = c => colorNames[ `rgba(${c.array.join( ", " )})` ];
+
+	// Get stuff
+	const stuffName = asIndex ? "indices" : "colors";
+	const stuff = await $.getAsync( 105, 85, 5, 5, 1, asIndex );
+	$.print( `${stuffName} = [` );
+	for( let i = 0; i < stuff.length; i++ ) {
+		if( asIndex ) {
+			$.print( `\t[ ${stuff[ i ].join( ", " )} ],` );
+		} else {
+			$.print( `\t[ ${stuff[ i ].map( mapColors ).join( ", " )} ],` );
+		}
+	}
+	$.print( "]" );
+
+	if( asIndex ) {
+		$.put( stuff, 80, 85 );
+		$.print( "\\n\\n\\n\\n\\n\\n" );
+	}
+}
 """
 
 [[parameters]]
