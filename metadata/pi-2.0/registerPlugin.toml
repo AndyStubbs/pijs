@@ -25,17 +25,41 @@ Optional metadata (version, description) and a list of dependencies can be provi
 dependencies will wait until all dependencies are registered before initialization.
 """
 example = """
-pi.registerPlugin( {
-	"name": "my-plugin",
+$.registerPlugin( {
+	"name": "octogon",
 	"version": "1.0.0",
-	"description": "Example plugin",
+	"description": "Poly plugin",
 	"dependencies": [],
 	"init": ( pluginApi ) => {
-		pluginApi.addCommand( "hello", ( screenData, options ) => {
-			console.log( "Hello from plugin!" );
-		}, true, [] );
+		pluginApi.addCommand( "poly", ( screenData, options ) => {
+			const x = options.x ?? 0;
+			const y = options.y ?? 0;
+			const radius = options.radius ?? 1;
+			const sides = options.sides ?? 1;
+			let angle = 0
+			const fillColor = options.fillColor;
+			let da = ( Math.PI * 2 ) / sides;
+			let x2 = null;
+			let y2 = null;
+			for( let i = 0; i < sides + 1; i += 1 ) {
+				let x1 = x + Math.cos( angle ) * radius;
+				let y1 = y + Math.sin( angle ) * radius;
+				if( x2 !== null ) {
+					screenData.api.line( x1, y1, x2, y2 );
+				}
+				x2 = x1;
+				y2 = y1;
+				angle += da;
+			}
+			if( fillColor !== null ) {
+				screenData.api.paint( x, y, fillColor );
+			}
+		}, true, [ "x", "y", "radius", "sides", "fillColor" ] );
 	}
 } );
+$.screen( "300x200" );
+$.setColor( 15 );
+$.poly( 150 , 100, 15, 8, "red" );
 """
 
 [[parameters]]

@@ -51,13 +51,29 @@
 	<div class="container" id="c3"></div>
 	<div class="container" id="c4"></div>
 	<div class="container" id="c5"></div>
-	<div  class="container" id="removed-indicator"></div>
+	<div class="container" id="removed-indicator"></div>
 	<div class="container" id="c6"></div>
 	<div class="container" id="c7"></div>
 	<div class="container" id="c8"></div>
 	<div class="container" id="c9"></div>
 <script>
 	$.ready( function () {
+
+		// Test 0: remove all screens
+		const screen0a = $.screen( "100x100", null, true );
+		const screen0b = $.screen( "100x100", null, true );
+		$.removeAllScreens();
+		if( $.getAllScreens().length > 0 ) {
+			console.error( "Failed to remove all screens" );
+			return;
+		}
+		try {
+			screen0a.print( "Test" );
+			console.error( "Calling method on removed screen should throw exception" );
+			return;
+		} catch( err ) {
+			console.log( "Successfully caught error" );
+		}
 
 		// Test 1: 120x120 exact pixels (x format)
 		const s1 = $.screen( {
@@ -188,7 +204,7 @@
 			"container": document.getElementById( "c7" )
 		} );
 
-		$.setScreen( 0 );
+		$.setScreen( 2 );
 		const retrievedScreen = $.getScreen( s7.id );
 		retrievedScreen.setColor( 6 );
 		retrievedScreen.setFont( 1 );
