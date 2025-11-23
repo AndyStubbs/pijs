@@ -36,6 +36,7 @@ methods = [
 	"setFontSize",
 	"setPen",
 	"setPinchZoom",
+	"setPixelMode",
 	"setVolume",
 	"startKeyboard",
 	"startMouse",

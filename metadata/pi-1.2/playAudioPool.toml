@@ -4,10 +4,15 @@ isScreen = false
 summary = "Plays an audio pool sound."
 description = ""
 example = """
-var bombPool = $.createAudioPool( "/sounds/bomb.wav", 1 );\r
-$.ready( function () {\r
-\t$.playAudioPool( bombPool );\r
-} );\r
+$.screen( "300x200" );
+var bombPool = $.createAudioPool( "media/bomb.wav", 5 );
+$.ready( function () {
+	$.print( "Press any key to play bomb sound." );
+	$.onkey( "any", "down", () => {
+		$.print( "BOOM ", true );
+		$.playAudioPool( bombPool );
+	}, false, true );
+} );
 """
 
 [[parameters]]

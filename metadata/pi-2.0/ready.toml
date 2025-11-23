@@ -4,15 +4,17 @@ isScreen = false
 summary = "Waits for document readiness and all pending resources."
 description = """
 Defers execution until the document is ready and all registered asynchronous resources
-have completed loading (e.g., images queued via internal loading). 
+have completed loading (e.g., images queued via internal loading). Supports both callback
+and promise styles.
 
 Usage styles:
 - Callback: $.ready( function() {} );
+- Promise: $.ready().then( function() {} );
+- Async/Await: await $.ready();
 """
 example = """
 $.screen( "128x64" );
 $.loadSpritesheet( "media/tiles.png", "tiles", 16, 16, 0 );
-$.loadImage( { "src": "media/player.png", "name": "player" } );
 
 // Wait for spritesheet to load using callback
 $.ready( async function() {
@@ -21,6 +23,10 @@ $.ready( async function() {
 			$.drawSprite( "tiles", 0, x, y );
 		}
 	}
+	$.loadImage( { "src": "media/player.png", "name": "player" } );
+
+	// Wait for image to load using await
+	await $.ready();
 	$.drawImage( "player", 58, 24 );
 } );
 """
@@ -29,8 +35,10 @@ $.ready( async function() {
 name = "callback"
 type = "function"
 signature = "() => void"
-description = "Callback to run when ready completes."
+description = "Optional callback to run when ready completes."
+optional = true
 
 [[returns]]
-type = "void"
-description = "This function does not return anything"
+type = "Promise<void>"
+typeDesc = "Promise"
+description = "Resolves when the document and all pending resources are ready."

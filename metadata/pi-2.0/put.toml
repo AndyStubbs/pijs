@@ -18,14 +18,13 @@ Behavior:
 - Data should contain palette indices (typically from $.get with asIndex=true).
 """
 example = """
-$.screen( "300x200" );
-
-// Read a region as indices, then blit it elsewhere
-const patch = $.get( 10, 10, 32, 16 );	// indices by default
-$.put( patch, 100, 50 );				// draw, skipping 0 (transparent)
-
-// Using object form and including index 0
-$.put( { "data": patch, "x": 140, "y": 80, "include0": true } );
+var data = [
+	[  1,  2,  3,  4,  5,  6 ],
+	[  7,  8,  9, 10, 11, 12 ],
+	[ 13, 14, 15, 16, 17, 18 ]
+]
+$.screen( "30x20" );
+$.put( data, 1, 1 );
 """
 
 [[parameters]]

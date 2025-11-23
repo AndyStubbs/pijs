@@ -17,6 +17,7 @@ $.print();
 $.print( "Line 1" );
 $.print( "Inline text", true );
 $.print( " more inline", true );
+$.print();
 $.print( "Centered", false, true );
 """
 

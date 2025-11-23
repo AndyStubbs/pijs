@@ -13,17 +13,25 @@ is within that rectangular area.
 example = """
 $.screen( "300x200" );
 $.onmouse( "down", ( mouseData ) => {
-	$.print( `Mouse down at ${mouseData.x}, ${mouseData.y}` );
+	$.setPosPx( mouseData.x, mouseData.y );
+	$.print( `(${mouseData.x}, ${mouseData.y})` );
 } );
 
 // With hit box
+const hitBox = { "x": 10, "y": 10, "width": 100, "height": 50 };
+$.setColor( 2 );
+$.rect( hitBox );
+$.setColor( 7 );
 $.onmouse( "move", ( mouseData ) => {
-	$.print( "Mouse in button area" );
-}, false, { "x": 10, "y": 10, "width": 100, "height": 50 } );
+	$.setColor( 3 );
+	$.pset( mouseData.x, mouseData.y );
+	$.setColor( 7 );
+}, false, hitBox );
 
 // One-time handler
 $.onmouse( "up", () => {
-	$.print( "Mouse released once" );
+	$.setPos( 0, 12 )
+	$.print( "Mouse released once", true, true );
 }, true );
 """
 

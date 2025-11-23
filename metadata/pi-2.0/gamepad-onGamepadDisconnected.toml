@@ -18,7 +18,6 @@ $.onGamepadConnected( ( gamepad ) => {
 $.onGamepadDisconnected( ( gamepad ) => {
 	$.print( `Gamepad ${gamepad.index} disconnected: ${gamepad.id}` );
 } );
-$.startGamepad();
 """
 
 [[parameters]]

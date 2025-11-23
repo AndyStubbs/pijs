@@ -11,14 +11,28 @@ Supports hit box filtering - if a hitBox is provided, the callback only fires wh
 is within that rectangular area.
 """
 example = """
+$.screen( "300x200" );
 $.onpress( "down", ( pressData ) => {
-	$.print( `${pressData.type} pressed at ${pressData.x}, ${pressData.y}` );
+	$.setPosPx( pressData.x, pressData.y );
+	$.print( `(${pressData.x}, ${pressData.y})` );
 } );
 
 // With hit box
-$.onpress( "up", ( pressData ) => {
-	$.print( "Released in button area" );
-}, false, { "x": 10, "y": 10, "width": 100, "height": 50 } );
+const hitBox = { "x": 10, "y": 10, "width": 100, "height": 50 };
+$.setColor( 2 );
+$.rect( hitBox );
+$.setColor( 7 );
+$.onpress( "move", ( pressData ) => {
+	$.setColor( 3 );
+	$.pset( pressData.x, pressData.y );
+	$.setColor( 7 );
+}, false, hitBox );
+
+// One-time handler
+$.onpress( "up", () => {
+	$.setPos( 0, 12 )
+	$.print( "press released once", true, true );
+}, true );
 """
 
 [[parameters]]

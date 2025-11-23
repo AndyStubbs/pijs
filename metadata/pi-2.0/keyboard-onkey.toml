@@ -15,6 +15,7 @@ Use "any" as the key to listen for any key press. In this case, the callback rec
 data for the specific key that was pressed.
 """
 example = """
+$.screen( "300x200" );
 $.onkey( "Enter", "down", ( keyData ) => {
 	$.print( "Enter pressed!" );
 } );

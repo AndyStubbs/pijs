@@ -16,14 +16,30 @@ Notes:
 """
 example = """
 $.screen( "300x200" );
+
+// Draw some rects and lines to demo paint routine
 $.rect( 20, 20, 100, 60 );
-
-// Tolerance fill (similar colors to the starting pixel)
-$.paint( 25, 25, "gold", 0.25 );
-
-// Boundary fill (fill until reaching boundary color)
+$.setColor( "#111111" );
+$.line( 30, 30, 50, 50 );
+$.setColor( "#151515" );
+$.line( 35, 30, 55, 50 );
+$.setColor( "#FFFFFF" );
+$.line( 45, 30, 65, 50 );
 $.setColor( "red" );
 $.rect( 150, 50, 120, 80 );
+$.setColor( "#111111" );
+$.line( 170, 80, 180, 90 );
+$.setColor( "#151515" );
+$.line( 190, 80, 200, 90 );
+$.setColor( "#FFFFFF" );
+$.line( 210, 80, 220, 90 );
+
+// Tolerance fill (similar colors to the starting pixel)
+// Should paint over the two dark gray lines but not the white line
+$.paint( 25, 25, "#333300", 0.25 );
+
+// Boundary fill (fill until reaching boundary color)
+// Should paint over everything expect the boundary color which is red
 $.paint( 160, 60, "#0080FF", 0.2, "red" );
 """
 
