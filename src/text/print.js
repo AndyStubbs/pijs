@@ -288,7 +288,9 @@ function setPrintSize( screenData, options ) {
 	const padX = g_utils.getInt( options.padX, null );
 	const padY = g_utils.getInt( options.padY, null );
 
-	if( scaleWidth === null || scaleWidth <= 0 || scaleHeight === null || scaleHeight <= 0 ) {
+	if(
+		( scaleWidth !== null && scaleWidth <= 0 ) || ( scaleHeight !== null && scaleHeight <= 0 )
+	) {
 		const error = new RangeError(
 			"setPrintSize: Parameters scaleWidth and scaleHeight must be a number greater than 0."
 		);
@@ -296,8 +298,13 @@ function setPrintSize( screenData, options ) {
 		throw error;
 	}
 
-	screenData.printCursor.scaleWidth = scaleWidth;
-	screenData.printCursor.scaleHeight = scaleHeight;
+	if( scaleWidth !== null ) {
+		screenData.printCursor.scaleWidth = scaleWidth;
+	}
+
+	if( scaleHeight !== null ) {
+		screenData.printCursor.scaleHeight = scaleHeight;
+	}
 
 	// Update padding if provided
 	if( padX !== null ) {

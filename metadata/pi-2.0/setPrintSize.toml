@@ -5,6 +5,8 @@ summary = "Sets the scale factor for printed text."
 description = """
 Sets the horizontal and vertical scale factors for bitmap font rendering. This allows you to
 make text larger or smaller. Scale values must be numbers greater than 0.
+
+Use padX and padY to add extra padding between characters when the print to the screen.
 """
 example = """
 $.screen( "320x200" );
@@ -20,11 +22,26 @@ $.print( "Ultra thin tall font" );
 name = "scaleWidth"
 type = "number"
 description = "Horizontal scale factor (must be number >= 0)."
+optional = true
 
 [[parameters]]
 name = "scaleHeight"
 type = "number"
 description = "Vertical scale factor (must be number >= 0)."
+optional = true
+
+[[parameters]]
+name = "padX"
+type = "number"
+description = "Extra horizontal padding between characters in pixels. Defaults to 0."
+optional = true
+
+[[parameters]]
+name = "padY"
+type = "number"
+description = "Extra vertical padding between lines in pixels. Defaults to 0."
+optional = true
+
 
 [[returns]]
 type = "void"
