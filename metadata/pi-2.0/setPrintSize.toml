@@ -4,7 +4,7 @@ isScreen = true
 summary = "Sets the scale factor for printed text."
 description = """
 Sets the horizontal and vertical scale factors for bitmap font rendering. This allows you to
-make text larger or smaller. Scale values must be integers greater than 0.
+make text larger or smaller. Scale values must be numbers greater than 0.
 """
 example = """
 $.screen( "320x200" );
@@ -19,12 +19,12 @@ $.print( "Ultra thin tall font" );
 [[parameters]]
 name = "scaleWidth"
 type = "number"
-description = "Horizontal scale factor (must be integer >= 1)."
+description = "Horizontal scale factor (must be number >= 0)."
 
 [[parameters]]
 name = "scaleHeight"
 type = "number"
-description = "Vertical scale factor (must be integer >= 1)."
+description = "Vertical scale factor (must be number >= 0)."
 
 [[returns]]
 type = "void"
