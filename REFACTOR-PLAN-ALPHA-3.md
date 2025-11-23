@@ -531,7 +531,6 @@ Update `api/graphics.js` to use new renderer functions:
 **Changes:**
 - Replace stub `s_drawRectFilled` with actual `g_renderer.drawRectFilled`
 - Replace stub `s_drawCircleFilled` with actual `g_renderer.drawCircleFilled`
-- Remove TODOs and placeholder implementations
 
 **Note:** `drawRectFilled` and `drawCircleFilled` are available for use by other commands if needed, but `pset` only draws single pixels.
 
@@ -879,7 +878,6 @@ Update pixel module for WebGL2 only:
 ## Phase 12: Code Cleanup and Documentation
 
 ### Step 12.1: Code Cleanup
-- Remove all TODO comments that are addressed
 - Remove commented-out Canvas2D code
 - Ensure consistent code style
 - Verify JSDoc comments are complete
