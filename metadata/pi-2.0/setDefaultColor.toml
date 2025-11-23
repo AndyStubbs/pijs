@@ -6,8 +6,9 @@ description = """
 Updates the default drawing color for newly created screens.
 """
 example = """
-$.setDefaultColor( 7 );
+$.setDefaultColor( 9 );
 $.screen( "300x200" );
+$.rect( 100, 50, 100, 100 );
 """
 
 [[parameters]]

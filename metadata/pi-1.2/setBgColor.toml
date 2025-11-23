@@ -5,6 +5,10 @@ summary = "Sets the canvas background color."
 description = """
 Sets the background color of the canvas element. Transparent pixels will show this background color.
 """
+example = """
+$.screen( "300x200" );
+$.setBgColor( "navy" );
+"""
 
 [[parameters]]
 name = "color"
@@ -14,8 +18,3 @@ description = "Palette index or color value (string, array, object, number)."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "300x200" );
-$.setBgColor( "navy" );
-"""

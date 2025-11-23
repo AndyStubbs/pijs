@@ -9,8 +9,9 @@ right-clicks are prevented from showing the context menu, allowing them to be ha
 event handlers instead.
 """
 example = """
-$.setEnableContextMenu( true ); // Allow right-click menu
-$.setEnableContextMenu( false ); // Block right-click menu
+$.screen( "300x200" );
+$.print( "Try right click to see if context menu appears." );
+$.setEnableContextMenu( false );
 """
 
 [[parameters]]

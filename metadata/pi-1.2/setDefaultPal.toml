@@ -4,17 +4,17 @@ isScreen = false
 summary = "Sets the default color palette for new screens."
 description = ""
 example = """
-var colors = [\r
-\t"black", "red", "green", "blue", \r
-\t"navy", "orange", "purple", "gray",\r
-\t"white", "pink", "brown", "cyan"\r
-];\r
-$.setDefaultPal( colors );\r
-$.screen( "300x200" );\r
-for( var i = 0; i < colors.length; i++ ) {\r
-\t$.setColor( i );\r
-\t$.print( i + " = " + colors[ i ] );\r
-}\r
+var colors = [
+	"black", "red", "green", "blue",
+	"navy", "orange", "purple", "gray",
+	"white", "pink", "brown", "cyan"
+];
+$.setDefaultPal( colors );
+$.screen( "300x200" );
+for( var i = 0; i < colors.length; i++ ) {
+	$.setColor( i );
+	$.print( i + " = " + colors[ i ] );
+}
 """
 
 [[parameters]]

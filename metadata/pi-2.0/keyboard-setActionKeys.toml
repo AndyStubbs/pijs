@@ -11,8 +11,25 @@ don't want the browser to handle certain keys.
 Keys can be specified by code (e.g., "ArrowUp") or key value (e.g., "Arrow Up").
 """
 example = """
-$.setActionKeys( [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight" ] );
-$.setActionKeys( [ "Space", "Enter" ] );
+$.screen( "200x200" );
+$.setActionKeys( [ "Control", "KeyS"] );
+setInterval( function () {
+	let keys = $.inkey();
+	$.cls();
+	$.print( "Press Ctrl+S." );
+	let key = $.inkey( "Control" );
+	if( key ) {
+		$.print( "Control key is pressed." );
+	} else {
+		$.print( "Control key is not pressed." );
+	}
+	for( key in keys ) {
+		$.print( "--------------------------" );
+		$.print( "key:      " + keys[ key ].key );
+		$.print( "location: " + keys[ key ].location );
+		$.print( "code:     " + keys[ key ].code );
+	}
+}, 60 );
 """
 
 [[parameters]]

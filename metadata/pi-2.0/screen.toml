@@ -7,22 +7,22 @@ Creates a new WebGL2 canvas screen and sets it as the active screen. The screen 
 called before any graphics commands can be used.
 
 Aspect ratio format: `(width)(x|e|m)(height)`
-- **x**: Exact pixel dimensions (e.g., "320x200")
-- **e**: Extend mode - extends canvas to fill container while maintaining aspect ratio
-- **m**: Multiple mode - scales to exact multiples of target resolution
+- **x**: Exact pixel dimensions (e.g., "300x200")
+- **e**: Extend mode (e.g., "100e100") - extends canvas to fill container while maintaining aspect ratio
+- **m**: Multiple mode (e.g., "300m200") - scales to exact multiples of target resolution
 
 For offscreen screens, only exact pixel dimensions (x) are allowed.
 """
 example = """
-$.screen( "320x200" );
-$.screen( "640e480", document.getElementById( "game-container" ) );
-const offscreen = $.screen( "256x256", null, true );
+$.screen( "300m200" );
+$.line( 0, 0, $.width(), $.height() );
+$.line( 0, $.height(), $.width(), 0 );
 """
 
 [[parameters]]
 name = "aspect"
 type = "string"
-description = "Aspect ratio string in format (width)(x|e|m)(height), e.g., '320x200', '100m100', '640e480'."
+description = "Aspect ratio string in format (width)(x|e|m)(height), e.g., '300x200', '100e00', '300m200'."
 
 [[parameters]]
 name = "container"

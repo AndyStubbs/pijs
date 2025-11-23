@@ -1,14 +1,42 @@
 title = "setDefaultAnchor"
 category = "images"
 isScreen = true
-summary = "Sets the default anchor point for images on the current screen."
+summary = "Sets the default anchor point for images when drawing on the current screen."
 description = """
-Defines the default normalized anchor (0.0-1.0) used by image and sprite drawing calls on this screen.
+Sets the default anchor point for all image and sprite drawing operations on this screen. The anchor
+point defines the relative starting position to draw the image, based a percentage of the image size
+using the x/y coordinates as a starting point.
+
+**Common anchor values:**
+- `(0.0, 0.0)` - Top-left corner (default). The x/y position refers to the upper-left corner of the 
+	image.
+- `(0.5, 0.5)` - Center of the image. The x/y position refers to the center point. Useful for
+	rotating images around their center or positioning sprites by their center point.
+- `(1.0, 1.0)` - Bottom-right corner. The x/y position refers to the lower-right corner of the
+	image.
+- `(0.5, 0.0)` - Top-center. Useful for UI elements that should align at their top edge.
+- `(0.5, 1.0)` - Bottom-center. Useful for characters or objects that stand on a surface.
+
+The anchor affects all image drawing commands (`drawImage`, `drawSprite`, `blitImage`, `blitSprite`)
+unless they explicitly specify their own anchor point. This setting persists for the current screen
+until changed.
 """
 example = """
 $.screen( "300x200" );
-$.setDefaultAnchor( { "x": 0.5, "y": 0.5 } );
+$.loadImage( "media/spaceship_0.png", "ship" );
+
+// Set the anchor point to the center of the ship so that the image will rotate correctly
 $.setDefaultAnchor( 0.5, 0.5 );
+$.ready( () => {
+	run();
+} );
+let angle = 0;
+function run() {
+	$.cls();
+	$.drawImage( { "image": "ship", "x": 150, "y": 100, "angle": angle } );
+	angle += 1;
+	requestAnimationFrame( run );
+}
 """
 
 [[parameters]]

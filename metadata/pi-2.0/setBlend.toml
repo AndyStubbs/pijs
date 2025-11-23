@@ -12,7 +12,8 @@ Supported blend modes:
 example = """
 $.screen( "300x200" );
 $.setBlend( "alpha" );
-$.line( 20, 20, 280, 180 );
+$.rect( 20, 20, 80, 80, "#AA0000FF" );
+$.rect( 40, 40, 80, 80, "#00AA0088" );
 """
 
 [[parameters]]

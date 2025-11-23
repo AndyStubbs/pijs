@@ -3,13 +3,28 @@ category = "colors"
 isScreen = false
 summary = "Sets the default color palette for newly created screens."
 description = """
-Defines the default palette used when a new screen is created. The first color (index 0) is
-reserved for transparent black and will be set automatically.
+Defines the default palette used when a new screen is created.
+
+The first color (index 0) is reserved for transparent black and will be set automatically. This 
+means that the color you set at (index 0) will be (index 1) in the internal palette.
 """
 example = """
 const pal = [ "#0000FF", "red", [ 0, 255, 0 ], [ 255, 255, 0, 255 ] ];
 $.setDefaultPal( pal );
 $.screen( "300x200" );
+const newPal = $.getPal( true );
+let x = 90;
+let y = 5;
+for( const color of newPal ) {
+	$.setColor( "#AAA" );
+	$.print( `Color Index: ${$.getPalIndex( color )}` );
+	$.setColor( color );
+	$.print( `[${color.array.join( ", " )}]` );
+	$.print();
+	$.rect( x, y, 100, 100 );
+	x += 25;
+	y += 15;
+}
 """
 
 [[parameters]]

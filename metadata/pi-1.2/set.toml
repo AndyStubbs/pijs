@@ -11,6 +11,11 @@ Behavior:
   screen if available.
 - Settings routed to non-screen commands are applied globally.
 """
+example = """
+$.screen( "300x200" );
+$.set( { "color": 10, "font": 2, "pos": { "col": 5, "row": 5 }, "bgColor": "#267" } );
+$.print( "Settings have been applied" );
+"""
 
 [[parameters]]
 name = "options"
@@ -20,14 +25,3 @@ description = "Object whose keys map to available settings (e.g., { \"screen\": 
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-// Create a screen and set multiple options together
-$.set( { "screen": "300x200", "color": 7 } );
-
-// Combine with other settings (examples; actual availability depends on modules loaded)
-$.set( {
-	"color": "#FF00FF",
-	"defaultPal": [ "#000000", "#FFFFFF", "#FF0000" ]
-} );
-"""

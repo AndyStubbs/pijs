@@ -8,11 +8,11 @@ Pi.js. Font 0 = 6x6, font 1 = 6x8, font 2 = 8x8, font 3 = 8x14, font\r
 4 = 8x16."""
 description = ""
 example = """
-$.screen( "300x200" );\r
-for( var i = 0; i < 4; i++ ) {\r
-\t$.setFont( i );\r
-\t$.print( "Font - " + i );\r
-}\r
+$.screen( "300x200" );
+for( var i = 0; i < 4; i++ ) {
+	$.setFont( i );
+	$.print( "Font - " + i );
+}
 """
 
 [[parameters]]

@@ -6,6 +6,23 @@ description = """
 Sets the default font ID that will be used when new screens are created. The font must already
 be loaded using loadFont.
 """
+example = """
+const fontId = $.loadFont( {
+	"src": "media/gnsh.png",
+	"width": 5,
+	"height": 12,
+	"margin": 0,
+	"charset": " !\\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]" +
+			   "^_`abcdefghijklmnopqrstuvwxyz{|}~"
+} );
+$.ready( () => {
+	$.setDefaultFont( fontId );
+	$.screen( "300x200" );
+	$.setBgColor( "#555" );
+	$.setPosPx( 0, 85 );
+	$.print( "The quick brown fox jumped over the lazy dogs! 123456789", true, true );
+} );
+"""
 
 [[parameters]]
 name = "fontId"
@@ -15,11 +32,4 @@ description = "Font ID from loadFont to use as default for new screens."
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-const fontId = $.loadFont( { "src": "custom-font.png", "width": 8, "height": 16 } );
-$.setDefaultFont( fontId );
-$.screen( "320x200" );
-$.print( "The quck brown fox jumped over the lazy dogs." );
-"""
 

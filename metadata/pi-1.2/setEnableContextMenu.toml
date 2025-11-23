@@ -4,9 +4,9 @@ isScreen = true
 summary = "Disables context menu on right click."
 description = ""
 example = """
-$.screen( "300x200" );\r
-$.print( "Try right click to see if context menu appears." );\r
-$.setEnableContextMenu( false );\r
+$.screen( "300x200" );
+$.print( "Try right click to see if context menu appears." );
+$.setEnableContextMenu( false );
 """
 
 [[parameters]]

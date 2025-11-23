@@ -1,25 +1,17 @@
 title = "setBlendMode"
 category = "primitives"
 isScreen = true
-summary = "Sets the blend mode when drawing. Normal will set the pixel to the exact color. Blended will mix the colors if the alpha channel of the current color is not 100%."
-description = ""
+summary = "Sets the alpha blend mode when drawing."
+description = """
+Normal will set the pixel to the exact color. Blended will mix the colors if the alpha channel of
+the current color is not 100%.
+"""
 example = """
-$.ready(function () {\r
-\t$.screen( "5x5" );\r
-\t// draw 3 red pixels\r
-\t$.setColor( "rgba(255,0,0,1)" );\r
-\t$.pset( 1, 2 );\r
-\t$.pset( 2, 2 );\r
-\t$.pset( 3, 2 );\r
-\t$.render();\r
-\t$.setBlendMode( "blend" );\r
-\t// blend red and green\r
-\t$.setColor( "rgba(0,255,0,0.5)" );\r
-\t$.pset( 2, 2 );\r
-\t// blend red and blue\r
-\t$.setColor( "rgba(0,0,255,0.5)" );\r
-\t$.pset( 3, 2 );\r
-});\r
+$.screen( "300x200" );
+$.rect( 20, 20, 80, 80, "#AA0000FF" );
+$.render();
+$.setBlendMode( "blend" );
+$.rect( 40, 40, 80, 80, "#00AA0088" );
 """
 
 [[parameters]]

@@ -1,21 +1,14 @@
 title = "setColors"
 category = "colors"
 isScreen = true
-summary = """
-Sets an array of color values for use with multi-color fonts\r
-using the print statement. The first color in the array will\r
-be used in all drawing commands while the rest are only used\r
-in multi-color fonts."""
-description = ""
+summary = "Set multiple colors for multi-color fonts"
+description = """
+Sets an array of color values for use with multi-color fonts using the print statement. The first 
+color in the array will be used in all drawing commands while the rest are only used in multi-color
+fonts.
+"""
 example = """
-var font = $.loadFont( "font-goofy-2.png", 8, 14 );\r
-$.ready( function () {\r
-\t$.screen( "300x200" );\r
-\t$.setFont( font );\r
-\t$.print( "Hello World" );\r
-\t$.setColors( [ 1, 2, 3, 4 ] );\r
-\t$.print( "Hello World" );\r
-} );\r
+$.setColors( [ 1, 2, 3, 4 ] );
 """
 
 [[parameters]]

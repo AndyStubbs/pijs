@@ -11,7 +11,7 @@ $.screen( "360x300" );
 let colors = $.getPal();
 let x = 0;
 let y = 0;
-let size = 0;
+let size = 20;
 for( let i = 0; i < colors.length; i += 1 ) {
 	$.setColor( i );
 	$.rect( x, y, size, size );
