@@ -7,15 +7,20 @@ description = """
 Starts the keyboard input monitoring system. This initializes event listeners for keydown and
 keyup events.
 
-Note: the keyboard plugin automatically starts when loaded, but this command can be used
-to restart it after calling stopKeyboard.
+Note: the keyboard automatically starts when key commands are called, but this command can be
+used to restart it after calling stopKeyboard.
 """
 example = """
+$.screen( "300x200" );
 $.stopKeyboard();
-$.startKeyboard();
-$.onkey( "Enter", "down", () => {
-	$.print( "Enter pressed!" );
+$.print( "Keyboard will be enabled in 3 seconds." );
+$.onkey( "any", "down", () => {
+	$.print( "Key pressed!" );
 } );
+setTimeout( () => {
+	$.print( "Keyboard is enabled" );
+	$.startKeyboard();
+}, 3000 );
 """
 
 [[returns]]

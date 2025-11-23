@@ -8,9 +8,22 @@ Stops touch event listeners on the screen canvas. Touch tracking will no longer 
 startTouch() is called again.
 """
 example = """
-$.startTouch();
-// ... use touch ...
-$.stopTouch();
+$.screen( "300x200" );
+$.print( "Touch will be stopped in 3 seconds." );
+$.ontouch( "move", ( touchData ) => {
+	const touch = touchData[ 0 ];
+	$.setPosPx( touch.x, touch.y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 13 );
+	$.print( "+", true );
+} );
+setTimeout( () => {
+	$.setPos( 0, 1 );
+	$.setColor( 7 );
+	$.print( "Touch is stopped" );
+	$.stopTouch();
+}, 3000 );
 """
 
 [[returns]]

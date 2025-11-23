@@ -7,13 +7,13 @@ description = """
 Stops all playing instances in the specified audio pool, or stops all audio pools if audioId is null.
 """
 example = """
-const audioId1 = $.loadAudio( "music.mp3" );
-const audioId2 = $.loadAudio( "music.mp3" );
-$.playAudio( audioId1 );
-$.playAudio( audioId2 );
-// Later...
-$.stopAudio( audioId1 ); // Stop this audio pool
-$.stopAudio(); // Stop all audio pools
+let audio = $.loadAudio( "media/sound.wav", 1 );
+$.ready( function () {
+	$.playAudio( audio );
+	setTimeout( function () {
+		$.stopAudio( audio );
+	}, 500 );
+} );
 """
 
 [[parameters]]

@@ -11,7 +11,7 @@ Volume is multiplied by the global volume set with setVolume.
 """
 example = """
 $.screen( "300x200" );
-var bombAudio = $.loadAudio( "media/bomb.wav", 5 );
+let bombAudio = $.loadAudio( "media/bomb.wav", 5 );
 $.ready( function () {
 	$.print( "Press any key to play bomb sound." );
 	$.onkey( "any", "down", () => {

@@ -1,19 +1,29 @@
 title = "startTouch"
 category = "touch"
 isScreen = true
-summary = """
-Starts the touch event listeners for the screen. This will get called automatically when any\r
-touch command gets called."""
-description = ""
+summary = "Starts touch input tracking for this screen."
+description = """
+Starts touch event listeners on the screen canvas. Touch positions and states will be tracked
+and available via intouch(). This is automatically called when touch event handlers are registered.
+"""
 example = """
-$.screen( "4x4" );\r
-$.startTouch();\r
-$.setPinchZoom( false );\r
-$.ontouch( "start", function ( touches ) {\r
-\tvar touch = touches[ 0 ];\r
-\t$.setColor( Math.floor( Math.random() * 9 ) + 1 );\r
-\t$.pset( touch.x, touch.y );\r
-} );\r
+$.screen( "300x200" );
+$.print( "Touch will be enabled in 3 seconds." );
+$.ontouch( "move", ( touchData ) => {
+	const touch = touchData[ 0 ];
+	$.setPosPx( touch.x, touch.y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 13 );
+	$.print( "+", true );
+} );
+$.stopTouch();
+setTimeout( () => {
+	$.setPos( 0, 1 );
+	$.setColor( 7 );
+	$.print( "Touch is enabled" );
+	$.startTouch();
+}, 3000 );
 """
 
 parameters = [ ]

@@ -7,16 +7,6 @@ Controls whether text wrapping breaks at word boundaries (spaces) or at any char
 enabled, long words will wrap at the last space before the line end. When disabled, text will
 wrap at any character.
 """
-
-[[parameters]]
-name = "isEnabled"
-type = "boolean"
-description = "If true, enable word breaking at spaces. If false, break at any character."
-
-[[returns]]
-type = "void"
-description = "This function does not return a value."
-
 example = """
 $.screen( "320x200" );
 $.setFont( 1 );
@@ -26,3 +16,11 @@ $.setWordBreak( false );
 $.print( "This text will break anywhere when it reaches the edge" );
 """
 
+[[parameters]]
+name = "isEnabled"
+type = "boolean"
+description = "If true, enable word breaking at spaces. If false, break at any character."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

@@ -4,8 +4,11 @@ isScreen = false
 summary = "Sets the master volume for all sound commands."
 description = ""
 example = """
-$.setVolume( 0.75 );\r
-$.play( "Q1o3L8ED+ED+Eo2Bo3DCL2o2A" );\r
+$.setVolume( 0.15 );
+$.play( "Q1o3L8ED+ED+Eo2Bo3DCL2o2A" );
+setTimeout( () => {
+	$.setVolume( 1 );
+}, 730 );
 """
 
 [[parameters]]

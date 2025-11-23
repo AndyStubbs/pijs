@@ -6,13 +6,21 @@
 
 import { triggerPressListeners, triggerClickListeners, getTouchPress } from "./press.js";
 
+// Module-level reference to startMouseInternal function
+let m_startMouseInternal = null;
+
+export function startMouseInternal( screenData ) {
+	if( m_startMouseInternal ) {
+		m_startMouseInternal( screenData );
+	}
+}
+
 export function registerMouse( pluginApi, helpers ) {
-	
-	const m_api = pluginApi.getApi();
 	const m_onevent = helpers.onevent;
 	const m_offevent = helpers.offevent;
 	const m_triggerEventListeners = helpers.triggerEventListeners;
-	
+
+	pluginApi.addScreenDataItem( "mouseStopped", false );
 	pluginApi.addScreenDataItem( "mouseStarted", false );
 	pluginApi.addScreenDataItem( "mouse", null );
 	pluginApi.addScreenDataItem( "lastEvent", null );
@@ -31,7 +39,9 @@ export function registerMouse( pluginApi, helpers ) {
 	pluginApi.addCommand( "stopMouse", stopMouse, true, [] );
 	pluginApi.addCommand( "inmouse", inmouse, true, [] );
 	pluginApi.addCommand( "setEnableContextMenu", setEnableContextMenu, true, [ "isEnabled" ] );
-	pluginApi.addCommand( "onmouse", onmouse, true, [ "mode", "fn", "once", "hitBox", "customData" ] );
+	pluginApi.addCommand(
+		"onmouse", onmouse, true, [ "mode", "fn", "once", "hitBox", "customData" ]
+	);
 	pluginApi.addCommand( "offmouse", offmouse, true, [ "mode", "fn" ] );
 	
 	function initMouseData( screenData ) {
@@ -45,7 +55,22 @@ export function registerMouse( pluginApi, helpers ) {
 		};
 	}
 	
+	function startMouseInternal( screenData ) {
+
+		// Do not start mouse if explicitly stopped
+		if( screenData.mouseStopped === false ) {
+			startMouse( screenData );
+		}
+	}
+	
+	// Store reference for module-level export
+	m_startMouseInternal = startMouseInternal;
+
 	function startMouse( screenData ) {
+
+		//Clear explicit mouseStopped
+		screenData.mouseStopped = false;
+
 		if( !screenData.mouseStarted ) {
 			screenData.canvas.addEventListener( "mousemove", mouseMove );
 			screenData.canvas.addEventListener( "mousedown", mouseDown );
@@ -56,6 +81,11 @@ export function registerMouse( pluginApi, helpers ) {
 	}
 	
 	function stopMouse( screenData ) {
+
+		// Explicitly set mouse to stoppedto prevent mouse commands from starting mouse when
+		// use explicitly sets it to true
+		screenData.mouseStopped = true;
+
 		if( screenData.mouseStarted ) {
 			screenData.canvas.removeEventListener( "mousemove", mouseMove );
 			screenData.canvas.removeEventListener( "mousedown", mouseDown );
@@ -78,13 +108,13 @@ export function registerMouse( pluginApi, helpers ) {
 	}
 	
 	function inmouse( screenData ) {
-		startMouse( screenData );
+		startMouseInternal( screenData );
 		return getMouse( screenData );
 	}
 	
 	function setEnableContextMenu( screenData, options ) {
 		screenData.isContextMenuEnabled = !!( options.isEnabled );
-		startMouse( screenData );
+		startMouseInternal( screenData );
 	}
 	
 	function onmouse( screenData, options ) {
@@ -100,7 +130,7 @@ export function registerMouse( pluginApi, helpers ) {
 		);
 		
 		if( isValid ) {
-			startMouse( screenData );
+			startMouseInternal( screenData );
 			screenData.mouseEventListenersActive += 1;
 		}
 	}

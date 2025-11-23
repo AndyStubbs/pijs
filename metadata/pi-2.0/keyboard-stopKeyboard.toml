@@ -8,9 +8,15 @@ Stops the keyboard input monitoring system. This removes event listeners and cle
 states. Keyboard events will no longer be tracked until startKeyboard is called again.
 """
 example = """
-$.stopKeyboard();
-// Keyboard events are no longer tracked
-$.startKeyboard();
+$.screen( "300x200" );
+$.print( "Keyboard will be stopped in 3 seconds." );
+$.onkey( "any", "down", () => {
+	$.print( "Key pressed!" );
+} );
+setTimeout( () => {
+	$.print( "Keyboard is now stopped" );
+	$.stopKeyboard();
+}, 3000 );
 """
 
 [[returns]]

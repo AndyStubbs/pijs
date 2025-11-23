@@ -45,6 +45,7 @@ methods = [
 	"startTouch",
 	"stopKeyboard",
 	"stopMouse",
+	"stopAudioPool",
 	"stopPlay",
 	"stopSound",
 	"stopTouch",

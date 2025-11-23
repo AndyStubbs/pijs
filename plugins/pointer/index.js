@@ -33,6 +33,7 @@ export default function pointerPlugin( pluginApi ) {
 	// Register clearEvents handlers for mouse, touch, and press
 	pluginApi.registerClearEvents( "mouse", ( screenData ) => {
 		if( screenData !== null ) {
+			
 			// Clear mouse events for specific screen
 			mouseApi.clearMouseEvents( screenData );
 		} else {

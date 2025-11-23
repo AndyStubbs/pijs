@@ -4,8 +4,10 @@
 
 "use strict";
 
+import { startMouseInternal } from "./mouse.js";
+import { startTouchInternal } from "./touch.js";
+
 export function registerPress( pluginApi, helpers ) {
-	
 	const onevent = helpers.onevent;
 	const offevent = helpers.offevent;
 	const triggerEventListenersLocal = helpers.triggerEventListeners;
@@ -38,8 +40,8 @@ export function registerPress( pluginApi, helpers ) {
 	}
 	
 	function inpress( screenData ) {
-		screenData.api.startMouse();
-		screenData.api.startTouch();
+		startMouseInternal( screenData );
+		startTouchInternal( screenData );
 		if( screenData.lastEvent === "touch" ) {
 			return getTouchPress( screenData );
 		} else {
@@ -60,8 +62,8 @@ export function registerPress( pluginApi, helpers ) {
 		);
 		
 		if( isValid ) {
-			screenData.api.startMouse();
-			screenData.api.startTouch();
+			startMouseInternal( screenData );
+			startTouchInternal( screenData );
 			screenData.pressEventListenersActive += 1;
 		}
 	}
@@ -108,8 +110,8 @@ export function registerPress( pluginApi, helpers ) {
 		);
 		
 		if( isValid ) {
-			screenData.api.startMouse();
-			screenData.api.startTouch();
+			startMouseInternal( screenData );
+			startTouchInternal( screenData );
 			screenData.clickEventListenersActive += 1;
 		}
 	}

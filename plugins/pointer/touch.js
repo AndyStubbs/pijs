@@ -6,15 +6,22 @@
 
 import { triggerPressListeners, triggerClickListeners, getTouchPress } from "./press.js";
 
+// Module-level reference to startTouchInternal function
+let m_startTouchInternal = null;
+
+export function startTouchInternal( screenData ) {
+	if( m_startTouchInternal ) {
+		m_startTouchInternal( screenData );
+	}
+}
+
 export function registerTouch( pluginApi, helpers ) {
 	
-	const m_api = pluginApi.getApi();
 	const m_onevent = helpers.onevent;
 	const m_offevent = helpers.offevent;
 	const m_triggerEventListeners = helpers.triggerEventListeners;
 	
-	let m_isTouchScreen = false;
-	
+	pluginApi.addScreenDataItem( "touchStopped", false );
 	pluginApi.addScreenDataItem( "touchStarted", false );
 	pluginApi.addScreenDataItem( "touches", {} );
 	pluginApi.addScreenDataItem( "lastTouches", {} );
@@ -27,7 +34,9 @@ export function registerTouch( pluginApi, helpers ) {
 	pluginApi.addCommand( "startTouch", startTouch, true, [] );
 	pluginApi.addCommand( "stopTouch", stopTouch, true, [] );
 	pluginApi.addCommand( "intouch", intouch, true, [] );
-	pluginApi.addCommand( "ontouch", ontouch, true, [ "mode", "fn", "once", "hitBox", "customData" ] );
+	pluginApi.addCommand(
+		"ontouch", ontouch, true, [ "mode", "fn", "once", "hitBox", "customData" ]
+	);
 	pluginApi.addCommand( "offtouch", offtouch, true, [ "mode", "fn" ] );
 	pluginApi.addCommand( "setPinchZoom", setPinchZoom, false, [ "isEnabled" ] );
 	
@@ -39,7 +48,20 @@ export function registerTouch( pluginApi, helpers ) {
 		};
 	}
 	
+	function startTouchInternal( screenData ) {
+		if( !screenData.touchStopped ) {
+			startTouch( screenData );
+		}
+	}
+	
+	// Store reference for module-level export
+	m_startTouchInternal = startTouchInternal;
+
 	function startTouch( screenData ) {
+
+		// Clear explicit touch stopped
+		screenData.touchStopped = false;
+
 		if( !screenData.touchStarted ) {
 			const options = { "passive": false };
 			screenData.canvas.addEventListener( "touchstart", touchStart, options );
@@ -51,6 +73,10 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 	
 	function stopTouch( screenData ) {
+		
+		//Clear explicit touchStopped
+		screenData.touchStopped = true;
+
 		if( screenData.touchStarted ) {
 			screenData.canvas.removeEventListener( "touchstart", touchStart );
 			screenData.canvas.removeEventListener( "touchmove", touchMove );
@@ -61,7 +87,7 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 	
 	function intouch( screenData ) {
-		startTouch( screenData );
+		startTouchInternal( screenData );
 		return getTouch( screenData );
 	}
 	
@@ -78,7 +104,7 @@ export function registerTouch( pluginApi, helpers ) {
 		);
 		
 		if( isValid ) {
-			startTouch( screenData );
+			startTouchInternal( screenData );
 			screenData.touchEventListenersActive += 1;
 		}
 	}
@@ -114,7 +140,6 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 	
 	function touchStart( e ) {
-		m_isTouchScreen = true;
 		const screenData = getScreenDataFromEvent( e );
 		if( screenData == null ) {
 			return;

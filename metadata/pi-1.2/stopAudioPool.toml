@@ -4,14 +4,13 @@ isScreen = false
 summary = "Stops and audio pool if it is currently playing audio."
 description = ""
 example = """
-var bombPool = $.createAudioPool( "/sounds/bomb.wav", 1 );\r
-var timeout = 0;\r
-$.ready( function () {\r
-\t$.playAudioPool( bombPool );\r
-\ttimeout = setTimeout( function () {\r
-\t\t$.stopAudioPool( bombPool );\r
-\t}, 500 );\r
-} );\r
+let soundPool = $.createAudioPool( "media/sound.wav", 1 );
+$.ready( function () {
+	$.playAudioPool( soundPool );
+	setTimeout( function () {
+		$.stopAudioPool( soundPool );
+	}, 500 );
+} );
 """
 
 [[parameters]]

@@ -10,9 +10,11 @@ gradually using exponential ramping to avoid clicks and pops.
 Volume is a multiplier: 0 = silent, 1 = full volume.
 """
 example = """
-$.setVolume( 0.5 ); // 50% volume
-$.sound( 440, 1 );
-$.playAudioPool( poolId ); // Both affected by volume
+$.setVolume( 0.15 );
+$.play( "Q1o3L8ED+ED+Eo2Bo3DCL2o2A" );
+setTimeout( () => {
+	$.setVolume( 1 );
+}, 730 );
 """
 
 [[parameters]]

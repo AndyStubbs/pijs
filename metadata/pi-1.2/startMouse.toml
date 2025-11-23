@@ -1,12 +1,12 @@
 title = "startMouse"
 category = "mouse"
 isScreen = true
-summary = """
-Starts tracking mouse input. This gets automatically called the \r
-first time any mouse method (inmouse, onmouse) gets called so\r
-calling startMouse is not necessary unless you explicitly call\r
-stopMouse."""
-description = ""
+summary = "Starts mouse input tracking for this screen."
+description = """
+Starts mouse event listeners on the screen canvas. Mouse position and button states will be
+tracked and available via getMouse() or inmouse(). This is automatically called when mouse
+event handlers are registered.
+"""
 example = """
 var isMouseEnabled = true;\r
 $.screen( "300x200" );\r

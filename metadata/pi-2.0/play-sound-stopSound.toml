@@ -8,9 +8,9 @@ Stops a specific sound by sound ID, or stops all sounds if soundId is null.
 """
 example = """
 const soundId = $.sound( 440, 5 );
-// Later...
-$.stopSound( soundId ); // Stop specific sound
-$.stopSound(); // Stop all sounds
+setTimeout( () => {
+	$.stopSound();
+}, 500 );
 """
 
 [[parameters]]

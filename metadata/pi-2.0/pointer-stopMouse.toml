@@ -8,9 +8,21 @@ Stops mouse event listeners on the screen canvas. Mouse tracking will no longer 
 startMouse() is called again.
 """
 example = """
-$.startMouse();
-// ... use mouse ...
-$.stopMouse();
+$.screen( "300x200" );
+$.print( "Mouse will be stopped in 3 seconds." );
+$.onmouse( "move", ( mouseData ) => {
+	$.setPosPx( mouseData.x, mouseData.y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 13 );
+	$.print( "+", true );
+} );
+setTimeout( () => {
+	$.setPos( 0, 1 );
+	$.setColor( 7 );
+	$.print( "Mouse is stopped" );
+	$.stopMouse();
+}, 3000 );
 """
 
 [[returns]]

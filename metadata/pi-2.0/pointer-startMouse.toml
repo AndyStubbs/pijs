@@ -9,9 +9,22 @@ tracked and available via getMouse() or inmouse(). This is automatically called 
 event handlers are registered.
 """
 example = """
-$.startMouse();
-const mouse = $.getMouse();
-$.print( `Mouse at ${mouse.x}, ${mouse.y}` );
+$.screen( "300x200" );
+$.stopMouse();
+$.print( "Mouse will be enabled in 3 seconds." );
+$.onmouse( "move", ( mouseData ) => {
+	$.setPosPx( mouseData.x, mouseData.y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 13 );
+	$.print( "+", true );
+} );
+setTimeout( () => {
+	$.setPos( 0, 1 );
+	$.setColor( 7 );
+	$.print( "Mouse is enabled" );
+	$.startMouse();
+}, 3000 );
 """
 
 [[returns]]
