@@ -1,16 +1,17 @@
 title = "setPinchZoom"
 category = "touch"
 isScreen = false
-summary = "Enables or disables pinch zoom. This is recommended when working with touch if you want to disable zoom."
-description = ""
+summary = "Enables or disables pinch zoom."
+description = """
+Controls whether the browser's default pinch-to-zoom gesture is enabled. When disabled, pinch
+gestures are prevented from zooming the page, allowing them to be handled by touch event handlers
+instead.
+
+This is recommended when working with touch if you want to disable zoom.
+"""
 example = """
-$.screen( "4x4" );\r
-$.setPinchZoom( false );\r
-$.ontouch( "start", function ( touches ) {\r
-\tvar touch = touches[ 0 ];\r
-\t$.setColor( Math.floor( Math.random() * 9 ) + 1 );\r
-\t$.pset( touch.x, touch.y );\r
-} );\r
+$.setPinchZoom( false ); // Disable pinch zoom for game controls
+$.setPinchZoom( true ); // Re-enable pinch zoom
 """
 
 [[parameters]]

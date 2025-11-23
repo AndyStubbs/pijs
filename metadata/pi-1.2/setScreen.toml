@@ -8,7 +8,8 @@ on this screen until another screen is set as active.
 """
 example = """
 const screen0 = $.screen( "320x200" );
-const screen1 = $.screen( "640x480" );
+const screen1 = $.screen( "320x200" );
+screen1.setBgColor( "rgba(0,0,0,0)" );
 $.setScreen( screen0 );
 $.line( 0, 0, 320, 200 );
 $.setScreen( { "screen": 1 } );

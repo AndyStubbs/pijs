@@ -18,13 +18,16 @@ example = """
 $.screen( "300x200" );
 
 // Single value (symmetric range on all channels)
-$.setNoise( 24 );
+$.setNoise( 24, 0 );
+$.rect( 25, 25, 50, 50, 2 );
 
 // Per-channel symmetric ranges
-$.setNoise( [ 16, 8, 0, 0 ] );
+$.setNoise( [ 16, 8, 0, 0 ], 0 );
+$.rect( 100, 25, 50, 50, 2 );
 
 // Explicit per-channel min/max ranges
-$.setNoise( [ [ 8, 4, 0, 0 ], [ 24, 12, 0, 0 ] ], 1234 );
+$.setNoise( [ [ 100, 4, 0, 0 ], [ 255, 12, 0, 0 ] ], 0 );
+$.rect( 175, 25, 50, 50, 2 );
 """
 
 [[parameters]]

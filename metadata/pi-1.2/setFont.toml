@@ -1,12 +1,11 @@
 title = "setFont"
 category = "print"
 isScreen = true
-summary = """
-Sets a font on a screen. The font must already be loaded with the \r
-loadFont command. There are several preloaded fonts that come with\r
-Pi.js. Font 0 = 6x6, font 1 = 6x8, font 2 = 8x8, font 3 = 8x14, font\r
-4 = 8x16."""
-description = ""
+summary = "Sets the font for the current screen."
+description = """
+Sets the active font for text rendering on the current screen. The font must already be loaded
+using loadFont. Several default fonts are preloaded: 0=6x6, 1=6x8 (default), 2=8x8, 3=8x14, 4=8x16.
+"""
 example = """
 $.screen( "300x200" );
 for( var i = 0; i < 4; i++ ) {

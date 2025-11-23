@@ -9,6 +9,12 @@ Sets multiple palette entries by index. Indices must be within the palette range
 example = """
 $.screen( "300x200" );
 $.setPalColors( [ 1, 2, 3 ], [ "white", "#FF00FF", [ 0, 255, 128 ] ] );
+$.setColor( 1 );
+$.print( "white" );
+$.setColor( 2 );
+$.print( "#FF00FF" );
+$.setColor( 3 );
+$.print( [ 0, 255, 128 ] );
 """
 
 [[parameters]]

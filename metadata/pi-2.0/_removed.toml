@@ -34,6 +34,8 @@ methods = [
 	"setEnableContextMenu",
 	"setErrorMode",
 	"setFontSize",
+	"setInputCursor",
+	"setPalColor",
 	"setPen",
 	"setPinchZoom",
 	"setPixelMode",

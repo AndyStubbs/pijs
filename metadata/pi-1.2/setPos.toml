@@ -6,6 +6,14 @@ description = """
 Sets the print cursor position based on character grid coordinates (columns and rows). The grid
 size is determined by the current font size and print scale. Column and row are 0-indexed.
 """
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+$.setPos( 5, 10 );
+$.print( "X" );
+$.setPos( { "col": 10, "row": 15 } );
+$.print( "Y" );
+"""
 
 [[parameters]]
 name = "col"
@@ -22,12 +30,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "320x200" );
-$.setFont( 1 );
-$.setPos( 5, 10 );
-$.print( "X" );
-$.setPos( { "col": 10, "row": 15 } );
-$.print( "Y" );
-"""

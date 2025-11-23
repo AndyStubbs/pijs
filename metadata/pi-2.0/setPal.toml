@@ -9,7 +9,15 @@ reserved for transparent black.
 """
 example = """
 $.screen( "300x200" );
-$.setPal( [ "black", "white", "red", "green", "blue" ] );
+$.setPal( [ "white", "red", "green", "blue" ] );
+$.setColor( 1 );
+$.print( "white" );
+$.setColor( 2 );
+$.print( "red" );
+$.setColor( 3 );
+$.print( "green" );
+$.setColor( 4 );
+$.print( "blue" );
 """
 
 [[parameters]]

@@ -4,14 +4,19 @@ isScreen = true
 summary = "Sets the font-size for bitmap fonts. Can only be used in bitmap fonts."
 description = ""
 example = """
-var font = $.loadFont( "/images/font-block.png", 10, 10, "ABCDFGHI" );\r
-$.ready( function () {\r
-\t$.screen( "100x100" );\r
-\t$.setFont( font );\r
-\t$.print( "ABCD" );\r
-\t$.setFontSize( 20, 20 );\r
-\t$.print( "ABCD" );\r
-} );\r
+var font = $.loadFont(
+	"media/gnsh.png", 5, 12,
+	" !\\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]" +
+	"^_`abcdefghijklmnopqrstuvwxyz{|}~"
+);
+$.ready( function () {
+	$.screen( "100x100" );
+	$.setBgColor( "#333" );
+	$.setFont( font );
+	$.print( "ABCD" );
+	$.setFontSize( 20, 20 );
+	$.print( "ABCD" );
+} );
 """
 
 [[parameters]]

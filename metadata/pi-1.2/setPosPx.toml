@@ -6,6 +6,14 @@ description = """
 Sets the print cursor position using exact pixel coordinates. This allows precise positioning
 independent of the font's character grid.
 """
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+$.setPosPx( 50, 100 );
+$.print( "At pixel 50, 100" );
+$.setPosPx( { "x": 100, "y": 150 } );
+$.print( "At pixel 100, 150" );
+"""
 
 [[parameters]]
 name = "x"
@@ -22,13 +30,3 @@ optional = true
 [[returns]]
 type = "void"
 description = "This function does not return a value."
-
-example = """
-$.screen( "320x200" );
-$.setFont( 1 );
-$.setPosPx( 50, 100 );
-$.print( "At pixel 50, 100" );
-$.setPosPx( { "x": 100, "y": 150 } );
-$.print( "At pixel 100, 150" );
-"""
-
