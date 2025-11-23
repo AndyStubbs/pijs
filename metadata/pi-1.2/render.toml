@@ -1,30 +1,29 @@
 title = "render"
 category = "graphics"
 isScreen = true
-summary = """
-Renders buffered graphics to the screen. Render is called\r
-automatically when all drawing has been completed at the\r
-of execution so it is generally not needed to call it.\r
-However, there are some cases you may need to call the\r
-render function. Such as if you are drawing to an offscreen\r
-canvas and then want to draw that canvas onto another canvas."""
-description = ""
+summary = "Renders buffered graphics to the screen."
+description = """
+Render is called automatically when all drawing has been completed at the of execution so it is
+generally not needed to call it. However, there are some cases you may need to call the render
+function. Such as if you are drawing to an offscreen canvas and then want to draw that canvas onto
+another canvas.
+"""
 example = """
-// Create a main screen.\r
-var screen1 = $.screen( "320x200" );\r
-\r
-// Create an offscreen buffer.\r
-var screen2 = $.screen( "32x32", null, true );\r
-\r
-// Draw circle to offscreen buffer.\r
-screen2.circle( 15, 15, 15, 1 );\r
-\r
-// Without this render the subsequent drawImage\r
-// method would not show the circle.\r
-screen2.render();\r
-\r
-// Draw the image\r
-screen1.drawImage( screen2, 100, 100 );\r
+// Create a main screen.
+var screen1 = $.screen( "320x200" );
+
+// Create an offscreen buffer.
+var screen2 = $.screen( "32x32", null, true );
+
+// Draw circle to offscreen buffer.
+screen2.circle( 15, 15, 15, 1 );
+
+// Without this render the subsequent drawImage
+// method would not show the circle.
+screen2.render();
+
+// Draw the image
+screen1.drawImage( screen2, 100, 100 );
 """
 
 parameters = [ ]
