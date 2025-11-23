@@ -281,12 +281,12 @@ function setWordBreak( screenData, options ) {
  * @returns {void}
  */
 function setPrintSize( screenData, options ) {
-	const scaleWidth = g_utils.getInt( options.scaleWidth, null );
-	const scaleHeight = g_utils.getInt( options.scaleHeight, null );
+	const scaleWidth = g_utils.getFloat( options.scaleWidth, null );
+	const scaleHeight = g_utils.getFloat( options.scaleHeight, null );
 
-	if( scaleWidth === null || scaleWidth < 1 || scaleHeight === null || scaleHeight < 1 ) {
+	if( scaleWidth === null || scaleWidth <= 0 || scaleHeight === null || scaleHeight <= 0 ) {
 		const error = new RangeError(
-			"setPrintSize: Parameters width and height must be an integer greater than 0."
+			"setPrintSize: Parameters scaleWidth and scaleHeight must be a number greater than 0."
 		);
 		error.code = "INVALID_SIZE";
 		throw error;

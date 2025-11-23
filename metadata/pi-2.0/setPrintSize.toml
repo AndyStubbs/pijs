@@ -12,8 +12,8 @@ $.setFont( 1 );
 $.print( "Normal size" );
 $.setPrintSize( 2, 2 );
 $.print( "Double size" );
-$.setPrintSize( { "scaleWidth": 1, "scaleHeight": 1 } );
-$.print( "Back to normal" );
+$.setPrintSize( { "scaleWidth": 1, "scaleHeight": 2.5 } );
+$.print( "Ultra thin tall font" );
 """
 
 [[parameters]]
