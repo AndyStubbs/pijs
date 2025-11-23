@@ -69,7 +69,7 @@ function registerCommands( api ) {
 
 	// Register screen commands
 	g_commands.addCommand( "setChar", setChar, true, [ "charCode", "data" ] );
-	g_commands.addCommand( "setFont", setFont, true, [ "fontId", "padX", "padY" ] );
+	g_commands.addCommand( "setFont", setFont, true, [ "fontId" ] );
 }
 
 
@@ -293,8 +293,6 @@ function setDefaultFont( options ) {
  */
 export function setFont( screenData, options ) {
 	const fontId = g_utils.getInt( options.fontId, null );
-	const padX = g_utils.getInt( options.padX, 0 );
-	const padY = g_utils.getInt( options.padY, 0 );
 
 	// TODO: setFont should also accept a font object returned by getAvailableFonts
 	
@@ -317,7 +315,7 @@ export function setFont( screenData, options ) {
 	screenData.font = font;
 
 	// Update print cursor dimensions
-	g_print.updatePrintCursorDimensions( screenData, padX, padY );
+	g_print.updatePrintCursorDimensions( screenData );
 }
 
 

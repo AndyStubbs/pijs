@@ -241,9 +241,9 @@
 		$.setPosPx( 5, 40 );
 		$.print( "ABCDFGHI" );
 		
-		$.setPrintSize( 4, 3 );
+		$.setPrintSize( 10.5, 4.5 );
 		$.setPosPx( 5, 70 );
-		$.print( "ABCDFGHI" );
+		$.print( "ABC" );
 
 
 		// ============================================================
@@ -306,24 +306,30 @@
 		$.print();
 
 		$.setFont( 1 );
+		$.setPrintSize( 1, 1, 0, 0 );
 		$.print( "Font 1 with 0px padding" );
-		$.setFont( 1, 1, 1 );
+		$.setFont( 1 );
+		$.setPrintSize( 1, 1, 1, 1 );
 		$.print( "Font 1 with 1px padding" );
-		$.setFont( 1, 3, 1 );
+		$.setFont( 1 );
+		$.setPrintSize( 1, 1, 3, 1 );
 		$.print( "Font 1 with 3,1px" );
 		
-		$.print( "Font 2 with 0px padding" );
 		$.setFont( 2 );
-		$.setFont( 2, 2, 2 );
+		$.setPrintSize( 1, 1, 0, 0 );
+		$.print( "Font 2 with 0px padding" );
+		$.setPrintSize( 1, 1, 2, 2 );
 		$.print( "Font 2 with 2px padding" );
 
 		$.setFont( gnshFont );
-		$.setPos( 0, $.getPos().row );
+		$.setPrintSize( 1, 1, 0, 0 );
+		$.setPos( 0, $.getPos().row + 1 );
 		$.print( "Font with 0px padding" );
 		$.setPos( 5, $.getPos().row );
 		$.print( "Test", true );
 
-		$.setFont( gnshFont, 3, 2 );
+		$.setFont( gnshFont );
+		$.setPrintSize( 1, 1, 3, 2 );
 		$.setPos( 0, $.getPos().row + 2 );
 		console.log( $.getPosPx() );
 		$.print( "Font with 3,2px" );

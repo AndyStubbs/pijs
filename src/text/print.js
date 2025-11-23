@@ -72,7 +72,7 @@ function registerCommands() {
 	g_commands.addCommand( "getCols", getCols, true, [] );
 	g_commands.addCommand( "getRows", getRows, true, [] );
 	g_commands.addCommand( "setWordBreak", setWordBreak, true, [ "isEnabled" ] );
-	g_commands.addCommand( "setPrintSize", setPrintSize, true, [ "scaleWidth", "scaleHeight" ] );
+	g_commands.addCommand( "setPrintSize", setPrintSize, true, [ "scaleWidth", "scaleHeight", "padX", "padY" ] );
 	g_commands.addCommand( "calcWidth", calcWidth, true, [ "msg" ] );
 }
 
@@ -278,11 +278,15 @@ function setWordBreak( screenData, options ) {
  * @param {Object} options - Options
  * @param {number} options.scaleWidth - Font scale width
  * @param {number} options.scaleHeight - Font scale height
+ * @param {number} [options.padX] - Horizontal padding between characters
+ * @param {number} [options.padY] - Vertical padding between lines
  * @returns {void}
  */
 function setPrintSize( screenData, options ) {
 	const scaleWidth = g_utils.getFloat( options.scaleWidth, null );
 	const scaleHeight = g_utils.getFloat( options.scaleHeight, null );
+	const padX = g_utils.getInt( options.padX, null );
+	const padY = g_utils.getInt( options.padY, null );
 
 	if( scaleWidth === null || scaleWidth <= 0 || scaleHeight === null || scaleHeight <= 0 ) {
 		const error = new RangeError(
@@ -294,6 +298,14 @@ function setPrintSize( screenData, options ) {
 
 	screenData.printCursor.scaleWidth = scaleWidth;
 	screenData.printCursor.scaleHeight = scaleHeight;
+
+	// Update padding if provided
+	if( padX !== null ) {
+		screenData.printCursor.padX = padX;
+	}
+	if( padY !== null ) {
+		screenData.printCursor.padY = padY;
+	}
 
 	// Update print cursor dimensions
 	updatePrintCursorDimensions( screenData );
@@ -462,7 +474,7 @@ function bitmapPrint( screenData, msg, x, y ) {
  * @param {Object} screenData - Screen data object
  * @returns {void}
  */
-export function updatePrintCursorDimensions( screenData, padX = null, padY = null ) {
+export function updatePrintCursorDimensions( screenData ) {
 	const font = screenData.font;
 	if( !font ) {
 		return;
@@ -470,13 +482,6 @@ export function updatePrintCursorDimensions( screenData, padX = null, padY = nul
 
 	const printCursor = screenData.printCursor;
 
-	// Update the padding
-	if( padX !== null ) {
-		printCursor.padX = padX;
-	}
-	if( padY !== null ) {
-		printCursor.padY = padY;
-	}
 	printCursor.width = printCursor.scaleWidth * ( font.width + printCursor.padX );
 	printCursor.height = printCursor.scaleHeight * ( font.height + printCursor.padY );
 	printCursor.cols = Math.floor( screenData.width / printCursor.width );
