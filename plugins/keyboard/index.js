@@ -275,7 +275,9 @@ function onKeyDown( event ) {
 	m_inKeys[ event.key ] = keyData;
 
 	triggerKeyEventHandlers( event, "down", event.code );
-	triggerKeyEventHandlers( event, "down", event.key );
+	if( event.code !== event.key ) {
+		triggerKeyEventHandlers( event, "down", event.key );
+	}
 	triggerKeyEventHandlers( event, "down", "any" );
 	if( m_actionKeys.has( event.code ) || m_actionKeys.has( event.key ) ) {
 		event.preventDefault();
@@ -290,7 +292,10 @@ function onKeyUp( event ) {
 		return;
 	}
 	triggerKeyEventHandlers( event, "up", event.code );
-	triggerKeyEventHandlers( event, "up", event.key );
+
+	if( event.code !== event.key ) {
+		triggerKeyEventHandlers( event, "up", event.key );
+	}
 	triggerKeyEventHandlers( event, "up", "any" );
 
 	delete m_inCodes[ event.code ];
