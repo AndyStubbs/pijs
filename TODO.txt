@@ -7,3 +7,4 @@ TODO: loadAudio should work like loadImage where you can pass in a name of the a
 playback
 TODO: Add support for non-fixed with fonts. Font will still load the same but should auto detect
 the size of each character and then and use that for spacing.
+TODO: Update play toml file for Version 2.0.
