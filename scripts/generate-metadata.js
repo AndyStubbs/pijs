@@ -561,13 +561,31 @@ function buildTypeDefinitions( version, screenMethods, apiMethods, objects ) {
 	lines.push( "\t}" );
 	lines.push( "}" );
 	lines.push( "" );
-	lines.push( "declare const Pi: Pi.API;" );
-	lines.push( "declare const $: Pi.API;" );
+	lines.push( "// Global variable declarations for IIFE-based Pi.js library" );
+	lines.push( "// These are exposed as window.Pi and window.$ in the browser runtime" );
+	lines.push(
+		"// Using 'var' instead of 'const' because these are global variables, not constants"
+	);
+	lines.push( "declare var Pi: Pi.API;" );
+	lines.push( "declare var $: Pi.API;" );
 	lines.push( "" );
+	lines.push(
+		 "// Global augmentation block ensures these are available in non-module JavaScript contexts"
+	);
+	lines.push(
+		"// This is needed because the file has exports (making it a module), but we want"
+	);
+	lines.push( "// the globals to be available in plain JavaScript files (IIFE-based code)" );
+	lines.push( "declare global {" );
+	lines.push( "\tvar Pi: Pi.API;" );
+	lines.push( "\tvar $: Pi.API;" );
+	lines.push( "}" );
+	lines.push( "" );
+	lines.push( "// Module exports for TypeScript/ES6 module users (optional)" );
 	lines.push( "export { Pi, $ };" );
 	lines.push( "export default Pi;" );
 
-	// TODO: Research if it makes sense to limit typeDefinition lines count.
+	// TODO-LATER: Research if it makes sense to limit typeDefinition lines count.
 	// If the intellisense works better with 80 or 100 characters per line then it will be
 	// worth it. But if not then just leave it be.
 	

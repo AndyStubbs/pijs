@@ -1,10 +1,10 @@
-TODO: Pi Version 1 stopPlay is not working.
-TODO: Pi Version 1 swapColor example doesn't work, looks like a bug with swapColor. I might get rid
+TODO-LATER: Pi Version 1 stopPlay is not working.
+TODO-LATER: Pi Version 1 swapColor example doesn't work, looks like a bug with swapColor. I might get rid
 of swapColor if I make version 1 compatible with version 2 so no need to fix this right now.
-TODO: Pi Version 1 Update -> Make version 1 the canvas2d version of Pi.js. Make it compatible with
+TODO-LATER: Pi Version 1 Update -> Make version 1 the canvas2d version of Pi.js. Make it compatible with
 version 2 but runs in canvas 2d.  I will only do this if there is a demand for canvas2d only mode.
 TODO: loadAudio should work like loadImage where you can pass in a name of the audio for later 
 playback
-TODO: Add support for non-fixed with fonts. Font will still load the same but should auto detect
+TODO-LATER: Add support for non-fixed with fonts. Font will still load the same but should auto detect
 the size of each character and then and use that for spacing.
 TODO: Update play toml file for Version 2.0.
