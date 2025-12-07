@@ -1,0 +1,85 @@
+title = "play"
+category = "sound"
+isScreen = false
+plugin = "sound"
+summary = "Plays music using BASIC-style notation (inspired by QBasic PLAY command)."
+description = """
+Plays music from a notation string. Supports notes, tempo, volume, waveforms, and simultaneous
+notes using commas.
+
+**Notes:**
+- A-G: Note letters (A, B, C, D, E, F, G)
+- Sharps: Use # or + after note (e.g., C#, F+)
+- Flats: Use - after note (e.g., B-, E-)
+- Dotted notes: . (1.5x length), .. (1.75x length)
+- Note length in note: Include number after note (e.g., C4 = quarter note C)
+- N[n]: Play note by MIDI number (0-127)
+
+**Octave:**
+- O[n]: Set octave (0-9)
+- <: Decrease octave by 1
+- >: Increase octave by 1
+
+**Note Length:**
+- L[n]: Set default note length (1-64, where 4=quarter note, 8=eighth note, etc.)
+- Note-specific length: Include number directly after note (e.g., C4, D8)
+
+**Tempo & Timing:**
+- T[n]: Set tempo in BPM (32-255)
+
+**Volume:**
+- V[n]: Set volume (0-100)
+
+**Pause:**
+- P[n]: Pause for specified note length (1-64)
+
+**Waveforms:**
+- WS or SINE: Sine wave
+- WQ or SQUARE: Square wave
+- WW or SAWTOOTH: Sawtooth wave
+- WT or TRIANGLE: Triangle wave
+- [[r],[i]]: Use custom wavetable
+
+**Style (Musical Articulation):**
+- MS: Staccato (75% of note length)
+- MN: Normal (87.5% of note length)
+- ML: Legato (100% of note length)
+- MW: Toggle full note mode
+
+**Modifiers (Envelope & Effects):**
+- MU[n] or MO[n]: Octave offset (can be negative: MU-n)
+- MY[n] or MA[n]: Attack rate (0-100)
+- MX[n] or MT[n]: Sustain rate (0-100)
+- MZ[n] or MD[n]: Decay rate (0-100)
+
+**Advanced Features:**
+- Simultaneous notes: Use comma to play the next note simultaneously with the previous note (e.g., "CDE, F" plays F at the same time as E)
+- Multiple tracks: Call `.play()` multiple times with different playstrings to play multiple independent tracks
+- Custom wavetables: Define using [realArray, imagArray]
+"""
+example = """
+$.screen( "300x200" );
+const tracks = [
+	"T120 O3 L4 GAB>C",
+	"T120 O3 L4 GAB>C,C",
+	"WS T120 O3 L4 GAB>C",
+	"[[0,1,0,-1],[0,0,0,0]] T120 O3 L4 GAB>C",
+];
+let t = 0;
+for( const track of tracks ) {
+	setTimeout( () => {
+		$.print( `Play: ${track}` );
+		$.play( track );
+	}, t );
+	t += 2000;
+}
+"""
+
+[[parameters]]
+name = "playString"
+type = "string"
+description = "Music notation string with notes and commands."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
