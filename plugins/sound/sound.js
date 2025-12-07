@@ -222,16 +222,33 @@ export function registerSound( pluginApi ) {
 	 * @param {number} options.poolSize - Number of audio instances (default: 1)
 	 * @returns {string} Audio ID for use with playAudio
 	 */
-	pluginApi.addCommand( "loadAudio", loadAudio, false, [ "src", "poolSize" ] );
+	pluginApi.addCommand( "loadAudio", loadAudio, false, [ "src", "name", "poolSize" ] );
 	function loadAudio( options ) {
 		const src = options.src;
 		let poolSize = utils.getInt( options.poolSize, 1 );
+		let audioName = options.name;
 
 		// Validate src
 		if( !src || typeof src !== "string" ) {
 			const error = new TypeError( "loadAudio: Parameter src must be a non-empty string." );
 			error.code = "INVALID_SRC";
 			throw error;
+		}
+
+		let audioId = "audioPool_" + m_nextAudioId;
+		if( audioName ) {
+
+			// Name must be unique
+			if( m_audioPools[ audioName ] ) {
+				const error = new Error(
+					`loadAudio: Audio pool name "${audioName}" is already in use.`
+				);
+				error.code = "DUPLICATE_AUDIO_NAME";
+				throw error;
+			}
+			audioId = audioName;
+		} else {
+			m_nextAudioId += 1;
 		}
 
 		// Validate poolSize
@@ -255,10 +272,8 @@ export function registerSound( pluginApi ) {
 			loadAudioItem( pluginApi, audioItem, audio );
 		}
 
-		// Generate unique ID for this pool
-		const audioId = "audioPool_" + m_nextAudioId;
+		// Save audioId to global array
 		m_audioPools[ audioId ] = audioItem;
-		m_nextAudioId += 1;
 
 		return audioId;
 	}

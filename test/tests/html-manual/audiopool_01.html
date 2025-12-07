@@ -152,7 +152,7 @@
 				
 				// For testing without external files, we generate a beep sound
 				const audioUrl = generateBeepDataURL();
-				audioId = $.loadAudio( audioUrl, 5 );
+				audioId = $.loadAudio( audioUrl, null, 5 );
 
 				// Wait for audio to load and pi to be ready
 				$.ready( () => {

@@ -12,12 +12,12 @@ The audio file will be loaded asynchronously. Use $.ready() to wait for all audi
 """
 example = """
 $.screen( "300x200" );
-var bombAudio = $.loadAudio( "media/bomb.wav", 5 );
+$.loadAudio( "media/bomb.wav", "bomb", 5 );
 $.ready( function () {
 	$.print( "Press any key to play bomb sound." );
 	$.onkey( "any", "down", () => {
 		$.print( "BOOM ", true );
-		$.playAudio( bombAudio );
+		$.playAudio( "bomb" );
 	}, false, true );
 } );
 """
@@ -26,6 +26,11 @@ $.ready( function () {
 name = "src"
 type = "string"
 description = "Audio file URL (e.g., 'sound.mp3', 'audio/beep.wav')."
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "A name that can be used to identify the audio for later use."
 
 [[parameters]]
 name = "poolSize"

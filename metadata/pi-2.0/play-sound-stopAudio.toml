@@ -7,7 +7,7 @@ description = """
 Stops all playing instances in the specified audio pool, or stops all audio pools if audioId is null.
 """
 example = """
-let audio = $.loadAudio( "media/sound.wav", 1 );
+let audio = $.loadAudio( "media/sound.wav", null, 1 );
 $.ready( function () {
 	$.playAudio( audio );
 	setTimeout( function () {

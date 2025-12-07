@@ -9,7 +9,7 @@ audio ID is no longer valid.
 """
 example = """
 $.screen( "300x200" );
-var bombAudio = $.loadAudio( "media/bomb.wav", 5 );
+let bombAudio = $.loadAudio( "media/bomb.wav", null, 5 );
 $.ready( function () {
 	$.print( "Press any key to try to play bomb sound." );
 	$.removeAudio( bombAudio );
