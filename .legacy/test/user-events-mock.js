@@ -111,9 +111,6 @@ function processCommands( commands, conflictData ) {
 function removeQuotes( commandString ) {
 	var quotes, start, end;
 
-	// TODO - allow for escaped quotes
-	// TODO - Error handling for uneven quotes
-
 	quotes = [];
 	start = commandString.indexOf( "\"" );
 	while( start !== -1 ) {

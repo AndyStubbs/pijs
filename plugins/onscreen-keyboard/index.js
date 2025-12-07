@@ -206,7 +206,7 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 
 	function renderKeyboard() {
 
-		// TODO: Should only redraw current key being pressed and not the entire keyboard
+		// TODO-LATER: Should only redraw current key being pressed and not the entire keyboard
 
 		const screenData = m_keyboardState.screenData;
 		const layout = m_keyboardState.layout;
@@ -581,7 +581,7 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 		// Save current color
 		const currentColor = screenData.api.getColor();
 
-		// TODO: This should not be a fixed color - need to specify a key highlight color in
+		// TODO-LATER: This should not be a fixed color - need to specify a key highlight color in
 		// the parameters - or maybe use color 1 since a palette must have at least 2 colors
 		// Draw highlight
 		screenData.api.setColor( "white" );

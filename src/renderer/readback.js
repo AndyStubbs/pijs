@@ -64,9 +64,9 @@ export function readPixel( screenData, x, y ) {
  */
 export function readPixelAsync( screenData, x, y ) {
 
-	// TODO: Instead of queueing a microtask make this a part of the batch system, that way the user
-	// will get a result that reflects the state of the FBO when they make the call rather than the
-	// state at the end of the frame.
+	// TODO-LATER: Instead of queueing a microtask make this a part of the batch system, that way 
+	// the user will get a result that reflects the state of the FBO when they make the call rather
+	// than the state at the end of the frame.
 	// If I make this change I should rename the API functions to something like getPixelQueued
 	// instead of getPixelAsync.
 	return new Promise( ( resolve ) => {

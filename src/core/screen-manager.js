@@ -72,7 +72,7 @@ export { m_screenCanvasMap as screenCanvasMap };
 
 export function init( api ) {
 
-	// TODO: Add matchMedia to watch for DPR changes
+	// TODO-LATER: Add matchMedia to watch for DPR changes
 
 	// Create a single ResizeObserver for all screen containers
 	m_resizeObserver = new ResizeObserver( ( entries ) => {
@@ -663,7 +663,7 @@ function setCanvasSize( screenData, maxWidth, maxHeight ) {
 	canvas.style.marginTop = Math.floor( ( maxHeight - newCssHeight ) / 2 ) + "px";
 
 	// Set the actual canvas pixel dimensions
-	// TODO: Change size to css size and use custom upscaling - needs testing
+	// TODO-LATER: Change size to css size and use custom upscaling - needs testing
 	// canvas.width = Math.min( Math.floor( newCssWidth ), MAX_CANVAS_DIMENSION );
 	// canvas.height = Math.min( Math.floor( newCssHeight ), MAX_CANVAS_DIMENSION );
 	canvas.width = Math.min( width, MAX_CANVAS_DIMENSION );

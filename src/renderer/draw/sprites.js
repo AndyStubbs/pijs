@@ -73,7 +73,7 @@ function calculateTransformedCorners(
 /**
  * Add a textured quad (2 triangles, 6 vertices) to IMAGE_BATCH
  * 
- * TODO: Move to batch helpers and call addQuadToBatch
+ * TODO-LATER: Move to batch helpers and call addQuadToBatch
  * 
  * @param {Object} screenData - Screen data object
  * @param {WebGLTexture} texture - WebGL texture
@@ -183,7 +183,7 @@ function getQuadColorArray( color ) {
 
 	if (quadColorArray === undefined) {
 
-		// TODO: Implement Pruning logic BEFORE creating new entry
+		// TODO-LATER: Implement Pruning logic BEFORE creating new entry
 		// if (m_quadColorMap.size >= MAX_QUAD_COLOR_MAP_SIZE) {
 		// 	// Simple approach: Clear the entire map. Aggressive but easy.
 		// 	m_quadColorMap.clear();

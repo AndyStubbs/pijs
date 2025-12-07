@@ -6,7 +6,6 @@
  * @module text/print
  */
 
-// TODO: Add optional spacing around fonts when printing -- Maybe add parameter to setFont?
 // Maybe move setFont to print.js from fonts.js?
 
 "use strict";
@@ -60,8 +59,6 @@ export function init( api ) {
  * @returns {void}
  */
 function registerCommands() {
-
-	// TODO: Change setPrintSize name to setPrintScale
 
 	// Register screen commands
 	g_commands.addCommand( "print", print, true, [ "msg", "isInline", "isCentered" ] );

@@ -7,7 +7,7 @@
  * @version 1.0.0
  */
 
-// TODO: Refactor print-table into a printf command that handles special formatting for strings.
+// TODO-LATER: Refactor print-table into a printf command that handles special formatting for strings.
 // It can include a table formatter that will automatically format tables using special characters
 
 "use strict";

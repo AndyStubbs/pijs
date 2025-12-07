@@ -76,7 +76,7 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 	// More segments = smoother arc, but more draw calls/vertices
 	// A common heuristic is based on radius or a fixed segment length
 	// Let's use a rough estimate based on the full circle segments
-	// TODO: actually figure out good formula for segmentsPerFullCircle
+	// TODO-LATER: actually figure out good formula for segmentsPerFullCircle
 	const segmentsPerFullCircle = Math.min( Math.round( radius * 5 ), 360 );
 
 	const halfWidth = penSize / 2;
@@ -183,7 +183,7 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 		// No separate geometry; arc was extended to produce square ends without overlap
 	} else {
 
-		// TODO: Fix circle end caps
+		// TODO-LATER: Fix circle end caps
 		// Draw circular caps
 		// Use penSize / 2 as radius (same as drawLineCircle does)
 		// drawFilledCircle applies radius -= 1 internally, so we add 1 to ensure full coverage

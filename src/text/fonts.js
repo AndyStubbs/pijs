@@ -7,7 +7,7 @@
  * @module text/fonts
  */
 
-// TODO: Add remove font command that removes the font and deletes any WebGL textures
+// TODO-LATER: Add remove font command that removes the font and deletes any WebGL textures
 
 "use strict";
 
@@ -294,7 +294,7 @@ function setDefaultFont( options ) {
 export function setFont( screenData, options ) {
 	const fontId = g_utils.getInt( options.fontId, null );
 
-	// TODO: setFont should also accept a font object returned by getAvailableFonts
+	// TODO-LATER: setFont should also accept a font object returned by getAvailableFonts
 	
 	if( fontId === null || !m_fontMap.has( fontId ) ) {
 		const error = new RangeError(

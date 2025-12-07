@@ -159,11 +159,11 @@ export function createContext( screenData ) {
 	screenData.canvas.addEventListener( "webglcontextrestored", () => {
 		console.log( "WebGL context restored" );
 
-		// TODO: Reinitialize WebGL resources
+		// TODO-LATER: Reinitialize WebGL resources
 		// initWebGL( screenData );
 		screenData.contextLost = false;
 
-		// TODO: Reset blend mode
+		// TODO-LATER: Reset blend mode
 		// blendModeChanged( screenData );
 	} );
 }

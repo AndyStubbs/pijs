@@ -396,7 +396,7 @@ export function flushBatches( screenData, blends = null ) {
 
 	if( screenData.contextLost ) {
 
-		// TODO: Maybe add warning here?
+		// TODO-LATER: Maybe add warning here?
 		// console.warn( "WebGL context lost unable to render screen." );
 		return;
 	}

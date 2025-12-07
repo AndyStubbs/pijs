@@ -178,7 +178,7 @@ function scheduleReadyCheck() {
 
 function checkReady() {
 
-	// TODO: [Violation] 'setTimeout' handler took 381ms
+	// TODO-LATER: [Violation] 'setTimeout' handler took 381ms
 	// Long running tasks in callback should be handled - maybe we should track callback times?
 
 	m_checkReadyTimeout = null;

@@ -62,7 +62,7 @@ export function addTriangleToBatch( batch, x1, y1, x2, y2, x3, y3, color ) {
  * Add a quad (rectangle as two triangles) to a geometry batch
  * The quad is defined by two corner points (x1,y1) and (x2,y2) forming a rectangle
  * 
- * TODO: Improve efficiency, this should work more similiarly to addTexturedQuadToBatch
+ * TODO-LATER: Improve efficiency, this should work more similiarly to addTexturedQuadToBatch
  * 
  * @param {Object} batch - Geometry batch object
  * @param {number} x1 - Left/bottom-left X coordinate
@@ -93,14 +93,14 @@ export function addQuadToBatch( batch, x1, y1, x2, y2, color ) {
 
 
 /***************************************************************************************************
- * Curves Helpers - TODO Get out of here
+ * Curves Helpers - TODO-LATER Get out of here
  ***************************************************************************************************/
 
 /**
  * Tessellate a cubic Bezier curve into a polyline using an adaptive flatness criterion.
  * Returns an array of points [x0, y0, x1, y1, ..., xn, yn] including endpoints.
  * 
- * TODO: Move this function to bezier module
+ * TODO-LATER: Move this function to bezier module
  * 
  * @param {number} x0
  * @param {number} y0
