@@ -49,7 +49,7 @@ function getFullBanner( version ) {
  * - Plugin system with bundled plugins:
  *		gamepad: Gamepad input handling
  *		keyboard: Keyboard input handling
- *		play-sound: Music playback and sound effects
+ *		sound: Music playback and sound effects
  *		pointer: Mouse, touch, and press handling
  * 
  * For the core-only version, use pi.lite.js

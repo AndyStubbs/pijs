@@ -1,7 +1,7 @@
 title = "setVolume"
-category = "play-sound"
+category = "sound"
 isScreen = false
-plugin = "play-sound"
+plugin = "sound"
 summary = "Sets the global volume for all sounds and audio pools."
 description = """
 Sets the master volume that affects all sounds and audio pools. Volume changes are applied

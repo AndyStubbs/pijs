@@ -1,7 +1,7 @@
 title = "loadAudio"
-category = "play-sound"
+category = "sound"
 isScreen = false
-plugin = "play-sound"
+plugin = "sound"
 summary = "Creates an audio pool for playing multiple instances of the same sound file."
 description = """
 Creates a pool of audio instances from a single audio file. This allows playing the same sound

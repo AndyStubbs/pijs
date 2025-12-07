@@ -1,7 +1,7 @@
 title = "play"
-category = "play-sound"
+category = "sound"
 isScreen = false
-plugin = "play-sound"
+plugin = "sound"
 summary = "Plays music using BASIC-style notation (inspired by QBasic PLAY command)."
 description = """
 Plays music from a notation string. Supports notes, tempo, volume, waveforms, and multiple

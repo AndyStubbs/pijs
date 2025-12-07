@@ -1,7 +1,7 @@
 title = "stopAudio"
-category = "play-sound"
+category = "sound"
 isScreen = false
-plugin = "play-sound"
+plugin = "sound"
 summary = "Stops audio from an audio pool or all audio pools."
 description = """
 Stops all playing instances in the specified audio pool, or stops all audio pools if audioId is null.

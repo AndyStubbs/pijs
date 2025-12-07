@@ -4,7 +4,7 @@
  * Music playback and sound effects using Web Audio API.
  * Combines play.js (BASIC-style music notation) and sound.js (sound effects).
  * 
- * @module plugins/play-sound
+ * @module plugins/sound
  * @version 1.0.0
  */
 
@@ -37,7 +37,7 @@ export default function playSoundPlugin( pluginApi ) {
 // Auto-register in IIFE mode (when loaded via <script> tag)
 if( typeof window !== "undefined" && window.pi ) {
 	window.pi.registerPlugin( {
-		"name": "play-sound",
+		"name": "sound",
 		"version": "1.0.0",
 		"description": "Music playback and sound effects using Web Audio API",
 		"init": playSoundPlugin

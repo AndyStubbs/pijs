@@ -3,7 +3,7 @@
  * 
  * Sound effects, audio files, and volume control using Web Audio API.
  * 
- * @module plugins/play-sound/sound
+ * @module plugins/sound/sound
  */
 
 "use strict";

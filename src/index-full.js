@@ -4,7 +4,7 @@
  * Includes core Pi.js functionality plus key plugins:
  * - gamepad: Gamepad input handling
  * - keyboard: Keyboard input handling
- * - play-sound: Music playback and sound effects
+ * - sound: Music playback and sound effects
  * - pointer: Mouse, touch, and press handling
  * 
  * This is the official Pi.js library with essential plugins included.
@@ -22,7 +22,7 @@ import api from "./index.js";
 // Import plugins
 import "../plugins/gamepad/index.js";
 import "../plugins/keyboard/index.js";
-import "../plugins/play-sound/index.js";
+import "../plugins/sound/index.js";
 import "../plugins/pointer/index.js";
 
 // Export the same API (now with plugins)

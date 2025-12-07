@@ -3,7 +3,7 @@
  * 
  * BASIC-style music notation playback (inspired by QBasic PLAY command).
  * 
- * @module plugins/play-sound/play
+ * @module plugins/sound/play
  */
 
 "use strict";

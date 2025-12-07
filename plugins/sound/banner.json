@@ -1,5 +1,5 @@
 {
-	"name": "play-sound",
+	"name": "sound",
 	"version": "1.0.0",
 	"description": "Music playback and sound effects using Web Audio API",
 	"author": "Andy Stubbs",
