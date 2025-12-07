@@ -5,4 +5,3 @@ TODO-LATER: Pi Version 1 Update -> Make version 1 the canvas2d version of Pi.js.
 version 2 but runs in canvas 2d.  I will only do this if there is a demand for canvas2d only mode.
 TODO-LATER: Add support for non-fixed with fonts. Font will still load the same but should auto detect
 the size of each character and then and use that for spacing.
-TODO: Update play toml file for Version 2.0.
