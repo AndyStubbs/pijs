@@ -28,10 +28,6 @@ const MAX_IMAGE_BATCH_SIZE = 10_000;
 const DEFAULT_IMAGE_BATCH_SIZE = 50;
 const BATCH_CAPACITY_SHRINK_INTERVAL = 5000;
 
-// TODO: Need to keep an eye on memory usage and memory caps. Maybe make max_batch_size a variable
-// maybe let user update max batch sizes.  Need to handle out of memory issues or prevent them
-// from happening.  Needs research.
-
 // Nested Map for WebGL2 texture storage
 // Outer Map: Image element -> Inner Map: GL context -> WebGL texture
 // This allows efficient lookup by image and cleanup when image is removed
@@ -260,8 +256,6 @@ export function initWebGL( screenData ) {
 	screenData.canvas.addEventListener( "webglcontextrestored", () => {
 		console.log( "WebGL context restored" );
 
-		// TODO: Screen gets lost but maybe we can restore it from the FBO?
-
 		// Reinitialize WebGL resources
 		initWebGL( screenData );
 		screenData.contextLost = false;
@@ -454,13 +448,6 @@ export function setImageDirty( screenData ) {
 }
 
 export function cls( screenData, x, y, width, height ) {
-	
-	// TODO: Implement clear screen command
-	// How to implement this?
-	// For a full screen clear need to clear the screen and clear out all the batches too.
-	// No need to render anything that happens before this because the user would never see it.
-	// But if it's a partial screen clear then maybe just draw a transparent rectangle over the
-	// clear area.
 }
 
 export function blendModeChanged( screenData, previousBlend ) {
@@ -661,7 +648,6 @@ function flushBatches( screenData, blend = null ) {
 
 	if( screenData.contextLost ) {
 
-		// TODO: Maybe add warning here?
 		// console.warn( "WebGL context lost unable to render screen." );
 		return;
 	}
@@ -679,7 +665,6 @@ function flushBatches( screenData, blend = null ) {
 		screenData.isFirstRender = false;
 	}
 
-	// TODO: Images should not share the same blend mode as other drawItems.
 	// Update the blend mode
 	if( blend === g_pens.BLEND_REPLACE ) {
 		gl.disable( gl.BLEND );

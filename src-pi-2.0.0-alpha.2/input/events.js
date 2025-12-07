@@ -14,7 +14,7 @@ import * as g_screenManager from "../core/screen-manager.js";
 import * as g_state from "../core/state-settings.js";
 
 
-// Import clear functions from input modules (TODO: Re-enable when input modules are reimplemented)
+// Import clear functions from input modules (Re-enable when input modules are reimplemented)
 // import { clearKeyboardEvents } from "../modules/keyboard";
 // import { clearMouseEvents } from "../modules/mouse";
 // import { clearTouchEvents } from "../modules/touch";
@@ -23,27 +23,27 @@ import * as g_state from "../core/state-settings.js";
 
 // Placeholder functions until modules are reimplemented
 function clearKeyboardEvents() {
-	// TODO: Implement when keyboard module is reimplemented
+	
 }
 
 function clearMouseEvents( screenData ) {
-	// TODO: Implement when mouse module is reimplemented
+	
 }
 
 function clearTouchEvents( screenData ) {
-	// TODO: Implement when touch module is reimplemented
+	
 }
 
 function clearPressEvents( screenData ) {
-	// TODO: Implement when press module is reimplemented
+	
 }
 
 function clearClickEvents( screenData ) {
-	// TODO: Implement when press module is reimplemented
+	
 }
 
 function clearGamepadEvents() {
-	// TODO: Implement when gamepad module is reimplemented
+	
 }
 
 

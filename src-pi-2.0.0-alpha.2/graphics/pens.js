@@ -302,7 +302,7 @@ function setPen( screenData, options ) {
  **************************************************************************************************/
 
 
-// TODO: These pen functions are obviously flawed for use in lines and shapes as they will write
+// These pen functions are obviously flawed for use in lines and shapes as they will write
 // over the same pixel multiple times.  Find a better way to draw shapes with a pen might be 
 // complicated so it's not a high priority, this will get the job done for now. This is especially
 // problematic when combined with alpha blends because it will perform blends multiple times.

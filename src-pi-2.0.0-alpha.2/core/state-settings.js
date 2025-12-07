@@ -187,13 +187,6 @@ export function set( screenData, options ) {
 			const argsArray = [ optionValues ];
 			const parsedOptions = g_utils.parseOptions( argsArray, setting.parameterNames );
 
-			// TODO: Need to handle when setting multiple commands that trigger api rebuilds so that
-			// we can defer the api rebuilds until after settings are done. This will allow the 
-			// user to do things like set both a pen and a blend and the api will only rebuild one
-			// time. But since the rebuild will have to be completed before any new graphics 
-			// commands get called this will be tricky. It would be nice to implement in the
-			// build functions themselves but probably best to handle it here.
-
 			// Call the setting function
 			if( setting.isScreen ) {
 				setting.fn( screenData, parsedOptions );

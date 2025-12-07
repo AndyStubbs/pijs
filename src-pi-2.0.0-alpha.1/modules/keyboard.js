@@ -245,10 +245,6 @@ function offkey( options ) {
 	}
 }
 
-// TODO: A couple of bugs notice with input at 640x480. First sometimes I see rogue cursor after
-// hitting the backspace. Then If I type in the letter A as the first character I noticed the left
-// side looks like it's getting sliced a little bit. This may be due to the drawing of the cursor
-// and clearing space for the flashing display.
 screenManager.addCommand(
 	"input", input, [ "prompt", "fn", "cursor", "isNumber", "isInteger", "allowNegative" ]
 );

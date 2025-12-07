@@ -37,7 +37,6 @@ const m_observedContainers = new Set();
 
 export function init() {
 	
-	// TODO: Add matchMedia to watch for DPR changes - if a user moves a browser to a new monitor
 	// it could cause the canvas image to become blury, even if the actual CSS size of the canvas.
 	// doesn't change.
 	// matchMedia( `(resolution: ${dpr}dppx)` ).addEventListener( "change", resizeCanvases );
@@ -344,13 +343,6 @@ addCommand( "canvas", canvas, [] );
 function canvas( screenData ) {
 	return screenData.canvas;
 }
-
-// TODO: Consider simplifying api commands. This fancy processApiCommand is complex and it only
-// saves 1 if statement per command call. It might be worth it to simplify it.
-// TODO: When pixel mode is set it's setting it in a mixed state. The global $ will get set for
-// all screens, but only the current screen on the screen state will get updated.
-// Preferred fix is to not set the global $ pixel mode but only for active screen. Or just
-// set pixel mode for global $ and all screens - make this a global command only.
 
 // Set pixel mode command
 addCommand( "setPixelMode", setPixelMode, [ "isEnabled" ] );

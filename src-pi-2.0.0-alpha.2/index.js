@@ -25,14 +25,8 @@ import * as g_graphicsApi from "./graphics/graphics-api.js";
 import * as g_pixels from "./graphics/pixels.js";
 import * as g_images from "./graphics/images.js";
 
-// Text
-// TODO: Import text modules
-
 // Inputs
 import * as g_events from "./input/events.js";
-
-// Audio
-// TODO: Import audio modules
 
 // Version injected during build from package.json
 const VERSION = __VERSION__;

@@ -67,9 +67,6 @@ export function initCanvas2D( screenData ) {
 
 export function getImageData( screenData ) {
 
-	// TODO: getImageData but only if image has been drawn to by context command such
-	// as drawImage.  Otherwise we shouldn't need to getImageData as it should be up to
-	// date
 }
 
 /**
@@ -139,8 +136,7 @@ export function afterResize( screenData, fromSize, toSize ) {
 
 
 export function cls( screenData, x, y, width, height ) {
-	
-	// TODO: Implement clear screen command
+
 }
 
 

@@ -217,7 +217,6 @@ function getColor( screenData, options ) {
 	);
 }
 
-// TODO: Add parameter (include0) to return the 0 item from the pal.
 // Get palette
 function getPal( screenData ) {
 	const filteredPal = [];
@@ -421,9 +420,6 @@ function getPalColor( screenData, options ) {
 	}
 	return null;
 }
-
-// TODO: Implement replaceColors and replacePalColors commands
-// These require special planning for WebGL2 implementation
 
 
 /***************************************************************************************************

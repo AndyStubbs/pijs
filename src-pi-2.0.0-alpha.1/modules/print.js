@@ -34,11 +34,6 @@ export function init() {
  * External API Commands
  **************************************************************************************************/
 
-
-// TODO: add printf command that has format printing that allows for colors, spacing, variable 
-// injection and maybe more formating stuff. Research other languages like c/c++ and others.
-
-
 // print command
 screenManager.addCommand( "print", print, [ "msg", "isInline", "isCentered" ] );
 function print( screenData, options ) {
