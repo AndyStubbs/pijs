@@ -97,6 +97,8 @@ const m_batchProto = {
 	"locations": null
 };
 
+const m_isDebug = window.location.search.includes( "webgl-debug" );
+
 
 /***************************************************************************************************
  * Module Initialization
@@ -296,9 +298,11 @@ function resizeBatch( batch, newCapacity ) {
 		batch.texCoords = newTexCoords;
 	}
 
-	console.log(
-		`Batch ${BATCH_TYPES[ batch.type ]} resized from ${batch.capacity} to ${newCapacity}`
-	);
+	if( m_isDebug ) {
+		console.log(
+			`Batch ${BATCH_TYPES[ batch.type ]} resized from ${batch.capacity} to ${newCapacity}`
+		);
+	}
 
 	// Update batch
 	batch.capacity = newCapacity;
@@ -362,10 +366,13 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
 
 		// Make sure we don't exceed max batch size
 		if( requiredCount > batch.maxCapacity ) {
-			console.log(
-				`Batch ${BATCH_TYPES[ batch.type ]} exceeded maxCapacity ${batch.maxCapacity}, ` +
-				`requested ${requiredCount}.  Flushing batch to reset count to 0.`
-			);
+			if( m_isDebug ) {
+				console.log(
+					`Batch ${BATCH_TYPES[ batch.type ]} exceeded maxCapacity ` +
+					`${batch.maxCapacity}, requested ${requiredCount}.  Flushing batch to reset` +
+					` count to 0.`
+				);
+			}
 		
 			flushBatches( screenData );
 			return prepareBatch( screenData, batchType, itemCount, texture );

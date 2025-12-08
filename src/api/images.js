@@ -461,7 +461,14 @@ function loadSpritesheet( options ) {
  * @returns {Object} Actual image
  */
 function getImage( options ) {
-	return getImageFromRawInput( options.name, "getImage" );
+	const img = getImageFromRawInput( options.name, "getImage" );
+
+	// For offscreen screens then call createImageFromScreen
+	if( img.isMock ) {
+		const imgScreenData = g_screenManager.getScreenData( "getImage", img.dataset.screenId );
+		return createImageFromScreen( imgScreenData );
+	}
+	return img;
 }
 
 /**
@@ -646,7 +653,7 @@ function getSpritesheetData( screenData, options ) {
  */
 function createCanvasFromScreenRegion( screenData, x, y, width, height ) {
 
-	// TODO-LATER: Research if it's possible to use blitFrameBuffer or another faster methand that
+	// TODO-LATER: Research if it's possible to use blitFrameBuffer or another faster method than
 	// readPixels.
 	
 	// Read pixel data from FBO using readPixelsRaw
@@ -733,8 +740,9 @@ export function getImageFromRawInput( imageOrName, fnName ) {
 	} else if( imageOrName && typeof imageOrName === "object" ) {
 		if( isTexImageCompatible( imageOrName ) ) {
 			img = imageOrName;
-		} else if( imageOrName.screen === true && typeof imageOrName.canvas === "function" ) {
-			img = imageOrName.canvas();
+		} else if( imageOrName.screen === true ) {
+			const imgScreenData = g_screenManager.getScreenData( fnName, imageOrName.id );
+			img = imgScreenData.canvas;
 		}
 	}
 

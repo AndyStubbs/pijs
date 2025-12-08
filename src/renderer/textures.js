@@ -37,6 +37,78 @@ export function init() {
 
 
 /**
+ * Copy image data to currently bound texture, handling mock canvases by copying from FBO
+ * Handles cross-context copying when mock canvas uses a different WebGL context
+ * 
+ * @param {WebGL2RenderingContext} gl - WebGL2 context (destination context)
+ * @param {HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} img - Image or Canvas element
+ * @returns {void}
+ */
+function copyImageToTexture( gl, img ) {
+	
+	// If img is a mock canvas, copy from the FBO instead of the mock canvas
+	if( img.isMock ) {
+		const imgScreenData = g_screenManager.screenCanvasMap.get( img );
+		if( imgScreenData ) {
+
+			// Make sure the other screen is up to date
+			g_batches.flushBatches( imgScreenData );
+			
+			// Check if contexts are different (cross-context copy needed)
+			if( imgScreenData.gl !== gl ) {
+				
+				// Cross-context copy: read pixels from source FBO, upload to destination texture
+				const srcGl = imgScreenData.gl;
+				const width = imgScreenData.width;
+				const height = imgScreenData.height;
+				
+				// Allocate buffer for pixel data
+				const pixelData = new Uint8Array( width * height * 4 );
+				
+				// Read pixels from source FBO in source context
+				srcGl.bindFramebuffer( srcGl.FRAMEBUFFER, imgScreenData.FBO );
+				srcGl.readPixels( 0, 0, width, height, srcGl.RGBA, srcGl.UNSIGNED_BYTE, pixelData );
+				srcGl.bindFramebuffer( srcGl.FRAMEBUFFER, null );
+				
+				// Flip Y-axis (WebGL reads bottom-to-top, but texImage2D expects top-to-bottom)
+				// Flip rows in place
+				const rowSize = width * 4;
+				const tempRow = new Uint8Array( rowSize );
+				for( let y = 0; y < Math.floor( height / 2 ); y++ ) {
+					const topRow = y * rowSize;
+					const bottomRow = ( height - 1 - y ) * rowSize;
+					
+					// Swap rows
+					tempRow.set( pixelData.subarray( topRow, topRow + rowSize ) );
+					pixelData.set( pixelData.subarray( bottomRow, bottomRow + rowSize ), topRow );
+					pixelData.set( tempRow, bottomRow );
+				}
+				
+				// Upload pixel data to destination texture in destination context
+				gl.texImage2D(
+					gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+					pixelData
+				);
+			} else {
+				
+				// Same context: can use copyTexImage2D directly
+				gl.bindFramebuffer( gl.READ_FRAMEBUFFER, imgScreenData.FBO );
+				gl.copyTexImage2D(
+					gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, imgScreenData.width, imgScreenData.height, 0
+				);
+				gl.bindFramebuffer( gl.READ_FRAMEBUFFER, null );
+			}
+		} else {
+
+			// Fallback to regular canvas copy if screenData not found
+			gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img );
+		}
+	} else {
+		gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img );
+	}
+}
+
+/**
  * Get or create WebGL2 texture for image
  * Creates and caches texture if it doesn't exist for this GL context.
  * 
@@ -71,7 +143,8 @@ export function getWebGL2Texture( screenData, img ) {
 		// If image is a canvas, update the texture so that it has the latest data
 		if(
 			img instanceof HTMLCanvasElement ||
-			( typeof OffscreenCanvas !== "undefined" && img instanceof OffscreenCanvas )
+			( typeof OffscreenCanvas !== "undefined" && img instanceof OffscreenCanvas ) ||
+			img.isMock
 		) {
 
 			// If the img.isDirty is not defined then assume it's dirty, otherwise only if it's
@@ -89,7 +162,7 @@ export function getWebGL2Texture( screenData, img ) {
 
 			// Copy the content of the source canvas to the texture
 			gl.bindTexture( gl.TEXTURE_2D, texture );
-			gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img );
+			copyImageToTexture( gl, img );
 			gl.bindTexture( gl.TEXTURE_2D, null );
 		}
 		return texture;
@@ -105,7 +178,7 @@ export function getWebGL2Texture( screenData, img ) {
 
 	// Upload image data to texture
 	gl.bindTexture( gl.TEXTURE_2D, texture );
-	gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img );
+	copyImageToTexture( gl, img );
 
 	// Set texture parameters for pixel-perfect rendering
 	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );

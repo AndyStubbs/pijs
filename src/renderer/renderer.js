@@ -62,6 +62,9 @@ export {
  * Module Initialization
  ***************************************************************************************************/
 
+const m_isDebug = window.location.search.includes( "webgl-debug" );
+let m_offscreenContext = null;
+
 
 /**
  * Initialize all renderer modules
@@ -100,19 +103,33 @@ export function init( api ) {
  */
 export function createContext( screenData ) {
 
-	const canvas = screenData.canvas;
+	let canvas = screenData.canvas;
 	const width = screenData.width;
 	const height = screenData.height;
 	
-	// Try WebGL2
-	screenData.gl = canvas.getContext( "webgl2", { 
-		"alpha": true, 
-		"premultipliedAlpha": false,
-		"antialias": false,
-		"preserveDrawingBuffer": true,
-		"desynchronized": false,
-		"colorType": "unorm8"
-	} );
+	if( screenData.isOffscreen ) {
+		canvas = screenData.canvas.canvas;
+		if( !m_offscreenContext ) {
+			m_offscreenContext = canvas.getContext( "webgl2", { 
+				"alpha": true, 
+				"premultipliedAlpha": false,
+				"antialias": false,
+				"preserveDrawingBuffer": true,
+				"desynchronized": false,
+				"colorType": "unorm8"
+			} );
+		}
+		screenData.gl = m_offscreenContext;
+	} else {
+		screenData.gl = canvas.getContext( "webgl2", { 
+			"alpha": true, 
+			"premultipliedAlpha": false,
+			"antialias": false,
+			"preserveDrawingBuffer": true,
+			"desynchronized": false,
+			"colorType": "unorm8"
+		} );
+	}
 	
 	// WebGL2 not available
 	if( !screenData.gl ) {
@@ -141,7 +158,7 @@ export function createContext( screenData ) {
 	g_shaders.setupDisplayShader( screenData );
 
 	// Enable WebGL debugging extensions
-	if( typeof window !== "undefined" && window.location.search.includes( "webgl-debug" ) ) {
+	if( m_isDebug) {
 		const debugExt = screenData.gl.getExtension( "WEBGL_debug_renderer_info" );
 		if( debugExt ) {
 			console.log( "GPU:", screenData.gl.getParameter( debugExt.UNMASKED_RENDERER_WEBGL ) );
@@ -149,14 +166,14 @@ export function createContext( screenData ) {
 	}
 	
 	// Track if webglcontext gets lost
-	screenData.canvas.addEventListener( "webglcontextlost", ( e ) => {
+	canvas.addEventListener( "webglcontextlost", ( e ) => {
 		e.preventDefault();
 		console.warn( "WebGL context lost" );
 		screenData.contextLost = true;
 	} );
 	
 	// Reinit canvas when webglcontext gets restored
-	screenData.canvas.addEventListener( "webglcontextrestored", () => {
+	canvas.addEventListener( "webglcontextrestored", () => {
 		console.log( "WebGL context restored" );
 
 		// TODO-LATER: Reinitialize WebGL resources

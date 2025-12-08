@@ -55,11 +55,12 @@ const m_screenDataItemGetters = [];
 const m_screenDataInitFunctions = [];
 const m_screenDataCleanupFunctions = [];
 const MAX_CANVAS_DIMENSION = 8192;
+const m_observedContainers = new Set();
 
 let m_nextScreenId = 0;
 let m_activeScreenData = null;
 let m_resizeObserver = null;
-const m_observedContainers = new Set();
+let m_offscreenCanvas = null;
 
 
 /***************************************************************************************************
@@ -130,7 +131,6 @@ function registerCommands() {
 	g_commands.addCommand( "width", widthCmd, true, [] );
 	g_commands.addCommand( "height", heightCmd, true, [] );
 	g_commands.addCommand( "canvas", canvasCmd, true, [] );
-
 }
 
 export function addScreenDataItem( name, val ) {
@@ -244,13 +244,24 @@ function screen( options ) {
 	// If it's not a ratio validate the dimensions
 	validateDimensions( screenData.aspectData.width, screenData.aspectData.height );
 
-	// Create the canvas
-	screenData.canvas = document.createElement( "canvas" );
-	screenData.canvas.dataset.screenId = screenData.id;
-	m_screenCanvasMap.set( screenData.canvas, screenData );
-
 	// Setup options for offscreen canvas
 	if( screenData.isOffscreen ) {
+
+		// Create a shared canvas for offscreen screens
+		if( !m_offscreenCanvas ) {
+			m_offscreenCanvas = document.createElement( "canvas" );
+		}
+
+		// Create a mock canvas for offscreen screen
+		screenData.canvas = {
+			"isMock": true,
+			"canvas": m_offscreenCanvas,
+			"dataset": { "screenId": screenData.id },
+			"width": screenData.aspectData.width,
+			"height": screenData.aspectData.height,
+			"style": {}
+		};
+
 		if( screenData.aspectData.splitter !== "x" ) {
 			const error = new Error(
 				"screen: You must use aspect ratio with e(x)act pixel dimensions for offscreen " +
@@ -263,6 +274,10 @@ function screen( options ) {
 		screenData.width = screenData.aspectData.width;
 		screenData.height = screenData.aspectData.height;
 	} else {
+
+		// Create the canvas
+		screenData.canvas = document.createElement( "canvas" );
+		screenData.canvas.dataset.screenId = screenData.id;
 
 		// Setup options for onscreen canvas
 		screenData.canvas.tabIndex = 0;
@@ -300,6 +315,9 @@ function screen( options ) {
 			m_observedContainers.add( screenData.container );
 		}
 	}
+
+	// Map the canvas to the screenData
+	m_screenCanvasMap.set( screenData.canvas, screenData );
 	
 	if( !screenData.isOffscreen ) {
 		resizeScreen( screenData, true );
@@ -549,6 +567,14 @@ function heightCmd( screenData ) {
 }
 
 function canvasCmd( screenData ) {
+	if( screenData.isOffscreen ) {
+		console.warn(
+			"Offscreen screens use a shared canvas that draws to textures to simulate an " +
+			"offscreen canvas. The canvas returned is that shared canvas. Proceed with caution " +
+			"changes to this canvas could cause unexpected results." 
+		);
+		return screenData.canvas.canvas;
+	}
 	return screenData.canvas;
 }
 

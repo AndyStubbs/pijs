@@ -13,9 +13,9 @@ import * as g_testManager from "./test-manager.js";
 import * as g_reportManager from "./report-manager.js";
 
 const PI_VERSIONS = {
-	"2.0.0-alpha.3": {
+	"2.0.0": {
 		"path": "../../build/pi.js",
-		"menuName": "2.0.0-alpha.3 (Current Build)"
+		"menuName": "2.0.0 (Current Build)"
 	},
 	"2.0.0-alpha.1": {
 		"path": "../../releases/pi-2.0.0-alpha.1/pi.js",
