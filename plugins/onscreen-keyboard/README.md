@@ -68,7 +68,7 @@ pi.hideKeyboard();
 
 ```javascript
 pi.ready( () => {
-	pi.screen( { "aspect": "16:9" } );
+	pi.screen( { "aspect": "300x200" } );
 	
 	pi.print( "Enter your name:" );
 	
@@ -86,7 +86,7 @@ pi.ready( () => {
 ### Number Input with Number Pad
 
 ```javascript
-pi.screen( { "aspect": "16:9" } );
+pi.screen( { "aspect": "300x200" } );
 pi.print( "Enter your age:" );
 
 // Show number keyboard
@@ -102,7 +102,7 @@ pi.input( "> ", ( age ) => {
 
 ```javascript
 pi.ready( () => {
-	pi.screen( { "aspect": "16:9" } );
+	pi.screen( { "aspect": "300x200" } );
 	
 	// Detect touch device
 	const isTouchDevice = ( 'ontouchstart' in window ) || 
@@ -126,7 +126,7 @@ pi.ready( () => {
 ```javascript
 let keyboardVisible = false;
 
-pi.screen( { "aspect": "16:9" } );
+pi.screen( { "aspect": "300x200" } );
 pi.print( "Press K to toggle keyboard" );
 
 pi.onkey( "k", "down", () => {

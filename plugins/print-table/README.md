@@ -56,7 +56,7 @@ Built-in border styles:
 ### Simple Auto-Formatted Table
 
 ```javascript
-pi.screen( { "aspect": "16:9" } );
+pi.screen( { "aspect": "300x200" } );
 
 const data = [
 	[ "Name", "Age", "City" ],
@@ -110,7 +110,7 @@ The plugin automatically determines what type of intersection to draw based on a
 
 ```javascript
 pi.ready( () => {
-	pi.screen( { "aspect": "16:9" } );
+	pi.screen( { "aspect": "300x200" } );
 	
 	const menu = [
 		[ "Main Menu" ],

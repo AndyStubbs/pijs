@@ -171,7 +171,7 @@ pi.offkey( "KeyA", "down", handleKey );
 
 <script>
 	pi.ready( () => {
-		pi.screen( { "aspect": "16:9" } );
+		pi.screen( { "aspect": "300x200" } );
 		
 		// Keyboard is automatically started
 		pi.onkey( "KeyA", "down", ( keyData ) => {
@@ -193,7 +193,7 @@ pi.registerPlugin( {
 } );
 
 pi.ready( () => {
-	pi.screen( { "aspect": "16:9" } );
+	pi.screen( { "aspect": "300x200" } );
 	
 	// Keyboard is automatically started
 	pi.onkey( "KeyA", "down", ( keyData ) => {

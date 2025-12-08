@@ -51,7 +51,7 @@ The simplest way to use plugins in the browser:
 	
 	<script>
 		pi.ready( () => {
-			pi.screen( { "aspect": "16:9" } );
+			pi.screen( { "aspect": "300x200" } );
 			
 			// Use plugin commands
 			pi.myPluginCommand( "hello" );
@@ -76,7 +76,7 @@ pi.registerPlugin( {
 } );
 
 pi.ready( () => {
-	pi.screen( { "aspect": "16:9" } );
+	pi.screen( { "aspect": "300x200" } );
 	pi.myPluginCommand( "hello" );
 } );
 ```

@@ -261,7 +261,7 @@ All documentation is complete and comprehensive:
 <script src="plugins/example-plugin/example-plugin.js"></script>
 <script>
     pi.ready( () => {
-        pi.screen( { "aspect": "16:9" } );
+        pi.screen( { "aspect": "300x200" } );
         pi.hello( "World" );
         pi.drawRandomCircle( 100, 100, 50 );
     } );
@@ -279,7 +279,7 @@ pi.registerPlugin( {
 } );
 
 pi.ready( () => {
-    pi.screen( { "aspect": "16:9" } );
+    pi.screen( { "aspect": "300x200" } );
     pi.hello( "World" );
 } );
 ```

@@ -172,7 +172,7 @@ if( typeof window !== "undefined" && window.pi ) {
 
 ```javascript
 pi.ready( () => {
-	pi.screen( { "aspect": "16:9" } );
+	pi.screen( { "aspect": "300x200" } );
 	
 	console.log( pi.increment() );  // 1
 	console.log( pi.increment() );  // 2

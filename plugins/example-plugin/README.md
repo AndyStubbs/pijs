@@ -108,7 +108,7 @@ pi.star( 300, 200, 100, 8 ); // 8-pointed star
 
 <script>
 	pi.ready( () => {
-		pi.screen( { "aspect": "16:9" } );
+		pi.screen( { "aspect": "300x200" } );
 		pi.hello( "Plugin User" );
 		pi.drawRandomCircle( 200, 150, 75 );
 	} );
@@ -127,7 +127,7 @@ pi.registerPlugin( {
 } );
 
 pi.ready( () => {
-	pi.screen( { "aspect": "16:9" } );
+	pi.screen( { "aspect": "300x200" } );
 	pi.hello( "Plugin User" );
 	pi.drawRandomCircle( 200, 150, 75 );
 } );

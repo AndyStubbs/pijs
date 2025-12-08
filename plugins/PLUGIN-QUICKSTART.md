@@ -23,7 +23,7 @@ test/test-plugin-system.html           ← Basic inline tests
 	<script src="plugins/example-plugin/dist/example-plugin.min.js"></script>
 	<script>
 		pi.ready( () => {
-			pi.screen( { "aspect": "16:9" } );
+			pi.screen( { "aspect": "300x200" } );
 			pi.hello( "World" );                    // Plugin command!
 			pi.drawRandomCircle( 200, 150, 50 );    // Plugin command!
 		} );
@@ -47,7 +47,7 @@ test/test-plugin-system.html           ← Basic inline tests
 		} );
 		
 		pi.ready( () => {
-			pi.screen( { "aspect": "16:9" } );
+			pi.screen( { "aspect": "300x200" } );
 			pi.hello( "Plugin User" );
 		} );
 	</script>
@@ -118,7 +118,7 @@ This automatically builds your plugin along with Pi.js!
 	<script src="plugins/my-first-plugin/dist/my-first-plugin.min.js"></script>
 	<script>
 		pi.ready( () => {
-			pi.screen( { "aspect": "16:9", "container": "container" } );
+			pi.screen( { "aspect": "300x200", "container": "container" } );
 			
 			// Your plugin commands!
 			pi.greet( "World" );
