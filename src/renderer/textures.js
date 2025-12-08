@@ -41,7 +41,7 @@ export function init() {
  * Creates and caches texture if it doesn't exist for this GL context.
  * 
  * @param {Object} screenData - Screen data object
- * @param {HTMLImageElement|HTMLCanvasElement} img - Image or Canvas element
+ * @param {HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} img - Image or Canvas element
  * @returns {WebGLTexture|null} WebGL texture or null on error
  */
 export function getWebGL2Texture( screenData, img ) {
@@ -69,7 +69,17 @@ export function getWebGL2Texture( screenData, img ) {
 	if( texture ) {
 
 		// If image is a canvas, update the texture so that it has the latest data
-		if( img instanceof HTMLCanvasElement ) {
+		if(
+			img instanceof HTMLCanvasElement ||
+			( typeof OffscreenCanvas !== "undefined" && img instanceof OffscreenCanvas )
+		) {
+
+			// If the img.isDirty is not defined then assume it's dirty, otherwise only if it's
+			// explicitly set to false then we don't perform the copy, this makes it so that the 
+			// default behavior is to copy the texture.
+			if( img.isDirty !== undefined && img.isDirty === false ) {
+				return texture;
+			}
 
 			// If a texture is currently scheduled to be drawn we need to flush the batch so that
 			// the texture will appear as it was when the draw command was issued
@@ -77,13 +87,7 @@ export function getWebGL2Texture( screenData, img ) {
 				g_batches.flushBatches( screenData );
 			}
 
-			// TODO-LATER: This might be kind of slow for drawing canvases as images, maybe consider
-			// adding an update texture function that the user can call when a canvas has been
-			// updated or this could be an optional parameter when the texture is loaded to auto
-			// update to texture.
-
 			// Copy the content of the source canvas to the texture
-			const gl = screenData.gl;
 			gl.bindTexture( gl.TEXTURE_2D, texture );
 			gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img );
 			gl.bindTexture( gl.TEXTURE_2D, null );
@@ -123,7 +127,7 @@ export function getWebGL2Texture( screenData, img ) {
  * Must be called explicitly to free GPU memory - textures are not automatically
  * garbage collected by the browser.
  * 
- * @param {HTMLImageElement|HTMLCanvasElement} img - Image or Canvas element
+ * @param {HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} img - Image or Canvas element
  * @returns {void}
  */
 export function deleteWebGL2Texture( screenData, img ) {
@@ -146,7 +150,7 @@ export function deleteWebGL2Texture( screenData, img ) {
  * If imgKey is null, uses screenData.fboTexture directly (for FBO updates).
  * 
  * @param {Object} screenData - Screen data object
- * @param {HTMLImageElement|HTMLCanvasElement|null} imgKey - Image element used as cache key, or null for FBO texture
+ * @param {HTMLImageElement|HTMLCanvasElement|OffscreenCanvas|null} imgKey - Image cache key
  * @param {Uint8ClampedArray|Uint8Array} pixelData - RGBA pixel data array
  * @param {number} width - Width of the pixel data
  * @param {number} height - Height of the pixel data
@@ -208,7 +212,7 @@ export function updateWebGL2TextureSubImage(
  * Creates the texture on-demand if it doesn't yet exist for this context.
  * 
  * @param {Object} screenData - Screen data object
- * @param {HTMLImageElement|HTMLCanvasElement} imgKey - Image element used as cache key
+ * @param {HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} imgKey - Image cache key
  * @param {Uint8ClampedArray} pixelData - RGBA pixel data array
  * @param {number} width - Width of the pixel data
  * @param {number} height - Height of the pixel data

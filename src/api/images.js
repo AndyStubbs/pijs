@@ -79,7 +79,7 @@ function registerCommands( api ) {
  * Load an image from URL or use provided Image/Canvas element
  * 
  * @param {Object} options - Load options
- * @param {string|HTMLImageElement|HTMLCanvasElement} options.src - Image source
+ * @param {string|HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} options.src - Image source
  * @param {string} [options.name] - Optional name for the image
  * @param {boolean} [options.usePalette] - Set image colors to be linked to screen canvas
  * @param {Array} [options.paletteKeys] - An array of colors used as key colors from the image to
@@ -292,7 +292,7 @@ function removeImage( options ) {
  * Load a spritesheet from URL or use provided Image/Canvas element
  * 
  * @param {Object} options - Load options
- * @param {string|HTMLImageElement|HTMLCanvasElement} options.src - Image source
+ * @param {string|HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} options.src - Image source
  * @param {string} [options.name] - Optional name for the spritesheet
  * @param {number} [options.width] - Sprite width (required for fixed grid mode)
  * @param {number} [options.height] - Sprite height (required for fixed grid mode)

@@ -137,7 +137,7 @@ function loadDefaultFonts() {
  * Load font from image source
  * 
  * @param {Object} options - Load options
- * @param {string|HTMLImageElement|HTMLCanvasElement} options.src - Font image source
+ * @param {string|HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} options.src - Font image
  * @param {number} options.width - Character width in pixels
  * @param {number} options.height - Character height in pixels
  * @param {number} options.margin - Individual character cell width in pixels
@@ -245,7 +245,10 @@ function loadFontFromImage( fontSrc, font ) {
 
 		// Set source after handlers
 		img.src = fontSrc;
-	} else if( fontSrc instanceof HTMLImageElement || fontSrc instanceof HTMLCanvasElement ) {
+	} else if(
+		fontSrc instanceof HTMLImageElement || fontSrc instanceof HTMLCanvasElement ||
+		( typeof OffscreenCanvas !== "undefined" && fontSrc instanceof OffscreenCanvas )
+	) {
 
 		// Use image element directly
 		font.image = fontSrc;
