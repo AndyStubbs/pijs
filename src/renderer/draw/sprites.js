@@ -11,6 +11,8 @@
 import * as g_batches from "../batches.js";
 import * as g_textures from "../textures.js";
 
+// Color array map to speed up copying of colors to vertices
+const MAX_QUAD_COLOR_MAP_SIZE = 1000;
 const m_quadColorMap = new Map();
 
 /**
@@ -41,10 +43,10 @@ function calculateTransformedCorners(
 
 	// Calculate corner positions relative to anchor point
 	const corners = [
-		{ "x": -anchorXPx, "y": -anchorYPx },                    // Top-left
-		{ "x": scaledWidth - anchorXPx, "y": -anchorYPx },      // Top-right
-		{ "x": -anchorXPx, "y": scaledHeight - anchorYPx },     // Bottom-left
-		{ "x": scaledWidth - anchorXPx, "y": scaledHeight - anchorYPx } // Bottom-right
+		{ "x": -anchorXPx, "y": -anchorYPx },								// Top-left
+		{ "x": scaledWidth - anchorXPx, "y": -anchorYPx },					// Top-right
+		{ "x": -anchorXPx, "y": scaledHeight - anchorYPx },					// Bottom-left
+		{ "x": scaledWidth - anchorXPx, "y": scaledHeight - anchorYPx }		// Bottom-right
 	];
 
 	// Rotate corners around (0,0) then translate to (x,y)
@@ -103,40 +105,24 @@ function addTexturedQuadToBatch(
 	// Triangle 1: Top-left, Top-right, Bottom-left
 	let vIdx = vertexBase;
 	let tIdx = texBase;
-	//let cIdx = colorBase;
 
 	// Vertex 0: Top-left
 	batchVertices[ vIdx++ ] = corners[ 0 ].x;
 	batchVertices[ vIdx++ ] = corners[ 0 ].y;
 	batchTexCoords[ tIdx++ ] = texCoords[ 0 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 1 ];
-	//batchColors.set( color, colorBase );
-	// batchColors[ cIdx++ ] = color[ 0 ];
-	// batchColors[ cIdx++ ] = color[ 1 ];
-	// batchColors[ cIdx++ ] = color[ 2 ];
-	// batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Vertex 1: Top-right
 	batchVertices[ vIdx++ ] = corners[ 1 ].x;
 	batchVertices[ vIdx++ ] = corners[ 1 ].y;
 	batchTexCoords[ tIdx++ ] = texCoords[ 2 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 3 ];
-	//batchColors.set( color, colorBase + 4 );
-	// batchColors[ cIdx++ ] = color[ 0 ];
-	// batchColors[ cIdx++ ] = color[ 1 ];
-	// batchColors[ cIdx++ ] = color[ 2 ];
-	// batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Vertex 2: Bottom-left
 	batchVertices[ vIdx++ ] = corners[ 2 ].x;
 	batchVertices[ vIdx++ ] = corners[ 2 ].y;
 	batchTexCoords[ tIdx++ ] = texCoords[ 4 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 5 ];
-	//batchColors.set( color, colorBase + 8 );
-	// batchColors[ cIdx++ ] = color[ 0 ];
-	// batchColors[ cIdx++ ] = color[ 1 ];
-	// batchColors[ cIdx++ ] = color[ 2 ];
-	// batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Triangle 2: Top-right, Bottom-right, Bottom-left
 	// Vertex 3: Top-right
@@ -144,33 +130,18 @@ function addTexturedQuadToBatch(
 	batchVertices[ vIdx++ ] = corners[ 1 ].y;
 	batchTexCoords[ tIdx++ ] = texCoords[ 6 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 7 ];
-	//batchColors.set( color, colorBase + 12 );
-	// batchColors[ cIdx++ ] = color[ 0 ];
-	// batchColors[ cIdx++ ] = color[ 1 ];
-	// batchColors[ cIdx++ ] = color[ 2 ];
-	// batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Vertex 4: Bottom-right
 	batchVertices[ vIdx++ ] = corners[ 3 ].x;
 	batchVertices[ vIdx++ ] = corners[ 3 ].y;
 	batchTexCoords[ tIdx++ ] = texCoords[ 8 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 9 ];
-	//batchColors.set( color, colorBase + 16 );
-	// batchColors[ cIdx++ ] = color[ 0 ];
-	// batchColors[ cIdx++ ] = color[ 1 ];
-	// batchColors[ cIdx++ ] = color[ 2 ];
-	// batchColors[ cIdx++ ] = color[ 3 ];
 
 	// Vertex 5: Bottom-left
 	batchVertices[ vIdx++ ] = corners[ 2 ].x;
 	batchVertices[ vIdx++ ] = corners[ 2 ].y;
 	batchTexCoords[ tIdx++ ] = texCoords[ 10 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 11 ];
-	// batchColors.set( color, colorBase + 20 );
-	// batchColors[ cIdx++ ] = color[ 0 ];
-	// batchColors[ cIdx++ ] = color[ 1 ];
-	// batchColors[ cIdx++ ] = color[ 2 ];
-	// batchColors[ cIdx++ ] = color[ 3 ];
 
 	batchColors.set( colorQuadArray, colorBase );
 
@@ -181,14 +152,12 @@ function addTexturedQuadToBatch(
 function getQuadColorArray( color ) {
 	let quadColorArray = m_quadColorMap.get( color.key );
 
-	if (quadColorArray === undefined) {
+	if( quadColorArray === undefined ) {
 
-		// TODO-LATER: Implement Pruning logic BEFORE creating new entry
-		// if (m_quadColorMap.size >= MAX_QUAD_COLOR_MAP_SIZE) {
-		// 	// Simple approach: Clear the entire map. Aggressive but easy.
-		// 	m_quadColorMap.clear();
-		// 	// More sophisticated: Remove oldest N items (requires tracking order/timestamps)
-		// }
+		// Simple approach: Clear the entire map. Aggressive but easy.
+		if( m_quadColorMap.size >= MAX_QUAD_COLOR_MAP_SIZE ) {
+			m_quadColorMap.clear();
+		}
 		
 		const r = color.r;
 		const g = color.g;
