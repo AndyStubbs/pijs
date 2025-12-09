@@ -28,7 +28,7 @@ $.ontouch( "end", touchStop, true );
 // Touch move function receives touchData and optional customData
 function touchMove( touchData, customData ) {
 	$.setPosPx( touchData[ 0 ].x, touchData[ 0 ].y );
-	var pos = $.getPos();
+	const pos = $.getPos();
 	$.setPos( pos.col, pos.row );
 	$.setColor( 8 );
 	$.print( "+", true );
@@ -37,7 +37,7 @@ function touchMove( touchData, customData ) {
 // touch stop function receives touchData and optional customData
 function touchStop( touchData, customData ) {
 	$.setColor( 14 );
-	var pos = $.getPos();
+	const pos = $.getPos();
 	$.setPos( pos.col - 4, pos.row );
 	$.print( "Stopped!", true );
 	$.offtouch( "move", touchMove );

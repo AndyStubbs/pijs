@@ -27,7 +27,17 @@
 	},
 	"[markdown]": {
 		"editor.defaultFormatter": null,
-		"editor.formatOnSave": false
+		"editor.formatOnSave": false,
+		"editor.wordWrap": "wordWrapColumn",
+		"editor.wordWrapColumn": 100,
+	},
+	"[toml]": {
+		"editor.wordWrap": "wordWrapColumn",
+		"editor.wordWrapColumn": 100,
+	},
+	"[plaintext]": {
+		"editor.wordWrap": "wordWrapColumn",
+		"editor.wordWrapColumn": 100,
 	},
 
 	// ESLint

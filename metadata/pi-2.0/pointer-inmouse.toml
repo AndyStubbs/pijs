@@ -22,9 +22,7 @@ function run() {
 			c = 1;
 		}
 	}
-	if(
-		mouse.lastX !== undefined && mouse.lastY !== undefined
-	) {
+	if( mouse.lastX !== undefined && mouse.lastY !== undefined ) {
 		tail.push( [ mouse.lastX, mouse.lastY, c ] );
 		if( tail.length > 50 ) {
 			tail.shift();

@@ -25,10 +25,7 @@ function run() {
 		$.circle( press.x, press.y, 10 );
 		
 		// Draw trail while dragging
-		if(
-			press.lastX !== undefined && press.lastY !== undefined &&
-			press.action === "move"
-		) {
+		if( press.lastX !== undefined && press.lastY !== undefined && press.action === "move" ) {
 			tail.push( [ press.x, press.y ] );
 			if( tail.length > 50 ) {
 				tail.shift();
