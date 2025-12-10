@@ -7,10 +7,14 @@ description = """
 Stops a specific music track by track ID, or stops all tracks if trackId is null.
 """
 example = """
-$.play( "T120 O4 L4 CDEF GAB>C ABCDEFG" );
-setTimeout( () => {
-	$.stopPlay();
-}, 500 );
+$.screen( "300x200" );
+$.print( "Press any key to hear sound" );
+$.onkey( "any", "down", () => {
+	$.play( "T120 O4 L4 CDEF GAB>C ABCDEFG" );
+	setTimeout( () => {
+		$.stopPlay();
+	}, 500 );
+} );
 """
 
 [[parameters]]

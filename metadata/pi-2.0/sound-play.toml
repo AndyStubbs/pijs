@@ -65,14 +65,17 @@ const tracks = [
 	"WS T120 O3 L4 GAB>C",
 	"[[0,1,0,-1],[0,0,0,0]] T120 O3 L4 GAB>C",
 ];
-let t = 0;
-for( const track of tracks ) {
-	setTimeout( () => {
-		$.print( `Play: ${track}` );
-		$.play( track );
-	}, t );
-	t += 2000;
-}
+$.print( "Press any key to play music" );
+$.onkey( "any", "down", () => {
+	let t = 0;
+	for( const track of tracks ) {
+		setTimeout( () => {
+			$.print( `Play: ${track}` );
+			$.play( track );
+		}, t );
+		t += 2000;
+	}
+} );
 """
 
 [[parameters]]

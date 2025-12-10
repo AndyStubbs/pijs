@@ -7,10 +7,14 @@ description = """
 Stops a specific sound by sound ID, or stops all sounds if soundId is null.
 """
 example = """
-const soundId = $.sound( 440, 5 );
-setTimeout( () => {
-	$.stopSound();
-}, 500 );
+$.screen( "300x200" );
+$.print( "Press any key to hear sound" );
+$.onkey( "any", "down", () => {
+	const soundId = $.sound( 440, 5 );
+	setTimeout( () => {
+		$.stopSound();
+	}, 500 );
+} );
 """
 
 [[parameters]]

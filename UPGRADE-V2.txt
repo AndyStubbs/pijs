@@ -1,0 +1,240 @@
+Pi.js v2.0.0 Upgrade Guide: What's New and What Changed
+
+========================================
+INTRODUCTION
+========================================
+
+Pi.js v2.0.0 represents a major modernization of the library, featuring a complete architectural refactor, WebGL2-only rendering, and significant performance improvements. This guide covers all the new features, improvements, and breaking changes from v1.2.4 to v2.0.0.
+
+========================================
+MAJOR ARCHITECTURAL CHANGES
+========================================
+
+1. WEBGL2-ONLY RENDERING
+   - Complete migration from Canvas2D ImageData rendering to WebGL2
+   - GPU-accelerated rendering for significantly better performance
+   - Automatic batch rendering system for optimal draw call efficiency
+   - Framebuffer Object (FBO) architecture for off-screen rendering
+   - No Canvas2D fallback - WebGL2 is required (all modern browsers support it)
+
+2. MODULAR ARCHITECTURE
+   - Complete refactor from monolithic codebase to modular ES6 structure
+   - Clean separation of concerns with dedicated modules for each feature
+   - Renderer layer separated from API layer for better maintainability
+   - Organized directory structure: core/, renderer/, api/, text/
+
+3. MODERN BUILD SYSTEM
+   - Migrated from legacy build tools to esbuild (100x faster builds)
+   - Multiple output formats: ESM (ES Modules), CJS (CommonJS), IIFE (browser)
+   - Source maps for debugging
+   - Tree-shaking support for smaller bundles
+   - Zero runtime dependencies
+
+4. MODERN JAVASCRIPT
+   - Full ES2020+ support (const/let, arrow functions, template literals, etc.)
+   - Comprehensive JSDoc documentation throughout
+   - Consistent coding conventions
+   - Better error handling with typed errors
+
+========================================
+NEW FEATURES
+========================================
+
+1. PLUGIN SYSTEM
+   - Official plugin registration system for extending Pi.js functionality
+   - Register plugins using `pi.registerPlugin()` with an initialization function
+   - Plugin initialization function receives a `pluginApi` object with methods:
+     * `pluginApi.addCommand()` - Register new commands
+     * `pluginApi.addScreenDataItem()` - Add custom screen data properties
+     * `pluginApi.addScreenDataItemGetter()` - Add computed screen data properties
+     * `pluginApi.addScreenInitFunction()` - Run code when screens are created
+     * `pluginApi.addScreenCleanupFunction()` - Run code when screens are destroyed
+     * `pluginApi.getScreenData()` - Access screen data
+     * `pluginApi.getAllScreensData()` - Access all screens data
+     * `pluginApi.getApi()` - Access the main Pi.js API
+     * `pluginApi.utils` - Access utility functions
+     * `pluginApi.wait()` - Wait for async operations
+     * `pluginApi.done()` - Signal async operation completion
+     * `pluginApi.registerClearEvents()` - Register event clearing handlers
+   - Plugin dependency support - plugins can depend on other plugins
+   - List registered plugins with `pi.getPlugins()`
+   - Clear events from plugins with `pi.clearEvents()`
+
+2. MULTIPLE OUTPUT FORMATS
+   - ESM format: `pi.esm.min.js` for modern import statements
+   - IIFE format: `pi.js` and `pi.min.js` for traditional <script> tags
+   - Both formats available in both minified and unminified versions
+
+3. BATCH RENDERING SYSTEM
+   - Automatic batching of draw operations for optimal GPU performance
+   - Multiple batch types: POINTS_BATCH, IMAGE_BATCH, GEOMETRY_BATCH, LINES_BATCH
+   - Automatic batch flushing and capacity management
+   - GPU-first rendering approach using vertices and shapes
+
+4. ENHANCED TEXTURE MANAGEMENT
+   - Improved texture caching system
+   - Better memory management with automatic cleanup
+   - Support for Image elements, Canvas elements, and URL strings
+
+========================================
+PERFORMANCE IMPROVEMENTS
+========================================
+
+1. GPU-ACCELERATED RENDERING
+   - All drawing operations now use WebGL2 for hardware acceleration
+   - Significant performance improvements for complex scenes
+   - Better frame rates for games and animations
+
+2. BATCH RENDERING
+   - Multiple draw operations batched into single GPU calls
+   - Reduced draw call overhead
+   - Optimal GPU utilization
+
+3. OPTIMIZED COMMAND SYSTEM
+   - Pre-specialized functions that close over screen data
+   - Reduced branching in hot paths
+   - Better JIT optimization opportunities
+   - Monomorphic call sites for improved performance
+
+4. FASTER BUILDS
+   - esbuild provides ~100x faster build times compared to legacy tools
+   - Quicker development iteration cycles
+
+========================================
+BREAKING CHANGES
+========================================
+
+1. REMOVED: Canvas2D Renderer
+   - WebGL2 is now the only rendering backend
+   - No fallback to Canvas2D
+   - All modern browsers support WebGL2
+
+2. REMOVED: `render()` Command
+   - Rendering is now always automatic
+   - No manual render control needed
+   - Removed `setAutoRender()` - always auto-renders
+
+3. REMOVED: Non-Pixel Mode
+   - Pixel mode is now the only mode
+   - Removed `setPixelMode()` command
+   - Always uses pixel-perfect rendering
+
+4. REMOVED: Canvas Font Support
+   - Only bitmap fonts are supported
+   - Removed canvas-based font rendering
+   - Uses bitmap/put fonts exclusively
+
+5. REMOVED: Pen System
+   - Simplified to direct pixel writes
+   - Removed pen mode configuration
+   - Direct drawing operations only
+
+6. REMOVED: Some Blend Modes
+   - Simplified blend mode system
+   - Some advanced blend modes removed
+   - GPU-based blending only
+
+7. CHANGED: Plugin System
+   - New official plugin registration system via `pi.registerPlugin()`
+   - Plugins receive a `pluginApi` object with controlled access to internal APIs
+   - More structured and secure than accessing internal APIs directly
+   - Supports plugin dependencies and proper initialization order
+
+========================================
+API COMPATIBILITY
+========================================
+
+The public API remains largely compatible with v1.2.4. All major commands work mostly the same way:
+- Graphics commands: `pset()`, `line()`, `rect()`, `circle()`, `ellipse()`, `arc()`, `bezier()`
+- Image commands: `loadImage()`, `drawImage()`
+- Color commands: `setPalColor()`, `findColor()`, etc.
+- Screen commands: `screen()`, `cls()`, etc.
+- Text commands: `print()`, `setFont()`, etc.
+- Input commands: `key()`, `mouse()`, `touch()`, `gamepad()`, etc.
+
+The main differences are:
+- Removed commands: `render()`, `setPixelMode()`, `setAutoRender()`
+- Automatic rendering (no need to call `render()`)
+- Always pixel mode (no need to set it)
+- Some of the parameters have changed for commands see reference page for details.
+
+========================================
+MIGRATION GUIDE
+========================================
+
+1. REMOVE DEPRECATED CALLS
+   - Remove any `render()` calls - rendering is now automatic
+   - Remove `setPixelMode()` calls - always pixel mode
+   - Remove `setAutoRender()` calls - always auto-renders
+
+2. TEST YOUR CODE
+   - Most code should work without changes
+   - Test all graphics operations
+   - Verify performance improvements
+   - Check for any visual differences (should be minimal)
+
+========================================
+TECHNICAL DETAILS
+========================================
+
+BUILD SYSTEM
+- Build tool: esbuild (replaces legacy uglify-js)
+- Build time: ~100x faster
+- Output formats: ESM, IIFE
+- Source maps: Included for debugging
+- Tree-shaking: Supported for ESM format
+
+DEPENDENCIES
+- Runtime: Zero dependencies (no external libraries required)
+- Development: 4 dev dependencies (down from 6 in v1.2.4)
+  * esbuild - Fast bundler
+  * @playwright/test - Testing framework
+  * @iarna/toml - TOML parser
+  * pngjs - PNG image comparison
+
+MODULE STRUCTURE
+- core/ - Core system modules (commands, screen-manager, utils, plugins)
+- renderer/ - WebGL2 rendering system (renderer, batches, shaders, textures, draw/)
+- api/ - User-facing API commands (graphics, images, colors, pixels, paint, blends)
+- text/ - Text rendering modules (fonts, print)
+
+RENDERING ARCHITECTURE
+- WebGL2 context creation and management
+- Framebuffer Object (FBO) for off-screen rendering
+- Shader-based rendering with GLSL shaders
+- Batch system for efficient GPU utilization
+- Automatic batch flushing and display to canvas
+
+========================================
+WHAT'S NEXT
+========================================
+
+Future improvements planned for v2.x:
+- Custom post image processing effects that apply affects to the screen before rendering to canvas
+- Create a video plugin that supports playing of videos on a pi.js screen.
+- Create a pens plugin that can shapes instead of specific pixels
+- More comprehensive documentation
+- Additional examples and tutorials
+
+========================================
+SUMMARY
+========================================
+
+Pi.js v2.0.0 is a major upgrade that brings:
+✅ WebGL2-only rendering for better performance
+✅ Modern build system with multiple output formats
+✅ Modular architecture for better maintainability
+✅ Plugin system for extensibility
+✅ Improved gamepad and input handling
+✅ Zero runtime dependencies
+✅ 100x faster builds
+✅ Full ES2020+ JavaScript support
+
+Breaking changes are minimal and mostly involve removing deprecated features. The public API remains largely compatible, making migration straightforward for most projects.
+
+For detailed API documentation, visit: https://pijs.org
+
+========================================
+END OF UPGRADE GUIDE
+========================================
+

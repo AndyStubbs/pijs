@@ -8,9 +8,33 @@ Removes keys from the action keys set. These keys will no longer have their defa
 behavior prevented.
 """
 example = """
-$.setActionKeys( [ "ArrowUp", "ArrowDown" ] );
-$.removeActionKeys( [ "ArrowUp" ] );
-// Only ArrowDown remains as an action key
+$.screen( "200x200" );
+$.setActionKeys( [ "Control", "KeyS"] );
+let actionKeysRemoved = false;
+setTimeout( () => {
+	$.removeActionKeys( [ "Control", "KeyS" ] );
+	actionKeysRemoved = true;
+}, 5000 );
+setInterval( function () {
+	let keys = $.inkey();
+	$.cls();
+	$.print( "Press Ctrl+S." );
+	if( actionKeysRemoved ) {
+		$.print( "Action Keys Removed" );
+	}
+	let key = $.inkey( "Control" );
+	if( key ) {
+		$.print( "Control key is pressed." );
+	} else {
+		$.print( "Control key is not pressed." );
+	}
+	for( key in keys ) {
+		$.print( "--------------------------" );
+		$.print( "key:      " + keys[ key ].key );
+		$.print( "location: " + keys[ key ].location );
+		$.print( "code:     " + keys[ key ].code );
+	}
+}, 60 );
 """
 
 [[parameters]]

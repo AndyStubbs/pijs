@@ -6,7 +6,28 @@ description = """
 Deletes the stored image and frees associated GPU resources (textures) for all screens.
 """
 example = """
-$.removeImage( { "name": "player" } );
+$.screen( "300x200" );
+$.loadImage( "media/player.png", "player" );
+$.ready( () => {
+	let x = 5;
+	let y = 5;
+	$.drawImage( "player", x, y );
+	$.removeImage( "player" );
+	y += 16;
+	$.onkey( "any", "down", () => {
+		if( x > $.width() ) {
+			y += 16;
+			x = 0;
+		}
+		try {
+			$.drawImage( "player", x, y );
+		} catch (e) {
+			$.setPosPx( x, y );
+			$.print( "Image Removed", true );
+		}
+		x += 85;
+	}, false, true );
+} );
 """
 
 [[parameters]]

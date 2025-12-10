@@ -14,8 +14,11 @@ $.ready( function () {
 	$.print( "Press any key to try to play bomb sound." );
 	$.removeAudio( bombAudio );
 	$.onkey( "any", "down", () => {
-		$.print( "SILENCE ", true );
-		$.playAudioPool( bombAudio );
+		try {
+			$.playAudio( bombAudio );
+		} catch (e) {
+			$.print( "SILENCE ", true );
+		}
 	}, false, true );
 } );
 """

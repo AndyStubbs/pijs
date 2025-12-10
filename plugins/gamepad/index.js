@@ -251,10 +251,11 @@ function updateGamepads() {
 		gamepads = [];
 	}
 
-	for( let i = 0; i < gamepads.length; i++ ) {
-		if( gamepads[ i ] && gamepads[ i ].index in m_gamepads ) {
-			updateGamepad( gamepads[ i ] );
+	for( const gamepad of gamepads ) {
+		if( !gamepad || !gamepad.connected ) {
+			continue;
 		}
+		updateGamepad( gamepad );
 	}
 }
 

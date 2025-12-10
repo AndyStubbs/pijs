@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pi.js Session Test</title>
+</head>
+	<body>
+	<div id="msg"></div>
+	<button id="start">Start</button>
+	<script>
+		
+		document.getElementById( "start" ).addEventListener( "click", () => {
+			window.addEventListener( "gamepadconnected", e => {
+				console.log( "EDGE connected:", e.gamepad );
+				document.getElementById( "msg" ).innerHTML += `<p>Connected: ${e.gamepad.id}</p>`;
+			} );
+			window.addEventListener( "gamepaddisconnected", e => {
+				console.log( "EDGE disconnected:", e.gamepad );
+				document.getElementById( "msg" ).innerHTML += `<p>Disconnected: ${e.gamepad.id}</p>`;
+			} );
+			document.getElementById( "msg" ).innerHTML += `<p>Listening to gamepadconnected and gamepaddisconnected.</p>`;
+		} );
+	</script>
+</body>
+</html>

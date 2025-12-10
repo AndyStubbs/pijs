@@ -28,17 +28,20 @@ let attackRate = 0.01;
 let decayRate = 0.1;
 let sustainRate = 0.89;
 $.screen( "300x200" );
-for( let i = 0; i < data.length; i += 3 ) {
-	const freq = data[ i ];
-	const duration = data[ i + 1 ] / 18.2;
-	const sustain = duration * sustainRate;
-	const attack = duration * attackRate;
-	const decay = duration * decayRate;
-	const word = data[ i + 2 ];
-	$.sound( freq, sustain, volume, "sawtooth", totalDuration, attack, decay );
-	printWord( word, totalDuration );
-	totalDuration += duration;
-}
+$.print( "Press any key to hear the song" );
+$.onkey( "any", "down", () => {
+	for( let i = 0; i < data.length; i += 3 ) {
+		const freq = data[ i ];
+		const duration = data[ i + 1 ] / 18.2;
+		const sustain = duration * sustainRate;
+		const attack = duration * attackRate;
+		const decay = duration * decayRate;
+		const word = data[ i + 2 ];
+		$.sound( freq, sustain, volume, "sawtooth", totalDuration, attack, decay );
+		printWord( word, totalDuration );
+		totalDuration += duration;
+	}
+} );
 
 function printWord( word, delay ) {
 	printTimeouts.push( setTimeout( function () {
