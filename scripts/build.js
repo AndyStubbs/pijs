@@ -212,6 +212,14 @@ async function buildPiVersion( versionName, entryFile, outputPrefix ) {
 		"outfile": path.join( buildDir, `${outputPrefix}.esm.min.js` )
 	} );
 
+	console.log( `  Building ${versionName} ESM (unminified)...` );
+	await esbuild.build( {
+		...buildOptions,
+		"format": "esm",
+		"minify": false,
+		"outfile": path.join( buildDir, `${outputPrefix}.esm.js` )
+	} );
+
 	console.log( `  Building ${versionName} IIFE...` );
 	await esbuild.build( {
 		...buildOptions,
@@ -253,20 +261,24 @@ async function build() {
 		console.log( "  Full version (with plugins):" );
 		console.log( "    - build/pi.js (IIFE, unminified with sourcemaps)" );
 		console.log( "    - build/pi.min.js (IIFE, minified)" );
+		console.log( "    - build/pi.esm.js (ESM, unminified with sourcemaps)" );
 		console.log( "    - build/pi.esm.min.js (ESM, minified)" );
 		console.log( "  Lite version (core only):" );
 		console.log( "    - build/pi.lite.js (IIFE, unminified with sourcemaps)" );
 		console.log( "    - build/pi.lite.min.js (IIFE, minified)" );
+		console.log( "    - build/pi.lite.esm.js (ESM, unminified with sourcemaps)" );
 		console.log( "    - build/pi.lite.esm.min.js (ESM, minified)" );
 
 		// Print file sizes
 		const files = [
 			{ "name": "pi.js", "label": "Full (unminified)" },
 			{ "name": "pi.min.js", "label": "Full (minified)" },
-			{ "name": "pi.esm.min.js", "label": "Full (ESM)" },
+			{ "name": "pi.esm.js", "label": "Full (ESM unminified)" },
+			{ "name": "pi.esm.min.js", "label": "Full (ESM minified)" },
 			{ "name": "pi.lite.js", "label": "Lite (unminified)" },
 			{ "name": "pi.lite.min.js", "label": "Lite (minified)" },
-			{ "name": "pi.lite.esm.min.js", "label": "Lite (ESM)" }
+			{ "name": "pi.lite.esm.js", "label": "Lite (ESM unminified)" },
+			{ "name": "pi.lite.esm.min.js", "label": "Lite (ESM minified)" }
 		];
 
 		console.log( "" );

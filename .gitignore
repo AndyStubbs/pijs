@@ -17,3 +17,4 @@ test/session*.html
 deploy.bat
 homeshell.bat
 test/performance/data/
+releases/*/dist
