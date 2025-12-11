@@ -14,8 +14,8 @@ const toml = require( "@iarna/toml" );
 const packageJson = require( path.join( __dirname, "..", "package.json" ) );
 const METADATA_DIR = path.join( __dirname, "..", "metadata" );
 const OUTPUT_DIR = path.join( __dirname, "..", "build", "metadata" );
-const REFERENCE_FILE = path.join( OUTPUT_DIR, `reference-{VERSION}.json` );
-const TYPE_DEFINITION_FILE = path.join( OUTPUT_DIR, "pi-{VERSION}.d.ts" );
+const REFERENCE_FILE = path.join( OUTPUT_DIR, "{VERSION}", "reference.json" );
+const TYPE_DEFINITION_FILE = path.join( OUTPUT_DIR, "{VERSION}", "pi.d.ts" );
 
 // Generate metadata
 generateMetadata();
@@ -702,6 +702,13 @@ function writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata )
 
 function writeReferenceOutput( version, data ) {
 	const filePath = REFERENCE_FILE.replace( "{VERSION}", version );
+	const dirPath = path.dirname( filePath );
+	
+	// Ensure the version subfolder exists
+	if( !fs.existsSync( dirPath ) ) {
+		fs.mkdirSync( dirPath, { "recursive": true } );
+	}
+	
 	const payload = {
 		"version": version,
 		"generatedAt": new Date().toISOString(),
@@ -718,6 +725,13 @@ function writeReferenceOutput( version, data ) {
 
 function writeTypeDefinitions( version, lines ) {
 	const filePath = TYPE_DEFINITION_FILE.replace( "{VERSION}", version );
+	const dirPath = path.dirname( filePath );
+	
+	// Ensure the version subfolder exists
+	if( !fs.existsSync( dirPath ) ) {
+		fs.mkdirSync( dirPath, { "recursive": true } );
+	}
+	
 	const header = [
 		"/**",
 		" * Pi.js Type Definitions",

@@ -20,22 +20,22 @@
 		"./plugins/gamepad": {
 			"browser": "./plugins/gamepad/gamepad.js",
 			"import": "./plugins/gamepad/gamepad.esm.js",
-			"types": "./plugins/gamepad/gamepad.d.ts"
+			"types": "./pi.d.ts"
 		},
 		"./plugins/keyboard": {
 			"browser": "./plugins/keyboard/keyboard.js",
 			"import": "./plugins/keyboard/keyboard.esm.js",
-			"types": "./plugins/keyboard/keyboard.d.ts"
+			"types": "./pi.d.ts"
 		},
 		"./plugins/pointer": {
 			"browser": "./plugins/pointer/pointer.js",
 			"import": "./plugins/pointer/pointer.esm.js",
-			"types": "./plugins/pointer/pointer.d.ts"
+			"types": "./pi.d.ts"
 		},
 		"./plugins/sound": {
 			"browser": "./plugins/sound/sound.js",
 			"import": "./plugins/sound/sound.esm.js",
-			"types": "./plugins/sound/sound.d.ts"
+			"types": "./pi.d.ts"
 		}
 	},
 	"repository": {
