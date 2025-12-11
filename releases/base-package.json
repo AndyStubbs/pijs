@@ -1,10 +1,11 @@
 {
 	"name": "pijs-web",
-	"version": "2.0.0",
-	"majorVersion": "2.0",
+	"version": "[VERSION]",
 	"description": "Retro2D graphics, sound, and input library for javascript",
 	"types": "pi.d.ts",
 	"browser": "dist/pi.js",
+	"unpkg": "dist/pi.min.js",
+	"jsdelivr": "dist/pi.min.js",
 	"files": [ "dist" ],
 	"exports": {
 		".": {
