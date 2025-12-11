@@ -12,9 +12,9 @@ Pi.js is named after the mathematical constant **π (pi)**, which plays a key ro
 
 **Quick Tip:** The library is accessible via `$` (preferred, for brevity) or `pi` (for clarity). Examples use `$`.
 
-Built on top of the **HTML5 Canvas API**, Pi.js features:
+Built on top of **WebGL 2**, Pi.js features:
 
-- **Pixel-Perfect Graphics** - Retro-style graphics without anti-aliasing
+- **Pixel-Perfect Graphics** - Retro-style graphics with GPU acceleration
 - **Primitive Drawing** - Lines, circles, rectangles - old-school style
 - **Print Command** - A modern library with classic BASIC print functionality
 - **Beginner-Friendly** - Simple, intuitive API inspired by QBasic
@@ -26,10 +26,9 @@ Built on top of the **HTML5 Canvas API**, Pi.js features:
 
 ### Graphics
 - 2D shape drawing (lines, circles, rectangles, ellipses, bezier curves)
-- Pixel-perfect rendering mode (manual pixel manipulation)
-- Anti-aliased mode for smooth graphics
+- Pixel-perfect rendering with WebGL 2 acceleration
 - Sprite and image support with transformations
-- Custom fonts and text rendering
+- Bitmap fonts and text rendering
 - Paint/fill operations
 - Path drawing
 
@@ -54,32 +53,30 @@ Built on top of the **HTML5 Canvas API**, Pi.js features:
 
 ---
 
-## 🚧 Project Status: v2.0 Refactor in Progress
-
-Pi.js is currently undergoing a major modernization refactor. See `REFACTOR-PLAN.md` for details.
+## Version Information
 
 ### Current Version
-- **Stable:** v1.2.4 (available on `v1.2.x` branch)
-- **In Development:** v2.0.0 (main branch)
+- **Latest:** v2.0.0 (WebGL 2 only, browser-only library)
+- **Legacy:** v1.2.4 (Canvas2D support, available on `v1.2.x` branch)
 
-### What's New in v2.0
+### Version 2.0.0 Highlights
 
-#### Completed ✅
-- Modern build system using esbuild (100x faster builds)
-- ES2020+ JavaScript support (const/let, arrow functions, etc.)
-- Minimal dependencies (reduced from 6 to 4 packages)
-- Modular architecture with clean separation of concerns
-- Improved code quality with comprehensive JSDoc
-- Multiple output formats (ESM, CJS, IIFE)
+Version 2.0.0 is a major release featuring:
 
-#### In Progress 🔄
-- Porting all 265+ API methods to new architecture
-- Maintaining 100% API compatibility
-- Pixel-mode implementation for retro graphics
-- Full test coverage
+- **WebGL 2 Only** - GPU-accelerated rendering for significantly better performance
+- **Modern Architecture** - Complete refactor with modular ES6 structure
+- **Plugin System** - New official plugin registration system
+- **Zero Dependencies** - No runtime dependencies required
+- **100x Faster Builds** - Modern build system using esbuild
 
-#### Legacy Code
-The v1.2.4 codebase is preserved in `.legacy/src/` for reference during refactor.
+### Important Notes for Upgrading
+
+**Breaking Changes:** Version 2.0.0 includes significant breaking changes. If you're upgrading from v1.2.4, please:
+- Review the [Upgrade Guide](UPGRADE-V2.txt) for detailed migration information
+- Check [pijs.org/docs/api](https://pijs.org/docs/api) for API differences
+- Note that Canvas2D mode has been removed - WebGL 2 is now required
+
+**Canvas2D Support:** If you need Canvas2D rendering, continue using v1.2.4, which is available on the `v1.2.x` branch and remains functional for Canvas2D use cases.
 
 ---
 
@@ -117,7 +114,7 @@ npm install
 ### Build
 
 ```bash
-# Build all formats (ESM, CJS, IIFE)
+# Build all formats (ESM, IIFE)
 npm run build
 ```
 
@@ -125,7 +122,8 @@ Output files in `build/dist/`:
 - `pi.js` - IIFE format, unminified (for debugging)
 - `pi.min.js` - IIFE format, minified (for <script> tags)
 - `pi.esm.min.js` - ES Module format (for import statements)
-- `pi.cjs.min.js` - CommonJS format (for Node.js)
+
+**Note:** Pi.js is a browser-only library. CommonJS format is not supported in v2.0.0.
 
 ### Development Server
 
@@ -189,7 +187,7 @@ This project follows strict coding conventions to maintain consistency. Key rule
 - **Spaces inside parentheses**: `func( arg )` not `func(arg)`
 - **No space before control parens**: `if(` not `if (`
 - **Quote all object properties**: `{ "key": "value" }`
-- **No ternary operators** - use explicit if/else
+- **Prefer explicit if/else over ternary operators** - use explicit if/else for readability
 - **JSDoc comments** required for all files
 - **Line limit** of 100 characters
 
@@ -239,47 +237,36 @@ $.line( 0, 0, 100, 100 );
 $.line( { "x1": 0, "y1": 0, "x2": 100, "y2": 100 } );
 ```
 
-### Pixel Mode vs Anti-Aliased
-
-```javascript
-// Pixel-perfect mode (default) - no anti-aliasing
-$.set( { "pixelMode": true } );
-$.circle( 400, 300, 50 ); // Pixel-perfect circle
-
-// Anti-aliased mode - smooth graphics
-$.set( { "pixelMode": false } );
-$.circle( 400, 300, 50 ); // Smooth circle
-```
-
 ### Plugin Support
 
-Pi.js v2.0 exposes an internal API (`$._` or `pi._`) for creating plugins and extensions:
+Pi.js v2.0 features a new official plugin system for extending functionality:
 
 ```javascript
 // Example: Creating a particle system plugin
-( function() {
-  "use strict";
-  
-  // Register a new command using pi._ (both $ and pi reference same object)
-  pi._.addCommand( "particle", function( screenData, args ) {
+pi.registerPlugin( "particleSystem", function( pluginApi ) {
+  // Register a new command
+  pluginApi.addCommand( "particle", function( screenData, args ) {
     const x = args[ 0 ];
     const y = args[ 1 ];
     const color = args[ 2 ];
     // Your particle logic here...
-  }, false, true, [ "x", "y", "color" ] );
+  }, [ "x", "y", "color" ] );
   
   // Now users can call with preferred $ alias:
   $.particle( 100, 100, "#FF0000" );
-} )();
+} );
 ```
 
-**Plugin API:**
-- `pi._.addCommand()` - Register single-implementation commands
-- `pi._.addCommands()` - Register dual pixel/anti-aliased implementations
-- `pi._.addSetting()` - Register settings
-- `pi._.addPen()` - Add custom pen modes
-- `pi._.addBlendCommand()` - Add blend operations
-- `pi._.data` - Access internal data store
+**Plugin API Methods:**
+- `pluginApi.addCommand()` - Register new commands
+- `pluginApi.addScreenDataItem()` - Add custom screen data properties
+- `pluginApi.addScreenDataItemGetter()` - Add computed screen data properties
+- `pluginApi.addScreenInitFunction()` - Run code when screens are created
+- `pluginApi.addScreenCleanupFunction()` - Run code when screens are destroyed
+- `pluginApi.getScreenData()` - Access screen data
+- `pluginApi.getAllScreensData()` - Access all screens data
+- `pluginApi.getApi()` - Access the main Pi.js API
+- `pluginApi.utils` - Access utility functions
 
 **Alias Note:** 
 - `$` and `pi` both reference the same object
@@ -287,7 +274,7 @@ Pi.js v2.0 exposes an internal API (`$._` or `pi._`) for creating plugins and ex
 - `$` is only set if not already defined (won't conflict with jQuery)
 - If `$` is already taken, use `pi` instead
 
-**v2.0 Change:** In v1.x, `pi._` was deleted after initialization to hide internal APIs. In v2.0, we're **keeping it exposed** to enable extensibility and community plugins.
+For detailed plugin documentation, see the [Upgrade Guide](UPGRADE-V2.txt) or visit [pijs.org/docs/api](https://pijs.org/docs/api).
 
 ---
 
@@ -304,19 +291,14 @@ We welcome contributions! To contribute:
 
 ### Areas Needing Help
 
-See `REFACTOR-PLAN.md` for the current refactor progress. Major areas:
-
-- Porting legacy modules to new architecture
-- Writing unit tests
-- Migrating visual tests to Playwright
-- Documentation and examples
+See `TODO.txt` for the current know issues.  Or search code base for "TODO" comments.
 
 ---
 
 ## Dependencies
 
 ### Production
-None! Pi.js has zero runtime dependencies.
+None! Pi.js has zero runtime dependencies, just a modern web browser.
 
 ### Development
 
@@ -334,10 +316,10 @@ Minimal dev dependencies:
 
 ### Modern Build with esbuild
 
-The new build system using esbuild provides:
+The build system using esbuild provides:
 
-- **~100x faster** than uglify-js
-- **Multiple formats** in one build (ESM, CJS, IIFE)
+- **faster** than legacy build tools
+- **Multiple formats** in one build (ESM, IIFE)
 - **Source maps** for debugging
 - **Tree-shaking** for smaller bundles
 - **Modern JS** support (ES2020+)
@@ -360,7 +342,7 @@ Build is configured via `scripts/build.js`. Customization options:
 
 Located in `test/tests/`, these tests use screenshot comparison to ensure pixel-perfect rendering.
 
-### Unit Tests (Coming Soon)
+### Unit Tests (Maybe someday...)
 
 Will be located in `test/unit/` for testing individual modules.
 
@@ -394,4 +376,4 @@ Inspired by QBasic and the retro programming community. Built with modern web te
 
 ---
 
-**Note:** This project is actively being refactored. See `REFACTOR-PLAN.md` for detailed refactor progress and plans.
+**Note:** Version 2.0.0 is now released. For upgrading from v1.2.4, see `UPGRADE-V2.txt` for detailed migration information and breaking changes.
