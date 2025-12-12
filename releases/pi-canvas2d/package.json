@@ -1,6 +1,6 @@
 {
 	"name": "pijs-web",
-	"version": "1.2.4",
+	"version": "1.2.5",
 	"majorVersion": "1.0",
 	"description": "Retro2D graphics, sound, and input library for javascript (Canvas2D API)",
 	"types": "pi.d.ts",
