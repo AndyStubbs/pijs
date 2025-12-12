@@ -1,0 +1,40 @@
+{
+	"name": "pijs-web",
+	"version": "1.2.4",
+	"majorVersion": "1.0",
+	"description": "Retro2D graphics, sound, and input library for javascript (Canvas2D API)",
+	"types": "pi.d.ts",
+	"browser": "dist/pi.js",
+	"unpkg": "dist/pi.min.js",
+	"jsdelivr": "dist/pi.min.js",
+	"files": [ "dist" ],
+	"exports": {
+		".": {
+			"browser": "./pi.js",
+			"types": "./pi.d.ts"
+		}
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/AndyStubbs/pijs"
+	},
+	"author": "Andy Stubbs <andy@pijs.org>",
+	"license": "Apache-2.0",
+	"bugs": {
+		"url": "https://github.com/AndyStubbs/pijs/issues"
+	},
+	"homepage": "https://www.pijs.org",
+	"keywords": [
+		"2d",
+		"graphics",
+		"canvas",
+		"retro",
+		"game-engine",
+		"game-dev",
+		"input",
+		"sound",
+		"javascript",
+		"browser-game",
+		"pixel-art"
+	]
+}

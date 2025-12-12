@@ -1,6 +1,7 @@
 {
 	"name": "pijs-web",
 	"version": "[VERSION]",
+	"majorVersion": "[MAJOR-VERSION]",
 	"description": "Retro2D graphics, sound, and input library for javascript",
 	"types": "pi.d.ts",
 	"browser": "dist/pi.js",
@@ -48,5 +49,19 @@
 	"bugs": {
 		"url": "https://github.com/AndyStubbs/pijs/issues"
 	},
-	"homepage": "https://www.pijs.org"
+	"homepage": "https://www.pijs.org",
+	"keywords": [
+		"2d",
+		"graphics",
+		"webgl",
+		"canvas",
+		"retro",
+		"game-engine",
+		"game-dev",
+		"input",
+		"sound",
+		"javascript",
+		"browser-game",
+		"pixel-art"
+	]
 }
