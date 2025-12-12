@@ -1,6 +1,6 @@
 # Instructions for publishing to NPM
 
-# In terminal go to specific version folder
+# In terminal cd to specific version folder
 cd releases\[folder]
 
 # login
