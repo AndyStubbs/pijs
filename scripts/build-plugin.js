@@ -22,14 +22,23 @@ const path = require( "path" );
  * @param {string} options.pluginDir - Custom plugin directory path (defaults to plugins/pluginName)
  * @param {Array} options.plugins - Array of esbuild plugins to use (defaults to [])
  * @param {boolean} options.verbose - Whether to output detailed information (defaults to true)
+ * @param {string} options.majorVersion - Major version for output directory (defaults to reading from package.json)
  * @returns {Promise<boolean>} Returns true if build succeeded, false otherwise
  */
 async function buildPlugin( pluginName, options = {} ) {
 	const {
 		pluginDir: providedPluginDir,
 		plugins = [],
-		verbose = true
+		verbose = true,
+		majorVersion: providedMajorVersion
 	} = options;
+
+	// Get major version from options or package.json
+	let majorVersion = providedMajorVersion;
+	if( !majorVersion ) {
+		const pkg = require( path.join( __dirname, "..", "package.json" ) );
+		majorVersion = pkg.majorVersion;
+	}
 
 	// Determine plugin directory
 	let pluginDir;
@@ -65,8 +74,8 @@ async function buildPlugin( pluginName, options = {} ) {
 		return false;
 	}
 
-	// Create build/plugins/plugin-name directory
-	const buildDir = path.join( __dirname, "..", "build", "plugins", pluginName );
+	// Create build/[MAJOR_VERSION]/plugins/plugin-name directory
+	const buildDir = path.join( __dirname, "..", "build", majorVersion, "plugins", pluginName );
 	if( !fs.existsSync( buildDir ) ) {
 		fs.mkdirSync( buildDir, { "recursive": true } );
 	}
@@ -161,10 +170,10 @@ async function buildPlugin( pluginName, options = {} ) {
 			console.log( `✓ Successfully built plugin: ${pluginName}` );
 			console.log( "" );
 			console.log( "Output files:" );
-			console.log( `  - build/plugins/${pluginName}/${pluginName}.esm.js (ESM)` );
-			console.log( `  - build/plugins/${pluginName}/${pluginName}.esm.min.js (ESM, minified)` );
-			console.log( `  - build/plugins/${pluginName}/${pluginName}.js (IIFE)` );
-			console.log( `  - build/plugins/${pluginName}/${pluginName}.min.js (IIFE, minified)` );
+			console.log( `  - build/${majorVersion}/plugins/${pluginName}/${pluginName}.esm.js (ESM)` );
+			console.log( `  - build/${majorVersion}/plugins/${pluginName}/${pluginName}.esm.min.js (ESM, minified)` );
+			console.log( `  - build/${majorVersion}/plugins/${pluginName}/${pluginName}.js (IIFE)` );
+			console.log( `  - build/${majorVersion}/plugins/${pluginName}/${pluginName}.min.js (IIFE, minified)` );
 
 			// Print file sizes
 			const files = [
@@ -239,7 +248,12 @@ if( require.main === module ) {
 		process.exit( 1 );
 	}
 
-	buildPlugin( pluginName, { "standalone": true } );
+	// Read majorVersion from package.json for standalone mode
+	const pkg = require( path.join( __dirname, "..", "package.json" ) );
+	buildPlugin( pluginName, { 
+		"standalone": true,
+		"majorVersion": pkg.majorVersion
+	} );
 }
 
 

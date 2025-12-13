@@ -13,9 +13,9 @@ const path = require( "path" );
 const toml = require( "@iarna/toml" );
 const packageJson = require( path.join( __dirname, "..", "package.json" ) );
 const METADATA_DIR = path.join( __dirname, "..", "metadata" );
-const OUTPUT_DIR = path.join( __dirname, "..", "build", "metadata" );
-const REFERENCE_FILE = path.join( OUTPUT_DIR, "{VERSION}", "reference.json" );
-const TYPE_DEFINITION_FILE = path.join( OUTPUT_DIR, "{VERSION}", "pi.d.ts" );
+const BUILD_DIR = path.join( __dirname, "..", "build" );
+const REFERENCE_FILE = path.join( BUILD_DIR, "reference-{VERSION}.json" );
+const TYPE_DEFINITION_FILE = path.join( BUILD_DIR, "{VERSION}", "pi.d.ts" );
 
 // Generate metadata
 generateMetadata();
@@ -36,8 +36,8 @@ function ensureDirectories() {
 		process.exit( 1 );
 	}
 
-	if( !fs.existsSync( OUTPUT_DIR ) ) {
-		fs.mkdirSync( OUTPUT_DIR, { "recursive": true } );
+	if( !fs.existsSync( BUILD_DIR ) ) {
+		fs.mkdirSync( BUILD_DIR, { "recursive": true } );
 	}
 }
 

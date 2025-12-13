@@ -13,6 +13,7 @@ const { buildPlugin } = require( "./build-plugin.js" );
 // Read version from package.json (single source of truth)
 const pkg = require( "../package.json" );
 const version = pkg.version;
+const majorVersion = pkg.majorVersion;
 
 // Determine source directory and version from command line args
 const args = process.argv.slice( 2 );
@@ -78,8 +79,8 @@ function getLiteBanner( version ) {
  */`;
 }
 
-// Ensure build directory exists
-const buildDir = path.join( __dirname, "../build" );
+// Ensure build directory exists with version structure
+const buildDir = path.join( __dirname, "../build", majorVersion );
 if( !fs.existsSync( buildDir ) ) {
 	fs.mkdirSync( buildDir, { "recursive": true } );
 }
@@ -179,7 +180,8 @@ async function buildAllPlugins() {
 		const success = await buildPlugin( pluginName, {
 			"pluginDir": pluginDir,
 			"plugins": [ webpBase64Plugin ],
-			"verbose": false
+			"verbose": false,
+			"majorVersion": majorVersion
 		} );
 		if( success ) {
 			builtCount++;
@@ -259,15 +261,15 @@ async function build() {
 		console.log( "" );
 		console.log( "Output files:" );
 		console.log( "  Full version (with plugins):" );
-		console.log( "    - build/pi.js (IIFE, unminified with sourcemaps)" );
-		console.log( "    - build/pi.min.js (IIFE, minified)" );
-		console.log( "    - build/pi.esm.js (ESM, unminified with sourcemaps)" );
-		console.log( "    - build/pi.esm.min.js (ESM, minified)" );
+		console.log( `    - build/${majorVersion}/pi.js (IIFE, unminified with sourcemaps)` );
+		console.log( `    - build/${majorVersion}/pi.min.js (IIFE, minified)` );
+		console.log( `    - build/${majorVersion}/pi.esm.js (ESM, unminified with sourcemaps)` );
+		console.log( `    - build/${majorVersion}/pi.esm.min.js (ESM, minified)` );
 		console.log( "  Lite version (core only):" );
-		console.log( "    - build/pi.lite.js (IIFE, unminified with sourcemaps)" );
-		console.log( "    - build/pi.lite.min.js (IIFE, minified)" );
-		console.log( "    - build/pi.lite.esm.js (ESM, unminified with sourcemaps)" );
-		console.log( "    - build/pi.lite.esm.min.js (ESM, minified)" );
+		console.log( `    - build/${majorVersion}/pi.lite.js (IIFE, unminified with sourcemaps)` );
+		console.log( `    - build/${majorVersion}/pi.lite.min.js (IIFE, minified)` );
+		console.log( `    - build/${majorVersion}/pi.lite.esm.js (ESM, unminified with sourcemaps)` );
+		console.log( `    - build/${majorVersion}/pi.lite.esm.min.js (ESM, minified)` );
 
 		// Print file sizes
 		const files = [

@@ -8,10 +8,10 @@ entries.
 """
 example = """
 $.screen( "300x200" );
-const indices = $.addPalColors( [ "#112233", "gold", [ 10, 20, 30 ] ] );
+const indices = $.addPalColors( [ "#ee2233", "gold", [ 10, 200, 30 ] ] );
 for( const i of indices ) {
 	$.setColor( i );
-	$.print( `Color: ${i}` );
+	$.print( `Color: ${i}`, false, true );
 }
 """
 
