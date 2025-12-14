@@ -251,7 +251,8 @@ function filterImg( screenData, options ) {
  * Apply filter to pixel region (called at end of frame)
  * 
  * @param {Object} screenData - Screen data object
- * @param {Function} filter - Filter callback function (r, g, b, a, x, y) => color object or null
+ * @param {Function} filter - Filter callback function (pixelData, x, y) => boolean
+ * 							  pixelData is a Uint8ClampedArray with [r, g, b, a] at indices 0-3
  * @param {number} x1 - Left coordinate
  * @param {number} y1 - Top coordinate
  * @param {number} width - Region width
@@ -295,7 +296,7 @@ function applyFilter( screenData, filter, x1, y1, width, height ) {
 			// Output index is in bottom-left origin format (same as pixelData)
 			const dstIndex = ( srcRow * width + x ) * 4;
 
-			// Call filter with r, g, b, a, x, y as separate parameters
+			// Call filter with pixelData array
 			// x and y are in top-left coordinate system for the filter callback
 			if( filter( pixelData, x1 + x, y1 + y ) ) {
 
@@ -386,7 +387,7 @@ function putWrapper( screenData, data, x, y, include0 = false ) {
 
 	// If nothing to draw after clipping, exit
 	if( width <= 0 || height <= 0 ) {
-		return;
+		return null;
 	}
 
 	// Prepare the batch by making sure there are enough memory in the batch

@@ -526,6 +526,8 @@ function setScreen( options ) {
 		throw error;
 	}
 
+	// Note: there is no need to check if m_activeScreenData is null because it cannot be null
+	// unless there are no screens in which case an error would already have been thrown.
 	const previousScreenId = m_activeScreenData.id;
 	m_activeScreenData = m_screens[ screenId ];
 

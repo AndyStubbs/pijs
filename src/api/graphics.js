@@ -181,7 +181,9 @@ export function buildApi( s_screenData ) {
 		const pRadius = s_getInt( radius, null );
 
 		if( pX === null || pY === null || pRadius === null ) {
-			const error = new TypeError( "rect: Parameters x, y, and radius must be integers." );
+			const error = new TypeError(
+				"circle: Parameters x, y, and radius must be integers."
+			);
 			error.code = "INVALID_PARAMETER";
 			throw error;
 		}

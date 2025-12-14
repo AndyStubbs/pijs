@@ -1,6 +1,6 @@
 {
 	"name": "pijs-web",
-	"version": "2.0.0",
+	"version": "2.0.1",
 	"majorVersion": "2.0",
 	"description": "Retro2D graphics, sound, and input library for javascript",
 	"types": "pi.d.ts",

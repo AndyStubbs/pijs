@@ -280,6 +280,9 @@ function removeImage( options ) {
 
 		// Remove from paletteImages
 		if( imageObj.usePalette ) {
+
+			// Since name is guaranteed to be unique we can assume there are no duplicate names in
+			// the array
 			m_paletteImages.splice( m_paletteImages.indexOf( name ), 1 );
 		}
 
@@ -316,11 +319,11 @@ function loadSpritesheet( options ) {
 	const onErrorCallback = options.onError;
 	let isAuto = false;
 
-	if( margin == null ) {
+	if( margin === null ) {
 		margin = 0;
 	}
 
-	if( spriteWidth == null && spriteHeight == null ) {
+	if( spriteWidth === null && spriteHeight === null ) {
 		isAuto = true;
 		spriteWidth = 0;
 		spriteHeight = 0;
@@ -787,7 +790,6 @@ function addPaletteImage( name ) {
 	// Get the color object data
 	const imageObj = m_images[ name ];
 
-	let canvas;
 	let context;
 
 	// Create a canvas for manipulating color data of original image
@@ -799,7 +801,7 @@ function addPaletteImage( name ) {
 		context.drawImage( imageObj.image, 0, 0 );
 		imageObj.image = canvas;
 	} else {
-		canvas = imageObj.image;
+		const canvas = imageObj.image;
 		context = canvas.getContext( "2d" );
 	}
 

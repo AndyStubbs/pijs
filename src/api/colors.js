@@ -156,7 +156,7 @@ function getDefaultPal( options ) {
 	const include0 = options.include0 ?? null;
 	const filteredPal = [];
 	
-	// Set the start index to 0 if including 0 which is the transparent balck color
+	// Set the start index to 0 if including 0 which is the transparent black color
 	let startIndex = 0;
 	if( include0 === null ) {
 		startIndex = 1;
@@ -165,7 +165,12 @@ function getDefaultPal( options ) {
 	// Need to explicitly convert each color because I don't want the default pal to be modified
 	// outside.
 	for( let i = startIndex; i < m_defaultPal.length; i += 1 ) {
-		filteredPal.push( { ...m_defaultPal[ i ] } );
+		filteredPal.push( g_utils.rgbToColor(
+			m_defaultPal[ i ].r,
+			m_defaultPal[ i ].g,
+			m_defaultPal[ i ].b,
+			m_defaultPal[ i ].a
+		) );
 	}
 	return filteredPal;
 }
@@ -203,7 +208,7 @@ function createColor( options ) {
 	const color = g_utils.convertToColor( options.color );
 	if( color === null ) {
 		const error = new TypeError(
-			`setColor: Parameter color is a valid color format.`
+			`createColor: Parameter color is not a valid color format.`
 		);
 		error.code = "INVALID_PARAMETER";
 		throw error;
@@ -260,7 +265,7 @@ function getPal( screenData, options ) {
 	const include0 = options.include0 ?? null;
 	const filteredPal = [];
 	
-	// Set the start index to 0 if including 0 which is the transparent balck color
+	// Set the start index to 0 if including 0 which is the transparent black color
 	let startIndex = 0;
 	if( include0 === null ) {
 		startIndex = 1;
@@ -269,7 +274,12 @@ function getPal( screenData, options ) {
 	// Need to explicitly convert each color because I don't want the pal to be modified
 	// outside.
 	for( let i = startIndex; i < screenData.pal.length; i += 1 ) {
-		filteredPal.push( { ...screenData.pal[ i ] } );
+		filteredPal.push( g_utils.rgbToColor(
+			screenData.pal[ i ].r,
+			screenData.pal[ i ].g,
+			screenData.pal[ i ].b,
+			screenData.pal[ i ].a
+		) );
 	}
 	return filteredPal;
 }

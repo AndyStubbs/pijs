@@ -44,7 +44,7 @@ export function init( api ) {
 		for( const pluginInfo of m_waitingForDependencies ) {
 			let missingDependencies = [];
 			for( const dependency of pluginInfo.dependencies ) {
-				if( !m_plugins.includes( pi => pi.name === dependency ) ) {
+				if( !m_plugins.some( pi => pi.name === dependency ) ) {
 					missingDependencies.push( dependency );
 				}
 			}
@@ -110,7 +110,7 @@ function registerPlugin( options ) {
 	}
 
 	// Check for duplicate
-	if( m_plugins.find( p => p.name === options.name ) ) {
+	if( m_plugins.some( p => p.name === options.name ) ) {
 		const error = new Error(
 			`registerPlugin: Plugin '${options.name}' is already registered.`
 		);
@@ -132,7 +132,7 @@ function registerPlugin( options ) {
 	// If all dependencies loaded then process immediately
 	let isWaitingForDependencies = false;
 	for( const dependency of pluginInfo.config.dependencies ) {
-		if( m_plugins.includes( pi => pi.name === dependency ) ) {
+		if( !m_plugins.some( pi => pi.name === dependency ) ) {
 			isWaitingForDependencies = true;
 		}
 	}
