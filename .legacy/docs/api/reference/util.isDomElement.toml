@@ -1,3 +1,0 @@
-name = "util.isDomElement"
-isScreen = false
-parameters = [ "el",]

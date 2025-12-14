@@ -15,7 +15,7 @@ const packageJson = require( path.join( __dirname, "..", "package.json" ) );
 const METADATA_DIR = path.join( __dirname, "..", "metadata" );
 const BUILD_DIR = path.join( __dirname, "..", "build" );
 const REFERENCE_FILE = path.join( BUILD_DIR, "reference-{VERSION}.json" );
-const TYPE_DEFINITION_FILE = path.join( BUILD_DIR, "{VERSION}", "pi.d.ts" );
+const TYPE_DEFINITION_FILE = path.join( BUILD_DIR, "pi.d.ts" );
 
 // Generate metadata
 generateMetadata();
@@ -724,10 +724,10 @@ function writeReferenceOutput( version, data ) {
 }
 
 function writeTypeDefinitions( version, lines ) {
-	const filePath = TYPE_DEFINITION_FILE.replace( "{VERSION}", version );
+	const filePath = TYPE_DEFINITION_FILE;
 	const dirPath = path.dirname( filePath );
 	
-	// Ensure the version subfolder exists
+	// Ensure the build directory exists
 	if( !fs.existsSync( dirPath ) ) {
 		fs.mkdirSync( dirPath, { "recursive": true } );
 	}

@@ -1,4 +1,0 @@
-name = "util.getWindowSize"
-isScreen = false
-isUtil = true
-parameters = [ ]

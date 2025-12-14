@@ -74,8 +74,8 @@ async function buildPlugin( pluginName, options = {} ) {
 		return false;
 	}
 
-	// Create build/[MAJOR_VERSION]/plugins/plugin-name directory
-	const buildDir = path.join( __dirname, "..", "build", majorVersion, "plugins", pluginName );
+	// Create build/plugins/plugin-name directory
+	const buildDir = path.join( __dirname, "..", "build", "plugins", pluginName );
 	if( !fs.existsSync( buildDir ) ) {
 		fs.mkdirSync( buildDir, { "recursive": true } );
 	}
@@ -170,10 +170,10 @@ async function buildPlugin( pluginName, options = {} ) {
 			console.log( `✓ Successfully built plugin: ${pluginName}` );
 			console.log( "" );
 			console.log( "Output files:" );
-			console.log( `  - build/${majorVersion}/plugins/${pluginName}/${pluginName}.esm.js (ESM)` );
-			console.log( `  - build/${majorVersion}/plugins/${pluginName}/${pluginName}.esm.min.js (ESM, minified)` );
-			console.log( `  - build/${majorVersion}/plugins/${pluginName}/${pluginName}.js (IIFE)` );
-			console.log( `  - build/${majorVersion}/plugins/${pluginName}/${pluginName}.min.js (IIFE, minified)` );
+			console.log( `  - build/plugins/${pluginName}/${pluginName}.esm.js (ESM)` );
+			console.log( `  - build/plugins/${pluginName}/${pluginName}.esm.min.js (ESM, minified)` );
+			console.log( `  - build/plugins/${pluginName}/${pluginName}.js (IIFE)` );
+			console.log( `  - build/plugins/${pluginName}/${pluginName}.min.js (IIFE, minified)` );
 
 			// Print file sizes
 			const files = [

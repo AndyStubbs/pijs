@@ -1,3 +1,0 @@
-name = "util.isFunction"
-isScreen = false
-parameters = [ "fn" ]
