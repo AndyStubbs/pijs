@@ -1,4 +1,4 @@
-# Pi.js v2.0.0
+# Pi.js
 
 A JavaScript library for retro-style 2D games and demos. Inspired by QBasic, Pi.js provides a beginner-friendly API for graphics, sound, and input handling on modern web browsers.
 
