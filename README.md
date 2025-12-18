@@ -216,7 +216,7 @@ pi.registerPlugin( "particleSystem", function( pluginApi ) {
 		const x = args[ 0 ];
 		const y = args[ 1 ];
 		const color = args[ 2 ];
-		
+
 		// Your particle logic here...
 	}, [ "x", "y", "color" ] );
 
@@ -242,7 +242,7 @@ pi.registerPlugin( "particleSystem", function( pluginApi ) {
 - `$` is only set if not already defined (won't conflict with jQuery)
 - If `$` is already taken, use `pi` instead
 
-For detailed plugin documentation, see the [Upgrade Guide](UPGRADE-V2.txt) or visit [pijs.org/docs/api](https://pijs.org/docs/api).
+For detailed plugin documentation, see [pijs.org/docs/api](https://pijs.org/docs/api).
 
 ---
 
@@ -341,7 +341,3 @@ Copyright Andy Stubbs
 ## Acknowledgments
 
 Inspired by QBasic and the retro programming community. Built with modern web technologies to bring classic programming experiences to the browser.
-
----
-
-**Note:** Version 2.0.0 is now released. For upgrading from v1.2.4, see `UPGRADE-V2.txt` for detailed migration information and breaking changes.
