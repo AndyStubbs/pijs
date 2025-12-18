@@ -67,16 +67,16 @@ Version 2.0.0 is a major release featuring:
 - **Modern Architecture** - Complete refactor with modular ES6 structure
 - **Plugin System** - New official plugin registration system
 - **Zero Dependencies** - No runtime dependencies required
-- **100x Faster Builds** - Modern build system using esbuild
+- **Faster Builds** - Modern build system using esbuild
 
 ### Important Notes for Upgrading
 
 **Breaking Changes:** Version 2.0.0 includes significant breaking changes. If you're upgrading from v1.2.4, please:
-- Review the [Upgrade Guide](UPGRADE-V2.txt) for detailed migration information
+- Review the [Upgrade Guide](https://pijs.org/pi-js-v2-upgrade/) for detailed migration information
 - Check [pijs.org/docs/api](https://pijs.org/docs/api) for API differences
 - Note that Canvas2D mode has been removed - WebGL 2 is now required
 
-**Canvas2D Support:** If you need Canvas2D rendering, continue using v1.2.4, which is available on the `v1.2.x` branch and remains functional for Canvas2D use cases.
+**Canvas2D Support:** If you need Canvas2D rendering, continue using v1.2.4, which is available in the [Canvas2d](https://github.com/AndyStubbs/pijs-canvas2d) repo and remains functional for Canvas2D use cases.
 
 ---
 
@@ -143,40 +143,6 @@ npm test
 
 ---
 
-## Project Structure
-
-```
-pijs/
-├── .cursorrules              # Coding conventions
-├── .legacy/                  # v1.2.4 legacy code (reference only)
-│   └── src/                  # Original source files
-├── src/                      # v2.0 refactored source
-│   ├── core/                 # Core systems
-│   │   ├── pi-data.js        # Global data storage
-│   │   ├── command-system.js # Command registration
-│   │   ├── errors.js         # Error handling
-│   │   └── ...
-│   ├── modules/              # Feature modules
-│   │   ├── utils.js          # Utilities ✅
-│   │   ├── screen.js         # Screen management
-│   │   ├── graphics-pixel.js # Pixel-mode drawing
-│   │   ├── graphics-aa.js    # Anti-aliased drawing
-│   │   ├── input.js          # Input handling
-│   │   └── ...
-│   └── index.js              # Main entry point
-├── scripts/
-│   └── build.js              # esbuild build script
-├── build/
-│   └── dist/                 # Build outputs
-├── test/                     # Test files
-├── docs/                     # Documentation
-├── package.json              # Dependencies and scripts
-├── README.md                 # This file
-└── REFACTOR-PLAN.md          # Detailed refactor plan
-```
-
----
-
 ## Coding Conventions
 
 This project follows strict coding conventions to maintain consistency. Key rules:
@@ -202,17 +168,18 @@ See `.cursorrules` for complete details.
 ```html
 <script src="build/dist/pi.min.js"></script>
 <script>
-  // Create a screen (using $ alias - preferred)
-  const screen = $.screen( "myCanvas", 800, 600 );
-  
-  // Draw a line
-  $.line( 0, 0, 100, 100 );
-  
-  // Draw a circle
-  $.circle( 400, 300, 50 );
-  
-  // Or use pi if you prefer
-  pi.line( 100, 100, 200, 200 );
+
+	// Create a screen (using $ alias - preferred)
+	const screen = $.screen( "myCanvas", 800, 600 );
+
+	// Draw a line
+	$.line( 0, 0, 100, 100 );
+
+	// Draw a circle
+	$.circle( 400, 300, 50 );
+
+	// Or use pi if you prefer
+	pi.line( 100, 100, 200, 200 );
 </script>
 ```
 
@@ -244,16 +211,17 @@ Pi.js v2.0 features a new official plugin system for extending functionality:
 ```javascript
 // Example: Creating a particle system plugin
 pi.registerPlugin( "particleSystem", function( pluginApi ) {
-  // Register a new command
-  pluginApi.addCommand( "particle", function( screenData, args ) {
-    const x = args[ 0 ];
-    const y = args[ 1 ];
-    const color = args[ 2 ];
-    // Your particle logic here...
-  }, [ "x", "y", "color" ] );
-  
-  // Now users can call with preferred $ alias:
-  $.particle( 100, 100, "#FF0000" );
+	// Register a new command
+	pluginApi.addCommand( "particle", function( screenData, args ) {
+		const x = args[ 0 ];
+		const y = args[ 1 ];
+		const color = args[ 2 ];
+		
+		// Your particle logic here...
+	}, [ "x", "y", "color" ] );
+
+	// Now users can call with preferred $ alias:
+	$.particle( 100, 100, "#FF0000" );
 } );
 ```
 
