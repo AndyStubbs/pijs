@@ -1,0 +1,114 @@
+# Pi.js - Quick Reference for LLMs
+
+## Overview
+Pi.js is a JavaScript library for retro-style games and demos, inspired by QBasic. It provides graphics, sound, and input handling with a beginner-friendly API.
+
+## Key Facts
+- Library alias: `$` (preferred) or `pi` (both reference the same object)
+- Browser-only library (WebGL 2 required)
+- Zero runtime dependencies
+- Version: 2.0.1 (current)
+
+## Essential API Patterns
+
+### Screen Setup
+```javascript
+$.screen( "800x600" );  // Create screen with exact dimensions
+$.screen( "640m480" );  // Multiple mode (scales to exact multiples)
+$.screen( "640e480" );  // Extend mode (fills container, maintains aspect)
+$.screen( "640x480", "containerId" );  // With container element
+```
+
+### Basic Drawing
+```javascript
+$.setColor( "#FF0000" );  // Set color (hex, palette index, or RGB array)
+$.line( 0, 0, 100, 100 );  // Draw line
+$.circle( 400, 300, 50 );  // Draw circle
+$.rect( 10, 10, 100, 50 );  // Draw rectangle
+$.pset( 50, 50 );  // Draw pixel
+```
+
+### Text Printing
+```javascript
+$.print( "Hello World" );  // Print text
+$.setPos( 10, 5 );  // Set cursor position (column, row)
+$.setPosPx( 100, 50 );  // Set cursor position (pixels)
+```
+
+### Input Handling
+```javascript
+// Keyboard auto-starts when key commands are used
+$.startKeyboard();  // Only needed to restart after stopKeyboard()
+const keys = $.inkey();  // Get all pressed keys
+if( $.inkey( "ArrowLeft" ) ) { /* move left */ }
+
+$.startMouse();  // Start mouse input
+const mouse = $.inmouse();  // Get mouse state {x, y, buttons}
+
+$.startTouch();  // Start touch input
+const touches = $.intouch();  // Get touch state
+```
+
+### Sound
+```javascript
+$.sound( { "frequency": 440, "duration": 0.5 } );  // Play sound
+$.play( "O3 C D E F G A B O4 C" );  // Play music (BASIC-style)
+$.setVolume( 0.5 );  // Set volume (0-1, default: 0.75)
+
+// Audio pools (for sound files)
+$.loadAudio( "sound.mp3", "mySound", 5 );  // Load audio file, create pool
+$.playAudio( "mySound", 0.8 );  // Play from pool
+$.stopAudio( "mySound" );  // Stop pool
+$.removeAudio( "mySound" );  // Remove pool
+```
+
+### Images
+```javascript
+$.loadImage( "sprite.png", "mySprite" );  // Load image
+$.drawImage( "mySprite", 100, 100 );  // Draw image
+```
+
+## Parameter Styles
+Pi.js supports both positional and object parameters:
+```javascript
+// Positional
+$.line( 0, 0, 100, 100 );
+
+// Object-based
+$.line( { "x1": 0, "y1": 0, "x2": 100, "y2": 100 } );
+```
+
+## Color Formats
+- Palette index: `15` (integer)
+- Hex string: `"#FF0000"` or `"#FF0000AA"` (with alpha)
+- RGB array: `[255, 0, 0]` or `[255, 0, 0, 128]` (with alpha)
+- Color object: `{ "r": 255, "g": 0, "b": 0, "a": 255 }`
+
+## Common Patterns
+```javascript
+// Wait for ready
+$.ready( function() {
+	$.screen( "640x480" );
+	// Your code here
+} );
+
+// Game loop pattern
+function gameLoop() {
+	$.cls();  // Clear screen
+	// Update game state
+	// Draw game
+	// Rendering is automatic - no need to call render()
+	requestAnimationFrame( gameLoop );
+}
+gameLoop();
+
+// Event handlers
+$.onkey( "ArrowLeft", "down", function() { /* move left */ } );
+$.onmouse( "down", function( e ) { /* handle click */ } );
+```
+
+## Important Notes
+- Always create a screen before drawing
+- Coordinates: top-left is (0, 0)
+- Most commands require an active screen
+- Screen automatically resizes when container element resizes

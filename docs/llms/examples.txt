@@ -1,0 +1,821 @@
+# Pi.js Code Examples
+
+This file contains example code snippets demonstrating how to use Pi.js for various tasks.
+
+## Basic Setup
+
+### Minimal Example
+```javascript
+$.screen( "640x480" );
+$.setColor( 15 );
+$.print( "Hello, Pi.js!" );
+```
+
+### Screen with Container
+```javascript
+$.screen( "800x600", "myCanvas" );
+$.setColor( "#FF0000" );
+$.circle( 400, 300, 50 );
+```
+
+## Drawing Primitives
+
+### Basic Shapes
+```javascript
+$.screen( "640x480" );
+
+// Set colors
+$.setColor( "#FF0000" );  // Red
+$.line( 0, 0, 100, 100 );
+
+$.setColor( "#00FF00" );  // Green
+$.rect( 50, 50, 100, 80 );
+
+$.setColor( "#0000FF" );  // Blue
+$.circle( 320, 240, 50 );
+
+// Filled shapes
+$.setColor( "#FFFF00" );
+$.rect( 200, 200, 100, 50, "#FF00FF" );  // Yellow outline, magenta fill
+
+$.setColor( "#00FFFF" );
+$.circle( 400, 300, 40, "#FF00FF" );  // Cyan outline, magenta fill
+```
+
+### Pixel Drawing
+```javascript
+$.screen( "320x200" );
+$.setColor( 15 );
+
+// Draw a pattern
+for( let y = 0; y < 200; y++ ) {
+	for( let x = 0; x < 320; x++ ) {
+		const colorIndex = ( x + y ) % 16;
+		$.setColor( colorIndex );
+		$.pset( x, y );
+	}
+}
+```
+
+### Lines and Patterns
+```javascript
+$.screen( "640x480" );
+$.setColor( 15 );
+
+// Grid pattern
+for( let x = 0; x < 640; x += 20 ) {
+	$.line( x, 0, x, 480 );
+}
+for( let y = 0; y < 480; y += 20 ) {
+	$.line( 0, y, 640, y );
+}
+
+// Star pattern
+const centerX = 320;
+const centerY = 240;
+for( let i = 0; i < 8; i++ ) {
+	const angle = ( i / 8 ) * Math.PI * 2;
+	const x = centerX + Math.cos( angle ) * 100;
+	const y = centerY + Math.sin( angle ) * 100;
+	$.line( centerX, centerY, x, y );
+}
+```
+
+### Advanced Shapes
+```javascript
+$.screen( "640x480" );
+
+// Ellipse
+$.setColor( "#FF0000" );
+$.ellipse( 200, 150, 80, 40 );  // Horizontal ellipse
+$.ellipse( 400, 150, 40, 80, "#00FF00" );  // Vertical ellipse, filled
+
+// Arc
+$.setColor( "#0000FF" );
+$.arc( 320, 240, 100, 0, 90 );  // Quarter circle
+$.arc( 320, 240, 100, 90, 180 );  // Another quarter
+
+// Bézier curve
+$.setColor( "#FFFF00" );
+$.bezier( 100, 200, 200, 100, 400, 300, 500, 200 );
+```
+
+## BASIC-Style Drawing
+
+### Draw Command Examples
+```javascript
+$.screen( "300x200" );
+
+// Draw a house
+$.pset( 150, 100 );
+$.draw( "C2 R15 D15 L30 U15 R15" );  // House outline
+$.draw( "B G4 C1 L6 D6 R6 U6 BG3 P1" );  // Window
+$.draw( "B E3 B R14 C1 L6 D6 R6 U6 BG3 P1" );  // Another window
+$.draw( "B E3 B R1 P2" );  // Paint house
+$.draw( "B E4 B U C6 H15 G15 B R5 P6" );  // Roof
+```
+
+### Draw with Angles
+```javascript
+$.screen( "400x300" );
+$.pset( 200, 150 );
+
+// Draw a star using angles
+$.draw( "C15 TA0 R50" );  // Right
+$.draw( "TA72 R50" );  // Turn 72 degrees, draw
+$.draw( "TA144 R50" );
+$.draw( "TA216 R50" );
+$.draw( "TA288 R50" );
+```
+
+## Text and Fonts
+
+### Basic Text Printing
+```javascript
+$.screen( "640x480" );
+$.setColor( 15 );
+
+// Print text
+$.print( "Hello, World!" );
+$.print( "This is on a new line" );
+
+// Inline printing
+$.print( "First ", true );
+$.print( "Second ", true );
+$.print( "Third" );
+
+// Centered text
+$.print( "Centered Text", false, true );
+```
+
+### Cursor Positioning
+```javascript
+$.screen( "640x480" );
+$.setColor( 15 );
+
+// Character-based positioning
+$.setPos( 10, 5 );  // Column 10, Row 5
+$.print( "At position 10,5" );
+
+// Pixel-based positioning
+$.setPosPx( 100, 50 );  // X: 100px, Y: 50px
+$.print( "At pixel 100,50" );
+
+// Get current position
+const pos = $.getPos();  // Returns {col, row}
+const posPx = $.getPosPx();  // Returns {x, y}
+```
+
+### Custom Fonts
+```javascript
+// Load bitmap font (before $.ready())
+const font = $.loadFont( "font.png", 6, 8 );
+
+$.ready( function() {
+	$.screen( "640x480" );
+	$.setFont( font );
+	$.setColor( 15 );
+	$.print( "Custom Font Text" );
+	
+	// Change font size
+	$.setFontSize( 12, 16 );
+	$.print( "Larger Font" );
+} );
+```
+
+### Word Wrapping
+```javascript
+$.screen( "200x200" );
+$.setColor( 15 );
+$.setWordBreak( true );
+$.print( "This is a long line of text that will wrap automatically when it reaches the edge of the screen." );
+```
+
+## Colors and Palettes
+
+### Color Formats
+```javascript
+$.screen( "640x480" );
+
+// Palette index
+$.setColor( 15 );  // White (if using default palette)
+
+// Hex string
+$.setColor( "#FF0000" );  // Red
+$.setColor( "#00FF00AA" );  // Green with alpha
+
+// RGB array
+$.setColor( [255, 0, 0] );  // Red
+$.setColor( [255, 0, 0, 128] );  // Red with alpha
+
+// Color object
+$.setColor( { "r": 255, "g": 0, "b": 0, "a": 255 } );  // Red
+```
+
+### Custom Palette
+```javascript
+const customPalette = [
+	"#000000",  // 0: Black
+	"#FFFFFF",  // 1: White
+	"#FF0000",  // 2: Red
+	"#00FF00",  // 3: Green
+	"#0000FF",  // 4: Blue
+	"#FFFF00",  // 5: Yellow
+	"#FF00FF",  // 6: Magenta
+	"#00FFFF"   // 7: Cyan
+];
+
+$.setDefaultPal( customPalette );
+$.screen( "640x480" );
+
+// Use palette indices
+for( let i = 0; i < 8; i++ ) {
+	$.setColor( i );
+	$.rect( i * 80, 0, 80, 480, i );
+}
+```
+
+### Background Colors
+```javascript
+$.screen( "640x480" );
+$.setBgColor( "#000080" );  // Dark blue background
+$.setContainerBgColor( "#000000" );  // Black container background
+```
+
+## Input Handling
+
+### Keyboard Input
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+	
+	let x = 320;
+	let y = 240;
+	
+	// Polling method
+	function gameLoop() {
+		$.cls();
+		
+		if( $.inkey( "ArrowLeft" ) ) {
+			x -= 5;
+		}
+		if( $.inkey( "ArrowRight" ) ) {
+			x += 5;
+		}
+		if( $.inkey( "ArrowUp" ) ) {
+			y -= 5;
+		}
+		if( $.inkey( "ArrowDown" ) ) {
+			y += 5;
+		}
+		
+		$.setColor( 15 );
+		$.circle( x, y, 20 );
+		
+		requestAnimationFrame( gameLoop );
+	}
+	gameLoop();
+} );
+```
+
+### Keyboard Events
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+	$.setColor( 15 );
+	$.print( "Press arrow keys to move" );
+	
+	let x = 320;
+	let y = 240;
+	
+	$.onkey( "ArrowLeft", "down", function() {
+		x -= 10;
+	} );
+	
+	$.onkey( "ArrowRight", "down", function() {
+		x += 10;
+	} );
+	
+	$.onkey( "ArrowUp", "down", function() {
+		y -= 10;
+	} );
+	
+	$.onkey( "ArrowDown", "down", function() {
+		y += 10;
+	} );
+	
+	function draw() {
+		$.cls();
+		$.setColor( 15 );
+		$.circle( x, y, 20 );
+		requestAnimationFrame( draw );
+	}
+	draw();
+} );
+```
+
+### Mouse Input
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+	$.startMouse();
+	
+	$.setColor( 15 );
+	$.print( "Click and drag to draw" );
+	
+	$.onmouse( "down", function( e ) {
+		if( e.buttons.left ) {
+			$.setColor( 15 );
+			$.pset( e.x, e.y );
+		}
+	} );
+	
+	$.onmouse( "move", function( e ) {
+		if( e.buttons.left ) {
+			$.setColor( 15 );
+			$.pset( e.x, e.y );
+		}
+	} );
+} );
+```
+
+### Touch Input
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+	$.startTouch();
+	
+	$.ontouch( "start", function( e ) {
+		$.setColor( 15 );
+		$.circle( e.x, e.y, 10 );
+	} );
+	
+	$.ontouch( "move", function( e ) {
+		$.setColor( 15 );
+		$.circle( e.x, e.y, 10 );
+	} );
+} );
+```
+
+### Unified Press Input
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+	
+	// Works with both mouse and touch
+	$.onpress( "down", function( e ) {
+		$.setColor( 15 );
+		$.circle( e.x, e.y, 20 );
+	} );
+	
+	$.onpress( "move", function( e ) {
+		if( e.buttons > 0 ) {
+			$.setColor( 15 );
+			$.pset( e.x, e.y );
+		}
+	} );
+} );
+```
+
+### Input Prompt
+```javascript
+$.ready( async function() {
+	$.screen( "640x480" );
+	$.setColor( 15 );
+	
+	// Text input
+	const name = await $.input( "Enter your name: " );
+	$.print( "Hello, " + name + "!" );
+	
+	// Number input
+	const age = await $.input( "Enter your age: ", null, null, true, false, true );
+	$.print( "You are " + age + " years old." );
+	
+	// Integer input
+	const score = await $.input( "Enter score: ", null, null, true, true, false );
+	$.print( "Score: " + score );
+} );
+```
+
+## Sound and Music
+
+### Basic Sound
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+	
+	// Play a beep
+	$.sound( { "frequency": 440, "duration": 0.5 } );
+	
+	// Play different waveforms
+	$.sound( { "frequency": 440, "duration": 0.5, "oType": "sine" } );
+	$.sound( { "frequency": 440, "duration": 0.5, "oType": "square" } );
+	$.sound( { "frequency": 440, "duration": 0.5, "oType": "triangle" } );
+	$.sound( { "frequency": 440, "duration": 0.5, "oType": "sawtooth" } );
+	
+	// With envelope
+	$.sound( {
+		"frequency": 440,
+		"duration": 1.0,
+		"attack": 0.2,
+		"decay": 0.3
+	} );
+} );
+```
+
+### Music (PLAY Command)
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+	
+	// Simple scale
+	$.play( "C D E F G A B C5" );
+	
+	// With tempo and length
+	$.play( "T120 L4 C D E F G A B C5" );
+	
+	// Mary Had a Little Lamb
+	$.play( "L4 E D C D E E E2 D D D2 E G G2 E D C D E E E E D D E D C2" );
+	
+	// Multiple tracks (chords)
+	$.play( "C2, E2, G2" );  // C major chord
+	
+	// With octaves
+	$.play( "O3 C D E F G A B O4 C" );
+	
+	// Different styles
+	$.play( "MS C D E F G" );  // Staccato
+	$.play( "ML C D E F G" );  // Legato
+	$.play( "MN C D E F G" );  // Normal
+	
+	// Different waveforms
+	$.play( "SINE C D E F G" );
+	$.play( "SQUARE C D E F G" );
+} );
+```
+
+### Volume Control
+```javascript
+$.setVolume( 1.0 );  // 100%
+$.sound( { "frequency": 440, "duration": 0.5 } );
+
+$.setVolume( 0.5 );  // 50%
+$.sound( { "frequency": 440, "duration": 0.5 } );
+
+$.setVolume( 0.25 );  // 25%
+$.sound( { "frequency": 440, "duration": 0.5 } );
+```
+
+## Images and Sprites
+
+### Loading and Drawing Images
+```javascript
+// Load image (before $.ready())
+$.loadImage( "sprite.png", "mySprite" );
+
+$.ready( function() {
+	$.screen( "640x480" );
+	
+	// Draw image
+	$.drawImage( "mySprite", 100, 100 );
+	
+	// Draw with transformations
+	$.drawImage( "mySprite", 200, 200, 45, 0.5, 0.5, 0.8, 2, 2 );
+	// x, y, rotation, anchorX, anchorY, alpha, scaleX, scaleY
+} );
+```
+
+### Spritesheets
+```javascript
+// Load spritesheet (32x32 frames, 1px margin) - before $.ready()
+$.loadSpritesheet( "sprites.png", "player", 32, 32, 1 );
+
+$.ready( function() {
+	$.screen( "640x480" );
+	
+	let frame = 0;
+	
+	// Animate sprite
+	function animate() {
+		$.cls();
+		$.drawSprite( "player", frame, 320, 240 );
+		frame = ( frame + 1 ) % 4;  // 4 frames
+		setTimeout( animate, 100 );
+	}
+	animate();
+} );
+```
+
+### Screen Capture
+```javascript
+$.screen( "640x480" );
+$.setColor( 15 );
+$.circle( 320, 240, 50 );
+
+// Capture screen region as image
+$.getImage( "captured", 0, 0, 640, 480 );
+
+// Draw captured image elsewhere
+$.drawImage( "captured", 0, 0 );
+```
+
+## Animation
+
+### Simple Animation Loop
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+	
+	let angle = 0;
+	
+	function animate() {
+		$.cls();
+		
+		angle += 0.1;
+		const x = 320 + Math.cos( angle ) * 100;
+		const y = 240 + Math.sin( angle ) * 100;
+		
+		$.setColor( 15 );
+		$.circle( x, y, 20 );
+		
+		requestAnimationFrame( animate );
+	}
+	
+	animate();
+} );
+```
+
+### Multiple Animated Objects
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+	
+	const objects = [];
+	for( let i = 0; i < 10; i++ ) {
+		objects.push( {
+			"x": Math.random() * 640,
+			"y": Math.random() * 480,
+			"vx": ( Math.random() - 0.5 ) * 5,
+			"vy": ( Math.random() - 0.5 ) * 5,
+			"color": Math.floor( Math.random() * 16 )
+		} );
+	}
+	
+	function animate() {
+		$.cls();
+		
+		for( let i = 0; i < objects.length; i++ ) {
+			const obj = objects[ i ];
+			
+			// Update position
+			obj.x += obj.vx;
+			obj.y += obj.vy;
+			
+			// Bounce off walls
+			if( obj.x < 0 || obj.x > 640 ) {
+				obj.vx = -obj.vx;
+			}
+			if( obj.y < 0 || obj.y > 480 ) {
+				obj.vy = -obj.vy;
+			}
+			
+			// Draw
+			$.setColor( obj.color );
+			$.circle( obj.x, obj.y, 10 );
+		}
+		
+		requestAnimationFrame( animate );
+	}
+	
+	animate();
+} );
+```
+
+## Game Patterns
+
+### Simple Game Loop
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+
+	// Game state
+	let playerX = 320;
+	let playerY = 240;
+	let score = 0;
+	
+	function gameLoop() {
+
+		// Clear screen
+		$.cls();
+		
+		// Handle input
+		if( $.inkey( "ArrowLeft" ) ) {
+			playerX -= 5;
+		}
+		if( $.inkey( "ArrowRight" ) ) {
+			playerX += 5;
+		}
+		if( $.inkey( "ArrowUp" ) ) {
+			playerY -= 5;
+		}
+		if( $.inkey( "ArrowDown" ) ) {
+			playerY += 5;
+		}
+		
+		// Draw player
+		$.setColor( 15 );
+		$.circle( playerX, playerY, 20 );
+		
+		// Draw score
+		$.setPos( 0, 0 );
+		$.print( "Score: " + score );
+		
+		// Rendering is automatic - no need to call render()
+		requestAnimationFrame( gameLoop );
+	}
+	
+	gameLoop();
+} );
+```
+
+### Collision Detection
+```javascript
+function checkCollision( x1, y1, r1, x2, y2, r2 ) {
+	const dx = x2 - x1;
+	const dy = y2 - y1;
+	const distance = Math.sqrt( dx * dx + dy * dy );
+	return distance < ( r1 + r2 );
+}
+
+$.ready( function() {
+	$.screen( "640x480" );
+	
+	let playerX = 320;
+	let playerY = 240;
+	let enemyX = 100;
+	let enemyY = 100;
+	
+	function gameLoop() {
+		$.cls();
+		
+		// Update player
+		if( $.inkey( "ArrowLeft" ) ) playerX -= 5;
+		if( $.inkey( "ArrowRight" ) ) playerX += 5;
+		if( $.inkey( "ArrowUp" ) ) playerY -= 5;
+		if( $.inkey( "ArrowDown" ) ) playerY += 5;
+		
+		// Check collision
+		if( checkCollision( playerX, playerY, 20, enemyX, enemyY, 20 ) ) {
+			$.setColor( 4 );  // Red
+			$.print( "COLLISION!" );
+		}
+		
+		// Draw
+		$.setColor( 15 );
+		$.circle( playerX, playerY, 20 );
+		$.setColor( 4 );
+		$.circle( enemyX, enemyY, 20 );
+		
+		requestAnimationFrame( gameLoop );
+	}
+	
+	gameLoop();
+} );
+```
+
+## Advanced Examples
+
+### Pixel Data Manipulation
+```javascript
+$.screen( "640x480" );
+
+// Draw something
+$.setColor( 15 );
+$.rect( 100, 100, 200, 150, 2 );
+
+// Capture it
+const pixelData = $.get( 100, 100, 200, 150 );
+
+// Draw it multiple times
+for( let y = 0; y < 3; y++ ) {
+	for( let x = 0; x < 3; x++ ) {
+		$.put( pixelData, 300 + x * 220, 100 + y * 160 );
+	}
+}
+```
+
+### Filter Effects
+```javascript
+$.screen( "640x480" );
+
+// Draw something
+$.setColor( 15 );
+$.circle( 320, 240, 100 );
+
+// Apply filter to all pixels
+// Filter callback receives (color, x, y) where color is a PiColor object
+// Return true to keep the pixel, false to remove it
+$.filterImg( function( color, x, y ) {
+
+	// Modify color object properties (r, g, b, a)
+	color.r = 255 - color.r;
+	color.g = 255 - color.g;
+	color.b = 255 - color.b;
+	return true;  // Keep the modified pixel
+} );
+```
+
+### Multiple Screens
+```javascript
+$.ready( function() {
+
+	// Create multiple screens
+	const screen1 = $.screen( "320x240", "container1" );
+	const screen2 = $.screen( "320x240", "container2" );
+	
+	// Draw on screen 1
+	$.setScreen( screen1 );
+	$.setColor( 15 );
+	$.circle( 160, 120, 50 );
+	
+	// Draw on screen 2
+	$.setScreen( screen2 );
+	$.setColor( 4 );
+	$.rect( 100, 100, 120, 40, 2 );
+} );
+```
+
+### Object Parameters
+```javascript
+$.screen( "640x480" );
+
+// Using object parameters
+$.line( {
+	"x1": 0,
+	"y1": 0,
+	"x2": 100,
+	"y2": 100
+} );
+
+$.circle( {
+	"x": 320,
+	"y": 240,
+	"radius": 50,
+	"fillColor": 15
+} );
+
+$.rect( {
+	"x": 100,
+	"y": 100,
+	"width": 200,
+	"height": 150,
+	"fillColor": 2
+} );
+```
+
+### Batch Settings
+```javascript
+$.screen( "640x480" );
+
+// Set multiple properties at once
+$.set( {
+	"color": 15,
+	"pen": "circle",
+	"blend": "alpha",
+	"bgColor": "#000080"
+} );
+
+$.circle( 320, 240, 50 );
+```
+
+## Plugin Example
+
+### Creating a Simple Plugin
+```javascript
+pi.registerPlugin( "myPlugin", function( pluginApi ) {
+	
+	// Add a custom command
+	pluginApi.addCommand( "drawStar", function( screenData, args ) {
+		const x = args[ 0 ];
+		const y = args[ 1 ];
+		const size = args[ 2 ];
+		const color = args[ 3 ] || screenData.color;
+		
+		// Draw a star
+		const api = pluginApi.getApi();
+		api.setColor( color );
+		for( let i = 0; i < 5; i++ ) {
+			const angle = ( i / 5 ) * Math.PI * 2;
+			const px = x + Math.cos( angle ) * size;
+			const py = y + Math.sin( angle ) * size;
+			api.line( x, y, px, py );
+		}
+	}, true, [ "x", "y", "size", "color" ], false );  // isScreen=true, isScreenOptional=false
+}, "1.0.0", "My custom plugin" );
+
+// Use the plugin
+$.ready( function() {
+	$.screen( "640x480" );
+	$.drawStar( 320, 240, 50, 15 );  // Draw star at center
+} );
+```

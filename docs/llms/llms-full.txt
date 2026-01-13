@@ -1,0 +1,547 @@
+# Pi.js - Comprehensive Reference for LLMs
+
+## Overview
+Pi.js is a JavaScript library for creating retro-style games and demos, inspired by QBasic. It provides an all-in-one solution for graphics, sound, and user input with a beginner-friendly API. Built on WebGL 2, it offers GPU-accelerated pixel-perfect rendering.
+
+**Official Website:** https://pijs.org
+
+## Library Access
+- Primary alias: `$` (preferred for brevity)
+- Alternative alias: `pi` (for clarity)
+- Both reference the same object
+- `$` is only set if not already defined (won't conflict with jQuery)
+
+## Version Information
+- Current: v2.0.0 (WebGL 2 only, browser-only)
+- Legacy: v1.2.4 (Canvas2D support, available on separate branch)
+- Zero runtime dependencies
+- Requires modern browser with WebGL 2 support
+
+## Core Concepts
+
+### Screen System
+Pi.js uses a screen-based rendering system. You must create a screen before drawing operations.
+
+**Screen Creation:**
+```javascript
+$.screen( aspect, container, isOffscreen, resizeCallback );
+```
+
+**Aspect Ratio Formats:**
+- `"800x600"` - Exact pixel dimensions (scales to best fit resultion)
+- `"80m60"` - Multiple mode (scales to exact multiples of target resolution)
+- `"80e60"` - Extend mode (extends canvas to fill container while maintaining aspect ratio)
+
+**Screen Management:**
+```javascript
+$.screen( "640x480" );  // Create screen
+$.setScreen( screenObj );  // Set active screen
+$.getScreen( screenId );  // Get screen by ID
+$.removeScreen();  // Remove current screen
+```
+
+**Screen Properties:**
+```javascript
+$.width();  // Get screen width
+$.height();  // Get screen height
+$.canvas();  // Get HTMLCanvasElement
+```
+
+### Rendering System
+
+**Screen Clearing:**
+```javascript
+$.cls();  // Clear entire screen
+$.cls( x, y, width, height );  // Clear rectangular region
+```
+
+**Note:** Rendering is automatic in v2.0. There is no `render()`, `setAutoRender()`, or `setPixelMode()` - the library always uses pixel-perfect rendering automatically.
+
+**Blend Modes:**
+```javascript
+$.setBlend( "replace" );  // Replace pixels (no blending)
+$.setBlend( "alpha" );  // Alpha blending (default)
+```
+
+**Pen Styles:**
+```javascript
+$.setPen( "pixel", 1 );  // Pixel pen
+$.setPen( "square", 3 );  // Square pen (size 3)
+$.setPen( "circle", 5 );  // Circle pen (size 5)
+```
+
+## Color System
+
+### Color Formats
+Pi.js supports multiple color formats:
+
+1. **Palette Index** (integer): `15`
+2. **Hex String**: `"#FF0000"` or `"#FF0000AA"` (with alpha)
+3. **RGB Array**: `[255, 0, 0]` or `[255, 0, 0, 128]` (with alpha)
+4. **Color Object**: `{ "r": 255, "g": 0, "b": 0, "a": 255 }`
+
+### Color Management
+```javascript
+$.setColor( color, isAddToPalette );  // Set current drawing color
+$.setDefaultColor( color );  // Set default color for new screens
+$.setBgColor( color );  // Set canvas background color
+$.setContainerBgColor( color );  // Set container background color
+```
+
+### Palette System
+```javascript
+$.setPal( paletteArray );  // Replace entire palette
+$.getPal();  // Get current palette (copy)
+$.setPalColor( index, color );  // Change specific palette color
+$.setDefaultPal( paletteArray );  // Set default palette for new screens
+$.findColor( color, tolerance, isAddToPalette );  // Find palette index
+$.swapColor( oldColor, newColor );  // Replace color on screen
+```
+
+## Graphics Primitives
+
+### Basic Drawing
+```javascript
+$.pset( x, y );  // Draw single pixel
+$.line( x1, y1, x2, y2 );  // Draw line
+$.rect( x, y, width, height, fillColor );  // Draw rectangle (optional fill)
+$.circle( x, y, radius, fillColor );  // Draw circle (optional fill)
+```
+
+### Advanced Graphics
+```javascript
+$.ellipse( x, y, radiusX, radiusY, fillColor );  // Draw ellipse
+$.arc( x, y, radius, angle1, angle2 );  // Draw arc (degrees)
+$.bezier( xStart, yStart, x1, y1, x2, y2, xEnd, yEnd );  // Draw Bézier curve
+```
+
+### Pixel Data Operations
+```javascript
+$.get( x1, y1, x2, y2, tolerance, isAddToPalette );  // Capture region as pixel data
+$.put( data, x, y, includeZero );  // Draw pixel data array
+$.getPixel( x, y );  // Get color of single pixel
+```
+
+### BASIC-Style Drawing
+```javascript
+$.draw( drawString );  // Execute BASIC-style drawing commands
+```
+
+**Draw Commands:**
+- `U`, `D`, `L`, `R` - Up, Down, Left, Right
+- `E`, `F`, `G`, `H` - Diagonal directions
+- `M` - Move to absolute coordinate
+- `C` - Change color
+- `P` - Paint/fill
+- `T` - Turn angle
+- `A` - Arc
+- `B` - Blind move (don't draw)
+
+**Example:**
+```javascript
+$.draw( "C2 R15 D15 L30 U15 R15" );  // Draw house outline
+$.draw( "B G4 C1 L6 D6 R6 U6 BG3 P1" );  // Draw window
+```
+
+### Paint & Fill
+```javascript
+$.paint( x, y, fillColor, tolerance );  // Flood fill from point
+```
+
+## Images & Sprites
+
+### Image Loading
+```javascript
+$.loadImage( src, name, onLoad, onError );  // Load image from URL or element
+$.loadSpritesheet( src, name, width, height, margin );  // Load spritesheet
+$.removeImage( name );  // Remove image from memory
+```
+
+### Image Drawing
+```javascript
+$.drawImage( name, x, y, rotation, anchorX, anchorY, alpha, scaleX, scaleY );
+$.drawSprite( name, frame, x, y, rotation, anchorX, anchorY, alpha, scaleX, scaleY );
+```
+
+### Image Capture
+```javascript
+$.getImage( name, x1, y1, x2, y2 );  // Capture screen region as image
+$.getSpritesheetData( name );  // Get frame data for spritesheet
+```
+
+## Text & Fonts
+
+### Font Loading
+```javascript
+$.loadFont( fontSrc, width, height, charSet, isEncoded );  // Load bitmap font
+$.setDefaultFont( fontId );  // Set default font for new screens
+$.setFont( font );  // Set current font (ID or CSS font string)
+$.setFontSize( width, height );  // Change bitmap font size
+$.getAvailableFonts();  // Get list of loaded fonts
+$.setChar( charCode, data );  // Define custom character
+```
+
+### Text Printing
+```javascript
+$.print( msg, isInline, isCentered );  // Print text
+$.setPos( col, row );  // Set cursor position (character cells)
+$.setPosPx( x, y );  // Set cursor position (pixels)
+$.getPos();  // Get cursor position (col, row)
+$.getPosPx();  // Get cursor position (x, y)
+$.getCols();  // Get number of text columns
+$.getRows();  // Get number of text rows
+$.setWordBreak( isEnabled );  // Enable/disable word wrapping
+```
+
+### Text Width Calculation
+```javascript
+$.calcWidth( msg );  // Calculate width of string based on current font
+```
+
+## Input Handling
+
+### Keyboard Input
+```javascript
+// Keyboard automatically starts when key commands are called
+$.startKeyboard();  // Only needed to restart after stopKeyboard()
+$.stopKeyboard();  // Stop listening
+$.inkey( key );  // Get key state (or all keys if key is null)
+$.setActionKeys( keys );  // Mark keys as action keys (preventDefault)
+$.removeActionKeys( keys );  // Remove from action keys list
+```
+
+**Event Handlers:**
+```javascript
+$.onkey( key, mode, fn, once, allowRepeat );  // Register handler
+$.offkey( key, mode, fn, once, allowRepeat );  // Remove handler
+// mode: "up" or "down"
+```
+
+**Input Prompt:**
+```javascript
+$.input( prompt, fn, cursor, isNumber, isInteger, allowNegative, maxLength );
+$.cancelInput();  // Cancel current input
+```
+
+### Mouse Input
+```javascript
+$.startMouse();  // Start listening
+$.stopMouse();  // Stop listening
+$.getMouse();  // Get mouse state
+$.inmouse();  // Get mouse state (auto-starts mouse)
+$.setEnableContextMenu( isEnabled );  // Enable/disable right-click menu
+```
+
+**Event Handlers:**
+```javascript
+$.onmouse( mode, fn, once, hitBox, customData );  // Register handler
+$.offmouse( mode, fn );  // Remove handler
+// mode: "down", "up", or "move"
+```
+
+**Mouse State Object:**
+```javascript
+{
+	"x": number,  // X coordinate
+	"y": number,  // Y coordinate
+	"buttons": {
+		"left": boolean,
+		"right": boolean,
+		"middle": boolean
+	}
+}
+```
+
+### Touch Input
+```javascript
+$.startTouch();  // Start listening
+$.stopTouch();  // Stop listening
+$.intouch();  // Get touch state (auto-starts touch)
+$.setPinchZoom( isEnabled );  // Enable/disable pinch-to-zoom
+```
+
+**Event Handlers:**
+```javascript
+$.ontouch( mode, fn, once, hitBox, customData );  // Register handler
+$.offtouch( mode, fn );  // Remove handler
+// mode: "start", "end", or "move"
+```
+
+**Touch State:**
+- Array of touch objects with `x`, `y`, `id`, etc.
+
+### Unified Press Input
+```javascript
+$.inpress();  // Get current input (mouse or touch)
+$.onpress( mode, fn, once, hitBox, customData );  // Register handler
+$.offpress( mode, fn );  // Remove handler
+$.onclick( fn, once, hitBox, customData );  // Register click handler
+$.offclick( fn );  // Remove click handler
+```
+
+### Gamepad Input
+```javascript
+$.startGamepad();  // Start gamepad monitoring loop
+$.stopGamepad();  // Stop polling (connection events still tracked)
+$.ingamepad( gamepadIndex );  // Get gamepad state (or all if null)
+$.setGamepadSensitivity( sensitivity );  // Set dead zone (0-1)
+$.onGamepadConnected( fn );  // Register connection handler
+$.onGamepadDisconnected( fn );  // Register disconnection handler
+```
+
+### Event Management
+```javascript
+$.clearEvents( type );  // Clear event handlers
+// type: "keyboard", "mouse", "touch", "press", "click", "gamepad", or array
+// If omitted, clears all event handlers
+```
+
+## Sound & Audio
+
+### Audio Pools
+```javascript
+$.loadAudio( src, name, poolSize );  // Load audio file and create pool
+$.removeAudio( audioId );  // Remove audio pool
+$.playAudio( audioId, volume, startTime, duration );  // Play from pool
+$.stopAudio( audioId );  // Stop pool (or all if null)
+```
+
+### Synthesized Sound
+```javascript
+$.sound( { "frequency": 440, "duration": 0.5, "volume": 1, "oType": "sine", "attack": 0.1, "decay": 0.2 } );
+// oType: "sine", "square", "triangle", "sawtooth", or custom wave table
+// All parameters are optional
+$.stopSound( soundId );  // Stop sound (or all if null)
+$.setVolume( volume );  // Set global volume (0-1, default: 0.75)
+```
+
+### Music (BASIC-style)
+```javascript
+$.play( playString );  // Play music using BASIC notation
+$.stopPlay( trackId );  // Stop playing (or all tracks if null)
+```
+
+**PLAY Command Syntax:**
+- **Notes**: A-G with sharps (#/+) and flats (-)
+- **Commands**: O (octave), L (length), T (tempo), V (volume), P (pause)
+- **Waveforms**: W (SINE, SQUARE, TRIANGLE, SAWTOOTH)
+- **Styles**: MS (staccato), MN (normal), ML (legato)
+- **Multiple tracks**: Separated by commas
+
+**Example:**
+```javascript
+$.play( "O3 C D E F G A B O4 C" );  // Scale
+$.play( "T120 L4 C D E F G A B O4 C" );  // With tempo and length
+```
+
+## Parameter Styles
+
+Pi.js supports both positional and object-based parameters:
+
+**Positional:**
+```javascript
+$.line( 0, 0, 100, 100 );
+$.circle( 400, 300, 50 );
+```
+
+**Object-based:**
+```javascript
+$.line( { "x1": 0, "y1": 0, "x2": 100, "y2": 100 } );
+$.circle( { "x": 400, "y": 300, "radius": 50 } );
+```
+
+**Batch Settings:**
+```javascript
+$.set( {
+	"color": 15,
+	"pen": "circle",
+	"blend": "alpha"
+} );
+```
+
+## Utilities
+
+### Ready State
+```javascript
+$.ready( callback );  // Wait for document ready and resources
+// Returns Promise, supports async/await
+```
+
+**Example:**
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+	// Your code here
+} );
+
+// Or with async/await
+await $.ready();
+$.screen( "640x480" );
+```
+
+## Plugin System
+
+### Plugin Registration
+```javascript
+pi.registerPlugin( name, init, version?, description?, dependencies? );
+```
+
+**Plugin API:**
+```javascript
+pluginApi.addCommand( name, fn, isScreen, parameterNames, isScreenOptional );  // Register command
+pluginApi.addScreenDataItem( name, defaultValue );  // Add screen data property
+pluginApi.addScreenDataItemGetter( name, getterFn );  // Add computed property
+pluginApi.addScreenInitFunction( fn );  // Run on screen creation
+pluginApi.addScreenCleanupFunction( fn );  // Run on screen destruction
+pluginApi.getScreenData( fnName, screenId );  // Access screen data
+pluginApi.getAllScreensData();  // Access all screens
+pluginApi.getApi();  // Access main Pi.js API
+pluginApi.utils;  // Utility functions
+```
+
+**Example:**
+```javascript
+pi.registerPlugin( "myPlugin", function( pluginApi ) {
+	pluginApi.addCommand( "myCommand", function( screenData, args ) {
+		const x = args[ 0 ];
+		const y = args[ 1 ];
+		// Command implementation
+	}, true, [ "x", "y" ], false );  // isScreen=true, isScreenOptional=false
+}, "1.0.0", "My plugin" );
+```
+
+## Common Patterns
+
+### Initialization
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+	$.setColor( 15 );
+	// Initialize game
+} );
+```
+
+### Game Loop
+```javascript
+function gameLoop() {
+	$.cls();  // Clear screen
+	
+	// Update game state
+	updateGame();
+	
+	// Draw game
+	drawGame();
+	
+	// Rendering is automatic - no need to call render()
+	requestAnimationFrame( gameLoop );
+}
+gameLoop();
+```
+
+### Input Handling
+```javascript
+// Keyboard
+$.onkey( "ArrowLeft", "down", function() {
+	playerX -= 5;
+} );
+
+// Mouse
+$.startMouse();
+$.onmouse( "down", function( e ) {
+	if( e.buttons.left ) {
+		// Handle left click
+	}
+} );
+
+// Unified press (works with mouse or touch)
+$.onpress( "down", function( e ) {
+	// Handle press
+} );
+```
+
+### Animation
+```javascript
+let angle = 0;
+function animate() {
+	$.cls();
+	angle += 0.1;
+	const x = 320 + Math.cos( angle ) * 100;
+	const y = 240 + Math.sin( angle ) * 100;
+	$.circle( x, y, 20 );
+	requestAnimationFrame( animate );
+}
+animate();
+```
+
+### Sprite Animation
+```javascript
+$.loadSpritesheet( "sprites.png", "player", 32, 32 );
+let frame = 0;
+function animateSprite() {
+	$.cls();
+	$.drawSprite( "player", frame, 100, 100 );
+	frame = ( frame + 1 ) % 4;  // 4 frames
+	setTimeout( animateSprite, 100 );
+}
+```
+
+## Important Notes
+
+### Coordinate System
+- Top-left corner is (0, 0)
+- X increases to the right
+- Y increases downward
+- All coordinates are in pixels (unless using character-based positioning)
+
+### Screen Requirements
+- Most drawing commands require an active screen
+- Create screen before drawing operations
+- Screen automatically resizes when container element resizes (using ResizeObserver)
+
+### Rendering
+- Rendering is automatic - no need to call `render()` or `setAutoRender()`
+- All drawing operations are automatically batched and rendered
+- Pixel-perfect rendering is always enabled (no `setPixelMode()` needed)
+
+### Color System
+- Colors can be specified in multiple formats
+- Palette system allows efficient color management
+- Alpha blending available when blend mode is "alpha"
+
+### Performance
+- WebGL 2 acceleration for all drawing operations
+- Pixel-perfect rendering mode available
+- Batch operations recommended for performance
+
+### Browser Compatibility
+- Requires WebGL 2 support
+- Modern browsers only (Chrome, Firefox, Safari, Edge)
+- No IE11 or older browser support
+
+### Error Handling
+- Invalid operations typically fail silently or log warnings
+- Check for screen existence before operations
+- Validate input parameters
+
+## Best Practices
+
+1. **Always use `$.ready()`** after loading resources
+2. **Create screens before drawing** - Most commands require active screen
+3. **Use appropriate color formats** - Palette indices for efficiency, hex for flexibility
+4. **Handle input properly** - Start input systems is optional and is only needed when explicitly stopped.
+5. **Clean up resources** - Remove screens and images when done
+6. **Use event handlers** - Prefer event handlers over polling for input
+7. **Batch operations** - Group drawing operations when possible
+8. **Use spritesheets** - More efficient than individual images
+9. **Set appropriate blend modes** - "replace" for performance, "alpha" for transparency
+10. **Test on target browsers** - Ensure WebGL 2 support
+
+## Migration from v1.2.4
+
+Key differences in v2.0.0:
+- Canvas2D mode removed (WebGL 2 only)
+- New plugin system
+- Some API changes (see upgrade guide)
+- Improved performance with WebGL 2
+
+For detailed migration information, see: https://pijs.org/pi-js-v2-upgrade/
