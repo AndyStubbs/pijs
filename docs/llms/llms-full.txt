@@ -176,7 +176,7 @@ $.getSpritesheetData( name );  // Get frame data for spritesheet
 $.loadFont( fontSrc, width, height, charSet, isEncoded );  // Load bitmap font
 $.setDefaultFont( fontId );  // Set default font for new screens
 $.setFont( font );  // Set current font (ID or CSS font string)
-$.setFontSize( width, height );  // Change bitmap font size
+$.setPrintSize( scaleX, scaleY, padX, padY );  // Change bitmap font scale and padding
 $.getAvailableFonts();  // Get list of loaded fonts
 $.setChar( charCode, data );  // Define custom character
 ```
@@ -212,7 +212,7 @@ $.removeActionKeys( keys );  // Remove from action keys list
 
 **Event Handlers:**
 ```javascript
-$.onkey( key, mode, fn, once, allowRepeat );  // Register handler
+$.onkey( key, mode, fn, once, allowRepeat );  // Register handler -- use "any" for any key
 $.offkey( key, mode, fn, once, allowRepeat );  // Remove handler
 // mode: "up" or "down"
 ```

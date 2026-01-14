@@ -103,12 +103,14 @@ function gameLoop() {
 gameLoop();
 
 // Event handlers
+$.onkey( "any", "down", function () { /* Any key pressed */ } );
 $.onkey( "ArrowLeft", "down", function() { /* move left */ } );
 $.onmouse( "down", function( e ) { /* handle click */ } );
 ```
 
 ## Important Notes
 - Always create a screen before drawing
+- Use $.ready after loading resources
 - Coordinates: top-left is (0, 0)
 - Most commands require an active screen
 - Screen automatically resizes when container element resizes

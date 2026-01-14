@@ -2,6 +2,12 @@
 
 This file contains example code snippets demonstrating how to use Pi.js for various tasks.
 
+# QUICK REFERENCE INDEX
+- Task: Hello World -> see section ### Hello World
+- Task: Pong Game -> see section ### Pong Game
+- Task: Mary Had A Little Lamb -> see section ### Mary Had A Little Lamb
+- Task: Retro City Intro -> see section ### Retro City
+
 ## Basic Setup
 
 ### Minimal Example
@@ -178,7 +184,7 @@ $.ready( function() {
 	$.print( "Custom Font Text" );
 	
 	// Change font size
-	$.setFontSize( 12, 16 );
+	$.setPrintSize( 2, 2 );
 	$.print( "Larger Font" );
 } );
 ```
@@ -818,4 +824,221 @@ $.ready( function() {
 	$.screen( "640x480" );
 	$.drawStar( 320, 240, 50, 15 );  // Draw star at center
 } );
+```
+
+## Other Examples
+
+### Hello World
+```javascript
+// Create a small retro-style screen
+$.screen( "320x200" );
+
+// Print Hello World
+$.setColor( 15 ); // white
+$.setPos( 0, 1 ); // Move text down by 1 line
+$.print( "Hello World", true, true );
+
+// Draw a red rectangle
+$.setColor( "#FF0000" );
+$.rect( 20, 40, 80, 40 );
+
+// Draw a green circle
+$.setColor( "#00FF00" );
+$.circle( 160, 100, 30 );
+
+// Draw a blue line
+$.setColor( "#0000FF" );
+$.line( 200, 20, 300, 180 );
+```
+
+### Pong Game
+```javascript
+$.screen( "640x480" );
+
+// Game objects
+const ball = {
+	x: 320,
+	y: 240,
+	radius: 8
+};
+
+const paddleLeft = {
+	x: 20,
+	y: 200,
+	width: 10,
+	height: 80
+};
+
+const paddleRight = {
+	x: 610,
+	y: 200,
+	width: 10,
+	height: 80
+};
+
+function draw() {
+	// Clear screen (blank background)
+	$.cls();
+
+	// Draw paddles
+	$.setColor( 15 ); // white
+	$.rect( paddleLeft.x, paddleLeft.y, paddleLeft.width, paddleLeft.height );
+	$.rect( paddleRight.x, paddleRight.y, paddleRight.width, paddleRight.height );
+
+	// Draw ball
+	$.circle( ball.x, ball.y, ball.radius, 15 );
+
+	requestAnimationFrame( draw );
+}
+
+draw();
+```
+
+### Mary Had A Little Lamb
+```javascript
+$.ready( function() {
+	$.screen( "640x240" );
+
+	$.setColor( 15 );
+	$.print( "Mary Had a Little Lamb" );
+	$.print( "" );
+	$.print( "Press any key to play " + String.fromCharCode( 13 ) );
+
+	// Require a keypress before playing audio
+	$.onkey( "any", "down", function() {
+		$.cls();
+		$.setPos( 1, 1 );
+		$.print( String.fromCharCode( 13 ) + " Playing..." );
+
+		$.play(
+			"O3 L4 " +
+			"E D C D E E E2 " +
+			"D D D2 " +
+			"E G G2 " +
+			"E D C D E E E E " +
+			"D D E D C2"
+		);
+	}, true ); // Set once to true
+} );
+```
+
+### Retro City
+```javascript
+$.ready(function() {
+	$.screen("640x480");
+	$.setBgColor("#000000");
+
+	const centerX = 320;
+	const horizonY = 240;
+	const bottomY = 480;
+
+	/* =========================
+	   HORIZON GLOW
+	========================= */
+	for (let i = 0; i < 120; i++) {
+		$.setColor(`rgba(255,0,255,${1 - i / 120})`);
+		$.line(0, horizonY - i, 640, horizonY - i);
+	}
+
+	/* =========================
+	   RETRO SUN
+	========================= */
+	for (let r = 60; r > 0; r--) {
+		$.setColor(`rgba(255,105,180,${r / 60})`);
+		$.circle(centerX, horizonY - 0, r);
+	}
+	$.cls(0, horizonY, 640, horizonY);
+
+	/* =========================
+	   CITY SKYLINE (WITH GAP)
+	========================= */
+	const gapWidth = 120;
+	const leftLimit = centerX - gapWidth / 2;
+	const rightLimit = centerX + gapWidth / 2;
+
+	function drawBuilding(x, w) {
+		const h = 100 + Math.random() * 50;
+
+		// Building body
+		$.setColor("#111111");
+		$.rect(x, horizonY - h, w, h, "#222222");
+
+		// Windows
+		const windowW = 6;
+		const windowH = 8;
+		const padX = 6;
+		const padY = 10;
+
+		for (let wy = horizonY - h + padY; wy < horizonY - 10; wy += padY) {
+			for (let wx = x + padX; wx < x + w - padX; wx += padX + windowW) {
+				if (Math.random() > 0.4) {
+					$.setColor(Math.random() > 0.8 ? "#00FFFF" : "#FFFF66");
+					$.rect(wx, wy, windowW, windowH, $.getColor());
+				}
+			}
+		}
+	}
+
+	// Left side buildings
+	let x = 0;
+	while (x < leftLimit - 40) {
+		const w = 40 + Math.random() * 30;
+		drawBuilding(x, w);
+		x += w + 10;
+	}
+
+	// Right side buildings
+	x = rightLimit + 10;
+	while (x < 640) {
+		const w = 40 + Math.random() * 30;
+		drawBuilding(x, w);
+		x += w + 10;
+	}
+
+	/* =========================
+	   PERSPECTIVE GRID
+	========================= */
+	$.setColor("#00FFFF");
+
+	// Vertical lines
+	for (let gx = 0; gx <= 640; gx += 40) {
+		$.line(gx, bottomY, centerX, horizonY);
+	}
+
+	// Horizontal lines (correct spacing: wide bottom → tight horizon)
+	const numLines = 28;
+	const p = 3;
+
+	for (let i = 1; i <= numLines; i++) {
+		const t = i / numLines;
+		const depth = 1 - Math.pow(1 - t, p);
+		const y = bottomY - depth * (bottomY - horizonY);
+		$.line(0, y, 640, y);
+	}
+
+	/* =========================
+	   TITLE
+	========================= */
+	$.setColor("#FF00FF");
+	$.setPrintSize({ scaleWidth: 4, scaleHeight: 4 });
+	$.setPosPx(120, 40);
+	$.print("RETRO CITY", false, true);
+
+	/* =========================
+	   PRESS ANY KEY BOX
+	========================= */
+	const boxY = 415;
+	const boxH = 28;
+
+	// Background box
+	$.setColor("rgba(0,0,0,0.75)");
+	$.setBlend( "alpha" );
+	$.rect(175, boxY, 272, boxH, "rgba(0,0,0,0.75)");
+
+	// Text
+	$.setColor("#00FFFF");
+	$.setPrintSize({ scaleWidth: 2, scaleHeight: 2 });
+	$.setPosPx(200, boxY + 10);
+	$.print("PRESS ANY KEY TO START", false, true);
+});
 ```
