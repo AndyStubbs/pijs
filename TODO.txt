@@ -1,8 +1,8 @@
-TODO-LATER: Pi Version 1 stopPlay is not working.
-TODO-LATER: Pi Version 1 swapColor example doesn't work, looks like a bug with swapColor. I might get rid of swapColor if I make version 1 compatible with version 2 so no need to fix this right now.
-TODO-LATER: Pi Version 1 Update -> Make version 1 the canvas2d version of Pi.js. Make it compatible with version 2 but runs in canvas 2d.  I will only do this if there is a demand for canvas2d only mode.
-TODO-LATER: Add support for non-fixed with fonts. Font will still load the same but should auto detect the size of each character and then and use that for spacing.
-TODO-LATER: Add getFont that returns the font data of specific fonts if font-id passed in. If no font data is passed in then return the font data of the current font. Return type should match getAvailableFonts.
-TODO-LATER: Add post image processing effects for screens. An example would be a CRT (scanline simulation).
-TODO-LATER: Add the ability to non-square pixel sizes for screens, for example old CRT's rendered 8x8 font but the vertical pixels would be stretched.
-TODO-MUCH-LATER: Research 3d Drawing. How to do 3d Drawing with a procedural API. Even though API is procedural could create objects like a camera and shapes to draw in 3d. Needs careful planning but would be nice to be able to do some simple 3d games like Bard's Tale, Ultima Underworld, Dark Forces, or Wing Commander.
+TODO-LATER: [VERSION 1] Pi Version 1 stopPlay is not working.
+TODO-LATER: [VERSION 1] Pi Version 1 swapColor example doesn't work, looks like a bug with swapColor. I might get rid of swapColor if I make version 1 compatible with version 2 so no need to fix this right now.
+TODO-LATER: [VERSION 1] Pi Version 1 Update -> Make version 1 the canvas2d version of Pi.js. Make it compatible with version 2 but runs in canvas 2d.  I will only do this if there is a demand for canvas2d only mode.
+TODO-LATER: [FONTS] Add support for non-fixed with fonts. Font will still load the same but should auto detect the size of each character and then and use that for spacing.
+TODO-LATER: [FONTS] Add getFont that returns the font data of specific fonts if font-id passed in. If no font data is passed in then return the font data of the current font. Return type should match getAvailableFonts.
+TODO-LATER: [SCREEN] Add post image processing effects for screens. An example would be a CRT (scanline simulation).
+TODO-LATER: [SCREEN] Add the ability to non-square pixel sizes for screens, for example old CRT's rendered 8x8 font but the vertical pixels would be stretched.
+TODO-MUCH-LATER: [3D] Research 3d Drawing. How to do 3d Drawing with a procedural API. Even though API is procedural could create objects like a camera and shapes to draw in 3d. Needs careful planning but would be nice to be able to do some simple 3d games like Bard's Tale, Ultima Underworld, Dark Forces, or Wing Commander.
