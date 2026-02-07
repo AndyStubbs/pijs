@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<title>Char Edit</title>
-		<script src="../build/dist/pi.js"></script>
+		<script src="../build/pi.js"></script>
 		<style>
 			html, body {
 				background-color: black;
@@ -22,9 +22,9 @@
 
 			.charTextContainer textarea {
 				display: block;
-				width: calc( 100% - 5px );	
-				margin-bottom: 5px;		
-				resize: none;	
+				width: calc( 100% - 5px );
+				margin-bottom: 5px;
+				resize: none;
 			}
 
 			.charTextContainer input[type="button"] {
@@ -140,7 +140,7 @@ function displayTitle( title ) {
 	$.setColor( 7 );
 	$.line( 0, g.height + 4, $.width(), g.height + 4 );
 	$.setPosPx( 0, 2 );
-	$.print( title );	
+	$.print( title );
 }
 
 function drawDisplay() {
@@ -153,7 +153,7 @@ function drawChar() {
 	var data, x, y;
 
 	document.querySelector( "#charText" ).value = g.char;
-	
+
 	g.left = 0;
 	g.top = g.height + 6;
 	g.charPixelWidth = g.factors[ g.height ] * g.width;
@@ -180,7 +180,7 @@ function drawChar() {
 
 function showMenu() {
 	displayTitle( "Menu" );
-	$.print();	
+	$.print();
 	$.print( "1. Create New Char" );
 	$.print( "2. Load/View/Copy Char" );
 	$.print( "3. Help" );
@@ -260,7 +260,7 @@ function menuShowHelp() {
 	$.print(
 		"Use the mouse to draw a char to be used by the setChar method."  +
 		" Left click to draw a pixel and right click to erase a pixel.\n\n"  +
-		"Press Control+M to view the menu. Then enter the key for the " + 
+		"Press Control+M to view the menu. Then enter the key for the " +
 		"items to run the menu items. Menu items can be run at any time " +
 		" not just when the menu is showing.\n\nPress 4 to close help."
 	);
