@@ -1,5 +1,5 @@
 title = "setFontSize"
-category = "print"
+category = "text"
 isScreen = true
 summary = "Sets the font-size for bitmap fonts. Can only be used in bitmap fonts."
 description = ""

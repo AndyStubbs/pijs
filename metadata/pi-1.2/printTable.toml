@@ -1,5 +1,5 @@
 title = "printTable"
-category = "print"
+category = "text"
 isScreen = true
 summary = "Prints a table on the screen."
 description = ""

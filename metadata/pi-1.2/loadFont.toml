@@ -1,5 +1,5 @@
 title = "loadFont"
-category = "print"
+category = "text"
 isScreen = false
 summary = "Loads a font from an image or encoded string."
 description = ""

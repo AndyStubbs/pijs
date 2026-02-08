@@ -1,5 +1,5 @@
 title = "setFont"
-category = "print"
+category = "text"
 isScreen = true
 summary = "Sets the font for the current screen."
 description = """
