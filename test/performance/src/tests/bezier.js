@@ -41,6 +41,12 @@ function init() {
 	
 	m_pal = $.getPal();
 	generateOperationList();
+
+	for( const operation of m_operations ) {
+		if( !$[ operation.name ] ) {
+			throw new Error( `Function ${operation.name} not found` );
+		}
+	}
 }
 
 /**
@@ -85,6 +91,7 @@ function generateRandomOperation() {
 	const bezierX4 = Math.floor( m_seededRandom() * width );
 	const bezierY4 = Math.floor( m_seededRandom() * height );
 	return {
+		"name": "bezier",
 		"func": $.bezier,
 		"params": [ bezierX1, bezierY1, bezierX2, bezierY2, bezierX3, bezierY3, bezierX4, bezierY4 ],
 		"getParams": () => [

@@ -41,6 +41,11 @@ function init() {
 	
 	m_pal = $.getPal();
 	generateOperationList();
+	for( const operation of m_operations ) {
+		if( !$[ operation.name ] ) {
+			throw new Error( `Function ${operation.name} not found` );
+		}
+	}
 }
 
 /**
@@ -82,6 +87,7 @@ function generateRandomOperation() {
 	const y2 = Math.floor( m_seededRandom() * height );
 	
 	return {
+		"name": "line",
 		"func": $.line,
 		"params": [ x1, y1, x2, y2 ],
 		"getParams": () => [

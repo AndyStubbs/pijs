@@ -24,7 +24,7 @@ let m_pal;
  * @returns {Object} Test configuration
  */
 export function getConfig( testOptions ) {
-	let exludeVersions = [ "2.0.0-alpha.1", "2.0.0-alpha.0", "1.2.4" ];
+	let exludeVersions = [ "2.0.0-alpha.1", "2.0.0-alpha.0", "1.2.5" ];
 	
 	// Generate test name based on options
 	let name = "Images Mixed Test";

@@ -31,14 +31,14 @@ let m_tests = [];
 //m_tests.push( g_psetTest.getConfig() );
 //m_tests.push( g_lineTest.getConfig() );
 
-// m_tests.push( g_graphicsTest.getConfig() );
+m_tests.push( g_graphicsTest.getConfig( [ "line" ] ) );
+m_tests.push( g_graphicsTest.getConfig() );
 // m_tests.push( g_graphicsTest.getConfig( [ "arc" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "bezier" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "circle" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "circle-filled" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "ellipse" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "ellipse-filled" ] ) );
-// m_tests.push( g_graphicsTest.getConfig( [ "line" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "put" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "pset" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "pset2" ] ) );
@@ -53,13 +53,13 @@ let m_tests = [];
 
 // Images Advanced Test - All 8 combinations
 const allImageTestOptions = [
-	"blit-images",
+	//"blit-images",
 	"blit-images-colors",
-	"blit-sprites",
+	//"blit-sprites",
 	"blit-sprites-colors",
-	"draw-images",
+	//"draw-images",
 	"draw-images-colors",
-	"draw-sprites",
+	//"draw-sprites",
 	"draw-sprites-colors"
 ];
 

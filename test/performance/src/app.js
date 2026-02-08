@@ -13,9 +13,9 @@ import * as g_testManager from "./test-manager.js";
 import * as g_reportManager from "./report-manager.js";
 
 const PI_VERSIONS = {
-	"2.0.0": {
+	"2.0.1": {
 		"path": "../../build/pi.js",
-		"menuName": "2.0.0 (Current Build)"
+		"menuName": "2.0.1 (Current Build)"
 	},
 	"2.0.0-alpha.1": {
 		"path": "../../releases/pi-2.0.0-alpha.1/pi.js",
@@ -25,16 +25,16 @@ const PI_VERSIONS = {
 		"path": "../../releases/pi-2.0.0-alpha.0/pi.js",
 		"menuName": "2.0.0-alpha.0"
 	},
-	"1.2.4": {
-		"path": "../../releases/pi-1.all/pi-1.2.4.js",
-		"menuName": "1.2.4"
+	"1.2.5": {
+		"path": "../../releases/pi-1.all/pi.js",
+		"menuName": "1.2.5 (Legacy)"
 	}
 };
 
 // App-level state for display positioning
 let m_centerPosY = 0;
 let m_reducedFlashing = false;
-let m_piVersion = localStorage.getItem( "piVersion" ) || "1.2.4";
+let m_piVersion = localStorage.getItem( "piVersion" ) || "1.2.5";
 
 /**
  * Adds a DOM keydown listener that matches the specified key.
@@ -132,7 +132,7 @@ function loadPiJsScript( scriptPath ) {
 		console.error( "Failed to load Pi.js version:", m_piVersion, "from:", scriptPath );
 		
 		// Fallback to default version
-		const fallbackVersion = PI_VERSIONS[ "1.2.4" ];
+		const fallbackVersion = PI_VERSIONS[ "1.2.5" ];
 		m_piVersion = fallbackVersion;
 		const fallbackScript = document.createElement( "script" );
 		fallbackScript.src = fallbackVersion.path;

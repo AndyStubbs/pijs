@@ -30,7 +30,7 @@ export function getConfig( useSprites, useAlpha ) {
 		} else {
 			name = "Sprites1 Test";
 		}
-		exludeVersions.push( "1.2.4" );
+		exludeVersions.push( "1.2.5" );
 	} else {
 		if( useAlpha ) {
 			name = "Images1 Alpha Test";
@@ -67,6 +67,11 @@ async function init( config ) {
 	m_pal = $.getPal();
 	
 	generateOperationList();
+	for( const operation of m_operations ) {
+		if( !$[ operation.name ] ) {
+			throw new Error( `Function ${operation.name} not found` );
+		}
+	}
 }
 
 /**
@@ -182,6 +187,7 @@ function createSpriteOperation( parameterNames, transformData, width, height ) {
 
 	const screen = $.getScreen( 0 );
 	return createOperation(
+		"drawSprite",
 		screen.drawSprite,
 		parameterNames,
 		transformData,
@@ -203,6 +209,7 @@ function createImageOperation( parameterNames, transformData, width, height ) {
 
 	const screen = $.getScreen( 0 );
 	return createOperation(
+		"drawImage",
 		screen.drawImage,
 		parameterNames,
 		transformData,
@@ -213,6 +220,7 @@ function createImageOperation( parameterNames, transformData, width, height ) {
 }
 
 function createOperation(
+	name,
 	func,
 	parameterNames,
 	transformData,
@@ -228,6 +236,7 @@ function createOperation(
 	);
 
 	return {
+		"name": name,
 		"func": func,
 		"params": initialParams,
 		"getParams": () => {

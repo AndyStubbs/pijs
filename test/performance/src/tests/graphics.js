@@ -57,6 +57,12 @@ function init( config ) {
 	
 	m_pal = $.getPal();
 	generateOperationList();
+
+	for( const operation of m_operations ) {
+		if( !$[ operation.name ] ) {
+			throw new Error( `Function ${operation.name} not found` );
+		}
+	}
 }
 
 /**
@@ -95,6 +101,7 @@ function generateRandomOperation() {
 			const arcAngle1 = Math.floor( m_seededRandom() * 360 );
 			const arcAngle2 = Math.floor( m_seededRandom() * 360 );
 			return {
+				"name": "arc",
 				"func": $.arc,
 				"params": [ arcX, arcY, arcRadius, arcAngle1, arcAngle2 ],
 				"getParams": () => [
@@ -116,6 +123,7 @@ function generateRandomOperation() {
 			const bezierX4 = Math.floor( m_seededRandom() * width );
 			const bezierY4 = Math.floor( m_seededRandom() * height );
 			return {
+				"name": "bezier",
 				"func": $.bezier,
 				"params": [ bezierX1, bezierY1, bezierX2, bezierY2, bezierX3, bezierY3, bezierX4, bezierY4 ],
 				"getParams": () => [
@@ -135,6 +143,7 @@ function generateRandomOperation() {
 			const circleY = Math.floor( m_seededRandom() * height );
 			const circleRadius = Math.floor( m_seededRandom() * 50 ) + 5;
 			return {
+				"name": "circle",
 				"func": $.circle,
 				"params": [ circleX, circleY, circleRadius ],
 				"getParams": () => [
@@ -150,6 +159,7 @@ function generateRandomOperation() {
 			const circleFillRadius = Math.floor( m_seededRandom() * 50 ) + 5;
 			const circleFillColor = Math.floor( m_seededRandom() * colorCount );
 			return {
+				"name": "circle",
 				"func": $.circle,
 				"params": [ circleFillX, circleFillY, circleFillRadius, circleFillColor ],
 				"getParams": () => [
@@ -166,6 +176,7 @@ function generateRandomOperation() {
 			const ellipseRadiusX = Math.floor( m_seededRandom() * 60 ) + 5;
 			const ellipseRadiusY = Math.floor( m_seededRandom() * 40 ) + 5;
 			return {
+				"name": "ellipse",
 				"func": $.ellipse,
 				"params": [ ellipseX, ellipseY, ellipseRadiusX, ellipseRadiusY ],
 				"getParams": () => [
@@ -183,6 +194,7 @@ function generateRandomOperation() {
 			const ellipseFillRadiusY = Math.floor( m_seededRandom() * 40 ) + 5;
 			const ellipseFillColor = Math.floor( m_seededRandom() * colorCount );
 			return {
+				"name": "ellipse",
 				"func": $.ellipse,
 				"params": [ ellipseFillX, ellipseFillY, ellipseFillRadiusX, ellipseFillRadiusY, ellipseFillColor ],
 				"getParams": () => [
@@ -200,6 +212,7 @@ function generateRandomOperation() {
 			const lineX2 = Math.floor( m_seededRandom() * width );
 			const lineY2 = Math.floor( m_seededRandom() * height );
 			return {
+				"name": "line",
 				"func": $.line,
 				"params": [ lineX1, lineY1, lineX2, lineY2 ],
 				"getParams": () => [
@@ -214,6 +227,7 @@ function generateRandomOperation() {
 			const psetX = Math.floor( m_seededRandom() * width );
 			const psetY = Math.floor( m_seededRandom() * height );
 			return {
+				"name": "pset",
 				"func": $.pset,
 				"params": [ psetX, psetY ],
 				"getParams": () => [
@@ -237,6 +251,7 @@ function generateRandomOperation() {
 				}
 			}
 			return {
+				"name": "put",
 				"func": $.put,
 				"params": [ putData, putX, putY ],
 				"getParams": () => [
@@ -252,6 +267,7 @@ function generateRandomOperation() {
 			const rectWidth = Math.floor( m_seededRandom() * 100 ) + 10;
 			const rectHeight = Math.floor( m_seededRandom() * 80 ) + 10;
 			return {
+				"name": "rect",
 				"func": $.rect,
 				"params": [ rectX, rectY, rectWidth, rectHeight ],
 				"getParams": () => [
@@ -269,6 +285,7 @@ function generateRandomOperation() {
 			const rectFillHeight = Math.floor( m_seededRandom() * 80 ) + 10;
 			const rectFillColor = Math.floor( m_seededRandom() * colorCount );
 			return {
+				"name": "rect",
 				"func": $.rect,
 				"params": [ rectFillX, rectFillY, rectFillWidth, rectFillHeight, rectFillColor ],
 				"getParams": () => [
@@ -284,6 +301,7 @@ function generateRandomOperation() {
 			const defaultX = Math.floor( m_seededRandom() * width );
 			const defaultY = Math.floor( m_seededRandom() * height );
 			return {
+				"name": "pset",
 				"func": $.pset,
 				"params": [ defaultX, defaultY ],
 				"getParams": () => [
