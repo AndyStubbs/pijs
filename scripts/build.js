@@ -15,19 +15,8 @@ const pkg = require( "../package.json" );
 const version = pkg.version;
 const majorVersion = pkg.majorVersion;
 
-// Determine source directory and version from command line args
-const args = process.argv.slice( 2 );
-const buildType = args[ 0 ] || "default";
-let sourceDir = "src";
-let buildVersion = version;
-
-if( buildType === "alpha-0" ) {
-	sourceDir = "src-pi-2.0.0-alpha.0";
-	buildVersion = "2.0.0-alpha.0";
-} else if( buildType === "alpha-1" ) {
-	sourceDir = "src-pi-2.0.0-alpha.1";
-	buildVersion = "2.0.0-alpha.1";
-}
+const sourceDir = "src";
+const buildVersion = version;
 
 // Generate banner for full version (includes core + plugins)
 function getFullBanner( version ) {
