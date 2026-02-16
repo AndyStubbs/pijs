@@ -65,7 +65,6 @@ export {
 const m_isDebug = window.location.search.includes( "webgl-debug" );
 let m_offscreenContext = null;
 
-
 /**
  * Initialize all renderer modules
  * 

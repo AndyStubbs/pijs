@@ -41,7 +41,6 @@ export function init() {
  * @returns {WebGLShader|null} Compiled shader or null on error
  */
 export function compileShader( gl, type, source ) {
-
 	const shader = gl.createShader( type );
 	gl.shaderSource( shader, source );
 	gl.compileShader( shader );
@@ -64,7 +63,6 @@ export function compileShader( gl, type, source ) {
  * @returns {WebGLProgram|null} Linked program or null on error
  */
 export function createShaderProgram( gl, vertexSrc, fragSrc ) {
-
 	const vertexShader = compileShader( gl, gl.VERTEX_SHADER, vertexSrc );
 	const fragmentShader = compileShader( gl, gl.FRAGMENT_SHADER, fragSrc );
 	
@@ -101,7 +99,6 @@ export function createShaderProgram( gl, vertexSrc, fragSrc ) {
  * @returns {void}
  */
 export function setupDisplayShader( screenData ) {
-	
 	const gl = screenData.gl;
 	
 	// Create shader program
@@ -134,4 +131,3 @@ export function setupDisplayShader( screenData ) {
 		"texture": textureLoc
 	};
 }
-
