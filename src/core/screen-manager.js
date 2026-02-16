@@ -618,6 +618,9 @@ function resizeScreen( screenData, isInit ) {
 		// Handle "e"xtend mode resize the renderer
 		if( lastScreenWidth !== screenData.width || lastScreenHeight !== screenData.height ) {
 			g_renderer.resizeScreen( screenData, lastScreenWidth, lastScreenHeight );
+
+			// Redraw FBO to canvas (fix issue where canvas was blank after resize for extend mode)
+			g_renderer.displayToCanvas( screenData );
 		}
 	}
 	
