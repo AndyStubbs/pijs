@@ -117,7 +117,7 @@ $.createShader( fragmentSource, { uniforms: { u_strength: 1.0, u_color: [1, 0, 0
 - Fragment shader source must be valid GLSL ES 3.00
 - Fragment shader must output `vec4` to `fragColor` (or `out vec4 fragColor`)
 
-**`u_texture` requirement (documented, not validated at create time):** The shader should declare `uniform sampler2D u_texture` for the input texture. No parsing or validation at `createShader` time. The "missing" error triggers only when the shader is **about to draw**: display shader on first present, or FBO shader item on execution. Do **not** throw during `setDisplayShader` if the shader is never displayed (e.g., offscreen screen).
+**`u_texture` recommended but not required (documented, not validated at create time):** The shader should declare `uniform sampler2D u_texture` for the input texture. No parsing or validation at `createShader` time. The "missing" error triggers only when the shader is **about to draw**: display shader on first present, or FBO shader item on execution. Do **not** throw during `setDisplayShader` if the shader is never displayed (e.g., offscreen screen).
 
 **Custom uniforms:** If a uniform doesn't exist in the compiled shader, it is ignored. If a provided uniform exists but the value shape is unsupported (e.g., array length 5 for vec4), ignore and warn in debug mode. In debug mode (`?webgl-debug`), warn about unknown uniforms (both defaults from `createShader` and per-call overrides in `applyShader`).
 
