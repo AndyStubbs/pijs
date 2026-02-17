@@ -322,3 +322,19 @@ export function updateWebGL2TextureImage( screenData, imgKey, pixelData, width, 
 
 	return texture;
 }
+
+export function cleanup( screenData ) {
+	const gl = screenData.gl;
+
+	// Delete all textures in the imageContextMap for this screen but keep the image 
+	for( const img of screenData.imageContextMap.keys() ) {
+		const screenMap = screenData.imageContextMap.get( img );
+		const texture = screenMap.get( gl );
+		if( texture ) {
+			gl.deleteTexture( texture );
+		}
+	}
+
+	// Clear references for GC and signal uninitialized state
+	screenData.imageContextMap = null;
+}

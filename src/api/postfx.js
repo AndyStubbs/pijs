@@ -9,6 +9,7 @@
 "use strict";
 
 import * as g_commands from "../core/commands.js";
+import * as g_renderer from "../renderer/renderer.js";
 
 /** Next id for shader handles */
 let m_nextShaderId = 0;
@@ -28,6 +29,7 @@ export function init( api ) {
 
 function registerCommands() {
 	g_commands.addCommand( "createShader", createShader, false, [ "fragmentSource", "uniforms" ] );
+	g_commands.addCommand( "applyShader", applyShader, true, [ "shaderHandle", "uniforms" ] );
 }
 
 
@@ -85,4 +87,54 @@ function createShader( options ) {
 	m_shaderHandles.set( handle.id, handle );
 	
 	return handle.id;
+}
+
+
+/**
+ * Resolve shader handle (id or object) to the full handle object.
+ *
+ * @param {number|Object} shaderHandle - Shader handle id or handle object
+ * @returns {{ id: number, fragmentSource: string, uniforms: Object }} Handle object
+ */
+export function getShaderHandle( shaderHandle ) {
+	if( shaderHandle == null ) {
+		const error = new TypeError( "applyShader: Parameter shaderHandle is required." );
+		error.code = "INVALID_SHADER_HANDLE";
+		throw error;
+	}
+	if( typeof shaderHandle === "number" ) {
+		const handle = m_shaderHandles.get( shaderHandle );
+		if( !handle ) {
+			const error = new TypeError( `applyShader: Unknown shader handle id ${shaderHandle}.` );
+			error.code = "INVALID_SHADER_HANDLE";
+			throw error;
+		}
+		return handle;
+	}
+	if(
+		typeof shaderHandle === "object" && "id" in shaderHandle && "fragmentSource" in shaderHandle
+	) {
+		return shaderHandle;
+	}
+	const error = new TypeError(
+		"applyShader: Parameter shaderHandle must be a shader id or handle from createShader."
+	);
+	error.code = "INVALID_SHADER_HANDLE";
+	throw error;
+}
+
+
+/**
+ * Queue custom FBO shader at current point in draw order (does not flush).
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {Object} options - Parsed options: shaderHandle (number|Object), uniforms (object | null)
+ * @returns {void}
+ */
+function applyShader( screenData, options ) {
+	const handle = getShaderHandle( options.shaderHandle );
+	const overrides = options.uniforms ?? {};
+	const merged = { ...( handle.uniforms ?? {} ), ...overrides };
+	g_renderer.prepareShaderBatch( screenData, handle, merged );
+	g_renderer.setImageDirty( screenData );
 }

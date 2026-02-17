@@ -23,9 +23,9 @@ import m_imageFragSrc from "./shaders/image.frag";
 import m_gemoetryVertSrc from "./shaders/geometry.vert";
 
 
-/***************************************************************************************************
+/**************************************************************************************************
  * Constants
- ***************************************************************************************************/
+ **************************************************************************************************/
 
 
 export const POINTS_BATCH = 0;
@@ -33,6 +33,7 @@ export const IMAGE_BATCH = 1;
 export const GEOMETRY_BATCH = 2;
 export const POINTS_REPLACE_BATCH = 3;
 export const IMAGE_REPLACE_BATCH = 4;
+export const SHADER_BATCH = 5;
 
 // Resize by doubling up to 8 times
 const MAX_SIZE_MULTIPLIER = Math.pow( 2, 8 );
@@ -53,7 +54,7 @@ const MAX_GEOMETRY_BATCH_SIZE = DEFAULT_GEOMETRY_BATCH_SIZE * MAX_SIZE_MULTIPLIE
 const BATCH_CAPACITY_SHRINK_INTERVAL = 5000;
 
 // String constants to identify batch system names
-const BATCH_TYPES = [ "POINTS", "IMAGE", "GEOMETRY", "POINTS_REPLACE", "IMAGE_REPLACE" ];
+const BATCH_TYPES = [ "POINTS", "IMAGE", "GEOMETRY", "POINTS_REPLACE", "IMAGE_REPLACE", "SHADER" ];
 
 // Batch prototype
 const m_batchProto = {
@@ -100,9 +101,9 @@ const m_batchProto = {
 const m_isDebug = window.location.search.includes( "webgl-debug" );
 
 
-/***************************************************************************************************
+/**************************************************************************************************
  * Module Initialization
- ***************************************************************************************************/
+ **************************************************************************************************/
 
 
 /**
@@ -134,6 +135,13 @@ export function createBatches( screenData ) {
 	screenData.batches[ GEOMETRY_BATCH ] = createBatch( screenData, GEOMETRY_BATCH );
 	screenData.batches[ POINTS_REPLACE_BATCH ] = createBatch( screenData, POINTS_REPLACE_BATCH );
 	screenData.batches[ IMAGE_REPLACE_BATCH ] = createBatch( screenData, IMAGE_REPLACE_BATCH );
+
+	// Shader batch: no geometry, programs created lazily per handle in customShaders
+	const shaderBatch = Object.create( m_batchProto );
+	shaderBatch.type = SHADER_BATCH;
+	shaderBatch.overrideGlobalBlend = null;
+	shaderBatch.count = 0;
+	screenData.batches[ SHADER_BATCH ] = shaderBatch;
 }
 
 /**
@@ -184,7 +192,9 @@ export function createBatch( screenData, type ) {
 		batch.mode = gl.POINTS;
 		batch.overrideGlobalBlend = false;
 	} else {
-		throw `createBatch: Unknown batch type ${type}`;
+		const error = new Error( `createBatch: Unknown batch type ${type}` );
+		error.code = "INVALID_BATCH_TYPE";
+		throw error;
 	}
 
 	// Create the batch shader program
@@ -387,6 +397,99 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
 }
 
 /**
+ * Queue a shader item at the current point in draw order (batch-break, does not flush).
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {{ id: number, fragmentSource: string, uniforms: Object }} handle - Shader handle
+ * @param {Object} uniforms - Merged uniform values (defaults + per-call overrides)
+ * @returns {void}
+ */
+export function prepareShaderBatch( screenData, handle, uniforms ) {
+	const batchInfo = screenData.batchInfo;
+	const batch = screenData.batches[ SHADER_BATCH ];
+
+	// Batch-break: close current batch before adding shader item (same as prepareBatch)
+	if( batchInfo.drawOrder.length > 0 ) {
+		const lastDrawOrderItem = batchInfo.drawOrder[ batchInfo.drawOrder.length - 1 ];
+		lastDrawOrderItem.endIndex = lastDrawOrderItem.batch.count;
+	}
+
+	const drawOrderItem = {
+		"batch": batch,
+		"startIndex": 0,
+		"endIndex": 0,
+		"overrideGlobalBlend": batch.overrideGlobalBlend,
+		"shaderHandle": handle,
+		"uniforms": uniforms ?? {}
+	};
+	batchInfo.drawOrder.push( drawOrderItem );
+	batchInfo.currentBatch = batch;
+}
+
+/**
+ * Run one FBO shader pass: render FBO to bufferFBO with shader, then blit back to FBO.
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {{ batch: Object, shaderHandle: Object, uniforms: Object }} drawOrderItem
+ * @returns {void}
+ */
+function runShaderPass( screenData, drawOrderItem ) {
+	const gl = screenData.gl;
+	const handle = drawOrderItem.shaderHandle;
+	const uniforms = drawOrderItem.uniforms;
+
+	const { program, locations } = g_shaders.getOrCreateCustomShaderProgram( screenData, handle );
+	if( locations.texture === null ) {
+		const error = new Error( "applyShader: Missing required uniform u_texture in shader." );
+		error.code = "MISSING_U_TEXTURE";
+		throw error;
+	}
+
+	const w = screenData.width;
+	const h = screenData.height;
+
+	// 1. Bind bufferFBO as draw target, render fullscreen quad with FBO texture as input
+	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.bufferFBO );
+	gl.viewport( 0, 0, w, h );
+	gl.disable( gl.BLEND );
+
+	gl.useProgram( program );
+	gl.bindVertexArray( screenData.displayQuadVao );
+
+	gl.activeTexture( gl.TEXTURE0 );
+	gl.bindTexture( gl.TEXTURE_2D, screenData.fboTexture );
+	gl.uniform1i( locations.texture, 0 );
+
+	if( locations.sourceSize !== null ) {
+		gl.uniform2f( locations.sourceSize, w, h );
+	}
+	if( locations.outputSize !== null ) {
+		gl.uniform2f( locations.outputSize, w, h );
+	}
+	if( locations.time !== null ) {
+		gl.uniform1f( locations.time, performance.now() / 1000 );
+	}
+	if( locations.frame !== null ) {
+		gl.uniform1i( locations.frame, screenData.frameCount ?? 0 );
+	}
+
+	g_shaders.setCustomUniforms( gl, program, uniforms );
+
+	gl.drawArrays( gl.TRIANGLES, 0, 6 );
+
+	gl.bindVertexArray( null );
+
+	// 2. Blit bufferFBO (READ) → FBO (DRAW)
+	gl.bindFramebuffer( gl.READ_FRAMEBUFFER, screenData.bufferFBO );
+	gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, screenData.FBO );
+	gl.blitFramebuffer( 0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST );
+
+	// 3. Restore FBO as current for remaining draw order items
+	gl.bindFramebuffer( gl.READ_FRAMEBUFFER, null );
+	gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, screenData.FBO );
+}
+
+/**
  * Flush all batches to FBO
  * 
  * @param {Object} screenData - Screen data object
@@ -407,6 +510,8 @@ export function flushBatches( screenData, blends = null ) {
 		// console.warn( "WebGL context lost unable to render screen." );
 		return;
 	}
+
+	screenData.frameCount = ( screenData.frameCount ?? 0 ) + 1;
 
 	// Bind FBO
 	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
@@ -433,6 +538,11 @@ export function flushBatches( screenData, blends = null ) {
 	for( const drawOrderItem of screenData.batchInfo.drawOrder ) {
 		if( drawOrderItem.endIndex === null ) {
 			drawOrderItem.endIndex = drawOrderItem.batch.count;
+		}
+
+		if( drawOrderItem.batch.type === SHADER_BATCH ) {
+			runShaderPass( screenData, drawOrderItem );
+			continue;
 		}
 
 		// Only draw the batch if there is something to draw
@@ -639,6 +749,11 @@ export function resetBatches( screenData ) {
  */
 function resetBatch( batch ) {
 
+	if( batch.type === SHADER_BATCH ) {
+		batch.count = 0;
+		return;
+	}
+
 	// Update the batch local max
 	batch.capacityLocalMax = Math.max( batch.count, batch.capacityLocalMax );
 
@@ -692,13 +807,7 @@ export function displayToCanvas( screenData ) {
 
 	// Use display shader
 	gl.useProgram( program );
-	
-	// Enable position attribute
-	gl.enableVertexAttribArray( locations.position );
-	
-	// Bind position buffer
-	gl.bindBuffer( gl.ARRAY_BUFFER, screenData.displayPositionBuffer );
-	gl.vertexAttribPointer( locations.position, 2, gl.FLOAT, false, 0, 0 );
+	gl.bindVertexArray( screenData.displayQuadVao );
 	
 	// Bind FBO texture
 	gl.activeTexture( gl.TEXTURE0 );
@@ -708,8 +817,7 @@ export function displayToCanvas( screenData ) {
 	// Draw fullscreen quad
 	gl.drawArrays( gl.TRIANGLES, 0, 6 );
 	
-	// Cleanup
-	gl.disableVertexAttribArray( locations.position );
+	gl.bindVertexArray( null );
 }
 
 /**
@@ -727,6 +835,10 @@ export function cleanup( screenData ) {
 		// Get the batch
 		const batch = screenData.batches[ batchType ];
 
+		if( batch.type === SHADER_BATCH ) {
+			continue;
+		}
+
 		// Delete texCoord items
 		if( batch.texCoordVBO ) {
 			gl.deleteBuffer( batch.texCoordVBO );
@@ -737,8 +849,9 @@ export function cleanup( screenData ) {
 		gl.deleteVertexArray( batch.vao );
 		gl.deleteProgram( batch.program );
 
-		if( batch.texture ) {
-			gl.deleteTexture( batch.texture );
+		if( batch.useTexture === true ) {
+			batch.texture = null;
+			batch.image = null;
 		}
 	}
 

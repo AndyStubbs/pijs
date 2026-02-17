@@ -29,7 +29,7 @@ import * as g_readback from "./readback.js";
 
 // Re-export batch constants
 export {
-	POINTS_BATCH, IMAGE_BATCH, GEOMETRY_BATCH, POINTS_REPLACE_BATCH, IMAGE_REPLACE_BATCH
+	POINTS_BATCH, IMAGE_BATCH, GEOMETRY_BATCH, POINTS_REPLACE_BATCH, IMAGE_REPLACE_BATCH, SHADER_BATCH
 } from "./batches.js";
 
 // Re-export drawing functions
@@ -45,7 +45,7 @@ export { drawEllipse } from "./draw/ellipses.js";
 export { shiftImageUp, cls } from "./effects.js";
 
 // Re-export batch management
-export { prepareBatch, flushBatches, displayToCanvas } from "./batches.js";
+export { prepareBatch, flushBatches, displayToCanvas, prepareShaderBatch } from "./batches.js";
 
 // Re-export texture management
 export {
@@ -82,6 +82,8 @@ export function init( api ) {
 	g_screenManager.addScreenDataItem( "FBO", null );
 	g_screenManager.addScreenDataItem( "bufferFboTexture", null );
 	g_screenManager.addScreenDataItem( "bufferFBO", null );
+	g_screenManager.addScreenDataItem( "customShaders", {} );
+	g_screenManager.addScreenDataItem( "frameCount", 0 );
 
 	// Register renderer cleanup function
 	g_screenManager.addScreenCleanupFunction( cleanup );
@@ -261,8 +263,22 @@ export function cleanup( screenData ) {
 	if( screenData.displayProgram ) {
 		gl.deleteProgram( screenData.displayProgram );
 		gl.deleteBuffer( screenData.displayPositionBuffer );
+		gl.deleteVertexArray( screenData.displayQuadVao );
+	}
+
+	// Cleanup custom shader programs (FBO / display)
+	if( screenData.customShaders ) {
+		for( const id of Object.keys( screenData.customShaders ) ) {
+			const cache = screenData.customShaders[ id ];
+			if( cache && cache.program ) {
+				gl.deleteProgram( cache.program );
+			}
+		}
 	}
 	
+	// Cleanup textures
+	g_textures.cleanup( screenData );
+
 	// Cleanup FBO
 	if( screenData.FBO ) {
 		gl.deleteFramebuffer( screenData.FBO );
