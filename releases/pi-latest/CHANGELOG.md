@@ -2,6 +2,16 @@
 ### Fixed
 - Package `exports` and `types` paths now point at `dist/…` so Vite/npm
   resolve `import $ from "pijs-web"` correctly
+- `$.play()` no longer creates a new AudioContext per call, which could
+  exhaust the browser limit and stop sound (e.g. fireworks demo). Notes
+  now share one context and disconnect Web Audio nodes when they end.
+- Sound envelopes use linear ramps instead of `setValueCurveAtTime`, which
+  could throw on a shared context, leak audio nodes (errors often swallowed
+  by callers), degrade playback, and eventually crash the tab. Concurrent
+  voices are also capped to avoid renderer overload.
+- Voice limiting only stops notes that have already started, so long
+  `$.play()` melodies are no longer silenced while notes are queued.
+- `$.play()` again returns the track ID so `$.stopPlay( trackId )` works.
 
 ## [2.0.1] - 2025-12-14
 ### Fixed

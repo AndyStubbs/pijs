@@ -84,5 +84,5 @@ type = "string"
 description = "Music notation string with notes and commands."
 
 [[returns]]
-type = "void"
-description = "This function does not return a value."
+type = "number"
+description = "Sound ID for use with stopPlay."

@@ -8,7 +8,7 @@
 
 "use strict";
 
-import { createSound, stopSoundById } from "./sound.js";
+import { createSound, getAudioContext, stopSoundById } from "./sound.js";
 
 const m_tracks = {};
 const m_allTracks = [];
@@ -661,9 +661,8 @@ export function registerPlay( pluginApi ) {
 		// Sort by time
 		m_playData.sort( ( a, b ) => a.time - b.time );
 
-		// Create audio context
-		const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-		const audioContext = new AudioContextClass();
+		// Reuse shared audio context for all notes
+		const audioContext = getAudioContext();
 
 		// Create all sounds
 		for( let i = 0; i < m_playData.length; i++ ) {
@@ -676,6 +675,8 @@ export function registerPlay( pluginApi ) {
 				)
 			);
 		}
+
+		return trackId;
 	}
 
 	/**

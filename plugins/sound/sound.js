@@ -9,11 +9,15 @@
 "use strict";
 
 let m_audioContext = null;
+let m_masterGain = null;
 let m_audioPools = {};
 let m_nextAudioId = 0;
 let m_soundPool = {};
 let m_nextSoundId = 0;
 let m_volume = 0.75;
+
+// Cap concurrent oscillators to avoid renderer overload / tab crashes
+const MAX_VOICES = 64;
 
 
 /***************************************************************************************************
@@ -92,13 +96,115 @@ function loadAudioItem( pluginApi, audioItem, audio, retryCount = 3 ) {
 
 
 /**
+ * Get the shared AudioContext, creating it if needed
+ * 
+ * @returns {AudioContext} Shared audio context
+ */
+export function getAudioContext() {
+	if( !m_audioContext ) {
+		const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+		m_audioContext = new AudioContextClass();
+	}
+
+	return m_audioContext;
+}
+
+/**
+ * Get the shared master gain node connected to the destination
+ * 
+ * @returns {GainNode} Shared master gain
+ */
+function getMasterGain() {
+	const audioContext = getAudioContext();
+
+	if( !m_masterGain ) {
+		m_masterGain = audioContext.createGain();
+		m_masterGain.gain.value = 1;
+		m_masterGain.connect( audioContext.destination );
+	}
+
+	return m_masterGain;
+}
+
+/**
+ * Disconnect nodes and remove a sound from the pool
+ * 
+ * @param {string} soundId - Sound ID to clean up
+ * @returns {void}
+ */
+function cleanupSound( soundId ) {
+	const sound = m_soundPool[ soundId ];
+	if( !sound ) {
+		return;
+	}
+
+	try {
+		sound.oscillator.disconnect();
+	} catch( _e ) {
+		// Already disconnected
+	}
+
+	try {
+		sound.envelope.disconnect();
+	} catch( _e ) {
+		// Already disconnected
+	}
+
+	try {
+		sound.master.disconnect();
+	} catch( _e ) {
+		// Already disconnected
+	}
+
+	delete m_soundPool[ soundId ];
+}
+
+/**
+ * Stop oldest voices that have already started when the active voice
+ * limit is exceeded. Future-scheduled notes from $.play() are left alone
+ * so long melodies are not cut off while being queued.
+ * 
+ * @returns {void}
+ */
+function enforceVoiceLimit() {
+	const audioContext = getAudioContext();
+	const now = audioContext.currentTime;
+	const activeIds = [];
+
+	for( const soundId in m_soundPool ) {
+		const sound = m_soundPool[ soundId ];
+		if( sound.startTime <= now ) {
+			activeIds.push( soundId );
+		}
+	}
+
+	if( activeIds.length < MAX_VOICES ) {
+		return;
+	}
+
+	const removeCount = activeIds.length - MAX_VOICES + 1;
+	for( let i = 0; i < removeCount; i++ ) {
+		stopSoundById( activeIds[ i ] );
+	}
+}
+
+/**
  * Stop a sound by ID (internal function for play module)
  * 
  * @param {string} soundId - Sound ID to stop
  */
 export function stopSoundById( soundId ) {
-	if( m_soundPool[ soundId ] ) {
-		m_soundPool[ soundId ].oscillator.stop( 0 );
+	const sound = m_soundPool[ soundId ];
+	if( !sound ) {
+		return;
+	}
+
+	try {
+		sound.oscillator.stop();
+	} catch( _e ) {
+
+		// Already stopped; clean up immediately
+		cleanupSound( soundId );
 	}
 }
 
@@ -121,9 +227,12 @@ export function createSound(
 	audioContext, frequency, volume, attackTime, sustainTime,
 	decayTime, stopTime, oType, waveTables, delay
 ) {
+	enforceVoiceLimit();
+
 	const oscillator = audioContext.createOscillator();
 	const envelope = audioContext.createGain();
 	const master = audioContext.createGain();
+	const startTime = audioContext.currentTime + delay;
 
 	master.gain.value = m_volume;
 	oscillator.frequency.value = frequency;
@@ -138,64 +247,63 @@ export function createSound(
 		oscillator.type = oType;
 	}
 
-	// Set initial envelope gain
-	if( attackTime === 0 ) {
-		envelope.gain.value = volume;
-	} else {
-		envelope.gain.value = 0;
-	}
-
-	// Connect audio nodes
+	// Connect through shared master to limit destination fan-out
 	oscillator.connect( envelope );
 	envelope.connect( master );
-	master.connect( audioContext.destination );
+	master.connect( getMasterGain() );
 
-	const currentTime = audioContext.currentTime + delay;
-
-	// Set attack envelope
-	if( attackTime > 0 ) {
-		envelope.gain.setValueCurveAtTime(
-			new Float32Array( [ 0, volume ] ),
-			currentTime,
-			attackTime
-		);
-	}
-
-	// Set sustain envelope
-	if( sustainTime > 0 ) {
-		envelope.gain.setValueCurveAtTime(
-			new Float32Array( [ volume, 0.8 * volume ] ),
-			currentTime + attackTime,
-			sustainTime
-		);
-	}
-
-	// Set decay envelope
-	if( decayTime > 0 ) {
-		envelope.gain.setValueCurveAtTime(
-			new Float32Array( [ 0.8 * volume, 0.1 * volume, 0 ] ),
-			currentTime + attackTime + sustainTime,
-			decayTime
-		);
-	}
-
-	// Start and stop oscillator
-	oscillator.start( currentTime );
-	oscillator.stop( currentTime + stopTime );
-
-	// Add to sound pool
 	const soundId = "sound_" + m_nextSoundId;
 	m_nextSoundId += 1;
 	m_soundPool[ soundId ] = {
 		"oscillator": oscillator,
+		"envelope": envelope,
 		"master": master,
-		"audioContext": audioContext
+		"audioContext": audioContext,
+		"startTime": startTime
 	};
 
-	// Auto-cleanup when done
-	setTimeout( () => {
-		delete m_soundPool[ soundId ];
-	}, ( currentTime + stopTime ) * 1000 );
+	// Disconnect nodes and remove from pool when playback ends
+	oscillator.onended = function() {
+		cleanupSound( soundId );
+	};
+
+	try {
+		const attackEnd = startTime + attackTime;
+		const sustainEnd = attackEnd + sustainTime;
+		const decayEnd = sustainEnd + decayTime;
+		let endTime = startTime + stopTime;
+
+		if( endTime < decayEnd ) {
+			endTime = decayEnd;
+		}
+
+		// Use linear ramps instead of setValueCurveAtTime. Abutting curves on a
+		// long-lived shared context often throw InvalidStateError; callers that
+		// swallow errors then leak connected nodes until the tab crashes.
+		if( attackTime > 0 ) {
+			envelope.gain.setValueAtTime( 0, startTime );
+			envelope.gain.linearRampToValueAtTime( volume, attackEnd );
+		} else {
+			envelope.gain.setValueAtTime( volume, startTime );
+		}
+
+		if( sustainTime > 0 ) {
+			envelope.gain.linearRampToValueAtTime( 0.8 * volume, sustainEnd );
+		}
+
+		if( decayTime > 0 ) {
+			envelope.gain.linearRampToValueAtTime( 0.1 * volume, sustainEnd + decayTime * 0.5 );
+			envelope.gain.linearRampToValueAtTime( 0, decayEnd );
+		} else {
+			envelope.gain.linearRampToValueAtTime( 0, endTime );
+		}
+
+		oscillator.start( startTime );
+		oscillator.stop( endTime );
+	} catch( err ) {
+		cleanupSound( soundId );
+		throw err;
+	}
 
 	return soundId;
 }
@@ -549,17 +657,11 @@ export function registerSound( pluginApi ) {
 			}
 		}
 
-		// Create audio context if needed
-		if( !m_audioContext ) {
-			const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-			m_audioContext = new AudioContextClass();
-		}
-
 		// Calculate stop time
 		const stopTime = attack + duration + decay;
 
 		return createSound(
-			m_audioContext, frequency, volume, attack, duration,
+			getAudioContext(), frequency, volume, attack, duration,
 			decay, stopTime, oType, waveTables, delay
 		);
 	}
@@ -576,19 +678,14 @@ export function registerSound( pluginApi ) {
 
 		// If no soundId, stop all sounds
 		if( soundId == null ) {
-			for( const id in m_soundPool ) {
-				m_soundPool[ id ].oscillator.stop( 0 );
+			const soundIds = Object.keys( m_soundPool );
+			for( let i = 0; i < soundIds.length; i++ ) {
+				stopSoundById( soundIds[ i ] );
 			}
 			return;
 		}
 
-		// Validate soundId exists
-		if( !m_soundPool[ soundId ] ) {
-			return;
-		}
-
-		// Stop the sound
-		m_soundPool[ soundId ].oscillator.stop( 0 );
+		stopSoundById( soundId );
 	}
 
 	/**
