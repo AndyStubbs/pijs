@@ -3,41 +3,47 @@
 	"version": "[VERSION]",
 	"majorVersion": "[MAJOR-VERSION]",
 	"description": "Retro2D graphics, sound, and input library for javascript",
-	"types": "pi.d.ts",
+	"types": "dist/pi.d.ts",
 	"browser": "dist/pi.js",
 	"unpkg": "dist/pi.min.js",
 	"jsdelivr": "dist/pi.min.js",
 	"files": [ "dist" ],
 	"exports": {
 		".": {
-			"browser": "./pi.js",
-			"import": "./pi.esm.js",
-			"types": "./pi.d.ts"
+			"types": "./dist/pi.d.ts",
+			"browser": "./dist/pi.js",
+			"import": "./dist/pi.esm.js",
+			"default": "./dist/pi.esm.js"
 		},
 		"./lite": {
-			"browser": "./pi.lite.js",
-			"import": "./pi.lite.esm.js",
-			"types": "./pi.d.ts"
+			"types": "./dist/pi.d.ts",
+			"browser": "./dist/pi.lite.js",
+			"import": "./dist/pi.lite.esm.js",
+			"default": "./dist/pi.lite.esm.js"
 		},
 		"./plugins/gamepad": {
-			"browser": "./plugins/gamepad/gamepad.js",
-			"import": "./plugins/gamepad/gamepad.esm.js",
-			"types": "./pi.d.ts"
+			"types": "./dist/pi.d.ts",
+			"browser": "./dist/plugins/gamepad/gamepad.js",
+			"import": "./dist/plugins/gamepad/gamepad.esm.js",
+			"default": "./dist/plugins/gamepad/gamepad.esm.js"
 		},
 		"./plugins/keyboard": {
-			"browser": "./plugins/keyboard/keyboard.js",
-			"import": "./plugins/keyboard/keyboard.esm.js",
-			"types": "./pi.d.ts"
+			"types": "./dist/pi.d.ts",
+			"browser": "./dist/plugins/keyboard/keyboard.js",
+			"import": "./dist/plugins/keyboard/keyboard.esm.js",
+			"default": "./dist/plugins/keyboard/keyboard.esm.js"
 		},
 		"./plugins/pointer": {
-			"browser": "./plugins/pointer/pointer.js",
-			"import": "./plugins/pointer/pointer.esm.js",
-			"types": "./pi.d.ts"
+			"types": "./dist/pi.d.ts",
+			"browser": "./dist/plugins/pointer/pointer.js",
+			"import": "./dist/plugins/pointer/pointer.esm.js",
+			"default": "./dist/plugins/pointer/pointer.esm.js"
 		},
 		"./plugins/sound": {
-			"browser": "./plugins/sound/sound.js",
-			"import": "./plugins/sound/sound.esm.js",
-			"types": "./pi.d.ts"
+			"types": "./dist/pi.d.ts",
+			"browser": "./dist/plugins/sound/sound.js",
+			"import": "./dist/plugins/sound/sound.esm.js",
+			"default": "./dist/plugins/sound/sound.esm.js"
 		}
 	},
 	"repository": {

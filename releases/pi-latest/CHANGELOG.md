@@ -1,3 +1,8 @@
+## [2.0.2] - 2026-07-15
+### Fixed
+- Package `exports` and `types` paths now point at `dist/…` so Vite/npm
+  resolve `import $ from "pijs-web"` correctly
+
 ## [2.0.1] - 2025-12-14
 ### Fixed
 - Array.includes() bug in plugins.js
