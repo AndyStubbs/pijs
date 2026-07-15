@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Fireworks Demo</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "fireworks"
+			name = "Fireworks Demo"
+			width = 320
+			height = 240
+			delay = 0
+			[[TOML_END]]
+		</script>
+		<script src="../../../build/pi.js"></script>
+		<style>
+			html, body {
+				background-color: #111;
+			}
+		</style>
+	</head>
+<body>
+<script>
+/**
+ * @file Fireworks Demo
+ * @description An interactive, retro-style physical fireworks simulation utilizing
+ * pixel-perfect rendering, customized explosion styles, twinkling starfields,
+ * and synthesized sound effects.
+ */
+
+( function() {
+	// Active state lists
+	let g_stars = [];
+	let g_particles = [];
+	let g_rockets = [];
+	let g_launchTimer = 30;
+	let g_started = false;
+
+	/**
+	 * Creates a new particle object.
+	 * @param {number} x - Start X coordinate
+	 * @param {number} y - Start Y coordinate
+	 * @param {number} vx - Horizontal velocity
+	 * @param {number} vy - Vertical velocity
+	 * @param {string} color - Hex color string
+	 * @param {number} life - Frames of particle existence
+	 * @param {string} type - Particle type ("spark", "crackle", "trail")
+	 * @returns {object} The initialized particle
+	 */
+	function createParticle( x, y, vx, vy, color, life, type ) {
+		return {
+			"x": x,
+			"y": y,
+			"vx": vx,
+			"vy": vy,
+			"color": color,
+			"life": life,
+			"maxLife": life,
+			"type": type,
+			"gravity": 0.04,
+			"resistance": 0.98
+		};
+	}
+
+	/**
+	 * Spawns the static starfield in the upper sky background.
+	 */
+	function initStars() {
+		const starCount = 40;
+
+		for( let i = 0; i < starCount; i++ ) {
+			g_stars.push( {
+				"x": Math.floor( Math.random() * 320 ),
+				"y": Math.floor( Math.random() * 160 ),
+				"color": "#888888",
+				"twinkleSpeed": Math.random() * 0.05 + 0.02,
+				"phase": Math.random() * Math.PI
+			} );
+		}
+	}
+
+	/**
+	 * Safely plays synthesized sound instructions, ignoring WebAudio framework errors.
+	 * @param {string} playString - BASIC-style notation instruction
+	 */
+	function safePlay( playString ) {
+		try {
+			$.play( playString );
+		}
+		catch( e ) {
+			// Catch and suppress WebAudio device and suspended state errors
+		}
+	}
+
+	/**
+	 * Plays a retro sound effect based on event type.
+	 * @param {string} type - The sound event type
+	 */
+	function playSound( type ) {
+		if( type === "launch" ) {
+			safePlay( "W1 O5 L64 C D E F G" );
+		}
+
+		if( type === "explode" ) {
+			safePlay( "W2 O1 L32 G E C" );
+		}
+
+		if( type === "crackle" ) {
+			safePlay( "W1 O6 L64 G C" );
+		}
+	}
+
+	/**
+	 * Launches a firework rocket with randomized attributes.
+	 */
+	function launchRandomRocket() {
+		const startX = Math.floor( Math.random() * 260 ) + 30;
+		const targetY = Math.floor( Math.random() * 100 ) + 30;
+		const speed = Math.random() * 2 + 3;
+		const angle = -Math.PI / 2 + ( Math.random() * 0.2 - 0.1 );
+		const vx = Math.cos( angle ) * speed;
+		const vy = Math.sin( angle ) * speed;
+
+		// Vibrant neon-inspired built-in color selection (hex values for high contrast)
+		const colors = [
+			"#FF007F", // Neon Pink
+			"#00F0FF", // Neon Cyan
+			"#9400D3", // Electric Purple
+			"#FFFF00", // Bright Yellow
+			"#39FF14", // Lime Green
+			"#FF5F00", // Vivid Orange
+			"#FFFFFF"  // Pearl White
+		];
+		const colorIndex = Math.floor( Math.random() * colors.length );
+		const color = colors[ colorIndex ];
+		const style = Math.floor( Math.random() * 6 );
+
+		g_rockets.push( {
+			"x": startX,
+			"y": 240,
+			"vx": vx,
+			"vy": vy,
+			"targetY": targetY,
+			"color": color,
+			"style": style
+		} );
+
+		playSound( "launch" );
+	}
+
+	/**
+	 * Triggers a customized explosion based on the chosen style index.
+	 * @param {number} x - Center X
+	 * @param {number} y - Center Y
+	 * @param {number} style - Explosion type index
+	 * @param {string} baseColor - Color hex string
+	 */
+	function triggerExplosion( x, y, style, baseColor ) {
+		playSound( "explode" );
+
+		// Style 0: Classic Circular Burst
+		if( style === 0 ) {
+			const count = 40;
+
+			for( let i = 0; i < count; i++ ) {
+				const angle = Math.random() * Math.PI * 2;
+				const speed = Math.random() * 2 + 0.5;
+				const vx = Math.cos( angle ) * speed;
+				const vy = Math.sin( angle ) * speed;
+				const life = Math.floor( Math.random() * 15 ) + 20;
+				g_particles.push( createParticle( x, y, vx, vy, baseColor, life, "spark" ) );
+			}
+		}
+
+		// Style 1: Precise Ring Burst
+		if( style === 1 ) {
+			const count = 30;
+			const step = ( Math.PI * 2 ) / count;
+
+			for( let i = 0; i < count; i++ ) {
+				const angle = i * step;
+				const speed = 1.6;
+				const vx = Math.cos( angle ) * speed;
+				const vy = Math.sin( angle ) * speed;
+				const life = 30;
+				g_particles.push( createParticle( x, y, vx, vy, baseColor, life, "spark" ) );
+			}
+		}
+
+		// Style 2: Chrysanthemum with trailing sparks
+		if( style === 2 ) {
+			const count = 35;
+
+			for( let i = 0; i < count; i++ ) {
+				const angle = Math.random() * Math.PI * 2;
+				const speed = Math.random() * 1.5 + 1.0;
+				const vx = Math.cos( angle ) * speed;
+				const vy = Math.sin( angle ) * speed;
+				const life = Math.floor( Math.random() * 20 ) + 25;
+				const p = createParticle( x, y, vx, vy, baseColor, life, "trail" );
+				p.gravity = 0.03;
+				g_particles.push( p );
+			}
+		}
+
+		// Style 3: Heart Shape Burst
+		if( style === 3 ) {
+			const count = 32;
+			const step = ( Math.PI * 2 ) / count;
+
+			for( let i = 0; i < count; i++ ) {
+				const angle = i * step;
+				const hx = 16 * Math.sin( angle ) * Math.sin( angle ) * Math.sin( angle );
+				const hy = 13 * Math.cos( angle )
+					- 5 * Math.cos( 2 * angle )
+					- 2 * Math.cos( 3 * angle )
+					- Math.cos( 4 * angle );
+				const vx = ( hx / 16 ) * 1.6;
+				const vy = -( hy / 16 ) * 1.6;
+				const life = 35;
+				g_particles.push( createParticle( x, y, vx, vy, baseColor, life, "spark" ) );
+			}
+		}
+
+		// Style 4: Double Concentric Ring Burst
+		if( style === 4 ) {
+			const count = 24;
+			const step = ( Math.PI * 2 ) / count;
+
+			for( let i = 0; i < count; i++ ) {
+				const angle = i * step;
+
+				// Outer ring
+				const vx1 = Math.cos( angle ) * 2.2;
+				const vy1 = Math.sin( angle ) * 2.2;
+				g_particles.push( createParticle( x, y, vx1, vy1, baseColor, 35, "spark" ) );
+
+				// Inner ring
+				const vx2 = Math.cos( angle ) * 1.2;
+				const vy2 = Math.sin( angle ) * 1.2;
+				g_particles.push( createParticle( x, y, vx2, vy2, "#FFFF00", 25, "spark" ) );
+			}
+		}
+
+		// Style 5: Crackle Burst
+		if( style === 5 ) {
+			const count = 30;
+
+			for( let i = 0; i < count; i++ ) {
+				const angle = Math.random() * Math.PI * 2;
+				const speed = Math.random() * 2 + 0.8;
+				const vx = Math.cos( angle ) * speed;
+				const vy = Math.sin( angle ) * speed;
+				const life = Math.floor( Math.random() * 10 ) + 15;
+				g_particles.push( createParticle( x, y, vx, vy, baseColor, life, "crackle" ) );
+			}
+		}
+	}
+
+	/**
+	 * Updates star twinkling phases.
+	 */
+	function updateStars() {
+		for( let i = 0; i < g_stars.length; i++ ) {
+			const star = g_stars[ i ];
+			star.phase += star.twinkleSpeed;
+		}
+	}
+
+	/**
+	 * Updates all active firework rockets.
+	 */
+	function updateRockets() {
+		for( let i = g_rockets.length - 1; i >= 0; i-- ) {
+			const r = g_rockets[ i ];
+			r.x += r.vx;
+			r.y += r.vy;
+
+			// Rocket gravity influence
+			r.vy += 0.05;
+
+			// Spark trail generation (using gold yellow hex)
+			if( Math.random() > 0.3 ) {
+				const vx = Math.random() * 0.4 - 0.2;
+				const vy = Math.random() * 0.4 + 0.1;
+				const trail = createParticle( r.x, r.y, vx, vy, "#FFD700", 15, "trail" );
+
+				g_particles.push( trail );
+			}
+
+			// Explode when rocket reaches peak target height
+			if( r.vy >= 0 || r.y <= r.targetY ) {
+				triggerExplosion( r.x, r.y, r.style, r.color );
+				g_rockets.splice( i, 1 );
+			}
+		}
+	}
+
+	/**
+	 * Updates active physics and state properties for particles.
+	 */
+	function updateParticles() {
+		for( let i = g_particles.length - 1; i >= 0; i-- ) {
+			const p = g_particles[ i ];
+			p.x += p.vx;
+			p.y += p.vy;
+
+			// Drift physics
+			p.vy += p.gravity;
+			p.vx *= p.resistance;
+			p.vy *= p.resistance;
+			p.life--;
+
+			// Handle trailing sparks (using light gray index 7)
+			if( p.type === "trail" ) {
+				if( Math.random() > 0.45 ) {
+					const vx = Math.random() * 0.2 - 0.1;
+					const vy = Math.random() * 0.2;
+					const spark = createParticle( p.x, p.y, vx, vy, "#888888", 8, "spark" );
+
+					g_particles.push( spark );
+				}
+			}
+
+			// Process particle cleanup and secondary crackling explosions
+			if( p.life <= 0 ) {
+				if( p.type === "crackle" ) {
+					playSound( "crackle" );
+					const sparkCount = 3;
+
+					for( let s = 0; s < sparkCount; s++ ) {
+						const angle = Math.random() * Math.PI * 2;
+						const speed = Math.random() * 1.5 + 0.5;
+						const vx = Math.cos( angle ) * speed;
+						const vy = Math.sin( angle ) * speed;
+						const life = Math.floor( Math.random() * 6 ) + 4;
+						g_particles.push( createParticle(
+							p.x,
+							p.y,
+							vx,
+							vy,
+							"#FFFFFF",
+							life,
+							"spark"
+						) );
+					}
+				}
+				g_particles.splice( i, 1 );
+			}
+		}
+	}
+
+	/**
+	 * Draws background stars based on twinkling phases.
+	 */
+	function drawStars() {
+		for( let i = 0; i < g_stars.length; i++ ) {
+			const star = g_stars[ i ];
+			const brightness = Math.sin( star.phase );
+			let col = "#444444";
+
+			if( brightness > 0.4 ) {
+				col = "#FFFFFF";
+			}
+			else if( brightness > -0.2 ) {
+				col = "#888888";
+			}
+
+			$.setColor( col );
+			$.pset( star.x, star.y );
+		}
+	}
+
+	/**
+	 * Draws active entities and interface overlay.
+	 */
+	function drawDemo() {
+		// Handle start screen before user triggers audio unlock
+		if( !g_started ) {
+			$.cls();
+
+			$.setColor( "#00F0FF" );
+			$.setPosPx( 0, 100 );
+			$.print( "PI.JS FIREWORKS SHOW", false, true );
+
+			$.setColor( "#FFFFFF" );
+			$.setPosPx( 0, 120 );
+			$.print( "PRESS ANY KEY TO START THE SHOW", false, true );
+			return;
+		}
+
+		// Trail fade: draw a semi-transparent black rectangle over the screen
+		$.setBlend( "alpha" );
+		$.setColor( "#00000028" );
+		$.rect( 0, 0, 320, 240, "#00000028" );
+
+		// Twinkling Starfield
+		drawStars();
+
+		// Draw particles
+		for( let i = 0; i < g_particles.length; i++ ) {
+			const p = g_particles[ i ];
+			let col = p.color;
+
+			// Flicker near death for crackling particles
+			if( p.type === "crackle" ) {
+				if( p.life < 5 ) {
+					if( Math.random() > 0.5 ) {
+						col = "#FFFFFF";
+					}
+					else {
+						col = "#FFFF55";
+					}
+				}
+			}
+
+			$.setColor( col );
+			$.pset( p.x, p.y );
+		}
+
+		// Draw rising rockets with propulsion trail flare
+		for( let i = 0; i < g_rockets.length; i++ ) {
+			const r = g_rockets[ i ];
+			$.setColor( "#FFFFFF" );
+			$.pset( r.x, r.y );
+			$.setColor( "#FFD700" );
+			$.pset( r.x, r.y + 1 );
+		}
+
+		// Text typography overlays
+		$.setColor( "#00F0FF" );
+		$.setPosPx( 8, 8 );
+		$.print( "PI.JS FIREWORKS SHOW" );
+
+		$.setColor( "#888888" );
+		$.setPosPx( 8, 224 );
+		$.print( "DEMO RUNNING AUTOMATICALLY" );
+	}
+
+	/**
+	 * Pi.js environment ready trigger.
+	 */
+	$.ready( function() {
+		// Initialize the viewport and resolution
+		$.screen( "320x240" );
+		initStars();
+
+		// Event handler for key presses
+		$.onkey( "any", "down", function( state ) {
+			if( state ) {
+				if( !g_started ) {
+					g_started = true;
+				}
+			}
+		} );
+
+		// Main interactive update-draw loop
+		function loop() {
+			if( g_started ) {
+				updateStars();
+				updateRockets();
+				updateParticles();
+
+				// Process automatic launcher sequence
+				g_launchTimer--;
+
+				if( g_launchTimer <= 0 ) {
+					launchRandomRocket();
+					g_launchTimer = Math.floor( Math.random() * 50 ) + 40;
+				}
+			}
+
+			drawDemo();
+			requestAnimationFrame( loop );
+		}
+
+		requestAnimationFrame( loop );
+	} );
+} )();
+</script>
+</body>
+</html>

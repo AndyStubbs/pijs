@@ -6,3 +6,5 @@ TODO-LATER: [FONTS] Add getFont that returns the font data of specific fonts if 
 TODO-LATER: [SCREEN] Add post image processing effects for screens. An example would be a CRT (scanline simulation).
 TODO-LATER: [SCREEN] Add the ability to non-square pixel sizes for screens, for example old CRT's rendered 8x8 font but the vertical pixels would be stretched.
 TODO-MUCH-LATER: [3D] Research 3d Drawing. How to do 3d Drawing with a procedural API. Even though API is procedural could create objects like a camera and shapes to draw in 3d. Needs careful planning but would be nice to be able to do some simple 3d games like Bard's Tale, Ultima Underworld, Dark Forces, or Wing Commander.
+
+TODO: [SOUND] fireworks.html exposes a bug in the sound, after a few seconds the sound just stops and an error, "The AudioContext encountered an error from the audio device or the WebAudio renderer.". No line number is given about the error and the sound just stops, but will come back intermittently.
