@@ -1,3 +1,10 @@
+## [2.0.3] - 2026-07-15
+### Fixed
+- Package `exports` no longer list a `browser` condition pointing at IIFE
+  builds. Vite and similar bundlers now resolve `import` / `default` to the
+  ESM files (`pi.esm.js`, lite, plugins). CDN `<script>` tags still use
+  `unpkg` / `jsdelivr` → `dist/pi.min.js`.
+
 ## [2.0.2] - 2026-07-15
 ### Fixed
 - Package `exports` and `types` paths now point at `dist/…` so Vite/npm
