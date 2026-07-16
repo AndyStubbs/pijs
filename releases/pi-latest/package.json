@@ -5,7 +5,11 @@
 	"description": "Retro2D graphics, sound, and input library for javascript",
 	"types": "dist/pi.d.ts",
 	"browser": "dist/pi.js",
-	"files": [ "dist" ],
+	"unpkg": "dist/pi.min.js",
+	"jsdelivr": "dist/pi.min.js",
+	"files": [
+		"dist"
+	],
 	"exports": {
 		".": {
 			"types": "./dist/pi.d.ts",
@@ -53,5 +57,19 @@
 	"bugs": {
 		"url": "https://github.com/AndyStubbs/pijs/issues"
 	},
-	"homepage": "https://www.pijs.org"
+	"homepage": "https://www.pijs.org",
+	"keywords": [
+		"2d",
+		"graphics",
+		"webgl",
+		"canvas",
+		"retro",
+		"game-engine",
+		"game-dev",
+		"input",
+		"sound",
+		"javascript",
+		"browser-game",
+		"pixel-art"
+	]
 }

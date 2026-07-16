@@ -9,6 +9,7 @@
 	},
 	"scripts": {
 		"build": "node scripts/build.js",
+		"copy-to-release": "node scripts/copy-to-release.js",
 		"metadata": "node scripts/generate-metadata.js",
 		"test": "playwright test test/scripts/run-visual-tests.js",
 		"test:grep": "playwright test test/scripts/run-visual-tests.js --grep",
