@@ -1,0 +1,27 @@
+@font-face {
+	font-family: "RobotMono";
+	src: url("RobotoMono-VariableFont_Wght.ttf") format("truetype");
+	font-weight: normal;
+	font-style: normal;
+}
+
+* {
+	box-sizing: border-box;
+	font-family: "RobotMono", monospace;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font-family: "RobotMono", monospace;
+	font-size: 16px;
+	line-height: 1.2;
+}
+
+canvas {
+	display: block;
+}
