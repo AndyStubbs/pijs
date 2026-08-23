@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Pi.js Animated Shader Demo — Deep Sea</title>
+	<style>
+		html,
+		body {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			background: #000814;
+			overflow: hidden;
+		}
+
+		#screen {
+			width: 100%;
+			height: 100%;
+		}
+	</style>
+</head>
+<body>
+	<script id="caustics-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+		uniform float u_strength;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec2 uv = v_texCoord;
+
+			float c1 = sin( ( uv.x * 9.0 + uv.y * 6.0 ) + u_time * 1.4 );
+			float c2 = sin( ( uv.x * 5.0 - uv.y * 12.0 ) - u_time * 1.1 );
+
+			vec2 offset = vec2( c1, c2 ) * u_strength;
+
+			vec4 color = texture( u_texture, uv + offset );
+
+			float glow = 0.5 + 0.5 * sin( ( c1 + c2 ) * 3.0 + u_time * 2.0 );
+			color.rgb += vec3( 0.0, 0.08, 0.14 ) * glow;
+
+			fragColor = color;
+		}
+	</script>
+	<script id="kaleido-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		#define SEGMENTS 6.0
+		#define PI 3.14159265
+
+		void main() {
+			vec2 centered = v_texCoord - 0.5;
+
+			float radius = length( centered );
+			float angle = atan( centered.y, centered.x ) + u_time * 0.25;
+
+			float wedge = PI * 2.0 / SEGMENTS;
+			angle = mod( angle, wedge );
+			angle = abs( angle - wedge * 0.5 );
+
+			vec2 uv = vec2( cos( angle ), sin( angle ) ) * radius + 0.5;
+
+			fragColor = texture( u_texture, uv );
+		}
+	</script>
+	<script id="vhs-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform vec2 u_sourceSize;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		float rand( vec2 co ) {
+			return fract( sin( dot( co, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 );
+		}
+
+		void main() {
+			vec2 uv = v_texCoord;
+
+			float trackJitter = sin( u_time * 6.0 + uv.y * 4.0 ) * 0.0025;
+			uv.x += trackJitter;
+
+			vec2 pixel = 1.0 / u_sourceSize;
+
+			float red = texture( u_texture, uv + vec2( pixel.x * 1.5, 0.0 ) ).r;
+			float green = texture( u_texture, uv ).g;
+			float blue = texture( u_texture, uv - vec2( pixel.x * 1.5, 0.0 ) ).b;
+
+			vec3 color = vec3( red, green, blue );
+
+			float noise = rand( uv * u_sourceSize + u_time * 60.0 ) - 0.5;
+			color += noise * 0.06;
+
+			float lineNoise = step( 0.995, rand( vec2( floor( uv.y * u_sourceSize.y ), floor( u_time * 10.0 ) ) ) );
+			color += lineNoise * 0.5;
+
+			float scan = 0.9 + 0.1 * sin( uv.y * u_sourceSize.y * 3.14159265 );
+			color *= scan;
+
+			fragColor = vec4( color, 1.0 );
+		}
+	</script>
+	<script id="bloom-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform vec2 u_sourceSize;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec4 source = texture( u_texture, v_texCoord );
+
+			vec2 pixel = 1.0 / u_sourceSize;
+			vec3 blur = vec3( 0.0 );
+			float total = 0.0;
+
+			for( int x = -2; x <= 2; x++ ) {
+				for( int y = -2; y <= 2; y++ ) {
+					vec2 offset = vec2( float( x ), float( y ) ) * pixel * 2.0;
+					vec4 texSample = texture( u_texture, v_texCoord + offset );
+					float bright = max( texSample.r, max( texSample.g, texSample.b ) );
+					float weight = step( 0.55, bright );
+					blur += texSample.rgb * weight;
+					total += weight;
+				}
+			}
+
+			if( total > 0.0 ) {
+				blur /= total;
+			}
+
+			float pulse = 0.6 + 0.4 * sin( u_time * 1.6 );
+			vec3 color = source.rgb + blur * 0.6 * pulse;
+
+			fragColor = vec4( color, source.a );
+		}
+	</script>
+	<script id="heat-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		float noise( vec2 p ) {
+			return fract( sin( dot( p, vec2( 41.0, 289.0 ) ) ) * 43758.5453 );
+		}
+
+		void main() {
+			vec2 uv = v_texCoord;
+
+			float n = noise( floor( uv * vec2( 40.0, 20.0 ) ) + floor( u_time * 6.0 ) );
+			float shimmer = sin( uv.y * 30.0 + u_time * 4.0 + n * 6.28 );
+
+			uv.x += shimmer * 0.004 * ( 1.0 - uv.y );
+
+			vec4 color = texture( u_texture, uv );
+
+			color.rgb += vec3( 0.06, 0.02, 0.0 ) * shimmer;
+
+			fragColor = color;
+		}
+	</script>
+	<script id="dither-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform vec2 u_sourceSize;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		float bayer( vec2 pos ) {
+			int x = int( mod( pos.x, 4.0 ) );
+			int y = int( mod( pos.y, 4.0 ) );
+			int index = x + y * 4;
+
+			float table[16];
+			table[0] = 0.0;  table[1] = 8.0;  table[2] = 2.0;  table[3] = 10.0;
+			table[4] = 12.0; table[5] = 4.0;  table[6] = 14.0; table[7] = 6.0;
+			table[8] = 3.0;  table[9] = 11.0; table[10] = 1.0; table[11] = 9.0;
+			table[12] = 15.0; table[13] = 7.0; table[14] = 13.0; table[15] = 5.0;
+
+			return table[ index ] / 16.0;
+		}
+
+		void main() {
+			vec2 pixelPos = floor( v_texCoord * u_sourceSize );
+
+			float levels = 4.0 + 2.0 * sin( u_time * 0.5 );
+			vec4 color = texture( u_texture, v_texCoord );
+
+			float threshold = bayer( pixelPos );
+			vec3 quant = floor( color.rgb * levels + threshold ) / levels;
+
+			fragColor = vec4( quant, color.a );
+		}
+	</script>
+
+	<script src="../../build/pi.js"></script>
+	<script>
+		$.ready( function() {
+			$.screen( "320x180" );
+
+			const causticsShader = $.createShader(
+				document.getElementById( "caustics-shader" ).textContent.trim()
+			);
+			const kaleidoShader = $.createShader(
+				document.getElementById( "kaleido-shader" ).textContent.trim()
+			);
+			const vhsShader = $.createShader(
+				document.getElementById( "vhs-shader" ).textContent.trim()
+			);
+			const bloomShader = $.createShader(
+				document.getElementById( "bloom-shader" ).textContent.trim()
+			);
+			const heatShader = $.createShader(
+				document.getElementById( "heat-shader" ).textContent.trim()
+			);
+			const ditherShader = $.createShader(
+				document.getElementById( "dither-shader" ).textContent.trim()
+			);
+
+			const shaders = [
+				{
+					"handle": null,
+					"name": "None",
+					"description": "No display shader standard renderer"
+				},
+				{
+					"handle": kaleidoShader,
+					"name": "KALEIDO",
+					"description": "Radial mirrored wedges rotate slowly"
+				},
+				{
+					"handle": vhsShader,
+					"name": "VHS",
+					"description": "Tape jitter, noise and RGB smear"
+				},
+				{
+					"handle": bloomShader,
+					"name": "BLOOM",
+					"description": "Bright areas glow and pulse"
+				},
+				{
+					"handle": heatShader,
+					"name": "HEAT HAZE",
+					"description": "Shimmering thermal refraction"
+				},
+				{
+					"handle": ditherShader,
+					"name": "DITHER",
+					"description": "Ordered dithering with shifting palette depth"
+				}
+			];
+
+			const SHADER_DURATION = 5;
+			const START_TIME = performance.now();
+			const FPS_UPDATE_INTERVAL = 500;
+			const BUBBLE_COUNT = 22;
+			const FISH_COUNT = 8;
+
+			let gCurrentShaderIndex = -1;
+			let gFps = 0;
+			let gFpsFrameCount = 0;
+			let gFpsUpdateTime = START_TIME;
+			let gApplyCausticsShader = true;
+
+			const bubbles = [];
+			for( let i = 0; i < BUBBLE_COUNT; i++ ) {
+				bubbles.push( {
+					"x": Math.random() * 320,
+					"y": Math.random() * 180,
+					"speed": 8 + Math.random() * 18,
+					"size": 1 + Math.random() * 2.5,
+					"wobble": Math.random() * Math.PI * 2
+				} );
+			}
+
+			function setShader( index ) {
+				if( index === gCurrentShaderIndex ) {
+					return;
+				}
+				gApplyCausticsShader = Math.random() > 0.5;
+				gCurrentShaderIndex = index;
+				const shader = shaders[ index ];
+				console.log( shader.name );
+				$.setDisplayShader( shader.handle );
+			}
+
+			function drawBackground( time ) {
+				$.rect( 0, 0, 320, 180, "#001428" );
+
+				for( let y = 0; y < 180; y += 1 ) {
+					const depth = y / 180;
+					const shade = Math.floor( 4 + depth * 10 );
+					$.setColor( "#00" + ( 10 + shade ).toString( 16 ).padStart( 2, "0" ) + "3C" );
+					$.line( 0, y, 320, y );
+				}
+
+				$.setColor( "#FFEE99" );
+				for( let i = 0; i < 5; i++ ) {
+					const rayX = 40 + i * 60 + Math.sin( time * 0.5 + i ) * 10;
+					$.line( rayX, 0, rayX - 40, 180 );
+				}
+			}
+
+			function drawBubbles( time, delta ) {
+				$.setColor( "#AEE8FF" );
+				for( let i = 0; i < bubbles.length; i++ ) {
+					const bubble = bubbles[ i ];
+					bubble.y -= bubble.speed * delta;
+					bubble.x += Math.sin( time * 2.0 + bubble.wobble ) * 0.3;
+
+					if( bubble.y < -5 ) {
+						bubble.y = 185;
+						bubble.x = Math.random() * 320;
+					}
+
+					$.circle( bubble.x, bubble.y, bubble.size );
+				}
+			}
+
+			function drawFish( time ) {
+				for( let i = 0; i < FISH_COUNT; i++ ) {
+					const speed = 0.5 + i * 0.07;
+					const laneY = 30 + i * 16;
+					const dir = i % 2 === 0 ? 1 : -1;
+					const x = 160 + dir * ( ( ( time * speed * 40 ) % 400 ) - 200 );
+					const y = laneY + Math.sin( time * 2.0 + i ) * 4;
+
+					const color = i % 3 === 0 ? "#FF8844" : ( i % 3 === 1 ? "#44DDFF" : "#FFDD44" );
+
+					$.setColor( color );
+					$.circle( x, y, 4 );
+					$.line( x - dir * 6, y, x - dir * 10, y - 3 );
+					$.line( x - dir * 6, y, x - dir * 10, y + 3 );
+				}
+			}
+
+			function drawSub( time ) {
+				const x = 160 + Math.sin( time * 0.6 ) * 90;
+				const y = 100 + Math.cos( time * 0.9 ) * 20;
+
+				$.setColor( "#556677" );
+				$.ellipse( x, y, 14, 6 );
+				$.setColor( "#223344" );
+				$.rect( x - 3, y - 9, 6, 6 );
+				$.setColor( "#FFCC00" );
+				$.circle( x + 8, y, 2 );
+			}
+
+			function drawShaderInfo( shader ) {
+				$.setBlend( "alpha" );
+				$.rect( 4, 4, 312, 31, "#000000CC" );
+				$.setBlend( "replace" );
+				$.setColor( "#FFFFFF" );
+				$.setPosPx( 9, 8 );
+				$.print( "DISPLAY SHADER: " + shader.name );
+				$.setPosPx( 200, 8 );
+				$.print( "CAUSTICS: " + gApplyCausticsShader );
+				$.setColor( "#66CCFF" );
+				$.setPosPx( 9, 20 );
+				$.print( shader.description );
+			}
+
+			function updateFps( now ) {
+				gFpsFrameCount += 1;
+				const elapsed = now - gFpsUpdateTime;
+
+				if( elapsed >= FPS_UPDATE_INTERVAL ) {
+					gFps = Math.round( ( gFpsFrameCount * 1000 ) / elapsed );
+					gFpsFrameCount = 0;
+					gFpsUpdateTime = now;
+				}
+			}
+
+			function drawFps() {
+				const label = "FPS: " + gFps;
+				const charWidth = 6;
+				const charHeight = 8;
+				const padding = 3;
+				const textWidth = label.length * charWidth;
+				const panelWidth = textWidth + padding * 2;
+				const panelHeight = charHeight + padding * 2;
+				const panelX = 320 - 4 - panelWidth;
+				const panelY = 180 - 8 - panelHeight;
+
+				$.setBlend( "alpha" );
+				$.rect( panelX, panelY, panelWidth, panelHeight, "#000000CC" );
+				$.setBlend( "replace" );
+				$.setColor( "#66CCFF" );
+				$.setPosPx( panelX + padding, panelY + padding );
+				$.print( label );
+			}
+
+			function drawShaderTimer( elapsed, shaderIndex ) {
+				const shaderTime = elapsed - shaderIndex * SHADER_DURATION;
+				const progress = shaderTime / SHADER_DURATION;
+				const width = Math.floor( 312 * Math.min( progress, 1 ) );
+				$.rect( 4, 174, 312, 2, "#0A1830" );
+
+				if( width > 0 ) {
+					$.rect( 4, 174, width, 2, "#66CCFF" );
+				}
+			}
+
+			let lastElapsed = 0;
+
+			function frame( now ) {
+				updateFps( now );
+				const elapsed = ( now - START_TIME ) / 1000;
+				const delta = elapsed - lastElapsed;
+				lastElapsed = elapsed;
+
+				const totalDuration = shaders.length * SHADER_DURATION;
+				const cycleTime = elapsed % totalDuration;
+				let shaderIndex = Math.floor( cycleTime / SHADER_DURATION );
+
+				if( shaderIndex < 0 ) {
+					shaderIndex = 0;
+				}
+				setShader( shaderIndex );
+
+				const shader = shaders[ shaderIndex ];
+				$.cls();
+
+				drawBackground( elapsed );
+				drawFish( elapsed );
+				drawBubbles( elapsed, delta );
+
+				if( gApplyCausticsShader ) {
+					const strength = 0.01 + Math.sin( elapsed * 1.3 ) * 0.004;
+					$.applyShader( causticsShader, {
+						"u_strength": strength
+					} );
+				}
+
+				drawSub( elapsed );
+				drawShaderInfo( shader );
+				drawShaderTimer( cycleTime, shaderIndex );
+				drawFps();
+				requestAnimationFrame( frame );
+			}
+
+			requestAnimationFrame( frame );
+		} );
+	</script>
+</body>
+</html>
