@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Pi.js Orbital Sanctum Shader Demo</title>
+	<style>
+		html,
+		body {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			background: #02010a;
+			overflow: hidden;
+		}
+
+		#screen {
+			width: 100%;
+			height: 100%;
+		}
+	</style>
+</head>
+<body>
+	<div id="screen"></div>
+
+	<script id="pulse-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+		uniform float u_strength;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec2 center = vec2(0.5, 0.48);
+			vec2 delta = v_texCoord - center;
+			float dist = length(delta);
+			float pulse = sin(dist * 42.0 - u_time * 6.0);
+			vec2 direction = vec2(0.0);
+
+			if( dist > 0.0001 ) {
+				direction = delta / dist;
+			}
+
+			vec2 uv = v_texCoord + direction * pulse * u_strength;
+			fragColor = texture(u_texture, uv);
+		}
+	</script>
+
+	<script id="vortex-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec2 p = v_texCoord - 0.5;
+			float radius = length(p);
+			float angle = atan(p.y, p.x);
+			float twist = (1.0 - smoothstep(0.0, 0.85, radius));
+			angle += twist * (1.4 + sin(u_time * 0.7) * 0.6);
+			angle -= radius * (2.2 + sin(u_time * 1.3) * 0.4);
+
+			vec2 uv = vec2(cos(angle), sin(angle)) * radius + 0.5;
+			vec4 color = texture(u_texture, uv);
+			float glow = 1.0 + twist * 0.18;
+			color.rgb *= glow;
+
+			fragColor = color;
+		}
+	</script>
+
+	<script id="kaleido-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec2 p = v_texCoord - 0.5;
+			float radius = length(p);
+			float angle = atan(p.y, p.x) + u_time * 0.25;
+			float segments = 8.0;
+			float slice = 6.2831853 / segments;
+
+			angle = mod(angle, slice);
+			angle = abs(angle - slice * 0.5);
+
+			vec2 uv = vec2(cos(angle), sin(angle)) * radius + 0.5;
+			uv = mix(uv, 1.0 - uv, step(1.0, uv.x) + step(1.0, uv.y));
+			uv = clamp(uv, 0.0, 1.0);
+
+			vec4 color = texture(u_texture, uv);
+			float shimmer = 0.92 + 0.08 * sin(radius * 30.0 - u_time * 4.0);
+			color.rgb *= shimmer;
+
+			fragColor = color;
+		}
+	</script>
+
+	<script id="vhs-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform vec2 u_sourceSize;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		float hash(float value) {
+			return fract(sin(value * 127.1) * 43758.5453);
+		}
+
+		void main() {
+			vec2 uv = v_texCoord;
+			float row = floor(uv.y * u_sourceSize.y);
+			float tear = hash(floor(u_time * 11.0) + row * 0.15);
+			float jitter = (tear - 0.5) * 0.03;
+			float band = step(0.93, hash(floor(u_time * 2.4) + 17.0));
+
+			uv.x += jitter * (0.25 + band);
+			uv.y += sin(u_time * 18.0 + uv.x * 40.0) * 0.0015;
+
+			float track = fract(uv.y * 1.4 + u_time * 0.12);
+			if( track > 0.96 ) {
+				uv.x += 0.04;
+				uv.y += 0.01;
+			}
+
+			vec2 pixel = 1.0 / u_sourceSize;
+			float bleed = 1.6 + band * 3.0;
+			float red = texture(u_texture, uv + vec2(pixel.x * bleed, 0.0)).r;
+			float green = texture(u_texture, uv).g;
+			float blue = texture(u_texture, uv - vec2(pixel.x * bleed, 0.0)).b;
+			vec3 color = vec3(red, green, blue);
+
+			float noise = hash(uv.x * 83.0 + uv.y * 191.0 + floor(u_time * 24.0));
+			color += (noise - 0.5) * 0.08;
+
+			float scan = 0.86 + 0.14 * sin(uv.y * u_sourceSize.y * 3.14159);
+			color *= scan;
+			color *= vec3(1.05, 0.98, 1.08);
+
+			fragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+		}
+	</script>
+
+	<script id="bloom-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform vec2 u_sourceSize;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec2 pixel = 1.0 / u_sourceSize;
+			vec4 source = texture(u_texture, v_texCoord);
+			vec3 bloom = vec3(0.0);
+			float weight = 0.0;
+
+			for( int y = -3; y <= 3; y++ ) {
+				for( int x = -3; x <= 3; x++ ) {
+					if( x == 0 && y == 0 ) {
+						continue;
+					}
+
+					vec2 offset = vec2(float(x), float(y)) * pixel * 1.6;
+					vec3 sampleColor = texture(u_texture, v_texCoord + offset).rgb;
+					float luma = dot(sampleColor, vec3(0.299, 0.587, 0.114));
+					float falloff = 1.0 / (1.0 + float(x * x + y * y));
+					bloom += sampleColor * smoothstep(0.45, 0.95, luma) * falloff;
+					weight += falloff;
+				}
+			}
+
+			bloom /= max(weight, 0.001);
+			float pulse = 0.55 + 0.25 * sin(u_time * 2.2);
+			vec3 color = source.rgb + bloom * pulse;
+			color *= 0.94 + 0.06 * sin(u_time * 5.0);
+
+			fragColor = vec4(color, source.a);
+		}
+	</script>
+
+	<script id="thermal-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec4 source = texture(u_texture, v_texCoord);
+			float luma = dot(source.rgb, vec3(0.299, 0.587, 0.114));
+			luma += 0.04 * sin(v_texCoord.y * 50.0 + u_time * 3.0);
+
+			vec3 ice = vec3(0.02, 0.05, 0.28);
+			vec3 teal = vec3(0.05, 0.75, 0.62);
+			vec3 gold = vec3(0.98, 0.72, 0.12);
+			vec3 magma = vec3(0.95, 0.18, 0.08);
+			vec3 white = vec3(1.0, 0.96, 0.86);
+
+			vec3 color = mix(ice, teal, smoothstep(0.00, 0.28, luma));
+			color = mix(color, gold, smoothstep(0.28, 0.55, luma));
+			color = mix(color, magma, smoothstep(0.55, 0.78, luma));
+			color = mix(color, white, smoothstep(0.78, 1.00, luma));
+
+			float contour = abs(sin(luma * 28.0 - u_time * 2.0));
+			color += contour * 0.05;
+
+			fragColor = vec4(color, source.a);
+		}
+	</script>
+
+	<script src="../../build/pi.js"></script>
+	<script>
+		// Generated by Grok 4.6
+		$.ready( function() {
+			$.screen( "320x180", "screen" );
+
+			const pulseShader = $.createShader(
+				document.getElementById( "pulse-shader" ).textContent.trim()
+			);
+			const vortexShader = $.createShader(
+				document.getElementById( "vortex-shader" ).textContent.trim()
+			);
+			const kaleidoShader = $.createShader(
+				document.getElementById( "kaleido-shader" ).textContent.trim()
+			);
+			const vhsShader = $.createShader(
+				document.getElementById( "vhs-shader" ).textContent.trim()
+			);
+			const bloomShader = $.createShader(
+				document.getElementById( "bloom-shader" ).textContent.trim()
+			);
+			const thermalShader = $.createShader(
+				document.getElementById( "thermal-shader" ).textContent.trim()
+			);
+
+			const shaders = [
+				{
+					"handle": null,
+					"name": "None",
+					"description": "Raw framebuffer no display pass"
+				},
+				{
+					"handle": vortexShader,
+					"name": "VORTEX",
+					"description": "Spiral warp pulls the sanctum inward"
+				},
+				{
+					"handle": kaleidoShader,
+					"name": "KALEIDO",
+					"description": "Eight-fold mirrored temple geometry"
+				},
+				{
+					"handle": vhsShader,
+					"name": "VHS",
+					"description": "Tracking tears, bleed and tape noise"
+				},
+				{
+					"handle": bloomShader,
+					"name": "BLOOM",
+					"description": "Soft glow blooms off bright relics"
+				},
+				{
+					"handle": thermalShader,
+					"name": "THERMAL",
+					"description": "Heat-map false color of energy fields"
+				}
+			];
+
+			const SHADER_DURATION = 5;
+			const START_TIME = performance.now();
+			const FPS_UPDATE_INTERVAL = 500;
+			const STAR_COUNT = 48;
+			const stars = [];
+
+			for( let i = 0; i < STAR_COUNT; i++ ) {
+				stars.push( {
+					"x": ( i * 47 ) % 320,
+					"y": ( i * 31 ) % 96,
+					"phase": i * 0.7,
+					"size": 1 + ( i % 3 === 0 ? 1 : 0 )
+				} );
+			}
+
+			let gCurrentShaderIndex = -1;
+			let gFps = 0;
+			let gFpsFrameCount = 0;
+			let gFpsUpdateTime = START_TIME;
+			let gApplyPulseShader = true;
+
+			function setShader( index ) {
+				if( index === gCurrentShaderIndex ) {
+					return;
+				}
+				gApplyPulseShader = Math.random() > 0.5;
+				gCurrentShaderIndex = index;
+				const shader = shaders[ index ];
+				$.setDisplayShader( shader.handle );
+			}
+
+			function mixHex( a, b, t ) {
+				const ar = parseInt( a.slice( 1, 3 ), 16 );
+				const ag = parseInt( a.slice( 3, 5 ), 16 );
+				const ab = parseInt( a.slice( 5, 7 ), 16 );
+				const br = parseInt( b.slice( 1, 3 ), 16 );
+				const bg = parseInt( b.slice( 3, 5 ), 16 );
+				const bb = parseInt( b.slice( 5, 7 ), 16 );
+				const r = Math.round( ar + ( br - ar ) * t );
+				const g = Math.round( ag + ( bg - ag ) * t );
+				const bl = Math.round( ab + ( bb - ab ) * t );
+				return "#" +
+					r.toString( 16 ).padStart( 2, "0" ) +
+					g.toString( 16 ).padStart( 2, "0" ) +
+					bl.toString( 16 ).padStart( 2, "0" );
+			}
+
+			function drawBackground( time ) {
+				for( let y = 0; y < 180; y += 4 ) {
+					const t = y / 180;
+					let color;
+					if( t < 0.55 ) {
+						color = mixHex( "#040018", "#1a0840", t / 0.55 );
+					} else {
+						color = mixHex( "#1a0840", "#041428", ( t - 0.55 ) / 0.45 );
+					}
+					$.setColor( color );
+					$.rect( 0, y, 320, 4, color );
+				}
+
+				for( let i = 0; i < stars.length; i++ ) {
+					const star = stars[ i ];
+					const twinkle = 0.35 + 0.65 * Math.abs(
+						Math.sin( time * 2.4 + star.phase )
+					);
+					if( twinkle < 0.45 ) {
+						continue;
+					}
+					$.setColor( "#C8F0FF" );
+					$.pset( star.x, star.y );
+					if( star.size > 1 && twinkle > 0.8 ) {
+						$.pset( star.x + 1, star.y );
+						$.pset( star.x, star.y + 1 );
+					}
+				}
+
+				const nebulaX = 210 + Math.sin( time * 0.3 ) * 8;
+				const nebulaY = 42 + Math.cos( time * 0.22 ) * 6;
+				$.setBlend( "alpha" );
+				$.setColor( "#6A20FF33" );
+				$.circle( nebulaX, nebulaY, 34, "#6A20FF33" );
+				$.setColor( "#FF2A7A22" );
+				$.circle( 78, 38, 26, "#FF2A7A22" );
+				$.setBlend( "replace" );
+			}
+
+			function drawHexFloor( time ) {
+				const horizon = 98;
+				$.setColor( "#143060" );
+				for( let i = 1; i <= 10; i++ ) {
+					const t = i / 10;
+					const depth = 1 - Math.pow( 1 - t, 2.4 );
+					const y = horizon + depth * ( 180 - horizon );
+					const wobble = Math.sin( time * 1.6 + i * 0.5 ) * 1.2;
+					$.line( 0, y + wobble, 320, y + wobble );
+				}
+
+				const drift = ( time * 18 ) % 28;
+				for( let x = -40; x <= 360; x += 28 ) {
+					$.setColor( "#0C2848" );
+					$.line( 160, horizon, x + drift, 180 );
+				}
+			}
+
+			function drawGate( time ) {
+				const cx = 160;
+				const cy = 78;
+				const pulse = 1 + Math.sin( time * 2.1 ) * 0.06;
+				const spokes = 6;
+				const inner = 16 * pulse;
+				const outer = 36 * pulse;
+
+				$.setColor( "#201040" );
+				$.circle( cx, cy, outer + 6, "#140828" );
+
+				for( let ring = 0; ring < 3; ring++ ) {
+					const radius = inner + ring * 10;
+					$.setColor( ring === 1 ? "#66F0FF" : "#B14CFF" );
+					$.circle( cx, cy, radius );
+				}
+
+				for( let i = 0; i < spokes; i++ ) {
+					const angle = ( i / spokes ) * Math.PI * 2 + time * 0.35;
+					const x1 = cx + Math.cos( angle ) * inner;
+					const y1 = cy + Math.sin( angle ) * inner;
+					const x2 = cx + Math.cos( angle ) * outer;
+					const y2 = cy + Math.sin( angle ) * outer;
+					$.setColor( "#7CF6FF" );
+					$.line( x1, y1, x2, y2 );
+				}
+
+				const core = 5 + Math.sin( time * 5.0 ) * 1.5;
+				$.setColor( "#FFE08A" );
+				$.circle( cx, cy, core, "#FF6AD5" );
+			}
+
+			function drawRelics( time ) {
+				for( let i = 0; i < 8; i++ ) {
+					const speed = 0.55 + i * 0.07;
+					const angle = time * speed + i * 0.85;
+					const rx = 48 + ( i % 4 ) * 10;
+					const ry = 18 + ( i % 3 ) * 6;
+					const x = 160 + Math.cos( angle ) * rx;
+					const y = 80 + Math.sin( angle * 1.15 ) * ry;
+					const color = i % 2 === 0 ? "#39F6C8" : "#FF4FD0";
+					const size = 2 + ( i % 3 );
+
+					$.setColor( color );
+					$.circle( x, y, size, color );
+
+					if( i % 3 === 0 ) {
+						$.line( x - 5, y, x + 5, y );
+						$.line( x, y - 5, x, y + 5 );
+					}
+				}
+			}
+
+			function drawCrystals( time ) {
+				const bases = [
+					{ "x": 46, "y": 128, "h": 28, "w": 10 },
+					{ "x": 74, "y": 136, "h": 20, "w": 8 },
+					{ "x": 246, "y": 130, "h": 26, "w": 10 },
+					{ "x": 274, "y": 138, "h": 18, "w": 8 }
+				];
+
+				for( let i = 0; i < bases.length; i++ ) {
+					const crystal = bases[ i ];
+					const sway = Math.sin( time * 1.8 + i ) * 2;
+					const tipX = crystal.x + sway;
+					const tipY = crystal.y - crystal.h;
+					const left = crystal.x - crystal.w;
+					const right = crystal.x + crystal.w;
+
+					$.setColor( "#3DE0FF" );
+					$.line( left, crystal.y, tipX, tipY );
+					$.line( right, crystal.y, tipX, tipY );
+					$.line( left, crystal.y, right, crystal.y );
+
+					$.setColor( "#FF78E4" );
+					$.line( crystal.x, crystal.y, tipX, tipY );
+				}
+			}
+
+			function drawProbe( time ) {
+				const x = 160 + Math.sin( time * 1.1 ) * 88;
+				const y = 122 + Math.cos( time * 2.3 ) * 10;
+				const tilt = Math.sin( time * 1.1 ) * 4;
+
+				$.setColor( "#FFFFFF" );
+				$.line( x, y - 6, x + 8 + tilt, y );
+				$.line( x + 8 + tilt, y, x, y + 6 );
+				$.line( x, y + 6, x - 8 + tilt, y );
+				$.line( x - 8 + tilt, y, x, y - 6 );
+
+				$.setColor( "#7CFF6A" );
+				$.pset( x, y );
+				$.line( x - 3, y + 7, x - 6, y + 11 );
+				$.line( x + 3, y + 7, x + 6, y + 11 );
+			}
+
+			function drawShaderInfo( shader ) {
+				$.setBlend( "alpha" );
+				$.rect( 4, 4, 312, 31, "#000000CC" );
+				$.setBlend( "replace" );
+				$.setColor( "#FFFFFF" );
+				$.setPosPx( 9, 8 );
+				$.print( "DISPLAY SHADER: " + shader.name );
+				$.setPosPx( 200, 8 );
+				$.print( "PULSE SHADER: " + gApplyPulseShader );
+				$.setColor( "#7CF6FF" );
+				$.setPosPx( 9, 20 );
+				$.print( shader.description );
+			}
+
+			function updateFps( now ) {
+				gFpsFrameCount += 1;
+				const elapsed = now - gFpsUpdateTime;
+
+				if( elapsed >= FPS_UPDATE_INTERVAL ) {
+					gFps = Math.round( ( gFpsFrameCount * 1000 ) / elapsed );
+					gFpsFrameCount = 0;
+					gFpsUpdateTime = now;
+				}
+			}
+
+			function drawFps() {
+				const label = "FPS: " + gFps;
+				const charWidth = 6;
+				const charHeight = 8;
+				const padding = 3;
+				const textWidth = label.length * charWidth;
+				const panelWidth = textWidth + padding * 2;
+				const panelHeight = charHeight + padding * 2;
+				const panelX = 320 - 4 - panelWidth;
+				const panelY = 180 - 8 - panelHeight;
+
+				$.setBlend( "alpha" );
+				$.rect( panelX, panelY, panelWidth, panelHeight, "#000000CC" );
+				$.setBlend( "replace" );
+				$.setColor( "#7CF6FF" );
+				$.setPosPx( panelX + padding, panelY + padding );
+				$.print( label );
+			}
+
+			function drawShaderTimer( elapsed, shaderIndex ) {
+				const shaderTime = elapsed - shaderIndex * SHADER_DURATION;
+				const progress = shaderTime / SHADER_DURATION;
+				const width = Math.floor( 312 * Math.min( progress, 1 ) );
+				$.rect( 4, 174, 312, 2, "#24103A" );
+
+				if( width > 0 ) {
+					$.rect( 4, 174, width, 2, "#7CF6FF" );
+				}
+			}
+
+			function frame( now ) {
+				updateFps( now );
+				const elapsed = ( now - START_TIME ) / 1000;
+				const totalDuration = shaders.length * SHADER_DURATION;
+				const cycleTime = elapsed % totalDuration;
+				let shaderIndex = Math.floor( cycleTime / SHADER_DURATION );
+
+				if( shaderIndex < 0 ) {
+					shaderIndex = 0;
+				}
+				setShader( shaderIndex );
+
+				const shader = shaders[ shaderIndex ];
+				$.cls();
+
+				drawBackground( elapsed );
+				drawHexFloor( elapsed );
+				drawCrystals( elapsed );
+				drawGate( elapsed );
+				drawRelics( elapsed );
+
+				if( gApplyPulseShader ) {
+					const pulseStrength =
+						0.005 + Math.sin( elapsed * 1.9 ) * 0.0025;
+					$.applyShader( pulseShader, {
+						"u_strength": pulseStrength
+					} );
+				}
+
+				drawProbe( elapsed );
+				drawShaderInfo( shader );
+				drawShaderTimer( cycleTime, shaderIndex );
+				drawFps();
+				requestAnimationFrame( frame );
+			}
+
+			requestAnimationFrame( frame );
+		} );
+	</script>
+</body>
+</html>

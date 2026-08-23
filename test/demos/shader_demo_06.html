@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Pi.js Animated Shader Demo - Neon Abyss</title>
+	<style>
+		html,
+		body {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			background: #020a14;
+			overflow: hidden;
+		}
+
+		#screen {
+			width: 100%;
+			height: 100%;
+		}
+	</style>
+</head>
+<body>
+	<script id="warp-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+		uniform float u_strength;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec2 uv = v_texCoord;
+
+			float wobbleX = sin(uv.y * 32.0 + u_time * 2.4) * 0.5;
+			float wobbleY = cos(uv.x * 18.0 - u_time * 1.8) * 0.3;
+
+			uv.x += wobbleX * u_strength;
+			uv.y += wobbleY * u_strength * 0.4;
+
+			fragColor = texture(u_texture, uv);
+		}
+	</script>
+	<script id="vhs-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform vec2 u_sourceSize;
+		uniform vec2 u_outputSize;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		float hash(vec2 p) {
+			return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+		}
+
+		void main() {
+			vec2 uv = v_texCoord;
+
+			float tracking = sin(u_time * 4.0) * 0.003;
+			uv.x += tracking * step(0.92, hash(vec2(floor(uv.y * 60.0), floor(u_time * 10.0))));
+
+			float jitter = (hash(vec2(u_time * 0.3, 0.0)) - 0.5) * 0.002;
+			uv.x += jitter;
+
+			vec2 pixel = 1.0 / u_sourceSize;
+			float split = 1.5 + sin(u_time * 6.0) * 0.7;
+
+			float r = texture(u_texture, uv + vec2(pixel.x * split, 0.0)).r;
+			float g = texture(u_texture, uv).g;
+			float b = texture(u_texture, uv - vec2(pixel.x * split, 0.0)).b;
+
+			vec3 color = vec3(r, g, b);
+
+			float scanPos = v_texCoord.y * u_outputSize.y;
+			float scanline = 0.85 + 0.15 * sin(scanPos * 1.8);
+			color *= scanline;
+
+			float noise = hash(v_texCoord * u_time * 0.5) * 0.08;
+			color += noise;
+
+			float roll = fract(v_texCoord.y + u_time * 0.08);
+			float bar = step(0.985, sin(roll * 120.0));
+			color += bar * 0.12;
+
+			fragColor = vec4(color, 1.0);
+		}
+	</script>
+	<script id="vortex-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec2 center = vec2(0.5, 0.55);
+			vec2 delta = v_texCoord - center;
+			float dist = length(delta);
+			float angle = atan(delta.y, delta.x);
+
+			float swirl = 1.8 * smoothstep(0.45, 0.0, dist);
+			float pulse = sin(dist * 28.0 - u_time * 4.0) * 0.015;
+
+			angle += swirl * (0.7 + 0.3 * sin(u_time * 0.9));
+			dist += pulse;
+
+			vec2 uv = vec2(cos(angle), sin(angle)) * dist + center;
+
+			vec4 color = texture(u_texture, uv);
+			float edgeFade = smoothstep(0.5, 0.35, dist);
+			color.rgb *= 0.85 + edgeFade * 0.25;
+
+			fragColor = color;
+		}
+	</script>
+	<script id="datamosh-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform vec2 u_sourceSize;
+		uniform float u_time;
+		uniform int u_frame;
+
+		out vec4 fragColor;
+
+		float rand(float n) {
+			return fract(sin(n * 91.3458) * 47453.5453);
+		}
+
+		void main() {
+			vec2 uv = v_texCoord;
+
+			float slice = floor(uv.y * 32.0);
+			float sliceHash = rand(slice + floor(u_time * 12.0));
+
+			float activeSlice = step(0.78, sliceHash);
+			float dir = sign(rand(slice * 1.7) - 0.5);
+
+			float offset = activeSlice * dir * (0.01 + sliceHash * 0.045);
+			offset += sin(u_time * 15.0 + slice) * 0.002 * activeSlice;
+
+			uv.x += offset;
+
+			if (rand(floor(u_time * 6.0) + slice) > 0.97) {
+				uv.y += (rand(slice) - 0.5) * 0.015;
+			}
+
+			vec2 pixel = 1.0 / u_sourceSize;
+			float chroma = 3.0 * activeSlice;
+
+			float r = texture(u_texture, uv + vec2(pixel.x * chroma, 0.0)).r;
+			float g = texture(u_texture, uv).g;
+			float b = texture(u_texture, uv - vec2(pixel.x * chroma, 0.0)).b;
+
+			vec3 color = vec3(r, g, b);
+
+			if (rand(float(u_frame) * 0.13) > 0.985) {
+				color = vec3(1.0) - color * 0.3;
+			}
+
+			fragColor = vec4(color, 1.0);
+		}
+	</script>
+	<script id="aurora-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec4 base = texture(u_texture, v_texCoord);
+
+			float waveA = sin(v_texCoord.x * 12.0 + u_time * 1.1);
+			float waveB = sin(v_texCoord.y * 9.0 - u_time * 0.9);
+			float waveC = sin((v_texCoord.x - v_texCoord.y) * 10.0 + u_time * 1.4);
+
+			float plasma = (waveA + waveB + waveC) / 3.0;
+			plasma = plasma * 0.5 + 0.5;
+
+			vec3 auroraA = vec3(0.05, 0.9, 0.75);
+			vec3 auroraB = vec3(0.3, 0.4, 1.0);
+			vec3 auroraC = vec3(0.9, 0.15, 0.6);
+
+			vec3 tint = mix(auroraA, auroraB, plasma);
+			tint = mix(tint, auroraC, smoothstep(0.6, 0.9, plasma) * 0.5);
+
+			float strength = 0.35 + plasma * 0.35;
+			vec3 final = base.rgb * (1.0 - strength) + base.rgb * tint * (1.2 + strength);
+
+			fragColor = vec4(final, base.a);
+		}
+	</script>
+	<script id="led-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform vec2 u_sourceSize;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			float scale = 3.0 + 2.0 * (0.5 + 0.5 * sin(u_time * 1.1));
+			vec2 grid = u_sourceSize / scale;
+
+			vec2 cell = floor(v_texCoord * grid) / grid;
+			vec2 cellUv = fract(v_texCoord * grid);
+
+			vec4 color = texture(u_texture, cell);
+
+			float dist = distance(cellUv, vec2(0.5));
+			float dotMask = 1.0 - smoothstep(0.32, 0.5, dist);
+
+			float flicker = 0.92 + 0.08 * sin(u_time * 18.0 + cell.x * 40.0);
+
+			color.rgb *= dotMask * flicker;
+
+			float line = step(0.96, cellUv.y);
+			color.rgb *= 1.0 - line * 0.45;
+
+			fragColor = vec4(color.rgb, 1.0);
+		}
+	</script>
+	<script src="../../build/pi.js"></script>
+	<script>
+		// Generated by Muse Spark 1.2
+		$.ready(function() {
+			$.screen("320x180");
+
+			const warpShader = $.createShader(
+				document.getElementById("warp-shader").textContent.trim()
+			);
+			const vhsShader = $.createShader(
+				document.getElementById("vhs-shader").textContent.trim()
+			);
+			const vortexShader = $.createShader(
+				document.getElementById("vortex-shader").textContent.trim()
+			);
+			const datamoshShader = $.createShader(
+				document.getElementById("datamosh-shader").textContent.trim()
+			);
+			const auroraShader = $.createShader(
+				document.getElementById("aurora-shader").textContent.trim()
+			);
+			const ledShader = $.createShader(
+				document.getElementById("led-shader").textContent.trim()
+			);
+
+			const shaders = [
+				{
+					"handle": null,
+					"name": "None",
+					"description": "No display shader standard renderer"
+				},
+				{
+					"handle": vhsShader,
+					"name": "VHS",
+					"description": "Tracking jitter, scanlines and tape noise"
+				},
+				{
+					"handle": vortexShader,
+					"name": "VORTEX",
+					"description": "Spiral swirl around the abyss center"
+				},
+				{
+					"handle": datamoshShader,
+					"name": "DATAMOSH",
+					"description": "Sliced horizontal blocks with chroma tear"
+				},
+				{
+					"handle": auroraShader,
+					"name": "AURORA",
+					"description": "Drifting plasma tints the whole scene"
+				},
+				{
+					"handle": ledShader,
+					"name": "LED WALL",
+					"description": "Dot-matrix grid with pulsating cell size"
+				}
+			];
+
+			const SHADER_DURATION = 5;
+			const START_TIME = performance.now();
+			const FPS_UPDATE_INTERVAL = 500;
+
+			let gCurrentShaderIndex = -1;
+			let gFps = 0;
+			let gFpsFrameCount = 0;
+			let gFpsUpdateTime = START_TIME;
+			let gApplyWarpShader = true;
+
+			function setShader(index) {
+				if (index === gCurrentShaderIndex) {
+					return;
+				}
+				gApplyWarpShader = Math.random() > 0.45;
+				gCurrentShaderIndex = index;
+				const shader = shaders[index];
+				$.setDisplayShader(shader.handle);
+			}
+
+			function drawAbyss(time) {
+				// Deep vertical gradient
+				for (let y = 0; y < 180; y++) {
+					const t = y / 180;
+					const r = Math.floor(2 + t * 18);
+					const g = Math.floor(12 + t * 28);
+					const b = Math.floor(38 + t * 22);
+					$.setColor(`rgb(${r},${g},${b})`);
+					$.line(0, y, 320, y);
+				}
+
+				// Light rays from surface
+				$.setColor("#0a2a44");
+				for (let i = 0; i < 6; i++) {
+					const xTop = 20 + i * 58 + Math.sin(time * 0.3 + i) * 8;
+					const wobble = Math.sin(time * 0.7 + i * 1.3) * 12;
+					$.line(xTop + wobble, 0, 160 + (xTop - 160) * 0.35, 125);
+					$.line(xTop + wobble + 1, 0, 160 + (xTop - 160) * 0.35 + 1, 125);
+				}
+
+				// Seafloor
+				$.setColor("#0d1b2e");
+				$.rect(0, 152, 320, 28, "#0d1b2e");
+				$.setColor("#132a3a");
+				for (let x = 0; x < 320; x += 22) {
+					const h = 6 + Math.sin(x * 0.12 + time) * 2;
+					$.rect(x, 152 - h, 18, h, "#132a3a");
+				}
+			}
+
+			function drawBubbles(time) {
+				for (let i = 0; i < 14; i++) {
+					const speed = 0.25 + (i % 4) * 0.12;
+					const drift = Math.sin(time * 0.6 + i * 1.7) * 6;
+					const y = 150 - ((time * (18 + i * 2) + i * 47) % 150);
+					const x = 24 + (i * 23) % 280 + drift;
+					const r = 1 + (i % 3);
+					const alpha = 0.35 + 0.35 * Math.sin(time * 1.2 + i);
+
+					if (i % 3 === 0) {
+						$.setColor(`rgba(140,220,255,${alpha})`);
+					} else if (i % 3 === 1) {
+						$.setColor(`rgba(180,255,220,${alpha})`);
+					} else {
+						$.setColor(`rgba(255,255,255,${alpha})`);
+					}
+					$.circle(x, y, r, $.getColor());
+				}
+			}
+
+			function drawJellySwarm(time) {
+				for (let i = 0; i < 7; i++) {
+					const angle = time * (0.45 + i * 0.04) + i * 1.1;
+					const radius = 38 + i * 9;
+					const x = 160 + Math.cos(angle) * radius;
+					const y = 88 + Math.sin(angle * 1.25) * 22 + Math.cos(time + i) * 4;
+
+					const pulse = 0.7 + 0.3 * Math.sin(time * 2.4 + i);
+					const size = 3 + pulse * 1.5;
+
+					if (i % 2 === 0) {
+						$.setColor("#7af0ff");
+					} else {
+						$.setColor("#ff7ad1");
+					}
+					$.circle(x, y, size, $.getColor());
+
+					// Tentacles
+					$.setColor("rgba(255,255,255,0.55)");
+					const tailY = y + size + 2;
+					$.line(x - 1, y + 1, x - 1 + Math.sin(time * 3 + i) * 2, tailY + 4);
+					$.line(x + 1, y + 1, x + 1 + Math.cos(time * 3 + i) * 2, tailY + 4);
+				}
+			}
+
+			function drawSubmarine(time) {
+				const x = 160 + Math.sin(time * 0.9) * 62;
+				const y = 132 + Math.cos(time * 1.6) * 5;
+
+				// Body
+				$.setColor("#e8f0ff");
+				$.ellipse(x, y, 18, 7, "#d8e6ff");
+				// Viewport
+				$.setColor("#00e5ff");
+				$.circle(x + 6, y - 1, 4, "#00e5ff");
+				$.setColor("#ffffff");
+				$.circle(x + 7, y - 2, 1, "#ffffff");
+				// Fins
+				$.setColor("#e8f0ff");
+				$.line(x - 18, y, x - 24, y - 4);
+				$.line(x - 18, y, x - 24, y + 4);
+				// Propeller wash
+				$.setColor("rgba(120,240,255,0.6)");
+				const wash = 3 + Math.sin(time * 18) * 1.5;
+				$.ellipse(x - 19, y, wash, 1.5);
+			}
+
+			function drawShaderInfo(shader) {
+				$.setBlend("alpha");
+				$.rect(4, 4, 312, 31, "#000000CC");
+				$.setBlend("replace");
+				$.setColor("#FFFFFF");
+				$.setPosPx(9, 8);
+				$.print("DISPLAY SHADER: " + shader.name);
+				$.setPosPx(200, 8);
+				$.print("WARP SHADER: " + gApplyWarpShader);
+				$.setColor("#7af0ff");
+				$.setPosPx(9, 20);
+				$.print(shader.description);
+			}
+
+			function updateFps(now) {
+				gFpsFrameCount += 1;
+				const elapsed = now - gFpsUpdateTime;
+				if (elapsed >= FPS_UPDATE_INTERVAL) {
+					gFps = Math.round((gFpsFrameCount * 1000) / elapsed);
+					gFpsFrameCount = 0;
+					gFpsUpdateTime = now;
+				}
+			}
+
+			function drawFps() {
+				const label = "FPS: " + gFps;
+				const charWidth = 6;
+				const charHeight = 8;
+				const padding = 3;
+				const textWidth = label.length * charWidth;
+				const panelWidth = textWidth + padding * 2;
+				const panelHeight = charHeight + padding * 2;
+				const panelX = 320 - 4 - panelWidth;
+				const panelY = 180 - 8 - panelHeight;
+
+				$.setBlend("alpha");
+				$.rect(panelX, panelY, panelWidth, panelHeight, "#000000CC");
+				$.setBlend("replace");
+				$.setColor("#7af0ff");
+				$.setPosPx(panelX + padding, panelY + padding);
+				$.print(label);
+			}
+
+			function drawShaderTimer(elapsed, shaderIndex) {
+				const shaderTime = elapsed - shaderIndex * SHADER_DURATION;
+				const progress = shaderTime / SHADER_DURATION;
+				const width = Math.floor(312 * Math.min(progress, 1));
+				$.rect(4, 174, 312, 2, "#0a2a44");
+				if (width > 0) {
+					$.rect(4, 174, width, 2, "#7af0ff");
+				}
+			}
+
+			function frame(now) {
+				updateFps(now);
+				const elapsed = (now - START_TIME) / 1000;
+				const totalDuration = shaders.length * SHADER_DURATION;
+				const cycleTime = elapsed % totalDuration;
+				let shaderIndex = Math.floor(cycleTime / SHADER_DURATION);
+				if (shaderIndex < 0) {
+					shaderIndex = 0;
+				}
+				setShader(shaderIndex);
+
+				const shader = shaders[shaderIndex];
+				$.cls();
+
+				drawAbyss(elapsed);
+				drawBubbles(elapsed);
+				drawJellySwarm(elapsed);
+
+				if (gApplyWarpShader) {
+					const warpStrength = 0.005 + Math.sin(elapsed * 1.2) * 0.0025;
+					$.applyShader(warpShader, {
+						"u_strength": warpStrength
+					});
+				}
+
+				drawSubmarine(elapsed);
+				drawShaderInfo(shader);
+				drawShaderTimer(cycleTime, shaderIndex);
+				drawFps();
+				requestAnimationFrame(frame);
+			}
+
+			requestAnimationFrame(frame);
+		});
+	</script>
+</body>
+</html>

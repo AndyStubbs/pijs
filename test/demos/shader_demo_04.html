@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Pi.js Animated Shader Demo - Cosmic Hyperdrive</title>
+	<style>
+		html,
+		body {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			background: #030008;
+			overflow: hidden;
+		}
+
+		#screen {
+			width: 100%;
+			height: 100%;
+		}
+	</style>
+</head>
+<body>
+	<script id="heat-warp-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+		uniform float u_strength;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec2 uv = v_texCoord;
+			float waveX = sin(uv.y * 35.0 + u_time * 4.0);
+			float waveY = cos(uv.x * 25.0 - u_time * 2.5);
+
+			uv.x += waveX * u_strength;
+			uv.y += waveY * u_strength * 0.5;
+
+			fragColor = texture(u_texture, uv);
+		}
+	</script>
+	<script id="vortex-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec2 uv = v_texCoord - vec2(0.5);
+			float dist = length(uv);
+			float angle = atan(uv.y, uv.x);
+
+			float swirl = sin(u_time * 1.5) * 2.5 * (1.0 - smoothstep(0.0, 0.75, dist));
+			angle += swirl;
+
+			vec2 newUv = vec2(cos(angle), sin(angle)) * dist + vec2(0.5);
+
+			if(
+				newUv.x < 0.0 ||
+				newUv.x > 1.0 ||
+				newUv.y < 0.0 ||
+				newUv.y > 1.0
+			) {
+				fragColor = vec4(0.0, 0.0, 0.0, 1.0);
+			} else {
+				fragColor = texture(u_texture, newUv);
+			}
+		}
+	</script>
+	<script id="kaleidoscope-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec2 uv = v_texCoord - vec2(0.5);
+			float r = length(uv);
+			float a = atan(uv.y, uv.x);
+
+			float sides = 6.0;
+			float tau = 6.28318530718;
+			a = mod(a, tau / sides);
+			a = abs(a - tau / (sides * 2.0));
+			a += u_time * 0.4;
+
+			vec2 kUv = vec2(cos(a), sin(a)) * r + vec2(0.5);
+			kUv = clamp(kUv, 0.0, 1.0);
+
+			fragColor = texture(u_texture, kUv);
+		}
+	</script>
+	<script id="thermal-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		vec3 thermalPalette(float val) {
+			val = clamp(val, 0.0, 1.0);
+			vec3 c0 = vec3(0.0, 0.0, 0.15);
+			vec3 c1 = vec3(0.1, 0.1, 0.85);
+			vec3 c2 = vec3(0.85, 0.0, 0.85);
+			vec3 c3 = vec3(1.0, 0.3, 0.0);
+			vec3 c4 = vec3(1.0, 0.9, 0.1);
+			vec3 c5 = vec3(1.0, 1.0, 1.0);
+
+			if( val < 0.2 ) return mix(c0, c1, val * 5.0);
+			if( val < 0.4 ) return mix(c1, c2, (val - 0.2) * 5.0);
+			if( val < 0.6 ) return mix(c2, c3, (val - 0.4) * 5.0);
+			if( val < 0.8 ) return mix(c3, c4, (val - 0.6) * 5.0);
+			return mix(c4, c5, (val - 0.8) * 5.0);
+		}
+
+		void main() {
+			vec4 tex = texture(u_texture, v_texCoord);
+			float lum = dot(tex.rgb, vec3(0.299, 0.587, 0.114));
+			lum += sin(v_texCoord.y * 100.0 + u_time * 5.0) * 0.03;
+			vec3 col = thermalPalette(lum);
+			fragColor = vec4(col, tex.a);
+		}
+	</script>
+	<script id="vhs-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		float hash(float n) {
+			return fract(sin(n) * 43758.5453123);
+		}
+
+		void main() {
+			vec2 uv = v_texCoord;
+
+			float tapeDistort = step(0.91, uv.y) * sin(uv.y * 90.0 + u_time * 18.0) * 0.018;
+			float lineNoise = hash(floor(uv.y * 130.0) + floor(u_time * 16.0));
+			float jitter = (lineNoise - 0.5) * 0.005 * step(0.88, lineNoise);
+
+			uv.x += tapeDistort + jitter;
+
+			vec2 offset = vec2(0.0035, 0.0);
+			float r = texture(u_texture, uv + offset).r;
+			float g = texture(u_texture, uv).g;
+			float b = texture(u_texture, uv - offset).b;
+
+			vec3 col = vec3(r, g, b);
+
+			float staticNoise = hash(uv.x * 120.0 + uv.y * 220.0 + u_time * 50.0);
+			col += (staticNoise - 0.5) * 0.07;
+
+			fragColor = vec4(col, 1.0);
+		}
+	</script>
+	<script id="hud-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec2 uv = v_texCoord;
+			vec4 tex = texture(u_texture, uv);
+
+			vec2 gridUv = fract(uv * vec2(40.0, 22.5));
+			float grid = step(0.95, gridUv.x) + step(0.95, gridUv.y);
+
+			vec2 center = uv - vec2(0.5);
+			float dist = length(center);
+			float ring = smoothstep(0.012, 0.0, abs(dist - fract(u_time * 0.25) * 0.65));
+
+			vec3 hudColor = tex.rgb;
+			hudColor.g *= 1.2;
+			hudColor += vec3(0.0, 0.18, 0.06) * grid;
+			hudColor += vec3(0.0, 0.35, 0.15) * ring;
+
+			vec2 corner = abs(uv - 0.5);
+			if( corner.x > 0.46 || corner.y > 0.44 ) {
+				hudColor += vec3(0.0, 0.4, 0.8) * 0.5;
+			}
+
+			fragColor = vec4(hudColor, 1.0);
+		}
+	</script>
+
+	<script src="../../build/pi.js"></script>
+	<script>
+		// Generated by Gemini 3.6 Flash
+		$.ready( function() {
+			$.screen( "320x180" );
+
+			const heatWarpShader = $.createShader(
+				document.getElementById( "heat-warp-shader" ).textContent.trim()
+			);
+			const vortexShader = $.createShader(
+				document.getElementById( "vortex-shader" ).textContent.trim()
+			);
+			const kaleidoscopeShader = $.createShader(
+				document.getElementById( "kaleidoscope-shader" ).textContent.trim()
+			);
+			const thermalShader = $.createShader(
+				document.getElementById( "thermal-shader" ).textContent.trim()
+			);
+			const vhsShader = $.createShader(
+				document.getElementById( "vhs-shader" ).textContent.trim()
+			);
+			const hudShader = $.createShader(
+				document.getElementById( "hud-shader" ).textContent.trim()
+			);
+
+			const shaders = [
+				{
+					"handle": null,
+					"name": "STANDARD",
+					"description": "Unmodified WebGL framebuffer"
+				},
+				{
+					"handle": vortexShader,
+					"name": "VORTEX",
+					"description": "Radial swirl space warping effect"
+				},
+				{
+					"handle": kaleidoscopeShader,
+					"name": "KALEIDOSCOPE",
+					"description": "6-way symmetrical optical mirror grid"
+				},
+				{
+					"handle": thermalShader,
+					"name": "THERMAL",
+					"description": "Luminance mapped heat-vision palette"
+				},
+				{
+					"handle": vhsShader,
+					"name": "VHS TAPE",
+					"description": "Tracking distortion, jitter & tape noise"
+				},
+				{
+					"handle": hudShader,
+					"name": "CYBER HUD",
+					"description": "Tactical green matrix & pulsing radar ring"
+				}
+			];
+
+			const SHADER_DURATION = 5;
+			const START_TIME = performance.now();
+			const FPS_UPDATE_INTERVAL = 500;
+
+			let gCurrentShaderIndex = -1;
+			let gFps = 0;
+			let gFpsFrameCount = 0;
+			let gFpsUpdateTime = START_TIME;
+			let gApplyHeatWarp = true;
+
+			function setShader( index ) {
+				if( index === gCurrentShaderIndex ) {
+					return;
+				}
+				gApplyHeatWarp = Math.random() > 0.5;
+				gCurrentShaderIndex = index;
+				const shader = shaders[ index ];
+				$.setDisplayShader( shader.handle );
+			}
+
+			function drawSpaceBackground( time ) {
+				$.setColor( "#04000c" );
+				$.rect( 0, 0, 320, 180, "#04000c" );
+
+				for( let i = 0; i < 40; i++ ) {
+					const sx = ( i * 37 + Math.sin( i + time * 0.2 ) * 10 ) % 320;
+					const sy = ( i * 19 + time * ( 5 + ( i % 5 ) * 3 ) ) % 180;
+					const brightness = Math.sin( time * 3.0 + i ) > 0 ? "#FFFFFF" : "#4060A0";
+					$.setColor( brightness );
+					$.pset( sx, sy );
+				}
+
+				const planetX = 160;
+				const planetY = 65 + Math.sin( time * 0.8 ) * 4;
+				const planetR = 26;
+
+				$.setColor( "#701050" );
+				$.circle( planetX, planetY, planetR, "#701050" );
+
+				for( let r = planetR; r > 0; r -= 4 ) {
+					const alphaCol = "#B02080";
+					$.setColor( alphaCol );
+					$.circle( planetX, planetY, r );
+				}
+
+				$.setColor( "#00E0FF" );
+				$.ellipse( planetX, planetY, planetR + 18, 6 );
+
+				const horizon = 125;
+				for( let y = horizon; y < 180; y += 7 ) {
+					const offset = Math.sin( time * 3.0 + y * 0.15 ) * 2.0;
+					$.setColor( "#201040" );
+					$.line( 0, y + offset, 320, y + offset );
+				}
+
+				const gridScroll = ( time * 30 ) % 20;
+				for( let x = -100; x < 420; x += 20 ) {
+					$.setColor( "#400080" );
+					$.line( 160, horizon, x + gridScroll, 180 );
+				}
+			}
+
+			function drawOrbitalDrones( time ) {
+				for( let i = 0; i < 8; i++ ) {
+					const angle = time * 1.5 + ( i * Math.PI ) / 4;
+					const rx = 55 + Math.cos( time + i ) * 15;
+					const ry = 22;
+					const x = 160 + Math.cos( angle ) * rx;
+					const y = 65 + Math.sin( angle ) * ry;
+
+					const color = i % 2 === 0 ? "#00FFFF" : "#FF20A0";
+					$.setColor( color );
+					$.circle( x, y, 2.5, color );
+				}
+			}
+
+			function drawStarfighter( time ) {
+				const x = 160 + Math.sin( time * 2.2 ) * 50;
+				const y = 140 + Math.cos( time * 3.1 ) * 5;
+
+				const flameLen = 4 + Math.sin( time * 40.0 ) * 3;
+				$.setColor( "#FF8000" );
+				$.line( x - 3, y + 6, x - 3, y + 6 + flameLen );
+				$.line( x + 3, y + 6, x + 3, y + 6 + flameLen );
+
+				$.setColor( "#00FFFF" );
+				$.line( x - 12, y + 4, x, y - 8 );
+				$.line( x, y - 8, x + 12, y + 4 );
+				$.line( x - 12, y + 4, x + 12, y + 4 );
+
+				$.setColor( "#FF0080" );
+				$.line( x - 6, y + 1, x, y - 4 );
+				$.line( x, y - 4, x + 6, y + 1 );
+			}
+
+			function drawShaderInfo( shader ) {
+				$.setBlend( "alpha" );
+				$.rect( 4, 4, 312, 31, "#000000CC" );
+				$.setBlend( "replace" );
+				$.setColor( "#FFFFFF" );
+				$.setPosPx( 9, 8 );
+				$.print( "DISPLAY SHADER: " + shader.name );
+				$.setPosPx( 200, 8 );
+				$.print( "HEAT WARP: " + gApplyHeatWarp );
+				$.setColor( "#00FFFF" );
+				$.setPosPx( 9, 20 );
+				$.print( shader.description );
+			}
+
+			function updateFps( now ) {
+				gFpsFrameCount += 1;
+				const elapsed = now - gFpsUpdateTime;
+
+				if( elapsed >= FPS_UPDATE_INTERVAL ) {
+					gFps = Math.round( ( gFpsFrameCount * 1000 ) / elapsed );
+					gFpsFrameCount = 0;
+					gFpsUpdateTime = now;
+				}
+			}
+
+			function drawFps() {
+				const label = "FPS: " + gFps;
+				const charWidth = 6;
+				const charHeight = 8;
+				const padding = 3;
+				const textWidth = label.length * charWidth;
+				const panelWidth = textWidth + padding * 2;
+				const panelHeight = charHeight + padding * 2;
+				const panelX = 320 - 4 - panelWidth;
+				const panelY = 180 - 8 - panelHeight;
+
+				$.setBlend( "alpha" );
+				$.rect( panelX, panelY, panelWidth, panelHeight, "#000000CC" );
+				$.setBlend( "replace" );
+				$.setColor( "#00FFFF" );
+				$.setPosPx( panelX + padding, panelY + padding );
+				$.print( label );
+			}
+
+			function drawShaderTimer( elapsed, shaderIndex ) {
+				const shaderTime = elapsed - shaderIndex * SHADER_DURATION;
+				const progress = shaderTime / SHADER_DURATION;
+				const width = Math.floor( 312 * Math.min( progress, 1 ) );
+				$.rect( 4, 174, 312, 2, "#200830" );
+
+				if( width > 0 ) {
+					$.rect( 4, 174, width, 2, "#FF00A0" );
+				}
+			}
+
+			function frame( now ) {
+				updateFps( now );
+				const elapsed = ( now - START_TIME ) / 1000;
+				const totalDuration = shaders.length * SHADER_DURATION;
+				const cycleTime = elapsed % totalDuration;
+				let shaderIndex = Math.floor( cycleTime / SHADER_DURATION );
+
+				if( shaderIndex < 0 ) {
+					shaderIndex = 0;
+				}
+				setShader( shaderIndex );
+
+				const shader = shaders[ shaderIndex ];
+				$.cls();
+
+				drawSpaceBackground( elapsed );
+				drawOrbitalDrones( elapsed );
+
+				if( gApplyHeatWarp ) {
+					const heatStrength = 0.005 + Math.sin( elapsed * 2.5 ) * 0.003;
+					$.applyShader( heatWarpShader, {
+						"u_strength": heatStrength
+					} );
+				}
+
+				drawStarfighter( elapsed );
+				drawShaderInfo( shader );
+				drawShaderTimer( cycleTime, shaderIndex );
+				drawFps();
+
+				requestAnimationFrame( frame );
+			}
+
+			requestAnimationFrame( frame );
+		} );
+	</script>
+</body>
+</html>
