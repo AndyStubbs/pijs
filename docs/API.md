@@ -6,6 +6,7 @@ This document lists all external API commands available in Pi.js.
 
 - [Core & Screen Management](#core--screen-management)
 - [Rendering](#rendering)
+- [Custom Shaders](#custom-shaders)
 - [Colors & Palettes](#colors--palettes)
 - [Basic Graphics](#basic-graphics)
 - [Advanced Graphics](#advanced-graphics)
@@ -43,6 +44,8 @@ Creates a new screen/canvas with specified properties.
   - `fromSize`: Object with `width` and `height` before resize
   - `toSize`: Object with `width` and `height` after resize
   - **Note**: Screens automatically resize when their container element resizes (using ResizeObserver)
+  - Drawing in the callback is supported. The logical framebuffer is already
+    resized; callback drawing is flushed and presented as part of that resize.
 
 ### `setScreen( screen )`
 Sets the active screen for drawing operations.
@@ -87,6 +90,87 @@ Sets the pen style and size for drawing operations.
 ### `setBlend( mode, noise )`
 Sets the blend mode for drawing operations.
 - **mode**: `"replace"` or `"alpha"`
+
+---
+
+## Custom Shaders
+
+Users supply fragment source only. The vertex stage is a built-in fullscreen
+quad (`in vec2 v_texCoord`, `out vec4 fragColor`). Source must include
+`#version 300 es`. At first real draw the shader must declare
+`uniform sampler2D u_texture`.
+
+**Built-in uniforms:** `u_texture` (`sampler2D`), `u_sourceSize` (`vec2`),
+`u_outputSize` (`vec2`), `u_time` (`float`), `u_frame` (`int`).
+
+**Resolution:**
+
+- FBO shaders: `u_sourceSize` = `u_outputSize` = logical screen size
+- Display shaders: `u_sourceSize` = logical FBO; `u_outputSize` =
+  `canvas.width` × `canvas.height` (backing store, not CSS)
+
+Custom uniforms are `number`, `[x, y]`, `[x, y, z]`, or `[x, y, z, w]`.
+Unknown names are ignored. Programs compile lazily on first use.
+
+### `createShader( fragmentSource, uniforms )`
+Creates a screen-independent shader. Returns a numeric handle.
+
+- **fragmentSource**: GLSL ES 3.00 fragment source
+- **uniforms**: Optional default custom uniform values
+
+```javascript
+const invert = $.createShader( `#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+out vec4 fragColor;
+void main() {
+	vec4 c = texture(u_texture, v_texCoord);
+	fragColor = vec4(1.0 - c.rgb, c.a);
+}` );
+```
+
+### `applyShader( shaderHandle, uniforms )`
+Queues an FBO (logical → logical) shader at the current draw position.
+Creates a batch break; does not run immediately. Later draws sit on top.
+Works on offscreen screens.
+
+- **shaderHandle**: Handle from `createShader`
+- **uniforms**: Optional per-call overrides
+
+```javascript
+$.rect( 10, 10, 40, 40, "red" );
+$.applyShader( invert );
+$.line( 0, 0, 50, 50 );
+```
+
+### `setDisplayShader( shaderHandle, uniforms )`
+Sets the final presentation shader. Does not modify the logical FBO.
+When active, canvas backing tracks CSS presentation size (clamped).
+`null` restores the default display path and logical backing.
+
+Does not run on offscreen screens (state may still be stored). Replaces
+the shader and resets persistent display overrides to the uniforms from
+this call.
+
+- **shaderHandle**: Handle from `createShader`, or `null` to clear
+- **uniforms**: Optional initial display overrides
+
+```javascript
+$.setDisplayShader( invert );
+$.setDisplayShader( null );
+```
+
+### `setDisplayShaderUniforms( uniforms )`
+Merges persistent display-shader overrides and re-presents the current
+logical FBO if the screen is eligible. Does not resize.
+
+- **uniforms**: Values to merge into the active display overrides
+
+```javascript
+$.setDisplayShader( tint, { "u_gain": 1 } );
+$.setDisplayShaderUniforms( { "u_gain": 0.5 } );
+```
 
 ---
 

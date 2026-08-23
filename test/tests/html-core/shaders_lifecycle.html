@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Shaders Lifecycle</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "shaders_lifecycle"
+			name = "shaders lifecycle"
+			lite = true
+			width = 640
+			height = 520
+			delay = 250
+			[[TOML_END]]
+		</script>
+		<script src="../../../build/pi.js"></script>
+		<link href="../reset.css" rel="stylesheet" />
+		<style>
+			html, body {
+				background-color: #222;
+				color: #eee;
+				margin: 0;
+				padding: 8px;
+			}
+			#log {
+				font-size: 11px;
+				white-space: pre;
+				line-height: 1.25;
+			}
+			.ok { color: #6f6; }
+			.fail { color: #f66; }
+			.box {
+				display: inline-block;
+				vertical-align: top;
+				margin: 4px;
+				background: #444;
+				position: relative;
+			}
+			#same { width: 320px; height: 200px; }
+			#scaled { width: 320px; height: 200px; }
+			#mfit { width: 160px; height: 100px; }
+			#ext { width: 160px; height: 80px; }
+			#hid { width: 160px; height: 100px; }
+			#hiduni { width: 80px; height: 50px; }
+			#csschg { width: 200px; height: 200px; }
+			#uniflush { width: 80px; height: 50px; }
+			#cbonly { width: 200px; height: 200px; }
+			#edetail { width: 80px; height: 80px; }
+		</style>
+	</head>
+<body>
+	<div id="log"></div>
+	<div class="box" id="same"></div>
+	<div class="box" id="scaled"></div>
+	<div class="box" id="mfit"></div>
+	<div class="box" id="ext"></div>
+	<div class="box" id="hid"></div>
+	<div class="box" id="hiduni"></div>
+	<div class="box" id="csschg"></div>
+	<div class="box" id="uniflush"></div>
+	<div class="box" id="cbonly"></div>
+	<div class="box" id="edetail"></div>
+<script>
+	const invertSrc = `
+#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+out vec4 fragColor;
+void main() {
+	vec4 c = texture(u_texture, v_texCoord);
+	fragColor = vec4(1.0 - c.rgb, c.a);
+}`.trim();
+
+	const tintSrc = `
+#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+uniform vec4 u_tint;
+uniform float u_gain;
+out vec4 fragColor;
+void main() {
+	vec4 c = texture(u_texture, v_texCoord);
+	fragColor = vec4(c.rgb * u_tint.rgb * u_gain, c.a);
+}`.trim();
+
+	const logEl = document.getElementById( "log" );
+	let failed = 0;
+
+	function check( name, cond ) {
+		if( cond ) {
+			return;
+		}
+		failed += 1;
+		const line = document.createElement( "div" );
+		line.className = "fail";
+		line.textContent = "FAIL " + name;
+		logEl.appendChild( line );
+	}
+
+	function waitMs( ms ) {
+		return new Promise( ( resolve ) => {
+			setTimeout( resolve, ms );
+		} );
+	}
+
+	function watchBacking( canvas ) {
+		let writes = 0;
+		const descW = Object.getOwnPropertyDescriptor(
+			HTMLCanvasElement.prototype, "width"
+		);
+		const descH = Object.getOwnPropertyDescriptor(
+			HTMLCanvasElement.prototype, "height"
+		);
+		Object.defineProperty( canvas, "width", {
+			"configurable": true,
+			"get": function() {
+				return descW.get.call( this );
+			},
+			"set": function( value ) {
+				writes += 1;
+				descW.set.call( this, value );
+			}
+		} );
+		Object.defineProperty( canvas, "height", {
+			"configurable": true,
+			"get": function() {
+				return descH.get.call( this );
+			},
+			"set": function( value ) {
+				writes += 1;
+				descH.set.call( this, value );
+			}
+		} );
+		return {
+			"writes": function() {
+				return writes;
+			},
+			"reset": function() {
+				writes = 0;
+			},
+			"restore": function() {
+				delete canvas.width;
+				delete canvas.height;
+			}
+		};
+	}
+
+	function watchPresents( canvas ) {
+		const gl = canvas.getContext( "webgl2" );
+		const orig = gl.drawArrays.bind( gl );
+		let count = 0;
+		gl.drawArrays = function( mode, first, n ) {
+			count += 1;
+			return orig( mode, first, n );
+		};
+		return {
+			"count": function() {
+				return count;
+			},
+			"reset": function() {
+				count = 0;
+			}
+		};
+	}
+
+	function drawScene( api ) {
+		api.cls();
+		api.setColor( "#FF0000" );
+		api.rect( 0, 0, api.width(), api.height(), "#FF0000" );
+		api.setColor( "#00FF00" );
+		api.rect( 8, 8, 16, 16,  "#00FF00" );
+	}
+
+	function readCanvasPixel( canvas, x, y ) {
+		const gl = canvas.getContext( "webgl2" );
+		const buf = new Uint8Array( 4 );
+		gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+		const glY = canvas.height - 1 - y;
+		gl.readPixels( x, glY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf );
+		return { "r": buf[ 0 ], "g": buf[ 1 ], "b": buf[ 2 ], "a": buf[ 3 ] };
+	}
+
+	$.ready( async function() {
+		const invert = $.createShader( invertSrc );
+		const tintA = $.createShader( tintSrc, {
+			"u_tint": [ 1, 0, 0, 1 ],
+			"u_gain": 1
+		} );
+		const tintB = $.createShader( tintSrc, {
+			"u_tint": [ 0, 0, 1, 1 ],
+			"u_gain": 1
+		} );
+
+		// 1. Activate with identical logical/CSS dimensions
+		const same = $.screen( "320x200", "same" );
+		drawScene( same );
+		const sameCanvas = same.canvas();
+		check(
+			"same initial backing 320x200",
+			sameCanvas.width === 320 && sameCanvas.height === 200
+		);
+		const sameWatch = watchBacking( sameCanvas );
+		same.setDisplayShader( invert );
+		check(
+			"activate keeps backing 320x200",
+			sameCanvas.width === 320 && sameCanvas.height === 200
+		);
+		check( "activate does not rewrite backing", sameWatch.writes() === 0 );
+		check(
+			"activate logical size unchanged",
+			same.width() === 320 && same.height() === 200
+		);
+
+		// 2. Clear with identical dimensions
+		sameWatch.reset();
+		same.setDisplayShader( null );
+		check(
+			"clear keeps backing 320x200",
+			sameCanvas.width === 320 && sameCanvas.height === 200
+		);
+		check( "clear does not rewrite backing", sameWatch.writes() === 0 );
+		sameWatch.restore();
+
+		// 3/4/5. Replace shader, repeated set, uniform reset
+		const scaled = $.screen( "80x50", "scaled" );
+		drawScene( scaled );
+		const scaledCanvas = scaled.canvas();
+		check(
+			"scaled default backing is logical",
+			scaledCanvas.width === 80 && scaledCanvas.height === 50
+		);
+
+		const overridesA = { "u_tint": [ 1, 1, 0, 1 ], "u_gain": 0.5 };
+		scaled.setDisplayShader( tintA, overridesA );
+		overridesA.u_gain = 9;
+
+		scaled.setDisplayShaderUniforms( { "u_gain": 0.25 } );
+		const beforeReplaceW = scaledCanvas.width;
+		const beforeReplaceH = scaledCanvas.height;
+		const logicalW = scaled.width();
+		const logicalH = scaled.height();
+		scaled.setDisplayShader( tintB, { "u_tint": [ 0, 1, 1, 1 ] } );
+		check(
+			"replace keeps logical size",
+			scaled.width() === logicalW && scaled.height() === logicalH
+		);
+		check(
+			"replace keeps backing",
+			scaledCanvas.width === beforeReplaceW &&
+			scaledCanvas.height === beforeReplaceH
+		);
+
+		const repeatWatch = watchPresents( scaledCanvas );
+		repeatWatch.reset();
+		scaled.setDisplayShader( tintB, { "u_tint": [ 0, 1, 1, 1 ] } );
+		check( "repeated setDisplayShader re-presents", repeatWatch.count() > 0 );
+
+		check(
+			"display backing tracks CSS when scaled",
+			scaledCanvas.width === parseInt( scaledCanvas.style.width, 10 ) &&
+			scaledCanvas.height === parseInt( scaledCanvas.style.height, 10 )
+		);
+
+		// 6. Uniform-only does not resize
+		const uniW = scaledCanvas.width;
+		const uniH = scaledCanvas.height;
+		scaled.setDisplayShaderUniforms( { "u_gain": 0.8 } );
+		check(
+			"uniform-only keeps backing",
+			scaledCanvas.width === uniW && scaledCanvas.height === uniH
+		);
+
+		// 7/8. Backing toggle and default viewport after clear
+		scaled.setDisplayShader( invert );
+		const presentW = scaledCanvas.width;
+		const presentH = scaledCanvas.height;
+		check(
+			"custom display backing != logical",
+			presentW !== 80 || presentH !== 50
+		);
+		scaled.setDisplayShader( null );
+		check(
+			"clear restores logical backing",
+			scaledCanvas.width === 80 && scaledCanvas.height === 50
+		);
+		check(
+			"default viewport matches backing",
+			scaledCanvas.width === 80 && scaledCanvas.height === 50
+		);
+
+		// 9. Presentation-only resize
+		scaled.setDisplayShader( invert );
+		const fboW = scaled.width();
+		const fboH = scaled.height();
+		document.getElementById( "scaled" ).style.width = "240px";
+		document.getElementById( "scaled" ).style.height = "150px";
+		await waitMs( 80 );
+		check(
+			"presentation resize keeps FBO",
+			scaled.width() === fboW && scaled.height() === fboH
+		);
+		check(
+			"presentation resize updates backing",
+			scaledCanvas.width === parseInt( scaledCanvas.style.width, 10 )
+		);
+
+		// 10/12. CSS change without backing change (x-mode, no display shader)
+		const cssBox = document.getElementById( "csschg" );
+		const cssScreen = $.screen( "80x50", "csschg" );
+		drawScene( cssScreen );
+		const cssCanvas = cssScreen.canvas();
+		const cssWatch = watchBacking( cssCanvas );
+		const presentWatch = watchPresents( cssCanvas );
+		await waitMs( 30 );
+		cssWatch.reset();
+		presentWatch.reset();
+		const oldStyleW = cssCanvas.style.width;
+		const oldBackW = cssCanvas.width;
+		const oldBackH = cssCanvas.height;
+		cssBox.style.width = "240px";
+		cssBox.style.height = "220px";
+		await waitMs( 80 );
+		check( "css style changed", cssCanvas.style.width !== oldStyleW );
+		check(
+			"css resize keeps backing",
+			cssCanvas.width === oldBackW && cssCanvas.height === oldBackH
+		);
+		check( "css resize does not assign backing", cssWatch.writes() === 0 );
+		check( "css resize does not present", presentWatch.count() === 0 );
+		cssWatch.restore();
+
+		// 11. Extend-mode logical resize with display shader
+		const ext = $.screen( "40e25", "ext" );
+		drawScene( ext );
+		ext.setDisplayShader( invert );
+		const extLogical = ext.width();
+		document.getElementById( "ext" ).style.width = "240px";
+		document.getElementById( "ext" ).style.height = "120px";
+		await waitMs( 80 );
+		check( "extend mode can change logical size", ext.width() !== extLogical );
+
+		// 13. Hidden canvas preserves mode and does not resize
+		const hid = $.screen( "80x50", "hid" );
+		drawScene( hid );
+		const hidCanvas = hid.canvas();
+		const hidW = hidCanvas.width;
+		const hidH = hidCanvas.height;
+		document.getElementById( "hid" ).style.display = "none";
+		hid.setDisplayShader( invert );
+		check(
+			"hidden setDisplayShader keeps backing",
+			hidCanvas.width === hidW && hidCanvas.height === hidH
+		);
+		document.getElementById( "hid" ).style.display = "block";
+		document.getElementById( "hid" ).style.width = "200px";
+		await waitMs( 80 );
+		check(
+			"shown resize applies presentation backing",
+			hidCanvas.width === parseInt( hidCanvas.style.width, 10 )
+		);
+
+		// 14. FBO order: later draw not processed by shader
+		const off = $.screen( "80x50", null, true );
+		off.setColor( "#FF0000" );
+		off.cls();
+		off.rect( 0, 0, 80, 50, "#FF0000" );
+		off.applyShader( invert );
+		off.setColor( "#00FF00" );
+		off.rect( 0, 0, 10, 10,  "#00FF00" );
+		const inverted = off.getPixel( 40, 25 );
+		const overlay = off.getPixel( 4, 4 );
+		check(
+			"FBO invert processed fill",
+			inverted.r < 20 && inverted.g > 200 && inverted.b > 200
+		);
+		check(
+			"FBO later draw not inverted",
+			overlay.r < 20 && overlay.g > 200 && overlay.b < 20
+		);
+
+		// 15. Offscreen display shader does not resize shared canvas
+		const shared = off.canvas();
+		const sharedW = shared.width;
+		const sharedH = shared.height;
+		off.setDisplayShader( invert );
+		check(
+			"offscreen display does not resize shared canvas",
+			shared.width === sharedW && shared.height === sharedH
+		);
+		const afterDisplay = off.getPixel( 40, 25 );
+		check(
+			"offscreen display does not change FBO",
+			afterDisplay.r === inverted.r && afterDisplay.g === inverted.g
+		);
+
+		// 16. Uniform update flushes queued drawing into the default FB
+		const passSrc = `
+#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+uniform float u_gain;
+out vec4 fragColor;
+void main() {
+	vec4 c = texture(u_texture, v_texCoord);
+	fragColor = vec4(c.rgb * u_gain, c.a);
+}`.trim();
+		const pass = $.createShader( passSrc, { "u_gain": 1 } );
+		const uniFlush = $.screen( "80x50", "uniflush" );
+		uniFlush.cls();
+		uniFlush.setColor( "#FF0000" );
+		uniFlush.rect( 0, 0, 80, 50, "#FF0000" );
+		uniFlush.setDisplayShader( pass, { "u_gain": 1 } );
+		uniFlush.setColor( "#00FFFF" );
+		uniFlush.rect( 0, 0, 10, 10, "#00FFFF" );
+		uniFlush.setDisplayShaderUniforms( { "u_gain": 1 } );
+		const queued = readCanvasPixel( uniFlush.canvas(), 2, 2 );
+		check(
+			"uniform update presents queued drawing",
+			queued.r < 20 && queued.g > 200 && queued.b > 200
+		);
+
+		// 17. Hidden uniform update does not present; later present uses latest
+		const hidUni = $.screen( "80x50", "hiduni" );
+		hidUni.cls();
+		hidUni.setColor( "#FF0000" );
+		hidUni.rect( 0, 0, 80, 50, "#FF0000" );
+		hidUni.setDisplayShader( pass, { "u_gain": 1 } );
+		const hidUniCanvas = hidUni.canvas();
+		const hidUniWatch = watchBacking( hidUniCanvas );
+		const hidUniPresent = watchPresents( hidUniCanvas );
+		document.getElementById( "hiduni" ).style.display = "none";
+		hidUniWatch.reset();
+		hidUniPresent.reset();
+		hidUni.setDisplayShaderUniforms( { "u_gain": 0 } );
+		check( "hidden uniforms do not present", hidUniPresent.count() === 0 );
+		check( "hidden uniforms do not rewrite backing", hidUniWatch.writes() === 0 );
+		document.getElementById( "hiduni" ).style.display = "block";
+		document.getElementById( "hiduni" ).style.width = "160px";
+		document.getElementById( "hiduni" ).style.height = "100px";
+		await waitMs( 80 );
+		const afterShow = readCanvasPixel( hidUniCanvas, 4, 4 );
+		check(
+			"shown present uses latest uniforms",
+			afterShow.r < 20 && afterShow.g < 20 && afterShow.b < 20
+		);
+		hidUniWatch.restore();
+
+		// 18. Detached canvas uniform update does not present
+		const detachBox = document.createElement( "div" );
+		detachBox.style.width = "80px";
+		detachBox.style.height = "50px";
+		document.body.appendChild( detachBox );
+		const detachScreen = $.screen( "80x50", detachBox );
+		detachScreen.cls();
+		detachScreen.setDisplayShader( pass, { "u_gain": 1 } );
+		const detachCanvas = detachScreen.canvas();
+		const detachPresent = watchPresents( detachCanvas );
+		detachBox.removeChild( detachCanvas );
+		detachPresent.reset();
+		detachScreen.setDisplayShaderUniforms( { "u_gain": 0.2 } );
+		check( "detached uniforms do not present", detachPresent.count() === 0 );
+		document.body.removeChild( detachBox );
+
+		// 19. E-mode callback draws on resized FBO near the new edge
+		const edgeBox = document.getElementById( "edetail" );
+		const edgeScreen = $.screen( {
+			"aspect": "40e25",
+			"container": edgeBox,
+			"resizeCallback": function( screen ) {
+				screen.setColor( "#00FFFF" );
+				screen.rect(
+					screen.width() - 4, screen.height() - 4, 4, 4, "#00FFFF"
+				);
+			}
+		} );
+		edgeScreen.cls();
+		edgeScreen.setColor( "#330000" );
+		edgeScreen.rect(
+			0, 0, edgeScreen.width(), edgeScreen.height(), "#330000"
+		);
+		edgeBox.style.width = "240px";
+		edgeBox.style.height = "120px";
+		await waitMs( 80 );
+		const edgeX = edgeScreen.width() - 2;
+		const edgeY = edgeScreen.height() - 2;
+		const edgePx = edgeScreen.getPixel( edgeX, edgeY );
+		check(
+			"e-mode callback drew on new FBO edge",
+			edgePx.r < 20 && edgePx.g > 200 && edgePx.b > 200
+		);
+
+		// 20. Callback-only CSS offset change still presents callback drawing
+		const cbBox = document.getElementById( "cbonly" );
+		const cbScreen = $.screen( {
+			"aspect": "80x50",
+			"container": cbBox,
+			"resizeCallback": function( screen ) {
+				screen.setColor( "#FFFFFF" );
+				screen.rect( 0, 0, 8, 8, "#FFFFFF" );
+			}
+		} );
+		cbScreen.cls();
+		cbScreen.setColor( "#440000" );
+		cbScreen.rect( 0, 0, 80, 50, "#440000" );
+		const cbCanvas = cbScreen.canvas();
+		const cbWatch = watchBacking( cbCanvas );
+		const cbPresent = watchPresents( cbCanvas );
+		await waitMs( 30 );
+		const cbBackW = cbCanvas.width;
+		const cbBackH = cbCanvas.height;
+		cbWatch.reset();
+		cbPresent.reset();
+		cbBox.style.width = "240px";
+		cbBox.style.height = "220px";
+		await waitMs( 80 );
+		check(
+			"callback-only resize keeps backing",
+			cbCanvas.width === cbBackW && cbCanvas.height === cbBackH
+		);
+		check( "callback-only resize does not assign backing", cbWatch.writes() === 0 );
+		check( "callback-only resize presents", cbPresent.count() > 0 );
+		const marker = readCanvasPixel( cbCanvas, 2, 2 );
+		check(
+			"callback-only present shows marker",
+			marker.r > 200 && marker.g > 200 && marker.b > 200
+		);
+		cbWatch.restore();
+
+		const summary = document.createElement( "div" );
+		if( failed === 0 ) {
+			summary.className = "ok";
+			summary.textContent = "ALL CHECKS PASSED";
+		} else {
+			summary.className = "fail";
+			summary.textContent = failed + " CHECKS FAILED";
+		}
+		logEl.insertBefore( summary, logEl.firstChild );
+	} );
+</script>
+</body>
+</html>

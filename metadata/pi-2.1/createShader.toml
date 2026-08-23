@@ -1,0 +1,44 @@
+title = "createShader"
+category = "shaders"
+isScreen = false
+summary = "Creates a custom fragment shader and returns a handle."
+description = """
+Creates a screen-independent shader from GLSL ES 3.00 fragment source. The
+vertex stage is built-in (fullscreen quad, v_texCoord). The WebGL program is
+compiled lazily on first use.
+
+The fragment source must include "#version 300 es". At first real draw the
+shader must declare uniform sampler2D u_texture. Built-in uniforms, if
+declared: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2),
+u_time (float), u_frame (int).
+
+The second argument is an optional map of default custom uniform values
+(number, [x, y], [x, y, z], or [x, y, z, w]). Unknown uniform names are
+ignored.
+"""
+example = """
+const invert = $.createShader( `#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+out vec4 fragColor;
+void main() {
+	vec4 c = texture(u_texture, v_texCoord);
+	fragColor = vec4(1.0 - c.rgb, c.a);
+}` );
+"""
+
+[[parameters]]
+name = "fragmentSource"
+type = "string"
+description = "GLSL ES 3.00 fragment shader source. Must include \"#version 300 es\"."
+
+[[parameters]]
+name = "uniforms"
+type = "object"
+description = "Optional default custom uniform values. Keys are uniform names."
+optional = true
+
+[[returns]]
+type = "number"
+description = "Shader handle id for applyShader or setDisplayShader."

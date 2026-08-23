@@ -31,6 +31,7 @@ Built on top of **WebGL 2**, Pi.js features:
 - Bitmap fonts and text rendering
 - Paint/fill operations
 - Path drawing
+- Custom fragment shaders for in-pipeline FBO effects and final display/upscale effects
 
 ### Sound
 - WebAudio-based sound system

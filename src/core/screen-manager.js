@@ -71,6 +71,15 @@ let m_offscreenCanvas = null;
 export { m_activeScreenData as activeScreenData };
 export { m_screenCanvasMap as screenCanvasMap };
 
+/**
+ * Initialize screen management.
+ *
+ * Creates the shared ResizeObserver, registers screen commands, and attaches
+ * removeScreen on the global API and each new screen.
+ *
+ * @param {Object} api - Global Pi.js API object
+ * @returns {void}
+ */
 export function init( api ) {
 
 	// TODO-LATER: Add matchMedia to watch for DPR changes
@@ -133,22 +142,62 @@ function registerCommands() {
 	g_commands.addCommand( "canvas", canvasCmd, true, [] );
 }
 
+/**
+ * Register a value cloned onto every new screenData object.
+ *
+ * Used by renderer and API modules at init for per-screen state.
+ *
+ * @param {string} name - Property name on screenData
+ * @param {*} val - Default value to clone onto each new screen
+ * @returns {void}
+ */
 export function addScreenDataItem( name, val ) {
 	m_screenDataItems[ name ] = val;
 }
 
+/**
+ * Register a getter that supplies a per-screen default.
+ *
+ * fn() is called for each new screen and the result is cloned onto
+ * screenData. Used for per-screen defaults such as palette.
+ *
+ * @param {string} name - Property name on screenData
+ * @param {Function} fn - Getter that returns the default value
+ * @returns {void}
+ */
 export function addScreenDataItemGetter( name, fn ) {
 	m_screenDataItemGetters.push( { name, fn } );
 }
 
+/**
+ * Register a function to run after a screen is created.
+ *
+ * @param {Function} fn - Function called with the new screenData
+ * @returns {void}
+ */
 export function addScreenInitFunction( fn ) {
 	m_screenDataInitFunctions.push( fn );
 }
 
+/**
+ * Register a function to run before a screen is removed.
+ *
+ * @param {Function} fn - Function called with the screenData being removed
+ * @returns {void}
+ */
 export function addScreenCleanupFunction( fn ) {
 	m_screenDataCleanupFunctions.push( fn );
 }
 
+/**
+ * Get the active screen data object.
+ *
+ * Throws NO_ACTIVE_SCREEN unless isScreenOptional is true.
+ *
+ * @param {string} fnName - Calling command name for the error message
+ * @param {boolean} [isScreenOptional] - Allow null when no screen is active
+ * @returns {Object|null} Active screen data, or null if optional and none
+ */
 export function getActiveScreen( fnName, isScreenOptional ) {
 	if( m_activeScreenData === null && !isScreenOptional ) {
 		const error = new Error(
@@ -162,6 +211,15 @@ export function getActiveScreen( fnName, isScreenOptional ) {
 	return m_activeScreenData;
 }
 
+/**
+ * Get screen data by screen id.
+ *
+ * Throws INVALID_SCREEN_ID if the id is not found.
+ *
+ * @param {string} fnName - Calling command name for the error message
+ * @param {number} screenId - Screen id to look up
+ * @returns {Object} Screen data object
+ */
 export function getScreenData( fnName, screenId ) {
 	if( !m_screens[ screenId ] ) {
 		const error = new Error( `${fnName}: Invalid screen id.` );
@@ -190,6 +248,23 @@ export function getAllScreensData() {
  ***************************************************************************************************/
 
 
+/**
+ * Create a WebGL2 screen and set it as the active screen.
+ *
+ * Aspect format is width + splitter + height:
+ * - x: exact pixel size (e.g. "320x200")
+ * - e: extend to fill the container
+ * - m: scale by integer multiples of the target size
+ *
+ * Offscreen screens require exact pixel dimensions (x).
+ *
+ * @param {Object} options - Screen options
+ * @param {string} options.aspect - Aspect string (WxH, WeH, or WmH)
+ * @param {string|HTMLElement} [options.container] - Container element or id
+ * @param {boolean} [options.isOffscreen] - Create an offscreen screen
+ * @param {Function} [options.resizeCallback] - Called on container resize
+ * @returns {Object} Screen API object with id and graphics commands
+ */
 function screen( options ) {
 
 	// Validate resize callback
@@ -418,6 +493,11 @@ function validateDimensions( width, height ) {
  **************************************************************************************************/
 
 
+/**
+ * Remove every screen.
+ *
+ * @returns {void}
+ */
 function removeAllScreens() {
 	const allScreenDatas = getAllScreensData();
 	for( const screenData of allScreenDatas ) {
@@ -425,6 +505,15 @@ function removeAllScreens() {
 	}
 }
 
+/**
+ * Tear down one screen and free its resources.
+ *
+ * Runs cleanup hooks, stubs API methods, unobserves the container when
+ * unused, and clears screenData references.
+ *
+ * @param {Object} screenData - Screen data object to remove
+ * @returns {void}
+ */
 function removeScreen( screenData ) {
 
 	// Get the id for reference
@@ -511,6 +600,15 @@ function removeScreen( screenData ) {
 	delete m_screens[ screenId ];
 }
 
+/**
+ * Set the active screen from an id or screen API object.
+ *
+ * Rebuilds the screen API if the active screen changes.
+ *
+ * @param {Object} options - Command options
+ * @param {number|Object} options.screen - Screen id or screen API object
+ * @returns {void}
+ */
 function setScreen( options ) {
 	const screenObj = options.screen;
 	let screenId;
@@ -536,6 +634,13 @@ function setScreen( options ) {
 	}
 }
 
+/**
+ * Get a screen API object by screen id.
+ *
+ * @param {Object} options - Command options
+ * @param {number} options.screenId - Screen id to retrieve
+ * @returns {Object} Screen API object
+ */
 function getScreen( options ) {
 	const screenId = g_utils.getInt( options.screenId, null );
 	if( screenId === null || screenId < 0 ) {
@@ -552,6 +657,11 @@ function getScreen( options ) {
 	return screen.api;
 }
 
+/**
+ * Get all screen API objects.
+ *
+ * @returns {Array<Object>} Array of screen API objects
+ */
 function getAllScreens() {
 	const screens = [];
 	for( const id in m_screens ) {
@@ -560,14 +670,35 @@ function getAllScreens() {
 	return screens;
 }
 
+/**
+ * Get the logical framebuffer width of the screen.
+ *
+ * @param {Object} screenData - Screen data object
+ * @returns {number} Screen width in pixels
+ */
 function widthCmd( screenData ) {
 	return screenData.width;
 }
 
+/**
+ * Get the logical framebuffer height of the screen.
+ *
+ * @param {Object} screenData - Screen data object
+ * @returns {number} Screen height in pixels
+ */
 function heightCmd( screenData ) {
 	return screenData.height;
 }
 
+/**
+ * Get the HTML canvas for the screen.
+ *
+ * Offscreen screens share one canvas used to draw to textures. A warning
+ * is logged because changes to that canvas can affect other screens.
+ *
+ * @param {Object} screenData - Screen data object
+ * @returns {HTMLCanvasElement} Canvas element for the screen
+ */
 function canvasCmd( screenData ) {
 	if( screenData.isOffscreen ) {
 		console.warn(
@@ -586,56 +717,139 @@ function canvasCmd( screenData ) {
  ***************************************************************************************************/
 
 
-function resizeScreen( screenData, isInit ) {
+/**
+ * True when the screen can use existing screen-manager sizing and presentation.
+ *
+ * Offscreen, hidden, and detached canvases are ineligible. forcePresent must
+ * not bypass this check.
+ *
+ * @param {Object} screenData - Screen data object
+ * @returns {boolean} True if sizing and presentation may run
+ */
+function canSizeAndPresent( screenData ) {
+	if( screenData.isOffscreen ) {
+		return false;
+	}
+	if( !screenData.canvas || screenData.canvas.offsetParent === null ) {
+		return false;
+	}
+	return true;
+}
 
-	// Skip if screen is not visible or should not be resized
-	if( screenData.isOffscreen || screenData.canvas.offsetParent === null ) {
+/**
+ * Flush pending batches and present if the screen is currently eligible.
+ *
+ * Does not resize or rewrite canvas dimensions.
+ *
+ * @param {Object} screenData - Screen data object
+ * @returns {void}
+ */
+export function presentCurrentScreen( screenData ) {
+	if( !canSizeAndPresent( screenData ) ) {
+		return;
+	}
+	g_renderer.flushBatches( screenData );
+	g_renderer.displayToCanvas( screenData );
+}
+
+/**
+ * Recalculate CSS, logical, and backing size. Resize FBOs and/or present.
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {boolean} [forcePresent=false] - Present even if sizes did not change
+ * @returns {void}
+ */
+export function refreshScreenSize( screenData, forcePresent ) {
+	if( forcePresent == null ) {
+		forcePresent = false;
+	}
+
+	if( !canSizeAndPresent( screenData ) ) {
 		return;
 	}
 
-	// Get the previous size (if stored from last time)
-	let fromSize = screenData.previousOffsetSize;
+	const flags = applyScreenSizing( screenData );
+	applyResizeConsequences( screenData, flags, forcePresent );
+}
 
-	// Track previous screenData dimensions for "e"xtend mode
-	const lastScreenWidth = screenData.width;
-	const lastScreenHeight = screenData.height;
+function resizeScreen( screenData, isInit ) {
+	if( !canSizeAndPresent( screenData ) ) {
+		return;
+	}
+	const flags = applyScreenSizing( screenData );
+	if( !isInit ) {
+		applyResizeConsequences( screenData, flags, false );
+	}
+}
 
-	// Update the canvas to the new size
+/**
+ * Apply fit/aspect sizing and update CSS layout. Does not resize FBOs,
+ * invoke resizeCallback, or present.
+ *
+ * @param {Object} screenData - Screen data object
+ * @returns {{ logicalChanged: boolean, backingChanged: boolean,
+ * 	oldWidth: number|null, oldHeight: number|null,
+ * 	fromSize: Object|null, toSize: Object }} Sizing result
+ */
+function applyScreenSizing( screenData ) {
+	const fromSize = screenData.previousOffsetSize;
 	const size = getSize( screenData.container );
-	setCanvasSize( screenData, size.width, size.height );
+	const flags = setCanvasSize( screenData, size.width, size.height );
 
-	// Resize the client rectangle
 	screenData.clientRect = screenData.canvas.getBoundingClientRect();
 
-	// Get the new size after resize
 	const toSize = {
 		"width": screenData.canvas.offsetWidth,
 		"height": screenData.canvas.offsetHeight
 	};
 
-	if( !isInit ) {
-
-		// Handle "e"xtend mode resize the renderer
-		if( lastScreenWidth !== screenData.width || lastScreenHeight !== screenData.height ) {
-			g_renderer.resizeScreen( screenData, lastScreenWidth, lastScreenHeight );
-
-			// Redraw FBO to canvas (fix issue where canvas was blank after resize for extend mode)
-			g_renderer.displayToCanvas( screenData );
-		}
-	}
-	
-	// Send the resize data to the client
-	if( screenData.resizeCallback ) {
-		if(
-			fromSize !== null &&
-			( fromSize.width !== toSize.width || fromSize.height !== toSize.height )
-		) {
-			screenData.resizeCallback( screenData.api, fromSize, toSize );
-		}
-	}
-
-	// Store the new size for next time
 	screenData.previousOffsetSize = toSize;
+	return {
+		"logicalChanged": flags.logicalChanged,
+		"backingChanged": flags.backingChanged,
+		"oldWidth": flags.oldWidth,
+		"oldHeight": flags.oldHeight,
+		"fromSize": fromSize,
+		"toSize": toSize
+	};
+}
+
+/**
+ * Apply FBO resize, resize callback, optional flush, and a single present.
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {{ logicalChanged: boolean, backingChanged: boolean,
+ * 	oldWidth: number|null, oldHeight: number|null,
+ * 	fromSize: Object|null, toSize: Object }} flags - Sizing result
+ * @param {boolean} forcePresent - Present even if sizes did not change
+ * @returns {void}
+ */
+function applyResizeConsequences( screenData, flags, forcePresent ) {
+	if( flags.logicalChanged ) {
+		g_renderer.resizeScreen( screenData, flags.oldWidth, flags.oldHeight );
+	}
+
+	let callbackRan = false;
+	const fromSize = flags.fromSize;
+	const toSize = flags.toSize;
+	if(
+		screenData.resizeCallback &&
+		fromSize !== null &&
+		( fromSize.width !== toSize.width || fromSize.height !== toSize.height )
+	) {
+		screenData.resizeCallback( screenData.api, fromSize, toSize );
+		callbackRan = true;
+	}
+
+	if( callbackRan ) {
+		g_renderer.flushBatches( screenData );
+	}
+
+	if(
+		flags.logicalChanged || flags.backingChanged || forcePresent || callbackRan
+	) {
+		g_renderer.displayToCanvas( screenData );
+	}
 }
 
 function setCanvasSize( screenData, maxWidth, maxHeight ) {
@@ -645,6 +859,11 @@ function setCanvasSize( screenData, maxWidth, maxHeight ) {
 	let height = aspectData.height;
 	const splitter = aspectData.splitter;
 	let newCssWidth, newCssHeight;
+
+	const oldWidth = screenData.width;
+	const oldHeight = screenData.height;
+	const oldBackingWidth = canvas.width;
+	const oldBackingHeight = canvas.height;
 
 	// If set size to multiple or extend
 	if( splitter === "m" || splitter === "e" ) {
@@ -681,24 +900,49 @@ function setCanvasSize( screenData, maxWidth, maxHeight ) {
 		}
 	}
 
-	// Set screen data width/height
+	const logicalChanged = oldWidth !== width || oldHeight !== height;
 	screenData.width = width;
 	screenData.height = height;
 
-	// Set the size
+	// CSS presentation size (DOM layout only)
 	canvas.style.width = Math.floor( newCssWidth ) + "px";
 	canvas.style.height = Math.floor( newCssHeight ) + "px";
 
-	// Set the margins
 	canvas.style.marginLeft = Math.floor( ( maxWidth - newCssWidth ) / 2 ) + "px";
 	canvas.style.marginTop = Math.floor( ( maxHeight - newCssHeight ) / 2 ) + "px";
 
-	// Set the actual canvas pixel dimensions
-	// TODO-LATER: Change size to css size and use custom upscaling - needs testing
-	// canvas.width = Math.min( Math.floor( newCssWidth ), MAX_CANVAS_DIMENSION );
-	// canvas.height = Math.min( Math.floor( newCssHeight ), MAX_CANVAS_DIMENSION );
-	canvas.width = Math.min( width, MAX_CANVAS_DIMENSION );
-	canvas.height = Math.min( height, MAX_CANVAS_DIMENSION );
+	let desiredBackingWidth;
+	let desiredBackingHeight;
+	if( screenData.renderToDisplaySize ) {
+		desiredBackingWidth = Math.min(
+			Math.floor( newCssWidth ), MAX_CANVAS_DIMENSION
+		);
+		desiredBackingHeight = Math.min(
+			Math.floor( newCssHeight ), MAX_CANVAS_DIMENSION
+		);
+	} else {
+		desiredBackingWidth = Math.min( width, MAX_CANVAS_DIMENSION );
+		desiredBackingHeight = Math.min( height, MAX_CANVAS_DIMENSION );
+	}
+
+	const backingChanged = (
+		oldBackingWidth !== desiredBackingWidth ||
+		oldBackingHeight !== desiredBackingHeight
+	);
+
+	if( canvas.width !== desiredBackingWidth ) {
+		canvas.width = desiredBackingWidth;
+	}
+	if( canvas.height !== desiredBackingHeight ) {
+		canvas.height = desiredBackingHeight;
+	}
+
+	return {
+		"logicalChanged": logicalChanged,
+		"backingChanged": backingChanged,
+		"oldWidth": oldWidth,
+		"oldHeight": oldHeight
+	};
 }
 
 function getSize( element ) {

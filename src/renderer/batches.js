@@ -452,6 +452,7 @@ function runShaderPass( screenData, drawOrderItem ) {
 	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.bufferFBO );
 	gl.viewport( 0, 0, w, h );
 	gl.disable( gl.BLEND );
+	gl.disable( gl.SCISSOR_TEST );
 
 	gl.useProgram( program );
 	gl.bindVertexArray( screenData.displayQuadVao );
@@ -789,34 +790,73 @@ function resetBatch( batch ) {
 export function displayToCanvas( screenData ) {
 	
 	const gl = screenData.gl;
-	const program = screenData.displayProgram;
-	const locations = screenData.displayLocations;
+	const useCustom = !screenData.isOffscreen && !!screenData.displayShaderHandle;
+
+	let program;
+	let locations;
+	let customUniforms = null;
+
+	if( useCustom ) {
+		const handle = screenData.displayShaderHandle;
+		const cache = g_shaders.getOrCreateCustomShaderProgram( screenData, handle );
+		if( cache.locations.texture === null ) {
+			const error = new Error(
+				"setDisplayShader: Missing required uniform u_texture in shader."
+			);
+			error.code = "MISSING_U_TEXTURE";
+			throw error;
+		}
+		program = cache.program;
+		locations = cache.locations;
+		customUniforms = {
+			...( handle.uniforms ?? {} ),
+			...( screenData.displayShaderUniforms ?? {} )
+		};
+	} else {
+		program = screenData.displayProgram;
+		locations = screenData.displayLocations;
+	}
 
 	// Bind default framebuffer (screen)
 	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
-	
-	// Set viewport to full canvas
+
+	// Viewport always matches the actual canvas backing store
 	gl.viewport( 0, 0, screenData.canvas.width, screenData.canvas.height );
-	
+
 	// Clear the canvas before drawing the FBO texture
 	gl.clearColor( 0, 0, 0, 0 );
 	gl.clear( gl.COLOR_BUFFER_BIT );
-	
-	// Disable blend for render to display
-	gl.disable( gl.BLEND );
 
-	// Use display shader
+	gl.disable( gl.BLEND );
+	gl.disable( gl.SCISSOR_TEST );
+
 	gl.useProgram( program );
 	gl.bindVertexArray( screenData.displayQuadVao );
-	
-	// Bind FBO texture
+
 	gl.activeTexture( gl.TEXTURE0 );
 	gl.bindTexture( gl.TEXTURE_2D, screenData.fboTexture );
 	gl.uniform1i( locations.texture, 0 );
-	
-	// Draw fullscreen quad
+
+	if( useCustom ) {
+		if( locations.sourceSize !== null ) {
+			gl.uniform2f( locations.sourceSize, screenData.width, screenData.height );
+		}
+		if( locations.outputSize !== null ) {
+			gl.uniform2f(
+				locations.outputSize, screenData.canvas.width, screenData.canvas.height
+			);
+		}
+		if( locations.time !== null ) {
+			gl.uniform1f( locations.time, performance.now() / 1000 );
+		}
+		if( locations.frame !== null ) {
+			gl.uniform1i( locations.frame, screenData.frameCount ?? 0 );
+		}
+		g_shaders.setCustomUniforms( gl, program, customUniforms );
+	}
+
 	gl.drawArrays( gl.TRIANGLES, 0, 6 );
-	
+
 	gl.bindVertexArray( null );
 }
 

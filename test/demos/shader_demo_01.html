@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Pi.js Animated Shader Demo</title>
+	<style>
+		html,
+		body {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			background: #050008;
+			overflow: hidden;
+		}
+
+		#screen {
+			width: 100%;
+			height: 100%;
+		}
+	</style>
+</head>
+<body>
+	<script id="wave-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+		
+		in vec2 v_texCoord;
+		
+		uniform sampler2D u_texture;
+		uniform float u_time;
+		uniform float u_strength;
+		
+		out vec4 fragColor;
+		
+		void main() {
+			vec2 uv = v_texCoord;
+		
+			float wave1 = sin(uv.y * 28.0 + u_time * 3.0);
+			float wave2 = sin(uv.y * 11.0 - u_time * 1.7);
+		
+			uv.x += (wave1 + wave2 * 0.5) * u_strength;
+		
+			fragColor = texture(u_texture, uv);
+		}
+	</script>
+	<script id="crt-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+		
+		in vec2 v_texCoord;
+		
+		uniform sampler2D u_texture;
+		uniform vec2 u_sourceSize;
+		uniform vec2 u_outputSize;
+		uniform float u_time;
+		
+		out vec4 fragColor;
+		
+		vec2 curveScreen(vec2 uv) {
+			vec2 p = uv * 2.0 - 1.0;
+			float r2 = dot(p, p);
+		
+			p *= 1.0 + r2 * 0.04;
+		
+			return p * 0.5 + 0.5;
+		}
+		
+		void main() {
+			vec2 uv = curveScreen(v_texCoord);
+		
+			if(
+				uv.x < 0.0 ||
+				uv.x > 1.0 ||
+				uv.y < 0.0 ||
+				uv.y > 1.0
+			) {
+				fragColor = vec4(0.0, 0.0, 0.0, 1.0);
+				return;
+			}
+		
+			vec2 pixel = 1.0 / u_sourceSize;
+		
+			float shift = 0.8 + sin(u_time * 2.0) * 0.4;
+		
+			float red = texture(
+				u_texture,
+				uv + vec2(pixel.x * shift, 0.0)
+			).r;
+		
+			float green = texture(u_texture, uv).g;
+		
+			float blue = texture(
+				u_texture,
+				uv - vec2(pixel.x * shift, 0.0)
+			).b;
+		
+			vec3 color = vec3(red, green, blue);
+		
+			float outputY = v_texCoord.y * u_outputSize.y;
+			float scanline = 0.88 + 0.12 * sin(outputY * 3.14159265);
+		
+			color *= scanline;
+		
+			vec2 centered = v_texCoord * 2.0 - 1.0;
+			float vignette = 1.0 - dot(centered, centered) * 0.2;
+		
+			color *= vignette;
+		
+			float flicker = 0.985 + 0.015 * sin(u_time * 47.0);
+			color *= flicker;
+		
+			fragColor = vec4(color, 1.0);
+		}
+	</script>
+	<script id="ripple-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec2 center = vec2(0.5);
+			vec2 delta = v_texCoord - center;
+
+			float distanceFromCenter = length(delta);
+			float wave = sin(
+				distanceFromCenter * 55.0 -
+				u_time * 5.0
+			);
+
+			vec2 direction = vec2(0.0);
+
+			if( distanceFromCenter > 0.0001 ) {
+				direction = delta / distanceFromCenter;
+			}
+
+			vec2 uv = v_texCoord + direction * wave * 0.006;
+
+			vec4 color = texture(u_texture, uv);
+
+			float glow = 1.0 + wave * 0.08;
+			color.rgb *= glow;
+
+			fragColor = color;
+		}
+	</script>
+	<script id="glitch-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform vec2 u_sourceSize;
+		uniform float u_time;
+		uniform int u_frame;
+
+		out vec4 fragColor;
+
+		float hash(float value) {
+			return fract(sin(value * 91.3458) * 47453.5453);
+		}
+
+		void main() {
+			vec2 uv = v_texCoord;
+
+			float row = floor(uv.y * 45.0);
+			float blockNoise = hash(row + floor(u_time * 8.0));
+
+			float glitchActive = step(0.82, blockNoise);
+
+			float horizontalOffset = (blockNoise - 0.5) * 0.08 * glitchActive;
+
+			uv.x += horizontalOffset;
+
+			vec2 pixel = 1.0 / u_sourceSize;
+
+			float channelOffset =
+				2.0 +
+				4.0 * glitchActive;
+
+			float red = texture(
+				u_texture,
+				uv + vec2(pixel.x * channelOffset, 0.0)
+			).r;
+
+			float green = texture(u_texture, uv).g;
+
+			float blue = texture(
+				u_texture,
+				uv - vec2(pixel.x * channelOffset, 0.0)
+			).b;
+
+			vec3 color = vec3(red, green, blue);
+
+			float frame = float(u_frame);
+			float flashNoise = hash(floor(frame / 3.0));
+
+			if( flashNoise > 0.96 ) {
+				color *= 1.4;
+			}
+
+			fragColor = vec4(color, 1.0);
+		}
+	</script>
+	<script id="plasma-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			vec4 source = texture(u_texture, v_texCoord);
+
+			float plasma =
+				sin(v_texCoord.x * 18.0 + u_time * 2.0) +
+				sin(v_texCoord.y * 22.0 - u_time * 1.7) +
+				sin(
+					(v_texCoord.x + v_texCoord.y) * 14.0 +
+					u_time * 1.3
+				);
+
+			plasma = plasma / 3.0;
+
+			vec3 tint = vec3(
+				0.75 + 0.25 * sin(plasma * 3.0 + u_time),
+				0.75 + 0.25 * sin(plasma * 3.0 + u_time + 2.1),
+				0.75 + 0.25 * sin(plasma * 3.0 + u_time + 4.2)
+			);
+
+			fragColor = vec4(source.rgb * tint, source.a);
+		}
+	</script>
+	<script id="pixel-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision mediump float;
+
+		in vec2 v_texCoord;
+
+		uniform sampler2D u_texture;
+		uniform vec2 u_sourceSize;
+		uniform float u_time;
+
+		out vec4 fragColor;
+
+		void main() {
+			float amount = 2.0 + 3.0 * (
+				0.5 +
+				0.5 * sin(u_time * 0.8)
+			);
+
+			vec2 virtualSize = u_sourceSize / amount;
+
+			vec2 uv = floor(
+				v_texCoord * virtualSize
+			) / virtualSize;
+
+			vec4 color = texture(u_texture, uv);
+
+			float pulse = 0.9 + 0.1 * sin(u_time * 3.0);
+
+			color.rgb *= pulse;
+
+			fragColor = color;
+		}
+	</script>
+
+	</script>
+	<script src="../../build/pi.js"></script>
+	<script>
+		$.ready( function() {
+			$.screen( "320x180" );
+
+			const waveShader = $.createShader(
+				document.getElementById( "wave-shader" ).textContent.trim()
+			);
+			const crtShader = $.createShader(
+				document.getElementById( "crt-shader" ).textContent.trim()
+			);
+			const rippleShader = $.createShader(
+				document.getElementById( "ripple-shader" ).textContent.trim()
+			);
+			const glitchShader = $.createShader(
+				document.getElementById( "glitch-shader" ).textContent.trim()
+			);
+			const plasmaShader = $.createShader(
+				document.getElementById( "plasma-shader" ).textContent.trim()
+			);
+			const pixelShader = $.createShader(
+				document.getElementById( "pixel-shader" ).textContent.trim()
+			);
+
+			const shaders = [
+				{
+					"handle": null,
+					"name": "None",
+					"description": "No display shader standard renderer"
+				},
+				{
+					"handle": crtShader,
+					"name": "CRT",
+					"description": "Scanlines, curvature and RGB separation"
+				},
+				{
+					"handle": rippleShader,
+					"name": "RIPPLE",
+					"description": "Animated waves radiate from the center"
+				},
+				{
+					"handle": glitchShader,
+					"name": "GLITCH",
+					"description": "Random horizontal distortion and RGB tearing"
+				},
+				{
+					"handle": plasmaShader,
+					"name": "PLASMA",
+					"description": "Moving color fields tint the framebuffer"
+				},
+				{
+					"handle": pixelShader,
+					"name": "PIXELATE",
+					"description": "Pixel size grows and shrinks over time"
+				}
+			];
+
+			const SHADER_DURATION = 5;
+			const START_TIME = performance.now();
+			const FPS_UPDATE_INTERVAL = 500;
+
+			let gCurrentShaderIndex = -1;
+			let gFps = 0;
+			let gFpsFrameCount = 0;
+			let gFpsUpdateTime = START_TIME;
+			let gApplyWaveShader = true;
+
+			function setShader( index ) {
+				if( index === gCurrentShaderIndex ) {
+					return;
+				}
+				gApplyWaveShader = Math.random() > 0.5;
+				gCurrentShaderIndex = index;
+				const shader = shaders[ index ];
+				$.setDisplayShader( shader.handle );
+			}
+
+			function drawBackground( time ) {
+				const horizon = 100;
+
+				$.setColor( "#170020" );
+				$.rect( 0, 0, 320, 180, "#170020" );
+
+				$.setColor( "#FF2070" );
+				$.circle( 160, 66 + Math.sin( time ) * 3, 28, "#FF2070" );
+
+				for( let y = horizon; y < 180; y += 8 ) {
+					const offset = Math.sin( time * 2.0 + y * 0.1 ) * 1.5;
+					$.setColor( "#402080" );
+					$.line( 0, y + offset, 320, y + offset );
+				}
+
+				const movement = ( time * 24 ) % 24;
+				for( let x = -160; x < 480; x += 24 ) {
+					$.setColor( "#104080" );
+					$.line( 160, horizon, x + movement, 180 );
+				}
+			}
+
+			function drawMovingObjects( time ) {
+				for( let i = 0; i < 10; i++ ) {
+					const angle = time * ( 0.7 + i * 0.035 ) + i * 0.7;
+					const radius = 32 + i * 5;
+					const x = 160 + Math.cos( angle ) * radius;
+					const y = 92 + Math.sin( angle * 1.4 ) * 28;
+
+					let color;
+
+					if( i % 2 === 0 ) {
+						color = "#00FFFF";
+					} else {
+						color = "#FF40D0";
+					}
+
+					$.setColor( color );
+					$.circle( x, y, 3, color );
+				}
+			}
+
+			function drawShip( time ) {
+				const x = 160 + Math.sin( time * 1.4 ) * 70;
+				const y = 128 + Math.cos( time * 2.0 ) * 7;
+
+				$.setColor( "#FFFFFF" );
+				$.line( x - 8, y + 5, x, y - 4 );
+				$.line( x, y - 4, x + 8, y + 5 );
+
+				$.setColor( "#00FFFF" );
+				$.line( x - 8, y + 5, x + 8, y + 5 );
+			}
+
+			function drawShaderInfo( shader ) {
+
+				// Draw a dark panel so the text remains readable.
+				$.setBlend( "alpha" );
+				$.rect( 4, 4, 312, 31, "#000000CC" );
+				$.setBlend( "replace" );
+				$.setColor( "#FFFFFF" );
+				$.setPosPx( 9, 8 );
+				$.print( "DISPLAY SHADER: " + shader.name );
+				$.setPosPx( 200, 8 );
+				$.print( "WAVE SHADER: " + gApplyWaveShader );
+				$.setColor( "#00FFFF" );
+				$.setPosPx( 9, 20 );
+				$.print( shader.description );
+			}
+
+			function updateFps( now ) {
+				gFpsFrameCount += 1;
+				const elapsed = now - gFpsUpdateTime;
+
+				if( elapsed >= FPS_UPDATE_INTERVAL ) {
+					gFps = Math.round( ( gFpsFrameCount * 1000 ) / elapsed );
+					gFpsFrameCount = 0;
+					gFpsUpdateTime = now;
+				}
+			}
+
+			function drawFps() {
+				const label = "FPS: " + gFps;
+				const charWidth = 6;
+				const charHeight = 8;
+				const padding = 3;
+				const textWidth = label.length * charWidth;
+				const panelWidth = textWidth + padding * 2;
+				const panelHeight = charHeight + padding * 2;
+				const panelX = 320 - 4 - panelWidth;
+				const panelY = 180 - 8 - panelHeight;
+
+				$.setBlend( "alpha" );
+				$.rect( panelX, panelY, panelWidth, panelHeight, "#000000CC" );
+				$.setBlend( "replace" );
+				$.setColor( "#00FFFF" );
+				$.setPosPx( panelX + padding, panelY + padding );
+				$.print( label );
+			}
+
+			function drawShaderTimer( elapsed, shaderIndex ) {
+				const shaderTime = elapsed - shaderIndex * SHADER_DURATION;
+				const progress = shaderTime / SHADER_DURATION;
+				const width = Math.floor( 312 * Math.min( progress, 1 ) );
+				$.rect( 4, 174, 312, 2, "#301040" );
+
+				if( width > 0 ) {
+					$.rect( 4, 174, width, 2, "#00FFFF" );
+				}
+			}
+
+			function frame( now ) {
+				updateFps( now );
+				const elapsed = ( now - START_TIME ) / 1000;
+				const totalDuration = shaders.length * SHADER_DURATION;
+				const cycleTime = elapsed % totalDuration;
+				let shaderIndex = Math.floor( cycleTime / SHADER_DURATION );
+
+				if( shaderIndex < 0 ) {
+					shaderIndex = 0;
+				}
+				setShader( shaderIndex );
+
+				const shader = shaders[ shaderIndex ];
+				$.cls();
+
+				drawBackground( elapsed );
+				drawMovingObjects( elapsed );
+
+				if( gApplyWaveShader ) {
+					const waveStrength = 0.006 + Math.sin( elapsed * 1.7 ) * 0.003;
+					$.applyShader( waveShader, {
+						"u_strength": waveStrength
+					} );
+				}
+
+				drawShip( elapsed );
+				drawShaderInfo( shader );
+				drawShaderTimer( cycleTime, shaderIndex );
+				drawFps();
+				requestAnimationFrame( frame );
+			}
+
+			requestAnimationFrame( frame );
+		} );
+	</script>
+</body>
+</html>

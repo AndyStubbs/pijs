@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Pi.js CGA 640x200 Display Shader Stretch Demo</title>
+	<style>
+		html,
+		body {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			background: #333;
+			overflow: hidden;
+		}
+		body {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		#screen {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		canvas {
+			width: min( 94vw, calc( 94vh * 4 / 3 ) ) !important;
+			height: min( 94vh, calc( 94vw * 3 / 4 ) ) !important;
+			margin: 0 !important;
+		}
+	</style>
+</head>
+<body>
+	<div id="screen"></div>
+	<script src="../../build/pi.js"></script>
+	<script id="crt-shader" style="display: none" type="x-shader/x-fragment">
+		#version 300 es
+		precision highp float;
+		in vec2 v_texCoord;
+		uniform sampler2D u_texture;
+		uniform vec2 u_sourceSize;
+		uniform vec2 u_outputSize;
+		uniform float u_time;
+		uniform float u_wobble;
+		out vec4 fragColor;
+
+		float sampleText( vec2 uv ) {
+			vec2 sourcePixel = 1.0 / u_sourceSize;
+			float center = texture( u_texture, uv ).r;
+			float scaleX = u_outputSize.x / u_sourceSize.x;
+
+			if( scaleX >= 1.15 ) {
+				return center;
+			}
+
+			float left = texture( u_texture, uv - vec2( sourcePixel.x, 0.0 ) ).r;
+			float right = texture( u_texture, uv + vec2( sourcePixel.x, 0.0 ) ).r;
+			return max( center, max( left, right ) );
+		}
+
+		void main() {
+			vec2 p = v_texCoord * 2.0 - 1.0;
+			float r2 = dot( p, p );
+
+			// Subtle CRT curvature that preserves edge readability.
+			p *= 1.0 + r2 * 0.018;
+
+			float scaleX = u_outputSize.x / u_sourceSize.x;
+			float wobbleStrength = smoothstep( 0.95, 1.6, scaleX );
+			float beam = sin( p.y * 22.0 + u_time * 1.4 ) * 0.00010;
+			beam += sin( p.y * 67.0 - u_time * 1.9 ) * 0.00004;
+			p.x += beam * u_wobble * wobbleStrength;
+
+			vec2 uv = p * 0.5 + 0.5;
+			bool outside = uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0;
+			if( outside ) {
+				fragColor = vec4( 0.0, 0.0, 0.0, 1.0 );
+				return;
+			}
+
+			// Snap to logical pixel centers before sampling the bitmap font.
+			vec2 sourceCoord = floor( uv * u_sourceSize ) + 0.5;
+			vec2 snappedUv = sourceCoord / u_sourceSize;
+			float source = sampleText( snappedUv );
+
+			// Only add scanline gaps when enough vertical pixels exist to spare.
+			float scaleY = u_outputSize.y / u_sourceSize.y;
+			bool scanGap = false;
+			if( scaleY >= 2.4 ) {
+				float outputLine = floor( v_texCoord.y * u_outputSize.y );
+				scanGap = mod( outputLine, 3.0 ) < 1.0;
+			}
+
+			float edge = max( abs( p.x ), abs( p.y ) );
+			bool edgeCut = edge > 0.997;
+			bool lit = source > 0.25 && !scanGap && !edgeCut;
+
+			if( lit ) {
+				fragColor = vec4( 0.6667, 0.6667, 0.6667, 1.0 );
+			} else {
+				fragColor = vec4( 0.0, 0.0, 0.0, 1.0 );
+			}
+		}
+	</script>
+	<script>
+		/**
+		 * CGA 640x200 display-shader stretch demo.
+		 */
+		( function() {
+			"use strict";
+
+			const SCREEN_WIDTH = 640;
+			const SCREEN_HEIGHT = 200;
+			const TEXT_COLOR = "#AAAAAA";
+			const BACKGROUND_COLOR = "#000000";
+			const TYPE_DELAY = 24;
+			const LINE_DELAY = 140;
+			const CURSOR_BLINK_MS = 480;
+
+			const lines = [
+				"PI/BIOS 2.01   640K SYSTEM RAM   CGA DISPLAY ADAPTER",
+				"Copyright (C) 1984-1987 Pi Computer Systems",
+				"",
+				"640x200 HIGH-RESOLUTION DISPLAY MODE .........................................OK",
+				"DISPLAY SHADER ...........................................................ACTIVE",
+				"OUTPUT ASPECT ...............................................................4:3",
+				"RASTER EMULATION .........................................................ONLINE",
+				"",
+				"C:\\>MODE CGA,HIGH",
+				"C:\\>DISPLAY /STRETCH /CRT",
+				"",
+				"Logical framebuffer: 640 x 200 pixels",
+				"Presentation surface: stretched to 4:3",
+				"Two-color high-resolution output enabled.",
+				"",
+				"C:\\>TYPE README.TXT",
+				"Pi.js display shaders can present a logical framebuffer at",
+				"a different physical resolution without changing its pixels.",
+				"This demo keeps CGA's 640x200 source and stretches it to 4:3.",
+				"",
+				"C:\\>"
+			];
+
+			let typedLines = [];
+			let lineIndex = 0;
+			let charIndex = 0;
+			let cursorVisible = true;
+			let typingFinished = false;
+			let lastBlink = 0;
+
+			$.ready( function() {
+				$.setDefaultPal( [ BACKGROUND_COLOR, TEXT_COLOR ] );
+				$.screen( "640x200" );
+				$.setBgColor( BACKGROUND_COLOR );
+				$.setColor( TEXT_COLOR );
+				$.setFont( 2 );
+				$.setPrintSize( 1, 1, 0, 0 );
+
+				const crtShader = $.createShader(
+					document.getElementById( "crt-shader" ).textContent.trim()
+				);
+
+				$.setDisplayShader( crtShader, { "u_wobble": 0.45 } );
+				drawTerminal();
+				setTimeout( typeNextCharacter, 350 );
+				requestAnimationFrame( animateDisplay );
+			} );
+
+			function typeNextCharacter() {
+				if( lineIndex >= lines.length ) {
+					typingFinished = true;
+					drawTerminal();
+					return;
+				}
+
+				const line = lines[ lineIndex ];
+
+				if( typedLines[ lineIndex ] === undefined ) {
+					typedLines[ lineIndex ] = "";
+				}
+
+				if( charIndex < line.length ) {
+					typedLines[ lineIndex ] += line[ charIndex ];
+					charIndex++;
+					drawTerminal();
+					setTimeout( typeNextCharacter, TYPE_DELAY );
+					return;
+				}
+
+				lineIndex++;
+				charIndex = 0;
+				drawTerminal();
+				setTimeout( typeNextCharacter, LINE_DELAY );
+			}
+
+			function drawTerminal() {
+				$.cls();
+				$.setColor( TEXT_COLOR );
+
+				for( let i = 0; i < typedLines.length; i++ ) {
+					$.setPos( 0, i + 1 );
+					$.print( typedLines[ i ], true );
+				}
+
+				if( cursorVisible ) {
+					drawTypingCursor();
+				}
+			}
+
+			function drawTypingCursor() {
+				let cursorLine = lineIndex;
+				let cursorColumn = 0;
+
+				if( typingFinished ) {
+					cursorLine = lines.length - 1;
+				}
+
+				if( typedLines[ cursorLine ] !== undefined ) {
+					cursorColumn += typedLines[ cursorLine ].length;
+				}
+
+				$.setPos( cursorColumn, cursorLine + 1 );
+				$.print( "_", true );
+			}
+
+			function animateDisplay( now ) {
+				if( now - lastBlink >= CURSOR_BLINK_MS ) {
+					lastBlink = now;
+					cursorVisible = !cursorVisible;
+					drawTerminal();
+				}
+
+				const wobble = 0.35 + Math.sin( now * 0.0013 ) * 0.10;
+				$.setDisplayShaderUniforms( { "u_wobble": wobble } );
+				requestAnimationFrame( animateDisplay );
+			}
+		} )();
+	</script>
+</body>
+</html>

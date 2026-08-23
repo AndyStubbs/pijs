@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Shaders Comprehensive</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "shaders_comprehensive"
+			name = "shaders comprehensive"
+			lite = true
+			width = 700
+			height = 480
+			delay = 150
+			[[TOML_END]]
+		</script>
+		<script src="../../../build/pi.js"></script>
+		<link href="../reset.css" rel="stylesheet" />
+		<style>
+			html, body {
+				background-color: #333;
+				margin: 0;
+				padding: 8px;
+			}
+			.box {
+				display: inline-block;
+				vertical-align: top;
+				width: 160px;
+				height: 100px;
+				margin: 4px;
+				background: #555;
+				position: relative;
+			}
+		</style>
+	</head>
+<body>
+	<div class="box" id="s1"></div>
+	<div class="box" id="s2"></div>
+	<div class="box" id="s3"></div>
+	<div class="box" id="s4"></div>
+	<div class="box" id="s5"></div>
+	<div class="box" id="s6"></div>
+	<div class="box" id="s7"></div>
+<script>
+	const invertSrc = `
+#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+out vec4 fragColor;
+void main() {
+	vec4 c = texture(u_texture, v_texCoord);
+	fragColor = vec4(1.0 - c.rgb, c.a);
+}`.trim();
+
+	const tintSrc = `
+#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+uniform vec4 u_tint;
+out vec4 fragColor;
+void main() {
+	vec4 c = texture(u_texture, v_texCoord);
+	fragColor = vec4(c.rgb * u_tint.rgb, c.a);
+}`.trim();
+
+	const scaleSrc = `
+#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+uniform vec2 u_sourceSize;
+uniform vec2 u_outputSize;
+out vec4 fragColor;
+void main() {
+	vec4 c = texture(u_texture, v_texCoord);
+	float scale = u_outputSize.x / max(u_sourceSize.x, 1.0);
+	float band = step(0.5, fract(gl_FragCoord.x / 8.0));
+	fragColor = vec4(mix(c.rgb, c.rgb * 0.55, band * step(1.5, scale)), c.a);
+}`.trim();
+
+	function drawScene( api, label ) {
+		api.setBgColor( "#000000" );
+		api.cls();
+		api.setColor( "#FF3333" );
+		api.rect( 4, 18, 24, 24,  "#FF3333" );
+		api.setColor( "#33FF33" );
+		api.rect( 32, 18, 24, 24, "#33FF33" );
+		api.setColor( "#3388FF" );
+		api.rect( 60, 18, 24, 24, "#3388FF" );
+		api.setColor( "#FFFF55" );
+		api.circle( 20, 62, 12, "#FFFF55" );
+		api.setColor( "#FFFFFF" );
+		api.setPosPx( 2, 2 );
+		api.print( label );
+	}
+
+	$.ready( function() {
+		const invert = $.createShader( invertSrc );
+		const tint = $.createShader( tintSrc, {
+			"u_tint": [ 1, 1, 1, 1 ]
+		} );
+		const scaleFx = $.createShader( scaleSrc );
+
+		const a1 = $.screen( "80x50", "s1" );
+		drawScene( a1, "1 DEFAULT" );
+
+		const a2 = $.screen( "80x50", "s2" );
+		a2.setColor( "#FFCC00" );
+		a2.cls();
+		a2.rect( 0, 0, 80, 50, "#FFCC00" );
+		a2.applyShader( invert );
+		a2.setColor( "#FFFFFF" );
+		a2.line( 4, 8, 76, 42 );
+		a2.setPosPx( 2, 2 );
+		a2.print( "2 FBO ORD" );
+
+		const a3 = $.screen( "80x50", "s3" );
+		drawScene( a3, "3 INVERT" );
+		a3.setDisplayShader( invert );
+
+		const a4 = $.screen( "80x50", "s4" );
+		drawScene( a4, "4 TINT R" );
+		a4.setDisplayShader( tint, { "u_tint": [ 1, 0.25, 0.25, 1 ] } );
+
+		const a5 = $.screen( "80x50", "s5" );
+		drawScene( a5, "5 TINT B" );
+		a5.setDisplayShader( tint, { "u_tint": [ 1, 0.25, 0.25, 1 ] } );
+		a5.setDisplayShader( tint, { "u_tint": [ 0.25, 0.35, 1, 1 ] } );
+
+		const a6 = $.screen( "80x50", "s6" );
+		drawScene( a6, "6 CLEARED" );
+		a6.setDisplayShader( invert );
+		a6.setDisplayShader( null );
+
+		const a7 = $.screen( "80x50", "s7" );
+		drawScene( a7, "7 SCALE" );
+		a7.setDisplayShader( scaleFx );
+	} );
+</script>
+</body>
+</html>

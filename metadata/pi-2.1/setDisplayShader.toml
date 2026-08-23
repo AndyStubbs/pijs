@@ -1,0 +1,41 @@
+title = "setDisplayShader"
+category = "shaders"
+isScreen = true
+summary = "Sets or clears the custom display shader for final presentation."
+description = """
+Sets the shader used when presenting the logical FBO to the canvas. The
+logical FBO is not modified. Typical uses include custom upscaling, CRT
+effects, and color grading.
+
+When a custom display shader is active, canvas.width and canvas.height
+track the CSS presentation size (clamped). CSS style size remains for
+layout. Passing null restores the default display program and logical
+backing-store size.
+
+u_sourceSize is the logical FBO size. u_outputSize is the actual canvas
+backing size. Display shaders do not run on offscreen screens (state may
+still be stored).
+
+This call replaces the active shader and resets persistent display
+uniform overrides to the uniforms supplied here (or none).
+"""
+example = """
+$.screen( "320x200" );
+$.setDisplayShader( invert );
+$.setDisplayShader( null );
+"""
+
+[[parameters]]
+name = "shaderHandle"
+type = "number | null"
+description = "Shader handle from createShader, or null to restore the default display path."
+
+[[parameters]]
+name = "uniforms"
+type = "object"
+description = "Optional initial display uniform overrides. Replaces prior overrides."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
