@@ -46,6 +46,7 @@ import * as g_utils from "./utils.js";
 import * as g_commands from "./commands.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_graphics from "../api/graphics.js";
+import * as g_view from "../api/view.js";
 
 const SCREEN_API_PROTO = { "screen": true, "id": 0 };
 const m_screens = {};
@@ -677,7 +678,7 @@ function getAllScreens() {
  * @returns {number} Screen width in pixels
  */
 function widthCmd( screenData ) {
-	return screenData.width;
+	return screenData.view.width;
 }
 
 /**
@@ -687,7 +688,7 @@ function widthCmd( screenData ) {
  * @returns {number} Screen height in pixels
  */
 function heightCmd( screenData ) {
-	return screenData.height;
+	return screenData.view.height;
 }
 
 /**
@@ -827,6 +828,7 @@ function applyScreenSizing( screenData ) {
 function applyResizeConsequences( screenData, flags, forcePresent ) {
 	if( flags.logicalChanged ) {
 		g_renderer.resizeScreen( screenData, flags.oldWidth, flags.oldHeight );
+		g_view.onScreenResize( screenData );
 	}
 
 	let callbackRan = false;

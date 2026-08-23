@@ -15,6 +15,7 @@ import * as g_colors from "./colors.js";
 import * as g_commands from "../core/commands.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_textures from "../renderer/textures.js";
+import * as g_view from "./view.js";
 
 
 /***************************************************************************************************
@@ -71,7 +72,7 @@ function getPixel( screenData, options ) {
 		throw error;
 	}
 	const asIndex = options.asIndex ?? false;
-	const colorValue = g_renderer.readPixel( screenData, px, py );
+	const colorValue = readViewPixel( screenData, px, py );
 	if( asIndex ) {
 		return g_colors.findColorIndexByColorValue( screenData, colorValue );
 	}
@@ -87,7 +88,17 @@ function getPixelAsync( screenData, options ) {
 		throw error;
 	}
 	const asIndex = options.asIndex ?? false;
-	return g_renderer.readPixelAsync( screenData, px, py ).then( ( colorValue ) => {
+	const resolved = resolveViewPixel( screenData, px, py );
+	if( resolved === null ) {
+		const empty = g_utils.rgbToColor( 0, 0, 0, 0 );
+		if( asIndex ) {
+			return Promise.resolve(
+				g_colors.findColorIndexByColorValue( screenData, empty )
+			);
+		}
+		return Promise.resolve( empty );
+	}
+	return g_renderer.readPixelAsync( screenData, resolved.x, resolved.y ).then( ( colorValue ) => {
 		if( asIndex ) {
 			return g_colors.findColorIndexByColorValue( screenData, colorValue );
 		}
@@ -124,8 +135,14 @@ function get( screenData, options ) {
 		return [];
 	}
 
-	const colors = g_renderer.readPixels( screenData, pX, pY, pWidth, pHeight );
-	return convertColorsToIndices( screenData, colors, pWidth, asIndex, tolerance );
+	const region = resolveViewReadRect( screenData, pX, pY, pWidth, pHeight );
+	if( region === null ) {
+		return [];
+	}
+	const colors = g_renderer.readPixels(
+		screenData, region.x, region.y, region.width, region.height
+	);
+	return convertColorsToIndices( screenData, colors, region.width, asIndex, tolerance );
 }
 
 function getAsync( screenData, options ) {
@@ -148,8 +165,15 @@ function getAsync( screenData, options ) {
 		return Promise.resolve( [] );
 	}
 
-	return g_renderer.readPixelsAsync( screenData, pX, pY, pWidth, pHeight ).then( ( colors ) => {
-		return convertColorsToIndices( screenData, colors, pWidth, asIndex, tolerance );
+	const region = resolveViewReadRect( screenData, pX, pY, pWidth, pHeight );
+	if( region === null ) {
+		return Promise.resolve( [] );
+	}
+
+	return g_renderer.readPixelsAsync(
+		screenData, region.x, region.y, region.width, region.height
+	).then( ( colors ) => {
+		return convertColorsToIndices( screenData, colors, region.width, asIndex, tolerance );
 	} );
 }
 
@@ -205,11 +229,11 @@ function convertColorsToIndices( screenData, colors, width, asIndex, tolerance )
 function filterImg( screenData, options ) {
 	const filter = options.filter;
 
-	// Get optional clipping bounds (default to full screen)
+	const viewSnap = g_view.snapshotView( screenData );
 	let x1 = g_utils.getInt( options.x1, 0 );
 	let y1 = g_utils.getInt( options.y1, 0 );
-	let x2 = g_utils.getInt( options.x2, screenData.width - 1 );
-	let y2 = g_utils.getInt( options.y2, screenData.height - 1 );
+	let x2 = g_utils.getInt( options.x2, viewSnap.width - 1 );
+	let y2 = g_utils.getInt( options.y2, viewSnap.height - 1 );
 
 	if( !g_utils.isFunction( filter ) ) {
 		const error = new TypeError( "filterImg: Argument filter must be a callback function." );
@@ -217,32 +241,25 @@ function filterImg( screenData, options ) {
 		throw error;
 	}
 
-	// Validate and clamp bounds to screen dimensions
-	x1 = g_utils.clamp( x1, 0, screenData.width - 1 );
-	y1 = g_utils.clamp( y1, 0, screenData.height - 1 );
-	x2 = g_utils.clamp( x2, 0, screenData.width - 1 );
-	y2 = g_utils.clamp( y2, 0, screenData.height - 1 );
+	// Inclusive local corners → half-open, then intersect the captured clip
+	const left = Math.min( x1, x2 );
+	const top = Math.min( y1, y2 );
+	const right = Math.max( x1, x2 ) + 1;
+	const bottom = Math.max( y1, y2 ) + 1;
+	const phys = g_view.intersectRects(
+		left + viewSnap.originX, top + viewSnap.originY,
+		right - left, bottom - top,
+		viewSnap.clipX, viewSnap.clipY, viewSnap.clipWidth, viewSnap.clipHeight
+	);
 
-	// Ensure x1 <= x2 and y1 <= y2
-	if( x1 > x2 ) {
-		const temp = x1;
-		x1 = x2;
-		x2 = temp;
+	if( phys.width <= 0 || phys.height <= 0 ) {
+		return;
 	}
-	if( y1 > y2 ) {
-		const temp = y1;
-		y1 = y2;
-		y2 = temp;
-	}
-
-	const width = x2 - x1 + 1;
-	const height = y2 - y1 + 1;
 
 	// Queue filter operation to run at end of frame
-	// Use double microtask to ensure it runs after any current render operations
 	g_utils.queueMicrotask( () => {
 		g_utils.queueMicrotask( () => {
-			applyFilter( screenData, filter, x1, y1, width, height );
+			applyFilter( screenData, filter, phys.x, phys.y, phys.width, phys.height, viewSnap );
 		} );
 	} );
 }
@@ -259,7 +276,7 @@ function filterImg( screenData, options ) {
  * @param {number} height - Region height
  * @returns {void}
  */
-function applyFilter( screenData, filter, x1, y1, width, height ) {
+function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
 
 	// Ensure batches are flushed before reading
 	g_renderer.flushBatches( screenData );
@@ -298,7 +315,9 @@ function applyFilter( screenData, filter, x1, y1, width, height ) {
 
 			// Call filter with pixelData array
 			// x and y are in top-left coordinate system for the filter callback
-			if( filter( pixelData, x1 + x, y1 + y ) ) {
+			const localX = ( x1 + x ) - viewSnap.originX;
+			const localY = ( y1 + y ) - viewSnap.originY;
+			if( filter( pixelData, localX, localY ) ) {
 
 				// Update the pixeldata 
 				filteredData[ dstIndex     ] = pixelData[ 0 ];
@@ -365,25 +384,20 @@ function putWrapper( screenData, data, x, y, include0 = false ) {
 		throw error;
 	}
 
-	// Validate and clip data
-	const screenW = screenData.width;
-	const screenH = screenData.height;
+	// Clip dest against the effective view clip in local coordinates
+	const view = screenData.view;
+	const clipLocalX = view.clipX - view.originX;
+	const clipLocalY = view.clipY - view.originY;
+	const dest = g_view.intersectRects(
+		pX, pY,
+		pData[ 0 ] ? pData[ 0 ].length : 0, pData.length,
+		clipLocalX, clipLocalY, view.clipWidth, view.clipHeight
+	);
 
-	// Clip starting offsets when x/y are negative
-	let startX = ( pX < 0 ? -pX : 0 );
-	let startY = ( pY < 0 ? -pY : 0 );
-
-	// Calculate width/height available from data starting at the clipped offsets
-	let width = pData[ 0 ] ? ( pData[ 0 ].length - startX ) : 0;
-	let height = pData.length - startY;
-
-	// Clamp to screen bounds
-	if( pX + startX + width > screenW ) {
-		width = screenW - pX - startX;
-	}
-	if( pY + startY + height > screenH ) {
-		height = screenH - pY - startY;
-	}
+	let startX = dest.x - pX;
+	let startY = dest.y - pY;
+	let width = dest.width;
+	let height = dest.height;
 
 	// If nothing to draw after clipping, exit
 	if( width <= 0 || height <= 0 ) {
@@ -444,5 +458,61 @@ function put( screenData, data, x, y, include0, startY, startX, width, height ) 
 			);
 		}
 	}
+}
+
+
+/**
+ * Read one view-local pixel, or transparent black if outside the effective clip.
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {number} x - Local x
+ * @param {number} y - Local y
+ * @returns {Object} Color value
+ */
+function readViewPixel( screenData, x, y ) {
+	const resolved = resolveViewPixel( screenData, x, y );
+	if( resolved === null ) {
+		return g_utils.rgbToColor( 0, 0, 0, 0 );
+	}
+	return g_renderer.readPixel( screenData, resolved.x, resolved.y );
+}
+
+/**
+ * Convert a local point to a physical FBO point if it is inside the clip.
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {number} x - Local x
+ * @param {number} y - Local y
+ * @returns {{ x: number, y: number }|null}
+ */
+function resolveViewPixel( screenData, x, y ) {
+	const phys = g_view.toScreen( screenData, x, y );
+	if( !g_view.isInsideClip( screenData.view, phys.x, phys.y ) ) {
+		return null;
+	}
+	return phys;
+}
+
+/**
+ * Convert a local read rectangle to the visible physical intersection.
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {number} x - Local x
+ * @param {number} y - Local y
+ * @param {number} width - Requested width
+ * @param {number} height - Requested height
+ * @returns {{ x: number, y: number, width: number, height: number }|null}
+ */
+function resolveViewReadRect( screenData, x, y, width, height ) {
+	const view = screenData.view;
+	const phys = g_view.toScreen( screenData, x, y );
+	const clip = g_view.intersectRects(
+		phys.x, phys.y, width, height,
+		view.clipX, view.clipY, view.clipWidth, view.clipHeight
+	);
+	if( clip.width <= 0 || clip.height <= 0 ) {
+		return null;
+	}
+	return clip;
 }
 

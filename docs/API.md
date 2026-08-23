@@ -5,6 +5,7 @@ This document lists all external API commands available in Pi.js.
 ## Table of Contents
 
 - [Core & Screen Management](#core--screen-management)
+- [View](#view)
 - [Rendering](#rendering)
 - [Custom Shaders](#custom-shaders)
 - [Colors & Palettes](#colors--palettes)
@@ -59,10 +60,12 @@ Removes the current screen from the page and memory.
 Gets a screen object by its ID.
 
 ### `width()`
-Returns the width of the current screen in pixels.
+Returns the requested local view width in pixels. With no view this is the
+logical framebuffer width, not the effective clip size.
 
 ### `height()`
-Returns the height of the current screen in pixels.
+Returns the requested local view height in pixels. With no view this is the
+logical framebuffer height, not the effective clip size.
 
 ### `canvas()`
 Returns the HTMLCanvasElement for the current screen.
@@ -72,13 +75,73 @@ Enables or disables pixel-perfect rendering mode.
 
 ---
 
+## View
+
+A view gives the active screen a local drawing coordinate system and clips
+pixels to an effective rectangle. `screenData` framebuffer size does not
+change. Empty stack means full-screen behavior identical to no view.
+
+Internal clips are half-open: `[x, x+width) × [y, y+height)`. Inclusive
+APIs such as `createImageFromScreen` convert at the boundary (`x2 + 1`,
+`y2 + 1`) before intersecting the clip.
+
+- Coordinates are local; pixels are scissored to the effective clip
+  (requested rectangle ∩ parent clip).
+- `width()` / `height()` are the requested local size, not the clip size.
+- Zero-size views are valid; print is a no-op and must not hang.
+- Text wraps and scrolls using local size; scroll pixels only in the clip.
+- Direct `setPos` / `setPosPx` keep current semantics; `view()` and FBO
+  resize always normalize the stored cursor into `[0, width] × [0, height]`.
+- `pushView` / `popView` save and restore the print cursor.
+- Reads clamp-and-shrink to the effective clip. `getPixel` rejects
+  framebuffer-valid pixels that sit outside the current clip.
+- `filterImg` snapshots complete VIEW state at call time. Callback `x, y`
+  are that view’s local coordinates.
+- `paint` cannot cross the effective clip.
+- Input stays screen-relative. `viewToScreen` / `screenToView` use the
+  logical origin, not the clip origin.
+- `cls()` always resets the cursor to `(0, 0)`. Rectangular `cls` resets
+  only for the full requested view `0, 0, width(), height()`.
+- `popView` on an empty stack throws `VIEW_STACK_EMPTY`.
+- Multiple views in one render cycle flush into the same framebuffer.
+- Child clips intersect the parent. Resize recomputes from requested
+  local rects.
+- `applyShader` and display shaders are full-framebuffer. View scissor is
+  restored after an FBO shader pass.
+
+### `view( x, y, width, height )`
+Sets one full-screen-relative view and normalizes the print cursor.
+`view()` with no arguments clears the stack (full-screen root) and
+normalizes the cursor. Changing the view flushes pending batches; it does
+not clear the framebuffer.
+
+### `pushView( x, y, width, height )`
+Pushes a child view relative to the current local origin. Saves the parent
+cursor and starts the child cursor at `(0, 0)`.
+
+### `popView()`
+Pops the current child view and restores the parent cursor. Throws
+`VIEW_STACK_EMPTY` when the stack is empty.
+
+### `viewToScreen( x, y )`
+Converts a local point to screen / FBO coordinates using the logical
+origin. Returns `{ x, y }`.
+
+### `screenToView( x, y )`
+Converts a screen / FBO point to local view coordinates using the logical
+origin. Returns `{ x, y }`.
+
+---
+
 ## Rendering
 
 ### `render()`
 Renders pending pixel operations to the canvas.
 
 ### `cls( x, y, width, height )`
-Clears the screen or a rectangular region.
+Clears the active view or a rectangular local region, clipped to the
+effective view. `cls()` always resets the print cursor to `(0, 0)`.
+Rectangular `cls` resets the cursor only for the full requested view.
 
 ### `setAutoRender( isAutoRender )`
 Enables or disables automatic rendering after draw operations.
@@ -225,11 +288,13 @@ Draws a circle (optionally filled).
 ### `put( data, x, y, includeZero )`
 Draws pixel data array to the screen.
 
-### `get( x1, y1, x2, y2, tolerance, isAddToPalette )`
-Captures a rectangular region as pixel data array.
+### `get( x, y, width, height, tolerance, asIndex )`
+Captures a rectangular region as pixel data. Coordinates are view-local.
+The result is clamp-and-shrunk to the effective clip (no padding).
 
 ### `getPixel( x, y )`
-Returns the color of a single pixel.
+Returns the color of a single local pixel. Pixels outside the effective
+clip return transparent black, even if they exist in the framebuffer.
 
 ---
 
@@ -244,8 +309,9 @@ Draws an ellipse (optionally filled).
 ### `bezier( xStart, yStart, x1, y1, x2, y2, xEnd, yEnd )`
 Draws a cubic Bézier curve.
 
-### `filterImg( filter )`
-Applies a filter function to all pixels on screen.
+### `filterImg( filter, x1, y1, x2, y2 )`
+Applies a filter to a local inclusive rectangle. Snapshots the complete
+VIEW state at call time. Callback `x, y` are that view’s local coordinates.
 
 ---
 
@@ -261,7 +327,8 @@ Executes BASIC-style drawing commands from a string.
 ## Paint & Fill
 
 ### `paint( x, y, fillColor, tolerance )`
-Flood fills a region starting from the specified point.
+Flood fills a region starting from a local point. The fill cannot cross
+the effective clip.
 
 ---
 
@@ -315,13 +382,17 @@ Defines custom character bitmap data.
 ## Text Printing
 
 ### `print( msg, isInline, isCentered )`
-Prints text to the screen.
+Prints text in the active view. Wrap, columns, rows, and scroll use the
+requested local size. Scroll only moves pixels inside the effective clip.
+Zero-size views are a no-op.
 
 ### `setPos( col, row )`
-Sets the text cursor position (in character cells).
+Sets the text cursor position in character cells. Clamps only when the
+position is past the local view bound.
 
 ### `setPosPx( x, y )`
-Sets the text cursor position (in pixels).
+Sets the text cursor position in pixels. Does not clamp; `view()` and FBO
+resize normalize the stored cursor.
 
 ### `getPos()`
 Returns the current text cursor position (col, row).

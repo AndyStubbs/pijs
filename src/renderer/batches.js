@@ -68,6 +68,10 @@ const m_batchProto = {
 	"colors": null,
 	"count": 0,
 
+	// View origin applied to local vertices
+	"originX": 0,
+	"originY": 0,
+
 	// Capacity
 	"minCapacity": 0,
 	"capacity": 0,
@@ -335,6 +339,13 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
 
 	// Get the batch
 	const batch = screenData.batches[ batchType ];
+	if( screenData.view ) {
+		batch.originX = screenData.view.originX;
+		batch.originY = screenData.view.originY;
+	} else {
+		batch.originX = 0;
+		batch.originY = 0;
+	}
 
 	// Track if the batch type is changing or texture is changing (for image batches)
 	const batchInfo = screenData.batchInfo;
@@ -535,6 +546,9 @@ export function flushBatches( screenData, blends = null ) {
 		}
 	}
 
+	// Apply the current view scissor for geometry; shader passes disable it
+	applyViewScissor( gl, screenData );
+
 	// Draw items
 	for( const drawOrderItem of screenData.batchInfo.drawOrder ) {
 		if( drawOrderItem.endIndex === null ) {
@@ -543,6 +557,7 @@ export function flushBatches( screenData, blends = null ) {
 
 		if( drawOrderItem.batch.type === SHADER_BATCH ) {
 			runShaderPass( screenData, drawOrderItem );
+			applyViewScissor( gl, screenData );
 			continue;
 		}
 
@@ -604,8 +619,39 @@ export function flushBatches( screenData, blends = null ) {
 	// Unbind VAO
 	gl.bindVertexArray( null );
 
+	gl.disable( gl.SCISSOR_TEST );
+
 	// Unbind FBO
 	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+}
+
+/**
+ * Enable scissor for the current view clip, or disable if the clip is full-screen.
+ *
+ * @param {WebGL2RenderingContext} gl - WebGL2 context
+ * @param {Object} screenData - Screen data object
+ * @returns {void}
+ */
+function applyViewScissor( gl, screenData ) {
+	const view = screenData.view;
+	if( !view || view.clipWidth <= 0 || view.clipHeight <= 0 ) {
+		gl.enable( gl.SCISSOR_TEST );
+		gl.scissor( 0, 0, 0, 0 );
+		return;
+	}
+
+	if(
+		view.clipX === 0 && view.clipY === 0 &&
+		view.clipWidth === screenData.width &&
+		view.clipHeight === screenData.height
+	) {
+		gl.disable( gl.SCISSOR_TEST );
+		return;
+	}
+
+	gl.enable( gl.SCISSOR_TEST );
+	const scissorY = screenData.height - ( view.clipY + view.clipHeight );
+	gl.scissor( view.clipX, scissorY, view.clipWidth, view.clipHeight );
 }
 
 /**

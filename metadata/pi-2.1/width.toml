@@ -1,0 +1,18 @@
+title = "width"
+category = "core"
+isScreen = true
+summary = "Returns the requested local view width in pixels."
+description = """
+Returns the active view's requested local width. When no view is set this is
+the logical framebuffer width. This is not the effective clip width; a
+partially clipped view still reports the requested size.
+"""
+example = """
+$.screen( "320x200" );
+$.view( -20, 10, 100, 80 );
+$.print( $.width() );
+"""
+
+[[returns]]
+type = "number"
+description = "Requested local view width in pixels."

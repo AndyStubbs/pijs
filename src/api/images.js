@@ -489,18 +489,31 @@ function getImage( options ) {
  */
 function createImageFromScreen( screenData, options ) {
 	let name = options.name;
+	const view = screenData.view;
 	let x1 = g_utils.getInt( options.x1, 0 );
 	let y1 = g_utils.getInt( options.y1, 0 );
-	let x2 = g_utils.getInt( options.x2, screenData.width - 1 );
-	let y2 = g_utils.getInt( options.y2, screenData.height - 1 );
+	let x2 = g_utils.getInt( options.x2, view.width - 1 );
+	let y2 = g_utils.getInt( options.y2, view.height - 1 );
 
-	// Validate and clamp bounds to screen dimensions
-	x1 = g_utils.clamp( x1, 0, screenData.width - 1 );
-	y1 = g_utils.clamp( y1, 0, screenData.height - 1 );
-	x2 = g_utils.clamp( x2, 0, screenData.width - 1 );
-	y2 = g_utils.clamp( y2, 0, screenData.height - 1 );
+	if( view.clipWidth <= 0 || view.clipHeight <= 0 ) {
+		const error = new RangeError(
+			"createImageFromScreen: Region width and height must be greater than 0."
+		);
+		error.code = "INVALID_DIMENSIONS";
+		throw error;
+	}
 
-	// Calculate dimensions -- x2, y2 are inclusive so add 1 to width & height here
+	// Inclusive local clip limits from the effective physical clip
+	const minLocalX = view.clipX - view.originX;
+	const minLocalY = view.clipY - view.originY;
+	const maxLocalX = view.clipX + view.clipWidth - 1 - view.originX;
+	const maxLocalY = view.clipY + view.clipHeight - 1 - view.originY;
+
+	x1 = g_utils.clamp( x1, minLocalX, maxLocalX );
+	y1 = g_utils.clamp( y1, minLocalY, maxLocalY );
+	x2 = g_utils.clamp( x2, minLocalX, maxLocalX );
+	y2 = g_utils.clamp( y2, minLocalY, maxLocalY );
+
 	const width = Math.abs( x2 - x1 ) + 1;
 	const height = Math.abs( y2 - y1 ) + 1;
 
@@ -512,9 +525,9 @@ function createImageFromScreen( screenData, options ) {
 		throw error;
 	}
 
-	// Calculate actual coordinates (top-left corner)
-	const actualX = Math.min( x1, x2 );
-	const actualY = Math.min( y1, y2 );
+	// Physical top-left of the clamped inclusive corners
+	const actualX = Math.min( x1, x2 ) + view.originX;
+	const actualY = Math.min( y1, y2 ) + view.originY;
 
 	// Generate a name if none is provided
 	if( !name || name === "" ) {

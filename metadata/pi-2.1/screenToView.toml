@@ -1,0 +1,31 @@
+title = "screenToView"
+category = "view"
+isScreen = true
+summary = "Converts a screen point to local view coordinates."
+description = """
+Converts a point from screen / FBO coordinates to the active view's local
+coordinates using the logical view origin. Input stays screen-relative;
+call this to map mouse or other screen positions into the current view.
+"""
+example = """
+$.screen( "320x200" );
+$.view( 40, 20, 100, 80 );
+$.startMouse();
+const mouse = $.inmouse();
+const local = $.screenToView( mouse.x, mouse.y );
+$.print( local.x + "," + local.y );
+"""
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "Screen / FBO x coordinate."
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "Screen / FBO y coordinate."
+
+[[returns]]
+type = "PositionPx"
+description = "Local view position { x, y }."

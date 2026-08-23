@@ -16,6 +16,7 @@ import * as g_utils from "../core/utils.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_colors from "./colors.js";
 import * as g_images from "./images.js";
+import * as g_view from "./view.js";
 
 const DEFAULT_BLIT_COLOR = g_utils.rgbToColor( 255, 255, 255, 255 );
 let m_api = null;
@@ -644,24 +645,32 @@ export function buildApi( s_screenData ) {
  * @returns {void}
  */
 function cls( screenData, options ) {
-	const x = g_utils.clamp( g_utils.getInt( options.x, 0 ), 0, screenData.width );
-	const y = g_utils.clamp( g_utils.getInt( options.y, 0 ), 0, screenData.height );
+	const view = screenData.view;
+	const localW = view.width;
+	const localH = view.height;
+	const x = g_utils.clamp( g_utils.getInt( options.x, 0 ), 0, localW );
+	const y = g_utils.clamp( g_utils.getInt( options.y, 0 ), 0, localH );
 	const width = g_utils.clamp(
-		g_utils.getInt( options.width, screenData.width - x ), 0, screenData.width
+		g_utils.getInt( options.width, localW - x ), 0, localW
 	);
 	const height = g_utils.clamp(
-		g_utils.getInt( options.height, screenData.height - y ), 0, screenData.height
+		g_utils.getInt( options.height, localH - y ), 0, localH
 	);
 
-	if( width <= 0 || height <= 0 ) {
-		return;
+	const phys = g_view.toScreen( screenData, x, y );
+	const clip = g_view.intersectRects(
+		phys.x, phys.y, width, height,
+		view.clipX, view.clipY, view.clipWidth, view.clipHeight
+	);
+
+	if( clip.width > 0 && clip.height > 0 ) {
+		g_renderer.cls( screenData, clip.x, clip.y, clip.width, clip.height );
+		g_renderer.setImageDirty( screenData );
 	}
 
-	g_renderer.cls( screenData, x, y, width, height );
-	g_renderer.setImageDirty( screenData );
-
-	// Reset the cursor position if clearing the full screen
-	if( x === 0 && y === 0 && width === screenData.width && height === screenData.height ) {
-		screenData.api.setPos( 0, 0 );
+	// Reset cursor for no-arg / full requested-view clears
+	if( x === 0 && y === 0 && width === localW && height === localH ) {
+		screenData.printCursor.x = 0;
+		screenData.printCursor.y = 0;
 	}
 }

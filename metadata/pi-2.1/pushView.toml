@@ -1,0 +1,48 @@
+title = "pushView"
+category = "view"
+isScreen = true
+summary = "Pushes a child view relative to the current view."
+description = """
+Pushes a nested view whose x, y are relative to the current local origin.
+The child clip is the parent effective clip intersected with the requested
+child rectangle. The parent print cursor is saved and the child cursor starts
+at (0, 0).
+
+Use popView() to restore the parent view and cursor. Child clips stay inside
+the parent. Resize recomputes origins and clips from the requested local
+rects, so previously clipped areas can become visible again when the screen
+grows.
+"""
+example = """
+$.screen( "320x200" );
+$.view( 10, 10, 200, 160 );
+$.pushView( 8, 8, 80, 60 );
+$.cls();
+$.print( "child" );
+$.popView();
+$.print( "parent" );
+"""
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "Left edge of the child view in current local coordinates."
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "Top edge of the child view in current local coordinates."
+
+[[parameters]]
+name = "width"
+type = "number"
+description = "Requested local width in pixels. Must be 0 or greater."
+
+[[parameters]]
+name = "height"
+type = "number"
+description = "Requested local height in pixels. Must be 0 or greater."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

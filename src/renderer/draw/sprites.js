@@ -95,6 +95,8 @@ function addTexturedQuadToBatch(
 	const batchVertices = batch.vertices;
 	const batchTexCoords = batch.texCoords;
 	const batchColors = batch.colors;
+	const originX = batch.originX || 0;
+	const originY = batch.originY || 0;
 
 	// Add two triangles (6 vertices)
 	const baseIdx = batch.count;
@@ -107,39 +109,39 @@ function addTexturedQuadToBatch(
 	let tIdx = texBase;
 
 	// Vertex 0: Top-left
-	batchVertices[ vIdx++ ] = corners[ 0 ].x;
-	batchVertices[ vIdx++ ] = corners[ 0 ].y;
+	batchVertices[ vIdx++ ] = corners[ 0 ].x + originX;
+	batchVertices[ vIdx++ ] = corners[ 0 ].y + originY;
 	batchTexCoords[ tIdx++ ] = texCoords[ 0 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 1 ];
 
 	// Vertex 1: Top-right
-	batchVertices[ vIdx++ ] = corners[ 1 ].x;
-	batchVertices[ vIdx++ ] = corners[ 1 ].y;
+	batchVertices[ vIdx++ ] = corners[ 1 ].x + originX;
+	batchVertices[ vIdx++ ] = corners[ 1 ].y + originY;
 	batchTexCoords[ tIdx++ ] = texCoords[ 2 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 3 ];
 
 	// Vertex 2: Bottom-left
-	batchVertices[ vIdx++ ] = corners[ 2 ].x;
-	batchVertices[ vIdx++ ] = corners[ 2 ].y;
+	batchVertices[ vIdx++ ] = corners[ 2 ].x + originX;
+	batchVertices[ vIdx++ ] = corners[ 2 ].y + originY;
 	batchTexCoords[ tIdx++ ] = texCoords[ 4 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 5 ];
 
 	// Triangle 2: Top-right, Bottom-right, Bottom-left
 	// Vertex 3: Top-right
-	batchVertices[ vIdx++ ] = corners[ 1 ].x;
-	batchVertices[ vIdx++ ] = corners[ 1 ].y;
+	batchVertices[ vIdx++ ] = corners[ 1 ].x + originX;
+	batchVertices[ vIdx++ ] = corners[ 1 ].y + originY;
 	batchTexCoords[ tIdx++ ] = texCoords[ 6 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 7 ];
 
 	// Vertex 4: Bottom-right
-	batchVertices[ vIdx++ ] = corners[ 3 ].x;
-	batchVertices[ vIdx++ ] = corners[ 3 ].y;
+	batchVertices[ vIdx++ ] = corners[ 3 ].x + originX;
+	batchVertices[ vIdx++ ] = corners[ 3 ].y + originY;
 	batchTexCoords[ tIdx++ ] = texCoords[ 8 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 9 ];
 
 	// Vertex 5: Bottom-left
-	batchVertices[ vIdx++ ] = corners[ 2 ].x;
-	batchVertices[ vIdx++ ] = corners[ 2 ].y;
+	batchVertices[ vIdx++ ] = corners[ 2 ].x + originX;
+	batchVertices[ vIdx++ ] = corners[ 2 ].y + originY;
 	batchTexCoords[ tIdx++ ] = texCoords[ 10 ];
 	batchTexCoords[ tIdx++ ] = texCoords[ 11 ];
 

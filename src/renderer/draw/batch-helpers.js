@@ -29,8 +29,10 @@ import * as g_batches from "../batches.js";
 export function addVertexToBatch( batch, x, y, color ) {
 	const idx = batch.count * batch.vertexComps;
 	const cidx = batch.count * batch.colorComps;
-	batch.vertices[ idx     ] = x;
-	batch.vertices[ idx + 1 ] = y;
+	const originX = batch.originX || 0;
+	const originY = batch.originY || 0;
+	batch.vertices[ idx     ] = x + originX;
+	batch.vertices[ idx + 1 ] = y + originY;
 	batch.colors[ cidx     ] = color.r;
 	batch.colors[ cidx + 1 ] = color.g;
 	batch.colors[ cidx + 2 ] = color.b;

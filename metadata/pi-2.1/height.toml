@@ -1,0 +1,18 @@
+title = "height"
+category = "core"
+isScreen = true
+summary = "Returns the requested local view height in pixels."
+description = """
+Returns the active view's requested local height. When no view is set this is
+the logical framebuffer height. This is not the effective clip height; a
+partially clipped view still reports the requested size.
+"""
+example = """
+$.screen( "320x200" );
+$.view( -20, 10, 100, 80 );
+$.print( $.height() );
+"""
+
+[[returns]]
+type = "number"
+description = "Requested local view height in pixels."

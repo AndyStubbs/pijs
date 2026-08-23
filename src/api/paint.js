@@ -12,6 +12,7 @@ import * as g_colors from "./colors.js";
 import * as g_utils from "../core/utils.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_commands from "../core/commands.js";
+import * as g_view from "./view.js";
 
 
 /***************************************************************************************************
@@ -80,26 +81,28 @@ function paint( screenData, options ) {
 		throw error;
 	}
 
-	const width = screenData.width;
-	const height = screenData.height;
+	const view = screenData.view;
+	const clipX = view.clipX;
+	const clipY = view.clipY;
+	const clipW = view.clipWidth;
+	const clipH = view.clipHeight;
+	const originX = view.originX;
+	const originY = view.originY;
+	const startPhys = g_view.toScreen( screenData, x, y );
 
-	// Check if starting point is in bounds
-	if( x < 0 || x >= width || y < 0 || y >= height ) {
+	if( !g_view.isInsideClip( view, startPhys.x, startPhys.y ) ) {
 		return;
 	}
 
-	// Optimization: if tolerance is 1 (any color), just fill the entire screen
+	// Optimization: if tolerance is 1 (any color), fill the requested view
 	if( tolerance === 1 ) {
-		g_renderer.drawRectFilled( screenData, 0, 0, width, height, fillColor );
+		g_renderer.drawRectFilled( screenData, 0, 0, view.width, view.height, fillColor );
 		g_renderer.setImageDirty( screenData );
 		return;
 	}
 
-	// Read all pixels from screen as 2D array
-	const pixels2D = g_renderer.readPixels( screenData, 0, 0, width, height );
-
-	// Get the starting pixel color
-	const startColor = pixels2D[ y ][ x ];
+	const pixels2D = g_renderer.readPixels( screenData, clipX, clipY, clipW, clipH );
+	const startColor = pixels2D[ startPhys.y - clipY ][ startPhys.x - clipX ];
 
 	// Don't fill if the color is the same
 	if( startColor.key === fillColor.key ) {
@@ -114,14 +117,14 @@ function paint( screenData, options ) {
 	const toleranceThreshold = ( 1 - tolerance * tolerance ) * maxDifference;
 
 	// Use Uint8Array for efficient visited pixel tracking
-	const visited = new Uint8Array( width * height );
+	const visited = new Uint8Array( clipW * clipH );
 
 	// BFS queue for flood fill - using head pointer for O(1) dequeue
 	const queue = [];
-	queue.push( { "x": x, "y": y } );
+	queue.push( { "x": startPhys.x, "y": startPhys.y } );
 
 	// Mark starting pixel as visited
-	visited[ y * width + x ] = 1;
+	visited[ ( startPhys.y - clipY ) * clipW + ( startPhys.x - clipX ) ] = 1;
 
 	// Define color comparison function based on fill mode (no conditionals in hot loop)
 	let shouldSkipPixel;
@@ -153,7 +156,7 @@ function paint( screenData, options ) {
 	}
 
 	// Prepare batch for drawing pixels
-	const pixelCount = width * height;
+	const pixelCount = clipW * clipH;
 	g_renderer.prepareBatch( screenData, g_renderer.POINTS_BATCH, pixelCount );
 
 	let head = 0;
@@ -165,23 +168,22 @@ function paint( screenData, options ) {
 		const py = pixel.y;
 
 		// Get pixel color
-		const pixelColor = pixels2D[ py ][ px ];
+		const pixelColor = pixels2D[ py - clipY ][ px - clipX ];
 
 		// Skip if color comparison fails
 		if( shouldSkipPixel( pixelColor ) ) {
 			continue;
 		}
 
-		// Fill this pixel using drawPixelUnsafe
+		// Fill using local coords so the view origin is applied once
 		g_renderer.drawPixelUnsafe(
-			screenData, pixel.x, pixel.y, fillColor, g_renderer.POINTS_BATCH
+			screenData, px - originX, py - originY, fillColor, g_renderer.POINTS_BATCH
 		);
 
-		// Add adjacent pixels to queue if not visited and in bounds
-		addToQueue( queue, visited, px + 1, py, width, height );
-		addToQueue( queue, visited, px - 1, py, width, height );
-		addToQueue( queue, visited, px, py + 1, width, height );
-		addToQueue( queue, visited, px, py - 1, width, height );
+		addToQueue( queue, visited, px + 1, py, clipX, clipY, clipW, clipH );
+		addToQueue( queue, visited, px - 1, py, clipX, clipY, clipW, clipH );
+		addToQueue( queue, visited, px, py + 1, clipX, clipY, clipW, clipH );
+		addToQueue( queue, visited, px, py - 1, clipX, clipY, clipW, clipH );
 	}
 
 	// Mark image as dirty to trigger render
@@ -205,12 +207,12 @@ function paint( screenData, options ) {
  * @param {number} height - Screen height
  * @returns {void}
  */
-function addToQueue( queue, visited, x, y, width, height ) {
-	if( x < 0 || x >= width || y < 0 || y >= height ) {
+function addToQueue( queue, visited, x, y, clipX, clipY, clipW, clipH ) {
+	if( x < clipX || x >= clipX + clipW || y < clipY || y >= clipY + clipH ) {
 		return;
 	}
 
-	const index = y * width + x;
+	const index = ( y - clipY ) * clipW + ( x - clipX );
 	if( visited[ index ] === 0 ) {
 		visited[ index ] = 1;
 		queue.push( { "x": x, "y": y } );

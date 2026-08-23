@@ -101,8 +101,16 @@ function print( screenData, options ) {
 		throw error;
 	}
 
-	// Bail if not possible to print an entire line on screen
-	if( screenData.printCursor.height > screenData.height ) {
+	const viewWidth = getViewWidth( screenData );
+	const viewHeight = getViewHeight( screenData );
+
+	// Zero-size views and lines taller than the view cannot print
+	if( viewWidth <= 0 || viewHeight <= 0 ) {
+		return;
+	}
+
+	// Bail if not possible to print an entire line in the view
+	if( screenData.printCursor.height > viewHeight ) {
 		return;
 	}
 
@@ -150,9 +158,14 @@ function setPos( screenData, options ) {
 			error.code = "INVALID_COL";
 			throw error;
 		}
+		const viewWidth = getViewWidth( screenData );
 		let x = Math.floor( col * printCursor.width );
-		if( x > screenData.width ) {
-			x = screenData.width - printCursor.height;
+		if( x > viewWidth ) {
+			if( viewWidth - printCursor.width < 0 ) {
+				x = 0;
+			} else {
+				x = viewWidth - printCursor.width;
+			}
 		}
 		screenData.printCursor.x = x;
 	}
@@ -164,9 +177,14 @@ function setPos( screenData, options ) {
 			error.code = "INVALID_ROW";
 			throw error;
 		}
+		const viewHeight = getViewHeight( screenData );
 		let y = Math.floor( row * screenData.printCursor.height );
-		if( y > screenData.height ) {
-			y = screenData.height - screenData.printCursor.height;
+		if( y > viewHeight ) {
+			if( viewHeight - printCursor.height < 0 ) {
+				y = 0;
+			} else {
+				y = viewHeight - printCursor.height;
+			}
 		}
 		screenData.printCursor.y = y;
 	}
@@ -357,17 +375,30 @@ function startPrint( screenData, msg, isInline, isCentered ) {
 		printCursor.x = Math.floor( ( printCursor.cols - msg.length ) / 2 ) * printCursor.width;
 	}
 
+	const viewWidth = getViewWidth( screenData );
+	const viewHeight = getViewHeight( screenData );
+
+	if( viewWidth <= 0 || viewHeight <= 0 ) {
+		return;
+	}
+
 	// Handle text wrapping if text is too wide
 	if(
 		!isInline &&
 		!isCentered &&
-		width + printCursor.x > screenData.width &&
+		width + printCursor.x > viewWidth &&
 		msg.length > 1
 	) {
-		const overlap = ( width + printCursor.x ) - screenData.width;
+		const overlap = ( width + printCursor.x ) - viewWidth;
 		const onScreen = width - overlap;
+		if( onScreen <= 0 ) {
+			return;
+		}
 		const onScreenPct = onScreen / width;
 		let msgSplit = Math.floor( msg.length * onScreenPct );
+		if( msgSplit <= 0 ) {
+			return;
+		}
 		let msg1 = msg.substring( 0, msgSplit );
 		let msg2 = msg.substring( msgSplit, msg.length );
 
@@ -386,10 +417,12 @@ function startPrint( screenData, msg, isInline, isCentered ) {
 	}
 
 	// Handle auto-scroll if text is too tall
-	if( printCursor.y + printCursor.height > screenData.height ) {
-
-		// Shift image up by font height
-		g_renderer.shiftImageUp( screenData, printCursor.height );
+	if( printCursor.y + printCursor.height > viewHeight ) {
+		const view = screenData.view;
+		g_renderer.shiftImageUp(
+			screenData, printCursor.height,
+			view.clipX, view.clipY, view.clipWidth, view.clipHeight
+		);
 
 		// Move cursor up
 		printCursor.y -= printCursor.height;
@@ -404,7 +437,7 @@ function startPrint( screenData, msg, isInline, isCentered ) {
 		printCursor.x = 0;
 	} else {
 		printCursor.x += printCursor.width * msg.length;
-		if( printCursor.x > screenData.width - printCursor.width ) {
+		if( printCursor.x > viewWidth - printCursor.width ) {
 			printCursor.x = 0;
 			printCursor.y += printCursor.height;
 		}
@@ -488,6 +521,43 @@ export function updatePrintCursorDimensions( screenData ) {
 
 	printCursor.width = printCursor.scaleWidth * ( font.width + printCursor.padX );
 	printCursor.height = printCursor.scaleHeight * ( font.height + printCursor.padY );
-	printCursor.cols = Math.floor( screenData.width / printCursor.width );
-	printCursor.rows = Math.floor( screenData.height / printCursor.height );
+
+	const viewWidth = getViewWidth( screenData );
+	const viewHeight = getViewHeight( screenData );
+	if( printCursor.width <= 0 || viewWidth <= 0 ) {
+		printCursor.cols = 0;
+	} else {
+		printCursor.cols = Math.floor( viewWidth / printCursor.width );
+	}
+	if( printCursor.height <= 0 || viewHeight <= 0 ) {
+		printCursor.rows = 0;
+	} else {
+		printCursor.rows = Math.floor( viewHeight / printCursor.height );
+	}
+}
+
+/**
+ * Requested local view width, or the FBO width if no view cache exists.
+ *
+ * @param {Object} screenData - Screen data object
+ * @returns {number}
+ */
+function getViewWidth( screenData ) {
+	if( screenData.view ) {
+		return screenData.view.width;
+	}
+	return screenData.width;
+}
+
+/**
+ * Requested local view height, or the FBO height if no view cache exists.
+ *
+ * @param {Object} screenData - Screen data object
+ * @returns {number}
+ */
+function getViewHeight( screenData ) {
+	if( screenData.view ) {
+		return screenData.view.height;
+	}
+	return screenData.height;
 }

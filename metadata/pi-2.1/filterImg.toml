@@ -1,0 +1,65 @@
+title = "filterImg"
+category = "pixels"
+isScreen = true
+summary = "Applies a filter function to a rectangular view region."
+description = """
+Queues a filter to run at end of frame. The filter callback receives a
+mutable pixel buffer (RGBA as Uint8ClampedArray) and x, y coordinates that
+are local to the view captured at call time. Return truthy to apply the
+modified pixel. If the callback does not return true the pixel is set to
+transparent black.
+
+filterImg snapshots the complete VIEW state and the local region when it is
+called. Later view(), pushView(), popView(), or screen switches do not
+change that job's origin, clip, or callback coordinates.
+
+Coordinates x1, y1, x2, y2 are inclusive local corners. They convert to
+half-open (x2+1, y2+1) before intersecting the effective clip. Defaults are
+the requested local bounds.
+
+Note: this is asynchronous but uses the image data from the call time. A
+line drawn after filterImg is drawn after the filter. This runs on the CPU.
+"""
+example = """
+$.screen( "300x200" );
+$.view( 20, 20, 100, 100 );
+$.circle( 50, 50, 40, "red" );
+$.filterImg( function ( color, x, y ) {
+	color[ 0 ] = color[ 0 ] - Math.round( Math.tan( ( x + y ) / 10 ) * 128 );
+	return color;
+} );
+"""
+
+[[parameters]]
+name = "filter"
+type = "function"
+signature = "( color: PiColor, x: number, y: number ) => boolean"
+description = "Callback (color, x, y) => truthy to accept modified pixel color, falsy to skip."
+
+[[parameters]]
+name = "x1"
+type = "number"
+description = "Left local coordinate (default 0)."
+optional = true
+
+[[parameters]]
+name = "y1"
+type = "number"
+description = "Top local coordinate (default 0)."
+optional = true
+
+[[parameters]]
+name = "x2"
+type = "number"
+description = "Right local coordinate (default view width - 1)."
+optional = true
+
+[[parameters]]
+name = "y2"
+type = "number"
+description = "Bottom local coordinate (default view height - 1)."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

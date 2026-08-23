@@ -1,0 +1,22 @@
+title = "popView"
+category = "view"
+isScreen = true
+summary = "Pops the current child view and restores the parent."
+description = """
+Removes the top view from the stack and restores the parent print cursor.
+After one view() call, popView() returns to the full-screen root. Calling
+popView() when the stack is empty throws VIEW_STACK_EMPTY.
+"""
+example = """
+$.screen( "320x200" );
+$.view( 20, 20, 100, 80 );
+$.pushView( 4, 4, 40, 30 );
+$.print( "child" );
+$.popView();
+$.print( "parent" );
+$.popView();
+"""
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

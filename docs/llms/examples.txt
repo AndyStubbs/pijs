@@ -4,6 +4,7 @@ This file contains example code snippets demonstrating how to use Pi.js for vari
 
 # QUICK REFERENCE INDEX
 - Task: Hello World -> see section ### Hello World
+- Task: Nested drawing views -> see section ### Nested Views
 - Task: Pong Game -> see section ### Pong Game
 - Task: Mary Had A Little Lamb -> see section ### Mary Had A Little Lamb
 - Task: Retro City Intro -> see section ### Retro City
@@ -22,6 +23,27 @@ $.print( "Hello, Pi.js!" );
 $.screen( "800x600", "myCanvas" );
 $.setColor( "#FF0000" );
 $.circle( 400, 300, 50 );
+```
+
+## Views
+
+### Nested Views
+```javascript
+$.screen( "320x200" );
+
+$.view( 16, 12, 140, 100 );
+$.cls();
+$.rect( 0, 0, $.width() - 1, $.height() - 1, "red" );
+$.print( "panel" );
+
+$.pushView( 8, 20, 80, 50 );
+$.cls();
+$.print( "child" );
+const screenPt = $.viewToScreen( 0, 0 );
+const localPt = $.screenToView( screenPt.x, screenPt.y );
+$.popView();
+
+$.view();
 ```
 
 ## Drawing Primitives
