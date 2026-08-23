@@ -31,7 +31,7 @@ $.circle( 400, 300, 50 );
 ```javascript
 $.screen( "320x200" );
 
-$.view( 16, 12, 140, 100 );
+$.pushView( 16, 12, 140, 100 );
 $.cls();
 $.rect( 0, 0, $.width() - 1, $.height() - 1, "red" );
 $.print( "panel" );
@@ -42,8 +42,7 @@ $.print( "child" );
 const screenPt = $.viewToScreen( 0, 0 );
 const localPt = $.screenToView( screenPt.x, screenPt.y );
 $.popView();
-
-$.view();
+$.popView();
 ```
 
 ## Drawing Primitives

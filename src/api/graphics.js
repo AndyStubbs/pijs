@@ -194,7 +194,9 @@ export function buildApi( s_screenData ) {
 		if( fillColor != null ) {
 			fillColorValue = s_getColorValueByRawInput( s_screenData, fillColor );
 			if( fillColorValue === null ) {
-				const error = new TypeError( "rect: Parameter 'fillColor' must be a valid color." );
+				const error = new TypeError(
+					"circle: Parameter 'fillColor' must be a valid color."
+				);
 				error.code = "INVALID_PARAMETER";
 				throw error;
 			}
@@ -651,10 +653,10 @@ function cls( screenData, options ) {
 	const x = g_utils.clamp( g_utils.getInt( options.x, 0 ), 0, localW );
 	const y = g_utils.clamp( g_utils.getInt( options.y, 0 ), 0, localH );
 	const width = g_utils.clamp(
-		g_utils.getInt( options.width, localW - x ), 0, localW
+		g_utils.getInt( options.width, localW - x ), 0, localW - x
 	);
 	const height = g_utils.clamp(
-		g_utils.getInt( options.height, localH - y ), 0, localH
+		g_utils.getInt( options.height, localH - y ), 0, localH - y
 	);
 
 	const phys = g_view.toScreen( screenData, x, y );

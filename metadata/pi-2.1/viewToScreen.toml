@@ -3,14 +3,11 @@ category = "view"
 isScreen = true
 summary = "Converts a local view point to screen coordinates."
 description = """
-Converts a point from the active view's local coordinates to screen / FBO
-coordinates using the logical view origin. This uses the requested origin,
-not the clipped origin. Input events stay screen-relative; use this helper
-when you need to compare local drawing coordinates with input positions.
+Converts a point from the active view's local coordinates to screen / FBO coordinates using the logical view origin. This uses the requested origin, not the clipped origin. Input events stay screen-relative; use this helper when you need to compare local drawing coordinates with input positions.
 """
 example = """
 $.screen( "320x200" );
-$.view( 40, 20, 100, 80 );
+$.pushView( 40, 20, 100, 80 );
 const p = $.viewToScreen( 0, 0 );
 $.print( p.x + "," + p.y );
 """

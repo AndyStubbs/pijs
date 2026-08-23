@@ -3,16 +3,11 @@ category = "shaders"
 isScreen = true
 summary = "Merges persistent display-shader uniform overrides and re-presents."
 description = """
-Merges values into the current display shader uniform overrides. Descriptor
-defaults from createShader are applied first; these overrides take
-precedence.
+Merges values into the current display shader uniform overrides. Descriptor defaults from createShader are applied first; these overrides take precedence.
 
-If an onscreen display shader is active and the canvas can be presented,
-pending drawing is flushed and the current logical FBO is presented.
-This does not change canvas or FBO size.
+If an onscreen display shader is active and the canvas can be presented, pending drawing is flushed and the current logical FBO is presented. This does not change canvas or FBO size.
 
-Hidden, detached, and offscreen screens store the new uniforms but do
-not present. The next valid presentation uses the stored values.
+Hidden, detached, and offscreen screens store the new uniforms but do not present. The next valid presentation uses the stored values.
 """
 example = """
 $.setDisplayShader( tint, { "u_gain": 1 } );

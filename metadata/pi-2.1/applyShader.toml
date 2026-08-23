@@ -3,17 +3,11 @@ category = "shaders"
 isScreen = true
 summary = "Queues an FBO shader at the current point in draw order."
 description = """
-Applies a custom shader to the logical framebuffer at the current draw
-position. The call creates a batch break and queues the pass; it does not
-run immediately. When batches flush, prior geometry is finalized, the
-shader processes the FBO at logical resolution, then later draws appear
-on top of the result.
+Applies a custom shader to the logical framebuffer at the current draw position. The call creates a batch break and queues the pass; it does not run immediately. When batches flush, prior geometry is finalized, the shader processes the FBO at logical resolution, then later draws appear on top of the result.
 
-u_sourceSize and u_outputSize are both the logical screen size. FBO
-shaders work on onscreen and offscreen screens.
+u_sourceSize and u_outputSize are both the logical screen size. FBO shaders work on onscreen and offscreen screens.
 
-Per-call uniforms are merged over createShader defaults for that
-invocation only.
+Per-call uniforms are merged over createShader defaults for that invocation only.
 """
 example = """
 $.screen( "320x200" );

@@ -1,18 +1,23 @@
 title = "width"
-category = "core"
+category = "view"
 isScreen = true
-summary = "Returns the requested local view width in pixels."
+summary = "Returns the screen or active view width in pixels."
 description = """
-Returns the active view's requested local width. When no view is set this is
-the logical framebuffer width. This is not the effective clip width; a
-partially clipped view still reports the requested size.
+Gets the internal width of the active screen's canvas. This is the logical width used for drawing
+operations, which may differ from the CSS display size.
+
+If there is an active view using pushView then it will return the width of the local viewport area and not the screen width.
 """
 example = """
 $.screen( "320x200" );
-$.view( -20, 10, 100, 80 );
-$.print( $.width() );
+const w = $.width();
+$.print( `Screen Width: ${w} ` );
+$.print( `Canvas CSS width: ${$.canvas().offsetWidth}` );
+$.pushView( 30, 20, 50, 50 );
+$.print( `Viewport Width: ${$.width()} ` );
+$.popView();
 """
 
 [[returns]]
 type = "number"
-description = "Requested local view width in pixels."
+description = "Screen or local view width in pixels."

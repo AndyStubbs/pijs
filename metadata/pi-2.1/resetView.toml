@@ -1,0 +1,21 @@
+title = "resetView"
+category = "view"
+isScreen = true
+summary = "Clears the view stack and resets to full screen."
+description = """
+Clears the entire view stack and restores implicit full-screen origin and clip. The print cursor is set to (0, 0). Safe to call when the stack is already empty.
+
+resetView() does not restore saved nested cursors. Use popView() when you need to restore a parent cursor. Changing the view flushes pending batches into the framebuffer. It does not clear the screen.
+"""
+example = """
+$.screen( "320x200" );
+$.pushView( 20, 10, 120, 80 );
+$.pushView( 8, 8, 40, 30 );
+$.print( "nested" );
+$.resetView();
+$.print( "full screen" );
+"""
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

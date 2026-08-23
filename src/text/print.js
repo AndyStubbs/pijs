@@ -69,7 +69,9 @@ function registerCommands() {
 	g_commands.addCommand( "getCols", getCols, true, [] );
 	g_commands.addCommand( "getRows", getRows, true, [] );
 	g_commands.addCommand( "setWordBreak", setWordBreak, true, [ "isEnabled" ] );
-	g_commands.addCommand( "setPrintSize", setPrintSize, true, [ "scaleWidth", "scaleHeight", "padX", "padY" ] );
+	g_commands.addCommand(
+		"setPrintSize", setPrintSize, true, [ "scaleWidth", "scaleHeight", "padX", "padY" ]
+	);
 	g_commands.addCommand( "calcWidth", calcWidth, true, [ "msg" ] );
 }
 

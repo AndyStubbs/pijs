@@ -3,7 +3,7 @@
  * Version: pi-2.1
  * Author: Andy Stubbs
  * License: Apache-2.0
- * Generated on 2026-08-23T04:08:24.212Z
+ * Generated on 2026-08-23T15:58:23.809Z
  */
 declare namespace Pi {
 	/**
@@ -671,7 +671,7 @@ declare namespace Pi {
 		/**
 		 * Queues an FBO shader at the current point in draw order.
 		 *
-		 * Applies a custom shader to the logical framebuffer at the current draw position. The call creates a batch break and queues the pass; it does not run immediately. When batches flush, prior geometry is finalized, the shader processes the FBO at logical resolution, then later draws appear on top of the result.  u_sourceSize and u_outputSize are both the logical screen size. FBO shaders work on onscreen and offscreen screens.  Per-call uniforms are merged over createShader defaults for that invocation only.
+		 * Applies a custom shader to the logical framebuffer at the current draw position. The call creates a batch break and queues the pass; it does not run immediately. When batches flush, prior geometry is finalized, the shader processes the FBO at logical resolution, then later draws appear on top of the result.  u_sourceSize and u_outputSize are both the logical screen size. FBO shaders work on onscreen and offscreen screens.  Per-call uniforms are merged over createShader defaults for that invocation only.
 		 * @param shaderHandle Shader handle returned by createShader.
 		 * @param uniforms Optional per-call uniform overrides for this invocation.
 		 */
@@ -787,13 +787,13 @@ declare namespace Pi {
 		clearEvents( type?: string ): void;
 
 		/**
-		 * Clears the active view or a rectangular region.
+		 * Clears the screen or a rectangular region.
 		 *
-		 * Clears the active view or a rectangular local region. Coordinates are local to the current view. The clear is clipped to the effective clip.  cls() with no arguments always resets the print cursor to (0, 0), even if the view is only partially visible. Rectangular cls(x, y, width, height) resets the cursor only when the rectangle is the full requested view (0, 0, width(), height()). Partial rectangles do not reset the cursor.  applyShader and display shaders still process the full framebuffer. View scissor is restored after an FBO shader pass.
-		 * @param x Local horizontal coordinate of the region to clear.
-		 * @param y Local vertical coordinate of the region to clear.
-		 * @param width Width of the region to clear.
-		 * @param height Height of the region to clear.
+		 * This function clears the entire screen or a rectangular region of the active canvas.  When x, y, width, and height are provided, only that region is cleared. Otherwise the full screen is cleared and the print cursor is reset to position (0, 0).
+		 * @param x The horizontal coordinate of the region to clear.
+		 * @param y The vertical coordinate of the region to clear.
+		 * @param width The width of the region to clear.
+		 * @param height The height of the region to clear.
 		 */
 		cls( params: { "x"?: number; "y"?: number; "width"?: number; "height"?: number } ): void;
 		cls( x?: number, y?: number, width?: number, height?: number ): void;
@@ -887,14 +887,14 @@ declare namespace Pi {
 		ellipse( x: number, y: number, radiusX: number, radiusY: number, fillColor?: any ): void;
 
 		/**
-		 * Applies a filter function to a rectangular view region.
+		 * Applies a filter function to a rectangular region of the screen.
 		 *
-		 * Queues a filter to run at end of frame. The filter callback receives a mutable pixel buffer (RGBA as Uint8ClampedArray) and x, y coordinates that are local to the view captured at call time. Return truthy to apply the modified pixel. If the callback does not return true the pixel is set to transparent black.  filterImg snapshots the complete VIEW state and the local region when it is called. Later view(), pushView(), popView(), or screen switches do not change that job's origin, clip, or callback coordinates.  Coordinates x1, y1, x2, y2 are inclusive local corners. They convert to half-open (x2+1, y2+1) before intersecting the effective clip. Defaults are the requested local bounds.  Note: this is asynchronous but uses the image data from the call time. A line drawn after filterImg is drawn after the filter. This runs on the CPU.
+		 * Queues a filter to run at end of frame. The filter callback receives a mutable pixel buffer (RGBA as Uint8ClampedArray) and x, y coordinates; return truthy to apply the modified pixel. If true is not returned in the callback the pixel will be filtered out and be set to black/transparent, even if it is not modified.  Note: while this function is asynchrounous it will modify the screen image using the image data at the time the function is called. So a line drawn after the filterImg command is called will be drawn after the filter is applied. Also, this runs on the CPU not the GPU so in large areas it may not be suitable to run in an animationFrame.
 		 * @param filter Callback (color, x, y) => truthy to accept modified pixel color, falsy to skip.
-		 * @param x1 Left local coordinate (default 0).
-		 * @param y1 Top local coordinate (default 0).
-		 * @param x2 Right local coordinate (default view width - 1).
-		 * @param y2 Bottom local coordinate (default view height - 1).
+		 * @param x1 Left coordinate (default 0).
+		 * @param y1 Top coordinate (default 0).
+		 * @param x2 Right coordinate (default screen width - 1).
+		 * @param y2 Bottom coordinate (default screen height - 1).
 		 */
 		filterImg( params: { "filter": ( color: PiColor, x: number, y: number ) => boolean; "x1"?: number; "y1"?: number; "x2"?: number; "y2"?: number } ): void;
 		filterImg( filter: ( color: PiColor, x: number, y: number ) => boolean, x1?: number, y1?: number, x2?: number, y2?: number ): void;
@@ -1026,7 +1026,7 @@ declare namespace Pi {
 		/**
 		 * Returns the requested local view height in pixels.
 		 *
-		 * Returns the active view's requested local height. When no view is set this is the logical framebuffer height. This is not the effective clip height; a partially clipped view still reports the requested size.
+		 * Gets the internal height of the active screen's framebuffer size. This is the logical height used for drawing operations, which may differ from the CSS display size.  If a view is active on the screen then it returns the local height of the viewport as opposed to the screen's framebuffer height.
 		 */
 		height(): void;
 
@@ -1195,17 +1195,17 @@ declare namespace Pi {
 		/**
 		 * Pops the current child view and restores the parent.
 		 *
-		 * Removes the top view from the stack and restores the parent print cursor. After one view() call, popView() returns to the full-screen root. Calling popView() when the stack is empty throws VIEW_STACK_EMPTY.
+		 * Removes the top view from the stack and restores the parent print cursor. Popping the last view returns to implicit full screen. Calling popView() when the stack is empty throws VIEW_STACK_EMPTY.
 		 */
 		popView(): void;
 
 		/**
-		 * Prints text in the active view and advances the cursor.
+		 * Prints text to the screen using the current font and advances the cursor.
 		 *
-		 * Prints text at the current cursor using the active bitmap font. Wrap, setPos bounds, cols/rows, and the bottom scroll bound use the requested local view size. Scroll only shifts pixels inside the effective clip.  Zero-size views are a no-op and must not hang. getCols() and getRows() are 0 in a 0-width or 0-height view.  Direct setPos still clamps only when the position is past the local bound. setPosPx does not clamp. view(), view reset, and framebuffer resize always normalize the stored cursor into [0, width] x [0, height]. Insertion at exactly width or height stays valid. pushView/popView save and restore the parent cursor.
+		 * Prints text to the screen at the current cursor position using the active bitmap font. The text cursor automatically advances after printing. Supports automatic word wrapping, text centering, and vertical scrolling when the cursor reaches the bottom of the screen.  Newlines in the message will split the text into multiple lines. Tabs are converted to spaces.
 		 * @param msg Text message to print. If omitted, prints an empty line.
 		 * @param isInline If true, cursor stays on the same line after printing instead of advancing to next line.
-		 * @param isCentered If true, centers the text horizontally in the current view.
+		 * @param isCentered If true, centers the text horizontally on the screen.
 		 */
 		print( params: { "msg"?: string; "isInline"?: boolean; "isCentered"?: boolean } ): void;
 		print( msg?: string, isInline?: boolean, isCentered?: boolean ): void;
@@ -1223,7 +1223,7 @@ declare namespace Pi {
 		/**
 		 * Pushes a child view relative to the current view.
 		 *
-		 * Pushes a nested view whose x, y are relative to the current local origin. The child clip is the parent effective clip intersected with the requested child rectangle. The parent print cursor is saved and the child cursor starts at (0, 0).  Use popView() to restore the parent view and cursor. Child clips stay inside the parent. Resize recomputes origins and clips from the requested local rects, so previously clipped areas can become visible again when the screen grows.
+		 * Pushes a nested view whose x, y are relative to the current local origin. The child clip is the parent effective clip intersected with the requested child rectangle. The parent print cursor is saved and the child cursor starts at (0, 0).  Use popView() to restore the parent view and cursor. Child clips stay inside the parent. Resize recomputes origins and clips from the requested local rects, so previously clipped areas can become visible again when the screen grows.
 		 * @param x Left edge of the child view in current local coordinates.
 		 * @param y Top edge of the child view in current local coordinates.
 		 * @param width Requested local width in pixels. Must be 0 or greater.
@@ -1264,9 +1264,16 @@ declare namespace Pi {
 		rect( x: number, y: number, width: number, height: number, fillColor?: any ): void;
 
 		/**
+		 * Clears the view stack and resets to full screen.
+		 *
+		 * Clears the entire view stack and restores implicit full-screen origin and clip. The print cursor is set to (0, 0). Safe to call when the stack is already empty.  resetView() does not restore saved nested cursors. Use popView() when you need to restore a parent cursor. Changing the view flushes pending batches into the framebuffer. It does not clear the screen.
+		 */
+		resetView(): void;
+
+		/**
 		 * Converts a screen point to local view coordinates.
 		 *
-		 * Converts a point from screen / FBO coordinates to the active view's local coordinates using the logical view origin. Input stays screen-relative; call this to map mouse or other screen positions into the current view.
+		 * Converts a point from screen / FBO coordinates to the active view's local coordinates using the logical view origin. Input stays screen-relative; call this to map mouse or other screen positions into the current view.
 		 * @param x Screen / FBO x coordinate.
 		 * @param y Screen / FBO y coordinate.
 		 */
@@ -1350,7 +1357,7 @@ declare namespace Pi {
 		/**
 		 * Sets or clears the custom display shader for final presentation.
 		 *
-		 * Sets the shader used when presenting the logical FBO to the canvas. The logical FBO is not modified. Typical uses include custom upscaling, CRT effects, and color grading.  When a custom display shader is active, canvas.width and canvas.height track the CSS presentation size (clamped). CSS style size remains for layout. Passing null restores the default display program and logical backing-store size.  u_sourceSize is the logical FBO size. u_outputSize is the actual canvas backing size. Display shaders do not run on offscreen screens (state may still be stored).  This call replaces the active shader and resets persistent display uniform overrides to the uniforms supplied here (or none).
+		 * Sets the shader used when presenting the logical FBO to the canvas. The logical FBO is not modified. Typical uses include custom upscaling, CRT effects, and color grading.  When a custom display shader is active, canvas.width and canvas.height track the CSS presentation size (clamped). CSS style size remains for layout. Passing null restores the default display program and logical backing-store size.  u_sourceSize is the logical FBO size. u_outputSize is the actual canvas backing size. Display shaders do not run on offscreen screens (state may still be stored).  This call replaces the active shader and resets persistent display uniform overrides to the uniforms supplied here (or none).
 		 * @param shaderHandle Shader handle from createShader, or null to restore the default display path.
 		 * @param uniforms Optional initial display uniform overrides. Replaces prior overrides.
 		 */
@@ -1360,7 +1367,7 @@ declare namespace Pi {
 		/**
 		 * Merges persistent display-shader uniform overrides and re-presents.
 		 *
-		 * Merges values into the current display shader uniform overrides. Descriptor defaults from createShader are applied first; these overrides take precedence.  If an onscreen display shader is active and the canvas can be presented, pending drawing is flushed and the current logical FBO is presented. This does not change canvas or FBO size.  Hidden, detached, and offscreen screens store the new uniforms but do not present. The next valid presentation uses the stored values.
+		 * Merges values into the current display shader uniform overrides. Descriptor defaults from createShader are applied first; these overrides take precedence.  If an onscreen display shader is active and the canvas can be presented, pending drawing is flushed and the current logical FBO is presented. This does not change canvas or FBO size.  Hidden, detached, and offscreen screens store the new uniforms but do not present. The next valid presentation uses the stored values.
 		 * @param uniforms Uniform values to merge into the active display-shader overrides.
 		 */
 		setDisplayShaderUniforms( params: { "uniforms": object } ): void;
@@ -1487,21 +1494,9 @@ declare namespace Pi {
 		stopTouch(): void;
 
 		/**
-		 * Sets or resets the active local drawing view.
-		 *
-		 * Sets a local drawing coordinate system on the active screen. Drawing, text, cls, reads, and paint then use local coordinates with 0,0 at the view origin. Pixels are scissored to the effective clip (the requested rectangle intersected with the parent clip). Internal clips are half-open: [x, x+width) x [y, y+height).  width() and height() return the requested local size, not the clipped size. Zero-size views (0x0, 0xh, wx0) are valid. Print is a no-op and must not hang.  view(x, y, width, height) replaces the stack with one view relative to the full screen and normalizes the print cursor into the new local range. view() with no arguments clears the stack (full-screen root) and normalizes the cursor.  Changing the view flushes pending batches into the framebuffer. It does not clear the screen. Multiple views in one render cycle stay visible together. Negative width or height throws INVALID_PARAMETER.
-		 * @param x Left edge of the view in full-screen coordinates.
-		 * @param y Top edge of the view in full-screen coordinates.
-		 * @param width Requested local width in pixels. Must be 0 or greater.
-		 * @param height Requested local height in pixels. Must be 0 or greater.
-		 */
-		view( params: { "x"?: number; "y"?: number; "width"?: number; "height"?: number } ): void;
-		view( x?: number, y?: number, width?: number, height?: number ): void;
-
-		/**
 		 * Converts a local view point to screen coordinates.
 		 *
-		 * Converts a point from the active view's local coordinates to screen / FBO coordinates using the logical view origin. This uses the requested origin, not the clipped origin. Input events stay screen-relative; use this helper when you need to compare local drawing coordinates with input positions.
+		 * Converts a point from the active view's local coordinates to screen / FBO coordinates using the logical view origin. This uses the requested origin, not the clipped origin. Input events stay screen-relative; use this helper when you need to compare local drawing coordinates with input positions.
 		 * @param x Local x coordinate.
 		 * @param y Local y coordinate.
 		 */
@@ -1511,7 +1506,7 @@ declare namespace Pi {
 		/**
 		 * Returns the requested local view width in pixels.
 		 *
-		 * Returns the active view's requested local width. When no view is set this is the logical framebuffer width. This is not the effective clip width; a partially clipped view still reports the requested size.
+		 * Returns the active view's requested local width. When no view is set this is the logical framebuffer width. This is not the effective clip width; a partially clipped view still reports the requested size.  Gets the internal width of the active screen's canvas. This is the logical width used for drawing operations, which may differ from the CSS display size.  If a view is active on the screen then it returns the local width of the viewport as opposed to the screen's framebuffer width.
 		 */
 		width(): void;
 	}
@@ -1520,7 +1515,7 @@ declare namespace Pi {
 		/**
 		 * Creates a custom fragment shader and returns a handle.
 		 *
-		 * Creates a screen-independent shader from GLSL ES 3.00 fragment source. The vertex stage is built-in (fullscreen quad, v_texCoord). The WebGL program is compiled lazily on first use.  The fragment source must include "#version 300 es". At first real draw the shader must declare uniform sampler2D u_texture. Built-in uniforms, if declared: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2), u_time (float), u_frame (int).  The second argument is an optional map of default custom uniform values (number, [x, y], [x, y, z], or [x, y, z, w]). Unknown uniform names are ignored.
+		 * Creates a screen-independent shader from GLSL ES 3.00 fragment source. The vertex stage is built-in (fullscreen quad, v_texCoord). The WebGL program is compiled lazily on first use.  The fragment source must include "#version 300 es". At first real draw the shader must declare uniform sampler2D u_texture. Built-in uniforms, if declared: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2), u_time (float), u_frame (int).  The second argument is an optional map of default custom uniform values (number, [x, y], [x, y, z], or [x, y, z, w]). Unknown uniform names are ignored.
 		 * @param fragmentSource GLSL ES 3.00 fragment shader source. Must include "#version 300 es".
 		 * @param uniforms Optional default custom uniform values. Keys are uniform names.
 		 */

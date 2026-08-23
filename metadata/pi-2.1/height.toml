@@ -1,18 +1,23 @@
 title = "height"
-category = "core"
+category = "view"
 isScreen = true
-summary = "Returns the requested local view height in pixels."
+summary = "Returns the screen or active view height in pixels."
 description = """
-Returns the active view's requested local height. When no view is set this is
-the logical framebuffer height. This is not the effective clip height; a
-partially clipped view still reports the requested size.
+Gets the internal height of the active screen's canvas. This is the logical height used for drawing
+operations, which may differ from the CSS display size.
+
+If there is an active view using pushView then it will return the height of the local viewport area and not the screen height.
 """
 example = """
 $.screen( "320x200" );
-$.view( -20, 10, 100, 80 );
-$.print( $.height() );
+const h = $.height();
+$.print( `Screen Height: ${h}` );
+$.print( `Canvas CSS height: ${$.canvas().offsetHeight}` );
+$.pushView( 30, 20, 50, 50 );
+$.print( `Viewport Height: ${$.height()} ` );
+$.popView();
 """
 
 [[returns]]
 type = "number"
-description = "Requested local view height in pixels."
+description = "Screen or local view height in pixels."

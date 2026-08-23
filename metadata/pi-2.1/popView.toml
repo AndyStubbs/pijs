@@ -3,18 +3,23 @@ category = "view"
 isScreen = true
 summary = "Pops the current child view and restores the parent."
 description = """
-Removes the top view from the stack and restores the parent print cursor.
-After one view() call, popView() returns to the full-screen root. Calling
-popView() when the stack is empty throws VIEW_STACK_EMPTY.
+Removes the top view from the stack and restores the parent print cursor. Popping the last view returns to implicit full screen. Calling popView() when the stack is empty throws VIEW_STACK_EMPTY.
+
+A view defines a local drawing area with its own origin, width, height, and clipping region. Graphics and text commands use coordinates relative to the current view and cannot draw outside
+its visible clipped area.
 """
 example = """
 $.screen( "320x200" );
-$.view( 20, 20, 100, 80 );
-$.pushView( 4, 4, 40, 30 );
-$.print( "child" );
+$.setColor( 15 );
+$.pushView( 20, 20, 100, 80 );
+$.paint( 0, 0, 1 );
+$.pushView( 8, 8, 80, 60 );
+$.paint( 0, 0, 2 );
+$.print( "child: This content should wrap here" );
 $.popView();
 $.print( "parent" );
 $.popView();
+$.print( "grandparent" );
 """
 
 [[returns]]

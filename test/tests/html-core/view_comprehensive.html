@@ -146,17 +146,17 @@ void main() {
 	}
 
 	function assertImgPixel( img, x, y, viewX, viewY, msg ) {
-		const expected = $.getPixel( viewX, viewY, false );
-		const ctx = img.getContext( "2d" );
+		const expectedIndex = $.getPixel( viewX, viewY, true );
+		const ctx = img.getContext( "2d", { "willReadFrequently": true } );
 		const d = ctx.getImageData( x, y, 1, 1 ).data;
-		if(
-			d[ 0 ] !== expected.r || d[ 1 ] !== expected.g ||
-			d[ 2 ] !== expected.b
-		) {
+		const actualIndex = $.getPalIndex( {
+			"color": [ d[ 0 ], d[ 1 ], d[ 2 ], d[ 3 ] / 255 ],
+			"tolerance": 0.01
+		} );
+		if( actualIndex !== expectedIndex ) {
 			fails.push(
-				msg + " got " + d[ 0 ] + "," + d[ 1 ] + "," + d[ 2 ] +
-				" expected " + expected.r + "," + expected.g + "," +
-				expected.b
+				msg + " got index " + actualIndex + " expected index " +
+				expectedIndex
 			);
 		}
 	}
@@ -174,7 +174,7 @@ void main() {
 		}
 		finished = true;
 		$.setScreen( main );
-		$.view();
+		$.resetView();
 		$.setColor( 15 );
 		$.setPosPx( 8, 332 );
 		if( fails.length === 0 ) {
@@ -200,7 +200,7 @@ void main() {
 		$.set( { "enableContextMenu": false } );
 
 		// Translation + screenToView
-		$.view( 8, 8, 72, 52 );
+		$.pushView( 8, 8, 72, 52 );
 		fillView( 4, 0, 0, 72, 52 );
 		assertEq( $.width(), 72, "translate width" );
 		assertEq( $.height(), 52, "translate height" );
@@ -214,34 +214,35 @@ void main() {
 		assertPixel( 70, 50, 4, "translate last px" );
 		assertClear( 72, 0, "translate right edge" );
 		assertClear( 0, 52, "translate bottom edge" );
+		$.popView();
 
 		// Clip on all four edges (one-pixel boundaries)
-		$.view();
 		$.setColor( 14 );
 		$.pset( 87, 20 );
 		$.pset( 160, 20 );
 		$.pset( 110, 7 );
 		$.pset( 110, 64 );
-		$.view( 88, 8, 72, 56 );
+		$.pushView( 88, 8, 72, 56 );
 		fillView( 2, 0, 0, 72, 56 );
 		assertPixel( 5, 5, 2, "clip inside" );
 		assertClear( -1, 10, "clip left local" );
 		assertClear( 72, 10, "clip right local" );
 		assertClear( 10, -1, "clip top local" );
 		assertClear( 10, 56, "clip bottom local" );
-		$.view();
+		$.popView();
 		assertPixel( 87, 20, 14, "left outside kept" );
 		assertPixel( 160, 20, 14, "right outside kept" );
 		assertPixel( 110, 7, 14, "top outside kept" );
 		assertPixel( 110, 64, 14, "bottom outside kept" );
 
 		// Image clip
-		$.view( 168, 8, 48, 40 );
+		$.pushView( 168, 8, 48, 40 );
 		$.drawImage( "ship", 10, 5 );
 		fillView( 15, 0, 0, 47, 39 );
+		$.popView();
 
 		// Full-view cls vs rectangular cls
-		$.view( 224, 8, 72, 48 );
+		$.pushView( 224, 8, 72, 48 );
 		fillView( 1, 0, 0, 72, 48 );
 		$.setPosPx( 8, 8 );
 		$.cls( 10, 10, 20, 20 );
@@ -254,10 +255,11 @@ void main() {
 		assertEq( afterFull.y, 0, "full cls y" );
 		assertClear( 5, 5, "full cls cleared" );
 
+		$.popView();
+
 		// Paint clip: matching color outside must not leak
-		$.view();
 		fillView( 4, 300, 4, 88, 64 );
-		$.view( 308, 12, 72, 48 );
+		$.pushView( 308, 12, 72, 48 );
 		fillView( 16, 0, 0, 72, 48 );
 		$.paint( 10, 10, 2 );
 		assertPixel( 5, 5, 2, "paint left" );
@@ -265,16 +267,15 @@ void main() {
 		assertPixel( 5, 40, 2, "paint bottom" );
 		assertClear( 72, 0, "paint past right" );
 		assertClear( -1, 10, "paint past left" );
-		$.view();
+		$.popView();
 		assertPixel( 307, 30, 4, "no leak left" );
 		assertPixel( 380, 30, 4, "no leak right" );
 		assertPixel( 340, 11, 4, "no leak top" );
 		assertPixel( 340, 60, 4, "no leak bottom" );
 
 		// Paint in a partially clipped child
-		$.view();
 		fillView( 4, 392, 4, 88, 68 );
-		$.view( 400, 8, 80, 56 );
+		$.pushView( 400, 8, 80, 56 );
 		fillView( 16, 0, 0, 80, 56 );
 		$.pushView( 50, 10, 80, 40 );
 		fillView( 16, 0, 0, 30, 40 );
@@ -282,18 +283,18 @@ void main() {
 		assertPixel( 5, 5, 3, "child paint" );
 		assertClear( 40, 0, "child past parent" );
 		$.popView();
-		$.view();
+		$.popView();
 		assertPixel( 399, 30, 4, "parent outside kept" );
 
 		// Shader invert inside a view, then clipped draw
 		const invert = $.createShader( invertSrc );
-		$.view( 488, 8, 100, 70 );
+		$.pushView( 488, 8, 100, 70 );
 		$.setColor( 40 );
 		$.rect( 0, 0, 100, 70, 40 );
 		$.applyShader( invert );
 		$.setColor( 2 );
 		$.circle( 70, 40, 16, 2 );
-		$.view();
+		$.popView();
 		const inverted = $.getPixel( 508, 28 );
 		if( !isColor( inverted, 0, 255, 255 ) ) {
 			fails.push(
@@ -305,7 +306,7 @@ void main() {
 		assert( $.getPixel( 484, 20 ).a === 0, "outside shader still clear" );
 
 		// Nested origin + parent intersection
-		$.view( 8, 84, 90, 64 );
+		$.pushView( 8, 84, 90, 64 );
 		fillView( 1, 0, 0, 90, 64 );
 		$.pushView( 60, 8, 70, 32 );
 		assertEq( $.width(), 70, "nested requested width" );
@@ -316,27 +317,30 @@ void main() {
 		assertPixel( 5, 5, 3, "nested visible" );
 		assertClear( 40, 0, "nested past parent" );
 		$.popView();
+		$.popView();
 
 		// Empty-clip child
-		$.view( 108, 84, 56, 36 );
+		$.pushView( 108, 84, 56, 36 );
 		fillView( 6, 0, 0, 56, 36 );
 		$.pushView( 70, 0, 40, 36 );
 		fillView( 4, 0, 0, 40, 36 );
 		assertClear( 0, 0, "empty clip child" );
 		$.popView();
+		$.popView();
 
 		// Batch flush: rect, then view change, then circle — both remain
-		$.view( 176, 84, 80, 64 );
+		$.pushView( 176, 84, 80, 64 );
 		fillView( 13, 10, 10, 30, 30 );
-		$.view( 264, 84, 80, 64 );
+		$.popView();
+		$.pushView( 264, 84, 80, 64 );
 		$.setColor( 14 );
 		$.circle( 40, 40, 20, 14 );
-		$.view();
+		$.popView();
 		assertPixel( 191, 99, 13, "flush rect kept" );
 		assertPixel( 304, 124, 14, "flush circle kept" );
 
 		// setPos / setPosPx at view origin
-		$.view( 352, 84, 100, 44 );
+		$.pushView( 352, 84, 100, 44 );
 		$.setColor( 1 );
 		$.rect( 0, 0, 100, 44, 1 );
 		$.setPos( 0, 0 );
@@ -346,35 +350,39 @@ void main() {
 		const origin = $.viewToScreen( 0, 0 );
 		assertEq( origin.x, 352, "print origin x" );
 		assertEq( origin.y, 84, "print origin y" );
+		$.popView();
 
 		// Word wrap
-		$.view( 460, 84, 56, 56 );
+		$.pushView( 460, 84, 56, 56 );
 		$.setColor( 5 );
 		$.rect( 0, 0, 56, 56, 5 );
 		$.setWordBreak( true );
 		$.print( "word wrap here" );
+		$.popView();
 
 		// Character wrap
-		$.view( 524, 84, 44, 56 );
+		$.pushView( 524, 84, 44, 56 );
 		$.setColor( 3 );
 		$.rect( 0, 0, 44, 56, 3 );
 		$.setWordBreak( false );
 		$.print( "CHARWRAP" );
 		$.setWordBreak( true );
+		$.popView();
 
 		// Newline to local X 0
-		$.view( 576, 84, 56, 36 );
+		$.pushView( 576, 84, 56, 36 );
 		$.setColor( 4 );
 		$.rect( 0, 0, 56, 36, 4 );
+		$.setColor( 15 );
 		$.print( "AB" );
 		const afterNl = $.getPosPx();
 		assertEq( afterNl.x, 0, "newline x" );
+		$.popView();
 
 		// Bottom bound + scroll only inside the view
-		$.view();
 		$.setColor( 14 );
 		$.rect( 8, 152, 90, 64, 14 );
-		$.view( 16, 160, 48, 32 );
+		$.pushView( 16, 160, 48, 32 );
 		$.setColor( 16 );
 		$.rect( 0, 0, 48, 32, 16 );
 		$.print( "1" );
@@ -382,11 +390,11 @@ void main() {
 		$.print( "3" );
 		$.print( "4" );
 		$.print( "5" );
-		$.view();
+		$.popView();
 		assertEq( $.getPixel( 10, 156, true ), 14, "scroll stays in clip" );
 
 		// Inclusive createImageFromScreen sizes
-		$.view( 108, 152, 50, 50 );
+		$.pushView( 108, 152, 50, 50 );
 		fillView( 4, 0, 0, 50, 50 );
 		const fullName = $.createImageFromScreen( "full", 0, 0, 49, 49 );
 		const fullImg = $.getImage( fullName );
@@ -396,11 +404,12 @@ void main() {
 		const oneImg = $.getImage( oneName );
 		assertEq( oneImg.width, 1, "image 1 width" );
 		assertEq( oneImg.height, 1, "image 1 height" );
+		$.popView();
 
 		// Inclusive-corner clamp: both endpoints outside the same edge
 		const capScreen = $.screen( "100x100", null, true );
 		$.setScreen( capScreen );
-		$.view( 0, 0, 100, 100 );
+		$.pushView( 0, 0, 100, 100 );
 		fillView( 4, 0, 0, 100, 100 );
 		$.setColor( 15 );
 		$.pset( 0, 10 );
@@ -518,17 +527,17 @@ void main() {
 		$.setScreen( main );
 
 		// Clamp-and-shrink get
-		$.view( 168, 152, 72, 44 );
+		$.pushView( 168, 152, 72, 44 );
 		fillView( 2, 0, 0, 72, 44 );
 		const region = $.get( -10, -10, 100, 80, 1, false );
 		assertEq( region.length, 44, "get height shrink" );
 		assertEq( region[ 0 ].length, 72, "get width shrink" );
+		$.popView();
 
 		// Isolation: FBO-valid pixel outside clip
-		$.view();
 		$.setColor( 14 );
 		$.pset( 237, 162 );
-		$.view( 252, 152, 56, 36 );
+		$.pushView( 252, 152, 56, 36 );
 		$.pushView( -20, 8, 40, 24 );
 		assertClear( 5, 2, "getPixel isolation" );
 		const iso = $.get( 0, 0, 40, 24 );
@@ -546,9 +555,10 @@ void main() {
 		assertEq( isoImg.width, 1, "getImage isolation width" );
 		assertEq( isoImg.height, 3, "getImage isolation height" );
 		$.popView();
+		$.popView();
 
 		// filterImg snapshot: schedule on A, switch to B
-		$.view( 316, 152, 36, 36 );
+		$.pushView( 316, 152, 36, 36 );
 		fillView( 1, 0, 0, 36, 36 );
 		$.filterImg( function( color, x, y ) {
 			if( x === 5 && y === 5 ) {
@@ -560,27 +570,31 @@ void main() {
 			}
 			return true;
 		} );
-		$.view( 360, 152, 36, 36 );
+		$.popView();
+		$.pushView( 360, 152, 36, 36 );
 		fillView( 2, 0, 0, 36, 36 );
+		$.popView();
 
 		// Negative-origin clip capture
-		$.view( -10, 220, 50, 40 );
+		$.pushView( -10, 220, 50, 40 );
 		fillView( 1, 0, 0, 50, 40 );
 		const clipName = $.createImageFromScreen( "clip", 0, 0, 49, 39 );
 		const clipImg = $.getImage( clipName );
 		assertEq( clipImg.width, 40, "clipped image width" );
 		assertEq( clipImg.height, 40, "clipped image height" );
+		$.popView();
 
 		// No-arg cls in a partially clipped view resets cursor
-		$.view( -20, 268, 80, 28 );
+		$.pushView( -20, 268, 80, 28 );
 		$.setPosPx( 12, 8 );
 		$.cls();
 		const clsPos = $.getPosPx();
 		assertEq( clsPos.x, 0, "partial cls cursor x" );
 		assertEq( clsPos.y, 0, "partial cls cursor y" );
+		$.popView();
 
 		// Exact right/bottom cursor endpoints on direct setPos
-		$.view( 108, 220, 80, 48 );
+		$.pushView( 108, 220, 80, 48 );
 		$.setColor( 7 );
 		$.rect( 0, 0, 80, 48, 7 );
 		$.setPos( 1, 0 );
@@ -593,9 +607,10 @@ void main() {
 		let px = $.getPosPx();
 		assertEq( px.x, $.width(), "setPos right endpoint" );
 		assertEq( px.y, $.height(), "setPos bottom endpoint" );
+		$.popView();
 
-		// pushView / popView restore cursor
-		$.view( 200, 220, 100, 48 );
+		// pushView starts child at (0, 0); popView restores parent
+		$.pushView( 200, 220, 100, 48 );
 		$.setColor( 9 );
 		$.rect( 0, 0, 100, 48, 9 );
 		$.setPosPx( 16, 16 );
@@ -607,23 +622,12 @@ void main() {
 		px = $.getPosPx();
 		assertEq( px.x, 16, "pop restore x" );
 		assertEq( px.y, 16, "pop restore y" );
-
-		// setPosPx -> view -> popView restores the parent cursor
-		$.view();
-		$.setPosPx( 50, 60 );
-		$.view( 10, 10, 100, 100 );
-		px = $.getPosPx();
-		assertEq( px.x, 50, "view keeps cursor x" );
-		assertEq( px.y, 60, "view keeps cursor y" );
 		$.popView();
-		px = $.getPosPx();
-		assertEq( px.x, 50, "view pop restore x" );
-		assertEq( px.y, 60, "view pop restore y" );
 
-		// Nested setPosPx, view, pushView, popView, popView
-		$.view();
+		// Nested cursor restoration: each pop restores that parent
+		$.setPosPx( 12, 18 );
+		$.pushView( 10, 10, 100, 100 );
 		$.setPosPx( 24, 32 );
-		$.view( 10, 10, 100, 100 );
 		$.pushView( 8, 8, 40, 24 );
 		px = $.getPosPx();
 		assertEq( px.x, 0, "nested push cursor x" );
@@ -634,60 +638,79 @@ void main() {
 		assertEq( px.y, 32, "pop child restore y" );
 		$.popView();
 		px = $.getPosPx();
-		assertEq( px.x, 24, "pop view restore x" );
-		assertEq( px.y, 32, "pop view restore y" );
+		assertEq( px.x, 12, "pop root restore x" );
+		assertEq( px.y, 18, "pop root restore y" );
 
-		// setPosPx out of range then view() normalizes
-		$.view();
-		$.setPosPx( 500, 400 );
-		$.view( 200, 220, 100, 48 );
+		// resetView clears nested views, sets cursor to (0, 0)
+		$.pushView( 20, 20, 80, 60 );
+		$.pushView( 4, 4, 20, 20 );
+		$.setPosPx( 8, 8 );
+		$.resetView();
+		assertEq( $.width(), 640, "reset nested width" );
+		assertEq( $.height(), 360, "reset nested height" );
+		const resetNest = $.viewToScreen( 0, 0 );
+		assertEq( resetNest.x, 0, "reset nested origin x" );
+		assertEq( resetNest.y, 0, "reset nested origin y" );
 		px = $.getPosPx();
-		assertEq( px.x, 100, "normalize x after view" );
-		assertEq( px.y, 48, "normalize y after view" );
+		assertEq( px.x, 0, "reset nested cursor x" );
+		assertEq( px.y, 0, "reset nested cursor y" );
 
-		// view-reset normalize
+		// resetView is safe on an empty stack
+		$.resetView();
+		assertEq( $.width(), 640, "empty reset width" );
+		px = $.getPosPx();
+		assertEq( px.x, 0, "empty reset cursor x" );
+		assertEq( px.y, 0, "empty reset cursor y" );
+
+		// resetView always sets cursor to (0, 0)
+		$.setPosPx( 50, 60 );
+		$.resetView();
+		px = $.getPosPx();
+		assertEq( px.x, 0, "reset in-range cursor x" );
+		assertEq( px.y, 0, "reset in-range cursor y" );
 		$.setPosPx( 900, 900 );
-		$.view();
+		$.resetView();
 		px = $.getPosPx();
-		assertEq( px.x, 640, "reset normalize x" );
-		assertEq( px.y, 360, "reset normalize y" );
+		assertEq( px.x, 0, "reset out-of-range cursor x" );
+		assertEq( px.y, 0, "reset out-of-range cursor y" );
 
 		// Zero-size requested size and print
-		$.view( 10, 10, 0, 0 );
+		$.pushView( 10, 10, 0, 0 );
 		assertEq( $.width(), 0, "zero width" );
 		assertEq( $.height(), 0, "zero height" );
 		$.print( "must not hang" );
 		assertEq( $.getCols(), 0, "0x0 cols" );
 		assertEq( $.getRows(), 0, "0x0 rows" );
-		$.view( 400, 220, 0, 100 );
+		$.popView();
+		$.pushView( 400, 220, 0, 100 );
 		$.print( "zero width" );
 		assertEq( $.getCols(), 0, "0xh cols" );
-		$.view( 400, 220, 100, 0 );
+		$.popView();
+		$.pushView( 400, 220, 100, 0 );
 		$.print( "zero height" );
 		assertEq( $.getRows(), 0, "wx0 rows" );
+		$.popView();
 
-		// Reset
-		$.view();
 		assertEq( $.width(), 640, "reset width" );
 		assertEq( $.height(), 360, "reset height" );
 		const resetPt = $.viewToScreen( 0, 0 );
 		assertEq( resetPt.x, 0, "reset origin x" );
 		assertEq( resetPt.y, 0, "reset origin y" );
 
-		// popView after view() then extra pop throws
-		$.view( 10, 10, 20, 20 );
+		// extra pop after empty stack throws
+		$.pushView( 10, 10, 20, 20 );
 		$.popView();
 		assertEq( $.width(), 640, "pop to full screen" );
 		assertThrows( function() {
 			$.popView();
 		}, "VIEW_STACK_EMPTY", "empty pop" );
 
-		// Input stays screen-relative; draw in screen space after reset
-		$.view( 450, 250, 80, 50 );
+		// Input stays screen-relative; draw in screen space after pop
+		$.pushView( 450, 250, 80, 50 );
 		$.rect( 0, 0, 80, 50, "navy" );
 		$.setColor( 15 );
 		$.print( "VIEW" );
-		$.view();
+		$.popView();
 		$.setColor( 15 );
 		let last = { "x": 0, "y": 0 };
 		let isDrawing = false;
@@ -710,7 +733,7 @@ void main() {
 		// Dual screens: independent view stacks
 		const s1 = $.screen( "120x80", "s1" );
 		s1.setFont( 1 );
-		s1.view( 8, 8, 60, 30 );
+		s1.pushView( 8, 8, 60, 30 );
 		s1.rect( 0, 0, 60, 30, "red" );
 		s1.print( "S1" );
 		assertEq( s1.width(), 60, "s1 width" );
@@ -718,7 +741,7 @@ void main() {
 
 		const s2 = $.screen( "120x80", "s2" );
 		s2.setFont( 1 );
-		s2.view( 15, 20, 45, 35 );
+		s2.pushView( 15, 20, 45, 35 );
 		s2.rect( 0, 0, 45, 35, "lime" );
 		s2.print( "S2" );
 		assertEq( s2.width(), 45, "s2 width" );
@@ -742,7 +765,7 @@ void main() {
 		const box = document.getElementById( "box" );
 		const rs = $.screen( "32e24", "box" );
 		rs.setFont( 1 );
-		rs.view( 4, 2, 32, 20 );
+		rs.pushView( 4, 2, 32, 20 );
 		rs.setColor( 1 );
 		rs.rect( 0, 0, 32, 20, 1 );
 		rs.setColor( 2 );
@@ -754,11 +777,12 @@ void main() {
 		$.setScreen( main );
 
 		setTimeout( function() {
-			$.view( 316, 152, 36, 36 );
+			$.pushView( 316, 152, 36, 36 );
 			assertPixel( 5, 5, 40, "filter used view A" );
-			$.view( 360, 152, 36, 36 );
+			$.popView();
+			$.pushView( 360, 152, 36, 36 );
 			assertPixel( 5, 5, 2, "filter ignored view B" );
-			$.view();
+			$.popView();
 			done();
 		}, 50 );
 

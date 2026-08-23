@@ -5,8 +5,7 @@ summary = "Clears the screen or a rectangular region."
 description = """
 This function clears the entire screen or a rectangular region of the active canvas.
 
-When x, y, width, and height are provided, only that region is cleared. Otherwise the full screen is
-cleared and the print cursor is reset to position (0, 0).
+When x, y, width, and height are provided, only that region is cleared. Otherwise the full screen is cleared and the print cursor is reset to position (0, 0).
 """
 example = """
 $.screen( "128x80" );

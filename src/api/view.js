@@ -60,9 +60,9 @@ export function init( api ) {
  * @returns {void}
  */
 function registerCommands() {
-	g_commands.addCommand( "view", viewCmd, true, [ "x", "y", "width", "height" ] );
 	g_commands.addCommand( "pushView", pushViewCmd, true, [ "x", "y", "width", "height" ] );
 	g_commands.addCommand( "popView", popViewCmd, true, [] );
+	g_commands.addCommand( "resetView", resetViewCmd, true, [] );
 	g_commands.addCommand( "viewToScreen", viewToScreenCmd, true, [ "x", "y" ] );
 	g_commands.addCommand( "screenToView", screenToViewCmd, true, [ "x", "y" ] );
 }
@@ -357,50 +357,7 @@ function parseViewRect( fnName, options ) {
 
 
 /**
- * Set or reset the user-facing root view.
- *
- * @param {Object} screenData - Screen data object
- * @param {Object} options - x, y, width, height or all null to reset
- * @returns {void}
- */
-function viewCmd( screenData, options ) {
-	const hasAny = (
-		options.x !== null || options.y !== null ||
-		options.width !== null || options.height !== null
-	);
-
-	if( !hasAny ) {
-		flushThenMutate( screenData, () => {
-			screenData.view.stack = [];
-		} );
-		return;
-	}
-
-	const rect = parseViewRect( "view", options );
-	const printCursor = screenData.printCursor;
-	let savedX = 0;
-	let savedY = 0;
-	if( printCursor ) {
-		savedX = printCursor.x;
-		savedY = printCursor.y;
-	}
-
-	flushThenMutate( screenData, () => {
-		screenData.view.stack = [
-			{
-				"localX": rect.x,
-				"localY": rect.y,
-				"width": rect.width,
-				"height": rect.height,
-				"savedCursorX": savedX,
-				"savedCursorY": savedY
-			}
-		];
-	} );
-}
-
-/**
- * Push a child view relative to the current view.
+ * Push a view relative to the current drawing origin.
  *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - x, y, width, height
@@ -433,7 +390,7 @@ function pushViewCmd( screenData, options ) {
 }
 
 /**
- * Pop the current child view and restore the parent cursor.
+ * Pop the current view and restore the previous cursor.
  *
  * @param {Object} screenData - Screen data object
  * @returns {void}
@@ -451,6 +408,23 @@ function popViewCmd( screenData ) {
 		if( printCursor ) {
 			printCursor.x = popped.savedCursorX;
 			printCursor.y = popped.savedCursorY;
+		}
+	} );
+}
+
+/**
+ * Clear the view stack and reset to implicit full screen.
+ *
+ * @param {Object} screenData - Screen data object
+ * @returns {void}
+ */
+function resetViewCmd( screenData ) {
+	flushThenMutate( screenData, () => {
+		screenData.view.stack = [];
+		const printCursor = screenData.printCursor;
+		if( printCursor ) {
+			printCursor.x = 0;
+			printCursor.y = 0;
 		}
 	} );
 }
