@@ -554,6 +554,3 @@ To contribute a plugin:
 3. Include comprehensive documentation
 4. Test thoroughly
 5. Submit a pull request
-
-Happy plugin development! 🎨
-
