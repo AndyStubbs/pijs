@@ -278,6 +278,7 @@ function initializePlugin( pluginInfo ) {
 		"addScreenDataItemGetter": g_screenManager.addScreenDataItemGetter,
 		"addScreenInitFunction": g_screenManager.addScreenInitFunction,
 		"addScreenCleanupFunction": g_screenManager.addScreenCleanupFunction,
+		"getActiveScreen": g_screenManager.getActiveScreen,
 		"getScreenData": g_screenManager.getScreenData,
 		"getAllScreensData": g_screenManager.getAllScreensData,
 		"getApi": () => m_api,
@@ -301,4 +302,3 @@ function initializePlugin( pluginInfo ) {
 		throw pluginError;
 	}
 }
-

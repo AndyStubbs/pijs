@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Pi Vision Window Smoke Test</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "pi_vision_01"
+			name = "Pi Vision Window Smoke Test"
+			width = 320
+			height = 180
+			delay = 0
+			[[TOML_END]]
+		</script>
+		<script src="../../../build/pi.js"></script>
+		<script src="../../../build/plugins/pi-vision/pi-vision.js"></script>
+		<style>
+			html, body {
+				background-color: #333;
+				margin: 0;
+				padding: 0;
+			}
+		</style>
+	</head>
+<body>
+<script>
+	const main = $.screen( "320x180" );
+
+	$.ready( function() {
+		const failures = [];
+
+		check( $.vis && typeof $.vis.window === "function", "$.vis.window exists" );
+
+		const bordered = $.vis.window( {
+			"x": 12,
+			"y": 16,
+			"width": 120,
+			"height": 80
+		} );
+
+		check( bordered && bordered.screen === true, "window returns a screen" );
+		check( $.width() === 320 && $.height() === 180, "parent screen remains active" );
+		check( bordered.width() === 108, "bordered client width" );
+		check( bordered.height() === 64, "bordered client height" );
+
+		const borderedOrigin = bordered.viewToScreen( 0, 0 );
+		check( borderedOrigin.x === 6 && borderedOrigin.y === 8, "bordered client origin" );
+
+		const titled = $.vis.window( {
+			"x": 20,
+			"y": 24,
+			"width": 90,
+			"height": 48,
+			"title": "Title",
+			"border": "none",
+			"shadow": false
+		} );
+
+		check( titled.width() === 90, "borderless client width" );
+		check( titled.height() === 40, "borderless title height" );
+
+		const titledOrigin = titled.viewToScreen( 0, 0 );
+		check( titledOrigin.x === 0 && titledOrigin.y === 8, "borderless title origin" );
+		checkThrows(
+			() => $.vis.window( { "y": 0, "width": 90, "height": 48 } ),
+			"required x"
+		);
+		checkThrows(
+			() => $.vis.window( { "x": 0, "y": 0, "width": 90, "height": 48,
+				"border": "invalid" } ),
+			"invalid border"
+		);
+		checkThrows(
+			() => $.vis.window( { "x": 0, "y": 0, "width": 12, "height": 16 } ),
+			"positive client area"
+		);
+
+		$.vis.render();
+
+		$.setScreen( main );
+		if( failures.length === 0 ) {
+			$.setColor( 2 );
+			$.print( "Pi Vision Phase 1: PASS" );
+		} else {
+			$.setColor( 4 );
+			$.print( "Pi Vision Phase 1: FAIL" );
+		}
+
+		for( const failure of failures ) {
+			$.print( failure );
+		}
+
+		function check( condition, name ) {
+			if( !condition ) {
+				failures.push( name );
+			}
+		}
+
+		function checkThrows( fn, name ) {
+			let didThrow = false;
+			try {
+				fn();
+			} catch( _error ) {
+				didThrow = true;
+			}
+			check( didThrow, name );
+		}
+	} );
+</script>
+</body>
+</html>
