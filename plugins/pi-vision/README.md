@@ -12,7 +12,7 @@ Scoped neatly under the `$.vis` namespace, Pi Vision provides a powerful windowi
 2. **Windows as Screens**: Under the hood, each window is a specialized offscreen Pi.js screen object. This means windows are fully compatible with standard Pi.js functions like `$.setScreen()`, `$.cls()`, `$.line()`, `$.print()`, and more.
 3. **Windows Are Not Required**: You do not need to create a window to use Pi Vision controls. Standalone widgets can be added directly, automatically attaching to a default desktop root container.
 4. **Protected Client View & Borders**: Windows automatically calculate insets based on their border style, using Pi.js's native `pushView` to protect the inner client area. Advanced users can use `$.popView()` to escape the client area and draw directly onto the window frames or borders.
-5. **Explicit Manual Rendering & Recursion**: True to Pi.js's immediate-mode DNA, Pi Vision avoids hidden magic. Windows and controls are composited when you explicitly call `$.vis.render()` or trigger individual window render functions.
+5. **Explicit Manual Rendering & Recursion**: True to Pi.js's immediate-mode DNA, Pi Vision avoids hidden magic. Elements are composited when you explicitly call `$.vis.render()` or trigger an individual window render function. Windows are containers, so their child elements can be rendered recursively.
 
 ---
 
@@ -38,19 +38,19 @@ By default all tools should work with Mouse, Keyboard, Touch, and Gamepads. But 
 ### Basic Usage Example
 
 ```javascript
-import pi from "./build/pi.esm.min.js";
+import $ from "./build/pi.esm.min.js";
 import visPlugin from "./plugins/pi-vision/dist/pi-vision.esm.min.js";
 
-pi.registerPlugin( {
+$.registerPlugin( {
 	"name": "pi-vision",
 	"init": visPlugin
 } );
 
-pi.ready( () => {
-	const mainScreen = pi.screen( { "aspect": "640x480" } );
+$.ready( () => {
+	const mainScreen = $.screen( { "aspect": "640x480" } );
 
 	// Create a retro window
-	const win = pi.vis.window( {
+	const win = $.vis.window( {
 		"title": "System Console",
 		"x": 50,
 		"y": 40,
@@ -61,22 +61,22 @@ pi.ready( () => {
 	} );
 
 	// Target the window for custom drawing using standard Pi.js commands
-	pi.setScreen( win );
-	pi.cls();
-	pi.color( "lightgreen" );
-	pi.print( "Initializing Pi Vision...\nReady." );
+	$.setScreen( win );
+	$.cls();
+	$.color( "lightgreen" );
+	$.print( "Initializing Pi Vision...\nReady." );
 
 	// Switch back to main screen
-	pi.setScreen( mainScreen );
+	$.setScreen( mainScreen );
 
 	// Main application loop
 	function frame() {
-		pi.cls();
+		$.cls();
 		
 		// Draw background graphics...
 		
 		// Render all Pi Vision windows and GUI controls on top (recursive by default)
-		pi.vis.render();
+		$.vis.render();
 		
 		requestAnimationFrame( frame );
 	}
@@ -103,6 +103,9 @@ Creates a new GUI window. Returns a specialized Pi.js screen object that can be 
   - `border` (String): Border style (`"double"`, `"single"`, `"thick"`, or `"none"`). Default is `"double"`.
   - `shadow` (Boolean): Enables a classic retro 2-pixel drop shadow. Default is `true`.
 
+Every window reserves one character row for its title bar and visual `[X]` close button. The close
+button is decorative in this phase and does not yet handle input.
+
 ```javascript
 const win = $.vis.window( {
 	"title": "Settings",
@@ -113,8 +116,9 @@ const win = $.vis.window( {
 ```
 
 #### `$.vis.render( recursive )`
-Composites and renders active windows, frames, title bars, and top-layer UI controls onto the current active screen, processing only the windows and root elements that belong to that specific screen.
-- **recursive** (Boolean): Defaults to `true` (renders all windows and root controls). If set to `false`, it skips automatic bulk rendering, allowing you to manually control the render sequence per window.
+Renders all root elements owned by the active screen in creation order. Windows rebuild their chrome
+and composite their offscreen screen onto their parent. Windows are the only container element.
+- **recursive** (Boolean): Defaults to `true`. When enabled, each window renders its descendant elements before it is composited. When `false`, root elements render without their descendants.
 
 ```javascript
 // Render all windows recursively for the active screen
@@ -123,6 +127,9 @@ $.vis.render();
 // Or render a single specific window manually
 win.render();
 ```
+
+`win.render( recursive )` renders the window onto the parent it was created on, independent of the
+currently active screen. It uses the same recursion behavior and defaults to `true`.
 
 #### `$.vis.moveElement( element, targetScreenOrContainer )`
 Moves any visual GUI element (such as a standalone button, label, or an entire window) from its current container to a new screen or target window container while preserving its internal state and handlers.

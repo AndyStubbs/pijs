@@ -9,8 +9,8 @@
 
 "use strict";
 
-import g_Util from "./util.js";
 import g_Window from "./window.js";
+import g_Compositor from "./compositor.js";
 
 let g_pluginApi = null;
 
@@ -25,18 +25,19 @@ export default function piVisionPlugin( pluginApi ) {
 
 	// Initialize Components
 	g_Window.init( g_pluginApi );
+	g_Compositor.init( g_pluginApi );
 
 	// Setup API's
 	const api = g_pluginApi.getApi();
 	g_pluginApi.addScreenDataItem( "vis", {
-		"windows": [],
-		"window": null
+		"elements": [],
+		"element": null
 	} );
 	for( const screenData of g_pluginApi.getAllScreensData() ) {
 		if( !screenData.vis ) {
 			screenData.vis = {
-				"windows": [],
-				"window": null
+				"elements": [],
+				"element": null
 			};
 		}
 	}
@@ -45,6 +46,7 @@ export default function piVisionPlugin( pluginApi ) {
 
 	const vis = api.vis || {};
 	vis.window = g_Window.createWindow;
+	vis.render = g_Compositor.render;
 	api.vis = vis;
 }
 
@@ -69,16 +71,16 @@ function cleanupScreen( screenData ) {
 		return;
 	}
 
-	const record = screenData.vis.window;
+	const record = screenData.vis.element;
 	if( !record ) {
 		return;
 	}
 
-	const screens = pluginApi.getAllScreensData();
+	const screens = g_pluginApi.getAllScreensData();
 	const parentData = screens.find( ( item ) => item.id === record.parentScreenId );
 	if( !parentData ) {
 		return;
 	}
 
-	parentData.vis.windows = parentData.vis.windows.filter( ( item ) => item !== record );
+	parentData.vis.elements = parentData.vis.elements.filter( ( item ) => item !== record );
 }

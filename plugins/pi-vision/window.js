@@ -8,13 +8,16 @@
 
 "use strict";
 
-import { validateOptionsObject } from "./util.js";
+import g_Util from "./util.js";
 
 const BORDER_GLYPHS = {
 	"single": [ 218, 196, 191, 179, 192, 217 ],
 	"double": [ 201, 205, 187, 186, 200, 188 ],
 	"thick": [ 219, 223, 219, 219, 219, 219 ]
 };
+
+const CLOSE_BUTTON = "[X]";
+const SHADOW_SIZE = 2;
 
 let g_pluginApi = null;
 
@@ -39,15 +42,16 @@ function init( pluginApi ) {
  * @param {number} options.width - Total window width in pixels
  * @param {number} options.height - Total window height in pixels
  * @param {string} [options.title=""] - Window title
- * @param {string} [options.border="single"] - Border style
- * @param {boolean} [options.shadow=true] - Whether to composite a shadow in a later phase
+ * @param {string} [options.border="double"] - Border style
+ * @param {boolean} [options.shadow=true] - Whether to composite a two-pixel drop shadow
  * @returns {Object} Offscreen Pi.js screen API
  */
 function createWindow( options ) {
-	validateOptionsObject( options, "vis.window" );
+	g_Util.validateOptionsObject( options, "vis.createWindow" );
 
 	const normalized = normalizeOptions( options );
 	const parentData = g_pluginApi.getActiveScreen( "vis.window" );
+	const api = g_pluginApi.getApi();
 	let windowScreen = null;
 
 	try {
@@ -59,8 +63,10 @@ function createWindow( options ) {
 		const windowData = g_pluginApi.getScreenData( "vis.window", windowScreen.id );
 		const client = calculateClientRect( windowData, normalized );
 		const record = {
+			"type": "window",
 			"parentScreenId": parentData.id,
 			"screen": windowScreen,
+			"screenData": windowData,
 			"x": normalized.x,
 			"y": normalized.y,
 			"width": normalized.width,
@@ -68,13 +74,18 @@ function createWindow( options ) {
 			"title": normalized.title,
 			"border": normalized.border,
 			"shadow": normalized.shadow,
-			"client": client
+			"client": client,
+			"chromeColor": windowScreen.getColor(),
+			"chrome": null,
+			"render": null
 		};
 
-		parentData.vis.windows.push( record );
-		windowData.vis.window = record;
+		record.render = ( recursive = true ) => renderWindow( record, recursive );
+		parentData.vis.elements.push( record );
+		windowData.vis.element = record;
+		windowScreen.render = record.render;
 
-		drawFrame( windowScreen, windowData, normalized );
+		drawChrome( record );
 		windowScreen.setPosPx( 0, 0 );
 		windowScreen.pushView( client );
 	} catch( error ) {
@@ -102,7 +113,7 @@ function normalizeOptions( options ) {
 		title = options.title;
 	}
 
-	let border = "single";
+	let border = "double";
 	if( options.border != null ) {
 		if( typeof options.border !== "string" ) {
 			const error = new TypeError( "vis.window: Parameter border must be a string." );
@@ -176,9 +187,8 @@ function calculateClientRect( screenData, options ) {
 	const fontWidth = screenData.font.width;
 	const fontHeight = screenData.font.height;
 	const hasBorder = options.border !== "none";
-	const hasTitleRow = hasBorder || options.title.length > 0;
 	let left = 0;
-	let top = 0;
+	let top = fontHeight;
 	let right = 0;
 	let bottom = 0;
 
@@ -186,9 +196,6 @@ function calculateClientRect( screenData, options ) {
 		left = fontWidth;
 		right = fontWidth;
 		bottom = fontHeight;
-	}
-	if( hasTitleRow ) {
-		top = fontHeight;
 	}
 	const client = {
 		"x": left,
@@ -209,75 +216,138 @@ function calculateClientRect( screenData, options ) {
 }
 
 /**
- * Draw the initial CP437 frame and title
- * 
- * @param {Object} screen - Window screen API
- * @param {Object} screenData - Window screen data
- * @param {Object} options - Normalized window options
+ * Render a window element and optionally its descendants
+ *
+ * @param {Object} record - Window element record
+ * @param {boolean} [recursive=true] - Whether to render descendant elements
  * @returns {void}
  */
-function drawFrame( screen, screenData, options ) {
-	const fontWidth = screenData.font.width;
-	const fontHeight = screenData.font.height;
-	const columns = Math.floor( options.width / fontWidth );
-	const rows = Math.floor( options.height / fontHeight );
-
-	if( options.border !== "none" ) {
-		drawBorder( screen, options, fontWidth, fontHeight, columns, rows );
-	} else if( options.title.length > 0 ) {
-		const x = Math.floor( ( options.width - fontWidth * options.title.length ) / 2 );
-		screen.setPosPx( x, 0 );
-		screen.print( options.title, true );
+function renderWindow( record, recursive = true ) {
+	if( typeof recursive !== "boolean" ) {
+		const error = new TypeError( "window.render: Parameter recursive must be a boolean." );
+		error.code = "INVALID_VIS_RECURSIVE";
+		throw error;
 	}
-}
 
-/**
- * Draw a character-cell border
- * 
- * @param {Object} screen - Window screen API
- * @param {Object} options - Normalized window options
- * @param {number} fontWidth - Character width
- * @param {number} fontHeight - Character height
- * @param {number} columns - Complete character columns
- * @param {number} rows - Complete character rows
- * @returns {void}
- */
-function drawBorder( screen, options, fontWidth, fontHeight, columns, rows ) {
-	const glyphs = BORDER_GLYPHS[ options.border ];
-	const rightX = options.width - fontWidth;
-	const bottomY = options.height - fontHeight;
-
-	// Get the title
-	let title = "";
-	if( options.title.length > 0 ) {
-		let borderColumns = 2;
-		title = " " + options.title + " ";
-		const availableColumns = Math.max( columns - borderColumns, 0 );
-		if( title.length > availableColumns ) {
-			title = title.substring( 1, availableColumns + 1 );
+	drawChrome( record );
+	if( recursive ) {
+		for( const element of [ ...record.screenData.vis.elements ] ) {
+			if( typeof element.render === "function" ) {
+				element.render( true );
+			}
 		}
 	}
 
-	// Draw Top Border With Title
-	const topBorderSpan = glyphs[ 1 ].repeat(
-		Math.floor( ( columns - 1 - title.length ) / 2 ),
-		glyphs[ 1 ]
-	);
-	const topBorder = glyphs[ 0 ] + topBorderSpan + title + topBorderSpan + glyphs[ 2 ];
-	screen.setPosPx( 0, 0 );
-	screen.print( topBorder, true );
-
-	// Draw Bottom Border
-	const bottomBorder = glyphs[ 4 ] + glyphs[ 1 ].repeat( columns - 2 ) + glyphs[ 5 ];
-	screen.setPosPx( 0, bottomY );
-	screen.print( bottomBorder, true );
-
-	// Draw Vertical Border
-	for( let row = 1; row < rows - 1; row += 1 ) {
-		const y = row * fontHeight;
-		screen.setPosPx( 0, y );
-		screen.print( glyphs[ 3 ], true );
-		screen.setPosPx( rightX, y );
-		screen.print( glyphs[ 3 ], true );
+	const parentData = g_pluginApi.getScreenData( "window.render", record.parentScreenId );
+	if( record.shadow ) {
+		const savedColor = parentData.api.getColor();
+		parentData.api.setColor( 0 );
+		parentData.api.rect(
+			record.x + SHADOW_SIZE, record.y + record.height,
+			record.width, SHADOW_SIZE, 0
+		);
+		parentData.api.rect(
+			record.x + record.width, record.y + SHADOW_SIZE,
+			SHADOW_SIZE, record.height, 0
+		);
+		parentData.api.setColor( savedColor );
 	}
+	parentData.api.drawImage( record.screen, record.x, record.y, undefined, 0, 0, 1, 1, 0 );
+}
+
+/**
+ * Build and draw all window chrome with one print call
+ *
+ * @param {Object} record - Window element record
+ * @returns {void}
+ */
+function drawChrome( record ) {
+	const screen = record.screen;
+	const screenData = record.screenData;
+	const fontWidth = screenData.font.width;
+	const fontHeight = screenData.font.height;
+	const columns = Math.floor( record.width / fontWidth );
+	const rows = Math.floor( record.height / fontHeight );
+	const savedColor = screen.getColor();
+	const savedCursor = {
+		"x": screenData.printCursor.x,
+		"y": screenData.printCursor.y
+	};
+	const savedViews = screenData.view.stack.map( ( view ) => ( {
+		"x": view.localX,
+		"y": view.localY,
+		"width": view.width,
+		"height": view.height,
+		"savedCursorX": view.savedCursorX,
+		"savedCursorY": view.savedCursorY
+	} ) );
+
+	screen.resetView();
+	screen.setColor( record.chromeColor );
+	screen.cls( 0, 0, record.width, fontHeight );
+
+	const glyphs = BORDER_GLYPHS[ record.border ];
+	if( record.chrome === null ) {
+		const inset = glyphs ? 1 : 0;
+		const horizontal = glyphs ? String.fromCharCode( glyphs[ 1 ] ) : " ";
+		const top = Array( columns ).fill( horizontal );
+		if( glyphs ) {
+			top[ 0 ] = String.fromCharCode( glyphs[ 0 ] );
+			top[ columns - 1 ] = String.fromCharCode( glyphs[ 2 ] );
+		}
+
+		const available = Math.max( columns - inset * 2, 0 );
+		const closeText = CLOSE_BUTTON.slice( -Math.min( CLOSE_BUTTON.length, available ) );
+		const closeColumn = Math.max( inset, columns - inset - closeText.length );
+		const titleWidth = Math.max( closeColumn - inset - 1, 0 );
+		let title = "";
+		if( record.title.length > 0 && titleWidth >= 3 ) {
+			title = " " + record.title.slice( 0, titleWidth - 2 ) + " ";
+		}
+		const titleColumn = inset + Math.floor( ( titleWidth - title.length ) / 2 );
+
+		for( let i = 0; i < title.length; i += 1 ) {
+			top[ titleColumn + i ] = title[ i ];
+		}
+		for( let i = 0; i < closeText.length; i += 1 ) {
+			top[ closeColumn + i ] = closeText[ i ];
+		}
+
+		const frame = [ top.join( "" ) ];
+		if( glyphs ) {
+			const vertical = String.fromCharCode( glyphs[ 3 ] );
+			const middle = vertical + " ".repeat( Math.max( columns - 2, 0 ) ) + vertical;
+			for( let row = 1; row < rows - 1; row += 1 ) {
+				frame.push( middle );
+			}
+			frame.push(
+				String.fromCharCode( glyphs[ 4 ] ) +
+				horizontal.repeat( Math.max( columns - 2, 0 ) ) +
+				String.fromCharCode( glyphs[ 5 ] )
+			);
+		}
+		record.chrome = frame.join( "\n" );
+	}
+
+	if( glyphs ) {
+		screen.cls( 0, fontHeight, fontWidth, record.height - fontHeight );
+		screen.cls(
+			record.width - fontWidth, fontHeight,
+			fontWidth, record.height - fontHeight
+		);
+		screen.cls( 0, record.height - fontHeight, record.width, fontHeight );
+	}
+
+	screen.setPosPx( 0, 0 );
+	screen.print( record.chrome, true );
+	screen.resetView();
+	for( const view of savedViews ) {
+		screen.pushView( view );
+		const restoredView = screenData.view.stack[ screenData.view.stack.length - 1 ];
+		restoredView.savedCursorX = view.savedCursorX;
+		restoredView.savedCursorY = view.savedCursorY;
+	}
+	screen.setColor( savedColor );
+	screenData.printCursor.x = savedCursor.x;
+	screenData.printCursor.y = savedCursor.y;
 }

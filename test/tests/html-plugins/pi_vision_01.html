@@ -29,6 +29,7 @@
 		const failures = [];
 
 		check( $.vis && typeof $.vis.window === "function", "$.vis.window exists" );
+		check( typeof $.vis.render === "function", "$.vis.render exists" );
 
 		const bordered = $.vis.window( {
 			"x": 12,
@@ -38,6 +39,7 @@
 		} );
 
 		check( bordered && bordered.screen === true, "window returns a screen" );
+		check( typeof bordered.render === "function", "window render exists" );
 		check( $.width() === 320 && $.height() === 180, "parent screen remains active" );
 		check( bordered.width() === 108, "bordered client width" );
 		check( bordered.height() === 64, "bordered client height" );
@@ -60,6 +62,80 @@
 
 		const titledOrigin = titled.viewToScreen( 0, 0 );
 		check( titledOrigin.x === 0 && titledOrigin.y === 8, "borderless title origin" );
+
+		bordered.setColor( 1 );
+		bordered.rect( 0, 0, bordered.width(), bordered.height(), 1 );
+		bordered.setColor( 14 );
+		bordered.line( 2, 2, bordered.width() - 3, bordered.height() - 3 );
+		bordered.setPos( 1, 1 );
+		bordered.print( "Pi.js" );
+
+		titled.setColor( 3 );
+		titled.rect( 0, 0, titled.width(), titled.height(), 3 );
+
+		const single = $.vis.window( {
+			"x": 142,
+			"y": 8,
+			"width": 78,
+			"height": 56,
+			"title": "Single",
+			"border": "single"
+		} );
+		single.setColor( 2 );
+		single.rect( 0, 0, single.width(), single.height(), 2 );
+
+		const thick = $.vis.window( {
+			"x": 232,
+			"y": 8,
+			"width": 78,
+			"height": 56,
+			"title": "Thick title clipped",
+			"border": "thick",
+			"shadow": false
+		} );
+		thick.setColor( 4 );
+		thick.rect( 0, 0, thick.width(), thick.height(), 4 );
+
+		$.setScreen( main );
+		const container = $.vis.window( {
+			"x": 142,
+			"y": 82,
+			"width": 138,
+			"height": 80,
+			"title": "Container",
+			"border": "double",
+			"shadow": false
+		} );
+		container.setColor( 5 );
+		container.rect( 0, 0, container.width(), container.height(), 5 );
+
+		$.setScreen( container );
+		const child = $.vis.window( {
+			"x": 12,
+			"y": 8,
+			"width": 66,
+			"height": 40,
+			"title": "Child",
+			"border": "single",
+			"shadow": false
+		} );
+		child.setColor( 6 );
+		child.rect( 0, 0, child.width(), child.height(), 6 );
+
+		$.setScreen( main );
+		const activeBeforeRender = $.width();
+		$.vis.render( false );
+		check( $.width() === activeBeforeRender, "render preserves active screen" );
+		check( $.getPixel( 167, 107, true ) === 5, "recursive false skips child" );
+		$.vis.render();
+		check( $.getPixel( 167, 107, true ) === 6, "recursive true renders child" );
+
+		const temporary = $.vis.window( {
+			"x": 300, "y": 160, "width": 18, "height": 24, "shadow": false
+		} );
+		temporary.removeScreen();
+		$.setScreen( main );
+		$.vis.render();
 		checkThrows(
 			() => $.vis.window( { "y": 0, "width": 90, "height": 48 } ),
 			"required x"
@@ -74,13 +150,14 @@
 			"positive client area"
 		);
 
-		$.setScreen( main );
 		if( failures.length === 0 ) {
 			$.setColor( 2 );
-			$.print( "Pi Vision Phase 1: PASS" );
+			$.setPosPx( 4, 168 );
+			$.print( "Pi Vision Phase 2: PASS" );
 		} else {
 			$.setColor( 4 );
-			$.print( "Pi Vision Phase 1: FAIL" );
+			$.setPosPx( 4, 168 );
+			$.print( "Pi Vision Phase 2: FAIL" );
 		}
 
 		for( const failure of failures ) {
