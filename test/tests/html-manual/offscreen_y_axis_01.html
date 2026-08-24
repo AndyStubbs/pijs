@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Offscreen Y-Axis Reproduction</title>
+		<meta charset="utf-8">
+		<script src="../../../build/pi.js"></script>
+		<style>
+			html, body {
+				background-color: #222;
+				margin: 0;
+				padding: 0;
+			}
+		</style>
+	</head>
+<body>
+<script>
+	$.ready( function() {
+		const SOURCE_WIDTH = 200;
+		const SOURCE_HEIGHT = 140;
+		const TOP_COLOR = "#cc2222";
+		const BOTTOM_COLOR = "#2266cc";
+
+		// Draw an asymmetric source so a vertical flip is immediately obvious.
+		const source = $.screen( {
+			"aspect": `${SOURCE_WIDTH}x${SOURCE_HEIGHT}`,
+			"isOffscreen": true
+		} );
+		$.setBgColor( "#111111" );
+		$.cls();
+		$.setColor( "#ffffff" );
+		$.rect( 0, 0, SOURCE_WIDTH, 40, TOP_COLOR );
+		$.setFont( 1 );
+		$.setPosPx( 52, 12 );
+		$.print( "TOP / RED" );
+		$.line( 16, 54, 184, 86 );
+		$.setPosPx( 60, 62 );
+		$.print( "Y-AXIS" );
+		$.rect( 0, 100, SOURCE_WIDTH, 40, BOTTOM_COLOR );
+		$.setPosPx( 36, 112 );
+		$.print( "BOTTOM / BLUE" );
+
+		// This copy stays in the shared offscreen WebGL context and exposes the bug.
+		const nested = $.screen( {
+			"aspect": `${SOURCE_WIDTH}x${SOURCE_HEIGHT}`,
+			"isOffscreen": true
+		} );
+		$.setBgColor( "#000000" );
+		$.cls();
+		$.drawImage( source, 0, 0 );
+
+		const nestedTop = nested.getPixel( 10, 10 );
+		const nestedBottom = nested.getPixel( 10, SOURCE_HEIGHT - 11 );
+		const topIsBlue = isColor( nestedTop, 34, 102, 204 );
+		const bottomIsRed = isColor( nestedBottom, 204, 34, 34 );
+		const bugReproduced = topIsBlue && bottomIsRed;
+
+		console.log( "Offscreen Y-axis source expects red at top and blue at bottom." );
+		console.log( "Nested offscreen top sample:", nestedTop );
+		console.log( "Nested offscreen bottom sample:", nestedBottom );
+		console.log( bugReproduced ? "BUG REPRODUCED" : "BUG NOT REPRODUCED" );
+
+		// The direct path crosses contexts; the nested path includes the broken same-context copy.
+		const main = $.screen( "550x240" );
+		$.setBgColor( "#202020" );
+		$.cls();
+		$.setColor( "#ffffff" );
+		$.setFont( 1 );
+		$.setPosPx( 48, 16 );
+		$.print( "DIRECT COPY" );
+		$.setPosPx( 328, 16 );
+		$.print( "NESTED COPY" );
+		$.drawImage( source, 35, 42 );
+		$.drawImage( nested, 315, 42 );
+
+		if( bugReproduced ) {
+			$.setColor( "#ffcc00" );
+			$.setPosPx( 191, 202 );
+			$.print( "BUG REPRODUCED" );
+		} else {
+			$.setColor( "#44dd66" );
+			$.setPosPx( 175, 202 );
+			$.print( "BUG NOT REPRODUCED" );
+		}
+
+		function isColor( color, r, g, b ) {
+			return color.r === r && color.g === g && color.b === b && color.a === 255;
+		}
+	} );
+</script>
+</body>
+</html>
