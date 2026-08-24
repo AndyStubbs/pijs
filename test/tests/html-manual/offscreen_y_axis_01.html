@@ -57,7 +57,11 @@
 		console.log( "Offscreen Y-axis source expects red at top and blue at bottom." );
 		console.log( "Nested offscreen top sample:", nestedTop );
 		console.log( "Nested offscreen bottom sample:", nestedBottom );
-		console.log( bugReproduced ? "BUG REPRODUCED" : "BUG NOT REPRODUCED" );
+		if( bugReproduced ) {
+			console.log( "BUG REPRODUCED" );
+		} else {
+			console.log( "BUG NOT REPRODUCED" );
+		}
 
 		// The direct path crosses contexts; the nested path includes the broken same-context copy.
 		const main = $.screen( "550x240" );
