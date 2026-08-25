@@ -24,41 +24,46 @@
 			#log {
 				font-size: 11px;
 				white-space: pre;
-				line-height: 1.25;
+				line-height: 14px;
+				min-height: 14px;
 			}
 			.ok { color: #6f6; }
 			.fail { color: #f66; }
-			.box {
-				display: inline-block;
-				vertical-align: top;
-				margin: 4px;
-				background: #444;
+			#stage {
 				position: relative;
+				width: 582px;
+				height: 896px;
 			}
-			#same { width: 320px; height: 200px; }
-			#scaled { width: 320px; height: 200px; }
-			#mfit { width: 160px; height: 100px; }
-			#ext { width: 160px; height: 80px; }
-			#hid { width: 160px; height: 100px; }
-			#hiduni { width: 80px; height: 50px; }
-			#csschg { width: 200px; height: 200px; }
-			#uniflush { width: 80px; height: 50px; }
-			#cbonly { width: 200px; height: 200px; }
-			#edetail { width: 80px; height: 80px; }
+			.box {
+				background: #444;
+				position: absolute;
+			}
+			#same { left: 4px; top: 4px; width: 320px; height: 200px; }
+			#scaled { left: 342px; top: 4px; width: 320px; height: 200px; }
+			#mfit { left: 4px; top: 212px; width: 160px; height: 100px; }
+			#ext { left: 182px; top: 212px; width: 160px; height: 80px; }
+			#hid { left: 4px; top: 340px; width: 160px; height: 100px; }
+			#hiduni { left: 222px; top: 340px; width: 80px; height: 50px; }
+			#csschg { left: 4px; top: 448px; width: 200px; height: 200px; }
+			#uniflush { left: 262px; top: 448px; width: 80px; height: 50px; }
+			#cbonly { left: 4px; top: 676px; width: 200px; height: 200px; }
+			#edetail { left: 262px; top: 676px; width: 80px; height: 80px; }
 		</style>
 	</head>
 <body>
 	<div id="log"></div>
-	<div class="box" id="same"></div>
-	<div class="box" id="scaled"></div>
-	<div class="box" id="mfit"></div>
-	<div class="box" id="ext"></div>
-	<div class="box" id="hid"></div>
-	<div class="box" id="hiduni"></div>
-	<div class="box" id="csschg"></div>
-	<div class="box" id="uniflush"></div>
-	<div class="box" id="cbonly"></div>
-	<div class="box" id="edetail"></div>
+	<div id="stage">
+		<div class="box" id="same"></div>
+		<div class="box" id="scaled"></div>
+		<div class="box" id="mfit"></div>
+		<div class="box" id="ext"></div>
+		<div class="box" id="hid"></div>
+		<div class="box" id="hiduni"></div>
+		<div class="box" id="csschg"></div>
+		<div class="box" id="uniflush"></div>
+		<div class="box" id="cbonly"></div>
+		<div class="box" id="edetail"></div>
+	</div>
 <script>
 	const invertSrc = `
 #version 300 es
@@ -528,15 +533,12 @@ void main() {
 		);
 		cbWatch.restore();
 
-		const summary = document.createElement( "div" );
-		if( failed === 0 ) {
-			summary.className = "ok";
-			summary.textContent = "ALL CHECKS PASSED";
-		} else {
+		if( failed > 0 ) {
+			const summary = document.createElement( "div" );
 			summary.className = "fail";
 			summary.textContent = failed + " CHECKS FAILED";
+			logEl.insertBefore( summary, logEl.firstChild );
 		}
-		logEl.insertBefore( summary, logEl.firstChild );
 	} );
 </script>
 </body>

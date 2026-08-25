@@ -23,14 +23,27 @@
 				height: 800px;
 			}
 			.container {
-				display: inline-block;
-				vertical-align: top;
-				margin: 5px;
 				background-color: #555;
+				position: absolute;
 				width: 160px;
 				height: 120px;
 				padding: 0;
 			}
+			#stage {
+				position: relative;
+				width: 704px;
+				height: 425px;
+			}
+			#c1 { left: 5px; top: 5px; }
+			#c2 { left: 185px; top: 5px; }
+			#c3 { left: 364px; top: 5px; }
+			#c4 { left: 544px; top: 5px; }
+			#c5 { left: 5px; top: 135px; }
+			#removed-indicator { left: 185px; top: 135px; }
+			#c6 { left: 364px; top: 135px; }
+			#c7 { left: 544px; top: 135px; }
+			#c8 { left: 5px; top: 265px; }
+			#c9 { left: 345px; top: 265px; }
 			.container.wide {
 				width: 320px;
 			}
@@ -46,16 +59,18 @@
 		</style>
 	</head>
 <body>
-	<div class="container" id="c1"></div>
-	<div class="container" id="c2"></div>
-	<div class="container" id="c3"></div>
-	<div class="container" id="c4"></div>
-	<div class="container" id="c5"></div>
-	<div class="container" id="removed-indicator"></div>
-	<div class="container" id="c6"></div>
-	<div class="container" id="c7"></div>
-	<div class="container" id="c8"></div>
-	<div class="container" id="c9"></div>
+	<div id="stage">
+		<div class="container" id="c1"></div>
+		<div class="container" id="c2"></div>
+		<div class="container" id="c3"></div>
+		<div class="container" id="c4"></div>
+		<div class="container" id="c5"></div>
+		<div class="container" id="removed-indicator"></div>
+		<div class="container" id="c6"></div>
+		<div class="container" id="c7"></div>
+		<div class="container" id="c8"></div>
+		<div class="container" id="c9"></div>
+	</div>
 <script>
 	$.ready( function () {
 
@@ -175,10 +190,9 @@
 		try {
 			toRemove.print( "Should fail" );
 			divRemoved.style.color = "red";
-			divRemoved.innerHTML = "Removed - Failed";
+			divRemoved.innerHTML = "FAIL: drawing to removed screen succeeded";
 		} catch( e ) {
 			errorCaught = true;
-			divRemoved.innerHTML = "Removed - Success!";
 		}
 
 		// Test setScreen() and getScreen()
@@ -262,4 +276,3 @@
 </script>
 </body>
 </html>
-
