@@ -1,3 +1,22 @@
+## [2.1.0] - 2026-08-25
+### Added
+- Custom GLSL ES 3.00 fragment shaders can be created with `createShader()` and applied in
+  draw order with `applyShader()`.
+- Display shaders can be set with `setDisplayShader()` for effects such as custom upscaling,
+  color grading, and CRT simulation. Persistent uniforms can be updated with
+  `setDisplayShaderUniforms()`.
+- Nested drawing views can be managed with `pushView()`, `popView()`, and `resetView()`.
+  Drawing, images, pixels, paint operations, clearing, and text output honor the active view's
+  origin and clipping rectangle.
+- `viewToScreen()` and `screenToView()` convert coordinates between the active view and the
+  logical screen.
+
+### Fixed
+- Drawing an offscreen screen as an image no longer reverses its Y axis when the source and
+  destination share a WebGL context.
+- Removing images now releases their WebGL textures, and temporary framebuffers used for
+  texture copies are reused and cleaned up with their screen.
+
 ## [2.0.3] - 2026-07-15
 ### Fixed
 - Package `exports` no longer list a `browser` condition pointing at IIFE
