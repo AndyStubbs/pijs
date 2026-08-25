@@ -62,7 +62,7 @@ function registerCommands() {
  **************************************************************************************************/
 
 
-// getPixel: Returns RGBA color object by default; if asIndex===true, returns palette index
+// getPixel: Returns RGBA8 color object by default; if asIndex===true, returns palette index
 function getPixel( screenData, options ) {
 	const px = g_utils.getInt( options.x, null );
 	const py = g_utils.getInt( options.y, null );
@@ -304,7 +304,7 @@ function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
 			const srcRow = ( height - 1 ) - y;
 			const srcIndex = ( srcRow * width + x ) * 4;
 
-			// Populate the temporary buffer with current pixel's RGBA
+			// Populate the temporary buffer with current pixel's RGBA8
 			pixelData[ 0 ] = imageData[ srcIndex ];
 			pixelData[ 1 ] = imageData[ srcIndex + 1 ];
 			pixelData[ 2 ] = imageData[ srcIndex + 2 ];

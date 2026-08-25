@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Offscreen Y-Axis Reproduction</title>
+		<title>Offscreen Y-Axis Verification</title>
 		<meta charset="utf-8">
 		<script src="../../../build/pi.js"></script>
 		<style>
@@ -39,7 +39,7 @@
 		$.setPosPx( 36, 112 );
 		$.print( "BOTTOM / BLUE" );
 
-		// This copy stays in the shared offscreen WebGL context and exposes the bug.
+		// This copy stays in the shared offscreen WebGL context and verifies the fix.
 		const nested = $.screen( {
 			"aspect": `${SOURCE_WIDTH}x${SOURCE_HEIGHT}`,
 			"isOffscreen": true
@@ -50,20 +50,20 @@
 
 		const nestedTop = nested.getPixel( 10, 10 );
 		const nestedBottom = nested.getPixel( 10, SOURCE_HEIGHT - 11 );
-		const topIsBlue = isColor( nestedTop, 34, 102, 204 );
-		const bottomIsRed = isColor( nestedBottom, 204, 34, 34 );
-		const bugReproduced = topIsBlue && bottomIsRed;
+		const topIsRed = isColor( nestedTop, 204, 34, 34 );
+		const bottomIsBlue = isColor( nestedBottom, 34, 102, 204 );
+		const fixVerified = topIsRed && bottomIsBlue;
 
 		console.log( "Offscreen Y-axis source expects red at top and blue at bottom." );
 		console.log( "Nested offscreen top sample:", nestedTop );
 		console.log( "Nested offscreen bottom sample:", nestedBottom );
-		if( bugReproduced ) {
-			console.log( "BUG REPRODUCED" );
+		if( fixVerified ) {
+			console.log( "FIX VERIFIED" );
 		} else {
-			console.log( "BUG NOT REPRODUCED" );
+			console.log( "FIX FAILED" );
 		}
 
-		// The direct path crosses contexts; the nested path includes the broken same-context copy.
+		// Compare the cross-context path with the corrected same-context path.
 		const main = $.screen( "550x240" );
 		$.setBgColor( "#202020" );
 		$.cls();
@@ -76,14 +76,14 @@
 		$.drawImage( source, 35, 42 );
 		$.drawImage( nested, 315, 42 );
 
-		if( bugReproduced ) {
-			$.setColor( "#ffcc00" );
-			$.setPosPx( 191, 202 );
-			$.print( "BUG REPRODUCED" );
-		} else {
+		if( fixVerified ) {
 			$.setColor( "#44dd66" );
-			$.setPosPx( 175, 202 );
-			$.print( "BUG NOT REPRODUCED" );
+			$.setPosPx( 207, 202 );
+			$.print( "FIX VERIFIED" );
+		} else {
+			$.setColor( "#ffcc00" );
+			$.setPosPx( 223, 202 );
+			$.print( "FIX FAILED" );
 		}
 
 		function isColor( color, r, g, b ) {

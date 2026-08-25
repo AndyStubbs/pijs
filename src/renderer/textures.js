@@ -28,6 +28,7 @@ export function init() {
 	// Outer Map: Image element -> Inner Map: GL context -> WebGL texture
 	// This allows efficient lookup by image and cleanup when image is removed
 	g_screenManager.addScreenDataItem( "imageContextMap", new Map() );
+	g_screenManager.addScreenDataItem( "textureCopyFBO", null );
 }
 
 
@@ -40,11 +41,13 @@ export function init() {
  * Copy image data to currently bound texture, handling mock canvases by copying from FBO
  * Handles cross-context copying when mock canvas uses a different WebGL context
  * 
- * @param {WebGL2RenderingContext} gl - WebGL2 context (destination context)
+ * @param {Object} screenData - Destination screen data
  * @param {HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} img - Image or Canvas element
+ * @param {WebGLTexture} texture - Currently bound destination texture
  * @returns {void}
  */
-function copyImageToTexture( gl, img ) {
+function copyImageToTexture( screenData, img, texture ) {
+	const gl = screenData.gl;
 	
 	// If img is a mock canvas, copy from the FBO instead of the mock canvas
 	if( img.isMock ) {
@@ -90,13 +93,37 @@ function copyImageToTexture( gl, img ) {
 					pixelData
 				);
 			} else {
-				
-				// Same context: can use copyTexImage2D directly
+
+				// Allocate the destination texture before attaching it to the copy framebuffer
+				gl.texImage2D(
+					gl.TEXTURE_2D, 0, gl.RGBA8, imgScreenData.width, imgScreenData.height, 0,
+					gl.RGBA, gl.UNSIGNED_BYTE, null
+				);
+
+				// Reuse a framebuffer to keep same-context copies entirely on the GPU
+				if( !screenData.textureCopyFBO ) {
+					screenData.textureCopyFBO = gl.createFramebuffer();
+					if( !screenData.textureCopyFBO ) {
+						const error = new Error( "Failed to create texture copy framebuffer." );
+						error.code = "WEBGL2_ERROR";
+						throw error;
+					}
+				}
+
 				gl.bindFramebuffer( gl.READ_FRAMEBUFFER, imgScreenData.FBO );
-				gl.copyTexImage2D(
-					gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, imgScreenData.width, imgScreenData.height, 0
+				gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, screenData.textureCopyFBO );
+				gl.framebufferTexture2D(
+					gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0
+				);
+
+				// Reverse destination Y so the texture uses top-left image coordinates
+				gl.blitFramebuffer(
+					0, 0, imgScreenData.width, imgScreenData.height,
+					0, imgScreenData.height, imgScreenData.width, 0,
+					gl.COLOR_BUFFER_BIT, gl.NEAREST
 				);
 				gl.bindFramebuffer( gl.READ_FRAMEBUFFER, null );
+				gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, null );
 			}
 		} else {
 
@@ -162,7 +189,7 @@ export function getWebGL2Texture( screenData, img ) {
 
 			// Copy the content of the source canvas to the texture
 			gl.bindTexture( gl.TEXTURE_2D, texture );
-			copyImageToTexture( gl, img );
+			copyImageToTexture( screenData, img, texture );
 			gl.bindTexture( gl.TEXTURE_2D, null );
 		}
 		return texture;
@@ -178,7 +205,7 @@ export function getWebGL2Texture( screenData, img ) {
 
 	// Upload image data to texture
 	gl.bindTexture( gl.TEXTURE_2D, texture );
-	copyImageToTexture( gl, img );
+	copyImageToTexture( screenData, img, texture );
 
 	// Set texture parameters for pixel-perfect rendering
 	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
@@ -209,6 +236,14 @@ export function deleteWebGL2Texture( screenData, img ) {
 	const contextMap = screenData.imageContextMap.get( img );
 	if( !contextMap ) {
 		return;
+	}
+
+	// Delete the texture from gl
+	const gl = screenData.gl;
+	const texture = contextMap.get( gl );
+	if( texture ) {
+		gl.deleteTexture( texture );
+		contextMap.delete( gl );
 	}
 
 	// Remove the context Map if empty
@@ -298,7 +333,7 @@ export function updateWebGL2TextureImage( screenData, imgKey, pixelData, width, 
 
 	// If a texture is currently scheduled to be drawn we need to flush the batch so that
 	// the texture will appear as it was when the draw command was issued
-	if( screenData.batchInfo.textureBatchSets.has( texture ) ) {
+	if( screenData.batchInfo.textureBatchSet.has( texture ) ) {
 		g_batches.flushBatches( screenData );
 	}
 	
@@ -325,6 +360,11 @@ export function updateWebGL2TextureImage( screenData, imgKey, pixelData, width, 
 
 export function cleanup( screenData ) {
 	const gl = screenData.gl;
+
+	if( screenData.textureCopyFBO ) {
+		gl.deleteFramebuffer( screenData.textureCopyFBO );
+		screenData.textureCopyFBO = null;
+	}
 
 	// Delete all textures in the imageContextMap for this screen but keep the image 
 	for( const img of screenData.imageContextMap.keys() ) {
