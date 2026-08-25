@@ -281,6 +281,7 @@ function initializePlugin( pluginInfo ) {
 		"getActiveScreen": g_screenManager.getActiveScreen,
 		"getScreenData": g_screenManager.getScreenData,
 		"getAllScreensData": g_screenManager.getAllScreensData,
+		"resizeOffscreenScreen": g_screenManager.resizeOffscreenScreen,
 		"getApi": () => m_api,
 		"utils": g_utils,
 		"wait": g_commands.wait,

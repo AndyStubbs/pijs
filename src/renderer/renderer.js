@@ -362,11 +362,13 @@ export function resizeScreen( screenData, oldWidth, oldHeight ) {
 	gl.bindFramebuffer( gl.READ_FRAMEBUFFER, screenData.bufferFBO );
 	gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, screenData.FBO );
 
-	// Need to flip the y-index so the top-left of the screen is preserved if the screen is smaller
-	const srcY = Math.max( 0, oldHeight - newHeight );
+	// WebGL blits use a bottom-left origin. Offset both rectangles so the logical top-left region
+	// remains anchored when growing as well as when shrinking.
+	const srcY = oldHeight - copyHeight;
+	const destinationY = newHeight - copyHeight;
 	gl.blitFramebuffer(
 		0, srcY, copyWidth, srcY + copyHeight,
-		0, 0, copyWidth, copyHeight,
+		0, destinationY, copyWidth, destinationY + copyHeight,
 		gl.COLOR_BUFFER_BIT, gl.NEAREST
 	);
 

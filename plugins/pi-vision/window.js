@@ -31,6 +31,10 @@ export default { init, createWindow };
  */
 function init( pluginApi ) {
 	g_pluginApi = pluginApi;
+	g_pluginApi.addScreenInitFunction( setupInteractionScreen );
+	for( const screenData of g_pluginApi.getAllScreensData() ) {
+		setupInteractionScreen( screenData );
+	}
 }
 
 /**
@@ -44,6 +48,8 @@ function init( pluginApi ) {
  * @param {string} [options.title=""] - Window title
  * @param {string} [options.border="double"] - Border style
  * @param {boolean} [options.shadow=true] - Whether to composite a two-pixel drop shadow
+ * @param {Function} [options.beforeClose] - Return false to cancel a close request
+ * @param {Function} [options.onRender] - Rebuilds client content before descendants render
  * @returns {Object} Offscreen Pi.js screen API
  */
 function createWindow( options ) {
@@ -51,6 +57,7 @@ function createWindow( options ) {
 
 	const normalized = normalizeOptions( options );
 	const parentData = g_pluginApi.getActiveScreen( "vis.window" );
+	ensureRootInteraction( parentData );
 	const api = g_pluginApi.getApi();
 	let windowScreen = null;
 
@@ -61,7 +68,6 @@ function createWindow( options ) {
 		} );
 
 		const windowData = g_pluginApi.getScreenData( "vis.window", windowScreen.id );
-		const client = calculateClientRect( windowData, normalized );
 		const record = {
 			"type": "window",
 			"parentScreenId": parentData.id,
@@ -74,27 +80,36 @@ function createWindow( options ) {
 			"title": normalized.title,
 			"border": normalized.border,
 			"shadow": normalized.shadow,
-			"client": client,
+			"beforeClose": normalized.beforeClose,
+			"onRender": normalized.onRender,
+			"client": null,
 			"chromeColor": windowScreen.getColor(),
 			"chrome": null,
 			"render": null
 		};
 
 		record.render = ( recursive = true ) => renderWindow( record, recursive );
+		record.move = ( x, y ) => moveWindow( record, x, y );
+		record.resize = ( width, height ) => resizeWindow( record, width, height );
+		record.close = () => closeWindow( record );
 		parentData.vis.elements.push( record );
 		windowData.vis.element = record;
 		windowScreen.render = record.render;
+		windowScreen.move = record.move;
+		windowScreen.resize = record.resize;
+		windowScreen.close = record.close;
 
+		fitWindowToParent( record, true );
 		drawChrome( record );
 		windowScreen.setPosPx( 0, 0 );
-		windowScreen.pushView( client );
+		windowScreen.pushView( record.client );
 	} catch( error ) {
 		if( windowScreen ) {
 			windowScreen.removeScreen();
 		}
 		throw error;
 	} finally {
-		api.setScreen( parentData.api );
+		api.setScreen( parentData.id );
 	}
 
 	return windowScreen;
@@ -128,6 +143,26 @@ function normalizeOptions( options ) {
 		shadow = options.shadow;
 	}
 
+	let beforeClose = null;
+	if( options.beforeClose != null ) {
+		if( typeof options.beforeClose !== "function" ) {
+			const error = new TypeError( "vis.window: Parameter beforeClose must be a function." );
+			error.code = "INVALID_WINDOW_CALLBACK";
+			throw error;
+		}
+		beforeClose = options.beforeClose;
+	}
+
+	let onRender = null;
+	if( options.onRender != null ) {
+		if( typeof options.onRender !== "function" ) {
+			const error = new TypeError( "vis.window: Parameter onRender must be a function." );
+			error.code = "INVALID_VIS_RENDER_CALLBACK";
+			throw error;
+		}
+		onRender = options.onRender;
+	}
+
 	const normalized = {
 		"x": options.x,
 		"y": options.y,
@@ -135,7 +170,9 @@ function normalizeOptions( options ) {
 		"height": options.height,
 		"title": title,
 		"border": border,
-		"shadow": shadow
+		"shadow": shadow,
+		"beforeClose": beforeClose,
+		"onRender": onRender
 	};
 
 	for( const name of [ "x", "y", "width", "height" ] ) {
@@ -184,25 +221,10 @@ function normalizeOptions( options ) {
  * @returns {Object} Client rectangle
  */
 function calculateClientRect( screenData, options ) {
-	const fontWidth = screenData.font.width;
-	const fontHeight = screenData.font.height;
-	const hasBorder = options.border !== "none";
-	let left = 0;
-	let top = fontHeight;
-	let right = 0;
-	let bottom = 0;
-
-	if( hasBorder ) {
-		left = fontWidth;
-		right = fontWidth;
-		bottom = fontHeight;
-	}
-	const client = {
-		"x": left,
-		"y": top,
-		"width": options.width - left - right,
-		"height": options.height - top - bottom
-	};
+	const layout = calculateWindowLayout(
+		screenData, options.border, options.width, options.height, "nearest"
+	);
+	const client = layout.client;
 
 	if( client.width <= 0 || client.height <= 0 ) {
 		const error = new RangeError(
@@ -213,6 +235,475 @@ function calculateClientRect( screenData, options ) {
 	}
 
 	return client;
+}
+
+/**
+ * Calculate normalized window, client, chrome, and resize-grip geometry.
+ *
+ * @param {Object} screenData - Window screen data
+ * @param {string} border - Border style
+ * @param {number} width - Requested outer width
+ * @param {number} height - Requested outer height
+ * @param {string} roundMode - "nearest", "floor", or "ceil"
+ * @returns {Object} Normalized layout
+ */
+function calculateWindowLayout( screenData, border, width, height, roundMode ) {
+	const fontWidth = screenData.font.width;
+	const fontHeight = screenData.font.height;
+	if( border === "none" ) {
+		return {
+			"width": width,
+			"height": height,
+			"columns": Math.floor( width / fontWidth ),
+			"rows": Math.floor( height / fontHeight ),
+			"client": { "x": 0, "y": fontHeight, "width": width,
+				"height": height - fontHeight },
+			"grip": { "x": Math.max( width - fontWidth, 0 ),
+				"y": Math.max( height - fontHeight, 0 ),
+				"width": fontWidth, "height": fontHeight }
+		};
+	}
+
+	const normalizedWidth = snapDimension( width, fontWidth, roundMode, fontWidth * 3 );
+	const normalizedHeight = snapDimension( height, fontHeight, roundMode, fontHeight * 3 );
+	return {
+		"width": normalizedWidth,
+		"height": normalizedHeight,
+		"columns": normalizedWidth / fontWidth,
+		"rows": normalizedHeight / fontHeight,
+		"client": {
+			"x": fontWidth,
+			"y": fontHeight,
+			"width": normalizedWidth - fontWidth * 2,
+			"height": normalizedHeight - fontHeight * 2
+		},
+		"grip": {
+			"x": normalizedWidth - fontWidth,
+			"y": normalizedHeight - fontHeight,
+			"width": fontWidth,
+			"height": fontHeight
+		}
+	};
+}
+
+function snapDimension( value, cellSize, roundMode, minimum ) {
+	let cells;
+	if( roundMode === "floor" ) {
+		cells = Math.floor( value / cellSize );
+	} else if( roundMode === "ceil" ) {
+		cells = Math.ceil( value / cellSize );
+	} else {
+		cells = Math.round( value / cellSize );
+	}
+	return Math.max( cells * cellSize, minimum );
+}
+
+/**
+ * Attach the shared pointer dispatcher to an onscreen parent.
+ *
+ * @param {Object} screenData - Screen data object
+ * @returns {void}
+ */
+function setupInteractionScreen( screenData ) {
+	if( screenData.isOffscreen || !screenData.vis || screenData.vis.interaction ) {
+		return;
+	}
+
+	const state = {
+		"capture": null,
+		"down": ( data ) => interactionDown( screenData, state, data ),
+		"move": ( data ) => interactionMove( state, data ),
+		"up": ( data ) => interactionUp( state, data )
+	};
+	screenData.vis.interaction = state;
+	screenData.api.onpress( "down", state.down );
+	screenData.api.onpress( "move", state.move );
+	screenData.api.onpress( "up", state.up );
+}
+
+function ensureRootInteraction( screenData ) {
+	let rootData = screenData;
+	while( rootData.isOffscreen && rootData.vis.element ) {
+		rootData = getScreenDataById( rootData.vis.element.parentScreenId );
+	}
+	if( rootData ) {
+		setupInteractionScreen( rootData );
+	}
+}
+
+function interactionDown( rootData, state, data ) {
+	const hit = hitTestWindows( rootData, data.x, data.y, 0, 0 );
+	state.capture = null;
+	if( !hit ) {
+		return;
+	}
+
+	raiseWindow( hit.record );
+	renderRootForRecord( hit.record );
+	const mode = getInteractionMode( hit.record, hit.x, hit.y );
+	if( mode === null ) {
+		return;
+	}
+	state.capture = {
+		"record": hit.record,
+		"mode": mode,
+		"startX": data.x,
+		"startY": data.y,
+		"x": hit.record.x,
+		"y": hit.record.y,
+		"width": hit.record.width,
+		"height": hit.record.height
+	};
+}
+
+function interactionMove( state, data ) {
+	const capture = state.capture;
+	if( !capture || data.buttons === 0 ) {
+		return;
+	}
+	if( !getScreenDataById( capture.record.screenData.id ) ) {
+		state.capture = null;
+		return;
+	}
+	const deltaX = data.x - capture.startX;
+	const deltaY = data.y - capture.startY;
+	if( capture.mode === "move" ) {
+		moveWindow( capture.record, capture.x + deltaX, capture.y + deltaY );
+	} else if( capture.mode === "resize" ) {
+		resizeWindow( capture.record, capture.width + deltaX, capture.height + deltaY );
+	}
+}
+
+function interactionUp( state, data ) {
+	const capture = state.capture;
+	state.capture = null;
+	if( !capture || capture.mode !== "close" ) {
+		return;
+	}
+	if( !getScreenDataById( capture.record.screenData.id ) ) {
+		return;
+	}
+	const origin = getWindowRootOrigin( capture.record );
+	const localX = data.x - origin.x;
+	const localY = data.y - origin.y;
+	if( getInteractionMode( capture.record, localX, localY ) === "close" ) {
+		closeWindow( capture.record );
+	}
+}
+
+/**
+ * Hit-test nested windows from front to back.
+ *
+ * @param {Object} parentData - Parent screen data
+ * @param {number} x - Root-space x
+ * @param {number} y - Root-space y
+ * @param {number} parentX - Parent client root-space x
+ * @param {number} parentY - Parent client root-space y
+ * @returns {Object|null} Hit result
+ */
+function hitTestWindows( parentData, x, y, parentX, parentY ) {
+	for( let i = parentData.vis.elements.length - 1; i >= 0; i -= 1 ) {
+		const record = parentData.vis.elements[ i ];
+		if( record.type !== "window" ) {
+			continue;
+		}
+		const left = parentX + record.x;
+		const top = parentY + record.y;
+		if( x < left || y < top || x >= left + record.width || y >= top + record.height ) {
+			continue;
+		}
+
+		const childHit = hitTestWindows(
+			record.screenData, x, y,
+			left + record.client.x, top + record.client.y
+		);
+		if( childHit ) {
+			return childHit;
+		}
+		return { "record": record, "x": x - left, "y": y - top };
+	}
+	return null;
+}
+
+function getInteractionMode( record, x, y ) {
+	const fontHeight = record.screenData.font.height;
+	const layout = calculateWindowLayout(
+		record.screenData, record.border, record.width, record.height, "nearest"
+	);
+	if(
+		x >= layout.grip.x && x < layout.grip.x + layout.grip.width &&
+		y >= layout.grip.y && y < layout.grip.y + layout.grip.height
+	) {
+		return "resize";
+	}
+	if( y >= 0 && y < fontHeight ) {
+		const close = getCloseRect( record );
+		if( x >= close.x && x < close.x + close.width ) {
+			return "close";
+		}
+		return "move";
+	}
+	return null;
+}
+
+function getCloseRect( record ) {
+	const fontWidth = record.screenData.font.width;
+	const layout = calculateWindowLayout(
+		record.screenData, record.border, record.width, record.height, "nearest"
+	);
+	const columns = layout.columns;
+	const inset = record.border === "none" ? 0 : 1;
+	const available = Math.max( columns - inset * 2, 0 );
+	const length = Math.min( CLOSE_BUTTON.length, available );
+	const column = Math.max( inset, columns - inset - length );
+	return { "x": column * fontWidth, "width": length * fontWidth };
+}
+
+function getWindowRootOrigin( record ) {
+	let x = record.x;
+	let y = record.y;
+	let parentData = getScreenDataById( record.parentScreenId );
+	while( parentData && parentData.vis.element ) {
+		const parent = parentData.vis.element;
+		x += parent.x + parent.client.x;
+		y += parent.y + parent.client.y;
+		parentData = getScreenDataById( parent.parentScreenId );
+	}
+	return { "x": x, "y": y };
+}
+
+function raiseWindow( record ) {
+	const parentData = getScreenDataById( record.parentScreenId );
+	if( !parentData ) {
+		return;
+	}
+	const index = parentData.vis.elements.indexOf( record );
+	if( index >= 0 && index !== parentData.vis.elements.length - 1 ) {
+		parentData.vis.elements.splice( index, 1 );
+		parentData.vis.elements.push( record );
+	}
+	if( parentData.vis.element ) {
+		raiseWindow( parentData.vis.element );
+	}
+}
+
+function moveWindow( record, x, y ) {
+	validateGeometryValue( "window.move", "x", x );
+	validateGeometryValue( "window.move", "y", y );
+	record.x = x;
+	record.y = y;
+	fitWindowToParent( record, false );
+	renderRootForRecord( record );
+	return record.screen;
+}
+
+function resizeWindow( record, width, height ) {
+	validateGeometryValue( "window.resize", "width", width );
+	validateGeometryValue( "window.resize", "height", height );
+	const bounds = getWindowBounds( record );
+	const minimum = getMinimumSize( record );
+	const maximum = getMaximumSize(
+		record, bounds.width - record.x - getShadowExtent( record ),
+		bounds.height - record.y - getShadowExtent( record )
+	);
+	const requested = calculateWindowLayout(
+		record.screenData, record.border, width, height, "nearest"
+	);
+	const nextWidth = Math.max( minimum.width, Math.min( requested.width, maximum.width ) );
+	const nextHeight = Math.max( minimum.height, Math.min( requested.height, maximum.height ) );
+	if( applyWindowSize( record, nextWidth, nextHeight ) ) {
+		fitDescendants( record );
+		renderRootForRecord( record );
+	}
+	return record.screen;
+}
+
+function closeWindow( record ) {
+	if( record.beforeClose && record.beforeClose( record.screen ) === false ) {
+		return false;
+	}
+	const activeData = g_pluginApi.getActiveScreen( "window.close" );
+	const parentData = getScreenDataById( record.parentScreenId );
+	const rootData = getRootData( parentData );
+	closeDescendants( record );
+	record.screen.removeScreen();
+	if( rootData && getScreenDataById( rootData.id ) ) {
+		renderRootData( rootData );
+	}
+	if( activeData && getScreenDataById( activeData.id ) ) {
+		g_pluginApi.getApi().setScreen( activeData.id );
+	} else if( parentData && getScreenDataById( parentData.id ) ) {
+		g_pluginApi.getApi().setScreen( parentData.id );
+	}
+	return true;
+}
+
+function closeDescendants( record ) {
+	for( const element of [ ...record.screenData.vis.elements ].reverse() ) {
+		if( element.type === "window" ) {
+			closeDescendants( element );
+			element.beforeClose = null;
+			element.screen.removeScreen();
+		}
+	}
+}
+
+function fitWindowToParent( record, resizeToFit ) {
+	const bounds = getWindowBounds( record );
+	const minimum = getMinimumSize( record );
+	const shadow = getShadowExtent( record );
+	const maximum = getMaximumSize( record, bounds.width - shadow, bounds.height - shadow );
+	const maximumWidth = maximum.width;
+	const maximumHeight = maximum.height;
+	if( maximumWidth < minimum.width || maximumHeight < minimum.height ) {
+		const error = new RangeError( "vis.window: Parent cannot contain the minimum window size." );
+		error.code = "WINDOW_DOES_NOT_FIT";
+		throw error;
+	}
+	if( resizeToFit ) {
+		const requested = calculateWindowLayout(
+			record.screenData, record.border, record.width, record.height, "nearest"
+		);
+		applyWindowSize(
+			record,
+			Math.max( minimum.width, Math.min( requested.width, maximumWidth ) ),
+			Math.max( minimum.height, Math.min( requested.height, maximumHeight ) )
+		);
+	}
+	record.x = Math.max( 0, Math.min( record.x, bounds.width - record.width - shadow ) );
+	record.y = Math.max( 0, Math.min( record.y, bounds.height - record.height - shadow ) );
+}
+
+function fitDescendants( record ) {
+	for( const element of record.screenData.vis.elements ) {
+		if( element.type === "window" ) {
+			fitWindowToParent( element, true );
+			fitDescendants( element );
+		}
+	}
+}
+
+function applyWindowSize( record, width, height ) {
+	if( record.client !== null && record.width === width && record.height === height ) {
+		return false;
+	}
+	const options = { "width": width, "height": height, "border": record.border };
+	const client = calculateClientRect( record.screenData, options );
+	const hadClientView = record.screenData.view.stack.length > 0;
+	const savedViews = record.screenData.view.stack.slice( 1 ).map( ( view ) => ( {
+		"x": view.localX,
+		"y": view.localY,
+		"width": view.width,
+		"height": view.height
+	} ) );
+	record.width = width;
+	record.height = height;
+	record.client = client;
+	record.chrome = null;
+	g_pluginApi.resizeOffscreenScreen( record.screenData, width, height );
+	if( hadClientView ) {
+		record.screen.resetView();
+		record.screen.pushView( client );
+		for( const view of savedViews ) {
+			record.screen.pushView( view );
+		}
+	}
+	drawChrome( record );
+	return true;
+}
+
+function getMaximumSize( record, width, height ) {
+	if( record.border === "none" ) {
+		return { "width": width, "height": height };
+	}
+	return {
+		"width": Math.floor( width / record.screenData.font.width ) *
+			record.screenData.font.width,
+		"height": Math.floor( height / record.screenData.font.height ) *
+			record.screenData.font.height
+	};
+}
+
+function getWindowBounds( record ) {
+	const parentData = getScreenDataById( record.parentScreenId );
+	return { "width": parentData.view.width, "height": parentData.view.height };
+}
+
+function getMinimumSize( record ) {
+	const fontWidth = record.screenData.font.width;
+	const fontHeight = record.screenData.font.height;
+	let width;
+	let height;
+	if( record.border === "none" ) {
+		width = 1;
+		height = fontHeight + 1;
+	} else {
+		width = fontWidth * 3;
+		height = fontHeight * 3;
+	}
+
+	for( const element of record.screenData.vis.elements ) {
+		if( element.type !== "window" ) {
+			continue;
+		}
+		const childMinimum = getMinimumSize( element );
+		const requiredClientWidth = childMinimum.width + getShadowExtent( element );
+		const requiredClientHeight = childMinimum.height + getShadowExtent( element );
+		const horizontalInset = record.border === "none" ? 0 : fontWidth * 2;
+		const verticalInset = record.border === "none" ? fontHeight : fontHeight * 2;
+		width = Math.max( width, horizontalInset + requiredClientWidth );
+		height = Math.max( height, verticalInset + requiredClientHeight );
+	}
+	if( record.border !== "none" ) {
+		width = snapDimension( width, fontWidth, "ceil", fontWidth * 3 );
+		height = snapDimension( height, fontHeight, "ceil", fontHeight * 3 );
+	}
+	return { "width": width, "height": height };
+}
+
+function getShadowExtent( record ) {
+	return record.shadow ? SHADOW_SIZE : 0;
+}
+
+function getScreenDataById( id ) {
+	return g_pluginApi.getAllScreensData().find( ( screenData ) => screenData.id === id ) || null;
+}
+
+function getRootData( screenData ) {
+	let rootData = screenData;
+	while( rootData && rootData.isOffscreen && rootData.vis.element ) {
+		rootData = getScreenDataById( rootData.vis.element.parentScreenId );
+	}
+	return rootData;
+}
+
+function renderRootForRecord( record ) {
+	const parentData = getScreenDataById( record.parentScreenId );
+	const rootData = getRootData( parentData );
+	if( rootData ) {
+		renderRootData( rootData );
+	}
+}
+
+function renderRootData( rootData ) {
+	const activeData = g_pluginApi.getActiveScreen( "window.render" );
+	const api = g_pluginApi.getApi();
+	try {
+		api.setScreen( rootData.id );
+		api.vis.render();
+	} finally {
+		if( activeData && getScreenDataById( activeData.id ) ) {
+			api.setScreen( activeData.id );
+		}
+	}
+}
+
+function validateGeometryValue( command, name, value ) {
+	if( !Number.isInteger( value ) ) {
+		const error = new TypeError( `${command}: Parameter ${name} must be an integer.` );
+		error.code = "INVALID_WINDOW_GEOMETRY";
+		throw error;
+	}
 }
 
 /**
@@ -229,30 +720,41 @@ function renderWindow( record, recursive = true ) {
 		throw error;
 	}
 
-	drawChrome( record );
-	if( recursive ) {
-		for( const element of [ ...record.screenData.vis.elements ] ) {
-			if( typeof element.render === "function" ) {
-				element.render( true );
+	const activeData = g_pluginApi.getActiveScreen( "window.render" );
+	try {
+		drawChrome( record );
+		record.screen.cls();
+		if( record.onRender ) {
+			record.onRender( record.screen );
+		}
+		if( recursive ) {
+			for( const element of [ ...record.screenData.vis.elements ] ) {
+				if( typeof element.render === "function" ) {
+					element.render( true );
+				}
 			}
 		}
-	}
 
-	const parentData = g_pluginApi.getScreenData( "window.render", record.parentScreenId );
-	if( record.shadow ) {
-		const savedColor = parentData.api.getColor();
-		parentData.api.setColor( 0 );
-		parentData.api.rect(
-			record.x + SHADOW_SIZE, record.y + record.height,
-			record.width, SHADOW_SIZE, 0
-		);
-		parentData.api.rect(
-			record.x + record.width, record.y + SHADOW_SIZE,
-			SHADOW_SIZE, record.height, 0
-		);
-		parentData.api.setColor( savedColor );
+		const parentData = g_pluginApi.getScreenData( "window.render", record.parentScreenId );
+		if( record.shadow ) {
+			const savedColor = parentData.api.getColor();
+			parentData.api.setColor( 0 );
+			parentData.api.rect(
+				record.x + SHADOW_SIZE, record.y + record.height,
+				record.width, SHADOW_SIZE, 0
+			);
+			parentData.api.rect(
+				record.x + record.width, record.y + SHADOW_SIZE,
+				SHADOW_SIZE, record.height, 0
+			);
+			parentData.api.setColor( savedColor );
+		}
+		parentData.api.drawImage( record.screen, record.x, record.y, undefined, 0, 0, 1, 1, 0 );
+	} finally {
+		if( activeData && getScreenDataById( activeData.id ) ) {
+			g_pluginApi.getApi().setScreen( activeData.id );
+		}
 	}
-	parentData.api.drawImage( record.screen, record.x, record.y, undefined, 0, 0, 1, 1, 0 );
 }
 
 /**
@@ -266,8 +768,11 @@ function drawChrome( record ) {
 	const screenData = record.screenData;
 	const fontWidth = screenData.font.width;
 	const fontHeight = screenData.font.height;
-	const columns = Math.floor( record.width / fontWidth );
-	const rows = Math.floor( record.height / fontHeight );
+	const layout = calculateWindowLayout(
+		screenData, record.border, record.width, record.height, "nearest"
+	);
+	const columns = layout.columns;
+	const rows = layout.rows;
 	const savedColor = screen.getColor();
 	const savedCursor = {
 		"x": screenData.printCursor.x,

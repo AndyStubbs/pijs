@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Pi Vision Window Management Manual Test</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "pi_vision_window_01"
+			name = "Pi Vision Window Management Manual Test"
+			width = 640
+			height = 360
+			delay = 0
+			[[TOML_END]]
+		</script>
+		<script src="../../../build/pi.js"></script>
+		<script src="../../../build/plugins/pi-vision/pi-vision.js"></script>
+		<style>
+			html, body {
+				background-color: #333;
+				margin: 0;
+				padding: 0;
+			}
+		</style>
+	</head>
+<body>
+<script>
+	const desktop = $.screen( "640x360" );
+
+	$.ready( function() {
+		$.vis.onRender( ( screen ) => {
+			screen.setColor( 8 );
+			screen.setPosPx( 8, 344 );
+			screen.print( "Pi Vision window management" );
+		} );
+		createWindow( {
+			"x": 24, "y": 24, "width": 190, "height": 112,
+			"title": "Drag Me", "color": 1, "accent": 14,
+			"draw": ( screen ) => {
+				screen.line( 4, 4, screen.width() - 5, screen.height() - 5, 14 );
+				screen.line( screen.width() - 5, 4, 4, screen.height() - 5, 14 );
+			}
+		} );
+		createWindow( {
+			"x": 234, "y": 24, "width": 176, "height": 112,
+			"title": "Resize Me", "color": 2, "accent": 10,
+			"draw": ( screen ) => {
+				screen.rect( 8, 8, 48, 32, 10 );
+				screen.rect( 64, 8, 48, 32, 14 );
+			}
+		} );
+		createWindow( {
+			"x": 430, "y": 24, "width": 176, "height": 112,
+			"title": "Close Me", "color": 4, "accent": 12
+		} );
+
+		let vetoClose = true;
+		createWindow( {
+			"x": 24, "y": 164, "width": 190, "height": 112,
+			"title": "Veto Once", "color": 3, "accent": 11,
+			"beforeClose": () => {
+				if( vetoClose ) {
+					vetoClose = false;
+					return false;
+				}
+				return true;
+			}
+		} );
+
+		$.setScreen( desktop );
+		const parentWindow = createWindow( {
+			"x": 234, "y": 164, "width": 372, "height": 168,
+			"title": "Parent", "color": 5, "accent": 13
+		} );
+		$.setScreen( parentWindow );
+		createWindow( {
+			"x": 24, "y": 16, "width": 150, "height": 96,
+			"title": "Child", "color": 6, "accent": 15,
+			"shadow": false
+		} );
+
+		$.setScreen( desktop );
+		function frame() {
+			$.vis.render();
+			requestAnimationFrame( frame );
+		}
+		frame();
+	} );
+
+	function createWindow( options ) {
+		const draw = options.draw;
+		options.onRender = ( screen ) => {
+			screen.setColor( options.color );
+			screen.rect( 0, 0, screen.width(), screen.height(), options.color );
+			screen.setColor( options.accent );
+			screen.rect( 8, 8, 24, 16, options.accent );
+			if( draw ) {
+				draw( screen );
+			}
+		};
+		const windowScreen = $.vis.window( options );
+		return windowScreen;
+	}
+</script>
+</body>
+</html>

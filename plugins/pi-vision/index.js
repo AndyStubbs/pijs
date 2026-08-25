@@ -23,30 +23,35 @@ let g_pluginApi = null;
 export default function piVisionPlugin( pluginApi ) {
 	g_pluginApi = pluginApi;
 
-	// Initialize Components
-	g_Window.init( g_pluginApi );
-	g_Compositor.init( g_pluginApi );
-
 	// Setup API's
 	const api = g_pluginApi.getApi();
 	g_pluginApi.addScreenDataItem( "vis", {
 		"elements": [],
-		"element": null
+		"element": null,
+		"interaction": null,
+		"onRender": null
 	} );
 	for( const screenData of g_pluginApi.getAllScreensData() ) {
 		if( !screenData.vis ) {
 			screenData.vis = {
 				"elements": [],
-				"element": null
+				"element": null,
+				"interaction": null,
+				"onRender": null
 			};
 		}
 	}
+
+	// Initialize components after existing screens have Pi Vision state.
+	g_Window.init( g_pluginApi );
+	g_Compositor.init( g_pluginApi );
 
 	g_pluginApi.addScreenCleanupFunction( cleanupScreen );
 
 	const vis = api.vis || {};
 	vis.window = g_Window.createWindow;
 	vis.render = g_Compositor.render;
+	vis.onRender = g_Compositor.onRender;
 	api.vis = vis;
 }
 
@@ -56,6 +61,7 @@ if( typeof window !== "undefined" && window.pi ) {
 		"name": "pi-vision",
 		"version": "1.0.0",
 		"description": "Retro character-cell windowing and controls for Pi.js",
+		"dependencies": [ "pointer" ],
 		"init": piVisionPlugin
 	} );
 }
@@ -69,6 +75,12 @@ if( typeof window !== "undefined" && window.pi ) {
 function cleanupScreen( screenData ) {
 	if( !screenData.vis ) {
 		return;
+	}
+	for( const element of [ ...screenData.vis.elements ].reverse() ) {
+		if( element.type === "window" ) {
+			element.beforeClose = null;
+			element.screen.removeScreen();
+		}
 	}
 
 	const record = screenData.vis.element;

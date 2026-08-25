@@ -773,6 +773,47 @@ export function refreshScreenSize( screenData, forcePresent ) {
 	applyResizeConsequences( screenData, flags, forcePresent );
 }
 
+/**
+ * Resize an offscreen screen to exact logical pixel dimensions.
+ *
+ * This is exposed through the plugin API for container-style plugins. Onscreen screens continue
+ * to be sized exclusively from their configured aspect and DOM container.
+ *
+ * @param {Object} screenData - Offscreen screen data object
+ * @param {number} width - New logical width
+ * @param {number} height - New logical height
+ * @returns {void}
+ */
+export function resizeOffscreenScreen( screenData, width, height ) {
+	if( !screenData || !screenData.isOffscreen ) {
+		const error = new TypeError( "resizeOffscreenScreen: Screen must be offscreen." );
+		error.code = "INVALID_OFFSCREEN_SCREEN";
+		throw error;
+	}
+	if( !Number.isInteger( width ) || !Number.isInteger( height ) ) {
+		const error = new TypeError(
+			"resizeOffscreenScreen: Width and height must be integers."
+		);
+		error.code = "INVALID_SCREEN_DIMENSIONS";
+		throw error;
+	}
+	validateDimensions( width, height );
+	if( screenData.width === width && screenData.height === height ) {
+		return;
+	}
+
+	const oldWidth = screenData.width;
+	const oldHeight = screenData.height;
+	screenData.width = width;
+	screenData.height = height;
+	screenData.canvas.width = width;
+	screenData.canvas.height = height;
+	screenData.aspectData.width = width;
+	screenData.aspectData.height = height;
+	g_renderer.resizeScreen( screenData, oldWidth, oldHeight );
+	g_view.onScreenResize( screenData );
+}
+
 function resizeScreen( screenData, isInit ) {
 	if( !canSizeAndPresent( screenData ) ) {
 		return;
@@ -953,4 +994,3 @@ function getSize( element ) {
 		"height": element.offsetHeight || element.clientHeight || element.height
 	};
 }
-

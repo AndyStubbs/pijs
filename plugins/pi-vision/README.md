@@ -13,6 +13,8 @@ Scoped neatly under the `$.vis` namespace, Pi Vision provides a powerful windowi
 3. **Windows Are Not Required**: You do not need to create a window to use Pi Vision controls. Standalone widgets can be added directly, automatically attaching to a default desktop root container.
 4. **Protected Client View & Borders**: Windows automatically calculate insets based on their border style, using Pi.js's native `pushView` to protect the inner client area. Advanced users can use `$.popView()` to escape the client area and draw directly onto the window frames or borders.
 5. **Explicit Manual Rendering & Recursion**: True to Pi.js's immediate-mode DNA, Pi Vision avoids hidden magic. Elements are composited when you explicitly call `$.vis.render()` or trigger an individual window render function. Windows are containers, so their child elements can be rendered recursively.
+6. **Pointer Input**: Pi Vision requires the `pointer` plugin. Mouse and touch presses share the
+   same title-bar, resize-grip, and close-button behavior.
 
 ---
 
@@ -57,24 +59,21 @@ $.ready( () => {
 		"width": 320,
 		"height": 200,
 		"border": "double",
-		"shadow": true
+		"shadow": true,
+		"onRender": ( screen ) => {
+			screen.setColor( "lightgreen" );
+			screen.print( "Initializing Pi Vision...\nReady." );
+		}
 	} );
 
-	// Target the window for custom drawing using standard Pi.js commands
-	$.setScreen( win );
-	$.cls();
-	$.color( "lightgreen" );
-	$.print( "Initializing Pi Vision...\nReady." );
-
-	// Switch back to main screen
-	$.setScreen( mainScreen );
+	$.vis.onRender( ( screen ) => {
+		screen.setColor( 8 );
+		screen.setPosPx( 8, 8 );
+		screen.print( "Desktop" );
+	} );
 
 	// Main application loop
 	function frame() {
-		$.cls();
-		
-		// Draw background graphics...
-		
 		// Render all Pi Vision windows and GUI controls on top (recursive by default)
 		$.vis.render();
 		
@@ -102,22 +101,53 @@ Creates a new GUI window. Returns a specialized Pi.js screen object that can be 
   - `height` (Number): Total window height (including title bar and borders).
   - `border` (String): Border style (`"double"`, `"single"`, `"thick"`, or `"none"`). Default is `"double"`.
   - `shadow` (Boolean): Enables a classic retro 2-pixel drop shadow. Default is `true`.
+  - `beforeClose` (Function): Optional callback receiving the window screen. Returning exactly
+    `false` cancels a close request.
+  - `onRender` (Function): Optional callback receiving the window screen. Pi Vision clears the
+    client area and invokes this callback before rendering child elements.
 
-Every window reserves one character row for its title bar and visual `[X]` close button. The close
-button is decorative in this phase and does not yet handle input.
+Every window reserves one character row for its title bar and `[X]` close button. Press and drag the
+title bar to move the window, drag its bottom-right character cell to resize it, or release `[X]` to
+close it. Interacting with a window raises it above its siblings. Geometry remains integer-pixel
+based and is clamped so the window and optional shadow stay inside the parent client area.
+Bordered window dimensions snap to complete font cells. Requested sizes use nearest-cell rounding;
+containment limits round downward. Borderless windows retain exact integer-pixel dimensions.
 
 ```javascript
 const win = $.vis.window( {
 	"title": "Settings",
 	"x": 100, "y": 80,
 	"width": 280, "height": 160,
-	"border": "single"
+	"border": "single",
+	"onRender": ( screen ) => {
+		screen.setColor( 2 );
+		screen.rect( 0, 0, screen.width(), screen.height(), 2 );
+	}
 } );
 ```
 
+#### `win.move( x, y )`
+
+Moves a window within its parent client area and returns the window screen for chaining. Coordinates
+are clamped when necessary.
+
+#### `win.resize( width, height )`
+
+Resizes a window from its top-left corner and returns the window screen for chaining. Bordered
+dimensions snap to complete font cells so the visible bottom-right corner remains the resize grip.
+The client view and nested windows are adjusted to the new bounds, then the render callback rebuilds
+the cleared client area.
+
+#### `win.close()`
+
+Requests closure of the window and all descendant windows. It returns `false` when `beforeClose`
+vetoes the request and `true` after successful removal. Programmatic and `[X]` close requests use
+the same callback and cleanup behavior.
+
 #### `$.vis.render( recursive )`
-Renders all root elements owned by the active screen in creation order. Windows rebuild their chrome
-and composite their offscreen screen onto their parent. Windows are the only container element.
+Clears the active base screen, invokes its `onRender` callback, then renders all root elements in
+creation order. Each window rebuilds its chrome, clears its client, invokes its own callback, renders
+its children, and composites onto its parent. Windows are the only container element.
 - **recursive** (Boolean): Defaults to `true`. When enabled, each window renders its descendant elements before it is composited. When `false`, root elements render without their descendants.
 
 ```javascript
@@ -130,6 +160,23 @@ win.render();
 
 `win.render( recursive )` renders the window onto the parent it was created on, independent of the
 currently active screen. It uses the same recursion behavior and defaults to `true`.
+
+Client rendering is immediate-mode. One-time drawing is cleared by the next render, so persistent
+content belongs in `onRender`. Callbacks must draw through the screen argument they receive. Callback
+errors propagate and stop descendant rendering.
+
+#### `$.vis.onRender( fn )`
+
+Sets the render callback for the active base screen. Pass `null` to remove it. Pi Vision invokes the
+callback as `fn( screen )` after clearing the base screen and before drawing root elements.
+
+```javascript
+$.vis.onRender( ( screen ) => {
+	screen.setColor( 1 );
+	screen.setPosPx( 8, 8 );
+	screen.print( "Desktop" );
+} );
+```
 
 #### `$.vis.moveElement( element, targetScreenOrContainer )`
 Moves any visual GUI element (such as a standalone button, label, or an entire window) from its current container to a new screen or target window container while preserving its internal state and handlers.
