@@ -278,6 +278,8 @@ function screen( options ) {
 	}
 
 	let parentData = null;
+	let parentScreenId = null;
+	let parentRenderContext = null;
 	if( options.parent != null ) {
 		if( !options.isOffscreen ) {
 			const error = new TypeError(
@@ -305,6 +307,8 @@ function screen( options ) {
 		} else {
 			parentData = m_screens[ options.parent.id ];	
 		}
+		parentScreenId = parentData.id;
+		parentRenderContext = parentData.gl;
 	}
 
 	// Validate aspect - "Now Required"
@@ -326,8 +330,8 @@ function screen( options ) {
 		"aspectData": null,
 		"clientRect": null,
 		"previousOffsetSize": null,
-		"parentScreenId": parentData ? parentData.id : null,
-		"parentRenderContext": parentData ? parentData.gl : null
+		"parentScreenId": parentScreenId,
+		"parentRenderContext": parentRenderContext
 	};
 
 	screenData.api.id = screenData.id;
