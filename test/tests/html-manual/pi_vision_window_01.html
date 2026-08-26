@@ -117,6 +117,13 @@
 
 	function createWindow( options ) {
 		const draw = options.draw;
+		options.mode = "interactive";
+		if( options.border == null ) {
+			options.border = "double";
+		}
+		if( options.shadow == null ) {
+			options.shadow = true;
+		}
 		options.onRender = ( screen ) => {
 			screen.setColor( options.color );
 			screen.rect( 0, 0, screen.width(), screen.height(), options.color );

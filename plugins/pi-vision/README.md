@@ -11,17 +11,21 @@ Scoped neatly under the `$.vis` namespace, Pi Vision provides a powerful windowi
 1. **Namespace (`$.vis`)**: All GUI commands and window managers are cleanly organized under `$.vis` to prevent core API pollution.
 2. **Windows as Screens**: Under the hood, each window is a specialized offscreen Pi.js screen object. This means windows are fully compatible with standard Pi.js functions like `$.setScreen()`, `$.cls()`, `$.line()`, `$.print()`, and more.
 3. **Windows Are Not Required**: You do not need to create a window to use Pi Vision controls. Standalone widgets can be added directly, automatically attaching to a default desktop root container.
-4. **Protected Client View & Borders**: Windows automatically calculate insets based on their border style, using Pi.js's native `pushView` to protect the inner client area. Advanced users can use `$.popView()` to escape the client area and draw directly onto the window frames or borders.
+4. **Protected Client View & Borders**: Bordered and interactive windows calculate their chrome
+   insets using Pi.js's native `pushView`. A static borderless window exposes its entire surface as
+   client space. Advanced users can use `$.popView()` to escape an inset client area.
 5. **Explicit Manual Rendering & Recursion**: True to Pi.js's immediate-mode DNA, Pi Vision avoids hidden magic. Elements are composited when you explicitly call `$.vis.render()` or trigger an individual window render function. Windows are containers, so their child elements can be rendered recursively.
-6. **Pointer Input**: Pi Vision requires the `pointer` plugin. Mouse and touch presses share the
-   same title-bar, resize-grip, and close-button behavior.
+6. **Pointer Input**: Pi Vision requires the `pointer` plugin, but only interactive windows register
+   Pi Vision pointer handlers. Mouse and touch presses share the same title-bar, resize-grip, and
+   close-button behavior.
 
 ---
 
 ## Retro Tools & Widgets
 
 Inspired by VBDOS and TurboVision, Pi Vision offers a classic suite of controls:
-- **Windows**: Draggable/managed containers with title bars, close buttons, and drop shadows.
+- **Windows**: Static containers by default, with optional interactive title bars, close buttons,
+  borders, and drop shadows.
 - **Buttons**: Clickable retro push buttons with pressed/focused states.
 - **Labels**: Static text displays.
 - **Text Areas**: Multi-line or single-line text input fields with full cursor controls.
@@ -32,7 +36,7 @@ Inspired by VBDOS and TurboVision, Pi Vision offers a classic suite of controls:
 - **Radio buttons**: Check one out of a group of options.
 - **Tree View**: Collapsible tree view area.
 
-By default all tools should work with Mouse, Keyboard, Touch, and Gamepads. But this can be configured.
+Interactive tools support mouse, keyboard, touch, and gamepads where applicable.
 ---
 
 ## Getting Started
@@ -53,6 +57,7 @@ $.ready( () => {
 
 	// Create a retro window
 	const win = $.vis.window( {
+		"mode": "interactive",
 		"title": "System Console",
 		"x": 50,
 		"y": 40,
@@ -99,22 +104,30 @@ Creates a new GUI window. Returns a specialized Pi.js screen object that can be 
   - `y` (Number): Y position on screen.
   - `width` (Number): Total window width (including borders).
   - `height` (Number): Total window height (including title bar and borders).
-  - `border` (String): Border style (`"double"`, `"single"`, `"thick"`, or `"none"`). Default is `"double"`.
-  - `shadow` (Boolean): Enables a classic retro 2-pixel drop shadow. Default is `true`.
+  - `mode` (String): `"static"` or `"interactive"`. Default is `"static"`.
+  - `border` (String): Border style (`"double"`, `"single"`, `"thick"`, or `"none"`). Default is `"none"`.
+  - `shadow` (Boolean): Enables a classic retro 2-pixel drop shadow. Default is `false`.
   - `beforeClose` (Function): Optional callback receiving the window screen. Returning exactly
     `false` cancels a close request.
   - `onRender` (Function): Optional callback receiving the window screen. Pi Vision clears the
     client area and invokes this callback before rendering child elements.
 
-Every window reserves one character row for its title bar and `[X]` close button. Press and drag the
-title bar to move the window, drag its bottom-right character cell to resize it, or release `[X]` to
-close it. Interacting with a window raises it above its siblings. Geometry remains integer-pixel
-based and is clamped so the window and optional shadow stay inside the parent client area.
-Bordered window dimensions snap to complete font cells. Requested sizes use nearest-cell rounding;
-containment limits round downward. Borderless windows retain exact integer-pixel dimensions.
+Static windows do not respond to pointer-driven move, resize, close, or raise actions. Their
+`move()`, `resize()`, and `close()` methods remain available to scripts. A static borderless window
+has no title or close chrome, and its client view occupies the full requested width and height. A
+static bordered window can display its border and title, but does not display `[X]`.
+
+Interactive windows reserve one character row for their title bar and `[X]` close button. Press and
+drag the title bar to move the window, drag its bottom-right character cell to resize it, or release
+`[X]` to close it. Interacting with an interactive window raises it above its siblings. Geometry
+remains integer-pixel based and is clamped so the window and optional shadow stay inside the parent
+client area. Bordered window dimensions snap to complete font cells. Requested sizes use
+nearest-cell rounding; containment limits round downward. Borderless windows retain exact
+integer-pixel dimensions.
 
 ```javascript
 const win = $.vis.window( {
+	"mode": "interactive",
 	"title": "Settings",
 	"x": 100, "y": 80,
 	"width": 280, "height": 160,
@@ -141,8 +154,8 @@ the cleared client area.
 #### `win.close()`
 
 Requests closure of the window and all descendant windows. It returns `false` when `beforeClose`
-vetoes the request and `true` after successful removal. Programmatic and `[X]` close requests use
-the same callback and cleanup behavior.
+vetoes the request and `true` after successful removal. For interactive windows, programmatic and
+`[X]` close requests use the same callback and cleanup behavior.
 
 #### `$.vis.render( recursive )`
 Clears the active base screen, invokes its `onRender` callback, then renders all root elements in
@@ -194,7 +207,9 @@ pi.vis.moveElement( btn, screenB );
 
 ## Advanced: Border Customization & The View Stack
 
-When you draw inside a window using `$.setScreen(win)`, Pi Vision automatically applies `pushView` to keep your drawings neatly constrained inside the client area (below the title bar and inside the borders).
+When you draw inside a window using `$.setScreen(win)`, Pi Vision automatically applies `pushView`
+to keep drawings inside the calculated client area. For the default static borderless window, that
+view is the full window surface. Interactive and bordered windows protect their chrome insets.
 
 If you are an advanced user who wants to customize the outer frame or draw custom title bar elements manually:
 

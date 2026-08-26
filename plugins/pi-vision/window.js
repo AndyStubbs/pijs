@@ -31,10 +31,6 @@ export default { init, createWindow };
  */
 function init( pluginApi ) {
 	g_pluginApi = pluginApi;
-	g_pluginApi.addScreenInitFunction( setupInteractionScreen );
-	for( const screenData of g_pluginApi.getAllScreensData() ) {
-		setupInteractionScreen( screenData );
-	}
 }
 
 /**
@@ -45,9 +41,10 @@ function init( pluginApi ) {
  * @param {number} options.y - Vertical position on the parent screen
  * @param {number} options.width - Total window width in pixels
  * @param {number} options.height - Total window height in pixels
+ * @param {string} [options.mode="static"] - Window interaction mode
  * @param {string} [options.title=""] - Window title
- * @param {string} [options.border="double"] - Border style
- * @param {boolean} [options.shadow=true] - Whether to composite a two-pixel drop shadow
+ * @param {string} [options.border="none"] - Border style
+ * @param {boolean} [options.shadow=false] - Whether to composite a two-pixel drop shadow
  * @param {Function} [options.beforeClose] - Return false to cancel a close request
  * @param {Function} [options.onRender] - Rebuilds client content before descendants render
  * @returns {Object} Offscreen Pi.js screen API
@@ -57,7 +54,6 @@ function createWindow( options ) {
 
 	const normalized = normalizeOptions( options );
 	const parentData = g_pluginApi.getActiveScreen( "vis.window" );
-	ensureRootInteraction( parentData );
 	const api = g_pluginApi.getApi();
 	let windowScreen = null;
 
@@ -78,6 +74,7 @@ function createWindow( options ) {
 			"y": normalized.y,
 			"width": normalized.width,
 			"height": normalized.height,
+			"mode": normalized.mode,
 			"title": normalized.title,
 			"border": normalized.border,
 			"shadow": normalized.shadow,
@@ -104,6 +101,9 @@ function createWindow( options ) {
 		drawChrome( record );
 		windowScreen.setPosPx( 0, 0 );
 		windowScreen.pushView( record.client );
+		if( normalized.mode === "interactive" ) {
+			ensureRootInteraction( parentData );
+		}
 	} catch( error ) {
 		if( windowScreen ) {
 			windowScreen.removeScreen();
@@ -124,12 +124,22 @@ function createWindow( options ) {
  * @returns {Object} Normalized options
  */
 function normalizeOptions( options ) {
+	let mode = "static";
+	if( options.mode != null ) {
+		if( typeof options.mode !== "string" ) {
+			const error = new TypeError( "vis.window: Parameter mode must be a string." );
+			error.code = "INVALID_WINDOW_MODE";
+			throw error;
+		}
+		mode = options.mode.toLowerCase();
+	}
+
 	let title = "";
 	if( options.title != null ) {
 		title = options.title;
 	}
 
-	let border = "double";
+	let border = "none";
 	if( options.border != null ) {
 		if( typeof options.border !== "string" ) {
 			const error = new TypeError( "vis.window: Parameter border must be a string." );
@@ -139,7 +149,7 @@ function normalizeOptions( options ) {
 		border = options.border.toLowerCase();
 	}
 
-	let shadow = true;
+	let shadow = false;
 	if( options.shadow != null ) {
 		shadow = options.shadow;
 	}
@@ -169,6 +179,7 @@ function normalizeOptions( options ) {
 		"y": options.y,
 		"width": options.width,
 		"height": options.height,
+		"mode": mode,
 		"title": title,
 		"border": border,
 		"shadow": shadow,
@@ -193,6 +204,12 @@ function normalizeOptions( options ) {
 	if( typeof normalized.title !== "string" ) {
 		const error = new TypeError( "vis.window: Parameter title must be a string." );
 		error.code = "INVALID_WINDOW_TITLE";
+		throw error;
+	}
+
+	if( normalized.mode !== "static" && normalized.mode !== "interactive" ) {
+		const error = new RangeError( `vis.window: Unknown window mode "${normalized.mode}".` );
+		error.code = "INVALID_WINDOW_MODE";
 		throw error;
 	}
 
@@ -223,7 +240,7 @@ function normalizeOptions( options ) {
  */
 function calculateClientRect( screenData, options ) {
 	const layout = calculateWindowLayout(
-		screenData, options.border, options.width, options.height, "nearest"
+		screenData, options.mode, options.border, options.width, options.height, "nearest"
 	);
 	const client = layout.client;
 
@@ -242,23 +259,25 @@ function calculateClientRect( screenData, options ) {
  * Calculate normalized window, client, chrome, and resize-grip geometry.
  *
  * @param {Object} screenData - Window screen data
+ * @param {string} mode - Window interaction mode
  * @param {string} border - Border style
  * @param {number} width - Requested outer width
  * @param {number} height - Requested outer height
  * @param {string} roundMode - "nearest", "floor", or "ceil"
  * @returns {Object} Normalized layout
  */
-function calculateWindowLayout( screenData, border, width, height, roundMode ) {
+function calculateWindowLayout( screenData, mode, border, width, height, roundMode ) {
 	const fontWidth = screenData.font.width;
 	const fontHeight = screenData.font.height;
 	if( border === "none" ) {
+		const titleHeight = mode === "interactive" ? fontHeight : 0;
 		return {
 			"width": width,
 			"height": height,
 			"columns": Math.floor( width / fontWidth ),
 			"rows": Math.floor( height / fontHeight ),
-			"client": { "x": 0, "y": fontHeight, "width": width,
-				"height": height - fontHeight },
+			"client": { "x": 0, "y": titleHeight, "width": width,
+				"height": height - titleHeight },
 			"grip": { "x": Math.max( width - fontWidth, 0 ),
 				"y": Math.max( height - fontHeight, 0 ),
 				"width": fontWidth, "height": fontHeight }
@@ -337,6 +356,9 @@ function interactionDown( rootData, state, data ) {
 	const hit = hitTestWindows( rootData, data.x, data.y, 0, 0 );
 	state.capture = null;
 	if( !hit ) {
+		return;
+	}
+	if( hit.record.mode === "static" ) {
 		return;
 	}
 
@@ -428,9 +450,12 @@ function hitTestWindows( parentData, x, y, parentX, parentY ) {
 }
 
 function getInteractionMode( record, x, y ) {
+	if( record.mode !== "interactive" ) {
+		return null;
+	}
 	const fontHeight = record.screenData.font.height;
 	const layout = calculateWindowLayout(
-		record.screenData, record.border, record.width, record.height, "nearest"
+		record.screenData, record.mode, record.border, record.width, record.height, "nearest"
 	);
 	if(
 		x >= layout.grip.x && x < layout.grip.x + layout.grip.width &&
@@ -451,7 +476,7 @@ function getInteractionMode( record, x, y ) {
 function getCloseRect( record ) {
 	const fontWidth = record.screenData.font.width;
 	const layout = calculateWindowLayout(
-		record.screenData, record.border, record.width, record.height, "nearest"
+		record.screenData, record.mode, record.border, record.width, record.height, "nearest"
 	);
 	const columns = layout.columns;
 	const inset = record.border === "none" ? 0 : 1;
@@ -535,7 +560,7 @@ function resizeWindow( record, width, height, render = true ) {
 		bounds.height - record.y - getShadowExtent( record )
 	);
 	const requested = calculateWindowLayout(
-		record.screenData, record.border, width, height, "nearest"
+		record.screenData, record.mode, record.border, width, height, "nearest"
 	);
 	const nextWidth = Math.max( minimum.width, Math.min( requested.width, maximum.width ) );
 	const nextHeight = Math.max( minimum.height, Math.min( requested.height, maximum.height ) );
@@ -592,7 +617,8 @@ function fitWindowToParent( record, resizeToFit ) {
 	}
 	if( resizeToFit ) {
 		const requested = calculateWindowLayout(
-			record.screenData, record.border, record.width, record.height, "nearest"
+			record.screenData, record.mode, record.border,
+			record.width, record.height, "nearest"
 		);
 		applyWindowSize(
 			record,
@@ -617,7 +643,12 @@ function applyWindowSize( record, width, height ) {
 	if( record.client !== null && record.width === width && record.height === height ) {
 		return false;
 	}
-	const options = { "width": width, "height": height, "border": record.border };
+	const options = {
+		"width": width,
+		"height": height,
+		"mode": record.mode,
+		"border": record.border
+	};
 	const client = calculateClientRect( record.screenData, options );
 	const hadClientView = record.screenData.view.stack.length > 0;
 	const savedViews = record.screenData.view.stack.slice( 1 ).map( ( view ) => ( {
@@ -665,7 +696,7 @@ function getMinimumSize( record ) {
 	let height;
 	if( record.border === "none" ) {
 		width = 1;
-		height = fontHeight + 1;
+		height = record.mode === "interactive" ? fontHeight + 1 : 1;
 	} else {
 		width = fontWidth * 3;
 		height = fontHeight * 3;
@@ -679,7 +710,8 @@ function getMinimumSize( record ) {
 		const requiredClientWidth = childMinimum.width + getShadowExtent( element );
 		const requiredClientHeight = childMinimum.height + getShadowExtent( element );
 		const horizontalInset = record.border === "none" ? 0 : fontWidth * 2;
-		const verticalInset = record.border === "none" ? fontHeight : fontHeight * 2;
+		const verticalInset = record.border === "none" ?
+			( record.mode === "interactive" ? fontHeight : 0 ) : fontHeight * 2;
 		width = Math.max( width, horizontalInset + requiredClientWidth );
 		height = Math.max( height, verticalInset + requiredClientHeight );
 	}
@@ -793,12 +825,16 @@ function renderWindow( record, recursive = true ) {
  * @returns {void}
  */
 function drawChrome( record ) {
+	if( record.mode === "static" && record.border === "none" ) {
+		return;
+	}
+
 	const screen = record.screen;
 	const screenData = record.screenData;
 	const fontWidth = screenData.font.width;
 	const fontHeight = screenData.font.height;
 	const layout = calculateWindowLayout(
-		screenData, record.border, record.width, record.height, "nearest"
+		screenData, record.mode, record.border, record.width, record.height, "nearest"
 	);
 	const columns = layout.columns;
 	const rows = layout.rows;
@@ -831,9 +867,14 @@ function drawChrome( record ) {
 		}
 
 		const available = Math.max( columns - inset * 2, 0 );
-		const closeText = CLOSE_BUTTON.slice( -Math.min( CLOSE_BUTTON.length, available ) );
-		const closeColumn = Math.max( inset, columns - inset - closeText.length );
-		const titleWidth = Math.max( closeColumn - inset - 1, 0 );
+		let closeText = "";
+		let closeColumn = columns - inset;
+		let titleWidth = available;
+		if( record.mode === "interactive" ) {
+			closeText = CLOSE_BUTTON.slice( -Math.min( CLOSE_BUTTON.length, available ) );
+			closeColumn = Math.max( inset, columns - inset - closeText.length );
+			titleWidth = Math.max( closeColumn - inset - 1, 0 );
+		}
 		let title = "";
 		if( record.title.length > 0 && titleWidth >= 3 ) {
 			title = " " + record.title.slice( 0, titleWidth - 2 ) + " ";

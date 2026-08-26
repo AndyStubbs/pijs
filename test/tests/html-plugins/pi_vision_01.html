@@ -43,11 +43,62 @@
 		check( typeof $.vis.render === "function", "$.vis.render exists" );
 		check( typeof $.vis.onRender === "function", "$.vis.onRender exists" );
 
+		const mainData = testPluginApi.getScreenData( "pi-vision-test", main.id );
+		const staticDefault = $.vis.window( {
+			"x": 4,
+			"y": 4,
+			"width": 91,
+			"height": 49,
+			"title": "Not rendered"
+		} );
+		const staticData = testPluginApi.getScreenData(
+			"pi-vision-test", staticDefault.id
+		);
+		const staticRecord = staticData.vis.element;
+		check( staticRecord.mode === "static", "default window mode is static" );
+		check( staticRecord.border === "none", "default window is borderless" );
+		check( staticRecord.shadow === false, "default window has no shadow" );
+		check( staticRecord.chrome === null, "static borderless window omits chrome" );
+		check( mainData.vis.interaction === null, "static window adds no interaction handlers" );
+		check( staticDefault.width() === 91, "static client uses full width" );
+		check( staticDefault.height() === 49, "static client uses full height" );
+		const staticOrigin = staticDefault.viewToScreen( 0, 0 );
+		check( staticOrigin.x === 0 && staticOrigin.y === 0, "static client starts at origin" );
+		staticDefault.move( 6, 7 );
+		check( staticRecord.x === 6 && staticRecord.y === 7, "script moves static window" );
+		staticDefault.resize( 103, 61 );
+		check(
+			staticDefault.width() === 103 && staticDefault.height() === 61,
+			"script resizes static window exactly"
+		);
+		check( staticDefault.close() === true, "script closes static window" );
+
+		const staticBordered = $.vis.window( {
+			"x": 4,
+			"y": 4,
+			"width": 78,
+			"height": 48,
+			"title": "Fixed",
+			"border": "single"
+		} );
+		const staticBorderedRecord = testPluginApi.getScreenData(
+			"pi-vision-test", staticBordered.id
+		).vis.element;
+		check(
+			!staticBorderedRecord.chrome.top.includes( "[X]" ),
+			"static bordered window omits close button"
+		);
+		check( mainData.vis.interaction === null, "bordered static window adds no handlers" );
+		staticBordered.close();
+
 		const bordered = $.vis.window( {
 			"x": 12,
 			"y": 16,
 			"width": 120,
 			"height": 80,
+			"mode": "interactive",
+			"border": "double",
+			"shadow": true,
 			"onRender": drawBordered
 		} );
 
@@ -70,6 +121,7 @@
 			"y": 24,
 			"width": 90,
 			"height": 48,
+			"mode": "interactive",
 			"title": "Title",
 			"border": "none",
 			"shadow": false,
@@ -100,8 +152,10 @@
 			"y": 8,
 			"width": 78,
 			"height": 56,
+			"mode": "interactive",
 			"title": "Single",
 			"border": "single",
+			"shadow": true,
 			"onRender": ( screen ) => {
 				screen.setColor( 2 );
 				screen.rect( 0, 0, screen.width(), screen.height(), 2 );
@@ -115,6 +169,7 @@
 			"y": 8,
 			"width": 78,
 			"height": 56,
+			"mode": "interactive",
 			"title": "Thick title clipped",
 			"border": "thick",
 			"shadow": false,
@@ -132,6 +187,7 @@
 			"y": 82,
 			"width": 138,
 			"height": 80,
+			"mode": "interactive",
 			"title": "Container",
 			"border": "double",
 			"shadow": false,
@@ -149,6 +205,7 @@
 			"y": 8,
 			"width": 66,
 			"height": 40,
+			"mode": "interactive",
 			"title": "Child",
 			"border": "single",
 			"shadow": false,
@@ -174,11 +231,13 @@
 		check( $.getPixel( 167, 107, true ) === 6, "recursive true renders child" );
 
 		const temporary = $.vis.window( {
-			"x": 300, "y": 160, "width": 18, "height": 24, "shadow": false
+			"x": 300, "y": 160, "width": 18, "height": 24,
+			"border": "double", "shadow": false
 		} );
 		temporary.removeScreen();
 		const normalizedWindow = $.vis.window( {
-			"x": 180, "y": 100, "width": 91, "height": 49, "shadow": false
+			"x": 180, "y": 100, "width": 91, "height": 49,
+			"border": "double", "shadow": false
 		} );
 		check( normalizedWindow.width() === 78, "bordered width snaps to font cells" );
 		check( normalizedWindow.height() === 32, "bordered height snaps to font cells" );
@@ -199,8 +258,15 @@
 		);
 		checkThrows(
 			() => $.vis.window( { "x": 0, "y": 0, "width": 12, "height": 8,
-				"border": "none" } ),
-			"positive client area"
+				"mode": "invalid" } ),
+			"invalid mode",
+			"INVALID_WINDOW_MODE"
+		);
+		checkThrows(
+			() => $.vis.window( { "x": 0, "y": 0, "width": 12, "height": 8,
+				"mode": true } ),
+			"invalid mode type",
+			"INVALID_WINDOW_MODE"
 		);
 
 		const explicitRenderCount = borderedRenderCount;
@@ -221,6 +287,35 @@
 				"clientY": canvasRect.top + y / 180 * canvasRect.height
 			} ) );
 		};
+		let staticPointerRenderCount = 0;
+		const staticPointer = $.vis.window( {
+			"x": 282,
+			"y": 142,
+			"width": 30,
+			"height": 20,
+			"onRender": () => {
+				staticPointerRenderCount += 1;
+			}
+		} );
+		const staticPointerRecord = testPluginApi.getScreenData(
+			"pi-vision-test", staticPointer.id
+		).vis.element;
+		$.vis.render();
+		const pointerStaticRenderCount = staticPointerRenderCount;
+		dispatchMouse( "mousedown", 284, 144, 1 );
+		dispatchMouse( "mousemove", 290, 150, 1 );
+		dispatchMouse( "mouseup", 290, 150, 0 );
+		await new Promise( ( resolve ) => requestAnimationFrame( resolve ) );
+		check(
+			staticPointerRecord.x === 282 && staticPointerRecord.y === 142 &&
+				staticPointer.width() === 30 && staticPointer.height() === 20,
+			"pointer cannot manage static window"
+		);
+		check(
+			staticPointerRenderCount === pointerStaticRenderCount,
+			"static pointer input does not render"
+		);
+		staticPointer.close();
 		dispatchMouse( "mousedown", 16, 20, 1 );
 		const pointerDownRenderCount = borderedRenderCount;
 		dispatchMouse( "mousemove", 18, 20, 1 );
@@ -281,14 +376,18 @@
 			screen.print( "Pi.js" );
 		}
 
-		function checkThrows( fn, name ) {
-			let didThrow = false;
+		function checkThrows( fn, name, errorCode = null ) {
+			let thrownError = null;
 			try {
 				fn();
-			} catch( _error ) {
-				didThrow = true;
+			} catch( error ) {
+				thrownError = error;
 			}
-			check( didThrow, name );
+			check(
+				thrownError !== null &&
+					( errorCode === null || thrownError.code === errorCode ),
+				name
+			);
 		}
 	} );
 </script>
