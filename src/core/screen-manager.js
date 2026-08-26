@@ -130,7 +130,8 @@ function registerCommands() {
 
 	// Global commands
 	g_commands.addCommand(
-		"screen", screen, false, [ "aspect", "container", "isOffscreen", "resizeCallback" ]
+		"screen", screen, false,
+		[ "aspect", "container", "isOffscreen", "resizeCallback", "parent" ]
 	);
 	g_commands.addCommand( "setScreen", setScreen, false, [ "screen" ] );
 	g_commands.addCommand( "getScreen", getScreen, false, [ "screenId" ] );
@@ -264,6 +265,7 @@ export function getAllScreensData() {
  * @param {string|HTMLElement} [options.container] - Container element or id
  * @param {boolean} [options.isOffscreen] - Create an offscreen screen
  * @param {Function} [options.resizeCallback] - Called on container resize
+ * @param {Object} [options.parent] - Screen whose WebGL context an offscreen screen uses
  * @returns {Object} Screen API object with id and graphics commands
  */
 function screen( options ) {
@@ -273,6 +275,36 @@ function screen( options ) {
 		const error = new TypeError( "screen: Parameter resizeCallback must be a function." );
 		error.code = "INVALID_CALLBACK";
 		throw error;
+	}
+
+	let parentData = null;
+	if( options.parent != null ) {
+		if( !options.isOffscreen ) {
+			const error = new TypeError(
+				"screen: Parameter parent can only be used with an offscreen screen."
+			);
+			error.code = "INVALID_SCREEN_PARENT";
+			throw error;
+		}
+		if(
+			( typeof options.parent === "string" || typeof options.parent === "number" ) &&
+			m_screens[ options.parent ]
+		) {
+			parentData = m_screens[ options.parent ];
+		} else if(
+			typeof options.parent !== "object" ||
+			Object.getPrototypeOf( options.parent ) !== SCREEN_API_PROTO ||
+			!m_screens[ options.parent.id ] ||
+			m_screens[ options.parent.id ].api !== options.parent
+		) {
+			const error = new TypeError(
+				"screen: Parameter parent must be an existing screen."
+			);
+			error.code = "INVALID_SCREEN_PARENT";
+			throw error;
+		} else {
+			parentData = m_screens[ options.parent.id ];	
+		}
 	}
 
 	// Validate aspect - "Now Required"
@@ -293,7 +325,9 @@ function screen( options ) {
 		"container": null,
 		"aspectData": null,
 		"clientRect": null,
-		"previousOffsetSize": null
+		"previousOffsetSize": null,
+		"parentScreenId": parentData ? parentData.id : null,
+		"parentRenderContext": parentData ? parentData.gl : null
 	};
 
 	screenData.api.id = screenData.id;
@@ -519,6 +553,7 @@ function removeScreen( screenData ) {
 
 	// Get the id for reference
 	const screenId = screenData.id;
+	flushScreenTextureUsers( screenData );
 
 	// Call cleanup functions for all modules that need cleanup
 	for( const fn of m_screenDataCleanupFunctions ) {
@@ -577,6 +612,8 @@ function removeScreen( screenData ) {
 	screenData.aspectData = null;
 	screenData.clientRect = null;
 	screenData.previousOffsetSize = null;
+	screenData.parentScreenId = null;
+	screenData.parentRenderContext = null;
 
 	// Remove additional screenData items
 	for( const i in m_screenDataItems ) {
@@ -802,6 +839,7 @@ export function resizeOffscreenScreen( screenData, width, height ) {
 		return;
 	}
 
+	flushScreenTextureUsers( screenData );
 	const oldWidth = screenData.width;
 	const oldHeight = screenData.height;
 	screenData.width = width;
@@ -812,6 +850,26 @@ export function resizeOffscreenScreen( screenData, width, height ) {
 	screenData.aspectData.height = height;
 	g_renderer.resizeScreen( screenData, oldWidth, oldHeight );
 	g_view.onScreenResize( screenData );
+}
+
+/**
+ * Finish queued same-context draws before a screen texture changes or is deleted.
+ *
+ * @param {Object} sourceData - Screen whose framebuffer texture is changing
+ * @returns {void}
+ */
+function flushScreenTextureUsers( sourceData ) {
+	if( !sourceData.fboTexture ) {
+		return;
+	}
+	for( const screenData of getAllScreensData() ) {
+		if(
+			screenData !== sourceData && screenData.gl === sourceData.gl &&
+			screenData.batchInfo?.textureBatchSet.has( sourceData.fboTexture )
+		) {
+			g_renderer.flushBatches( screenData );
+		}
+	}
 }
 
 function resizeScreen( screenData, isInit ) {

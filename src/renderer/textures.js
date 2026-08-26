@@ -223,6 +223,32 @@ export function getWebGL2Texture( screenData, img ) {
 }
 
 /**
+ * Resolve a texture and coordinate orientation for an image draw.
+ *
+ * @param {Object} screenData - Destination screen data
+ * @param {Image|Canvas|WebGLTexture} img - Image source
+ * @returns {{texture: WebGLTexture, invertedY: boolean}} Texture draw information
+ */
+export function getTextureDrawInfo( screenData, img ) {
+	const sourceData = g_screenManager.screenCanvasMap.get( img );
+	if( !sourceData || sourceData.gl !== screenData.gl ) {
+		return { "texture": getWebGL2Texture( screenData, img ), "invertedY": false };
+	}
+	if( sourceData.FBO === screenData.FBO ) {
+		const error = new Error( "drawImage: A screen cannot draw its own framebuffer." );
+		error.code = "FRAMEBUFFER_FEEDBACK_LOOP";
+		throw error;
+	}
+
+	// Preserve an earlier queued draw before the source framebuffer can be changed.
+	if( screenData.batchInfo.textureBatchSet.has( sourceData.fboTexture ) ) {
+		g_batches.flushBatches( screenData );
+	}
+	g_batches.flushBatches( sourceData );
+	return { "texture": sourceData.fboTexture, "invertedY": true };
+}
+
+/**
  * Delete WebGL2 texture for an image on all screens
  * Must be called explicitly to free GPU memory - textures are not automatically
  * garbage collected by the browser.

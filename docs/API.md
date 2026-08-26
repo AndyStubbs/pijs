@@ -35,17 +35,24 @@ This document lists all external API commands available in Pi.js.
 
 
 
-### `screen( aspect, container, isOffscreen, willReadFrequently, noStyles, resizeCallback )`
+### `screen( aspect, container, isOffscreen, resizeCallback, parent )`
 
 Creates a new screen/canvas with specified properties.
+
+```javascript
+const parent = $.screen( { "aspect": "320x200" } );
+const child = $.screen( {
+	"aspect": "160x100",
+	"isOffscreen": true,
+	"parent": parent
+} );
+```
 
 **Parameters:**
 
 - **aspect**: Aspect ratio string (e.g., `"4:3"`, `"320x200"`, `"80m60"`, `"80e60"`)
 - **container**: DOM element or ID to contain the canvas
 - **isOffscreen**: Boolean - create an offscreen canvas for rendering
-- **willReadFrequently**: Boolean - optimize canvas for frequent pixel reading
-- **noStyles**: Boolean - create canvas without default styling
 - **resizeCallback**: Function - called when screen is resized: `function( screen, fromSize, toSize )`
   - `screen`: The screen object that was resized
   - `fromSize`: Object with `width` and `height` before resize
@@ -53,6 +60,10 @@ Creates a new screen/canvas with specified properties.
   - **Note**: Screens automatically resize when their container element resizes (using ResizeObserver)
   - Drawing in the callback is supported. The logical framebuffer is already
   resized; callback drawing is flushed and presented as part of that resize.
+- **parent**: Existing screen object whose WebGL context an offscreen screen should use
+  - Only valid when `isOffscreen` is `true`.
+  - If omitted, the screen uses the shared offscreen WebGL context.
+  - This controls rendering-context affinity only and does not establish lifecycle ownership.
 
 
 
@@ -854,4 +865,3 @@ Sets multiple settings at once using an object.
 - Can set any "set" command as a property (e.g., `{ "color": 1, "pen": "circle" }`)
 
 ---
-

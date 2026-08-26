@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Same-context screen composition</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "screen_same_context_01"
+			name = "same-context screen composition"
+			width = 320
+			height = 136
+			delay = 100
+			[[TOML_END]]
+		</script>
+		<style>
+			html, body {
+				background-color: grey;
+			}
+		</style>
+		<script src="../../../build/pi.js"></script>
+		<link href="../reset.css" rel="stylesheet" />
+	</head>
+<body>
+<script>
+	window.addEventListener( "error", ( event ) => {
+		document.body.dataset.error = event.message;
+	} );
+	let coreApi;
+	$.registerPlugin( {
+		"name": "same-context-screen-test",
+		"version": "1.0.0",
+		"description": "Inspects public parent-affiliated screens.",
+		"dependencies": [],
+		"init": ( pluginApi ) => {
+			coreApi = pluginApi;
+		}
+	} );
+
+	$.ready( function() {
+		const failures = [];
+		const check = ( name, condition ) => {
+			if( !condition ) {
+				failures.push( name );
+			}
+		};
+		const root = $.screen( { "aspect": "320x136" } );
+		const rootData = coreApi.getActiveScreen( "same-context-screen-test" );
+		const affiliated = $.screen( {
+			"aspect": "64x48", "isOffscreen": true, "parent": root
+		} );
+		const affiliatedData = coreApi.getScreenData(
+			"same-context-screen-test", affiliated.id
+		);
+		check(
+			"active after create",
+			coreApi.getActiveScreen( "same-context-screen-test" ) === affiliatedData
+		);
+		check( "shared context", affiliatedData.gl === rootData.gl );
+
+		const nested = $.screen( "16x16", null, true, null, affiliated );
+		const nestedData = coreApi.getScreenData( "same-context-screen-test", nested.id );
+		check( "positional parent", nestedData.gl === affiliatedData.gl );
+		nested.removeScreen();
+
+		let invalidOnscreen = false;
+		try {
+			$.screen( { "aspect": "16x16", "parent": root } );
+		} catch( error ) {
+			invalidOnscreen = error.code === "INVALID_SCREEN_PARENT";
+		}
+		check( "onscreen parent option", invalidOnscreen );
+
+		let invalidObject = false;
+		try {
+			$.screen( { "aspect": "16x16", "isOffscreen": true, "parent": {} } );
+		} catch( error ) {
+			invalidObject = error.code === "INVALID_SCREEN_PARENT";
+		}
+		check( "invalid parent object", invalidObject );
+
+		const removedParent = $.screen( {
+			"aspect": "16x16", "isOffscreen": true, "parent": root
+		} );
+		removedParent.removeScreen();
+		let removedRejected = false;
+		try {
+			$.screen( {
+				"aspect": "16x16", "isOffscreen": true, "parent": removedParent
+			} );
+		} catch( error ) {
+			removedRejected = error.code === "INVALID_SCREEN_PARENT";
+		}
+		check( "removed parent", removedRejected );
+
+		const lifecycleParent = $.screen( {
+			"aspect": "16x16", "isOffscreen": true, "parent": root
+		} );
+		const lifecycleChild = $.screen( {
+			"aspect": "8x8", "isOffscreen": true, "parent": lifecycleParent
+		} );
+		lifecycleParent.removeScreen();
+		let childSurvived = true;
+		try {
+			lifecycleChild.setColor( 9 );
+			lifecycleChild.cls();
+		} catch( error ) {
+			childSurvived = false;
+		}
+		check( "parent lifecycle independence", childSurvived );
+		lifecycleChild.removeScreen();
+
+		coreApi.resizeOffscreenScreen( affiliatedData, 64, 56 );
+		check( "resize", affiliated.width() === 64 && affiliated.height() === 56 );
+		affiliated.setColor( 4 );
+		affiliated.rect( 0, 0, 64, 28, 4 );
+		affiliated.setColor( 1 );
+		affiliated.rect( 0, 28, 64, 28, 1 );
+
+		let readCount = 0;
+		let uploadCount = 0;
+		const originalReadPixels = rootData.gl.readPixels;
+		const originalTexImage = rootData.gl.texImage2D;
+		rootData.gl.readPixels = function( ...args ) {
+			readCount += 1;
+			return originalReadPixels.apply( this, args );
+		};
+		rootData.gl.texImage2D = function( ...args ) {
+			uploadCount += 1;
+			return originalTexImage.apply( this, args );
+		};
+		try {
+			root.drawImage( affiliated, 8, 8 );
+			affiliated.setColor( 3 );
+			affiliated.rect( 0, 0, 64, 28, 3 );
+			root.drawImage( affiliated, 80, 8 );
+		} finally {
+			rootData.gl.readPixels = originalReadPixels;
+			rootData.gl.texImage2D = originalTexImage;
+		}
+		check( "direct readback", readCount === 0 );
+		check( "direct upload", uploadCount === 0 );
+		const firstDraw = root.getPixel( 8, 8 );
+		const secondDraw = root.getPixel( 80, 8 );
+		check(
+			"queued source mutation",
+			firstDraw.r > firstDraw.g && secondDraw.g > secondDraw.r
+		);
+
+		const copied = $.screen( { "aspect": "64x48", "isOffscreen": true } );
+		const copiedData = coreApi.getActiveScreen( "same-context-screen-test" );
+		const copiedSibling = $.screen( { "aspect": "8x8", "isOffscreen": true } );
+		const copiedSiblingData = coreApi.getActiveScreen( "same-context-screen-test" );
+		check( "shared offscreen default", copiedData.gl === copiedSiblingData.gl );
+		check( "default differs from root", copiedData.gl !== rootData.gl );
+		copiedSibling.removeScreen();
+		copied.setColor( 2 );
+		copied.rect( 0, 0, 64, 24, 2 );
+		copied.setColor( 14 );
+		copied.rect( 0, 24, 64, 24, 14 );
+		let copiedReadCount = 0;
+		let copiedUploadCount = 0;
+		const originalCopiedReadPixels = copiedData.gl.readPixels;
+		const originalRootTexImage = rootData.gl.texImage2D;
+		copiedData.gl.readPixels = function( ...args ) {
+			copiedReadCount += 1;
+			return originalCopiedReadPixels.apply( this, args );
+		};
+		rootData.gl.texImage2D = function( ...args ) {
+			copiedUploadCount += 1;
+			return originalRootTexImage.apply( this, args );
+		};
+		try {
+			root.drawImage( copied, 8, 76 );
+		} finally {
+			copiedData.gl.readPixels = originalCopiedReadPixels;
+			rootData.gl.texImage2D = originalRootTexImage;
+		}
+		check( "copy fallback", copiedReadCount > 0 );
+		check( "copy upload", copiedUploadCount > 0 );
+		copied.removeScreen();
+
+		let feedbackRejected = false;
+		try {
+			affiliated.drawImage( affiliated, 0, 0 );
+		} catch( error ) {
+			feedbackRejected = error.code === "FRAMEBUFFER_FEEDBACK_LOOP";
+		}
+		check( "feedback rejection", feedbackRejected );
+
+		// Removal must flush the queued direct-texture draw before deleting the source texture.
+		affiliated.removeScreen();
+		check(
+			"active after remove",
+			coreApi.getActiveScreen( "same-context-screen-test" ) !== affiliatedData
+		);
+
+		const passed = failures.length === 0;
+		document.body.dataset.result = passed ? "pass" : failures.join( ", " );
+		root.setColor( passed ? 10 : 12 );
+		root.setPosPx( 152, 16 );
+		root.print( passed ? "SAME CONTEXT: PASS" : "SAME CONTEXT: FAIL" );
+		root.setPosPx( 152, 40 );
+		root.print( "DIRECT: RED / CYAN" );
+		root.setPosPx( 80, 88 );
+		root.print( passed ? "COPY: GREEN / YELLOW" : failures.join( ", " ) );
+	} );
+</script>
+</body>
+</html>

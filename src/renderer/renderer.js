@@ -108,7 +108,10 @@ export function createContext( screenData ) {
 	const width = screenData.width;
 	const height = screenData.height;
 	
-	if( screenData.isOffscreen ) {
+	if( screenData.parentRenderContext ) {
+		canvas = screenData.canvas.canvas;
+		screenData.gl = screenData.parentRenderContext;
+	} else if( screenData.isOffscreen ) {
 		canvas = screenData.canvas.canvas;
 		if( !m_offscreenContext ) {
 			m_offscreenContext = canvas.getContext( "webgl2", { 

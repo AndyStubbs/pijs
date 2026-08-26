@@ -220,7 +220,8 @@ export function drawImage(
 ) {
 
 	// Get or create texture
-	const texture = g_textures.getWebGL2Texture( screenData, img );
+	const textureInfo = g_textures.getTextureDrawInfo( screenData, img );
+	const texture = textureInfo.texture;
 
 	// Calculate image dimensions
 	const imgWidth = img.width;
@@ -232,14 +233,26 @@ export function drawImage(
 	);
 
 	// Texture coordinates (full image)
-	const texCoords = [
-		0, 0,  // Top-left
-		1, 0,  // Top-right
-		0, 1,  // Bottom-left
-		1, 0,  // Top-right (repeat for second triangle)
-		1, 1,  // Bottom-right
-		0, 1   // Bottom-left (repeat for second triangle)
-	];
+	let texCoords;
+	if( textureInfo.invertedY ) {
+		texCoords = [
+			0, 1,  // Top-left
+			1, 1,  // Top-right
+			0, 0,  // Bottom-left
+			1, 1,  // Top-right (repeat for second triangle)
+			1, 0,  // Bottom-right
+			0, 0   // Bottom-left (repeat for second triangle)
+		];
+	} else {
+		texCoords = [
+			0, 0,  // Top-left
+			1, 0,  // Top-right
+			0, 1,  // Bottom-left
+			1, 0,  // Top-right (repeat for second triangle)
+			1, 1,  // Bottom-right
+			0, 1   // Bottom-left (repeat for second triangle)
+		];
+	}
 
 	// Add textured quad to batch
 	addTexturedQuadToBatch(
@@ -275,7 +288,8 @@ export function drawSprite(
 ) {
 
 	// Get or create texture
-	const texture = g_textures.getWebGL2Texture( screenData, img );
+	const textureInfo = g_textures.getTextureDrawInfo( screenData, img );
+	const texture = textureInfo.texture;
 
 	// Get texture dimensions for coordinate conversion
 	const texWidth = img.width;
@@ -283,9 +297,13 @@ export function drawSprite(
 
 	// Convert pixel coordinates to normalized texture coordinates (0-1)
 	const u0 = sx / texWidth;
-	const v0 = sy / texHeight;
+	let v0 = sy / texHeight;
 	const u1 = ( sx + sw ) / texWidth;
-	const v1 = ( sy + sh ) / texHeight;
+	let v1 = ( sy + sh ) / texHeight;
+	if( textureInfo.invertedY ) {
+		v0 = 1 - v0;
+		v1 = 1 - v1;
+	}
 
 	// Calculate transformed corners
 	const corners = calculateTransformedCorners(
@@ -307,4 +325,3 @@ export function drawSprite(
 		screenData, texture, corners, texCoords, getQuadColorArray( color ), batchType
 	);
 }
-
