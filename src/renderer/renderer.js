@@ -301,6 +301,11 @@ export function cleanup( screenData ) {
  * @returns {void}
  */
 export function setImageDirty( screenData ) {
+	// Parent-affiliated offscreen screens never present to a canvas. Their FBO is flushed lazily
+	// when another screen composites it or a readback operation needs its pixels.
+	if( screenData.isOffscreen && screenData.parentRenderContext ) {
+		return;
+	}
 
 	if( !screenData.isRenderScheduled ) {
 		screenData.isRenderScheduled = true;

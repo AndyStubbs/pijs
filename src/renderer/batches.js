@@ -510,6 +510,12 @@ function runShaderPass( screenData, drawOrderItem ) {
  * @returns {void}
  */
 export function flushBatches( screenData, blends = null ) {
+	// Avoid rebinding framebuffers and restoring GL state when a screen has no queued work.
+	// The first flush still initializes a newly created framebuffer.
+	if( !screenData.isFirstRender && screenData.batchInfo.drawOrder.length === 0 ) {
+		return;
+	}
+
 	if( blends === null ) {
 		blends = screenData.blends;
 	}
@@ -834,6 +840,10 @@ function resetBatch( batch ) {
  * @returns {void}
  */
 export function displayToCanvas( screenData ) {
+	// Parent-affiliated offscreen screens share the visible screen's context but remain FBO-only.
+	if( screenData.isOffscreen && screenData.parentRenderContext ) {
+		return;
+	}
 	
 	const gl = screenData.gl;
 	const useCustom = !screenData.isOffscreen && !!screenData.displayShaderHandle;
