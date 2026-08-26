@@ -64,7 +64,8 @@ function createWindow( options ) {
 	try {
 		windowScreen = api.screen( {
 			"aspect": `${normalized.width}x${normalized.height}`,
-			"isOffscreen": true
+			"isOffscreen": true,
+			"parent": parentData.api
 		} );
 
 		const windowData = g_pluginApi.getScreenData( "vis.window", windowScreen.id );
@@ -311,6 +312,7 @@ function setupInteractionScreen( screenData ) {
 
 	const state = {
 		"capture": null,
+		"renderRequestId": null,
 		"down": ( data ) => interactionDown( screenData, state, data ),
 		"move": ( data ) => interactionMove( state, data ),
 		"up": ( data ) => interactionUp( state, data )
@@ -338,22 +340,21 @@ function interactionDown( rootData, state, data ) {
 		return;
 	}
 
+	const mode = getInteractionMode( hit.record, hit.x, hit.y );
+	if( mode !== null ) {
+		state.capture = {
+			"record": hit.record,
+			"mode": mode,
+			"startX": data.x,
+			"startY": data.y,
+			"x": hit.record.x,
+			"y": hit.record.y,
+			"width": hit.record.width,
+			"height": hit.record.height
+		};
+	}
 	raiseWindow( hit.record );
 	renderRootForRecord( hit.record );
-	const mode = getInteractionMode( hit.record, hit.x, hit.y );
-	if( mode === null ) {
-		return;
-	}
-	state.capture = {
-		"record": hit.record,
-		"mode": mode,
-		"startX": data.x,
-		"startY": data.y,
-		"x": hit.record.x,
-		"y": hit.record.y,
-		"width": hit.record.width,
-		"height": hit.record.height
-	};
 }
 
 function interactionMove( state, data ) {
@@ -368,10 +369,11 @@ function interactionMove( state, data ) {
 	const deltaX = data.x - capture.startX;
 	const deltaY = data.y - capture.startY;
 	if( capture.mode === "move" ) {
-		moveWindow( capture.record, capture.x + deltaX, capture.y + deltaY );
+		moveWindow( capture.record, capture.x + deltaX, capture.y + deltaY, false );
 	} else if( capture.mode === "resize" ) {
-		resizeWindow( capture.record, capture.width + deltaX, capture.height + deltaY );
+		resizeWindow( capture.record, capture.width + deltaX, capture.height + deltaY, false );
 	}
+	scheduleInteractionRender( capture.record, state );
 }
 
 function interactionUp( state, data ) {
@@ -487,17 +489,43 @@ function raiseWindow( record ) {
 	}
 }
 
-function moveWindow( record, x, y ) {
+/**
+ * Queue one root render for pointer-driven changes in the current display frame.
+ *
+ * @param {Object} record - Window element record
+ * @param {Object} state - Root interaction state
+ * @returns {void}
+ */
+function scheduleInteractionRender( record, state ) {
+	if( state.renderRequestId !== null ) {
+		return;
+	}
+	const parentData = getScreenDataById( record.parentScreenId );
+	const rootData = getRootData( parentData );
+	if( !rootData ) {
+		return;
+	}
+	state.renderRequestId = requestAnimationFrame( () => {
+		state.renderRequestId = null;
+		if( getScreenDataById( rootData.id ) ) {
+			renderRootData( rootData );
+		}
+	} );
+}
+
+function moveWindow( record, x, y, render = true ) {
 	validateGeometryValue( "window.move", "x", x );
 	validateGeometryValue( "window.move", "y", y );
 	record.x = x;
 	record.y = y;
 	fitWindowToParent( record, false );
-	renderRootForRecord( record );
+	if( render ) {
+		renderRootForRecord( record );
+	}
 	return record.screen;
 }
 
-function resizeWindow( record, width, height ) {
+function resizeWindow( record, width, height, render = true ) {
 	validateGeometryValue( "window.resize", "width", width );
 	validateGeometryValue( "window.resize", "height", height );
 	const bounds = getWindowBounds( record );
@@ -513,7 +541,9 @@ function resizeWindow( record, width, height ) {
 	const nextHeight = Math.max( minimum.height, Math.min( requested.height, maximum.height ) );
 	if( applyWindowSize( record, nextWidth, nextHeight ) ) {
 		fitDescendants( record );
-		renderRootForRecord( record );
+		if( render ) {
+			renderRootForRecord( record );
+		}
 	}
 	return record.screen;
 }
@@ -608,7 +638,6 @@ function applyWindowSize( record, width, height ) {
 			record.screen.pushView( view );
 		}
 	}
-	drawChrome( record );
 	return true;
 }
 
@@ -722,8 +751,8 @@ function renderWindow( record, recursive = true ) {
 
 	const activeData = g_pluginApi.getActiveScreen( "window.render" );
 	try {
-		drawChrome( record );
 		record.screen.cls();
+		drawChrome( record );
 		if( record.onRender ) {
 			record.onRender( record.screen );
 		}
@@ -758,7 +787,7 @@ function renderWindow( record, recursive = true ) {
 }
 
 /**
- * Build and draw all window chrome with one print call
+ * Build and draw window chrome without emitting transparent interior glyphs
  *
  * @param {Object} record - Window element record
  * @returns {void}
@@ -818,20 +847,19 @@ function drawChrome( record ) {
 			top[ closeColumn + i ] = closeText[ i ];
 		}
 
-		const frame = [ top.join( "" ) ];
+		const chrome = {
+			"top": top.join( "" ),
+			"vertical": null,
+			"bottom": null
+		};
 		if( glyphs ) {
-			const vertical = String.fromCharCode( glyphs[ 3 ] );
-			const middle = vertical + " ".repeat( Math.max( columns - 2, 0 ) ) + vertical;
-			for( let row = 1; row < rows - 1; row += 1 ) {
-				frame.push( middle );
-			}
-			frame.push(
+			chrome.vertical = String.fromCharCode( glyphs[ 3 ] );
+			chrome.bottom =
 				String.fromCharCode( glyphs[ 4 ] ) +
-				horizontal.repeat( Math.max( columns - 2, 0 ) ) +
-				String.fromCharCode( glyphs[ 5 ] )
-			);
+					horizontal.repeat( Math.max( columns - 2, 0 ) ) +
+					String.fromCharCode( glyphs[ 5 ] );
 		}
-		record.chrome = frame.join( "\n" );
+		record.chrome = chrome;
 	}
 
 	if( glyphs ) {
@@ -844,7 +872,17 @@ function drawChrome( record ) {
 	}
 
 	screen.setPosPx( 0, 0 );
-	screen.print( record.chrome, true );
+	screen.print( record.chrome.top, true );
+	if( glyphs ) {
+		for( let row = 1; row < rows - 1; row += 1 ) {
+			screen.setPosPx( 0, row * fontHeight );
+			screen.print( record.chrome.vertical, true );
+			screen.setPosPx( ( columns - 1 ) * fontWidth, row * fontHeight );
+			screen.print( record.chrome.vertical, true );
+		}
+		screen.setPosPx( 0, ( rows - 1 ) * fontHeight );
+		screen.print( record.chrome.bottom, true );
+	}
 	screen.resetView();
 	for( const view of savedViews ) {
 		screen.pushView( view );

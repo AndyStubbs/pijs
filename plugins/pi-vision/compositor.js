@@ -58,6 +58,11 @@ function render( recursive = true ) {
 	}
 
 	const screenData = g_pluginApi.getActiveScreen( "vis.render" );
+	const interaction = screenData.vis.interaction;
+	if( interaction && interaction.renderRequestId !== null ) {
+		cancelAnimationFrame( interaction.renderRequestId );
+		interaction.renderRequestId = null;
+	}
 	const activeId = screenData.id;
 	try {
 		screenData.api.cls();

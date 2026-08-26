@@ -19,14 +19,35 @@
 				margin: 0;
 				padding: 0;
 			}
+			#metrics {
+				background: rgba( 0, 0, 0, 0.8 );
+				color: #fff;
+				font: 12px/1.4 monospace;
+				padding: 6px 8px;
+				pointer-events: none;
+				position: fixed;
+				right: 0;
+				top: 0;
+				white-space: pre;
+				z-index: 2;
+			}
 		</style>
 	</head>
 <body>
+<output id="metrics">Warming up...</output>
 <script>
 	const desktop = $.screen( "640x360" );
+	const windowScreens = [];
+	const renderSamples = [];
+	const frameSamples = [];
+	let rootRenderCount = 0;
+	let lastFrameTime = null;
+	let lastMetricsTime = 0;
+	let lastMetricsRenderCount = 0;
 
 	$.ready( function() {
 		$.vis.onRender( ( screen ) => {
+			rootRenderCount += 1;
 			screen.setColor( 8 );
 			screen.setPosPx( 8, 344 );
 			screen.print( "Pi Vision window management" );
@@ -78,11 +99,20 @@
 		} );
 
 		$.setScreen( desktop );
-		function frame() {
-			$.vis.render();
+		function frame( time ) {
+			if( lastFrameTime !== null ) {
+				addSample( frameSamples, time - lastFrameTime );
+			}
+			lastFrameTime = time;
+			const renderStart = performance.now();
+			//$.vis.render();
+			addSample( renderSamples, performance.now() - renderStart );
+			if( time - lastMetricsTime >= 500 ) {
+				updateMetrics( time );
+			}
 			requestAnimationFrame( frame );
 		}
-		frame();
+		requestAnimationFrame( frame );
 	} );
 
 	function createWindow( options ) {
@@ -97,7 +127,53 @@
 			}
 		};
 		const windowScreen = $.vis.window( options );
+		windowScreens.push( windowScreen );
 		return windowScreen;
+	}
+
+	function addSample( samples, value ) {
+		samples.push( value );
+		if( samples.length > 120 ) {
+			samples.shift();
+		}
+	}
+
+	function percentile( samples, ratio ) {
+		if( samples.length === 0 ) {
+			return 0;
+		}
+		const sorted = [ ...samples ].sort( ( first, second ) => first - second );
+		const index = Math.min( Math.floor( sorted.length * ratio ), sorted.length - 1 );
+		return sorted[ index ];
+	}
+
+	function countOpenWindows() {
+		let count = 0;
+		for( const screen of windowScreens ) {
+			try {
+				screen.width();
+				count += 1;
+			} catch( _error ) {}
+		}
+		return count;
+	}
+
+	function updateMetrics( time ) {
+		const elapsed = time - lastMetricsTime;
+		const renders = rootRenderCount - lastMetricsRenderCount;
+		const frameMedian = percentile( frameSamples, 0.5 );
+		const renderMedian = percentile( renderSamples, 0.5 );
+		const renderP95 = percentile( renderSamples, 0.95 );
+		const fps = frameMedian > 0 ? 1000 / frameMedian : 0;
+		const rendersPerSecond = elapsed > 0 ? renders * 1000 / elapsed : 0;
+		document.getElementById( "metrics" ).textContent = "" +
+			`FPS: ${fps.toFixed( 1 )}\n` +
+			`Render median: ${renderMedian.toFixed( 2 )} ms\n` +
+			`Render p95: ${renderP95.toFixed( 2 )} ms\n` +
+			`Windows: ${countOpenWindows()}\n` +
+			`Renders: ${rootRenderCount} (${rendersPerSecond.toFixed( 1 )}/s)`;
+		lastMetricsTime = time;
+		lastMetricsRenderCount = rootRenderCount;
 	}
 </script>
 </body>

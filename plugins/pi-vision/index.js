@@ -76,6 +76,12 @@ function cleanupScreen( screenData ) {
 	if( !screenData.vis ) {
 		return;
 	}
+	if(
+		screenData.vis.interaction && screenData.vis.interaction.renderRequestId !== null
+	) {
+		cancelAnimationFrame( screenData.vis.interaction.renderRequestId );
+		screenData.vis.interaction.renderRequestId = null;
+	}
 	for( const element of [ ...screenData.vis.elements ].reverse() ) {
 		if( element.type === "window" ) {
 			element.beforeClose = null;

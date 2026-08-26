@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Pi Vision Window Smoke Test</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "pi_vision_01"
+			name = "Pi Vision Window Smoke Test"
+			width = 320
+			height = 180
+			delay = 0
+			[[TOML_END]]
+		</script>
+		<script src="../../../build/pi.js"></script>
+		<script src="../../../build/plugins/pi-vision/pi-vision.js"></script>
+		<style>
+			html, body {
+				background-color: #333;
+				margin: 0;
+				padding: 0;
+			}
+		</style>
+	</head>
+<body>
+<script>
+	const main = $.screen( "320x240" );
+
+	$.ready( function() {
+		const failures = [];
+
+		// Bordered window
+		const bordered = $.vis.window( {
+			"x": 12,
+			"y": 16,
+			"width": 120,
+			"height": 80,
+			"onRender": ( screen ) => {
+				screen.setColor( 1 );
+				screen.rect( 0, 0, screen.width(), screen.height(), 1 );
+				screen.setColor( 7 );
+				screen.print( "This is a bordered window" );
+			}
+		} );
+		$.vis.render();
+
+		// const titled = $.vis.window( {
+		// 	"x": 20,
+		// 	"y": 24,
+		// 	"width": 90,
+		// 	"height": 48,
+		// 	"title": "Title",
+		// 	"border": "none",
+		// 	"shadow": false,
+		// 	"onRender": ( screen ) => {
+		// 		screen.setColor( 3 );
+		// 		screen.rect( 0, 0, screen.width(), screen.height(), 3 );
+		// 	}
+		// } );
+
+		// const single = $.vis.window( {
+		// 	"x": 142,
+		// 	"y": 8,
+		// 	"width": 78,
+		// 	"height": 56,
+		// 	"title": "Single",
+		// 	"border": "single",
+		// 	"onRender": ( screen ) => {
+		// 		screen.setColor( 2 );
+		// 		screen.rect( 0, 0, screen.width(), screen.height(), 2 );
+		// 	}
+		// } );
+
+		// const thick = $.vis.window( {
+		// 	"x": 232,
+		// 	"y": 8,
+		// 	"width": 78,
+		// 	"height": 56,
+		// 	"title": "Thick title clipped",
+		// 	"border": "thick",
+		// 	"shadow": false,
+		// 	"onRender": ( screen ) => {
+		// 		screen.setColor( 4 );
+		// 		screen.rect( 0, 0, screen.width(), screen.height(), 4 );
+		// 	}
+		// } );
+
+		// const container = $.vis.window( {
+		// 	"x": 142,
+		// 	"y": 82,
+		// 	"width": 138,
+		// 	"height": 80,
+		// 	"title": "Container",
+		// 	"border": "double",
+		// 	"shadow": false,
+		// 	"onRender": ( screen ) => {
+		// 		screen.setColor( 5 );
+		// 		screen.rect( 0, 0, screen.width(), screen.height(), 5 );
+		// 	}
+		// } );
+
+		// $.setScreen( container );
+		// const child = $.vis.window( {
+		// 	"x": 12,
+		// 	"y": 8,
+		// 	"width": 66,
+		// 	"height": 40,
+		// 	"title": "Child",
+		// 	"border": "single",
+		// 	"shadow": false,
+		// 	"onRender": ( screen ) => {
+		// 		screen.setColor( 6 );
+		// 		screen.rect( 0, 0, screen.width(), screen.height(), 6 );
+		// 	}
+		// } );
+
+	} );
+</script>
+</body>
+</html>

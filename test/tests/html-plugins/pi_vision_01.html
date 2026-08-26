@@ -8,7 +8,7 @@
 			name = "Pi Vision Window Smoke Test"
 			width = 320
 			height = 180
-			delay = 0
+			delay = 100
 			[[TOML_END]]
 		</script>
 		<script src="../../../build/pi.js"></script>
@@ -23,10 +23,21 @@
 	</head>
 <body>
 <script>
+	let testPluginApi;
+	$.registerPlugin( {
+		"name": "pi-vision-test",
+		"version": "1.0.0",
+		"description": "Inspects Pi Vision window screen contexts.",
+		"dependencies": [],
+		"init": ( pluginApi ) => {
+			testPluginApi = pluginApi;
+		}
+	} );
 	const main = $.screen( "320x180" );
 
-	$.ready( function() {
+	$.ready( async function() {
 		const failures = [];
+		let borderedRenderCount = 0;
 
 		check( $.vis && typeof $.vis.window === "function", "$.vis.window exists" );
 		check( typeof $.vis.render === "function", "$.vis.render exists" );
@@ -42,6 +53,11 @@
 
 		check( bordered && bordered.screen === true, "window returns a screen" );
 		check( typeof bordered.render === "function", "window render exists" );
+		check(
+			testPluginApi.getScreenData( "pi-vision-test", bordered.id ).gl ===
+				testPluginApi.getScreenData( "pi-vision-test", main.id ).gl,
+			"top-level window uses parent context"
+		);
 		check( $.width() === 320 && $.height() === 180, "parent screen remains active" );
 		check( bordered.width() === 108, "bordered client width" );
 		check( bordered.height() === 64, "bordered client height" );
@@ -141,6 +157,11 @@
 				screen.rect( 0, 0, screen.width(), screen.height(), 6 );
 			}
 		} );
+		check(
+			testPluginApi.getScreenData( "pi-vision-test", child.id ).gl ===
+				testPluginApi.getScreenData( "pi-vision-test", container.id ).gl,
+			"nested window uses parent context"
+		);
 		child.setColor( 6 );
 		child.rect( 0, 0, child.width(), child.height(), 6 );
 
@@ -182,6 +203,54 @@
 			"positive client area"
 		);
 
+		const explicitRenderCount = borderedRenderCount;
+		$.vis.render();
+		$.vis.render();
+		check(
+			borderedRenderCount === explicitRenderCount + 2,
+			"explicit render callbacks stay live"
+		);
+
+		const canvas = $.canvas();
+		const canvasRect = canvas.getBoundingClientRect();
+		const dispatchMouse = ( type, x, y, buttons ) => {
+			canvas.dispatchEvent( new MouseEvent( type, {
+				"bubbles": true,
+				"buttons": buttons,
+				"clientX": canvasRect.left + x / 320 * canvasRect.width,
+				"clientY": canvasRect.top + y / 180 * canvasRect.height
+			} ) );
+		};
+		dispatchMouse( "mousedown", 16, 20, 1 );
+		const pointerDownRenderCount = borderedRenderCount;
+		dispatchMouse( "mousemove", 18, 20, 1 );
+		dispatchMouse( "mousemove", 19, 20, 1 );
+		check(
+			borderedRenderCount === pointerDownRenderCount,
+			"pointer moves defer rendering"
+		);
+		await new Promise( ( resolve ) => requestAnimationFrame( resolve ) );
+		check(
+			borderedRenderCount === pointerDownRenderCount + 1,
+			"pointer moves coalesce rendering"
+		);
+		dispatchMouse( "mouseup", 19, 20, 0 );
+
+		const programmaticMoveCount = borderedRenderCount;
+		bordered.move( 12, 16 );
+		check(
+			borderedRenderCount === programmaticMoveCount + 1,
+			"programmatic move renders synchronously"
+		);
+		const programmaticResizeCount = borderedRenderCount;
+		bordered.resize( 126, 88 );
+		check(
+			borderedRenderCount === programmaticResizeCount + 1,
+			"programmatic resize renders synchronously"
+		);
+		bordered.resize( 120, 80 );
+		$.vis.render();
+
 		if( failures.length === 0 ) {
 			$.setColor( 2 );
 			$.setPosPx( 4, 168 );
@@ -203,6 +272,7 @@
 		}
 
 		function drawBordered( screen ) {
+			borderedRenderCount += 1;
 			screen.setColor( 1 );
 			screen.rect( 0, 0, screen.width(), screen.height(), 1 );
 			screen.setColor( 14 );

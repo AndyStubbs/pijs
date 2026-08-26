@@ -35,12 +35,22 @@
 		}
 	} );
 
-	$.ready( function() {
+	$.ready( async function() {
 		const failures = [];
 		const check = ( name, condition ) => {
 			if( !condition ) {
 				failures.push( name );
 			}
+		};
+		const readDefaultPixel = ( screenData, x, y ) => {
+			const pixel = new Uint8Array( 4 );
+			const gl = screenData.gl;
+			gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+			gl.readPixels( x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel );
+			return pixel;
+		};
+		const pixelsMatch = ( first, second ) => {
+			return first.every( ( value, index ) => value === second[ index ] );
 		};
 		const root = $.screen( { "aspect": "320x136" } );
 		const rootData = coreApi.getActiveScreen( "same-context-screen-test" );
@@ -55,6 +65,19 @@
 			coreApi.getActiveScreen( "same-context-screen-test" ) === affiliatedData
 		);
 		check( "shared context", affiliatedData.gl === rootData.gl );
+
+		root.setColor( 4 );
+		root.cls();
+		await Promise.resolve();
+		const rootDefaultPixel = readDefaultPixel( rootData, 160, 68 );
+		affiliated.setColor( 2 );
+		affiliated.cls();
+		await Promise.resolve();
+		const rootAfterAffiliatedRender = readDefaultPixel( rootData, 160, 68 );
+		check(
+			"affiliated screen does not present to root",
+			pixelsMatch( rootDefaultPixel, rootAfterAffiliatedRender )
+		);
 
 		const nested = $.screen( "16x16", null, true, null, affiliated );
 		const nestedData = coreApi.getScreenData( "same-context-screen-test", nested.id );
@@ -114,6 +137,7 @@
 		affiliated.rect( 0, 0, 64, 28, 4 );
 		affiliated.setColor( 1 );
 		affiliated.rect( 0, 28, 64, 28, 1 );
+		check( "affiliated render is lazy", affiliatedData.isRenderScheduled === false );
 
 		let readCount = 0;
 		let uploadCount = 0;
