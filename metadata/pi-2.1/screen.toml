@@ -1,0 +1,68 @@
+title = "screen"
+category = "core"
+isScreen = false
+summary = "Creates a new screen (canvas) with specified dimensions and aspect ratio."
+description = """
+Creates a new WebGL2 canvas screen and sets it as the active screen. The screen command must be
+called before any graphics commands can be used.
+
+Aspect ratio format: `(width)(x|e|m)(height)`
+- **x**: Exact pixel dimensions (e.g., "300x200")
+- **e**: Extend mode (e.g., "100e100") - extends canvas to fill container while maintaining aspect ratio
+- **m**: Multiple mode (e.g., "300m200") - scales to exact multiples of target resolution
+
+For offscreen screens, only exact pixel dimensions (x) are allowed. An offscreen screen can use an
+existing screen as its parent to share that screen's WebGL context. This allows drawImage to use the
+offscreen framebuffer directly for faster drawing. The parent controls rendering-context affinity
+only and does not establish lifecycle ownership.
+"""
+example = """
+const parent = $.screen( { "aspect": "320x200" } );
+const offscreen = $.screen( {
+	"aspect": "160x100",
+	"isOffscreen": true,
+	"parent": parent
+} );
+
+$.cls( 1 );
+$.circle( 80, 50, 32, true );
+
+$.setScreen( parent );
+$.drawImage( offscreen, 80, 50 );
+"""
+
+[[parameters]]
+name = "aspect"
+type = "string"
+description = "Aspect ratio string in format (width)(x|e|m)(height), e.g., '300x200', '100e00', '300m200'."
+
+[[parameters]]
+name = "container"
+type = "string | HTMLElement"
+typeDesc = "*Many"
+description = "DOM element or element ID string to use as container. Defaults to document.body."
+optional = true
+
+[[parameters]]
+name = "isOffscreen"
+type = "boolean"
+description = "If true, creates an offscreen canvas that is not displayed. Requires exact pixel dimensions."
+optional = true
+
+[[parameters]]
+name = "resizeCallback"
+type = "function"
+signature = "( screenApi: Screen, fromSize: Size, toSize: Size ) => void"
+description = "Callback function called when screen is resized. Receives (screenApi, fromSize, toSize)."
+optional = true
+
+[[parameters]]
+name = "parent"
+type = "number | Screen"
+typeDesc = "*Many"
+description = "Existing screen ID or screen API object whose WebGL context the offscreen screen uses. Only valid when isOffscreen is true. Enables fast drawImage calls directly from the offscreen framebuffer and does not establish lifecycle ownership."
+optional = true
+
+[[returns]]
+type = "Screen"
+description = "Screen API object with all graphics command and screen=true and id property."

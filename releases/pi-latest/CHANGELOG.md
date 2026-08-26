@@ -8,8 +8,10 @@
 - Nested drawing views can be managed with `pushView()`, `popView()`, and `resetView()`.
   Drawing, images, pixels, paint operations, clearing, and text output honor the active view's
   origin and clipping rectangle.
-- `viewToScreen()` and `screenToView()` convert coordinates between the active view and the
-  logical screen.
+- `viewToScreen()` and `screenToView()` convert coordinates between the active view and the logical
+  screen.
+- Added parent parameter to screen command that enables fast drawImage calls directly from the
+  offscreen framebuffer.
 
 ### Fixed
 - Drawing an offscreen screen as an image no longer reverses its Y axis when the source and
