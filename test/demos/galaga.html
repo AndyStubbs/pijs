@@ -1,0 +1,1658 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Pi.js Galaga Demo</title>
+	<style>
+		html,
+		body {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			background: #000;
+			overflow: hidden;
+		}
+	</style>
+</head>
+<body>
+<script src="../../build/pi.js"></script>
+<script>
+	$.ready( function() {
+	$.screen( "640x480" );
+	$.setBgColor( "#030206" );
+
+	/* ==========================================================
+	   CRISP ARCADE CRT SHADER (threshold bloom, no smear)
+	========================================================== */
+	const crtShader = $.createShader( `#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+uniform vec2 u_sourceSize;
+uniform vec2 u_outputSize;
+uniform float u_time;
+out vec4 fragColor;
+
+float luma( vec3 c ) {
+	return dot( c, vec3( 0.299, 0.587, 0.114 ) );
+}
+
+void main() {
+	vec2 uv = v_texCoord - 0.5;
+	float r2 = dot( uv, uv );
+	uv = uv * ( 1.0 + 0.035 * r2 ) + 0.5;
+
+	if( uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0 ) {
+		fragColor = vec4( 0.0 );
+		return;
+	}
+
+	vec2 texel = 1.0 / u_sourceSize;
+
+	// Tight RGB fringe (1/3 of a source pixel)
+	vec3 col;
+	col.r = texture( u_texture, uv + vec2( -texel.x * 0.35, 0.0 ) ).r;
+	col.g = texture( u_texture, uv ).g;
+	col.b = texture( u_texture, uv + vec2( texel.x * 0.35, 0.0 ) ).b;
+	float a = texture( u_texture, uv ).a;
+
+	// Bright-pass bloom: only glow pixels that are already lit
+	vec3 bloom = vec3( 0.0 );
+	vec2 offs[8];
+	offs[0] = vec2( -texel.x, 0.0 );
+	offs[1] = vec2(  texel.x, 0.0 );
+	offs[2] = vec2( 0.0, -texel.y );
+	offs[3] = vec2( 0.0,  texel.y );
+	offs[4] = vec2( -texel.x, -texel.y );
+	offs[5] = vec2(  texel.x, -texel.y );
+	offs[6] = vec2( -texel.x,  texel.y );
+	offs[7] = vec2(  texel.x,  texel.y );
+
+	for( int i = 0; i < 8; i++ ) {
+		vec3 s = texture( u_texture, uv + offs[ i ] ).rgb;
+		float w = smoothstep( 0.22, 0.65, luma( s ) );
+		bloom += s * w;
+	}
+	bloom *= 0.085;
+	col += bloom;
+
+	// Pop neon vectors without washing out black
+	col = pow( col, vec3( 0.92 ) ) * 1.12;
+
+	// Horizontal scanlines at source resolution
+	float scan = 0.5 + 0.5 * sin( uv.y * u_sourceSize.y * 3.14159 );
+	col *= mix( 0.88, 1.0, scan );
+
+	// Fine aperture grille on the presentation buffer
+	float grille = 0.92 + 0.08 * sin( v_texCoord.x * u_outputSize.x * 3.14159 );
+	col *= grille;
+
+	// Phosphor tint + tiny flicker
+	col *= vec3( 1.02, 1.0, 0.98 );
+	col *= 0.985 + 0.015 * sin( u_time * 62.0 );
+
+	// Soft vignette
+	vec2 v = v_texCoord * ( 1.0 - v_texCoord );
+	float vig = pow( 16.0 * v.x * v.y, 0.14 );
+	col *= mix( 0.72, 1.0, vig );
+
+	fragColor = vec4( clamp( col, 0.0, 1.0 ), a );
+}` );
+
+	$.setDisplayShader( crtShader );
+
+	/* ==========================================================
+	   GAME STATE
+	========================================================== */
+	let gameState = "title";
+	let score = 0;
+	let highScore = 10000;
+	let stage = 1;
+	let lives = 3;
+	let frameCount = 0;
+	let stageBanner = 0;
+	let stageClearTimer = 0;
+	let dockChimePlayed = false;
+
+	const COLS = 8;
+	const ROWS = 5;
+	const GRID_ORIGIN_X = 175;
+	const GRID_ORIGIN_Y = 58;
+	const GRID_GAP_X = 42;
+	const GRID_GAP_Y = 30;
+	const PLAYER_COOLDOWN = 26;
+	const MAX_PLAYER_BULLETS = 4;
+
+	/* ==========================================================
+	   AUDIO
+	========================================================== */
+	function sfxShoot() {
+		$.sound( {
+			"frequency": 980,
+			"duration": 0.045,
+			"volume": 0.16,
+			"oType": "square",
+			"attack": 0.002,
+			"decay": 0.042
+		} );
+		$.sound( {
+			"frequency": 1560,
+			"duration": 0.03,
+			"volume": 0.1,
+			"oType": "triangle",
+			"attack": 0.001,
+			"decay": 0.028
+		} );
+		$.sound( {
+			"frequency": 420,
+			"duration": 0.07,
+			"volume": 0.08,
+			"oType": "square",
+			"delay": 0.03,
+			"attack": 0.001,
+			"decay": 0.065
+		} );
+	}
+
+	function sfxExplosion() {
+		$.sound( {
+			"frequency": 210,
+			"duration": 0.12,
+			"volume": 0.28,
+			"oType": "sawtooth",
+			"attack": 0.004,
+			"decay": 0.11
+		} );
+		$.sound( {
+			"frequency": 92,
+			"duration": 0.22,
+			"volume": 0.3,
+			"oType": "square",
+			"delay": 0.03,
+			"attack": 0.008,
+			"decay": 0.2
+		} );
+		$.sound( {
+			"frequency": 48,
+			"duration": 0.32,
+			"volume": 0.22,
+			"oType": "sawtooth",
+			"delay": 0.07,
+			"attack": 0.015,
+			"decay": 0.3
+		} );
+		$.sound( {
+			"frequency": 36,
+			"duration": 0.28,
+			"volume": 0.14,
+			"oType": "triangle",
+			"delay": 0.1,
+			"attack": 0.02,
+			"decay": 0.26
+		} );
+	}
+
+	function sfxHit() {
+		$.sound( {
+			"frequency": 1480,
+			"duration": 0.04,
+			"volume": 0.18,
+			"oType": "triangle",
+			"attack": 0.001,
+			"decay": 0.038
+		} );
+		$.sound( {
+			"frequency": 880,
+			"duration": 0.07,
+			"volume": 0.12,
+			"oType": "square",
+			"delay": 0.025,
+			"attack": 0.001,
+			"decay": 0.065
+		} );
+		$.sound( {
+			"frequency": 520,
+			"duration": 0.08,
+			"volume": 0.08,
+			"oType": "triangle",
+			"delay": 0.05,
+			"attack": 0.002,
+			"decay": 0.075
+		} );
+	}
+
+	function sfxDive() {
+		$.sound( {
+			"frequency": 640,
+			"duration": 0.1,
+			"volume": 0.09,
+			"oType": "sine",
+			"attack": 0.008,
+			"decay": 0.09
+		} );
+		$.sound( {
+			"frequency": 420,
+			"duration": 0.14,
+			"volume": 0.08,
+			"oType": "triangle",
+			"delay": 0.06,
+			"attack": 0.01,
+			"decay": 0.13
+		} );
+		$.sound( {
+			"frequency": 220,
+			"duration": 0.16,
+			"volume": 0.06,
+			"oType": "sine",
+			"delay": 0.12,
+			"attack": 0.01,
+			"decay": 0.15
+		} );
+	}
+
+	function sfxEnemyShot() {
+		$.sound( {
+			"frequency": 310,
+			"duration": 0.07,
+			"volume": 0.09,
+			"oType": "square",
+			"attack": 0.004,
+			"decay": 0.065
+		} );
+		$.sound( {
+			"frequency": 155,
+			"duration": 0.1,
+			"volume": 0.07,
+			"oType": "triangle",
+			"delay": 0.03,
+			"attack": 0.006,
+			"decay": 0.09
+		} );
+	}
+
+	function sfxPlayerDown() {
+		$.sound( {
+			"frequency": 180,
+			"duration": 0.18,
+			"volume": 0.32,
+			"oType": "sawtooth",
+			"attack": 0.01,
+			"decay": 0.17
+		} );
+		$.sound( {
+			"frequency": 90,
+			"duration": 0.28,
+			"volume": 0.3,
+			"oType": "square",
+			"delay": 0.05,
+			"attack": 0.02,
+			"decay": 0.26
+		} );
+		$.sound( {
+			"frequency": 46,
+			"duration": 0.4,
+			"volume": 0.24,
+			"oType": "sawtooth",
+			"delay": 0.12,
+			"attack": 0.03,
+			"decay": 0.37
+		} );
+		$.sound( {
+			"frequency": 220,
+			"duration": 0.12,
+			"volume": 0.12,
+			"oType": "triangle",
+			"delay": 0.22,
+			"attack": 0.01,
+			"decay": 0.11
+		} );
+	}
+
+	function sfxStart() {
+		$.play(
+			"T168 L16 SQUARE O4 C E G O5 C8 P16 " +
+			"O4 G8 O5 E8 C4 P8 O4 E8 G8 O5 C8"
+		);
+	}
+
+	function sfxStageClear() {
+		$.play( "T176 L16 SQUARE O5 C E G C6 O5 G8 O6 C4" );
+	}
+
+	function sfxDocked() {
+		$.sound( {
+			"frequency": 880,
+			"duration": 0.06,
+			"volume": 0.1,
+			"oType": "triangle",
+			"attack": 0.004,
+			"decay": 0.055
+		} );
+		$.sound( {
+			"frequency": 1320,
+			"duration": 0.08,
+			"volume": 0.08,
+			"oType": "sine",
+			"delay": 0.05,
+			"attack": 0.004,
+			"decay": 0.075
+		} );
+	}
+
+	/* ==========================================================
+	   STARFIELD
+	========================================================== */
+	const stars = [];
+	for( let i = 0; i < 70; i++ ) {
+		stars.push( {
+			"x": Math.random() * 640,
+			"y": Math.random() * 480,
+			"speed": 0.4 + Math.random() * 2.0,
+			"color": [ "#FFFFFF", "#55FFFF", "#FF55AA", "#FFFF77" ][
+				Math.floor( Math.random() * 4 )
+			]
+		} );
+	}
+
+	function updateAndDrawStars() {
+		for( let i = 0; i < stars.length; i++ ) {
+			const s = stars[ i ];
+			s.y += s.speed;
+			if( s.y > 480 ) {
+				s.y = 0;
+				s.x = Math.random() * 640;
+			}
+			$.setColor( s.color );
+			$.pset( s.x, s.y );
+		}
+	}
+
+	/* ==========================================================
+	   VECTOR DRAWING
+	========================================================== */
+	function drawVectorShape(
+		lines, cx, cy, scale, color, angle = 0, wingOffset = 0
+	) {
+		$.setColor( color );
+		const cosA = Math.cos( angle );
+		const sinA = Math.sin( angle );
+
+		for( let i = 0; i < lines.length; i++ ) {
+			const seg = lines[ i ];
+
+			let sx1 = seg[ 0 ];
+			let sy1 = seg[ 1 ];
+			let sx2 = seg[ 2 ];
+			let sy2 = seg[ 3 ];
+
+			if( sx1 < -4 ) sx1 -= wingOffset;
+			if( sx1 > 4 ) sx1 += wingOffset;
+			if( sx2 < -4 ) sx2 -= wingOffset;
+			if( sx2 > 4 ) sx2 += wingOffset;
+
+			const x1 = sx1 * scale;
+			const y1 = sy1 * scale;
+			const rx1 = cx + ( x1 * cosA - y1 * sinA );
+			const ry1 = cy + ( x1 * sinA + y1 * cosA );
+
+			const x2 = sx2 * scale;
+			const y2 = sy2 * scale;
+			const rx2 = cx + ( x2 * cosA - y2 * sinA );
+			const ry2 = cy + ( x2 * sinA + y2 * cosA );
+
+			$.line( rx1, ry1, rx2, ry2 );
+		}
+	}
+
+	/* ==========================================================
+	   VECTOR MODELS
+	========================================================== */
+	const PLAYER_VECTORS = [
+		[ 0, -14, -7, 8 ],
+		[ 0, -14, 7, 8 ],
+		[ -7, 8, -4, 4 ],
+		[ 7, 8, 4, 4 ],
+		[ -4, 4, 4, 4 ],
+		[ -7, 8, -12, 11 ],
+		[ -12, 11, -9, 3 ],
+		[ -9, 3, -4, 4 ],
+		[ 7, 8, 12, 11 ],
+		[ 12, 11, 9, 3 ],
+		[ 9, 3, 4, 4 ],
+		[ 0, -7, -3, 0 ],
+		[ 0, -7, 3, 0 ],
+		[ -3, 0, 3, 0 ],
+		[ 0, 4, 0, 10 ]
+	];
+
+	const BEE_VECTORS = [
+		[ 0, -8, -3, -12 ],
+		[ 0, -8, 3, -12 ],
+		[ -3, -12, -5, -11 ],
+		[ 3, -12, 5, -11 ],
+		[ -3, -8, 3, -8 ],
+		[ -3, -8, -5, -1 ],
+		[ 3, -8, 5, -1 ],
+		[ -5, -1, 0, 9 ],
+		[ 5, -1, 0, 9 ],
+		[ -3, 3, 3, 3 ],
+		[ -2, 6, 2, 6 ],
+		[ -5, -4, -11, -7 ],
+		[ -11, -7, -9, 3 ],
+		[ -9, 3, -4, 0 ],
+		[ 5, -4, 11, -7 ],
+		[ 11, -7, 9, 3 ],
+		[ 9, 3, 4, 0 ],
+		[ -3, -2, 3, -2 ]
+	];
+
+	const BUTTERFLY_VECTORS = [
+		[ 0, -9, -4, -12 ],
+		[ 0, -9, 4, -12 ],
+		[ -4, -12, -2, -8 ],
+		[ 4, -12, 2, -8 ],
+		[ -2, -8, 2, -8 ],
+		[ -2, -8, -3, 4 ],
+		[ 2, -8, 3, 4 ],
+		[ -3, 4, 0, 8 ],
+		[ 3, 4, 0, 8 ],
+		[ -2, -6, -11, -7 ],
+		[ -11, -7, -13, 1 ],
+		[ -13, 1, -3, 0 ],
+		[ 2, -6, 11, -7 ],
+		[ 11, -7, 13, 1 ],
+		[ 13, 1, 3, 0 ],
+		[ -3, 0, -9, 7 ],
+		[ -9, 7, -2, 4 ],
+		[ 3, 0, 9, 7 ],
+		[ 9, 7, 2, 4 ]
+	];
+
+	const BOSS_VECTORS = [
+		[ 0, -11, -4, -8 ],
+		[ 0, -11, 4, -8 ],
+		[ -4, -8, -7, -11 ],
+		[ 4, -8, 7, -11 ],
+		[ -7, -11, -7, -6 ],
+		[ 7, -11, 7, -6 ],
+		[ -7, -6, -13, -1 ],
+		[ 13, -1, 7, -6 ],
+		[ -13, -1, -11, 7 ],
+		[ 13, -1, 11, 7 ],
+		[ -11, 7, -5, 10 ],
+		[ 11, 7, 5, 10 ],
+		[ -5, 10, 0, 5 ],
+		[ 5, 10, 0, 5 ],
+		[ -4, -3, 4, -3 ],
+		[ 4, -3, 0, 2 ],
+		[ 0, 2, -4, -3 ],
+		[ -8, 1, -3, 2 ],
+		[ 8, 1, 3, 2 ]
+	];
+
+	const SCORPION_VECTORS = [
+		[ 0, -10, -4, -6 ],
+		[ 0, -10, 4, -6 ],
+		[ -4, -6, -3, 2 ],
+		[ 4, -6, 3, 2 ],
+		[ -3, 2, 0, 6 ],
+		[ 3, 2, 0, 6 ],
+		[ -4, -6, -11, -13 ],
+		[ -11, -13, -9, -4 ],
+		[ -9, -4, -4, -2 ],
+		[ 4, -6, 11, -13 ],
+		[ 11, -13, 9, -4 ],
+		[ 9, -4, 4, -2 ],
+		[ 0, 6, -6, 11 ],
+		[ 0, 6, 6, 11 ],
+		[ -6, 11, 0, 15 ],
+		[ 6, 11, 0, 15 ],
+		[ -2, -3, -2, -1 ],
+		[ 2, -3, 2, -1 ]
+	];
+
+	const WASP_VECTORS = [
+		[ 0, -13, -2, -6 ],
+		[ 0, -13, 2, -6 ],
+		[ -2, -6, -5, 1 ],
+		[ 2, -6, 5, 1 ],
+		[ -5, 1, 0, 11 ],
+		[ 5, 1, 0, 11 ],
+		[ -5, -1, -12, -6 ],
+		[ -12, -6, -10, 3 ],
+		[ -10, 3, -4, 2 ],
+		[ 5, -1, 12, -6 ],
+		[ 12, -6, 10, 3 ],
+		[ 10, 3, 4, 2 ],
+		[ -2, 4, 2, 4 ],
+		[ 0, -8, 0, -4 ]
+	];
+
+	const ARMOR_VECTORS = [
+		[ -6, -8, 6, -8 ],
+		[ 6, -8, 11, -2 ],
+		[ 11, -2, 9, 6 ],
+		[ 9, 6, 0, 11 ],
+		[ 0, 11, -9, 6 ],
+		[ -9, 6, -11, -2 ],
+		[ -11, -2, -6, -8 ],
+		[ -4, -3, 4, -3 ],
+		[ -5, 2, 5, 2 ],
+		[ -3, 6, 3, 6 ],
+		[ 0, -8, 0, -12 ],
+		[ -4, -11, 4, -11 ],
+		[ -8, -2, -8, 3 ],
+		[ 8, -2, 8, 3 ]
+	];
+
+	const STINGRAY_VECTORS = [
+		[ 0, -6, -14, 2 ],
+		[ 0, -6, 14, 2 ],
+		[ -14, 2, -8, 6 ],
+		[ 14, 2, 8, 6 ],
+		[ -8, 6, 0, 4 ],
+		[ 8, 6, 0, 4 ],
+		[ 0, -6, 0, 10 ],
+		[ -3, 10, 3, 10 ],
+		[ -4, -1, 4, -1 ],
+		[ -10, 0, -16, -4 ],
+		[ 10, 0, 16, -4 ]
+	];
+
+	const ENEMY_TYPES = {
+		"bee": {
+			"vectors": BEE_VECTORS,
+			"color": "#FFE600",
+			"score": 50,
+			"hp": 1,
+			"scale": 1.3,
+			"dive": "chase"
+		},
+		"butterfly": {
+			"vectors": BUTTERFLY_VECTORS,
+			"color": "#FF3377",
+			"score": 80,
+			"hp": 1,
+			"scale": 1.3,
+			"dive": "weave"
+		},
+		"boss": {
+			"vectors": BOSS_VECTORS,
+			"color": "#22FF88",
+			"score": 150,
+			"hp": 2,
+			"scale": 1.45,
+			"dive": "chase"
+		},
+		"scorpion": {
+			"vectors": SCORPION_VECTORS,
+			"color": "#FF8800",
+			"score": 160,
+			"hp": 1,
+			"scale": 1.35,
+			"dive": "loop"
+		},
+		"wasp": {
+			"vectors": WASP_VECTORS,
+			"color": "#CC66FF",
+			"score": 60,
+			"hp": 1,
+			"scale": 1.15,
+			"dive": "sine"
+		},
+		"armor": {
+			"vectors": ARMOR_VECTORS,
+			"color": "#88AACC",
+			"score": 200,
+			"hp": 3,
+			"scale": 1.4,
+			"dive": "chase"
+		},
+		"stingray": {
+			"vectors": STINGRAY_VECTORS,
+			"color": "#33DDEE",
+			"score": 120,
+			"hp": 2,
+			"scale": 1.25,
+			"dive": "weave"
+		}
+	};
+
+	function enemyDrawColor( e ) {
+		if( e.flash > 0 ) {
+			return "#FFFFFF";
+		}
+		if( e.type === "boss" ) {
+			return e.hp >= 2 ? "#22FF88" : "#5599FF";
+		}
+		if( e.type === "armor" ) {
+			if( e.hp >= 3 ) {
+				return "#88AACC";
+			}
+			if( e.hp >= 2 ) {
+				return "#FFCC44";
+			}
+			return "#FF6622";
+		}
+		if( e.type === "stingray" ) {
+			return e.hp >= 2 ? "#33DDEE" : "#FFEE66";
+		}
+		return e.color;
+	}
+
+	/* ==========================================================
+	   ENTRANCE PATHS
+	========================================================== */
+	function mirrorPath( path ) {
+		const out = [];
+		for( let i = 0; i < path.length; i++ ) {
+			out.push( [ 640 - path[ i ][ 0 ], path[ i ][ 1 ] ] );
+		}
+		return out;
+	}
+
+	function makeSpiral( dir ) {
+		const pts = [];
+		for( let i = 0; i <= 20; i++ ) {
+			const t = i / 20;
+			const ang = dir * t * Math.PI * 3.2;
+			const rad = 240 * ( 1 - t * 0.72 );
+			pts.push( [
+				320 + Math.cos( ang ) * rad,
+				28 + t * 96 + Math.sin( ang ) * rad * 0.55
+			] );
+		}
+		return pts;
+	}
+
+	const PATH_LEFT_LOOP = [
+		[ -40, 28 ],
+		[ 70, 48 ],
+		[ 150, 118 ],
+		[ 195, 220 ],
+		[ 140, 330 ],
+		[ 250, 392 ],
+		[ 410, 348 ],
+		[ 478, 236 ],
+		[ 430, 128 ],
+		[ 320, 78 ]
+	];
+	const PATH_RIGHT_LOOP = mirrorPath( PATH_LEFT_LOOP );
+
+	const PATH_TOP_WEAVE = [
+		[ 320, -40 ],
+		[ 170, 55 ],
+		[ 470, 125 ],
+		[ 130, 200 ],
+		[ 510, 255 ],
+		[ 250, 175 ],
+		[ 320, 72 ]
+	];
+
+	const PATH_FIGURE_EIGHT = [
+		[ 320, -36 ],
+		[ 190, 70 ],
+		[ 185, 200 ],
+		[ 320, 268 ],
+		[ 455, 200 ],
+		[ 450, 70 ],
+		[ 320, 36 ],
+		[ 200, 90 ],
+		[ 320, 168 ],
+		[ 320, 74 ]
+	];
+
+	const PATH_LEFT_SWEEP = [
+		[ -40, 210 ],
+		[ 80, 290 ],
+		[ 200, 368 ],
+		[ 360, 405 ],
+		[ 530, 338 ],
+		[ 590, 198 ],
+		[ 500, 88 ],
+		[ 320, 70 ]
+	];
+	const PATH_RIGHT_SWEEP = mirrorPath( PATH_LEFT_SWEEP );
+
+	const PATH_HELIX_L = [
+		[ -30, 96 ],
+		[ 90, 36 ],
+		[ 190, 150 ],
+		[ 70, 250 ],
+		[ 230, 330 ],
+		[ 380, 236 ],
+		[ 300, 96 ]
+	];
+	const PATH_HELIX_R = mirrorPath( PATH_HELIX_L );
+
+	const PATH_CORNER_L = [
+		[ -30, -20 ],
+		[ 80, 40 ],
+		[ 40, 160 ],
+		[ 160, 260 ],
+		[ 80, 340 ],
+		[ 240, 300 ],
+		[ 320, 90 ]
+	];
+	const PATH_CORNER_R = mirrorPath( PATH_CORNER_L );
+
+	const PATH_SPIRAL_CW = makeSpiral( 1 );
+	const PATH_SPIRAL_CCW = makeSpiral( -1 );
+
+	const PATHS = {
+		"leftLoop": PATH_LEFT_LOOP,
+		"rightLoop": PATH_RIGHT_LOOP,
+		"topWeave": PATH_TOP_WEAVE,
+		"figureEight": PATH_FIGURE_EIGHT,
+		"leftSweep": PATH_LEFT_SWEEP,
+		"rightSweep": PATH_RIGHT_SWEEP,
+		"helixL": PATH_HELIX_L,
+		"helixR": PATH_HELIX_R,
+		"cornerL": PATH_CORNER_L,
+		"cornerR": PATH_CORNER_R,
+		"spiralCw": PATH_SPIRAL_CW,
+		"spiralCcw": PATH_SPIRAL_CCW
+	};
+
+	function pointOnPath( points, t ) {
+		if( t <= 0 ) {
+			return {
+				"x": points[ 0 ][ 0 ],
+				"y": points[ 0 ][ 1 ],
+				"angle": 0
+			};
+		}
+
+		const last = points.length - 1;
+		if( t >= 1 ) {
+			const dx = points[ last ][ 0 ] - points[ last - 1 ][ 0 ];
+			const dy = points[ last ][ 1 ] - points[ last - 1 ][ 1 ];
+			return {
+				"x": points[ last ][ 0 ],
+				"y": points[ last ][ 1 ],
+				"angle": Math.atan2( dy, dx ) - Math.PI / 2
+			};
+		}
+
+		const segs = points.length - 1;
+		const ft = t * segs;
+		const i = Math.min( segs - 1, Math.floor( ft ) );
+		const lt = ft - i;
+		const s = lt * lt * ( 3 - 2 * lt );
+		const x1 = points[ i ][ 0 ];
+		const y1 = points[ i ][ 1 ];
+		const x2 = points[ i + 1 ][ 0 ];
+		const y2 = points[ i + 1 ][ 1 ];
+
+		return {
+			"x": x1 + ( x2 - x1 ) * s,
+			"y": y1 + ( y2 - y1 ) * s,
+			"angle": Math.atan2( y2 - y1, x2 - x1 ) - Math.PI / 2
+		};
+	}
+
+	/* ==========================================================
+	   PARTICLES
+	========================================================== */
+	let particles = [];
+
+	function spawnExplosion( x, y, color, count = 14, playSound = true ) {
+		if( playSound ) {
+			sfxExplosion();
+		}
+		for( let i = 0; i < count; i++ ) {
+			const angle = Math.random() * Math.PI * 2;
+			const speed = 1.0 + Math.random() * 3.5;
+			particles.push( {
+				"x": x,
+				"y": y,
+				"vx": Math.cos( angle ) * speed,
+				"vy": Math.sin( angle ) * speed,
+				"life": 16 + Math.floor( Math.random() * 12 ),
+				"color": color
+			} );
+		}
+	}
+
+	function spawnSparks( x, y, color, count = 6 ) {
+		for( let i = 0; i < count; i++ ) {
+			const angle = Math.random() * Math.PI * 2;
+			const speed = 0.8 + Math.random() * 2.2;
+			particles.push( {
+				"x": x,
+				"y": y,
+				"vx": Math.cos( angle ) * speed,
+				"vy": Math.sin( angle ) * speed,
+				"life": 8 + Math.floor( Math.random() * 8 ),
+				"color": color
+			} );
+		}
+	}
+
+	function updateParticles() {
+		for( let i = particles.length - 1; i >= 0; i-- ) {
+			const p = particles[ i ];
+			p.x += p.vx;
+			p.y += p.vy;
+			p.life--;
+			if( p.life <= 0 ) {
+				particles.splice( i, 1 );
+			}
+		}
+	}
+
+	function drawParticles() {
+		for( let i = 0; i < particles.length; i++ ) {
+			const p = particles[ i ];
+			$.setColor( p.color );
+			$.line( p.x, p.y, p.x - p.vx * 1.6, p.y - p.vy * 1.6 );
+		}
+	}
+
+	/* ==========================================================
+	   PLAYER
+	========================================================== */
+	const player = {
+		"x": 320,
+		"y": 440,
+		"speed": 5.2,
+		"cooldown": 0,
+		"alive": true,
+		"respawnTimer": 0,
+		"invulnerableTimer": 0
+	};
+
+	let playerBullets = [];
+	let enemyBullets = [];
+
+	function fireBullet() {
+		if(
+			player.cooldown <= 0 &&
+			player.alive &&
+			playerBullets.length < MAX_PLAYER_BULLETS
+		) {
+			playerBullets.push( { "x": player.x - 6, "y": player.y - 12 } );
+			playerBullets.push( { "x": player.x + 6, "y": player.y - 12 } );
+			player.cooldown = PLAYER_COOLDOWN;
+			sfxShoot();
+		}
+	}
+
+	function killPlayer() {
+		player.alive = false;
+		player.respawnTimer = 70;
+		lives--;
+		sfxPlayerDown();
+		spawnExplosion( player.x, player.y, "#00FFFF", 24, false );
+	}
+
+	/* ==========================================================
+	   ENEMIES & FORMATIONS
+	========================================================== */
+	let enemies = [];
+
+	function gridPos( c, r ) {
+		return {
+			"x": GRID_ORIGIN_X + c * GRID_GAP_X,
+			"y": GRID_ORIGIN_Y + r * GRID_GAP_Y
+		};
+	}
+
+	function typeForCell( stageNum, r, c ) {
+		if( r === 0 ) {
+			if( c >= 2 && c <= 5 ) {
+				if( stageNum >= 4 && ( c === 2 || c === 5 ) ) {
+					return "armor";
+				}
+				return "boss";
+			}
+			if( stageNum >= 2 ) {
+				return "wasp";
+			}
+			return "bee";
+		}
+		if( r === 1 ) {
+			if( stageNum >= 3 && ( c === 0 || c === 7 ) ) {
+				return "scorpion";
+			}
+			return "butterfly";
+		}
+		if( r === 2 ) {
+			if( stageNum >= 5 && c % 2 === 0 ) {
+				return "stingray";
+			}
+			if( stageNum >= 3 && c % 3 === 0 ) {
+				return "scorpion";
+			}
+			return "butterfly";
+		}
+		if( r === 3 ) {
+			if( stageNum >= 2 && c % 2 === 1 ) {
+				return "wasp";
+			}
+			return "bee";
+		}
+		return "bee";
+	}
+
+	function makeEnemy( c, r, typeName ) {
+		const t = ENEMY_TYPES[ typeName ];
+		const g = gridPos( c, r );
+		return {
+			"type": typeName,
+			"vectors": t.vectors,
+			"color": t.color,
+			"score": t.score,
+			"hp": t.hp,
+			"scale": t.scale,
+			"diveStyle": t.dive,
+			"col": c,
+			"row": r,
+			"gridX": g.x,
+			"gridY": g.y,
+			"x": g.x,
+			"y": g.y,
+			"state": "entering",
+			"spawnDelay": 0,
+			"path": null,
+			"pathT": 0,
+			"diveAngle": 0,
+			"vx": 0,
+			"vy": 0,
+			"flash": 0,
+			"diveTime": 0
+		};
+	}
+
+	function assignConvoy( members, pathName, delayStart, stagger ) {
+		const path = PATHS[ pathName ];
+		for( let i = 0; i < members.length; i++ ) {
+			const e = members[ i ];
+			e.path = path;
+			e.pathT = 0;
+			e.spawnDelay = delayStart + i * stagger;
+			e.state = "entering";
+			e.x = path[ 0 ][ 0 ];
+			e.y = path[ 0 ][ 1 ];
+		}
+	}
+
+	function getPatternPlan( stageNum ) {
+		const id = ( stageNum - 1 ) % 6;
+		if( id === 0 ) {
+			return [
+				{ "row": 4, "left": "leftLoop", "right": "rightLoop", "delay": 0, "stagger": 8 },
+				{ "row": 3, "left": "leftLoop", "right": "rightLoop", "delay": 72, "stagger": 8 },
+				{ "row": 2, "left": "rightLoop", "right": "leftLoop", "delay": 150, "stagger": 8 },
+				{ "row": 1, "left": "rightLoop", "right": "leftLoop", "delay": 228, "stagger": 8 },
+				{ "row": 0, "left": "topWeave", "right": "topWeave", "delay": 310, "stagger": 10 }
+			];
+		}
+		if( id === 1 ) {
+			return [
+				{ "row": 4, "left": "spiralCw", "right": "spiralCcw", "delay": 0, "stagger": 7 },
+				{ "row": 3, "left": "spiralCcw", "right": "spiralCw", "delay": 80, "stagger": 7 },
+				{ "row": 2, "left": "figureEight", "right": "figureEight", "delay": 170, "stagger": 8 },
+				{ "row": 1, "left": "helixL", "right": "helixR", "delay": 250, "stagger": 8 },
+				{ "row": 0, "left": "cornerL", "right": "cornerR", "delay": 330, "stagger": 10 }
+			];
+		}
+		if( id === 2 ) {
+			return [
+				{ "row": 4, "left": "leftSweep", "right": "rightSweep", "delay": 0, "stagger": 8 },
+				{ "row": 3, "left": "rightSweep", "right": "leftSweep", "delay": 90, "stagger": 8 },
+				{ "row": 2, "left": "helixL", "right": "helixR", "delay": 180, "stagger": 7 },
+				{ "row": 1, "left": "topWeave", "right": "topWeave", "delay": 255, "stagger": 8 },
+				{ "row": 0, "left": "leftLoop", "right": "rightLoop", "delay": 330, "stagger": 10 }
+			];
+		}
+		if( id === 3 ) {
+			return [
+				{ "row": 4, "left": "cornerL", "right": "cornerR", "delay": 0, "stagger": 8 },
+				{ "row": 3, "left": "figureEight", "right": "figureEight", "delay": 70, "stagger": 7 },
+				{ "row": 2, "left": "leftLoop", "right": "rightLoop", "delay": 155, "stagger": 8 },
+				{ "row": 1, "left": "spiralCw", "right": "spiralCcw", "delay": 240, "stagger": 7 },
+				{ "row": 0, "left": "helixL", "right": "helixR", "delay": 320, "stagger": 10 }
+			];
+		}
+		if( id === 4 ) {
+			return [
+				{ "row": 4, "left": "helixL", "right": "helixR", "delay": 0, "stagger": 7 },
+				{ "row": 3, "left": "leftSweep", "right": "rightSweep", "delay": 85, "stagger": 8 },
+				{ "row": 2, "left": "cornerL", "right": "cornerR", "delay": 170, "stagger": 8 },
+				{ "row": 1, "left": "rightLoop", "right": "leftLoop", "delay": 250, "stagger": 8 },
+				{ "row": 0, "left": "spiralCw", "right": "spiralCcw", "delay": 335, "stagger": 9 }
+			];
+		}
+		return [
+			{ "row": 4, "left": "figureEight", "right": "figureEight", "delay": 0, "stagger": 7 },
+			{ "row": 3, "left": "spiralCcw", "right": "spiralCw", "delay": 80, "stagger": 7 },
+			{ "row": 2, "left": "leftSweep", "right": "rightSweep", "delay": 165, "stagger": 8 },
+			{ "row": 1, "left": "helixR", "right": "helixL", "delay": 245, "stagger": 8 },
+			{ "row": 0, "left": "topWeave", "right": "topWeave", "delay": 325, "stagger": 10 }
+		];
+	}
+
+	function spawnFleet() {
+		enemies = [];
+		const roster = [];
+
+		for( let r = 0; r < ROWS; r++ ) {
+			const row = [];
+			for( let c = 0; c < COLS; c++ ) {
+				const typeName = typeForCell( stage, r, c );
+				const e = makeEnemy( c, r, typeName );
+				row.push( e );
+				enemies.push( e );
+			}
+			roster.push( row );
+		}
+
+		const plan = getPatternPlan( stage );
+		for( let i = 0; i < plan.length; i++ ) {
+			const wave = plan[ i ];
+			const row = roster[ wave.row ].slice();
+			const mid = Math.ceil( row.length / 2 );
+			const left = row.slice( 0, mid ).reverse();
+			const right = row.slice( mid );
+			assignConvoy( left, wave.left, wave.delay, wave.stagger );
+			assignConvoy( right, wave.right, wave.delay, wave.stagger );
+		}
+
+		stageBanner = 110;
+		stageClearTimer = 0;
+		dockChimePlayed = false;
+	}
+
+	function formationReady() {
+		for( let i = 0; i < enemies.length; i++ ) {
+			const e = enemies[ i ];
+			if(
+				e.spawnDelay > 0 ||
+				e.state === "entering" ||
+				e.state === "homing"
+			) {
+				return false;
+			}
+		}
+		return enemies.length > 0;
+	}
+
+	function resetGame() {
+		score = 0;
+		lives = 3;
+		stage = 1;
+		player.x = 320;
+		player.alive = true;
+		player.respawnTimer = 0;
+		player.invulnerableTimer = 90;
+		player.cooldown = 0;
+		playerBullets = [];
+		enemyBullets = [];
+		particles = [];
+		spawnFleet();
+		sfxStart();
+		gameState = "playing";
+	}
+
+	function diveChanceFor( typeName ) {
+		if( typeName === "wasp" ) {
+			return 0.0022;
+		}
+		if( typeName === "bee" ) {
+			return 0.0014;
+		}
+		if( typeName === "scorpion" ) {
+			return 0.0012;
+		}
+		if( typeName === "butterfly" ) {
+			return 0.001;
+		}
+		if( typeName === "stingray" ) {
+			return 0.0009;
+		}
+		if( typeName === "boss" ) {
+			return 0.00055;
+		}
+		return 0.0004;
+	}
+
+	function startDive( e ) {
+		e.state = "diving";
+		e.diveTime = 0;
+		e.vx = ( Math.random() - 0.5 ) * 2.4;
+		e.vy = 2.0 + Math.random() * 1.3 + stage * 0.08;
+		if( e.type === "wasp" ) {
+			e.vy += 0.6;
+		}
+		if( e.type === "armor" ) {
+			e.vy *= 0.75;
+		}
+		sfxDive();
+	}
+
+	/* ==========================================================
+	   MAIN LOOP
+	========================================================== */
+	function gameLoop() {
+		$.cls();
+		frameCount++;
+		updateAndDrawStars();
+
+		if( gameState === "title" ) {
+			drawTitleScreen();
+		} else if( gameState === "playing" ) {
+			updatePlaying();
+			drawPlaying();
+		} else if( gameState === "gameover" ) {
+			updateParticles();
+			drawGameOver();
+			drawParticles();
+		}
+
+		requestAnimationFrame( gameLoop );
+	}
+
+	function drawTitleScreen() {
+		const wingAnim = Math.sin( frameCount * 0.15 ) * 2.0;
+
+		$.setColor( "#FF1166" );
+		$.setPosPx( 190, 48 );
+		$.setPrintSize( 4, 4 );
+		$.print( "GALAGA", false, true );
+
+		$.setColor( "#00FFFF" );
+		$.setPosPx( 210, 88 );
+		$.setPrintSize( 2, 2 );
+		$.print( "VECTOR EDITION", false, true );
+
+		drawVectorShape(
+			BOSS_VECTORS, 140, 155, 1.5, "#22FF88",
+			frameCount * 0.02, wingAnim
+		);
+		drawVectorShape(
+			ARMOR_VECTORS, 250, 155, 1.5, "#88AACC",
+			-frameCount * 0.015, 0
+		);
+		drawVectorShape(
+			SCORPION_VECTORS, 360, 155, 1.5, "#FF8800",
+			frameCount * 0.025, wingAnim
+		);
+		drawVectorShape(
+			STINGRAY_VECTORS, 480, 155, 1.45, "#33DDEE",
+			-frameCount * 0.02, wingAnim
+		);
+
+		drawVectorShape(
+			BUTTERFLY_VECTORS, 180, 230, 1.4, "#FF3377",
+			-frameCount * 0.02, wingAnim
+		);
+		drawVectorShape(
+			WASP_VECTORS, 320, 230, 1.4, "#CC66FF",
+			frameCount * 0.04, wingAnim
+		);
+		drawVectorShape(
+			BEE_VECTORS, 460, 230, 1.4, "#FFE600",
+			frameCount * 0.03, wingAnim
+		);
+
+		$.setPrintSize( 1, 1 );
+		$.setColor( "#22FF88" );
+		$.setPosPx( 150, 275 );
+		$.print( "COMMANDER  2 HITS  150 PTS" );
+		$.setColor( "#88AACC" );
+		$.setPosPx( 150, 292 );
+		$.print( "ARMOR BUG  3 HITS  200 PTS" );
+		$.setColor( "#FF8800" );
+		$.setPosPx( 150, 309 );
+		$.print( "SCORPION            160 PTS" );
+		$.setColor( "#33DDEE" );
+		$.setPosPx( 150, 326 );
+		$.print( "STINGRAY   2 HITS  120 PTS" );
+		$.setColor( "#FF3377" );
+		$.setPosPx( 400, 275 );
+		$.print( "BUTTERFLY  80 PTS" );
+		$.setColor( "#CC66FF" );
+		$.setPosPx( 400, 292 );
+		$.print( "WASP       60 PTS" );
+		$.setColor( "#FFE600" );
+		$.setPosPx( 400, 309 );
+		$.print( "DRONE BEE  50 PTS" );
+
+		if( Math.floor( frameCount / 25 ) % 2 === 0 ) {
+			$.setColor( "#FFFFFF" );
+			$.setPrintSize( 2, 2 );
+			$.setPosPx( 160, 370 );
+			$.print( "PRESS SPACE OR CLICK", false, true );
+		}
+
+		$.setColor( "#778899" );
+		$.setPrintSize( 1, 1 );
+		$.setPosPx( 180, 440 );
+		$.print( "ARROW KEYS: MOVE | SPACE: FIRE" );
+	}
+
+	function updatePlaying() {
+		if( stageBanner > 0 ) {
+			stageBanner--;
+		}
+
+		if( player.alive ) {
+			if( player.invulnerableTimer > 0 ) {
+				player.invulnerableTimer--;
+			}
+
+			if( $.inkey( "ArrowLeft" ) || $.inkey( "KeyA" ) ) {
+				player.x -= player.speed;
+			}
+			if( $.inkey( "ArrowRight" ) || $.inkey( "KeyD" ) ) {
+				player.x += player.speed;
+			}
+			if( $.inkey( "Space" ) || $.inkey( "KeyZ" ) ) {
+				fireBullet();
+			}
+
+			if( player.x < 24 ) {
+				player.x = 24;
+			}
+			if( player.x > 616 ) {
+				player.x = 616;
+			}
+			if( player.cooldown > 0 ) {
+				player.cooldown--;
+			}
+		} else {
+			player.respawnTimer--;
+			if( player.respawnTimer <= 0 ) {
+				if( lives > 0 ) {
+					player.alive = true;
+					player.x = 320;
+					player.invulnerableTimer = 90;
+				} else {
+					if( score > highScore ) {
+						highScore = score;
+					}
+					gameState = "gameover";
+				}
+			}
+		}
+
+		for( let i = playerBullets.length - 1; i >= 0; i-- ) {
+			const b = playerBullets[ i ];
+			b.y -= 10;
+			if( b.y < 0 ) {
+				playerBullets.splice( i, 1 );
+			}
+		}
+
+		for( let i = enemyBullets.length - 1; i >= 0; i-- ) {
+			const eb = enemyBullets[ i ];
+			eb.x += eb.vx;
+			eb.y += eb.vy;
+
+			if( player.alive && player.invulnerableTimer <= 0 ) {
+				const dist = Math.hypot( eb.x - player.x, eb.y - player.y );
+				if( dist < 12 ) {
+					killPlayer();
+					enemyBullets.splice( i, 1 );
+					continue;
+				}
+			}
+
+			if( eb.y > 490 || eb.x < -10 || eb.x > 650 ) {
+				enemyBullets.splice( i, 1 );
+			}
+		}
+
+		const formationOffsetX = Math.sin( frameCount * 0.035 ) * 22;
+		const ready = formationReady();
+		if( ready && !dockChimePlayed ) {
+			dockChimePlayed = true;
+			sfxDocked();
+		}
+
+		let activeDivers = 0;
+		for( let i = 0; i < enemies.length; i++ ) {
+			if( enemies[ i ].state === "diving" ) {
+				activeDivers++;
+			}
+		}
+
+		const maxDivers = Math.min( 1 + Math.floor( stage / 2 ), 4 );
+		const pathSpeed = 0.0072 + Math.min( stage, 10 ) * 0.00045;
+		const remainingFactor = enemies.length < 8 ? 2.2 : 1;
+
+		for( let i = enemies.length - 1; i >= 0; i-- ) {
+			const e = enemies[ i ];
+			if( e.flash > 0 ) {
+				e.flash--;
+			}
+
+			if( e.spawnDelay > 0 ) {
+				e.spawnDelay--;
+				continue;
+			}
+
+			if( e.state === "entering" ) {
+				e.pathT += pathSpeed;
+				if( e.pathT >= 1 ) {
+					e.pathT = 1;
+					e.state = "homing";
+				}
+				const pt = pointOnPath( e.path, e.pathT );
+				e.x = pt.x;
+				e.y = pt.y;
+				e.diveAngle = pt.angle;
+			} else if( e.state === "homing" ) {
+				const tx = e.gridX + formationOffsetX;
+				const ty = e.gridY;
+				const dx = tx - e.x;
+				const dy = ty - e.y;
+				const dist = Math.hypot( dx, dy );
+				if( dist < 4 ) {
+					e.state = "grid";
+					e.x = tx;
+					e.y = ty;
+					e.diveAngle = 0;
+				} else {
+					e.x += ( dx / dist ) * 4.2;
+					e.y += ( dy / dist ) * 4.2;
+					e.diveAngle = Math.atan2( dy, dx ) - Math.PI / 2;
+				}
+			} else if( e.state === "grid" ) {
+				e.x = e.gridX + formationOffsetX;
+				e.y = e.gridY;
+				e.diveAngle = 0;
+
+				if(
+					ready &&
+					activeDivers < maxDivers &&
+					Math.random() <
+						diveChanceFor( e.type ) *
+						( 1 + stage * 0.28 ) *
+						remainingFactor
+				) {
+					startDive( e );
+					activeDivers++;
+				}
+			} else if( e.state === "diving" ) {
+				e.diveTime++;
+				if( e.diveStyle === "sine" ) {
+					e.vx += Math.sin( e.diveTime * 0.18 ) * 0.18;
+				} else if( e.diveStyle === "weave" ) {
+					e.vx += Math.sin( e.diveTime * 0.12 ) * 0.12;
+					if( e.y < 340 ) {
+						if( e.x < player.x ) {
+							e.vx += 0.04;
+						}
+						if( e.x > player.x ) {
+							e.vx -= 0.04;
+						}
+					}
+				} else if( e.diveStyle === "loop" ) {
+					e.vx = Math.sin( e.diveTime * 0.09 ) * 3.1;
+					e.vy = 2.15 + Math.cos( e.diveTime * 0.09 ) * 0.7;
+				} else {
+					if( e.y < 330 ) {
+						if( e.x < player.x ) {
+							e.vx += 0.038;
+						}
+						if( e.x > player.x ) {
+							e.vx -= 0.038;
+						}
+					}
+				}
+
+				if( e.vx > 3.4 ) {
+					e.vx = 3.4;
+				}
+				if( e.vx < -3.4 ) {
+					e.vx = -3.4;
+				}
+
+				e.x += e.vx;
+				e.y += e.vy;
+				e.diveAngle = Math.atan2( e.vy, e.vx ) - Math.PI / 2;
+
+				const shotChance = e.type === "boss" || e.type === "armor" ?
+					0.012 :
+					0.007;
+				if(
+					Math.random() < shotChance &&
+					enemyBullets.length < 5 + Math.min( stage, 4 )
+				) {
+					enemyBullets.push( {
+						"x": e.x,
+						"y": e.y,
+						"vx": ( player.x - e.x ) * 0.008,
+						"vy": 2.35 + stage * 0.05
+					} );
+					sfxEnemyShot();
+				}
+
+				if( e.y > 510 ) {
+					e.y = -24;
+					e.x = e.gridX + formationOffsetX;
+					e.vx = 0;
+					e.vy = 1.8;
+					e.state = "returning";
+				}
+			} else if( e.state === "returning" ) {
+				const targetX = e.gridX + formationOffsetX;
+				const targetY = e.gridY;
+				e.x += ( targetX - e.x ) * 0.05;
+				e.y += ( targetY - e.y ) * 0.05;
+				e.diveAngle = 0;
+				if( Math.hypot( targetX - e.x, targetY - e.y ) < 3 ) {
+					e.state = "grid";
+				}
+			}
+
+			if(
+				player.alive &&
+				player.invulnerableTimer <= 0 &&
+				e.spawnDelay <= 0
+			) {
+				const pDist = Math.hypot( e.x - player.x, e.y - player.y );
+				if( pDist < 15 ) {
+					killPlayer();
+					spawnExplosion( e.x, e.y, enemyDrawColor( e ), 16, false );
+					enemies.splice( i, 1 );
+					continue;
+				}
+			}
+
+			for( let j = playerBullets.length - 1; j >= 0; j-- ) {
+				const pb = playerBullets[ j ];
+				const dist = Math.hypot( e.x - pb.x, e.y - pb.y );
+				if( dist < 16 ) {
+					playerBullets.splice( j, 1 );
+					e.hp--;
+					if( e.hp <= 0 ) {
+						const diving = e.state === "diving";
+						score += e.score * ( diving ? 2 : 1 );
+						spawnExplosion( e.x, e.y, enemyDrawColor( e ), 16 );
+						enemies.splice( i, 1 );
+					} else {
+						e.flash = 6;
+						sfxHit();
+						spawnSparks( e.x, e.y, enemyDrawColor( e ), 7 );
+					}
+					break;
+				}
+			}
+		}
+
+		if( enemies.length === 0 ) {
+			if( stageClearTimer === 0 ) {
+				stageClearTimer = 78;
+				sfxStageClear();
+			} else {
+				stageClearTimer--;
+				if( stageClearTimer <= 0 ) {
+					stage++;
+					spawnFleet();
+					sfxStart();
+				}
+			}
+		}
+
+		updateParticles();
+	}
+
+	function drawPlaying() {
+		const wingAnim = Math.sin( frameCount * 0.15 ) * 2.0;
+
+		for( let i = 0; i < enemies.length; i++ ) {
+			const e = enemies[ i ];
+			if( e.spawnDelay > 0 ) {
+				continue;
+			}
+			const flying = e.state === "entering" ||
+				e.state === "homing" ||
+				e.state === "diving";
+			const angle = flying ? e.diveAngle : 0;
+			drawVectorShape(
+				e.vectors, e.x, e.y, e.scale,
+				enemyDrawColor( e ), angle, wingAnim
+			);
+		}
+
+		if( player.alive ) {
+			if(
+				player.invulnerableTimer === 0 ||
+				Math.floor( frameCount / 3 ) % 2 === 0
+			) {
+				drawVectorShape(
+					PLAYER_VECTORS, player.x, player.y, 1.3, "#00E5FF", 0
+				);
+				if( frameCount % 4 < 2 ) {
+					$.setColor( "#FF8800" );
+					$.line(
+						player.x - 3, player.y + 11,
+						player.x, player.y + 17
+					);
+					$.line(
+						player.x + 3, player.y + 11,
+						player.x, player.y + 17
+					);
+				}
+			}
+		}
+
+		$.setColor( "#FFFF33" );
+		for( let i = 0; i < playerBullets.length; i++ ) {
+			const b = playerBullets[ i ];
+			$.line( b.x, b.y, b.x, b.y - 7 );
+		}
+
+		for( let i = 0; i < enemyBullets.length; i++ ) {
+			const eb = enemyBullets[ i ];
+			const ex = Math.round( eb.x );
+			const ey = Math.round( eb.y );
+
+			$.setColor( "#FF1144" );
+			$.line( ex, ey - 5, ex - 3, ey );
+			$.line( ex - 3, ey, ex, ey + 4 );
+			$.line( ex, ey + 4, ex + 3, ey );
+			$.line( ex + 3, ey, ex, ey - 5 );
+			$.line( ex, ey - 5, ex - eb.vx * 3, ey - eb.vy * 3 );
+
+			$.setColor( "#FFFF88" );
+			$.pset( ex, ey - 1 );
+			$.pset( ex, ey );
+			$.pset( ex, ey + 1 );
+			$.pset( ex - 1, ey );
+			$.pset( ex + 1, ey );
+		}
+
+		drawParticles();
+
+		$.setPrintSize( 1, 1 );
+		$.setColor( "#FF0055" );
+		$.setPosPx( 20, 10 );
+		$.print( "1UP" );
+		$.setColor( "#FFFFFF" );
+		$.setPosPx( 20, 22 );
+		$.print( score.toString().padStart( 6, "0" ) );
+
+		$.setColor( "#22FF88" );
+		$.setPosPx( 270, 10 );
+		$.print( "HIGH SCORE" );
+		$.setColor( "#FFFFFF" );
+		$.setPosPx( 285, 22 );
+		$.print(
+			Math.max( score, highScore ).toString().padStart( 6, "0" )
+		);
+
+		$.setColor( "#FFE600" );
+		$.setPosPx( 560, 10 );
+		$.print( "STAGE " + stage );
+
+		if( stageBanner > 0 ) {
+			$.setColor( "#FFFFFF" );
+			$.setPrintSize( 3, 3 );
+			$.setPosPx( 220, 210 );
+			$.print( "STAGE " + stage, false, true );
+		}
+
+		if( enemies.length === 0 && stageClearTimer > 0 ) {
+			$.setColor( "#22FF88" );
+			$.setPrintSize( 2, 2 );
+			$.setPosPx( 230, 210 );
+			$.print( "STAGE CLEAR", false, true );
+		}
+
+		for( let i = 0; i < lives; i++ ) {
+			drawVectorShape(
+				PLAYER_VECTORS, 30 + i * 20, 465, 0.65, "#00E5FF", 0
+			);
+		}
+	}
+
+	function drawGameOver() {
+		$.setColor( "#FF1144" );
+		$.setPrintSize( 4, 4 );
+		$.setPosPx( 170, 180 );
+		$.print( "GAME OVER", false, true );
+
+		$.setColor( "#00FFFF" );
+		$.setPrintSize( 2, 2 );
+		$.setPosPx( 205, 240 );
+		$.print( "FINAL SCORE: " + score, false, true );
+
+		if( Math.floor( frameCount / 25 ) % 2 === 0 ) {
+			$.setColor( "#FFFFFF" );
+			$.setPrintSize( 1, 1 );
+			$.setPosPx( 220, 320 );
+			$.print( "PRESS SPACE TO RETRY", false, true );
+		}
+	}
+
+	$.onkey( "Space", "down", function() {
+		if( gameState === "title" || gameState === "gameover" ) {
+			resetGame();
+		}
+	} );
+
+	$.onkey( "Enter", "down", function() {
+		if( gameState === "title" || gameState === "gameover" ) {
+			resetGame();
+		}
+	} );
+
+	$.onpress( "down", function() {
+		if( gameState === "title" || gameState === "gameover" ) {
+			resetGame();
+		} else if( gameState === "playing" ) {
+			fireBullet();
+		}
+	} );
+
+	gameLoop();
+} );
+</script>
+
+</body>
+</html>
