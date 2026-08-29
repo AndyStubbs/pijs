@@ -222,14 +222,39 @@ void main() {
 		const same = $.screen( "320x200", "same" );
 		drawScene( same );
 		const sameCanvas = same.canvas();
+		const sameGl = sameCanvas.getContext( "webgl2" );
+		const originalCreateShader = sameGl.createShader;
+		const originalDeleteShader = sameGl.deleteShader;
+		let invalidVertexShader = null;
+		let invalidVertexDeleted = false;
+		sameGl.createShader = function( type ) {
+			const shader = originalCreateShader.call( sameGl, type );
+			if( type === sameGl.VERTEX_SHADER ) {
+				invalidVertexShader = shader;
+			}
+			return shader;
+		};
+		sameGl.deleteShader = function( shader ) {
+			if( shader === invalidVertexShader ) {
+				invalidVertexDeleted = true;
+			}
+			return originalDeleteShader.call( sameGl, shader );
+		};
 
 		let invalidApplyCode = null;
 		try {
 			same.applyShader( invalid );
 		} catch( error ) {
 			invalidApplyCode = error.code;
+		} finally {
+			sameGl.createShader = originalCreateShader;
+			sameGl.deleteShader = originalDeleteShader;
 		}
 		check( "invalid apply throws synchronously", invalidApplyCode === "INVALID_SHADERS" );
+		check(
+			"invalid fragment deletes compiled vertex",
+			invalidVertexShader !== null && invalidVertexDeleted
+		);
 
 		let missingTextureCode = null;
 		try {

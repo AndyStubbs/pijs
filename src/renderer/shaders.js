@@ -64,39 +64,46 @@ export function compileShader( gl, type, source ) {
  * @returns {WebGLProgram|null} Linked program or null on error
  */
 export function createShaderProgram( gl, vertexSrc, fragSrc, cmdName = "screen" ) {
-	const vertexShader = compileShader( gl, gl.VERTEX_SHADER, vertexSrc );
-	const fragmentShader = compileShader( gl, gl.FRAGMENT_SHADER, fragSrc );
-	
-	if( !vertexShader || !fragmentShader ) {
+	let vertexShader = null;
+	let fragmentShader = null;
+	let program = null;
+	let isProgramLinked = false;
+
+	try {
+		vertexShader = compileShader( gl, gl.VERTEX_SHADER, vertexSrc );
+		fragmentShader = compileShader( gl, gl.FRAGMENT_SHADER, fragSrc );
+
+		if( !vertexShader || !fragmentShader ) {
+			const error = new Error( `${cmdName}: Unable to compile shaders.` );
+			error.code = "INVALID_SHADERS";
+			throw error;
+		}
+
+		program = gl.createProgram();
+		gl.attachShader( program, vertexShader );
+		gl.attachShader( program, fragmentShader );
+		gl.linkProgram( program );
+
+		if( !gl.getProgramParameter( program, gl.LINK_STATUS ) ) {
+			const errLog = gl.getProgramInfoLog( program );
+			const error = new Error( `${cmdName}: Shader program error: ${errLog}.` );
+			error.code = "SHADER_PROGRAM_ERROR";
+			throw error;
+		}
+
+		isProgramLinked = true;
+		return program;
+	} finally {
 		if( vertexShader ) {
 			gl.deleteShader( vertexShader );
 		}
 		if( fragmentShader ) {
 			gl.deleteShader( fragmentShader );
 		}
-		const error = new Error( `${cmdName}: Unable to compile shaders.` );
-		error.code = "INVALID_SHADERS";
-		throw error;
+		if( program && !isProgramLinked ) {
+			gl.deleteProgram( program );
+		}
 	}
-	
-	const program = gl.createProgram();
-	gl.attachShader( program, vertexShader );
-	gl.attachShader( program, fragmentShader );
-	gl.linkProgram( program );
-
-	// Cleanup shader programs
-	gl.deleteShader( vertexShader );
-	gl.deleteShader( fragmentShader );
-	
-	if( !gl.getProgramParameter( program, gl.LINK_STATUS ) ) {
-		const errLog = gl.getProgramInfoLog( program );
-		gl.deleteProgram( program );
-		const error = new Error( `${cmdName}: Shader program error: ${errLog}.` );
-		error.code = "SHADER_PROGRAM_ERROR";
-		throw error;
-	}
-	
-	return program;
 }
 
 /**
