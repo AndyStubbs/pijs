@@ -333,7 +333,7 @@ declare namespace Pi {
 		/**
 		 * Merges persistent display-shader uniform overrides and re-presents.
 		 */
-		displayShaderUniforms?: object;
+		displayShaderUniforms?: ShaderUniforms;
 
 		/**
 		 * Enables or disables the right-click context menu.
@@ -582,6 +582,52 @@ declare namespace Pi {
 	}
 
 	/**
+	 * Image source accepted by a sampler2D custom uniform.
+	 *
+	 * Accepts the same direct image inputs as drawImage, registered names, and screens.
+	 */
+	type ShaderImageInput =
+		string |
+		HTMLImageElement |
+		HTMLVideoElement |
+		HTMLCanvasElement |
+		ImageBitmap |
+		ImageData |
+		OffscreenCanvas |
+		Screen;
+
+	/**
+	 * Flat numeric or boolean data for vector, matrix, and uniform-array values.
+	 *
+	 * Matrices use WebGL column-major order.
+	 */
+	type ShaderNumericData =
+		number[] |
+		boolean[] |
+		Float32Array |
+		Int32Array |
+		Uint32Array;
+
+	/**
+	 * Custom shader uniform values keyed by GLSL uniform name.
+	 *
+	 * Unknown names and reserved Pi.js built-in uniform names are ignored.
+	 */
+	type ShaderUniforms = Record<string, ShaderUniformValue>;
+
+	/**
+	 * Value accepted for one reflected custom shader uniform.
+	 *
+	 * The GLSL declaration determines how the value is interpreted.
+	 */
+	type ShaderUniformValue =
+		number |
+		boolean |
+		ShaderNumericData |
+		ShaderImageInput |
+		ShaderImageInput[];
+
+	/**
 	 * Width and height dimensions object.
 	 *
 	 * Size object containing width and height dimensions. Used in resize callbacks and other operations that need dimension information.
@@ -671,13 +717,13 @@ declare namespace Pi {
 		/**
 		 * Queues an FBO shader at the current point in draw order.
 		 *
-		 * Applies a custom shader to the logical framebuffer at the current draw position. The call creates a batch break and queues the pass; it does not run immediately. When batches flush, prior geometry is finalized, the shader processes the FBO at logical resolution, then later draws appear on top of the result.  u_sourceSize and u_outputSize are both the logical screen size. FBO shaders work on onscreen and offscreen screens.  Per-call uniforms are merged over createShader defaults for that invocation only.
+		 * Applies a custom shader to the logical framebuffer at the current draw position. The call creates a batch break and queues the pass; it does not run immediately. When batches flush, prior geometry is finalized, the shader processes the FBO at logical resolution, then later draws appear on top of the result.  u_sourceSize and u_outputSize are both the logical screen size. FBO shaders work on onscreen and offscreen screens.  Per-call uniforms are merged over createShader defaults for that invocation only. Sampler inputs are resolved and snapshotted when this command queues the pass. Known uniform values with an invalid type or component count throw synchronously before the pass is queued.
 		 * @param shaderHandle Shader handle returned by createShader.
 		 * @param uniforms Optional per-call uniform overrides for this invocation.
 		 * @returns This function does not return a value.
 		 */
-		applyShader( params: { "shaderHandle": number; "uniforms"?: object } ): void;
-		applyShader( shaderHandle: number, uniforms?: object ): void;
+		applyShader( params: { "shaderHandle": number; "uniforms"?: ShaderUniforms } ): void;
+		applyShader( shaderHandle: number, uniforms?: ShaderUniforms ): void;
 
 		/**
 		 * Draws an arc on the screen.
@@ -1418,22 +1464,26 @@ declare namespace Pi {
 		 * Sets or clears the custom display shader for final presentation.
 		 *
 		 * Sets the shader used when presenting the logical FBO to the canvas. The logical FBO is not modified. Typical uses include custom upscaling, CRT effects, and color grading.  When a custom display shader is active, canvas.width and canvas.height track the CSS presentation size (clamped). CSS style size remains for layout. Passing null restores the default display program and logical backing-store size.  u_sourceSize is the logical FBO size. u_outputSize is the actual canvas backing size. Display shaders do not run on offscreen screens (state may still be stored).  This call replaces the active shader and resets persistent display uniform overrides to the uniforms supplied here (or none).
+		 *
+		 * Sampler2D values retain their resolved image sources and refresh dynamic canvas or screen content on each presentation. A shader cannot sample its own destination screen.
 		 * @param shaderHandle Shader handle from createShader, or null to restore the default display path.
 		 * @param uniforms Optional initial display uniform overrides. Replaces prior overrides.
 		 * @returns This function does not return a value.
 		 */
-		setDisplayShader( params: { "shaderHandle": number | null; "uniforms"?: object } ): void;
-		setDisplayShader( shaderHandle: number | null, uniforms?: object ): void;
+		setDisplayShader( params: { "shaderHandle": number | null; "uniforms"?: ShaderUniforms } ): void;
+		setDisplayShader( shaderHandle: number | null, uniforms?: ShaderUniforms ): void;
 
 		/**
 		 * Merges persistent display-shader uniform overrides and re-presents.
 		 *
 		 * Merges values into the current display shader uniform overrides. Descriptor defaults from createShader are applied first; these overrides take precedence.  If an onscreen display shader is active and the canvas can be presented, pending drawing is flushed and the current logical FBO is presented. This does not change canvas or FBO size.  Hidden, detached, and offscreen screens store the new uniforms but do not present. The next valid presentation uses the stored values.
+		 *
+		 * Known uniform values are reflected and validated synchronously before persistent state changes.
 		 * @param uniforms Uniform values to merge into the active display-shader overrides.
 		 * @returns This function does not return a value.
 		 */
-		setDisplayShaderUniforms( params: { "uniforms": object } ): void;
-		setDisplayShaderUniforms( uniforms: object ): void;
+		setDisplayShaderUniforms( params: { "uniforms": ShaderUniforms } ): void;
+		setDisplayShaderUniforms( uniforms: ShaderUniforms ): void;
 
 		/**
 		 * Enables or disables the right-click context menu.
@@ -1594,13 +1644,13 @@ declare namespace Pi {
 		 *
 		 * Creates a screen-independent shader from GLSL ES 3.00 fragment source. The vertex stage is built-in (fullscreen quad, v_texCoord). The WebGL program is compiled and validated synchronously the first time it is passed to applyShader or setDisplayShader for each screen, then cached for that screen.
 		 *
-		 * The fragment source must include "#version 300 es". When first applied to a screen, the shader must declare uniform sampler2D u_texture. Invalid shaders throw synchronously without changing rendering state. Built-in uniforms, if declared: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2), u_time (float), u_frame (int).  The second argument is an optional map of default custom uniform values (number, [x, y], [x, y, z], or [x, y, z, w]). Unknown uniform names are ignored.
+		 * The fragment source must include "#version 300 es". When first applied to a screen, the shader must declare uniform sampler2D u_texture. Invalid shaders throw synchronously without changing rendering state. Built-in uniforms, if declared: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2), u_time (float), u_frame (int).  The second argument is an optional map of default custom uniform values. Values are interpreted from the linked GLSL declaration and may include float, integer, unsigned integer, boolean, vector, matrix, uniform-array, and sampler2D image inputs. Unknown and reserved built-in names are ignored.
 		 * @param fragmentSource GLSL ES 3.00 fragment shader source. Must include "#version 300 es".
-		 * @param uniforms Optional default custom uniform values. Keys are uniform names.
+		 * @param uniforms Optional reflected custom uniform values keyed by uniform name.
 		 * @returns Shader handle id for applyShader or setDisplayShader.
 		 */
-		createShader( params: { "fragmentSource": string; "uniforms"?: object } ): number;
-		createShader( fragmentSource: string, uniforms?: object ): number;
+		createShader( params: { "fragmentSource": string; "uniforms"?: ShaderUniforms } ): number;
+		createShader( fragmentSource: string, uniforms?: ShaderUniforms ): number;
 
 		/**
 		 * Returns an array of all screen API objects.

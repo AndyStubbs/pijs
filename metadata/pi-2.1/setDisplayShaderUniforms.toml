@@ -8,6 +8,8 @@ Merges values into the current display shader uniform overrides. Descriptor defa
 If an onscreen display shader is active and the canvas can be presented, pending drawing is flushed and the current logical FBO is presented. This does not change canvas or FBO size.
 
 Hidden, detached, and offscreen screens store the new uniforms but do not present. The next valid presentation uses the stored values.
+
+Known uniform values are reflected and validated synchronously before persistent state changes.
 """
 example = """
 $.setDisplayShader( tint, { "u_gain": 1 } );
@@ -16,7 +18,7 @@ $.setDisplayShaderUniforms( { "u_gain": 0.5 } );
 
 [[parameters]]
 name = "uniforms"
-type = "object"
+type = "ShaderUniforms"
 description = "Uniform values to merge into the active display-shader overrides."
 
 [[returns]]

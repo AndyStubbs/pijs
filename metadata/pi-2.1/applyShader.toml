@@ -7,7 +7,9 @@ Applies a custom shader to the logical framebuffer at the current draw position.
 
 u_sourceSize and u_outputSize are both the logical screen size. FBO shaders work on onscreen and offscreen screens.
 
-Per-call uniforms are merged over createShader defaults for that invocation only.
+Per-call uniforms are merged over createShader defaults for that invocation only. Sampler inputs
+are resolved and snapshotted when this command queues the pass. Known uniform values with an
+invalid type or component count throw synchronously before the pass is queued.
 """
 example = """
 $.screen( "320x200" );
@@ -23,7 +25,7 @@ description = "Shader handle returned by createShader."
 
 [[parameters]]
 name = "uniforms"
-type = "object"
+type = "ShaderUniforms"
 description = "Optional per-call uniform overrides for this invocation."
 optional = true
 

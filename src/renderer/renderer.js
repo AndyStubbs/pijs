@@ -47,8 +47,8 @@ export { shiftImageUp, cls } from "./effects.js";
 // Re-export batch management
 export { prepareBatch, flushBatches, displayToCanvas, prepareShaderBatch } from "./batches.js";
 
-// Re-export custom shader validation
-export { validateCustomShaderProgram } from "./shaders.js";
+// Re-export custom shader validation and uniform normalization
+export { validateCustomShaderProgram, normalizeCustomUniforms } from "./shaders.js";
 
 // Re-export texture management
 export {

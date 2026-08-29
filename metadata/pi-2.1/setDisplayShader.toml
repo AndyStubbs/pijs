@@ -10,6 +10,9 @@ When a custom display shader is active, canvas.width and canvas.height track the
 u_sourceSize is the logical FBO size. u_outputSize is the actual canvas backing size. Display shaders do not run on offscreen screens (state may still be stored).
 
 This call replaces the active shader and resets persistent display uniform overrides to the uniforms supplied here (or none).
+
+Sampler2D values retain their resolved image sources and refresh dynamic canvas or screen content
+on each presentation. A shader cannot sample its own destination screen.
 """
 example = """
 $.screen( "320x200" );
@@ -24,7 +27,7 @@ description = "Shader handle from createShader, or null to restore the default d
 
 [[parameters]]
 name = "uniforms"
-type = "object"
+type = "ShaderUniforms"
 description = "Optional initial display uniform overrides. Replaces prior overrides."
 optional = true
 

@@ -5,6 +5,9 @@
 - Display shaders can be set with `setDisplayShader()` for effects such as custom upscaling,
   color grading, and CRT simulation. Persistent uniforms can be updated with
   `setDisplayShaderUniforms()`.
+- Custom shaders support reflected float, integer, unsigned integer, boolean, vector, matrix,
+  uniform-array, and `sampler2D` image inputs. Samplers accept registered images, direct browser
+  image sources, and Pi screens.
 - Nested drawing views can be managed with `pushView()`, `popView()`, and `resetView()`.
   Drawing, images, pixels, paint operations, clearing, and text output honor the active view's
   origin and clipping rectangle.

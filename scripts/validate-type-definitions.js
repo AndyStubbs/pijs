@@ -16,13 +16,17 @@ const DOCS_TYPE_FILE = path.join( __dirname, "..", "docs", "llms", "pi.d.ts" );
 
 const REQUIRED_DECLARATIONS = [
 	{
+		"name": "shader uniform map type",
+		"text": "type ShaderUniforms = Record<string, ShaderUniformValue>;"
+	},
+	{
 		"name": "createShader object overload return type",
 		"text": "createShader( params: { \"fragmentSource\": string; " +
-			"\"uniforms\"?: object } ): number;"
+			"\"uniforms\"?: ShaderUniforms } ): number;"
 	},
 	{
 		"name": "createShader positional overload return type",
-		"text": "createShader( fragmentSource: string, uniforms?: object ): number;"
+		"text": "createShader( fragmentSource: string, uniforms?: ShaderUniforms ): number;"
 	},
 	{
 		"name": "viewToScreen return type",

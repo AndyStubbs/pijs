@@ -225,15 +225,33 @@ declare
 - Display shaders: `u_sourceSize` = logical FBO; `u_outputSize` =
 `canvas.width` × `canvas.height` (backing store, not CSS)
 
-Custom uniforms are `number`, `[x, y]`, `[x, y, z]`, or `[x, y, z, w]`.
-Unknown names are ignored. Programs are cached per screen after successful validation.
+Custom uniform values are interpreted from the active GLSL declaration:
+
+- `float`, `int`, `uint`, and `bool` accept scalar values; boolean uniforms require booleans.
+- Vector, matrix, and uniform-array values use flat JavaScript arrays or compatible
+  `Float32Array`, `Int32Array`, and `Uint32Array` values.
+- Arrays must contain exactly the reflected component count. Matrices use WebGL column-major
+  order and support square and non-square GLSL ES 3.00 matrix types.
+- `sampler2D` accepts the same registered image names, direct image inputs, canvases, and Pi
+  screens as `drawImage()`. Sampler arrays accept one image input per element.
+
+Texture unit 0 is reserved for `u_texture`; auxiliary samplers use consecutive texture units.
+Queued FBO passes snapshot their sampler textures. Display samplers retain their image sources and
+refresh dynamic canvas or screen content whenever the screen is presented. A shader cannot sample
+its own destination screen. Removing a registered image name does not clear a source already
+retained by a display shader; replace or clear that uniform to release the reference.
+
+Unknown names and attempts to override built-in uniforms are ignored. Known values with the wrong
+shape or type throw `INVALID_UNIFORM_VALUE` synchronously. Unsupported GLSL types throw
+`UNSUPPORTED_UNIFORM_TYPE`, and exceeding the context texture-unit limit throws
+`TOO_MANY_TEXTURE_UNIFORMS`. Programs and reflection data are cached per screen after validation.
 
 ### `createShader( fragmentSource, uniforms )`
 
 Creates a screen-independent shader. Returns a numeric handle.
 
 - **fragmentSource**: GLSL ES 3.00 fragment source
-- **uniforms**: Optional default custom uniform values
+- **uniforms**: Optional reflected default values (`ShaderUniforms`)
 
 ```javascript
 const invert = $.createShader( `#version 300 es
@@ -256,7 +274,7 @@ Creates a batch break; does not run immediately. Later draws sit on top.
 Works on offscreen screens.
 
 - **shaderHandle**: Handle from `createShader`
-- **uniforms**: Optional per-call overrides
+- **uniforms**: Optional per-call `ShaderUniforms` overrides
 
 ```javascript
 $.rect( 10, 10, 40, 40, "red" );
@@ -277,7 +295,7 @@ the shader and resets persistent display overrides to the uniforms from
 this call.
 
 - **shaderHandle**: Handle from `createShader`, or `null` to clear
-- **uniforms**: Optional initial display overrides
+- **uniforms**: Optional initial display `ShaderUniforms` overrides
 
 ```javascript
 $.setDisplayShader( invert );
@@ -291,7 +309,7 @@ $.setDisplayShader( null );
 Merges persistent display-shader overrides and re-presents the current
 logical FBO if the screen is eligible. Does not resize.
 
-- **uniforms**: Values to merge into the active display overrides
+- **uniforms**: `ShaderUniforms` values to merge into the active display overrides
 
 ```javascript
 $.setDisplayShader( tint, { "u_gain": 1 } );

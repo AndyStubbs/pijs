@@ -1,0 +1,28 @@
+# Pi.js 2.1 Object Type Definitions
+
+[[objects]]
+title = "ShaderNumericData"
+summary = "Flat numeric or boolean data for vector, matrix, and uniform-array values."
+description = "Matrices use WebGL column-major order."
+typeAlias = "number[] | boolean[] | Float32Array | Int32Array | Uint32Array"
+
+[[objects]]
+title = "ShaderImageInput"
+summary = "Image source accepted by a sampler2D custom uniform."
+description = "Accepts the same direct image inputs as drawImage, registered names, and screens."
+typeAlias = """
+string | HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | ImageData |
+OffscreenCanvas | Screen
+"""
+
+[[objects]]
+title = "ShaderUniformValue"
+summary = "Value accepted for one reflected custom shader uniform."
+description = "The GLSL declaration determines how the value is interpreted."
+typeAlias = "number | boolean | ShaderNumericData | ShaderImageInput | ShaderImageInput[]"
+
+[[objects]]
+title = "ShaderUniforms"
+summary = "Custom shader uniform values keyed by GLSL uniform name."
+description = "Unknown names and reserved Pi.js built-in uniform names are ignored."
+typeAlias = "Record<string, ShaderUniformValue>"

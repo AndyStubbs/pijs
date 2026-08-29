@@ -412,10 +412,11 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
  *
  * @param {Object} screenData - Screen data object
  * @param {{ id: number, fragmentSource: string, uniforms: Object }} handle - Shader handle
- * @param {Object} uniforms - Merged uniform values (defaults + per-call overrides)
+ * @param {Object} uniforms - Normalized uniform bindings
+ * @param {Map} samplerTextures - Sampler source to queued WebGL texture
  * @returns {void}
  */
-export function prepareShaderBatch( screenData, handle, uniforms ) {
+export function prepareShaderBatch( screenData, handle, uniforms, samplerTextures = new Map() ) {
 	const batchInfo = screenData.batchInfo;
 	const batch = screenData.batches[ SHADER_BATCH ];
 
@@ -431,8 +432,12 @@ export function prepareShaderBatch( screenData, handle, uniforms ) {
 		"endIndex": 0,
 		"overrideGlobalBlend": batch.overrideGlobalBlend,
 		"shaderHandle": handle,
-		"uniforms": uniforms ?? {}
+		"uniforms": uniforms ?? {},
+		"samplerTextures": samplerTextures
 	};
+	for( const texture of samplerTextures.values() ) {
+		batchInfo.textureBatchSet.add( texture );
+	}
 	batchInfo.drawOrder.push( drawOrderItem );
 	batchInfo.currentBatch = batch;
 }
@@ -448,6 +453,7 @@ function runShaderPass( screenData, drawOrderItem ) {
 	const gl = screenData.gl;
 	const handle = drawOrderItem.shaderHandle;
 	const uniforms = drawOrderItem.uniforms;
+	const samplerTextures = drawOrderItem.samplerTextures;
 
 	const { program, locations } = g_shaders.getOrCreateCustomShaderProgram( screenData, handle );
 	if( locations.texture === null ) {
@@ -485,7 +491,7 @@ function runShaderPass( screenData, drawOrderItem ) {
 		gl.uniform1i( locations.frame, screenData.frameCount ?? 0 );
 	}
 
-	g_shaders.setCustomUniforms( gl, program, uniforms );
+	g_shaders.setCustomUniforms( gl, uniforms, ( source ) => samplerTextures.get( source ) );
 
 	gl.drawArrays( gl.TRIANGLES, 0, 6 );
 
@@ -864,13 +870,25 @@ export function displayToCanvas( screenData ) {
 		}
 		program = cache.program;
 		locations = cache.locations;
-		customUniforms = {
-			...( handle.uniforms ?? {} ),
-			...( screenData.displayShaderUniforms ?? {} )
-		};
+		customUniforms = screenData.displayShaderUniformBindings ?? {};
 	} else {
 		program = screenData.displayProgram;
 		locations = screenData.displayLocations;
+	}
+	const samplerTextures = new Map();
+	if( useCustom ) {
+		for( const binding of Object.values( customUniforms ) ) {
+			if( binding.info.family !== "sampler" ) {
+				continue;
+			}
+			for( const source of binding.sources ) {
+				if( !samplerTextures.has( source ) ) {
+					samplerTextures.set(
+						source, screenData.displayShaderTextureResolver( source )
+					);
+				}
+			}
+		}
 	}
 
 	// Bind default framebuffer (screen)
@@ -908,7 +926,9 @@ export function displayToCanvas( screenData ) {
 		if( locations.frame !== null ) {
 			gl.uniform1i( locations.frame, screenData.frameCount ?? 0 );
 		}
-		g_shaders.setCustomUniforms( gl, program, customUniforms );
+		g_shaders.setCustomUniforms(
+			gl, customUniforms, ( source ) => samplerTextures.get( source )
+		);
 	}
 
 	gl.drawArrays( gl.TRIANGLES, 0, 6 );

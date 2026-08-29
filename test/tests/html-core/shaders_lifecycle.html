@@ -108,6 +108,71 @@ void main() {
 	fragColor = vec4(v_texCoord, 0.0, 1.0);
 }`.trim();
 
+	const samplerSrc = `
+#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+uniform sampler2D u_aux;
+out vec4 fragColor;
+void main() {
+	fragColor = texture(u_aux, v_texCoord);
+}`.trim();
+
+	const expandedSrc = `
+#version 300 es
+precision highp float;
+precision highp int;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+uniform sampler2D u_aux[2];
+uniform float u_f;
+uniform vec2 u_f2;
+uniform vec3 u_f3;
+uniform vec4 u_f4;
+uniform int u_i;
+uniform ivec2 u_i2;
+uniform ivec3 u_i3;
+uniform ivec4 u_i4;
+uniform uint u_ui;
+uniform uvec2 u_ui2;
+uniform uvec3 u_ui3;
+uniform uvec4 u_ui4;
+uniform bool u_b;
+uniform bvec2 u_b2;
+uniform bvec3 u_b3;
+uniform bvec4 u_b4;
+uniform mat2 u_m2;
+uniform mat3 u_m3;
+uniform mat4 u_m4;
+uniform mat2x3 u_m23;
+uniform mat2x4 u_m24;
+uniform mat3x2 u_m32;
+uniform mat3x4 u_m34;
+uniform mat4x2 u_m42;
+uniform mat4x3 u_m43;
+uniform float u_fa[2];
+uniform ivec2 u_i2a[2];
+uniform mat2 u_m2a[2];
+out vec4 fragColor;
+void main() {
+	float total = u_f + u_f2.x + u_f3.x + u_f4.x;
+	total += float(u_i + u_i2.x + u_i3.x + u_i4.x);
+	total += float(u_ui + u_ui2.x + u_ui3.x + u_ui4.x);
+	total += float(u_b) + float(u_b2.x) + float(u_b3.x) + float(u_b4.x);
+	total += u_m2[0][0] + u_m3[0][0] + u_m4[0][0];
+	total += u_m23[0][0] + u_m24[0][0] + u_m32[0][0];
+	total += u_m34[0][0] + u_m42[0][0] + u_m43[0][0];
+	total += u_fa[0] + u_fa[1] + float(u_i2a[0].x + u_i2a[1].x);
+	total += u_m2a[0][0][0] + u_m2a[1][0][0];
+	total += texture(u_aux[0], v_texCoord).r;
+	total += texture(u_aux[1], v_texCoord).g;
+	fragColor = texture(u_texture, v_texCoord);
+	if(total < -100000.0) {
+		fragColor = vec4(0.0);
+	}
+}`.trim();
+
 	const logEl = document.getElementById( "log" );
 	let failed = 0;
 
@@ -203,6 +268,16 @@ void main() {
 		const glY = canvas.height - 1 - y;
 		gl.readPixels( x, glY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf );
 		return { "r": buf[ 0 ], "g": buf[ 1 ], "b": buf[ 2 ], "a": buf[ 3 ] };
+	}
+
+	function createSolidCanvas( color ) {
+		const canvas = document.createElement( "canvas" );
+		canvas.width = 2;
+		canvas.height = 2;
+		const context = canvas.getContext( "2d" );
+		context.fillStyle = color;
+		context.fillRect( 0, 0, 2, 2 );
+		return canvas;
 	}
 
 	$.ready( async function() {
@@ -627,6 +702,244 @@ void main() {
 			marker.r > 200 && marker.g > 200 && marker.b > 200
 		);
 		cbWatch.restore();
+
+		// 21. Reflected scalar, vector, matrix, array, and sampler dispatch
+		const redCanvas = createSolidCanvas( "#FF0000" );
+		const greenCanvas = createSolidCanvas( "#00FF00" );
+		$.loadImage( redCanvas, "shader_uniform_red" );
+		const expanded = $.createShader( expandedSrc, {
+			"u_f": 1,
+			"u_f2": new Float32Array( [ 1, 2 ] ),
+			"u_f3": [ 1, 2, 3 ],
+			"u_f4": [ 1, 2, 3, 4 ],
+			"u_i": -1,
+			"u_i2": new Int32Array( [ 1, 2 ] ),
+			"u_i3": [ 1, 2, 3 ],
+			"u_i4": [ 1, 2, 3, 4 ],
+			"u_ui": 1,
+			"u_ui2": new Uint32Array( [ 1, 2 ] ),
+			"u_ui3": [ 1, 2, 3 ],
+			"u_ui4": [ 1, 2, 3, 4 ],
+			"u_b": true,
+			"u_b2": [ true, false ],
+			"u_b3": [ true, false, true ],
+			"u_b4": [ true, false, true, false ],
+			"u_m2": [ 1, 0, 0, 1 ],
+			"u_m3": [ 1, 0, 0, 0, 1, 0, 0, 0, 1 ],
+			"u_m4": [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ],
+			"u_m23": [ 1, 0, 0, 0, 1, 0 ],
+			"u_m24": [ 1, 0, 0, 0, 0, 1, 0, 0 ],
+			"u_m32": [ 1, 0, 0, 1, 0, 0 ],
+			"u_m34": [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0 ],
+			"u_m42": [ 1, 0, 0, 1, 0, 0, 0, 0 ],
+			"u_m43": [ 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 ],
+			"u_fa": [ 1, 2 ],
+			"u_i2a": [ 1, 2, 3, 4 ],
+			"u_m2a": [ 1, 0, 0, 1, 2, 0, 0, 2 ],
+			"u_aux": [ "shader_uniform_red", greenCanvas ]
+		} );
+		const uniformMethods = [
+			"uniform1f", "uniform2fv", "uniform3fv", "uniform4fv",
+			"uniform1i", "uniform2iv", "uniform3iv", "uniform4iv",
+			"uniform1ui", "uniform2uiv", "uniform3uiv", "uniform4uiv",
+			"uniform1fv", "uniform1iv",
+			"uniformMatrix2fv", "uniformMatrix3fv", "uniformMatrix4fv",
+			"uniformMatrix2x3fv", "uniformMatrix2x4fv", "uniformMatrix3x2fv",
+			"uniformMatrix3x4fv", "uniformMatrix4x2fv", "uniformMatrix4x3fv"
+		];
+		const originalUniformMethods = {};
+		const calledUniformMethods = new Set();
+		try {
+			for( const name of uniformMethods ) {
+				originalUniformMethods[ name ] = sameGl[ name ];
+				sameGl[ name ] = function() {
+					calledUniformMethods.add( name );
+					if( name.startsWith( "uniformMatrix" ) ) {
+						check( name + " transpose false", arguments[ 1 ] === false );
+					}
+					return originalUniformMethods[ name ].apply( sameGl, arguments );
+				};
+			}
+			same.applyShader( expanded, {
+				"u_unknown": { "ignored": true },
+				"u_time": { "reserved": true }
+			} );
+			same.getPixel( 1, 1 );
+		} finally {
+			for( const name of uniformMethods ) {
+				sameGl[ name ] = originalUniformMethods[ name ];
+			}
+		}
+		for( const name of uniformMethods ) {
+			check( name + " dispatched", calledUniformMethods.has( name ) );
+		}
+
+		// 22. Sampler image inputs, orientation, queued removal, and later lookup failure
+		const orientedCanvas = document.createElement( "canvas" );
+		orientedCanvas.width = 2;
+		orientedCanvas.height = 2;
+		const orientedContext = orientedCanvas.getContext( "2d" );
+		orientedContext.fillStyle = "#FF0000";
+		orientedContext.fillRect( 0, 0, 2, 1 );
+		orientedContext.fillStyle = "#0000FF";
+		orientedContext.fillRect( 0, 1, 2, 1 );
+		$.loadImage( orientedCanvas, "shader_sampler_oriented" );
+		const sampler = $.createShader( samplerSrc );
+		const samplerOff = $.screen( "2x2", null, true );
+		samplerOff.applyShader( sampler, { "u_aux": "shader_sampler_oriented" } );
+		$.removeImage( "shader_sampler_oriented" );
+		const samplerTop = samplerOff.getPixel( 0, 0 );
+		const samplerBottom = samplerOff.getPixel( 0, 1 );
+		check( "sampler top orientation", samplerTop.r > 240 && samplerTop.b < 16 );
+		check( "sampler bottom orientation", samplerBottom.r < 16 && samplerBottom.b > 240 );
+		let removedSamplerCode = null;
+		try {
+			samplerOff.applyShader( sampler, { "u_aux": "shader_sampler_oriented" } );
+		} catch( error ) {
+			removedSamplerCode = error.code;
+		}
+		check( "removed sampler name rejected", removedSamplerCode === "IMAGE_NOT_FOUND" );
+
+		// 23. Separate- and shared-context screens are normalized as sampler inputs
+		const separateSource = $.screen( "2x2", null, true );
+		separateSource.rect( 0, 0, 2, 2, "#00FF00" );
+		same.applyShader( sampler, { "u_aux": separateSource } );
+		const separatePixel = same.getPixel( 0, 0 );
+		check(
+			"separate-context sampler",
+			separatePixel.r < 16 && separatePixel.g > 240 && separatePixel.b < 16
+		);
+		const sharedSource = $.screen( {
+			"aspect": "2x2", "isOffscreen": true, "parent": same
+		} );
+		sharedSource.rect( 0, 0, 2, 2, "#0000FF" );
+		same.applyShader( sampler, { "u_aux": sharedSource } );
+		const sharedPixel = same.getPixel( 0, 0 );
+		check(
+			"shared-context sampler",
+			sharedPixel.r < 16 && sharedPixel.g < 16 && sharedPixel.b > 240
+		);
+		drawScene( same );
+
+		// 24. Persistent display samplers refresh canvas sources
+		const dynamicCanvas = createSolidCanvas( "#FF0000" );
+		$.loadImage( dynamicCanvas, "shader_display_dynamic" );
+		const dynamicBox = document.createElement( "div" );
+		dynamicBox.style.position = "absolute";
+		dynamicBox.style.left = "2000px";
+		dynamicBox.style.top = "0";
+		dynamicBox.style.width = "2px";
+		dynamicBox.style.height = "2px";
+		document.body.appendChild( dynamicBox );
+		const dynamicScreen = $.screen( "2x2", dynamicBox );
+		dynamicScreen.setDisplayShader( sampler, { "u_aux": "shader_display_dynamic" } );
+		let dynamicPixel = readCanvasPixel( dynamicScreen.canvas(), 0, 0 );
+		check( "display sampler initial source", dynamicPixel.r > 240 && dynamicPixel.g < 16 );
+		$.removeImage( "shader_display_dynamic" );
+		const dynamicContext = dynamicCanvas.getContext( "2d" );
+		dynamicContext.fillStyle = "#00FF00";
+		dynamicContext.fillRect( 0, 0, 2, 2 );
+		dynamicScreen.setDisplayShaderUniforms( {} );
+		dynamicPixel = readCanvasPixel( dynamicScreen.canvas(), 0, 0 );
+		check(
+			"display sampler retained and refreshed source",
+			dynamicPixel.r < 16 && dynamicPixel.g > 240
+		);
+
+		// 25. Expanded uniform failures are synchronous and transactional
+		const invalidVec = $.createShader( `
+#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+uniform vec2 u_value;
+out vec4 fragColor;
+void main() {
+	fragColor = texture(u_texture, v_texCoord) * vec4(u_value, 1.0, 1.0);
+}`.trim() );
+		let invalidValueCode = null;
+		try {
+			same.applyShader( invalidVec, { "u_value": [ 1 ] } );
+		} catch( error ) {
+			invalidValueCode = error.code;
+		}
+		check( "invalid uniform shape rejected", invalidValueCode === "INVALID_UNIFORM_VALUE" );
+		let invalidIntegerCode = null;
+		try {
+			same.applyShader( expanded, { "u_i": 1.5 } );
+		} catch( error ) {
+			invalidIntegerCode = error.code;
+		}
+		check( "invalid integer rejected", invalidIntegerCode === "INVALID_UNIFORM_VALUE" );
+		const unsupportedSampler = $.createShader( `
+#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+uniform highp samplerCube u_cube;
+out vec4 fragColor;
+void main() {
+	fragColor = texture(u_texture, v_texCoord) + texture(u_cube, vec3(v_texCoord, 1.0));
+}`.trim() );
+		let unsupportedSamplerCode = null;
+		try {
+			same.applyShader( unsupportedSampler, { "u_cube": redCanvas } );
+		} catch( error ) {
+			unsupportedSamplerCode = error.code;
+		}
+		check(
+			"unsupported sampler rejected",
+			unsupportedSamplerCode === "UNSUPPORTED_UNIFORM_TYPE"
+		);
+		let selfSamplerCode = null;
+		try {
+			same.applyShader( sampler, { "u_aux": same } );
+		} catch( error ) {
+			selfSamplerCode = error.code;
+		}
+		check( "self sampler rejected", selfSamplerCode === "FRAMEBUFFER_FEEDBACK_LOOP" );
+		const originalGetParameter = sameGl.getParameter;
+		let textureLimitCode = null;
+		try {
+			sameGl.getParameter = function( parameter ) {
+				if( parameter === sameGl.MAX_TEXTURE_IMAGE_UNITS ) {
+					return 1;
+				}
+				return originalGetParameter.call( sameGl, parameter );
+			};
+			same.applyShader( sampler, { "u_aux": redCanvas } );
+		} catch( error ) {
+			textureLimitCode = error.code;
+		} finally {
+			sameGl.getParameter = originalGetParameter;
+		}
+		check( "texture unit limit rejected", textureLimitCode === "TOO_MANY_TEXTURE_UNIFORMS" );
+		let invalidDisplaySamplerCode = null;
+		try {
+			dynamicScreen.setDisplayShaderUniforms( { "u_aux": 5 } );
+		} catch( error ) {
+			invalidDisplaySamplerCode = error.code;
+		}
+		check(
+			"invalid display sampler rejected transactionally",
+			invalidDisplaySamplerCode === "INVALID_UNIFORM_VALUE"
+		);
+
+		$.removeImage( "shader_uniform_red" );
+		const dynamicGl = dynamicScreen.canvas().getContext( "webgl2" );
+		const originalDeleteTexture = dynamicGl.deleteTexture;
+		let deletedDynamicTextures = 0;
+		dynamicGl.deleteTexture = function( texture ) {
+			deletedDynamicTextures += 1;
+			return originalDeleteTexture.call( dynamicGl, texture );
+		};
+		dynamicScreen.removeScreen();
+		dynamicGl.deleteTexture = originalDeleteTexture;
+		check( "sampler textures cleaned with screen", deletedDynamicTextures >= 3 );
+		dynamicBox.remove();
+		sharedSource.removeScreen();
+		separateSource.removeScreen();
+		samplerOff.removeScreen();
 
 		if( failed > 0 ) {
 			const summary = document.createElement( "div" );

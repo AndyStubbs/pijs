@@ -11,6 +11,7 @@
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
+import * as g_images from "./images.js";
 
 /** Next id for shader handles */
 let m_nextShaderId = 0;
@@ -27,6 +28,8 @@ let m_shaderHandles = new Map();
 export function init( api ) {
 	g_screenManager.addScreenDataItem( "displayShaderHandle", null );
 	g_screenManager.addScreenDataItem( "displayShaderUniforms", {} );
+	g_screenManager.addScreenDataItem( "displayShaderUniformBindings", {} );
+	g_screenManager.addScreenDataItem( "displayShaderTextureResolver", null );
 	g_screenManager.addScreenDataItem( "renderToDisplaySize", false );
 	registerCommands();
 }
@@ -82,18 +85,13 @@ function createShader( options ) {
 		throw error;
 	}
 
-	// Validate uniforms
-	if( uniforms && typeof uniforms !== "object" ) {
-		const error = new TypeError( "createShader: Parameter uniforms must be an object." );
-		error.code = "INVALID_UNIFORMS";
-		throw error;
-	}
+	validateUniformMap( uniforms, "createShader" );
 
 	// Create shader handle
 	const handle = {
 		"id": m_nextShaderId++,
 		"fragmentSource": fragmentSource,
-		"uniforms": uniforms
+		"uniforms": copyUniforms( uniforms )
 	};
 	m_shaderHandles.set( handle.id, handle );
 	
@@ -149,7 +147,97 @@ function copyUniforms( uniforms ) {
 	if( !uniforms || typeof uniforms !== "object" ) {
 		return {};
 	}
-	return { ...uniforms };
+	const copy = {};
+	for( const name of Object.keys( uniforms ) ) {
+		const value = uniforms[ name ];
+		if( Array.isArray( value ) ) {
+			copy[ name ] = value.slice();
+		} else if(
+			value instanceof Float32Array || value instanceof Int32Array ||
+			value instanceof Uint32Array
+		) {
+			copy[ name ] = value.slice();
+		} else {
+			copy[ name ] = value;
+		}
+	}
+	return copy;
+}
+
+function mergeUniforms( defaults, overrides ) {
+	const merged = copyUniforms( defaults );
+	const overrideCopy = copyUniforms( overrides );
+	for( const name of Object.keys( overrideCopy ) ) {
+		merged[ name ] = overrideCopy[ name ];
+	}
+	return merged;
+}
+
+function validateUniformMap( uniforms, cmdName ) {
+	if( uniforms != null && ( typeof uniforms !== "object" || Array.isArray( uniforms ) ) ) {
+		const error = new TypeError( `${cmdName}: Parameter uniforms must be an object.` );
+		error.code = "INVALID_UNIFORMS";
+		throw error;
+	}
+}
+
+function resolveSamplerSource( screenData, input, cmdName ) {
+	let source;
+	try {
+		source = g_images.getImageFromRawInput( input, cmdName );
+	} catch( error ) {
+		if( error.code === "INVALID_NAME" ) {
+			const uniformError = new TypeError( `${cmdName}: Invalid sampler2D image input.` );
+			uniformError.code = "INVALID_UNIFORM_VALUE";
+			throw uniformError;
+		}
+		throw error;
+	}
+	const sourceData = g_screenManager.screenCanvasMap.get( source );
+	if( sourceData === screenData ) {
+		const error = new Error( `${cmdName}: A shader cannot sample its destination screen.` );
+		error.code = "FRAMEBUFFER_FEEDBACK_LOOP";
+		throw error;
+	}
+	return source;
+}
+
+function normalizeUniforms( screenData, cache, uniforms, cmdName ) {
+	return g_renderer.normalizeCustomUniforms(
+		screenData.gl, cache, uniforms, cmdName,
+		( input ) => resolveSamplerSource( screenData, input, cmdName )
+	);
+}
+
+function getSamplerTextureMap( screenData, bindings ) {
+	const textures = new Map();
+	for( const binding of Object.values( bindings ) ) {
+		if( binding.info.family !== "sampler" ) {
+			continue;
+		}
+		for( const source of binding.sources ) {
+			if( !textures.has( source ) ) {
+				textures.set( source, g_renderer.getWebGL2Texture( screenData, source ) );
+			}
+		}
+	}
+	return textures;
+}
+
+function retainSamplerSources( uniforms, bindings ) {
+	const retained = copyUniforms( uniforms );
+	for( const name of Object.keys( bindings ) ) {
+		const binding = bindings[ name ];
+		if( binding.info.family !== "sampler" ) {
+			continue;
+		}
+		if( binding.sources.length === 1 ) {
+			retained[ name ] = binding.sources[ 0 ];
+		} else {
+			retained[ name ] = binding.sources.slice();
+		}
+	}
+	return retained;
 }
 
 
@@ -162,10 +250,13 @@ function copyUniforms( uniforms ) {
  */
 function applyShader( screenData, options ) {
 	const handle = getShaderHandle( options.shaderHandle );
-	const overrides = options.uniforms ?? {};
-	const merged = { ...( handle.uniforms ?? {} ), ...overrides };
-	g_renderer.validateCustomShaderProgram( screenData, handle, "applyShader" );
-	g_renderer.prepareShaderBatch( screenData, handle, merged );
+	validateUniformMap( options.uniforms, "applyShader" );
+	const overrides = copyUniforms( options.uniforms );
+	const merged = mergeUniforms( handle.uniforms, overrides );
+	const cache = g_renderer.validateCustomShaderProgram( screenData, handle, "applyShader" );
+	const bindings = normalizeUniforms( screenData, cache, merged, "applyShader" );
+	const samplerTextures = getSamplerTextureMap( screenData, bindings );
+	g_renderer.prepareShaderBatch( screenData, handle, bindings, samplerTextures );
 	g_renderer.setImageDirty( screenData );
 }
 
@@ -181,22 +272,29 @@ function setDisplayShader( screenData, options ) {
 	if( options.shaderHandle == null ) {
 		screenData.displayShaderHandle = null;
 		screenData.displayShaderUniforms = {};
+		screenData.displayShaderUniformBindings = {};
+		screenData.displayShaderTextureResolver = null;
 		screenData.renderToDisplaySize = false;
 		g_renderer.flushBatches( screenData );
 		g_screenManager.refreshScreenSize( screenData, true );
 		return;
 	}
 
-	if( options.uniforms && typeof options.uniforms !== "object" ) {
-		const error = new TypeError( "setDisplayShader: Parameter uniforms must be an object." );
-		error.code = "INVALID_UNIFORMS";
-		throw error;
-	}
+	validateUniformMap( options.uniforms, "setDisplayShader" );
 
 	const handle = getShaderHandle( options.shaderHandle, "setDisplayShader" );
-	g_renderer.validateCustomShaderProgram( screenData, handle, "setDisplayShader" );
+	const cache = g_renderer.validateCustomShaderProgram(
+		screenData, handle, "setDisplayShader"
+	);
+	const merged = mergeUniforms( handle.uniforms, options.uniforms );
+	const bindings = normalizeUniforms( screenData, cache, merged, "setDisplayShader" );
+	getSamplerTextureMap( screenData, bindings );
 	screenData.displayShaderHandle = handle;
-	screenData.displayShaderUniforms = copyUniforms( options.uniforms );
+	screenData.displayShaderUniforms = retainSamplerSources( merged, bindings );
+	screenData.displayShaderUniformBindings = bindings;
+	screenData.displayShaderTextureResolver = ( source ) => {
+		return g_renderer.getWebGL2Texture( screenData, source );
+	};
 	screenData.renderToDisplaySize = !screenData.isOffscreen;
 	g_renderer.flushBatches( screenData );
 	g_screenManager.refreshScreenSize( screenData, true );
@@ -212,18 +310,21 @@ function setDisplayShader( screenData, options ) {
  */
 function setDisplayShaderUniforms( screenData, options ) {
 	const incoming = options.uniforms;
-	if( incoming && typeof incoming !== "object" ) {
-		const error = new TypeError(
-			"setDisplayShaderUniforms: Parameter uniforms must be an object."
-		);
-		error.code = "INVALID_UNIFORMS";
-		throw error;
-	}
+	validateUniformMap( incoming, "setDisplayShaderUniforms" );
 
-	screenData.displayShaderUniforms = {
-		...( screenData.displayShaderUniforms ?? {} ),
-		...copyUniforms( incoming )
-	};
+	const values = mergeUniforms( screenData.displayShaderUniforms, incoming );
+	let bindings = screenData.displayShaderUniformBindings;
+	if( screenData.displayShaderHandle ) {
+		const cache = g_renderer.validateCustomShaderProgram(
+			screenData, screenData.displayShaderHandle, "setDisplayShaderUniforms"
+		);
+		bindings = normalizeUniforms(
+			screenData, cache, values, "setDisplayShaderUniforms"
+		);
+		getSamplerTextureMap( screenData, bindings );
+	}
+	screenData.displayShaderUniforms = retainSamplerSources( values, bindings );
+	screenData.displayShaderUniformBindings = bindings;
 
 	if( screenData.displayShaderHandle ) {
 		g_screenManager.presentCurrentScreen( screenData );

@@ -7,7 +7,9 @@ Creates a screen-independent shader from GLSL ES 3.00 fragment source. The verte
 
 The fragment source must include "#version 300 es". When first applied to a screen, the shader must declare uniform sampler2D u_texture. Invalid shaders throw synchronously without changing rendering state. Built-in uniforms, if declared: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2), u_time (float), u_frame (int).
 
-The second argument is an optional map of default custom uniform values (number, [x, y], [x, y, z], or [x, y, z, w]). Unknown uniform names are ignored.
+The second argument is an optional map of default custom uniform values. Values are interpreted
+from the linked GLSL declaration and may include float, integer, unsigned integer, boolean, vector,
+matrix, uniform-array, and sampler2D image inputs. Unknown and reserved built-in names are ignored.
 """
 example = """
 const invert = $.createShader( `#version 300 es
@@ -28,8 +30,8 @@ description = "GLSL ES 3.00 fragment shader source. Must include \"#version 300 
 
 [[parameters]]
 name = "uniforms"
-type = "object"
-description = "Optional default custom uniform values. Keys are uniform names."
+type = "ShaderUniforms"
+description = "Optional reflected custom uniform values keyed by uniform name."
 optional = true
 
 [[returns]]

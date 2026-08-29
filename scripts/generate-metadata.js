@@ -476,6 +476,20 @@ function buildObjectInterface( objectData ) {
 	}
 	lines.push( "\t */" );
 
+	if( objectData.typeAlias ) {
+		const aliasParts = objectData.typeAlias.split( "|" ).map( ( part ) => part.trim() );
+		if( aliasParts.length === 1 ) {
+			lines.push( `\ttype ${title} = ${aliasParts[ 0 ]};` );
+		} else {
+			lines.push( `\ttype ${title} =` );
+			aliasParts.forEach( ( part, index ) => {
+				const suffix = index === aliasParts.length - 1 ? ";" : " |";
+				lines.push( `\t\t${part}${suffix}` );
+			} );
+		}
+		return lines;
+	}
+
 	// Interface declaration
 	lines.push( `\tinterface ${title} {` );
 
