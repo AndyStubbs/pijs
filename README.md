@@ -60,6 +60,20 @@ Built on top of **WebGL 2**, Pi.js features:
 - **Latest:** v2.1.0 (WebGL 2 only, browser-only library)
 - **Legacy:** v1.2.4 (Canvas2D support, available on `v1.2.x` branch)
 
+### Version 2.1.0 Highlights
+
+Version 2.1.0 expands Pi.js rendering and composition capabilities:
+
+- **Custom Fragment Shaders** - Create GLSL ES 3.00 effects with `createShader()`, apply them in
+  draw order with `applyShader()`, use them for final presentation with `setDisplayShader()`, and
+  update persistent uniforms with `setDisplayShaderUniforms()`.
+- **Nested Drawing Views** - Use `pushView()`, `popView()`, and `resetView()` for local coordinates,
+  clipping, and cursor restoration, with `viewToScreen()` and `screenToView()` for conversion.
+- **Shared-Context Offscreen Screens** - Give an offscreen `screen()` a parent to draw its
+  framebuffer directly in the parent's WebGL context.
+- **Rendering Lifecycle Fixes** - Correct offscreen Y orientation and safer GPU texture cleanup,
+  reuse, and removal across screens.
+
 ### Version 2.0.0 Highlights
 
 Version 2.0.0 is a major release featuring:
