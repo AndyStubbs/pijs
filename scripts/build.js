@@ -9,6 +9,8 @@ const fs = require( "fs" );
 const path = require( "path" );
 const zlib = require( "zlib" );
 const { buildPlugin } = require( "./build-plugin.js" );
+const { generateMetadata } = require( "./generate-metadata.js" );
+const { validateTypeDefinitions } = require( "./validate-type-definitions.js" );
 
 // Read version from package.json (single source of truth)
 const pkg = require( "../package.json" );
@@ -232,6 +234,11 @@ async function build() {
 	console.log( `Building Pi.js v${buildVersion} from ${sourceDir}...` );
 
 	try {
+		console.log( "" );
+		console.log( "Generating and validating metadata..." );
+		generateMetadata();
+		validateTypeDefinitions();
+
 		// Build all plugins first
 		await buildAllPlugins();
 

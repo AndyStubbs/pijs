@@ -57,7 +57,7 @@ Built on top of **WebGL 2**, Pi.js features:
 ## Version Information
 
 ### Current Version
-- **Latest:** v2.0.0 (WebGL 2 only, browser-only library)
+- **Latest:** v2.1.0 (WebGL 2 only, browser-only library)
 - **Legacy:** v1.2.4 (Canvas2D support, available on `v1.2.x` branch)
 
 ### Version 2.0.0 Highlights

@@ -17,6 +17,7 @@
 		"test:lite:grep": "set PI_TEST_LITE=true&&playwright test test/scripts/run-visual-tests.js --grep",
 		"test:plugins": "set PI_TEST_TYPE=plugins&& playwright test test/scripts/run-visual-tests.js",
 		"test:plugins:grep": "set PI_TEST_TYPE=plugins&& playwright test test/scripts/run-visual-tests.js --grep",
+		"test:types": "node scripts/generate-metadata.js && node scripts/validate-type-definitions.js",
 		"server": "node server.js"
 	},
 	"repository": {

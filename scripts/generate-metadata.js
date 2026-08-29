@@ -16,9 +16,7 @@ const METADATA_DIR = path.join( __dirname, "..", "metadata" );
 const BUILD_DIR = path.join( __dirname, "..", "build" );
 const REFERENCE_FILE = path.join( BUILD_DIR, "reference-{VERSION}.json" );
 const TYPE_DEFINITION_FILE = path.join( BUILD_DIR, "pi.d.ts" );
-
-// Generate metadata
-generateMetadata();
+const DOCS_TYPE_DEFINITION_FILE = path.join( __dirname, "..", "docs", "llms", "pi.d.ts" );
 
 function getVersionFolders() {
 	if( !fs.existsSync( METADATA_DIR ) ) {
@@ -165,7 +163,7 @@ function formatTypeScriptType( rawType, fallback = "any" ) {
 
 function buildMethodSignature( method ) {
 	const returnType = formatTypeScriptType(
-		method.returns?.[ 0 ]?.type || "void",
+		method.returns?.type || "void",
 		"void"
 	);
 
@@ -255,7 +253,7 @@ function buildDocCommentLines( method ) {
 		}
 	} );
 
-	const returnInfo = method.returns?.[ 0 ] || {};
+	const returnInfo = method.returns || {};
 	const returnDescription = returnInfo.description ? returnInfo.description.trim() : "";
 	const returnTypeName = ( returnInfo.type || "void" ).trim();
 	const shouldDocumentReturn = Boolean( returnDescription ) ||
@@ -724,29 +722,31 @@ function writeReferenceOutput( version, data ) {
 }
 
 function writeTypeDefinitions( version, lines ) {
-	const filePath = TYPE_DEFINITION_FILE;
-	const dirPath = path.dirname( filePath );
-	
-	// Ensure the build directory exists
-	if( !fs.existsSync( dirPath ) ) {
-		fs.mkdirSync( dirPath, { "recursive": true } );
-	}
-	
 	const header = [
 		"/**",
 		" * Pi.js Type Definitions",
 		` * Version: pi-${version}`,
 		` * Author: ${packageJson.author}`,
 		` * License: ${packageJson.license}`,
-		` * Generated on ${new Date().toISOString()}`,
 		" */",
 		""
 	].join( "\n" );
+	const contents = `${header}${lines.join( "\n" )}\n`;
+	const outputFiles = [ TYPE_DEFINITION_FILE, DOCS_TYPE_DEFINITION_FILE ];
 
-	fs.writeFileSync(
-		filePath,
-		`${header}${lines.join( "\n" )}\n`,
-		"utf8"
-	);
-	console.log( "✓ Generated type definitions:", filePath );
+	for( const filePath of outputFiles ) {
+		const dirPath = path.dirname( filePath );
+		if( !fs.existsSync( dirPath ) ) {
+			fs.mkdirSync( dirPath, { "recursive": true } );
+		}
+
+		fs.writeFileSync( filePath, contents, "utf8" );
+		console.log( "✓ Generated type definitions:", filePath );
+	}
 }
+
+if( require.main === module ) {
+	generateMetadata();
+}
+
+module.exports = { generateMetadata };

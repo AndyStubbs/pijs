@@ -1,6 +1,6 @@
 # Pi.js Visual Regression Tests
 
-This directory contains visual regression tests for Pi.js v2.0.
+This directory contains visual regression tests for Pi.js.
 
 ## Test Structure
 

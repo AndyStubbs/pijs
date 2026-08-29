@@ -305,7 +305,7 @@ function screen( options ) {
 			error.code = "INVALID_SCREEN_PARENT";
 			throw error;
 		} else {
-			parentData = m_screens[ options.parent.id ];	
+			parentData = m_screens[ options.parent.id ];
 		}
 		parentScreenId = parentData.id;
 		parentRenderContext = parentData.gl;
