@@ -1913,7 +1913,7 @@ declare namespace Pi {
 		/**
 		 * Removes a previously loaded image by name.
 		 *
-		 * Deletes the stored image and frees associated GPU resources (textures) for all screens.
+		 * Deletes the stored image and frees associated GPU resources (textures) for all screens. Draws already queued with the image complete before their textures are freed. Subsequent draws using the removed name throw IMAGE_NOT_FOUND.
 		 * @param name Image name to remove.
 		 * @returns This function does not return a value.
 		 */

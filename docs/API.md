@@ -455,7 +455,8 @@ Loads a spritesheet and divides it into frames.
 
 ### `removeImage( name )`
 
-Removes a loaded image from memory.
+Removes a loaded image from memory. Draws already queued with the image complete before its GPU
+textures are freed; subsequent draws by name fail with `IMAGE_NOT_FOUND`.
 
 ### `getImage( name, x1, y1, x2, y2 )`
 

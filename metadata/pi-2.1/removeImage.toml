@@ -1,0 +1,29 @@
+title = "removeImage"
+category = "images"
+isScreen = false
+summary = "Removes a previously loaded image by name."
+description = """
+Deletes the stored image and frees associated GPU resources (textures) for all screens. Draws already queued with the image complete before their textures are freed. Subsequent draws using the removed name throw IMAGE_NOT_FOUND.
+"""
+example = """
+$.screen( "300x200" );
+$.loadImage( "media/player.png", "player" );
+$.ready( () => {
+	$.drawImage( "player", 5, 5 );
+	$.removeImage( "player" );
+	try {
+		$.drawImage( "player", 5, 21 );
+	} catch( error ) {
+		$.print( error.code );
+	}
+} );
+"""
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "Image name to remove."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

@@ -198,13 +198,60 @@
 
 	// Test removeImage functionality
 	function testRemoveImage() {
-		
+		let separateScreen = null;
+		let sharedScreen = null;
+
 		// Test 1: Remove existing image
 		try {
+			const sourceCanvas = document.createElement( "canvas" );
+			sourceCanvas.width = 2;
+			sourceCanvas.height = 2;
+			const sourceContext = sourceCanvas.getContext( "2d" );
+			sourceContext.fillStyle = "#ff0000";
+			sourceContext.fillRect( 0, 0, 2, 2 );
+			$.loadImage( sourceCanvas, "queued_remove" );
+
+			separateScreen = $.screen( "2x2", null, true );
+			$.drawImage( {
+				"image": "queued_remove", "x": 0, "y": 0, "anchorX": 0, "anchorY": 0
+			} );
+
+			sharedScreen = $.screen( {
+				"aspect": "2x2", "isOffscreen": true, "parent": 0
+			} );
+			$.drawImage( {
+				"image": "queued_remove", "x": 0, "y": 0, "anchorX": 0, "anchorY": 0
+			} );
+
+			$.removeImage( "queued_remove" );
+			let removedNameRejected = false;
+			try {
+				$.drawImage( "queued_remove", 0, 0 );
+			} catch( error ) {
+				removedNameRejected = error.code === "IMAGE_NOT_FOUND";
+			}
+			const sharedPixel = $.getPixel( 0, 0 );
+			$.setScreen( separateScreen );
+			const separatePixel = $.getPixel( 0, 0 );
+			const queuedDrawsPreserved =
+				sharedPixel.r === 255 && sharedPixel.a === 255 &&
+				separatePixel.r === 255 && separatePixel.a === 255 &&
+				removedNameRejected;
+
+			$.setScreen( 0 );
 			$.removeImage( "ship_url" );
-			logTest( "removeImage existing image", true );
+			logTest( "removeImage existing image", queuedDrawsPreserved );
 		} catch( e ) {
 			logTest( "removeImage existing image", false );
+		} finally {
+			$.setScreen( 0 );
+			if( sharedScreen ) {
+				$.removeScreen( sharedScreen );
+			}
+			if( separateScreen ) {
+				$.removeScreen( separateScreen );
+			}
+			$.removeImage( "queued_remove" );
 		}
 		
 		// Test 2: Remove non-existent image (should not throw)

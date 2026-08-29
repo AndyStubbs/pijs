@@ -249,10 +249,11 @@ export function getTextureDrawInfo( screenData, img ) {
 }
 
 /**
- * Delete WebGL2 texture for an image on all screens
+ * Delete the WebGL2 texture for an image on one screen.
  * Must be called explicitly to free GPU memory - textures are not automatically
  * garbage collected by the browser.
- * 
+ *
+ * @param {Object} screenData - Screen data object
  * @param {HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} img - Image or Canvas element
  * @returns {void}
  */
@@ -268,6 +269,9 @@ export function deleteWebGL2Texture( screenData, img ) {
 	const gl = screenData.gl;
 	const texture = contextMap.get( gl );
 	if( texture ) {
+		if( screenData.batchInfo.textureBatchSet.has( texture ) ) {
+			g_batches.flushBatches( screenData );
+		}
 		gl.deleteTexture( texture );
 		contextMap.delete( gl );
 	}
