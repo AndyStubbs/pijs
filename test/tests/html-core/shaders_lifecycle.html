@@ -773,6 +773,33 @@ void main() {
 		for( const name of uniformMethods ) {
 			check( name + " dispatched", calledUniformMethods.has( name ) );
 		}
+		const expandedInfo = same.getShaderInfo( expanded );
+		const expandedUniforms = expandedInfo.screen.uniforms;
+		check(
+			"matrix reflection diagnostics",
+			expandedUniforms.some( ( uniform ) => {
+				return uniform.name === "u_m23" && uniform.type === "mat2x3";
+			} )
+		);
+		check(
+			"boolean reflection diagnostics",
+			expandedUniforms.some( ( uniform ) => {
+				return uniform.name === "u_b4" && uniform.type === "bvec4";
+			} )
+		);
+		check(
+			"uniform array reflection diagnostics",
+			expandedUniforms.some( ( uniform ) => {
+				return uniform.name === "u_fa" && uniform.type === "float" && uniform.size === 2;
+			} )
+		);
+		check(
+			"sampler array reflection diagnostics",
+			expandedUniforms.some( ( uniform ) => {
+				return uniform.name === "u_aux" && uniform.type === "sampler2D" &&
+					uniform.size === 2;
+			} )
+		);
 
 		// 22. Sampler image inputs, orientation, queued removal, and later lookup failure
 		const orientedCanvas = document.createElement( "canvas" );
@@ -924,6 +951,120 @@ void main() {
 			"invalid display sampler rejected transactionally",
 			invalidDisplaySamplerCode === "INVALID_UNIFORM_VALUE"
 		);
+
+		// 26. Shader diagnostics and deterministic disposal
+		const disposable = $.createShader( tintSrc, {
+			"u_tint": [ 1, 1, 1, 1 ],
+			"u_gain": new Float32Array( [ 1 ] )
+		} );
+		const disposeScreen = $.screen( "2x2", null, true );
+		let disposeInfo = disposeScreen.getShaderInfo( disposable );
+		check( "unused shader is not compiled", disposeInfo.compiledScreenCount === 0 );
+		check( "unused screen diagnostics", !disposeInfo.screen.compiled );
+		check( "unused reflection is empty", disposeInfo.screen.uniforms.length === 0 );
+		check( "shader diagnostics include source", disposeInfo.fragmentSource === tintSrc );
+		disposeInfo.uniforms.u_tint[ 0 ] = 0;
+		disposeInfo.screen.uniforms.push( { "name": "changed" } );
+		disposeInfo = disposeScreen.getShaderInfo( disposable );
+		check( "diagnostic defaults are copied", disposeInfo.uniforms.u_tint[ 0 ] === 1 );
+		check( "diagnostic collections are copied", disposeInfo.screen.uniforms.length === 0 );
+
+		const disposeShared = $.screen( {
+			"aspect": "2x2", "isOffscreen": true, "parent": same
+		} );
+		disposeScreen.rect( 0, 0, 2, 2, "#FF0000" );
+		disposeScreen.applyShader( disposable );
+		disposeShared.rect( 0, 0, 2, 2, "#00FF00" );
+		disposeShared.applyShader( disposable );
+		same.rect( 0, 0, 1, 1, "#FF0000" );
+		same.getPixel( 0, 0 );
+		same.setDisplayShader( disposable );
+		disposeInfo = disposeScreen.getShaderInfo( disposable );
+		check( "aggregate compiled screen count", disposeInfo.compiledScreenCount === 3 );
+		check( "aggregate queued shader count", disposeInfo.queuedPassCount === 2 );
+		check( "aggregate display shader count", disposeInfo.displayScreenCount === 1 );
+		check( "screen queued shader count", disposeInfo.screen.queuedPassCount === 1 );
+		const reflectedTexture = disposeInfo.screen.uniforms.find( ( uniform ) => {
+			return uniform.name === "u_texture";
+		} );
+		const reflectedTint = disposeInfo.screen.uniforms.find( ( uniform ) => {
+			return uniform.name === "u_tint";
+		} );
+		check(
+			"reserved uniform diagnostics",
+			reflectedTexture.type === "sampler2D" && reflectedTexture.size === 1 &&
+				reflectedTexture.reserved
+		);
+		check(
+			"custom uniform diagnostics",
+			reflectedTint.type === "vec4" && reflectedTint.size === 1 &&
+				!reflectedTint.reserved
+		);
+
+		const disposeGl = disposeScreen.canvas().getContext( "webgl2" );
+		const originalDisposeDeleteProgram = disposeGl.deleteProgram;
+		const originalSameDeleteProgram = sameGl.deleteProgram;
+		let disposeDeleteCount = 0;
+		let sameDeleteCount = 0;
+		disposeGl.deleteProgram = function( program ) {
+			disposeDeleteCount += 1;
+			return originalDisposeDeleteProgram.call( disposeGl, program );
+		};
+		sameGl.deleteProgram = function( program ) {
+			sameDeleteCount += 1;
+			return originalSameDeleteProgram.call( sameGl, program );
+		};
+		try {
+			$.removeShader( disposable );
+		} finally {
+			disposeGl.deleteProgram = originalDisposeDeleteProgram;
+			sameGl.deleteProgram = originalSameDeleteProgram;
+		}
+		check( "separate shader program deleted once", disposeDeleteCount === 1 );
+		check( "shared shader programs deleted once", sameDeleteCount === 2 );
+		const disposedPixel = disposeScreen.getPixel( 0, 0 );
+		check(
+			"queued shader survives disposal",
+			disposedPixel.r < 16 && disposedPixel.g > 240 && disposedPixel.b > 240
+		);
+		const restoredPixel = readCanvasPixel( same.canvas(), 0, 0 );
+		check(
+			"display shader disposal restores default",
+			restoredPixel.r > 240 && restoredPixel.g < 16 && restoredPixel.b < 16
+		);
+		$.removeShader( disposable );
+		$.removeShader( 999999 );
+		let malformedRemoveCode = null;
+		try {
+			$.removeShader( "invalid" );
+		} catch( error ) {
+			malformedRemoveCode = error.code;
+		}
+		check( "malformed shader removal rejected", malformedRemoveCode === "INVALID_SHADER_HANDLE" );
+		let removedInfoCode = null;
+		try {
+			disposeScreen.getShaderInfo( disposable );
+		} catch( error ) {
+			removedInfoCode = error.code;
+		}
+		check( "removed shader diagnostics rejected", removedInfoCode === "INVALID_SHADER_HANDLE" );
+		let removedApplyCode = null;
+		try {
+			disposeScreen.applyShader( disposable );
+		} catch( error ) {
+			removedApplyCode = error.code;
+		}
+		check( "removed shader application rejected", removedApplyCode === "INVALID_SHADER_HANDLE" );
+		let removedDisplayCode = null;
+		try {
+			same.setDisplayShader( disposable );
+		} catch( error ) {
+			removedDisplayCode = error.code;
+		}
+		check( "removed display shader rejected", removedDisplayCode === "INVALID_SHADER_HANDLE" );
+		drawScene( same );
+		disposeShared.removeScreen();
+		disposeScreen.removeScreen();
 
 		$.removeImage( "shader_uniform_red" );
 		const dynamicGl = dynamicScreen.canvas().getContext( "webgl2" );

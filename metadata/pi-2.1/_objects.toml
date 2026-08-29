@@ -26,3 +26,91 @@ title = "ShaderUniforms"
 summary = "Custom shader uniform values keyed by GLSL uniform name."
 description = "Unknown names and reserved Pi.js built-in uniform names are ignored."
 typeAlias = "Record<string, ShaderUniformValue>"
+
+[[objects]]
+title = "ShaderUniformInfo"
+summary = "Reflected information about one active GLSL uniform."
+
+[[objects.properties]]
+name = "name"
+type = "string"
+description = "Uniform name with any trailing array [0] removed."
+
+[[objects.properties]]
+name = "type"
+type = "string"
+description = "Readable GLSL ES type name, or unknown for an unsupported reflected type."
+
+[[objects.properties]]
+name = "size"
+type = "number"
+description = "Uniform array length, or 1 for a non-array uniform."
+
+[[objects.properties]]
+name = "reserved"
+type = "boolean"
+description = "Whether Pi.js owns and supplies this built-in uniform."
+
+[[objects]]
+title = "ShaderScreenInfo"
+summary = "Custom shader lifecycle details for one screen."
+
+[[objects.properties]]
+name = "compiled"
+type = "boolean"
+description = "Whether this screen has compiled and cached the shader."
+
+[[objects.properties]]
+name = "queuedPassCount"
+type = "number"
+description = "Number of queued framebuffer passes using the shader on this screen."
+
+[[objects.properties]]
+name = "displayActive"
+type = "boolean"
+description = "Whether this shader is the screen's active display shader."
+
+[[objects.properties]]
+name = "uniforms"
+type = "ShaderUniformInfo[]"
+description = "Reflected active uniforms, empty until the shader is compiled on this screen."
+
+[[objects]]
+title = "ShaderInfo"
+summary = "Copied lifecycle and diagnostic information for a custom shader."
+
+[[objects.properties]]
+name = "id"
+type = "number"
+description = "Shader handle id."
+
+[[objects.properties]]
+name = "fragmentSource"
+type = "string"
+description = "Full GLSL ES 3.00 fragment source."
+
+[[objects.properties]]
+name = "uniforms"
+type = "ShaderUniforms"
+description = "Copied default custom uniform values."
+
+[[objects.properties]]
+name = "compiledScreenCount"
+type = "number"
+description = "Number of screens that have compiled and cached the shader."
+
+[[objects.properties]]
+name = "queuedPassCount"
+type = "number"
+description = "Total queued framebuffer passes using the shader across all screens."
+
+[[objects.properties]]
+name = "displayScreenCount"
+type = "number"
+description = "Number of screens currently using this shader for display presentation."
+
+[[objects.properties]]
+name = "screen"
+type = "ShaderScreenInfo"
+description = "Selected-screen details when a current screen is available."
+optional = true

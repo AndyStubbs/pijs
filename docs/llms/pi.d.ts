@@ -597,6 +597,46 @@ declare namespace Pi {
 		Screen;
 
 	/**
+	 * Copied lifecycle and diagnostic information for a custom shader.
+	 */
+	interface ShaderInfo {
+		/**
+		 * Shader handle id.
+		 */
+		id: number;
+
+		/**
+		 * Full GLSL ES 3.00 fragment source.
+		 */
+		fragmentSource: string;
+
+		/**
+		 * Copied default custom uniform values.
+		 */
+		uniforms: ShaderUniforms;
+
+		/**
+		 * Number of screens that have compiled and cached the shader.
+		 */
+		compiledScreenCount: number;
+
+		/**
+		 * Total queued framebuffer passes using the shader across all screens.
+		 */
+		queuedPassCount: number;
+
+		/**
+		 * Number of screens currently using this shader for display presentation.
+		 */
+		displayScreenCount: number;
+
+		/**
+		 * Selected-screen details when a current screen is available.
+		 */
+		screen?: ShaderScreenInfo;
+	}
+
+	/**
 	 * Flat numeric or boolean data for vector, matrix, and uniform-array values.
 	 *
 	 * Matrices use WebGL column-major order.
@@ -607,6 +647,56 @@ declare namespace Pi {
 		Float32Array |
 		Int32Array |
 		Uint32Array;
+
+	/**
+	 * Custom shader lifecycle details for one screen.
+	 */
+	interface ShaderScreenInfo {
+		/**
+		 * Whether this screen has compiled and cached the shader.
+		 */
+		compiled: boolean;
+
+		/**
+		 * Number of queued framebuffer passes using the shader on this screen.
+		 */
+		queuedPassCount: number;
+
+		/**
+		 * Whether this shader is the screen's active display shader.
+		 */
+		displayActive: boolean;
+
+		/**
+		 * Reflected active uniforms, empty until the shader is compiled on this screen.
+		 */
+		uniforms: ShaderUniformInfo[];
+	}
+
+	/**
+	 * Reflected information about one active GLSL uniform.
+	 */
+	interface ShaderUniformInfo {
+		/**
+		 * Uniform name with any trailing array [0] removed.
+		 */
+		name: string;
+
+		/**
+		 * Readable GLSL ES type name, or unknown for an unsupported reflected type.
+		 */
+		type: string;
+
+		/**
+		 * Uniform array length, or 1 for a non-array uniform.
+		 */
+		size: number;
+
+		/**
+		 * Whether Pi.js owns and supplies this built-in uniform.
+		 */
+		reserved: boolean;
+	}
 
 	/**
 	 * Custom shader uniform values keyed by GLSL uniform name.
@@ -1088,6 +1178,18 @@ declare namespace Pi {
 		 * @returns Number of rows that fit on the screen.
 		 */
 		getRows(): number;
+
+		/**
+		 * Returns lifecycle and reflection diagnostics for a custom shader.
+		 *
+		 * Returns a copied snapshot containing the shader source, default uniforms, and aggregate counts for compiled screens, queued passes, and active display screens. When a current screen is available, the result also describes that screen's compilation state, queued passes, display use, and reflected uniforms.
+		 *
+		 * This function never compiles the shader or allocates GPU resources. An unused shader reports an uncompiled screen with an empty reflected-uniform list. Unknown handles throw INVALID_SHADER_HANDLE synchronously.
+		 * @param shaderHandle Shader handle returned by createShader.
+		 * @returns Copied shader lifecycle and diagnostic information.
+		 */
+		getShaderInfo( params: { "shaderHandle": number } ): ShaderInfo;
+		getShaderInfo( shaderHandle: number ): ShaderInfo;
 
 		/**
 		 * Returns frame metadata for a spritesheet.
@@ -1979,6 +2081,16 @@ declare namespace Pi {
 		 */
 		removeScreen( params: { "screen"?: number | Screen } ): void;
 		removeScreen( screen?: number | Screen ): void;
+
+		/**
+		 * Removes a custom shader and releases its cached GPU programs.
+		 *
+		 * Completes every queued pass using the shader, clears it from active display screens, deletes its cached WebGL program from every screen, and invalidates the handle for future use. Removing an unknown or previously removed numeric handle is a no-op. Malformed handles throw INVALID_SHADER_HANDLE synchronously.
+		 * @param shaderHandle Shader handle returned by createShader.
+		 * @returns This function does not return a value.
+		 */
+		removeShader( params: { "shaderHandle": number } ): void;
+		removeShader( shaderHandle: number ): void;
 
 		/**
 		 * Creates a new screen (canvas) with specified dimensions and aspect ratio.

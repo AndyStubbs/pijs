@@ -45,10 +45,15 @@ export { drawEllipse } from "./draw/ellipses.js";
 export { shiftImageUp, cls } from "./effects.js";
 
 // Re-export batch management
-export { prepareBatch, flushBatches, displayToCanvas, prepareShaderBatch } from "./batches.js";
+export {
+	prepareBatch, flushBatches, displayToCanvas, prepareShaderBatch, countQueuedShaderPasses
+} from "./batches.js";
 
 // Re-export custom shader validation and uniform normalization
-export { validateCustomShaderProgram, normalizeCustomUniforms } from "./shaders.js";
+export {
+	validateCustomShaderProgram, normalizeCustomUniforms, getCustomShaderDiagnostics,
+	deleteCustomShaderProgram
+} from "./shaders.js";
 
 // Re-export texture management
 export {

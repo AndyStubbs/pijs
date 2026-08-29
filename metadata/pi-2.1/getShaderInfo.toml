@@ -1,0 +1,28 @@
+title = "getShaderInfo"
+category = "shaders"
+isScreen = true
+summary = "Returns lifecycle and reflection diagnostics for a custom shader."
+description = """
+Returns a copied snapshot containing the shader source, default uniforms, and aggregate counts for
+compiled screens, queued passes, and active display screens. When a current screen is available,
+the result also describes that screen's compilation state, queued passes, display use, and
+reflected uniforms.
+
+This function never compiles the shader or allocates GPU resources. An unused shader reports an
+uncompiled screen with an empty reflected-uniform list. Unknown handles throw
+INVALID_SHADER_HANDLE synchronously.
+"""
+example = """
+const invert = $.createShader( source );
+const info = $.getShaderInfo( invert );
+$.print( info.compiledScreenCount );
+"""
+
+[[parameters]]
+name = "shaderHandle"
+type = "number"
+description = "Shader handle returned by createShader."
+
+[[returns]]
+type = "ShaderInfo"
+description = "Copied shader lifecycle and diagnostic information."

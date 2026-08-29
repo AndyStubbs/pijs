@@ -1,0 +1,24 @@
+title = "removeShader"
+category = "shaders"
+isScreen = false
+summary = "Removes a custom shader and releases its cached GPU programs."
+description = """
+Completes every queued pass using the shader, clears it from active display screens, deletes its
+cached WebGL program from every screen, and invalidates the handle for future use. Removing an
+unknown or previously removed numeric handle is a no-op. Malformed handles throw
+INVALID_SHADER_HANDLE synchronously.
+"""
+example = """
+const invert = $.createShader( source );
+$.applyShader( invert );
+$.removeShader( invert );
+"""
+
+[[parameters]]
+name = "shaderHandle"
+type = "number"
+description = "Shader handle returned by createShader."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

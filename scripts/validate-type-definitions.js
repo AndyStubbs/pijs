@@ -29,6 +29,18 @@ const REQUIRED_DECLARATIONS = [
 		"text": "createShader( fragmentSource: string, uniforms?: ShaderUniforms ): number;"
 	},
 	{
+		"name": "shader diagnostic type",
+		"text": "interface ShaderInfo {"
+	},
+	{
+		"name": "getShaderInfo return type",
+		"text": "getShaderInfo( shaderHandle: number ): ShaderInfo;"
+	},
+	{
+		"name": "removeShader signature",
+		"text": "removeShader( shaderHandle: number ): void;"
+	},
+	{
 		"name": "viewToScreen return type",
 		"text": "viewToScreen( x: number, y: number ): PositionPx;"
 	},

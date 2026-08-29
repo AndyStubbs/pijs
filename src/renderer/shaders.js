@@ -198,6 +198,87 @@ const m_reservedUniforms = new Set( [
 ] );
 
 /**
+ * Convert a reflected WebGL uniform type to its GLSL ES name.
+ *
+ * @param {WebGL2RenderingContext} gl - WebGL2 context
+ * @param {number} type - WebGL uniform type enum
+ * @returns {string} GLSL type name, or "unknown"
+ */
+function getUniformTypeName( gl, type ) {
+	const types = new Map( [
+		[ gl.FLOAT, "float" ],
+		[ gl.FLOAT_VEC2, "vec2" ],
+		[ gl.FLOAT_VEC3, "vec3" ],
+		[ gl.FLOAT_VEC4, "vec4" ],
+		[ gl.INT, "int" ],
+		[ gl.INT_VEC2, "ivec2" ],
+		[ gl.INT_VEC3, "ivec3" ],
+		[ gl.INT_VEC4, "ivec4" ],
+		[ gl.UNSIGNED_INT, "uint" ],
+		[ gl.UNSIGNED_INT_VEC2, "uvec2" ],
+		[ gl.UNSIGNED_INT_VEC3, "uvec3" ],
+		[ gl.UNSIGNED_INT_VEC4, "uvec4" ],
+		[ gl.BOOL, "bool" ],
+		[ gl.BOOL_VEC2, "bvec2" ],
+		[ gl.BOOL_VEC3, "bvec3" ],
+		[ gl.BOOL_VEC4, "bvec4" ],
+		[ gl.FLOAT_MAT2, "mat2" ],
+		[ gl.FLOAT_MAT3, "mat3" ],
+		[ gl.FLOAT_MAT4, "mat4" ],
+		[ gl.FLOAT_MAT2x3, "mat2x3" ],
+		[ gl.FLOAT_MAT2x4, "mat2x4" ],
+		[ gl.FLOAT_MAT3x2, "mat3x2" ],
+		[ gl.FLOAT_MAT3x4, "mat3x4" ],
+		[ gl.FLOAT_MAT4x2, "mat4x2" ],
+		[ gl.FLOAT_MAT4x3, "mat4x3" ],
+		[ gl.SAMPLER_2D, "sampler2D" ]
+	] );
+	return types.get( type ) ?? "unknown";
+}
+
+/**
+ * Inspect a cached custom shader without compiling it.
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {number} shaderId - Custom shader id
+ * @returns {{ compiled: boolean, uniforms: Array<Object> }} Per-screen diagnostics
+ */
+export function getCustomShaderDiagnostics( screenData, shaderId ) {
+	const cache = screenData.customShaders[ shaderId ];
+	if( !cache ) {
+		return { "compiled": false, "uniforms": [] };
+	}
+	const uniforms = [];
+	for( const uniform of Object.values( cache.customUniforms ) ) {
+		uniforms.push( {
+			"name": uniform.name,
+			"type": getUniformTypeName( screenData.gl, uniform.type ),
+			"size": uniform.size,
+			"reserved": m_reservedUniforms.has( uniform.name )
+		} );
+	}
+	return { "compiled": true, "uniforms": uniforms };
+}
+
+/**
+ * Delete one cached custom shader program from a screen.
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {number} shaderId - Custom shader id
+ * @returns {void}
+ */
+export function deleteCustomShaderProgram( screenData, shaderId ) {
+	const cache = screenData.customShaders[ shaderId ];
+	if( !cache ) {
+		return;
+	}
+	if( cache.program ) {
+		screenData.gl.deleteProgram( cache.program );
+	}
+	delete screenData.customShaders[ shaderId ];
+}
+
+/**
  * Reflect active uniforms so JavaScript values can be dispatched by their GLSL types.
  *
  * @param {WebGL2RenderingContext} gl - WebGL2 context

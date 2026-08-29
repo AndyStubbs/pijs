@@ -443,6 +443,23 @@ export function prepareShaderBatch( screenData, handle, uniforms, samplerTexture
 }
 
 /**
+ * Count queued passes that reference a custom shader.
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {number} shaderId - Custom shader id
+ * @returns {number} Number of queued shader passes
+ */
+export function countQueuedShaderPasses( screenData, shaderId ) {
+	let count = 0;
+	for( const item of screenData.batchInfo.drawOrder ) {
+		if( item.shaderHandle && item.shaderHandle.id === shaderId ) {
+			count += 1;
+		}
+	}
+	return count;
+}
+
+/**
  * Run one FBO shader pass: render FBO to bufferFBO with shader, then blit back to FBO.
  *
  * @param {Object} screenData - Screen data object

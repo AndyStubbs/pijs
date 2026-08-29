@@ -8,6 +8,9 @@
 - Custom shaders support reflected float, integer, unsigned integer, boolean, vector, matrix,
   uniform-array, and `sampler2D` image inputs. Samplers accept registered images, direct browser
   image sources, and Pi screens.
+- `getShaderInfo()` reports global and per-screen shader lifecycle and reflection diagnostics.
+  `removeShader()` completes queued passes, clears active display uses, and releases cached WebGL
+  programs.
 - Nested drawing views can be managed with `pushView()`, `popView()`, and `resetView()`.
   Drawing, images, pixels, paint operations, clearing, and text output honor the active view's
   origin and clipping rectangle.

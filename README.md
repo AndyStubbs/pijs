@@ -67,7 +67,8 @@ Version 2.1.0 expands Pi.js rendering and composition capabilities:
 - **Custom Fragment Shaders** - Create GLSL ES 3.00 effects with `createShader()`, apply them in
   draw order with `applyShader()`, use them for final presentation with `setDisplayShader()`, and
   update reflected float, integer, boolean, matrix, array, and image-sampler uniforms with
-  `setDisplayShaderUniforms()`.
+  `setDisplayShaderUniforms()`. Inspect and release shader resources with `getShaderInfo()` and
+  `removeShader()`.
 - **Nested Drawing Views** - Use `pushView()`, `popView()`, and `resetView()` for local coordinates,
   clipping, and cursor restoration, with `viewToScreen()` and `screenToView()` for conversion.
 - **Shared-Context Offscreen Screens** - Give an offscreen `screen()` a parent to draw its

@@ -266,6 +266,37 @@ void main() {
 ```
 
 
+### `getShaderInfo( shaderHandle )`
+
+Returns a copied diagnostic snapshot without compiling the shader. Global fields include the full
+fragment source, copied default uniforms, and counts for compiled screens, queued passes, and
+active display screens. When a current screen is available, `screen` also reports that screen's
+compilation state, queued-pass count, display use, and reflected uniform names, GLSL types, array
+sizes, and reserved status.
+
+- **shaderHandle**: Handle from `createShader`
+
+```javascript
+const info = $.getShaderInfo( invert );
+$.print( info.compiledScreenCount );
+```
+
+
+### `removeShader( shaderHandle )`
+
+Completes queued passes using the shader, restores the default presentation path on screens using
+it as a display shader, deletes every cached WebGL program, and invalidates the handle. Removing an
+unknown or previously removed numeric handle is a no-op. Malformed handles throw
+`INVALID_SHADER_HANDLE`.
+
+- **shaderHandle**: Handle from `createShader`
+
+```javascript
+$.applyShader( invert );
+$.removeShader( invert );
+```
+
+
 
 ### `applyShader( shaderHandle, uniforms )`
 

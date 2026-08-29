@@ -37,6 +37,8 @@ export function init( api ) {
 
 function registerCommands() {
 	g_commands.addCommand( "createShader", createShader, false, [ "fragmentSource", "uniforms" ] );
+	g_commands.addCommand( "removeShader", removeShader, false, [ "shaderHandle" ] );
+	g_commands.addCommand( "getShaderInfo", getShaderInfo, true, [ "shaderHandle" ], true );
 	g_commands.addCommand( "applyShader", applyShader, true, [ "shaderHandle", "uniforms" ] );
 	g_commands.addCommand(
 		"setDisplayShader", setDisplayShader, true, [ "shaderHandle", "uniforms" ]
@@ -96,6 +98,116 @@ function createShader( options ) {
 	m_shaderHandles.set( handle.id, handle );
 	
 	return handle.id;
+}
+
+
+/**
+ * Validate a public numeric shader id.
+ *
+ * @param {*} shaderId - Caller-provided shader id
+ * @param {string} cmdName - Public command name
+ * @returns {number} Valid shader id
+ */
+function validateShaderId( shaderId, cmdName ) {
+	if( typeof shaderId !== "number" || !Number.isInteger( shaderId ) || shaderId < 0 ) {
+		const error = new TypeError(
+			`${cmdName}: Parameter shaderHandle must be a shader id from createShader.`
+		);
+		error.code = "INVALID_SHADER_HANDLE";
+		throw error;
+	}
+	return shaderId;
+}
+
+
+/**
+ * Return global and optional current-screen shader diagnostics.
+ *
+ * @param {Object|null} screenData - Current screen data, if one exists
+ * @param {Object} options - Parsed options: shaderHandle
+ * @returns {Object} Shader diagnostic snapshot
+ */
+function getShaderInfo( screenData, options ) {
+	const shaderId = validateShaderId( options.shaderHandle, "getShaderInfo" );
+	const handle = m_shaderHandles.get( shaderId );
+	if( !handle ) {
+		const error = new TypeError( `getShaderInfo: Unknown shader handle id ${shaderId}.` );
+		error.code = "INVALID_SHADER_HANDLE";
+		throw error;
+	}
+
+	let compiledScreenCount = 0;
+	let queuedPassCount = 0;
+	let displayScreenCount = 0;
+	for( const currentScreen of g_screenManager.getAllScreensData() ) {
+		if( currentScreen.customShaders[ shaderId ] ) {
+			compiledScreenCount += 1;
+		}
+		queuedPassCount += g_renderer.countQueuedShaderPasses( currentScreen, shaderId );
+		if(
+			currentScreen.displayShaderHandle &&
+			currentScreen.displayShaderHandle.id === shaderId
+		) {
+			displayScreenCount += 1;
+		}
+	}
+
+	const info = {
+		"id": handle.id,
+		"fragmentSource": handle.fragmentSource,
+		"uniforms": copyUniforms( handle.uniforms ),
+		"compiledScreenCount": compiledScreenCount,
+		"queuedPassCount": queuedPassCount,
+		"displayScreenCount": displayScreenCount
+	};
+	if( screenData ) {
+		const diagnostics = g_renderer.getCustomShaderDiagnostics( screenData, shaderId );
+		info.screen = {
+			"compiled": diagnostics.compiled,
+			"queuedPassCount": g_renderer.countQueuedShaderPasses( screenData, shaderId ),
+			"displayActive": !!screenData.displayShaderHandle &&
+				screenData.displayShaderHandle.id === shaderId,
+			"uniforms": diagnostics.uniforms
+		};
+	}
+	return info;
+}
+
+
+/**
+ * Remove a shader and release every cached WebGL program.
+ *
+ * @param {Object} options - Parsed options: shaderHandle
+ * @returns {void}
+ */
+function removeShader( options ) {
+	const shaderId = validateShaderId( options.shaderHandle, "removeShader" );
+	if( !m_shaderHandles.has( shaderId ) ) {
+		return;
+	}
+
+	const screens = g_screenManager.getAllScreensData();
+	for( const screenData of screens ) {
+		if( g_renderer.countQueuedShaderPasses( screenData, shaderId ) > 0 ) {
+			g_renderer.flushBatches( screenData );
+		}
+	}
+
+	for( const screenData of screens ) {
+		if(
+			screenData.displayShaderHandle &&
+			screenData.displayShaderHandle.id === shaderId
+		) {
+			screenData.displayShaderHandle = null;
+			screenData.displayShaderUniforms = {};
+			screenData.displayShaderUniformBindings = {};
+			screenData.displayShaderTextureResolver = null;
+			screenData.renderToDisplaySize = false;
+			g_screenManager.refreshScreenSize( screenData, true );
+		}
+		g_renderer.deleteCustomShaderProgram( screenData, shaderId );
+	}
+	m_shaderHandles.delete( shaderId );
 }
 
 
