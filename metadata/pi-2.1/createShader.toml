@@ -3,9 +3,9 @@ category = "shaders"
 isScreen = false
 summary = "Creates a custom fragment shader and returns a handle."
 description = """
-Creates a screen-independent shader from GLSL ES 3.00 fragment source. The vertex stage is built-in (fullscreen quad, v_texCoord). The WebGL program is compiled lazily on first use.
+Creates a screen-independent shader from GLSL ES 3.00 fragment source. The vertex stage is built-in (fullscreen quad, v_texCoord). The WebGL program is compiled and validated synchronously the first time it is passed to applyShader or setDisplayShader for each screen, then cached for that screen.
 
-The fragment source must include "#version 300 es". At first real draw the shader must declare uniform sampler2D u_texture. Built-in uniforms, if declared: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2), u_time (float), u_frame (int).
+The fragment source must include "#version 300 es". When first applied to a screen, the shader must declare uniform sampler2D u_texture. Invalid shaders throw synchronously without changing rendering state. Built-in uniforms, if declared: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2), u_time (float), u_frame (int).
 
 The second argument is an optional map of default custom uniform values (number, [x, y], [x, y, z], or [x, y, z, w]). Unknown uniform names are ignored.
 """

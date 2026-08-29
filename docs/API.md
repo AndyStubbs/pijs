@@ -212,7 +212,8 @@ Sets the blend mode for drawing operations.
 
 Users supply fragment source only. The vertex stage is a built-in fullscreen
 quad (`in vec2 v_texCoord`, `out vec4 fragColor`). Source must include
-`#version 300 es`. At first real draw the shader must declare
+`#version 300 es`. When first applied to a screen, the shader is compiled synchronously and must
+declare
 `uniform sampler2D u_texture`.
 
 **Built-in uniforms:** `u_texture` (`sampler2D`), `u_sourceSize` (`vec2`),
@@ -225,7 +226,7 @@ quad (`in vec2 v_texCoord`, `out vec4 fragColor`). Source must include
 `canvas.width` × `canvas.height` (backing store, not CSS)
 
 Custom uniforms are `number`, `[x, y]`, `[x, y, z]`, or `[x, y, z, w]`.
-Unknown names are ignored. Programs compile lazily on first use.
+Unknown names are ignored. Programs are cached per screen after successful validation.
 
 ### `createShader( fragmentSource, uniforms )`
 

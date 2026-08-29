@@ -89,6 +89,25 @@ void main() {
 	fragColor = vec4(c.rgb * u_tint.rgb * u_gain, c.a);
 }`.trim();
 
+	const invalidSrc = `
+#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+out vec4 fragColor;
+void main() {
+	fragColor = this is not valid GLSL;
+}`.trim();
+
+	const missingTextureSrc = `
+#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+out vec4 fragColor;
+void main() {
+	fragColor = vec4(v_texCoord, 0.0, 1.0);
+}`.trim();
+
 	const logEl = document.getElementById( "log" );
 	let failed = 0;
 
@@ -196,17 +215,68 @@ void main() {
 			"u_tint": [ 0, 0, 1, 1 ],
 			"u_gain": 1
 		} );
+		const invalid = $.createShader( invalidSrc );
+		const missingTexture = $.createShader( missingTextureSrc );
 
 		// 1. Activate with identical logical/CSS dimensions
 		const same = $.screen( "320x200", "same" );
 		drawScene( same );
 		const sameCanvas = same.canvas();
+
+		let invalidApplyCode = null;
+		try {
+			same.applyShader( invalid );
+		} catch( error ) {
+			invalidApplyCode = error.code;
+		}
+		check( "invalid apply throws synchronously", invalidApplyCode === "INVALID_SHADERS" );
+
+		let missingTextureCode = null;
+		try {
+			same.applyShader( missingTexture );
+		} catch( error ) {
+			missingTextureCode = error.code;
+		}
+		check( "missing texture throws synchronously", missingTextureCode === "MISSING_U_TEXTURE" );
+
+		same.setColor( "#FFFFFF" );
+		same.pset( 1, 1 );
+		await waitMs( 20 );
+		const recoveryPixel = readCanvasPixel( sameCanvas, 1, 1 );
+		check(
+			"rejected apply keeps automatic rendering operational",
+			recoveryPixel.r > 240 && recoveryPixel.g > 240 && recoveryPixel.b > 240
+		);
+		drawScene( same );
+
 		check(
 			"same initial backing 320x200",
 			sameCanvas.width === 320 && sameCanvas.height === 200
 		);
 		const sameWatch = watchBacking( sameCanvas );
 		same.setDisplayShader( invert );
+
+		let invalidDisplayCode = null;
+		try {
+			same.setDisplayShader( invalid );
+		} catch( error ) {
+			invalidDisplayCode = error.code;
+		}
+		check(
+			"invalid display shader throws synchronously",
+			invalidDisplayCode === "INVALID_SHADERS"
+		);
+		same.setColor( "#0000FF" );
+		same.pset( 2, 2 );
+		await waitMs( 20 );
+		const retainedDisplayPixel = readCanvasPixel( sameCanvas, 2, 2 );
+		check(
+			"rejected display shader preserves previous shader",
+			retainedDisplayPixel.r > 240 && retainedDisplayPixel.g > 240 &&
+			retainedDisplayPixel.b < 16
+		);
+		drawScene( same );
+
 		check(
 			"activate keeps backing 320x200",
 			sameCanvas.width === 320 && sameCanvas.height === 200

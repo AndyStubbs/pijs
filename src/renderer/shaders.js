@@ -60,14 +60,21 @@ export function compileShader( gl, type, source ) {
  * @param {WebGL2RenderingContext} gl - WebGL2 context
  * @param {string} vertexSrc - Vertex shader source
  * @param {string} fragSrc - Fragment shader source
+ * @param {string} [cmdName="screen"] - Command name for error messages
  * @returns {WebGLProgram|null} Linked program or null on error
  */
-export function createShaderProgram( gl, vertexSrc, fragSrc ) {
+export function createShaderProgram( gl, vertexSrc, fragSrc, cmdName = "screen" ) {
 	const vertexShader = compileShader( gl, gl.VERTEX_SHADER, vertexSrc );
 	const fragmentShader = compileShader( gl, gl.FRAGMENT_SHADER, fragSrc );
 	
 	if( !vertexShader || !fragmentShader ) {
-		const error = new Error( "screen: Unable to compile shaders." );
+		if( vertexShader ) {
+			gl.deleteShader( vertexShader );
+		}
+		if( fragmentShader ) {
+			gl.deleteShader( fragmentShader );
+		}
+		const error = new Error( `${cmdName}: Unable to compile shaders.` );
 		error.code = "INVALID_SHADERS";
 		throw error;
 	}
@@ -84,7 +91,7 @@ export function createShaderProgram( gl, vertexSrc, fragSrc ) {
 	if( !gl.getProgramParameter( program, gl.LINK_STATUS ) ) {
 		const errLog = gl.getProgramInfoLog( program );
 		gl.deleteProgram( program );
-		const error = new Error( `screen: Shader program error:, ${errLog}.` );
+		const error = new Error( `${cmdName}: Shader program error: ${errLog}.` );
 		error.code = "SHADER_PROGRAM_ERROR";
 		throw error;
 	}
@@ -146,15 +153,16 @@ export function setupDisplayShader( screenData ) {
  *
  * @param {Object} screenData - Screen data object
  * @param {{ id: number, fragmentSource: string, uniforms: Object }} handle - Shader handle
+ * @param {string} [cmdName="screen"] - Command name for compilation errors
  * @returns {{ program: WebGLProgram, locations: Object }} Program and cached locations
  */
-export function getOrCreateCustomShaderProgram( screenData, handle ) {
+export function getOrCreateCustomShaderProgram( screenData, handle, cmdName = "screen" ) {
 	const gl = screenData.gl;
 	let cache = screenData.customShaders[ handle.id ];
 	if( cache ) {
 		return cache;
 	}
-	const program = createShaderProgram( gl, m_displayVertSrc, handle.fragmentSource );
+	const program = createShaderProgram( gl, m_displayVertSrc, handle.fragmentSource, cmdName );
 	const positionLoc = gl.getAttribLocation( program, "a_position" );
 	const textureLoc = gl.getUniformLocation( program, "u_texture" );
 	const sourceSizeLoc = gl.getUniformLocation( program, "u_sourceSize" );
@@ -173,6 +181,29 @@ export function getOrCreateCustomShaderProgram( screenData, handle ) {
 		}
 	};
 	screenData.customShaders[ handle.id ] = cache;
+	return cache;
+}
+
+/**
+ * Compile and validate a custom shader before it changes rendering state.
+ *
+ * Programs are cached per screen after successful compilation. Custom post-processing shaders
+ * must sample the current framebuffer through u_texture.
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {{ id: number, fragmentSource: string, uniforms: Object }} handle - Shader handle
+ * @param {string} cmdName - Public command applying the shader
+ * @returns {{ program: WebGLProgram, locations: Object }} Validated program cache
+ */
+export function validateCustomShaderProgram( screenData, handle, cmdName ) {
+	const cache = getOrCreateCustomShaderProgram( screenData, handle, cmdName );
+	if( cache.locations.texture === null ) {
+		const error = new Error(
+			`${cmdName}: Missing required uniform u_texture in shader.`
+		);
+		error.code = "MISSING_U_TEXTURE";
+		throw error;
+	}
 	return cache;
 }
 

@@ -164,6 +164,7 @@ function applyShader( screenData, options ) {
 	const handle = getShaderHandle( options.shaderHandle );
 	const overrides = options.uniforms ?? {};
 	const merged = { ...( handle.uniforms ?? {} ), ...overrides };
+	g_renderer.validateCustomShaderProgram( screenData, handle, "applyShader" );
 	g_renderer.prepareShaderBatch( screenData, handle, merged );
 	g_renderer.setImageDirty( screenData );
 }
@@ -193,6 +194,7 @@ function setDisplayShader( screenData, options ) {
 	}
 
 	const handle = getShaderHandle( options.shaderHandle, "setDisplayShader" );
+	g_renderer.validateCustomShaderProgram( screenData, handle, "setDisplayShader" );
 	screenData.displayShaderHandle = handle;
 	screenData.displayShaderUniforms = copyUniforms( options.uniforms );
 	screenData.renderToDisplaySize = !screenData.isOffscreen;
