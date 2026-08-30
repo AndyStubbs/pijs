@@ -323,9 +323,12 @@ export function setImageDirty( screenData ) {
 			if( !screenData.isRenderScheduled ) {
 				return;
 			}
-			g_batches.flushBatches( screenData );
-			g_batches.displayToCanvas( screenData );
-			screenData.isRenderScheduled = false;
+			try {
+				g_batches.flushBatches( screenData );
+				g_batches.displayToCanvas( screenData );
+			} finally {
+				screenData.isRenderScheduled = false;
+			}
 		} );
 	}
 }

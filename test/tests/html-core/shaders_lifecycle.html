@@ -253,6 +253,29 @@ void main() {
 		};
 	}
 
+	function watchDefaultPresents( canvas ) {
+		const gl = canvas.getContext( "webgl2" );
+		const orig = gl.drawArrays;
+		let count = 0;
+		gl.drawArrays = function( mode, first, n ) {
+			if( gl.getParameter( gl.DRAW_FRAMEBUFFER_BINDING ) === null ) {
+				count += 1;
+			}
+			return orig.call( gl, mode, first, n );
+		};
+		return {
+			"count": function() {
+				return count;
+			},
+			"reset": function() {
+				count = 0;
+			},
+			"restore": function() {
+				gl.drawArrays = orig;
+			}
+		};
+	}
+
 	function drawScene( api ) {
 		api.cls();
 		api.setColor( "#FF0000" );
@@ -873,7 +896,92 @@ void main() {
 			dynamicPixel.r < 16 && dynamicPixel.g > 240
 		);
 
-		// 25. Expanded uniform failures are synchronous and transactional
+		// 25. Removing a persistent display sampler restores automatic presentation
+		const removalBox = document.createElement( "div" );
+		removalBox.style.position = "absolute";
+		removalBox.style.left = "2010px";
+		removalBox.style.top = "0";
+		removalBox.style.width = "2px";
+		removalBox.style.height = "2px";
+		document.body.appendChild( removalBox );
+		const removalDestination = $.screen( "2x2", removalBox );
+		const removalSource = $.screen( "2x2", null, true );
+		removalSource.rect( 0, 0, 2, 2, "#00FF00" );
+		removalDestination.setDisplayShader( sampler, { "u_aux": removalSource } );
+		let removalInfo = removalDestination.getShaderInfo( sampler );
+		check( "removed sampler display initially active", removalInfo.screen.displayActive );
+		removalSource.removeScreen();
+		removalInfo = removalDestination.getShaderInfo( sampler );
+		check( "removed sampler display cleared", !removalInfo.screen.displayActive );
+		const removalPresents = watchDefaultPresents( removalDestination.canvas() );
+		removalDestination.rect( 0, 0, 2, 2, "#FF0000" );
+		await Promise.resolve();
+		let removalPixel = readCanvasPixel( removalDestination.canvas(), 0, 0 );
+		check(
+			"removed sampler first automatic present",
+			removalPresents.count() === 1 && removalPixel.r > 240 && removalPixel.g < 16
+		);
+		removalPresents.reset();
+		removalDestination.rect( 0, 0, 2, 2, "#0000FF" );
+		await Promise.resolve();
+		removalPixel = readCanvasPixel( removalDestination.canvas(), 0, 0 );
+		check(
+			"removed sampler second automatic present",
+			removalPresents.count() === 1 && removalPixel.r < 16 && removalPixel.b > 240
+		);
+		removalPresents.restore();
+
+		// 26. Automatic presentation scheduling recovers after an exception
+		const recoveryBox = document.createElement( "div" );
+		recoveryBox.style.position = "absolute";
+		recoveryBox.style.left = "2020px";
+		recoveryBox.style.top = "0";
+		recoveryBox.style.width = "2px";
+		recoveryBox.style.height = "2px";
+		document.body.appendChild( recoveryBox );
+		const recoveryScreen = $.screen( "2x2", recoveryBox );
+		const recoveryCanvas = recoveryScreen.canvas();
+		const recoveryGl = recoveryCanvas.getContext( "webgl2" );
+		const originalRecoveryDrawArrays = recoveryGl.drawArrays;
+		const expectedRenderError = new Error( "expected automatic presentation failure" );
+		let expectedRenderErrorSeen = false;
+		let throwOnPresent = true;
+		let recoveryPresentCount = 0;
+		const expectedErrorHandler = ( event ) => {
+			if( event.error === expectedRenderError ) {
+				expectedRenderErrorSeen = true;
+				event.preventDefault();
+			}
+		};
+		window.addEventListener( "error", expectedErrorHandler );
+		recoveryGl.drawArrays = function( mode, first, count ) {
+			if( recoveryGl.getParameter( recoveryGl.DRAW_FRAMEBUFFER_BINDING ) === null ) {
+				if( throwOnPresent ) {
+					throwOnPresent = false;
+					throw expectedRenderError;
+				}
+				recoveryPresentCount += 1;
+			}
+			return originalRecoveryDrawArrays.call( recoveryGl, mode, first, count );
+		};
+		try {
+			recoveryScreen.rect( 0, 0, 2, 2, "#FF0000" );
+			await waitMs( 0 );
+			recoveryScreen.rect( 0, 0, 2, 2, "#00FF00" );
+			await waitMs( 0 );
+		} finally {
+			recoveryGl.drawArrays = originalRecoveryDrawArrays;
+			window.removeEventListener( "error", expectedErrorHandler );
+		}
+		const schedulerRecoveryPixel = readCanvasPixel( recoveryCanvas, 0, 0 );
+		check( "automatic presentation failure observed", expectedRenderErrorSeen );
+		check(
+			"automatic presentation rescheduled after failure",
+			recoveryPresentCount === 1 && schedulerRecoveryPixel.r < 16 &&
+				schedulerRecoveryPixel.g > 240
+		);
+
+		// 27. Expanded uniform failures are synchronous and transactional
 		const invalidVec = $.createShader( `
 #version 300 es
 precision mediump float;
@@ -952,7 +1060,7 @@ void main() {
 			invalidDisplaySamplerCode === "INVALID_UNIFORM_VALUE"
 		);
 
-		// 26. Shader diagnostics and deterministic disposal
+		// 28. Shader diagnostics and deterministic disposal
 		const disposable = $.createShader( tintSrc, {
 			"u_tint": [ 1, 1, 1, 1 ],
 			"u_gain": new Float32Array( [ 1 ] )
@@ -1078,6 +1186,10 @@ void main() {
 		dynamicGl.deleteTexture = originalDeleteTexture;
 		check( "sampler textures cleaned with screen", deletedDynamicTextures >= 3 );
 		dynamicBox.remove();
+		removalDestination.removeScreen();
+		removalBox.remove();
+		recoveryScreen.removeScreen();
+		recoveryBox.remove();
 		sharedSource.removeScreen();
 		separateSource.removeScreen();
 		samplerOff.removeScreen();

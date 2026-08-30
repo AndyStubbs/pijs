@@ -54,6 +54,7 @@ const m_screenCanvasMap = new Map();
 const m_screenDataItems = {};
 const m_screenDataItemGetters = [];
 const m_screenDataInitFunctions = [];
+const m_screenDataPreCleanupFunctions = [];
 const m_screenDataCleanupFunctions = [];
 const MAX_CANVAS_DIMENSION = 8192;
 const m_observedContainers = new Set();
@@ -179,6 +180,16 @@ export function addScreenDataItemGetter( name, fn ) {
  */
 export function addScreenInitFunction( fn ) {
 	m_screenDataInitFunctions.push( fn );
+}
+
+/**
+ * Register a function to run before screen module resources are cleaned up.
+ *
+ * @param {Function} fn - Function called with the screenData being removed
+ * @returns {void}
+ */
+export function addScreenPreCleanupFunction( fn ) {
+	m_screenDataPreCleanupFunctions.push( fn );
 }
 
 /**
@@ -558,6 +569,11 @@ function removeScreen( screenData ) {
 	// Get the id for reference
 	const screenId = screenData.id;
 	flushScreenTextureUsers( screenData );
+
+	// Invalidate references held by other screens before GPU resources are destroyed
+	for( const fn of m_screenDataPreCleanupFunctions ) {
+		fn( screenData );
+	}
 
 	// Call cleanup functions for all modules that need cleanup
 	for( const fn of m_screenDataCleanupFunctions ) {

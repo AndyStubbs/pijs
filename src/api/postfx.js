@@ -31,6 +31,7 @@ export function init( api ) {
 	g_screenManager.addScreenDataItem( "displayShaderUniformBindings", {} );
 	g_screenManager.addScreenDataItem( "displayShaderTextureResolver", null );
 	g_screenManager.addScreenDataItem( "renderToDisplaySize", false );
+	g_screenManager.addScreenPreCleanupFunction( invalidateDisplayShaderScreenSource );
 	registerCommands();
 }
 
@@ -198,12 +199,7 @@ function removeShader( options ) {
 			screenData.displayShaderHandle &&
 			screenData.displayShaderHandle.id === shaderId
 		) {
-			screenData.displayShaderHandle = null;
-			screenData.displayShaderUniforms = {};
-			screenData.displayShaderUniformBindings = {};
-			screenData.displayShaderTextureResolver = null;
-			screenData.renderToDisplaySize = false;
-			g_screenManager.refreshScreenSize( screenData, true );
+			clearDisplayShader( screenData );
 		}
 		g_renderer.deleteCustomShaderProgram( screenData, shaderId );
 	}
@@ -352,6 +348,46 @@ function retainSamplerSources( uniforms, bindings ) {
 	return retained;
 }
 
+/**
+ * Clear a persistent display shader and restore the default presentation path.
+ *
+ * @param {Object} screenData - Screen data object
+ * @returns {void}
+ */
+function clearDisplayShader( screenData ) {
+	screenData.displayShaderHandle = null;
+	screenData.displayShaderUniforms = {};
+	screenData.displayShaderUniformBindings = {};
+	screenData.displayShaderTextureResolver = null;
+	screenData.renderToDisplaySize = false;
+	g_renderer.flushBatches( screenData );
+	g_screenManager.refreshScreenSize( screenData, true );
+}
+
+/**
+ * Invalidate display shaders and cached textures that reference a screen being removed.
+ *
+ * @param {Object} sourceData - Screen data object being removed
+ * @returns {void}
+ */
+function invalidateDisplayShaderScreenSource( sourceData ) {
+	const source = sourceData.canvas;
+	for( const screenData of g_screenManager.getAllScreensData() ) {
+		if( screenData === sourceData ) {
+			continue;
+		}
+		const usesSource = Object.values(
+			screenData.displayShaderUniformBindings ?? {}
+		).some( ( binding ) => {
+			return binding.info.family === "sampler" && binding.sources.includes( source );
+		} );
+		if( usesSource ) {
+			clearDisplayShader( screenData );
+		}
+		g_renderer.deleteWebGL2Texture( screenData, source );
+	}
+}
+
 
 /**
  * Queue custom FBO shader at current point in draw order (does not flush).
@@ -382,13 +418,7 @@ function applyShader( screenData, options ) {
  */
 function setDisplayShader( screenData, options ) {
 	if( options.shaderHandle == null ) {
-		screenData.displayShaderHandle = null;
-		screenData.displayShaderUniforms = {};
-		screenData.displayShaderUniformBindings = {};
-		screenData.displayShaderTextureResolver = null;
-		screenData.renderToDisplaySize = false;
-		g_renderer.flushBatches( screenData );
-		g_screenManager.refreshScreenSize( screenData, true );
+		clearDisplayShader( screenData );
 		return;
 	}
 
