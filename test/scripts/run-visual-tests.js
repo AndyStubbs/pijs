@@ -87,7 +87,7 @@ function logMessage( message ) {
 
 // Test configuration - can be overridden by environment variable
 const TEST_TYPE = process.env.PI_TEST_TYPE || "core";
-const TEST_LITE = process.env.PI_TEST_LITE || false;
+const TEST_LITE = process.env.PI_TEST_LITE === "true";
 const TEST_CONFIG = {
 	"core": {
 		"testsDir": "../tests/html-core",
@@ -108,6 +108,15 @@ const TEST_CONFIG = {
 };
 
 const config = TEST_CONFIG[ TEST_TYPE ];
+const LITE_BUNDLE_PATH = path.resolve( __dirname, "../../build/pi.lite.js" );
+const FULL_BUNDLE_REQUEST = /\/build\/pi\.js(?:\?.*)?$/;
+
+if( TEST_LITE && !fs.existsSync( LITE_BUNDLE_PATH ) ) {
+	throw new Error(
+		"Lite test bundle not found at build/pi.lite.js. Run `npm run build` before " +
+		"running lite tests."
+	);
+}
 
 // Test results storage
 const results = {
@@ -171,9 +180,11 @@ function parseTOML( content ) {
 				continue;
 			}
 
-			// Remove quotes
+			// Remove quotes or convert unquoted booleans
 			if( value.startsWith( '"' ) && value.endsWith( '"' ) ) {
 				value = value.slice( 1, -1 );
+			} else if( value === "true" || value === "false" ) {
+				value = value === "true";
 			}
 
 			// Convert numbers
@@ -670,41 +681,14 @@ function findTestFiles() {
 			const content = fs.readFileSync( filePath, "utf8" );
 			const metadata = parseTOML( content );
 
-			// Add test if lite mode and test is lite or run all tests in non-lite mode
-			if( TEST_LITE && metadata.lite || !TEST_LITE) {
+			// Add lite-compatible tests in lite mode, or all tests in normal mode
+			if( !TEST_LITE || metadata.lite === true ) {
 				testFiles.push( {
 					"file": file,
 					"path": filePath,
 					"url": `${config.urlPrefix}/${file}`,
 					"metadata": metadata
 				} );
-
-				// Swap out pi.js version with the lite version
-				if(
-					TEST_LITE &&
-					metadata.lite &&
-					content.includes( `<script src="../../../build/pi.js"></script>` )
-				) {
-					fs.writeFileSync(
-						filePath,
-						content.replace(
-							`<script src="../../../build/pi.js"></script>`,
-							`<script src="../../../build/pi.lite.js"></script>`
-						)
-					);
-				
-				// Swap out the lite version with full version
-				} else if(
-					content.includes( `<script src="../../../build/pi.lite.js"></script>` )
-				) {
-					fs.writeFileSync(
-						filePath,
-						content.replace(
-							`<script src="../../../build/pi.lite.js"></script>`,
-							`<script src="../../../build/pi.js"></script>`
-						)
-					);
-				}
 			}
 		}
 	}
@@ -730,6 +714,7 @@ test.describe( config.description, () => {
 		}, async ( { page } ) => {
 			const metadata = testFile.metadata;
 			const testName = metadata.file || metadata.name;
+			let liteBundleRequests = 0;
 
 			results.total++;
 
@@ -743,6 +728,18 @@ test.describe( config.description, () => {
 			const isNewTest = !fs.existsSync( referencePath );
 
 			try {
+				if( TEST_LITE ) {
+					await page.route( FULL_BUNDLE_REQUEST, async route => {
+						const liteBundleUrl = new URL( route.request().url() );
+						liteBundleUrl.pathname = liteBundleUrl.pathname.replace(
+							/\/pi\.js$/,
+							"/pi.lite.js"
+						);
+						liteBundleRequests++;
+						await route.continue( { "url": liteBundleUrl.toString() } );
+					} );
+				}
+
 				// Set viewport size
 				await page.setViewportSize( {
 					"width": metadata.width,
@@ -754,6 +751,13 @@ test.describe( config.description, () => {
 					"waitUntil": "networkidle",
 					"timeout": 30000
 				} );
+
+				if( TEST_LITE && liteBundleRequests === 0 ) {
+					throw new Error(
+						`Lite test ${testFile.file} did not request build/pi.js; ` +
+						"the lite bundle could not be remapped."
+					);
+				}
 
 				// Prepare per-test log file named after the screenshot base
 				const baseName = ( testName || testFile.file ).replace( /\.html$/, "" );
