@@ -9,7 +9,7 @@ A JavaScript library for retro-style 2D games and demos. Inspired by QBasic, Pi.
 ## Installation
 
 ```bash
-npm install pijs
+npm install pijs-web
 ```
 
 ---
@@ -19,10 +19,10 @@ npm install pijs
 ### ES Modules (Recommended)
 
 ```javascript
-import $ from "pijs";
+import $ from "pijs-web";
 
 // Create a screen
-const screen = $.screen( "myCanvas", 800, 600 );
+const screen = $.screen( "800x600" );
 
 // Draw a line
 $.line( 0, 0, 100, 100 );
@@ -34,23 +34,25 @@ $.circle( 400, 300, 50 );
 ### Browser (Script Tag)
 
 ```html
-<script src="node_modules/pijs/dist/pi.js"></script>
+<script src="node_modules/pijs-web/dist/pi.js"></script>
 <script>
-  const screen = $.screen( "myCanvas", 800, 600 );
-  $.line( 0, 0, 100, 100 );
+	const screen = $.screen( "800x600" );
+	$.line( 0, 0, 100, 100 );
 </script>
 ```
 
 ---
 
-## What's New in v2.0.0
+## What's New in v2.1.0
 
-- **WebGL2 Rendering** - GPU-accelerated graphics for significantly better performance
-- **Modern Build System** - Multiple output formats (ESM, IIFE) with esbuild
-- **Plugin System** - Official plugin API for extending functionality
-- **Zero Runtime Dependencies** - Lightweight and fast
-- **TypeScript Support** - Full type definitions included
-- **ES2020+ JavaScript** - Modern syntax support
+- **Custom Shaders** - Create GLSL ES 3.00 fragment shaders, apply effects in draw order, and
+  customize final presentation with display shaders
+- **Nested Drawing Views** - Use local coordinates and clipping with push, pop, reset, and
+  coordinate-conversion commands
+- **Shared-Context Offscreen Screens** - Give an offscreen screen a parent for faster image draws
+  within the parent's WebGL context
+- **Rendering Lifecycle Fixes** - Corrected offscreen Y orientation and improved GPU texture
+  cleanup, reuse, and removal
 
 ---
 
@@ -59,14 +61,14 @@ $.circle( 400, 300, 50 );
 This package provides multiple entry points:
 
 ### Main Library
-- **Default:** `import $ from "pijs"` - Full library with all features
-- **Lite Version:** `import $ from "pijs/lite"` - Smaller bundle without some features
+- **Default:** `import $ from "pijs-web"` - Full library with all features
+- **Lite Version:** `import $ from "pijs-web/lite"` - Smaller bundle without some features
 
 ### Plugins
-- `pijs/plugins/gamepad` - Gamepad/controller support
-- `pijs/plugins/keyboard` - Keyboard input handling
-- `pijs/plugins/pointer` - Mouse and touch input
-- `pijs/plugins/sound` - Sound and audio functionality
+- `pijs-web/plugins/gamepad` - Gamepad/controller support
+- `pijs-web/plugins/keyboard` - Keyboard input handling
+- `pijs-web/plugins/pointer` - Mouse and touch input
+- `pijs-web/plugins/sound` - Sound and audio functionality
 
 ---
 
