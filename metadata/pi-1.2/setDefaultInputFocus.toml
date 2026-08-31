@@ -4,9 +4,9 @@ isScreen = false
 summary = "Sets the default input focus for keyboard. By default this will be set to the window.  Normally you don't really need to change this but if you have multiple elements on your screen that will compete for keyboard focus then this will come in handy."
 description = ""
 example = """
-$.setDefaultInputFocus( window );\r
-$.screen( "300x200" );\r
-$.print( "Keyboard event handlers has been placed on the window object." );\r
+$.setDefaultInputFocus( window );
+$.screen( "300x200" );
+$.print( "Keyboard event handlers has been placed on the window object." );
 """
 
 [[parameters]]

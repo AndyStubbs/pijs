@@ -8,37 +8,37 @@ tracked and available via getMouse() or inmouse(). This is automatically called 
 event handlers are registered.
 """
 example = """
-var isMouseEnabled = true;\r
-$.screen( "300x200" );\r
-$.onkey( "m", "down", function () {\r
-\tisMouseEnabled = !isMouseEnabled;\r
-\tif( isMouseEnabled ) {\r
-\t\t$.startMouse();\r
-\t} else {\r
-\t\t$.stopMouse();\r
-\t}\r
-\tdrawScreen();\r
-} );\r
-$.onmouse( "move", function ( data ) {\r
-\t$.setPosPx( data.x, data.y );\r
-\tvar pos = $.getPos();\r
-\t$.setPos( pos.col, pos.row );\r
-\t$.setColor( 1 );\r
-\t$.print( "+", true );\r
-} );\r
-\r
-drawScreen();\r
-\r
-function drawScreen() {\r
-\t$.cls();\r
-\t$.setColor( 7 );\r
-\t$.print();\r
-\t$.print( " Press 'm' key to toggle mouse" );\r
-\t$.print( isMouseEnabled ? " Mouse Enabled" : " Mouse Disabled" );\r
-\t$.setPen( "square", 2 );\r
-\t$.setColor( isMouseEnabled ? 2 : 4 );\r
-\t$.rect( 0, 0, 300, 200 );\t\r
-}\r
+var isMouseEnabled = true;
+$.screen( "300x200" );
+$.onkey( "m", "down", function () {
+\tisMouseEnabled = !isMouseEnabled;
+\tif( isMouseEnabled ) {
+\t\t$.startMouse();
+\t} else {
+\t\t$.stopMouse();
+\t}
+\tdrawScreen();
+} );
+$.onmouse( "move", function ( data ) {
+\t$.setPosPx( data.x, data.y );
+\tvar pos = $.getPos();
+\t$.setPos( pos.col, pos.row );
+\t$.setColor( 1 );
+\t$.print( "+", true );
+} );
+
+drawScreen();
+
+function drawScreen() {
+\t$.cls();
+\t$.setColor( 7 );
+\t$.print();
+\t$.print( " Press 'm' key to toggle mouse" );
+\t$.print( isMouseEnabled ? " Mouse Enabled" : " Mouse Disabled" );
+\t$.setPen( "square", 2 );
+\t$.setColor( isMouseEnabled ? 2 : 4 );
+\t$.rect( 0, 0, 300, 200 );\t
+}
 """
 
 parameters = [ ]

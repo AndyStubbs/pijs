@@ -2,7 +2,7 @@ title = "getDefaultPal"
 category = "colors"
 isScreen = false
 summary = """
-Gets default palette and returns an array with all the color data. The default color palette defines what colors are\r
+Gets default palette and returns an array with all the color data. The default color palette defines what colors are
 available when a new screen is created."""
 description = ""
 example = """

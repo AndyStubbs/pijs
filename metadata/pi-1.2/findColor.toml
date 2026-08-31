@@ -4,10 +4,10 @@ isScreen = true
 summary = "Given a color value, find the index from the color palette."
 description = ""
 example = """
-$.screen("300x200");\r
-var color = $.findColor("red");\r
-$.setColor(color);\r
-$.print("The index of red is " + color + ".");\r
+$.screen("300x200");
+var color = $.findColor("red");
+$.setColor(color);
+$.print("The index of red is " + color + ".");
 """
 
 [[parameters]]

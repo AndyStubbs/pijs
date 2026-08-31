@@ -4,11 +4,11 @@ isScreen = true
 summary = "Sets a color value in the current screen's palette."
 description = ""
 example = """
-$.screen( "300x200" );\r
-$.setColor( 2 );\r
-$.print( "Hello" );\r
-$.setPalColor( 2, "purple" );\r
-$.print( "Hello" );\r
+$.screen( "300x200" );
+$.setColor( 2 );
+$.print( "Hello" );
+$.setPalColor( 2, "purple" );
+$.print( "Hello" );
 """
 
 [[parameters]]

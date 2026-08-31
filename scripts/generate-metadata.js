@@ -46,6 +46,40 @@ function listTomlFilesInDir( dir ) {
 		.sort();
 }
 
+/**
+ * Normalizes platform and corrupted newline sequences to LF.
+ *
+ * @param {string} value - String to normalize.
+ * @returns {string} String containing LF newlines.
+ */
+function normalizeNewlines( value ) {
+	return value.replace( /\r\r\n|\r\n|\r/g, "\n" );
+}
+
+/**
+ * Recursively normalizes every string in parsed metadata.
+ *
+ * @param {*} value - Parsed metadata value.
+ * @returns {*} Normalized metadata value.
+ */
+function normalizeParsedStrings( value ) {
+	if( typeof value === "string" ) {
+		return normalizeNewlines( value );
+	}
+
+	if( Array.isArray( value ) ) {
+		return value.map( ( item ) => normalizeParsedStrings( item ) );
+	}
+
+	if( value && typeof value === "object" ) {
+		for( const key of Object.keys( value ) ) {
+			value[ key ] = normalizeParsedStrings( value[ key ] );
+		}
+	}
+
+	return value;
+}
+
 function formatParameters( parameters = [] ) {
 	if( !Array.isArray( parameters ) ) {
 		return [];
@@ -82,6 +116,7 @@ function formatDescription( description ) {
 	if( !description ) {
 		return "";
 	}
+	description = normalizeNewlines( description );
 	
 	// Replace double newlines with a temporary placeholder
 	const paragraphPlaceholder = "__PARAGRAPH_BREAK__";
@@ -606,7 +641,21 @@ function buildTypeDefinitions( version, screenMethods, apiMethods, objects ) {
 
 function parseMetadataFile( filePath ) {
 	const raw = fs.readFileSync( filePath, "utf8" );
-	return toml.parse( raw );
+	return parseMetadata( raw );
+}
+
+/**
+ * Parses TOML metadata with platform-independent newlines.
+ *
+ * Raw input is normalized so every platform newline style is valid TOML. Parsed strings are
+ * normalized again because TOML escape sequences can introduce carriage returns.
+ *
+ * @param {string} raw - Raw TOML source.
+ * @returns {object} Parsed and normalized metadata.
+ */
+function parseMetadata( raw ) {
+	const normalizedRaw = normalizeNewlines( raw );
+	return normalizeParsedStrings( toml.parse( normalizedRaw ) );
 }
 
 function generateMetadata() {
@@ -763,4 +812,10 @@ if( require.main === module ) {
 	generateMetadata();
 }
 
-module.exports = { generateMetadata };
+module.exports = {
+	formatDescription,
+	generateMetadata,
+	normalizeNewlines,
+	normalizeParsedStrings,
+	parseMetadata
+};

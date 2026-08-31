@@ -4,49 +4,49 @@ isScreen = false
 summary = "Stops tracking keyboard input."
 description = ""
 example = """
-$.screen( "300x200" );\r
-\r
-var hitbox = {\r
-\t"x": 175,\r
-\t"y": 75,\r
-\t"width": 100,\r
-\t"height": 100\r
-};\r
-var msg = "";\r
-var isGreen = true;\r
-\r
-$.onclick( clickBox, false, hitbox );\r
-$.onkey( "any", "down", function ( key ) {\r
-\tmsg = "You pressed " + key.key + ".";\r
-\tdrawScreen();\r
-} );\r
-$.onkey( "any", "up", function ( key ) {\r
-\tmsg = "";\r
-\tdrawScreen();\r
-} );\r
-\r
-drawScreen();\r
-\r
-function drawScreen() {\r
-\t$.cls();\r
-\t$.setColor( 7 );\r
-\t$.print( "Press any key" );\r
-\t$.print( "Click the box to toggle keyboard." );\r
-\t$.print( isGreen ? "Keyboard enabled" : "Keyboard disabled" );\r
-\t$.print( msg );\r
-\t$.setColor( isGreen ? 2 : 4 );\r
-\t$.rect( hitbox );\r
-}\r
-\r
-function clickBox() {\r
-\tisGreen = !isGreen;\r
-\tif( isGreen ) {\r
-\t\t$.startKeyboard();\r
-\t} else {\r
-\t\t$.stopKeyboard();\r
-\t}\r
-\tdrawScreen();\r
-}\r
+$.screen( "300x200" );
+
+var hitbox = {
+\t"x": 175,
+\t"y": 75,
+\t"width": 100,
+\t"height": 100
+};
+var msg = "";
+var isGreen = true;
+
+$.onclick( clickBox, false, hitbox );
+$.onkey( "any", "down", function ( key ) {
+\tmsg = "You pressed " + key.key + ".";
+\tdrawScreen();
+} );
+$.onkey( "any", "up", function ( key ) {
+\tmsg = "";
+\tdrawScreen();
+} );
+
+drawScreen();
+
+function drawScreen() {
+\t$.cls();
+\t$.setColor( 7 );
+\t$.print( "Press any key" );
+\t$.print( "Click the box to toggle keyboard." );
+\t$.print( isGreen ? "Keyboard enabled" : "Keyboard disabled" );
+\t$.print( msg );
+\t$.setColor( isGreen ? 2 : 4 );
+\t$.rect( hitbox );
+}
+
+function clickBox() {
+\tisGreen = !isGreen;
+\tif( isGreen ) {
+\t\t$.startKeyboard();
+\t} else {
+\t\t$.stopKeyboard();
+\t}
+\tdrawScreen();
+}
 """
 
 parameters = [ ]

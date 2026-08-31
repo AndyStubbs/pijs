@@ -4,20 +4,20 @@ isScreen = true
 summary = "Stops the touch event listeners for the screen."
 description = ""
 example = """
-$.screen( "100x100" );\r
-$.startTouch();\r
-$.setPinchZoom( false );\r
-var count = 5;\r
-$.print( count + " touches left" );\r
-$.ontouch( "start", function ( touches ) {\r
-\t$.setColor( Math.floor( Math.random() * 9 ) + 1 );\r
-\t$.print( --count + " touches left" );\r
-\tvar touch = touches[ 0 ];\r
-\t$.pset( touch.x, touch.y );\r
-\tif( count === 0 ) {\r
-\t\t$.stopTouch();\r
-\t}\r
-} );\r
+$.screen( "100x100" );
+$.startTouch();
+$.setPinchZoom( false );
+var count = 5;
+$.print( count + " touches left" );
+$.ontouch( "start", function ( touches ) {
+\t$.setColor( Math.floor( Math.random() * 9 ) + 1 );
+\t$.print( --count + " touches left" );
+\tvar touch = touches[ 0 ];
+\t$.pset( touch.x, touch.y );
+\tif( count === 0 ) {
+\t\t$.stopTouch();
+\t}
+} );
 """
 
 parameters = [ ]

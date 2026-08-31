@@ -17,22 +17,22 @@ You can listen for specific buttons/axes by index, use "any" to listen for any b
 an array to listen for multiple specific buttons. The customData parameter is optional.
 """
 example = """
-$.screen( "300x300" );\r
-$.print( "Press button 3 to stop" );\r
-$.ongamepad( 0, "pressed", "any", pressButton );\r
-$.ongamepad( 0, "pressed", 3, stop );\r
-\r
-// Press button function receives button data and optional customData\r
-function pressButton( btn, customData ) {\r
-\t$.print( "Button " + btn.index + " pressed" );\r
-}\r
-\r
-// Stop function receives event data and optional customData\r
-function stop( data, customData ) {\r
-\t$.offgamepad( 0, "pressed", "any", pressButton );\r
-\t$.offgamepad( 0, "pressed", 3, stop );\r
-\t$.print( "Stopped" );\r
-}\r
+$.screen( "300x300" );
+$.print( "Press button 3 to stop" );
+$.ongamepad( 0, "pressed", "any", pressButton );
+$.ongamepad( 0, "pressed", 3, stop );
+
+// Press button function receives button data and optional customData
+function pressButton( btn, customData ) {
+\t$.print( "Button " + btn.index + " pressed" );
+}
+
+// Stop function receives event data and optional customData
+function stop( data, customData ) {
+\t$.offgamepad( 0, "pressed", "any", pressButton );
+\t$.offgamepad( 0, "pressed", 3, stop );
+\t$.print( "Stopped" );
+}
 """
 
 [[parameters]]

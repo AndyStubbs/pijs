@@ -2,8 +2,8 @@ title = "loadSpritesheet"
 category = "images"
 isScreen = false
 summary = """
-Loads an image for later use in the drawSprite command. It is recommended to use the ready command after loadSpritesheet and before calling the drawSprite command. If you do not provide a\r
-width and height the frames will be auto generated. Use getSpritesheetData to get info on the\r
+Loads an image for later use in the drawSprite command. It is recommended to use the ready command after loadSpritesheet and before calling the drawSprite command. If you do not provide a
+width and height the frames will be auto generated. Use getSpritesheetData to get info on the
 frame count and frame dimensions."""
 description = ""
 example = """

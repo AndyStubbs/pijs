@@ -4,11 +4,11 @@ isScreen = true
 summary = "Toggles between pixel mode and anti-aliased drawing modes."
 description = ""
 example = """
-$.screen( "300x200" );\r
-$.setColor( 4 );\r
-$.line( 30, 80, 270, 50 );\r
-$.setPixelMode( false );\r
-$.line( 30, 120, 270, 90 );\r
+$.screen( "300x200" );
+$.setColor( 4 );
+$.line( 30, 80, 270, 50 );
+$.setPixelMode( false );
+$.line( 30, 120, 270, 90 );
 """
 
 [[parameters]]

@@ -4,24 +4,24 @@ isScreen = true
 summary = "Sets the foreground color."
 description = ""
 example = """
-var i, colors, x, y, size;\r
-\r
-$.screen( "360x300" );\r
-colors = $.getPal();\r
-x = 0;\r
-y = 0;\r
-size = 20;\r
-for( i = 0; i < colors.length; i++ ) {\r
-\t$.setColor( i );\r
-\t$.rect( x, y, size, size );\r
-\t$.setPosPx( x + 1, y + 4 );\r
-\t$.print( i, true );\r
-\tx += size;\r
-\tif( x >= $.width() ) {\r
-\t\tx = 0;\r
-\t\ty += size;\r
-\t}\r
-}\r
+var i, colors, x, y, size;
+
+$.screen( "360x300" );
+colors = $.getPal();
+x = 0;
+y = 0;
+size = 20;
+for( i = 0; i < colors.length; i++ ) {
+\t$.setColor( i );
+\t$.rect( x, y, size, size );
+\t$.setPosPx( x + 1, y + 4 );
+\t$.print( i, true );
+\tx += size;
+\tif( x >= $.width() ) {
+\t\tx = 0;
+\t\ty += size;
+\t}
+}
 """
 
 [[parameters]]

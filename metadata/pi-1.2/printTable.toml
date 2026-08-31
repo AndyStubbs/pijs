@@ -4,29 +4,29 @@ isScreen = true
 summary = "Prints a table on the screen."
 description = ""
 example = """
-var data = [\r
-\t[ "One", "2", "3", "FourSandwhiches", "EggMcMuffins", "6a" ],\r
-\t[ "Hotdogs", "Five", "Six", "7", "8", "9" ],\r
-\t[ "Seven", "Eight", "Nine", "a", "b", "c" ]\r
-];\r
-var format = [\r
-\t"*-----------*---*---*---*----*",\r
-\t"|           |   |   |V  |V   |",\r
-\t"*----*------*---*---*   |    |",\r
-\t"|    |      |       |   |    |",\r
-\t"|    *------*       |   |    |",\r
-\t"*----*      |       |   |    |",\r
-\t"|    |      |       |   |    |",\r
-\t"*----*------*-------*---*----*"\r
-];\r
-$.screen( "300x210" );\r
-$.setColor( 2 );\r
-$.setFont( 1 );\r
-$.print( "12345678901234567890123456789012345678901234567890" );\r
-$.setPos( 18, 2 );\r
-$.printTable( data, format, null, false );\r
-$.printTable( data, format, null, true );\r
-$.printTable( data, null, null );\r
+var data = [
+\t[ "One", "2", "3", "FourSandwhiches", "EggMcMuffins", "6a" ],
+\t[ "Hotdogs", "Five", "Six", "7", "8", "9" ],
+\t[ "Seven", "Eight", "Nine", "a", "b", "c" ]
+];
+var format = [
+\t"*-----------*---*---*---*----*",
+\t"|           |   |   |V  |V   |",
+\t"*----*------*---*---*   |    |",
+\t"|    |      |       |   |    |",
+\t"|    *------*       |   |    |",
+\t"*----*      |       |   |    |",
+\t"|    |      |       |   |    |",
+\t"*----*------*-------*---*----*"
+];
+$.screen( "300x210" );
+$.setColor( 2 );
+$.setFont( 1 );
+$.print( "12345678901234567890123456789012345678901234567890" );
+$.setPos( 18, 2 );
+$.printTable( data, format, null, false );
+$.printTable( data, format, null, true );
+$.printTable( data, null, null );
 """
 [[parameters]]
 name = "items"
@@ -37,12 +37,12 @@ description = "An array of strings that get put into the table from top-left to 
 name = "tableFormat"
 type = "any"
 description = """
-An array of strings that creates the table shape.\r
-\t\t<ul style='margin:0'>\r
-\t\t\t<li><span class='gray'>"*"</span> Indicates a table corner.</li>\r
-\t\t\t<li><span class='gray'>"-"</span> Indicates a table horiztontal line.</li>\r
-\t\t\t<li><span class='gray'>"|"</span> Indicates a table vertical line.</li>\r
-\t\t\t<li><span class='gray'>"V"</span> Inside a cell for vertical orientation of the cell.</li>\r
+An array of strings that creates the table shape.
+\t\t<ul style='margin:0'>
+\t\t\t<li><span class='gray'>"*"</span> Indicates a table corner.</li>
+\t\t\t<li><span class='gray'>"-"</span> Indicates a table horiztontal line.</li>
+\t\t\t<li><span class='gray'>"|"</span> Indicates a table vertical line.</li>
+\t\t\t<li><span class='gray'>"V"</span> Inside a cell for vertical orientation of the cell.</li>
 \t\t</ul>"""
 optional = true
 

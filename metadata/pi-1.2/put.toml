@@ -2,8 +2,8 @@ title = "put"
 category = "primitives"
 isScreen = true
 summary = """
-Writes a 2-dimensional array of color values onto the screen. It's counterpart the get statement\r
-will create an array of color values that you can use with the put statement. Or you can create\r
+Writes a 2-dimensional array of color values onto the screen. It's counterpart the get statement
+will create an array of color values that you can use with the put statement. Or you can create
 your own array to use."""
 description = ""
 example = """

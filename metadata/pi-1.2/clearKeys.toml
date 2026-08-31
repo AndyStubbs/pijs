@@ -4,14 +4,14 @@ isScreen = false
 summary = "Clears event handlers for keyboard events."
 description = ""
 example = """
-$.screen("300x200");\r
-$.print("\\n");\r
-$.onkey( "any", "down", function (key) {\r
-\t$.print(key.key + " pressed.");\r
-});\r
-$.onkey( "Escape", "down", function (key) {\r
-\t$.print(key.key + " pressed.");\r
-\t$.clearKeys();\r
+$.screen("300x200");
+$.print("\\n");
+$.onkey( "any", "down", function (key) {
+\t$.print(key.key + " pressed.");
+});
+$.onkey( "Escape", "down", function (key) {
+\t$.print(key.key + " pressed.");
+\t$.clearKeys();
 });"""
 
 parameters = [ ]

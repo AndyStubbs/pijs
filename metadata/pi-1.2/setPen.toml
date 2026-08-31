@@ -4,11 +4,11 @@ isScreen = true
 summary = "Sets the pen to use for drawing operations."
 description = ""
 example = """
-$.screen( "300x200" );\r
-$.setPen( "circle", 5, [ 32, 16, 8, 0 ] );\r
-$.line( 30, 80, 270, 50 );\r
-$.pset( 150, 100 );\r
-$.draw( "BR15 D15 R100 D30 L15" );\r
+$.screen( "300x200" );
+$.setPen( "circle", 5, [ 32, 16, 8, 0 ] );
+$.line( 30, 80, 270, 50 );
+$.pset( 150, 100 );
+$.draw( "BR15 D15 R100 D30 L15" );
 """
 
 [[parameters]]

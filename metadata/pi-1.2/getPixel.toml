@@ -4,11 +4,11 @@ isScreen = true
 summary = "Gets the pixel color from the screen and returns the color data."
 description = ""
 example = """
-$.screen( "300x200" );\r
-$.setColor( 5 );\r
-$.pset( 55, 55 );\r
-var pixel = $.getPixel( 55, 55 );\r
-$.print( pixel.s );\r
+$.screen( "300x200" );
+$.setColor( 5 );
+$.pset( 55, 55 );
+var pixel = $.getPixel( 55, 55 );
+$.print( pixel.s );
 """
 
 [[parameters]]

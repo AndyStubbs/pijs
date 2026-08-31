@@ -4,10 +4,10 @@ isScreen = true
 summary = "Swaps a color in the screens palette with a new color and updates the screen colors."
 description = ""
 example = """
-$.screen( "300x200" );\r
-$.setColor( 2 );\r
-$.print( "HELLO" );\r
-$.swapColor( 2, "red" );\r
+$.screen( "300x200" );
+$.setColor( 2 );
+$.print( "HELLO" );
+$.swapColor( 2, "red" );
 """
 
 [[parameters]]

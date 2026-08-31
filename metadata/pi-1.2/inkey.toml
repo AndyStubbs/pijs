@@ -30,5 +30,5 @@ optional = true
 [[returns]]
 type = "void"
 description = """
-If the first parameter is left blank then it will return an array of key data objects. If not then it returns the\r
+If the first parameter is left blank then it will return an array of key data objects. If not then it returns the
 an object containing data for a single key."""

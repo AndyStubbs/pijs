@@ -2,18 +2,18 @@ title = "print"
 category = "text"
 isScreen = true
 summary = """
-Prints text onto the screen and moves the text cursor to the next line. Will automatically\r
+Prints text onto the screen and moves the text cursor to the next line. Will automatically
 vertically scroll the text and screen image up when text cursor reaches the bottom of the screen."""
 description = ""
 example = """
-$.screen( "300x200" );\r
-$.print( "Welcome to PI JS", false, true );\r
-$.print();\r
-$.print( "This is a line of text." );\r
-$.print( "This is inline text", true );\r
-$.print( ". Some more inline text.", true );\r
-$.print();\r
-$.print( "The End" );\r
+$.screen( "300x200" );
+$.print( "Welcome to PI JS", false, true );
+$.print();
+$.print( "This is a line of text." );
+$.print( "This is inline text", true );
+$.print( ". Some more inline text.", true );
+$.print();
+$.print( "The End" );
 """
 
 [[parameters]]

@@ -4,8 +4,8 @@ isScreen = false
 summary = "Sets how Pi.js handles errors by setting an error mode between throw, log, and none."
 description = ""
 example = """
-$.setErrorMode( "throw" );\r
-$.screen( "23514235" );\r
+$.setErrorMode( "throw" );
+$.screen( "23514235" );
 """
 
 [[parameters]]

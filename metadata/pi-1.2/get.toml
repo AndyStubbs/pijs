@@ -2,8 +2,8 @@ title = "get"
 category = "primitives"
 isScreen = true
 summary = """
-Gets an area of pixels from the screen and returns an array of color indices.\r
-It's counterpart, the put method, copies the contents of the array back onto\r
+Gets an area of pixels from the screen and returns an array of color indices.
+It's counterpart, the put method, copies the contents of the array back onto
 the screen."""
 description = ""
 example = """
