@@ -8,9 +8,7 @@ Converts a point from screen / FBO coordinates to the active view's local coordi
 example = """
 $.screen( "320x200" );
 $.pushView( 40, 20, 100, 80 );
-$.startMouse();
-const mouse = $.inmouse();
-const local = $.screenToView( mouse.x, mouse.y );
+const local = $.screenToView( 45, 25 );
 $.print( local.x + "," + local.y );
 """
 

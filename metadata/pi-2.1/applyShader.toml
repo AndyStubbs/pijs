@@ -23,7 +23,7 @@ void main() {
 }` );
 
 $.screen( "320x200" );
-$.rect( 10, 10, 40, 40, "red" );
+$.rect( 10, 10, 40, 40, 4 );
 $.applyShader( invert );
 $.line( 0, 0, 50, 50 );
 """
