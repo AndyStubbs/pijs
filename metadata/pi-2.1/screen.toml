@@ -25,7 +25,7 @@ const offscreen = $.screen( {
 } );
 
 $.cls( 1 );
-$.circle( 80, 50, 32, true );
+$.circle( 80, 50, 32, "red" );
 
 $.setScreen( parent );
 $.drawImage( offscreen, 80, 50 );

@@ -12,6 +12,20 @@ Hidden, detached, and offscreen screens store the new uniforms but do not presen
 Known uniform values are reflected and validated synchronously before persistent state changes.
 """
 example = """
+const tint = $.createShader( `#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+uniform float u_gain;
+out vec4 fragColor;
+void main() {
+	vec4 color = texture(u_texture, v_texCoord);
+	fragColor = vec4(color.rgb * u_gain, color.a);
+}` );
+
+$.screen( "320x200" );
+$.setColor( 14 );
+$.circle( 160, 100, 40, 4 );
 $.setDisplayShader( tint, { "u_gain": 1 } );
 $.setDisplayShaderUniforms( { "u_gain": 0.5 } );
 """

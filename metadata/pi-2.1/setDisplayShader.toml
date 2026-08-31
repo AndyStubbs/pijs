@@ -15,7 +15,27 @@ Sampler2D values retain their resolved image sources and refresh dynamic canvas 
 on each presentation. A shader cannot sample its own destination screen.
 """
 example = """
+const invert = $.createShader( `#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+out vec4 fragColor;
+void main() {
+	vec4 color = texture(u_texture, v_texCoord);
+	fragColor = vec4(1.0 - color.rgb, color.a);
+}` );
+
+// Screen 0 inverts colors
 $.screen( "320x200" );
+$.setColor( 4 );
+$.circle( 160, 100, 40, 4 );
+$.setDisplayShader( invert );
+
+// Screen 1 should not invert colors
+$.screen( "320x200" );
+$.setBgColor( 0 );
+$.setColor( 4 );
+$.circle( 180, 120, 40, 4 );
 $.setDisplayShader( invert );
 $.setDisplayShader( null );
 """

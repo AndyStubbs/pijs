@@ -7,16 +7,21 @@ Deletes the stored image and frees associated GPU resources (textures) for all s
 """
 example = """
 $.screen( "300x200" );
-$.loadImage( "media/player.png", "player" );
-$.ready( () => {
-	$.drawImage( "player", 5, 5 );
-	$.removeImage( "player" );
-	try {
-		$.drawImage( "player", 5, 21 );
-	} catch( error ) {
-		$.print( error.code );
-	}
-} );
+const playerA = document.createElement( "canvas" );
+playerA.width = 32;
+playerA.height = 32;
+const context = playerA.getContext( "2d" );
+context.fillStyle = "red";
+context.font = "16pt Arial Bold";
+context.fillText( "A", 0, 16 );
+$.loadImage( playerA, "player" );
+$.drawImage( "player", 5, 5 );
+$.removeImage( "player" );
+try {
+	$.drawImage( "player", 5, 21 );
+} catch( error ) {
+	$.print( error.code );
+}
 """
 
 [[parameters]]
