@@ -1,0 +1,554 @@
+Pi.js v2.1.0 Upgrade Guide: What's New and What Changed
+
+========================================
+INTRODUCTION
+========================================
+
+Pi.js v2.1.0 is a backward-compatible feature release that expands the WebGL2 rendering and
+composition APIs introduced in v2.0. This guide covers the new features, behavioral changes,
+performance improvements, and fixes when upgrading from any Pi.js v2.0.x release to v2.1.0.
+
+The main additions are custom fragment shaders, nested drawing views, and shared-context
+offscreen screens. Version 2.1 also improves GPU resource validation and cleanup. No documented
+v2.0 commands were removed, so most v2.0 applications can upgrade without code changes.
+
+Applications upgrading directly from Pi.js v1.2.4 should read docs/UPGRADE-V2.txt first because
+the v2.0 architectural and API changes still apply.
+
+========================================
+UPGRADE AT A GLANCE
+========================================
+
+1. EXISTING V2.0 APPLICATIONS
+   - Existing drawing, image, text, input, sound, and plugin code remains compatible
+   - No documented v2.0 commands were removed or renamed
+   - Custom shaders, views, and parented offscreen screens are opt-in
+   - Applications that do not use the new APIs should behave as they did in v2.0
+
+2. NEW CAPABILITIES
+   - Create custom GLSL ES 3.00 fragment shaders
+   - Apply shader passes at a specific point in draw order
+   - Replace the final presentation shader for scaling and display effects
+   - Use nested local coordinate systems with automatic clipping
+   - Convert points between view-local and screen coordinates
+   - Share a parent's WebGL context with an offscreen screen
+   - Inspect and explicitly release custom shader resources
+
+3. BEHAVIOR TO REVIEW
+   - `width()` and `height()` return the active view's requested size inside a view
+   - Display shaders may change the canvas backing-store size without changing logical size
+   - Input coordinates remain screen-relative when a view is active
+   - Shader passes process the complete logical framebuffer, not only the active view
+
+========================================
+NEW FEATURES
+========================================
+
+1. CUSTOM FRAGMENT SHADERS
+   - `createShader()` creates a screen-independent shader and returns a numeric handle
+   - Applications provide GLSL ES 3.00 fragment source; Pi.js supplies the vertex shader
+   - Source must begin with or include `#version 300 es`
+   - A shader must declare `uniform sampler2D u_texture` before it can be applied
+   - Programs are compiled, linked, validated, and cached separately for each WebGL screen
+   - Compilation occurs synchronously the first time the shader is used on a screen
+
+   Minimal shader example:
+
+       const invert = $.createShader( `#version 300 es
+       precision mediump float;
+       in vec2 v_texCoord;
+       uniform sampler2D u_texture;
+       out vec4 fragColor;
+
+       void main() {
+           vec4 color = texture( u_texture, v_texCoord );
+           fragColor = vec4( 1.0 - color.rgb, color.a );
+       }` );
+
+       $.screen( "320x200" );
+       $.circle( 160, 100, 40, "red" );
+       $.applyShader( invert );
+
+2. DRAW-ORDER FRAMEBUFFER SHADERS
+   - `applyShader( shaderHandle, uniforms )` queues a shader at the current draw position
+   - Drawing before the call is processed by the shader
+   - Drawing after the call appears on top of the processed result
+   - The pass processes the logical framebuffer at logical screen resolution
+   - `u_sourceSize` and `u_outputSize` both contain the logical screen size
+   - Framebuffer shaders work with both onscreen and offscreen screens
+   - The pass creates a batch break and runs when pending batches are flushed
+   - The active view does not limit the shader pass; the complete framebuffer is processed
+
+   Draw-order example:
+
+       $.rect( 10, 10, 40, 40, "red" );
+       $.applyShader( invert );
+       $.line( 0, 0, 80, 80, "white" );
+
+   In this example the rectangle is inverted, while the line is drawn afterward and is not
+   processed by that shader invocation.
+
+3. DISPLAY SHADERS
+   - `setDisplayShader()` replaces the shader used to present the logical framebuffer
+   - Display shaders do not modify pixels stored in the logical framebuffer
+   - They are suitable for CRT simulation, color grading, scanlines, and custom upscaling
+   - `setDisplayShader( null )` restores the default Pi.js presentation path
+   - `setDisplayShaderUniforms()` updates persistent uniform overrides and re-presents the image
+   - A display shader is stored per screen
+   - Display shaders do not execute for offscreen screens, although their state may be stored
+
+   Display shader example:
+
+       const tint = $.createShader( `#version 300 es
+       precision mediump float;
+       in vec2 v_texCoord;
+       uniform sampler2D u_texture;
+       uniform float u_gain;
+       out vec4 fragColor;
+
+       void main() {
+           vec4 color = texture( u_texture, v_texCoord );
+           fragColor = vec4( color.rgb * u_gain, color.a );
+       }`, {
+           "u_gain": 1
+       } );
+
+       $.screen( "320x200" );
+       $.setDisplayShader( tint );
+       $.setDisplayShaderUniforms( { "u_gain": 0.6 } );
+
+       // Restore normal presentation later.
+       $.setDisplayShader( null );
+
+4. BUILT-IN SHADER UNIFORMS
+   - `u_texture` (`sampler2D`) contains the framebuffer being processed
+   - `u_sourceSize` (`vec2`) contains the source framebuffer dimensions
+   - `u_outputSize` (`vec2`) contains the shader output dimensions
+   - `u_time` (`float`) provides the rendering time for animated effects
+   - `u_frame` (`int`) provides the presentation frame counter
+   - Applications may declare only the built-in uniforms they use
+   - Pi.js owns built-in values; custom uniform maps cannot override them
+   - Texture unit 0 is reserved for `u_texture`
+
+5. CUSTOM SHADER UNIFORMS
+   - Default values may be passed as the second argument to `createShader()`
+   - Per-call values passed to `applyShader()` override defaults for that pass only
+   - Values passed to `setDisplayShader()` replace prior persistent display overrides
+   - `setDisplayShaderUniforms()` merges new values into the current persistent overrides
+   - Unknown uniform names are ignored
+   - Known uniforms with invalid types or component counts throw synchronously
+
+   Supported values include:
+   - Scalar `float`, `int`, `uint`, and `bool` values
+   - Float, integer, unsigned integer, and boolean vectors
+   - Square and non-square GLSL ES 3.00 matrices
+   - Uniform arrays
+   - `sampler2D` images and sampler arrays
+   - Flat JavaScript arrays, `Float32Array`, `Int32Array`, and `Uint32Array`
+
+   Matrices use WebGL column-major order. Vectors, matrices, and arrays must contain exactly the
+   number of components reported by WebGL shader reflection.
+
+6. IMAGE SAMPLER UNIFORMS
+   - `sampler2D` accepts registered Pi.js image names
+   - It also accepts direct browser image sources supported by `drawImage()`
+   - Supported sources include image, video, canvas, bitmap, image-data, and offscreen-canvas
+     objects
+   - A Pi.js screen can be used as a sampler source
+   - Sampler arrays accept one image source for each array element
+   - A shader cannot sample from the same screen it is currently presenting into
+   - Queued `applyShader()` passes snapshot their sampler textures when queued
+   - Display shaders retain sampler sources and refresh dynamic canvas or screen content whenever
+     the destination screen is presented
+
+7. SHADER DIAGNOSTICS AND CLEANUP
+   - `getShaderInfo( shaderHandle )` returns a copied diagnostic snapshot
+   - It does not compile the shader or allocate GPU resources
+   - Global information includes source, default uniforms, compiled-screen count, queued-pass
+     count, and active-display-screen count
+   - When a screen is active, the result also reports that screen's compilation state, queued
+     passes, display use, and reflected uniforms
+   - Reflected uniform information includes name, GLSL type, array size, and reserved status
+   - `removeShader( shaderHandle )` completes queued passes before releasing the shader
+   - It clears the shader from screens using it for final presentation
+   - It deletes cached WebGL programs from every screen and invalidates the handle
+   - Removing an unknown or already removed numeric handle is safe and does nothing
+
+   Lifecycle example:
+
+       const info = $.getShaderInfo( invert );
+       console.log( info.compiledScreenCount );
+       console.log( info.queuedPassCount );
+
+       $.removeShader( invert );
+
+8. NESTED DRAWING VIEWS
+   - `pushView( x, y, width, height )` creates a local drawing region
+   - The child origin is relative to the current view's local origin
+   - Coordinates inside the child begin at `(0, 0)`
+   - Child drawing is clipped to the intersection of the child and all parent clips
+   - Views can be nested to create panels, windows, HUD regions, or component layouts
+   - A requested width or height of zero is valid and creates an empty drawing region
+   - Changing the view flushes pending drawing so operations keep their intended view state
+
+   View example:
+
+       $.screen( "320x200" );
+       $.print( "Main screen" );
+
+       $.pushView( 20, 20, 100, 60 );
+       $.cls( 1 );
+       $.print( "Local panel" );
+
+       $.pushView( 8, 16, 60, 30 );
+       $.rect( 0, 0, 80, 40, "red" );
+       $.popView();
+
+       $.popView();
+       $.print( "Back on the main screen" );
+
+9. VIEW STACK AND PRINT CURSOR
+   - Each `pushView()` saves the parent view's print cursor
+   - A new child view starts with its print cursor at `(0, 0)`
+   - `popView()` restores the parent view and its saved print cursor
+   - Popping the last view returns to implicit full-screen drawing
+   - Calling `popView()` with an empty stack throws an error with code `VIEW_STACK_EMPTY`
+   - `resetView()` clears the entire stack and resets the cursor to `(0, 0)`
+   - `resetView()` is safe when no view is active
+   - `resetView()` does not restore cursors saved by discarded nested views
+   - Text wrapping and scrolling use the active view's requested size and effective clip
+
+10. VIEW-AWARE DRAWING AND READING
+   - Shapes, lines, images, sprites, pixels, paint, clearing, and text use local coordinates
+   - Pixel output is restricted to the effective view clip
+   - `paint()` cannot flood outside the active clip
+   - Screen reads are reduced to the portion inside the active clip
+   - `getPixel()` rejects positions outside the clip even if they are inside the framebuffer
+   - `cls()` clears the active view when called without rectangle arguments
+   - A full-view clear resets the active view's print cursor to `(0, 0)`
+   - The logical framebuffer size does not change when views are pushed or popped
+
+11. VIEW COORDINATE CONVERSION
+   - Input events remain relative to the logical screen, not the active view
+   - `viewToScreen( x, y )` converts a local view point to screen/FBO coordinates
+   - `screenToView( x, y )` converts a screen/FBO point to local view coordinates
+   - Both functions return a new `{ x, y }` object
+   - Conversions use the requested logical origin, not the clipped origin
+
+   Input conversion example:
+
+       $.pushView( 40, 20, 100, 80 );
+
+       const localMouse = $.screenToView( mouseX, mouseY );
+       const screenOrigin = $.viewToScreen( 0, 0 );
+
+       console.log( localMouse.x, localMouse.y );
+       console.log( screenOrigin.x, screenOrigin.y );
+
+       $.popView();
+
+12. SHARED-CONTEXT OFFSCREEN SCREENS
+   - The `screen()` options object accepts a new optional `parent` property
+   - `parent` may be an existing screen API object or screen ID
+   - It is valid only when `isOffscreen` is `true`
+   - The offscreen screen uses its parent's WebGL context
+   - `drawImage()` can then draw the offscreen framebuffer directly in the parent context
+   - This avoids unnecessary texture transfers and improves composition performance
+   - A parent controls rendering-context affinity only
+   - Removing a parent does not automatically remove its offscreen children
+
+   Shared-context example:
+
+       const main = $.screen( { "aspect": "320x200" } );
+       const layer = $.screen( {
+           "aspect": "160x100",
+           "isOffscreen": true,
+           "parent": main
+       } );
+
+       layer.cls( 0 );
+       layer.circle( 80, 50, 30, "red" );
+
+       main.drawImage( layer, 80, 50 );
+
+========================================
+BEHAVIORAL CHANGES
+========================================
+
+1. `width()` AND `height()` ARE VIEW-AWARE
+   - With no active view, they return the logical framebuffer dimensions as before
+   - With an active view, they return the requested local view width and height
+   - They do not return the smaller effective clip when a view extends outside its parent
+
+   Code that always needs the full-screen dimensions should store them before pushing a view or
+   query them when the view stack has been reset.
+
+2. DISPLAY SHADERS CHANGE PRESENTATION SIZE
+   - Without a display shader, the canvas backing store uses the logical screen size
+   - With a display shader, the backing store tracks the CSS presentation size, subject to the
+     renderer's size limits
+   - The logical framebuffer and drawing coordinates remain unchanged
+   - `u_sourceSize` reports the logical size
+   - `u_outputSize` reports the canvas backing-store size
+   - Clearing the display shader restores the default logical backing-store behavior
+
+   Do not use `canvas.width` or `canvas.height` as logical drawing dimensions while a display
+   shader is active. Continue to use `width()` and `height()` outside a view.
+
+3. INPUT REMAINS SCREEN-RELATIVE
+   - Activating a view does not transform keyboard, mouse, pointer, touch, or gamepad input
+   - Mouse and touch positions continue to use logical screen coordinates
+   - Use `screenToView()` when comparing input positions with local view content
+
+4. VIEW RESIZING
+   - View definitions retain their requested local rectangles
+   - When a screen resizes, Pi.js recomputes view origins and clips from those rectangles
+   - An area clipped by the old screen size may become visible after the screen grows
+   - Stored print cursor positions may be normalized to the resized local view
+
+5. SHADER VALIDATION
+   - Invalid source, missing `u_texture`, compilation errors, and link errors throw synchronously
+     when the shader is first applied to a screen
+   - Invalid uniform shapes and types throw before a pass or display-state change is committed
+   - A failed shader does not leave rendering permanently blocked
+   - Applications may catch shader errors and continue drawing normally
+
+========================================
+FIXES AND RESOURCE MANAGEMENT
+========================================
+
+1. OFFSCREEN IMAGE ORIENTATION
+   - Drawing an offscreen screen as an image no longer reverses its Y axis when the source and
+     destination share a WebGL context
+   - Existing workarounds that manually flipped same-context offscreen images should be removed
+
+2. IMAGE REMOVAL
+   - `removeImage( name )` now completes queued draws that reference the image before deletion
+   - Associated WebGL textures are released for all screens
+   - Drawing the removed registered name afterward throws `IMAGE_NOT_FOUND`
+
+3. SHADER RESOURCE CLEANUP
+   - Failed compilation cleans up shader-stage resources
+   - Screen cleanup releases cached shader programs and display-shader references
+   - `removeShader()` provides explicit application-level shader disposal
+
+4. FRAMEBUFFER AND TEXTURE CLEANUP
+   - Temporary framebuffers used for texture copies are reused instead of recreated repeatedly
+   - Temporary framebuffer resources are deleted when their screen is removed
+   - Texture updates and deletions safely account for queued batches
+
+========================================
+API COMPATIBILITY
+========================================
+
+Pi.js v2.1.0 does not remove or rename any documented v2.0 API. Existing v2.0 code should
+continue to work without changes.
+
+New commands:
+- `createShader( fragmentSource, uniforms )`
+- `applyShader( shaderHandle, uniforms )`
+- `setDisplayShader( shaderHandle, uniforms )`
+- `setDisplayShaderUniforms( uniforms )`
+- `getShaderInfo( shaderHandle )`
+- `removeShader( shaderHandle )`
+- `pushView( x, y, width, height )`
+- `popView()`
+- `resetView()`
+- `viewToScreen( x, y )`
+- `screenToView( x, y )`
+
+Extended commands:
+- `screen()` accepts `parent` as the fifth positional parameter or as an options property
+- `width()` returns the requested active-view width when a view is active
+- `height()` returns the requested active-view height when a view is active
+- `removeImage()` now safely flushes queued users and releases GPU textures
+
+New public data concepts:
+- `ShaderUniforms` maps GLSL uniform names to scalar, array, typed-array, or image values
+- `ShaderInfo` describes shader source, defaults, lifecycle counts, and per-screen reflection
+- Coordinate conversion functions return position objects shaped as `{ x, y }`
+
+========================================
+MIGRATION GUIDE
+========================================
+
+1. UPDATE THE LIBRARY
+   - Replace all Pi.js v2.0 bundle files with matching v2.1 bundle files
+   - Keep full, lite, ESM, and IIFE variants consistent with the variant already in use
+   - Update separately loaded plugin bundles at the same time when applicable
+   - Do not mix v2.0 core and v2.1-generated type definitions
+
+2. VERIFY EXISTING CODE FIRST
+   - Run the application without adopting any new features
+   - Check drawing order, offscreen composition, image removal, and screen resizing
+   - Remove any manual Y-axis flip used only to correct same-context offscreen drawing
+   - Confirm code does not depend on leaked textures or other resources after `removeImage()`
+
+3. ADOPT VIEWS FOR LOCAL LAYOUTS
+   - Replace repeated manual coordinate offsets with `pushView()` and `popView()`
+   - Balance every `pushView()` with a `popView()` when the parent cursor must be restored
+   - Use `resetView()` for a deliberate return to full-screen coordinates
+   - Convert screen-relative pointer positions with `screenToView()`
+   - Review code that calls `width()` or `height()` inside local drawing helpers
+
+   Before v2.1:
+
+       const panelX = 20;
+       const panelY = 20;
+       $.rect( panelX + 5, panelY + 5, 40, 20, "red" );
+       $.setPosPx( panelX + 8, panelY + 8 );
+       $.print( "Status" );
+
+   With a v2.1 view:
+
+       $.pushView( 20, 20, 100, 60 );
+       $.rect( 5, 5, 40, 20, "red" );
+       $.setPosPx( 8, 8 );
+       $.print( "Status" );
+       $.popView();
+
+4. CHOOSE THE CORRECT SHADER PATH
+   - Use `applyShader()` when an effect must occur between drawing operations
+   - Use `setDisplayShader()` when an effect should alter only final presentation
+   - Use `applyShader()` for effects that must become part of later framebuffer contents
+   - Use a display shader for output-resolution effects or non-destructive color treatment
+
+5. MANAGE SHADER HANDLES
+   - Store the numeric value returned by `createShader()`
+   - Reuse the handle across screens; Pi.js maintains per-screen compiled programs
+   - Use `getShaderInfo()` for diagnostics without forcing compilation
+   - Call `removeShader()` when an application permanently retires a shader
+   - Do not use a handle after removing it
+
+6. VALIDATE CUSTOM UNIFORMS
+   - Match JavaScript value types to the linked GLSL declarations
+   - Supply flattened vectors, matrices, and arrays with exact component counts
+   - Use booleans for `bool` uniforms
+   - Keep auxiliary sampler counts within the device texture-unit limit
+   - Catch initialization errors if user-provided shader source is supported
+
+7. ADOPT PARENTED OFFSCREEN SCREENS
+   - Create the onscreen parent first
+   - Pass that parent when creating offscreen layers drawn primarily into it
+   - Continue removing parent and child screens explicitly according to application ownership
+   - Do not pass `parent` to an onscreen screen
+
+   Before v2.1:
+
+       const layer = $.screen( {
+           "aspect": "160x100",
+           "isOffscreen": true
+       } );
+
+   With shared parent context:
+
+       const layer = $.screen( {
+           "aspect": "160x100",
+           "isOffscreen": true,
+           "parent": main
+       } );
+
+8. TEST PRESENTATION AND CLEANUP
+   - Test display shaders at more than one CSS canvas size
+   - Verify custom upscalers use `u_sourceSize` and `u_outputSize` correctly
+   - Test nested clips with children that partially extend outside their parents
+   - Test screen resize while views are active
+   - Test removing images and shaders after queued rendering operations
+
+========================================
+ERRORS TO HANDLE
+========================================
+
+1. VIEW ERRORS
+   - `VIEW_STACK_EMPTY`: `popView()` was called without a view to pop
+   - `INVALID_PARAMETER`: coordinate conversion received invalid coordinates
+   - Invalid view rectangles throw before the view stack changes
+
+2. SHADER ERRORS
+   - `INVALID_FRAGMENT_SOURCE`: shader source is missing, empty, or not GLSL ES 3.00
+   - `INVALID_SHADER_HANDLE`: a command received a malformed or unknown shader handle
+   - `INVALID_UNIFORMS`: the uniforms argument is not an object map
+   - `INVALID_UNIFORM_VALUE`: a known uniform has the wrong type, size, or sampler input
+   - `UNSUPPORTED_UNIFORM_TYPE`: the linked shader uses an unsupported custom uniform type
+   - `TOO_MANY_TEXTURE_UNIFORMS`: the shader requires more texture units than the context allows
+   - WebGL compilation and linking errors include diagnostic messages from the browser
+
+3. SCREEN PARENT ERRORS
+   - `INVALID_SCREEN_PARENT`: `parent` is invalid, deleted, or used with an onscreen screen
+   - Create the parent before the offscreen child and pass a current screen object or ID
+
+========================================
+TECHNICAL DETAILS
+========================================
+
+SHADER PIPELINE
+- Custom shaders use a built-in fullscreen-quad vertex stage
+- `applyShader()` inserts a logical-framebuffer-to-logical-framebuffer pass
+- Display shaders run only while presenting the logical framebuffer to an onscreen canvas
+- Program compilation and uniform reflection are cached per WebGL context and screen
+- Framebuffer shader sampler inputs are snapshotted to preserve queued draw order
+- Display shader sampler inputs are refreshed when the destination is presented
+
+VIEW MODEL
+- An empty view stack represents the complete logical framebuffer
+- Each view stores a requested local rectangle, logical origin, and effective clip
+- Effective clips use the intersection of the child rectangle and its parent clip
+- Pixel clipping uses half-open bounds from the left/top edge up to, but not including, the
+  right/bottom edge
+- Views change coordinate interpretation and clipping, not framebuffer allocation
+- Resizing recomputes the view cache from the requested rectangles
+
+OFFSCREEN CONTEXT SHARING
+- A parented offscreen screen reuses the parent's WebGL2 rendering context
+- Its framebuffer remains a separate logical drawing target
+- Same-context drawing can use the framebuffer texture directly
+- Parent selection is a rendering optimization, not an ownership or removal relationship
+
+RESOURCE LIFECYCLE
+- Images maintain texture caches for the screens that use them
+- Removing an image flushes queued texture users before releasing cached textures
+- Shader handles own per-screen compiled program caches
+- Removing a shader finishes queued passes, clears display use, and deletes those caches
+- Removing a screen cleans up textures, shader programs, and temporary framebuffer resources
+
+========================================
+UPGRADE CHECKLIST
+========================================
+
+- [ ] Replace v2.0 bundles and type definitions with v2.1 versions
+- [ ] Run existing application behavior before adopting new APIs
+- [ ] Remove obsolete same-context offscreen Y-flip workarounds
+- [ ] Review `width()` and `height()` calls that may execute inside views
+- [ ] Convert screen-relative input coordinates before using them in a view
+- [ ] Balance `pushView()` calls or deliberately use `resetView()`
+- [ ] Verify shader source includes `#version 300 es` and declares `u_texture`
+- [ ] Match custom uniform values to their GLSL declarations
+- [ ] Test display shaders at different CSS output sizes
+- [ ] Explicitly remove retired images, shaders, and screens
+- [ ] Test parented offscreen composition and independent child cleanup
+
+========================================
+SUMMARY
+========================================
+
+Pi.js v2.1.0 adds major rendering and composition capabilities while preserving v2.0 API
+compatibility:
+
+- Custom GLSL ES 3.00 framebuffer and display shaders
+- Reflected scalar, vector, matrix, array, and image-sampler uniforms
+- Shader diagnostics and explicit GPU resource disposal
+- Nested local-coordinate views with clipping and cursor restoration
+- View/screen coordinate conversion for input handling
+- Shared-context offscreen screens for faster composition
+- Correct same-context offscreen image orientation
+- Safer image, texture, shader, and framebuffer cleanup
+
+Most v2.0 applications require only a bundle update. Review view-sensitive dimensions, canvas
+backing dimensions under display shaders, and any offscreen Y-axis workarounds when adopting the
+new features.
+
+For detailed API documentation, visit: https://pijs.org
+
+========================================
+END OF UPGRADE GUIDE
+========================================
