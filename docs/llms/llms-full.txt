@@ -12,7 +12,7 @@ Pi.js is a JavaScript library for creating retro-style games and demos, inspired
 - `$` is only set if not already defined (won't conflict with jQuery)
 
 ## Version Information
-- Current: v2.0.0 (WebGL 2 only, browser-only)
+- Current: v2.1.0 (WebGL 2 only, browser-only)
 - Legacy: v1.2.4 (Canvas2D support, available on separate branch)
 - Zero runtime dependencies
 - Requires modern browser with WebGL 2 support
@@ -55,7 +55,7 @@ $.cls();  // Clear entire screen
 $.cls( x, y, width, height );  // Clear rectangular region
 ```
 
-**Note:** Rendering is automatic in v2.0. There is no `render()`, `setAutoRender()`, or `setPixelMode()` - the library always uses pixel-perfect rendering automatically.
+**Note:** Rendering is automatic in v2.0+. There is no `render()`, `setAutoRender()`, or `setPixelMode()` - the library always uses pixel-perfect rendering automatically.
 
 **Blend Modes:**
 ```javascript
@@ -538,7 +538,7 @@ function animateSprite() {
 
 ## Migration from v1.2.4
 
-Key differences in v2.0.0:
+Key differences in v2.0.0+:
 - Canvas2D mode removed (WebGL 2 only)
 - New plugin system
 - Some API changes (see upgrade guide)
