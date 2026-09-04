@@ -1,10 +1,13 @@
-# Pi.js Code Examples
+# Pi.js 2.1.0 Code Examples
 
 This file contains example code snippets demonstrating how to use Pi.js for various tasks.
 
 # QUICK REFERENCE INDEX
 - Task: Hello World -> see section ### Hello World
 - Task: Nested drawing views -> see section ### Nested Views
+- Task: Framebuffer shader -> see section ### Framebuffer Shader
+- Task: Display shader -> see section ### Display Shader Uniforms
+- Task: Offscreen composition -> see section ### Parented Offscreen Screen
 - Task: Pong Game -> see section ### Pong Game
 - Task: Mary Had A Little Lamb -> see section ### Mary Had A Little Lamb
 - Task: Retro City Intro -> see section ### Retro City
@@ -41,8 +44,101 @@ $.cls();
 $.print( "child" );
 const screenPt = $.viewToScreen( 0, 0 );
 const localPt = $.screenToView( screenPt.x, screenPt.y );
+console.log( localPt.x, localPt.y );
 $.popView();
 $.popView();
+
+// Discard any remaining views and return to full-screen coordinates.
+$.resetView();
+```
+
+Pointer events stay in screen coordinates while a view is active. Convert them before comparing
+them with local content:
+
+```javascript
+$.screen( "320x200" );
+$.pushView( 40, 20, 100, 80 );
+
+$.onpress( "down", function( press ) {
+	const local = $.screenToView( press.x, press.y );
+	if( local.x >= 0 && local.x < $.width() && local.y >= 0 && local.y < $.height() ) {
+		$.circle( local.x, local.y, 3, "white" );
+	}
+} );
+```
+
+## Shaders
+
+### Framebuffer Shader
+
+`applyShader()` processes drawing queued before it. Drawing queued afterward appears on top of the
+processed framebuffer.
+
+```javascript
+const invert = $.createShader( `#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+out vec4 fragColor;
+
+void main() {
+	vec4 color = texture( u_texture, v_texCoord );
+	fragColor = vec4( 1.0 - color.rgb, color.a );
+}` );
+
+$.screen( "320x200" );
+$.circle( 160, 100, 40, "red" );
+$.applyShader( invert );
+$.print( "This text is drawn after the shader" );
+
+const shaderInfo = $.getShaderInfo( invert );
+console.log( shaderInfo.compiledScreenCount );
+$.removeShader( invert );
+```
+
+### Display Shader Uniforms
+
+```javascript
+const tint = $.createShader( `#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+uniform float u_gain;
+out vec4 fragColor;
+
+void main() {
+	vec4 color = texture( u_texture, v_texCoord );
+	fragColor = vec4( color.rgb * u_gain, color.a );
+}`, { "u_gain": 1.0 } );
+
+$.screen( "320x200" );
+$.setDisplayShader( tint, { "u_gain": 0.8 } );
+$.setDisplayShaderUniforms( { "u_gain": 0.6 } );
+
+// Restore normal presentation before releasing the shader.
+$.setDisplayShader( null );
+$.removeShader( tint );
+```
+
+## Offscreen Composition
+
+### Parented Offscreen Screen
+
+```javascript
+const main = $.screen( "320x200" );
+const layer = $.screen( {
+	"aspect": "160x100",
+	"isOffscreen": true,
+	"parent": main
+} );
+
+layer.cls();
+layer.circle( 80, 50, 30, "red" );
+main.drawImage( layer, 80, 50 );
+
+// Context sharing does not imply ownership; remove both screens.
+layer.removeScreen();
+main.removeScreen();
 ```
 
 ## Drawing Primitives
@@ -215,7 +311,10 @@ $.ready( function() {
 $.screen( "200x200" );
 $.setColor( 15 );
 $.setWordBreak( true );
-$.print( "This is a long line of text that will wrap automatically when it reaches the edge of the screen." );
+$.print(
+	"This is a long line of text that will wrap automatically when it reaches the edge " +
+	"of the screen."
+);
 ```
 
 ## Colors and Palettes
@@ -242,23 +341,24 @@ $.setColor( { "r": 255, "g": 0, "b": 0, "a": 255 } );  // Red
 ### Custom Palette
 ```javascript
 const customPalette = [
-	"#000000",  // 0: Black
-	"#FFFFFF",  // 1: White
-	"#FF0000",  // 2: Red
-	"#00FF00",  // 3: Green
-	"#0000FF",  // 4: Blue
-	"#FFFF00",  // 5: Yellow
-	"#FF00FF",  // 6: Magenta
-	"#00FFFF"   // 7: Cyan
+	"#000000",  // Becomes index 1: Black
+	"#FFFFFF",  // Becomes index 2: White
+	"#FF0000",  // Becomes index 3: Red
+	"#00FF00",  // Becomes index 4: Green
+	"#0000FF",  // Becomes index 5: Blue
+	"#FFFF00",  // Becomes index 6: Yellow
+	"#FF00FF",  // Becomes index 7: Magenta
+	"#00FFFF"   // Becomes index 8: Cyan
 ];
 
 $.setDefaultPal( customPalette );
 $.screen( "640x480" );
 
 // Use palette indices
-for( let i = 0; i < 8; i++ ) {
+// Index 0 is always reserved for transparent black.
+for( let i = 1; i <= 8; i++ ) {
 	$.setColor( i );
-	$.rect( i * 80, 0, 80, 480, i );
+	$.rect( ( i - 1 ) * 80, 0, 80, 480, i );
 }
 ```
 
@@ -345,20 +445,19 @@ $.ready( function() {
 ```javascript
 $.ready( function() {
 	$.screen( "640x480" );
-	$.startMouse();
 	
 	$.setColor( 15 );
 	$.print( "Click and drag to draw" );
 	
 	$.onmouse( "down", function( e ) {
-		if( e.buttons.left ) {
+		if( e.buttons & 1 ) {
 			$.setColor( 15 );
 			$.pset( e.x, e.y );
 		}
 	} );
 	
 	$.onmouse( "move", function( e ) {
-		if( e.buttons.left ) {
+		if( e.buttons & 1 ) {
 			$.setColor( 15 );
 			$.pset( e.x, e.y );
 		}
@@ -370,16 +469,17 @@ $.ready( function() {
 ```javascript
 $.ready( function() {
 	$.screen( "640x480" );
-	$.startTouch();
 	
-	$.ontouch( "start", function( e ) {
-		$.setColor( 15 );
-		$.circle( e.x, e.y, 10 );
+	$.ontouch( "start", function( touches ) {
+		for( const touch of touches ) {
+			$.circle( touch.x, touch.y, 10, 15 );
+		}
 	} );
 	
-	$.ontouch( "move", function( e ) {
-		$.setColor( 15 );
-		$.circle( e.x, e.y, 10 );
+	$.ontouch( "move", function( touches ) {
+		for( const touch of touches ) {
+			$.circle( touch.x, touch.y, 10, 15 );
+		}
 	} );
 } );
 ```
@@ -507,8 +607,8 @@ $.ready( function() {
 	$.drawImage( "mySprite", 100, 100 );
 	
 	// Draw with transformations
-	$.drawImage( "mySprite", 200, 200, 45, 0.5, 0.5, 0.8, 2, 2 );
-	// x, y, rotation, anchorX, anchorY, alpha, scaleX, scaleY
+	$.drawImage( "mySprite", 200, 200, "#FFFFFFCC", 0.5, 0.5, 2, 2, 45 );
+	// x, y, color, anchorX, anchorY, scaleX, scaleY, angle in degrees
 } );
 ```
 
@@ -540,10 +640,13 @@ $.setColor( 15 );
 $.circle( 320, 240, 50 );
 
 // Capture screen region as image
-$.getImage( "captured", 0, 0, 640, 480 );
+const captured = $.createImageFromScreen( "captured", 0, 0, 639, 479 );
 
 // Draw captured image elsewhere
-$.drawImage( "captured", 0, 0 );
+$.drawImage( captured, 0, 0 );
+
+// Queued draws finish before textures are released.
+$.removeImage( captured );
 ```
 
 ## Animation
@@ -657,7 +760,6 @@ $.ready( function() {
 		$.setPos( 0, 0 );
 		$.print( "Score: " + score );
 		
-		// Rendering is automatic - no need to call render()
 		requestAnimationFrame( gameLoop );
 	}
 	
@@ -807,8 +909,8 @@ $.screen( "640x480" );
 // Set multiple properties at once
 $.set( {
 	"color": 15,
-	"pen": "circle",
 	"blend": "alpha",
+	"noise": [ 4, 2, 0, 0 ],
 	"bgColor": "#000080"
 } );
 
@@ -819,26 +921,33 @@ $.circle( 320, 240, 50 );
 
 ### Creating a Simple Plugin
 ```javascript
-pi.registerPlugin( "myPlugin", function( pluginApi ) {
-	
-	// Add a custom command
-	pluginApi.addCommand( "drawStar", function( screenData, args ) {
-		const x = args[ 0 ];
-		const y = args[ 1 ];
-		const size = args[ 2 ];
-		const color = args[ 3 ] || screenData.color;
-		
-		// Draw a star
-		const api = pluginApi.getApi();
-		api.setColor( color );
-		for( let i = 0; i < 5; i++ ) {
-			const angle = ( i / 5 ) * Math.PI * 2;
-			const px = x + Math.cos( angle ) * size;
-			const py = y + Math.sin( angle ) * size;
-			api.line( x, y, px, py );
-		}
-	}, true, [ "x", "y", "size", "color" ], false );  // isScreen=true, isScreenOptional=false
-}, "1.0.0", "My custom plugin" );
+pi.registerPlugin( {
+	"name": "myPlugin",
+	"version": "1.0.0",
+	"description": "My custom plugin",
+	"dependencies": [],
+	"init": function( pluginApi ) {
+		pluginApi.addCommand(
+			"drawStar",
+			function( screenData, options ) {
+				const x = options.x;
+				const y = options.y;
+				const size = options.size;
+				const color = options.color ?? screenData.color;
+				screenData.api.setColor( color );
+
+				for( let i = 0; i < 5; i++ ) {
+					const angle = ( i / 5 ) * Math.PI * 2;
+					const px = x + Math.cos( angle ) * size;
+					const py = y + Math.sin( angle ) * size;
+					screenData.api.line( x, y, px, py );
+				}
+			},
+			true,
+			[ "x", "y", "size", "color" ]
+		);
+	}
+} );
 
 // Use the plugin
 $.ready( function() {

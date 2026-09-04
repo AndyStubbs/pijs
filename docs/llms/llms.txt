@@ -1,116 +1,185 @@
-# Pi.js - Quick Reference for LLMs
+# Pi.js 2.1.0 - Quick Reference for LLMs
 
 ## Overview
-Pi.js is a JavaScript library for retro-style games and demos, inspired by QBasic. It provides graphics, sound, and input handling with a beginner-friendly API.
+
+Pi.js is a browser-only WebGL 2 library for retro-style graphics, bitmap text, sound, and input.
+The global API is available as `pi` and, when it is not already defined, `$`.
 
 ## Key Facts
-- Library alias: `$` (preferred) or `pi` (both reference the same object)
-- Browser-only library (WebGL 2 required)
-- Zero runtime dependencies
-- Version: 2.1.0 (current)
 
-## Essential API Patterns
+- Current version: 2.1.0
+- Create a screen before calling screen-scoped commands.
+- Coordinates start at the top-left and use logical screen pixels.
+- Rendering is automatic and pixel-perfect.
+- Most commands accept positional arguments or one options object.
+- Index 0 in a palette is reserved for transparent black.
 
-### Screen Setup
+## Setup and Drawing
+
 ```javascript
-$.screen( "800x600" );  // Create screen with exact dimensions
-$.screen( "640m480" );  // Multiple mode (scales to exact multiples)
-$.screen( "640e480" );  // Extend mode (fills container, maintains aspect)
-$.screen( "640x480", "containerId" );  // With container element
-```
-
-### Basic Drawing
-```javascript
-$.setColor( "#FF0000" );  // Set color (hex, palette index, or RGB array)
-$.line( 0, 0, 100, 100 );  // Draw line
-$.circle( 400, 300, 50 );  // Draw circle
-$.rect( 10, 10, 100, 50 );  // Draw rectangle
-$.pset( 50, 50 );  // Draw pixel
-```
-
-### Text Printing
-```javascript
-$.print( "Hello World" );  // Print text
-$.setPos( 10, 5 );  // Set cursor position (column, row)
-$.setPosPx( 100, 50 );  // Set cursor position (pixels)
-```
-
-### Input Handling
-```javascript
-// Keyboard auto-starts when key commands are used
-$.startKeyboard();  // Only needed to restart after stopKeyboard()
-const keys = $.inkey();  // Get all pressed keys
-if( $.inkey( "ArrowLeft" ) ) { /* move left */ }
-
-$.startMouse();  // Start mouse input
-const mouse = $.inmouse();  // Get mouse state {x, y, buttons}
-
-$.startTouch();  // Start touch input
-const touches = $.intouch();  // Get touch state
-```
-
-### Sound
-```javascript
-$.sound( { "frequency": 440, "duration": 0.5 } );  // Play sound
-$.play( "O3 C D E F G A B O4 C" );  // Play music (BASIC-style)
-$.setVolume( 0.5 );  // Set volume (0-1, default: 0.75)
-
-// Audio pools (for sound files)
-$.loadAudio( "sound.mp3", "mySound", 5 );  // Load audio file, create pool
-$.playAudio( "mySound", 0.8 );  // Play from pool
-$.stopAudio( "mySound" );  // Stop pool
-$.removeAudio( "mySound" );  // Remove pool
-```
-
-### Images
-```javascript
-$.loadImage( "sprite.png", "mySprite" );  // Load image
-$.drawImage( "mySprite", 100, 100 );  // Draw image
-```
-
-## Parameter Styles
-Pi.js supports both positional and object parameters:
-```javascript
-// Positional
+const main = $.screen( "320x200" );
+$.setColor( "white" );
 $.line( 0, 0, 100, 100 );
-
-// Object-based
-$.line( { "x1": 0, "y1": 0, "x2": 100, "y2": 100 } );
+$.rect( 20, 20, 80, 40, "red" );
+$.circle( 160, 100, 30, "blue" );
+$.print( "Hello, Pi.js!" );
 ```
 
-## Color Formats
-- Palette index: `15` (integer)
-- Hex string: `"#FF0000"` or `"#FF0000AA"` (with alpha)
-- RGB array: `[255, 0, 0]` or `[255, 0, 0, 128]` (with alpha)
-- Color object: `{ "r": 255, "g": 0, "b": 0, "a": 255 }`
+Aspect strings use `x` for exact dimensions, `m` for integer-multiple scaling, and `e` for
+extending the logical area to fill the container:
 
-## Common Patterns
 ```javascript
-// Wait for ready
+$.screen( "640x480" );
+$.screen( "320m200", "game-container" );
+$.screen( { "aspect": "320e200", "container": "game-container" } );
+```
+
+## Images and Resources
+
+Load resources before waiting for readiness. `loadImage()` returns the registered image name;
+`getImage()` retrieves its browser image element.
+
+```javascript
+const playerName = $.loadImage( "player.png", "player" );
+
 $.ready( function() {
-	$.screen( "640x480" );
-	// Your code here
+	$.screen( "320x200" );
+	$.drawImage( playerName, 160, 100, null, 0.5, 0.5, 2, 2, 45 );
+	const playerElement = $.getImage( playerName );
+	console.log( playerElement.width, playerElement.height );
+} );
+```
+
+`drawImage()` arguments after `x` and `y` are `color`, `anchorX`, `anchorY`, `scaleX`, `scaleY`,
+and `angle` in degrees. Use `createImageFromScreen()` to capture framebuffer pixels.
+
+```javascript
+const captureName = $.createImageFromScreen( "capture", 0, 0, 63, 63 );
+$.drawImage( captureName, 100, 20 );
+$.removeImage( captureName );
+```
+
+Queued draws finish before `removeImage()` releases textures. Later draws using the removed name
+throw `IMAGE_NOT_FOUND`.
+
+## Colors and Settings
+
+```javascript
+$.setPal( [ "black", "white", "red", "green", "blue" ] );
+$.setPalColors( [ 2, 3 ], [ "orange", "lime" ] );
+const orangeIndex = $.getPalIndex( "orange", 0 );
+const orange = $.getPalColor( orangeIndex );
+
+$.set( {
+	"color": orange,
+	"blend": "alpha",
+	"bgColor": "#101020"
+} );
+```
+
+Supported blend modes are `"replace"` and `"alpha"`. Palette changes affect future drawing; they
+do not recolor pixels already in the framebuffer.
+
+## Views and Input
+
+Views create nested local coordinate systems and clipping regions. Inside a view, `width()` and
+`height()` return the requested view dimensions. Pointer coordinates remain screen-relative.
+
+```javascript
+$.screen( "320x200" );
+$.pushView( 20, 20, 120, 80 );
+$.cls();
+
+const mouse = $.inmouse();
+const localMouse = $.screenToView( mouse.x, mouse.y );
+if( mouse.buttons & 1 ) {
+	$.circle( localMouse.x, localMouse.y, 3, "white" );
+}
+
+$.popView();
+$.resetView();
+```
+
+Keyboard polling and events start tracking automatically:
+
+```javascript
+if( $.inkey( "ArrowLeft" ) ) {
+	playerX -= 1;
+}
+
+$.onkey( "Space", "down", function( keyData ) {
+	console.log( keyData );
+} );
+```
+
+Mouse and press callbacks receive one data object. Touch callbacks receive an array of touch
+objects.
+
+## Shaders
+
+`applyShader()` inserts a pass into framebuffer draw order. A display shader changes final
+presentation without modifying the logical framebuffer.
+
+```javascript
+const invert = $.createShader( `#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+out vec4 fragColor;
+
+void main() {
+	vec4 color = texture( u_texture, v_texCoord );
+	fragColor = vec4( 1.0 - color.rgb, color.a );
+}` );
+
+$.screen( "320x200" );
+$.circle( 160, 100, 40, "red" );
+$.applyShader( invert );
+console.log( $.getShaderInfo( invert ) );
+$.removeShader( invert );
+```
+
+Shader source must use GLSL ES 3.00 and declare `uniform sampler2D u_texture`. Known uniforms with
+invalid values throw synchronously.
+
+## Parented Offscreen Screens
+
+```javascript
+const main = $.screen( "320x200" );
+const layer = $.screen( {
+	"aspect": "160x100",
+	"isOffscreen": true,
+	"parent": main
 } );
 
-// Game loop pattern
-function gameLoop() {
-	$.cls();  // Clear screen
-	// Update game state
-	// Draw game
-	// Rendering is automatic - no need to call render()
-	requestAnimationFrame( gameLoop );
-}
-gameLoop();
+layer.circle( 80, 50, 30, "red" );
+main.drawImage( layer, 80, 50 );
 
-// Event handlers
-$.onkey( "any", "down", function () { /* Any key pressed */ } );
-$.onkey( "ArrowLeft", "down", function() { /* move left */ } );
-$.onmouse( "down", function( e ) { /* handle click */ } );
+layer.removeScreen();
+main.removeScreen();
 ```
 
-## Important Notes
-- Always create a screen before drawing
-- Use $.ready after loading resources
-- Coordinates: top-left is (0, 0)
-- Most commands require an active screen
-- Screen automatically resizes when container element resizes
+The parent shares its WebGL context but does not own the child. Remove both screens explicitly.
+
+## Ready and Game Loops
+
+```javascript
+await $.ready();
+$.screen( "320x200" );
+
+function gameLoop() {
+	$.cls();
+	updateGame();
+	drawGame();
+	requestAnimationFrame( gameLoop );
+}
+
+gameLoop();
+```
+
+## Migration Notes
+
+Pi.js 2 removed the Canvas2D renderer, canvas-font and pen systems, manual `render()` control,
+pixel-mode toggling, and unsupported blend modes. Pi.js 2.1 adds shaders, views, and parented
+offscreen screens without removing documented 2.0 commands. Do not reproduce legacy calls from
+older examples; consult `docs/UPGRADE-V2.txt` and `docs/UPGRADE-V2.1.txt` when migrating them.
