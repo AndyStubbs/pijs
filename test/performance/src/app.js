@@ -13,17 +13,15 @@ import * as g_testManager from "./test-manager.js";
 import * as g_reportManager from "./report-manager.js";
 
 const PI_VERSIONS = {
-	"2.0.1": {
+	"2.1.0": {
 		"path": "../../build/pi.js",
-		"menuName": "2.0.1 (Current Build)"
+		"pluginPath": "../../build/plugins/polygons/polygons.js",
+		"menuName": "2.1.0 (Current Build)"
 	},
-	"2.0.0-alpha.1": {
-		"path": "../../releases/pi-2.0.0-alpha.1/pi.js",
-		"menuName": "2.0.0-alpha.1"
-	},
-	"2.0.0-alpha.0": {
-		"path": "../../releases/pi-2.0.0-alpha.0/pi.js",
-		"menuName": "2.0.0-alpha.0"
+	"2.0.3": {
+		"path": "../../releases/pi-2.0.3/pi.js",
+		"pluginPath": "../../build/plugins/polygons/polygons.js",
+		"menuName": "2.0.3"
 	},
 	"1.2.5": {
 		"path": "../../releases/pi-1.all/pi.js",
@@ -104,7 +102,7 @@ loadPiJsVersion();
  * @returns {void}
  */
 function loadPiJsVersion() {
-	const versionInfo = PI_VERSIONS[ m_piVersion ] || PI_VERSIONS[ "2.0.0-alpha.1" ];
+	const versionInfo = PI_VERSIONS[ m_piVersion ] || PI_VERSIONS[ "2.1.0" ];
 	const scriptPath = versionInfo.path;
 	
 	console.log( "Loading Pi.js version:", m_piVersion, "from:", scriptPath );
@@ -115,7 +113,7 @@ function loadPiJsVersion() {
 }
 
 /**
- * Loads the Pi.js script
+ * Loads the Pi.js script and any applicable plugins
  * 
  * @param {string} scriptPath - Path to the Pi.js script
  * @returns {void}
@@ -125,12 +123,21 @@ function loadPiJsScript( scriptPath ) {
 	script.src = scriptPath;
 	script.onload = function() {
 		console.log( "Pi.js loaded successfully, version:", m_piVersion );
-		
-		$.ready( initApp );
+
+		const versionInfo = PI_VERSIONS[ m_piVersion ];
+
+		// If version 2+ and a plugin path exists, load the plugin first
+		if( m_piVersion.startsWith( "2." ) && versionInfo?.pluginPath ) {
+			loadPluginScript( versionInfo.pluginPath, () => {
+				$.ready( initApp );
+			} );
+		} else {
+			$.ready( initApp );
+		}
 	};
 	script.onerror = function() {
 		console.error( "Failed to load Pi.js version:", m_piVersion, "from:", scriptPath );
-		
+
 		// Fallback to default version
 		const fallbackVersion = PI_VERSIONS[ "1.2.5" ];
 		m_piVersion = fallbackVersion;
@@ -147,6 +154,28 @@ function loadPiJsScript( scriptPath ) {
 		document.head.appendChild( fallbackScript );
 	};
 	document.head.appendChild( script );
+}
+
+/**
+ * Loads a plugin script dynamically
+ * 
+ * @param {string} pluginPath - Path to the plugin script
+ * @param {Function} callback - Function called when loaded
+ * @returns {void}
+ */
+function loadPluginScript( pluginPath, callback ) {
+	const pluginScript = document.createElement( "script" );
+	pluginScript.src = pluginPath;
+	pluginScript.onload = function() {
+		console.log( "Plugin loaded successfully from:", pluginPath );
+		callback();
+	};
+	pluginScript.onerror = function() {
+		console.error( "Failed to load plugin from:", pluginPath );
+		// Proceed anyway so the rest of the test suite can run
+		callback();
+	};
+	document.head.appendChild( pluginScript );
 }
 
 /**

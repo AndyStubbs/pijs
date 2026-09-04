@@ -20,7 +20,7 @@ import * as g_batchHelpers from "./batch-helpers.js";
  ***************************************************************************************************/
 
 /**
- * Draw line using WebGL2 LINES or geometry based on pen size
+ * Draw line using geometry for higher precision and consistency and not WebGL LINES
  * 
  * @param {Object} screenData - Screen data object
  * @param {number} x1 - Start X coordinate

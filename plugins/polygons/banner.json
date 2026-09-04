@@ -1,0 +1,7 @@
+{
+	"name": "Polygons Plugin for Pi.js",
+	"version": "1.0.0",
+	"description": "WebGL-accelerated outlined and filled simple polygons",
+	"author": "Andy Stubbs",
+	"license": "Apache-2.0"
+}

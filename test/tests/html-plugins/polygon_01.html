@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Polygons Plugin Test</title>
+		<script type="text/toml">
+			[[TOML_START]]
+			file = "polygon_01"
+			name = "polygon 01"
+			width = 480
+			height = 300
+			delay = 0
+			[[TOML_END]]
+		</script>
+		<script src="../../../build/pi.js"></script>
+		<script src="../../../build/plugins/polygons/polygons.js"></script>
+		<style>
+			html, body {
+				background-color: #333;
+				margin: 0;
+				padding: 0;
+			}
+		</style>
+	</head>
+<body>
+<script>
+	$.screen( "480x300" );
+	$.ready( function() {
+		$.setColor( 15 );
+		$.polygon( [ 15, 15, 100, 20, 90, 75, 25, 65 ], 4 );
+
+		$.setColor( 14 );
+		$.polygon( [
+			{ "x": 125, "y": 15 },
+			{ "x": 220, "y": 15 },
+			{ "x": 185, "y": 42 },
+			{ "x": 215, "y": 76 },
+			{ "x": 135, "y": 67 },
+			{ "x": 158, "y": 42 }
+		], "#2958a8" );
+
+		$.setColor( 13 );
+		$.polygon( [
+			{ "x": 335, "y": 67 },
+			{ "x": 255, "y": 76 },
+			{ "x": 285, "y": 42 },
+			{ "x": 250, "y": 15 },
+			{ "x": 345, "y": 15 },
+			{ "x": 312, "y": 42 }
+		], "#a83d29" );
+
+		$.setColor( 11 );
+		$.polygon( new Int16Array( [
+			20, 100, 105, 92, 87, 148, 48, 130, 20, 148
+		] ), "rgba(80, 210, 120, 0.55)" );
+
+		$.setColor( 10 );
+		$.polygon( [ 130, 95, 220, 95, 205, 150, 175, 120, 145, 150 ] );
+
+		// Repeated closing, duplicate, and redundant collinear points are normalized.
+		$.setColor( 9 );
+		$.polygon( {
+			"points": [
+				245, 95, 285, 95, 285, 95, 325, 95,
+				340, 125, 325, 155, 245, 155, 245, 95
+			],
+			"fillColor": 3
+		} );
+
+		// Reuse one cached polygon in two views and verify view clipping.
+		const cachedPoints = [ -8, 8, 30, -8, 68, 8, 53, 42, 8, 42 ];
+		$.pushView( 15, 175, 75, 50 );
+		$.setColor( 15 );
+		$.polygon( cachedPoints, 5 );
+		$.popView();
+
+		$.pushView( 105, 175, 75, 50 );
+		$.setColor( 14 );
+		$.polygon( cachedPoints, "#633d99" );
+		$.popView();
+
+		$.pushView( 285, 175, 55, 42 );
+		$.setColor( 12 );
+		$.polygon( cachedPoints, 6 );
+		$.popView();
+
+		// Cache coordinates on an outline-only call, then lazily generate spans later.
+		const lazyPoints = [ 5, 5, 85, 8, 44, 45 ];
+		$.pushView( 370, 10, 100, 55 );
+		$.setColor( 8 );
+		$.polygon( lazyPoints );
+		$.popView();
+
+		$.pushView( 370, 70, 100, 55 );
+		$.setColor( "rgba(30, 240, 230, 0.65)" );
+		$.polygon( lazyPoints, "rgba(255, 70, 70, 0.65)" );
+		$.popView();
+
+		// Shallow edges exercise rows containing multiple Bresenham boundary pixels.
+		$.setColor( 15 );
+		$.polygon( [ 370, 140, 465, 146, 460, 178, 375, 170 ], 2 );
+
+		// Acute and steep edges expose corner gaps and one-pixel-wide interiors.
+		$.setColor( 14 );
+		$.polygon( [ 375, 195, 465, 210, 385, 225, 415, 210 ], 4 );
+		$.setColor( 11 );
+		$.polygon( [ 205, 245, 211, 245, 255, 290, 247, 290 ], 5 );
+
+		// A horizontal concave notch requires two even-odd spans on lower rows.
+		$.setColor( 10 );
+		$.polygon( [
+			370, 240, 465, 240, 465, 290, 430, 290,
+			430, 260, 405, 260, 405, 290, 370, 290
+		], 3 );
+
+		assertErrorCode( function() {
+			$.polygon( [ 0, 0, 10 ] );
+		}, "INVALID_PARAMETER" );
+		assertErrorCode( function() {
+			$.polygon( [ 0, 0, NaN, 10, 10, 0 ] );
+		}, "INVALID_PARAMETER" );
+		assertErrorCode( function() {
+			$.polygon( [ 0, 0, 10, 0 ] );
+		}, "INVALID_POLYGON" );
+		assertErrorCode( function() {
+			$.polygon( [ 0, 0, 10, 0, 20, 0 ], 4 );
+		}, "INVALID_POLYGON" );
+		assertErrorCode( function() {
+			$.polygon( [ 0, 0, 30, 30, 0, 30, 20, 0 ], 4 );
+		}, "INVALID_POLYGON" );
+
+		// Exercise geometry-batch growth and a cache hit without changing the screenshot.
+		const largeCachedPoints = [];
+		for( let i = 0; i < 1000; i++ ) {
+			const angle = i * Math.PI * 2 / 1000;
+			largeCachedPoints.push(
+				Math.round( -5000 + Math.cos( angle ) * 1000 ),
+				Math.round( -5000 + Math.sin( angle ) * 1000 )
+			);
+		}
+		$.polygon( largeCachedPoints, 1 );
+		$.polygon( largeCachedPoints, 2 );
+	} );
+
+	function assertErrorCode( fn, expectedCode ) {
+		let error = null;
+		try {
+			fn();
+		} catch( caughtError ) {
+			error = caughtError;
+		}
+		if( !error || error.code !== expectedCode ) {
+			throw new Error( "Expected polygon error code " + expectedCode + "." );
+		}
+	}
+</script>
+</body>
+</html>

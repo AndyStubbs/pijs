@@ -16,6 +16,7 @@ import * as g_imageLoader from "./image-loader.js";
 
 // Import all available tests
 import * as g_psetTest from "./tests/pset.js";
+import * as g_polyTest from "./tests/poly.js";
 import * as g_lineTest from "./tests/line.js";
 import * as g_graphicsTest from "./tests/graphics.js";
 import * as g_imagesTest from "./tests/images.js";
@@ -31,7 +32,12 @@ let m_tests = [];
 //m_tests.push( g_psetTest.getConfig() );
 //m_tests.push( g_lineTest.getConfig() );
 
+m_tests.push( g_polyTest.getConfig( [ "polygon" ] ) );
+m_tests.push( g_polyTest.getConfig( [ "polygon-filled" ] ) );
 m_tests.push( g_graphicsTest.getConfig( [ "line" ] ) );
+m_tests.push( g_graphicsTest.getConfig( [ "rect-filled" ] ) );
+m_tests.push( g_graphicsTest.getConfig( [ "circle-filled" ] ) );
+m_tests.push( g_graphicsTest.getConfig( [ "ellipse-filled" ] ) );
 m_tests.push( g_graphicsTest.getConfig() );
 // m_tests.push( g_graphicsTest.getConfig( [ "arc" ] ) );
 // m_tests.push( g_graphicsTest.getConfig( [ "bezier" ] ) );
