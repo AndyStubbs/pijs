@@ -1,29 +1,34 @@
 # Polygons Plugin
 
 Draw outlined and optionally filled polygons with Pi.js. Polygon fills use integer scanline spans
-aligned with Pi.js's Bresenham outlines, then submit those spans to the existing WebGL geometry
-batch as one-pixel-tall rectangles.
+aligned with Pi.js's Bresenham outlines, then draw those spans through the public `rect` command
+as one-pixel-tall rectangles. Pi.js handles WebGL batching internally.
 
 ## Loading
 
-Build the plugin with:
+When developing in the Pi.js repository, build the plugin with:
 
 ```bash
 node scripts/build-plugin.js polygons
 ```
 
+For any other project, copy the Pi.js bundle and the polygons plugin bundle into your project's
+own directory (for example, `vendor/`). Only these JavaScript files are needed at runtime; the
+plugin does not import or bundle Pi.js source modules. No Pi.js repository checkout is required.
+
 Load the IIFE bundle after Pi.js:
 
 ```html
-<script src="build/pi.js"></script>
-<script src="build/plugins/polygons/polygons.min.js"></script>
+<script src="./vendor/pi.js"></script>
+<script src="./vendor/polygons.min.js"></script>
 ```
 
-Or register the ESM build explicitly:
+Or register the ESM build explicitly. Import the plugin before Pi.js in this example so its
+automatic registration does not run against an existing `window.pi`:
 
 ```javascript
-import pi from "./build/pi.esm.min.js";
-import polygonsPlugin from "./build/plugins/polygons/polygons.esm.min.js";
+import polygonsPlugin from "./vendor/polygons.esm.min.js";
+import pi from "./vendor/pi.esm.min.js";
 
 pi.registerPlugin( {
 	"name": "polygons",

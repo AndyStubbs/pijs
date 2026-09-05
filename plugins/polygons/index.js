@@ -1,17 +1,13 @@
 /**
  * Polygons Plugin for Pi.js
  *
- * Draws outlined and optionally filled simple polygons using Pi.js WebGL batches.
+ * Draws outlined and optionally filled simple polygons using the public Pi.js API.
  *
  * @module plugins/polygons
  * @version 1.0.0
  */
 
 "use strict";
-
-import * as g_colors from "../../src/api/colors.js";
-import * as g_batches from "../../src/renderer/batches.js";
-import * as g_batchHelpers from "../../src/renderer/draw/batch-helpers.js";
 
 const m_polygonCache = new WeakMap();
 
@@ -44,9 +40,12 @@ export default function polygonsPlugin( pluginApi ) {
 		const polygonData = getPolygonData( options.points, pluginApi.utils.getInt );
 
 		if( options.fillColor != null ) {
-			const fillColor = g_colors.getColorValueByRawInput(
-				screenData, options.fillColor
-			);
+			let fillColor;
+			if( Number.isInteger( options.fillColor ) ) {
+				fillColor = screenData.api.getPalColor( options.fillColor );
+			} else {
+				fillColor = pluginApi.utils.convertToColor( options.fillColor );
+			}
 			if( fillColor == null ) {
 				throw createParameterError(
 					"polygon: Parameter 'fillColor' must be a valid color."
@@ -511,7 +510,7 @@ function appendSpanWithoutBoundaries( spans, y, xStart, xEnd, boundaries ) {
 
 
 /**
- * Add polygon scanline spans to the WebGL geometry batch.
+ * Draw polygon scanline spans using public one-pixel-tall rectangles.
  *
  * @param {Object} screenData - Active Pi.js screen data
  * @param {Object} polygonData - Cached polygon data
@@ -520,34 +519,19 @@ function appendSpanWithoutBoundaries( spans, y, xStart, xEnd, boundaries ) {
  */
 function drawFill( screenData, polygonData, color ) {
 	const spans = polygonData.spans;
-	let spanOffset = 0;
+	const api = screenData.api;
+	const previousColor = api.getColor();
 
-	while( spanOffset < spans.length ) {
-		const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
-		const maxSpansPerChunk = Math.floor( batch.maxCapacity / 6 );
-		const remainingSpans = ( spans.length - spanOffset ) / 3;
-		const chunkSpanCount = Math.min( remainingSpans, maxSpansPerChunk );
-		g_batches.prepareBatch(
-			screenData, g_batches.GEOMETRY_BATCH, chunkSpanCount * 6
-		);
-
-		const chunkEnd = spanOffset + chunkSpanCount * 3;
-		for( let i = spanOffset; i < chunkEnd; i += 3 ) {
+	try {
+		api.setColor( color );
+		for( let i = 0; i < spans.length; i += 3 ) {
 			const y = spans[ i ];
 			const x1 = spans[ i + 1 ];
-			const x2 = spans[ i + 2 ] + 1;
-			g_batchHelpers.addTriangleToBatch(
-				batch,
-				x1, y, x2, y, x1, y + 1,
-				color
-			);
-			g_batchHelpers.addTriangleToBatch(
-				batch,
-				x2, y, x2, y + 1, x1, y + 1,
-				color
-			);
+			const x2 = spans[ i + 2 ];
+			api.rect( x1, y, x2 - x1 + 1, 1 );
 		}
-		spanOffset = chunkEnd;
+	} finally {
+		api.setColor( previousColor );
 	}
 }
 
