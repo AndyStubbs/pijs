@@ -1,7 +1,8 @@
-# Pi.js 2.1.0 API Reference
+# Pi.js 2.2.0 API Reference (In Development)
 
-This document summarizes the public browser API in Pi.js 2.1.0. Commands generally accept either
-the positional signature shown here or a single options object. The generated declarations in
+This document summarizes the public browser API in Pi.js 2.2.0, which is in development.
+Commands generally accept either the positional signature shown here or a single options object.
+The generated declarations in
 `docs/llms/pi.d.ts` are the authoritative type reference.
 
 ## Contents
@@ -19,7 +20,7 @@ the positional signature shown here or a single options object. The generated de
 
 ## Core and Screens
 
-### `screen( aspect, container, isOffscreen, resizeCallback, parent )`
+### `screen( aspect, container, isOffscreen, resizeCallback, parent, noCss )`
 
 Creates a WebGL 2 screen, makes it active, and returns its `Screen` API object.
 
@@ -384,3 +385,31 @@ $.registerPlugin( {
 The initialization API supports command registration, per-screen data, screen initialization and
 cleanup hooks, access to screen data and the main API, readiness counters, dependency handling,
 event cleanup hooks, and utility functions.
+
+## Upcoming 2.2 minor upgrade behavior
+
+These changes target 2.2 because screen gains the optional noCss parameter after parent.
+See [Upgrading to Pi.js 2.2](upgrade-2.2.md) for compatibility notes.
+
+With `noCss: true` (default false), Pi.js does not write automatic canvas, container, html, or body
+styles. Supply usable canvas layout in host CSS. The canvas is still appended and its intrinsic
+size and WebGL resources are managed. Explicit background commands still apply requested styles.
+Logical x/e/m dimensions follow the container; display shader backing size follows the rendered
+canvas CSS content size before transforms. Canvas and container changes are observed. Hidden hosts retain their last
+valid allocation and recover when visible. Offscreen screens accept noCss as a no-op.
+Pointer input requires an onscreen target: screen creation changes the active screen, so use
+visible.inmouse() or setScreen(visible) after creating an offscreen buffer.
+
+v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same
+orientation as u_texture. Remove any custom-map 1.0 - uv.y workaround used before the 2.2 upgrade.
+Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with
+vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on
+resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid
+upload is retained. No video rendering loop is created.
+
+Image onLoad/onError exceptions remain visible and release their resource wait exactly once.
+Pointer subscriptions register synchronously; additions during dispatch enter later snapshots.
+Replaying pooled audio clears that slot's old duration timer, including full-length playback.
+Plugin dependencies resolve after successful initialization, including late registrations;
+missing, cyclic, and failed dependencies remain initialized:false. Initializers run at most once.
+Failed screen creation rolls back its DOM, observers, commands, and GPU resources.

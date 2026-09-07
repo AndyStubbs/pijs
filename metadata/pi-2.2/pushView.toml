@@ -1,0 +1,46 @@
+title = "pushView"
+category = "view"
+isScreen = true
+summary = "Pushes a child view relative to the current view."
+description = """
+Creates a new view relative to the current view. The parent print cursor is saved and the new view starts with its cursor at (0, 0). If the requested view extends outside its parent, only the overlapping area is visible.
+
+A view defines a local drawing area with its own origin, width, height, and clipping region. Graphics and text commands use coordinates relative to the current view and cannot draw outside its visible clipped area.
+
+Use popView() to restore the parent view and cursor. Child clips stay inside the parent. Resize recomputes origins and clips from the requested local rects, so previously clipped areas can become visible again when the screen grows.
+"""
+example = """
+$.screen( "320x200" );
+$.setColor( 15 );
+$.print( "grandparent" );
+$.pushView( 20, 20, 100, 80 );
+$.paint( 0, 0, 1 );
+$.print( "parent" );
+$.pushView( 8, 8, 80, 60 );
+$.paint( 0, 0, 2 );
+$.print( "child: This content should wrap here" );
+"""
+
+[[parameters]]
+name = "x"
+type = "number"
+description = "Left edge of the child view in current local coordinates."
+
+[[parameters]]
+name = "y"
+type = "number"
+description = "Top edge of the child view in current local coordinates."
+
+[[parameters]]
+name = "width"
+type = "number"
+description = "Requested local width in pixels. Must be 0 or greater."
+
+[[parameters]]
+name = "height"
+type = "number"
+description = "Requested local height in pixels. Must be 0 or greater."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

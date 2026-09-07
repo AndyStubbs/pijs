@@ -2,7 +2,6 @@
 
 # Build and copy artifacts into releases/pi-latest/dist
 npm run build
-npm run copy-to-release
 
 # In terminal cd to specific version folder
 cd releases\[folder]

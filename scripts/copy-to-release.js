@@ -219,4 +219,8 @@ function copyToRelease() {
 	);
 }
 
-copyToRelease();
+if( require.main === module ) {
+	copyToRelease();
+}
+
+module.exports = { copyToRelease };

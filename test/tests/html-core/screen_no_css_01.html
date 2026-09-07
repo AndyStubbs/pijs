@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Screen noCss assertions</title>
+	<script type="text/toml">
+		[[TOML_START]]
+		file = "screen_no_css_01"
+		name = "Screen noCss 2.2"
+		lite = true
+		width = 480
+		height = 300
+		[[TOML_END]]
+	</script>
+	<style>
+		html, body {
+			background-color: grey;
+		}
+	</style>
+	<script src="../../../build/pi.js"></script>
+</head>
+<body>
+	<script>
+		window.patchResult = $.ready().then( async () => {
+			const elements = [ document.documentElement, document.body ];
+			const styles = elements.map( element => element.getAttribute( "style" ) );
+			const screen = $.screen( { "aspect": "160x90", "noCss": true } );
+			const canvas = screen.canvas();
+
+			function checkStyles() {
+				if( canvas.getAttribute( "style" ) !== null || elements.some(
+					( element, index ) => element.getAttribute( "style" ) !== styles[ index ]
+				) ) {
+					throw new Error( "noCss changed automatic styles" );
+				}
+				if( canvas.width !== 160 || canvas.height !== 90 ) {
+					throw new Error( "noCss changed intrinsic dimensions" );
+				}
+			}
+
+			checkStyles();
+			screen.setColor( "#102030" );
+			screen.rect( 0, 0, 160, 90, "#102030" );
+			screen.setColor( "#79d0be" );
+			screen.rect( 10, 10, 140, 70 );
+			screen.circle( 80, 45, 24, "#79d0be" );
+			const identity = $.createShader( `#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+out vec4 fragColor;
+void main() { fragColor = texture(u_texture, v_texCoord); }` );
+			screen.setDisplayShader( identity );
+			await new Promise( resolve => requestAnimationFrame( resolve ) );
+			checkStyles();
+			screen.setDisplayShader( null );
+			await new Promise( resolve => requestAnimationFrame( resolve ) );
+			checkStyles();
+
+			const pixel = screen.getPixel( 80, 45 );
+			if( pixel.r !== 121 || pixel.g !== 208 || pixel.b !== 190 || pixel.a !== 255 ) {
+				throw new Error( "noCss drawing did not preserve the expected pixels" );
+			}
+			const copy = document.createElement( "canvas" );
+			copy.width = 160;
+			copy.height = 90;
+			copy.getContext( "2d" ).drawImage( canvas, 0, 0 );
+			screen.removeScreen();
+			$.removeShader( identity );
+
+			// Only Pi.js renders the successful fixture; no DOM text or custom layout CSS.
+			const output = $.screen( "480x300" );
+			output.setColor( "#18202b" );
+			output.rect( 0, 0, 480, 300, "#18202b" );
+			output.drawImage( { "image": copy, "x": 80, "y": 60, "scaleX": 2, "scaleY": 2 } );
+			await new Promise( resolve => requestAnimationFrame( resolve ) );
+			return true;
+		} );
+		window.patchResult.catch( error => {
+			$.removeAllScreens();
+			const failure = document.createElement( "pre" );
+			failure.textContent = "FAIL: " + error.message;
+			document.body.appendChild( failure );
+		} );
+	</script>
+</body>
+</html>

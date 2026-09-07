@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Shader source orientation</title>
+	<script type="text/toml">
+		[[TOML_START]]
+		file = "shader_orientation_01"
+		name = "Shader orientation 2.2"
+		lite = true
+		width = 640
+		height = 160
+		[[TOML_END]]
+	</script>
+	<style>
+		html, body {
+			background-color: grey;
+		}
+	</style>
+	<script src="../../../build/pi.js"></script>
+	<script src="../patch-shader-checks.js"></script>
+</head>
+<body>
+	<script>
+		window.patchResult = runPatchShaderChecks();
+		window.patchResult.catch( error => {
+			$.removeAllScreens();
+			const failure = document.createElement( "pre" );
+			failure.textContent = "FAIL: " + error.message;
+			document.body.appendChild( failure );
+		} );
+	</script>
+</body>
+</html>

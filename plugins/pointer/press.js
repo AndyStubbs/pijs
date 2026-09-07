@@ -4,6 +4,7 @@
 
 "use strict";
 
+import { validatePointerTarget } from "./target.js";
 import { startMouseInternal } from "./mouse.js";
 import { startTouchInternal } from "./touch.js";
 
@@ -40,6 +41,7 @@ export function registerPress( pluginApi, helpers ) {
 	}
 	
 	function inpress( screenData ) {
+		validatePointerTarget( screenData, "inpress" );
 		startMouseInternal( screenData );
 		startTouchInternal( screenData );
 		if( screenData.lastEvent === "touch" ) {
@@ -50,6 +52,7 @@ export function registerPress( pluginApi, helpers ) {
 	}
 	
 	function onpress( screenData, options ) {
+		validatePointerTarget( screenData, "onpress" );
 		const mode = options.mode;
 		const fn = options.fn;
 		const once = options.once;
@@ -90,6 +93,7 @@ export function registerPress( pluginApi, helpers ) {
 	}
 	
 	function onclick( screenData, options ) {
+		validatePointerTarget( screenData, "onclick" );
 		const fn = options.fn;
 		const once = options.once;
 		let hitBox = options.hitBox;

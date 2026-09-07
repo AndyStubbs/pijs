@@ -13,10 +13,15 @@ import * as g_testManager from "./test-manager.js";
 import * as g_reportManager from "./report-manager.js";
 
 const PI_VERSIONS = {
-	"2.1.0": {
+	"2.2.0": {
 		"path": "../../build/pi.js",
 		"pluginPath": "../../build/plugins/polygons/polygons.js",
-		"menuName": "2.1.0 (Current Build)"
+		"menuName": "2.2.0 (Current Build)"
+	},
+	"2.1.0": {
+		"path": "../../releases/pi-2.1.0/pi.js",
+		"pluginPath": "../../build/plugins/polygons/polygons.js",
+		"menuName": "2.1.0"
 	},
 	"2.0.3": {
 		"path": "../../releases/pi-2.0.3/pi.js",

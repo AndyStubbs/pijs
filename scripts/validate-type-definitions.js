@@ -1,7 +1,7 @@
 /**
  * Pi.js Type Definition Validation Script
  *
- * Checks release-critical Pi.js 2.1 declarations and ensures the build and
+ * Checks release-critical Pi.js declarations and ensures the build and
  * documentation copies remain identical.
  */
 
@@ -57,17 +57,18 @@ const REQUIRED_DECLARATIONS = [
 		"text": "height(): number;"
 	},
 	{
-		"name": "screen object overload parent and return type",
+		"name": "screen object overload parent, noCss, and return type",
 		"text": "screen( params: { \"aspect\": string; " +
 			"\"container\"?: string | HTMLElement; \"isOffscreen\"?: boolean; " +
 			"\"resizeCallback\"?: ( screenApi: Screen, fromSize: Size, " +
-			"toSize: Size ) => void; \"parent\"?: number | Screen } ): Screen;"
+			"toSize: Size ) => void; \"parent\"?: number | Screen; \"noCss\"?: boolean } ): Screen;"
 	},
 	{
-		"name": "screen positional overload parent and return type",
+		"name": "screen positional overload parent, noCss, and return type",
 		"text": "screen( aspect: string, container?: string | HTMLElement, " +
 			"isOffscreen?: boolean, resizeCallback?: ( screenApi: Screen, " +
-			"fromSize: Size, toSize: Size ) => void, parent?: number | Screen ): Screen;"
+			"fromSize: Size, toSize: Size ) => void, parent?: number | Screen, " +
+			"noCss?: boolean ): Screen;"
 	}
 ];
 
@@ -85,7 +86,7 @@ function readTypeFile( filePath ) {
 }
 
 /**
- * Validates generated declaration parity and release-critical Pi.js 2.1 signatures.
+ * Validates generated declaration parity and release-critical Pi.js signatures.
  *
  * @returns {void}
  */
@@ -108,7 +109,10 @@ function validateTypeDefinitions() {
 		}
 	}
 
-	console.log( "✓ Type definitions are current and contain the required Pi.js 2.1 APIs." );
+	console.log(
+		"✓ Type definitions are current and contain the required " +
+		`Pi.js ${packageJson.majorVersion} APIs.`
+	);
 }
 
 if( require.main === module ) {

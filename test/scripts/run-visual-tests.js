@@ -752,6 +752,16 @@ test.describe( config.description, () => {
 					"timeout": 30000
 				} );
 
+				// Assertion fixtures signal completion explicitly, independent of device speed.
+				await page.evaluate( async () => {
+					if( window.patchResult && typeof window.patchResult.then === "function" ) {
+						const result = await window.patchResult;
+						if( result === false ) {
+							throw new Error( "Fixture assertions failed." );
+						}
+					}
+				} );
+
 				if( TEST_LITE && liteBundleRequests === 0 ) {
 					throw new Error(
 						`Lite test ${testFile.file} did not request build/pi.js; ` +

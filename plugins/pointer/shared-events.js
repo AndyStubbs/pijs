@@ -52,35 +52,33 @@ export function createEventHelpers( pluginApi ) {
 			}
 		}
 		
-		setTimeout( () => {
-			const originalFn = fn;
-			let newMode = mode;
-			
-			if( typeof extraId === "string" ) {
-				newMode = mode + extraId;
-			}
-			
-			let wrappedFn = fn;
-			if( once ) {
-				wrappedFn = ( data, customData ) => {
-					offevent( mode, originalFn, modes, name, listenerArr, extraId );
-					originalFn( data, customData );
-				};
-			}
-			
-			if( !listenerArr[ newMode ] ) {
-				listenerArr[ newMode ] = [];
-			}
-			
-			listenerArr[ newMode ].push( {
-				"fn": wrappedFn,
-				"hitBox": hitBox,
-				"extraData": extraData,
-				"clickDown": false,
-				"originalFn": originalFn,
-				"customData": customData
-			} );
-		}, 1 );
+		const originalFn = fn;
+		let newMode = mode;
+		
+		if( typeof extraId === "string" ) {
+			newMode = mode + extraId;
+		}
+		
+		let wrappedFn = fn;
+		if( once ) {
+			wrappedFn = ( data, customData ) => {
+				offevent( mode, originalFn, modes, name, listenerArr, extraId );
+				originalFn( data, customData );
+			};
+		}
+		
+		if( !listenerArr[ newMode ] ) {
+			listenerArr[ newMode ] = [];
+		}
+		
+		listenerArr[ newMode ].push( {
+			"fn": wrappedFn,
+			"hitBox": hitBox,
+			"extraData": extraData,
+			"clickDown": false,
+			"originalFn": originalFn,
+			"customData": customData
+		} );
 		
 		return true;
 	}

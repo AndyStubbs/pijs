@@ -11,6 +11,8 @@
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_batches from "./batches.js";
 
+const m_textureSizes = new WeakMap();
+
 
 /***************************************************************************************************
  * Module Initialization
@@ -29,6 +31,7 @@ export function init() {
 	// This allows efficient lookup by image and cleanup when image is removed
 	g_screenManager.addScreenDataItem( "imageContextMap", new Map() );
 	g_screenManager.addScreenDataItem( "textureCopyFBO", null );
+	g_screenManager.addScreenDataItem( "samplerContextMap", new Map() );
 }
 
 
@@ -47,6 +50,27 @@ export function init() {
  * @returns {void}
  */
 function copyImageToTexture( screenData, img, texture ) {
+	const gl = screenData.gl;
+	const read = gl.getParameter( gl.READ_FRAMEBUFFER_BINDING );
+	const draw = gl.getParameter( gl.DRAW_FRAMEBUFFER_BINDING );
+	const scissor = gl.isEnabled( gl.SCISSOR_TEST );
+	try {
+		gl.disable( gl.SCISSOR_TEST );
+		uploadImageToTexture( screenData, img, texture );
+		m_textureSizes.set( texture, {
+			"width": img.videoWidth || img.naturalWidth || img.width,
+			"height": img.videoHeight || img.naturalHeight || img.height
+		} );
+	} finally {
+		gl.bindFramebuffer( gl.READ_FRAMEBUFFER, read );
+		gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, draw );
+		if( scissor ) {
+			gl.enable( gl.SCISSOR_TEST );
+		}
+	}
+}
+
+function uploadImageToTexture( screenData, img, texture ) {
 	const gl = screenData.gl;
 	
 	// If img is a mock canvas, copy from the FBO instead of the mock canvas
@@ -69,9 +93,13 @@ function copyImageToTexture( screenData, img, texture ) {
 				const pixelData = new Uint8Array( width * height * 4 );
 				
 				// Read pixels from source FBO in source context
-				srcGl.bindFramebuffer( srcGl.FRAMEBUFFER, imgScreenData.FBO );
-				srcGl.readPixels( 0, 0, width, height, srcGl.RGBA, srcGl.UNSIGNED_BYTE, pixelData );
-				srcGl.bindFramebuffer( srcGl.FRAMEBUFFER, null );
+				const previousRead = srcGl.getParameter( srcGl.READ_FRAMEBUFFER_BINDING );
+				srcGl.bindFramebuffer( srcGl.READ_FRAMEBUFFER, imgScreenData.FBO );
+				try {
+					srcGl.readPixels( 0, 0, width, height, srcGl.RGBA, srcGl.UNSIGNED_BYTE, pixelData );
+				} finally {
+					srcGl.bindFramebuffer( srcGl.READ_FRAMEBUFFER, previousRead );
+				}
 				
 				// Flip Y-axis (WebGL reads bottom-to-top, but texImage2D expects top-to-bottom)
 				// Flip rows in place
@@ -144,6 +172,22 @@ function copyImageToTexture( screenData, img, texture ) {
  * @returns {WebGLTexture|null} WebGL texture or null on error
  */
 export function getWebGL2Texture( screenData, img ) {
+	const gl = screenData.gl;
+	const activeTexture = gl.getParameter( gl.ACTIVE_TEXTURE );
+	const texture = gl.getParameter( gl.TEXTURE_BINDING_2D );
+	const read = gl.getParameter( gl.READ_FRAMEBUFFER_BINDING );
+	const draw = gl.getParameter( gl.DRAW_FRAMEBUFFER_BINDING );
+	try {
+		return resolveWebGL2Texture( screenData, img );
+	} finally {
+		gl.activeTexture( activeTexture );
+		gl.bindTexture( gl.TEXTURE_2D, texture );
+		gl.bindFramebuffer( gl.READ_FRAMEBUFFER, read );
+		gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, draw );
+	}
+}
+
+function resolveWebGL2Texture( screenData, img ) {
 
 	// imageContextMap is a map (image -> context) containing a map (context -> texture)
 	// Get or create inner Map for this image
@@ -165,11 +209,23 @@ export function getWebGL2Texture( screenData, img ) {
 	// Check if texture already exists for this screen's context
 	const gl = screenData.gl;
 	let texture = contextTextureMap.get( gl );
+	const isVideo = typeof HTMLVideoElement !== "undefined" && img instanceof HTMLVideoElement;
+	if( isVideo && ( img.readyState < 2 || !img.videoWidth || !img.videoHeight ) ) {
+		if( texture ) {
+			return texture;
+		}
+		if( contextTextureMap.size === 0 ) {
+			screenData.imageContextMap.delete( img );
+		}
+		const error = new Error( "Image has no decoded video frame yet." );
+		error.code = "IMAGE_NOT_READY";
+		throw error;
+	}
 	if( texture ) {
 
 		// If image is a canvas, update the texture so that it has the latest data
 		if(
-			img instanceof HTMLCanvasElement ||
+			isVideo || img instanceof HTMLCanvasElement ||
 			( typeof OffscreenCanvas !== "undefined" && img instanceof OffscreenCanvas ) ||
 			img.isMock
 		) {
@@ -177,7 +233,7 @@ export function getWebGL2Texture( screenData, img ) {
 			// If the img.isDirty is not defined then assume it's dirty, otherwise only if it's
 			// explicitly set to false then we don't perform the copy, this makes it so that the 
 			// default behavior is to copy the texture.
-			if( img.isDirty !== undefined && img.isDirty === false ) {
+			if( !isVideo && img.isDirty === false ) {
 				return texture;
 			}
 
@@ -203,21 +259,31 @@ export function getWebGL2Texture( screenData, img ) {
 		throw error;
 	}
 
-	// Upload image data to texture
-	gl.bindTexture( gl.TEXTURE_2D, texture );
-	copyImageToTexture( screenData, img, texture );
+	try {
+		// Upload image data to texture
+		gl.bindTexture( gl.TEXTURE_2D, texture );
+		copyImageToTexture( screenData, img, texture );
 
-	// Set texture parameters for pixel-perfect rendering
-	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
-	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
-	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
-	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
+		// Set texture parameters for pixel-perfect rendering
+		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
+		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
+		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
 
-	// Unbind the texture
-	gl.bindTexture( gl.TEXTURE_2D, null );
+		// Unbind the texture
+		gl.bindTexture( gl.TEXTURE_2D, null );
 
-	// Store texture in nested Map
-	contextTextureMap.set( gl, texture );
+		// Store texture in nested Map
+		contextTextureMap.set( gl, texture );
+	} catch( error ) {
+		gl.deleteTexture( texture );
+		if( contextTextureMap.size === 0 ) {
+			screenData.imageContextMap.delete( img );
+		}
+		throw error;
+	} finally {
+		gl.bindTexture( gl.TEXTURE_2D, null );
+	}
 
 	return texture;
 }
@@ -249,6 +315,117 @@ export function getTextureDrawInfo( screenData, img ) {
 }
 
 /**
+ * Resolve a separate bottom-left/y-up texture for a custom shader sampler.
+ * Ordinary drawing retains its own upload and coordinate convention.
+ * @param {Object} screenData - Destination screen
+ * @param {Object} img - Resolved image source
+ * @returns {WebGLTexture} Sampler-oriented texture
+ */
+export function getSamplerTexture( screenData, img ) {
+	const gl = screenData.gl;
+	const source = getWebGL2Texture( screenData, img );
+	const size = m_textureSizes.get( source );
+	let contexts = screenData.samplerContextMap.get( img );
+	let entry = contexts?.get( gl );
+	if( entry?.source === source && entry.sourceSize === size ) {
+		return entry.texture;
+	}
+	if( entry && screenData.batchInfo.textureBatchSet.has( entry.texture ) ) {
+		g_batches.flushBatches( screenData );
+	}
+	const read = gl.getParameter( gl.READ_FRAMEBUFFER_BINDING );
+	const draw = gl.getParameter( gl.DRAW_FRAMEBUFFER_BINDING );
+	const boundTexture = gl.getParameter( gl.TEXTURE_BINDING_2D );
+	const scissor = gl.isEnabled( gl.SCISSOR_TEST );
+	try {
+		if( !entry ) {
+			entry = { "texture": gl.createTexture(), "width": 0, "height": 0,
+				"readFbo": null, "drawFbo": null };
+			if( !entry.texture ) {
+				throw new Error( "Failed to allocate sampler texture." );
+			}
+			entry.readFbo = gl.createFramebuffer();
+			entry.drawFbo = gl.createFramebuffer();
+			if( !entry.readFbo || !entry.drawFbo ) {
+				throw new Error( "Failed to allocate sampler copy framebuffers." );
+			}
+		}
+		gl.bindTexture( gl.TEXTURE_2D, entry.texture );
+		if( entry.width !== size.width || entry.height !== size.height ) {
+			gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA8, size.width, size.height, 0,
+				gl.RGBA, gl.UNSIGNED_BYTE, null );
+			entry.width = size.width;
+			entry.height = size.height;
+			gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
+			gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+			gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
+			gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
+		}
+		gl.bindFramebuffer( gl.READ_FRAMEBUFFER, entry.readFbo );
+		gl.framebufferTexture2D(
+			gl.READ_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, source, 0
+		);
+		gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, entry.drawFbo );
+		gl.framebufferTexture2D(
+			gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, entry.texture, 0
+		);
+		if(
+			gl.checkFramebufferStatus( gl.READ_FRAMEBUFFER ) !== gl.FRAMEBUFFER_COMPLETE ||
+			gl.checkFramebufferStatus( gl.DRAW_FRAMEBUFFER ) !== gl.FRAMEBUFFER_COMPLETE
+		) {
+			throw new Error( "Sampler copy framebuffer is incomplete." );
+		}
+		gl.disable( gl.SCISSOR_TEST );
+		gl.blitFramebuffer( 0, 0, size.width, size.height, 0, size.height, size.width, 0,
+			gl.COLOR_BUFFER_BIT, gl.NEAREST );
+		entry.source = source;
+		entry.sourceSize = size;
+		if( !contexts ) {
+			contexts = new Map();
+			screenData.samplerContextMap.set( img, contexts );
+		}
+		contexts.set( gl, entry );
+		return entry.texture;
+	} catch( error ) {
+		if( entry?.texture ) {
+			gl.deleteTexture( entry.texture );
+			gl.deleteFramebuffer( entry.readFbo );
+			gl.deleteFramebuffer( entry.drawFbo );
+		}
+		contexts?.delete( gl );
+		if( contexts?.size === 0 ) {
+			screenData.samplerContextMap.delete( img );
+		}
+		error.code = error.code || "WEBGL2_ERROR";
+		throw error;
+	} finally {
+		gl.bindFramebuffer( gl.READ_FRAMEBUFFER, read );
+		gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, draw );
+		gl.bindTexture( gl.TEXTURE_2D, boundTexture );
+		if( scissor ) {
+			gl.enable( gl.SCISSOR_TEST );
+		}
+	}
+}
+
+function deleteSamplerTexture( screenData, img ) {
+	const contexts = screenData.samplerContextMap?.get( img );
+	const entry = contexts?.get( screenData.gl );
+	if( entry ) {
+		if( screenData.batchInfo?.textureBatchSet.has( entry.texture ) ) {
+			g_batches.flushBatches( screenData );
+		}
+		screenData.gl.deleteTexture( entry.texture );
+		screenData.gl.deleteFramebuffer( entry.readFbo );
+		screenData.gl.deleteFramebuffer( entry.drawFbo );
+		contexts.delete( screenData.gl );
+	}
+	if( contexts?.size === 0 ) {
+		screenData.samplerContextMap.delete( img );
+	}
+}
+
+/**
  * Delete the WebGL2 texture for an image on one screen.
  * Must be called explicitly to free GPU memory - textures are not automatically
  * garbage collected by the browser.
@@ -258,6 +435,7 @@ export function getTextureDrawInfo( screenData, img ) {
  * @returns {void}
  */
 export function deleteWebGL2Texture( screenData, img ) {
+	deleteSamplerTexture( screenData, img );
 
 	// Get the context Map for this image
 	const contextMap = screenData.imageContextMap.get( img );
@@ -333,6 +511,9 @@ export function updateWebGL2TextureSubImage(
 		width, height,
 		gl.RGBA, gl.UNSIGNED_BYTE, pixelData 
 	);
+	if( imgKey !== null ) {
+		m_textureSizes.set( texture, { ...m_textureSizes.get( texture ) } );
+	}
 
 	// Keep texture parameters consistent
 	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
@@ -376,6 +557,7 @@ export function updateWebGL2TextureImage( screenData, imgKey, pixelData, width, 
 		width, height, 0,
 		gl.RGBA, gl.UNSIGNED_BYTE, pixelData 
 	);
+	m_textureSizes.set( texture, { "width": width, "height": height } );
 
 	// Keep texture parameters consistent
 	// gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
@@ -390,6 +572,10 @@ export function updateWebGL2TextureImage( screenData, imgKey, pixelData, width, 
 
 export function cleanup( screenData ) {
 	const gl = screenData.gl;
+	for( const img of screenData.samplerContextMap?.keys() ?? [] ) {
+		deleteSamplerTexture( screenData, img );
+	}
+	screenData.samplerContextMap = null;
 
 	if( screenData.textureCopyFBO ) {
 		gl.deleteFramebuffer( screenData.textureCopyFBO );

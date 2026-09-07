@@ -1,4 +1,4 @@
-# Pi.js 2.1.0 - Comprehensive Reference for LLMs
+# Pi.js 2.2.0 - Comprehensive Reference for LLMs (In Development)
 
 ## Overview
 
@@ -6,7 +6,7 @@ Pi.js is a browser-only WebGL 2 library for retro-style graphics, bitmap text, s
 It provides GPU-accelerated, pixel-perfect rendering with no runtime dependencies.
 
 - Official website: https://pijs.org
-- Current version: 2.1.0
+- Development version: 2.2.0 (not release-ready)
 - Primary global: `pi`
 - Short alias: `$`, created only when another library has not already defined it
 - Coordinates: logical pixels with `(0, 0)` at the top-left
@@ -47,7 +47,7 @@ Aspect separators have these meanings:
 - `e`: extend the logical area to fill the container while preserving pixel aspect
 
 The full signature is
-`screen( aspect, container, isOffscreen, resizeCallback, parent )`. Prefer an options object when
+`screen( aspect, container, isOffscreen, resizeCallback, parent, noCss )`. Prefer an options object when
 creating an offscreen or parented screen.
 
 ### Managing Screens
@@ -66,7 +66,7 @@ first.removeScreen();
 
 Calling a method on a removed screen throws an error with code `DELETED_METHOD`.
 
-### Parented Offscreen Screens (2.1)
+### Parented Offscreen Screens (2.1+)
 
 An offscreen screen can share an existing screen's WebGL context. This makes drawing its
 framebuffer into the parent more efficient and fixes the old same-context Y-orientation issue.
@@ -179,7 +179,7 @@ $.set( {
 } );
 ```
 
-There is no `pen` setting in Pi.js 2.1.
+There is no `pen` setting in Pi.js 2.0+.
 
 ## Images and Sprites
 
@@ -286,7 +286,7 @@ $.print( "Centered", false, true );
 Other text helpers include `getPos()`, `getPosPx()`, `getCols()`, `getRows()`, `calcWidth()`,
 `setWordBreak()`, `setChar()`, `getAvailableFonts()`, and the global `setDefaultFont()`.
 
-## Views (2.1)
+## Views (2.1+)
 
 Views provide nested local coordinates and clipping. A child origin is relative to its parent.
 `width()` and `height()` return the requested active-view size, not the effective clipped size.
@@ -316,7 +316,7 @@ $.resetView();
 returns to full-screen coordinates, and resets the print cursor. Input remains screen-relative;
 call `screenToView()` before comparing pointer coordinates with view-local content.
 
-## Shaders (2.1)
+## Shaders (2.1+)
 
 Custom shaders are GLSL ES 3.00 fragment shaders. Pi.js supplies the vertex stage. Every usable
 shader must declare `uniform sampler2D u_texture`.
@@ -567,7 +567,7 @@ gameLoop();
 - A parented offscreen screen is not removed when its parent is removed.
 - Do not use an image name, shader handle, or screen object after removal.
 
-## Migration from Pi.js 1.2.4
+## Migration from Pi.js 1.2.5
 
 Pi.js 2 removed the Canvas2D renderer, canvas-font and pen systems, manual `render()` control,
 pixel-mode toggling, and unsupported blend modes. Replace old palette helpers with
@@ -578,3 +578,31 @@ Pi.js 2.1 removes no documented 2.0 commands. It adds shaders, nested views, coo
 conversion, parented offscreen screens, and stricter GPU-resource lifecycle behavior. Remove any
 manual same-context offscreen Y-flip workaround when migrating. See `docs/UPGRADE-V2.txt` and
 `docs/UPGRADE-V2.1.txt` for the complete migration details.
+
+## Upcoming 2.2 minor upgrade behavior
+
+These changes target 2.2 because screen gains the optional noCss parameter after parent.
+Package version 2.2.0 is in development; see ../upgrade-2.2.md for upgrade notes.
+
+With `noCss: true` (default false), Pi.js does not write automatic canvas, container, html, or body
+styles. Supply usable canvas layout in host CSS. The canvas is still appended and its intrinsic
+size and WebGL resources are managed. Explicit background commands still apply requested styles.
+Logical x/e/m dimensions follow the container; display shader backing size follows the rendered
+canvas CSS content size before transforms. Canvas and container changes are observed. Hidden hosts retain their last
+valid allocation and recover when visible. Offscreen screens accept noCss as a no-op.
+Pointer input requires an onscreen target: screen creation changes the active screen, so use
+visible.inmouse() or setScreen(visible) after creating an offscreen buffer.
+
+v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same
+orientation as u_texture. Remove any custom-map 1.0 - uv.y workaround used before the 2.2 upgrade.
+Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with
+vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on
+resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid
+upload is retained. No video rendering loop is created.
+
+Image onLoad/onError exceptions remain visible and release their resource wait exactly once.
+Pointer subscriptions register synchronously; additions during dispatch enter later snapshots.
+Replaying pooled audio clears that slot's old duration timer, including full-length playback.
+Plugin dependencies resolve after successful initialization, including late registrations;
+missing, cyclic, and failed dependencies remain initialized:false. Initializers run at most once.
+Failed screen creation rolls back its DOM, observers, commands, and GPU resources.

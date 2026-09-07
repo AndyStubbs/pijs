@@ -1,6 +1,6 @@
 /**
  * Pi.js Type Definitions
- * Version: pi-2.1
+ * Version: pi-2.2
  * Author: Andy Stubbs
  * License: Apache-2.0
  */
@@ -816,6 +816,8 @@ declare namespace Pi {
 		 * u_sourceSize and u_outputSize are both the logical screen size. FBO shaders work on onscreen and offscreen screens.
 		 *
 		 * Per-call uniforms are merged over createShader defaults for that invocation only. Sampler inputs are resolved and snapshotted when this command queues the pass. Known uniform values with an invalid type or component count throw synchronously before the pass is queued.
+		 *
+		 * v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
 		 * @param shaderHandle Shader handle returned by createShader.
 		 * @param uniforms Optional per-call uniform overrides for this invocation.
 		 * @returns This function does not return a value.
@@ -1248,6 +1250,8 @@ declare namespace Pi {
 		 * Gets the current mouse state and starts tracking if needed.
 		 *
 		 * Gets the current mouse state. If mouse tracking is not started, it will be started automatically. This is a convenience function that combines startMouse() and getMouse().
+		 *
+		 * Requires an onscreen screen.
 		 * @returns Mouse data object with position, buttons, and action properties.
 		 */
 		inmouse(): MouseData;
@@ -1258,6 +1262,8 @@ declare namespace Pi {
 		 * Returns press data from either mouse or touch, depending on which was used last. If the last event was touch, returns touch press data. Otherwise, returns mouse data.
 		 *
 		 * The returned object contains position, buttons, action, and type properties. For touch, it also includes a touches array with all active touches.
+		 *
+		 * Requires an onscreen screen.
 		 * @returns Press data object (mouse or touch) with position, buttons, action, and type properties.
 		 */
 		inpress(): PressData;
@@ -1295,6 +1301,8 @@ declare namespace Pi {
 		 * - **type**: Always "touch"
 		 *
 		 * If touch tracking is not started, it will be started automatically.
+		 *
+		 * Requires an onscreen screen.
 		 * @returns Array of touch data objects.
 		 */
 		intouch(): Array<TouchData>;
@@ -1363,6 +1371,8 @@ declare namespace Pi {
 		 * Registers a callback function that will be called when a click event occurs. Click events are triggered when a press is released (up) after being pressed (down) in the same location, unifying mouse clicks and touch taps.
 		 *
 		 * If no hitBox is provided, the entire screen is used as the hit box.
+		 *
+		 * Requires an onscreen screen.
 		 * @param fn Callback function that receives (clickData, customData) when a click occurs.
 		 * @param once If true, the handler is removed after being called once.
 		 * @param hitBox Optional hit box object with x, y, width, height properties. Click only fires if press is within this area. Defaults to full screen.
@@ -1378,6 +1388,8 @@ declare namespace Pi {
 		 * Registers a callback function that will be called when a mouse event occurs. The callback receives mouse data and optional custom data.
 		 *
 		 * Supports hit box filtering - if a hitBox is provided, the callback only fires when the mouse is within that rectangular area.
+		 *
+		 * Requires an onscreen screen.
 		 * @param mode Event mode: 'down', 'up', or 'move'.
 		 * @param fn Callback function that receives (mouseData, customData) when the event occurs.
 		 * @param once If true, the handler is removed after being called once.
@@ -1394,6 +1406,8 @@ declare namespace Pi {
 		 * Registers a callback function that will be called when a press event occurs. Press events unify mouse and touch input, so the callback receives data from either input method.
 		 *
 		 * Supports hit box filtering - if a hitBox is provided, the callback only fires when the press is within that rectangular area.
+		 *
+		 * Requires an onscreen screen.
 		 * @param mode Event mode: 'down', 'up', or 'move'.
 		 * @param fn Callback function that receives (pressData, customData) when the event occurs.
 		 * @param once If true, the handler is removed after being called once.
@@ -1410,6 +1424,8 @@ declare namespace Pi {
 		 * Registers a callback function that will be called when a touch event occurs. The callback receives an array of touch data and optional custom data.
 		 *
 		 * Supports hit box filtering - if a hitBox is provided, the callback only fires when touches are within that rectangular area.
+		 *
+		 * Requires an onscreen screen.
 		 * @param mode Event mode: 'start', 'end', or 'move'.
 		 * @param fn Callback function that receives (touchDataArray, customData) when the event occurs.
 		 * @param once If true, the handler is removed after being called once.
@@ -1660,6 +1676,8 @@ declare namespace Pi {
 		 * This call replaces the active shader and resets persistent display uniform overrides to the uniforms supplied here (or none).
 		 *
 		 * Sampler2D values retain their resolved image sources and refresh dynamic canvas or screen content on each presentation. A shader cannot sample its own destination screen.
+		 *
+		 * v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Remove any custom-map 1.0 - uv.y workaround used before this patch. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
 		 * @param shaderHandle Shader handle from createShader, or null to restore the default display path.
 		 * @param uniforms Optional initial display uniform overrides. Replaces prior overrides.
 		 * @returns This function does not return a value.
@@ -1677,6 +1695,8 @@ declare namespace Pi {
 		 * Hidden, detached, and offscreen screens store the new uniforms but do not present. The next valid presentation uses the stored values.
 		 *
 		 * Known uniform values are reflected and validated synchronously before persistent state changes.
+		 *
+		 * v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Remove any custom-map 1.0 - uv.y workaround used before this patch. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
 		 * @param uniforms Uniform values to merge into the active display-shader overrides.
 		 * @returns This function does not return a value.
 		 */
@@ -1687,6 +1707,8 @@ declare namespace Pi {
 		 * Enables or disables the right-click context menu.
 		 *
 		 * Controls whether the browser's default right-click context menu is shown. When disabled (default), right-clicks are prevented from showing the context menu, allowing them to be handled by mouse event handlers instead.
+		 *
+		 * Requires an onscreen screen.
 		 * @param isEnabled If true, enables the context menu. If false, disables it (default).
 		 * @returns This function does not return a value.
 		 */
@@ -1794,6 +1816,8 @@ declare namespace Pi {
 		 * Starts mouse input tracking for this screen.
 		 *
 		 * Starts mouse event listeners on the screen canvas. Mouse position and button states will be tracked and available via getMouse() or inmouse(). This is automatically called when mouse event handlers are registered.
+		 *
+		 * Requires an onscreen screen.
 		 * @returns This function does not return a value.
 		 */
 		startMouse(): void;
@@ -1802,6 +1826,8 @@ declare namespace Pi {
 		 * Starts touch input tracking for this screen.
 		 *
 		 * Starts touch event listeners on the screen canvas. Touch positions and states will be tracked and available via intouch(). This is automatically called when touch event handlers are registered.
+		 *
+		 * Requires an onscreen screen.
 		 * @returns This function does not return a value.
 		 */
 		startTouch(): void;
@@ -1853,6 +1879,8 @@ declare namespace Pi {
 		 * The fragment source must include "#version 300 es". When first applied to a screen, the shader must declare uniform sampler2D u_texture. Invalid shaders throw synchronously without changing rendering state. Built-in uniforms, if declared: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2), u_time (float), u_frame (int).
 		 *
 		 * The second argument is an optional map of default custom uniform values. Values are interpreted from the linked GLSL declaration and may include float, integer, unsigned integer, boolean, vector, matrix, uniform-array, and sampler2D image inputs. Unknown and reserved built-in names are ignored.
+		 *
+		 * v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Remove any custom-map 1.0 - uv.y workaround used before this patch. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
 		 * @param fragmentSource GLSL ES 3.00 fragment shader source. Must include "#version 300 es".
 		 * @param uniforms Optional reflected custom uniform values keyed by uniform name.
 		 * @returns Shader handle id for applyShader or setDisplayShader.
@@ -2180,7 +2208,9 @@ declare namespace Pi {
 		 * - **done**(): Decrement resource wait counter
 		 * - **registerClearEvents**(name, handler): Register a clearEvents handler for a specific event type
 		 *
-		 * Optional metadata (version, description) and a list of dependencies can be provided. Plugins with dependencies will wait until all dependencies are registered before initialization.
+		 * Optional metadata (version, description) and a list of dependencies can be provided. Plugins with dependencies wait until all dependencies initialize successfully. Resolution runs after every registration, including registrations made by another initializer. Each initializer is attempted once.
+		 *
+		 * Missing and cyclic dependencies stay pending (initialized:false in getPlugins). Failed initializers throw PLUGIN_INIT_FAILED and do not release dependents or retry automatically. Unrelated eligible plugins still initialize. Dependencies must be an array of nonempty strings; null or omission means no dependencies. Invalid values throw INVALID_PLUGIN_DEPENDENCIES.
 		 * @param name Unique plugin name.
 		 * @param init Initialization function that receives pluginApi.
 		 * @param version Optional plugin version.
@@ -2260,15 +2290,18 @@ declare namespace Pi {
 		 * - **m**: Multiple mode (e.g., "300m200") - scales to exact multiples of target resolution
 		 *
 		 * For offscreen screens, only exact pixel dimensions (x) are allowed. An offscreen screen can use an existing screen as its parent to share that screen's WebGL context. This allows drawImage to use the offscreen framebuffer directly for faster drawing. The parent controls rendering-context affinity only and does not establish lifecycle ownership.
+		 *
+		 * With noCss true (default false), Pi.js does not write automatic canvas, container, html, or body styles. Supply usable canvas layout in host CSS. The canvas is still appended and its intrinsic size and WebGL resources are managed. Explicit background commands still apply requested styles. Logical x/e/m dimensions follow the container; display shader backing size follows the rendered canvas CSS content size before transforms. Canvas and container changes are observed. Hidden hosts retain their last valid allocation and recover when visible. Offscreen screens accept noCss as a no-op. Pointer input requires an onscreen target: screen creation changes the active screen, so use visible.inmouse() or setScreen(visible) after creating an offscreen buffer.
 		 * @param aspect Aspect ratio string in format (width)(x|e|m)(height), e.g., '300x200', '100e00', '300m200'.
 		 * @param container DOM element or element ID string to use as container. Defaults to document.body.
 		 * @param isOffscreen If true, creates an offscreen canvas that is not displayed. Requires exact pixel dimensions.
 		 * @param resizeCallback Callback function called when screen is resized. Receives (screenApi, fromSize, toSize).
 		 * @param parent Existing screen ID or screen API object whose WebGL context the offscreen screen uses. Only valid when isOffscreen is true. Enables fast drawImage calls directly from the offscreen framebuffer and does not establish lifecycle ownership.
+		 * @param noCss Disable automatic CSS writes. Default false; null or omission means false. Nonboolean supplied values throw TypeError with INVALID_PARAMETER. Ignored for offscreen layout.
 		 * @returns Screen API object with all graphics command and screen=true and id property.
 		 */
-		screen( params: { "aspect": string; "container"?: string | HTMLElement; "isOffscreen"?: boolean; "resizeCallback"?: ( screenApi: Screen, fromSize: Size, toSize: Size ) => void; "parent"?: number | Screen } ): Screen;
-		screen( aspect: string, container?: string | HTMLElement, isOffscreen?: boolean, resizeCallback?: ( screenApi: Screen, fromSize: Size, toSize: Size ) => void, parent?: number | Screen ): Screen;
+		screen( params: { "aspect": string; "container"?: string | HTMLElement; "isOffscreen"?: boolean; "resizeCallback"?: ( screenApi: Screen, fromSize: Size, toSize: Size ) => void; "parent"?: number | Screen; "noCss"?: boolean } ): Screen;
+		screen( aspect: string, container?: string | HTMLElement, isOffscreen?: boolean, resizeCallback?: ( screenApi: Screen, fromSize: Size, toSize: Size ) => void, parent?: number | Screen, noCss?: boolean ): Screen;
 
 		/**
 		 * Sets keys that should prevent default browser behavior.
@@ -2447,7 +2480,7 @@ declare namespace Pi {
 		/**
 		 * Current Pi.js version string.
 		 */
-		readonly version: "pi-2.1";
+		readonly version: "pi-2.2";
 	}
 }
 

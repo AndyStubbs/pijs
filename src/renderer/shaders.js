@@ -117,6 +117,7 @@ export function setupDisplayShader( screenData ) {
 	
 	// Create shader program
 	const program = createShaderProgram( gl, m_displayVertSrc, m_displayFragSrc );
+	screenData.displayProgram = program;
 	
 	// Create fullscreen quad vertices (NDC: -1 to 1)
 	const positions = new Float32Array( [
@@ -130,6 +131,7 @@ export function setupDisplayShader( screenData ) {
 	
 	// Create vertex buffer
 	const positionBuffer = gl.createBuffer();
+	screenData.displayPositionBuffer = positionBuffer;
 	gl.bindBuffer( gl.ARRAY_BUFFER, positionBuffer );
 	gl.bufferData( gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW );
 	
@@ -139,6 +141,12 @@ export function setupDisplayShader( screenData ) {
 
 	// VAO for fullscreen quad (shared by display pass and FBO shader pass)
 	const quadVao = gl.createVertexArray();
+	screenData.displayQuadVao = quadVao;
+	if( !positionBuffer || !quadVao ) {
+		const error = new Error( "screen: Failed to allocate display buffers." );
+		error.code = "WEBGL_ERROR";
+		throw error;
+	}
 	gl.bindVertexArray( quadVao );
 	gl.bindBuffer( gl.ARRAY_BUFFER, positionBuffer );
 	gl.enableVertexAttribArray( positionLoc );

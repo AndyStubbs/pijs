@@ -479,6 +479,8 @@ export function registerSound( pluginApi ) {
 		// Get the next audio player from the pool
 		const poolItem = audioItem.pool[ audioItem.index ];
 		const audio = poolItem.audio;
+		clearTimeout( poolItem.timeout );
+		poolItem.timeout = 0;
 
 		// Set volume and start time
 		audio.volume = m_volume * volume;
@@ -487,8 +489,8 @@ export function registerSound( pluginApi ) {
 
 		// Set duration if specified
 		if( duration > 0 ) {
-			clearTimeout( poolItem.timeout );
 			poolItem.timeout = setTimeout( () => {
+				poolItem.timeout = 0;
 				audio.pause();
 				audio.currentTime = 0;
 			}, duration * 1000 );

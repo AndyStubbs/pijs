@@ -218,31 +218,43 @@ function loadImage( options ) {
 	
 	// Increment wait count for ready() - will be decremented in onload/onerror
 	g_commands.wait();
+	let settled = false;
 
 	// Setup onload handler
 	img.onload = function() {
-		updateImageFn( img );
-
-		// Decrement wait count
-		g_commands.done();
+		if( settled ) {
+			return;
+		}
+		settled = true;
+		try {
+			updateImageFn( img );
+		} finally {
+			g_commands.done();
+		}
 	};
 
 	// Setup onerror handler
 	img.onerror = function( error ) {
-
-		// Mark image as failed
-		m_images[ name ] = {
-			"status": "error",
-			"error": error
-		};
-
-		// Call user error callback if provided
-		if( onErrorCallback ) {
-			onErrorCallback( error );
+		if( settled ) {
+			return;
 		}
+		settled = true;
+		try {
 
-		// Decrement wait count even on error
-		g_commands.done();
+			// Mark image as failed
+			m_images[ name ] = {
+				"status": "error",
+				"error": error
+			};
+
+			// Call user error callback if provided
+			if( onErrorCallback ) {
+				onErrorCallback( error );
+			}
+
+		} finally {
+			g_commands.done();
+		}
 	};
 
 	// Set source - may trigger onload synchronously if cached

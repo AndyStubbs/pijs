@@ -4,6 +4,7 @@
  * Parses TOML metadata files and generates two JSON outputs:
  * 1. Reference data for documentation tooling.
  * 2. Monaco completion data for the online editor.
+ * Copies generated type definitions into the latest release package.
  */
 
 "use strict";
@@ -17,6 +18,9 @@ const BUILD_DIR = path.join( __dirname, "..", "build" );
 const REFERENCE_FILE = path.join( BUILD_DIR, "reference-{VERSION}.json" );
 const TYPE_DEFINITION_FILE = path.join( BUILD_DIR, "pi.d.ts" );
 const DOCS_TYPE_DEFINITION_FILE = path.join( __dirname, "..", "docs", "llms", "pi.d.ts" );
+const RELEASE_TYPE_DEFINITION_FILE = path.join(
+	__dirname, "..", "releases", "pi-latest", "dist", "pi.d.ts"
+);
 
 function getVersionFolders() {
 	if( !fs.existsSync( METADATA_DIR ) ) {
@@ -733,6 +737,10 @@ function generateMetadata() {
 		const version = folderName.substring( folderName.indexOf( "-" ) + 1 );
 		writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata );
 	}
+
+	fs.mkdirSync( path.dirname( RELEASE_TYPE_DEFINITION_FILE ), { "recursive": true } );
+	fs.copyFileSync( TYPE_DEFINITION_FILE, RELEASE_TYPE_DEFINITION_FILE );
+	console.log( "✓ Copied type definitions to latest release:", RELEASE_TYPE_DEFINITION_FILE );
 }
 
 function writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata ) {

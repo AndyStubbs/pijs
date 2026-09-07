@@ -2,6 +2,7 @@
  * Pi.js Build Script
  * 
  * Builds Pi.js using esbuild for ESM and IIFE formats.
+ * Copies completed build output into the latest release package.
  */
 
 const esbuild = require( "esbuild" );
@@ -11,6 +12,7 @@ const zlib = require( "zlib" );
 const { buildPlugin } = require( "./build-plugin.js" );
 const { generateMetadata } = require( "./generate-metadata.js" );
 const { validateTypeDefinitions } = require( "./validate-type-definitions.js" );
+const { copyToRelease } = require( "./copy-to-release.js" );
 
 // Read version from package.json (single source of truth)
 const pkg = require( "../package.json" );
@@ -251,6 +253,9 @@ async function build() {
 		console.log( "" );
 		console.log( "Building Pi.js Full (with plugins)..." );
 		await buildPiVersion( "full", "index-full.js", "pi" );
+
+		console.log( "" );
+		copyToRelease();
 
 		console.log( "" );
 		console.log( "✓ Build completed successfully!" );

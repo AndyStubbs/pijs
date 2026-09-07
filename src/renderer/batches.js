@@ -159,6 +159,7 @@ export function createBatch( screenData, type ) {
 
 	const gl = screenData.gl;
 	const batch = Object.create( m_batchProto );
+	screenData.batches[ type ] = batch;
 
 	// Get shader sources based on batch type
 	let vertSrc, fragSrc;
@@ -245,6 +246,14 @@ export function createBatch( screenData, type ) {
 
 	// Create VAO (WebGL2 only)
 	batch.vao = gl.createVertexArray();
+	if(
+		!batch.vertexVBO || !batch.colorVBO || !batch.vao ||
+		( batch.useTexture && !batch.texCoordVBO )
+	) {
+		const error = new Error( "screen: Failed to allocate batch buffers." );
+		error.code = "WEBGL_ERROR";
+		throw error;
+	}
 	gl.bindVertexArray( batch.vao );
 
 	// Setup position attribute

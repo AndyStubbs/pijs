@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Pointer lifecycle assertions</title>
+	<script type="text/toml">
+		[[TOML_START]]
+		file = "pointer_lifecycle_01"
+		name = "Pointer lifecycle 2.1.1"
+		width = 560
+		height = 180
+		[[TOML_END]]
+	</script>
+	<script src="../../../build/pi.lite.js"></script>
+	<script src="../../../build/plugins/pointer/pointer.js"></script>
+	<style>
+		body { margin: 20px; background: #18202b; color: #79d0be; font: 16px monospace; }
+		#host { position: absolute; left: -100px; width: 8px; height: 8px; }
+	</style>
+</head>
+<body>
+	<div id="host"></div>
+	<pre id="results">Checking pointer lifecycle...</pre>
+	<script>
+		window.patchResult = $.ready().then( async () => {
+			const screen = $.screen( { "aspect": "8x8", "container": "host", "noCss": true } );
+			let count = 0;
+			const listener = () => count++;
+			screen.onmouse( "move", listener );
+			screen.offmouse( "move", listener );
+			screen.canvas().dispatchEvent( new MouseEvent( "mousemove" ) );
+			if( count !== 0 ) { throw new Error( "immediate removal" ); }
+			screen.onmouse( "move", listener );
+			screen.clearEvents();
+			screen.canvas().dispatchEvent( new MouseEvent( "mousemove" ) );
+			if( count !== 0 ) { throw new Error( "immediate clear" ); }
+			const offscreen = $.screen( { "aspect": "8x8", "isOffscreen": true, "parent": screen } );
+			let rejected = false;
+			try { $.onpress( "down", listener ); } catch( error ) {
+				rejected = error.code === "OFFSCREEN_INPUT_UNSUPPORTED";
+			}
+			if( !rejected ) { throw new Error( "offscreen diagnostic" ); }
+			screen.onmouse( "move", listener );
+			offscreen.removeScreen(); screen.removeScreen();
+			await new Promise( resolve => setTimeout( resolve, 20 ) );
+			document.getElementById( "results" ).textContent =
+				"PASS  Immediate listener removal\nPASS  Immediate event clearing\n" +
+				"PASS  Offscreen target diagnostic\nPASS  Screen disposal";
+			return count === 0;
+		} );
+	</script>
+</body>
+</html>

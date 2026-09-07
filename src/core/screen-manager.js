@@ -47,6 +47,7 @@ import * as g_commands from "./commands.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_graphics from "../api/graphics.js";
 import * as g_view from "../api/view.js";
+import { getCanvasContentRect } from "./canvas-layout.js";
 
 const SCREEN_API_PROTO = { "screen": true, "id": 0 };
 const m_screens = {};
@@ -58,6 +59,7 @@ const m_screenDataPreCleanupFunctions = [];
 const m_screenDataCleanupFunctions = [];
 const MAX_CANVAS_DIMENSION = 8192;
 const m_observedContainers = new Set();
+const m_styleOwners = new WeakMap();
 
 let m_nextScreenId = 0;
 let m_activeScreenData = null;
@@ -90,6 +92,10 @@ export function init( api ) {
 	m_resizeObserver = new ResizeObserver( ( entries ) => {
 		for( const entry of entries ) {
 			const container = entry.target;
+			const ownScreen = m_screenCanvasMap.get( container );
+			if( ownScreen?.noCss && m_screens[ ownScreen.id ] ) {
+				resizeScreen( ownScreen, false );
+			}
 			
 			// Find all canvas elements in this container
 			const canvases = container.querySelectorAll( "canvas[data-screen-id]" );
@@ -132,7 +138,7 @@ function registerCommands() {
 	// Global commands
 	g_commands.addCommand(
 		"screen", screen, false,
-		[ "aspect", "container", "isOffscreen", "resizeCallback", "parent" ]
+		[ "aspect", "container", "isOffscreen", "resizeCallback", "parent", "noCss" ]
 	);
 	g_commands.addCommand( "setScreen", setScreen, false, [ "screen" ] );
 	g_commands.addCommand( "getScreen", getScreen, false, [ "screenId" ] );
@@ -277,9 +283,15 @@ export function getAllScreensData() {
  * @param {boolean} [options.isOffscreen] - Create an offscreen screen
  * @param {Function} [options.resizeCallback] - Called on container resize
  * @param {Object} [options.parent] - Screen whose WebGL context an offscreen screen uses
+ * @param {boolean} [options.noCss=false] - Let host CSS control layout; omit automatic style writes
  * @returns {Object} Screen API object with id and graphics commands
  */
 function screen( options ) {
+	if( options.noCss != null && typeof options.noCss !== "boolean" ) {
+		const error = new TypeError( "screen: Parameter noCss must be a boolean." );
+		error.code = "INVALID_PARAMETER";
+		throw error;
+	}
 
 	// Validate resize callback
 	if( options.resizeCallback != null && !g_utils.isFunction( options.resizeCallback ) ) {
@@ -332,6 +344,8 @@ function screen( options ) {
 	const screenData = {
 		"id": m_nextScreenId,
 		"isOffscreen": !!options.isOffscreen,
+		"noCss": options.noCss === true,
+		"styleChanges": [],
 		"resizeCallback": options.resizeCallback,
 		"api": Object.create( SCREEN_API_PROTO ),
 		"canvas": null,
@@ -347,120 +361,223 @@ function screen( options ) {
 
 	screenData.api.id = screenData.id;
 
-	// Append additional items onto the screendata
-	Object.assign( screenData, structuredClone( m_screenDataItems ) );
-
-	// Append dynamic screendata items (items with dynamic defaults)
-	for( const itemGetter of m_screenDataItemGetters ) {
-		screenData[ itemGetter.name ] = structuredClone( itemGetter.fn() );
-	}
-
-	// Increment to the next screen id
+	const previousActive = m_activeScreenData;
 	m_nextScreenId += 1;
+	try {
+		// Append additional items onto the screendata
+		Object.assign( screenData, structuredClone( m_screenDataItems ) );
 
-	// Parse aspect ratio
-	screenData.aspectData = parseAspect( options.aspect.toLowerCase() );
-	if( !screenData.aspectData ) {
-		const error = new Error( "screen: Parameter aspect is not valid." );
-		error.code = "INVALID_ASPECT";
+		// Append dynamic screendata items (items with dynamic defaults)
+		for( const itemGetter of m_screenDataItemGetters ) {
+			screenData[ itemGetter.name ] = structuredClone( itemGetter.fn() );
+		}
+
+
+		// Parse aspect ratio
+		screenData.aspectData = parseAspect( options.aspect.toLowerCase() );
+		if( !screenData.aspectData ) {
+			const error = new Error( "screen: Parameter aspect is not valid." );
+			error.code = "INVALID_ASPECT";
+			throw error;
+		}
+
+		// If it's not a ratio validate the dimensions
+		validateDimensions( screenData.aspectData.width, screenData.aspectData.height );
+
+		// Setup options for offscreen canvas
+		if( screenData.isOffscreen ) {
+
+			// Create a shared canvas for offscreen screens
+			if( !m_offscreenCanvas ) {
+				m_offscreenCanvas = document.createElement( "canvas" );
+			}
+
+			// Create a mock canvas for offscreen screen
+			screenData.canvas = {
+				"isMock": true,
+				"canvas": m_offscreenCanvas,
+				"dataset": { "screenId": screenData.id },
+				"width": screenData.aspectData.width,
+				"height": screenData.aspectData.height,
+				"style": {}
+			};
+
+			if( screenData.aspectData.splitter !== "x" ) {
+				const error = new Error(
+					"screen: You must use aspect ratio with e(x)act pixel dimensions for offscreen " +
+					"screens. For example: 320x200 for width of 320 and height of 200 pixels."
+				);
+				error.code = "INVALID_OFFSCREEN_ASPECT";
+				throw error;
+			}
+			setupOffscreenCanvasOptions( screenData );
+			screenData.width = screenData.aspectData.width;
+			screenData.height = screenData.aspectData.height;
+		} else {
+
+			// Create the canvas
+			screenData.canvas = document.createElement( "canvas" );
+			screenData.canvas.dataset.screenId = screenData.id;
+
+			// Setup options for onscreen canvas
+			screenData.canvas.tabIndex = 0;
+
+			// Get the container element from the dom if it's available
+			if( typeof options.container === "string" ) {
+				screenData.container = document.getElementById( options.container );
+			} else if( !options.container ) {
+				screenData.container = document.body;
+			} else {
+				screenData.container = options.container;
+			}
+
+			if( !g_utils.isDomElement( screenData.container ) ) {
+				const error = new TypeError(
+					"screen: Invalid argument container. Container must be a DOM element or a string " +
+					"id of a DOM element."
+				);
+				error.code = "INVALID_CONTAINER";
+				throw error;
+			}
+
+			// Create a default canvas
+			if( !screenData.noCss ) {
+				setDefaultCanvasOptions( screenData );
+			}
+
+			// Append the canvas to the container
+			screenData.container.appendChild( screenData.canvas );
+
+			if( screenData.noCss ) {
+				m_resizeObserver.observe( screenData.canvas );
+			}
+
+			// Add container to the global resize observer (only if not already observed)
+			if(
+				m_resizeObserver && screenData.container &&
+				!m_observedContainers.has( screenData.container )
+			) {
+				m_resizeObserver.observe( screenData.container );
+				m_observedContainers.add( screenData.container );
+			}
+		}
+
+		// Map the canvas to the screenData
+		m_screenCanvasMap.set( screenData.canvas, screenData );
+		
+		if( !screenData.isOffscreen ) {
+			if( screenData.noCss ) {
+				screenData.width = screenData.aspectData.width;
+				screenData.height = screenData.aspectData.height;
+				screenData.canvas.width = screenData.width;
+				screenData.canvas.height = screenData.height;
+			}
+			resizeScreen( screenData, true );
+		}
+
+		// Assign screen to active screen
+		m_activeScreenData = screenData;
+		m_screens[ screenData.id ] = screenData;
+
+		// Setup WebGL2 renderer
+		g_renderer.createContext( screenData );
+
+		// Call init functions for all modules that need initialization
+		for( const fn of m_screenDataInitFunctions ) {
+			fn( screenData );
+		}
+
+		screenData.styleChanges = null;
+		return screenData.api;
+	} catch( error ) {
+		rollbackScreen( screenData, previousActive );
 		throw error;
 	}
+}
 
-	// If it's not a ratio validate the dimensions
-	validateDimensions( screenData.aspectData.width, screenData.aspectData.height );
-
-	// Setup options for offscreen canvas
-	if( screenData.isOffscreen ) {
-
-		// Create a shared canvas for offscreen screens
-		if( !m_offscreenCanvas ) {
-			m_offscreenCanvas = document.createElement( "canvas" );
-		}
-
-		// Create a mock canvas for offscreen screen
-		screenData.canvas = {
-			"isMock": true,
-			"canvas": m_offscreenCanvas,
-			"dataset": { "screenId": screenData.id },
-			"width": screenData.aspectData.width,
-			"height": screenData.aspectData.height,
-			"style": {}
+/** Record automatic styles so a failed construction can restore only its own writes. */
+function writeAutomaticStyle( screenData, element, property, value ) {
+	let properties = [ property.replace( /[A-Z]/g, letter => "-" + letter.toLowerCase() ) ];
+	if( property === "margin" || property === "padding" ) {
+		properties = [ "top", "right", "bottom", "left" ].map( side => property + "-" + side );
+	}
+	let owners = m_styleOwners.get( element );
+	if( !owners ) {
+		owners = new Map();
+		m_styleOwners.set( element, owners );
+	}
+	for( const name of properties ) {
+		const change = {
+			"element": element, "name": name,
+			"value": element.style.getPropertyValue( name ),
+			"priority": element.style.getPropertyPriority( name ),
+			"owner": owners.get( name ),
+			"hadStyle": element.hasAttribute( "style" )
 		};
+		element.style.setProperty( name, value );
+		change.written = element.style.getPropertyValue( name );
+		owners.set( name, screenData.id );
+		screenData.styleChanges?.push( change );
+	}
+}
 
-		if( screenData.aspectData.splitter !== "x" ) {
-			const error = new Error(
-				"screen: You must use aspect ratio with e(x)act pixel dimensions for offscreen " +
-				"screens. For example: 320x200 for width of 320 and height of 200 pixels."
-			);
-			error.code = "INVALID_OFFSCREEN_ASPECT";
-			throw error;
+/** Undo construction without assuming the renderer or module initializers completed. */
+function rollbackScreen( screenData, previousActive ) {
+	screenData.isRenderScheduled = false;
+	try {
+		flushScreenTextureUsers( screenData );
+	} catch( error ) {
+		// Preserve the original failure even if a partial renderer cannot flush its users.
+	}
+	for( const fn of m_screenDataPreCleanupFunctions ) {
+		try {
+			fn( screenData );
+		} catch( error ) {
+			// Preserve the construction error while continuing independent cleanup.
 		}
-		setupOffscreenCanvasOptions( screenData );
-		screenData.width = screenData.aspectData.width;
-		screenData.height = screenData.aspectData.height;
-	} else {
-
-		// Create the canvas
-		screenData.canvas = document.createElement( "canvas" );
-		screenData.canvas.dataset.screenId = screenData.id;
-
-		// Setup options for onscreen canvas
-		screenData.canvas.tabIndex = 0;
-
-		// Get the container element from the dom if it's available
-		if( typeof options.container === "string" ) {
-			screenData.container = document.getElementById( options.container );
-		} else if( !options.container ) {
-			screenData.container = document.body;
-		} else {
-			screenData.container = options.container;
+	}
+	for( const fn of m_screenDataCleanupFunctions ) {
+		try {
+			fn( screenData );
+		} catch( error ) {
+			// A partially initialized plugin must not prevent core rollback.
 		}
-
-		if( !g_utils.isDomElement( screenData.container ) ) {
-			const error = new TypeError(
-				"screen: Invalid argument container. Container must be a DOM element or a string " +
-				"id of a DOM element."
-			);
-			error.code = "INVALID_CONTAINER";
-			throw error;
-		}
-
-		// Create a default canvas
-		setDefaultCanvasOptions( screenData );
-
-		// Append the canvas to the container
-		screenData.container.appendChild( screenData.canvas );
-
-		// Add container to the global resize observer (only if not already observed)
+	}
+	m_screenCanvasMap.delete( screenData.canvas );
+	delete m_screens[ screenData.id ];
+	if( screenData.canvas?.parentElement ) {
+		screenData.canvas.remove();
+	}
+	if( screenData.noCss && !screenData.isOffscreen && screenData.canvas ) {
+		m_resizeObserver.unobserve( screenData.canvas );
+	}
+	if( screenData.container && !Object.values( m_screens ).some(
+		other => other.container === screenData.container
+	) ) {
+		m_resizeObserver.unobserve( screenData.container );
+		m_observedContainers.delete( screenData.container );
+	}
+	for( const change of screenData.styleChanges.reverse() ) {
+		const { element, name } = change;
+		const owners = m_styleOwners.get( element );
 		if(
-			m_resizeObserver && screenData.container &&
-			!m_observedContainers.has( screenData.container )
+			owners.get( name ) === screenData.id &&
+			element.style.getPropertyValue( name ) === change.written
 		) {
-			m_resizeObserver.observe( screenData.container );
-			m_observedContainers.add( screenData.container );
+			if( change.value ) {
+				element.style.setProperty( name, change.value, change.priority );
+			} else {
+				element.style.removeProperty( name );
+			}
+			owners.set( name, change.owner );
+			if( !change.hadStyle && element.style.length === 0 ) {
+				element.removeAttribute( "style" );
+			}
 		}
 	}
-
-	// Map the canvas to the screenData
-	m_screenCanvasMap.set( screenData.canvas, screenData );
-	
-	if( !screenData.isOffscreen ) {
-		resizeScreen( screenData, true );
-	}
-
-	// Assign screen to active screen
-	m_activeScreenData = screenData;
-	m_screens[ screenData.id ] = screenData;
-
-	// Setup WebGL2 renderer
-	g_renderer.createContext( screenData )
-
-	// Call init functions for all modules that need initialization
-	for( const fn of m_screenDataInitFunctions ) {
-		fn( screenData );
-	}
-
-	return screenData.api;
+	screenData.styleChanges = null;
+	m_activeScreenData = previousActive;
+	g_graphics.buildApi( previousActive );
 }
 
 function parseAspect( aspect ) {
@@ -495,30 +612,30 @@ function setupOffscreenCanvasOptions( screenData ) {
 }
 
 function setDefaultCanvasOptions( screenData ) {
-	screenData.canvas.style.outline = "none";
-	screenData.canvas.style.backgroundColor = "black";
-	screenData.canvas.style.position = "absolute";
-	screenData.canvas.style.imageRendering = "pixelated";
+	writeAutomaticStyle( screenData, screenData.canvas, "outline", "none" );
+	writeAutomaticStyle( screenData, screenData.canvas, "backgroundColor", "black" );
+	writeAutomaticStyle( screenData, screenData.canvas, "position", "absolute" );
+	writeAutomaticStyle( screenData, screenData.canvas, "imageRendering", "pixelated" );
 
 	// Check if the container is document.body
 	if( screenData.container === document.body ) {
-		document.documentElement.style.height = "100%";
-		document.documentElement.style.margin = "0";
-		document.documentElement.style.padding = "0";
-		document.body.style.height = "100%";
-		document.body.style.margin = "0";
-		document.body.style.padding = "0";
-		screenData.canvas.style.left = "0";
-		screenData.canvas.style.top = "0";
+		writeAutomaticStyle( screenData, document.documentElement, "height", "100%" );
+		writeAutomaticStyle( screenData, document.documentElement, "margin", "0" );
+		writeAutomaticStyle( screenData, document.documentElement, "padding", "0" );
+		writeAutomaticStyle( screenData, document.body, "height", "100%" );
+		writeAutomaticStyle( screenData, document.body, "margin", "0" );
+		writeAutomaticStyle( screenData, document.body, "padding", "0" );
+		writeAutomaticStyle( screenData, screenData.canvas, "left", "0" );
+		writeAutomaticStyle( screenData, screenData.canvas, "top", "0" );
 	}
 
 	// No scrolling within a container as canvases fit to size of container and are meant to 
 	// overlap. If scrolling is required use an outer container that scrolls.
-	screenData.container.style.overflow = "hidden";
+	writeAutomaticStyle( screenData, screenData.container, "overflow", "hidden" );
 
 	// Make sure container is not blank
 	if( screenData.container.offsetHeight === 0 ) {
-		screenData.container.style.height = "200px";
+		writeAutomaticStyle( screenData, screenData.container, "height", "200px" );
 	}
 }
 
@@ -598,6 +715,10 @@ function removeScreen( screenData ) {
 
 	// Remove from the screenCanvasMap
 	m_screenCanvasMap.delete( screenData.canvas );
+
+	if( screenData.noCss && !screenData.isOffscreen ) {
+		m_resizeObserver.unobserve( screenData.canvas );
+	}
 
 	// Remove the canvas from the page
 	if( screenData.canvas && screenData.canvas.parentElement ) {
@@ -788,7 +909,7 @@ function canSizeAndPresent( screenData ) {
 	if( screenData.isOffscreen ) {
 		return false;
 	}
-	if( !screenData.canvas || screenData.canvas.offsetParent === null ) {
+	if( !screenData.canvas || ( !screenData.noCss && screenData.canvas.offsetParent === null ) ) {
 		return false;
 	}
 	return true;
@@ -883,6 +1004,9 @@ function flushScreenTextureUsers( sourceData ) {
 		return;
 	}
 	for( const screenData of getAllScreensData() ) {
+		if( screenData !== sourceData ) {
+			g_renderer.deleteWebGL2Texture( screenData, sourceData.canvas );
+		}
 		if(
 			screenData !== sourceData && screenData.gl === sourceData.gl &&
 			screenData.batchInfo?.textureBatchSet.has( sourceData.fboTexture )
@@ -946,6 +1070,7 @@ function applyScreenSizing( screenData ) {
  */
 function applyResizeConsequences( screenData, flags, forcePresent ) {
 	if( flags.logicalChanged ) {
+		flushScreenTextureUsers( screenData );
 		g_renderer.resizeScreen( screenData, flags.oldWidth, flags.oldHeight );
 		g_view.onScreenResize( screenData );
 	}
@@ -985,6 +1110,14 @@ function setCanvasSize( screenData, maxWidth, maxHeight ) {
 	const oldHeight = screenData.height;
 	const oldBackingWidth = canvas.width;
 	const oldBackingHeight = canvas.height;
+
+	if( screenData.noCss ) {
+		const bounds = getCanvasContentRect( canvas );
+		if( !( maxWidth > 0 && maxHeight > 0 && bounds.width > 0 && bounds.height > 0 ) ) {
+			return { "logicalChanged": false, "backingChanged": false,
+				"oldWidth": oldWidth, "oldHeight": oldHeight };
+		}
+	}
 
 	// If set size to multiple or extend
 	if( splitter === "m" || splitter === "e" ) {
@@ -1026,15 +1159,25 @@ function setCanvasSize( screenData, maxWidth, maxHeight ) {
 	screenData.height = height;
 
 	// CSS presentation size (DOM layout only)
-	canvas.style.width = Math.floor( newCssWidth ) + "px";
-	canvas.style.height = Math.floor( newCssHeight ) + "px";
+	if( !screenData.noCss ) {
+		canvas.style.width = Math.floor( newCssWidth ) + "px";
+		canvas.style.height = Math.floor( newCssHeight ) + "px";
 
-	canvas.style.marginLeft = Math.floor( ( maxWidth - newCssWidth ) / 2 ) + "px";
-	canvas.style.marginTop = Math.floor( ( maxHeight - newCssHeight ) / 2 ) + "px";
+		canvas.style.marginLeft = Math.floor( ( maxWidth - newCssWidth ) / 2 ) + "px";
+		canvas.style.marginTop = Math.floor( ( maxHeight - newCssHeight ) / 2 ) + "px";
+	}
 
 	let desiredBackingWidth;
 	let desiredBackingHeight;
 	if( screenData.renderToDisplaySize ) {
+		if( screenData.noCss ) {
+			const bounds = getCanvasContentRect( canvas );
+
+			// CSS layout pixels exclude transforms, matching ResizeObserver and avoiding an
+			// intrinsic-size feedback loop on canvases styled only with transform: scale().
+			newCssWidth = Math.max( 1, bounds.cssWidth );
+			newCssHeight = Math.max( 1, bounds.cssHeight );
+		}
 		desiredBackingWidth = Math.min(
 			Math.floor( newCssWidth ), MAX_CANVAS_DIMENSION
 		);

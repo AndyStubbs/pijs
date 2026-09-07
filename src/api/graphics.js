@@ -56,6 +56,8 @@ export function buildApi( s_screenData ) {
 		m_api.line = () => g_utils.errFn( "line" );
 		m_api.pset = () => g_utils.errFn( "pset" );
 		m_api.rect = () => g_utils.errFn( "rect" );
+		m_api.drawImage = () => g_utils.errFn( "drawImage" );
+		m_api.drawSprite = () => g_utils.errFn( "drawSprite" );
 		return;
 	}
 

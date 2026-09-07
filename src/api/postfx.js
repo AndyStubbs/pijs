@@ -325,7 +325,7 @@ function getSamplerTextureMap( screenData, bindings ) {
 		}
 		for( const source of binding.sources ) {
 			if( !textures.has( source ) ) {
-				textures.set( source, g_renderer.getWebGL2Texture( screenData, source ) );
+				textures.set( source, g_renderer.getSamplerTexture( screenData, source ) );
 			}
 		}
 	}
@@ -435,7 +435,7 @@ function setDisplayShader( screenData, options ) {
 	screenData.displayShaderUniforms = retainSamplerSources( merged, bindings );
 	screenData.displayShaderUniformBindings = bindings;
 	screenData.displayShaderTextureResolver = ( source ) => {
-		return g_renderer.getWebGL2Texture( screenData, source );
+		return g_renderer.getSamplerTexture( screenData, source );
 	};
 	screenData.renderToDisplaySize = !screenData.isOffscreen;
 	g_renderer.flushBatches( screenData );

@@ -57,7 +57,8 @@ export {
 
 // Re-export texture management
 export {
-	getWebGL2Texture, deleteWebGL2Texture, updateWebGL2TextureImage, updateWebGL2TextureSubImage
+	getWebGL2Texture, getSamplerTexture, deleteWebGL2Texture, updateWebGL2TextureImage,
+	updateWebGL2TextureSubImage
 } from "./textures.js";
 
 // Re-export readback functions
@@ -178,14 +179,16 @@ export function createContext( screenData ) {
 	}
 	
 	// Track if webglcontext gets lost
-	canvas.addEventListener( "webglcontextlost", ( e ) => {
+	screenData.contextCanvas = canvas;
+	screenData.contextLostHandler = ( e ) => {
 		e.preventDefault();
 		console.warn( "WebGL context lost" );
 		screenData.contextLost = true;
-	} );
+	};
+	canvas.addEventListener( "webglcontextlost", screenData.contextLostHandler );
 	
 	// Reinit canvas when webglcontext gets restored
-	canvas.addEventListener( "webglcontextrestored", () => {
+	screenData.contextRestoredHandler = () => {
 		console.log( "WebGL context restored" );
 
 		// TODO-LATER: Reinitialize WebGL resources
@@ -194,7 +197,8 @@ export function createContext( screenData ) {
 
 		// TODO-LATER: Reset blend mode
 		// blendModeChanged( screenData );
-	} );
+	};
+	canvas.addEventListener( "webglcontextrestored", screenData.contextRestoredHandler );
 }
 
 /**
@@ -209,6 +213,7 @@ function createTextureAndFBO( screenData ) {
 	const width = screenData.width;
 	const height = screenData.height;
 	
+	let FBO = null;
 	// Create texture
 	const fboTexture = gl.createTexture();
 	if( !fboTexture ) {
@@ -217,42 +222,53 @@ function createTextureAndFBO( screenData ) {
 		throw error;
 	}
 
-	gl.bindTexture( gl.TEXTURE_2D, fboTexture );
-	gl.texImage2D( 
-		gl.TEXTURE_2D, 0, gl.RGBA8, 
-		width, height, 0, 
-		gl.RGBA, gl.UNSIGNED_BYTE, null 
-	);
-	
-	// Set texture parameters for pixel-perfect rendering
-	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
-	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
-	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
-	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
-	
-	// Create FBO
-	const FBO = gl.createFramebuffer();
-	gl.bindFramebuffer( gl.FRAMEBUFFER, FBO );
-	
-	// Attach texture to FBO
-	gl.framebufferTexture2D(
-		gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, 
-		gl.TEXTURE_2D, fboTexture, 0 
-	);
+	try {
+		gl.bindTexture( gl.TEXTURE_2D, fboTexture );
+		gl.texImage2D( 
+			gl.TEXTURE_2D, 0, gl.RGBA8, 
+			width, height, 0, 
+			gl.RGBA, gl.UNSIGNED_BYTE, null 
+		);
+		
+		// Set texture parameters for pixel-perfect rendering
+		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
+		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
+		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
+		
+		// Create FBO
+		FBO = gl.createFramebuffer();
+		if( !FBO ) {
+			const error = new Error( "screen: Failed to create WebGL2 framebuffer." );
+			error.code = "WEBGL_ERROR";
+			throw error;
+		}
+		gl.bindFramebuffer( gl.FRAMEBUFFER, FBO );
+		
+		// Attach texture to FBO
+		gl.framebufferTexture2D(
+			gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, 
+			gl.TEXTURE_2D, fboTexture, 0 
+		);
 
-	// Make sure that framebuffer is complete
-	const status = gl.checkFramebufferStatus( gl.FRAMEBUFFER );
-	if( status !== gl.FRAMEBUFFER_COMPLETE ) {
-		const error = new Error( `screen: WebGL2 Framebuffer incomplete. ${status}` );
-		error.code = "WEBGL_ERROR";
+		// Make sure that framebuffer is complete
+		const status = gl.checkFramebufferStatus( gl.FRAMEBUFFER );
+		if( status !== gl.FRAMEBUFFER_COMPLETE ) {
+			const error = new Error( `screen: WebGL2 Framebuffer incomplete. ${status}` );
+			error.code = "WEBGL_ERROR";
+			throw error;
+		}
+
+		// Unbind
+		gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+		gl.bindTexture( gl.TEXTURE_2D, null );
+
+		return { "fboTexture": fboTexture, "FBO": FBO };
+	} catch( error ) {
+		gl.deleteTexture( fboTexture );
+		gl.deleteFramebuffer( FBO );
 		throw error;
 	}
-
-	// Unbind
-	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
-	gl.bindTexture( gl.TEXTURE_2D, null );
-
-	return { fboTexture, FBO };
 }
 
 /**
@@ -263,6 +279,20 @@ function createTextureAndFBO( screenData ) {
  */
 export function cleanup( screenData ) {
 	const gl = screenData.gl;
+	if( screenData.contextCanvas ) {
+		screenData.contextCanvas.removeEventListener(
+			"webglcontextlost", screenData.contextLostHandler
+		);
+		screenData.contextCanvas.removeEventListener(
+			"webglcontextrestored", screenData.contextRestoredHandler
+		);
+		screenData.contextCanvas = null;
+		screenData.contextLostHandler = null;
+		screenData.contextRestoredHandler = null;
+	}
+	if( !gl ) {
+		return;
+	}
 
 	// Make sure no render gets executed in the microtask
 	screenData.isRenderScheduled = false;

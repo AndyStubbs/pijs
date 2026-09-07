@@ -14,7 +14,7 @@ import * as g_screenManager from "./screen-manager.js";
 import * as g_utils from "./utils.js";
 
 const m_plugins = [];
-const m_waitingForDependencies = [];
+let m_isResolving = false;
 const m_clearEventsHandlers = {};
 let m_api = null;
 
@@ -38,26 +38,6 @@ export function init( api ) {
 	g_commands.addCommand(
 		"clearEvents", clearEvents, true, [ "type" ], true
 	);
-
-	// Resolve plugins waiting on dependencies at end of frame
-	queueMicrotask( () => {
-		for( const pluginInfo of m_waitingForDependencies ) {
-			let missingDependencies = [];
-			for( const dependency of pluginInfo.dependencies ) {
-				if( !m_plugins.some( pi => pi.name === dependency ) ) {
-					missingDependencies.push( dependency );
-				}
-			}
-			if( missingDependencies.length > 0 ) {
-				console.error(
-					`Unable to initialize plugin "${pluginInfo.name}". Missing the following ` +
-					`dependencies: ` + missingDependencies.join( ", " ) + "."
-				);
-			} else {
-				initializePlugin( pluginInfo );
-			}
-		}
-	} );
 }
 
 
@@ -74,7 +54,7 @@ export function init( api ) {
  * @param {Function} options.init - Initialization function that receives pluginApi
  * @param {string} [options.version] - Optional version string
  * @param {string} [options.description] - Optional description
- * @param {string} [options.dependencies] - Optional list of dependencies
+ * @param {string[]} [options.dependencies] - Optional list of dependencies
  * @returns {void}
  * 
  * @example
@@ -104,10 +84,18 @@ function registerPlugin( options ) {
 		throw error;
 	}
 
-	// If dependencies is not defined then create empty array
-	if( options.dependencies === null ) {
-		options.dependencies = [];
+	const dependencies = options.dependencies ?? [];
+	if(
+		!Array.isArray( dependencies ) ||
+		dependencies.some( name => typeof name !== "string" || name.trim() === "" )
+	) {
+		const error = new TypeError(
+			"registerPlugin: dependencies must be an array of nonempty strings."
+		);
+		error.code = "INVALID_PLUGIN_DEPENDENCIES";
+		throw error;
 	}
+	options = { ...options, "dependencies": dependencies.slice() };
 
 	// Check for duplicate
 	if( m_plugins.some( p => p.name === options.name ) ) {
@@ -124,22 +112,50 @@ function registerPlugin( options ) {
 		"version": options.version || "unknown",
 		"description": options.description || "",
 		"config": options,
-		"initialized": false
+		"initialized": false,
+		"state": "pending"
 	};
 
 	m_plugins.push( pluginInfo );
 
-	// If all dependencies loaded then process immediately
-	let isWaitingForDependencies = false;
-	for( const dependency of pluginInfo.config.dependencies ) {
-		if( !m_plugins.some( pi => pi.name === dependency ) ) {
-			isWaitingForDependencies = true;
-		}
+	resolveDependencies();
+}
+
+/** Resolve registrations, including those made by initializers, without recursive entry. */
+function resolveDependencies() {
+	if( m_isResolving ) {
+		return;
 	}
-	if( isWaitingForDependencies ) {
-		m_waitingForDependencies.push( pluginInfo );
-	} else {
-		initializePlugin( pluginInfo );
+	m_isResolving = true;
+	let firstError = null;
+	try {
+		let progress = true;
+		while( progress ) {
+			progress = false;
+			for( const plugin of m_plugins ) {
+				if( plugin.state !== "pending" || !plugin.config.dependencies.every(
+					name => m_plugins.some( item => item.name === name && item.initialized )
+				) ) {
+					continue;
+				}
+				plugin.state = "initializing";
+				try {
+					initializePlugin( plugin );
+					plugin.state = "initialized";
+				} catch( error ) {
+					plugin.state = "failed";
+					if( !firstError ) {
+						firstError = error;
+					}
+				}
+				progress = true;
+			}
+		}
+	} finally {
+		m_isResolving = false;
+	}
+	if( firstError ) {
+		throw firstError;
 	}
 }
 

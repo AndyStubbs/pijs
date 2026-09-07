@@ -1,0 +1,97 @@
+title = "registerPlugin"
+category = "plugins"
+isScreen = false
+summary = "Registers a plugin to extend Pi.js with custom commands and features."
+description = """
+Registers a plugin with a unique name and an init function. The init callback receives a pluginApi object that provides access to Pi.js internals for extending functionality.
+
+The pluginApi object provides the following methods and properties:
+
+- **addCommand**(name, fn, isScreen, parameterNames, isScreenOptional): Register a new command
+- **addScreenDataItem**(name, defaultValue): Add persistent data to each screen
+- **addScreenDataItemGetter**(name, getterFn): Add a dynamic data getter for screens
+- **addScreenInitFunction**(initFn): Register a function to run when screens are created
+- **addScreenCleanupFunction**(cleanupFn): Register a function to run when screens are destroyed
+- **getScreenData**(name): Get data for a specific screen by name
+- **getAllScreensData**(): Get array of all screen data objects
+- **getApi**(): Get the main Pi.js API object
+- **utils**: Access to utility functions
+- **wait**(): Increment resource wait counter (for async operations)
+- **done**(): Decrement resource wait counter
+- **registerClearEvents**(name, handler): Register a clearEvents handler for a specific event type
+
+Optional metadata (version, description) and a list of dependencies can be provided. Plugins with dependencies wait until all dependencies initialize successfully. Resolution runs after every registration, including registrations made by another initializer. Each initializer is attempted once.
+
+Missing and cyclic dependencies stay pending (initialized:false in getPlugins). Failed initializers throw PLUGIN_INIT_FAILED and do not release dependents or retry automatically. Unrelated eligible plugins still initialize. Dependencies must be an array of nonempty strings; null or omission means no dependencies. Invalid values throw INVALID_PLUGIN_DEPENDENCIES.
+"""
+example = """
+$.registerPlugin( {
+	"name": "octogon",
+	"version": "1.0.0",
+	"description": "Poly plugin",
+	"dependencies": [],
+	"init": ( pluginApi ) => {
+		pluginApi.addCommand( "poly", ( screenData, options ) => {
+			const x = options.x ?? 0;
+			const y = options.y ?? 0;
+			const radius = options.radius ?? 1;
+			const sides = options.sides ?? 1;
+			let angle = 0
+			const fillColor = options.fillColor;
+			let da = ( Math.PI * 2 ) / sides;
+			let x2 = null;
+			let y2 = null;
+			for( let i = 0; i < sides + 1; i += 1 ) {
+				let x1 = x + Math.cos( angle ) * radius;
+				let y1 = y + Math.sin( angle ) * radius;
+				if( x2 !== null ) {
+					screenData.api.line( x1, y1, x2, y2 );
+				}
+				x2 = x1;
+				y2 = y1;
+				angle += da;
+			}
+			if( fillColor !== null ) {
+				screenData.api.paint( x, y, fillColor );
+			}
+		}, true, [ "x", "y", "radius", "sides", "fillColor" ] );
+	}
+} );
+$.screen( "300x200" );
+$.setColor( 15 );
+$.poly( 150 , 100, 15, 8, "red" );
+"""
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "Unique plugin name."
+
+[[parameters]]
+name = "init"
+type = "function"
+signature = "( pluginApi: PluginAPI ) => void"
+description = "Initialization function that receives pluginApi."
+
+[[parameters]]
+name = "version"
+type = "string"
+description = "Optional plugin version."
+optional = true
+
+[[parameters]]
+name = "description"
+type = "string"
+description = "Optional plugin description."
+optional = true
+
+[[parameters]]
+name = "dependencies"
+type = "Array<string>"
+typeDesc = "*Array"
+description = "Optional list of dependency plugin names."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

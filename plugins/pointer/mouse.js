@@ -4,6 +4,7 @@
 
 "use strict";
 
+import { validatePointerTarget, pointerPosition } from "./target.js";
 import { triggerPressListeners, triggerClickListeners, getTouchPress } from "./press.js";
 
 // Module-level reference to startMouseInternal function
@@ -67,6 +68,7 @@ export function registerMouse( pluginApi, helpers ) {
 	m_startMouseInternal = startMouseInternal;
 
 	function startMouse( screenData ) {
+		validatePointerTarget( screenData, "startMouse" );
 
 		//Clear explicit mouseStopped
 		screenData.mouseStopped = false;
@@ -108,16 +110,19 @@ export function registerMouse( pluginApi, helpers ) {
 	}
 	
 	function inmouse( screenData ) {
+		validatePointerTarget( screenData, "inmouse" );
 		startMouseInternal( screenData );
 		return getMouse( screenData );
 	}
 	
 	function setEnableContextMenu( screenData, options ) {
+		validatePointerTarget( screenData, "setEnableContextMenu" );
 		screenData.isContextMenuEnabled = !!( options.isEnabled );
 		startMouseInternal( screenData );
 	}
 	
 	function onmouse( screenData, options ) {
+		validatePointerTarget( screenData, "onmouse" );
 		const mode = options.mode;
 		const fn = options.fn;
 		const once = options.once;
@@ -218,13 +223,11 @@ export function registerMouse( pluginApi, helpers ) {
 	}
 	
 	function updateMouse( screenData, e, action ) {
-		const rect = screenData.clientRect;
-		const x = Math.floor(
-			e.offsetX / rect.width * screenData.width
-		);
-		const y = Math.floor(
-			e.offsetY / rect.height * screenData.height
-		);
+		const position = pointerPosition( screenData, e );
+		if( !position ) {
+			return;
+		}
+		const { x, y } = position;
 		
 		let lastX = x;
 		let lastY = y;

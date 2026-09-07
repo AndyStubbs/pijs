@@ -4,6 +4,7 @@
 
 "use strict";
 
+import { validatePointerTarget, pointerPosition } from "./target.js";
 import { triggerPressListeners, triggerClickListeners, getTouchPress } from "./press.js";
 
 // Module-level reference to startTouchInternal function
@@ -58,6 +59,7 @@ export function registerTouch( pluginApi, helpers ) {
 	m_startTouchInternal = startTouchInternal;
 
 	function startTouch( screenData ) {
+		validatePointerTarget( screenData, "startTouch" );
 
 		// Clear explicit touch stopped
 		screenData.touchStopped = false;
@@ -87,11 +89,13 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 	
 	function intouch( screenData ) {
+		validatePointerTarget( screenData, "intouch" );
 		startTouchInternal( screenData );
 		return getTouch( screenData );
 	}
 	
 	function ontouch( screenData, options ) {
+		validatePointerTarget( screenData, "ontouch" );
 		const mode = options.mode;
 		const fn = options.fn;
 		const once = options.once;
@@ -182,22 +186,13 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 	
 	function updateTouch( screenData, e, action ) {
-		if( !screenData.clientRect ) {
-			return;
-		}
-		
 		const newTouches = {};
-		const rect = screenData.clientRect;
-		
 		for( let j = 0; j < e.touches.length; j++ ) {
 			const touch = e.touches[ j ];
-			const touchData = {};
-			touchData.x = Math.floor(
-				( touch.clientX - rect.left ) / rect.width * screenData.width
-			);
-			touchData.y = Math.floor(
-				( touch.clientY - rect.top ) / rect.height * screenData.height
-			);
+			const touchData = pointerPosition( screenData, touch );
+			if( !touchData ) {
+				continue;
+			}
 			touchData.id = touch.identifier;
 			if( screenData.touches[ touchData.id ] ) {
 				touchData.lastX = screenData.touches[ touchData.id ].x;

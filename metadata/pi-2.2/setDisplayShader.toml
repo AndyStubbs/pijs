@@ -1,0 +1,57 @@
+title = "setDisplayShader"
+category = "shaders"
+isScreen = true
+summary = "Sets or clears the custom display shader for final presentation."
+description = """
+Sets the shader used when presenting the logical FBO to the canvas. The logical FBO is not modified. Typical uses include custom upscaling, CRT effects, and color grading.
+
+When a custom display shader is active, canvas.width and canvas.height track the CSS presentation size (clamped). CSS style size remains for layout. Passing null restores the default display program and logical backing-store size.
+
+u_sourceSize is the logical FBO size. u_outputSize is the actual canvas backing size. Display shaders do not run on offscreen screens (state may still be stored).
+
+This call replaces the active shader and resets persistent display uniform overrides to the uniforms supplied here (or none).
+
+Sampler2D values retain their resolved image sources and refresh dynamic canvas or screen content on each presentation. A shader cannot sample its own destination screen.
+
+v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Remove any custom-map 1.0 - uv.y workaround used before this patch. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
+"""
+example = """
+const invert = $.createShader( `#version 300 es
+precision mediump float;
+in vec2 v_texCoord;
+uniform sampler2D u_texture;
+out vec4 fragColor;
+void main() {
+	vec4 color = texture(u_texture, v_texCoord);
+	fragColor = vec4(1.0 - color.rgb, color.a);
+}` );
+
+// Screen 0 inverts colors
+$.screen( "320x200" );
+$.setColor( 4 );
+$.circle( 160, 100, 40, 4 );
+$.setDisplayShader( invert );
+
+// Screen 1 should not invert colors
+$.screen( "320x200" );
+$.setBgColor( 0 );
+$.setColor( 4 );
+$.circle( 180, 120, 40, 4 );
+$.setDisplayShader( invert );
+$.setDisplayShader( null );
+"""
+
+[[parameters]]
+name = "shaderHandle"
+type = "number | null"
+description = "Shader handle from createShader, or null to restore the default display path."
+
+[[parameters]]
+name = "uniforms"
+type = "ShaderUniforms"
+description = "Optional initial display uniform overrides. Replaces prior overrides."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
