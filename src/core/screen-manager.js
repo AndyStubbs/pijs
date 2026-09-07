@@ -576,8 +576,7 @@ function rollbackScreen( screenData, previousActive ) {
 		}
 	}
 	screenData.styleChanges = null;
-	m_activeScreenData = previousActive;
-	g_graphics.buildApi( previousActive );
+	activateScreen( previousActive );
 }
 
 function parseAspect( aspect ) {
@@ -766,13 +765,14 @@ function removeScreen( screenData ) {
 
 	// If the current screen is the active screen then set to next screen available
 	if( screenData === m_activeScreenData ) {
-		m_activeScreenData = null;
+		let nextScreen = null;
 		for( const i in m_screens ) {
 			if( m_screens[ i ] !== screenData ) {
-				m_activeScreenData = m_screens[ i ];
+				nextScreen = m_screens[ i ];
 				break;
 			}
 		}
+		activateScreen( nextScreen );
 	}
 
 	// Delete the screen from the screens container
@@ -780,9 +780,20 @@ function removeScreen( screenData ) {
 }
 
 /**
+ * Synchronize the active screen and global graphics bindings.
+ *
+ * @param {Object|null} screenData - Initialized screen data, or null when no screens remain
+ * @returns {void}
+ */
+function activateScreen( screenData ) {
+	m_activeScreenData = screenData;
+	g_graphics.buildApi( screenData );
+}
+
+/**
  * Set the active screen from an id or screen API object.
  *
- * Rebuilds the screen API if the active screen changes.
+ * Always rebuilds graphics bindings, including when reselecting the active screen.
  *
  * @param {Object} options - Command options
  * @param {number|Object} options.screen - Screen id or screen API object
@@ -803,14 +814,7 @@ function setScreen( options ) {
 		throw error;
 	}
 
-	// Note: there is no need to check if m_activeScreenData is null because it cannot be null
-	// unless there are no screens in which case an error would already have been thrown.
-	const previousScreenId = m_activeScreenData.id;
-	m_activeScreenData = m_screens[ screenId ];
-
-	if( previousScreenId !== m_activeScreenData.id  ) {
-		g_graphics.buildApi( m_activeScreenData );
-	}
+	activateScreen( m_screens[ screenId ] );
 }
 
 /**

@@ -102,6 +102,74 @@ async function probe( fn ) {
 	}
 }
 
+test( "SYS-001 active removal rebinds global drawing to the first survivor", async () => {
+	assert.deepEqual( await probe( () => {
+		const first = $.screen( "16x16" );
+		const second = $.screen( "12x12" );
+		const removed = $.screen( "8x8" );
+		removed.removeScreen();
+		const dimensions = [ $.width(), $.height() ];
+		$.setColor( "red" );
+		$.pset( 1, 1 );
+		$.setScreen( first );
+		$.setColor( "blue" );
+		$.pset( 2, 2 );
+		first.setColor( "white" );
+		first.pset( 3, 3 );
+		const pixels = [ 1, 2, 3 ].map( position => {
+			const { r, g, b, a } = first.getPixel( position, position );
+			return [ r, g, b, a ];
+		} );
+		let removedCode;
+		try { removed.pset( 1, 1 ); } catch( error ) { removedCode = error.code; }
+		return [ dimensions, $.canvas() === first.canvas(), pixels, removedCode,
+			second.getPixel( 1, 1 ).r ];
+	} ), [ [ 16, 16 ], true, [ [ 255, 0, 0, 255 ], [ 0, 0, 255, 255 ],
+		[ 255, 255, 255, 255 ] ], "DELETED_METHOD", 0 ] );
+} );
+
+test( "SYS-001 nonactive removal preserves global drawing and explicit selection repairs bindings",
+	async () => {
+		assert.deepEqual( await probe( () => {
+			const removed = $.screen( "16x16" );
+			const active = $.screen( "8x8" );
+			const stalePset = removed.pset;
+			$.removeScreen( removed );
+			$.setColor( "red" );
+			$.pset( 1, 1 );
+			// Simulate a stale global binding and reselect the already-active screen.
+			$.pset = stalePset;
+			$.setScreen( active.id );
+			$.setColor( "blue" );
+			$.pset( 2, 2 );
+			const pixels = [ 1, 2 ].map( position => {
+				const { r, g, b, a } = active.getPixel( position, position );
+				return [ r, g, b, a ];
+			} );
+			return [ $.width(), $.height(), $.canvas() === active.canvas(), pixels ];
+		} ), [ 8, 8, true, [ [ 255, 0, 0, 255 ], [ 0, 0, 255, 255 ] ] ] );
+	}
+);
+
+test( "SYS-001 last removal restores no-screen errors and new-screen drawing", async () => {
+	const commands = [ "arc", "bezier", "circle", "ellipse", "line", "pset", "rect",
+		"drawImage", "drawSprite" ];
+	assert.deepEqual( await probe( () => {
+		const screen = $.screen( "8x8" );
+		$.removeScreen( screen.id );
+		const codes = [ "arc", "bezier", "circle", "ellipse", "line", "pset", "rect",
+			"drawImage", "drawSprite", "width" ].map( command => {
+			try { $[ command ](); } catch( error ) { return error.code; }
+		} );
+		const replacement = $.screen( "10x10" );
+		$.setColor( "red" );
+		$.pset( 1, 1 );
+		const { r, g, b, a } = replacement.getPixel( 1, 1 );
+		return [ codes, $.width(), $.height(), [ r, g, b, a ] ];
+	} ), [ [ ...commands.map( () => "NO_SCREEN" ), "NO_ACTIVE_SCREEN" ],
+		10, 10, [ 255, 0, 0, 255 ] ] );
+} );
+
 test( "throwing image callbacks release ready waits", async () => {
 	assert.equal( await probe( async () => {
 		const canvas = document.createElement( "canvas" );
