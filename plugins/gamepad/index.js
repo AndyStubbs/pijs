@@ -123,7 +123,7 @@ function ingamepad( options ) {
 function setGamepadSensitivity( options ) {
 	const sensitivity = options.sensitivity;
 
-	if( typeof sensitivity !== "number" || sensitivity < 0 || sensitivity > 1 ) {
+	if( !Number.isFinite( sensitivity ) || sensitivity < 0 || sensitivity > 1 ) {
 		const error = new TypeError(
 			"setGamepadSensitivity: sensitivity must be a number between 0 and 1."
 		);

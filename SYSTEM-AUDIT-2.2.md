@@ -609,6 +609,26 @@ the corrected next-tick probe establishes the defect.
 **Impact:** movement calculations using the documented numeric axis output become NaN.
 **Fix:** validate with `Number.isFinite` before range checking and preserve prior sensitivity on error.
 
+**Resolution — 2026-09-08:** SYS-021 is fixed. `setGamepadSensitivity` requires a finite number
+in the inclusive range 0–1 before changing state. Invalid input preserves the previous sensitivity
+and retains the existing `TypeError`, `INVALID_PARAMETERS` code, and error message. The default
+0.2, fractional thresholds, and conversion of 1 to 0.99999 are unchanged.
+
+Validation: before implementation, two source regressions reproduced accepted NaN and non-finite
+axes on a subsequent polling tick; all four browser scenarios failed on accepted NaN. After the fix,
+`node --test --test-concurrency=1 test/unit/gamepad-validation.test.js
+test/unit/gamepad-validation-browser.test.js` passed 22/22 (18 source, 4 browser). Controlled
+gamepad snapshots and animation frames verify invalid numeric/nonnumeric inputs, unchanged state
+after rejection, default/fractional/boundary thresholds, and positive, negative, and dead-zone axes.
+Browser checks exercise positional and options-object calls against fresh in-memory full and
+lite-plus-gamepad bundles with no unexpected page errors. These are not physical-device tests.
+
+Both suites are included in `test:patch`. The complete `test:patch` file set plus
+`test/scripts/generate-metadata.test.js`, run with `node --test --test-concurrency=1`, passed
+203/203. Existing server-based checks used the running repository server on port 8080; the new
+gamepad browser tests require no server. Chromium required execution outside the sandbox after
+a launch `EPERM`. No release generation or screenshot baseline changes were used.
+
 ### SYS-022 — P3 — Invalid font sources publish permanent incomplete font records
 
 **Location:** [fonts.js:207](C:/Docs/src/pijs/src/text/fonts.js:207).
@@ -933,3 +953,7 @@ failure publication (SYS-022). Earlier recommendations and evidence remain histo
 **Follow-up status — color validation, 2026-09-08:** SYS-017 is now resolved. Next is gamepad
 sensitivity validation (SYS-021), followed by font failure publication (SYS-022), completing task 5.
 Earlier recommendations and evidence remain historical context.
+
+**Follow-up status — gamepad validation, 2026-09-08:** SYS-021 is now resolved. Next is font
+failure publication (SYS-022), the remaining issue in task 5. Earlier recommendations and evidence
+remain historical context.

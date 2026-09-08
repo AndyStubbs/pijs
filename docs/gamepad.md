@@ -127,7 +127,10 @@ pi.setGamepadSensitivity( 0.3 );
 ```
 
 **Parameters:**
-- `sensitivity` (Number): Value between 0 and 1 (default: 0.2)
+- `sensitivity` (Number): Finite value between 0 and 1, inclusive (default: 0.2).
+
+Invalid values throw a `TypeError` with code `INVALID_PARAMETERS` and leave the previous
+sensitivity unchanged. A value of 1 uses an internal threshold of 0.99999.
 
 ## Events
 
