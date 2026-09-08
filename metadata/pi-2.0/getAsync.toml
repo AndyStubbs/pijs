@@ -6,6 +6,12 @@ description = """
 Returns a Promise resolving to a 2D array [height][width]. By default resolves to palette indices.
 Set asIndex=false to resolve to color value objects. Tolerance controls color-to-index matching.
 
+The region uses the view captured when called; pixel data is read in a deferred microtask.
+If the screen is removed before deferred processing completes, the promise rejects with an
+Error whose code is "SCREEN_REMOVED". Other read failures reject with the original error.
+Empty or out-of-bounds results completed immediately are unaffected by later screen removal.
+Invalid arguments still throw synchronously.
+
 Note: if asIndex is set to false then the 2D array cannot be used with the put command.
 """
 example = """
@@ -80,5 +86,9 @@ optional = true
 [[returns]]
 type = "Promise<Array<Array<number | PiColor>>>"
 typeDesc = "*Promise"
-description = "Promise resolving to 2D array [height][width] of indices (default) or color values."
+description = """
+Resolves to a 2D array [height][width] of indices (default) or color values. Rejects with code
+SCREEN_REMOVED if the screen is removed before deferred processing completes, or with the
+original read error.
+"""
 

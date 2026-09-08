@@ -1072,7 +1072,9 @@ declare namespace Pi {
 		 *
 		 * Queues a filter to run at end of frame. The filter callback receives a mutable pixel buffer (RGBA as Uint8ClampedArray) and x, y coordinates; return truthy to apply the modified pixel. If true is not returned in the callback the pixel will be filtered out and be set to black/transparent, even if it is not modified.
 		 *
-		 * Note: while this function is asynchrounous it will modify the screen image using the image data at the time the function is called. So a line drawn after the filterImg command is called will be drawn after the filter is applied. Also, this runs on the CPU not the GPU so in large areas it may not be suitable to run in an animationFrame.
+		 * The region and view coordinates are captured when called. Pixel data is read when the queued filter runs. Removing the screen cancels queued filtering without invoking the callback. If a callback removes its own screen, filtering stops immediately, with no further callbacks or pixel upload. This command returns no promise; callback exceptions retain their normal behavior.
+		 *
+		 * Filtering runs on the CPU rather than the GPU, so large areas may not be suitable for use in an animationFrame.
 		 * @param filter Callback (color, x, y) => truthy to accept modified pixel color, falsy to skip.
 		 * @param x1 Left coordinate (default 0).
 		 * @param y1 Top coordinate (default 0).
@@ -1105,6 +1107,8 @@ declare namespace Pi {
 		 *
 		 * Returns a Promise resolving to a 2D array [height][width]. By default resolves to palette indices. Set asIndex=false to resolve to color value objects. Tolerance controls color-to-index matching.
 		 *
+		 * The region uses the view captured when called; pixel data is read in a deferred microtask. If the screen is removed before deferred processing completes, the promise rejects with an Error whose code is "SCREEN_REMOVED". Other read failures reject with the original error. Empty or out-of-bounds results completed immediately are unaffected by later screen removal. Invalid arguments still throw synchronously.
+		 *
 		 * Note: if asIndex is set to false then the 2D array cannot be used with the put command.
 		 * @param x Left coordinate.
 		 * @param y Top coordinate.
@@ -1112,7 +1116,9 @@ declare namespace Pi {
 		 * @param height Region height.
 		 * @param tolerance Color matching tolerance [0.0-1.0] for index conversion (default 1).
 		 * @param asIndex If false, resolve to color value objects instead of indices.
-		 * @returns Promise resolving to 2D array [height][width] of indices (default) or color values.
+		 * @returns Resolves to a 2D array [height][width] of indices (default) or color values. Rejects with code
+SCREEN_REMOVED if the screen is removed before deferred processing completes, or with the
+original read error.
 		 */
 		getAsync( params: { "x": number; "y": number; "width": number; "height": number; "tolerance"?: number; "asIndex"?: boolean } ): Promise<Array<Array<number | PiColor>>>;
 		getAsync( x: number, y: number, width: number, height: number, tolerance?: number, asIndex?: boolean ): Promise<Array<Array<number | PiColor>>>;
@@ -1182,10 +1188,13 @@ declare namespace Pi {
 		 * Asynchronously reads the color of a single pixel.
 		 *
 		 * Reads the color at (x, y) asynchronously. If asIndex is true, resolves to the palette index; otherwise resolves to a color value object.
+		 *
+		 * Coordinates use the view captured when called; pixel data is read in a deferred microtask. If the screen is removed before deferred processing completes, the promise rejects with an Error whose code is "SCREEN_REMOVED". Other read failures reject with the original error. An out-of-bounds result completed immediately is unaffected by later screen removal. Invalid arguments still throw synchronously.
 		 * @param x X (horizontal) coordinate.
 		 * @param y Y (vertical) coordinate.
 		 * @param asIndex If true, resolve to palette index instead of color value.
-		 * @returns Promise that resolves to palette index or color value object.
+		 * @returns Resolves to a palette index or color value object. Rejects with code SCREEN_REMOVED if the
+screen is removed before deferred processing completes, or with the original read error.
 		 */
 		getPixelAsync( params: { "x": number; "y": number; "asIndex"?: boolean } ): Promise<number | object>;
 		getPixelAsync( x: number, y: number, asIndex?: boolean ): Promise<number | object>;
@@ -2178,12 +2187,15 @@ declare namespace Pi {
 		 *
 		 * Defers execution until the document is ready and all registered asynchronous resources have completed loading (e.g., images queued via internal loading). Supports both callback and promise styles.
 		 *
+		 * Callbacks always run asynchronously. If a callback throws synchronously, only that ready call's promise rejects with the thrown value; other queued waiters continue. Handle this failure through the returned promise. Successful calls resolve to undefined. Callback return values are ignored, including promises: ready does not wait for async callbacks to finish or adopt their rejections.
+		 *
 		 * Usage styles:
 		 * - Callback: $.ready( function() {} );
 		 * - Promise: $.ready().then( function() {} );
 		 * - Async/Await: await $.ready();
 		 * @param callback Optional callback to run when ready completes.
-		 * @returns Resolves when the document and all pending resources are ready.
+		 * @returns Resolves to undefined when ready, after invoking the optional callback. Rejects with the
+original thrown value if the callback throws synchronously. Callback return values are ignored.
 		 */
 		ready( params: { "callback"?: () => void } ): Promise<void>;
 		ready( callback?: () => void ): Promise<void>;

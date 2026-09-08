@@ -9,11 +9,171 @@ const vm = require( "node:vm" );
 
 function loadModule( file, globals = {} ) {
 	const source = fs.readFileSync( path.join( __dirname, "../..", file ), "utf8" )
-		.replace( /^import .*;\r?\n/gm, "" ).replace( /export /g, "" );
+		.replace( /^import .*;\r?\n/gm, "" )
+		.replace( /^export \{.*\};\r?\n/gm, "" ).replace( /export /g, "" );
 	const context = vm.createContext( { "console": console, ...globals } );
 	vm.runInContext( source, context, { "filename": file } );
 	return context;
 }
+
+function createPixelHarness() {
+	const microtasks = [];
+	const calls = { "read": 0, "upload": 0, "dirty": 0, "convert": 0 };
+	const manager = loadModule( "src/core/screen-manager.js" );
+	const view = loadModule( "src/api/view.js" );
+	const screen = {
+		"id": 42, "isRemoved": false, "width": 2, "height": 2,
+		"view": { "originX": 0, "originY": 0, "width": 2, "height": 2,
+			"clipX": 0, "clipY": 0, "clipWidth": 2, "clipHeight": 2 },
+		"gl": {
+			"bindFramebuffer": () => {},
+			"readPixels": ( ...args ) => {
+				calls.read++;
+				for( let i = 0; i < args[ 6 ].length; i += 4 ) {
+					args[ 6 ].set( [ 255, 0, 0, 255 ], i );
+				}
+			}
+		}
+	};
+	const utils = {
+		"queueMicrotask": fn => microtasks.push( fn ),
+		"getInt": ( value, fallback ) => value ?? fallback,
+		"getFloat": ( value, fallback ) => value ?? fallback,
+		"isFunction": value => typeof value === "function",
+		"rgbToColor": ( r, g, b, a ) => ( { "r": r, "g": g, "b": b, "a": a } )
+	};
+	const readback = loadModule( "src/renderer/readback.js", {
+		"g_utils": utils, "g_screenManager": manager,
+		"g_batches": { "flushBatches": () => {} }
+	} );
+	const pixels = loadModule( "src/api/pixels.js", {
+		"g_utils": utils, "g_screenManager": manager, "g_view": view,
+		"g_commands": { "addCommand": () => {} },
+		"g_renderer": {
+			"readPixelAsync": readback.readPixelAsync,
+			"readPixelsAsync": readback.readPixelsAsync,
+			"readPixelsRaw": readback.readPixelsRaw,
+			"flushBatches": () => {}, "setImageDirty": () => calls.dirty++
+		},
+		"g_textures": { "updateWebGL2TextureSubImage": () => calls.upload++ },
+		"g_colors": { "findColorIndexByColorValue": () => { calls.convert++; return 4; } }
+	} );
+	pixels.init( {} );
+	const cleanupHooks = vm.runInContext( "m_screenDataPreCleanupFunctions", manager );
+	const dispose = () => {
+		screen.isRemoved = true;
+		for( const hook of cleanupHooks ) {
+			hook( screen );
+		}
+		screen.gl = null;
+	};
+	return { "microtasks": microtasks, "calls": calls, "screen": screen,
+		"readback": readback, "pixels": pixels, "dispose": dispose };
+}
+
+for( const command of [ "getPixelAsync", "getAsync" ] ) {
+	for( const asIndex of [ false, true ] ) {
+		test( `SYS-005 ${command} rejects disposal with asIndex=${asIndex}`, async () => {
+			const { pixels, screen, microtasks, calls } = createPixelHarness();
+			const promise = pixels[ command ]( screen, {
+				"x": 0, "y": 0, "width": 2, "height": 2, "asIndex": asIndex
+			} );
+			let settlements = 0;
+			const observed = promise.then( () => { settlements++; }, error => {
+				settlements++;
+				return error.code;
+			} );
+			screen.isRemoved = true;
+			screen.gl = null;
+			assert.doesNotThrow( () => microtasks.shift()() );
+			assert.equal( await observed, "SCREEN_REMOVED" );
+			assert.equal( settlements, 1 );
+			assert.equal( calls.read, 0 );
+			assert.equal( calls.convert, 0 );
+		} );
+	}
+
+	test( `SYS-005 ${command} checks disposal before palette conversion`, async () => {
+		const { pixels, screen, microtasks, calls } = createPixelHarness();
+		const promise = pixels[ command ]( screen, {
+			"x": 0, "y": 0, "width": 2, "height": 2, "asIndex": true
+		} );
+		const rejected = assert.rejects( promise, { "code": "SCREEN_REMOVED" } );
+		microtasks.shift()();
+		screen.isRemoved = true;
+		await rejected;
+		assert.equal( calls.read, 1 );
+		assert.equal( calls.convert, 0 );
+	} );
+
+	test( `SYS-005 ${command} propagates the original read failure`, async () => {
+		const { pixels, screen, microtasks } = createPixelHarness();
+		const failure = new Error( "read failed" );
+		screen.gl.readPixels = () => { throw failure; };
+		const promise = pixels[ command ]( screen, {
+			"x": 0, "y": 0, "width": 2, "height": 2
+		} );
+		const rejected = assert.rejects( promise, error => error === failure );
+		assert.doesNotThrow( () => microtasks.shift()() );
+		await rejected;
+	} );
+}
+
+for( const timing of [ "immediate", "between microtasks", "inside callback", "live" ] ) {
+	test( "SYS-005 filter lifetime: " + timing, () => {
+		const { pixels, screen, microtasks, calls, dispose } = createPixelHarness();
+		let callbacks = 0;
+		pixels.filterImg( screen, { "filter": () => {
+			callbacks++;
+			if( timing === "inside callback" ) {
+				dispose();
+			}
+			return true;
+		} } );
+		if( timing === "between microtasks" ) {
+			microtasks.shift()();
+		}
+		if( timing === "immediate" || timing === "between microtasks" ) {
+			dispose();
+		}
+		while( microtasks.length ) {
+			microtasks.shift()();
+		}
+		assert.equal( vm.runInContext( "m_activeFilters", pixels ).has( screen ), false );
+		if( timing === "live" ) {
+			assert.equal( callbacks, 4 );
+			assert.equal( calls.upload, 1 );
+			assert.equal( calls.dirty, 1 );
+		} else {
+			let expectedCallbacks = 0;
+			if( timing === "inside callback" ) {
+				expectedCallbacks = 1;
+			}
+			assert.equal( callbacks, expectedCallbacks );
+			assert.equal( calls.upload, 0 );
+			assert.equal( calls.dirty, 0 );
+		}
+	} );
+}
+
+test( "SYS-005 throwing filters release cancellation state and allow subsequent filtering", () => {
+	const { pixels, screen, microtasks, calls } = createPixelHarness();
+	const failure = new Error( "filter failed" );
+	pixels.filterImg( screen, { "filter": () => { throw failure; } } );
+	microtasks.shift()();
+	assert.throws( () => microtasks.shift()(), error => error === failure );
+	assert.equal( vm.runInContext( "m_activeFilters", pixels ).has( screen ), false );
+	assert.equal( calls.upload, 0 );
+	assert.equal( calls.dirty, 0 );
+	let callbacks = 0;
+	pixels.filterImg( screen, { "filter": () => { callbacks++; return true; } } );
+	while( microtasks.length ) {
+		microtasks.shift()();
+	}
+	assert.equal( callbacks, 4 );
+	assert.equal( calls.upload, 1 );
+	assert.equal( calls.dirty, 1 );
+} );
 
 function createReadyHarness( readyState = "complete" ) {
 	const timers = new Map();

@@ -17,6 +17,8 @@ import * as g_renderer from "../renderer/renderer.js";
 import * as g_textures from "../renderer/textures.js";
 import * as g_view from "./view.js";
 
+const m_activeFilters = new WeakMap();
+
 
 /***************************************************************************************************
  * Module Commands
@@ -25,6 +27,7 @@ import * as g_view from "./view.js";
 
 export function init( api ) {
 	registerCommands();
+	g_screenManager.addScreenPreCleanupFunction( cancelFilter );
 
 	// Stable API - do not route through addCommand for hot path put
 	api.put = ( data, x, y, include0 ) => {
@@ -79,6 +82,13 @@ function getPixel( screenData, options ) {
 	return colorValue;
 }
 
+/**
+ * Read a pixel in a captured view, rejecting deferred work if the screen is removed.
+ *
+ * @param {Object} screenData - Screen data
+ * @param {Object} options - Coordinates and optional palette-index selection
+ * @returns {Promise<Object|number>} Pixel result; rejects with SCREEN_REMOVED on disposal
+ */
 function getPixelAsync( screenData, options ) {
 	const px = g_utils.getInt( options.x, null );
 	const py = g_utils.getInt( options.y, null );
@@ -99,6 +109,7 @@ function getPixelAsync( screenData, options ) {
 		return Promise.resolve( empty );
 	}
 	return g_renderer.readPixelAsync( screenData, resolved.x, resolved.y ).then( ( colorValue ) => {
+		g_screenManager.assertScreenAvailable( screenData );
 		if( asIndex ) {
 			return g_colors.findColorIndexByColorValue( screenData, colorValue );
 		}
@@ -145,6 +156,13 @@ function get( screenData, options ) {
 	return convertColorsToIndices( screenData, colors, region.width, asIndex, tolerance );
 }
 
+/**
+ * Read a captured view region, rejecting deferred work if the screen is removed.
+ *
+ * @param {Object} screenData - Screen data
+ * @param {Object} options - Region, tolerance and palette-index selection
+ * @returns {Promise<Array>} Pixel rows; rejects with SCREEN_REMOVED on disposal
+ */
 function getAsync( screenData, options ) {
 	const pX = g_utils.getInt( options.x, null );
 	const pY = g_utils.getInt( options.y, null );
@@ -173,6 +191,7 @@ function getAsync( screenData, options ) {
 	return g_renderer.readPixelsAsync(
 		screenData, region.x, region.y, region.width, region.height
 	).then( ( colors ) => {
+		g_screenManager.assertScreenAvailable( screenData );
 		return convertColorsToIndices( screenData, colors, region.width, asIndex, tolerance );
 	} );
 }
@@ -218,9 +237,23 @@ function convertColorsToIndices( screenData, colors, width, asIndex, tolerance )
  * Filter Image
  **************************************************************************************************/
 
+/**
+ * Stop an active filter through its existing loop bounds before screen resources are released.
+ *
+ * @param {Object} screenData - Screen being removed
+ * @returns {void}
+ */
+function cancelFilter( screenData ) {
+	const cancel = m_activeFilters.get( screenData );
+	if( cancel ) {
+		cancel();
+	}
+}
+
 
 /**
- * Apply a filter function to a region of the screen
+ * Apply a filter function to a region of the screen.
+ * Disposal cancels queued work; disposal inside the callback stops further pixels and upload.
  * 
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Options object with filter, x1, y1, x2, y2
@@ -258,6 +291,9 @@ function filterImg( screenData, options ) {
 
 	// Queue filter operation to run at end of frame
 	g_utils.queueMicrotask( () => {
+		if( screenData.isRemoved ) {
+			return;
+		}
 		g_utils.queueMicrotask( () => {
 			applyFilter( screenData, filter, phys.x, phys.y, phys.width, phys.height, viewSnap );
 		} );
@@ -277,6 +313,9 @@ function filterImg( screenData, options ) {
  * @returns {void}
  */
 function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
+	if( screenData.isRemoved ) {
+		return;
+	}
 
 	// Ensure batches are flushed before reading
 	g_renderer.flushBatches( screenData );
@@ -296,43 +335,55 @@ function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
 	const filteredData = new Uint8Array( width * height * 4 );
 	const pixelData = new Uint8ClampedArray( 4 );
 
-	for( let y = 0; y < height; y++ ) {
-		for( let x = 0; x < width; x++ ) {
+	// Cleanup shortens the loops without adding a disposal check to every pixel.
+	m_activeFilters.set( screenData, () => {
+		width = 0;
+		height = 0;
+	} );
+	try {
+		for( let y = 0; y < height; y++ ) {
+			for( let x = 0; x < width; x++ ) {
 
-			// Convert top-left y to bottom-left y for reading from pixelData
-			// pixelData is ordered from bottom row to top row
-			const srcRow = ( height - 1 ) - y;
-			const srcIndex = ( srcRow * width + x ) * 4;
+				// Convert top-left y to bottom-left y for reading from pixelData.
+				const srcRow = ( height - 1 ) - y;
+				const srcIndex = ( srcRow * width + x ) * 4;
 
-			// Populate the temporary buffer with current pixel's RGBA8
-			pixelData[ 0 ] = imageData[ srcIndex ];
-			pixelData[ 1 ] = imageData[ srcIndex + 1 ];
-			pixelData[ 2 ] = imageData[ srcIndex + 2 ];
-			pixelData[ 3 ] = imageData[ srcIndex + 3 ];
+				// Populate the temporary buffer with current pixel's RGBA8.
+				pixelData[ 0 ] = imageData[ srcIndex ];
+				pixelData[ 1 ] = imageData[ srcIndex + 1 ];
+				pixelData[ 2 ] = imageData[ srcIndex + 2 ];
+				pixelData[ 3 ] = imageData[ srcIndex + 3 ];
 
-			// Output index is in bottom-left origin format (same as pixelData)
-			const dstIndex = ( srcRow * width + x ) * 4;
+				// Output index is in bottom-left origin format (same as pixelData).
+				const dstIndex = ( srcRow * width + x ) * 4;
 
-			// Call filter with pixelData array
-			// x and y are in top-left coordinate system for the filter callback
-			const localX = ( x1 + x ) - viewSnap.originX;
-			const localY = ( y1 + y ) - viewSnap.originY;
-			if( filter( pixelData, localX, localY ) ) {
+				// Call filter using the captured view's top-left coordinates.
+				const localX = ( x1 + x ) - viewSnap.originX;
+				const localY = ( y1 + y ) - viewSnap.originY;
+				if( filter( pixelData, localX, localY ) ) {
 
-				// Update the pixeldata 
-				filteredData[ dstIndex     ] = pixelData[ 0 ];
-				filteredData[ dstIndex + 1 ] = pixelData[ 1 ];
-				filteredData[ dstIndex + 2 ] = pixelData[ 2 ];
-				filteredData[ dstIndex + 3 ] = pixelData[ 3 ];
-			} else {
+					// These local buffers remain valid even if the callback removed the screen.
+					filteredData[ dstIndex     ] = pixelData[ 0 ];
+					filteredData[ dstIndex + 1 ] = pixelData[ 1 ];
+					filteredData[ dstIndex + 2 ] = pixelData[ 2 ];
+					filteredData[ dstIndex + 3 ] = pixelData[ 3 ];
+				} else {
 
-				// Invalid color format, keep original pixel
-				filteredData[ dstIndex     ] = 0;
-				filteredData[ dstIndex + 1 ] = 0;
-				filteredData[ dstIndex + 2 ] = 0;
-				filteredData[ dstIndex + 3 ] = 0;
+					// A rejected pixel becomes transparent.
+					filteredData[ dstIndex     ] = 0;
+					filteredData[ dstIndex + 1 ] = 0;
+					filteredData[ dstIndex + 2 ] = 0;
+					filteredData[ dstIndex + 3 ] = 0;
+				}
 			}
 		}
+	} finally {
+		m_activeFilters.delete( screenData );
+	}
+
+	// A callback may have removed the screen; never upload to its disposed texture.
+	if( screenData.isRemoved ) {
+		return;
 	}
 
 	// Calculate destination Y in WebGL texture coordinates (bottom-left origin)
@@ -515,4 +566,3 @@ function resolveViewReadRect( screenData, x, y, width, height ) {
 	}
 	return clip;
 }
-

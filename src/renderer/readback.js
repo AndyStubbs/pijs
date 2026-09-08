@@ -11,6 +11,7 @@
 // Import required modules
 import * as g_batches from "./batches.js";
 import * as g_utils from "../core/utils.js";
+import * as g_screenManager from "../core/screen-manager.js";
 
 
 /***************************************************************************************************
@@ -60,7 +61,7 @@ export function readPixel( screenData, x, y ) {
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
- * @returns {Promise<Object|null>} Promise resolving to color object or null
+ * @returns {Promise<Object|null>} Resolves to a color; rejects with SCREEN_REMOVED on disposal
  */
 export function readPixelAsync( screenData, x, y ) {
 
@@ -69,9 +70,14 @@ export function readPixelAsync( screenData, x, y ) {
 	// than the state at the end of the frame.
 	// If I make this change I should rename the API functions to something like getPixelQueued
 	// instead of getPixelAsync.
-	return new Promise( ( resolve ) => {
+	return new Promise( ( resolve, reject ) => {
 		g_utils.queueMicrotask( () => {
-			resolve( readPixel( screenData, x, y ) );
+			try {
+				g_screenManager.assertScreenAvailable( screenData );
+				resolve( readPixel( screenData, x, y ) );
+			} catch( error ) {
+				reject( error );
+			}
 		} );
 	} );
 }
@@ -148,12 +154,17 @@ export function readPixels( screenData, x, y, width, height ) {
  * @param {number} y - Y coordinate
  * @param {number} width - Rectangle width
  * @param {number} height - Rectangle height
- * @returns {Promise<Array<Array<Object>>>} Promise resolving to 2D array of color objects
+ * @returns {Promise<Array<Array<Object>>>} Resolves to colors; rejects on disposal or read failure
  */
 export function readPixelsAsync( screenData, x, y, width, height ) {
-	return new Promise( ( resolve ) => {
+	return new Promise( ( resolve, reject ) => {
 		g_utils.queueMicrotask( () => {
-			resolve( readPixels( screenData, x, y, width, height ) );
+			try {
+				g_screenManager.assertScreenAvailable( screenData );
+				resolve( readPixels( screenData, x, y, width, height ) );
+			} catch( error ) {
+				reject( error );
+			}
 		} );
 	} );
 }

@@ -167,6 +167,23 @@ promises stayed pending with `Cannot read properties of null (reading 'drawOrder
 deferred work, reject read promises through a caught error path, and cancel queued filters on
 disposal. Preserve the documented deferred timing for valid reads.
 
+**Resolution — 2026-09-07:** SYS-005 is fixed. Screen disposal now marks the retained screen
+record before cleanup. Deferred pixel reads reject with `Error.code === "SCREEN_REMOVED"`,
+including removal before the API's result conversion; other read failures reject with the
+original error. Queued filters cancel, and a filter callback that removes its own screen stops
+further processing and GPU writes. Live scheduling, captured views, and already-completed empty
+results are preserved. The original reproduction and evidence above describe the audited revision.
+
+Active filter cancellation uses a screen pre-cleanup hook to set the running loop bounds to zero,
+with one disposal check before upload rather than an additional check for every pixel. The active
+cancellation reference is released in `finally`, including when a filter callback throws.
+
+Validation: `node --test test/unit/patch-lifecycle.test.js` passed 23/23, including 13 focused
+SYS-005 cases. `node --test test/unit/pixel-disposal-browser.test.js` passed 10/10 against fresh
+in-memory full/lite bundles in Chromium, with no uncaught page errors. Before the fix, 11/12
+focused source tests failed; browser disposal cases reproduced the reported errors in both bundles.
+No release-copy tooling or screenshot baseline updates were used.
+
 ### SYS-006 — P2 — Transparent offscreen composition applies alpha twice
 
 **Locations:** [batches.js:613](C:/Docs/src/pijs/src/renderer/batches.js:613),

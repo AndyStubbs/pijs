@@ -5,6 +5,12 @@ summary = "Asynchronously reads the color of a single pixel."
 description = """
 Reads the color at (x, y) asynchronously. If asIndex is true, resolves to the palette index;
 otherwise resolves to a color value object.
+
+Coordinates use the view captured when called; pixel data is read in a deferred microtask.
+If the screen is removed before deferred processing completes, the promise rejects with an
+Error whose code is "SCREEN_REMOVED". Other read failures reject with the original error.
+An out-of-bounds result completed immediately is unaffected by later screen removal.
+Invalid arguments still throw synchronously.
 """
 example = """
 $.screen( "300x200" );
@@ -38,4 +44,7 @@ optional = true
 [[returns]]
 type = "Promise<number | object>"
 typeDesc = "*Promise"
-description = "Promise that resolves to palette index or color value object."
+description = """
+Resolves to a palette index or color value object. Rejects with code SCREEN_REMOVED if the
+screen is removed before deferred processing completes, or with the original read error.
+"""

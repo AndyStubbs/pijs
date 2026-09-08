@@ -8,10 +8,13 @@ Queues a filter to run at end of frame. The filter callback receives a mutable p
 true is not returned in the callback the pixel will be filtered out and be set to black/transparent,
 even if it is not modified.
 
-Note: while this function is asynchrounous it will modify the screen image using the image data
-at the time the function is called. So a line drawn after the filterImg command is called will be
-drawn after the filter is applied. Also, this runs on the CPU not the GPU so in large areas it may
-not be suitable to run in an animationFrame.
+The region and view coordinates are captured when called. Pixel data is read when the queued
+filter runs. Removing the screen cancels queued filtering without invoking the callback. If a
+callback removes its own screen, filtering stops immediately, with no further callbacks or
+pixel upload. This command returns no promise; callback exceptions retain their normal behavior.
+
+Filtering runs on the CPU rather than the GPU, so large areas may not be suitable for use in
+an animationFrame.
 """
 example = """
 $.screen( "300x200" );

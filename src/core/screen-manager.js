@@ -231,6 +231,23 @@ export function getActiveScreen( fnName, isScreenOptional ) {
 }
 
 /**
+ * Guard deferred work against screen disposal, including disposal during cleanup hooks.
+ *
+ * @param {Object} screenData - Screen data retained by the deferred operation
+ * @returns {void}
+ * @throws {Error} SCREEN_REMOVED when disposal has begun
+ */
+export function assertScreenAvailable( screenData ) {
+	if( screenData.isRemoved ) {
+		const error = new Error(
+			`Cannot complete deferred work on removed screen (id: ${screenData.id}).`
+		);
+		error.code = "SCREEN_REMOVED";
+		throw error;
+	}
+}
+
+/**
  * Get screen data by screen id.
  *
  * Throws INVALID_SCREEN_ID if the id is not found.
@@ -343,6 +360,7 @@ function screen( options ) {
 
 	const screenData = {
 		"id": m_nextScreenId,
+		"isRemoved": false,
 		"isOffscreen": !!options.isOffscreen,
 		"noCss": options.noCss === true,
 		"styleChanges": [],
@@ -523,6 +541,7 @@ function writeAutomaticStyle( screenData, element, property, value ) {
 
 /** Undo construction without assuming the renderer or module initializers completed. */
 function rollbackScreen( screenData, previousActive ) {
+	screenData.isRemoved = true;
 	screenData.isRenderScheduled = false;
 	try {
 		flushScreenTextureUsers( screenData );
@@ -681,6 +700,9 @@ function removeAllScreens() {
  * @returns {void}
  */
 function removeScreen( screenData ) {
+
+	// Keep this lifecycle flag outside the registered data cleared during cleanup.
+	screenData.isRemoved = true;
 
 	// Get the id for reference
 	const screenId = screenData.id;
