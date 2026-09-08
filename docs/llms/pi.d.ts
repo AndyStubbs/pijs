@@ -1159,9 +1159,9 @@ original read error.
 		/**
 		 * Returns the color value object for a palette index.
 		 *
-		 * Gets the color value for a specific palette index. Returns null if the index is out of range.
-		 * @param index Palette index to retrieve.
-		 * @returns Color value object if found; otherwise null.
+		 * Returns the color value object at a numeric integer palette index. Index 0 is transparent black. Returns null for nonnumeric indices, non-finite numbers, fractions, and indices outside the palette.
+		 * @param index Finite integer from 0 through the last palette entry.
+		 * @returns Color value object if the index is valid; otherwise null.
 		 */
 		getPalColor( params: { "index": number } ): PiColor | null;
 		getPalColor( index: number ): PiColor | null;
@@ -1641,8 +1641,8 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Sets the current foreground color used for drawing.
 		 *
-		 * Sets the active foreground color. Accepts a palette index or any supported color value. If a color value is provided that is not in the palette, the closest match will be used.
-		 * @param color Palette index or color value (string, array, object, number).
+		 * Sets the active foreground color from a palette index or a supported color value. Color values are used directly, including colors outside the palette. Numeric indices must be finite integers from 0 through the last palette entry; index 0 is transparent black. Invalid numeric indices throw TypeError with code INVALID_PARAMETER without changing the current color. Strings use color-string conversion and are not coerced to palette indices.
+		 * @param color Numeric integer palette index, CSS/hex string, RGB/RGBA array, or color object.
 		 * @returns This function does not return a value.
 		 */
 		setColor( params: { "color": any } ): void;
@@ -2332,8 +2332,8 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Sets the default foreground color used by new screens.
 		 *
-		 * Updates the default drawing color for newly created screens.
-		 * @param color Palette index or color value (string, array, object, number).
+		 * Sets the drawing color for subsequently created screens from a default-palette index or a supported color value. Numeric indices must be finite integers from 0 through the last default-palette entry; index 0 is transparent black. Invalid numeric indices throw TypeError with code INVALID_PARAMETER without changing the default color. Strings use color-string conversion and are not coerced to palette indices. Existing screens retain their current drawing colors.
+		 * @param color Numeric integer palette index, CSS/hex string, RGB/RGBA array, or color object.
 		 * @returns This function does not return a value.
 		 */
 		setDefaultColor( params: { "color": any } ): void;

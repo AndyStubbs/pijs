@@ -502,6 +502,39 @@ failed; explicitly restoring red on the existing screen made drawing work again.
 validation error. **Fix:** require a finite integer in the allowed range and resolve the color
 completely before assignment; apply the same rule to numeric color lookup helpers.
 
+**Resolution — 2026-09-08:** SYS-017 is fixed. Numeric palette lookups now share validation for
+integer indices from zero through the last palette entry. Negative indices, fractions, NaN,
+infinities, and out-of-range indices cannot publish invalid current or default colors. Setters
+throw TypeError with `INVALID_PARAMETER` before assignment; invalid lookup helpers and
+`getPalColor` return null. Background and fill commands retain their established validation errors
+without changing styles or pixels. Index zero remains transparent black.
+
+`setDefaultColor` no longer coerces inputs into palette indices. Strings follow the same color-string
+conversion path as `setColor`; supported CSS/hex strings, arrays, and color objects remain available.
+Public signatures are unchanged. The API reference and three 2.2 metadata overrides describe the
+current contract without modifying earlier-version metadata. General CSS parsing, component
+validation, and `put()` input coercion remain outside this fix.
+
+Validation: before implementation, `node --test test/unit/color-validation.test.js` failed 15 of
+17 source regressions and `node --test test/unit/color-validation-browser.test.js` failed all eight
+browser regressions. After implementation, source tests passed 17/17 and Chromium tests passed 8/8
+against fresh in-memory full and lite bundles, with no unexpected page errors. Coverage includes
+global and nonactive screen-bound setters, both argument forms, invalid and boundary indices,
+state preservation, drawing after rejection, new-screen defaults, styles, and fill pixels.
+
+The complete `test:patch` file set plus metadata unit tests passed 181/181 with
+`--test-concurrency=1`. The initial run passed 180/181: an older image regression invoked detached
+DOM handler properties after successful completion. It now captures and replays stale callbacks,
+asserts handler detachment, and verifies the expected callback error without changing image code.
+The final run supplied fresh in-memory bundles to server-based tests using
+`build/system-audit/sys017-fresh-bundles.cjs`; results are in `sys017-regressions-fresh.log` in that
+directory. Chromium required execution outside the sandbox after launch EPERM.
+
+In-memory metadata generation checked all four version references, the three new overrides,
+unchanged public signatures, and unchanged earlier-version references; no generated metadata or
+release files were written. No screenshot baselines were changed. Both new suites are included
+in `test:patch`.
+
 ### SYS-018 — P2 — Removing pending audio leaves its loading work and retries alive
 
 **Locations:** [sound.js:36](C:/Docs/src/pijs/plugins/sound/sound.js:36),
@@ -896,3 +929,7 @@ as a separate focused task. Earlier recommendations and evidence remain historic
 **Follow-up status — image cancellation, 2026-09-07:** SYS-010 is now resolved. Remaining task 5
 work is numeric color validation (SYS-017), gamepad sensitivity validation (SYS-021), and font
 failure publication (SYS-022). Earlier recommendations and evidence remain historical context.
+
+**Follow-up status — color validation, 2026-09-08:** SYS-017 is now resolved. Next is gamepad
+sensitivity validation (SYS-021), followed by font failure publication (SYS-022), completing task 5.
+Earlier recommendations and evidence remain historical context.

@@ -345,8 +345,15 @@ test( "duplicate image terminal events cannot release another resource wait", as
 			calls++; throw new Error( "expected" );
 		} } );
 		$.loadImage( { "src": "controlled-b", "onError": () => { calls++; } } );
-		try { images[ 0 ].onload(); } catch( error ) {}
-		images[ 0 ].onload(); images[ 0 ].onerror( new Error( "duplicate" ) );
+		const onLoad = images[ 0 ].onload;
+		const onError = images[ 0 ].onerror;
+		let callbackError;
+		try { onLoad(); } catch( error ) { callbackError = error.message; }
+		if( callbackError !== "expected" ) { throw new Error( "missing callback error" ); }
+		if( images[ 0 ].onload !== null || images[ 0 ].onerror !== null ) {
+			throw new Error( "terminal handlers remain attached" );
+		}
+		onLoad(); onError( new Error( "duplicate" ) );
 		let ready = false;
 		const settled = $.ready().then( () => { ready = true; } );
 		await new Promise( resolve => setTimeout( resolve, 20 ) );

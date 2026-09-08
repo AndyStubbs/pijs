@@ -1,0 +1,25 @@
+title = "setColor"
+category = "colors"
+isScreen = true
+summary = "Sets the current foreground color used for drawing."
+description = """
+Sets the active foreground color from a palette index or a supported color value. Color values
+are used directly, including colors outside the palette. Numeric indices must be finite integers
+from 0 through the last palette entry; index 0 is transparent black. Invalid numeric indices throw
+TypeError with code INVALID_PARAMETER without changing the current color. Strings use color-string
+conversion and are not coerced to palette indices.
+"""
+example = """
+$.screen( "300x200" );
+$.setColor( 9 );
+$.rect( 100, 50, 100, 100 );
+"""
+
+[[parameters]]
+name = "color"
+type = "any"
+description = "Numeric integer palette index, CSS/hex string, RGB/RGBA array, or color object."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

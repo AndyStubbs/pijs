@@ -143,6 +143,11 @@ Colors may be palette indices, CSS/hex strings, RGB/RGBA arrays, or `PiColor`-sh
 Palette index 0 is reserved for transparent black. Colors supplied to `setPal()` and
 `setDefaultPal()` therefore begin at index 1.
 
+Palette indices must be numbers that are finite integers from 0 through the last palette entry.
+`setColor()` and `setDefaultColor()` throw `TypeError` with code `INVALID_PARAMETER` for invalid
+numeric indices and preserve the previous color. Strings use color-string conversion; they are
+not coerced to palette indices. `getPalColor()` returns `null` for invalid or nonnumeric indices.
+
 ### Color and Palette Commands
 
 - `setColor( color )`: Sets the current drawing color.

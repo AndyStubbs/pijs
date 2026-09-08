@@ -1,0 +1,25 @@
+title = "setDefaultColor"
+category = "colors"
+isScreen = false
+summary = "Sets the default foreground color used by new screens."
+description = """
+Sets the drawing color for subsequently created screens from a default-palette index or a supported
+color value. Numeric indices must be finite integers from 0 through the last default-palette entry;
+index 0 is transparent black. Invalid numeric indices throw TypeError with code INVALID_PARAMETER
+without changing the default color. Strings use color-string conversion and are not coerced to
+palette indices. Existing screens retain their current drawing colors.
+"""
+example = """
+$.setDefaultColor( 9 );
+$.screen( "300x200" );
+$.rect( 100, 50, 100, 100 );
+"""
+
+[[parameters]]
+name = "color"
+type = "any"
+description = "Numeric integer palette index, CSS/hex string, RGB/RGBA array, or color object."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

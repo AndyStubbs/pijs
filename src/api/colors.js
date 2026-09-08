@@ -176,21 +176,16 @@ function getDefaultPal( options ) {
 
 // Set default color
 function setDefaultColor( options ) {
-	let c = options.color;
-
-	if( !isNaN( Number( c ) ) && m_defaultPal.length > c ) {
-		m_defaultColor = m_defaultPal[ c ];
-	} else {
-		c = g_utils.convertToColor( c );
-		if( c === null ) {
-			const error = new TypeError(
-				"setDefaultColor: Parameter color is not a valid color format."
-			);
-			error.code = "INVALID_PARAMETER";
-			throw error;
-		}
-		m_defaultColor = c;
+	const colorValue = getColorValueByRawInput( { "pal": m_defaultPal }, options.color );
+	if( colorValue === null ) {
+		const error = new TypeError(
+			"setDefaultColor: Parameter color must be a valid color or an integer palette " +
+			"index in range."
+		);
+		error.code = "INVALID_PARAMETER";
+		throw error;
 	}
+	m_defaultColor = colorValue;
 }
 
 // Get default color
@@ -221,16 +216,16 @@ function setColor( screenData, options ) {
 
 	let colorValue;
 
-	// If colorInput is an number then get colorValue for pal
+	// Resolve numeric palette indices before publishing the drawing color
 	if( typeof colorInput === "number" ) {
-		if( colorInput >= screenData.pal.length ) {
+		colorValue = getColorValueByIndex( screenData, colorInput );
+		if( colorValue === null ) {
 			const error = new TypeError(
 				`setColor: Parameter color index is not in pal.`
 			);
 			error.code = "INVALID_PARAMETER";
 			throw error;
 		}
-		colorValue = screenData.pal[ colorInput ];
 	} else {
 
 		// Convert the color to a colorValue
@@ -538,10 +533,8 @@ function addPalColors( screenData, options ) {
 }
 
 function getPalColor( screenData, options ) {
-	const index = options.index;
-
-	if( screenData.pal[ index ] ) {
-		const color = screenData.pal[ index ];
+	const color = getColorValueByIndex( screenData, options.index );
+	if( color !== null ) {
 		return g_utils.createColor( color.array );
 	}
 	return null;
@@ -554,20 +547,13 @@ function getPalColor( screenData, options ) {
 
 
 export function getColorValueByRawInput( screenData, rawInput ) {
-	let colorValue;
 
-	// If it is an integer than get from pal array
-	if( Number.isInteger( rawInput ) ) {
-		if( rawInput >= screenData.pal.length ) {
-			return null;
-		}
-		return screenData.pal[ rawInput ];
+	// Every number denotes a palette index, including invalid numeric inputs
+	if( typeof rawInput === "number" ) {
+		return getColorValueByIndex( screenData, rawInput );
 	}
-	
-	// Convert to a color value
-	colorValue = g_utils.convertToColor( rawInput );
 
-	return colorValue;
+	return g_utils.convertToColor( rawInput );
 }
 
 // Finds a color index without adding it to palette
@@ -617,8 +603,15 @@ export function findColorIndexByColorValue( screenData, color, tolerance = 0 ) {
 	return bestMatchIndex;
 }
 
+/**
+ * Resolve a numeric integer palette index without coercion.
+ *
+ * @param {Object} screenData - Screen data containing the palette.
+ * @param {*} palIndex - Palette index, including zero for transparent black.
+ * @returns {Object|null} Palette color, or null for an invalid index.
+ */
 export function getColorValueByIndex( screenData, palIndex ) {
-	if( palIndex >= screenData.pal.length ) {
+	if( !Number.isInteger( palIndex ) || palIndex < 0 || palIndex >= screenData.pal.length ) {
 		return null;
 	}
 	return screenData.pal[ palIndex ];

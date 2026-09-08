@@ -1,0 +1,24 @@
+title = "getPalColor"
+category = "colors"
+isScreen = true
+summary = "Returns the color value object for a palette index."
+description = """
+Returns the color value object at a numeric integer palette index. Index 0 is transparent black.
+Returns null for nonnumeric indices, non-finite numbers, fractions, and indices outside the palette.
+"""
+example = """
+$.screen( "300x200" );
+const color = $.getPalColor( 2 );
+$.setColor( color );
+$.print( "Color 2 = [" + color.array.join( ", " ) + "]" );
+"""
+
+[[parameters]]
+name = "index"
+type = "number"
+description = "Finite integer from 0 through the last palette entry."
+
+[[returns]]
+type = "PiColor | null"
+typeDesc = "*PiColor"
+description = "Color value object if the index is valid; otherwise null."
