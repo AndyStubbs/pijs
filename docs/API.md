@@ -189,6 +189,10 @@ accepted.
 - `getImage( name )`: Returns the registered `HTMLImageElement` or `HTMLCanvasElement`.
 - `getSpritesheetData( name )`: Returns spritesheet frame metadata.
 - `removeImage( name )`: Finishes queued users, removes the name, and releases cached textures.
+  Loading and failed images can also be removed, and the name is immediately reusable. Removing
+  a pending URL load silently cancels it and releases its readiness wait without calling `onLoad`
+  or `onError`. Late events cannot publish the removed image or affect a replacement. This also
+  applies to pending spritesheets. Removing an unknown name is a no-op.
 
 Drawing a removed registered name throws `IMAGE_NOT_FOUND`.
 

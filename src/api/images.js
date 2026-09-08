@@ -174,7 +174,7 @@ function loadImage( options ) {
 	}
 
 	// Create blank image object
-	m_images[ name ] = {
+	const imageObj = {
 		"status": "loading",
 		"image": null,
 		"width": null,
@@ -183,12 +183,12 @@ function loadImage( options ) {
 		"palColors": palColors,
 		"palColorMap": palColorMap
 	};
+	m_images[ name ] = imageObj;
 
 	// Update function for when image is loaded to update the image object
 	const updateImageFn = ( img ) => {
 
 		// Use the element directly
-		const imageObj = m_images[ name ];
 		imageObj.image = img;
 		imageObj.status = "ready";
 		imageObj.width = img.width;
@@ -198,67 +198,88 @@ function loadImage( options ) {
 		if( imageObj.usePalette ) {
 			addPaletteImage( name );
 		}
-
-		// Call user callback if provided
-		if( onLoadCallback ) {
-			onLoadCallback( name );
-		}
 	};
 
 	// Handle Image or Canvas element passed directly
 	if( typeof src !== "string" ) {
 
 		// Use the element directly
-		updateImageFn( src );
+		try {
+			updateImageFn( src );
+		} catch( error ) {
+			removeImage( { "name": name } );
+			throw error;
+		}
+		if( onLoadCallback ) {
+			onLoadCallback( name );
+		}
 		return name;
 	}
 
-	// Create the new image
-	const img = new Image();
-	
-	// Increment wait count for ready() - will be decremented in onload/onerror
-	g_commands.wait();
-	let settled = false;
-
-	// Setup onload handler
-	img.onload = function() {
-		if( settled ) {
-			return;
-		}
-		settled = true;
-		try {
-			updateImageFn( img );
-		} finally {
-			g_commands.done();
-		}
-	};
-
-	// Setup onerror handler
-	img.onerror = function( error ) {
-		if( settled ) {
-			return;
-		}
-		settled = true;
-		try {
-
-			// Mark image as failed
-			m_images[ name ] = {
-				"status": "error",
-				"error": error
-			};
-
-			// Call user error callback if provided
-			if( onErrorCallback ) {
-				onErrorCallback( error );
+	// The load owns its element and one readiness wait, independently of the registered name.
+	const load = {
+		"image": null,
+		"settled": false,
+		"waiting": false,
+		"releaseWait": () => {
+			if( load.waiting ) {
+				load.waiting = false;
+				g_commands.done();
 			}
-
-		} finally {
-			g_commands.done();
 		}
 	};
+	imageObj.load = load;
 
-	// Set source - may trigger onload synchronously if cached
-	img.src = src;
+	try {
+		const img = new Image();
+		load.image = img;
+		g_commands.wait();
+		load.waiting = true;
+
+		img.onload = function() {
+			if( load.settled || m_images[ name ] !== imageObj ) {
+				return;
+			}
+			finishImageLoad( load );
+			try {
+				updateImageFn( img );
+				if( onLoadCallback ) {
+					onLoadCallback( name );
+				}
+			} finally {
+				load.releaseWait();
+			}
+		};
+
+		img.onerror = function( error ) {
+			if( load.settled || m_images[ name ] !== imageObj ) {
+				return;
+			}
+			finishImageLoad( load );
+			try {
+				imageObj.status = "error";
+				imageObj.error = error;
+				if( onErrorCallback ) {
+					onErrorCallback( error );
+				}
+			} finally {
+				load.releaseWait();
+			}
+		};
+
+		// A cached or controlled source may complete synchronously.
+		img.src = src;
+	} catch( error ) {
+
+		// Completed callbacks may throw after removing or replacing their own registration.
+		if( !load.settled ) {
+			if( m_images[ name ] === imageObj ) {
+				delete m_images[ name ];
+			}
+			cancelImageLoad( load );
+		}
+		throw error;
+	}
 
 	return name;
 }
@@ -266,6 +287,7 @@ function loadImage( options ) {
 
 /**
  * Remove an image from storage
+ * Pending URL loads cancel silently and release their readiness wait. Names are reusable at once.
  * 
  * @param {Object} options - Load options
  * @param {string} [options.name] - Name of the image to remove
@@ -279,7 +301,17 @@ function removeImage( options ) {
 	}
 
 	const imageObj = m_images[ name ];
-	if( imageObj && imageObj.image ) {
+	if( !imageObj ) {
+		return;
+	}
+
+	// Release ownership before cancellation can generate any more events.
+	delete m_images[ name ];
+	if( imageObj.load && !imageObj.load.settled ) {
+		cancelImageLoad( imageObj.load );
+	}
+
+	if( imageObj.image ) {
 
 		const img = imageObj.image;
 
@@ -289,17 +321,43 @@ function removeImage( options ) {
 		for( const screenData of g_screenManager.getAllScreensData() ) {
 			g_renderer.deleteWebGL2Texture( screenData, img );
 		}
+	}
 
-		// Remove from paletteImages
-		if( imageObj.usePalette ) {
+	// Loading and failed palette images may never have entered this list.
+	const paletteIndex = m_paletteImages.indexOf( name );
+	if( paletteIndex !== -1 ) {
+		m_paletteImages.splice( paletteIndex, 1 );
+	}
+}
 
-			// Since name is guaranteed to be unique we can assume there are no duplicate names in
-			// the array
-			m_paletteImages.splice( m_paletteImages.indexOf( name ), 1 );
+/**
+ * Stop accepting terminal events and release the pending element reference.
+ * @param {Object} load - Owned image load
+ * @returns {void}
+ */
+function finishImageLoad( load ) {
+	load.settled = true;
+	if( load.image ) {
+		load.image.onload = null;
+		load.image.onerror = null;
+		load.image = null;
+	}
+}
+
+/**
+ * Cancel an internally created image without invoking user callbacks.
+ * @param {Object} load - Owned image load
+ * @returns {void}
+ */
+function cancelImageLoad( load ) {
+	const img = load.image;
+	finishImageLoad( load );
+	try {
+		if( img ) {
+			img.removeAttribute( "src" );
 		}
-
-		// Delete the image object
-		delete m_images[ name ];
+	} finally {
+		load.releaseWait();
 	}
 }
 

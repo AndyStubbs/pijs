@@ -333,6 +333,38 @@ the pending image appeared after `ready()`. Removing/reloading an already-ready 
 **Fix:** support every record state, cancel/settle outstanding work once, and use record identity
 or a generation token so late events cannot publish into a replacement record.
 
+**Resolution — 2026-09-07:** SYS-010 is fixed. Image URL loads own their pending element,
+terminal state, and readiness settlement. Removal now handles loading, failed, and ready records,
+immediately frees the name, and silently cancels pending loads without invoking either callback.
+Cancellation detaches both handlers, clears the internally created element's source, and releases
+its wait once. Success and failure also detach both handlers; duplicate or captured stale events
+cannot publish into a replacement or release another resource's wait. Failed records retain
+`IMAGE_LOAD_FAILED` until removal; removed names report `IMAGE_NOT_FOUND`.
+
+Synchronous constructor, handler setup, and source-assignment failures roll back registration and
+settle acquired waits. Direct-element palette setup failures also roll back partial registration.
+Throwing or reentrant user callbacks preserve their existing propagation behavior and cannot
+overwrite replacement records or strand readiness. Caller-provided elements remain untouched;
+ready removal preserves texture cleanup and queued draws. Palette membership is removed only
+when present. Spritesheets inherit cancellation through their existing image-loading path.
+
+Validation: the initial 10 source cases produced seven failures before implementation and all
+passed afterward. The expanded `node --test test/unit/image-lifecycle.test.js` suite passed 15/15,
+covering name reuse, duplicate/stale events, exact wait accounting, callback errors/reentrancy,
+setup failures, caller-owned sources, and palette cleanup. The new
+`node --test test/unit/image-lifecycle-browser.test.js` suite passed 14/14 against fresh in-memory
+full and lite bundles. Controlled DOM events verify readiness isolation and callback errors;
+native image decoding verifies cancellation, failure, and reuse. Pixel assertions verify replacement
+images, spritesheet frames, and queued draws across independent and shared-context screens.
+Expected callback page errors were asserted explicitly; no unexpected page errors were observed.
+
+The complete `test:patch` file set plus `test/scripts/generate-metadata.test.js`, run with
+`node --test --test-concurrency=1`, passed 146/146. The older server-based patch-browser suite used
+the existing server and its bundle on port 8080; the image, audio, keyboard, and pixel-disposal
+browser suites compiled fresh bundles in memory. Chromium required execution outside the sandbox
+after a launch `EPERM`. Both image suites are included in `test:patch`. No release generation or
+screenshot baseline changes were used. SYS-017, SYS-021, and SYS-022 remain separate follow-ups.
+
 ### SYS-011 — P2 — Keyboard callbacks can repeat once-handlers and leave released keys held
 
 **Locations:** [keyboard/index.js:287](C:/Docs/src/pijs/plugins/keyboard/index.js:287),
@@ -856,3 +888,7 @@ and recommendation above are retained as historical context.
 completing the first four follow-up tasks. Next is task 5: image/font failure publication and
 numeric state validation (SYS-010, SYS-017, SYS-021, SYS-022), starting with image cancellation
 as a separate focused task. Earlier recommendations and evidence remain historical context.
+
+**Follow-up status — image cancellation, 2026-09-07:** SYS-010 is now resolved. Remaining task 5
+work is numeric color validation (SYS-017), gamepad sensitivity validation (SYS-021), and font
+failure publication (SYS-022). Earlier recommendations and evidence remain historical context.
