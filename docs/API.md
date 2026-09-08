@@ -284,10 +284,13 @@ synchronously with the documented shader error code.
 
 Pi.js supports bitmap fonts only.
 
+Font 1, the default 6x8 font, is created synchronously and can render immediately without
+calling `$.ready()`, even while the other built-in font images are still loading.
+
 - `loadFont( src, width, height, margin, charset )`: Loads a bitmap font and returns its ID.
 - `setDefaultFont( fontId )`: Sets the font used by new screens.
 - `setFont( fontId )`: Selects a loaded font for the active screen.
-- `getAvailableFonts()`: Returns loaded font metadata.
+- `getAvailableFonts()`: Returns registered font metadata, including pending or failed URL loads.
 - `setChar( charCode, data )`: Replaces one character bitmap in the active font.
 - `setPrintSize( scaleWidth, scaleHeight, padX, padY )`: Sets font scale and spacing.
 - `print( msg, isInline, isCentered )`: Prints and advances the active view's cursor.
@@ -296,6 +299,14 @@ Pi.js supports bitmap fonts only.
 - `getCols()`, `getRows()`: Return the cells that fit in the active view.
 - `setWordBreak( isEnabled )`: Selects space-aware or character-level wrapping.
 - `calcWidth( msg )`: Returns bitmap text width in pixels.
+
+`loadFont` accepts a URL string, `HTMLImageElement`, `HTMLCanvasElement`, or `OffscreenCanvas`.
+Synchronous validation or setup failure throws without registering a font, consuming a font ID,
+or leaving a readiness wait pending. A URL load returns its ID and registers the pending font
+immediately after setup succeeds. Use `await $.ready()` to wait for pending loads to settle.
+If a URL image fails asynchronously, Pi.js logs an error and releases its readiness wait; the
+font remains registered and selectable without an image. Readiness does not guarantee load success.
+Image and canvas elements are used directly; callers supply their usable image data.
 
 Views save and restore print cursors. Wrapping, scrolling, rows, and columns use the requested
 active-view size and effective clip.

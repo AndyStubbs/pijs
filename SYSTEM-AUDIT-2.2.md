@@ -643,6 +643,42 @@ grew from five entries to six and exposed the failed ID. No font removal command
 **Fix:** validate before publication and roll back synchronous setup failures; separately define the
 state exposed for asynchronous font-load failure. That asynchronous policy was not fully verified.
 
+**Resolution — synchronous publication, 2026-09-08:** The synchronous SYS-022 defect is fixed.
+`loadFont` completes source validation and synchronous setup before assigning an ID or publishing
+the font. Rejected calls leave the registry and next ID unchanged. URL setup failures invalidate
+callbacks, detach handlers, attempt cancellation, and release any acquired readiness wait while
+preserving the original exception. A settlement guard prevents stale events from changing an
+abandoned font or releasing an unrelated wait. Successful pending URL registration, direct image
+and canvas sources, existing validation errors, and built-in IDs 0–4 are preserved.
+
+Validation: before implementation, 14 of 15 new source regressions failed. After the fix,
+`node --test --test-concurrency=1 test/unit/font-publication.test.js
+test/unit/font-publication-browser.test.js` passed 27/27 (15 source, 12 browser). Coverage includes
+repeated invalid sources, constructor/handler/source assignment exceptions, direct-source dimension
+getter exceptions, cleanup exceptions, stale events, simulated synchronous completion, nested setup,
+and asynchronous success/error settlement. Browser checks use fresh in-memory full and lite bundles,
+exercise positional and options-object calls, verify default IDs and native image/canvas/offscreen
+font rendering, and assert readiness recovery and no unexpected page or console errors.
+
+Both suites are included in `test:patch`. The complete `test:patch` file set plus
+`test/scripts/generate-metadata.test.js`, run with `node --test --test-concurrency=1`, passed
+230/230. Existing server-based checks used the running repository server on port 8080; the new font
+browser suite requires no server. Chromium required execution outside the sandbox after a launch
+`EPERM`. No release generation or screenshot baseline changes were used.
+
+**Open follow-up — asynchronous failure policy:** Existing behavior is now characterized, not
+changed: a failed URL load logs the existing error and releases readiness, retaining a font with no
+image. Its ID remains selectable, including as the default for new screens; `setChar` reports
+`NO_FONT_IMAGE`. Whether to remove these records, and how to handle screens/defaults already using
+them, remains a separate policy decision. Readiness does not guarantee successful font loading.
+
+**Additional verification — immediate font 1, 2026-09-08:** Added full/lite browser regressions
+that hold all four built-in URL font loads pending and print during the same script turn as library
+initialization, without calling `$.ready()`. Both default selection and explicit `setFont( 1 )`
+render matching nonempty glyphs. The focused font suites now pass 29/29 (15 source, 14 browser).
+Font 1 remains synchronously created from its embedded data through a canvas; no runtime change
+was needed for this verification.
+
 ### SYS-023 — P2 — Visual tests can pass despite uncaught JavaScript errors
 
 **Location:** [run-visual-tests.js:782](C:/Docs/src/pijs/test/scripts/run-visual-tests.js:782).
@@ -956,4 +992,9 @@ Earlier recommendations and evidence remain historical context.
 
 **Follow-up status — gamepad validation, 2026-09-08:** SYS-021 is now resolved. Next is font
 failure publication (SYS-022), the remaining issue in task 5. Earlier recommendations and evidence
+remain historical context.
+
+**Follow-up status — font publication, 2026-09-08:** The synchronous SYS-022 defect is resolved,
+completing the agreed synchronous font work in task 5. Asynchronous font failure behavior is covered
+by regression tests and remains an explicit policy follow-up. Earlier recommendations and evidence
 remain historical context.

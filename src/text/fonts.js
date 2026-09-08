@@ -135,6 +135,9 @@ function loadDefaultFonts() {
 
 /**
  * Load font from image source
+ * Synchronous rejection publishes no font and consumes no font ID or readiness wait.
+ * URL sources publish a pending font after setup. Asynchronous failure logs an error and
+ * releases readiness, retaining the registered font without an image.
  * 
  * @param {Object} options - Load options
  * @param {string|HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} options.src - Font image
@@ -190,7 +193,7 @@ function loadFont( options ) {
 
 	// Create font object
 	const font = {
-		"id": m_nextFontId,
+		"id": null,
 		"width": width,
 		"height": height,
 		"margin": margin,
@@ -203,12 +206,11 @@ function loadFont( options ) {
 		"atlasHeight": null
 	};
 
-	// Add to fonts array
+	// Complete synchronous setup before assigning an ID or publishing the font.
+	loadFontFromImage( fontSrc, font );
+	font.id = m_nextFontId;
 	m_fontMap.set( font.id, font );
 	m_nextFontId += 1;
-
-	// Load from image source
-	loadFontFromImage( fontSrc, font );
 
 	return font.id;
 }
@@ -216,35 +218,13 @@ function loadFont( options ) {
 /**
  * Load font from image source
  * 
- * @param {string|HTMLImageElement} fontSrc - Font image source
+ * @param {string|HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} fontSrc - Font image source
  * @param {Object} font - Font object to populate
  * @returns {void}
  */
 function loadFontFromImage( fontSrc, font ) {
-	let img;
-
 	if( typeof fontSrc === "string" ) {
-
-		// Create a new image
-		img = new Image();
-
-		// Increment wait count
-		g_commands.wait();
-
-		img.onload = function() {
-			font.image = img;
-			font.atlasWidth = img.width;
-			font.atlasHeight = img.height;
-			g_commands.done();
-		};
-
-		img.onerror = function( err ) {
-			console.error( "loadFont: Unable to load image for font." );
-			g_commands.done();
-		};
-
-		// Set source after handlers
-		img.src = fontSrc;
+		loadFontUrl( fontSrc, font );
 	} else if(
 		fontSrc instanceof HTMLImageElement || fontSrc instanceof HTMLCanvasElement ||
 		( typeof OffscreenCanvas !== "undefined" && fontSrc instanceof OffscreenCanvas )
@@ -257,6 +237,83 @@ function loadFontFromImage( fontSrc, font ) {
 	} else {
 		const error = new TypeError( "loadFont: fontSrc must be a string or Image element." );
 		error.code = "INVALID_FONT_SRC";
+		throw error;
+	}
+}
+
+
+/**
+ * Set up an owned URL image, releasing its readiness wait exactly once.
+ * @param {string} fontSrc - Font image URL
+ * @param {Object} font - Font object to populate
+ * @returns {void}
+ */
+function loadFontUrl( fontSrc, font ) {
+	let img = null;
+	let settled = false;
+	let waiting = false;
+
+	function releaseWait() {
+		if( waiting ) {
+			waiting = false;
+			g_commands.done();
+		}
+	}
+
+	function finish() {
+		settled = true;
+		if( img ) {
+			for( const name of [ "onload", "onerror" ] ) {
+				try {
+					img[ name ] = null;
+				} catch( error ) {
+
+					// A replaced DOM setter must not prevent cleanup of the other handler.
+					// The settlement guard also invalidates callbacks that cannot be detached.
+				}
+			}
+		}
+	}
+
+	try {
+		img = new Image();
+		g_commands.wait();
+		waiting = true;
+
+		img.onload = function() {
+			if( settled ) { return; }
+			finish();
+			try {
+				font.atlasWidth = img.width;
+				font.atlasHeight = img.height;
+				font.image = img;
+			} finally {
+				releaseWait();
+			}
+		};
+
+		img.onerror = function() {
+			if( settled ) { return; }
+			finish();
+			try {
+				console.error( "loadFont: Unable to load image for font." );
+			} finally {
+				releaseWait();
+			}
+		};
+
+		// A controlled source can invoke a terminal handler synchronously.
+		img.src = fontSrc;
+	} catch( error ) {
+		finish();
+		try {
+			if( img ) { img.removeAttribute( "src" ); }
+		} catch( cleanupError ) {
+
+			// Preserve the setup exception even if a replaced DOM method cannot cancel.
+		} finally {
+			releaseWait();
+		}
 		throw error;
 	}
 }
