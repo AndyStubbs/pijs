@@ -7,14 +7,41 @@ release-ready.
 
 These changes are now assigned to the 2.2 minor upgrade rather than the originally planned
 2.1.1 patch because the screen command gains the optional noCss parameter in both overloads.
-Existing positional arguments keep their order; noCss is appended after parent and defaults to
+Existing screen positional arguments keep their order; noCss is appended after parent and defaults to
 false. PATCH-001 through PATCH-009 remain stable finding IDs for implementation traceability.
 Updated metadata is in `metadata/pi-2.2`; `metadata/pi-2.1` retains the original 2.1 documentation.
 Package versions are set to 2.2.0 for development; release preparation is still pending.
 
+## Image palette swapping removed
+
+Pi.js 2.2 removes usePalette and paletteKeys from loadImage and loadSpritesheet, in both
+object and positional forms. This is an intentional breaking API change. Images and sprites
+retain their source colors when a screen palette changes; screen palettes remain supported
+for drawing colors.
+
+Remove the two palette arguments, including false/null placeholders, before positional callbacks:
+
+```javascript
+// Before 2.2
+$.loadImage( src, name, false, null, onLoad, onError );
+$.loadSpritesheet( src, name, width, height, margin, false, null, onLoad, onError );
+
+// Pi.js 2.2
+$.loadImage( src, name, onLoad, onError );
+$.loadSpritesheet( src, name, width, height, margin, onLoad, onError );
+```
+
+For object calls, remove the usePalette and paletteKeys properties; callback names stay the same.
+No compatibility shim is provided. Unknown object properties follow the existing option parsing
+behavior and are ignored.
+
+Use the existing createShader/applyShader API for recoloring. See the
+[shader API reference](docs/API.md#custom-shaders). No automatic replacement effect is applied.
+
 ## Objective and recommendations
 
-Fix reproducible correctness and lifecycle problems while preserving the 2.x API. Include the
+Fix reproducible correctness and lifecycle problems. The image palette removal below is an
+intentional exception to preserving the 2.x API. Include the
 requested opt-out from automatic screen CSS. This guide incorporates `docs/no-css-screens.txt`
 and `docs/uv-flip-todo.txt`, but treats their proposals separately from verified behavior.
 

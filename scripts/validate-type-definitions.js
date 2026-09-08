@@ -16,6 +16,29 @@ const DOCS_TYPE_FILE = path.join( __dirname, "..", "docs", "llms", "pi.d.ts" );
 
 const REQUIRED_DECLARATIONS = [
 	{
+		"name": "loadImage object overload without palette options",
+		"text": "loadImage( params: { \"src\": string | HTMLImageElement | HTMLCanvasElement; " +
+			"\"name\"?: string; \"onLoad\"?: ( name: string ) => void; " +
+			"\"onError\"?: ( error: Error ) => void } ): string;"
+	},
+	{
+		"name": "loadImage positional callbacks",
+		"text": "loadImage( src: string | HTMLImageElement | HTMLCanvasElement, name?: string, " +
+			"onLoad?: ( name: string ) => void, onError?: ( error: Error ) => void ): string;"
+	},
+	{
+		"name": "loadSpritesheet object overload without palette options",
+		"text": "loadSpritesheet( params: { \"src\": string | HTMLImageElement | HTMLCanvasElement; " +
+			"\"name\"?: string; \"width\"?: number; \"height\"?: number; \"margin\"?: number; " +
+			"\"onLoad\"?: ( name: string ) => void; \"onError\"?: ( error: Error ) => void } ): string;"
+	},
+	{
+		"name": "loadSpritesheet positional callbacks",
+		"text": "loadSpritesheet( src: string | HTMLImageElement | HTMLCanvasElement, " +
+			"name?: string, width?: number, height?: number, margin?: number, " +
+			"onLoad?: ( name: string ) => void, onError?: ( error: Error ) => void ): string;"
+	},
+	{
 		"name": "shader uniform map type",
 		"text": "type ShaderUniforms = Record<string, ShaderUniformValue>;"
 	},
@@ -107,6 +130,9 @@ function validateTypeDefinitions() {
 		if( !buildTypes.includes( declaration.text ) ) {
 			throw new Error( `Missing or incorrect ${declaration.name}.` );
 		}
+	}
+	if( /\b(usePalette|paletteKeys)\b/.test( buildTypes ) ) {
+		throw new Error( "Type definitions still expose removed image palette options." );
 	}
 
 	console.log(

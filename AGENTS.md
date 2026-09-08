@@ -32,6 +32,13 @@ prefer explicit `if`/`else` over ternaries. Use `camelCase` for functions and va
 `UPPER_CASE` for true constants, and `m_` for module-private state. Add file-level JSDoc and
 document public functions.
 
+## Documentation Guidelines
+
+General documentation, including API references, metadata, and LLM references, must describe
+current behavior only. Do not include change history, removed APIs, before/after comparisons,
+or migration instructions. Keep those details in dedicated upgrade guides, migration documents,
+or changelogs.
+
 ## Testing Guidelines
 
 Tests use Playwright plus deterministic PNG comparison. Name fixtures descriptively with

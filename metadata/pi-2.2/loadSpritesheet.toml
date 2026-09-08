@@ -1,0 +1,74 @@
+title = "loadSpritesheet"
+category = "images"
+isScreen = false
+summary = "Loads a spritesheet by URL or from an Image/Canvas element."
+description = """
+Loads a spritesheet and slices it either automatically (connected components) or by a fixed grid.
+Sprites retain their source colors when the screen palette changes. Use the shader API
+for recoloring.
+"""
+example = """
+$.screen( "150x100" );
+$.setDefaultAnchor( 0.5, 0.5 );
+$.loadSpritesheet( "media/cat_sprite.png", "cat", 34, 34, 1 );
+let catData;
+$.ready( () => {
+	catData = $.getSpritesheetData( "cat" );
+	requestAnimationFrame( animate );
+} );
+
+function animate( t ) {
+	$.cls();
+	const frame = Math.round( t / 100 ) % catData.frameCount;
+	$.drawSprite( "cat", frame, 75, 50 );
+	requestAnimationFrame( animate );
+}
+"""
+
+[[parameters]]
+name = "src"
+type = "string | HTMLImageElement | HTMLCanvasElement"
+typeDesc = "*Many"
+description = "Spritesheet source: URL string, HTMLImageElement, or HTMLCanvasElement."
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "Optional unique name for the spritesheet. Auto-generated if omitted."
+optional = true
+
+[[parameters]]
+name = "width"
+type = "number"
+description = "Sprite width for fixed grid mode."
+optional = true
+
+[[parameters]]
+name = "height"
+type = "number"
+description = "Sprite height for fixed grid mode."
+optional = true
+
+[[parameters]]
+name = "margin"
+type = "number"
+description = "Margin between sprites in fixed grid mode (default 0)."
+optional = true
+
+[[parameters]]
+name = "onLoad"
+type = "function"
+signature = "( name: string ) => void"
+description = "Callback invoked when the spritesheet finishes loading."
+optional = true
+
+[[parameters]]
+name = "onError"
+type = "function"
+signature = "( error: Error ) => void"
+description = "Callback invoked if the spritesheet fails to load."
+optional = true
+
+[[returns]]
+type = "string"
+description = "The spritesheet name."

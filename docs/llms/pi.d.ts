@@ -2026,35 +2026,31 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Loads an image by URL or from an Image/Canvas element.
 		 *
-		 * Loads an image and stores it by name. Supports optional palette-linking to the screen palette. After calling load image you should call $.ready command to wait for image to load before calling drawImage.
+		 * Loads an image and stores it by name. Use $.ready() to wait for loading before calling drawImage. Images retain their source colors when the screen palette changes. Use the shader API for recoloring.
 		 * @param src Image source: URL string, HTMLImageElement, or HTMLCanvasElement.
 		 * @param name Optional unique name for the image. Auto-generated if omitted.
-		 * @param usePalette If true, link image colors to the active screen palette.
-		 * @param paletteKeys Key colors used to map image colors to palette indices (required if usePalette).
 		 * @param onLoad Callback invoked when the image finishes loading.
 		 * @param onError Callback invoked if the image fails to load.
 		 * @returns The image name.
 		 */
-		loadImage( params: { "src": string | HTMLImageElement | HTMLCanvasElement; "name"?: string; "usePalette"?: boolean; "paletteKeys"?: Array<number>; "onLoad"?: ( name: string ) => void; "onError"?: ( error: Error ) => void } ): string;
-		loadImage( src: string | HTMLImageElement | HTMLCanvasElement, name?: string, usePalette?: boolean, paletteKeys?: Array<number>, onLoad?: ( name: string ) => void, onError?: ( error: Error ) => void ): string;
+		loadImage( params: { "src": string | HTMLImageElement | HTMLCanvasElement; "name"?: string; "onLoad"?: ( name: string ) => void; "onError"?: ( error: Error ) => void } ): string;
+		loadImage( src: string | HTMLImageElement | HTMLCanvasElement, name?: string, onLoad?: ( name: string ) => void, onError?: ( error: Error ) => void ): string;
 
 		/**
 		 * Loads a spritesheet by URL or from an Image/Canvas element.
 		 *
-		 * Loads a spritesheet and slices it either automatically (connected components) or by a fixed grid.
+		 * Loads a spritesheet and slices it either automatically (connected components) or by a fixed grid. Sprites retain their source colors when the screen palette changes. Use the shader API for recoloring.
 		 * @param src Spritesheet source: URL string, HTMLImageElement, or HTMLCanvasElement.
 		 * @param name Optional unique name for the spritesheet. Auto-generated if omitted.
 		 * @param width Sprite width for fixed grid mode.
 		 * @param height Sprite height for fixed grid mode.
 		 * @param margin Margin between sprites in fixed grid mode (default 0).
-		 * @param usePalette If true, link image colors to the active screen palette.
-		 * @param paletteKeys Key colors used to map image colors to palette indices (required if usePalette).
 		 * @param onLoad Callback invoked when the spritesheet finishes loading.
 		 * @param onError Callback invoked if the spritesheet fails to load.
 		 * @returns The spritesheet name.
 		 */
-		loadSpritesheet( params: { "src": string | HTMLImageElement | HTMLCanvasElement; "name"?: string; "width"?: number; "height"?: number; "margin"?: number; "usePalette"?: boolean; "paletteKeys"?: Array<number>; "onLoad"?: ( name: string ) => void; "onError"?: ( error: Error ) => void } ): string;
-		loadSpritesheet( src: string | HTMLImageElement | HTMLCanvasElement, name?: string, width?: number, height?: number, margin?: number, usePalette?: boolean, paletteKeys?: Array<number>, onLoad?: ( name: string ) => void, onError?: ( error: Error ) => void ): string;
+		loadSpritesheet( params: { "src": string | HTMLImageElement | HTMLCanvasElement; "name"?: string; "width"?: number; "height"?: number; "margin"?: number; "onLoad"?: ( name: string ) => void; "onError"?: ( error: Error ) => void } ): string;
+		loadSpritesheet( src: string | HTMLImageElement | HTMLCanvasElement, name?: string, width?: number, height?: number, margin?: number, onLoad?: ( name: string ) => void, onError?: ( error: Error ) => void ): string;
 
 		/**
 		 * Removes a key event handler.

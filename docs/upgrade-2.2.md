@@ -10,7 +10,7 @@ $.screen( aspect, container, isOffscreen, resizeCallback, parent, noCss );
 $.screen( { "aspect": "320x200", "container": "game", "noCss": true } );
 ```
 
-Existing positional arguments retain their order. Omitting noCss, or passing false or null,
+Existing screen positional arguments retain their order. Omitting noCss, or passing false or null,
 preserves automatic CSS behavior. The finding IDs PATCH-001 through PATCH-009 are retained in
 the [implementation guide](../UPGRADE-2.2.md).
 
@@ -60,7 +60,50 @@ is in `metadata/pi-2.2`; `metadata/pi-2.1` retains the original 2.1 documentatio
 Video drawImage currently requires explicit video.width and video.height attributes; this upgrade
 does not add natural-dimension fallback for unspecified-size videos.
 
+## Image palette swapping removed
+
+Pi.js 2.2 removes usePalette and paletteKeys from loadImage and loadSpritesheet, in both
+object and positional forms. This is an intentional breaking API change. Images and sprites
+retain their source colors when a screen palette changes; screen palettes remain supported
+for drawing colors.
+
+Remove the two palette arguments, including false/null placeholders, before positional callbacks:
+
+```javascript
+// Before 2.2
+$.loadImage( src, name, false, null, onLoad, onError );
+$.loadSpritesheet( src, name, width, height, margin, false, null, onLoad, onError );
+
+// Pi.js 2.2
+$.loadImage( src, name, onLoad, onError );
+$.loadSpritesheet( src, name, width, height, margin, onLoad, onError );
+```
+
+For object calls, remove the usePalette and paletteKeys properties; callback names stay the same.
+No compatibility shim is provided. Unknown object properties follow the existing option parsing
+behavior and are ignored.
+
+Use the existing createShader/applyShader API for recoloring. See the
+[shader API reference](API.md#custom-shaders). No automatic replacement effect is applied.
+
 ## Validation
+
+Image palette removal was validated on 2026-09-08:
+
+- `node --test test/unit/image-lifecycle.test.js test/unit/image-lifecycle-browser.test.js`:
+  39 passed, including both loader overloads, callback failures, source preservation, and
+  palette-independent image/sprite rendering in fresh in-memory full and lite bundles.
+- `node --test test/scripts/generate-metadata.test.js test/unit/patch-lifecycle.test.js`:
+  28 passed.
+- Isolated metadata generation and both metadata/type validators passed. Generated 2.0/2.1
+  references retain the palette arguments; 2.2 references and declarations use the new signatures.
+  Only the current documentation declarations were copied back; release artifacts were not updated.
+- Existing image and shader-orientation fixtures passed 47 and 132 assertions respectively
+  in each of the full and lite builds, served from fresh in-memory bundles. No screenshot
+  baselines were changed or compared during these assertion checks.
+- The existing shader lifecycle fixture stops with `Missing required uniform u_texture`
+  at the oriented sampler check. The same failure was reproduced using the unchanged existing
+  build, so that fixture could not provide a complete lifecycle result for this change.
 
 On 2026-09-06, all 23 upgrade regression tests and five metadata tests passed. The shader fixture
 checks eleven source forms on onscreen and offscreen destinations with asymmetric corners,

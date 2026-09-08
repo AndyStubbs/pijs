@@ -12,11 +12,9 @@ import * as g_utils from "../core/utils.js";
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
-import * as g_colors from "./colors.js";
 
 // Image storage by name
 const m_images = {};
-const m_paletteImages = [];
 let m_imageCount = 0;
 
 
@@ -36,10 +34,6 @@ export function init( api ) {
 
 	g_screenManager.addScreenDataItem( "defaultAnchorX", 0 );
 	g_screenManager.addScreenDataItem( "defaultAnchorY", 0 );
-	g_screenManager.addScreenDataItem( "palImagesData", {} );
-
-	// Palettize all images when screen is loaded
-	g_screenManager.addScreenInitFunction( palettizeImages );
 }
 
 /**
@@ -50,14 +44,11 @@ export function init( api ) {
 function registerCommands( api ) {
 	g_commands.addCommand(
 		"loadImage", loadImage, false,
-		[ "src", "name", "usePalette", "paletteKeys", "onLoad", "onError" ]
+		[ "src", "name", "onLoad", "onError" ]
 	);
 	g_commands.addCommand(
 		"loadSpritesheet", loadSpritesheet, false,
-		[
-			"src", "name", "width", "height", "margin", "usePalette", "paletteKeys", "onLoad",
-			"onError"
-		]
+		[ "src", "name", "width", "height", "margin", "onLoad", "onError" ]
 	);
 	g_commands.addCommand( "getImage", getImage, false, [ "name" ] );
 	g_commands.addCommand( "getSpritesheetData", getSpritesheetData, true, [ "name" ], true );
@@ -81,9 +72,6 @@ function registerCommands( api ) {
  * @param {Object} options - Load options
  * @param {string|HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} options.src - Image source
  * @param {string} [options.name] - Optional name for the image
- * @param {boolean} [options.usePalette] - Set image colors to be linked to screen canvas
- * @param {Array} [options.paletteKeys] - An array of colors used as key colors from the image to
- * 										  use as indices to look up palette colors
  * @param {Function} [options.onLoad] - Callback when image loads
  * @param {Function} [options.onError] - Callback when image fails to load
  * @returns {string} Image name
@@ -91,8 +79,6 @@ function registerCommands( api ) {
 function loadImage( options ) {
 	const src = options.src;
 	let name = options.name;
-	const usePalette = !!options.usePalette;
-	const paletteKeys = options.paletteKeys;
 	const onLoadCallback = options.onLoad;
 	const onErrorCallback = options.onError;
 	const srcErrMsg = "loadImage: Parameter src must be a string URL, Image element, or Canvas " +
@@ -146,42 +132,12 @@ function loadImage( options ) {
 		throw error;
 	}
 
-	// Validate paletteKeys
-	let palColors = null;
-	let palColorMap = null;
-	if( usePalette ) {
-		if( !Array.isArray( paletteKeys ) || paletteKeys.length === 0 ) {
-			const error = new TypeError(
-				"loadImage: Parameter paletteKeys must be non empty Array when usePalette is set."
-			);
-			error.code = "INVALID_PALETTE";
-			throw error;
-		}
-
-		// Create a color map
-		palColorMap = new Map();
-
-		// Initialize palColors with 0 for transparent black
-		palColors = [ g_utils.convertToColor( "rgba(0, 0, 0, 0)" ) ];
-		palColorMap.set( palColors[ 0 ].key, 0 );
-
-		for( let i = 0; i < paletteKeys.length; i += 1 ) {
-			const palColorRaw = paletteKeys[ i ];
-			const palColor = g_utils.convertToColor( palColorRaw );
-			palColors.push( palColor );
-			palColorMap.set( palColor.key, i + 1 );
-		}
-	}
-
 	// Create blank image object
 	const imageObj = {
 		"status": "loading",
 		"image": null,
 		"width": null,
-		"height": null,
-		"usePalette": usePalette,
-		"palColors": palColors,
-		"palColorMap": palColorMap
+		"height": null
 	};
 	m_images[ name ] = imageObj;
 
@@ -193,11 +149,6 @@ function loadImage( options ) {
 		imageObj.status = "ready";
 		imageObj.width = img.width;
 		imageObj.height = img.height;
-
-		// If using palette then push the image to the use palette array
-		if( imageObj.usePalette ) {
-			addPaletteImage( name );
-		}
 	};
 
 	// Handle Image or Canvas element passed directly
@@ -322,12 +273,6 @@ function removeImage( options ) {
 			g_renderer.deleteWebGL2Texture( screenData, img );
 		}
 	}
-
-	// Loading and failed palette images may never have entered this list.
-	const paletteIndex = m_paletteImages.indexOf( name );
-	if( paletteIndex !== -1 ) {
-		m_paletteImages.splice( paletteIndex, 1 );
-	}
 }
 
 /**
@@ -370,9 +315,6 @@ function cancelImageLoad( load ) {
  * @param {number} [options.width] - Sprite width (required for fixed grid mode)
  * @param {number} [options.height] - Sprite height (required for fixed grid mode)
  * @param {number} [options.margin] - Margin between sprites (default: 0)
- * @param {boolean} [options.usePalette] - Set image colors to be linked to screen canvas
- * @param {Array} [options.paletteKeys] - An array of colors used as key colors from the image to
- * 										  use as indices to look up palette colors
  * @param {Function} [options.onLoad] - Callback when spritesheet loads
  * @param {Function} [options.onError] - Callback when spritesheet fails to load
  * @returns {string} Spritesheet name
@@ -383,8 +325,6 @@ function loadSpritesheet( options ) {
 	let spriteWidth = options.width;
 	let spriteHeight = options.height;
 	let margin = options.margin;
-	const usePalette = !!options.usePalette;
-	const paletteKeys = options.paletteKeys;
 	const onLoadCallback = options.onLoad;
 	const onErrorCallback = options.onError;
 	let isAuto = false;
@@ -457,40 +397,10 @@ function loadSpritesheet( options ) {
 		throw error;
 	}
 
-	// Validate paletteKeys
-	let palColors = null;
-	let palColorMap = null;
-	if( usePalette ) {
-		if( !Array.isArray( paletteKeys ) || paletteKeys.length === 0 ) {
-			const error = new TypeError(
-				"loadSpritesheet: Parameter paletteKeys must be non empty Array when usePalette " +
-				"is set."
-			);
-			error.code = "INVALID_PALETTE";
-			throw error;
-		}
-
-		// Create a color map
-		palColorMap = new Map();
-
-		// Initialize palColors with 0 for transparent black
-		palColors = [ g_utils.convertToColor( "rgba(0, 0, 0, 0)" ) ];
-		palColorMap.set( palColors[ 0 ].key, 0 );
-
-		for( let i = 0; i < paletteKeys.length; i += 1 ) {
-			const palColorRaw = paletteKeys[ i ];
-			const palColor = g_utils.convertToColor( palColorRaw );
-			palColors.push( palColor );
-			palColorMap.set( palColor.key, i + 1 );
-		}
-	}
-
 	// Load the image first, then process frames in callback
 	loadImage( {
 		"src": src,
 		"name": name,
-		"usePalette": usePalette,
-		"paletteKeys": paletteKeys,
 		"onLoad": function( imageName ) {
 
 			// Update the image data to spritesheet type
@@ -623,10 +533,7 @@ function createImageFromScreen( screenData, options ) {
 		"status": "ready",
 		"image": canvas,
 		"width": width,
-		"height": height,
-		"usePalette": false,
-		"palColors": null,
-		"palColorMap": null
+		"height": height
 	};
 
 	return name;
@@ -865,109 +772,6 @@ export function getStoredImage( name ) {
 		return null;
 	}
 	return m_images[ name ] || null;
-}
-
-function addPaletteImage( name ) {
-	m_paletteImages.push( name );
-
-	// Get the color object data
-	const imageObj = m_images[ name ];
-
-	let context;
-
-	// Create a canvas for manipulating color data of original image
-	if( imageObj.image.tagName !== "CANVAS" ) {
-		const canvas = document.createElement( "canvas" );
-		canvas.width = imageObj.width;
-		canvas.height = imageObj.height;
-		context = canvas.getContext( "2d" );
-		context.drawImage( imageObj.image, 0, 0 );
-		imageObj.image = canvas;
-	} else {
-		const canvas = imageObj.image;
-		context = canvas.getContext( "2d" );
-	}
-
-	// Create a fake screen data object so we can use the findColorIndexByColorValue function
-	const fakeScreenData = { "pal": imageObj.palColors, "palMap": imageObj.palColorMap };
-
-	// Quantize image colors to color keys - Makes sure image only uses colors provided in key map
-	const imageData = context.getImageData( 0, 0, imageObj.width, imageObj.height );
-	const data = imageData.data;
-	for( let i = 0; i < data.length; i += 4 ) {
-		const color = g_utils.rgbToColor( data[ i ], data[ i + 1 ], data[ i + 2 ], data[ i + 3 ] );
-		const index = g_colors.findColorIndexByColorValue( fakeScreenData, color, 1 );
-		const newColor = fakeScreenData.pal[ index ];
-		if( newColor.key !== color.key ) {
-			data[ i ] = newColor.r;
-			data[ i + 1 ] = newColor.g;
-			data[ i + 2 ] = newColor.b;
-			data[ i + 3 ] = newColor.a;
-		}
-	}
-	context.putImageData( imageData, 0, 0 );
-
-	// Store the imageData.data onto the object so we don't need to call getImageData when palette
-	// swaps. The base canvas never changes after this so we can just store the image data here.
-	imageObj.data = data;
-
-	// Palettize image on all created screens
-	for( const screenData of g_screenManager.getAllScreensData() ) {
-		palettizeImage( screenData, name );
-	}
-}
-
-// Palettizes all images for a screen
-export function palettizeImages( screenData ) {
-
-	// Loop through all palette images
-	for( const name of m_paletteImages ) {
-		palettizeImage( screenData, name );
-	}
-}
-
-function palettizeImage( screenData, name ) {
-
-	// Get the global image object
-	const imageObj = m_images[ name ];
-
-	// Make sure there are enough colors in the screen palette for this image
-	if( imageObj.palColors.length > screenData.pal.length ) {
-		console.warn(
-			`There are too many palette colors in image: ${name}. Unable to swap colors for this ` +
-			"palette."
-		);
-		return;
-	}
-
-	// Cache the array length
-	const len = imageObj.width * imageObj.height * 4;
-
-	// Create a 
-	const palettizedImageData = new Uint8ClampedArray( len );
-	const data = imageObj.data;
-	
-	// Swap canvas colors. Should have enough indices for screen palette.
-	for( let i = 0; i < len; i += 4 ) {
-
-		// Get the pal index from the original image data
-		const key = g_utils.generateColorKey(
-			data[ i ], data[ i + 1 ], data[ i + 2 ], data[i + 3 ]
-		);
-		const palIndex = imageObj.palColorMap.get( key );
-
-		// Set the new color
-		const newColor = screenData.pal[ palIndex ];
-		palettizedImageData[ i ] = newColor.r;
-		palettizedImageData[ i + 1 ] = newColor.g;
-		palettizedImageData[ i + 2 ] = newColor.b;
-		palettizedImageData[ i + 3 ] = newColor.a;
-	}
-
-	// Update the texture with the palettized imageData
-	g_renderer.updateWebGL2TextureImage(
-		screenData, imageObj.image, palettizedImageData, imageObj.width, imageObj.height
-	);
 }
 
 /**

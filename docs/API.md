@@ -67,7 +67,7 @@ After removal, calls through a retained screen object throw a `TypeError` with c
 
 ## Views
 
-Views, introduced in 2.1, provide nested local coordinates and clipping without changing the
+Views provide nested local coordinates and clipping without changing the
 logical framebuffer size.
 
 - `pushView( x, y, width, height )`: Pushes a child relative to the current local origin. It saves
@@ -182,9 +182,9 @@ accepted.
 
 ### Loading and Lookup
 
-- `loadImage( src, name, usePalette, paletteKeys, onLoad, onError )`: Registers an image URL,
+- `loadImage( src, name, onLoad, onError )`: Registers an image URL,
   image element, or canvas and returns its name.
-- `loadSpritesheet( src, name, width, height, margin, usePalette, paletteKeys, onLoad, onError )`:
+- `loadSpritesheet( src, name, width, height, margin, onLoad, onError )`:
   Registers a spritesheet and returns its name.
 - `getImage( name )`: Returns the registered `HTMLImageElement` or `HTMLCanvasElement`.
 - `getSpritesheetData( name )`: Returns spritesheet frame metadata.
@@ -193,6 +193,9 @@ accepted.
   a pending URL load silently cancels it and releases its readiness wait without calling `onLoad`
   or `onError`. Late events cannot publish the removed image or affect a replacement. This also
   applies to pending spritesheets. Removing an unknown name is a no-op.
+
+Images and sprites retain their source colors when screen palettes change.
+Use the [shader API](#custom-shaders) for recoloring.
 
 Drawing a removed registered name throws `IMAGE_NOT_FOUND`.
 
@@ -274,7 +277,7 @@ synchronously with the documented shader error code.
 
 ## Bitmap Text
 
-Pi.js 2 supports bitmap fonts only.
+Pi.js supports bitmap fonts only.
 
 - `loadFont( src, width, height, margin, charset )`: Loads a bitmap font and returns its ID.
 - `setDefaultFont( fontId )`: Sets the font used by new screens.
@@ -418,10 +421,7 @@ The initialization API supports command registration, per-screen data, screen in
 cleanup hooks, access to screen data and the main API, readiness counters, dependency handling,
 event cleanup hooks, and utility functions.
 
-## Upcoming 2.2 minor upgrade behavior
-
-These changes target 2.2 because screen gains the optional noCss parameter after parent.
-See [Upgrading to Pi.js 2.2](upgrade-2.2.md) for compatibility notes.
+## Screen Layout and Resource Behavior
 
 With `noCss: true` (default false), Pi.js does not write automatic canvas, container, html, or body
 styles. Supply usable canvas layout in host CSS. The canvas is still appended and its intrinsic
@@ -433,7 +433,7 @@ Pointer input requires an onscreen target: screen creation changes the active sc
 visible.inmouse() or setScreen(visible) after creating an offscreen buffer.
 
 v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same
-orientation as u_texture. Remove any custom-map 1.0 - uv.y workaround used before the 2.2 upgrade.
+orientation as u_texture.
 Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with
 vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on
 resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid

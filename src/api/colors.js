@@ -13,7 +13,6 @@
 import * as g_commands from "../core/commands.js";
 import * as g_utils from "../core/utils.js";
 import * as g_screenManager from "../core/screen-manager.js";
-import * as g_images from "./images.js";
 
 // Max color difference used in find color by index
 const MAX_DIFFERENCE = ( 255 * 255 ) * 3.25;
@@ -338,9 +337,6 @@ function setPal( screenData, options ) {
 		// If current color not found, default to palette index 1
 		screenData.color = newPal[ 1 ];
 	}
-
-	// Trigger images to update color palletes
-	g_images.palettizeImages( screenData );
 }
 
 // Get palette index for a color
@@ -437,8 +433,6 @@ function setPalColors( screenData, options ) {
 		return;
 	}
 
-	let colorSwapped = false;
-
 	// Validate each index and color
 	for( let i = 0; i < indices.length; i += 1 ) {
 		const index = indices[ i ];
@@ -494,14 +488,6 @@ function setPalColors( screenData, options ) {
 		// Update the palMap - remove old color entry and add new one
 		screenData.palMap.delete( oldColor.key );
 		screenData.palMap.set( colorValue.key, index );
-
-		// Set color swapped to true indicated a palette color has been changed
-		colorSwapped = true;
-	}
-
-	// Trigger images to update color palletes
-	if( colorSwapped ) {
-		g_images.palettizeImages( screenData );
 	}
 }
 
@@ -522,7 +508,6 @@ function addPalColors( screenData, options ) {
 	}
 
 	const newIndices = [];
-	let colorsAdded = false;
 
 	// Convert and add each color to the palette
 	for( let i = 0; i < colors.length; i += 1 ) {
@@ -547,13 +532,6 @@ function addPalColors( screenData, options ) {
 		screenData.pal.push( colorValue );
 		screenData.palMap.set( colorValue.key, newIndex );
 		newIndices.push( newIndex );
-
-		colorsAdded = true;
-	}
-
-	// Trigger images to update color palletes
-	if( colorsAdded ) {
-		g_images.palettizeImages( screenData );
 	}
 
 	return newIndices;

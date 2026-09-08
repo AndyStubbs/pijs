@@ -57,8 +57,7 @@ export {
 
 // Re-export texture management
 export {
-	getWebGL2Texture, getSamplerTexture, deleteWebGL2Texture, updateWebGL2TextureImage,
-	updateWebGL2TextureSubImage
+	getWebGL2Texture, getSamplerTexture, deleteWebGL2Texture, updateWebGL2TextureSubImage
 } from "./textures.js";
 
 // Re-export readback functions

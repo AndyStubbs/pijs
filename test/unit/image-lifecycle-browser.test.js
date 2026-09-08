@@ -94,6 +94,108 @@ function installImageHarness() {
 }
 
 for( const bundle of [ "full", "lite" ] ) {
+	for( const loader of [ "loadImage", "loadSpritesheet" ] ) {
+		for( const overload of [ "positional", "object" ] ) {
+			test( `2.2 ${bundle}: ${loader} ${overload} callbacks and readiness`, async () => {
+				const result = await probe( bundle, async ( { loader, overload } ) => {
+					const h = imageTest;
+					const calls = [];
+					for( const eventName of [ "load", "error" ] ) {
+						for( const shouldThrow of [ false, true ] ) {
+							const onLoad = name => {
+								calls.push( [ "load", name ] );
+								if( shouldThrow ) { throw new Error( "expected loader callback" ); }
+							};
+							const onError = error => {
+								calls.push( [ "error", error.type ] );
+								if( shouldThrow ) { throw new Error( "expected loader callback" ); }
+							};
+							if( overload === "object" ) {
+								$[ loader ]( { "src": "source.png", "name": "source",
+									"width": 2, "height": 2, "onLoad": onLoad, "onError": onError } );
+							} else if( loader === "loadImage" ) {
+								$.loadImage( "source.png", "source", onLoad, onError );
+							} else {
+								$.loadSpritesheet( "source.png", "source", 2, 2, 0, onLoad, onError );
+							}
+							const img = h.instances.at( -1 );
+							img.dispatchEvent( new Event( eventName ) );
+							await $.ready();
+							calls.push( h.code( "source" ) );
+							$.removeImage( "source" );
+						}
+					}
+					return calls;
+				}, { "loader": loader, "overload": overload },
+				[ "expected loader callback", "expected loader callback" ] );
+				assert.deepEqual( result, [ [ "load", "source" ], "ready",
+					[ "load", "source" ], "ready", [ "error", "error" ], "IMAGE_LOAD_FAILED",
+					[ "error", "error" ], "IMAGE_LOAD_FAILED" ] );
+			} );
+		}
+	}
+
+	test( `2.2 ${bundle}: images and sprites retain source colors across palette changes`,
+		async () => {
+			const result = await probe( bundle, async () => {
+				const first = $.screen( "12x12" );
+				const source = document.createElement( "canvas" );
+				source.width = 7;
+				source.height = 3;
+				const context = source.getContext( "2d" );
+				context.fillStyle = "red";
+				context.fillRect( 0, 0, 3, 3 );
+				context.fillStyle = "blue";
+				context.fillRect( 4, 0, 3, 3 );
+				const original = Array.from( context.getImageData( 0, 0, 7, 3 ).data );
+				let directCallbacks = 0;
+				$.loadImage( source, "image", () => directCallbacks++ );
+
+				// Removed object options follow the existing unknown-option behavior.
+				$.loadImage( { "src": source, "name": "old-options", "usePalette": true,
+					"paletteKeys": [ "black" ], "onLoad": () => directCallbacks++ } );
+				$.loadSpritesheet( source, "fixed", 1, 1, 0, () => directCallbacks++ );
+				$.loadSpritesheet( { "src": source, "name": "auto",
+					"usePalette": true, "paletteKeys": [ "black" ],
+					"onLoad": () => directCallbacks++ } );
+				const second = $.screen( "12x12" );
+				const samples = [];
+				for( const screen of [ first, second ] ) {
+					for( const change of [ () => {},
+						() => screen.setPal( [ "black", "white" ] ),
+						() => screen.setPalColors( [ 1 ], [ "lime" ] ),
+						() => screen.addPalColors( [ "yellow" ] ) ] ) {
+						change();
+						screen.cls();
+						screen.drawImage( "image", 0, 0 );
+						screen.drawImage( "old-options", 0, 3 );
+						screen.drawSprite( "fixed", 0, 0, 6 );
+						screen.drawSprite( "fixed", 4, 4, 6 );
+						screen.drawSprite( "auto", 0, 0, 9 );
+						screen.drawSprite( "auto", 1, 4, 9 );
+						for( const y of [ 0, 3, 6, 9 ] ) {
+							for( const x of [ 0, 4 ] ) {
+								const pixel = await screen.getPixelAsync( x, y );
+								samples.push( [ pixel.r, pixel.g, pixel.b, pixel.a ] );
+							}
+						}
+					}
+				}
+				const finalPixels = context.getImageData( 0, 0, 7, 3 ).data;
+				return { "samples": samples, "directCallbacks": directCallbacks,
+					"sourcePreserved": $.getImage( "image" ) === source &&
+						original.every( ( value, i ) =>
+							value === finalPixels[ i ] ),
+					"frames": [ second.getSpritesheetData( "fixed" ).frameCount,
+						second.getSpritesheetData( "auto" ).frameCount ] };
+			} );
+			assert.equal( result.directCallbacks, 4 );
+			assert.equal( result.sourcePreserved, true );
+			assert.deepEqual( result.frames, [ 21, 2 ] );
+			assert.deepEqual( result.samples,
+				Array( 32 ).fill( [ [ 255, 0, 0, 255 ], [ 0, 0, 255, 255 ] ] ).flat() );
+		} );
+
 	test( `SYS-010 ${bundle}: cancellation isolates replacements and readiness`, async () => {
 		assert.deepEqual( await probe( bundle, async () => {
 			const h = imageTest;

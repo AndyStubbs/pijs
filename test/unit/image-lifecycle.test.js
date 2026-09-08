@@ -12,17 +12,14 @@ function createHarness() {
 	const counts = { "wait": 0, "done": 0, "deleted": [] };
 	const failures = {};
 	const screens = [];
-	const color = { "r": 0, "g": 0, "b": 0, "a": 0, "key": 0 };
 	const context = vm.createContext( {
 		"console": console,
-		"g_utils": { "isFunction": v => typeof v === "function",
-			"convertToColor": () => color, "rgbToColor": () => color },
+		"g_utils": { "isFunction": v => typeof v === "function" },
 		"g_commands": { "wait": () => counts.wait++, "done": () => counts.done++ },
 		"g_screenManager": { "getAllScreensData": () => screens },
 		"g_renderer": { "deleteWebGL2Texture": ( screen, img ) => {
 			counts.deleted.push( [ screen, img ] );
 		} },
-		"g_colors": { "findColorIndexByColorValue": () => 0 },
 		"Image": class {
 			constructor() {
 				if( failures.construct ) { throw failures.error; }
@@ -52,7 +49,7 @@ function createHarness() {
 		.replace( /^import .*;\r?\n/gm, "" ).replace( /export /g, "" );
 	vm.runInContext( source, context, { "filename": "src/api/images.js" } );
 	return { "api": context, "images": images, "counts": counts, "failures": failures,
-		"screens": screens, "palette": () => vm.runInContext( "m_paletteImages.slice()", context ) };
+		"screens": screens };
 }
 
 function missing( h, name ) {
@@ -177,17 +174,12 @@ test( "SYS-010 synchronous callback replacement survives source assignment error
 	assert.equal( h.counts.done, 2 );
 } );
 
-test( "SYS-010 synchronous palette setup failure rolls back partial registration", () => {
+test( "2.2 direct canvas loading preserves the source without pixel processing", () => {
 	const h = createHarness();
-	const failure = new Error( "canvas setup" );
 	const canvas = { "tagName": "CANVAS", "width": 1, "height": 1,
-		"getContext": () => { throw failure; } };
-	assert.throws( () => h.api.loadImage( { "src": canvas, "name": "reuse",
-		"usePalette": true, "paletteKeys": [ "black" ] } ), error => error === failure );
-	missing( h, "reuse" );
-	assert.equal( h.palette().length, 0 );
-	h.api.loadImage( { "src": canvas, "name": "reuse" } );
-	assert.equal( h.api.getImage( { "name": "reuse" } ), canvas );
+		"getContext": () => { throw new Error( "unexpected pixel processing" ); } };
+	h.api.loadImage( { "src": canvas, "name": "source" } );
+	assert.equal( h.api.getImage( { "name": "source" } ), canvas );
 	assert.equal( h.counts.wait, 0 );
 } );
 
@@ -224,18 +216,15 @@ test( "SYS-010 ready removal cleans textures without modifying caller canvas", (
 	missing( h, "canvas" );
 } );
 
-test( "SYS-010 pending palette removal does not remove another palette registration", () => {
+test( "SYS-010 pending removal preserves an unrelated ready registration", () => {
 	const h = createHarness();
-	const canvas = { "tagName": "CANVAS", "width": 1, "height": 1,
-		"getContext": () => ( { "getImageData": () => ( {
-			"data": new Uint8ClampedArray( 4 ) } ), "putImageData": () => {} } ) };
-	h.api.loadImage( { "src": canvas, "name": "kept", "usePalette": true,
-		"paletteKeys": [ "black" ] } );
-	h.api.loadImage( { "src": "pending.png", "name": "pending", "usePalette": true,
-		"paletteKeys": [ "black" ] } );
+	const canvas = { "tagName": "CANVAS", "width": 1, "height": 1 };
+	h.api.loadImage( { "src": canvas, "name": "kept" } );
+	h.api.loadImage( { "src": "pending.png", "name": "pending" } );
 	h.api.removeImage( { "name": "pending" } );
 	missing( h, "pending" );
-	assert.deepEqual( Array.from( h.palette() ), [ "kept" ] );
+	assert.equal( h.api.getImage( { "name": "kept" } ), canvas );
+	assert.equal( h.counts.done, 1 );
 	h.api.removeImage( { "name": "kept" } );
-	assert.equal( h.palette().length, 0 );
+	missing( h, "kept" );
 } );

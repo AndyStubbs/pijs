@@ -66,7 +66,7 @@ first.removeScreen();
 
 Calling a method on a removed screen throws an error with code `DELETED_METHOD`.
 
-### Parented Offscreen Screens (2.1+)
+### Parented Offscreen Screens
 
 An offscreen screen can share an existing screen's WebGL context. This makes drawing its
 framebuffer into the parent more efficient and fixes the old same-context Y-orientation issue.
@@ -179,17 +179,17 @@ $.set( {
 } );
 ```
 
-There is no `pen` setting in Pi.js 2.0+.
-
 ## Images and Sprites
 
 ### Loading
+
+Images and sprites retain their source colors when the screen palette changes.
+Use the shader API for recoloring.
 
 ```javascript
 const imageName = $.loadImage( {
 	"src": "player.png",
 	"name": "player",
-	"usePalette": false,
 	"onError": function( error ) {
 		console.error( error.message );
 	}
@@ -263,7 +263,7 @@ $.filterImg( function( color ) {
 
 ## Bitmap Text
 
-Pi.js 2 supports bitmap fonts only. Built-in font IDs are 0 through 4.
+Pi.js supports bitmap fonts only. Built-in font IDs are 0 through 4.
 
 ```javascript
 const fontId = $.loadFont( {
@@ -286,7 +286,7 @@ $.print( "Centered", false, true );
 Other text helpers include `getPos()`, `getPosPx()`, `getCols()`, `getRows()`, `calcWidth()`,
 `setWordBreak()`, `setChar()`, `getAvailableFonts()`, and the global `setDefaultFont()`.
 
-## Views (2.1+)
+## Views
 
 Views provide nested local coordinates and clipping. A child origin is relative to its parent.
 `width()` and `height()` return the requested active-view size, not the effective clipped size.
@@ -316,7 +316,7 @@ $.resetView();
 returns to full-screen coordinates, and resets the print cursor. Input remains screen-relative;
 call `screenToView()` before comparing pointer coordinates with view-local content.
 
-## Shaders (2.1+)
+## Shaders
 
 Custom shaders are GLSL ES 3.00 fragment shaders. Pi.js supplies the vertex stage. Every usable
 shader must declare `uniform sampler2D u_texture`.
@@ -567,22 +567,7 @@ gameLoop();
 - A parented offscreen screen is not removed when its parent is removed.
 - Do not use an image name, shader handle, or screen object after removal.
 
-## Migration from Pi.js 1.2.5
-
-Pi.js 2 removed the Canvas2D renderer, canvas-font and pen systems, manual `render()` control,
-pixel-mode toggling, and unsupported blend modes. Replace old palette helpers with
-`getPalIndex()`/`setPalColors()`, use `inmouse()` instead of the removed direct mouse getter, and
-use `createImageFromScreen()` rather than the image lookup command for framebuffer capture.
-
-Pi.js 2.1 removes no documented 2.0 commands. It adds shaders, nested views, coordinate
-conversion, parented offscreen screens, and stricter GPU-resource lifecycle behavior. Remove any
-manual same-context offscreen Y-flip workaround when migrating. See `docs/UPGRADE-V2.txt` and
-`docs/UPGRADE-V2.1.txt` for the complete migration details.
-
-## Upcoming 2.2 minor upgrade behavior
-
-These changes target 2.2 because screen gains the optional noCss parameter after parent.
-Package version 2.2.0 is in development; see ../upgrade-2.2.md for upgrade notes.
+## Screen Layout and Resource Behavior
 
 With `noCss: true` (default false), Pi.js does not write automatic canvas, container, html, or body
 styles. Supply usable canvas layout in host CSS. The canvas is still appended and its intrinsic
@@ -594,7 +579,7 @@ Pointer input requires an onscreen target: screen creation changes the active sc
 visible.inmouse() or setScreen(visible) after creating an offscreen buffer.
 
 v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same
-orientation as u_texture. Remove any custom-map 1.0 - uv.y workaround used before the 2.2 upgrade.
+orientation as u_texture.
 Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with
 vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on
 resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid
