@@ -293,6 +293,7 @@ function initializePlugin( pluginInfo ) {
 		"addScreenDataItem": g_screenManager.addScreenDataItem,
 		"addScreenDataItemGetter": g_screenManager.addScreenDataItemGetter,
 		"addScreenInitFunction": g_screenManager.addScreenInitFunction,
+		"addScreenPreCleanupFunction": g_screenManager.addScreenPreCleanupFunction,
 		"addScreenCleanupFunction": g_screenManager.addScreenCleanupFunction,
 		"getActiveScreen": g_screenManager.getActiveScreen,
 		"getScreenData": g_screenManager.getScreenData,

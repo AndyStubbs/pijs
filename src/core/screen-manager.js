@@ -190,6 +190,7 @@ export function addScreenInitFunction( fn ) {
 
 /**
  * Register a function to run before screen module resources are cleaned up.
+ * The screen is already marked isRemoved; hooks must not redraw or start new screen work.
  *
  * @param {Function} fn - Function called with the screenData being removed
  * @returns {void}

@@ -305,6 +305,24 @@ commands are primarily useful after a stop command.
   numeric prompt and returns a promise.
 - `cancelInput()`: Cancels the active prompt.
 
+Only one input prompt is active at a time. Cancellation by `cancelInput()`, Escape, replacement,
+event clearing, or removal of the owning screen resolves its promise with `null` and calls its
+callback once with `null`. Screen removal releases the prompt's timer, key handler, and background
+image without redrawing. Removing another screen leaves the prompt active. Prompt rendering uses
+the owning screen even when a different screen is selected.
+
+Input promises settle and session resources are released before completion callbacks run. Callbacks
+can start another prompt; the most recent input request wins, including requests made while an
+earlier replacement is cancelling a prompt. Starting input on a screen undergoing removal throws
+`SCREEN_REMOVED`; methods on an already removed screen retain the usual `DELETED_METHOD` error.
+
+Keyboard once-handlers are removed before invocation, including all entries for a combination.
+Handlers removed during dispatch are skipped. Keyup callbacks can still inspect the releasing key
+and match combinations; release cleanup preserves any new press dispatched by a callback.
+Synchronous exceptions from input callbacks and keyboard handlers are reported asynchronously as
+browser errors. Each error is reported separately; other handlers, key release, browser-default
+prevention for action keys, and screen cleanup continue. Callback return values are not awaited.
+
 ### Mouse, Touch, and Press
 
 - `startMouse()`, `stopMouse()`, `inmouse()`

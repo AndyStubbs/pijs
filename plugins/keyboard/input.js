@@ -12,6 +12,7 @@ const CURSOR_BLINK = 500;
 
 // Input state
 let m_inputData = null;
+let m_inputRequest = 0;
 
 // Store pluginApi reference for use in functions
 let m_pluginApi = null;
@@ -32,6 +33,7 @@ let m_pluginApi = null;
 export function initInput( pluginApi ) {
 
 	m_pluginApi = pluginApi;
+	pluginApi.addScreenPreCleanupFunction( disposeInput );
 
 	// Register screen commands
 	pluginApi.addCommand(
@@ -49,6 +51,10 @@ export function initInput( pluginApi ) {
 
 /**
  * Input command - Get text input from user
+ *
+ * Cancellation (including disposal) resolves with null and calls fn with null.
+ * Callback errors are reported asynchronously after settlement and cleanup.
+ * A reentrant input request supersedes any earlier request still being started.
  * 
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Input options
@@ -59,9 +65,14 @@ export function initInput( pluginApi ) {
  * @param {boolean} [options.isInteger] - If true, only allow integer input
  * @param {boolean} [options.allowNegative] - If true, allow negative numbers
  * @param {number} [options.maxLength] - Maximum length of input string
- * @returns {Promise} Promise that resolves with input value or rejects on cancel
+ * @returns {Promise} Promise resolving with the input value or null on cancellation
  */
 function input( screenData, options ) {
+	if( screenData.isRemoved ) {
+		const error = new Error( "input: Cannot start input on a removed screen." );
+		error.code = "SCREEN_REMOVED";
+		throw error;
+	}
 	const prompt = options.prompt;
 	const fn = options.fn;
 	const cursor = options.cursor ? options.cursor : String.fromCharCode( 219 );
@@ -103,9 +114,17 @@ function input( screenData, options ) {
 		resolvePromise = resolve;
 		rejectPromise = reject;
 	} );
+	const request = ++m_inputRequest;
 
 	if( m_inputData ) {
 		finishInput( true );
+	}
+
+	// A cancellation callback may start a newer prompt or dispose this target.
+	if( request !== m_inputRequest || screenData.isRemoved ) {
+		resolvePromise( null );
+		notifyInput( fn, null );
+		return promise;
 	}
 
 	m_inputData = {
@@ -128,7 +147,14 @@ function input( screenData, options ) {
 		"captureY": null
 	};
 
-	startInput();
+	const inputData = m_inputData;
+	try {
+		startInput( inputData );
+	} catch( error ) {
+		m_inputData = null;
+		inputData.reject( error );
+		releaseInput( inputData );
+	}
 
 	return promise;
 }
@@ -151,25 +177,30 @@ function cancelInput( screenData ) {
  **************************************************************************************************/
 
 
-function startInput() {
+function startInput( inputData ) {
 	const api = m_pluginApi.getApi();
 
 	// Create unique image name for background
 	const key = `${Date.now()}_${Math.random().toString( 36 ).substring( 2, 9 )}`;
-	m_inputData.backgroundImageName = `__input_bg_${key}`;
+	inputData.backgroundImageName = `__input_bg_${key}`;
 
 	// Capture the background image
-	captureBackground();
+	captureBackground( inputData );
 
 	// Add input event listener
-	api.onkey( "any", "down", onInputKeyDown, false, true );
+	inputData.keyHandler = keyData => onInputKeyDown( inputData, keyData );
+	api.onkey( "any", "down", inputData.keyHandler, false, true );
 
 	// Add interval for blinking cursor
-	m_inputData.interval = setInterval( showPrompt, 100 );
+	inputData.interval = setInterval( () => {
+		if( m_inputData === inputData ) {
+			showPrompt( inputData );
+		}
+	}, 100 );
 }
 
-function captureBackground() {
-	const screenData = m_inputData.screenData;
+function captureBackground( inputData ) {
+	const screenData = inputData.screenData;
 
 	// Check if need to scroll first
 	let pos = screenData.api.getPos();
@@ -190,20 +221,24 @@ function captureBackground() {
 	const captureHeight = height;
 	
 	screenData.api.createImageFromScreen( {
-		"name": m_inputData.backgroundImageName ,
+		"name": inputData.backgroundImageName ,
 		"x1": posPx.x,
 		"y1": posPx.y,
 		"x2": posPx.x + captureWidth - 1,
 		"y2": posPx.y + captureHeight - 1
 	} );
-	m_inputData.backgroundImage = m_pluginApi.getApi().getImage( m_inputData.backgroundImageName  );
-	m_inputData.captureX = posPx.x;
-	m_inputData.captureY = posPx.y;
-	m_inputData.captureWidth = captureWidth;
-	m_inputData.captureHeight = captureHeight;
+	inputData.backgroundImage = m_pluginApi.getApi().getImage( inputData.backgroundImageName  );
+	inputData.captureX = posPx.x;
+	inputData.captureY = posPx.y;
+	inputData.captureWidth = captureWidth;
+	inputData.captureHeight = captureHeight;
 }
 
-function onInputKeyDown( keyData ) {
+function onInputKeyDown( inputData, keyData ) {
+	if( m_inputData !== inputData ) {
+		return;
+	}
+
 
 	// Handle Enter Key - Complete Input
 	if( keyData.key === "Enter" ) {
@@ -217,8 +252,8 @@ function onInputKeyDown( keyData ) {
 	
 	// Handle Backspace - Erase last character
 	} else if( keyData.key === "Backspace" ) {
-		if( m_inputData.val.length > 0 ) {
-			m_inputData.val = m_inputData.val.substring( 0, m_inputData.val.length - 1 );
+		if( inputData.val.length > 0 ) {
+			inputData.val = inputData.val.substring( 0, inputData.val.length - 1 );
 		}
 	
 	// Handle single length keys
@@ -227,27 +262,27 @@ function onInputKeyDown( keyData ) {
 		let inputHandled = false;
 
 		// Handle +/- numbers
-		if( m_inputData.isNumber && m_inputData.allowNegative ) {
+		if( inputData.isNumber && inputData.allowNegative ) {
 
 			// If user enters a "-" then insert "-" at the start
 			if( keyData.key === "-" ) {
-				if( m_inputData.val.charAt( 0 ) !== "-" ) {
-					m_inputData.val = "-" + m_inputData.val;
+				if( inputData.val.charAt( 0 ) !== "-" ) {
+					inputData.val = "-" + inputData.val;
 				}
 				inputHandled = true;
 			
 			// Any time the user enters a "+" key then replace the minus symbol
 			} else if(
 				( keyData.key === "+" || keyData.code === "Equal" ) &&
-				m_inputData.val.charAt( 0 ) === "-"
+				inputData.val.charAt( 0 ) === "-"
 			) {
-				m_inputData.val = m_inputData.val.substring( 1 );
+				inputData.val = inputData.val.substring( 1 );
 				inputHandled = true;
 			}
 		}
 
 		// Don't allow decimal points for integer number
-		if( m_inputData.isInteger && keyData.code === "Period" ) {
+		if( inputData.isInteger && keyData.code === "Period" ) {
 			inputHandled = true;
 		}
 
@@ -256,115 +291,152 @@ function onInputKeyDown( keyData ) {
 			
 			// Check maxLength before appending
 			if(
-				m_inputData.maxLength !== null && m_inputData.val.length >= m_inputData.maxLength
+				inputData.maxLength !== null && inputData.val.length >= inputData.maxLength
 			) {
 				inputHandled = true;
 			} else {
-				m_inputData.val += keyData.key;
+				inputData.val += keyData.key;
 
 				// Make sure it's a valid number or valid integer
 				if(
-					( m_inputData.isNumber && isNaN( Number( m_inputData.val ) ) ) ||
-					( m_inputData.isInteger && !Number.isInteger( Number( m_inputData.val ) ) )
+					( inputData.isNumber && isNaN( Number( inputData.val ) ) ) ||
+					( inputData.isInteger && !Number.isInteger( Number( inputData.val ) ) )
 				) {
-					m_inputData.val = m_inputData.val.substring( 0, m_inputData.val.length - 1 );
+					inputData.val = inputData.val.substring( 0, inputData.val.length - 1 );
 				}
 			}
 		}
 	}
 
-	showPrompt();
+	showPrompt( inputData );
 }
 
-function showPrompt( hideCursorOverride ) {
-	const screenData = m_inputData.screenData;
-	let msg = m_inputData.prompt + m_inputData.val;
+function showPrompt( inputData, hideCursorOverride ) {
+	if( inputData.screenData.isRemoved ) {
+		return;
+	}
+
+	const screenData = inputData.screenData;
+	let msg = inputData.prompt + inputData.val;
 
 	// Blink cursor after every blink duration
 	if( !hideCursorOverride ) {
 		const now = Date.now();
-		if( now - m_inputData.lastCursorBlink > CURSOR_BLINK ) {
-			m_inputData.lastCursorBlink = now;
-			m_inputData.showCursor = !m_inputData.showCursor;
+		if( now - inputData.lastCursorBlink > CURSOR_BLINK ) {
+			inputData.lastCursorBlink = now;
+			inputData.showCursor = !inputData.showCursor;
 		}
 
 		// Show cursor if not hidden
-		if( m_inputData.showCursor ) {
-			msg += m_inputData.cursor;
+		if( inputData.showCursor ) {
+			msg += inputData.cursor;
 		}
 	}
 
 	// Restore the background image over the prompt area
 	screenData.api.blitImage( 
-		m_inputData.backgroundImage,
-		m_inputData.captureX,
-		m_inputData.captureY
+		inputData.backgroundImage,
+		inputData.captureX,
+		inputData.captureY
 	);
 	
 	// Get cursor position
-	const posPx = $.getPosPx();
+	const posPx = screenData.api.getPosPx();
 
 	// Print the prompt + input + cursor
-	$.setPosPx( m_inputData.captureX, m_inputData.captureY );
+	screenData.api.setPosPx( inputData.captureX, inputData.captureY );
 	screenData.api.print( msg, true );
 
 	// Restore the cursor
 	screenData.api.setPosPx( posPx );
 }
 
-function finishInput( isCancel ) {
-	const screenData = m_inputData.screenData;
-	const api = m_pluginApi.getApi();
-
-	// Remove input key handler
-	api.offkey( "any", "down", onInputKeyDown, false, true );
-
-	// Show prompt on complete, without the cursor
-	showPrompt( true );
-
-	// Move cursor down one line
-	screenData.printCursor.y += screenData.font.height;
-
-	// Clear the interval
-	clearInterval( m_inputData.interval );
-
-	// Process Input Value
-	let val = m_inputData.val;
-	if( m_inputData.isNumber ) {
+/** Finish the captured session before user code can start another one. */
+function finishInput( isCancel, isDisposal = false ) {
+	const inputData = m_inputData;
+	if( !inputData ) {
+		return;
+	}
+	m_inputData = null;
+	const screenData = inputData.screenData;
+	const fn = inputData.fn;
+	let val = inputData.val;
+	if( isCancel ) {
+		val = null;
+	} else if( inputData.isNumber ) {
 		if( val === "" || val === "-" ) {
 			val = 0;
 		} else {
 			val = Number( val );
-			if( m_inputData.isInteger ) {
+			if( inputData.isInteger ) {
 				val = Math.floor( val );
 			}
 		}
 	}
 
-	// Clean up background image texture
-	api.removeImage( m_inputData.backgroundImageName );
-	
-	// Clear out the inputData
-	const tempInputData = m_inputData;
-	m_inputData = null;
-
-	// Handle cancel input
-	if( isCancel ) {
-		tempInputData.resolve( null );
-
-		// Callback function
-		if( tempInputData.fn ) {
-			tempInputData.fn( null );
+	inputData.resolve( val );
+	try {
+		if( !isDisposal && !screenData.isRemoved ) {
+			showPrompt( inputData, true );
+			screenData.printCursor.y += screenData.font.height;
 		}
-	
-	// Handle successful input
-	} else {
-		tempInputData.resolve( val );
+	} catch( error ) {
+		reportInputError( error );
+	} finally {
+		releaseInput( inputData );
+	}
+	notifyInput( fn, val );
+}
 
-		// Callback function
-		if( tempInputData.fn ) {
-			tempInputData.fn( val );
+/** Release only this session's resources, including after partial initialization. */
+function releaseInput( inputData ) {
+	const api = m_pluginApi.getApi();
+	clearInterval( inputData.interval );
+	try {
+		if( inputData.keyHandler ) {
+			api.offkey( "any", "down", inputData.keyHandler, false, true );
 		}
+	} catch( error ) {
+		reportInputError( error );
+	}
+	try {
+		if( inputData.backgroundImageName ) {
+			api.removeImage( inputData.backgroundImageName );
+		}
+	} catch( error ) {
+		reportInputError( error );
+	} finally {
+		inputData.screenData = null;
+		inputData.backgroundImage = null;
+		inputData.backgroundImageName = null;
+		inputData.keyHandler = null;
+		inputData.interval = null;
+		inputData.fn = null;
+		inputData.resolve = null;
+		inputData.reject = null;
+	}
+}
+
+/** Invoke a completion callback without interrupting disposal or a replacement request. */
+function notifyInput( fn, val ) {
+	if( !fn ) {
+		return;
+	}
+	try {
+		fn( val );
+	} catch( error ) {
+		reportInputError( error );
+	}
+}
+
+function reportInputError( error ) {
+	m_pluginApi.utils.queueMicrotask( () => { throw error; } );
+}
+
+/** Cancel a removed screen's prompt before renderer cleanup; never redraw the screen. */
+function disposeInput( screenData ) {
+	if( m_inputData && m_inputData.screenData === screenData ) {
+		finishInput( true, true );
 	}
 }
 

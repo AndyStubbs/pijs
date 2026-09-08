@@ -23,6 +23,7 @@ const m_onKeyHandlers = {};
 
 // Status variables
 let m_isKeyboardActive = false;
+let m_pluginApi = null;
 
 
 /***************************************************************************************************
@@ -31,16 +32,11 @@ let m_isKeyboardActive = false;
 
 
 export default function keyboardPlugin( pluginApi ) {
+	m_pluginApi = pluginApi;
 
 	// Initialize keyboard on plugin load
 	startKeyboard();
 	window.addEventListener( "blur", clearInKeys );
-
-	// Add screen cleanup function to clear keyboard events when screen is removed
-	pluginApi.addScreenCleanupFunction( () => {
-		// Keyboard events are global, so we don't need screen-specific cleanup
-		// But we can use this hook if needed in the future
-	} );
 
 	// Register global commands
 	pluginApi.addCommand( "startKeyboard", startKeyboard, false, [] );
@@ -149,6 +145,7 @@ function removeActionKeys( options ) {
 	}
 }
 
+/** Register a handler; callback errors are reported asynchronously without stopping dispatch. */
 function onkey( options ) {
 	const key = options.key;
 	const mode = options.mode;
@@ -291,18 +288,55 @@ function onKeyUp( event ) {
 		clearInKeys();
 		return;
 	}
-	triggerKeyEventHandlers( event, "up", event.code );
+	const codeData = m_inCodes[ event.code ];
+	const keyData = m_inKeys[ event.key ];
+	try {
+		triggerKeyEventHandlers( event, "up", event.code );
+		if( event.code !== event.key ) {
+			triggerKeyEventHandlers( event, "up", event.key );
+		}
+		triggerKeyEventHandlers( event, "up", "any" );
+	} finally {
 
-	if( event.code !== event.key ) {
-		triggerKeyEventHandlers( event, "up", event.key );
+		// Preserve a new press dispatched by a release callback.
+		if( m_inCodes[ event.code ] === codeData ) {
+			delete m_inCodes[ event.code ];
+		}
+		if( m_inKeys[ event.key ] === keyData ) {
+			delete m_inKeys[ event.key ];
+		}
+		if( m_actionKeys.has( event.code ) || m_actionKeys.has( event.key ) ) {
+			event.preventDefault();
+		}
 	}
-	triggerKeyEventHandlers( event, "up", "any" );
+}
 
-	delete m_inCodes[ event.code ];
-	delete m_inKeys[ event.key ];
+/** Remove this registration from every bucket before invoking a once-handler. */
+function removeHandler( handler ) {
+	handler.isRemoved = true;
+	for( const key of handler.combo ) {
+		const handlers = m_onKeyHandlers[ key ];
+		if( !handlers ) {
+			continue;
+		}
+		const remaining = handlers.filter( item => item !== handler );
+		if( remaining.length === 0 ) {
+			delete m_onKeyHandlers[ key ];
+		} else {
+			m_onKeyHandlers[ key ] = remaining;
+		}
+	}
+}
 
-	if( m_actionKeys.has( event.code ) || m_actionKeys.has( event.key ) ) {
-		event.preventDefault();
+/** Isolate each callback while preserving the original error for browser error reporting. */
+function invokeHandler( handler, data ) {
+	if( handler.once ) {
+		removeHandler( handler );
+	}
+	try {
+		handler.fn( data );
+	} catch( error ) {
+		m_pluginApi.utils.queueMicrotask( () => { throw error; } );
 	}
 }
 
@@ -314,7 +348,6 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 
 	const isAnyKey = keyOrCode === "any";
 	const handlersCopy = handlers.slice();
-	const toRemove = new Set();
 
 	for( let i = 0; i < handlersCopy.length; i += 1 ) {
 		const handler = handlersCopy[ i ];
@@ -341,12 +374,7 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 
 			// In case stopKeyboard gets called in another key event handler keyData will be blank
 			if( keyData !== undefined ) {
-				handler.fn( keyData );
-			}
-
-			if( handler.once ) {
-				toRemove.add( handler );
-				handler.isRemoved = true;
+				invokeHandler( handler, keyData );
 			}
 			continue;
 		}
@@ -363,25 +391,10 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 			} );
 
 			if( comboData.length === 1 ) {
-				handler.fn( comboData[ 0 ] );
+				invokeHandler( handler, comboData[ 0 ] );
 			} else {
-				handler.fn( comboData );
+				invokeHandler( handler, comboData );
 			}
-
-			if( handler.once ) {
-				toRemove.add( handler );
-				handler.isRemoved = true;
-			}
-		}
-	}
-
-	// Remove the handlers that are one time only calls
-	if( toRemove.size > 0 ) {
-		m_onKeyHandlers[ keyOrCode ] = handlers.filter( h => !toRemove.has( h ) );
-		
-		// Delete the array if empty
-		if( m_onKeyHandlers[ keyOrCode ].length === 0 ) {
-			delete m_onKeyHandlers[ keyOrCode ];
 		}
 	}
 }
@@ -439,6 +452,9 @@ export function clearKeyboardEvents( screenData ) {
 	
 	// Clear all keyboard event handlers
 	for( const mode in m_onKeyHandlers ) {
+		for( const handler of m_onKeyHandlers[ mode ] ) {
+			handler.isRemoved = true;
+		}
 		delete m_onKeyHandlers[ mode ];
 	}
 	

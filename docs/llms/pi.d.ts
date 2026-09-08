@@ -469,6 +469,11 @@ declare namespace Pi {
 		addScreenInitFunction: ( initFn: Function ) => void;
 
 		/**
+		 * Run after isRemoved is set, before renderer cleanup; cancel work without redrawing.
+		 */
+		addScreenPreCleanupFunction: ( cleanupFn: ( screenData: any ) => void ) => void;
+
+		/**
 		 * Register a function to run when screens are destroyed.
 		 */
 		addScreenCleanupFunction: ( cleanupFn: Function ) => void;
@@ -2211,6 +2216,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 * - **addScreenDataItem**(name, defaultValue): Add persistent data to each screen
 		 * - **addScreenDataItemGetter**(name, getterFn): Add a dynamic data getter for screens
 		 * - **addScreenInitFunction**(initFn): Register a function to run when screens are created
+		 * - **addScreenPreCleanupFunction**(cleanupFn): Run with screenData after isRemoved is set, before renderer and module cleanup; cancel owned work without redrawing
 		 * - **addScreenCleanupFunction**(cleanupFn): Register a function to run when screens are destroyed
 		 * - **getScreenData**(name): Get data for a specific screen by name
 		 * - **getAllScreensData**(): Get array of all screen data objects

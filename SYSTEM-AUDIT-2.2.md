@@ -130,6 +130,31 @@ and failed replacement prompt. **Impact:** screen navigation can disable text in
 **Fix:** add disposal-specific cancellation that does not redraw, settles before releasing state,
 clears the interval/listener/image, and remains safe when a callback throws or reenters input.
 
+**Resolution — 2026-09-07:** SYS-003 is fixed. The keyboard plugin uses the newly exposed
+`pluginApi.addScreenPreCleanupFunction` hook to cancel its owning screen's input before renderer
+cleanup. Disposal resolves the promise with `null`, releases the timer, handler, background image,
+and session references without redrawing, then invokes the callback once with `null`. Cancellation
+and completion use captured session state; reentrant input requests supersede older requests without
+leaking or overwriting a newer session. Prompts use their owning screen's cursor APIs. Starting input
+during that screen's removal throws `SCREEN_REMOVED`; already-removed methods retain `DELETED_METHOD`.
+Initialization failures reject and release partially acquired resources. Callback errors are reported
+asynchronously with their original error values and cannot interrupt screen teardown.
+
+Validation for SYS-003 and SYS-011: `node --test test/unit/keyboard-lifecycle.test.js` passed 20/20;
+`node --test test/unit/keyboard-lifecycle-browser.test.js` passed 10/10 against fresh in-memory full
+and lite-plus-keyboard bundles in Chromium. Tests cover disposal before/after a controlled cursor
+blink, resource counts, stale timer callbacks, repeated reuse, nonactive-screen rendering, throwing
+callbacks, reentrant replacement, once-handlers, and key release. Browser checks assert expected
+callback errors explicitly and observed no unexpected page errors. Chromium required execution
+outside the sandbox after a launch `EPERM`.
+
+Existing lifecycle tests passed 23/23, pixel-disposal browser tests passed 10/10, and metadata unit
+tests passed 5/5. In-memory metadata generation verified the new 2.2 hook declaration while preserving
+earlier-version metadata and inherited PluginAPI members. Before implementation, the new source
+tests reproduced stranded disposal and nine failing keyboard scenarios; the pending disposal promise
+also prevented later tests in the initial combined run from completing. No release generation or
+screenshot baseline changes were used.
+
 ### SYS-004 — P1 — Audio load completion can release an unrelated resource wait
 
 **Location:** [sound.js:36](C:/Docs/src/pijs/plugins/sound/sound.js:36).
@@ -294,6 +319,14 @@ dispatch. Reentrancy sees the live once-handler; exceptions skip removal/state c
 **Impact:** duplicate actions, stuck movement keys, and repeat callback errors. **Fix:** mark/remove
 once-handlers before invoking them, finalize device state independently of callback success, and
 isolate handler failures so unrelated subscribers can run under a documented dispatch policy.
+
+**Resolution — 2026-09-07:** SYS-011 is fixed. Once-handlers are removed from every combination
+bucket before invocation. Explicit removal and event clearing invalidate handlers held by dispatch
+snapshots. Each synchronous callback exception is reported separately through the plugin utility's
+microtask scheduler, allowing subsequent handlers and action-key default prevention to run. Keyup
+cleanup runs in `finally`, preserving combination matching during callbacks and retaining a new
+keydown record created by a reentrant callback. Repeat filtering and dispatch order are preserved.
+Focused and regression validation results are recorded with SYS-003 above.
 
 ### SYS-012 — P2 — Generated declarations disagree with runtime exports and capabilities
 
@@ -780,3 +813,8 @@ Broader coverage work, after or alongside focused fix tests:
 It is small, reproducible through the public API, affects ordinary screen navigation, and restores
 a core invariant needed by later lifecycle tests. Then address readiness and text-input teardown
 before undertaking the larger alpha-representation and context-recovery changes.
+
+**Follow-up status — 2026-09-07:** SYS-003 and SYS-011 are now resolved. Together with the preceding
+SYS-001, SYS-002, and SYS-005 fixes, this completes the first three follow-up tasks. The next grouped
+task is audio load ownership and single settlement (SYS-004, SYS-018). The original audit evidence
+and recommendation above are retained as historical context.

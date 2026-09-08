@@ -276,6 +276,14 @@ pluginApi.addScreenInitFunction( ( screenData ) => {
 } );
 ```
 
+#### `addScreenPreCleanupFunction( fn )`
+
+Register a function receiving `screenData` after the screen is marked `isRemoved`, before renderer
+and other module cleanup. Use this hook to cancel screen-owned work and release resources that
+need live texture maps, such as a captured input background image. Do not redraw or start new work
+on the screen being removed. Release state before calling user code and handle callback exceptions
+so they cannot interrupt teardown.
+
 #### `addScreenCleanupFunction( fn )`
 
 Register a function to be called when a screen is removed.

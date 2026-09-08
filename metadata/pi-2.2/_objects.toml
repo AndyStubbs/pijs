@@ -1,0 +1,85 @@
+[[objects]]
+title = "PluginAPI"
+summary = "Plugin API object for extending Pi.js functionality."
+description = """
+Plugin API object passed to plugin initialization functions. Provides access
+to Pi.js internals for registering commands, adding screen data, and extending
+functionality.
+"""
+
+[[objects.properties]]
+name = "addCommand"
+type = "function"
+signature = "( name: string, fn: ( ...args: any[] ) => any, isScreen: boolean, parameterNames: string[], isScreenOptional: boolean ) => void"
+description = "Register a new command."
+
+[[objects.properties]]
+name = "addScreenDataItem"
+type = "function"
+signature = "( name: string, defaultValue: any ) => void"
+description = "Add persistent data to each screen."
+
+[[objects.properties]]
+name = "addScreenDataItemGetter"
+type = "function"
+signature = "( name: string, getterFn: Function ) => void"
+description = "Add a dynamic data getter for screens."
+
+[[objects.properties]]
+name = "addScreenInitFunction"
+type = "function"
+signature = "( initFn: Function ) => void"
+description = "Register a function to run when screens are created."
+
+[[objects.properties]]
+name = "addScreenPreCleanupFunction"
+type = "function"
+signature = "( cleanupFn: ( screenData: any ) => void ) => void"
+description = "Run after isRemoved is set, before renderer cleanup; cancel work without redrawing."
+
+[[objects.properties]]
+name = "addScreenCleanupFunction"
+type = "function"
+signature = "( cleanupFn: Function ) => void"
+description = "Register a function to run when screens are destroyed."
+
+[[objects.properties]]
+name = "getScreenData"
+type = "function"
+signature = "( fnName: string, screenId: string ) => any"
+description = "Get data for a specific screen by name."
+
+[[objects.properties]]
+name = "getAllScreensData"
+type = "function"
+signature = "() => any[]"
+description = "Get array of all screen data objects."
+
+[[objects.properties]]
+name = "getApi"
+type = "function"
+signature = "() => Pi.API"
+description = "Get the main Pi.js API object."
+
+[[objects.properties]]
+name = "utils"
+type = "object"
+description = "Access to utility functions."
+
+[[objects.properties]]
+name = "wait"
+type = "function"
+signature = "() => void"
+description = "Increment resource wait counter (for async operations)."
+
+[[objects.properties]]
+name = "done"
+type = "function"
+signature = "() => void"
+description = "Decrement resource wait counter."
+
+[[objects.properties]]
+name = "registerClearEvents"
+type = "function"
+signature = "( name: string, handler: Function ) => void"
+description = "Register a clearEvents handler for a specific event type."

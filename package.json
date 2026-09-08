@@ -18,7 +18,7 @@
 		"test:plugins": "set PI_TEST_TYPE=plugins&& playwright test test/scripts/run-visual-tests.js",
 		"test:plugins:grep": "set PI_TEST_TYPE=plugins&& playwright test test/scripts/run-visual-tests.js --grep",
 		"test:metadata": "node --test test/scripts/generate-metadata.test.js",
-		"test:patch": "node --test test/unit/patch-lifecycle.test.js test/unit/patch-browser.test.js test/unit/pixel-disposal-browser.test.js",
+		"test:patch": "node --test test/unit/patch-lifecycle.test.js test/unit/patch-browser.test.js test/unit/pixel-disposal-browser.test.js test/unit/keyboard-lifecycle.test.js test/unit/keyboard-lifecycle-browser.test.js",
 		"test:types": "npm run test:metadata && node scripts/generate-metadata.js && node scripts/validate-metadata-output.js && node scripts/validate-type-definitions.js",
 		"server": "node server.js"
 	},
