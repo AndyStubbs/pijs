@@ -1,5 +1,5 @@
 /**
- * Deterministic regressions for the 2.1.1 lifecycle fixes using actual source modules.
+ * Deterministic regressions for lifecycle and system audit fixes using actual source modules.
  */
 const { test } = require( "node:test" );
 const assert = require( "node:assert/strict" );
@@ -14,6 +14,159 @@ function loadModule( file, globals = {} ) {
 	vm.runInContext( source, context, { "filename": file } );
 	return context;
 }
+
+function createReadyHarness( readyState = "complete" ) {
+	const timers = new Map();
+	const listeners = {};
+	let nextTimer = 0;
+	const commands = loadModule( "src/core/commands.js", {
+		"g_utils": { "isFunction": value => typeof value === "function" },
+		"g_screenManager": { "addScreenInitFunction": () => {} },
+		"document": {
+			"readyState": readyState,
+			"addEventListener": ( name, fn ) => { listeners[ name ] = fn; }
+		},
+		"setTimeout": fn => { timers.set( ++nextTimer, fn ); return nextTimer; },
+		"clearTimeout": id => timers.delete( id )
+	} );
+	commands.init( {} );
+	return {
+		"commands": commands,
+		"listeners": listeners,
+		"flush": () => {
+
+			// Timers scheduled during dispatch belong to a subsequent turn.
+			const callbacks = Array.from( timers.values() );
+			timers.clear();
+			for( const callback of callbacks ) {
+				callback();
+			}
+		}
+	};
+}
+
+test( "SYS-002 ready failures reject independently and preserve unrelated waiters", async () => {
+	const { commands, flush } = createReadyHarness();
+	const error = new Error( "expected ready failure" );
+	const order = [];
+	const outcomes = [];
+	const callbacks = [
+		() => { order.push( "first" ); throw error; },
+		() => { order.push( "second" ); return 42; },
+		null,
+		() => { order.push( "third" ); throw null; },
+		() => { order.push( "fourth" ); }
+	];
+	for( const [ index, callback ] of callbacks.entries() ) {
+		commands.ready( { "callback": callback } ).then(
+			value => { outcomes[ index ] = { "status": "fulfilled", "value": value }; },
+			reason => { outcomes[ index ] = { "status": "rejected", "reason": reason }; }
+		);
+	}
+	assert.deepEqual( order, [] );
+	assert.doesNotThrow( flush );
+	assert.deepEqual( order, [ "first", "second", "third", "fourth" ] );
+	await Promise.resolve();
+	assert.deepEqual( outcomes, [
+		{ "status": "rejected", "reason": error },
+		{ "status": "fulfilled", "value": undefined },
+		{ "status": "fulfilled", "value": undefined },
+		{ "status": "rejected", "reason": null },
+		{ "status": "fulfilled", "value": undefined }
+	] );
+	assert.equal( outcomes[ 0 ].reason, error );
+	let laterResolved = false;
+	commands.ready( {} ).then( () => { laterResolved = true; } );
+	flush();
+	await Promise.resolve();
+	assert.equal( laterResolved, true );
+	flush();
+	assert.deepEqual( order, [ "first", "second", "third", "fourth" ] );
+} );
+
+test( "SYS-002 reentrant ready callbacks run on a subsequent check", async () => {
+	const { commands, flush } = createReadyHarness();
+	const order = [];
+	let nestedResolved = false;
+	commands.ready( { "callback": () => {
+		order.push( "outer" );
+		commands.ready( { "callback": () => order.push( "nested" ) } ).then( () => {
+			nestedResolved = true;
+		} );
+	} } );
+	commands.ready( { "callback": () => order.push( "sibling" ) } );
+	assert.deepEqual( order, [] );
+	flush();
+	await Promise.resolve();
+	assert.deepEqual( order, [ "outer", "sibling" ] );
+	assert.equal( nestedResolved, false );
+	flush();
+	await Promise.resolve();
+	assert.deepEqual( order, [ "outer", "sibling", "nested" ] );
+	assert.equal( nestedResolved, true );
+	flush();
+	assert.equal( order.length, 3 );
+} );
+
+test( "SYS-002 ready still waits for document readiness and every resource", async () => {
+	const { commands, listeners, flush } = createReadyHarness( "loading" );
+	let calls = 0;
+	let resolved = false;
+	commands.ready( { "callback": () => { calls++; } } ).then( () => { resolved = true; } );
+	flush();
+	await Promise.resolve();
+	assert.equal( calls, 0 );
+	assert.equal( resolved, false );
+	commands.wait();
+	commands.wait();
+	listeners.DOMContentLoaded();
+	flush();
+	await Promise.resolve();
+	assert.equal( calls, 0 );
+	assert.equal( resolved, false );
+	commands.done();
+	flush();
+	await Promise.resolve();
+	assert.equal( calls, 0 );
+	assert.equal( resolved, false );
+	commands.done();
+	assert.equal( calls, 0 );
+	flush();
+	await Promise.resolve();
+	assert.equal( calls, 1 );
+	assert.equal( resolved, true );
+} );
+
+test( "SYS-002 ready ignores async callback completion", async () => {
+	const { commands, flush } = createReadyHarness();
+	let completeCallback;
+	const pending = new Promise( resolve => { completeCallback = resolve; } );
+	let callbackCompleted = false;
+	const outcomes = [];
+	commands.ready( { "callback": async () => {
+		await pending;
+		callbackCompleted = true;
+		return 42;
+	} } ).then( value => outcomes.push( value ) );
+	flush();
+	await Promise.resolve();
+	assert.deepEqual( outcomes, [ undefined ] );
+	assert.equal( callbackCompleted, false );
+	completeCallback();
+	await Promise.resolve();
+	assert.equal( callbackCompleted, true );
+	assert.deepEqual( outcomes, [ undefined ] );
+} );
+
+test( "SYS-002 invalid ready callbacks still throw synchronously", () => {
+	const { commands, flush } = createReadyHarness();
+	for( const callback of [ false, 0, "callback", {}, [] ] ) {
+		assert.throws( () => commands.ready( { "callback": callback } ), {
+			"name": "TypeError", "code": "INVALID_CALLBACK"
+		} );
+	}
+	assert.doesNotThrow( flush );
+} );
 
 test( "plugin cycles, failure, reentrant registration, and validation remain deterministic", () => {
 	const commands = {};

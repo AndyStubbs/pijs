@@ -121,6 +121,13 @@ function processScreenCommands( screenData ) {
  *   - $.ready( callback )        // Callback style
  *   - await $.ready()            // Promise style
  *   - $.ready().then( ... )      // Promise .then() style
+ *
+ * A synchronous callback throw rejects only this call's promise with the thrown value.
+ * Other queued waiters continue. Callback return values, including promises, are ignored.
+ *
+ * @param {Object} options - Ready command options.
+ * @param {Function} [options.callback] - Callback to invoke asynchronously when ready.
+ * @returns {Promise<void>} Resolves after invocation, or rejects if the callback throws.
  */
 function ready( options ) {
 
@@ -134,10 +141,11 @@ function ready( options ) {
 	}
 
 	// Never execute immediately - always defer to next tick
-	return new Promise( ( resolve ) => {
+	return new Promise( ( resolve, reject ) => {
 		m_readyCallbacks.push( {
 			"callback": callback,
 			"resolve": resolve,
+			"reject": reject,
 			"triggered": false
 		} );
 
@@ -207,11 +215,15 @@ function checkReady() {
 		// Mark as triggered
 		item.triggered = true;
 
-		// Execute callback and resolve promise
-		if( item.callback ) {
-			item.callback();
+		// Settle each waiter independently so callback failures cannot abandon the queue.
+		try {
+			if( item.callback ) {
+				item.callback();
+			}
+			item.resolve();
+		} catch( error ) {
+			item.reject( error );
 		}
-		item.resolve();
 	}
 }
 

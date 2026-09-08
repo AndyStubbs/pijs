@@ -7,6 +7,12 @@ Defers execution until the document is ready and all registered asynchronous res
 have completed loading (e.g., images queued via internal loading). Supports both callback
 and promise styles.
 
+Callbacks always run asynchronously. If a callback throws synchronously, only that
+ready call's promise rejects with the thrown value; other queued waiters continue.
+Handle this failure through the returned promise. Successful calls resolve to undefined.
+Callback return values are ignored, including promises: ready does not wait for async
+callbacks to finish or adopt their rejections.
+
 Usage styles:
 - Callback: $.ready( function() {} );
 - Promise: $.ready().then( function() {} );
@@ -41,4 +47,7 @@ optional = true
 [[returns]]
 type = "Promise<void>"
 typeDesc = "Promise"
-description = "Resolves when the document and all pending resources are ready."
+description = """
+Resolves to undefined when ready, after invoking the optional callback. Rejects with the
+original thrown value if the callback throws synchronously. Callback return values are ignored.
+"""
