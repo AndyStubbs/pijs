@@ -26,28 +26,94 @@ const MAX_VOICES = 64;
 
 
 /**
- * Load an audio element and add to pool when ready
- * 
+ * Release media without allowing a cleanup failure to strand other owned resources.
+ *
+ * @param {HTMLAudioElement} audio - Audio element to release
+ */
+function releaseAudioElement( audio ) {
+	try {
+		audio.pause();
+	} catch( _error ) {
+		// Continue releasing the source even if playback could not be paused.
+	}
+	try {
+		audio.removeAttribute( "src" );
+		audio.load();
+	} catch( _error ) {
+		// Listener removal and readiness settlement must still complete.
+	}
+}
+
+/**
+ * Settle one original slot's readiness wait, including all its retry attempts.
+ *
  * @param {Object} pluginApi - Plugin API
- * @param {Object} audioItem - Audio pool item
- * @param {HTMLAudioElement} audio - Audio element
+ * @param {Object} audioItem - Owning audio pool
+ * @param {Object} load - Pending load record
+ */
+function settleAudioLoad( pluginApi, audioItem, load ) {
+	if( load.settled ) {
+		return;
+	}
+	load.settled = true;
+	clearTimeout( load.retryTimer );
+	load.retryTimer = null;
+	if( load.detach ) {
+		load.detach();
+	}
+	if( load.audio ) {
+		const audio = load.audio;
+		load.audio = null;
+		releaseAudioElement( audio );
+	}
+	audioItem.loads.delete( load );
+	pluginApi.done();
+}
+
+/**
+ * Start an attempt belonging to an existing load; retries never acquire another wait.
+ *
+ * @param {Object} pluginApi - Plugin API
+ * @param {Object} audioItem - Owning audio pool
+ * @param {Object} load - Pending load record
  * @param {number} retryCount - Number of retries remaining
  */
-function loadAudioItem( pluginApi, audioItem, audio, retryCount = 3 ) {
+function loadAudioItem( pluginApi, audioItem, load, retryCount = 3 ) {
+	const audio = new Audio( load.src );
+	load.audio = audio;
+	let active = true;
+
+	function detach() {
+		active = false;
+		audio.removeEventListener( "canplay", audioReady );
+		audio.removeEventListener( "error", audioError );
+		load.detach = null;
+	}
+	load.detach = detach;
 
 	// Audio ready callback
 	function audioReady() {
+		if( !active || load.settled || audioItem.removed ) {
+			return;
+		}
+		detach();
 		audioItem.pool.push( {
 			"audio": audio,
 			"timeout": 0,
 			"volume": 1
 		} );
-		audio.removeEventListener( "canplay", audioReady );
-		pluginApi.done();
+
+		// Transfer ownership to the playable pool before settling the pending load.
+		load.audio = null;
+		settleAudioLoad( pluginApi, audioItem, load );
 	}
 
 	// Audio error callback
 	function audioError() {
+		if( !active || load.settled || audioItem.removed ) {
+			return;
+		}
+		detach();
 		const errors = [
 			"MEDIA_ERR_ABORTED - fetching process aborted by user",
 			"MEDIA_ERR_NETWORK - error occurred when downloading",
@@ -55,38 +121,62 @@ function loadAudioItem( pluginApi, audioItem, audio, retryCount = 3 ) {
 			"MEDIA_ERR_SRC_NOT_SUPPORTED - audio/video not supported"
 		];
 
-		const errorCode = audio.error.code;
+		const errorCode = audio.error?.code;
 		const index = errorCode - 1;
+		load.audio = null;
+		releaseAudioElement( audio );
 
-		if( index >= 0 && index < errors.length ) {
+		if( Number.isInteger( errorCode ) && index >= 0 && index < errors.length ) {
 			console.error( "loadAudio: " + errors[ index ] );
 
 			// Retry loading if retries remain
 			if( retryCount > 0 ) {
-				setTimeout( () => {
-					audio.removeEventListener( "canplay", audioReady );
-					audio.removeEventListener( "error", audioError );
-					const newAudio = new Audio( audio.src );
-					loadAudioItem( pluginApi, audioItem, newAudio, retryCount - 1 );
+				const timer = setTimeout( () => {
+					if( load.settled || audioItem.removed || load.retryTimer !== timer ) {
+						return;
+					}
+					load.retryTimer = null;
+					try {
+						loadAudioItem( pluginApi, audioItem, load, retryCount - 1 );
+					} catch( error ) {
+						settleAudioLoad( pluginApi, audioItem, load );
+						console.error( "loadAudio: Retry initialization failed:", error );
+					}
 				}, 100 );
+				load.retryTimer = timer;
 			} else {
-				console.error( "loadAudio: Max retries exceeded for " + audio.src );
-				pluginApi.done();
+				console.error( "loadAudio: Max retries exceeded for " + load.src );
+				settleAudioLoad( pluginApi, audioItem, load );
 			}
 		} else {
 			console.error( "loadAudio: Unknown error - " + errorCode );
-			pluginApi.done();
+			settleAudioLoad( pluginApi, audioItem, load );
 		}
-	}
-
-	// Wait for audio to load (only on first attempt)
-	if( retryCount === 3 ) {
-		pluginApi.wait();
 	}
 
 	// Set up event listeners
 	audio.addEventListener( "canplay", audioReady );
 	audio.addEventListener( "error", audioError );
+}
+
+/**
+ * Invalidate a pool before releasing pending loads and playable media.
+ *
+ * @param {Object} pluginApi - Plugin API
+ * @param {Object} audioItem - Audio pool to dispose
+ */
+function disposeAudioPool( pluginApi, audioItem ) {
+	audioItem.removed = true;
+	for( const load of audioItem.loads ) {
+		settleAudioLoad( pluginApi, audioItem, load );
+	}
+	for( const poolItem of audioItem.pool ) {
+		clearTimeout( poolItem.timeout );
+		poolItem.timeout = 0;
+		releaseAudioElement( poolItem.audio );
+	}
+	audioItem.pool.length = 0;
+	audioItem.index = 0;
 }
 
 
@@ -324,6 +414,7 @@ export function registerSound( pluginApi ) {
 
 	/**
 	 * Create an audio pool for playing multiple instances of the same sound file
+	 * Each slot holds readiness until it loads, fails after retries, or is removed.
 	 * 
 	 * @param {Object} options - Command options
 	 * @param {string} options.src - Audio file URL
@@ -371,13 +462,25 @@ export function registerSound( pluginApi ) {
 		// Create the audio pool item
 		const audioItem = {
 			"pool": [],
-			"index": 0
+			"index": 0,
+			"loads": new Set(),
+			"removed": false
 		};
 
 		// Create each audio instance in the pool
-		for( let i = 0; i < poolSize; i++ ) {
-			const audio = new Audio( src );
-			loadAudioItem( pluginApi, audioItem, audio );
+		try {
+			for( let i = 0; i < poolSize; i++ ) {
+				const load = {
+					"src": src, "audio": null, "detach": null,
+					"retryTimer": null, "settled": false
+				};
+				audioItem.loads.add( load );
+				pluginApi.wait();
+				loadAudioItem( pluginApi, audioItem, load );
+			}
+		} catch( error ) {
+			disposeAudioPool( pluginApi, audioItem );
+			throw error;
 		}
 
 		// Save audioId to global array
@@ -388,6 +491,7 @@ export function registerSound( pluginApi ) {
 
 	/**
 	 * Delete an audio pool and free its resources
+	 * Cancels pending loads and retries, releases their readiness waits, and permits name reuse.
 	 * 
 	 * @param {Object} options - Command options
 	 * @param {string} options.audioId - Audio pool ID returned from loadAudio
@@ -403,15 +507,9 @@ export function registerSound( pluginApi ) {
 			throw error;
 		}
 
-		// Stop all audio and clear timeouts in the pool
-		for( let i = 0; i < m_audioPools[ audioId ].pool.length; i++ ) {
-			const poolItem = m_audioPools[ audioId ].pool[ i ];
-			poolItem.audio.pause();
-			clearTimeout( poolItem.timeout );
-		}
-
-		// Delete the pool
+		const audioItem = m_audioPools[ audioId ];
 		delete m_audioPools[ audioId ];
+		disposeAudioPool( pluginApi, audioItem );
 	}
 
 	/**

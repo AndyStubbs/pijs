@@ -354,6 +354,16 @@ remain screen-relative inside views.
 - `stopAudio( audioId )`: Stops one pool, or all pools when omitted.
 - `removeAudio( audioId )`: Removes a pool and releases its resources.
 
+Each audio slot holds `ready()` until it loads, reaches a terminal failure, or is removed.
+Recognized media errors retry up to three times, 100 ms apart; terminal failures are logged.
+Loaded slots remain playable when other slots fail or are still loading.
+
+`removeAudio()` also cancels pending loads and retries, detaches load listeners, stops playback,
+and releases the media sources. It releases only that pool's outstanding readiness waits, and its
+name can be reused immediately. Late events from removed audio cannot affect a replacement pool.
+If synchronous initialization throws, the partially created pool is cleaned up and its name
+remains available; the original error is rethrown.
+
 ### Synthesized Sound and PLAY
 
 - `sound( frequency, duration, volume, oType, delay, attack, decay )`: Plays a synthesized sound

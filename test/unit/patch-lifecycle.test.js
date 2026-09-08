@@ -445,6 +445,8 @@ test( "replaying an audio slot without duration cancels its previous timer", () 
 			removeEventListener( name ) { delete this.listeners[ name ]; }
 			pause() {}
 			play() {}
+			removeAttribute() {}
+			load() {}
 		}
 	} );
 	module.registerSound( {

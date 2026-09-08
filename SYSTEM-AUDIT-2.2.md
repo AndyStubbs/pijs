@@ -173,6 +173,35 @@ resolve before the corresponding `done()`. Two Audio instances were created.
 load, detach both terminal listeners, and make retries share the original accounting token.
 This is independent of the previously fixed playback-duration timer.
 
+**Resolution — 2026-09-07:** SYS-004 and SYS-018 are fixed. Each pending audio slot owns one
+readiness wait, its active media element and listeners, and its retry timer. Success, terminal
+failure, and cancellation settle that wait once. Both listeners detach on every terminal attempt
+event; duplicate events, stale callbacks, and late errors cannot publish a second playable slot or
+release another resource's wait. Recognized media errors retain three retries at 100 ms intervals;
+unknown or missing errors terminate safely. Failed attempts release their media before retrying.
+
+Pool removal invalidates owned work, cancels retry and playback timers, detaches listeners, pauses
+and releases pending and playable media, and settles outstanding waits. Names are immediately
+reusable without interference from the old pool. Synchronous initialization failures roll back all
+partially acquired resources and rethrow the original error; retry initialization failures log and
+settle. Public signatures, partial-pool playback, and existing missing/empty-pool errors are preserved.
+
+Validation: all 15 new source regressions failed before implementation and passed after the fix.
+`node --test test/unit/audio-lifecycle.test.js` covers duplicate/late events, retry success/exhaustion,
+missing/unknown media errors, stale retry callbacks, pending/retrying/partial/ready pool removal,
+name reuse, resource counts, and initial/retry constructor and listener setup failures.
+`node --test test/unit/audio-lifecycle-browser.test.js` passed 10/10 using fresh in-memory full and
+lite-plus-sound bundles, controlled EventTarget audio, and the real readiness scheduler. These
+checks confirm unrelated-wait isolation, cancellation, replacement, partial playback and terminal
+failure, with no uncaught page errors. They do not establish audible playback or codec support.
+
+The complete `test:patch` file set plus `test/scripts/generate-metadata.test.js`, run through
+`node --test --test-concurrency=1`, passed 117/117. Existing server-based patch-browser checks used
+the running repository server on port 8080; audio, keyboard, and pixel-disposal browser suites
+compiled fresh bundles in memory. Chromium required execution outside the sandbox after a launch
+`EPERM`. No release generation or screenshot baseline changes were used. Both new audio suites are
+included in `test:patch`.
+
 ### SYS-005 — P2 — Deferred pixel reads and filters execute after screen disposal
 
 **Locations:** [readback.js:65](C:/Docs/src/pijs/src/renderer/readback.js:65),
@@ -453,6 +482,10 @@ elements; firing its retained error listener created a second Audio instance 100
 **Impact:** discarded assets continue allocating/loading and can delay initialization.
 **Fix:** track pending elements and retry handles as owned pool resources and invalidate them
 on removal. Coordinate cancellation accounting with SYS-004's once-only settlement.
+
+**Resolution — 2026-09-07:** Fixed with SYS-004; see its resolution and validation record above.
+Pending loads, retry handles, and playable media are owned by the pool and released on removal,
+with single readiness settlement and immediate safe name reuse.
 
 ### SYS-019 — P2 — Build success ignores a failed optional-plugin build
 
@@ -818,3 +851,8 @@ before undertaking the larger alpha-representation and context-recovery changes.
 SYS-001, SYS-002, and SYS-005 fixes, this completes the first three follow-up tasks. The next grouped
 task is audio load ownership and single settlement (SYS-004, SYS-018). The original audit evidence
 and recommendation above are retained as historical context.
+
+**Follow-up status — audio completion, 2026-09-07:** SYS-004 and SYS-018 are now resolved,
+completing the first four follow-up tasks. Next is task 5: image/font failure publication and
+numeric state validation (SYS-010, SYS-017, SYS-021, SYS-022), starting with image cancellation
+as a separate focused task. Earlier recommendations and evidence remain historical context.
