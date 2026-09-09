@@ -11,6 +11,26 @@
 
 import * as g_batches from "../batches.js";
 
+/**
+ * Create a point writer that lazily reserves chunks and counts only emitted points.
+ * Use within one synchronous drawing loop, without interleaving other batch writers or flushes.
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {number} batchType - Points batch type
+ * @returns {Function} Writer accepting local x, y and color
+ */
+export function createPointWriter( screenData, batchType ) {
+	const batch = screenData.batches[ batchType ];
+	let remaining = 0;
+	return function( x, y, color ) {
+		if( remaining === 0 ) {
+			remaining = g_batches.prepareBatchChunk( screenData, batchType );
+		}
+		addVertexToBatch( batch, x, y, color );
+		remaining--;
+	};
+}
+
 
 /***************************************************************************************************
  * Vertex Helpers

@@ -282,6 +282,24 @@ also exhaust the stack. **Fix:** split operations into bounded chunks or support
 bounded larger allocation; never retry an impossible reservation recursively. Paint should not
 reserve the entire screen when it can stream filled spans/points.
 
+**Resolution — bounded reservations, 2026-09-08:** SYS-007 is resolved for core drawing and the
+full/lite library bundles. Reservations validate counts before changing queued state, flush at most
+once when accumulated work exceeds capacity, and fail deterministically when a flush cannot make
+room. Exact-capacity requests no longer resize. Paint, pixel replacement, outlines, ellipse fills,
+Bézier segments, and cached geometry submit bounded chunks using the existing capacity limits.
+Point writers reserve lazily; geometry chunks retain complete primitives. Deprecated pens remain
+outside this task; the four plugins included in the full bundle do not reserve rendering batches.
+
+Validation: 15 source tests compare emissions across reduced limits and check reservation failures;
+16 browser tests use fresh in-memory full/lite bundles. Every Full HD paint pixel is verified red,
+Full HD replacement includes transparent writes, the oversized arc completes, and clipping,
+tolerance/boundary fills, alpha/replace blending, textures, and the 10,000-point growth control pass.
+`npm run test:patch` passes 258 tests. With `PI_BATCH_VISUAL=true`, the new browser test file also
+runs existing paint, graphics, renderer, and view fixtures: 11 approved-baseline comparisons pass;
+the full-only view fixture is skipped for lite. A separate diagnostic of `draw_comprehensive`
+encountered its existing `$.render()` call, outside SYS-007. No approved baselines or release
+artifacts changed. SYS-015/SYS-016 rasterization work remains separate.
+
 ### SYS-008 — P2 — Context restoration resumes rendering with invalid GPU objects
 
 **Location:** [renderer.js:191](C:/Docs/src/pijs/src/renderer/renderer.js:191).
@@ -998,3 +1016,8 @@ remain historical context.
 completing the agreed synchronous font work in task 5. Asynchronous font failure behavior is covered
 by regression tests and remains an explicit policy follow-up. Earlier recommendations and evidence
 remain historical context.
+
+**Follow-up status — batch reservations, 2026-09-08:** SYS-007 is resolved for core and full/lite
+bundles. Remaining task 6 work is arc full-turn handling and circle rasterization (SYS-015, SYS-016),
+kept separate from reservation chunking. Earlier recommendations and evidence remain historical
+context.

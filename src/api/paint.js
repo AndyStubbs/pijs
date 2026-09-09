@@ -155,9 +155,7 @@ function paint( screenData, options ) {
 		};
 	}
 
-	// Prepare batch for drawing pixels
-	const pixelCount = clipW * clipH;
-	g_renderer.prepareBatch( screenData, g_renderer.POINTS_BATCH, pixelCount );
+	const writePoint = g_renderer.createPointWriter( screenData, g_renderer.POINTS_BATCH );
 
 	let head = 0;
 	while( head < queue.length ) {
@@ -176,9 +174,7 @@ function paint( screenData, options ) {
 		}
 
 		// Fill using local coords so the view origin is applied once
-		g_renderer.drawPixelUnsafe(
-			screenData, px - originX, py - originY, fillColor, g_renderer.POINTS_BATCH
-		);
+		writePoint( px - originX, py - originY, fillColor );
 
 		addToQueue( queue, visited, px + 1, py, clipX, clipY, clipW, clipH );
 		addToQueue( queue, visited, px - 1, py, clipX, clipY, clipW, clipH );

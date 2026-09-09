@@ -31,6 +31,7 @@ import * as g_batchHelpers from "./batch-helpers.js";
  */
 export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y ) {
 	const color = screenData.color;
+	const writePoint = g_batchHelpers.createPointWriter( screenData, g_batches.POINTS_BATCH );
 
 	// Tessellate curve into points with ~0.75px max error
 	const maxError = 0.75;
@@ -41,15 +42,12 @@ export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y )
 	if( pts.length < 4 ) {
 		
 		// Degenerate: plot a single pixel
-		const batch = screenData.batches[ g_batches.POINTS_BATCH ];
-		g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, 1 );
-		g_batchHelpers.addVertexToBatch( batch, p0x | 0, p0y | 0, color );
+		writePoint( p0x | 0, p0y | 0, color );
 		return;
 	}
 
 	// Track drawn pixels to avoid duplicates at segment junctions
 	const drawn = new Set();
-	const batch = screenData.batches[ g_batches.POINTS_BATCH ];
 
 	// Draw consecutive segments, skipping duplicate pixels
 	for( let i = 0; i + 3 < pts.length; i += 2 ) {
@@ -61,8 +59,6 @@ export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y )
 
 		const dx = Math.abs( x2 - x1 );
 		const dy = Math.abs( y2 - y1 );
-		const pointCount = Math.max( dx, dy ) + 1;
-		g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, pointCount );
 
 		const sx = x1 < x2 ? 1 : -1;
 		const sy = y1 < y2 ? 1 : -1;
@@ -74,7 +70,7 @@ export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y )
 			const key = x + "," + y;
 			if( !drawn.has( key ) ) {
 				drawn.add( key );
-				g_batchHelpers.addVertexToBatch( batch, x, y, color );
+				writePoint( x, y, color );
 			}
 
 			if( x === x2 && y === y2 ) {

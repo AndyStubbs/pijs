@@ -35,6 +35,7 @@ export {
 // Re-export drawing functions
 export { drawImage, drawSprite } from "./draw/sprites.js";
 export { drawPixel, drawPixelUnsafe } from "./draw/primitives.js";
+export { createPointWriter } from "./draw/batch-helpers.js";
 export { drawArc } from "./draw/arcs.js";
 export { drawBezier } from "./draw/bezier.js";
 export { drawLine } from "./draw/lines.js";

@@ -43,16 +43,7 @@ export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 	const isFullCircle = span >= TWO_PI - FULL_CIRCLE_EPSILON;
 	const isLargeArc = !isFullCircle && span > Math.PI;
 
-	// Estimate pixel count based on span
-	const estimatedPixels = Math.max(
-		4,
-		Math.ceil( radius * ( isFullCircle ? TWO_PI : span ) )
-	);
-
-	// Prepare batch
-	const batchIndex = g_batches.POINTS_BATCH;
-	g_batches.prepareBatch( screenData, batchIndex, estimatedPixels );
-	const batch = screenData.batches[ batchIndex ];
+	const writePoint = g_batchHelpers.createPointWriter( screenData, g_batches.POINTS_BATCH );
 
 	// Precompute start/end direction vectors for angle tests
 	let startX = 0;
@@ -72,7 +63,7 @@ export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 
 	if( isFullCircle ) {
 		setPixel = function( px, py ) {
-			g_batchHelpers.addVertexToBatch( batch, px, py, color );
+			writePoint( px, py, color );
 		};
 	} else if( !isLargeArc ) {
 
@@ -90,7 +81,7 @@ export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 			const cvw = endX * dy - endY * dx;
 
 			if( cuw >= 0 && cvw <= 0 ) {
-				g_batchHelpers.addVertexToBatch( batch, px, py, color );
+				writePoint( px, py, color );
 			}
 		};
 	} else {
@@ -111,7 +102,7 @@ export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 			const cvw = endX * dy - endY * dx;
 
 			if( !( cvw >= 0 && cuw <= 0 ) ) {
-				g_batchHelpers.addVertexToBatch( batch, px, py, color );
+				writePoint( px, py, color );
 			}
 		};
 	}

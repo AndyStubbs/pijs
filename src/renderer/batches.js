@@ -336,18 +336,44 @@ function resizeBatch( batch, newCapacity ) {
 }
 
 /**
- * Ensure batch has capacity for items
+ * Ensure batch has capacity for items. A zero-item reservation is a no-op.
  * 
  * @param {Object} screenData - Screen data object
  * @param {number} batchType - Batch type
  * @param {number} itemCount - Number of items needed
  * @param {WebGLTexture} [texture] - Texture for images
+ * @throws {RangeError} If itemCount is invalid or the reservation cannot fit after flushing
  * @returns {void}
  */
 export function prepareBatch( screenData, batchType, itemCount, texture ) {
 
 	// Get the batch
 	const batch = screenData.batches[ batchType ];
+	if( !Number.isSafeInteger( itemCount ) || itemCount < 0 || itemCount > batch.maxCapacity ) {
+		throw new RangeError(
+			`prepareBatch: itemCount must be an integer between 0 and ${batch.maxCapacity}.`
+		);
+	}
+	if( itemCount === 0 ) {
+		return;
+	}
+
+	let requiredCount = batch.count + itemCount;
+	if( requiredCount > batch.maxCapacity ) {
+		flushBatches( screenData );
+		requiredCount = batch.count + itemCount;
+		if( requiredCount > batch.maxCapacity ) {
+			throw new RangeError( "prepareBatch: Flushing could not make room for itemCount." );
+		}
+	}
+
+	if( requiredCount > batch.capacity ) {
+		const newCapacity = Math.max(
+			requiredCount, Math.min( batch.capacity * 2, batch.maxCapacity )
+		);
+		resizeBatch( batch, newCapacity );
+	}
+
 	if( screenData.view ) {
 		batch.originX = screenData.view.originX;
 		batch.originY = screenData.view.originY;
@@ -389,31 +415,44 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
 		batchInfo.drawOrder.push( drawOrderItem );
 		batchInfo.currentBatch = batch;
 	}
+}
 
-	// Check if need to increase capacity
-	const requiredCount = batch.count + itemCount;
-	if( requiredCount >= batch.capacity ) {
-
-		// Make sure we don't exceed max batch size
-		if( requiredCount > batch.maxCapacity ) {
-			if( m_isDebug ) {
-				console.log(
-					`Batch ${BATCH_TYPES[ batch.type ]} exceeded maxCapacity ` +
-					`${batch.maxCapacity}, requested ${requiredCount}.  Flushing batch to reset` +
-					` count to 0.`
-				);
-			}
-		
-			flushBatches( screenData );
-			return prepareBatch( screenData, batchType, itemCount, texture );
-		}
-
-		// Resize to new capacity by doubling current capacity up to maxCapacity
-		const newCapacity = Math.max(
-			requiredCount, Math.min( batch.capacity * 2, batch.maxCapacity )
-		);
-		resizeBatch( batch, newCapacity );
+/**
+ * Reserve a bounded chunk of complete primitives for a synchronous drawing loop.
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {number} batchType - Untextured batch type
+ * @param {number} [remainingCount] - Remaining vertices, omitted for unknown-length work
+ * @param {number} [primitiveSize=1] - Vertices per indivisible primitive
+ * @returns {number} Reserved vertex count
+ */
+export function prepareBatchChunk( screenData, batchType, remainingCount, primitiveSize = 1 ) {
+	const batch = screenData.batches[ batchType ];
+	const limit = Math.min( batch.minCapacity, batch.maxCapacity );
+	if( !Number.isSafeInteger( primitiveSize ) || primitiveSize < 1 || primitiveSize > limit ) {
+		throw new RangeError( "prepareBatchChunk: primitiveSize must fit in a chunk." );
 	}
+	if( remainingCount !== undefined && (
+		!Number.isSafeInteger( remainingCount ) || remainingCount < 0 ||
+		remainingCount % primitiveSize !== 0
+	) ) {
+		throw new RangeError(
+			"prepareBatchChunk: remainingCount must contain complete primitives."
+		);
+	}
+	let count = Math.floor( limit / primitiveSize ) * primitiveSize;
+	if( remainingCount !== undefined ) {
+		count = Math.min( count, remainingCount );
+	}
+
+	// Use spare capacity first so short drawing loops do not cause unnecessary growth.
+	const available = Math.floor( ( batch.capacity - batch.count ) / primitiveSize ) *
+		primitiveSize;
+	if( available > 0 ) {
+		count = Math.min( count, available );
+	}
+	prepareBatch( screenData, batchType, count );
+	return count;
 }
 
 /**

@@ -12,7 +12,7 @@
 
 import * as g_batches from "../batches.js";
 import * as g_geometry from "./geometry.js";
-import { drawPixelUnsafe } from "./primitives.js";
+import { createPointWriter } from "./batch-helpers.js";
 
 
 /**
@@ -26,6 +26,7 @@ import { drawPixelUnsafe } from "./primitives.js";
  */
 export function drawCircle( screenData, cx, cy, radius ) {
 	const color = screenData.color;
+	const writePoint = createPointWriter( screenData, g_batches.POINTS_BATCH );
 
 	// Nothing to draw
 	if( radius <= 0 ) {
@@ -33,8 +34,7 @@ export function drawCircle( screenData, cx, cy, radius ) {
 	}
 
 	if( radius === 1 ) {
-		g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, 1 );
-		drawPixelUnsafe( screenData, cx + 1, cy, color, g_batches.POINTS_BATCH );
+		writePoint( cx + 1, cy, color );
 		return;
 	}
 
@@ -43,17 +43,12 @@ export function drawCircle( screenData, cx, cy, radius ) {
 
 	// Single point
 	if( radius === 1 ) {
-		g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, 4 );
-		drawPixelUnsafe( screenData, cx + 1, cy, color, g_batches.POINTS_BATCH );
-		drawPixelUnsafe( screenData, cx - 1, cy, color, g_batches.POINTS_BATCH );
-		drawPixelUnsafe( screenData, cx, cy + 1, color, g_batches.POINTS_BATCH );
-		drawPixelUnsafe( screenData, cx, cy - 1, color, g_batches.POINTS_BATCH );
+		writePoint( cx + 1, cy, color );
+		writePoint( cx - 1, cy, color );
+		writePoint( cx, cy + 1, color );
+		writePoint( cx, cy - 1, color );
 		return;
 	}
-
-	// Estimate batch size based on circumference
-	const perimeterPixels = Math.round( 2 * Math.PI * radius );
-	g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, perimeterPixels );
 
 	// Midpoint circle algorithm (8-way symmetry)
 	let x = radius;
@@ -61,10 +56,10 @@ export function drawCircle( screenData, cx, cy, radius ) {
 	let err = 1 - x;
 
 	// Initial symmetrical points (no duplicates here)
-	drawPixelUnsafe( screenData, cx + x, cy + y, color, g_batches.POINTS_BATCH );
-	drawPixelUnsafe( screenData, cx - x, cy + y, color, g_batches.POINTS_BATCH );
-	drawPixelUnsafe( screenData, cx + y, cy + x, color, g_batches.POINTS_BATCH );
-	drawPixelUnsafe( screenData, cx + y, cy - x, color, g_batches.POINTS_BATCH );
+	writePoint( cx + x, cy + y, color );
+	writePoint( cx - x, cy + y, color );
+	writePoint( cx + y, cy + x, color );
+	writePoint( cx + y, cy - x, color );
 
 	while( x >= y ) {
 		y++;
@@ -79,21 +74,21 @@ export function drawCircle( screenData, cx, cy, radius ) {
 
 			// On the diagonal, 8-way symmetry collapses to 4 distinct pixels.
 			// Emit each unique coordinate only once so there are no overlaps.
-			drawPixelUnsafe( screenData, cx + x, cy + y, color, g_batches.POINTS_BATCH );
-			drawPixelUnsafe( screenData, cx - x, cy + y, color, g_batches.POINTS_BATCH );
-			drawPixelUnsafe( screenData, cx - x, cy - y, color, g_batches.POINTS_BATCH );
-			drawPixelUnsafe( screenData, cx + x, cy - y, color, g_batches.POINTS_BATCH );
+			writePoint( cx + x, cy + y, color );
+			writePoint( cx - x, cy + y, color );
+			writePoint( cx - x, cy - y, color );
+			writePoint( cx + x, cy - y, color );
 		} else {
 
 			// 8-way symmetry, all distinct when x !== y
-			drawPixelUnsafe( screenData, cx + x, cy + y, color, g_batches.POINTS_BATCH );
-			drawPixelUnsafe( screenData, cx + y, cy + x, color, g_batches.POINTS_BATCH );
-			drawPixelUnsafe( screenData, cx - y, cy + x, color, g_batches.POINTS_BATCH );
-			drawPixelUnsafe( screenData, cx - x, cy + y, color, g_batches.POINTS_BATCH );
-			drawPixelUnsafe( screenData, cx - x, cy - y, color, g_batches.POINTS_BATCH );
-			drawPixelUnsafe( screenData, cx - y, cy - x, color, g_batches.POINTS_BATCH );
-			drawPixelUnsafe( screenData, cx + y, cy - x, color, g_batches.POINTS_BATCH );
-			drawPixelUnsafe( screenData, cx + x, cy - y, color, g_batches.POINTS_BATCH );
+			writePoint( cx + x, cy + y, color );
+			writePoint( cx + y, cy + x, color );
+			writePoint( cx - y, cy + x, color );
+			writePoint( cx - x, cy + y, color );
+			writePoint( cx - x, cy - y, color );
+			writePoint( cx - y, cy - x, color );
+			writePoint( cx + y, cy - x, color );
+			writePoint( cx + x, cy - y, color );
 		}
 	}
 }

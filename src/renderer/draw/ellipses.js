@@ -26,6 +26,7 @@ import * as g_batchHelpers from "./batch-helpers.js";
  */
 export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 	const color = screenData.color;
+	const writePoint = g_batchHelpers.createPointWriter( screenData, g_batches.POINTS_BATCH );
 
 	// Validate radii
 	if( rx < 0 || ry < 0 ) {
@@ -34,28 +35,14 @@ export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 
 	// Handle trivial cases
 	if( rx === 0 && ry === 0 ) {
-		g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, 1 );
-		const singleBatch = screenData.batches[ g_batches.POINTS_BATCH ];
-		g_batchHelpers.addVertexToBatch( singleBatch, cx, cy, color );
+		writePoint( cx, cy, color );
 		return;
 	}
-
-	// Estimate pixel count using Ramanujan perimeter approximation
-	// P ≈ π[ 3(a+b) − sqrt{ (3a+b)(a+3b) } ] where a=rx, b=ry
-	const a = rx;
-	const b = ry;
-	const perimeter = Math.PI * ( 3 * ( a + b ) - Math.sqrt( ( 3 * a + b ) * ( a + 3 * b ) ) );
-	const estimatedPixels = Math.max( 8, Math.ceil( perimeter ) );
-
-	// Prepare outline batch
-	const pointsBatchIndex = g_batches.POINTS_BATCH;
-	g_batches.prepareBatch( screenData, pointsBatchIndex, estimatedPixels );
-	const pointsBatch = screenData.batches[ pointsBatchIndex ];
 
 	const plotPoint = function( px, py ) {
 		const ix = px | 0;
 		const iy = py | 0;
-		g_batchHelpers.addVertexToBatch( pointsBatch, ix, iy, color );
+		writePoint( ix, iy, color );
 	};
 
 	// Symmetric plotting for the four quadrants (no duplicate pixels)
@@ -206,10 +193,8 @@ export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 		sortedYCoords.sort( function( a, b ) { return a - b; } );
 
 		if( sortedYCoords.length >= 3 ) {
-			const interiorRowCount = sortedYCoords.length - 2;
-			const vertexCount = interiorRowCount * 6;
-			g_batches.prepareBatch( screenData, g_batches.GEOMETRY_BATCH, vertexCount );
 			const geoBatch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
+			let remaining = 0;
 
 			for( let row = 1; row < sortedYCoords.length - 1; row++ ) {
 				const currentY = sortedYCoords[ row ];
@@ -231,6 +216,12 @@ export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 				const yWorld = cy + currentY;
 				const x1 = cx + xStart;
 				const x2 = cx + xEnd + 1;
+				if( remaining === 0 ) {
+					remaining = g_batches.prepareBatchChunk(
+						screenData, g_batches.GEOMETRY_BATCH, undefined, 6
+					);
+				}
+				remaining -= 6;
 
 				g_batchHelpers.addVertexToBatch( geoBatch, x1, yWorld, fillColor );
 				g_batchHelpers.addVertexToBatch( geoBatch, x2, yWorld, fillColor );

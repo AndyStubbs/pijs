@@ -455,23 +455,6 @@ function putWrapper( screenData, data, x, y, include0 = false ) {
 		return null;
 	}
 
-	// Prepare the batch by making sure there are enough memory in the batch
-	let pixelCount = 0;
-
-	// Use the already calculated loop bounds
-	for( let i = startY; i < startY + height; i++ ) {
-		const row = pData[ i ];
-
-		// Check if row exists
-		if( row ) {
-
-			// The actual number of pixels drawn from this row will be `width`
-			pixelCount += width;
-		}
-	}
-
-	g_renderer.prepareBatch( screenData, g_renderer.POINTS_REPLACE_BATCH, pixelCount );
-
 	put( screenData, pData, pX, pY, pInclude0, startY, startX, width, height );
 
 	// Mark image as dirty
@@ -483,6 +466,7 @@ function put( screenData, data, x, y, include0, startY, startX, width, height ) 
 	
 	const endY = startY + height;
 	const endX = startX + width;
+	const writePoint = g_renderer.createPointWriter( screenData, g_renderer.POINTS_REPLACE_BATCH );
 
 	// Draw
 	for( let dataY = startY; dataY < endY; dataY++ ) {
@@ -504,9 +488,7 @@ function put( screenData, data, x, y, include0, startY, startX, width, height ) 
 			const sx = x + dataX;
 			const sy = y + dataY;
 
-			g_renderer.drawPixelUnsafe(
-				screenData, sx, sy, colorValue, g_renderer.POINTS_REPLACE_BATCH
-			);
+			writePoint( sx, sy, colorValue );
 		}
 	}
 }
