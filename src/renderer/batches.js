@@ -9,6 +9,8 @@
 
 "use strict";
 
+import { isContextUnavailable, probeContextLoss } from "./context-state.js";
+
 import * as g_shaders from "./shaders.js";
 import * as g_screenManager from "../core/screen-manager.js";
 
@@ -343,9 +345,12 @@ function resizeBatch( batch, newCapacity ) {
  * @param {number} itemCount - Number of items needed
  * @param {WebGLTexture} [texture] - Texture for images
  * @throws {RangeError} If itemCount is invalid or the reservation cannot fit after flushing
- * @returns {void}
+ * @returns {boolean} True if reserved, false if context loss canceled the reservation
  */
 export function prepareBatch( screenData, batchType, itemCount, texture ) {
+	if( isContextUnavailable( screenData ) ) {
+		return false;
+	}
 
 	// Get the batch
 	const batch = screenData.batches[ batchType ];
@@ -355,12 +360,15 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
 		);
 	}
 	if( itemCount === 0 ) {
-		return;
+		return true;
 	}
 
 	let requiredCount = batch.count + itemCount;
 	if( requiredCount > batch.maxCapacity ) {
 		flushBatches( screenData );
+		if( isContextUnavailable( screenData ) ) {
+			return false;
+		}
 		requiredCount = batch.count + itemCount;
 		if( requiredCount > batch.maxCapacity ) {
 			throw new RangeError( "prepareBatch: Flushing could not make room for itemCount." );
@@ -415,6 +423,7 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
 		batchInfo.drawOrder.push( drawOrderItem );
 		batchInfo.currentBatch = batch;
 	}
+	return true;
 }
 
 /**
@@ -427,6 +436,10 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
  * @returns {number} Reserved vertex count
  */
 export function prepareBatchChunk( screenData, batchType, remainingCount, primitiveSize = 1 ) {
+	if( isContextUnavailable( screenData ) ) {
+		return 0;
+	}
+
 	const batch = screenData.batches[ batchType ];
 	const limit = Math.min( batch.minCapacity, batch.maxCapacity );
 	if( !Number.isSafeInteger( primitiveSize ) || primitiveSize < 1 || primitiveSize > limit ) {
@@ -451,7 +464,9 @@ export function prepareBatchChunk( screenData, batchType, remainingCount, primit
 	if( available > 0 ) {
 		count = Math.min( count, available );
 	}
-	prepareBatch( screenData, batchType, count );
+	if( !prepareBatch( screenData, batchType, count ) ) {
+		return 0;
+	}
 	return count;
 }
 
@@ -465,6 +480,10 @@ export function prepareBatchChunk( screenData, batchType, remainingCount, primit
  * @returns {void}
  */
 export function prepareShaderBatch( screenData, handle, uniforms, samplerTextures = new Map() ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
+
 	const batchInfo = screenData.batchInfo;
 	const batch = screenData.batches[ SHADER_BATCH ];
 
@@ -581,6 +600,10 @@ function runShaderPass( screenData, drawOrderItem ) {
  * @returns {void}
  */
 export function flushBatches( screenData, blends = null ) {
+	if( probeContextLoss( screenData ) ) {
+		return;
+	}
+
 	// Avoid rebinding framebuffers and restoring GL state when a screen has no queued work.
 	// The first flush still initializes a newly created framebuffer.
 	if( !screenData.isFirstRender && screenData.batchInfo.drawOrder.length === 0 ) {
@@ -911,6 +934,10 @@ function resetBatch( batch ) {
  * @returns {void}
  */
 export function displayToCanvas( screenData ) {
+	if( probeContextLoss( screenData ) ) {
+		return;
+	}
+
 	// Parent-affiliated offscreen screens share the visible screen's context but remain FBO-only.
 	if( screenData.isOffscreen && screenData.parentRenderContext ) {
 		return;

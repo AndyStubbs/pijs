@@ -13,6 +13,7 @@ import * as g_utils from "../core/utils.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_commands from "../core/commands.js";
 import * as g_view from "./view.js";
+import { isContextUnavailable } from "../renderer/context-state.js";
 
 
 /***************************************************************************************************
@@ -82,6 +83,9 @@ function paint( screenData, options ) {
 	}
 
 	const view = screenData.view;
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
 	const clipX = view.clipX;
 	const clipY = view.clipY;
 	const clipW = view.clipWidth;
@@ -214,4 +218,3 @@ function addToQueue( queue, visited, x, y, clipX, clipY, clipW, clipH ) {
 		queue.push( { "x": x, "y": y } );
 	}
 }
-

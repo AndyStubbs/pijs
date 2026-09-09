@@ -8,6 +8,8 @@
 
 "use strict";
 
+import { isContextUnavailable } from "../context-state.js";
+
 import * as g_batches from "../batches.js";
 import * as g_textures from "../textures.js";
 
@@ -90,7 +92,9 @@ function addTexturedQuadToBatch(
 
 	// Prepare batch for 6 vertices (2 triangles)
 	const batch = screenData.batches[ batchType ];
-	g_batches.prepareBatch( screenData, batchType, 6, texture );
+	if( !g_batches.prepareBatch( screenData, batchType, 6, texture ) ) {
+		return;
+	}
 
 	const batchVertices = batch.vertices;
 	const batchTexCoords = batch.texCoords;
@@ -218,10 +222,16 @@ export function drawImage(
 	screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad,
 	batchType = g_batches.IMAGE_BATCH
 ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
 
 	// Get or create texture
 	const textureInfo = g_textures.getTextureDrawInfo( screenData, img );
 	const texture = textureInfo.texture;
+	if( !texture ) {
+		return;
+	}
 
 	// Calculate image dimensions
 	const imgWidth = img.width;
@@ -286,12 +296,19 @@ export function drawSprite(
 	anchorX = 0, anchorY = 0, scaleX = 1, scaleY = 1, angleRad = 0,
 	batchType = g_batches.IMAGE_BATCH
 ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
 
 	// Get or create texture
 	const textureInfo = g_textures.getTextureDrawInfo( screenData, img );
 	const texture = textureInfo.texture;
 
 	// Get texture dimensions for coordinate conversion
+	if( !texture ) {
+		return;
+	}
+
 	const texWidth = img.width;
 	const texHeight = img.height;
 

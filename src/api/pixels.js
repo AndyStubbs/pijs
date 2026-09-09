@@ -8,6 +8,9 @@
 
 "use strict";
 
+import { isContextUnavailable, getContextGeneration } from "../renderer/context-state.js";
+import { probeContextLoss } from "../renderer/context-state.js";
+
 // Imports
 import { unpremultiplyPixels } from "../renderer/alpha.js";
 import * as g_utils from "../core/utils.js";
@@ -91,6 +94,7 @@ function getPixel( screenData, options ) {
  * @returns {Promise<Object|number>} Pixel result; rejects with SCREEN_REMOVED on disposal
  */
 function getPixelAsync( screenData, options ) {
+	const generation = getContextGeneration( screenData );
 	const px = g_utils.getInt( options.x, null );
 	const py = g_utils.getInt( options.y, null );
 	if( px === null || py === null ) {
@@ -103,14 +107,17 @@ function getPixelAsync( screenData, options ) {
 	if( resolved === null ) {
 		const empty = g_utils.rgbToColor( 0, 0, 0, 0 );
 		if( asIndex ) {
-			return Promise.resolve(
-				g_colors.findColorIndexByColorValue( screenData, empty )
-			);
+			return Promise.resolve( g_colors.findColorIndexByColorValue( screenData, empty ) );
 		}
 		return Promise.resolve( empty );
 	}
 	return g_renderer.readPixelAsync( screenData, resolved.x, resolved.y ).then( ( colorValue ) => {
 		g_screenManager.assertScreenAvailable( screenData );
+		if(
+			probeContextLoss( screenData ) || generation !== getContextGeneration( screenData )
+		) {
+			colorValue = g_utils.rgbToColor( 0, 0, 0, 0 );
+		}
 		if( asIndex ) {
 			return g_colors.findColorIndexByColorValue( screenData, colorValue );
 		}
@@ -165,6 +172,7 @@ function get( screenData, options ) {
  * @returns {Promise<Array>} Pixel rows; rejects with SCREEN_REMOVED on disposal
  */
 function getAsync( screenData, options ) {
+	const generation = getContextGeneration( screenData );
 	const pX = g_utils.getInt( options.x, null );
 	const pY = g_utils.getInt( options.y, null );
 	const pWidth = g_utils.getInt( options.width, null );
@@ -193,6 +201,11 @@ function getAsync( screenData, options ) {
 		screenData, region.x, region.y, region.width, region.height
 	).then( ( colors ) => {
 		g_screenManager.assertScreenAvailable( screenData );
+		if( probeContextLoss( screenData ) ||
+			generation !== getContextGeneration( screenData )
+		) {
+			colors = colors.map( row => row.map( () => g_utils.rgbToColor( 0, 0, 0, 0 ) ) );
+		}
 		return convertColorsToIndices( screenData, colors, region.width, asIndex, tolerance );
 	} );
 }
@@ -290,13 +303,22 @@ function filterImg( screenData, options ) {
 		return;
 	}
 
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
+	const generation = getContextGeneration( screenData );
+
 	// Queue filter operation to run at end of frame
 	g_utils.queueMicrotask( () => {
-		if( screenData.isRemoved ) {
+		if( screenData.isRemoved || isContextUnavailable( screenData ) ||
+			generation !== getContextGeneration( screenData )
+		) {
 			return;
 		}
 		g_utils.queueMicrotask( () => {
-			applyFilter( screenData, filter, phys.x, phys.y, phys.width, phys.height, viewSnap );
+			if( generation === getContextGeneration( screenData ) ) {
+				applyFilter( screenData, filter, phys.x, phys.y, phys.width, phys.height, viewSnap );
+			}
 		} );
 	} );
 }
@@ -314,7 +336,7 @@ function filterImg( screenData, options ) {
  * @returns {void}
  */
 function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
-	if( screenData.isRemoved ) {
+	if( screenData.isRemoved || isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -324,7 +346,7 @@ function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
 	// Read pixels as raw Uint8Array (bottom-left origin from WebGL)
 	const imageData = g_renderer.readPixelsRaw( screenData, x1, y1, width, height );
 
-	if( !imageData ) {
+	if( !imageData || isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -363,7 +385,11 @@ function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
 				// Call filter using the captured view's top-left coordinates.
 				const localX = ( x1 + x ) - viewSnap.originX;
 				const localY = ( y1 + y ) - viewSnap.originY;
-				if( filter( pixelData, localX, localY ) ) {
+				const keep = filter( pixelData, localX, localY );
+				if( screenData.isRemoved || isContextUnavailable( screenData ) ) {
+					return;
+				}
+				if( keep ) {
 
 					// These local buffers remain valid even if the callback removed the screen.
 					filteredData[ dstIndex     ] = pixelData[ 0 ];
@@ -385,7 +411,7 @@ function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
 	}
 
 	// A callback may have removed the screen; never upload to its disposed texture.
-	if( screenData.isRemoved ) {
+	if( screenData.isRemoved || isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -466,6 +492,9 @@ function putWrapper( screenData, data, x, y, include0 = false ) {
 
 // put: Hot path inner function. Assumes x/y are integers and data is a 2D array.
 function put( screenData, data, x, y, include0, startY, startX, width, height ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
 	
 	const endY = startY + height;
 	const endX = startX + width;

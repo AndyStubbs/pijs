@@ -50,6 +50,25 @@ main.removeScreen();
 Parented offscreen screens share context affinity only. Removing either screen does not remove the
 other. An invalid, deleted, or onscreen parent configuration throws `INVALID_SCREEN_PARENT`.
 
+### WebGL Context Recovery
+
+When a WebGL context is lost, all screens sharing it suspend rendering. Drawing and pending shader
+passes are discarded, and pixel reads return transparent pixels in their normal result shapes.
+Asynchronous reads settle normally; a read spanning context loss returns transparent pixels even if
+restoration completes before the read finishes. Removing a screen still rejects its pending reads.
+Deferred pixel filters from the lost context generation are canceled.
+
+On restoration, Pi.js rebuilds GPU resources for every surviving screen sharing the context before
+resuming rendering. Framebuffers start transparent. Screen settings, views, image sources, font
+selection, and shader handles remain available; persistent display shaders retain their settings.
+Images and font atlases upload again when needed. Framebuffer pixels and GPU-only edits, including
+custom glyph pixels, are not preserved. Applications should redraw their scene after restoration.
+
+Screen settings can change during loss. GPU-dependent validation of display-shader settings is
+deferred until restoration. Screens created in a lost shared context join its recovery; removed
+screens do not return. If resource rebuilding fails, the entire group remains suspended and Pi.js
+reports `WEBGL_CONTEXT_RESTORE_FAILED` to the console with the underlying cause.
+
 ### Screen Management
 
 - `setScreen( screen )`: Makes a screen object or ID active.

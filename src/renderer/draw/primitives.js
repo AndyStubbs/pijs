@@ -8,6 +8,8 @@
 
 "use strict";
 
+import { isContextUnavailable } from "../context-state.js";
+
 import * as g_batchHelpers from "./batch-helpers.js";
 import * as g_batches from "../batches.js";
 
@@ -21,9 +23,14 @@ import * as g_batches from "../batches.js";
  * @returns {void}
  */
 export function drawPixel( screenData, x, y, batchType ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
 
 	// Prep for 1 pixel
-	g_batches.prepareBatch( screenData, batchType, 1, null, null );
+	if( !g_batches.prepareBatch( screenData, batchType, 1, null, null ) ) {
+		return;
+	}
 
 	// Add directly to point batch
 	const batch = screenData.batches[ batchType ];
@@ -40,6 +47,9 @@ export function drawPixel( screenData, x, y, batchType ) {
  * @returns {void}
  */
 export function drawPixelUnsafe( screenData, x, y, color, batchType ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
 
 	// Add directly to point batch
 	const batch = screenData.batches[ batchType ];

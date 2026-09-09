@@ -9,6 +9,8 @@
 
 "use strict";
 
+import { isContextUnavailable, probeContextLoss } from "./context-state.js";
+
 import * as g_batches from "./batches.js";
 
 /**
@@ -25,6 +27,9 @@ import * as g_batches from "./batches.js";
  * @returns {void}
  */
 export function shiftImageUp( screenData, yOffset, x, y, width, height ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
 
 	if( yOffset <= 0 ) {
 		return;
@@ -52,6 +57,9 @@ export function shiftImageUp( screenData, yOffset, x, y, width, height ) {
 
 	// Ensure the latest content is in screenData.fboTexture
 	g_batches.flushBatches( screenData );
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
 
 	const remainH = regionH - yOffset;
 
@@ -121,6 +129,9 @@ export function shiftImageUp( screenData, yOffset, x, y, width, height ) {
  * @returns {void}
  */
 export function cls( screenData, x, y, width, height ) {
+	if( probeContextLoss( screenData ) ) {
+		return;
+	}
 
 	if( width <= 0 || height <= 0 ) {
 		return;
@@ -131,6 +142,9 @@ export function cls( screenData, x, y, width, height ) {
 		g_batches.resetBatches( screenData );
 	} else {
 		g_batches.flushBatches( screenData );
+	}
+	if( isContextUnavailable( screenData ) ) {
+		return;
 	}
 
 	const gl = screenData.gl;

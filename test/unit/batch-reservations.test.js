@@ -14,6 +14,9 @@ function loadModule( file, globals = {}, constants = [] ) {
 		.replace( /^import .*;\r?\n/gm, "" )
 		.replace( /^export \{.*\};\r?\n/gm, "" ).replace( /export /g, "" );
 	const context = vm.createContext( { "console": console, ...globals } );
+	vm.runInContext( fs.readFileSync(
+		path.join( __dirname, "../../src/renderer/context-state.js" ), "utf8"
+	).replace( /export /g, "" ), context );
 	vm.runInContext( source, context, { "filename": file } );
 	for( const name of constants ) {
 		context[ name ] = vm.runInContext( name, context );
@@ -155,13 +158,14 @@ test( "SYS-007 accumulated overflow flushes once and restores ordered texture se
 	assert.equal( screen.batchInfo.textureBatchSet.has( first ), false );
 } );
 
-test( "SYS-007 context loss prevents progress without recursive retry or queue corruption", () => {
+test( "SYS-008 suspended reservations neither throw nor change queued state", () => {
 	const { batches, screen } = createHarness();
 	batches.prepareBatch( screen, 0, 19 );
 	screen.batches[ 0 ].count = 19;
 	screen.contextLost = true;
 	const order = screen.batchInfo.drawOrder;
-	assert.throws( () => batches.prepareBatch( screen, 0, 1 ), /Flushing could not make room/ );
+	assert.doesNotThrow( () => batches.prepareBatch( screen, 0, 1 ) );
+	assert.equal( batches.prepareBatchChunk( screen, 0, 1 ), 0 );
 	assert.equal( screen.batches[ 0 ].count, 19 );
 	assert.equal( screen.batchInfo.drawOrder, order );
 	assert.equal( order.length, 1 );

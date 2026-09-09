@@ -42,6 +42,11 @@ export function init() {
  */
 export function compileShader( gl, type, source ) {
 	const shader = gl.createShader( type );
+	if( !shader ) {
+		const error = new Error( "screen: Failed to allocate shader." );
+		error.code = "WEBGL_ERROR";
+		throw error;
+	}
 	gl.shaderSource( shader, source );
 	gl.compileShader( shader );
 	
@@ -80,6 +85,11 @@ export function createShaderProgram( gl, vertexSrc, fragSrc, cmdName = "screen" 
 		}
 
 		program = gl.createProgram();
+		if( !program ) {
+			const error = new Error( `${cmdName}: Failed to allocate shader program.` );
+			error.code = "WEBGL_ERROR";
+			throw error;
+		}
 		gl.attachShader( program, vertexShader );
 		gl.attachShader( program, fragmentShader );
 		gl.linkProgram( program );
@@ -132,8 +142,6 @@ export function setupDisplayShader( screenData ) {
 	// Create vertex buffer
 	const positionBuffer = gl.createBuffer();
 	screenData.displayPositionBuffer = positionBuffer;
-	gl.bindBuffer( gl.ARRAY_BUFFER, positionBuffer );
-	gl.bufferData( gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW );
 	
 	// Get attribute/uniform locations
 	const positionLoc = gl.getAttribLocation( program, "a_position" );
@@ -149,6 +157,7 @@ export function setupDisplayShader( screenData ) {
 	}
 	gl.bindVertexArray( quadVao );
 	gl.bindBuffer( gl.ARRAY_BUFFER, positionBuffer );
+	gl.bufferData( gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW );
 	gl.enableVertexAttribArray( positionLoc );
 	gl.vertexAttribPointer( positionLoc, 2, gl.FLOAT, false, 0, 0 );
 	gl.bindVertexArray( null );

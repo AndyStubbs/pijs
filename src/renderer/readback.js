@@ -8,6 +8,8 @@
 
 "use strict";
 
+import { isContextUnavailable, getContextGeneration } from "./context-state.js";
+
 // Import required modules
 import { unpremultiplyPixels } from "./alpha.js";
 import * as g_batches from "./batches.js";
@@ -35,12 +37,22 @@ export function init() {
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
+ * @param {number} [generation] - Generation captured by a deferred read
  * @returns {Object|null} Color object with r, g, b, a or null on error
  */
-export function readPixel( screenData, x, y ) {
+export function readPixel( screenData, x, y, generation = getContextGeneration( screenData ) ) {
+	if( isContextUnavailable( screenData ) ||
+		generation !== getContextGeneration( screenData )
+	) {
+		return g_utils.rgbToColor( 0, 0, 0, 0 );
+	}
+
 
 	// Ensure latest contents are in the FBO
 	g_batches.flushBatches( screenData );
+	if( isContextUnavailable( screenData ) ) {
+		return g_utils.rgbToColor( 0, 0, 0, 0 );
+	}
 
 	const gl = screenData.gl;
 	const screenHeight = screenData.height;
@@ -66,6 +78,7 @@ export function readPixel( screenData, x, y ) {
  * @returns {Promise<Object|null>} Resolves to a color; rejects with SCREEN_REMOVED on disposal
  */
 export function readPixelAsync( screenData, x, y ) {
+	const generation = getContextGeneration( screenData );
 
 	// TODO-LATER: Instead of queueing a microtask make this a part of the batch system, that way 
 	// the user will get a result that reflects the state of the FBO when they make the call rather
@@ -76,7 +89,7 @@ export function readPixelAsync( screenData, x, y ) {
 		g_utils.queueMicrotask( () => {
 			try {
 				g_screenManager.assertScreenAvailable( screenData );
-				resolve( readPixel( screenData, x, y ) );
+				resolve( readPixel( screenData, x, y, generation ) );
 			} catch( error ) {
 				reject( error );
 			}
@@ -92,9 +105,12 @@ export function readPixelAsync( screenData, x, y ) {
  * @param {number} y - Y coordinate
  * @param {number} width - Rectangle width
  * @param {number} height - Rectangle height
+ * @param {number} [generation] - Generation captured by a deferred read
  * @returns {Array<Array<Object>>} 2D array of color objects [height][width]
  */
-export function readPixels( screenData, x, y, width, height ) {
+export function readPixels(
+	screenData, x, y, width, height, generation = getContextGeneration( screenData )
+) {
 	const gl = screenData.gl;
 	const screenWidth = screenData.width;
 	const screenHeight = screenData.height;
@@ -110,9 +126,6 @@ export function readPixels( screenData, x, y, width, height ) {
 		return [];
 	}
 
-	// Flush batches before reading
-	g_batches.flushBatches( screenData );
-
 	// Allocate buffer for the exact rectangle to read
 	const buf = new Uint8Array( clampedWidth * clampedHeight * 4 );
 
@@ -121,9 +134,19 @@ export function readPixels( screenData, x, y, width, height ) {
 	// Bottom-left corner Y of the rectangle
 	const glReadY = ( screenHeight - ( clampedY + clampedHeight ) );
 
-	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
-	gl.readPixels( clampedX, glReadY, clampedWidth, clampedHeight, gl.RGBA, gl.UNSIGNED_BYTE, buf );
-	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+	if(
+		!isContextUnavailable( screenData ) &&
+		generation === getContextGeneration( screenData )
+	) {
+		g_batches.flushBatches( screenData );
+		if( !isContextUnavailable( screenData ) ) {
+			gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
+			gl.readPixels(
+				clampedX, glReadY, clampedWidth, clampedHeight, gl.RGBA, gl.UNSIGNED_BYTE, buf
+			);
+			gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+		}
+	}
 
 	unpremultiplyPixels( buf );
 
@@ -161,11 +184,12 @@ export function readPixels( screenData, x, y, width, height ) {
  * @returns {Promise<Array<Array<Object>>>} Resolves to colors; rejects on disposal or read failure
  */
 export function readPixelsAsync( screenData, x, y, width, height ) {
+	const generation = getContextGeneration( screenData );
 	return new Promise( ( resolve, reject ) => {
 		g_utils.queueMicrotask( () => {
 			try {
 				g_screenManager.assertScreenAvailable( screenData );
-				resolve( readPixels( screenData, x, y, width, height ) );
+				resolve( readPixels( screenData, x, y, width, height, generation ) );
 			} catch( error ) {
 				reject( error );
 			}
@@ -213,11 +237,12 @@ export function readPixelsRaw( screenData, x, y, width, height ) {
 	// Bottom-left corner Y of the rectangle
 	const glReadY = ( screenHeight - ( clampedY + clampedHeight ) );
 
-	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
-	gl.readPixels( clampedX, glReadY, clampedWidth, clampedHeight, gl.RGBA, gl.UNSIGNED_BYTE, buf );
-	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+	if( !isContextUnavailable( screenData ) ) {
+		gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
+		gl.readPixels( clampedX, glReadY, clampedWidth, clampedHeight, gl.RGBA, gl.UNSIGNED_BYTE, buf );
+		gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+	}
 
 	// Return raw WebGL data (bottom-left origin) - flipping will be done in applyFilter
 	return buf;
 }
-

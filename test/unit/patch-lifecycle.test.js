@@ -12,6 +12,9 @@ function loadModule( file, globals = {} ) {
 		.replace( /^import .*;\r?\n/gm, "" )
 		.replace( /^export \{.*\};\r?\n/gm, "" ).replace( /export /g, "" );
 	const context = vm.createContext( { "console": console, ...globals } );
+	vm.runInContext( fs.readFileSync(
+		path.join( __dirname, "../../src/renderer/context-state.js" ), "utf8"
+	).replace( /export /g, "" ), context );
 	vm.runInContext( source, context, { "filename": file } );
 	return context;
 }
@@ -121,6 +124,40 @@ for( const command of [ "getPixelAsync", "getAsync" ] ) {
 		await rejected;
 	} );
 }
+
+for( const command of [ "getPixelAsync", "getAsync" ] ) {
+	for( const afterRead of [ false, true ] ) {
+		test( `SYS-008 ${command} discards old-generation reads afterRead=${afterRead}`, async () => {
+			const { pixels, screen, microtasks, calls } = createPixelHarness();
+			const promise = pixels[ command ]( screen, {
+				"x": 0, "y": 0, "width": 2, "height": 2, "asIndex": false
+			} );
+			if( afterRead ) {
+				microtasks.shift()();
+			}
+			// Simulate restoration before queued work or its conversion continuation executes.
+			screen.contextGeneration = 1;
+			while( microtasks.length ) { microtasks.shift()(); }
+			const result = await promise;
+			let colors = [ result ];
+			if( command === "getAsync" ) { colors = result.flat(); }
+			assert.ok( colors.every( color => color.r === 0 && color.a === 0 ) );
+			assert.equal( calls.read, Number( afterRead ) );
+		} );
+	}
+}
+
+test( "SYS-008 filters queued before restoration never touch the new generation", () => {
+	const { pixels, screen, microtasks, calls } = createPixelHarness();
+	let callbacks = 0;
+	pixels.filterImg( screen, { "filter": () => { callbacks++; return true; } } );
+	microtasks.shift()();
+	screen.contextGeneration = 1;
+	while( microtasks.length ) { microtasks.shift()(); }
+	assert.equal( callbacks, 0 );
+	assert.equal( calls.read, 0 );
+	assert.equal( calls.upload, 0 );
+} );
 
 for( const timing of [ "immediate", "between microtasks", "inside callback", "live" ] ) {
 	test( "SYS-005 filter lifetime: " + timing, () => {

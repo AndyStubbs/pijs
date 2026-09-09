@@ -12,6 +12,7 @@ import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_images from "./images.js";
+import { probeContextLoss } from "../renderer/context-state.js";
 
 /** Next id for shader handles */
 let m_nextShaderId = 0;
@@ -292,7 +293,12 @@ function validateUniformMap( uniforms, cmdName ) {
 function resolveSamplerSource( screenData, input, cmdName ) {
 	let source;
 	try {
-		source = g_images.getImageFromRawInput( input, cmdName );
+		if( g_screenManager.screenCanvasMap.has( input ) ) {
+			// Persistent bindings retain the internal canvas of an offscreen screen.
+			source = input;
+		} else {
+			source = g_images.getImageFromRawInput( input, cmdName );
+		}
 	} catch( error ) {
 		if( error.code === "INVALID_NAME" ) {
 			const uniformError = new TypeError( `${cmdName}: Invalid sampler2D image input.` );
@@ -380,6 +386,10 @@ function invalidateDisplayShaderScreenSource( sourceData ) {
 			screenData.displayShaderUniformBindings ?? {}
 		).some( ( binding ) => {
 			return binding.info.family === "sampler" && binding.sources.includes( source );
+		} ) || Object.values( screenData.displayShaderUniforms ?? {} ).some( value => {
+			// Retained CPU sources remain available while GPU bindings are invalidated.
+			return value === source || value === sourceData.api ||
+				( Array.isArray( value ) && value.includes( source ) );
 		} );
 		if( usesSource ) {
 			clearDisplayShader( screenData );
@@ -399,6 +409,9 @@ function invalidateDisplayShaderScreenSource( sourceData ) {
 function applyShader( screenData, options ) {
 	const handle = getShaderHandle( options.shaderHandle );
 	validateUniformMap( options.uniforms, "applyShader" );
+	if( probeContextLoss( screenData ) ) {
+		return;
+	}
 	const overrides = copyUniforms( options.uniforms );
 	const merged = mergeUniforms( handle.uniforms, overrides );
 	const cache = g_renderer.validateCustomShaderProgram( screenData, handle, "applyShader" );
@@ -425,6 +438,16 @@ function setDisplayShader( screenData, options ) {
 	validateUniformMap( options.uniforms, "setDisplayShader" );
 
 	const handle = getShaderHandle( options.shaderHandle, "setDisplayShader" );
+	if( probeContextLoss( screenData ) ) {
+		screenData.displayShaderHandle = handle;
+		screenData.displayShaderUniforms = copyUniforms(
+			mergeUniforms( handle.uniforms, options.uniforms )
+		);
+		screenData.displayShaderUniformBindings = {};
+		screenData.renderToDisplaySize = !screenData.isOffscreen;
+		g_screenManager.refreshScreenSize( screenData, true );
+		return;
+	}
 	const cache = g_renderer.validateCustomShaderProgram(
 		screenData, handle, "setDisplayShader"
 	);
@@ -455,6 +478,10 @@ function setDisplayShaderUniforms( screenData, options ) {
 	validateUniformMap( incoming, "setDisplayShaderUniforms" );
 
 	const values = mergeUniforms( screenData.displayShaderUniforms, incoming );
+	if( probeContextLoss( screenData ) ) {
+		screenData.displayShaderUniforms = copyUniforms( values );
+		return;
+	}
 	let bindings = screenData.displayShaderUniformBindings;
 	if( screenData.displayShaderHandle ) {
 		const cache = g_renderer.validateCustomShaderProgram(
@@ -471,4 +498,28 @@ function setDisplayShaderUniforms( screenData, options ) {
 	if( screenData.displayShaderHandle ) {
 		g_screenManager.presentCurrentScreen( screenData );
 	}
+}
+
+/**
+ * Recompile persistent presentation and reflect bindings after all context members are rebuilt.
+ * @param {Object} screenData - Screen data
+ * @returns {void}
+ */
+export function restoreDisplayShaderBindings( screenData ) {
+	if( !screenData.displayShaderHandle ) {
+		return;
+	}
+	const cache = g_renderer.validateCustomShaderProgram(
+		screenData, screenData.displayShaderHandle, "setDisplayShader"
+	);
+	const bindings = normalizeUniforms(
+		screenData, cache, screenData.displayShaderUniforms, "setDisplayShader"
+	);
+	screenData.displayShaderUniforms = retainSamplerSources(
+		screenData.displayShaderUniforms, bindings
+	);
+	screenData.displayShaderUniformBindings = bindings;
+	screenData.displayShaderTextureResolver = source => {
+		return g_renderer.getSamplerTexture( screenData, source );
+	};
 }

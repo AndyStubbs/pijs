@@ -10,6 +10,8 @@
 
 "use strict";
 
+import { isContextUnavailable } from "../context-state.js";
+
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
 
@@ -25,6 +27,10 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @returns {void}
  */
 export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
+
 	const color = screenData.color;
 	const writePoint = g_batchHelpers.createPointWriter( screenData, g_batches.POINTS_BATCH );
 
@@ -220,6 +226,9 @@ export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 					remaining = g_batches.prepareBatchChunk(
 						screenData, g_batches.GEOMETRY_BATCH, undefined, 6
 					);
+					if( remaining === 0 ) {
+						return;
+					}
 				}
 				remaining -= 6;
 

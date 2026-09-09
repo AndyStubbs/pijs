@@ -23,6 +23,9 @@ function createHarness() {
 			path.join( __dirname, "../../src/renderer/draw", name + ".js" ), "utf8"
 		).replace( /^import .*;\r?\n/gm, "" ).replace( /export /g, "" );
 		const context = vm.createContext( { ...globals } );
+		vm.runInContext( fs.readFileSync(
+			path.join( __dirname, "../../src/renderer/context-state.js" ), "utf8"
+		).replace( /export /g, "" ), context );
 		vm.runInContext( source, context );
 		return context;
 	}

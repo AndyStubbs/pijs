@@ -11,6 +11,8 @@
 
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
+import * as g_postfx from "../api/postfx.js";
+import { isContextUnavailable, getContextGeneration, probeContextLoss } from "./context-state.js";
 
 // Import renderer modules
 import * as g_shaders from "./shaders.js";
@@ -73,6 +75,7 @@ export {
 
 const m_isDebug = window.location.search.includes( "webgl-debug" );
 let m_offscreenContext = null;
+const m_contexts = new WeakMap();
 
 /**
  * Initialize all renderer modules
@@ -84,6 +87,7 @@ export function init( api ) {
 
 	// Add screenData items
 	g_screenManager.addScreenDataItem( "contextLost", false );
+	g_screenManager.addScreenDataItem( "contextGeneration", 0 );
 	g_screenManager.addScreenDataItem( "isRenderScheduled", false );
 	g_screenManager.addScreenDataItem( "isFirstRender", true );
 	g_screenManager.addScreenDataItem( "gl", null );
@@ -114,8 +118,6 @@ export function init( api ) {
 export function createContext( screenData ) {
 
 	let canvas = screenData.canvas;
-	const width = screenData.width;
-	const height = screenData.height;
 	
 	if( screenData.parentRenderContext ) {
 		canvas = screenData.canvas.canvas;
@@ -151,54 +153,124 @@ export function createContext( screenData ) {
 		throw error;
 	}
 
-	// Setup viewport
-	screenData.gl.viewport( 0, 0, width, height );
-	
-	// Create texture and FBO
-	const fboAndTexture = createTextureAndFBO( screenData );
-	screenData.fboTexture = fboAndTexture.fboTexture;
-	screenData.FBO = fboAndTexture.FBO;
-	
-	// Create a buffer texture and FBO
-	const bufferFboAndTexture = createTextureAndFBO( screenData );
-	screenData.bufferFboTexture = bufferFboAndTexture.fboTexture;
-	screenData.bufferFBO = bufferFboAndTexture.FBO;
-
-	// Create all the batches
-	g_batches.createBatches( screenData );
-
-	// Setup display shader
-	g_shaders.setupDisplayShader( screenData );
-
-	// Enable WebGL debugging extensions
-	if( m_isDebug) {
-		const debugExt = screenData.gl.getExtension( "WEBGL_debug_renderer_info" );
+	const gl = screenData.gl;
+	let state = m_contexts.get( gl );
+	if( !state ) {
+		state = {
+			"gl": gl, "canvas": gl.canvas, "generation": 0, "status": "ready",
+			"screens": new Set(), "error": null
+		};
+		state.suspend = () => suspendContext( state );
+		state.lostHandler = event => {
+			event.preventDefault();
+			state.suspend();
+		};
+		state.restoredHandler = () => restoreContext( state );
+		state.canvas.addEventListener( "webglcontextlost", state.lostHandler );
+		state.canvas.addEventListener( "webglcontextrestored", state.restoredHandler );
+		m_contexts.set( gl, state );
+	}
+	state.screens.add( screenData );
+	screenData.contextState = state;
+	screenData.contextGeneration = state.generation;
+	screenData.contextLost = state.status !== "ready";
+	if( probeContextLoss( screenData ) ) {
+		return;
+	}
+	createResources( screenData );
+	if( m_isDebug ) {
+		const debugExt = gl.getExtension( "WEBGL_debug_renderer_info" );
 		if( debugExt ) {
-			console.log( "GPU:", screenData.gl.getParameter( debugExt.UNMASKED_RENDERER_WEBGL ) );
+			console.log( "GPU:", gl.getParameter( debugExt.UNMASKED_RENDERER_WEBGL ) );
 		}
 	}
-	
-	// Track if webglcontext gets lost
-	screenData.contextCanvas = canvas;
-	screenData.contextLostHandler = ( e ) => {
-		e.preventDefault();
-		console.warn( "WebGL context lost" );
-		screenData.contextLost = true;
-	};
-	canvas.addEventListener( "webglcontextlost", screenData.contextLostHandler );
-	
-	// Reinit canvas when webglcontext gets restored
-	screenData.contextRestoredHandler = () => {
-		console.log( "WebGL context restored" );
+}
 
-		// TODO-LATER: Reinitialize WebGL resources
-		// initWebGL( screenData );
-		screenData.contextLost = false;
+/** Create a screen's GPU resources without rerunning its logical initialization. */
+function createResources( screenData ) {
+	const gl = screenData.gl;
+	gl.viewport( 0, 0, screenData.width, screenData.height );
+	const primary = createTextureAndFBO( screenData );
+	screenData.FBO = primary.FBO;
+	screenData.fboTexture = primary.fboTexture;
+	const buffer = createTextureAndFBO( screenData );
+	screenData.bufferFBO = buffer.FBO;
+	screenData.bufferFboTexture = buffer.fboTexture;
+	g_batches.createBatches( screenData );
+	g_shaders.setupDisplayShader( screenData );
+}
 
-		// TODO-LATER: Reset blend mode
-		// blendModeChanged( screenData );
+/** Forget objects whose storage was destroyed by the browser; never delete stale handles. */
+function discardResources( screenData ) {
+	screenData.isRenderScheduled = false;
+	screenData.isFirstRender = true;
+	screenData.batches = {};
+	screenData.batchInfo = {
+		"currentBatch": null, "drawOrder": [], "textureBatchSet": new Set()
 	};
-	canvas.addEventListener( "webglcontextrestored", screenData.contextRestoredHandler );
+	screenData.customShaders = {};
+	screenData.displayShaderUniformBindings = {};
+	screenData.imageContextMap = new Map();
+	screenData.samplerContextMap = new Map();
+	for( const key of [ "FBO", "fboTexture", "bufferFBO", "bufferFboTexture",
+		"displayProgram", "displayPositionBuffer", "displayQuadVao", "displayLocations",
+		"textureCopyFBO" ] ) {
+		screenData[ key ] = null;
+	}
+}
+
+/** Suspend all members exactly once for a browser loss, including loss observed before its event. */
+function suspendContext( state ) {
+	if( state.status === "lost" ) {
+		return;
+	}
+	state.status = "lost";
+	state.generation++;
+	state.error = null;
+	for( const screen of state.screens ) {
+		screen.contextLost = true;
+		screen.contextGeneration = state.generation;
+		discardResources( screen );
+	}
+}
+
+/** Rebuild the whole generation before allowing any member to render. */
+function restoreContext( state ) {
+	if( state.status !== "lost" || state.gl.isContextLost() ) {
+		return;
+	}
+	state.status = "restoring";
+	try {
+		for( const screen of state.screens ) {
+			createResources( screen );
+		}
+		for( const screen of state.screens ) {
+			g_postfx.restoreDisplayShaderBindings( screen );
+			for( const other of g_screenManager.getAllScreensData() ) {
+				if( other.gl !== state.gl ) {
+					g_textures.deleteWebGL2Texture( other, screen.canvas );
+				}
+			}
+		}
+		state.status = "ready";
+		for( const screen of state.screens ) {
+			screen.contextLost = false;
+		}
+		for( const screen of state.screens ) {
+			setImageDirty( screen );
+		}
+	} catch( cause ) {
+		for( const screen of state.screens ) {
+			releaseResources( screen );
+			discardResources( screen );
+			screen.contextLost = true;
+		}
+		state.status = "failed";
+		const error = new Error( "WebGL context resource recovery failed.", { "cause": cause } );
+		error.code = "WEBGL_CONTEXT_RESTORE_FAILED";
+		state.error = error;
+		console.error( error.code, error );
+	}
 }
 
 /**
@@ -278,18 +350,22 @@ function createTextureAndFBO( screenData ) {
  * @returns {void}
  */
 export function cleanup( screenData ) {
-	const gl = screenData.gl;
-	if( screenData.contextCanvas ) {
-		screenData.contextCanvas.removeEventListener(
-			"webglcontextlost", screenData.contextLostHandler
-		);
-		screenData.contextCanvas.removeEventListener(
-			"webglcontextrestored", screenData.contextRestoredHandler
-		);
-		screenData.contextCanvas = null;
-		screenData.contextLostHandler = null;
-		screenData.contextRestoredHandler = null;
+	const state = screenData.contextState;
+	if( state ) {
+		state.screens.delete( screenData );
+		if( state.screens.size === 0 ) {
+			state.canvas.removeEventListener( "webglcontextlost", state.lostHandler );
+			state.canvas.removeEventListener( "webglcontextrestored", state.restoredHandler );
+			m_contexts.delete( state.gl );
+		}
+		screenData.contextState = null;
 	}
+	releaseResources( screenData );
+}
+
+/** Release only currently owned GPU objects, including partially constructed resources. */
+function releaseResources( screenData ) {
+	const gl = screenData.gl;
 	if( !gl ) {
 		return;
 	}
@@ -326,7 +402,7 @@ export function cleanup( screenData ) {
 		gl.deleteTexture( screenData.fboTexture );
 	}
 
-	// Cleanup Buffe FBO
+	// Cleanup buffer FBO
 	if( screenData.bufferFBO ) {
 		gl.deleteFramebuffer( screenData.bufferFBO );
 		gl.deleteTexture( screenData.bufferFboTexture );
@@ -339,6 +415,9 @@ export function cleanup( screenData ) {
  * @returns {void}
  */
 export function setImageDirty( screenData ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
 	// Parent-affiliated offscreen screens never present to a canvas. Their FBO is flushed lazily
 	// when another screen composites it or a readback operation needs its pixels.
 	if( screenData.isOffscreen && screenData.parentRenderContext ) {
@@ -346,11 +425,15 @@ export function setImageDirty( screenData ) {
 	}
 
 	if( !screenData.isRenderScheduled ) {
+		const generation = getContextGeneration( screenData );
 		screenData.isRenderScheduled = true;
 		g_utils.queueMicrotask( () => {
 			
 			// Make sure render hasn't been cancelled
-			if( !screenData.isRenderScheduled ) {
+			if( !screenData.isRenderScheduled || screenData.isRemoved ||
+				generation !== getContextGeneration( screenData ) ||
+				isContextUnavailable( screenData )
+			) {
 				return;
 			}
 			try {
@@ -377,9 +460,15 @@ export function blendModeChanged( screenData, previousBlends ) {
 }
 
 export function resizeScreen( screenData, oldWidth, oldHeight ) {
+	if( probeContextLoss( screenData ) ) {
+		return;
+	}
 
 	// Finish rendering to the FBO before resizing
 	g_batches.flushBatches( screenData );
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
 
 	const gl = screenData.gl;
 	const newWidth = screenData.width;

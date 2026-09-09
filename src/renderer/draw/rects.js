@@ -10,6 +10,8 @@
 
 "use strict";
 
+import { isContextUnavailable } from "../context-state.js";
+
 // Import required modules
 import { drawLine } from "./lines.js";
 import { GEOMETRY_BATCH  } from "../renderer.js";
@@ -32,6 +34,10 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @returns {void}
  */
 export function drawRect( screenData, x, y, width, height ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
+
 	const x2 = x + width - 1;
 	const y2 = y + height - 1;
 	const color = screenData.color;
@@ -70,12 +76,17 @@ export function drawRect( screenData, x, y, width, height ) {
  * @returns {void}
  */
 export function drawRectFilled( screenData, x, y, width, height, color ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
 
 	// Get geometry batch
 	const batch = screenData.batches[ GEOMETRY_BATCH ];
 
 	// Prepare batch for 6 vertices (2 triangles)
-	g_batches.prepareBatch( screenData, GEOMETRY_BATCH, 6 );
+	if( !g_batches.prepareBatch( screenData, GEOMETRY_BATCH, 6 ) ) {
+		return;
+	}
 
 	const x1 = x;
 	const y1 = y;

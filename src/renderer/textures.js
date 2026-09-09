@@ -8,6 +8,8 @@
 
 "use strict";
 
+import { isContextUnavailable, probeContextLoss } from "./context-state.js";
+
 import { premultiplyPixels } from "./alpha.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_batches from "./batches.js";
@@ -78,6 +80,12 @@ function copyImageToTexture( screenData, img, texture ) {
 
 function uploadImageToTexture( screenData, img, texture ) {
 	const gl = screenData.gl;
+	const sourceScreen = g_screenManager.screenCanvasMap.get( img );
+	if( sourceScreen && probeContextLoss( sourceScreen ) ) {
+		gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA8, img.width, img.height, 0,
+			gl.RGBA, gl.UNSIGNED_BYTE, null );
+		return;
+	}
 	
 	// If img is a mock canvas, copy from the FBO instead of the mock canvas
 	if( img.isMock ) {
@@ -181,6 +189,10 @@ function uploadImageToTexture( screenData, img, texture ) {
  * @returns {WebGLTexture|null} WebGL texture or null on error
  */
 export function getWebGL2Texture( screenData, img ) {
+	if( probeContextLoss( screenData ) ) {
+		return null;
+	}
+
 	const gl = screenData.gl;
 	const activeTexture = gl.getParameter( gl.ACTIVE_TEXTURE );
 	const texture = gl.getParameter( gl.TEXTURE_BINDING_2D );
@@ -213,6 +225,9 @@ function resolveWebGL2Texture( screenData, img ) {
 		// Make sure the other screen is up to date
 		g_batches.flushBatches( otherScreenData );
 		g_batches.displayToCanvas( otherScreenData );
+	}
+	if( isContextUnavailable( screenData ) ) {
+		return null;
 	}
 
 	// Check if texture already exists for this screen's context
@@ -250,6 +265,9 @@ function resolveWebGL2Texture( screenData, img ) {
 			// the texture will appear as it was when the draw command was issued
 			if( screenData.batchInfo.textureBatchSet.has( texture ) ) {
 				g_batches.flushBatches( screenData );
+				if( isContextUnavailable( screenData ) ) {
+					return null;
+				}
 			}
 
 			// Copy the content of the source canvas to the texture
@@ -331,8 +349,15 @@ export function getTextureDrawInfo( screenData, img ) {
  * @returns {WebGLTexture} Sampler-oriented texture
  */
 export function getSamplerTexture( screenData, img ) {
+	if( isContextUnavailable( screenData ) ) {
+		return null;
+	}
+
 	const gl = screenData.gl;
 	const source = getWebGL2Texture( screenData, img );
+	if( !source ) {
+		return null;
+	}
 	const size = m_textureSizes.get( source );
 	let contexts = screenData.samplerContextMap.get( img );
 	let entry = contexts?.get( gl );
@@ -341,6 +366,9 @@ export function getSamplerTexture( screenData, img ) {
 	}
 	if( entry && screenData.batchInfo.textureBatchSet.has( entry.texture ) ) {
 		g_batches.flushBatches( screenData );
+		if( isContextUnavailable( screenData ) ) {
+			return null;
+		}
 	}
 	const read = gl.getParameter( gl.READ_FRAMEBUFFER_BINDING );
 	const draw = gl.getParameter( gl.DRAW_FRAMEBUFFER_BINDING );
@@ -486,6 +514,9 @@ export function deleteWebGL2Texture( screenData, img ) {
 export function updateWebGL2TextureSubImage(
 	screenData, imgKey, pixelData, width, height, dstX, dstY
 ) {
+	if( probeContextLoss( screenData ) ) {
+		return null;
+	}
 
 	if( !screenData.gl ) {
 		return null;
@@ -510,6 +541,9 @@ export function updateWebGL2TextureSubImage(
 	// the texture will appear as it was when the draw command was issued
 	if( screenData.batchInfo.textureBatchSet.has( texture ) ) {
 		g_batches.flushBatches( screenData );
+	}
+	if( isContextUnavailable( screenData ) ) {
+		return null;
 	}
 
 	gl.bindTexture( gl.TEXTURE_2D, texture );
@@ -553,7 +587,7 @@ export function cleanup( screenData ) {
 	}
 
 	// Delete all textures in the imageContextMap for this screen but keep the image 
-	for( const img of screenData.imageContextMap.keys() ) {
+	for( const img of screenData.imageContextMap?.keys() ?? [] ) {
 		const screenMap = screenData.imageContextMap.get( img );
 		const texture = screenMap.get( gl );
 		if( texture ) {

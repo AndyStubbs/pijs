@@ -9,6 +9,7 @@
 
 "use strict";
 
+import { isContextUnavailable } from "../context-state.js";
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
 
@@ -309,6 +310,9 @@ function getCachedGeometry( cacheType, unit ) {
  * @returns {void}
  */
 export function drawCachedGeometry( screenData, cacheType, unit, x, y, color ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
 
 	// Get cached geometry
 	const geometry = getCachedGeometry( cacheType, unit );
@@ -324,6 +328,9 @@ export function drawCachedGeometry( screenData, cacheType, unit, x, y, color ) {
 			remaining = g_batches.prepareBatchChunk(
 				screenData, g_batches.GEOMETRY_BATCH, geometry.vertexCount - i, 3
 			);
+			if( remaining === 0 ) {
+				return;
+			}
 		}
 		remaining--;
 
@@ -332,4 +339,3 @@ export function drawCachedGeometry( screenData, cacheType, unit, x, y, color ) {
 		g_batchHelpers.addVertexToBatch( batch, vx, vy, color );
 	}
 }
-

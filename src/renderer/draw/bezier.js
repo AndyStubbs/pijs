@@ -10,6 +10,8 @@
 
 "use strict";
 
+import { isContextUnavailable } from "../context-state.js";
+
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
 
@@ -30,6 +32,10 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @returns {void}
  */
 export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
+
 	const color = screenData.color;
 	const writePoint = g_batchHelpers.createPointWriter( screenData, g_batches.POINTS_BATCH );
 

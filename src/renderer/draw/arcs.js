@@ -10,6 +10,8 @@
 
 "use strict";
 
+import { isContextUnavailable } from "../context-state.js";
+
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
 import * as g_circles from "./circles.js";
@@ -29,6 +31,10 @@ const FULL_CIRCLE_EPSILON = 0.0001;
  * @returns {void}
  */
 export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
+
 	const color = screenData.color;
 	const rawSpan = angle2 - angle1;
 

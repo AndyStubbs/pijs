@@ -10,6 +10,8 @@
 
 "use strict";
 
+import { isContextUnavailable } from "../context-state.js";
+
 import * as g_batches from "../batches.js";
 import * as g_geometry from "./geometry.js";
 import { createPointWriter } from "./batch-helpers.js";
@@ -25,6 +27,10 @@ import { createPointWriter } from "./batch-helpers.js";
  * @returns {void}
  */
 export function drawCircle( screenData, cx, cy, radius ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
+
 	const color = screenData.color;
 	const writePoint = createPointWriter( screenData, g_batches.POINTS_BATCH );
 
@@ -110,6 +116,9 @@ export function drawCircle( screenData, cx, cy, radius ) {
  * @returns {void}
  */
 export function drawCircleFilled( screenData, cx, cy, radius, color ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
 
 	// Apply input adjustments for MCA consistency
 	return g_geometry.drawCachedGeometry(

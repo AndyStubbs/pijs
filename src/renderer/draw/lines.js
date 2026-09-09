@@ -10,6 +10,8 @@
 
 "use strict";
 
+import { isContextUnavailable } from "../context-state.js";
+
 // Import required modules
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
@@ -30,6 +32,10 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @returns {void}
  */
 export function drawLine( screenData, x1, y1, x2, y2 ) {
+	if( isContextUnavailable( screenData ) ) {
+		return;
+	}
+
 	const color = screenData.color;
 
 	// Distances used by Bresenham's algorithm

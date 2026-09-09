@@ -9,6 +9,8 @@
 
 "use strict";
 
+import { isContextUnavailable } from "../context-state.js";
+
 import * as g_batches from "../batches.js";
 
 /**
@@ -20,11 +22,18 @@ import * as g_batches from "../batches.js";
  * @returns {Function} Writer accepting local x, y and color
  */
 export function createPointWriter( screenData, batchType ) {
+	if( isContextUnavailable( screenData ) ) {
+		return () => {};
+	}
+
 	const batch = screenData.batches[ batchType ];
 	let remaining = 0;
 	return function( x, y, color ) {
 		if( remaining === 0 ) {
 			remaining = g_batches.prepareBatchChunk( screenData, batchType );
+			if( remaining === 0 ) {
+				return;
+			}
 		}
 		addVertexToBatch( batch, x, y, color );
 		remaining--;
@@ -190,4 +199,3 @@ export function tessellateCubicBezier( x0, y0, x1, y1, x2, y2, x3, y3, maxError 
 	subdivide( x0, y0, x1, y1, x2, y2, x3, y3, 0 );
 	return out;
 }
-

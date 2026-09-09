@@ -351,6 +351,43 @@ Browser logs identified stale framebuffer/program/uniform/buffer objects.
 recovery is deferred, expose a deterministic failure instead of silently resuming stale state.
 Preserving pre-loss pixels was not assumed or tested.
 
+**Resolution — context-generation recovery, 2026-09-09:** SYS-008 is resolved for the full and
+lite bundles. Context lifecycle listeners belong to the actual WebGL canvas and coordinate all
+surviving screens sharing that context. Loss discards queued work and GPU caches; restoration
+rebuilds framebuffer textures, framebuffers, batch/display programs, buffers, VAOs, and uniform
+locations before resuming the group. Persistent display shaders rebuild their reflected bindings,
+including retained offscreen sampler sources. Image and font textures upload lazily from their
+retained sources, and copies cached in independent contexts are invalidated.
+
+Drawing during loss is discarded without throwing. Reads return transparent pixels in their
+existing shapes, including asynchronous reads crossing generations. Deferred filters cannot write
+into a recovered generation. Logical settings remain available; shared screens can join, resize,
+or be removed during loss. Failed resource allocation releases partial resources and leaves the
+group suspended with a `WEBGL_CONTEXT_RESTORE_FAILED` console diagnostic. Pixel preservation,
+including GPU-only custom glyph edits, remains outside this task.
+
+Validation began with failing `WEBGL_lose_context` tests in both bundles, reproducing stale-object
+`INVALID_OPERATION` errors. The 48 recovery browser tests now pass with fresh in-memory bundles,
+covering framebuffer and canvas readback, repeated/shared recovery, independent contexts,
+membership changes, suspended calls, image/font uploads, geometry and blending, custom shaders,
+sampler copies, and injected failures allocating each GPU resource class. Five additional source
+tests cover deferred reads and filters crossing generations. `npm run test:patch` passes all 348
+tests. Existing rendering fixtures pass 11 approved-baseline comparisons; one full-only fixture is
+skipped for lite. No generated bundles, release artifacts, or approved screenshots were changed.
+
+**Performance refinement — 2026-09-09:** Drawing, reservation, scheduling, and generation checks
+read cached JavaScript state. Native context-loss probes run at GPU boundaries and asynchronous
+read completion. Reservations report cancellation when a forced flush detects loss, and their
+callers stop before touching discarded batch storage. Tests verify that queuing 1,000 pixels makes
+zero native loss queries, and that GPU operations detect loss before its event arrives. Forced-flush
+cancellation covers pixels, lines, pixel arrays, rectangles, cached geometry, ellipses, images, and
+sprites in both bundles.
+
+A local headless Chromium comparison of full bundles used 25 measured samples after five warmups,
+alternating the pre-optimization and optimized versions. Median CPU time issuing 100,000 `pset`
+calls fell from 8.3 ms to 6.0 ms (about 28%); 1,000 filled circles measured 4.7 ms and 4.5 ms.
+Flush and readback were excluded from those timings; these results do not measure end-to-end FPS.
+
 ### SYS-009 — P2 — Late plugins do not initialize existing screen state or screen APIs
 
 **Locations:** [plugins.js:310](C:/Docs/src/pijs/src/core/plugins.js:310),
