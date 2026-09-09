@@ -49,5 +49,6 @@ void main() {
 	}
 
 	vec4 finalColor = baseColor + pixelNoise;
-	fragColor = clamp(finalColor, 0.0, 1.0);
+	finalColor = clamp(finalColor, 0.0, 1.0);
+	fragColor = vec4(finalColor.rgb * finalColor.a, finalColor.a);
 }

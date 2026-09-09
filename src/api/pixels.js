@@ -9,6 +9,7 @@
 "use strict";
 
 // Imports
+import { unpremultiplyPixels } from "../renderer/alpha.js";
 import * as g_utils from "../core/utils.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_colors from "./colors.js";
@@ -326,6 +327,8 @@ function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
 	if( !imageData ) {
 		return;
 	}
+
+	unpremultiplyPixels( imageData );
 
 	const screenHeight = screenData.height;
 

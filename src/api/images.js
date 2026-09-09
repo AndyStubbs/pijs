@@ -8,6 +8,7 @@
 
 "use strict";
 
+import { unpremultiplyPixels } from "../renderer/alpha.js";
 import * as g_utils from "../core/utils.js";
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
@@ -667,6 +668,8 @@ function createCanvasFromScreenRegion( screenData, x, y, width, height ) {
 	const context = canvas.getContext( "2d" );
 
 	// Create ImageData for canvas (top-left origin)
+	unpremultiplyPixels( pixelData );
+
 	const imageData = context.createImageData( width, height );
 	const canvasData = imageData.data;
 

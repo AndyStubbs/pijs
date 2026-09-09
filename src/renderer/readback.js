@@ -9,6 +9,7 @@
 "use strict";
 
 // Import required modules
+import { unpremultiplyPixels } from "./alpha.js";
 import * as g_batches from "./batches.js";
 import * as g_utils from "../core/utils.js";
 import * as g_screenManager from "../core/screen-manager.js";
@@ -52,6 +53,7 @@ export function readPixel( screenData, x, y ) {
 	gl.readPixels( x, glY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf );
 	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
 
+	unpremultiplyPixels( buf );
 	return g_utils.rgbToColor( buf[ 0 ], buf[ 1 ], buf[ 2 ], buf[ 3 ] );
 }
 
@@ -123,6 +125,8 @@ export function readPixels( screenData, x, y, width, height ) {
 	gl.readPixels( clampedX, glReadY, clampedWidth, clampedHeight, gl.RGBA, gl.UNSIGNED_BYTE, buf );
 	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
 
+	unpremultiplyPixels( buf );
+
 	// Map back to output structure expected by api/pixels.js
 	// This function will return a flat array of color objects
 	const resultColors = new Array( clampedHeight );
@@ -171,7 +175,7 @@ export function readPixelsAsync( screenData, x, y, width, height ) {
 
 /**
  * Read pixel rectangle as raw Uint8Array (synchronous)
- * Returns RGBA data in a Uint8Array with WebGL bottom-left origin ordering.
+ * Returns premultiplied RGBA data in a Uint8Array with WebGL bottom-left origin ordering.
  * Format: [r0, g0, b0, a0, r1, g1, b1, a1, ...] where pixels are ordered
  * row by row from bottom to top, left to right (WebGL native format).
  * 

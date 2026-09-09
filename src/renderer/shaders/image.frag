@@ -13,8 +13,7 @@ void main() {
 	// Sample the color from the texture at the given texture coordinates
 	vec4 texColor = texture(u_texture, v_texCoord);
 
-	// Multiply the texture color by the vertex color (which can be used for tinting/alpha)
-	// If v_color is white (1,1,1,1), it will just use the texColor.
-	outColor = texColor * v_color;
+	// Textures are premultiplied; tint colors are straight RGBA.
+	outColor = vec4(texColor.rgb * v_color.rgb * v_color.a, texColor.a * v_color.a);
 }
 

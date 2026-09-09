@@ -3,13 +3,15 @@ category = "shaders"
 isScreen = false
 summary = "Creates a custom fragment shader and returns a handle."
 description = """
+Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. Keep RGB between zero and alpha, with zero RGB at zero alpha. For opacity, multiply all four channels; for inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+
 Creates a screen-independent shader from GLSL ES 3.00 fragment source. The vertex stage is built-in (fullscreen quad, v_texCoord). The WebGL program is compiled and validated synchronously the first time it is passed to applyShader or setDisplayShader for each screen, then cached for that screen.
 
 The fragment source must include "#version 300 es". When first applied to a screen, the shader must declare uniform sampler2D u_texture. Invalid shaders throw synchronously without changing rendering state. Built-in uniforms, if declared: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2), u_time (float), u_frame (int).
 
 The second argument is an optional map of default custom uniform values. Values are interpreted from the linked GLSL declaration and may include float, integer, unsigned integer, boolean, vector, matrix, uniform-array, and sampler2D image inputs. Unknown and reserved built-in names are ignored.
 
-v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Remove any custom-map 1.0 - uv.y workaround used before this patch. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
+v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
 """
 example = """
 const invert = $.createShader( `#version 300 es
@@ -19,7 +21,7 @@ uniform sampler2D u_texture;
 out vec4 fragColor;
 void main() {
 	vec4 color = texture(u_texture, v_texCoord);
-	fragColor = vec4(1.0 - color.rgb, color.a);
+	fragColor = vec4(color.a - color.rgb, color.a);
 }` );
 
 $.screen( "320x200" );

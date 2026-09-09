@@ -125,7 +125,7 @@ export function createContext( screenData ) {
 		if( !m_offscreenContext ) {
 			m_offscreenContext = canvas.getContext( "webgl2", { 
 				"alpha": true, 
-				"premultipliedAlpha": false,
+				"premultipliedAlpha": true,
 				"antialias": false,
 				"preserveDrawingBuffer": true,
 				"desynchronized": false,
@@ -136,7 +136,7 @@ export function createContext( screenData ) {
 	} else {
 		screenData.gl = canvas.getContext( "webgl2", { 
 			"alpha": true, 
-			"premultipliedAlpha": false,
+			"premultipliedAlpha": true,
 			"antialias": false,
 			"preserveDrawingBuffer": true,
 			"desynchronized": false,

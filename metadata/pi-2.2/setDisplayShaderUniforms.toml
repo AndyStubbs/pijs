@@ -3,6 +3,8 @@ category = "shaders"
 isScreen = true
 summary = "Merges persistent display-shader uniform overrides and re-presents."
 description = """
+Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. Keep RGB between zero and alpha, with zero RGB at zero alpha. For opacity, multiply all four channels; for inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+
 Merges values into the current display shader uniform overrides. Descriptor defaults from createShader are applied first; these overrides take precedence.
 
 If an onscreen display shader is active and the canvas can be presented, pending drawing is flushed and the current logical FBO is presented. This does not change canvas or FBO size.
@@ -11,7 +13,7 @@ Hidden, detached, and offscreen screens store the new uniforms but do not presen
 
 Known uniform values are reflected and validated synchronously before persistent state changes.
 
-v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Remove any custom-map 1.0 - uv.y workaround used before this patch. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
+v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
 """
 example = """
 const tint = $.createShader( `#version 300 es
@@ -22,7 +24,7 @@ uniform float u_gain;
 out vec4 fragColor;
 void main() {
 	vec4 color = texture(u_texture, v_texCoord);
-	fragColor = vec4(color.rgb * u_gain, color.a);
+	fragColor = vec4(clamp(color.rgb * u_gain, 0.0, color.a), color.a);
 }` );
 
 $.screen( "320x200" );

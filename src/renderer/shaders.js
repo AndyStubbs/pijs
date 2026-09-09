@@ -316,7 +316,8 @@ function reflectCustomUniforms( gl, program ) {
  * Compile and validate a custom shader before it changes rendering state.
  *
  * Programs are cached per screen after successful compilation. Custom post-processing shaders
- * must sample the current framebuffer through u_texture.
+ * must sample the current framebuffer through u_texture. All samplers and fragment outputs use
+ * premultiplied RGBA, including custom display shaders.
  *
  * @param {Object} screenData - Screen data object
  * @param {{ id: number, fragmentSource: string, uniforms: Object }} handle - Shader handle

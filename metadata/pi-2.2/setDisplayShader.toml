@@ -3,6 +3,8 @@ category = "shaders"
 isScreen = true
 summary = "Sets or clears the custom display shader for final presentation."
 description = """
+Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. Keep RGB between zero and alpha, with zero RGB at zero alpha. For opacity, multiply all four channels; for inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+
 Sets the shader used when presenting the logical FBO to the canvas. The logical FBO is not modified. Typical uses include custom upscaling, CRT effects, and color grading.
 
 When a custom display shader is active, canvas.width and canvas.height track the CSS presentation size (clamped). CSS style size remains for layout. Passing null restores the default display program and logical backing-store size.
@@ -13,7 +15,7 @@ This call replaces the active shader and resets persistent display uniform overr
 
 Sampler2D values retain their resolved image sources and refresh dynamic canvas or screen content on each presentation. A shader cannot sample its own destination screen.
 
-v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Remove any custom-map 1.0 - uv.y workaround used before this patch. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
+v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
 """
 example = """
 const invert = $.createShader( `#version 300 es
@@ -23,7 +25,7 @@ uniform sampler2D u_texture;
 out vec4 fragColor;
 void main() {
 	vec4 color = texture(u_texture, v_texCoord);
-	fragColor = vec4(1.0 - color.rgb, color.a);
+	fragColor = vec4(color.a - color.rgb, color.a);
 }` );
 
 // Screen 0 inverts colors

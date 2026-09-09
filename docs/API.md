@@ -230,6 +230,15 @@ $.removeImage( capture );
 
 ## Custom Shaders
 
+GPU framebuffers, image samplers, and custom shader outputs use **premultiplied RGBA**: RGB
+is multiplied by alpha. Keep RGB between zero and alpha, and use zero RGB when alpha is zero.
+Multiply all four channels to change opacity. To perform straight-color math, divide RGB by
+alpha only when alpha is nonzero, then multiply the resulting RGB by the output alpha.
+
+JavaScript colors, pixel read results, palette matching, filter callbacks, and captured canvas
+images use straight RGBA. Readback returns zero RGB for fully transparent pixels; low-alpha
+RGB is quantized by the internal RGBA8 storage.
+
 Pi.js 2.1 accepts GLSL ES 3.00 fragment source and supplies a fullscreen-quad vertex stage. A
 usable shader must declare `uniform sampler2D u_texture`. Compilation, linking, reflection, and
 validation occur synchronously on first use for each screen.
@@ -265,7 +274,7 @@ out vec4 fragColor;
 
 void main() {
 	vec4 color = texture( u_texture, v_texCoord );
-	fragColor = vec4( 1.0 - color.rgb, color.a );
+	fragColor = vec4( color.a - color.rgb, color.a );
 }` );
 
 $.screen( "320x200" );

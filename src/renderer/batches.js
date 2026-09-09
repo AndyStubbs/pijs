@@ -650,7 +650,7 @@ export function flushBatches( screenData, blends = null ) {
 				} else {
 					gl.enable( gl.BLEND );
 					gl.blendFuncSeparate(
-						gl.SRC_ALPHA,           // srcRGBFactor
+						gl.ONE,                 // premultiplied srcRGBFactor
 						gl.ONE_MINUS_SRC_ALPHA, // dstRGBFactor
 						gl.ONE,                 // srcAlphaFactor - src alpha factor 1.0 (no scale)
 						gl.ONE_MINUS_SRC_ALPHA  // dstAlphaFactor - dst alpha factor (1-src.a)
@@ -662,7 +662,7 @@ export function flushBatches( screenData, blends = null ) {
 				// IMAGE_BATCH always uses alpha blending
 				gl.enable( gl.BLEND );
 				gl.blendFuncSeparate(
-					gl.SRC_ALPHA,           // srcRGBFactor
+					gl.ONE,                 // premultiplied srcRGBFactor
 					gl.ONE_MINUS_SRC_ALPHA, // dstRGBFactor
 					gl.ONE,                 // srcAlphaFactor - src alpha factor 1.0 (no scale)
 					gl.ONE_MINUS_SRC_ALPHA  // dstAlphaFactor - dst alpha factor (1-src.a)

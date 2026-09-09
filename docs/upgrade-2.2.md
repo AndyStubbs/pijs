@@ -1,5 +1,23 @@
 # Upgrading to Pi.js 2.2
 
+## Transparent composition and custom shaders
+
+Transparent offscreen layers now compose with the same brightness as direct drawing. All GPU
+textures and framebuffer/display shader outputs use premultiplied RGBA. Existing custom shaders
+that assume straight RGB need to account for alpha:
+
+- Identity sampling remains `fragColor = texture( u_texture, v_texCoord );`.
+- Replace `vec4( 1.0 - color.rgb, color.a )` with
+  `vec4( color.a - color.rgb, color.a )` for inversion.
+- Fade with `color * opacity`, including RGB, instead of changing alpha alone.
+- For nonlinear color operations, divide RGB by alpha with a zero-alpha guard, operate on the
+  straight color, then multiply RGB by the new alpha before returning it.
+
+The contract applies equally to `u_texture` and custom image/screen sampler uniforms. Output RGB
+should stay between zero and alpha. JavaScript color inputs, pixel readback, palette lookup,
+`filterImg` callbacks, and captured canvas images use straight RGBA. Transparent readback now
+returns zero RGB; low-alpha RGB has RGBA8 quantization and may not exactly match the input color.
+
 Pi.js 2.2.0 is in development and is not release-ready.
 
 The changes originally planned for 2.1.1 are planned for the 2.2 minor upgrade because

@@ -8,6 +8,7 @@
 
 "use strict";
 
+import { premultiplyPixels } from "./alpha.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_batches from "./batches.js";
 
@@ -54,7 +55,11 @@ function copyImageToTexture( screenData, img, texture ) {
 	const read = gl.getParameter( gl.READ_FRAMEBUFFER_BINDING );
 	const draw = gl.getParameter( gl.DRAW_FRAMEBUFFER_BINDING );
 	const scissor = gl.isEnabled( gl.SCISSOR_TEST );
+	const premultiply = gl.getParameter( gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL );
 	try {
+
+		// Browser sources enter as premultiplied pixels. FBO byte copies are already encoded.
+		gl.pixelStorei( gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true );
 		gl.disable( gl.SCISSOR_TEST );
 		uploadImageToTexture( screenData, img, texture );
 		m_textureSizes.set( texture, {
@@ -62,6 +67,7 @@ function copyImageToTexture( screenData, img, texture ) {
 			"height": img.videoHeight || img.naturalHeight || img.height
 		} );
 	} finally {
+		gl.pixelStorei( gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, premultiply );
 		gl.bindFramebuffer( gl.READ_FRAMEBUFFER, read );
 		gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, draw );
 		if( scissor ) {
@@ -77,6 +83,9 @@ function uploadImageToTexture( screenData, img, texture ) {
 	if( img.isMock ) {
 		const imgScreenData = g_screenManager.screenCanvasMap.get( img );
 		if( imgScreenData ) {
+
+			// Raw framebuffer transfers already contain premultiplied RGB.
+			gl.pixelStorei( gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false );
 
 			// Make sure the other screen is up to date
 			g_batches.flushBatches( imgScreenData );
@@ -467,7 +476,7 @@ export function deleteWebGL2Texture( screenData, img ) {
  * 
  * @param {Object} screenData - Screen data object
  * @param {HTMLImageElement|HTMLCanvasElement|OffscreenCanvas|null} imgKey - Image cache key
- * @param {Uint8ClampedArray|Uint8Array} pixelData - RGBA pixel data array
+ * @param {Uint8ClampedArray|Uint8Array} pixelData - Straight RGBA pixel data array
  * @param {number} width - Width of the pixel data
  * @param {number} height - Height of the pixel data
  * @param {number} dstX - Destination X in the texture
@@ -505,12 +514,17 @@ export function updateWebGL2TextureSubImage(
 
 	gl.bindTexture( gl.TEXTURE_2D, texture );
 
-	// Upload only the updated region using pixel data
-	gl.texSubImage2D( 
-		gl.TEXTURE_2D, 0, dstX, dstY,
-		width, height,
-		gl.RGBA, gl.UNSIGNED_BYTE, pixelData 
-	);
+	// Typed uploads are explicitly converted once, independently of browser unpack state.
+	const premultiply = gl.getParameter( gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL );
+	try {
+		gl.pixelStorei( gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false );
+		gl.texSubImage2D(
+			gl.TEXTURE_2D, 0, dstX, dstY, width, height,
+			gl.RGBA, gl.UNSIGNED_BYTE, premultiplyPixels( pixelData )
+		);
+	} finally {
+		gl.pixelStorei( gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, premultiply );
+	}
 	if( imgKey !== null ) {
 		m_textureSizes.set( texture, { ...m_textureSizes.get( texture ) } );
 	}

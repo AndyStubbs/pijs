@@ -146,7 +146,7 @@
 			float glow = 1.0 + wave * 0.08;
 			color.rgb *= glow;
 
-			fragColor = color;
+			fragColor = vec4(clamp(color.rgb, 0.0, color.a), color.a);
 		}
 	</script>
 	<script id="glitch-shader" style="display: none" type="x-shader/x-fragment">
@@ -271,7 +271,7 @@
 
 			color.rgb *= pulse;
 
-			fragColor = color;
+			fragColor = vec4(clamp(color.rgb, 0.0, color.a), color.a);
 		}
 	</script>
 

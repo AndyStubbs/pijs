@@ -7,7 +7,7 @@ out vec4 fragColor;
 void main() {
 	vec4 texColor = texture(u_texture, v_texCoord);
 	
-	// The FBO already contains STRAIGHT ALPHA, so just output it directly.
+	// Both the FBO and browser compositor use premultiplied alpha.
 	fragColor = texColor;
 }
 

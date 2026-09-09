@@ -18,6 +18,7 @@ function loadModule( file, globals = {} ) {
 
 function createPixelHarness() {
 	const microtasks = [];
+	const alpha = loadModule( "src/renderer/alpha.js" );
 	const calls = { "read": 0, "upload": 0, "dirty": 0, "convert": 0 };
 	const manager = loadModule( "src/core/screen-manager.js" );
 	const view = loadModule( "src/api/view.js" );
@@ -43,10 +44,12 @@ function createPixelHarness() {
 		"rgbToColor": ( r, g, b, a ) => ( { "r": r, "g": g, "b": b, "a": a } )
 	};
 	const readback = loadModule( "src/renderer/readback.js", {
+		"unpremultiplyPixels": alpha.unpremultiplyPixels,
 		"g_utils": utils, "g_screenManager": manager,
 		"g_batches": { "flushBatches": () => {} }
 	} );
 	const pixels = loadModule( "src/api/pixels.js", {
+		"unpremultiplyPixels": alpha.unpremultiplyPixels,
 		"g_utils": utils, "g_screenManager": manager, "g_view": view,
 		"g_commands": { "addCommand": () => {} },
 		"g_renderer": {

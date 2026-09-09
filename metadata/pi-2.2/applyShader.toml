@@ -3,6 +3,8 @@ category = "shaders"
 isScreen = true
 summary = "Queues an FBO shader at the current point in draw order."
 description = """
+Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. Keep RGB between zero and alpha, with zero RGB at zero alpha. For opacity, multiply all four channels; for inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+
 Applies a custom shader to the logical framebuffer at the current draw position. The call creates a batch break and queues the pass; it does not run immediately. When batches flush, prior geometry is finalized, the shader processes the FBO at logical resolution, then later draws appear on top of the result.
 
 u_sourceSize and u_outputSize are both the logical screen size. FBO shaders work on onscreen and offscreen screens.
@@ -19,7 +21,7 @@ uniform sampler2D u_texture;
 out vec4 fragColor;
 void main() {
 	vec4 color = texture(u_texture, v_texCoord);
-	fragColor = vec4(1.0 - color.rgb, color.a);
+	fragColor = vec4(color.a - color.rgb, color.a);
 }` );
 
 $.screen( "320x200" );

@@ -75,6 +75,7 @@ $.onpress( "down", function( press ) {
 processed framebuffer.
 
 ```javascript
+// Shader inputs and outputs use premultiplied RGBA; scale all channels for opacity.
 const invert = $.createShader( `#version 300 es
 precision mediump float;
 in vec2 v_texCoord;
@@ -83,7 +84,7 @@ out vec4 fragColor;
 
 void main() {
 	vec4 color = texture( u_texture, v_texCoord );
-	fragColor = vec4( 1.0 - color.rgb, color.a );
+	fragColor = vec4( color.a - color.rgb, color.a );
 }` );
 
 $.screen( "320x200" );
@@ -108,7 +109,7 @@ out vec4 fragColor;
 
 void main() {
 	vec4 color = texture( u_texture, v_texCoord );
-	fragColor = vec4( color.rgb * u_gain, color.a );
+	fragColor = vec4( clamp( color.rgb * u_gain, 0.0, color.a ), color.a );
 }`, { "u_gain": 1.0 } );
 
 $.screen( "320x200" );

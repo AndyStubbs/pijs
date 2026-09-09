@@ -122,7 +122,7 @@
 			float edgeFade = smoothstep(0.5, 0.35, dist);
 			color.rgb *= 0.85 + edgeFade * 0.25;
 
-			fragColor = color;
+			fragColor = vec4(clamp(color.rgb, 0.0, color.a), color.a);
 		}
 	</script>
 	<script id="datamosh-shader" style="display: none" type="x-shader/x-fragment">
@@ -207,7 +207,7 @@
 			float strength = 0.35 + plasma * 0.35;
 			vec3 final = base.rgb * (1.0 - strength) + base.rgb * tint * (1.2 + strength);
 
-			fragColor = vec4(final, base.a);
+			fragColor = vec4(clamp(final, 0.0, base.a), base.a);
 		}
 	</script>
 	<script id="led-shader" style="display: none" type="x-shader/x-fragment">

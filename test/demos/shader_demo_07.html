@@ -134,7 +134,7 @@
 			float edgeFade = smoothstep( 0.0, 0.06, phase );
 			color *= 0.7 + 0.3 * edgeFade;
 
-			fragColor = vec4( color, current.a );
+			fragColor = vec4( clamp( color, 0.0, current.a ), current.a );
 		}
 	</script>
 	<script id="water-shader" style="display: none" type="x-shader/x-fragment">
@@ -164,7 +164,7 @@
 				);
 			color.rgb *= shimmer;
 
-			fragColor = color;
+			fragColor = vec4(clamp(color.rgb, 0.0, color.a), color.a);
 		}
 	</script>
 	<script id="bloom-shader" style="display: none" type="x-shader/x-fragment">
@@ -224,7 +224,7 @@
 			vec3 color = source.rgb +
 				glow * amount * 1.6 * pulse;
 
-			fragColor = vec4( color, source.a );
+			fragColor = vec4( clamp( color, 0.0, source.a ), source.a );
 		}
 	</script>
 

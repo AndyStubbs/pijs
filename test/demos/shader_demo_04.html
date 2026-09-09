@@ -133,10 +133,12 @@
 
 		void main() {
 			vec4 tex = texture(u_texture, v_texCoord);
-			float lum = dot(tex.rgb, vec3(0.299, 0.587, 0.114));
+			vec3 straight = vec3(0.0);
+			if( tex.a > 0.0 ) { straight = tex.rgb / tex.a; }
+			float lum = dot(straight, vec3(0.299, 0.587, 0.114));
 			lum += sin(v_texCoord.y * 100.0 + u_time * 5.0) * 0.03;
 			vec3 col = thermalPalette(lum);
-			fragColor = vec4(col, tex.a);
+			fragColor = vec4(clamp(col, 0.0, 1.0) * tex.a, tex.a);
 		}
 	</script>
 	<script id="vhs-shader" style="display: none" type="x-shader/x-fragment">

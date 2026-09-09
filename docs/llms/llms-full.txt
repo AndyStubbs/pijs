@@ -323,6 +323,15 @@ call `screenToView()` before comparing pointer coordinates with view-local conte
 
 ## Shaders
 
+GPU framebuffers, image samplers, and custom shader outputs use **premultiplied RGBA**: RGB
+is multiplied by alpha. Keep RGB between zero and alpha, and use zero RGB when alpha is zero.
+Multiply all four channels to change opacity. To perform straight-color math, divide RGB by
+alpha only when alpha is nonzero, then multiply the resulting RGB by the output alpha.
+
+JavaScript colors, pixel read results, palette matching, filter callbacks, and captured canvas
+images use straight RGBA. Readback returns zero RGB for fully transparent pixels; low-alpha
+RGB is quantized by the internal RGBA8 storage.
+
 Custom shaders are GLSL ES 3.00 fragment shaders. Pi.js supplies the vertex stage. Every usable
 shader must declare `uniform sampler2D u_texture`.
 
@@ -340,7 +349,7 @@ out vec4 fragColor;
 
 void main() {
 	vec4 color = texture( u_texture, v_texCoord );
-	fragColor = vec4( 1.0 - color.rgb, color.a );
+	fragColor = vec4( color.a - color.rgb, color.a );
 }` );
 
 $.screen( "320x200" );
@@ -365,7 +374,7 @@ out vec4 fragColor;
 
 void main() {
 	vec4 color = texture( u_texture, v_texCoord );
-	fragColor = vec4( color.rgb * u_gain, color.a );
+	fragColor = vec4( clamp( color.rgb * u_gain, 0.0, color.a ), color.a );
 }`, { "u_gain": 1.0 } );
 
 $.screen( "320x200" );

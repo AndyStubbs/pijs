@@ -265,6 +265,39 @@ beyond screenshot/color-conversion tolerance. **Fix:** establish one explicit fr
 representation and make blending, image/screen sampling, replace writes, shader passes, readback,
 and presentation agree. Add direct-versus-layered equivalence tests before implementing it.
 
+**Resolution — 2026-09-09:** SYS-006 is fixed. GPU framebuffers and image/screen sampler textures
+use premultiplied RGBA8. Primitive fragments premultiply after noise and clamping, image tinting
+scales RGB by tint alpha, and source-over blending uses `ONE` / `ONE_MINUS_SRC_ALPHA`. Replace
+writes retain the same storage representation. Browser uploads premultiply once; framebuffer
+copies preserve their bytes, including cross-context uploads. Uploads restore the caller's unpack
+state on success and failure.
+
+Framebuffer and display shaders consume and produce premultiplied RGBA. Browser presentation uses
+premultiplied compositing. JavaScript pixel reads, palette matching, filter callbacks, and captured
+canvas images use straight RGBA; filter and font uploads convert to GPU storage. Transparent RGB
+is canonicalized to zero, and low-alpha readback has RGBA8 quantization. Shader references, metadata,
+generated declarations, and maintained examples describe the contract; compatibility instructions
+are in `docs/upgrade-2.2.md`.
+
+The four direct-versus-layered assertions were added and failed before renderer changes, returning
+`[64,0,127,255]` instead of `[128,0,127,255]` in both full/lite bundles and both context paths.
+They now pass exactly. Intermediate storage is `[128,0,0,128]`; public readback is `[255,0,0,128]`.
+
+Validation: `npm run test:patch` passed 295/295, with fresh in-memory bundles routed into the
+server-based cases. This includes 22 SYS-006 tests covering nested/mixed-color composition, uploads,
+readback, filters, palette lookup, text, shader samplers, presentation, shader examples, and byte
+conversion. Metadata tests passed 5/5; metadata-output and type-definition validation passed.
+Metadata generation omitted the release-copy step. No release artifacts or version changes were
+made.
+
+Visual review used `PI_ALPHA_VISUAL=true` with the focused browser suite and fresh bundles. Seven
+of nine applicable fixture comparisons matched exactly. Both full/lite `renderer_comprehensive`
+comparisons intentionally differ from their approved PNG by 13,109 pixels, reflecting corrected
+translucent rendering; the strict baseline assertions still report these differences. For example,
+the overlapping half-alpha blue/green region over gray now presents `[32,96,160,255]`, replacing
+`[32,128,128,255]`. The full-only view fixture was skipped for lite. Approved baselines remain
+unchanged; reviewed captures are in `test/tests/screenshots/new/*-alpha-*.png`.
+
 ### SYS-007 — P2 — A single oversized batch request recurses forever; Full HD paint fails
 
 **Locations:** [batches.js:394](C:/Docs/src/pijs/src/renderer/batches.js:394),

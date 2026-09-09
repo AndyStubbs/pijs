@@ -43,9 +43,9 @@
 			vec4 color = texture( u_texture, uv + offset );
 
 			float glow = 0.5 + 0.5 * sin( ( c1 + c2 ) * 3.0 + u_time * 2.0 );
-			color.rgb += vec3( 0.0, 0.08, 0.14 ) * glow;
+			color.rgb += vec3( 0.0, 0.08, 0.14 ) * glow * color.a;
 
-			fragColor = color;
+			fragColor = vec4(clamp(color.rgb, 0.0, color.a), color.a);
 		}
 	</script>
 	<script id="kaleido-shader" style="display: none" type="x-shader/x-fragment">
@@ -156,7 +156,7 @@
 			float pulse = 0.6 + 0.4 * sin( u_time * 1.6 );
 			vec3 color = source.rgb + blur * 0.6 * pulse;
 
-			fragColor = vec4( color, source.a );
+			fragColor = vec4( clamp( color, 0.0, source.a ), source.a );
 		}
 	</script>
 	<script id="heat-shader" style="display: none" type="x-shader/x-fragment">
@@ -184,9 +184,9 @@
 
 			vec4 color = texture( u_texture, uv );
 
-			color.rgb += vec3( 0.06, 0.02, 0.0 ) * shimmer;
+			color.rgb += vec3( 0.06, 0.02, 0.0 ) * shimmer * color.a;
 
-			fragColor = color;
+			fragColor = vec4(clamp(color.rgb, 0.0, color.a), color.a);
 		}
 	</script>
 	<script id="dither-shader" style="display: none" type="x-shader/x-fragment">
@@ -222,9 +222,11 @@
 			vec4 color = texture( u_texture, v_texCoord );
 
 			float threshold = bayer( pixelPos );
-			vec3 quant = floor( color.rgb * levels + threshold ) / levels;
+			vec3 straight = vec3( 0.0 );
+			if( color.a > 0.0 ) { straight = color.rgb / color.a; }
+			vec3 quant = floor( straight * levels + threshold ) / levels;
 
-			fragColor = vec4( quant, color.a );
+			fragColor = vec4( clamp( quant, 0.0, 1.0 ) * color.a, color.a );
 		}
 	</script>
 
