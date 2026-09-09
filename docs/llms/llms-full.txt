@@ -109,6 +109,11 @@ $.paint( 0, 0, "#202040", 0.1 );
 `rect()`, `circle()`, and `ellipse()` use the current color for the outline and the optional
 `fillColor` for the interior. `paint()` also accepts an optional boundary color after tolerance.
 
+`arc()` angles are degrees, clockwise from the positive x-axis. Equal angles draw nothing;
+positive or negative differences of at least 360 degrees draw one outline matching `circle()`.
+Shorter differences wrap clockwise. Sweeps within 0.0001 radians (about 0.00573 degrees) of a full
+turn are treated as complete circles.
+
 Only two blend modes are supported:
 
 ```javascript

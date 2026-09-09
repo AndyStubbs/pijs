@@ -835,7 +835,7 @@ declare namespace Pi {
 		 *
 		 * This function renders a circular arc segment to the active canvas.
 		 *
-		 * The angles are measured in degrees, clockwise from the positive x-axis.
+		 * The angles are measured in degrees, clockwise from the positive x-axis. Equal start and end angles draw nothing. A positive or negative angular difference of at least 360 degrees draws one complete outline matching circle(), even for multiple revolutions. Shorter differences wrap clockwise from the starting angle to the ending angle. Sweeps within 0.0001 radians (about 0.00573 degrees) of a full turn are treated as complete circles.
 		 * @param x The x coordinate of the center point of the arc's circle.
 		 * @param y The y coordinate of the center point of the arc's circle.
 		 * @param radius The radius of the arc's circle.

@@ -70,6 +70,11 @@ export function drawCircle( screenData, cx, cy, radius ) {
 			err += 2 * ( y - x ) + 1;
 		}
 
+		// Stop before reflected points repeat or extend past the diagonal.
+		if( x < y ) {
+			break;
+		}
+
 		if( x === y ) {
 
 			// On the diagonal, 8-way symmetry collapses to 4 distinct pixels.

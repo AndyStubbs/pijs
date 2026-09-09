@@ -12,6 +12,7 @@
 
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
+import * as g_circles from "./circles.js";
 
 const TWO_PI = 2 * Math.PI;
 const FULL_CIRCLE_EPSILON = 0.0001;
@@ -29,43 +30,46 @@ const FULL_CIRCLE_EPSILON = 0.0001;
  */
 export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 	const color = screenData.color;
+	const rawSpan = angle2 - angle1;
+
+	if( rawSpan === 0 ) {
+		return;
+	}
+
+	// Preserve full revolutions before endpoint normalization discards them.
+	if( Math.abs( rawSpan ) >= TWO_PI - FULL_CIRCLE_EPSILON ) {
+		g_circles.drawCircle( screenData, cx, cy, radius );
+		return;
+	}
 
 	// Normalize angles to [0, 2π)
-	let a1 = normalizeAngle( angle1 );
-	let a2 = normalizeAngle( angle2 );
+	const a1 = normalizeAngle( angle1 );
+	const a2 = normalizeAngle( angle2 );
 
-	// CCW span from a1 to a2 in [0, 2π)
+	// Clockwise span in screen coordinates from a1 to a2 in [0, 2π).
 	let span = a2 - a1;
 	if( span < 0 ) {
 		span += TWO_PI;
 	}
 
-	const isFullCircle = span >= TWO_PI - FULL_CIRCLE_EPSILON;
-	const isLargeArc = !isFullCircle && span > Math.PI;
+	if( span >= TWO_PI - FULL_CIRCLE_EPSILON ) {
+		g_circles.drawCircle( screenData, cx, cy, radius );
+		return;
+	}
+	const isLargeArc = span > Math.PI;
 
 	const writePoint = g_batchHelpers.createPointWriter( screenData, g_batches.POINTS_BATCH );
 
 	// Precompute start/end direction vectors for angle tests
-	let startX = 0;
-	let startY = 0;
-	let endX = 0;
-	let endY = 0;
-
-	if( !isFullCircle ) {
-		startX = Math.cos( a1 );
-		startY = Math.sin( a1 );
-		endX = Math.cos( a2 );
-		endY = Math.sin( a2 );
-	}
+	const startX = Math.cos( a1 );
+	const startY = Math.sin( a1 );
+	const endX = Math.cos( a2 );
+	const endY = Math.sin( a2 );
 
 	// Per-pixel plot helper with arc angle filtering (no atan2)
 	let setPixel;
 
-	if( isFullCircle ) {
-		setPixel = function( px, py ) {
-			writePoint( px, py, color );
-		};
-	} else if( !isLargeArc ) {
+	if( !isLargeArc ) {
 
 		// Small arc: span <= π
 		// Inside if: cross( startDir, w ) >= 0 && cross( endDir, w ) <= 0
@@ -144,6 +148,11 @@ export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
 		} else {
 			x--;
 			err += 2 * ( y - x ) + 1;
+		}
+
+		// Stop before reflected points repeat or extend past the diagonal.
+		if( x < y ) {
+			break;
 		}
 
 		if( x === y ) {

@@ -489,6 +489,15 @@ Angles are documented in degrees; the public wrapper converts them before callin
 span before endpoint normalization and define equal-angle/full-revolution behavior explicitly;
 test full turns, wrapping, and positive/negative multiples.
 
+**Status — resolved, 2026-09-08:** SYS-015 preserves the raw angular difference before endpoint
+normalization. Equal angles draw nothing; positive/negative full turns, multiple revolutions, and
+sweeps beyond a revolution delegate to the circle outline. The existing near-full tolerance and
+ordinary clockwise wrapping remain supported. Current-version arc metadata documents these rules.
+Four source tests and full/lite browser regressions cover shifted starts, positive/negative turns,
+450/720-degree sweeps, equal angles, wrapping, tolerance, small radii, and object arguments. The
+reported radius-10 full turn now covers the same 52 pixels as its circle. This fix was implemented
+and verified before SYS-016, independently of SYS-007 reservation chunking.
+
 ### SYS-016 — P2 — Circle outlines emit duplicate pixels under alpha blending
 
 **Location:** [circles.js:69](C:/Docs/src/pijs/src/renderer/draw/circles.js:69).
@@ -503,6 +512,20 @@ iteration after crossing the diagonal.
 radii 2 and 5 produced only 128. **Impact:** nonuniform bright/opaque outline segments; opaque
 screenshots conceal the duplicate writes. **Fix:** stop at the symmetry crossing and ensure each
 coordinate is emitted once. Assert coordinate uniqueness and translucent output, not only shape.
+
+**Status — resolved, 2026-09-08:** Both circle and partial-arc midpoint loops stop before plotting
+after the diagonal crossing. Three source regressions verify unique coordinates for radii 1–128,
+symmetry, small-radius conventions, and the radius-5 outline without reflected stray pixels. Full
+arcs inherit this correction through SYS-015's delegation. Full/lite browser regressions verify
+alpha 128 at every covered pixel of one translucent outline and alpha 192 after two intentional
+draws. Translated clipping retains a nonempty portion of each circle/full arc/partial arc with
+19-point batch limits. Production batching code and filled-circle geometry were not changed.
+
+**Validation:** `npm run test:patch` passes 273 tests, including 15 new rasterization tests. With
+`PI_RASTER_VISUAL=true`, the new browser suite passes four approved-baseline comparisons under the
+existing tolerance: each full/lite graphics fixture differs by 247 pixels, confined to circle,
+arc, and copied-circle regions; each renderer fixture differs by zero pixels. Enlarged before/after
+images were visually reviewed. Approved PNGs and release artifacts were not modified.
 
 ### SYS-017 — P2 — Invalid palette indices poison current and default drawing colors
 
@@ -1021,3 +1044,9 @@ remain historical context.
 bundles. Remaining task 6 work is arc full-turn handling and circle rasterization (SYS-015, SYS-016),
 kept separate from reservation chunking. Earlier recommendations and evidence remain historical
 context.
+
+**Follow-up status — rasterization, 2026-09-08:** SYS-015 and SYS-016 are resolved, completing task 6
+for core and full/lite bundles. Full turns match circles, and circle/arc outlines emit each pixel
+once. The two rasterization fixes were implemented in order and validated separately from SYS-007.
+The patch suite passes 273 tests; four visual comparisons pass with reviewed outline changes and
+unchanged approved baselines.

@@ -67,9 +67,9 @@ function createHarness( min = 8, max = 19 ) {
 		"createPointWriter": helpers.createPointWriter };
 	const geometry = loadModule( "renderer/draw/geometry.js", globals, [ "FILLED_CIRCLE" ] );
 	const shapes = {};
-	for( const name of [ "lines", "arcs", "circles", "ellipses", "bezier" ] ) {
+	for( const name of [ "lines", "circles", "arcs", "ellipses", "bezier" ] ) {
 		shapes[ name ] = loadModule( `renderer/draw/${name}.js`, {
-			...globals, "g_geometry": geometry
+			...globals, "g_geometry": geometry, "g_circles": shapes.circles
 		} );
 	}
 	const utils = loadModule( "core/utils.js", {
