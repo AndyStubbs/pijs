@@ -1,4 +1,4 @@
-# Pens Plugin
+# Pens Plugin -- Depreciated
 
 Basic plugin to add pens to pi.js. This plugin is incomplete. I may not continue development
 because the pens just didn't look very good and I don't think they are important. 
