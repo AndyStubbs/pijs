@@ -1,15 +1,14 @@
 /**
  * Pi.js - Colors Module
- * 
+ *
  * Manages the color palettes and color values.
  * Simplified version focused on WebGL2 rendering.
- * 
+ *
  * @module api/colors
  */
 
 "use strict";
 
-// Import modules directly
 import * as g_commands from "../core/commands.js";
 import * as g_utils from "../core/utils.js";
 import * as g_screenManager from "../core/screen-manager.js";
@@ -22,12 +21,17 @@ let m_defaultPalMap = new Map();
 let m_defaultColor = -1;
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
-// Initialize color defaults
+/**
+ * Initialize the module and register its commands and lifecycle hooks.
+ *
+ * @param {Object} api - Public Pi.js API.
+ * @returns {void}
+ */
 export function init( api ) {
 
 	// Default 256-color palette (CGA + extended colors) - raw hex strings
@@ -80,9 +84,9 @@ export function init( api ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * External API Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 function registerCommands() {
 
@@ -106,7 +110,12 @@ function registerCommands() {
 	g_commands.addCommand( "getPalColor", getPalColor, true, [ "index" ] );
 }
 
-// Set default pal
+/**
+ * Set the palette used by newly created screens, reserving index zero for transparency.
+ *
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function setDefaultPal( options ) {
 	const pal = options.pal;
 
@@ -150,11 +159,16 @@ function setDefaultPal( options ) {
 	}
 }
 
-// Get default pal
+/**
+ * Return copies of the default palette colors.
+ *
+ * @param {Object} options - Command options.
+ * @returns {Array<Object>}
+ */
 function getDefaultPal( options ) {
 	const include0 = options.include0 ?? null;
 	const filteredPal = [];
-	
+
 	// Set the start index to 0 if including 0 which is the transparent black color
 	let startIndex = 0;
 	if( include0 === null ) {
@@ -174,7 +188,12 @@ function getDefaultPal( options ) {
 	return filteredPal;
 }
 
-// Set default color
+/**
+ * Set the initial drawing color for newly created screens.
+ *
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function setDefaultColor( options ) {
 	const colorValue = getColorValueByRawInput( { "pal": m_defaultPal }, options.color );
 	if( colorValue === null ) {
@@ -188,7 +207,12 @@ function setDefaultColor( options ) {
 	m_defaultColor = colorValue;
 }
 
-// Get default color
+/**
+ * Return the default drawing color as a palette index or color object.
+ *
+ * @param {Object} options - Command options.
+ * @returns {number|Object|null}
+ */
 function getDefaultColor( options ) {
 	const asIndex = options.asIndex ?? true;
 	if( asIndex ) {
@@ -198,19 +222,31 @@ function getDefaultColor( options ) {
 	return g_utils.createColor( m_defaultColor.array );
 }
 
+/**
+ * Convert a supported color value into a color object.
+ *
+ * @param {Object} options - Command options.
+ * @returns {Object}
+ */
 function createColor( options ) {
 	const color = g_utils.convertToColor( options.color );
 	if( color === null ) {
 		const error = new TypeError(
-			`createColor: Parameter color is not a valid color format.`
+			"createColor: Parameter color is not a valid color format."
 		);
 		error.code = "INVALID_PARAMETER";
 		throw error;
 	}
-	return color
+	return color;
 }
 
-// Set color
+/**
+ * Set the screen drawing color from a palette index or color value.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function setColor( screenData, options ) {
 	const colorInput = options.color;
 
@@ -221,7 +257,7 @@ function setColor( screenData, options ) {
 		colorValue = getColorValueByIndex( screenData, colorInput );
 		if( colorValue === null ) {
 			const error = new TypeError(
-				`setColor: Parameter color index is not in pal.`
+				"setColor: Parameter color index is not in pal."
 			);
 			error.code = "INVALID_PARAMETER";
 			throw error;
@@ -234,7 +270,7 @@ function setColor( screenData, options ) {
 		// If we were unable to convert this color than it is not a valid color format
 		if( colorValue === null ) {
 			const error = new TypeError(
-				`setColor: Parameter color is not a valid color format.`
+				"setColor: Parameter color is not a valid color format."
 			);
 			error.code = "INVALID_PARAMETER";
 			throw error;
@@ -245,6 +281,13 @@ function setColor( screenData, options ) {
 	screenData.color = colorValue;
 }
 
+/**
+ * Return the screen drawing color as a palette index or color object.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {number|Object|null}
+ */
 function getColor( screenData, options ) {
 	const asIndex = !!options.asIndex;
 	if( asIndex ) {
@@ -254,11 +297,17 @@ function getColor( screenData, options ) {
 }
 
 
-// Get palette
+/**
+ * Return copies of the screen palette colors.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {Array<Object>}
+ */
 function getPal( screenData, options ) {
 	const include0 = options.include0 ?? null;
 	const filteredPal = [];
-	
+
 	// Set the start index to 0 if including 0 which is the transparent black color
 	let startIndex = 0;
 	if( include0 === null ) {
@@ -278,7 +327,13 @@ function getPal( screenData, options ) {
 	return filteredPal;
 }
 
-// Set entire palette
+/**
+ * Replace the screen palette and update its color lookup map.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function setPal( screenData, options ) {
 	const pal = options.pal;
 
@@ -334,15 +389,22 @@ function setPal( screenData, options ) {
 	}
 }
 
-// Get palette index for a color
+/**
+ * Find a palette index for a color within the requested tolerance.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {number|null}
+ */
 function getPalIndex( screenData, options ) {
-	let color = options.color;
-	let tolerance = g_utils.getFloat( options.tolerance, 0 );
+	const color = options.color;
+	const tolerance = g_utils.getFloat( options.tolerance, 0 );
 
 	// Validate tolerance variable
 	if( tolerance < 0 || tolerance > 1 ) {
 		const error = new RangeError(
-			"getPalIndex: Parameter tolerance must be a number between 0 and 1 (0 = exact match, 1 = any color)."
+			"getPalIndex: Parameter tolerance must be a number between 0 and 1 " +
+			"(0 = exact match, 1 = any color)."
 		);
 		error.code = "INVALID_PARAMETER";
 		throw error;
@@ -352,7 +414,7 @@ function getPalIndex( screenData, options ) {
 	const colorValue = g_utils.convertToColor( color );
 	if( colorValue === null ) {
 		const error = new TypeError(
-			`getPalIndex: Parameter color is not a valid color format.`
+			"getPalIndex: Parameter color is not a valid color format."
 		);
 		error.code = "INVALID_COLOR";
 		throw error;
@@ -362,7 +424,13 @@ function getPalIndex( screenData, options ) {
 	return index;
 }
 
-// Set the background color of the canvas
+/**
+ * Set the canvas background color.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function setBgColor( screenData, options ) {
 	const colorRaw = options.color;
 	const color = getColorValueByRawInput( screenData, colorRaw );
@@ -375,7 +443,13 @@ function setBgColor( screenData, options ) {
 	}
 }
 
-// Set the background color of the container
+/**
+ * Set the background color of the screen container.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function setContainerBgColor( screenData, options ) {
 	if( !screenData.container ) {
 		return;
@@ -383,7 +457,7 @@ function setContainerBgColor( screenData, options ) {
 
 	const colorRaw = options.color;
 	const color = getColorValueByRawInput( screenData, colorRaw );
-	
+
 	if( color !== null ) {
 		screenData.container.style.backgroundColor = g_utils.colorToHex( color );
 	} else {
@@ -395,7 +469,13 @@ function setContainerBgColor( screenData, options ) {
 	}
 }
 
-// Set palette colors
+/**
+ * Replace selected palette colors and update the screen pixels.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function setPalColors( screenData, options ) {
 	const indices = options.indices;
 	const colors = options.colors;
@@ -486,7 +566,13 @@ function setPalColors( screenData, options ) {
 	}
 }
 
-// Add palette colors
+/**
+ * Append colors to the screen palette.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {Array<number>} Indices of newly added colors.
+ */
 function addPalColors( screenData, options ) {
 	const colors = options.colors;
 
@@ -518,6 +604,7 @@ function addPalColors( screenData, options ) {
 		// Check if color already exists in palette
 		const existingIndex = screenData.palMap.get( colorValue.key );
 		if( existingIndex !== undefined ) {
+
 			// Color already exists, skip it
 			continue;
 		}
@@ -532,6 +619,13 @@ function addPalColors( screenData, options ) {
 	return newIndices;
 }
 
+/**
+ * Return a copy of the color at the requested palette index.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {Object|null} Color, or null when the index is invalid.
+ */
 function getPalColor( screenData, options ) {
 	const color = getColorValueByIndex( screenData, options.index );
 	if( color !== null ) {
@@ -541,11 +635,18 @@ function getPalColor( screenData, options ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Internal Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
+/**
+ * Resolve a palette index or supported color value into an internal color object.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {*} rawInput - Palette index or supported color value.
+ * @returns {Object|null}
+ */
 export function getColorValueByRawInput( screenData, rawInput ) {
 
 	// Every number denotes a palette index, including invalid numeric inputs
@@ -556,10 +657,14 @@ export function getColorValueByRawInput( screenData, rawInput ) {
 	return g_utils.convertToColor( rawInput );
 }
 
-// Finds a color index without adding it to palette
-// @param {Object} screenData - The screen data object
-// @param {Object} color - Color object to find
-// @param {number} tolerance - Color matching tolerance (0 = exact match, 1 = any color)
+/**
+ * Find the closest palette entry within tolerance without adding a color.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} color - RGBA color object.
+ * @param {number} [tolerance] - Color matching tolerance from zero to one.
+ * @returns {number|null}
+ */
 export function findColorIndexByColorValue( screenData, color, tolerance = 0 ) {
 
 	// First check by key - fastest lookup

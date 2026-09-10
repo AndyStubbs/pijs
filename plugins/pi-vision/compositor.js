@@ -9,9 +9,9 @@
 
 "use strict";
 
-let g_pluginApi = null;
+let m_pluginApi = null;
 
-export default { init, onRender, render };
+export default { "init": init, "onRender": onRender, "render": render };
 
 /**
  * Initialize the element compositor
@@ -20,7 +20,7 @@ export default { init, onRender, render };
  * @returns {void}
  */
 function init( pluginApi ) {
-	g_pluginApi = pluginApi;
+	m_pluginApi = pluginApi;
 }
 
 /**
@@ -30,7 +30,7 @@ function init( pluginApi ) {
  * @returns {void}
  */
 function onRender( fn ) {
-	const screenData = g_pluginApi.getActiveScreen( "vis.onRender" );
+	const screenData = m_pluginApi.getActiveScreen( "vis.onRender" );
 	if( screenData.isOffscreen ) {
 		const error = new TypeError( "vis.onRender: Active screen must be a base screen." );
 		error.code = "INVALID_VIS_RENDER_TARGET";
@@ -57,7 +57,7 @@ function render( recursive = true ) {
 		throw error;
 	}
 
-	const screenData = g_pluginApi.getActiveScreen( "vis.render" );
+	const screenData = m_pluginApi.getActiveScreen( "vis.render" );
 	const interaction = screenData.vis.interaction;
 	if( interaction && interaction.renderRequestId !== null ) {
 		cancelAnimationFrame( interaction.renderRequestId );
@@ -71,9 +71,9 @@ function render( recursive = true ) {
 		}
 		renderElements( screenData.vis.elements, recursive );
 	} finally {
-		const activeData = g_pluginApi.getAllScreensData().find( ( item ) => item.id === activeId );
+		const activeData = m_pluginApi.getAllScreensData().find( ( item ) => item.id === activeId );
 		if( activeData ) {
-			g_pluginApi.getApi().setScreen( activeId );
+			m_pluginApi.getApi().setScreen( activeId );
 		}
 	}
 }

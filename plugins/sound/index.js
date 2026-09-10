@@ -1,36 +1,37 @@
 /**
  * Pi.js - Play-Sound Plugin
- * 
+ *
  * Music playback and sound effects using Web Audio API.
  * Combines play.js (BASIC-style music notation) and sound.js (sound effects).
- * 
+ *
  * @module plugins/sound
  * @version 1.0.0
  */
 
 "use strict";
 
-import { registerSound } from "./sound.js";
-import { registerPlay } from "./play.js";
+import * as g_sound from "./sound.js";
+import * as g_play from "./play.js";
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Plugin Initialization
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Play-sound plugin initialization
- * 
+ *
  * @param {Object} pluginApi - Plugin API provided by Pi.js
+ * @returns {void}
  */
 export default function playSoundPlugin( pluginApi ) {
 
 	// Register sound module commands
-	registerSound( pluginApi );
+	g_sound.registerSound( pluginApi );
 
 	// Register play module commands
-	registerPlay( pluginApi );
+	g_play.registerPlay( pluginApi );
 }
 
 

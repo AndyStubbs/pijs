@@ -145,6 +145,13 @@ const result = condition ? valueA : valueB;
 
 ### Comments and Documentation
 
+#### Module Imports
+- Import JavaScript modules with `import * as g_moduleName`, using camelCase after `g_`.
+- Access members through the namespace, including existing default exports through `.default`.
+- Consolidate imports from the same module; do not import individual function names.
+- Keep default imports for shader/font assets and bare side-effect imports.
+- Reserve `g_` for imported bindings; use `m_` for private module state.
+
 #### JSDoc Comments
 - Include JSDoc block comments at the top of **all JavaScript files**
 - Document all public functions with JSDoc comments
@@ -182,6 +189,9 @@ function circle( screenData, args ) {
 - **Place comments above code**, not after code on the same line
 - **Always include an empty line** before a comment
 - Keep comments concise and meaningful
+- Comments may break up large blocks; describe the following section's purpose or responsibility.
+- Preserve explanations of intent, constraints, and non-obvious behavior.
+- Remove boilerplate such as "Import required modules" that adds no useful context.
 
 **Examples:**
 ```javascript

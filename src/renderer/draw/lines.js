@@ -1,29 +1,27 @@
 /**
  * Pi.js - Lines Drawing Module
- * 
+ *
  * High-level primitive drawing operations: lines
- * 
+ *
  * drawLine, drawLineSquare, drawLineCircle
- * 
+ *
  * @module renderer/draw/lines
  */
 
 "use strict";
 
-import { isContextUnavailable } from "../context-state.js";
-
-// Import required modules
+import * as g_contextState from "../context-state.js";
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Initialization
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 /**
  * Draw line using geometry for higher precision and consistency and not WebGL LINES
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} x1 - Start X coordinate
  * @param {number} y1 - Start Y coordinate
@@ -32,7 +30,7 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @returns {void}
  */
 export function drawLine( screenData, x1, y1, x2, y2 ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -44,8 +42,18 @@ export function drawLine( screenData, x1, y1, x2, y2 ) {
 	const writePoint = g_batchHelpers.createPointWriter( screenData, g_batches.POINTS_BATCH );
 
 	// Add a line using Bresenham's algorithm (as individual points)
-	const sx = x1 < x2 ? 1 : -1;
-	const sy = y1 < y2 ? 1 : -1;
+	let sx;
+	if( x1 < x2 ) {
+		sx = 1;
+	} else {
+		sx = -1;
+	}
+	let sy;
+	if( y1 < y2 ) {
+		sy = 1;
+	} else {
+		sy = -1;
+	}
 	let err = dx - dy;
 
 	let x = x1;

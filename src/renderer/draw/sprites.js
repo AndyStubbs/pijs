@@ -1,15 +1,14 @@
 /**
  * Pi.js - Images Drawing Module
- * 
+ *
  * Low-level drawing operations: image drawing.
- * 
+ *
  * @module renderer/draw/images
  */
 
 "use strict";
 
-import { isContextUnavailable } from "../context-state.js";
-
+import * as g_contextState from "../context-state.js";
 import * as g_batches from "../batches.js";
 import * as g_textures from "../textures.js";
 
@@ -19,7 +18,7 @@ const m_quadColorMap = new Map();
 
 /**
  * Calculate transformed corner positions for a quad
- * 
+ *
  * @param {number} width - Quad width
  * @param {number} height - Quad height
  * @param {number} anchorX - Anchor point X (0-1)
@@ -45,10 +44,18 @@ function calculateTransformedCorners(
 
 	// Calculate corner positions relative to anchor point
 	const corners = [
-		{ "x": -anchorXPx, "y": -anchorYPx },								// Top-left
-		{ "x": scaledWidth - anchorXPx, "y": -anchorYPx },					// Top-right
-		{ "x": -anchorXPx, "y": scaledHeight - anchorYPx },					// Bottom-left
-		{ "x": scaledWidth - anchorXPx, "y": scaledHeight - anchorYPx }		// Bottom-right
+
+		// Top-left
+		{ "x": -anchorXPx, "y": -anchorYPx },
+
+		// Top-right
+		{ "x": scaledWidth - anchorXPx, "y": -anchorYPx },
+
+		// Bottom-left
+		{ "x": -anchorXPx, "y": scaledHeight - anchorYPx },
+
+		// Bottom-right
+		{ "x": scaledWidth - anchorXPx, "y": scaledHeight - anchorYPx }
 	];
 
 	// Rotate corners around (0,0) then translate to (x,y)
@@ -63,7 +70,7 @@ function calculateTransformedCorners(
 			corner.y = ry + y;
 		}
 	} else {
-		
+
 		// No rotation, just translate
 		for( let i = 0; i < corners.length; i++ ) {
 			corners[ i ].x += x;
@@ -76,9 +83,9 @@ function calculateTransformedCorners(
 
 /**
  * Add a textured quad (2 triangles, 6 vertices) to IMAGE_BATCH
- * 
+ *
  * TODO-LATER: Move to batch helpers and call addQuadToBatch
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {WebGLTexture} texture - WebGL texture
  * @param {Array<Object>} corners - Array of 4 corner objects with x, y properties
@@ -164,7 +171,7 @@ function getQuadColorArray( color ) {
 		if( m_quadColorMap.size >= MAX_QUAD_COLOR_MAP_SIZE ) {
 			m_quadColorMap.clear();
 		}
-		
+
 		const r = color.r;
 		const g = color.g;
 		const b = color.b;
@@ -205,7 +212,7 @@ function getQuadColorArray( color ) {
 
 /**
  * Draw image as textured quad with optional transform
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Image|Canvas|WebGLTexture} img - Image, Canvas, or Texture
  * @param {number} x - X position
@@ -216,13 +223,14 @@ function getQuadColorArray( color ) {
  * @param {number} scaleX - Scale X factor
  * @param {number} scaleY - Scale Y factor
  * @param {number} angleRad - Rotation angle in radians
+ * @param {number} [batchType] - Destination batch type.
  * @returns {void}
  */
-export function drawImage( 
+export function drawImage(
 	screenData, img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad,
 	batchType = g_batches.IMAGE_BATCH
 ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -246,21 +254,45 @@ export function drawImage(
 	let texCoords;
 	if( textureInfo.invertedY ) {
 		texCoords = [
-			0, 1,  // Top-left
-			1, 1,  // Top-right
-			0, 0,  // Bottom-left
-			1, 1,  // Top-right (repeat for second triangle)
-			1, 0,  // Bottom-right
-			0, 0   // Bottom-left (repeat for second triangle)
+
+			// Top-left
+			0, 1,
+
+			// Top-right
+			1, 1,
+
+			// Bottom-left
+			0, 0,
+
+			// Top-right (repeat for second triangle)
+			1, 1,
+
+			// Bottom-right
+			1, 0,
+
+			// Bottom-left (repeat for second triangle)
+			0, 0
 		];
 	} else {
 		texCoords = [
-			0, 0,  // Top-left
-			1, 0,  // Top-right
-			0, 1,  // Bottom-left
-			1, 0,  // Top-right (repeat for second triangle)
-			1, 1,  // Bottom-right
-			0, 1   // Bottom-left (repeat for second triangle)
+
+			// Top-left
+			0, 0,
+
+			// Top-right
+			1, 0,
+
+			// Bottom-left
+			0, 1,
+
+			// Top-right (repeat for second triangle)
+			1, 0,
+
+			// Bottom-right
+			1, 1,
+
+			// Bottom-left (repeat for second triangle)
+			0, 1
 		];
 	}
 
@@ -272,7 +304,7 @@ export function drawImage(
 
 /**
  * Draw sprite (sub-region) from texture atlas
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Image|Canvas|WebGLTexture} img - Image, Canvas, or Texture
  * @param {number} sx - Source X in texture
@@ -289,6 +321,7 @@ export function drawImage(
  * @param {number} [scaleX=1] - Scale X factor
  * @param {number} [scaleY=1] - Scale Y factor
  * @param {number} [angleRad=0] - Rotation angle in radians
+ * @param {number} [batchType] - Destination batch type.
  * @returns {void}
  */
 export function drawSprite(
@@ -296,7 +329,7 @@ export function drawSprite(
 	anchorX = 0, anchorY = 0, scaleX = 1, scaleY = 1, angleRad = 0,
 	batchType = g_batches.IMAGE_BATCH
 ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -329,12 +362,24 @@ export function drawSprite(
 
 	// Texture coordinates for sub-region
 	const texCoords = [
-		u0, v0,  // Top-left
-		u1, v0,  // Top-right
-		u0, v1,  // Bottom-left
-		u1, v0,  // Top-right (repeat for second triangle)
-		u1, v1,  // Bottom-right
-		u0, v1   // Bottom-left (repeat for second triangle)
+
+		// Top-left
+		u0, v0,
+
+		// Top-right
+		u1, v0,
+
+		// Bottom-left
+		u0, v1,
+
+		// Top-right (repeat for second triangle)
+		u1, v0,
+
+		// Bottom-right
+		u1, v1,
+
+		// Bottom-left (repeat for second triangle)
+		u0, v1
 	];
 
 	// Add textured quad to batch

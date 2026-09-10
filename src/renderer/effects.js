@@ -1,16 +1,15 @@
 /**
  * Pi.js - Render Effects Module
- * 
+ *
  * Screen-space post operations that manipulate the off-screen render target (FBO),
  * such as scrolling and simple blits.
- * 
+ *
  * @module renderer/draw/effects
  */
 
 "use strict";
 
-import { isContextUnavailable, probeContextLoss } from "./context-state.js";
-
+import * as g_contextState from "./context-state.js";
 import * as g_batches from "./batches.js";
 
 /**
@@ -27,7 +26,7 @@ import * as g_batches from "./batches.js";
  * @returns {void}
  */
 export function shiftImageUp( screenData, yOffset, x, y, width, height ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -57,7 +56,7 @@ export function shiftImageUp( screenData, yOffset, x, y, width, height ) {
 
 	// Ensure the latest content is in screenData.fboTexture
 	g_batches.flushBatches( screenData );
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -129,7 +128,7 @@ export function shiftImageUp( screenData, yOffset, x, y, width, height ) {
  * @returns {void}
  */
 export function cls( screenData, x, y, width, height ) {
-	if( probeContextLoss( screenData ) ) {
+	if( g_contextState.probeContextLoss( screenData ) ) {
 		return;
 	}
 
@@ -143,7 +142,7 @@ export function cls( screenData, x, y, width, height ) {
 	} else {
 		g_batches.flushBatches( screenData );
 	}
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 

@@ -1,15 +1,14 @@
 /**
  * Pi.js - Graphics API Module
- * 
+ *
  * Thin wrapper layer for graphics commands.
  * Handles input parsing, validation, and builds optimized drawing functions.
- * 
+ *
  * @module api/graphics
  */
 
 "use strict";
 
-// Import modules
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
@@ -22,12 +21,17 @@ const DEFAULT_BLIT_COLOR = g_utils.rgbToColor( 255, 255, 255, 255 );
 let m_api = null;
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Commands
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
-// Initialize graphics module - only gets called on script load
+/**
+ * Initialize the module and register its commands and lifecycle hooks.
+ *
+ * @param {Object} api - Public Pi.js API.
+ * @returns {void}
+ */
 export function init( api ) {
 	m_api = api;
 
@@ -41,14 +45,20 @@ export function init( api ) {
 	g_screenManager.addScreenInitFunction( ( screenData ) => buildApi( screenData ) );
 }
 
-// Function to build the external API drawing commands (e.g., pset, line, etc...) for the current
-// active screen. This creates specialized API wrappers that handle input parsing/validation, then
-// call optimized internal drawing routines. By closing over specific, already-optimized functions
-// and screen configuration, it provides highly performant, monomorphic call sites in hot loops.
-export function buildApi( s_screenData ) {
+/**
+ * Build screen-specific drawing wrappers with captured render functions and validated inputs.
+ *
+ * Capturing optimized render functions and screen configuration keeps drawing call sites
+ * monomorphic in hot loops.
+ *
+ * @param {Object|null} sharedScreenData - Screen state, or null to install unavailable-screen
+ * handlers.
+ * @returns {void}
+ */
+export function buildApi( sharedScreenData ) {
 
 	// Set error functions for when no screen is available
-	if( s_screenData === null ) {
+	if( sharedScreenData === null ) {
 		m_api.arc = () => g_utils.errFn( "arc" );
 		m_api.bezier = () => g_utils.errFn( "bezier" );
 		m_api.circle = () => g_utils.errFn( "circle" );
@@ -62,42 +72,42 @@ export function buildApi( s_screenData ) {
 	}
 
 	// Draw commands
-	const s_drawArc = g_renderer.drawArc;
-	const s_drawBezier = g_renderer.drawBezier;
-	const s_drawCircle = g_renderer.drawCircle;
-	const s_drawCircleFilled = g_renderer.drawCircleFilled;
-	const s_drawEllipse = g_renderer.drawEllipse;
-	const s_drawLine = g_renderer.drawLine;
-	const s_drawPixel = g_renderer.drawPixel;
-	const s_drawRect = g_renderer.drawRect;
-	const s_drawRectFilled = g_renderer.drawRectFilled;
-	const s_drawImage = g_renderer.drawImage;
-	const s_drawSprite = g_renderer.drawSprite;
-	
+	const sharedDrawArc = g_renderer.drawArc;
+	const sharedDrawBezier = g_renderer.drawBezier;
+	const sharedDrawCircle = g_renderer.drawCircle;
+	const sharedDrawCircleFilled = g_renderer.drawCircleFilled;
+	const sharedDrawEllipse = g_renderer.drawEllipse;
+	const sharedDrawLine = g_renderer.drawLine;
+	const sharedDrawPixel = g_renderer.drawPixel;
+	const sharedDrawRect = g_renderer.drawRect;
+	const sharedDrawRectFilled = g_renderer.drawRectFilled;
+	const sharedDrawImage = g_renderer.drawImage;
+	const sharedDrawSprite = g_renderer.drawSprite;
+
 	// Other API Commands
-	const s_getImageFromRawInput = g_images.getImageFromRawInput;
-	const s_getStoredImage = g_images.getStoredImage;
+	const sharedGetImageFromRawInput = g_images.getImageFromRawInput;
+	const sharedGetStoredImage = g_images.getStoredImage;
 
 	// Utility commands
-	const s_isObjectLiteral = g_utils.isObjectLiteral;
-	const s_setImageDirty = g_renderer.setImageDirty;
-	const s_getInt = g_utils.getInt;
-	const s_getFloat = g_utils.getFloat;
-	const s_degreesToRadian = g_utils.degreesToRadian;
-	const s_getColorValueByRawInput = g_colors.getColorValueByRawInput;
+	const sharedIsObjectLiteral = g_utils.isObjectLiteral;
+	const sharedSetImageDirty = g_renderer.setImageDirty;
+	const sharedGetInt = g_utils.getInt;
+	const sharedGetFloat = g_utils.getFloat;
+	const sharedDegreesToRadian = g_utils.degreesToRadian;
+	const sharedGetColorValueByRawInput = g_colors.getColorValueByRawInput;
 
 	// Constants
-	const s_pointsBatch = g_renderer.POINTS_BATCH;
-	const s_imageReplaceBatch = g_renderer.IMAGE_REPLACE_BATCH;
+	const sharedPointsBatch = g_renderer.POINTS_BATCH;
+	const sharedImageReplaceBatch = g_renderer.IMAGE_REPLACE_BATCH;
 
 	/**********************************************************************************************
 	 * ARC Command
 	 **********************************************************************************************/
 
 	const arcFn = ( x, y, radius, angle1, angle2 ) => {
-		const pX = s_getInt( x, null );
-		const pY = s_getInt( y, null );
-		const pRadius = s_getInt( radius, null );
+		const pX = sharedGetInt( x, null );
+		const pY = sharedGetInt( y, null );
+		const pRadius = sharedGetInt( radius, null );
 
 		// Validate integer parameters
 		if( pX === null || pY === null || pRadius === null ) {
@@ -119,35 +129,35 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw Arc
-		s_drawArc(
-			s_screenData, pX, pY, pRadius, s_degreesToRadian( angle1 ),
-			s_degreesToRadian( angle2 )
+		sharedDrawArc(
+			sharedScreenData, pX, pY, pRadius, sharedDegreesToRadian( angle1 ),
+			sharedDegreesToRadian( angle2 )
 		);
-		s_setImageDirty( s_screenData );
+		sharedSetImageDirty( sharedScreenData );
 	};
 	const arcFnWrapper = ( x, y, radius, angle1, angle2 ) => {
-		if( s_isObjectLiteral( x ) ) {
+		if( sharedIsObjectLiteral( x ) ) {
 			arcFn( x.x, x.y, x.radius, x.angle1, x.angle2 );
 		} else {
 			arcFn( x, y, radius, angle1, angle2 );
 		}
 	};
 	m_api.arc = arcFnWrapper;
-	s_screenData.api.arc = arcFnWrapper;
-	
+	sharedScreenData.api.arc = arcFnWrapper;
+
 	/**********************************************************************************************
 	 * BEZIER Command
 	 **********************************************************************************************/
 
 	const bezierFn = ( x1, y1, x2, y2, x3, y3, x4, y4 ) => {
-		const pX1 = s_getInt( x1, null );
-		const pY1 = s_getInt( y1, null );
-		const pX2 = s_getInt( x2, null );
-		const pY2 = s_getInt( y2, null );
-		const pX3 = s_getInt( x3, null );
-		const pY3 = s_getInt( y3, null );
-		const pX4 = s_getInt( x4, null );
-		const pY4 = s_getInt( y4, null );
+		const pX1 = sharedGetInt( x1, null );
+		const pY1 = sharedGetInt( y1, null );
+		const pX2 = sharedGetInt( x2, null );
+		const pY2 = sharedGetInt( y2, null );
+		const pX3 = sharedGetInt( x3, null );
+		const pY3 = sharedGetInt( y3, null );
+		const pX4 = sharedGetInt( x4, null );
+		const pY4 = sharedGetInt( y4, null );
 
 		if(
 			pX1 === null || pY1 === null || pX2 === null || pY2 === null ||
@@ -161,27 +171,27 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw Bezier
-		s_drawBezier( s_screenData, pX1, pY1, pX2, pY2, pX3, pY3, pX4, pY4 );
-		s_setImageDirty( s_screenData );
+		sharedDrawBezier( sharedScreenData, pX1, pY1, pX2, pY2, pX3, pY3, pX4, pY4 );
+		sharedSetImageDirty( sharedScreenData );
 	};
 	const bezierFnWrapper = ( x1, y1, x2, y2, x3, y3, x4, y4 ) => {
-		if( s_isObjectLiteral( x1 ) ) {
+		if( sharedIsObjectLiteral( x1 ) ) {
 			bezierFn( x1.x1, x1.y1, x1.x2, x1.y2, x1.x3, x1.y3, x1.x4, x1.y4 );
 		} else {
 			bezierFn( x1, y1, x2, y2, x3, y3, x4, y4 );
 		}
 	};
 	m_api.bezier = bezierFnWrapper;
-	s_screenData.api.bezier = bezierFnWrapper;
+	sharedScreenData.api.bezier = bezierFnWrapper;
 
 	/**********************************************************************************************
 	 * Circle Command
 	 **********************************************************************************************/
 
 	const circleFn = ( x, y, radius, fillColor ) => {
-		const pX = s_getInt( x, null );
-		const pY = s_getInt( y, null );
-		const pRadius = s_getInt( radius, null );
+		const pX = sharedGetInt( x, null );
+		const pY = sharedGetInt( y, null );
+		const pRadius = sharedGetInt( radius, null );
 
 		if( pX === null || pY === null || pRadius === null ) {
 			const error = new TypeError(
@@ -194,7 +204,7 @@ export function buildApi( s_screenData ) {
 		// Parse and validate fillColor here (single source of truth)
 		let fillColorValue = null;
 		if( fillColor != null ) {
-			fillColorValue = s_getColorValueByRawInput( s_screenData, fillColor );
+			fillColorValue = sharedGetColorValueByRawInput( sharedScreenData, fillColor );
 			if( fillColorValue === null ) {
 				const error = new TypeError(
 					"circle: Parameter 'fillColor' must be a valid color."
@@ -205,34 +215,34 @@ export function buildApi( s_screenData ) {
 
 			// Fill in the circle
 			if( pRadius > 0 ) {
-				s_drawCircleFilled( s_screenData, pX, pY, pRadius, fillColorValue );
+				sharedDrawCircleFilled( sharedScreenData, pX, pY, pRadius, fillColorValue );
 			}
 		}
 
 		// Draw the circle border
-		s_drawCircle( s_screenData, pX, pY, pRadius );
-		s_setImageDirty( s_screenData );
+		sharedDrawCircle( sharedScreenData, pX, pY, pRadius );
+		sharedSetImageDirty( sharedScreenData );
 	};
 	const circleFnWrapper = ( x, y, radius, fillColor ) => {
-		if( s_isObjectLiteral( x ) ) {
+		if( sharedIsObjectLiteral( x ) ) {
 			circleFn( x.x, x.y, x.radius, x.fillColor );
 		} else {
-			circleFn( x, y, radius, fillColor);
+			circleFn( x, y, radius, fillColor );
 		}
 	};
 
 	m_api.circle = circleFnWrapper;
-	s_screenData.api.circle = circleFnWrapper;
+	sharedScreenData.api.circle = circleFnWrapper;
 
 	/**********************************************************************************************
 	 * Ellipse Command
 	 **********************************************************************************************/
 
 	const ellipseFn = ( x, y, radiusX, radiusY, fillColor ) => {
-		const pX = s_getInt( x, null );
-		const pY = s_getInt( y, null );
-		const pRx = s_getInt( radiusX, null );
-		const pRy = s_getInt( radiusY, null );
+		const pX = sharedGetInt( x, null );
+		const pY = sharedGetInt( y, null );
+		const pRx = sharedGetInt( radiusX, null );
+		const pRy = sharedGetInt( radiusY, null );
 
 		if( pX === null || pY === null || pRx === null || pRy === null ) {
 			const error = new TypeError( "ellipse: Parameters x, y, rx, and ry must be integers." );
@@ -243,7 +253,7 @@ export function buildApi( s_screenData ) {
 		// Parse and validate fillColor here (single source of truth)
 		let fillColorValue = null;
 		if( fillColor != null ) {
-			fillColorValue = s_getColorValueByRawInput( s_screenData, fillColor );
+			fillColorValue = sharedGetColorValueByRawInput( sharedScreenData, fillColor );
 			if( fillColorValue === null ) {
 				const error = new TypeError(
 					"ellipse: Parameter 'fillColor' must be a valid color."
@@ -256,29 +266,29 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw the ellipse border
-		s_drawEllipse( s_screenData, pX, pY, pRx, pRy, fillColorValue );
-		s_setImageDirty( s_screenData );
+		sharedDrawEllipse( sharedScreenData, pX, pY, pRx, pRy, fillColorValue );
+		sharedSetImageDirty( sharedScreenData );
 	};
 	const ellipseFnWrapper = ( x, y, radiusX, radiusY, fillColor ) => {
-		if( s_isObjectLiteral( x ) ) {
+		if( sharedIsObjectLiteral( x ) ) {
 			ellipseFn( x.x, x.y, x.radiusX, x.radiusY, x.fillColor );
 		} else {
-			ellipseFn( x, y, radiusX, radiusY, fillColor);
+			ellipseFn( x, y, radiusX, radiusY, fillColor );
 		}
 	};
 
 	m_api.ellipse = ellipseFnWrapper;
-	s_screenData.api.ellipse = ellipseFnWrapper;
+	sharedScreenData.api.ellipse = ellipseFnWrapper;
 
 	/**********************************************************************************************
 	 * LINE Command
 	 **********************************************************************************************/
 
 	const lineFn = ( x1, y1, x2, y2 ) => {
-		const pX1 = s_getInt( x1, null );
-		const pY1 = s_getInt( y1, null );
-		const pX2 = s_getInt( x2, null );
-		const pY2 = s_getInt( y2, null );
+		const pX1 = sharedGetInt( x1, null );
+		const pY1 = sharedGetInt( y1, null );
+		const pX2 = sharedGetInt( x2, null );
+		const pY2 = sharedGetInt( y2, null );
 
 		// Make sure x1, y1, x2, y2 are integers
 		if( pX1 === null || pY1 === null || pX2 === null || pY2 === null ) {
@@ -288,11 +298,11 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw Line
-		s_drawLine( s_screenData, pX1, pY1, pX2, pY2 );
-		s_setImageDirty( s_screenData );
+		sharedDrawLine( sharedScreenData, pX1, pY1, pX2, pY2 );
+		sharedSetImageDirty( sharedScreenData );
 	};
 	const lineFnWrapper = ( x1, y1, x2, y2 ) => {
-		if( s_isObjectLiteral( x1 ) ) {
+		if( sharedIsObjectLiteral( x1 ) ) {
 			lineFn( x1.x1 , x1.y1, x1.x2, x1.y2 );
 		} else {
 			lineFn( x1, y1, x2, y2 );
@@ -300,15 +310,15 @@ export function buildApi( s_screenData ) {
 	};
 
 	m_api.line = lineFnWrapper;
-	s_screenData.api.line = lineFnWrapper;
-	
+	sharedScreenData.api.line = lineFnWrapper;
+
 	/**********************************************************************************************
 	 * PSET Command
 	 **********************************************************************************************/
 
 	const psetFn = ( x, y ) => {
-		const pX = s_getInt( x, null );
-		const pY = s_getInt( y, null );
+		const pX = sharedGetInt( x, null );
+		const pY = sharedGetInt( y, null );
 
 		// Make sure x and y are integers
 		if( pX === null || pY === null ) {
@@ -318,32 +328,32 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Draw the pixel
-		s_drawPixel( s_screenData, pX, pY, s_pointsBatch );
-		s_setImageDirty( s_screenData );
+		sharedDrawPixel( sharedScreenData, pX, pY, sharedPointsBatch );
+		sharedSetImageDirty( sharedScreenData );
 
 		// Set the cursor after drawing
-		s_screenData.cursor.x = x;
-		s_screenData.cursor.y = y;
+		sharedScreenData.cursor.x = x;
+		sharedScreenData.cursor.y = y;
 	};
 	const psetFnWrapper = ( x, y ) => {
-		if( s_isObjectLiteral( x ) ) {
+		if( sharedIsObjectLiteral( x ) ) {
 			psetFn( x.x , x.y );
 		} else {
 			psetFn( x, y );
 		}
 	};
 	m_api.pset = psetFnWrapper;
-	s_screenData.api.pset = psetFnWrapper;
+	sharedScreenData.api.pset = psetFnWrapper;
 
 	/**********************************************************************************************
 	 * RECT Command
 	 **********************************************************************************************/
 
 	const rectFn = ( x, y, width, height, fillColor ) => {
-		const pX = s_getInt( x, null );
-		const pY = s_getInt( y, null );
-		const pWidth = s_getInt( width, null );
-		const pHeight = s_getInt( height, null );
+		const pX = sharedGetInt( x, null );
+		const pY = sharedGetInt( y, null );
+		const pWidth = sharedGetInt( width, null );
+		const pHeight = sharedGetInt( height, null );
 
 		if( pX === null || pY === null || pWidth === null || pHeight === null ) {
 			const error = new TypeError( "rect: Parameters x, y, width, height must be integers." );
@@ -358,7 +368,7 @@ export function buildApi( s_screenData ) {
 		// Parse and validate fillColor here (single source of truth)
 		let fillColorValue = null;
 		if( fillColor != null ) {
-			fillColorValue = s_getColorValueByRawInput( s_screenData, fillColor );
+			fillColorValue = sharedGetColorValueByRawInput( sharedScreenData, fillColor );
 			if( fillColorValue === null ) {
 				const error = new TypeError( "rect: Parameter 'fillColor' must be a valid color." );
 				error.code = "INVALID_PARAMETER";
@@ -369,16 +379,16 @@ export function buildApi( s_screenData ) {
 			const fWidth = pWidth - 2;
 			const fHeight = pHeight - 2;
 			if( fWidth > 0 && fHeight > 0 ) {
-				s_drawRectFilled( s_screenData, pX + 1, pY + 1, fWidth, fHeight, fillColorValue );
+				sharedDrawRectFilled( sharedScreenData, pX + 1, pY + 1, fWidth, fHeight, fillColorValue );
 			}
 		}
 
 		// Draw the rect border
-		s_drawRect( s_screenData, pX, pY, pWidth, pHeight );
-		s_setImageDirty( s_screenData );
+		sharedDrawRect( sharedScreenData, pX, pY, pWidth, pHeight );
+		sharedSetImageDirty( sharedScreenData );
 	};
 	const rectFnWrapper = ( x, y, width, height, fillColor ) => {
-		if( s_isObjectLiteral( x ) ) {
+		if( sharedIsObjectLiteral( x ) ) {
 			rectFn( x.x , x.y, x.width, x.height, x.fillColor );
 		} else {
 			rectFn( x, y, width, height, fillColor );
@@ -386,7 +396,7 @@ export function buildApi( s_screenData ) {
 	};
 
 	m_api.rect = rectFnWrapper;
-	s_screenData.api.rect = rectFnWrapper;
+	sharedScreenData.api.rect = rectFnWrapper;
 
 	/**********************************************************************************************
 	 * BLIT IMAGE Command
@@ -394,14 +404,14 @@ export function buildApi( s_screenData ) {
 
 	// Draw image with blending disabled
 	const blitImageFn = ( img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad ) => {
-		const pAnchorX = anchorX ?? s_screenData.defaultAnchorX;
-		const pAnchorY = anchorY ?? s_screenData.defaultAnchorY;
+		const pAnchorX = anchorX ?? sharedScreenData.defaultAnchorX;
+		const pAnchorY = anchorY ?? sharedScreenData.defaultAnchorY;
 		const pColor = color ?? DEFAULT_BLIT_COLOR;
-		s_drawImage(
-			s_screenData, img, x, y, pColor, pAnchorX, pAnchorY, scaleX, scaleY, angleRad,
-			s_imageReplaceBatch
+		sharedDrawImage(
+			sharedScreenData, img, x, y, pColor, pAnchorX, pAnchorY, scaleX, scaleY, angleRad,
+			sharedImageReplaceBatch
 		);
-		s_setImageDirty( s_screenData );
+		sharedSetImageDirty( sharedScreenData );
 	};
 
 	const blitImageFnWrapper = (
@@ -415,7 +425,7 @@ export function buildApi( s_screenData ) {
 		scaleY = 1,
 		angleRad = 0
 	) => {
-		if( s_isObjectLiteral( img ) ) {
+		if( sharedIsObjectLiteral( img ) ) {
 			blitImageFn(
 				img.img, img.x, img.y, img.color, img.anchorX, img.anchorY, img.scaleX, img.scaleY,
 				img.angleRad
@@ -425,7 +435,7 @@ export function buildApi( s_screenData ) {
 		}
 	};
 	m_api.blitImage = blitImageFnWrapper;
-	s_screenData.api.blitImage = blitImageFnWrapper;
+	sharedScreenData.api.blitImage = blitImageFnWrapper;
 
 	/**********************************************************************************************
 	 * BLIT SPRITE Command
@@ -435,20 +445,20 @@ export function buildApi( s_screenData ) {
 	const blitSpriteFn = (
 		name, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
 	) => {
-		const spriteData = s_getStoredImage( name );
+		const spriteData = sharedGetStoredImage( name );
 		const frameData = spriteData.frames[ frame ];
 		const img = spriteData.image;
-		const pAnchorX = anchorX ?? s_screenData.defaultAnchorX;
-		const pAnchorY = anchorY ?? s_screenData.defaultAnchorY;
+		const pAnchorX = anchorX ?? sharedScreenData.defaultAnchorX;
+		const pAnchorY = anchorY ?? sharedScreenData.defaultAnchorY;
 		const pColor = color ?? DEFAULT_BLIT_COLOR;
-		s_drawSprite(
-			s_screenData, img,
+		sharedDrawSprite(
+			sharedScreenData, img,
 			frameData.x, frameData.y, frameData.width, frameData.height,
 			x, y, frameData.width, frameData.height,
 			pColor, pAnchorX, pAnchorY, scaleX, scaleY, angleRad,
-			s_imageReplaceBatch
+			sharedImageReplaceBatch
 		);
-		s_setImageDirty( s_screenData );
+		sharedSetImageDirty( sharedScreenData );
 	};
 
 	const blitSpriteFnWrapper = (
@@ -463,7 +473,7 @@ export function buildApi( s_screenData ) {
 		scaleY = 1,
 		angleRad = 0
 	) => {
-		if( s_isObjectLiteral( name ) ) {
+		if( sharedIsObjectLiteral( name ) ) {
 			blitSpriteFn(
 				name.name, name.frame, name.x, name.y, name.color, name.anchorX, name.anchorY,
 				name.scaleX, name.scaleY, name.angleRad
@@ -473,50 +483,50 @@ export function buildApi( s_screenData ) {
 		}
 	};
 	m_api.blitSprite = blitSpriteFnWrapper;
-	s_screenData.api.blitSprite = blitSpriteFnWrapper;
+	sharedScreenData.api.blitSprite = blitSpriteFnWrapper;
 
 	/**********************************************************************************************
 	 * DRAW IMAGE Command
 	 **********************************************************************************************/
 
 	const drawImageFn = ( image, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ) => {
-		x = s_getInt( x, null );
-		y = s_getInt( y, null );
+		x = sharedGetInt( x, null );
+		y = sharedGetInt( y, null );
 		color = color ?? DEFAULT_BLIT_COLOR;
-		anchorX = s_getFloat( anchorX, s_screenData.defaultAnchorX );
-		anchorY = s_getFloat( anchorY, s_screenData.defaultAnchorY );
-		scaleX = s_getFloat( scaleX, 1 );
-		scaleY = s_getFloat( scaleY, 1 );
-		angle = s_getFloat( angle, 0 );
-		image = s_getImageFromRawInput( image, "drawImage" );
-	
+		anchorX = sharedGetFloat( anchorX, sharedScreenData.defaultAnchorX );
+		anchorY = sharedGetFloat( anchorY, sharedScreenData.defaultAnchorY );
+		scaleX = sharedGetFloat( scaleX, 1 );
+		scaleY = sharedGetFloat( scaleY, 1 );
+		angle = sharedGetFloat( angle, 0 );
+		image = sharedGetImageFromRawInput( image, "drawImage" );
+
 		// Validate coordinates
 		if( x === null || y === null ) {
 			const error = new TypeError( "drawImage: Parameters x and y must be numbers." );
 			error.code = "INVALID_COORDINATES";
 			throw error;
 		}
-	
+
 		// Parses the color and makes sure it's in a valid format
-		color = s_getColorValueByRawInput( s_screenData, color );
+		color = sharedGetColorValueByRawInput( sharedScreenData, color );
 		if( color === null ) {
 			color = DEFAULT_BLIT_COLOR;
 		}
-			
+
 		// Convert angle from degrees to radians
-		const angleRad = s_degreesToRadian( angle );
-	
+		const angleRad = sharedDegreesToRadian( angle );
+
 		// Draw using renderer-specific implementation
-		s_drawImage(
-			s_screenData, image, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
+		sharedDrawImage(
+			sharedScreenData, image, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
 		);
-	
+
 		// Mark screen as dirty
-		s_setImageDirty( s_screenData );
+		sharedSetImageDirty( sharedScreenData );
 	};
 
 	const drawImageFnWrapper = ( image, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ) => {
-		if( s_isObjectLiteral( image ) ) {
+		if( sharedIsObjectLiteral( image ) ) {
 			drawImageFn(
 				image.image, image.x, image.y, image.color, image.anchorX, image.anchorY,
 				image.scaleX, image.scaleY, image.angle
@@ -527,7 +537,7 @@ export function buildApi( s_screenData ) {
 	};
 
 	m_api.drawImage = drawImageFnWrapper;
-	s_screenData.api.drawImage = drawImageFnWrapper;
+	sharedScreenData.api.drawImage = drawImageFnWrapper;
 
 	/**********************************************************************************************
 	 * DRAW SPRITE Command
@@ -535,14 +545,14 @@ export function buildApi( s_screenData ) {
 
 	const drawSpriteFn = ( name, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ) => {
 		frame = frame ?? 0;
-		x = s_getInt( x, null );
-		y = s_getInt( y, null );
+		x = sharedGetInt( x, null );
+		y = sharedGetInt( y, null );
 		color = color ?? DEFAULT_BLIT_COLOR;
-		anchorX = s_getFloat( anchorX, s_screenData.defaultAnchorX );
-		anchorY = s_getFloat( anchorY, s_screenData.defaultAnchorY );
-		scaleX = s_getFloat( scaleX, 1 );
-		scaleY = s_getFloat( scaleY, 1 );
-		angle = s_getFloat( angle, 0 );
+		anchorX = sharedGetFloat( anchorX, sharedScreenData.defaultAnchorX );
+		anchorY = sharedGetFloat( anchorY, sharedScreenData.defaultAnchorY );
+		scaleX = sharedGetFloat( scaleX, 1 );
+		scaleY = sharedGetFloat( scaleY, 1 );
+		angle = sharedGetFloat( angle, 0 );
 
 		// Validate name
 		if( typeof name !== "string" ) {
@@ -551,7 +561,7 @@ export function buildApi( s_screenData ) {
 			throw error;
 		}
 
-		const spriteData = s_getStoredImage( name );
+		const spriteData = sharedGetStoredImage( name );
 		if( !spriteData ) {
 			const error = new Error( `drawSprite: Spritesheet "${name}" not found.` );
 			error.code = "IMAGE_NOT_FOUND";
@@ -600,13 +610,13 @@ export function buildApi( s_screenData ) {
 		}
 
 		// Parses the color and makes sure it's in a valid format
-		color = s_getColorValueByRawInput( s_screenData, color );
+		color = sharedGetColorValueByRawInput( sharedScreenData, color );
 		if( color === null ) {
 			color = DEFAULT_BLIT_COLOR;
 		}
 
 		// Convert angle from degrees to radians
-		const angleRad = s_degreesToRadian( angle );
+		const angleRad = sharedDegreesToRadian( angle );
 
 		// Get frame data
 		const frameData = spriteData.frames[ frame ];
@@ -614,20 +624,20 @@ export function buildApi( s_screenData ) {
 
 		// Draw using renderer-specific implementation
 		g_renderer.drawSprite(
-			s_screenData, img,
+			sharedScreenData, img,
 			frameData.x, frameData.y, frameData.width, frameData.height,
 			x, y, frameData.width, frameData.height,
 			color, anchorX, anchorY, scaleX, scaleY, angleRad
 		);
 
 		// Mark screen as dirty
-		s_setImageDirty( s_screenData );
+		sharedSetImageDirty( sharedScreenData );
 	};
 
 	const drawSpriteFnWrapper = (
 		name, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angle
 	) => {
-		if( s_isObjectLiteral( name ) ) {
+		if( sharedIsObjectLiteral( name ) ) {
 			drawSpriteFn(
 				name.name, name.frame, name.x, name.y, name.color, name.anchorX, name.anchorY,
 				name.scaleX, name.scaleY, name.angle
@@ -638,12 +648,12 @@ export function buildApi( s_screenData ) {
 	};
 
 	m_api.drawSprite = drawSpriteFnWrapper;
-	s_screenData.api.drawSprite = drawSpriteFnWrapper;
+	sharedScreenData.api.drawSprite = drawSpriteFnWrapper;
 }
 
 /**
  * Clear the screen or a rectangular region
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Options containing x, y, width, height
  * @returns {void}

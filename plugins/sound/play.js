@@ -1,14 +1,14 @@
 /**
  * Pi.js - Play Module (Plugin)
- * 
+ *
  * BASIC-style music notation playback (inspired by QBasic PLAY command).
- * 
+ *
  * @module plugins/sound/play
  */
 
 "use strict";
 
-import { createSound, getAudioContext, stopSoundById } from "./sound.js";
+import * as g_sound from "./sound.js";
 
 const m_tracks = {};
 const m_allTracks = [];
@@ -20,7 +20,9 @@ let m_utils = null;
 const m_notesData = {
 	"A": [ 27.50, 55.00, 110, 220, 440, 880, 1760, 3520, 7040, 14080 ],
 	"A#": [ 29.14, 58.27, 116.541, 233.082, 466.164, 932.328, 1864.655, 3729.31, 7458.62, 14917.24 ],
-	"B": [ 30.87, 61.74, 123.471, 246.942, 493.883, 987.767, 1975.533, 3951.066, 7902.132, 15804.264 ],
+	"B": [
+		30.87, 61.74, 123.471, 246.942, 493.883, 987.767, 1975.533, 3951.066, 7902.132, 15804.264
+	],
 	"C": [ 16.35, 32.70, 65.41, 130.813, 261.626, 523.251, 1046.502, 2093.005, 4186.009, 8372.018 ],
 	"C#": [ 17.32, 34.65, 69.296, 138.591, 277.183, 554.365, 1108.731, 2217.461, 4434.922, 8869.844 ],
 	"D": [ 18.35, 36.71, 73.416, 146.832, 293.665, 587.33, 1174.659, 2349.318, 4698.636, 9397.272 ],
@@ -29,7 +31,9 @@ const m_notesData = {
 	"F": [ 21.83, 43.65, 87.307, 174.614, 349.228, 698.456, 1396.913, 2793.826, 5587.652, 11175.304 ],
 	"F#": [ 23.12, 46.25, 92.499, 184.997, 369.994, 739.989, 1479.978, 2959.955, 5919.91, 11839.82 ],
 	"G": [ 24.50, 49.00, 97.999, 195.998, 391.995, 783.991, 1567.982, 3135.964, 6271.928, 12543.856 ],
-	"G#": [ 25.96, 51.91, 103.826, 207.652, 415.305, 830.609, 1661.219, 3322.438, 6644.876, 13289.752 ]
+	"G#": [
+		25.96, 51.91, 103.826, 207.652, 415.305, 830.609, 1661.219, 3322.438, 6644.876, 13289.752
+	]
 };
 
 // All notes by number (for N command)
@@ -48,14 +52,14 @@ const m_allNotes = [
 ];
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Internal Functions
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Create a track from a play string
- * 
+ *
  * @param {string} playString - Music notation string
  * @returns {number} First track ID
  */
@@ -211,7 +215,7 @@ function createTrack( playString ) {
 
 /**
  * Play a track recursively
- * 
+ *
  * @param {number} trackId - Track ID to play
  */
 function playTrack( trackId ) {
@@ -347,7 +351,7 @@ function playTrack( trackId ) {
 
 /**
  * Process a note command (A-G)
- * 
+ *
  * @param {Object} track - Track object
  * @param {Object} cmd - Command object
  * @returns {number} Frequency in Hz
@@ -400,7 +404,7 @@ function processNote( track, cmd ) {
 
 /**
  * Process music style commands (M...)
- * 
+ *
  * @param {Object} track - Track object
  * @param {Object} cmd - Command object
  */
@@ -463,7 +467,7 @@ function processMusic( track, cmd ) {
 
 /**
  * Process waveform commands (W...)
- * 
+ *
  * @param {Object} track - Track object
  * @param {Object} cmd - Command object
  */
@@ -488,7 +492,7 @@ function processWaveform( track, cmd ) {
 
 /**
  * Play a single note
- * 
+ *
  * @param {Object} track - Track object
  * @param {number} frequency - Frequency in Hz
  */
@@ -537,7 +541,7 @@ function playNote( track, frequency ) {
 
 /**
  * Copy track data from source to destination
- * 
+ *
  * @param {number} trackDestId - Destination track ID
  * @param {number} trackSourceId - Source track ID
  */
@@ -563,7 +567,7 @@ function copyTrackData( trackDestId, trackSourceId ) {
 
 /**
  * Remove a track and all its sub-tracks
- * 
+ *
  * @param {number} trackId - Track ID to remove
  */
 function removeTrack( trackId ) {
@@ -584,7 +588,7 @@ function removeTrack( trackId ) {
 
 /**
  * Get note length from note value
- * 
+ *
  * @param {number} val - Note value (1-64)
  * @returns {number} Note length
  */
@@ -596,28 +600,32 @@ function getNoteLength( val ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Plugin Registration
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Register play module commands
- * 
+ *
  * @param {Object} pluginApi - Plugin API
+ * @returns {void}
  */
 export function registerPlay( pluginApi ) {
 	m_utils = pluginApi.utils;
 
+
+	pluginApi.addCommand( "play", play, false, [ "playString" ] );
+
 	/**
 	 * Play music using BASIC-style notation
-	 * 
+	 *
 	 * Format: "NOTE[length][.][#|+|-] ..."
 	 * - Notes: A-G (can include sharps # or +, flats -)
 	 * - Length: 1-64 (1=whole, 4=quarter, etc.)
 	 * - Dot modifiers: . (1.5x), .. (1.75x)
 	 * - Multiple tracks: separated by commas
-	 * 
+	 *
 	 * Commands:
 	 * - O[n]: Set octave (0-9)
 	 * - L[n]: Set default note length
@@ -636,13 +644,13 @@ export function registerPlay( pluginApi ) {
 	 * - MD[n]: Modify decay rate (0-100)
 	 * - <: Decrease octave
 	 * - >: Increase octave
-	 * 
+	 *
 	 * @param {Object} options - Command options
 	 * @param {string} options.playString - Music notation string
+	 * @returns {number} Track ID for use with stopPlay.
 	 */
-	pluginApi.addCommand( "play", play, false, [ "playString" ] );
 	function play( options ) {
-		let playString = options.playString;
+		const playString = options.playString;
 
 		// Validate playString
 		if( typeof playString !== "string" ) {
@@ -662,13 +670,13 @@ export function registerPlay( pluginApi ) {
 		m_playData.sort( ( a, b ) => a.time - b.time );
 
 		// Reuse shared audio context for all notes
-		const audioContext = getAudioContext();
+		const audioContext = g_sound.getAudioContext();
 
 		// Create all sounds
 		for( let i = 0; i < m_playData.length; i++ ) {
 			const playData = m_playData[ i ];
 			playData.track.sounds.push(
-				createSound(
+				g_sound.createSound(
 					audioContext, playData.frequency, playData.volume, playData.attackTime,
 					playData.sustainTime, playData.decayTime, playData.stopTime, playData.oType,
 					playData.waveTables, playData.time
@@ -679,13 +687,16 @@ export function registerPlay( pluginApi ) {
 		return trackId;
 	}
 
+
+	pluginApi.addCommand( "stopPlay", stopPlay, false, [ "trackId" ] );
+
 	/**
 	 * Stop playing music
-	 * 
+	 *
 	 * @param {Object} options - Command options
 	 * @param {number} options.trackId - Track ID to stop (null to stop all tracks)
+	 * @returns {void}
 	 */
-	pluginApi.addCommand( "stopPlay", stopPlay, false, [ "trackId" ] );
 	function stopPlay( options ) {
 		const trackId = options.trackId;
 
@@ -695,7 +706,7 @@ export function registerPlay( pluginApi ) {
 				const track = m_tracks[ m_allTracks[ i ] ];
 				if( track ) {
 					for( let j = 0; j < track.sounds.length; j++ ) {
-						stopSoundById( track.sounds[ j ] );
+						g_sound.stopSoundById( track.sounds[ j ] );
 					}
 					delete m_tracks[ m_allTracks[ i ] ];
 				}
@@ -708,10 +719,9 @@ export function registerPlay( pluginApi ) {
 		if( m_tracks[ trackId ] ) {
 			const track = m_tracks[ trackId ];
 			for( let j = 0; j < track.sounds.length; j++ ) {
-				stopSoundById( track.sounds[ j ] );
+				g_sound.stopSoundById( track.sounds[ j ] );
 			}
 			removeTrack( trackId );
 		}
 	}
 }
-

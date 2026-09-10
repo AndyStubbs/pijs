@@ -1,25 +1,24 @@
 /**
  * Pi.js - Circles Drawing Module
- * 
+ *
  * Low-level drawing operations: circle drawing.
- * 
+ *
  * drawCircle, drawCirclePenSquare, drawCircleCircle
- * 
+ *
  * @module renderer/draw/circles
  */
 
 "use strict";
 
-import { isContextUnavailable } from "../context-state.js";
-
+import * as g_contextState from "../context-state.js";
 import * as g_batches from "../batches.js";
 import * as g_geometry from "./geometry.js";
-import { createPointWriter } from "./batch-helpers.js";
+import * as g_batchHelpers from "./batch-helpers.js";
 
 
 /**
  * Draw circle outline using pixel drawing (no bounds checking, GPU clipping)
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} cx - Center X coordinate
  * @param {number} cy - Center Y coordinate
@@ -27,12 +26,12 @@ import { createPointWriter } from "./batch-helpers.js";
  * @returns {void}
  */
 export function drawCircle( screenData, cx, cy, radius ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
 	const color = screenData.color;
-	const writePoint = createPointWriter( screenData, g_batches.POINTS_BATCH );
+	const writePoint = g_batchHelpers.createPointWriter( screenData, g_batches.POINTS_BATCH );
 
 	// Nothing to draw
 	if( radius <= 0 ) {
@@ -107,7 +106,7 @@ export function drawCircle( screenData, cx, cy, radius ) {
 
 /**
  * Draw filled circle (no bounds checking, GPU clipping)
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} cx - Center X coordinate
  * @param {number} cy - Center Y coordinate
@@ -116,7 +115,7 @@ export function drawCircle( screenData, cx, cy, radius ) {
  * @returns {void}
  */
 export function drawCircleFilled( screenData, cx, cy, radius, color ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 

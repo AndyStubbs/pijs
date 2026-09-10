@@ -1,3 +1,11 @@
+/**
+ * Pi.js - Pen Lines Module
+ *
+ * Geometry routines for drawing with thick pens.
+ *
+ * @module plugins/pens/shapes/lines
+ */
+
 
 /**
  * Draw line with square pen (geometry-based, for pen size >= 2)
@@ -18,7 +26,7 @@ export function drawLineSquare( screenData, x1, y1, x2, y2, color, penSize ) {
 	const dx = x2 - x1;
 	const dy = y2 - y1;
 	const lengthSq = dx * dx + dy * dy;
-	if ( lengthSq < 0.001 * 0.001 ) {
+	if( lengthSq < 0.001 * 0.001 ) {
 
 		// Draw a filled square for a degenerate line
 		// The `penSize` will be the side length of the square
@@ -64,14 +72,15 @@ export function drawLineSquare( screenData, x1, y1, x2, y2, color, penSize ) {
 export function drawLineCircle( screenData, x1, y1, x2, y2, color, penSize ) {
 	const batch = screenData.batches[ g_batches.GEOMETRY_BATCH ];
 
-	const radius = penSize / 2; // Half penSize is the radius of the caps
+	// Half penSize is the radius of the caps
+	const radius = penSize / 2;
 
 	const dx = x2 - x1;
 	const dy = y2 - y1;
 	const lengthSq = dx * dx + dy * dy;
 
 	// Handle degenerate line (essentially a point)
-	if ( lengthSq < 0.001 * 0.001 ) {
+	if( lengthSq < 0.001 * 0.001 ) {
 		g_shapes.drawFilledCircle( screenData, x1, y1, radius, color );
 		return;
 	}
@@ -92,7 +101,8 @@ export function drawLineCircle( screenData, x1, y1, x2, y2, color, penSize ) {
 	// Now for the caps. The previous fix for inversion was:
 	// g_batchHelpers.drawHalfCircleCap( screenData, x1, y1, radius, color, dirX, dirY );
 	// g_batchHelpers.drawHalfCircleCap( screenData, x2, y2, radius, color, -dirX, -dirY );
-	// This was based on the assumption that `dirX, dirY` points FROM the flat edge TO the curved part.
+	// This was based on the assumption that `dirX, dirY` points FROM the flat edge TO the curved
+	// part.
 	// If the caps are overlapping, it might be that `drawHalfCircleCap` is drawing a slightly
 	// larger segment than a perfect half-circle, or its internal positioning needs adjustment.
 
@@ -108,7 +118,7 @@ export function drawLineCircle( screenData, x1, y1, x2, y2, color, penSize ) {
 	// Cap at (x2, y2): Curved part should point away from (x1, y1)
 	// The vector pointing from (x1, y1) to (x2, y2) is (dirX, dirY).
 	// So the cap at (x2, y2) should be oriented by (dirX, dirY) for its curve to face away.
-	g_batchHelpers.drawHalfCircleCap( screenData, x2, y2, radius, color, -dirX, -dirY );	
+	g_batchHelpers.drawHalfCircleCap( screenData, x2, y2, radius, color, -dirX, -dirY );
 }
 
 /**
@@ -130,7 +140,7 @@ function drawLineBody( batch, x1, y1, x2, y2, penSize, halfExtension, color ) {
 	const dy = y2 - y1;
 	const length = Math.sqrt( dx * dx + dy * dy );
 
-	if ( length < 0.001 ) {
+	if( length < 0.001 ) {
 		return;
 	}
 

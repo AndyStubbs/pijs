@@ -12,20 +12,26 @@ import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_images from "./images.js";
-import { probeContextLoss } from "../renderer/context-state.js";
+import * as g_contextState from "../renderer/context-state.js";
 
 /** Next id for shader handles */
 let m_nextShaderId = 0;
 
 /** Shader handles */
-let m_shaderHandles = new Map();
+const m_shaderHandles = new Map();
 
 
 /**************************************************************************************************
  * Module Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
+/**
+ * Initialize the module and register its commands and lifecycle hooks.
+ *
+ * @param {Object} api - Public Pi.js API.
+ * @returns {void}
+ */
 export function init( api ) {
 	g_screenManager.addScreenDataItem( "displayShaderHandle", null );
 	g_screenManager.addScreenDataItem( "displayShaderUniforms", {} );
@@ -53,7 +59,7 @@ function registerCommands() {
 
 /**************************************************************************************************
  * External API Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
@@ -98,7 +104,7 @@ function createShader( options ) {
 		"uniforms": copyUniforms( uniforms )
 	};
 	m_shaderHandles.set( handle.id, handle );
-	
+
 	return handle.id;
 }
 
@@ -294,6 +300,7 @@ function resolveSamplerSource( screenData, input, cmdName ) {
 	let source;
 	try {
 		if( g_screenManager.screenCanvasMap.has( input ) ) {
+
 			// Persistent bindings retain the internal canvas of an offscreen screen.
 			source = input;
 		} else {
@@ -387,6 +394,7 @@ function invalidateDisplayShaderScreenSource( sourceData ) {
 		).some( ( binding ) => {
 			return binding.info.family === "sampler" && binding.sources.includes( source );
 		} ) || Object.values( screenData.displayShaderUniforms ?? {} ).some( value => {
+
 			// Retained CPU sources remain available while GPU bindings are invalidated.
 			return value === source || value === sourceData.api ||
 				( Array.isArray( value ) && value.includes( source ) );
@@ -409,7 +417,7 @@ function invalidateDisplayShaderScreenSource( sourceData ) {
 function applyShader( screenData, options ) {
 	const handle = getShaderHandle( options.shaderHandle );
 	validateUniformMap( options.uniforms, "applyShader" );
-	if( probeContextLoss( screenData ) ) {
+	if( g_contextState.probeContextLoss( screenData ) ) {
 		return;
 	}
 	const overrides = copyUniforms( options.uniforms );
@@ -438,7 +446,7 @@ function setDisplayShader( screenData, options ) {
 	validateUniformMap( options.uniforms, "setDisplayShader" );
 
 	const handle = getShaderHandle( options.shaderHandle, "setDisplayShader" );
-	if( probeContextLoss( screenData ) ) {
+	if( g_contextState.probeContextLoss( screenData ) ) {
 		screenData.displayShaderHandle = handle;
 		screenData.displayShaderUniforms = copyUniforms(
 			mergeUniforms( handle.uniforms, options.uniforms )
@@ -478,7 +486,7 @@ function setDisplayShaderUniforms( screenData, options ) {
 	validateUniformMap( incoming, "setDisplayShaderUniforms" );
 
 	const values = mergeUniforms( screenData.displayShaderUniforms, incoming );
-	if( probeContextLoss( screenData ) ) {
+	if( g_contextState.probeContextLoss( screenData ) ) {
 		screenData.displayShaderUniforms = copyUniforms( values );
 		return;
 	}

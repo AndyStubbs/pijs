@@ -1,23 +1,22 @@
 /**
  * Pi.js - Ellipses Drawing Module
- * 
+ *
  * Low-level drawing operations: ellipse drawing.
- * 
+ *
  * drawEllipse, drawEllipseSquare, drawEllipseCircle
- * 
+ *
  * @module renderer/draw/ellipses
  */
 
 "use strict";
 
-import { isContextUnavailable } from "../context-state.js";
-
+import * as g_contextState from "../context-state.js";
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
 
 /**
  * Draw ellipse outline or filled
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} cx - Center X coordinate
  * @param {number} cy - Center Y coordinate
@@ -27,7 +26,7 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @returns {void}
  */
 export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -53,7 +52,7 @@ export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 
 	// Symmetric plotting for the four quadrants (no duplicate pixels)
 	const plotSymmetric = function( x, y ) {
-		
+
 		// x, y are integers from the midpoint algorithm
 		if( x === 0 ) {
 
@@ -129,17 +128,17 @@ export function drawEllipse( screenData, cx, cy, rx, ry, fillColor ) {
 		};
 
 		// Seed
-		updateScanline(  x,  y );
+		updateScanline( x,  y );
 		updateScanline( -x,  y );
 		updateScanline( -x, -y );
-		updateScanline(  x, -y );
+		updateScanline( x, -y );
 
 		// Symmetric updater for scanlines (can accept any x,y pair)
 		updateScanlineSym = function( sx, sy ) {
-			updateScanline(  sx,  sy );
+			updateScanline( sx,  sy );
 			updateScanline( -sx,  sy );
 			updateScanline( -sx, -sy );
-			updateScanline(  sx, -sy );
+			updateScanline( sx, -sy );
 		};
 	}
 

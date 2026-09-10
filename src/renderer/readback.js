@@ -1,48 +1,47 @@
 /**
  * Pi.js - Pixel Readback Module
- * 
+ *
  * Pixel readback operations: single pixel and rectangular regions.
- * 
+ *
  * @module renderer/readback
  */
 
 "use strict";
 
-import { isContextUnavailable, getContextGeneration } from "./context-state.js";
-
-// Import required modules
-import { unpremultiplyPixels } from "./alpha.js";
+import * as g_contextState from "./context-state.js";
+import * as g_alpha from "./alpha.js";
 import * as g_batches from "./batches.js";
 import * as g_utils from "../core/utils.js";
 import * as g_screenManager from "../core/screen-manager.js";
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Initialization
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
- * Initialize readback module
- * 
+ * Provide the initialization hook expected by the renderer; no startup state is required.
+ *
  * @returns {void}
  */
-export function init() {
-	// No initialization needed
-}
+export function init() {}
 
 /**
  * Read single pixel (synchronous)
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
  * @param {number} [generation] - Generation captured by a deferred read
  * @returns {Object|null} Color object with r, g, b, a or null on error
  */
-export function readPixel( screenData, x, y, generation = getContextGeneration( screenData ) ) {
-	if( isContextUnavailable( screenData ) ||
-		generation !== getContextGeneration( screenData )
+export function readPixel(
+	screenData, x, y, generation = g_contextState.getContextGeneration( screenData )
+) {
+	if(
+		g_contextState.isContextUnavailable( screenData ) ||
+		generation !== g_contextState.getContextGeneration( screenData )
 	) {
 		return g_utils.rgbToColor( 0, 0, 0, 0 );
 	}
@@ -50,7 +49,7 @@ export function readPixel( screenData, x, y, generation = getContextGeneration( 
 
 	// Ensure latest contents are in the FBO
 	g_batches.flushBatches( screenData );
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return g_utils.rgbToColor( 0, 0, 0, 0 );
 	}
 
@@ -65,22 +64,22 @@ export function readPixel( screenData, x, y, generation = getContextGeneration( 
 	gl.readPixels( x, glY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf );
 	gl.bindFramebuffer( gl.FRAMEBUFFER, null );
 
-	unpremultiplyPixels( buf );
+	g_alpha.unpremultiplyPixels( buf );
 	return g_utils.rgbToColor( buf[ 0 ], buf[ 1 ], buf[ 2 ], buf[ 3 ] );
 }
 
 /**
  * Read single pixel (asynchronous)
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
  * @returns {Promise<Object|null>} Resolves to a color; rejects with SCREEN_REMOVED on disposal
  */
 export function readPixelAsync( screenData, x, y ) {
-	const generation = getContextGeneration( screenData );
+	const generation = g_contextState.getContextGeneration( screenData );
 
-	// TODO-LATER: Instead of queueing a microtask make this a part of the batch system, that way 
+	// TODO-LATER: Instead of queueing a microtask make this a part of the batch system, that way
 	// the user will get a result that reflects the state of the FBO when they make the call rather
 	// than the state at the end of the frame.
 	// If I make this change I should rename the API functions to something like getPixelQueued
@@ -99,7 +98,7 @@ export function readPixelAsync( screenData, x, y ) {
 
 /**
  * Read pixel rectangle (synchronous)
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
@@ -109,7 +108,7 @@ export function readPixelAsync( screenData, x, y ) {
  * @returns {Array<Array<Object>>} 2D array of color objects [height][width]
  */
 export function readPixels(
-	screenData, x, y, width, height, generation = getContextGeneration( screenData )
+	screenData, x, y, width, height, generation = g_contextState.getContextGeneration( screenData )
 ) {
 	const gl = screenData.gl;
 	const screenWidth = screenData.width;
@@ -135,11 +134,11 @@ export function readPixels(
 	const glReadY = ( screenHeight - ( clampedY + clampedHeight ) );
 
 	if(
-		!isContextUnavailable( screenData ) &&
-		generation === getContextGeneration( screenData )
+		!g_contextState.isContextUnavailable( screenData ) &&
+		generation === g_contextState.getContextGeneration( screenData )
 	) {
 		g_batches.flushBatches( screenData );
-		if( !isContextUnavailable( screenData ) ) {
+		if( !g_contextState.isContextUnavailable( screenData ) ) {
 			gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
 			gl.readPixels(
 				clampedX, glReadY, clampedWidth, clampedHeight, gl.RGBA, gl.UNSIGNED_BYTE, buf
@@ -148,7 +147,7 @@ export function readPixels(
 		}
 	}
 
-	unpremultiplyPixels( buf );
+	g_alpha.unpremultiplyPixels( buf );
 
 	// Map back to output structure expected by api/pixels.js
 	// This function will return a flat array of color objects
@@ -175,7 +174,7 @@ export function readPixels(
 
 /**
  * Read pixel rectangle (asynchronous)
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
@@ -184,7 +183,7 @@ export function readPixels(
  * @returns {Promise<Array<Array<Object>>>} Resolves to colors; rejects on disposal or read failure
  */
 export function readPixelsAsync( screenData, x, y, width, height ) {
-	const generation = getContextGeneration( screenData );
+	const generation = g_contextState.getContextGeneration( screenData );
 	return new Promise( ( resolve, reject ) => {
 		g_utils.queueMicrotask( () => {
 			try {
@@ -202,7 +201,7 @@ export function readPixelsAsync( screenData, x, y, width, height ) {
  * Returns premultiplied RGBA data in a Uint8Array with WebGL bottom-left origin ordering.
  * Format: [r0, g0, b0, a0, r1, g1, b1, a1, ...] where pixels are ordered
  * row by row from bottom to top, left to right (WebGL native format).
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
@@ -237,7 +236,7 @@ export function readPixelsRaw( screenData, x, y, width, height ) {
 	// Bottom-left corner Y of the rectangle
 	const glReadY = ( screenHeight - ( clampedY + clampedHeight ) );
 
-	if( !isContextUnavailable( screenData ) ) {
+	if( !g_contextState.isContextUnavailable( screenData ) ) {
 		gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
 		gl.readPixels( clampedX, glReadY, clampedWidth, clampedHeight, gl.RGBA, gl.UNSIGNED_BYTE, buf );
 		gl.bindFramebuffer( gl.FRAMEBUFFER, null );

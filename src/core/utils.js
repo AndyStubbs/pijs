@@ -1,23 +1,23 @@
 /**
  * Pi.js - Utilities Module
- * 
+ *
  * Common utility functions for math, colors, types, and data manipulation.
- * 
+ *
  * @module core/utils
  */
 
 "use strict";
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * General Utility Functions
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 export const errFn = ( commandName ) => {
 	const error = new Error(
 		`${commandName}: No screens available for command. You must first create a ` +
-		`screen with $.screen command.`
+		"screen with $.screen command."
 	);
 	error.code = "NO_SCREEN";
 	throw error;
@@ -26,9 +26,10 @@ export const errFn = ( commandName ) => {
 /**
  * Parse options - normalizes input arguments into an object with named parameters.
  *
- * @param {Array<any>} args - Arguments passed to the command (from rest parameters like `...args`).
+ * @param {Array<any>} args - Arguments passed to the command (from rest parameters like
+ * `...args`).
  * @param {Array<string>} parameterNames - Array of parameter names in expected order.
- * @returns {Object<string, any>} 	An object where keys are `parameterNames` and values are the 
+ * @returns {Object<string, any>} 	An object where keys are `parameterNames` and values are the
  * 									parsed arguments. Missing values will be `null`.
  */
 export function parseOptions( args, parameterNames ) {
@@ -51,8 +52,8 @@ export function parseOptions( args, parameterNames ) {
 				resultOptions[ name ] = inputOptions[ name ];
 			}
 		}
-	} 
-	
+	}
+
 	// If no named parameters found then treat as positional array
 	if( !isNamedParameterFound ) {
 
@@ -84,7 +85,7 @@ export const isObjectLiteral = ( obj ) => {
 
 /**
  * Convert hex string to 2D data array
- * 
+ *
  * @param {string} hex - Hex string
  * @param {number} width - Width of data
  * @param {number} height - Height of data
@@ -120,7 +121,7 @@ export function hexToData( hex, width, height ) {
 
 /**
  * Clamp a number between min and max
- * 
+ *
  * @param {number} num - Number to clamp
  * @param {number} min - Minimum value
  * @param {number} max - Maximum value
@@ -132,7 +133,7 @@ export function clamp( num, min, max ) {
 
 /**
  * Check if a point is in a rectangle
- * 
+ *
  * @param {Object} point - Point with x, y properties
  * @param {Object} hitBox - Rectangle with x, y, width, height properties
  * @returns {boolean} True if point is inside rectangle
@@ -144,7 +145,7 @@ export function inRange( point, hitBox ) {
 
 /**
  * Check if coordinates are in a rectangle
- * 
+ *
  * @param {number} x1 - Point x
  * @param {number} y1 - Point y
  * @param {number} x2 - Rectangle x
@@ -160,7 +161,7 @@ export function inRange2( x1, y1, x2, y2, width, height ) {
 
 /**
  * Generate random number in range
- * 
+ *
  * @param {number} min - Minimum value
  * @param {number} max - Maximum value
  * @returns {number} Random number between min and max
@@ -171,7 +172,7 @@ export function rndRange( min, max ) {
 
 /**
  * Convert degrees to radians
- * 
+ *
  * @param {number} deg - Degrees
  * @returns {number} Radians
  */
@@ -181,7 +182,7 @@ export function degreesToRadian( deg ) {
 
 /**
  * Convert radians to degrees
- * 
+ *
  * @param {number} rad - Radians
  * @returns {number} Degrees
  */
@@ -193,7 +194,7 @@ export function radiansToDegrees( rad ) {
 
 /**
  * Pad string on left
- * 
+ *
  * @param {string} str - String to pad
  * @param {number} len - Target length
  * @param {string} c - Padding character
@@ -213,7 +214,7 @@ export function padL( str, len, c ) {
 
 /**
  * Pad string on both sides
- * 
+ *
  * @param {string} str - String to pad
  * @param {number} len - Target length
  * @param {string} c - Padding character
@@ -235,7 +236,7 @@ export function pad( str, len, c ) {
 
 /**
  * Parse integer with default value
- * 
+ *
  * @param {*} val - Value to parse
  * @param {number} def - Default value if parsing fails
  * @returns {number} Parsed integer or default
@@ -254,7 +255,7 @@ export function getInt( val, def ) {
 
 /**
  * Parse float with default value
- * 
+ *
  * @param {*} val - Value to parse
  * @param {number} def - Default value if parsing fails
  * @returns {number} Parsed float or default
@@ -282,9 +283,9 @@ export const queueMicrotask = ( callback ) => {
 };
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Color Utility Functions
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 const m_colorCheckerContext = document.createElement( "canvas" ).getContext(
@@ -336,7 +337,7 @@ export function generateColorKey( r, g, b, a ) {
 
 /**
  * Convert RGB to color object
- * 
+ *
  * @param {number} r - Red component (0-255)
  * @param {number} g - Green component (0-255)
  * @param {number} b - Blue component (0-255)
@@ -351,7 +352,7 @@ export function rgbToColor( r, g, b, a ) {
 
 /**
  * Convert various color formats to color object
- * 
+ *
  * @param {*} color - Color in various formats
  * @returns {Object|null} Color object or null if invalid
  */
@@ -400,7 +401,7 @@ export function convertToColor( color ) {
 	) {
 		color = [ color.r, color.g, color.b, color.a ];
 	}
-	
+
 	// Parse rgb colors
 	for( let i = 0; i < 3; i += 1 ) {
 		color[ i ] = getInt( color[ i ], 0 );
@@ -413,10 +414,18 @@ export function convertToColor( color ) {
 	} else {
 		color[ 3 ] = Math.round( color[ 3 ] );
 	}
-	
+
 	return rgbToColor( color[ 0 ], color[ 1 ], color[ 2 ], color[ 3 ] );
 }
 
+/**
+ * Calculate the weighted squared distance between two RGBA colors.
+ *
+ * @param {Object} c1 - First RGBA color.
+ * @param {Object} c2 - Second RGBA color.
+ * @param {Array<number>} [w] - Weights for the RGBA components.
+ * @returns {number}
+ */
 export function calcColorDifference( c1, c2, w = [ 0.2, 0.68, 0.07, 0.05 ] ) {
 	const dr = c1.array[ 0 ] - c2.array[ 0 ];
 	const dg = c1.array[ 1 ] - c2.array[ 1 ];
@@ -426,6 +435,13 @@ export function calcColorDifference( c1, c2, w = [ 0.2, 0.68, 0.07, 0.05 ] ) {
 	return ( dr * dr * w[ 0 ] + dg * dg * w[ 1 ] + db * db * w[ 2 ] + da * da * w[ 3 ] );
 }
 
+/**
+ * Copy the color key and RGBA array into an existing color object.
+ *
+ * @param {Object} colorSrc - Source color.
+ * @param {Object} colorDest - Destination color to update.
+ * @returns {void}
+ */
 export function copyColor( colorSrc, colorDest ) {
 	colorDest.key = colorSrc.key;
 	colorDest.array[ 0 ] = colorSrc.array[ 0 ];
@@ -436,7 +452,7 @@ export function copyColor( colorSrc, colorDest ) {
 
 /**
  * Convert hex color to color object
- * 
+ *
  * @param {string} hex - Hex color string (#RGB, #RRGGBB, or #RRGGBBAA)
  * @returns {Object} Color object with r, g, b, a, s, s2 properties
  */
@@ -464,7 +480,7 @@ function hexToColor( hex ) {
 
 /**
  * Convert color component to hex
- * 
+ *
  * @param {number} c - Color component (0-255)
  * @returns {string} Hex string
  */
@@ -474,13 +490,17 @@ function cToHex( c ) {
 	}
 	c = clamp( c, 0, 255 );
 	const hex = Number( c ).toString( 16 );
-	return hex.length < 2 ? "0" + hex : hex.toUpperCase();
+	if( hex.length < 2 ) {
+		return "0" + hex;
+	} else {
+		return hex.toUpperCase();
+	}
 }
 
 /**
  * Convert Color Object to hex string
- * 
- * @param {Object} r - Red component (0-255)
+ *
+ * @param {Object} color - RGBA color object.
  * @returns {string} Hex color string
  */
 export function colorToHex( color ) {
@@ -489,7 +509,7 @@ export function colorToHex( color ) {
 
 /**
  * Split RGB/RGBA string into components
- * 
+ *
  * @param {string} s - RGB or RGBA string
  * @returns {Array<number>} Array of color components
  */
@@ -514,7 +534,7 @@ function splitRgb( s ) {
 
 /**
  * Convert color string to color object using canvas
- * 
+ *
  * @param {string} colorStr - CSS color string
  * @returns {Object} Color object
  */

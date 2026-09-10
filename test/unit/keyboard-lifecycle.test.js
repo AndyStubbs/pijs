@@ -49,7 +49,7 @@ function harness() {
 	}
 	const input = load( "plugins/keyboard/input.js" );
 	const keyboard = load( "plugins/keyboard/index.js", {
-		"initInput": input.initInput, "cancelAllInputs": input.cancelAllInputs
+		"g_input": input
 	} );
 	keyboard.keyboardPlugin( pluginApi );
 	function screen() {

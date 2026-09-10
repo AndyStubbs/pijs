@@ -1,9 +1,9 @@
 /**
  * Pi.js - Command System Module
- * 
+ *
  * Command registration and processing for Pi.js.
  * Handles ready command and set command.
- * 
+ *
  * @module core/commands
  */
 
@@ -23,9 +23,15 @@ let m_checkReadyTimeout = null;
 
 /**************************************************************************************************
  * Module Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
+/**
+ * Initialize the module and register its commands and lifecycle hooks.
+ *
+ * @param {Object} api - Public Pi.js API.
+ * @returns {void}
+ */
 export function init( api ) {
 	m_api = api;
 
@@ -58,21 +64,42 @@ function registerCommands() {
 
 /**************************************************************************************************
  * Command processing
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
+/**
+ * Queue a command for registration and expose set-prefixed commands as settings.
+ *
+ * @param {string} name - Command or setting name.
+ * @param {Function} fn - Command or setting implementation.
+ * @param {boolean} isScreen - Whether the implementation receives screen state.
+ * @param {Array<string>} parameterNames - Ordered command parameter names.
+ * @param {boolean} isScreenOptional - Whether the command can run without an active screen.
+ * @returns {void}
+ */
 export function addCommand( name, fn, isScreen, parameterNames, isScreenOptional ) {
-	m_commands.push( { name, fn, isScreen, parameterNames, isScreenOptional } );
-	
+	m_commands.push(
+		{
+			"name": name, "fn": fn, "isScreen": isScreen, "parameterNames": parameterNames,
+			"isScreenOptional": isScreenOptional
+		}
+	);
+
 	// Auto-register set commands as settings
 	if( name.startsWith( "set" ) && name !== "set" ) {
 		const settingName = name.substring( 3, 4 ).toLowerCase() + name.substring( 4 );
 		m_settings[ settingName ] = {
-			fn, isScreen, "parameterNames": parameterNames, isProcessed: false
+			"fn": fn, "isScreen": isScreen, "parameterNames": parameterNames, "isProcessed": false
 		};
 	}
 }
 
+/**
+ * Install queued commands on the public API.
+ *
+ * @param {Object} api - Public Pi.js API.
+ * @returns {void}
+ */
 export function processCommands( api ) {
 	for( const command of m_commands ) {
 		if( !command.isProcessed ) {
@@ -82,7 +109,13 @@ export function processCommands( api ) {
 }
 
 function processCommand( api, command ) {
-	const { name, fn, isScreen, parameterNames, isScreenOptional } = command;
+	const {
+		"name": name,
+		"fn": fn,
+		"isScreen": isScreen,
+		"parameterNames": parameterNames,
+		"isScreenOptional": isScreenOptional
+	} = command;
 	if( isScreen ) {
 		api[ name ] = ( ...args ) => {
 			const options = g_utils.parseOptions( args, parameterNames );
@@ -99,7 +132,12 @@ function processCommand( api, command ) {
 
 function processScreenCommands( screenData ) {
 	for( const command of m_commands ) {
-		const { name, fn, isScreen, parameterNames } = command;
+		const {
+			"name": name,
+			"fn": fn,
+			"isScreen": isScreen,
+			"parameterNames": parameterNames
+		} = command;
 		if( isScreen ) {
 			screenData.api[ name ] = ( ...args ) => {
 				const options = g_utils.parseOptions( args, parameterNames );
@@ -112,11 +150,11 @@ function processScreenCommands( screenData ) {
 
 /**************************************************************************************************
  * Resource Loader - Ready Command
- **************************************************************************************************/
+ ************************************************************************************************/
 
 /**
  * ready command - waits for document ready and all pending resources
- * 
+ *
  * Supports both callback and promise patterns:
  *   - $.ready( callback )        // Callback style
  *   - await $.ready()            // Promise style
@@ -132,7 +170,7 @@ function processScreenCommands( screenData ) {
 function ready( options ) {
 
 	const callback = options.callback;
-	
+
 	// Validate callback if provided
 	if( callback != null && !g_utils.isFunction( callback ) ) {
 		const error = new TypeError( "ready: Parameter callback must be a function." );
@@ -154,10 +192,20 @@ function ready( options ) {
 	} );
 }
 
+/**
+ * Hold readiness callbacks while an asynchronous resource loads.
+ *
+ * @returns {void}
+ */
 export function wait() {
 	m_waitCount++;
 }
 
+/**
+ * Release one resource wait and schedule a readiness check.
+ *
+ * @returns {void}
+ */
 export function done() {
 	m_waitCount--;
 	if( m_waitCount < 0 ) {
@@ -230,13 +278,16 @@ function checkReady() {
 
 /**************************************************************************************************
  * Settings and set command
- **************************************************************************************************/
+ ************************************************************************************************/
 
 /**
  * Global settings command
- * 
+ *
  * This can get called from either the global api or directly from a screenData.api.
  * screenData can be null if no screen is available
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {void}
  */
 export function set( screenData, options ) {
 
@@ -277,7 +328,15 @@ export function set( screenData, options ) {
 	}
 }
 
+/**
+ * Register a function that applies a global or screen setting.
+ *
+ * @param {string} name - Command or setting name.
+ * @param {Function} fn - Command or setting implementation.
+ * @param {boolean} isScreen - Whether the implementation receives screen state.
+ * @returns {void}
+ */
 export function addSetting( name, fn, isScreen ) {
-	m_settings[ name ] = { fn, isScreen };
+	m_settings[ name ] = { "fn": fn, "isScreen": isScreen };
 }
 

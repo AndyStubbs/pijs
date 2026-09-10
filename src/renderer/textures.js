@@ -1,30 +1,29 @@
 /**
  * Pi.js - Textures Module
- * 
+ *
  * Texture cache management and WebGL2 texture operations.
- * 
+ *
  * @module renderer/textures
  */
 
 "use strict";
 
-import { isContextUnavailable, probeContextLoss } from "./context-state.js";
-
-import { premultiplyPixels } from "./alpha.js";
+import * as g_contextState from "./context-state.js";
+import * as g_alpha from "./alpha.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_batches from "./batches.js";
 
 const m_textureSizes = new WeakMap();
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Initialization
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Initialize textures module
- * 
+ *
  * @returns {void}
  */
 export function init() {
@@ -38,15 +37,15 @@ export function init() {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Texture Cache Management
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Copy image data to currently bound texture, handling mock canvases by copying from FBO
  * Handles cross-context copying when mock canvas uses a different WebGL context
- * 
+ *
  * @param {Object} screenData - Destination screen data
  * @param {HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} img - Image or Canvas element
  * @param {WebGLTexture} texture - Currently bound destination texture
@@ -81,12 +80,12 @@ function copyImageToTexture( screenData, img, texture ) {
 function uploadImageToTexture( screenData, img, texture ) {
 	const gl = screenData.gl;
 	const sourceScreen = g_screenManager.screenCanvasMap.get( img );
-	if( sourceScreen && probeContextLoss( sourceScreen ) ) {
+	if( sourceScreen && g_contextState.probeContextLoss( sourceScreen ) ) {
 		gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA8, img.width, img.height, 0,
 			gl.RGBA, gl.UNSIGNED_BYTE, null );
 		return;
 	}
-	
+
 	// If img is a mock canvas, copy from the FBO instead of the mock canvas
 	if( img.isMock ) {
 		const imgScreenData = g_screenManager.screenCanvasMap.get( img );
@@ -97,18 +96,18 @@ function uploadImageToTexture( screenData, img, texture ) {
 
 			// Make sure the other screen is up to date
 			g_batches.flushBatches( imgScreenData );
-			
+
 			// Check if contexts are different (cross-context copy needed)
 			if( imgScreenData.gl !== gl ) {
-				
+
 				// Cross-context copy: read pixels from source FBO, upload to destination texture
 				const srcGl = imgScreenData.gl;
 				const width = imgScreenData.width;
 				const height = imgScreenData.height;
-				
+
 				// Allocate buffer for pixel data
 				const pixelData = new Uint8Array( width * height * 4 );
-				
+
 				// Read pixels from source FBO in source context
 				const previousRead = srcGl.getParameter( srcGl.READ_FRAMEBUFFER_BINDING );
 				srcGl.bindFramebuffer( srcGl.READ_FRAMEBUFFER, imgScreenData.FBO );
@@ -117,7 +116,7 @@ function uploadImageToTexture( screenData, img, texture ) {
 				} finally {
 					srcGl.bindFramebuffer( srcGl.READ_FRAMEBUFFER, previousRead );
 				}
-				
+
 				// Flip Y-axis (WebGL reads bottom-to-top, but texImage2D expects top-to-bottom)
 				// Flip rows in place
 				const rowSize = width * 4;
@@ -125,13 +124,13 @@ function uploadImageToTexture( screenData, img, texture ) {
 				for( let y = 0; y < Math.floor( height / 2 ); y++ ) {
 					const topRow = y * rowSize;
 					const bottomRow = ( height - 1 - y ) * rowSize;
-					
+
 					// Swap rows
 					tempRow.set( pixelData.subarray( topRow, topRow + rowSize ) );
 					pixelData.set( pixelData.subarray( bottomRow, bottomRow + rowSize ), topRow );
 					pixelData.set( tempRow, bottomRow );
 				}
-				
+
 				// Upload pixel data to destination texture in destination context
 				gl.texImage2D(
 					gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE,
@@ -183,13 +182,13 @@ function uploadImageToTexture( screenData, img, texture ) {
 /**
  * Get or create WebGL2 texture for image
  * Creates and caches texture if it doesn't exist for this GL context.
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} img - Image or Canvas element
  * @returns {WebGLTexture|null} WebGL texture or null on error
  */
 export function getWebGL2Texture( screenData, img ) {
-	if( probeContextLoss( screenData ) ) {
+	if( g_contextState.probeContextLoss( screenData ) ) {
 		return null;
 	}
 
@@ -226,7 +225,7 @@ function resolveWebGL2Texture( screenData, img ) {
 		g_batches.flushBatches( otherScreenData );
 		g_batches.displayToCanvas( otherScreenData );
 	}
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return null;
 	}
 
@@ -255,7 +254,7 @@ function resolveWebGL2Texture( screenData, img ) {
 		) {
 
 			// If the img.isDirty is not defined then assume it's dirty, otherwise only if it's
-			// explicitly set to false then we don't perform the copy, this makes it so that the 
+			// explicitly set to false then we don't perform the copy, this makes it so that the
 			// default behavior is to copy the texture.
 			if( !isVideo && img.isDirty === false ) {
 				return texture;
@@ -265,7 +264,7 @@ function resolveWebGL2Texture( screenData, img ) {
 			// the texture will appear as it was when the draw command was issued
 			if( screenData.batchInfo.textureBatchSet.has( texture ) ) {
 				g_batches.flushBatches( screenData );
-				if( isContextUnavailable( screenData ) ) {
+				if( g_contextState.isContextUnavailable( screenData ) ) {
 					return null;
 				}
 			}
@@ -287,6 +286,7 @@ function resolveWebGL2Texture( screenData, img ) {
 	}
 
 	try {
+
 		// Upload image data to texture
 		gl.bindTexture( gl.TEXTURE_2D, texture );
 		copyImageToTexture( screenData, img, texture );
@@ -349,7 +349,7 @@ export function getTextureDrawInfo( screenData, img ) {
  * @returns {WebGLTexture} Sampler-oriented texture
  */
 export function getSamplerTexture( screenData, img ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return null;
 	}
 
@@ -366,7 +366,7 @@ export function getSamplerTexture( screenData, img ) {
 	}
 	if( entry && screenData.batchInfo.textureBatchSet.has( entry.texture ) ) {
 		g_batches.flushBatches( screenData );
-		if( isContextUnavailable( screenData ) ) {
+		if( g_contextState.isContextUnavailable( screenData ) ) {
 			return null;
 		}
 	}
@@ -501,7 +501,7 @@ export function deleteWebGL2Texture( screenData, img ) {
  * Update a sub-rectangle of an existing WebGL2 texture using pixel data.
  * Creates the texture on-demand if it doesn't yet exist for this context.
  * If imgKey is null, uses screenData.fboTexture directly (for FBO updates).
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {HTMLImageElement|HTMLCanvasElement|OffscreenCanvas|null} imgKey - Image cache key
  * @param {Uint8ClampedArray|Uint8Array} pixelData - Straight RGBA pixel data array
@@ -514,7 +514,7 @@ export function deleteWebGL2Texture( screenData, img ) {
 export function updateWebGL2TextureSubImage(
 	screenData, imgKey, pixelData, width, height, dstX, dstY
 ) {
-	if( probeContextLoss( screenData ) ) {
+	if( g_contextState.probeContextLoss( screenData ) ) {
 		return null;
 	}
 
@@ -532,7 +532,7 @@ export function updateWebGL2TextureSubImage(
 			return null;
 		}
 	} else {
-		
+
 		// Ensure texture exists for the image key
 		texture = getWebGL2Texture( screenData, imgKey );
 	}
@@ -542,7 +542,7 @@ export function updateWebGL2TextureSubImage(
 	if( screenData.batchInfo.textureBatchSet.has( texture ) ) {
 		g_batches.flushBatches( screenData );
 	}
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return null;
 	}
 
@@ -554,7 +554,7 @@ export function updateWebGL2TextureSubImage(
 		gl.pixelStorei( gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false );
 		gl.texSubImage2D(
 			gl.TEXTURE_2D, 0, dstX, dstY, width, height,
-			gl.RGBA, gl.UNSIGNED_BYTE, premultiplyPixels( pixelData )
+			gl.RGBA, gl.UNSIGNED_BYTE, g_alpha.premultiplyPixels( pixelData )
 		);
 	} finally {
 		gl.pixelStorei( gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, premultiply );
@@ -574,6 +574,12 @@ export function updateWebGL2TextureSubImage(
 	return texture;
 }
 
+/**
+ * Delete the textures and copy framebuffer owned by a screen.
+ *
+ * @param {Object} screenData - Screen state.
+ * @returns {void}
+ */
 export function cleanup( screenData ) {
 	const gl = screenData.gl;
 	for( const img of screenData.samplerContextMap?.keys() ?? [] ) {
@@ -586,7 +592,7 @@ export function cleanup( screenData ) {
 		screenData.textureCopyFBO = null;
 	}
 
-	// Delete all textures in the imageContextMap for this screen but keep the image 
+	// Delete all textures in the imageContextMap for this screen but keep the image
 	for( const img of screenData.imageContextMap?.keys() ?? [] ) {
 		const screenMap = screenData.imageContextMap.get( img );
 		const texture = screenMap.get( gl );

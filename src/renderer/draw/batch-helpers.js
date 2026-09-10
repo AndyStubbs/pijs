@@ -1,16 +1,15 @@
 /**
  * Pi.js - Batch Drawing Helpers Module
- * 
+ *
  * Shared helper functions for adding geometry to batches.
  * Provides common operations like adding vertices, quads, and triangles.
- * 
+ *
  * @module renderer/draw/batch-helpers
  */
 
 "use strict";
 
-import { isContextUnavailable } from "../context-state.js";
-
+import * as g_contextState from "../context-state.js";
 import * as g_batches from "../batches.js";
 
 /**
@@ -22,7 +21,7 @@ import * as g_batches from "../batches.js";
  * @returns {Function} Writer accepting local x, y and color
  */
 export function createPointWriter( screenData, batchType ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return () => {};
 	}
 
@@ -41,14 +40,14 @@ export function createPointWriter( screenData, batchType ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Vertex Helpers
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Add a single vertex to a geometry or points batch
- * 
+ *
  * @param {Object} batch - Batch object (GEOMETRY_BATCH or POINTS_BATCH)
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
@@ -72,7 +71,7 @@ export function addVertexToBatch( batch, x, y, color ) {
 
 /**
  * Add a triangle (3 vertices) to a geometry batch
- * 
+ *
  * @param {Object} batch - Geometry batch object
  * @param {number} x1 - First vertex X coordinate
  * @param {number} y1 - First vertex Y coordinate
@@ -92,9 +91,9 @@ export function addTriangleToBatch( batch, x1, y1, x2, y2, x3, y3, color ) {
 /**
  * Add a quad (rectangle as two triangles) to a geometry batch
  * The quad is defined by two corner points (x1,y1) and (x2,y2) forming a rectangle
- * 
+ *
  * TODO-LATER: Improve efficiency, this should work more similiarly to addTexturedQuadToBatch
- * 
+ *
  * @param {Object} batch - Geometry batch object
  * @param {number} x1 - Left/bottom-left X coordinate
  * @param {number} y1 - Left/bottom-left Y coordinate
@@ -123,16 +122,16 @@ export function addQuadToBatch( batch, x1, y1, x2, y2, color ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Curves Helpers - TODO-LATER Get out of here
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 /**
  * Tessellate a cubic Bezier curve into a polyline using an adaptive flatness criterion.
  * Returns an array of points [x0, y0, x1, y1, ..., xn, yn] including endpoints.
- * 
+ *
  * TODO-LATER: Move this function to bezier module
- * 
+ *
  * @param {number} x0
  * @param {number} y0
  * @param {number} x1
@@ -174,6 +173,7 @@ export function tessellateCubicBezier( x0, y0, x1, y1, x2, y2, x3, y3, maxError 
 		const d1 = pointLineDistanceSq( bx, by, ax, ay, dx, dy );
 		const d2 = pointLineDistanceSq( cx, cy, ax, ay, dx, dy );
 		if( depth >= maxDepth || ( d1 <= maxErrorSq && d2 <= maxErrorSq ) ) {
+
 			// Accept segment
 			if( out.length === 0 ) {
 				out.push( ax, ay );

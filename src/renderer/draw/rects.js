@@ -1,26 +1,24 @@
 /**
  * Pi.js - Rects Drawing Module
- * 
+ *
  * High-level primitive drawing operations: rects
- * 
+ *
  * drawRectPenPixel, drawRectSquare, drawRectCircle
- * 
+ *
  * @module renderer/draw/rects
  */
 
 "use strict";
 
-import { isContextUnavailable } from "../context-state.js";
-
-// Import required modules
-import { drawLine } from "./lines.js";
-import { GEOMETRY_BATCH  } from "../renderer.js";
+import * as g_contextState from "../context-state.js";
+import * as g_lines from "./lines.js";
+import * as g_renderer from "../renderer.js";
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Public API
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
@@ -34,14 +32,14 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @returns {void}
  */
 export function drawRect( screenData, x, y, width, height ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
 	const x2 = x + width - 1;
 	const y2 = y + height - 1;
 	const color = screenData.color;
-	
+
 	// Outline only for pixel pen rectangles
 
 	// Top edge
@@ -56,7 +54,7 @@ export function drawRect( screenData, x, y, width, height ) {
 	if( width > 1 && height > 2 ) {
 		drawRectFilled( screenData, x + width - 1, y + 1, 1, height - 2, color );
 	}
-	
+
 	// Right edge
 	if( height > 2 ) {
 		drawRectFilled( screenData, x, y + 1, 1, height - 2, color );
@@ -66,7 +64,7 @@ export function drawRect( screenData, x, y, width, height ) {
 
 /**
  * Draw filled rectangle (unsafe - no bounds checking, GPU clipping)
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
@@ -76,15 +74,15 @@ export function drawRect( screenData, x, y, width, height ) {
  * @returns {void}
  */
 export function drawRectFilled( screenData, x, y, width, height, color ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
 	// Get geometry batch
-	const batch = screenData.batches[ GEOMETRY_BATCH ];
+	const batch = screenData.batches[ g_renderer.GEOMETRY_BATCH ];
 
 	// Prepare batch for 6 vertices (2 triangles)
-	if( !g_batches.prepareBatch( screenData, GEOMETRY_BATCH, 6 ) ) {
+	if( !g_batches.prepareBatch( screenData, g_renderer.GEOMETRY_BATCH, 6 ) ) {
 		return;
 	}
 

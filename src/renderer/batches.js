@@ -1,20 +1,17 @@
 /**
  * Pi.js - Batches and Rendering Module
- * 
+ *
  * Batch system for rendering points and images efficiently.
  * Combines batch management and rendering operations.
- * 
+ *
  * @module api/renderer/batches
  */
 
 "use strict";
 
-import { isContextUnavailable, probeContextLoss } from "./context-state.js";
-
+import * as g_contextState from "./context-state.js";
 import * as g_shaders from "./shaders.js";
 import * as g_screenManager from "../core/screen-manager.js";
-
-// Import blend mode constants
 import * as g_blends from "../api/blends.js";
 
 // Shaders are imported from external files via esbuild text loader
@@ -27,7 +24,7 @@ import m_gemoetryVertSrc from "./shaders/geometry.vert";
 
 /**************************************************************************************************
  * Constants
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 export const POINTS_BATCH = 0;
@@ -60,10 +57,12 @@ const BATCH_TYPES = [ "POINTS", "IMAGE", "GEOMETRY", "POINTS_REPLACE", "IMAGE_RE
 
 // Batch prototype
 const m_batchProto = {
-	
+
 	// Type of batch POINTS_BATCH, IMAGE_BATCH, etc...
 	"type": null,
-	"overrideGlobalBlend": null,   // Tri-state: null = use default, true = alpha, false = replace
+
+	// Tri-state: null = use default, true = alpha, false = replace
+	"overrideGlobalBlend": null,
 
 	"program": null,
 	"vertices": null,
@@ -109,12 +108,12 @@ const m_isDebug = window.location.search.includes( "webgl-debug" );
 
 /**************************************************************************************************
  * Module Initialization
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Initialize batch and rendering module
- * 
+ *
  * @returns {void}
  */
 export function init() {
@@ -130,7 +129,8 @@ export function init() {
 
 /**
  * Creates all the batches
- * 
+ *
+ * @param {Object} screenData - Screen state.
  * @returns {void}
  */
 export function createBatches( screenData ) {
@@ -152,7 +152,7 @@ export function createBatches( screenData ) {
 
 /**
  * Create batch system for points or images
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} type - Batch type (POINTS_BATCH or IMAGE_BATCH, etc..)
  * @returns {Object|null} Batch object or null on error
@@ -291,7 +291,7 @@ export function createBatch( screenData, type ) {
 
 /**
  * Resize batch to new capacity
- * 
+ *
  * @param {Object} batch - Batch object
  * @param {number} newCapacity - New capacity
  * @returns {void}
@@ -301,25 +301,25 @@ function resizeBatch( batch, newCapacity ) {
 	// Resize arrays
 	const newVertices = new Float32Array( newCapacity * batch.vertexComps );
 	const newColors = new Uint8Array( newCapacity * batch.colorComps );
-	
+
 	// Copy existing data only if there is data to copy
 	// When shrinking after flush, count is 0 so no copy is needed
 	if( batch.count > 0 ) {
 		newVertices.set( batch.vertices.subarray( 0, batch.count * batch.vertexComps ) );
 		newColors.set( batch.colors.subarray( 0, batch.count * batch.colorComps ) );
 	}
-	
+
 	batch.vertices = newVertices;
 	batch.colors = newColors;
-	
+
 	if( batch.useTexture === true ) {
 		const newTexCoords = new Float32Array( newCapacity * batch.texCoordComps );
-		
+
 		// Copy existing texture coordinates only if there is data to copy
 		if( batch.count > 0 ) {
 			newTexCoords.set( batch.texCoords.subarray( 0, batch.count * batch.texCoordComps ) );
 		}
-		
+
 		batch.texCoords = newTexCoords;
 	}
 
@@ -339,7 +339,7 @@ function resizeBatch( batch, newCapacity ) {
 
 /**
  * Ensure batch has capacity for items. A zero-item reservation is a no-op.
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} batchType - Batch type
  * @param {number} itemCount - Number of items needed
@@ -348,7 +348,7 @@ function resizeBatch( batch, newCapacity ) {
  * @returns {boolean} True if reserved, false if context loss canceled the reservation
  */
 export function prepareBatch( screenData, batchType, itemCount, texture ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return false;
 	}
 
@@ -366,7 +366,7 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
 	let requiredCount = batch.count + itemCount;
 	if( requiredCount > batch.maxCapacity ) {
 		flushBatches( screenData );
-		if( isContextUnavailable( screenData ) ) {
+		if( g_contextState.isContextUnavailable( screenData ) ) {
 			return false;
 		}
 		requiredCount = batch.count + itemCount;
@@ -397,7 +397,7 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
 		batchInfo.currentBatch === batch && batch.texture !== texture;
 
 	if( batchTypeChanging || textureChanging ) {
-		
+
 		// Set the end index for the last drawOrderItem to it's current count
 		if( batchInfo.drawOrder.length > 0 ) {
 			const lastDrawOrderItem = batchInfo.drawOrder[ batchInfo.drawOrder.length - 1 ];
@@ -411,7 +411,7 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
 			"endIndex": null,
 			"overrideGlobalBlend": batch.overrideGlobalBlend
 		};
-		
+
 		// For image batches, track the current image/texture for this segment
 		if( batch.useTexture === true ) {
 			batch.texture = texture;
@@ -436,7 +436,7 @@ export function prepareBatch( screenData, batchType, itemCount, texture ) {
  * @returns {number} Reserved vertex count
  */
 export function prepareBatchChunk( screenData, batchType, remainingCount, primitiveSize = 1 ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return 0;
 	}
 
@@ -445,10 +445,12 @@ export function prepareBatchChunk( screenData, batchType, remainingCount, primit
 	if( !Number.isSafeInteger( primitiveSize ) || primitiveSize < 1 || primitiveSize > limit ) {
 		throw new RangeError( "prepareBatchChunk: primitiveSize must fit in a chunk." );
 	}
-	if( remainingCount !== undefined && (
+	if(
+		remainingCount !== undefined && (
 		!Number.isSafeInteger( remainingCount ) || remainingCount < 0 ||
 		remainingCount % primitiveSize !== 0
-	) ) {
+	)
+	) {
 		throw new RangeError(
 			"prepareBatchChunk: remainingCount must contain complete primitives."
 		);
@@ -480,7 +482,7 @@ export function prepareBatchChunk( screenData, batchType, remainingCount, primit
  * @returns {void}
  */
 export function prepareShaderBatch( screenData, handle, uniforms, samplerTextures = new Map() ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -539,7 +541,9 @@ function runShaderPass( screenData, drawOrderItem ) {
 	const uniforms = drawOrderItem.uniforms;
 	const samplerTextures = drawOrderItem.samplerTextures;
 
-	const { program, locations } = g_shaders.getOrCreateCustomShaderProgram( screenData, handle );
+	const { "program": program, "locations": locations } = g_shaders.getOrCreateCustomShaderProgram(
+		screenData, handle
+	);
 	if( locations.texture === null ) {
 		const error = new Error( "applyShader: Missing required uniform u_texture in shader." );
 		error.code = "MISSING_U_TEXTURE";
@@ -593,14 +597,14 @@ function runShaderPass( screenData, drawOrderItem ) {
 
 /**
  * Flush all batches to FBO
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object|null} blends - Blends data including blend mode, noise, seed or null for default
  * @param {Array<Float32Array>|null} noise - Noise values
  * @returns {void}
  */
 export function flushBatches( screenData, blends = null ) {
-	if( probeContextLoss( screenData ) ) {
+	if( g_contextState.probeContextLoss( screenData ) ) {
 		return;
 	}
 
@@ -613,7 +617,7 @@ export function flushBatches( screenData, blends = null ) {
 	if( blends === null ) {
 		blends = screenData.blends;
 	}
-	
+
 	const gl = screenData.gl;
 
 	if( screenData.contextLost ) {
@@ -627,10 +631,10 @@ export function flushBatches( screenData, blends = null ) {
 
 	// Bind FBO
 	gl.bindFramebuffer( gl.FRAMEBUFFER, screenData.FBO );
-	
+
 	// Set viewport
 	gl.viewport( 0, 0, screenData.width, screenData.height );
-	
+
 	// Clear FBO on first render only
 	if( screenData.isFirstRender ) {
 		gl.clearColor( 0, 0, 0, 0 );
@@ -673,10 +677,18 @@ export function flushBatches( screenData, blends = null ) {
 				} else {
 					gl.enable( gl.BLEND );
 					gl.blendFuncSeparate(
-						gl.ONE,                 // premultiplied srcRGBFactor
-						gl.ONE_MINUS_SRC_ALPHA, // dstRGBFactor
-						gl.ONE,                 // srcAlphaFactor - src alpha factor 1.0 (no scale)
-						gl.ONE_MINUS_SRC_ALPHA  // dstAlphaFactor - dst alpha factor (1-src.a)
+
+						// premultiplied srcRGBFactor
+						gl.ONE,
+
+						// dstRGBFactor
+						gl.ONE_MINUS_SRC_ALPHA,
+
+						// srcAlphaFactor - src alpha factor 1.0 (no scale)
+						gl.ONE,
+
+						// dstAlphaFactor - dst alpha factor (1-src.a)
+						gl.ONE_MINUS_SRC_ALPHA
 					);
 				}
 
@@ -685,10 +697,18 @@ export function flushBatches( screenData, blends = null ) {
 				// IMAGE_BATCH always uses alpha blending
 				gl.enable( gl.BLEND );
 				gl.blendFuncSeparate(
-					gl.ONE,                 // premultiplied srcRGBFactor
-					gl.ONE_MINUS_SRC_ALPHA, // dstRGBFactor
-					gl.ONE,                 // srcAlphaFactor - src alpha factor 1.0 (no scale)
-					gl.ONE_MINUS_SRC_ALPHA  // dstAlphaFactor - dst alpha factor (1-src.a)
+
+					// premultiplied srcRGBFactor
+					gl.ONE,
+
+					// dstRGBFactor
+					gl.ONE_MINUS_SRC_ALPHA,
+
+					// srcAlphaFactor - src alpha factor 1.0 (no scale)
+					gl.ONE,
+
+					// dstAlphaFactor - dst alpha factor (1-src.a)
+					gl.ONE_MINUS_SRC_ALPHA
 				);
 			} else {
 				gl.disable( gl.BLEND );
@@ -756,7 +776,7 @@ function applyViewScissor( gl, screenData ) {
 
 /**
  * Upload batch data to GPU
- * 
+ *
  * @param {WebGL2RenderingContext} gl - WebGL2 context
  * @param {Object} batch - Batch object
  * @param {number} width - Screen width
@@ -767,7 +787,7 @@ function uploadBatch( gl, batch, width, height ) {
 	gl.useProgram( batch.program );
 	gl.uniform2f( batch.locations.resolution, width, height );
 	gl.bindVertexArray( batch.vao );
-	
+
 	// Allocate or resize buffers on capacity change
 	if( batch.capacityChanged ) {
 		gl.bindBuffer( gl.ARRAY_BUFFER, batch.vertexVBO );
@@ -785,10 +805,10 @@ function uploadBatch( gl, batch, width, height ) {
 
 	// Upload positions
 	gl.bindBuffer( gl.ARRAY_BUFFER, batch.vertexVBO );
-	gl.bufferSubData( 
+	gl.bufferSubData(
 		gl.ARRAY_BUFFER, 0, batch.vertices.subarray( 0, batch.count * batch.vertexComps )
 	);
-	
+
 	// Upload colors
 	gl.bindBuffer( gl.ARRAY_BUFFER, batch.colorVBO );
 	gl.bufferSubData(
@@ -806,7 +826,7 @@ function uploadBatch( gl, batch, width, height ) {
 
 /**
  * Draw batch to FBO
- * 
+ *
  * @param {WebGL2RenderingContext} gl - WebGL2 context
  * @param {Object} screenData - Screen data object
  * @param {Object} batch - Batch object
@@ -835,7 +855,7 @@ function drawBatch( gl, screenData, batch, startIndex, endIndex, texture = null,
 		}
 		const noise = blends.noise;
 		const noiseSeed = blends.noiseSeed;
-		
+
 		// Calculate noise min and max ranges
 		let noiseMin, noiseMax;
 		if( noise === null ) {
@@ -848,10 +868,10 @@ function drawBatch( gl, screenData, batch, startIndex, endIndex, texture = null,
 			noiseMin = noise[ 0 ];
 			noiseMax = noise[ 1 ];
 		}
-		
+
 		gl.uniform4fv( batch.locations.noiseMin, noiseMin );
 		gl.uniform4fv( batch.locations.noiseMax, noiseMax );
-		
+
 		// Set time for animated noise
 		// Use seed if available, otherwise use current time
 		let timeValue;
@@ -870,8 +890,9 @@ function drawBatch( gl, screenData, batch, startIndex, endIndex, texture = null,
 
 /**
  * Reset batches and draw order items
- * 
+ *
  * @param {Object} batch - Batch object
+ * @param {Object} screenData - Screen state.
  * @returns {void}
  */
 export function resetBatches( screenData ) {
@@ -890,7 +911,7 @@ export function resetBatches( screenData ) {
 
 /**
  * Reset batch after flush
- * 
+ *
  * @param {Object} batch - Batch object
  * @returns {void}
  */
@@ -929,12 +950,12 @@ function resetBatch( batch ) {
 
 /**
  * Display FBO texture to canvas
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @returns {void}
  */
 export function displayToCanvas( screenData ) {
-	if( probeContextLoss( screenData ) ) {
+	if( g_contextState.probeContextLoss( screenData ) ) {
 		return;
 	}
 
@@ -942,7 +963,7 @@ export function displayToCanvas( screenData ) {
 	if( screenData.isOffscreen && screenData.parentRenderContext ) {
 		return;
 	}
-	
+
 	const gl = screenData.gl;
 	const useCustom = !screenData.isOffscreen && !!screenData.displayShaderHandle;
 
@@ -1030,7 +1051,7 @@ export function displayToCanvas( screenData ) {
 
 /**
  * Cleanup batch resources for screen
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @returns {void}
  */

@@ -1,9 +1,9 @@
 /**
  * Onscreen Keyboard Plugin for Pi.js
- * 
+ *
  * Provides an onscreen keyboard for touch devices and accessibility.
  * Renders a virtual keyboard and simulates keystrokes.
- * 
+ *
  * @module plugins/onscreen-keyboard
  * @version 1.0.0
  */
@@ -80,7 +80,7 @@ const KEY_LOOKUP = {
 	"SPACE": { "val": "SPACE", "key": " ", "code": "Space" }
 };
 
-let m_keyboardState = {
+const m_keyboardState = {
 	"layout": "lowercase",
 	"format": 0,
 	"isLowerCase": true,
@@ -104,6 +104,12 @@ if( typeof window !== "undefined" && window.pi ) {
 	window.pi.registerPlugin( CONFIG );
 }
 
+/**
+ * Register the on-screen keyboard commands and screen cleanup hook.
+ *
+ * @param {Object} pluginApi - Plugin registration and screen access API.
+ * @returns {void}
+ */
 export default function onscreenKeyboardPlugin( pluginApi ) {
 
 	m_api = pluginApi.getApi();
@@ -121,6 +127,13 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 	 * External API Commands
 	 **********************************************************************************************/
 
+	/**
+	 * Show the on-screen keyboard using the requested display mode.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {Object} options - Command options.
+	 * @returns {void}
+	 */
 	function showKeyboard( screenData, options ) {
 		const mode = options.mode || "text";
 
@@ -174,6 +187,12 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 		setupKeyboardEvents();
 	}
 
+	/**
+	 * Hide the on-screen keyboard and release its resources.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {void}
+	 */
 	function hideKeyboard( screenData ) {
 		if( !m_keyboardState.isVisible || m_keyboardState.screenData !== screenData ) {
 			return;
@@ -214,12 +233,12 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 
 		// Calculate dimensions
 		const font = screenData.font;
-		const { x, y } = m_keyboardState.startPosPx;
+		const { "x": x, "y": y } = m_keyboardState.startPosPx;
 		const width = format[ 0 ].length * font.width;
 		const height = format.length * font.height;
 
 		// Save background
-		if( m_keyboardState.background === null ) {	
+		if( m_keyboardState.background === null ) {
 			const key = `${Date.now()}_${Math.random().toString( 36 ).substring( 2, 9 )}`;
 			m_keyboardState.backgroundName = `__onscreen_keyboard_bg_${key}`;
 			screenData.api.createImageFromScreen( {
@@ -387,7 +406,11 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 				m_keyboardState.toggledKeys.add( index );
 
 				if( m_keyboardState.layout === "symbol" ) {
-					m_keyboardState.layout = m_keyboardState.isLowerCase ? "lowercase" : "uppercase";
+					if( m_keyboardState.isLowerCase ) {
+						m_keyboardState.layout = "lowercase";
+					} else {
+						m_keyboardState.layout = "uppercase";
+					}
 				} else {
 					m_keyboardState.layout = "symbol";
 				}
@@ -483,7 +506,9 @@ export default function onscreenKeyboardPlugin( pluginApi ) {
 					press.y < hitBox.y + hitBox.height
 				) {
 					keysUnderPress.add( i );
-					break; // Each press can only be on one key
+
+					// Each press can only be on one key
+					break;
 				}
 			}
 		}

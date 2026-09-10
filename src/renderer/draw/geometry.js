@@ -1,24 +1,24 @@
 /**
  * Pi.js - Geometry Cache Module
- * 
+ *
  * Cached geometry for commonly used shapes.
  * Stores pre-computed vertex data for efficient rendering.
- * 
+ *
  * @module renderer/draw/geometry
  */
 
 "use strict";
 
-import { isContextUnavailable } from "../context-state.js";
+import * as g_contextState from "../context-state.js";
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
 
 export const FILLED_CIRCLE = 0;
 export const FILLED_ELLIPSE = 1;
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Geometry Cache
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 // Cache key format: "type:radius"
@@ -32,15 +32,15 @@ const m_geometryCache = new Map();
 // }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Initialization
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 export { m_geometryCache as geometryCache };
 
 /**
  * Initialize geometry module
- * 
+ *
  * @returns {void}
  */
 export function init() {
@@ -51,7 +51,7 @@ export function init() {
 
 /**
  * Pre-populate cache with commonly used geometry
- * 
+ *
  * @returns {void}
  */
 function prepopulateCache() {
@@ -64,7 +64,7 @@ function prepopulateCache() {
 	// Pre-generate circles for sizes 1-10
 	for( let radius = 1; radius <= 10; radius++ ) {
 		const cacheKey = `${FILLED_CIRCLE}:${radius}`;
-		
+
 		// Use Alpha 2's radius threshold: (half - 0.5)^2
 		const geometry = generateCircleGeometry( radius );
 		m_geometryCache.set( cacheKey, geometry );
@@ -72,14 +72,14 @@ function prepopulateCache() {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Geometry Building Helpers
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Add a single vertex to a geometry vertices array
- * 
+ *
  * @param {Float32Array} vertices - Vertices array
  * @param {number} vIdx - Current index into vertices array (will be modified)
  * @param {number} x - X coordinate
@@ -95,7 +95,7 @@ function addVertex( vertices, vIdx, x, y ) {
 
 /**
  * Add a triangle (3 vertices) to a geometry vertices array
- * 
+ *
  * @param {Float32Array} vertices - Vertices array
  * @param {number} vIdx - Current index into vertices array (will be modified)
  * @param {number} x1 - First vertex X coordinate
@@ -117,7 +117,7 @@ function addTriangle( vertices, vIdx, x1, y1, x2, y2, x3, y3 ) {
 /**
  * Add a quad (rectangle as two triangles) to a geometry vertices array
  * The quad is defined by two corner points (x1,y1) and (x2,y2) forming a rectangle
- * 
+ *
  * @param {Float32Array} vertices - Vertices array
  * @param {number} vIdx - Current index into vertices array (will be modified)
  * @param {number} x1 - Left/bottom-left X coordinate
@@ -137,14 +137,14 @@ function addQuad( vertices, vIdx, x1, y1, x2, y2 ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Geometry Generation
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Fill points in an array first, then generate scanlines for pixel-perfect results
- * 
+ *
  * @param {number} radius - Radius of the circle
  * @returns {Object} Geometry data with vertexCount and vertices array
  */
@@ -153,26 +153,29 @@ function generateCircleGeometry( radius ) {
 	if( radius <= 0 ) {
 		return { "vertexCount": 0, "vertices": null };
 	}
-	
+
 	// Store min/max X for each Y scanline as we discover them during MCA
-	const scanlineMinMax = new Map(); // Map<y, {min: x, max: x}>
+	// Map<y, {min: x, max: x}>
+	const scanlineMinMax = new Map();
 
 	// --- Midpoint Circle Algorithm to find outline pixels ---
-	let x = radius - 1;  // Radius adjustment - due to integer rounding it looks better this way
+	// Radius adjustment - due to integer rounding it looks better this way
+	let x = radius - 1;
 	let y = 0;
 	let err = 1 - x;
 
 	// Helper to update min/max X for a specific Y scanline
 	const updateScanline = ( px, py ) => {
 
-		const pixelY = py | 0; // Fast Math.floor
+		// Fast Math.floor
+		const pixelY = py | 0;
 		const pixelX = px | 0;
 
 		if( !scanlineMinMax.has( pixelY ) ) {
 			if( pixelX < 0 ) {
 				scanlineMinMax.set( pixelY, { "left": pixelX, "right": Infinity } );
 			} else if( pixelX > 0 ) {
-				scanlineMinMax.set( pixelY, { "left": -Infinity, "right": pixelX } );	
+				scanlineMinMax.set( pixelY, { "left": -Infinity, "right": pixelX } );
 			} else {
 				scanlineMinMax.set( pixelY, { "left": pixelX, "right": pixelX } );
 			}
@@ -194,14 +197,29 @@ function generateCircleGeometry( radius ) {
 	while( x >= y ) {
 
 		// Apply 8-way symmetry to update scanlines
-		updateScanline(  x,  y ); // Quadrant 1
-		updateScanline(  y,  x ); // Quadrant 2
-		updateScanline( -y,  x ); // Quadrant 3
-		updateScanline( -x,  y ); // Quadrant 4
-		updateScanline( -x, -y ); // Quadrant 5
-		updateScanline( -y, -x ); // Quadrant 6
-		updateScanline(  y, -x ); // Quadrant 7
-		updateScanline(  x, -y ); // Quadrant 8
+		// Quadrant 1
+		updateScanline( x,  y );
+
+		// Quadrant 2
+		updateScanline( y,  x );
+
+		// Quadrant 3
+		updateScanline( -y,  x );
+
+		// Quadrant 4
+		updateScanline( -x,  y );
+
+		// Quadrant 5
+		updateScanline( -x, -y );
+
+		// Quadrant 6
+		updateScanline( -y, -x );
+
+		// Quadrant 7
+		updateScanline( y, -x );
+
+		// Quadrant 8
+		updateScanline( x, -y );
 
 		y++;
 		if( err < 0 ) {
@@ -226,7 +244,7 @@ function generateCircleGeometry( radius ) {
 	let vIdx = 0;
 
 	// Generate quads for each scanline -- skip the top row as it's border
-	for(let row = 1; row < sortedYCoords.length - 1; row += 1 ) {
+	for( let row = 1; row < sortedYCoords.length - 1; row += 1 ) {
 		const currentY = sortedYCoords[ row ];
 		const limits = scanlineMinMax.get( currentY );
 
@@ -260,14 +278,14 @@ function generateSinglePixelGeometry() {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Cache Management
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Get cached geometry or generate and cache it
- * 
+ *
  * @param {string} cacheKey - Geometry cache key (e.g., "circle:32")
  * @returns {Object} Geometry data with vertexCount and vertices array
  */
@@ -294,23 +312,24 @@ function getCachedGeometry( cacheType, unit ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Drawing Functions
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Draw cached geometry with specified color
- * 
+ *
  * @param {Object} screenData - Screen data object
- * @param {string} cacheKey - Geometry cache key (e.g., "circle:32")
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
  * @param {Object} color - Color object with [ r, g, b, a ] values (0-255)
+ * @param {number} cacheType - Cached geometry type.
+ * @param {number} unit - Size used to select cached geometry.
  * @returns {void}
  */
 export function drawCachedGeometry( screenData, cacheType, unit, x, y, color ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 

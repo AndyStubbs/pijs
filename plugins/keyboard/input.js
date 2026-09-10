@@ -1,8 +1,8 @@
 /**
  * Keyboard Input Command for Pi.js
- * 
+ *
  * Provides text input functionality with cursor blinking and validation.
- * 
+ *
  * @module plugins/keyboard/input
  */
 
@@ -18,15 +18,14 @@ let m_inputRequest = 0;
 let m_pluginApi = null;
 
 
-
-/***************************************************************************************************
+/*************************************************************************************************
  * Input Command Registration
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Initialize input command
- * 
+ *
  * @param {Object} pluginApi - Plugin API provided by Pi.js
  * @returns {void}
  */
@@ -44,9 +43,9 @@ export function initInput( pluginApi ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * External API Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
@@ -55,7 +54,7 @@ export function initInput( pluginApi ) {
  * Cancellation (including disposal) resolves with null and calls fn with null.
  * Callback errors are reported asynchronously after settlement and cleanup.
  * A reentrant input request supersedes any earlier request still being started.
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Input options
  * @param {string} options.prompt - Prompt text to display
@@ -75,7 +74,12 @@ function input( screenData, options ) {
 	}
 	const prompt = options.prompt;
 	const fn = options.fn;
-	const cursor = options.cursor ? options.cursor : String.fromCharCode( 219 );
+	let cursor;
+	if( options.cursor ) {
+		cursor = options.cursor;
+	} else {
+		cursor = String.fromCharCode( 219 );
+	}
 	const isNumber = !!options.isNumber;
 	const isInteger = !!options.isInteger;
 	const allowNegative = !!options.allowNegative;
@@ -161,7 +165,7 @@ function input( screenData, options ) {
 
 /**
  * Cancel input command - Cancel current input
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @returns {void}
  */
@@ -172,9 +176,9 @@ function cancelInput( screenData ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Internal Helper Functions
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 function startInput( inputData ) {
@@ -203,12 +207,12 @@ function captureBackground( inputData ) {
 	const screenData = inputData.screenData;
 
 	// Check if need to scroll first
-	let pos = screenData.api.getPos();
+	const pos = screenData.api.getPos();
 	if( pos.row >= screenData.api.getRows() ) {
 		screenData.api.print( "" );
 		screenData.api.setPos( pos.col, pos.row - 1 );
 	}
-	
+
 	// Get current position to capture background region
 	const posPx = screenData.api.getPosPx();
 	const font = screenData.font;
@@ -219,7 +223,7 @@ function captureBackground( inputData ) {
 	// Capture from the pixel position until the end the screen
 	const captureWidth = width - posPx.x;
 	const captureHeight = height;
-	
+
 	screenData.api.createImageFromScreen( {
 		"name": inputData.backgroundImageName ,
 		"x1": posPx.x,
@@ -227,7 +231,7 @@ function captureBackground( inputData ) {
 		"x2": posPx.x + captureWidth - 1,
 		"y2": posPx.y + captureHeight - 1
 	} );
-	inputData.backgroundImage = m_pluginApi.getApi().getImage( inputData.backgroundImageName  );
+	inputData.backgroundImage = m_pluginApi.getApi().getImage( inputData.backgroundImageName );
 	inputData.captureX = posPx.x;
 	inputData.captureY = posPx.y;
 	inputData.captureWidth = captureWidth;
@@ -244,18 +248,18 @@ function onInputKeyDown( inputData, keyData ) {
 	if( keyData.key === "Enter" ) {
 		finishInput();
 		return;
-	
+
 	// Handle Escape - Cancel Input
 	} else if( keyData.key === "Escape" ) {
 		finishInput( true );
 		return;
-	
+
 	// Handle Backspace - Erase last character
 	} else if( keyData.key === "Backspace" ) {
 		if( inputData.val.length > 0 ) {
 			inputData.val = inputData.val.substring( 0, inputData.val.length - 1 );
 		}
-	
+
 	// Handle single length keys
 	} else if( keyData.key && keyData.key.length === 1 ) {
 
@@ -270,7 +274,7 @@ function onInputKeyDown( inputData, keyData ) {
 					inputData.val = "-" + inputData.val;
 				}
 				inputHandled = true;
-			
+
 			// Any time the user enters a "+" key then replace the minus symbol
 			} else if(
 				( keyData.key === "+" || keyData.code === "Equal" ) &&
@@ -288,7 +292,7 @@ function onInputKeyDown( inputData, keyData ) {
 
 		// If the input is valid append the next character and validate
 		if( !inputHandled ) {
-			
+
 			// Check maxLength before appending
 			if(
 				inputData.maxLength !== null && inputData.val.length >= inputData.maxLength
@@ -334,12 +338,12 @@ function showPrompt( inputData, hideCursorOverride ) {
 	}
 
 	// Restore the background image over the prompt area
-	screenData.api.blitImage( 
+	screenData.api.blitImage(
 		inputData.backgroundImage,
 		inputData.captureX,
 		inputData.captureY
 	);
-	
+
 	// Get cursor position
 	const posPx = screenData.api.getPosPx();
 
@@ -443,7 +447,7 @@ function disposeInput( screenData ) {
 /**
  * Cancel all active input prompts
  * Called by clearKeyboardEvents
- * 
+ *
  * @param {Object} [screenData] - Optional screen data to cancel input for specific screen only
  * @returns {void}
  */

@@ -1,8 +1,8 @@
 /**
  * Pi.js - Shaders Module
- * 
+ *
  * Shader compilation, program creation, and display shader setup.
- * 
+ *
  * @module renderer/shaders
  */
 
@@ -15,14 +15,14 @@ import m_displayVertSrc from "./shaders/display.vert";
 import m_displayFragSrc from "./shaders/display.frag";
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Initialization
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Initialize shaders module
- * 
+ *
  * @returns {void}
  */
 export function init() {
@@ -34,7 +34,7 @@ export function init() {
 
 /**
  * Compile a single shader
- * 
+ *
  * @param {WebGL2RenderingContext} gl - WebGL2 context
  * @param {number} type - Shader type (VERTEX_SHADER or FRAGMENT_SHADER)
  * @param {string} source - Shader source code
@@ -49,19 +49,19 @@ export function compileShader( gl, type, source ) {
 	}
 	gl.shaderSource( shader, source );
 	gl.compileShader( shader );
-	
+
 	if( !gl.getShaderParameter( shader, gl.COMPILE_STATUS ) ) {
 		console.error( "Shader compile error:", gl.getShaderInfoLog( shader ) );
 		gl.deleteShader( shader );
 		return null;
 	}
-	
+
 	return shader;
 }
 
 /**
  * Create a linked shader program
- * 
+ *
  * @param {WebGL2RenderingContext} gl - WebGL2 context
  * @param {string} vertexSrc - Vertex shader source
  * @param {string} fragSrc - Fragment shader source
@@ -118,31 +118,43 @@ export function createShaderProgram( gl, vertexSrc, fragSrc, cmdName = "screen" 
 
 /**
  * Setup display shader for rendering FBO to screen
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @returns {void}
  */
 export function setupDisplayShader( screenData ) {
 	const gl = screenData.gl;
-	
+
 	// Create shader program
 	const program = createShaderProgram( gl, m_displayVertSrc, m_displayFragSrc );
 	screenData.displayProgram = program;
-	
+
 	// Create fullscreen quad vertices (NDC: -1 to 1)
 	const positions = new Float32Array( [
-		-1, -1, // Bottom left
-		 1, -1, // Bottom right
-		-1,  1, // Top left
-		-1,  1, // Top left
-		 1, -1, // Bottom right
-		 1,  1  // Top right
+
+		// Bottom left
+		-1, -1,
+
+		// Bottom right
+		 1, -1,
+
+		// Top left
+		-1,  1,
+
+		// Top left
+		-1,  1,
+
+		// Bottom right
+		 1, -1,
+
+		// Top right
+		 1,  1
 	] );
-	
+
 	// Create vertex buffer
 	const positionBuffer = gl.createBuffer();
 	screenData.displayPositionBuffer = positionBuffer;
-	
+
 	// Get attribute/uniform locations
 	const positionLoc = gl.getAttribLocation( program, "a_position" );
 	const textureLoc = gl.getUniformLocation( program, "u_texture" );
@@ -161,7 +173,7 @@ export function setupDisplayShader( screenData ) {
 	gl.enableVertexAttribArray( positionLoc );
 	gl.vertexAttribPointer( positionLoc, 2, gl.FLOAT, false, 0, 0 );
 	gl.bindVertexArray( null );
-	
+
 	// Store in screen data
 	screenData.displayProgram = program;
 	screenData.displayPositionBuffer = positionBuffer;
@@ -195,15 +207,15 @@ export function getOrCreateCustomShaderProgram( screenData, handle, cmdName = "s
 	const frameLoc = gl.getUniformLocation( program, "u_frame" );
 	const customUniforms = reflectCustomUniforms( gl, program );
 	cache = {
-		program,
-		customUniforms,
-		locations: {
-			position: positionLoc,
-			texture: textureLoc,
-			sourceSize: sourceSizeLoc,
-			outputSize: outputSizeLoc,
-			time: timeLoc,
-			frame: frameLoc
+		"program": program,
+		"customUniforms": customUniforms,
+		"locations": {
+			"position": positionLoc,
+			"texture": textureLoc,
+			"sourceSize": sourceSizeLoc,
+			"outputSize": outputSizeLoc,
+			"time": timeLoc,
+			"frame": frameLoc
 		}
 	};
 	screenData.customShaders[ handle.id ] = cache;
@@ -310,7 +322,12 @@ function reflectCustomUniforms( gl, program ) {
 		if( !active ) {
 			continue;
 		}
-		const name = active.name.endsWith( "[0]" ) ? active.name.slice( 0, -3 ) : active.name;
+		let name;
+		if( active.name.endsWith( "[0]" ) ) {
+			name = active.name.slice( 0, -3 );
+		} else {
+			name = active.name;
+		}
 		uniforms[ name ] = {
 			"location": gl.getUniformLocation( program, active.name ),
 			"name": name,
@@ -345,7 +362,9 @@ export function validateCustomShaderProgram( screenData, handle, cmdName ) {
 	return cache;
 }
 
-const m_isDebug = typeof window !== "undefined" && window.location.search.includes( "webgl-debug" );
+const m_isDebug = typeof window !== "undefined" && window.location.search.includes(
+	"webgl-debug"
+);
 
 function uniformError( cmdName, code, message ) {
 	const error = new TypeError( `${cmdName}: ${message}` );
@@ -503,7 +522,12 @@ export function normalizeCustomUniforms( gl, cache, uniforms, cmdName, resolveSa
 			"uniform": uniform
 		};
 		if( info.family === "sampler" ) {
-			const inputs = uniform.size === 1 ? [ uniforms[ name ] ] : uniforms[ name ];
+			let inputs;
+			if( uniform.size === 1 ) {
+				inputs = [ uniforms[ name ] ];
+			} else {
+				inputs = uniforms[ name ];
+			}
 			if( !Array.isArray( inputs ) || inputs.length !== uniform.size ) {
 				throw uniformError(
 					cmdName, "INVALID_UNIFORM_VALUE",
@@ -544,7 +568,7 @@ export function normalizeCustomUniforms( gl, cache, uniforms, cmdName, resolveSa
 export function setCustomUniforms( gl, uniforms, getTexture ) {
 	let textureUnit = 1;
 	for( const binding of Object.values( uniforms ?? {} ) ) {
-		const { info, value, sources } = binding;
+		const { "info": info, "value": value, "sources": sources } = binding;
 		const loc = info.uniform.location;
 		if( info.family === "sampler" ) {
 			const units = [];

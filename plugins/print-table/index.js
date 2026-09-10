@@ -1,13 +1,14 @@
 /**
  * Print Table Plugin for Pi.js
- * 
+ *
  * Table formatting and printing with customizable borders
- * 
+ *
  * @module plugins/print-table
  * @version 1.0.0
  */
 
-// TODO-LATER: Refactor print-table into a printf command that handles special formatting for strings.
+// TODO-LATER: Refactor print-table into a printf command that handles special formatting for
+// strings.
 // It can include a table formatter that will automatically format tables using special characters
 
 "use strict";
@@ -46,6 +47,12 @@ const m_borderStyles = {
 	]
 };
 
+/**
+ * Register the command for printing tables with borders and column formatting.
+ *
+ * @param {Object} pluginApi - Plugin registration and screen access API.
+ * @returns {void}
+ */
 export default function printTablePlugin( pluginApi ) {
 	const utils = pluginApi.utils;
 
@@ -57,7 +64,7 @@ export default function printTablePlugin( pluginApi ) {
 
 	/**
 	 * Print a formatted table to the screen
-	 * 
+	 *
 	 * @param {Object} screenData - Screen data object
 	 * @param {Object} options - Options object
 	 * @param {Array} options.items - 2D array of items to display
@@ -117,9 +124,9 @@ export default function printTablePlugin( pluginApi ) {
 		}
 	}
 
-	/***************************************************************************************************
+	/************************************************************************************************
 	 * Internal Helper Functions
-	 **************************************************************************************************/
+	 ***********************************************************************************************/
 
 	/**
 	 * Build a standard auto-formatted table

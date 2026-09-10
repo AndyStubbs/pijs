@@ -1,17 +1,16 @@
 /**
  * Pi.js - Arcs Drawing Module
- * 
+ *
  * Low-level drawing operations: arcs drawing.
- * 
+ *
  * drawArc, drawArcSquare, drawArcCircle
- * 
+ *
  * @module renderer/draw/arcs
  */
 
 "use strict";
 
-import { isContextUnavailable } from "../context-state.js";
-
+import * as g_contextState from "../context-state.js";
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
 import * as g_circles from "./circles.js";
@@ -21,7 +20,7 @@ const FULL_CIRCLE_EPSILON = 0.0001;
 
 /**
  * Draw arc outline using midpoint circle algorithm
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} cx - Center X coordinate
  * @param {number} cy - Center Y coordinate
@@ -31,7 +30,7 @@ const FULL_CIRCLE_EPSILON = 0.0001;
  * @returns {void}
  */
 export function drawArc( screenData, cx, cy, radius, angle1, angle2 ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 

@@ -15,6 +15,11 @@ function loadModule( file, globals = {} ) {
 	vm.runInContext( fs.readFileSync(
 		path.join( __dirname, "../../src/renderer/context-state.js" ), "utf8"
 	).replace( /export /g, "" ), context );
+	context.g_contextState = {
+		"isContextUnavailable": context.isContextUnavailable,
+		"getContextGeneration": context.getContextGeneration,
+		"probeContextLoss": context.probeContextLoss
+	};
 	vm.runInContext( source, context, { "filename": file } );
 	return context;
 }
@@ -47,12 +52,12 @@ function createPixelHarness() {
 		"rgbToColor": ( r, g, b, a ) => ( { "r": r, "g": g, "b": b, "a": a } )
 	};
 	const readback = loadModule( "src/renderer/readback.js", {
-		"unpremultiplyPixels": alpha.unpremultiplyPixels,
+		"g_alpha": alpha,
 		"g_utils": utils, "g_screenManager": manager,
 		"g_batches": { "flushBatches": () => {} }
 	} );
 	const pixels = loadModule( "src/api/pixels.js", {
-		"unpremultiplyPixels": alpha.unpremultiplyPixels,
+		"g_alpha": alpha,
 		"g_utils": utils, "g_screenManager": manager, "g_view": view,
 		"g_commands": { "addCommand": () => {} },
 		"g_renderer": {

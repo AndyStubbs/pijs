@@ -1,18 +1,15 @@
 /**
  * Pi.js - Graphics Pixels Module
- * 
+ *
  * Commands to read and write pixels from the screen.
- * 
+ *
  * @module api/pixels
  */
 
 "use strict";
 
-import { isContextUnavailable, getContextGeneration } from "../renderer/context-state.js";
-import { probeContextLoss } from "../renderer/context-state.js";
-
-// Imports
-import { unpremultiplyPixels } from "../renderer/alpha.js";
+import * as g_contextState from "../renderer/context-state.js";
+import * as g_alpha from "../renderer/alpha.js";
 import * as g_utils from "../core/utils.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_colors from "./colors.js";
@@ -24,11 +21,17 @@ import * as g_view from "./view.js";
 const m_activeFilters = new WeakMap();
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
+/**
+ * Initialize the module and register its commands and lifecycle hooks.
+ *
+ * @param {Object} api - Public Pi.js API.
+ * @returns {void}
+ */
 export function init( api ) {
 	registerCommands();
 	g_screenManager.addScreenPreCleanupFunction( cancelFilter );
@@ -48,7 +51,7 @@ export function init( api ) {
 
 
 function registerCommands() {
-	
+
 	// Register screen commands
 	g_commands.addCommand( "getPixel", getPixel, true, [ "x", "y", "asIndex" ] );
 	g_commands.addCommand( "getPixelAsync", getPixelAsync, true, [ "x", "y", "asIndex" ] );
@@ -64,12 +67,18 @@ function registerCommands() {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Get Pixel and Get Pixel Async
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
-// getPixel: Returns RGBA8 color object by default; if asIndex===true, returns palette index
+/**
+ * Read a pixel in the current view as a color object or palette index.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {Object|number|null}
+ */
 function getPixel( screenData, options ) {
 	const px = g_utils.getInt( options.x, null );
 	const py = g_utils.getInt( options.y, null );
@@ -94,7 +103,7 @@ function getPixel( screenData, options ) {
  * @returns {Promise<Object|number>} Pixel result; rejects with SCREEN_REMOVED on disposal
  */
 function getPixelAsync( screenData, options ) {
-	const generation = getContextGeneration( screenData );
+	const generation = g_contextState.getContextGeneration( screenData );
 	const px = g_utils.getInt( options.x, null );
 	const py = g_utils.getInt( options.y, null );
 	if( px === null || py === null ) {
@@ -114,7 +123,11 @@ function getPixelAsync( screenData, options ) {
 	return g_renderer.readPixelAsync( screenData, resolved.x, resolved.y ).then( ( colorValue ) => {
 		g_screenManager.assertScreenAvailable( screenData );
 		if(
-			probeContextLoss( screenData ) || generation !== getContextGeneration( screenData )
+			g_contextState.probeContextLoss(
+				screenData
+			) || generation !== g_contextState.getContextGeneration(
+				screenData
+			)
 		) {
 			colorValue = g_utils.rgbToColor( 0, 0, 0, 0 );
 		}
@@ -126,14 +139,18 @@ function getPixelAsync( screenData, options ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Get and Get Async
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
-// get: Returns a 2D array [height][width] of palette indices by default.
-// Set asIndex=false to return colorValue objects instead.
-// Optional tolerance passed to findColorIndexByColorValue.
+/**
+ * Read a rectangle in the current view as rows of colors or palette indices.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {Array<Array<Object|number>>}
+ */
 function get( screenData, options ) {
 	const pX = g_utils.getInt( options.x, null );
 	const pY = g_utils.getInt( options.y, null );
@@ -149,7 +166,7 @@ function get( screenData, options ) {
 		error.code = "INVALID_PARAMETER";
 		throw error;
 	}
-	
+
 	if( pWidth <= 0 || pHeight <= 0 ) {
 		return [];
 	}
@@ -172,7 +189,7 @@ function get( screenData, options ) {
  * @returns {Promise<Array>} Pixel rows; rejects with SCREEN_REMOVED on disposal
  */
 function getAsync( screenData, options ) {
-	const generation = getContextGeneration( screenData );
+	const generation = g_contextState.getContextGeneration( screenData );
 	const pX = g_utils.getInt( options.x, null );
 	const pY = g_utils.getInt( options.y, null );
 	const pWidth = g_utils.getInt( options.width, null );
@@ -201,8 +218,9 @@ function getAsync( screenData, options ) {
 		screenData, region.x, region.y, region.width, region.height
 	).then( ( colors ) => {
 		g_screenManager.assertScreenAvailable( screenData );
-		if( probeContextLoss( screenData ) ||
-			generation !== getContextGeneration( screenData )
+		if(
+			g_contextState.probeContextLoss( screenData ) ||
+			generation !== g_contextState.getContextGeneration( screenData )
 		) {
 			colors = colors.map( row => row.map( () => g_utils.rgbToColor( 0, 0, 0, 0 ) ) );
 		}
@@ -212,7 +230,7 @@ function getAsync( screenData, options ) {
 
 /**
  * Convert colors array to indices array if needed
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Array} colors - 2D array of color values [height][width]
  * @param {number} width - Width of the region
@@ -228,15 +246,24 @@ function convertColorsToIndices( screenData, colors, width, asIndex, tolerance )
 	const results = new Array( colors.length );
 	for( let row = 0; row < colors.length; row++ ) {
 		const resultsRow = new Array( width );
-		const rowLength = colors[ row ] ? colors[ row ].length : 0;
-		
+		let rowLength;
+		if( colors[ row ] ) {
+			rowLength = colors[ row ].length;
+		} else {
+			rowLength = 0;
+		}
+
 		for( let col = 0; col < width; col++ ) {
 			if( col < rowLength ) {
 				const colorValue = colors[ row ][ col ];
 				const idx = g_colors.findColorIndexByColorValue(
 					screenData, colorValue, tolerance
 				);
-				resultsRow[ col ] = ( idx === null ? 0 : idx );
+				if( idx === null ) {
+					resultsRow[ col ] = 0;
+				} else {
+					resultsRow[ col ] = idx;
+				}
 			} else {
 				resultsRow[ col ] = 0;
 			}
@@ -247,9 +274,9 @@ function convertColorsToIndices( screenData, colors, width, asIndex, tolerance )
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Filter Image
- **************************************************************************************************/
+ ************************************************************************************************/
 
 /**
  * Stop an active filter through its existing loop bounds before screen resources are released.
@@ -268,7 +295,7 @@ function cancelFilter( screenData ) {
 /**
  * Apply a filter function to a region of the screen.
  * Disposal cancels queued work; disposal inside the callback stops further pixels and upload.
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Options object with filter, x1, y1, x2, y2
  * @returns {void}
@@ -277,10 +304,10 @@ function filterImg( screenData, options ) {
 	const filter = options.filter;
 
 	const viewSnap = g_view.snapshotView( screenData );
-	let x1 = g_utils.getInt( options.x1, 0 );
-	let y1 = g_utils.getInt( options.y1, 0 );
-	let x2 = g_utils.getInt( options.x2, viewSnap.width - 1 );
-	let y2 = g_utils.getInt( options.y2, viewSnap.height - 1 );
+	const x1 = g_utils.getInt( options.x1, 0 );
+	const y1 = g_utils.getInt( options.y1, 0 );
+	const x2 = g_utils.getInt( options.x2, viewSnap.width - 1 );
+	const y2 = g_utils.getInt( options.y2, viewSnap.height - 1 );
 
 	if( !g_utils.isFunction( filter ) ) {
 		const error = new TypeError( "filterImg: Argument filter must be a callback function." );
@@ -303,20 +330,21 @@ function filterImg( screenData, options ) {
 		return;
 	}
 
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
-	const generation = getContextGeneration( screenData );
+	const generation = g_contextState.getContextGeneration( screenData );
 
 	// Queue filter operation to run at end of frame
 	g_utils.queueMicrotask( () => {
-		if( screenData.isRemoved || isContextUnavailable( screenData ) ||
-			generation !== getContextGeneration( screenData )
+		if(
+			screenData.isRemoved || g_contextState.isContextUnavailable( screenData ) ||
+			generation !== g_contextState.getContextGeneration( screenData )
 		) {
 			return;
 		}
 		g_utils.queueMicrotask( () => {
-			if( generation === getContextGeneration( screenData ) ) {
+			if( generation === g_contextState.getContextGeneration( screenData ) ) {
 				applyFilter( screenData, filter, phys.x, phys.y, phys.width, phys.height, viewSnap );
 			}
 		} );
@@ -325,7 +353,7 @@ function filterImg( screenData, options ) {
 
 /**
  * Apply filter to pixel region (called at end of frame)
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Function} filter - Filter callback function (pixelData, x, y) => boolean
  * 							  pixelData is a Uint8ClampedArray with [r, g, b, a] at indices 0-3
@@ -336,7 +364,7 @@ function filterImg( screenData, options ) {
  * @returns {void}
  */
 function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
-	if( screenData.isRemoved || isContextUnavailable( screenData ) ) {
+	if( screenData.isRemoved || g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -346,11 +374,11 @@ function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
 	// Read pixels as raw Uint8Array (bottom-left origin from WebGL)
 	const imageData = g_renderer.readPixelsRaw( screenData, x1, y1, width, height );
 
-	if( !imageData || isContextUnavailable( screenData ) ) {
+	if( !imageData || g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
-	unpremultiplyPixels( imageData );
+	g_alpha.unpremultiplyPixels( imageData );
 
 	const screenHeight = screenData.height;
 
@@ -386,7 +414,7 @@ function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
 				const localX = ( x1 + x ) - viewSnap.originX;
 				const localY = ( y1 + y ) - viewSnap.originY;
 				const keep = filter( pixelData, localX, localY );
-				if( screenData.isRemoved || isContextUnavailable( screenData ) ) {
+				if( screenData.isRemoved || g_contextState.isContextUnavailable( screenData ) ) {
 					return;
 				}
 				if( keep ) {
@@ -411,7 +439,7 @@ function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
 	}
 
 	// A callback may have removed the screen; never upload to its disposed texture.
-	if( screenData.isRemoved || isContextUnavailable( screenData ) ) {
+	if( screenData.isRemoved || g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -430,9 +458,9 @@ function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Write API
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 // Wrapper for the put commands handles all parsing and data validation
@@ -468,16 +496,20 @@ function putWrapper( screenData, data, x, y, include0 = false ) {
 	const view = screenData.view;
 	const clipLocalX = view.clipX - view.originX;
 	const clipLocalY = view.clipY - view.originY;
+	let sourceWidth = 0;
+	if( pData[ 0 ] ) {
+		sourceWidth = pData[ 0 ].length;
+	}
 	const dest = g_view.intersectRects(
 		pX, pY,
-		pData[ 0 ] ? pData[ 0 ].length : 0, pData.length,
+		sourceWidth, pData.length,
 		clipLocalX, clipLocalY, view.clipWidth, view.clipHeight
 	);
 
-	let startX = dest.x - pX;
-	let startY = dest.y - pY;
-	let width = dest.width;
-	let height = dest.height;
+	const startX = dest.x - pX;
+	const startY = dest.y - pY;
+	const width = dest.width;
+	const height = dest.height;
 
 	// If nothing to draw after clipping, exit
 	if( width <= 0 || height <= 0 ) {
@@ -492,10 +524,10 @@ function putWrapper( screenData, data, x, y, include0 = false ) {
 
 // put: Hot path inner function. Assumes x/y are integers and data is a 2D array.
 function put( screenData, data, x, y, include0, startY, startX, width, height ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
-	
+
 	const endY = startY + height;
 	const endX = startX + width;
 	const writePoint = g_renderer.createPointWriter( screenData, g_renderer.POINTS_REPLACE_BATCH );

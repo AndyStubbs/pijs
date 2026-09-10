@@ -2,7 +2,7 @@
  * Pointer target validation and current viewport-to-screen conversion.
  * @module plugins/pointer/target
  */
-import { getCanvasContentRect } from "../../src/core/canvas-layout.js";
+import * as g_canvasLayout from "../../src/core/canvas-layout.js";
 
 /**
  * Validate before changing device or subscription state.
@@ -29,7 +29,7 @@ export function validatePointerTarget( screenData, command ) {
  * @returns {{x: number, y: number}|null} Logical position, or null for an empty content box
  */
 export function pointerPosition( screenData, event ) {
-	const rect = getCanvasContentRect( screenData.canvas );
+	const rect = g_canvasLayout.getCanvasContentRect( screenData.canvas );
 	screenData.clientRect = rect;
 	if( rect.width <= 0 || rect.height <= 0 ) {
 		return null;

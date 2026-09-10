@@ -1,14 +1,13 @@
 /**
  * Pi.js - Plugin System Core Module
- * 
+ *
  * Plugin registration and management for extending Pi.js functionality.
- * 
+ *
  * @module core/plugins
  */
 
 "use strict";
 
-// Import modules directly
 import * as g_commands from "./commands.js";
 import * as g_screenManager from "./screen-manager.js";
 import * as g_utils from "./utils.js";
@@ -19,11 +18,17 @@ const m_clearEventsHandlers = {};
 let m_api = null;
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
+/**
+ * Initialize the module and register its commands and lifecycle hooks.
+ *
+ * @param {Object} api - Public Pi.js API.
+ * @returns {void}
+ */
 export function init( api ) {
 	m_api = api;
 
@@ -41,14 +46,14 @@ export function init( api ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * External API Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Register a plugin with Pi.js
- * 
+ *
  * @param {Object} options - Plugin configuration
  * @param {string} options.name - Unique name for the plugin
  * @param {Function} options.init - Initialization function that receives pluginApi
@@ -56,7 +61,7 @@ export function init( api ) {
  * @param {string} [options.description] - Optional description
  * @param {string[]} [options.dependencies] - Optional list of dependencies
  * @returns {void}
- * 
+ *
  * @example
  * pi.registerPlugin( {
  *   "name": "my-plugin",
@@ -133,9 +138,11 @@ function resolveDependencies() {
 		while( progress ) {
 			progress = false;
 			for( const plugin of m_plugins ) {
-				if( plugin.state !== "pending" || !plugin.config.dependencies.every(
+				if(
+					plugin.state !== "pending" || !plugin.config.dependencies.every(
 					name => m_plugins.some( item => item.name === name && item.initialized )
-				) ) {
+				)
+				) {
 					continue;
 				}
 				plugin.state = "initializing";
@@ -161,9 +168,9 @@ function resolveDependencies() {
 
 /**
  * Get list of registered plugins
- * 
+ *
  * @returns {Array<Object>} Array of plugin info objects with name, version, description
- * 
+ *
  * @example
  * const plugins = pi.getPlugins();
  * console.log( plugins ); // [{ name: "my-plugin", version: "1.0.0", ... }]
@@ -179,25 +186,26 @@ function getPlugins() {
 
 /**
  * Clear all events from all plugins or a specific plugin type
- * 
+ *
  * @param {Object} screenData - Screen data object (may be null)
  * @param {Object} options - Options object
- * @param {string} [options.type] - Optional type to clear (e.g., "keyboard", "mouse", "touch", "press")
+ * @param {string} [options.type] - Optional type to clear (e.g., "keyboard", "mouse", "touch",
+ * "press")
  * @returns {void}
- * 
+ *
  * @example
  * $.clearEvents(); // Clear all events from all plugins
  * $.clearEvents( { "type": "keyboard" } ); // Clear only keyboard events
  */
 function clearEvents( screenData, options ) {
 	const type = options?.type;
-	
+
 	if( type ) {
 
 		// Clear events for specific type
 		const lowerType = String( type ).toLowerCase();
 		const handler = m_clearEventsHandlers[ lowerType ];
-		
+
 		if( !handler ) {
 			const validTypes = Object.keys( m_clearEventsHandlers );
 			let errorMessage = `clearEvents: Invalid type "${type}".`;
@@ -210,7 +218,7 @@ function clearEvents( screenData, options ) {
 			error.code = "INVALID_TYPE";
 			throw error;
 		}
-		
+
 		try {
 			handler( screenData );
 		} catch( error ) {
@@ -237,19 +245,19 @@ function clearEvents( screenData, options ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Internal Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Register a clearEvents handler function with a name
- * 
+ *
  * @param {string} name - Name of the event type (e.g., "keyboard", "mouse", "touch", "press")
  * @param {Function} handler - Function to call when clearEvents is invoked for this type
  * @param {Object} [handler.screenData] - Screen data passed from clearEvents (may be null)
  * @returns {void}
- * 
+ *
  * @example
  * pluginApi.registerClearEvents( "keyboard", ( screenData ) => {
  *   // Clear keyboard events for this plugin
@@ -261,15 +269,15 @@ function registerClearEvents( name, handler ) {
 		error.code = "INVALID_NAME";
 		throw error;
 	}
-	
+
 	if( typeof handler !== "function" ) {
 		const error = new TypeError( "registerClearEvents: handler must be a function." );
 		error.code = "INVALID_HANDLER";
 		throw error;
 	}
-	
+
 	const lowerName = name.toLowerCase();
-	
+
 	if( m_clearEventsHandlers[ lowerName ] ) {
 		const error = new Error(
 			`registerClearEvents: Handler with name "${name}" is already registered.`
@@ -277,7 +285,7 @@ function registerClearEvents( name, handler ) {
 		error.code = "DUPLICATE_HANDLER";
 		throw error;
 	}
-	
+
 	m_clearEventsHandlers[ lowerName ] = handler;
 }
 

@@ -1,12 +1,12 @@
 /**
  * Example Plugin for Pi.js
- * 
+ *
  * Demonstrates basic plugin functionality including:
  * - Adding global commands
  * - Adding screen commands
  * - Using screen data
  * - Lifecycle hooks
- * 
+ *
  * @module plugins/example-plugin
  * @version 1.0.0
  */
@@ -15,8 +15,9 @@
 
 /**
  * Example plugin initialization
- * 
+ *
  * @param {Object} pluginApi - Plugin API provided by Pi.js
+ * @returns {void}
  */
 export default function examplePlugin( pluginApi ) {
 
@@ -46,7 +47,7 @@ export default function examplePlugin( pluginApi ) {
 
 	/**
 	 * Say hello
-	 * 
+	 *
 	 * @param {Object} options - Command options
 	 * @param {string} options.name - Name to greet
 	 * @returns {string} Greeting message
@@ -59,7 +60,7 @@ export default function examplePlugin( pluginApi ) {
 
 	/**
 	 * Track a click on the screen
-	 * 
+	 *
 	 * @param {Object} screenData - Screen data
 	 * @param {Object} options - Command options
 	 * @param {number} options.x - Click X coordinate
@@ -70,7 +71,7 @@ export default function examplePlugin( pluginApi ) {
 		screenData.exampleData.clicks++;
 		const x = options.x || 0;
 		const y = options.y || 0;
-		
+
 		// Store old cursor position
 		const cursorPx =  screenData.api.getPosPx();
 
@@ -86,6 +87,7 @@ export default function examplePlugin( pluginApi ) {
 	/**
 	 * Get Pi.js library information
 	 * @param {Object} screenData - Screen data
+	 * @returns {void}
 	 */
 	function showClicks( screenData ) {
 		screenData.api.print( `Total Clicks: ${screenData.exampleData.clicks}` );
@@ -93,7 +95,7 @@ export default function examplePlugin( pluginApi ) {
 
 	/**
 	 * Get Pi.js library information
-	 * 
+	 *
 	 * @returns {Object} Library info
 	 */
 	function getLibraryInfo() {
@@ -106,12 +108,13 @@ export default function examplePlugin( pluginApi ) {
 
 	/**
 	 * Draw a circle with random color
-	 * 
+	 *
 	 * @param {Object} screenData - Screen data
 	 * @param {Object} options - Command options
 	 * @param {number} options.x - Circle center X coordinate
 	 * @param {number} options.y - Circle center Y coordinate
 	 * @param {number} options.radius - Circle radius
+	 * @returns {void}
 	 */
 	function drawRandomCircle( screenData, options ) {
 		const x = options.x || 0;
@@ -138,13 +141,14 @@ export default function examplePlugin( pluginApi ) {
 
 	/**
 	 * Draw a star with shape
-	 * 
+	 *
 	 * @param {Object} screenData - Screen data
 	 * @param {Object} options - Command options
 	 * @param {number} options.x - Star center X coordinate
 	 * @param {number} options.y - Star center Y coordinate
 	 * @param {number} options.radius - Star radius
 	 * @param {number} options.radius - Star number of points
+	 * @returns {void}
 	 */
 	function star( screenData, options ) {
 		const x = options.x || 0;
@@ -152,14 +156,19 @@ export default function examplePlugin( pluginApi ) {
 		const radius = options.radius || 50;
 		const points = options.points || 5;
 		const innerRadius = radius * 0.5;
-		
+
 		let px0, py0, px1, py1;
 		for( let i = 0; i < points * 2; i++ ) {
-			const r = i % 2 === 0 ? radius : innerRadius;
+			let r;
+			if( i % 2 === 0 ) {
+				r = radius;
+			} else {
+				r = innerRadius;
+			}
 			const angle = ( i * Math.PI ) / points;
 			const px2 = x + r * Math.cos( angle - Math.PI / 2 );
 			const py2 = y + r * Math.sin( angle - Math.PI / 2 );
-			
+
 			if( i === 0 ) {
 				px0 = px2;
 				py0 = py2;

@@ -1,14 +1,14 @@
 /**
  * Pi.js - Images Module
- * 
+ *
  * Image loading, storage, and management for WebGL2 renderer.
- * 
+ *
  * @module api/images
  */
 
 "use strict";
 
-import { unpremultiplyPixels } from "../renderer/alpha.js";
+import * as g_alpha from "../renderer/alpha.js";
 import * as g_utils from "../core/utils.js";
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
@@ -21,12 +21,12 @@ let m_imageCount = 0;
 
 /**************************************************************************************************
  * Module Initialization
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Initialize images module
- * 
+ *
  * @param {Object} api - The main Pi.js API object
  * @returns {void}
  */
@@ -39,7 +39,7 @@ export function init( api ) {
 
 /**
  * Register image commands
- * 
+ *
  * @returns {void}
  */
 function registerCommands( api ) {
@@ -64,12 +64,12 @@ function registerCommands( api ) {
 
 /**************************************************************************************************
  * External API Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Load an image from URL or use provided Image/Canvas element
- * 
+ *
  * @param {Object} options - Load options
  * @param {string|HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} options.src - Image source
  * @param {string} [options.name] - Optional name for the image
@@ -110,6 +110,7 @@ function loadImage( options ) {
 		error.code = "INVALID_NAME";
 		throw error;
 	}
+
 	// Generate a name if none is provided
 	if( !name || name === "" ) {
 		m_imageCount += 1;
@@ -240,9 +241,10 @@ function loadImage( options ) {
 /**
  * Remove an image from storage
  * Pending URL loads cancel silently and release their readiness wait. Names are reusable at once.
- * 
+ *
  * @param {Object} options - Load options
  * @param {string} [options.name] - Name of the image to remove
+ * @returns {void}
  */
 function removeImage( options ) {
 	const name = options.name;
@@ -309,7 +311,7 @@ function cancelImageLoad( load ) {
 
 /**
  * Load a spritesheet from URL or use provided Image/Canvas element
- * 
+ *
  * @param {Object} options - Load options
  * @param {string|HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} options.src - Image source
  * @param {string} [options.name] - Optional name for the spritesheet
@@ -439,7 +441,7 @@ function loadSpritesheet( options ) {
 
 /**
  * Gets the image by name and returns the DOM element (Image or Canvas).
- * 
+ *
  * @param {Object} options - Options
  * @param {string} [options.name] - Optional name for the image
  * @returns {Object} Actual image
@@ -458,7 +460,7 @@ function getImage( options ) {
 /**
  * Create an image from a region of the screen (FBO)
  * Defaults to fullscreen if no coordinates are provided
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Options
  * @param {string} [options.name] - Optional name for the image
@@ -542,7 +544,7 @@ function createImageFromScreen( screenData, options ) {
 
 /**
  * Set the default anchor point for images on this screen
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Options
  * @param {number} options.anchorX - Anchor point X (0-1)
@@ -578,7 +580,7 @@ function setDefaultAnchor( screenData, options ) {
 
 /**
  * Get spritesheet data including frame information
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Options
  * @param {string} options.name - Spritesheet name
@@ -632,12 +634,12 @@ function getSpritesheetData( screenData, options ) {
 
 /**************************************************************************************************
  * Internal Helper Functions
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Create a canvas copy from a region of the screen (FBO)
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} x - X coordinate of region
  * @param {number} y - Y coordinate of region
@@ -649,7 +651,7 @@ function createCanvasFromScreenRegion( screenData, x, y, width, height ) {
 
 	// TODO-LATER: Research if it's possible to use blitFrameBuffer or another faster method than
 	// readPixels.
-	
+
 	// Read pixel data from FBO using readPixelsRaw
 	const pixelData = g_renderer.readPixelsRaw( screenData, x, y, width, height );
 
@@ -668,7 +670,7 @@ function createCanvasFromScreenRegion( screenData, x, y, width, height ) {
 	const context = canvas.getContext( "2d" );
 
 	// Create ImageData for canvas (top-left origin)
-	unpremultiplyPixels( pixelData );
+	g_alpha.unpremultiplyPixels( pixelData );
 
 	const imageData = context.createImageData( width, height );
 	const canvasData = imageData.data;
@@ -700,6 +702,13 @@ function createCanvasFromScreenRegion( screenData, x, y, width, height ) {
 	return canvas;
 }
 
+/**
+ * Resolve a ready named image, screen, or browser image source for drawing.
+ *
+ * @param {string|Object} imageOrName - Image name, screen API, or browser image source.
+ * @param {string} fnName - Command name used in errors.
+ * @returns {Object}
+ */
 export function getImageFromRawInput( imageOrName, fnName ) {
 	let img = null;
 
@@ -710,7 +719,7 @@ export function getImageFromRawInput( imageOrName, fnName ) {
 		const imageData = getStoredImage( imageOrName );
 		if( !imageData ) {
 			const error = new Error( `${fnName}: Image "${imageOrName}" not found.` );
-			error.code = "IMAGE_NOT_FOUND"
+			error.code = "IMAGE_NOT_FOUND";
 			throw error;
 		}
 
@@ -766,7 +775,7 @@ function isTexImageCompatible( img ) {
 
 /**
  * Get stored image by name
- * 
+ *
  * @param {string} name - Image name
  * @returns {Object|null} Image data object or null if not found
  */
@@ -779,7 +788,7 @@ export function getStoredImage( name ) {
 
 /**
  * Process spritesheet with fixed grid dimensions
- * 
+ *
  * @param {Object} imageData - Image data object
  * @param {number} width - Image width
  * @param {number} height - Image height
@@ -814,7 +823,7 @@ function processSpriteSheetFixed( imageData, width, height ) {
 
 /**
  * Process spritesheet with auto-detection (finds connected pixel clusters)
- * 
+ *
  * @param {Object} imageData - Image data object
  * @param {number} width - Image width
  * @param {number} height - Image height

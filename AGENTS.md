@@ -32,6 +32,16 @@ prefer explicit `if`/`else` over ternaries. Use `camelCase` for functions and va
 `UPPER_CASE` for true constants, and `m_` for module-private state. Add file-level JSDoc and
 document public functions.
 
+Import JavaScript modules with `import * as g_moduleName`, using camelCase after `g_`, and
+access their members through that namespace. Access existing default exports through `.default`.
+Keep default imports for shader/font assets and bare imports used for side effects. Consolidate
+imports from the same module. Reserve `g_` for imported bindings and use `m_` for private module
+state.
+
+Comments may divide large blocks into sections, but should describe each section's purpose or
+responsibility. Preserve explanations of intent and constraints; remove boilerplate such as
+"Import required modules." Put comments above code with an empty line before each comment block.
+
 ## Documentation Guidelines
 
 General documentation, including API references, metadata, and LLM references, must describe

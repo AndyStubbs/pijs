@@ -1,8 +1,8 @@
 /**
  * Pi.js - Sound Module (Plugin)
- * 
+ *
  * Sound effects, audio files, and volume control using Web Audio API.
- * 
+ *
  * @module plugins/sound/sound
  */
 
@@ -10,9 +10,9 @@
 
 let m_audioContext = null;
 let m_masterGain = null;
-let m_audioPools = {};
+const m_audioPools = {};
 let m_nextAudioId = 0;
-let m_soundPool = {};
+const m_soundPool = {};
 let m_nextSoundId = 0;
 let m_volume = 0.75;
 
@@ -20,9 +20,9 @@ let m_volume = 0.75;
 const MAX_VOICES = 64;
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Internal Functions
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
@@ -33,13 +33,15 @@ const MAX_VOICES = 64;
 function releaseAudioElement( audio ) {
 	try {
 		audio.pause();
-	} catch( _error ) {
+	} catch( caughtError ) {
+
 		// Continue releasing the source even if playback could not be paused.
 	}
 	try {
 		audio.removeAttribute( "src" );
 		audio.load();
-	} catch( _error ) {
+	} catch( caughtError ) {
+
 		// Listener removal and readiness settlement must still complete.
 	}
 }
@@ -180,20 +182,20 @@ function disposeAudioPool( pluginApi, audioItem ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Exported Functions (for play.js)
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Get the shared AudioContext, creating it if needed
- * 
+ *
  * @returns {AudioContext} Shared audio context
  */
 export function getAudioContext() {
 	if( !m_audioContext ) {
-		const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-		m_audioContext = new AudioContextClass();
+		const audioContextClass = window.AudioContext || window.webkitAudioContext;
+		m_audioContext = new audioContextClass();
 	}
 
 	return m_audioContext;
@@ -201,7 +203,7 @@ export function getAudioContext() {
 
 /**
  * Get the shared master gain node connected to the destination
- * 
+ *
  * @returns {GainNode} Shared master gain
  */
 function getMasterGain() {
@@ -218,7 +220,7 @@ function getMasterGain() {
 
 /**
  * Disconnect nodes and remove a sound from the pool
- * 
+ *
  * @param {string} soundId - Sound ID to clean up
  * @returns {void}
  */
@@ -230,19 +232,22 @@ function cleanupSound( soundId ) {
 
 	try {
 		sound.oscillator.disconnect();
-	} catch( _e ) {
+	} catch( caughtError ) {
+
 		// Already disconnected
 	}
 
 	try {
 		sound.envelope.disconnect();
-	} catch( _e ) {
+	} catch( caughtError ) {
+
 		// Already disconnected
 	}
 
 	try {
 		sound.master.disconnect();
-	} catch( _e ) {
+	} catch( caughtError ) {
+
 		// Already disconnected
 	}
 
@@ -253,7 +258,7 @@ function cleanupSound( soundId ) {
  * Stop oldest voices that have already started when the active voice
  * limit is exceeded. Future-scheduled notes from $.play() are left alone
  * so long melodies are not cut off while being queued.
- * 
+ *
  * @returns {void}
  */
 function enforceVoiceLimit() {
@@ -280,8 +285,9 @@ function enforceVoiceLimit() {
 
 /**
  * Stop a sound by ID (internal function for play module)
- * 
+ *
  * @param {string} soundId - Sound ID to stop
+ * @returns {void}
  */
 export function stopSoundById( soundId ) {
 	const sound = m_soundPool[ soundId ];
@@ -291,7 +297,7 @@ export function stopSoundById( soundId ) {
 
 	try {
 		sound.oscillator.stop();
-	} catch( _e ) {
+	} catch( caughtError ) {
 
 		// Already stopped; clean up immediately
 		cleanupSound( soundId );
@@ -300,7 +306,7 @@ export function stopSoundById( soundId ) {
 
 /**
  * Create a sound using Web Audio API (internal function exported for play module)
- * 
+ *
  * @param {AudioContext} audioContext - Audio context
  * @param {number} frequency - Frequency in Hz
  * @param {number} volume - Volume (0-1)
@@ -399,33 +405,36 @@ export function createSound(
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Plugin Registration
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Register sound module commands
- * 
+ *
  * @param {Object} pluginApi - Plugin API
+ * @returns {void}
  */
 export function registerSound( pluginApi ) {
 	const utils = pluginApi.utils;
 
+
+	pluginApi.addCommand( "loadAudio", loadAudio, false, [ "src", "name", "poolSize" ] );
+
 	/**
 	 * Create an audio pool for playing multiple instances of the same sound file
 	 * Each slot holds readiness until it loads, fails after retries, or is removed.
-	 * 
+	 *
 	 * @param {Object} options - Command options
 	 * @param {string} options.src - Audio file URL
 	 * @param {number} options.poolSize - Number of audio instances (default: 1)
 	 * @returns {string} Audio ID for use with playAudio
 	 */
-	pluginApi.addCommand( "loadAudio", loadAudio, false, [ "src", "name", "poolSize" ] );
 	function loadAudio( options ) {
 		const src = options.src;
-		let poolSize = utils.getInt( options.poolSize, 1 );
-		let audioName = options.name;
+		const poolSize = utils.getInt( options.poolSize, 1 );
+		const audioName = options.name;
 
 		// Validate src
 		if( !src || typeof src !== "string" ) {
@@ -489,14 +498,17 @@ export function registerSound( pluginApi ) {
 		return audioId;
 	}
 
+
+	pluginApi.addCommand( "removeAudio", removeAudio, false, [ "audioId" ] );
+
 	/**
 	 * Delete an audio pool and free its resources
 	 * Cancels pending loads and retries, releases their readiness waits, and permits name reuse.
-	 * 
+	 *
 	 * @param {Object} options - Command options
 	 * @param {string} options.audioId - Audio pool ID returned from loadAudio
+	 * @returns {void}
 	 */
-	pluginApi.addCommand( "removeAudio", removeAudio, false, [ "audioId" ] );
 	function removeAudio( options ) {
 		const audioId = options.audioId;
 
@@ -512,18 +524,21 @@ export function registerSound( pluginApi ) {
 		disposeAudioPool( pluginApi, audioItem );
 	}
 
+
+	pluginApi.addCommand(
+		"playAudio", playAudio, false, [ "audioId", "volume", "startTime", "duration" ]
+	);
+
 	/**
 	 * Play audio from an audio pool
-	 * 
+	 *
 	 * @param {Object} options - Command options
 	 * @param {string} options.audioId - Audio pool ID
 	 * @param {number} options.volume - Volume (0-1, default: 1)
 	 * @param {number} options.startTime - Start time in seconds (default: 0)
 	 * @param {number} options.duration - Play duration in seconds (default: 0 = play full)
+	 * @returns {void}
 	 */
-	pluginApi.addCommand(
-		"playAudio", playAudio, false, [ "audioId", "volume", "startTime", "duration" ]
-	);
 	function playAudio( options ) {
 		const audioId = options.audioId;
 		const volume = utils.getFloat( options.volume, 1 );
@@ -610,13 +625,16 @@ export function registerSound( pluginApi ) {
 		}
 	}
 
+
+	pluginApi.addCommand( "stopAudio", stopAudio, false, [ "audioId" ] );
+
 	/**
 	 * Stop audio from an audio pool or all audio pools
-	 * 
+	 *
 	 * @param {Object} options - Command options
 	 * @param {string} options.audioId - Audio pool ID (null to stop all pools)
+	 * @returns {void}
 	 */
-	pluginApi.addCommand( "stopAudio", stopAudio, false, [ "audioId" ] );
 	function stopAudio( options ) {
 		const audioId = options.audioId;
 
@@ -647,27 +665,35 @@ export function registerSound( pluginApi ) {
 		}
 	}
 
+
+	pluginApi.addCommand( "sound", sound, false, [
+		"frequency", "duration", "volume", "oType", "delay", "attack", "decay"
+	] );
+
 	/**
 	 * Play a sound by frequency using Web Audio API
-	 * 
+	 *
 	 * @param {Object} options - Command options
 	 * @param {number} options.frequency - Frequency in Hz
 	 * @param {number} options.duration - Duration in seconds (default: 1)
 	 * @param {number} options.volume - Volume 0-1 (default: 1)
-	 * @param {string|Array} options.oType - Oscillator type or custom wave table (default: "triangle")
+	 * @param {string|Array} options.oType - Oscillator type or custom wave table (default:
+	 * "triangle")
 	 * @param {number} options.delay - Delay before playing in seconds (default: 0)
 	 * @param {number} options.attack - Attack time in seconds (default: 0)
 	 * @param {number} options.decay - Decay time in seconds (default: 0.1)
 	 * @returns {string} Sound ID for use with stopSound
 	 */
-	pluginApi.addCommand( "sound", sound, false, [
-		"frequency", "duration", "volume", "oType", "delay", "attack", "decay"
-	] );
 	function sound( options ) {
 		const frequency = Math.round( utils.getFloat( options.frequency, 440 ) );
 		const duration = utils.getFloat( options.duration, 1 );
 		const volume = utils.getFloat( options.volume, 1 );
-		let oType = options.oType != null ? options.oType : "triangle";
+		let oType;
+		if( options.oType != null ) {
+			oType = options.oType;
+		} else {
+			oType = "triangle";
+		}
 		const delay = utils.getFloat( options.delay, 0 );
 		const attack = utils.getFloat( options.attack, 0 );
 		const decay = utils.getFloat( options.decay, 0.1 );
@@ -766,13 +792,16 @@ export function registerSound( pluginApi ) {
 		);
 	}
 
+
+	pluginApi.addCommand( "stopSound", stopSound, false, [ "soundId" ] );
+
 	/**
 	 * Stop a playing sound or all sounds
-	 * 
+	 *
 	 * @param {Object} options - Command options
 	 * @param {string} options.soundId - Sound ID (null to stop all sounds)
+	 * @returns {void}
 	 */
-	pluginApi.addCommand( "stopSound", stopSound, false, [ "soundId" ] );
 	function stopSound( options ) {
 		const soundId = options.soundId;
 
@@ -788,13 +817,16 @@ export function registerSound( pluginApi ) {
 		stopSoundById( soundId );
 	}
 
+
+	pluginApi.addCommand( "setVolume", setVolume, false, [ "volume" ] );
+
 	/**
 	 * Set global volume for all sounds
-	 * 
+	 *
 	 * @param {Object} options - Command options
 	 * @param {number} options.volume - Volume (0-1)
+	 * @returns {void}
 	 */
-	pluginApi.addCommand( "setVolume", setVolume, false, [ "volume" ] );
 	function setVolume( options ) {
 		const volume = utils.getFloat( options.volume, 0.75 );
 

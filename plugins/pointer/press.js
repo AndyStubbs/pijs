@@ -4,31 +4,40 @@
 
 "use strict";
 
-import { validatePointerTarget } from "./target.js";
-import { startMouseInternal } from "./mouse.js";
-import { startTouchInternal } from "./touch.js";
+import * as g_target from "./target.js";
+import * as g_mouse from "./mouse.js";
+import * as g_touch from "./touch.js";
 
+/**
+ * Register combined mouse/touch press and click commands.
+ *
+ * @param {Object} pluginApi - Plugin registration and screen access API.
+ * @param {Object} helpers - Shared pointer event helpers.
+ * @returns {Object}
+ */
 export function registerPress( pluginApi, helpers ) {
 	const onevent = helpers.onevent;
 	const offevent = helpers.offevent;
 	const triggerEventListenersLocal = helpers.triggerEventListeners;
-	
+
 	// Expose trigger for other modules via module-level binding
 	m_triggerEventListeners = triggerEventListenersLocal;
-	
+
 	pluginApi.addScreenDataItem( "pressEventListenersActive", 0 );
 	pluginApi.addScreenDataItem( "onPressEventListeners", {} );
 	pluginApi.addScreenDataItem( "clickEventListenersActive", 0 );
 	pluginApi.addScreenDataItem( "onClickEventListeners", {} );
-	
+
 	pluginApi.addScreenInitFunction( initPressData );
-	
+
 	pluginApi.addCommand( "inpress", inpress, true, [] );
-	pluginApi.addCommand( "onpress", onpress, true, [ "mode", "fn", "once", "hitBox", "customData" ] );
+	pluginApi.addCommand(
+		"onpress", onpress, true, [ "mode", "fn", "once", "hitBox", "customData" ]
+	);
 	pluginApi.addCommand( "offpress", offpress, true, [ "mode", "fn" ] );
 	pluginApi.addCommand( "onclick", onclick, true, [ "fn", "once", "hitBox", "customData" ] );
 	pluginApi.addCommand( "offclick", offclick, true, [ "fn" ] );
-	
+
 	function initPressData( screenData ) {
 		screenData.onPressEventListeners = {
 			"down": [],
@@ -39,47 +48,67 @@ export function registerPress( pluginApi, helpers ) {
 			"click": []
 		};
 	}
-	
+
+	/**
+	 * Read the most recent mouse or touch press state.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {Object}
+	 */
 	function inpress( screenData ) {
-		validatePointerTarget( screenData, "inpress" );
-		startMouseInternal( screenData );
-		startTouchInternal( screenData );
+		g_target.validatePointerTarget( screenData, "inpress" );
+		g_mouse.startMouseInternal( screenData );
+		g_touch.startTouchInternal( screenData );
 		if( screenData.lastEvent === "touch" ) {
 			return getTouchPress( screenData );
 		} else {
 			return screenData.api.inmouse();
 		}
 	}
-	
+
+	/**
+	 * Register a combined mouse/touch press listener.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {Object} options - Command options.
+	 * @returns {void}
+	 */
 	function onpress( screenData, options ) {
-		validatePointerTarget( screenData, "onpress" );
+		g_target.validatePointerTarget( screenData, "onpress" );
 		const mode = options.mode;
 		const fn = options.fn;
 		const once = options.once;
 		const hitBox = options.hitBox;
 		const customData = options.customData;
-		
+
 		const isValid = onevent(
 			mode, fn, once, hitBox, [ "down", "up", "move" ], "onpress",
 			screenData.onPressEventListeners, null, null, customData
 		);
-		
+
 		if( isValid ) {
-			startMouseInternal( screenData );
-			startTouchInternal( screenData );
+			g_mouse.startMouseInternal( screenData );
+			g_touch.startTouchInternal( screenData );
 			screenData.pressEventListenersActive += 1;
 		}
 	}
-	
+
+	/**
+	 * Remove matching combined press listeners.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {Object} options - Command options.
+	 * @returns {void}
+	 */
 	function offpress( screenData, options ) {
 		const mode = options.mode;
 		const fn = options.fn;
-		
+
 		const isValid = offevent(
 			mode, fn, [ "down", "up", "move" ], "offpress",
 			screenData.onPressEventListeners
 		);
-		
+
 		if( isValid ) {
 			if( fn == null ) {
 				screenData.pressEventListenersActive = 0;
@@ -91,14 +120,21 @@ export function registerPress( pluginApi, helpers ) {
 			}
 		}
 	}
-	
+
+	/**
+	 * Register a click listener with optional hit-box filtering.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {Object} options - Command options.
+	 * @returns {void}
+	 */
 	function onclick( screenData, options ) {
-		validatePointerTarget( screenData, "onclick" );
+		g_target.validatePointerTarget( screenData, "onclick" );
 		const fn = options.fn;
 		const once = options.once;
 		let hitBox = options.hitBox;
 		const customData = options.customData;
-		
+
 		if( hitBox == null ) {
 			hitBox = {
 				"x": 0,
@@ -107,26 +143,33 @@ export function registerPress( pluginApi, helpers ) {
 				"height": screenData.height
 			};
 		}
-		
+
 		const isValid = onevent(
 			"click", fn, once, hitBox, [ "click" ], "onclick",
 			screenData.onClickEventListeners, null, null, customData
 		);
-		
+
 		if( isValid ) {
-			startMouseInternal( screenData );
-			startTouchInternal( screenData );
+			g_mouse.startMouseInternal( screenData );
+			g_touch.startTouchInternal( screenData );
 			screenData.clickEventListenersActive += 1;
 		}
 	}
-	
+
+	/**
+	 * Remove matching click listeners.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {Object} options - Command options.
+	 * @returns {void}
+	 */
 	function offclick( screenData, options ) {
 		const fn = options.fn;
 		const isValid = offevent(
 			"click", fn, [ "click" ], "offclick",
 			screenData.onClickEventListeners
 		);
-		
+
 		if( isValid ) {
 			if( fn == null ) {
 				screenData.clickEventListenersActive = 0;
@@ -138,17 +181,17 @@ export function registerPress( pluginApi, helpers ) {
 			}
 		}
 	}
-	
+
 	function clearPressEvents( screenData ) {
 		screenData.onPressEventListeners = {};
 		screenData.pressEventListenersActive = 0;
 	}
-	
+
 	function clearClickEvents( screenData ) {
 		screenData.onClickEventListeners = {};
 		screenData.clickEventListenersActive = 0;
 	}
-	
+
 	return {
 		"clearPressEvents": clearPressEvents,
 		"clearClickEvents": clearClickEvents
@@ -158,18 +201,40 @@ export function registerPress( pluginApi, helpers ) {
 // Module-level reference to event trigger helper
 let m_triggerEventListeners = null;
 
+/**
+ * Dispatch a press event to active listeners on the screen.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {string} mode - Pointer event mode.
+ * @param {Object} data - Pointer event data.
+ * @returns {void}
+ */
 export function triggerPressListeners( screenData, mode, data ) {
 	if( screenData.pressEventListenersActive > 0 && m_triggerEventListeners ) {
 		m_triggerEventListeners( mode, data, screenData.onPressEventListeners );
 	}
 }
 
+/**
+ * Dispatch a click event to active listeners on the screen.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} data - Pointer event data.
+ * @param {string} clickStatus - Click status used to filter listeners.
+ * @returns {void}
+ */
 export function triggerClickListeners( screenData, data, clickStatus ) {
 	if( screenData.clickEventListenersActive > 0 && m_triggerEventListeners ) {
 		m_triggerEventListeners( "click", data, screenData.onClickEventListeners, clickStatus );
 	}
 }
 
+/**
+ * Convert active or recently released touches into a press-state snapshot.
+ *
+ * @param {Object} screenData - Screen state.
+ * @returns {Object}
+ */
 export function getTouchPress( screenData ) {
 	function copyTouches( touches, touchArr, action ) {
 		for( const i in touches ) {
@@ -189,7 +254,7 @@ export function getTouchPress( screenData ) {
 			touchArr.push( touchData );
 		}
 	}
-	
+
 	const touchArr = [];
 	copyTouches( screenData.touches, touchArr );
 	if( touchArr.length === 0 ) {

@@ -1,8 +1,8 @@
 /**
  * Pi.js - Print Module
- * 
+ *
  * Text printing, cursor positioning, and word wrapping for bitmap fonts.
- * 
+ *
  * @module text/print
  */
 
@@ -18,14 +18,14 @@ import * as g_textures from "../renderer/textures.js";
 import * as g_sprites from "../renderer/draw/sprites.js";
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Initialization
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Initialize print module
- * 
+ *
  * @param {Object} api - The main Pi.js API object
  * @returns {void}
  */
@@ -48,14 +48,14 @@ export function init( api ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Command Registration
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Register print commands
- * 
+ *
  * @returns {void}
  */
 function registerCommands() {
@@ -78,12 +78,12 @@ function registerCommands() {
 
 /**************************************************************************************************
  * External API Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Print text to screen
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Print options
  * @param {string} [options.msg] - Message to print
@@ -134,7 +134,7 @@ function print( screenData, options ) {
 
 /**
  * Set cursor position by row/column
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Position options
  * @param {number} [options.col] - Column position
@@ -194,7 +194,7 @@ function setPos( screenData, options ) {
 
 /**
  * Set cursor position by pixels
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Position options
  * @param {number} [options.x] - X position in pixels
@@ -226,7 +226,7 @@ function setPosPx( screenData, options ) {
 
 /**
  * Get cursor position as row/column
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @returns {Object} Object with col and row properties
  */
@@ -245,7 +245,7 @@ function getPos( screenData ) {
 
 /**
  * Get cursor position in pixels
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @returns {Object} Object with x and y properties
  */
@@ -258,7 +258,7 @@ function getPosPx( screenData ) {
 
 /**
  * Get number of columns
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @returns {number} Number of columns
  */
@@ -268,7 +268,7 @@ function getCols( screenData ) {
 
 /**
  * Get number of rows
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @returns {number} Number of rows
  */
@@ -278,7 +278,7 @@ function getRows( screenData ) {
 
 /**
  * Enable/disable word breaking
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Options
  * @param {boolean} options.isEnabled - Enable word breaking
@@ -290,7 +290,7 @@ function setWordBreak( screenData, options ) {
 
 /**
  * Set font size for bitmap fonts
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Options
  * @param {number} options.scaleWidth - Font scale width
@@ -337,7 +337,7 @@ function setPrintSize( screenData, options ) {
 
 /**
  * Calculate text width
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Options
  * @param {string} [options.msg] - Message to calculate width for
@@ -346,19 +346,19 @@ function setPrintSize( screenData, options ) {
 function calcWidth( screenData, options ) {
 	const msg = options.msg || "";
 	const printCursor = screenData.printCursor;
-	
+
 	return printCursor.width * msg.length;
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Internal Functions
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Start printing text
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {string} msg - Message to print
  * @param {boolean} isInline - If true, don't advance to next line
@@ -397,7 +397,7 @@ function startPrint( screenData, msg, isInline, isCentered ) {
 			return;
 		}
 		const onScreenPct = onScreen / width;
-		let msgSplit = Math.floor( msg.length * onScreenPct );
+		const msgSplit = Math.floor( msg.length * onScreenPct );
 		if( msgSplit <= 0 ) {
 			return;
 		}
@@ -448,7 +448,7 @@ function startPrint( screenData, msg, isInline, isCentered ) {
 
 /**
  * Print using bitmap font image
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {string} msg - Message to print
  * @param {number} x - X position
@@ -509,7 +509,7 @@ function bitmapPrint( screenData, msg, x, y ) {
 
 /**
  * Update print cursor rows and columns based on font and size
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @returns {void}
  */

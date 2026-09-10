@@ -4,22 +4,28 @@
 
 "use strict";
 
+/**
+ * Create shared pointer listener registration, removal, and dispatch helpers.
+ *
+ * @param {Object} pluginApi - Plugin registration and screen access API.
+ * @returns {Object}
+ */
 export function createEventHelpers( pluginApi ) {
-	
+
 	const utils = pluginApi.utils;
-	
+
 	function onevent(
 		mode, fn, once, hitBox, modes, name, listenerArr, extraId, extraData, customData
 	) {
 		let modeFound = false;
-		
+
 		for( let i = 0; i < modes.length; i++ ) {
 			if( mode === modes[ i ] ) {
 				modeFound = true;
 				break;
 			}
 		}
-		
+
 		if( !modeFound ) {
 			const error = new Error(
 				`${name}: mode needs to be one of the following: ${modes.join( ", " )}.`
@@ -27,15 +33,15 @@ export function createEventHelpers( pluginApi ) {
 			error.code = "INVALID_MODE";
 			throw error;
 		}
-		
+
 		once = !!( once );
-		
+
 		if( typeof fn !== "function" ) {
 			const error = new Error( `${name}: fn is not a valid function.` );
 			error.code = "INVALID_FUNCTION";
 			throw error;
 		}
-		
+
 		if( hitBox ) {
 			if(
 				!Number.isInteger( hitBox.x ) ||
@@ -51,14 +57,14 @@ export function createEventHelpers( pluginApi ) {
 				throw error;
 			}
 		}
-		
+
 		const originalFn = fn;
 		let newMode = mode;
-		
+
 		if( typeof extraId === "string" ) {
 			newMode = mode + extraId;
 		}
-		
+
 		let wrappedFn = fn;
 		if( once ) {
 			wrappedFn = ( data, customData ) => {
@@ -66,11 +72,11 @@ export function createEventHelpers( pluginApi ) {
 				originalFn( data, customData );
 			};
 		}
-		
+
 		if( !listenerArr[ newMode ] ) {
 			listenerArr[ newMode ] = [];
 		}
-		
+
 		listenerArr[ newMode ].push( {
 			"fn": wrappedFn,
 			"hitBox": hitBox,
@@ -79,20 +85,20 @@ export function createEventHelpers( pluginApi ) {
 			"originalFn": originalFn,
 			"customData": customData
 		} );
-		
+
 		return true;
 	}
-	
+
 	function offevent( mode, fn, modes, name, listenerArr, extraId ) {
 		let modeFound = false;
-		
+
 		for( let i = 0; i < modes.length; i++ ) {
 			if( mode === modes[ i ] ) {
 				modeFound = true;
 				break;
 			}
 		}
-		
+
 		if( !modeFound ) {
 			const error = new Error(
 				`${name}: mode needs to be one of the following: ${modes.join( ", " )}.`
@@ -100,19 +106,19 @@ export function createEventHelpers( pluginApi ) {
 			error.code = "INVALID_MODE";
 			throw error;
 		}
-		
+
 		if( typeof extraId === "string" ) {
 			mode += extraId;
 		}
-		
+
 		const isClear = fn == null;
-		
+
 		if( !isClear && typeof fn !== "function" ) {
 			const error = new Error( `${name}: fn is not a valid function.` );
 			error.code = "INVALID_FUNCTION";
 			throw error;
 		}
-		
+
 		if( listenerArr[ mode ] ) {
 			if( isClear ) {
 				delete listenerArr[ mode ];
@@ -130,25 +136,25 @@ export function createEventHelpers( pluginApi ) {
 		}
 		return false;
 	}
-	
+
 	function triggerEventListeners( mode, data, listenerArr, clickStatus ) {
 		if( !listenerArr[ mode ] ) {
 			return;
 		}
-		
+
 		const temp = listenerArr[ mode ].slice();
-		
+
 		for( let i = 0; i < temp.length; i++ ) {
 			const listener = temp[ i ];
-			
+
 			if( clickStatus === "up" && !listener.clickDown ) {
 				continue;
 			}
-			
+
 			if( listener.hitBox ) {
 				let isHit = false;
 				let newData;
-				
+
 				if( Array.isArray( data ) ) {
 					newData = [];
 					for( let j = 0; j < data.length; j++ ) {
@@ -166,7 +172,7 @@ export function createEventHelpers( pluginApi ) {
 						isHit = true;
 					}
 				}
-				
+
 				if( isHit ) {
 					if( clickStatus === "down" ) {
 						listener.clickDown = true;
@@ -180,7 +186,7 @@ export function createEventHelpers( pluginApi ) {
 			}
 		}
 	}
-	
+
 	return {
 		"onevent": onevent,
 		"offevent": offevent,

@@ -1,16 +1,16 @@
 /**
  * Keyboard Plugin for Pi.js
- * 
+ *
  * Provides keyboard input handling including key state tracking, event handlers,
  * and action key management.
- * 
+ *
  * @module plugins/keyboard
  * @version 1.0.0
  */
 
 "use strict";
 
-import { initInput, cancelAllInputs } from "./input.js";
+import * as g_input from "./input.js";
 
 // Input tags that we don't want to capture
 const INPUT_TAGS = new Set( [ "INPUT", "TEXTAREA", "SELECT", "BUTTON" ] );
@@ -26,11 +26,17 @@ let m_isKeyboardActive = false;
 let m_pluginApi = null;
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Plugin Initialization
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
+/**
+ * Register keyboard commands, input handling, and screen cleanup hooks.
+ *
+ * @param {Object} pluginApi - Plugin registration and screen access API.
+ * @returns {void}
+ */
 export default function keyboardPlugin( pluginApi ) {
 	m_pluginApi = pluginApi;
 
@@ -48,18 +54,23 @@ export default function keyboardPlugin( pluginApi ) {
 	pluginApi.addCommand( "offkey", offkey, false, [ "key", "mode", "fn", "once", "allowRepeat" ] );
 
 	// Initialize input command
-	initInput( pluginApi );
+	g_input.initInput( pluginApi );
 
 	// Register clearEvents handler
 	pluginApi.registerClearEvents( "keyboard", clearKeyboardEvents );
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * External API Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
+/**
+ * Start keyboard event handling.
+ *
+ * @returns {void}
+ */
 function startKeyboard() {
 	if( m_isKeyboardActive ) {
 		return;
@@ -72,6 +83,11 @@ function startKeyboard() {
 	}
 }
 
+/**
+ * Stop keyboard event handling and clear active key state.
+ *
+ * @returns {void}
+ */
 function stopKeyboard() {
 	if( !m_isKeyboardActive ) {
 		return;
@@ -84,6 +100,12 @@ function stopKeyboard() {
 	clearInKeys();
 }
 
+/**
+ * Read one active key event or all active key events.
+ *
+ * @param {Object} options - Command options.
+ * @returns {Object|Array<Object>|null}
+ */
 function inkey( options ) {
 	const key = options.key;
 
@@ -119,6 +141,12 @@ function inkey( options ) {
 	return keyCodes;
 }
 
+/**
+ * Set the keys whose browser defaults are suppressed.
+ *
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function setActionKeys( options ) {
 	const keys = options.keys;
 
@@ -132,6 +160,12 @@ function setActionKeys( options ) {
 	}
 }
 
+/**
+ * Remove keys from the browser-default suppression list.
+ *
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function removeActionKeys( options ) {
 	const keys = options.keys;
 
@@ -145,14 +179,18 @@ function removeActionKeys( options ) {
 	}
 }
 
-/** Register a handler; callback errors are reported asynchronously without stopping dispatch. */
+/**
+ *  Register a handler; callback errors are reported asynchronously without stopping dispatch.
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function onkey( options ) {
 	const key = options.key;
 	const mode = options.mode;
 	const fn = options.fn;
 	const once = !!options.once;
 	const allowRepeat = !!options.allowRepeat;
-	
+
 	if( !key || ( typeof key !== "string" && !Array.isArray( key ) ) ) {
 		const error = new TypeError( "onkey: key must be a string or an array of strings." );
 		error.code = "INVALID_PARAMETERS";
@@ -172,7 +210,12 @@ function onkey( options ) {
 	}
 
 	// Normalize key into an array for easier processing
-	const combo = typeof key === "string" ? [ key ] : key;
+	let combo;
+	if( typeof key === "string" ) {
+		combo = [ key ];
+	} else {
+		combo = key;
+	}
 
 	const handler = {
 		"comboKey": combo.sort().join( "" ),
@@ -183,7 +226,7 @@ function onkey( options ) {
 		"allowRepeat": allowRepeat,
 		"isRemoved": false
 	};
-	
+
 	// Add a on key handler for each of the key codes - in combo all must be pressed
 	for( const key of combo ) {
 		if( !m_onKeyHandlers[ key ] ) {
@@ -193,6 +236,12 @@ function onkey( options ) {
 	}
 }
 
+/**
+ * Remove matching keyboard listeners.
+ *
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function offkey( options ) {
 	const key = options.key;
 	const mode = options.mode;
@@ -213,7 +262,12 @@ function offkey( options ) {
 	}
 
 	// Normalize key into an array for easier processing
-	const combo = typeof key === "string" ? [ key ] : key;
+	let combo;
+	if( typeof key === "string" ) {
+		combo = [ key ];
+	} else {
+		combo = key;
+	}
 	const comboKey = combo.sort().join( "" );
 
 	// Find the handlers and remove them
@@ -246,9 +300,9 @@ function offkey( options ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Internal Helper Functions
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 function onKeyDown( event ) {
@@ -282,7 +336,7 @@ function onKeyDown( event ) {
 }
 
 function onKeyUp( event ) {
-	
+
 	// Ignore typing when focus is inside an editable
 	if( isFromEditableTarget( event ) ) {
 		clearInKeys();
@@ -436,20 +490,20 @@ function clearInKeys() {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Exports for Other Modules
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Clear all keyboard event handlers
  * Called by clearEvents command and exported for use by other modules
- * 
+ *
  * @param {Object} [screenData] - Screen data to clear events for specific screen
  * @returns {void}
  */
 export function clearKeyboardEvents( screenData ) {
-	
+
 	// Clear all keyboard event handlers
 	for( const mode in m_onKeyHandlers ) {
 		for( const handler of m_onKeyHandlers[ mode ] ) {
@@ -457,9 +511,9 @@ export function clearKeyboardEvents( screenData ) {
 		}
 		delete m_onKeyHandlers[ mode ];
 	}
-	
+
 	// Cancel all active input prompts
-	cancelAllInputs( screenData );
+	g_input.cancelAllInputs( screenData );
 }
 
 
@@ -472,4 +526,3 @@ if( typeof window !== "undefined" && window.pi ) {
 		"init": keyboardPlugin
 	} );
 }
-

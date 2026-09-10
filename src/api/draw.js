@@ -1,8 +1,8 @@
 /**
  * Pi.js - Draw Module
- * 
+ *
  * BASIC-style draw command with string syntax for procedural drawing
- * 
+ *
  * @module api/draw
  */
 
@@ -13,14 +13,14 @@ import * as g_utils from "../core/utils.js";
 import * as g_commands from "../core/commands.js";
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Initialize draw module
- * 
+ *
  * @param {Object} api - The main Pi.js API object
  * @returns {void}
  */
@@ -32,9 +32,9 @@ export function init( api ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * External API Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 function registerCommands() {
@@ -44,7 +44,7 @@ function registerCommands() {
 
 /**
  * Draw command - BASIC-style draw command with string syntax
- * 
+ *
  * @param {Object} screenData - The screen data object
  * @param {Object} options - Options object with drawString
  * @param {string} options.drawString - The draw command string
@@ -74,13 +74,13 @@ function draw( screenData, options ) {
 	// Note: Z is not included because Z is a replacement character and not allowed in original
 	// string
 	drawString = drawString.replace( /[^CRBFGLATDHUENMPSO0-9#,]/g, "" );
-	
+
 	// Convert TA to T
 	drawString = drawString.replace( /(TA)/gi, "T" );
 
 	// Convert ARC to Z
 	drawString = drawString.replace( /(ARC)/gi, "Z" );
-	
+
 	// Regular expression for the draw commands
 	const reg = /(?=C|O|R|B|F|G|L|A|T|D|G|H|U|E|N|M|P|S|Z)/;
 
@@ -214,9 +214,9 @@ function draw( screenData, options ) {
 
 			// S - Scale
 			/*
-				Set scale factor. n may range from 1 to 255. n is divided by 4 to derive the scale 
-				factor. The scale factor is multiplied by the distances given with U, D, L, R, E, 
-				F, G, H, or relative M commands to get the actual distance traveled. The default 
+				Set scale factor. n may range from 1 to 255. n is divided by 4 to derive the scale
+				factor. The scale factor is multiplied by the distances given with U, D, L, R, E,
+				F, G, H, or relative M commands to get the actual distance traveled. The default
 				for S is 4.
 			*/
 			case "S": {

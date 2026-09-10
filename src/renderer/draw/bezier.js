@@ -1,24 +1,23 @@
 /**
  * Pi.js - Bezier Drawing Module
- * 
+ *
  * Low-level drawing operations: bezier drawing.
- * 
+ *
  * drawBezier, drawBezierSquare, drawBezierCircle
- * 
+ *
  * @module renderer/draw/bezier
  */
 
 "use strict";
 
-import { isContextUnavailable } from "../context-state.js";
-
+import * as g_contextState from "../context-state.js";
 import * as g_batches from "../batches.js";
 import * as g_batchHelpers from "./batch-helpers.js";
 
 /**
  * Draw cubic Bezier with pixel pen by tessellating into short line segments.
  * Uses adaptive subdivision for smoothness and deduplicates pixels at junctions.
- * 
+ *
  * @param {Object} screenData
  * @param {number} p0x
  * @param {number} p0y
@@ -32,7 +31,7 @@ import * as g_batchHelpers from "./batch-helpers.js";
  * @returns {void}
  */
 export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -46,7 +45,7 @@ export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y )
 	);
 
 	if( pts.length < 4 ) {
-		
+
 		// Degenerate: plot a single pixel
 		writePoint( p0x | 0, p0y | 0, color );
 		return;
@@ -66,8 +65,18 @@ export function drawBezier( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y )
 		const dx = Math.abs( x2 - x1 );
 		const dy = Math.abs( y2 - y1 );
 
-		const sx = x1 < x2 ? 1 : -1;
-		const sy = y1 < y2 ? 1 : -1;
+		let sx;
+		if( x1 < x2 ) {
+			sx = 1;
+		} else {
+			sx = -1;
+		}
+		let sy;
+		if( y1 < y2 ) {
+			sy = 1;
+		} else {
+			sy = -1;
+		}
 		let err = dx - dy;
 		let x = x1;
 		let y = y1;

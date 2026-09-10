@@ -17,6 +17,11 @@ function loadModule( file, globals = {}, constants = [] ) {
 	vm.runInContext( fs.readFileSync(
 		path.join( __dirname, "../../src/renderer/context-state.js" ), "utf8"
 	).replace( /export /g, "" ), context );
+	context.g_contextState = {
+		"isContextUnavailable": context.isContextUnavailable,
+		"getContextGeneration": context.getContextGeneration,
+		"probeContextLoss": context.probeContextLoss
+	};
 	vm.runInContext( source, context, { "filename": file } );
 	for( const name of constants ) {
 		context[ name ] = vm.runInContext( name, context );
@@ -66,8 +71,7 @@ function createHarness( min = 8, max = 19 ) {
 		batch.vao = batch;
 		screen.batches[ type ] = batch;
 	}
-	const globals = { "g_batches": batches, "g_batchHelpers": helpers,
-		"createPointWriter": helpers.createPointWriter };
+	const globals = { "g_batches": batches, "g_batchHelpers": helpers };
 	const geometry = loadModule( "renderer/draw/geometry.js", globals, [ "FILLED_CIRCLE" ] );
 	const shapes = {};
 	for( const name of [ "lines", "circles", "arcs", "ellipses", "bezier" ] ) {

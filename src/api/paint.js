@@ -1,8 +1,8 @@
 /**
  * Pi.js - Paint Module
- * 
+ *
  * Flood fill algorithm with tolerance support
- * 
+ *
  * @module api/paint
  */
 
@@ -13,17 +13,17 @@ import * as g_utils from "../core/utils.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_commands from "../core/commands.js";
 import * as g_view from "./view.js";
-import { isContextUnavailable } from "../renderer/context-state.js";
+import * as g_contextState from "../renderer/context-state.js";
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Initialize paint module
- * 
+ *
  * @param {Object} api - The main Pi.js API object
  * @returns {void}
  */
@@ -32,9 +32,9 @@ export function init( api ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * External API Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 function registerCommands() {
@@ -46,7 +46,7 @@ function registerCommands() {
 
 /**
  * Paint command - flood fill algorithm with tolerance support
- * 
+ *
  * @param {Object} screenData - The screen data object
  * @param {Object} options - Options object with x, y, fillColor, tolerance, boundaryColor
  * @param {number} options.tolerance - Color matching tolerance (0 = exact match, 1 = any color)
@@ -56,7 +56,7 @@ function paint( screenData, options ) {
 	const x = g_utils.getInt( options.x, null );
 	const y = g_utils.getInt( options.y, null );
 	let fillColor = options.fillColor;
-	let tolerance = g_utils.getFloat( options.tolerance, 0 );
+	const tolerance = g_utils.getFloat( options.tolerance, 0 );
 	let boundaryColor = options.boundaryColor;
 
 	if( x === null || y === null ) {
@@ -83,7 +83,7 @@ function paint( screenData, options ) {
 	}
 
 	const view = screenData.view;
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 	const clipX = view.clipX;
@@ -191,14 +191,14 @@ function paint( screenData, options ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Internal Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Add pixel to queue if valid and not visited
- * 
+ *
  * @param {Array} queue - BFS queue
  * @param {Uint8Array} visited - Visited pixel tracking array
  * @param {number} x - X coordinate

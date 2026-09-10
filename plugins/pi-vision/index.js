@@ -1,37 +1,37 @@
 /**
  * Pi Vision Plugin for Pi.js
- * 
+ *
  * Provides retro, character-cell-based windows under the $.vis namespace.
- * 
+ *
  * @module plugins/pi-vision
  * @version 1.0.0
  */
 
 "use strict";
 
-import g_Window from "./window.js";
-import g_Compositor from "./compositor.js";
+import * as g_window from "./window.js";
+import * as g_compositor from "./compositor.js";
 
-let g_pluginApi = null;
+let m_pluginApi = null;
 
 /**
  * Initialize the Pi Vision plugin
- * 
+ *
  * @param {Object} pluginApi - Plugin API provided by Pi.js
  * @returns {void}
  */
 export default function piVisionPlugin( pluginApi ) {
-	g_pluginApi = pluginApi;
+	m_pluginApi = pluginApi;
 
 	// Setup API's
-	const api = g_pluginApi.getApi();
-	g_pluginApi.addScreenDataItem( "vis", {
+	const api = m_pluginApi.getApi();
+	m_pluginApi.addScreenDataItem( "vis", {
 		"elements": [],
 		"element": null,
 		"interaction": null,
 		"onRender": null
 	} );
-	for( const screenData of g_pluginApi.getAllScreensData() ) {
+	for( const screenData of m_pluginApi.getAllScreensData() ) {
 		if( !screenData.vis ) {
 			screenData.vis = {
 				"elements": [],
@@ -43,15 +43,15 @@ export default function piVisionPlugin( pluginApi ) {
 	}
 
 	// Initialize components after existing screens have Pi Vision state.
-	g_Window.init( g_pluginApi );
-	g_Compositor.init( g_pluginApi );
+	g_window.default.init( m_pluginApi );
+	g_compositor.default.init( m_pluginApi );
 
-	g_pluginApi.addScreenCleanupFunction( cleanupScreen );
+	m_pluginApi.addScreenCleanupFunction( cleanupScreen );
 
 	const vis = api.vis || {};
-	vis.window = g_Window.createWindow;
-	vis.render = g_Compositor.render;
-	vis.onRender = g_Compositor.onRender;
+	vis.window = g_window.default.createWindow;
+	vis.render = g_compositor.default.render;
+	vis.onRender = g_compositor.default.onRender;
 	api.vis = vis;
 }
 
@@ -68,7 +68,7 @@ if( typeof window !== "undefined" && window.pi ) {
 
 /**
  * Remove a deleted window from its parent's registry
- * 
+ *
  * @param {Object} screenData - Screen being removed
  * @returns {void}
  */
@@ -94,7 +94,7 @@ function cleanupScreen( screenData ) {
 		return;
 	}
 
-	const screens = g_pluginApi.getAllScreensData();
+	const screens = m_pluginApi.getAllScreensData();
 	const parentData = screens.find( ( item ) => item.id === record.parentScreenId );
 	if( !parentData ) {
 		return;

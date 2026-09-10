@@ -1,9 +1,9 @@
 /**
  * Pi.js - Renderer Module
- * 
+ *
  * WebGL2 context creation, module orchestration, and public API exports.
  * Main orchestrator for all renderer modules.
- * 
+ *
  * @module renderer/renderer
  */
 
@@ -12,21 +12,17 @@
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
 import * as g_postfx from "../api/postfx.js";
-import { isContextUnavailable, getContextGeneration, probeContextLoss } from "./context-state.js";
-
-// Import renderer modules
+import * as g_contextState from "./context-state.js";
 import * as g_shaders from "./shaders.js";
 import * as g_batches from "./batches.js";
-
-// Import shapes module for geometry drawing
 import * as g_geometry from "./draw/geometry.js";
 import * as g_textures from "./textures.js";
 import * as g_readback from "./readback.js";
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Public API Exports
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 // Re-export batch constants
@@ -69,9 +65,9 @@ export {
 } from "./readback.js";
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Initialization
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 const m_isDebug = window.location.search.includes( "webgl-debug" );
 let m_offscreenContext = null;
@@ -79,7 +75,7 @@ const m_contexts = new WeakMap();
 
 /**
  * Initialize all renderer modules
- * 
+ *
  * @param {Object} api - The main Pi.js API object
  * @returns {void}
  */
@@ -111,22 +107,22 @@ export function init( api ) {
 
 /**
  * Create WebGL2 context for screen
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @returns {boolean} True if context created successfully
  */
 export function createContext( screenData ) {
 
 	let canvas = screenData.canvas;
-	
+
 	if( screenData.parentRenderContext ) {
 		canvas = screenData.canvas.canvas;
 		screenData.gl = screenData.parentRenderContext;
 	} else if( screenData.isOffscreen ) {
 		canvas = screenData.canvas.canvas;
 		if( !m_offscreenContext ) {
-			m_offscreenContext = canvas.getContext( "webgl2", { 
-				"alpha": true, 
+			m_offscreenContext = canvas.getContext( "webgl2", {
+				"alpha": true,
 				"premultipliedAlpha": true,
 				"antialias": false,
 				"preserveDrawingBuffer": true,
@@ -136,8 +132,8 @@ export function createContext( screenData ) {
 		}
 		screenData.gl = m_offscreenContext;
 	} else {
-		screenData.gl = canvas.getContext( "webgl2", { 
-			"alpha": true, 
+		screenData.gl = canvas.getContext( "webgl2", {
+			"alpha": true,
 			"premultipliedAlpha": true,
 			"antialias": false,
 			"preserveDrawingBuffer": true,
@@ -145,7 +141,7 @@ export function createContext( screenData ) {
 			"colorType": "unorm8"
 		} );
 	}
-	
+
 	// WebGL2 not available
 	if( !screenData.gl ) {
 		const error = new Error( "screen: Failed to create WebGL2 context. WebGL2 is required." );
@@ -174,7 +170,7 @@ export function createContext( screenData ) {
 	screenData.contextState = state;
 	screenData.contextGeneration = state.generation;
 	screenData.contextLost = state.status !== "ready";
-	if( probeContextLoss( screenData ) ) {
+	if( g_contextState.probeContextLoss( screenData ) ) {
 		return;
 	}
 	createResources( screenData );
@@ -212,14 +208,18 @@ function discardResources( screenData ) {
 	screenData.displayShaderUniformBindings = {};
 	screenData.imageContextMap = new Map();
 	screenData.samplerContextMap = new Map();
-	for( const key of [ "FBO", "fboTexture", "bufferFBO", "bufferFboTexture",
+	for(
+		const key of [ "FBO", "fboTexture", "bufferFBO", "bufferFboTexture",
 		"displayProgram", "displayPositionBuffer", "displayQuadVao", "displayLocations",
-		"textureCopyFBO" ] ) {
+		"textureCopyFBO" ]
+	) {
 		screenData[ key ] = null;
 	}
 }
 
-/** Suspend all members exactly once for a browser loss, including loss observed before its event. */
+/**
+ * Suspend all members exactly once for a browser loss, including loss observed before its event.
+ */
 function suspendContext( state ) {
 	if( state.status === "lost" ) {
 		return;
@@ -275,7 +275,7 @@ function restoreContext( state ) {
 
 /**
  * Create FBO and texture for screen
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @returns {boolean} True if FBO created successfully
  */
@@ -284,8 +284,9 @@ function createTextureAndFBO( screenData ) {
 	const gl = screenData.gl;
 	const width = screenData.width;
 	const height = screenData.height;
-	
+
 	let FBO = null;
+
 	// Create texture
 	const fboTexture = gl.createTexture();
 	if( !fboTexture ) {
@@ -296,18 +297,18 @@ function createTextureAndFBO( screenData ) {
 
 	try {
 		gl.bindTexture( gl.TEXTURE_2D, fboTexture );
-		gl.texImage2D( 
-			gl.TEXTURE_2D, 0, gl.RGBA8, 
-			width, height, 0, 
-			gl.RGBA, gl.UNSIGNED_BYTE, null 
+		gl.texImage2D(
+			gl.TEXTURE_2D, 0, gl.RGBA8,
+			width, height, 0,
+			gl.RGBA, gl.UNSIGNED_BYTE, null
 		);
-		
+
 		// Set texture parameters for pixel-perfect rendering
 		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
 		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
 		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
 		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
-		
+
 		// Create FBO
 		FBO = gl.createFramebuffer();
 		if( !FBO ) {
@@ -316,11 +317,11 @@ function createTextureAndFBO( screenData ) {
 			throw error;
 		}
 		gl.bindFramebuffer( gl.FRAMEBUFFER, FBO );
-		
+
 		// Attach texture to FBO
 		gl.framebufferTexture2D(
-			gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, 
-			gl.TEXTURE_2D, fboTexture, 0 
+			gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,
+			gl.TEXTURE_2D, fboTexture, 0
 		);
 
 		// Make sure that framebuffer is complete
@@ -345,7 +346,7 @@ function createTextureAndFBO( screenData ) {
 
 /**
  * Cleanup renderer resources for screen
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @returns {void}
  */
@@ -372,7 +373,7 @@ function releaseResources( screenData ) {
 
 	// Make sure no render gets executed in the microtask
 	screenData.isRenderScheduled = false;
-	
+
 	// Cleanup batches
 	g_batches.cleanup( screenData );
 
@@ -392,7 +393,7 @@ function releaseResources( screenData ) {
 			}
 		}
 	}
-	
+
 	// Cleanup textures
 	g_textures.cleanup( screenData );
 
@@ -415,9 +416,10 @@ function releaseResources( screenData ) {
  * @returns {void}
  */
 export function setImageDirty( screenData ) {
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
+
 	// Parent-affiliated offscreen screens never present to a canvas. Their FBO is flushed lazily
 	// when another screen composites it or a readback operation needs its pixels.
 	if( screenData.isOffscreen && screenData.parentRenderContext ) {
@@ -425,14 +427,15 @@ export function setImageDirty( screenData ) {
 	}
 
 	if( !screenData.isRenderScheduled ) {
-		const generation = getContextGeneration( screenData );
+		const generation = g_contextState.getContextGeneration( screenData );
 		screenData.isRenderScheduled = true;
 		g_utils.queueMicrotask( () => {
-			
+
 			// Make sure render hasn't been cancelled
-			if( !screenData.isRenderScheduled || screenData.isRemoved ||
-				generation !== getContextGeneration( screenData ) ||
-				isContextUnavailable( screenData )
+			if(
+				!screenData.isRenderScheduled || screenData.isRemoved ||
+				generation !== g_contextState.getContextGeneration( screenData ) ||
+				g_contextState.isContextUnavailable( screenData )
 			) {
 				return;
 			}
@@ -459,14 +462,22 @@ export function blendModeChanged( screenData, previousBlends ) {
 	g_batches.displayToCanvas( screenData );
 }
 
+/**
+ * Resize the rendering buffers while preserving existing screen content.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {number} oldWidth - Previous screen width in pixels.
+ * @param {number} oldHeight - Previous screen height in pixels.
+ * @returns {void}
+ */
 export function resizeScreen( screenData, oldWidth, oldHeight ) {
-	if( probeContextLoss( screenData ) ) {
+	if( g_contextState.probeContextLoss( screenData ) ) {
 		return;
 	}
 
 	// Finish rendering to the FBO before resizing
 	g_batches.flushBatches( screenData );
-	if( isContextUnavailable( screenData ) ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
 		return;
 	}
 
@@ -487,10 +498,10 @@ export function resizeScreen( screenData, oldWidth, oldHeight ) {
 
 	// Resize the primary FBO texture
 	gl.bindTexture( gl.TEXTURE_2D, screenData.fboTexture );
-	gl.texImage2D( 
-		gl.TEXTURE_2D, 0, gl.RGBA8, 
+	gl.texImage2D(
+		gl.TEXTURE_2D, 0, gl.RGBA8,
 		newWidth, newHeight, 0,
-		gl.RGBA, gl.UNSIGNED_BYTE, null 
+		gl.RGBA, gl.UNSIGNED_BYTE, null
 	);
 	gl.bindTexture( gl.TEXTURE_2D, null );
 
@@ -512,10 +523,10 @@ export function resizeScreen( screenData, oldWidth, oldHeight ) {
 
 	// Resize the buffer FBO texture to match the new dimensions
 	gl.bindTexture( gl.TEXTURE_2D, screenData.bufferFboTexture );
-	gl.texImage2D( 
-		gl.TEXTURE_2D, 0, gl.RGBA8, 
+	gl.texImage2D(
+		gl.TEXTURE_2D, 0, gl.RGBA8,
 		newWidth, newHeight, 0,
-		gl.RGBA, gl.UNSIGNED_BYTE, null 
+		gl.RGBA, gl.UNSIGNED_BYTE, null
 	);
 	gl.bindTexture( gl.TEXTURE_2D, null );
 

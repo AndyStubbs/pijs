@@ -1,7 +1,15 @@
+/**
+ * Pi.js - Pen Arcs Module
+ *
+ * Geometry routines for drawing with thick pens.
+ *
+ * @module plugins/pens/shapes/arcs
+ */
+
 
 /**
  * Draw arc outline using a square pen (thicker line segments)
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} cx - Center X coordinate
  * @param {number} cy - Center Y coordinate
@@ -13,14 +21,16 @@
  * @param {number} penType - Pen type (unused)
  * @returns {void}
  */
-export function drawArcSquare( screenData, cx, cy, radius, angle1, angle2, color, penSize, penType ) {
+export function drawArcSquare(
+	screenData, cx, cy, radius, angle1, angle2, color, penSize, penType
+) {
 
-	_drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, penSize, true );
+	drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, penSize, true );
 }
 
 /**
  * Draw arc outline using a circular pen (thicker line segments with rounded caps)
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} cx - Center X coordinate
  * @param {number} cy - Center Y coordinate
@@ -32,14 +42,16 @@ export function drawArcSquare( screenData, cx, cy, radius, angle1, angle2, color
  * @param {number} penType - Pen type (unused)
  * @returns {void}
  */
-export function drawArcCircle( screenData, cx, cy, radius, angle1, angle2, color, penSize, penType ) {
+export function drawArcCircle(
+	screenData, cx, cy, radius, angle1, angle2, color, penSize, penType
+) {
 
-	_drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, penSize, false );
+	drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, penSize, false );
 }
 
 /**
  * Internal helper to draw an arc by subdividing it into rectangular segments
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {number} cx - Center X coordinate
  * @param {number} cy - Center Y coordinate
@@ -51,7 +63,9 @@ export function drawArcCircle( screenData, cx, cy, radius, angle1, angle2, color
  * @param {boolean} useSquareCaps - True for square caps, false for circular caps
  * @returns {void}
  */
-function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, penSize, useSquareCaps ) {
+function drawArcSegments(
+	screenData, cx, cy, radius, angle1, angle2, color, penSize, useSquareCaps
+) {
 
 	// Determine the sweep angle
 	let sweepAngle = angle2 - angle1;
@@ -82,7 +96,12 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 	const halfWidth = penSize / 2;
 
 	// For square caps, extend the arc by halfWidth on each end to avoid overlapping cap quads
-	const extensionAngle = ( useSquareCaps && radius > 0 ) ? ( halfWidth / radius ) : 0;
+	let extensionAngle;
+	if( useSquareCaps && radius > 0 ) {
+		extensionAngle = halfWidth / radius;
+	} else {
+		extensionAngle = 0;
+	}
 	const effectiveStartAngle = angle1 - extensionAngle;
 	const effectiveEndAngle = ( angle1 + sweepAngle ) + extensionAngle;
 	const effectiveSweep = effectiveEndAngle - effectiveStartAngle;
@@ -188,10 +207,14 @@ function _drawArcSegments( screenData, cx, cy, radius, angle1, angle2, color, pe
 		// Use penSize / 2 as radius (same as drawLineCircle does)
 		// drawFilledCircle applies radius -= 1 internally, so we add 1 to ensure full coverage
 		const capRadius = Math.round( penSize / 2 );
-		
+
 
 		// Draw half circles oriented along the stroke direction to avoid overlap
-		g_batchHelpers.drawHalfCircleCap( screenData, startX, startY, capRadius, color, startDirX, startDirY, false );
-		g_batchHelpers.drawHalfCircleCap( screenData, endX, endY, capRadius, color, endDirX, endDirY, true );
+		g_batchHelpers.drawHalfCircleCap(
+			screenData, startX, startY, capRadius, color, startDirX, startDirY, false
+		);
+		g_batchHelpers.drawHalfCircleCap(
+			screenData, endX, endY, capRadius, color, endDirX, endDirY, true
+		);
 	}
 }

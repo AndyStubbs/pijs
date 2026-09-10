@@ -1,14 +1,14 @@
 /**
  * Pi Vision Window Command for Pi.js
- * 
+ *
  * Provides window functionality for the pi-vision plugin.
- * 
+ *
  * @module plugins/pi-vision/window
  */
 
 "use strict";
 
-import g_Util from "./util.js";
+import * as g_util from "./util.js";
 
 const BORDER_GLYPHS = {
 	"single": [ 218, 196, 191, 179, 192, 217 ],
@@ -19,23 +19,23 @@ const BORDER_GLYPHS = {
 const CLOSE_BUTTON = "[X]";
 const SHADOW_SIZE = 2;
 
-let g_pluginApi = null;
+let m_pluginApi = null;
 
-export default { init, createWindow };
+export default { "init": init, "createWindow": createWindow };
 
 /**
  * Initialize the window command
- * 
+ *
  * @param {Object} pluginApi - Plugin API
  * @returns {void}
  */
 function init( pluginApi ) {
-	g_pluginApi = pluginApi;
+	m_pluginApi = pluginApi;
 }
 
 /**
  * Create an offscreen Pi Vision window
- * 
+ *
  * @param {Object} options - Window options
  * @param {number} options.x - Horizontal position on the parent screen
  * @param {number} options.y - Vertical position on the parent screen
@@ -50,11 +50,11 @@ function init( pluginApi ) {
  * @returns {Object} Offscreen Pi.js screen API
  */
 function createWindow( options ) {
-	g_Util.validateOptionsObject( options, "vis.createWindow" );
+	g_util.default.validateOptionsObject( options, "vis.createWindow" );
 
 	const normalized = normalizeOptions( options );
-	const parentData = g_pluginApi.getActiveScreen( "vis.window" );
-	const api = g_pluginApi.getApi();
+	const parentData = m_pluginApi.getActiveScreen( "vis.window" );
+	const api = m_pluginApi.getApi();
 	let windowScreen = null;
 
 	try {
@@ -64,7 +64,7 @@ function createWindow( options ) {
 			"parent": parentData.api
 		} );
 
-		const windowData = g_pluginApi.getScreenData( "vis.window", windowScreen.id );
+		const windowData = m_pluginApi.getScreenData( "vis.window", windowScreen.id );
 		const record = {
 			"type": "window",
 			"parentScreenId": parentData.id,
@@ -119,7 +119,7 @@ function createWindow( options ) {
 
 /**
  * Validate and normalize the public options object
- * 
+ *
  * @param {Object} options - Raw window options
  * @returns {Object} Normalized options
  */
@@ -233,7 +233,7 @@ function normalizeOptions( options ) {
 
 /**
  * Calculate the protected client rectangle
- * 
+ *
  * @param {Object} screenData - Window screen data
  * @param {Object} options - Normalized window options
  * @returns {Object} Client rectangle
@@ -270,7 +270,12 @@ function calculateWindowLayout( screenData, mode, border, width, height, roundMo
 	const fontWidth = screenData.font.width;
 	const fontHeight = screenData.font.height;
 	if( border === "none" ) {
-		const titleHeight = mode === "interactive" ? fontHeight : 0;
+		let titleHeight;
+		if( mode === "interactive" ) {
+			titleHeight = fontHeight;
+		} else {
+			titleHeight = 0;
+		}
 		return {
 			"width": width,
 			"height": height,
@@ -479,7 +484,12 @@ function getCloseRect( record ) {
 		record.screenData, record.mode, record.border, record.width, record.height, "nearest"
 	);
 	const columns = layout.columns;
-	const inset = record.border === "none" ? 0 : 1;
+	let inset;
+	if( record.border === "none" ) {
+		inset = 0;
+	} else {
+		inset = 1;
+	}
 	const available = Math.max( columns - inset * 2, 0 );
 	const length = Math.min( CLOSE_BUTTON.length, available );
 	const column = Math.max( inset, columns - inset - length );
@@ -577,7 +587,7 @@ function closeWindow( record ) {
 	if( record.beforeClose && record.beforeClose( record.screen ) === false ) {
 		return false;
 	}
-	const activeData = g_pluginApi.getActiveScreen( "window.close" );
+	const activeData = m_pluginApi.getActiveScreen( "window.close" );
 	const parentData = getScreenDataById( record.parentScreenId );
 	const rootData = getRootData( parentData );
 	closeDescendants( record );
@@ -586,9 +596,9 @@ function closeWindow( record ) {
 		renderRootData( rootData );
 	}
 	if( activeData && getScreenDataById( activeData.id ) ) {
-		g_pluginApi.getApi().setScreen( activeData.id );
+		m_pluginApi.getApi().setScreen( activeData.id );
 	} else if( parentData && getScreenDataById( parentData.id ) ) {
-		g_pluginApi.getApi().setScreen( parentData.id );
+		m_pluginApi.getApi().setScreen( parentData.id );
 	}
 	return true;
 }
@@ -661,7 +671,7 @@ function applyWindowSize( record, width, height ) {
 	record.height = height;
 	record.client = client;
 	record.chrome = null;
-	g_pluginApi.resizeOffscreenScreen( record.screenData, width, height );
+	m_pluginApi.resizeOffscreenScreen( record.screenData, width, height );
 	if( hadClientView ) {
 		record.screen.resetView();
 		record.screen.pushView( client );
@@ -696,7 +706,11 @@ function getMinimumSize( record ) {
 	let height;
 	if( record.border === "none" ) {
 		width = 1;
-		height = record.mode === "interactive" ? fontHeight + 1 : 1;
+		if( record.mode === "interactive" ) {
+			height = fontHeight + 1;
+		} else {
+			height = 1;
+		}
 	} else {
 		width = fontWidth * 3;
 		height = fontHeight * 3;
@@ -709,9 +723,22 @@ function getMinimumSize( record ) {
 		const childMinimum = getMinimumSize( element );
 		const requiredClientWidth = childMinimum.width + getShadowExtent( element );
 		const requiredClientHeight = childMinimum.height + getShadowExtent( element );
-		const horizontalInset = record.border === "none" ? 0 : fontWidth * 2;
-		const verticalInset = record.border === "none" ?
-			( record.mode === "interactive" ? fontHeight : 0 ) : fontHeight * 2;
+		let horizontalInset;
+		if( record.border === "none" ) {
+			horizontalInset = 0;
+		} else {
+			horizontalInset = fontWidth * 2;
+		}
+		let verticalInset;
+		if( record.border === "none" ) {
+			if( record.mode === "interactive" ) {
+				verticalInset = fontHeight;
+			} else {
+				verticalInset = 0;
+			}
+		} else {
+			verticalInset = fontHeight * 2;
+		}
 		width = Math.max( width, horizontalInset + requiredClientWidth );
 		height = Math.max( height, verticalInset + requiredClientHeight );
 	}
@@ -723,11 +750,15 @@ function getMinimumSize( record ) {
 }
 
 function getShadowExtent( record ) {
-	return record.shadow ? SHADOW_SIZE : 0;
+	if( record.shadow ) {
+		return SHADOW_SIZE;
+	} else {
+		return 0;
+	}
 }
 
 function getScreenDataById( id ) {
-	return g_pluginApi.getAllScreensData().find( ( screenData ) => screenData.id === id ) || null;
+	return m_pluginApi.getAllScreensData().find( ( screenData ) => screenData.id === id ) || null;
 }
 
 function getRootData( screenData ) {
@@ -747,8 +778,8 @@ function renderRootForRecord( record ) {
 }
 
 function renderRootData( rootData ) {
-	const activeData = g_pluginApi.getActiveScreen( "window.render" );
-	const api = g_pluginApi.getApi();
+	const activeData = m_pluginApi.getActiveScreen( "window.render" );
+	const api = m_pluginApi.getApi();
 	try {
 		api.setScreen( rootData.id );
 		api.vis.render();
@@ -781,7 +812,7 @@ function renderWindow( record, recursive = true ) {
 		throw error;
 	}
 
-	const activeData = g_pluginApi.getActiveScreen( "window.render" );
+	const activeData = m_pluginApi.getActiveScreen( "window.render" );
 	try {
 		record.screen.cls();
 		drawChrome( record );
@@ -796,7 +827,7 @@ function renderWindow( record, recursive = true ) {
 			}
 		}
 
-		const parentData = g_pluginApi.getScreenData( "window.render", record.parentScreenId );
+		const parentData = m_pluginApi.getScreenData( "window.render", record.parentScreenId );
 		if( record.shadow ) {
 			const savedColor = parentData.api.getColor();
 			parentData.api.setColor( 0 );
@@ -813,7 +844,7 @@ function renderWindow( record, recursive = true ) {
 		parentData.api.drawImage( record.screen, record.x, record.y, undefined, 0, 0, 1, 1, 0 );
 	} finally {
 		if( activeData && getScreenDataById( activeData.id ) ) {
-			g_pluginApi.getApi().setScreen( activeData.id );
+			m_pluginApi.getApi().setScreen( activeData.id );
 		}
 	}
 }
@@ -858,8 +889,18 @@ function drawChrome( record ) {
 
 	const glyphs = BORDER_GLYPHS[ record.border ];
 	if( record.chrome === null ) {
-		const inset = glyphs ? 1 : 0;
-		const horizontal = glyphs ? String.fromCharCode( glyphs[ 1 ] ) : " ";
+		let inset;
+		if( glyphs ) {
+			inset = 1;
+		} else {
+			inset = 0;
+		}
+		let horizontal;
+		if( glyphs ) {
+			horizontal = String.fromCharCode( glyphs[ 1 ] );
+		} else {
+			horizontal = " ";
+		}
 		const top = Array( columns ).fill( horizontal );
 		if( glyphs ) {
 			top[ 0 ] = String.fromCharCode( glyphs[ 0 ] );

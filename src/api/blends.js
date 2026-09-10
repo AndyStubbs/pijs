@@ -1,14 +1,13 @@
 /**
  * Pi.js - Blends Module
- * 
+ *
  * Manages the api for blending in WebGL2.
- * 
+ *
  * @module api/blends
  */
 
 "use strict";
 
-// Import modules directly
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_commands from "../core/commands.js";
 import * as g_utils from "../core/utils.js";
@@ -20,14 +19,19 @@ export const BLEND_ALPHA = "alpha";
 export const BLENDS = new Set( [ BLEND_REPLACE, BLEND_ALPHA ] );
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Commands
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
-// Initialize the blends
+/**
+ * Initialize the module and register its commands and lifecycle hooks.
+ *
+ * @param {Object} api - Public Pi.js API.
+ * @returns {void}
+ */
 export function init( api ) {
-	
+
 	// Add Render Screen Data - Store pen and blend configuration only
 	g_screenManager.addScreenDataItem( "blends", {
 		"blend": BLEND_REPLACE, "noise": null, "noiseSeed": null, "noiseData": []
@@ -43,18 +47,24 @@ function registerCommands() {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * External API Commands
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
-// Set Blend Command
+/**
+ * Select the blend mode used for subsequent drawing.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function setBlend( screenData, options ) {
-	let blend = options.blend ?? screenData.blends.blend;
+	const blend = options.blend ?? screenData.blends.blend;
 
 	if( !BLENDS.has( blend ) ) {
 		const error = new TypeError(
-			`setBlend: Parameter blend is not a valid blend. Valid blends are (` +
+			"setBlend: Parameter blend is not a valid blend. Valid blends are (" +
 			`${Array.from( BLENDS ).join( ", " )}).`
 		);
 		error.code = "INVALID_BLEND_MODE";
@@ -73,10 +83,16 @@ function setBlend( screenData, options ) {
 }
 
 
-// Set Noise Command
+/**
+ * Configure the noise applied to drawing colors.
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function setNoise( screenData, options ) {
-	let noise = options.noise;
-	let seed = options.seed;
+	const noise = options.noise;
+	const seed = options.seed;
 
 	const noiseErrorMsg = "setNoise: Parameter noise must either be a number ie: 32, a 1d array " +
 		"with numbers ie: [23, 13, 15, 0], or a 2d array where the inner array is two arrays " +
@@ -110,7 +126,7 @@ function setNoise( screenData, options ) {
 			for( let i = 0; i < noise.length && i < 4; i += 1 ) {
 
 				const noiseRow = noise[ i ];
-		
+
 				// Validate if 2d array
 				if( Array.isArray( noiseRow ) ) {
 
@@ -151,7 +167,7 @@ function setNoise( screenData, options ) {
 	}
 
 	// Set seed - if null, use time
-	let noiseSeed = g_utils.getFloat( seed, null );
+	const noiseSeed = g_utils.getFloat( seed, null );
 
 	// Set noise data on screen
 	const previousNoise = screenData.blends.noise;

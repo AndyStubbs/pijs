@@ -1,16 +1,24 @@
 /**
- * Browser assertions for 2.1.1. Requires a fresh build and the repository server.
+ * Browser assertions against fresh in-memory bundles and repository fixtures.
  * Run with node --test test/unit/patch-browser.test.js.
  */
 const { test, before, after } = require( "node:test" );
 const assert = require( "node:assert/strict" );
 const { chromium } = require( "@playwright/test" );
+const { createSourceContext } = require( "./browser-source-harness.js" );
 let browser;
-before( async () => { browser = await chromium.launch( { "headless": true } ); } );
-after( async () => { await browser?.close(); } );
+let context;
+before( async () => {
+	browser = await chromium.launch( { "headless": true } );
+	context = await createSourceContext( browser );
+} );
+after( async () => {
+	await context?.close();
+	await browser?.close();
+} );
 
 test( "all supported shader source kinds preserve asymmetric corners in independent passes", async () => {
-	const page = await browser.newPage();
+	const page = await context.newPage();
 	try {
 		await page.goto( "http://localhost:8080/test/tests/html-core/shader_orientation_01.html" );
 		assert.equal( await page.evaluate( () => window.patchResult ), 132 );
@@ -21,7 +29,7 @@ test( "all supported shader source kinds preserve asymmetric corners in independ
 
 for( const mode of [ "rounding", "no requestFrame", "wrong corner" ] ) {
 	test( "shader orientation browser compatibility: " + mode, async () => {
-		const page = await browser.newPage();
+		const page = await context.newPage();
 		try {
 			await page.addInitScript( mode => {
 				if( mode === "no requestFrame" ) {
@@ -68,7 +76,7 @@ for( const mode of [ "rounding", "no requestFrame", "wrong corner" ] ) {
 }
 
 test( "pointer lifecycle fixture clears subscriptions before disposal", async () => {
-	const page = await browser.newPage();
+	const page = await context.newPage();
 	try {
 		await page.goto( "http://localhost:8080/test/tests/html-plugins/pointer_lifecycle_01.html" );
 		assert.equal( await page.evaluate( () => window.patchResult ), true );
@@ -76,7 +84,7 @@ test( "pointer lifecycle fixture clears subscriptions before disposal", async ()
 } );
 
 async function probe( fn ) {
-	const page = await browser.newPage();
+	const page = await context.newPage();
 	try {
 		await page.goto( "http://localhost:8080/" );
 		await page.setContent( "<html><body><div id='host'></div></body></html>" );
@@ -686,7 +694,7 @@ test( "noCss validates both overloads and preserves logical aspect rules", async
 } );
 
 test( "lite plugins initialize when their real dependencies arrive later", async () => {
-	const page = await browser.newPage();
+	const page = await context.newPage();
 	try {
 		await page.goto( "http://localhost:8080/" );
 		await page.setContent( "<html><body></body></html>" );

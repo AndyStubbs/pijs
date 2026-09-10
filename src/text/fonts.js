@@ -1,9 +1,9 @@
 /**
  * Pi.js - Font Module
- * 
+ *
  * Font loading, management, and character data for text rendering.
  * Supports bitmap fonts from images only (no base32-encoded data).
- * 
+ *
  * @module text/fonts
  */
 
@@ -16,7 +16,6 @@ import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_print from "./print.js";
-
 import g_fnt6x6 from "./fonts/font-6x6.webp";
 import * as g_fnt6x8 from "./fonts/font-6x8.js";
 import g_fnt8x8 from "./fonts/font-8x8.webp";
@@ -28,20 +27,20 @@ let m_defaultFontId = null;
 let m_nextFontId = 0;
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module Initialization
- ***************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Initialize font module
- * 
+ *
  * @param {Object} api - The main Pi.js API object
  * @returns {void}
  */
 export function init( api ) {
 	g_screenManager.addScreenDataItem( "font", null );
-	
+
 	registerCommands( api );
 	loadDefaultFonts();
 
@@ -53,7 +52,7 @@ export function init( api ) {
 
 /**
  * Register font commands
- * 
+ *
  * @param {Object} api - The main Pi.js API object
  * @returns {void}
  */
@@ -71,7 +70,6 @@ function registerCommands( api ) {
 	g_commands.addCommand( "setChar", setChar, true, [ "charCode", "data" ] );
 	g_commands.addCommand( "setFont", setFont, true, [ "fontId" ] );
 }
-
 
 
 // Load the default fonts
@@ -130,7 +128,7 @@ function loadDefaultFonts() {
 
 /**************************************************************************************************
  * Load Font Command
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
@@ -138,7 +136,7 @@ function loadDefaultFonts() {
  * Synchronous rejection publishes no font and consumes no font ID or readiness wait.
  * URL sources publish a pending font after setup. Asynchronous failure logs an error and
  * releases readiness, retaining the registered font without an image.
- * 
+ *
  * @param {Object} options - Load options
  * @param {string|HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} options.src - Font image
  * @param {number} options.width - Character width in pixels
@@ -217,7 +215,7 @@ function loadFont( options ) {
 
 /**
  * Load font from image source
- * 
+ *
  * @param {string|HTMLImageElement|HTMLCanvasElement|OffscreenCanvas} fontSrc - Font image source
  * @param {Object} font - Font object to populate
  * @returns {void}
@@ -321,12 +319,12 @@ function loadFontUrl( fontSrc, font ) {
 
 /**************************************************************************************************
  * Set Defaault Font Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Set default font
- * 
+ *
  * @param {Object} options - Options
  * @param {number} options.fontId - Font ID
  * @returns {void}
@@ -345,7 +343,7 @@ function setDefaultFont( options ) {
 
 /**
  * Set font for screen
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Options
  * @param {number} options.fontId - Font ID or CSS font string
@@ -355,7 +353,7 @@ export function setFont( screenData, options ) {
 	const fontId = g_utils.getInt( options.fontId, null );
 
 	// TODO-LATER: setFont should also accept a font object returned by getAvailableFonts
-	
+
 	if( fontId === null || !m_fontMap.has( fontId ) ) {
 		const error = new RangeError(
 			"setFont: Parameter fontId must be an integer and an index in the available fonts."
@@ -381,12 +379,12 @@ export function setFont( screenData, options ) {
 
 /**************************************************************************************************
  * Get Available Font Command
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Get available fonts
- * 
+ *
  * @returns {Array<Object>} Array of font info objects
  */
 function getAvailableFonts() {
@@ -404,13 +402,13 @@ function getAvailableFonts() {
 
 /**************************************************************************************************
  * Get Available Font Command
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**
  * Set custom character bitmap by drawing into a temporary Canvas2D copy of the
  * font atlas, then updating the existing WebGL texture.
- * 
+ *
  * @param {Object} screenData - Screen data object
  * @param {Object} options - Options
  * @param {number|string} options.charCode - Character code or single-character string
@@ -492,7 +490,12 @@ function setChar( screenData, options ) {
 	const buf = new Uint8ClampedArray( sw * sh * 4 );
 	for( let y = 0; y < sh; y += 1 ) {
 		for( let x = 0; x < sw; x += 1 ) {
-			const on = data[ y ][ x ] ? 1 : 0;
+			let on;
+			if( data[ y ][ x ] ) {
+				on = 1;
+			} else {
+				on = 0;
+			}
 			if( on ) {
 				const i = ( y * sw + x ) * 4;
 				buf[ i + 0 ] = 255;

@@ -1,8 +1,8 @@
 /**
  * Pi.js - Main Entry Point
- * 
+ *
  * Graphics library for retro-style games and demos.
- * 
+ *
  * @module pi.js
  * @author Andy Stubbs
  * @license Apache-2.0
@@ -41,36 +41,36 @@ import * as g_print from "./text/print.js";
 const VERSION = __VERSION__;
 
 // Create the main api for all external commands later assinged to globals pi or $
-const api = {
+const m_api = {
 	"version": VERSION
 };
 
 // Store modules in array for ordered initialization
-const mods = [
+const m_mods = [
 	g_utils, g_commands, g_screenManager, g_plugins, g_renderer, g_colors, g_graphicsApi, g_images,
 	g_blends, g_pixels, g_paint, g_draw, g_postfx, g_fonts, g_print, g_view
 ];
 
 // Initialize the modules
-for( const mod of mods ) {
+for( const mod of m_mods ) {
 	if( mod.init ) {
-		mod.init( api );
+		mod.init( m_api );
 	}
 }
 
 // Process API commands
-g_commands.processCommands( api );
+g_commands.processCommands( m_api );
 
 // Set window.pi for browser environments
 if( typeof window !== "undefined" ) {
-	window.pi = api;
+	window.pi = m_api;
 
 	// Set $ alias only if not already defined (avoid jQuery conflicts)
 	if( window.$ === undefined ) {
-		window.$ = api;
+		window.$ = m_api;
 	}
 }
 
 // Export for different module systems
-export default api;
-export { api as pi };
+export default m_api;
+export { m_api as pi };

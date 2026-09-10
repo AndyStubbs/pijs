@@ -4,34 +4,47 @@
 
 "use strict";
 
-import { validatePointerTarget, pointerPosition } from "./target.js";
-import { triggerPressListeners, triggerClickListeners, getTouchPress } from "./press.js";
+import * as g_target from "./target.js";
+import * as g_press from "./press.js";
 
 // Module-level reference to startTouchInternal function
 let m_startTouchInternal = null;
 
+/**
+ * Start touch tracking through the registered touch implementation.
+ *
+ * @param {Object} screenData - Screen state.
+ * @returns {void}
+ */
 export function startTouchInternal( screenData ) {
 	if( m_startTouchInternal ) {
 		m_startTouchInternal( screenData );
 	}
 }
 
+/**
+ * Register touch commands, screen state, and focus handling.
+ *
+ * @param {Object} pluginApi - Plugin registration and screen access API.
+ * @param {Object} helpers - Shared pointer event helpers.
+ * @returns {Object}
+ */
 export function registerTouch( pluginApi, helpers ) {
-	
+
 	const m_onevent = helpers.onevent;
 	const m_offevent = helpers.offevent;
 	const m_triggerEventListeners = helpers.triggerEventListeners;
-	
+
 	pluginApi.addScreenDataItem( "touchStopped", false );
 	pluginApi.addScreenDataItem( "touchStarted", false );
 	pluginApi.addScreenDataItem( "touches", {} );
 	pluginApi.addScreenDataItem( "lastTouches", {} );
 	pluginApi.addScreenDataItem( "touchEventListenersActive", 0 );
 	pluginApi.addScreenDataItem( "onTouchEventListeners", {} );
-	
+
 	pluginApi.addScreenInitFunction( initTouchData );
 	window.addEventListener( "blur", onWindowBlurTouch );
-	
+
 	pluginApi.addCommand( "startTouch", startTouch, true, [] );
 	pluginApi.addCommand( "stopTouch", stopTouch, true, [] );
 	pluginApi.addCommand( "intouch", intouch, true, [] );
@@ -40,7 +53,7 @@ export function registerTouch( pluginApi, helpers ) {
 	);
 	pluginApi.addCommand( "offtouch", offtouch, true, [ "mode", "fn" ] );
 	pluginApi.addCommand( "setPinchZoom", setPinchZoom, false, [ "isEnabled" ] );
-	
+
 	function initTouchData( screenData ) {
 		screenData.onTouchEventListeners = {
 			"start": [],
@@ -48,18 +61,24 @@ export function registerTouch( pluginApi, helpers ) {
 			"move": []
 		};
 	}
-	
+
 	function startTouchInternal( screenData ) {
 		if( !screenData.touchStopped ) {
 			startTouch( screenData );
 		}
 	}
-	
+
 	// Store reference for module-level export
 	m_startTouchInternal = startTouchInternal;
 
+	/**
+	 * Start tracking touch events on the screen.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {void}
+	 */
 	function startTouch( screenData ) {
-		validatePointerTarget( screenData, "startTouch" );
+		g_target.validatePointerTarget( screenData, "startTouch" );
 
 		// Clear explicit touch stopped
 		screenData.touchStopped = false;
@@ -73,9 +92,15 @@ export function registerTouch( pluginApi, helpers ) {
 			screenData.touchStarted = true;
 		}
 	}
-	
+
+	/**
+	 * Stop tracking touch events and reset the screen touch state.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {void}
+	 */
 	function stopTouch( screenData ) {
-		
+
 		//Clear explicit touchStopped
 		screenData.touchStopped = true;
 
@@ -87,41 +112,61 @@ export function registerTouch( pluginApi, helpers ) {
 			screenData.touchStarted = false;
 		}
 	}
-	
+
+	/**
+	 * Read the screen touch state.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {Array<Object>}
+	 */
 	function intouch( screenData ) {
-		validatePointerTarget( screenData, "intouch" );
+		g_target.validatePointerTarget( screenData, "intouch" );
 		startTouchInternal( screenData );
 		return getTouch( screenData );
 	}
-	
+
+	/**
+	 * Register a touch listener with optional hit-box filtering.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {Object} options - Command options.
+	 * @returns {void}
+	 */
 	function ontouch( screenData, options ) {
-		validatePointerTarget( screenData, "ontouch" );
+		g_target.validatePointerTarget( screenData, "ontouch" );
 		const mode = options.mode;
 		const fn = options.fn;
 		const once = options.once;
 		const hitBox = options.hitBox;
 		const customData = options.customData;
-		
+
 		const isValid = m_onevent(
 			mode, fn, once, hitBox, [ "start", "end", "move" ], "ontouch",
 			screenData.onTouchEventListeners, null, null, customData
 		);
-		
+
 		if( isValid ) {
 			startTouchInternal( screenData );
 			screenData.touchEventListenersActive += 1;
 		}
 	}
-	
+
+	/**
+	 * Remove matching touch listeners.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {Object} options - Command options.
+	 * @returns {void}
+	 */
 	function offtouch( screenData, options ) {
 		const mode = options.mode;
 		const fn = options.fn;
-		
+
 		const isValid = m_offevent(
 			mode, fn, [ "start", "end", "move" ], "offtouch",
 			screenData.onTouchEventListeners
 		);
-		
+
 		if( isValid ) {
 			if( fn == null ) {
 				screenData.touchEventListenersActive = 0;
@@ -133,7 +178,13 @@ export function registerTouch( pluginApi, helpers ) {
 			}
 		}
 	}
-	
+
+	/**
+	 * Enable or suppress browser pinch zoom.
+	 *
+	 * @param {Object} options - Command options.
+	 * @returns {void}
+	 */
 	function setPinchZoom( options ) {
 		const isEnabled = !!( options.isEnabled );
 		if( isEnabled ) {
@@ -142,7 +193,7 @@ export function registerTouch( pluginApi, helpers ) {
 			document.body.style.touchAction = "none";
 		}
 	}
-	
+
 	function touchStart( e ) {
 		const screenData = getScreenDataFromEvent( e );
 		if( screenData == null ) {
@@ -153,11 +204,11 @@ export function registerTouch( pluginApi, helpers ) {
 		if( screenData.touchEventListenersActive > 0 ) {
 			m_triggerEventListeners( "start", touchData, screenData.onTouchEventListeners );
 		}
-		triggerPressListeners( screenData, "down", getTouchPress( screenData ) );
+		g_press.triggerPressListeners( screenData, "down", g_press.getTouchPress( screenData ) );
 		e.preventDefault();
-		triggerClickListeners( screenData, getTouchPress( screenData ), "down" );
+		g_press.triggerClickListeners( screenData, g_press.getTouchPress( screenData ), "down" );
 	}
-	
+
 	function touchMove( e ) {
 		const screenData = getScreenDataFromEvent( e );
 		if( screenData == null ) {
@@ -168,9 +219,9 @@ export function registerTouch( pluginApi, helpers ) {
 		if( screenData.touchEventListenersActive > 0 ) {
 			m_triggerEventListeners( "move", touchData, screenData.onTouchEventListeners );
 		}
-		triggerPressListeners( screenData, "move", getTouchPress( screenData ) );
+		g_press.triggerPressListeners( screenData, "move", g_press.getTouchPress( screenData ) );
 	}
-	
+
 	function touchEnd( e ) {
 		const screenData = getScreenDataFromEvent( e );
 		if( screenData == null ) {
@@ -181,15 +232,15 @@ export function registerTouch( pluginApi, helpers ) {
 		if( screenData.touchEventListenersActive > 0 ) {
 			m_triggerEventListeners( "end", touchData, screenData.onTouchEventListeners );
 		}
-		triggerPressListeners( screenData, "up", getTouchPress( screenData ) );
-		triggerClickListeners( screenData, getTouchPress( screenData ), "up" );
+		g_press.triggerPressListeners( screenData, "up", g_press.getTouchPress( screenData ) );
+		g_press.triggerClickListeners( screenData, g_press.getTouchPress( screenData ), "up" );
 	}
-	
+
 	function updateTouch( screenData, e, action ) {
 		const newTouches = {};
 		for( let j = 0; j < e.touches.length; j++ ) {
 			const touch = e.touches[ j ];
-			const touchData = pointerPosition( screenData, touch );
+			const touchData = g_target.pointerPosition( screenData, touch );
 			if( !touchData ) {
 				continue;
 			}
@@ -204,12 +255,12 @@ export function registerTouch( pluginApi, helpers ) {
 			touchData.action = action;
 			newTouches[ touchData.id ] = touchData;
 		}
-		
+
 		screenData.lastTouches = screenData.touches;
 		screenData.touches = newTouches;
 		screenData.lastEvent = "touch";
 	}
-	
+
 	function getTouch( screenData ) {
 		const touchArr = [];
 		for( const i in screenData.touches ) {
@@ -227,7 +278,7 @@ export function registerTouch( pluginApi, helpers ) {
 		}
 		return touchArr;
 	}
-	
+
 	function getScreenDataFromEvent( e ) {
 		const screenId = e.target.dataset?.screenId;
 		if( screenId === undefined ) {
@@ -235,7 +286,7 @@ export function registerTouch( pluginApi, helpers ) {
 		}
 		return pluginApi.getScreenData( "touch-event", screenId );
 	}
-	
+
 	function onWindowBlurTouch() {
 		const allScreensData = pluginApi.getAllScreensData();
 		for( const screenData of allScreensData ) {
@@ -243,12 +294,12 @@ export function registerTouch( pluginApi, helpers ) {
 			screenData.touches = {};
 		}
 	}
-	
+
 	function clearTouchEvents( screenData ) {
 		screenData.onTouchEventListeners = {};
 		screenData.touchEventListenersActive = 0;
 	}
-	
+
 	return {
 		"stopTouch": stopTouch,
 		"clearTouchEvents": clearTouchEvents

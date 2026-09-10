@@ -1,9 +1,9 @@
 /**
  * Gamepad Plugin for Pi.js
- * 
+ *
  * Provides gamepad input handling including button state tracking, axis handling,
  * and connect/disconnect event management.
- * 
+ *
  * @module plugins/gamepad
  * @version 1.0.0
  */
@@ -11,9 +11,9 @@
 "use strict";
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Module State
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 const m_gamepads = {};
@@ -29,11 +29,17 @@ let m_tick = 0;
 let m_lastGamepadUpdateTick = -1;
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Plugin Initialization
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
+/**
+ * Register gamepad commands and window focus handlers.
+ *
+ * @param {Object} pluginApi - Plugin registration and screen access API.
+ * @returns {void}
+ */
 export default function gamepadPlugin( pluginApi ) {
 
 	// Add window blur/focus handlers
@@ -55,17 +61,22 @@ export default function gamepadPlugin( pluginApi ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * External API Commands
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
+/**
+ * Start gamepad polling and initialize connection listeners when needed.
+ *
+ * @returns {void}
+ */
 function startGamepad() {
 	if( !m_isInitialized ) {
 		window.addEventListener( "gamepadconnected", gamepadConnected );
 		window.addEventListener( "gamepaddisconnected", gamepadDisconnected );
 		m_isInitialized = true;
-		
+
 		// Scan for already-connected gamepads
 		scanForGamepads();
 	}
@@ -79,6 +90,11 @@ function startGamepad() {
 	}
 }
 
+/**
+ * Stop gamepad polling and prevent reads from restarting it automatically.
+ *
+ * @returns {void}
+ */
 function stopGamepad() {
 
 	// Explicitly stop gamepad to prevent autostart when ingamepad is called
@@ -92,6 +108,12 @@ function stopGamepad() {
 	}
 }
 
+/**
+ * Read one gamepad or all connected gamepads, unless polling was explicitly stopped.
+ *
+ * @param {Object} options - Command options.
+ * @returns {Object|Array<Object>|null|undefined}
+ */
 function ingamepad( options ) {
 	const gamepadIndex = options.gamepadIndex;
 
@@ -120,6 +142,12 @@ function ingamepad( options ) {
 	return m_gamepads[ gamepadIndex ];
 }
 
+/**
+ * Set the dead zone used when reporting gamepad axes.
+ *
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function setGamepadSensitivity( options ) {
 	const sensitivity = options.sensitivity;
 
@@ -138,6 +166,12 @@ function setGamepadSensitivity( options ) {
 	}
 }
 
+/**
+ * Register a callback for gamepad connections.
+ *
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function onGamepadConnected( options ) {
 	const fn = options.fn;
 
@@ -151,6 +185,12 @@ function onGamepadConnected( options ) {
 	startGamepad();
 }
 
+/**
+ * Register a callback for gamepad disconnections.
+ *
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
 function onGamepadDisconnected( options ) {
 	const fn = options.fn;
 
@@ -165,9 +205,9 @@ function onGamepadDisconnected( options ) {
 }
 
 
-/***************************************************************************************************
+/*************************************************************************************************
  * Internal Helper Functions
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 function gamepadConnected( e ) {
@@ -224,7 +264,7 @@ function scanForGamepads() {
 	for( let i = 0; i < gamepads.length; i++ ) {
 		if( gamepads[ i ] && !( gamepads[ i ].index in m_gamepads ) ) {
 			updateGamepad( gamepads[ i ] );
-			
+
 			// Trigger connect handlers for pre-connected gamepads
 			const gamepadData = m_gamepads[ gamepads[ i ].index ];
 			for( const handler of m_onConnectHandlers ) {
@@ -382,7 +422,7 @@ function onWindowFocus() {
 /**
  * Clear all gamepad event handlers
  * Called by clearEvents command
- * 
+ *
  * @param {Object} [screenData] - Screen data (not used for gamepad events)
  * @returns {void}
  */

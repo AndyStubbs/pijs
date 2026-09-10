@@ -1,11 +1,33 @@
+/**
+ * Pi.js - Pen Bezier Module
+ *
+ * Geometry routines for drawing with thick pens.
+ *
+ * @module plugins/pens/shapes/bezier
+ */
+
 
 /**
  * Draw cubic Bezier with square pen by tessellating and emitting thick rectangles per segment.
  * Adds square caps at the curve ends using batch-helpers.
- * 
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {number} p0x - Control point 0 x coordinate.
+ * @param {number} p0y - Control point 0 y coordinate.
+ * @param {number} p1x - Control point 1 x coordinate.
+ * @param {number} p1y - Control point 1 y coordinate.
+ * @param {number} p2x - Control point 2 x coordinate.
+ * @param {number} p2y - Control point 2 y coordinate.
+ * @param {number} p3x - Control point 3 x coordinate.
+ * @param {number} p3y - Control point 3 y coordinate.
+ * @param {Object} color - RGBA color object.
+ * @param {number} penSize - Pen thickness in pixels.
+ * @param {number} penType - Pen type.
  * @returns {void}
  */
-export function drawBezierSquare( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, penSize, penType ) {
+export function drawBezierSquare(
+	screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color, penSize, penType
+) {
 
 	const pts = g_batchHelpers.tessellateCubicBezier( p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, 0.75 );
 	if( pts.length < 4 ) return;
@@ -46,7 +68,18 @@ export function drawBezierSquare( screenData, p0x, p0y, p1x, p1y, p2x, p2y, p3x,
 
 /**
  * Draw cubic Bezier with circle pen: thick segments without caps, then semicircle caps at ends.
- * 
+ *
+ * @param {Object} screenData - Screen state.
+ * @param {number} p0x - Control point 0 x coordinate.
+ * @param {number} p0y - Control point 0 y coordinate.
+ * @param {number} p1x - Control point 1 x coordinate.
+ * @param {number} p1y - Control point 1 y coordinate.
+ * @param {number} p2x - Control point 2 x coordinate.
+ * @param {number} p2y - Control point 2 y coordinate.
+ * @param {number} p3x - Control point 3 x coordinate.
+ * @param {number} p3y - Control point 3 y coordinate.
+ * @param {Object} color - RGBA color object.
+ * @param {number} penSize - Pen thickness in pixels.
  * @returns {void}
  */
 export function drawBezierCircle(
@@ -88,7 +121,7 @@ export function drawBezierCircle(
 
 /**************************************************************************************************
  * Ineternal Helper functions
- **************************************************************************************************/
+ ************************************************************************************************/
 
 
 /**

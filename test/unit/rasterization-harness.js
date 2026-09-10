@@ -15,8 +15,7 @@ function createHarness() {
 	};
 	const globals = {
 		"g_batches": { "POINTS_BATCH": 0 },
-		"g_batchHelpers": { "createPointWriter": createPointWriter },
-		"createPointWriter": createPointWriter
+		"g_batchHelpers": { "createPointWriter": createPointWriter }
 	};
 	function load( name ) {
 		const source = fs.readFileSync(
@@ -26,6 +25,11 @@ function createHarness() {
 		vm.runInContext( fs.readFileSync(
 			path.join( __dirname, "../../src/renderer/context-state.js" ), "utf8"
 		).replace( /export /g, "" ), context );
+		context.g_contextState = {
+			"isContextUnavailable": context.isContextUnavailable,
+			"getContextGeneration": context.getContextGeneration,
+			"probeContextLoss": context.probeContextLoss
+		};
 		vm.runInContext( source, context );
 		return context;
 	}
