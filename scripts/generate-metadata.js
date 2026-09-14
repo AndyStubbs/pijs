@@ -17,10 +17,15 @@ const METADATA_DIR = path.join( __dirname, "..", "metadata" );
 const BUILD_DIR = path.join( __dirname, "..", "build" );
 const REFERENCE_FILE = path.join( BUILD_DIR, "reference-{VERSION}.json" );
 const TYPE_DEFINITION_FILE = path.join( BUILD_DIR, "pi.d.ts" );
+const LITE_TYPE_DEFINITION_FILE = path.join( BUILD_DIR, "pi.lite.d.ts" );
 const DOCS_TYPE_DEFINITION_FILE = path.join( __dirname, "..", "docs", "llms", "pi.d.ts" );
 const RELEASE_TYPE_DEFINITION_FILE = path.join(
 	__dirname, "..", "releases", "pi-latest", "dist", "pi.d.ts"
 );
+const RELEASE_LITE_TYPE_DEFINITION_FILE = path.join(
+	__dirname, "..", "releases", "pi-latest", "dist", "pi.lite.d.ts"
+);
+const BASE_PACKAGE_PATH = path.join( __dirname, "..", "releases", "base-package.json" );
 
 function getVersionFolders() {
 	if( !fs.existsSync( METADATA_DIR ) ) {
@@ -160,6 +165,7 @@ function buildMethodReferenceEntry( name, metadata ) {
 		"name": name,
 		"category": metadata.category || "",
 		"isScreen": Boolean( metadata.isScreen ),
+		"plugin": metadata.plugin || "",
 		"summary": metadata.summary || "",
 		"syntax": syntax,
 		"description": description,
@@ -486,7 +492,7 @@ function buildAPIObject( screenMethods, apiMethods ) {
 		"summary": "Main Pi.js API object.",
 		"description": "Main Pi.js API object that extends Screen and provides additional " +
 			"API-level methods for screen management, plugin registration, and global utilities. " +
-			"This is the object exposed as `Pi` and `$`.",
+			"This is the object exposed as `pi` and `$`.",
 		"properties": properties
 	};
 }
@@ -575,8 +581,9 @@ function buildObjectInterfaces( objects ) {
 	return lines;
 }
 
-function buildTypeDefinitions( version, screenMethods, apiMethods, objects ) {
+function buildTypeDefinitions( screenMethods, apiMethods, objects ) {
 	const lines = [];
+	const packageVersion = packageJson.version;
 
 	lines.push( "declare namespace Pi {" );
 
@@ -608,33 +615,28 @@ function buildTypeDefinitions( version, screenMethods, apiMethods, objects ) {
 	lines.push( "\t\t/**" );
 	lines.push( "\t\t * Current Pi.js version string." );
 	lines.push( "\t\t */" );
-	lines.push( `\t\treadonly version: "pi-${version}";` );
+	lines.push( `\t\treadonly version: "${packageVersion}";` );
 	lines.push( "\t}" );
 	lines.push( "}" );
 	lines.push( "" );
-	lines.push( "// Global variable declarations for IIFE-based Pi.js library" );
-	lines.push( "// These are exposed as window.Pi and window.$ in the browser runtime" );
-	lines.push(
-		"// Using 'var' instead of 'const' because these are global variables, not constants"
-	);
-	lines.push( "declare var Pi: Pi.API;" );
-	lines.push( "declare var $: Pi.API;" );
+	lines.push( "// Module and global bindings for Pi.js" );
+	lines.push( "// Runtime exposes window.pi and optional window.$; ESM exports pi and $." );
+	lines.push( "declare const pi: Pi.API;" );
+	lines.push( "declare const $: Pi.API;" );
+	lines.push( "" );
+	lines.push( "export { pi, $ };" );
+	lines.push( "export default pi;" );
+	lines.push( "export type PluginAPI = Pi.PluginAPI;" );
+	lines.push( "export type API = Pi.API;" );
+	lines.push( "export type Screen = Pi.Screen;" );
 	lines.push( "" );
 	lines.push(
-		 "// Global augmentation block ensures these are available in non-module JavaScript contexts"
+		"// Global augmentation for IIFE / non-module script usage"
 	);
-	lines.push(
-		"// This is needed because the file has exports (making it a module), but we want"
-	);
-	lines.push( "// the globals to be available in plain JavaScript files (IIFE-based code)" );
 	lines.push( "declare global {" );
-	lines.push( "\tvar Pi: Pi.API;" );
+	lines.push( "\tvar pi: Pi.API;" );
 	lines.push( "\tvar $: Pi.API;" );
 	lines.push( "}" );
-	lines.push( "" );
-	lines.push( "// Module exports for TypeScript/ES6 module users (optional)" );
-	lines.push( "export { Pi, $ };" );
-	lines.push( "export default Pi;" );
 
 	// TODO-LATER: Research if it makes sense to limit typeDefinition lines count.
 	// If the intellisense works better with 80 or 100 characters per line then it will be
@@ -741,6 +743,64 @@ function generateMetadata() {
 	fs.mkdirSync( path.dirname( RELEASE_TYPE_DEFINITION_FILE ), { "recursive": true } );
 	fs.copyFileSync( TYPE_DEFINITION_FILE, RELEASE_TYPE_DEFINITION_FILE );
 	console.log( "✓ Copied type definitions to latest release:", RELEASE_TYPE_DEFINITION_FILE );
+	fs.copyFileSync( LITE_TYPE_DEFINITION_FILE, RELEASE_LITE_TYPE_DEFINITION_FILE );
+	console.log(
+		"✓ Copied lite type definitions to latest release:",
+		RELEASE_LITE_TYPE_DEFINITION_FILE
+	);
+	writePluginTypeDefinitions();
+}
+
+function getReleasePluginNames() {
+	if( !fs.existsSync( BASE_PACKAGE_PATH ) ) {
+		return [];
+	}
+	const basePackage = JSON.parse( fs.readFileSync( BASE_PACKAGE_PATH, "utf8" ) );
+	const exportsMap = basePackage.exports || {};
+	const plugins = [];
+	for( const exportPath of Object.keys( exportsMap ) ) {
+		if( exportPath.startsWith( "./plugins/" ) ) {
+			plugins.push( exportPath.slice( "./plugins/".length ) );
+		}
+	}
+	return plugins;
+}
+
+function buildPluginTypeDefinitions( pluginName ) {
+	const camelName = pluginName.replace( /-/g, "_" );
+	return [
+		`import type { PluginAPI } from "pijs-web";`,
+		"",
+		`/**`,
+		` * ${pluginName} plugin initializer for Pi.js.`,
+		` */`,
+		`declare function ${camelName}Plugin( pluginApi: PluginAPI ): void;`,
+		`export default ${camelName}Plugin;`,
+		""
+	].join( "\n" );
+}
+
+function writePluginTypeDefinitions() {
+	const pluginNames = getReleasePluginNames();
+	for( const pluginName of pluginNames ) {
+		const contents = buildPluginTypeDefinitions( pluginName );
+		const buildPath = path.join(
+			BUILD_DIR, "plugins", pluginName, `${pluginName}.d.ts`
+		);
+		const releasePath = path.join(
+			__dirname, "..", "releases", "pi-latest", "dist", "plugins", pluginName,
+			`${pluginName}.d.ts`
+		);
+		const outputFiles = [ buildPath, releasePath ];
+		for( const filePath of outputFiles ) {
+			const dirPath = path.dirname( filePath );
+			if( !fs.existsSync( dirPath ) ) {
+				fs.mkdirSync( dirPath, { "recursive": true } );
+			}
+			fs.writeFileSync( filePath, contents, "utf8" );
+			console.log( "✓ Generated plugin type definitions:", filePath );
+		}
+	}
 }
 
 function writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata ) {
@@ -765,7 +825,18 @@ function writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata )
 
 	writeReferenceOutput( version, { "methods": referenceMethods, "objects": objects } );
 	writeTypeDefinitions(
-		version, buildTypeDefinitions( version, screenMethods, apiMethods, objects )
+		version, buildTypeDefinitions( screenMethods, apiMethods, objects ),
+		[ TYPE_DEFINITION_FILE, DOCS_TYPE_DEFINITION_FILE ]
+	);
+
+	// Lite declarations omit plugin-registered commands
+	const liteMethods = referenceMethods.filter( ( m ) => !m.plugin );
+	const liteScreenMethods = liteMethods.filter( ( m ) => m.isScreen );
+	const liteApiMethods = liteMethods.filter( ( m ) => !m.isScreen );
+	writeTypeDefinitions(
+		version,
+		buildTypeDefinitions( liteScreenMethods, liteApiMethods, objects ),
+		[ LITE_TYPE_DEFINITION_FILE ]
 	);
 }
 
@@ -792,7 +863,7 @@ function writeReferenceOutput( version, data ) {
 	console.log( "✓ Generated reference metadata:", filePath );
 }
 
-function writeTypeDefinitions( version, lines ) {
+function writeTypeDefinitions( version, lines, outputFiles ) {
 	const header = [
 		"/**",
 		" * Pi.js Type Definitions",
@@ -803,7 +874,6 @@ function writeTypeDefinitions( version, lines ) {
 		""
 	].join( "\n" );
 	const contents = `${header}${lines.join( "\n" )}\n`;
-	const outputFiles = [ TYPE_DEFINITION_FILE, DOCS_TYPE_DEFINITION_FILE ];
 
 	for( const filePath of outputFiles ) {
 		const dirPath = path.dirname( filePath );

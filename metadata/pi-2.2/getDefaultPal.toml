@@ -1,0 +1,27 @@
+title = "getDefaultPal"
+category = "colors"
+isScreen = false
+summary = """
+Gets default palette and returns an array with all the color data. The default color palette defines what colors are
+available when a new screen is created."""
+description = """
+Gets the default color palette used when screens are created. By default, index 0 (transparent
+black) is excluded.
+"""
+example = """
+$.screen( "300x200" );
+var pal = $.getDefaultPal();
+$.setColor( 4 );
+$.print( `Color 4 in default pal = [ ${pal[ 4 ].array.join( ", " )} ]` );
+"""
+
+[[parameters]]
+name = "include0"
+type = "boolean"
+description = "If true include palette index 0 (transparent black)."
+optional = true
+
+[[returns]]
+type = "Array<PiColor>"
+typeDesc = "*Array"
+description = "An array of color data for the default color palette."

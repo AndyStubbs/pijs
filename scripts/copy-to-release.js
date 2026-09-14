@@ -27,6 +27,7 @@ const majorVersion = pkg.majorVersion;
  */
 const libraryFiles = [
 	"pi.d.ts",
+	"pi.lite.d.ts",
 	"pi.js",
 	"pi.js.map",
 	"pi.min.js",

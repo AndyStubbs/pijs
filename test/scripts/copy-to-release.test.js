@@ -15,6 +15,7 @@ const { copyToRelease } = require( "../../scripts/copy-to-release.js" );
 
 const LIBRARY_FILES = [
 	"pi.d.ts",
+	"pi.lite.d.ts",
 	"pi.js",
 	"pi.js.map",
 	"pi.min.js",

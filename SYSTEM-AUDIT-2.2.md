@@ -496,7 +496,7 @@ cleanup runs in `finally`, preserving combination matching during callbacks and 
 keydown record created by a reentrant callback. Repeat filtering and dispatch order are preserved.
 Focused and regression validation results are recorded with SYS-003 above.
 
-### SYS-012 — P2 — Generated declarations disagree with runtime exports and capabilities
+### SYS-012 — P2 — Generated declarations disagree with runtime exports and capabilities - COMPLETED
 
 **Locations:** [generate-metadata.js:611](C:/Docs/src/pijs/scripts/generate-metadata.js:611),
 [generate-metadata.js:620](C:/Docs/src/pijs/scripts/generate-metadata.js:620),
@@ -524,6 +524,13 @@ compilation and existing validators pass, demonstrating their limits rather than
 **Fix:** emit declarations for actual module/global names and package version, distinct plugin
 initializers and lite capabilities, and fill the metadata omissions. Validate against real
 package consumers in addition to generated-string checks.
+
+**Resolution — declarations and package consumers, 2026-09-14:** Runtime and declarations now export
+`pi` and `$` (globals `window.pi` / optional `window.$`). The API version literal is
+`package.json`'s `"2.2.0"`. Full, lite (`pi.lite.d.ts`), and per-plugin initializer `.d.ts` files are
+emitted and wired through `base-package.json`. Metadata covers `getDefaultColor`, `createColor`, and
+`getDefaultPal(include0)`. `npm run test:types` includes positive/negative package-consumer `tsc`
+checks under bundler resolution.
 
 ### SYS-013 — P2 — ESM plugins auto-register despite documented explicit registration - COMPLETED
 

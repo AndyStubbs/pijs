@@ -1892,6 +1892,16 @@ screen is removed before deferred processing completes, or with the original rea
 
 	interface API extends Screen {
 		/**
+		 * Converts a supported color value into a color object.
+		 *
+		 * Creates a PiColor object from a palette index, CSS color string, array, or color-like object.
+		 * @param color Palette index or color value (string, array, object, number).
+		 * @returns A color value object for the converted color.
+		 */
+		createColor( params: { "color": any } ): PiColor;
+		createColor( color: any ): PiColor;
+
+		/**
 		 * Creates a custom fragment shader and returns a handle.
 		 *
 		 * Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. Keep RGB between zero and alpha, with zero RGB at zero alpha. For opacity, multiply all four channels; for inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
@@ -1927,11 +1937,25 @@ screen is removed before deferred processing completes, or with the original rea
 		getAvailableFonts(): Array<FontInfo>;
 
 		/**
+		 * Gets the default foreground color used by new screens.
+		 *
+		 * Returns the default drawing color for newly created screens. If asIndex is true, returns the palette index; otherwise returns the color value object.
+		 * @param asIndex If true returns the palette index, otherwise returns a color value object.
+		 * @returns Palette index if asIndex is true; otherwise a color value object.
+		 */
+		getDefaultColor( params: { "asIndex"?: boolean } ): number | PiColor;
+		getDefaultColor( asIndex?: boolean ): number | PiColor;
+
+		/**
 		 * Gets default palette and returns an array with all the color data. The default color palette defines what colors are
 		 * available when a new screen is created.
+		 *
+		 * Gets the default color palette used when screens are created. By default, index 0 (transparent black) is excluded.
+		 * @param include0 If true include palette index 0 (transparent black).
 		 * @returns An array of color data for the default color palette.
 		 */
-		getDefaultPal(): Array<PiColor>;
+		getDefaultPal( params: { "include0"?: boolean } ): Array<PiColor>;
+		getDefaultPal( include0?: boolean ): Array<PiColor>;
 
 		/**
 		 * Gets the image element by name.
@@ -2504,24 +2528,23 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Current Pi.js version string.
 		 */
-		readonly version: "pi-2.2";
+		readonly version: "2.2.0";
 	}
 }
 
-// Global variable declarations for IIFE-based Pi.js library
-// These are exposed as window.Pi and window.$ in the browser runtime
-// Using 'var' instead of 'const' because these are global variables, not constants
-declare var Pi: Pi.API;
-declare var $: Pi.API;
+// Module and global bindings for Pi.js
+// Runtime exposes window.pi and optional window.$; ESM exports pi and $.
+declare const pi: Pi.API;
+declare const $: Pi.API;
 
-// Global augmentation block ensures these are available in non-module JavaScript contexts
-// This is needed because the file has exports (making it a module), but we want
-// the globals to be available in plain JavaScript files (IIFE-based code)
+export { pi, $ };
+export default pi;
+export type PluginAPI = Pi.PluginAPI;
+export type API = Pi.API;
+export type Screen = Pi.Screen;
+
+// Global augmentation for IIFE / non-module script usage
 declare global {
-	var Pi: Pi.API;
+	var pi: Pi.API;
 	var $: Pi.API;
 }
-
-// Module exports for TypeScript/ES6 module users (optional)
-export { Pi, $ };
-export default Pi;

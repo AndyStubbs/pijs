@@ -14,27 +14,27 @@
 			"default": "./dist/pi.esm.js"
 		},
 		"./lite": {
-			"types": "./dist/pi.d.ts",
+			"types": "./dist/pi.lite.d.ts",
 			"import": "./dist/pi.lite.esm.js",
 			"default": "./dist/pi.lite.esm.js"
 		},
 		"./plugins/gamepad": {
-			"types": "./dist/pi.d.ts",
+			"types": "./dist/plugins/gamepad/gamepad.d.ts",
 			"import": "./dist/plugins/gamepad/gamepad.esm.js",
 			"default": "./dist/plugins/gamepad/gamepad.esm.js"
 		},
 		"./plugins/keyboard": {
-			"types": "./dist/pi.d.ts",
+			"types": "./dist/plugins/keyboard/keyboard.d.ts",
 			"import": "./dist/plugins/keyboard/keyboard.esm.js",
 			"default": "./dist/plugins/keyboard/keyboard.esm.js"
 		},
 		"./plugins/pointer": {
-			"types": "./dist/pi.d.ts",
+			"types": "./dist/plugins/pointer/pointer.d.ts",
 			"import": "./dist/plugins/pointer/pointer.esm.js",
 			"default": "./dist/plugins/pointer/pointer.esm.js"
 		},
 		"./plugins/sound": {
-			"types": "./dist/pi.d.ts",
+			"types": "./dist/plugins/sound/sound.d.ts",
 			"import": "./dist/plugins/sound/sound.esm.js",
 			"default": "./dist/plugins/sound/sound.esm.js"
 		}

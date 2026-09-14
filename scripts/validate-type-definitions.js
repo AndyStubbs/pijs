@@ -126,6 +126,35 @@ function validateTypeDefinitions() {
 		throw new Error( `Type definitions do not contain ${expectedVersion}.` );
 	}
 
+	const expectedVersionLiteral = `readonly version: "${packageJson.version}";`;
+	if( !buildTypes.includes( expectedVersionLiteral ) ) {
+		throw new Error(
+			`Type definitions do not contain version literal ${expectedVersionLiteral}.`
+		);
+	}
+
+	const requiredExports = [
+		{ "name": "named pi and $ exports", "text": "export { pi, $ };" },
+		{ "name": "default pi export", "text": "export default pi;" },
+		{ "name": "module pi declaration", "text": "declare const pi: Pi.API;" },
+		{ "name": "module $ declaration", "text": "declare const $: Pi.API;" }
+	];
+	for( const declaration of requiredExports ) {
+		if( !buildTypes.includes( declaration.text ) ) {
+			throw new Error( `Missing or incorrect ${declaration.name}.` );
+		}
+	}
+
+	if(
+		buildTypes.includes( "export { Pi," ) ||
+		buildTypes.includes( "declare var Pi:" ) ||
+		buildTypes.includes( "declare const Pi:" )
+	) {
+		throw new Error(
+			"Type definitions still export or declare capital Pi instead of pi."
+		);
+	}
+
 	for( const declaration of REQUIRED_DECLARATIONS ) {
 		if( !buildTypes.includes( declaration.text ) ) {
 			throw new Error( `Missing or incorrect ${declaration.name}.` );
@@ -133,6 +162,16 @@ function validateTypeDefinitions() {
 	}
 	if( /\b(usePalette|paletteKeys)\b/.test( buildTypes ) ) {
 		throw new Error( "Type definitions still expose removed image palette options." );
+	}
+
+	const liteTypes = readTypeFile(
+		path.join( __dirname, "..", "build", "pi.lite.d.ts" )
+	);
+	if( /^\t\tinmouse\(/m.test( liteTypes ) ) {
+		throw new Error( "Lite type definitions incorrectly include plugin command inmouse." );
+	}
+	if( !/^\t\tinmouse\(/m.test( buildTypes ) ) {
+		throw new Error( "Full type definitions are missing plugin command inmouse." );
 	}
 
 	console.log(

@@ -1,0 +1,21 @@
+title = "createColor"
+category = "colors"
+isScreen = false
+summary = "Converts a supported color value into a color object."
+description = """
+Creates a PiColor object from a palette index, CSS color string, array, or color-like object.
+"""
+example = """
+const red = $.createColor( "red" );
+$.print( `[ ${red.array.join( ", " )} ]` );
+"""
+
+[[parameters]]
+name = "color"
+type = "any"
+description = "Palette index or color value (string, array, object, number)."
+
+[[returns]]
+type = "PiColor"
+typeDesc = "*Object"
+description = "A color value object for the converted color."

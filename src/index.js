@@ -73,4 +73,4 @@ if( typeof window !== "undefined" ) {
 
 // Export for different module systems
 export default m_api;
-export { m_api as pi };
+export { m_api as pi, m_api as $ };

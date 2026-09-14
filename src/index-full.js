@@ -24,4 +24,4 @@ import "../plugins/sound/index.js";
 import "../plugins/pointer/index.js";
 
 export default g_core.default;
-export { default as pi } from "./index.js";
+export { default as pi, default as $ } from "./index.js";
