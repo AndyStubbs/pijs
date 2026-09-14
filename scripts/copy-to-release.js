@@ -49,11 +49,12 @@ const libraryFiles = [
  * Ensures a directory exists.
  *
  * @param {string} dirPath - Directory to create
+ * @param {Object} fileSystem - Filesystem implementation
  * @returns {void}
  */
-function ensureDir( dirPath ) {
-	if( !fs.existsSync( dirPath ) ) {
-		fs.mkdirSync( dirPath, { "recursive": true } );
+function ensureDir( dirPath, fileSystem = fs ) {
+	if( !fileSystem.existsSync( dirPath ) ) {
+		fileSystem.mkdirSync( dirPath, { "recursive": true } );
 	}
 }
 
@@ -62,22 +63,24 @@ function ensureDir( dirPath ) {
  *
  * @param {string} srcPath - Source file path
  * @param {string} destPath - Destination file path
+ * @param {Object} fileSystem - Filesystem implementation
  * @returns {void}
  */
-function copyFile( srcPath, destPath ) {
-	ensureDir( path.dirname( destPath ) );
-	fs.copyFileSync( srcPath, destPath );
+function copyFile( srcPath, destPath, fileSystem = fs ) {
+	ensureDir( path.dirname( destPath ), fileSystem );
+	fileSystem.copyFileSync( srcPath, destPath );
 }
 
 /**
  * Removes a directory tree if it exists.
  *
  * @param {string} dirPath - Directory to remove
+ * @param {Object} fileSystem - Filesystem implementation
  * @returns {void}
  */
-function removeDir( dirPath ) {
-	if( fs.existsSync( dirPath ) ) {
-		fs.rmSync( dirPath, { "recursive": true, "force": true } );
+function removeDir( dirPath, fileSystem = fs ) {
+	if( fileSystem.existsSync( dirPath ) ) {
+		fileSystem.rmSync( dirPath, { "recursive": true, "force": true } );
 	}
 }
 
@@ -105,12 +108,13 @@ function getReleasePlugins( basePackage ) {
  *
  * @param {string} srcDir - Source directory
  * @param {string} destDir - Destination directory
+ * @param {Object} fileSystem - Filesystem implementation
  * @returns {number} Number of files copied
  */
-function copyDirFiles( srcDir, destDir ) {
-	ensureDir( destDir );
+function copyDirFiles( srcDir, destDir, fileSystem = fs ) {
+	ensureDir( destDir, fileSystem );
 
-	const entries = fs.readdirSync( srcDir, { "withFileTypes": true } );
+	const entries = fileSystem.readdirSync( srcDir, { "withFileTypes": true } );
 	let count = 0;
 
 	for( const entry of entries ) {
@@ -118,9 +122,9 @@ function copyDirFiles( srcDir, destDir ) {
 		const destPath = path.join( destDir, entry.name );
 
 		if( entry.isDirectory() ) {
-			count += copyDirFiles( srcPath, destPath );
+			count += copyDirFiles( srcPath, destPath, fileSystem );
 		} else {
-			copyFile( srcPath, destPath );
+			copyFile( srcPath, destPath, fileSystem );
 			count++;
 		}
 	}
@@ -132,95 +136,214 @@ function copyDirFiles( srcDir, destDir ) {
  * Writes releases/pi-latest/package.json from the base template.
  *
  * @param {Object} basePackage - Parsed base package.json
+ * @param {Object} options - Release metadata and filesystem dependency
  * @returns {void}
  */
-function writeReleasePackageJson( basePackage ) {
+function writeReleasePackageJson( basePackage, options = {} ) {
+	const fileSystem = options.fileSystem || fs;
+	const packageVersion = options.version || version;
+	const packageMajorVersion = options.majorVersion || majorVersion;
+	const packageReleaseDir = options.releaseDir || releaseDir;
 	const releasePackage = JSON.parse( JSON.stringify( basePackage ) );
-	releasePackage.version = version;
-	releasePackage.majorVersion = majorVersion;
+	releasePackage.version = packageVersion;
+	releasePackage.majorVersion = packageMajorVersion;
 
-	const packagePath = path.join( releaseDir, "package.json" );
+	const packagePath = path.join( packageReleaseDir, "package.json" );
 	const contents = JSON.stringify( releasePackage, null, "\t" ) + "\n";
-	fs.writeFileSync( packagePath, contents, "utf8" );
+	fileSystem.writeFileSync( packagePath, contents, "utf8" );
+}
+
+/**
+ * Validates all files and directories required by the release package.
+ *
+ * @param {Object} options - Release paths and filesystem dependency
+ * @param {string} options.buildDir - Build output directory
+ * @param {Object} options.fileSystem - Filesystem implementation
+ * @param {string[]} options.releasePlugins - Plugins included in the release
+ * @returns {void}
+ */
+function validateReleaseInputs( options ) {
+	const missingInputs = [];
+
+	for( const fileName of libraryFiles ) {
+		const filePath = path.join( options.buildDir, fileName );
+		try {
+			if( !options.fileSystem.statSync( filePath ).isFile() ) {
+				missingInputs.push( fileName );
+			}
+		} catch( error ) {
+			missingInputs.push( fileName );
+		}
+	}
+
+	for( const pluginName of options.releasePlugins ) {
+		const pluginPath = path.join( options.buildDir, "plugins", pluginName );
+		try {
+			if( !options.fileSystem.statSync( pluginPath ).isDirectory() ) {
+				missingInputs.push( `plugins/${pluginName}` );
+			}
+		} catch( error ) {
+			missingInputs.push( `plugins/${pluginName}` );
+		}
+	}
+
+	if( missingInputs.length > 0 ) {
+		throw new Error(
+			`Missing required release inputs:\n${missingInputs.map( input => `  - ${input}` ).join( "\n" )}`
+		);
+	}
+}
+
+/**
+ * Replaces a release distribution while preserving the prior directory on failure.
+ *
+ * @param {string} stagedDir - Completely assembled distribution directory
+ * @param {string} destinationDir - Release distribution destination
+ * @param {Object} fileSystem - Filesystem implementation
+ * @returns {void}
+ */
+function replaceDist( stagedDir, destinationDir, fileSystem ) {
+	const backupDir = `${stagedDir}-backup`;
+	let previousMoved = false;
+
+	try {
+		try {
+			if( fileSystem.existsSync( destinationDir ) ) {
+				fileSystem.renameSync( destinationDir, backupDir );
+				previousMoved = true;
+			}
+
+			fileSystem.renameSync( stagedDir, destinationDir );
+		} catch( error ) {
+			if( previousMoved ) {
+				try {
+					removeDir( destinationDir, fileSystem );
+					fileSystem.renameSync( backupDir, destinationDir );
+					previousMoved = false;
+				} catch( rollbackError ) {
+					throw new Error(
+						`Failed to replace release dist and restore its backup at ${backupDir}: ` +
+						rollbackError.message,
+						{ "cause": error }
+					);
+				}
+			}
+
+			throw error;
+		}
+	} finally {
+		removeDir( stagedDir, fileSystem );
+	}
+
+	if( previousMoved ) {
+		removeDir( backupDir, fileSystem );
+	}
 }
 
 /**
  * Copies build artifacts into releases/pi-latest.
  *
+ * @param {Object} options - Optional paths and dependencies for testing
+ * @param {string} options.basePackagePath - Base package template path
+ * @param {string} options.buildDir - Build output directory
+ * @param {string} options.distDir - Release distribution destination
+ * @param {Object} options.fileSystem - Filesystem implementation
+ * @param {Object} options.logger - Console-compatible logger
+ * @param {string} options.majorVersion - Release major version
+ * @param {string} options.releaseDir - Release package directory
+ * @param {string} options.version - Release version
  * @returns {void}
  */
-function copyToRelease() {
-	console.log( `Copying Pi.js v${version} build to releases/pi-latest...` );
+function copyToRelease( options = {} ) {
+	const fileSystem = options.fileSystem || fs;
+	const logger = options.logger || console;
+	const sourceBuildDir = options.buildDir || buildDir;
+	const destinationReleaseDir = options.releaseDir || releaseDir;
+	const destinationDistDir = options.distDir || path.join( destinationReleaseDir, "dist" );
+	const packageTemplatePath = options.basePackagePath || basePackagePath;
+	const releaseVersion = options.version || version;
+	const releaseMajorVersion = options.majorVersion || majorVersion;
 
-	if( !fs.existsSync( buildDir ) ) {
-		console.error( "✗ Build directory not found. Run `npm run build` first." );
-		process.exit( 1 );
+	logger.log( `Copying Pi.js v${releaseVersion} build to releases/pi-latest...` );
+
+	if( !fileSystem.existsSync( sourceBuildDir ) ) {
+		throw new Error( "Build directory not found. Run `npm run build` first." );
 	}
 
-	if( !fs.existsSync( basePackagePath ) ) {
-		console.error( "✗ releases/base-package.json not found." );
-		process.exit( 1 );
+	if( !fileSystem.existsSync( packageTemplatePath ) ) {
+		throw new Error( "releases/base-package.json not found." );
 	}
 
-	const basePackage = JSON.parse( fs.readFileSync( basePackagePath, "utf8" ) );
+	const basePackage = JSON.parse( fileSystem.readFileSync( packageTemplatePath, "utf8" ) );
 	const releasePlugins = getReleasePlugins( basePackage );
+	validateReleaseInputs( {
+		"buildDir": sourceBuildDir,
+		fileSystem,
+		releasePlugins
+	} );
 
-	// Fresh dist so removed/renamed artifacts do not linger
-	removeDir( distDir );
-	ensureDir( distDir );
+	ensureDir( destinationReleaseDir, fileSystem );
+	const stagedDistDir = fileSystem.mkdtempSync(
+		path.join( destinationReleaseDir, ".dist-stage-" )
+	);
 
-	console.log( "" );
-	console.log( "Copying library files..." );
+	logger.log( "" );
+	logger.log( "Copying library files..." );
 
 	let libraryCount = 0;
-	for( const fileName of libraryFiles ) {
-		const srcPath = path.join( buildDir, fileName );
-
-		if( !fs.existsSync( srcPath ) ) {
-			console.error( `✗ Missing build file: ${fileName}` );
-			process.exit( 1 );
-		}
-
-		copyFile( srcPath, path.join( distDir, fileName ) );
-		libraryCount++;
-	}
-
-	console.log( `  ✓ Copied ${libraryCount} library file(s)` );
-
-	console.log( "" );
-	console.log( "Copying release plugins..." );
-
 	let pluginFileCount = 0;
-	for( const pluginName of releasePlugins ) {
-		const srcPluginDir = path.join( buildDir, "plugins", pluginName );
-
-		if( !fs.existsSync( srcPluginDir ) ) {
-			console.error( `✗ Missing plugin build: plugins/${pluginName}` );
-			process.exit( 1 );
+	try {
+		for( const fileName of libraryFiles ) {
+			const srcPath = path.join( sourceBuildDir, fileName );
+			copyFile( srcPath, path.join( stagedDistDir, fileName ), fileSystem );
+			libraryCount++;
 		}
 
-		const destPluginDir = path.join( distDir, "plugins", pluginName );
-		const copied = copyDirFiles( srcPluginDir, destPluginDir );
-		pluginFileCount += copied;
-		console.log( `  ✓ ${pluginName} (${copied} file(s))` );
+		logger.log( `  ✓ Copied ${libraryCount} library file(s)` );
+
+		logger.log( "" );
+		logger.log( "Copying release plugins..." );
+
+		for( const pluginName of releasePlugins ) {
+			const srcPluginDir = path.join( sourceBuildDir, "plugins", pluginName );
+			const destPluginDir = path.join( stagedDistDir, "plugins", pluginName );
+			const copied = copyDirFiles( srcPluginDir, destPluginDir, fileSystem );
+			pluginFileCount += copied;
+			logger.log( `  ✓ ${pluginName} (${copied} file(s))` );
+		}
+
+		replaceDist( stagedDistDir, destinationDistDir, fileSystem );
+	} catch( error ) {
+		removeDir( stagedDistDir, fileSystem );
+		throw error;
 	}
 
-	console.log( "" );
-	console.log( "Updating package.json from base-package.json..." );
-	writeReleasePackageJson( basePackage );
-	console.log( `  ✓ package.json set to v${version}` );
+	logger.log( "" );
+	logger.log( "Updating package.json from base-package.json..." );
+	writeReleasePackageJson( basePackage, {
+		fileSystem,
+		"majorVersion": releaseMajorVersion,
+		"releaseDir": destinationReleaseDir,
+		"version": releaseVersion
+	} );
+	logger.log( `  ✓ package.json set to v${releaseVersion}` );
 
-	console.log( "" );
-	console.log( "✓ Copy to release completed successfully!" );
-	console.log( `  Destination: releases/pi-latest/dist` );
-	console.log(
+	logger.log( "" );
+	logger.log( "✓ Copy to release completed successfully!" );
+	logger.log( `  Destination: releases/pi-latest/dist` );
+	logger.log(
 		`  Files: ${libraryCount} library + ${pluginFileCount} plugin` +
 		` (${releasePlugins.length} plugin(s))`
 	);
 }
 
 if( require.main === module ) {
-	copyToRelease();
+	try {
+		copyToRelease();
+	} catch( error ) {
+		console.error( `✗ ${error.message}` );
+		process.exitCode = 1;
+	}
 }
 
 module.exports = { copyToRelease };

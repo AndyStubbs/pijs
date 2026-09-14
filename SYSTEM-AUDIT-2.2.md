@@ -729,7 +729,7 @@ attempts after failure, and single/multiple failure reporting. The complete patc
 359/359 tests. A fresh aggregate build produced all ten plugin output sets with eight files each,
 then built both core variants and copied the four published plugins into the release package.
 
-### SYS-020 — P2 — Release copying destroys the prior dist before checking required inputs
+### SYS-020 — P2 — Release copying destroys the prior dist before checking required inputs - COMPLETED
 
 **Location:** [copy-to-release.js:169](C:/Docs/src/pijs/scripts/copy-to-release.js:169).
 
@@ -745,6 +745,19 @@ changed or published.
 **Impact:** an incomplete build invocation can replace a usable local release package with partial
 contents. **Fix:** validate all inputs first, assemble in a temporary directory, then replace the
 destination only after complete success.
+
+**Resolution — 2026-09-14:** The release copier now validates every required library file and
+exported plugin directory before creating output. It assembles the complete distribution in a
+same-filesystem temporary directory, then replaces the prior distribution through a guarded
+backup-and-rename transaction. Staging failures leave the prior package untouched, replacement
+failures restore it, and transaction directories are cleaned up after every recoverable outcome.
+The reusable copier throws operational errors while its command-line entry point retains a nonzero
+failure exit.
+
+Validation: focused Node regressions cover missing library and plugin inputs, staging failure,
+replacement rollback, successful stale-file removal, complete copying, package version generation,
+and transaction cleanup. The release-copy suite is included in `test:patch`; the complete suite
+passed 364/364 tests.
 
 ### SYS-021 — P2 — NaN sensitivity propagates NaN through gamepad axes - COMPLETED
 
