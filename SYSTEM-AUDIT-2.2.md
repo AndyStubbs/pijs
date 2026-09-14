@@ -796,7 +796,7 @@ Both suites are included in `test:patch`. The complete `test:patch` file set plu
 gamepad browser tests require no server. Chromium required execution outside the sandbox after
 a launch `EPERM`. No release generation or screenshot baseline changes were used.
 
-### SYS-022 — P3 — Invalid font sources publish permanent incomplete font records
+### SYS-022 — P3 — Invalid font sources publish permanent incomplete font records - COMPLETED
 
 **Location:** [fonts.js:207](C:/Docs/src/pijs/src/text/fonts.js:207).
 
@@ -833,11 +833,11 @@ Both suites are included in `test:patch`. The complete `test:patch` file set plu
 browser suite requires no server. Chromium required execution outside the sandbox after a launch
 `EPERM`. No release generation or screenshot baseline changes were used.
 
-**Open follow-up — asynchronous failure policy:** Existing behavior is now characterized, not
-changed: a failed URL load logs the existing error and releases readiness, retaining a font with no
-image. Its ID remains selectable, including as the default for new screens; `setChar` reports
-`NO_FONT_IMAGE`. Whether to remove these records, and how to handle screens/defaults already using
-them, remains a separate policy decision. Readiness does not guarantee successful font loading.
+**Resolution — asynchronous failure policy, 2026-09-14:** The characterized retention behavior is
+accepted as the defined contract. A failed URL load logs the existing error and releases readiness,
+retaining a font with no image. Its ID remains selectable, including as the default for new screens;
+`setChar` reports `NO_FONT_IMAGE`. Readiness does not guarantee successful font loading. This matches
+`docs/API.md` and the existing browser regression `async failure retains a selectable font`.
 
 **Additional verification — immediate font 1, 2026-09-08:** Added full/lite browser regressions
 that hold all four built-in URL font loads pending and print during the same script turn as library
@@ -1113,7 +1113,7 @@ Do not bundle all findings into another sweeping release patch.
 | 2 | Isolate ready callbacks and deferred read completion (SYS-002, SYS-005) - COMPLETED | Every promise settles exactly once, unrelated callbacks continue, and disposal causes defined cancellation without uncaught internal errors. |
 | 3 | Make text-input disposal and keyboard dispatch exception-safe (SYS-003, SYS-011) - COMPLETED | No timer/listener/background remains after disposal; replacement input works; once/reentrant/throwing callbacks cannot retain held keys. |
 | 4 | Give audio loads owned cancellation and single settlement (SYS-004, SYS-018) - COMPLETED | Late errors/retries never release another load's wait; removal cancels pending elements/retries and allows clean reuse. |
-| 5 | Fix image/font failure publication and numeric state validation (SYS-010, SYS-017, SYS-021, SYS-022) | Failed/removed records can be reused; invalid values leave previous state intact; font rejection publishes nothing. Split image cancellation from small validator fixes. |
+| 5 | Fix image/font failure publication and numeric state validation (SYS-010, SYS-017, SYS-021, SYS-022) - COMPLETED | Failed/removed records can be reused; invalid values leave previous state intact; font rejection publishes nothing. Split image cancellation from small validator fixes. |
 | 6 | Bound batch reservations and fix arc/circle rasterization (SYS-007, SYS-015, SYS-016) - COMPLETED | Full HD paint completes; oversized work is chunked; full turns match circles; outlines contain no repeated translucent pixels. Use separate commits/tasks for batching and rasterization. |
 | 7 | Specify and implement consistent alpha storage (SYS-006) - COMPLETED | Direct and layered composition agree across source types, contexts, replace/alpha modes, readback, shader and presentation paths. |
 | 8 | Implement context-generation recovery (SYS-008) - COMPLETED | Restore invalidates/rebuilds all owned resources; shared users recover together or receive a defined unusable-state error. |
@@ -1165,6 +1165,11 @@ remain historical context.
 completing the agreed synchronous font work in task 5. Asynchronous font failure behavior is covered
 by regression tests and remains an explicit policy follow-up. Earlier recommendations and evidence
 remain historical context.
+
+**Follow-up status — font publication complete, 2026-09-14:** SYS-022 is fully resolved. Synchronous
+rejection leaves the registry unchanged, and asynchronous URL failure retention is accepted as the
+defined contract (documented in `docs/API.md` and covered by the existing font-publication suites).
+This completes task 5. Earlier recommendations and evidence remain historical context.
 
 **Follow-up status — batch reservations, 2026-09-08:** SYS-007 is resolved for core and full/lite
 bundles. Remaining task 6 work is arc full-turn handling and circle rasterization (SYS-015, SYS-016),
