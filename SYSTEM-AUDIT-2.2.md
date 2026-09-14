@@ -896,7 +896,7 @@ the fixture was restored afterward. No screenshot baseline changes were required
 | Images/textures/shaders | Loading/removal, palette linkage (removed in 2.2), source resolution, caches, sampling, shader lifecycle/uniforms, readback; existing shader/video regressions and cross-context transparency/removal probes | No exhaustive HTMLImageElement partial-decode, changing media dimensions, every uniform type/limit, or shader compile-failure allocation matrix beyond existing checks. Explicitly test alpha representation across all source forms. |
 | Fonts/text/palettes/draw strings | Font registration/loading, cursor sizing, printing/wrapping/scrolling, palette setters and BASIC draw parsing; visual suites, invalid font/color probes, clipped scroll control | No exhaustive custom charset/margin/scale or font-network-failure tests; no complete draw-string grammar campaign. Test source failure and zero/negative dimensions without invalid publication. |
 | Keyboard/text input | State tracking, dispatch, once/removal, input prompt/timer/background ownership; real DOM key-event reentrancy/throw/disposal probes and existing visual tests | Editable targets, IME/layout behavior, blur during prompt, and complex simultaneous-key sequences are not fully exercised. Prioritize teardown and handler-failure isolation. |
-| Pointer/touch/press | Listener helpers, target/layout mapping and cleanup; existing regressions and visual suites, late-loading probe | Real touch hardware and multi-touch/pinch/browser cancellation remain unverified. Fix touch fixture synchronization before using it as a deterministic regression gate. |
+| Pointer/touch/press | Listener helpers, target/layout mapping and cleanup; existing regressions and visual suites, late-loading probe; intouch fixture synchronized by inter-stroke delay and touch-id reset | Real touch hardware and multi-touch/pinch/browser cancellation remain unverified. |
 | Gamepad/audio/music | Poll loop, smoothing, button state, connect/disconnect, sound pools/voices, load/retry/play/stop and music track scheduling; controlled gamepad/audio probes and historical timer regression rerun | No physical controller, haptics, audible result, codec/autoplay matrix, or complete music grammar/timer campaign. Add deterministic once-settlement/removal tests, then browser media tests. |
 | Optional plugins | All ten plugin entries/build outputs; polygon validation/raster spans/cache contract, print-table formatting, onscreen-keyboard ownership and synthetic input, Pi Vision creation/composition/close, example hooks, pens status; plugin suite and ESM import checks | Pi Vision smoke assertions execute but its visual baseline is absent. Cross-screen onscreen-keyboard switching, nested Pi Vision callback removal, and full polygon boundary coverage remain unverified. Pens is explicitly incomplete; implementing it is not an audit finding. |
 | Build/distribution | Clean install, real build/generation/copy, all library variants and plugin ESM exports, package entry targets, declaration consumers, repeat-output hashes, build/copy failure injection | No Node 18 execution, POSIX shell run, registry publication, or external installed-package project. Node server-side library execution is not required by this browser-only contract. |
@@ -904,12 +904,17 @@ the fixture was restored afterward. No screenshot baseline changes were required
 
 ### Actionable coverage gaps and investigated concerns
 
-- **COV-001 — Touch fixture timing:** `intouch_01.html` samples touch state every 15 ms but its
-  scripted end/start gap requests only 10 ms. The failed candidate has an extra horizontal line
-  connecting the two strokes; the approved image has only the two diagonals. Logged end/start
-  events were 13 ms apart, allowing the polling loop to miss the no-touch interval. This explains
-  a concrete fixture race; it does not prove that Pi.js reported incorrect event state. Synchronize
-  the driver with observed stroke completion or reset drawing state by touch identity/events.
+- **COV-001 — Touch fixture timing - COMPLETED:** `intouch_01.html` sampled touch state every
+  15 ms but its scripted end/start gap requested only 10 ms. The failed candidate had an extra
+  horizontal line connecting the two strokes; the approved image has only the two diagonals.
+  Logged end/start events were 13 ms apart, allowing the polling loop to miss the no-touch
+  interval. This was a fixture race, not a Pi.js event-state defect.
+
+  **Resolution — 2026-09-14:** The fixture now waits `DL 40` between `TE` and the next `TS`, and
+  resets stroke continuity when `touchData.id` changes so a new stroke cannot inherit the prior
+  stroke's last point. Validation: `npx playwright test test/scripts/run-visual-tests.js --grep
+  "intouch 01" --repeat-each=5 --workers=1` passed 5/5 against the existing approved baseline.
+  No library, runner, or baseline changes were required.
 - **COV-002 — Missing baselines:** `Pi Vision Window Smoke Test` (`pi_vision_01.html`) and
   `Pointer lifecycle 2.1.1` (`pointer_lifecycle_01.html`) have no approved images. Their pages and
   explicit assertions run before the runner skips comparison. Approve baselines only after a
@@ -1138,7 +1143,7 @@ Do not bundle all findings into another sweeping release patch.
 | 8 | Implement context-generation recovery (SYS-008) - COMPLETED | Restore invalidates/rebuilds all owned resources; shared users recover together or receive a defined unusable-state error. |
 | 9 | Define plugin installation across existing screens and module formats (SYS-009, SYS-013, SYS-014) - COMPLETED | Late loading is coherent, ESM/IIFE registration follows one documented contract, and tutorial examples execute. |
 | 10 | Correct package declarations and build/copy failure handling (SYS-012, SYS-019, SYS-020) | Positive/negative consumers match runtime; any required plugin failure fails the build; incomplete copy never destroys prior dist. Split types from tooling transactions. |
-| 11 | Strengthen the existing visual runner (SYS-023 completed; COV-001 open) | Unexpected page errors fail tests; intentional errors are declared via `expectPageError`. Remaining: touch strokes no longer depend on an unsampled timer gap (COV-001). |
+| 11 | Strengthen the existing visual runner (SYS-023, COV-001) - COMPLETED | Unexpected page errors fail tests; intentional errors are declared via `expectPageError`. Touch strokes no longer depend on an unsampled timer gap. |
 
 Broader coverage work, after or alongside focused fix tests:
 
@@ -1210,3 +1215,8 @@ plugin-authoring contract and executes the maintained guide initializers in full
 `pageerror` events fail visual tests independently of screenshots; intentional errors use
 `expectPageError`. Task 11 remaining work is COV-001 (touch fixture timing). Earlier
 recommendations and evidence remain historical context.
+
+**Follow-up status — touch fixture timing, 2026-09-14:** COV-001 is resolved. `intouch_01.html`
+uses a 40 ms end/start gap and resets drawing on touch-id change; five repeated visual runs
+passed against the unchanged approved baseline. This completes task 11. Earlier recommendations
+and evidence remain historical context.
