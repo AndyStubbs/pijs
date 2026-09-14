@@ -7,9 +7,8 @@
 Open any of these test pages in your browser:
 
 ```
-test/test-example-plugin-iife.html     ← Start here! Beautiful animated demo
-test/test-example-plugin.html          ← ESM module version
-test/test-plugin-system.html           ← Basic inline tests
+test/tests/html-plugins/example_01.html  ← Automated visual fixture
+test/tests/html-manual/example_01.html   ← Interactive manual fixture
 ```
 
 ### 2. Use the Example Plugin
@@ -20,7 +19,7 @@ test/test-plugin-system.html           ← Basic inline tests
 <html>
 <body>
 	<script src="build/pi.min.js"></script>
-	<script src="plugins/example-plugin/dist/example-plugin.min.js"></script>
+	<script src="build/plugins/example-plugin/example-plugin.min.js"></script>
 	<script>
 		pi.ready( () => {
 			pi.screen( { "aspect": "300x200" } );
@@ -39,12 +38,7 @@ test/test-plugin-system.html           ← Basic inline tests
 <body>
 	<script type="module">
 		import pi from "./build/pi.esm.min.js";
-		import examplePlugin from "./plugins/example-plugin/dist/example-plugin.esm.min.js";
-		
-		pi.registerPlugin( {
-			"name": "example-plugin",
-			"init": examplePlugin
-		} );
+		import "./build/plugins/example-plugin/example-plugin.esm.min.js";
 		
 		pi.ready( () => {
 			pi.screen( { "aspect": "300x200" } );
@@ -63,7 +57,7 @@ test/test-plugin-system.html           ← Basic inline tests
 export default function myFirstPlugin( pluginApi ) {
 	
 	// Add a simple command
-	pluginApi.addCommand( "greet", greet, [ "name" ] );
+	pluginApi.addCommand( "greet", greet, false, [ "name" ] );
 	
 	function greet( options ) {
 		const name = options.name || "Friend";
@@ -71,7 +65,7 @@ export default function myFirstPlugin( pluginApi ) {
 	}
 	
 	// Add a drawing command
-	pluginApi.addScreenCommand( "drawStar", drawStar, [ "x", "y", "size" ] );
+	pluginApi.addCommand( "drawStar", drawStar, true, [ "x", "y", "size" ] );
 	
 	function drawStar( screenData, options ) {
 		const x = options.x || 100;
@@ -115,14 +109,14 @@ This automatically builds your plugin along with Pi.js!
 	<div id="container"></div>
 	
 	<script src="build/pi.min.js"></script>
-	<script src="plugins/my-first-plugin/dist/my-first-plugin.min.js"></script>
+	<script src="build/plugins/my-first-plugin/my-first-plugin.min.js"></script>
 	<script>
 		pi.ready( () => {
 			pi.screen( { "aspect": "300x200", "container": "container" } );
 			
 			// Your plugin commands!
 			pi.greet( "World" );
-			pi.color( "yellow" );
+			pi.setColor( "yellow" );
 			pi.drawStar( 200, 150, 50 );
 		} );
 	</script>
@@ -140,14 +134,14 @@ export default function counterPlugin( pluginApi ) {
 	pluginApi.addScreenDataItem( "counter", 0 );
 	
 	// Increment command
-	pluginApi.addScreenCommand( "increment", increment, [] );
+	pluginApi.addCommand( "increment", increment, true, [] );
 	function increment( screenData ) {
 		screenData.counter++;
 		return screenData.counter;
 	}
 	
 	// Get counter command
-	pluginApi.addScreenCommand( "getCounter", getCounter, [] );
+	pluginApi.addCommand( "getCounter", getCounter, true, [] );
 	function getCounter( screenData ) {
 		return screenData.counter;
 	}
@@ -183,7 +177,7 @@ export default function setupPlugin( pluginApi ) {
 
 ```javascript
 export default function infoPlugin( pluginApi ) {
-	pluginApi.addCommand( "showInfo", showInfo, [] );
+	pluginApi.addCommand( "showInfo", showInfo, false, [] );
 	
 	function showInfo() {
 		const api = pluginApi.getApi();
@@ -203,7 +197,7 @@ export default function infoPlugin( pluginApi ) {
 export default function mathPlugin( pluginApi ) {
 	const utils = pluginApi.utils;
 	
-	pluginApi.addCommand( "randomColor", randomColor, [] );
+	pluginApi.addCommand( "randomColor", randomColor, false, [] );
 	
 	function randomColor() {
 		const r = Math.floor( utils.rndRange( 0, 256 ) );
@@ -218,24 +212,33 @@ export default function mathPlugin( pluginApi ) {
 
 1. **Read full docs**: `plugins/README.md`
 2. **Study example**: `plugins/example-plugin/`
-3. **View tests**: Open `test/test-example-plugin-iife.html`
+3. **View tests**: Open `test/tests/html-manual/example_01.html`
 4. **Build more**: Create your own plugins!
 
 ## 🔍 Available Plugin API
 
 ```javascript
-pluginApi.addCommand( name, fn, params )
-pluginApi.addScreenCommand( name, fn, params )
-pluginApi.addPixelCommand( name, fn, params )
-pluginApi.addAACommand( name, fn, params )
+pluginApi.addCommand( name, fn, isScreen, parameterNames[, isScreenOptional] )
 pluginApi.addScreenDataItem( name, value )
 pluginApi.addScreenDataItemGetter( name, fn )
-pluginApi.addScreenInternalCommands( name, fn )
 pluginApi.addScreenInitFunction( fn )
+pluginApi.addScreenPreCleanupFunction( fn )
 pluginApi.addScreenCleanupFunction( fn )
+pluginApi.getActiveScreen( fnName, isScreenOptional )
+pluginApi.getScreenData( fnName, screenId )
+pluginApi.getAllScreensData()
+pluginApi.resizeOffscreenScreen( screenData, width, height )
 pluginApi.getApi()
 pluginApi.utils
+pluginApi.wait()
+pluginApi.done()
+pluginApi.registerClearEvents( name, handler )
 ```
+
+Set `isScreen` to `false` for a global command whose handler receives `options`. Set it to `true`
+for a screen command whose handler receives `screenData, options`. The final `isScreenOptional`
+argument is optional and allows a screen command to run with `screenData` set to `null` when no
+screen is active.
 
 ## 💡 Pro Tips
 

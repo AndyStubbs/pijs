@@ -83,23 +83,13 @@
 
 ### Test Pages
 
-✅ **Plugin System Tests** (`test/test-plugin-system.html`)
-- Tests inline plugin creation
-- Tests plugin validation
-- Tests custom commands
-- Tests duplicate prevention
-
-✅ **Example Plugin Tests - ESM** (`test/test-example-plugin.html`)
-- Uses ES modules
-- Comprehensive UI
-- Tests all plugin commands
-- Interactive controls
-
-✅ **Example Plugin Tests - IIFE** (`test/test-example-plugin-iife.html`)
-- Beautiful animated interface
+✅ **Example Plugin Test - IIFE** (`test/tests/html-plugins/example_01.html`)
 - Tests auto-registration
-- Console output display
 - All plugin features
+
+✅ **Example Plugin Test - ESM** (`test/tests/html-manual/example_01.html`)
+- Uses ES modules
+- Interactive animated fixture
 
 ## 🎯 Key Features Implemented
 
@@ -108,15 +98,14 @@
 - ✅ Works with ESM (modern ES modules)
 
 ### 2. Plugin API
-- ✅ `addCommand()` - Global commands
-- ✅ `addScreenCommand()` - Screen commands
-- ✅ `addPixelCommand()` - Pixel-mode commands
-- ✅ `addAACommand()` - Anti-aliased mode commands
+- ✅ `addCommand()` - Global and screen commands, selected by the `isScreen` argument
 - ✅ `addScreenDataItem()` - Custom screen data
 - ✅ `addScreenDataItemGetter()` - Dynamic data
-- ✅ `addScreenInternalCommands()` - Internal helpers
 - ✅ `addScreenInitFunction()` - Init hooks
+- ✅ `addScreenPreCleanupFunction()` - Pre-cleanup hooks
 - ✅ `addScreenCleanupFunction()` - Cleanup hooks
+- ✅ Screen lookup and offscreen resize helpers
+- ✅ Readiness and event-cleanup helpers
 - ✅ `getApi()` - Access main API
 - ✅ `utils` - Access all Pi.js utilities
 
@@ -150,9 +139,8 @@ plugins/README.md                        (Plugin documentation)
 plugins/example-plugin/index.js          (Example plugin source)
 plugins/example-plugin/README.md         (Example plugin docs)
 plugins/example-plugin/*.js              (Built plugin files)
-test/test-plugin-system.html             (Basic tests)
-test/test-example-plugin.html            (ESM tests)
-test/test-example-plugin-iife.html       (IIFE tests)
+test/tests/html-plugins/example_01.html  (IIFE visual fixture)
+test/tests/html-manual/example_01.html   (ESM interactive fixture)
 PLUGIN-SYSTEM.md                         (Implementation overview)
 PLUGIN-SYSTEM-SUMMARY.md                 (This file)
 ```
@@ -171,9 +159,8 @@ build/pi.esm.min.js                      (Rebuilt with plugin system)
 
 1. **Open test pages in browser:**
    ```
-   test/test-example-plugin-iife.html  (Recommended - best UI)
-   test/test-example-plugin.html       (ESM modules version)
-   test/test-plugin-system.html        (Basic inline tests)
+   test/tests/html-plugins/example_01.html  (IIFE visual fixture)
+   test/tests/html-manual/example_01.html   (ESM interactive fixture)
    ```
 
 2. **Test commands in browser console:**
@@ -195,7 +182,7 @@ build/pi.esm.min.js                      (Rebuilt with plugin system)
 2. **Write plugin code:**
    ```javascript
    export default function myPlugin( pluginApi ) {
-       pluginApi.addCommand( "myCmd", myFn, [ "param" ] );
+       pluginApi.addCommand( "myCmd", myFn, false, [ "param" ] );
        function myFn( options ) {
            console.log( options.param );
        }
@@ -210,7 +197,7 @@ build/pi.esm.min.js                      (Rebuilt with plugin system)
 4. **Use plugin:**
    ```html
    <script src="build/pi.min.js"></script>
-   <script src="plugins/my-plugin/dist/my-plugin.min.js"></script>
+   <script src="build/plugins/my-plugin/my-plugin.min.js"></script>
    <script>
        pi.myCmd( "test" );
    </script>
@@ -258,7 +245,7 @@ All documentation is complete and comprehensive:
 ### IIFE (Simplest - Auto-Registration)
 ```html
 <script src="build/pi.min.js"></script>
-<script src="plugins/example-plugin/example-plugin.js"></script>
+<script src="build/plugins/example-plugin/example-plugin.js"></script>
 <script>
     pi.ready( () => {
         pi.screen( { "aspect": "300x200" } );
@@ -271,12 +258,7 @@ All documentation is complete and comprehensive:
 ### ESM (Modern)
 ```javascript
 import pi from "./build/pi.esm.min.js";
-import examplePlugin from "./plugins/example-plugin/index.js";
-
-pi.registerPlugin( {
-    "name": "example-plugin",
-    "init": examplePlugin
-} );
+import "./build/plugins/example-plugin/example-plugin.esm.min.js";
 
 pi.ready( () => {
     pi.screen( { "aspect": "300x200" } );

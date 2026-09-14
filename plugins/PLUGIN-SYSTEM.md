@@ -23,15 +23,12 @@ Pi.js now includes a comprehensive plugin system that allows developers to exten
 The plugin API provides these capabilities:
 
 #### Command Registration
-- `addCommand( name, fn, parameterNames )` - Add global commands
-- `addScreenCommand( name, fn, parameterNames )` - Add screen-specific commands
-- `addPixelCommand( name, fn, parameterNames )` - Add pixel-mode commands
-- `addAACommand( name, fn, parameterNames )` - Add anti-aliased mode commands
+- `addCommand( name, fn, isScreen, parameterNames, isScreenOptional )` - Add global or
+  screen-specific commands. The final argument is optional.
 
 #### Screen Data Management
 - `addScreenDataItem( name, value )` - Add custom data to screens
 - `addScreenDataItemGetter( name, fn )` - Add dynamic screen data
-- `addScreenInternalCommands( name, fn )` - Add internal helper functions
 
 #### Lifecycle Hooks
 - `addScreenInitFunction( fn )` - Hook into screen initialization
@@ -76,20 +73,13 @@ The plugin API provides these capabilities:
 
 ### Test Pages
 
-1. **`test/test-plugin-system.html`** - Basic plugin system tests
-   - Tests inline plugin registration
-   - Tests plugin validation
-   - Tests custom commands
-
-2. **`test/test-example-plugin.html`** - Comprehensive example plugin tests (ESM)
-   - Tests all example plugin commands
-   - Interactive UI for testing
-   - Uses ES modules
-
-3. **`test/test-example-plugin-iife.html`** - IIFE format tests
+1. **`test/tests/html-plugins/example_01.html`** - IIFE visual regression fixture
    - Tests auto-registration
-   - Beautiful animated demo
-   - Uses `<script>` tags
+   - Exercises the example plugin commands
+
+2. **`test/tests/html-manual/example_01.html`** - ESM interactive fixture
+   - Uses ES modules
+   - Provides an animated manual demo
 
 ## Features
 
@@ -100,14 +90,14 @@ The plugin system works seamlessly with both build formats:
 **IIFE (Browser `<script>` tags)**
 ```html
 <script src="build/pi.min.js"></script>
-<script src="plugins/my-plugin/dist/my-plugin.min.js"></script>
+<script src="build/plugins/my-plugin/my-plugin.min.js"></script>
 <!-- Plugin auto-registers -->
 ```
 
 **ESM (ES Modules)**
 ```javascript
 import pi from "./build/pi.esm.min.js";
-import "./plugins/my-plugin/dist/my-plugin.esm.min.js";
+import "./build/plugins/my-plugin/my-plugin.esm.min.js";
 ```
 
 Load Pi.js before the plugin. The ESM bundle auto-registers when `window.pi` already exists,
@@ -151,7 +141,7 @@ export default function myPlugin( pluginApi ) {
 	} );
 	
 	// Add a command
-	pluginApi.addScreenCommand( "increment", increment, [] );
+	pluginApi.addCommand( "increment", increment, true, [] );
 	
 	function increment( screenData ) {
 		screenData.myData.value++;
@@ -192,9 +182,8 @@ To test the plugin system:
    This builds both Pi.js and all plugins in one command.
 
 2. **Open test pages in browser:**
-   - `test/test-plugin-system.html` - Basic tests
-   - `test/test-example-plugin.html` - ESM module tests
-   - `test/test-example-plugin-iife.html` - IIFE tests (recommended)
+   - `test/tests/html-plugins/example_01.html` - IIFE visual fixture
+   - `test/tests/html-manual/example_01.html` - ESM interactive fixture
 
 ## Benefits
 

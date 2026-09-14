@@ -549,7 +549,7 @@ polygons example. Browser ESM usage imports Pi.js first and then imports the plu
 side-effect registration. The default initializer export and explicit `registerPlugin()` path remain
 documented for controlled evaluation and non-browser use; callers must choose one path per plugin.
 
-### SYS-014 — P2 — Plugin quickstart documents nonexistent registration methods
+### SYS-014 — P2 — Plugin quickstart documents nonexistent registration methods - COMPLETED
 
 **Locations:** [PLUGIN-QUICKSTART.md:66](C:/Docs/src/pijs/plugins/PLUGIN-QUICKSTART.md:66),
 [PLUGIN-QUICKSTART.md:74](C:/Docs/src/pijs/plugins/PLUGIN-QUICKSTART.md:74),
@@ -565,6 +565,16 @@ parameter-name array. Several companion methods advertised in the system guide a
 signature, so the maintained guides contradict each other.
 **Impact:** extension authors cannot run the supplied tutorial. **Fix:** update the quickstart and
 system guide from the real PluginAPI and execute their examples in a smoke test.
+
+**Resolution — documentation, 2026-09-14:** The quickstart, plugin-system guide, and implementation
+summary now document `addCommand(name, fn, isScreen, parameterNames[, isScreenOptional])` as the
+single command-registration method. Their global and screen examples pass the required boolean,
+the nonexistent specialized helpers are no longer advertised, and the quickstart uses current
+fixture and bundle paths plus side-effect registration for browser ESM. A documentation browser
+test extracts and executes all six initializer examples against fresh full and lite source bundles,
+covering global and screen command publication, parameter parsing, isolated screen data, lifecycle
+hooks, utilities, and clean initialization. The focused test passed 3/3 and the complete
+`npm run test:patch` suite passed 355/355 with no generated bundles or screenshot changes.
 
 ### SYS-015 — P2 — A 360-degree arc collapses to two pixels - COMPLETED
 
@@ -1082,7 +1092,7 @@ Do not bundle all findings into another sweeping release patch.
 | 6 | Bound batch reservations and fix arc/circle rasterization (SYS-007, SYS-015, SYS-016) - COMPLETED | Full HD paint completes; oversized work is chunked; full turns match circles; outlines contain no repeated translucent pixels. Use separate commits/tasks for batching and rasterization. |
 | 7 | Specify and implement consistent alpha storage (SYS-006) - COMPLETED | Direct and layered composition agree across source types, contexts, replace/alpha modes, readback, shader and presentation paths. |
 | 8 | Implement context-generation recovery (SYS-008) - COMPLETED | Restore invalidates/rebuilds all owned resources; shared users recover together or receive a defined unusable-state error. |
-| 9 | Define plugin installation across existing screens and module formats (SYS-009, SYS-013, SYS-014) | Late loading is coherent, ESM/IIFE registration follows one documented contract, and tutorial examples execute. |
+| 9 | Define plugin installation across existing screens and module formats (SYS-009, SYS-013, SYS-014) - COMPLETED | Late loading is coherent, ESM/IIFE registration follows one documented contract, and tutorial examples execute. |
 | 10 | Correct package declarations and build/copy failure handling (SYS-012, SYS-019, SYS-020) | Positive/negative consumers match runtime; any required plugin failure fails the build; incomplete copy never destroys prior dist. Split types from tooling transactions. |
 | 11 | Strengthen the existing visual runner (SYS-023, COV-001) | Unexpected page errors fail tests; intentional errors are declared; touch strokes no longer depend on an unsampled timer gap. |
 
@@ -1144,4 +1154,5 @@ unchanged approved baselines.
 
 **Follow-up status — late plugin installation, 2026-09-14:** SYS-009 is resolved. Existing screens
 now receive only a newly initialized plugin's state, screen commands, and initialization hooks.
-Task 9 remains open for correcting and executing the plugin authoring guides (SYS-014).
+Task 9 is complete: SYS-013 aligns browser ESM registration guidance, and SYS-014 corrects the
+plugin-authoring contract and executes the maintained guide initializers in full and lite bundles.
