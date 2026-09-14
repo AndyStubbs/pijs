@@ -2232,6 +2232,8 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 *
 		 * Optional metadata (version, description) and a list of dependencies can be provided. Plugins with dependencies wait until all dependencies initialize successfully. Resolution runs after every registration, including registrations made by another initializer. Each initializer is attempted once.
 		 *
+		 * When a plugin initializes after screens already exist, its static and dynamic screen data is added to every live screen, its screen commands are bound, and its screen initialization hooks run once. Earlier core and plugin initialization hooks are not replayed. Screens created later receive the same registrations through normal screen creation.
+		 *
 		 * Missing and cyclic dependencies stay pending (initialized:false in getPlugins). Failed initializers throw PLUGIN_INIT_FAILED and do not release dependents or retry automatically. Unrelated eligible plugins still initialize. Dependencies must be an array of nonempty strings; null or omission means no dependencies. Invalid values throw INVALID_PLUGIN_DEPENDENCIES.
 		 * @param name Unique plugin name.
 		 * @param init Initialization function that receives pluginApi.

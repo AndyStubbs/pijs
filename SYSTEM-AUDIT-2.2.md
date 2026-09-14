@@ -406,6 +406,21 @@ existing-screen installation phase that initializes only the new plugin's data/h
 its commands. Do not rerun every core screen initializer. Pi Vision already backfills some of its
 own data; this does not repair the general command/state installation problem.
 
+**Resolution — late plugin installation, 2026-09-14:** SYS-009 is resolved for full and lite
+bundles. Plugin initialization records the screen data, dynamic getters, initialization hooks, and
+commands contributed by that plugin. Existing live screens receive independently cloned state,
+new screen-command bindings, and only the new plugin's initialization hooks before its global
+commands are published. Normal screen creation continues to install all registered extensions,
+and dependency-delayed plugins use the same existing-screen phase when they become eligible.
+
+Pi Vision now relies on the general installation contract instead of maintaining a partial custom
+backfill. Focused browser coverage exercises custom plugins in both bundles, real late Pointer
+loading in lite, independent state, single initialization, and delayed dependency resolution.
+The complete patch suite passes 352 tests, and metadata/type validation passes. The plugin visual
+suite passes six comparisons and skips two missing baselines; `example_01` retains its pre-existing
+62-pixel outline mismatch from the SYS-016 rasterization correction, so its approved baseline was
+not replaced. SYS-013 and SYS-014 remain separate module-format and documentation follow-ups.
+
 ### SYS-010 — P2 — Loading and failed images cannot be removed or replaced by name
 
 **Location:** [images.js:282](C:/Docs/src/pijs/src/api/images.js:282).
@@ -1120,3 +1135,8 @@ for core and full/lite bundles. Full turns match circles, and circle/arc outline
 once. The two rasterization fixes were implemented in order and validated separately from SYS-007.
 The patch suite passes 273 tests; four visual comparisons pass with reviewed outline changes and
 unchanged approved baselines.
+
+**Follow-up status — late plugin installation, 2026-09-14:** SYS-009 is resolved. Existing screens
+now receive only a newly initialized plugin's state, screen commands, and initialization hooks.
+Task 9 remains open for ESM/IIFE registration consistency (SYS-013), followed by correcting and
+executing the plugin authoring guides (SYS-014).

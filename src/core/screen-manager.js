@@ -210,6 +210,41 @@ export function addScreenCleanupFunction( fn ) {
 }
 
 /**
+ * Install one newly initialized plugin on screens that predate the plugin.
+ *
+ * Static and dynamic data are initialized before screen commands and plugin init hooks, matching
+ * the relevant portions of normal screen creation without replaying earlier module hooks.
+ *
+ * @param {Array<Object>} screens - Live screen states captured before plugin initialization.
+ * @param {Object} extensions - Screen registrations contributed by the plugin.
+ * @param {Array<Object>} extensions.dataItems - Static screen data registrations.
+ * @param {Array<Object>} extensions.dataItemGetters - Dynamic screen data registrations.
+ * @param {Array<Function>} extensions.initFunctions - Plugin screen initialization hooks.
+ * @param {Array<Object>} extensions.commands - Plugin command descriptors.
+ * @returns {void}
+ */
+export function installScreenExtensions( screens, extensions ) {
+	for( const screenData of screens ) {
+		if( screenData.isRemoved ) {
+			continue;
+		}
+
+		for( const item of extensions.dataItems ) {
+			screenData[ item.name ] = structuredClone( item.value );
+		}
+		for( const itemGetter of extensions.dataItemGetters ) {
+			screenData[ itemGetter.name ] = structuredClone( itemGetter.fn() );
+		}
+
+		g_commands.processScreenCommands( screenData, extensions.commands );
+
+		for( const fn of extensions.initFunctions ) {
+			fn( screenData );
+		}
+	}
+}
+
+/**
  * Get the active screen data object.
  *
  * Throws NO_ACTIVE_SCREEN unless isScreenOptional is true.

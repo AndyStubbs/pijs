@@ -31,18 +31,8 @@ export default function piVisionPlugin( pluginApi ) {
 		"interaction": null,
 		"onRender": null
 	} );
-	for( const screenData of m_pluginApi.getAllScreensData() ) {
-		if( !screenData.vis ) {
-			screenData.vis = {
-				"elements": [],
-				"element": null,
-				"interaction": null,
-				"onRender": null
-			};
-		}
-	}
 
-	// Initialize components after existing screens have Pi Vision state.
+	// Initialize components that use Pi Vision state after plugin installation.
 	g_window.default.init( m_pluginApi );
 	g_compositor.default.init( m_pluginApi );
 

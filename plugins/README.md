@@ -244,7 +244,8 @@ pi.myCommand( { "param1": "a", "param2": "b" } );  // Named
 
 #### `addScreenDataItem( name, value )`
 
-Add custom data to all screens. The value will be cloned for each screen.
+Add custom data to all screens. The value is cloned independently for existing screens when the
+plugin initializes and for each screen created later.
 
 **Example:**
 ```javascript
@@ -261,13 +262,16 @@ function myCommand( screenData ) {
 
 #### `addScreenDataItemGetter( name, fn )`
 
-Add dynamic screen data that's generated when each screen is created.
+Add dynamic screen data that's generated independently for existing screens when the plugin
+initializes and for each screen created later.
 
 ### Lifecycle Hooks
 
 #### `addScreenInitFunction( fn )`
 
-Register a function to be called when each screen is initialized.
+Register a function to be called once for every existing screen when the plugin initializes and
+once for each screen created later. Initializers from core modules and earlier plugins are not
+replayed when a plugin is registered late.
 
 **Example:**
 ```javascript

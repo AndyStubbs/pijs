@@ -294,13 +294,31 @@ function initializePlugin( pluginInfo ) {
 	if( pluginInfo.initialized ) {
 		return;
 	}
+	const existingScreens = g_screenManager.getAllScreensData();
+	const extensions = {
+		"commands": [],
+		"dataItems": [],
+		"dataItemGetters": [],
+		"initFunctions": []
+	};
 
 	// Create plugin API
 	const pluginApi = {
-		"addCommand": g_commands.addCommand,
-		"addScreenDataItem": g_screenManager.addScreenDataItem,
-		"addScreenDataItemGetter": g_screenManager.addScreenDataItemGetter,
-		"addScreenInitFunction": g_screenManager.addScreenInitFunction,
+		"addCommand": ( ...args ) => {
+			extensions.commands.push( g_commands.addCommand( ...args ) );
+		},
+		"addScreenDataItem": ( name, value ) => {
+			g_screenManager.addScreenDataItem( name, value );
+			extensions.dataItems.push( { "name": name, "value": value } );
+		},
+		"addScreenDataItemGetter": ( name, fn ) => {
+			g_screenManager.addScreenDataItemGetter( name, fn );
+			extensions.dataItemGetters.push( { "name": name, "fn": fn } );
+		},
+		"addScreenInitFunction": fn => {
+			g_screenManager.addScreenInitFunction( fn );
+			extensions.initFunctions.push( fn );
+		},
 		"addScreenPreCleanupFunction": g_screenManager.addScreenPreCleanupFunction,
 		"addScreenCleanupFunction": g_screenManager.addScreenCleanupFunction,
 		"getActiveScreen": g_screenManager.getActiveScreen,
@@ -317,7 +335,8 @@ function initializePlugin( pluginInfo ) {
 	// Initialize plugin
 	try {
 		pluginInfo.config.init( pluginApi );
-		g_commands.processCommands( m_api );
+		g_screenManager.installScreenExtensions( existingScreens, extensions );
+		g_commands.processCommands( m_api, extensions.commands );
 		pluginInfo.initialized = true;
 	} catch( error ) {
 		const pluginError = new Error(

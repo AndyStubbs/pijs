@@ -378,7 +378,11 @@ test( "plugin cycles, failure, reentrant registration, and validation remain det
 	const module = loadModule( "src/core/plugins.js", {
 		"g_commands": { "addCommand": ( name, fn ) => { commands[ name ] = fn; },
 			"processCommands": () => {} },
-		"g_screenManager": {}, "g_utils": {}, "queueMicrotask": () => {}
+		"g_screenManager": {
+			"getAllScreensData": () => [],
+			"installScreenExtensions": () => {}
+		},
+		"g_utils": {}, "queueMicrotask": () => {}
 	} );
 	module.init( {} );
 	const register = commands.registerPlugin;
@@ -460,7 +464,11 @@ test( "plugin dependencies resolve in initialization order after late registrati
 			"addCommand": ( name, fn ) => { commands[ name ] = fn; },
 			"processCommands": () => {}
 		},
-		"g_screenManager": {}, "g_utils": {},
+		"g_screenManager": {
+			"getAllScreensData": () => [],
+			"installScreenExtensions": () => {}
+		},
+		"g_utils": {},
 		"queueMicrotask": fn => microtasks.push( fn )
 	} );
 	module.init( {} );

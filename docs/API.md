@@ -465,6 +465,11 @@ The initialization API supports command registration, per-screen data, screen in
 cleanup hooks, access to screen data and the main API, readiness counters, dependency handling,
 event cleanup hooks, and utility functions.
 
+When a plugin initializes after screens already exist, Pi.js clones that plugin's static and
+dynamic screen data onto each live screen, binds its screen commands, and runs its screen
+initialization hooks once. Earlier core and plugin initialization hooks are not replayed. Screens
+created afterward receive the same registrations through normal screen creation.
+
 ## Screen Layout and Resource Behavior
 
 With `noCss: true` (default false), Pi.js does not write automatic canvas, container, html, or body

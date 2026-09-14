@@ -75,15 +75,14 @@ function registerCommands() {
  * @param {boolean} isScreen - Whether the implementation receives screen state.
  * @param {Array<string>} parameterNames - Ordered command parameter names.
  * @param {boolean} isScreenOptional - Whether the command can run without an active screen.
- * @returns {void}
+ * @returns {Object} Registered command descriptor.
  */
 export function addCommand( name, fn, isScreen, parameterNames, isScreenOptional ) {
-	m_commands.push(
-		{
-			"name": name, "fn": fn, "isScreen": isScreen, "parameterNames": parameterNames,
-			"isScreenOptional": isScreenOptional
-		}
-	);
+	const command = {
+		"name": name, "fn": fn, "isScreen": isScreen, "parameterNames": parameterNames,
+		"isScreenOptional": isScreenOptional
+	};
+	m_commands.push( command );
 
 	// Auto-register set commands as settings
 	if( name.startsWith( "set" ) && name !== "set" ) {
@@ -92,16 +91,19 @@ export function addCommand( name, fn, isScreen, parameterNames, isScreenOptional
 			"fn": fn, "isScreen": isScreen, "parameterNames": parameterNames, "isProcessed": false
 		};
 	}
+
+	return command;
 }
 
 /**
  * Install queued commands on the public API.
  *
  * @param {Object} api - Public Pi.js API.
+ * @param {Array<Object>} [commands=m_commands] - Command descriptors to install.
  * @returns {void}
  */
-export function processCommands( api ) {
-	for( const command of m_commands ) {
+export function processCommands( api, commands = m_commands ) {
+	for( const command of commands ) {
 		if( !command.isProcessed ) {
 			processCommand( api, command );
 		}
@@ -130,8 +132,15 @@ function processCommand( api, command ) {
 	}
 }
 
-function processScreenCommands( screenData ) {
-	for( const command of m_commands ) {
+/**
+ * Install screen-scoped commands on one screen API.
+ *
+ * @param {Object} screenData - Screen state receiving command bindings.
+ * @param {Array<Object>} [commands=m_commands] - Command descriptors to install.
+ * @returns {void}
+ */
+export function processScreenCommands( screenData, commands = m_commands ) {
+	for( const command of commands ) {
 		const {
 			"name": name,
 			"fn": fn,
@@ -339,4 +348,3 @@ export function set( screenData, options ) {
 export function addSetting( name, fn, isScreen ) {
 	m_settings[ name ] = { "fn": fn, "isScreen": isScreen };
 }
-
