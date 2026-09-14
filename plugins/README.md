@@ -63,21 +63,30 @@ The simplest way to use plugins in the browser:
 
 ### ES Modules (ESM)
 
-For modern JavaScript projects:
+For modern browser projects, load Pi.js before the plugin and import the plugin for its
+side effect. The ESM bundle auto-registers when `window.pi` already exists:
 
 ```javascript
 import pi from "./build/pi.esm.min.js";
-import myPlugin from "./plugins/my-plugin/dist/my-plugin.esm.min.js";
-
-// Register the plugin
-pi.registerPlugin( {
-	"name": "my-plugin",
-	"init": myPlugin
-} );
+import "./plugins/my-plugin/dist/my-plugin.esm.min.js";
 
 pi.ready( () => {
 	pi.screen( { "aspect": "300x200" } );
 	pi.myPluginCommand( "hello" );
+} );
+```
+
+The plugin's default export remains available for controlled or non-browser loading. In that
+case, import the plugin before Pi.js so its automatic registration cannot see `window.pi`, then
+register the initializer explicitly:
+
+```javascript
+import myPlugin from "./plugins/my-plugin/dist/my-plugin.esm.min.js";
+import pi from "./build/pi.esm.min.js";
+
+pi.registerPlugin( {
+	"name": "my-plugin",
+	"init": myPlugin
 } );
 ```
 

@@ -107,13 +107,14 @@ The plugin system works seamlessly with both build formats:
 **ESM (ES Modules)**
 ```javascript
 import pi from "./build/pi.esm.min.js";
-import myPlugin from "./plugins/my-plugin/dist/my-plugin.esm.min.js";
-
-pi.registerPlugin( {
-	"name": "my-plugin",
-	"init": myPlugin
-} );
+import "./plugins/my-plugin/dist/my-plugin.esm.min.js";
 ```
+
+Load Pi.js before the plugin. The ESM bundle auto-registers when `window.pi` already exists,
+so importing the plugin is sufficient in a browser. The default export is also available for
+controlled registration: import the plugin before Pi.js, then pass the initializer to
+`pi.registerPlugin()` explicitly. Do not do both for the same plugin, because registration is
+intentionally rejected when a plugin name is duplicated.
 
 
 ### Plugin Validation
@@ -218,7 +219,8 @@ To test the plugin system:
 
 1. Find or create plugins for your needs
 2. Load plugins using your preferred format (ESM or IIFE)
-3. Register plugins with `pi.registerPlugin()`
+3. Load browser plugins after Pi.js so they auto-register; use `pi.registerPlugin()` explicitly
+   only when controlling module evaluation or running without the browser auto-registration path
 4. Use plugin commands like any other Pi.js command
 
 ## Migration Path

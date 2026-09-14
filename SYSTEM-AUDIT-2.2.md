@@ -68,7 +68,7 @@ the fresh library loaded and `await $.ready()`. The short snippets below assume 
 
 ## 2. Prioritized confirmed findings
 
-### SYS-001 — P1 — Active-screen removal leaves global drawing bound to disposed data
+### SYS-001 — P1 — Active-screen removal leaves global drawing bound to disposed data - COMPLETED
 
 **Locations:** [screen-manager.js:769](C:/Docs/src/pijs/src/core/screen-manager.js:769),
 [screen-manager.js:808](C:/Docs/src/pijs/src/core/screen-manager.js:808),
@@ -96,7 +96,7 @@ or new screen creation rebuilds the wrappers. **Evidence:** `active removal glob
 **Fix:** centralize active-screen transitions and rebuild graphics bindings after removal,
 including transition to null; make explicit selection repair stale bindings.
 
-### SYS-002 — P1 — One throwing ready callback permanently abandons unrelated waiters
+### SYS-002 — P1 — One throwing ready callback permanently abandons unrelated waiters - COMPLETED
 
 **Location:** [commands.js:179](C:/Docs/src/pijs/src/core/commands.js:179).
 
@@ -113,7 +113,7 @@ the 100 ms observation alone is not treated as proof of indefinite waiting.
 ready item independent completion/error handling and define rejection semantics for the throwing
 callback. Preserve asynchronous timing and settle every detached item.
 
-### SYS-003 — P1 — Disposing a screen with active text input strands the global input session
+### SYS-003 — P1 — Disposing a screen with active text input strands the global input session - COMPLETED
 
 **Locations:** [keyboard/index.js:40](C:/Docs/src/pijs/plugins/keyboard/index.js:40),
 [keyboard/input.js:154](C:/Docs/src/pijs/plugins/keyboard/input.js:154),
@@ -155,7 +155,7 @@ tests reproduced stranded disposal and nine failing keyboard scenarios; the pend
 also prevented later tests in the initial combined run from completing. No release generation or
 screenshot baseline changes were used.
 
-### SYS-004 — P1 — Audio load completion can release an unrelated resource wait
+### SYS-004 — P1 — Audio load completion can release an unrelated resource wait - COMPLETED
 
 **Location:** [sound.js:36](C:/Docs/src/pijs/plugins/sound/sound.js:36).
 
@@ -202,7 +202,7 @@ compiled fresh bundles in memory. Chromium required execution outside the sandbo
 `EPERM`. No release generation or screenshot baseline changes were used. Both new audio suites are
 included in `test:patch`.
 
-### SYS-005 — P2 — Deferred pixel reads and filters execute after screen disposal
+### SYS-005 — P2 — Deferred pixel reads and filters execute after screen disposal - COMPLETED
 
 **Locations:** [readback.js:65](C:/Docs/src/pijs/src/renderer/readback.js:65),
 [readback.js:153](C:/Docs/src/pijs/src/renderer/readback.js:153),
@@ -238,7 +238,7 @@ in-memory full/lite bundles in Chromium, with no uncaught page errors. Before th
 focused source tests failed; browser disposal cases reproduced the reported errors in both bundles.
 No release-copy tooling or screenshot baseline updates were used.
 
-### SYS-006 — P2 — Transparent offscreen composition applies alpha twice
+### SYS-006 — P2 — Transparent offscreen composition applies alpha twice - COMPLETED
 
 **Locations:** [batches.js:613](C:/Docs/src/pijs/src/renderer/batches.js:613),
 [batches.js:625](C:/Docs/src/pijs/src/renderer/batches.js:625),
@@ -298,7 +298,7 @@ the overlapping half-alpha blue/green region over gray now presents `[32,96,160,
 `[32,128,128,255]`. The full-only view fixture was skipped for lite. Approved baselines remain
 unchanged; reviewed captures are in `test/tests/screenshots/new/*-alpha-*.png`.
 
-### SYS-007 — P2 — A single oversized batch request recurses forever; Full HD paint fails
+### SYS-007 — P2 — A single oversized batch request recurses forever; Full HD paint fails - COMPLETED
 
 **Locations:** [batches.js:394](C:/Docs/src/pijs/src/renderer/batches.js:394),
 [paint.js:159](C:/Docs/src/pijs/src/api/paint.js:159).
@@ -333,7 +333,7 @@ the full-only view fixture is skipped for lite. A separate diagnostic of `draw_c
 encountered its existing `$.render()` call, outside SYS-007. No approved baselines or release
 artifacts changed. SYS-015/SYS-016 rasterization work remains separate.
 
-### SYS-008 — P2 — Context restoration resumes rendering with invalid GPU objects
+### SYS-008 — P2 — Context restoration resumes rendering with invalid GPU objects - COMPLETED
 
 **Location:** [renderer.js:191](C:/Docs/src/pijs/src/renderer/renderer.js:191).
 
@@ -388,7 +388,7 @@ alternating the pre-optimization and optimized versions. Median CPU time issuing
 calls fell from 8.3 ms to 6.0 ms (about 28%); 1,000 filled circles measured 4.7 ms and 4.5 ms.
 Flush and readback were excluded from those timings; these results do not measure end-to-end FPS.
 
-### SYS-009 — P2 — Late plugins do not initialize existing screen state or screen APIs
+### SYS-009 — P2 — Late plugins do not initialize existing screen state or screen APIs - COMPLETED
 
 **Locations:** [plugins.js:310](C:/Docs/src/pijs/src/core/plugins.js:310),
 [commands.js:100](C:/Docs/src/pijs/src/core/commands.js:100),
@@ -419,9 +419,9 @@ loading in lite, independent state, single initialization, and delayed dependenc
 The complete patch suite passes 352 tests, and metadata/type validation passes. The plugin visual
 suite passes six comparisons and skips two missing baselines; `example_01` retains its pre-existing
 62-pixel outline mismatch from the SYS-016 rasterization correction, so its approved baseline was
-not replaced. SYS-013 and SYS-014 remain separate module-format and documentation follow-ups.
+not replaced. SYS-014 remains a separate plugin-authoring documentation follow-up.
 
-### SYS-010 — P2 — Loading and failed images cannot be removed or replaced by name
+### SYS-010 — P2 — Loading and failed images cannot be removed or replaced by name - COMPLETED
 
 **Location:** [images.js:282](C:/Docs/src/pijs/src/api/images.js:282).
 
@@ -472,7 +472,7 @@ browser suites compiled fresh bundles in memory. Chromium required execution out
 after a launch `EPERM`. Both image suites are included in `test:patch`. No release generation or
 screenshot baseline changes were used. SYS-017, SYS-021, and SYS-022 remain separate follow-ups.
 
-### SYS-011 — P2 — Keyboard callbacks can repeat once-handlers and leave released keys held
+### SYS-011 — P2 — Keyboard callbacks can repeat once-handlers and leave released keys held - COMPLETED
 
 **Locations:** [keyboard/index.js:287](C:/Docs/src/pijs/plugins/keyboard/index.js:287),
 [keyboard/index.js:309](C:/Docs/src/pijs/plugins/keyboard/index.js:309).
@@ -525,7 +525,7 @@ compilation and existing validators pass, demonstrating their limits rather than
 initializers and lite capabilities, and fill the metadata omissions. Validate against real
 package consumers in addition to generated-string checks.
 
-### SYS-013 — P2 — ESM plugins auto-register despite documented explicit registration
+### SYS-013 — P2 — ESM plugins auto-register despite documented explicit registration - COMPLETED
 
 **Locations:** [pointer/index.js:92](C:/Docs/src/pijs/plugins/pointer/index.js:92),
 [plugins/README.md:65](C:/Docs/src/pijs/plugins/README.md:65).
@@ -542,6 +542,12 @@ and `getPlugins()` already lists initialized pointer before the manual call.
 **Fix:** separate IIFE auto-registration from ESM initializer exports and align bundled full-entry
 registration accordingly, or explicitly adopt/document side-effect imports consistently. Test
 both supported module-loading patterns; avoid silently allowing duplicate initializers.
+
+**Resolution — documentation, 2026-09-14:** Automatic registration is the preferred browser ESM
+behavior and is now documented consistently in the general plugin guide, plugin-system guide, and
+polygons example. Browser ESM usage imports Pi.js first and then imports the plugin for its
+side-effect registration. The default initializer export and explicit `registerPlugin()` path remain
+documented for controlled evaluation and non-browser use; callers must choose one path per plugin.
 
 ### SYS-014 — P2 — Plugin quickstart documents nonexistent registration methods
 
@@ -560,7 +566,7 @@ signature, so the maintained guides contradict each other.
 **Impact:** extension authors cannot run the supplied tutorial. **Fix:** update the quickstart and
 system guide from the real PluginAPI and execute their examples in a smoke test.
 
-### SYS-015 — P2 — A 360-degree arc collapses to two pixels
+### SYS-015 — P2 — A 360-degree arc collapses to two pixels - COMPLETED
 
 **Location:** [arcs.js:34](C:/Docs/src/pijs/src/renderer/draw/arcs.js:34).
 
@@ -583,7 +589,7 @@ Four source tests and full/lite browser regressions cover shifted starts, positi
 reported radius-10 full turn now covers the same 52 pixels as its circle. This fix was implemented
 and verified before SYS-016, independently of SYS-007 reservation chunking.
 
-### SYS-016 — P2 — Circle outlines emit duplicate pixels under alpha blending
+### SYS-016 — P2 — Circle outlines emit duplicate pixels under alpha blending - COMPLETED
 
 **Location:** [circles.js:69](C:/Docs/src/pijs/src/renderer/draw/circles.js:69).
 
@@ -612,7 +618,7 @@ existing tolerance: each full/lite graphics fixture differs by 247 pixels, confi
 arc, and copied-circle regions; each renderer fixture differs by zero pixels. Enlarged before/after
 images were visually reviewed. Approved PNGs and release artifacts were not modified.
 
-### SYS-017 — P2 — Invalid palette indices poison current and default drawing colors
+### SYS-017 — P2 — Invalid palette indices poison current and default drawing colors - COMPLETED
 
 **Locations:** [colors.js:182](C:/Docs/src/pijs/src/api/colors.js:182),
 [colors.js:227](C:/Docs/src/pijs/src/api/colors.js:227).
@@ -661,7 +667,7 @@ unchanged public signatures, and unchanged earlier-version references; no genera
 release files were written. No screenshot baselines were changed. Both new suites are included
 in `test:patch`.
 
-### SYS-018 — P2 — Removing pending audio leaves its loading work and retries alive
+### SYS-018 — P2 — Removing pending audio leaves its loading work and retries alive - COMPLETED
 
 **Locations:** [sound.js:36](C:/Docs/src/pijs/plugins/sound/sound.js:36),
 [sound.js:396](C:/Docs/src/pijs/plugins/sound/sound.js:396).
@@ -718,7 +724,7 @@ changed or published.
 contents. **Fix:** validate all inputs first, assemble in a temporary directory, then replace the
 destination only after complete success.
 
-### SYS-021 — P2 — NaN sensitivity propagates NaN through gamepad axes
+### SYS-021 — P2 — NaN sensitivity propagates NaN through gamepad axes - COMPLETED
 
 **Locations:** [gamepad/index.js:126](C:/Docs/src/pijs/plugins/gamepad/index.js:126),
 [gamepad/index.js:354](C:/Docs/src/pijs/plugins/gamepad/index.js:354).
@@ -1068,14 +1074,14 @@ Do not bundle all findings into another sweeping release patch.
 
 | Order | Bug-fix task | Acceptance |
 | --- | --- | --- |
-| 1 | Repair active-screen transitions (SYS-001) | Removing current/last/noncurrent screens keeps every global command aligned; explicit selection repairs bindings; survivors draw normally. |
-| 2 | Isolate ready callbacks and deferred read completion (SYS-002, SYS-005) | Every promise settles exactly once, unrelated callbacks continue, and disposal causes defined cancellation without uncaught internal errors. |
-| 3 | Make text-input disposal and keyboard dispatch exception-safe (SYS-003, SYS-011) | No timer/listener/background remains after disposal; replacement input works; once/reentrant/throwing callbacks cannot retain held keys. |
-| 4 | Give audio loads owned cancellation and single settlement (SYS-004, SYS-018) | Late errors/retries never release another load's wait; removal cancels pending elements/retries and allows clean reuse. |
+| 1 | Repair active-screen transitions (SYS-001) - COMPLETED | Removing current/last/noncurrent screens keeps every global command aligned; explicit selection repairs bindings; survivors draw normally. |
+| 2 | Isolate ready callbacks and deferred read completion (SYS-002, SYS-005) - COMPLETED | Every promise settles exactly once, unrelated callbacks continue, and disposal causes defined cancellation without uncaught internal errors. |
+| 3 | Make text-input disposal and keyboard dispatch exception-safe (SYS-003, SYS-011) - COMPLETED | No timer/listener/background remains after disposal; replacement input works; once/reentrant/throwing callbacks cannot retain held keys. |
+| 4 | Give audio loads owned cancellation and single settlement (SYS-004, SYS-018) - COMPLETED | Late errors/retries never release another load's wait; removal cancels pending elements/retries and allows clean reuse. |
 | 5 | Fix image/font failure publication and numeric state validation (SYS-010, SYS-017, SYS-021, SYS-022) | Failed/removed records can be reused; invalid values leave previous state intact; font rejection publishes nothing. Split image cancellation from small validator fixes. |
-| 6 | Bound batch reservations and fix arc/circle rasterization (SYS-007, SYS-015, SYS-016) | Full HD paint completes; oversized work is chunked; full turns match circles; outlines contain no repeated translucent pixels. Use separate commits/tasks for batching and rasterization. |
-| 7 | Specify and implement consistent alpha storage (SYS-006) | Direct and layered composition agree across source types, contexts, replace/alpha modes, readback, shader and presentation paths. |
-| 8 | Implement context-generation recovery (SYS-008) | Restore invalidates/rebuilds all owned resources; shared users recover together or receive a defined unusable-state error. |
+| 6 | Bound batch reservations and fix arc/circle rasterization (SYS-007, SYS-015, SYS-016) - COMPLETED | Full HD paint completes; oversized work is chunked; full turns match circles; outlines contain no repeated translucent pixels. Use separate commits/tasks for batching and rasterization. |
+| 7 | Specify and implement consistent alpha storage (SYS-006) - COMPLETED | Direct and layered composition agree across source types, contexts, replace/alpha modes, readback, shader and presentation paths. |
+| 8 | Implement context-generation recovery (SYS-008) - COMPLETED | Restore invalidates/rebuilds all owned resources; shared users recover together or receive a defined unusable-state error. |
 | 9 | Define plugin installation across existing screens and module formats (SYS-009, SYS-013, SYS-014) | Late loading is coherent, ESM/IIFE registration follows one documented contract, and tutorial examples execute. |
 | 10 | Correct package declarations and build/copy failure handling (SYS-012, SYS-019, SYS-020) | Positive/negative consumers match runtime; any required plugin failure fails the build; incomplete copy never destroys prior dist. Split types from tooling transactions. |
 | 11 | Strengthen the existing visual runner (SYS-023, COV-001) | Unexpected page errors fail tests; intentional errors are declared; touch strokes no longer depend on an unsampled timer gap. |
@@ -1138,5 +1144,4 @@ unchanged approved baselines.
 
 **Follow-up status — late plugin installation, 2026-09-14:** SYS-009 is resolved. Existing screens
 now receive only a newly initialized plugin's state, screen commands, and initialization hooks.
-Task 9 remains open for ESM/IIFE registration consistency (SYS-013), followed by correcting and
-executing the plugin authoring guides (SYS-014).
+Task 9 remains open for correcting and executing the plugin authoring guides (SYS-014).

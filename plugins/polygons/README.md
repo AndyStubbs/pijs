@@ -23,8 +23,15 @@ Load the IIFE bundle after Pi.js:
 <script src="./vendor/polygons.min.js"></script>
 ```
 
-Or register the ESM build explicitly. Import the plugin before Pi.js in this example so its
-automatic registration does not run against an existing `window.pi`:
+For browser ESM usage, import Pi.js first and then import the plugin for its automatic
+registration side effect:
+
+```javascript
+import pi from "./vendor/pi.esm.min.js";
+import "./vendor/polygons.esm.min.js";
+```
+
+For controlled registration, import the plugin before Pi.js and register its default export:
 
 ```javascript
 import polygonsPlugin from "./vendor/polygons.esm.min.js";
