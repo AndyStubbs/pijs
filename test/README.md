@@ -90,6 +90,13 @@ Each test file contains:
 </script>
 ```
 
+Optional `expectPageError` allowlists one intentional uncaught page error by exact
+`error.message` (for fixtures that deliberately throw). Example:
+
+```toml
+expectPageError = "expected automatic presentation failure"
+```
+
 2. **Test Code:**
 ```javascript
 $.ready(function () {
@@ -106,12 +113,13 @@ $.ready(function () {
 ## Screenshot Comparison
 
 The test runner:
-1. Loads each test page
-2. Waits for specified delay
-3. Takes a screenshot
-4. Compares with reference image using pixel-by-pixel comparison
-5. Allows up to 1% pixel difference (configurable threshold)
-6. Reports pass/fail based on comparison
+1. Attaches console and `pageerror` listeners, then loads each test page
+2. Waits for specified delay and runs any scripted commands
+3. Fails on unexpected uncaught page errors (unless allowlisted via `expectPageError`)
+4. Takes a screenshot
+5. Compares with reference image using pixel-by-pixel comparison
+6. Allows up to 1% pixel difference (configurable threshold)
+7. Reports pass/fail based on page errors and screenshot comparison
 
 ## Adding New Tests
 

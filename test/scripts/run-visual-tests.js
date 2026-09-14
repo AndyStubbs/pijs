@@ -141,7 +141,8 @@ function parseTOML( content ) {
 		"width": 320,
 		"height": 200,
 		"delay": 0,
-		"commands": null
+		"commands": null,
+		"expectPageError": null
 	};
 
 	// Simple TOML parser for our needs
@@ -728,6 +729,24 @@ test.describe( config.description, () => {
 			const isNewTest = !fs.existsSync( referencePath );
 
 			try {
+				const pageErrors = [];
+				const baseName = ( testName || testFile.file ).replace( /\.html$/, "" );
+				setLogFileForTest( baseName );
+
+				// Capture console and page errors before navigation so load-time
+				// throws are not missed. Page errors fail the test unless allowlisted.
+				page.on( "console", msg => {
+					const type = msg.type();
+					const text = msg.text();
+					logMessage( `[console.${type}] ${text}` );
+				} );
+
+				page.on( "pageerror", error => {
+					pageErrors.push( error.message );
+					logMessage( `[PAGE ERROR] ${error.message}` );
+					logMessage( `  Stack: ${error.stack}` );
+				} );
+
 				if( TEST_LITE ) {
 					await page.route( FULL_BUNDLE_REQUEST, async route => {
 						const liteBundleUrl = new URL( route.request().url() );
@@ -769,23 +788,6 @@ test.describe( config.description, () => {
 					);
 				}
 
-				// Prepare per-test log file named after the screenshot base
-				const baseName = ( testName || testFile.file ).replace( /\.html$/, "" );
-				setLogFileForTest( baseName );
-
-				// Capture console messages and errors
-				page.on( "console", msg => {
-					const type = msg.type();
-					const text = msg.text();
-					logMessage( `[console.${type}] ${text}` );
-				} );
-
-				// Capture page errors
-				page.on( "pageerror", error => {
-					logMessage( `[PAGE ERROR] ${error.message}` );
-					logMessage( `  Stack: ${error.stack}` );
-				} );
-
 				// Wait for delay if specified
 				if( metadata.delay > 0 ) {
 					await page.waitForTimeout( metadata.delay );
@@ -798,6 +800,21 @@ test.describe( config.description, () => {
 
 				// Wait for render
 				await page.waitForTimeout( 100 );
+
+				// Fail on unexpected uncaught page errors independently of pixels
+				const expectedPageError = metadata.expectPageError;
+				const unexpectedPageErrors = pageErrors.filter( message => {
+					if( !expectedPageError ) {
+						return true;
+					}
+					return message !== expectedPageError;
+				} );
+
+				if( unexpectedPageErrors.length > 0 ) {
+					throw new Error(
+						"Unexpected page error(s): " + unexpectedPageErrors.join( "; " )
+					);
+				}
 
 				// Take screenshot
 				const screenshotPath = path.join(

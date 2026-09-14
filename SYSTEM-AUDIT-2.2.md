@@ -846,7 +846,7 @@ render matching nonempty glyphs. The focused font suites now pass 29/29 (15 sour
 Font 1 remains synchronously created from its embedded data through a canvas; no runtime change
 was needed for this verification.
 
-### SYS-023 — P2 — Visual tests can pass despite uncaught JavaScript errors
+### SYS-023 — P2 — Visual tests can pass despite uncaught JavaScript errors - COMPLETED
 
 **Location:** [run-visual-tests.js:782](C:/Docs/src/pijs/test/scripts/run-visual-tests.js:782).
 
@@ -865,6 +865,18 @@ reporting **1 passed**. The copied fixture was restored in `finally`; the origin
 with explicit expectations for fixtures intentionally testing errors. Keep screenshot comparison
 as an additional assertion, not the only correctness signal.
 
+**Resolution — 2026-09-14:** The visual runner attaches `console` and `pageerror` listeners before
+`page.goto`, collects page-error messages per test, and after delay/commands/settle fails on any
+message that is not allowlisted by TOML `expectPageError` (exact `error.message` match). Screenshot
+comparison remains a second correctness gate. `shaders_lifecycle.html` declares
+`expectPageError = "expected automatic presentation failure"` for its intentional uncaught throw.
+`test/README.md` documents the policy.
+
+Validation: `npm run test:grep -- "shaders lifecycle"` and `npm run test:grep -- "set 01"` both
+passed (1/1 each). A temporary 50 ms delayed `throw new Error("audit-unhandled-page-error")` in
+`set_01.html` made `--grep 'set 01'` fail with `Unexpected page error(s): audit-unhandled-page-error`;
+the fixture was restored afterward. No screenshot baseline changes were required.
+
 ## 3. Subsystem coverage map
 
 | Subsystem | Inspected and executed | Remaining limits / highest-value tests |
@@ -881,7 +893,7 @@ as an additional assertion, not the only correctness signal.
 | Gamepad/audio/music | Poll loop, smoothing, button state, connect/disconnect, sound pools/voices, load/retry/play/stop and music track scheduling; controlled gamepad/audio probes and historical timer regression rerun | No physical controller, haptics, audible result, codec/autoplay matrix, or complete music grammar/timer campaign. Add deterministic once-settlement/removal tests, then browser media tests. |
 | Optional plugins | All ten plugin entries/build outputs; polygon validation/raster spans/cache contract, print-table formatting, onscreen-keyboard ownership and synthetic input, Pi Vision creation/composition/close, example hooks, pens status; plugin suite and ESM import checks | Pi Vision smoke assertions execute but its visual baseline is absent. Cross-screen onscreen-keyboard switching, nested Pi Vision callback removal, and full polygon boundary coverage remain unverified. Pens is explicitly incomplete; implementing it is not an audit finding. |
 | Build/distribution | Clean install, real build/generation/copy, all library variants and plugin ESM exports, package entry targets, declaration consumers, repeat-output hashes, build/copy failure injection | No Node 18 execution, POSIX shell run, registry publication, or external installed-package project. Node server-side library execution is not required by this browser-only contract. |
-| Test infrastructure | Fixture discovery/lite routing, assertions, screenshot tolerances, skip policy, logging/reporting; complete suites and uncaught-error injection | A green screenshot does not establish device/resource state. Add explicit error expectations, assertion-only tests for lifecycle, and deterministic scheduling controls. |
+| Test infrastructure | Fixture discovery/lite routing, assertions, screenshot tolerances, skip policy, logging/reporting; complete suites; pageerror fail-before-compare with `expectPageError` allowlist | A green screenshot does not establish device/resource state. Add assertion-only tests for lifecycle and deterministic scheduling controls. |
 
 ### Actionable coverage gaps and investigated concerns
 
@@ -1119,7 +1131,7 @@ Do not bundle all findings into another sweeping release patch.
 | 8 | Implement context-generation recovery (SYS-008) - COMPLETED | Restore invalidates/rebuilds all owned resources; shared users recover together or receive a defined unusable-state error. |
 | 9 | Define plugin installation across existing screens and module formats (SYS-009, SYS-013, SYS-014) - COMPLETED | Late loading is coherent, ESM/IIFE registration follows one documented contract, and tutorial examples execute. |
 | 10 | Correct package declarations and build/copy failure handling (SYS-012, SYS-019, SYS-020) | Positive/negative consumers match runtime; any required plugin failure fails the build; incomplete copy never destroys prior dist. Split types from tooling transactions. |
-| 11 | Strengthen the existing visual runner (SYS-023, COV-001) | Unexpected page errors fail tests; intentional errors are declared; touch strokes no longer depend on an unsampled timer gap. |
+| 11 | Strengthen the existing visual runner (SYS-023 completed; COV-001 open) | Unexpected page errors fail tests; intentional errors are declared via `expectPageError`. Remaining: touch strokes no longer depend on an unsampled timer gap (COV-001). |
 
 Broader coverage work, after or alongside focused fix tests:
 
@@ -1186,3 +1198,8 @@ unchanged approved baselines.
 now receive only a newly initialized plugin's state, screen commands, and initialization hooks.
 Task 9 is complete: SYS-013 aligns browser ESM registration guidance, and SYS-014 corrects the
 plugin-authoring contract and executes the maintained guide initializers in full and lite bundles.
+
+**Follow-up status — visual runner page errors, 2026-09-14:** SYS-023 is resolved. Unexpected
+`pageerror` events fail visual tests independently of screenshots; intentional errors use
+`expectPageError`. Task 11 remaining work is COV-001 (touch fixture timing). Earlier
+recommendations and evidence remain historical context.
