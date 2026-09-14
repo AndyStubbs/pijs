@@ -72,11 +72,7 @@ function getLiteBanner( version ) {
  */`;
 }
 
-// Ensure build directory exists
 const buildDir = path.join( __dirname, "../build" );
-if( !fs.existsSync( buildDir ) ) {
-	fs.mkdirSync( buildDir, { "recursive": true } );
-}
 
 // Plugin to inject version
 const injectVersionPlugin = {
@@ -146,31 +142,50 @@ function getBuildOptions( entryFile, banner ) {
 }
 
 
-async function buildAllPlugins() {
-	const pluginsDir = path.join( __dirname, "..", "plugins" );
+/**
+ * Builds every plugin with an index.js entry point.
+ *
+ * @param {Object} options - Optional test dependencies
+ * @param {string} options.pluginsDir - Directory containing plugin directories
+ * @param {Function} options.buildPlugin - Plugin build function
+ * @returns {Promise<number>} Number of plugins built
+ */
+async function buildAllPlugins( options = {} ) {
+	const pluginsDir = options.pluginsDir || path.join( __dirname, "..", "plugins" );
+	const buildPluginFn = options.buildPlugin || buildPlugin;
 
 	// Check if plugins directory exists
 	if( !fs.existsSync( pluginsDir ) ) {
-		return;
+		return 0;
 	}
 
-	// Get all directories in plugins folder
+	// Get all buildable directories in plugins folder
 	const entries = fs.readdirSync( pluginsDir, { "withFileTypes": true } );
-	const pluginDirs = entries
-		.filter( entry => entry.isDirectory() )
-		.map( entry => entry.name );
-
+	const pluginDirs = entries.filter( entry => entry.isDirectory() );
 	if( pluginDirs.length === 0 ) {
-		return;
+		return 0;
+	}
+
+	const buildablePluginDirs = pluginDirs
+		.filter( entry => fs.existsSync( path.join( pluginsDir, entry.name, "index.js" ) ) )
+		.map( entry => entry.name )
+		.sort();
+
+	if( buildablePluginDirs.length === 0 ) {
+		console.log( "" );
+		console.log( `Building plugins...` );
+		console.log( `  No buildable plugins found (plugins need an index.js file)` );
+		return 0;
 	}
 
 	console.log( "" );
 	console.log( `Building plugins...` );
 
 	let builtCount = 0;
-	for( const pluginName of pluginDirs ) {
+	const failedPlugins = [];
+	for( const pluginName of buildablePluginDirs ) {
 		const pluginDir = path.join( pluginsDir, pluginName );
-		const success = await buildPlugin( pluginName, {
+		const success = await buildPluginFn( pluginName, {
 			"pluginDir": pluginDir,
 			"plugins": [ webpBase64Plugin ],
 			"verbose": false,
@@ -178,14 +193,25 @@ async function buildAllPlugins() {
 		} );
 		if( success ) {
 			builtCount++;
+		} else {
+			failedPlugins.push( pluginName );
 		}
 	}
 
-	if( builtCount > 0 ) {
-		console.log( `  ✓ Built ${builtCount} plugin(s)` );
-	} else {
-		console.log( `  No buildable plugins found (plugins need an index.js file)` );
+	if( failedPlugins.length > 0 ) {
+		let pluginLabel;
+		if( failedPlugins.length === 1 ) {
+			pluginLabel = "plugin";
+		} else {
+			pluginLabel = "plugins";
+		}
+		throw new Error(
+			`Failed to build ${failedPlugins.length} ${pluginLabel}: ${failedPlugins.join( ", " )}`
+		);
 	}
+
+	console.log( `  ✓ Built ${builtCount} plugin(s)` );
+	return builtCount;
 }
 
 async function buildPiVersion( versionName, entryFile, outputPrefix ) {
@@ -236,6 +262,10 @@ async function build() {
 	console.log( `Building Pi.js v${buildVersion} from ${sourceDir}...` );
 
 	try {
+		if( !fs.existsSync( buildDir ) ) {
+			fs.mkdirSync( buildDir, { "recursive": true } );
+		}
+
 		console.log( "" );
 		console.log( "Generating and validating metadata..." );
 		generateMetadata();
@@ -310,5 +340,9 @@ async function build() {
 	}
 }
 
-build();
+if( require.main === module ) {
+	build();
+}
+
+module.exports = { build, buildAllPlugins };
 

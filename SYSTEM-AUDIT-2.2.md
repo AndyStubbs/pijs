@@ -698,7 +698,7 @@ on removal. Coordinate cancellation accounting with SYS-004's once-only settleme
 Pending loads, retry handles, and playable media are owned by the pool and released on removal,
 with single readiness settlement and immediate safe name reuse.
 
-### SYS-019 — P2 — Build success ignores a failed optional-plugin build
+### SYS-019 — P2 — Build success ignores a failed optional-plugin build - COMPLETED
 
 **Locations:** [build.js:173](C:/Docs/src/pijs/scripts/build.js:173),
 [build-plugin.js:220](C:/Docs/src/pijs/scripts/build-plugin.js:220).
@@ -716,6 +716,18 @@ no `print-table.js`. The temporary source was restored in `finally` and a clean 
 **Impact:** CI or developers accept an incomplete build, potentially retaining stale plugin files.
 **Fix:** propagate any required plugin failure to a nonzero aggregate result and prevent success
 or release copying until the requested output set is complete.
+
+**Resolution — 2026-09-14:** The aggregate build now treats every plugin directory containing an
+`index.js` entry point as requested output. It attempts the complete buildable set, collects all
+plugins whose build returns false, and throws one error naming every failure before either core
+bundle or release-copy work begins. Directories without an entry point retain their prior skipped
+behavior. The build script is import-safe and exposes dependency injection only for focused build
+orchestration tests; the plugin builder's boolean contract and browser-facing APIs are unchanged.
+
+Validation: four focused Node regressions cover skipped directories, successful counts, continued
+attempts after failure, and single/multiple failure reporting. The complete patch suite passed
+359/359 tests. A fresh aggregate build produced all ten plugin output sets with eight files each,
+then built both core variants and copied the four published plugins into the release package.
 
 ### SYS-020 — P2 — Release copying destroys the prior dist before checking required inputs
 
