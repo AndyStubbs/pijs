@@ -915,18 +915,36 @@ the fixture was restored afterward. No screenshot baseline changes were required
   stroke's last point. Validation: `npx playwright test test/scripts/run-visual-tests.js --grep
   "intouch 01" --repeat-each=5 --workers=1` passed 5/5 against the existing approved baseline.
   No library, runner, or baseline changes were required.
-- **COV-002 — Missing baselines:** `Pi Vision Window Smoke Test` (`pi_vision_01.html`) and
+- **COV-002 — Missing baselines - COMPLETED:** `Pi Vision Window Smoke Test` (`pi_vision_01.html`) and
   `Pointer lifecycle 2.1.1` (`pointer_lifecycle_01.html`) have no approved images. Their pages and
   explicit assertions run before the runner skips comparison. Approve baselines only after a
   separate deliberate visual review; no approvals were performed here.
-- **COV-003 — Numerical boundary coverage:** add finite/integer/range tables for colors, fonts,
+
+  **Resolution — 2026-09-14:** Approved baselines were copied from reviewed
+  `test/tests/screenshots/new/` candidates into `test/tests/screenshots/pi_vision_01.png` and
+  `pointer_lifecycle_01.png`. Plugins grep for both names passed 2/2 with zero skips.
+- **COV-003 — Numerical boundary coverage - COMPLETED:** add finite/integer/range tables for colors, fonts,
   gamepad values, geometry, and batch reservations. Existing happy-path rendering tests miss state
   poisoning and oversized requests.
-- **COV-004 — Ownership and reentrancy:** add unit/browser checks covering removal during pending
+
+  **Resolution — 2026-09-14:** Added `test/unit/numeric-boundaries.test.js` and
+  `numeric-boundaries-browser.test.js` covering views/clips, blends, paint tolerance, font
+  dimensions/`fontId`, and geometry non-finite rejection (with existing color/gamepad/batch suites
+  retained). Wired into `npm run test:patch`.
+- **COV-004 — Ownership and reentrancy - COMPLETED:** add unit/browser checks covering removal during pending
   reads, input, images/audio and callbacks; failed initialization; shared resources; listener and
   timer counts; and subsequent successful reuse. GC or a screenshot alone is insufficient.
-- **COV-005 — Package contracts:** declarations compiling by themselves does not prove that they
+
+  **Resolution — 2026-09-14:** Added `test/unit/ownership-reentrancy-matrix.test.js` and
+  `ownership-reentrancy-browser.test.js` covering pending image/audio removal with reuse, pixel
+  disposal during async reads, throwing ready isolation, failed/reentrant plugin init, and
+  shared-context child survival after parent removal. Wired into `npm run test:patch`.
+- **COV-005 — Package contracts - COMPLETED:** declarations compiling by themselves does not prove that they
   describe runtime. Add positive and negative import/capability consumers for every exported path.
+
+  **Resolution — 2026-09-14:** Extended `test/scripts/package-types-consumer.test.js` with positive
+  consumers for root, lite, and all four published plugin exports, plus negatives for named `Pi`,
+  `lite.inmouse()`, plugin-as-API misuse, and lite named `Pi`.
 
 Historical candidates confirmed afresh include pending/failed image removal, context restoration,
 readback after disposal, NaN gamepad sensitivity, and full-turn arcs. Unspecified-size video drawing
@@ -1142,7 +1160,7 @@ Do not bundle all findings into another sweeping release patch.
 | 7 | Specify and implement consistent alpha storage (SYS-006) - COMPLETED | Direct and layered composition agree across source types, contexts, replace/alpha modes, readback, shader and presentation paths. |
 | 8 | Implement context-generation recovery (SYS-008) - COMPLETED | Restore invalidates/rebuilds all owned resources; shared users recover together or receive a defined unusable-state error. |
 | 9 | Define plugin installation across existing screens and module formats (SYS-009, SYS-013, SYS-014) - COMPLETED | Late loading is coherent, ESM/IIFE registration follows one documented contract, and tutorial examples execute. |
-| 10 | Correct package declarations and build/copy failure handling (SYS-012, SYS-019, SYS-020) | Positive/negative consumers match runtime; any required plugin failure fails the build; incomplete copy never destroys prior dist. Split types from tooling transactions. |
+| 10 | Correct package declarations and build/copy failure handling (SYS-012, SYS-019, SYS-020) - COMPLETED | Positive/negative consumers match runtime; any required plugin failure fails the build; incomplete copy never destroys prior dist. Split types from tooling transactions. |
 | 11 | Strengthen the existing visual runner (SYS-023, COV-001) - COMPLETED | Unexpected page errors fail tests; intentional errors are declared via `expectPageError`. Touch strokes no longer depend on an unsampled timer gap. |
 
 Broader coverage work, after or alongside focused fix tests:
@@ -1220,3 +1238,13 @@ recommendations and evidence remain historical context.
 uses a 40 ms end/start gap and resets drawing on touch-id change; five repeated visual runs
 passed against the unchanged approved baseline. This completes task 11. Earlier recommendations
 and evidence remain historical context.
+
+**Follow-up status — Task 10 package/tooling, 2026-09-14:** SYS-012, SYS-019, and SYS-020 were
+already resolved in code. The follow-up table row is now marked COMPLETED. Acceptance remains:
+positive/negative package consumers match runtime (`npm run test:types`), required plugin build
+failures fail the aggregate build, and incomplete release copies never destroy prior dist.
+
+**Follow-up status — coverage gaps COV-002–005, 2026-09-14:** Missing plugin visual baselines are
+approved; numeric boundary and ownership/reentrancy suites are in `test:patch`; package-type
+consumers cover every published export path. This closes the remaining actionable coverage gaps
+listed in section 3.

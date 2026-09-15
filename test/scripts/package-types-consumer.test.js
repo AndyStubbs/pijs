@@ -105,12 +105,55 @@ function createConsumerPackage() {
 	);
 
 	fs.writeFileSync(
+		path.join( consumersDir, "valid-lite.mts" ),
+		[
+			`import lite, { pi as namedLite, $ as liteDollar } from "pijs-web/lite";`,
+			`const screen = lite.screen( "8x8" );`,
+			`screen.setColor( "red" );`,
+			`screen.pset( 1, 1 );`,
+			`namedLite.screen( "4x4" );`,
+			`liteDollar.screen( "2x2" );`,
+			""
+		].join( "\n" ),
+		"utf8"
+	);
+
+	fs.writeFileSync(
+		path.join( consumersDir, "valid-plugins.mts" ),
+		[
+			`import pi from "pijs-web";`,
+			`import gamepad from "pijs-web/plugins/gamepad";`,
+			`import keyboard from "pijs-web/plugins/keyboard";`,
+			`import pointer from "pijs-web/plugins/pointer";`,
+			`import sound from "pijs-web/plugins/sound";`,
+			`pi.registerPlugin( { name: "gamepad-consumer", init: gamepad } );`,
+			`pi.registerPlugin( { name: "keyboard-consumer", init: keyboard } );`,
+			`pi.registerPlugin( { name: "pointer-consumer", init: pointer } );`,
+			`pi.registerPlugin( { name: "sound-consumer", init: sound } );`,
+			""
+		].join( "\n" ),
+		"utf8"
+	);
+
+	fs.writeFileSync(
 		path.join( consumersDir, "false-positive.mts" ),
 		[
 			`import { Pi } from "pijs-web";`,
 			`import lite from "pijs-web/lite";`,
+			`import pointer from "pijs-web/plugins/pointer";`,
 			`Pi.screen( "8x8" );`,
 			`lite.inmouse();`,
+			`pointer.screen( "8x8" );`,
+			""
+		].join( "\n" ),
+		"utf8"
+	);
+
+	fs.writeFileSync(
+		path.join( consumersDir, "false-positive-lite-named.mts" ),
+		[
+			`import { Pi } from "pijs-web/lite";`,
+			`Pi.screen( "8x8" );`,
 			""
 		].join( "\n" ),
 		"utf8"
@@ -190,7 +233,9 @@ function runTsc( consumersDir, fileName ) {
 test( "positive package consumers typecheck against published declarations", () => {
 	const fixture = createConsumerPackage();
 	try {
-		for( const fileName of [ "control.mts", "valid-runtime.mts" ] ) {
+		for( const fileName of [
+			"control.mts", "valid-runtime.mts", "valid-lite.mts", "valid-plugins.mts"
+		] ) {
 			const result = runTsc( fixture.consumersDir, fileName );
 			assert.equal(
 				result.status,
@@ -206,11 +251,24 @@ test( "positive package consumers typecheck against published declarations", () 
 test( "negative package consumers are rejected by published declarations", () => {
 	const fixture = createConsumerPackage();
 	try {
-		const result = runTsc( fixture.consumersDir, "false-positive.mts" );
-		assert.notEqual( result.status, 0, "false-positive.mts should fail tsc" );
-		const output = `${result.stdout}${result.stderr}`;
+		const falsePositive = runTsc( fixture.consumersDir, "false-positive.mts" );
+		assert.notEqual( falsePositive.status, 0, "false-positive.mts should fail tsc" );
+		const output = `${falsePositive.stdout}${falsePositive.stderr}`;
 		assert.match( output, /Pi/, "should reject named Pi export" );
 		assert.match( output, /inmouse/, "should reject lite.inmouse()" );
+		assert.match( output, /screen/, "should reject plugin.screen()" );
+
+		const liteNamed = runTsc( fixture.consumersDir, "false-positive-lite-named.mts" );
+		assert.notEqual(
+			liteNamed.status,
+			0,
+			"false-positive-lite-named.mts should fail tsc"
+		);
+		assert.match(
+			`${liteNamed.stdout}${liteNamed.stderr}`,
+			/Pi/,
+			"should reject named Pi export from lite"
+		);
 	} finally {
 		fixture.cleanup();
 	}
