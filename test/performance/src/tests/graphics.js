@@ -30,6 +30,7 @@ export function getConfig( operationTypes ) {
 		"init": init,
 		"cleanUp": cleanUp,
 		"itemCountStart": 500,
+		"legacyItemCountStart": 5,
 		"itemFactor": 10,
 		"exludeVersions": [],
 		"operationTypes": operationTypes
@@ -85,6 +86,8 @@ function generateOperationList() {
  * @returns {Object} Operation object with function and parameters
  */
 function generateRandomOperation() {
+	const Math = Object.create( globalThis.Math );
+	Math.random = m_seededRandom;
 	const width = $.width();
 	const height = $.height();
 	const colorCount = m_pal.length;
@@ -105,11 +108,11 @@ function generateRandomOperation() {
 				"func": $.arc,
 				"params": [ arcX, arcY, arcRadius, arcAngle1, arcAngle2 ],
 				"getParams": () => [
-					arcX + Math.floor( Math.random() * 3 ) - 1,
-					arcY + Math.floor( Math.random() * 3 ) - 1,
-					arcRadius + Math.floor( Math.random() * 3 ) - 1,
-					arcAngle1 + Math.floor( Math.random() * 3 ) - 1,
-					arcAngle2 + Math.floor( Math.random() * 3 ) - 1
+					arcX + Math.floor( m_seededRandom() * 3 ) - 1,
+					arcY + Math.floor( m_seededRandom() * 3 ) - 1,
+					arcRadius + Math.floor( m_seededRandom() * 3 ) - 1,
+					arcAngle1 + Math.floor( m_seededRandom() * 3 ) - 1,
+					arcAngle2 + Math.floor( m_seededRandom() * 3 ) - 1
 				]
 			};
 			
@@ -338,7 +341,7 @@ function run( itemCount ) {
 		const operation = m_operations[ operationIndex ];
 		
 		// Set random color
-		$.setColor( Math.floor( Math.random() * m_pal.length ) );
+		$.setColor( Math.floor( m_seededRandom() * m_pal.length ) );
 		
 		// Execute the operation with variable parameters to prevent JIT optimization
 		const params = operation.getParams();

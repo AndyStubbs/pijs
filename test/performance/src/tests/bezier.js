@@ -95,14 +95,14 @@ function generateRandomOperation() {
 		"func": $.bezier,
 		"params": [ bezierX1, bezierY1, bezierX2, bezierY2, bezierX3, bezierY3, bezierX4, bezierY4 ],
 		"getParams": () => [
-			bezierX1 + Math.floor( Math.random() * 3 ) - 1,
-			bezierY1 + Math.floor( Math.random() * 3 ) - 1,
-			bezierX2 + Math.floor( Math.random() * 3 ) - 1,
-			bezierY2 + Math.floor( Math.random() * 3 ) - 1,
-			bezierX3 + Math.floor( Math.random() * 3 ) - 1,
-			bezierY3 + Math.floor( Math.random() * 3 ) - 1,
-			bezierX4 + Math.floor( Math.random() * 3 ) - 1,
-			bezierY4 + Math.floor( Math.random() * 3 ) - 1
+			bezierX1 + Math.floor( m_seededRandom() * 3 ) - 1,
+			bezierY1 + Math.floor( m_seededRandom() * 3 ) - 1,
+			bezierX2 + Math.floor( m_seededRandom() * 3 ) - 1,
+			bezierY2 + Math.floor( m_seededRandom() * 3 ) - 1,
+			bezierX3 + Math.floor( m_seededRandom() * 3 ) - 1,
+			bezierY3 + Math.floor( m_seededRandom() * 3 ) - 1,
+			bezierX4 + Math.floor( m_seededRandom() * 3 ) - 1,
+			bezierY4 + Math.floor( m_seededRandom() * 3 ) - 1
 		]
 	};
 }
@@ -124,7 +124,7 @@ function run( itemCount ) {
 		const operation = m_operations[ operationIndex ];
 		
 		// Set random color
-		$.setColor( Math.floor( Math.random() * m_pal.length ) );
+		$.setColor( Math.floor( m_seededRandom() * m_pal.length ) );
 		
 		// Execute the operation with variable parameters to prevent JIT optimization
 		const params = operation.getParams ? operation.getParams() : operation.params;

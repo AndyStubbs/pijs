@@ -14,6 +14,7 @@ let m_testOptions = [];
 let m_seededRandom;
 let m_operations;
 let m_pal;
+let m_isLegacy = false;
 
 /**
  * Gets the images test configuration object
@@ -24,25 +25,24 @@ let m_pal;
  * @returns {Object} Test configuration
  */
 export function getConfig( testOptions ) {
-	let exludeVersions = [ "2.0.0-alpha.1", "2.0.0-alpha.0", "1.2.5" ];
+	const selectedOptions = testOptions || [
+		"blit-images", "blit-images-colors", "blit-sprites", "blit-sprites-colors",
+		"draw-images", "draw-images-colors", "draw-sprites", "draw-sprites-colors"
+	];
+	const legacyCompatible = selectedOptions.length === 1 &&
+		[ "draw-images", "draw-sprites" ].includes( selectedOptions[ 0 ] );
+	const exludeVersions = [ "2.0.0-alpha.1", "2.0.0-alpha.0" ];
+	if( !legacyCompatible ) {
+		exludeVersions.push( "1.2.5" );
+	}
 	
 	// Generate test name based on options
 	let name = "Images Mixed Test";
-	if( !testOptions ) {
-
-		// Default to all test options if none provided
-		m_testOptions = [
-			"blit-images", "blit-images-colors", "blit-sprites", "blit-sprites-colors",
-			"draw-images", "draw-images-colors", "draw-sprites", "draw-sprites-colors"
-		];
-	} else {
-		m_testOptions = testOptions;
-	}
 	
-	if( m_testOptions.length === 1 ) {
+	if( selectedOptions.length === 1 ) {
 		
 		// Single test option - use descriptive name
-		const option = m_testOptions[ 0 ];
+		const option = selectedOptions[ 0 ];
 		name = option.split( "-" ).filter( part => part !== "" ).map(
 			name => name.substring( 0, 1 ).toUpperCase() + name.substring( 1 )
 		).join( " " ) + " Test";
@@ -56,7 +56,7 @@ export function getConfig( testOptions ) {
 		"itemCountStart": 200,
 		"itemFactor": 10,
 		"exludeVersions": exludeVersions,
-		"testOptions": testOptions
+		"testOptions": selectedOptions
 	};
 }
 
@@ -66,13 +66,8 @@ export function getConfig( testOptions ) {
  * @returns {Promise<void>}
  */
 async function init( config ) {
-	
-	if( !config.testOptions || config.testOptions.length === 0 ) {
-
-		
-	} else {
-		m_testOptions = config.testOptions;
-	}
+	m_testOptions = config.testOptions;
+	m_isLegacy = $.version === "1.2.5";
 
 	m_pal = $.getPal();
 
@@ -201,7 +196,11 @@ function generateRandomOperation() {
 		const frame = Math.floor(
 			m_seededRandom() * spriteData.frameCount
 		);
-		params = [ imageName, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ];
+		if( m_isLegacy ) {
+			params = [ imageName, frame, x, y, angle, anchorX, anchorY, 255, scaleX, scaleY ];
+		} else {
+			params = [ imageName, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ];
+		}
 		moveFn = ( params ) => {
 			params[ 1 ] = ( params[ 1 ] + 1 ) % spriteData.frameCount;
 			params[ 2 ] += dx;
@@ -214,14 +213,19 @@ function generateRandomOperation() {
 			if( params[ 3 ] === 0 || params[ 3 ] === height ) {
 				dy *= -1;
 			}
-			params[ 9 ] += da;
+			const angleIndex = m_isLegacy ? 4 : 9;
+			params[ angleIndex ] += da;
 		};
 	} else {
 
 		// Draw an image
 		const imageName = g_images[ Math.floor( m_seededRandom() * g_images.length ) ];
-		const image = $.getImage( imageName );
-		params = [ image, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ];
+		if( m_isLegacy ) {
+			params = [ imageName, x, y, angle, anchorX, anchorY, 255, scaleX, scaleY ];
+		} else {
+			const image = $.getImage( imageName );
+			params = [ image, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ];
+		}
 		moveFn = ( params ) => {
 			params[ 1 ] += dx;
 			params[ 2 ] += dy;
@@ -233,7 +237,8 @@ function generateRandomOperation() {
 			if( params[ 2 ] === 0 || params[ 2 ] === height ) {
 				dy *= -1;
 			}
-			params[ 8 ] += da;
+			const angleIndex = m_isLegacy ? 3 : 8;
+			params[ angleIndex ] += da;
 		};
 	}
 
@@ -253,6 +258,7 @@ function cleanUp() {
 	m_pal = null;
 	m_operations = [];
 	m_testOptions = [];
+	m_isLegacy = false;
 }
 
 /**
@@ -271,10 +277,7 @@ function run( itemCount ) {
 		const operationIndex = i % m_operations.length;
 		const operation = m_operations[ operationIndex ];
 		const params = operation.params;
-		operation.func(
-			params[ 0 ], params[ 1 ], params[ 2 ], params[ 3 ], params[ 4 ], params[ 5 ],
-			params[ 6 ], params[ 7 ], params[ 8 ], params[ 9 ]
-		);
+		operation.func( ...params );
 		operation.moveFn( params );
 	}
 }

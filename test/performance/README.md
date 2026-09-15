@@ -117,10 +117,29 @@ Each test configuration object should have:
 
 ## How It Works
 
-1. The system calculates the target FPS for the current system
-2. Tests are run with increasing item counts until the FPS drops below 95% of target
-3. The system finds the maximum stable item count for each test
-4. Results are displayed showing items per frame and items per second
+1. The system measures the display refresh rate from the median animation-frame interval.
+2. Each test warms up for 0.5 seconds so startup and shader compilation have less influence.
+3. A 1.5-second exponential/binary search finds the largest workload that stays within the
+   display frame budget.
+4. That fixed workload runs for 2 seconds. The median frame time determines throughput, while
+   the 95th-percentile frame time and median absolute deviation show stability.
+5. Seeded test data makes each version perform the same sequence of drawing operations.
+
+Pi.js 1.2.5 uses a smaller initial graphics workload and its legacy image/sprite argument
+order. Plain Draw Images and Draw Sprites tests are comparable across all supported versions;
+WebGL-only blit and color-tint variants remain excluded from 1.2.5.
+
+The complete active suite takes about 45 seconds rather than 15 seconds per test. Keep the tab
+visible and close other GPU-heavy applications while measuring. For a release comparison, run
+each version at least three times; the comparison graph uses the median run for each version.
+
+## Comparing Results
+
+Post each run, open **View Previous Results**, and press `C`. The graph starts with the overall
+score. Use the up and down arrow keys to move through individual tests. Each bar represents a
+version; when a version has multiple saved runs, its bar is the median of those runs. The
+overall graph uses only tests supported by every displayed version so legacy versions are not
+penalized for unavailable features.
 
 ## Running Tests
 
@@ -128,4 +147,4 @@ Open `index.html` in a web browser. The system will:
 1. Calculate target FPS
 2. Wait for a key press to begin
 3. Run each test automatically
-4. Display results when complete
+4. Display median throughput and stability statistics when complete

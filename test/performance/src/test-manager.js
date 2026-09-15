@@ -6,7 +6,11 @@
  * @module test-manager
  */
 
-const TEST_DURATION = 15000;
+const TARGET_FPS_SAMPLE_TIME = 1000;
+const WARM_UP_TIME = 500;
+const CALIBRATION_TIME = 1500;
+const MEASUREMENT_TIME = 2000;
+const CALIBRATION_WINDOW_SIZE = 8;
 
 export { init, startTests, getTargetFps, calculateTargetFPS };
 
@@ -63,9 +67,9 @@ const allImageTestOptions = [
 	"blit-images-colors",
 	//"blit-sprites",
 	"blit-sprites-colors",
-	//"draw-images",
+	"draw-images",
 	"draw-images-colors",
-	//"draw-sprites",
+	"draw-sprites",
 	"draw-sprites-colors"
 ];
 
@@ -131,7 +135,6 @@ function getTargetFps() {
  * @returns {Promise<number>} The calculated target FPS
  */
 async function calculateTargetFPS() {
-	const CALC_TIME = 3000;
 	let lt = 0;
 	
 	return new Promise( ( resolve ) => {
@@ -144,33 +147,18 @@ async function calculateTargetFPS() {
 				let dt = t - lt;
 				samples.push( dt );
 				duration += dt;
-				frames += 1;
 			}
 			lt = t;
-			if( duration < CALC_TIME ) {
+			if( duration < TARGET_FPS_SAMPLE_TIME ) {
 				requestAnimationFrame( loop );
 			} else {
 				if( samples.length === 0 ) {
-					return 60;
+					m_targetFps = 60;
+					resolve( m_targetFps );
+					return;
 				}
 
-				// Remove outliers
-				let originalLength = samples.length;
-				const sum = samples.reduce( ( sum, sample ) => sum += sample, 0 );
-				const avg = sum / samples.length;
-				let minAvg = avg * 0.95;
-				let maxAvg = avg * 1.05;
-				samples = samples.filter( sample => {
-					return sample > minAvg && sample < maxAvg
-				} );
-				const sum2 = samples.reduce( ( sum, sample ) => sum += sample, 0 );
-				
-				let rawFps;
-				if( samples.length === 0 ) {
-					rawFps = calcFpsFromMs( sum / originalLength );
-				} else {
-					rawFps = calcFpsFromMs( sum2 / samples.length );
-				}
+				const rawFps = calcFpsFromMs( calcPercentile( samples, 0.5 ) );
 				const fps = Math.round( rawFps * 100 ) / 100;
 				m_targetFps = fps;
 				resolve( fps );
@@ -185,22 +173,27 @@ async function calculateTargetFPS() {
  * @returns {Promise<void>}
  */
 async function runNextTest() {
-	const SAMPLES_COUNT = 500;
-
 	m_testIndex += 1;
 	if( m_testIndex >= m_tests.length ) {
 		if( m_results.length === 0 ) {
 			throw new Error( "Error, no results found after tests completed." );
 		}
 		const resultsObject = {
+			"schemaVersion": 2,
 			"version": $.version || "Unknown",
-			"date": new Date().toLocaleString(),
+			"date": new Date().toISOString(),
 			"targetFps": m_targetFps,
+			"method": {
+				"warmUpMs": WARM_UP_TIME,
+				"calibrationMs": CALIBRATION_TIME,
+				"measurementMs": MEASUREMENT_TIME,
+				"statistic": "median animation-frame throughput"
+			},
 			"tests": m_results,
 			"score": Math.round(
-				m_results.reduce(
+				m_results.filter( result => result.supported ).reduce(
 					( score, result ) => score + Math.round( result.score ), 0
-				) / m_results.length
+				) / m_results.filter( result => result.supported ).length
 			)
 		};
 		$.canvas().style.opacity = "";
@@ -213,9 +206,15 @@ async function runNextTest() {
 	if( test.exludeVersions.includes( $.version ) ) {
 		m_results.push( {
 			"name": test.name,
-			"avgFps": 0,
-			"itemCountAvg": 0,
+			"supported": false,
+			"medianFps": 0,
+			"itemCount": 0,
 			"itemCountPerSecond": 0,
+			"medianFrameMs": 0,
+			"p95FrameMs": 0,
+			"variabilityPercent": 0,
+			"sampleCount": 0,
+			"droppedFrames": 0,
 			"testTime": 0,
 			"score": 0
 		} );
@@ -223,12 +222,18 @@ async function runNextTest() {
 	}
 
 	let itemCount = test.itemCountStart;
+	if( $.version === "1.2.5" && test.legacyItemCountStart ) {
+		itemCount = test.legacyItemCountStart;
+	}
 	let startTime = 0;
-	let lt = 0;
-
-	// Most recent item counts
-	let recentItemCounts = [];
-	let recentFps = [];
+	let previousFrameTime = 0;
+	let phase = "warm-up";
+	let phaseStartTime = 0;
+	let lowerPassingCount = 0;
+	let upperFailingCount = null;
+	let calibrationFrames = [];
+	let measurementFrames = [];
+	let droppedFrames = 0;
 
 	// Initialize the test
 	await test.init( test );
@@ -240,20 +245,40 @@ async function runNextTest() {
 	async function loop( t ) {
 		if( !startTime ) {
 			startTime = t;
+			phaseStartTime = t;
+			previousFrameTime = t;
 		}
 
-		// Compute Times
-		let elapsed = t - startTime;
+		const elapsed = t - startTime;
+		const phaseElapsed = t - phaseStartTime;
+		const frameDuration = t - previousFrameTime;
+		previousFrameTime = t;
 
-		if( TEST_DURATION - elapsed <= 0 ) {
-			const itemCountAvg = calcAvg( recentItemCounts );
-			const avgFps = calcAvg( recentFps );
-			let score = Math.round( ( itemCountAvg * avgFps ) / 100 );
+		if(
+			phase === "measurement" && phaseElapsed >= MEASUREMENT_TIME &&
+			measurementFrames.length > 0
+		) {
+			const medianFrameMs = calcPercentile( measurementFrames, 0.5 );
+			const p95FrameMs = calcPercentile( measurementFrames, 0.95 );
+			const medianFps = calcFpsFromMs( medianFrameMs );
+			const throughput = itemCount * medianFps;
+			const deviations = measurementFrames.map(
+				value => Math.abs( value - medianFrameMs )
+			);
+			const variability = medianFrameMs > 0 ?
+				calcPercentile( deviations, 0.5 ) / medianFrameMs * 100 : 0;
+			const score = Math.round( throughput / 100 );
 			m_results.push( {
 				"name": test.name,
-				"avgFps": avgFps.toFixed( 2 ),
-				"itemCountAvg": itemCountAvg,
-				"itemCountPerSecond": itemCountAvg * m_targetFps,
+				"supported": true,
+				"medianFps": Number( medianFps.toFixed( 2 ) ),
+				"itemCount": itemCount,
+				"itemCountPerSecond": Math.round( throughput ),
+				"medianFrameMs": Number( medianFrameMs.toFixed( 3 ) ),
+				"p95FrameMs": Number( p95FrameMs.toFixed( 3 ) ),
+				"variabilityPercent": Number( variability.toFixed( 2 ) ),
+				"sampleCount": measurementFrames.length,
+				"droppedFrames": droppedFrames,
 				"testTime": elapsed,
 				"score": score
 			} );
@@ -265,69 +290,44 @@ async function runNextTest() {
 			return await runNextTest();
 		}
 
-		let frameStartTime = performance.now();
+		const targetFrameMs = 1000 / m_targetFps;
+		if( phase === "warm-up" ) {
+			if( frameDuration > targetFrameMs * 2 && itemCount > 1 ) {
+				itemCount = Math.max( 1, Math.floor( itemCount / 2 ) );
+			}
+			if( phaseElapsed >= WARM_UP_TIME ) {
+				phase = "calibration";
+				phaseStartTime = t;
+			}
+		} else if( phase === "calibration" ) {
+			if( frameDuration > targetFrameMs * 2 ) {
+				adjustItemCount( false );
+				calibrationFrames = [];
+			} else {
+				calibrationFrames.push( frameDuration );
+			}
+			if( calibrationFrames.length >= CALIBRATION_WINDOW_SIZE ) {
+				const medianFrameMs = calcPercentile( calibrationFrames, 0.5 );
+				const p90FrameMs = calcPercentile( calibrationFrames, 0.9 );
+				const passes = medianFrameMs <= targetFrameMs * 1.05 &&
+					p90FrameMs <= targetFrameMs * 1.2;
+				adjustItemCount( passes );
+				calibrationFrames = [];
+			}
+			if( phaseElapsed >= CALIBRATION_TIME && lowerPassingCount > 0 ) {
+				itemCount = lowerPassingCount;
+				phase = "measurement";
+				phaseStartTime = t;
+			}
+		} else {
+			measurementFrames.push( frameDuration );
+			if( frameDuration > targetFrameMs * 4 ) {
+				droppedFrames += 1;
+			}
+		}
+
 		test.run( itemCount, test.data );
-		let frameEndTime = performance.now();
-		let frameDuration = ( frameEndTime - frameStartTime );
-		let currentFps = calcFpsFromMs( frameDuration );
-		
-		// Track the recent frame counts to calculate stability
-		if( recentItemCounts.length >= SAMPLES_COUNT ) {
-			recentItemCounts.shift();
-		}
-		recentItemCounts.push( itemCount );
-
-		// Track the recnet FPS
-		if( recentFps.length >= SAMPLES_COUNT ) {
-			recentFps.shift();
-		}
-		recentFps.push( currentFps );
-		
-		// Adjust item count based on how much we beat target fps
-		if( currentFps > m_targetFps * 1.1 ) {
-
-			// Speed up
-			let increment = 1;
-			if( currentFps > m_targetFps * 1.125 ) increment = 5;
-			if( currentFps > m_targetFps * 1.15 )  increment = 15;
-			if( currentFps > m_targetFps * 1.25 )  increment = 25;
-			if( currentFps > m_targetFps * 1.5 )   increment = 50;
-			if( currentFps > m_targetFps * 2 )     increment = 100;
-			if( currentFps > m_targetFps * 3 )     increment = 200;
-
-			if( itemCount < 100 ) {
-				increment = 1;
-			} else if( itemCount < 200 ) {
-				increment = Math.min( increment, 50 );
-			}
-
-			// Speed up faster in first half of test
-			if( elapsed < TEST_DURATION / 2 ) {
-				increment *= 5;
-			}
-			itemCount += increment;
-		} else if( currentFps < m_targetFps ) {
-
-			// Slow down
-			let decrement = 1;
-			if( currentFps < m_targetFps * 0.95 ) decrement = 5;
-			if( currentFps < m_targetFps * 0.90 ) decrement = 15;
-			if( currentFps < m_targetFps * 0.85 ) decrement = 25;
-			if( currentFps < m_targetFps * 0.50 ) decrement = 50;
-			if( currentFps < m_targetFps * 0.30 ) decrement = 100;
-			if( currentFps < m_targetFps * 0.20 ) decrement = 200;
-			if( itemCount < 100 ) {
-				decrement = 1;
-			} else if( itemCount < 200 ) {
-				decrement = Math.min( decrement, 50 );
-			}
-
-			// Slow down faster in first half of test
-			if( elapsed < TEST_DURATION / 2 ) {
-				decrement *= 5;
-			}
-			itemCount = Math.max( itemCount - decrement, 1 );
-		}
+		const currentFps = calcFpsFromMs( frameDuration );
 
 		//$.cls( 0, 0, 155, 65 );
 		$.setColor( "black" );
@@ -339,26 +339,58 @@ async function runNextTest() {
 		$.print( "Item Count:" + itemCount.toFixed( 0 ).padStart( 13, " " ) );
 		$.print( "Target FPS:" + m_targetFps.toFixed( 0 ).padStart( 13, " " ) );
 		$.print( "Frame FPS:" + currentFps.toFixed( 0 ).padStart( 14, " " ) );
-		$.print(
-			"Test Time:" + ( ( TEST_DURATION - elapsed ) / 1000 ).toFixed( 2 ).padStart( 14, " " )
-		);
-
-		lt = t;
+		$.print( "Phase:" + phase.padStart( 18, " " ) );
 		requestAnimationFrame( loop );
 	};
+
+	/**
+	 * Updates the workload search bounds after a calibration sample.
+	 *
+	 * @param {boolean} passes - Whether the current workload met the frame budget
+	 * @returns {void}
+	 */
+	function adjustItemCount( passes ) {
+		if( passes ) {
+			lowerPassingCount = itemCount;
+			if( upperFailingCount === null ) {
+				itemCount *= 2;
+			} else {
+				itemCount = Math.floor( ( itemCount + upperFailingCount ) / 2 );
+			}
+			return;
+		}
+
+		upperFailingCount = itemCount;
+		if( lowerPassingCount === 0 ) {
+			itemCount = Math.max( 1, Math.floor( itemCount / 2 ) );
+			if( itemCount === 1 ) {
+				lowerPassingCount = 1;
+			}
+		} else {
+			itemCount = Math.floor( ( itemCount + lowerPassingCount ) / 2 );
+		}
+	}
 }
 
 /**
- * Calculates the average of an array of numbers
- * 
- * @param {Array<number>} data - Array of numbers
- * @returns {number} The average value
+ * Calculates a percentile using linear interpolation between sorted samples.
+ *
+ * @param {Array<number>} data - Numeric samples
+ * @param {number} percentile - Value from zero through one
+ * @returns {number} Percentile value
  */
-function calcAvg( data ) {
+function calcPercentile( data, percentile ) {
 	if( data.length === 0 ) {
 		return 0;
 	}
-	return data.reduce( ( sum, item ) => sum + item, 0 ) / data.length;
+	const sorted = [ ...data ].sort( ( a, b ) => a - b );
+	const index = ( sorted.length - 1 ) * percentile;
+	const lowerIndex = Math.floor( index );
+	const fraction = index - lowerIndex;
+	if( lowerIndex >= sorted.length - 1 ) {
+		return sorted[ sorted.length - 1 ];
+	}
+	return sorted[ lowerIndex ] + ( sorted[ lowerIndex + 1 ] - sorted[ lowerIndex ] ) * fraction;
 }
 
 /**

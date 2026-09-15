@@ -133,7 +133,7 @@ function generateRandomOperation() {
 				"params": [ points, baseFillColor ],
 				"getParams": () => [
 					points,
-					( baseFillColor + ( ( Math.random() * 5 ) | 0 ) ) % colorCount
+					( baseFillColor + ( ( m_seededRandom() * 5 ) | 0 ) ) % colorCount
 				]
 			};
 
@@ -176,7 +176,7 @@ function run( itemCount ) {
 		const operation = m_operations[ operationIndex ];
 		
 		// Set random border color
-		$.setColor( ( Math.random() * palLength ) | 0 );
+		$.setColor( ( m_seededRandom() * palLength ) | 0 );
 		
 		// Execute the operation with variable parameters to prevent JIT optimization
 		const params = operation.getParams();

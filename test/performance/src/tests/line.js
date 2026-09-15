@@ -91,10 +91,10 @@ function generateRandomOperation() {
 		"func": $.line,
 		"params": [ x1, y1, x2, y2 ],
 		"getParams": () => [
-			x1 + Math.floor( Math.random() * 3 ) - 1,
-			y1 + Math.floor( Math.random() * 3 ) - 1,
-			x2 + Math.floor( Math.random() * 3 ) - 1,
-			y2 + Math.floor( Math.random() * 3 ) - 1
+			x1 + Math.floor( m_seededRandom() * 3 ) - 1,
+			y1 + Math.floor( m_seededRandom() * 3 ) - 1,
+			x2 + Math.floor( m_seededRandom() * 3 ) - 1,
+			y2 + Math.floor( m_seededRandom() * 3 ) - 1
 		]
 	};
 }
@@ -116,7 +116,7 @@ function run( itemCount ) {
 		const operation = m_operations[ operationIndex ];
 		
 		// Set random color
-		$.setColor( Math.floor( Math.random() * m_pal.length ) );
+		$.setColor( Math.floor( m_seededRandom() * m_pal.length ) );
 		
 		// Execute the operation with variable parameters to prevent JIT optimization
 		const params = operation.getParams ? operation.getParams() : operation.params;

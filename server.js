@@ -143,13 +143,15 @@ function getFormattedDate( date ) {
 
 	let hours = date.getHours();
 	const minutes = date.getMinutes().toString().padStart(2, "0");
+	const seconds = date.getSeconds().toString().padStart(2, "0");
+	const milliseconds = date.getMilliseconds().toString().padStart(3, "0");
 	const ampm = hours >= 12 ? "PM" : "AM";
 
 	hours = hours % 12;
 	hours = hours ? hours : 12; // the hour "0" should be "12"
 	const formattedHours = hours.toString().padStart(2, "0");
 
-	return `${year}-${month}-${day}_${formattedHours}-${minutes}-${ampm}`;
+	return `${year}-${month}-${day}_${formattedHours}-${minutes}-${seconds}-${milliseconds}-${ampm}`;
 }
 
 const server = http.createServer( ( req, res ) => {

@@ -12,6 +12,7 @@ export { init, showResults, postResults, showPreviousResults };
 
 let m_api = null;
 let m_currentResultsObject = null;
+const PAGE_SIZE = 9;
 
 /**
  * Adds a DOM keydown listener that matches the specified key.
@@ -135,7 +136,7 @@ function showResults( resultsObject ) {
 	
 	// Create results table data
 	const resultsData = [ [
-		"Test Name", "Score", "Avg FPS", "Items/Frame", "Items/Sec", "Duration"
+		"Test Name", "Score", "FPS", "Items/Frame", "Items/Sec", "P95", "Var"
 	] ];
 	const menuOptionsData = [];
 
@@ -149,10 +150,11 @@ function showResults( resultsObject ) {
 		resultsData.push( [
 			result.name,
 			( result.score || 0 ) + "",
-			result.avgFps,
-			Math.round( result.itemCountAvg ).toString(),
+			result.medianFps,
+			Math.round( result.itemCount ).toString(),
 			Math.round( result.itemCountPerSecond ).toString(),
-			Math.round( result.testTime / 1000 ).toString() + "s"
+			result.p95FrameMs.toFixed( 1 ) + "ms",
+			result.variabilityPercent.toFixed( 1 ) + "%"
 		] );
 		const resultsIndex = resultsData.length - 1;
 		for( let i = 0; i < padding.length; i += 1 ) {
@@ -286,6 +288,9 @@ async function showPreviousResults() {
  */
 function displayResultsList( files, startIndex ) {
 	$.cls();
+	const totalPages = Math.ceil( files.length / PAGE_SIZE );
+	const normalizedStartIndex = startIndex >= files.length ? 0 : startIndex;
+	const pageFiles = files.slice( normalizedStartIndex, normalizedStartIndex + PAGE_SIZE );
 	
 	// Title - centered
 	$.setColor( 10 );
@@ -316,9 +321,8 @@ function displayResultsList( files, startIndex ) {
 	const resultsData = [ [ "Key", "Date/Time", "Version", "Score", "FPS" ] ];
 	
 	// Add each result file to the table
-	for( let i = 0; i + startIndex < files.length && i < 9; i++ ) {
-		const fileIndex = i + startIndex;
-		const file = files[ fileIndex  ];
+	for( let i = 0; i < pageFiles.length; i++ ) {
+		const file = pageFiles[ i ];
 		const dateTime = new Date( file.date ).toLocaleString();
 		
 		resultsData.push( [
@@ -330,9 +334,8 @@ function displayResultsList( files, startIndex ) {
 		] );
 	}
 
-	if( files.length > 9 ) {
-		const totalPages = Math.floor( files.length / 9 ) + 1;
-		const currentPage = Math.floor( startIndex / 9 ) + 1;
+	if( totalPages > 1 ) {
+		const currentPage = Math.floor( normalizedStartIndex / PAGE_SIZE ) + 1;
 		resultsData.push( [
 			"0",
 			"View Next Page",
@@ -363,7 +366,7 @@ function displayResultsList( files, startIndex ) {
 	// Add menu options
 	$.setColor( 15 );
 	$.setPos( 0, $.getRows() - 3 );
-	$.print( "Press number to view result, 'D' to delete all, 'R' to return", false, true );
+	$.print( "1-9: View | C: Compare | 0: Next | D: Delete | R: Return", false, true );
 	
 	// Define key handler cleanup list
 	const keyListenerCleanups = [];
@@ -374,22 +377,21 @@ function displayResultsList( files, startIndex ) {
 	}
 
 	// Set up key handlers for each file
-	for( let i = 0; i < files.length && i < 10; i++ ) {
-		const fileIndex = i + startIndex;
-		const key = ( fileIndex + 1 ).toString();
+	for( let i = 0; i < pageFiles.length; i++ ) {
+		const key = ( i + 1 ).toString();
 		const handler = () => {
 			clearAllKeys();
-			viewResult( files[ fileIndex ].name );
+			viewResult( pageFiles[ i ].name );
 		};
 		registerKeyHandler( key, handler );
 	}
 
-	if( files.length > 9 ) {
+	if( totalPages > 1 ) {
 		const key = "0";
 		const handler = () => {
 			clearAllKeys();
-			let nextStartIndex = startIndex + 9;
-			if( nextStartIndex > files.length ) {
+			let nextStartIndex = normalizedStartIndex + PAGE_SIZE;
+			if( nextStartIndex >= files.length ) {
 				nextStartIndex = 0;
 			}
 			displayResultsList( files, nextStartIndex );
@@ -399,6 +401,7 @@ function displayResultsList( files, startIndex ) {
 	
 	// Set up menu handlers
 	registerKeyHandler( "KeyD", deleteHandler );
+	registerKeyHandler( "KeyC", compareHandler );
 	registerKeyHandler( "KeyR", returnHandler );
 	
 	function clearAllKeys() {
@@ -420,6 +423,183 @@ function displayResultsList( files, startIndex ) {
 		deleteAllResults( files );
 	}
 
+	function compareHandler() {
+		clearAllKeys();
+		showComparison( files );
+	}
+
+}
+
+/**
+ * Loads saved runs and displays a version comparison graph.
+ *
+ * @param {Array<Object>} files - Saved result summaries
+ * @returns {Promise<void>}
+ */
+async function showComparison( files ) {
+	$.cls();
+	$.setColor( 10 );
+	$.setPos( 0, 2 );
+	$.print( "Loading comparison...", false, true );
+
+	try {
+		const responses = await Promise.all( files.map( file => fetch(
+			`http://localhost:8080/api/get-result/${encodeURIComponent( file.name )}`
+		) ) );
+		const payloads = await Promise.all( responses.map( response => response.json() ) );
+		const runs = payloads.filter( payload => payload.success ).map( payload => payload.data );
+		if( runs.length === 0 ) {
+			showError( "No comparable results found" );
+			return;
+		}
+		displayComparisonGraph( files, runs, 0 );
+	} catch( error ) {
+		showError( `Error: ${error.message}` );
+	}
+}
+
+/**
+ * Draws median scores by version, with a selectable overall or per-test metric.
+ *
+ * @param {Array<Object>} files - Saved result summaries
+ * @param {Array<Object>} runs - Full saved result objects
+ * @param {number} metricIndex - Selected metric index
+ * @returns {void}
+ */
+function displayComparisonGraph( files, runs, metricIndex ) {
+	const testNames = [ ...new Set( runs.flatMap(
+		run => run.tests.filter( test => test.supported !== false ).map( test => test.name )
+	) ) ].sort();
+	const versions = [ ...new Set( runs.map( run => run.version ) ) ];
+	const commonTestNames = testNames.filter( name => versions.every( version => runs.some(
+		run => run.version === version && run.tests.some(
+			test => test.name === name && test.supported !== false
+		)
+	) ) );
+	const metrics = [ "Overall Score", ...testNames ];
+	const selectedIndex = ( metricIndex + metrics.length ) % metrics.length;
+	const metric = metrics[ selectedIndex ];
+	const grouped = new Map();
+
+	for( const run of runs ) {
+		let value = null;
+		if( selectedIndex === 0 ) {
+			const commonTests = run.tests.filter( test => commonTestNames.includes( test.name ) );
+			if( commonTests.length > 0 ) {
+				value = commonTests.reduce( ( sum, test ) => sum + test.score, 0 ) /
+					commonTests.length;
+			}
+		}
+		if( selectedIndex > 0 ) {
+			const test = run.tests.find( entry => entry.name === metric );
+			value = test ? test.itemCountPerSecond : null;
+		}
+		if( Number.isFinite( value ) ) {
+			if( !grouped.has( run.version ) ) {
+				grouped.set( run.version, [] );
+			}
+			grouped.get( run.version ).push( value );
+		}
+	}
+
+	const bars = [ ...grouped.entries() ].map( ( [ version, values ] ) => ( {
+		"version": version,
+		"value": median( values ),
+		"runs": values.length
+	} ) ).sort( ( a, b ) => a.version.localeCompare( b.version, undefined, { "numeric": true } ) );
+	const maxValue = Math.max( ...bars.map( bar => bar.value ), 1 );
+	const width = $.width();
+	const height = $.height();
+	const chartLeft = 90;
+	const chartRight = width - 35;
+	const chartTop = 100;
+	const chartBottom = height - 115;
+	const chartHeight = chartBottom - chartTop;
+	const slotWidth = ( chartRight - chartLeft ) / Math.max( bars.length, 1 );
+	const colors = [ 12, 11, 10, 13, 14, 9 ];
+	const measureText = text => {
+		if( typeof $.calcWidth === "function" ) {
+			return $.calcWidth( text );
+		}
+		return text.length * width / $.getCols();
+	};
+
+	$.cls();
+	$.setColor( 10 );
+	$.setPos( 0, 2 );
+	$.print( "Performance Comparison", false, true );
+	$.setColor( 15 );
+	$.setPos( 0, 5 );
+	$.print( metric, false, true );
+	$.setColor( 8 );
+	$.line( chartLeft, chartTop, chartLeft, chartBottom );
+	$.line( chartLeft, chartBottom, chartRight, chartBottom );
+
+	for( let i = 0; i < bars.length; i++ ) {
+		const bar = bars[ i ];
+		const barHeight = Math.max( 1, Math.round( bar.value / maxValue * chartHeight ) );
+		const barWidth = Math.max( 10, Math.floor( slotWidth * 0.55 ) );
+		const x = Math.floor( chartLeft + slotWidth * i + ( slotWidth - barWidth ) / 2 );
+		const y = chartBottom - barHeight;
+		const valueText = formatGraphValue( bar.value );
+		const versionText = bar.runs > 1 ? `${bar.version} (${bar.runs})` : bar.version;
+		const lineHeight = height / $.getRows();
+		$.rect( x, y, barWidth, barHeight, colors[ i % colors.length ] );
+		$.setColor( 15 );
+		$.setPosPx(
+			Math.max( 0, x + ( barWidth - measureText( valueText ) ) / 2 ),
+			y + ( barHeight - lineHeight ) / 2
+		);
+		$.print( valueText );
+		$.setPosPx(
+			Math.max( 0, x + ( barWidth - measureText( versionText ) ) / 2 ),
+			chartBottom + 12
+		);
+		$.print( versionText );
+	}
+
+	$.setColor( 7 );
+	const helpText = "Up/Down: Change metric | R: Return to results";
+	$.setPosPx( ( width - measureText( helpText ) ) / 2, height - 35 );
+	$.print( helpText );
+	const cleanups = [];
+	const changeMetric = offset => {
+		while( cleanups.length > 0 ) cleanups.pop()();
+		displayComparisonGraph( files, runs, selectedIndex + offset );
+	};
+	cleanups.push( addKeyListener( "ArrowUp", () => changeMetric( -1 ) ) );
+	cleanups.push( addKeyListener( "ArrowDown", () => changeMetric( 1 ) ) );
+	cleanups.push( addKeyListener( "KeyR", () => {
+		while( cleanups.length > 0 ) cleanups.pop()();
+		displayResultsList( files, 0 );
+	} ) );
+}
+
+/**
+ * Returns the median of numeric values.
+ *
+ * @param {Array<number>} values - Numeric values
+ * @returns {number} Median value
+ */
+function median( values ) {
+	const sorted = [ ...values ].sort( ( a, b ) => a - b );
+	const middle = Math.floor( sorted.length / 2 );
+	if( sorted.length % 2 === 0 ) {
+		return ( sorted[ middle - 1 ] + sorted[ middle ] ) / 2;
+	}
+	return sorted[ middle ];
+}
+
+/**
+ * Formats a graph value compactly.
+ *
+ * @param {number} value - Numeric graph value
+ * @returns {string} Compact value
+ */
+function formatGraphValue( value ) {
+	if( value >= 1000000 ) return ( value / 1000000 ).toFixed( 1 ) + "m";
+	if( value >= 1000 ) return ( value / 1000 ).toFixed( 1 ) + "k";
+	return Math.round( value ).toString();
 }
 
 /**
