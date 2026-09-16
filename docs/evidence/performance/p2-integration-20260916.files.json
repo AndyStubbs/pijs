@@ -1,0 +1,2617 @@
+[
+  {
+    "path": "build.log",
+    "bytes": 6422,
+    "sha256": "5acc5d2fd64e1420f02af958ad3be8dd9972ff2206316d550187fa05297f4341"
+  },
+  {
+    "path": "run-visuals.js",
+    "bytes": 2305,
+    "sha256": "0215258f17b89ae0eeba11977b427570aaad2b2e63d949c1fd5fff746fed7588"
+  },
+  {
+    "path": "source/build/pi.d.ts",
+    "bytes": 119395,
+    "sha256": "02e3eef8982cc9310498ac2923e2644533876db2ac9ae3a839741e25fcb940a6"
+  },
+  {
+    "path": "source/build/pi.esm.js",
+    "bytes": 373358,
+    "sha256": "b775f20a45bd4f547d6b1b1b52197b5da2d255b40f60c4a1409092ffcf72ee74"
+  },
+  {
+    "path": "source/build/pi.esm.js.map",
+    "bytes": 829386,
+    "sha256": "66e42700af3fb521f30b807a5db6978ecb3e141cc04770b3e2636cace9d59780"
+  },
+  {
+    "path": "source/build/pi.esm.min.js",
+    "bytes": 177134,
+    "sha256": "5f801a0fcd960bd69d798a0bad51b153d2a4e811022b62df095b026a8d0a9102"
+  },
+  {
+    "path": "source/build/pi.esm.min.js.map",
+    "bytes": 840958,
+    "sha256": "0ea115b78a5dc06436b36e7a5e3bdd6844e2be092b83b050cc44b65717fb17fc"
+  },
+  {
+    "path": "source/build/pi.js",
+    "bytes": 397282,
+    "sha256": "a3532620653a5e451fd3dcc61eb30aafd602c85cb61e5b688a87b047924cd6ef"
+  },
+  {
+    "path": "source/build/pi.js.map",
+    "bytes": 831997,
+    "sha256": "74ed8ec5b50791eb9bd7d48a0069e40f96fbc2760266e65a5e4bd3c67578f640"
+  },
+  {
+    "path": "source/build/pi.lite.d.ts",
+    "bytes": 89660,
+    "sha256": "b85a54a849d2a94359ab2ee6fcfc44f139455f5e11690a2cab0d845d450c863e"
+  },
+  {
+    "path": "source/build/pi.lite.esm.js",
+    "bytes": 286482,
+    "sha256": "b2565499d8cd2154c8ebecd975b9891df4772d1f9da070515677b4e82f546ff9"
+  },
+  {
+    "path": "source/build/pi.lite.esm.js.map",
+    "bytes": 641573,
+    "sha256": "a5210d63957ab229e12e27b9cb5d721b4152d67b044df7a16a904acdccdb2706"
+  },
+  {
+    "path": "source/build/pi.lite.esm.min.js",
+    "bytes": 136500,
+    "sha256": "7ccaf6ccfa8b91a086b4fb75ec183dcdc0a101745de33c1d0e00cd1f5bc215b4"
+  },
+  {
+    "path": "source/build/pi.lite.esm.min.js.map",
+    "bytes": 654157,
+    "sha256": "5bb4320fabb9a218b32f364431521b4bd3b0dbf8cc62c79c08d25202bfacb26c"
+  },
+  {
+    "path": "source/build/pi.lite.js",
+    "bytes": 304431,
+    "sha256": "016dccc40522cba18fa30142d6aac6149998229addb55e74c2f8af6e007341f3"
+  },
+  {
+    "path": "source/build/pi.lite.js.map",
+    "bytes": 643576,
+    "sha256": "27a3b00b98688beb43fffd538484ffde99ad281325f4894d4e616c5162f80b68"
+  },
+  {
+    "path": "source/build/pi.lite.min.js",
+    "bytes": 136481,
+    "sha256": "a8a6105990acf7451a012dfc5ba254f1547e7bb9bb0e812d032c8f0952499719"
+  },
+  {
+    "path": "source/build/pi.lite.min.js.map",
+    "bytes": 654157,
+    "sha256": "5b3b442eeecedab9772dd74f262dc564bfc9bcb8e1da427d92bfb06093703a08"
+  },
+  {
+    "path": "source/build/pi.min.js",
+    "bytes": 177115,
+    "sha256": "6f081a121726ce9970bfd54de90a322d8db6be51e511c01245350c1113b4ac06"
+  },
+  {
+    "path": "source/build/pi.min.js.map",
+    "bytes": 840958,
+    "sha256": "fdecb1382b367448a1e2efe8bcc0215358a9c1e5ba341db03ff70c81f66cdda7"
+  },
+  {
+    "path": "source/build/plugins/example-plugin/example-plugin.esm.js",
+    "bytes": 3420,
+    "sha256": "852fde8331faebb09825de1c7f99d50d162d1090d8b2ab0654e22f5b1c6fb93d"
+  },
+  {
+    "path": "source/build/plugins/example-plugin/example-plugin.esm.js.map",
+    "bytes": 8277,
+    "sha256": "446f904abd8344bd02a7f33b53886ccb0a78878152e1f284431a01f8393385e6"
+  },
+  {
+    "path": "source/build/plugins/example-plugin/example-plugin.esm.min.js",
+    "bytes": 1757,
+    "sha256": "2d15b6ecbb5991931e891627e9d134892abc91acfa6af60e0be4de03dfb49aa3"
+  },
+  {
+    "path": "source/build/plugins/example-plugin/example-plugin.esm.min.js.map",
+    "bytes": 8371,
+    "sha256": "fda1608a61dd30a9833aefc6bd06c57af3a7df06240af6a8bfa3e5d116d29cf0"
+  },
+  {
+    "path": "source/build/plugins/example-plugin/example-plugin.js",
+    "bytes": 3597,
+    "sha256": "471da64dacb5b5cfff42c49359387260f2cae76e5d67bb947678d134af8ba77f"
+  },
+  {
+    "path": "source/build/plugins/example-plugin/example-plugin.js.map",
+    "bytes": 8300,
+    "sha256": "ebeb4d45005712942b99a876079af955c238fb7b72a478e4e692bd495739fb42"
+  },
+  {
+    "path": "source/build/plugins/example-plugin/example-plugin.min.js",
+    "bytes": 1756,
+    "sha256": "028eeb1641e8a77708a9170fa264de93e73f8c4b608eca9d64a77f7f69cf479d"
+  },
+  {
+    "path": "source/build/plugins/example-plugin/example-plugin.min.js.map",
+    "bytes": 8372,
+    "sha256": "867fbdae939a5c0b7cb1d8e671d784c37686dbba44a4f92fac9568c5c61af0fa"
+  },
+  {
+    "path": "source/build/plugins/gamepad/gamepad.d.ts",
+    "bytes": 185,
+    "sha256": "901cfe198bc62ff1d175be13cb8e21188570c248a402ec480cb35ac80da2ca3e"
+  },
+  {
+    "path": "source/build/plugins/gamepad/gamepad.esm.js",
+    "bytes": 8598,
+    "sha256": "df3c409dc9e27913273f805369650d19a2f52ee9b67f8f176fe69a7d42549041"
+  },
+  {
+    "path": "source/build/plugins/gamepad/gamepad.esm.js.map",
+    "bytes": 18021,
+    "sha256": "883e44dbea9cc3b83cedf2c48994191ab3fdff3bf45fcd9bb05c94159dbfde9c"
+  },
+  {
+    "path": "source/build/plugins/gamepad/gamepad.esm.min.js",
+    "bytes": 4007,
+    "sha256": "ea17a3ebabbaf5365875bfa628a964c929eceb8d7b9c5f17f22605f8bdf81740"
+  },
+  {
+    "path": "source/build/plugins/gamepad/gamepad.esm.min.js.map",
+    "bytes": 18124,
+    "sha256": "16bb3ec1fc308e782f6453233324f9e94d7bd63b6544151772dafa7e60f2dbe8"
+  },
+  {
+    "path": "source/build/plugins/gamepad/gamepad.js",
+    "bytes": 9147,
+    "sha256": "cb5615b577d36266792ccfcf687a751859fbe7efba4b5bf565023e4f048028c6"
+  },
+  {
+    "path": "source/build/plugins/gamepad/gamepad.js.map",
+    "bytes": 18134,
+    "sha256": "2729c79efdae7837ab7b7d543f45317d58bae41993f1d6e58bf75457b32ada4c"
+  },
+  {
+    "path": "source/build/plugins/gamepad/gamepad.min.js",
+    "bytes": 4006,
+    "sha256": "73f20dfb089fe5070c1081b829f7c98f79f3bc73e8f314e0fd2f3398cb3ff299"
+  },
+  {
+    "path": "source/build/plugins/gamepad/gamepad.min.js.map",
+    "bytes": 18125,
+    "sha256": "3d3b9a8dd08e8c77e7dc114969b068e14dd9baa64fb2eb591041155cdc889e14"
+  },
+  {
+    "path": "source/build/plugins/keyboard/keyboard.d.ts",
+    "bytes": 188,
+    "sha256": "4c9475450bd559d1614d30e967a67788652e3746698147d56554962b550adafd"
+  },
+  {
+    "path": "source/build/plugins/keyboard/keyboard.esm.js",
+    "bytes": 18331,
+    "sha256": "67b18b35f52a2904de692a6ea44a136f725fdb6cb8488c37ee4ef306153d55b7"
+  },
+  {
+    "path": "source/build/plugins/keyboard/keyboard.esm.js.map",
+    "bytes": 41197,
+    "sha256": "173fb0c2800749c1f6d11146e3e35c30a717c8d6c243ae8542b1fd4cd101c74a"
+  },
+  {
+    "path": "source/build/plugins/keyboard/keyboard.esm.min.js",
+    "bytes": 8463,
+    "sha256": "df15e79f69e57d0c243bd41be143c46d32d0cdf19783192b29531bd20c876612"
+  },
+  {
+    "path": "source/build/plugins/keyboard/keyboard.esm.min.js.map",
+    "bytes": 40974,
+    "sha256": "fb21c0e3e5ced824af59f428d8f84fb3e57e8c3a2e6ba6ea8e6d9eeb68473a4a"
+  },
+  {
+    "path": "source/build/plugins/keyboard/keyboard.js",
+    "bytes": 19570,
+    "sha256": "27d34abd7cc64c99543dbc8948eb557e0cb5ef0b89f203671b1d26489ff42bb8"
+  },
+  {
+    "path": "source/build/plugins/keyboard/keyboard.js.map",
+    "bytes": 41369,
+    "sha256": "cc2541487ae700c8152c1146ecffb0e5a045ef26b1c7201a08ce637304560506"
+  },
+  {
+    "path": "source/build/plugins/keyboard/keyboard.min.js",
+    "bytes": 8436,
+    "sha256": "da95f677723d0fc6535f028593e934f109a96d16be508566d1dadee917620873"
+  },
+  {
+    "path": "source/build/plugins/keyboard/keyboard.min.js.map",
+    "bytes": 40975,
+    "sha256": "27c45ee5f18f2ae974e5d518cb1ed05c41e5732bb1c7aafa79c3b701341d03e5"
+  },
+  {
+    "path": "source/build/plugins/onscreen-keyboard/onscreen-keyboard.esm.js",
+    "bytes": 15029,
+    "sha256": "c7cf4b46c3cbdf6ab71ce9c19041a58b0b60fc84298a6feada8cae33ed1e6eba"
+  },
+  {
+    "path": "source/build/plugins/onscreen-keyboard/onscreen-keyboard.esm.js.map",
+    "bytes": 30514,
+    "sha256": "d1af06112ca7e9498dadc7767ca621e07af454015cbbcf4b52f149f0ed76bb7b"
+  },
+  {
+    "path": "source/build/plugins/onscreen-keyboard/onscreen-keyboard.esm.min.js",
+    "bytes": 6877,
+    "sha256": "0c75fbb6d28b10344f896e218da3e0149b2735b9e3aaffedf242f8302083de5c"
+  },
+  {
+    "path": "source/build/plugins/onscreen-keyboard/onscreen-keyboard.esm.min.js.map",
+    "bytes": 29529,
+    "sha256": "4fa4b24b0d2bbaa41e8a16888ede703cb69323618b31fdc0ba74087b5fdef6ab"
+  },
+  {
+    "path": "source/build/plugins/onscreen-keyboard/onscreen-keyboard.js",
+    "bytes": 16085,
+    "sha256": "aaf2fdd1c7abcaa303b02d9ccf58511880c4b5421785dd20a5bff5047a292007"
+  },
+  {
+    "path": "source/build/plugins/onscreen-keyboard/onscreen-keyboard.js.map",
+    "bytes": 30573,
+    "sha256": "79c60d84baed1abf24ca394f83c6b014e061e6309b471b6aa5e2a05fac125ddd"
+  },
+  {
+    "path": "source/build/plugins/onscreen-keyboard/onscreen-keyboard.min.js",
+    "bytes": 6876,
+    "sha256": "46a13fbfdbe3e82a48b39bd1d7c3267ee652cd4c2780e04f6539934d80fbc774"
+  },
+  {
+    "path": "source/build/plugins/onscreen-keyboard/onscreen-keyboard.min.js.map",
+    "bytes": 29530,
+    "sha256": "a8a3691439e7b7d8c77904dc484e22910e9dacdd1a4e3a0902eb777d0af08a13"
+  },
+  {
+    "path": "source/build/plugins/pens/pens.esm.js",
+    "bytes": 217,
+    "sha256": "637c298e5a58b8d64a454b5b85dee296f1ccec818d296323b410f0ca005b01e7"
+  },
+  {
+    "path": "source/build/plugins/pens/pens.esm.js.map",
+    "bytes": 93,
+    "sha256": "ed562b0bba7ee7214e56ac7f728054b3496bec4597c94a4eb7b4179e6f5cb1c9"
+  },
+  {
+    "path": "source/build/plugins/pens/pens.esm.min.js",
+    "bytes": 221,
+    "sha256": "1adc4f73747249f1364a3d318a86a161a2f13a84871594f494ab339d1b315dfc"
+  },
+  {
+    "path": "source/build/plugins/pens/pens.esm.min.js.map",
+    "bytes": 93,
+    "sha256": "ed562b0bba7ee7214e56ac7f728054b3496bec4597c94a4eb7b4179e6f5cb1c9"
+  },
+  {
+    "path": "source/build/plugins/pens/pens.js",
+    "bytes": 242,
+    "sha256": "d7cae647ad5590911129c1c809d1f4e2d44fac9d55580e4092b4afd141bafacf"
+  },
+  {
+    "path": "source/build/plugins/pens/pens.js.map",
+    "bytes": 93,
+    "sha256": "ed562b0bba7ee7214e56ac7f728054b3496bec4597c94a4eb7b4179e6f5cb1c9"
+  },
+  {
+    "path": "source/build/plugins/pens/pens.min.js",
+    "bytes": 242,
+    "sha256": "03bf8cf8c55b6adb65ebc307580973bf930217de568840dc87a024c53777f3de"
+  },
+  {
+    "path": "source/build/plugins/pens/pens.min.js.map",
+    "bytes": 93,
+    "sha256": "ed562b0bba7ee7214e56ac7f728054b3496bec4597c94a4eb7b4179e6f5cb1c9"
+  },
+  {
+    "path": "source/build/plugins/pi-vision/pi-vision.esm.js",
+    "bytes": 30320,
+    "sha256": "f5c4a3f2bc1d4c8efafcdb39a94ac05060cf4116fc54b1e18c2f27b75c6936dd"
+  },
+  {
+    "path": "source/build/plugins/pi-vision/pi-vision.esm.js.map",
+    "bytes": 58649,
+    "sha256": "da3daf678e71f9d1e88b02c1020342ced78faada3fa5b678c50e997b563a3e5d"
+  },
+  {
+    "path": "source/build/plugins/pi-vision/pi-vision.esm.min.js",
+    "bytes": 13926,
+    "sha256": "eea927945d0c98c5563b28405bb5206d76e5d7ef9ee4f44b0cb7274039f233be"
+  },
+  {
+    "path": "source/build/plugins/pi-vision/pi-vision.esm.min.js.map",
+    "bytes": 59080,
+    "sha256": "082db08c170f85158f3e47fc40227a58ed3b7de1290ac62560eef82ebb4d302c"
+  },
+  {
+    "path": "source/build/plugins/pi-vision/pi-vision.js",
+    "bytes": 32231,
+    "sha256": "a4fb7ec1c86b6cfce091912af4d5fb497a2c9ce620408d319457938811c18ce8"
+  },
+  {
+    "path": "source/build/plugins/pi-vision/pi-vision.js.map",
+    "bytes": 58896,
+    "sha256": "af014fed237fce05073523a96e2a9df59dc9aefd049ec2a9fb5f268858b2d880"
+  },
+  {
+    "path": "source/build/plugins/pi-vision/pi-vision.min.js",
+    "bytes": 13925,
+    "sha256": "bbf0b392215320eaa7d3e40ed24bda796cdb83b66078eefc191f6a02662947e2"
+  },
+  {
+    "path": "source/build/plugins/pi-vision/pi-vision.min.js.map",
+    "bytes": 59081,
+    "sha256": "5d25690a11932f7ac6255fe3cac6c52cd5341675bf82ac296d9fe56e485e1b33"
+  },
+  {
+    "path": "source/build/plugins/pointer/pointer.d.ts",
+    "bytes": 185,
+    "sha256": "35ccf340b7f0a3bea371cace8a59bea3a379fe59ea26415c889dcc32fca042ba"
+  },
+  {
+    "path": "source/build/plugins/pointer/pointer.esm.js",
+    "bytes": 28940,
+    "sha256": "81e53fd43fc47d736d6d10ffae402875c7377e5d44a4ba3655dd43427f7cdd21"
+  },
+  {
+    "path": "source/build/plugins/pointer/pointer.esm.js.map",
+    "bytes": 58773,
+    "sha256": "086186b3748b7e3d9737a358a68eaa8cc3f33fd026651edf89bb7b33e616e4aa"
+  },
+  {
+    "path": "source/build/plugins/pointer/pointer.esm.min.js",
+    "bytes": 12739,
+    "sha256": "ea8455ec3952f9d7e3372f13aa24c052d87e79eeef52886977d41e5c6935b1ac"
+  },
+  {
+    "path": "source/build/plugins/pointer/pointer.esm.min.js.map",
+    "bytes": 58644,
+    "sha256": "b433310b4a95afa68cc4bf8cb5501cddda8013a6a0e566c4e9d5f16c7f3360b9"
+  },
+  {
+    "path": "source/build/plugins/pointer/pointer.js",
+    "bytes": 30785,
+    "sha256": "62b12be80c256cd17153a3fc31b30ce7eb5da24195fd817c501d10f29973adbc"
+  },
+  {
+    "path": "source/build/plugins/pointer/pointer.js.map",
+    "bytes": 58892,
+    "sha256": "4104d398cdcdfac02af06363a8f01a22eab07a9efa026f370909e12535b1fb8b"
+  },
+  {
+    "path": "source/build/plugins/pointer/pointer.min.js",
+    "bytes": 12738,
+    "sha256": "713e0778ce6790f8088317ba094a0cc44be6adb43e5795e2f28cf925830418d8"
+  },
+  {
+    "path": "source/build/plugins/pointer/pointer.min.js.map",
+    "bytes": 58645,
+    "sha256": "26bd9f4a64df4931d5e81b26d0a923aa869621cd77e2e8ab40414b24c48713bc"
+  },
+  {
+    "path": "source/build/plugins/polygons/polygons.esm.js",
+    "bytes": 13202,
+    "sha256": "21ff7586d1807e64f4aee4da6e61e8ff71f75fce7808189828b1e22c8b6b0765"
+  },
+  {
+    "path": "source/build/plugins/polygons/polygons.esm.js.map",
+    "bytes": 29763,
+    "sha256": "61c6187e86d4ec01bccd2d6aeba2931deeb817782238600b249d9101a90554f0"
+  },
+  {
+    "path": "source/build/plugins/polygons/polygons.esm.min.js",
+    "bytes": 5525,
+    "sha256": "720b084414ef5ffa43aac1a6279eb30348c9f3b516da45498377547f85ed748f"
+  },
+  {
+    "path": "source/build/plugins/polygons/polygons.esm.min.js.map",
+    "bytes": 30805,
+    "sha256": "632405bfe9fe97eb931db2247a77c8320774e726c47efdc563eeaf151bc99955"
+  },
+  {
+    "path": "source/build/plugins/polygons/polygons.js",
+    "bytes": 13984,
+    "sha256": "29f37be5e5fadd49705d497b67cce24c3b08633ab6083dc023adf50439d038b9"
+  },
+  {
+    "path": "source/build/plugins/polygons/polygons.js.map",
+    "bytes": 29917,
+    "sha256": "9c8e82537b4195c4697924864ef121c5fe4c22078dbb1e9004a6c673436245b8"
+  },
+  {
+    "path": "source/build/plugins/polygons/polygons.min.js",
+    "bytes": 5524,
+    "sha256": "94f4ab6d3766a6f8527084943cc089639255de13351014992d345a53c7b63020"
+  },
+  {
+    "path": "source/build/plugins/polygons/polygons.min.js.map",
+    "bytes": 30806,
+    "sha256": "911dbba08a8c5db2ddc7b49572a902798137215d93b19d322be82de457a4a4ab"
+  },
+  {
+    "path": "source/build/plugins/print-table/print-table.esm.js",
+    "bytes": 12340,
+    "sha256": "220a323739f712ac5ef24e1ccba0fbcd18a2dce913cb31582d0d14252bbfe76a"
+  },
+  {
+    "path": "source/build/plugins/print-table/print-table.esm.js.map",
+    "bytes": 25516,
+    "sha256": "88583640fc3019018a4808f7de50b40be003de144b8ab23bde149e7c0dc4430c"
+  },
+  {
+    "path": "source/build/plugins/print-table/print-table.esm.min.js",
+    "bytes": 5442,
+    "sha256": "f74ab9b60e80897c4d05ecb8cdb9f22fc8199a57ecea8595be1ee58b4d0d3eb3"
+  },
+  {
+    "path": "source/build/plugins/print-table/print-table.esm.min.js.map",
+    "bytes": 25112,
+    "sha256": "2d88c360bbc82f7a0d0dd0744cfa62212973e7a0744db5dad8d4fb4ce19d4c81"
+  },
+  {
+    "path": "source/build/plugins/print-table/print-table.js",
+    "bytes": 13074,
+    "sha256": "8be6eb65eb2a45a63750961fe4c98e5f01fa0afcb07149f18987b0fbdfadfa0b"
+  },
+  {
+    "path": "source/build/plugins/print-table/print-table.js.map",
+    "bytes": 25556,
+    "sha256": "46edfd5fe40fc291ccc1488e85d13a483bd17d07321517f591f7a385b0b36445"
+  },
+  {
+    "path": "source/build/plugins/print-table/print-table.min.js",
+    "bytes": 5441,
+    "sha256": "121b385279e97fe39a35e54a0dbb889633a7f4e42f2d1187f77185590a74d3fb"
+  },
+  {
+    "path": "source/build/plugins/print-table/print-table.min.js.map",
+    "bytes": 25113,
+    "sha256": "036c18acacfb97f10c91ff53c5526fad707dc567436c1c4990d8129875b150f6"
+  },
+  {
+    "path": "source/build/plugins/sound/sound.d.ts",
+    "bytes": 179,
+    "sha256": "3450d7352bf937692166900fdaad37ead64497bcf9674052e4e69f2d57e8cb90"
+  },
+  {
+    "path": "source/build/plugins/sound/sound.esm.js",
+    "bytes": 32717,
+    "sha256": "a32d8f4b86bfa5aa3a1e14b9fb3adbd52d5a79b0fe6a03505259a33d567515cd"
+  },
+  {
+    "path": "source/build/plugins/sound/sound.esm.js.map",
+    "bytes": 71849,
+    "sha256": "009c2d9e15c68c033ad0c2fd290ef697be75d275f2fbf910137534e513ef5b6b"
+  },
+  {
+    "path": "source/build/plugins/sound/sound.esm.min.js",
+    "bytes": 16134,
+    "sha256": "23b3d00ea79a137bc29d6a79b21ea2451e4745165d590c1c1dd3f9af5d9c4919"
+  },
+  {
+    "path": "source/build/plugins/sound/sound.esm.min.js.map",
+    "bytes": 71215,
+    "sha256": "2a20f8538ba47e8bd12278068405c2cd17ed9cefe187f052813f14b7a874ae41"
+  },
+  {
+    "path": "source/build/plugins/sound/sound.js",
+    "bytes": 35046,
+    "sha256": "85c49b2b7f7c419f9db92343eee2e5b57ed4d056611cb1eb6ec6f8281cad8d58"
+  },
+  {
+    "path": "source/build/plugins/sound/sound.js.map",
+    "bytes": 72065,
+    "sha256": "71c07b6a58e65ccfa9bc1dcb1f6172edc67ea473b91f3fc9c5fe406ddb0409dc"
+  },
+  {
+    "path": "source/build/plugins/sound/sound.min.js",
+    "bytes": 16133,
+    "sha256": "9b44410645bf45a2b08c7dae62a41ad439e0271c3fdd76daa567376ffcca2a82"
+  },
+  {
+    "path": "source/build/plugins/sound/sound.min.js.map",
+    "bytes": 71216,
+    "sha256": "cee8d70f8042d3bd9aa38305ea43015a347e63fb516aad7b6d9d252fe3872d09"
+  },
+  {
+    "path": "source/build/reference-1.2.json",
+    "bytes": 209738,
+    "sha256": "14fa075c8d98092278b68ed94d395f5ca433f479a73a0348d2de4afcf3f9a52c"
+  },
+  {
+    "path": "source/build/reference-2.0.json",
+    "bytes": 247656,
+    "sha256": "f683c13935b8811ba1292608cd668c04063ee7a56e39e7013c7491f0cf3e103c"
+  },
+  {
+    "path": "source/build/reference-2.1.json",
+    "bytes": 277608,
+    "sha256": "88f81ec5ed0725cb42c0e0e4b981566404a753d6e8220bc004f58690d36c2496"
+  },
+  {
+    "path": "source/build/reference-2.2.json",
+    "bytes": 286252,
+    "sha256": "d3e93134978c71e8d2f11dab973476e0e131c4e69b23dc6096538f52962e06ae"
+  },
+  {
+    "path": "source/docs/llms/pi.d.ts",
+    "bytes": 119395,
+    "sha256": "02e3eef8982cc9310498ac2923e2644533876db2ac9ae3a839741e25fcb940a6"
+  },
+  {
+    "path": "source/metadata/media/bomb.wav",
+    "bytes": 19229,
+    "sha256": "82e7d0d786450a1541ac40157f0f2f3a3505d788966f7687a1b83fb335dec1aa"
+  },
+  {
+    "path": "source/metadata/media/cat_sprite.png",
+    "bytes": 1052,
+    "sha256": "2880508d2efe919cc623ddcccc5d5916790d1e6cb59a4f2da8cb2cd90f6018c2"
+  },
+  {
+    "path": "source/metadata/media/gnsh.png",
+    "bytes": 2806,
+    "sha256": "a50a8860393664a7361b6fb80e92f12fb785aa875ea439fe3918f2e8783100ac"
+  },
+  {
+    "path": "source/metadata/media/player.png",
+    "bytes": 349,
+    "sha256": "0d4ecaa5cf4dac16e58722e1382ea4c9058adb0d878e6f464f6ff41c312af869"
+  },
+  {
+    "path": "source/metadata/media/sound.wav",
+    "bytes": 282284,
+    "sha256": "e2b40a3e213510946798cdca123bd2cb8617e9107df621ffd14fe1162e86feaa"
+  },
+  {
+    "path": "source/metadata/media/spaceship_0.png",
+    "bytes": 693,
+    "sha256": "bbac0da71c74646a39ff604f01f8785b60b28b8c3fd8a88b8753c78c75c55e33"
+  },
+  {
+    "path": "source/metadata/media/tiles.png",
+    "bytes": 1600,
+    "sha256": "52b6d32565178bad3799da148aaa419c81d99db8c8829459111db5cba88f19a4"
+  },
+  {
+    "path": "source/metadata/pi-1.2/_objects.toml",
+    "bytes": 12379,
+    "sha256": "c9b59beed5b1f7e0fdab0ee19d2c7df63d1b22f5b10a04bde3ad8c3d7d54fe05"
+  },
+  {
+    "path": "source/metadata/pi-1.2/arc.toml",
+    "bytes": 971,
+    "sha256": "06bb165a3a24361ba5246f70ce9ba692232c305032f441491847992d0946860f"
+  },
+  {
+    "path": "source/metadata/pi-1.2/bezier.toml",
+    "bytes": 1463,
+    "sha256": "c0709fb0a7d18e40a5213344cdbc3948b846e717074646268bf2461f6806e890"
+  },
+  {
+    "path": "source/metadata/pi-1.2/cancelInput.toml",
+    "bytes": 444,
+    "sha256": "d0f98b06227ec2704825c92873230bf6e2f9e1daef39f3b46c2644924d3a7be5"
+  },
+  {
+    "path": "source/metadata/pi-1.2/canvas.toml",
+    "bytes": 840,
+    "sha256": "ba42c443191049ae83044a70d2fc71acc3257407de998485b8b7775ac781b3d8"
+  },
+  {
+    "path": "source/metadata/pi-1.2/circle.toml",
+    "bytes": 994,
+    "sha256": "b87f8a2d7636cbbd8a257ea595ed9ae7407698299af6c3bee0ebf3ec4133368b"
+  },
+  {
+    "path": "source/metadata/pi-1.2/clearEvents.toml",
+    "bytes": 797,
+    "sha256": "3b952da6bc9b8362eb02b7edc74d7c6c91eaa55dd8b1104df28006420b52a554"
+  },
+  {
+    "path": "source/metadata/pi-1.2/clearKeys.toml",
+    "bytes": 462,
+    "sha256": "2deb8dafbe86b45891f4635eb2a0b104471c290b47eaf43603435db8a9c6991e"
+  },
+  {
+    "path": "source/metadata/pi-1.2/cls.toml",
+    "bytes": 1271,
+    "sha256": "6117fd2abcebe52b56c653df7b29057a05c218097cc2666eab6bf7ded2aa6ae1"
+  },
+  {
+    "path": "source/metadata/pi-1.2/createAudioPool.toml",
+    "bytes": 976,
+    "sha256": "e62674d164ec25b2d3f037adc84e5526e3403e0ea8032a930d438d31c6be6cbe"
+  },
+  {
+    "path": "source/metadata/pi-1.2/deleteAudioPool.toml",
+    "bytes": 628,
+    "sha256": "ad15cd85dc294e46568eec11d0d1bfe41879d555f627ad1653cc56fc4d91583e"
+  },
+  {
+    "path": "source/metadata/pi-1.2/draw.toml",
+    "bytes": 1869,
+    "sha256": "c97053a36bb114cd0cf3c9b86ea3694a3abbeb7d412903d71a486fc6c347933a"
+  },
+  {
+    "path": "source/metadata/pi-1.2/drawImage.toml",
+    "bytes": 1401,
+    "sha256": "08f79230f68ea8d2cd2c2f8530013387abe34ce66af27f6b8b9b0dd7c14dfb08"
+  },
+  {
+    "path": "source/metadata/pi-1.2/drawSprite.toml",
+    "bytes": 1815,
+    "sha256": "845a351894d04daa6030a30f2a7c11d4fd726d04f1f24975a8089b0bfda43234"
+  },
+  {
+    "path": "source/metadata/pi-1.2/ellipse.toml",
+    "bytes": 1131,
+    "sha256": "3f1942b9fe36304263303a1ffe874dd7396dddb85c80d57ca2057bfc644e94d1"
+  },
+  {
+    "path": "source/metadata/pi-1.2/filterImg.toml",
+    "bytes": 726,
+    "sha256": "0bd5cce94595a84197a6c669356909c15a99790d42a61a6b48e87b1d9c023b18"
+  },
+  {
+    "path": "source/metadata/pi-1.2/findColor.toml",
+    "bytes": 783,
+    "sha256": "6fc41ed72d748edff8ee222d9f455315e5e91dde920b61380f26b7c35686d387"
+  },
+  {
+    "path": "source/metadata/pi-1.2/get.toml",
+    "bytes": 1154,
+    "sha256": "bd1d75db77ef72bc419e26b6991533f135936a45d5d516308ec4a3c94c3cd339"
+  },
+  {
+    "path": "source/metadata/pi-1.2/getCols.toml",
+    "bytes": 513,
+    "sha256": "93123ef2f10a29e38d22431877e6192f6ad6791edd92796b296bc5644eb398a8"
+  },
+  {
+    "path": "source/metadata/pi-1.2/getDefaultPal.toml",
+    "bytes": 506,
+    "sha256": "49060dc59d09d413269d6d11c6437d37f77d7207927bccdca1a6309cae051962"
+  },
+  {
+    "path": "source/metadata/pi-1.2/getImage.toml",
+    "bytes": 1175,
+    "sha256": "079b51d89f06abfc39787f7c0b5451bc7fed90d95bcc8a5ae44422b8167129b1"
+  },
+  {
+    "path": "source/metadata/pi-1.2/getPal.toml",
+    "bytes": 491,
+    "sha256": "dc7974b22bcb09d30aa76f2ee1793529171569356c035b03d0941c0eb2d7c4f5"
+  },
+  {
+    "path": "source/metadata/pi-1.2/getPixel.toml",
+    "bytes": 607,
+    "sha256": "d572ffd69d4f4cfce57c1b2c6555fd4aac7f5357e96bfb78aba3011f717df271"
+  },
+  {
+    "path": "source/metadata/pi-1.2/getPos.toml",
+    "bytes": 576,
+    "sha256": "2a3d601b4f1eeff9cfdf1c752f4203f615a8e33c1fbf79aa906d2823a89567aa"
+  },
+  {
+    "path": "source/metadata/pi-1.2/getPosPx.toml",
+    "bytes": 469,
+    "sha256": "d0d5cb960d4e5fb5d3663e821df7640d2ad8f0e30834bbc4dfd834545da5cd02"
+  },
+  {
+    "path": "source/metadata/pi-1.2/getRows.toml",
+    "bytes": 499,
+    "sha256": "93f34a22cfa42b7d785014201df7fbae67ddd5639fde305b246c7e57ad1cc079"
+  },
+  {
+    "path": "source/metadata/pi-1.2/getScreen.toml",
+    "bytes": 1107,
+    "sha256": "05c08a23bc0efaba5856c6717f5ed5ab26818570eacdf54c8772e3c510cd0cac"
+  },
+  {
+    "path": "source/metadata/pi-1.2/getSpritesheetData.toml",
+    "bytes": 767,
+    "sha256": "f22a0ce62004bfa66775df75c2a0e5e6cb029fdaecfec7a145a400db80e1d664"
+  },
+  {
+    "path": "source/metadata/pi-1.2/height.toml",
+    "bytes": 548,
+    "sha256": "4621f7a6021dcf3f3e7b4e53bc59640a3ce3cdee67e69a7af8416a04909a286c"
+  },
+  {
+    "path": "source/metadata/pi-1.2/ingamepads.toml",
+    "bytes": 761,
+    "sha256": "2de5c6188210964ffe2eaf54f6734223a22f6df8bf08a486fbcafb9dd311db6f"
+  },
+  {
+    "path": "source/metadata/pi-1.2/inkey.toml",
+    "bytes": 978,
+    "sha256": "f9f8cffc37d144c0244a97ae0bc7e80b11c7bdd805d49b1fb9511bae3ece2695"
+  },
+  {
+    "path": "source/metadata/pi-1.2/inmouse.toml",
+    "bytes": 931,
+    "sha256": "46e27589f546da7e3309cf25f84cb03648d6e748b98c983a9df179ce658da901"
+  },
+  {
+    "path": "source/metadata/pi-1.2/inpress.toml",
+    "bytes": 1195,
+    "sha256": "dfeed912dfecafc62074763ae6a2298cbb34cc780449c9e4ebd4f4d1c5414d18"
+  },
+  {
+    "path": "source/metadata/pi-1.2/input.toml",
+    "bytes": 3297,
+    "sha256": "6eb2aad8c138edc204bf7b0b9f8abb2596f975b7e6c2006e19a9c1d3aaee5a84"
+  },
+  {
+    "path": "source/metadata/pi-1.2/intouch.toml",
+    "bytes": 943,
+    "sha256": "670c3592b7bec463fc6d651cbcc1c9c73b44c0bde2c8da0c9d90af21bf82a05e"
+  },
+  {
+    "path": "source/metadata/pi-1.2/line.toml",
+    "bytes": 971,
+    "sha256": "9e433b3e362ac9ca59b81b7a9f443cc2e3eb5c5a6449349b7646c7e885c623ad"
+  },
+  {
+    "path": "source/metadata/pi-1.2/loadFont.toml",
+    "bytes": 1358,
+    "sha256": "55fbec5bbf2acae785e260eb79c3e284d457fb0379bc36da189d10769581cc63"
+  },
+  {
+    "path": "source/metadata/pi-1.2/loadImage.toml",
+    "bytes": 899,
+    "sha256": "3af6ec8d6d7124b7d73488b6234c798b2918ebde729be8a359f76ff513c8666f"
+  },
+  {
+    "path": "source/metadata/pi-1.2/loadSpritesheet.toml",
+    "bytes": 1608,
+    "sha256": "5403a39c26e4aadadc77854e09b3255725f5aa03ce85344d13c51ac684b0d622"
+  },
+  {
+    "path": "source/metadata/pi-1.2/offclick.toml",
+    "bytes": 1271,
+    "sha256": "73ae517707d5ab65b378cdc40c54c251d184112b315441f34d6b8b13abf3b519"
+  },
+  {
+    "path": "source/metadata/pi-1.2/offgamepad.toml",
+    "bytes": 1592,
+    "sha256": "8155485872e931ccb2662587fb5005781c12fbfc4f29fbb1b74798351c91b083"
+  },
+  {
+    "path": "source/metadata/pi-1.2/offkey.toml",
+    "bytes": 1523,
+    "sha256": "78972e621256b00b5979e0a38cf950b6f4f5aac69ce819bdb5e0b471ec355b4e"
+  },
+  {
+    "path": "source/metadata/pi-1.2/offmouse.toml",
+    "bytes": 1568,
+    "sha256": "0267a4aa3d7906603c711f2cf713a6d1744302a71512b8bc53f317ebd2ec4ae2"
+  },
+  {
+    "path": "source/metadata/pi-1.2/offpress.toml",
+    "bytes": 1592,
+    "sha256": "2f074b442dc3171f256d7db2ea1e0c325b67e0bd32a4d660067a2eca86d23c52"
+  },
+  {
+    "path": "source/metadata/pi-1.2/offtouch.toml",
+    "bytes": 1643,
+    "sha256": "7252aed6b7237f2e3d0564f846970b5472a67d0b598a2f85e471373d247271df"
+  },
+  {
+    "path": "source/metadata/pi-1.2/onclick.toml",
+    "bytes": 2130,
+    "sha256": "18fbc06fc5f2307afd521e321860d4960f5dfa1c78231d91614ced974207d679"
+  },
+  {
+    "path": "source/metadata/pi-1.2/ongamepad.toml",
+    "bytes": 2400,
+    "sha256": "95441b8518e68d7a8990449f01f9555f31626d22c0abea5a5bf8fe130436be55"
+  },
+  {
+    "path": "source/metadata/pi-1.2/onkey.toml",
+    "bytes": 2182,
+    "sha256": "87931320c1e94ea22fe576987d1561729c70c2e1999570d29247b9e4bb21501d"
+  },
+  {
+    "path": "source/metadata/pi-1.2/onmouse.toml",
+    "bytes": 2468,
+    "sha256": "0958c1d5143bf47f3e064d24632e392a13c1a8bbf276bd297bbea3920d936ee0"
+  },
+  {
+    "path": "source/metadata/pi-1.2/onpress.toml",
+    "bytes": 2713,
+    "sha256": "9a3f0403b59c6b7a61ddd97bcb15cd8f044941150a021530586eb2f12961d50f"
+  },
+  {
+    "path": "source/metadata/pi-1.2/ontouch.toml",
+    "bytes": 2632,
+    "sha256": "44df955fed6b8c4e142f74e2e81f4bbf4990e8e33efe02248ec79f4bcc8d3802"
+  },
+  {
+    "path": "source/metadata/pi-1.2/paint.toml",
+    "bytes": 1346,
+    "sha256": "67f41182a96dc800cf8b79bd3b698142660fcc6740145117edf1a9fe95e46167"
+  },
+  {
+    "path": "source/metadata/pi-1.2/play.toml",
+    "bytes": 2102,
+    "sha256": "8526a6b895370da6fdca9f92629c909147737e135f8fc9709e6dab24fce4ca1d"
+  },
+  {
+    "path": "source/metadata/pi-1.2/playAudioPool.toml",
+    "bytes": 984,
+    "sha256": "8c6ed183bebce834c981bd0b548bdcf20077f8cb465abd019191623c413be7ab"
+  },
+  {
+    "path": "source/metadata/pi-1.2/print.toml",
+    "bytes": 984,
+    "sha256": "e4c9bfccaa25d9d5009a7119e89b112bb72ece05a8854049f4ba5fcc9467c1ce"
+  },
+  {
+    "path": "source/metadata/pi-1.2/printTable.toml",
+    "bytes": 1961,
+    "sha256": "34b6c6ee9d0f3dab8fb9c76b2e4f69a15e149b804b137d51cd60badf1b4e130b"
+  },
+  {
+    "path": "source/metadata/pi-1.2/pset.toml",
+    "bytes": 776,
+    "sha256": "00dcea74759a00f9973248faf6a5b262d2002c6353b2825909c8a31fe143ca49"
+  },
+  {
+    "path": "source/metadata/pi-1.2/put.toml",
+    "bytes": 1056,
+    "sha256": "686c01b5dabf96e1bcc01af5b95dfab97d27d1bb5dda05daf838cc6a1c0d30d7"
+  },
+  {
+    "path": "source/metadata/pi-1.2/ready.toml",
+    "bytes": 997,
+    "sha256": "06e37f144fff900705738c9683609d2be078ad324c1cc6637ff053df9f5aecaa"
+  },
+  {
+    "path": "source/metadata/pi-1.2/rect.toml",
+    "bytes": 1213,
+    "sha256": "d2d6bb1d20abeb8d90c108e39043bc5ba911f5bee88cc7e4e26d0bdce0edca8f"
+  },
+  {
+    "path": "source/metadata/pi-1.2/removeAllScreens.toml",
+    "bytes": 350,
+    "sha256": "8eaf7a574997f2656d884c2f5526b9a450b806d0cc2208d14ef2e8d8fb820df1"
+  },
+  {
+    "path": "source/metadata/pi-1.2/removeImage.toml",
+    "bytes": 527,
+    "sha256": "dc7b3e69c9fbd0176d18eea7e283b0bcd161475325ec363f9f4314eeefef80be"
+  },
+  {
+    "path": "source/metadata/pi-1.2/removeScreen.toml",
+    "bytes": 343,
+    "sha256": "d6e9d4fad18376376d31292230f2933a660cf9fac7df12e2e41922d9d9d49648"
+  },
+  {
+    "path": "source/metadata/pi-1.2/render.toml",
+    "bytes": 959,
+    "sha256": "311d87dca998078a666ee1a8002d2a72ca38d7bc6c42c4d1453040a9d9c60aa1"
+  },
+  {
+    "path": "source/metadata/pi-1.2/screen.toml",
+    "bytes": 3103,
+    "sha256": "6262050a936f7dafc33626990a12735b4fa2852fbab453e0f81c0d3be56c9780"
+  },
+  {
+    "path": "source/metadata/pi-1.2/set.toml",
+    "bytes": 967,
+    "sha256": "bfc2ba430522e97f0655e7520e02f37827cb4aa2743208cb1909ec0c70acc7e3"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setActionKey.toml",
+    "bytes": 1388,
+    "sha256": "8da3b7a94a5f11836a33d444015704debee256200eecfd4e5a1fcf74edb6b287"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setAutoRender.toml",
+    "bytes": 790,
+    "sha256": "9599f6b057b5f0c0b0b746822b016a9a91cbe68e237193686fb60726c1dd0ce2"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setBgColor.toml",
+    "bytes": 513,
+    "sha256": "6d9b28123274de6d08c5f8c286e54a71bf0ac5ace56ddca98b8f7ff76a0f882f"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setBlendMode.toml",
+    "bytes": 636,
+    "sha256": "e11d041369783acee55b9ff385df57aeaa08657d1b3bc131541deeae9027d41f"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setChar.toml",
+    "bytes": 821,
+    "sha256": "7d8a3daf9c2f991cb80606017e7cf12b6b36fa65476848da083c1bf3e5682f4f"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setColor.toml",
+    "bytes": 841,
+    "sha256": "b1e2f6ec9df1167d677f7c4e6353c65d81330b246f6be1d4deba1f69337fbe69"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setColors.toml",
+    "bytes": 587,
+    "sha256": "2b4f04e1af3e9e3df873552a84b424ca59619363fbc4dc36740b235826862ae9"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setContainerBgColor.toml",
+    "bytes": 540,
+    "sha256": "05596f5cab0bec0458d624781ed542c20935525bb51bf0290c874200d08b740c"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setDefaultFont.toml",
+    "bytes": 945,
+    "sha256": "656626109475688a064705310061986ec2a0652f62761cb73366103ca2880923"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setDefaultInputFocus.toml",
+    "bytes": 671,
+    "sha256": "3ed85a8febc0ec4b38c9fe8d261c12ef03d13d7e96478cbe2c5facff69bb2268"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setDefaultPal.toml",
+    "bytes": 644,
+    "sha256": "1855a098895a8d7c30c96031dca2f5e87320a195f343792299ac31f1bf0a2e54"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setEnableContextMenu.toml",
+    "bytes": 479,
+    "sha256": "1fdd228df98f32afe1f1d3023d386fbdf19bbe43a923a3ec171ac3deb54b8223"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setErrorMode.toml",
+    "bytes": 446,
+    "sha256": "8f282b9b60543c0c321a22a6290b3cee74af54c21b809c64529fc6c21a626c31"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setFont.toml",
+    "bytes": 664,
+    "sha256": "adc19ae40df29b5e5f4e169b297d8688d08a352b5f353558b67434847f8812c3"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setFontSize.toml",
+    "bytes": 783,
+    "sha256": "780ebd3721b70113a9d2d8d9dd31ed19113b505b9f7577061f86cc264dc5cefd"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setInputCursor.toml",
+    "bytes": 438,
+    "sha256": "f9677931c874f7bff16a09172c5823afca631c6361573162ddf8baeb71ac2dec"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setPalColor.toml",
+    "bytes": 571,
+    "sha256": "c8fac890019e4b872402e6f1a130addb51d20b2646338e239221da1aa3147af0"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setPen.toml",
+    "bytes": 882,
+    "sha256": "14fc8ed165f2aa3a603bce264fd54a94bafef51632466e67da664d7bc73aae32"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setPinchZoom.toml",
+    "bytes": 804,
+    "sha256": "a6f60757b6cb8412255e67ed0e4ce0a1434ed6c73a567df2da8e2059c20ba478"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setPixelMode.toml",
+    "bytes": 500,
+    "sha256": "307c8e211de24ff2363ae673651c8b24ceb70c242f72c31baee68ac95c5d7737"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setPos.toml",
+    "bytes": 806,
+    "sha256": "69583e866fcfe3eb9a25e57911fa17740aa4b594736c1fd4fa99ebaf8c4e7f6f"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setPosPx.toml",
+    "bytes": 768,
+    "sha256": "bed4fff908cb44f7928f45d5078d9354ef838695e75c2f7b97b06baec74f43b6"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setScreen.toml",
+    "bytes": 788,
+    "sha256": "ee414e414a267edb7ea01dce0b583c8b8fc2130f0854cf966f686a9fbc55cba9"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setVolume.toml",
+    "bytes": 479,
+    "sha256": "7e167c38493addcd6cfef3ca00de32cf747ba3aa8736286d514396835ba50858"
+  },
+  {
+    "path": "source/metadata/pi-1.2/setWordBreak.toml",
+    "bytes": 860,
+    "sha256": "46b6f8705564c1b9e4a3ca5bd18e0cecdd9725e5d3401c0a1b0a194be7792089"
+  },
+  {
+    "path": "source/metadata/pi-1.2/sound.toml",
+    "bytes": 2697,
+    "sha256": "d2e5de8b154729856c9b871f1c11e9e9b1bb5e5ed57f8732ba2643e226b6fabd"
+  },
+  {
+    "path": "source/metadata/pi-1.2/startKeyboard.toml",
+    "bytes": 1269,
+    "sha256": "5321fe1a5c9d5eeaa99c6685df59e1d14bf3b5baae1071268e568653e256d1e5"
+  },
+  {
+    "path": "source/metadata/pi-1.2/startMouse.toml",
+    "bytes": 1160,
+    "sha256": "9cfc42501c09623a5f294f61c9b19bcf122ae107e1e3ef9832abc59d1a4dd4eb"
+  },
+  {
+    "path": "source/metadata/pi-1.2/startTouch.toml",
+    "bytes": 886,
+    "sha256": "0d5ad697563caaf5dc9fedf2c25768f52133c942f082ecd6c87bcf8dbf58bdba"
+  },
+  {
+    "path": "source/metadata/pi-1.2/stopAudioPool.toml",
+    "bytes": 549,
+    "sha256": "e25c491c8af4e1e29762ee6dc5131d13c398000d238e4de80a22d5949aa3e8da"
+  },
+  {
+    "path": "source/metadata/pi-1.2/stopKeyboard.toml",
+    "bytes": 1016,
+    "sha256": "24b85b7ac1dc24ec299b45c2fe0773aa27bb943e08252efc601c9f6e3a0eeb87"
+  },
+  {
+    "path": "source/metadata/pi-1.2/stopMouse.toml",
+    "bytes": 929,
+    "sha256": "92cf6a476ab120cbc0d3254aa97e3b509257f0f9fe23977ceaa150955d6d8758"
+  },
+  {
+    "path": "source/metadata/pi-1.2/stopPlay.toml",
+    "bytes": 643,
+    "sha256": "90bef7a35b69f3ca5aab004ef0bfa56af144833b6f4360de4efb9bd8a104f4fb"
+  },
+  {
+    "path": "source/metadata/pi-1.2/stopSound.toml",
+    "bytes": 669,
+    "sha256": "576e4450f2aca35304205f33b0f640f1b2dad29ea17913c6ac62bb4c23e6c86f"
+  },
+  {
+    "path": "source/metadata/pi-1.2/stopTouch.toml",
+    "bytes": 608,
+    "sha256": "9fbb7892ac7a765c987f3a27f8e69a1e71400c99af2cebc2bf6713b19972664c"
+  },
+  {
+    "path": "source/metadata/pi-1.2/swapColor.toml",
+    "bytes": 536,
+    "sha256": "83591ea96c614ffcf25a8c011c9231d47333644acbb34297cf9d267891a434fd"
+  },
+  {
+    "path": "source/metadata/pi-1.2/width.toml",
+    "bytes": 530,
+    "sha256": "05e39b86e66d815474534f293fa973b42a7576068e7a424b6eae2ec146f7e6ef"
+  },
+  {
+    "path": "source/metadata/pi-2.0/_objects.toml",
+    "bytes": 6451,
+    "sha256": "247e9d723b603a4c5fefd050ddcdb7dd83d5acb49b18d32e193c3f3317ff9397"
+  },
+  {
+    "path": "source/metadata/pi-2.0/_removed.toml",
+    "bytes": 844,
+    "sha256": "e1d9b8e7a741b79547264fc553f2e2855b18aadd01fc6cae44de4c931255c613"
+  },
+  {
+    "path": "source/metadata/pi-2.0/addPalColors.toml",
+    "bytes": 761,
+    "sha256": "0ba91a25b934173a2e1822032d7a164480a5a65f034832de4f90a64f1dd52fef"
+  },
+  {
+    "path": "source/metadata/pi-2.0/bezier.toml",
+    "bytes": 1451,
+    "sha256": "366336a298741d3982b32fb720acff73e2fec30ebe6a7546bcf6cb6471f08f27"
+  },
+  {
+    "path": "source/metadata/pi-2.0/blitImage.toml",
+    "bytes": 2322,
+    "sha256": "2d0d0aa9c6852b9643614e9011edc4f2cbbead601f8d772bf0083e13c8463770"
+  },
+  {
+    "path": "source/metadata/pi-2.0/blitSprite.toml",
+    "bytes": 2780,
+    "sha256": "e675b647b5df16af69eecfbdfd80e643028c08cf4157fd579f74a6c62281e343"
+  },
+  {
+    "path": "source/metadata/pi-2.0/calcWidth.toml",
+    "bytes": 657,
+    "sha256": "b9072d906698ddc367ab603329d039aa5639eaa0a6cf99989d1de86fdabe943a"
+  },
+  {
+    "path": "source/metadata/pi-2.0/canvas.toml",
+    "bytes": 867,
+    "sha256": "bc20a567415f4d3ac75f61f8ded5ec1ca97712f945f2aacdcab0b2e569b12b07"
+  },
+  {
+    "path": "source/metadata/pi-2.0/clearEvents.toml",
+    "bytes": 1099,
+    "sha256": "053dc2dea7b4de5bf7cb09dd2510c1ccaeca61890e6ad4844c15bdfc81eb095d"
+  },
+  {
+    "path": "source/metadata/pi-2.0/cls.toml",
+    "bytes": 1239,
+    "sha256": "545de0038838cc830388f119637b3b47beb3d7031f3929331135766f5a5b7726"
+  },
+  {
+    "path": "source/metadata/pi-2.0/createImageFromScreen.toml",
+    "bytes": 1511,
+    "sha256": "39b3e75e6656f02108d1be1e577e834faae3443e9feee9da8943a043d3ab9b52"
+  },
+  {
+    "path": "source/metadata/pi-2.0/draw.toml",
+    "bytes": 2081,
+    "sha256": "ebebe2b5253d186b8ddbc9da3e716538adf8ca5c82aefcc9e79666fd4e3f900a"
+  },
+  {
+    "path": "source/metadata/pi-2.0/drawImage.toml",
+    "bytes": 1596,
+    "sha256": "4a78c548a986708abd1b6c59705b89467e6e1699a038b68ed27632c550b68b23"
+  },
+  {
+    "path": "source/metadata/pi-2.0/drawSprite.toml",
+    "bytes": 1980,
+    "sha256": "9bb3ec2e1430c75a7a769458030ceb1a14e90484031208e0c8d2cc1f4e7bb661"
+  },
+  {
+    "path": "source/metadata/pi-2.0/filterImg.toml",
+    "bytes": 2049,
+    "sha256": "481777f77e3e0fa8f55def3f7285c29d4117ff578470931e43d81f15870271fa"
+  },
+  {
+    "path": "source/metadata/pi-2.0/gamepad-ingamepad.toml",
+    "bytes": 2097,
+    "sha256": "fd04000befc4ee149f0cac79410e1653de09e338b251d7cd40316ad77da9ed49"
+  },
+  {
+    "path": "source/metadata/pi-2.0/gamepad-onGamepadConnected.toml",
+    "bytes": 1026,
+    "sha256": "f87cd35a1b52651c15f37c2ec004056753188e0c91dafb30c689e47c8ae66174"
+  },
+  {
+    "path": "source/metadata/pi-2.0/gamepad-onGamepadDisconnected.toml",
+    "bytes": 1042,
+    "sha256": "ff28732acdbedf854ed20f8d985c22d1e81aa20afe8e5e7023793e9c4fbcb106"
+  },
+  {
+    "path": "source/metadata/pi-2.0/gamepad-setGamepadSensitivity.toml",
+    "bytes": 1088,
+    "sha256": "764c8ff232913aaaae5dadcbf8a0930a10f5bcd4ec34b4b4dda37beab1176ae7"
+  },
+  {
+    "path": "source/metadata/pi-2.0/gamepad-startGamepad.toml",
+    "bytes": 1291,
+    "sha256": "49125738342ae79ff5c961ff9f7c1edcbe4768a62c133d11e1872131941706c6"
+  },
+  {
+    "path": "source/metadata/pi-2.0/gamepad-stopGamepad.toml",
+    "bytes": 1094,
+    "sha256": "52d215af9928fc29d68aca64eb49e7e7823a503b94f589f13dbacc6090c60037"
+  },
+  {
+    "path": "source/metadata/pi-2.0/get.toml",
+    "bytes": 2121,
+    "sha256": "6ad400f480f659c96267f6dfebb6eee920b6751904eafa243302791b9df07bc3"
+  },
+  {
+    "path": "source/metadata/pi-2.0/getAllScreens.toml",
+    "bytes": 516,
+    "sha256": "35881c9270775dd26a6bfe0eccc04f470ade5aea6d359ee267edacdf5eb58522"
+  },
+  {
+    "path": "source/metadata/pi-2.0/getAsync.toml",
+    "bytes": 2608,
+    "sha256": "7c28c0f649de8e08f754a1bdc98a3aca3e4ae9d0a7a68382439314366d82d6ba"
+  },
+  {
+    "path": "source/metadata/pi-2.0/getAvailableFonts.toml",
+    "bytes": 658,
+    "sha256": "bbcb31248d7372f5d6faac029fcb430355863fc094564738ecb5058ab1084a21"
+  },
+  {
+    "path": "source/metadata/pi-2.0/getColor.toml",
+    "bytes": 762,
+    "sha256": "36432f05b17d7da89ef90191e48f4d0eb0a7d707218c5bfe378ad0778299af9a"
+  },
+  {
+    "path": "source/metadata/pi-2.0/getDefaultPal.toml",
+    "bytes": 557,
+    "sha256": "c73d949e5aa9d9a277cb24b45ce0c804b7f2b315eb3b096eafd325381ebc76f1"
+  },
+  {
+    "path": "source/metadata/pi-2.0/getImage.toml",
+    "bytes": 637,
+    "sha256": "faa4a314fdbd8ded409b9298e25a5ae348211d02ed0efc53d01b247962ee531e"
+  },
+  {
+    "path": "source/metadata/pi-2.0/getPal.toml",
+    "bytes": 850,
+    "sha256": "5533a0dadca12d7e0f7d991781a32ba8d66eb3fd7812240d02c0dff1f9be74cb"
+  },
+  {
+    "path": "source/metadata/pi-2.0/getPalColor.toml",
+    "bytes": 626,
+    "sha256": "2f66dc3c93a3bf61aa0409fbe1166a48b2c1061c4a4530a16fb83c8930a623c4"
+  },
+  {
+    "path": "source/metadata/pi-2.0/getPalIndex.toml",
+    "bytes": 929,
+    "sha256": "fcaacfdd3818e3311cd094a5622c7c5322c36862d8c72675fa1b33b998490370"
+  },
+  {
+    "path": "source/metadata/pi-2.0/getPixel.toml",
+    "bytes": 1006,
+    "sha256": "3faddaf9e9fe5bedb57ae0a97721055c7739dee554344bacd2c6ce775c60c847"
+  },
+  {
+    "path": "source/metadata/pi-2.0/getPixelAsync.toml",
+    "bytes": 1618,
+    "sha256": "b35a932828ae311a4ee2e77fded93dfefc48d19b3209a4179b7fc4522675d7f7"
+  },
+  {
+    "path": "source/metadata/pi-2.0/getPlugins.toml",
+    "bytes": 669,
+    "sha256": "774d212b763e76f32cb0e4069ab45ea38dd047dfbeb312b53798fe21026db6cb"
+  },
+  {
+    "path": "source/metadata/pi-2.0/keyboard-cancelInput.toml",
+    "bytes": 638,
+    "sha256": "16620b1d1b39b280b4e555ab77456908245cb3bda7478c6d3ad2d0273bfed801"
+  },
+  {
+    "path": "source/metadata/pi-2.0/keyboard-inkey.toml",
+    "bytes": 1359,
+    "sha256": "63e834b131aa183c669d2424d2b8a03fd627de4459e702e9cd3e98d41f00b3b8"
+  },
+  {
+    "path": "source/metadata/pi-2.0/keyboard-input.toml",
+    "bytes": 2191,
+    "sha256": "61271a373e821e613a9103571d54caa6a6416c9d4f85d520a86ed43011de37ad"
+  },
+  {
+    "path": "source/metadata/pi-2.0/keyboard-offkey.toml",
+    "bytes": 1638,
+    "sha256": "e6d95a9d187fb42b49705cc1708d47ff0bcfca44340d4b17de5bc47b7064b81d"
+  },
+  {
+    "path": "source/metadata/pi-2.0/keyboard-onkey.toml",
+    "bytes": 2022,
+    "sha256": "462d69e7da5f6e8e156d7a4ceaab32484327b8197d5140ccdfb33ee3f18dc4ab"
+  },
+  {
+    "path": "source/metadata/pi-2.0/keyboard-removeActionKeys.toml",
+    "bytes": 1288,
+    "sha256": "d9fa90a5f7594560191506a09d63c2ea74190e9e17bc7956c8011a4e2cb2b156"
+  },
+  {
+    "path": "source/metadata/pi-2.0/keyboard-setActionKeys.toml",
+    "bytes": 1295,
+    "sha256": "3fd0b3f6e4b21ef9b1a946f48bf07f78978abacdb18b76049da7c6a26328f1b0"
+  },
+  {
+    "path": "source/metadata/pi-2.0/keyboard-startKeyboard.toml",
+    "bytes": 776,
+    "sha256": "130e44d32736a491d168a8150f90648b084a7ee42982cdadf9af226a1de7a682"
+  },
+  {
+    "path": "source/metadata/pi-2.0/keyboard-stopKeyboard.toml",
+    "bytes": 682,
+    "sha256": "015bc4a2e8a07876ee54aba7ef1517042db5b8c935e6a7e34b014905801563ee"
+  },
+  {
+    "path": "source/metadata/pi-2.0/loadFont.toml",
+    "bytes": 1981,
+    "sha256": "23e1ab6c569d84a6cb58f6d3651ecbc032ef1d910a0b55fd05aa65a438184de6"
+  },
+  {
+    "path": "source/metadata/pi-2.0/loadImage.toml",
+    "bytes": 1613,
+    "sha256": "a02afbe07c7f294f340a3447a0cf0db485033208993e32bb56fdd9277302d94d"
+  },
+  {
+    "path": "source/metadata/pi-2.0/loadSpritesheet.toml",
+    "bytes": 2211,
+    "sha256": "9b02ef64df24c433a444aec8cb40b3b81e91ae1c006a79425d0b4c94e059b6bb"
+  },
+  {
+    "path": "source/metadata/pi-2.0/paint.toml",
+    "bytes": 2250,
+    "sha256": "44609e110caaca913b113bf367eb192cafd69e5775330edde2f5038406189eac"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-inmouse.toml",
+    "bytes": 1140,
+    "sha256": "dea1da6b05d271864510194d2ca44e560cd4895e19c50b565bfd199214323fdf"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-inpress.toml",
+    "bytes": 1555,
+    "sha256": "6e438a64ab98a63164966550419739668dc9d8af0df046822e08ed3e1bf60487"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-intouch.toml",
+    "bytes": 979,
+    "sha256": "6ee9f7d777a400224b51af2b69dbafd035cd504779f99a66bf1b44f45127dda8"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-offclick.toml",
+    "bytes": 1094,
+    "sha256": "38397635d2071622d8fb6e5e560fc6a4917ebebf0c83e0b1573cf639fbeb7111"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-offmouse.toml",
+    "bytes": 1435,
+    "sha256": "c5fd4ada0606ed7eba3722bdddc2dd8705ad4991dca3ec98982e990620614f24"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-offpress.toml",
+    "bytes": 1453,
+    "sha256": "96ffad25a91d8857126e6e7658af7eded85d50a02e9cbeb2b91ff824f03205ae"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-offtouch.toml",
+    "bytes": 1469,
+    "sha256": "7138f117a2c9f3a0f6b52f3e394806e8984f9f9c0b33ba161198fbcb6ba0ff59"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-onclick.toml",
+    "bytes": 1429,
+    "sha256": "d999083814f43cd701c44d1e2c1688910cd488df0b8d80cda972375f443dcefa"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-onmouse.toml",
+    "bytes": 1901,
+    "sha256": "21a43f5b7e5cb4840ef6faba3de8e2a33a4c0f9e6d7d64f0b72fcd385c20ba86"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-onpress.toml",
+    "bytes": 1957,
+    "sha256": "ab0b7886e47092cf571881adadebaad1f38411df8f7d526035738b725c6450f7"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-ontouch.toml",
+    "bytes": 1800,
+    "sha256": "639d82fc14d1a5c42108e7583ae3f1c4abe8651536aa3956977d5ebc4d5bf20e"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-setEnableContextMenu.toml",
+    "bytes": 767,
+    "sha256": "25c2c3b7181e2063ff04b8ecb799238e662176eb64f96db84c0bfe617d1a3eaa"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-setPinchZoom.toml",
+    "bytes": 787,
+    "sha256": "0b96fce7e1000ad4771c60a79b8dd5ab257cbe624383baba542266f92601a679"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-startMouse.toml",
+    "bytes": 889,
+    "sha256": "63f5f94597f98659f001be118e731b3514607ab1bb2c9afc0b5befe8a847e2b0"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-startTouch.toml",
+    "bytes": 890,
+    "sha256": "5fd717ab84ed93e72ab53084f3052e28ae9f083bb3628b3e0f8932e8942dc725"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-stopMouse.toml",
+    "bytes": 776,
+    "sha256": "b42a6ad5a7d42f5738eb54ca993e65ce3cdf068352753d8d0219035fa7058929"
+  },
+  {
+    "path": "source/metadata/pi-2.0/pointer-stopTouch.toml",
+    "bytes": 800,
+    "sha256": "a547ed0865a3a2c72caabf0b44654047b3b37ef7f3085a47827c506c8bfcd1dc"
+  },
+  {
+    "path": "source/metadata/pi-2.0/print.toml",
+    "bytes": 1322,
+    "sha256": "d3f2b2974b0073cf5282109848fd3014120426ce8bbf3e55675e1bd3836803aa"
+  },
+  {
+    "path": "source/metadata/pi-2.0/put.toml",
+    "bytes": 1584,
+    "sha256": "24b6ddcfb5ded13de98318f4899fb2cb756e1338f69807df8d5b21c398daf1be"
+  },
+  {
+    "path": "source/metadata/pi-2.0/ready.toml",
+    "bytes": 1734,
+    "sha256": "bacec40da772f0c662188e8ba0a963ed3073ca5ffd7e05c04436174d144bd6c6"
+  },
+  {
+    "path": "source/metadata/pi-2.0/rect.toml",
+    "bytes": 1213,
+    "sha256": "d2d6bb1d20abeb8d90c108e39043bc5ba911f5bee88cc7e4e26d0bdce0edca8f"
+  },
+  {
+    "path": "source/metadata/pi-2.0/registerPlugin.toml",
+    "bytes": 3232,
+    "sha256": "a1ee738f44df03af57df4ba9bd9df963669d6096eadbffdff8991637ec6b992d"
+  },
+  {
+    "path": "source/metadata/pi-2.0/removeImage.toml",
+    "bytes": 867,
+    "sha256": "c216e7e03c60981de4c3b428c055714f40857211d848c98b58bd84675c75b3a7"
+  },
+  {
+    "path": "source/metadata/pi-2.0/removeScreen.toml",
+    "bytes": 910,
+    "sha256": "09a2d6ad48e5a19713d41ee9da23b930a9d40320f374c838a090eed98c5266d0"
+  },
+  {
+    "path": "source/metadata/pi-2.0/screen.toml",
+    "bytes": 1743,
+    "sha256": "2a089f4a706891f3ac6cdd87d90b5ca7b34a010bc5c1e45903ea832fbcbc0434"
+  },
+  {
+    "path": "source/metadata/pi-2.0/setBlend.toml",
+    "bytes": 714,
+    "sha256": "0b09b4ff43d9ef42453886eea1cf372858417c6c5a51d8c3ad474ea9f29ef6ce"
+  },
+  {
+    "path": "source/metadata/pi-2.0/setChar.toml",
+    "bytes": 1195,
+    "sha256": "d4e5daa48708b487e4e80536113d6b81905ac6817acd7dd82588a0f85cc972fe"
+  },
+  {
+    "path": "source/metadata/pi-2.0/setColor.toml",
+    "bytes": 868,
+    "sha256": "3dbf1bbd99a3e5d7da8667a49db31b0e72bea6d4a2d714622b935624f5512f93"
+  },
+  {
+    "path": "source/metadata/pi-2.0/setDefaultAnchor.toml",
+    "bytes": 1950,
+    "sha256": "7ea4b52d3e0b8edcfc2fbca0cc26007824d82bbd94976b7b6af97383d204bc01"
+  },
+  {
+    "path": "source/metadata/pi-2.0/setDefaultColor.toml",
+    "bytes": 532,
+    "sha256": "059c711e83ff36a2f535ca3153e660bf0b4c4265603633511c258c4c4f7d37ff"
+  },
+  {
+    "path": "source/metadata/pi-2.0/setDefaultPal.toml",
+    "bytes": 1094,
+    "sha256": "3d7615327b4f4f68ae495f7d94522e0fd6d9c7188555f9df792ad97087417b81"
+  },
+  {
+    "path": "source/metadata/pi-2.0/setNoise.toml",
+    "bytes": 1416,
+    "sha256": "7d3539ec587effe32ea54641a79ea57cfdd06b4a96ef4709931620ff40e58ad9"
+  },
+  {
+    "path": "source/metadata/pi-2.0/setPal.toml",
+    "bytes": 864,
+    "sha256": "6fce142f0991288924e84645e4642dd2423c6bc3a22a2d48a1f7afd572266945"
+  },
+  {
+    "path": "source/metadata/pi-2.0/setPalColors.toml",
+    "bytes": 894,
+    "sha256": "63f4c43647175f5f4a2c3a249a5b211ff757698e8e2d7d0dd4a29f1d7b9a994e"
+  },
+  {
+    "path": "source/metadata/pi-2.0/setPrintSize.toml",
+    "bytes": 1295,
+    "sha256": "db357db8fe4fac727c9d3328b673e28dfdb304e457f46d9c7142e9a7fb9228b5"
+  },
+  {
+    "path": "source/metadata/pi-2.0/sound-loadAudio.toml",
+    "bytes": 1299,
+    "sha256": "5f54815f000a03d1619c0b0290a24a5181114ffcc3e9dacc10d3b5bf0272efdd"
+  },
+  {
+    "path": "source/metadata/pi-2.0/sound-play.toml",
+    "bytes": 2569,
+    "sha256": "a8f27e225d5f77559212cac514be8f120cd149ac78c80e54fc1ee364f97a4aaf"
+  },
+  {
+    "path": "source/metadata/pi-2.0/sound-playAudio.toml",
+    "bytes": 1266,
+    "sha256": "7db33193b7b8d2e704d3aa8f73d249075e1e9db0dbb895d7b4e80ce97312e9d8"
+  },
+  {
+    "path": "source/metadata/pi-2.0/sound-removeAudio.toml",
+    "bytes": 850,
+    "sha256": "1a7e54c35add5e216c7d4b4bf6d14ba956607aadf06364929e7da5d3f7ceab8b"
+  },
+  {
+    "path": "source/metadata/pi-2.0/sound-setVolume.toml",
+    "bytes": 816,
+    "sha256": "ae48d1542ec94dde22ad596756111c22b3bf162cf0909611662f7b10ca033113"
+  },
+  {
+    "path": "source/metadata/pi-2.0/sound-sound.toml",
+    "bytes": 2922,
+    "sha256": "9794a097f6fdbe35d82fb1422d042ab1e2b711ef6401d3c3cf3f6e6f95df1835"
+  },
+  {
+    "path": "source/metadata/pi-2.0/sound-stopAudio.toml",
+    "bytes": 796,
+    "sha256": "3ad002e20f790594b3527e5b7a0e35961c082c2d937f2c5ca5cf0b4cea17a365"
+  },
+  {
+    "path": "source/metadata/pi-2.0/sound-stopPlay.toml",
+    "bytes": 662,
+    "sha256": "d08bd418221aea6ef6c1f758e5601014f6cbdc44fbd140ec5a790be98e7bab04"
+  },
+  {
+    "path": "source/metadata/pi-2.0/sound-stopSound.toml",
+    "bytes": 675,
+    "sha256": "d93498396e3ebb09d70a3b312063642ab7470a5456870fd513ce12f2728e4e61"
+  },
+  {
+    "path": "source/metadata/pi-2.1/_objects.toml",
+    "bytes": 3505,
+    "sha256": "702835497598e827a276fd8456e9c38317fad74ad7014a8b3fd63783c028f34b"
+  },
+  {
+    "path": "source/metadata/pi-2.1/applyShader.toml",
+    "bytes": 1558,
+    "sha256": "cd8112a2ed6b87bb251a6c258f282357cddf55e63bb5ae3dbd6e1b16a9331ad3"
+  },
+  {
+    "path": "source/metadata/pi-2.1/createShader.toml",
+    "bytes": 1851,
+    "sha256": "81f0e4cd95affbaa918f37647bdadceeb28d2bcebee7eb0096b9554e14e54008"
+  },
+  {
+    "path": "source/metadata/pi-2.1/getShaderInfo.toml",
+    "bytes": 2305,
+    "sha256": "b631d274322e429b6645d256eb063ce5e88c1010516c9e2d1ba3350f781730fc"
+  },
+  {
+    "path": "source/metadata/pi-2.1/height.toml",
+    "bytes": 774,
+    "sha256": "72bd7d75b716224b7ef693f755f381279e39c1aa3676879ff729b034cb9556f8"
+  },
+  {
+    "path": "source/metadata/pi-2.1/popView.toml",
+    "bytes": 915,
+    "sha256": "c98239f4a61933acbae93005f32f0232b861b08cc7536481a5b2bed39690c5e4"
+  },
+  {
+    "path": "source/metadata/pi-2.1/pushView.toml",
+    "bytes": 1617,
+    "sha256": "f504b5f6b9e82cc179a993307138d4ab91ebc22322966c8ddfa9a752725eeef4"
+  },
+  {
+    "path": "source/metadata/pi-2.1/removeImage.toml",
+    "bytes": 978,
+    "sha256": "07677e1a2e710451d8cafb5f8cefa24f96c26593f58cb48dcd3149630c3ab4ba"
+  },
+  {
+    "path": "source/metadata/pi-2.1/removeShader.toml",
+    "bytes": 1162,
+    "sha256": "7a8070c9e626361fc56adac190876442febf2733902e67c8bf31f2578a42048e"
+  },
+  {
+    "path": "source/metadata/pi-2.1/resetView.toml",
+    "bytes": 765,
+    "sha256": "92cc873587bb2e753fadc935a3c5cb0680d24d8a5cf6ac747937b8b10505fc65"
+  },
+  {
+    "path": "source/metadata/pi-2.1/screen.toml",
+    "bytes": 2466,
+    "sha256": "ccee21120ca5c97ea631818f22f73b7149dab0aad50f212cc6c9e67807e80d48"
+  },
+  {
+    "path": "source/metadata/pi-2.1/screenToView.toml",
+    "bytes": 786,
+    "sha256": "d92ea642d58855fe451b5497b573a576ed7a833ad53dd2688ac0f9c47c513062"
+  },
+  {
+    "path": "source/metadata/pi-2.1/setDisplayShader.toml",
+    "bytes": 2009,
+    "sha256": "ce3acc1370d14ab87874d9d4562df31a12b77c3e2dd22435c8efe98fd4d1386b"
+  },
+  {
+    "path": "source/metadata/pi-2.1/setDisplayShaderUniforms.toml",
+    "bytes": 1427,
+    "sha256": "dea2028902cc43ca3f616ddf8e49464af0c148a519d1c2c7d528588e9b4a816d"
+  },
+  {
+    "path": "source/metadata/pi-2.1/viewToScreen.toml",
+    "bytes": 839,
+    "sha256": "2047cf68015464071ac77ce5485ac7ed037a9bb1cd2d57b861d557c85fe79b9c"
+  },
+  {
+    "path": "source/metadata/pi-2.1/width.toml",
+    "bytes": 762,
+    "sha256": "e57c829f6d6b712485fd910bed0c0bcb2e62d815e667360c93e41a1baa24f340"
+  },
+  {
+    "path": "source/metadata/pi-2.2/_objects.toml",
+    "bytes": 2570,
+    "sha256": "0dc2b6fd128ed691c7652061e07a21a949dd8a26e19c4641093f070b1f751abd"
+  },
+  {
+    "path": "source/metadata/pi-2.2/applyShader.toml",
+    "bytes": 2349,
+    "sha256": "042e44a536a543b84f01c341e932d479ce52b7e500eb5229e63141e83f0e51a9"
+  },
+  {
+    "path": "source/metadata/pi-2.2/arc.toml",
+    "bytes": 1294,
+    "sha256": "85842016a50b44ae1a713f6107bf3594f4aada4f638e561e1f17f0937510e4ee"
+  },
+  {
+    "path": "source/metadata/pi-2.2/createColor.toml",
+    "bytes": 595,
+    "sha256": "16df62dd854b09c54243fb64cad338daadca4f8c65f4c717a755a30227427ea0"
+  },
+  {
+    "path": "source/metadata/pi-2.2/createShader.toml",
+    "bytes": 2686,
+    "sha256": "aa69cd8eaeb16a5e0113debb4969328324d7e043c92b60e172671ff1c208eab6"
+  },
+  {
+    "path": "source/metadata/pi-2.2/getDefaultColor.toml",
+    "bytes": 815,
+    "sha256": "5bad4ae018c66f74c3ff629ed1b62ff73e661fe17f13d2bddbaf07a4422a26f7"
+  },
+  {
+    "path": "source/metadata/pi-2.2/getDefaultPal.toml",
+    "bytes": 823,
+    "sha256": "e6b0a0aa26e52198d962b3bb6eb34f0d30a02bb1acc09b40d2653976ed622838"
+  },
+  {
+    "path": "source/metadata/pi-2.2/getPalColor.toml",
+    "bytes": 747,
+    "sha256": "41352cac14cf15ae58157648dd52c1f3316622aae06cc8b71fea4e7ac961a30f"
+  },
+  {
+    "path": "source/metadata/pi-2.2/loadImage.toml",
+    "bytes": 1215,
+    "sha256": "ef44fcad341b1f379ebb5ea94fc2afd6f87e810b2a5b6ed8f356c95d9ee0ba2c"
+  },
+  {
+    "path": "source/metadata/pi-2.2/loadSpritesheet.toml",
+    "bytes": 1894,
+    "sha256": "08f5a4da3f9696e705e4dbbfa162dd81c5b992fd8a08d86f3bdddc702f802a9d"
+  },
+  {
+    "path": "source/metadata/pi-2.2/pointer-inmouse.toml",
+    "bytes": 1124,
+    "sha256": "edc57a3fc1a432dc501362b74739e2d4155e5744235ff607b33c0ec6e7d417b1"
+  },
+  {
+    "path": "source/metadata/pi-2.2/pointer-inpress.toml",
+    "bytes": 1528,
+    "sha256": "a84a98dba0d7163fe77027d764eb622ae26b44a6575690f2ed80c1c587482ab0"
+  },
+  {
+    "path": "source/metadata/pi-2.2/pointer-intouch.toml",
+    "bytes": 975,
+    "sha256": "740e08ebacd5d0d1f3830df261a87f8ad981f5de37ee9817c72bb87d77773ba6"
+  },
+  {
+    "path": "source/metadata/pi-2.2/pointer-onclick.toml",
+    "bytes": 1412,
+    "sha256": "92dd1f16580ae51b8a75bfbda3134485bd949288aa4eb13250086ebd213f5d3d"
+  },
+  {
+    "path": "source/metadata/pi-2.2/pointer-onmouse.toml",
+    "bytes": 1862,
+    "sha256": "d4e5ef48a048d48f31bd5d224532134913bbcbd1a3b5aff615d4366628de84a8"
+  },
+  {
+    "path": "source/metadata/pi-2.2/pointer-onpress.toml",
+    "bytes": 1918,
+    "sha256": "7b0657c1259a735a3e6ef5bc84045e9a3dbbd41ee1a623f122a082e4267f4b5d"
+  },
+  {
+    "path": "source/metadata/pi-2.2/pointer-ontouch.toml",
+    "bytes": 1765,
+    "sha256": "45954c9ba6482e1ae977b84b3014c0eeecee2dd80a47b2365cb0b8c0dbd1d682"
+  },
+  {
+    "path": "source/metadata/pi-2.2/pointer-setEnableContextMenu.toml",
+    "bytes": 773,
+    "sha256": "41afe6e4da6737b695f254e890f3ef8f3f9f4abe992b5653015241d402c2f3ac"
+  },
+  {
+    "path": "source/metadata/pi-2.2/pointer-startMouse.toml",
+    "bytes": 886,
+    "sha256": "e88d4617645025a9a83cd7f08f59799494eb0414174ac197545e817c14c9717b"
+  },
+  {
+    "path": "source/metadata/pi-2.2/pointer-startTouch.toml",
+    "bytes": 888,
+    "sha256": "89c6271cdc48beb69cbc0ed404fae6370853d20d03d74b53b9c2fbbb4e631d34"
+  },
+  {
+    "path": "source/metadata/pi-2.2/popView.toml",
+    "bytes": 915,
+    "sha256": "3c567e493f2549b4c7467c8d35a84a7c0df5b65a44e6fb52cb45958c4cd36e7c"
+  },
+  {
+    "path": "source/metadata/pi-2.2/pushView.toml",
+    "bytes": 1617,
+    "sha256": "b7b2d13953edc128b40899f1337b7df6e7784e9eec0f135d3210672598a4f0df"
+  },
+  {
+    "path": "source/metadata/pi-2.2/registerPlugin.toml",
+    "bytes": 4123,
+    "sha256": "93217ba8fb080bfaac372ac3bd0ba5fca7398cc6613bd67b433c82f009215789"
+  },
+  {
+    "path": "source/metadata/pi-2.2/screen.toml",
+    "bytes": 3477,
+    "sha256": "e401807dab0db320df5e8ab4763e1fea1c999170e22c6921269eafb9413456e7"
+  },
+  {
+    "path": "source/metadata/pi-2.2/setColor.toml",
+    "bytes": 891,
+    "sha256": "7d0f918954e345a56a908b8eeb5e2cf4b8777b1f78bc0f39884ead61d94b9a75"
+  },
+  {
+    "path": "source/metadata/pi-2.2/setDefaultColor.toml",
+    "bytes": 932,
+    "sha256": "89c31b00df1094e953a58875872fd617e6f42a3e0cdd3eb3a01a21ec4e4f9ea3"
+  },
+  {
+    "path": "source/metadata/pi-2.2/setDisplayShader.toml",
+    "bytes": 2844,
+    "sha256": "afeb7bcb5fdbef2c978d2f70b133ec3665d823419a7820d39fd3a302a45f2c9e"
+  },
+  {
+    "path": "source/metadata/pi-2.2/setDisplayShaderUniforms.toml",
+    "bytes": 2279,
+    "sha256": "5300d2115299dbad4cd12565ce9ac578b1b66759feec8fb70216222efddeb233"
+  },
+  {
+    "path": "source/metadata/plugin-onscreen-keyboard/hideKeyboard.toml",
+    "bytes": 562,
+    "sha256": "3f95a15ddda858245a17a67a384e5f981c676fb55086fe9971ba5ddff6c3d922"
+  },
+  {
+    "path": "source/metadata/plugin-onscreen-keyboard/showKeyboard.toml",
+    "bytes": 1156,
+    "sha256": "eb379d7efb27d7cbf92c049b172b700553096d925cf8c594d0b22dd98d8cd406"
+  },
+  {
+    "path": "source/metadata/plugin-print-table/printTable.toml",
+    "bytes": 3061,
+    "sha256": "921209fa34c893cc4928c184dde37500ee2a315e3c132160717e85f4e0173505"
+  },
+  {
+    "path": "source/package.json",
+    "bytes": 3296,
+    "sha256": "b968213441199e087b87c35b82794eb61d7cd3214ccd77213f2a9925e948daf8"
+  },
+  {
+    "path": "source/plugins/example-plugin/banner.json",
+    "bytes": 184,
+    "sha256": "4ab948252ecad25f13eff15ce5ad35e67d9885377e34cc7172d9bd485e2df3be"
+  },
+  {
+    "path": "source/plugins/example-plugin/index.js",
+    "bytes": 5288,
+    "sha256": "656f5582330fa4ed7fe3a259ed741349d5d7f14e5ca381a6198644d84a3bb4bb"
+  },
+  {
+    "path": "source/plugins/example-plugin/README.md",
+    "bytes": 3945,
+    "sha256": "04e41122be2220eae0cd133899820d689b3e94c900deef356188257af5af61d8"
+  },
+  {
+    "path": "source/plugins/gamepad/banner.json",
+    "bytes": 155,
+    "sha256": "7d5a8485b1c8cd54196db06bff554c07a79e7978da05a01fb6c39a59224b8423"
+  },
+  {
+    "path": "source/plugins/gamepad/index.js",
+    "bytes": 11498,
+    "sha256": "51c11953281854be3c9bffeb212915e89f89f6dae1bbcea84afc616868f0ff68"
+  },
+  {
+    "path": "source/plugins/keyboard/banner.json",
+    "bytes": 157,
+    "sha256": "a2a2dc825ad3cfdc6c8102bba46c64150362e73438859dac3268d63827d3e4b9"
+  },
+  {
+    "path": "source/plugins/keyboard/index.js",
+    "bytes": 13180,
+    "sha256": "d788c0376bf2e756b352b7b4104ee9fc75172ff6be0b13d7568c87430e673a77"
+  },
+  {
+    "path": "source/plugins/keyboard/input.js",
+    "bytes": 12510,
+    "sha256": "fb7d2704df5f3916d5c6565a2f3069b76bdcb83b5b99827fa623004d7a8e0bf0"
+  },
+  {
+    "path": "source/plugins/keyboard/README.md",
+    "bytes": 7377,
+    "sha256": "97a463c6d8f13f8fba82110565984433dfdd53b468a731f5b666845c3169b7ae"
+  },
+  {
+    "path": "source/plugins/onscreen-keyboard/banner.json",
+    "bytes": 186,
+    "sha256": "259609859a06afae0dfaf14bc2fbdf50fda9fcde8fcfe5f8690e0ab2f2d9560a"
+  },
+  {
+    "path": "source/plugins/onscreen-keyboard/index.js",
+    "bytes": 17907,
+    "sha256": "c04a0da7a0e4ed8da127e3de6bf3b5034dd2c71ddc54053c165c5de8a63a228d"
+  },
+  {
+    "path": "source/plugins/onscreen-keyboard/ONSCREEN-KEYBOARD-CHANGES.md",
+    "bytes": 5380,
+    "sha256": "5d64f4c6bd49591627cd2ec09187c6f1d307c446e201f3386d76aea835386306"
+  },
+  {
+    "path": "source/plugins/onscreen-keyboard/ONSCREEN-KEYBOARD-SUMMARY.md",
+    "bytes": 7312,
+    "sha256": "947937d00a7fa08d55c8e9122e9c476e576b66cfd54ca22b636604430c9405ba"
+  },
+  {
+    "path": "source/plugins/onscreen-keyboard/README.md",
+    "bytes": 5182,
+    "sha256": "c3adc329cf68cf1b50816b67023b2cdabe12c05e3b99e9c7b7a085ac7757989c"
+  },
+  {
+    "path": "source/plugins/pens/banner.json",
+    "bytes": 204,
+    "sha256": "2505dea7b855a4c34fd605169e2f8452fb24b9223cd8c3da2d6098fecd55d7e0"
+  },
+  {
+    "path": "source/plugins/pens/index.js",
+    "bytes": 188,
+    "sha256": "04f181618d05bde14e5282e4187ff194174785ecac80db6864266c15b33062c5"
+  },
+  {
+    "path": "source/plugins/pens/README.md",
+    "bytes": 816,
+    "sha256": "8444c6e4e83ba44c7f590678700df976e72f7ed4a9b2b19cc57fd18befc21a6a"
+  },
+  {
+    "path": "source/plugins/pens/shapes/arcs.js",
+    "bytes": 7583,
+    "sha256": "16190ac5905ec5b75cac057f2d6d319306ae96f21300eb14e03ab4d67cb31b50"
+  },
+  {
+    "path": "source/plugins/pens/shapes/bezier.js",
+    "bytes": 8744,
+    "sha256": "08e0aa1bfcba39ab942a5f1aa73e1721264da0041b3259309e11ce7b7cb1fdb4"
+  },
+  {
+    "path": "source/plugins/pens/shapes/circles.js",
+    "bytes": 134,
+    "sha256": "335d67a26444121073dc2838f98d3f1cccda15975b5cb7146f0b4b048e64e2e2"
+  },
+  {
+    "path": "source/plugins/pens/shapes/ellipses.js",
+    "bytes": 136,
+    "sha256": "2db124a302161a87b2405c8a9796ffa3916e5bc0c35a0f9281451bc0a9ce3823"
+  },
+  {
+    "path": "source/plugins/pens/shapes/lines.js",
+    "bytes": 6571,
+    "sha256": "3137c4b6208d4616d307b6915cb08e49c794acf02e1290364165f71bab637e2c"
+  },
+  {
+    "path": "source/plugins/pi-vision/compositor.js",
+    "bytes": 2683,
+    "sha256": "d00a7efb26ae39fd56753b19f2a4d5ed4bab19ffc918c2b016e2f9f343629d89"
+  },
+  {
+    "path": "source/plugins/pi-vision/index.js",
+    "bytes": 2320,
+    "sha256": "0717f2612fd08b498bff2d60721fcbc6c27c4e5d687c54d24930dd0976752798"
+  },
+  {
+    "path": "source/plugins/pi-vision/README.md",
+    "bytes": 10078,
+    "sha256": "b34765666fa1b7ac1e3a4d29f3bcfa15ed3e2d8f37dac4e3091d207e49052a8c"
+  },
+  {
+    "path": "source/plugins/pi-vision/util.js",
+    "bytes": 685,
+    "sha256": "be3fc5c48aa0d75f44b5cce1dd08f26f34e9acfae17a335113cd7b98ff895d1c"
+  },
+  {
+    "path": "source/plugins/pi-vision/window.js",
+    "bytes": 28516,
+    "sha256": "29ede35085127df50da480b52be214c92b1df2f8180755e71743c6dfc6e46c10"
+  },
+  {
+    "path": "source/plugins/PLUGIN-QUICKSTART.md",
+    "bytes": 7560,
+    "sha256": "1400d0ed65dbeca381fd41a98aa12f74865ff86c266c3efd345a859934638d44"
+  },
+  {
+    "path": "source/plugins/PLUGIN-SYSTEM-SUMMARY.md",
+    "bytes": 8839,
+    "sha256": "d7f72b5353d3026902886a8c330b66e1ec326e0c3468f1bccd9cc103cfb35c30"
+  },
+  {
+    "path": "source/plugins/PLUGIN-SYSTEM.md",
+    "bytes": 7995,
+    "sha256": "45a72ffc0ed2a4624c2baaf29039de76e7e8de0434c8a4fefa4fd22e1f94fd3d"
+  },
+  {
+    "path": "source/plugins/pointer/banner.json",
+    "bytes": 163,
+    "sha256": "dbf885bac7e703c9b8c2e1018dde97d7e58a3623c23e6fc2d5e334876c95c335"
+  },
+  {
+    "path": "source/plugins/pointer/index.js",
+    "bytes": 3156,
+    "sha256": "2035cfceff0f62e57aa8dccfc735e60d1a961c7e45737d6dae267f1667e5583f"
+  },
+  {
+    "path": "source/plugins/pointer/mouse.js",
+    "bytes": 9022,
+    "sha256": "2d5d7fa70150e30773c47374bb82ea46a4a57912b335677307ee1aeb4b77c6a2"
+  },
+  {
+    "path": "source/plugins/pointer/press.js",
+    "bytes": 7500,
+    "sha256": "e3c8283ec9d1e4b3ac8d7061a36dd28d49c3cbe0f364f57807126543135455e0"
+  },
+  {
+    "path": "source/plugins/pointer/shared-events.js",
+    "bytes": 4183,
+    "sha256": "4757580b7ba452eb88c37991b1f03ac5d4f6ec8918258cec9ea85c2eea5eff11"
+  },
+  {
+    "path": "source/plugins/pointer/target.js",
+    "bytes": 1461,
+    "sha256": "dbad3a675a83d2777ce452ac0d0e36185b4090e239ea5a80ae1f44bf44207fd6"
+  },
+  {
+    "path": "source/plugins/pointer/touch.js",
+    "bytes": 8724,
+    "sha256": "0dd3881668d1f2f21fd1250a4b795db4dacb7293bf27ccced7786004efcb98f4"
+  },
+  {
+    "path": "source/plugins/polygons/banner.json",
+    "bytes": 187,
+    "sha256": "83fced6b156a263bbc56bf42f0bca5492f3dbe3b1b1373fa31fac735ab14e196"
+  },
+  {
+    "path": "source/plugins/polygons/index.js",
+    "bytes": 18538,
+    "sha256": "25831c85fbc3a45013dd60389e9127400b1d124015cd831a653de8c37654eca2"
+  },
+  {
+    "path": "source/plugins/polygons/README.md",
+    "bytes": 2812,
+    "sha256": "95dd74d5bcd7a4423509f6a2c4accd277a5d79640b94336bc6f446dfc22382da"
+  },
+  {
+    "path": "source/plugins/print-table/banner.json",
+    "bytes": 182,
+    "sha256": "07a10df31a9e3b77f0d59384b5562d8c53216fe9aa6a37aed903d9faceb5cfe2"
+  },
+  {
+    "path": "source/plugins/print-table/index.js",
+    "bytes": 13806,
+    "sha256": "f6883eb6db150b41597e054f69458c52d2379bd32ccad8ccb61e0c45850a46e4"
+  },
+  {
+    "path": "source/plugins/print-table/README.md",
+    "bytes": 3567,
+    "sha256": "37860adfb8cb0666c46d94c211c4c150a26a37d2606ab2f573934393e29f0b22"
+  },
+  {
+    "path": "source/plugins/README.md",
+    "bytes": 14146,
+    "sha256": "e3beba3bd27421558144e714f925be621a4f326719052bca9786f7772b255231"
+  },
+  {
+    "path": "source/plugins/sound/banner.json",
+    "bytes": 173,
+    "sha256": "f55c2d69dac92be3d5117f866d00350a9ddb0059d7ed6da25eb628a7006aeac1"
+  },
+  {
+    "path": "source/plugins/sound/index.js",
+    "bytes": 1159,
+    "sha256": "c6dba4bda91ebb64b0ec16f21568296dfb22907fc2c72d454aef94d2636f2c2d"
+  },
+  {
+    "path": "source/plugins/sound/play.js",
+    "bytes": 19494,
+    "sha256": "8f30e7256d7d92e4188840ed18ac5b977bbf62e4775c0a1ee61e41ced652d421"
+  },
+  {
+    "path": "source/plugins/sound/sound.js",
+    "bytes": 23347,
+    "sha256": "590fcc9d86b9ab669250d9d006d7cff64c429c0b01d97a289010cd86ab84a022"
+  },
+  {
+    "path": "source/releases/base-package.json",
+    "bytes": 1778,
+    "sha256": "da9b7cbc0ffb612d8f3c272ae478cac46db761f8be8db8206f0a1e75b13c8c5e"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.d.ts",
+    "bytes": 119395,
+    "sha256": "02e3eef8982cc9310498ac2923e2644533876db2ac9ae3a839741e25fcb940a6"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.esm.js",
+    "bytes": 373358,
+    "sha256": "b775f20a45bd4f547d6b1b1b52197b5da2d255b40f60c4a1409092ffcf72ee74"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.esm.js.map",
+    "bytes": 829386,
+    "sha256": "66e42700af3fb521f30b807a5db6978ecb3e141cc04770b3e2636cace9d59780"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.esm.min.js",
+    "bytes": 177134,
+    "sha256": "5f801a0fcd960bd69d798a0bad51b153d2a4e811022b62df095b026a8d0a9102"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.esm.min.js.map",
+    "bytes": 840958,
+    "sha256": "0ea115b78a5dc06436b36e7a5e3bdd6844e2be092b83b050cc44b65717fb17fc"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.js",
+    "bytes": 397282,
+    "sha256": "a3532620653a5e451fd3dcc61eb30aafd602c85cb61e5b688a87b047924cd6ef"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.js.map",
+    "bytes": 831997,
+    "sha256": "74ed8ec5b50791eb9bd7d48a0069e40f96fbc2760266e65a5e4bd3c67578f640"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.lite.d.ts",
+    "bytes": 89660,
+    "sha256": "b85a54a849d2a94359ab2ee6fcfc44f139455f5e11690a2cab0d845d450c863e"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.lite.esm.js",
+    "bytes": 286482,
+    "sha256": "b2565499d8cd2154c8ebecd975b9891df4772d1f9da070515677b4e82f546ff9"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.lite.esm.js.map",
+    "bytes": 641573,
+    "sha256": "a5210d63957ab229e12e27b9cb5d721b4152d67b044df7a16a904acdccdb2706"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.lite.esm.min.js",
+    "bytes": 136500,
+    "sha256": "7ccaf6ccfa8b91a086b4fb75ec183dcdc0a101745de33c1d0e00cd1f5bc215b4"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.lite.esm.min.js.map",
+    "bytes": 654157,
+    "sha256": "5bb4320fabb9a218b32f364431521b4bd3b0dbf8cc62c79c08d25202bfacb26c"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.lite.js",
+    "bytes": 304431,
+    "sha256": "016dccc40522cba18fa30142d6aac6149998229addb55e74c2f8af6e007341f3"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.lite.js.map",
+    "bytes": 643576,
+    "sha256": "27a3b00b98688beb43fffd538484ffde99ad281325f4894d4e616c5162f80b68"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.lite.min.js",
+    "bytes": 136481,
+    "sha256": "a8a6105990acf7451a012dfc5ba254f1547e7bb9bb0e812d032c8f0952499719"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.lite.min.js.map",
+    "bytes": 654157,
+    "sha256": "5b3b442eeecedab9772dd74f262dc564bfc9bcb8e1da427d92bfb06093703a08"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.min.js",
+    "bytes": 177115,
+    "sha256": "6f081a121726ce9970bfd54de90a322d8db6be51e511c01245350c1113b4ac06"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/pi.min.js.map",
+    "bytes": 840958,
+    "sha256": "fdecb1382b367448a1e2efe8bcc0215358a9c1e5ba341db03ff70c81f66cdda7"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/gamepad/gamepad.d.ts",
+    "bytes": 185,
+    "sha256": "901cfe198bc62ff1d175be13cb8e21188570c248a402ec480cb35ac80da2ca3e"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/gamepad/gamepad.esm.js",
+    "bytes": 8598,
+    "sha256": "df3c409dc9e27913273f805369650d19a2f52ee9b67f8f176fe69a7d42549041"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/gamepad/gamepad.esm.js.map",
+    "bytes": 18021,
+    "sha256": "883e44dbea9cc3b83cedf2c48994191ab3fdff3bf45fcd9bb05c94159dbfde9c"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/gamepad/gamepad.esm.min.js",
+    "bytes": 4007,
+    "sha256": "ea17a3ebabbaf5365875bfa628a964c929eceb8d7b9c5f17f22605f8bdf81740"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/gamepad/gamepad.esm.min.js.map",
+    "bytes": 18124,
+    "sha256": "16bb3ec1fc308e782f6453233324f9e94d7bd63b6544151772dafa7e60f2dbe8"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/gamepad/gamepad.js",
+    "bytes": 9147,
+    "sha256": "cb5615b577d36266792ccfcf687a751859fbe7efba4b5bf565023e4f048028c6"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/gamepad/gamepad.js.map",
+    "bytes": 18134,
+    "sha256": "2729c79efdae7837ab7b7d543f45317d58bae41993f1d6e58bf75457b32ada4c"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/gamepad/gamepad.min.js",
+    "bytes": 4006,
+    "sha256": "73f20dfb089fe5070c1081b829f7c98f79f3bc73e8f314e0fd2f3398cb3ff299"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/gamepad/gamepad.min.js.map",
+    "bytes": 18125,
+    "sha256": "3d3b9a8dd08e8c77e7dc114969b068e14dd9baa64fb2eb591041155cdc889e14"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/keyboard/keyboard.d.ts",
+    "bytes": 188,
+    "sha256": "4c9475450bd559d1614d30e967a67788652e3746698147d56554962b550adafd"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/keyboard/keyboard.esm.js",
+    "bytes": 18331,
+    "sha256": "67b18b35f52a2904de692a6ea44a136f725fdb6cb8488c37ee4ef306153d55b7"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/keyboard/keyboard.esm.js.map",
+    "bytes": 41197,
+    "sha256": "173fb0c2800749c1f6d11146e3e35c30a717c8d6c243ae8542b1fd4cd101c74a"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/keyboard/keyboard.esm.min.js",
+    "bytes": 8463,
+    "sha256": "df15e79f69e57d0c243bd41be143c46d32d0cdf19783192b29531bd20c876612"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/keyboard/keyboard.esm.min.js.map",
+    "bytes": 40974,
+    "sha256": "fb21c0e3e5ced824af59f428d8f84fb3e57e8c3a2e6ba6ea8e6d9eeb68473a4a"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/keyboard/keyboard.js",
+    "bytes": 19570,
+    "sha256": "27d34abd7cc64c99543dbc8948eb557e0cb5ef0b89f203671b1d26489ff42bb8"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/keyboard/keyboard.js.map",
+    "bytes": 41369,
+    "sha256": "cc2541487ae700c8152c1146ecffb0e5a045ef26b1c7201a08ce637304560506"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/keyboard/keyboard.min.js",
+    "bytes": 8436,
+    "sha256": "da95f677723d0fc6535f028593e934f109a96d16be508566d1dadee917620873"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/keyboard/keyboard.min.js.map",
+    "bytes": 40975,
+    "sha256": "27c45ee5f18f2ae974e5d518cb1ed05c41e5732bb1c7aafa79c3b701341d03e5"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/pointer/pointer.d.ts",
+    "bytes": 185,
+    "sha256": "35ccf340b7f0a3bea371cace8a59bea3a379fe59ea26415c889dcc32fca042ba"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/pointer/pointer.esm.js",
+    "bytes": 28940,
+    "sha256": "81e53fd43fc47d736d6d10ffae402875c7377e5d44a4ba3655dd43427f7cdd21"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/pointer/pointer.esm.js.map",
+    "bytes": 58773,
+    "sha256": "086186b3748b7e3d9737a358a68eaa8cc3f33fd026651edf89bb7b33e616e4aa"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/pointer/pointer.esm.min.js",
+    "bytes": 12739,
+    "sha256": "ea8455ec3952f9d7e3372f13aa24c052d87e79eeef52886977d41e5c6935b1ac"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/pointer/pointer.esm.min.js.map",
+    "bytes": 58644,
+    "sha256": "b433310b4a95afa68cc4bf8cb5501cddda8013a6a0e566c4e9d5f16c7f3360b9"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/pointer/pointer.js",
+    "bytes": 30785,
+    "sha256": "62b12be80c256cd17153a3fc31b30ce7eb5da24195fd817c501d10f29973adbc"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/pointer/pointer.js.map",
+    "bytes": 58892,
+    "sha256": "4104d398cdcdfac02af06363a8f01a22eab07a9efa026f370909e12535b1fb8b"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/pointer/pointer.min.js",
+    "bytes": 12738,
+    "sha256": "713e0778ce6790f8088317ba094a0cc44be6adb43e5795e2f28cf925830418d8"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/pointer/pointer.min.js.map",
+    "bytes": 58645,
+    "sha256": "26bd9f4a64df4931d5e81b26d0a923aa869621cd77e2e8ab40414b24c48713bc"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/sound/sound.d.ts",
+    "bytes": 179,
+    "sha256": "3450d7352bf937692166900fdaad37ead64497bcf9674052e4e69f2d57e8cb90"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/sound/sound.esm.js",
+    "bytes": 32717,
+    "sha256": "a32d8f4b86bfa5aa3a1e14b9fb3adbd52d5a79b0fe6a03505259a33d567515cd"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/sound/sound.esm.js.map",
+    "bytes": 71849,
+    "sha256": "009c2d9e15c68c033ad0c2fd290ef697be75d275f2fbf910137534e513ef5b6b"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/sound/sound.esm.min.js",
+    "bytes": 16134,
+    "sha256": "23b3d00ea79a137bc29d6a79b21ea2451e4745165d590c1c1dd3f9af5d9c4919"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/sound/sound.esm.min.js.map",
+    "bytes": 71215,
+    "sha256": "2a20f8538ba47e8bd12278068405c2cd17ed9cefe187f052813f14b7a874ae41"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/sound/sound.js",
+    "bytes": 35046,
+    "sha256": "85c49b2b7f7c419f9db92343eee2e5b57ed4d056611cb1eb6ec6f8281cad8d58"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/sound/sound.js.map",
+    "bytes": 72065,
+    "sha256": "71c07b6a58e65ccfa9bc1dcb1f6172edc67ea473b91f3fc9c5fe406ddb0409dc"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/sound/sound.min.js",
+    "bytes": 16133,
+    "sha256": "9b44410645bf45a2b08c7dae62a41ad439e0271c3fdd76daa567376ffcca2a82"
+  },
+  {
+    "path": "source/releases/pi-latest/dist/plugins/sound/sound.min.js.map",
+    "bytes": 71216,
+    "sha256": "cee8d70f8042d3bd9aa38305ea43015a347e63fb516aad7b6d9d252fe3872d09"
+  },
+  {
+    "path": "source/releases/pi-latest/package.json",
+    "bytes": 1699,
+    "sha256": "2219650e8688e2cbdb1242e1dc1a5e0ce3de91de0fe2d3c5aec94b931bd05e52"
+  },
+  {
+    "path": "source/scripts/build-plugin.js",
+    "bytes": 7964,
+    "sha256": "8f46117944913d846715587473182a22942969371efe36b09da32cdcf3e90fd9"
+  },
+  {
+    "path": "source/scripts/build.js",
+    "bytes": 11206,
+    "sha256": "ee8942a7fdc2711c91d4b5cc0f2d462f6f1ddc3dfa2718d7eb529a9fba386f19"
+  },
+  {
+    "path": "source/scripts/copy-to-release.js",
+    "bytes": 11260,
+    "sha256": "8488cd45b7c4dcb47d7fa7962279673bcaabab86eb05fa86d681f8ee34523776"
+  },
+  {
+    "path": "source/scripts/generate-metadata.js",
+    "bytes": 27840,
+    "sha256": "80811711a7977de5e1eb1de4f885d2d9a35dd1c1800f62a17fb1b6bf752d3cb2"
+  },
+  {
+    "path": "source/scripts/validate-metadata-output.js",
+    "bytes": 2726,
+    "sha256": "391d7e72a376e5dd00d4e62bd90125c445494f0b3eb1944105a37155b9337dca"
+  },
+  {
+    "path": "source/scripts/validate-type-definitions.js",
+    "bytes": 6713,
+    "sha256": "37414f0073d2363594d07e2cde3d14f7932e15df7064a4adb2109850b6cea860"
+  },
+  {
+    "path": "source/src/api/blends.js",
+    "bytes": 5699,
+    "sha256": "bb17ba7bce72227534655ef92264686e33cc329c9a3124535b42a65d49c34c3a"
+  },
+  {
+    "path": "source/src/api/colors.js",
+    "bytes": 22539,
+    "sha256": "0e3931e00bb0444a081f47b248b7b1515fd4ac46e36a86d9b25da4af337c5e21"
+  },
+  {
+    "path": "source/src/api/draw.js",
+    "bytes": 8669,
+    "sha256": "058d159f4b8c50c18928acb36d7a6bc5046f07b922afce7538d83fb159332481"
+  },
+  {
+    "path": "source/src/api/graphics.js",
+    "bytes": 22679,
+    "sha256": "b0f3eaf51855086d1fe9f892649c08e87e44dc11e3d66ef51b85df273b2641a7"
+  },
+  {
+    "path": "source/src/api/images.js",
+    "bytes": 26208,
+    "sha256": "6d5dc2d3e3fabf8ba1b8635eb39345550f330e77e854e90b9aad1b68f07b6a24"
+  },
+  {
+    "path": "source/src/api/paint.js",
+    "bytes": 6925,
+    "sha256": "7b9bb0e7f686057e89fd8d2596ee4578bec03a074c097fb857c5780cbd5b01ef"
+  },
+  {
+    "path": "source/src/api/pixels.js",
+    "bytes": 19461,
+    "sha256": "fcd14b2f768e88da36d59c027d510e4c5997196b8e61c04db2b77e52591e99db"
+  },
+  {
+    "path": "source/src/api/postfx.js",
+    "bytes": 17084,
+    "sha256": "739b14726293fc2659657a11d94545134524ce77fecfff87d679bae9781a06f1"
+  },
+  {
+    "path": "source/src/api/view.js",
+    "bytes": 12127,
+    "sha256": "e01e230fab34af6334722e078c7cebd186ce1601d0bc753916d52686e2533cb6"
+  },
+  {
+    "path": "source/src/core/canvas-layout.js",
+    "bytes": 1555,
+    "sha256": "8114b97b71332cf57ea439603e0f92c74a5977ee30d1bbf35f381d009c7dfc9c"
+  },
+  {
+    "path": "source/src/core/commands.js",
+    "bytes": 9435,
+    "sha256": "cf7b1e0ad415794aa181d6ca2b8125e83a4571dcc274cdbae0bde548f401c369"
+  },
+  {
+    "path": "source/src/core/plugins.js",
+    "bytes": 9787,
+    "sha256": "f11d67253b371be714da33ce1f3c0d28e97d2ad4531ea9c033eeb2bbc8be89ed"
+  },
+  {
+    "path": "source/src/core/screen-manager.js",
+    "bytes": 39970,
+    "sha256": "6afa20da32948d69c5059beacba287c2909e1050a096ca2f9c2d4cc314ec0c89"
+  },
+  {
+    "path": "source/src/core/utils.js",
+    "bytes": 13979,
+    "sha256": "ca77551c571d0ffa24c39fb272eb1b161acc2c46da4b65544a5867e83f929000"
+  },
+  {
+    "path": "source/src/index-full.js",
+    "bytes": 782,
+    "sha256": "23e210c0745dea71006ec6832a28684799f24c4efcb2c06b0a2992894ea095f5"
+  },
+  {
+    "path": "source/src/index.js",
+    "bytes": 2023,
+    "sha256": "eac7dc3c9cd830c9259bbba94e88b31f7d7658f4ffd4ec3b05f334052fc09292"
+  },
+  {
+    "path": "source/src/renderer/alpha.js",
+    "bytes": 1419,
+    "sha256": "7b3b0b631f84b2c7b84d03e928ab4386ab18df18023268324b867c3fb8c821a1"
+  },
+  {
+    "path": "source/src/renderer/batches.js",
+    "bytes": 32066,
+    "sha256": "82995a1bcf96c692d3540cc185a321c7947cac9258ef4a493e5682b6db9e887f"
+  },
+  {
+    "path": "source/src/renderer/context-state.js",
+    "bytes": 1132,
+    "sha256": "102817f7720b814ea82e654e343ca42eccfe98830fce5b1cc2be0bd2e0641b06"
+  },
+  {
+    "path": "source/src/renderer/draw/arcs.js",
+    "bytes": 4379,
+    "sha256": "24db60ac967778ef92dd3f2d2e663ea5c3daa254db3508fba21f3e19b6e2cbe6"
+  },
+  {
+    "path": "source/src/renderer/draw/batch-helpers.js",
+    "bytes": 6581,
+    "sha256": "8763b9ea1e4a8483f945300545d8e65cf7cc358053375db84f0cf6c6800da11e"
+  },
+  {
+    "path": "source/src/renderer/draw/bezier.js",
+    "bytes": 2295,
+    "sha256": "a97fa7403f27d71b38493123b9f8ed2f6748ac2c657d8ba958289b806a526c15"
+  },
+  {
+    "path": "source/src/renderer/draw/circles.js",
+    "bytes": 3174,
+    "sha256": "6e60bffa9d210060825f246a1a3987a62478ce4d1239b21f14c287f204b07038"
+  },
+  {
+    "path": "source/src/renderer/draw/ellipses.js",
+    "bytes": 5899,
+    "sha256": "415a9ffa022b5530a9569298da3466e22091bdbf7053fc3cb319ee13682a993a"
+  },
+  {
+    "path": "source/src/renderer/draw/geometry.js",
+    "bytes": 10156,
+    "sha256": "1ce48db91b0ddafa4a11a3a19988478c5cfc2b7a2e66e57b99e677bc511b09c1"
+  },
+  {
+    "path": "source/src/renderer/draw/lines.js",
+    "bytes": 3352,
+    "sha256": "b239f1e7affbd4d41b15a9f8744aca1ea1c5811bc7c99381b917dba209d75abe"
+  },
+  {
+    "path": "source/src/renderer/draw/primitives.js",
+    "bytes": 1596,
+    "sha256": "517958b822a695ffb84005941a3e7ad16528985a7cebbfdc37cd387b1cc53a97"
+  },
+  {
+    "path": "source/src/renderer/draw/rects.js",
+    "bytes": 2769,
+    "sha256": "4e7e98eb6539f556e18fb3a6814824b2c7b4659275d73ccbcc3cd47fe2f502e4"
+  },
+  {
+    "path": "source/src/renderer/draw/sprites.js",
+    "bytes": 10581,
+    "sha256": "f86152a2f9228b95cac77cc76d285c9e6a67d1b5adaac2db276a7c3c3fefea6b"
+  },
+  {
+    "path": "source/src/renderer/effects.js",
+    "bytes": 4732,
+    "sha256": "b33d742c47c58cff315c949b0bee41f98bccceb28d55c4e70b33a20144e8ef7e"
+  },
+  {
+    "path": "source/src/renderer/readback.js",
+    "bytes": 8478,
+    "sha256": "e11cc5ae8b1651961e5c1aaa3cd93cb4a02419d49c366b8d5e41c2713efe262a"
+  },
+  {
+    "path": "source/src/renderer/renderer.js",
+    "bytes": 16395,
+    "sha256": "657298476207dfdcaade98ac5a66a238661655deb74e0893aec0e4227176530a"
+  },
+  {
+    "path": "source/src/renderer/shaders.js",
+    "bytes": 18562,
+    "sha256": "59f65ea9bc5fef3eda1efcdb85811e3856e6c262d37491818b278e1e0bb59b59"
+  },
+  {
+    "path": "source/src/renderer/shaders/display.frag",
+    "bytes": 267,
+    "sha256": "f1bdf46cbcb18c36f340b5217c811403740cdaae6f8274d4631d15f950679096"
+  },
+  {
+    "path": "source/src/renderer/shaders/display.vert",
+    "bytes": 214,
+    "sha256": "123d498a05b433b0c979a1738f7f869d89189a00941dfeb694d9bfa178e94beb"
+  },
+  {
+    "path": "source/src/renderer/shaders/geometry.vert",
+    "bytes": 446,
+    "sha256": "252713994e9b253c89c8b6756339c308d4fd99e55a35fdb8f01ccd6513cdcb2c"
+  },
+  {
+    "path": "source/src/renderer/shaders/image.frag",
+    "bytes": 412,
+    "sha256": "899067f6f1c2eebdc43384099cd0375bc265e24aba655d1171001d279dc94e2f"
+  },
+  {
+    "path": "source/src/renderer/shaders/image.vert",
+    "bytes": 614,
+    "sha256": "a85f1ef4372305bd4dc5d7d67983e6c719a42ace5d561561c39d279dffe0889c"
+  },
+  {
+    "path": "source/src/renderer/shaders/point.frag",
+    "bytes": 1977,
+    "sha256": "39297cf2de7d2b902584e0c9d4f1656eff63fefdd30584c51fdbb568642f997d"
+  },
+  {
+    "path": "source/src/renderer/shaders/point.vert",
+    "bytes": 438,
+    "sha256": "c3158edf454d033017ddbe341817aeb18d56fa711f4564c6876fd51a514e5131"
+  },
+  {
+    "path": "source/src/renderer/textures.js",
+    "bytes": 21051,
+    "sha256": "87dccf3e1d5afe3c8e2fad56f7f2f5dd6518a91819012571e991987379249ac7"
+  },
+  {
+    "path": "source/src/text/fonts.js",
+    "bytes": 13348,
+    "sha256": "71dd890a39e9a921e3d032963052e050bc4946b12c0912f0510b4668a714a3eb"
+  },
+  {
+    "path": "source/src/text/fonts/font-6x6.webp",
+    "bytes": 1238,
+    "sha256": "c62beefe578af8e29e710376d7b3b2dfaea141e7b0401f391bac973b1398668f"
+  },
+  {
+    "path": "source/src/text/fonts/font-6x8.js",
+    "bytes": 7000,
+    "sha256": "a26f7e08888ba40645dc60403103b3b8b86ce4e978e63f6169eafb7142b65ec0"
+  },
+  {
+    "path": "source/src/text/fonts/font-8x14.webp",
+    "bytes": 1694,
+    "sha256": "7a73651ea4f0d2d9c3419e0cdecd3b3ad23a8ed0f419e4b03278513e362d9ddb"
+  },
+  {
+    "path": "source/src/text/fonts/font-8x16.webp",
+    "bytes": 1718,
+    "sha256": "9eb400c4e2f43a2c132f038b8a755d7392bb9ceb6645abf38d9e31cd41ea2fd8"
+  },
+  {
+    "path": "source/src/text/fonts/font-8x8.webp",
+    "bytes": 1436,
+    "sha256": "24d8a88b7fe9c0f97f10bb5a352e624af9b04d1a591d04b9bc25456a7dfbeb01"
+  },
+  {
+    "path": "source/src/text/print.js",
+    "bytes": 15040,
+    "sha256": "d8b8ea5df44807919646b38d595b295905b9022cf49a929d5f79dcb6cc3f540b"
+  },
+  {
+    "path": "test/playwright-report/index.html",
+    "bytes": 521400,
+    "sha256": "7c6542138474feef355eca551299b36fa8658338f86547a28322d4727614a716"
+  },
+  {
+    "path": "test/test-results/.last-run.json",
+    "bytes": 45,
+    "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+  },
+  {
+    "path": "visual-discovery-interrupted.log",
+    "bytes": 460,
+    "sha256": "7de3248bea88117cfea5e81df2798403773c463e19622a753642b77c899f43a6"
+  },
+  {
+    "path": "visual-full.log",
+    "bytes": 578,
+    "sha256": "39df4dcfe5eacde2a0bd84bc7d75eca19ec2e58983c02572b843330f44df599f"
+  },
+  {
+    "path": "visual-lite.log",
+    "bytes": 563,
+    "sha256": "34e68f57be466e2418e52f2e7ac760d22829bb78eb824b601413359c834bbf84"
+  },
+  {
+    "path": "visual-plugins.log",
+    "bytes": 561,
+    "sha256": "819ed304b99bec4c7bcfa236105d62d909eac9d072a34a6eebc15a89d6679d63"
+  },
+  {
+    "path": "visual.config.js",
+    "bytes": 543,
+    "sha256": "65f1f2c5d65539157b2e25e39608724976d93353a03e26ad85d6ca8377350e86"
+  }
+]

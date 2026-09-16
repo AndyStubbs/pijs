@@ -1,0 +1,60 @@
+{
+  "archivedAt": "2026-09-16T17:41:53.1392235Z",
+  "archiveDirectory": "C:\\Docs\\src\\pijs-evidence",
+  "campaigns": [
+    {
+      "campaign": "p2-integration-20260916",
+      "archive": "p2-integration-20260916.zip",
+      "sha256": "5eb1a86ffb24efb6d9f5a7e230f19c26cc58db0ac9b4ce0f468c64cb320be966",
+      "original": "C:\\Docs\\src\\pijs\\test\\performance\\campaigns\\p2-integration-20260916",
+      "files": 523,
+      "inventory": "p2-integration-20260916.files.json",
+      "verifiedExtraction": true
+    },
+    {
+      "campaign": "phase1-smoke",
+      "archive": "phase1-smoke.zip",
+      "sha256": "71f10c96fc97d312c18b25ec3ca676370b7f506996ce9cda3c967d798dfc7682",
+      "original": "C:\\Docs\\src\\pijs\\test\\performance\\campaigns\\phase1-smoke",
+      "files": 66,
+      "inventory": "phase1-smoke.files.json",
+      "verifiedExtraction": true
+    },
+    {
+      "campaign": "phase1-verified",
+      "archive": "phase1-verified.zip",
+      "sha256": "901b9f2a9e3b4404cd47d993e6632f9a897eb485c941351225e665a9b1394cbc",
+      "original": "C:\\Docs\\src\\pijs\\test\\performance\\campaigns\\phase1-verified",
+      "files": 66,
+      "inventory": "phase1-verified.files.json",
+      "verifiedExtraction": true
+    },
+    {
+      "campaign": "phase2-20260916",
+      "archive": "phase2-20260916.zip",
+      "sha256": "b25cdca237145e70cd63cf46d033a595438f5fbb3fcdf4f7b296502024bd26ca",
+      "original": "C:\\Docs\\src\\pijs\\test\\performance\\campaigns\\phase2-20260916",
+      "files": 693,
+      "inventory": "phase2-20260916.files.json",
+      "verifiedExtraction": true
+    },
+    {
+      "campaign": "phase3-20260916",
+      "archive": "phase3-20260916.zip",
+      "sha256": "5571a6d53585f4ae1b10a1142a5ee49020659a5b0e087a3c979775df3a2afcad",
+      "original": "C:\\Docs\\src\\pijs\\test\\performance\\campaigns\\phase3-20260916",
+      "files": 1771,
+      "inventory": "phase3-20260916.files.json",
+      "verifiedExtraction": true
+    },
+    {
+      "campaign": "phase4-20260916",
+      "archive": "phase4-20260916.zip",
+      "sha256": "c25fe0df306b44d12e9e2fdacd38b7c9b93704e4679e004ce3cab9a695fa6d45",
+      "original": "C:\\Docs\\src\\pijs\\test\\performance\\campaigns\\phase4-20260916",
+      "files": 2316,
+      "inventory": "phase4-20260916.files.json",
+      "verifiedExtraction": true
+    }
+  ]
+}
