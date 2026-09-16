@@ -59,7 +59,7 @@ Built on top of **WebGL 2**, Pi.js features:
 ### Current Version
 - **Latest release:** v2.1.0 (WebGL 2 only, browser-only library)
 - **In development:** v2.2.0 (not release-ready)
-- **Legacy:** v1.2.4 (Canvas2D support, available on `v1.2.x` branch)
+- **Legacy:** v1.2.5 (Canvas2D support, available on `v1.2.x` branch)
 
 ### Version 2.1.0 Highlights
 
@@ -89,12 +89,12 @@ Version 2.0.0 is a major release featuring:
 
 ### Important Notes for Upgrading
 
-**Breaking Changes:** Version 2.0.0 includes significant breaking changes. If you're upgrading from v1.2.4, please:
+**Breaking Changes:** Version 2.0.0 includes significant breaking changes. If you're upgrading from v1.2.5, please:
 - Review the [Upgrade Guide](https://pijs.org/pi-js-v2-upgrade/) for detailed migration information
 - Check [pijs.org/docs/api](https://pijs.org/docs/api) for API differences
 - Note that Canvas2D mode has been removed - WebGL 2 is now required
 
-**Canvas2D Support:** If you need Canvas2D rendering, continue using v1.2.4, which is available in the [Canvas2d](https://github.com/AndyStubbs/pijs-canvas2d) repo and remains functional for Canvas2D use cases.
+**Canvas2D Support:** If you need Canvas2D rendering, continue using v1.2.5, which is available in the [Canvas2d](https://github.com/AndyStubbs/pijs-canvas2d) repo and remains functional for Canvas2D use cases.
 
 ---
 
@@ -294,7 +294,7 @@ Minimal dev dependencies:
 - `@iarna/toml` - TOML config parser
 - `pngjs` - PNG image comparison for tests
 
-**Total:** 4 dev dependencies (down from 6 in v1.2.4)
+**Total:** 4 dev dependencies (down from 6 in v1.2.5)
 
 ---
 
