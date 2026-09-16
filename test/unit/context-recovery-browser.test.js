@@ -102,6 +102,84 @@ async function probe( bundle, fn, arg ) {
 }
 
 for( const bundle of [ "full", "lite" ] ) {
+	test( `P1 ${bundle}: warm static textures preserve state and recover after loss`, async () => {
+		assert.equal( await probe( bundle, async () => {
+			const screen = $.screen( "4x4" );
+			const data = inspect( screen );
+			const gl = data.gl;
+			const canvas = document.createElement( "canvas" );
+			canvas.width = 2;
+			canvas.height = 2;
+			const ctx = canvas.getContext( "2d" );
+			ctx.fillStyle = "red";
+			ctx.fillRect( 0, 0, 2, 2 );
+			const image = new Image();
+			image.src = canvas.toDataURL();
+			await image.decode();
+			screen.drawImage( image, 0, 0 );
+			if( pixel( screen )[ 0 ] !== 255 ) { throw new Error( "Cold upload failed" ); }
+			const renderer = recoveryTest.renderer;
+			const first = renderer.getWebGL2Texture( data, image );
+			const sentinel = gl.createTexture();
+			const read = gl.createFramebuffer();
+			const draw = gl.createFramebuffer();
+			gl.activeTexture( gl.TEXTURE3 );
+			gl.bindTexture( gl.TEXTURE_2D, sentinel );
+			gl.bindFramebuffer( gl.READ_FRAMEBUFFER, read );
+			gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, draw );
+			const calls = [];
+			const originals = {};
+			for( const name of [ "isContextLost", "getParameter", "activeTexture",
+				"bindTexture", "bindFramebuffer", "texImage2D" ] ) {
+				originals[ name ] = gl[ name ].bind( gl );
+				gl[ name ] = ( ...args ) => {
+					calls.push( name );
+					return originals[ name ]( ...args );
+				};
+			}
+			const cached = renderer.getWebGL2Texture( data, image );
+			for( const name of Object.keys( originals ) ) { gl[ name ] = originals[ name ]; }
+			if(
+				cached !== first || calls.join() !== "isContextLost" ||
+				gl.getParameter( gl.ACTIVE_TEXTURE ) !== gl.TEXTURE3 ||
+				gl.getParameter( gl.TEXTURE_BINDING_2D ) !== sentinel ||
+				gl.getParameter( gl.READ_FRAMEBUFFER_BINDING ) !== read ||
+				gl.getParameter( gl.DRAW_FRAMEBUFFER_BINDING ) !== draw
+			) {
+				throw new Error( "Warm lookup touched GL state" );
+			}
+			gl.bindFramebuffer( gl.READ_FRAMEBUFFER, null );
+			gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, null );
+			gl.bindTexture( gl.TEXTURE_2D, null );
+			gl.activeTexture( gl.TEXTURE0 );
+			gl.deleteTexture( sentinel );
+			gl.deleteFramebuffer( read );
+			gl.deleteFramebuffer( draw );
+
+			// Probe a warm cache while loss is pending, before the browser dispatches its event.
+			const extension = gl.getExtension( "WEBGL_lose_context" );
+			if( !extension ) { throw new Error( "WEBGL_lose_context unavailable" ); }
+			const lost = contextEvent( gl, "webglcontextlost" );
+			extension.loseContext();
+			if( renderer.getWebGL2Texture( data, image ) !== null || !data.contextLost ) {
+				throw new Error( "Warm lookup returned a lost texture" );
+			}
+			await lost;
+			await new Promise( resolve => setTimeout( resolve, 50 ) );
+			const restored = contextEvent( gl, "webglcontextrestored" );
+			extension.restoreContext();
+			await restored;
+			const second = renderer.getWebGL2Texture( data, image );
+			screen.drawImage( image, 0, 0 );
+			const color = pixel( screen );
+			if( second === first || color.join() !== "255,0,0,255" || gl.getError() !== 0 ) {
+				throw new Error( "Static image failed after restoration" );
+			}
+			screen.removeScreen();
+			return true;
+		} ), true );
+	} );
+
 	test( `SYS-008 ${bundle}: GPU boundaries detect loss before its event`, async () => {
 		assert.equal( await probe( bundle, async () => {
 			for( const operation of [ "pixel", "region", "clear", "shader", "resize", "image",

@@ -4,7 +4,8 @@ Based on the [2.0.3–2.2.0 investigation](upgrade-2.2-performance-report.md).
 Objective: recover performance through compatible optimizations, starting with the strongest
 measured results. Estimates are engineering days for a maintainer familiar with the renderer.
 This document schedules implementation and validation. Phase 1 provides the maintained benchmark;
-subsequent phases remain implementation and qualification work.
+Phase 2 provides the first validated optimizations. Later phases remain implementation and
+qualification work.
 
 ## Phase 1 — Make benchmark results reproducible
 
@@ -33,6 +34,16 @@ Land each change independently, then integrate them.
 **Deliverable:** separate production patches, followed by an integrated candidate. The existing
 combined prototype reduced image/sprite time by 41–44% and circle time by 13%; these are CPU
 submission reductions on one configuration, not additive gains or FPS promises.
+
+**Implemented:** P1 and P3 have independent patches, source snapshots, and focused regression
+coverage, followed by an integrated candidate. The integrated regression suite passed 451 tests;
+all 67 full/lite/plugin visual fixtures passed without baseline changes. Three fixed-work campaigns
+completed fourteen rounds per source without interruption. P1 reduced image/sprite submission by
+37.8%/40.4%; P3 reduced filled-circle submission by 12.1%. The integrated candidate independently
+measured 37.8%/38.3%/12.3% reductions for images/sprites/filled circles. These results passed the
+interval and variability gates on the measured RTX 4060/Chromium configuration. Text remained
+unstable, and broader qualification remains Phase 5 work. See the
+[Phase 2 validation record](upgrade-2.2-phase2-validation.md) for tests, intervals, and artifacts.
 
 ## Phase 3 — Improve line reservation
 

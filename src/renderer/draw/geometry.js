@@ -339,22 +339,19 @@ export function drawCachedGeometry( screenData, cacheType, unit, x, y, color ) {
 
 	// Copy vertices to batch with offset and generate colors
 	const vertices = geometry.vertices;
-	let vIdx = 0;
-	let remaining = 0;
-
-	for( let i = 0; i < geometry.vertexCount; i++ ) {
-		if( remaining === 0 ) {
-			remaining = g_batches.prepareBatchChunk(
-				screenData, g_batches.GEOMETRY_BATCH, geometry.vertexCount - i, 3
-			);
-			if( remaining === 0 ) {
-				return;
-			}
+	let i = 0;
+	while( i < geometry.vertexCount ) {
+		const count = g_batches.prepareBatchChunk(
+			screenData, g_batches.GEOMETRY_BATCH, geometry.vertexCount - i, 3
+		);
+		if( count === 0 ) {
+			return;
 		}
-		remaining--;
-
-		const vx = vertices[ vIdx++ ] + x;
-		const vy = vertices[ vIdx++ ] + y;
-		g_batchHelpers.addVertexToBatch( batch, vx, vy, color );
+		const end = i + count;
+		for( ; i < end; i++ ) {
+			g_batchHelpers.addVertexToBatch(
+				batch, vertices[ i * 2 ] + x, vertices[ i * 2 + 1 ] + y, color
+			);
+		}
 	}
 }

@@ -77,7 +77,8 @@ function createHarness( min = 8, max = 19 ) {
 		screen.batches[ type ] = batch;
 	}
 	const globals = { "g_batches": batches, "g_batchHelpers": helpers };
-	const geometry = loadModule( "renderer/draw/geometry.js", globals, [ "FILLED_CIRCLE" ] );
+	const geometry = loadModule( "renderer/draw/geometry.js", globals,
+		[ "FILLED_CIRCLE", "m_geometryCache" ] );
 	const shapes = {};
 	for( const name of [ "lines", "circles", "arcs", "ellipses", "bezier" ] ) {
 		shapes[ name ] = loadModule( `renderer/draw/${name}.js`, {
@@ -246,4 +247,76 @@ test( "SYS-007 skipped paint and put pixels allocate no point chunks", () => {
 	assert.equal( h.screen.batchInfo.drawOrder.length, 0 );
 	assert.equal( h.screen.batches[ 0 ].capacity, 8 );
 	assert.equal( h.screen.batches[ 3 ].capacity, 8 );
+} );
+
+for( const [ min, max ] of [ [ 3, 3 ], [ 4, 7 ], [ 8, 19 ], [ 12, 25 ] ] ) {
+	test( `P3 cached geometry preserves exact emission with capacities ${min}/${max}`, () => {
+		const large = createHarness( 10000, 20000 );
+		const small = createHarness( min, max );
+		const reservations = [];
+		const reserve = small.batches.prepareBatchChunk;
+		small.batches.prepareBatchChunk = ( ...args ) => {
+			const count = reserve( ...args );
+			reservations.push( { "count": count, "remaining": args[ 2 ] } );
+			assert.equal( count % 3, 0 );
+			assert.ok( count <= args[ 2 ] );
+			return count;
+		};
+		for( const h of [ large, small ] ) {
+			const type = h.batches.GEOMETRY_BATCH;
+			const batch = h.screen.batches[ type ];
+
+			// Start partially occupied, and preserve order across a different primitive batch.
+			h.batches.prepareBatch( h.screen, type, 3 );
+			h.helpers.addTriangleToBatch( batch, -2, -1, 1, 3, 4, 2, h.screen.color );
+			for( const alpha of [ 0, 128, 255 ] ) {
+				const color = { "r": 41, "g": 93, "b": 157, "a": alpha };
+				h.geometry.drawCachedGeometry( h.screen, h.geometry.FILLED_CIRCLE,
+					40, 0.25, -1.5, color );
+				h.batches.prepareBatch( h.screen, h.batches.POINTS_BATCH, 1 );
+				h.helpers.addVertexToBatch( h.screen.batches[ h.batches.POINTS_BATCH ],
+					5, 7, color );
+			}
+			h.batches.flushBatches( h.screen );
+		}
+		assert.deepEqual( small.emitted, large.emitted );
+		assert.ok( reservations.length > 1 );
+		assert.equal( reservations.at( -1 ).count, reservations.at( -1 ).remaining );
+	} );
+}
+
+test( "P3 final short chunk copies only remaining complete triangles", () => {
+	const h = createHarness( 12, 25 );
+	const vertices = new Float32Array( Array.from( { "length": 30 }, ( _, i ) => i / 4 ) );
+	h.geometry.m_geometryCache.set( "0:123", { "vertices": vertices, "vertexCount": 15 } );
+	const reservations = [];
+	const reserve = h.batches.prepareBatchChunk;
+	h.batches.prepareBatchChunk = ( ...args ) => {
+		const count = reserve( ...args );
+		reservations.push( count );
+		return count;
+	};
+	h.geometry.drawCachedGeometry( h.screen, 0, 123, 2, 4, h.screen.color );
+	h.batches.flushBatches( h.screen );
+	assert.deepEqual( reservations, [ 12, 3 ] );
+	assert.equal( h.emitted.length, 15 );
+	for( let i = 0; i < 15; i++ ) {
+		assert.deepEqual( h.emitted[ i ], [ h.batches.GEOMETRY_BATCH,
+			vertices[ i * 2 ] + 5, vertices[ i * 2 + 1 ] + 9, 200, 100, 50, 128 ] );
+	}
+} );
+
+test( "P3 cached geometry stops when a later chunk flush detects context loss", () => {
+	const h = createHarness( 3, 3 );
+	const batch = h.screen.batches[ h.batches.GEOMETRY_BATCH ];
+	let probes = 0;
+	h.screen.gl.isContextLost = () => { probes++; return true; };
+	h.screen.contextState = { "suspend": () => { h.screen.batchInfo.drawOrder = []; } };
+	h.geometry.drawCachedGeometry( h.screen, h.geometry.FILLED_CIRCLE,
+		40, 0, 0, h.screen.color );
+	assert.equal( probes, 1 );
+	assert.equal( h.screen.contextLost, true );
+	assert.equal( batch.count, 3 );
+	assert.equal( h.emitted.length, 0 );
+	assert.deepEqual( h.screen.batchInfo.drawOrder, [] );
 } );

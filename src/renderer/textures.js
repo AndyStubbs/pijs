@@ -193,6 +193,15 @@ export function getWebGL2Texture( screenData, img ) {
 	}
 
 	const gl = screenData.gl;
+
+	// Static cache hits do not touch GL state; mutable sources still use the upload path.
+	if( typeof HTMLImageElement !== "undefined" && img instanceof HTMLImageElement && !img.isMock ) {
+		const cached = screenData.imageContextMap.get( img )?.get( gl );
+		if( cached ) {
+			return cached;
+		}
+	}
+
 	const activeTexture = gl.getParameter( gl.ACTIVE_TEXTURE );
 	const texture = gl.getParameter( gl.TEXTURE_BINDING_2D );
 	const read = gl.getParameter( gl.READ_FRAMEBUFFER_BINDING );
