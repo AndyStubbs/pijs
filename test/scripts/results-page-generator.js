@@ -11,14 +11,16 @@ const fs = g_fs;
 const path = g_path;
 
 // Determine test type and paths
-const TEST_TYPE = process.env.PI_TEST_TYPE || "core";
 const SCREENSHOT_BASE = "/test/tests/screenshots";
-const TEST_NAME = TEST_TYPE === "core" ? "Core" : "Plugins";
 
 // Generate HTML results page
-function generateResultsPage( results ) {
-	const passed = results.tests.filter( t => t.status === "passed" );
-	const failed = results.tests.filter( t => t.status === "failed" );
+function generateResultsPage( results, mode = "full" ) {
+	const TEST_NAME = mode;
+	let TEST_TYPE = "core";
+	if( mode === "plugins" ) { TEST_TYPE = "plugins"; }
+	const candidateBase = `/test/test-results/${mode}/screenshots`;
+	const passed = results.tests.filter( t => [ "passed", "flaky" ].includes( t.status ) );
+	const failed = results.tests.filter( t => [ "failed", "timedOut", "interrupted" ].includes( t.status ) );
 	const skipped = results.tests.filter( t => t.status === "skipped" );
 
 	const passRate = results.total > 0 
@@ -35,7 +37,13 @@ function generateResultsPage( results ) {
 	// Replace summary stats
 	html = html.replace( "{{TOTAL}}", results.total );
 	html = html.replace( "{{PASSED}}", results.passed );
-	html = html.replace( "{{FAILED}}", results.failed );
+	html = html.replace( "{{FAILED}}", failed.length );
+	html = html.replaceAll( "{{MODE}}", mode );
+	html = html.replaceAll( "{{CANDIDATE_BASE}}", candidateBase );
+	html = html.replace( "{{DETAILS}}",
+		`Flaky: ${results.flaky || 0}; timed out: ${results.timedOut || 0}; ` +
+		`interrupted: ${results.interrupted || 0}; retries: ${results.retries || 0}; ` +
+		`pending baselines: ${results.pendingBaselines || 0}` );
 	html = html.replace( "{{SKIPPED}}", results.skipped );
 	html = html.replace( "{{PASS_RATE}}", passRate );
 	html = html.replace( "var(--pass-rate-color)", passRateColor );
@@ -60,7 +68,7 @@ function generateResultsPage( results ) {
 			// Use screenshotName from test record (preserves camelCase like "loadFont_01")
 			const baseName = test.screenshotName || test.file.replace( ".html", "" );
 			const refPath = `${SCREENSHOT_BASE}/${baseName}.png`;
-			const newPath = `${SCREENSHOT_BASE}/new/${baseName}.png`;
+			const newPath = `${candidateBase}/${baseName}.png`;
 			
 			failedHTML += `
 			<div class="test-item failed">
@@ -74,7 +82,7 @@ function generateResultsPage( results ) {
 					</div>
 					<div class="test-actions">
 						<button class="view-diff-btn" onclick="showDiffModal('${test.name}', '${baseName}', '${refPath}', '${newPath}')">View Comparison</button>
-						<div class="test-status status-failed">FAILED</div>
+						<div class="test-status status-failed">${test.status.toUpperCase()}</div>
 					</div>
 				</div>
 			</div>`;
@@ -103,7 +111,7 @@ function generateResultsPage( results ) {
 			// Use screenshotName from test record (preserves camelCase like "loadFont_01")
 			const baseName = test.screenshotName || test.file.replace( ".html", "" );
 			const refPath = `${SCREENSHOT_BASE}/${baseName}.png`;
-			const newPath = `${SCREENSHOT_BASE}/new/${baseName}.png`;
+			const newPath = `${candidateBase}/${baseName}.png`;
 			
 			passedHTML += `
 			<div class="test-item passed">
@@ -116,7 +124,7 @@ function generateResultsPage( results ) {
 					</div>
 					<div class="test-actions">
 						<button class="view-diff-btn" onclick="showDiffModal('${test.name}', '${baseName}', '${refPath}', '${newPath}')">View Comparison</button>
-						<div class="test-status status-passed">PASSED</div>
+						<div class="test-status status-passed">${test.status.toUpperCase()}</div>
 					</div>
 				</div>
 			</div>`;
@@ -144,7 +152,7 @@ function generateResultsPage( results ) {
 		for( const test of sortedSkipped ) {
 			// Use screenshotName from test record
 			const baseName = test.screenshotName || test.file.replace( ".html", "" );
-			const newPath = `${SCREENSHOT_BASE}/new/${baseName}.png`;
+			const newPath = `${candidateBase}/${baseName}.png`;
 			
 			// Check if this is a new test (no reference screenshot)
 			const isNewTest = test.error && test.error.includes( "No reference screenshot" );

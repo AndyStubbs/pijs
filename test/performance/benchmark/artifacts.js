@@ -120,9 +120,10 @@ async function prepare( config ) {
 		g_path.join( ROOT, "node_modules/@playwright/test/package.json" ), "utf8"
 	) );
 	const identity = {
-		"schemaVersion": 1, "sources": config.sources, "pluginSource": config.pluginSource,
+		"schemaVersion": 2, "sources": config.sources, "pluginSource": config.pluginSource,
 		"cases": config.cases, "smoke": config.smoke,
-		"warmupFrames": 16, "sampleFrames": 32, "rounds": [ 7, 14 ],
+		"warmupFrames": config.warmupFrames ?? 16, "sampleFrames": 32, "rounds": [ 7, 14 ],
+		"workloadProtocol": "preliminary-warmup-then-reinitialize-canonical-16-v1",
 		"seedOptions": { "entropy": false }, "build": BUILD,
 		"node": process.version, "esbuild": g_esbuild.version,
 		"playwright": playwrightPkg.version,

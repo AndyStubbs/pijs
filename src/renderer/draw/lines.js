@@ -39,6 +39,78 @@ export function drawLine( screenData, x1, y1, x2, y2 ) {
 	// Distances used by Bresenham's algorithm
 	const dx = Math.abs( x2 - x1 );
 	const dy = Math.abs( y2 - y1 );
+	const pointCount = Math.max( dx, dy ) + 1;
+	const batch = screenData.batches[ g_batches.POINTS_BATCH ];
+
+	// Reserve ordinary lines once; oversized lines retain bounded chunk emission.
+	if( pointCount > batch.maxCapacity ) {
+		return drawLineChunked( screenData, x1, y1, x2, y2 );
+	}
+	if( !g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, pointCount ) ) {
+		return;
+	}
+
+	// Add a line using Bresenham's algorithm (as individual points)
+	let sx;
+	if( x1 < x2 ) {
+		sx = 1;
+	} else {
+		sx = -1;
+	}
+	let sy;
+	if( y1 < y2 ) {
+		sy = 1;
+	} else {
+		sy = -1;
+	}
+	let err = dx - dy;
+
+	let x = x1;
+	let y = y1;
+
+	while( true ) {
+
+		// Add current point
+		g_batchHelpers.addVertexToBatch( batch, x, y, color );
+
+		// Check if we've reached the end
+		if( x === x2 && y === y2 ) {
+			break;
+		}
+
+		// Bresenham error calculation
+		const e2 = err * 2;
+		if( e2 > -dy ) {
+			err -= dy;
+			x += sx;
+		}
+		if( e2 < dx ) {
+			err += dx;
+			y += sy;
+		}
+	}
+}
+
+/**
+ * Draw an oversized line using bounded point reservations.
+ *
+ * @param {Object} screenData - Screen data object
+ * @param {number} x1 - Start X coordinate
+ * @param {number} y1 - Start Y coordinate
+ * @param {number} x2 - End X coordinate
+ * @param {number} y2 - End Y coordinate
+ * @returns {void}
+ */
+function drawLineChunked( screenData, x1, y1, x2, y2 ) {
+	if( g_contextState.isContextUnavailable( screenData ) ) {
+		return;
+	}
+
+	const color = screenData.color;
+
+	// Distances used by Bresenham's algorithm
+	const dx = Math.abs( x2 - x1 );
+	const dy = Math.abs( y2 - y1 );
 	const writePoint = g_batchHelpers.createPointWriter( screenData, g_batches.POINTS_BATCH );
 
 	// Add a line using Bresenham's algorithm (as individual points)

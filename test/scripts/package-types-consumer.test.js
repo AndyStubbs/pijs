@@ -31,7 +31,7 @@ const TSC_PATH = path.join( ROOT, "node_modules", "typescript", "bin", "tsc" );
  * @returns {{ packageRoot: string, consumersDir: string, cleanup: Function }}
  */
 function createConsumerPackage() {
-	generateMetadata();
+	generateMetadata( { "testOnly": true } );
 
 	const fixtureDir = fs.mkdtempSync( path.join( os.tmpdir(), "pijs-types-consumer-" ) );
 	const packageRoot = path.join( fixtureDir, "pijs-web" );

@@ -1,5 +1,11 @@
 # Phase 2 optimization validation
 
+**Current status:** P1, P3, and original helper-based P2 are integrated.
+
+**Evidence location:** the campaign is archived outside the repository. Consult the
+[evidence index and restore instructions](evidence/performance/README.md) before using the
+reproduction commands below. Archived manifests and historical decisions are unchanged.
+
 P1 adds a static-image texture cache lookup after the context-loss probe and before GL state
 capture. It excludes images with a truthy `isMock` and leaves mutable sources on the existing
 resolver. P3 reserves complete triangle chunks outside the cached-geometry vertex-copy loop.
@@ -8,9 +14,9 @@ Neither patch changes the public API, types, batch limits, or alpha representati
 ## Reproducible candidates
 
 The baseline is commit `962ca9fe430286f718122501025b9c23b2f2f2d6`, with a clean starting worktree.
-Local evidence is retained under
-[`test/performance/campaigns/phase2-20260916/`](../test/performance/campaigns/phase2-20260916/),
-an ignored output directory. It contains baseline, P1-only, P3-only, and combined source snapshots,
+The archived campaign originally lived under
+[`test/performance/campaigns/phase2-20260916/`](evidence/performance/README.md),
+an ignored output directory. Its archive contains baseline, P1-only, P3-only, and combined source snapshots,
 independently applicable `p1.patch` and `p3.patch` files, test logs, and benchmark campaigns.
 The standalone source snapshots differ from baseline only in their respective renderer module;
 the combined snapshot contains both changes. The patches include their regression tests.
@@ -100,10 +106,10 @@ of an established regression is not proof of no regression. In particular, P1 sh
 12.4% slower median, but its interval included no change and both versions exceeded 5% MAD.
 
 The complete workload results are in the local
-[P1 summary](../test/performance/campaigns/phase2-20260916/p1/summary.json),
-[P3 summary](../test/performance/campaigns/phase2-20260916/p3/summary.json), and
-[combined summary](../test/performance/campaigns/phase2-20260916/combined/summary.json).
-The [verification record](../test/performance/campaigns/phase2-20260916/verification.json)
+[P1 summary](evidence/performance/README.md),
+[P3 summary](evidence/performance/README.md), and
+[combined summary](evidence/performance/README.md).
+The [verification record](evidence/performance/README.md)
 records completion, interruption counts, fixed plugin identity, and regression-gate results.
 
 These results qualify the targeted benefits on this configuration. Additional GPU/backend,

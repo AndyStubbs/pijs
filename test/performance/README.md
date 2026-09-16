@@ -2,6 +2,10 @@
 
 Pi.js provides a reproducible fixed-work CLI and an interactive adaptive benchmark.
 
+Correctness validation runs separately through `npm test`; see [the testing guide](../README.md).
+Historical integration campaigns are stored outside the repository; see the
+[evidence archive index](../../docs/evidence/performance/README.md) for checksums and restoration.
+
 ## Fixed-work CLI
 
 Install the repository's Node 18+ dependencies and Playwright Chromium. Run from the repository
@@ -48,7 +52,11 @@ directories available and unchanged if you need to resume.
 
 - Keep Chromium visible and run one measurement process at a time. Avoid competing CPU/GPU work
   and correctness-test jobs. Software renderers and hidden-page measurements are rejected.
-- Every case uses an 800 × 600 logical screen, 16 warm-up frames, and 32 measured frames. Workload
+- Every case uses an 800 × 600 logical screen, 16 warm-up frames by default, and 32 measured frames.
+  `--warmup-frames=120` adds 104 preliminary frames, drains their rendering, reinitializes the
+  workload generator, then performs the canonical 16 warm-up frames. Renderer resources remain
+  warm. Both settings measure the same operation sequence, including image motion and sprite frames.
+  The setting and workload protocol are part of campaign identity and resume validation. Workload
   generators reinitialize with explicit `entropy: false`; seed-check streams are saved per run.
 - The asset set comprises twelve images and three spritesheets with explicit frame dimensions.
   Required asset failures abort the run. Image decoding and workload initialization precede timing.
@@ -122,6 +130,11 @@ seven runs and MAD at or below 5%; smoke results cannot qualify as stable. Compa
 5,000 deterministic bootstrap resamples of whole runs. Negative percentage change means lower
 CPU submission time. Zero baselines yield unavailable ratios rather than infinite speedups.
 
+The 5% MAD threshold is a diagnostic target, not an automatic integration veto. The `stable`
+flag reports whether that target is met; accepting an optimization above the target does not change
+the flag or the seven-to-fourteen-round sampling protocol. Integration decisions weigh the measured
+benefit, confidence interval, correctness, and evidence of regressions, and disclose variability.
+
 These measurements mainly describe warm caches and steady-state work. Intervals do not capture
 all JIT, scheduling, driver, machine, or historical rasterization differences. Polygon results
 measure the fixed plugin plus each core. A stable run group or interval excluding zero is not,
@@ -160,3 +173,31 @@ npm run test:performance-ui
 Tests cover deterministic operation sequences, counts and timing boundaries, statistics, ordering,
 resume integrity, and loading failures. Run a visible hardware smoke campaign after changes to
 browser measurement or build inputs. Smoke results verify operation, not optimization benefit.
+
+### Line diagnostics
+
+The separate diagnostic runner compares 16 and 120 warm-up frames over exactly seven rounds per
+source and setting. Source order alternates and setting order reverses each round. Each run uses
+a fresh context. Select one mode and a fresh output directory for each experiment:
+
+```powershell
+node test/performance/benchmark/diagnostics.js `
+  --source=baseline=C:/sources/baseline --source=p2=C:/sources/p2 `
+  --plugin-source=plugins/polygons --cases=line --mode=representative `
+  --out=test/performance/campaigns/line-diagnostic
+```
+
+Modes are `representative` (ordinary timed generator), `precomputed` (identical colors and endpoints
+prepared before timing), `execution` (CDP CPU profile and Chromium trace), and `allocation` (CDP
+sampled allocations, including collected objects). Execution and allocation modes instrument only
+isolated core bundles to record buffer resizing and reservation-forced flushes by benchmark phase.
+Instrumentation fails if its expected code sites change. Profiles include startup and warm-up;
+trace phase marks identify the measured interval. Allocation profiles describe the complete run.
+Precomputed results include a different allocation and dispatch pattern and serve only as a
+diagnostic comparison.
+
+The runner saves every result, profiles, phase events, hashes, environment, execution schedule,
+interruptions, and fast/slow run identifiers. Summaries are marked diagnostic and ineligible for
+qualification. It has no retries, resume, adaptive extension, or historical aggregation. It always
+tests both warm-up settings; `--warmup-frames` does not select a single diagnostic setting.
+Run one measurement process at a time, with visible hardware Chromium and no correctness jobs.

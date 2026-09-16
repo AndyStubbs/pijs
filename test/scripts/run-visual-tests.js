@@ -91,22 +91,24 @@ function logMessage( message ) {
 }
 
 // Test configuration - can be overridden by environment variable
-const TEST_TYPE = process.env.PI_TEST_TYPE || "core";
-const TEST_LITE = process.env.PI_TEST_LITE === "true";
+const TEST_MODE = process.env.PI_TEST_MODE || "full";
+let TEST_TYPE = "core";
+if( TEST_MODE === "plugins" ) { TEST_TYPE = "plugins"; }
+const TEST_LITE = TEST_MODE === "lite";
 const TEST_CONFIG = {
 	"core": {
 		"testsDir": "../tests/html-core",
 		"screenshotsDir": "../tests/screenshots",
-		"newScreenshotsDir": "../tests/screenshots/new",
-		"logsDir": "../tests/logs",
+		"newScreenshotsDir": `../test-results/${TEST_MODE}/screenshots`,
+		"logsDir": `../test-results/${TEST_MODE}/logs`,
 		"urlPrefix": "/test/tests/html-core",
 		"description": "Pi.js Visual Regression Tests"
 	},
 	"plugins": {
 		"testsDir": "../tests/html-plugins",
 		"screenshotsDir": "../tests/screenshots",
-		"newScreenshotsDir": "../tests/screenshots/new",
-		"logsDir": "../tests/logs",
+		"newScreenshotsDir": `../test-results/${TEST_MODE}/screenshots`,
+		"logsDir": `../test-results/${TEST_MODE}/logs`,
 		"urlPrefix": "/test/tests/html-plugins",
 		"description": "Pi.js Plugin Visual Regression Tests"
 	}
@@ -116,12 +118,11 @@ const config = TEST_CONFIG[ TEST_TYPE ];
 const LITE_BUNDLE_PATH = path.resolve( DIRNAME, "../../build/pi.lite.js" );
 const FULL_BUNDLE_REQUEST = /\/build\/pi\.js(?:\?.*)?$/;
 
-if( TEST_LITE && !fs.existsSync( LITE_BUNDLE_PATH ) ) {
-	throw new Error(
-		"Lite test bundle not found at build/pi.lite.js. Run `npm run build` before " +
-		"running lite tests."
-	);
-}
+test.beforeAll( () => {
+	if( TEST_LITE && !fs.existsSync( LITE_BUNDLE_PATH ) ) {
+		throw new Error( "Lite bundle missing. Run npm run test:lite to build and test it." );
+	}
+} );
 
 // Test results storage
 const results = {
@@ -688,6 +689,7 @@ function findTestFiles() {
 			const metadata = parseTOML( content );
 
 			// Add lite-compatible tests in lite mode, or all tests in normal mode
+			if( !metadata ) { throw new Error( `Missing TOML metadata: ${file}` ); }
 			if( !TEST_LITE || metadata.lite === true ) {
 				testFiles.push( {
 					"file": file,
@@ -705,8 +707,6 @@ function findTestFiles() {
 // Run visual regression tests
 const testFiles = findTestFiles();
 
-console.log( `\nFound ${testFiles.length} ${TEST_TYPE} tests` );
-console.log( `Running ${TEST_TYPE} tests...\n` );
 
 test.describe( config.description, () => {
 	test.describe.configure( { "mode": "parallel" } );
@@ -917,4 +917,3 @@ test.describe( config.description, () => {
 test.afterAll( async () => {
 	// Results page generation moved to reporter
 } );
-

@@ -169,6 +169,60 @@ g_test.test( "fixed counts and timing boundaries exclude status rendering", asyn
 	}
 } );
 
+g_test.test( "extra warm-up preserves every measured operation and timing boundary", async () => {
+	for( const spec of g_specs ) {
+		const streams = [];
+		for( const warmupFrames of [ 16, 120 ] ) {
+			const page = await mockPage();
+			try {
+				const output = await page.evaluate( async ( { name, warmupFrames } ) => {
+					await benchmark.init();
+					window.trace = [];
+					const result = await benchmark.runCase( name, { warmupFrames } );
+					const starts = trace.flatMap( ( item, index ) => {
+						if( item[ 0 ] === "cls" ) {
+							return [ index ];
+						}
+						return [];
+					} );
+					return { result, "frames": window.frames,
+						"measured": JSON.stringify( trace.slice( starts.at( -32 ) ) ) };
+				}, { "name": spec.name, warmupFrames } );
+				streams.push( g_artifacts.hash( output.measured ) );
+				g_assert.equal( output.result.samples.length, 32 );
+				g_assert.equal( output.result.warmupFrames, warmupFrames );
+				g_assert.equal( output.frames, warmupFrames + 34 + Number( warmupFrames === 120 ) );
+				g_assert.ok( output.result.samples.every( sample =>
+					sample.queueMs === 1 && sample.submitMs === 4 ) );
+			} finally {
+				await page.close();
+			}
+		}
+		g_assert.equal( streams[ 0 ], streams[ 1 ], spec.name );
+	}
+} );
+
+g_test.test( "precomputed lines reproduce representative colors and endpoints", async () => {
+	for( const warmupFrames of [ 16, 120 ] ) {
+		const streams = [];
+		for( const precomputed of [ false, true ] ) {
+			const page = await mockPage();
+			try {
+				const stream = await page.evaluate( async options => {
+					await benchmark.init();
+					window.trace = [];
+					await benchmark.runCase( "line", options );
+					return JSON.stringify( trace );
+				}, { warmupFrames, "diagnostic": { precomputed } } );
+				streams.push( g_artifacts.hash( stream ) );
+			} finally {
+				await page.close();
+			}
+		}
+		g_assert.equal( streams[ 0 ], streams[ 1 ] );
+	}
+} );
+
 g_test.test( "older cores report unsupported view cases explicitly", async () => {
 	const page = await mockPage();
 	try {

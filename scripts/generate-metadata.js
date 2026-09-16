@@ -674,7 +674,8 @@ function parseMetadata( raw ) {
 	return normalizeParsedStrings( toml.parse( normalizedRaw ) );
 }
 
-function generateMetadata() {
+/** Generate metadata; testOnly confines writes to ignored build artifacts. */
+function generateMetadata( { testOnly = false } = {} ) {
 	ensureDirectories();
 
 	const versionFolders = getVersionFolders();
@@ -747,18 +748,20 @@ function generateMetadata() {
 
 		// Write output for current version
 		const version = folderName.substring( folderName.indexOf( "-" ) + 1 );
-		writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata );
+		writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata, testOnly );
 	}
 
-	fs.mkdirSync( path.dirname( RELEASE_TYPE_DEFINITION_FILE ), { "recursive": true } );
-	fs.copyFileSync( TYPE_DEFINITION_FILE, RELEASE_TYPE_DEFINITION_FILE );
-	console.log( "✓ Copied type definitions to latest release:", RELEASE_TYPE_DEFINITION_FILE );
-	fs.copyFileSync( LITE_TYPE_DEFINITION_FILE, RELEASE_LITE_TYPE_DEFINITION_FILE );
-	console.log(
-		"✓ Copied lite type definitions to latest release:",
-		RELEASE_LITE_TYPE_DEFINITION_FILE
-	);
-	writePluginTypeDefinitions();
+	if( !testOnly ) {
+		fs.mkdirSync( path.dirname( RELEASE_TYPE_DEFINITION_FILE ), { "recursive": true } );
+		fs.copyFileSync( TYPE_DEFINITION_FILE, RELEASE_TYPE_DEFINITION_FILE );
+		console.log( "✓ Copied type definitions to latest release:", RELEASE_TYPE_DEFINITION_FILE );
+		fs.copyFileSync( LITE_TYPE_DEFINITION_FILE, RELEASE_LITE_TYPE_DEFINITION_FILE );
+		console.log(
+			"✓ Copied lite type definitions to latest release:",
+			RELEASE_LITE_TYPE_DEFINITION_FILE
+		);
+	}
+	writePluginTypeDefinitions( testOnly );
 }
 
 function getReleasePluginNames() {
@@ -790,7 +793,7 @@ function buildPluginTypeDefinitions( pluginName ) {
 	].join( "\n" );
 }
 
-function writePluginTypeDefinitions() {
+function writePluginTypeDefinitions( testOnly ) {
 	const pluginNames = getReleasePluginNames();
 	for( const pluginName of pluginNames ) {
 		const contents = buildPluginTypeDefinitions( pluginName );
@@ -801,7 +804,8 @@ function writePluginTypeDefinitions() {
 			DIRNAME, "..", "releases", "pi-latest", "dist", "plugins", pluginName,
 			`${pluginName}.d.ts`
 		);
-		const outputFiles = [ buildPath, releasePath ];
+		const outputFiles = [ buildPath ];
+		if( !testOnly ) { outputFiles.push( releasePath ); }
 		for( const filePath of outputFiles ) {
 			const dirPath = path.dirname( filePath );
 			if( !fs.existsSync( dirPath ) ) {
@@ -813,7 +817,7 @@ function writePluginTypeDefinitions() {
 	}
 }
 
-function writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata ) {
+function writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata, testOnly ) {
 	const referenceMethods = Array.from( methodNameToMetadata.values() ).sort(
 		( a, b ) => a.name.localeCompare( b.name )
 	);
@@ -834,9 +838,11 @@ function writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata )
 	);
 
 	writeReferenceOutput( version, { "methods": referenceMethods, "objects": objects } );
+	const fullOutputs = [ TYPE_DEFINITION_FILE ];
+	if( !testOnly ) { fullOutputs.push( DOCS_TYPE_DEFINITION_FILE ); }
 	writeTypeDefinitions(
 		version, buildTypeDefinitions( screenMethods, apiMethods, objects ),
-		[ TYPE_DEFINITION_FILE, DOCS_TYPE_DEFINITION_FILE ]
+		fullOutputs
 	);
 
 	// Lite declarations omit plugin-registered commands
@@ -897,7 +903,7 @@ function writeTypeDefinitions( version, lines, outputFiles ) {
 }
 
 if( isMainModule() ) {
-	generateMetadata();
+	generateMetadata( { "testOnly": process.argv.includes( "--test-only" ) } );
 }
 
 export { formatDescription, generateMetadata, normalizeNewlines, normalizeParsedStrings, parseMetadata };

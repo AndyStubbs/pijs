@@ -273,7 +273,8 @@ async function buildPiVersion( versionName, entryFile, outputPrefix ) {
 	} );
 }
 
-async function build() {
+/** Build bundles; testOnly avoids documentation and release publication. */
+async function build( { testOnly = false } = {} ) {
 	console.log( `Building Pi.js v${buildVersion} from ${sourceDir}...` );
 
 	try {
@@ -283,7 +284,7 @@ async function build() {
 
 		console.log( "" );
 		console.log( "Generating and validating metadata..." );
-		generateMetadata();
+		generateMetadata( { "testOnly": testOnly } );
 		validateTypeDefinitions();
 
 		// Build all plugins first
@@ -300,7 +301,7 @@ async function build() {
 		await buildPiVersion( "full", "index-full.js", "pi" );
 
 		console.log( "" );
-		copyToRelease();
+		if( !testOnly ) { copyToRelease(); }
 
 		console.log( "" );
 		console.log( "✓ Build completed successfully!" );
@@ -356,7 +357,7 @@ async function build() {
 }
 
 if( isMainModule() ) {
-	build();
+	build( { "testOnly": process.argv.includes( "--test-only" ) } );
 }
 
 export { build, buildAllPlugins };

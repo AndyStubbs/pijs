@@ -1,163 +1,109 @@
-# Pi.js Visual Regression Tests
+# Correctness testing
 
-This directory contains visual regression tests for Pi.js.
+Install Node 18+, run `npm install`, and install Chromium with `npx playwright install chromium`.
+Run commands from the repository root. The command wrappers work on Windows and POSIX without
+shell-specific environment assignments.
 
-## Test Structure
+## Commands
 
-```
-test/
-├── tests/                  # Test files directory
-│   ├── html-core/         # Core visual fixtures
-│   ├── html-plugins/      # Plugin visual fixtures
-│   ├── html-manual/       # Manual demos
-│   └── screenshots/       # Reference PNG images
-│       └── new/           # Generated screenshots (gitignored)
-├── scripts/               # Playwright runner and Node test helpers
-│   └── run-visual-tests.js
-├── libs/                  # Test helpers (seedrandom.js)
-├── test-api.html          # API comparison tool
-└── README.md              # This file
-```
+| Command | Coverage |
+| --- | --- |
+| `npm test` / `npm run test:all` | Fresh test build, Node tests, browser regressions, metadata/types, then all visual modes |
+| `npm run test:unit` | Immediate Node test files in the maintained unit and script-test directories |
+| `npm run test:browser` | Browser regression files, including benchmark-tool browser correctness |
+| `npm run test:types` | Fresh declarations, metadata validation, documentation parity, and package-consumer checks |
+| `npm run test:visual` | Fresh test build and full, lite, and plugin visual suites |
+| `npm run test:visual -- --mode=full` | Full-core visual fixtures |
+| `npm run test:lite` | Lite-compatible visual fixtures |
+| `npm run test:plugins` | Plugin visual fixtures |
+| `npm run test:grep -- "Circle"` | Full-core visuals matching a Playwright title expression |
+| `npm run test:lite:grep -- "Circle"` | Matching lite visuals |
+| `npm run test:plugins:grep -- "pointer"` | Matching plugin visuals |
+| `npm run test:patch` | Fresh test build, Node tests, and browser regressions |
+| `npm run test:benchmark` | Benchmark-tool correctness tests, without measurement campaigns |
+| `npm run test:performance-ui` | Performance report browser tests |
+| `npm run test:metadata` | Metadata parser and formatting tests |
 
-## Running Tests
+The complete workflow stops at the first failed stage. Node files run sequentially to limit competing
+browser and build processes. Visual workers remain configurable through Playwright arguments:
 
-### Prerequisites
-
-**Start the development server first:**
-
-```bash
-npm run server
-# Server must be running on http://localhost:8080
-```
-
-### Automated Visual Regression Tests
-
-**In a separate terminal:**
-
-```bash
-# Run all tests (minimal output, custom summary)
-npm test
-
-# Run tests with verbose Playwright output
-npm run test:verbose
-
-# Run tests with browser visible
-npm run test:headed
-
-# Run tests with Playwright UI (interactive)
-npm run test:ui
+```sh
+npm run test:visual -- --mode=full --workers=4
+npm run test:visual -- --list --reporter=list
 ```
 
-### Manual Testing
+Discovery visits only maintained test locations. Benchmark campaigns and copied repositories are
+outside discovery. `--list` does not build artifacts or start a server.
 
-Start the dev server and browse test files:
+## Artifacts and review
 
-```bash
-npm run server
-```
+Correctness builds use `node scripts/build.js --test-only`. Metadata generation uses
+`node scripts/generate-metadata.js --test-only`. These write ignored build artifacts without
+publishing release files or updating documentation. A stale checked-in declaration fails parity
+validation; use the explicit metadata-generation workflow and review the resulting changes.
 
-Then navigate to:
-- `http://localhost:8080/test/tests/html-core/` - Core visual fixtures
-- `http://localhost:8080/test/test-api.html` - API comparison tool
+Visual runs start their own read-only loopback server on an available port and close it when the
+child process finishes or is interrupted. No manually started server is needed for validation.
+Existing browser regressions that intercept localhost requests keep their isolated source harness.
 
-## Test Results
+Each visual mode (`full`, `lite`, `plugins`) has independent outputs:
 
-After running tests, results are available at:
-- `test/results.html` - Custom summary page for core tests with visual diffs
-- `test/results-plugins.html` - Custom summary page for plugin tests with visual diffs
-- `test/test-results/` - Playwright test artifacts (screenshots, traces)
-- `test/playwright-report/` - Playwright's detailed HTML report
+- `test/test-results/<mode>/results.html`: comparison and baseline-review page.
+- `test/test-results/<mode>/summary.json`: unique outcomes, attempts, and pending approvals.
+- `test/test-results/<mode>/screenshots/`, `logs/`, and `traces/`: diagnostic artifacts.
+- `test/playwright-report/<mode>/`: Playwright HTML report.
 
-To view the Playwright HTML report:
-```bash
-npx playwright show-report test/playwright-report
-```
+The console prints selected tests and workers once. Completion markers count unique tests:
+`.` passed, `R` flaky, `F` failed, `T` timed out, `I` interrupted, and `S` skipped. Retries are
+reported separately. Local runs have no automatic retries; CI allows two retries.
 
-## Test Format
+For interactive review, run `npm run server` and open
+`http://localhost:8080/test/test-results/full/results.html` (substitute the desired mode).
+Compare the candidate with the approved PNG before explicitly choosing an approval/reset action.
+The action promotes only that mode's candidate to the shared approved baseline directory.
+Never approve changed images merely to make a test pass.
 
-Each test file contains:
+Missing baselines produce candidate screenshots and a pending-review result. Focused visual runs
+allow this review workflow; `npm test` fails while baseline approvals remain outstanding. Rerun
+validation after any deliberate baseline change.
 
-1. **TOML Metadata Block:**
+## Performance and integration evidence
+
+Correctness tests do not establish performance benefits. Run measurement campaigns separately,
+without competing correctness jobs, following [the benchmark protocol](performance/README.md).
+P1, P3, and original helper-based P2 are integrated; the direct-write P2 variant is experimental.
+Historical campaigns are listed in the [evidence archive index](../docs/evidence/performance/README.md).
+
+## Adding visual fixtures
+
+Put HTML fixtures in `test/tests/html-core/` or `test/tests/html-plugins/`. Include TOML metadata:
+
 ```html
 <script type="text/toml">
 	[[TOML_START]]
-	test = "screenshot.js"
 	file = "circle_01"
 	name = "Circle Test 01"
 	width = 320
 	height = 200
 	delay = 0
+	lite = true
 	[[TOML_END]]
 </script>
 ```
 
-Optional `expectPageError` allowlists one intentional uncaught page error by exact
-`error.message` (for fixtures that deliberately throw). Example:
+Use `lite = true` only for core fixtures that work with the lite bundle. Initialize drawing through
+`$.ready()`. The optional `commands` string simulates input before capture; supported commands are
+documented at the top of `scripts/run-visual-tests.js`. `expectPageError` allowlists one intentional
+uncaught error by its exact message. Other uncaught page errors fail independently of pixels.
 
-```toml
-expectPageError = "expected automatic presentation failure"
-```
+The runner waits for fixture assertions (`window.patchResult`), the metadata delay, scripted input,
+and rendering before capture. Images must have identical dimensions. Pixels whose summed RGBA
+difference exceeds 6 count as different; fewer than 0.1% of pixels may differ.
 
-2. **Test Code:**
-```javascript
-$.ready(function () {
-	$.screen( "320x200" );
-	$.circle( 160, 100, 50 );
-	$.render();
-});
-```
+Run the focused visual command, inspect its candidate PNG, and explicitly approve it only if correct.
+Approved PNGs live in `test/tests/screenshots/`. Missing baselines require this review before the
+complete suite can pass. For mismatches, inspect per-mode logs and traces as well as the comparison
+page; browser and graphics-backend differences can affect rendering.
 
-3. **Reference Screenshot:**
-- Located in `tests/screenshots/circle_01.png`
-- New screenshots saved in `tests/screenshots/new/circle_01.png`
-
-## Screenshot Comparison
-
-The test runner:
-1. Attaches console and `pageerror` listeners, then loads each test page
-2. Waits for specified delay and runs any scripted commands
-3. Fails on unexpected uncaught page errors (unless allowlisted via `expectPageError`)
-4. Takes a screenshot
-5. Compares with reference image using pixel-by-pixel comparison
-6. Allows up to 1% pixel difference (configurable threshold)
-7. Reports pass/fail based on page errors and screenshot comparison
-
-## Adding New Tests
-
-1. Create HTML file in `test/tests/html-core/`
-2. Add TOML metadata block
-3. Write test code using `$.ready()`
-4. Run test once to generate screenshot in `tests/screenshots/new/`
-5. Review output and copy to `tests/screenshots/` if correct
-
-## Test Coverage
-
-Current tests cover:
-- Screen management (11 tests)
-- Drawing primitives (14 tests)
-- Paint/fill (3 tests)
-- Text/fonts (14 tests)
-- Images (10 tests)
-- Input systems (14 tests)
-- Palettes (5 tests)
-- Tables (3 tests)
-- Special features (10 tests)
-
-**Total:** 94 visual regression tests
-
-## Troubleshooting
-
-**Tests timing out:**
-- Increase timeout in `playwright.config.js`
-- Check if server is running
-
-**Screenshot mismatches:**
-- Check console for errors
-- Compare images in `screenshots/new/` with `screenshots/` manually
-- Verify test logic is correct
-- Font rendering may vary by OS/browser
-
-**Reference images missing:**
-- Tests will be skipped if no reference image exists
-- Generate reference by running test and copying from `screenshots/new/` to `screenshots/`
-
+For manual exploration, start `npm run server` and browse `/test/tests/html-core/`,
+`/test/tests/html-plugins/`, or `/test/test-api.html`.

@@ -20,10 +20,12 @@ Manual demos and performance checks have dedicated directories under `test/`.
 - `npm install` installs the Node 18+ development dependencies.
 - `npm run build` uses esbuild to produce full, lite, ESM, IIFE, and plugin bundles.
 - `npm run server` serves the repository at `http://localhost:8080/` for demos and tests.
-- `npm test` runs Chromium visual regression tests through Playwright.
+- `npm test` runs the complete correctness workflow: test build, Node/browser regressions,
+  metadata/types, and full/lite/plugin visual tests.
+- `npm run test:unit`, `npm run test:browser`, and `npm run test:types` run focused checks.
+- `npm run test:visual -- --mode=full` runs a focused visual suite with its own server.
 - `npm run test:grep -- "Circle"` runs matching visual tests only.
-- `npm run test:plugins` runs the plugin fixture suite (the packaged script uses Windows-style
-  environment syntax; on POSIX use `PI_TEST_TYPE=plugins npx playwright test`).
+- `npm run test:plugins` runs plugin visuals; wrappers support Windows and POSIX.
 
 ## Coding Style & Naming Conventions
 
@@ -55,9 +57,9 @@ or changelogs.
 
 Tests use Playwright plus deterministic PNG comparison. Name fixtures descriptively with
 numbered suffixes, such as `circle_01.html`, and include the required TOML metadata block.
-Review images generated in `test/tests/screenshots/new/`; never replace approved baselines
-without deliberate visual review. Test results and traces appear under `test/test-results/` and
-`test/playwright-report/`.
+Review images in `test/test-results/<mode>/screenshots/`; never replace approved baselines
+without deliberate visual review. Reports, logs, and traces are separated by `full`, `lite`, and
+`plugins` under `test/test-results/` and `test/playwright-report/`. See `test/README.md`.
 
 ## Commit & Pull Request Guidelines
 

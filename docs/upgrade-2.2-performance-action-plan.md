@@ -4,9 +4,13 @@ Based on the [2.0.3–2.2.0 investigation](upgrade-2.2-performance-report.md).
 Objective: recover performance through compatible optimizations, starting with the strongest
 measured results. Estimates are engineering days for a maintainer familiar with the renderer.
 This document schedules implementation and validation. Phase 1 provides the maintained benchmark;
-Phase 2 provides the first validated optimizations. Phase 3 provides a tested line candidate whose
-integration remains deferred. Phase 4 is the next step: diagnose its variability and qualify stable
-gains before integration. Phases 5–6 cover remaining optimizations and broader qualification.
+Phase 2 provides the first validated optimizations. Phase 3 provides the tested P2 line candidate.
+Phase 4 investigated variability and ran independent qualification; original P2 is now integrated
+with 5% MAD treated as a soft diagnostic target. Phases 5–6 cover remaining optimizations and broader
+qualification.
+
+Completed campaign evidence is catalogued in the [archive index](evidence/performance/README.md).
+Use the [correctness workflow](../test/README.md) to validate the integrated source.
 
 ## Phase 1 — Make benchmark results reproducible - COMPLETED
 
@@ -50,22 +54,24 @@ unstable, and broader qualification remains Phase 6 work. See the
 
 - Implement P2: reserve ordinary Bresenham lines once using `max(dx, dy) + 1` points.
 - Retain the bounded writer for oversized lines and preserve forced-flush/context-loss behavior.
-- Make integration conditional on independent stability confirmation: the prototype's 26% line
-  improvement was promising, but its 6.3% run variability exceeded the report's 5% threshold.
+- The original plan made integration conditional on independent stability confirmation: the
+  prototype's 26% line improvement was promising, but its 6.3% run variability exceeded the report's
+  strict 5% threshold. The revised acceptance policy is recorded in Phase 4 below.
 
 **Effort:** 2–4 days; medium difficulty and likelihood. **Deliverable:** a separate line patch
 targeting at least 10% lower line submission time.
 
-**Candidate validated; integration deferred:** P2 is retained as a separate renderer/test patch.
+**Original Phase 3 decision — candidate validated; integration deferred:** P2 was retained as a
+separate renderer/test patch.
 The candidate passed 469 regression tests and all 67 full/lite/plugin visual fixtures without
 baseline changes. One fresh fixed-work campaign completed fourteen rounds per source without
 interruption. Line submission time fell 13.7%, with a 95% reduction interval of 4.8–29.1%, but
 candidate line variability was 11.0%, exceeding the 5% stability threshold. The integration gate
-failed, so production renderer code remains unchanged. See the
+failed, so production renderer code remained unchanged at that stage. See the
 [Phase 3 validation record](upgrade-2.2-phase3-validation.md) and
 [standalone P2 patch](patches/upgrade-2.2-phase3-p2.patch).
 
-## Phase 4 — Stabilize line performance while preserving the gain
+## Phase 4 — Investigate line variability and integrate P2 - COMPLETED
 
 Retain P2's reserve-once design and isolate the source of variability before changing the renderer.
 The Phase 3 candidate's line medians ranged from 3.15–4.65 ms; most variation occurred during
@@ -96,17 +102,35 @@ These observations motivate investigation; they do not establish a cause or qual
    testing before measurement; do not pool historical/diagnostic results or repeat qualification
    merely to obtain a pass.
 
-**Acceptance:** at least 10% lower median line submission time, a 95% whole-run bootstrap interval
-excluding no change, and run MAD at or below 5% for both baseline and candidate. Require passing
+**Current acceptance:** at least 10% lower median line submission time and a 95% whole-run bootstrap
+interval excluding no change. Run MAD at or below 5% is a soft diagnostic target, not an integration
+veto; disclose variability and review the benefit and uncertainty together. Require passing
 line/batch/context-recovery regressions, full/lite/plugin visual coverage without baseline changes,
-and no regression above 5% elsewhere established by the same interval and stability requirements.
-Preserve these thresholds even if the measurement protocol changes. If qualification fails, retain
-the separate patch and evidence without integrating P2.
+and no established regression above 5% elsewhere. Review regression evidence even when variability
+exceeds the target. Preserve truthful stability flags and the existing capped sampling protocol.
+The original qualification used a strict MAD gate; its recorded results and decision are retained.
 
 **Effort:** 2–4 days initially; medium difficulty, stability benefit unproven.
 **Deliverable:** a diagnosis with retained traces and hashes, a documented measurement protocol,
 and an independently reviewable P2 patch with an explicit integration decision. Record any remaining
 uncertainty; broader GPU/browser/application qualification remains Phase 6 work.
+
+**Investigation completed:** maintained tooling now supports deterministic
+16/120-frame warm-up comparisons and separate execution, allocation, and precomputed-input
+diagnostics with retained profiles and hashes. Longer warm-up failed the stability selection rule.
+Profiles justified a separate direct-write variant, but its independent comparison failed interval
+and stability selection. Original P2 at 16 frames was therefore frozen for qualification.
+
+The selected candidate passed 469 regressions and all 67 full/lite/plugin visual fixtures without
+baseline changes. One qualification campaign completed fourteen rounds per source after an explicit
+resume of a recorded image-loading interruption. Line submission fell 17.0%, with a 95% change
+interval of -23.2 to -11.9%, with candidate MAD of 8.2%, above the 5% target. Integration was initially
+deferred under the strict MAD gate. The maintainer accepted this tradeoff under the revised policy;
+original helper-based P2 is now integrated with its regression tests. The direct-write variant
+remains separate because its additional benefit was not established.
+The [Phase 4 validation record](upgrade-2.2-phase4-validation.md) retains the diagnosis, protocol,
+patches, evidence, original decision, and subsequent integration checks. The variability cause and
+startup image-loading reliability remain unresolved.
 
 ## Phase 5 — Address remaining costs selectively
 
@@ -123,14 +147,15 @@ benefit and broke 21 and 30 correctness tests, respectively.
 
 ## Phase 6 — Qualify and release
 
-- Apply the report's future acceptance gates: workload benefit exceeding noise, a 95% interval
-  excluding no change, run variability at or below 5%, and no new correctness failures.
+- Require workload benefit exceeding noise, a 95% interval excluding no change, and no new
+  correctness failures. Target run variability at or below 5%, disclose higher variability, and
+  assess the tradeoff without using that threshold alone to veto integration.
 - Cover affected rendering, bounds, alpha, views, context recovery, and resource lifetime;
   preserve approved screenshot baselines. Check another GPU/backend, another browser engine,
   a representative application, and full/lite/minified builds before broad release claims.
 - Keep patches independently revertible. Roll back on stale resources, state leaks, rendering
   differences, recovery failures, or an established regression above 5% elsewhere.
 
-**Release priority:** P1 and P3 first; add P2 only after Phase 4 passes its gates. Neither the P2
-stability investigation nor the selective Phase 5 optimizations block delivering the confirmed
-P1/P3 improvements after Phase 6 qualification.
+**Release priority:** P1, P3, and original P2 are integrated for Phase 6 qualification. Further
+variability investigation and the selective Phase 5 optimizations do not block qualification of
+these improvements.

@@ -109,6 +109,7 @@ async function measure( browser, url, artifact, cases, options = {} ) {
 	const timeoutMs = options.timeoutMs ?? 30000;
 	let stage = "navigation";
 	let env = null;
+	let finishDiagnostic;
 	page.on( "pageerror", error => errors.push( String( error ) ) );
 	page.on( "requestfailed", request => requests.push( {
 		"url": request.url(), "error": request.failure()?.errorText
@@ -119,6 +120,9 @@ async function measure( browser, url, artifact, cases, options = {} ) {
 		}
 	} );
 	try {
+		if( options.startDiagnostic ) {
+			finishDiagnostic = await options.startDiagnostic( context, page );
+		}
 		await page.addInitScript( () => {
 			window.benchmarkHidden = false;
 			document.addEventListener( "visibilitychange", () => {
@@ -154,8 +158,9 @@ async function measure( browser, url, artifact, cases, options = {} ) {
 		const tests = [];
 		for( const name of cases ) {
 			stage = `case:${name}`;
-			tests.push( await bounded( page.evaluate( name => benchmark.runCase( name ), name ),
-				timeoutMs, stage ) );
+			tests.push( await bounded( page.evaluate( args => benchmark.runCase( ...args ),
+				[ name, { "warmupFrames": options.warmupFrames ?? 16,
+					"diagnostic": options.diagnostic } ] ), timeoutMs, stage ) );
 			if( errors.length || requests.length ) {
 				throw new Error( `Browser or asset errors during ${name}` );
 			}
@@ -172,7 +177,11 @@ async function measure( browser, url, artifact, cases, options = {} ) {
 		};
 		throw error;
 	} finally {
-		await context.close();
+		try {
+			await finishDiagnostic?.();
+		} finally {
+			await context.close();
+		}
 	}
 }
 

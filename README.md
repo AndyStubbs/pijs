@@ -155,7 +155,7 @@ Opens server at `http://localhost:8080/`
 ### Testing
 
 ```bash
-# Run tests (to be implemented)
+# Run complete correctness validation
 npm test
 ```
 
@@ -328,15 +328,19 @@ Build is configured via `scripts/build.js`. Customization options:
 
 Located in `test/tests/`, these tests use screenshot comparison to ensure pixel-perfect rendering.
 
-### Unit Tests (Maybe someday...)
+### Node and Browser Regressions
 
-Will be located in `test/unit/` for testing individual modules.
+Maintained tests in `test/unit/` and `test/scripts/` cover the library, tooling, and package types.
 
 ### Running Tests
 
 ```bash
 npm test
 ```
+
+This builds test artifacts, runs Node/browser regressions and type checks, then tests full, lite,
+and plugin visuals. Visual tests manage their own server. See the [testing guide](test/README.md)
+for focused commands, reports, and baseline review.
 
 ---
 

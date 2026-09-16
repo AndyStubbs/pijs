@@ -89,7 +89,11 @@ function runSynthetic( name, count ) {
 }
 
 /** Measure fixed-work CPU queue/submission time and frame spacing. */
-export async function runCase( name ) {
+export async function runCase( name, options = {} ) {
+	const warmupFrames = options.warmupFrames ?? WARMUP_FRAMES;
+	if( ![ 16, 120 ].includes( warmupFrames ) ) {
+		throw new Error( "Warm-up frames must be 16 or 120" );
+	}
 	const spec = g_specs.default.find( item => item.name === name );
 	if( !spec ) {
 		throw new Error( `Unknown case: ${name}` );
@@ -104,15 +108,55 @@ export async function runCase( name ) {
 		$.setScreen( m_screen );
 	}
 	const config = configure( spec );
+	if( options.diagnostic?.precomputed ) {
+		if( name !== "line" ) {
+			throw new Error( "Precomputed diagnostics support only lines" );
+		}
+		const initialize = config.init;
+		let inputs;
+		let frameIndex;
+		config.init = async () => {
+			await initialize( config );
+			inputs = g_graphics.precomputeLineFrames( spec.count, warmupFrames + SAMPLE_FRAMES );
+			frameIndex = 0;
+		};
+		config.run = () => {
+			$.cls();
+			for( const input of inputs[ frameIndex++ ] ) {
+				$.setColor( input[ 0 ] );
+				$.line( input[ 1 ], input[ 2 ], input[ 3 ], input[ 4 ] );
+			}
+		};
+	}
+	const setPhase = phase => {
+		if( options.diagnostic ) {
+			globalThis.piBenchmarkPhase = phase;
+			performance.mark( `pi-benchmark:${name}:${phase}` );
+		}
+	};
 	const records = [];
 	let previous = null;
 	try {
+		setPhase( "initialization" );
 		await config.init( config );
+		if( warmupFrames > WARMUP_FRAMES ) {
+			setPhase( "preliminary" );
+			for( let i = 0; i < warmupFrames - WARMUP_FRAMES; i++ ) {
+				await frame();
+				config.run( spec.count, config.data );
+			}
+			await frame();
+			setPhase( "reinitialize" );
+			config.cleanUp();
+			await config.init( config );
+		}
+		setPhase( "warmup" );
 		for( let i = 0; i < WARMUP_FRAMES; i++ ) {
 			await frame();
 			config.run( spec.count, config.data );
 		}
 		await frame();
+		setPhase( "measurement" );
 		for( let i = 0; i < SAMPLE_FRAMES; i++ ) {
 			const timestamp = await frame();
 			const start = performance.now();
@@ -131,6 +175,7 @@ export async function runCase( name ) {
 			previous = timestamp;
 		}
 		await frame();
+		setPhase( "validation" );
 		const gl = m_screen.canvas().getContext( "webgl2" );
 		if( gl.isContextLost() || gl.getError() ) {
 			throw new Error( `WebGL failure: ${name}` );
@@ -140,6 +185,6 @@ export async function runCase( name ) {
 	}
 	return {
 		"name": name, "supported": true, "count": spec.count,
-		"warmupFrames": WARMUP_FRAMES, "samples": records
+		"warmupFrames": warmupFrames, "samples": records
 	};
 }

@@ -9,6 +9,10 @@ import * as g_url from "node:url";
 
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
 const { defineConfig, devices } = g_playwright;
+const MODE = process.env.PI_TEST_MODE || "full";
+if( ![ "full", "lite", "plugins" ].includes( MODE ) ) {
+	throw new Error( "Invalid PI_TEST_MODE" );
+}
 
 let retries = 0;
 let workers;
@@ -18,8 +22,8 @@ if( process.env.CI ) {
 }
 
 export default defineConfig( {
-	"testDir": "./test",
-	"testMatch": "scripts/run-visual-tests.js",
+	"testDir": "./test/scripts",
+	"testMatch": "run-visual-tests.js",
 	"fullyParallel": true,
 	"forbidOnly": !!process.env.CI,
 	"retries": retries,
@@ -27,12 +31,12 @@ export default defineConfig( {
 	"globalSetup": g_path.join( DIRNAME, "test/scripts/global-setup.js" ),
 	"reporter": [
 		[ g_path.join( DIRNAME, "test/scripts/minimal-reporter.js" ) ],
-		[ "html", { "outputFolder": "test/playwright-report", "open": "never" } ]
+		[ "html", { "outputFolder": `test/playwright-report/${MODE}`, "open": "never" } ]
 	],
-	"outputDir": "test/test-results",
+	"outputDir": `test/test-results/${MODE}/traces`,
 	"timeout": 60000,
 	"use": {
-		"baseURL": "http://localhost:8080",
+		"baseURL": process.env.PI_TEST_BASE_URL,
 		"trace": "on-first-retry",
 		"screenshot": "only-on-failure",
 		"navigationTimeout": 30000,

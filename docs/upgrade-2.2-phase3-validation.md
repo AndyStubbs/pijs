@@ -1,13 +1,21 @@
 # Phase 3 line reservation validation
 
-P2 is implemented and correctness-tested as a separate candidate, but **is not integrated**.
+**Current status:** original helper-based P2 is integrated, as recorded in Phase 4.
+The decisions below describe the original Phase 3 qualification.
+
+**Evidence location:** the campaign is archived outside the repository. Consult the
+[evidence index and restore instructions](evidence/performance/README.md) before using the
+reproduction commands below. Archived manifests and historical decisions are unchanged.
+
+At the original Phase 3 decision, P2 was correctness-tested as a separate candidate,
+but **integration was deferred**.
 The fresh campaign measured 13.7% lower median line submission time, with a 95% reduction interval
 of 4.8–29.1%. Candidate line variability was 11.0%, exceeding the required 5% maximum. The stability
 gate therefore failed despite meeting the 10% median benefit target and excluding no change.
 
-Production renderer code and tests remain unchanged. The independently applicable
+Production renderer code and tests remained unchanged at that stage. The independently applicable
 [P2 patch](patches/upgrade-2.2-phase3-p2.patch) contains the renderer change and its regression tests.
-It is retained for future qualification, not enabled by a runtime flag.
+The patch was retained for the subsequent Phase 4 qualification.
 
 ## Candidate and reproducibility
 
@@ -17,9 +25,9 @@ P2 changes only the line renderer in that production source: ordinary Bresenham 
 existing vertex helper. Lines exceeding the batch maximum retain the original bounded writer.
 Public APIs, types, validation, views, clipping, alpha representation, and batch limits are unchanged.
 
-Local evidence is retained under
-[`test/performance/campaigns/phase3-20260916/`](../test/performance/campaigns/phase3-20260916/),
-an ignored output directory. It contains baseline/P2 source snapshots, the fixed polygon-plugin
+The archived campaign originally lived under
+[`test/performance/campaigns/phase3-20260916/`](evidence/performance/README.md),
+an ignored output directory. Its archive contains baseline/P2 source snapshots, the fixed polygon-plugin
 source, the patch, source inventories, test logs, build/visual validation helpers, and the campaign.
 Only the renderer and three regression-test files differ in the inventoried candidate inputs.
 
@@ -110,8 +118,8 @@ The line comparison passed the benefit and interval gates but failed stability. 
 was 16.5% slower, but its interval included no change and both sources were unstable; this does not
 establish a regression or rule one out. Benefits in other workloads do not override the line gate.
 
-The [complete summary](../test/performance/campaigns/phase3-20260916/p2/summary.json) and
-[verification record](../test/performance/campaigns/phase3-20260916/verification.json) retain the
+The [complete summary](evidence/performance/README.md) and
+[verification record](evidence/performance/README.md) retain the
 unrounded results and the failed integration decision. P2 remains a candidate requiring independent
 stable qualification through
 [Phase 4](upgrade-2.2-performance-action-plan.md#phase-4--stabilize-line-performance-while-preserving-the-gain).

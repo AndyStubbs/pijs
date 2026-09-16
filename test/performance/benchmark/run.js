@@ -15,7 +15,7 @@ const g_specs = JSON.parse(
 
 const HELP = `Usage: npm run benchmark -- --source=baseline=C:/sources/before
   --source=candidate=C:/sources/after [--plugin-source=C:/sources/before/plugins/polygons]
-  [--cases=line,images] [--out=directory] [--resume] [--smoke]
+  [--cases=line,images] [--warmup-frames=16|120] [--out=directory] [--resume] [--smoke]
 Sources are Pi.js 2.x directories. The first is the baseline; labels must be unique.
 The plugin defaults to the first source's plugins/polygons directory.
 Normal campaigns run 7 rounds, extending to 14 above 5% MAD. Smoke runs one round.
@@ -31,7 +31,7 @@ function parseArgs( args ) {
 			values[ arg.slice( 2 ) ] = true;
 			continue;
 		}
-		const match = /^--(source|plugin-source|cases|out)=(.+)$/.exec( arg );
+		const match = /^--(source|plugin-source|cases|out|warmup-frames)=(.+)$/.exec( arg );
 		if( !match ) {
 			throw new Error( `Unknown or empty option: ${arg}` );
 		}
@@ -64,6 +64,10 @@ function parseArgs( args ) {
 		throw new Error( "Unknown or duplicate cases" );
 	}
 	let out = values.out;
+	const warmupFrames = values[ "warmup-frames" ] ?? "16";
+	if( ![ "16", "120" ].includes( warmupFrames ) ) {
+		throw new Error( "Warm-up frames must be 16 or 120" );
+	}
 	if( !out ) {
 		out = g_path.join( g_artifacts.ROOT, "test/performance/campaigns",
 			new Date().toISOString().replaceAll( ":", "-" ) );
@@ -72,7 +76,8 @@ function parseArgs( args ) {
 		"sources": sources, "cases": cases, "out": g_path.resolve( out ),
 		"pluginSource": g_path.resolve( values[ "plugin-source" ] ||
 			g_path.join( sources[ 0 ].directory, "plugins/polygons" ) ),
-		"resume": !!values.resume, "smoke": !!values.smoke
+		"resume": !!values.resume, "smoke": !!values.smoke,
+		"warmupFrames": Number( warmupFrames )
 	};
 }
 
@@ -102,6 +107,9 @@ function expectedProof() {
 
 /** Validate complete samples and identity before accepting new or resumed results. */
 function validateRun( run, identity, fingerprint, env ) {
+	if( run.diagnostic || identity.diagnostic ) {
+		throw new Error( "Diagnostic results cannot qualify or resume a campaign" );
+	}
 	if( run.fingerprint !== fingerprint || !identity.artifacts.some( item =>
 		item.label === run.artifact && item.sha256 === run.sha256 ) ||
 		JSON.stringify( run.environment ) !== JSON.stringify( env ) ||
@@ -117,8 +125,9 @@ function validateRun( run, identity, fingerprint, env ) {
 			continue;
 		}
 		const spec = g_specs.find( item => item.name === test.name );
-		if( test.supported !== true || test.count !== spec.count || test.warmupFrames !== 16 ||
-			test.samples?.length !== 32 || test.samples.some( ( sample, i ) =>
+		if( test.supported !== true || test.count !== spec.count ||
+			test.warmupFrames !== ( identity.warmupFrames ?? 16 ) ||
+			test.samples?.length !== ( identity.sampleFrames ?? 32 ) || test.samples.some( ( sample, i ) =>
 				!Number.isFinite( sample.queueMs ) || sample.queueMs < 0 ||
 				!Number.isFinite( sample.submitMs ) || sample.submitMs < sample.queueMs ||
 				sample.visibility !== "visible" || ( i === 0 && sample.frameMs !== null ) ||
@@ -237,7 +246,8 @@ async function campaign( config, hooks = {} ) {
 				try {
 					const measure = hooks.measure || g_browser.measure;
 					const result = await measure( browser, served.url, artifact, config.cases, {
-						"expectedEnvironment": manifest.environment
+						"expectedEnvironment": manifest.environment,
+						"warmupFrames": prepared.identity.warmupFrames
 					} );
 					const run = {
 						"artifact": label, "sha256": artifact.sha256, "round": round + 1,

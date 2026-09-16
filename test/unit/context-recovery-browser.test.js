@@ -238,8 +238,8 @@ void main(){fragColor=texture(u_texture,v_texCoord);}` );
 		} ), [ 0, 1, 2, 0 ] );
 	} );
 
-	for( const operation of [ "pixel", "line", "put", "rectangle", "geometry", "ellipse",
-		"image", "sprite" ] ) {
+	for( const operation of [ "pixel", "line", "reserved line", "put", "rectangle", "geometry",
+		"ellipse", "image", "sprite" ] ) {
 		test( `SYS-008 ${bundle}: ${operation} stops when its forced flush detects loss`, async () => {
 			assert.deepEqual( await probe( bundle, async operation => {
 				const screen = $.screen( "32x32" );
@@ -249,6 +249,7 @@ void main(){fragColor=texture(u_texture,v_texCoord);}` );
 				const operations = {
 					"pixel": [ renderer.POINTS_BATCH, () => screen.pset( 0, 0 ) ],
 					"line": [ renderer.POINTS_BATCH, () => screen.line( 0, 0, 20, 20 ) ],
+					"reserved line": [ renderer.POINTS_BATCH, () => screen.line( 0, 0, 4, 2 ) ],
 					"put": [ renderer.POINTS_REPLACE_BATCH, () => screen.put( [ [ 4 ] ], 0, 0 ) ],
 					"rectangle": [ renderer.GEOMETRY_BATCH,
 						() => renderer.drawRectFilled( data, 0, 0, 8, 8, data.color ) ],

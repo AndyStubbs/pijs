@@ -8,6 +8,7 @@ import * as g_fs from "node:fs";
 import * as g_path from "node:path";
 import * as g_os from "node:os";
 import * as g_url from "node:url";
+import * as g_visualReview from "./scripts/visual-review.js";
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
 const http = g_http;
 const fs = g_fs;
@@ -191,20 +192,17 @@ const server = http.createServer( ( req, res ) => {
 			try {
 				const data = JSON.parse( body );
 				const baseName = data.baseName;
-				const testType = data.testType || "core";
 				
-				// Validate baseName to prevent path traversal
-				if( !baseName || baseName.includes( ".." ) || baseName.includes( "/" ) || baseName.includes( "\\" ) ) {
-					res.writeHead( 400, { "Content-Type": "application/json" } );
-					res.end( JSON.stringify( { "error": "Invalid base name" } ) );
+				// Resolve only the explicitly reviewed mode and fixture.
+				let paths;
+				try {
+					paths = g_visualReview.reviewPaths( DIRNAME, data.mode, baseName );
+				} catch( error ) {
+					res.writeHead( 400 ).end( JSON.stringify( { "error": error.message } ) );
 					return;
 				}
-				
-				// Determine paths based on test type
-				const testsDir = testType === "plugins" ? "tests-plugins" : "tests";
-				const sourcePath = path.join( DIRNAME, "test", testsDir, "screenshots", "new", `${baseName}.png` );
-				const destPath = path.join( DIRNAME, "test", testsDir, "screenshots", `${baseName}.png` );
-				
+				const { sourcePath, destPath } = paths;
+
 				// Check if source exists
 				if( !fs.existsSync( sourcePath ) ) {
 					res.writeHead( 404, { "Content-Type": "application/json" } );
@@ -346,23 +344,18 @@ const server = http.createServer( ( req, res ) => {
 				console.log( "Request body:", body );
 				const data = JSON.parse( body );
 				const baseName = data.baseName;
-				const testType = data.testType || "core";
 				console.log( "Base name:", baseName );
-				console.log( "Test type:", testType );
 				
-				// Validate baseName to prevent path traversal
-				if( !baseName || baseName.includes( ".." ) || baseName.includes( "/" ) || baseName.includes( "\\" ) ) {
-					console.log( "Invalid base name" );
-					res.writeHead( 400, { "Content-Type": "application/json" } );
-					res.end( JSON.stringify( { "error": "Invalid base name" } ) );
+				// Resolve only the explicitly reviewed mode and fixture.
+				let paths;
+				try {
+					paths = g_visualReview.reviewPaths( DIRNAME, data.mode, baseName );
+				} catch( error ) {
+					res.writeHead( 400 ).end( JSON.stringify( { "error": error.message } ) );
 					return;
 				}
-				
-				// Determine paths based on test type
-				const testsDir = testType === "plugins" ? "tests-plugins" : "tests";
-				const sourcePath = path.join( DIRNAME, "test", testsDir, "screenshots", "new", `${baseName}.png` );
-				const destPath = path.join( DIRNAME, "test", testsDir, "screenshots", `${baseName}.png` );
-				
+				const { sourcePath, destPath } = paths;
+
 				console.log( "Source path:", sourcePath );
 				console.log( "Dest path:", destPath );
 				console.log( "Source exists:", fs.existsSync( sourcePath ) );

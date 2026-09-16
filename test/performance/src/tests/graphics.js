@@ -349,3 +349,24 @@ function run( itemCount ) {
 		
 	}
 }
+
+/**
+ * Prepare diagnostic line inputs using the representative generator's exact random stream.
+ * Call after init with only the line operation selected. Never used by adaptive/qualification runs.
+ * @param {number} itemCount - Nominal operations per frame.
+ * @param {number} frameCount - Number of frames to prepare outside timing.
+ * @returns {Array} Frames of color and endpoint tuples.
+ */
+export function precomputeLineFrames( itemCount, frameCount ) {
+	if( m_operationTypes.length !== 1 || m_operationTypes[ 0 ] !== "line" ) {
+		throw new Error( "Precomputed diagnostics require line-only initialization" );
+	}
+	return Array.from( { "length": frameCount }, () => {
+		const inputs = [];
+		for( let i = 0; i < itemCount - 1; i++ ) {
+			const color = Math.floor( m_seededRandom() * m_pal.length );
+			inputs.push( [ color, ...m_operations[ i % m_operations.length ].getParams() ] );
+		}
+		return inputs;
+	} );
+}

@@ -109,6 +109,152 @@ function createHarness( min = 8, max = 19 ) {
 		"submissions": submissions };
 }
 
+const linePaths = [
+	[ [ 0, 0 ] ],
+	Array.from( { "length": 8 }, ( _, x ) => [ x, 0 ] ),
+	Array.from( { "length": 8 }, ( _, x ) => [ x, x ] ),
+	[ [ 0, 0 ], [ 1, 0 ], [ 2, 1 ], [ 3, 1 ], [ 4, 2 ], [ 5, 2 ], [ 6, 3 ], [ 7, 3 ] ]
+];
+
+test( "P2 all octants and reversed lines preserve exact points, colors and origins", () => {
+	for( const [ min, max ] of [ [ 8, 19 ], [ 3, 3 ] ] ) {
+		for( const alpha of [ 0, 128, 255 ] ) {
+			for( const translated of [ false, true ] ) {
+				const h = createHarness( min, max );
+				h.screen.color.a = alpha;
+				if( !translated ) {
+					h.screen.view = null;
+				}
+				const expected = [];
+				for( const points of linePaths ) {
+					for( const swap of [ false, true ] ) {
+						for( const sx of [ -1, 1 ] ) {
+							for( const sy of [ -1, 1 ] ) {
+								for( const reverse of [ false, true ] ) {
+									const path = points.map( ( [ x, y ] ) => {
+										if( swap ) { return [ y * sx - 2, x * sy - 3 ]; }
+										return [ x * sx - 2, y * sy - 3 ];
+									} );
+									if( reverse ) { path.reverse(); }
+									h.shapes.lines.drawLine(
+										h.screen, ...path[ 0 ], ...path.at( -1 )
+									);
+									for( const [ x, y ] of path ) {
+										expected.push( [ h.batches.POINTS_BATCH,
+											x + ( h.screen.view?.originX || 0 ),
+											y + ( h.screen.view?.originY || 0 ),
+											200, 100, 50, alpha ] );
+									}
+								}
+							}
+						}
+					}
+				}
+				h.batches.flushBatches( h.screen );
+				assert.deepEqual( h.emitted, expected );
+			}
+		}
+	}
+} );
+
+for( const [ occupied, points ] of [ [ 0, 1 ], [ 0, 8 ], [ 3, 5 ], [ 3, 6 ],
+	[ 0, 19 ], [ 3, 19 ], [ 19, 1 ], [ 0, 20 ], [ 3, 60 ] ] ) {
+	test( `P2 reservations preserve ${points} points after ${occupied} queued points`, () => {
+		const h = createHarness();
+		const type = h.batches.POINTS_BATCH;
+		const batch = h.screen.batches[ type ];
+		if( occupied ) {
+			h.batches.prepareBatch( h.screen, type, occupied );
+			for( let i = 0; i < occupied; i++ ) {
+				h.helpers.addVertexToBatch( batch, i, -1, h.screen.color );
+			}
+		}
+		const reservations = [];
+		let writers = 0;
+		const reserve = h.batches.prepareBatch;
+		const writer = h.helpers.createPointWriter;
+		h.batches.prepareBatch = ( ...args ) => {
+			reservations.push( args[ 2 ] );
+			return reserve( ...args );
+		};
+		h.helpers.createPointWriter = ( ...args ) => {
+			writers++;
+			return writer( ...args );
+		};
+		h.shapes.lines.drawLine( h.screen, 0, 0, points - 1, 0 );
+		if( points <= batch.maxCapacity ) {
+			assert.deepEqual( reservations, [ points ] );
+			assert.equal( writers, 0 );
+		} else {
+			assert.equal( writers, 1 );
+			assert.ok( reservations.length > 1 );
+			assert.ok( reservations.every( count => count <= batch.maxCapacity ) );
+		}
+		h.batches.flushBatches( h.screen );
+		const expected = [];
+		for( let i = 0; i < occupied; i++ ) {
+			expected.push( [ type, i + 3, 4, 200, 100, 50, 128 ] );
+		}
+		for( let i = 0; i < points; i++ ) {
+			expected.push( [ type, i + 3, 5, 200, 100, 50, 128 ] );
+		}
+		assert.deepEqual( h.emitted, expected );
+	} );
+}
+
+for( const points of [ 7, 60 ] ) {
+	test( `P2 suspended ${points}-point lines leave queued data untouched`, () => {
+		const h = createHarness();
+		const batch = h.screen.batches[ h.batches.POINTS_BATCH ];
+		h.batches.prepareBatch( h.screen, h.batches.POINTS_BATCH, 1 );
+		h.helpers.addVertexToBatch( batch, 1, 2, h.screen.color );
+		const vertices = batch.vertices.slice();
+		const colors = batch.colors.slice();
+		const order = h.screen.batchInfo.drawOrder;
+		h.screen.contextLost = true;
+		h.batches.prepareBatch = () => assert.fail( "Suspended line reserved points" );
+		h.shapes.lines.drawLine( h.screen, 0, 0, points - 1, 0 );
+		assert.equal( batch.count, 1 );
+		assert.deepEqual( batch.vertices, vertices );
+		assert.deepEqual( batch.colors, colors );
+		assert.equal( h.screen.batchInfo.drawOrder, order );
+	} );
+}
+
+for( const points of [ 7, 60 ] ) {
+	test( `P2 ${points}-point line stops emitting after forced-flush loss`, () => {
+		const h = createHarness( 8, 19 );
+		const batch = h.screen.batches[ h.batches.POINTS_BATCH ];
+		let probes = 0;
+		let countAtLoss;
+		let verticesAtLoss;
+		let colorsAtLoss;
+		if( points === 7 ) {
+			h.batches.prepareBatch( h.screen, h.batches.POINTS_BATCH, 19 );
+			for( let i = 0; i < 19; i++ ) {
+				h.helpers.addVertexToBatch( batch, i, -1, h.screen.color );
+			}
+		}
+		h.screen.gl.isContextLost = () => {
+			probes++;
+			countAtLoss = batch.count;
+			verticesAtLoss = batch.vertices.slice();
+			colorsAtLoss = batch.colors.slice();
+			return true;
+		};
+		h.screen.contextState = { "suspend": () => { h.screen.batchInfo.drawOrder = []; } };
+		h.shapes.lines.drawLine( h.screen, 0, 0, points - 1, 0 );
+		assert.equal( probes, 1 );
+		assert.equal( h.screen.contextLost, true );
+		assert.ok( countAtLoss > 0 );
+		assert.equal( batch.count, countAtLoss );
+		assert.deepEqual( batch.vertices, verticesAtLoss );
+		assert.deepEqual( batch.colors, colorsAtLoss );
+		assert.equal( h.emitted.length, 0 );
+		assert.deepEqual( h.screen.batchInfo.drawOrder, [] );
+	} );
+}
+
 test( "SYS-007 zero, exact capacity, growth and exact maximum reservations", () => {
 	const { batches, screen } = createHarness();
 	const batch = screen.batches[ 0 ];

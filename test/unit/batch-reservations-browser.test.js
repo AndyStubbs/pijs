@@ -127,6 +127,73 @@ async function probe( bundle, fn, arg ) {
 }
 
 for( const bundle of [ "full", "lite" ] ) {
+	test( `P2 ${bundle}: reserved and chunked lines match individual pixels in mixed views`,
+		async () => {
+			const results = await probe( bundle, () => {
+				const results = [];
+				const paths = [
+					[ [ 0, 0 ] ],
+					Array.from( { "length": 61 }, ( _, x ) => [ x - 10, 9 ] ),
+					[ [ 0, 0 ], [ 1, 0 ], [ 2, 1 ], [ 3, 1 ],
+						[ 4, 2 ], [ 5, 2 ], [ 6, 3 ], [ 7, 3 ] ]
+				];
+				const texture = document.createElement( "canvas" );
+				texture.width = 5;
+				texture.height = 5;
+				const context = texture.getContext( "2d" );
+				context.fillStyle = "#00FF0080";
+				context.fillRect( 0, 0, 5, 5 );
+				for( const mode of [ "reserved", "chunked", "pixels" ] ) {
+					const screen = $.screen( "48x32" );
+					if( mode === "chunked" ) { reduceLimits( screen ); }
+					track( screen );
+					screen.setBlend( "alpha" );
+					for( const view of [ "default", "translated", "nested" ] ) {
+						if( view === "translated" ) { screen.pushView( 3, 2, 40, 28 ); }
+						if( view === "nested" ) { screen.pushView( 4, 3, 28, 20 ); }
+						for( const alpha of [ "00", "80", "FF" ] ) {
+							for( const points of paths ) {
+								for( const swap of [ false, true ] ) {
+									for( const sx of [ -1, 1 ] ) {
+										for( const sy of [ -1, 1 ] ) {
+											for( const reverse of [ false, true ] ) {
+												const path = points.map( ( [ x, y ] ) => {
+													if( swap ) {
+														return [ 13 + y * sx, 10 + x * sy ];
+													}
+													return [ 13 + x * sx, 10 + y * sy ];
+												} );
+												if( reverse ) { path.reverse(); }
+												screen.rect( 8, 6, 12, 10, "#0000FF40" );
+												screen.setColor( "#FF0000" + alpha );
+												if( mode === "pixels" ) {
+													for( const [ x, y ] of path ) {
+														screen.pset( x, y );
+													}
+												} else {
+													screen.line( ...path[ 0 ], ...path.at( -1 ) );
+												}
+												screen.drawImage( texture, 10, 8 );
+											}
+										}
+									}
+								}
+							}
+						}
+						results.push( Array.from( rawPixels( screen ) ) );
+					}
+					screen.resetView();
+					screen.removeScreen();
+				}
+				return results;
+			} );
+			for( let view = 0; view < 3; view++ ) {
+				assert.deepEqual( results[ view ], results[ view + 6 ] );
+				assert.deepEqual( results[ view + 3 ], results[ view + 6 ] );
+			}
+		}
+	);
+
 	test( `SYS-007 ${bundle}: Full HD paint fills every pixel within batch limits`, async t => {
 		const result = await probe( bundle, () => {
 			const screen = $.screen( "1920x1080" );

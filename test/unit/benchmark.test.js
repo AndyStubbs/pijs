@@ -41,6 +41,11 @@ g_test.test( "CLI validates source paths, equals, and duplicate labels", () => {
 	g_assert.equal( config.pluginSource, g_path.resolve( "plugins/polygons" ) );
 	g_assert.deepEqual( config.cases, [ "line", "images" ] );
 	g_assert.ok( config.out.includes( "campaigns" ) );
+	g_assert.equal( config.warmupFrames, 16 );
+	g_assert.equal( g_run.parseArgs( [ "--source=a=.", "--warmup-frames=120" ] ).warmupFrames, 120 );
+	for( const value of [ "0", "17", "120.0", "016", "-1", "abc" ] ) {
+		g_assert.throws( () => g_run.parseArgs( [ "--source=a=.", `--warmup-frames=${value}` ] ) );
+	}
 	for( const args of [ [], [ "--source=a=.", "--source=A=." ],
 		[ "--source=a=.", "--cases=nope" ], [ "--source=a=.", "--cases=line,line" ],
 		[ "--source=a=.", "--resume" ], [ "--source=a=.", "--hedless" ] ] ) {
@@ -143,6 +148,9 @@ g_test.test( "campaign failures and resume preserve completed results", async ()
 		config.cases = [ "images" ];
 		await g_assert.rejects( g_run.campaign( config, hooks ), /inputs changed/ );
 		config.cases = [ "line" ];
+		config.warmupFrames = 120;
+		await g_assert.rejects( g_run.campaign( config, hooks ), /inputs changed/ );
+		config.warmupFrames = 16;
 		const prepared = await g_artifacts.prepare( config );
 		const complete = read();
 		const badOrder = structuredClone( complete );
@@ -165,6 +173,11 @@ g_test.test( "result validation rejects partial samples, wrong seeds, and enviro
 		"artifacts": [ { "label": "a", "sha256": "hash" } ], "cases": [ "line" ]
 	};
 	const check = value => g_run.validateRun( value, identity, "id", run.environment );
+	g_assert.doesNotThrow( () => check( run ) );
+	g_assert.throws( () => check( { ...run, "diagnostic": true } ), /Diagnostic/ );
+	identity.warmupFrames = 120;
+	g_assert.throws( () => check( run ), /Invalid samples/ );
+	run.tests[ 0 ].warmupFrames = 120;
 	g_assert.doesNotThrow( () => check( run ) );
 	g_assert.throws( () => check( { ...run, "environment": {} } ), /mismatch/ );
 	g_assert.throws( () => check( { ...run, "seedProof": {} } ), /mismatch/ );

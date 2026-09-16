@@ -1,168 +1,84 @@
-/**
- * Minimal Playwright Reporter
- * 
- * Only shows progress dots and summary at end (no error details)
- */
+/** Report unique visual-test outcomes and keep retry attempts separate. */
 import * as g_fs from "node:fs";
 import * as g_path from "node:path";
 import * as g_resultsPageGenerator from "./results-page-generator.js";
-const fs = g_fs;
-const path = g_path;
-const { generateResultsPage } = g_resultsPageGenerator;
 
-class MinimalReporter {
-	constructor( options ) {
-		this.options = options;
-		this.total = 0;
-		this.passed = 0;
-		this.failed = 0;
-		this.skipped = 0;
-		this.failedTests = [];
-		this.allTests = [];
+/** Convert the final result of a Playwright test into a report record. */
+export function summarizeTest( test, mode ) {
+	const result = test.results.at( -1 ) || { "status": "interrupted" };
+	let status = result.status;
+	if( test.outcome() === "flaky" ) { status = "flaky"; }
+	const annotation = test.annotations.find( item => item.type === "screenshot-name" );
+	const skip = test.annotations.find( item => item.type === "skip-reason" );
+	const screenshotName = annotation?.description || test.title;
+	let directory = "html-core";
+	if( mode === "plugins" ) { directory = "html-plugins"; }
+	return {
+		"id": test.id, "name": test.title, "file": `${screenshotName}.html`,
+		"url": `/test/tests/${directory}/${screenshotName}.html`,
+		"screenshotName": screenshotName, "status": status,
+		"error": result.error?.message || skip?.description || "",
+		"pendingBaseline": !!skip?.description.includes( "No reference screenshot" ),
+		"retries": Math.max( 0, test.results.length - 1 )
+	};
+}
+
+export default class MinimalReporter {
+	constructor( options = {} ) {
+		this.outputRoot = options.outputRoot || process.cwd();
+		this.mode = process.env.PI_TEST_MODE || "full";
 		this.startTime = Date.now();
 	}
 
 	onBegin( config, suite ) {
-		console.log( "" );
+		this.suite = suite;
+		this.mode = process.env.PI_TEST_MODE || "full";
+		this.startTime = Date.now();
+		const count = new Set( suite.allTests().map( test => test.id ) ).size;
+		console.log( `Running ${count} ${this.mode} visual tests ` +
+			`with up to ${config.workers} workers` );
 	}
 
 	onTestEnd( test, result ) {
-		this.total++;
-		
-		// Extract test name and filename
-		const title = test.title;
-		
-		// Get actual screenshot base name from annotation (preserves camelCase)
-		let screenshotName = null;
-		if( test.annotations ) {
-			const annotation = test.annotations.find( a => a.type === "screenshot-name" );
-			if( annotation ) {
-				screenshotName = annotation.description;
-			}
-		}
-		
-		// Fallback to lowercase conversion if no annotation
-		if( !screenshotName ) {
-			screenshotName = title.toLowerCase().replace( /\s+/g, "_" );
-		}
-		
-		const htmlFile = screenshotName + ".html";
-		
-		// Get error message - for skipped tests, check skip reason
-		let errorMessage = null;
-		if( result.error ) {
-			errorMessage = result.error.message;
-		} else if( result.status === "skipped" ) {
-			// Check test annotations for skip reason or custom error
-			if( test.annotations ) {
-				const errorAnnotation = test.annotations.find( a => a.type === "skip-reason" );
-				if( errorAnnotation ) {
-					errorMessage = errorAnnotation.description;
-				}
-			}
-		}
-		
-		// Create test record
-		const testType = process.env.PI_TEST_TYPE || "core";
-		const testsDir = testType === "plugins" ? "html-plugins" : "html-core";
-		const testRecord = {
-			"name": title,
-			"file": htmlFile,
-			"screenshotName": screenshotName, // Used for image paths
-			"url": `/test/tests/${testsDir}/${htmlFile}`,
-			"status": result.status,
-			"error": errorMessage
-		};
-		
-		this.allTests.push( testRecord );
-		
-		if( result.status === "passed" ) {
-			this.passed++;
-			process.stdout.write( "." );
-		} else if( result.status === "failed" ) {
-			this.failed++;
-			this.failedTests.push( {
-				"title": test.title,
-				"error": result.error ? result.error.message : "Unknown error"
-			} );
-			process.stdout.write( "F" );
-		} else if( result.status === "skipped" ) {
-			this.skipped++;
-			process.stdout.write( "S" );
-		}
-
-		// New line every 50 tests
-		if( this.total % 50 === 0 ) {
-			console.log( "" );
+		if( result.retry > 0 ) {
+			console.log( `Retry ${result.retry}: ${test.title} (${result.status})` );
 		}
 	}
 
 	onEnd( result ) {
-		const duration = ( ( Date.now() - this.startTime ) / 1000 ).toFixed( 1 );
-		
-		console.log( "\n" );
-		console.log( `Finished in ${duration}s\n` );
-		
-		// Show custom summary
-		console.log( "========================================" );
-		console.log( "   Pi.js Visual Regression Results" );
-		console.log( "========================================" );
-		console.log( `  Total:    ${this.total}` );
-		console.log( `  Passed:   ${this.passed}` );
-		console.log( `  Failed:   ${this.failed}` );
-		console.log( `  Skipped:  ${this.skipped}` );
-		
-		const passRate = this.total > 0 
-			? ( ( this.passed / this.total ) * 100 ).toFixed( 1 )
-			: 0;
-		console.log( `  Pass Rate: ${passRate}%` );
-		console.log( "========================================" );
-		
-		// Show failed tests if any
-		if( this.failed > 0 ) {
-			console.log( "\nFailed Tests:" );
-			this.failedTests.forEach( ( test, index ) => {
-				// Extract just the percentage from error message if it's a mismatch
-				let errorMsg = test.error;
-				const mismatchMatch = errorMsg.match( /(\d+\.?\d*)% different/ );
-				if( mismatchMatch ) {
-					errorMsg = `${mismatchMatch[ 1 ]}% different`;
-				}
-				
-				console.log( `${index + 1}. ${test.title} - ${errorMsg}` );
-			} );
-			console.log( "" );
-		}
-		
-		// Generate HTML results page
-		const resultsData = {
-			"total": this.total,
-			"passed": this.passed,
-			"failed": this.failed,
-			"skipped": this.skipped,
-			"tests": this.allTests
+		const tests = [ ...new Map( ( this.suite?.allTests() || [] ).map( test =>
+			[ test.id, summarizeTest( test, this.mode ) ]
+		) ).values() ];
+		const count = status => tests.filter( test => test.status === status ).length;
+		const summary = {
+			"total": tests.length, "passed": count( "passed" ), "flaky": count( "flaky" ),
+			"failed": count( "failed" ), "timedOut": count( "timedOut" ),
+			"interrupted": count( "interrupted" ), "skipped": count( "skipped" ),
+			"pendingBaselines": tests.filter( test => test.pendingBaseline ).length,
+			"retries": tests.reduce( ( total, test ) => total + test.retries, 0 ),
+			"status": result.status, "tests": tests
 		};
-		
-		const resultsHTML = generateResultsPage( resultsData );
-		
-		// Determine results filename based on test type
-		const testType = process.env.PI_TEST_TYPE || "core";
-		const resultsFilename = testType === "plugins" ? "results-plugins.html" : "results.html";
-		const resultsPath = path.join( process.cwd(), "test", resultsFilename );
-		const resultsDir = path.dirname( resultsPath );
-		
-		// Ensure directory exists
-		if( !fs.existsSync( resultsDir ) ) {
-			fs.mkdirSync( resultsDir, { "recursive": true } );
+		const markers = {
+			"passed": ".", "flaky": "R", "failed": "F", "timedOut": "T",
+			"interrupted": "I", "skipped": "S"
+		};
+		const pending = process.env.PI_TEST_STRICT === "true" && summary.pendingBaselines > 0;
+		if( pending ) { summary.status = "failed"; }
+		console.log( tests.map( test => markers[ test.status ] || "?" ).join( "" ) );
+		console.log( `Finished in ${ ( ( Date.now() - this.startTime ) / 1000 ).toFixed( 1 ) }s` );
+		for( const [ key, value ] of Object.entries( summary ) ) {
+			if( key !== "tests" ) { console.log( `${key}: ${value}` ); }
 		}
-		
-		fs.writeFileSync( resultsPath, resultsHTML );
-		
-		// Show results page link
-		console.log( `Results page: ${resultsPath.replace( process.cwd() + path.sep, "" )}` );
-		console.log( "========================================\n" );
+		const directory = g_path.resolve( this.outputRoot, "test/test-results", this.mode );
+		g_fs.mkdirSync( directory, { "recursive": true } );
+		g_fs.writeFileSync( g_path.join( directory, "summary.json" ),
+			JSON.stringify( summary, null, "\t" ) + "\n" );
+		g_fs.writeFileSync( g_path.join( directory, "results.html" ),
+			g_resultsPageGenerator.generateResultsPage( summary, this.mode ) );
+		console.log( `Review: /test/test-results/${this.mode}/results.html (npm run server)` );
+		if( pending ) {
+			console.error( "Baseline approval is pending; complete correctness validation failed." );
+			return { "status": "failed" };
+		}
 	}
 }
-
-export default MinimalReporter;
-

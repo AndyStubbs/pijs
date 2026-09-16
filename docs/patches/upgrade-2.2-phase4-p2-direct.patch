@@ -1,0 +1,357 @@
+--- a/src/renderer/draw/lines.js
++++ b/src/renderer/draw/lines.js
+@@ -39,6 +39,102 @@
+ 	// Distances used by Bresenham's algorithm
+ 	const dx = Math.abs( x2 - x1 );
+ 	const dy = Math.abs( y2 - y1 );
++	const pointCount = Math.max( dx, dy ) + 1;
++	const batch = screenData.batches[ g_batches.POINTS_BATCH ];
++
++	// Reserve ordinary lines once; oversized lines retain bounded chunk emission.
++	if( pointCount > batch.maxCapacity ) {
++		return drawLineChunked( screenData, x1, y1, x2, y2 );
++	}
++	if( !g_batches.prepareBatch( screenData, g_batches.POINTS_BATCH, pointCount ) ) {
++		return;
++	}
++
++	// Reservation may resize storage and updates the translated view origin.
++	const vertices = batch.vertices;
++	const colors = batch.colors;
++	const vertexComps = batch.vertexComps;
++	const colorComps = batch.colorComps;
++	const originX = batch.originX || 0;
++	const originY = batch.originY || 0;
++	const red = color.r;
++	const green = color.g;
++	const blue = color.b;
++	const alpha = color.a;
++	let vertexOffset = batch.count * vertexComps;
++	let colorOffset = batch.count * colorComps;
++
++	// Add a line using Bresenham's algorithm (as individual points)
++	let sx;
++	if( x1 < x2 ) {
++		sx = 1;
++	} else {
++		sx = -1;
++	}
++	let sy;
++	if( y1 < y2 ) {
++		sy = 1;
++	} else {
++		sy = -1;
++	}
++	let err = dx - dy;
++
++	let x = x1;
++	let y = y1;
++
++	while( true ) {
++
++		// Emit into the complete reservation without per-point helper lookups.
++		vertices[ vertexOffset ] = x + originX;
++		vertices[ vertexOffset + 1 ] = y + originY;
++		colors[ colorOffset ] = red;
++		colors[ colorOffset + 1 ] = green;
++		colors[ colorOffset + 2 ] = blue;
++		colors[ colorOffset + 3 ] = alpha;
++		vertexOffset += vertexComps;
++		colorOffset += colorComps;
++
++		// Check if we've reached the end
++		if( x === x2 && y === y2 ) {
++			break;
++		}
++
++		// Bresenham error calculation
++		const e2 = err * 2;
++		if( e2 > -dy ) {
++			err -= dy;
++			x += sx;
++		}
++		if( e2 < dx ) {
++			err += dx;
++			y += sy;
++		}
++	}
++
++	// No calls or flushes can interleave writes inside this reserved loop.
++	batch.count += pointCount;
++}
++
++/**
++ * Draw an oversized line using bounded point reservations.
++ *
++ * @param {Object} screenData - Screen data object
++ * @param {number} x1 - Start X coordinate
++ * @param {number} y1 - Start Y coordinate
++ * @param {number} x2 - End X coordinate
++ * @param {number} y2 - End Y coordinate
++ * @returns {void}
++ */
++function drawLineChunked( screenData, x1, y1, x2, y2 ) {
++	if( g_contextState.isContextUnavailable( screenData ) ) {
++		return;
++	}
++
++	const color = screenData.color;
++
++	// Distances used by Bresenham's algorithm
++	const dx = Math.abs( x2 - x1 );
++	const dy = Math.abs( y2 - y1 );
+ 	const writePoint = g_batchHelpers.createPointWriter( screenData, g_batches.POINTS_BATCH );
+ 
+ 	// Add a line using Bresenham's algorithm (as individual points)
+--- a/test/unit/batch-reservations.test.js
++++ b/test/unit/batch-reservations.test.js
+@@ -109,6 +109,152 @@
+ 		"submissions": submissions };
+ }
+ 
++const linePaths = [
++	[ [ 0, 0 ] ],
++	Array.from( { "length": 8 }, ( _, x ) => [ x, 0 ] ),
++	Array.from( { "length": 8 }, ( _, x ) => [ x, x ] ),
++	[ [ 0, 0 ], [ 1, 0 ], [ 2, 1 ], [ 3, 1 ], [ 4, 2 ], [ 5, 2 ], [ 6, 3 ], [ 7, 3 ] ]
++];
++
++test( "P2 all octants and reversed lines preserve exact points, colors and origins", () => {
++	for( const [ min, max ] of [ [ 8, 19 ], [ 3, 3 ] ] ) {
++		for( const alpha of [ 0, 128, 255 ] ) {
++			for( const translated of [ false, true ] ) {
++				const h = createHarness( min, max );
++				h.screen.color.a = alpha;
++				if( !translated ) {
++					h.screen.view = null;
++				}
++				const expected = [];
++				for( const points of linePaths ) {
++					for( const swap of [ false, true ] ) {
++						for( const sx of [ -1, 1 ] ) {
++							for( const sy of [ -1, 1 ] ) {
++								for( const reverse of [ false, true ] ) {
++									const path = points.map( ( [ x, y ] ) => {
++										if( swap ) { return [ y * sx - 2, x * sy - 3 ]; }
++										return [ x * sx - 2, y * sy - 3 ];
++									} );
++									if( reverse ) { path.reverse(); }
++									h.shapes.lines.drawLine(
++										h.screen, ...path[ 0 ], ...path.at( -1 )
++									);
++									for( const [ x, y ] of path ) {
++										expected.push( [ h.batches.POINTS_BATCH,
++											x + ( h.screen.view?.originX || 0 ),
++											y + ( h.screen.view?.originY || 0 ),
++											200, 100, 50, alpha ] );
++									}
++								}
++							}
++						}
++					}
++				}
++				h.batches.flushBatches( h.screen );
++				assert.deepEqual( h.emitted, expected );
++			}
++		}
++	}
++} );
++
++for( const [ occupied, points ] of [ [ 0, 1 ], [ 0, 8 ], [ 3, 5 ], [ 3, 6 ],
++	[ 0, 19 ], [ 3, 19 ], [ 19, 1 ], [ 0, 20 ], [ 3, 60 ] ] ) {
++	test( `P2 reservations preserve ${points} points after ${occupied} queued points`, () => {
++		const h = createHarness();
++		const type = h.batches.POINTS_BATCH;
++		const batch = h.screen.batches[ type ];
++		if( occupied ) {
++			h.batches.prepareBatch( h.screen, type, occupied );
++			for( let i = 0; i < occupied; i++ ) {
++				h.helpers.addVertexToBatch( batch, i, -1, h.screen.color );
++			}
++		}
++		const reservations = [];
++		let writers = 0;
++		const reserve = h.batches.prepareBatch;
++		const writer = h.helpers.createPointWriter;
++		h.batches.prepareBatch = ( ...args ) => {
++			reservations.push( args[ 2 ] );
++			return reserve( ...args );
++		};
++		h.helpers.createPointWriter = ( ...args ) => {
++			writers++;
++			return writer( ...args );
++		};
++		h.shapes.lines.drawLine( h.screen, 0, 0, points - 1, 0 );
++		if( points <= batch.maxCapacity ) {
++			assert.deepEqual( reservations, [ points ] );
++			assert.equal( writers, 0 );
++		} else {
++			assert.equal( writers, 1 );
++			assert.ok( reservations.length > 1 );
++			assert.ok( reservations.every( count => count <= batch.maxCapacity ) );
++		}
++		h.batches.flushBatches( h.screen );
++		const expected = [];
++		for( let i = 0; i < occupied; i++ ) {
++			expected.push( [ type, i + 3, 4, 200, 100, 50, 128 ] );
++		}
++		for( let i = 0; i < points; i++ ) {
++			expected.push( [ type, i + 3, 5, 200, 100, 50, 128 ] );
++		}
++		assert.deepEqual( h.emitted, expected );
++	} );
++}
++
++for( const points of [ 7, 60 ] ) {
++	test( `P2 suspended ${points}-point lines leave queued data untouched`, () => {
++		const h = createHarness();
++		const batch = h.screen.batches[ h.batches.POINTS_BATCH ];
++		h.batches.prepareBatch( h.screen, h.batches.POINTS_BATCH, 1 );
++		h.helpers.addVertexToBatch( batch, 1, 2, h.screen.color );
++		const vertices = batch.vertices.slice();
++		const colors = batch.colors.slice();
++		const order = h.screen.batchInfo.drawOrder;
++		h.screen.contextLost = true;
++		h.batches.prepareBatch = () => assert.fail( "Suspended line reserved points" );
++		h.shapes.lines.drawLine( h.screen, 0, 0, points - 1, 0 );
++		assert.equal( batch.count, 1 );
++		assert.deepEqual( batch.vertices, vertices );
++		assert.deepEqual( batch.colors, colors );
++		assert.equal( h.screen.batchInfo.drawOrder, order );
++	} );
++}
++
++for( const points of [ 7, 60 ] ) {
++	test( `P2 ${points}-point line stops emitting after forced-flush loss`, () => {
++		const h = createHarness( 8, 19 );
++		const batch = h.screen.batches[ h.batches.POINTS_BATCH ];
++		let probes = 0;
++		let countAtLoss;
++		let verticesAtLoss;
++		let colorsAtLoss;
++		if( points === 7 ) {
++			h.batches.prepareBatch( h.screen, h.batches.POINTS_BATCH, 19 );
++			for( let i = 0; i < 19; i++ ) {
++				h.helpers.addVertexToBatch( batch, i, -1, h.screen.color );
++			}
++		}
++		h.screen.gl.isContextLost = () => {
++			probes++;
++			countAtLoss = batch.count;
++			verticesAtLoss = batch.vertices.slice();
++			colorsAtLoss = batch.colors.slice();
++			return true;
++		};
++		h.screen.contextState = { "suspend": () => { h.screen.batchInfo.drawOrder = []; } };
++		h.shapes.lines.drawLine( h.screen, 0, 0, points - 1, 0 );
++		assert.equal( probes, 1 );
++		assert.equal( h.screen.contextLost, true );
++		assert.ok( countAtLoss > 0 );
++		assert.equal( batch.count, countAtLoss );
++		assert.deepEqual( batch.vertices, verticesAtLoss );
++		assert.deepEqual( batch.colors, colorsAtLoss );
++		assert.equal( h.emitted.length, 0 );
++		assert.deepEqual( h.screen.batchInfo.drawOrder, [] );
++	} );
++}
++
+ test( "SYS-007 zero, exact capacity, growth and exact maximum reservations", () => {
+ 	const { batches, screen } = createHarness();
+ 	const batch = screen.batches[ 0 ];
+--- a/test/unit/batch-reservations-browser.test.js
++++ b/test/unit/batch-reservations-browser.test.js
+@@ -127,6 +127,73 @@
+ }
+ 
+ for( const bundle of [ "full", "lite" ] ) {
++	test( `P2 ${bundle}: reserved and chunked lines match individual pixels in mixed views`,
++		async () => {
++			const results = await probe( bundle, () => {
++				const results = [];
++				const paths = [
++					[ [ 0, 0 ] ],
++					Array.from( { "length": 61 }, ( _, x ) => [ x - 10, 9 ] ),
++					[ [ 0, 0 ], [ 1, 0 ], [ 2, 1 ], [ 3, 1 ],
++						[ 4, 2 ], [ 5, 2 ], [ 6, 3 ], [ 7, 3 ] ]
++				];
++				const texture = document.createElement( "canvas" );
++				texture.width = 5;
++				texture.height = 5;
++				const context = texture.getContext( "2d" );
++				context.fillStyle = "#00FF0080";
++				context.fillRect( 0, 0, 5, 5 );
++				for( const mode of [ "reserved", "chunked", "pixels" ] ) {
++					const screen = $.screen( "48x32" );
++					if( mode === "chunked" ) { reduceLimits( screen ); }
++					track( screen );
++					screen.setBlend( "alpha" );
++					for( const view of [ "default", "translated", "nested" ] ) {
++						if( view === "translated" ) { screen.pushView( 3, 2, 40, 28 ); }
++						if( view === "nested" ) { screen.pushView( 4, 3, 28, 20 ); }
++						for( const alpha of [ "00", "80", "FF" ] ) {
++							for( const points of paths ) {
++								for( const swap of [ false, true ] ) {
++									for( const sx of [ -1, 1 ] ) {
++										for( const sy of [ -1, 1 ] ) {
++											for( const reverse of [ false, true ] ) {
++												const path = points.map( ( [ x, y ] ) => {
++													if( swap ) {
++														return [ 13 + y * sx, 10 + x * sy ];
++													}
++													return [ 13 + x * sx, 10 + y * sy ];
++												} );
++												if( reverse ) { path.reverse(); }
++												screen.rect( 8, 6, 12, 10, "#0000FF40" );
++												screen.setColor( "#FF0000" + alpha );
++												if( mode === "pixels" ) {
++													for( const [ x, y ] of path ) {
++														screen.pset( x, y );
++													}
++												} else {
++													screen.line( ...path[ 0 ], ...path.at( -1 ) );
++												}
++												screen.drawImage( texture, 10, 8 );
++											}
++										}
++									}
++								}
++							}
++						}
++						results.push( Array.from( rawPixels( screen ) ) );
++					}
++					screen.resetView();
++					screen.removeScreen();
++				}
++				return results;
++			} );
++			for( let view = 0; view < 3; view++ ) {
++				assert.deepEqual( results[ view ], results[ view + 6 ] );
++				assert.deepEqual( results[ view + 3 ], results[ view + 6 ] );
++			}
++		}
++	);
++
+ 	test( `SYS-007 ${bundle}: Full HD paint fills every pixel within batch limits`, async t => {
+ 		const result = await probe( bundle, () => {
+ 			const screen = $.screen( "1920x1080" );
+--- a/test/unit/context-recovery-browser.test.js
++++ b/test/unit/context-recovery-browser.test.js
+@@ -238,8 +238,8 @@
+ 		} ), [ 0, 1, 2, 0 ] );
+ 	} );
+ 
+-	for( const operation of [ "pixel", "line", "put", "rectangle", "geometry", "ellipse",
+-		"image", "sprite" ] ) {
++	for( const operation of [ "pixel", "line", "reserved line", "put", "rectangle", "geometry",
++		"ellipse", "image", "sprite" ] ) {
+ 		test( `SYS-008 ${bundle}: ${operation} stops when its forced flush detects loss`, async () => {
+ 			assert.deepEqual( await probe( bundle, async operation => {
+ 				const screen = $.screen( "32x32" );
+@@ -249,6 +249,7 @@
+ 				const operations = {
+ 					"pixel": [ renderer.POINTS_BATCH, () => screen.pset( 0, 0 ) ],
+ 					"line": [ renderer.POINTS_BATCH, () => screen.line( 0, 0, 20, 20 ) ],
++					"reserved line": [ renderer.POINTS_BATCH, () => screen.line( 0, 0, 4, 2 ) ],
+ 					"put": [ renderer.POINTS_REPLACE_BATCH, () => screen.put( [ [ 4 ] ], 0, 0 ) ],
+ 					"rectangle": [ renderer.GEOMETRY_BATCH,
+ 						() => renderer.drawRectFilled( data, 0, 0, 8, 8, data.color ) ],
