@@ -8,7 +8,7 @@ Phase 2 provides the first validated optimizations. Phase 3 provides a tested li
 integration remains deferred. Phase 4 is the next step: diagnose its variability and qualify stable
 gains before integration. Phases 5–6 cover remaining optimizations and broader qualification.
 
-## Phase 1 — Make benchmark results reproducible
+## Phase 1 — Make benchmark results reproducible - COMPLETED
 
 - Promote deterministic seeds (`entropy: false`), fixed workloads, and overlay-independent timing
   from the investigation into the maintained benchmark.
@@ -23,7 +23,7 @@ resume. The adaptive browser benchmark and historical scores remain separate. Pr
 tests cover reproducibility, timing, ordering, result integrity, and asset failures. A hardware
 smoke campaign verifies operation; it does not establish optimization benefits.
 
-## Phase 2 — Implement the two strongest optimizations
+## Phase 2 — Implement the two strongest optimizations - COMPLETED
 
 Land each change independently, then integrate them.
 
@@ -46,7 +46,7 @@ interval and variability gates on the measured RTX 4060/Chromium configuration. 
 unstable, and broader qualification remains Phase 6 work. See the
 [Phase 2 validation record](upgrade-2.2-phase2-validation.md) for tests, intervals, and artifacts.
 
-## Phase 3 — Improve line reservation
+## Phase 3 — Improve line reservation - COMPLETED
 
 - Implement P2: reserve ordinary Bresenham lines once using `max(dx, dy) + 1` points.
 - Retain the bounded writer for oversized lines and preserve forced-flush/context-loss behavior.
