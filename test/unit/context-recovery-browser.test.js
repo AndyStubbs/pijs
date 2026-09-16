@@ -2,14 +2,22 @@
  * SYS-008 context-generation regressions against fresh in-memory full and lite bundles.
  * Run with node --test test/unit/context-recovery-browser.test.js.
  */
-"use strict";
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_fsPromises from "node:fs/promises";
+import * as g_path from "node:path";
+import * as g_esbuild from "esbuild";
+import * as g_playwright from "@playwright/test";
+import * as g_fs from "node:fs";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { test, before, after } = g_test;
+const assert = g_assert;
+const fs = g_fsPromises;
+const path = g_path;
+const esbuild = g_esbuild;
+const { chromium } = g_playwright;
 
-const { test, before, after } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const fs = require( "node:fs/promises" );
-const path = require( "node:path" );
-const esbuild = require( "esbuild" );
-const { chromium } = require( "@playwright/test" );
 const bundles = {};
 let browser;
 
@@ -20,9 +28,9 @@ before( async () => {
 import * as manager from "./core/screen-manager.js";
 import * as renderer from "./renderer/renderer.js";
 window.recoveryTest = { manager, renderer };`,
-				"resolveDir": path.join( __dirname, "../../src" ) },
+				"resolveDir": path.join( DIRNAME, "../../src" ) },
 			"bundle": true, "write": false, "format": "iife", "target": "es2020",
-			"define": { "__VERSION__": JSON.stringify( require( "../../package.json" ).version ) },
+			"define": { "__VERSION__": JSON.stringify( JSON.parse( g_fs.readFileSync( new URL( "../../package.json", import.meta.url ), "utf8" ) ).version ) },
 			"loader": { ".vert": "text", ".frag": "text" },
 			"plugins": [ {
 				"name": "test-font-data",

@@ -6,26 +6,36 @@
  * 2. Monaco completion data for the online editor.
  * Copies generated type definitions into the latest release package.
  */
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_toml from "@iarna/toml";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+function isMainModule() {
+	const entry = process.argv[ 1 ];
+	if( !entry ) {
+		return false;
+	}
+	return g_url.pathToFileURL( g_path.resolve( entry ) ).href === import.meta.url;
+}
+const fs = g_fs;
+const path = g_path;
+const toml = g_toml;
 
-"use strict";
-
-const fs = require( "fs" );
-const path = require( "path" );
-const toml = require( "@iarna/toml" );
-const packageJson = require( path.join( __dirname, "..", "package.json" ) );
-const METADATA_DIR = path.join( __dirname, "..", "metadata" );
-const BUILD_DIR = path.join( __dirname, "..", "build" );
+const packageJson = JSON.parse( g_fs.readFileSync( path.join( DIRNAME, "..", "package.json"  ), "utf8" ) );
+const METADATA_DIR = path.join( DIRNAME, "..", "metadata" );
+const BUILD_DIR = path.join( DIRNAME, "..", "build" );
 const REFERENCE_FILE = path.join( BUILD_DIR, "reference-{VERSION}.json" );
 const TYPE_DEFINITION_FILE = path.join( BUILD_DIR, "pi.d.ts" );
 const LITE_TYPE_DEFINITION_FILE = path.join( BUILD_DIR, "pi.lite.d.ts" );
-const DOCS_TYPE_DEFINITION_FILE = path.join( __dirname, "..", "docs", "llms", "pi.d.ts" );
+const DOCS_TYPE_DEFINITION_FILE = path.join( DIRNAME, "..", "docs", "llms", "pi.d.ts" );
 const RELEASE_TYPE_DEFINITION_FILE = path.join(
-	__dirname, "..", "releases", "pi-latest", "dist", "pi.d.ts"
+	DIRNAME, "..", "releases", "pi-latest", "dist", "pi.d.ts"
 );
 const RELEASE_LITE_TYPE_DEFINITION_FILE = path.join(
-	__dirname, "..", "releases", "pi-latest", "dist", "pi.lite.d.ts"
+	DIRNAME, "..", "releases", "pi-latest", "dist", "pi.lite.d.ts"
 );
-const BASE_PACKAGE_PATH = path.join( __dirname, "..", "releases", "base-package.json" );
+const BASE_PACKAGE_PATH = path.join( DIRNAME, "..", "releases", "base-package.json" );
 
 function getVersionFolders() {
 	if( !fs.existsSync( METADATA_DIR ) ) {
@@ -788,7 +798,7 @@ function writePluginTypeDefinitions() {
 			BUILD_DIR, "plugins", pluginName, `${pluginName}.d.ts`
 		);
 		const releasePath = path.join(
-			__dirname, "..", "releases", "pi-latest", "dist", "plugins", pluginName,
+			DIRNAME, "..", "releases", "pi-latest", "dist", "plugins", pluginName,
 			`${pluginName}.d.ts`
 		);
 		const outputFiles = [ buildPath, releasePath ];
@@ -886,14 +896,8 @@ function writeTypeDefinitions( version, lines, outputFiles ) {
 	}
 }
 
-if( require.main === module ) {
+if( isMainModule() ) {
 	generateMetadata();
 }
 
-module.exports = {
-	formatDescription,
-	generateMetadata,
-	normalizeNewlines,
-	normalizeParsedStrings,
-	parseMetadata
-};
+export { formatDescription, generateMetadata, normalizeNewlines, normalizeParsedStrings, parseMetadata };

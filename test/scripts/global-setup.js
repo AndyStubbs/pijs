@@ -2,10 +2,10 @@
  * Global setup for Playwright tests
  * Checks if dev server is running before starting tests
  */
+import * as g_http from "node:http";
+const http = g_http;
 
-const http = require( "http" );
-
-module.exports = async function globalSetup() {
+export default async function globalSetup() {
 	return new Promise( ( resolve, reject ) => {
 		let settled = false;
 

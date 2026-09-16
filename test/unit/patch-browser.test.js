@@ -2,10 +2,15 @@
  * Browser assertions against fresh in-memory bundles and repository fixtures.
  * Run with node --test test/unit/patch-browser.test.js.
  */
-const { test, before, after } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const { chromium } = require( "@playwright/test" );
-const { createSourceContext } = require( "./browser-source-harness.js" );
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_playwright from "@playwright/test";
+import * as g_browserSourceHarness from "./browser-source-harness.js";
+const { test, before, after } = g_test;
+const assert = g_assert;
+const { chromium } = g_playwright;
+const { createSourceContext } = g_browserSourceHarness;
+
 let browser;
 let context;
 before( async () => {

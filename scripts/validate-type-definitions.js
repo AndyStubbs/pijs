@@ -4,15 +4,24 @@
  * Checks release-critical Pi.js declarations and ensures the build and
  * documentation copies remain identical.
  */
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+function isMainModule() {
+	const entry = process.argv[ 1 ];
+	if( !entry ) {
+		return false;
+	}
+	return g_url.pathToFileURL( g_path.resolve( entry ) ).href === import.meta.url;
+}
+const fs = g_fs;
+const path = g_path;
 
-"use strict";
+const packageJson = JSON.parse( g_fs.readFileSync( path.join( DIRNAME, "..", "package.json"  ), "utf8" ) );
 
-const fs = require( "fs" );
-const path = require( "path" );
-const packageJson = require( path.join( __dirname, "..", "package.json" ) );
-
-const BUILD_TYPE_FILE = path.join( __dirname, "..", "build", "pi.d.ts" );
-const DOCS_TYPE_FILE = path.join( __dirname, "..", "docs", "llms", "pi.d.ts" );
+const BUILD_TYPE_FILE = path.join( DIRNAME, "..", "build", "pi.d.ts" );
+const DOCS_TYPE_FILE = path.join( DIRNAME, "..", "docs", "llms", "pi.d.ts" );
 
 const REQUIRED_DECLARATIONS = [
 	{
@@ -165,7 +174,7 @@ function validateTypeDefinitions() {
 	}
 
 	const liteTypes = readTypeFile(
-		path.join( __dirname, "..", "build", "pi.lite.d.ts" )
+		path.join( DIRNAME, "..", "build", "pi.lite.d.ts" )
 	);
 	if( /^\t\tinmouse\(/m.test( liteTypes ) ) {
 		throw new Error( "Lite type definitions incorrectly include plugin command inmouse." );
@@ -180,7 +189,7 @@ function validateTypeDefinitions() {
 	);
 }
 
-if( require.main === module ) {
+if( isMainModule() ) {
 	try {
 		validateTypeDefinitions();
 	} catch( error ) {
@@ -189,4 +198,4 @@ if( require.main === module ) {
 	}
 }
 
-module.exports = { validateTypeDefinitions };
+export { validateTypeDefinitions };

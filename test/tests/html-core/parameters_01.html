@@ -15,7 +15,6 @@
 			"""
 			[[TOML_END]]
 		</script>
-		<script src="../../libs/seedrandom.js"></script>
 		<script src="../../../build/pi.js"></script>
 		<style>
 			html, body {
@@ -24,8 +23,9 @@
 		</style>
 	</head>
 <body>
-<script>
-Math.seedrandom('constant');
+<script type="module">
+import "../../libs/seedrandom.js";
+Math.seedrandom( "constant" );
 $.ready(function () {
 	var data;
 	$.screen( { "aspect": "100x100" } );

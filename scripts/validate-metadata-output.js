@@ -3,13 +3,21 @@
  *
  * Verifies that generated reference JSON is valid and contains no carriage returns.
  */
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+function isMainModule() {
+	const entry = process.argv[ 1 ];
+	if( !entry ) {
+		return false;
+	}
+	return g_url.pathToFileURL( g_path.resolve( entry ) ).href === import.meta.url;
+}
+const fs = g_fs;
+const path = g_path;
 
-"use strict";
-
-const fs = require( "fs" );
-const path = require( "path" );
-
-const BUILD_DIR = path.join( __dirname, "..", "build" );
+const BUILD_DIR = path.join( DIRNAME, "..", "build" );
 
 /**
  * Finds a carriage return in any string nested in a metadata value.
@@ -77,7 +85,7 @@ function validateMetadataOutput() {
 	console.log( `✓ Validated ${files.length} reference metadata files without carriage returns.` );
 }
 
-if( require.main === module ) {
+if( isMainModule() ) {
 	try {
 		validateMetadataOutput();
 	} catch( error ) {
@@ -86,4 +94,4 @@ if( require.main === module ) {
 	}
 }
 
-module.exports = { findCarriageReturn, validateMetadataOutput };
+export { findCarriageReturn, validateMetadataOutput };

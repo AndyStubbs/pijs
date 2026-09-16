@@ -1,11 +1,12 @@
 /**
  * SYS-016 outline uniqueness and midpoint coverage regressions.
  */
-"use strict";
-
-const { test } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const { createHarness } = require( "./rasterization-harness.js" );
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_rasterizationHarness from "./rasterization-harness.js";
+const { test } = g_test;
+const assert = g_assert;
+const { createHarness } = g_rasterizationHarness;
 
 test( "SYS-016 circle and arc coordinates are unique for radii 1 through 128", () => {
 	const h = createHarness();

@@ -3,10 +3,12 @@
  * 
  * Only shows progress dots and summary at end (no error details)
  */
-
-const fs = require( "fs" );
-const path = require( "path" );
-const { generateResultsPage } = require( "./results-page-generator.js" );
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_resultsPageGenerator from "./results-page-generator.js";
+const fs = g_fs;
+const path = g_path;
+const { generateResultsPage } = g_resultsPageGenerator;
 
 class MinimalReporter {
 	constructor( options ) {
@@ -162,5 +164,5 @@ class MinimalReporter {
 	}
 }
 
-module.exports = MinimalReporter;
+export default MinimalReporter;
 

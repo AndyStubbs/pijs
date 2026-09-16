@@ -18,7 +18,7 @@ let m_seededRandom = null;
  * Gets the polygon test configuration object
  * 
  * @param {Array<string>} [operationTypes] - Optional array of operation types to test
- * @returns {Object} Test configuration
+ * @returns {Object} Test configuration; optional seedOptions is passed to seedrandom during init
  */
 export function getConfig( operationTypes ) {
 	let name = "Polygon Test";
@@ -51,7 +51,7 @@ function init( config ) {
 	}
 
 	// Set up random seed for consistent test results
-	m_seededRandom = new Math.seedrandom( "poly", true );
+	m_seededRandom = new Math.seedrandom( "poly", config.seedOptions ?? true );
 	
 	m_pal = $.getPal();
 	generateOperationList();

@@ -1,13 +1,21 @@
 /**
  * SYS-006 RGBA8 boundary conversion tests, including irreversible low-alpha quantization.
  */
-const { test } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const fs = require( "node:fs" );
-const path = require( "node:path" );
-const vm = require( "node:vm" );
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_vm from "node:vm";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { test } = g_test;
+const assert = g_assert;
+const fs = g_fs;
+const path = g_path;
+const vm = g_vm;
+
 const context = vm.createContext( { "Uint8Array": Uint8Array } );
-vm.runInContext( fs.readFileSync( path.join( __dirname, "../../src/renderer/alpha.js" ), "utf8" )
+vm.runInContext( fs.readFileSync( path.join( DIRNAME, "../../src/renderer/alpha.js" ), "utf8" )
 	.replace( /export /g, "" ), context );
 
 test( "SYS-006 premultiplication rounds bytes and preserves the caller buffer", () => {

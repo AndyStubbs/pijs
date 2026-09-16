@@ -8,7 +8,7 @@
 
 "use strict";
 
-import { images as g_images, sprites as g_sprites } from "../image-loader.js";
+import * as g_loader from "../image-loader.js";
 
 let m_testOptions = [];
 let m_seededRandom;
@@ -22,7 +22,7 @@ let m_isLegacy = false;
  * @param {Array<string>} testOptions - Array of test option strings
  *   Valid options: "blit-images", "blit-images-colors", "blit-sprites", "blit-sprites-colors",
  *                  "draw-images", "draw-images-colors", "draw-sprites", "draw-sprites-colors"
- * @returns {Object} Test configuration
+ * @returns {Object} Test configuration; optional seedOptions is passed to seedrandom during init
  */
 export function getConfig( testOptions ) {
 	const selectedOptions = testOptions || [
@@ -72,7 +72,7 @@ async function init( config ) {
 	m_pal = $.getPal();
 
 	// Set up random seed for consistent test results
-	m_seededRandom = new Math.seedrandom( "blit-images", true );
+	m_seededRandom = new Math.seedrandom( "blit-images", config.seedOptions ?? true );
 	generateOperationList();
 }
 
@@ -191,7 +191,7 @@ function generateRandomOperation() {
 	if( useSprite ) {
 
 		// Draw a sprite
-		const imageName = g_sprites[ Math.floor( m_seededRandom() * g_sprites.length ) ];
+		const imageName = g_loader.sprites[ Math.floor( m_seededRandom() * g_loader.sprites.length ) ];
 		const spriteData = screen.getSpritesheetData( imageName );
 		const frame = Math.floor(
 			m_seededRandom() * spriteData.frameCount
@@ -219,7 +219,7 @@ function generateRandomOperation() {
 	} else {
 
 		// Draw an image
-		const imageName = g_images[ Math.floor( m_seededRandom() * g_images.length ) ];
+		const imageName = g_loader.images[ Math.floor( m_seededRandom() * g_loader.images.length ) ];
 		if( m_isLegacy ) {
 			params = [ imageName, x, y, angle, anchorX, anchorY, 255, scaleX, scaleY ];
 		} else {

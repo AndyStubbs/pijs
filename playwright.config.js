@@ -1,21 +1,32 @@
 /**
  * Playwright Test Configuration
- * 
+ *
  * Configuration for Pi.js visual regression testing
  */
+import * as g_playwright from "@playwright/test";
+import * as g_path from "node:path";
+import * as g_url from "node:url";
 
-const { defineConfig, devices } = require( "@playwright/test" );
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { defineConfig, devices } = g_playwright;
 
-module.exports = defineConfig( {
+let retries = 0;
+let workers;
+if( process.env.CI ) {
+	retries = 2;
+	workers = 1;
+}
+
+export default defineConfig( {
 	"testDir": "./test",
 	"testMatch": "scripts/run-visual-tests.js",
 	"fullyParallel": true,
 	"forbidOnly": !!process.env.CI,
-	"retries": process.env.CI ? 2 : 0,
-	"workers": process.env.CI ? 1 : undefined,
-	"globalSetup": require.resolve( "./test/scripts/global-setup.js" ),
+	"retries": retries,
+	"workers": workers,
+	"globalSetup": g_path.join( DIRNAME, "test/scripts/global-setup.js" ),
 	"reporter": [
-		[ require.resolve( "./test/scripts/minimal-reporter.js" ) ],
+		[ g_path.join( DIRNAME, "test/scripts/minimal-reporter.js" ) ],
 		[ "html", { "outputFolder": "test/playwright-report", "open": "never" } ]
 	],
 	"outputDir": "test/test-results",
@@ -34,4 +45,3 @@ module.exports = defineConfig( {
 		}
 	]
 } );
-

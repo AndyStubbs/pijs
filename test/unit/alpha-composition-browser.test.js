@@ -3,15 +3,27 @@
  * Run with node --test test/unit/alpha-composition-browser.test.js; no server is required.
  * Set PI_ALPHA_VISUAL=true to review existing visual fixtures against approved baselines.
  */
-const { test, before, after } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const fs = require( "node:fs/promises" );
-const path = require( "node:path" );
-const esbuild = require( "esbuild" );
-const { chromium } = require( "@playwright/test" );
-const { PNG } = require( "pngjs" );
-const toml = require( "@iarna/toml" );
-const root = path.join( __dirname, "../.." );
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_fsPromises from "node:fs/promises";
+import * as g_path from "node:path";
+import * as g_esbuild from "esbuild";
+import * as g_playwright from "@playwright/test";
+import * as g_pngjs from "pngjs";
+import * as g_toml from "@iarna/toml";
+import * as g_fs from "node:fs";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { test, before, after } = g_test;
+const assert = g_assert;
+const fs = g_fsPromises;
+const path = g_path;
+const esbuild = g_esbuild;
+const { chromium } = g_playwright;
+const { PNG } = g_pngjs;
+const toml = g_toml;
+
+const root = path.join( DIRNAME, "../.." );
 const bundles = {};
 let browser;
 
@@ -23,10 +35,10 @@ before( async () => {
 					import * as renderer from "./renderer/renderer.js";
 					import * as manager from "./core/screen-manager.js";
 					window.alphaInternals = { renderer, manager };`,
-				"resolveDir": path.join( __dirname, "../../src" )
+				"resolveDir": path.join( DIRNAME, "../../src" )
 			},
 			"bundle": true, "write": false, "format": "iife", "target": "es2020",
-			"define": { "__VERSION__": JSON.stringify( require( "../../package.json" ).version ) },
+			"define": { "__VERSION__": JSON.stringify( JSON.parse( g_fs.readFileSync( new URL( "../../package.json", import.meta.url ), "utf8" ) ).version ) },
 			"loader": { ".vert": "text", ".frag": "text" },
 			"plugins": [ {
 				"name": "test-font-data",

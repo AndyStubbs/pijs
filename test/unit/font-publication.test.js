@@ -1,13 +1,18 @@
 /**
  * SYS-022 publication and readiness regressions against the actual font source module.
  */
-"use strict";
-
-const { test } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const fs = require( "node:fs" );
-const path = require( "node:path" );
-const vm = require( "node:vm" );
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_vm from "node:vm";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { test } = g_test;
+const assert = g_assert;
+const fs = g_fs;
+const path = g_path;
+const vm = g_vm;
 
 function createHarness() {
 	const images = [];
@@ -52,7 +57,7 @@ function createHarness() {
 	const utilsContext = vm.createContext( {
 		"document": { "createElement": () => ( { "getContext": () => ( {} ) } ) }
 	} );
-	vm.runInContext( fs.readFileSync( path.join( __dirname, "../../src/core/utils.js" ), "utf8" )
+	vm.runInContext( fs.readFileSync( path.join( DIRNAME, "../../src/core/utils.js" ), "utf8" )
 		.replace( /export /g, "" ), utilsContext );
 	const context = vm.createContext( {
 		"console": { "error": message => counts.errors.push( message ) },
@@ -63,7 +68,7 @@ function createHarness() {
 		"HTMLImageElement": ImageElement, "HTMLCanvasElement": Canvas, "OffscreenCanvas": Offscreen,
 		"Image": ControlledImage
 	} );
-	const source = fs.readFileSync( path.join( __dirname, "../../src/text/fonts.js" ), "utf8" )
+	const source = fs.readFileSync( path.join( DIRNAME, "../../src/text/fonts.js" ), "utf8" )
 		.replace( /^import .*;\r?\n/gm, "" ).replace( /export /g, "" );
 	vm.runInContext( source, context, { "filename": "text/fonts.js" } );
 	return { "api": context, "images": images, "counts": counts, "failures": failures,

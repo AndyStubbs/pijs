@@ -1,18 +1,25 @@
 /**
  * Browser regressions for the performance results menu and comparison graph.
  */
-const { test, before, after } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const path = require( "node:path" );
-const esbuild = require( "esbuild" );
-const { chromium } = require( "@playwright/test" );
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_path from "node:path";
+import * as g_esbuild from "esbuild";
+import * as g_playwright from "@playwright/test";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { test, before, after } = g_test;
+const assert = g_assert;
+const path = g_path;
+const esbuild = g_esbuild;
+const { chromium } = g_playwright;
 
 let browser;
 let reportBundle;
 
 before( async () => {
 	const result = await esbuild.build( {
-		"entryPoints": [ path.join( __dirname, "../performance/src/report-manager.js" ) ],
+		"entryPoints": [ path.join( DIRNAME, "../performance/src/report-manager.js" ) ],
 		"bundle": true,
 		"write": false,
 		"format": "iife",

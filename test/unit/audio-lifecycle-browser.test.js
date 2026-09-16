@@ -2,12 +2,22 @@
  * SYS-004 and SYS-018 browser regressions against fresh in-memory full and lite bundles.
  * Run with node --test test/unit/audio-lifecycle-browser.test.js; no server is required.
  */
-const { test, before, after } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const fs = require( "node:fs/promises" );
-const path = require( "node:path" );
-const esbuild = require( "esbuild" );
-const { chromium } = require( "@playwright/test" );
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_fsPromises from "node:fs/promises";
+import * as g_path from "node:path";
+import * as g_esbuild from "esbuild";
+import * as g_playwright from "@playwright/test";
+import * as g_fs from "node:fs";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { test, before, after } = g_test;
+const assert = g_assert;
+const fs = g_fsPromises;
+const path = g_path;
+const esbuild = g_esbuild;
+const { chromium } = g_playwright;
+
 const bundles = {};
 let browser;
 let audioBundle;
@@ -15,9 +25,9 @@ let audioBundle;
 before( async () => {
 	for( const [ name, entry ] of [ [ "full", "index-full.js" ], [ "lite", "index.js" ] ] ) {
 		const result = await esbuild.build( {
-			"entryPoints": [ path.join( __dirname, "../../src", entry ) ],
+			"entryPoints": [ path.join( DIRNAME, "../../src", entry ) ],
 			"bundle": true, "write": false, "format": "iife", "target": "es2020",
-			"define": { "__VERSION__": JSON.stringify( require( "../../package.json" ).version ) },
+			"define": { "__VERSION__": JSON.stringify( JSON.parse( g_fs.readFileSync( new URL( "../../package.json", import.meta.url ), "utf8" ) ).version ) },
 			"loader": { ".vert": "text", ".frag": "text" },
 			"plugins": [ {
 				"name": "test-font-data",
@@ -34,7 +44,7 @@ before( async () => {
 		bundles[ name ] = result.outputFiles[ 0 ].text;
 	}
 	const plugin = await esbuild.build( {
-		"entryPoints": [ path.join( __dirname, "../../plugins/sound/index.js" ) ],
+		"entryPoints": [ path.join( DIRNAME, "../../plugins/sound/index.js" ) ],
 		"bundle": true, "write": false, "format": "iife", "target": "es2020"
 	} );
 	audioBundle = plugin.outputFiles[ 0 ].text;

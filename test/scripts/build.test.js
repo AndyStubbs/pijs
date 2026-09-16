@@ -3,15 +3,18 @@
  *
  * Verifies that optional-plugin failures reject the requested aggregate build.
  */
-
-"use strict";
-
-const assert = require( "node:assert/strict" );
-const fs = require( "node:fs" );
-const os = require( "node:os" );
-const path = require( "node:path" );
-const test = require( "node:test" );
-const { buildAllPlugins } = require( "../../scripts/build.js" );
+import * as g_assert from "node:assert/strict";
+import * as g_fs from "node:fs";
+import * as g_os from "node:os";
+import * as g_path from "node:path";
+import * as g_test from "node:test";
+import * as g_build from "../../scripts/build.js";
+const assert = g_assert;
+const fs = g_fs;
+const os = g_os;
+const path = g_path;
+const test = g_test.test;
+const { buildAllPlugins } = g_build;
 
 function createPluginFixture( t, pluginNames, directoryNames = [] ) {
 	const pluginsDir = fs.mkdtempSync( path.join( os.tmpdir(), "pijs-build-plugins-" ) );

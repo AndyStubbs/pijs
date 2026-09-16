@@ -17,7 +17,7 @@ let m_seededRandom = null;
 /**
  * Gets the graphics pixel test configuration object
  * 
- * @returns {Object} Test configuration
+ * @returns {Object} Test configuration; optional seedOptions is passed to seedrandom during init
  */
 export function getConfig( operationTypes ) {
 	let name = "Graphics Test";
@@ -54,7 +54,7 @@ function init( config ) {
 	}
 
 	// Set up random seed for consistent test results
-	m_seededRandom = new Math.seedrandom( "graphics", true );
+	m_seededRandom = new Math.seedrandom( "graphics", config.seedOptions ?? true );
 	
 	m_pal = $.getPal();
 	generateOperationList();

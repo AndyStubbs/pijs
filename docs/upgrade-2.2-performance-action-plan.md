@@ -3,7 +3,8 @@
 Based on the [2.0.3–2.2.0 investigation](upgrade-2.2-performance-report.md).
 Objective: recover performance through compatible optimizations, starting with the strongest
 measured results. Estimates are engineering days for a maintainer familiar with the renderer.
-This document schedules future implementation and validation; no additional tests were run.
+This document schedules implementation and validation. Phase 1 provides the maintained benchmark;
+subsequent phases remain implementation and qualification work.
 
 ## Phase 1 — Make benchmark results reproducible
 
@@ -13,6 +14,12 @@ This document schedules future implementation and validation; no additional test
 - Carry forward the report's measurement limits and unresolved image-loading interruption.
 
 **Deliverable:** a reproducible benchmark workflow ready for subsequent implementation phases.
+
+**Implemented:** the [fixed-work CLI](../test/performance/README.md) builds supplied source
+directories into isolated campaigns, records hashes and interruptions, and validates explicit
+resume. The adaptive browser benchmark and historical scores remain separate. Protocol and browser
+tests cover reproducibility, timing, ordering, result integrity, and asset failures. A hardware
+smoke campaign verifies operation; it does not establish optimization benefits.
 
 ## Phase 2 — Implement the two strongest optimizations
 

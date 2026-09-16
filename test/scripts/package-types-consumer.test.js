@@ -4,18 +4,24 @@
  * These files are compiled with tsc --strict against a local pijs-web package
  * layout to verify published declarations match runtime contracts.
  */
+import * as g_assert from "node:assert/strict";
+import * as g_cp from "node:child_process";
+import * as g_fs from "node:fs";
+import * as g_os from "node:os";
+import * as g_path from "node:path";
+import * as g_test from "node:test";
+import * as g_generateMetadata from "../../scripts/generate-metadata.js";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const assert = g_assert;
+const { spawnSync } = g_cp;
+const fs = g_fs;
+const os = g_os;
+const path = g_path;
+const test = g_test.test;
+const { generateMetadata } = g_generateMetadata;
 
-"use strict";
-
-const assert = require( "node:assert/strict" );
-const { spawnSync } = require( "node:child_process" );
-const fs = require( "node:fs" );
-const os = require( "node:os" );
-const path = require( "node:path" );
-const test = require( "node:test" );
-const { generateMetadata } = require( "../../scripts/generate-metadata.js" );
-
-const ROOT = path.join( __dirname, "..", ".." );
+const ROOT = path.join( DIRNAME, "..", ".." );
 const BASE_PACKAGE_PATH = path.join( ROOT, "releases", "base-package.json" );
 const TSC_PATH = path.join( ROOT, "node_modules", "typescript", "bin", "tsc" );
 

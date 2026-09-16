@@ -7,17 +7,29 @@
  *
  * @module copy-to-release
  */
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+function isMainModule() {
+	const entry = process.argv[ 1 ];
+	if( !entry ) {
+		return false;
+	}
+	return g_url.pathToFileURL( g_path.resolve( entry ) ).href === import.meta.url;
+}
+const fs = g_fs;
+const path = g_path;
 
-const fs = require( "fs" );
-const path = require( "path" );
-
-const rootDir = path.join( __dirname, ".." );
+const rootDir = path.join( DIRNAME, ".." );
 const buildDir = path.join( rootDir, "build" );
 const releaseDir = path.join( rootDir, "releases", "pi-latest" );
 const distDir = path.join( releaseDir, "dist" );
 const basePackagePath = path.join( rootDir, "releases", "base-package.json" );
 
-const pkg = require( path.join( rootDir, "package.json" ) );
+const pkg = JSON.parse(
+	g_fs.readFileSync( path.join( rootDir, "package.json" ), "utf8" )
+);
 const version = pkg.version;
 const majorVersion = pkg.majorVersion;
 
@@ -338,7 +350,7 @@ function copyToRelease( options = {} ) {
 	);
 }
 
-if( require.main === module ) {
+if( isMainModule() ) {
 	try {
 		copyToRelease();
 	} catch( error ) {
@@ -347,4 +359,4 @@ if( require.main === module ) {
 	}
 }
 
-module.exports = { copyToRelease };
+export { copyToRelease };

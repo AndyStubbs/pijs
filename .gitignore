@@ -17,5 +17,6 @@ test/session*.html
 deploy.bat
 homeshell.bat
 test/performance/data/
+test/performance/campaigns/
 test/performance/investigation
 releases/*/dist

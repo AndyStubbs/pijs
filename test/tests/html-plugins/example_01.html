@@ -11,7 +11,6 @@
 			delay = 0
 			[[TOML_END]]
 		</script>
-		<script src="../../libs/seedrandom.js"></script>
 		<script src="../../../build/pi.js"></script>
 		<script src="../../../build/plugins/example-plugin/example-plugin.js"></script>
 		<style>
@@ -23,7 +22,8 @@
 		</style>
 	</head>
 <body>
-<script>
+<script type="module">
+	import "../../libs/seedrandom.js";
 	Math.seedrandom( 1 );
 	const welcome = $.hello( "Example Plugin" );
 	const info = $.getLibraryInfo();

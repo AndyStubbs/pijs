@@ -3,9 +3,12 @@
  * 
  * Generates the custom visual regression test results HTML page
  */
-
-const fs = require( "fs" );
-const path = require( "path" );
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const fs = g_fs;
+const path = g_path;
 
 // Determine test type and paths
 const TEST_TYPE = process.env.PI_TEST_TYPE || "core";
@@ -26,7 +29,7 @@ function generateResultsPage( results ) {
 	const passRateColor = passRate >= 90 ? "#4CAF50" : passRate >= 70 ? "#FFC107" : "#f44336";
 
 	// Read template
-	const templatePath = path.join( __dirname, "results-template.html" );
+	const templatePath = path.join( DIRNAME, "results-template.html" );
 	let html = fs.readFileSync( templatePath, "utf8" );
 
 	// Replace summary stats
@@ -182,5 +185,5 @@ function generateResultsPage( results ) {
 	return html;
 }
 
-module.exports = { generateResultsPage };
+export { generateResultsPage };
 

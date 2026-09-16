@@ -1,11 +1,18 @@
 /**
  * Deterministic SYS-004/SYS-018 regressions against the actual sound source module.
  */
-const { test } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const fs = require( "node:fs" );
-const path = require( "node:path" );
-const vm = require( "node:vm" );
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_vm from "node:vm";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { test } = g_test;
+const assert = g_assert;
+const fs = g_fs;
+const path = g_path;
+const vm = g_vm;
 
 function createHarness() {
 	const audio = [];
@@ -48,7 +55,7 @@ function createHarness() {
 			load() { this.loads++; }
 		}
 	} );
-	const source = fs.readFileSync( path.join( __dirname, "../../plugins/sound/sound.js" ),
+	const source = fs.readFileSync( path.join( DIRNAME, "../../plugins/sound/sound.js" ),
 		"utf8" ).replace( /export /g, "" );
 	vm.runInContext( source, context, { "filename": "plugins/sound/sound.js" } );
 	context.registerSound( {

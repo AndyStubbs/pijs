@@ -2,16 +2,22 @@
  * SYS-014 executable plugin-authoring documentation regressions.
  * Run with node --test test/unit/plugin-docs-browser.test.js.
  */
-"use strict";
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_playwright from "@playwright/test";
+import * as g_browserSourceHarness from "./browser-source-harness.js";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { test, before, after } = g_test;
+const assert = g_assert;
+const fs = g_fs;
+const path = g_path;
+const { chromium } = g_playwright;
+const { createSourceContext } = g_browserSourceHarness;
 
-const { test, before, after } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const fs = require( "node:fs" );
-const path = require( "node:path" );
-const { chromium } = require( "@playwright/test" );
-const { createSourceContext } = require( "./browser-source-harness.js" );
-
-const ROOT = path.resolve( __dirname, "../.." );
+const ROOT = path.resolve( DIRNAME, "../.." );
 const GUIDE_FILES = [
 	"plugins/PLUGIN-QUICKSTART.md",
 	"plugins/PLUGIN-SYSTEM.md",

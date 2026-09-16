@@ -3,17 +3,23 @@
  * 
  * Simple HTTP server for local development and testing.
  */
-
-const http = require( "http" );
-const fs = require( "fs" );
-const path = require( "path" );
-const os = require( "os" );
+import * as g_http from "node:http";
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_os from "node:os";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const http = g_http;
+const fs = g_fs;
+const path = g_path;
+const os = g_os;
 
 const PORT = 8080;
 
 const mimeTypes = {
 	".html": "text/html",
 	".js": "text/javascript",
+	".mjs": "text/javascript",
 	".css": "text/css",
 	".json": "application/json",
 	".png": "image/png",
@@ -196,8 +202,8 @@ const server = http.createServer( ( req, res ) => {
 				
 				// Determine paths based on test type
 				const testsDir = testType === "plugins" ? "tests-plugins" : "tests";
-				const sourcePath = path.join( __dirname, "test", testsDir, "screenshots", "new", `${baseName}.png` );
-				const destPath = path.join( __dirname, "test", testsDir, "screenshots", `${baseName}.png` );
+				const sourcePath = path.join( DIRNAME, "test", testsDir, "screenshots", "new", `${baseName}.png` );
+				const destPath = path.join( DIRNAME, "test", testsDir, "screenshots", `${baseName}.png` );
 				
 				// Check if source exists
 				if( !fs.existsSync( sourcePath ) ) {
@@ -268,7 +274,7 @@ const server = http.createServer( ( req, res ) => {
 				};
 				
 				// Create results directory if it doesn't exist
-				const resultsDir = path.join( __dirname, "test", "performance", "data" );
+				const resultsDir = path.join( DIRNAME, "test", "performance", "data" );
 				if( !fs.existsSync( resultsDir ) ) {
 					fs.mkdirSync( resultsDir, { recursive: true } );
 				}
@@ -354,8 +360,8 @@ const server = http.createServer( ( req, res ) => {
 				
 				// Determine paths based on test type
 				const testsDir = testType === "plugins" ? "tests-plugins" : "tests";
-				const sourcePath = path.join( __dirname, "test", testsDir, "screenshots", "new", `${baseName}.png` );
-				const destPath = path.join( __dirname, "test", testsDir, "screenshots", `${baseName}.png` );
+				const sourcePath = path.join( DIRNAME, "test", testsDir, "screenshots", "new", `${baseName}.png` );
+				const destPath = path.join( DIRNAME, "test", testsDir, "screenshots", `${baseName}.png` );
 				
 				console.log( "Source path:", sourcePath );
 				console.log( "Dest path:", destPath );
@@ -391,7 +397,7 @@ const server = http.createServer( ( req, res ) => {
 	// Handle GET request to list performance test results
 	if( req.method === "GET" && req.url === "/api/list-results" ) {
 		try {
-			const resultsDir = path.join( __dirname, "test", "performance", "data" );
+			const resultsDir = path.join( DIRNAME, "test", "performance", "data" );
 			
 			if( !fs.existsSync( resultsDir ) ) {
 				res.writeHead( 200, { "Content-Type": "application/json" } );
@@ -471,7 +477,7 @@ const server = http.createServer( ( req, res ) => {
 				return;
 			}
 			
-			const resultsDir = path.join( __dirname, "test", "performance", "data" );
+			const resultsDir = path.join( DIRNAME, "test", "performance", "data" );
 			const filePath = path.join( resultsDir, filename );
 			
 			if( !fs.existsSync( filePath ) ) {
@@ -496,7 +502,7 @@ const server = http.createServer( ( req, res ) => {
 	// Handle POST request to reset/rebuild stats.json
 	if( req.method === "POST" && req.url === "/api/reset-stats" ) {
 		try {
-			const resultsDir = path.join( __dirname, "test", "performance", "data" );
+			const resultsDir = path.join( DIRNAME, "test", "performance", "data" );
 			let stats = [];
 			let addedCount = 0;
 			let removedCount = 0;
@@ -615,7 +621,7 @@ const server = http.createServer( ( req, res ) => {
 	// Handle POST request to delete all result files
 	if( req.method === "POST" && req.url === "/api/delete-all-results" ) {
 		try {
-			const resultsDir = path.join( __dirname, "test", "performance", "data" );
+			const resultsDir = path.join( DIRNAME, "test", "performance", "data" );
 			let deletedCount = 0;
 			
 			if( fs.existsSync( resultsDir ) ) {

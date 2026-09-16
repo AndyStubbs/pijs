@@ -34,11 +34,16 @@
  *   KU "Control"
  * """
  */
-
-const { test, expect } = require( "@playwright/test" );
-const fs = require( "fs" );
-const path = require( "path" );
-const { PNG } = require( "pngjs" );
+import * as g_playwright from "@playwright/test";
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_pngjs from "pngjs";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { test, expect } = g_playwright;
+const fs = g_fs;
+const path = g_path;
+const { PNG } = g_pngjs;
 
 // Command execution context
 let cmdContext = {
@@ -53,7 +58,7 @@ let LOG_START_TIME = 0;
 
 function setLogFileForTest( testBaseName ) {
 	try {
-		const logsDir = path.join( __dirname, config.logsDir );
+		const logsDir = path.join( DIRNAME, config.logsDir );
 		if( !fs.existsSync( logsDir ) ) {
 			fs.mkdirSync( logsDir, { "recursive": true } );
 		}
@@ -108,7 +113,7 @@ const TEST_CONFIG = {
 };
 
 const config = TEST_CONFIG[ TEST_TYPE ];
-const LITE_BUNDLE_PATH = path.resolve( __dirname, "../../build/pi.lite.js" );
+const LITE_BUNDLE_PATH = path.resolve( DIRNAME, "../../build/pi.lite.js" );
 const FULL_BUNDLE_REQUEST = /\/build\/pi\.js(?:\?.*)?$/;
 
 if( TEST_LITE && !fs.existsSync( LITE_BUNDLE_PATH ) ) {
@@ -667,7 +672,7 @@ function compareImages( img1Path, img2Path, threshold = 0.001 ) {
 
 // Find all test HTML files
 function findTestFiles() {
-	const testsDir = path.join( __dirname, config.testsDir );
+	const testsDir = path.join( DIRNAME, config.testsDir );
 	const testFiles = [];
 
 	if( !fs.existsSync( testsDir ) ) {
@@ -721,7 +726,7 @@ test.describe( config.description, () => {
 
 			// Check if reference exists before running test
 			const referencePath = path.join(
-				__dirname,
+				DIRNAME,
 				config.screenshotsDir,
 				`${testName}.png`
 			);
@@ -818,7 +823,7 @@ test.describe( config.description, () => {
 
 				// Take screenshot
 				const screenshotPath = path.join(
-					__dirname,
+					DIRNAME,
 					config.newScreenshotsDir,
 					`${testName}.png`
 				);

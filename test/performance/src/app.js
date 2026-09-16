@@ -9,6 +9,7 @@
 "use strict";
 
 
+import "../../libs/seedrandom.js";
 import * as g_testManager from "./test-manager.js";
 import * as g_reportManager from "./report-manager.js";
 

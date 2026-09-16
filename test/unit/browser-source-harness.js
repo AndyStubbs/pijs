@@ -1,13 +1,18 @@
 /**
  * Serve fresh in-memory Pi.js bundles and repository fixtures through a browser context.
  */
-"use strict";
+import * as g_fsPromises from "node:fs/promises";
+import * as g_path from "node:path";
+import * as g_esbuild from "esbuild";
+import * as g_fs from "node:fs";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const fs = g_fsPromises;
+const path = g_path;
+const esbuild = g_esbuild;
 
-const fs = require( "node:fs/promises" );
-const path = require( "node:path" );
-const esbuild = require( "esbuild" );
-const root = path.resolve( __dirname, "../.." );
-const version = require( "../../package.json" ).version;
+const root = path.resolve( DIRNAME, "../.." );
+const version = JSON.parse( g_fs.readFileSync( new URL( "../../package.json", import.meta.url ), "utf8" ) ).version;
 
 /**
  * Bundle a source entry without generating build or release artifacts.
@@ -104,4 +109,4 @@ async function createSourceContext( browser ) {
 	return context;
 }
 
-module.exports = { "buildSource": buildSource, "createSourceContext": createSourceContext };
+export { buildSource, createSourceContext };

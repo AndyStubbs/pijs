@@ -1,11 +1,13 @@
 /**
  * SYS-015 full-turn and zero-length arc regressions against source modules.
  */
-"use strict";
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_rasterizationHarness from "./rasterization-harness.js";
+const { test } = g_test;
+const assert = g_assert;
+const { createHarness } = g_rasterizationHarness;
 
-const { test } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const { createHarness } = require( "./rasterization-harness.js" );
 const TWO_PI = Math.PI * 2;
 const EPSILON = 0.0001;
 

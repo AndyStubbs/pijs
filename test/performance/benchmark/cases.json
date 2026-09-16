@@ -1,0 +1,16 @@
+[
+	{ "name": "line", "type": "graphics", "option": "line", "count": 1200 },
+	{ "name": "rect-filled", "type": "graphics", "option": "rect-filled", "count": 3000 },
+	{ "name": "circle-filled", "type": "graphics", "option": "circle-filled", "count": 800 },
+	{ "name": "ellipse-filled", "type": "graphics", "option": "ellipse-filled", "count": 500 },
+	{ "name": "mixed", "type": "graphics", "count": 400 },
+	{ "name": "polygon", "type": "poly", "option": "polygon", "count": 1200 },
+	{ "name": "polygon-filled", "type": "poly", "option": "polygon-filled", "count": 500 },
+	{ "name": "images", "type": "images", "option": "draw-images", "count": 3000 },
+	{ "name": "sprites", "type": "images", "option": "draw-sprites", "count": 4000 },
+	{ "name": "text", "count": 300 },
+	{ "name": "short-lines", "count": 10000 },
+	{ "name": "batch-boundary", "count": 3000 },
+	{ "name": "nested-view", "count": 1200 },
+	{ "name": "shared-screen", "count": 1000 }
+]

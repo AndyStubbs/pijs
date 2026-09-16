@@ -1,13 +1,18 @@
 /**
  * SYS-017 palette validation regressions against the actual color and utility modules.
  */
-"use strict";
-
-const { test } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const fs = require( "node:fs" );
-const path = require( "node:path" );
-const vm = require( "node:vm" );
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_vm from "node:vm";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { test } = g_test;
+const assert = g_assert;
+const fs = g_fs;
+const path = g_path;
+const vm = g_vm;
 
 function createHarness() {
 	const getters = {};
@@ -15,7 +20,7 @@ function createHarness() {
 		"document": { "createElement": () => ( { "getContext": () => ( {} ) } ) }
 	} );
 	const utilsSource = fs.readFileSync(
-		path.join( __dirname, "../../src/core/utils.js" ), "utf8"
+		path.join( DIRNAME, "../../src/core/utils.js" ), "utf8"
 	).replace( /export /g, "" );
 	vm.runInContext( utilsSource, utilsContext, { "filename": "core/utils.js" } );
 	const context = vm.createContext( {
@@ -26,7 +31,7 @@ function createHarness() {
 			getters[ name ] = getter;
 		} }
 	} );
-	const source = fs.readFileSync( path.join( __dirname, "../../src/api/colors.js" ), "utf8" )
+	const source = fs.readFileSync( path.join( DIRNAME, "../../src/api/colors.js" ), "utf8" )
 		.replace( /^import .*;\r?\n/gm, "" ).replace( /export /g, "" );
 	vm.runInContext( source, context, { "filename": "api/colors.js" } );
 	context.init();

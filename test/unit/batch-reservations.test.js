@@ -1,21 +1,26 @@
 /**
  * SYS-007 reservation and emission regressions against actual source modules.
  */
-"use strict";
-
-const { test } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const fs = require( "node:fs" );
-const path = require( "node:path" );
-const vm = require( "node:vm" );
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_vm from "node:vm";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { test } = g_test;
+const assert = g_assert;
+const fs = g_fs;
+const path = g_path;
+const vm = g_vm;
 
 function loadModule( file, globals = {}, constants = [] ) {
-	const source = fs.readFileSync( path.join( __dirname, "../../src", file ), "utf8" )
+	const source = fs.readFileSync( path.join( DIRNAME, "../../src", file ), "utf8" )
 		.replace( /^import .*;\r?\n/gm, "" )
 		.replace( /^export \{.*\};\r?\n/gm, "" ).replace( /export /g, "" );
 	const context = vm.createContext( { "console": console, ...globals } );
 	vm.runInContext( fs.readFileSync(
-		path.join( __dirname, "../../src/renderer/context-state.js" ), "utf8"
+		path.join( DIRNAME, "../../src/renderer/context-state.js" ), "utf8"
 	).replace( /export /g, "" ), context );
 	context.g_contextState = {
 		"isContextUnavailable": context.isContextUnavailable,

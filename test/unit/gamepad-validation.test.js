@@ -1,13 +1,18 @@
 /**
  * SYS-021 sensitivity regressions against the actual gamepad plugin with controlled polling.
  */
-"use strict";
-
-const { test } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const fs = require( "node:fs" );
-const path = require( "node:path" );
-const vm = require( "node:vm" );
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_vm from "node:vm";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { test } = g_test;
+const assert = g_assert;
+const fs = g_fs;
+const path = g_path;
+const vm = g_vm;
 
 function createHarness() {
 	const commands = {};
@@ -21,7 +26,7 @@ function createHarness() {
 		"requestAnimationFrame": fn => { frames.set( ++nextFrame, fn ); return nextFrame; },
 		"cancelAnimationFrame": id => frames.delete( id )
 	} );
-	const source = fs.readFileSync( path.join( __dirname, "../../plugins/gamepad/index.js" ),
+	const source = fs.readFileSync( path.join( DIRNAME, "../../plugins/gamepad/index.js" ),
 		"utf8" ).replace( "export default function", "function" );
 	vm.runInContext( source, context, { "filename": "plugins/gamepad/index.js" } );
 	context.gamepadPlugin( {

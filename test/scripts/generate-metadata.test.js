@@ -3,17 +3,12 @@
  *
  * Verifies newline normalization and formatting across platform newline styles.
  */
-
-"use strict";
-
-const assert = require( "node:assert/strict" );
-const test = require( "node:test" );
-const {
-	formatDescription,
-	normalizeNewlines,
-	normalizeParsedStrings,
-	parseMetadata
-} = require( "../../scripts/generate-metadata.js" );
+import * as g_assert from "node:assert/strict";
+import * as g_test from "node:test";
+import * as g_generateMetadata from "../../scripts/generate-metadata.js";
+const assert = g_assert;
+const test = g_test.test;
+const { formatDescription, normalizeNewlines, normalizeParsedStrings, parseMetadata } = g_generateMetadata;
 
 test( "normalizeNewlines converts supported newline sequences to LF", () => {
 	assert.equal( normalizeNewlines( "one\ntwo" ), "one\ntwo" );

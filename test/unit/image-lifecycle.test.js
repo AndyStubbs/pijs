@@ -1,11 +1,18 @@
 /**
  * Deterministic SYS-010 regressions against the actual image source module.
  */
-const { test } = require( "node:test" );
-const assert = require( "node:assert/strict" );
-const fs = require( "node:fs" );
-const path = require( "node:path" );
-const vm = require( "node:vm" );
+import * as g_test from "node:test";
+import * as g_assert from "node:assert/strict";
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_vm from "node:vm";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+const { test } = g_test;
+const assert = g_assert;
+const fs = g_fs;
+const path = g_path;
+const vm = g_vm;
 
 function createHarness() {
 	const images = [];
@@ -45,7 +52,7 @@ function createHarness() {
 			removeAttribute( name ) { if( name === "src" ) { this.url = ""; } }
 		}
 	} );
-	const source = fs.readFileSync( path.join( __dirname, "../../src/api/images.js" ), "utf8" )
+	const source = fs.readFileSync( path.join( DIRNAME, "../../src/api/images.js" ), "utf8" )
 		.replace( /^import .*;\r?\n/gm, "" ).replace( /export /g, "" );
 	vm.runInContext( source, context, { "filename": "src/api/images.js" } );
 	return { "api": context, "images": images, "counts": counts, "failures": failures,

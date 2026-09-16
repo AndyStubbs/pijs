@@ -7,12 +7,23 @@
  * Usage (standalone): node scripts/build-plugin.js <plugin-name>
  * Example: node scripts/build-plugin.js my-plugin
  * 
- * Usage (as module): const { buildPlugin } = require( "./build-plugin.js" );
+ * Usage (as module): import { buildPlugin } from "./build-plugin.js";
  */
-
-const esbuild = require( "esbuild" );
-const fs = require( "fs" );
-const path = require( "path" );
+import * as g_esbuild from "esbuild";
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+function isMainModule() {
+	const entry = process.argv[ 1 ];
+	if( !entry ) {
+		return false;
+	}
+	return g_url.pathToFileURL( g_path.resolve( entry ) ).href === import.meta.url;
+}
+const esbuild = g_esbuild;
+const fs = g_fs;
+const path = g_path;
 
 /**
  * Builds a plugin in ESM and IIFE formats
@@ -36,7 +47,7 @@ async function buildPlugin( pluginName, options = {} ) {
 	// Get major version from options or package.json
 	let majorVersion = providedMajorVersion;
 	if( !majorVersion ) {
-		const pkg = require( path.join( __dirname, "..", "package.json" ) );
+		const pkg = JSON.parse( g_fs.readFileSync( path.join( DIRNAME, "..", "package.json"  ), "utf8" ) );
 		majorVersion = pkg.majorVersion;
 	}
 
@@ -45,7 +56,7 @@ async function buildPlugin( pluginName, options = {} ) {
 	if( providedPluginDir ) {
 		pluginDir = providedPluginDir;
 	} else {
-		pluginDir = path.join( __dirname, "..", "plugins", pluginName );
+		pluginDir = path.join( DIRNAME, "..", "plugins", pluginName );
 	}
 
 	const entryPoint = path.join( pluginDir, "index.js" );
@@ -75,7 +86,7 @@ async function buildPlugin( pluginName, options = {} ) {
 	}
 
 	// Create build/plugins/plugin-name directory
-	const buildDir = path.join( __dirname, "..", "build", "plugins", pluginName );
+	const buildDir = path.join( DIRNAME, "..", "build", "plugins", pluginName );
 	if( !fs.existsSync( buildDir ) ) {
 		fs.mkdirSync( buildDir, { "recursive": true } );
 	}
@@ -231,10 +242,10 @@ async function buildPlugin( pluginName, options = {} ) {
 }
 
 // Export for use as module
-module.exports = { buildPlugin };
+export { buildPlugin };
 
 // If run directly, execute as standalone script
-if( require.main === module ) {
+if( isMainModule() ) {
 	const pluginName = process.argv[ 2 ];
 
 	if( !pluginName ) {
@@ -249,11 +260,10 @@ if( require.main === module ) {
 	}
 
 	// Read majorVersion from package.json for standalone mode
-	const pkg = require( path.join( __dirname, "..", "package.json" ) );
+	const pkg = JSON.parse( g_fs.readFileSync( path.join( DIRNAME, "..", "package.json"  ), "utf8" ) );
 	buildPlugin( pluginName, { 
 		"standalone": true,
 		"majorVersion": pkg.majorVersion
 	} );
 }
-
 

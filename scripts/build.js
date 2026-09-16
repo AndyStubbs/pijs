@@ -4,18 +4,34 @@
  * Builds Pi.js using esbuild for ESM and IIFE formats.
  * Copies completed build output into the latest release package.
  */
-
-const esbuild = require( "esbuild" );
-const fs = require( "fs" );
-const path = require( "path" );
-const zlib = require( "zlib" );
-const { buildPlugin } = require( "./build-plugin.js" );
-const { generateMetadata } = require( "./generate-metadata.js" );
-const { validateTypeDefinitions } = require( "./validate-type-definitions.js" );
-const { copyToRelease } = require( "./copy-to-release.js" );
+import * as g_esbuild from "esbuild";
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
+import * as g_zlib from "node:zlib";
+import * as g_buildPlugin from "./build-plugin.js";
+import * as g_generateMetadata from "./generate-metadata.js";
+import * as g_validateTypeDefinitions from "./validate-type-definitions.js";
+import * as g_copyToRelease from "./copy-to-release.js";
+import * as g_url from "node:url";
+const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+function isMainModule() {
+	const entry = process.argv[ 1 ];
+	if( !entry ) {
+		return false;
+	}
+	return g_url.pathToFileURL( g_path.resolve( entry ) ).href === import.meta.url;
+}
+const esbuild = g_esbuild;
+const fs = g_fs;
+const path = g_path;
+const zlib = g_zlib;
+const { buildPlugin } = g_buildPlugin;
+const { generateMetadata } = g_generateMetadata;
+const { validateTypeDefinitions } = g_validateTypeDefinitions;
+const { copyToRelease } = g_copyToRelease;
 
 // Read version from package.json (single source of truth)
-const pkg = require( "../package.json" );
+const pkg = JSON.parse( g_fs.readFileSync( new URL( "../package.json", import.meta.url ), "utf8" ) );
 const version = pkg.version;
 const majorVersion = pkg.majorVersion;
 
@@ -72,7 +88,7 @@ function getLiteBanner( version ) {
  */`;
 }
 
-const buildDir = path.join( __dirname, "../build" );
+const buildDir = path.join( DIRNAME, "../build" );
 
 // Plugin to inject version
 const injectVersionPlugin = {
@@ -128,7 +144,7 @@ const webpBase64Plugin = {
 
 function getBuildOptions( entryFile, banner ) {
 	return {
-		"entryPoints": [ path.join( __dirname, "..", sourceDir, entryFile ) ],
+		"entryPoints": [ path.join( DIRNAME, "..", sourceDir, entryFile ) ],
 		"bundle": true,
 		"sourcemap": true,
 		"banner": { "js": banner },
@@ -141,7 +157,6 @@ function getBuildOptions( entryFile, banner ) {
 	};
 }
 
-
 /**
  * Builds every plugin with an index.js entry point.
  *
@@ -151,7 +166,7 @@ function getBuildOptions( entryFile, banner ) {
  * @returns {Promise<number>} Number of plugins built
  */
 async function buildAllPlugins( options = {} ) {
-	const pluginsDir = options.pluginsDir || path.join( __dirname, "..", "plugins" );
+	const pluginsDir = options.pluginsDir || path.join( DIRNAME, "..", "plugins" );
 	const buildPluginFn = options.buildPlugin || buildPlugin;
 
 	// Check if plugins directory exists
@@ -340,9 +355,9 @@ async function build() {
 	}
 }
 
-if( require.main === module ) {
+if( isMainModule() ) {
 	build();
 }
 
-module.exports = { build, buildAllPlugins };
+export { build, buildAllPlugins };
 

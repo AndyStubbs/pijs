@@ -3,11 +3,14 @@
 	"version": "2.2.0",
 	"majorVersion": "2.2",
 	"description": "Retro2D graphics, sound, and input library for javascript",
+	"type": "module",
 	"main": "build/pi.js",
 	"directories": {
 		"test": "test"
 	},
 	"scripts": {
+		"benchmark": "node test/performance/benchmark/run.js",
+		"test:benchmark": "node --test test/unit/benchmark.test.js test/unit/benchmark-browser.test.js",
 		"build": "node scripts/build.js",
 		"copy-to-release": "node scripts/copy-to-release.js",
 		"metadata": "node scripts/generate-metadata.js",

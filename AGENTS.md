@@ -8,6 +8,8 @@ state and utilities under `src/core/`, and bitmap-font support under `src/text/`
 features are organized as separate packages in `plugins/`. Build tooling is in `scripts/`,
 while generated bundles go to `build/`; do not edit generated bundles directly. Documentation
 belongs in `docs/`, release snapshots in `releases/`, and development utilities in `tools/`.
+The package is ESM (`"type": "module"`). Node tooling is ESM `.js` under `scripts/`,
+`test/scripts/`, `test/unit/`, and `test/performance/benchmark/`.
 
 Visual regression fixtures are split between `test/tests/html-core/` and
 `test/tests/html-plugins/`. Their approved PNG baselines live in `test/tests/screenshots/`.

@@ -14,7 +14,14 @@ const m_spriteNames = [];
 export { m_imageNames as images };
 export { m_spriteNames as sprites };
 
-export function init() {
+/**
+ * Start loading benchmark assets.
+ * @param {Object} [options] - Loading options
+ * @param {boolean} [options.strict=false] - Surface synchronous loading errors to the caller
+ * @param {boolean} [options.explicitSpritesOnly=false] - Load only sheets with frame dimensions
+ * @returns {void}
+ */
+export function init( options = {} ) {
 
 	// List of image files from the media folder
 	const imageFiles = [
@@ -46,6 +53,9 @@ export function init() {
 			} );
 			console.log( `Loaded image: ${imageName} from ${imagePath}` );
 		} catch( error ) {
+			if( options.strict ) {
+				throw new Error( `Failed to load image ${imageName} (${imagePath}): ${error}` );
+			}
 			console.warn( `Failed to load image: ${imagePath}`, error );
 		}
 	}
@@ -73,6 +83,11 @@ export function init() {
 		const spriteName = `sprite_${i}`;
 		const spritePath = `/test/media/${spritesheetFiles[i].file}`;
 		const { width, height, margin } = spritesheetFiles[i];
+
+		// Fixed workloads use the explicit frame layouts accepted by every supported 2.x core.
+		if( options.explicitSpritesOnly && ( width === undefined || height === undefined ) ) {
+			continue;
+		}
 		
 		try {
 			$.loadSpritesheet( spritePath, spriteName, width, height, margin );
@@ -86,6 +101,9 @@ export function init() {
 			} );
 			console.log( `Loaded spritesheet: ${spriteName} from ${spritePath} (${width}x${height})` );
 		} catch( error ) {
+			if( options.strict ) {
+				throw new Error( `Failed to load spritesheet ${spriteName} (${spritePath}): ${error}` );
+			}
 			console.warn( `Failed to load spritesheet: ${spritePath}`, error );
 		}
 	}
