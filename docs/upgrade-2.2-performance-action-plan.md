@@ -4,8 +4,9 @@ Based on the [2.0.3–2.2.0 investigation](upgrade-2.2-performance-report.md).
 Objective: recover performance through compatible optimizations, starting with the strongest
 measured results. Estimates are engineering days for a maintainer familiar with the renderer.
 This document schedules implementation and validation. Phase 1 provides the maintained benchmark;
-Phase 2 provides the first validated optimizations. Later phases remain implementation and
-qualification work.
+Phase 2 provides the first validated optimizations. Phase 3 provides a tested line candidate whose
+integration remains deferred. Phase 4 is the next step: diagnose its variability and qualify stable
+gains before integration. Phases 5–6 cover remaining optimizations and broader qualification.
 
 ## Phase 1 — Make benchmark results reproducible
 
@@ -42,7 +43,7 @@ completed fourteen rounds per source without interruption. P1 reduced image/spri
 37.8%/40.4%; P3 reduced filled-circle submission by 12.1%. The integrated candidate independently
 measured 37.8%/38.3%/12.3% reductions for images/sprites/filled circles. These results passed the
 interval and variability gates on the measured RTX 4060/Chromium configuration. Text remained
-unstable, and broader qualification remains Phase 5 work. See the
+unstable, and broader qualification remains Phase 6 work. See the
 [Phase 2 validation record](upgrade-2.2-phase2-validation.md) for tests, intervals, and artifacts.
 
 ## Phase 3 — Improve line reservation
@@ -55,7 +56,59 @@ unstable, and broader qualification remains Phase 5 work. See the
 **Effort:** 2–4 days; medium difficulty and likelihood. **Deliverable:** a separate line patch
 targeting at least 10% lower line submission time.
 
-## Phase 4 — Address remaining costs selectively
+**Candidate validated; integration deferred:** P2 is retained as a separate renderer/test patch.
+The candidate passed 469 regression tests and all 67 full/lite/plugin visual fixtures without
+baseline changes. One fresh fixed-work campaign completed fourteen rounds per source without
+interruption. Line submission time fell 13.7%, with a 95% reduction interval of 4.8–29.1%, but
+candidate line variability was 11.0%, exceeding the 5% stability threshold. The integration gate
+failed, so production renderer code remains unchanged. See the
+[Phase 3 validation record](upgrade-2.2-phase3-validation.md) and
+[standalone P2 patch](patches/upgrade-2.2-phase3-p2.patch).
+
+## Phase 4 — Stabilize line performance while preserving the gain
+
+Retain P2's reserve-once design and isolate the source of variability before changing the renderer.
+The Phase 3 candidate's line medians ranged from 3.15–4.65 ms; most variation occurred during
+synchronous drawing, while the remaining submission overhead stayed near 0.3 ms. The batch-boundary
+workload also exercises lines and achieved a 19.1% reduction with 3.2% candidate variability.
+These observations motivate investigation; they do not establish a cause or qualify P2 for release.
+
+1. **Test warm-up sensitivity with P2 unchanged.** Each source/round starts in a fresh browser
+   context, with lines first and only 16 warm-up frames. Compare that setting with a fixed
+   120-frame warm-up in a separate diagnostic experiment. Apply identical settings to baseline
+   and candidate, and preserve the same deterministic measured operation sequence so extra warm-up
+   does not change the workload. Compilation and startup activity are hypotheses to test.
+2. **Profile fast and slow runs separately.** Capture JavaScript execution, allocation/garbage
+   collection activity, buffer growth, and forced-flush counts. Use a separate diagnostic workload
+   with precomputed inputs to isolate the timed generator's parameter-array allocations and random
+   number generation. Keep instrumented runs and simplified workloads out of qualification results;
+   retain the representative workload for acceptance.
+3. **Tighten the reserved-line loop only if profiling supports it.** Cache vertex/color arrays,
+   offsets, view origin, and color components once, then write directly inside the Bresenham loop.
+   Capture buffer references after successful reservation because reservation can resize them.
+   Preserve exact emission order, count, endpoint inclusion, alpha, translated views, clipping,
+   the oversized bounded fallback, and existing context-loss boundaries. Keep this variant separate
+   from the original P2 candidate so its effect can be measured independently.
+4. **Qualify the selected candidate in a fresh campaign.** Declare any protocol changes before
+   qualification, include them in campaign identity/resume validation, and test the revised timing
+   and deterministic-workload behavior. Use all fourteen workloads, alternating source order, and
+   the existing seven-round protocol with its capped extension to fourteen. Finish correctness
+   testing before measurement; do not pool historical/diagnostic results or repeat qualification
+   merely to obtain a pass.
+
+**Acceptance:** at least 10% lower median line submission time, a 95% whole-run bootstrap interval
+excluding no change, and run MAD at or below 5% for both baseline and candidate. Require passing
+line/batch/context-recovery regressions, full/lite/plugin visual coverage without baseline changes,
+and no regression above 5% elsewhere established by the same interval and stability requirements.
+Preserve these thresholds even if the measurement protocol changes. If qualification fails, retain
+the separate patch and evidence without integrating P2.
+
+**Effort:** 2–4 days initially; medium difficulty, stability benefit unproven.
+**Deliverable:** a diagnosis with retained traces and hashes, a documented measurement protocol,
+and an independently reviewable P2 patch with an explicit integration decision. Record any remaining
+uncertainty; broader GPU/browser/application qualification remains Phase 6 work.
+
+## Phase 5 — Address remaining costs selectively
 
 1. **P4: specialize default views** while retaining translated views and clipping. Hoist origin
    calculations or select a zero-origin emitter. The breaking ablation improved 2.1.0 circle time
@@ -68,7 +121,7 @@ Defer broader GL-state caching and new resource-update APIs until remaining cost
 Do not remove numeric validation or context guards globally: those experiments established no
 benefit and broke 21 and 30 correctness tests, respectively.
 
-## Phase 5 — Qualify and release
+## Phase 6 — Qualify and release
 
 - Apply the report's future acceptance gates: workload benefit exceeding noise, a 95% interval
   excluding no change, run variability at or below 5%, and no new correctness failures.
@@ -78,5 +131,6 @@ benefit and broke 21 and 30 correctness tests, respectively.
 - Keep patches independently revertible. Roll back on stale resources, state leaks, rendering
   differences, recovery failures, or an established regression above 5% elsewhere.
 
-**Release priority:** P1 and P3 first; add P2 once stable. Treat Phase 4 as follow-up work rather
-than a dependency for delivering the confirmed improvements.
+**Release priority:** P1 and P3 first; add P2 only after Phase 4 passes its gates. Neither the P2
+stability investigation nor the selective Phase 5 optimizations block delivering the confirmed
+P1/P3 improvements after Phase 6 qualification.

@@ -107,4 +107,5 @@ The [verification record](../test/performance/campaigns/phase2-20260916/verifica
 records completion, interruption counts, fixed plugin identity, and regression-gate results.
 
 These results qualify the targeted benefits on this configuration. Additional GPU/backend,
-browser-engine, representative-application, and release-wide qualification remain Phase 5 work.
+browser-engine, representative-application, and release-wide qualification remain
+[Phase 6 work](upgrade-2.2-performance-action-plan.md#phase-6--qualify-and-release).
