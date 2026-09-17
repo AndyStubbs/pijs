@@ -78,7 +78,7 @@ export async function runStages( stages ) {
 export function parseOptions( args ) {
 	const [ command = "all", ...rest ] = args;
 	const commands = [ "all", "unit", "browser", "types", "visual", "patch",
-		"benchmark", "performance-ui", "metadata" ];
+		"benchmark", "performance-ui", "metadata", "firefox" ];
 	if( !commands.includes( command ) ) { throw new Error( `Unknown suite: ${command}` ); }
 	const modes = [];
 	const forwarded = [];
@@ -111,7 +111,7 @@ export async function main( args = process.argv.slice( 2 ) ) {
 		return runNode( [ "--test", "--test-concurrency=1", ...files ] );
 	};
 	const isList = command === "visual" && forwarded.includes( "--list" );
-	if( [ "all", "patch", "visual" ].includes( command ) && !isList ) {
+	if( [ "all", "patch", "visual", "firefox" ].includes( command ) && !isList ) {
 		add( "Test artifact build", () => runNode( [ "scripts/build.js", "--test-only" ] ) );
 	}
 	if( [ "all", "patch", "unit" ].includes( command ) ) {
@@ -140,6 +140,9 @@ export async function main( args = process.argv.slice( 2 ) ) {
 	}
 	if( command === "metadata" ) {
 		add( "Metadata regressions", () => nodeTests( [ "test/scripts/generate-metadata.test.js" ] ) );
+	}
+	if( command === "firefox" ) {
+		add( "Firefox compatibility", () => runNode( [ "test/scripts/firefox-smoke.js" ] ) );
 	}
 	if( [ "all", "visual" ].includes( command ) ) {
 		for( const mode of modes ) {

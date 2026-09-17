@@ -1,4 +1,4 @@
-# Pi.js 2.2.0 - Quick Reference for LLMs (In Development)
+# Pi.js 2.2.0 - Quick Reference for LLMs
 
 ## Overview
 
@@ -7,7 +7,7 @@ The global API is available as `pi` and, when it is not already defined, `$`.
 
 ## Key Facts
 
-- Development version: 2.2.0 (not release-ready)
+- Version: 2.2.0
 - Create a screen before calling screen-scoped commands.
 - Coordinates start at the top-left and use logical screen pixels.
 - Rendering is automatic and pixel-perfect.
@@ -186,17 +186,7 @@ function gameLoop() {
 gameLoop();
 ```
 
-## Migration Notes
-
-Pi.js 2 removed the Canvas2D renderer, canvas-font and pen systems, manual `render()` control,
-pixel-mode toggling, and unsupported blend modes. Pi.js 2.1 adds shaders, views, and parented
-offscreen screens without removing documented 2.0 commands. Do not reproduce legacy calls from
-older examples; consult `docs/UPGRADE-V2.txt` and `docs/UPGRADE-V2.1.txt` when migrating them.
-
-## Upcoming 2.2 minor upgrade behavior
-
-These changes target 2.2 because screen gains the optional noCss parameter after parent.
-Package version 2.2.0 is in development; see ../upgrade-2.2.md for upgrade notes.
+## Screen layout and resource behavior
 
 With `noCss: true` (default false), Pi.js does not write automatic canvas, container, html, or body
 styles. Supply usable canvas layout in host CSS. The canvas is still appended and its intrinsic

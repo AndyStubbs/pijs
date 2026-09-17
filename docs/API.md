@@ -1,6 +1,6 @@
-# Pi.js 2.2.0 API Reference (In Development)
+# Pi.js 2.2.0 API Reference
 
-This document summarizes the public browser API in Pi.js 2.2.0, which is in development.
+This document summarizes the public browser API in Pi.js 2.2.0.
 Commands generally accept either the positional signature shown here or a single options object.
 The generated declarations in
 `docs/llms/pi.d.ts` are the authoritative type reference.

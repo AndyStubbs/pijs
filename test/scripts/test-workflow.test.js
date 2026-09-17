@@ -47,7 +47,12 @@ g_test.test( "discovery assigns every maintained file once and excludes snapshot
 
 g_test.test( "Playwright does not load campaign runner copies", t => {
 	const root = temporaryDirectory( t );
-	for( const directory of [ "test/scripts", "test/performance/sources/test/scripts" ] ) {
+	const copies = [
+		"phase3-20260916/sources/baseline", "phase3-20260916/sources/p2",
+		"phase4-20260916/sources/baseline", "phase4-20260916/sources/p2",
+		"phase4-20260916/sources/p2-direct"
+	].map( name => `test/performance/campaigns/${name}/test/scripts` );
+	for( const directory of [ "test/scripts", ...copies ] ) {
 		g_fs.mkdirSync( g_path.join( root, directory ), { "recursive": true } );
 	}
 	const playwright = g_url.pathToFileURL(
@@ -57,9 +62,10 @@ g_test.test( "Playwright does not load campaign runner copies", t => {
 		JSON.stringify( { "type": "module" } ) );
 	g_fs.writeFileSync( g_path.join( root, "test/scripts/run-visual-tests.js" ),
 		`import { test } from ${JSON.stringify( playwright )}; test("only maintained",()=>{});` );
-	g_fs.writeFileSync( g_path.join( root,
-		"test/performance/sources/test/scripts/run-visual-tests.js" ),
-		"throw new Error( \"snapshot loaded\" );" );
+	for( const directory of copies ) {
+		g_fs.writeFileSync( g_path.join( root, directory, "run-visual-tests.js" ),
+			"throw new Error( \"snapshot loaded\" );" );
+	}
 	g_fs.writeFileSync( g_path.join( root, "playwright.config.js" ),
 		`export default ${JSON.stringify( {
 			"testDir": g_config.default.testDir, "testMatch": g_config.default.testMatch
@@ -178,6 +184,33 @@ g_test.test( "review actions select each mode's candidate and reject invalid pat
 	for( const name of [ "../fixture", "a/b", "a\\b", "a:stream", null ] ) {
 		g_assert.throws( () => g_visualReview.reviewPaths( ROOT, "full", name ) );
 	}
+} );
+
+g_test.test( "legacy report bookmarks redirect instead of serving stale counts", () => {
+	for( const [ url, target ] of [
+		[ "/test/results.html", "/test/test-results/full/results.html" ],
+		[ "/test/results-plugins.html", "/test/test-results/plugins/results.html" ],
+		[ "/test/playwright-report/index.html", "/test/playwright-report/full/" ],
+		[ "/test/playwright-report/", "/test/playwright-report/full/" ],
+		[ "/test/playwright-report", "/test/playwright-report/full/" ]
+	] ) {
+		const response = {
+			"writeHead": ( status, headers ) => {
+				g_assert.equal( status, 302 );
+				g_assert.equal( headers.Location, target );
+				g_assert.equal( headers[ "Cache-Control" ], "no-store" );
+			},
+			"end": () => {}
+		};
+		for( const method of [ "GET", "HEAD" ] ) {
+			g_assert.equal( g_visualReview.redirectLegacyReport(
+				{ "method": method, "url": url + "?old=1" }, response ), true );
+		}
+	}
+	g_assert.equal( g_visualReview.redirectLegacyReport(
+		{ "method": "GET", "url": "/test/test-results/lite/results.html" }, {} ), false );
+	g_assert.equal( g_visualReview.redirectLegacyReport(
+		{ "method": "POST", "url": "/test/results.html" }, {} ), false );
 } );
 
 g_test.test( "interruption terminates the child and removes process listeners", async () => {

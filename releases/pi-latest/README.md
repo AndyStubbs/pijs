@@ -43,7 +43,7 @@ $.circle( 400, 300, 50 );
 
 ---
 
-## What's New in v2.1.0
+## Rendering features
 
 - **Custom Shaders** - Create GLSL ES 3.00 fragment shaders, apply effects in draw order, and
   customize final presentation with display shaders
@@ -51,8 +51,9 @@ $.circle( 400, 300, 50 );
   coordinate-conversion commands
 - **Shared-Context Offscreen Screens** - Give an offscreen screen a parent for faster image draws
   within the parent's WebGL context
-- **Rendering Lifecycle Fixes** - Corrected offscreen Y orientation and improved GPU texture
-  cleanup, reuse, and removal
+- **Resource Management** - Image and shader removal release their cached GPU resources
+- **Host Layout** - Use `noCss` to manage canvas styling in host CSS
+- **Context Recovery** - Surviving screens rebuild GPU resources after context restoration
 
 ---
 
@@ -114,8 +115,18 @@ Apache License 2.0 - See `LICENSE` file for details.
 
 ## Browser Support
 
-Requires WebGL2 support (available in all modern browsers):
-- Chrome/Edge 56+
-- Firefox 51+
-- Safari 15+
-- Opera 43+
+Requires a browser with WebGL2 enabled.
+
+
+## Release validation
+
+Chromium is the primary correctness and visual-test target. Firefox receives targeted
+compatibility checks for rendering, sprites, shaders, context recovery, sizing, and input.
+WebGL2 availability alone does not establish tested compatibility for a browser version.
+
+Safari testing is skipped for v2.2 because macOS hardware is unavailable. Validation is deferred
+until community testing support becomes available for a future version.
+
+See the [v2.2 update guide](https://github.com/AndyStubbs/pijs/blob/main/docs/upgrade-2.2.md)
+for additions, fixes, and compatibility changes. Performance improvements are workload- and
+configuration-dependent; no universal browser speedup is claimed.

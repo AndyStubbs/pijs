@@ -97,7 +97,7 @@ async function qualify( options ) {
 		}
 		report.rollback = { "action": "identification only; no production rollback performed",
 			"p1p3": report.baseline.patches ?? "Phase 2 archive: p1.patch and p3.patch",
-			"p2": "docs/patches/upgrade-2.2-phase4-p2.patch" };
+			"p2": "test/performance/evidence/patches/upgrade-2.2-phase4-p2.patch" };
 		save();
 		console.log( "Running complete correctness workflow in isolated candidate" );
 		report.checks.push( { "name": "correctness", ...await correctness( candidate,

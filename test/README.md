@@ -35,6 +35,21 @@ npm run test:visual -- --list --reporter=list
 Discovery visits only maintained test locations. Benchmark campaigns and copied repositories are
 outside discovery. `--list` does not build artifacts or start a server.
 
+## Release browser coverage
+
+Chromium runs the complete correctness workflow and full/lite/plugin visual suites.
+Run `npm run test:firefox` for targeted rendering, sprites, shaders, context recovery,
+CSS sizing, and keyboard/mouse input checks. Install Firefox with
+`npx playwright install firefox` first. Browser versions and results are saved under
+`test/test-results/firefox/`. This check uses assertions, without Chromium PNG baselines.
+
+Safari testing is skipped for v2.2 because macOS hardware is unavailable. Validation is deferred
+until community testing support becomes available for a future version.
+
+Additional browser/GPU performance campaigns are optional follow-up work. Performance claims
+must identify the measured browser, hardware, and workload. A benchmark timeout needs diagnosis;
+it is not interchangeable with a failed compatibility assertion.
+
 ## Artifacts and review
 
 Correctness builds use `node scripts/build.js --test-only`. Metadata generation uses
@@ -52,6 +67,12 @@ Each visual mode (`full`, `lite`, `plugins`) has independent outputs:
 - `test/test-results/<mode>/summary.json`: unique outcomes, attempts, and pending approvals.
 - `test/test-results/<mode>/screenshots/`, `logs/`, and `traces/`: diagnostic artifacts.
 - `test/playwright-report/<mode>/`: Playwright HTML report.
+
+Full mode contains 36 HTML fixtures, lite selects 22 of those, and plugins contains 9.
+Each selected fixture runs once by default. Playwright lists these as tests in one JavaScript
+runner file. Explicit `--repeat-each` repetitions are separate executions; retries are attempts
+within an execution. Copied runners under benchmark campaigns are excluded from discovery.
+Legacy report URLs redirect to the current full or plugin report through the development server.
 
 The console prints selected tests and workers once. Completion markers count unique tests:
 `.` passed, `R` flaky, `F` failed, `T` timed out, `I` interrupted, and `S` skipped. Retries are
@@ -72,7 +93,7 @@ validation after any deliberate baseline change.
 Correctness tests do not establish performance benefits. Run measurement campaigns separately,
 without competing correctness jobs, following [the benchmark protocol](performance/README.md).
 P1, P3, and original helper-based P2 are integrated; the direct-write P2 variant is experimental.
-Historical campaigns are listed in the [evidence archive index](../docs/evidence/performance/README.md).
+Historical campaigns are listed in the [evidence archive index](performance/evidence/README.md).
 
 ## Adding visual fixtures
 
@@ -105,5 +126,5 @@ Approved PNGs live in `test/tests/screenshots/`. Missing baselines require this 
 complete suite can pass. For mismatches, inspect per-mode logs and traces as well as the comparison
 page; browser and graphics-backend differences can affect rendering.
 
-For manual exploration, start `npm run server` and browse `/test/tests/html-core/`,
-`/test/tests/html-plugins/`, or `/test/test-api.html`.
+For manual exploration, start `npm run server` and browse `/test/tests/html-core/`
+or `/test/tests/html-plugins/`.

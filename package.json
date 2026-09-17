@@ -28,7 +28,8 @@
 		"test:all": "node scripts/test.js all",
 		"test:unit": "node scripts/test.js unit",
 		"test:browser": "node scripts/test.js browser",
-		"test:visual": "node scripts/test.js visual"
+		"test:visual": "node scripts/test.js visual",
+		"test:firefox": "node scripts/test.js firefox"
 	},
 	"repository": {
 		"type": "git",

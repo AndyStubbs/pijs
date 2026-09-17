@@ -1,4 +1,4 @@
-# Pi.js 2.2.0 - Comprehensive Reference for LLMs (In Development)
+# Pi.js 2.2.0 - Comprehensive Reference for LLMs
 
 ## Overview
 
@@ -6,7 +6,7 @@ Pi.js is a browser-only WebGL 2 library for retro-style graphics, bitmap text, s
 It provides GPU-accelerated, pixel-perfect rendering with no runtime dependencies.
 
 - Official website: https://pijs.org
-- Development version: 2.2.0 (not release-ready)
+- Version: 2.2.0
 - Primary global: `pi`
 - Short alias: `$`, created only when another library has not already defined it
 - Coordinates: logical pixels with `(0, 0)` at the top-left

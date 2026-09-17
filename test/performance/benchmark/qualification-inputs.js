@@ -57,7 +57,7 @@ function snapshot( root, destination ) {
 
 /** Restore and verify every archived file before selecting the pre-optimization baseline. */
 function restoreBaseline( out, directory ) {
-	const evidence = g_path.join( g_artifacts.ROOT, "docs/evidence/performance" );
+	const evidence = g_path.join( g_artifacts.ROOT, "test/performance/evidence" );
 	const index = JSON.parse( g_fs.readFileSync( g_path.join( evidence, "index.json" ) ) );
 	const entry = index.campaigns.find( item => item.campaign === "phase2-20260916" );
 	const archive = g_path.join( directory || index.archiveDirectory, entry.archive );

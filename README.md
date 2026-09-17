@@ -56,45 +56,16 @@ Built on top of **WebGL 2**, Pi.js features:
 
 ## Version Information
 
-### Current Version
-- **Latest release:** v2.1.0 (WebGL 2 only, browser-only library)
-- **In development:** v2.2.0 (not release-ready)
-- **Legacy:** v1.2.5 (Canvas2D support, available on `v1.2.x` branch)
+Pi.js 2.2.0 is a browser-only WebGL 2 library. See the [update guide](docs/upgrade-2.2.md)
+for changes and the [browser validation policy](test/README.md#release-browser-coverage).
 
-### Version 2.1.0 Highlights
+Rendering features include custom GLSL fragment and display shaders, nested drawing views,
+shared-context offscreen screens, host-controlled canvas layout, and context recovery.
+See the [API reference](docs/API.md) for current behavior.
 
-Version 2.1.0 expands Pi.js rendering and composition capabilities:
-
-- **Custom Fragment Shaders** - Create GLSL ES 3.00 effects with `createShader()`, apply them in
-  draw order with `applyShader()`, use them for final presentation with `setDisplayShader()`, and
-  update reflected float, integer, boolean, matrix, array, and image-sampler uniforms with
-  `setDisplayShaderUniforms()`. Inspect and release shader resources with `getShaderInfo()` and
-  `removeShader()`.
-- **Nested Drawing Views** - Use `pushView()`, `popView()`, and `resetView()` for local coordinates,
-  clipping, and cursor restoration, with `viewToScreen()` and `screenToView()` for conversion.
-- **Shared-Context Offscreen Screens** - Give an offscreen `screen()` a parent to draw its
-  framebuffer directly in the parent's WebGL context.
-- **Rendering Lifecycle Fixes** - Correct offscreen Y orientation and safer GPU texture cleanup,
-  reuse, and removal across screens.
-
-### Version 2.0.0 Highlights
-
-Version 2.0.0 is a major release featuring:
-
-- **WebGL 2 Only** - GPU-accelerated rendering for significantly better performance
-- **Modern Architecture** - Complete refactor with modular ES6 structure
-- **Plugin System** - New official plugin registration system
-- **Zero Dependencies** - No runtime dependencies required
-- **Faster Builds** - Modern build system using esbuild
-
-### Important Notes for Upgrading
-
-**Breaking Changes:** Version 2.0.0 includes significant breaking changes. If you're upgrading from v1.2.5, please:
-- Review the [Upgrade Guide](https://pijs.org/pi-js-v2-upgrade/) for detailed migration information
-- Check [pijs.org/docs/api](https://pijs.org/docs/api) for API differences
-- Note that Canvas2D mode has been removed - WebGL 2 is now required
-
-**Canvas2D Support:** If you need Canvas2D rendering, continue using v1.2.5, which is available in the [Canvas2d](https://github.com/AndyStubbs/pijs-canvas2d) repo and remains functional for Canvas2D use cases.
+Upgrade guidance for earlier versions is in the [v2 guide](docs/UPGRADE-V2.txt) and
+[v2.1 guide](docs/UPGRADE-V2.1.txt). The legacy Canvas2D library is maintained separately in
+[pijs-canvas2d](https://github.com/AndyStubbs/pijs-canvas2d).
 
 ---
 

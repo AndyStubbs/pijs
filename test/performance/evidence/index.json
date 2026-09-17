@@ -67,7 +67,6 @@
       "broadReadiness": "failed",
       "blocker": "Firefox baseline sprite smoke timed out; candidate unmeasured",
       "originalEvidenceFiles": 2166,
-      "validation": "../../upgrade-2.2-phase6-validation.md",
       "files": [
         {
           "file": "test/performance/campaigns/phase6-final-20260916/readiness.json",
@@ -95,5 +94,12 @@
         }
       ]
     }
-  ]
+  ],
+  "releaseValidation": {
+    "archive": "test/performance/campaigns/release-validation-20260917/temporary-output.zip",
+    "sha256": "e529506d377d5db37b98a69d27e1ea73945f884c4b8499f30a72e515e6f7f035",
+    "inventorySha256": "b426e04f80d54ecd7b3b802c2946224de869099dd0ebc19f21e11cfbd4390082",
+    "inventory": "test/performance/campaigns/release-validation-20260917/manifest.json",
+    "record": "release-validation.json"
+  }
 }

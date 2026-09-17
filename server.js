@@ -164,6 +164,8 @@ function getFormattedDate( date ) {
 const server = http.createServer( ( req, res ) => {
 	console.log( `${req.method} ${req.url}` );
 
+	if( g_visualReview.redirectLegacyReport( req, res ) ) { return; }
+
 	// Handle CORS preflight
 	if( req.method === "OPTIONS" ) {
 		res.writeHead( 200, {
@@ -714,4 +716,3 @@ server.listen( PORT, () => {
 	console.log( `Pi.js development server running at http://localhost:${PORT}/` );
 	console.log( `Press Ctrl+C to stop` );
 } );
-

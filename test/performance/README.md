@@ -4,7 +4,7 @@ Pi.js provides a reproducible fixed-work CLI and an interactive adaptive benchma
 
 Correctness validation runs separately through `npm test`; see [the testing guide](../README.md).
 Historical integration campaigns are stored outside the repository; see the
-[evidence archive index](../../docs/evidence/performance/README.md) for checksums and restoration.
+[evidence archive index](evidence/README.md) for checksums and restoration.
 
 ## Fixed-work CLI
 
@@ -149,10 +149,12 @@ all JIT, scheduling, driver, machine, or historical rasterization differences. P
 measure the fixed plugin plus each core. A stable run group or interval excluding zero is not,
 by itself, a release-wide FPS claim. Other browsers, GPUs, builds, and applications need validation.
 
-Image-loading startup reliability remains unresolved; the dedicated
-[performance investigation](../../docs/upgrade-2.2-performance-report.md) documents the `img_4`
-interruption. Failure recording and explicit resume preserve that limitation rather than establish
-its cause or a loading fix.
+Historical startup interruptions remain recorded in the archived campaign manifests.
+Failure recording and explicit resume preserve those observations; they do not establish a cause
+or a loading fix.
+
+The release compatibility policy is documented in [correctness testing](../README.md#release-browser-coverage).
+Benchmark qualification is a separate, broader measurement workflow.
 
 ## Local readiness pass
 
@@ -175,7 +177,7 @@ node test/performance/benchmark/qualify.js --out=test/performance/campaigns/loca
 
 The default baseline is `sources/baseline` from the Phase 2 archive in
 `C:\Docs\src\pijs-evidence`. The runner verifies the ZIP checksum against the
-[evidence index](../../docs/evidence/performance/index.json), then verifies every restored file
+[evidence index](evidence/index.json), then verifies every restored file
 against its inventory. `--archive-directory` overrides the archive location. Automatic archive
 extraction uses Windows PowerShell; on other systems supply a separately verified `--baseline`.
 Explicit baseline selection is an assertion that the supplied source predates P1/P2/P3. Both trees
