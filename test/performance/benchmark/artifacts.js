@@ -4,6 +4,7 @@ import * as g_path from "node:path";
 import * as g_crypto from "node:crypto";
 import * as g_url from "node:url";
 import * as g_esbuild from "esbuild";
+import * as g_target from "./target.js";
 
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
 const ROOT = g_path.resolve( DIRNAME, "../../.." );
@@ -11,7 +12,7 @@ const BUILD = {
 	"format": "iife", "target": "es2020", "platform": "browser", "minify": false,
 	"legalComments": "none", "charset": "utf8"
 };
-const RUNNER_FILES = [ "artifacts.js", "browser.js", "statistics.js", "run.js" ];
+const RUNNER_FILES = [ "artifacts.js", "browser.js", "statistics.js", "run.js", "target.js" ];
 
 /** SHA-256 over the exact bytes used or persisted. */
 function hash( value ) {
@@ -28,10 +29,10 @@ function inventory( inputs ) {
 	} ) );
 }
 
-async function bundle( root, entry, version, globalName ) {
+async function bundle( root, entry, version, globalName, minify = false ) {
 	const inputs = {};
 	const options = {
-		...BUILD, "absWorkingDir": root, "entryPoints": [ entry ], "bundle": true,
+		...BUILD, minify, "absWorkingDir": root, "entryPoints": [ entry ], "bundle": true,
 		"write": false, "plugins": [ {
 			"name": "benchmark-inputs",
 			"setup": builder => {
@@ -89,6 +90,12 @@ function collectMedia( dir, files, prefix ) {
 
 /** Build sources and the fixed plugin in memory, returning bytes to persist only for a new run. */
 async function prepare( config ) {
+	const build = config.build ?? "full";
+	if( ![ "full", "lite" ].includes( build ) ) {
+		throw new Error( "Build must be full or lite" );
+	}
+	let entry = "src/index-full.js";
+	if( build === "lite" ) { entry = "src/index.js"; }
 	const files = {};
 	const artifacts = [];
 	for( const source of config.sources ) {
@@ -97,7 +104,7 @@ async function prepare( config ) {
 		if( !/^2\./.test( version ) ) {
 			throw new Error( `Only Pi.js 2.x sources are supported: ${source.label}` );
 		}
-		const built = await bundle( source.directory, "src/index-full.js", version );
+		const built = await bundle( source.directory, entry, version, undefined, !!config.minify );
 		built.inputs[ "package.json" ] = packageBytes;
 		const file = `artifacts/core-${source.label}.js`;
 		files[ file ] = built.bytes;
@@ -120,11 +127,13 @@ async function prepare( config ) {
 		g_path.join( ROOT, "node_modules/@playwright/test/package.json" ), "utf8"
 	) );
 	const identity = {
-		"schemaVersion": 2, "sources": config.sources, "pluginSource": config.pluginSource,
+		"schemaVersion": 3, "sources": config.sources, "pluginSource": config.pluginSource,
 		"cases": config.cases, "smoke": config.smoke,
 		"warmupFrames": config.warmupFrames ?? 16, "sampleFrames": 32, "rounds": [ 7, 14 ],
 		"workloadProtocol": "preliminary-warmup-then-reinitialize-canonical-16-v1",
-		"seedOptions": { "entropy": false }, "build": BUILD,
+		"seedOptions": { "entropy": false },
+		"build": { ...BUILD, "variant": build, "minify": !!config.minify },
+		"target": g_target.target( config ),
 		"node": process.version, "esbuild": g_esbuild.version,
 		"playwright": playwrightPkg.version,
 		"artifacts": artifacts,

@@ -19,14 +19,16 @@ const version = JSON.parse( g_fs.readFileSync( new URL( "../../package.json", im
  *
  * @param {string} entry - Repository-relative JavaScript entry point.
  * @param {string} format - esbuild output format.
+ * @param {boolean} minify - Whether to produce genuinely minified JavaScript.
  * @returns {Promise<string>} Bundled JavaScript.
  */
-async function buildSource( entry, format = "iife" ) {
+async function buildSource( entry, format = "iife", minify = false ) {
 	const result = await esbuild.build( {
 		"entryPoints": [ path.join( root, entry ) ],
 		"bundle": true,
 		"write": false,
 		"format": format,
+		"minify": minify,
 		"target": "es2020",
 		"define": { "__VERSION__": JSON.stringify( version ) },
 		"loader": { ".vert": "text", ".frag": "text" },
@@ -77,11 +79,13 @@ async function createSourceContext( browser ) {
 			}
 		}
 		if( entry ) {
-			if( !bundles.has( entry ) ) {
-				bundles.set( entry, buildSource( entry ) );
+			const minify = pathname.endsWith( ".min.js" );
+			const key = `${entry}:${minify}`;
+			if( !bundles.has( key ) ) {
+				bundles.set( key, buildSource( entry, "iife", minify ) );
 			}
 			await route.fulfill( {
-				"contentType": "application/javascript", "body": await bundles.get( entry )
+				"contentType": "application/javascript", "body": await bundles.get( key )
 			} );
 			return;
 		}

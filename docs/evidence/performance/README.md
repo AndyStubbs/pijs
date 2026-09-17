@@ -24,6 +24,22 @@ checksums. All archives were extracted and every file verified before originals 
 Loose integration logs directly inside `test/performance/campaigns/` were not part of these six
 directories and remain in place. Unrelated investigation data and future campaigns are unchanged.
 
+## Phase 6 local evidence
+
+The Phase 6 local pass is retained unarchived at
+[`test/performance/campaigns/phase6-final-20260916`](../../../test/performance/campaigns/phase6-final-20260916/readiness.json).
+The `localCampaigns` entry in [index.json](index.json) records SHA-256 checksums for its readiness
+report, original 2,166-file inventory, and supplemental verification/test evidence. Verify those
+index checksums before using the file inventory to verify the individual artifacts. These local
+files are ignored by Git and are not provisioned on other machines.
+
+The single primary campaign passed its benefit and regression gates. Overall readiness remains
+blocked by a Firefox baseline sprite smoke timeout; no candidate regression was established.
+OpenGL, lite, and minified operational smokes passed, with timing conclusions explicitly
+inconclusive. See the [Phase 6 validation record](../../upgrade-2.2-phase6-validation.md) for the
+complete matrix, intervals, setup evidence, and limitations. Raw campaigns and the original
+readiness report are unchanged by the subsequent evidence audit and final tooling guard checks.
+
 ## Restore and reproduce
 
 1. Obtain the ZIP from the archive location and compare its SHA-256 with `index.json`.

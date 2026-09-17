@@ -132,6 +132,11 @@ export function summarize( runs, labels, complete ) {
 
 /** Run seven rounds per setting and mode, with no retries, extension, or historical inputs. */
 export async function experiment( config, mode, hooks = {} ) {
+	if( ( config.browser ?? "chromium" ) !== "chromium" ||
+		( config.backend ?? "default" ) !== "default" ||
+		( config.build ?? "full" ) !== "full" || config.minify ) {
+		throw new Error( "Diagnostics require Chromium/default/full/unminified" );
+	}
 	if( ![ "representative", "precomputed", "execution", "allocation" ].includes( mode ) ||
 		config.resume || config.smoke || config.cases.join( "," ) !== "line" ) {
 		throw new Error( "Diagnostics require --cases=line, a valid mode, and a fresh output" );

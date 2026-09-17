@@ -145,11 +145,18 @@ g_test.test( "campaign failures and resume preserve completed results", async ()
 		g_assert.deepEqual( summary.comparisons, [] );
 
 		// Resume must validate actual saved bytes and the selected workload, not just version labels.
+		const completedManifest = g_fs.readFileSync( g_path.join( out, "manifest.json" ) );
 		config.cases = [ "images" ];
 		await g_assert.rejects( g_run.campaign( config, hooks ), /inputs changed/ );
+		g_assert.deepEqual(
+			g_fs.readFileSync( g_path.join( out, "manifest.json" ) ), completedManifest
+		);
 		config.cases = [ "line" ];
 		config.warmupFrames = 120;
 		await g_assert.rejects( g_run.campaign( config, hooks ), /inputs changed/ );
+		g_assert.deepEqual(
+			g_fs.readFileSync( g_path.join( out, "manifest.json" ) ), completedManifest
+		);
 		config.warmupFrames = 16;
 		const prepared = await g_artifacts.prepare( config );
 		const complete = read();

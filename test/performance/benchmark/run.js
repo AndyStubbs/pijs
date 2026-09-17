@@ -2,7 +2,7 @@
 import * as g_fs from "node:fs";
 import * as g_path from "node:path";
 import * as g_url from "node:url";
-import * as g_playwright from "@playwright/test";
+import * as g_target from "./target.js";
 import * as g_artifacts from "./artifacts.js";
 import * as g_browser from "./browser.js";
 import * as g_statistics from "./statistics.js";
@@ -16,22 +16,24 @@ const g_specs = JSON.parse(
 const HELP = `Usage: npm run benchmark -- --source=baseline=C:/sources/before
   --source=candidate=C:/sources/after [--plugin-source=C:/sources/before/plugins/polygons]
   [--cases=line,images] [--warmup-frames=16|120] [--out=directory] [--resume] [--smoke]
+  [--browser=chromium|firefox] [--backend=default|d3d11|opengl] [--build=full|lite] [--minify]
 Sources are Pi.js 2.x directories. The first is the baseline; labels must be unique.
 The plugin defaults to the first source's plugins/polygons directory.
 Normal campaigns run 7 rounds, extending to 14 above 5% MAD. Smoke runs one round.
 Resume requires the same sources, cases, mode, files, and environment, plus --out.
-Keep Chromium visible and run only one benchmark process at a time.`;
+Keep the browser visible and run only one benchmark process at a time.`;
 
 /** Parse explicit inputs; reject typos rather than silently running the wrong comparison. */
 function parseArgs( args ) {
 	const values = {};
 	const sources = [];
 	for( const arg of args ) {
-		if( [ "--resume", "--smoke", "--help" ].includes( arg ) ) {
+		if( [ "--resume", "--smoke", "--help", "--minify" ].includes( arg ) ) {
 			values[ arg.slice( 2 ) ] = true;
 			continue;
 		}
-		const match = /^--(source|plugin-source|cases|out|warmup-frames)=(.+)$/.exec( arg );
+		const match = /^--(source|plugin-source|cases|out|warmup-frames|browser|backend|build)=(.+)$/
+			.exec( arg );
 		if( !match ) {
 			throw new Error( `Unknown or empty option: ${arg}` );
 		}
@@ -68,11 +70,21 @@ function parseArgs( args ) {
 	if( ![ "16", "120" ].includes( warmupFrames ) ) {
 		throw new Error( "Warm-up frames must be 16 or 120" );
 	}
+	const browser = values.browser ?? "chromium";
+	const backend = values.backend ?? "default";
+	const build = values.build ?? "full";
+	if( ![ "chromium", "firefox" ].includes( browser ) ||
+		![ "default", "d3d11", "opengl" ].includes( backend ) ||
+		( browser === "firefox" && backend !== "default" ) ||
+		![ "full", "lite" ].includes( build ) ) {
+		throw new Error( "Invalid browser, backend, or build" );
+	}
 	if( !out ) {
 		out = g_path.join( g_artifacts.ROOT, "test/performance/campaigns",
 			new Date().toISOString().replaceAll( ":", "-" ) );
 	}
 	return {
+		browser, backend, build, "minify": !!values.minify,
 		"sources": sources, "cases": cases, "out": g_path.resolve( out ),
 		"pluginSource": g_path.resolve( values[ "plugin-source" ] ||
 			g_path.join( sources[ 0 ].directory, "plugins/polygons" ) ),
@@ -209,6 +221,7 @@ async function campaign( config, hooks = {} ) {
 	g_fs.mkdirSync( out, { "recursive": true } );
 	const unlock = acquireLock( out );
 	let browser;
+	let launching = false;
 	let server;
 	let manifest;
 	let runs = [];
@@ -232,8 +245,10 @@ async function campaign( config, hooks = {} ) {
 		}
 		const served = await g_browser.serve( out, prepared.identity.files );
 		server = served.server;
-		const launch = hooks.launch || ( () => g_playwright.chromium.launch( { "headless": false } ) );
+		const launch = hooks.launch || ( () => g_target.launch( prepared.identity.target ) );
+		launching = true;
 		browser = await launch();
+		launching = false;
 		const labels = config.sources.map( source => source.label );
 		for( let round = 0; round < g_statistics.roundLimit( runs, labels, config.smoke ); round++ ) {
 			const order = orderForRound( labels, round );
@@ -284,6 +299,17 @@ async function campaign( config, hooks = {} ) {
 			g_statistics.campaignSummary( runs, labels, config.smoke, true ) );
 		console.log( `Campaign saved: ${out}` );
 		return manifest;
+	} catch( error ) {
+		if( manifest && launching ) {
+			manifest.interruptions.push( {
+				"date": new Date().toISOString(), "stage": "launch", "error": String( error )
+			} );
+			g_artifacts.writeJson( manifestFile, manifest );
+			g_artifacts.writeJson( g_path.join( out, "summary.json" ),
+				g_statistics.campaignSummary( runs, config.sources.map( item => item.label ),
+					config.smoke, false ) );
+		}
+		throw error;
 	} finally {
 		try {
 			await browser?.close();

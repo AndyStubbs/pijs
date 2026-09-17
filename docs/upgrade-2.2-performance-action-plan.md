@@ -6,8 +6,8 @@ measured results. Estimates are engineering days for a maintainer familiar with 
 This document schedules implementation and validation. Phase 1 provides the maintained benchmark;
 Phase 2 provides the first validated optimizations. Phase 3 provides the tested P2 line candidate.
 Phase 4 investigated variability and ran independent qualification; original P2 is now integrated
-with 5% MAD treated as a soft diagnostic target. Phases 5–6 cover remaining optimizations and broader
-qualification.
+with 5% MAD treated as a soft diagnostic target. Phase 5 is skipped and deferred. Phase 6 covers
+local qualification and a readiness report; it does not publish a release.
 
 Completed campaign evidence is catalogued in the [archive index](evidence/performance/README.md).
 Use the [correctness workflow](../test/README.md) to validate the integrated source.
@@ -132,7 +132,9 @@ The [Phase 4 validation record](upgrade-2.2-phase4-validation.md) retains the di
 patches, evidence, original decision, and subsequent integration checks. The variability cause and
 startup image-loading reliability remain unresolved.
 
-## Phase 5 — Address remaining costs selectively
+## Phase 5 — Address remaining costs selectively - SKIPPED / DEFERRED
+
+P4 and P7 are deferred and are not part of Phase 6. The proposals below remain future work.
 
 1. **P4: specialize default views** while retaining translated views and clipping. Hoist origin
    calculations or select a zero-origin emitter. The breaking ablation improved 2.1.0 circle time
@@ -145,7 +147,23 @@ Defer broader GL-state caching and new resource-update APIs until remaining cost
 Do not remove numeric validation or context guards globally: those experiments established no
 benefit and broke 21 and 30 correctness tests, respectively.
 
-## Phase 6 — Qualify and release
+## Phase 6 — Local qualification and release readiness - COMPLETED / READINESS BLOCKED
+
+**Local pass completed:** the tooling, correctness checks, one primary campaign, secondary smoke
+checks, and readiness report are implemented. This phase does not bump versions, publish, or
+generate release packages. Phase 5 remains skipped/deferred.
+
+The primary campaign completed fourteen rounds per source without interruption. Image, sprite,
+line, and filled-circle submission improved 52.4%, 55.5%, 24.4%, and 11.6%, respectively, with all
+four confidence intervals below zero and no established regression above 5%. Line MAD was 5.9%,
+above the soft target. All 517 correctness checks and 67 visual fixtures passed; all eight build
+variants and the full/lite Galaga checks passed without approved-baseline changes.
+
+OpenGL, lite, and minified smoke runs passed operationally; their timing evidence is inconclusive.
+Firefox loaded/rendered, but its baseline sprite smoke timed out before the candidate ran. The
+readiness report retains that failure and blocks local and broad readiness. No failed qualification
+was repeated to obtain a pass. See the [Phase 6 validation record](upgrade-2.2-phase6-validation.md)
+for the matrix, intervals, evidence, setup limitations, and remaining Firefox blocker.
 
 - Require workload benefit exceeding noise, a 95% interval excluding no change, and no new
   correctness failures. Target run variability at or below 5%, disclose higher variability, and

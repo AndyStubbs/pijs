@@ -56,5 +56,44 @@
       "inventory": "phase4-20260916.files.json",
       "verifiedExtraction": true
     }
+  ],
+  "localCampaigns": [
+    {
+      "campaign": "phase6-final-20260916",
+      "directory": "test/performance/campaigns/phase6-final-20260916",
+      "archived": false,
+      "primaryStatus": "passed",
+      "localReadiness": "failed",
+      "broadReadiness": "failed",
+      "blocker": "Firefox baseline sprite smoke timed out; candidate unmeasured",
+      "originalEvidenceFiles": 2166,
+      "validation": "../../upgrade-2.2-phase6-validation.md",
+      "files": [
+        {
+          "file": "test/performance/campaigns/phase6-final-20260916/readiness.json",
+          "sha256": "0d0903c2fd9ec397b2a872524b0044204947e3d0839a40d5d138f073f018b269"
+        },
+        {
+          "file": "test/performance/campaigns/phase6-final-20260916/evidence-files.json",
+          "sha256": "34dc9f01693f923b3079a8aa2e77a20a1a02578118f6310a4d2e22b39e204276"
+        },
+        {
+          "file": "test/performance/campaigns/phase6-final-20260916/verification.json",
+          "sha256": "f34ad482ff66bf0690fcc21f402b5f5b1d13e4d26b3602954e72909dbff10ace"
+        },
+        {
+          "file": "test/performance/campaigns/phase6-final-20260916/verify-evidence.js",
+          "sha256": "ed2b0dbb5075631b430bed0d1ef51769b995b5e68128d4bbd5451dd8ab322b37"
+        },
+        {
+          "file": "test/performance/campaigns/phase6-final-20260916/final-tooling-tests.log",
+          "sha256": "59f8fd1afac2ed91d24b4816ba19da8dd28d4a6f57ba9daaa851a6b93ea9dcfe"
+        },
+        {
+          "file": "test/performance/campaigns/phase6-final-20260916/final-tooling-tests-complete.log",
+          "sha256": "a56c272032cb5184f68757419f1b33e5950b53b5ad8ed8a67ce7779af3c7f96d"
+        }
+      ]
+    }
   ]
 }

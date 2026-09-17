@@ -39,10 +39,19 @@ comparison baseline. `--plugin-source` points to a directory containing the poly
 if that source does not contain the plugin. Every core runs against the same plugin bundle.
 Only Pi.js 2.x source trees are supported.
 
-Each source is built in isolation with esbuild as a full, unminified ES2020 IIFE. Font and shader
+Each source defaults to an isolated full, unminified ES2020 IIFE build with esbuild. Font and shader
 loaders follow the repository's conventions. Campaigns use snapshots of the resulting bundles,
 harness, seedrandom implementation, and media. The CLI does not require a running development
 server: it starts a read-only loopback server on a free port.
+
+`--browser=chromium|firefox` selects the engine (default Chromium).
+`--backend=default|d3d11|opengl` selects Chromium's requested backend; Firefox requires `default`.
+`--build=full|lite` selects the core entry point, and `--minify` enables core minification.
+The fixed polygon plugin is identical for both sources. Defaults retain full unminified IIFE.
+The target, launch options, executable path/hash, and build variant are part of campaign identity.
+The observed renderer belongs to the saved environment and must match on resume. Launch flags alone
+do not establish additional hardware-backend coverage. Browser binaries must be installed before
+starting a campaign; installing or changing them invalidates resume identity.
 
 `--out` selects an empty output directory. Its default is a timestamped directory under ignored
 `test/performance/campaigns/`. Use a new directory for each independent campaign. Keep source
@@ -50,7 +59,7 @@ directories available and unchanged if you need to resume.
 
 ### Measurement protocol
 
-- Keep Chromium visible and run one measurement process at a time. Avoid competing CPU/GPU work
+- Keep the selected browser visible and run one measurement process at a time. Avoid competing CPU/GPU work
   and correctness-test jobs. Software renderers and hidden-page measurements are rejected.
 - Every case uses an 800 × 600 logical screen, 16 warm-up frames by default, and 32 measured frames.
   `--warmup-frames=120` adds 104 preliminary frames, drains their rendering, reinitializes the
@@ -145,6 +154,61 @@ Image-loading startup reliability remains unresolved; the dedicated
 interruption. Failure recording and explicit resume preserve that limitation rather than establish
 its cause or a loading fix.
 
+## Local readiness pass
+
+The local readiness runner uses an isolated current-source snapshot, a verified historical baseline,
+and actual test-only build artifacts. It runs complete correctness before measurements, checks
+eight full/lite IIFE/ESM and minified/unminified builds, and briefly exercises Galaga with full and
+lite plus keyboard/pointer/sound plugins. Application checks establish compatibility, not FPS gains.
+
+```powershell
+# Optional local browser installation under the ignored campaign directory.
+$env:PLAYWRIGHT_BROWSERS_PATH = "$PWD/test/performance/campaigns/browsers"
+node node_modules/playwright/cli.js install chromium firefox
+
+node test/performance/benchmark/qualify.js --out=test/performance/campaigns/local-readiness
+
+# Fallback when the machine-local archive is unavailable.
+node test/performance/benchmark/qualify.js --out=test/performance/campaigns/local-readiness-other `
+  --baseline=C:/sources/known-pre-optimization-tree
+```
+
+The default baseline is `sources/baseline` from the Phase 2 archive in
+`C:\Docs\src\pijs-evidence`. The runner verifies the ZIP checksum against the
+[evidence index](../../docs/evidence/performance/index.json), then verifies every restored file
+against its inventory. `--archive-directory` overrides the archive location. Automatic archive
+extraction uses Windows PowerShell; on other systems supply a separately verified `--baseline`.
+Explicit baseline selection is an assertion that the supplied source predates P1/P2/P3. Both trees
+are snapshotted, hashed, and compared; unrelated differences must be considered when attributing
+benefits. No reverse patching or production rollback is performed.
+
+The one primary campaign uses Chromium/default hardware/full/unminified IIFE and all fourteen
+workloads. Its targets are at least 10% lower image, sprite, and line submission time, and 5% lower
+filled-circle submission time, each with a 95% change interval entirely below zero. MAD above 5%
+remains diagnostic. Any workload with a median slowdown above 5% and a 95% interval excluding zero
+fails the regression gate, regardless of MAD.
+
+Four secondary targets vary one setting each: Firefox, Chromium OpenGL, lite, and minified IIFE.
+Each receives load/render checks and a one-round smoke for lines, images, sprites, and filled
+circles. ESM receives load/render checks. These checks do not form a Cartesian matrix. Software
+rendering is rejected for measurement, and OpenGL adds backend coverage only when its observed
+hardware backend differs from the primary. Smoke timings remain inconclusive, even after a
+successful operational check; secondary targets have no benefit threshold.
+
+`readiness.json` records passed/failed/inconclusive/pending statuses, source differences, check
+results, campaign locations, interruptions, and rollback-patch identification. `evidence-files.json`
+hashes the retained evidence; candidate and baseline inventories describe the frozen inputs.
+Missing browsers/backends are pending. They do not block completion of the local pass or otherwise
+passing local readiness, but broad release readiness remains pending or inconclusive. Correctness
+failures block measurements and readiness. The CLI exits nonzero unless local readiness passes.
+
+The output directory must be fresh and inside `test/performance/campaigns`. The runner never retries
+or resumes automatically. After investigating a benchmark interruption, use the fixed-work CLI
+with the recorded inputs and `--resume`; retain the original readiness report and document the
+subsequent result separately. Do not repeat qualification to seek a pass. The runner does not
+publish, bump versions, or generate release packages; its isolated correctness fixture includes
+the existing `releases/base-package.json` as a read-only test input.
+
 ## Interactive adaptive benchmark
 
 Run `npm run server` and open `/test/performance/index.html`. Select a Pi.js version from the menu,
@@ -201,3 +265,5 @@ interruptions, and fast/slow run identifiers. Summaries are marked diagnostic an
 qualification. It has no retries, resume, adaptive extension, or historical aggregation. It always
 tests both warm-up settings; `--warmup-frames` does not select a single diagnostic setting.
 Run one measurement process at a time, with visible hardware Chromium and no correctness jobs.
+Diagnostics require Chromium's default backend and full unminified builds; other shared benchmark
+target options are rejected because the diagnostic capture and instrumentation are Chromium-only.
