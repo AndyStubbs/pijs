@@ -26,6 +26,9 @@ const buildDir = path.join( rootDir, "build" );
 const releaseDir = path.join( rootDir, "releases", "pi-latest" );
 const distDir = path.join( releaseDir, "dist" );
 const basePackagePath = path.join( rootDir, "releases", "base-package.json" );
+const MAX_RETRIES = 5;
+const RETRY_DELAY = 100;
+const m_waitBuffer = new Int32Array( new SharedArrayBuffer( 4 ) );
 
 const pkg = JSON.parse(
 	g_fs.readFileSync( path.join( rootDir, "package.json" ), "utf8" )
@@ -93,7 +96,46 @@ function copyFile( srcPath, destPath, fileSystem = fs ) {
  */
 function removeDir( dirPath, fileSystem = fs ) {
 	if( fileSystem.existsSync( dirPath ) ) {
-		fileSystem.rmSync( dirPath, { "recursive": true, "force": true } );
+		fileSystem.rmSync( dirPath, {
+			"recursive": true, "force": true,
+			"maxRetries": MAX_RETRIES, "retryDelay": RETRY_DELAY
+		} );
+	}
+}
+
+/**
+ * Waits synchronously between filesystem attempts without busy polling.
+ *
+ * @param {number} milliseconds - Delay before the next attempt
+ * @returns {void}
+ */
+function waitSync( milliseconds ) {
+	Atomics.wait( m_waitBuffer, 0, 0, milliseconds );
+}
+
+/**
+ * Retries directory renames when a temporary filesystem lock prevents the move.
+ *
+ * @param {string} sourceDir - Directory to move
+ * @param {string} destinationDir - Destination path
+ * @param {Object} fileSystem - Filesystem implementation
+ * @param {function(number): void} wait - Synchronous delay implementation
+ * @returns {void}
+ */
+function renameWithRetry( sourceDir, destinationDir, fileSystem, wait ) {
+	for( let retry = 0; ; retry++ ) {
+		try {
+			fileSystem.renameSync( sourceDir, destinationDir );
+			return;
+		} catch( error ) {
+			if(
+				retry >= MAX_RETRIES ||
+				![ "EPERM", "EACCES", "EBUSY" ].includes( error.code )
+			) {
+				throw error;
+			}
+			wait( RETRY_DELAY * ( retry + 1 ) );
+		}
 	}
 }
 
@@ -213,43 +255,47 @@ function validateReleaseInputs( options ) {
  * @param {string} stagedDir - Completely assembled distribution directory
  * @param {string} destinationDir - Release distribution destination
  * @param {Object} fileSystem - Filesystem implementation
+ * @param {function(number): void} wait - Synchronous delay implementation
  * @returns {void}
  */
-function replaceDist( stagedDir, destinationDir, fileSystem ) {
+function replaceDist( stagedDir, destinationDir, fileSystem, wait ) {
 	const backupDir = `${stagedDir}-backup`;
 	let previousMoved = false;
 
 	try {
-		try {
-			if( fileSystem.existsSync( destinationDir ) ) {
-				fileSystem.renameSync( destinationDir, backupDir );
-				previousMoved = true;
-			}
-
-			fileSystem.renameSync( stagedDir, destinationDir );
-		} catch( error ) {
-			if( previousMoved ) {
-				try {
-					removeDir( destinationDir, fileSystem );
-					fileSystem.renameSync( backupDir, destinationDir );
-					previousMoved = false;
-				} catch( rollbackError ) {
-					throw new Error(
-						`Failed to replace release dist and restore its backup at ${backupDir}: ` +
-						rollbackError.message,
-						{ "cause": error }
-					);
-				}
-			}
-
-			throw error;
+		if( fileSystem.existsSync( destinationDir ) ) {
+			renameWithRetry( destinationDir, backupDir, fileSystem, wait );
+			previousMoved = true;
 		}
-	} finally {
-		removeDir( stagedDir, fileSystem );
+
+		renameWithRetry( stagedDir, destinationDir, fileSystem, wait );
+	} catch( error ) {
+		if( previousMoved ) {
+			try {
+				removeDir( destinationDir, fileSystem );
+				renameWithRetry( backupDir, destinationDir, fileSystem, wait );
+			} catch( rollbackError ) {
+				throw new Error(
+					`Failed to replace release dist (${error.message}) and restore its ` +
+					`backup at ${backupDir}: ${rollbackError.message}`,
+					{ "cause": error }
+				);
+			}
+		}
+
+		throw error;
 	}
 
 	if( previousMoved ) {
-		removeDir( backupDir, fileSystem );
+		try {
+			removeDir( backupDir, fileSystem );
+		} catch( error ) {
+			throw new Error(
+				`Replaced release dist but failed to remove its backup at ${backupDir}: ` +
+				error.message,
+				{ "cause": error }
+			);
+		}
 	}
 }
 
@@ -265,10 +311,12 @@ function replaceDist( stagedDir, destinationDir, fileSystem ) {
  * @param {string} options.majorVersion - Release major version
  * @param {string} options.releaseDir - Release package directory
  * @param {string} options.version - Release version
+ * @param {function(number): void} options.waitSync - Synchronous delay implementation
  * @returns {void}
  */
 function copyToRelease( options = {} ) {
 	const fileSystem = options.fileSystem || fs;
+	const wait = options.waitSync || waitSync;
 	const logger = options.logger || console;
 	const sourceBuildDir = options.buildDir || buildDir;
 	const destinationReleaseDir = options.releaseDir || releaseDir;
@@ -325,9 +373,17 @@ function copyToRelease( options = {} ) {
 			logger.log( `  ✓ ${pluginName} (${copied} file(s))` );
 		}
 
-		replaceDist( stagedDistDir, destinationDistDir, fileSystem );
+		replaceDist( stagedDistDir, destinationDistDir, fileSystem, wait );
 	} catch( error ) {
-		removeDir( stagedDistDir, fileSystem );
+		try {
+			removeDir( stagedDistDir, fileSystem );
+		} catch( cleanupError ) {
+			throw new Error(
+				`${error.message}; failed to remove staging directory at ${stagedDistDir}: ` +
+				cleanupError.message,
+				{ "cause": error }
+			);
+		}
 		throw error;
 	}
 

@@ -3,9 +3,7 @@ category = "images"
 isScreen = false
 summary = "Loads an image by URL or from an Image/Canvas element."
 description = """
-Loads an image and stores it by name. Use $.ready() to wait for loading before calling drawImage.
-Images retain their source colors when the screen palette changes. Use the shader API
-for recoloring.
+Loads an image and stores it by name. Use $.ready() to wait for loading before calling drawImage. Images retain their source colors when the screen palette changes. Use the shader API for recoloring.
 """
 example = """
 $.screen( "300x200" );

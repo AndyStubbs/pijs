@@ -4,16 +4,8 @@ isScreen = true
 plugin = "pointer"
 summary = "Gets the current touch state and starts tracking if needed."
 description = """
-Returns an array of all active touches. Each touch object contains:
-- **x**: Current X coordinate
-- **y**: Current Y coordinate
-- **id**: Touch identifier
-- **lastX**: Previous X coordinate (or null if first touch)
-- **lastY**: Previous Y coordinate (or null if first touch)
-- **action**: Last action ("start", "end", or "move")
-- **type**: Always "touch"
-
-If touch tracking is not started, it will be started automatically.
+Returns the current touch state for use in an animation loop. Tracking starts \
+automatically if it has not been started yet.
 
 Requires an onscreen screen.
 """

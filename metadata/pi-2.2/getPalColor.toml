@@ -3,8 +3,7 @@ category = "colors"
 isScreen = true
 summary = "Returns the color value object for a palette index."
 description = """
-Returns the color value object at a numeric integer palette index. Index 0 is transparent black.
-Returns null for nonnumeric indices, non-finite numbers, fractions, and indices outside the palette.
+Returns the color value object at a numeric integer palette index. Index 0 is transparent black. Returns null for nonnumeric indices, non-finite numbers, fractions, and indices outside the palette.
 """
 example = """
 $.screen( "300x200" );

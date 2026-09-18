@@ -1,17 +1,26 @@
 title = "applyShader"
 category = "shaders"
 isScreen = true
-summary = "Queues an FBO shader at the current point in draw order."
+summary = "Applies a custom shader to the screen at the current point in draw order."
 description = """
-Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. Keep RGB between zero and alpha, with zero RGB at zero alpha. For opacity, multiply all four channels; for inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+Applies a custom fragment shader to the current screen pixels. Pi.js drawing commands write into the logical framebuffer at the screen's resolution. applyShader samples that framebuffer through u_texture, runs your shader over every pixel, and replaces those pixels with the result. Drawing that happens after applyShader appears on top. Call it more than once to stack effects.
 
-Applies a custom shader to the logical framebuffer at the current draw position. The call creates a batch break and queues the pass; it does not run immediately. When batches flush, prior geometry is finalized, the shader processes the FBO at logical resolution, then later draws appear on top of the result.
+This is part of drawing, not presentation. It changes the actual screen pixels, works on onscreen and offscreen screens, and always processes the full logical framebuffer even inside a view. After drawing, Pi.js presents the logical framebuffer to the canvas. Use setDisplayShader for a presentation effect that does not change logical pixels. For applyShader, u_sourceSize and u_outputSize are both the logical screen size.
 
-u_sourceSize and u_outputSize are both the logical screen size. FBO shaders work on onscreen and offscreen screens.
+Write the fragment shader with createShader. Pi.js supplies a fullscreen-quad vertex stage, so you only write GLSL ES 3.00 fragment source. A good shader:
 
-Per-call uniforms are merged over createShader defaults for that invocation only. Sampler inputs are resolved and snapshotted when this command queues the pass. Known uniform values with an invalid type or component count throw synchronously before the pass is queued.
+- Starts with "#version 300 es" and a precision qualifier such as precision mediump float
+- Declares in vec2 v_texCoord, uniform sampler2D u_texture, and out vec4 fragColor
+- Reads the current screen with texture(u_texture, v_texCoord)
+- Writes a complete premultiplied color; the shader replaces pixels and does not blend
+- Declares built-in uniforms only when needed: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2), u_time (float seconds), and u_frame (int)
+- Keeps RGB between zero and alpha, with zero RGB at zero alpha
 
-v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
+Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. For opacity, multiply all four channels. For inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+
+v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images match the same orientation as u_texture. Drawing coordinates remain top-left/y-down. Convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize.
+
+Per-call uniforms merge over createShader defaults for that invocation only. Built-in names cannot be overridden from JavaScript. Sampler images are captured when applyShader is called. A custom sampler cannot be the same screen the shader is applied to. Known uniform values with an invalid type or component count throw synchronously. Video sources refresh when decoded data is available; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
 """
 example = """
 const invert = $.createShader( `#version 300 es

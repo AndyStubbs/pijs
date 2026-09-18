@@ -5,11 +5,7 @@ summary = "Draws an arc on the screen."
 description = """
 This function renders a circular arc segment to the active canvas.
 
-The angles are measured in degrees, clockwise from the positive x-axis.
-Equal start and end angles draw nothing. A positive or negative angular difference of at least
-360 degrees draws one complete outline matching circle(), even for multiple revolutions.
-Shorter differences wrap clockwise from the starting angle to the ending angle. Sweeps within
-0.0001 radians (about 0.00573 degrees) of a full turn are treated as complete circles.
+The angles are measured in degrees, clockwise from the positive x-axis. Equal start and end angles draw nothing. A difference of 360 degrees or more draws one complete outline matching circle(). Shorter differences wrap clockwise from the starting angle to the ending angle.
 """
 example = """
 $.screen( "300x200" );

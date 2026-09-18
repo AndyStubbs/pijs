@@ -3,8 +3,7 @@ category = "colors"
 isScreen = false
 summary = "Gets the default foreground color used by new screens."
 description = """
-Returns the default drawing color for newly created screens. If asIndex is true, returns the
-palette index; otherwise returns the color value object.
+Returns the default drawing color for newly created screens. If asIndex is true, returns the palette index; otherwise returns the color value object.
 """
 example = """
 $.setDefaultColor( 9 );

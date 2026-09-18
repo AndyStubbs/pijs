@@ -3,29 +3,29 @@ category = "plugins"
 isScreen = false
 summary = "Registers a plugin to extend Pi.js with custom commands and features."
 description = """
-Registers a plugin with a unique name and an init function. The init callback receives a pluginApi object that provides access to Pi.js internals for extending functionality.
+Registers a plugin that adds commands and per-screen behavior to Pi.js. Provide a unique name and an init function. init receives a pluginApi object; this is a callback argument, not a return value. Commands registered with addCommand appear on the Pi.js API and accept the same positional or options-object calling style as built-in commands.
 
-The pluginApi object provides the following methods and properties:
+pluginApi methods and properties:
 
-- **addCommand**(name, fn, isScreen, parameterNames, isScreenOptional): Register a new command
-- **addScreenDataItem**(name, defaultValue): Add persistent data to each screen
-- **addScreenDataItemGetter**(name, getterFn): Add a dynamic data getter for screens
-- **addScreenInitFunction**(initFn): Register a function to run when screens are created
-- **addScreenPreCleanupFunction**(cleanupFn): Run with screenData after isRemoved is set, before renderer and module cleanup; cancel owned work without redrawing
-- **addScreenCleanupFunction**(cleanupFn): Register a function to run when screens are destroyed
-- **getScreenData**(name): Get data for a specific screen by name
-- **getAllScreensData**(): Get array of all screen data objects
-- **getApi**(): Get the main Pi.js API object
-- **utils**: Access to utility functions
-- **wait**(): Increment resource wait counter (for async operations)
-- **done**(): Decrement resource wait counter
-- **registerClearEvents**(name, handler): Register a clearEvents handler for a specific event type
+- **addCommand**(name, fn, isScreen, parameterNames, isScreenOptional): Add a command. Screen commands receive (screenData, options); global commands receive (options). Use screenData.api to draw. isScreenOptional allows a screen command when no screen is active.
+- **addScreenDataItem**(name, defaultValue): Attach cloned data to every screen.
+- **addScreenDataItemGetter**(name, getterFn): Attach per-screen data from a function called for each screen.
+- **addScreenInitFunction**(initFn): Run when a screen is created, and once for screens that already exist.
+- **addScreenPreCleanupFunction**(cleanupFn): Run first when a screen is removed. Cancel owned work and do not draw.
+- **addScreenCleanupFunction**(cleanupFn): Run later when a screen is removed. Release remaining resources.
+- **getActiveScreen**(fnName, isScreenOptional): Return the active screen data, or throw if none unless optional.
+- **getScreenData**(fnName, screenId): Return screen data for a screen id.
+- **getAllScreensData**(): Return all current screen data objects.
+- **resizeOffscreenScreen**(screenData, width, height): Resize an offscreen screen.
+- **getApi**(): Return the main Pi.js API object.
+- **utils**: Shared helper functions for colors, parsing, and math.
+- **wait**(): Hold $.ready() while an async resource loads.
+- **done**(): Release one wait() so $.ready() can continue.
+- **registerClearEvents**(name, handler): Handle $.clearEvents for an event type.
 
-Optional metadata (version, description) and a list of dependencies can be provided. Plugins with dependencies wait until all dependencies initialize successfully. Resolution runs after every registration, including registrations made by another initializer. Each initializer is attempted once.
+Optional version and description are stored for getPlugins. Optional dependencies are other plugin names that must initialize first. Omit dependencies, or pass an empty array, if there are none. Missing or cyclic dependencies stay pending. A failed initializer throws PLUGIN_INIT_FAILED and is not retried; plugins that depend on it stay pending. Duplicate names throw DUPLICATE_PLUGIN.
 
-When a plugin initializes after screens already exist, its static and dynamic screen data is added to every live screen, its screen commands are bound, and its screen initialization hooks run once. Earlier core and plugin initialization hooks are not replayed. Screens created later receive the same registrations through normal screen creation.
-
-Missing and cyclic dependencies stay pending (initialized:false in getPlugins). Failed initializers throw PLUGIN_INIT_FAILED and do not release dependents or retry automatically. Unrelated eligible plugins still initialize. Dependencies must be an array of nonempty strings; null or omission means no dependencies. Invalid values throw INVALID_PLUGIN_DEPENDENCIES.
+If screens already exist when the plugin initializes, its commands and screen data are added to those screens and its screen init functions run once. Screens created later receive the same registrations automatically. Plugin scripts register themselves when loaded after Pi.js; do not register the same plugin twice.
 """
 example = """
 $.registerPlugin( {

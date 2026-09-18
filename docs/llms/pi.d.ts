@@ -330,12 +330,12 @@ declare namespace Pi {
 		defaultPal?: Array<any>;
 
 		/**
-		 * Sets or clears the custom display shader for final presentation.
+		 * Sets or clears the shader used to present the screen to the canvas.
 		 */
 		displayShader?: number | null;
 
 		/**
-		 * Merges persistent display-shader uniform overrides and re-presents.
+		 * Updates uniforms on the active display shader.
 		 */
 		displayShaderUniforms?: ShaderUniforms;
 
@@ -814,17 +814,26 @@ declare namespace Pi {
 		addPalColors( colors: Array<any> ): Array<number>;
 
 		/**
-		 * Queues an FBO shader at the current point in draw order.
+		 * Applies a custom shader to the screen at the current point in draw order.
 		 *
-		 * Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. Keep RGB between zero and alpha, with zero RGB at zero alpha. For opacity, multiply all four channels; for inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+		 * Applies a custom fragment shader to the current screen pixels. Pi.js drawing commands write into the logical framebuffer at the screen's resolution. applyShader samples that framebuffer through u_texture, runs your shader over every pixel, and replaces those pixels with the result. Drawing that happens after applyShader appears on top. Call it more than once to stack effects.
 		 *
-		 * Applies a custom shader to the logical framebuffer at the current draw position. The call creates a batch break and queues the pass; it does not run immediately. When batches flush, prior geometry is finalized, the shader processes the FBO at logical resolution, then later draws appear on top of the result.
+		 * This is part of drawing, not presentation. It changes the actual screen pixels, works on onscreen and offscreen screens, and always processes the full logical framebuffer even inside a view. After drawing, Pi.js presents the logical framebuffer to the canvas. Use setDisplayShader for a presentation effect that does not change logical pixels. For applyShader, u_sourceSize and u_outputSize are both the logical screen size.
 		 *
-		 * u_sourceSize and u_outputSize are both the logical screen size. FBO shaders work on onscreen and offscreen screens.
+		 * Write the fragment shader with createShader. Pi.js supplies a fullscreen-quad vertex stage, so you only write GLSL ES 3.00 fragment source. A good shader:
 		 *
-		 * Per-call uniforms are merged over createShader defaults for that invocation only. Sampler inputs are resolved and snapshotted when this command queues the pass. Known uniform values with an invalid type or component count throw synchronously before the pass is queued.
+		 * - Starts with "#version 300 es" and a precision qualifier such as precision mediump float
+		 * - Declares in vec2 v_texCoord, uniform sampler2D u_texture, and out vec4 fragColor
+		 * - Reads the current screen with texture(u_texture, v_texCoord)
+		 * - Writes a complete premultiplied color; the shader replaces pixels and does not blend
+		 * - Declares built-in uniforms only when needed: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2), u_time (float seconds), and u_frame (int)
+		 * - Keeps RGB between zero and alpha, with zero RGB at zero alpha
 		 *
-		 * v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
+		 * Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. For opacity, multiply all four channels. For inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+		 *
+		 * v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images match the same orientation as u_texture. Drawing coordinates remain top-left/y-down. Convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize.
+		 *
+		 * Per-call uniforms merge over createShader defaults for that invocation only. Built-in names cannot be overridden from JavaScript. Sampler images are captured when applyShader is called. A custom sampler cannot be the same screen the shader is applied to. Known uniform values with an invalid type or component count throw synchronously. Video sources refresh when decoded data is available; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
 		 * @param shaderHandle Shader handle returned by createShader.
 		 * @param uniforms Optional per-call uniform overrides for this invocation.
 		 * @returns This function does not return a value.
@@ -837,7 +846,7 @@ declare namespace Pi {
 		 *
 		 * This function renders a circular arc segment to the active canvas.
 		 *
-		 * The angles are measured in degrees, clockwise from the positive x-axis. Equal start and end angles draw nothing. A positive or negative angular difference of at least 360 degrees draws one complete outline matching circle(), even for multiple revolutions. Shorter differences wrap clockwise from the starting angle to the ending angle. Sweeps within 0.0001 radians (about 0.00573 degrees) of a full turn are treated as complete circles.
+		 * The angles are measured in degrees, clockwise from the positive x-axis. Equal start and end angles draw nothing. A difference of 360 degrees or more draws one complete outline matching circle(). Shorter differences wrap clockwise from the starting angle to the ending angle.
 		 * @param x The x coordinate of the center point of the arc's circle.
 		 * @param y The y coordinate of the center point of the arc's circle.
 		 * @param radius The radius of the arc's circle.
@@ -1265,7 +1274,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Gets the current mouse state and starts tracking if needed.
 		 *
-		 * Gets the current mouse state. If mouse tracking is not started, it will be started automatically. This is a convenience function that combines startMouse() and getMouse().
+		 * Returns the current mouse state for use in an animation loop. Tracking starts automatically if it has not been started yet.
 		 *
 		 * Requires an onscreen screen.
 		 * @returns Mouse data object with position, buttons, and action properties.
@@ -1307,16 +1316,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Gets the current touch state and starts tracking if needed.
 		 *
-		 * Returns an array of all active touches. Each touch object contains:
-		 * - **x**: Current X coordinate
-		 * - **y**: Current Y coordinate
-		 * - **id**: Touch identifier
-		 * - **lastX**: Previous X coordinate (or null if first touch)
-		 * - **lastY**: Previous Y coordinate (or null if first touch)
-		 * - **action**: Last action ("start", "end", or "move")
-		 * - **type**: Always "touch"
-		 *
-		 * If touch tracking is not started, it will be started automatically.
+		 * Returns the current touch state for use in an animation loop. Tracking starts automatically if it has not been started yet.
 		 *
 		 * Requires an onscreen screen.
 		 * @returns Array of touch data objects.
@@ -1643,7 +1643,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Sets the current foreground color used for drawing.
 		 *
-		 * Sets the active foreground color from a palette index or a supported color value. Color values are used directly, including colors outside the palette. Numeric indices must be finite integers from 0 through the last palette entry; index 0 is transparent black. Invalid numeric indices throw TypeError with code INVALID_PARAMETER without changing the current color. Strings use color-string conversion and are not coerced to palette indices.
+		 * Sets the active foreground color from a palette index or a supported color value. Color values are used directly, including colors outside the palette. Numeric indices must be finite integers from 0 through the last palette entry; index 0 is transparent black.
 		 * @param color Numeric integer palette index, CSS/hex string, RGB/RGBA array, or color object.
 		 * @returns This function does not return a value.
 		 */
@@ -1681,21 +1681,28 @@ screen is removed before deferred processing completes, or with the original rea
 		setDefaultAnchor( x: number, y: number ): void;
 
 		/**
-		 * Sets or clears the custom display shader for final presentation.
+		 * Sets or clears the shader used to present the screen to the canvas.
 		 *
-		 * Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. Keep RGB between zero and alpha, with zero RGB at zero alpha. For opacity, multiply all four channels; for inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+		 * Sets the shader used when Pi.js presents the logical framebuffer to the canvas. Drawing commands write into the logical framebuffer at the screen's resolution. applyShader changes those pixels. setDisplayShader runs later, at presentation, and does not change logical pixels. Typical uses include custom upscaling, CRT effects, and color grading.
 		 *
-		 * Sets the shader used when presenting the logical FBO to the canvas. The logical FBO is not modified. Typical uses include custom upscaling, CRT effects, and color grading.
+		 * Write the fragment shader with createShader. Pi.js supplies a fullscreen-quad vertex stage. u_texture is the logical framebuffer. u_sourceSize is the logical screen size. u_outputSize is the canvas backing size, which can be larger than the logical screen while a display shader is active. A good display shader:
 		 *
-		 * When a custom display shader is active, canvas.width and canvas.height track the CSS presentation size (clamped). CSS style size remains for layout. Passing null restores the default display program and logical backing-store size.
+		 * - Starts with "#version 300 es" and a precision qualifier such as precision mediump float
+		 * - Declares in vec2 v_texCoord, uniform sampler2D u_texture, and out vec4 fragColor
+		 * - Reads the logical framebuffer with texture(u_texture, v_texCoord)
+		 * - Writes a complete premultiplied color to fragColor
+		 * - Uses u_sourceSize and u_outputSize when scaling or sampling in pixel units
+		 * - Keeps RGB between zero and alpha, with zero RGB at zero alpha
 		 *
-		 * u_sourceSize is the logical FBO size. u_outputSize is the actual canvas backing size. Display shaders do not run on offscreen screens (state may still be stored).
+		 * Passing **shaderHandle** null restores the default presentation and logical canvas backing size. While a custom display shader is active, canvas.width and canvas.height follow the CSS presentation size (clamped). CSS style size remains for layout.
 		 *
-		 * This call replaces the active shader and resets persistent display uniform overrides to the uniforms supplied here (or none).
+		 * Display shaders do not run on offscreen screens, though the setting may still be stored. This call replaces the active display shader and resets persistent uniform overrides to the **uniforms** supplied here, or to none.
 		 *
-		 * Sampler2D values retain their resolved image sources and refresh dynamic canvas or screen content on each presentation. A shader cannot sample its own destination screen.
+		 * Sampler images stay bound and refresh dynamic canvas or screen content on each presentation. A shader cannot sample its own destination screen. Built-in names cannot be overridden from JavaScript. Known uniform values with an invalid type or component count throw synchronously.
 		 *
-		 * v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
+		 * Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. For opacity, multiply all four channels. For inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+		 *
+		 * v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images match the same orientation as u_texture. Drawing coordinates remain top-left/y-down. Convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
 		 * @param shaderHandle Shader handle from createShader, or null to restore the default display path.
 		 * @param uniforms Optional initial display uniform overrides. Replaces prior overrides.
 		 * @returns This function does not return a value.
@@ -1704,19 +1711,15 @@ screen is removed before deferred processing completes, or with the original rea
 		setDisplayShader( shaderHandle: number | null, uniforms?: ShaderUniforms ): void;
 
 		/**
-		 * Merges persistent display-shader uniform overrides and re-presents.
+		 * Updates uniforms on the active display shader.
 		 *
-		 * Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. Keep RGB between zero and alpha, with zero RGB at zero alpha. For opacity, multiply all four channels; for inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+		 * Updates uniforms on the active display shader without replacing the shader. createShader defaults are applied first; values set here override them and stay until you change them again or call setDisplayShader.
 		 *
-		 * Merges values into the current display shader uniform overrides. Descriptor defaults from createShader are applied first; these overrides take precedence.
+		 * If an onscreen display shader is active and the canvas can be shown, the current logical framebuffer is presented with the new uniforms. This does not change canvas or logical screen size. Hidden, detached, and offscreen screens store the new uniforms but do not present; the next valid presentation uses them.
 		 *
-		 * If an onscreen display shader is active and the canvas can be presented, pending drawing is flushed and the current logical FBO is presented. This does not change canvas or FBO size.
+		 * **uniforms** is an object of uniform names to values. Known values with an invalid type or component count throw synchronously before the stored uniforms change. Built-in names cannot be overridden from JavaScript. Sampler images stay bound and refresh dynamic canvas or screen content on each presentation.
 		 *
-		 * Hidden, detached, and offscreen screens store the new uniforms but do not present. The next valid presentation uses the stored values.
-		 *
-		 * Known uniform values are reflected and validated synchronously before persistent state changes.
-		 *
-		 * v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
+		 * Display shaders sample the logical framebuffer through u_texture and do not change logical pixels. Use the same premultiplied alpha and UV rules as createShader. Video sources refresh when decoded data is available; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
 		 * @param uniforms Uniform values to merge into the active display-shader overrides.
 		 * @returns This function does not return a value.
 		 */
@@ -1894,7 +1897,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Converts a supported color value into a color object.
 		 *
-		 * Creates a PiColor object from a palette index, CSS color string, array, or color-like object.
+		 * Creates a PiColor object from a CSS color string, array, or color-like object. Useful for normalizing color values for inspection, comparison, or reuse without setting the screen drawing color or requiring an active screen.
 		 * @param color Palette index or color value (string, array, object, number).
 		 * @returns A color value object for the converted color.
 		 */
@@ -1904,15 +1907,26 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Creates a custom fragment shader and returns a handle.
 		 *
-		 * Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. Keep RGB between zero and alpha, with zero RGB at zero alpha. For opacity, multiply all four channels; for inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+		 * Creates a reusable custom fragment shader and returns a numeric handle. The handle is screen-independent: create it once, then pass it to applyShader or setDisplayShader on any screen. createShader stores the source and optional default uniforms; it does not draw.
 		 *
-		 * Creates a screen-independent shader from GLSL ES 3.00 fragment source. The vertex stage is built-in (fullscreen quad, v_texCoord). The WebGL program is compiled and validated synchronously the first time it is passed to applyShader or setDisplayShader for each screen, then cached for that screen.
+		 * Pi.js drawing commands write into the logical framebuffer at the screen's resolution. applyShader samples that framebuffer through u_texture, runs the shader over every pixel, and replaces those pixels with the result. setDisplayShader runs later, when the logical framebuffer is presented to the canvas, and does not change logical pixels. For applyShader, u_sourceSize and u_outputSize are both the logical screen size. For setDisplayShader, u_sourceSize is the logical screen size and u_outputSize is the canvas backing size.
 		 *
-		 * The fragment source must include "#version 300 es". When first applied to a screen, the shader must declare uniform sampler2D u_texture. Invalid shaders throw synchronously without changing rendering state. Built-in uniforms, if declared: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2), u_time (float), u_frame (int).
+		 * Pi.js supplies a fullscreen-quad vertex stage, so you only write GLSL ES 3.00 fragment source. A good shader:
 		 *
-		 * The second argument is an optional map of default custom uniform values. Values are interpreted from the linked GLSL declaration and may include float, integer, unsigned integer, boolean, vector, matrix, uniform-array, and sampler2D image inputs. Unknown and reserved built-in names are ignored.
+		 * - Starts with "#version 300 es" and a precision qualifier such as precision mediump float
+		 * - Declares in vec2 v_texCoord, uniform sampler2D u_texture, and out vec4 fragColor
+		 * - Reads u_texture with texture(u_texture, v_texCoord)
+		 * - Writes a complete premultiplied color to fragColor
+		 * - Declares built-in uniforms only when needed: u_texture (sampler2D), u_sourceSize (vec2), u_outputSize (vec2), u_time (float seconds), and u_frame (int)
+		 * - Keeps RGB between zero and alpha, with zero RGB at zero alpha
 		 *
-		 * v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
+		 * Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. For opacity, multiply all four channels. For inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+		 *
+		 * v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images match the same orientation as u_texture. Drawing coordinates remain top-left/y-down. Convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize.
+		 *
+		 * The source must include "#version 300 es". Compilation and validation happen synchronously the first time the shader is used on a screen. When first used, it must declare uniform sampler2D u_texture. Invalid shaders throw synchronously without changing rendering state.
+		 *
+		 * The second argument is an optional map of default custom uniform values. Values are interpreted from the linked GLSL declaration and may include float, integer, unsigned integer, boolean, vector, matrix, uniform-array, and sampler2D image inputs. Unknown and reserved built-in names are ignored. applyShader and setDisplayShader can override these defaults for a single use. A custom sampler cannot be the same screen the shader is applied to. Video sources refresh when decoded data is available; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
 		 * @param fragmentSource GLSL ES 3.00 fragment shader source. Must include "#version 300 es".
 		 * @param uniforms Optional reflected custom uniform values keyed by uniform name.
 		 * @returns Shader handle id for applyShader or setDisplayShader.
@@ -1947,10 +1961,9 @@ screen is removed before deferred processing completes, or with the original rea
 		getDefaultColor( asIndex?: boolean ): number | PiColor;
 
 		/**
-		 * Gets default palette and returns an array with all the color data. The default color palette defines what colors are
-		 * available when a new screen is created.
+		 * Gets default palette and returns an array with all the color data.
 		 *
-		 * Gets the default color palette used when screens are created. By default, index 0 (transparent black) is excluded.
+		 * Gets the default color palette used when screens are created. By default, index 0 (transparent black) is excluded. The default color palette defines what colors are available when a new screen is created.
 		 * @param include0 If true include palette index 0 (transparent black).
 		 * @returns An array of color data for the default color palette.
 		 */
@@ -2236,29 +2249,29 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Registers a plugin to extend Pi.js with custom commands and features.
 		 *
-		 * Registers a plugin with a unique name and an init function. The init callback receives a pluginApi object that provides access to Pi.js internals for extending functionality.
+		 * Registers a plugin that adds commands and per-screen behavior to Pi.js. Provide a unique name and an init function. init receives a pluginApi object; this is a callback argument, not a return value. Commands registered with addCommand appear on the Pi.js API and accept the same positional or options-object calling style as built-in commands.
 		 *
-		 * The pluginApi object provides the following methods and properties:
+		 * pluginApi methods and properties:
 		 *
-		 * - **addCommand**(name, fn, isScreen, parameterNames, isScreenOptional): Register a new command
-		 * - **addScreenDataItem**(name, defaultValue): Add persistent data to each screen
-		 * - **addScreenDataItemGetter**(name, getterFn): Add a dynamic data getter for screens
-		 * - **addScreenInitFunction**(initFn): Register a function to run when screens are created
-		 * - **addScreenPreCleanupFunction**(cleanupFn): Run with screenData after isRemoved is set, before renderer and module cleanup; cancel owned work without redrawing
-		 * - **addScreenCleanupFunction**(cleanupFn): Register a function to run when screens are destroyed
-		 * - **getScreenData**(name): Get data for a specific screen by name
-		 * - **getAllScreensData**(): Get array of all screen data objects
-		 * - **getApi**(): Get the main Pi.js API object
-		 * - **utils**: Access to utility functions
-		 * - **wait**(): Increment resource wait counter (for async operations)
-		 * - **done**(): Decrement resource wait counter
-		 * - **registerClearEvents**(name, handler): Register a clearEvents handler for a specific event type
+		 * - **addCommand**(name, fn, isScreen, parameterNames, isScreenOptional): Add a command. Screen commands receive (screenData, options); global commands receive (options). Use screenData.api to draw. isScreenOptional allows a screen command when no screen is active.
+		 * - **addScreenDataItem**(name, defaultValue): Attach cloned data to every screen.
+		 * - **addScreenDataItemGetter**(name, getterFn): Attach per-screen data from a function called for each screen.
+		 * - **addScreenInitFunction**(initFn): Run when a screen is created, and once for screens that already exist.
+		 * - **addScreenPreCleanupFunction**(cleanupFn): Run first when a screen is removed. Cancel owned work and do not draw.
+		 * - **addScreenCleanupFunction**(cleanupFn): Run later when a screen is removed. Release remaining resources.
+		 * - **getActiveScreen**(fnName, isScreenOptional): Return the active screen data, or throw if none unless optional.
+		 * - **getScreenData**(fnName, screenId): Return screen data for a screen id.
+		 * - **getAllScreensData**(): Return all current screen data objects.
+		 * - **resizeOffscreenScreen**(screenData, width, height): Resize an offscreen screen.
+		 * - **getApi**(): Return the main Pi.js API object.
+		 * - **utils**: Shared helper functions for colors, parsing, and math.
+		 * - **wait**(): Hold $.ready() while an async resource loads.
+		 * - **done**(): Release one wait() so $.ready() can continue.
+		 * - **registerClearEvents**(name, handler): Handle $.clearEvents for an event type.
 		 *
-		 * Optional metadata (version, description) and a list of dependencies can be provided. Plugins with dependencies wait until all dependencies initialize successfully. Resolution runs after every registration, including registrations made by another initializer. Each initializer is attempted once.
+		 * Optional version and description are stored for getPlugins. Optional dependencies are other plugin names that must initialize first. Omit dependencies, or pass an empty array, if there are none. Missing or cyclic dependencies stay pending. A failed initializer throws PLUGIN_INIT_FAILED and is not retried; plugins that depend on it stay pending. Duplicate names throw DUPLICATE_PLUGIN.
 		 *
-		 * When a plugin initializes after screens already exist, its static and dynamic screen data is added to every live screen, its screen commands are bound, and its screen initialization hooks run once. Earlier core and plugin initialization hooks are not replayed. Screens created later receive the same registrations through normal screen creation.
-		 *
-		 * Missing and cyclic dependencies stay pending (initialized:false in getPlugins). Failed initializers throw PLUGIN_INIT_FAILED and do not release dependents or retry automatically. Unrelated eligible plugins still initialize. Dependencies must be an array of nonempty strings; null or omission means no dependencies. Invalid values throw INVALID_PLUGIN_DEPENDENCIES.
+		 * If screens already exist when the plugin initializes, its commands and screen data are added to those screens and its screen init functions run once. Screens created later receive the same registrations automatically. Plugin scripts register themselves when loaded after Pi.js; do not register the same plugin twice.
 		 * @param name Unique plugin name.
 		 * @param init Initialization function that receives pluginApi.
 		 * @param version Optional plugin version.
@@ -2330,22 +2343,27 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Creates a new screen (canvas) with specified dimensions and aspect ratio.
 		 *
-		 * Creates a new WebGL2 canvas screen and sets it as the active screen. The screen command must be called before any graphics commands can be used.
+		 * Creates a WebGL 2 screen, makes it the active drawing target, and returns its Screen API object. Call screen before any graphics commands. Drawing writes into a logical framebuffer at the screen's resolution; Pi.js then presents that framebuffer to the canvas.
 		 *
-		 * Aspect ratio format: `(width)(x|e|m)(height)`
-		 * - **x**: Exact pixel dimensions (e.g., "300x200")
-		 * - **e**: Extend mode (e.g., "100e100") - extends canvas to fill container while maintaining aspect ratio
-		 * - **m**: Multiple mode (e.g., "300m200") - scales to exact multiples of target resolution
+		 * **aspect** uses `(width)(x|e|m)(height)`:
 		 *
-		 * For offscreen screens, only exact pixel dimensions (x) are allowed. An offscreen screen can use an existing screen as its parent to share that screen's WebGL context. This allows drawImage to use the offscreen framebuffer directly for faster drawing. The parent controls rendering-context affinity only and does not establish lifecycle ownership.
+		 * - **x**: Exact pixel dimensions (e.g., "320x200")
+		 * - **e**: Extend the logical area to fill the container while keeping the aspect ratio (e.g., "320e200")
+		 * - **m**: Scale by integer multiples of the target resolution (e.g., "320m200")
 		 *
-		 * With noCss true (default false), Pi.js does not write automatic canvas, container, html, or body styles. Supply usable canvas layout in host CSS. The canvas is still appended and its intrinsic size and WebGL resources are managed. Explicit background commands still apply requested styles. Logical x/e/m dimensions follow the container; display shader backing size follows the rendered canvas CSS content size before transforms. Canvas and container changes are observed. Hidden hosts retain their last valid allocation and recover when visible. Offscreen screens accept noCss as a no-op. Pointer input requires an onscreen target: screen creation changes the active screen, so use visible.inmouse() or setScreen(visible) after creating an offscreen buffer.
+		 * **container** is the DOM element or element ID that holds the canvas. It defaults to document.body.
+		 *
+		 * **isOffscreen** creates an undisplayed drawing buffer. Offscreen screens require exact **x** dimensions. They can use **parent**, an existing screen or screen id, to share that screen's WebGL context so drawImage can copy from the offscreen buffer directly. Parent only shares the rendering context; removing one screen does not remove the other. An invalid, deleted, or onscreen parent throws INVALID_SCREEN_PARENT.
+		 *
+		 * **resizeCallback** runs after the logical framebuffer resizes and receives (screen, fromSize, toSize).
+		 *
+		 * Creating a screen makes it active. Pointer input requires an onscreen target, so after creating an offscreen buffer call setScreen on the visible screen or use visible.inmouse().
 		 * @param aspect Aspect ratio string in format (width)(x|e|m)(height), e.g., '300x200', '100e00', '300m200'.
 		 * @param container DOM element or element ID string to use as container. Defaults to document.body.
 		 * @param isOffscreen If true, creates an offscreen canvas that is not displayed. Requires exact pixel dimensions.
 		 * @param resizeCallback Callback function called when screen is resized. Receives (screenApi, fromSize, toSize).
 		 * @param parent Existing screen ID or screen API object whose WebGL context the offscreen screen uses. Only valid when isOffscreen is true. Enables fast drawImage calls directly from the offscreen framebuffer and does not establish lifecycle ownership.
-		 * @param noCss Disable automatic CSS writes. Default false; null or omission means false. Nonboolean supplied values throw TypeError with INVALID_PARAMETER. Ignored for offscreen layout.
+		 * @param noCss If true, Pi.js does not write automatic canvas, container, html, or body styles. Supply canvas layout in your own CSS. The canvas is still appended and its size and WebGL resources are managed. Explicit background commands still apply requested styles. Logical x/e/m dimensions follow the container; display shader backing size follows the canvas CSS content size. Hidden hosts keep their last valid size and recover when visible. Default false; null or omission means false. Ignored for offscreen screens. Non-boolean values throw INVALID_PARAMETER.
 		 * @returns Screen API object with all graphics command and screen=true and id property.
 		 */
 		screen( params: { "aspect": string; "container"?: string | HTMLElement; "isOffscreen"?: boolean; "resizeCallback"?: ( screenApi: Screen, fromSize: Size, toSize: Size ) => void; "parent"?: number | Screen; "noCss"?: boolean } ): Screen;
@@ -2366,7 +2384,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Sets the default foreground color used by new screens.
 		 *
-		 * Sets the drawing color for subsequently created screens from a default-palette index or a supported color value. Numeric indices must be finite integers from 0 through the last default-palette entry; index 0 is transparent black. Invalid numeric indices throw TypeError with code INVALID_PARAMETER without changing the default color. Strings use color-string conversion and are not coerced to palette indices. Existing screens retain their current drawing colors.
+		 * Sets the drawing color for subsequently created screens from a default-palette index or a supported color value. Numeric indices must be finite integers from 0 through the last default-palette entry; index 0 is transparent black.
 		 * @param color Numeric integer palette index, CSS/hex string, RGB/RGBA array, or color object.
 		 * @returns This function does not return a value.
 		 */

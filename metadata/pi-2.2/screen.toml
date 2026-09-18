@@ -3,16 +3,21 @@ category = "core"
 isScreen = false
 summary = "Creates a new screen (canvas) with specified dimensions and aspect ratio."
 description = """
-Creates a new WebGL2 canvas screen and sets it as the active screen. The screen command must be called before any graphics commands can be used.
+Creates a WebGL 2 screen, makes it the active drawing target, and returns its Screen API object. Call screen before any graphics commands. Drawing writes into a logical framebuffer at the screen's resolution; Pi.js then presents that framebuffer to the canvas.
 
-Aspect ratio format: `(width)(x|e|m)(height)`
-- **x**: Exact pixel dimensions (e.g., "300x200")
-- **e**: Extend mode (e.g., "100e100") - extends canvas to fill container while maintaining aspect ratio
-- **m**: Multiple mode (e.g., "300m200") - scales to exact multiples of target resolution
+**aspect** uses `(width)(x|e|m)(height)`:
 
-For offscreen screens, only exact pixel dimensions (x) are allowed. An offscreen screen can use an existing screen as its parent to share that screen's WebGL context. This allows drawImage to use the offscreen framebuffer directly for faster drawing. The parent controls rendering-context affinity only and does not establish lifecycle ownership.
+- **x**: Exact pixel dimensions (e.g., "320x200")
+- **e**: Extend the logical area to fill the container while keeping the aspect ratio (e.g., "320e200")
+- **m**: Scale by integer multiples of the target resolution (e.g., "320m200")
 
-With noCss true (default false), Pi.js does not write automatic canvas, container, html, or body styles. Supply usable canvas layout in host CSS. The canvas is still appended and its intrinsic size and WebGL resources are managed. Explicit background commands still apply requested styles. Logical x/e/m dimensions follow the container; display shader backing size follows the rendered canvas CSS content size before transforms. Canvas and container changes are observed. Hidden hosts retain their last valid allocation and recover when visible. Offscreen screens accept noCss as a no-op. Pointer input requires an onscreen target: screen creation changes the active screen, so use visible.inmouse() or setScreen(visible) after creating an offscreen buffer.
+**container** is the DOM element or element ID that holds the canvas. It defaults to document.body.
+
+**isOffscreen** creates an undisplayed drawing buffer. Offscreen screens require exact **x** dimensions. They can use **parent**, an existing screen or screen id, to share that screen's WebGL context so drawImage can copy from the offscreen buffer directly. Parent only shares the rendering context; removing one screen does not remove the other. An invalid, deleted, or onscreen parent throws INVALID_SCREEN_PARENT.
+
+**resizeCallback** runs after the logical framebuffer resizes and receives (screen, fromSize, toSize).
+
+Creating a screen makes it active. Pointer input requires an onscreen target, so after creating an offscreen buffer call setScreen on the visible screen or use visible.inmouse().
 """
 example = """
 const parent = $.screen( { "aspect": "320x200" } );
@@ -64,7 +69,7 @@ optional = true
 [[parameters]]
 name = "noCss"
 type = "boolean"
-description = "Disable automatic CSS writes. Default false; null or omission means false. Nonboolean supplied values throw TypeError with INVALID_PARAMETER. Ignored for offscreen layout."
+description = "If true, Pi.js does not write automatic canvas, container, html, or body styles. Supply canvas layout in your own CSS. The canvas is still appended and its size and WebGL resources are managed. Explicit background commands still apply requested styles. Logical x/e/m dimensions follow the container; display shader backing size follows the canvas CSS content size. Hidden hosts keep their last valid size and recover when visible. Default false; null or omission means false. Ignored for offscreen screens. Non-boolean values throw INVALID_PARAMETER."
 optional = true
 
 [[returns]]

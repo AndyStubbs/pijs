@@ -3,9 +3,7 @@ category = "images"
 isScreen = false
 summary = "Loads a spritesheet by URL or from an Image/Canvas element."
 description = """
-Loads a spritesheet and slices it either automatically (connected components) or by a fixed grid.
-Sprites retain their source colors when the screen palette changes. Use the shader API
-for recoloring.
+Loads a spritesheet and slices it either automatically (connected components) or by a fixed grid. Sprites retain their source colors when the screen palette changes. Use the shader API for recoloring.
 """
 example = """
 $.screen( "150x100" );

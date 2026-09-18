@@ -1,21 +1,28 @@
 title = "setDisplayShader"
 category = "shaders"
 isScreen = true
-summary = "Sets or clears the custom display shader for final presentation."
+summary = "Sets or clears the shader used to present the screen to the canvas."
 description = """
-Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. Keep RGB between zero and alpha, with zero RGB at zero alpha. For opacity, multiply all four channels; for inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+Sets the shader used when Pi.js presents the logical framebuffer to the canvas. Drawing commands write into the logical framebuffer at the screen's resolution. applyShader changes those pixels. setDisplayShader runs later, at presentation, and does not change logical pixels. Typical uses include custom upscaling, CRT effects, and color grading.
 
-Sets the shader used when presenting the logical FBO to the canvas. The logical FBO is not modified. Typical uses include custom upscaling, CRT effects, and color grading.
+Write the fragment shader with createShader. Pi.js supplies a fullscreen-quad vertex stage. u_texture is the logical framebuffer. u_sourceSize is the logical screen size. u_outputSize is the canvas backing size, which can be larger than the logical screen while a display shader is active. A good display shader:
 
-When a custom display shader is active, canvas.width and canvas.height track the CSS presentation size (clamped). CSS style size remains for layout. Passing null restores the default display program and logical backing-store size.
+- Starts with "#version 300 es" and a precision qualifier such as precision mediump float
+- Declares in vec2 v_texCoord, uniform sampler2D u_texture, and out vec4 fragColor
+- Reads the logical framebuffer with texture(u_texture, v_texCoord)
+- Writes a complete premultiplied color to fragColor
+- Uses u_sourceSize and u_outputSize when scaling or sampling in pixel units
+- Keeps RGB between zero and alpha, with zero RGB at zero alpha
 
-u_sourceSize is the logical FBO size. u_outputSize is the actual canvas backing size. Display shaders do not run on offscreen screens (state may still be stored).
+Passing **shaderHandle** null restores the default presentation and logical canvas backing size. While a custom display shader is active, canvas.width and canvas.height follow the CSS presentation size (clamped). CSS style size remains for layout.
 
-This call replaces the active shader and resets persistent display uniform overrides to the uniforms supplied here (or none).
+Display shaders do not run on offscreen screens, though the setting may still be stored. This call replaces the active display shader and resets persistent uniform overrides to the **uniforms** supplied here, or to none.
 
-Sampler2D values retain their resolved image sources and refresh dynamic canvas or screen content on each presentation. A shader cannot sample its own destination screen.
+Sampler images stay bound and refresh dynamic canvas or screen content on each presentation. A shader cannot sample its own destination screen. Built-in names cannot be overridden from JavaScript. Known uniform values with an invalid type or component count throw synchronously.
 
-v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same orientation as u_texture. Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
+Framebuffers, u_texture, custom sampler2D images, and fragment outputs use premultiplied RGBA: RGB is multiplied by alpha. For opacity, multiply all four channels. For inversion, use vec4(color.a - color.rgb, color.a). Unpremultiply with a zero-alpha guard before straight-color math, then premultiply the result before output.
+
+v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images match the same orientation as u_texture. Drawing coordinates remain top-left/y-down. Convert UVs to screen pixels with vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid upload is retained. No video rendering loop is created.
 """
 example = """
 const invert = $.createShader( `#version 300 es

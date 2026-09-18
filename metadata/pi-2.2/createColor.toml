@@ -3,7 +3,9 @@ category = "colors"
 isScreen = false
 summary = "Converts a supported color value into a color object."
 description = """
-Creates a PiColor object from a palette index, CSS color string, array, or color-like object.
+Creates a PiColor object from a CSS color string, array, or color-like object.
+Useful for normalizing color values for inspection, comparison, or reuse without
+setting the screen drawing color or requiring an active screen.
 """
 example = """
 const red = $.createColor( "red" );

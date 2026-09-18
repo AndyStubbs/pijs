@@ -5,9 +5,7 @@ summary = "Sets the default foreground color used by new screens."
 description = """
 Sets the drawing color for subsequently created screens from a default-palette index or a supported
 color value. Numeric indices must be finite integers from 0 through the last default-palette entry;
-index 0 is transparent black. Invalid numeric indices throw TypeError with code INVALID_PARAMETER
-without changing the default color. Strings use color-string conversion and are not coerced to
-palette indices. Existing screens retain their current drawing colors.
+index 0 is transparent black.
 """
 example = """
 $.setDefaultColor( 9 );
