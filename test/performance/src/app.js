@@ -29,7 +29,7 @@ const PI_VERSIONS = {
 		"menuName": "2.0.3"
 	},
 	"1.2.5": {
-		"path": "../../releases/pi-1.all/pi.js",
+		"path": "../../releases/pi-1.2.5/pi.js",
 		"menuName": "1.2.5 (Legacy)"
 	}
 };

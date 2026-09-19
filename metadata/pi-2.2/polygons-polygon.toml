@@ -6,8 +6,6 @@ summary = "Draws a closed polygon outline with an optional fill."
 description = """
 Draws a closed polygon on the current screen. The outline uses the current drawing color. If **fillColor** is supplied, the interior is filled first, then the outline is drawn on top. Omit fillColor, or pass null, to draw only the outline. fillColor accepts a palette index or any Pi.js color value.
 
-Included in Pi.js Full. With Lite, load the polygons plugin before calling polygon. Do not load the standalone plugin with Full; that throws DUPLICATE_PLUGIN.
-
 **points** is one closed path. Pass a flat array of x, y pairs, a typed array, or an array of { x, y } objects. Coordinates round to integers. Consecutive duplicate points and a repeated closing point are removed. At least three distinct rounded points are required. The path closes automatically from the last point to the first.
 
 Convex, concave, self-intersecting, and overlapping shapes are supported, including stars and bowties. Filling uses nonzero winding: overlapping regions stay filled when edges wind the same way, and cancel when they wind opposite ways. Reversing the whole path does not change the fill. Fill coverage can differ from the outline on some edges, including the bottom row. A translucent outline blends over filled boundary pixels.
