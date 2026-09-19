@@ -69,7 +69,7 @@ optional = true
 [[parameters]]
 name = "noCss"
 type = "boolean"
-description = "If true, Pi.js does not write automatic canvas, container, html, or body styles. Supply canvas layout in your own CSS. The canvas is still appended and its size and WebGL resources are managed. Explicit background commands still apply requested styles. Logical x/e/m dimensions follow the container; display shader backing size follows the canvas CSS content size. Hidden hosts keep their last valid size and recover when visible. Default false; null or omission means false. Ignored for offscreen screens. Non-boolean values throw INVALID_PARAMETER."
+description = "If true, Pi.js does not write automatic canvas, container, html, or body styles. Supply canvas layout in your own CSS. The canvas is still appended and its size and WebGL resources are managed. Explicit background commands still apply requested styles. Logical x/e/m dimensions follow the container; display shader backing size follows the canvas CSS content size. Hidden hosts keep their last valid size and recover when visible."
 optional = true
 
 [[returns]]
