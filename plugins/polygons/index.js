@@ -1,7 +1,7 @@
 /**
  * Polygons Plugin for Pi.js
  *
- * Draws outlined and optionally filled simple polygons using the public Pi.js API.
+ * Draws outlined and optionally filled complex polygons using the public Pi.js API.
  *
  * @module plugins/polygons
  * @version 1.0.0
@@ -38,10 +38,11 @@ export default function polygonsPlugin( pluginApi ) {
 	 */
 	function polygon( screenData, options ) {
 		const polygonData = getPolygonData( options.points, pluginApi.utils.getInt );
+		const outlineColor = screenData.api.getColor();
 
 		if( options.fillColor != null ) {
 			let fillColor;
-			if( Number.isInteger( options.fillColor ) ) {
+			if( typeof options.fillColor === "number" ) {
 				fillColor = screenData.api.getPalColor( options.fillColor );
 			} else {
 				fillColor = pluginApi.utils.convertToColor( options.fillColor );
@@ -54,7 +55,10 @@ export default function polygonsPlugin( pluginApi ) {
 			if( polygonData.spans === null ) {
 				polygonData.spans = generateSpans( polygonData.coordinates );
 			}
-			drawFill( screenData, polygonData, fillColor );
+			drawFill( screenData, polygonData, fillColor, outlineColor );
+			if( fillColor.key === outlineColor.key ) {
+				return;
+			}
 		}
 
 		drawOutline( screenData, polygonData.coordinates );
@@ -87,7 +91,7 @@ function getPolygonData( points, getInt ) {
 	}
 
 	const coordinates = normalizePoints( points, getInt );
-	validateSimplePolygon( coordinates );
+	validatePolygon( coordinates );
 	const polygonData = {
 		"coordinates": coordinates,
 		"spans": null
@@ -143,13 +147,6 @@ function normalizePoints( points, getInt ) {
 
 	removeConsecutiveDuplicates( coordinates );
 	removeClosingDuplicate( coordinates );
-	removeRedundantCollinearPoints( coordinates );
-
-	if( coordinates.length < 6 ) {
-		throw createPolygonError(
-			"polygon: At least three distinct, non-collinear points are required."
-		);
-	}
 
 	return new Float64Array( coordinates );
 }
@@ -184,101 +181,55 @@ function appendCoordinate( coordinates, x, y, getInt ) {
  * @returns {void}
  */
 function removeConsecutiveDuplicates( coordinates ) {
-	for( let i = coordinates.length - 2; i >= 2; i -= 2 ) {
+	let length = 0;
+	for( let i = 0; i < coordinates.length; i += 2 ) {
+		const x = coordinates[ i ];
+		const y = coordinates[ i + 1 ];
 		if(
-			coordinates[ i ] === coordinates[ i - 2 ] &&
-			coordinates[ i + 1 ] === coordinates[ i - 1 ]
+			length === 0 || x !== coordinates[ length - 2 ] ||
+			y !== coordinates[ length - 1 ]
 		) {
-			coordinates.splice( i, 2 );
+			coordinates[ length++ ] = x;
+			coordinates[ length++ ] = y;
 		}
 	}
+	coordinates.length = length;
 }
 
 /**
- * Remove a repeated closing point in place.
+ * Strip repeated starting points from the tail of a closed path.
  *
  * @param {number[]} coordinates - Flat coordinate array
  * @returns {void}
  */
 function removeClosingDuplicate( coordinates ) {
-	if( coordinates.length < 4 ) {
-		return;
-	}
-	const last = coordinates.length - 2;
-	if(
-		coordinates[ 0 ] === coordinates[ last ] &&
-		coordinates[ 1 ] === coordinates[ last + 1 ]
-	) {
-		coordinates.splice( last, 2 );
-	}
-}
-
-/**
- * Remove collinear points that lie between their neighbors.
- *
- * @param {number[]} coordinates - Flat coordinate array
- * @returns {void}
- */
-function removeRedundantCollinearPoints( coordinates ) {
-	let changed = true;
-	while( changed && coordinates.length >= 6 ) {
-		changed = false;
-		const pointCount = coordinates.length / 2;
-		for( let i = 0; i < pointCount; i++ ) {
-			const previous = ( i + pointCount - 1 ) % pointCount;
-			const next = ( i + 1 ) % pointCount;
-			if(
-				crossAt( coordinates, previous, i, next ) === 0 &&
-				isPointBetween( coordinates, previous, i, next )
-			) {
-				coordinates.splice( i * 2, 2 );
-				changed = true;
-				break;
-			}
+	while( coordinates.length >= 4 ) {
+		const last = coordinates.length - 2;
+		if(
+			coordinates[ 0 ] !== coordinates[ last ] ||
+			coordinates[ 1 ] !== coordinates[ last + 1 ]
+		) {
+			break;
 		}
+		coordinates.length -= 2;
 	}
 }
 
 /**
- * Validate polygon area and segment intersections.
+ * Require three distinct normalized points without restricting path topology.
  *
  * @param {Float64Array} coordinates - Normalized polygon coordinates
  * @returns {void}
  */
-function validateSimplePolygon( coordinates ) {
-	const pointCount = coordinates.length / 2;
-	if( signedDoubleArea( coordinates ) === 0 ) {
-		throw createPolygonError( "polygon: Polygon area must be greater than zero." );
-	}
-
-	for( let i = 0; i < pointCount; i++ ) {
-		const previous = ( i + pointCount - 1 ) % pointCount;
-		const next = ( i + 1 ) % pointCount;
-		if( crossAt( coordinates, previous, i, next ) === 0 ) {
-			const ax = getX( coordinates, previous ) - getX( coordinates, i );
-			const ay = getY( coordinates, previous ) - getY( coordinates, i );
-			const bx = getX( coordinates, next ) - getX( coordinates, i );
-			const by = getY( coordinates, next ) - getY( coordinates, i );
-			if( ax * bx + ay * by > 0 ) {
-				throw createPolygonError( "polygon: Polygon edges must not overlap." );
-			}
+function validatePolygon( coordinates ) {
+	const distinct = new Set();
+	for( let i = 0; i < coordinates.length; i += 2 ) {
+		distinct.add( coordinates[ i ] + "," + coordinates[ i + 1 ] );
+		if( distinct.size === 3 ) {
+			return;
 		}
 	}
-
-	for( let i = 0; i < pointCount; i++ ) {
-		const iNext = ( i + 1 ) % pointCount;
-		for( let j = i + 1; j < pointCount; j++ ) {
-			const jNext = ( j + 1 ) % pointCount;
-			if( iNext === j || jNext === i ) {
-				continue;
-			}
-			if( segmentsIntersect( coordinates, i, iNext, j, jNext ) ) {
-				throw createPolygonError(
-					"polygon: Self-intersecting polygons are not supported."
-				);
-			}
-		}
-	}
+	throw createPolygonError( "polygon: At least three distinct points are required." );
 }
 
 
@@ -288,228 +239,122 @@ function validateSimplePolygon( coordinates ) {
 
 
 /**
- * Generate boundary-exclusive integer fill spans using Bresenham edge pixels.
+ * Build non-horizontal crossing edges, grouped by their first scanline.
+ *
+ * @param {Float64Array} coordinates - Normalized polygon coordinates
+ * @returns {Object[]} Sorted edge table
+ */
+function buildEdgeTable( coordinates ) {
+	const edges = [];
+	const pointCount = coordinates.length / 2;
+	for( let i = 0; i < pointCount; i++ ) {
+		const next = ( i + 1 ) % pointCount;
+		const x1 = getX( coordinates, i );
+		const y1 = getY( coordinates, i );
+		const x2 = getX( coordinates, next );
+		const y2 = getY( coordinates, next );
+		if( y1 === y2 ) {
+			continue;
+		}
+
+		let x = x1;
+		let direction = 1;
+		if( y1 > y2 ) {
+			x = x2;
+			direction = -1;
+		}
+		edges.push( {
+			"yMin": Math.min( y1, y2 ),
+			"yMax": Math.max( y1, y2 ),
+			"x": x,
+			"inverseSlope": ( x2 - x1 ) / ( y2 - y1 ),
+			"direction": direction,
+			"index": i
+		} );
+	}
+	edges.sort( function( a, b ) {
+		return a.yMin - b.yMin || a.index - b.index;
+	} );
+	return edges;
+}
+
+/**
+ * Generate inclusive X spans with a nonzero-winding Active Edge List sweep.
+ * Crossing edges cover yMin <= y < yMax; horizontal edges are not crossings.
  *
  * @param {Float64Array} coordinates - Normalized polygon coordinates
  * @returns {Int32Array} Inclusive spans stored as y, xStart, xEnd triplets
  */
 function generateSpans( coordinates ) {
-	const scanlines = new Map();
-	const pointCount = coordinates.length / 2;
+	const edges = buildEdgeTable( coordinates );
+	const active = [];
+	const spans = [];
+	let edgeIndex = 0;
+	if( edges.length === 0 ) {
+		return new Int32Array( 0 );
+	}
 
-	for( let edgeIndex = 0; edgeIndex < pointCount; edgeIndex++ ) {
-		const nextIndex = ( edgeIndex + 1 ) % pointCount;
-		const x1 = getX( coordinates, edgeIndex );
-		const y1 = getY( coordinates, edgeIndex );
-		const x2 = getX( coordinates, nextIndex );
-		const y2 = getY( coordinates, nextIndex );
-		const edgeRows = rasterizeEdgeRows( x1, y1, x2, y2 );
+	let y = edges[ 0 ].yMin;
+	while( edgeIndex < edges.length || active.length > 0 ) {
 
-		for( const [ y, edgeRun ] of edgeRows ) {
-			const scanline = getOrCreateScanline( scanlines, y );
-			scanline.boundaries.push( edgeRun );
-
-			// Horizontal edges are boundaries, but never parity crossings.
-			if( y1 !== y2 && y >= Math.min( y1, y2 ) && y < Math.max( y1, y2 ) ) {
-				scanline.crossings.push( edgeRun );
+		// Compact the AEL before adding all edges beginning on this row.
+		let length = 0;
+		for( const edge of active ) {
+			if( y < edge.yMax ) {
+				active[ length++ ] = edge;
 			}
 		}
+		active.length = length;
+		while( edgeIndex < edges.length && edges[ edgeIndex ].yMin === y ) {
+			active.push( edges[ edgeIndex++ ] );
+		}
+		active.sort( function( a, b ) {
+			return a.x - b.x || a.index - b.index;
+		} );
+
+		let winding = 0;
+		let leftX = 0;
+		for( const edge of active ) {
+			if( winding === 0 ) {
+				leftX = edge.x;
+			}
+			winding += edge.direction;
+			if( winding === 0 ) {
+				appendSpan( spans, y, Math.round( leftX ), Math.round( edge.x ) );
+			}
+		}
+		for( const edge of active ) {
+			edge.x += edge.inverseSlope;
+		}
+
+		// Disconnected vertical ranges need no empty-row iteration.
+		if( active.length === 0 && edgeIndex < edges.length ) {
+			y = edges[ edgeIndex ].yMin;
+		} else {
+			y++;
+		}
 	}
-
-	const spans = [];
-	const sortedY = Array.from( scanlines.keys() );
-	sortedY.sort( function( a, b ) { return a - b; } );
-
-	for( let rowIndex = 0; rowIndex < sortedY.length; rowIndex++ ) {
-		const y = sortedY[ rowIndex ];
-		const scanline = scanlines.get( y );
-		if( scanline.crossings.length === 0 ) {
-			continue;
-		}
-
-		scanline.crossings.sort( compareEdgeRuns );
-		if( scanline.crossings.length % 2 !== 0 ) {
-			throw createPolygonError( "polygon: Unable to generate even-odd fill spans." );
-		}
-
-		const boundaries = mergeEdgeRuns( scanline.boundaries );
-		for(
-			let crossingIndex = 0;
-			crossingIndex < scanline.crossings.length;
-			crossingIndex += 2
-		) {
-			const left = scanline.crossings[ crossingIndex ];
-			const right = scanline.crossings[ crossingIndex + 1 ];
-			appendSpanWithoutBoundaries(
-				spans, y, left.maxX + 1, right.minX - 1, boundaries
-			);
-		}
-	}
-
 	return new Int32Array( spans );
 }
 
 /**
- * Rasterize one edge with the same integer Bresenham stepping as Pi.js lines.
- *
- * @param {number} x1 - First x coordinate
- * @param {number} y1 - First y coordinate
- * @param {number} x2 - Second x coordinate
- * @param {number} y2 - Second y coordinate
- * @returns {Map<number, { minX: number, maxX: number }>} Pixel runs keyed by y
- */
-function rasterizeEdgeRows( x1, y1, x2, y2 ) {
-	const rows = new Map();
-	const dx = Math.abs( x2 - x1 );
-	const dy = Math.abs( y2 - y1 );
-	let sx;
-	if( x1 < x2 ) {
-		sx = 1;
-	} else {
-		sx = -1;
-	}
-	let sy;
-	if( y1 < y2 ) {
-		sy = 1;
-	} else {
-		sy = -1;
-	}
-	let err = dx - dy;
-	let x = x1;
-	let y = y1;
-
-	while( true ) {
-		addPixelToEdgeRows( rows, x, y );
-		if( x === x2 && y === y2 ) {
-			break;
-		}
-
-		const e2 = err * 2;
-		if( e2 > -dy ) {
-			err -= dy;
-			x += sx;
-		}
-		if( e2 < dx ) {
-			err += dx;
-			y += sy;
-		}
-	}
-
-	return rows;
-}
-
-/**
- * Add a Bresenham pixel to an edge's row range.
- *
- * @param {Map} rows - Edge rows
- * @param {number} x - Pixel x coordinate
- * @param {number} y - Pixel y coordinate
- * @returns {void}
- */
-function addPixelToEdgeRows( rows, x, y ) {
-	const row = rows.get( y );
-	if( row ) {
-		row.minX = Math.min( row.minX, x );
-		row.maxX = Math.max( row.maxX, x );
-	} else {
-		rows.set( y, { "minX": x, "maxX": x } );
-	}
-}
-
-/**
- * Get the accumulator for one polygon scanline.
- *
- * @param {Map} scanlines - Polygon scanline map
- * @param {number} y - Scanline y coordinate
- * @returns {{ boundaries: Object[], crossings: Object[] }} Scanline accumulator
- */
-function getOrCreateScanline( scanlines, y ) {
-	let scanline = scanlines.get( y );
-	if( !scanline ) {
-		scanline = { "boundaries": [], "crossings": [] };
-		scanlines.set( y, scanline );
-	}
-	return scanline;
-}
-
-/**
- * Sort boundary runs from left to right.
- *
- * @param {Object} a - First edge run
- * @param {Object} b - Second edge run
- * @returns {number} Sort comparison
- */
-function compareEdgeRuns( a, b ) {
-	const centerComparison = ( a.minX + a.maxX ) - ( b.minX + b.maxX );
-	if( centerComparison !== 0 ) {
-		return centerComparison;
-	}
-	if( a.minX !== b.minX ) {
-		return a.minX - b.minX;
-	}
-	return a.maxX - b.maxX;
-}
-
-/**
- * Sort and merge touching boundary runs.
- *
- * @param {Object[]} runs - Unordered boundary runs
- * @returns {Object[]} Merged boundary runs
- */
-function mergeEdgeRuns( runs ) {
-	const sortedRuns = runs.slice();
-	sortedRuns.sort( function( a, b ) {
-		if( a.minX !== b.minX ) {
-			return a.minX - b.minX;
-		}
-		return a.maxX - b.maxX;
-	} );
-
-	const merged = [];
-	for( let i = 0; i < sortedRuns.length; i++ ) {
-		const run = sortedRuns[ i ];
-		const previous = merged[ merged.length - 1 ];
-		if( previous && run.minX <= previous.maxX + 1 ) {
-			previous.maxX = Math.max( previous.maxX, run.maxX );
-		} else {
-			merged.push( { "minX": run.minX, "maxX": run.maxX } );
-		}
-	}
-	return merged;
-}
-
-/**
- * Append portions of a candidate span that do not overlap outline pixels.
+ * Append an ordered span, merging touching runs so fill pixels are drawn once.
  *
  * @param {number[]} spans - Destination span values
- * @param {number} y - Scanline y coordinate
- * @param {number} xStart - Inclusive candidate start
- * @param {number} xEnd - Inclusive candidate end
- * @param {Object[]} boundaries - Merged outline runs
+ * @param {number} y - Scanline
+ * @param {number} startX - Inclusive start
+ * @param {number} endX - Inclusive end
  * @returns {void}
  */
-function appendSpanWithoutBoundaries( spans, y, xStart, xEnd, boundaries ) {
-	if( xStart > xEnd ) {
-		return;
-	}
-
-	let cursor = xStart;
-	for( let i = 0; i < boundaries.length && cursor <= xEnd; i++ ) {
-		const boundary = boundaries[ i ];
-		if( boundary.maxX < cursor ) {
-			continue;
-		}
-		if( boundary.minX > xEnd ) {
-			break;
-		}
-		if( boundary.minX > cursor ) {
-			spans.push( y, cursor, Math.min( xEnd, boundary.minX - 1 ) );
-		}
-		cursor = Math.max( cursor, boundary.maxX + 1 );
-	}
-
-	if( cursor <= xEnd ) {
-		spans.push( y, cursor, xEnd );
+function appendSpan( spans, y, startX, endX ) {
+	const previous = spans.length - 3;
+	if(
+		previous >= 0 && spans[ previous ] === y &&
+		startX <= spans[ previous + 2 ] + 1
+	) {
+		spans[ previous + 2 ] = Math.max( spans[ previous + 2 ], endX );
+	} else {
+		spans.push( y, startX, endX );
 	}
 }
 
@@ -524,13 +369,13 @@ function appendSpanWithoutBoundaries( spans, y, xStart, xEnd, boundaries ) {
  *
  * @param {Object} screenData - Active Pi.js screen data
  * @param {Object} polygonData - Cached polygon data
- * @param {Object} color - Pi.js color value
+ * @param {Object} color - Pi.js fill color
+ * @param {Object} outlineColor - Screen color to restore
  * @returns {void}
  */
-function drawFill( screenData, polygonData, color ) {
+function drawFill( screenData, polygonData, color, outlineColor ) {
 	const spans = polygonData.spans;
 	const api = screenData.api;
-	const previousColor = api.getColor();
 
 	try {
 		api.setColor( color );
@@ -541,7 +386,7 @@ function drawFill( screenData, polygonData, color ) {
 			api.rect( x1, y, x2 - x1 + 1, 1 );
 		}
 	} finally {
-		api.setColor( previousColor );
+		api.setColor( outlineColor );
 	}
 }
 
@@ -577,62 +422,6 @@ function getY( coordinates, pointIndex ) {
 	return coordinates[ pointIndex * 2 + 1 ];
 }
 
-function crossAt( coordinates, a, b, c ) {
-	return (
-		( getX( coordinates, b ) - getX( coordinates, a ) ) *
-		( getY( coordinates, c ) - getY( coordinates, a ) ) -
-		( getY( coordinates, b ) - getY( coordinates, a ) ) *
-		( getX( coordinates, c ) - getX( coordinates, a ) )
-	);
-}
-
-function signedDoubleArea( coordinates ) {
-	let area = 0;
-	const pointCount = coordinates.length / 2;
-	for( let i = 0; i < pointCount; i++ ) {
-		const next = ( i + 1 ) % pointCount;
-		area += getX( coordinates, i ) * getY( coordinates, next ) -
-			getX( coordinates, next ) * getY( coordinates, i );
-	}
-	return area;
-}
-
-function isPointBetween( coordinates, a, b, c ) {
-	const bax = getX( coordinates, b ) - getX( coordinates, a );
-	const bay = getY( coordinates, b ) - getY( coordinates, a );
-	const bcx = getX( coordinates, b ) - getX( coordinates, c );
-	const bcy = getY( coordinates, b ) - getY( coordinates, c );
-	return bax * bcx + bay * bcy <= 0;
-}
-
-function segmentsIntersect( coordinates, a, b, c, d ) {
-	const abc = crossAt( coordinates, a, b, c );
-	const abd = crossAt( coordinates, a, b, d );
-	const cda = crossAt( coordinates, c, d, a );
-	const cdb = crossAt( coordinates, c, d, b );
-
-	if(
-		Math.sign( abc ) !== Math.sign( abd ) &&
-		Math.sign( cda ) !== Math.sign( cdb )
-	) {
-		return true;
-	}
-	if( abc === 0 && pointOnSegment( coordinates, a, c, b ) ) return true;
-	if( abd === 0 && pointOnSegment( coordinates, a, d, b ) ) return true;
-	if( cda === 0 && pointOnSegment( coordinates, c, a, d ) ) return true;
-	if( cdb === 0 && pointOnSegment( coordinates, c, b, d ) ) return true;
-	return false;
-}
-
-function pointOnSegment( coordinates, a, point, b ) {
-	const px = getX( coordinates, point );
-	const py = getY( coordinates, point );
-	return px >= Math.min( getX( coordinates, a ), getX( coordinates, b ) ) &&
-		px <= Math.max( getX( coordinates, a ), getX( coordinates, b ) ) &&
-		py >= Math.min( getY( coordinates, a ), getY( coordinates, b ) ) &&
-		py <= Math.max( getY( coordinates, a ), getY( coordinates, b ) );
-}
-
 /*************************************************************************************************
  * Errors
  ************************************************************************************************/
@@ -656,7 +445,7 @@ if( typeof window !== "undefined" && window.pi ) {
 	window.pi.registerPlugin( {
 		"name": "polygons",
 		"version": "1.0.0",
-		"description": "WebGL-accelerated outlined and filled simple polygons",
+		"description": "Outlined and nonzero-filled complex polygons",
 		"init": polygonsPlugin
 	} );
 }

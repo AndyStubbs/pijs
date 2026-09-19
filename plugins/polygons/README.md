@@ -1,8 +1,8 @@
 # Polygons Plugin
 
-Draw outlined and optionally filled polygons with Pi.js. Polygon fills use integer scanline spans
-aligned with Pi.js's Bresenham outlines, then draw those spans through the public `rect` command
-as one-pixel-tall rectangles. Pi.js handles WebGL batching internally.
+Draw outlined and optionally filled complex polygons with Pi.js. A CPU-only Active Edge List
+rasterizer generates integer scanline spans using nonzero winding. The public `rect` command draws
+these spans as one-pixel-tall rectangles; Pi.js handles WebGL batching internally.
 
 ## Loading
 
@@ -50,7 +50,8 @@ pi.registerPlugin( {
 
 Draws a closed polygon outline in the current Pi.js color. When `fillColor` is supplied, the
 polygon is filled before its outline is drawn. The fill accepts palette indices and every color
-format supported by Pi.js.
+format supported by Pi.js. If the resolved fill and current color have identical RGBA values, the
+outline pass is skipped. A null or undefined fill color draws only the outline.
 
 ```javascript
 $.setColor( 15 );
@@ -70,11 +71,21 @@ $.polygon( {
 $.polygon( [ 10, 10, 80, 20, 60, 70 ] );
 ```
 
-Coordinates are rounded to integers. Convex and concave simple polygons are supported in either
-winding order. A repeated closing point and redundant consecutive or collinear points are removed
-automatically.
+Coordinates are rounded to integers. Flat arrays, typed arrays, and arrays of `{ x, y }` objects
+are accepted. Paths close implicitly from the last vertex to the first. Repeated starting points
+at the tail and consecutive duplicate points are removed automatically; other vertices are kept.
+At least three distinct rounded points are required. Collinear and zero-area paths are accepted.
 
-Holes, zero-area polygons, and self-intersecting polygons are not supported.
+Convex, concave, self-intersecting, and self-overlapping paths are supported, including stars and
+bowties. Filling uses nonzero winding: crossings in opposite directions cancel, while crossings
+in the same direction accumulate. Reversing the entire path preserves its fill. The input describes
+one closed path, not an array of separate contours.
+
+Each span includes both rounded X endpoints, and touching spans are merged to draw fill pixels
+only once. Crossing edges contribute on rows `yMin <= y < yMax`; horizontal edges do not contribute
+crossings. Thus fill coverage alone can differ from the line outline, including at the bottom row
+and along shallow edges. Distinct outline colors are drawn over the fill, so translucent outlines
+blend over filled boundary pixels. The active drawing color is restored after filling.
 
 ## Scanline Cache
 

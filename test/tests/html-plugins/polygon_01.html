@@ -7,7 +7,7 @@
 			file = "polygon_01"
 			name = "polygon 01"
 			width = 480
-			height = 300
+			height = 400
 			delay = 0
 			[[TOML_END]]
 		</script>
@@ -23,7 +23,7 @@
 	</head>
 <body>
 <script>
-	$.screen( "480x300" );
+	$.screen( "480x400" );
 	$.ready( function() {
 		$.setColor( 15 );
 		$.polygon( [ 15, 15, 100, 20, 90, 75, 25, 65 ], 4 );
@@ -56,7 +56,7 @@
 		$.setColor( 10 );
 		$.polygon( [ 130, 95, 220, 95, 205, 150, 175, 120, 145, 150 ] );
 
-		// Repeated closing, duplicate, and redundant collinear points are normalized.
+		// Duplicates are normalized while intermediate collinear vertices are retained.
 		$.setColor( 9 );
 		$.polygon( {
 			"points": [
@@ -95,7 +95,7 @@
 		$.polygon( lazyPoints, "rgba(255, 70, 70, 0.65)" );
 		$.popView();
 
-		// Shallow edges exercise rows containing multiple Bresenham boundary pixels.
+		// Shallow edges exercise rounded scanline endpoints beneath the outline.
 		$.setColor( 15 );
 		$.polygon( [ 370, 140, 465, 146, 460, 178, 375, 170 ], 2 );
 
@@ -105,7 +105,7 @@
 		$.setColor( 11 );
 		$.polygon( [ 205, 245, 211, 245, 255, 290, 247, 290 ], 5 );
 
-		// A horizontal concave notch requires two even-odd spans on lower rows.
+		// A horizontal concave notch requires two nonzero spans on lower rows.
 		$.setColor( 10 );
 		$.polygon( [
 			370, 240, 465, 240, 465, 290, 430, 290,
@@ -121,12 +121,26 @@
 		assertErrorCode( function() {
 			$.polygon( [ 0, 0, 10, 0 ] );
 		}, "INVALID_POLYGON" );
-		assertErrorCode( function() {
-			$.polygon( [ 0, 0, 10, 0, 20, 0 ], 4 );
-		}, "INVALID_POLYGON" );
-		assertErrorCode( function() {
-			$.polygon( [ 0, 0, 30, 30, 0, 30, 20, 0 ], 4 );
-		}, "INVALID_POLYGON" );
+
+		// A self-intersecting star has a filled center under nonzero winding.
+		$.setColor( 15 );
+		$.polygon( [ 60, 310, 90, 390, 15, 340, 105, 340, 30, 390 ], 4 );
+
+		// Equal translucent colors exercise merged spans with no outline pass.
+		const sameColor = "rgba(80, 210, 120, 0.55)";
+		$.setColor( sameColor );
+		$.polygon( [ 130, 315, 220, 390, 130, 390, 220, 315 ], sameColor );
+
+		// Trace the same rectangle twice: nonzero winding keeps its interior filled.
+		$.setColor( 9 );
+		$.polygon( [
+			245, 315, 335, 315, 335, 390, 245, 390,
+			245, 315, 335, 315, 335, 390, 245, 390
+		], 3 );
+
+		$.setColor( 14 );
+		$.polygon( [ 365, 315, 465, 375, 365, 375, 465, 315 ], 5 );
+		$.polygon( [ 365, 390, 415, 390, 465, 390 ], 4 );
 
 		// Exercise geometry-batch growth and a cache hit without changing the screenshot.
 		const largeCachedPoints = [];

@@ -2351,19 +2351,15 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 * - **e**: Extend the logical area to fill the container while keeping the aspect ratio (e.g., "320e200")
 		 * - **m**: Scale by integer multiples of the target resolution (e.g., "320m200")
 		 *
-		 * **container** is the DOM element or element ID that holds the canvas. It defaults to document.body.
+		 * For offscreen screens, only exact pixel dimensions (x) are allowed. An offscreen screen can use an  existing screen as its parent to share that screen's WebGL context. This allows drawImage to use  the offscreen framebuffer directly for faster drawing. The parent controls rendering-context  affinity only and does not establish lifecycle ownership.
 		 *
-		 * **isOffscreen** creates an undisplayed drawing buffer. Offscreen screens require exact **x** dimensions. They can use **parent**, an existing screen or screen id, to share that screen's WebGL context so drawImage can copy from the offscreen buffer directly. Parent only shares the rendering context; removing one screen does not remove the other. An invalid, deleted, or onscreen parent throws INVALID_SCREEN_PARENT.
-		 *
-		 * **resizeCallback** runs after the logical framebuffer resizes and receives (screen, fromSize, toSize).
-		 *
-		 * Creating a screen makes it active. Pointer input requires an onscreen target, so after creating an offscreen buffer call setScreen on the visible screen or use visible.inmouse().
+		 *  Creating a screen makes it active. Pointer input requires an onscreen target, so after creating an offscreen buffer call setScreen on the visible screen or use visible.inmouse().
 		 * @param aspect Aspect ratio string in format (width)(x|e|m)(height), e.g., '300x200', '100e00', '300m200'.
 		 * @param container DOM element or element ID string to use as container. Defaults to document.body.
 		 * @param isOffscreen If true, creates an offscreen canvas that is not displayed. Requires exact pixel dimensions.
 		 * @param resizeCallback Callback function called when screen is resized. Receives (screenApi, fromSize, toSize).
 		 * @param parent Existing screen ID or screen API object whose WebGL context the offscreen screen uses. Only valid when isOffscreen is true. Enables fast drawImage calls directly from the offscreen framebuffer and does not establish lifecycle ownership.
-		 * @param noCss If true, Pi.js does not write automatic canvas, container, html, or body styles. Supply canvas layout in your own CSS. The canvas is still appended and its size and WebGL resources are managed. Explicit background commands still apply requested styles. Logical x/e/m dimensions follow the container; display shader backing size follows the canvas CSS content size. Hidden hosts keep their last valid size and recover when visible. Default false; null or omission means false. Ignored for offscreen screens. Non-boolean values throw INVALID_PARAMETER.
+		 * @param noCss If true, Pi.js does not write automatic canvas, container, html, or body styles. Supply canvas layout in your own CSS. The canvas is still appended and its size and WebGL resources are managed. Explicit background commands still apply requested styles. Logical x/e/m dimensions follow the container; display shader backing size follows the canvas CSS content size. Hidden hosts keep their last valid size and recover when visible.
 		 * @returns Screen API object with all graphics command and screen=true and id property.
 		 */
 		screen( params: { "aspect": string; "container"?: string | HTMLElement; "isOffscreen"?: boolean; "resizeCallback"?: ( screenApi: Screen, fromSize: Size, toSize: Size ) => void; "parent"?: number | Screen; "noCss"?: boolean } ): Screen;
