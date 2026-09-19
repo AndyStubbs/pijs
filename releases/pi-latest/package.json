@@ -35,6 +35,11 @@
 			"import": "./dist/plugins/pointer/pointer.esm.js",
 			"default": "./dist/plugins/pointer/pointer.esm.js"
 		},
+		"./plugins/polygons": {
+			"types": "./dist/plugins/polygons/polygons.d.ts",
+			"import": "./dist/plugins/polygons/polygons.esm.js",
+			"default": "./dist/plugins/polygons/polygons.esm.js"
+		},
 		"./plugins/sound": {
 			"types": "./dist/plugins/sound/sound.d.ts",
 			"import": "./dist/plugins/sound/sound.esm.js",

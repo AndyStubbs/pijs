@@ -124,6 +124,20 @@ $.setBlend( "alpha" );
 Use `setNoise( noise, seed )` for optional per-channel drawing noise. The Pi.js 1 pen system has
 no direct replacement in Pi.js 2; use primitives to construct wider or shaped strokes.
 
+### Polygons
+
+Full includes the polygons plugin automatically. With Lite, load the standalone polygons bundle
+after Pi.js. Do not load it again with Full: duplicate registration throws `DUPLICATE_PLUGIN`.
+
+`polygon( points, fillColor )` and `polygon( { points, fillColor } )` are screen commands.
+Points may be flat coordinate arrays, typed arrays, or arrays of `{ x, y }` objects. Coordinates
+are rounded to integers and require at least three distinct points. The path closes implicitly.
+The outline uses the current color. An optional fill uses nonzero winding, including for concave,
+self-intersecting, and overlapping paths. Null or undefined fill draws only the outline; matching
+fill and outline RGBA values skip the outline pass. Filling restores the current drawing color.
+The collection identity caches coordinates and lazily generated fill spans. Treat points and
+their objects as immutable and replace the outer collection when editing coordinates.
+
 ### Clearing and BASIC-Style Drawing
 
 ```javascript

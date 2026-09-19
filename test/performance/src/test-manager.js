@@ -9,6 +9,8 @@
 const TARGET_FPS_SAMPLE_TIME = 1000;
 const WARM_UP_TIME = 500;
 const CALIBRATION_TIME = 1500;
+const MAX_CALIBRATION_TIME = 5000;
+const CALIBRATION_TOLERANCE = 0.05;
 const MEASUREMENT_TIME = 2000;
 const CALIBRATION_WINDOW_SIZE = 8;
 
@@ -184,8 +186,12 @@ async function runNextTest() {
 			"date": new Date().toISOString(),
 			"targetFps": m_targetFps,
 			"method": {
+				"revision": 2,
 				"warmUpMs": WARM_UP_TIME,
 				"calibrationMs": CALIBRATION_TIME,
+				"maxCalibrationMs": MAX_CALIBRATION_TIME,
+				"calibrationTolerance": CALIBRATION_TOLERANCE,
+				"failureConfirmationWindows": 2,
 				"measurementMs": MEASUREMENT_TIME,
 				"statistic": "median animation-frame throughput"
 			},
@@ -232,11 +238,17 @@ async function runNextTest() {
 	let lowerPassingCount = 0;
 	let upperFailingCount = null;
 	let calibrationFrames = [];
+	let failedCalibrationWindows = 0;
 	let measurementFrames = [];
 	let droppedFrames = 0;
 
 	// Initialize the test
 	await test.init( test );
+
+	// Workload-specific preparation fills caches before timed warm-up and calibration.
+	if( test.warmUp ) {
+		await test.warmUp();
+	}
 
 	// Start the test loop
 	requestAnimationFrame( loop );
@@ -300,22 +312,34 @@ async function runNextTest() {
 				phaseStartTime = t;
 			}
 		} else if( phase === "calibration" ) {
-			if( frameDuration > targetFrameMs * 2 ) {
-				adjustItemCount( false );
-				calibrationFrames = [];
-			} else {
-				calibrationFrames.push( frameDuration );
-			}
+			calibrationFrames.push( frameDuration );
 			if( calibrationFrames.length >= CALIBRATION_WINDOW_SIZE ) {
 				const medianFrameMs = calcPercentile( calibrationFrames, 0.5 );
 				const p90FrameMs = calcPercentile( calibrationFrames, 0.9 );
 				const passes = medianFrameMs <= targetFrameMs * 1.05 &&
 					p90FrameMs <= targetFrameMs * 1.2;
-				adjustItemCount( passes );
+
+				// A brief stall must not become a permanent upper bound on throughput.
+				if( passes ) {
+					failedCalibrationWindows = 0;
+					adjustItemCount( true );
+				} else {
+					failedCalibrationWindows++;
+					if( failedCalibrationWindows >= 2 ) {
+						adjustItemCount( false );
+						failedCalibrationWindows = 0;
+					}
+				}
 				calibrationFrames = [];
 			}
-			if( phaseElapsed >= CALIBRATION_TIME && lowerPassingCount > 0 ) {
-				itemCount = lowerPassingCount;
+			const converged = lowerPassingCount > 0 && upperFailingCount !== null &&
+				upperFailingCount - lowerPassingCount <=
+				Math.max( 1, lowerPassingCount * CALIBRATION_TOLERANCE );
+			if(
+				( phaseElapsed >= CALIBRATION_TIME && converged ) ||
+				phaseElapsed >= MAX_CALIBRATION_TIME
+			) {
+				itemCount = Math.max( 1, lowerPassingCount );
 				phase = "measurement";
 				phaseStartTime = t;
 			}

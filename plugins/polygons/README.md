@@ -6,6 +6,11 @@ these spans as one-pixel-tall rectangles; Pi.js handles WebGL batching internall
 
 ## Loading
 
+Pi.js Full includes polygons automatically in both IIFE and ESM builds. Load only the full
+Pi.js bundle to use `polygon`; loading the standalone plugin as well throws `DUPLICATE_PLUGIN`.
+
+Pi.js Lite supports polygons through the standalone plugin. The following examples use Lite.
+
 When developing in the Pi.js repository, build the plugin with:
 
 ```bash
@@ -19,7 +24,7 @@ plugin does not import or bundle Pi.js source modules. No Pi.js repository check
 Load the IIFE bundle after Pi.js:
 
 ```html
-<script src="./vendor/pi.js"></script>
+<script src="./vendor/pi.lite.js"></script>
 <script src="./vendor/polygons.min.js"></script>
 ```
 
@@ -27,7 +32,7 @@ For browser ESM usage, import Pi.js first and then import the plugin for its aut
 registration side effect:
 
 ```javascript
-import pi from "./vendor/pi.esm.min.js";
+import pi from "./vendor/pi.lite.esm.min.js";
 import "./vendor/polygons.esm.min.js";
 ```
 
@@ -35,7 +40,7 @@ For controlled registration, import the plugin before Pi.js and register its def
 
 ```javascript
 import polygonsPlugin from "./vendor/polygons.esm.min.js";
-import pi from "./vendor/pi.esm.min.js";
+import pi from "./vendor/pi.lite.esm.min.js";
 
 pi.registerPlugin( {
 	"name": "polygons",

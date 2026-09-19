@@ -37,6 +37,8 @@ The CLI accepts one or more `--source=label=directory` arguments. The first sour
 comparison baseline. `--plugin-source` points to a directory containing the polygon plugin's
 `index.js`; it defaults to the first source's `plugins/polygons` directory. Supply it explicitly
 if that source does not contain the plugin. Every core runs against the same plugin bundle.
+Benchmark artifact builds omit the full entry point's bundled polygons import so the selected
+fixed plugin registers exactly once. Normal full builds include polygons automatically.
 Only Pi.js 2.x source trees are supported.
 
 Each source defaults to an isolated full, unminified ES2020 IIFE build with esbuild. Font and shader
@@ -215,9 +217,16 @@ the existing `releases/base-package.json` as a read-only test input.
 
 Run `npm run server` and open `/test/performance/index.html`. Select a Pi.js version from the menu,
 then run the performance tests. The browser calculates a target refresh rate, warms each case
-for 0.5 seconds, calibrates for at least 1.5 seconds, then measures the workload for 2 seconds.
-The Pi-rendered status overlay participates in this adaptive experience. Its generators enable
-entropy mixing, so equal seed strings do not establish identical work across page loads.
+for 0.5 seconds, calibrates for 1.5 to 5 seconds, then measures the workload for 2 seconds.
+Calibration uses eight-frame windows and requires two consecutive failing windows before lowering
+the workload limit. After the minimum calibration time, it measures once the passing and failing
+counts are within 5% (or one item); the time limit uses the best passing count available.
+Saved results identify this calibration method with `method.revision = 2`.
+
+Polygon cases use deterministic geometry and color streams by default and draw all 1,000 cached
+shapes before timed warm-up begins. Other adaptive generators enable entropy mixing, so equal seed
+strings do not establish identical work across page loads for those cases. The Pi-rendered status
+overlay participates in the adaptive measurement.
 
 Post a run, open **View Previous Results**, and press `C` to compare adaptive scores. Arrow keys
 select individual tests. Bars use the median saved run for each version; overall comparisons use
@@ -228,7 +237,8 @@ supports fewer cases. These scores are not combined with fixed-work submission t
 
 The maintained CLI lives in `benchmark/`, with fixed case definitions in `benchmark/cases.json`.
 Shared generators live in `src/tests/`. Their `getConfig()` results expose `init`, `run`, and
-`cleanUp`; a caller may set `config.seedOptions` before initialization. Omitted seed options retain
+`cleanUp`, with an optional `warmUp` hook for preparation before adaptive timing begins.
+A caller may set `config.seedOptions` before initialization. Omitted seed options retain
 the adaptive generator behavior. Updating any workload input changes campaign identity.
 
 ```powershell

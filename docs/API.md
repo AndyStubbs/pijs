@@ -133,6 +133,22 @@ $.popView();
 `rect()`, `circle()`, and `ellipse()` use the current color for their outline. The optional
 `fillColor` controls the interior.
 
+### `polygon( points, fillColor )`
+
+Available in Full through the bundled polygons plugin; Lite requires the standalone plugin.
+Draws a closed outline in the current color, with an optional nonzero-winding fill. Accepts flat
+coordinate arrays, typed arrays, or arrays of `{ x, y }` points, including concave and
+self-intersecting paths. Coordinates are rounded; at least three distinct points are required.
+Null or omitted `fillColor` draws only the outline. Equal fill and outline colors skip the outline
+pass. Cached points must be treated as immutable; replace the collection to change coordinates.
+
+```javascript
+$.polygon( [ 10, 10, 90, 20, 70, 80 ], 4 );
+main.polygon( { "points": new Int16Array( [ 10, 10, 90, 20, 70, 80 ] ) } );
+```
+
+See the [polygons reference](../plugins/polygons/README.md) for fill coverage and cache details.
+
 ### Pixel Reads and Writes
 
 - `get( x, y, width, height, tolerance, asIndex )`: Returns a `[row][column]` region. It returns

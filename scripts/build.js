@@ -61,6 +61,7 @@ function getFullBanner( version ) {
  *		keyboard: Keyboard input handling
  *		sound: Music playback and sound effects
  *		pointer: Mouse, touch, and press handling
+ *		polygons: Outlined and filled complex polygons
  * 
  * For the core-only version, use pi.lite.js
  */`;
@@ -361,4 +362,3 @@ if( isMainModule() ) {
 }
 
 export { build, buildAllPlugins };
-

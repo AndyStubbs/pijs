@@ -31,6 +31,10 @@ Plugins work seamlessly with both build formats:
 
 ## Using Existing Plugins
 
+Pi.js Full bundles gamepad, keyboard, sound, pointer, and polygons. These plugins are ready to
+use without additional script tags or imports. Lite omits bundled plugins; load standalone
+plugins after Lite as needed. Loading a plugin that is already registered throws `DUPLICATE_PLUGIN`.
+
 ### Browser (IIFE with `<script>` tags)
 
 The simplest way to use plugins in the browser:

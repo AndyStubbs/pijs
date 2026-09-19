@@ -8,6 +8,9 @@ The global API is available as `pi` and, when it is not already defined, `$`.
 ## Key Facts
 
 - Version: 2.2.0
+- Full bundles gamepad, keyboard, sound, pointer, and polygons. Lite requires standalone plugins.
+- `polygon( points, fillColor )` draws a closed outline with optional nonzero-winding fill.
+- Polygon points accept flat arrays, typed arrays, or `{ x, y }` arrays; replace them to edit vertices.
 - Create a screen before calling screen-scoped commands.
 - Coordinates start at the top-left and use logical screen pixels.
 - Rendering is automatic and pixel-perfect.

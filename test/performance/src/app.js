@@ -16,7 +16,6 @@ import * as g_reportManager from "./report-manager.js";
 const PI_VERSIONS = {
 	"2.2.0": {
 		"path": "../../build/pi.js",
-		"pluginPath": "../../build/plugins/polygons/polygons.js",
 		"menuName": "2.2.0 (Current Build)"
 	},
 	"2.1.0": {

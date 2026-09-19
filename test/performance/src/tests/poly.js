@@ -29,6 +29,7 @@ export function getConfig( operationTypes ) {
 		"name": name,
 		"run": run,
 		"init": init,
+		"warmUp": warmUp,
 		"cleanUp": cleanUp,
 		"itemCountStart": 200,
 		"itemFactor": 10,
@@ -51,7 +52,7 @@ function init( config ) {
 	}
 
 	// Set up random seed for consistent test results
-	m_seededRandom = new Math.seedrandom( "poly", config.seedOptions ?? true );
+	m_seededRandom = new Math.seedrandom( "poly", config.seedOptions ?? { "entropy": false } );
 	
 	m_pal = $.getPal();
 	generateOperationList();
@@ -156,6 +157,13 @@ function cleanUp() {
 	m_pal = null;
 	m_operations = [];
 	m_operationTypes = [];
+}
+
+/** Populate the complete polygon cache before workload calibration begins. */
+function warmUp() {
+
+	// The nominal workload count includes the clear operation.
+	run( m_operations.length + 1 );
 }
 
 /**

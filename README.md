@@ -25,7 +25,7 @@ Built on top of **WebGL 2**, Pi.js features:
 ## Features
 
 ### Graphics
-- 2D shape drawing (lines, circles, rectangles, ellipses, bezier curves)
+- 2D shape drawing (lines, circles, rectangles, ellipses, bezier curves, polygons)
 - Pixel-perfect rendering with WebGL 2 acceleration
 - Sprite and image support with transformations
 - Bitmap fonts and text rendering
@@ -62,6 +62,9 @@ for changes and the [browser validation policy](test/README.md#release-browser-c
 Rendering features include custom GLSL fragment and display shaders, nested drawing views,
 shared-context offscreen screens, host-controlled canvas layout, and context recovery.
 See the [API reference](docs/API.md) for current behavior.
+
+The full build includes the polygons plugin for outlined and filled complex polygons. Lite users
+can load the [standalone polygons plugin](plugins/polygons/README.md).
 
 Upgrade guidance for earlier versions is in the [v2 guide](docs/UPGRADE-V2.txt) and
 [v2.1 guide](docs/UPGRADE-V2.1.txt). The legacy Canvas2D library is maintained separately in

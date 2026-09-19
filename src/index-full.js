@@ -6,6 +6,7 @@
  * - keyboard: Keyboard input handling
  * - sound: Music playback and sound effects
  * - pointer: Mouse, touch, and press handling
+ * - polygons: Outlined and filled complex polygons
  *
  * This is the official Pi.js library with essential plugins included.
  *
@@ -22,6 +23,7 @@ import "../plugins/gamepad/index.js";
 import "../plugins/keyboard/index.js";
 import "../plugins/sound/index.js";
 import "../plugins/pointer/index.js";
+import "../plugins/polygons/index.js";
 
 export default g_core.default;
 export { default as pi, default as $ } from "./index.js";

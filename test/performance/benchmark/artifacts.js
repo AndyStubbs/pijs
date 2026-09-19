@@ -36,6 +36,22 @@ async function bundle( root, entry, version, globalName, minify = false ) {
 		"write": false, "plugins": [ {
 			"name": "benchmark-inputs",
 			"setup": builder => {
+
+				// Compare cores using the separately selected, fixed polygon implementation.
+				if( entry === "src/index-full.js" ) {
+					builder.onResolve( { "filter": /polygons\/index\.js$/ }, args => {
+						if(
+							g_path.normalize( args.importer ) !==
+							g_path.resolve( root, "src/index-full.js" )
+						) {
+							return;
+						}
+						return { "path": "fixed-polygons", "namespace": "benchmark" };
+					} );
+					builder.onLoad( { "filter": /.*/, "namespace": "benchmark" }, () => ( {
+						"contents": "", "loader": "js"
+					} ) );
+				}
 				builder.onLoad( { "filter": /\.(js|json|webp|vert|frag)$/ }, args => {
 					const bytes = g_fs.readFileSync( args.path );
 					inputs[ relative( root, args.path ) ] = bytes;
