@@ -29,4 +29,12 @@ npm login
 npm publish --access public
 ```
 
+Tag the published version on GitHub. From the repository root, replace `2.2.0` with the
+current version from `releases/pi-latest/package.json`:
+
+```sh
+git tag -a v2.2.0 -m "Release v2.2.0"
+git push origin v2.2.0
+```
+
 The legacy Canvas2D package uses the `canvas2d` npm tag.
