@@ -54,17 +54,27 @@ Goal: build the tooling and structure before any behavior changes.
 | # | Task | Plan § |
 | --- | --- | --- |
 | 0.1 | Extend the build report to plugin bundles; add `npm run size` differential builds writing `build/size-report.json`; record 2.2 baseline | 9.1 |
-| 0.2 | Resolve D6 (service API names) | 12 |
-| 0.3 | Add `pluginApi.provide()` / `getService()` with unit tests and plugin-doc entry | 4.3 |
-| 0.4 | Add Firefox and WebKit Playwright projects for the audio browser tests; document `npx playwright install firefox webkit` in `test/README.md`; record per-engine support for offline `suspend()` | 10.3 |
-| 0.5 | Build the `OfflineAudioContext` render harness: init-script globals, wrapped context with `state`/`statechange` masking, virtual timers, suspend-step clock loop, seeded PRNG, visibility control | 10.1 |
-| 0.6 | Reference residual checks; calibrate valid/abrupt fixtures; other audio metrics | 10.2 |
-| 0.7 | Record 2.2 reference renders for A/B comparison in the sound lab | 10.3 |
-| 0.8 | Split `sound.js` into the modules in 4.1 with **no behavior change** | 4.1 |
-| 0.9 | Scaffold `sound_lab_01.html` | 10.3 |
+| 0.2 | Stage the 2.3 version: set `version` to `2.3.0` and `majorVersion` to `"2.3"` in `package.json`, create `metadata/pi-2.3/` with an empty `_removed.toml`, build once, and commit the regenerated declarations | 9.2 |
+| 0.3 | Resolve D6 (service API names) | 12 |
+| 0.4 | Add `pluginApi.provide()` / `getService()` with unit tests and plugin-doc entry | 4.3 |
+| 0.5 | Add Firefox and WebKit Playwright projects for the audio browser tests; document `npx playwright install firefox webkit` in `test/README.md`; record per-engine support for offline `suspend()` | 10.3 |
+| 0.6 | Build the `OfflineAudioContext` render harness: init-script globals, wrapped context with `state`/`statechange` masking, virtual timers, suspend-step clock loop, seeded PRNG, visibility control | 10.1 |
+| 0.7 | Reference residual checks; calibrate valid/abrupt fixtures; other audio metrics | 10.2 |
+| 0.8 | Record 2.2 reference renders for A/B comparison in the sound lab | 10.3 |
+| 0.9 | Split `sound.js` into the modules in 4.1 with **no behavior change** | 4.1 |
+| 0.10 | Scaffold `sound_lab_01.html` | 10.3 |
+
+Task 0.2 comes first because the type check requires the generated declarations to name
+`pi-<majorVersion>`, and the generator takes that name from the highest `metadata/pi-X.Y`
+folder. The first API change (task 1.6) needs `metadata/pi-2.3/_removed.toml`, so the bump
+must already be in place. After the bump, every normal `npm run build` stamps
+`releases/pi-latest` as 2.3.0 from the working tree; that directory is not publishable until
+Phase 6, and the frozen `releases/pi-2.2.0` snapshot is untouched.
 
 Exit criteria:
 
+- `package.json` reads 2.3.0 / `"2.3"`, `build/reference-2.3.json` exists beside
+  `reference-2.2.json`, and `npm test` passes with the `pi-2.3` declarations.
 - The module split passes the existing tests unchanged, and the size delta is at most 0.3 KB
   gzipped.
 - The audio browser tests run in Chromium, Firefox, and WebKit from one command, and the
@@ -93,7 +103,7 @@ master volume.
 | 1.3 | Move `setVolume()` to the master gain only; remove per-voice master gains | 5.1 |
 | 1.4 | Two-stage limiter (compressor + soft clipper, knee on a curve sample) with `setSoundLimiter()`; tune compressor against the knee-share metric | 5.2 |
 | 1.5 | Implement `envelope.js` (pure math + scheduling) with Node unit tests | 6.2 |
-| 1.6 | New `sound()` signature in the ADSR order fixed by D2; remove `attack`/`decay`; stop rounding frequency; validate sweep endpoints | 6.1, 12 |
+| 1.6 | New `sound()` signature in the ADSR order fixed by D2; remove `attack`/`decay`; stop rounding frequency; validate sweep endpoints; bump the `sound` banner to 2.0.0 with this first breaking change | 6.1, 9.2, 12 |
 | 1.7 | `MIN_RAMP` onset floor, `SCHEDULE_LEAD`, and single `stopVoice()` fade path | 6.2, 6.3 |
 | 1.8 | Lifecycle states including `retiring`, slot and live-voice caps, and pending records; interim PLAY exemption below | 6.3 |
 | 1.9 | Occupancy-interval admission with conflict-time victims; steal overlap, earlier stop deadlines, and completed-ID semantics | 6.3 |
@@ -298,7 +308,7 @@ Exit criteria:
 | 6.3 | Rewrite `API.md` Sound and Music section to describe final behavior |
 | 6.4 | Update `docs/llms/` references, examples, and regenerated `pi.d.ts` |
 | 6.5 | Write `docs/UPGRADE-V2.3.md` from Section 11 of the plan |
-| 6.6 | Bump `sound` to 2.0.0, `sound-advanced` to 1.0.0, package to 2.3.0 |
+| 6.6 | Verify that `package.json` (2.3.0), the `sound` banner (2.0.0), the `sound-advanced` banner (1.0.0), the release `package.json`, and the declaration headers agree |
 | 6.7 | Full `npm test`, three-engine listening pass, release snapshot |
 
 Exit criteria:

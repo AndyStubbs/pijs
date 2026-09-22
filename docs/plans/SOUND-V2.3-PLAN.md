@@ -973,6 +973,26 @@ and full-merge cost next to them.
   4 KB gzipped. The modules and the service boundary are designed so a merge is a
   change to the build and registration code, not a rewrite.
 
+### 9.2 Versioning
+
+- **Package version is staged first.** `package.json` moves to `version: "2.3.0"` and
+  `majorVersion: "2.3"` at the start of Phase 0, before any API change. The type check
+  requires `pi.d.ts` to carry `Version: pi-<majorVersion>`, and the metadata generator takes
+  that from the highest `metadata/pi-X.Y` folder, so the `metadata/pi-2.3/` folder and the
+  bump land together. This matches how 2.2 was staged.
+- **Metadata layering.** Every API change in this plan is recorded under `metadata/pi-2.3/`:
+  removed commands and parameters in `_removed.toml`, changed signatures as overrides. The
+  generator keeps `build/reference-2.2.json` as the frozen 2.2 API and writes
+  `build/reference-2.3.json` for the new one.
+- **Plugin versions.** The `sound` banner becomes 2.0.0 with its first breaking change
+  (Phase 1). `sound-advanced` is created at 1.0.0 (Phase 5). Phase 6 verifies that the
+  package, plugin banners, release `package.json`, and declaration headers agree; it does not
+  bump anything.
+- **Working tree and `pi-latest`.** A normal build copies the working tree into
+  `releases/pi-latest` under the staged version. Nothing publishes automatically, and
+  `releases/pi-2.2.0` is the frozen 2.2 snapshot, but `pi-latest` is not publishable until
+  the Phase 6 gate.
+
 ## 10. Verification Strategy
 
 Pi.js visual tests compare screenshots, which can't check audio. Audio is instead verified by
@@ -1210,7 +1230,7 @@ Each item has a recommendation and a phase by which it must be resolved.
 | D3 | Requests while the context is locked | Drop one-shot `sound()`/`playAudio()` requests, returning completed IDs as in 6.3; defer looping instances and `play()` tracks until unlock, starting deferred stream instances inside the gesture listener (5.3) | Phase 1 |
 | D4 | Whether the public `setBusVolume()` command moves to core | Ships in `sound-advanced` 1.0 (the service method is already core); promote if its promotion cost is small | Release gate |
 | D5 | iOS mute switch silences Web Audio (media elements were not) | Set `navigator.audioSession.type = "playback"` where available; document the behavior | Phase 3 |
-| D6 | Service API names | `provide`/`getService`; confirm conventions | Before task 0.3 |
+| D6 | Service API names | `provide`/`getService`; confirm conventions | Before task 0.4 |
 
 ## 13. Risks
 
