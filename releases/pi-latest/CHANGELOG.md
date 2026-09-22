@@ -3,7 +3,7 @@
 - Added host-controlled canvas layout and WebGL context recovery; corrected rendering,
   resource lifecycle, input, plugins, and package declarations; optimized texture and geometry work.
 - Image palette arguments were removed, and custom shader samplers now align with the framebuffer.
-- See the [v2.2 update guide](https://github.com/AndyStubbs/pijs/blob/main/docs/upgrade-2.2.md)
+- See the [v2.2 update guide](https://github.com/AndyStubbs/pijs/blob/main/docs/UPGRADE-V2.2.md)
   for the complete changes and required upgrade adjustments.
 
 ## [2.1.0] - 2026-08-25

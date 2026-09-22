@@ -8,7 +8,7 @@ npm run test:firefox
 ```
 
 Follow the [browser validation policy](../test/README.md#release-browser-coverage).
-Review the [v2.2 update guide](../docs/upgrade-2.2.md), package README, and changelog.
+Review the [v2.2 update guide](../docs/UPGRADE-V2.2.md), package README, and changelog.
 Resolve failures and pending baseline approvals before preparing the package.
 
 Build and inspect the distribution:

@@ -127,6 +127,6 @@ WebGL2 availability alone does not establish tested compatibility for a browser 
 Safari testing is skipped for v2.2 because macOS hardware is unavailable. Validation is deferred
 until community testing support becomes available for a future version.
 
-See the [v2.2 update guide](https://github.com/AndyStubbs/pijs/blob/main/docs/upgrade-2.2.md)
+See the [v2.2 update guide](https://github.com/AndyStubbs/pijs/blob/main/docs/UPGRADE-V2.2.md)
 for additions, fixes, and compatibility changes. Performance improvements are workload- and
 configuration-dependent; no universal browser speedup is claimed.

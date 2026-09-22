@@ -56,7 +56,7 @@ Built on top of **WebGL 2**, Pi.js features:
 
 ## Version Information
 
-Pi.js 2.2.0 is a browser-only WebGL 2 library. See the [update guide](docs/upgrade-2.2.md)
+Pi.js 2.2.0 is a browser-only WebGL 2 library. See the [update guide](docs/UPGRADE-V2.2.md)
 for changes and the [browser validation policy](test/README.md#release-browser-coverage).
 
 Rendering features include custom GLSL fragment and display shaders, nested drawing views,
@@ -66,8 +66,8 @@ See the [API reference](docs/API.md) for current behavior.
 The full build includes the polygons plugin for outlined and filled complex polygons. Lite users
 can load the [standalone polygons plugin](plugins/polygons/README.md).
 
-Upgrade guidance for earlier versions is in the [v2 guide](docs/UPGRADE-V2.txt) and
-[v2.1 guide](docs/UPGRADE-V2.1.txt). The legacy Canvas2D library is maintained separately in
+Upgrade guidance for earlier versions is in the [v2 guide](docs/UPGRADE-V2.md) and
+[v2.1 guide](docs/UPGRADE-V2.1.md). The legacy Canvas2D library is maintained separately in
 [pijs-canvas2d](https://github.com/AndyStubbs/pijs-canvas2d).
 
 ---
