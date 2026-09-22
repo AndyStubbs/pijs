@@ -43,5 +43,3 @@ version from `releases/pi-latest/package.json`:
 ```bat
 xcopy /E /I /Y releases\pi-latest\dist releases\pi-2.2.0
 ```
-
-The legacy Canvas2D package uses the `canvas2d` npm tag.
