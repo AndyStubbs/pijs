@@ -1,11 +1,13 @@
 # Pi.js 2.3 Upgrade Plan
 
-Status: Sound workstream complete; audits and the CI/CD exploration not started
+Status: Sound Phases 0–6 complete and expansion Phases 7–10 proposed; audits and the CI/CD
+exploration not started
 Target release: Pi.js 2.3.0
 Workstream documents:
 
-- Sound: [SOUND-V2.3-PLAN.md](SOUND-V2.3-PLAN.md) and
-  [SOUND-V2.3-ROADMAP.md](SOUND-V2.3-ROADMAP.md)
+- Sound: [SOUND-V2.3-PLAN.md](SOUND-V2.3-PLAN.md),
+  [SOUND-V2.3-ROADMAP.md](SOUND-V2.3-ROADMAP.md), and
+  [SOUND-ADVANCED-V2.3-PLAN.md](SOUND-ADVANCED-V2.3-PLAN.md)
 - Keyboard, pointer, gamepad, core, tests, and CI/CD: audit reports, exploration results, and
   roadmaps are created by the steps in Sections 5–9
 
@@ -15,7 +17,9 @@ Pi.js 2.3 is an API-quality release for the core plugins. It covers four plugins
 `pi.js`, a lighter re-audit of the core library, and the test and build infrastructure:
 
 1. **Sound:** rebuild the `sound` plugin on one Web Audio graph and add `sound-advanced`. The
-   sound plan and roadmap define this work.
+   sound plan and roadmap define this work. The expansion plan then grows `sound-advanced`
+   with recording, more bus effects, a sound-effect generator, music sync, and sample
+   instruments.
 2. **Keyboard, pointer, and gamepad:** audit each plugin for correctness and API design, then
    improve its API. Breaking changes are allowed where the audit shows a clear improvement.
 3. **Core:** repeat the 2.2 whole-system audit at a lighter depth. It focuses on changes made
@@ -32,7 +36,7 @@ the release phase. Each workstream's design and task list live in its own docume
 
 | Workstream | Scope | Documents | Status |
 | --- | --- | --- | --- |
-| Sound | `plugins/sound/`, `plugins/sound-advanced/` | `SOUND-V2.3-PLAN.md`, `SOUND-V2.3-ROADMAP.md` | Complete: Phases 0–6 implemented |
+| Sound | `plugins/sound/`, `plugins/sound-advanced/` | `SOUND-V2.3-PLAN.md`, `SOUND-V2.3-ROADMAP.md`, `SOUND-ADVANCED-V2.3-PLAN.md` | Phases 0–6 implemented; expansion Phases 7–10 proposed |
 | Keyboard | `plugins/keyboard/`: key state, action keys, key handlers, `input()` prompts | `KEYBOARD-V2.3-AUDIT.md`, then `KEYBOARD-V2.3-ROADMAP.md` | Audit not started |
 | Pointer | `plugins/pointer/`: mouse, touch, press, click, context menu, pinch zoom | `POINTER-V2.3-AUDIT.md`, then `POINTER-V2.3-ROADMAP.md` | Audit not started |
 | Gamepad | `plugins/gamepad/`: polling loop, state, sensitivity, connection events | `GAMEPAD-V2.3-AUDIT.md`, then `GAMEPAD-V2.3-ROADMAP.md` | Audit not started |
@@ -62,7 +66,7 @@ These decisions apply to every workstream and are fixed for this plan.
 ## 4. Sequencing
 
 ```
-Sound Phases 0–6 (done) ─────────────────────────────────────────────┐
+Sound Phases 0–6 (done) ──► Sound Phases 7–10 (expansion) ───────────┐
                                                                      │
 Core audit ──► core follow-up fixes ─────────────────────────────────┤
                                                                      │
@@ -82,7 +86,9 @@ CI/CD exploration ──► portability fixes and CI roadmap ──────�
   can change what the input plugins build on.
 - The input conventions review (Section 6) runs after all three input audits and before any
   input roadmap is approved, so the three plugins change toward one convention.
-- Sound Phase 6 is complete, so the sound workstream waits only for the release phase.
+- Sound Phase 6 is complete. The expansion (Phases 7–10) is independent of the audits and the
+  CI/CD exploration and can start at once, except task 9.3 (music sync callbacks), which waits
+  for the input conventions review so its handler commands follow the same convention.
 - The test audit and the CI/CD exploration do not depend on the plugin work and can start at
   once. The test audit reuses the core audit's coverage map if it is available, and the
   exploration's per-platform runs feed the test audit's list of flaky tests.
@@ -99,7 +105,7 @@ CI/CD exploration ──► portability fixes and CI roadmap ──────�
 | --- | --- | --- |
 | U1: Audits complete | Core, keyboard, pointer, gamepad, and test audit reports; CI/CD exploration results | Each report reviewed; every finding accepted, rejected, or deferred |
 | U2: Roadmaps approved | Input conventions decisions; keyboard, pointer, gamepad, and CI roadmaps | Open decisions G1–G6 closed; each input roadmap has a compatibility summary |
-| U3: Implementation complete | Sound Phase 6; all input roadmaps; accepted core fixes, test removals, and portability fixes | Every workstream's exit criteria met with `npm test` green |
+| U3: Implementation complete | Sound Phases 6–10 (sound M5); all input roadmaps; accepted core fixes, test removals, and portability fixes | Every workstream's exit criteria met with `npm test` green |
 | U4: Release | Section 11 | Pi.js 2.3.0 snapshot created |
 
 ## 5. Input Plugin Audits
@@ -442,6 +448,8 @@ Phase 6 size review.
 ### 11.1 Entry criteria
 
 - Sound Phase 6 is complete: size review done, promotions applied, and D4 resolved.
+- Sound expansion Phases 7–10 are complete, or cut under the expansion plan's scope-cut order
+  with the cut recorded, and D7–D17 are closed.
 - Every input roadmap has met its exit criteria.
 - Every accepted core finding is fixed. Any finding not fixed is explicitly deferred.
 - Every accepted test-audit item is done or explicitly deferred, and the after metrics are
@@ -456,11 +464,11 @@ Phase 6 size review.
 | --- | --- |
 | R.1 | Confirm the entry criteria and record any deferrals in the owning documents |
 | R.2 | Rewrite the `API.md` Sound and Music section and the Input sections (Keyboard; Mouse, Touch, and Press; Gamepad), plus any core section a core fix changed, to describe final behavior |
-| R.3 | Update `docs/llms/` references and examples, commit the regenerated `pi.d.ts`, and update plugin READMEs and `docs/GAMEPAD.md` |
-| R.4 | Write `docs/UPGRADE-V2.3.md` from the compatibility summaries: sound plan Section 11, each input roadmap, and the core audit |
+| R.3 | Update `docs/llms/` references and examples, commit the regenerated `pi.d.ts`, and update plugin READMEs (including the `sound-advanced` README for the expansion commands) and `docs/GAMEPAD.md` |
+| R.4 | Write `docs/UPGRADE-V2.3.md` from the compatibility summaries: sound plan Section 11, expansion plan Section 11, each input roadmap, and the core audit |
 | R.5 | Update `releases/pi-latest/README.md` and `CHANGELOG.md`, and point `releases/PUBLISH.md` at the 2.3 upgrade guide |
 | R.6 | Verify that `package.json` (2.3.0), every plugin banner (`sound` 2.0.0, `sound-advanced` 1.0.0, and the `keyboard`, `pointer`, and `gamepad` versions set by their roadmaps), the release `package.json`, and the declaration headers agree |
-| R.7 | Full `npm test` and `npm run test:firefox`, the three-engine sound listening pass, the input manual device pass, then the release snapshot following `releases/PUBLISH.md` |
+| R.7 | Full `npm test` and `npm run test:firefox`, the three-engine sound listening pass (including recording and saving a WAV), the input manual device pass, then the release snapshot following `releases/PUBLISH.md` |
 
 The input manual device pass covers what synthetic events cannot: physical gamepads, touch and
 multi-touch on a phone or tablet, and keyboard layouts and IME input on desktop. Each input
@@ -477,7 +485,8 @@ roadmap lists its own manual checks, and R.7 runs any that are still open.
 
 If the schedule slips:
 
-1. **Sound:** follow the scope-cut order in the sound roadmap.
+1. **Sound:** follow the scope-cut order in the sound roadmap, which cuts the expansion
+   phases first (expansion plan Section 9).
 2. **Core:** deferred P3 findings move to a later release. P1 and P2 findings are fixed or
    explicitly accepted as known issues.
 3. **Input plugins:** a plugin's breaking changes ship together or not at all, so users update
@@ -506,6 +515,7 @@ If the schedule slips:
 | Dependent plugins break | `onscreen-keyboard` or `pi-vision` stop working | Dependents are updated in the same task; plugin visual suite at every phase exit |
 | Audits grow into rewrites | Schedule slips before any fix lands | Audits only record findings; changes go through reviewed roadmaps |
 | Full-build size growth | `pi.min.js` grows beyond the sound targets | Per-plugin size reporting at each phase exit |
+| Sound expansion delays the release | The sound workstream reopens after it closed | Expansion phases are cut independently, before any core sound item; recording is cut last, and its core output stage ships in 2.3.0 even if the plugin part slips |
 | Inconsistent APIs after separate roadmaps | Three plugins improve in different directions | The conventions review runs before any input roadmap is approved |
 | A removed test was the only check of a behavior | A regression goes unnoticed | Each removal names its covering tests, with a deliberate-break check where practical; the coverage map must not lose entries |
 | Test audit collides with workstream rewrites | Duplicate or conflicting test changes | Changes in an active workstream's area are handed to its roadmap |
@@ -519,4 +529,4 @@ If the schedule slips:
 - New input device types, such as MIDI, WebXR controllers, or motion sensors.
 - A full rendering re-audit or new performance campaign.
 - Replacing the test frameworks (Playwright and `node:test`).
-- Sound items listed in Section 14 of the sound plan.
+- Sound items listed in Section 14 of the sound plan and Section 10 of the expansion plan.

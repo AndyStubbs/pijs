@@ -1,17 +1,19 @@
 # Pi.js 2.3 Sound Upgrade Roadmap
 
-Status: Phases 0–6 implemented; sound workstream complete (M4)
+Status: Phases 0–6 implemented (M4); expansion Phases 7–10 proposed
 Design reference: [SOUND-V2.3-PLAN.md](SOUND-V2.3-PLAN.md) (section numbers below refer to it)
+Expansion plan: [SOUND-ADVANCED-V2.3-PLAN.md](SOUND-ADVANCED-V2.3-PLAN.md) (Phases 7–10)
 Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md) (the 2.3 release phase and the other
 2.3 workstreams)
 
 ## Overview
 
-The work is split into seven phases. Phases 0–4 deliver the core `sound` plugin 2.0.0.
-Phase 5 delivers the `sound-advanced` plugin 1.0.0. Phase 6 is the size review that closes the
-sound workstream. Documentation, the upgrade guide, version checks, and the release snapshot
-belong to the 2.3 release phase in the general plan (Section 11), which also covers the
-keyboard, pointer, gamepad, core, test, and CI/CD work.
+The work is split into eleven phases. Phases 0–4 deliver the core `sound` plugin 2.0.0.
+Phase 5 delivers the `sound-advanced` plugin 1.0.0. Phase 6 is the size review that closed the
+original sound scope. Phases 7–10 expand `sound-advanced` before the release; they are
+summarized after Phase 6 and designed in the expansion plan. Documentation, the upgrade guide,
+version checks, and the release snapshot belong to the 2.3 release phase in the general plan
+(Section 11), which also covers the keyboard, pointer, gamepad, core, test, and CI/CD work.
 
 ```
 Phase 0  Foundations ──► Phase 1  Bus & Voice ──► Phase 2  Sound Design
@@ -20,6 +22,9 @@ Phase 0  Foundations ──► Phase 1  Bus & Voice ──► Phase 2  Sound Des
                    │
                    ▼
              Phase 5  sound-advanced ──► Phase 6  Size Review
+                                                   │
+                                                   ▼
+                        Phases 7–10  sound-advanced expansion
                                                    │
                                                    ▼
                                      2.3 Release (general plan)
@@ -36,7 +41,8 @@ Phase 0  Foundations ──► Phase 1  Bus & Voice ──► Phase 2  Sound Des
 | M1: Core foundation | Phases 0–1 | Click-free, limited, single-volume synth voices |
 | M2: Core complete | Phases 2–4 | All core APIs implemented and tested |
 | M3: Advanced plugin | Phase 5 | `sound-advanced` 1.0.0 feature-complete |
-| M4: Sound complete | Phase 6 | Size decisions applied and D4 closed; ready for the 2.3 release phase |
+| M4: Sound complete | Phase 6 | Size decisions applied and D4 closed |
+| M5: Expansion complete | Phases 7–10 | Every expansion phase done or cut under the expansion plan's scope-cut order; D7–D17 closed; ready for the 2.3 release phase |
 
 ### Standing rules for every phase
 
@@ -541,9 +547,32 @@ Phase 6 results (evidence README, "Phase 6 size review"):
 - **Open manual checks:** unchanged from Phase 5. The release phase runs the three-engine
   listening pass (R.7).
 
+## Phases 7–10: `sound-advanced` Expansion
+
+Goal: expand `sound-advanced` before 2.3.0 ships. The design, tasks, and exit criteria are in
+[SOUND-ADVANCED-V2.3-PLAN.md](SOUND-ADVANCED-V2.3-PLAN.md); this roadmap lists the phases so
+the workstream reads in one place.
+
+| Phase | Contents | Core change | Expansion plan § |
+| --- | --- | --- | --- |
+| 7 | Recording: `startRecording()`, `stopRecording()`, `getRecordingState()`, `saveRecording()`, WAV encoding, `getSoundLevels( "output" )` | Output stage after the limiter; `tapBus( "output" )` | 3.1, 4 |
+| 8 | Bus effects: filter, distortion, bitcrusher, chorus, chains, in-place updates | None | 5 |
+| 9 | `generateSfx()` generator; `onPlayEvent()`/`offPlayEvent()` music sync | `observePlay` service member | 3.2, 6 |
+| 10 | Sample instruments through `defineInstrument()` | `getAudioBuffer` service member | 3.3, 7 |
+
+- Phases run in order of priority, but Phase 8 needs only the shared worklet loader (task 7.2)
+  from Phase 7, and task 9.1 needs nothing from it, so both can run in parallel with Phase 7.
+- Task 9.3 waits for the input conventions review (general plan Section 6), which decides the
+  handler naming it follows.
+- Each phase ends with `npm test` green, a size entry in `docs/evidence/sound-2.3/README.md`,
+  and a listening check in `sound_advanced_01.html`, as for Phases 0–6.
+- The expansion plan's decisions are D7–D17, numbered after D1–D6 in the sound plan.
+
 ## Scope-Cut Order
 
-If the schedule slips, features are deferred in this order. Earlier items go first.
+If the schedule slips, the expansion phases are cut first, in the order in Section 9 of the
+expansion plan (Phase 10 first, recording last). After them, features are deferred in this
+order. Earlier items go first.
 
 1. **Advanced analyser, effects, and periodic noise** move to a 2.3.x plugin release.
 2. **Presets and instruments** move to a 2.3.x plugin release. Core `@n` parsing still ships.

@@ -1,10 +1,13 @@
 # Pi.js 2.3 Sound Upgrade Plan
 
-Status: Approved; roadmap Phases 0–6 implemented
+Status: Approved; roadmap Phases 0–6 implemented; expansion Phases 7–10 proposed
 Target release: Pi.js 2.3.0
 Companion document: [SOUND-V2.3-ROADMAP.md](SOUND-V2.3-ROADMAP.md)
+Expansion plan: [SOUND-ADVANCED-V2.3-PLAN.md](SOUND-ADVANCED-V2.3-PLAN.md)
 Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md)
-Revision 10 recorded the Phase 6 size review: the public `setBusVolume()` command moved to core
+Revision 11 added the `sound-advanced` expansion (Phases 7–10: recording, more bus effects, a
+sound-effect generator, music sync, and sample instruments) in its own plan. Recording moved
+into scope (14), and the proposed service additions are listed in 4.3. Revision 10 recorded the Phase 6 size review: the public `setBusVolume()` command moved to core
 (D4), the other `sound-advanced` modules stay in the plugin, and the soft size targets were
 raised to 15.5 KB and 9.5 KB (9.1).
 Revision 9: sound becomes one workstream of the 2.3 release. The release gate, including version
@@ -172,6 +175,11 @@ The interface is internal. It is documented in the plugin authoring docs
 (`plugins/PLUGIN-SYSTEM.md`) but not in `API.md`. **Version 1 is frozen** (Phase 5): the
 contract tests in 4.3.4 pass, and `sound-advanced` 1.0 consumes every member. Later changes
 that break it require bumping `version`; a test pins the member list.
+
+**Proposed v1 additions before release** (expansion plan Section 3, decisions D7 and D8):
+`tapBus` accepts `"output"`, a fixed stage after the limiter; `observePlay( listener )` reports
+admitted PLAY notes and song ends; and `getAudioBuffer( name )` returns a loaded file's decoded
+buffer. Each addition updates this table when its task lands.
 
 - **`createVoice` requests** follow the `sound()` rules: the same validation and error codes
   (an unregistered oType throws `INVALID_OTYPE`), delays beyond the lookahead window held as
@@ -1373,8 +1381,10 @@ Each item has a recommendation and a phase by which it must be resolved.
 
 - 3D/HRTF spatial audio.
 - MIDI input or output.
-- Recording or exporting audio.
-- AudioWorklet-based synthesis or a true lookahead brickwall limiter.
+- Faster-than-real-time export and compressed recording formats. Real-time WAV recording is
+  in scope as expansion Phase 7.
+- AudioWorklet-based synthesis or a true lookahead brickwall limiter. The expansion uses
+  worklets only for recording and the bitcrusher effect.
 - Tracker module formats.
 - Microphone input.
 - Per-screen audio routing.
