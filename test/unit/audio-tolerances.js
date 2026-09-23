@@ -38,7 +38,18 @@ const TOLERANCES = {
 	"mixDeterminism": {
 		"chromium": 2e-6,
 		"firefox": 0
-	}
+	},
+
+	// Envelope stage boundaries measured from rendered sound() output against the analytic
+	// ADSR model, in seconds (plan 10.2: within 1 ms)
+	"envelopeTiming": { "chromium": 0.001, "firefox": 0.001 },
+
+	// Limiter quality: share of samples above the soft clipper knee (0.9) on the stress
+	// renders in audio-bus-browser.test.js. Chromium runs compressor + clipper. Firefox's
+	// compressor pre-emphasizes high frequencies and cuts bright waveforms far below its
+	// threshold, so the sound plugin's probe selects the clipper alone there; its value only
+	// records the observed saturation on these deliberately extreme overloads.
+	"limiterKneeShare": { "chromium": 0.01, "firefox": 0.65 }
 };
 
 /**

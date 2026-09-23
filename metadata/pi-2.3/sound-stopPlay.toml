@@ -1,0 +1,28 @@
+title = "stopPlay"
+category = "sound"
+isScreen = false
+plugin = "sound"
+summary = "Stops playing music tracks."
+description = """
+Stops a specific music track by track ID, or stops all tracks if trackId is null. Notes that are playing fade out over 10 ms, so the track is silent about 15 ms after the call. Notes that have not started are cancelled.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Press any key to hear sound" );
+$.onkey( "any", "down", () => {
+	$.play( "T120 O4 L4 CDEF GAB>C ABCDEFG" );
+	setTimeout( () => {
+		$.stopPlay();
+	}, 500 );
+} );
+"""
+
+[[parameters]]
+name = "trackId"
+type = "number"
+description = "Track ID to stop. If null, stops all tracks."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

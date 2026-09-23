@@ -174,6 +174,36 @@ Exit criteria:
 - Envelope stage timing is within 1 ms of the analytic model on all three engines.
 - Autoplay unlock is verified manually on desktop and on an iOS or Android device.
 
+Phase 1 results that later phases depend on:
+
+- **D3** is resolved as recommended, with one refinement: once the unlocking gesture listener
+  has called `resume()`, requests made in that gesture's own handlers are kept (plan 12).
+- **Limiter** (plan 5.2): compressor tuned to −4 dB / ratio 20 / 1 ms / 0.2 s, with a trim
+  that removes the makeup gain and a fast startup release. Firefox's compressor cuts bright
+  waveforms far below its threshold, so a startup probe selects the soft clipper alone there.
+  The knee-share target (< 1%) holds in Chromium (0.155% worst case); Firefox saturates on
+  deliberate overloads (evidence README). Chromium's compressor adds ~6 ms of latency, so
+  timing tests bypass the limiter.
+- **`sound()` 2.0.0** ships the full 11-parameter signature, including `pan` (conditional
+  panner) and the `frequencyEnd` sweep. Phase 2 keeps their spectrum and pan-law tests, the
+  noise sources, and D1. The decay time is floored at `MIN_RAMP` like attack and release.
+- **Service v1 so far:** `version`, `getContext`, `setBusVolume`, `stopVoice`, and
+  `scheduleEnvelope`. The other members arrive with their contracts in Phase 5.
+- **Admission and cleanup** are pure functions in `voices.js` (`planAdmission`,
+  `chooseCleanup`) with Node tests; sample instances join them in task 3.11 through the
+  `protected` flag they already honor.
+- **Scheduler** items are generic `{ id, kind, start, run }` records, so task 4.1 can add PLAY
+  events without changing the window-fill rule.
+- **Harness additions:** automation and source probes, `holdTimers()`, `advanceWall()`,
+  `simulateInterruption()`, `renderCarrier()`, and a wait for page-started offline renders.
+  The interim PLAY exemption test is titled "…interim PLAY exemption, deleted by task 4.2".
+- **Size:** `sound` is 10,349 bytes gzipped (+3,958 over Phase 0) and `pi.min.js` grew by
+  4,040. The plan 9.1 soft targets were raised to 14 KB for the plugin and 8 KB of full-build
+  growth, which Phase 1 meets with room for Phases 2–4.
+- **Open manual checks:** the three-engine listening pass in `sound_lab_01.html` and autoplay
+  unlock on desktop and on an iOS or Android device. Envelope timing is automated in Chromium
+  and Firefox; WebKit's is checked in Safari during the listening pass.
+
 ## Phase 2: Core Sound Design
 
 Goal: fill in the basic sound palette of the core plugin.

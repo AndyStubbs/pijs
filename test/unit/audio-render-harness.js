@@ -12,6 +12,12 @@
  * - performance.now and Date.now follow the virtual clock.
  * - Math.random is a seeded PRNG.
  * - document.hidden and visibilityState are controlled by the harness.
+ * - AudioParam automation, source start/stop/disconnect, and page-created offline renders are
+ *   observed through prototype wrappers: probes() lists automation calls with the context time
+ *   at each call, sources() lists source lifetimes, and settleRenders() waits for offline
+ *   renders the page started (such as the sound plugin's compressor probe).
+ * - holdTimers() withholds timer callbacks to simulate a stalled main thread, and a locked
+ *   context can be unlocked by simulateGesture() and re-locked by simulateInterruption().
  *
  * The Node helpers open a page with the harness installed and decode rendered channels.
  */
@@ -100,8 +106,18 @@ function installAudioRenderHarness( config ) {
 		return bestId;
 	}
 
+	// Held timers simulate a stalled main thread: the clock advances, callbacks wait
+	let timersHeld = false;
+
+	// Wall time spent while the audio clock was frozen (see advanceWall)
+	let wallOffset = 0;
+
 	function runTimersUntil( time ) {
 		const errors = [];
+		if( timersHeld ) {
+			now = Math.max( now, time );
+			return errors;
+		}
 		let id = nextDueTimer( time );
 		while( id !== null ) {
 			const timer = timers.get( id );
@@ -159,6 +175,116 @@ function installAudioRenderHarness( config ) {
 	const pageStateListeners = new Set();
 	const nodeCounts = {};
 	const statechangeLog = { "native": 0, "delivered": 0 };
+	let resumeCalls = 0;
+
+	// Probes: AudioParam automation calls and source lifetimes, recorded with the context
+	// time at the call. Prototype wrappers observe production code without changing it.
+	const probeLog = [];
+	const sourceLog = [];
+	const sourceEntries = new WeakMap();
+	const pendingRenders = new Set();
+
+	function contextTime() {
+		if( realContext ) {
+			return realContext.currentTime;
+		}
+		return 0;
+	}
+
+	function sourceEntry( node ) {
+		let entry = sourceEntries.get( node );
+		if( !entry ) {
+			entry = {
+				"id": sourceLog.length,
+				"type": node.constructor.name,
+				"startTime": null,
+				"stopTime": null,
+				"stopCalls": 0,
+				"disconnectCalls": 0,
+				"disconnectedAt": null,
+				"endedAt": null
+			};
+			sourceEntries.set( node, entry );
+			sourceLog.push( entry );
+			node.addEventListener( "ended", () => {
+				entry.endedAt = contextTime();
+			} );
+		}
+		return entry;
+	}
+
+	if( webAudio ) {
+		const paramMethods = [
+			"setValueAtTime", "linearRampToValueAtTime", "exponentialRampToValueAtTime",
+			"setTargetAtTime", "setValueCurveAtTime", "cancelScheduledValues",
+			"cancelAndHoldAtTime"
+		];
+		for( const method of paramMethods ) {
+			const native = AudioParam.prototype[ method ];
+			if( typeof native !== "function" ) {
+				continue;
+			}
+			AudioParam.prototype[ method ] = function( ...args ) {
+				let time = args[ 1 ];
+				if( method === "cancelScheduledValues" || method === "cancelAndHoldAtTime" ) {
+					time = args[ 0 ];
+				}
+				probeLog.push( { "method": method, "time": time, "contextTime": contextTime() } );
+				return native.apply( this, args );
+			};
+		}
+		const sourcePrototypes = [
+			AudioScheduledSourceNode.prototype, AudioBufferSourceNode.prototype
+		];
+		for( const prototype of sourcePrototypes ) {
+			for( const method of [ "start", "stop" ] ) {
+				if( !Object.prototype.hasOwnProperty.call( prototype, method ) ) {
+					continue;
+				}
+				const native = prototype[ method ];
+				prototype[ method ] = function( ...args ) {
+					const entry = sourceEntry( this );
+					const at = contextTime();
+					let when = at;
+					if( typeof args[ 0 ] === "number" ) {
+						when = Math.max( args[ 0 ], at );
+					}
+					if( method === "start" ) {
+						entry.startTime = when;
+					} else {
+						entry.stopTime = when;
+						entry.stopCalls++;
+					}
+					probeLog.push( { "method": method, "time": when, "contextTime": at } );
+					return native.apply( this, args );
+				};
+			}
+		}
+		const nativeDisconnect = AudioNode.prototype.disconnect;
+		AudioNode.prototype.disconnect = function( ...args ) {
+			const entry = sourceEntries.get( this );
+			if( entry && args.length === 0 ) {
+				entry.disconnectCalls++;
+				if( entry.disconnectedAt === null ) {
+					entry.disconnectedAt = contextTime();
+				}
+			}
+			return nativeDisconnect.apply( this, args );
+		};
+
+		// Page-created offline renders (such as the sound plugin's compressor probe) are
+		// tracked so a load can wait for them before its own render
+		const nativeStartRendering = NativeOfflineAudioContext.prototype.startRendering;
+		NativeOfflineAudioContext.prototype.startRendering = function( ...args ) {
+			const promise = nativeStartRendering.apply( this, args );
+			if( this !== realContext ) {
+				const tracked = promise.then( () => {}, () => {} );
+				pendingRenders.add( tracked );
+				tracked.then( () => pendingRenders.delete( tracked ) );
+			}
+			return promise;
+		};
+	}
 
 	function lengthFrames() {
 		return Math.ceil( ( duration * sampleRate ) / stepFrames ) * stepFrames;
@@ -181,7 +307,13 @@ function installAudioRenderHarness( config ) {
 				if( prop === "onstatechange" ) {
 					return pageStateHandler;
 				}
-				if( prop === "suspend" || prop === "resume" || prop === "close" ) {
+				if( prop === "resume" ) {
+					return () => {
+						resumeCalls++;
+						return Promise.resolve();
+					};
+				}
+				if( prop === "suspend" || prop === "close" ) {
 					return () => Promise.resolve();
 				}
 				if( prop === "startRendering" ) {
@@ -291,7 +423,7 @@ function installAudioRenderHarness( config ) {
 
 		function step( time ) {
 			steps++;
-			errors.push( ...runTimersUntil( time ) );
+			errors.push( ...runTimersUntil( time + wallOffset ) );
 			runActionsUntil( time );
 			if( options.onStep ) {
 				options.onStep( time );
@@ -319,7 +451,7 @@ function installAudioRenderHarness( config ) {
 		}
 
 		const buffer = await context.startRendering();
-		errors.push( ...runTimersUntil( endTime ) );
+		errors.push( ...runTimersUntil( endTime + wallOffset ) );
 		const channels = [];
 		for( let i = 0; i < buffer.numberOfChannels; i++ ) {
 			channels.push( encodeChannel( buffer.getChannelData( i ) ) );
@@ -361,6 +493,31 @@ function installAudioRenderHarness( config ) {
 		return result;
 	}
 
+	/**
+	 * Renders an unmodulated oscillator carrier for reference checks, in a separate native
+	 * offline context with the same rate and length as the harness render.
+	 *
+	 * @param {Object} spec - { type, frequency, start, waveTables? }
+	 * @returns {Promise<string>} Encoded mono channel
+	 */
+	async function renderCarrier( spec ) {
+		const context = new NativeOfflineAudioContext( 1, lengthFrames(), sampleRate );
+		const oscillator = context.createOscillator();
+		if( spec.waveTables ) {
+			oscillator.setPeriodicWave( context.createPeriodicWave(
+				new Float32Array( spec.waveTables[ 0 ] ), new Float32Array( spec.waveTables[ 1 ] )
+			) );
+		} else {
+			oscillator.type = spec.type;
+		}
+		oscillator.frequency.value = spec.frequency;
+		oscillator.connect( context.destination );
+		oscillator.start( spec.start );
+		const buffer = await context.startRendering();
+		oscillator.disconnect();
+		return encodeChannel( buffer.getChannelData( 0 ) );
+	}
+
 	window.__audioHarness = {
 		"sampleRate": sampleRate,
 		"stepSeconds": stepSeconds,
@@ -370,6 +527,14 @@ function installAudioRenderHarness( config ) {
 		"settle": settle,
 		"now": () => now,
 		"advance": seconds => runTimersUntil( now + seconds ),
+
+		// Wall time passes while the audio clock stands still, as during a context suspension;
+		// later render steps keep timers that far ahead of context time
+		"advanceWall": seconds => {
+			const errors = runTimersUntil( now + seconds );
+			wallOffset += seconds;
+			return errors;
+		},
 		"pendingTimers": () => timers.size,
 		"nodeCounts": () => ( { ...nodeCounts } ),
 		"statechanges": () => ( { ...statechangeLog } ),
@@ -390,7 +555,30 @@ function installAudioRenderHarness( config ) {
 			}
 			locked = false;
 			deliverPageStatechange();
-		}
+		},
+		"simulateInterruption": () => {
+			if( locked ) {
+				return;
+			}
+			locked = true;
+			deliverPageStatechange();
+		},
+		"resumeCalls": () => resumeCalls,
+		"holdTimers": held => {
+			timersHeld = held === true;
+		},
+		"probes": () => probeLog.slice(),
+		"clearProbes": () => {
+			probeLog.length = 0;
+		},
+		"sources": () => sourceLog.map( entry => ( { ...entry } ) ),
+		"liveSources": () => sourceLog.filter( entry => entry.disconnectedAt === null ).length,
+		"settleRenders": async () => {
+			while( pendingRenders.size > 0 ) {
+				await Promise.all( Array.from( pendingRenders ) );
+			}
+		},
+		"renderCarrier": renderCarrier
 	};
 }
 
@@ -465,6 +653,7 @@ async function createHarnessSession( browser ) {
 		if( options.ready !== false && scripts.length > 0 ) {
 			await page.evaluate( () => window.__audioHarness.settle( window.$.ready() ) );
 		}
+		await page.evaluate( () => window.__audioHarness.settleRenders() );
 		if( support === null ) {
 			support = await page.evaluate( () => window.__audioHarness.support );
 		}

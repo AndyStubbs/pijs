@@ -1,7 +1,8 @@
 /**
  * Pi.js - Sound Voices Module (Plugin)
  *
- * Oscillator voices, the voice limit, and the sound() and stopSound() commands.
+ * Synthesized voices: creation, occupancy-interval admission, voice stealing, the live-voice
+ * cap, the single de-clicked stop path, and the sound() and stopSound() commands.
  *
  * @module plugins/sound/voices
  */
@@ -9,12 +10,27 @@
 "use strict";
 
 import * as g_context from "./context.js";
+import * as g_envelope from "./envelope.js";
+import * as g_scheduler from "./scheduler.js";
 
-const m_soundPool = {};
+// Slot holders whose occupancy intervals may overlap at any instant
+export const MAX_VOICES = 64;
+
+// Voices in any node-holding state, including retiring and stopping
+export const MAX_LIVE_VOICES = 128;
+
+const OSCILLATOR_TYPES = [ "triangle", "sine", "square", "sawtooth" ];
+const CAPACITY_WARNING_INTERVAL = 1000;
+
+// Voices by sound ID, in creation order
+const m_voices = new Map();
 let m_nextSoundId = 0;
+let m_nextOrder = 0;
+let m_lastCapacityWarning = -Infinity;
 
-// Cap concurrent oscillators to avoid renderer overload / tab crashes
-const MAX_VOICES = 64;
+g_scheduler.setFillProbe(
+	() => countLiveVoices() < MAX_LIVE_VOICES - g_scheduler.FILL_HEADROOM
+);
 
 
 /*************************************************************************************************
@@ -23,68 +39,326 @@ const MAX_VOICES = 64;
 
 
 /**
- * Disconnect nodes and remove a sound from the pool
+ * Allocate a sound ID
  *
- * @param {string} soundId - Sound ID to clean up
- * @returns {void}
+ * @returns {string} Sound ID
  */
-function cleanupSound( soundId ) {
-	const sound = m_soundPool[ soundId ];
-	if( !sound ) {
-		return;
-	}
-
-	try {
-		sound.oscillator.disconnect();
-	} catch( caughtError ) {
-
-		// Already disconnected
-	}
-
-	try {
-		sound.envelope.disconnect();
-	} catch( caughtError ) {
-
-		// Already disconnected
-	}
-
-	try {
-		sound.master.disconnect();
-	} catch( caughtError ) {
-
-		// Already disconnected
-	}
-
-	delete m_soundPool[ soundId ];
+function nextSoundId() {
+	const soundId = "sound_" + m_nextSoundId;
+	m_nextSoundId += 1;
+	return soundId;
 }
 
 /**
- * Stop oldest voices that have already started when the active voice
- * limit is exceeded. Future-scheduled notes from $.play() are left alone
- * so long melodies are not cut off while being queued.
+ * Count voices that hold nodes and count toward the live-voice cap
+ *
+ * @returns {number} Live voice count
+ */
+function countLiveVoices() {
+	let count = 0;
+	for( const voice of m_voices.values() ) {
+		if( !voice.exempt ) {
+			count += 1;
+		}
+	}
+	return count;
+}
+
+/**
+ * Log a capacity warning at most once per second
  *
  * @returns {void}
  */
-function enforceVoiceLimit() {
-	const audioContext = g_context.getAudioContext();
-	const now = audioContext.currentTime;
-	const activeIds = [];
+function warnCapacity() {
+	const now = Date.now();
+	if( now - m_lastCapacityWarning >= CAPACITY_WARNING_INTERVAL ) {
+		m_lastCapacityWarning = now;
+		console.warn( "sound: Voice capacity reached; a new sound was not played." );
+	}
+}
 
-	for( const soundId in m_soundPool ) {
-		const sound = m_soundPool[ soundId ];
-		if( sound.startTime <= now ) {
-			activeIds.push( soundId );
+/**
+ * Disconnect a voice's nodes and remove it from the voice table; runs once per voice
+ *
+ * @param {Object} voice - Voice record
+ * @returns {void}
+ */
+function disposeVoice( voice ) {
+	if( voice.disposed ) {
+		return;
+	}
+	voice.disposed = true;
+	for( const node of voice.nodes ) {
+		try {
+			node.disconnect();
+		} catch( caughtError ) {
+
+			// Already disconnected
+		}
+	}
+	m_voices.delete( voice.id );
+}
+
+/**
+ * Stop a voice immediately without a fade and dispose of it now
+ *
+ * Used for voices that are not yet audible and for forced node-cap cleanup, the only path
+ * that can click.
+ *
+ * @param {Object} voice - Voice record
+ * @returns {void}
+ */
+function hardStop( voice ) {
+	try {
+		voice.source.stop();
+	} catch( caughtError ) {
+
+		// Already stopped
+	}
+	disposeVoice( voice );
+}
+
+/**
+ * Build a voice's nodes and start it
+ *
+ * @param {Object} spec - Voice spec
+ * @param {string} soundId - Sound ID
+ * @returns {Object} Voice record
+ */
+function buildVoice( spec, soundId ) {
+	const context = g_context.getAudioContext();
+	const env = spec.env;
+	const offset = spec.offset || 0;
+	const begin = spec.start + offset;
+	const end = spec.start + g_envelope.getEnvelopeLength( env );
+	const voice = {
+		"id": soundId,
+		"exempt": spec.exempt === true,
+		"order": m_nextOrder,
+		"start": spec.start,
+		"begin": begin,
+		"end": end,
+		"slotEnd": end,
+		"stopKind": null,
+		"fadeStart": null,
+		"env": env,
+		"peak": spec.peak,
+		"protected": false,
+		"nodes": [],
+		"source": null,
+		"gain": null,
+		"disposed": false
+	};
+	m_nextOrder += 1;
+	if( voice.exempt ) {
+		voice.slotEnd = null;
+	}
+
+	try {
+		const source = context.createOscillator();
+		voice.source = source;
+		voice.nodes.push( source );
+		if( spec.oType === "custom" ) {
+			source.setPeriodicWave(
+				context.createPeriodicWave( spec.waveTables[ 0 ], spec.waveTables[ 1 ] )
+			);
+		} else {
+			source.type = spec.oType;
+		}
+
+		// Pitch, with an optional exponential sweep over the gate
+		if( spec.frequencyEnd != null ) {
+			let frequency = spec.frequency;
+			if( offset > 0 && env.gate > 0 ) {
+				const progress = Math.min( offset / env.gate, 1 );
+				const ratio = spec.frequencyEnd / spec.frequency;
+				frequency = spec.frequency * Math.pow( ratio, progress );
+			}
+			source.frequency.setValueAtTime( frequency, begin );
+			if( spec.start + env.gate > begin ) {
+				source.frequency.exponentialRampToValueAtTime(
+					spec.frequencyEnd, spec.start + env.gate
+				);
+			}
+		} else {
+			source.frequency.value = spec.frequency;
+		}
+
+		// A late start multiplies the remaining envelope by a MIN_RAMP fade-in
+		let output = source;
+		if( offset > 0 ) {
+			const onset = context.createGain();
+			voice.nodes.push( onset );
+			onset.gain.value = 0;
+			onset.gain.setValueAtTime( 0, begin );
+			onset.gain.linearRampToValueAtTime( 1, begin + g_envelope.MIN_RAMP );
+			output.connect( onset );
+			output = onset;
+		}
+
+		const gain = context.createGain();
+		voice.gain = gain;
+		voice.nodes.push( gain );
+		gain.gain.value = 0;
+		g_envelope.applySchedule(
+			gain.gain, g_envelope.buildEnvelopeSchedule( env, spec.start, spec.peak, offset )
+		);
+		output.connect( gain );
+		output = gain;
+
+		// Panner only for panned voices
+		if( spec.pan ) {
+			const panner = context.createStereoPanner();
+			voice.nodes.push( panner );
+			panner.pan.value = spec.pan;
+			output.connect( panner );
+			output = panner;
+		}
+
+		output.connect( g_context.getBusInput( spec.bus ) );
+		source.onended = () => {
+			disposeVoice( voice );
+		};
+		source.start( begin );
+		source.stop( end );
+	} catch( error ) {
+		voice.disposed = true;
+		for( const node of voice.nodes ) {
+			try {
+				node.disconnect();
+			} catch( caughtError ) {
+
+				// Already disconnected
+			}
+		}
+		throw error;
+	}
+
+	m_voices.set( soundId, voice );
+	return voice;
+}
+
+/**
+ * Admit a voice under the slot and live-voice caps, then create it
+ *
+ * Victims and cleanup are chosen first and committed only when the voice is admitted, so a
+ * rejection touches no existing voice.
+ *
+ * @param {Object} spec - Voice spec with start, offset, and env
+ * @param {string} soundId - Sound ID
+ * @returns {Object|null} Voice record, or null when rejected
+ */
+function admitAndCreate( spec, soundId ) {
+	const context = g_context.getAudioContext();
+	const now = context.currentTime;
+	const lead = g_context.getScheduleLead();
+	const live = [];
+	for( const voice of m_voices.values() ) {
+		if( !voice.exempt ) {
+			live.push( voice );
 		}
 	}
 
-	if( activeIds.length < MAX_VOICES ) {
-		return;
+	// Node cap: pick the voice to free before planning admission
+	let cleanup = null;
+	if( live.length >= MAX_LIVE_VOICES ) {
+		cleanup = chooseCleanup( live, now, lead );
+		if( cleanup === null ) {
+			warnCapacity();
+			return null;
+		}
 	}
 
-	const removeCount = activeIds.length - MAX_VOICES + 1;
-	for( let i = 0; i < removeCount; i++ ) {
-		stopSoundById( activeIds[ i ] );
+	const begin = spec.start + ( spec.offset || 0 );
+	const end = spec.start + g_envelope.getEnvelopeLength( spec.env );
+	const holders = [];
+	for( const voice of live ) {
+		if( voice !== cleanup && voice.slotEnd !== null && voice.slotEnd > begin ) {
+			holders.push( {
+				"voice": voice,
+				"start": voice.begin,
+				"end": voice.slotEnd,
+				"order": voice.order,
+				"protected": voice.protected
+			} );
+		}
 	}
+	const plan = planAdmission( holders, begin, end, MAX_VOICES );
+	if( !plan.admit ) {
+		warnCapacity();
+		return null;
+	}
+
+	if( cleanup !== null ) {
+		hardStop( cleanup );
+	}
+	for( const victim of plan.victims ) {
+		stopVoice( victim.holder.voice, victim.conflict, "steal" );
+	}
+	return buildVoice( spec, soundId );
+}
+
+/**
+ * Start a sound request now or at its scheduled time, applying the late-start rule
+ *
+ * An item is late when its start is before the scheduling lead. Expiration is checked
+ * first; a surviving item within grace starts at the lead at its timeline position with an
+ * onset fade, and a one-shot beyond grace is skipped. Expired and skipped requests create no
+ * nodes and their IDs are completed.
+ *
+ * @param {Object} spec - Voice spec
+ * @param {string} soundId - Sound ID
+ * @returns {void}
+ */
+function startRequest( spec, soundId ) {
+	const context = g_context.getAudioContext();
+	const now = context.currentTime;
+	const lead = g_context.getScheduleLead();
+	spec.offset = 0;
+	if( spec.start < lead ) {
+		const end = spec.start + g_envelope.getEnvelopeLength( spec.env );
+		if( end - lead < g_envelope.MIN_RAMP ) {
+			return;
+		}
+		if( now - spec.start > g_scheduler.LATE_GRACE ) {
+			return;
+		}
+		spec.offset = lead - spec.start;
+	}
+	admitAndCreate( spec, soundId );
+}
+
+/**
+ * Interim PLAY rule: only started PLAY voices count toward MAX_VOICES, and the oldest
+ * started one is stopped when the count is reached.
+ * Interim PLAY exemption — removed by task 4.2.
+ *
+ * @returns {void}
+ */
+function enforcePlayVoiceLimit() {
+	const now = g_context.getAudioContext().currentTime;
+	const started = [];
+	for( const voice of m_voices.values() ) {
+		if( voice.exempt && voice.stopKind === null && voice.begin <= now ) {
+			started.push( voice );
+		}
+	}
+	for( let i = 0; i <= started.length - MAX_VOICES; i++ ) {
+		stopVoice( started[ i ], null, "stop" );
+	}
+}
+
+/**
+ * Throw a RangeError with an error code
+ *
+ * @param {string} message - Error message
+ * @param {string} code - Error code
+ * @returns {never}
+ */
+function throwRange( message, code ) {
+	const error = new RangeError( message );
+	error.code = code;
+	throw error;
 }
 
 
@@ -94,150 +368,226 @@ function enforceVoiceLimit() {
 
 
 /**
- * Stop a sound by ID (internal function for play module)
+ * Plan admission of an interval against slot holders' occupancy intervals
  *
- * @param {string} soundId - Sound ID to stop
+ * The conflict time is the first instant in [start, end) at which the incoming voice would
+ * make maxVoices + 1 overlapping holders. The victim is the oldest unprotected holder whose
+ * interval contains it; its interval is truncated there and the check repeats. Victims are
+ * tentative: when any conflict cannot be resolved, the result has no victims.
+ *
+ * @param {Array<Object>} holders - { start, end, order, protected } intervals [start, end)
+ * @param {number} start - Incoming start time
+ * @param {number} end - Incoming end time
+ * @param {number} maxVoices - Slot limit
+ * @returns {Object} { admit, victims: [{ holder, conflict }] }
+ */
+export function planAdmission( holders, start, end, maxVoices ) {
+	const ends = new Map();
+	for( const holder of holders ) {
+		ends.set( holder, holder.end );
+	}
+	const victims = [];
+
+	for( let guard = 0; guard <= holders.length; guard++ ) {
+
+		// The peak count changes only at the incoming start and at holder starts inside it
+		const points = [ start ];
+		for( const holder of holders ) {
+			if( holder.start > start && holder.start < end ) {
+				points.push( holder.start );
+			}
+		}
+		points.sort( ( a, b ) => a - b );
+
+		let conflict = null;
+		for( const point of points ) {
+			let count = 0;
+			for( const holder of holders ) {
+				if( holder.start <= point && point < ends.get( holder ) ) {
+					count += 1;
+				}
+			}
+			if( count >= maxVoices ) {
+				conflict = point;
+				break;
+			}
+		}
+		if( conflict === null ) {
+			return { "admit": true, "victims": victims };
+		}
+
+		let victim = null;
+		for( const holder of holders ) {
+			if(
+				!holder.protected && holder.start <= conflict && conflict < ends.get( holder ) &&
+				( victim === null || holder.order < victim.order )
+			) {
+				victim = holder;
+			}
+		}
+		if( victim === null ) {
+			return { "admit": false, "victims": [] };
+		}
+		ends.set( victim, conflict );
+		victims.push( { "holder": victim, "conflict": conflict } );
+	}
+
+	return { "admit": false, "victims": [] };
+}
+
+/**
+ * Choose the voice to free when the live-voice cap is reached
+ *
+ * Order: a retiring voice not yet audible; the stopping voice furthest into its fade (earliest
+ * deadline, including finished voices awaiting disposal); the oldest audible retiring voice;
+ * the oldest unprotected active voice. Protected and scheduled voices are never chosen.
+ *
+ * @param {Array<Object>} voices - Records with begin, end, order, stopKind, fadeStart, protected
+ * @param {number} now - Current context time
+ * @param {number} lead - Scheduling lead
+ * @returns {Object|null} Voice to free, or null to reject the incoming voice
+ */
+export function chooseCleanup( voices, now, lead ) {
+	let silentRetiring = null;
+	let stopping = null;
+	let audibleRetiring = null;
+	let active = null;
+	for( const voice of voices ) {
+		const retiring = voice.stopKind === "steal" && now < voice.fadeStart;
+		if( retiring && voice.begin >= lead ) {
+			if( silentRetiring === null || voice.order < silentRetiring.order ) {
+				silentRetiring = voice;
+			}
+		} else if( ( voice.stopKind !== null && !retiring ) || voice.end <= now ) {
+			if( stopping === null || voice.end < stopping.end ) {
+				stopping = voice;
+			}
+		} else if( retiring ) {
+			if( audibleRetiring === null || voice.order < audibleRetiring.order ) {
+				audibleRetiring = voice;
+			}
+		} else if( !voice.protected && voice.begin < lead ) {
+			if( active === null || voice.order < active.order ) {
+				active = voice;
+			}
+		}
+	}
+	return silentRetiring || stopping || audibleRetiring || active;
+}
+
+/**
+ * Lifecycle state of a node-holding voice
+ *
+ * @param {Object} voice - Voice record
+ * @param {number} now - Current context time
+ * @param {number} lead - Scheduling lead
+ * @returns {string} "scheduled", "active", "retiring", or "stopping"
+ */
+export function getVoiceState( voice, now, lead ) {
+	if( voice.stopKind === "stop" ) {
+		return "stopping";
+	}
+	if( voice.stopKind === "steal" ) {
+		if( now < voice.fadeStart ) {
+			return "retiring";
+		}
+		return "stopping";
+	}
+	if( voice.begin >= lead ) {
+		return "scheduled";
+	}
+	return "active";
+}
+
+/**
+ * Stop a voice through the single de-clicked path
+ *
+ * `when` is the requested silence deadline; omitted, the fade starts at the scheduling
+ * lead. A voice that would not sound before the fade starts is cancelled without sounding.
+ * An earlier committed end or fade is never prolonged. Otherwise the analytic envelope value
+ * is pinned at the fade start and gain ramps to 0 over STOP_FADE.
+ *
+ * @param {Object} voice - Voice record
+ * @param {number|null} when - Silence deadline in context time, or null for now
+ * @param {string} kind - "stop" for explicit stops (release the slot) or "steal"
  * @returns {void}
  */
-export function stopSoundById( soundId ) {
-	const sound = m_soundPool[ soundId ];
-	if( !sound ) {
+export function stopVoice( voice, when, kind ) {
+	if( voice.disposed ) {
+		return;
+	}
+	const lead = g_context.getScheduleLead();
+	let fadeStart = lead;
+	if( when !== null && when !== undefined ) {
+		fadeStart = Math.max( lead, when - g_envelope.STOP_FADE );
+	}
+
+	if( kind === "steal" ) {
+		if( voice.slotEnd !== null ) {
+			voice.slotEnd = Math.min( voice.slotEnd, when );
+		}
+	} else {
+		voice.slotEnd = null;
+	}
+
+	if( voice.begin >= fadeStart ) {
+		hardStop( voice );
 		return;
 	}
 
-	try {
-		sound.oscillator.stop();
-	} catch( caughtError ) {
-
-		// Already stopped; clean up immediately
-		cleanupSound( soundId );
+	const deadline = fadeStart + g_envelope.STOP_FADE;
+	if( kind === "stop" ) {
+		voice.stopKind = "stop";
 	}
+	if( voice.end <= deadline ) {
+		return;
+	}
+	if( voice.stopKind === null ) {
+		voice.stopKind = "steal";
+	}
+	voice.end = deadline;
+	voice.fadeStart = fadeStart;
+
+	const param = voice.gain.gain;
+	param.cancelScheduledValues( fadeStart );
+	g_envelope.applySchedule( param, [
+		g_envelope.stopHoldEvent( voice.env, voice.start, voice.peak, fadeStart ),
+		{ "type": "linear", "time": deadline, "value": 0 }
+	] );
+	voice.source.stop( deadline );
 }
 
 /**
- * Create a sound using Web Audio API (internal function exported for play module)
+ * Stop a sound or pending request by ID; unknown and completed IDs are ignored
  *
- * @param {AudioContext} audioContext - Audio context
- * @param {number} frequency - Frequency in Hz
- * @param {number} volume - Volume (0-1)
- * @param {number} attackTime - Attack time in seconds
- * @param {number} sustainTime - Sustain time in seconds
- * @param {number} decayTime - Decay time in seconds
- * @param {number} stopTime - Total sound duration
- * @param {string} oType - Oscillator type
- * @param {Array} waveTables - Custom wave tables (if oType is "custom")
- * @param {number} delay - Delay before playing
- * @returns {string} Sound ID
- */
-export function createSound(
-	audioContext, frequency, volume, attackTime, sustainTime,
-	decayTime, stopTime, oType, waveTables, delay
-) {
-	enforceVoiceLimit();
-
-	const oscillator = audioContext.createOscillator();
-	const envelope = audioContext.createGain();
-	const master = audioContext.createGain();
-	const startTime = audioContext.currentTime + delay;
-
-	master.gain.value = g_context.getVolume();
-	oscillator.frequency.value = frequency;
-
-	// Set oscillator type
-	if( oType === "custom" ) {
-		const real = waveTables[ 0 ];
-		const imag = waveTables[ 1 ];
-		const wave = audioContext.createPeriodicWave( real, imag );
-		oscillator.setPeriodicWave( wave );
-	} else {
-		oscillator.type = oType;
-	}
-
-	// Connect through shared master to limit destination fan-out
-	oscillator.connect( envelope );
-	envelope.connect( master );
-	master.connect( g_context.getMasterGain() );
-
-	const soundId = "sound_" + m_nextSoundId;
-	m_nextSoundId += 1;
-	m_soundPool[ soundId ] = {
-		"oscillator": oscillator,
-		"envelope": envelope,
-		"master": master,
-		"audioContext": audioContext,
-		"startTime": startTime
-	};
-
-	// Disconnect nodes and remove from pool when playback ends
-	oscillator.onended = function() {
-		cleanupSound( soundId );
-	};
-
-	try {
-		const attackEnd = startTime + attackTime;
-		const sustainEnd = attackEnd + sustainTime;
-		const decayEnd = sustainEnd + decayTime;
-		let endTime = startTime + stopTime;
-
-		if( endTime < decayEnd ) {
-			endTime = decayEnd;
-		}
-
-		// Use linear ramps instead of setValueCurveAtTime. Abutting curves on a
-		// long-lived shared context often throw InvalidStateError; callers that
-		// swallow errors then leak connected nodes until the tab crashes.
-		if( attackTime > 0 ) {
-			envelope.gain.setValueAtTime( 0, startTime );
-			envelope.gain.linearRampToValueAtTime( volume, attackEnd );
-		} else {
-			envelope.gain.setValueAtTime( volume, startTime );
-		}
-
-		if( sustainTime > 0 ) {
-			envelope.gain.linearRampToValueAtTime( 0.8 * volume, sustainEnd );
-		}
-
-		if( decayTime > 0 ) {
-			envelope.gain.linearRampToValueAtTime( 0.1 * volume, sustainEnd + decayTime * 0.5 );
-			envelope.gain.linearRampToValueAtTime( 0, decayEnd );
-		} else {
-			envelope.gain.linearRampToValueAtTime( 0, endTime );
-		}
-
-		oscillator.start( startTime );
-		oscillator.stop( endTime );
-	} catch( err ) {
-		cleanupSound( soundId );
-		throw err;
-	}
-
-	return soundId;
-}
-
-/**
- * Ramp every active sound's master gain to a new global volume
- *
- * @param {number} volume - Volume (0-1)
+ * @param {string} soundId - Sound ID
+ * @param {number|null} [when=null] - Silence deadline in context time
  * @returns {void}
  */
-export function rampVoiceVolumes( volume ) {
-	for( const soundId in m_soundPool ) {
-		const sound = m_soundPool[ soundId ];
-		if( volume === 0 ) {
-
-			// Use exponential ramp to near-zero, then set to zero
-			sound.master.gain.exponentialRampToValueAtTime(
-				0.01, sound.audioContext.currentTime + 0.1
-			);
-			sound.master.gain.setValueAtTime(
-				0, sound.audioContext.currentTime + 0.11
-			);
-		} else {
-			sound.master.gain.exponentialRampToValueAtTime(
-				volume, sound.audioContext.currentTime + 0.1
-			);
-		}
+export function stopSoundById( soundId, when = null ) {
+	if( g_scheduler.removePending( soundId ) ) {
+		return;
 	}
+	const voice = m_voices.get( soundId );
+	if( voice ) {
+		stopVoice( voice, when, "stop" );
+	}
+}
+
+/**
+ * Create a PLAY voice. PLAY voices keep the up-front emitter until the Phase 4 scheduler.
+ * Interim PLAY exemption — removed by task 4.2: they skip slot admission and the live-voice
+ * cap.
+ *
+ * @param {Object} spec - frequency, oType, waveTables, peak, env, bus, and start
+ * @returns {string} Sound ID
+ */
+export function createPlayVoice( spec ) {
+	enforcePlayVoiceLimit();
+	const soundId = nextSoundId();
+	spec.exempt = true;
+	buildVoice( spec, soundId );
+	return soundId;
 }
 
 
@@ -257,25 +607,32 @@ export function registerVoices( pluginApi ) {
 
 
 	pluginApi.addCommand( "sound", sound, false, [
-		"frequency", "duration", "volume", "oType", "delay", "attack", "decay"
+		"frequency", "duration", "volume", "oType", "delay", "attackTime", "decayTime",
+		"sustainLevel", "releaseTime", "pan", "frequencyEnd"
 	] );
 
 	/**
-	 * Play a sound by frequency using Web Audio API
+	 * Play a synthesized sound with an ADSR envelope
 	 *
 	 * @param {Object} options - Command options
-	 * @param {number} options.frequency - Frequency in Hz
-	 * @param {number} options.duration - Duration in seconds (default: 1)
-	 * @param {number} options.volume - Volume 0-1 (default: 1)
+	 * @param {number} options.frequency - Frequency in Hz (default: 440)
+	 * @param {number} options.duration - Gate length in seconds before release (default: 1)
+	 * @param {number} options.volume - Peak gain 0-1 (default: 1)
 	 * @param {string|Array} options.oType - Oscillator type or custom wave table (default:
 	 * "triangle")
 	 * @param {number} options.delay - Delay before playing in seconds (default: 0)
-	 * @param {number} options.attack - Attack time in seconds (default: 0)
-	 * @param {number} options.decay - Decay time in seconds (default: 0.1)
+	 * @param {number} options.attackTime - Seconds from silence to peak (default: 0)
+	 * @param {number} options.decayTime - Seconds from peak to the sustain level (default: 0)
+	 * @param {number} options.sustainLevel - Fraction of peak held until the gate ends
+	 * (default: 1)
+	 * @param {number} options.releaseTime - Seconds from the gate-end level to silence
+	 * (default: 0.1)
+	 * @param {number} options.pan - Stereo position from -1 (left) to 1 (right) (default: 0)
+	 * @param {number} options.frequencyEnd - Exponential sweep target in Hz over the duration
 	 * @returns {string} Sound ID for use with stopSound
 	 */
 	function sound( options ) {
-		const frequency = Math.round( utils.getFloat( options.frequency, 440 ) );
+		const frequency = utils.getFloat( options.frequency, 440 );
 		const duration = utils.getFloat( options.duration, 1 );
 		const volume = utils.getFloat( options.volume, 1 );
 		let oType;
@@ -285,41 +642,76 @@ export function registerVoices( pluginApi ) {
 			oType = "triangle";
 		}
 		const delay = utils.getFloat( options.delay, 0 );
-		const attack = utils.getFloat( options.attack, 0 );
-		const decay = utils.getFloat( options.decay, 0.1 );
+		const attackTime = utils.getFloat( options.attackTime, 0 );
+		const decayTime = utils.getFloat( options.decayTime, 0 );
+		const sustainLevel = utils.getFloat( options.sustainLevel, 1 );
+		const releaseTime = utils.getFloat( options.releaseTime, 0.1 );
+		const pan = utils.getFloat( options.pan, 0 );
+		let frequencyEnd = null;
+		if( options.frequencyEnd != null ) {
+			frequencyEnd = utils.getFloat( options.frequencyEnd, NaN );
+		}
 
 		// Validate duration
 		if( duration < 0 ) {
-			const error = new RangeError(
-				"sound: Parameter duration must be a number greater than or equal to 0."
+			throwRange(
+				"sound: Parameter duration must be a number greater than or equal to 0.",
+				"INVALID_DURATION"
 			);
-			error.code = "INVALID_DURATION";
-			throw error;
 		}
 
 		// Validate volume
 		if( volume < 0 || volume > 1 ) {
-			const error = new RangeError( "sound: Parameter volume must be a number between 0 and 1." );
-			error.code = "INVALID_VOLUME";
-			throw error;
-		}
-
-		// Validate attack
-		if( attack < 0 ) {
-			const error = new RangeError(
-				"sound: Parameter attack must be a number greater than or equal to 0."
+			throwRange(
+				"sound: Parameter volume must be a number between 0 and 1.", "INVALID_VOLUME"
 			);
-			error.code = "INVALID_ATTACK";
-			throw error;
 		}
 
 		// Validate delay
 		if( delay < 0 ) {
-			const error = new RangeError(
-				"sound: Parameter delay must be a number greater than or equal to 0."
+			throwRange(
+				"sound: Parameter delay must be a number greater than or equal to 0.",
+				"INVALID_DELAY"
 			);
-			error.code = "INVALID_DELAY";
-			throw error;
+		}
+
+		// Validate envelope stages
+		if( attackTime < 0 ) {
+			throwRange(
+				"sound: Parameter attackTime must be a number greater than or equal to 0.",
+				"INVALID_ATTACK_TIME"
+			);
+		}
+		if( decayTime < 0 ) {
+			throwRange(
+				"sound: Parameter decayTime must be a number greater than or equal to 0.",
+				"INVALID_DECAY_TIME"
+			);
+		}
+		if( sustainLevel < 0 || sustainLevel > 1 ) {
+			throwRange(
+				"sound: Parameter sustainLevel must be a number between 0 and 1.",
+				"INVALID_SUSTAIN_LEVEL"
+			);
+		}
+		if( releaseTime < 0 ) {
+			throwRange(
+				"sound: Parameter releaseTime must be a number greater than or equal to 0.",
+				"INVALID_RELEASE_TIME"
+			);
+		}
+
+		// Validate pan
+		if( pan < -1 || pan > 1 ) {
+			throwRange( "sound: Parameter pan must be a number between -1 and 1.", "INVALID_PAN" );
+		}
+
+		// An exponential sweep cannot reach or cross zero
+		if( frequencyEnd !== null && !( frequency > 0 && frequencyEnd > 0 ) ) {
+			throwRange(
+				"sound: Parameters frequency and frequencyEnd must be greater than 0 for a sweep.",
+				"INVALID_FREQUENCY"
+			);
 		}
 
 		let waveTables = null;
@@ -333,7 +725,8 @@ export function registerVoices( pluginApi ) {
 				oType[ 0 ].length !== oType[ 1 ].length
 			) {
 				const error = new TypeError(
-					"sound: Parameter oType array must contain two non-empty arrays of equal length."
+					"sound: Parameter oType array must contain two non-empty arrays of " +
+					"equal length."
 				);
 				error.code = "INVALID_WAVE_TABLE";
 				throw error;
@@ -360,33 +753,60 @@ export function registerVoices( pluginApi ) {
 			const error = new TypeError( "sound: Parameter oType must be a string or an array." );
 			error.code = "INVALID_OTYPE";
 			throw error;
-		} else {
-
-			// Validate oType string
-			const validTypes = [ "triangle", "sine", "square", "sawtooth" ];
-			if( validTypes.indexOf( oType ) === -1 ) {
-				const error = new Error(
-					"sound: Parameter oType must be one of: triangle, sine, square, sawtooth."
-				);
-				error.code = "INVALID_OTYPE";
-				throw error;
-			}
+		} else if( OSCILLATOR_TYPES.indexOf( oType ) === -1 ) {
+			const error = new Error(
+				"sound: Parameter oType must be one of: triangle, sine, square, sawtooth."
+			);
+			error.code = "INVALID_OTYPE";
+			throw error;
 		}
 
-		// Calculate stop time
-		const stopTime = attack + duration + decay;
+		// A locked context drops one-shots; the ID is returned in the completed state
+		const context = g_context.getAudioContext();
+		const soundId = nextSoundId();
+		if( g_context.isLocked() ) {
+			return soundId;
+		}
 
-		return createSound(
-			g_context.getAudioContext(), frequency, volume, attack, duration,
-			decay, stopTime, oType, waveTables, delay
-		);
+		const now = context.currentTime;
+		const spec = {
+			"frequency": frequency,
+			"frequencyEnd": frequencyEnd,
+			"oType": oType,
+			"waveTables": waveTables,
+			"peak": volume,
+			"pan": pan,
+			"bus": "sfx",
+			"env": g_envelope.resolveEnvelope( {
+				"duration": duration,
+				"attackTime": attackTime,
+				"decayTime": decayTime,
+				"sustainLevel": sustainLevel,
+				"releaseTime": releaseTime
+			} ),
+			"start": Math.max( now + delay, g_context.getScheduleLead() )
+		};
+
+		// Start now inside the window; otherwise keep a pending record until the window
+		if( g_scheduler.shouldCreate( spec.start, now ) ) {
+			startRequest( spec, soundId );
+		} else {
+			g_scheduler.addPending( {
+				"id": soundId,
+				"kind": "sound",
+				"start": spec.start,
+				"run": () => startRequest( spec, soundId )
+			}, "sound" );
+		}
+
+		return soundId;
 	}
 
 
 	pluginApi.addCommand( "stopSound", stopSound, false, [ "soundId" ] );
 
 	/**
-	 * Stop a playing sound or all sounds
+	 * Stop a playing sound or all sounds with a short fade
 	 *
 	 * @param {Object} options - Command options
 	 * @param {string} options.soundId - Sound ID (null to stop all sounds)
@@ -395,11 +815,11 @@ export function registerVoices( pluginApi ) {
 	function stopSound( options ) {
 		const soundId = options.soundId;
 
-		// If no soundId, stop all sounds
+		// If no soundId, stop all sounds and drop pending requests
 		if( soundId == null ) {
-			const soundIds = Object.keys( m_soundPool );
-			for( let i = 0; i < soundIds.length; i++ ) {
-				stopSoundById( soundIds[ i ] );
+			g_scheduler.clearPending( "sound" );
+			for( const voice of Array.from( m_voices.values() ) ) {
+				stopVoice( voice, null, "stop" );
 			}
 			return;
 		}

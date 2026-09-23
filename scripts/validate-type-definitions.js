@@ -109,6 +109,17 @@ const REQUIRED_DECLARATIONS = [
 	{
 		"name": "plugin service lookup",
 		"text": "getService: ( pluginName: string ) => any;"
+	},
+	{
+		"name": "sound positional overload with ADSR, pan, and sweep",
+		"text": "sound( frequency?: number, duration?: number, volume?: number, " +
+			"oType?: string | any[], delay?: number, attackTime?: number, " +
+			"decayTime?: number, sustainLevel?: number, releaseTime?: number, pan?: number, " +
+			"frequencyEnd?: number ): string;"
+	},
+	{
+		"name": "sound limiter switch",
+		"text": "setSoundLimiter( enabled: boolean ): void;"
 	}
 ];
 

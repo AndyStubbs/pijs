@@ -9,6 +9,7 @@
 "use strict";
 
 import * as g_context from "./context.js";
+import * as g_envelope from "./envelope.js";
 import * as g_voices from "./voices.js";
 
 const m_tracks = {};
@@ -173,7 +174,8 @@ function createTrack( playString ) {
 			"trackIds": trackIds,
 			"type": "triangle",
 			"waveTables": waveTables,
-			"sounds": []
+			"sounds": [],
+			"deferred": null
 		};
 		m_allTracks.push( trackId );
 		trackIds.push( trackId );
@@ -600,6 +602,80 @@ function getNoteLength( val ) {
 	return 0.875;
 }
 
+/**
+ * Generate a track's notes and create their voices on the music bus
+ *
+ * Until the Phase 4 scheduler, every note's voice is created up front. The 2.2 rates map
+ * onto the ADSR envelope: the attack stage is the attack, the old sustain stage decays to
+ * 0.8 of the note volume and ends the gate, and the old decay stage is the release.
+ *
+ * @param {number} trackId - First track ID
+ * @returns {void}
+ */
+function emitTrack( trackId ) {
+	const track = m_tracks[ trackId ];
+	if( !track ) {
+		return;
+	}
+	track.deferred = null;
+
+	// Generate all play data, sorted by time
+	m_playData = [];
+	playTrack( trackId );
+	m_playData.sort( ( a, b ) => a.time - b.time );
+
+	const base = g_context.getScheduleLead();
+	for( let i = 0; i < m_playData.length; i++ ) {
+		const playData = m_playData[ i ];
+		let attackTime = playData.attackTime;
+		let decayTime = playData.sustainTime;
+		let releaseTime = playData.decayTime;
+
+		// Full-note mode (MW) scales the envelope so the voice ends at the note interval
+		const total = attackTime + decayTime + releaseTime;
+		if( playData.stopTime < total ) {
+			const scale = playData.stopTime / total;
+			attackTime *= scale;
+			decayTime *= scale;
+			releaseTime *= scale;
+		}
+
+		playData.track.sounds.push( g_voices.createPlayVoice( {
+			"frequency": playData.frequency,
+			"frequencyEnd": null,
+			"oType": playData.oType,
+			"waveTables": playData.waveTables,
+			"peak": playData.volume,
+			"pan": 0,
+			"bus": "music",
+			"env": g_envelope.resolveEnvelope( {
+				"duration": attackTime + decayTime,
+				"attackTime": attackTime,
+				"decayTime": decayTime,
+				"sustainLevel": 0.8,
+				"releaseTime": releaseTime
+			} ),
+			"start": base + playData.time
+		} ) );
+	}
+}
+
+/**
+ * Stop a track's voices, or cancel its deferred start
+ *
+ * @param {Object} track - Track object
+ * @returns {void}
+ */
+function stopTrackSounds( track ) {
+	if( track.deferred ) {
+		g_context.cancelUnlock( track.deferred );
+		track.deferred = null;
+	}
+	for( let j = 0; j < track.sounds.length; j++ ) {
+		g_voices.stopSoundById( track.sounds[ j ] );
+	}
+}
+
 
 /*************************************************************************************************
  * Plugin Registration
@@ -663,28 +739,17 @@ export function registerPlay( pluginApi ) {
 		// Create track from play string
 		const trackId = createTrack( playString );
 
-		// Generate all play data
-		m_playData = [];
-		playTrack( trackId );
-
-		// Sort by time
-		m_playData.sort( ( a, b ) => a.time - b.time );
-
-		// Reuse shared audio context for all notes
-		const audioContext = g_context.getAudioContext();
-
-		// Create all sounds
-		for( let i = 0; i < m_playData.length; i++ ) {
-			const playData = m_playData[ i ];
-			playData.track.sounds.push(
-				g_voices.createSound(
-					audioContext, playData.frequency, playData.volume, playData.attackTime,
-					playData.sustainTime, playData.decayTime, playData.stopTime, playData.oType,
-					playData.waveTables, playData.time
-				)
-			);
+		// A locked context defers the song until the unlocking gesture
+		if( g_context.isLocked() ) {
+			const track = m_tracks[ trackId ];
+			track.deferred = () => {
+				emitTrack( trackId );
+			};
+			g_context.onUnlock( track.deferred );
+			return trackId;
 		}
 
+		emitTrack( trackId );
 		return trackId;
 	}
 
@@ -706,9 +771,7 @@ export function registerPlay( pluginApi ) {
 			for( let i = 0; i < m_allTracks.length; i++ ) {
 				const track = m_tracks[ m_allTracks[ i ] ];
 				if( track ) {
-					for( let j = 0; j < track.sounds.length; j++ ) {
-						g_voices.stopSoundById( track.sounds[ j ] );
-					}
+					stopTrackSounds( track );
 					delete m_tracks[ m_allTracks[ i ] ];
 				}
 			}
@@ -716,11 +779,13 @@ export function registerPlay( pluginApi ) {
 			return;
 		}
 
-		// Stop specific track
+		// Stop a specific track and its simultaneous tracks
 		if( m_tracks[ trackId ] ) {
-			const track = m_tracks[ trackId ];
-			for( let j = 0; j < track.sounds.length; j++ ) {
-				g_voices.stopSoundById( track.sounds[ j ] );
+			const trackIds = m_tracks[ trackId ].trackIds;
+			for( let i = 0; i < trackIds.length; i++ ) {
+				if( m_tracks[ trackIds[ i ] ] ) {
+					stopTrackSounds( m_tracks[ trackIds[ i ] ] );
+				}
 			}
 			removeTrack( trackId );
 		}

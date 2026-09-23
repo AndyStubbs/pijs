@@ -70,6 +70,24 @@ Playwright's Windows WebKit build has no `AudioContext` or `OfflineAudioContext`
 coverage for WebKit needs a platform whose WebKit build includes Web Audio, and Safari needs
 manual listening. Firefox also lacks `AudioParam.cancelAndHoldAtTime()`.
 
+The harness also records AudioParam automation calls and source lifetimes through prototype
+wrappers (`probes()`, `sources()`, `liveSources()`), withholds timers to simulate a stalled main
+thread (`holdTimers()`), advances wall time while the audio clock is frozen (`advanceWall()`),
+re-locks a locked-context document (`simulateInterruption()`), and renders unmodulated
+carriers for reference checks (`renderCarrier()`). Each load waits for offline renders the page
+started, such as the sound plugin's compressor probe. Suites share their per-engine setup
+through `test/unit/audio-browser-suite.js`:
+
+| Test | Covers |
+| --- | --- |
+| `audio-render-browser.test.js` | Harness behavior, state masking, determinism |
+| `audio-voices-browser.test.js` | Envelopes, stops, steals, caps, late starts, locking |
+| `audio-bus-browser.test.js` | Limiter ceiling and quality, master volume, bus-volume service |
+| `sound-envelope.test.js`, `sound-admission.test.js` | Envelope math and slot admission (Node) |
+
+Focused level and timing checks call `setSoundLimiter( false )`: Chromium's compressor delays
+its output by about 6 ms, and the limiter changes levels above its threshold.
+
 Click checks compare renders with a reference carrier multiplied by an independent oracle
 envelope (`test/unit/audio-metrics.js`). Tolerances are recorded per metric and engine in
 `test/unit/audio-tolerances.js`; run the calibration test with `PI_AUDIO_CALIBRATE=1` to print
@@ -92,9 +110,11 @@ Each sound phase closes with a listening pass in every engine. Run `npm run buil
 In each engine:
 
 1. Click the page once so the browser allows audio.
-2. With the master volume at 0.75, play A and B for every preset. They should match in pitch,
-   length, and level, with no clicks at onset or stop.
-3. Sweep the synth controls, including zero attack and short decay, and listen for clicks.
+2. With the master volume at 0.75, play A and B for every preset. B runs the 2.3 translation
+   of the recorded call. They should match in pitch, length, and level; the 2.3 envelope
+   curves differ slightly, and neither should click at onset or stop.
+3. Sweep the synth controls, including zero attack and release, pan, and the frequency sweep,
+   and listen for clicks. Stop sounds while they play, and toggle the limiter before playing.
 4. Record the engine version and anything that differs between A and B.
 
 Playwright's Windows WebKit has no Web Audio, so the WebKit pass uses Safari on macOS or iOS, or

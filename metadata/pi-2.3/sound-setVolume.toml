@@ -1,0 +1,30 @@
+title = "setVolume"
+category = "sound"
+isScreen = false
+plugin = "sound"
+summary = "Sets the master volume for all sounds, music, and audio."
+description = """
+Sets the master volume, which scales sounds, music, and audio files together before the output limiter. The change ramps smoothly over a few milliseconds to avoid clicks.
+
+Volume is a multiplier: 0 = silent, 1 = full volume. The default is 0.75.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Press any key to hear some music" );
+$.onkey( "any", "down", () => {
+	$.setVolume( 0.15 );
+	$.play( "Q1o3L8ED+ED+Eo2Bo3DCL2o2A" );
+	setTimeout( () => {
+		$.setVolume( 1 );
+	}, 730 );
+} );
+"""
+
+[[parameters]]
+name = "volume"
+type = "number"
+description = "Volume (0-1, default: 0.75)."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

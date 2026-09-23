@@ -95,7 +95,7 @@ playButton1.onclick = function () {
 	var i;
 	for( i = 0; i < 30; i++ ) {
 		$.sound(
-			240 + i * 8, duration, volume, "sawtooth", totalDuration, 0,
+			240 + i * 8, duration, volume, "sawtooth", totalDuration, 0, 0, 1,
 			decay
 		);
 		totalDuration += duration + decay;
@@ -110,7 +110,7 @@ playButton2.onclick = function () {
 		[   0, 0.4, 0.4,   1,   1,   1, 0.3, 0.7, 0.6, 0.5, 0.9, 0.8 ],
 		[   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0 ]
 	];
-	$.sound( 440, duration, volume, waveTable, 0, 0, decay );
+	$.sound( 440, duration, volume, waveTable, 0, 0, 0, 1, decay );
 };
 
 playButton3.onclick = function () {
@@ -124,7 +124,7 @@ playButton3.onclick = function () {
 	];
 	for( i = 0; i < 10; i++ ) {
 		$.sound(
-			240 + i * 8, duration, volume, waveTable, totalDuration, 0, decay
+			240 + i * 8, duration, volume, waveTable, totalDuration, 0, 0, 1, decay
 		);
 		totalDuration += duration + decay;
 	}
@@ -160,7 +160,7 @@ playButton4.onclick = function () {
 		var decay = duration * decayRate;
 		var word = data[ i + 2 ];
 		$.sound(
-			freq, sustain, volume, "sawtooth", totalDuration, attack, decay
+			freq, attack + sustain, volume, "sawtooth", totalDuration, attack, 0, 1, decay
 		);
 		setWord( word, totalDuration );
 		totalDuration += duration;

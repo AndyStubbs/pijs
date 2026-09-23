@@ -339,9 +339,20 @@ A compressor alone cannot guarantee a ceiling:
 The limiter therefore has two stages. On/off applies to both stages together.
 
 1. **Compressor** (`DynamicsCompressorNode`) reduces sustained overload so the clipper rarely
-   engages. Starting settings are threshold `-6` dB, knee `0`, ratio `20`, attack `0.003` s,
-   and release `0.1` s. The threshold accounts for the makeup gain. Phase 1 tunes these values
-   against the quality metric in Section 10.2.
+   engages. Tuned in Phase 1 to threshold `-4` dB, knee `0`, ratio `20`, attack `0.001` s,
+   and release `0.2` s (starting point: `-6` dB, `0.003` s, `0.1` s).
+   - **Makeup trim:** a fixed gain after the compressor removes the specification's automatic
+     makeup gain, `( 1 / fullRangeGain ) ^ 0.6`, so levels below the threshold pass unchanged.
+     The trim assumes a hard knee.
+   - **Startup release:** compressors start at full gain reduction and recover at the release
+     rate, which would attenuate the first ~0.3 s of audio. The release is `0.001` s until
+     context time `0.05` s, then the tuned value.
+   - **Engine probe:** Firefox's compressor cuts square and sawtooth waves by 6–14 dB even
+     below the threshold. At initialization core renders one second of a square 6 dB below
+     the threshold offline. An engine that cuts it by more than 1 dB uses the soft clipper
+     alone, so levels match across engines. Chromium passes; Firefox does not.
+   - **Latency:** Chromium's compressor delays output by about 6 ms (lookahead). Timing tests
+     bypass the limiter.
 2. **Soft clipper** (`WaveShaperNode`, `oversample: "none"`) sets the absolute ceiling:
    - **Shape:** a gain of `1 / H` (headroom `H = 4`) feeds a runtime-generated curve spanning
      input `±H`. The curve is exact identity up to the knee (`0.9`) and rises smoothly (tanh)
@@ -359,7 +370,8 @@ Guarantee and switch:
 
 - **Guarantee:** with the limiter on, output samples never exceed ±1.0.
 - **Quality:** the compressor keeps the clipper's engagement low, measured by the Section 10.2
-  quality metric.
+  quality metric. On engines that use the clipper alone, deliberate overloads saturate; the
+  observed share is recorded in `docs/evidence/sound-2.3/README.md`.
 - `setSoundLimiter( enabled )`: when disabled, the master gain connects straight to the
   destination, bypassing both stages. Switching reconnects immediately with no crossfade. It can
   cause a brief discontinuity, so the docs recommend setting it before playback starts.
@@ -380,7 +392,7 @@ Guarantee and switch:
   `context.resume()`, so they run under the same user activation. Starting them when the
   resume promise settles loses the activation on engines that do not carry it across the
   promise boundary.
-- **Requests made while locked:** see Section 12, Decision D3.
+- **Requests made while locked:** see Section 12, Decision D3 (resolved in Phase 1).
 
 ## 6. Synthesized Sound (core)
 
@@ -434,6 +446,8 @@ The total voice length includes the release floor: `duration + max( releaseTime,
   the source stops.
 - **De-click floor:** every onset and every stop uses a ramp of at least `MIN_RAMP` (3 ms), even
   when `attackTime` or `releaseTime` is 0. This is a documented guarantee, not a parameter.
+  The decay stage time is floored at `MIN_RAMP` as well, so a `sustainLevel` below 1 with a
+  zero `decayTime` reaches the sustain level through a short curve instead of a step.
 - **Early gate end:** if `duration` ends before attack and decay finish, release starts from the
   envelope's value at gate end. `envelope.js` computes that value analytically. The
   implementation does not use `cancelAndHoldAtTime`, because Firefox lacks it.
@@ -826,6 +840,9 @@ The docs state approximate costs. Decoded audio uses about 21 MB per stereo minu
     starts immediately. Synth/PLAY keeps the original gate end, release end, and sweep timeline.
     Evaluate its envelope at the original timeline position, with a `MIN_RAMP` fade-in from
     silence multiplying the remaining envelope. Do not replay a completed attack or gate.
+    Synth voices apply the fade-in on an extra onset gain node, created only for late starts,
+    so the product is exact. Items whose start falls before the scheduling lead are started
+    at the lead through the same path.
     Samples advance their offset by skipped content and reduce remaining content by the same
     amount, including one-shots and loops within grace. They fade in over `MIN_RAMP` without
     extending their original end.
@@ -961,8 +978,11 @@ The report states that marginal costs are not additive, and it always shows the 
 and full-merge cost next to them.
 
 - **Soft targets:**
-  - Core `sound` plugin: at most 8 KB gzipped, compared with 6.2 KB today.
-  - Full build growth from sound work: at most 3 KB gzipped.
+  - Core `sound` plugin: at most 14 KB gzipped, compared with 6.2 KB in 2.2.
+  - Full build growth from sound work: at most 8 KB gzipped over the 2.2 baseline.
+  - The targets were raised after Phase 1 (from 8 KB and 3 KB), when the bus graph, limiter,
+    envelope, voice caps, and scheduler measured 10.1 KB for the plugin and 4.3 KB of full-build
+    growth. The headroom covers noise, decoded samples, and the PLAY scheduler in Phases 2–4.
 - **Advanced plugin:** there is no fixed cap. Each module's marginal and promotion costs are
   reported so they can be judged against its value.
 - **Promotion checklist, for each module:**
@@ -1080,7 +1100,7 @@ Because of this loop:
 | Check | Assertion |
 | --- | --- |
 | Ceiling | Every output sample ≤ 1.0 in magnitude with limiter on; see stress cases below |
-| Limiter quality | On the same renders, the share of samples above the clipper knee (0.9) stays below a target set in Phase 1 (starting point: 1%) |
+| Limiter quality | On the same renders, the share of samples above the clipper knee (0.9) stays below 1% where the compressor is used (Phase 1: at most 0.155%); clipper-only engines record the observed share |
 | Click-free stop | Reference residual checks below pass for all supported waveforms |
 | Onset | Onset reference checks below pass, including zero attack and late starts |
 | Envelope timing | Measured stage boundaries within 1 ms of `envelopeValueAt` predictions |
@@ -1229,7 +1249,7 @@ Each item has a recommendation and a phase by which it must be resolved.
 | --- | --- | --- | --- |
 | D1 | What `frequency` does for `white`/`pink` noise | Core ignores `frequency`/`frequencyEnd` for white/pink noise (keeps spectra honest); pitched retro noise is `"periodic"` in `sound-advanced`. Prototype a `playbackRate` mapping in the sound lab before closing. | Phase 2 |
 | D2 | `sound()` positional order, and what position 7 means | **Resolved (revision 6): ADSR order as written in 6.1.** Position 7 is `decayTime`. The alternative, placing `releaseTime` at position 7 so that 2.2 tails keep their length, was rejected because it would make the positional form permanently disagree with the object form and with every other ADSR description in the docs. 2.2 positional callers past argument 5 are rare, and the command layer cannot tell an old positional call from a new one, so no runtime warning is possible. The upgrade guide shows the positional example in Section 11. | Resolved |
-| D3 | Requests while the context is locked | Drop one-shot `sound()`/`playAudio()` requests, returning completed IDs as in 6.3; defer looping instances and `play()` tracks until unlock, starting deferred stream instances inside the gesture listener (5.3) | Phase 1 |
+| D3 | Requests while the context is locked | **Resolved (Phase 1): as recommended.** One-shot `sound()`/`playAudio()` requests, immediate or delayed, are dropped and return completed IDs as in 6.3. Looping instances and `play()` tracks are deferred until unlock and started synchronously inside the gesture listener, including deferred stream instances (5.3). The context no longer counts as locked once the gesture listener has called `resume()`, so requests made in that gesture's own handlers (the listener runs in the capture phase, before them) are kept while the resume promise settles. | Resolved |
 | D4 | Whether the public `setBusVolume()` command moves to core | Ships in `sound-advanced` 1.0 (the service method is already core); promote if its promotion cost is small | Release gate |
 | D5 | iOS mute switch silences Web Audio (media elements were not) | Set `navigator.audioSession.type = "playback"` where available; document the behavior | Phase 3 |
 | D6 | Service API names | **Resolved (Phase 0): `provideService` / `getService`.** `provideService` names what is provided, matching the verb-object style of other plugin API members; error rules are in 4.3. | Resolved |

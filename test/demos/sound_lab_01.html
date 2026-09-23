@@ -108,6 +108,11 @@
 			Keep the master volume at 0.75 for level-matched A/B listening: the recorded
 			references include the 2.2 default master volume.
 		</p>
+		<label><input id="limiter" type="checkbox" checked> Output limiter</label>
+		<p class="note">
+			The limiter passes levels below its threshold unchanged. Turn it off to hear
+			the raw mix; set it before playing.
+		</p>
 	</div>
 
 	<div class="section">
@@ -118,15 +123,17 @@
 			<button id="stopSynth">Stop All</button>
 		</p>
 		<pre id="synthCall"></pre>
+		<fieldset>
+			<legend>Pan and sweep</legend>
+			<div class="controls" id="panControls"></div>
+			<label><input id="sweepEnabled" type="checkbox"> Sweep to frequency end</label>
+		</fieldset>
 		<fieldset disabled>
-			<legend>Noise, pan, and sweep</legend>
+			<legend>Noise</legend>
 			<p class="note">
-				These controls are inactive because sound() does not accept noise types, pan,
-				or frequencyEnd yet.
+				This control is inactive because sound() does not accept noise types yet.
 			</p>
 			<label>oType <select><option>white</option><option>pink</option></select></label>
-			<label>Pan <input type="range" min="-1" max="1" step="0.01" value="0"></label>
-			<label>Frequency end <input type="number" value="110"></label>
 		</fieldset>
 	</div>
 
@@ -134,7 +141,8 @@
 		<h2>A/B Against Pi.js 2.2</h2>
 		<p class="note">
 			A plays the recorded 2.2 render directly through an audio element, outside Pi.js.
-			B runs the same call live through this build.
+			B runs the equivalent 2.3 call live through this build: attack becomes attackTime,
+			the old duration plus attack becomes duration, and decay becomes releaseTime.
 		</p>
 		<p class="status" id="referenceStatus">Loading references...</p>
 		<table>
@@ -160,11 +168,83 @@
 				"value": 1 },
 			{ "name": "delay", "label": "Delay", "min": 0, "max": 2, "step": 0.01,
 				"value": 0 },
-			{ "name": "attack", "label": "Attack", "min": 0, "max": 1, "step": 0.001,
+			{ "name": "attackTime", "label": "Attack", "min": 0, "max": 1, "step": 0.001,
 				"value": 0 },
-			{ "name": "decay", "label": "Decay", "min": 0, "max": 2, "step": 0.001,
+			{ "name": "decayTime", "label": "Decay", "min": 0, "max": 2, "step": 0.001,
+				"value": 0 },
+			{ "name": "sustainLevel", "label": "Sustain", "min": 0, "max": 1, "step": 0.01,
+				"value": 1 },
+			{ "name": "releaseTime", "label": "Release", "min": 0, "max": 2, "step": 0.001,
 				"value": 0.1 }
 		];
+
+		const PAN_CONTROLS = [
+			{ "name": "pan", "label": "Pan", "min": -1, "max": 1, "step": 0.01, "value": 0 },
+			{ "name": "frequencyEnd", "label": "Freq. end", "min": 20, "max": 2000, "step": 1,
+				"value": 110 }
+		];
+
+		// 2.3 equivalents of the recorded 2.2 presets. Each call is a sound() options object,
+		// a sound() positional argument list, or a play() string.
+		const WAVE_TABLE = [
+			[ 0, 0.4, 0.4, 1, 1, 1, 0.3, 0.7, 0.6, 0.5, 0.9, 0.8 ],
+			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+		];
+		const PRESETS_2_3 = {
+			"default-triangle": [ [ 440 ] ],
+			"square-attack-decay": [ {
+				"frequency": 330, "duration": 0.45, "oType": "square", "attackTime": 0.05,
+				"releaseTime": 0.3
+			} ],
+			"sawtooth-bass": [ [ 110, 0.61, 0.8, "sawtooth", 0, 0.01, 0, 1, 0.2 ] ],
+			"sine-blip": [ {
+				"frequency": 1320, "duration": 0.05, "oType": "sine", "releaseTime": 0.05
+			} ],
+			"wave-table": [ [ 262, 0.5, 0.8, WAVE_TABLE, 0, 0, 0, 1, 0.1 ] ],
+			"play-phrase": [ "T176 L16 SQUARE O5 C E G C6 O5 G8 O6 C4" ],
+			"galaga-shoot": [
+				{ "frequency": 980, "duration": 0.047, "volume": 0.16, "oType": "square",
+					"attackTime": 0.002, "releaseTime": 0.042 },
+				{ "frequency": 1560, "duration": 0.031, "volume": 0.1, "oType": "triangle",
+					"attackTime": 0.001, "releaseTime": 0.028 },
+				{ "frequency": 420, "duration": 0.071, "volume": 0.08, "oType": "square",
+					"delay": 0.03, "attackTime": 0.001, "releaseTime": 0.065 }
+			],
+			"galaga-explosion": [
+				{ "frequency": 210, "duration": 0.124, "volume": 0.28, "oType": "sawtooth",
+					"attackTime": 0.004, "releaseTime": 0.11 },
+				{ "frequency": 92, "duration": 0.228, "volume": 0.3, "oType": "square",
+					"delay": 0.03, "attackTime": 0.008, "releaseTime": 0.2 },
+				{ "frequency": 48, "duration": 0.335, "volume": 0.22, "oType": "sawtooth",
+					"delay": 0.07, "attackTime": 0.015, "releaseTime": 0.3 },
+				{ "frequency": 36, "duration": 0.3, "volume": 0.14, "oType": "triangle",
+					"delay": 0.1, "attackTime": 0.02, "releaseTime": 0.26 }
+			]
+		};
+
+		function runPreset( calls ) {
+			for( const call of calls ) {
+				if( typeof call === "string" ) {
+					$.play( call );
+				} else if( Array.isArray( call ) ) {
+					$.sound( ...call );
+				} else {
+					$.sound( call );
+				}
+			}
+		}
+
+		function presetText( calls ) {
+			return calls.map( call => {
+				if( typeof call === "string" ) {
+					return "$.play( " + JSON.stringify( call ) + " );";
+				}
+				if( Array.isArray( call ) ) {
+					return "$.sound( " + call.map( arg => JSON.stringify( arg ) ).join( ", " ) + " );";
+				}
+				return "$.sound( " + JSON.stringify( call ) + " );";
+			} ).join( "\n" );
+		}
 
 		const OSCILLATOR_TYPES = [ "triangle", "sine", "square", "sawtooth" ];
 
@@ -173,7 +253,14 @@
 		// Synth controls: each range slider mirrors a number box
 		function buildSynthControls() {
 			const container = document.getElementById( "synthControls" );
-			for( const spec of SYNTH_CONTROLS ) {
+			addRangeControls( SYNTH_CONTROLS, container );
+			addOscillatorSelect( container );
+			addRangeControls( PAN_CONTROLS, document.getElementById( "panControls" ) );
+			document.getElementById( "sweepEnabled" ).addEventListener( "change", updateSynthCall );
+		}
+
+		function addRangeControls( specs, container ) {
+			for( const spec of specs ) {
 				const row = document.createElement( "div" );
 				row.className = "control";
 				const label = document.createElement( "label" );
@@ -202,7 +289,9 @@
 				row.append( label, range, number );
 				container.appendChild( row );
 			}
+		}
 
+		function addOscillatorSelect( container ) {
 			const row = document.createElement( "div" );
 			row.className = "control";
 			const label = document.createElement( "label" );
@@ -228,6 +317,10 @@
 				options[ spec.name ] = Number( inputs[ spec.name ].value );
 			}
 			options.oType = inputs.oType.value;
+			options.pan = Number( inputs.pan.value );
+			if( document.getElementById( "sweepEnabled" ).checked ) {
+				options.frequencyEnd = Number( inputs.frequencyEnd.value );
+			}
 			return options;
 		}
 
@@ -250,13 +343,17 @@
 			$.stopPlay( null );
 		}
 
-		// Master volume
+		// Master volume and limiter
 		function setupMasterVolume() {
 			const slider = document.getElementById( "masterVolume" );
 			const output = document.getElementById( "masterVolumeValue" );
 			slider.addEventListener( "input", () => {
 				output.textContent = Number( slider.value ).toFixed( 2 );
 				$.setVolume( Number( slider.value ) );
+			} );
+			const limiter = document.getElementById( "limiter" );
+			limiter.addEventListener( "change", () => {
+				$.setSoundLimiter( limiter.checked );
 			} );
 		}
 
@@ -316,7 +413,11 @@
 			} );
 			const playB = document.createElement( "button" );
 			playB.textContent = "B: this build";
-			const run = new Function( preset.code );
+			const calls = PRESETS_2_3[ preset.name ];
+			const translated = document.createElement( "pre" );
+			translated.textContent = presetText( calls );
+			nameCell.appendChild( translated );
+			const run = () => runPreset( calls );
 			playB.addEventListener( "click", () => {
 				try {
 					run();

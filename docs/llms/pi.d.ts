@@ -395,7 +395,12 @@ declare namespace Pi {
 		screen?: number | Screen;
 
 		/**
-		 * Sets the global volume for all sounds and audio pools.
+		 * Turns the output limiter on or off.
+		 */
+		soundLimiter?: boolean;
+
+		/**
+		 * Sets the master volume for all sounds, music, and audio.
 		 */
 		volume?: number;
 
@@ -2485,11 +2490,25 @@ original thrown value if the callback throws synchronously. Callback return valu
 		setScreen( screen: number | Screen ): void;
 
 		/**
-		 * Sets the global volume for all sounds and audio pools.
+		 * Turns the output limiter on or off.
 		 *
-		 * Sets the master volume that affects all sounds and audio pools. Volume changes are applied gradually using exponential ramping to avoid clicks and pops.
+		 * The limiter keeps the combined output of all sounds, music, and audio within ±1.0, so many sounds playing together saturate smoothly instead of clipping harshly. It is on by default. Levels below its threshold pass unchanged. It is a safety net against overload, not a mastering stage.
 		 *
-		 * Volume is a multiplier: 0 = silent, 1 = full volume.
+		 * The limiter has two stages: a compressor that reduces sustained overload, then a soft clipper that sets the absolute ceiling. Browsers whose compressor also reduces bright waveforms (such as square and sawtooth) below its threshold use the soft clipper alone, so levels match across browsers.
+		 *
+		 * Switching reconnects the output immediately, which can cause a brief discontinuity in sounds that are playing. Set it before playback starts.
+		 * @param enabled True to limit output (the default), false to bypass the limiter.
+		 * @returns This function does not return a value.
+		 */
+		setSoundLimiter( params: { "enabled": boolean } ): void;
+		setSoundLimiter( enabled: boolean ): void;
+
+		/**
+		 * Sets the master volume for all sounds, music, and audio.
+		 *
+		 * Sets the master volume, which scales sounds, music, and audio files together before the output limiter. The change ramps smoothly over a few milliseconds to avoid clicks.
+		 *
+		 * Volume is a multiplier: 0 = silent, 1 = full volume. The default is 0.75.
 		 * @param volume Volume (0-1, default: 0.75).
 		 * @returns This function does not return a value.
 		 */
@@ -2497,22 +2516,32 @@ original thrown value if the callback throws synchronously. Callback return valu
 		setVolume( volume: number ): void;
 
 		/**
-		 * Plays a sound by frequency using Web Audio API.
+		 * Plays a synthesized sound with an ADSR envelope using Web Audio API.
 		 *
-		 * Generates and plays a sound at a specific frequency using Web Audio API oscillators. Supports standard waveforms (triangle, sine, square, sawtooth) or custom wavetables.
+		 * Generates and plays a sound at a specific frequency using Web Audio API oscillators. Supports standard waveforms (triangle, sine, square, sawtooth) or custom wavetables. Frequency is not rounded.
 		 *
-		 * The sound uses an ADSR envelope (attack, sustain, decay) for natural sound shaping.
+		 * The volume follows an ADSR envelope. The attack ramps linearly from silence to the peak volume over attackTime. The decay then falls toward sustainLevel × volume over decayTime, and the sustain holds until duration ends. The release fades from that level to silence over releaseTime. If duration ends before the attack and decay finish, the release starts from the level reached at that point. The total length is duration plus the release. Every onset and stop ramps over at least 3 ms, even when attackTime or releaseTime is 0, so sounds start and end without clicks.
+		 *
+		 * pan places the sound from -1 (left) to 1 (right). frequencyEnd sweeps the pitch exponentially from frequency to frequencyEnd over duration; both must then be greater than 0, or the call throws INVALID_FREQUENCY.
+		 *
+		 * Sounds play on the sound-effects bus through the master volume and the output limiter. A delay beyond the 0.2 second lookahead window is held as a pending request until its start approaches. At most 1024 requests can be pending; beyond that the call throws TOO_MANY_PENDING_SOUNDS. At most 64 sounds hold voice slots at once; when all are in use, the oldest overlapping sound fades out to make room.
+		 *
+		 * Until the page receives its first user gesture (pointer, key, or touch), the browser keeps audio locked. Calls made while audio is locked return an ID but play nothing; audio unlocks on the first gesture.
 		 * @param frequency Frequency in Hz (default: 440).
-		 * @param duration Duration in seconds (default: 1).
-		 * @param volume Volume 0-1 (default: 1).
+		 * @param duration Gate length in seconds: how long the sound is held before the release begins (default: 1).
+		 * @param volume Peak volume 0-1 (default: 1).
 		 * @param oType Oscillator type: 'triangle', 'sine', 'square', 'sawtooth', or custom wavetable array [[realArray], [imagArray]] (default: 'triangle').
 		 * @param delay Delay before playing in seconds (default: 0).
-		 * @param attack Attack time in seconds (default: 0).
-		 * @param decay Decay time in seconds (default: 0.1).
+		 * @param attackTime Seconds from silence to the peak volume (default: 0; at least 3 ms is always used).
+		 * @param decayTime Seconds from the peak to the sustain level (default: 0).
+		 * @param sustainLevel Fraction of the peak volume held until duration ends, 0-1 (default: 1).
+		 * @param releaseTime Seconds from the sustain level to silence after duration ends (default: 0.1; at least 3 ms is always used).
+		 * @param pan Stereo position from -1 (left) to 1 (right) (default: 0).
+		 * @param frequencyEnd Frequency in Hz to sweep to exponentially over duration (default: no sweep).
 		 * @returns Sound ID for use with stopSound.
 		 */
-		sound( params: { "frequency"?: number; "duration"?: number; "volume"?: number; "oType"?: string | any[]; "delay"?: number; "attack"?: number; "decay"?: number } ): string;
-		sound( frequency?: number, duration?: number, volume?: number, oType?: string | any[], delay?: number, attack?: number, decay?: number ): string;
+		sound( params: { "frequency"?: number; "duration"?: number; "volume"?: number; "oType"?: string | any[]; "delay"?: number; "attackTime"?: number; "decayTime"?: number; "sustainLevel"?: number; "releaseTime"?: number; "pan"?: number; "frequencyEnd"?: number } ): string;
+		sound( frequency?: number, duration?: number, volume?: number, oType?: string | any[], delay?: number, attackTime?: number, decayTime?: number, sustainLevel?: number, releaseTime?: number, pan?: number, frequencyEnd?: number ): string;
 
 		/**
 		 * Starts the gamepad input loop and begins monitoring for gamepad connections.
@@ -2563,7 +2592,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops playing music tracks.
 		 *
-		 * Stops a specific music track by track ID, or stops all tracks if trackId is null.
+		 * Stops a specific music track by track ID, or stops all tracks if trackId is null. Notes that are playing fade out over 10 ms, so the track is silent about 15 ms after the call. Notes that have not started are cancelled.
 		 * @param trackId Track ID to stop. If null, stops all tracks.
 		 * @returns This function does not return a value.
 		 */
@@ -2573,7 +2602,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops a playing sound or all sounds.
 		 *
-		 * Stops a specific sound by sound ID, or stops all sounds if soundId is null.
+		 * Stops a specific sound by sound ID, or stops all sounds if soundId is null. A sound that is playing fades out over 10 ms, so it is silent about 15 ms after the call. A delayed sound that has not started is cancelled. IDs of sounds that have already finished, or were never played, are ignored.
 		 * @param soundId Sound ID returned from sound(). If null, stops all sounds.
 		 * @returns This function does not return a value.
 		 */

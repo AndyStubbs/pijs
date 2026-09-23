@@ -1,0 +1,32 @@
+title = "setSoundLimiter"
+category = "sound"
+isScreen = false
+plugin = "sound"
+summary = "Turns the output limiter on or off."
+description = """
+The limiter keeps the combined output of all sounds, music, and audio within ±1.0, so many sounds playing together saturate smoothly instead of clipping harshly. It is on by default. Levels below its threshold pass unchanged. It is a safety net against overload, not a mastering stage.
+
+The limiter has two stages: a compressor that reduces sustained overload, then a soft clipper that sets the absolute ceiling. Browsers whose compressor also reduces bright waveforms (such as square and sawtooth) below its threshold use the soft clipper alone, so levels match across browsers.
+
+Switching reconnects the output immediately, which can cause a brief discontinuity in sounds that are playing. Set it before playback starts.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Press any key to hear a chord without the limiter" );
+$.setSoundLimiter( false );
+$.setVolume( 0.2 );
+$.onkey( "any", "down", () => {
+	$.sound( 262, 1, 0.5 );
+	$.sound( 330, 1, 0.5 );
+	$.sound( 392, 1, 0.5 );
+} );
+"""
+
+[[parameters]]
+name = "enabled"
+type = "boolean"
+description = "True to limit output (the default), false to bypass the limiter."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
