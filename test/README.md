@@ -87,7 +87,10 @@ through `test/unit/audio-browser-suite.js`:
 | `audio-bus-browser.test.js` | Limiter ceiling and quality, master volume, bus-volume service |
 | `audio-sound-design-browser.test.js` | Noise spectra and buffers, pan law, sweep endpoints |
 | `audio-samples-browser.test.js` | Decoded sample position, pause/resume, setAudio, late starts, shared caps |
+| `audio-service-browser.test.js` | Sound extension service contracts with stub sources, inserts, and bus inserts |
+| `audio-advanced-browser.test.js` | `sound-advanced` synth features, periodic noise, bus effects, levels, presets, instruments |
 | `sound-envelope.test.js`, `sound-admission.test.js` | Envelope math and slot admission (Node) |
+| `sound-advanced.test.js` | Pulse tables, LFSR, synth options, preset and instrument snapshots (Node) |
 | `sound-noise.test.js` | Noise buffers: spectra, peak, loop seam, sharing, offsets (Node) |
 | `sound-samples.test.js` | Sample position model: budgets, rate segments, end prediction (Node) |
 | `audio-lifecycle.test.js` | Sample loading, retries, removal, IDs, validation (Node sandbox) |
@@ -98,6 +101,10 @@ frame from the rate schedule, so a position error of one frame fails the check.
 
 `audio-lifecycle-browser.test.js` checks readiness and removal with controlled `fetch` results
 and media events in the full and lite bundles, without the render harness.
+
+`describeAudioEngines()` accepts `{ "plugins": [ ... ] }` to load plugin source bundles after
+the full bundle in every page. `sound-advanced-bundles-browser.test.js` checks the plugin's IIFE
+and ESM bundles beside the full bundle and beside the lite bundle with the `sound` plugin.
 
 Stream mode cannot run offline, because `OfflineAudioContext` has no
 `createMediaElementSource`. `audio-stream-browser.test.js` therefore plays through a real

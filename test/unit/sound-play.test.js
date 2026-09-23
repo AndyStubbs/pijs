@@ -9,6 +9,7 @@ import * as g_assert from "node:assert/strict";
 import * as g_test from "node:test";
 import * as g_envelope from "../../plugins/sound/envelope.js";
 import * as g_play from "../../plugins/sound/play.js";
+import * as g_voices from "../../plugins/sound/voices.js";
 const assert = g_assert;
 const test = g_test.test;
 
@@ -333,4 +334,29 @@ test( "duplicate names and prefixes reject the whole registration", () => {
 
 	g_play.registerPlayExtension( "other", extension( { "q": () => {} } ) );
 	assert.deepEqual( names( "Q5" ), [ "Q5" ] );
+} );
+
+test( "extension oType overrides must name a built-in or registered source", () => {
+	g_voices.registerSource( "stub-noise", () => null );
+	g_play.registerPlayExtension( "source-check", {
+		"tokens": {
+			"!": ( state, value ) => {
+				state.source = value;
+			}
+		},
+		"initState": () => ( { "source": 0 } ),
+		"copyState": state => ( { ...state } ),
+		"resolveNote": state => {
+			if( state.source === 1 ) {
+				return { "oType": "nope" };
+			}
+			if( state.source === 2 ) {
+				return { "oType": "stub-noise" };
+			}
+			return null;
+		}
+	} );
+	assert.throws( () => g_play.parsePlayString( "!1 C" ), { "code": "INVALID_OTYPE" } );
+	assert.equal( g_play.parsePlayString( "!2 C" ).events[ 0 ].oType, "stub-noise" );
+	assert.equal( g_play.parsePlayString( "WN !0 C" ).events[ 0 ].oType, "white" );
 } );

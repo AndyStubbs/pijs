@@ -4,6 +4,13 @@
  * Author: Andy Stubbs
  * License: Apache-2.0
  */
+/**
+ * Commands added by separately loaded plugins. A plugin's declaration file augments
+ * this interface with `declare module "pijs-web"`, so importing the plugin adds its
+ * commands to the API.
+ */
+export interface PluginCommands {}
+
 declare namespace Pi {
 	/**
 	 * Click event data (mouse or touch).
@@ -1942,7 +1949,7 @@ screen is removed before deferred processing completes, or with the original rea
 		width(): number;
 	}
 
-	interface API extends Screen {
+	interface API extends Screen, PluginCommands {
 		/**
 		 * Converts a supported color value into a color object.
 		 *
@@ -2584,7 +2591,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 * @param frequency Frequency in Hz; no effect on noise (default: 440).
 		 * @param duration Gate length in seconds: how long the sound is held before the release begins (default: 1).
 		 * @param volume Peak volume 0-1 (default: 1).
-		 * @param oType Oscillator type: 'triangle', 'sine', 'square', 'sawtooth', 'white' or 'pink' noise, or custom wavetable array [[realArray], [imagArray]] (default: 'triangle').
+		 * @param oType Oscillator type: 'triangle', 'sine', 'square', 'sawtooth', 'white' or 'pink' noise, a source type added by a plugin (such as 'periodic' from sound-advanced), or custom wavetable array [[realArray], [imagArray]] (default: 'triangle').
 		 * @param delay Delay before playing in seconds (default: 0).
 		 * @param attackTime Seconds from silence to the peak volume (default: 0; at least 3 ms is always used).
 		 * @param decayTime Seconds from the peak to the sustain level (default: 0).

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Pi.js Sound Advanced</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			padding: 20px;
+			background: #222;
+			color: #fff;
+			max-width: 960px;
+			margin: 0 auto;
+		}
+		h1 {
+			margin-bottom: 4px;
+		}
+		.intro {
+			color: #bbb;
+			margin-top: 0;
+		}
+		.section {
+			margin-bottom: 24px;
+			padding: 16px 20px;
+			background: #333;
+			border-radius: 5px;
+		}
+		.section h2 {
+			margin-top: 0;
+		}
+		.controls {
+			display: grid;
+			grid-template-columns: repeat( auto-fill, minmax( 260px, 1fr ) );
+			gap: 10px 24px;
+		}
+		.control {
+			display: grid;
+			grid-template-columns: 110px 1fr 60px;
+			align-items: center;
+			gap: 8px;
+		}
+		button {
+			margin: 6px 8px 6px 0;
+			padding: 8px 16px;
+			font-size: 15px;
+			cursor: pointer;
+		}
+		canvas {
+			display: block;
+			width: 100%;
+			height: 160px;
+			background: #1a1a1a;
+			border-radius: 4px;
+		}
+		pre {
+			background: #1a1a1a;
+			padding: 10px;
+			border-radius: 4px;
+			white-space: pre-wrap;
+			font-size: 13px;
+			max-height: 220px;
+			overflow-y: auto;
+		}
+	</style>
+</head>
+<body>
+	<h1>Sound Advanced</h1>
+	<p class="intro">
+		Listening demo for the <code>sound-advanced</code> plugin: <code>synth()</code> with
+		filter, vibrato, tremolo, pulse duty, and arpeggio; periodic noise; presets; PLAY
+		instruments; bus volume and effects; and <code>getSoundLevels()</code>. Build with
+		<code>npm run build</code> and serve the repository with <code>npm run server</code>.
+	</p>
+
+	<div class="section">
+		<h2>Synth</h2>
+		<div class="controls">
+			<label class="control">Waveform
+				<select id="oType">
+					<option value="pulse" selected>Pulse</option>
+					<option value="square">Square</option>
+					<option value="sawtooth">Sawtooth</option>
+					<option value="triangle">Triangle</option>
+					<option value="sine">Sine</option>
+					<option value="white">White noise</option>
+					<option value="periodic">Periodic noise</option>
+				</select>
+				<span></span></label>
+			<label class="control">Frequency
+				<input id="frequency" type="range" min="55" max="1760" step="1" value="220">
+				<output id="frequencyOut"></output></label>
+			<label class="control">Duration
+				<input id="duration" type="range" min="0.05" max="2" step="0.05" value="0.6">
+				<output id="durationOut"></output></label>
+			<label class="control">Duty
+				<input id="duty" type="range" min="0.05" max="0.95" step="0.05" value="0.25">
+				<output id="dutyOut"></output></label>
+			<label class="control">Filter
+				<select id="filterType">
+					<option value="">Off</option>
+					<option value="lowpass" selected>Lowpass</option>
+					<option value="highpass">Highpass</option>
+					<option value="bandpass">Bandpass</option>
+					<option value="notch">Notch</option>
+				</select>
+				<span></span></label>
+			<label class="control">Cutoff
+				<input id="filterCutoff" type="range" min="50" max="8000" step="10" value="400">
+				<output id="filterCutoffOut"></output></label>
+			<label class="control">Resonance
+				<input id="filterQ" type="range" min="0" max="20" step="0.5" value="4">
+				<output id="filterQOut"></output></label>
+			<label class="control">Filter octaves
+				<input id="filterAmount" type="range" min="-4" max="6" step="0.5" value="3">
+				<output id="filterAmountOut"></output></label>
+			<label class="control">Filter decay
+				<input id="filterDecayTime" type="range" min="0" max="1.5" step="0.05"
+					value="0.3">
+				<output id="filterDecayTimeOut"></output></label>
+			<label class="control">Vibrato cents
+				<input id="vibratoDepth" type="range" min="0" max="200" step="5" value="0">
+				<output id="vibratoDepthOut"></output></label>
+			<label class="control">Tremolo depth
+				<input id="tremoloDepth" type="range" min="0" max="1" step="0.05" value="0">
+				<output id="tremoloDepthOut"></output></label>
+			<label class="control">Arpeggio
+				<select id="arpeggio">
+					<option value="" selected>Off</option>
+					<option value="0,4,7">Major</option>
+					<option value="0,3,7">Minor</option>
+					<option value="0,12">Octave</option>
+					<option value="0,4,7,12,7,4">Up and down</option>
+				</select>
+				<span></span></label>
+		</div>
+		<button id="playSynth">Play synth</button>
+		<button id="stopSynth">Stop</button>
+		<p>Periodic noise uses the frequency as its clock rate; try values above 1000.</p>
+	</div>
+
+	<div class="section">
+		<h2>Presets</h2>
+		<label class="control">Variation
+			<input id="variation" type="range" min="0" max="1" step="0.05" value="0.3">
+			<output id="variationOut"></output></label>
+		<div id="presets"></div>
+	</div>
+
+	<div class="section">
+		<h2>Instruments</h2>
+		<button data-song="lead">Lead and bass</button>
+		<button data-song="drums">Drum groove</button>
+		<button data-song="pad">Pad chords</button>
+		<button data-song="queued">Redefine while queued</button>
+		<button id="stopSongs">Stop</button>
+		<p>"Redefine while queued" starts a song with instrument 9, then redefines 9 as a
+			quiet sine; the playing song keeps its sound, and the next click uses the new
+			definition.</p>
+	</div>
+
+	<div class="section">
+		<h2>Buses</h2>
+		<div class="controls" id="buses"></div>
+		<p>Bus volume follows the effect, so muting a bus also cuts its reverb or echo tail.</p>
+	</div>
+
+	<div class="section">
+		<h2>Levels</h2>
+		<label class="control">Bus
+			<select id="levelBus">
+				<option value="master" selected>Master</option>
+				<option value="sfx">SFX</option>
+				<option value="music">Music</option>
+				<option value="audio">Audio</option>
+			</select>
+			<span></span></label>
+		<canvas id="meter" width="900" height="160"></canvas>
+	</div>
+
+	<pre id="log"></pre>
+
+	<script src="../../build/pi.js"></script>
+	<script src="../../build/plugins/sound-advanced/sound-advanced.js"></script>
+	<script>
+		"use strict";
+
+		const PRESETS = [
+			"coin", "laser", "jump", "hit", "explosion", "powerup", "blip", "select"
+		];
+		const SONGS = {
+			"lead": [
+				"@1 T140 O4 L8 C E G O5 C O4 G E C4 D F A O5 D O4 A F D4",
+				"@2 T140 O2 L4 C G D A"
+			],
+			"drums": [
+				"@6 T120 L8 " + "C P C P ".repeat( 4 ),
+				"@4 T120 L8 " + "P P C P ".repeat( 4 ),
+				"@5 T120 L16 " + "C C C C ".repeat( 8 )
+			],
+			"pad": [ "@3 T80 O4 L2 C, E, G" ]
+		};
+		const BUSES = [ "sfx", "music", "audio" ];
+		let songs = [];
+		let synthId = null;
+
+		function log( message ) {
+			const element = document.getElementById( "log" );
+			element.textContent = message + "\n" + element.textContent;
+		}
+
+		function value( id ) {
+			return document.getElementById( id ).value;
+		}
+
+		function number( id ) {
+			return Number( value( id ) );
+		}
+
+		function attempt( label, fn ) {
+			try {
+				return fn();
+			} catch( error ) {
+				log( `${label}: ${error.code || ""} ${error.message}` );
+				return null;
+			}
+		}
+
+		for( const input of document.querySelectorAll( "input[type=range]" ) ) {
+			const output = document.getElementById( input.id + "Out" );
+			if( !output ) {
+				continue;
+			}
+			const update = () => {
+				output.textContent = input.value;
+			};
+			input.addEventListener( "input", update );
+			update();
+		}
+
+		// Synth
+		document.getElementById( "playSynth" ).onclick = () => {
+			const options = {
+				"frequency": number( "frequency" ),
+				"duration": number( "duration" ),
+				"volume": 0.5,
+				"oType": value( "oType" ),
+				"duty": number( "duty" ),
+				"attackTime": 0.005,
+				"releaseTime": 0.2,
+				"vibratoDepth": number( "vibratoDepth" ),
+				"tremoloDepth": number( "tremoloDepth" )
+			};
+			if( value( "oType" ) === "periodic" ) {
+				options.frequency *= 40;
+			}
+			if( value( "filterType" ) ) {
+				options.filterType = value( "filterType" );
+				options.filterCutoff = number( "filterCutoff" );
+				options.filterQ = number( "filterQ" );
+				options.filterAmount = number( "filterAmount" );
+				options.filterDecayTime = number( "filterDecayTime" );
+				options.filterSustainLevel = 0.2;
+			}
+			if( value( "arpeggio" ) ) {
+				options.arpeggio = value( "arpeggio" ).split( "," ).map( Number );
+			}
+			synthId = attempt( "synth", () => $.synth( options ) );
+			log( "synth: " + JSON.stringify( options ) );
+		};
+		document.getElementById( "stopSynth" ).onclick = () => {
+			if( synthId ) {
+				$.stopSound( synthId );
+			}
+		};
+
+		// Presets
+		const presetButtons = document.getElementById( "presets" );
+		for( const name of PRESETS ) {
+			const button = document.createElement( "button" );
+			button.textContent = name;
+			button.onclick = () => {
+				attempt( "sfx", () => $.sfx( name, number( "variation" ) ) );
+			};
+			presetButtons.appendChild( button );
+		}
+
+		// Instruments
+		function stopSongs() {
+			for( const trackId of songs ) {
+				$.stopPlay( trackId );
+			}
+			songs = [];
+		}
+
+		let queuedRound = 0;
+		for( const button of document.querySelectorAll( "[data-song]" ) ) {
+			button.onclick = () => {
+				stopSongs();
+				const name = button.dataset.song;
+				if( name === "queued" ) {
+					if( queuedRound % 2 === 0 ) {
+						$.defineInstrument( 9, { "oType": "pulse", "duty": 0.125,
+							"vibratoRate": 6, "vibratoDepth": 25 } );
+					}
+					songs.push( $.play( "@9 T120 O4 L8 C D E F G A B O5 C" ) );
+					if( queuedRound % 2 === 0 ) {
+						$.defineInstrument( 9, { "oType": "sine", "volume": 0.3 } );
+					}
+					queuedRound += 1;
+					return;
+				}
+				for( const song of SONGS[ name ] ) {
+					const trackId = attempt( "play", () => $.play( song ) );
+					if( trackId ) {
+						songs.push( trackId );
+					}
+				}
+			};
+		}
+		document.getElementById( "stopSongs" ).onclick = stopSongs;
+
+		// Buses
+		const busControls = document.getElementById( "buses" );
+		for( const bus of BUSES ) {
+			const volume = document.createElement( "label" );
+			volume.className = "control";
+			volume.innerHTML = `${bus} volume <input type="range" min="0" max="1" step="0.05" ` +
+				`value="1"><output>1</output>`;
+			const input = volume.querySelector( "input" );
+			input.addEventListener( "input", () => {
+				volume.querySelector( "output" ).textContent = input.value;
+				$.setBusVolume( bus, Number( input.value ) );
+			} );
+			busControls.appendChild( volume );
+
+			const effect = document.createElement( "label" );
+			effect.className = "control";
+			effect.innerHTML = `${bus} effect <select><option value="">None</option>` +
+				`<option value="reverb">Reverb</option><option value="delay">Delay</option>` +
+				`</select><span></span>`;
+			const select = effect.querySelector( "select" );
+			select.addEventListener( "change", () => {
+				if( select.value === "reverb" ) {
+					$.setBusEffect( bus, "reverb", { "time": 2, "mix": 0.35 } );
+				} else if( select.value === "delay" ) {
+					$.setBusEffect( bus, "delay", { "time": 0.3, "feedback": 0.45 } );
+				} else {
+					$.setBusEffect( bus, null );
+				}
+				log( `setBusEffect: ${bus} ${select.value || "none"}` );
+			} );
+			busControls.appendChild( effect );
+		}
+
+		// Levels: a peak and RMS meter over the spectrum
+		const canvas = document.getElementById( "meter" );
+		const context = canvas.getContext( "2d" );
+		function draw() {
+			const levels = $.getSoundLevels( value( "levelBus" ), true );
+			const width = canvas.width;
+			const height = canvas.height;
+			context.fillStyle = "#1a1a1a";
+			context.fillRect( 0, 0, width, height );
+			context.fillStyle = "#3a6ea5";
+			const bins = 256;
+			for( let i = 0; i < bins; i++ ) {
+				const db = Math.max( levels.spectrum[ i ], -100 );
+				const barHeight = ( db + 100 ) / 100 * ( height - 30 );
+				context.fillRect( i * width / bins, height - 30 - barHeight, width / bins - 1,
+					barHeight );
+			}
+			context.fillStyle = "#6c6";
+			context.fillRect( 0, height - 24, levels.rms * width, 8 );
+			context.fillStyle = "#fc4";
+			context.fillRect( 0, height - 12, levels.peak * width, 8 );
+			requestAnimationFrame( draw );
+		}
+		draw();
+	</script>
+</body>
+</html>

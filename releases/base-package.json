@@ -42,6 +42,11 @@
 			"types": "./dist/plugins/sound/sound.d.ts",
 			"import": "./dist/plugins/sound/sound.esm.js",
 			"default": "./dist/plugins/sound/sound.esm.js"
+		},
+		"./plugins/sound-advanced": {
+			"types": "./dist/plugins/sound-advanced/sound-advanced.d.ts",
+			"import": "./dist/plugins/sound-advanced/sound-advanced.esm.js",
+			"default": "./dist/plugins/sound-advanced/sound-advanced.esm.js"
 		}
 	},
 	"repository": {

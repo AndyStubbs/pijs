@@ -1,0 +1,32 @@
+title = "setBusVolume"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Sets the volume of one sound bus."
+description = """
+Requires the sound-advanced plugin. Sound is mixed on three buses before the master volume: "sfx" carries sound(), synth(), and sfx(); "music" carries play(); and "audio" carries playAudio(). The bus volume applies after the bus effect, so it also fades an effect's tail. The change ramps over 10 ms. "master" is the same as setVolume().
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Press M to toggle music" );
+let isMuted = false;
+$.play( "T120 L8 O4 C E G E C E G E" );
+$.onkey( "KeyM", "down", () => {
+	isMuted = !isMuted;
+	if( isMuted ) {
+		$.setBusVolume( "music", 0 );
+	} else {
+		$.setBusVolume( "music", 1 );
+	}
+} );
+"""
+
+[[parameters]]
+name = "bus"
+type = "string"
+description = "'sfx', 'music', 'audio', or 'master'."
+
+[[parameters]]
+name = "volume"
+type = "number"
+description = "Volume, 0-1."

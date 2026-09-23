@@ -1,0 +1,196 @@
+title = "synth"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Plays a synthesized sound with a filter, vibrato, tremolo, pulse waves, and arpeggios."
+description = """
+Requires the sound-advanced plugin. Takes every sound() parameter and adds synthesis features. Each feature runs only when it is switched on, so a call with only sound() parameters plays the same as sound().
+
+oType also accepts "pulse", a square-like wave whose high part lasts for duty of each period. A duty of 0.5 is a square wave; 0.25 and 0.125 give the thinner tones of retro consoles.
+
+The filter runs when filterType is set. filterCutoff sets its cutoff frequency and filterQ its resonance. The filter envelope moves the cutoff by filterAmount octaves at its peak, with its own attack, decay, sustain, and release, timed like the volume envelope from the start of the sound and the end of duration. A negative filterAmount lowers the cutoff instead.
+
+Vibrato runs when vibratoDepth is above 0 and swings the pitch by up to vibratoDepth cents at vibratoRate times per second. Tremolo runs when tremoloDepth is above 0 and dips the volume by up to tremoloDepth at tremoloRate times per second. An arpeggio cycles the pitch through semitone offsets, such as [0, 4, 7] for a major chord, at arpeggioRate steps per second until the sound ends.
+
+Sounds play on the sound-effects bus and follow the same delay, voice, and autoplay rules as sound(). The returned ID works with stopSound().
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Press any key for a filtered pulse with vibrato" );
+$.onkey( "any", "down", () => {
+	$.synth( {
+		"frequency": 220,
+		"duration": 0.6,
+		"volume": 0.5,
+		"oType": "pulse",
+		"duty": 0.25,
+		"filterType": "lowpass",
+		"filterCutoff": 400,
+		"filterAmount": 3,
+		"filterDecayTime": 0.4,
+		"filterSustainLevel": 0.2,
+		"vibratoRate": 5,
+		"vibratoDepth": 15
+	} );
+} );
+"""
+
+[[parameters]]
+name = "frequency"
+type = "number"
+description = "Frequency in Hz; no effect on noise (default: 440)."
+optional = true
+
+[[parameters]]
+name = "duration"
+type = "number"
+description = "Gate length in seconds before the release begins (default: 1)."
+optional = true
+
+[[parameters]]
+name = "volume"
+type = "number"
+description = "Peak volume 0-1 (default: 1)."
+optional = true
+
+[[parameters]]
+name = "oType"
+type = "string | array"
+description = "Any sound() oType, or 'pulse' for a pulse wave with the given duty (default: 'triangle')."
+optional = true
+
+[[parameters]]
+name = "delay"
+type = "number"
+description = "Delay in seconds before the sound starts (default: 0)."
+optional = true
+
+[[parameters]]
+name = "attackTime"
+type = "number"
+description = "Seconds from silence to peak volume (default: 0)."
+optional = true
+
+[[parameters]]
+name = "decayTime"
+type = "number"
+description = "Seconds from peak volume to the sustain level (default: 0)."
+optional = true
+
+[[parameters]]
+name = "sustainLevel"
+type = "number"
+description = "Fraction of the peak held until duration ends, 0-1 (default: 1)."
+optional = true
+
+[[parameters]]
+name = "releaseTime"
+type = "number"
+description = "Seconds from the sustained level to silence (default: 0.1)."
+optional = true
+
+[[parameters]]
+name = "pan"
+type = "number"
+description = "Stereo position from -1 (left) to 1 (right) (default: 0)."
+optional = true
+
+[[parameters]]
+name = "frequencyEnd"
+type = "number"
+description = "Exponential pitch sweep target in Hz over the duration."
+optional = true
+
+[[parameters]]
+name = "filterType"
+type = "string"
+description = "'lowpass', 'highpass', 'bandpass', or 'notch'; the filter runs only when this is set."
+optional = true
+
+[[parameters]]
+name = "filterCutoff"
+type = "number"
+description = "Filter cutoff in Hz, above 0 and at most 24000 (default: 1000)."
+optional = true
+
+[[parameters]]
+name = "filterQ"
+type = "number"
+description = "Filter resonance, 0-100 (default: 1)."
+optional = true
+
+[[parameters]]
+name = "filterAttackTime"
+type = "number"
+description = "Seconds for the filter envelope to reach its peak (default: 0)."
+optional = true
+
+[[parameters]]
+name = "filterDecayTime"
+type = "number"
+description = "Seconds for the filter envelope to fall to its sustain level (default: 0)."
+optional = true
+
+[[parameters]]
+name = "filterSustainLevel"
+type = "number"
+description = "Fraction of filterAmount held until duration ends, 0-1 (default: 1)."
+optional = true
+
+[[parameters]]
+name = "filterReleaseTime"
+type = "number"
+description = "Seconds for the filter envelope to return to the cutoff after duration (default: 0.1)."
+optional = true
+
+[[parameters]]
+name = "filterAmount"
+type = "number"
+description = "Octaves the filter envelope moves the cutoff at its peak, -10 to 10 (default: 0)."
+optional = true
+
+[[parameters]]
+name = "vibratoRate"
+type = "number"
+description = "Vibrato cycles per second, above 0 and at most 100 (default: 5)."
+optional = true
+
+[[parameters]]
+name = "vibratoDepth"
+type = "number"
+description = "Vibrato depth in cents, 0-1200; 0 turns vibrato off (default: 0)."
+optional = true
+
+[[parameters]]
+name = "tremoloRate"
+type = "number"
+description = "Tremolo cycles per second, above 0 and at most 100 (default: 5)."
+optional = true
+
+[[parameters]]
+name = "tremoloDepth"
+type = "number"
+description = "Fraction of the volume the tremolo removes at its lowest, 0-1; 0 turns tremolo off (default: 0)."
+optional = true
+
+[[parameters]]
+name = "duty"
+type = "number"
+description = "Pulse duty cycle for oType 'pulse', between 0 and 1, exclusive (default: 0.5)."
+optional = true
+
+[[parameters]]
+name = "arpeggio"
+type = "number[]"
+description = "Semitone offsets to cycle through, 1 to 32 values between -48 and 48."
+optional = true
+
+[[parameters]]
+name = "arpeggioRate"
+type = "number"
+description = "Arpeggio steps per second, above 0 and at most 100 (default: 12)."
+optional = true
+
+[[returns]]
+type = "string"
+description = "Sound ID for use with stopSound()."

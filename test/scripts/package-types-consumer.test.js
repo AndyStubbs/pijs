@@ -163,6 +163,49 @@ function createConsumerPackage() {
 	);
 
 	fs.writeFileSync(
+		path.join( consumersDir, "valid-sound-advanced.mts" ),
+		[
+			`import pi from "pijs-web";`,
+			`import sound from "pijs-web/plugins/sound";`,
+			`import soundAdvanced from "pijs-web/plugins/sound-advanced";`,
+			`pi.registerPlugin( { name: "sound", init: sound } );`,
+			`pi.registerPlugin( {`,
+			`\tname: "sound-advanced", dependencies: [ "sound" ], init: soundAdvanced`,
+			`} );`,
+			`const id: string = pi.synth( { frequency: 220, oType: "pulse", duty: 0.25,`,
+			`\tfilterType: "lowpass", filterAmount: 2, arpeggio: [ 0, 4, 7 ] } );`,
+			`pi.stopSound( id );`,
+			`const coin: string = pi.sfx( "coin", 0.5 );`,
+			`void coin;`,
+			`pi.definePreset( "zap", { frequency: 1800, frequencyEnd: 300 } );`,
+			`pi.defineInstrument( 7, { oType: "square" } );`,
+			`pi.defineInstrument( 7, null );`,
+			`pi.setBusVolume( "music", 0.5 );`,
+			`pi.setBusEffect( "sfx", "delay", { time: 0.3 } );`,
+			`pi.setBusEffect( "sfx", null );`,
+			`const levels = pi.getSoundLevels( "master", true );`,
+			`const peak: number = levels.peak;`,
+			`const bins: number | undefined = levels.spectrum?.length;`,
+			`void peak;`,
+			`void bins;`,
+			`// @ts-expect-error Preset names are strings.`,
+			`pi.sfx( 5 );`,
+			""
+		].join( "\n" ),
+		"utf8"
+	);
+
+	fs.writeFileSync(
+		path.join( consumersDir, "false-positive-sound-advanced.mts" ),
+		[
+			`import pi from "pijs-web";`,
+			`pi.synth( { frequency: 440 } );`,
+			""
+		].join( "\n" ),
+		"utf8"
+	);
+
+	fs.writeFileSync(
 		path.join( consumersDir, "false-positive.mts" ),
 		[
 			`import { Pi } from "pijs-web";`,
@@ -261,7 +304,8 @@ test( "positive package consumers typecheck against published declarations", () 
 	const fixture = createConsumerPackage();
 	try {
 		for( const fileName of [
-			"control.mts", "valid-runtime.mts", "valid-lite.mts", "valid-plugins.mts"
+			"control.mts", "valid-runtime.mts", "valid-lite.mts", "valid-plugins.mts",
+			"valid-sound-advanced.mts"
 		] ) {
 			const result = runTsc( fixture.consumersDir, fileName );
 			assert.equal(
@@ -295,6 +339,19 @@ test( "negative package consumers are rejected by published declarations", () =>
 			`${liteNamed.stdout}${liteNamed.stderr}`,
 			/Pi/,
 			"should reject named Pi export from lite"
+		);
+
+		// sound-advanced commands exist only when the plugin's declarations are imported
+		const withoutPlugin = runTsc( fixture.consumersDir, "false-positive-sound-advanced.mts" );
+		assert.notEqual(
+			withoutPlugin.status,
+			0,
+			"false-positive-sound-advanced.mts should fail tsc"
+		);
+		assert.match(
+			`${withoutPlugin.stdout}${withoutPlugin.stderr}`,
+			/synth/,
+			"should reject synth() without the sound-advanced plugin"
 		);
 	} finally {
 		fixture.cleanup();

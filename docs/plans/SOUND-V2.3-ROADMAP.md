@@ -448,6 +448,52 @@ Exit criteria:
 - The plugin works as a standalone IIFE and ESM bundle alongside `pi.js` and `pi.lite.js`.
 - Real advanced-plugin consumers and contract tests pass before service v1 is frozen.
 
+Phase 5 results that later phases depend on:
+
+- **Service v1 is frozen** (plan 4.3). Members: `version`, `getContext`,
+  `createVoice( spec, name )`, `registerSource`, `scheduleEnvelope`, `stopVoice`,
+  `setBusVolume`, `setBusInsert`, `tapBus`, and `registerPlayExtension`.
+  `audio-service-browser.test.js` pins the member list.
+  - `createVoice` shares one request path with `sound()`: validation, pending records, the D3
+    drop, the late-start rule, and the caps.
+  - Registered sources get a frozen factory spec and a voice-record adapter.
+  - Voice inserts may expose a `detune` output, which core connects to the source's detune
+    parameter. This contract addition, decided in Phase 5, carries vibrato and arpeggios.
+  - Bus inserts sit between each bus input and its output gain; the master slot is between
+    the master input and the master gain. Master taps survive limiter re-routing, because
+    only the route edge changes.
+- **Plugin layout.** Each module exports `register( pluginApi, service )`. `index.js` checks
+  that the service is version 1 (`INCOMPATIBLE_SOUND_SERVICE` otherwise) and registers the
+  modules in order, with periodic noise first. `presets.js` and `instruments.js` import
+  `synth.js`, the only sibling dependency. Pulse waves are wave tables, not a registered
+  source.
+- **Types.** Command metadata lives in `metadata/plugin-sound-advanced/`. The generator emits a
+  plugin `sound-advanced.d.ts` that augments `PluginCommands`, a new exported interface that
+  `Pi.API` extends; `pi.d.ts` does not list the commands. `releases/base-package.json` exports
+  `./plugins/sound-advanced`. The package-types consumer test type-checks the commands with the
+  plugin imported and rejects `synth()` without it.
+- **Size** (evidence README):
+  - `sound-advanced` is 6,002 bytes gzipped, and its full merge into `pi.min.js` costs 5,264,
+    above the plan 9.1 guide of about 4 KB. Per-bus volume costs 75 bytes to promote. The
+    filter-bearing `synth` costs 1,842 to promote, or 2.4–2.5 KB with presets or instruments.
+  - The core `sound` plugin grew by 1,176 bytes, to 15,284, for the rest of the service. That is
+    948 over the 14 KB target, and full-build growth over 2.2 is 1,211 over the 8 KB target.
+  - Both variances go to the 6.1 size review.
+- **Tests:**
+  - `audio-service-browser.test.js`: the plan 4.3.4 contracts with stub extensions.
+  - `audio-advanced-browser.test.js`: offline renders per module, one of them single-pass so
+    Firefox covers synth voices.
+  - `sound-advanced.test.js`: Node tests.
+  - `sound-advanced-bundles-browser.test.js`: IIFE and ESM bundles with full and lite.
+  - `describeAudioEngines()` loads plugin source bundles through `{ "plugins": [ ... ] }`.
+  - No new tolerance metrics were needed; the assertions use analytic expectations. The
+    offline tests are clock-driven except the single-pass ones, so Firefox covers the service
+    contracts and synth voices only.
+- **Open manual checks:**
+  - The three-engine listening pass in `sound_advanced_01.html`: synth features, presets,
+    instruments, bus effects, and the level meter.
+  - The Phase 1–4 checks still open.
+
 ## Phase 6: Release
 
 | # | Task |

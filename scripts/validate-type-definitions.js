@@ -22,6 +22,23 @@ const packageJson = JSON.parse( g_fs.readFileSync( path.join( DIRNAME, "..", "pa
 
 const BUILD_TYPE_FILE = path.join( DIRNAME, "..", "build", "pi.d.ts" );
 const DOCS_TYPE_FILE = path.join( DIRNAME, "..", "docs", "llms", "pi.d.ts" );
+const SOUND_ADVANCED_TYPE_FILE = path.join(
+	DIRNAME, "..", "build", "plugins", "sound-advanced", "sound-advanced.d.ts"
+);
+
+// Commands of a standalone plugin, declared in its own file rather than pi.d.ts
+const SOUND_ADVANCED_DECLARATIONS = [
+	"declare module \"pijs-web\" {",
+	"interface PluginCommands {",
+	"synth( params: {",
+	"sfx( name: string, variation?: number ): string;",
+	"definePreset( name: string, params: object ): void;",
+	"defineInstrument( instrument: number, params: object | null ): void;",
+	"setBusVolume( bus: string, volume: number ): void;",
+	"setBusEffect( bus: string, effect: string | null, options?: object ): void;",
+	"getSoundLevels( bus?: string, spectrum?: boolean, waveform?: boolean ): {",
+	"declare function sound_advancedPlugin( pluginApi: PluginAPI ): void;"
+];
 
 const REQUIRED_DECLARATIONS = [
 	{
@@ -181,6 +198,11 @@ function validateTypeDefinitions() {
 	}
 
 	const requiredExports = [
+		{ "name": "plugin command interface", "text": "export interface PluginCommands {}" },
+		{
+			"name": "API extension by plugin commands",
+			"text": "interface API extends Screen, PluginCommands {"
+		},
 		{ "name": "named pi and $ exports", "text": "export { pi, $ };" },
 		{ "name": "default pi export", "text": "export default pi;" },
 		{ "name": "module pi declaration", "text": "declare const pi: Pi.API;" },
@@ -219,6 +241,17 @@ function validateTypeDefinitions() {
 	}
 	if( !/^\t\tinmouse\(/m.test( buildTypes ) ) {
 		throw new Error( "Full type definitions are missing plugin command inmouse." );
+	}
+
+	// Standalone plugin commands stay out of pi.d.ts and augment it from the plugin file
+	if( /^\t\tsynth\(/m.test( buildTypes ) ) {
+		throw new Error( "Full type definitions incorrectly include plugin command synth." );
+	}
+	const advancedTypes = readTypeFile( SOUND_ADVANCED_TYPE_FILE );
+	for( const text of SOUND_ADVANCED_DECLARATIONS ) {
+		if( !advancedTypes.includes( text ) ) {
+			throw new Error( `sound-advanced type definitions are missing: ${text}` );
+		}
 	}
 
 	console.log(

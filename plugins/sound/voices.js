@@ -24,8 +24,15 @@ export const MAX_LIVE_VOICES = 128;
 const OSCILLATOR_TYPES = [ "triangle", "sine", "square", "sawtooth" ];
 const CAPACITY_WARNING_INTERVAL = 1000;
 
+// Voice buses that createVoice accepts
+const VOICE_BUSES = [ "sfx", "music" ];
+
 // Voices by sound ID, in creation order
 const m_voices = new Map();
+
+// Source factories registered by extensions, by oType
+const m_sources = new Map();
+let m_utils = null;
 let m_nextSoundId = 0;
 let m_nextOrder = 0;
 let m_lastCapacityWarning = -Infinity;
@@ -79,6 +86,84 @@ function disposeInserts( inserts ) {
 }
 
 /**
+ * Disconnect the nodes core created for a voice, including insert detune links
+ *
+ * @param {Object} voice - Voice record
+ * @returns {void}
+ */
+function disconnectNodes( voice ) {
+	for( const node of voice.nodes ) {
+		try {
+			node.disconnect();
+		} catch( caughtError ) {
+
+			// Already disconnected
+		}
+	}
+	for( const link of voice.links.splice( 0, voice.links.length ) ) {
+		try {
+			link.node.disconnect( link.param );
+		} catch( caughtError ) {
+
+			// Already disconnected
+		}
+	}
+}
+
+/**
+ * Dispose of a voice's inserts and registered source once each
+ *
+ * @param {Object} voice - Voice record
+ * @returns {void}
+ */
+function disposeVoiceParts( voice ) {
+	disposeInserts( voice.inserts );
+	const disposeSource = voice.disposeSource;
+	if( disposeSource ) {
+		voice.disposeSource = null;
+		try {
+			disposeSource();
+		} catch( error ) {
+			console.error( "sound: Source cleanup failed:", error );
+		}
+	}
+}
+
+/**
+ * Throw an error with an error code
+ *
+ * @param {Function} ErrorType - Error constructor
+ * @param {string} message - Error message
+ * @param {string} code - Error code
+ * @returns {never}
+ */
+function throwCode( ErrorType, message, code ) {
+	const error = new ErrorType( message );
+	error.code = code;
+	throw error;
+}
+
+/**
+ * Check a realized insert against the insert contract
+ *
+ * @param {Object} insert - Insert returned by a factory
+ * @param {string} label - Message prefix
+ * @returns {void}
+ */
+function validateInsert( insert, label ) {
+	if(
+		!hasMembers( insert, [ "input", "output" ], [ "start", "stop", "dispose" ] ) ||
+		( insert.detune != null && !( insert.detune instanceof AudioNode ) )
+	) {
+		throwCode(
+			TypeError,
+			label + " must provide input, output, start, stop, and dispose.",
+			"INVALID_INSERT"
+		);
+	}
+}
+
+/**
  * Log a capacity warning at most once per second
  *
  * @returns {void}
@@ -102,16 +187,9 @@ function disposeVoice( voice ) {
 		return;
 	}
 	voice.disposed = true;
-	for( const node of voice.nodes ) {
-		try {
-			node.disconnect();
-		} catch( caughtError ) {
-
-			// Already disconnected
-		}
-	}
+	disconnectNodes( voice );
 	m_voices.delete( voice.id );
-	disposeInserts( voice.inserts );
+	disposeVoiceParts( voice );
 	if( voice.onDispose ) {
 		try {
 			voice.onDispose( voice );
@@ -146,8 +224,34 @@ function hardStop( voice ) {
 }
 
 /**
- * Create an oscillator with its waveform and pitch, including an optional exponential sweep
- * over the gate
+ * Set a source's pitch, including an optional exponential sweep over the gate
+ *
+ * @param {AudioParam} param - Frequency parameter in Hz
+ * @param {Object} spec - Voice spec
+ * @param {number} begin - Audible start in context time
+ * @param {number} offset - Seconds into the envelope at which a late voice begins
+ * @returns {void}
+ */
+function schedulePitch( param, spec, begin, offset ) {
+	const env = spec.env;
+	if( spec.frequencyEnd != null ) {
+		let frequency = spec.frequency;
+		if( offset > 0 && env.gate > 0 ) {
+			const progress = Math.min( offset / env.gate, 1 );
+			const ratio = spec.frequencyEnd / spec.frequency;
+			frequency = spec.frequency * Math.pow( ratio, progress );
+		}
+		param.setValueAtTime( frequency, begin );
+		if( spec.start + env.gate > begin ) {
+			param.exponentialRampToValueAtTime( spec.frequencyEnd, spec.start + env.gate );
+		}
+	} else {
+		param.value = spec.frequency;
+	}
+}
+
+/**
+ * Create an oscillator with its waveform and pitch
  *
  * @param {AudioContext} context - Audio context
  * @param {Object} spec - Voice spec
@@ -157,7 +261,6 @@ function hardStop( voice ) {
  */
 function createOscillator( context, spec, begin, offset ) {
 	const source = context.createOscillator();
-	const env = spec.env;
 	if( spec.oType === "custom" ) {
 		source.setPeriodicWave(
 			context.createPeriodicWave( spec.waveTables[ 0 ], spec.waveTables[ 1 ] )
@@ -165,23 +268,67 @@ function createOscillator( context, spec, begin, offset ) {
 	} else {
 		source.type = spec.oType;
 	}
+	schedulePitch( source.frequency, spec, begin, offset );
+	return source;
+}
 
-	if( spec.frequencyEnd != null ) {
-		let frequency = spec.frequency;
-		if( offset > 0 && env.gate > 0 ) {
-			const progress = Math.min( offset / env.gate, 1 );
-			const ratio = spec.frequencyEnd / spec.frequency;
-			frequency = spec.frequency * Math.pow( ratio, progress );
-		}
-		source.frequency.setValueAtTime( frequency, begin );
-		if( spec.start + env.gate > begin ) {
-			source.frequency.exponentialRampToValueAtTime(
-				spec.frequencyEnd, spec.start + env.gate
-			);
-		}
-	} else {
-		source.frequency.value = spec.frequency;
+/**
+ * Create a source from a registered factory and adapt it to the voice record
+ *
+ * The factory receives a frozen spec and must return the source contract: output,
+ * frequency (or null), optional detune, start, stop, onEnded, and dispose. Core connects
+ * the output, schedules pitch, and disposes the source exactly once.
+ *
+ * @param {AudioContext} context - Audio context
+ * @param {Object} spec - Voice spec
+ * @param {Object} voice - Voice record
+ * @param {number} offset - Seconds into the envelope at which a late voice begins
+ * @returns {Object} Source object from the factory
+ */
+function createRegisteredSource( context, spec, voice, offset ) {
+	const factory = m_sources.get( spec.oType );
+	const source = factory( context, Object.freeze( {
+		"oType": spec.oType,
+		"frequency": spec.frequency,
+		"frequencyEnd": spec.frequencyEnd,
+		"start": spec.start,
+		"gate": spec.env.gate,
+		"end": voice.end,
+		"offset": offset
+	} ) );
+	if( source && typeof source.dispose === "function" ) {
+		voice.disposeSource = () => {
+			source.dispose();
+		};
 	}
+	if( !hasMembers( source, [ "output" ], [ "start", "stop", "onEnded", "dispose" ] ) ) {
+		throwCode(
+			TypeError,
+			"sound: Source factory for \"" + spec.oType + "\" must return output, start, " +
+			"stop, onEnded, and dispose.",
+			"INVALID_SOURCE"
+		);
+	}
+
+	// Stops before start are skipped; a constructed source that never started is only disposed
+	let started = false;
+	voice.source = {
+		"start": ( when ) => {
+			started = true;
+			source.start( when );
+		},
+		"stop": ( when ) => {
+			if( started ) {
+				source.stop( when ?? context.currentTime );
+			}
+		}
+	};
+	if( source.frequency ) {
+		schedulePitch( source.frequency, spec, voice.begin, offset );
+	}
+	source.onEnded( () => {
+		disposeVoice( voice );
+	} );
 	return source;
 }
 
@@ -213,28 +360,64 @@ function buildVoice( spec, soundId ) {
 	} );
 
 	try {
-
-		// Noise ignores frequency and frequencyEnd (decision D1)
-		let source;
-		let sourceOffset = null;
-		if( g_noise.isNoiseType( spec.oType ) ) {
-			const noise = g_noise.createNoiseSource( context, spec.oType );
-			source = noise.source;
-			sourceOffset = noise.offset;
+		let output;
+		let detune = null;
+		let startSource;
+		if( m_sources.has( spec.oType ) ) {
+			const registered = createRegisteredSource( context, spec, voice, offset );
+			output = registered.output;
+			if( registered.detune instanceof AudioParam ) {
+				detune = registered.detune;
+			}
+			startSource = () => {
+				voice.source.start( begin );
+				voice.source.stop( end );
+			};
 		} else {
-			source = createOscillator( context, spec, begin, offset );
+
+			// Noise ignores frequency and frequencyEnd (decision D1)
+			let source;
+			let sourceOffset = null;
+			if( g_noise.isNoiseType( spec.oType ) ) {
+				const noise = g_noise.createNoiseSource( context, spec.oType );
+				source = noise.source;
+				sourceOffset = noise.offset;
+			} else {
+				source = createOscillator( context, spec, begin, offset );
+				detune = source.detune;
+			}
+			voice.source = source;
+			voice.nodes.push( source );
+			output = source;
+			startSource = () => {
+				source.onended = () => {
+					disposeVoice( voice );
+				};
+				if( sourceOffset === null ) {
+					source.start( begin );
+				} else {
+					source.start( begin, sourceOffset );
+				}
+				source.stop( end );
+			};
 		}
-		voice.source = source;
-		voice.nodes.push( source );
-		let output = source;
 
 		// Voice inserts are built only now, after admission, and chained after the source
 		if( spec.inserts ) {
 			for( const descriptor of spec.inserts ) {
 				const insert = descriptor.factory( context, descriptor.params );
-				voice.inserts.push( insert );
+				if( insert && typeof insert.dispose === "function" ) {
+					voice.inserts.push( insert );
+				}
+				validateInsert( insert, "sound: Voice insert" );
 				output.connect( insert.input );
 				output = insert.output;
+
+				// Pitch modulation: core connects the insert's detune output to the source
+				if( insert.detune && detune ) {
+					insert.detune.connect( detune );
+					voice.links.push( { "node": insert.detune, "param": detune } );
+				}
 				insert.start( begin, spec.start + env.gate );
 				insert.stop( end );
 			}
@@ -271,26 +454,19 @@ function buildVoice( spec, soundId ) {
 		}
 
 		output.connect( g_context.getBusInput( spec.bus ) );
-		source.onended = () => {
-			disposeVoice( voice );
-		};
-		if( sourceOffset === null ) {
-			source.start( begin );
-		} else {
-			source.start( begin, sourceOffset );
-		}
-		source.stop( end );
+		startSource();
 	} catch( error ) {
-		voice.disposed = true;
-		for( const node of voice.nodes ) {
-			try {
-				node.disconnect();
-			} catch( caughtError ) {
 
-				// Already disconnected
-			}
+		// No partially connected voice remains; a started source is stopped before disposal
+		voice.disposed = true;
+		try {
+			voice.source?.stop( context.currentTime );
+		} catch( caughtError ) {
+
+			// Never started or already stopped
 		}
-		disposeInserts( voice.inserts );
+		disconnectNodes( voice );
+		disposeVoiceParts( voice );
 		throw error;
 	}
 
@@ -323,9 +499,249 @@ function admitAndCreate( spec, soundId ) {
  * @returns {never}
  */
 function throwRange( message, code ) {
-	const error = new RangeError( message );
-	error.code = code;
-	throw error;
+	throwCode( RangeError, message, code );
+}
+
+/**
+ * Parse and validate sound parameters shared by sound() and createVoice()
+ *
+ * @param {string} name - Command name for error messages
+ * @param {Object} options - sound() parameters
+ * @returns {Object} Validated request: frequency, frequencyEnd, oType, waveTables, volume,
+ * pan, delay, and envelope
+ */
+function resolveSoundRequest( name, options ) {
+	const utils = m_utils;
+	const frequency = utils.getFloat( options.frequency, 440 );
+	const duration = utils.getFloat( options.duration, 1 );
+	const volume = utils.getFloat( options.volume, 1 );
+	let oType;
+	if( options.oType != null ) {
+		oType = options.oType;
+	} else {
+		oType = "triangle";
+	}
+	const delay = utils.getFloat( options.delay, 0 );
+	const attackTime = utils.getFloat( options.attackTime, 0 );
+	const decayTime = utils.getFloat( options.decayTime, 0 );
+	const sustainLevel = utils.getFloat( options.sustainLevel, 1 );
+	const releaseTime = utils.getFloat( options.releaseTime, 0.1 );
+	const pan = utils.getFloat( options.pan, 0 );
+	let frequencyEnd = null;
+	if( options.frequencyEnd != null ) {
+		frequencyEnd = utils.getFloat( options.frequencyEnd, NaN );
+	}
+
+	// Validate duration
+	if( duration < 0 ) {
+		throwRange(
+			`${name}: Parameter duration must be a number greater than or equal to 0.`,
+			"INVALID_DURATION"
+		);
+	}
+
+	// Validate volume
+	if( volume < 0 || volume > 1 ) {
+		throwRange(
+			`${name}: Parameter volume must be a number between 0 and 1.`, "INVALID_VOLUME"
+		);
+	}
+
+	// Validate delay
+	if( delay < 0 ) {
+		throwRange(
+			`${name}: Parameter delay must be a number greater than or equal to 0.`,
+			"INVALID_DELAY"
+		);
+	}
+
+	// Validate envelope stages
+	if( attackTime < 0 ) {
+		throwRange(
+			`${name}: Parameter attackTime must be a number greater than or equal to 0.`,
+			"INVALID_ATTACK_TIME"
+		);
+	}
+	if( decayTime < 0 ) {
+		throwRange(
+			`${name}: Parameter decayTime must be a number greater than or equal to 0.`,
+			"INVALID_DECAY_TIME"
+		);
+	}
+	if( sustainLevel < 0 || sustainLevel > 1 ) {
+		throwRange(
+			`${name}: Parameter sustainLevel must be a number between 0 and 1.`,
+			"INVALID_SUSTAIN_LEVEL"
+		);
+	}
+	if( releaseTime < 0 ) {
+		throwRange(
+			`${name}: Parameter releaseTime must be a number greater than or equal to 0.`,
+			"INVALID_RELEASE_TIME"
+		);
+	}
+
+	// Validate pan
+	if( pan < -1 || pan > 1 ) {
+		throwRange( `${name}: Parameter pan must be a number between -1 and 1.`, "INVALID_PAN" );
+	}
+
+	// An exponential sweep cannot reach or cross zero
+	if( frequencyEnd !== null && !( frequency > 0 && frequencyEnd > 0 ) ) {
+		throwRange(
+			`${name}: Parameters frequency and frequencyEnd must be greater than 0 for a sweep.`,
+			"INVALID_FREQUENCY"
+		);
+	}
+
+	let waveTables = null;
+
+	// Check for custom waveform (array)
+	if( Array.isArray( oType ) ) {
+		if(
+			oType.length !== 2 ||
+			oType[ 0 ].length === 0 ||
+			oType[ 1 ].length === 0 ||
+			oType[ 0 ].length !== oType[ 1 ].length
+		) {
+			throwCode(
+				TypeError,
+				`${name}: Parameter oType array must contain two non-empty arrays of ` +
+				"equal length.",
+				"INVALID_WAVE_TABLE"
+			);
+		}
+
+		waveTables = [];
+
+		// Validate all values are numbers
+		for( let i = 0; i < oType.length; i++ ) {
+			for( let j = 0; j < oType[ i ].length; j++ ) {
+				if( isNaN( oType[ i ][ j ] ) ) {
+					throwCode(
+						TypeError,
+						`${name}: Parameter oType array must only contain numbers.`,
+						"INVALID_WAVE_TABLE_VALUE"
+					);
+				}
+			}
+			waveTables.push( new Float32Array( oType[ i ] ) );
+		}
+
+		oType = "custom";
+	} else if( typeof oType !== "string" ) {
+		throwCode(
+			TypeError, `${name}: Parameter oType must be a string or an array.`, "INVALID_OTYPE"
+		);
+	} else if( !isSourceType( oType ) ) {
+		throwCode(
+			Error,
+			`${name}: Parameter oType must be one of: ${getSourceTypes().join( ", " )}.`,
+			"INVALID_OTYPE"
+		);
+	}
+
+	return {
+		"frequency": frequency,
+		"frequencyEnd": frequencyEnd,
+		"oType": oType,
+		"waveTables": waveTables,
+		"volume": volume,
+		"pan": pan,
+		"delay": delay,
+		"envelope": {
+			"duration": duration,
+			"attackTime": attackTime,
+			"decayTime": decayTime,
+			"sustainLevel": sustainLevel,
+			"releaseTime": releaseTime
+		}
+	};
+}
+
+/**
+ * Validate voice insert descriptors and copy them into an immutable snapshot
+ *
+ * @param {string} name - Command name for error messages
+ * @param {Array<Object>|null|undefined} inserts - Descriptors: { factory, params }
+ * @returns {Array<Object>|null} Frozen descriptors, or null for none
+ */
+function resolveInserts( name, inserts ) {
+	if( inserts == null ) {
+		return null;
+	}
+	if(
+		!Array.isArray( inserts ) ||
+		inserts.some( descriptor => !descriptor || typeof descriptor.factory !== "function" )
+	) {
+		throwCode(
+			TypeError,
+			`${name}: Parameter inserts must be an array of { factory, params } descriptors.`,
+			"INVALID_INSERT"
+		);
+	}
+	if( inserts.length === 0 ) {
+		return null;
+	}
+	return snapshot( inserts.map( descriptor => ( {
+		"factory": descriptor.factory,
+		"params": descriptor.params ?? null
+	} ) ) );
+}
+
+/**
+ * Start a validated voice request now inside the window, or record it until the window
+ *
+ * A locked context drops one-shots (decision D3); the ID is returned in the completed state.
+ *
+ * @param {Object} request - Request from resolveSoundRequest
+ * @param {string} bus - "sfx" or "music"
+ * @param {Array<Object>|null} inserts - Frozen insert descriptors
+ * @returns {string} Sound ID
+ */
+function requestVoice( request, bus, inserts ) {
+	const context = g_context.getAudioContext();
+	const soundId = nextSoundId();
+	if( g_context.isLocked() ) {
+		return soundId;
+	}
+
+	const now = context.currentTime;
+	const spec = {
+		"frequency": request.frequency,
+		"frequencyEnd": request.frequencyEnd,
+		"oType": request.oType,
+		"waveTables": request.waveTables,
+		"peak": request.volume,
+		"pan": request.pan,
+		"bus": bus,
+		"env": g_envelope.resolveEnvelope( request.envelope ),
+		"start": Math.max( now + request.delay, g_context.getScheduleLead() ),
+		"inserts": inserts
+	};
+
+	// Start now inside the window; otherwise keep a pending record until the window
+	if( g_scheduler.shouldCreate( spec.start, now ) ) {
+		startVoice( spec, soundId );
+	} else {
+		g_scheduler.addPending( {
+			"id": soundId,
+			"kind": "sound",
+			"start": spec.start,
+			"run": () => startVoice( spec, soundId )
+		}, "sound" );
+	}
+
+	return soundId;
+}
+
+/**
+ * List the oType names sound() accepts
+ *
+ * @returns {Array<string>} Built-in and registered source types
+ */
+function getSourceTypes() {
+	return OSCILLATOR_TYPES.concat( g_noise.NOISE_TYPES, Array.from( m_sources.keys() ) );
 }
 
 
@@ -408,7 +824,9 @@ export function createVoiceRecord( fields ) {
 		"protected": false,
 		"nodes": [],
 		"inserts": [],
+		"links": [],
 		"source": null,
+		"disposeSource": null,
 		"gain": null,
 		"fade": null,
 		"onDispose": null,
@@ -719,6 +1137,109 @@ export function stopSoundById( soundId, when = null ) {
 	}
 }
 
+/**
+ * Deep copy a value into an immutable snapshot
+ *
+ * Arrays and plain objects are copied and frozen, typed arrays are copied, and functions and
+ * primitives are kept, so a snapshot never shares mutable state with its source.
+ *
+ * @param {*} value - Value to copy
+ * @returns {*} Snapshot
+ */
+export function snapshot( value ) {
+	if( Array.isArray( value ) ) {
+		return Object.freeze( value.map( snapshot ) );
+	}
+	if( ArrayBuffer.isView( value ) ) {
+		return value.slice();
+	}
+	if( value !== null && typeof value === "object" ) {
+		const copy = {};
+		for( const key of Object.keys( value ) ) {
+			copy[ key ] = snapshot( value[ key ] );
+		}
+		return Object.freeze( copy );
+	}
+	return value;
+}
+
+/**
+ * Check an extension object's shape: the named members are audio nodes and functions
+ *
+ * @param {Object} object - Object returned by an extension
+ * @param {Array<string>} nodes - Members that must be AudioNodes
+ * @param {Array<string>} functions - Members that must be functions
+ * @returns {boolean} True when every member matches
+ */
+export function hasMembers( object, nodes, functions ) {
+	return Boolean( object ) &&
+		nodes.every( key => object[ key ] instanceof AudioNode ) &&
+		functions.every( key => typeof object[ key ] === "function" );
+}
+
+/**
+ * Check whether an oType names a built-in or registered source
+ *
+ * @param {string} oType - Source type
+ * @returns {boolean} True for oscillator, noise, and registered source types
+ */
+export function isSourceType( oType ) {
+	return OSCILLATOR_TYPES.indexOf( oType ) !== -1 ||
+		g_noise.isNoiseType( oType ) ||
+		m_sources.has( oType );
+}
+
+/**
+ * Register a source type for sound(), createVoice(), and PLAY notes (extension service)
+ *
+ * @param {string} oType - New source type name
+ * @param {Function} factory - factory( context, spec ) returning the source contract
+ * @returns {void}
+ */
+export function registerSource( oType, factory ) {
+	if( typeof oType !== "string" || oType === "" || typeof factory !== "function" ) {
+		throwCode(
+			TypeError,
+			"registerSource: Parameter oType must be a non-empty string and factory a function.",
+			"INVALID_SOURCE"
+		);
+	}
+	if( isSourceType( oType ) || oType === "custom" ) {
+		throwCode(
+			Error,
+			`registerSource: Source type "${oType}" is already defined.`,
+			"DUPLICATE_SOURCE"
+		);
+	}
+	m_sources.set( oType, factory );
+}
+
+/**
+ * Create a voice from a source and optional inserts (extension service)
+ *
+ * The spec takes the sound() parameters plus bus ("sfx" or "music") and inserts, an ordered
+ * array of { factory, params } descriptors. Factories run only after admission. Requests
+ * follow the same delay, lock, late-start, and cap rules as sound().
+ *
+ * @param {Object} spec - Voice spec
+ * @param {string} [name="createVoice"] - Calling command name for error messages
+ * @returns {string} Sound ID
+ */
+export function createVoice( spec, name = "createVoice" ) {
+	if( spec === null || typeof spec !== "object" ) {
+		throwCode( TypeError, `${name}: Parameter spec must be an object.`, "INVALID_SPEC" );
+	}
+	const request = resolveSoundRequest( name, spec );
+	let bus = "sfx";
+	if( spec.bus != null ) {
+		if( VOICE_BUSES.indexOf( spec.bus ) === -1 ) {
+			throwCode( Error, `${name}: Parameter bus must be one of: sfx, music.`, "INVALID_BUS" );
+		}
+		bus = spec.bus;
+	}
+	return requestVoice( request, bus, resolveInserts( name, spec.inserts ) );
+}
+
 
 /*************************************************************************************************
  * Plugin Registration
@@ -732,7 +1253,7 @@ export function stopSoundById( soundId, when = null ) {
  * @returns {void}
  */
 export function registerVoices( pluginApi ) {
-	const utils = pluginApi.utils;
+	m_utils = pluginApi.utils;
 
 
 	pluginApi.addCommand( "sound", sound, false, [
@@ -747,8 +1268,8 @@ export function registerVoices( pluginApi ) {
 	 * @param {number} options.frequency - Frequency in Hz; no effect on noise (default: 440)
 	 * @param {number} options.duration - Gate length in seconds before release (default: 1)
 	 * @param {number} options.volume - Peak gain 0-1 (default: 1)
-	 * @param {string|Array} options.oType - Oscillator type, "white" or "pink" noise, or a
-	 * custom wave table (default: "triangle")
+	 * @param {string|Array} options.oType - Oscillator type, "white" or "pink" noise, a
+	 * registered source type, or a custom wave table (default: "triangle")
 	 * @param {number} options.delay - Delay before playing in seconds (default: 0)
 	 * @param {number} options.attackTime - Seconds from silence to peak (default: 0)
 	 * @param {number} options.decayTime - Seconds from peak to the sustain level (default: 0)
@@ -763,175 +1284,7 @@ export function registerVoices( pluginApi ) {
 	 * @returns {string} Sound ID for use with stopSound
 	 */
 	function sound( options ) {
-		const frequency = utils.getFloat( options.frequency, 440 );
-		const duration = utils.getFloat( options.duration, 1 );
-		const volume = utils.getFloat( options.volume, 1 );
-		let oType;
-		if( options.oType != null ) {
-			oType = options.oType;
-		} else {
-			oType = "triangle";
-		}
-		const delay = utils.getFloat( options.delay, 0 );
-		const attackTime = utils.getFloat( options.attackTime, 0 );
-		const decayTime = utils.getFloat( options.decayTime, 0 );
-		const sustainLevel = utils.getFloat( options.sustainLevel, 1 );
-		const releaseTime = utils.getFloat( options.releaseTime, 0.1 );
-		const pan = utils.getFloat( options.pan, 0 );
-		let frequencyEnd = null;
-		if( options.frequencyEnd != null ) {
-			frequencyEnd = utils.getFloat( options.frequencyEnd, NaN );
-		}
-
-		// Validate duration
-		if( duration < 0 ) {
-			throwRange(
-				"sound: Parameter duration must be a number greater than or equal to 0.",
-				"INVALID_DURATION"
-			);
-		}
-
-		// Validate volume
-		if( volume < 0 || volume > 1 ) {
-			throwRange(
-				"sound: Parameter volume must be a number between 0 and 1.", "INVALID_VOLUME"
-			);
-		}
-
-		// Validate delay
-		if( delay < 0 ) {
-			throwRange(
-				"sound: Parameter delay must be a number greater than or equal to 0.",
-				"INVALID_DELAY"
-			);
-		}
-
-		// Validate envelope stages
-		if( attackTime < 0 ) {
-			throwRange(
-				"sound: Parameter attackTime must be a number greater than or equal to 0.",
-				"INVALID_ATTACK_TIME"
-			);
-		}
-		if( decayTime < 0 ) {
-			throwRange(
-				"sound: Parameter decayTime must be a number greater than or equal to 0.",
-				"INVALID_DECAY_TIME"
-			);
-		}
-		if( sustainLevel < 0 || sustainLevel > 1 ) {
-			throwRange(
-				"sound: Parameter sustainLevel must be a number between 0 and 1.",
-				"INVALID_SUSTAIN_LEVEL"
-			);
-		}
-		if( releaseTime < 0 ) {
-			throwRange(
-				"sound: Parameter releaseTime must be a number greater than or equal to 0.",
-				"INVALID_RELEASE_TIME"
-			);
-		}
-
-		// Validate pan
-		if( pan < -1 || pan > 1 ) {
-			throwRange( "sound: Parameter pan must be a number between -1 and 1.", "INVALID_PAN" );
-		}
-
-		// An exponential sweep cannot reach or cross zero
-		if( frequencyEnd !== null && !( frequency > 0 && frequencyEnd > 0 ) ) {
-			throwRange(
-				"sound: Parameters frequency and frequencyEnd must be greater than 0 for a sweep.",
-				"INVALID_FREQUENCY"
-			);
-		}
-
-		let waveTables = null;
-
-		// Check for custom waveform (array)
-		if( Array.isArray( oType ) ) {
-			if(
-				oType.length !== 2 ||
-				oType[ 0 ].length === 0 ||
-				oType[ 1 ].length === 0 ||
-				oType[ 0 ].length !== oType[ 1 ].length
-			) {
-				const error = new TypeError(
-					"sound: Parameter oType array must contain two non-empty arrays of " +
-					"equal length."
-				);
-				error.code = "INVALID_WAVE_TABLE";
-				throw error;
-			}
-
-			waveTables = [];
-
-			// Validate all values are numbers
-			for( let i = 0; i < oType.length; i++ ) {
-				for( let j = 0; j < oType[ i ].length; j++ ) {
-					if( isNaN( oType[ i ][ j ] ) ) {
-						const error = new TypeError(
-							"sound: Parameter oType array must only contain numbers."
-						);
-						error.code = "INVALID_WAVE_TABLE_VALUE";
-						throw error;
-					}
-				}
-				waveTables.push( new Float32Array( oType[ i ] ) );
-			}
-
-			oType = "custom";
-		} else if( typeof oType !== "string" ) {
-			const error = new TypeError( "sound: Parameter oType must be a string or an array." );
-			error.code = "INVALID_OTYPE";
-			throw error;
-		} else if( OSCILLATOR_TYPES.indexOf( oType ) === -1 && !g_noise.isNoiseType( oType ) ) {
-			const error = new Error(
-				"sound: Parameter oType must be one of: triangle, sine, square, sawtooth, " +
-				"white, pink."
-			);
-			error.code = "INVALID_OTYPE";
-			throw error;
-		}
-
-		// A locked context drops one-shots; the ID is returned in the completed state
-		const context = g_context.getAudioContext();
-		const soundId = nextSoundId();
-		if( g_context.isLocked() ) {
-			return soundId;
-		}
-
-		const now = context.currentTime;
-		const spec = {
-			"frequency": frequency,
-			"frequencyEnd": frequencyEnd,
-			"oType": oType,
-			"waveTables": waveTables,
-			"peak": volume,
-			"pan": pan,
-			"bus": "sfx",
-			"env": g_envelope.resolveEnvelope( {
-				"duration": duration,
-				"attackTime": attackTime,
-				"decayTime": decayTime,
-				"sustainLevel": sustainLevel,
-				"releaseTime": releaseTime
-			} ),
-			"start": Math.max( now + delay, g_context.getScheduleLead() )
-		};
-
-		// Start now inside the window; otherwise keep a pending record until the window
-		if( g_scheduler.shouldCreate( spec.start, now ) ) {
-			startVoice( spec, soundId );
-		} else {
-			g_scheduler.addPending( {
-				"id": soundId,
-				"kind": "sound",
-				"start": spec.start,
-				"run": () => startVoice( spec, soundId )
-			}, "sound" );
-		}
-
-		return soundId;
+		return requestVoice( resolveSoundRequest( "sound", options ), "sfx", null );
 	}
 
 

@@ -1,0 +1,7 @@
+{
+	"name": "sound-advanced",
+	"version": "1.0.0",
+	"description": "Synthesis, bus effects, analyser, presets, and PLAY instruments for the sound plugin",
+	"author": "Andy Stubbs",
+	"license": "Apache-2.0"
+}

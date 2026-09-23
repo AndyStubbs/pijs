@@ -25,6 +25,13 @@ const PLUGINS_DIR = g_path.join( ROOT_DIR, "plugins" );
 const DEFAULT_REPORT_FILE = g_path.join( BUILD_DIR, "size-report.json" );
 const ADVANCED_PLUGIN = "sound-advanced";
 
+// sound-advanced modules in registration order. synth.js is a shared helper: presets and
+// instruments import it, so removing it removes them too.
+const ADVANCED_MODULES = [
+	"periodic-noise", "synth", "buses", "effects", "analyser", "presets", "instruments"
+];
+const ADVANCED_HELPERS = { "synth": [ "presets", "instruments" ] };
+
 const MAIN_BUNDLES = [
 	{ "name": "pi.min.js", "entry": "index-full.js", "getBanner": g_build.getFullBanner },
 	{ "name": "pi.lite.min.js", "entry": "index.js", "getBanner": g_build.getLiteBanner }
@@ -58,6 +65,7 @@ const DIFFERENTIALS = [];
 function getDifferentials() {
 	const differentials = [ ...DIFFERENTIALS ];
 	if( g_fs.existsSync( g_path.join( PLUGINS_DIR, ADVANCED_PLUGIN, "index.js" ) ) ) {
+		differentials.push( ...getAdvancedModuleDifferentials() );
 		differentials.push( {
 			"name": `${ADVANCED_PLUGIN} full merge`,
 			"kind": "fullMerge",
@@ -67,6 +75,108 @@ function getDifferentials() {
 				"contents": `import "./src/index-full.js";\n` +
 					`import "./plugins/${ADVANCED_PLUGIN}/index.js";\n`,
 				"banner": g_build.getFullBanner( readPackageVersion() )
+			}
+		} );
+	}
+	return differentials;
+}
+
+/**
+ * Builds an entry module that registers a sound-advanced plugin with a subset of modules.
+ *
+ * Every variant registers modules the way the plugin's index.js does, so variants differ
+ * only by the modules they include.
+ *
+ * @param {string[]} modules - Module names from ADVANCED_MODULES
+ * @param {boolean} withSound - True to bundle the core sound plugin in the same file
+ * @returns {string} Entry module source
+ */
+function getAdvancedEntry( modules, withSound ) {
+	const lines = [];
+	if( withSound ) {
+		lines.push( `import "./plugins/sound/index.js";` );
+	}
+	modules.forEach( ( name, index ) => {
+		lines.push( `import * as m${index} from "./plugins/${ADVANCED_PLUGIN}/${name}.js";` );
+	} );
+	lines.push( "window.pi.registerPlugin( {" );
+	lines.push( `\t"name": "${ADVANCED_PLUGIN}",` );
+	lines.push( `\t"dependencies": [ "sound" ],` );
+	lines.push( `\t"init": api => {` );
+	lines.push( `\t\tconst service = api.getService( "sound" );` );
+	modules.forEach( ( name, index ) => {
+		lines.push( `\t\tm${index}.register( api, service );` );
+	} );
+	lines.push( "\t}" );
+	lines.push( "} );" );
+	return lines.join( "\n" ) + "\n";
+}
+
+/**
+ * Formats a plugin's release banner.
+ *
+ * @param {string} pluginName - Plugin directory name
+ * @returns {string|null} Banner comment
+ */
+function getPluginBanner( pluginName ) {
+	const bannerData = g_buildPlugin.readBannerData( g_path.join( PLUGINS_DIR, pluginName ) );
+	if( !bannerData ) {
+		return null;
+	}
+	return g_buildPlugin.formatPluginBanner( bannerData );
+}
+
+/**
+ * Marginal and promotion measurements for each sound-advanced module (plan 9.1).
+ *
+ * Marginal: the all-modules variant minus a variant without the module. Removing a shared
+ * helper also removes its dependents; that group lists them as members, and dependents'
+ * own marginal costs keep the helper. Promotion: the core sound plugin bundled with the
+ * module (and any helper it needs), minus the sound plugin alone.
+ *
+ * @returns {Object[]} Differential entries
+ */
+function getAdvancedModuleDifferentials() {
+	const advancedBanner = getPluginBanner( ADVANCED_PLUGIN );
+	const soundBanner = getPluginBanner( "sound" );
+	const allModules = {
+		"label": `${ADVANCED_PLUGIN} (all modules)`,
+		"contents": getAdvancedEntry( ADVANCED_MODULES, false ),
+		"banner": advancedBanner
+	};
+	const differentials = [];
+	for( const name of ADVANCED_MODULES ) {
+		const members = ADVANCED_HELPERS[ name ] || [];
+		const removed = [ name, ...members ];
+		const entry = {
+			"name": `${ADVANCED_PLUGIN}/${name}`,
+			"kind": "marginal",
+			"base": allModules,
+			"variant": {
+				"label": `${ADVANCED_PLUGIN} without ${removed.join( ", " )}`,
+				"contents": getAdvancedEntry(
+					ADVANCED_MODULES.filter( module => removed.indexOf( module ) === -1 ), false
+				),
+				"banner": advancedBanner
+			}
+		};
+		if( members.length > 0 ) {
+			entry.members = members;
+		}
+		differentials.push( entry );
+	}
+	for( const name of ADVANCED_MODULES ) {
+		const included = ADVANCED_MODULES.filter( module => {
+			return module === name || ( ADVANCED_HELPERS[ module ] || [] ).indexOf( name ) !== -1;
+		} );
+		differentials.push( {
+			"name": `${ADVANCED_PLUGIN}/${name} promotion`,
+			"kind": "promotion",
+			"base": "plugin:sound",
+			"variant": {
+				"label": `sound + ${included.join( " + " )}`,
+				"contents": getAdvancedEntry( included, true ),
+				"banner": soundBanner
 			}
 		} );
 	}
@@ -182,14 +292,25 @@ function computeDifferentialCost( kind, baseGzip, variantGzip ) {
 	throw new TypeError( `computeDifferentialCost: unknown kind "${kind}".` );
 }
 
-async function resolveBase( base, report ) {
+async function resolveBase( base, report, variantCache ) {
 	if( typeof base === "string" && base.startsWith( "bundle:" ) ) {
 		return { "label": base, ...report.bundles[ base.slice( 7 ) ] };
 	}
 	if( typeof base === "string" && base.startsWith( "plugin:" ) ) {
-		return { "label": base, ...report.plugins[ base.slice( 7 ) ] };
+		let plugin = report.plugins[ base.slice( 7 ) ];
+		if( !plugin ) {
+			plugin = await measurePlugin( base.slice( 7 ) );
+		}
+		return { "label": base, ...plugin };
 	}
-	return measureVariant( base );
+
+	// Several differentials share one variant base; measure it once
+	let measured = variantCache.get( base.contents );
+	if( !measured ) {
+		measured = await measureVariant( base );
+		variantCache.set( base.contents, measured );
+	}
+	return measured;
 }
 
 function listPlugins() {
@@ -227,8 +348,9 @@ async function createSizeReport( options = {} ) {
 	for( const pluginName of pluginNames ) {
 		report.plugins[ pluginName ] = await measurePlugin( pluginName );
 	}
+	const variantCache = new Map();
 	for( const differential of differentials ) {
-		const base = await resolveBase( differential.base, report );
+		const base = await resolveBase( differential.base, report, variantCache );
 		const variant = await measureVariant( differential.variant );
 		const entry = {
 			"name": differential.name,
@@ -305,4 +427,6 @@ if( isMainModule() ) {
 	}
 }
 
-export { computeDifferentialCost, createSizeReport, measurePlugin, measureVariant };
+export {
+	computeDifferentialCost, createSizeReport, getDifferentials, measurePlugin, measureVariant
+};

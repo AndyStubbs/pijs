@@ -1,0 +1,48 @@
+title = "getSoundLevels"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Measures the current level of a sound bus, with optional spectrum and waveform data."
+description = """
+Requires the sound-advanced plugin. Measures the most recent 2048 samples of a bus after its effect and volume, which suits level meters and visualizers. "master" is measured after the master volume, before the output limiter.
+
+peak is the largest sample magnitude and rms the average level, both from 0 upward. With spectrum, the result includes 1024 frequency bands in decibels from 0 Hz up to half the sample rate. With waveform, it includes the 2048 samples themselves. Arrays that were not requested are null.
+
+The first call on a bus starts measuring it and returns silence, so call it every frame.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Press any key to play" );
+$.onkey( "any", "down", () => {
+	$.play( "T120 L8 O4 C E G O5 C O4 G E C" );
+} );
+function draw() {
+	const levels = $.getSoundLevels( "music" );
+	$.cls();
+	$.rect( 10, 90, Math.round( levels.peak * 280 ), 20, 10 );
+	requestAnimationFrame( draw );
+}
+draw();
+"""
+
+[[parameters]]
+name = "bus"
+type = "string"
+description = "'sfx', 'music', 'audio', or 'master' (default: 'master')."
+optional = true
+
+[[parameters]]
+name = "spectrum"
+type = "boolean"
+description = "Include frequency data in decibels (default: false)."
+optional = true
+
+[[parameters]]
+name = "waveform"
+type = "boolean"
+description = "Include the time-domain samples (default: false)."
+optional = true
+
+[[returns]]
+type = "{ peak: number; rms: number; spectrum: Float32Array | null; waveform: Float32Array | null }"
+description = "Levels, plus spectrum and waveform arrays when requested."

@@ -4,9 +4,11 @@
  * Shared AudioContext lifecycle, the bus graph, the limiter, master volume, the scheduling
  * lead, and the autoplay unlock.
  *
- * Graph: bus input → [effects slot] → bus output gain → master input → master gain →
- * compressor → makeup trim → soft clipper → destination. The limiter stages can be bypassed
- * as a unit, and engines whose compressor fails the startup probe use the clipper alone.
+ * Graph: bus input → [effects insert] → bus output gain → master input → [effects insert] →
+ * master gain → compressor → makeup trim → soft clipper → destination. The limiter stages
+ * can be bypassed as a unit, and engines whose compressor fails the startup probe use the
+ * clipper alone. Extensions reach the insert slots and bus taps only through the functions
+ * here, so core owns every connection between its nodes and theirs.
  *
  * @module plugins/sound/context
  */
@@ -163,7 +165,7 @@ function createGraph( context ) {
 	clipperGain.connect( clipper );
 	clipper.connect( context.destination );
 
-	// Each bus: fixed input gain, an effects slot (empty), then its own output gain
+	// Each bus: fixed input gain, an empty effects insert slot, then its own output gain
 	const buses = {};
 	for( const name of BUS_NAMES ) {
 		const input = context.createGain();
@@ -181,8 +183,10 @@ function createGraph( context ) {
 
 	return {
 		"buses": buses,
+		"master": { "input": masterInput, "insert": null, "output": masterGain },
 		"masterInput": masterInput,
 		"masterGain": masterGain,
+		"masterRoute": null,
 		"compressor": compressor,
 		"clipperGain": clipperGain
 	};
@@ -195,14 +199,37 @@ function createGraph( context ) {
  */
 function routeMaster() {
 	const masterGain = m_graph.masterGain;
-	masterGain.disconnect();
+	let target;
 	if( !m_limiterEnabled ) {
-		masterGain.connect( m_audioContext.destination );
+		target = m_audioContext.destination;
 	} else if( m_compressorUsable ) {
-		masterGain.connect( m_graph.compressor );
+		target = m_graph.compressor;
 	} else {
-		masterGain.connect( m_graph.clipperGain );
+		target = m_graph.clipperGain;
 	}
+
+	// Only the route edge changes, so master taps stay connected
+	if( m_graph.masterRoute !== target ) {
+		if( m_graph.masterRoute ) {
+			masterGain.disconnect( m_graph.masterRoute );
+		}
+		masterGain.connect( target );
+		m_graph.masterRoute = target;
+	}
+}
+
+/**
+ * Get the input, insert slot, and output gain of a bus or the master stage
+ *
+ * @param {string} bus - "sfx", "music", "audio", or "master"
+ * @returns {Object} { input, insert, output }
+ */
+function getBusStage( bus ) {
+	getAudioContext();
+	if( bus === "master" ) {
+		return m_graph.master;
+	}
+	return m_graph.buses[ bus ];
 }
 
 /**
@@ -421,6 +448,77 @@ export function getBusInput( bus ) {
 }
 
 /**
+ * Place one effects insert on a bus; null removes it
+ *
+ * The route is bus input → insert → output gain. Replacing or removing an insert restores
+ * the direct connection first, then disposes of the old insert. The output gain and its
+ * volume are never touched.
+ *
+ * @param {string} bus - "sfx", "music", "audio", or "master"
+ * @param {Object|null} insert - { input, output, dispose } or null
+ * @returns {void}
+ */
+export function setBusInsert( bus, insert ) {
+	const stage = getBusStage( bus );
+	const previous = stage.insert;
+	if( previous === insert ) {
+		return;
+	}
+	if( previous ) {
+		for( const [ from, to ] of [
+			[ stage.input, previous.input ], [ previous.output, stage.output ]
+		] ) {
+			try {
+				from.disconnect( to );
+			} catch( caughtError ) {
+
+				// The insert already disconnected itself
+			}
+		}
+		stage.input.connect( stage.output );
+		stage.insert = null;
+	}
+	if( insert ) {
+		stage.input.disconnect( stage.output );
+		stage.input.connect( insert.input );
+		insert.output.connect( stage.output );
+		stage.insert = insert;
+	}
+	if( previous ) {
+		try {
+			previous.dispose();
+		} catch( error ) {
+			console.error( "sound: Bus insert cleanup failed:", error );
+		}
+	}
+}
+
+/**
+ * Connect a bus output in parallel to a node, after its effects and output gain
+ *
+ * @param {string} bus - "sfx", "music", "audio", or "master"
+ * @param {AudioNode} node - Node that receives the bus signal
+ * @returns {Function} Untap function; disconnects only this tap and may be called repeatedly
+ */
+export function tapBus( bus, node ) {
+	const output = getBusStage( bus ).output;
+	output.connect( node );
+	let tapped = true;
+	return () => {
+		if( !tapped ) {
+			return;
+		}
+		tapped = false;
+		try {
+			output.disconnect( node );
+		} catch( caughtError ) {
+
+			// Already disconnected
+		}
+	};
+}
+
+/**
  * Context time at which an immediate change is scheduled
  *
  * The main-thread clock lags the render thread, so immediate automation is placed at least
@@ -454,7 +552,7 @@ export function setMasterVolume( volume ) {
 
 /**
  * Ramp a bus output gain over 10 ms from the scheduling lead. The output gain follows the
- * bus effects slot, so it also controls effect tails.
+ * bus effects insert, so it also controls effect tails.
  *
  * @param {string} bus - "sfx", "music", or "audio"
  * @param {number} volume - Volume (0-1)

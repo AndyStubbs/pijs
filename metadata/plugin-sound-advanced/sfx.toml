@@ -1,0 +1,40 @@
+title = "sfx"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Plays a named sound-effect preset."
+description = """
+Requires the sound-advanced plugin. Plays a preset: a stored set of synth() options. The built-in presets are "coin", "laser", "jump", "hit", "explosion", "powerup", "blip", and "select". definePreset() adds presets or replaces these.
+
+variation adds random pitch and length changes so repeated effects do not sound identical. At 1, the pitch moves by up to 3 semitones either way and the duration by up to 10%.
+
+A name that is not defined throws PRESET_NOT_FOUND.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Press C for a coin, J to jump, or L for a laser" );
+$.onkey( "KeyC", "down", () => {
+	$.sfx( "coin" );
+} );
+$.onkey( "KeyJ", "down", () => {
+	$.sfx( "jump", 0.3 );
+} );
+$.onkey( "KeyL", "down", () => {
+	$.sfx( "laser", 0.5 );
+} );
+"""
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "Preset name."
+
+[[parameters]]
+name = "variation"
+type = "number"
+description = "Random pitch and duration variation, 0-1 (default: 0)."
+optional = true
+
+[[returns]]
+type = "string"
+description = "Sound ID for use with stopSound()."

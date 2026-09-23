@@ -617,6 +617,17 @@ function buildTypeDefinitions( screenMethods, apiMethods, objects ) {
 	const lines = [];
 	const packageVersion = packageJson.version;
 
+	lines.push( "/**" );
+	lines.push(
+		" * Commands added by separately loaded plugins. A plugin's declaration file augments"
+	);
+	lines.push(
+		" * this interface with `declare module \"pijs-web\"`, so importing the plugin adds its"
+	);
+	lines.push( " * commands to the API." );
+	lines.push( " */" );
+	lines.push( "export interface PluginCommands {}" );
+	lines.push( "" );
 	lines.push( "declare namespace Pi {" );
 
 	// Add object interfaces (excluding Screen and API as they're built separately)
@@ -639,7 +650,7 @@ function buildTypeDefinitions( screenMethods, apiMethods, objects ) {
 	lines.push( "" );
 
 	// API interface
-	lines.push( "\tinterface API extends Screen {" );
+	lines.push( "\tinterface API extends Screen, PluginCommands {" );
 	buildInterfaceMethods( lines, apiMethods );
 	if( apiMethods.length > 0 ) {
 		lines.push( "" );
@@ -801,18 +812,55 @@ function getReleasePluginNames() {
 	return plugins;
 }
 
+/**
+ * Reads a standalone plugin's command metadata from metadata/plugin-<name>/.
+ *
+ * @param {string} pluginName - Plugin name
+ * @returns {Array<Object>} Method reference entries sorted by name; empty without a folder
+ */
+function readPluginMethods( pluginName ) {
+	const dirPath = path.join( METADATA_DIR, `plugin-${pluginName}` );
+	if( !fs.existsSync( dirPath ) ) {
+		return [];
+	}
+	return listTomlFilesInDir( dirPath )
+		.filter( ( fileName ) => !fileName.startsWith( "_" ) )
+		.map( ( fileName ) => {
+			const metadata = parseMetadataFile( path.join( dirPath, fileName ) );
+			return buildMethodReferenceEntry( metadata.title, metadata );
+		} )
+		.sort( ( a, b ) => a.name.localeCompare( b.name ) );
+}
+
+/**
+ * Builds a plugin declaration file: its commands augment PluginCommands in "pijs-web", and
+ * the default export is the plugin initializer.
+ *
+ * @param {string} pluginName - Plugin name
+ * @returns {string} Declaration file contents
+ */
 function buildPluginTypeDefinitions( pluginName ) {
 	const camelName = pluginName.replace( /-/g, "_" );
-	return [
-		`import type { PluginAPI } from "pijs-web";`,
-		"",
+	const lines = [ `import type { PluginAPI } from "pijs-web";`, "" ];
+	const methods = readPluginMethods( pluginName );
+	if( methods.length > 0 ) {
+		lines.push( `// Commands the ${pluginName} plugin adds to the Pi.js API` );
+		lines.push( `declare module "pijs-web" {` );
+		lines.push( "\tinterface PluginCommands {" );
+		buildInterfaceMethods( lines, methods );
+		lines.push( "\t}" );
+		lines.push( "}" );
+		lines.push( "" );
+	}
+	lines.push(
 		`/**`,
 		` * ${pluginName} plugin initializer for Pi.js.`,
 		` */`,
 		`declare function ${camelName}Plugin( pluginApi: PluginAPI ): void;`,
 		`export default ${camelName}Plugin;`,
 		""
-	].join( "\n" );
+	);
+	return lines.join( "\n" );
 }
 
 function writePluginTypeDefinitions( testOnly ) {

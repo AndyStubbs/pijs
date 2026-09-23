@@ -135,32 +135,6 @@ function clamp( value, min, max ) {
 }
 
 /**
- * Deep copy a value into an immutable snapshot
- *
- * Arrays and plain objects are copied and frozen, typed arrays are copied, and functions and
- * primitives are kept, so a snapshot never shares mutable state with its source.
- *
- * @param {*} value - Value to copy
- * @returns {*} Snapshot
- */
-function snapshot( value ) {
-	if( Array.isArray( value ) ) {
-		return Object.freeze( value.map( snapshot ) );
-	}
-	if( ArrayBuffer.isView( value ) ) {
-		return value.slice();
-	}
-	if( value !== null && typeof value === "object" ) {
-		const copy = {};
-		for( const key of Object.keys( value ) ) {
-			copy[ key ] = snapshot( value[ key ] );
-		}
-		return Object.freeze( copy );
-	}
-	return value;
-}
-
-/**
  * Extract [[real],[imag]] wave tables, replacing each with a W<index> command
  *
  * @param {string} playString - Uppercase play string without whitespace
@@ -293,7 +267,9 @@ function createNoteEvent( state, frequency, time, slot ) {
 
 	// Extension overrides are copied into the snapshot; factories are kept, not invoked
 	for( const extension of m_extensions ) {
-		const overrides = extension.resolveNote( state.ext[ extension.name ], snapshot( note ) );
+		const overrides = extension.resolveNote(
+			state.ext[ extension.name ], g_voices.snapshot( note )
+		);
 		if( overrides ) {
 			note = Object.assign( {}, note, overrides, {
 				"time": time,
@@ -306,9 +282,11 @@ function createNoteEvent( state, frequency, time, slot ) {
 	if( Array.isArray( oType ) ) {
 		waveTables = [ new Float32Array( oType[ 0 ] ), new Float32Array( oType[ 1 ] ) ];
 		oType = "custom";
+	} else if( oType !== "custom" && !g_voices.isSourceType( oType ) ) {
+		throwCode( `play: Unknown oType "${oType}" from a PLAY extension.`, "INVALID_OTYPE" );
 	}
 
-	return snapshot( {
+	return g_voices.snapshot( {
 		"time": time,
 		"frequency": note.frequency,
 		"frequencyEnd": note.frequencyEnd,

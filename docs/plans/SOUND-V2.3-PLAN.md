@@ -3,11 +3,14 @@
 Status: Approved for planning, not yet implemented
 Target release: Pi.js 2.3.0
 Companion document: [SOUND-V2.3-ROADMAP.md](SOUND-V2.3-ROADMAP.md)
-Revision 7: records the Phase 4 PLAY decisions in 8.2: equal-temperament pitch, unknown
-commands warned and ignored, dotted explicit lengths, accidentals across octave boundaries,
-and the comma-track timing kept from 2.2. Revision 6 added the scheduling lead, the PLAY slot
-and release placement, harness state masking, the stream-mode realtime test, D2, sweep
-validation, duplicate PLAY token prefixes, and the live-voice cap name.
+Revision 8: freezes the extension service v1 (4.3) after Phase 5. It adds the source factory
+spec, the voice-insert `detune` output for pitch modulation, and the `createVoice` error label,
+and gives the `sound-advanced` parameters their final names and units (9). Revision 7 recorded
+the Phase 4 PLAY decisions in 8.2: equal-temperament pitch, unknown commands warned and
+ignored, dotted explicit lengths, accidentals across octave boundaries, and the comma-track
+timing kept from 2.2. Revision 6 added the scheduling lead, the PLAY slot and release
+placement, harness state masking, the stream-mode realtime test, D2, sweep validation,
+duplicate PLAY token prefixes, and the live-voice cap name.
 
 ## 1. Purpose
 
@@ -144,8 +147,8 @@ change is needed. This mechanism is general and also available to third-party pl
 | --- | --- |
 | `version` | Integer interface version; starts at `1` |
 | `getContext()` | Shared AudioContext (created lazily) |
-| `createVoice( spec )` | Builds a voice from a source and optional inserts; returns a sound ID |
-| `registerSource( oType, factory )` | Adds a source type (e.g. `"pulse"`, `"periodic"`) |
+| `createVoice( spec, name )` | Builds a voice from a source and optional inserts; returns a sound ID. `spec` takes the `sound()` parameters plus `bus` (`"sfx"` or `"music"`) and `inserts`; `name` labels error messages |
+| `registerSource( oType, factory )` | Adds a source type (e.g. `"periodic"`) for `sound()`, `createVoice`, and PLAY notes |
 | `scheduleEnvelope( param, env, start, gateEnd, peak )` | Shared envelope scheduling |
 | `stopVoice( soundId, when )` | De-clicked stop used by all callers |
 | `setBusVolume( bus, volume )` | Ramps the bus output gain independently of its effects insert |
@@ -157,19 +160,34 @@ Buses are named `"sfx"`, `"music"`, `"audio"`, and `"master"`. Extensions never 
 bus's `GainNode` and never rewire core nodes themselves. Core owns every connection between
 nodes it created and nodes an extension created.
 
-The interface is internal. It is documented in the plugin authoring docs but not in `API.md`.
-It is frozen at the end of Phase 5 (see the roadmap), after the contract tests in 4.3.4 pass.
-Later changes that break it require bumping `version`.
+The interface is internal. It is documented in the plugin authoring docs
+(`plugins/PLUGIN-SYSTEM.md`) but not in `API.md`. **Version 1 is frozen** (Phase 5): the
+contract tests in 4.3.4 pass, and `sound-advanced` 1.0 consumes every member. Later changes
+that break it require bumping `version`; a test pins the member list.
+
+- **`createVoice` requests** follow the `sound()` rules: the same validation and error codes
+  (an unregistered oType throws `INVALID_OTYPE`), delays beyond the lookahead window held as
+  pending records, the D3 locked-context drop, late starts, and the shared caps. A bad `spec`
+  throws `INVALID_SPEC`, a bus other than `"sfx"` or `"music"` throws `INVALID_BUS`, and
+  malformed insert descriptors throw `INVALID_INSERT`. Voices are synth voices, so
+  `stopSound()` also stops them.
+- **Validation codes:** `registerSource` throws `INVALID_SOURCE` for a bad name or factory and
+  `DUPLICATE_SOURCE` for a built-in (including `"custom"`) or already registered type.
+  `setBusInsert` and `tapBus` throw `INVALID_BUS`, `INVALID_INSERT`, and `INVALID_TAP`. A PLAY
+  extension override naming an unknown oType throws `INVALID_OTYPE` from `play()`.
 
 #### 4.3.1 Source contract
 
-`registerSource( oType, factory )` registers `factory( context, spec )`, which must return a
-source object:
+`registerSource( oType, factory )` registers `factory( context, spec )`. `spec` is frozen:
+`oType`, `frequency`, `frequencyEnd`, `start` (intended start), `gate` (gate length), `end`
+(committed end), and `offset` (late-start offset into the envelope). The factory must return
+a source object:
 
 | Member | Contract |
 | --- | --- |
 | `output` | `AudioNode` that core connects into the voice chain |
-| `frequency` | `AudioParam` for pitch automation, or `null` if the source is unpitched |
+| `frequency` | `AudioParam` in Hz for pitch automation, or `null` if the source is unpitched; core sets the pitch and schedules `frequencyEnd` sweeps on it |
+| `detune` | Optional `AudioParam` in cents that receives voice-insert `detune` outputs |
 | `start( when )` | Starts all internal nodes at context time `when` |
 | `stop( when )` | Sets or advances the stop deadline; repeated calls may stop earlier |
 | `onEnded( callback )` | Registers the single callback fired when the source has fully stopped |
@@ -190,6 +208,9 @@ Ownership rules:
   Core disposes of previously returned sources and inserts; a returned source whose `start`
   throws must support disposal after partial startup. No partially connected voice remains.
 - **References:** the source must not keep references to core nodes after `dispose`.
+- **Adapter:** core wraps the source in its voice record, so a stop requested before `start`
+  (a cancelled scheduled voice) is skipped and the source is only disposed. A returned object
+  missing a member throws `INVALID_SOURCE` and is disposed if it can be.
 
 #### 4.3.2 Insert contract
 
@@ -202,11 +223,15 @@ state. Realized voice inserts and bus inserts share one shape:
 | Member | Contract |
 | --- | --- |
 | `input`, `output` | Nodes core connects before and after the insert (may be the same node) |
+| `detune` | Voice inserts only, optional: `AudioNode` whose output core connects to the source's `detune` parameter (cents), for vibrato and arpeggios; unpitched sources ignore it |
 | `start( when, gateEnd )` | Voice inserts only: schedule automation such as a filter envelope |
 | `stop( when )` | Voice inserts only: stop automation/LFOs at a deadline that may move earlier |
 | `dispose()` | Disconnects and releases internal nodes; core calls it exactly once |
 
 - **Voice inserts** are chained in array order between the source and the envelope gain.
+  Core makes and removes the `detune` connection, so pitch modulation needs no access to the
+  source; several inserts' `detune` outputs sum. A realized insert missing a member throws
+  `INVALID_INSERT`, with the usual failure cleanup.
   `stopVoice` calls `stop` on every insert with the same `when` it uses for the source, so an
   early stop cuts a filter envelope or LFO cleanly. Future stop scheduling preserves automation
   before that deadline. Repeated earlier stops preserve continuity and dispose exactly once.
@@ -973,13 +998,13 @@ Depends on `sound`. All features use the extension service.
 
 | Module | Public API (proposed) | Notes |
 | --- | --- | --- |
-| `synth.js` | `synth( options )` → sound ID | `sound()` superset: `filterType`, `filterCutoff`, `filterQ`, filter envelope (`filterAttackTime`, `filterDecayTime`, `filterSustainLevel`, `filterReleaseTime`, `filterAmount`), `vibratoRate`, `vibratoDepth`, `tremoloRate`, `tremoloDepth`, `duty` (pulse), `arpeggio`, `arpeggioRate` |
-| `periodic-noise.js` | `oType: "periodic"` via `registerSource` | NES-style LFSR noise; `frequency` sets the clock rate |
-| `buses.js` | `setBusVolume( bus, volume )` | `"sfx"`, `"music"`, `"audio"`; core-promotion candidate |
-| `effects.js` | `setBusEffect( bus, effect, options )` | `"reverb"` (generated impulse) and `"delay"` (feedback); `null` clears |
-| `analyser.js` | `getSoundLevels( bus )` | Peak/RMS plus optional spectrum and waveform arrays |
-| `presets.js` | `sfx( name, variation )`, `definePreset( name, params )` | Built-in retro set: coin, laser, jump, hit, explosion, powerup, blip, select |
-| `instruments.js` | `defineInstrument( n, params )` + PLAY `@n` | Built-in instruments: square lead, pluck bass, pad, noise snare/hat/kick |
+| `synth.js` | `synth( options )` → sound ID | `sound()` superset. `oType: "pulse"` with `duty` (0–1, exclusive; default 0.5). Filter: `filterType` (`lowpass`, `highpass`, `bandpass`, `notch`; off when unset), `filterCutoff` (Hz, default 1000), `filterQ` (0–100, default 1). Filter envelope: `filterAttackTime`, `filterDecayTime`, `filterSustainLevel`, `filterReleaseTime` (defaults 0, 0, 1, 0.1), and `filterAmount` in octaves at the peak (−10 to 10, default 0), scheduled on the filter's `detune`. `vibratoRate` (Hz, default 5) and `vibratoDepth` (cents, 0–1200, off at 0); `tremoloRate` (Hz, default 5) and `tremoloDepth` (0–1, off at 0); `arpeggio` (1–32 semitone offsets within ±48) at `arpeggioRate` steps per second (default 12) |
+| `periodic-noise.js` | `oType: "periodic"` via `registerSource` | NES short-mode LFSR (93 steps); `frequency` sets the clock rate in steps per second, and `frequencyEnd` sweeps it |
+| `buses.js` | `setBusVolume( bus, volume )` | `"sfx"`, `"music"`, `"audio"`, and `"master"` (same as `setVolume`); core-promotion candidate |
+| `effects.js` | `setBusEffect( bus, effect, options )` | Any bus including `"master"`. `"reverb"` (generated impulse: `time` 0.1–10 s, `decay` 0.1–20, `mix`) and `"delay"` (`time` 0.01–2 s, `feedback` 0–0.95, `mix`); `null` clears. Mixes dry and wet in one insert |
+| `analyser.js` | `getSoundLevels( bus, spectrum, waveform )` | Default bus `"master"` (after master volume, before the limiter). Peak and RMS of the latest 2048 frames, plus 1024 spectrum bins in dB and the 2048-sample waveform when requested. The first call on a bus starts its analyser |
+| `presets.js` | `sfx( name, variation )`, `definePreset( name, params )` | Built-in retro set: coin, laser, jump, hit, explosion, powerup, blip, select. `variation` 0–1 jitters pitch by up to ±3 semitones and duration by up to ±10% |
+| `instruments.js` | `defineInstrument( instrument, params )` + PLAY `@n` | Instruments 1–255; `@0` is the default sound. An instrument overrides only what it sets (oType, envelope stages in seconds, pan, fixed `frequency`/`frequencyEnd`); `volume` scales the note. Built-ins: 1 square lead, 2 pluck bass, 3 pad, 4 noise snare, 5 hi-hat, 6 kick |
 
 - **Service usage:** each module uses only the contracts in Section 4.3:
   - `synth.js`: `createVoice` with the filter and LFOs as voice inserts.
@@ -990,8 +1015,15 @@ Depends on `sound`. All features use the extension service.
   - `buses.js`: the dedicated `setBusVolume` service method. It registers the public command
     without consuming an effects slot. Promotion moves command registration into core; the
     gain node and routing already belong to core.
-- **Pulse waves:** they use `PeriodicWave` Fourier tables, cached per duty value (12.5%, 25%,
-  50%, 75%, plus arbitrary values).
+- **Pulse waves:** they use `PeriodicWave` Fourier tables (64 harmonics), cached per duty
+  value, with the 64 most recent values kept. They reach core as an ordinary wave-table
+  `oType`, so no `"pulse"` source is registered.
+- **Pitch modulation:** vibrato and arpeggio are voice inserts whose `detune` output core
+  connects to the source (4.3.2). Tremolo and the filter sit in the insert chain.
+- **Types:** the plugin's commands are declared in its own `sound-advanced.d.ts`, generated
+  from `metadata/plugin-sound-advanced/`. It augments an exported `PluginCommands` interface
+  that `Pi.API` extends, so importing the plugin adds the commands; `pi.d.ts` does not list
+  them.
 - **Presets and instruments:** these are data tables of `synth()` parameters. They add no new
   synthesis code, so their size cost is data only.
 - **Full build:** `sound-advanced` is excluded from `pi.js` in 2.3.0 unless the size decision

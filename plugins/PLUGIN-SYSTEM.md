@@ -67,6 +67,87 @@ pi.registerPlugin( {
 } );
 ```
 
+#### Sound extension service
+
+The `sound` plugin provides a service to plugins that list `"sound"` in their `dependencies`.
+It lets them add sound sources, voice effects, bus effects, and PLAY commands while sharing
+the audio context, buses, voice limits, and de-clicked stops of core. The `sound-advanced`
+plugin is built entirely on it. The service is version 1; any change that breaks a member
+below requires a new `version`.
+
+| Member | Purpose |
+| --- | --- |
+| `version` | Interface version, `1` |
+| `getContext()` | The shared `AudioContext`, created on first use |
+| `createVoice( spec, name )` | Plays a voice and returns a sound ID. `spec` takes the `sound()` parameters plus `bus` (`"sfx"` or `"music"`) and `inserts`; `name` labels error messages |
+| `registerSource( oType, factory )` | Adds a source type that `sound()`, `createVoice()`, and PLAY notes accept |
+| `scheduleEnvelope( param, env, start, gateEnd, peak )` | Schedules an ADSR envelope (`attackTime`, `decayTime`, `sustainLevel`, `releaseTime`) on an `AudioParam` |
+| `stopVoice( soundId, when )` | Fades a voice out by `when` (context time), or as soon as possible |
+| `setBusVolume( bus, volume )` | Sets a bus volume after its effect; `"master"` is the same as `setVolume()` |
+| `setBusInsert( bus, insert )` | Places one effect insert on a bus; `null` removes it |
+| `tapBus( bus, node )` | Connects a bus output to `node` in parallel and returns an untap function |
+| `registerPlayExtension( name, extension )` | Adds PLAY tokens, per-track state, and per-note voice overrides |
+
+Buses are `"sfx"`, `"music"`, `"audio"`, and `"master"`. Core makes every connection between
+its nodes and an extension's nodes; extensions never receive core nodes.
+
+- **Sources.** `factory( context, spec )` receives a frozen spec (`oType`, `frequency`,
+  `frequencyEnd`, `start`, `gate`, `end`, `offset`) and returns `{ output, frequency, detune,
+  start( when ), stop( when ), onEnded( callback ), dispose() }`. `frequency` and `detune` are
+  `AudioParam`s or `null`; core schedules pitch and sweeps on `frequency`. Core calls `start`
+  once and `dispose` exactly once, and may call `stop` again with an earlier time, which must
+  bring the stop forward. A source that was never started is disposed without `stop`. A
+  factory that throws cleans up its own nodes.
+- **Voice inserts.** `inserts` is an ordered array of `{ factory, params }` descriptors.
+  `params` is copied and frozen, and `factory( context, params )` runs only when the voice is
+  admitted, so pending sounds and queued songs hold no nodes. It returns `{ input, output,
+  detune, start( when, gateEnd ), stop( when ), dispose() }`. Inserts are chained between the
+  source and the voice envelope. An optional `detune` node is connected to the source's
+  detune parameter, in cents, for vibrato and arpeggios. Stop and dispose follow the source
+  rules.
+- **Bus inserts.** `{ input, output, dispose }`. Replacing or removing one restores the
+  direct route first, then disposes of the old insert. Bus volume follows the insert, so
+  muting a bus also silences an effect's tail.
+- **PLAY extensions.** `extension` has `tokens` (prefix → `handler( state, value )`),
+  `initState()`, `copyState( state )` for comma tracks, and `resolveNote( state, note )`,
+  which returns overrides for `frequency`, `frequencyEnd`, `gate`, `volume`, `envelope`,
+  `pan`, `oType`, and `inserts`, or `null`. Notes resolve when `play()` is called. A prefix
+  that core or another extension owns throws `DUPLICATE_PLAY_TOKEN`.
+
+```javascript
+function wobblePlugin( pluginApi ) {
+	const sound = pluginApi.getService( "sound" );
+	const wobble = {
+		"factory": ( context, params ) => {
+			const lfo = context.createOscillator();
+			const depth = context.createGain();
+			const pass = context.createGain();
+			lfo.frequency.value = params.rate;
+			depth.gain.value = params.cents;
+			lfo.connect( depth );
+			return {
+				"input": pass,
+				"output": pass,
+				"detune": depth,
+				"start": when => lfo.start( when ),
+				"stop": when => lfo.stop( when ),
+				"dispose": () => {
+					lfo.disconnect();
+					depth.disconnect();
+					pass.disconnect();
+				}
+			};
+		},
+		"params": { "rate": 6, "cents": 30 }
+	};
+	pluginApi.addCommand( "wobble", options => sound.createVoice( {
+		"frequency": options.frequency, "oType": "square", "inserts": [ wobble ]
+	}, "wobble" ), false, [ "frequency" ] );
+}
+
+pi.registerPlugin( { "name": "wobble", "dependencies": [ "sound" ], "init": wobblePlugin } );
+```
+
 ### Tools
 
 1. **`scripts/build.js`** - Main build script

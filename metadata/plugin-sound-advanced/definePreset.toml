@@ -1,0 +1,33 @@
+title = "definePreset"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Adds or replaces a sound-effect preset for sfx()."
+description = """
+Requires the sound-advanced plugin. Stores a set of synth() options under a name, so sfx( name ) plays them. The options are validated and copied when the preset is defined, so an invalid option throws here, and later changes to the object have no effect. Defining a built-in name replaces that preset.
+"""
+example = """
+$.definePreset( "zap", {
+	"frequency": 1800,
+	"frequencyEnd": 300,
+	"duration": 0.12,
+	"volume": 0.4,
+	"oType": "pulse",
+	"duty": 0.125
+} );
+$.screen( "300x200" );
+$.print( "Press any key to zap" );
+$.onkey( "any", "down", () => {
+	$.sfx( "zap", 0.2 );
+} );
+"""
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "Preset name."
+
+[[parameters]]
+name = "params"
+type = "object"
+description = "synth() options."

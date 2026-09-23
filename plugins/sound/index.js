@@ -47,16 +47,38 @@ export default function playSoundPlugin( pluginApi ) {
 	// Decide whether this engine's compressor can serve as the first limiter stage
 	g_context.startLimiterProbe();
 
+	// Service v1 is frozen: a breaking change to any member requires a new version
 	pluginApi.provideService( {
 		"version": SERVICE_VERSION,
 		"getContext": g_context.getAudioContext,
-		"setBusVolume": setBusVolume,
+		"createVoice": g_voices.createVoice,
+		"registerSource": g_voices.registerSource,
+		"scheduleEnvelope": g_envelope.scheduleEnvelope,
 		"stopVoice": ( soundId, when ) => {
 			g_voices.stopSoundById( soundId, when ?? null );
 		},
-		"scheduleEnvelope": g_envelope.scheduleEnvelope,
+		"setBusVolume": setBusVolume,
+		"setBusInsert": setBusInsert,
+		"tapBus": tapBus,
 		"registerPlayExtension": g_play.registerPlayExtension
 	} );
+}
+
+/**
+ * Validate a bus name
+ *
+ * @param {string} name - Service method name for the error message
+ * @param {string} bus - Bus name
+ * @returns {void}
+ */
+function validateBus( name, bus ) {
+	if( bus !== "master" && g_context.BUS_NAMES.indexOf( bus ) === -1 ) {
+		const error = new Error(
+			`${name}: Parameter bus must be one of: sfx, music, audio, master.`
+		);
+		error.code = "INVALID_BUS";
+		throw error;
+	}
 }
 
 /**
@@ -84,19 +106,49 @@ function validateVolume( name, volume ) {
  * @returns {void}
  */
 function setBusVolume( bus, volume ) {
-	if( bus !== "master" && g_context.BUS_NAMES.indexOf( bus ) === -1 ) {
-		const error = new Error(
-			"setBusVolume: Parameter bus must be one of: sfx, music, audio, master."
-		);
-		error.code = "INVALID_BUS";
-		throw error;
-	}
+	validateBus( "setBusVolume", bus );
 	validateVolume( "setBusVolume", volume );
 	if( bus === "master" ) {
 		g_context.setMasterVolume( volume );
 	} else {
 		g_context.setBusOutputVolume( bus, volume );
 	}
+}
+
+/**
+ * Place one effects insert on a bus (extension service method); null removes it
+ *
+ * @param {string} bus - "sfx", "music", "audio", or "master"
+ * @param {Object|null} insert - { input, output, dispose } or null
+ * @returns {void}
+ */
+function setBusInsert( bus, insert ) {
+	validateBus( "setBusInsert", bus );
+	if( insert !== null && !g_voices.hasMembers( insert, [ "input", "output" ], [ "dispose" ] ) ) {
+		const error = new TypeError(
+			"setBusInsert: Parameter insert must be null or provide input, output, and dispose."
+		);
+		error.code = "INVALID_INSERT";
+		throw error;
+	}
+	g_context.setBusInsert( bus, insert );
+}
+
+/**
+ * Connect a bus output in parallel to a node (extension service method)
+ *
+ * @param {string} bus - "sfx", "music", "audio", or "master"
+ * @param {AudioNode} node - Node that receives the bus signal
+ * @returns {Function} Untap function
+ */
+function tapBus( bus, node ) {
+	validateBus( "tapBus", bus );
+	if( !( node instanceof AudioNode ) ) {
+		const error = new TypeError( "tapBus: Parameter node must be an AudioNode." );
+		error.code = "INVALID_TAP";
+		throw error;
+	}
+	return g_context.tapBus( bus, node );
 }
 
 /**

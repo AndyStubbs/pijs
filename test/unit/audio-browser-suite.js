@@ -1,15 +1,17 @@
 /**
  * Shared scaffolding for offline-render browser tests.
  *
- * describeAudioEngines() builds the in-memory full bundle once, then defines one describe
- * block per engine from audio-engines.js. Engines run in parallel; each engine's tests share
- * one harness session and run in order. Engines without Web Audio or offline suspend() skip
- * the tests that need them, with the reason reported.
+ * describeAudioEngines() builds the in-memory full bundle, plus any plugin bundles the suite
+ * asks for, once, then defines one describe block per engine from audio-engines.js. Engines
+ * run in parallel; each engine's tests share one harness session and run in order. Engines
+ * without Web Audio or offline suspend() skip the tests that need them, with the reason
+ * reported.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
 import * as g_audioEngines from "./audio-engines.js";
 import * as g_harness from "./audio-render-harness.js";
+import * as g_sourceHarness from "./browser-source-harness.js";
 const { describe, before, after } = g_test;
 const assert = g_assert;
 
@@ -39,12 +41,18 @@ function frame( seconds ) {
  *
  * @param {string} title - Top-level describe title
  * @param {Function} defineTests - Called with { engine, inHarness, getSession, getBundle }
+ * @param {Object} [suiteOptions] - { plugins }: plugin names whose source bundles every page
+ * loads after the full bundle, in order
  * @returns {void}
  */
-function describeAudioEngines( title, defineTests ) {
+function describeAudioEngines( title, defineTests, suiteOptions = {} ) {
 	let fullBundle;
+	let pluginBundles = [];
 	before( async () => {
 		fullBundle = await g_harness.buildFullBundle();
+		pluginBundles = await Promise.all( ( suiteOptions.plugins || [] ).map(
+			name => g_sourceHarness.buildSource( `plugins/${name}/index.js` )
+		) );
 	} );
 
 	describe( title, { "concurrency": true }, () => {
@@ -84,7 +92,7 @@ function describeAudioEngines( title, defineTests ) {
 						return null;
 					}
 					const harness = await session.open( {
-						"scripts": [ fullBundle ],
+						"scripts": [ fullBundle ].concat( pluginBundles ),
 						"config": options.config
 					} );
 					const result = await harness.page.evaluate( fn, arg );

@@ -81,7 +81,7 @@ optional = true
 name = "oType"
 type = "string | array"
 typeDesc = "*Many"
-description = "Oscillator type: 'triangle', 'sine', 'square', 'sawtooth', 'white' or 'pink' noise, or custom wavetable array [[realArray], [imagArray]] (default: 'triangle')."
+description = "Oscillator type: 'triangle', 'sine', 'square', 'sawtooth', 'white' or 'pink' noise, a source type added by a plugin (such as 'periodic' from sound-advanced), or custom wavetable array [[realArray], [imagArray]] (default: 'triangle')."
 optional = true
 
 [[parameters]]

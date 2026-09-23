@@ -15,6 +15,7 @@ compresses them with gzip level 9. Sizes are in bytes.
 | `size-phase2.json` | Phase 2 exit: white and pink noise, pan level | `sound` 2.0.0 |
 | `size-phase3.json` | Phase 3 exit: decoded and streamed samples, instances, shared caps | `sound` 2.0.0 |
 | `size-phase4.json` | Phase 4 exit: PLAY scheduler, tokenizer, extensions, voice inserts | `sound` 2.0.0; M2 |
+| `size-phase5.json` | Phase 5 exit: service v1 completed and frozen, `sound-advanced` plugin | `sound` 2.0.0, `sound-advanced` 1.0.0; M3 |
 
 Phase 0 deltas, gzipped:
 
@@ -95,6 +96,52 @@ target. Full-build growth over the 2.2 baseline is 8,232 bytes, **40 bytes over*
 (8,192 byte) target, down from 187 over at Phase 3. This variance is recorded for the release
 size review (roadmap 6.1). The core API is complete, so later growth comes only from Phase 6
 promotions, which that review decides.
+
+Phase 5 deltas, gzipped:
+
+| Bundle | Phase 4 exit | Phase 5 exit | Delta | Since 2.2 baseline |
+| --- | --- | --- | --- | --- |
+| `sound` plugin | 14,108 | 15,284 | +1,176 | +9,001 |
+| `pi.lite.min.js` | 48,586 | 48,586 | 0 | +311 |
+| `pi.min.js` | 71,160 | 72,331 | +1,171 | +9,403 |
+| `sound-advanced` plugin | — | 6,002 | new | — |
+
+Minified bytes by module in the `sound` bundle (Phase 4 → Phase 5): `voices.js` 7,726 → 10,582,
+`context.js` 3,489 → 4,113, `index.js` 1,083 → 1,583, `play.js` 7,826 → 7,684. The other
+modules have no source changes. The growth is the rest of the extension service, which plan
+4.3 places in core: `createVoice` (with the `sound()` validation shared through one request
+path), `registerSource` and registered-source voices, insert validation and `detune` links,
+`setBusInsert`, and `tapBus`. Its contract checks and error messages are most of the
+minified text; consolidating the shape checks saved 162 minified bytes and no gzip bytes.
+
+**Size variance for the release review.** The core `sound` plugin is 15,284 bytes, **948 over**
+the 14 KB (14,336 byte) target. Full-build growth over the 2.2 baseline is 9,403 bytes,
+**1,211 over** the 8 KB (8,192 byte) target. The targets were set before the service's Phase 5
+members were measured; roadmap 6.1 decides whether they are raised or code moves.
+
+Minified bytes by module in the `sound-advanced` bundle: `synth.js` 6,560, `instruments.js`
+2,609, `presets.js` 2,389, `effects.js` 2,053, `analyser.js` 1,208, `periodic-noise.js` 979,
+`index.js` 464, `buses.js` 176.
+
+Phase 5 differentials, gzipped (`size-phase5.json`). Marginal costs compare the all-modules
+variant (5,481 bytes; the plugin bundle adds its index and banner for 6,002) with a variant
+without the module. Promotion costs compare the `sound` plugin (15,284) with the plugin plus
+the module in one bundle. Removing `synth` also removes presets and instruments, its
+dependents; their own marginal costs keep `synth`, and their promotions include it.
+
+| Module | Marginal | Promotion |
+| --- | --- | --- |
+| `synth` (group: `presets`, `instruments`) | 3,394 | 1,842 (alone) |
+| `instruments` | 703 | 2,541 (with `synth`) |
+| `presets` | 659 | 2,453 (with `synth`) |
+| `effects` | 602 | 732 |
+| `analyser` | 411 | 444 |
+| `periodic-noise` | 358 | 411 |
+| `buses` | 42 | 75 |
+
+Full merge: `pi.min.js` with all of `sound-advanced` is 77,595 bytes, 5,264 over the current
+`pi.min.js`, above the plan 9.1 guide of about 4 KB for merging the whole plugin. Per-bus
+volume costs 75 bytes to promote.
 
 ## Sample measurements (Phase 3)
 

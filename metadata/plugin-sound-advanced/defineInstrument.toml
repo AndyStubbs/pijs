@@ -1,0 +1,40 @@
+title = "defineInstrument"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Defines a play() instrument that a play string selects with @n."
+description = """
+Requires the sound-advanced plugin. Stores synth() options as instrument number n, from 1 to 255. In a play() string, @n selects the instrument for the notes that follow, and @0 returns to the default sound. A simultaneous track after a comma keeps the instrument of the track before it.
+
+An instrument replaces only the options it sets. oType (including "pulse" with duty) replaces the waveform. attackTime, decayTime, sustainLevel, and releaseTime are in seconds and replace the note's envelope stage; stages left out keep the play() values from MA, MD, MH, and MR. volume scales each note's volume, and pan replaces its position. frequency fixes the pitch of every note, which suits drums, and frequencyEnd sweeps each note to that pitch. Filter, vibrato, tremolo, and arpeggio options apply to every note.
+
+play() reads the instrument when it is called, so redefining an instrument changes later songs only, not a song already playing. params of null removes the instrument.
+
+Built-in instruments: 1 square lead, 2 pluck bass, 3 pad, 4 noise snare, 5 hi-hat, and 6 kick drum.
+"""
+example = """
+$.defineInstrument( 7, {
+	"oType": "pulse",
+	"duty": 0.125,
+	"attackTime": 0.005,
+	"decayTime": 0.2,
+	"sustainLevel": 0.4,
+	"vibratoRate": 6,
+	"vibratoDepth": 20
+} );
+$.screen( "300x200" );
+$.print( "Press any key to play" );
+$.onkey( "any", "down", () => {
+	$.play( "@7 T140 O4 L8 C E G O5 C4, @2 O2 L4 C G, @6 L4 C C" );
+} );
+"""
+
+[[parameters]]
+name = "instrument"
+type = "number"
+description = "Instrument number, 1-255."
+
+[[parameters]]
+name = "params"
+type = "object | null"
+description = "synth() options, or null to remove the instrument."
