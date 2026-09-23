@@ -14,6 +14,7 @@ compresses them with gzip level 9. Sizes are in bytes.
 | `size-phase1.json` | Phase 1 exit: buses, limiter, envelope, voice caps, scheduler, unlock | `sound` 2.0.0 |
 | `size-phase2.json` | Phase 2 exit: white and pink noise, pan level | `sound` 2.0.0 |
 | `size-phase3.json` | Phase 3 exit: decoded and streamed samples, instances, shared caps | `sound` 2.0.0 |
+| `size-phase4.json` | Phase 4 exit: PLAY scheduler, tokenizer, extensions, voice inserts | `sound` 2.0.0; M2 |
 
 Phase 0 deltas, gzipped:
 
@@ -74,6 +75,26 @@ rule for samples, and its error messages are a large share of the minified text.
 growth is 8,379 bytes, 187 bytes over the 8 KB (8,192 bytes) target, before the Phase 4 PLAY
 scheduler. The targets are checked at M2 (Phase 4 exit), so Phase 4 either offsets its own
 growth and this overrun, or records a variance for the release size review (roadmap 6.1).
+
+Phase 4 deltas, gzipped:
+
+| Bundle | Phase 3 exit | Phase 4 exit | Delta | Since 2.2 baseline |
+| --- | --- | --- | --- | --- |
+| `sound` plugin | 14,300 | 14,108 | −192 | +7,825 |
+| `pi.lite.min.js` | 48,586 | 48,586 | 0 | +311 |
+| `pi.min.js` | 71,307 | 71,160 | −147 | +8,232 |
+
+Minified bytes by module in the `sound` bundle (Phase 3 → Phase 4): `play.js` 8,311 → 7,826,
+`scheduler.js` 893 → 1,498, `voices.js` 7,593 → 7,726, `index.js` 1,058 → 1,083. The other
+modules have no source changes. Replacing the two note-frequency tables with an
+equal-temperament formula and the regex tokenizer with a longest-match table paid for the
+scheduler streams, PLAY extensions, event snapshots, and voice inserts.
+
+**M2 size check.** The core `sound` plugin is 14,108 bytes, 228 under the 14 KB (14,336 byte)
+target. Full-build growth over the 2.2 baseline is 8,232 bytes, **40 bytes over** the 8 KB
+(8,192 byte) target, down from 187 over at Phase 3. This variance is recorded for the release
+size review (roadmap 6.1). The core API is complete, so later growth comes only from Phase 6
+promotions, which that review decides.
 
 ## Sample measurements (Phase 3)
 

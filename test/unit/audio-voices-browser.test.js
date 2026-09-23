@@ -1,8 +1,8 @@
 /**
  * Offline render tests for synthesized voices: the ADSR envelope, the de-click floor, the
  * single stop path, voice stealing, the slot and live-voice caps, pending requests, the
- * late-start rule, the interim PLAY exemption, and the locked-context policy. Pan, sweep,
- * and noise spectra are covered in audio-sound-design-browser.test.js.
+ * late-start rule, and the locked-context policy. Pan, sweep, and noise spectra are covered
+ * in audio-sound-design-browser.test.js.
  *
  * Focused residual checks bypass the limiter and set the master volume to 1, so output is
  * carrier × envelope. Carriers come from a separate offline render in the same engine, and
@@ -422,11 +422,11 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 		const left = g_harness.decodeRender( result ).channels[ 0 ];
 		const carrier = g_harness.decodeChannels( [ result.carrier ] )[ 0 ];
 
-		// T60 L1 ML: a 4 s note interval; the 2.2 rates map to attack 0.6 s, a 2.6 s decay to
-		// 0.8, and a 0.8 s release
+		// T60 L1 ML: a 4 s slot, all of it sounding; the default percentages give attack 0.6 s,
+		// decay 0.8 s to 0.65, and a 0.8 s release inside the slot
 		const envelope = expectedAdsr( {
-			"start": LEAD, "duration": 3.2, "attackTime": 0.6, "decayTime": 2.6,
-			"sustainLevel": 0.8, "releaseTime": 0.8, "peak": 1
+			"start": LEAD, "duration": 3.2, "attackTime": 0.6, "decayTime": 0.8,
+			"sustainLevel": 0.65, "releaseTime": 0.8, "peak": 1
 		} );
 		const fadeStart = result.stoppedAt + LEAD;
 		const residual = g_metrics.stopResidual( left, carrier, withStop( envelope, fadeStart ), {
@@ -904,32 +904,6 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 		assert.ok( Math.abs( voices[ 0 ].startTime - 0.5 ) < 1e-9 );
 	} );
 
-	test( "a play() string over 128 notes plays every note (interim PLAY exemption, " +
-		"deleted by task 4.2)", async t => {
-		const notes = 154;
-		const result = await suite.inHarness( t, { "config": { "duration": 2 } }, notes => {
-			$.setSoundLimiter( false );
-			$.play( "T255 L64 MS " + "CDEFGAB".repeat( notes / 7 ) );
-			const live = __audioHarness.liveSources();
-			return __audioHarness.render( { "singlePass": true } ).then( render => ( {
-				...render, "live": live, "sources": __audioHarness.sources()
-			} ) );
-		}, notes );
-		if( !result ) {
-			return;
-		}
-		assert.equal( result.nodeCounts.createOscillator, notes );
-		assert.equal( result.live, notes );
-		const voices = voiceSources( result.sources );
-		assert.equal( voices.length, notes );
-		const left = g_harness.decodeRender( result ).channels[ 0 ];
-		for( const voice of voices ) {
-			assert.equal( voice.stopCalls, 1 );
-			const start = frame( voice.startTime );
-			assert.ok( g_metrics.peak( left, start, start + frame( 0.008 ) ) > 0.05 );
-		}
-	} );
-
 	test( "frequency is not rounded", async t => {
 		const result = await suite.inHarness( t, { "config": { "duration": 2 } }, () => {
 			$.setSoundLimiter( false );
@@ -980,17 +954,19 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 				return;
 			}
 			assert.equal( typeof result.droppedId, "string" );
+
+			// The deferred song starts on the gesture; only its first note is inside the window
 			assert.deepEqual( { ...result, "droppedId": null }, {
 				"droppedId": null,
 				"afterDrop": 0,
 				"afterPlay": 0,
 				"resumeCalls": 1,
-				"afterGesture": 3,
-				"sameGesture": 4,
+				"afterGesture": 1,
+				"sameGesture": 2,
 				"resumeAfterRunning": 1,
-				"afterInterruption": 4,
+				"afterInterruption": 2,
 				"resumeAfterInterruption": 2,
-				"afterRearm": 5
+				"afterRearm": 3
 			} );
 		}
 	);

@@ -1,0 +1,94 @@
+title = "play"
+category = "sound"
+isScreen = false
+plugin = "sound"
+summary = "Plays music using BASIC-style notation (inspired by QBasic PLAY command)."
+description = """
+Plays music from a notation string. Notes are scheduled just ahead of time as the song plays, so long songs use few resources. Songs play on the music bus.
+
+**Notes:**
+- A-G: Note letters (A, B, C, D, E, F, G)
+- Sharps: Use # or + after the note (e.g., C#, F+)
+- Flats: Use - after the note (e.g., B-, E-); C- is the B below C
+- Note length: Include a number after the note (e.g., C4 = quarter note C, C#8 = eighth note C#)
+- Dotted notes: . (1.5x length), .. (1.75x length), after the length if one is given (e.g., C4.)
+- N[n]: Play note by number (1-119, where 1 is C0 and 58 is A4 at 440 Hz); N0 is a rest
+
+**Octave:**
+- O[n]: Set octave (0-9)
+- <: Decrease octave by 1
+- >: Increase octave by 1
+- MO[n]: Octave offset added to later notes (can be negative: MO-1)
+
+**Note Length:**
+- L[n]: Set default note length (1-64, where 4=quarter note, 8=eighth note, etc.)
+
+**Tempo & Timing:**
+- T[n]: Set tempo in quarter notes per minute (32-255, default 120)
+- P[n]: Rest for a note length (1-64)
+
+**Volume and Pan:**
+- V[n]: Set volume (0-100)
+- MP[n]: Pan from -100 (left) to 100 (right)
+
+**Waveforms:**
+- WS or SINE: Sine wave
+- WQ or SQUARE: Square wave
+- WW or SAWTOOTH: Sawtooth wave
+- WT or TRIANGLE: Triangle wave (default)
+- WN or NOISE: White noise
+- WP or PINK: Pink noise
+- [[r],[i]]: Use a custom wave table
+
+**Articulation:**
+Each note fills a slot of its note length at the current tempo, and the song advances by whole slots. Articulation sets how much of the slot sounds; the rest is silent, so the beat never changes.
+- MS: Staccato (75% of the slot sounds)
+- MN: Normal (87.5%, default)
+- ML: Legato (100%)
+
+**Envelope:**
+- MA[n]: Attack time, % of the sounding length (default 15)
+- MD[n]: Decay time, % of the sounding length (default 20)
+- MH[n]: Sustain (hold) level, % of note volume (default 65)
+- MR[n]: Release time, % of the sounding length (default 20)
+
+The release happens inside the sounding length, so every note ends within its own slot. If MA + MD + MR is over 100, the note releases from the level it reached.
+
+**Instruments:**
+- @[n]: Select instrument n. Instruments are provided by a plugin that extends PLAY; without one, @n is ignored and a warning is logged.
+
+**Simultaneous Tracks:**
+A comma starts another track at the time of the previous track's last command, with that track's settings. For example, "CDE, F" plays F at the same time as E, and "C2, E2, G2" plays a chord. Call `play()` several times to play independent tracks from the same moment.
+
+Unknown commands are ignored, and a warning is logged once per call.
+"""
+example = """
+$.screen( "300x200" );
+const tracks = [
+	"T120 O3 L4 GAB>C",
+	"T120 O3 L4 MS GAB>C ML GAB>C",
+	"T120 O4 L2 C, E, G",
+	"T120 L8 WN MA0 MD20 MH0 MR20 C C C P8 C C",
+	"[[0,1,0,-1],[0,0,0,0]] T120 O3 L4 MP-100 G MP100 A MP0 B>C"
+];
+$.print( "Press any key to play music" );
+$.onkey( "any", "down", () => {
+	let t = 0;
+	for( const track of tracks ) {
+		setTimeout( () => {
+			$.print( `Play: ${track}` );
+			$.play( track );
+		}, t );
+		t += 2500;
+	}
+} );
+"""
+
+[[parameters]]
+name = "playString"
+type = "string"
+description = "Music notation string with notes and commands."
+
+[[returns]]
+type = "number"
+description = "Track ID for use with stopPlay."

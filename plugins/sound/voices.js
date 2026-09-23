@@ -41,29 +41,41 @@ g_scheduler.setFillProbe(
 
 
 /**
- * Allocate a sound ID
- *
- * @returns {string} Sound ID
- */
-function nextSoundId() {
-	const soundId = "sound_" + m_nextSoundId;
-	m_nextSoundId += 1;
-	return soundId;
-}
-
-/**
  * Count voices that hold nodes and count toward the live-voice cap
  *
  * @returns {number} Live voice count
  */
 function countLiveVoices() {
-	let count = 0;
-	for( const voice of m_voices.values() ) {
-		if( !voice.exempt ) {
-			count += 1;
+	return m_voices.size;
+}
+
+/**
+ * Stop a voice's inserts at a deadline
+ *
+ * @param {Object} voice - Voice record
+ * @param {number} when - Context time
+ * @returns {void}
+ */
+function stopInserts( voice, when ) {
+	for( const insert of voice.inserts ) {
+		insert.stop( when );
+	}
+}
+
+/**
+ * Dispose of voice inserts once each
+ *
+ * @param {Array<Object>} inserts - Realized inserts
+ * @returns {void}
+ */
+function disposeInserts( inserts ) {
+	for( const insert of inserts.splice( 0, inserts.length ) ) {
+		try {
+			insert.dispose();
+		} catch( error ) {
+			console.error( "sound: Insert cleanup failed:", error );
 		}
 	}
-	return count;
 }
 
 /**
@@ -99,6 +111,7 @@ function disposeVoice( voice ) {
 		}
 	}
 	m_voices.delete( voice.id );
+	disposeInserts( voice.inserts );
 	if( voice.onDispose ) {
 		try {
 			voice.onDispose( voice );
@@ -123,6 +136,11 @@ function hardStop( voice ) {
 	} catch( caughtError ) {
 
 		// Already stopped
+	}
+	try {
+		stopInserts( voice, g_context.getAudioContext().currentTime );
+	} catch( error ) {
+		console.error( "sound: Insert stop failed:", error );
 	}
 	disposeVoice( voice );
 }
@@ -186,16 +204,13 @@ function buildVoice( spec, soundId ) {
 	}
 	const voice = createVoiceRecord( {
 		"id": soundId,
-		"exempt": spec.exempt === true,
 		"start": spec.start,
 		"begin": begin,
 		"end": end,
 		"env": env,
-		"peak": peak
+		"peak": peak,
+		"onDispose": spec.onDispose || null
 	} );
-	if( voice.exempt ) {
-		voice.slotEnd = null;
-	}
 
 	try {
 
@@ -211,9 +226,21 @@ function buildVoice( spec, soundId ) {
 		}
 		voice.source = source;
 		voice.nodes.push( source );
+		let output = source;
+
+		// Voice inserts are built only now, after admission, and chained after the source
+		if( spec.inserts ) {
+			for( const descriptor of spec.inserts ) {
+				const insert = descriptor.factory( context, descriptor.params );
+				voice.inserts.push( insert );
+				output.connect( insert.input );
+				output = insert.output;
+				insert.start( begin, spec.start + env.gate );
+				insert.stop( end );
+			}
+		}
 
 		// A late start multiplies the remaining envelope by a MIN_RAMP fade-in
-		let output = source;
 		if( offset > 0 ) {
 			const onset = context.createGain();
 			voice.nodes.push( onset );
@@ -263,6 +290,7 @@ function buildVoice( spec, soundId ) {
 				// Already disconnected
 			}
 		}
+		disposeInserts( voice.inserts );
 		throw error;
 	}
 
@@ -288,56 +316,6 @@ function admitAndCreate( spec, soundId ) {
 }
 
 /**
- * Start a sound request now or at its scheduled time, applying the late-start rule
- *
- * An item is late when its start is before the scheduling lead. Expiration is checked
- * first; a surviving item within grace starts at the lead at its timeline position with an
- * onset fade, and a one-shot beyond grace is skipped. Expired and skipped requests create no
- * nodes and their IDs are completed.
- *
- * @param {Object} spec - Voice spec
- * @param {string} soundId - Sound ID
- * @returns {void}
- */
-function startRequest( spec, soundId ) {
-	const context = g_context.getAudioContext();
-	const now = context.currentTime;
-	const lead = g_context.getScheduleLead();
-	spec.offset = 0;
-	if( spec.start < lead ) {
-		const end = spec.start + g_envelope.getEnvelopeLength( spec.env );
-		if( end - lead < g_envelope.MIN_RAMP ) {
-			return;
-		}
-		if( now - spec.start > g_scheduler.LATE_GRACE ) {
-			return;
-		}
-		spec.offset = lead - spec.start;
-	}
-	admitAndCreate( spec, soundId );
-}
-
-/**
- * Interim PLAY rule: only started PLAY voices count toward MAX_VOICES, and the oldest
- * started one is stopped when the count is reached.
- * Interim PLAY exemption — removed by task 4.2.
- *
- * @returns {void}
- */
-function enforcePlayVoiceLimit() {
-	const now = g_context.getAudioContext().currentTime;
-	const started = [];
-	for( const voice of m_voices.values() ) {
-		if( voice.exempt && voice.stopKind === null && voice.begin <= now ) {
-			started.push( voice );
-		}
-	}
-	for( let i = 0; i <= started.length - MAX_VOICES; i++ ) {
-		stopVoice( started[ i ], null, "stop" );
-	}
-}
-
-/**
  * Throw a RangeError with an error code
  *
  * @param {string} message - Error message
@@ -355,6 +333,48 @@ function throwRange( message, code ) {
  * Exported Functions
  ************************************************************************************************/
 
+
+/**
+ * Allocate a sound ID, shared by sound() requests and play() notes
+ *
+ * @returns {string} Sound ID
+ */
+export function nextSoundId() {
+	const soundId = "sound_" + m_nextSoundId;
+	m_nextSoundId += 1;
+	return soundId;
+}
+
+/**
+ * Start a synth voice now or at its scheduled time, applying the late-start rule
+ *
+ * An item is late when its start is before the scheduling lead. Expiration is checked
+ * first; a surviving item within grace starts at the lead at its timeline position with an
+ * onset fade, and an item beyond grace is skipped. Expired, skipped, and rejected items
+ * create no nodes and their IDs are completed.
+ *
+ * @param {Object} spec - Voice spec: frequency, frequencyEnd, oType, waveTables, peak, pan,
+ * bus, env, start, and optional inserts and onDispose. Its offset is set here.
+ * @param {string} soundId - Sound ID
+ * @returns {Object|null} Voice record, or null when the item did not play
+ */
+export function startVoice( spec, soundId ) {
+	const context = g_context.getAudioContext();
+	const now = context.currentTime;
+	const lead = g_context.getScheduleLead();
+	spec.offset = 0;
+	if( spec.start < lead ) {
+		const end = spec.start + g_envelope.getEnvelopeLength( spec.env );
+		if( end - lead < g_envelope.MIN_RAMP ) {
+			return null;
+		}
+		if( now - spec.start > g_scheduler.LATE_GRACE ) {
+			return null;
+		}
+		spec.offset = lead - spec.start;
+	}
+	return admitAndCreate( spec, soundId );
+}
 
 /**
  * Gain that keeps a panned voice's louder channel at its peak
@@ -382,12 +402,12 @@ export function panGain( pan ) {
 export function createVoiceRecord( fields ) {
 	const voice = Object.assign( {
 		"kind": "synth",
-		"exempt": false,
 		"order": m_nextOrder,
 		"stopKind": null,
 		"fadeStart": null,
 		"protected": false,
 		"nodes": [],
+		"inserts": [],
 		"source": null,
 		"gain": null,
 		"fade": null,
@@ -440,12 +460,7 @@ export function admitVoice( request ) {
 	const context = g_context.getAudioContext();
 	const now = context.currentTime;
 	const lead = g_context.getScheduleLead();
-	const live = [];
-	for( const voice of m_voices.values() ) {
-		if( !voice.exempt ) {
-			live.push( voice );
-		}
-	}
+	const live = Array.from( m_voices.values() );
 
 	// Node cap: pick the voice to free before planning admission
 	let cleanup = null;
@@ -684,6 +699,7 @@ export function stopVoice( voice, when, kind ) {
 		{ "type": "linear", "time": deadline, "value": 0 }
 	] );
 	voice.source.stop( deadline );
+	stopInserts( voice, deadline );
 }
 
 /**
@@ -701,22 +717,6 @@ export function stopSoundById( soundId, when = null ) {
 	if( voice && voice.kind === "synth" ) {
 		stopVoice( voice, when, "stop" );
 	}
-}
-
-/**
- * Create a PLAY voice. PLAY voices keep the up-front emitter until the Phase 4 scheduler.
- * Interim PLAY exemption — removed by task 4.2: they skip slot admission and the live-voice
- * cap.
- *
- * @param {Object} spec - frequency, oType, waveTables, peak, env, bus, and start
- * @returns {string} Sound ID
- */
-export function createPlayVoice( spec ) {
-	enforcePlayVoiceLimit();
-	const soundId = nextSoundId();
-	spec.exempt = true;
-	buildVoice( spec, soundId );
-	return soundId;
 }
 
 
@@ -921,13 +921,13 @@ export function registerVoices( pluginApi ) {
 
 		// Start now inside the window; otherwise keep a pending record until the window
 		if( g_scheduler.shouldCreate( spec.start, now ) ) {
-			startRequest( spec, soundId );
+			startVoice( spec, soundId );
 		} else {
 			g_scheduler.addPending( {
 				"id": soundId,
 				"kind": "sound",
 				"start": spec.start,
-				"run": () => startRequest( spec, soundId )
+				"run": () => startVoice( spec, soundId )
 			}, "sound" );
 		}
 

@@ -41,14 +41,15 @@ A, B, C, D, E, F or G are the notes in the current octave. Can use the following
 - for a flat note. Example: PLAY "C-"
 Nn - Plays a note n by number(n can be between 0 to 84 in the 7 octaves, where 0 is a rest). Example: PLAY "N42"
 Ln - Sets length of a note (n can be 1 to 64 where 1 is a whole note and 4 is a quarter of a note etc.). Example: PLAY "L4"
-MS - Each note plays 3/4 of length set by L (staccato)
-MN - Each note plays 7/8 of length set by L (normal)
-ML - Each note plays full length set by L (legato)
+MS - Each note sounds for 3/4 of its length, leaving a rest before the next note (staccato)
+MN - Each note sounds for 7/8 of its length (normal)
+ML - Each note sounds for its full length (legato)
 MOn - Changes the octave for all subsequent notes.  Example: MO1 increases the octave by 1, so o2 becomes o3, etc.
-MAn - Set the attack rate percentage 0 - 100%. If decay + attack + sustain is over 100% there will be overlap between notes
-MTn - Set the sustain rate percentage 0 - 100%.
-MDn - Set the decay rate percentage 0 - 100%.
-MF - Each note will play completely before plaiying the next note. If MA + MT + MD > 100 you may hear a clicking sound as the sound will be cutoff.
+MAn - Attack time as a percentage (0 - 100%) of the sounding length.
+MDn - Decay time as a percentage (0 - 100%) of the sounding length.
+MHn - Sustain level as a percentage (0 - 100%) of the note volume.
+MRn - Release time as a percentage (0 - 100%) of the sounding length. The release ends before the next note.
+MPn - Pan from -100 (left) to 100 (right).
 Pn - Pause in the duration of n quarternotes (n can be 1 to 64) corresponding to L, Example: PLAY "P32"
 Tn - Tempo sets number of L4 quarter notes per minute (n can be 32 to 255 where 120 is the default). Example: PLAY "T180"
 .    - period after a note plays 1½ times the note length determined by L * T.
@@ -58,6 +59,8 @@ SQUARE - Sets the ocillator type to a square wave.
 SINE - Sets the ocillator type to a sine wave.
 TRIANGLE - Sets the ocillator type to a triangle wave.
 SAWTOOTH - Sets the ocillator type to a sawtooth wave.
+NOISE - Sets the waveform to white noise.
+PINK - Sets the waveform to pink noise.
 [[n,n],[n,n]] - Setup a custom wave table example: [[0,0.8,0.2,1],[1,0,1,0]]. There must be two sets of numbers of equal length.
 	If the first set has 4 numbers the second set must also have four numbers.
 </pre>
@@ -75,8 +78,9 @@ Enter Music Below:
 <textarea id="music">
 triangle
 ma5
-mt90
 md10
+mh80
+mr10
 mo1 t140 o2 p4 g2 e4. f8 g4 o3 c2 o2 b8 o3 c8 d4 c4 o2 b4 a8 g2.
 o2 b8 o3 c8 d4 c4 o2 b4 a8 a8 g8 o3 c4 o2 e8 e4 g8 a8 g4 f4 e4 f4 g2.
 g2 e4. f8 g4 o3 c2 o2 b8 o3 c8 d4 c4 o2 b4 a8 g2.
@@ -85,8 +89,9 @@ v30
 o2 b8 o3 c8 d4 c4 o2 b4 a8 a8 g8 o3 c4 o2 e8 e4 g8 a8 g4 f4 e4 d4 c2.
 c4 a4 a4 o3 c4 c4 o2 b4 a4 g4 e4 f4 a4 g4 f4 e2.
 ma10
-mt80
 md10
+mh80
+mr10
 mo-1
 sawtooth
 v35

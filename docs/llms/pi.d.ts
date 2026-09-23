@@ -2217,59 +2217,63 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Plays music using BASIC-style notation (inspired by QBasic PLAY command).
 		 *
-		 * Plays music from a notation string. Supports notes, tempo, volume, waveforms, and simultaneous notes using commas.
+		 * Plays music from a notation string. Notes are scheduled just ahead of time as the song plays, so long songs use few resources. Songs play on the music bus.
 		 *
 		 * **Notes:**
 		 * - A-G: Note letters (A, B, C, D, E, F, G)
-		 * - Sharps: Use # or + after note (e.g., C#, F+)
-		 * - Flats: Use - after note (e.g., B-, E-)
-		 * - Dotted notes: . (1.5x length), .. (1.75x length)
-		 * - Note length in note: Include number after note (e.g., C4 = quarter note C)
-		 * - N[n]: Play note by MIDI number (0-127)
+		 * - Sharps: Use # or + after the note (e.g., C#, F+)
+		 * - Flats: Use - after the note (e.g., B-, E-); C- is the B below C
+		 * - Note length: Include a number after the note (e.g., C4 = quarter note C, C#8 = eighth note C#)
+		 * - Dotted notes: . (1.5x length), .. (1.75x length), after the length if one is given (e.g., C4.)
+		 * - N[n]: Play note by number (1-119, where 1 is C0 and 58 is A4 at 440 Hz); N0 is a rest
 		 *
 		 * **Octave:**
 		 * - O[n]: Set octave (0-9)
 		 * - <: Decrease octave by 1
 		 * - >: Increase octave by 1
+		 * - MO[n]: Octave offset added to later notes (can be negative: MO-1)
 		 *
 		 * **Note Length:**
 		 * - L[n]: Set default note length (1-64, where 4=quarter note, 8=eighth note, etc.)
-		 * - Note-specific length: Include number directly after note (e.g., C4, D8)
 		 *
 		 * **Tempo & Timing:**
-		 * - T[n]: Set tempo in BPM (32-255)
+		 * - T[n]: Set tempo in quarter notes per minute (32-255, default 120)
+		 * - P[n]: Rest for a note length (1-64)
 		 *
-		 * **Volume:**
+		 * **Volume and Pan:**
 		 * - V[n]: Set volume (0-100)
-		 *
-		 * **Pause:**
-		 * - P[n]: Pause for specified note length (1-64)
+		 * - MP[n]: Pan from -100 (left) to 100 (right)
 		 *
 		 * **Waveforms:**
 		 * - WS or SINE: Sine wave
 		 * - WQ or SQUARE: Square wave
 		 * - WW or SAWTOOTH: Sawtooth wave
-		 * - WT or TRIANGLE: Triangle wave
-		 * - [[r],[i]]: Use custom wavetable
+		 * - WT or TRIANGLE: Triangle wave (default)
+		 * - WN or NOISE: White noise
+		 * - WP or PINK: Pink noise
+		 * - [[r],[i]]: Use a custom wave table
 		 *
-		 * **Style (Musical Articulation):**
-		 * - MS: Staccato (75% of note length)
-		 * - MN: Normal (87.5% of note length)
-		 * - ML: Legato (100% of note length)
-		 * - MW: Toggle full note mode
+		 * **Articulation:** Each note fills a slot of its note length at the current tempo, and the song advances by whole slots. Articulation sets how much of the slot sounds; the rest is silent, so the beat never changes.
+		 * - MS: Staccato (75% of the slot sounds)
+		 * - MN: Normal (87.5%, default)
+		 * - ML: Legato (100%)
 		 *
-		 * **Modifiers (Envelope & Effects):**
-		 * - MU[n] or MO[n]: Octave offset (can be negative: MU-n)
-		 * - MY[n] or MA[n]: Attack rate (0-100)
-		 * - MX[n] or MT[n]: Sustain rate (0-100)
-		 * - MZ[n] or MD[n]: Decay rate (0-100)
+		 * **Envelope:**
+		 * - MA[n]: Attack time, % of the sounding length (default 15)
+		 * - MD[n]: Decay time, % of the sounding length (default 20)
+		 * - MH[n]: Sustain (hold) level, % of note volume (default 65)
+		 * - MR[n]: Release time, % of the sounding length (default 20)
 		 *
-		 * **Advanced Features:**
-		 * - Simultaneous notes: Use comma to play the next note simultaneously with the previous note (e.g., "CDE, F" plays F at the same time as E)
-		 * - Multiple tracks: Call `.play()` multiple times with different playstrings to play multiple independent tracks
-		 * - Custom wavetables: Define using [realArray, imagArray]
+		 * The release happens inside the sounding length, so every note ends within its own slot. If MA + MD + MR is over 100, the note releases from the level it reached.
+		 *
+		 * **Instruments:**
+		 * - @[n]: Select instrument n. Instruments are provided by a plugin that extends PLAY; without one, @n is ignored and a warning is logged.
+		 *
+		 * **Simultaneous Tracks:** A comma starts another track at the time of the previous track's last command, with that track's settings. For example, "CDE, F" plays F at the same time as E, and "C2, E2, G2" plays a chord. Call `play()` several times to play independent tracks from the same moment.
+		 *
+		 * Unknown commands are ignored, and a warning is logged once per call.
 		 * @param playString Music notation string with notes and commands.
-		 * @returns Sound ID for use with stopPlay.
+		 * @returns Track ID for use with stopPlay.
 		 */
 		play( params: { "playString": string } ): number;
 		play( playString: string ): number;

@@ -92,7 +92,9 @@ g_suite.describeAudioEngines( "audio render harness", suite => {
 		// Silent once the fade that starts at the scheduling lead has finished
 		const silentFrom = frame( rendered.stoppedAt + g_suite.LEAD + g_suite.STOP_FADE ) + 1;
 		assert.ok( g_metrics.isSilent( left, silentFrom, left.length ) );
-		assert.ok( rendered.nodeCounts.createOscillator >= 8 );
+
+		// The lookahead scheduler created only the notes that entered its window before the stop
+		assert.equal( rendered.nodeCounts.createOscillator, 3 );
 	} );
 
 	test( "state masking yields one voice per sound() call at every step", async t => {

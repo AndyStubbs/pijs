@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Pi.js Sound Play</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			padding: 20px;
+			background: #222;
+			color: #fff;
+			max-width: 960px;
+			margin: 0 auto;
+		}
+		h1 {
+			margin-bottom: 4px;
+		}
+		.intro {
+			color: #bbb;
+			margin-top: 0;
+		}
+		.section {
+			margin-bottom: 24px;
+			padding: 16px 20px;
+			background: #333;
+			border-radius: 5px;
+		}
+		.section h2 {
+			margin-top: 0;
+		}
+		.controls {
+			display: grid;
+			grid-template-columns: repeat( auto-fill, minmax( 260px, 1fr ) );
+			gap: 10px 24px;
+		}
+		.control {
+			display: grid;
+			grid-template-columns: 90px 1fr 60px;
+			align-items: center;
+			gap: 8px;
+		}
+		button {
+			margin: 6px 8px 6px 0;
+			padding: 8px 16px;
+			font-size: 15px;
+			cursor: pointer;
+		}
+		textarea {
+			width: 100%;
+			box-sizing: border-box;
+			height: 90px;
+			font-family: monospace;
+			font-size: 14px;
+			background: #1a1a1a;
+			color: #fff;
+			border: 1px solid #555;
+			border-radius: 4px;
+			padding: 8px;
+		}
+		pre {
+			background: #1a1a1a;
+			padding: 10px;
+			border-radius: 4px;
+			white-space: pre-wrap;
+			font-size: 13px;
+			max-height: 220px;
+			overflow-y: auto;
+		}
+	</style>
+</head>
+<body>
+	<h1>Sound Play</h1>
+	<p class="intro">
+		Listening demo for <code>play()</code> on the lookahead scheduler: PLAY envelopes,
+		articulation, pan, noise percussion, simultaneous tracks, and long songs. Use it to tune
+		the default envelope (MA 15, MD 20, MH 65, MR 20) by ear. Serve the repository over
+		HTTP (<code>npm run server</code>) so the 2.2 reference can load.
+	</p>
+
+	<div class="section">
+		<h2>Envelope and articulation</h2>
+		<div class="controls">
+			<label class="control">MA (attack %)
+				<input id="attack" type="range" min="0" max="100" step="1" value="15">
+				<output id="attackOut">15</output></label>
+			<label class="control">MD (decay %)
+				<input id="decay" type="range" min="0" max="100" step="1" value="20">
+				<output id="decayOut">20</output></label>
+			<label class="control">MH (sustain %)
+				<input id="sustain" type="range" min="0" max="100" step="1" value="65">
+				<output id="sustainOut">65</output></label>
+			<label class="control">MR (release %)
+				<input id="release" type="range" min="0" max="100" step="1" value="20">
+				<output id="releaseOut">20</output></label>
+			<label class="control">MP (pan)
+				<input id="pan" type="range" min="-100" max="100" step="5" value="0">
+				<output id="panOut">0</output></label>
+			<label class="control">Tempo
+				<input id="tempo" type="range" min="32" max="255" step="1" value="120">
+				<output id="tempoOut">120</output></label>
+			<label class="control">Pace
+				<select id="pace">
+					<option value="MS">MS staccato</option>
+					<option value="MN" selected>MN normal</option>
+					<option value="ML">ML legato</option>
+				</select>
+				<span></span></label>
+			<label class="control">Waveform
+				<select id="wave">
+					<option value="WT" selected>Triangle</option>
+					<option value="WS">Sine</option>
+					<option value="WQ">Square</option>
+					<option value="WW">Sawtooth</option>
+					<option value="WN">White noise</option>
+					<option value="WP">Pink noise</option>
+				</select>
+				<span></span></label>
+		</div>
+		<p>The settings above are prepended to the song below; commands in the song override
+			them. Pace changes how much of each note sounds, never the beat.</p>
+		<textarea id="song">O4 L8 C D E F G A B > C4 < B A G F E D C4</textarea>
+		<button id="playSong">Play</button>
+		<button id="compare">Staccato, then legato</button>
+		<button id="stopSong">Stop</button>
+		<p>Played: <code id="played"></code></p>
+	</div>
+
+	<div class="section">
+		<h2>Songs</h2>
+		<button data-song="scale">Scale</button>
+		<button data-song="dotted">Dotted notes</button>
+		<button data-song="chord">Chord</button>
+		<button data-song="tracks">Two tracks</button>
+		<button data-song="galaga">Galaga start</button>
+		<button data-song="groove">Noise groove</button>
+		<button data-song="panned">Panned arpeggio</button>
+		<button data-song="long">Long song (switch tabs while it plays)</button>
+		<p>A comma starts a track at the previous track's last command, so "C D E, G" plays G
+			with E. The long song has several hundred notes; hiding the tab widens the
+			lookahead window, and it should keep playing without gaps.</p>
+	</div>
+
+	<div class="section">
+		<h2>2.2 comparison</h2>
+		<button id="reference">Play 2.2 reference</button>
+		<button id="current">Play in 2.3</button>
+		<p><code>T176 L16 SQUARE O5 C E G C6 O5 G8 O6 C4</code>. The 2.2 envelope fell to 80%
+			and paced notes shortened the beat; 2.3 keeps the beat and releases inside each
+			note.</p>
+	</div>
+
+	<pre id="log"></pre>
+
+	<script src="../../build/pi.js"></script>
+	<script>
+		"use strict";
+
+		const REFERENCE_SONG = "T176 L16 SQUARE O5 C E G C6 O5 G8 O6 C4";
+		const SONGS = {
+			"scale": [ "O4 L8 C D E F G A B > C4 < B A G F E D C4" ],
+			"dotted": [ "L4 C4. C8 C4.. C16 E4. E8 G2" ],
+			"chord": [ "L2 C, E, G" ],
+			"tracks": [ "O4 C D E F G A, O2 C1 G1" ],
+			"galaga": [
+				"T168 L16 SQUARE O4 C E G O5 C8 P16 O4 G8 O5 E8 C4 P8 O4 E8 G8 O5 C8"
+			],
+			"groove": [
+				"T110 L16 V70 WN MA0 MD15 MH0 MR10 " + "C P C P ".repeat( 8 ),
+				"T110 L8 V60 WP MA0 MD30 MH0 MR20 " + "P C P C ".repeat( 4 ),
+				"T110 L8 V50 WQ O2 MS " + "C C G G A A G4 ".repeat( 2 )
+			],
+			"panned": [
+				"T140 L16 WS O5 MP-100 C MP-50 E MP0 G MP50 > C MP100 E MP50 C MP0 < G MP-50 E " +
+				"MP-100 C4"
+			],
+			"long": [
+				"T200 L16 O4 " + "C E G > C < G E ".repeat( 60 ),
+				"T200 L8 O2 WQ V40 " + "C G ".repeat( 90 )
+			]
+		};
+		let tracks = [];
+
+		function log( message ) {
+			const element = document.getElementById( "log" );
+			element.textContent = message + "\n" + element.textContent;
+		}
+
+		function value( id ) {
+			return document.getElementById( id ).value;
+		}
+
+		for( const id of [ "attack", "decay", "sustain", "release", "pan", "tempo" ] ) {
+			const input = document.getElementById( id );
+			const output = document.getElementById( id + "Out" );
+			const update = () => {
+				output.textContent = input.value;
+			};
+			input.addEventListener( "input", update );
+			update();
+		}
+
+		function settings( pace ) {
+			return `T${value( "tempo" )} ${pace || value( "pace" )} MA${value( "attack" )} ` +
+				`MD${value( "decay" )} MH${value( "sustain" )} MR${value( "release" )} ` +
+				`MP${value( "pan" )} ${value( "wave" )} `;
+		}
+
+		function stopAll() {
+			for( const trackId of tracks ) {
+				$.stopPlay( trackId );
+			}
+			tracks = [];
+		}
+
+		function playStrings( strings, prefix ) {
+			for( const string of strings ) {
+				const played = prefix + string;
+				try {
+					tracks.push( $.play( played ) );
+					document.getElementById( "played" ).textContent = played;
+					log( "play: " + played );
+				} catch( error ) {
+					log( `play: ${error.code || ""} ${error.message}` );
+				}
+			}
+		}
+
+		document.getElementById( "playSong" ).onclick = () => {
+			stopAll();
+			playStrings( [ value( "song" ) ], settings() );
+		};
+		document.getElementById( "compare" ).onclick = () => {
+			stopAll();
+			const song = value( "song" );
+			playStrings( [ song + " P2 ML " + song ], settings( "MS" ) );
+		};
+		document.getElementById( "stopSong" ).onclick = stopAll;
+
+		for( const button of document.querySelectorAll( "[data-song]" ) ) {
+			button.onclick = () => {
+				stopAll();
+				playStrings( SONGS[ button.dataset.song ], "" );
+			};
+		}
+
+		document.getElementById( "reference" ).onclick = () => {
+			stopAll();
+			const audio = new Audio( "../media/sound-2.2/play-phrase.wav" );
+			audio.play().catch( error => {
+				log( "reference: " + error.message );
+			} );
+		};
+		document.getElementById( "current" ).onclick = () => {
+			stopAll();
+			playStrings( [ REFERENCE_SONG ], "" );
+		};
+
+		document.addEventListener( "visibilitychange", () => {
+			if( document.hidden ) {
+				log( "page hidden" );
+			} else {
+				log( "page visible" );
+			}
+		} );
+	</script>
+</body>
+</html>

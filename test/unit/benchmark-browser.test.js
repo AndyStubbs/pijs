@@ -265,12 +265,18 @@ g_test.test( "browser failures retain their stage and asset diagnostics", async 
 				item.url.endsWith( "/cherry_image.png" ) ) );
 			return true;
 		} );
+
+		// Hanging stubs keep their promise reachable from window: DevTools rejects an awaited
+		// promise that is garbage collected ("Promise was collected"), and Playwright reports
+		// that as a destroyed execution context instead of letting the timeout fire
 		await g_assert.rejects( g_browser.measure( m_browser, served.url, artifact, [ "line" ], {
 			"allowSoftware": true, "timeoutMs": 1000,
 			"beforeNavigate": async page => {
 				await page.route( "**/harness.js", async route => {
-					await route.fulfill( { "contentType": "text/javascript",
-						"body": "window.benchmark = { init: () => new Promise( () => {} ) };" } );
+					await route.fulfill( { "contentType": "text/javascript", "body":
+						"window.benchmark = { " +
+						"init: () => ( window.hang = new Promise( () => {} ) ) };"
+					} );
 				} );
 			}
 		} ), error => {
@@ -283,7 +289,8 @@ g_test.test( "browser failures retain their stage and asset diagnostics", async 
 			"beforeNavigate": async page => {
 				await page.route( "**/harness.js", async route => {
 					const body = Buffer.from( prepared.files[ "harness.js" ] ).toString( "utf8" ) +
-						"\nbenchmark = { ...benchmark, runCase: () => new Promise( () => {} ) };";
+						"\nbenchmark = { ...benchmark, " +
+						"runCase: () => ( window.hang = new Promise( () => {} ) ) };";
 					await route.fulfill( { "contentType": "text/javascript", "body": body } );
 				} );
 			}

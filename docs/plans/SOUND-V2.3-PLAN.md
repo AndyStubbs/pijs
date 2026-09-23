@@ -3,11 +3,11 @@
 Status: Approved for planning, not yet implemented
 Target release: Pi.js 2.3.0
 Companion document: [SOUND-V2.3-ROADMAP.md](SOUND-V2.3-ROADMAP.md)
-Revision 6: adds a scheduling lead for immediate automation, defines the PLAY slot, sounding
-length, gate, and release placement so pace no longer changes the beat, masks context state in
-the offline harness, gives stream mode a realtime test path and gesture rule, records the
-resolves D2 (ADSR positional order), validates sweep endpoints, defines duplicate PLAY token
-prefixes, and renames the live-voice cap.
+Revision 7: records the Phase 4 PLAY decisions in 8.2: equal-temperament pitch, unknown
+commands warned and ignored, dotted explicit lengths, accidentals across octave boundaries,
+and the comma-track timing kept from 2.2. Revision 6 added the scheduling lead, the PLAY slot
+and release placement, harness state masking, the stream-mode realtime test, D2, sweep
+validation, duplicate PLAY token prefixes, and the live-voice cap name.
 
 ## 1. Purpose
 
@@ -903,6 +903,11 @@ The docs state approximate costs. Decoded audio uses about 21 MB per stereo minu
   the same caps.
 - **Cleanup:** track removal is driven by the scheduler, replacing the per-track `setTimeout`.
 - **Routing:** all music voices go to the music bus.
+- **Streams (Phase 4):** a `play()` call is one scheduler stream of immutable note events
+  sorted by time. Streams are merged with the pending records in start order under the same
+  window-fill rule, but do not count toward `MAX_PENDING_SOUNDS`. A stream is removed once its
+  events are exhausted and its voices have been disposed. Hiding the page runs a tick at once,
+  so the 2 s window fills before timers are throttled.
 
 ### 8.2 PLAY string changes
 
@@ -937,11 +942,30 @@ The docs state approximate costs. Decoded audio uses about 21 MB per stereo minu
   can overrun, so core treats `MW` as a no-op and still parses it.
 - **Defaults** reproduce a musical shape close to 2.2: attack 15%, decay 20%, sustain level
   65%, release 20%. In 2.2 the 65 was a stage duration and the note fell to 80% during it;
-  here it is a level, so the shape is similar but not identical. Final values are set in
-  Phase 4 using the listening demo.
+  here it is a level, so the shape is similar but not identical. Phase 4 ships these values
+  and the default pace of 0.875 (`MN`); tuning them by ear in `sound_play_01.html` is an open
+  listening check before release.
 - **`@n` without an extension:** core always parses the token. It is handled by a registered
   PLAY extension (Section 4.3.3). With no extension, the token is ignored and a warning is
   logged once per `play()` call.
+- **Tokenizer (Phase 4):** commands are matched longest first against the built-in commands,
+  the waveform words (`SINE`, `SQUARE`, `SAWTOOTH`, `TRIANGLE`, `NOISE`, `PINK`), `@`, and
+  registered extension prefixes. A note is a letter, an optional accidental (`#`, `+`, `-`),
+  an optional length, and optional dots; dots apply after an explicit length, so `C4.` is a
+  dotted quarter. `MO` is the octave offset. `MB` and `MF` are parsed and have no effect.
+- **Unknown commands (Phase 4):** `M` followed by any other letter is read as one unknown
+  command with its value, so a removed command such as `MT50` is never read as `T50`. Unknown
+  commands and characters are ignored, with one warning per `play()` call.
+- **Pitch (Phase 4):** frequencies follow equal temperament from A4 = 440 Hz instead of a
+  table. `N n` plays note `n` (1–119, where 1 is C0 and 58 is A4); the 2.2 table skipped G9, so
+  N116–N119 played a semitone high. Notes use semitone arithmetic, so `C-` is the B an octave
+  below and `B#` the C an octave above; 2.2 kept the octave. Notes outside octaves 0–9 rest.
+  Pitches differ from the 2.2 table by less than 0.03%.
+- **Simultaneous tracks (Phase 4):** a comma track starts at the song time of the previous
+  track's last command and copies that track's settings after the command applies, as in
+  2.2: `"CDE, F"` plays F with E, and `"C2, E2, G2"` is a chord.
+- **Release floor:** the release is `max( sounding × MR%, MIN_RAMP )` and the gate is the
+  sounding length minus the release, so a note with `MR0` still ends within its slot.
 
 ## 9. Advanced Plugin: `sound-advanced`
 
@@ -1256,6 +1280,10 @@ Click checks compare against an expected waveform rather than require raw RMS to
 - PLAY: `MS`, `MN`, and `ML` now shorten the sounding part of each note and leave the beat
   unchanged. Songs that used `MS` or `MN` play at their written tempo instead of faster, so
   they take longer than in 2.2.
+- PLAY: `MT` and the undocumented `MU`, `MX`, `MY`, `MZ`, and `MK` are ignored with a warning.
+  Rewrite `MAa MTt MDd` as `MAa MDd MHh MRr` with the new percentages.
+- PLAY: `C4.` is now a dotted quarter (2.2 ignored dots after a length). `C-` and `B#` cross
+  the octave boundary. `N116`–`N119` play G#9–B9 instead of a semitone higher.
 - After a scheduler stall, unexpired items late by up to 25 ms start at their timeline position
   with an onset fade; items with insufficient remaining time complete silently. Later PLAY
   notes and delayed one-shots are skipped; surviving late loops advance to their timeline

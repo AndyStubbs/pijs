@@ -373,6 +373,49 @@ Exit criteria:
 - **M2 reached:** the core API is complete, and the core size target is met or a variance is
   recorded.
 
+Phase 4 results that later phases depend on:
+
+- **Scheduler streams.** `scheduler.js` exports `addStream( stream )` and
+  `removeStream( id )`. A stream is `{ id, kind, peek, take, isDone, onDone }`: `peek()`
+  returns the next item's context start time, `take()` creates it and must advance first, and
+  `onDone()` runs once when the scheduler removes a finished stream. Streams merge with pending
+  records in start order under the window-fill rule and do not count toward
+  `MAX_PENDING_SOUNDS`. Hiding the page runs a tick at once.
+- **`startVoice( spec, soundId )`** in `voices.js` is the single synth entry point: late-start
+  rule, admission, and caps. It returns the voice record or `null`, and `nextSoundId()` is
+  exported. Specs accept `inserts` (frozen `{ factory, params }` descriptors) and
+  `onDispose`. Task 5.2's `createVoice` can build on it.
+- **Voice inserts.** Factories run inside admission's build step only. Inserts chain between
+  the source and the envelope gain, get `start( begin, gateEnd )` and `stop( end )` at build,
+  `stop( deadline )` on every fade, `stop( now )` on hard stops, and `dispose()` exactly once;
+  a throwing factory or `start` disposes the inserts created so far. Fault-injection contract
+  tests remain task 5.2.
+- **`registerPlayExtension( name, extension )`** is in the service. `extension` has `tokens`
+  (prefix → `handler( state, value )`, where `value` is the integer after the prefix or
+  `null`), `initState`, `copyState`, and `resolveNote( state, note )`. The note is a frozen
+  `{ frequency, frequencyEnd, time, gate, volume, envelope, pan, oType, waveTables, inserts }`
+  with `envelope` in seconds; overrides may set any of these but `time`, and a partial
+  `envelope` merges. An `oType` array is a wave table. Malformed input throws
+  `INVALID_PLAY_EXTENSION`; a duplicate name or a prefix owned by a built-in (commands, words,
+  note letters) or another extension throws `DUPLICATE_PLAY_TOKEN`. `@` can be claimed once.
+- **Parsing** happens at `play()` time, including for songs deferred by a locked context.
+  `parsePlayString()` and `tokenize()` are pure exports tested in Node
+  (`sound-play.test.js`).
+- **Decisions** recorded in plan 8.2 and 11: equal-temperament pitch replaces the note tables,
+  unknown commands (including `MT`) warn once and are ignored, `C4.` is dotted, accidentals
+  cross octaves, and comma tracks keep the 2.2 timing.
+- **Tests:** `audio-play-browser.test.js` (regression strings, window, hidden-tab fill, long
+  song, stall, frozen clock, `stopPlay` for scheduled and retiring notes, extension inserts)
+  and `sound-scheduler.test.js`. The interim PLAY exemption test was deleted with the
+  exemption.
+- **Size:** `sound` is 14,108 bytes gzipped (−192 from Phase 3), within the 14 KB target.
+  `pi.min.js` growth over 2.2 is 8,232 bytes, 40 over the 8 KB target; the variance is
+  recorded for the 6.1 size review (`docs/evidence/sound-2.3/README.md`). The note tables
+  replaced by the pitch formula offset the scheduler and extension code.
+- **Open manual checks:** the three-engine listening pass in `sound_play_01.html`, including
+  tuning the default envelope (MA 15, MD 20, MH 65, MR 20) by ear and a hidden-tab long song,
+  plus the Phase 1–3 checks still open.
+
 ## Phase 5: `sound-advanced` Plugin
 
 Goal: advanced features in a separate plugin, with each module measured individually.

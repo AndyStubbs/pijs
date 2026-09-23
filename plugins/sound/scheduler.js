@@ -1,8 +1,9 @@
 /**
  * Pi.js - Sound Scheduler Module (Plugin)
  *
- * Lookahead scheduler for delayed requests. Pending items cost a small record; their nodes
- * are created only when their start time enters the lookahead window.
+ * Lookahead scheduler for delayed requests and play() songs. Pending items cost a small
+ * record, and song events stay in their stream; nodes are created only when an item's start
+ * time enters the lookahead window.
  *
  * @module plugins/sound/scheduler
  */
@@ -27,7 +28,11 @@ export const MAX_PENDING_SOUNDS = 1024;
 
 // Pending items sorted by start time: { id, kind, start, run }
 const m_pending = [];
+
+// Ordered event sources such as play() songs: { id, kind, peek, take, isDone, onDone }
+const m_streams = [];
 let m_timer = null;
+let m_visibilityListener = false;
 let m_canFill = () => true;
 
 
@@ -43,20 +48,68 @@ let m_canFill = () => true;
  */
 function tick() {
 	processPending( g_context.getAudioContext().currentTime );
-	if( m_pending.length === 0 ) {
+	if( m_pending.length === 0 && m_streams.length === 0 && m_timer !== null ) {
 		clearInterval( m_timer );
 		m_timer = null;
 	}
 }
 
 /**
- * Start the tick timer if items are pending
+ * Tick at once when the page becomes hidden, so the larger window fills before background
+ * timer throttling starts
+ *
+ * @returns {void}
+ */
+function handleVisibilityChange() {
+	if( document.hidden && m_timer !== null ) {
+		tick();
+	}
+}
+
+/**
+ * Start the tick timer if items are pending or streams are active
  *
  * @returns {void}
  */
 function ensureTimer() {
-	if( m_timer === null && m_pending.length > 0 ) {
+	if( m_timer === null && ( m_pending.length > 0 || m_streams.length > 0 ) ) {
 		m_timer = setInterval( tick, TICK * 1000 );
+		if( !m_visibilityListener && typeof document !== "undefined" ) {
+			m_visibilityListener = true;
+			document.addEventListener( "visibilitychange", handleVisibilityChange );
+		}
+	}
+}
+
+/**
+ * Earliest stream by next start time
+ *
+ * @returns {Object|null} Stream with the earliest next item, or null when none has one
+ */
+function nextStream() {
+	let best = null;
+	let bestStart = Infinity;
+	for( const stream of m_streams ) {
+		const start = stream.peek();
+		if( start < bestStart ) {
+			best = stream;
+			bestStart = start;
+		}
+	}
+	return best;
+}
+
+/**
+ * Run a scheduled item, logging its failure without stopping the scheduler
+ *
+ * @param {Function} run - Item function
+ * @returns {void}
+ */
+function runItem( run ) {
+	try {
+		run();
+	} catch( error ) {
+		console.error( "sound: Scheduled start failed:", error );
 	}
 }
 
@@ -160,19 +213,70 @@ export function clearPending( kind ) {
 }
 
 /**
- * Create nodes for items in start order: due items always, items beyond the base horizon
- * only while fill capacity remains
+ * Add a stream of ordered items, such as a play() song, and schedule its first items now
+ *
+ * Streams hold their own items, so they do not count toward MAX_PENDING_SOUNDS.
+ *
+ * @param {Object} stream - Stream record
+ * @param {string|number} stream.id - Stream ID
+ * @param {Function} stream.peek - Returns the next item's context start time, or Infinity
+ * @param {Function} stream.take - Creates the next item's nodes
+ * @param {Function} stream.isDone - True once no items or voices remain
+ * @param {Function} stream.onDone - Called once when the scheduler removes a finished stream
+ * @returns {void}
+ */
+export function addStream( stream ) {
+	m_streams.push( stream );
+	processPending( g_context.getAudioContext().currentTime );
+	ensureTimer();
+}
+
+/**
+ * Remove a stream; its remaining items are dropped without creating nodes
+ *
+ * @param {string|number} id - Stream ID
+ * @returns {boolean} True if a stream was removed
+ */
+export function removeStream( id ) {
+	const index = m_streams.findIndex( stream => stream.id === id );
+	if( index === -1 ) {
+		return false;
+	}
+	m_streams.splice( index, 1 );
+	return true;
+}
+
+/**
+ * Create nodes for pending records and stream items in start order: due items always, items
+ * beyond the base horizon only while fill capacity remains. Finished streams are removed.
  *
  * @param {number} now - Current context time
  * @returns {void}
  */
 export function processPending( now ) {
-	while( m_pending.length > 0 && shouldCreate( m_pending[ 0 ].start, now ) ) {
-		const item = m_pending.shift();
-		try {
-			item.run();
-		} catch( error ) {
-			console.error( "sound: Scheduled start failed:", error );
+	while( true ) {
+		const stream = nextStream();
+		let start = Infinity;
+		if( stream !== null ) {
+			start = stream.peek();
+		}
+		if( m_pending.length > 0 && m_pending[ 0 ].start <= start ) {
+			if( !shouldCreate( m_pending[ 0 ].start, now ) ) {
+				break;
+			}
+			runItem( m_pending.shift().run );
+		} else if( stream !== null && shouldCreate( start, now ) ) {
+			runItem( stream.take );
+		} else {
+			break;
+		}
+	}
+
+	for( let i = m_streams.length - 1; i >= 0; i-- ) {
+		const stream = m_streams[ i ];
+		if( stream.isDone() ) {
+			m_streams.splice( i, 1 );
+			runItem( stream.onDone );
 		}
 	}
 }

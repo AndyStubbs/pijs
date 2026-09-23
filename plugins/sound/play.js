@@ -1,7 +1,10 @@
 /**
  * Pi.js - Play Module (Plugin)
  *
- * BASIC-style music notation playback (inspired by QBasic PLAY command).
+ * BASIC-style music notation playback (inspired by QBasic PLAY command). A play string is
+ * parsed into immutable note events when play() is called; the lookahead scheduler creates
+ * each note's voice only when it enters the window. PLAY extensions add tokens, per-track
+ * state, and per-note voice overrides.
  *
  * @module plugins/sound/play
  */
@@ -10,48 +13,62 @@
 
 import * as g_context from "./context.js";
 import * as g_envelope from "./envelope.js";
+import * as g_scheduler from "./scheduler.js";
 import * as g_voices from "./voices.js";
 
-const m_tracks = {};
-const m_allTracks = [];
-let m_lastTrackId = 0;
-let m_playData = [];
-let m_utils = null;
+// Semitones above C for each note letter
+const NOTE_SEMITONES = { "C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11 };
 
-// Note frequency data (in Hz) by note name and octave
-const m_notesData = {
-	"A": [ 27.50, 55.00, 110, 220, 440, 880, 1760, 3520, 7040, 14080 ],
-	"A#": [ 29.14, 58.27, 116.541, 233.082, 466.164, 932.328, 1864.655, 3729.31, 7458.62, 14917.24 ],
-	"B": [
-		30.87, 61.74, 123.471, 246.942, 493.883, 987.767, 1975.533, 3951.066, 7902.132, 15804.264
-	],
-	"C": [ 16.35, 32.70, 65.41, 130.813, 261.626, 523.251, 1046.502, 2093.005, 4186.009, 8372.018 ],
-	"C#": [ 17.32, 34.65, 69.296, 138.591, 277.183, 554.365, 1108.731, 2217.461, 4434.922, 8869.844 ],
-	"D": [ 18.35, 36.71, 73.416, 146.832, 293.665, 587.33, 1174.659, 2349.318, 4698.636, 9397.272 ],
-	"D#": [ 19.45, 38.89, 77.782, 155.563, 311.127, 622.254, 1244.508, 2489.016, 4978.032, 9956.064 ],
-	"E": [ 20.60, 41.20, 82.407, 164.814, 329.628, 659.255, 1318.51, 2637.021, 5274.042, 10548.084 ],
-	"F": [ 21.83, 43.65, 87.307, 174.614, 349.228, 698.456, 1396.913, 2793.826, 5587.652, 11175.304 ],
-	"F#": [ 23.12, 46.25, 92.499, 184.997, 369.994, 739.989, 1479.978, 2959.955, 5919.91, 11839.82 ],
-	"G": [ 24.50, 49.00, 97.999, 195.998, 391.995, 783.991, 1567.982, 3135.964, 6271.928, 12543.856 ],
-	"G#": [
-		25.96, 51.91, 103.826, 207.652, 415.305, 830.609, 1661.219, 3322.438, 6644.876, 13289.752
-	]
+// N plays notes 1-119 by number; N1 is C0 and N58 is A4 at 440 Hz
+const MAX_NOTE_NUMBER = 119;
+const A4_NUMBER = 58;
+const OCTAVES = 10;
+
+// Built-in commands other than notes. "@" is reserved for an instrument extension.
+const COMMANDS = [
+	"N", "O", "L", "T", "V", "P", "<", ">", "MS", "MN", "ML", "MW", "MO", "MA", "MD", "MH",
+	"MR", "MP", "MB", "MF", "WS", "WQ", "WW", "WT", "WN", "WP", "W"
+];
+
+// Waveform words and the commands they stand for
+const WORDS = {
+	"SINE": "WS",
+	"SQUARE": "WQ",
+	"SAWTOOTH": "WW",
+	"TRIANGLE": "WT",
+	"NOISE": "WN",
+	"PINK": "WP"
 };
 
-// All notes by number (for N command)
-const m_allNotes = [
-	0, 16.35, 17.32, 18.35, 19.45, 20.60, 21.83, 23.12, 24.50, 25.96, 27.50, 29.14, 30.87, 32.70,
-	34.65, 36.71, 38.89, 41.20, 43.65, 46.25, 49.00, 51.91, 55.00, 58.27, 61.74, 65.406, 69.296,
-	73.416, 77.782, 82.407, 87.307, 92.499, 97.999, 103.826, 110, 116.541, 123.471, 130.813,
-	138.591, 146.832, 155.563, 164.814, 174.614, 184.997, 195.998, 207.652, 220, 233.082, 246.942,
-	261.626, 277.183, 293.665, 311.127, 329.628, 349.228, 369.994, 391.995, 415.305, 440, 466.164,
-	493.883, 523.251, 554.365, 587.33, 622.254, 659.255, 698.456, 739.989, 783.991, 830.609, 880,
-	932.328, 987.767, 1046.502, 1108.731, 1174.659, 1244.508, 1318.51, 1396.913, 1479.978, 1567.982,
-	1661.219, 1760, 1864.655, 1975.533, 2093.005, 2217.461, 2349.318, 2489.016, 2637.021, 2793.826,
-	2959.955, 3135.964, 3322.438, 3520, 3729.31, 3951.066, 4186.009, 4434.922, 4698.636, 4978.032,
-	5274.042, 5587.652, 5919.91, 6271.928, 6644.876, 7040, 7458.62, 7902.132, 8372.018, 8869.844,
-	9397.272, 9956.064, 10548.084, 11175.304, 11839.82, 13289.752, 14080, 14917.24, 15804.264
-];
+const WAVEFORMS = {
+	"WS": "sine",
+	"WQ": "square",
+	"WW": "sawtooth",
+	"WT": "triangle",
+	"WN": "white",
+	"WP": "pink"
+};
+
+// Articulation: the fraction of each note's slot that sounds
+const PACES = { "MS": 0.75, "MN": 0.875, "ML": 1 };
+
+// Envelope percentages of the sounding length (MA, MD, MR) and sustain level (MH)
+const ENVELOPE_COMMANDS = { "MA": "attack", "MD": "decay", "MH": "sustain", "MR": "release" };
+
+const NOTE_PATTERN = /([A-G])([#+-]?)(\d*)(\.{0,2})/y;
+const VALUE_PATTERN = /-?\d+/y;
+const INVALID_PREFIX_PATTERN = /[\d\s,[\]#+.-]/;
+
+const m_songs = new Map();
+let m_lastTrackId = 0;
+
+// Registered PLAY extensions in registration order, and extension tokens by prefix
+const m_extensions = [];
+const m_extensionTokens = new Map();
+
+// Token names matched longest first: commands, words, "@", and extension prefixes
+let m_tokenNames = [];
+rebuildTokenNames();
 
 
 /*************************************************************************************************
@@ -60,537 +77,40 @@ const m_allNotes = [
 
 
 /**
- * Create a track from a play string
+ * Rebuild the token table, longest names first
  *
- * @param {string} playString - Music notation string
- * @returns {number} First track ID
+ * @returns {void}
  */
-function createTrack( playString ) {
-	let firstTrackId;
-
-	// Convert to uppercase and remove spaces
-	playString = playString.split( /\s+/ ).join( "" ).toUpperCase();
-
-	// Find and extract wavetables
-	const waveTables = [];
-	let start = 0;
-	while( start > -1 ) {
-		start = playString.indexOf( "[[" );
-		if( start > -1 ) {
-			const end = playString.indexOf( "]]", start );
-			waveTables.push( playString.substring( start, end + 2 ) );
-			const i = waveTables.length - 1;
-			playString = playString.replace( waveTables[ i ], "W" + i );
-		}
-	}
-
-	// Convert wavetables to arrays
-	for( let i = 0; i < waveTables.length; i++ ) {
-		waveTables[ i ] = JSON.parse( waveTables[ i ] );
-
-		// Validate wavetable
-		if(
-			waveTables[ i ].length !== 2 ||
-			waveTables[ i ][ 0 ].length !== waveTables[ i ][ 1 ].length
-		) {
-			console.error(
-				"play: Wavetables must have 2 arrays of same length. Defaulting to triangle wave."
-			);
-			waveTables[ i ] = "triangle";
-			continue;
-		}
-
-		// Validate all values are numbers
-		for( let j = 0; j < 2; j++ ) {
-			for( let k = 0; k < waveTables[ i ][ j ].length; k++ ) {
-				waveTables[ i ][ j ][ k ] = parseFloat( waveTables[ i ][ j ][ k ] );
-				if( isNaN( waveTables[ i ][ j ][ k ] ) ) {
-					waveTables[ i ][ j ][ k ] = 0;
-				}
-			}
-			waveTables[ i ][ j ] = new Float32Array( waveTables[ i ][ j ] );
-		}
-	}
-
-	// Split tracks by commas
-	const trackStrings = playString.split( "," );
-	const trackIds = [];
-
-	// Regular expression for parsing play commands
-	const regString =
-		"(?=WS|WQ|WW|WT|W\\d[\\d]?|V\\d|Q\\d|O\\d|\\<|\\>|N\\d\\d?|" +
-		"L\\d\\d?|MS|MN|ML|MU\\d|MU\\-\\d|MK\\d[\\d]?[\\d]?|" +
-		"MZ\\d[\\d]?[\\d]?|MX\\d[\\d]?[\\d]?|MY\\d[\\d]?[\\d]?|" +
-		"MW|P[\\d]?|T\\d|" +
-		"[[A|B|C|D|E|F|G][\\d]?[\\+|\\-|\\#|\\.\\.?]?)";
-	const reg = new RegExp( regString );
-
-	let lastNote;
-
-	for( let i = 0; i < trackStrings.length; i++ ) {
-
-		// Replace complex keywords with short symbols
-		trackStrings[ i ] = trackStrings[ i ].replace( /SINE/g, "WS" );
-		trackStrings[ i ] = trackStrings[ i ].replace( /SQUARE/g, "WQ" );
-		trackStrings[ i ] = trackStrings[ i ].replace( /SAWTOOTH/g, "WW" );
-		trackStrings[ i ] = trackStrings[ i ].replace( /TRIANGLE/g, "WT" );
-
-		// Replace conflicting symbols
-		trackStrings[ i ] = trackStrings[ i ].replace( /MD/g, "MZ" );
-		trackStrings[ i ] = trackStrings[ i ].replace( /MA/g, "MY" );
-		trackStrings[ i ] = trackStrings[ i ].replace( /MT/g, "MX" );
-		trackStrings[ i ] = trackStrings[ i ].replace( /MO/g, "MU" );
-
-		// Remove deprecated symbols
-		trackStrings[ i ] = trackStrings[ i ].replace( /MB/g, "" );
-		trackStrings[ i ] = trackStrings[ i ].replace( /MF/g, "" );
-
-		// Create track
-		const trackId = m_lastTrackId;
-		if( firstTrackId === undefined ) {
-			firstTrackId = trackId;
-		}
-		m_lastTrackId += 1;
-
-		m_tracks[ trackId ] = {
-			"id": trackId,
-			"notes": [],
-			"noteId": 0,
-			"decayRate": 0.20,
-			"attackRate": 0.15,
-			"sustainRate": 0.65,
-			"fullNote": false,
-			"extra": 1,
-			"space": "normal",
-			"interval": 0,
-			"time": 0,
-			"simultaneousPlay": i > 0,
-			"tempo": 60 / 120,
-			"noteLength": 0.25,
-			"pace": 0.875,
-			"octave": 4,
-			"octaveExtra": 0,
-			"volume": 1,
-			"trackIds": trackIds,
-			"type": "triangle",
-			"waveTables": waveTables,
-			"sounds": [],
-			"deferred": null
-		};
-		m_allTracks.push( trackId );
-		trackIds.push( trackId );
-
-		// Mark previous note for simultaneous play
-		if( i > 0 ) {
-			lastNote.simultaneousPlay = trackId;
-		}
-
-		// Split track into command parts
-		const trackParts = trackStrings[ i ].split( reg );
-
-		for( let j = 0; j < trackParts.length; j++ ) {
-			const index = trackParts[ j ].indexOf( "-" );
-
-			// Split minus symbol (only if not a music note)
-			if( index > -1 && "ABCDEFG".indexOf( trackParts[ j ][ 0 ] ) === -1 ) {
-				const noteData = {
-					"name": trackParts[ j ].substring( 0, index ),
-					"val": trackParts[ j ].substring( index )
-				};
-				m_tracks[ trackId ].notes.push( noteData );
-				lastNote = noteData;
-			} else {
-				const noteParts = trackParts[ j ].split( /(\d+)/ );
-				const noteData = {
-					"name": noteParts[ 0 ]
-				};
-				if( noteParts.length > 1 ) {
-					noteData.val = noteParts[ 1 ];
-				}
-				m_tracks[ trackId ].notes.push( noteData );
-				lastNote = noteData;
-			}
-		}
-	}
-
-	return firstTrackId;
+function rebuildTokenNames() {
+	m_tokenNames = COMMANDS.concat( Object.keys( WORDS ), "@", [ ...m_extensionTokens.keys() ] );
+	m_tokenNames.sort( ( a, b ) => b.length - a.length );
 }
 
 /**
- * Play a track recursively
+ * Throw an error with a code
  *
- * @param {number} trackId - Track ID to play
+ * @param {string} message - Error message
+ * @param {string} code - Error code
+ * @returns {never}
  */
-function playTrack( trackId ) {
-	const track = m_tracks[ trackId ];
-	if( track.noteId >= track.notes.length ) {
-		return;
-	}
-
-	const cmd = track.notes[ track.noteId ];
-	let frequency = 0;
-	let val;
-	let wait = false;
-	track.extra = 0;
-
-	switch( cmd.name.charAt( 0 ) ) {
-		case "A":
-		case "B":
-		case "C":
-		case "D":
-		case "E":
-		case "F":
-		case "G":
-			frequency = processNote( track, cmd );
-			wait = true;
-			break;
-		case "N":
-			if( !isNaN( Number( cmd.val ) ) ) {
-				val = m_utils.getInt( cmd.val, 0 );
-				if( val >= 0 && val < m_allNotes.length ) {
-					frequency = m_allNotes[ val ];
-				}
-				wait = true;
-			}
-			break;
-		case "O":
-			if( !isNaN( Number( cmd.val ) ) ) {
-				val = m_utils.getInt( cmd.val, 4 );
-				if( val >= 0 && val < m_notesData[ "A" ].length ) {
-					track.octave = val;
-				}
-			}
-			break;
-		case ">":
-			track.octave += 1;
-			if( track.octave >= m_notesData[ "A" ].length ) {
-				track.octave = m_notesData[ "A" ].length - 1;
-			}
-			break;
-		case "<":
-			track.octave -= 1;
-			if( track.octave < 0 ) {
-				track.octave = 0;
-			}
-			break;
-		case "L":
-			if( !isNaN( Number( cmd.val ) ) ) {
-				val = m_utils.getInt( cmd.val, 1 );
-				track.noteLength = getNoteLength( val );
-			}
-			break;
-		case "T":
-			if( !isNaN( Number( cmd.val ) ) ) {
-				val = m_utils.getInt( cmd.val, 120 );
-				if( val >= 32 && val < 256 ) {
-					track.tempo = 60 / val;
-				}
-			}
-			break;
-		case "M":
-			processMusic( track, cmd );
-			break;
-		case "P":
-			if( !isNaN( Number( cmd.val ) ) ) {
-				wait = true;
-				val = m_utils.getInt( cmd.val, 1 );
-				track.extra = getNoteLength( val );
-			}
-			break;
-		case "V":
-			if( !isNaN( Number( cmd.val ) ) ) {
-				val = m_utils.getInt( cmd.val, 50 );
-				if( val < 0 ) {
-					val = 0;
-				} else if( val > 100 ) {
-					val = 100;
-				}
-				track.volume = val / 100;
-			}
-			break;
-		case "W":
-			processWaveform( track, cmd );
-			break;
-	}
-
-	// Calculate interval for next note
-	if( track.extra > 0 ) {
-		track.interval = track.tempo * track.extra * track.pace * 4;
-	} else {
-		track.interval = track.tempo * track.noteLength * track.pace * 4;
-	}
-
-	// Play simultaneous track
-	if( m_tracks[ cmd.simultaneousPlay ] ) {
-		m_tracks[ cmd.simultaneousPlay ].time = track.time;
-		copyTrackData( m_tracks[ cmd.simultaneousPlay ].id, trackId );
-		playTrack( m_tracks[ cmd.simultaneousPlay ].id );
-	}
-
-	// Play note if frequency > 0
-	if( frequency > 0 ) {
-		playNote( track, frequency );
-	}
-
-	// Move to next instruction
-	track.noteId += 1;
-
-	// Continue playing track
-	if( track.noteId < track.notes.length ) {
-		if( wait ) {
-			track.time += track.interval;
-		}
-		playTrack( trackId );
-	} else {
-
-		// Schedule track removal after completion
-		setTimeout( () => {
-			if( m_tracks[ trackId ] ) {
-				removeTrack( trackId );
-			}
-		}, ( track.time + track.interval ) * 1000 );
-	}
+function throwCode( message, code ) {
+	const error = new Error( message );
+	error.code = code;
+	throw error;
 }
 
 /**
- * Process a note command (A-G)
+ * Frequency of a note number
  *
- * @param {Object} track - Track object
- * @param {Object} cmd - Command object
+ * @param {number} number - Note number; 1 is C0 and 58 is A4
  * @returns {number} Frequency in Hz
  */
-function processNote( track, cmd ) {
-	let note = cmd.name;
-
-	// Convert + to sharp
-	note = note.replace( /\+/g, "#" );
-
-	// Convert flats to equivalent sharps
-	note = note.replace( "C-", "B" );
-	note = note.replace( "D-", "C#" );
-	note = note.replace( "E-", "D#" );
-	note = note.replace( "G-", "F#" );
-	note = note.replace( "A-", "G#" );
-	note = note.replace( "B-", "A#" );
-
-	// Convert enharmonic equivalents
-	note = note.replace( "E#", "F" );
-	note = note.replace( "B#", "C" );
-
-	// Check for extra note length (dotted notes)
-	if( cmd.name.indexOf( ".." ) > 0 ) {
-		track.extra = 1.75 * track.noteLength;
-	} else if( cmd.name.indexOf( "." ) > 0 ) {
-		track.extra = 1.5 * track.noteLength;
-	}
-
-	// Remove dots from note
-	note = note.replace( /\./g, "" );
-
-	// Get note frequency
-	let frequency = 0;
-	if( m_notesData[ note ] ) {
-		const octave = track.octave + track.octaveExtra;
-		if( octave < m_notesData[ note ].length ) {
-			frequency = m_notesData[ note ][ octave ];
-		}
-	}
-
-	// Check if note length included
-	if( !isNaN( Number( cmd.val ) ) ) {
-		const val = m_utils.getInt( cmd.val, 1 );
-		track.extra = getNoteLength( val );
-	}
-
-	return frequency;
+function noteFrequency( number ) {
+	return 440 * Math.pow( 2, ( number - A4_NUMBER ) / 12 );
 }
 
 /**
- * Process music style commands (M...)
- *
- * @param {Object} track - Track object
- * @param {Object} cmd - Command object
- */
-function processMusic( track, cmd ) {
-	switch( cmd.name ) {
-		case "MS":
-
-			// Staccato
-			track.pace = 0.75;
-			break;
-		case "MN":
-
-			// Normal
-			track.pace = 0.875;
-			break;
-		case "ML":
-
-			// Legato
-			track.pace = 1;
-			break;
-		case "MU":
-			if( !isNaN( Number( cmd.val ) ) ) {
-
-				// Modify octave
-				const val = m_utils.getInt( cmd.val, 0 );
-				track.octaveExtra = val;
-			}
-			break;
-		case "MY":
-			if( !isNaN( Number( cmd.val ) ) ) {
-
-				// Modify attack rate
-				const val = m_utils.getInt( cmd.val, 25 );
-				track.attackRate = val / 100;
-			}
-			break;
-		case "MX":
-			if( !isNaN( Number( cmd.val ) ) ) {
-
-				// Modify sustain rate
-				const val = m_utils.getInt( cmd.val, 25 );
-				track.sustainRate = val / 100;
-			}
-			break;
-		case "MZ":
-			if( !isNaN( Number( cmd.val ) ) ) {
-
-				// Modify decay rate
-				const val = m_utils.getInt( cmd.val, 25 );
-				track.decayRate = val / 100;
-			}
-			break;
-		case "MW":
-
-			// Toggle full note
-			track.fullNote = !track.fullNote;
-			break;
-	}
-}
-
-/**
- * Process waveform commands (W...)
- *
- * @param {Object} track - Track object
- * @param {Object} cmd - Command object
- */
-function processWaveform( track, cmd ) {
-	if( cmd.name === "WS" ) {
-		track.type = "sine";
-	} else if( cmd.name === "WQ" ) {
-		track.type = "square";
-	} else if( cmd.name === "WW" ) {
-		track.type = "sawtooth";
-	} else if( cmd.name === "WT" ) {
-		track.type = "triangle";
-	} else if( !isNaN( Number( cmd.val ) ) ) {
-
-		// Custom wavetable
-		const val = m_utils.getInt( cmd.val, -1 );
-		if( track.waveTables[ val ] ) {
-			track.type = val;
-		}
-	}
-}
-
-/**
- * Play a single note
- *
- * @param {Object} track - Track object
- * @param {number} frequency - Frequency in Hz
- */
-function playNote( track, frequency ) {
-	const volume = track.volume;
-	const attackTime = track.interval * track.attackRate;
-	const sustainTime = track.interval * track.sustainRate;
-	const decayTime = track.interval * track.decayRate;
-
-	let stopTime;
-	if( track.fullNote && attackTime + sustainTime + decayTime > track.interval ) {
-		stopTime = track.interval;
-	} else {
-		stopTime = attackTime + sustainTime + decayTime;
-	}
-
-	let oType;
-	let waveTables = null;
-	if( typeof track.type === "string" ) {
-		oType = track.type;
-	} else {
-		waveTables = track.waveTables[ track.type ];
-		if( Array.isArray( waveTables ) ) {
-			oType = "custom";
-		} else {
-			oType = waveTables;
-			waveTables = null;
-		}
-	}
-
-	const soundData = {
-		"frequency": frequency,
-		"volume": volume,
-		"attackTime": attackTime,
-		"sustainTime": sustainTime,
-		"decayTime": decayTime,
-		"stopTime": stopTime,
-		"oType": oType,
-		"waveTables": waveTables,
-		"time": track.time,
-		"track": track
-	};
-
-	m_playData.push( soundData );
-}
-
-/**
- * Copy track data from source to destination
- *
- * @param {number} trackDestId - Destination track ID
- * @param {number} trackSourceId - Source track ID
- */
-function copyTrackData( trackDestId, trackSourceId ) {
-	const trackDest = m_tracks[ trackDestId ];
-	const trackSource = m_tracks[ trackSourceId ];
-
-	trackDest.decayRate = trackSource.decayRate;
-	trackDest.attackRate = trackSource.attackRate;
-	trackDest.sustainRate = trackSource.sustainRate;
-	trackDest.fullNote = trackSource.fullNote;
-	trackDest.extra = trackSource.extra;
-	trackDest.space = trackSource.space;
-	trackDest.interval = trackSource.interval;
-	trackDest.tempo = trackSource.tempo;
-	trackDest.noteLength = trackSource.noteLength;
-	trackDest.pace = trackSource.pace;
-	trackDest.octave = trackSource.octave;
-	trackDest.octaveExtra = trackSource.octaveExtra;
-	trackDest.volume = trackSource.volume;
-	trackDest.type = trackSource.type;
-}
-
-/**
- * Remove a track and all its sub-tracks
- *
- * @param {number} trackId - Track ID to remove
- */
-function removeTrack( trackId ) {
-
-	// Delete all sub-tracks as well as main track
-	const trackIds = m_tracks[ trackId ].trackIds;
-	for( let i = trackIds.length; i >= 0; i-- ) {
-		delete m_tracks[ trackIds[ i ] ];
-	}
-
-	// Remove track from all tracks array
-	for( let i = m_allTracks.length - 1; i >= 0; i-- ) {
-		if( !m_tracks[ m_allTracks[ i ] ] ) {
-			m_allTracks.splice( i, 1 );
-		}
-	}
-}
-
-/**
- * Get note length from note value
+ * Note length from a note value, as a fraction of a whole note
  *
  * @param {number} val - Note value (1-64)
  * @returns {number} Note length
@@ -603,77 +123,630 @@ function getNoteLength( val ) {
 }
 
 /**
- * Generate a track's notes and create their voices on the music bus
+ * Clamp a value to a range
  *
- * Until the Phase 4 scheduler, every note's voice is created up front. The 2.2 rates map
- * onto the ADSR envelope: the attack stage is the attack, the old sustain stage decays to
- * 0.8 of the note volume and ends the gate, and the old decay stage is the release.
+ * @param {number} value - Value
+ * @param {number} min - Minimum
+ * @param {number} max - Maximum
+ * @returns {number} Clamped value
+ */
+function clamp( value, min, max ) {
+	return Math.min( Math.max( value, min ), max );
+}
+
+/**
+ * Deep copy a value into an immutable snapshot
  *
- * @param {number} trackId - First track ID
+ * Arrays and plain objects are copied and frozen, typed arrays are copied, and functions and
+ * primitives are kept, so a snapshot never shares mutable state with its source.
+ *
+ * @param {*} value - Value to copy
+ * @returns {*} Snapshot
+ */
+function snapshot( value ) {
+	if( Array.isArray( value ) ) {
+		return Object.freeze( value.map( snapshot ) );
+	}
+	if( ArrayBuffer.isView( value ) ) {
+		return value.slice();
+	}
+	if( value !== null && typeof value === "object" ) {
+		const copy = {};
+		for( const key of Object.keys( value ) ) {
+			copy[ key ] = snapshot( value[ key ] );
+		}
+		return Object.freeze( copy );
+	}
+	return value;
+}
+
+/**
+ * Extract [[real],[imag]] wave tables, replacing each with a W<index> command
+ *
+ * @param {string} playString - Uppercase play string without whitespace
+ * @returns {Object} { playString, waveTables }; invalid tables become "triangle"
+ */
+function extractWaveTables( playString ) {
+	const waveTables = [];
+	let start = playString.indexOf( "[[" );
+	while( start > -1 ) {
+		const end = playString.indexOf( "]]", start );
+		if( end === -1 ) {
+			break;
+		}
+		const text = playString.substring( start, end + 2 );
+		playString = playString.replace( text, "W" + waveTables.length );
+		let table = JSON.parse( text );
+		if( table.length !== 2 || table[ 0 ].length !== table[ 1 ].length ) {
+			console.error(
+				"play: Wavetables must have 2 arrays of same length. Defaulting to triangle wave."
+			);
+			table = "triangle";
+		} else {
+			for( let j = 0; j < 2; j++ ) {
+				table[ j ] = new Float32Array( table[ j ].map( value => {
+					const number = parseFloat( value );
+					if( isNaN( number ) ) {
+						return 0;
+					}
+					return number;
+				} ) );
+			}
+		}
+		waveTables.push( table );
+		start = playString.indexOf( "[[" );
+	}
+	return { "playString": playString, "waveTables": waveTables };
+}
+
+/**
+ * Read an optional signed integer at a position
+ *
+ * @param {string} text - Track text
+ * @param {number} index - Position
+ * @returns {Object} { value, index }; value is null when no digits follow
+ */
+function readValue( text, index ) {
+	VALUE_PATTERN.lastIndex = index;
+	const match = VALUE_PATTERN.exec( text );
+	if( match === null ) {
+		return { "value": null, "index": index };
+	}
+	return { "value": parseInt( match[ 0 ], 10 ), "index": VALUE_PATTERN.lastIndex };
+}
+
+/**
+ * Create the default settings of a track
+ *
+ * @returns {Object} Track settings
+ */
+function createTrackState() {
+	const state = {
+		"tempo": 60 / 120,
+		"noteLength": 0.25,
+		"pace": PACES.MN,
+		"octave": 4,
+		"octaveOffset": 0,
+		"volume": 1,
+		"pan": 0,
+		"attack": 15,
+		"decay": 20,
+		"sustain": 65,
+		"release": 20,
+		"oType": "triangle",
+		"waveTables": null,
+		"ext": {}
+	};
+	for( const extension of m_extensions ) {
+		state.ext[ extension.name ] = extension.initState();
+	}
+	return state;
+}
+
+/**
+ * Copy track settings for a simultaneous (comma-separated) track, including extension state
+ *
+ * @param {Object} state - Track settings
+ * @returns {Object} Copy
+ */
+function copyTrackState( state ) {
+	const copy = Object.assign( {}, state, { "ext": {} } );
+	for( const extension of m_extensions ) {
+		copy.ext[ extension.name ] = extension.copyState( state.ext[ extension.name ] );
+	}
+	return copy;
+}
+
+/**
+ * Build a note's immutable event, applying extension overrides
+ *
+ * The slot is split into a sounding length (slot × pace) and a rest. Attack, decay, and
+ * release are percentages of the sounding length, and the release runs inside it, so the
+ * envelope always ends within the note's own slot.
+ *
+ * @param {Object} state - Track settings
+ * @param {number} frequency - Frequency in Hz
+ * @param {number} time - Song time of the note in seconds
+ * @param {number} slot - Slot length in seconds
+ * @returns {Object} Frozen event
+ */
+function createNoteEvent( state, frequency, time, slot ) {
+	const sounding = slot * state.pace;
+	const releaseTime = Math.max( sounding * state.release / 100, g_envelope.MIN_RAMP );
+	let note = {
+		"frequency": frequency,
+		"frequencyEnd": null,
+		"time": time,
+		"gate": Math.max( sounding - releaseTime, 0 ),
+		"volume": state.volume,
+		"envelope": {
+			"attackTime": sounding * state.attack / 100,
+			"decayTime": sounding * state.decay / 100,
+			"sustainLevel": state.sustain / 100,
+			"releaseTime": releaseTime
+		},
+		"pan": state.pan,
+		"oType": state.oType,
+		"waveTables": state.waveTables,
+		"inserts": null
+	};
+
+	// Extension overrides are copied into the snapshot; factories are kept, not invoked
+	for( const extension of m_extensions ) {
+		const overrides = extension.resolveNote( state.ext[ extension.name ], snapshot( note ) );
+		if( overrides ) {
+			note = Object.assign( {}, note, overrides, {
+				"time": time,
+				"envelope": Object.assign( {}, note.envelope, overrides.envelope )
+			} );
+		}
+	}
+	let oType = note.oType;
+	let waveTables = note.waveTables;
+	if( Array.isArray( oType ) ) {
+		waveTables = [ new Float32Array( oType[ 0 ] ), new Float32Array( oType[ 1 ] ) ];
+		oType = "custom";
+	}
+
+	return snapshot( {
+		"time": time,
+		"frequency": note.frequency,
+		"frequencyEnd": note.frequencyEnd,
+		"peak": note.volume,
+		"pan": note.pan,
+		"oType": oType,
+		"waveTables": waveTables,
+		"env": g_envelope.resolveEnvelope( {
+			"duration": note.gate,
+			"attackTime": note.envelope.attackTime,
+			"decayTime": note.envelope.decayTime,
+			"sustainLevel": note.envelope.sustainLevel,
+			"releaseTime": note.envelope.releaseTime
+		} ),
+		"inserts": note.inserts
+	} );
+}
+
+/**
+ * Apply one token to a track, adding a note event if it plays one
+ *
+ * @param {Object} token - Token from tokenize
+ * @param {Object} state - Track settings
+ * @param {number} time - Song time of the token in seconds
+ * @param {Object} song - Generation context: events, waveTables, warnings
+ * @returns {number} Song time of the next token
+ */
+function applyToken( token, state, time, song ) {
+	const value = token.value;
+	let frequency = 0;
+	let length = 0;
+
+	if( token.handler ) {
+		token.handler( state.ext[ token.extension ], value );
+		return time;
+	}
+
+	switch( token.name ) {
+		case "NOTE": {
+			const octave = state.octave + state.octaveOffset;
+			if( octave >= 0 && octave < OCTAVES ) {
+				frequency = noteFrequency( octave * 12 + token.semitone + 1 );
+			}
+			length = state.noteLength;
+			if( token.length !== null ) {
+				length = getNoteLength( token.length );
+			}
+			length *= [ 1, 1.5, 1.75 ][ token.dots ];
+			break;
+		}
+		case "N":
+			if( value !== null ) {
+				if( value > 0 && value <= MAX_NOTE_NUMBER ) {
+					frequency = noteFrequency( value );
+				}
+				length = state.noteLength;
+			}
+			break;
+		case "O":
+			if( value !== null && value >= 0 && value < OCTAVES ) {
+				state.octave = value;
+			}
+			break;
+		case ">":
+			state.octave = Math.min( state.octave + 1, OCTAVES - 1 );
+			break;
+		case "<":
+			state.octave = Math.max( state.octave - 1, 0 );
+			break;
+		case "L":
+			if( value !== null ) {
+				state.noteLength = getNoteLength( value );
+			}
+			break;
+		case "T":
+			if( value !== null && value >= 32 && value < 256 ) {
+				state.tempo = 60 / value;
+			}
+			break;
+		case "V":
+			if( value !== null ) {
+				state.volume = clamp( value, 0, 100 ) / 100;
+			}
+			break;
+		case "P":
+			if( value !== null ) {
+				length = getNoteLength( value );
+			}
+			break;
+		case "MS":
+		case "MN":
+		case "ML":
+			state.pace = PACES[ token.name ];
+			break;
+		case "MO":
+			if( value !== null ) {
+				state.octaveOffset = value;
+			}
+			break;
+		case "MA":
+		case "MD":
+		case "MH":
+		case "MR":
+			if( value !== null ) {
+				state[ ENVELOPE_COMMANDS[ token.name ] ] = clamp( value, 0, 100 );
+			}
+			break;
+		case "MP":
+			if( value !== null ) {
+				state.pan = clamp( value, -100, 100 ) / 100;
+			}
+			break;
+		case "W": {
+			const table = song.waveTables[ value ];
+			if( Array.isArray( table ) ) {
+				state.oType = "custom";
+				state.waveTables = table;
+			} else if( table ) {
+				state.oType = table;
+				state.waveTables = null;
+			}
+			break;
+		}
+		case "@":
+			song.warnings.instrument = true;
+			break;
+		case "?":
+			if( song.warnings.unknown === null ) {
+				song.warnings.unknown = token.text;
+			}
+			break;
+		default:
+			if( WAVEFORMS[ token.name ] ) {
+				state.oType = WAVEFORMS[ token.name ];
+				state.waveTables = null;
+			}
+
+			// MW, MB, and MF are parsed and have no effect
+			break;
+	}
+
+	if( length === 0 ) {
+		return time;
+	}
+	const slot = state.tempo * length * 4;
+	if( frequency > 0 ) {
+		song.events.push( createNoteEvent( state, frequency, time, slot ) );
+	}
+	return time + slot;
+}
+
+/**
+ * Remove a song's track IDs from the song table
+ *
+ * @param {Object} song - Song record
  * @returns {void}
  */
-function emitTrack( trackId ) {
-	const track = m_tracks[ trackId ];
-	if( !track ) {
-		return;
-	}
-	track.deferred = null;
-
-	// Generate all play data, sorted by time
-	m_playData = [];
-	playTrack( trackId );
-	m_playData.sort( ( a, b ) => a.time - b.time );
-
-	const base = g_context.getScheduleLead();
-	for( let i = 0; i < m_playData.length; i++ ) {
-		const playData = m_playData[ i ];
-		let attackTime = playData.attackTime;
-		let decayTime = playData.sustainTime;
-		let releaseTime = playData.decayTime;
-
-		// Full-note mode (MW) scales the envelope so the voice ends at the note interval
-		const total = attackTime + decayTime + releaseTime;
-		if( playData.stopTime < total ) {
-			const scale = playData.stopTime / total;
-			attackTime *= scale;
-			decayTime *= scale;
-			releaseTime *= scale;
+function removeSong( song ) {
+	for( const trackId of song.trackIds ) {
+		if( m_songs.get( trackId ) === song ) {
+			m_songs.delete( trackId );
 		}
-
-		playData.track.sounds.push( g_voices.createPlayVoice( {
-			"frequency": playData.frequency,
-			"frequencyEnd": null,
-			"oType": playData.oType,
-			"waveTables": playData.waveTables,
-			"peak": playData.volume,
-			"pan": 0,
-			"bus": "music",
-			"env": g_envelope.resolveEnvelope( {
-				"duration": attackTime + decayTime,
-				"attackTime": attackTime,
-				"decayTime": decayTime,
-				"sustainLevel": 0.8,
-				"releaseTime": releaseTime
-			} ),
-			"start": base + playData.time
-		} ) );
 	}
 }
 
 /**
- * Stop a track's voices, or cancel its deferred start
+ * Create the voice of a song's next event on the music bus
  *
- * @param {Object} track - Track object
+ * The event index advances first, so a failed start never repeats. startVoice applies the
+ * late-start rule, admission, and the caps.
+ *
+ * @param {Object} song - Song record
  * @returns {void}
  */
-function stopTrackSounds( track ) {
-	if( track.deferred ) {
-		g_context.cancelUnlock( track.deferred );
-		track.deferred = null;
+function playNextEvent( song ) {
+	const event = song.events[ song.index ];
+	song.index += 1;
+	const soundId = g_voices.nextSoundId();
+	const voice = g_voices.startVoice( {
+		"frequency": event.frequency,
+		"frequencyEnd": event.frequencyEnd,
+		"oType": event.oType,
+		"waveTables": event.waveTables,
+		"peak": event.peak,
+		"pan": event.pan,
+		"bus": "music",
+		"env": event.env,
+		"start": song.base + event.time,
+		"inserts": event.inserts,
+		"onDispose": () => {
+			song.voices.delete( soundId );
+		}
+	}, soundId );
+	if( voice ) {
+		song.voices.set( soundId, voice );
 	}
-	for( let j = 0; j < track.sounds.length; j++ ) {
-		g_voices.stopSoundById( track.sounds[ j ] );
+}
+
+/**
+ * Start a song's timeline at the scheduling lead and hand its events to the scheduler
+ *
+ * @param {Object} song - Song record
+ * @returns {void}
+ */
+function startSong( song ) {
+	song.deferred = null;
+	song.base = g_context.getScheduleLead();
+	g_scheduler.addStream( {
+		"id": song.id,
+		"kind": "play",
+		"peek": () => {
+			if( song.index < song.events.length ) {
+				return song.base + song.events[ song.index ].time;
+			}
+			return Infinity;
+		},
+		"take": () => {
+			playNextEvent( song );
+		},
+		"isDone": () => song.index >= song.events.length && song.voices.size === 0,
+		"onDone": () => {
+			removeSong( song );
+		}
+	} );
+}
+
+/**
+ * Stop a song: cancel its deferred start, drop its unscheduled events, and stop its voices
+ *
+ * Voices not yet audible are stopped without sound; audible voices fade from the scheduling
+ * lead, and earlier fades are kept.
+ *
+ * @param {Object} song - Song record
+ * @returns {void}
+ */
+function stopSong( song ) {
+	if( song.deferred ) {
+		g_context.cancelUnlock( song.deferred );
+		song.deferred = null;
 	}
+	g_scheduler.removeStream( song.id );
+	song.index = song.events.length;
+	for( const voice of Array.from( song.voices.values() ) ) {
+		g_voices.stopVoice( voice, null, "stop" );
+	}
+	removeSong( song );
+}
+
+
+/*************************************************************************************************
+ * Exported Functions
+ ************************************************************************************************/
+
+
+/**
+ * Split one track of a play string into tokens
+ *
+ * Commands are matched longest first. A note is a letter A-G with an optional accidental
+ * (#, +, or -), length, and one or two dots. Other commands take an optional signed integer.
+ * "M" followed by any other letter is one unknown command, and any other unrecognized
+ * character is skipped; both produce "?" tokens.
+ *
+ * @param {string} text - Uppercase track text without whitespace
+ * @returns {Array<Object>} Tokens { name, value } and notes { name: "NOTE", semitone, length,
+ * dots }
+ */
+export function tokenize( text ) {
+	const tokens = [];
+	let index = 0;
+	while( index < text.length ) {
+		const name = m_tokenNames.find( tokenName => text.startsWith( tokenName, index ) );
+		if( name !== undefined ) {
+			const read = readValue( text, index + name.length );
+			const token = { "name": WORDS[ name ] || name, "value": read.value };
+			const owner = m_extensionTokens.get( name );
+			if( owner ) {
+				token.handler = owner.handler;
+				token.extension = owner.extension;
+			}
+			tokens.push( token );
+			index = read.index;
+			continue;
+		}
+
+		NOTE_PATTERN.lastIndex = index;
+		const note = NOTE_PATTERN.exec( text );
+		if( note !== null ) {
+			let semitone = NOTE_SEMITONES[ note[ 1 ] ];
+			if( note[ 2 ] === "-" ) {
+				semitone -= 1;
+			} else if( note[ 2 ] !== "" ) {
+				semitone += 1;
+			}
+			let length = null;
+			if( note[ 3 ] !== "" ) {
+				length = parseInt( note[ 3 ], 10 );
+			}
+			tokens.push( {
+				"name": "NOTE",
+				"semitone": semitone,
+				"length": length,
+				"dots": note[ 4 ].length
+			} );
+			index = NOTE_PATTERN.lastIndex;
+			continue;
+		}
+
+		// Unknown input: "M" plus a letter is one command with its value, so a removed
+		// command such as MT50 is never read as T50
+		let end = index + 1;
+		if( text[ index ] === "M" && /[A-Z]/.test( text[ index + 1 ] ) ) {
+			end = readValue( text, index + 2 ).index;
+		}
+		tokens.push( { "name": "?", "value": null, "text": text.substring( index, end ) } );
+		index = end;
+	}
+	return tokens;
+}
+
+/**
+ * Parse a play string into immutable note events
+ *
+ * Each comma-separated track starts at the song time of the previous track's last command,
+ * with a copy of that track's settings at that point, so "CDE, F" plays F with E. Extension
+ * token handlers run in string order and resolveNote runs once per note.
+ *
+ * @param {string} playString - Music notation string
+ * @returns {Object} { events (sorted by time, frozen), trackCount, warnings: { unknown,
+ * instrument } }
+ */
+export function parsePlayString( playString ) {
+	const extracted = extractWaveTables( playString.split( /\s+/ ).join( "" ).toUpperCase() );
+	const trackTexts = extracted.playString.split( "," );
+	const song = {
+		"events": [],
+		"waveTables": extracted.waveTables,
+		"warnings": { "unknown": null, "instrument": false }
+	};
+
+	let state = createTrackState();
+	let time = 0;
+	for( let i = 0; i < trackTexts.length; i++ ) {
+		const tokens = tokenize( trackTexts[ i ] );
+		let nextTime = time;
+		for( const token of tokens ) {
+			nextTime = time;
+			time = applyToken( token, state, time, song );
+		}
+
+		// The next track starts at this track's last command, after its settings apply
+		if( i < trackTexts.length - 1 ) {
+			state = copyTrackState( state );
+			time = nextTime;
+		}
+	}
+
+	song.events.sort( ( a, b ) => a.time - b.time );
+	return {
+		"events": Object.freeze( song.events ),
+		"trackCount": trackTexts.length,
+		"warnings": song.warnings
+	};
+}
+
+/**
+ * Register a PLAY extension (extension service method)
+ *
+ * The registration is rejected as a whole when any check fails.
+ *
+ * @param {string} name - Extension name; its per-track state is track.ext[ name ]
+ * @param {Object} extension - Extension
+ * @param {Object<string, Function>} extension.tokens - Token prefix to handler( state, value );
+ * value is the integer after the prefix, or null
+ * @param {Function} extension.initState - Returns a new per-track state
+ * @param {Function} extension.copyState - Returns a copy of a state for a simultaneous track
+ * @param {Function} extension.resolveNote - ( state, note ) => voice-spec overrides or null
+ * @returns {void}
+ */
+export function registerPlayExtension( name, extension ) {
+	if( typeof name !== "string" || name === "" ) {
+		throwCode(
+			"registerPlayExtension: Parameter name must be a non-empty string.",
+			"INVALID_PLAY_EXTENSION"
+		);
+	}
+	if(
+		!extension || typeof extension.tokens !== "object" || extension.tokens === null ||
+		typeof extension.initState !== "function" || typeof extension.copyState !== "function" ||
+		typeof extension.resolveNote !== "function"
+	) {
+		throwCode(
+			"registerPlayExtension: Parameter extension must have tokens, initState, copyState, " +
+			"and resolveNote.",
+			"INVALID_PLAY_EXTENSION"
+		);
+	}
+	if( m_extensions.some( registered => registered.name === name ) ) {
+		throwCode(
+			`registerPlayExtension: A PLAY extension named "${name}" is already registered.`,
+			"DUPLICATE_PLAY_TOKEN"
+		);
+	}
+
+	const tokens = new Map();
+	for( const prefix of Object.keys( extension.tokens ) ) {
+		const upper = prefix.toUpperCase();
+		const handler = extension.tokens[ prefix ];
+		if(
+			upper === "" || INVALID_PREFIX_PATTERN.test( upper ) || typeof handler !== "function"
+		) {
+			throwCode(
+				`registerPlayExtension: Token "${prefix}" must be a prefix without digits, ` +
+				"spaces, or , [ ] # + - . and must map to a function.",
+				"INVALID_PLAY_EXTENSION"
+			);
+		}
+		if(
+			COMMANDS.includes( upper ) || WORDS[ upper ] || NOTE_SEMITONES[ upper ] !== undefined ||
+			m_extensionTokens.has( upper ) || tokens.has( upper )
+		) {
+			throwCode(
+				`registerPlayExtension: PLAY token "${upper}" is already registered.`,
+				"DUPLICATE_PLAY_TOKEN"
+			);
+		}
+		tokens.set( upper, { "handler": handler, "extension": name } );
+	}
+
+	m_extensions.push( {
+		"name": name,
+		"initState": extension.initState,
+		"copyState": extension.copyState,
+		"resolveNote": extension.resolveNote
+	} );
+	for( const [ prefix, owner ] of tokens ) {
+		m_extensionTokens.set( prefix, owner );
+	}
+	rebuildTokenNames();
 }
 
 
@@ -689,7 +762,6 @@ function stopTrackSounds( track ) {
  * @returns {void}
  */
 export function registerPlay( pluginApi ) {
-	m_utils = pluginApi.utils;
 
 
 	pluginApi.addCommand( "play", play, false, [ "playString" ] );
@@ -697,30 +769,26 @@ export function registerPlay( pluginApi ) {
 	/**
 	 * Play music using BASIC-style notation
 	 *
-	 * Format: "NOTE[length][.][#|+|-] ..."
-	 * - Notes: A-G (can include sharps # or +, flats -)
-	 * - Length: 1-64 (1=whole, 4=quarter, etc.)
-	 * - Dot modifiers: . (1.5x), .. (1.75x)
-	 * - Multiple tracks: separated by commas
+	 * Format: "NOTE[#|+|-][length][.|..] ..."
+	 * - Notes: A-G, with sharps (# or +) or flats (-)
+	 * - Length: 1-64 (1=whole, 4=quarter, etc.); dots add 1.5x or 1.75x
+	 * - Comma: starts a simultaneous track at the previous track's last command
 	 *
 	 * Commands:
-	 * - O[n]: Set octave (0-9)
+	 * - O[n]: Set octave (0-9); < and > step it
 	 * - L[n]: Set default note length
 	 * - T[n]: Set tempo (32-255 BPM)
 	 * - V[n]: Set volume (0-100)
-	 * - P[n]: Pause for note length
-	 * - N[n]: Play note by number (0-127)
-	 * - W[type]: Set waveform (SINE, SQUARE, SAWTOOTH, TRIANGLE)
-	 * - MS: Staccato (75% of note length)
-	 * - MN: Normal (87.5% of note length)
-	 * - ML: Legato (100% of note length)
-	 * - MW: Toggle full note mode
-	 * - MO[n]: Modify octave offset
-	 * - MA[n]: Modify attack rate (0-100)
-	 * - MT[n]: Modify sustain rate (0-100)
-	 * - MD[n]: Modify decay rate (0-100)
-	 * - <: Decrease octave
-	 * - >: Increase octave
+	 * - P[n]: Rest for a note length
+	 * - N[n]: Play note by number (1-119; 0 rests)
+	 * - WS/SINE, WQ/SQUARE, WW/SAWTOOTH, WT/TRIANGLE, WN/NOISE, WP/PINK: Waveform
+	 * - [[real],[imag]]: Custom wave table
+	 * - MS, MN, ML: Staccato (75%), normal (87.5%), legato (100%) of each note's slot sounds
+	 * - MA[n], MD[n], MR[n]: Attack, decay, release as % of the sounding length
+	 * - MH[n]: Sustain level as % of note volume
+	 * - MP[n]: Pan (-100 to 100)
+	 * - MO[n]: Octave offset (can be negative)
+	 * - @[n]: Select instrument (needs a PLAY extension)
 	 *
 	 * @param {Object} options - Command options
 	 * @param {string} options.playString - Music notation string
@@ -736,21 +804,41 @@ export function registerPlay( pluginApi ) {
 			throw error;
 		}
 
-		// Create track from play string
-		const trackId = createTrack( playString );
+		// Events are generated now, so later extension changes never affect this song
+		const parsed = parsePlayString( playString );
+		if( parsed.warnings.unknown !== null ) {
+			console.warn( `play: Unknown command "${parsed.warnings.unknown}" ignored.` );
+		}
+		if( parsed.warnings.instrument ) {
+			console.warn( "play: Instrument command @n needs a PLAY extension; ignored." );
+		}
+
+		const song = {
+			"id": m_lastTrackId,
+			"trackIds": [],
+			"events": parsed.events,
+			"index": 0,
+			"base": 0,
+			"voices": new Map(),
+			"deferred": null
+		};
+		for( let i = 0; i < parsed.trackCount; i++ ) {
+			song.trackIds.push( m_lastTrackId );
+			m_songs.set( m_lastTrackId, song );
+			m_lastTrackId += 1;
+		}
 
 		// A locked context defers the song until the unlocking gesture
 		if( g_context.isLocked() ) {
-			const track = m_tracks[ trackId ];
-			track.deferred = () => {
-				emitTrack( trackId );
+			song.deferred = () => {
+				startSong( song );
 			};
-			g_context.onUnlock( track.deferred );
-			return trackId;
+			g_context.onUnlock( song.deferred );
+			return song.id;
 		}
 
-		emitTrack( trackId );
-		return trackId;
+		startSong( song );
+		return song.id;
 	}
 
 
@@ -766,28 +854,18 @@ export function registerPlay( pluginApi ) {
 	function stopPlay( options ) {
 		const trackId = options.trackId;
 
-		// Stop all tracks
+		// Stop all songs
 		if( trackId === null ) {
-			for( let i = 0; i < m_allTracks.length; i++ ) {
-				const track = m_tracks[ m_allTracks[ i ] ];
-				if( track ) {
-					stopTrackSounds( track );
-					delete m_tracks[ m_allTracks[ i ] ];
-				}
+			for( const song of new Set( m_songs.values() ) ) {
+				stopSong( song );
 			}
-			m_allTracks.length = 0;
 			return;
 		}
 
-		// Stop a specific track and its simultaneous tracks
-		if( m_tracks[ trackId ] ) {
-			const trackIds = m_tracks[ trackId ].trackIds;
-			for( let i = 0; i < trackIds.length; i++ ) {
-				if( m_tracks[ trackIds[ i ] ] ) {
-					stopTrackSounds( m_tracks[ trackIds[ i ] ] );
-				}
-			}
-			removeTrack( trackId );
+		// Stop the song containing the track, including its simultaneous tracks
+		const song = m_songs.get( trackId );
+		if( song ) {
+			stopSong( song );
 		}
 	}
 }

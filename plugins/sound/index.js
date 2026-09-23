@@ -54,7 +54,8 @@ export default function playSoundPlugin( pluginApi ) {
 		"stopVoice": ( soundId, when ) => {
 			g_voices.stopSoundById( soundId, when ?? null );
 		},
-		"scheduleEnvelope": g_envelope.scheduleEnvelope
+		"scheduleEnvelope": g_envelope.scheduleEnvelope,
+		"registerPlayExtension": g_play.registerPlayExtension
 	} );
 }
 
