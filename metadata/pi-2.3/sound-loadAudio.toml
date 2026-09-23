@@ -1,0 +1,44 @@
+title = "loadAudio"
+category = "sound"
+isScreen = false
+plugin = "sound"
+summary = "Loads an audio file for playback with playAudio."
+description = """
+Loads an audio file and returns an audio ID for playAudio. By default the file is downloaded and decoded into memory, so any number of instances can play it at once with sample-accurate timing. Set stream to true for long files such as music: the file then plays through a media element instead of being decoded, which saves memory but allows only one instance at a time, and its timing is approximate. Decoded audio uses about 21 MB per stereo minute at 44.1 kHz, so streaming is recommended for music longer than about 30 seconds.
+
+The file loads asynchronously; use $.ready() to wait for it. Network failures are retried up to three times. A file that fails to load logs an error, and playAudio then throws AUDIO_NOT_LOADED.
+
+Audio requires a page served over HTTP(S). file: URLs throw UNSUPPORTED_PROTOCOL, and cross-origin files need CORS headers.
+"""
+example = """
+$.screen( "300x200" );
+$.loadAudio( "media/bomb.wav", "bomb" );
+$.ready( function () {
+	$.print( "Press any key to play bomb sound." );
+	$.onkey( "any", "down", () => {
+		$.print( "BOOM ", true );
+		$.playAudio( "bomb" );
+	}, false, true );
+} );
+"""
+
+[[parameters]]
+name = "src"
+type = "string"
+description = "Audio file URL (e.g., 'sound.mp3', 'audio/beep.wav')."
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "A unique name to use as the audio ID. If omitted, an ID is generated."
+optional = true
+
+[[parameters]]
+name = "stream"
+type = "boolean"
+description = "True to stream the file through a media element instead of decoding it into memory (default: false)."
+optional = true
+
+[[returns]]
+type = "string"
+description = "Audio ID for use with playAudio, stopAudio, pauseAudio, resumeAudio, and removeAudio."

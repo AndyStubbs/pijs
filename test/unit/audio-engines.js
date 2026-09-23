@@ -36,14 +36,35 @@ function parseEngines( value ) {
 const AUDIO_ENGINES = parseEngines( process.env.PI_AUDIO_ENGINES );
 
 /**
+ * Launch options that let a realtime AudioContext and media elements play without a user
+ * gesture, for the realtime stream-mode test.
+ */
+const REALTIME_OPTIONS = {
+	"chromium": { "args": [ "--autoplay-policy=no-user-gesture-required" ] },
+	"firefox": {
+		"firefoxUserPrefs": {
+			"media.autoplay.default": 0,
+			"media.autoplay.block-webaudio": false,
+			"media.autoplay.blocking_policy": 0
+		}
+	},
+	"webkit": {}
+};
+
+/**
  * Launches a headless browser for an engine, explaining how to install a missing one.
  *
  * @param {string} name - "chromium", "firefox", or "webkit"
+ * @param {Object} [options] - { realtimeAudio: true } allows playback without a gesture
  * @returns {Promise<Object>} Playwright browser
  */
-async function launchEngine( name ) {
+async function launchEngine( name, options = {} ) {
+	let launchOptions = { "headless": true };
+	if( options.realtimeAudio ) {
+		launchOptions = { ...launchOptions, ...REALTIME_OPTIONS[ name ] };
+	}
 	try {
-		return await g_playwright[ name ].launch( { "headless": true } );
+		return await g_playwright[ name ].launch( launchOptions );
 	} catch( error ) {
 		if( /Executable doesn't exist|install/i.test( error.message ) ) {
 			throw new Error( `${name} is not installed. ${INSTALL_HINT}`, { "cause": error } );

@@ -285,6 +285,11 @@ declare namespace Pi {
 		actionKeys?: Array<string>;
 
 		/**
+		 * Changes the volume, playback rate, or pan of an audio instance.
+		 */
+		audio?: number;
+
+		/**
 		 * Sets the canvas background color.
 		 */
 		bgColor?: any;
@@ -2081,18 +2086,20 @@ screen is removed before deferred processing completes, or with the original rea
 		inkey( key?: string ): object | any[] | null;
 
 		/**
-		 * Creates an audio pool for playing multiple instances of the same sound file.
+		 * Loads an audio file for playback with playAudio.
 		 *
-		 * Creates a pool of audio instances from a single audio file. This allows playing the same sound multiple times simultaneously without waiting for previous instances to finish. The pool uses round-robin selection to cycle through available instances.
+		 * Loads an audio file and returns an audio ID for playAudio. By default the file is downloaded and decoded into memory, so any number of instances can play it at once with sample-accurate timing. Set stream to true for long files such as music: the file then plays through a media element instead of being decoded, which saves memory but allows only one instance at a time, and its timing is approximate. Decoded audio uses about 21 MB per stereo minute at 44.1 kHz, so streaming is recommended for music longer than about 30 seconds.
 		 *
-		 * The audio file will be loaded asynchronously. Use $.ready() to wait for all audio to load.
+		 * The file loads asynchronously; use $.ready() to wait for it. Network failures are retried up to three times. A file that fails to load logs an error, and playAudio then throws AUDIO_NOT_LOADED.
+		 *
+		 * Audio requires a page served over HTTP(S). file: URLs throw UNSUPPORTED_PROTOCOL, and cross-origin files need CORS headers.
 		 * @param src Audio file URL (e.g., 'sound.mp3', 'audio/beep.wav').
-		 * @param name A name that can be used to identify the audio for later use.
-		 * @param poolSize Number of audio instances in the pool (default: 1).
-		 * @returns Audio ID for use with playAudio and stopAudio.
+		 * @param name A unique name to use as the audio ID. If omitted, an ID is generated.
+		 * @param stream True to stream the file through a media element instead of decoding it into memory (default: false).
+		 * @returns Audio ID for use with playAudio, stopAudio, pauseAudio, resumeAudio, and removeAudio.
 		 */
-		loadAudio( params: { "src": string; "name": string; "poolSize"?: number } ): string;
-		loadAudio( src: string, name: string, poolSize?: number ): string;
+		loadAudio( params: { "src": string; "name"?: string; "stream"?: boolean } ): string;
+		loadAudio( src: string, name?: string, stream?: boolean ): string;
 
 		/**
 		 * Loads a bitmap font from an image source.
@@ -2198,6 +2205,16 @@ screen is removed before deferred processing completes, or with the original rea
 		onkey( key: string | any[], mode: string, fn: ( keyData: object ) => void, once?: boolean, allowRepeat?: boolean ): void;
 
 		/**
+		 * Pauses an audio instance, every instance of an audio ID, or all audio.
+		 *
+		 * Pauses audio and saves its position, so resumeAudio continues from the same place with the rest of its duration. Pass an instance ID, an audio ID to pause every instance of that file, or nothing to pause all audio. The instance fades out over 10 ms, and a paused instance holds no voice. Pausing an instance that has not started yet cancels its start; resuming it then plays from its startTime. Pausing a paused instance does nothing. Finished instance IDs are ignored; unknown IDs throw AUDIO_NOT_FOUND.
+		 * @param id Instance ID, or audio ID to pause all its instances. If omitted, pauses all audio.
+		 * @returns This function does not return a value.
+		 */
+		pauseAudio( params: { "id"?: number | string } ): void;
+		pauseAudio( id?: number | string ): void;
+
+		/**
 		 * Plays music using BASIC-style notation (inspired by QBasic PLAY command).
 		 *
 		 * Plays music from a notation string. Supports notes, tempo, volume, waveforms, and simultaneous notes using commas.
@@ -2258,19 +2275,27 @@ screen is removed before deferred processing completes, or with the original rea
 		play( playString: string ): number;
 
 		/**
-		 * Plays audio from an audio pool.
+		 * Plays loaded audio as a new instance and returns its instance ID.
 		 *
-		 * Plays an audio instance from the specified audio pool. The pool uses round-robin selection, so multiple calls will cycle through available instances, allowing overlapping playback.
+		 * Starts a new instance of audio loaded with loadAudio and returns its instance ID. The instance can then be stopped, paused, resumed, or changed with setAudio. Decoded audio can play many instances at once. Streamed audio has one instance at a time: a new playAudio fades out the current instance and replaces it.
 		 *
-		 * Volume is multiplied by the global volume set with setVolume.
-		 * @param audioId Audio pool ID returned from loadAudio.
+		 * startTime and duration are measured in the file's own time. duration counts every loop pass, so a looping instance with duration 5 stops after 5 seconds of the file. A duration of 0 plays to the end of the file, or loops forever. playbackRate changes speed and pitch together, so at rate 0.5 a duration of 5 lasts 10 seconds. The rate must be between 0.0625 and 16 for decoded audio, and between 0.25 and 4 for streamed audio, or the call throws INVALID_PLAYBACK_RATE. pan places the instance from -1 (left) to 1 (right). delay starts the instance later, measured on the audio clock.
+		 *
+		 * Instances fade in and out over a few milliseconds, so they start and stop without clicks. They play on the audio bus through the master volume and the output limiter, and share the 64-voice limit with sound() and play(). Looping instances are never stopped to make room for other sounds; when every voice is held by a loop, new sounds are not played. A request that is not played still returns an instance ID, and operations on it do nothing.
+		 *
+		 * Until the page receives its first user gesture, the browser keeps audio locked. A one-shot requested while audio is locked is not played; a looping instance starts when audio unlocks.
+		 * @param audioId Audio ID returned from loadAudio.
 		 * @param volume Volume (0-1, default: 1).
-		 * @param startTime Start time in seconds (default: 0).
-		 * @param duration Play duration in seconds (default: 0 = play full audio).
-		 * @returns This function does not return a value.
+		 * @param startTime Offset into the file in seconds (default: 0).
+		 * @param duration Seconds of the file to play, including every loop pass (default: 0 = to the end, or forever when looping).
+		 * @param loop Loop the whole file (default: false).
+		 * @param playbackRate Speed and pitch: 0.0625-16 for decoded audio, 0.25-4 for streamed audio (default: 1).
+		 * @param pan Stereo position from -1 (left) to 1 (right) (default: 0).
+		 * @param delay Seconds before playback starts (default: 0).
+		 * @returns Instance ID for use with stopAudio, pauseAudio, resumeAudio, and setAudio.
 		 */
-		playAudio( params: { "audioId": string; "volume"?: number; "startTime"?: number; "duration"?: number } ): void;
-		playAudio( audioId: string, volume?: number, startTime?: number, duration?: number ): void;
+		playAudio( params: { "audioId": string; "volume"?: number; "startTime"?: number; "duration"?: number; "loop"?: boolean; "playbackRate"?: number; "pan"?: number; "delay"?: number } ): number;
+		playAudio( audioId: string, volume?: number, startTime?: number, duration?: number, loop?: boolean, playbackRate?: number, pan?: number, delay?: number ): number;
 
 		/**
 		 * Waits for document readiness and all pending resources.
@@ -2345,9 +2370,9 @@ original thrown value if the callback throws synchronously. Callback return valu
 		removeAllScreens(): void;
 
 		/**
-		 * Removes an audio pool and frees its resources.
+		 * Removes loaded audio and frees its resources.
 		 *
-		 * Removes an audio pool, stopping all playing instances and freeing memory. After deletion, the audio ID is no longer valid.
+		 * Removes audio loaded with loadAudio. A load still in progress is cancelled and no longer holds $.ready(). Playing instances fade out, paused and delayed instances end, and the memory is released. The audio ID is freed at once, so its name can be reused by a new loadAudio; results from the removed load can never affect the new one.
 		 * @param audioId Audio ID returned from loadAudio.
 		 * @returns This function does not return a value.
 		 */
@@ -2387,6 +2412,16 @@ original thrown value if the callback throws synchronously. Callback return valu
 		removeShader( shaderHandle: number ): void;
 
 		/**
+		 * Resumes a paused audio instance, every instance of an audio ID, or all audio.
+		 *
+		 * Resumes paused audio from its saved position with the rest of its duration, fading in over a few milliseconds. Pass an instance ID, an audio ID to resume every paused instance of that file, or nothing to resume all paused audio. Volume, rate, and pan changes made with setAudio while paused apply on resume. A resumed instance needs a free voice again; if every voice is held by a loop, it stays paused. Resuming a playing instance does nothing. Finished instance IDs are ignored; unknown IDs throw AUDIO_NOT_FOUND.
+		 * @param id Instance ID, or audio ID to resume all its instances. If omitted, resumes all paused audio.
+		 * @returns This function does not return a value.
+		 */
+		resumeAudio( params: { "id"?: number | string } ): void;
+		resumeAudio( id?: number | string ): void;
+
+		/**
 		 * Creates a new screen (canvas) with specified dimensions and aspect ratio.
 		 *
 		 * Creates a WebGL 2 screen, makes it the active drawing target, and returns its Screen API object. Call screen before any graphics commands. Drawing writes into a logical framebuffer at the screen's resolution; Pi.js then presents that framebuffer to the canvas.
@@ -2422,6 +2457,19 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 */
 		setActionKeys( params: { "keys": Array<string> } ): void;
 		setActionKeys( keys: Array<string> ): void;
+
+		/**
+		 * Changes the volume, playback rate, or pan of an audio instance.
+		 *
+		 * Changes a playing, delayed, or paused instance. Omitted values are unchanged. Volume and pan ramp over 10 ms. playbackRate changes speed and pitch together; it must stay within the range of the instance's loading mode (0.0625-16 decoded, 0.25-4 streamed), or the call throws INVALID_PLAYBACK_RATE. The duration passed to playAudio is file time, so a rate change also changes how long the rest of the instance lasts. Changes to a delayed instance apply from its start, and changes to a paused instance apply when it resumes. Finished instance IDs are ignored; an instance ID that was never returned throws AUDIO_NOT_FOUND.
+		 * @param instanceId Instance ID returned from playAudio.
+		 * @param volume Volume (0-1).
+		 * @param playbackRate Speed and pitch within the instance's mode range.
+		 * @param pan Stereo position from -1 (left) to 1 (right).
+		 * @returns This function does not return a value.
+		 */
+		setAudio( params: { "instanceId": number; "volume"?: number; "playbackRate"?: number; "pan"?: number } ): void;
+		setAudio( instanceId: number, volume?: number, playbackRate?: number, pan?: number ): void;
 
 		/**
 		 * Sets the default foreground color used by new screens.
@@ -2566,14 +2614,14 @@ original thrown value if the callback throws synchronously. Callback return valu
 		startKeyboard(): void;
 
 		/**
-		 * Stops audio from an audio pool or all audio pools.
+		 * Stops an audio instance, every instance of an audio ID, or all audio.
 		 *
-		 * Stops all playing instances in the specified audio pool, or stops all audio pools if audioId is null.
-		 * @param audioId Audio pool ID. If null, stops all audio pools.
+		 * Stops audio with a short fade. Pass an instance ID from playAudio to stop one instance, an audio ID from loadAudio to stop every instance of that file, or nothing to stop all audio. A playing instance fades out over 10 ms, so it is silent about 15 ms after the call; paused and delayed instances end at once. Instance IDs that have already finished are ignored. An instance ID that was never returned, or an unknown audio ID, throws AUDIO_NOT_FOUND.
+		 * @param id Instance ID, or audio ID to stop all its instances. If omitted, stops all audio.
 		 * @returns This function does not return a value.
 		 */
-		stopAudio( params: { "audioId"?: string } ): void;
-		stopAudio( audioId?: string ): void;
+		stopAudio( params: { "id"?: number | string } ): void;
+		stopAudio( id?: number | string ): void;
 
 		/**
 		 * Stops the gamepad input loop.

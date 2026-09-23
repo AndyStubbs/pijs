@@ -294,6 +294,44 @@ Exit criteria:
 - Listening and performance checks validate the initial 64-slot voice budget with mixed
   synth and sample workloads.
 
+Phase 3 results that later phases depend on:
+
+- **D5** is resolved as `"ambient"`, not the recommended `"playback"`: sound follows the iOS
+  mute switch and mixes with other apps' audio (plan 12). Phase 6 documents it.
+- **Shared voice records.** `voices.js` now exports `createVoiceRecord()`, `admitVoice()`,
+  `registerVoice()`, and `releaseVoice()`. Sample instances build their own nodes and pass a
+  `fade( fadeStart, deadline )` hook, which `stopVoice()` calls instead of the synth envelope
+  fade, plus `onDispose`. `admitVoice()` runs live-voice cleanup, occupancy admission, and
+  victim commits for any voice; `inherit: true` skips slot planning for stream replacement.
+  Task 4.2 and the Phase 5 `createVoice` service method can admit through the same function.
+- **Command scope.** `stopSound()` stops only synth voices and `stopAudio()` only sample
+  instances. Pending sample requests use scheduler records of kind `"audio"`.
+- **Sample graph.** Every instance is source → fade gain → volume gain → panner → audio bus.
+  Fades, including stops and steals, act only on the fade gain; `setAudio()` ramps only the
+  volume gain and the panner. The pan level factor applies to mono buffers only (plan 5).
+- **Position model.** `resolveBudget`, `consumedAt`, `rateAt`, `timeForContent`,
+  `addRateSegment`, `wrapPosition`, and `isPlaybackRateValid` are pure exports of
+  `samples.js` with Node tests. Finite budgets pass the native duration and also schedule a
+  fade and `stop()` at the predicted end, which move on rate changes.
+- **Stream mode** keeps one element and one `MediaElementAudioSourceNode` per audio ID. A
+  replacement fades the outgoing instance, then seeks and plays from a timer at the fade end.
+- **`file:` detection** runs in both modes (`UNSUPPORTED_PROTOCOL`), not only stream mode.
+- **Tests:** `audio-samples-browser.test.js` (offline, chirp fixtures from
+  `audio-sample-fixtures.js`), `audio-stream-browser.test.js` (realtime, Chromium and Firefox),
+  `sound-samples.test.js`, and a Node sandbox for `samples.js` (`audio-sample-sandbox.js`)
+  shared by the lifecycle and ownership tests. `test/scripts/test-server.js` now serves byte
+  ranges, which media elements need to seek. `launchEngine()` accepts
+  `{ "realtimeAudio": true }`.
+- **Manual pages** use the new `loadAudio()` signature. `audiopool_01.html` keeps its name
+  because the frozen performance campaign manifests list it.
+- **Size:** `sound` is 14,300 bytes gzipped (+3,393 over Phase 2), within the 14 KB plugin
+  target by 36 bytes. `pi.min.js` growth over 2.2 is 8,379 bytes, 187 over the 8 KB target
+  (variance in `docs/evidence/sound-2.3/README.md`). Phase 4 has no size headroom left.
+- **Open manual checks:** the three-engine listening pass in `sound_samples_01.html`; a stream
+  instance deferred while locked starting on the unlocking gesture in desktop Safari or on iOS;
+  iOS mute-switch behavior under the `"ambient"` session; validating the 64-slot budget by ear
+  with mixed synth and sample load; plus the Phase 1 and 2 checks still open.
+
 ## Phase 4: Music Engine
 
 Goal: `play()` uses the new voice path, runs on a lookahead scheduler, and exposes its

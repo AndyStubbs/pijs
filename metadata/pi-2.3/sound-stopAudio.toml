@@ -1,0 +1,31 @@
+title = "stopAudio"
+category = "sound"
+isScreen = false
+plugin = "sound"
+summary = "Stops an audio instance, every instance of an audio ID, or all audio."
+description = """
+Stops audio with a short fade. Pass an instance ID from playAudio to stop one instance, an audio ID from loadAudio to stop every instance of that file, or nothing to stop all audio. A playing instance fades out over 10 ms, so it is silent about 15 ms after the call; paused and delayed instances end at once. Instance IDs that have already finished are ignored. An instance ID that was never returned, or an unknown audio ID, throws AUDIO_NOT_FOUND.
+"""
+example = """
+$.screen( "300x200" );
+const audio = $.loadAudio( "media/sound.wav" );
+$.ready( function () {
+	$.print( "Press any key to hear sound" );
+	$.onkey( "any", "down", () => {
+		const instance = $.playAudio( audio );
+		setTimeout( function () {
+			$.stopAudio( instance );
+		}, 500 );
+	} );
+} );
+"""
+
+[[parameters]]
+name = "id"
+type = "number | string"
+description = "Instance ID, or audio ID to stop all its instances. If omitted, stops all audio."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

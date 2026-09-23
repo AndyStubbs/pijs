@@ -120,6 +120,25 @@ const REQUIRED_DECLARATIONS = [
 	{
 		"name": "sound limiter switch",
 		"text": "setSoundLimiter( enabled: boolean ): void;"
+	},
+	{
+		"name": "decoded or streamed audio loading",
+		"text": "loadAudio( src: string, name?: string, stream?: boolean ): string;"
+	},
+	{
+		"name": "audio instance playback",
+		"text": "playAudio( audioId: string, volume?: number, startTime?: number, " +
+			"duration?: number, loop?: boolean, playbackRate?: number, pan?: number, " +
+			"delay?: number ): number;"
+	},
+	{
+		"name": "audio instance controls",
+		"text": "setAudio( instanceId: number, volume?: number, playbackRate?: number, " +
+			"pan?: number ): void;"
+	},
+	{
+		"name": "audio pause by instance or audio ID",
+		"text": "pauseAudio( id?: number | string ): void;"
 	}
 ];
 

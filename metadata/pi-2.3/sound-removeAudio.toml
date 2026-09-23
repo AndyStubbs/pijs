@@ -1,0 +1,32 @@
+title = "removeAudio"
+category = "sound"
+isScreen = false
+plugin = "sound"
+summary = "Removes loaded audio and frees its resources."
+description = """
+Removes audio loaded with loadAudio. A load still in progress is cancelled and no longer holds $.ready(). Playing instances fade out, paused and delayed instances end, and the memory is released. The audio ID is freed at once, so its name can be reused by a new loadAudio; results from the removed load can never affect the new one.
+"""
+example = """
+$.screen( "300x200" );
+let bombAudio = $.loadAudio( "media/bomb.wav" );
+$.ready( function () {
+	$.print( "Press any key to try to play bomb sound." );
+	$.removeAudio( bombAudio );
+	$.onkey( "any", "down", () => {
+		try {
+			$.playAudio( bombAudio );
+		} catch (e) {
+			$.print( "SILENCE ", true );
+		}
+	}, false, true );
+} );
+"""
+
+[[parameters]]
+name = "audioId"
+type = "string"
+description = "Audio ID returned from loadAudio."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

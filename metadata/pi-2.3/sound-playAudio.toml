@@ -1,0 +1,79 @@
+title = "playAudio"
+category = "sound"
+isScreen = false
+plugin = "sound"
+summary = "Plays loaded audio as a new instance and returns its instance ID."
+description = """
+Starts a new instance of audio loaded with loadAudio and returns its instance ID. The instance can then be stopped, paused, resumed, or changed with setAudio. Decoded audio can play many instances at once. Streamed audio has one instance at a time: a new playAudio fades out the current instance and replaces it.
+
+startTime and duration are measured in the file's own time. duration counts every loop pass, so a looping instance with duration 5 stops after 5 seconds of the file. A duration of 0 plays to the end of the file, or loops forever. playbackRate changes speed and pitch together, so at rate 0.5 a duration of 5 lasts 10 seconds. The rate must be between 0.0625 and 16 for decoded audio, and between 0.25 and 4 for streamed audio, or the call throws INVALID_PLAYBACK_RATE. pan places the instance from -1 (left) to 1 (right). delay starts the instance later, measured on the audio clock.
+
+Instances fade in and out over a few milliseconds, so they start and stop without clicks. They play on the audio bus through the master volume and the output limiter, and share the 64-voice limit with sound() and play(). Looping instances are never stopped to make room for other sounds; when every voice is held by a loop, new sounds are not played. A request that is not played still returns an instance ID, and operations on it do nothing.
+
+Until the page receives its first user gesture, the browser keeps audio locked. A one-shot requested while audio is locked is not played; a looping instance starts when audio unlocks.
+"""
+example = """
+$.screen( "300x200" );
+const bomb = $.loadAudio( "media/bomb.wav" );
+$.ready( function () {
+	$.print( "Press any key to play bomb sound." );
+	$.onkey( "any", "down", () => {
+		$.print( "BOOM ", true );
+		$.playAudio( {
+			"audioId": bomb, "playbackRate": 0.75 + Math.random() * 0.5,
+			"pan": Math.random() * 2 - 1
+		} );
+	}, false, true );
+} );
+"""
+
+[[parameters]]
+name = "audioId"
+type = "string"
+description = "Audio ID returned from loadAudio."
+
+[[parameters]]
+name = "volume"
+type = "number"
+description = "Volume (0-1, default: 1)."
+optional = true
+
+[[parameters]]
+name = "startTime"
+type = "number"
+description = "Offset into the file in seconds (default: 0)."
+optional = true
+
+[[parameters]]
+name = "duration"
+type = "number"
+description = "Seconds of the file to play, including every loop pass (default: 0 = to the end, or forever when looping)."
+optional = true
+
+[[parameters]]
+name = "loop"
+type = "boolean"
+description = "Loop the whole file (default: false)."
+optional = true
+
+[[parameters]]
+name = "playbackRate"
+type = "number"
+description = "Speed and pitch: 0.0625-16 for decoded audio, 0.25-4 for streamed audio (default: 1)."
+optional = true
+
+[[parameters]]
+name = "pan"
+type = "number"
+description = "Stereo position from -1 (left) to 1 (right) (default: 0)."
+optional = true
+
+[[parameters]]
+name = "delay"
+type = "number"
+description = "Seconds before playback starts (default: 0)."
+optional = true
+
+[[returns]]
+type = "number"
+description = "Instance ID for use with stopAudio, pauseAudio, resumeAudio, and setAudio."

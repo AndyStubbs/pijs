@@ -2,7 +2,8 @@
  * Pi.js - Sound Voices Module (Plugin)
  *
  * Synthesized voices: creation, occupancy-interval admission, voice stealing, the live-voice
- * cap, the single de-clicked stop path, and the sound() and stopSound() commands.
+ * cap, the single de-clicked stop path, and the sound() and stopSound() commands. Sample
+ * instances from samples.js join the same voice table, caps, and stop path.
  *
  * @module plugins/sound/voices
  */
@@ -98,6 +99,13 @@ function disposeVoice( voice ) {
 		}
 	}
 	m_voices.delete( voice.id );
+	if( voice.onDispose ) {
+		try {
+			voice.onDispose( voice );
+		} catch( error ) {
+			console.error( "sound: Voice cleanup failed:", error );
+		}
+	}
 }
 
 /**
@@ -117,20 +125,6 @@ function hardStop( voice ) {
 		// Already stopped
 	}
 	disposeVoice( voice );
-}
-
-/**
- * Gain that keeps a panned voice's louder channel at its peak
- *
- * A mono input to a StereoPannerNode gets cos θ and sin θ per channel, so the scaled
- * channels keep the equal-power ratio while center matches an unpanned voice.
- *
- * @param {number} pan - Stereo position from -1 to 1
- * @returns {number} Gain factor, from 1 at the edges to √2 at center
- */
-function panGain( pan ) {
-	const angle = ( pan + 1 ) * Math.PI / 4;
-	return 1 / Math.max( Math.cos( angle ), Math.sin( angle ) );
 }
 
 /**
@@ -190,25 +184,15 @@ function buildVoice( spec, soundId ) {
 	if( spec.pan ) {
 		peak *= panGain( spec.pan );
 	}
-	const voice = {
+	const voice = createVoiceRecord( {
 		"id": soundId,
 		"exempt": spec.exempt === true,
-		"order": m_nextOrder,
 		"start": spec.start,
 		"begin": begin,
 		"end": end,
-		"slotEnd": end,
-		"stopKind": null,
-		"fadeStart": null,
 		"env": env,
-		"peak": peak,
-		"protected": false,
-		"nodes": [],
-		"source": null,
-		"gain": null,
-		"disposed": false
-	};
-	m_nextOrder += 1;
+		"peak": peak
+	} );
 	if( voice.exempt ) {
 		voice.slotEnd = null;
 	}
@@ -287,63 +271,20 @@ function buildVoice( spec, soundId ) {
 }
 
 /**
- * Admit a voice under the slot and live-voice caps, then create it
- *
- * Victims and cleanup are chosen first and committed only when the voice is admitted, so a
- * rejection touches no existing voice.
+ * Admit a synth voice under the slot and live-voice caps, then create it
  *
  * @param {Object} spec - Voice spec with start, offset, and env
  * @param {string} soundId - Sound ID
  * @returns {Object|null} Voice record, or null when rejected
  */
 function admitAndCreate( spec, soundId ) {
-	const context = g_context.getAudioContext();
-	const now = context.currentTime;
-	const lead = g_context.getScheduleLead();
-	const live = [];
-	for( const voice of m_voices.values() ) {
-		if( !voice.exempt ) {
-			live.push( voice );
-		}
-	}
-
-	// Node cap: pick the voice to free before planning admission
-	let cleanup = null;
-	if( live.length >= MAX_LIVE_VOICES ) {
-		cleanup = chooseCleanup( live, now, lead );
-		if( cleanup === null ) {
-			warnCapacity();
-			return null;
-		}
-	}
-
-	const begin = spec.start + ( spec.offset || 0 );
-	const end = spec.start + g_envelope.getEnvelopeLength( spec.env );
-	const holders = [];
-	for( const voice of live ) {
-		if( voice !== cleanup && voice.slotEnd !== null && voice.slotEnd > begin ) {
-			holders.push( {
-				"voice": voice,
-				"start": voice.begin,
-				"end": voice.slotEnd,
-				"order": voice.order,
-				"protected": voice.protected
-			} );
-		}
-	}
-	const plan = planAdmission( holders, begin, end, MAX_VOICES );
-	if( !plan.admit ) {
-		warnCapacity();
-		return null;
-	}
-
-	if( cleanup !== null ) {
-		hardStop( cleanup );
-	}
-	for( const victim of plan.victims ) {
-		stopVoice( victim.holder.voice, victim.conflict, "steal" );
-	}
-	return buildVoice( spec, soundId );
+	return admitVoice( {
+		"begin": spec.start + ( spec.offset || 0 ),
+		"end": spec.start + g_envelope.getEnvelopeLength( spec.env ),
+		"protected": false,
+		"inherit": false,
+		"build": () => buildVoice( spec, soundId )
+	} );
 }
 
 /**
@@ -414,6 +355,142 @@ function throwRange( message, code ) {
  * Exported Functions
  ************************************************************************************************/
 
+
+/**
+ * Gain that keeps a panned voice's louder channel at its peak
+ *
+ * A mono input to a StereoPannerNode gets cos θ and sin θ per channel, so the scaled
+ * channels keep the equal-power ratio while center matches an unpanned voice.
+ *
+ * @param {number} pan - Stereo position from -1 to 1
+ * @returns {number} Gain factor, from 1 at the edges to √2 at center
+ */
+export function panGain( pan ) {
+	const angle = ( pan + 1 ) * Math.PI / 4;
+	return 1 / Math.max( Math.cos( angle ), Math.sin( angle ) );
+}
+
+/**
+ * Create a voice record with default lifecycle fields
+ *
+ * Sample instances build their own nodes and pass `kind`, their stop hooks, and `onDispose`.
+ * `fade( fadeStart, deadline )` replaces the synth envelope fade in stopVoice.
+ *
+ * @param {Object} fields - Record fields; id, start, begin, and end are required
+ * @returns {Object} Voice record
+ */
+export function createVoiceRecord( fields ) {
+	const voice = Object.assign( {
+		"kind": "synth",
+		"exempt": false,
+		"order": m_nextOrder,
+		"stopKind": null,
+		"fadeStart": null,
+		"protected": false,
+		"nodes": [],
+		"source": null,
+		"gain": null,
+		"fade": null,
+		"onDispose": null,
+		"disposed": false
+	}, fields );
+	m_nextOrder += 1;
+	if( voice.slotEnd === undefined ) {
+		voice.slotEnd = voice.end;
+	}
+	return voice;
+}
+
+/**
+ * Add an externally built voice to the voice table
+ *
+ * @param {Object} voice - Voice record from createVoiceRecord
+ * @returns {void}
+ */
+export function registerVoice( voice ) {
+	m_voices.set( voice.id, voice );
+}
+
+/**
+ * Disconnect a voice's nodes and remove it from the voice table; runs once per voice
+ *
+ * @param {Object} voice - Voice record
+ * @returns {void}
+ */
+export function releaseVoice( voice ) {
+	disposeVoice( voice );
+}
+
+/**
+ * Admit a voice under the slot and live-voice caps, then build it
+ *
+ * Victims and cleanup are chosen first and committed only when the voice is admitted, so a
+ * rejection touches no existing voice. A voice that inherits a slot (stream replacement)
+ * skips slot planning but still frees room under the live-voice cap.
+ *
+ * @param {Object} request - Admission request
+ * @param {number} request.begin - Audible start in context time
+ * @param {number} request.end - Occupancy end; Infinity for sample instances
+ * @param {boolean} request.protected - Protected from automatic stealing (loops)
+ * @param {boolean} request.inherit - Inherits the slot of a replaced instance
+ * @param {Function} request.build - Creates the nodes and returns the voice record
+ * @returns {Object|null} Voice record, or null when rejected
+ */
+export function admitVoice( request ) {
+	const context = g_context.getAudioContext();
+	const now = context.currentTime;
+	const lead = g_context.getScheduleLead();
+	const live = [];
+	for( const voice of m_voices.values() ) {
+		if( !voice.exempt ) {
+			live.push( voice );
+		}
+	}
+
+	// Node cap: pick the voice to free before planning admission
+	let cleanup = null;
+	if( live.length >= MAX_LIVE_VOICES ) {
+		cleanup = chooseCleanup( live, now, lead );
+		if( cleanup === null ) {
+			warnCapacity();
+			return null;
+		}
+	}
+
+	let victims = [];
+	if( !request.inherit ) {
+		const holders = [];
+		for( const voice of live ) {
+			if(
+				voice !== cleanup && voice.slotEnd !== null && voice.slotEnd > request.begin
+			) {
+				holders.push( {
+					"voice": voice,
+					"start": voice.begin,
+					"end": voice.slotEnd,
+					"order": voice.order,
+					"protected": voice.protected
+				} );
+			}
+		}
+		const plan = planAdmission( holders, request.begin, request.end, MAX_VOICES );
+		if( !plan.admit ) {
+			warnCapacity();
+			return null;
+		}
+		victims = plan.victims;
+	}
+
+	if( cleanup !== null ) {
+		hardStop( cleanup );
+	}
+	for( const victim of victims ) {
+		stopVoice( victim.holder.voice, victim.conflict, "steal" );
+	}
+	const voice = request.build();
+	voice.protected = request.protected === true;
+	return voice;
+}
 
 /**
  * Plan admission of an interval against slot holders' occupancy intervals
@@ -595,6 +672,10 @@ export function stopVoice( voice, when, kind ) {
 	}
 	voice.end = deadline;
 	voice.fadeStart = fadeStart;
+	if( voice.fade ) {
+		voice.fade( fadeStart, deadline );
+		return;
+	}
 
 	const param = voice.gain.gain;
 	param.cancelScheduledValues( fadeStart );
@@ -617,7 +698,7 @@ export function stopSoundById( soundId, when = null ) {
 		return;
 	}
 	const voice = m_voices.get( soundId );
-	if( voice ) {
+	if( voice && voice.kind === "synth" ) {
 		stopVoice( voice, when, "stop" );
 	}
 }
@@ -870,7 +951,9 @@ export function registerVoices( pluginApi ) {
 		if( soundId == null ) {
 			g_scheduler.clearPending( "sound" );
 			for( const voice of Array.from( m_voices.values() ) ) {
-				stopVoice( voice, null, "stop" );
+				if( voice.kind === "synth" ) {
+					stopVoice( voice, null, "stop" );
+				}
 			}
 			return;
 		}

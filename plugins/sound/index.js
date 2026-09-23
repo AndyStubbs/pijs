@@ -2,8 +2,9 @@
  * Pi.js - Play-Sound Plugin
  *
  * Music playback and sound effects using Web Audio API.
- * Combines samples.js (audio files), voices.js (sound effects), and play.js (BASIC-style
- * music notation), which share the audio context, buses, and master volume in context.js.
+ * Combines samples.js (decoded and streamed audio files), voices.js (sound effects), and
+ * play.js (BASIC-style music notation), which share the audio context, buses, master volume,
+ * and voice caps.
  * Provides the sound extension service to plugins that declare "sound" as a dependency.
  *
  * @module plugins/sound
@@ -58,17 +59,6 @@ export default function playSoundPlugin( pluginApi ) {
 }
 
 /**
- * Apply the master volume to the master gain and to media-element audio
- *
- * @param {number} volume - Volume (0-1)
- * @returns {void}
- */
-function applyMasterVolume( volume ) {
-	g_context.setMasterVolume( volume );
-	g_samples.applyVolumeToPools( volume );
-}
-
-/**
  * Validate a volume value
  *
  * @param {string} name - Command name for the error message
@@ -102,7 +92,7 @@ function setBusVolume( bus, volume ) {
 	}
 	validateVolume( "setBusVolume", volume );
 	if( bus === "master" ) {
-		applyMasterVolume( volume );
+		g_context.setMasterVolume( volume );
 	} else {
 		g_context.setBusOutputVolume( bus, volume );
 	}
@@ -130,7 +120,7 @@ function registerVolume( pluginApi ) {
 	function setVolume( options ) {
 		const volume = utils.getFloat( options.volume, 0.75 );
 		validateVolume( "setVolume", volume );
-		applyMasterVolume( volume );
+		g_context.setMasterVolume( volume );
 	}
 
 

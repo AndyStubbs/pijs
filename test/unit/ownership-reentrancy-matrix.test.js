@@ -8,6 +8,7 @@ import * as g_fs from "node:fs";
 import * as g_path from "node:path";
 import * as g_vm from "node:vm";
 import * as g_url from "node:url";
+import * as g_sampleSandbox from "./audio-sample-sandbox.js";
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
 const { test } = g_test;
 const assert = g_assert;
@@ -72,58 +73,6 @@ function createImageHarness() {
 		{ "filename": "src/api/images.js" }
 	);
 	return { "api": context, "images": images, "counts": counts };
-}
-
-function createAudioHarness() {
-	const audio = [];
-	const commands = {};
-	const timers = new Map();
-	const counts = { "wait": 0, "done": 0 };
-	let nextTimer = 0;
-	const context = vm.createContext( {
-		"console": { "error": () => {}, "warn": () => {} },
-		"setTimeout": ( fn, delay ) => {
-			timers.set( ++nextTimer, { "fn": fn, "delay": delay } );
-			return nextTimer;
-		},
-		"clearTimeout": id => timers.delete( id ),
-		"Audio": class {
-			constructor( src ) {
-				this.src = src;
-				this.error = { "code": 2 };
-				this.listeners = new Map();
-				this.pauses = 0;
-				this.loads = 0;
-				this.plays = 0;
-				audio.push( this );
-			}
-			addEventListener( name, fn ) { this.listeners.set( name, fn ); }
-			removeEventListener( name, fn ) {
-				if( this.listeners.get( name ) === fn ) { this.listeners.delete( name ); }
-			}
-			emit( name ) { this.listeners.get( name )?.(); }
-			pause() { this.pauses++; }
-			play() { this.plays++; }
-			removeAttribute( name ) { if( name === "src" ) { this.src = ""; } }
-			load() { this.loads++; }
-		}
-	} );
-	context.g_context = { "getVolume": () => 0.75 };
-	vm.runInContext(
-		fs.readFileSync( path.join( DIRNAME, "../../plugins/sound/samples.js" ), "utf8" )
-			.replace( /^import .*;\r?\n/gm, "" ).replace( /export /g, "" ),
-		context,
-		{ "filename": "plugins/sound/samples.js" }
-	);
-	context.registerSamples( {
-		"addCommand": ( name, fn ) => { commands[ name ] = fn; },
-		"utils": { "getInt": ( v, d ) => v ?? d, "getFloat": ( v, d ) => v ?? d },
-		"wait": () => { counts.wait++; },
-		"done": () => { counts.done++; }
-	} );
-	return {
-		"audio": audio, "commands": commands, "timers": timers, "counts": counts
-	};
 }
 
 function createReadyPluginHarness() {
@@ -262,25 +211,23 @@ test( "COV-004 image: pending removal ignores late events and permits reuse", ()
 	assert.equal( h.counts.wait, h.counts.done );
 } );
 
-test( "COV-004 audio: pending removal cancels retries and permits reuse", () => {
-	const h = createAudioHarness();
+test( "COV-004 audio: pending removal cancels retries and permits reuse", async () => {
+	const h = g_sampleSandbox.createSampleSandbox();
 	const id = h.commands.loadAudio( { "src": "old.wav", "name": "reuse" } );
-	const old = h.audio[ 0 ];
-	old.emit( "error" );
+	h.fetches[ 0 ].reject( new TypeError( "network" ) );
+	await g_sampleSandbox.flush();
 	assert.equal( h.timers.size, 1 );
 	const retry = h.timers.values().next().value.fn;
 	h.commands.removeAudio( { "audioId": id } );
 	assert.equal( h.timers.size, 0 );
-	assert.equal( old.listeners.size, 0 );
-	assert.equal( old.src, "" );
 	assert.equal( h.counts.wait, h.counts.done );
 	h.commands.loadAudio( { "src": "new.wav", "name": "reuse" } );
 	retry();
-	assert.equal( h.audio.length, 2 );
+	assert.equal( h.fetches.length, 2 );
 	assert.equal( h.timers.size, 0 );
-	h.audio[ 1 ].emit( "canplay" );
+	await h.finishDecode();
 	h.commands.playAudio( { "audioId": "reuse" } );
-	assert.equal( h.audio[ 1 ].plays, 1 );
+	assert.equal( h.admitted.length, 1 );
 	assert.equal( h.counts.wait, h.counts.done );
 } );
 

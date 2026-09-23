@@ -1,0 +1,55 @@
+title = "setAudio"
+category = "sound"
+isScreen = false
+plugin = "sound"
+summary = "Changes the volume, playback rate, or pan of an audio instance."
+description = """
+Changes a playing, delayed, or paused instance. Omitted values are unchanged. Volume and pan ramp over 10 ms. playbackRate changes speed and pitch together; it must stay within the range of the instance's loading mode (0.0625-16 decoded, 0.25-4 streamed), or the call throws INVALID_PLAYBACK_RATE. The duration passed to playAudio is file time, so a rate change also changes how long the rest of the instance lasts. Changes to a delayed instance apply from its start, and changes to a paused instance apply when it resumes. Finished instance IDs are ignored; an instance ID that was never returned throws AUDIO_NOT_FOUND.
+"""
+example = """
+$.screen( "300x200" );
+const engine = $.loadAudio( "media/sound.wav" );
+let instance = null;
+let rate = 1;
+$.ready( function () {
+	$.print( "Press up and down to change the pitch" );
+	$.onkey( "any", "down", key => {
+		if( instance === null ) {
+			instance = $.playAudio( { "audioId": engine, "loop": true, "volume": 0.5 } );
+		}
+		if( key.key === "ArrowUp" ) {
+			rate = Math.min( rate * 1.1, 4 );
+		} else if( key.key === "ArrowDown" ) {
+			rate = Math.max( rate / 1.1, 0.25 );
+		}
+		$.setAudio( { "instanceId": instance, "playbackRate": rate } );
+	} );
+} );
+"""
+
+[[parameters]]
+name = "instanceId"
+type = "number"
+description = "Instance ID returned from playAudio."
+
+[[parameters]]
+name = "volume"
+type = "number"
+description = "Volume (0-1)."
+optional = true
+
+[[parameters]]
+name = "playbackRate"
+type = "number"
+description = "Speed and pitch within the instance's mode range."
+optional = true
+
+[[parameters]]
+name = "pan"
+type = "number"
+description = "Stereo position from -1 (left) to 1 (right)."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

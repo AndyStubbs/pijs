@@ -64,7 +64,7 @@ reason in the test output:
 | --- | --- | --- | --- |
 | Chromium 141 | Yes | Yes | All renders, including clock-driven tests |
 | Firefox 142 | Yes | No | Single-pass renders; clock-driven tests skip |
-| WebKit 26 (Playwright, Windows) | No | No | Media-element lifecycle tests only |
+| WebKit 26 (Playwright, Windows) | No | No | Stream-mode (media element) lifecycle tests only |
 
 Playwright's Windows WebKit build has no `AudioContext` or `OfflineAudioContext`. Render
 coverage for WebKit needs a platform whose WebKit build includes Web Audio, and Safari needs
@@ -86,8 +86,30 @@ through `test/unit/audio-browser-suite.js`:
 | `audio-voices-browser.test.js` | Envelopes, stops, steals, caps, late starts, locking |
 | `audio-bus-browser.test.js` | Limiter ceiling and quality, master volume, bus-volume service |
 | `audio-sound-design-browser.test.js` | Noise spectra and buffers, pan law, sweep endpoints |
+| `audio-samples-browser.test.js` | Decoded sample position, pause/resume, setAudio, late starts, shared caps |
 | `sound-envelope.test.js`, `sound-admission.test.js` | Envelope math and slot admission (Node) |
 | `sound-noise.test.js` | Noise buffers: spectra, peak, loop seam, sharing, offsets (Node) |
+| `sound-samples.test.js` | Sample position model: budgets, rate segments, end prediction (Node) |
+| `audio-lifecycle.test.js` | Sample loading, retries, removal, IDs, validation (Node sandbox) |
+
+Sample tests load generated 16-bit chirp WAV files through `blob:` URLs
+(`test/unit/audio-sample-fixtures.js`). Their references integrate the content position per
+frame from the rate schedule, so a position error of one frame fails the check.
+
+`audio-lifecycle-browser.test.js` checks readiness and removal with controlled `fetch` results
+and media events in the full and lite bundles, without the render harness.
+
+Stream mode cannot run offline, because `OfflineAudioContext` has no
+`createMediaElementSource`. `audio-stream-browser.test.js` therefore plays through a real
+`AudioContext` in Chromium and Firefox, launched with autoplay allowed
+(`launchEngine( name, { "realtimeAudio": true } )`), from generated WAV files served by
+`test/scripts/test-server.js` with byte-range support so media elements can seek. It checks
+readiness at `canplay`, media event order, element positions after play, pause, resume, rate
+changes, and replacement, rate limits, and audibility at rates 0.25 and 4 through an analyser
+tap. Positions are compared with elapsed wall time, within 50 ms in Chromium and 120 ms in
+Firefox, whose media start lags by up to 89 ms. The same file checks a decoded instance's
+rendered position after a rate change against the position model within 0.05 s of content,
+which is the realtime check on the scheduling lead. WebKit is skipped.
 
 Focused level and timing checks call `setSoundLimiter( false )`: Chromium's compressor delays
 its output by about 6 ms, and the limiter changes levels above its threshold.
@@ -122,6 +144,11 @@ In each engine:
 4. Play white and pink noise, and use Pan sweep to check that the level stays even through
    center. Compare the noise pitch prototype (B) with the core call (A).
 5. Record the engine version and anything that differs between A and B.
+6. Open `test/demos/sound_samples_01.html`. Play one-shots, the scatter and burst, and a loop
+   while moving the volume, rate, and pan sliders; pause and resume it, including before a
+   delayed start. Play and replace the stream, change its rate, and pause and resume it. Run
+   the synth flood with loops playing, then fill 64 loops and confirm that new sounds are not
+   played. Listen for clicks at every start, stop, pause, resume, and replacement.
 
 Playwright's Windows WebKit has no Web Audio, so the WebKit pass uses Safari on macOS or iOS, or
 Playwright WebKit on a platform whose build includes Web Audio.

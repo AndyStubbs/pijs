@@ -2,9 +2,9 @@
  * Offline render tests for the core audio graph: the two-stage limiter, master volume, and
  * the bus-volume service method.
  *
- * Stress renders run with the limiter on and assert the absolute ceiling plus the limiter
- * quality metric (share of samples above the soft clipper knee). Focused level checks bypass
- * the limiter so output is exactly carrier × gain.
+ * Stress renders, including 64 simultaneous sample instances, run with the limiter on and
+ * assert the absolute ceiling plus the limiter quality metric (share of samples above the soft
+ * clipper knee). Focused level checks bypass the limiter so output is exactly carrier × gain.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
@@ -12,12 +12,16 @@ import * as g_harness from "./audio-render-harness.js";
 import * as g_metrics from "./audio-metrics.js";
 import * as g_suite from "./audio-browser-suite.js";
 import * as g_tolerances from "./audio-tolerances.js";
+import * as g_fixtures from "./audio-sample-fixtures.js";
 const test = g_test.test;
 const assert = g_assert;
 const frame = g_suite.frame;
 
 const RATE = g_harness.SAMPLE_RATE;
 const LEAD = g_suite.LEAD;
+
+// Stereo chirp for the sample-instance stress case
+const SAMPLE_WAV = g_fixtures.wavBase64( g_fixtures.chirp( 0.5, 2 ) );
 
 // Deliberate overloads far beyond normal use (plan 10.2)
 const STRESS_CASES = {
@@ -67,6 +71,36 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 			}
 		} );
 	}
+
+	test( "the limiter keeps 64 simultaneous sample instances within ±1.0", async t => {
+		const result = await suite.inHarness( t, { "config": { "duration": 1 } }, async arg => {
+			eval( arg.loader );
+			const id = await __loadWav( arg.wav );
+			for( let i = 0; i < 64; i++ ) {
+				$.playAudio( {
+					"audioId": id, "startTime": ( i * 0.0071 ) % 0.4, "loop": true,
+					"pan": ( i % 9 ) / 4 - 1
+				} );
+			}
+			return __audioHarness.render( { "singlePass": true } ).then( render => ( {
+				...render,
+				"sources": __audioHarness.sources().filter(
+					source => source.type === "AudioBufferSourceNode"
+				).length
+			} ) );
+		}, { "loader": g_fixtures.PAGE_LOADER, "wav": SAMPLE_WAV } );
+		if( !result ) {
+			return;
+		}
+		assert.equal( result.sources, 64 );
+		const channels = g_harness.decodeRender( result ).channels;
+		const knee = g_tolerances.getTolerance( "limiterKneeShare", engine );
+		for( const channel of channels ) {
+			assert.ok( g_metrics.peak( channel ) <= 1, `peak ${g_metrics.peak( channel )}` );
+			const share = g_metrics.kneeShare( channel );
+			assert.ok( share <= knee, `knee share ${share} > ${knee}` );
+		}
+	} );
 
 	test( "the limiter leaves levels below its threshold unchanged", async t => {
 		const peaks = {};

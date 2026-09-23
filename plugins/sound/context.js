@@ -13,6 +13,8 @@
 
 "use strict";
 
+import * as g_envelope from "./envelope.js";
+
 export const BUS_NAMES = [ "sfx", "music", "audio" ];
 
 // Web Audio renders in blocks of this many frames
@@ -253,20 +255,20 @@ function probeCompressor() {
 }
 
 /**
- * Value of a linear bus ramp at a context time
+ * Select the "ambient" audio session where supported (decision D5): sound respects the iOS
+ * mute switch and mixes with audio from other apps
  *
- * @param {Object} ramp - Ramp record { from, to, t0, t1 }
- * @param {number} time - Context time
- * @returns {number} Gain value
+ * @returns {void}
  */
-function rampValueAt( ramp, time ) {
-	if( time <= ramp.t0 ) {
-		return ramp.from;
+function setAudioSession() {
+	try {
+		if( typeof navigator !== "undefined" && navigator.audioSession ) {
+			navigator.audioSession.type = "ambient";
+		}
+	} catch( error ) {
+
+		// Keep the browser's default session
 	}
-	if( time >= ramp.t1 ) {
-		return ramp.to;
-	}
-	return ramp.from + ( ramp.to - ramp.from ) * ( time - ramp.t0 ) / ( ramp.t1 - ramp.t0 );
 }
 
 /**
@@ -376,6 +378,7 @@ function handleStateChange() {
 export function getAudioContext() {
 	if( !m_audioContext ) {
 		m_audioContext = new AudioContext();
+		setAudioSession();
 		m_graph = createGraph( m_audioContext );
 		routeMaster();
 		m_audioContext.addEventListener( "statechange", handleStateChange );
@@ -433,15 +436,6 @@ export function getScheduleLead() {
 }
 
 /**
- * Get the master volume, which media-element audio applies through audio.volume
- *
- * @returns {number} Volume (0-1)
- */
-export function getVolume() {
-	return m_volume;
-}
-
-/**
  * Set the master gain, shared by all buses; ramps with a ~15 ms time constant
  *
  * @param {number} volume - Volume (0-1); zero is valid
@@ -477,7 +471,7 @@ export function setBusOutputVolume( bus, volume ) {
 	let current = gain.value;
 	let holdType = "set";
 	if( busNodes.ramp ) {
-		current = rampValueAt( busNodes.ramp, lead );
+		current = g_envelope.rampValueAt( busNodes.ramp, lead );
 		if( lead > busNodes.ramp.t0 && lead < busNodes.ramp.t1 ) {
 			holdType = "linear";
 		}

@@ -1,0 +1,72 @@
+{
+	"version": "2.3.0",
+	"generatedAt": "2026-09-23T14:13:11.249Z",
+	"gzipLevel": 9,
+	"bundles": {
+		"pi.min.js": {
+			"bytes": 203200,
+			"gzip": 71307
+		},
+		"pi.lite.min.js": {
+			"bytes": 137464,
+			"gzip": 48586
+		}
+	},
+	"plugins": {
+		"example-plugin": {
+			"version": "1.0.0",
+			"bytes": 1756,
+			"gzip": 846
+		},
+		"gamepad": {
+			"version": "1.0.0",
+			"bytes": 4006,
+			"gzip": 1428
+		},
+		"keyboard": {
+			"version": "1.0.0",
+			"bytes": 8436,
+			"gzip": 3110
+		},
+		"onscreen-keyboard": {
+			"version": "1.0.0",
+			"bytes": 6876,
+			"gzip": 2606
+		},
+		"pens": {
+			"version": "1.0.0",
+			"bytes": 242,
+			"gzip": 204
+		},
+		"pi-vision": {
+			"version": null,
+			"bytes": 13925,
+			"gzip": 4762
+		},
+		"pointer": {
+			"version": "1.0.0",
+			"bytes": 12738,
+			"gzip": 3951
+		},
+		"polygons": {
+			"version": "1.0.0",
+			"bytes": 3582,
+			"gzip": 1660
+		},
+		"print-table": {
+			"version": "1.0.0",
+			"bytes": 5441,
+			"gzip": 2046
+		},
+		"sound": {
+			"version": "2.0.0",
+			"bytes": 37723,
+			"gzip": 14300
+		}
+	},
+	"differentials": [],
+	"notes": [
+		"Sizes are bytes of the minified IIFE bundle and its gzip level 9 compression.",
+		"Marginal costs are not additive: gzip shares context across modules. Compare them with the plugin total and the full-merge cost."
+	]
+}

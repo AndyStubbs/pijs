@@ -13,6 +13,7 @@ compresses them with gzip level 9. Sizes are in bytes.
 | `size-phase0-split.json` | After the plugin service API (0.4) and the sound module split (0.9) | No sound behavior change |
 | `size-phase1.json` | Phase 1 exit: buses, limiter, envelope, voice caps, scheduler, unlock | `sound` 2.0.0 |
 | `size-phase2.json` | Phase 2 exit: white and pink noise, pan level | `sound` 2.0.0 |
+| `size-phase3.json` | Phase 3 exit: decoded and streamed samples, instances, shared caps | `sound` 2.0.0 |
 
 Phase 0 deltas, gzipped:
 
@@ -54,6 +55,54 @@ Phase 2 deltas, gzipped:
 Minified bytes by module in the `sound` bundle (Phase 1 → Phase 2): `noise.js` new 997,
 `voices.js` 6,824 → 7,104. The other modules have no source changes. Phase 2 uses 10,907 of the
 14 KB plugin target and 5,026 of the 8 KB full-build growth target.
+
+Phase 3 deltas, gzipped:
+
+| Bundle | Phase 2 exit | Phase 3 exit | Delta | Since 2.2 baseline |
+| --- | --- | --- | --- | --- |
+| `sound` plugin | 10,907 | 14,300 | +3,393 | +8,017 |
+| `pi.lite.min.js` | 48,586 | 48,586 | 0 | +311 |
+| `pi.min.js` | 67,954 | 71,307 | +3,353 | +8,379 |
+
+Minified bytes by module in the `sound` bundle (Phase 2 → Phase 3): `samples.js` 4,211 →
+13,564, `voices.js` 7,104 → 7,593, `envelope.js` 1,494 → 1,593, `context.js` 3,438 → 3,489,
+`index.js` 1,083 → 1,058. The sample engine replaces the `<audio>` pools with fetch and decode,
+stream mode, instance records, the position model, pause and resume, `setAudio`, and the late
+rule for samples, and its error messages are a large share of the minified text.
+
+**Variance.** The plugin is 36 bytes under the 14 KB (14,336 bytes) target, and full-build
+growth is 8,379 bytes, 187 bytes over the 8 KB (8,192 bytes) target, before the Phase 4 PLAY
+scheduler. The targets are checked at M2 (Phase 4 exit), so Phase 4 either offsets its own
+growth and this overrun, or records a variance for the release size review (roadmap 6.1).
+
+## Sample measurements (Phase 3)
+
+Decoded instances are compared with the fixture content at the modeled position times the
+expected fades (`audio-samples-browser.test.js`). Normalized maximum residual on 16-bit chirp
+fixtures, where a one-frame position error measures 1.3e-2:
+
+| Case | Chromium | Firefox |
+| --- | --- | --- |
+| Rate 1: offset, default duration, stereo, pan | 3.1e-5 | 3.1e-5 |
+| Rates 0.5, 1.5 (loop), and 2 | 3.1e-5 | ≤ 1.9e-3 |
+| Rate changes, pause and resume, setAudio before start | 3.1e-5 | Clock-driven; skipped |
+
+3.1e-5 is half a 16-bit step. Chromium interpolates linearly between samples, as the reference
+does, so its position matches the model to the sample at every rate. Firefox resamples at
+rates other than 1; its residual there reflects filtering, not position.
+
+Mono buffers apply the pan level factor (plan 5); stereo buffers do not, because a
+`StereoPannerNode` passes stereo input through unchanged at center. Both were within the
+position tolerance at their expected levels.
+
+Limiter stress with 64 looping stereo sample instances at full volume: every sample within
+±1.0; share above the knee 0.34% in Chromium and 31.6% in Firefox (clipper only).
+
+Realtime stream mode (`audio-stream-browser.test.js`), elapsed-time estimate versus
+`element.currentTime`: Chromium within 38 ms after play, resume, rate change, and
+replacement; Firefox up to 89 ms, from media start latency after a seek. A decoded instance's
+rendered position after a rate change, read through an analyser, was within 0.001 s of content
+of the model in Chromium and 0.011 s in Firefox.
 
 ## Noise and pan measurements (Phase 2)
 

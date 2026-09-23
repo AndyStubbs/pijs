@@ -1,0 +1,38 @@
+title = "resumeAudio"
+category = "sound"
+isScreen = false
+plugin = "sound"
+summary = "Resumes a paused audio instance, every instance of an audio ID, or all audio."
+description = """
+Resumes paused audio from its saved position with the rest of its duration, fading in over a few milliseconds. Pass an instance ID, an audio ID to resume every paused instance of that file, or nothing to resume all paused audio. Volume, rate, and pan changes made with setAudio while paused apply on resume. A resumed instance needs a free voice again; if every voice is held by a loop, it stays paused. Resuming a playing instance does nothing. Finished instance IDs are ignored; unknown IDs throw AUDIO_NOT_FOUND.
+"""
+example = """
+$.screen( "300x200" );
+const music = $.loadAudio( "media/sound.wav" );
+let instance = null;
+$.ready( function () {
+	$.print( "Hold any key to play the music" );
+	$.onkey( "any", "down", () => {
+		if( instance === null ) {
+			instance = $.playAudio( { "audioId": music, "loop": true } );
+		} else {
+			$.resumeAudio( instance );
+		}
+	} );
+	$.onkey( "any", "up", () => {
+		if( instance !== null ) {
+			$.pauseAudio( instance );
+		}
+	} );
+} );
+"""
+
+[[parameters]]
+name = "id"
+type = "number | string"
+description = "Instance ID, or audio ID to resume all its instances. If omitted, resumes all paused audio."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

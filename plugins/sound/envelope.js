@@ -221,3 +221,20 @@ export function scheduleEnvelope( param, env, start, gateEnd, peak ) {
 	applySchedule( param, buildEnvelopeSchedule( resolved, start, peak ) );
 	return start + getEnvelopeLength( resolved );
 }
+
+/**
+ * Value of a linear ramp record at a context time
+ *
+ * @param {Object} ramp - Ramp record { from, to, t0, t1 }
+ * @param {number} time - Context time
+ * @returns {number} Value
+ */
+export function rampValueAt( ramp, time ) {
+	if( time <= ramp.t0 ) {
+		return ramp.from;
+	}
+	if( time >= ramp.t1 ) {
+		return ramp.to;
+	}
+	return ramp.from + ( ramp.to - ramp.from ) * ( time - ramp.t0 ) / ( ramp.t1 - ramp.t0 );
+}

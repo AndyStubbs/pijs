@@ -315,17 +315,20 @@ Before v1 is frozen, stub extensions verify:
   Core owns the routing, effects insert point, and output gain. The dedicated service method
   controls volume after effects, so it also controls their tails. Public per-bus volume is
   provided by `sound-advanced` (and is a strong candidate for moving into core).
-- **Panner** (`StereoPannerNode`) is created only when a voice or instance has a non-zero pan,
-  or when its pan can change later (sample instances with pan set). This keeps the node count
-  down for the common unpanned case.
+- **Panner** (`StereoPannerNode`) is created only when a voice has a non-zero pan. This keeps
+  the node count down for the common unpanned case. Every sample instance has one, because
+  `setAudio()` can pan it at any time and a panner cannot be inserted into a playing chain
+  without a level step (Phase 3).
 - **Pan level:** for a mono input the panner applies `cos θ` and `sin θ` to the two channels,
   with `θ = ( pan + 1 ) · π / 4`, so center would be 3 dB below an unpanned voice, which
   bypasses the panner. A panned voice's gain is therefore scaled by
   `1 / max( cos θ, sin θ )`. The louder channel always plays at the voice's level, center
   matches an unpanned voice, and the channel ratio keeps the equal-power law (`tan θ`). Hard
   pans have 3 dB less total power than center, and no channel exceeds `volume`. The factor
-  goes into the envelope peak, so it costs no node. Sample instances whose pan changes apply
-  the same factor to their instance gain.
+  goes into the envelope peak, so it costs no node. Sample instances of mono buffers apply the
+  same factor to their instance gain whenever their pan changes. Stereo buffers and stream
+  instances do not: a `StereoPannerNode` passes stereo input through unchanged at center, so
+  the factor would raise their level (Phase 3).
 - **Voice removal:** after `onended`, all voice nodes are disconnected and removed from the
   voice table, as today.
 
@@ -710,9 +713,10 @@ $.removeAudio( audioId );
   Without the `crossOrigin` attribute, a CORS-enabled cross-origin file would still play
   silence through the graph.
 - **Unsupported pages:** `file://` pages and cross-origin files without CORS headers are not
-  supported. Decode mode fails at `fetch`. In stream mode, a media element source from those
-  origins plays silence, so stream mode detects `file:` pages up front and fails with a clear
-  error. The docs state that audio requires an HTTP(S) server.
+  supported. In stream mode, a media element source from those origins plays silence, and in
+  decode mode `fetch` fails and would be retried, so both modes resolve the source URL against
+  the page and throw `UNSUPPORTED_PROTOCOL` for `file:` URLs up front. The docs state that
+  audio requires an HTTP(S) server.
 - **`removeAudio`:** keeps its 2.2 guarantees. It cancels pending fetches through
   `AbortController`, releases waits, stops instances with a fade, and frees the name
   immediately. Late results from removed audio cannot affect a replacement.
@@ -1241,7 +1245,10 @@ Click checks compare against an expected waveform rather than require raw RMS to
 - New: `pauseAudio()`, `resumeAudio()`, `setAudio()`, `setSoundLimiter()`.
 - Error codes renamed from pool terminology: `AUDIO_POOL_NOT_FOUND` → `AUDIO_NOT_FOUND`,
   `EMPTY_POOL` → `AUDIO_NOT_LOADED`, `INVALID_POOL_SIZE` removed, `INVALID_STREAM`,
-  `INVALID_PLAYBACK_RATE`, and `TOO_MANY_PENDING_SOUNDS` added.
+  `INVALID_PLAYBACK_RATE`, `UNSUPPORTED_PROTOCOL`, `INVALID_LOOP`, `INVALID_PAN`,
+  `INVALID_DELAY`, `INVALID_AUDIO_ID`, and `TOO_MANY_PENDING_SOUNDS` added.
+- Default audio IDs are `audio_N` instead of `audioPool_N`. The `stopAudio()` object form
+  takes `id` instead of `audioId`.
 - `setVolume()` now affects a single master gain. It applies to samples and synth equally and
   is limited before output.
 - PLAY: `MT` removed. `MA`/`MD` meanings change to ADSR stage times. `MH`, `MR`, `MP`, `WN`,
@@ -1257,6 +1264,8 @@ Click checks compare against an expected waveform rather than require raw RMS to
   immediately (a short scheduling lead plus a 10 ms fade).
 - `sound()` throws `INVALID_FREQUENCY` when a sweep has a non-positive endpoint.
 - Audio requires HTTP(S). `file://` pages are unsupported.
+- On iOS, the mute switch now silences audio files as well as synthesized sounds, and game
+  audio mixes with audio from other apps (D5).
 - Plugin API: `provideService()` and `getService()` are added.
 
 ## 12. Open Decisions
@@ -1269,7 +1278,7 @@ Each item has a recommendation and a phase by which it must be resolved.
 | D2 | `sound()` positional order, and what position 7 means | **Resolved (revision 6): ADSR order as written in 6.1.** Position 7 is `decayTime`. The alternative, placing `releaseTime` at position 7 so that 2.2 tails keep their length, was rejected because it would make the positional form permanently disagree with the object form and with every other ADSR description in the docs. 2.2 positional callers past argument 5 are rare, and the command layer cannot tell an old positional call from a new one, so no runtime warning is possible. The upgrade guide shows the positional example in Section 11. | Resolved |
 | D3 | Requests while the context is locked | **Resolved (Phase 1): as recommended.** One-shot `sound()`/`playAudio()` requests, immediate or delayed, are dropped and return completed IDs as in 6.3. Looping instances and `play()` tracks are deferred until unlock and started synchronously inside the gesture listener, including deferred stream instances (5.3). The context no longer counts as locked once the gesture listener has called `resume()`, so requests made in that gesture's own handlers (the listener runs in the capture phase, before them) are kept while the resume promise settles. | Resolved |
 | D4 | Whether the public `setBusVolume()` command moves to core | Ships in `sound-advanced` 1.0 (the service method is already core); promote if its promotion cost is small | Release gate |
-| D5 | iOS mute switch silences Web Audio (media elements were not) | Set `navigator.audioSession.type = "playback"` where available; document the behavior | Phase 3 |
+| D5 | iOS mute switch silences Web Audio (media elements were not) | **Resolved (Phase 3): `"ambient"`, not the recommended `"playback"`.** Core sets `navigator.audioSession.type = "ambient"` when it creates the context, where the API exists. Sound then follows the mute switch and mixes with other apps' audio instead of interrupting it, which suits games. In 2.2, `<audio>` samples ignored the mute switch; in 2.3 all sound respects it. The docs and upgrade guide say so. | Resolved |
 | D6 | Service API names | **Resolved (Phase 0): `provideService` / `getService`.** `provideService` names what is provided, matching the verb-object style of other plugin API members; error rules are in 4.3. | Resolved |
 
 ## 13. Risks
@@ -1282,7 +1291,7 @@ Each item has a recommendation and a phase by which it must be resolved.
 | Decoded-audio memory | Large files exhaust memory on mobile | Stream mode, documented costs |
 | Background timer throttling | Missing PLAY notes | Lookahead and recovery rules in Section 8.1 |
 | Voice pressure | New sounds rejected | Occupancy-interval slots; capacity-limited window fill; steal one-shots first; protect loops; stream replacement reuses its slot |
-| iOS mute switch / audio session | Silent audio on iPhones | D5 mitigation, documentation |
+| iOS mute switch / audio session | Audio silent on muted iPhones, unlike 2.2 samples | D5 chose the `"ambient"` session deliberately; documented in the API docs and upgrade guide |
 | Engine differences (Firefox lacks `cancelAndHoldAtTime`, WebKit quirks) | Clicks or timing drift on one engine | Analytic envelope values; three-engine test matrix |
 | Offline harness diverges from realtime behavior | Tests pass but audio clicks or drifts live | Scheduling lead for every immediate change (6.3); realtime stream-mode test with a decode-mode position check (10.3); manual listening demos at every phase gate |
 | Offline harness state leaks into production paths | Unlock re-arm and D3 drop fire on every suspend step, hiding real behavior | Mandatory `state`/`statechange` masking with a Phase 0 probe (10.1) |

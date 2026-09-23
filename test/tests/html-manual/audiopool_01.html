@@ -42,8 +42,8 @@
 
 	<div class="section">
 		<h2>Audio Info</h2>
-		<p>Audio allow you to play the same sound multiple times simultaneously.</p>
-		<p>Each audio command maintains multiple instances of the same audio file that can play overlapping.</p>
+		<p>Decoded audio can play the same sound many times simultaneously.</p>
+		<p>Each playAudio call starts a new instance that can overlap the others.</p>
 		<div id="status">Ready to load audio...</div>
 	</div>
 
@@ -142,16 +142,16 @@
 
 		function loadAudio() {
 			const status = document.getElementById( "status" );
-			status.textContent = "Generating audio and loading with 5 instances...";
+			status.textContent = "Generating and decoding audio...";
 
 			try {
 
 				// Note: In a real application, use an actual audio file URL
-				// audioId = $.loadAudio( "sounds/beep.mp3", 5 );
+				// audioId = $.loadAudio( "sounds/beep.mp3" );
 				
 				// For testing without external files, we generate a beep sound
 				const audioUrl = generateBeepDataURL();
-				audioId = $.loadAudio( audioUrl, null, 5 );
+				audioId = $.loadAudio( audioUrl );
 
 				// Wait for audio to load and pi to be ready
 				$.ready( () => {

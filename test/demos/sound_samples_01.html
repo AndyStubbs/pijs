@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Pi.js Sound Samples</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			padding: 20px;
+			background: #222;
+			color: #fff;
+			max-width: 960px;
+			margin: 0 auto;
+		}
+		h1 {
+			margin-bottom: 4px;
+		}
+		.intro {
+			color: #bbb;
+			margin-top: 0;
+		}
+		.section {
+			margin-bottom: 24px;
+			padding: 16px 20px;
+			background: #333;
+			border-radius: 5px;
+		}
+		.section h2 {
+			margin-top: 0;
+		}
+		.controls {
+			display: grid;
+			grid-template-columns: repeat( auto-fill, minmax( 260px, 1fr ) );
+			gap: 10px 24px;
+		}
+		.control {
+			display: grid;
+			grid-template-columns: 90px 1fr 60px;
+			align-items: center;
+			gap: 8px;
+		}
+		button {
+			margin: 6px 8px 6px 0;
+			padding: 8px 16px;
+			font-size: 15px;
+			cursor: pointer;
+		}
+		pre {
+			background: #1a1a1a;
+			padding: 10px;
+			border-radius: 4px;
+			white-space: pre-wrap;
+			font-size: 13px;
+			max-height: 220px;
+			overflow-y: auto;
+		}
+	</style>
+</head>
+<body>
+	<h1>Sound Samples</h1>
+	<p class="intro">
+		Listening demo for decoded and streamed audio instances: one-shots, loops, playback
+		rate, pan, pause and resume, stream replacement, and mixed synth and sample load.
+		Serve the repository over HTTP (<code>npm run server</code>); audio does not load from
+		<code>file:</code> pages.
+	</p>
+
+	<div class="section">
+		<h2>One-shots (decoded)</h2>
+		<button id="bomb">Bomb</button>
+		<button id="star">Star</button>
+		<button id="scatter">Scatter: 12 stars, random rate and pan</button>
+		<button id="burst">Burst: 40 bombs in 0.4 s</button>
+		<p>Every instance fades in and out over a few milliseconds, so none should click.</p>
+	</div>
+
+	<div class="section">
+		<h2>Loop instance (decoded)</h2>
+		<div class="controls">
+			<label class="control">Start time
+				<input id="loopStart" type="range" min="0" max="4" step="0.01" value="0">
+				<output id="loopStartOut">0</output></label>
+			<label class="control">Duration
+				<input id="loopDuration" type="range" min="0" max="20" step="0.1" value="0">
+				<output id="loopDurationOut">0</output></label>
+			<label class="control">Delay
+				<input id="loopDelay" type="range" min="0" max="3" step="0.05" value="0">
+				<output id="loopDelayOut">0</output></label>
+			<label class="control">Volume
+				<input id="loopVolume" type="range" min="0" max="1" step="0.01" value="0.6">
+				<output id="loopVolumeOut">0.6</output></label>
+			<label class="control">Rate
+				<input id="loopRate" type="range" min="-4" max="4" step="0.05" value="0">
+				<output id="loopRateOut">1</output></label>
+			<label class="control">Pan
+				<input id="loopPan" type="range" min="-1" max="1" step="0.05" value="0">
+				<output id="loopPanOut">0</output></label>
+		</div>
+		<button id="loopPlay">Play loop</button>
+		<button id="loopPause">Pause</button>
+		<button id="loopResume">Resume</button>
+		<button id="loopStop">Stop</button>
+		<p>Volume, rate, and pan apply live through setAudio, including while delayed or
+			paused. Rate is 2<sup>n</sup> from 0.0625 to 16. Duration counts every loop pass;
+			0 loops forever.</p>
+	</div>
+
+	<div class="section">
+		<h2>Stream (media element)</h2>
+		<div class="controls">
+			<label class="control">Start time
+				<input id="streamStart" type="range" min="0" max="10" step="0.1" value="0">
+				<output id="streamStartOut">0</output></label>
+			<label class="control">Rate
+				<input id="streamRate" type="range" min="-2" max="2" step="0.05" value="0">
+				<output id="streamRateOut">1</output></label>
+			<label class="control">Pan
+				<input id="streamPan" type="range" min="-1" max="1" step="0.05" value="0">
+				<output id="streamPanOut">0</output></label>
+		</div>
+		<button id="streamPlay">Play / replace</button>
+		<button id="streamPause">Pause</button>
+		<button id="streamResume">Resume</button>
+		<button id="streamStop">Stop</button>
+		<p>A second Play fades out the current instance and replaces it. Stream rates are
+			limited to 0.25&ndash;4, and timing is approximate.</p>
+	</div>
+
+	<div class="section">
+		<h2>Mixed load</h2>
+		<button id="flood">Synth flood: 120 blips</button>
+		<button id="loops">Fill: 64 quiet loops</button>
+		<button id="stopAll">Stop all audio and sounds</button>
+		<p>Loops are protected from stealing: a synth flood keeps them playing, and once 64
+			loops hold every voice, new sounds and loops are not played.</p>
+	</div>
+
+	<pre id="log"></pre>
+
+	<script src="../../build/pi.js"></script>
+	<script>
+		"use strict";
+
+		const bomb = $.loadAudio( "../media/bomb.wav" );
+		const star = $.loadAudio( "../media/star.wav" );
+		const test = $.loadAudio( "../media/TEST.WAV" );
+		const recruits = $.loadAudio( "../media/RECRUITS.WAV", "recruits", true );
+		let loopInstance = null;
+		let streamInstance = null;
+		const quietLoops = [];
+
+		function log( message ) {
+			const element = document.getElementById( "log" );
+			element.textContent = message + "\n" + element.textContent;
+		}
+
+		function run( label, fn ) {
+			try {
+				const result = fn();
+				if( result !== undefined ) {
+					log( `${label}: ${result}` );
+				}
+			} catch( error ) {
+				log( `${label}: ${error.code || ""} ${error.message}` );
+			}
+		}
+
+		function value( id ) {
+			return Number( document.getElementById( id ).value );
+		}
+
+		// Slider readouts; rate sliders are exponents of 2
+		for( const id of [
+			"loopStart", "loopDuration", "loopDelay", "loopVolume", "loopRate", "loopPan",
+			"streamStart", "streamRate", "streamPan"
+		] ) {
+			const input = document.getElementById( id );
+			const output = document.getElementById( id + "Out" );
+			const update = () => {
+				let shown = Number( input.value );
+				if( id.endsWith( "Rate" ) ) {
+					shown = Math.pow( 2, shown ).toFixed( 3 );
+				}
+				output.textContent = shown;
+			};
+			input.addEventListener( "input", update );
+			update();
+		}
+
+		document.getElementById( "bomb" ).onclick = () => {
+			run( "bomb", () => $.playAudio( bomb ) );
+		};
+		document.getElementById( "star" ).onclick = () => {
+			run( "star", () => $.playAudio( star ) );
+		};
+		document.getElementById( "scatter" ).onclick = () => {
+			for( let i = 0; i < 12; i++ ) {
+				run( "scatter", () => {
+					$.playAudio( {
+						"audioId": star, "delay": i * 0.08, "volume": 0.6,
+						"playbackRate": Math.pow( 2, Math.random() * 3 - 1.5 ),
+						"pan": Math.random() * 2 - 1
+					} );
+				} );
+			}
+		};
+		document.getElementById( "burst" ).onclick = () => {
+			for( let i = 0; i < 40; i++ ) {
+				run( "burst", () => {
+					$.playAudio( { "audioId": bomb, "delay": i * 0.01, "volume": 0.4 } );
+				} );
+			}
+		};
+
+		document.getElementById( "loopPlay" ).onclick = () => {
+			if( loopInstance !== null ) {
+				$.stopAudio( loopInstance );
+			}
+			run( "loop", () => {
+				loopInstance = $.playAudio( {
+					"audioId": test, "loop": true, "volume": value( "loopVolume" ),
+					"startTime": value( "loopStart" ), "duration": value( "loopDuration" ),
+					"delay": value( "loopDelay" ), "playbackRate": Math.pow( 2, value( "loopRate" ) ),
+					"pan": value( "loopPan" )
+				} );
+				return "instance " + loopInstance;
+			} );
+		};
+		for( const id of [ "loopVolume", "loopRate", "loopPan" ] ) {
+			document.getElementById( id ).addEventListener( "input", () => {
+				if( loopInstance === null ) {
+					return;
+				}
+				run( "setAudio", () => {
+					$.setAudio( loopInstance, value( "loopVolume" ),
+						Math.pow( 2, value( "loopRate" ) ), value( "loopPan" ) );
+				} );
+			} );
+		}
+		document.getElementById( "loopPause" ).onclick = () => {
+			run( "pause", () => $.pauseAudio( loopInstance ?? test ) );
+		};
+		document.getElementById( "loopResume" ).onclick = () => {
+			run( "resume", () => $.resumeAudio( loopInstance ?? test ) );
+		};
+		document.getElementById( "loopStop" ).onclick = () => {
+			run( "stop", () => $.stopAudio( test ) );
+		};
+
+		document.getElementById( "streamPlay" ).onclick = () => {
+			run( "stream", () => {
+				streamInstance = $.playAudio( {
+					"audioId": recruits, "loop": true, "startTime": value( "streamStart" ),
+					"playbackRate": Math.pow( 2, value( "streamRate" ) ),
+					"pan": value( "streamPan" )
+				} );
+				return "instance " + streamInstance;
+			} );
+		};
+		for( const id of [ "streamRate", "streamPan" ] ) {
+			document.getElementById( id ).addEventListener( "input", () => {
+				if( streamInstance === null ) {
+					return;
+				}
+				run( "setAudio", () => {
+					$.setAudio( {
+						"instanceId": streamInstance,
+						"playbackRate": Math.pow( 2, value( "streamRate" ) ),
+						"pan": value( "streamPan" )
+					} );
+				} );
+			} );
+		}
+		document.getElementById( "streamPause" ).onclick = () => {
+			run( "pause", () => $.pauseAudio( recruits ) );
+		};
+		document.getElementById( "streamResume" ).onclick = () => {
+			run( "resume", () => $.resumeAudio( recruits ) );
+		};
+		document.getElementById( "streamStop" ).onclick = () => {
+			run( "stop", () => $.stopAudio( recruits ) );
+		};
+
+		document.getElementById( "flood" ).onclick = () => {
+			for( let i = 0; i < 120; i++ ) {
+				$.sound( {
+					"frequency": 300 + ( i * 53 ) % 1200, "duration": 0.08, "volume": 0.15,
+					"oType": "square", "delay": i * 0.015, "releaseTime": 0.05
+				} );
+			}
+		};
+		document.getElementById( "loops" ).onclick = () => {
+			for( let i = 0; i < 64; i++ ) {
+				run( "fill", () => {
+					quietLoops.push( $.playAudio( {
+						"audioId": star, "loop": true, "volume": 0.02,
+						"playbackRate": 0.5 + ( i % 8 ) * 0.1
+					} ) );
+				} );
+			}
+			log( `fill: ${quietLoops.length} loop instances requested` );
+		};
+		document.getElementById( "stopAll" ).onclick = () => {
+			$.stopAudio();
+			$.stopSound();
+			quietLoops.length = 0;
+			loopInstance = null;
+			streamInstance = null;
+		};
+
+		$.ready( () => {
+			log( `loaded: ${bomb}, ${star}, ${test}, ${recruits} (streamed)` );
+		} );
+	</script>
+</body>
+</html>

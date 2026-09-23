@@ -48,7 +48,8 @@ const TOLERANCES = {
 	// renders in audio-bus-browser.test.js. Chromium runs compressor + clipper. Firefox's
 	// compressor pre-emphasizes high frequencies and cuts bright waveforms far below its
 	// threshold, so the sound plugin's probe selects the clipper alone there; its value only
-	// records the observed saturation on these deliberately extreme overloads.
+	// records the observed saturation on these deliberately extreme overloads. 64 looping
+	// stereo sample instances at full volume: chromium 0.34%, firefox 31.6%.
 	"limiterKneeShare": { "chromium": 0.01, "firefox": 0.65 },
 
 	// Noise spectra: power-density slope error in dB/octave against 0 (white) and -3 (pink),
@@ -57,7 +58,15 @@ const TOLERANCES = {
 	// Observed, identical on both engines: white slope -0.002, deviation 0.175; pink slope
 	// -2.967, deviation 0.201.
 	"noiseSlope": { "chromium": 0.15, "firefox": 0.15 },
-	"noiseBandDeviation": { "chromium": 0.5, "firefox": 0.5 }
+	"noiseBandDeviation": { "chromium": 0.5, "firefox": 0.5 },
+
+	// Decoded sample instances against content × gain, where the content position is
+	// integrated per frame from the rate schedule with linear interpolation
+	// (audio-samples-browser.test.js). Normalized maximum residual on the chirp fixtures.
+	// Observed: chromium 3.1e-5 at every rate (half a 16-bit step); firefox 3.1e-5 at rate 1
+	// and up to 1.9e-3 at other rates, where it resamples instead of interpolating linearly.
+	// A position error of one frame measures about 1.3e-2.
+	"samplePosition": { "chromium": 1e-4, "firefox": 0.004 }
 };
 
 /**

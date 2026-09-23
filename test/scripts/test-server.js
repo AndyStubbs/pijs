@@ -25,10 +25,33 @@ export async function startTestServer( root ) {
 				response.writeHead( 403 ).end();
 				return;
 			}
-			const body = await g_fs.readFile( realFile );
-			response.writeHead( 200, {
-				"Content-Type": types[ g_path.extname( realFile ) ] || "application/octet-stream"
-			} );
+			let body = await g_fs.readFile( realFile );
+			const headers = {
+				"Content-Type": types[ g_path.extname( realFile ) ] || "application/octet-stream",
+				"Accept-Ranges": "bytes"
+			};
+
+			// Single byte ranges, which media elements need to seek
+			let status = 200;
+			const range = /^bytes=(\d*)-(\d*)$/.exec( request.headers.range || "" );
+			if( range && ( range[ 1 ] !== "" || range[ 2 ] !== "" ) ) {
+				let start = Number( range[ 1 ] );
+				let end = body.length - 1;
+				if( range[ 1 ] === "" ) {
+					start = Math.max( body.length - Number( range[ 2 ] ), 0 );
+				} else if( range[ 2 ] !== "" ) {
+					end = Math.min( Number( range[ 2 ] ), end );
+				}
+				if( start > end ) {
+					response.writeHead( 416, { "Content-Range": `bytes */${body.length}` } ).end();
+					return;
+				}
+				headers[ "Content-Range" ] = `bytes ${start}-${end}/${body.length}`;
+				body = body.subarray( start, end + 1 );
+				status = 206;
+			}
+			headers[ "Content-Length" ] = body.length;
+			response.writeHead( status, headers );
 			if( request.method === "HEAD" ) {
 				response.end();
 			} else {
