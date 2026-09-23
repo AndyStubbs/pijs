@@ -8,7 +8,9 @@ import * as g_test from "node:test";
 import * as g_generateMetadata from "../../scripts/generate-metadata.js";
 const assert = g_assert;
 const test = g_test.test;
-const { formatDescription, normalizeNewlines, normalizeParsedStrings, parseMetadata } = g_generateMetadata;
+const {
+	formatDescription, normalizeNewlines, normalizeParsedStrings, parseMetadata, sortVersionFolders
+} = g_generateMetadata;
 
 test( "normalizeNewlines converts supported newline sequences to LF", () => {
 	assert.equal( normalizeNewlines( "one\ntwo" ), "one\ntwo" );
@@ -86,4 +88,13 @@ test( "formatDescription preserves paragraphs and Markdown lists", () => {
 		"- First item\n- Second item\n1. Ordered item\n2. Final item";
 
 	assert.equal( formatDescription( description ), expected );
+} );
+
+test( "sortVersionFolders orders metadata layers numerically", () => {
+	const names = [ "pi-2.2", "pi-2.10", "pi-1.2", "pi-2.3", "pi-2.0" ];
+	assert.deepEqual(
+		sortVersionFolders( names ),
+		[ "pi-1.2", "pi-2.0", "pi-2.2", "pi-2.3", "pi-2.10" ]
+	);
+	assert.deepEqual( names[ 0 ], "pi-2.2" );
 } );

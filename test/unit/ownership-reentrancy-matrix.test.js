@@ -108,13 +108,14 @@ function createAudioHarness() {
 			load() { this.loads++; }
 		}
 	} );
+	context.g_context = { "getVolume": () => 0.75 };
 	vm.runInContext(
-		fs.readFileSync( path.join( DIRNAME, "../../plugins/sound/sound.js" ), "utf8" )
-			.replace( /export /g, "" ),
+		fs.readFileSync( path.join( DIRNAME, "../../plugins/sound/samples.js" ), "utf8" )
+			.replace( /^import .*;\r?\n/gm, "" ).replace( /export /g, "" ),
 		context,
-		{ "filename": "plugins/sound/sound.js" }
+		{ "filename": "plugins/sound/samples.js" }
 	);
-	context.registerSound( {
+	context.registerSamples( {
 		"addCommand": ( name, fn ) => { commands[ name ] = fn; },
 		"utils": { "getInt": ( v, d ) => v ?? d, "getFloat": ( v, d ) => v ?? d },
 		"wait": () => { counts.wait++; },

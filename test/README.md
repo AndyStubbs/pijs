@@ -1,6 +1,7 @@
 # Correctness testing
 
 Install Node 18+, run `npm install`, and install Chromium with `npx playwright install chromium`.
+The audio browser tests also need Firefox and WebKit: `npx playwright install firefox webkit`.
 Run commands from the repository root. The command wrappers work on Windows and POSIX without
 shell-specific environment assignments.
 
@@ -23,6 +24,8 @@ shell-specific environment assignments.
 | `npm run test:benchmark` | Benchmark-tool correctness tests, without measurement campaigns |
 | `npm run test:performance-ui` | Performance report browser tests |
 | `npm run test:metadata` | Metadata parser and formatting tests |
+| `npm run size` | Minified and gzipped bundle, plugin, and differential sizes in `build/size-report.json` |
+| `npm run sound:references` | Re-record the Pi.js 2.2 reference renders used by the sound lab |
 
 The complete workflow stops at the first failed stage. Node files run sequentially to limit competing
 browser and build processes. Visual workers remain configurable through Playwright arguments:
@@ -43,8 +46,59 @@ CSS sizing, and keyboard/mouse input checks. Install Firefox with
 `npx playwright install firefox` first. Browser versions and results are saved under
 `test/test-results/firefox/`. This check uses assertions, without Chromium PNG baselines.
 
-Safari testing is skipped for v2.2 because macOS hardware is unavailable. Validation is deferred
-until community testing support becomes available for a future version.
+Safari itself is not tested because macOS hardware is unavailable. WebKit coverage comes from
+Playwright's WebKit build as described below; iOS-specific audio behavior needs a device.
+
+### Audio engines
+
+The audio browser tests (`audio-*-browser.test.js`) run in Chromium, Firefox, and WebKit from
+`npm run test:browser`. Set `PI_AUDIO_ENGINES` to a comma-separated subset, such as
+`chromium,firefox`, while iterating. A missing engine fails with the install command.
+
+The offline render harness (`test/unit/audio-render-harness.js`) replaces the page's
+`AudioContext`, timers, clocks, `Math.random`, and visibility before any bundle loads, then renders
+into an `OfflineAudioContext`. Engine support determines which tests run; the rest skip with the
+reason in the test output:
+
+| Engine | Web Audio | Offline `suspend()` | Harness coverage |
+| --- | --- | --- | --- |
+| Chromium 141 | Yes | Yes | All renders, including clock-driven tests |
+| Firefox 142 | Yes | No | Single-pass renders; clock-driven tests skip |
+| WebKit 26 (Playwright, Windows) | No | No | Media-element lifecycle tests only |
+
+Playwright's Windows WebKit build has no `AudioContext` or `OfflineAudioContext`. Render
+coverage for WebKit needs a platform whose WebKit build includes Web Audio, and Safari needs
+manual listening. Firefox also lacks `AudioParam.cancelAndHoldAtTime()`.
+
+Click checks compare renders with a reference carrier multiplied by an independent oracle
+envelope (`test/unit/audio-metrics.js`). Tolerances are recorded per metric and engine in
+`test/unit/audio-tolerances.js`; run the calibration test with `PI_AUDIO_CALIBRATE=1` to print
+the observed extremes before changing them.
+
+`npm run sound:references` re-records the Pi.js 2.2 reference renders in
+`test/media/sound-2.2/` from the frozen `releases/pi-2.2.0/pi.js` bundle.
+
+### Listening check
+
+Each sound phase closes with a listening pass in every engine. Run `npm run build` and
+`npm run server`, then open the sound lab in each engine:
+
+| Engine | Command |
+| --- | --- |
+| Chromium | `npx playwright cr http://localhost:8080/test/demos/sound_lab_01.html` |
+| Firefox | `npx playwright ff http://localhost:8080/test/demos/sound_lab_01.html` |
+| WebKit | `npx playwright wk http://localhost:8080/test/demos/sound_lab_01.html` |
+
+In each engine:
+
+1. Click the page once so the browser allows audio.
+2. With the master volume at 0.75, play A and B for every preset. They should match in pitch,
+   length, and level, with no clicks at onset or stop.
+3. Sweep the synth controls, including zero attack and short decay, and listen for clicks.
+4. Record the engine version and anything that differs between A and B.
+
+Playwright's Windows WebKit has no Web Audio, so the WebKit pass uses Safari on macOS or iOS, or
+Playwright WebKit on a platform whose build includes Web Audio.
 
 Additional browser/GPU performance campaigns are optional follow-up work. Performance claims
 must identify the measured browser, hardware, and workload. A benchmark timeout needs diagnosis;

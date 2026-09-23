@@ -1,65 +1,31 @@
 /**
  * SYS-004 and SYS-018 browser regressions against fresh in-memory full and lite bundles.
- * Run with node --test test/unit/audio-lifecycle-browser.test.js; no server is required.
+ * Runs in every engine from audio-engines.js. Run with
+ * node --test test/unit/audio-lifecycle-browser.test.js; no server is required.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_fsPromises from "node:fs/promises";
-import * as g_path from "node:path";
-import * as g_esbuild from "esbuild";
-import * as g_playwright from "@playwright/test";
-import * as g_fs from "node:fs";
-import * as g_url from "node:url";
-const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
-const { test, before, after } = g_test;
+import * as g_audioEngines from "./audio-engines.js";
+import * as g_sourceHarness from "./browser-source-harness.js";
+const { test, describe, before, after } = g_test;
 const assert = g_assert;
-const fs = g_fsPromises;
-const path = g_path;
-const esbuild = g_esbuild;
-const { chromium } = g_playwright;
 
 const bundles = {};
-let browser;
+const browsers = {};
+const pages = {};
 let audioBundle;
 
 before( async () => {
-	for( const [ name, entry ] of [ [ "full", "index-full.js" ], [ "lite", "index.js" ] ] ) {
-		const result = await esbuild.build( {
-			"entryPoints": [ path.join( DIRNAME, "../../src", entry ) ],
-			"bundle": true, "write": false, "format": "iife", "target": "es2020",
-			"define": { "__VERSION__": JSON.stringify( JSON.parse( g_fs.readFileSync( new URL( "../../package.json", import.meta.url ), "utf8" ) ).version ) },
-			"loader": { ".vert": "text", ".frag": "text" },
-			"plugins": [ {
-				"name": "test-font-data",
-				"setup": build => {
-					build.onLoad( { "filter": /\.webp$/ }, async args => {
-						const data = await fs.readFile( args.path );
-						const font = { "data": "data:image/webp;base64," + data.toString( "base64" ) };
-						return { "contents": "export default " + JSON.stringify( font ),
-							"loader": "js" };
-					} );
-				}
-			} ]
-		} );
-		bundles[ name ] = result.outputFiles[ 0 ].text;
-	}
-	const plugin = await esbuild.build( {
-		"entryPoints": [ path.join( DIRNAME, "../../plugins/sound/index.js" ) ],
-		"bundle": true, "write": false, "format": "iife", "target": "es2020"
-	} );
-	audioBundle = plugin.outputFiles[ 0 ].text;
-	browser = await chromium.launch( { "headless": true } );
+	bundles.full = await g_sourceHarness.buildSource( "src/index-full.js" );
+	bundles.lite = await g_sourceHarness.buildSource( "src/index.js" );
+	audioBundle = await g_sourceHarness.buildSource( "plugins/sound/index.js" );
 } );
 
-after( async () => { await browser?.close(); } );
-
-async function probe( bundle, fn, arg ) {
-	const page = await browser.newPage();
-	const errors = [];
+async function probe( engine, bundle, fn, arg ) {
+	const reusable = pages[ engine ];
+	const page = await reusable.load();
 	let timeout;
-	page.on( "pageerror", error => errors.push( error.message ) );
 	try {
-		await page.setContent( "<!doctype html><html><body></body></html>" );
 		await page.addScriptTag( { "content": bundles[ bundle ] } );
 		if( bundle === "lite" ) {
 			await page.addScriptTag( { "content": audioBundle } );
@@ -74,11 +40,10 @@ async function probe( bundle, fn, arg ) {
 		] );
 		// Cross a task boundary to observe errors from all queued microtasks.
 		await page.evaluate( () => new Promise( resolve => setTimeout( resolve, 0 ) ) );
-		assert.deepEqual( errors, [] );
+		assert.deepEqual( reusable.errors, [] );
 		return result;
 	} finally {
 		clearTimeout( timeout );
-		await page.close();
 	}
 }
 
@@ -150,65 +115,81 @@ function installAudioHarness() {
 	};
 }
 
-for( const bundle of [ "full", "lite" ] ) {
-	test( `SYS-004 ${bundle}: late events cannot release an unrelated readiness wait`, async () => {
-		const result = await probe( bundle, async () => {
-			const h = audioTest;
-			const id = $.loadAudio( "one.wav" );
-			const audio = h.instances[ 0 ];
-			const ready = audio.listeners.get( "canplay" );
-			const error = audio.listeners.get( "error" );
-			audio.dispatchEvent( new Event( "canplay" ) );
-			await $.ready();
-			h.control.wait();
-			let settlements = 0;
-			const promise = $.ready().then( () => { settlements++; } );
-			ready(); error();
-			audio.dispatchEvent( new Event( "error" ) );
-			await h.checkpoint();
-			const pending = settlements;
-			const retries = h.retries.size;
-			$.removeAudio( id );
-			await h.checkpoint();
-			const afterRemoval = settlements;
-			h.control.done();
-			await promise;
-			return [ pending, afterRemoval, settlements, retries, h.instances.length, h.released() ];
-		} );
-		assert.deepEqual( result, [ 0, 0, 1, 0, 1, true ] );
-	} );
+// Engines run in parallel; each engine's tests share one page and run in order
+describe( "audio engines", { "concurrency": true }, () => {
+	for( const engine of g_audioEngines.AUDIO_ENGINES ) {
+		describe( engine, { "concurrency": 1 }, () => {
+			before( async () => {
+				browsers[ engine ] = await g_audioEngines.launchEngine( engine );
+				pages[ engine ] = await g_audioEngines.createReusablePage( browsers[ engine ] );
+			} );
 
-	for( const timing of [ "pending", "retry", "partial" ] ) {
-		test( `SYS-018 ${bundle}: ${timing} removal cancels and isolates a replacement`, async () => {
-			assert.deepEqual( await probe( bundle, removalScenario, timing ),
-				[ 0, 0, 1, 1, 3, true ] );
+			after( async () => {
+				await browsers[ engine ]?.close();
+			} );
+
+			for( const bundle of [ "full", "lite" ] ) {
+				test( `SYS-004 ${bundle}: late events cannot release an unrelated readiness wait`, async () => {
+					const result = await probe( engine, bundle, async () => {
+						const h = audioTest;
+						const id = $.loadAudio( "one.wav" );
+						const audio = h.instances[ 0 ];
+						const ready = audio.listeners.get( "canplay" );
+						const error = audio.listeners.get( "error" );
+						audio.dispatchEvent( new Event( "canplay" ) );
+						await $.ready();
+						h.control.wait();
+						let settlements = 0;
+						const promise = $.ready().then( () => { settlements++; } );
+						ready(); error();
+						audio.dispatchEvent( new Event( "error" ) );
+						await h.checkpoint();
+						const pending = settlements;
+						const retries = h.retries.size;
+						$.removeAudio( id );
+						await h.checkpoint();
+						const afterRemoval = settlements;
+						h.control.done();
+						await promise;
+						return [ pending, afterRemoval, settlements, retries, h.instances.length, h.released() ];
+					} );
+					assert.deepEqual( result, [ 0, 0, 1, 0, 1, true ] );
+				} );
+
+				for( const timing of [ "pending", "retry", "partial" ] ) {
+					test( `SYS-018 ${bundle}: ${timing} removal cancels and isolates a replacement`, async () => {
+						assert.deepEqual( await probe( engine, bundle, removalScenario, timing ),
+							[ 0, 0, 1, 1, 3, true ] );
+					} );
+				}
+
+				test( `SYS-004 ${bundle}: retry success and terminal failure settle independently`, async () => {
+					const result = await probe( engine, bundle, async () => {
+						const h = audioTest;
+						const id = $.loadAudio( "retry.wav", "mixed", 2 );
+						let settled = false;
+						const promise = $.ready().then( () => { settled = true; } );
+						const oldReady = h.instances[ 0 ].listeners.get( "canplay" );
+						h.instances[ 0 ].dispatchEvent( new Event( "error" ) );
+						oldReady();
+						h.retry();
+						h.instances[ 2 ].dispatchEvent( new Event( "canplay" ) );
+						$.playAudio( id );
+						await h.checkpoint();
+						const pending = settled;
+						h.instances[ 1 ].error = null;
+						h.instances[ 1 ].dispatchEvent( new Event( "error" ) );
+						await promise;
+						const plays = h.instances[ 2 ].plays;
+						$.removeAudio( id );
+						return [ pending, settled, plays, h.retries.size, h.released() ];
+					} );
+					assert.deepEqual( result, [ false, true, 1, 0, true ] );
+				} );
+			}
 		} );
 	}
-
-	test( `SYS-004 ${bundle}: retry success and terminal failure settle independently`, async () => {
-		const result = await probe( bundle, async () => {
-			const h = audioTest;
-			const id = $.loadAudio( "retry.wav", "mixed", 2 );
-			let settled = false;
-			const promise = $.ready().then( () => { settled = true; } );
-			const oldReady = h.instances[ 0 ].listeners.get( "canplay" );
-			h.instances[ 0 ].dispatchEvent( new Event( "error" ) );
-			oldReady();
-			h.retry();
-			h.instances[ 2 ].dispatchEvent( new Event( "canplay" ) );
-			$.playAudio( id );
-			await h.checkpoint();
-			const pending = settled;
-			h.instances[ 1 ].error = null;
-			h.instances[ 1 ].dispatchEvent( new Event( "error" ) );
-			await promise;
-			const plays = h.instances[ 2 ].plays;
-			$.removeAudio( id );
-			return [ pending, settled, plays, h.retries.size, h.released() ];
-		} );
-		assert.deepEqual( result, [ false, true, 1, 0, true ] );
-	} );
-}
+} );
 
 async function removalScenario( timing ) {
 	const h = audioTest;

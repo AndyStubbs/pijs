@@ -7,11 +7,11 @@
 import * as g_esbuild from "esbuild";
 import * as g_fs from "node:fs";
 import * as g_path from "node:path";
-import * as g_zlib from "node:zlib";
 import * as g_buildPlugin from "./build-plugin.js";
 import * as g_generateMetadata from "./generate-metadata.js";
 import * as g_validateTypeDefinitions from "./validate-type-definitions.js";
 import * as g_copyToRelease from "./copy-to-release.js";
+import * as g_sizeUtils from "./size-utils.js";
 import * as g_url from "node:url";
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
 function isMainModule() {
@@ -24,7 +24,6 @@ function isMainModule() {
 const esbuild = g_esbuild;
 const fs = g_fs;
 const path = g_path;
-const zlib = g_zlib;
 const { buildPlugin } = g_buildPlugin;
 const { generateMetadata } = g_generateMetadata;
 const { validateTypeDefinitions } = g_validateTypeDefinitions;
@@ -274,6 +273,42 @@ async function buildPiVersion( versionName, entryFile, outputPrefix ) {
 	} );
 }
 
+/**
+ * Prints one build report line with the minified and gzipped size of a file.
+ *
+ * @param {string} filePath - Built file
+ * @param {string} label - Report label
+ */
+function printFileSize( filePath, label ) {
+	if( !fs.existsSync( filePath ) ) {
+		return;
+	}
+	const buffer = fs.readFileSync( filePath );
+	let gzipLabel = "n/a";
+	try {
+		gzipLabel = g_sizeUtils.formatSize( g_sizeUtils.gzipSize( buffer ) );
+	} catch( gzipError ) {
+		console.warn( `  ⚠️ Unable to gzip ${label}: ${gzipError.message}` );
+	}
+	console.log( `  ${label}: ${g_sizeUtils.formatSize( buffer.length )} (gzip ≈ ${gzipLabel})` );
+}
+
+/**
+ * Lists built plugin directories in build/plugins.
+ *
+ * @returns {string[]} Sorted plugin names
+ */
+function listBuiltPlugins() {
+	const pluginsBuildDir = path.join( buildDir, "plugins" );
+	if( !fs.existsSync( pluginsBuildDir ) ) {
+		return [];
+	}
+	return fs.readdirSync( pluginsBuildDir, { "withFileTypes": true } )
+		.filter( entry => entry.isDirectory() )
+		.map( entry => entry.name )
+		.sort();
+}
+
 /** Build bundles; testOnly avoids documentation and release publication. */
 async function build( { testOnly = false } = {} ) {
 	console.log( `Building Pi.js v${buildVersion} from ${sourceDir}...` );
@@ -334,22 +369,17 @@ async function build( { testOnly = false } = {} ) {
 		console.log( "" );
 		console.log( "File sizes:" );
 		files.forEach( file => {
-			const filePath = path.join( buildDir, file.name );
-			if( fs.existsSync( filePath ) ) {
-				const buffer = fs.readFileSync( filePath );
-				const sizeKB = ( buffer.length / 1024 ).toFixed( 2 );
-				let gzipKB = "n/a";
-				try {
-					const gzipBuffer = zlib.gzipSync(
-						buffer, { "level": zlib.constants.Z_BEST_COMPRESSION }
-					);
-					gzipKB = ( gzipBuffer.length / 1024 ).toFixed( 2 );
-				} catch( gzipError ) {
-					console.warn( `  ⚠️ Unable to gzip ${file.name}: ${gzipError.message}` );
-				}
-				console.log( `  ${file.label} (${file.name}): ${sizeKB} KB (gzip ≈ ${gzipKB} KB)` );
-			}
+			printFileSize( path.join( buildDir, file.name ), `${file.label} (${file.name})` );
 		} );
+
+		console.log( "" );
+		console.log( "Plugin sizes (IIFE minified):" );
+		for( const pluginName of listBuiltPlugins() ) {
+			printFileSize(
+				path.join( buildDir, "plugins", pluginName, `${pluginName}.min.js` ),
+				`${pluginName} (${pluginName}.min.js)`
+			);
+		}
 
 	} catch( error ) {
 		console.error( "✗ Build failed:", error );
@@ -361,4 +391,7 @@ if( isMainModule() ) {
 	build( { "testOnly": process.argv.includes( "--test-only" ) } );
 }
 
-export { build, buildAllPlugins };
+export {
+	build, buildAllPlugins, getBuildOptions, getFullBanner, getLiteBanner, injectVersionPlugin,
+	webpBase64Plugin
+};

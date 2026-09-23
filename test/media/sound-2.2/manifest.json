@@ -1,0 +1,64 @@
+{
+	"source": "releases/pi-2.2.0/pi.js",
+	"engine": "chromium",
+	"sampleRate": 48000,
+	"format": "16-bit PCM mono WAV, left channel of the offline render",
+	"presets": [
+		{
+			"name": "default-triangle",
+			"label": "Default triangle",
+			"file": "default-triangle.wav",
+			"duration": 1.2533333333333334,
+			"code": "$.sound( 440 );"
+		},
+		{
+			"name": "square-attack-decay",
+			"label": "Square with attack and decay",
+			"file": "square-attack-decay.wav",
+			"duration": 0.8,
+			"code": "$.sound( { \"frequency\": 330, \"duration\": 0.4, \"oType\": \"square\", \"attack\": 0.05, \"decay\": 0.3 } );"
+		},
+		{
+			"name": "sawtooth-bass",
+			"label": "Sawtooth bass",
+			"file": "sawtooth-bass.wav",
+			"duration": 0.9066666666666666,
+			"code": "$.sound( 110, 0.6, 0.8, \"sawtooth\", 0, 0.01, 0.2 );"
+		},
+		{
+			"name": "sine-blip",
+			"label": "Sine blip",
+			"file": "sine-blip.wav",
+			"duration": 0.26666666666666666,
+			"code": "$.sound( { \"frequency\": 1320, \"duration\": 0.05, \"oType\": \"sine\", \"decay\": 0.05 } );"
+		},
+		{
+			"name": "wave-table",
+			"label": "Wave table",
+			"file": "wave-table.wav",
+			"duration": 0.7733333333333333,
+			"code": "$.sound( 262, 0.5, 0.8, [ [ 0, 0.4, 0.4, 1, 1, 1, 0.3, 0.7, 0.6, 0.5, 0.9, 0.8 ], [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ] ], 0, 0, 0.1 );"
+		},
+		{
+			"name": "play-phrase",
+			"label": "PLAY phrase",
+			"file": "play-phrase.wav",
+			"duration": 1.52,
+			"code": "$.play( \"T176 L16 SQUARE O5 C E G C6 O5 G8 O6 C4\" );"
+		},
+		{
+			"name": "galaga-shoot",
+			"label": "Galaga shoot",
+			"file": "galaga-shoot.wav",
+			"duration": 0.32,
+			"code": "$.sound( { \"frequency\": 980, \"duration\": 0.045, \"volume\": 0.16, \"oType\": \"square\", \"attack\": 0.002, \"decay\": 0.042 } );\n$.sound( { \"frequency\": 1560, \"duration\": 0.03, \"volume\": 0.1, \"oType\": \"triangle\", \"attack\": 0.001, \"decay\": 0.028 } );\n$.sound( { \"frequency\": 420, \"duration\": 0.07, \"volume\": 0.08, \"oType\": \"square\", \"delay\": 0.03, \"attack\": 0.001, \"decay\": 0.065 } );"
+		},
+		{
+			"name": "galaga-explosion",
+			"label": "Galaga explosion",
+			"file": "galaga-explosion.wav",
+			"duration": 1.0133333333333334,
+			"code": "$.sound( { \"frequency\": 210, \"duration\": 0.12, \"volume\": 0.28, \"oType\": \"sawtooth\", \"attack\": 0.004, \"decay\": 0.11 } );\n$.sound( { \"frequency\": 92, \"duration\": 0.22, \"volume\": 0.3, \"oType\": \"square\", \"delay\": 0.03, \"attack\": 0.008, \"decay\": 0.2 } );\n$.sound( { \"frequency\": 48, \"duration\": 0.32, \"volume\": 0.22, \"oType\": \"sawtooth\", \"delay\": 0.07, \"attack\": 0.015, \"decay\": 0.3 } );\n$.sound( { \"frequency\": 36, \"duration\": 0.28, \"volume\": 0.14, \"oType\": \"triangle\", \"delay\": 0.1, \"attack\": 0.02, \"decay\": 0.26 } );"
+		}
+	]
+}

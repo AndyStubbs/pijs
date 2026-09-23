@@ -101,6 +101,14 @@ const REQUIRED_DECLARATIONS = [
 			"isOffscreen?: boolean, resizeCallback?: ( screenApi: Screen, " +
 			"fromSize: Size, toSize: Size ) => void, parent?: number | Screen, " +
 			"noCss?: boolean ): Screen;"
+	},
+	{
+		"name": "plugin service provider",
+		"text": "provideService: ( service: object ) => void;"
+	},
+	{
+		"name": "plugin service lookup",
+		"text": "getService: ( pluginName: string ) => any;"
 	}
 ];
 

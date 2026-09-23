@@ -345,6 +345,37 @@ Access to Pi.js utility functions (see `src/core/utils.js`):
 - `getInt( val, def )` - Parse integer with default
 - And more...
 
+### Services
+
+#### `provideService( service )`
+
+Publish one service object for plugins that depend on this one. Call it during `init`; a call
+after `init` returns throws `SERVICE_PROVIDE_CLOSED`. A plugin provides at most one service, so a
+second call throws `DUPLICATE_SERVICE`, and a value that is not an object throws
+`INVALID_SERVICE`. If `init` fails, the service is discarded.
+
+#### `getService( pluginName )`
+
+Return the service of a plugin named in this plugin's `dependencies`. Dependencies initialize
+first, so the call works inside `init`. It throws `SERVICE_NOT_AVAILABLE` when the plugin is not
+a declared dependency, is not initialized, or provided no service.
+
+**Example:**
+```javascript
+pi.registerPlugin( {
+	"name": "mixer",
+	"init": pluginApi => pluginApi.provideService( { "setLevel": level => {} } )
+} );
+pi.registerPlugin( {
+	"name": "audio-tools",
+	"dependencies": [ "mixer" ],
+	"init": pluginApi => {
+		const mixer = pluginApi.getService( "mixer" );
+		pluginApi.addCommand( "mute", () => mixer.setLevel( 0 ), false, [] );
+	}
+} );
+```
+
 ---
 
 ## Building Plugins

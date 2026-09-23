@@ -1,6 +1,6 @@
 /**
  * Pi.js Type Definitions
- * Version: pi-2.2
+ * Version: pi-2.3
  * Author: Andy Stubbs
  * License: Apache-2.0
  */
@@ -479,6 +479,11 @@ declare namespace Pi {
 		addScreenCleanupFunction: ( cleanupFn: Function ) => void;
 
 		/**
+		 * Return the active screen data, or throw if none unless isScreenOptional is true.
+		 */
+		getActiveScreen: ( fnName: string, isScreenOptional?: boolean ) => any;
+
+		/**
 		 * Get data for a specific screen by name.
 		 */
 		getScreenData: ( fnName: string, screenId: string ) => any;
@@ -487,6 +492,11 @@ declare namespace Pi {
 		 * Get array of all screen data objects.
 		 */
 		getAllScreensData: () => any[];
+
+		/**
+		 * Resize an offscreen screen to integer dimensions.
+		 */
+		resizeOffscreenScreen: ( screenData: any, width: number, height: number ) => void;
 
 		/**
 		 * Get the main Pi.js API object.
@@ -512,6 +522,16 @@ declare namespace Pi {
 		 * Register a clearEvents handler for a specific event type.
 		 */
 		registerClearEvents: ( name: string, handler: Function ) => void;
+
+		/**
+		 * During init, publish one service object for plugins that depend on this plugin.
+		 */
+		provideService: ( service: object ) => void;
+
+		/**
+		 * Return the service of an initialized plugin named in this plugin's dependencies.
+		 */
+		getService: ( pluginName: string ) => any;
 	}
 
 	/**
@@ -1479,8 +1499,6 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * Draws a closed polygon on the current screen. The outline uses the current drawing color. If **fillColor** is supplied, the interior is filled first, then the outline is drawn on top. Omit fillColor, or pass null, to draw only the outline. fillColor accepts a palette index or any Pi.js color value.
 		 *
-		 * Included in Pi.js Full. With Lite, load the polygons plugin before calling polygon. Do not load the standalone plugin with Full; that throws DUPLICATE_PLUGIN.
-		 *
 		 * **points** is one closed path. Pass a flat array of x, y pairs, a typed array, or an array of { x, y } objects. Coordinates round to integers. Consecutive duplicate points and a repeated closing point are removed. At least three distinct rounded points are required. The path closes automatically from the last point to the first.
 		 *
 		 * Convex, concave, self-intersecting, and overlapping shapes are supported, including stars and bowties. Filling uses nonzero winding: overlapping regions stay filled when edges wind the same way, and cancel when they wind opposite ways. Reversing the whole path does not change the fill. Fill coverage can differ from the outline on some edges, including the bottom row. A translucent outline blends over filled boundary pixels.
@@ -2289,6 +2307,8 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 * - **wait**(): Hold $.ready() while an async resource loads.
 		 * - **done**(): Release one wait() so $.ready() can continue.
 		 * - **registerClearEvents**(name, handler): Handle $.clearEvents for an event type.
+		 * - **provideService**(service): During init, publish one service object for plugins that depend on this plugin. A second call throws DUPLICATE_SERVICE, a non-object throws INVALID_SERVICE, and a call after init throws SERVICE_PROVIDE_CLOSED.
+		 * - **getService**(pluginName): Return the service of a plugin listed in dependencies. Throws SERVICE_NOT_AVAILABLE when the plugin is not a declared dependency, is not initialized, or provided no service.
 		 *
 		 * Optional version and description are stored for getPlugins. Optional dependencies are other plugin names that must initialize first. Omit dependencies, or pass an empty array, if there are none. Missing or cyclic dependencies stay pending. A failed initializer throws PLUGIN_INIT_FAILED and is not retried; plugins that depend on it stay pending. Duplicate names throw DUPLICATE_PLUGIN.
 		 *
@@ -2563,7 +2583,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Current Pi.js version string.
 		 */
-		readonly version: "2.2.0";
+		readonly version: "2.3.0";
 	}
 }
 

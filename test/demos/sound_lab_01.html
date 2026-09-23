@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Pi.js Sound Lab</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			padding: 20px;
+			background: #222;
+			color: #fff;
+			max-width: 960px;
+			margin: 0 auto;
+		}
+		h1 {
+			margin-bottom: 4px;
+		}
+		.intro {
+			color: #bbb;
+			margin-top: 0;
+		}
+		.section {
+			margin-bottom: 24px;
+			padding: 16px 20px;
+			background: #333;
+			border-radius: 5px;
+		}
+		.section h2 {
+			margin-top: 0;
+		}
+		.controls {
+			display: grid;
+			grid-template-columns: repeat( auto-fill, minmax( 260px, 1fr ) );
+			gap: 10px 24px;
+		}
+		.control {
+			display: grid;
+			grid-template-columns: 90px 1fr 70px;
+			align-items: center;
+			gap: 8px;
+		}
+		.control input[type="number"], .control select {
+			width: 100%;
+			box-sizing: border-box;
+		}
+		button {
+			margin: 6px 8px 6px 0;
+			padding: 8px 16px;
+			font-size: 15px;
+			cursor: pointer;
+		}
+		pre {
+			background: #1a1a1a;
+			padding: 10px;
+			border-radius: 4px;
+			white-space: pre-wrap;
+			word-break: break-word;
+			font-size: 13px;
+		}
+		fieldset[disabled] {
+			opacity: 0.45;
+		}
+		fieldset {
+			border: 1px solid #555;
+			border-radius: 4px;
+		}
+		table {
+			width: 100%;
+			border-collapse: collapse;
+		}
+		td, th {
+			padding: 8px 6px;
+			border-bottom: 1px solid #444;
+			text-align: left;
+			vertical-align: top;
+		}
+		canvas {
+			background: #1a1a1a;
+			width: 240px;
+			height: 48px;
+		}
+		.status {
+			color: #f99;
+		}
+		.note {
+			color: #bbb;
+			font-size: 14px;
+		}
+	</style>
+</head>
+<body>
+	<h1>Sound Lab</h1>
+	<p class="intro">
+		Shape a synthesized sound and compare it with recorded Pi.js 2.2 renders. Serve the
+		repository with <code>npm run server</code> after <code>npm run build</code>, then open
+		this page from <code>http://localhost:8080/test/demos/sound_lab_01.html</code>.
+	</p>
+
+	<div class="section">
+		<h2>Master Volume</h2>
+		<div class="control">
+			<label for="masterVolume">Volume</label>
+			<input id="masterVolume" type="range" min="0" max="1" step="0.01" value="0.75">
+			<output id="masterVolumeValue">0.75</output>
+		</div>
+		<p class="note">
+			Keep the master volume at 0.75 for level-matched A/B listening: the recorded
+			references include the 2.2 default master volume.
+		</p>
+	</div>
+
+	<div class="section">
+		<h2>Envelope and Oscillator</h2>
+		<div class="controls" id="synthControls"></div>
+		<p>
+			<button id="playSynth">Play (Space)</button>
+			<button id="stopSynth">Stop All</button>
+		</p>
+		<pre id="synthCall"></pre>
+		<fieldset disabled>
+			<legend>Noise, pan, and sweep</legend>
+			<p class="note">
+				These controls are inactive because sound() does not accept noise types, pan,
+				or frequencyEnd yet.
+			</p>
+			<label>oType <select><option>white</option><option>pink</option></select></label>
+			<label>Pan <input type="range" min="-1" max="1" step="0.01" value="0"></label>
+			<label>Frequency end <input type="number" value="110"></label>
+		</fieldset>
+	</div>
+
+	<div class="section">
+		<h2>A/B Against Pi.js 2.2</h2>
+		<p class="note">
+			A plays the recorded 2.2 render directly through an audio element, outside Pi.js.
+			B runs the same call live through this build.
+		</p>
+		<p class="status" id="referenceStatus">Loading references...</p>
+		<table>
+			<thead>
+				<tr><th>Preset</th><th>Recorded 2.2 waveform</th><th>Listen</th></tr>
+			</thead>
+			<tbody id="referenceRows"></tbody>
+		</table>
+	</div>
+
+	<script src="../../build/pi.js"></script>
+	<script>
+		"use strict";
+
+		const REFERENCE_DIR = "../media/sound-2.2/";
+
+		const SYNTH_CONTROLS = [
+			{ "name": "frequency", "label": "Frequency", "min": 20, "max": 2000, "step": 1,
+				"value": 440 },
+			{ "name": "duration", "label": "Duration", "min": 0, "max": 3, "step": 0.01,
+				"value": 0.5 },
+			{ "name": "volume", "label": "Volume", "min": 0, "max": 1, "step": 0.01,
+				"value": 1 },
+			{ "name": "delay", "label": "Delay", "min": 0, "max": 2, "step": 0.01,
+				"value": 0 },
+			{ "name": "attack", "label": "Attack", "min": 0, "max": 1, "step": 0.001,
+				"value": 0 },
+			{ "name": "decay", "label": "Decay", "min": 0, "max": 2, "step": 0.001,
+				"value": 0.1 }
+		];
+
+		const OSCILLATOR_TYPES = [ "triangle", "sine", "square", "sawtooth" ];
+
+		const inputs = {};
+
+		// Synth controls: each range slider mirrors a number box
+		function buildSynthControls() {
+			const container = document.getElementById( "synthControls" );
+			for( const spec of SYNTH_CONTROLS ) {
+				const row = document.createElement( "div" );
+				row.className = "control";
+				const label = document.createElement( "label" );
+				label.textContent = spec.label;
+				label.htmlFor = "control-" + spec.name;
+				const range = document.createElement( "input" );
+				range.type = "range";
+				range.id = "control-" + spec.name;
+				const number = document.createElement( "input" );
+				number.type = "number";
+				for( const input of [ range, number ] ) {
+					input.min = spec.min;
+					input.max = spec.max;
+					input.step = spec.step;
+					input.value = spec.value;
+				}
+				range.addEventListener( "input", () => {
+					number.value = range.value;
+					updateSynthCall();
+				} );
+				number.addEventListener( "input", () => {
+					range.value = number.value;
+					updateSynthCall();
+				} );
+				inputs[ spec.name ] = number;
+				row.append( label, range, number );
+				container.appendChild( row );
+			}
+
+			const row = document.createElement( "div" );
+			row.className = "control";
+			const label = document.createElement( "label" );
+			label.textContent = "oType";
+			label.htmlFor = "control-oType";
+			const select = document.createElement( "select" );
+			select.id = "control-oType";
+			for( const type of OSCILLATOR_TYPES ) {
+				const option = document.createElement( "option" );
+				option.value = type;
+				option.textContent = type;
+				select.appendChild( option );
+			}
+			select.addEventListener( "change", updateSynthCall );
+			inputs.oType = select;
+			row.append( label, select, document.createElement( "span" ) );
+			container.appendChild( row );
+		}
+
+		function getSynthOptions() {
+			const options = {};
+			for( const spec of SYNTH_CONTROLS ) {
+				options[ spec.name ] = Number( inputs[ spec.name ].value );
+			}
+			options.oType = inputs.oType.value;
+			return options;
+		}
+
+		function updateSynthCall() {
+			const text = JSON.stringify( getSynthOptions(), null, "\t" );
+			document.getElementById( "synthCall" ).textContent = "$.sound( " + text + " );";
+		}
+
+		function playSynth() {
+			try {
+				$.sound( getSynthOptions() );
+			} catch( error ) {
+				document.getElementById( "synthCall" ).textContent = error.code + ": " +
+					error.message;
+			}
+		}
+
+		function stopAll() {
+			$.stopSound( null );
+			$.stopPlay( null );
+		}
+
+		// Master volume
+		function setupMasterVolume() {
+			const slider = document.getElementById( "masterVolume" );
+			const output = document.getElementById( "masterVolumeValue" );
+			slider.addEventListener( "input", () => {
+				output.textContent = Number( slider.value ).toFixed( 2 );
+				$.setVolume( Number( slider.value ) );
+			} );
+		}
+
+		// Reference A/B rows
+		function readWavSamples( buffer ) {
+			const view = new DataView( buffer );
+			const dataBytes = view.getUint32( 40, true );
+			const samples = new Float32Array( dataBytes / 2 );
+			for( let i = 0; i < samples.length; i++ ) {
+				samples[ i ] = view.getInt16( 44 + i * 2, true ) / 32767;
+			}
+			return samples;
+		}
+
+		function drawWaveform( canvas, samples ) {
+			const scale = window.devicePixelRatio || 1;
+			canvas.width = 240 * scale;
+			canvas.height = 48 * scale;
+			const context = canvas.getContext( "2d" );
+			const middle = canvas.height / 2;
+			const perColumn = Math.max( 1, Math.floor( samples.length / canvas.width ) );
+			context.fillStyle = "#6cf";
+			for( let x = 0; x < canvas.width; x++ ) {
+				let peak = 0;
+				const start = x * perColumn;
+				for( let i = start; i < start + perColumn && i < samples.length; i++ ) {
+					peak = Math.max( peak, Math.abs( samples[ i ] ) );
+				}
+				const height = Math.max( 1, peak * canvas.height );
+				context.fillRect( x, middle - height / 2, 1, height );
+			}
+		}
+
+		function addReferenceRow( preset ) {
+			const row = document.createElement( "tr" );
+			const nameCell = document.createElement( "td" );
+			const title = document.createElement( "strong" );
+			title.textContent = preset.label;
+			const code = document.createElement( "pre" );
+			code.textContent = preset.code;
+			nameCell.append( title, code );
+
+			const waveCell = document.createElement( "td" );
+			const canvas = document.createElement( "canvas" );
+			waveCell.appendChild( canvas );
+			fetch( REFERENCE_DIR + preset.file )
+				.then( response => response.arrayBuffer() )
+				.then( buffer => drawWaveform( canvas, readWavSamples( buffer ) ) );
+
+			const listenCell = document.createElement( "td" );
+			const playA = document.createElement( "button" );
+			playA.textContent = "A: 2.2";
+			const audio = new Audio( REFERENCE_DIR + preset.file );
+			playA.addEventListener( "click", () => {
+				audio.currentTime = 0;
+				audio.play();
+			} );
+			const playB = document.createElement( "button" );
+			playB.textContent = "B: this build";
+			const run = new Function( preset.code );
+			playB.addEventListener( "click", () => {
+				try {
+					run();
+				} catch( error ) {
+					playB.textContent = "B: " + error.code;
+				}
+			} );
+			listenCell.append( playA, playB );
+
+			row.append( nameCell, waveCell, listenCell );
+			document.getElementById( "referenceRows" ).appendChild( row );
+		}
+
+		function loadReferences() {
+			const status = document.getElementById( "referenceStatus" );
+			fetch( REFERENCE_DIR + "manifest.json" )
+				.then( response => {
+					if( !response.ok ) {
+						throw new Error( "HTTP " + response.status );
+					}
+					return response.json();
+				} )
+				.then( manifest => {
+					status.textContent = "";
+					for( const preset of manifest.presets ) {
+						addReferenceRow( preset );
+					}
+				} )
+				.catch( error => {
+					status.textContent = "Could not load the 2.2 references (" + error.message +
+						"). Serve the repository over HTTP.";
+				} );
+		}
+
+		buildSynthControls();
+		updateSynthCall();
+		setupMasterVolume();
+		loadReferences();
+		document.getElementById( "playSynth" ).addEventListener( "click", playSynth );
+		document.getElementById( "stopSynth" ).addEventListener( "click", stopAll );
+		document.addEventListener( "keydown", event => {
+			if( event.code === "Space" && event.target.tagName !== "INPUT" ) {
+				event.preventDefault();
+				playSynth();
+			}
+		} );
+	</script>
+</body>
+</html>

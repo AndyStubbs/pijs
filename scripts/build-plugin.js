@@ -26,6 +26,62 @@ const fs = g_fs;
 const path = g_path;
 
 /**
+ * Reads a plugin's banner.json.
+ *
+ * @param {string} pluginDir - Plugin source directory
+ * @returns {Object|null} Parsed banner data, or null when the plugin has no banner.json
+ */
+function readBannerData( pluginDir ) {
+	const bannerPath = path.join( pluginDir, "banner.json" );
+	if( !fs.existsSync( bannerPath ) ) {
+		return null;
+	}
+	return JSON.parse( fs.readFileSync( bannerPath, "utf8" ) );
+}
+
+/**
+ * Formats the license banner placed at the top of every plugin bundle.
+ *
+ * @param {Object} bannerData - Parsed banner.json contents
+ * @returns {string} Banner comment
+ */
+function formatPluginBanner( bannerData ) {
+	return `/**
+ * ${bannerData.name} - ${bannerData.description}
+ * @version ${bannerData.version}
+ * @author ${bannerData.author}
+ * @license ${bannerData.license}
+ * @preserve
+ */`;
+}
+
+/**
+ * Returns the esbuild options shared by every plugin bundle format.
+ *
+ * @param {string} entryPoint - Plugin index.js path
+ * @param {Array} plugins - esbuild plugins
+ * @param {string|null} banner - Banner comment, or null for none
+ * @returns {Object} esbuild options without format, minify, or outfile
+ */
+function getPluginBuildOptions( entryPoint, plugins, banner ) {
+	const buildOptions = {
+		"entryPoints": [ entryPoint ],
+		"bundle": true,
+		"sourcemap": true,
+		"target": "es2020",
+		"platform": "browser",
+		"loader": { ".vert": "text", ".frag": "text" },
+		"plugins": plugins,
+		"legalComments": "none"
+	};
+
+	if( banner ) {
+		buildOptions.banner = { "js": banner };
+	}
+	return buildOptions;
+}
+
+/**
  * Builds a plugin in ESM and IIFE formats
  * 
  * @param {string} pluginName - The name of the plugin to build
@@ -99,38 +155,18 @@ async function buildPlugin( pluginName, options = {} ) {
 
 	// Read banner.json if it exists
 	let banner = null;
-	const bannerPath = path.join( pluginDir, "banner.json" );
-	if( fs.existsSync( bannerPath ) ) {
-		try {
-			const bannerData = JSON.parse( fs.readFileSync( bannerPath, "utf8" ) );
-			banner = `/**
- * ${bannerData.name} - ${bannerData.description}
- * @version ${bannerData.version}
- * @author ${bannerData.author}
- * @license ${bannerData.license}
- * @preserve
- */`;
-		} catch( error ) {
-			if( verbose ) {
-				console.warn( `  ⚠️  Failed to read banner.json: ${error.message}` );
-			}
+	try {
+		const bannerData = readBannerData( pluginDir );
+		if( bannerData ) {
+			banner = formatPluginBanner( bannerData );
+		}
+	} catch( error ) {
+		if( verbose ) {
+			console.warn( `  ⚠️  Failed to read banner.json: ${error.message}` );
 		}
 	}
 
-	const buildOptions = {
-		"entryPoints": [ entryPoint ],
-		"bundle": true,
-		"sourcemap": true,
-		"target": "es2020",
-		"platform": "browser",
-		"loader": { ".vert": "text", ".frag": "text" },
-		"plugins": plugins,
-		"legalComments": "none"
-	};
-
-	if( banner ) {
-		buildOptions.banner = { "js": banner };
-	}
+	const buildOptions = getPluginBuildOptions( entryPoint, plugins, banner );
 
 	try {
 		// Build ESM (unminified)
@@ -242,7 +278,7 @@ async function buildPlugin( pluginName, options = {} ) {
 }
 
 // Export for use as module
-export { buildPlugin };
+export { buildPlugin, formatPluginBanner, getPluginBuildOptions, readBannerData };
 
 // If run directly, execute as standalone script
 if( isMainModule() ) {

@@ -127,11 +127,13 @@ therefore reach core through a runtime interface.
 
 **Core change (`src/core/plugins.js`):** two new plugin API members.
 
-- `pluginApi.provide( service )`: during `init`, stores one service object for the calling
-  plugin.
+- `pluginApi.provideService( service )`: during `init`, stores one service object for the
+  calling plugin. A non-object throws `INVALID_SERVICE`, a second call throws
+  `DUPLICATE_SERVICE`, and a call after `init` returns throws `SERVICE_PROVIDE_CLOSED`. The
+  service is published only when initialization succeeds.
 - `pluginApi.getService( pluginName )`: returns the service of a plugin named in this plugin's
   `dependencies`. It throws `SERVICE_NOT_AVAILABLE` for undeclared or uninitialized
-  dependencies.
+  dependencies, and for dependencies that provided no service.
 
 The existing dependency resolver already initializes dependencies first, so no other ordering
 change is needed. This mechanism is general and also available to third-party plugins.
@@ -1217,7 +1219,7 @@ Click checks compare against an expected waveform rather than require raw RMS to
   immediately (a short scheduling lead plus a 10 ms fade).
 - `sound()` throws `INVALID_FREQUENCY` when a sweep has a non-positive endpoint.
 - Audio requires HTTP(S). `file://` pages are unsupported.
-- Plugin API: `provide()` and `getService()` are added.
+- Plugin API: `provideService()` and `getService()` are added.
 
 ## 12. Open Decisions
 
@@ -1230,7 +1232,7 @@ Each item has a recommendation and a phase by which it must be resolved.
 | D3 | Requests while the context is locked | Drop one-shot `sound()`/`playAudio()` requests, returning completed IDs as in 6.3; defer looping instances and `play()` tracks until unlock, starting deferred stream instances inside the gesture listener (5.3) | Phase 1 |
 | D4 | Whether the public `setBusVolume()` command moves to core | Ships in `sound-advanced` 1.0 (the service method is already core); promote if its promotion cost is small | Release gate |
 | D5 | iOS mute switch silences Web Audio (media elements were not) | Set `navigator.audioSession.type = "playback"` where available; document the behavior | Phase 3 |
-| D6 | Service API names | `provide`/`getService`; confirm conventions | Before task 0.4 |
+| D6 | Service API names | **Resolved (Phase 0): `provideService` / `getService`.** `provideService` names what is provided, matching the verb-object style of other plugin API members; error rules are in 4.3. | Resolved |
 
 ## 13. Risks
 

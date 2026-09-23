@@ -38,6 +38,35 @@ The plugin API provides these capabilities:
 - `getApi()` - Access main Pi.js API
 - `utils` - Access to all Pi.js utility functions
 
+#### Services
+- `provideService( service )` - Publish one service object for plugins that depend on this one.
+  Call it during `init` only. A second call throws `DUPLICATE_SERVICE`, a non-object throws
+  `INVALID_SERVICE`, and a call after `init` returns throws `SERVICE_PROVIDE_CLOSED`. If `init`
+  fails, the service is discarded.
+- `getService( pluginName )` - Return the service of a plugin listed in this plugin's
+  `dependencies`. It throws `SERVICE_NOT_AVAILABLE` when the plugin is not a declared
+  dependency, is not initialized, or provided no service.
+
+Dependencies initialize first, so a dependent plugin can call `getService()` inside its own
+`init`:
+
+```javascript
+function audioToolsPlugin( pluginApi ) {
+	const mixer = pluginApi.getService( "mixer" );
+	pluginApi.addCommand( "mute", () => mixer.setLevel( 0 ), false, [] );
+}
+
+pi.registerPlugin( {
+	"name": "mixer",
+	"init": pluginApi => pluginApi.provideService( { "setLevel": level => {} } )
+} );
+pi.registerPlugin( {
+	"name": "audio-tools",
+	"dependencies": [ "mixer" ],
+	"init": audioToolsPlugin
+} );
+```
+
 ### Tools
 
 1. **`scripts/build.js`** - Main build script

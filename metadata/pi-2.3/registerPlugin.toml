@@ -1,0 +1,102 @@
+title = "registerPlugin"
+category = "plugins"
+isScreen = false
+summary = "Registers a plugin to extend Pi.js with custom commands and features."
+description = """
+Registers a plugin that adds commands and per-screen behavior to Pi.js. Provide a unique name and an init function. init receives a pluginApi object; this is a callback argument, not a return value. Commands registered with addCommand appear on the Pi.js API and accept the same positional or options-object calling style as built-in commands.
+
+pluginApi methods and properties:
+
+- **addCommand**(name, fn, isScreen, parameterNames, isScreenOptional): Add a command. Screen commands receive (screenData, options); global commands receive (options). Use screenData.api to draw. isScreenOptional allows a screen command when no screen is active.
+- **addScreenDataItem**(name, defaultValue): Attach cloned data to every screen.
+- **addScreenDataItemGetter**(name, getterFn): Attach per-screen data from a function called for each screen.
+- **addScreenInitFunction**(initFn): Run when a screen is created, and once for screens that already exist.
+- **addScreenPreCleanupFunction**(cleanupFn): Run first when a screen is removed. Cancel owned work and do not draw.
+- **addScreenCleanupFunction**(cleanupFn): Run later when a screen is removed. Release remaining resources.
+- **getActiveScreen**(fnName, isScreenOptional): Return the active screen data, or throw if none unless optional.
+- **getScreenData**(fnName, screenId): Return screen data for a screen id.
+- **getAllScreensData**(): Return all current screen data objects.
+- **resizeOffscreenScreen**(screenData, width, height): Resize an offscreen screen.
+- **getApi**(): Return the main Pi.js API object.
+- **utils**: Shared helper functions for colors, parsing, and math.
+- **wait**(): Hold $.ready() while an async resource loads.
+- **done**(): Release one wait() so $.ready() can continue.
+- **registerClearEvents**(name, handler): Handle $.clearEvents for an event type.
+- **provideService**(service): During init, publish one service object for plugins that depend on this plugin. A second call throws DUPLICATE_SERVICE, a non-object throws INVALID_SERVICE, and a call after init throws SERVICE_PROVIDE_CLOSED.
+- **getService**(pluginName): Return the service of a plugin listed in dependencies. Throws SERVICE_NOT_AVAILABLE when the plugin is not a declared dependency, is not initialized, or provided no service.
+
+Optional version and description are stored for getPlugins. Optional dependencies are other plugin names that must initialize first. Omit dependencies, or pass an empty array, if there are none. Missing or cyclic dependencies stay pending. A failed initializer throws PLUGIN_INIT_FAILED and is not retried; plugins that depend on it stay pending. Duplicate names throw DUPLICATE_PLUGIN.
+
+If screens already exist when the plugin initializes, its commands and screen data are added to those screens and its screen init functions run once. Screens created later receive the same registrations automatically. Plugin scripts register themselves when loaded after Pi.js; do not register the same plugin twice.
+"""
+example = """
+$.registerPlugin( {
+	"name": "octogon",
+	"version": "1.0.0",
+	"description": "Poly plugin",
+	"dependencies": [],
+	"init": ( pluginApi ) => {
+		pluginApi.addCommand( "poly", ( screenData, options ) => {
+			const x = options.x ?? 0;
+			const y = options.y ?? 0;
+			const radius = options.radius ?? 1;
+			const sides = options.sides ?? 1;
+			let angle = 0
+			const fillColor = options.fillColor;
+			let da = ( Math.PI * 2 ) / sides;
+			let x2 = null;
+			let y2 = null;
+			for( let i = 0; i < sides + 1; i += 1 ) {
+				let x1 = x + Math.cos( angle ) * radius;
+				let y1 = y + Math.sin( angle ) * radius;
+				if( x2 !== null ) {
+					screenData.api.line( x1, y1, x2, y2 );
+				}
+				x2 = x1;
+				y2 = y1;
+				angle += da;
+			}
+			if( fillColor !== null ) {
+				screenData.api.paint( x, y, fillColor );
+			}
+		}, true, [ "x", "y", "radius", "sides", "fillColor" ] );
+	}
+} );
+$.screen( "300x200" );
+$.setColor( 15 );
+$.poly( 150 , 100, 15, 8, "red" );
+"""
+
+[[parameters]]
+name = "name"
+type = "string"
+description = "Unique plugin name."
+
+[[parameters]]
+name = "init"
+type = "function"
+signature = "( pluginApi: PluginAPI ) => void"
+description = "Initialization function that receives pluginApi."
+
+[[parameters]]
+name = "version"
+type = "string"
+description = "Optional plugin version."
+optional = true
+
+[[parameters]]
+name = "description"
+type = "string"
+description = "Optional plugin description."
+optional = true
+
+[[parameters]]
+name = "dependencies"
+type = "Array<string>"
+typeDesc = "*Array"
+description = "Optional list of dependency plugin names."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

@@ -302,6 +302,9 @@ function initializePlugin( pluginInfo ) {
 		"initFunctions": []
 	};
 
+	// The service is published only after init succeeds, so a failed plugin exposes nothing
+	const serviceState = { "isOpen": false, "hasService": false, "service": null };
+
 	// Create plugin API
 	const pluginApi = {
 		"addCommand": ( ...args ) => {
@@ -329,14 +332,24 @@ function initializePlugin( pluginInfo ) {
 		"utils": g_utils,
 		"wait": g_commands.wait,
 		"done": g_commands.done,
-		"registerClearEvents": registerClearEvents
+		"registerClearEvents": registerClearEvents,
+		"provideService": service => provideService( serviceState, service ),
+		"getService": pluginName => getService( pluginInfo, pluginName )
 	};
 
 	// Initialize plugin
 	try {
-		pluginInfo.config.init( pluginApi );
+		serviceState.isOpen = true;
+		try {
+			pluginInfo.config.init( pluginApi );
+		} finally {
+			serviceState.isOpen = false;
+		}
 		g_screenManager.installScreenExtensions( existingScreens, extensions );
 		g_commands.processCommands( m_api, extensions.commands );
+		if( serviceState.hasService ) {
+			pluginInfo.service = serviceState.service;
+		}
 		pluginInfo.initialized = true;
 	} catch( error ) {
 		const pluginError = new Error(
@@ -346,4 +359,58 @@ function initializePlugin( pluginInfo ) {
 		pluginError.originalError = error;
 		throw pluginError;
 	}
+}
+
+/**
+ * Stores the service object a plugin exposes to plugins that depend on it.
+ *
+ * @param {Object} serviceState - Per-plugin service state from initializePlugin
+ * @param {Object} service - Service object
+ * @returns {void}
+ */
+function provideService( serviceState, service ) {
+	if( !serviceState.isOpen ) {
+		const error = new Error( "provideService: Services can only be provided during init." );
+		error.code = "SERVICE_PROVIDE_CLOSED";
+		throw error;
+	}
+	if( service === null || typeof service !== "object" ) {
+		const error = new TypeError( "provideService: service must be an object." );
+		error.code = "INVALID_SERVICE";
+		throw error;
+	}
+	if( serviceState.hasService ) {
+		const error = new Error( "provideService: This plugin has already provided a service." );
+		error.code = "DUPLICATE_SERVICE";
+		throw error;
+	}
+	serviceState.hasService = true;
+	serviceState.service = service;
+}
+
+/**
+ * Returns the service of an initialized plugin that the caller declared as a dependency.
+ *
+ * @param {Object} pluginInfo - Calling plugin's registration record
+ * @param {string} pluginName - Name of the dependency whose service is requested
+ * @returns {Object} The dependency's service object
+ */
+function getService( pluginInfo, pluginName ) {
+	const provider = m_plugins.find( item => item.name === pluginName );
+	let reason = null;
+	if( !pluginInfo.config.dependencies.includes( pluginName ) ) {
+		reason = "is not a declared dependency";
+	} else if( !provider || !provider.initialized ) {
+		reason = "is not initialized";
+	} else if( !Object.prototype.hasOwnProperty.call( provider, "service" ) ) {
+		reason = "does not provide a service";
+	}
+	if( reason ) {
+		const error = new Error(
+			`getService: Plugin '${pluginName}' ${reason} for plugin '${pluginInfo.name}'.`
+		);
+		error.code = "SERVICE_NOT_AVAILABLE";
+		throw error;
+	}
+	return provider.service;
 }

@@ -1,7 +1,7 @@
 {
 	"name": "pijs",
-	"version": "2.2.0",
-	"majorVersion": "2.2",
+	"version": "2.3.0",
+	"majorVersion": "2.3",
 	"description": "Retro2D graphics, sound, and input library for javascript",
 	"type": "module",
 	"main": "build/pi.js",
@@ -25,6 +25,8 @@
 		"test:patch": "node scripts/test.js patch",
 		"test:types": "node scripts/test.js types",
 		"server": "node server.js",
+		"size": "node scripts/size.js",
+		"sound:references": "node test/scripts/record-sound-references.js",
 		"test:all": "node scripts/test.js all",
 		"test:unit": "node scripts/test.js unit",
 		"test:browser": "node scripts/test.js browser",

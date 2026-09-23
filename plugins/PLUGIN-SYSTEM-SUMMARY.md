@@ -108,6 +108,7 @@
 - ✅ Readiness and event-cleanup helpers
 - ✅ `getApi()` - Access main API
 - ✅ `utils` - Access all Pi.js utilities
+- ✅ `provideService()` / `getService()` - Services shared with dependent plugins
 
 ### 3. Validation & Error Handling
 - ✅ Validates plugin configuration

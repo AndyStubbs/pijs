@@ -8,7 +8,8 @@
 
 "use strict";
 
-import * as g_sound from "./sound.js";
+import * as g_context from "./context.js";
+import * as g_voices from "./voices.js";
 
 const m_tracks = {};
 const m_allTracks = [];
@@ -670,13 +671,13 @@ export function registerPlay( pluginApi ) {
 		m_playData.sort( ( a, b ) => a.time - b.time );
 
 		// Reuse shared audio context for all notes
-		const audioContext = g_sound.getAudioContext();
+		const audioContext = g_context.getAudioContext();
 
 		// Create all sounds
 		for( let i = 0; i < m_playData.length; i++ ) {
 			const playData = m_playData[ i ];
 			playData.track.sounds.push(
-				g_sound.createSound(
+				g_voices.createSound(
 					audioContext, playData.frequency, playData.volume, playData.attackTime,
 					playData.sustainTime, playData.decayTime, playData.stopTime, playData.oType,
 					playData.waveTables, playData.time
@@ -706,7 +707,7 @@ export function registerPlay( pluginApi ) {
 				const track = m_tracks[ m_allTracks[ i ] ];
 				if( track ) {
 					for( let j = 0; j < track.sounds.length; j++ ) {
-						g_sound.stopSoundById( track.sounds[ j ] );
+						g_voices.stopSoundById( track.sounds[ j ] );
 					}
 					delete m_tracks[ m_allTracks[ i ] ];
 				}
@@ -719,7 +720,7 @@ export function registerPlay( pluginApi ) {
 		if( m_tracks[ trackId ] ) {
 			const track = m_tracks[ trackId ];
 			for( let j = 0; j < track.sounds.length; j++ ) {
-				g_sound.stopSoundById( track.sounds[ j ] );
+				g_voices.stopSoundById( track.sounds[ j ] );
 			}
 			removeTrack( trackId );
 		}

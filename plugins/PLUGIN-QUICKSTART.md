@@ -233,12 +233,17 @@ pluginApi.utils
 pluginApi.wait()
 pluginApi.done()
 pluginApi.registerClearEvents( name, handler )
+pluginApi.provideService( service )
+pluginApi.getService( pluginName )
 ```
 
 Set `isScreen` to `false` for a global command whose handler receives `options`. Set it to `true`
 for a screen command whose handler receives `screenData, options`. The final `isScreenOptional`
 argument is optional and allows a screen command to run with `screenData` set to `null` when no
 screen is active.
+
+Call `provideService()` during `init` to publish one service object. Another plugin that lists
+yours in its `dependencies` can read it with `getService( pluginName )`.
 
 ## 💡 Pro Tips
 

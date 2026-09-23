@@ -496,7 +496,8 @@ test( "replaying an audio slot without duration cancels its previous timer", () 
 	let nextTimer = 0;
 	const commands = {};
 	const audio = [];
-	const module = loadModule( "plugins/sound/sound.js", {
+	const module = loadModule( "plugins/sound/samples.js", {
+		"g_context": { "getVolume": () => 0.75 },
 		"setTimeout": fn => { timers.set( ++nextTimer, fn ); return nextTimer; },
 		"clearTimeout": id => timers.delete( id ),
 		"Audio": class {
@@ -509,7 +510,7 @@ test( "replaying an audio slot without duration cancels its previous timer", () 
 			load() {}
 		}
 	} );
-	module.registerSound( {
+	module.registerSamples( {
 		"addCommand": ( name, fn ) => { commands[ name ] = fn; },
 		"wait": () => {}, "done": () => {},
 		"utils": { "getInt": ( v, d ) => v ?? d, "getFloat": ( v, d ) => v ?? d }

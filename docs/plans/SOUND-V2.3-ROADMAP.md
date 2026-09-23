@@ -56,7 +56,7 @@ Goal: build the tooling and structure before any behavior changes.
 | 0.1 | Extend the build report to plugin bundles; add `npm run size` differential builds writing `build/size-report.json`; record 2.2 baseline | 9.1 |
 | 0.2 | Stage the 2.3 version: set `version` to `2.3.0` and `majorVersion` to `"2.3"` in `package.json`, create `metadata/pi-2.3/` with an empty `_removed.toml`, build once, and commit the regenerated declarations | 9.2 |
 | 0.3 | Resolve D6 (service API names) | 12 |
-| 0.4 | Add `pluginApi.provide()` / `getService()` with unit tests and plugin-doc entry | 4.3 |
+| 0.4 | Add `pluginApi.provideService()` / `getService()` with unit tests and plugin-doc entry | 4.3 |
 | 0.5 | Add Firefox and WebKit Playwright projects for the audio browser tests; document `npx playwright install firefox webkit` in `test/README.md`; record per-engine support for offline `suspend()` | 10.3 |
 | 0.6 | Build the `OfflineAudioContext` render harness: init-script globals, wrapped context with `state`/`statechange` masking, virtual timers, suspend-step clock loop, seeded PRNG, visibility control | 10.1 |
 | 0.7 | Reference residual checks; calibrate valid/abrupt fixtures; other audio metrics | 10.2 |
@@ -90,6 +90,24 @@ Exit criteria:
   seeded noise. Numeric tolerances are recorded per metric and engine before Phase 1.
 - `npm run size` reports the full-bundle and plugin totals for the 2.2 baseline.
 - A baseline size report has been committed to the plan evidence.
+
+Phase 0 results that later phases depend on:
+
+- **D6** is resolved as `provideService()` / `getService()` (plan 4.3 and 12).
+- **Engine support** (Playwright 1.56, Windows): Chromium supports offline `suspend()`. Firefox
+  renders offline but has no `suspend()`, so its clock-driven tests skip. Playwright's Windows
+  WebKit has no Web Audio API, so WebKit runs only the media-element lifecycle tests and its
+  listening pass uses Safari. Details are in `test/README.md` and
+  `docs/evidence/sound-2.3/README.md`.
+- **Tolerances** per metric and engine are in `test/unit/audio-tolerances.js`. Chromium mixes
+  multiple inputs in an address-dependent order, so a seeded multi-voice mix is identical only
+  within a recorded float tolerance. Single-source seeded renders are bit-identical.
+- **Split test loaders:** three Node tests loaded `sound.js` into a `vm` sandbox. They now load
+  `samples.js` with a `g_context` stub. Their assertions are unchanged.
+- **2.2 parity pin:** `audio-render-browser.test.js` checks that the working tree reproduces the
+  recorded 2.2 references. Task 1.6 retires that test with the first `sound()` behavior change.
+- **Module layout:** `envelope.js`, `noise.js`, and `scheduler.js` are created by tasks 1.5, 2.1,
+  and the first Phase 1 scheduler task, not as empty Phase 0 stubs.
 
 ## Phase 1: Bus Safety and Envelope Foundation
 

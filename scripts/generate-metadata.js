@@ -37,14 +37,36 @@ const RELEASE_LITE_TYPE_DEFINITION_FILE = path.join(
 );
 const BASE_PACKAGE_PATH = path.join( DIRNAME, "..", "releases", "base-package.json" );
 
+/**
+ * Orders pi-X.Y folder names by numeric major and minor version.
+ *
+ * Layering depends on this order: later folders override earlier ones, and the last folder
+ * names the generated declarations. Directory listing order is not guaranteed by every file
+ * system, and a lexical sort would place pi-2.10 before pi-2.2.
+ *
+ * @param {string[]} names - Folder names matching pi-X.Y.
+ * @returns {string[]} A new array sorted from oldest to newest.
+ */
+function sortVersionFolders( names ) {
+	const parse = ( name ) => name.slice( 3 ).split( "." ).map( ( part ) => Number( part ) );
+	return [ ...names ].sort( ( a, b ) => {
+		const [ aMajor, aMinor ] = parse( a );
+		const [ bMajor, bMinor ] = parse( b );
+		if( aMajor !== bMajor ) {
+			return aMajor - bMajor;
+		}
+		return aMinor - bMinor;
+	} );
+}
+
 function getVersionFolders() {
 	if( !fs.existsSync( METADATA_DIR ) ) {
 		return [];
 	}
 	const entries = fs.readdirSync( METADATA_DIR, { "withFileTypes": true } );
-	return entries
+	return sortVersionFolders( entries
 		.filter( ( d ) => d.isDirectory() && /^pi-\d+\.\d+$/.test( d.name ) )
-		.map( ( d ) => d.name );
+		.map( ( d ) => d.name ) );
 }
 
 function ensureDirectories() {
@@ -906,4 +928,7 @@ if( isMainModule() ) {
 	generateMetadata( { "testOnly": process.argv.includes( "--test-only" ) } );
 }
 
-export { formatDescription, generateMetadata, normalizeNewlines, normalizeParsedStrings, parseMetadata };
+export {
+	formatDescription, generateMetadata, normalizeNewlines, normalizeParsedStrings, parseMetadata,
+	sortVersionFolders
+};
