@@ -1,11 +1,15 @@
 # Pi.js 2.3 Sound Upgrade Plan
 
-Status: Approved for planning, not yet implemented
+Status: Approved; roadmap Phases 0–5 implemented
 Target release: Pi.js 2.3.0
 Companion document: [SOUND-V2.3-ROADMAP.md](SOUND-V2.3-ROADMAP.md)
-Revision 8: freezes the extension service v1 (4.3) after Phase 5. It adds the source factory
-spec, the voice-insert `detune` output for pitch modulation, and the `createVoice` error label,
-and gives the `sound-advanced` parameters their final names and units (9). Revision 7 recorded
+Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md)
+Revision 9: sound becomes one workstream of the 2.3 release. The release gate, including version
+checks and the upgrade guide, moves to the general upgrade plan; roadmap Phase 6 keeps the size
+review (9.1, 9.2, 12). Revision 8 froze the extension service v1 (4.3) after Phase 5. It added
+the source factory spec, the voice-insert `detune` output for pitch modulation, and the
+`createVoice` error label, and gave the `sound-advanced` parameters their final names and units
+(9). Revision 7 recorded
 the Phase 4 PLAY decisions in 8.2: equal-temperament pitch, unknown commands warned and
 ignored, dotted explicit lengths, accidentals across octave boundaries, and the comma-track
 timing kept from 2.2. Revision 6 added the scheduling lead, the PLAY slot and release
@@ -14,7 +18,9 @@ duplicate PLAY token prefixes, and the live-voice cap name.
 
 ## 1. Purpose
 
-Pi.js 2.3 rebuilds the sound subsystem on a single Web Audio graph. The release has two goals:
+Pi.js 2.3 rebuilds the sound subsystem on a single Web Audio graph. Sound is one workstream of
+the 2.3 release; the general upgrade plan covers the keyboard, pointer, gamepad, and core audits
+and the release phase. The sound work has two goals:
 
 1. Make the core `sound` plugin clean, click-free, and safe from clipping while keeping it small.
 2. Add a separate `sound-advanced` plugin for synthesis, effects, presets, and instruments that
@@ -37,7 +43,7 @@ These decisions were made during scoping and are treated as fixed for this plan.
 | `file://` pages | Not supported for audio; no fallback path |
 | Audio instances | `playAudio()` returns an instance ID; loop, rate, pan, pause, resume |
 | Voice budget | Synth and samples share limits; slots are counted by occupancy interval from admission; looping samples are protected from stealing |
-| Bus volume | Dedicated core service method; gain follows effects; public command ships in `sound-advanced` 1.0, and moving it to core is decided at release (D4) |
+| Bus volume | Dedicated core service method; gain follows effects; public command ships in `sound-advanced` 1.0, and moving it to core is decided in the roadmap Phase 6 size review (D4) |
 | Late recovery | Expiration first; 25 ms grace and timeline catch-up as specified in 8.1 |
 | Presets | Not in core; provided by `sound-advanced` |
 | Noise | White and pink noise |
@@ -45,7 +51,7 @@ These decisions were made during scoping and are treated as fixed for this plan.
 | Limiter | Compressor plus soft clipper with an absolute ±1.0 ceiling; on by default, can be disabled |
 | Autoplay | Core unlocks the audio context on the first user gesture |
 | Verification | Deterministic `OfflineAudioContext` tests, one realtime browser test for stream mode and the scheduling lead, and manual listening demos |
-| Plan location | `docs/plans/`; user-facing `UPGRADE-V2.3.md` is written at release |
+| Plan location | `docs/plans/`; user-facing `UPGRADE-V2.3.md` is written in the release phase of the general plan |
 | Versions | `sound` plugin 2.0.0; `sound-advanced` plugin 1.0.0 |
 
 ## 3. Current State (Pi.js 2.2)
@@ -1085,13 +1091,13 @@ and full-merge cost next to them.
   generator keeps `build/reference-2.2.json` as the frozen 2.2 API and writes
   `build/reference-2.3.json` for the new one.
 - **Plugin versions.** The `sound` banner becomes 2.0.0 with its first breaking change
-  (Phase 1). `sound-advanced` is created at 1.0.0 (Phase 5). Phase 6 verifies that the
-  package, plugin banners, release `package.json`, and declaration headers agree; it does not
-  bump anything.
+  (Phase 1). `sound-advanced` is created at 1.0.0 (Phase 5). The release phase of the general
+  plan verifies that the package, plugin banners, release `package.json`, and declaration
+  headers agree; it does not bump anything.
 - **Working tree and `pi-latest`.** A normal build copies the working tree into
   `releases/pi-latest` under the staged version. Nothing publishes automatically, and
   `releases/pi-2.2.0` is the frozen 2.2 snapshot, but `pi-latest` is not publishable until
-  the Phase 6 gate.
+  the release phase.
 
 ## 10. Verification Strategy
 
@@ -1337,7 +1343,7 @@ Each item has a recommendation and a phase by which it must be resolved.
 | D1 | What `frequency` does for `white`/`pink` noise | **Resolved (Phase 2): as recommended.** Core ignores `frequency` and `frequencyEnd` for white and pink noise, so their spectra stay accurate. A `playbackRate` mapping would shift and band-limit the spectrum, so neither type would keep its defined shape. Pitched retro noise is the `"periodic"` source in `sound-advanced`. The sound lab keeps the `playbackRate = frequency / 440` prototype for A/B listening. | Resolved |
 | D2 | `sound()` positional order, and what position 7 means | **Resolved (revision 6): ADSR order as written in 6.1.** Position 7 is `decayTime`. The alternative, placing `releaseTime` at position 7 so that 2.2 tails keep their length, was rejected because it would make the positional form permanently disagree with the object form and with every other ADSR description in the docs. 2.2 positional callers past argument 5 are rare, and the command layer cannot tell an old positional call from a new one, so no runtime warning is possible. The upgrade guide shows the positional example in Section 11. | Resolved |
 | D3 | Requests while the context is locked | **Resolved (Phase 1): as recommended.** One-shot `sound()`/`playAudio()` requests, immediate or delayed, are dropped and return completed IDs as in 6.3. Looping instances and `play()` tracks are deferred until unlock and started synchronously inside the gesture listener, including deferred stream instances (5.3). The context no longer counts as locked once the gesture listener has called `resume()`, so requests made in that gesture's own handlers (the listener runs in the capture phase, before them) are kept while the resume promise settles. | Resolved |
-| D4 | Whether the public `setBusVolume()` command moves to core | Ships in `sound-advanced` 1.0 (the service method is already core); promote if its promotion cost is small | Release gate |
+| D4 | Whether the public `setBusVolume()` command moves to core | Ships in `sound-advanced` 1.0 (the service method is already core); promote if its promotion cost is small | Roadmap Phase 6 |
 | D5 | iOS mute switch silences Web Audio (media elements were not) | **Resolved (Phase 3): `"ambient"`, not the recommended `"playback"`.** Core sets `navigator.audioSession.type = "ambient"` when it creates the context, where the API exists. Sound then follows the mute switch and mixes with other apps' audio instead of interrupting it, which suits games. In 2.2, `<audio>` samples ignored the mute switch; in 2.3 all sound respects it. The docs and upgrade guide say so. | Resolved |
 | D6 | Service API names | **Resolved (Phase 0): `provideService` / `getService`.** `provideService` names what is provided, matching the verb-object style of other plugin API members; error rules are in 4.3. | Resolved |
 
