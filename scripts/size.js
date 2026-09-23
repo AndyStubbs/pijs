@@ -28,7 +28,7 @@ const ADVANCED_PLUGIN = "sound-advanced";
 // sound-advanced modules in registration order. synth.js is a shared helper: presets and
 // instruments import it, so removing it removes them too.
 const ADVANCED_MODULES = [
-	"periodic-noise", "synth", "effects", "analyser", "presets", "instruments"
+	"periodic-noise", "synth", "effects", "analyser", "presets", "instruments", "recorder"
 ];
 const ADVANCED_HELPERS = { "synth": [ "presets", "instruments" ] };
 

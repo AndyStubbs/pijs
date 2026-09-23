@@ -70,7 +70,7 @@ test( "sound-advanced differentials cover every module, the synth group, and pro
 	const differentials = g_size.getDifferentials();
 	const names = differentials.map( entry => `${entry.kind} ${entry.name}` );
 	const modules = [
-		"periodic-noise", "synth", "effects", "analyser", "presets", "instruments"
+		"periodic-noise", "synth", "effects", "analyser", "presets", "instruments", "recorder"
 	];
 	for( const module of modules ) {
 		assert.ok( names.includes( `marginal sound-advanced/${module}` ), module );

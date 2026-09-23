@@ -1,0 +1,38 @@
+title = "saveRecording"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Downloads a recording as a file."
+description = """
+Requires the sound-advanced plugin. Starts a browser download of a Blob, usually the WAV file returned by stopRecording(), under the given file name. Browsers may ask the user where to save the file, or block downloads that do not follow a user action, so call it from an input handler.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Press any key to record one second" );
+$.onkey( "any", "down", async () => {
+	await $.startRecording();
+	$.sound( 220, 0.8 );
+	setTimeout( async () => {
+		const wav = await $.stopRecording();
+		$.print( "Press any key to save" );
+		$.onkey( "any", "down", () => {
+			$.saveRecording( wav, "note.wav" );
+		}, true );
+	}, 1000 );
+}, true );
+"""
+
+[[parameters]]
+name = "blob"
+type = "Blob"
+description = "The file to save, such as the result of stopRecording()."
+
+[[parameters]]
+name = "filename"
+type = "string"
+description = "Name of the downloaded file (default: 'recording.wav')."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

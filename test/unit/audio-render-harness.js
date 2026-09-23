@@ -372,6 +372,19 @@ function installAudioRenderHarness( config ) {
 	window.AudioContext = HarnessAudioContext;
 	window.webkitAudioContext = HarnessAudioContext;
 
+	// The AudioWorkletNode constructor checks for a real context, so unwrap the proxy
+	if( typeof window.AudioWorkletNode === "function" ) {
+		const NativeAudioWorkletNode = window.AudioWorkletNode;
+		window.AudioWorkletNode = class extends NativeAudioWorkletNode {
+			constructor( context, name, options ) {
+				if( context === proxy ) {
+					context = realContext;
+				}
+				super( context, name, options );
+			}
+		};
+	}
+
 	function deliverPageStatechange() {
 		const event = new Event( "statechange" );
 		statechangeLog.delivered++;

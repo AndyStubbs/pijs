@@ -9,8 +9,12 @@ import * as g_playwright from "@playwright/test";
 const ALL_ENGINES = [ "chromium", "firefox", "webkit" ];
 const INSTALL_HINT = "Install the audio test engines with: npx playwright install firefox webkit";
 
-/** Origin of the blank documents that reusable pages navigate to. */
-const BLANK_ORIGIN = "http://audio-test.local";
+/**
+ * Origin of the blank documents that reusable pages navigate to. Localhost is a secure
+ * context, which AudioWorklet requires; the route fulfills every request, so nothing is sent
+ * to the network.
+ */
+const BLANK_ORIGIN = "http://localhost:47109";
 
 /**
  * Parses an engine list from PI_AUDIO_ENGINES.

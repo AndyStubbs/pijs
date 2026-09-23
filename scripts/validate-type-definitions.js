@@ -36,6 +36,11 @@ const SOUND_ADVANCED_DECLARATIONS = [
 	"defineInstrument( instrument: number, params: object | null ): void;",
 	"setBusEffect( bus: string, effect: string | null, options?: object ): void;",
 	"getSoundLevels( bus?: string, spectrum?: boolean, waveform?: boolean ): {",
+	"startRecording( bus?: string, maxDuration?: number, bitDepth?: number ): Promise<void>;",
+	"stopRecording(): Promise<Blob>;",
+	"getRecordingState(): { state: \"idle\" | \"starting\" | \"recording\" | \"full\"; " +
+		"duration: number };",
+	"saveRecording( blob: Blob, filename?: string ): void;",
 	"declare function sound_advancedPlugin( pluginApi: PluginAPI ): void;"
 ];
 

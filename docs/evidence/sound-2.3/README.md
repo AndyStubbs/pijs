@@ -17,6 +17,7 @@ compresses them with gzip level 9. Sizes are in bytes.
 | `size-phase4.json` | Phase 4 exit: PLAY scheduler, tokenizer, extensions, voice inserts | `sound` 2.0.0; M2 |
 | `size-phase5.json` | Phase 5 exit: service v1 completed and frozen, `sound-advanced` plugin | `sound` 2.0.0, `sound-advanced` 1.0.0; M3 |
 | `size-phase6.json` | Phase 6 exit: `setBusVolume()` promoted to core | `sound` 2.0.0, `sound-advanced` 1.0.0; M4 |
+| `size-phase7.json` | Phase 7 exit: core output stage, recording in `sound-advanced` | `sound` 2.0.0, `sound-advanced` 1.0.0 |
 
 Phase 0 deltas, gzipped:
 
@@ -181,6 +182,61 @@ them out would reopen the frozen service v1. The targets were therefore raised t
 0.5 KB above the Phase 6 measurement: **15.5 KB (15,872 bytes)** for the core plugin, with 535
 bytes of headroom, and **9.5 KB (9,728 bytes)** of full-build growth over the 2.2 baseline,
 with 276 bytes of headroom. No variance remains.
+
+## Phase 7: recording
+
+Phase 7 of the expansion plan
+([SOUND-ADVANCED-V2.3-PLAN.md](../../plans/SOUND-ADVANCED-V2.3-PLAN.md)) added the core output
+stage behind `tapBus( "output" )` and the `recorder` module, with its `wav` and `worklet`
+helpers, to `sound-advanced`.
+
+Phase 7 deltas, gzipped:
+
+| Bundle | Phase 6 exit | Phase 7 exit | Delta | Since 2.2 baseline |
+| --- | --- | --- | --- | --- |
+| `sound` plugin | 15,337 | 15,390 | +53 | +9,107 |
+| `pi.lite.min.js` | 48,586 | 48,586 | 0 | +311 |
+| `pi.min.js` | 72,380 | 72,435 | +55 | +9,507 |
+| `sound-advanced` plugin | 5,949 | 7,783 | +1,834 | — |
+
+- **Core output stage (task 7.1).** It costs 53 bytes in the `sound` plugin and 55 in
+  `pi.min.js`, which covers the stage node, its routing, and `tapBus` accepting "output".
+  The core plugin is 15,390 bytes, 482 under the 15,872-byte target. Full-build growth over
+  the 2.2 baseline is 9,507 bytes, 221 under the 9,728-byte target.
+- **Recorder.** Its marginal cost is 1,787 bytes, and 1,795 bytes to promote into core. That
+  is about 250 bytes over the plan 8 estimate of 1.5 KB, which is a guide, not a limit. The
+  processor is written as a function and published as its source text, so the minifier
+  compacts it. As an inline template string it measured 1,912 bytes. The minified
+  `sound-advanced` bundle grew from 16,611 to 21,295 bytes. The rest of the plugin growth is
+  the analyser accepting "output".
+- **Full merge.** Merging all of `sound-advanced` into `pi.min.js` now costs 7,002 bytes.
+
+### Worklet processing without outputs (task 7.2)
+
+The recorder `AudioWorkletNode` has no outputs and is reached only through a bus tap. The
+checks below record whether each engine still runs its `process()`. Measured with
+Playwright's builds on Windows:
+
+| Engine | Offline (harness) | Realtime |
+| --- | --- | --- |
+| Chromium | Processed; a float recording equals the destination sample for sample | Processed; the captured length equals the context time elapsed |
+| Firefox | Processed; a float recording equals the destination sample for sample | Processed; within 30 ms of the context time elapsed |
+| WebKit | Not run: Playwright's Windows build has no Web Audio API | Not run |
+
+No engine needed the fallback output through a zero-gain node.
+
+Other findings:
+
+- **Flush after the render.** A `"stop"` message posted after an offline render has finished
+  is still handled by the processor. The flush runs in its message handler, not in
+  `process()`, so recordings keep their last partial block.
+- **Firefox message timing.** Firefox can deliver the processor's last messages, including
+  `"full"`, a few tasks after `startRendering()` resolves. The tests wait for the state
+  instead of reading it right after the render.
+- **Test origin.** `AudioWorklet` needs a secure context, so the harness pages moved from
+  `http://audio-test.local` to a routed `http://localhost` origin. The route still answers
+  every request, so nothing reaches the network. The harness also swaps its proxy for the real
+  context in the `AudioWorkletNode` constructor.
 
 ## Sample measurements (Phase 3)
 

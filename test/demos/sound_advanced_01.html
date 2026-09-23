@@ -170,12 +170,43 @@
 		<label class="control">Bus
 			<select id="levelBus">
 				<option value="master" selected>Master</option>
+				<option value="output">Output (after limiter)</option>
 				<option value="sfx">SFX</option>
 				<option value="music">Music</option>
 				<option value="audio">Audio</option>
 			</select>
 			<span></span></label>
 		<canvas id="meter" width="900" height="160"></canvas>
+	</div>
+
+	<div class="section">
+		<h2>Recording</h2>
+		<div class="controls">
+			<label class="control">Bus
+				<select id="recordBus">
+					<option value="output" selected>Output (after limiter)</option>
+					<option value="master">Master</option>
+					<option value="sfx">SFX</option>
+					<option value="music">Music</option>
+					<option value="audio">Audio</option>
+				</select>
+				<span></span></label>
+			<label class="control">Bit depth
+				<select id="recordBits">
+					<option value="16" selected>16-bit PCM</option>
+					<option value="32">32-bit float</option>
+				</select>
+				<span></span></label>
+			<label class="control">Max seconds
+				<input id="recordMax" type="range" min="1" max="120" step="1" value="30">
+				<output id="recordMaxOut"></output></label>
+		</div>
+		<button id="startRecording">Start</button>
+		<button id="stopRecording">Stop</button>
+		<button id="saveRecording">Save</button>
+		<span id="recordState"></span>
+		<p>Start, play something from the sections above, then stop. Save downloads the last
+			recording as a WAV file.</p>
 	</div>
 
 	<pre id="log"></pre>
@@ -220,6 +251,15 @@
 		function attempt( label, fn ) {
 			try {
 				return fn();
+			} catch( error ) {
+				log( `${label}: ${error.code || ""} ${error.message}` );
+				return null;
+			}
+		}
+
+		async function attemptAsync( label, fn ) {
+			try {
+				return await fn();
 			} catch( error ) {
 				log( `${label}: ${error.code || ""} ${error.message}` );
 				return null;
@@ -353,6 +393,27 @@
 			busControls.appendChild( effect );
 		}
 
+		// Recording: start, stop, and save the last WAV file
+		let recording = null;
+		document.getElementById( "startRecording" ).onclick = () => attemptAsync(
+			"startRecording", async () => {
+				await $.startRecording(
+					value( "recordBus" ), number( "recordMax" ), number( "recordBits" )
+				);
+				log( `startRecording: ${value( "recordBus" )}, ${value( "recordBits" )}-bit` );
+			}
+		);
+		document.getElementById( "stopRecording" ).onclick = () => attemptAsync(
+			"stopRecording", async () => {
+				recording = await $.stopRecording();
+				log( `stopRecording: ${( recording.size / 1024 ).toFixed( 1 )} KB WAV` );
+			}
+		);
+		document.getElementById( "saveRecording" ).onclick = () => attempt(
+			"saveRecording", () => $.saveRecording( recording, "pi-recording.wav" )
+		);
+		const recordState = document.getElementById( "recordState" );
+
 		// Levels: a peak and RMS meter over the spectrum
 		const canvas = document.getElementById( "meter" );
 		const context = canvas.getContext( "2d" );
@@ -374,6 +435,8 @@
 			context.fillRect( 0, height - 24, levels.rms * width, 8 );
 			context.fillStyle = "#fc4";
 			context.fillRect( 0, height - 12, levels.peak * width, 8 );
+			const state = $.getRecordingState();
+			recordState.textContent = `${state.state} ${state.duration.toFixed( 1 )} s`;
 			requestAnimationFrame( draw );
 		}
 		draw();

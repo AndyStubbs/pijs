@@ -1,0 +1,30 @@
+title = "getRecordingState"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Gets the recording state and the seconds recorded so far."
+description = """
+Requires the sound-advanced plugin. state is "idle" with no recording, "starting" while the first recording loads its audio worklet, "recording" while capturing, and "full" when the recording reached its maxDuration and waits for stopRecording().
+
+duration is the length captured so far, in seconds. It counts audio as it arrives, in steps of about 85 ms, and does not advance while audio is locked or suspended. It returns to 0 when the recording is stopped.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Press any key to start recording" );
+$.onkey( "any", "down", () => {
+	$.startRecording( "output", 5 );
+	$.play( "T120 L4 O4 C D E F G A B O5 C" );
+}, true );
+function draw() {
+	const recording = $.getRecordingState();
+	$.cls();
+	$.print( recording.state + " " + recording.duration.toFixed( 1 ) + " s" );
+	requestAnimationFrame( draw );
+}
+draw();
+"""
+parameters = [ ]
+
+[[returns]]
+type = "{ state: \"idle\" | \"starting\" | \"recording\" | \"full\"; duration: number }"
+description = "The recording state and the seconds captured so far."

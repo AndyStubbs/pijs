@@ -396,6 +396,34 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		}
 	);
 
+	test( "getSoundLevels measures the output after the limiter", async t => {
+		const result = await suite.inHarness( t, {
+			"config": { "duration": 0.6 }, "needsSuspend": true
+		}, renderActions, { "actions": [
+			{ "time": 0, "code": `
+				$.setVolume( 1 );
+				$.getSoundLevels( "master" );
+				$.getSoundLevels( "output" );
+				for( const frequency of [ 220, 330, 440 ] ) {
+					$.sound( { "frequency": frequency, "duration": 0.5, "volume": 1,
+						"oType": "square" } );
+				}` },
+			{ "time": 0.3, "code": `
+				values.master = $.getSoundLevels( "master" ).peak;
+				values.output = $.getSoundLevels( "output" ).peak;` }
+		] } );
+		if( !result ) {
+			return;
+		}
+
+		// The master tap is before the limiter, so it is over full scale; the output is not
+		assert.ok( result.values.master > 1, `master ${result.values.master}` );
+		assert.ok(
+			result.values.output <= 1 && result.values.output > 0.5,
+			`output ${result.values.output}`
+		);
+	} );
+
 	test( "built-in presets play within the limiter ceiling; custom presets validate",
 		async t => {
 			const actions = PRESETS.map( ( name, index ) => ( {

@@ -10,7 +10,7 @@
 
 "use strict";
 
-export const ANALYSER_BUSES = [ "sfx", "music", "audio", "master" ];
+export const ANALYSER_BUSES = [ "sfx", "music", "audio", "master", "output" ];
 
 // Analysis window in frames, and the spectrum floor in dB
 const FFT_SIZE = 2048;
@@ -131,12 +131,13 @@ export function register( pluginApi, service ) {
 	 * Measure the most recent 2048 frames of a bus
 	 *
 	 * Levels are linear sample values after the bus effects and volume; "master" is measured
-	 * after the master volume and before the limiter. The spectrum holds 1024 bins in dB from
-	 * 0 Hz to half the sample rate. The first call on a bus starts its analyser and returns
-	 * silence, so call it every frame rather than once.
+	 * after the master volume and before the limiter, and "output" after the limiter. The
+	 * spectrum holds 1024 bins in dB from 0 Hz to half the sample rate. The first call on a bus
+	 * starts its analyser and returns silence, so call it every frame rather than once.
 	 *
 	 * @param {Object} options - Command options
-	 * @param {string} options.bus - "sfx", "music", "audio", or "master" (default: "master")
+	 * @param {string} options.bus - "sfx", "music", "audio", "master", or "output"
+	 *   (default: "master")
 	 * @param {boolean} options.spectrum - Include frequency data in dB (default: false)
 	 * @param {boolean} options.waveform - Include time-domain samples (default: false)
 	 * @returns {Object} { peak, rms, spectrum, waveform }; arrays are null unless requested
@@ -149,7 +150,7 @@ export function register( pluginApi, service ) {
 		if( ANALYSER_BUSES.indexOf( bus ) === -1 ) {
 			throwCode(
 				Error,
-				"getSoundLevels: Parameter bus must be one of: sfx, music, audio, master.",
+				"getSoundLevels: Parameter bus must be one of: sfx, music, audio, master, output.",
 				"INVALID_BUS"
 			);
 		}

@@ -1,7 +1,7 @@
 # Pi.js 2.3 Upgrade Plan
 
-Status: Sound Phases 0–6 complete and expansion Phases 7–10 proposed; audits and the CI/CD
-exploration not started
+Status: Sound Phases 0–6 complete, expansion Phase 7 implemented, and Phases 8–10 proposed;
+audits and the CI/CD exploration not started
 Target release: Pi.js 2.3.0
 Workstream documents:
 
@@ -36,7 +36,7 @@ the release phase. Each workstream's design and task list live in its own docume
 
 | Workstream | Scope | Documents | Status |
 | --- | --- | --- | --- |
-| Sound | `plugins/sound/`, `plugins/sound-advanced/` | `SOUND-V2.3-PLAN.md`, `SOUND-V2.3-ROADMAP.md`, `SOUND-ADVANCED-V2.3-PLAN.md` | Phases 0–6 implemented; expansion Phases 7–10 proposed |
+| Sound | `plugins/sound/`, `plugins/sound-advanced/` | `SOUND-V2.3-PLAN.md`, `SOUND-V2.3-ROADMAP.md`, `SOUND-ADVANCED-V2.3-PLAN.md` | Phases 0–6 implemented; expansion Phase 7 implemented, Phases 8–10 proposed |
 | Keyboard | `plugins/keyboard/`: key state, action keys, key handlers, `input()` prompts | `KEYBOARD-V2.3-AUDIT.md`, then `KEYBOARD-V2.3-ROADMAP.md` | Audit not started |
 | Pointer | `plugins/pointer/`: mouse, touch, press, click, context menu, pinch zoom | `POINTER-V2.3-AUDIT.md`, then `POINTER-V2.3-ROADMAP.md` | Audit not started |
 | Gamepad | `plugins/gamepad/`: polling loop, state, sensitivity, connection events | `GAMEPAD-V2.3-AUDIT.md`, then `GAMEPAD-V2.3-ROADMAP.md` | Audit not started |

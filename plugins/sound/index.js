@@ -69,13 +69,19 @@ export default function playSoundPlugin( pluginApi ) {
  *
  * @param {string} name - Service method name for the error message
  * @param {string} bus - Bus name
+ * @param {boolean} [allowOutput] - Accept "output", the read-only stage after the limiter
  * @returns {void}
  */
-function validateBus( name, bus ) {
+function validateBus( name, bus, allowOutput ) {
+	let names = "sfx, music, audio, master";
+	if( allowOutput ) {
+		if( bus === "output" ) {
+			return;
+		}
+		names += ", output";
+	}
 	if( bus !== "master" && g_context.BUS_NAMES.indexOf( bus ) === -1 ) {
-		const error = new Error(
-			`${name}: Parameter bus must be one of: sfx, music, audio, master.`
-		);
+		const error = new Error( `${name}: Parameter bus must be one of: ${names}.` );
 		error.code = "INVALID_BUS";
 		throw error;
 	}
@@ -138,12 +144,12 @@ function setBusInsert( bus, insert ) {
 /**
  * Connect a bus output in parallel to a node (extension service method)
  *
- * @param {string} bus - "sfx", "music", "audio", or "master"
+ * @param {string} bus - "sfx", "music", "audio", "master", or "output"
  * @param {AudioNode} node - Node that receives the bus signal
  * @returns {Function} Untap function
  */
 function tapBus( bus, node ) {
-	validateBus( "tapBus", bus );
+	validateBus( "tapBus", bus, true );
 	if( !( node instanceof AudioNode ) ) {
 		const error = new TypeError( "tapBus: Parameter node must be an AudioNode." );
 		error.code = "INVALID_TAP";

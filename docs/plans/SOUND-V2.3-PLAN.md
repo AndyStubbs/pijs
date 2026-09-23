@@ -164,10 +164,12 @@ change is needed. This mechanism is general and also available to third-party pl
 | `stopVoice( soundId, when )` | De-clicked stop used by all callers |
 | `setBusVolume( bus, volume )` | Ramps the bus output gain independently of its effects insert |
 | `setBusInsert( bus, insert )` | Places one insert on a bus; `null` removes it |
-| `tapBus( bus, node )` | Connects a bus output in parallel to `node`; returns an untap function |
+| `tapBus( bus, node )` | Connects a bus output in parallel to `node`; returns an untap function. `"output"` taps the fixed stage after the limiter |
 | `registerPlayExtension( name, extension )` | Adds PLAY tokens, per-track state, and note resolution |
 
-Buses are named `"sfx"`, `"music"`, `"audio"`, and `"master"`. Extensions never receive a
+Buses are named `"sfx"`, `"music"`, `"audio"`, and `"master"`. `tapBus` also accepts
+`"output"`, the fixed stage after the limiter; `setBusVolume` and `setBusInsert` reject it with
+`INVALID_BUS`, so the output stage holds no effect or volume of its own. Extensions never receive a
 bus's `GainNode` and never rewire core nodes themselves. Core owns every connection between
 nodes it created and nodes an extension created.
 
@@ -176,10 +178,10 @@ The interface is internal. It is documented in the plugin authoring docs
 contract tests in 4.3.4 pass, and `sound-advanced` 1.0 consumes every member. Later changes
 that break it require bumping `version`; a test pins the member list.
 
-**Proposed v1 additions before release** (expansion plan Section 3, decisions D7 and D8):
-`tapBus` accepts `"output"`, a fixed stage after the limiter; `observePlay( listener )` reports
-admitted PLAY notes and song ends; and `getAudioBuffer( name )` returns a loaded file's decoded
-buffer. Each addition updates this table when its task lands.
+**Proposed v1 additions before release** (expansion plan Section 3, decision D8):
+`observePlay( listener )` reports admitted PLAY notes and song ends, and
+`getAudioBuffer( name )` returns a loaded file's decoded buffer. Each addition updates this
+table when its task lands.
 
 - **`createVoice` requests** follow the `sound()` rules: the same validation and error codes
   (an unregistered oType throws `INVALID_OTYPE`), delays beyond the lookahead window held as
@@ -266,8 +268,11 @@ state. Realized voice inserts and bus inserts share one shape:
   (Section 5.1), not the 10 ms linear ramp. `setBusVolume( "master", v )` and `setVolume( v )`
   are equivalent.
   Core registers the public `setBusVolume()` command over the same function (D4).
-- **Taps:** `tapBus` taps are parallel, read-only connections, used by the analyser. Removing a
-  tap disconnects only that tap. A bus tap follows its effects and output gain.
+- **Taps:** `tapBus` taps are parallel, read-only connections, used by the analyser and the
+  recorder. Removing a tap disconnects only that tap. A bus tap follows its effects and output
+  gain. An `"output"` tap connects to the fixed output stage between the limiter and the
+  destination. `setSoundLimiter()` reroutes only the edge into that stage, so the tap receives
+  exactly what the destination receives, with the limiter on or off.
 
 #### 4.3.3 PLAY extension contract
 
@@ -348,6 +353,8 @@ Before v1 is frozen, stub extensions verify:
                        ▼                              ├ limiter, bypassable as a unit
                  soft clipper (WaveShaperNode)        ┘
                        ▼
+                 output stage (unity gain; "output" taps)
+                       ▼
                  destination
 ```
 
@@ -423,7 +430,7 @@ Guarantee and switch:
   quality metric. On engines that use the clipper alone, deliberate overloads saturate; the
   observed share is recorded in `docs/evidence/sound-2.3/README.md`.
 - `setSoundLimiter( enabled )`: when disabled, the master gain connects straight to the
-  destination, bypassing both stages. Switching reconnects immediately with no crossfade. It can
+  output stage before the destination, bypassing both limiter stages. Switching reconnects immediately with no crossfade. It can
   cause a brief discontinuity, so the docs recommend setting it before playback starts.
 - The limiter is on by default. It is a safety net, not a mastering stage, and the docs say so.
 

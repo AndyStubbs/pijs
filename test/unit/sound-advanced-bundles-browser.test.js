@@ -9,7 +9,8 @@ import * as g_playwright from "@playwright/test";
 import * as g_source from "./browser-source-harness.js";
 
 const COMMANDS = [
-	"defineInstrument", "definePreset", "getSoundLevels", "setBusEffect", "sfx", "synth"
+	"defineInstrument", "definePreset", "getRecordingState", "getSoundLevels", "saveRecording",
+	"setBusEffect", "sfx", "startRecording", "stopRecording", "synth"
 ];
 
 let m_browser;
@@ -38,7 +39,9 @@ for( const format of [ "iife", "esm" ] ) {
 				const errors = [];
 				page.on( "pageerror", error => errors.push( error ) );
 				try {
-					await page.route( "http://sound-advanced.test/**", route => {
+
+					// Localhost is a secure context, which the recorder's AudioWorklet requires
+					await page.route( "http://localhost:47110/**", route => {
 						const name = new URL( route.request().url() ).pathname.slice( 1 );
 						if( name.endsWith( ".js" ) ) {
 							return route.fulfill( {
@@ -50,7 +53,7 @@ for( const format of [ "iife", "esm" ] ) {
 							"contentType": "text/html", "body": "<!doctype html><body>"
 						} );
 					} );
-					await page.goto( "http://sound-advanced.test/" );
+					await page.goto( "http://localhost:47110/" );
 					await loadBundle( page, format, "core" );
 					await loadBundle( page, format, "advanced" );
 					if( variant === "lite" ) {
@@ -63,6 +66,10 @@ for( const format of [ "iife", "esm" ] ) {
 					const result = await page.evaluate( async commands => {
 						await pi.ready();
 						const levels = $.getSoundLevels();
+
+						// The recorder's worklet source survives minification
+						await $.startRecording();
+						const wav = await $.stopRecording();
 						return {
 							"commands": commands.map( name => typeof pi[ name ] ),
 							"initialized": pi.getPlugins()
@@ -71,7 +78,8 @@ for( const format of [ "iife", "esm" ] ) {
 							"id": $.synth( { "duration": 0.01, "volume": 0, "oType": "pulse" } ),
 							"sfx": $.sfx( "blip" ),
 							"periodic": $.sound( { "duration": 0.01, "oType": "periodic" } ),
-							"peak": levels.peak
+							"peak": levels.peak,
+							"wav": [ wav.type, wav.size ]
 						};
 					}, COMMANDS );
 					g_assert.deepEqual( result.commands, COMMANDS.map( () => "function" ) );
@@ -80,6 +88,8 @@ for( const format of [ "iife", "esm" ] ) {
 					g_assert.match( result.sfx, /^sound_\d+$/ );
 					g_assert.match( result.periodic, /^sound_\d+$/ );
 					g_assert.equal( result.peak, 0 );
+					g_assert.equal( result.wav[ 0 ], "audio/wav" );
+					g_assert.ok( result.wav[ 1 ] >= 44 );
 					g_assert.deepEqual( errors, [] );
 				} finally {
 					await page.close();

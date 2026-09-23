@@ -163,7 +163,12 @@ function createGraph( context ) {
 	compressor.connect( makeupTrim );
 	makeupTrim.connect( clipperGain );
 	clipperGain.connect( clipper );
-	clipper.connect( context.destination );
+
+	// Fixed output stage: taps on "output" receive what the speakers receive and survive
+	// limiter changes, because only the edge into this stage is rerouted
+	const output = context.createGain();
+	output.connect( context.destination );
+	clipper.connect( output );
 
 	// Each bus: fixed input gain, an empty effects insert slot, then its own output gain
 	const buses = {};
@@ -184,6 +189,7 @@ function createGraph( context ) {
 	return {
 		"buses": buses,
 		"master": { "input": masterInput, "insert": null, "output": masterGain },
+		"output": { "output": output },
 		"masterInput": masterInput,
 		"masterGain": masterGain,
 		"masterRoute": null,
@@ -193,7 +199,7 @@ function createGraph( context ) {
 }
 
 /**
- * Connect the master gain through the limiter or straight to the destination
+ * Connect the master gain through the limiter or straight to the output stage
  *
  * @returns {void}
  */
@@ -201,7 +207,7 @@ function routeMaster() {
 	const masterGain = m_graph.masterGain;
 	let target;
 	if( !m_limiterEnabled ) {
-		target = m_audioContext.destination;
+		target = m_graph.output.output;
 	} else if( m_compressorUsable ) {
 		target = m_graph.compressor;
 	} else {
@@ -219,15 +225,16 @@ function routeMaster() {
 }
 
 /**
- * Get the input, insert slot, and output gain of a bus or the master stage
+ * Get the input, insert slot, and output gain of a bus or the master stage. The "output"
+ * stage has only an output node.
  *
- * @param {string} bus - "sfx", "music", "audio", or "master"
+ * @param {string} bus - "sfx", "music", "audio", "master", or "output"
  * @returns {Object} { input, insert, output }
  */
 function getBusStage( bus ) {
 	getAudioContext();
-	if( bus === "master" ) {
-		return m_graph.master;
+	if( bus === "master" || bus === "output" ) {
+		return m_graph[ bus ];
 	}
 	return m_graph.buses[ bus ];
 }
@@ -494,9 +501,10 @@ export function setBusInsert( bus, insert ) {
 }
 
 /**
- * Connect a bus output in parallel to a node, after its effects and output gain
+ * Connect a bus output in parallel to a node, after its effects and output gain. "output"
+ * taps the fixed stage after the limiter.
  *
- * @param {string} bus - "sfx", "music", "audio", or "master"
+ * @param {string} bus - "sfx", "music", "audio", "master", or "output"
  * @param {AudioNode} node - Node that receives the bus signal
  * @returns {Function} Untap function; disconnects only this tap and may be called repeatedly
  */

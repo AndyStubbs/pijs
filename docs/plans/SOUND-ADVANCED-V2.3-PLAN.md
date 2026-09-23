@@ -1,6 +1,7 @@
 # Pi.js 2.3 Sound Advanced Expansion Plan
 
-Status: Proposed; Phases 7–10 not started
+Status: Phase 7 implemented (its three-engine listening check is open); Phases 8–10 not
+started
 Revision 2: the sound-effect generator is `generateSfx()`, repeatable by default, with seed 0
 as the built-in preset and a `variation` parameter (6.1, D17).
 Target release: Pi.js 2.3.0
@@ -130,10 +131,14 @@ Rules:
 - **Suspended contexts.** A recording captures context time, not wall time. While the context
   is locked before the first user gesture, or suspended by the browser, nothing is captured
   and the duration does not advance.
-- **Validation codes:** `INVALID_BUS`, `INVALID_DURATION`, `INVALID_BIT_DEPTH`, and
-  `INVALID_BLOB` for `saveRecording`. When the worklet cannot load, for example because a
-  Content Security Policy blocks `blob:` modules, the promise rejects with
-  `RECORDING_UNAVAILABLE` and the state returns to `"idle"`.
+- **Stopping early.** `stopRecording` while the recording is starting waits for it to start.
+  Calling it again before it resolves returns the same promise.
+- **Validation codes:** `INVALID_BUS`, `INVALID_DURATION`, and `INVALID_BIT_DEPTH` for
+  `startRecording`; `INVALID_BLOB` and `INVALID_FILENAME` (not a non-empty string) for
+  `saveRecording`. When the worklet cannot load, for example because a Content Security
+  Policy blocks `blob:` modules, the promise rejects with `RECORDING_UNAVAILABLE` and the
+  state returns to `"idle"`. A `stopRecording` waiting on that start rejects the same way, and
+  a later start loads the module again.
 
 `getSoundLevels()` also accepts `"output"`, so a meter can show the level after the limiter.
 
@@ -146,9 +151,10 @@ plugins/sound-advanced/
 └── wav.js          # Pure WAV encoder, no audio context
 ```
 
-- **Worklet loader (`worklet.js`).** The processors are an inline source string turned into a
-  `blob:` URL and passed to `context.audioWorklet.addModule()` once per context. Callers
-  receive a shared promise. The bitcrusher (Phase 8) registers its processor in the same
+- **Worklet loader (`worklet.js`).** The processors are written as a self-contained function
+  whose source text, which the minifier still compacts, is turned into a `blob:` URL and
+  passed to `context.audioWorklet.addModule()` once per context. Callers receive a shared
+  promise; a failed load is forgotten, so a later call retries. The bitcrusher (Phase 8) registers its processor in the same
   module. `file://` pages are already unsupported for audio (sound plan Section 2), and
   `http://localhost` and HTTPS are secure contexts, so AudioWorklet is available wherever Pi.js
   audio runs.
@@ -158,15 +164,18 @@ plugins/sound-advanced/
   `Float32Array`s. Stopping posts a flush message; the processor sends its partial buffer and
   a done message, and `stopRecording` resolves after that, so the last quantum is kept. The
   tap is removed on stop, so a finished recorder costs no processing.
-- **Processing without an output.** The node has no outputs. Task 7.2 confirms that every
-  engine processes a connected node with no outputs. If one does not, the node gets one
-  output routed through a zero-gain node to the destination.
+- **Processing without an output.** The node has no outputs. Task 7.2 confirmed that Chromium
+  and Firefox process a connected node with no outputs, offline and realtime, so the fallback
+  (one output routed through a zero-gain node to the destination) is not used. The findings
+  are in `docs/evidence/sound-2.3/README.md`.
 - **Storage.** In 16-bit mode, chunks are converted to `Int16Array` as they arrive, which
   halves memory. Stereo 16-bit audio at 48 kHz is about 11.5 MB per minute, so the 600-second
   maximum is about 115 MB.
-- **Encoding (`wav.js`).** `encodeWav( channels, sampleRate, bitDepth )` writes a RIFF header
-  (format 1 for PCM, format 3 for float) and interleaved samples. It clamps to ±1 before
-  conversion, scales by 32767, and does not dither. The sample rate is the context's.
+- **Encoding (`wav.js`).** `toPcm16( samples )` clamps to ±1, scales by 32767, and does not
+  dither; the recorder applies it to each chunk as it arrives. `encodeWav( chunks,
+  channelCount, sampleRate, bitDepth )` writes a RIFF header (format 1 for PCM, format 3 for
+  float) and interleaves the chunks straight into the file buffer, without concatenating
+  them first. The sample rate is the context's.
 - **Download.** `saveRecording` creates an object URL and a detached `<a download>`, clicks
   it, and revokes the URL on the next task.
 
@@ -195,6 +204,18 @@ plugins/sound-advanced/
 - Every error code has a test, and a failed worklet load returns the state to `"idle"`.
 - The listening check covers recording and saving in `sound_advanced_01.html` on all three
   engines (Safari for WebKit).
+
+### 4.5 Exit status
+
+- Tasks 7.1–7.7 are implemented. The offline tests are in `audio-recording-browser.test.js`,
+  the realtime and download tests in `audio-recording-realtime-browser.test.js`, the encoder
+  tests in `sound-advanced-wav.test.js`, and the output-stage contract tests in
+  `audio-service-browser.test.js`.
+- Automated tests run in Chromium and Firefox. Playwright's WebKit build on Windows has no Web
+  Audio API, so WebKit is covered by the listening check only.
+- The Phase 7 size entry is in `docs/evidence/sound-2.3/README.md`. The recorder costs about
+  250 bytes more than the Section 8 estimate, and the core output stage fits in the headroom.
+- **Open:** the three-engine listening check.
 
 ## 5. Phase 8: Bus Effects
 
@@ -473,11 +494,11 @@ Numbered after the sound plan's D1–D6.
 
 | ID | Decision | Recommendation | Resolve by |
 | --- | --- | --- | --- |
-| D7 | How extensions reach the post-limiter signal | `tapBus( "output" )` with a fixed output stage in core. It adds no service member, and `setBusInsert` and `setBusVolume` reject `"output"` | Task 7.1 |
-| D8 | Whether additions reopen the frozen service v1 | Yes, until 2.3.0 ships. Nothing outside this repository consumes v1 yet, and `sound` 2.0.0 and `sound-advanced` 1.0.0 ship together. Update the member pin test in each task. After release, the versioning rule applies | Task 7.1 |
-| D9 | Recording formats | WAV only: 16-bit PCM by default, 32-bit float as an option. `MediaRecorder` output differs by browser and cannot be tested sample for sample | Task 7.4 |
-| D10 | Concurrent recordings | One at a time. Several recorders multiply memory, and no common game use needs them | Task 7.4 |
-| D11 | Recording duration limits | 60 s default, 600 s maximum (about 115 MB at 48 kHz, 16-bit stereo) | Task 7.4 |
+| D7 | How extensions reach the post-limiter signal | **Resolved (task 7.1):** `tapBus( "output" )` with a fixed output stage in core. It adds no service member, and `setBusInsert` and `setBusVolume` reject `"output"` | Resolved |
+| D8 | Whether additions reopen the frozen service v1 | **Resolved (task 7.1): yes**, until 2.3.0 ships. Nothing outside this repository consumes v1 yet, and `sound` 2.0.0 and `sound-advanced` 1.0.0 ship together. Tasks that add a member (9.2, 10.1) update the member pin test. After release, the versioning rule applies | Resolved |
+| D9 | Recording formats | **Resolved (task 7.4):** WAV only: 16-bit PCM by default, 32-bit float as an option. `MediaRecorder` output differs by browser and cannot be tested sample for sample | Resolved |
+| D10 | Concurrent recordings | **Resolved (task 7.4):** one at a time. Several recorders multiply memory, and no common game use needs them | Resolved |
+| D11 | Recording duration limits | **Resolved (task 7.4):** 60 s default, 600 s maximum (about 115 MB at 48 kHz, 16-bit stereo) | Resolved |
 | D12 | Changing effect options without a rebuild | Ramp `AudioParam` options in place when the chain's types and order match. Rebuild otherwise, which cuts tails as today | Task 8.3 |
 | D13 | Music sync delivery | Dispatch on animation frames from the audible time; drop notes more than 250 ms late; always deliver `"end"` | Task 9.3 |
 | D14 | PLAY cue markers | Defer to 2.3.x. A cue needs a timed event without a voice, which changes the PLAY extension contract | Task 9.3 |

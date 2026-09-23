@@ -1,0 +1,33 @@
+title = "stopRecording"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Stops recording and returns the recording as a WAV file."
+description = """
+Requires the sound-advanced plugin. Stops the recording started by startRecording(), including a recording that stopped capturing at its maxDuration, and resolves with an audio/wav Blob. The last samples are flushed before the promise resolves, so nothing is lost at the end.
+
+The file is stereo at the audio context's sample rate, as 16-bit PCM or 32-bit float samples. Pass it to saveRecording() to download it, or play it back with URL.createObjectURL() and loadAudio().
+
+Stopping while the recording is still starting waits for it to start. Calling stopRecording() again before it resolves returns the same promise. With no recording, it throws NOT_RECORDING.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Press R to record, S to stop and save" );
+$.onkey( "r", "down", async () => {
+	await $.startRecording( "sfx" );
+	$.print( "Recording sound effects" );
+}, true );
+$.onkey( "s", "down", async () => {
+	const wav = await $.stopRecording();
+	$.saveRecording( wav, "effects.wav" );
+}, true );
+$.onkey( "Space", "down", () => {
+	$.sound( 440 + Math.random() * 440, 0.2 );
+} );
+"""
+parameters = [ ]
+
+[[returns]]
+type = "Promise<Blob>"
+typeDesc = "Promise"
+description = "Resolves with the recording as an audio/wav Blob."

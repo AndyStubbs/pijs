@@ -85,11 +85,13 @@ below requires a new `version`.
 | `stopVoice( soundId, when )` | Fades a voice out by `when` (context time), or as soon as possible |
 | `setBusVolume( bus, volume )` | Sets a bus volume after its effect; `"master"` is the same as `setVolume()` |
 | `setBusInsert( bus, insert )` | Places one effect insert on a bus; `null` removes it |
-| `tapBus( bus, node )` | Connects a bus output to `node` in parallel and returns an untap function |
+| `tapBus( bus, node )` | Connects a bus output to `node` in parallel and returns an untap function; `"output"` taps the signal after the limiter |
 | `registerPlayExtension( name, extension )` | Adds PLAY tokens, per-track state, and per-note voice overrides |
 
-Buses are `"sfx"`, `"music"`, `"audio"`, and `"master"`. Core makes every connection between
-its nodes and an extension's nodes; extensions never receive core nodes.
+Buses are `"sfx"`, `"music"`, `"audio"`, and `"master"`. `tapBus` also accepts `"output"`,
+the final signal after the limiter, which is what the speakers receive; `setBusVolume` and
+`setBusInsert` do not. Core makes every connection between its nodes and an extension's
+nodes; extensions never receive core nodes.
 
 - **Sources.** `factory( context, spec )` receives a frozen spec (`oType`, `frequency`,
   `frequencyEnd`, `start`, `gate`, `end`, `offset`) and returns `{ output, frequency, detune,

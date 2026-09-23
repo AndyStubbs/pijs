@@ -4,7 +4,7 @@ isScreen = false
 plugin = "sound-advanced"
 summary = "Measures the current level of a sound bus, with optional spectrum and waveform data."
 description = """
-Requires the sound-advanced plugin. Measures the most recent 2048 samples of a bus after its effect and volume, which suits level meters and visualizers. "master" is measured after the master volume, before the output limiter.
+Requires the sound-advanced plugin. Measures the most recent 2048 samples of a bus after its effect and volume, which suits level meters and visualizers. "master" is measured after the master volume, before the output limiter, and "output" after the limiter, which is what the speakers receive.
 
 peak is the largest sample magnitude and rms the average level, both from 0 upward. With spectrum, the result includes 1024 frequency bands in decibels from 0 Hz up to half the sample rate. With waveform, it includes the 2048 samples themselves. Arrays that were not requested are null.
 
@@ -28,7 +28,7 @@ draw();
 [[parameters]]
 name = "bus"
 type = "string"
-description = "'sfx', 'music', 'audio', or 'master' (default: 'master')."
+description = "'sfx', 'music', 'audio', 'master', or 'output' (default: 'master')."
 optional = true
 
 [[parameters]]

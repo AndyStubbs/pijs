@@ -747,6 +747,123 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		assert.ok( g_metrics.peak( left, frame( 0.6 ), frame( 0.9 ) ) > 0.4 );
 	} );
 
+	test( "only tapBus accepts the output stage", async t => {
+		const result = await suite.inHarness( t, {}, arg => {
+			eval( arg.stubs );
+			const service = __stubs.service();
+			const codeOf = __stubs.codeOf;
+			const context = service.getContext();
+			const analyser = context.createAnalyser();
+			let untap = null;
+			const tap = codeOf( () => {
+				untap = service.tapBus( "output", analyser );
+			} );
+			untap();
+			untap();
+			let message = null;
+			try {
+				service.tapBus( "drums", analyser );
+			} catch( error ) {
+				message = error.message;
+			}
+			return {
+				"tap": tap,
+				"untapType": typeof untap,
+				"message": message,
+				"insert": codeOf( () => service.setBusInsert( "output", null ) ),
+				"volume": codeOf( () => service.setBusVolume( "output", 0.5 ) ),
+				"command": codeOf( () => $.setBusVolume( "output", 0.5 ) )
+			};
+		}, { "stubs": STUBS } );
+		if( !result ) {
+			return;
+		}
+		assert.equal( result.tap, null );
+		assert.equal( result.untapType, "function" );
+		assert.match( result.message, /master, output\.$/ );
+		assert.equal( result.insert, "INVALID_BUS" );
+		assert.equal( result.volume, "INVALID_BUS" );
+		assert.equal( result.command, "INVALID_BUS" );
+	} );
+
+	test( "an output tap matches the destination as the limiter turns off and on", async t => {
+		const result = await suite.inHarness( t, {
+			"config": { "duration": 1.2 }, "needsSuspend": true
+		}, arg => {
+			eval( arg.stubs );
+			const service = __stubs.service();
+			const reads = [];
+			let analyser = null;
+			function read( limiter ) {
+				const data = new Float32Array( analyser.fftSize );
+				analyser.getFloatTimeDomainData( data );
+				reads.push( {
+					"limiter": limiter,
+					"time": service.getContext().currentTime,
+					"data": Array.from( data )
+				} );
+			}
+			return __audioHarness.render( { "actions": [
+				{ "time": 0, "run": () => {
+					$.setVolume( 1 );
+					analyser = service.getContext().createAnalyser();
+					service.tapBus( "output", analyser );
+
+					// Loud enough that the limiter visibly changes the signal
+					for( const frequency of [ 220, 330 ] ) {
+						$.sound( {
+							"frequency": frequency, "duration": 1.1, "volume": 1, "oType": "square"
+						} );
+					}
+				} },
+				{ "time": 0.3, "run": () => {
+					read( true );
+					$.setSoundLimiter( false );
+				} },
+				{ "time": 0.6, "run": () => {
+					read( false );
+					$.setSoundLimiter( true );
+				} },
+				{ "time": 0.9, "run": () => read( true ) }
+			] } ).then( render => ( { ...render, "reads": reads } ) );
+		}, { "stubs": STUBS } );
+		if( !result ) {
+			return;
+		}
+		const left = channel( result );
+		const right = channel( result, 1 );
+		const peaks = {};
+		for( const entry of result.reads ) {
+
+			// The analyser holds the most recent frames before the read; find that window in
+			// the destination near the read time and require an exact match
+			const size = entry.data.length;
+			const end = Math.round( entry.time * RATE );
+			let best = Infinity;
+			for( let start = end - size - 4096; start <= end - size + 256; start++ ) {
+				if( start < 0 ) {
+					continue;
+				}
+				let worst = 0;
+				for( let i = 0; i < size && worst <= best; i++ ) {
+					worst = Math.max( worst, Math.abs( left[ start + i ] - entry.data[ i ] ) );
+				}
+				best = Math.min( best, worst );
+			}
+			assert.ok( best <= 1e-7, `limiter ${entry.limiter}: window differs by ${best}` );
+			const key = String( entry.limiter );
+			const peak = Math.max( ...entry.data.map( Math.abs ) );
+			peaks[ key ] = Math.max( peaks[ key ] ?? 0, peak );
+		}
+
+		// Both channels carry the centered tones, and the limiter changed the level
+		assert.deepEqual(
+			Array.from( left.subarray( 0, 4096 ) ), Array.from( right.subarray( 0, 4096 ) )
+		);
+		assert.ok( peaks.true <= 1, `limited peak ${peaks.true}` );
+		assert.ok( peaks.false > peaks.true, `unlimited ${peaks.false}, limited ${peaks.true}` );
+	} );
+
 	test( "createVoice requests follow the pending, bus, and locked-context rules", async t => {
 		const result = await suite.inHarness( t, {
 			"config": { "duration": 1.6 }, "needsSuspend": true
