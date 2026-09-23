@@ -307,6 +307,11 @@ declare namespace Pi {
 		blend?: string;
 
 		/**
+		 * Sets the volume of one sound bus.
+		 */
+		busVolume?: { "bus": string; "volume": number };
+
+		/**
 		 * Sets a custom character bitmap in the current font.
 		 */
 		char?: { "charCode": number | string; "data": any[] | string };
@@ -2481,6 +2486,17 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 */
 		setAudio( params: { "instanceId": number; "volume"?: number; "playbackRate"?: number; "pan"?: number } ): void;
 		setAudio( instanceId: number, volume?: number, playbackRate?: number, pan?: number ): void;
+
+		/**
+		 * Sets the volume of one sound bus.
+		 *
+		 * Sound is mixed on three buses before the master volume: "sfx" carries sound(), "music" carries play(), and "audio" carries playAudio(). The bus volume applies after any bus effect set with the sound-advanced plugin's setBusEffect(), so it also fades an effect's tail. The change ramps over 10 ms. "master" is the same as setVolume().
+		 * @param bus 'sfx', 'music', 'audio', or 'master'.
+		 * @param volume Volume, 0-1.
+		 * @returns This function does not return a value.
+		 */
+		setBusVolume( params: { "bus": string; "volume": number } ): void;
+		setBusVolume( bus: string, volume: number ): void;
 
 		/**
 		 * Sets the default foreground color used by new screens.

@@ -34,7 +34,6 @@ const SOUND_ADVANCED_DECLARATIONS = [
 	"sfx( name: string, variation?: number ): string;",
 	"definePreset( name: string, params: object ): void;",
 	"defineInstrument( instrument: number, params: object | null ): void;",
-	"setBusVolume( bus: string, volume: number ): void;",
 	"setBusEffect( bus: string, effect: string | null, options?: object ): void;",
 	"getSoundLevels( bus?: string, spectrum?: boolean, waveform?: boolean ): {",
 	"declare function sound_advancedPlugin( pluginApi: PluginAPI ): void;"
@@ -137,6 +136,10 @@ const REQUIRED_DECLARATIONS = [
 	{
 		"name": "sound limiter switch",
 		"text": "setSoundLimiter( enabled: boolean ): void;"
+	},
+	{
+		"name": "bus volume",
+		"text": "setBusVolume( bus: string, volume: number ): void;"
 	},
 	{
 		"name": "decoded or streamed audio loading",
@@ -252,6 +255,11 @@ function validateTypeDefinitions() {
 		if( !advancedTypes.includes( text ) ) {
 			throw new Error( `sound-advanced type definitions are missing: ${text}` );
 		}
+	}
+
+	// Core sound commands are declared once, in pi.d.ts
+	if( advancedTypes.includes( "setBusVolume(" ) ) {
+		throw new Error( "sound-advanced type definitions incorrectly include setBusVolume." );
 	}
 
 	console.log(

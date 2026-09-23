@@ -84,7 +84,7 @@ through `test/unit/audio-browser-suite.js`:
 | --- | --- |
 | `audio-render-browser.test.js` | Harness behavior, state masking, determinism |
 | `audio-voices-browser.test.js` | Envelopes, stops, steals, caps, late starts, locking |
-| `audio-bus-browser.test.js` | Limiter ceiling and quality, master volume, bus-volume service |
+| `audio-bus-browser.test.js` | Limiter ceiling and quality, master volume, `setBusVolume()` and its service method |
 | `audio-sound-design-browser.test.js` | Noise spectra and buffers, pan law, sweep endpoints |
 | `audio-samples-browser.test.js` | Decoded sample position, pause/resume, setAudio, late starts, shared caps |
 | `audio-service-browser.test.js` | Sound extension service contracts with stub sources, inserts, and bus inserts |

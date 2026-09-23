@@ -1,6 +1,6 @@
 # Pi.js 2.3 Sound Upgrade Roadmap
 
-Status: Phases 0–5 implemented; Phase 6 open
+Status: Phases 0–6 implemented; sound workstream complete (M4)
 Design reference: [SOUND-V2.3-PLAN.md](SOUND-V2.3-PLAN.md) (section numbers below refer to it)
 Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md) (the 2.3 release phase and the other
 2.3 workstreams)
@@ -523,6 +523,23 @@ Exit criteria:
 - `npm test` is green after the promotions.
 - Section 11 of the plan, the compatibility summary, matches the final sound API. The release
   phase writes the upgrade guide from it.
+
+Phase 6 results (evidence README, "Phase 6 size review"):
+
+- **D4 resolved: `setBusVolume()` is core.** The core plugin registers the command beside
+  `setVolume()` over the existing validating function, so the service method is unchanged.
+  `buses.js` is removed from `sound-advanced`. The metadata moved to
+  `metadata/pi-2.3/sound-setBusVolume.toml`, so `pi.d.ts` declares the command (and a
+  `busVolume` setting) and `sound-advanced.d.ts` no longer does. `audio-bus-browser.test.js`
+  covers the public command.
+- **No other promotions, no full merge.** Every other module adds an API concept, and the full
+  merge costs 5,198 bytes, above the 4 KB guide. `sound-advanced` stays a standalone bundle.
+- **Size:** the core plugin is 15,337 bytes (+53) and full-build growth over 2.2 is 9,452
+  (+49). The soft targets were raised to 15.5 KB and 9.5 KB (plan 9.1), because they predated
+  the service members plan 4.3 places in core. No variance remains.
+- **Size tooling:** `npm run size` no longer reports `buses`.
+- **Open manual checks:** unchanged from Phase 5. The release phase runs the three-engine
+  listening pass (R.7).
 
 ## Scope-Cut Order
 

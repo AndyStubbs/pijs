@@ -1,6 +1,6 @@
 /**
  * Offline render tests for the core audio graph: the two-stage limiter, master volume, and
- * the bus-volume service method.
+ * bus volume through the setBusVolume() command and the service method.
  *
  * Stress renders, including 64 simultaneous sample instances, run with the limiter on and
  * assert the absolute ceiling plus the limiter quality metric (share of samples above the soft
@@ -265,18 +265,19 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 		assert.ok( residual.max <= g_tolerances.getTolerance( "stopResidualMax", engine ) );
 	} );
 
-	test( "muting the sfx bus leaves music playing", async t => {
+	test( "setBusVolume() validates, and muting the sfx bus leaves music playing", async t => {
 		const result = await suite.inHarness( t, {
 			"config": { "duration": 1 }, "needsSuspend": true
 		}, () => {
-			let service = null;
-			pi.registerPlugin( {
-				"name": "sound-service-probe",
-				"dependencies": [ "sound" ],
-				"init": api => {
-					service = api.getService( "sound" );
+			const errors = [];
+			const calls = [ [ "drums", 1 ], [ "sfx", 2 ], [ "sfx", "loud" ], [ "sfx" ] ];
+			for( const call of calls ) {
+				try {
+					$.setBusVolume( ...call );
+				} catch( error ) {
+					errors.push( error.code );
 				}
-			} );
+			}
 			return __audioHarness.render( { "actions": [
 				{ "time": 0, "run": () => {
 					$.setSoundLimiter( false );
@@ -284,13 +285,17 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 					$.play( "T60 L1 ML O4 C" );
 				} },
 				{ "time": 0.3, "run": () => {
-					service.setBusVolume( "sfx", 0 );
+					$.setBusVolume( "sfx", 0 );
 				} }
-			] } );
+			] } ).then( render => ( { ...render, "busErrors": errors } ) );
 		} );
 		if( !result ) {
 			return;
 		}
+		assert.deepEqual(
+			result.busErrors,
+			[ "INVALID_BUS", "INVALID_VOLUME", "INVALID_VOLUME", "INVALID_VOLUME" ]
+		);
 		const [ left, right ] = g_harness.decodeRender( result ).channels;
 
 		// Before muting the panned sfx voice makes the channels differ; afterwards only the
@@ -310,34 +315,24 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 
 	test( "setBusVolume( \"master\" ) matches setVolume()", async t => {
 		const renders = [];
-		for( const useService of [ true, false ] ) {
+		for( const useBus of [ true, false ] ) {
 			const result = await suite.inHarness( t, {
 				"config": { "duration": 0.6 }, "needsSuspend": true
-			}, useService => {
-				let service = null;
-				if( useService ) {
-					pi.registerPlugin( {
-						"name": "sound-service-probe",
-						"dependencies": [ "sound" ],
-						"init": api => {
-							service = api.getService( "sound" );
-						}
-					} );
-				}
+			}, useBus => {
 				return __audioHarness.render( { "actions": [
 					{ "time": 0, "run": () => {
 						$.setSoundLimiter( false );
 						$.sound( 440, 1, 1, "sine" );
 					} },
 					{ "time": 0.2, "run": () => {
-						if( useService ) {
-							service.setBusVolume( "master", 0.2 );
+						if( useBus ) {
+							$.setBusVolume( "master", 0.2 );
 						} else {
 							$.setVolume( 0.2 );
 						}
 					} }
 				] } );
-			}, useService );
+			}, useBus );
 			if( !result ) {
 				return;
 			}

@@ -1,9 +1,9 @@
 /**
  * Pi.js - Sound Advanced Plugin
  *
- * Synthesis, periodic noise, per-bus volume, bus effects, level analysis, sound-effect
- * presets, and PLAY instruments. Every module reaches the core sound plugin only through its
- * extension service, so the plugin shares the core audio context, buses, and voice caps.
+ * Synthesis, periodic noise, bus effects, level analysis, sound-effect presets, and PLAY
+ * instruments. Every module reaches the core sound plugin only through its extension service,
+ * so the plugin shares the core audio context, buses, and voice caps.
  * Each module registers its own commands and can move into core on its own.
  *
  * @module plugins/sound-advanced
@@ -13,7 +13,6 @@
 "use strict";
 
 import * as g_analyser from "./analyser.js";
-import * as g_buses from "./buses.js";
 import * as g_effects from "./effects.js";
 import * as g_instruments from "./instruments.js";
 import * as g_periodicNoise from "./periodic-noise.js";
@@ -25,7 +24,7 @@ const SOUND_SERVICE_VERSION = 1;
 
 // Modules in registration order; periodic noise registers its source type first
 const MODULES = [
-	g_periodicNoise, g_synth, g_buses, g_effects, g_analyser, g_presets, g_instruments
+	g_periodicNoise, g_synth, g_effects, g_analyser, g_presets, g_instruments
 ];
 
 

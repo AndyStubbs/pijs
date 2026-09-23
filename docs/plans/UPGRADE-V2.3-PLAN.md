@@ -1,6 +1,6 @@
 # Pi.js 2.3 Upgrade Plan
 
-Status: Sound workstream in progress; audits and the CI/CD exploration not started
+Status: Sound workstream complete; audits and the CI/CD exploration not started
 Target release: Pi.js 2.3.0
 Workstream documents:
 
@@ -32,7 +32,7 @@ the release phase. Each workstream's design and task list live in its own docume
 
 | Workstream | Scope | Documents | Status |
 | --- | --- | --- | --- |
-| Sound | `plugins/sound/`, `plugins/sound-advanced/` | `SOUND-V2.3-PLAN.md`, `SOUND-V2.3-ROADMAP.md` | Phases 0–5 implemented; Phase 6 size review open |
+| Sound | `plugins/sound/`, `plugins/sound-advanced/` | `SOUND-V2.3-PLAN.md`, `SOUND-V2.3-ROADMAP.md` | Complete: Phases 0–6 implemented |
 | Keyboard | `plugins/keyboard/`: key state, action keys, key handlers, `input()` prompts | `KEYBOARD-V2.3-AUDIT.md`, then `KEYBOARD-V2.3-ROADMAP.md` | Audit not started |
 | Pointer | `plugins/pointer/`: mouse, touch, press, click, context menu, pinch zoom | `POINTER-V2.3-AUDIT.md`, then `POINTER-V2.3-ROADMAP.md` | Audit not started |
 | Gamepad | `plugins/gamepad/`: polling loop, state, sensitivity, connection events | `GAMEPAD-V2.3-AUDIT.md`, then `GAMEPAD-V2.3-ROADMAP.md` | Audit not started |
@@ -62,7 +62,7 @@ These decisions apply to every workstream and are fixed for this plan.
 ## 4. Sequencing
 
 ```
-Sound Phases 0–5 (done) ──► Sound Phase 6: size review ──────────────┐
+Sound Phases 0–6 (done) ─────────────────────────────────────────────┐
                                                                      │
 Core audit ──► core follow-up fixes ─────────────────────────────────┤
                                                                      │
@@ -82,7 +82,7 @@ CI/CD exploration ──► portability fixes and CI roadmap ──────�
   can change what the input plugins build on.
 - The input conventions review (Section 6) runs after all three input audits and before any
   input roadmap is approved, so the three plugins change toward one convention.
-- Sound Phase 6 can run at any time before release. It does not depend on the audits.
+- Sound Phase 6 is complete, so the sound workstream waits only for the release phase.
 - The test audit and the CI/CD exploration do not depend on the plugin work and can start at
   once. The test audit reuses the core audit's coverage map if it is available, and the
   exploration's per-platform runs feed the test audit's list of flaky tests.

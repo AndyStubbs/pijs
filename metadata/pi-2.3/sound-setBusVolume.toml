@@ -1,10 +1,10 @@
 title = "setBusVolume"
 category = "sound"
 isScreen = false
-plugin = "sound-advanced"
+plugin = "sound"
 summary = "Sets the volume of one sound bus."
 description = """
-Requires the sound-advanced plugin. Sound is mixed on three buses before the master volume: "sfx" carries sound(), synth(), and sfx(); "music" carries play(); and "audio" carries playAudio(). The bus volume applies after the bus effect, so it also fades an effect's tail. The change ramps over 10 ms. "master" is the same as setVolume().
+Sound is mixed on three buses before the master volume: "sfx" carries sound(), "music" carries play(), and "audio" carries playAudio(). The bus volume applies after any bus effect set with the sound-advanced plugin's setBusEffect(), so it also fades an effect's tail. The change ramps over 10 ms. "master" is the same as setVolume().
 """
 example = """
 $.screen( "300x200" );
@@ -30,3 +30,7 @@ description = "'sfx', 'music', 'audio', or 'master'."
 name = "volume"
 type = "number"
 description = "Volume, 0-1."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

@@ -1,8 +1,8 @@
 /**
  * Offline render tests for the sound-advanced plugin: synth() filter and filter envelope,
- * vibrato, tremolo, pulse duty, and arpeggio; periodic noise; public bus volume; bus reverb
- * and delay; getSoundLevels(); the built-in presets; and PLAY instruments. Each page loads the
- * full bundle followed by the plugin's source bundle.
+ * vibrato, tremolo, pulse duty, and arpeggio; periodic noise; bus reverb and delay and their
+ * interaction with bus volume; getSoundLevels(); the built-in presets; and PLAY instruments.
+ * Each page loads the full bundle followed by the plugin's source bundle.
  *
  * Tone levels are measured with a single-bin DFT written here, independent of the plugin.
  */
@@ -265,7 +265,7 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		}
 	);
 
-	test( "setBusVolume and setBusEffect work in either order and validate", async t => {
+	test( "setBusVolume and setBusEffect work in either order; effects validate", async t => {
 		const result = await suite.inHarness( t, {
 			"config": { "duration": 3.2 }, "needsSuspend": true
 		}, renderActions, { "actions": [
@@ -279,8 +279,6 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 					return null;
 				};
 				values.codes = [
-					codeOf( () => $.setBusVolume( "drums", 1 ) ),
-					codeOf( () => $.setBusVolume( "sfx", 2 ) ),
 					codeOf( () => $.setBusEffect( "sfx", "chorus" ) ),
 					codeOf( () => $.setBusEffect( "drums", "delay" ) ),
 					codeOf( () => $.setBusEffect( "sfx", "delay", { "feedback": 1 } ) ),
@@ -316,8 +314,7 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 			return;
 		}
 		assert.deepEqual( result.values.codes, [
-			"INVALID_BUS", "INVALID_VOLUME", "INVALID_EFFECT", "INVALID_BUS",
-			"INVALID_EFFECT_OPTION", "INVALID_OPTIONS"
+			"INVALID_EFFECT", "INVALID_BUS", "INVALID_EFFECT_OPTION", "INVALID_OPTIONS"
 		] );
 		const left = channel( result );
 		assertNear( g_metrics.peak( left, frame( 0.05 ), frame( 0.18 ) ), 0.4, 0.01, "volume" );

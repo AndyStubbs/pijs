@@ -99,7 +99,8 @@ function validateVolume( name, volume ) {
 }
 
 /**
- * Set a bus output volume (extension service method). "master" is equivalent to setVolume.
+ * Set a bus output volume (setBusVolume command and extension service method). "master" is
+ * equivalent to setVolume.
  *
  * @param {string} bus - "sfx", "music", "audio", or "master"
  * @param {number} volume - Volume (0-1)
@@ -152,7 +153,7 @@ function tapBus( bus, node ) {
 }
 
 /**
- * Register the master volume and limiter commands
+ * Register the master volume, bus volume, and limiter commands
  *
  * @param {Object} pluginApi - Plugin API
  * @returns {void}
@@ -174,6 +175,24 @@ function registerVolume( pluginApi ) {
 		const volume = utils.getFloat( options.volume, 0.75 );
 		validateVolume( "setVolume", volume );
 		g_context.setMasterVolume( volume );
+	}
+
+
+	pluginApi.addCommand( "setBusVolume", setBusVolumeCommand, false, [ "bus", "volume" ] );
+
+	/**
+	 * Set a bus volume after its effects, so it also controls effect tails
+	 *
+	 * "sfx" carries sound(), "music" carries play(), and "audio" carries playAudio(). The
+	 * change ramps over 10 ms. "master" is the same as setVolume().
+	 *
+	 * @param {Object} options - Command options
+	 * @param {string} options.bus - "sfx", "music", "audio", or "master"
+	 * @param {number} options.volume - Volume (0-1)
+	 * @returns {void}
+	 */
+	function setBusVolumeCommand( options ) {
+		setBusVolume( options.bus, utils.getFloat( options.volume, NaN ) );
 	}
 
 

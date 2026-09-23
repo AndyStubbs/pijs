@@ -119,6 +119,7 @@ function createConsumerPackage() {
 			`pi.polygon( new DataView( new ArrayBuffer( 24 ) ) );`,
 			`// @ts-expect-error Point objects need both coordinates.`,
 			`polygonScreen.polygon( [ { x: 1 } ] );`,
+			`pi.setBusVolume( "music", 0.5 );`,
 			`void version;`,
 			""
 		].join( "\n" ),
@@ -138,6 +139,8 @@ function createConsumerPackage() {
 			`lite.polygon( [ 0, 0, 6, 0, 3, 6 ] );`,
 			`// @ts-expect-error Lite screens do not include polygon declarations.`,
 			`screen.polygon( { points: [ 0, 0, 6, 0, 3, 6 ] } );`,
+			`// @ts-expect-error Lite does not bundle sound.`,
+			`lite.setBusVolume( "music", 0.5 );`,
 			""
 		].join( "\n" ),
 		"utf8"
@@ -180,7 +183,6 @@ function createConsumerPackage() {
 			`pi.definePreset( "zap", { frequency: 1800, frequencyEnd: 300 } );`,
 			`pi.defineInstrument( 7, { oType: "square" } );`,
 			`pi.defineInstrument( 7, null );`,
-			`pi.setBusVolume( "music", 0.5 );`,
 			`pi.setBusEffect( "sfx", "delay", { time: 0.3 } );`,
 			`pi.setBusEffect( "sfx", null );`,
 			`const levels = pi.getSoundLevels( "master", true );`,

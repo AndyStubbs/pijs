@@ -9,8 +9,7 @@ import * as g_playwright from "@playwright/test";
 import * as g_source from "./browser-source-harness.js";
 
 const COMMANDS = [
-	"defineInstrument", "definePreset", "getSoundLevels", "setBusEffect", "setBusVolume", "sfx",
-	"synth"
+	"defineInstrument", "definePreset", "getSoundLevels", "setBusEffect", "sfx", "synth"
 ];
 
 let m_browser;

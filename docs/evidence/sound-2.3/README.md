@@ -16,6 +16,7 @@ compresses them with gzip level 9. Sizes are in bytes.
 | `size-phase3.json` | Phase 3 exit: decoded and streamed samples, instances, shared caps | `sound` 2.0.0 |
 | `size-phase4.json` | Phase 4 exit: PLAY scheduler, tokenizer, extensions, voice inserts | `sound` 2.0.0; M2 |
 | `size-phase5.json` | Phase 5 exit: service v1 completed and frozen, `sound-advanced` plugin | `sound` 2.0.0, `sound-advanced` 1.0.0; M3 |
+| `size-phase6.json` | Phase 6 exit: `setBusVolume()` promoted to core | `sound` 2.0.0, `sound-advanced` 1.0.0; M4 |
 
 Phase 0 deltas, gzipped:
 
@@ -142,6 +143,44 @@ dependents; their own marginal costs keep `synth`, and their promotions include 
 Full merge: `pi.min.js` with all of `sound-advanced` is 77,595 bytes, 5,264 over the current
 `pi.min.js`, above the plan 9.1 guide of about 4 KB for merging the whole plugin. Per-bus
 volume costs 75 bytes to promote.
+
+## Phase 6 size review
+
+The release size review (roadmap 6.1) decided where each `sound-advanced` module belongs from
+the Phase 5 differentials above, and task 6.2 applied the result.
+
+- **`buses` promoted (D4).** Per-bus volume is common in games (separate music and effects
+  settings), only extends the existing volume concept, and its service method was already
+  core. Its measured promotion cost was 75 bytes. The command now registers in the core plugin
+  beside `setVolume()`, and `buses.js` is removed.
+- **Other modules stay in `sound-advanced`.** Each adds an API concept that typical games do
+  not need, and each would widen the core overrun: `periodic-noise` 411, `analyser` 444,
+  `effects` 732, and `synth` 1,842 (2,453 with `presets`, 2,541 with `instruments`).
+- **No full merge.** Merging all of `sound-advanced` into `pi.min.js` costs 5,198 bytes after
+  the promotion, above the plan 9.1 guide of about 4 KB. The plugin stays a standalone bundle.
+
+Phase 6 deltas, gzipped:
+
+| Bundle | Phase 5 exit | Phase 6 exit | Delta | Since 2.2 baseline |
+| --- | --- | --- | --- | --- |
+| `sound` plugin | 15,284 | 15,337 | +53 | +9,054 |
+| `pi.lite.min.js` | 48,586 | 48,586 | 0 | +311 |
+| `pi.min.js` | 72,331 | 72,380 | +49 | +9,452 |
+| `sound-advanced` plugin | 6,002 | 5,949 | −53 | — |
+
+The promotion measured 53 bytes in the plugin, below the 75-byte estimate, because the core
+handler calls the validating function directly instead of going through the service. The
+minified `sound` bundle grew from 41,835 to 41,947 bytes, and `sound-advanced` shrank from
+16,792 to 16,611.
+
+**Size targets raised.** At Phase 5 the core plugin was 948 bytes over the 14 KB target, and
+full-build growth was 1,211 bytes over the 8 KB target. The targets were set after Phase 1,
+before the extension service's Phase 5 members (`createVoice`, registered sources, inserts,
+`setBusInsert`, `tapBus`) were measured, and plan 4.3 places those members in core. Moving
+them out would reopen the frozen service v1. The targets were therefore raised to the next
+0.5 KB above the Phase 6 measurement: **15.5 KB (15,872 bytes)** for the core plugin, with 535
+bytes of headroom, and **9.5 KB (9,728 bytes)** of full-build growth over the 2.2 baseline,
+with 276 bytes of headroom. No variance remains.
 
 ## Sample measurements (Phase 3)
 

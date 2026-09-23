@@ -1,9 +1,12 @@
 # Pi.js 2.3 Sound Upgrade Plan
 
-Status: Approved; roadmap Phases 0–5 implemented
+Status: Approved; roadmap Phases 0–6 implemented
 Target release: Pi.js 2.3.0
 Companion document: [SOUND-V2.3-ROADMAP.md](SOUND-V2.3-ROADMAP.md)
 Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md)
+Revision 10 recorded the Phase 6 size review: the public `setBusVolume()` command moved to core
+(D4), the other `sound-advanced` modules stay in the plugin, and the soft size targets were
+raised to 15.5 KB and 9.5 KB (9.1).
 Revision 9: sound becomes one workstream of the 2.3 release. The release gate, including version
 checks and the upgrade guide, moves to the general upgrade plan; roadmap Phase 6 keeps the size
 review (9.1, 9.2, 12). Revision 8 froze the extension service v1 (4.3) after Phase 5. It added
@@ -43,7 +46,7 @@ These decisions were made during scoping and are treated as fixed for this plan.
 | `file://` pages | Not supported for audio; no fallback path |
 | Audio instances | `playAudio()` returns an instance ID; loop, rate, pan, pause, resume |
 | Voice budget | Synth and samples share limits; slots are counted by occupancy interval from admission; looping samples are protected from stealing |
-| Bus volume | Dedicated core service method; gain follows effects; public command ships in `sound-advanced` 1.0, and moving it to core is decided in the roadmap Phase 6 size review (D4) |
+| Bus volume | Core `setBusVolume()` command over a dedicated service method; gain follows effects (D4) |
 | Late recovery | Expiration first; 25 ms grace and timeline catch-up as specified in 8.1 |
 | Presets | Not in core; provided by `sound-advanced` |
 | Noise | White and pink noise |
@@ -96,7 +99,7 @@ Known defects and limits that motivate this upgrade:
 
 ```
 plugins/sound/
-├── index.js        # Plugin registration; provides the extension service
+├── index.js        # Plugin registration, volume commands; provides the extension service
 ├── context.js      # AudioContext lifecycle, autoplay unlock, buses, limiter, master volume
 ├── envelope.js     # Pure envelope math and AudioParam scheduling helpers
 ├── voices.js       # Voice creation, voice stealing, de-click stop, sound()/stopSound()
@@ -115,7 +118,6 @@ plugins/sound-advanced/
 ├── index.js        # Registration; declares dependency on "sound"
 ├── synth.js        # synth() command: filter, filter envelope, LFO, pulse duty, arpeggio
 ├── periodic-noise.js
-├── buses.js        # Per-bus volume
 ├── effects.js      # Bus reverb and delay
 ├── analyser.js     # Level and spectrum data for visualizers
 ├── presets.js      # Sound-effect presets and sfx()
@@ -126,7 +128,7 @@ Each module registers its own commands, and no module imports a sibling unless t
 documented. This makes every module a candidate for moving into core on its own.
 
 The advanced plugin ships as a standalone plugin bundle (`build/plugins/sound-advanced/`). It is
-not included in `pi.js`/`pi.min.js` until the size decision in Section 9.
+not included in `pi.js`/`pi.min.js`; the Phase 6 size decision (9.1) kept it separate.
 
 ### 4.3 Cross-plugin extension service
 
@@ -255,8 +257,7 @@ state. Realized voice inserts and bus inserts share one shape:
   shares its setting and ramp with `setVolume()`: `setTargetAtTime` with a ~15 ms time constant
   (Section 5.1), not the 10 ms linear ramp. `setBusVolume( "master", v )` and `setVolume( v )`
   are equivalent.
-  The public `setBusVolume()` command remains in `sound-advanced`; core exposes only the
-  extension-service method until a promotion decision is made.
+  Core registers the public `setBusVolume()` command over the same function (D4).
 - **Taps:** `tapBus` taps are parallel, read-only connections, used by the analyser. Removing a
   tap disconnects only that tap. A bus tap follows its effects and output gain.
 
@@ -343,9 +344,8 @@ Before v1 is frozen, stub extensions verify:
 ```
 
 - **Buses** have an input `GainNode` fixed at 1 and a separate output gain initially at 1.
-  Core owns the routing, effects insert point, and output gain. The dedicated service method
-  controls volume after effects, so it also controls their tails. Public per-bus volume is
-  provided by `sound-advanced` (and is a strong candidate for moving into core).
+  Core owns the routing, effects insert point, and output gain. The `setBusVolume()` command and
+  its service method control volume after effects, so they also control effect tails.
 - **Panner** (`StereoPannerNode`) is created only when a voice has a non-zero pan. This keeps
   the node count down for the common unpanned case. Every sample instance has one, because
   `setAudio()` can pan it at any time and a panner cannot be inserted into a playing chain
@@ -1006,7 +1006,6 @@ Depends on `sound`. All features use the extension service.
 | --- | --- | --- |
 | `synth.js` | `synth( options )` → sound ID | `sound()` superset. `oType: "pulse"` with `duty` (0–1, exclusive; default 0.5). Filter: `filterType` (`lowpass`, `highpass`, `bandpass`, `notch`; off when unset), `filterCutoff` (Hz, default 1000), `filterQ` (0–100, default 1). Filter envelope: `filterAttackTime`, `filterDecayTime`, `filterSustainLevel`, `filterReleaseTime` (defaults 0, 0, 1, 0.1), and `filterAmount` in octaves at the peak (−10 to 10, default 0), scheduled on the filter's `detune`. `vibratoRate` (Hz, default 5) and `vibratoDepth` (cents, 0–1200, off at 0); `tremoloRate` (Hz, default 5) and `tremoloDepth` (0–1, off at 0); `arpeggio` (1–32 semitone offsets within ±48) at `arpeggioRate` steps per second (default 12) |
 | `periodic-noise.js` | `oType: "periodic"` via `registerSource` | NES short-mode LFSR (93 steps); `frequency` sets the clock rate in steps per second, and `frequencyEnd` sweeps it |
-| `buses.js` | `setBusVolume( bus, volume )` | `"sfx"`, `"music"`, `"audio"`, and `"master"` (same as `setVolume`); core-promotion candidate |
 | `effects.js` | `setBusEffect( bus, effect, options )` | Any bus including `"master"`. `"reverb"` (generated impulse: `time` 0.1–10 s, `decay` 0.1–20, `mix`) and `"delay"` (`time` 0.01–2 s, `feedback` 0–0.95, `mix`); `null` clears. Mixes dry and wet in one insert |
 | `analyser.js` | `getSoundLevels( bus, spectrum, waveform )` | Default bus `"master"` (after master volume, before the limiter). Peak and RMS of the latest 2048 frames, plus 1024 spectrum bins in dB and the 2048-sample waveform when requested. The first call on a bus starts its analyser |
 | `presets.js` | `sfx( name, variation )`, `definePreset( name, params )` | Built-in retro set: coin, laser, jump, hit, explosion, powerup, blip, select. `variation` 0–1 jitters pitch by up to ±3 semitones and duration by up to ±10% |
@@ -1018,9 +1017,6 @@ Depends on `sound`. All features use the extension service.
   - `effects.js`: `setBusInsert`.
   - `analyser.js`: `tapBus`.
   - `instruments.js`: `registerPlayExtension`.
-  - `buses.js`: the dedicated `setBusVolume` service method. It registers the public command
-    without consuming an effects slot. Promotion moves command registration into core; the
-    gain node and routing already belong to core.
 - **Pulse waves:** they use `PeriodicWave` Fourier tables (64 harmonics), cached per duty
   value, with the 64 most recent values kept. They reach core as an ordinary wave-table
   `oType`, so no `"pulse"` source is registered.
@@ -1032,8 +1028,7 @@ Depends on `sound`. All features use the extension service.
   them.
 - **Presets and instruments:** these are data tables of `synth()` parameters. They add no new
   synthesis code, so their size cost is data only.
-- **Full build:** `sound-advanced` is excluded from `pi.js` in 2.3.0 unless the size decision
-  says otherwise.
+- **Full build:** `sound-advanced` is excluded from `pi.js` in 2.3.0 (9.1).
 
 ### 9.1 Size budget and the core-merge decision
 
@@ -1062,11 +1057,15 @@ The report states that marginal costs are not additive, and it always shows the 
 and full-merge cost next to them.
 
 - **Soft targets:**
-  - Core `sound` plugin: at most 14 KB gzipped, compared with 6.2 KB in 2.2.
-  - Full build growth from sound work: at most 8 KB gzipped over the 2.2 baseline.
+  - Core `sound` plugin: at most 15.5 KB gzipped, compared with 6.2 KB in 2.2.
+  - Full build growth from sound work: at most 9.5 KB gzipped over the 2.2 baseline.
   - The targets were raised after Phase 1 (from 8 KB and 3 KB), when the bus graph, limiter,
     envelope, voice caps, and scheduler measured 10.1 KB for the plugin and 4.3 KB of full-build
-    growth. The headroom covers noise, decoded samples, and the PLAY scheduler in Phases 2–4.
+    growth. The headroom covered noise, decoded samples, and the PLAY scheduler in Phases 2–4.
+  - The Phase 6 size review raised them again (from 14 KB and 8 KB). They had been set before
+    the extension service's Phase 5 members were measured, and Section 4.3 places those
+    members in core. The Phase 6 measurement is 15,337 bytes for the plugin and 9,452 bytes of
+    full-build growth (`docs/evidence/sound-2.3/README.md`).
 - **Advanced plugin:** there is no fixed cap. Each module's marginal and promotion costs are
   reported so they can be judged against its value.
 - **Promotion checklist, for each module:**
@@ -1074,10 +1073,14 @@ and full-merge cost next to them.
   2. How many typical games would use it.
   3. Whether it adds an API concept or only extends an existing one.
   4. Whether moving it removes a service-interface dependency.
-- **Candidates:** per-bus volume and the filter are the most likely candidates for promotion.
+- **Decision (Phase 6):** per-bus volume moved to core (D4). The other modules stay in
+  `sound-advanced`: each adds an API concept, and the cheapest (`periodic-noise`, 411 bytes)
+  would widen the core plugin for a feature few games use. The filter is part of `synth()`,
+  whose promotion costs 1,842 bytes.
 - **Merging the whole plugin into core:** reasonable if the full-merge cost stays under about
   4 KB gzipped. The modules and the service boundary are designed so a merge is a
-  change to the build and registration code, not a rewrite.
+  change to the build and registration code, not a rewrite. The Phase 6 full-merge cost is
+  5,198 bytes, so the plugin stays a standalone bundle.
 
 ### 9.2 Versioning
 
@@ -1304,7 +1307,7 @@ Click checks compare against an expected waveform rather than require raw RMS to
   throws `TOO_MANY_PENDING_SOUNDS`.
 - With the limiter on, output is soft-clipped above 0.9. Mixes that previously clipped hard now
   saturate smoothly.
-- New: `pauseAudio()`, `resumeAudio()`, `setAudio()`, `setSoundLimiter()`.
+- New: `pauseAudio()`, `resumeAudio()`, `setAudio()`, `setSoundLimiter()`, `setBusVolume()`.
 - Error codes renamed from pool terminology: `AUDIO_POOL_NOT_FOUND` → `AUDIO_NOT_FOUND`,
   `EMPTY_POOL` → `AUDIO_NOT_LOADED`, `INVALID_POOL_SIZE` removed, `INVALID_STREAM`,
   `INVALID_PLAYBACK_RATE`, `UNSUPPORTED_PROTOCOL`, `INVALID_LOOP`, `INVALID_PAN`,
@@ -1343,7 +1346,7 @@ Each item has a recommendation and a phase by which it must be resolved.
 | D1 | What `frequency` does for `white`/`pink` noise | **Resolved (Phase 2): as recommended.** Core ignores `frequency` and `frequencyEnd` for white and pink noise, so their spectra stay accurate. A `playbackRate` mapping would shift and band-limit the spectrum, so neither type would keep its defined shape. Pitched retro noise is the `"periodic"` source in `sound-advanced`. The sound lab keeps the `playbackRate = frequency / 440` prototype for A/B listening. | Resolved |
 | D2 | `sound()` positional order, and what position 7 means | **Resolved (revision 6): ADSR order as written in 6.1.** Position 7 is `decayTime`. The alternative, placing `releaseTime` at position 7 so that 2.2 tails keep their length, was rejected because it would make the positional form permanently disagree with the object form and with every other ADSR description in the docs. 2.2 positional callers past argument 5 are rare, and the command layer cannot tell an old positional call from a new one, so no runtime warning is possible. The upgrade guide shows the positional example in Section 11. | Resolved |
 | D3 | Requests while the context is locked | **Resolved (Phase 1): as recommended.** One-shot `sound()`/`playAudio()` requests, immediate or delayed, are dropped and return completed IDs as in 6.3. Looping instances and `play()` tracks are deferred until unlock and started synchronously inside the gesture listener, including deferred stream instances (5.3). The context no longer counts as locked once the gesture listener has called `resume()`, so requests made in that gesture's own handlers (the listener runs in the capture phase, before them) are kept while the resume promise settles. | Resolved |
-| D4 | Whether the public `setBusVolume()` command moves to core | Ships in `sound-advanced` 1.0 (the service method is already core); promote if its promotion cost is small | Roadmap Phase 6 |
+| D4 | Whether the public `setBusVolume()` command moves to core | **Resolved (Phase 6): promoted.** Its measured promotion cost was 75 bytes (53 once applied). Per-bus volume is common in games, only extends the existing volume concept, and its service method was already core. Core registers the command beside `setVolume()`, and `buses.js` is removed from `sound-advanced`. | Resolved |
 | D5 | iOS mute switch silences Web Audio (media elements were not) | **Resolved (Phase 3): `"ambient"`, not the recommended `"playback"`.** Core sets `navigator.audioSession.type = "ambient"` when it creates the context, where the API exists. Sound then follows the mute switch and mixes with other apps' audio instead of interrupting it, which suits games. In 2.2, `<audio>` samples ignored the mute switch; in 2.3 all sound respects it. The docs and upgrade guide say so. | Resolved |
 | D6 | Service API names | **Resolved (Phase 0): `provideService` / `getService`.** `provideService` names what is provided, matching the verb-object style of other plugin API members; error rules are in 4.3. | Resolved |
 
