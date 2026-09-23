@@ -11,6 +11,7 @@
 
 import * as g_context from "./context.js";
 import * as g_envelope from "./envelope.js";
+import * as g_noise from "./noise.js";
 import * as g_scheduler from "./scheduler.js";
 
 // Slot holders whose occupancy intervals may overlap at any instant
@@ -119,6 +120,60 @@ function hardStop( voice ) {
 }
 
 /**
+ * Gain that keeps a panned voice's louder channel at its peak
+ *
+ * A mono input to a StereoPannerNode gets cos θ and sin θ per channel, so the scaled
+ * channels keep the equal-power ratio while center matches an unpanned voice.
+ *
+ * @param {number} pan - Stereo position from -1 to 1
+ * @returns {number} Gain factor, from 1 at the edges to √2 at center
+ */
+function panGain( pan ) {
+	const angle = ( pan + 1 ) * Math.PI / 4;
+	return 1 / Math.max( Math.cos( angle ), Math.sin( angle ) );
+}
+
+/**
+ * Create an oscillator with its waveform and pitch, including an optional exponential sweep
+ * over the gate
+ *
+ * @param {AudioContext} context - Audio context
+ * @param {Object} spec - Voice spec
+ * @param {number} begin - Audible start in context time
+ * @param {number} offset - Seconds into the envelope at which a late voice begins
+ * @returns {OscillatorNode} Oscillator
+ */
+function createOscillator( context, spec, begin, offset ) {
+	const source = context.createOscillator();
+	const env = spec.env;
+	if( spec.oType === "custom" ) {
+		source.setPeriodicWave(
+			context.createPeriodicWave( spec.waveTables[ 0 ], spec.waveTables[ 1 ] )
+		);
+	} else {
+		source.type = spec.oType;
+	}
+
+	if( spec.frequencyEnd != null ) {
+		let frequency = spec.frequency;
+		if( offset > 0 && env.gate > 0 ) {
+			const progress = Math.min( offset / env.gate, 1 );
+			const ratio = spec.frequencyEnd / spec.frequency;
+			frequency = spec.frequency * Math.pow( ratio, progress );
+		}
+		source.frequency.setValueAtTime( frequency, begin );
+		if( spec.start + env.gate > begin ) {
+			source.frequency.exponentialRampToValueAtTime(
+				spec.frequencyEnd, spec.start + env.gate
+			);
+		}
+	} else {
+		source.frequency.value = spec.frequency;
+	}
+	return source;
+}
+
+/**
  * Build a voice's nodes and start it
  *
  * @param {Object} spec - Voice spec
@@ -131,6 +186,10 @@ function buildVoice( spec, soundId ) {
 	const offset = spec.offset || 0;
 	const begin = spec.start + offset;
 	const end = spec.start + g_envelope.getEnvelopeLength( env );
+	let peak = spec.peak;
+	if( spec.pan ) {
+		peak *= panGain( spec.pan );
+	}
 	const voice = {
 		"id": soundId,
 		"exempt": spec.exempt === true,
@@ -142,7 +201,7 @@ function buildVoice( spec, soundId ) {
 		"stopKind": null,
 		"fadeStart": null,
 		"env": env,
-		"peak": spec.peak,
+		"peak": peak,
 		"protected": false,
 		"nodes": [],
 		"source": null,
@@ -155,34 +214,19 @@ function buildVoice( spec, soundId ) {
 	}
 
 	try {
-		const source = context.createOscillator();
+
+		// Noise ignores frequency and frequencyEnd (decision D1)
+		let source;
+		let sourceOffset = null;
+		if( g_noise.isNoiseType( spec.oType ) ) {
+			const noise = g_noise.createNoiseSource( context, spec.oType );
+			source = noise.source;
+			sourceOffset = noise.offset;
+		} else {
+			source = createOscillator( context, spec, begin, offset );
+		}
 		voice.source = source;
 		voice.nodes.push( source );
-		if( spec.oType === "custom" ) {
-			source.setPeriodicWave(
-				context.createPeriodicWave( spec.waveTables[ 0 ], spec.waveTables[ 1 ] )
-			);
-		} else {
-			source.type = spec.oType;
-		}
-
-		// Pitch, with an optional exponential sweep over the gate
-		if( spec.frequencyEnd != null ) {
-			let frequency = spec.frequency;
-			if( offset > 0 && env.gate > 0 ) {
-				const progress = Math.min( offset / env.gate, 1 );
-				const ratio = spec.frequencyEnd / spec.frequency;
-				frequency = spec.frequency * Math.pow( ratio, progress );
-			}
-			source.frequency.setValueAtTime( frequency, begin );
-			if( spec.start + env.gate > begin ) {
-				source.frequency.exponentialRampToValueAtTime(
-					spec.frequencyEnd, spec.start + env.gate
-				);
-			}
-		} else {
-			source.frequency.value = spec.frequency;
-		}
 
 		// A late start multiplies the remaining envelope by a MIN_RAMP fade-in
 		let output = source;
@@ -201,7 +245,7 @@ function buildVoice( spec, soundId ) {
 		voice.nodes.push( gain );
 		gain.gain.value = 0;
 		g_envelope.applySchedule(
-			gain.gain, g_envelope.buildEnvelopeSchedule( env, spec.start, spec.peak, offset )
+			gain.gain, g_envelope.buildEnvelopeSchedule( env, spec.start, peak, offset )
 		);
 		output.connect( gain );
 		output = gain;
@@ -219,7 +263,11 @@ function buildVoice( spec, soundId ) {
 		source.onended = () => {
 			disposeVoice( voice );
 		};
-		source.start( begin );
+		if( sourceOffset === null ) {
+			source.start( begin );
+		} else {
+			source.start( begin, sourceOffset );
+		}
 		source.stop( end );
 	} catch( error ) {
 		voice.disposed = true;
@@ -615,11 +663,11 @@ export function registerVoices( pluginApi ) {
 	 * Play a synthesized sound with an ADSR envelope
 	 *
 	 * @param {Object} options - Command options
-	 * @param {number} options.frequency - Frequency in Hz (default: 440)
+	 * @param {number} options.frequency - Frequency in Hz; no effect on noise (default: 440)
 	 * @param {number} options.duration - Gate length in seconds before release (default: 1)
 	 * @param {number} options.volume - Peak gain 0-1 (default: 1)
-	 * @param {string|Array} options.oType - Oscillator type or custom wave table (default:
-	 * "triangle")
+	 * @param {string|Array} options.oType - Oscillator type, "white" or "pink" noise, or a
+	 * custom wave table (default: "triangle")
 	 * @param {number} options.delay - Delay before playing in seconds (default: 0)
 	 * @param {number} options.attackTime - Seconds from silence to peak (default: 0)
 	 * @param {number} options.decayTime - Seconds from peak to the sustain level (default: 0)
@@ -627,8 +675,10 @@ export function registerVoices( pluginApi ) {
 	 * (default: 1)
 	 * @param {number} options.releaseTime - Seconds from the gate-end level to silence
 	 * (default: 0.1)
-	 * @param {number} options.pan - Stereo position from -1 (left) to 1 (right) (default: 0)
-	 * @param {number} options.frequencyEnd - Exponential sweep target in Hz over the duration
+	 * @param {number} options.pan - Stereo position from -1 (left) to 1 (right); the louder
+	 * channel stays at the volume (default: 0)
+	 * @param {number} options.frequencyEnd - Exponential sweep target in Hz over the duration;
+	 * no effect on noise
 	 * @returns {string} Sound ID for use with stopSound
 	 */
 	function sound( options ) {
@@ -753,9 +803,10 @@ export function registerVoices( pluginApi ) {
 			const error = new TypeError( "sound: Parameter oType must be a string or an array." );
 			error.code = "INVALID_OTYPE";
 			throw error;
-		} else if( OSCILLATOR_TYPES.indexOf( oType ) === -1 ) {
+		} else if( OSCILLATOR_TYPES.indexOf( oType ) === -1 && !g_noise.isNoiseType( oType ) ) {
 			const error = new Error(
-				"sound: Parameter oType must be one of: triangle, sine, square, sawtooth."
+				"sound: Parameter oType must be one of: triangle, sine, square, sawtooth, " +
+				"white, pink."
 			);
 			error.code = "INVALID_OTYPE";
 			throw error;

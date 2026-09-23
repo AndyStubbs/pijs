@@ -2518,26 +2518,28 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Plays a synthesized sound with an ADSR envelope using Web Audio API.
 		 *
-		 * Generates and plays a sound at a specific frequency using Web Audio API oscillators. Supports standard waveforms (triangle, sine, square, sawtooth) or custom wavetables. Frequency is not rounded.
+		 * Generates and plays a sound at a specific frequency using Web Audio API oscillators. Supports standard waveforms (triangle, sine, square, sawtooth), custom wavetables, and white or pink noise. Frequency is not rounded.
 		 *
 		 * The volume follows an ADSR envelope. The attack ramps linearly from silence to the peak volume over attackTime. The decay then falls toward sustainLevel × volume over decayTime, and the sustain holds until duration ends. The release fades from that level to silence over releaseTime. If duration ends before the attack and decay finish, the release starts from the level reached at that point. The total length is duration plus the release. Every onset and stop ramps over at least 3 ms, even when attackTime or releaseTime is 0, so sounds start and end without clicks.
 		 *
-		 * pan places the sound from -1 (left) to 1 (right). frequencyEnd sweeps the pitch exponentially from frequency to frequencyEnd over duration; both must then be greater than 0, or the call throws INVALID_FREQUENCY.
+		 * pan places the sound from -1 (left) to 1 (right). The louder channel always plays at volume, so a sound panned near center is as loud as an unpanned one, and the channels keep an equal-power balance. frequencyEnd sweeps the pitch exponentially from frequency to frequencyEnd over duration; both must then be greater than 0, or the call throws INVALID_FREQUENCY.
+		 *
+		 * The "white" and "pink" types play noise instead of a tone. White noise has equal energy at every frequency; pink noise falls by 3 dB per octave, which sounds deeper and softer. Each noise type loops one shared 2-second buffer, and every sound starts it at a random position so repeated hits do not sound identical. frequency and frequencyEnd have no effect on noise, though a sweep's values are still validated.
 		 *
 		 * Sounds play on the sound-effects bus through the master volume and the output limiter. A delay beyond the 0.2 second lookahead window is held as a pending request until its start approaches. At most 1024 requests can be pending; beyond that the call throws TOO_MANY_PENDING_SOUNDS. At most 64 sounds hold voice slots at once; when all are in use, the oldest overlapping sound fades out to make room.
 		 *
 		 * Until the page receives its first user gesture (pointer, key, or touch), the browser keeps audio locked. Calls made while audio is locked return an ID but play nothing; audio unlocks on the first gesture.
-		 * @param frequency Frequency in Hz (default: 440).
+		 * @param frequency Frequency in Hz; no effect on noise (default: 440).
 		 * @param duration Gate length in seconds: how long the sound is held before the release begins (default: 1).
 		 * @param volume Peak volume 0-1 (default: 1).
-		 * @param oType Oscillator type: 'triangle', 'sine', 'square', 'sawtooth', or custom wavetable array [[realArray], [imagArray]] (default: 'triangle').
+		 * @param oType Oscillator type: 'triangle', 'sine', 'square', 'sawtooth', 'white' or 'pink' noise, or custom wavetable array [[realArray], [imagArray]] (default: 'triangle').
 		 * @param delay Delay before playing in seconds (default: 0).
 		 * @param attackTime Seconds from silence to the peak volume (default: 0; at least 3 ms is always used).
 		 * @param decayTime Seconds from the peak to the sustain level (default: 0).
 		 * @param sustainLevel Fraction of the peak volume held until duration ends, 0-1 (default: 1).
 		 * @param releaseTime Seconds from the sustain level to silence after duration ends (default: 0.1; at least 3 ms is always used).
-		 * @param pan Stereo position from -1 (left) to 1 (right) (default: 0).
-		 * @param frequencyEnd Frequency in Hz to sweep to exponentially over duration (default: no sweep).
+		 * @param pan Stereo position from -1 (left) to 1 (right); the louder channel stays at volume (default: 0).
+		 * @param frequencyEnd Frequency in Hz to sweep to exponentially over duration; no effect on noise (default: no sweep).
 		 * @returns Sound ID for use with stopSound.
 		 */
 		sound( params: { "frequency"?: number; "duration"?: number; "volume"?: number; "oType"?: string | any[]; "delay"?: number; "attackTime"?: number; "decayTime"?: number; "sustainLevel"?: number; "releaseTime"?: number; "pan"?: number; "frequencyEnd"?: number } ): string;

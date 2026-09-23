@@ -224,6 +224,26 @@ Exit criteria:
   harness).
 - D1 is closed and the plan is updated.
 
+Phase 2 results that later phases depend on:
+
+- **D1** is resolved as recommended: core white and pink noise ignore `frequency` and
+  `frequencyEnd`. The sound lab keeps a `playbackRate` prototype for A/B listening (plan 12).
+- **Pan level** (plan 5): a panned voice's peak is scaled by `1 / max( cos θ, sin θ )`, so the
+  louder channel plays at `volume` and center matches an unpanned voice. Task 3.3 applies the
+  same factor to a sample instance's gain whenever its pan changes.
+- **`noise.js`** exports `NOISE_TYPES`, `isNoiseType()`, and
+  `createNoiseSource( context, type )`, which returns a looping buffer source and a random
+  start offset. Task 4.4 (`WN`/`WP`) and the `sound-advanced` `periodic` source build on it.
+  Voices start it with `source.start( begin, offset )`; they have no pitch parameters.
+- **Harness:** source entries record their start `offset`, and
+  `renderCarrier( { sourceId } )` replays a recorded buffer source, so noise and later sample
+  instances get reference carriers. New metrics: `spectrumSlope()`, `correlation()`, and
+  `risingZeroCrossings()`, with tolerances `noiseSlope` and `noiseBandDeviation`.
+- **Size:** `sound` is 10,907 bytes gzipped (+558 over Phase 1), and `pi.min.js` grew by 593.
+  Both stay within the raised plan 9.1 targets.
+- **Open manual checks:** the three-engine listening pass in `sound_lab_01.html` (noise, pan
+  sweep, sweeps, D1 prototype), plus the Phase 1 checks still open.
+
 ## Phase 3: Sample Engine Modernization
 
 Goal: replace `<audio>` pools with decoded buffers and controllable instances.

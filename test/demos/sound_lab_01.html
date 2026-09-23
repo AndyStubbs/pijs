@@ -127,13 +127,26 @@
 			<legend>Pan and sweep</legend>
 			<div class="controls" id="panControls"></div>
 			<label><input id="sweepEnabled" type="checkbox"> Sweep to frequency end</label>
-		</fieldset>
-		<fieldset disabled>
-			<legend>Noise</legend>
-			<p class="note">
-				This control is inactive because sound() does not accept noise types yet.
+			<p>
+				<button id="panSweep">Pan sweep</button>
 			</p>
-			<label>oType <select><option>white</option><option>pink</option></select></label>
+			<p class="note">
+				Pan sweep plays the current sound at nine positions from left to right. The
+				louder channel stays at the volume, so the level should not dip or jump
+				through center.
+			</p>
+		</fieldset>
+		<fieldset>
+			<legend>Noise pitch prototype (decision D1)</legend>
+			<p class="note">
+				Pi.js ignores frequency and frequencyEnd for white and pink noise. B is a lab-only
+				prototype, played outside Pi.js, that maps frequency to the noise playback rate
+				(frequency / 440, clamped to 0.0625&ndash;16) and sweeps it to frequency end.
+				Choose white or pink as the oType above, then compare.
+			</p>
+			<button id="noiseCore">A: Pi.js (frequency ignored)</button>
+			<button id="noisePrototype">B: playback-rate prototype</button>
+			<span class="status" id="noiseStatus"></span>
 		</fieldset>
 	</div>
 
@@ -246,7 +259,7 @@
 			} ).join( "\n" );
 		}
 
-		const OSCILLATOR_TYPES = [ "triangle", "sine", "square", "sawtooth" ];
+		const OSCILLATOR_TYPES = [ "triangle", "sine", "square", "sawtooth", "white", "pink" ];
 
 		const inputs = {};
 
@@ -336,6 +349,99 @@
 				document.getElementById( "synthCall" ).textContent = error.code + ": " +
 					error.message;
 			}
+		}
+
+		function panSweep() {
+			const options = getSynthOptions();
+			const step = options.duration + options.releaseTime + 0.1;
+			try {
+				for( let i = 0; i < 9; i++ ) {
+					const delay = options.delay + i * step;
+					$.sound( { ...options, "pan": -1 + i / 4, "delay": delay } );
+				}
+			} catch( error ) {
+				document.getElementById( "synthCall" ).textContent = error.code + ": " +
+					error.message;
+			}
+		}
+
+		// D1 prototype: noise pitched through the playback rate, in the lab's own context
+		let prototypeContext = null;
+		const prototypeBuffers = {};
+
+		function createPrototypeNoise( context, type ) {
+			const data = new Float32Array( context.sampleRate * 2 );
+			let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+			let peak = 0;
+			for( let i = 0; i < data.length; i++ ) {
+				const white = Math.random() * 2 - 1;
+				if( type === "white" ) {
+					data[ i ] = white;
+				} else {
+					b0 = 0.99886 * b0 + white * 0.0555179;
+					b1 = 0.99332 * b1 + white * 0.0750759;
+					b2 = 0.969 * b2 + white * 0.153852;
+					b3 = 0.8665 * b3 + white * 0.3104856;
+					b4 = 0.55 * b4 + white * 0.5329522;
+					b5 = -0.7616 * b5 - white * 0.016898;
+					data[ i ] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+					b6 = white * 0.115926;
+				}
+				peak = Math.max( peak, Math.abs( data[ i ] ) );
+			}
+			const buffer = context.createBuffer( 1, data.length, context.sampleRate );
+			buffer.copyToChannel( data.map( value => value / peak ), 0 );
+			return buffer;
+		}
+
+		function playNoisePrototype() {
+			const options = getSynthOptions();
+			const status = document.getElementById( "noiseStatus" );
+			if( options.oType !== "white" && options.oType !== "pink" ) {
+				status.textContent = "Choose white or pink as the oType first.";
+				return;
+			}
+			status.textContent = "";
+			if( prototypeContext === null ) {
+				prototypeContext = new AudioContext();
+			}
+			const context = prototypeContext;
+			context.resume();
+			if( !prototypeBuffers[ options.oType ] ) {
+				prototypeBuffers[ options.oType ] = createPrototypeNoise( context, options.oType );
+			}
+			const clampRate = value => Math.min( 16, Math.max( 0.0625, value / 440 ) );
+			const start = context.currentTime + 0.02 + options.delay;
+			const attack = Math.max( options.attackTime, 0.003 );
+			const release = Math.max( options.releaseTime, 0.003 );
+			const master = Number( document.getElementById( "masterVolume" ).value );
+			const peak = options.volume * master;
+			const gateEnd = start + options.duration;
+
+			const source = context.createBufferSource();
+			source.buffer = prototypeBuffers[ options.oType ];
+			source.loop = true;
+			source.playbackRate.setValueAtTime( clampRate( options.frequency ), start );
+			if( options.frequencyEnd !== undefined ) {
+				source.playbackRate.exponentialRampToValueAtTime(
+					clampRate( options.frequencyEnd ), gateEnd
+				);
+			}
+
+			// Linear attack, a decay toward the sustain level, and a release from the gate end;
+			// close to the core envelope, which is enough to compare pitch behavior
+			const gain = context.createGain();
+			gain.gain.setValueAtTime( 0, start );
+			gain.gain.linearRampToValueAtTime( peak, start + attack );
+			gain.gain.setTargetAtTime( peak * options.sustainLevel, start + attack,
+				Math.max( options.decayTime, 0.003 ) / Math.log( 10000 ) );
+			gain.gain.setTargetAtTime( 0, gateEnd, release / Math.log( 10000 ) );
+
+			const panner = context.createStereoPanner();
+			panner.pan.value = options.pan;
+			source.connect( gain ).connect( panner ).connect( context.destination );
+			source.start( start, Math.random() * 2 );
+			source.stop( gateEnd + release );
 		}
 
 		function stopAll() {
@@ -458,6 +564,11 @@
 		loadReferences();
 		document.getElementById( "playSynth" ).addEventListener( "click", playSynth );
 		document.getElementById( "stopSynth" ).addEventListener( "click", stopAll );
+		document.getElementById( "panSweep" ).addEventListener( "click", panSweep );
+		document.getElementById( "noiseCore" ).addEventListener( "click", playSynth );
+		document.getElementById( "noisePrototype" ).addEventListener(
+			"click", playNoisePrototype
+		);
 		document.addEventListener( "keydown", event => {
 			if( event.code === "Space" && event.target.tagName !== "INPUT" ) {
 				event.preventDefault();

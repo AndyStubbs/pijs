@@ -134,3 +134,63 @@ test( "referenceResidual rejects a silent reference", () => {
 		{ "name": "RangeError" }
 	);
 } );
+
+/** Seeded uniform generator in [-1, 1) (mulberry32). */
+function seededNoise( seed ) {
+	let state = seed >>> 0;
+	return () => {
+		state = ( state + 0x6d2b79f5 ) >>> 0;
+		let value = state;
+		value = Math.imul( value ^ ( value >>> 15 ), value | 1 );
+		value ^= value + Math.imul( value ^ ( value >>> 7 ), value | 61 );
+		return ( ( ( value ^ ( value >>> 14 ) ) >>> 0 ) / 4294967296 ) * 2 - 1;
+	};
+}
+
+/** Voss–McCartney pink noise, an oracle independent of the plugin's Kellet filter. */
+function vossPink( seconds, seed ) {
+	const next = seededNoise( seed );
+	const rows = new Float64Array( 16 );
+	let sum = 0;
+	for( let r = 0; r < rows.length; r++ ) {
+		rows[ r ] = next();
+		sum += rows[ r ];
+	}
+	const data = new Float32Array( Math.round( seconds * RATE ) );
+	for( let i = 0; i < data.length; i++ ) {
+		const counter = i + 1;
+		const row = Math.min( 31 - Math.clz32( counter & -counter ), rows.length - 1 );
+		sum -= rows[ row ];
+		rows[ row ] = next();
+		sum += rows[ row ];
+		data[ i ] = ( sum + next() ) / ( rows.length + 1 );
+	}
+	return data;
+}
+
+test( "spectrumSlope separates white and pink noise", () => {
+	const next = seededNoise( 7 );
+	const white = new Float32Array( 2 * RATE ).map( () => next() );
+	const whiteSlope = g_metrics.spectrumSlope( white, RATE );
+	assert.ok( Math.abs( whiteSlope.slope ) < 0.3, `white slope ${whiteSlope.slope}` );
+	assert.ok( whiteSlope.deviation < 1, `white deviation ${whiteSlope.deviation}` );
+	const pink = g_metrics.spectrumSlope( vossPink( 2, 11 ), RATE );
+	assert.ok( Math.abs( pink.slope + 3 ) < 0.5, `pink slope ${pink.slope}` );
+	assert.ok( pink.deviation < 1.5, `pink deviation ${pink.deviation}` );
+	const tone = g_metrics.spectrumSlope( sine( 1000, 1 ), RATE );
+	assert.ok( tone.deviation > 20 );
+	assert.throws( () => g_metrics.spectrumSlope( white, RATE, 0, 1000 ) );
+} );
+
+test( "correlation and rising zero crossings", () => {
+	const next = seededNoise( 3 );
+	const a = new Float32Array( RATE ).map( () => next() );
+	const b = new Float32Array( RATE ).map( () => next() );
+	assert.ok( Math.abs( g_metrics.correlation( a, a ) - 1 ) < 1e-9 );
+	assert.ok( Math.abs( g_metrics.correlation( a, a.map( value => -value ) ) + 1 ) < 1e-9 );
+	assert.ok( Math.abs( g_metrics.correlation( a, b ) ) < 0.02 );
+	assert.equal( g_metrics.correlation( a, new Float32Array( RATE ) ), 0 );
+	const crossings = g_metrics.risingZeroCrossings( sine( 100, 0.1 ) );
+	assert.equal( crossings.length, 9 );
+	assert.ok( Math.abs( crossings[ 1 ] - crossings[ 0 ] - RATE / 100 ) < 1e-3 );
+} );

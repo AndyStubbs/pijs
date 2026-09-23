@@ -12,6 +12,7 @@ compresses them with gzip level 9. Sizes are in bytes.
 | `size-phase0-baseline-2.2.json` | 2.2 sound code after the 2.3 version stage (task 0.1) | Baseline; the `version` field reads 2.3.0 because the stage precedes it |
 | `size-phase0-split.json` | After the plugin service API (0.4) and the sound module split (0.9) | No sound behavior change |
 | `size-phase1.json` | Phase 1 exit: buses, limiter, envelope, voice caps, scheduler, unlock | `sound` 2.0.0 |
+| `size-phase2.json` | Phase 2 exit: white and pink noise, pan level | `sound` 2.0.0 |
 
 Phase 0 deltas, gzipped:
 
@@ -41,6 +42,37 @@ full-build growth), so they were raised to 14 KB gzipped for the plugin and 8 KB
 full-build growth over the 2.2 baseline. Phase 1 uses 10,349 and 4,433 bytes of them. The
 remaining headroom covers noise, decoded samples, and the PLAY scheduler in Phases 2–4; the
 targets are checked at M2 (Phase 4 exit).
+
+Phase 2 deltas, gzipped:
+
+| Bundle | Phase 1 exit | Phase 2 exit | Delta | Since 2.2 baseline |
+| --- | --- | --- | --- | --- |
+| `sound` plugin | 10,349 | 10,907 | +558 | +4,624 |
+| `pi.lite.min.js` | 48,586 | 48,586 | 0 | +311 |
+| `pi.min.js` | 67,361 | 67,954 | +593 | +5,026 |
+
+Minified bytes by module in the `sound` bundle (Phase 1 → Phase 2): `noise.js` new 997,
+`voices.js` 6,824 → 7,104. The other modules have no source changes. Phase 2 uses 10,907 of the
+14 KB plugin target and 5,026 of the 8 KB full-build growth target.
+
+## Noise and pan measurements (Phase 2)
+
+Octave-band power-density slopes from 125 Hz to 8 kHz (`spectrumSlope()` in
+`test/unit/audio-metrics.js`), on seeded 1.75 s `sound()` renders at 48 kHz:
+
+| Type | Target | Chromium | Firefox | Largest band deviation from the fit |
+| --- | --- | --- | --- | --- |
+| White | 0 dB/octave | −0.002 | −0.002 | 0.18 dB |
+| Pink | −3 dB/octave | −2.967 | −2.967 | 0.20 dB |
+
+Both engines render the buffers identically, because the plugin generates them and plays them at
+rate 1. On the generated buffers alone (Node, `sound-noise.test.js`), white measures −0.035 and
+pink −3.014 dB/octave.
+
+Pan: a raw `StereoPannerNode` puts a mono voice 3 dB lower on each channel at center than an
+unpanned voice, which bypasses the panner. Phase 2 scales a panned voice's peak by
+`1 / max( cos θ, sin θ )`. In both engines the louder channel is within 0.5% of the unpanned
+level at every tested pan, and the channel ratio is within 0.1 dB of `tan θ`.
 
 ## Limiter findings (Phase 1)
 

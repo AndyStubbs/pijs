@@ -318,6 +318,14 @@ Before v1 is frozen, stub extensions verify:
 - **Panner** (`StereoPannerNode`) is created only when a voice or instance has a non-zero pan,
   or when its pan can change later (sample instances with pan set). This keeps the node count
   down for the common unpanned case.
+- **Pan level:** for a mono input the panner applies `cos θ` and `sin θ` to the two channels,
+  with `θ = ( pan + 1 ) · π / 4`, so center would be 3 dB below an unpanned voice, which
+  bypasses the panner. A panned voice's gain is therefore scaled by
+  `1 / max( cos θ, sin θ )`. The louder channel always plays at the voice's level, center
+  matches an unpanned voice, and the channel ratio keeps the equal-power law (`tan θ`). Hard
+  pans have 3 dB less total power than center, and no channel exceeds `volume`. The factor
+  goes into the envelope peak, so it costs no node. Sample instances whose pan changes apply
+  the same factor to their instance gain.
 - **Voice removal:** after `onended`, all voice nodes are disconnected and removed from the
   voice table, as today.
 
@@ -420,8 +428,10 @@ $.sound( {
 | `decayTime` | 0 | Seconds from peak to `sustainLevel` |
 | `sustainLevel` | 1 | Fraction of peak held until the gate ends, 0–1 |
 | `releaseTime` | 0.1 | Seconds from the gate-end level to silence |
-| `pan` | 0 | -1 (left) to 1 (right) |
+| `pan` | 0 | -1 (left) to 1 (right); the louder channel plays at `volume` (Section 5) |
 | `frequencyEnd` | none | If set, frequency sweeps exponentially to this value over `duration` |
+
+`frequency` and `frequencyEnd` have no effect on `white` and `pink` noise (D1).
 
 The total voice length includes the release floor: `duration + max( releaseTime, MIN_RAMP )`.
 `attack` and `decay` are no longer recognized. The upgrade guide documents the positional shift.
@@ -632,7 +642,15 @@ window-fill rule in Section 8.1.
   at the context sample rate. Pink noise uses the Paul Kellet filter method.
 - Each voice loops its buffer and starts at a random offset, so repeated hits do not phase
   against each other.
-- `frequency` and `frequencyEnd` for noise: see Section 12, Decision D1.
+- Each buffer is generated 10 ms longer than it is stored, and the excess is equal-power crossfaded into its
+  start, so the loop wrap continues the signal without a step. Pink noise runs its filter
+  for 4,800 samples before recording, so it starts settled.
+- Buffers are normalized to a peak of 1, so `volume` is the peak gain for noise as it is for
+  oscillators.
+- `frequency` and `frequencyEnd` have no effect on noise (Decision D1). A sweep's endpoints
+  are still validated, so `sound()` validates its arguments the same way for every `oType`.
+- Measured at 48 kHz from 125 Hz to 8 kHz: white −0.002 dB/octave, pink −2.97 dB/octave, both
+  within 0.21 dB of the fitted slope in every octave band.
 
 ## 7. Sample Playback (core)
 
@@ -1247,7 +1265,7 @@ Each item has a recommendation and a phase by which it must be resolved.
 
 | ID | Decision | Recommendation | Resolve by |
 | --- | --- | --- | --- |
-| D1 | What `frequency` does for `white`/`pink` noise | Core ignores `frequency`/`frequencyEnd` for white/pink noise (keeps spectra honest); pitched retro noise is `"periodic"` in `sound-advanced`. Prototype a `playbackRate` mapping in the sound lab before closing. | Phase 2 |
+| D1 | What `frequency` does for `white`/`pink` noise | **Resolved (Phase 2): as recommended.** Core ignores `frequency` and `frequencyEnd` for white and pink noise, so their spectra stay accurate. A `playbackRate` mapping would shift and band-limit the spectrum, so neither type would keep its defined shape. Pitched retro noise is the `"periodic"` source in `sound-advanced`. The sound lab keeps the `playbackRate = frequency / 440` prototype for A/B listening. | Resolved |
 | D2 | `sound()` positional order, and what position 7 means | **Resolved (revision 6): ADSR order as written in 6.1.** Position 7 is `decayTime`. The alternative, placing `releaseTime` at position 7 so that 2.2 tails keep their length, was rejected because it would make the positional form permanently disagree with the object form and with every other ADSR description in the docs. 2.2 positional callers past argument 5 are rare, and the command layer cannot tell an old positional call from a new one, so no runtime warning is possible. The upgrade guide shows the positional example in Section 11. | Resolved |
 | D3 | Requests while the context is locked | **Resolved (Phase 1): as recommended.** One-shot `sound()`/`playAudio()` requests, immediate or delayed, are dropped and return completed IDs as in 6.3. Looping instances and `play()` tracks are deferred until unlock and started synchronously inside the gesture listener, including deferred stream instances (5.3). The context no longer counts as locked once the gesture listener has called `resume()`, so requests made in that gesture's own handlers (the listener runs in the capture phase, before them) are kept while the resume promise settles. | Resolved |
 | D4 | Whether the public `setBusVolume()` command moves to core | Ships in `sound-advanced` 1.0 (the service method is already core); promote if its promotion cost is small | Release gate |

@@ -182,6 +182,7 @@ function installAudioRenderHarness( config ) {
 	const probeLog = [];
 	const sourceLog = [];
 	const sourceEntries = new WeakMap();
+	const sourceNodes = [];
 	const pendingRenders = new Set();
 
 	function contextTime() {
@@ -198,6 +199,7 @@ function installAudioRenderHarness( config ) {
 				"id": sourceLog.length,
 				"type": node.constructor.name,
 				"startTime": null,
+				"offset": null,
 				"stopTime": null,
 				"stopCalls": 0,
 				"disconnectCalls": 0,
@@ -206,6 +208,7 @@ function installAudioRenderHarness( config ) {
 			};
 			sourceEntries.set( node, entry );
 			sourceLog.push( entry );
+			sourceNodes.push( node );
 			node.addEventListener( "ended", () => {
 				entry.endedAt = contextTime();
 			} );
@@ -251,6 +254,9 @@ function installAudioRenderHarness( config ) {
 					}
 					if( method === "start" ) {
 						entry.startTime = when;
+						if( typeof args[ 1 ] === "number" ) {
+							entry.offset = args[ 1 ];
+						}
 					} else {
 						entry.stopTime = when;
 						entry.stopCalls++;
@@ -494,27 +500,41 @@ function installAudioRenderHarness( config ) {
 	}
 
 	/**
-	 * Renders an unmodulated oscillator carrier for reference checks, in a separate native
-	 * offline context with the same rate and length as the harness render.
+	 * Renders an unmodulated carrier for reference checks, in a separate native offline
+	 * context with the same rate and length as the harness render. An oscillator spec gives
+	 * the waveform; a sourceId replays that recorded buffer source's buffer, loop, start
+	 * time, and start offset, as for noise voices.
 	 *
-	 * @param {Object} spec - { type, frequency, start, waveTables? }
+	 * @param {Object} spec - { type, frequency, start, waveTables? } or { sourceId }
 	 * @returns {Promise<string>} Encoded mono channel
 	 */
 	async function renderCarrier( spec ) {
 		const context = new NativeOfflineAudioContext( 1, lengthFrames(), sampleRate );
-		const oscillator = context.createOscillator();
-		if( spec.waveTables ) {
-			oscillator.setPeriodicWave( context.createPeriodicWave(
-				new Float32Array( spec.waveTables[ 0 ] ), new Float32Array( spec.waveTables[ 1 ] )
-			) );
+		let source;
+		if( spec.sourceId !== undefined ) {
+			const recorded = sourceNodes[ spec.sourceId ];
+			const entry = sourceLog[ spec.sourceId ];
+			source = context.createBufferSource();
+			source.buffer = recorded.buffer;
+			source.loop = recorded.loop;
+			source.connect( context.destination );
+			source.start( entry.startTime, entry.offset || 0 );
 		} else {
-			oscillator.type = spec.type;
+			source = context.createOscillator();
+			if( spec.waveTables ) {
+				source.setPeriodicWave( context.createPeriodicWave(
+					new Float32Array( spec.waveTables[ 0 ] ),
+					new Float32Array( spec.waveTables[ 1 ] )
+				) );
+			} else {
+				source.type = spec.type;
+			}
+			source.frequency.value = spec.frequency;
+			source.connect( context.destination );
+			source.start( spec.start );
 		}
-		oscillator.frequency.value = spec.frequency;
-		oscillator.connect( context.destination );
-		oscillator.start( spec.start );
 		const buffer = await context.startRendering();
-		oscillator.disconnect();
+		source.disconnect();
 		return encodeChannel( buffer.getChannelData( 0 ) );
 	}
 

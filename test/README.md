@@ -74,7 +74,9 @@ The harness also records AudioParam automation calls and source lifetimes throug
 wrappers (`probes()`, `sources()`, `liveSources()`), withholds timers to simulate a stalled main
 thread (`holdTimers()`), advances wall time while the audio clock is frozen (`advanceWall()`),
 re-locks a locked-context document (`simulateInterruption()`), and renders unmodulated
-carriers for reference checks (`renderCarrier()`). Each load waits for offline renders the page
+carriers for reference checks (`renderCarrier()`). A carrier is either an oscillator or a replay
+of a recorded buffer source (`{ sourceId }`) with its buffer, loop, start time, and start
+offset, which is how noise voices get their references. Each load waits for offline renders the page
 started, such as the sound plugin's compressor probe. Suites share their per-engine setup
 through `test/unit/audio-browser-suite.js`:
 
@@ -83,7 +85,9 @@ through `test/unit/audio-browser-suite.js`:
 | `audio-render-browser.test.js` | Harness behavior, state masking, determinism |
 | `audio-voices-browser.test.js` | Envelopes, stops, steals, caps, late starts, locking |
 | `audio-bus-browser.test.js` | Limiter ceiling and quality, master volume, bus-volume service |
+| `audio-sound-design-browser.test.js` | Noise spectra and buffers, pan law, sweep endpoints |
 | `sound-envelope.test.js`, `sound-admission.test.js` | Envelope math and slot admission (Node) |
+| `sound-noise.test.js` | Noise buffers: spectra, peak, loop seam, sharing, offsets (Node) |
 
 Focused level and timing checks call `setSoundLimiter( false )`: Chromium's compressor delays
 its output by about 6 ms, and the limiter changes levels above its threshold.
@@ -115,7 +119,9 @@ In each engine:
    curves differ slightly, and neither should click at onset or stop.
 3. Sweep the synth controls, including zero attack and release, pan, and the frequency sweep,
    and listen for clicks. Stop sounds while they play, and toggle the limiter before playing.
-4. Record the engine version and anything that differs between A and B.
+4. Play white and pink noise, and use Pan sweep to check that the level stays even through
+   center. Compare the noise pitch prototype (B) with the core call (A).
+5. Record the engine version and anything that differs between A and B.
 
 Playwright's Windows WebKit has no Web Audio, so the WebKit pass uses Safari on macOS or iOS, or
 Playwright WebKit on a platform whose build includes Web Audio.

@@ -123,6 +123,170 @@ function zeroCrossingFrequency( samples, sampleRate, from, to ) {
 }
 
 /**
+ * Interpolated positions of rising zero crossings.
+ *
+ * @param {Float32Array|number[]} samples - Samples
+ * @param {number} [from] - First frame
+ * @param {number} [to] - End frame (exclusive)
+ * @returns {number[]} Fractional frame positions
+ */
+function risingZeroCrossings( samples, from, to ) {
+	const [ start, end ] = clampRange( samples, from, to );
+	const crossings = [];
+	for( let i = start + 1; i < end; i++ ) {
+		const a = samples[ i - 1 ];
+		const b = samples[ i ];
+		if( a < 0 && b >= 0 ) {
+			crossings.push( i - 1 + ( -a / ( b - a ) ) );
+		}
+	}
+	return crossings;
+}
+
+/**
+ * Pearson correlation of two sample ranges.
+ *
+ * @param {Float32Array|number[]} a - First samples
+ * @param {Float32Array|number[]} b - Second samples
+ * @param {number} [from] - First frame
+ * @param {number} [to] - End frame (exclusive)
+ * @returns {number} Correlation from -1 to 1, or 0 when either range is constant
+ */
+function correlation( a, b, from, to ) {
+	const [ start, end ] = clampRange( a, from, to );
+	let sumA = 0;
+	let sumB = 0;
+	const count = end - start;
+	for( let i = start; i < end; i++ ) {
+		sumA += a[ i ];
+		sumB += b[ i ];
+	}
+	const meanA = sumA / count;
+	const meanB = sumB / count;
+	let cross = 0;
+	let varA = 0;
+	let varB = 0;
+	for( let i = start; i < end; i++ ) {
+		const da = a[ i ] - meanA;
+		const db = b[ i ] - meanB;
+		cross += da * db;
+		varA += da * da;
+		varB += db * db;
+	}
+	if( varA === 0 || varB === 0 ) {
+		return 0;
+	}
+	return cross / Math.sqrt( varA * varB );
+}
+
+/**
+ * In-place iterative radix-2 FFT.
+ *
+ * @param {Float64Array} re - Real parts; length a power of two
+ * @param {Float64Array} im - Imaginary parts
+ * @returns {void}
+ */
+function fft( re, im ) {
+	const n = re.length;
+	for( let i = 1, j = 0; i < n; i++ ) {
+		let bit = n >> 1;
+		for( ; j & bit; bit >>= 1 ) {
+			j ^= bit;
+		}
+		j ^= bit;
+		if( i < j ) {
+			[ re[ i ], re[ j ] ] = [ re[ j ], re[ i ] ];
+			[ im[ i ], im[ j ] ] = [ im[ j ], im[ i ] ];
+		}
+	}
+	for( let size = 2; size <= n; size <<= 1 ) {
+		const angle = -2 * Math.PI / size;
+		const half = size >> 1;
+		for( let i = 0; i < n; i += size ) {
+			for( let k = 0; k < half; k++ ) {
+				const cos = Math.cos( angle * k );
+				const sin = Math.sin( angle * k );
+				const a = i + k;
+				const b = a + half;
+				const tr = re[ b ] * cos - im[ b ] * sin;
+				const ti = re[ b ] * sin + im[ b ] * cos;
+				re[ b ] = re[ a ] - tr;
+				im[ b ] = im[ a ] - ti;
+				re[ a ] += tr;
+				im[ a ] += ti;
+			}
+		}
+	}
+}
+
+/**
+ * Power-density slope across octave bands, from a Welch-averaged spectrum (Hann window,
+ * 4096 points, 50% overlap). White noise has a slope near 0 dB/octave and pink noise near
+ * -3 dB/octave.
+ *
+ * @param {Float32Array|number[]} samples - Samples
+ * @param {number} sampleRate - Sample rate in Hz
+ * @param {number} [from] - First frame
+ * @param {number} [to] - End frame (exclusive)
+ * @param {number[]} [centers] - Octave band centers in Hz
+ * @returns {{ slope: number, deviation: number, bands: number[] }} Least-squares slope in
+ * dB/octave, largest band deviation from the fit in dB, and band densities in dB
+ */
+function spectrumSlope(
+	samples, sampleRate, from, to, centers = [ 125, 250, 500, 1000, 2000, 4000, 8000 ]
+) {
+	const size = 4096;
+	const [ start, end ] = clampRange( samples, from, to );
+	const power = new Float64Array( size / 2 );
+	const window = new Float64Array( size );
+	for( let i = 0; i < size; i++ ) {
+		window[ i ] = 0.5 - 0.5 * Math.cos( 2 * Math.PI * i / ( size - 1 ) );
+	}
+	let segments = 0;
+	for( let offset = start; offset + size <= end; offset += size / 2 ) {
+		const re = new Float64Array( size );
+		const im = new Float64Array( size );
+		for( let i = 0; i < size; i++ ) {
+			re[ i ] = samples[ offset + i ] * window[ i ];
+		}
+		fft( re, im );
+		for( let k = 0; k < size / 2; k++ ) {
+			power[ k ] += re[ k ] * re[ k ] + im[ k ] * im[ k ];
+		}
+		segments++;
+	}
+	if( segments === 0 ) {
+		throw new Error( "spectrumSlope: range is shorter than one 4096-frame segment" );
+	}
+	const binWidth = sampleRate / size;
+	const bands = centers.map( center => {
+		const low = Math.ceil( center / Math.SQRT2 / binWidth );
+		const high = Math.floor( center * Math.SQRT2 / binWidth );
+		let sum = 0;
+		for( let k = low; k <= high; k++ ) {
+			sum += power[ k ];
+		}
+		return 10 * Math.log10( sum / ( high - low + 1 ) / segments );
+	} );
+	const xs = centers.map( center => Math.log2( center ) );
+	const meanX = xs.reduce( ( a, b ) => a + b, 0 ) / xs.length;
+	const meanY = bands.reduce( ( a, b ) => a + b, 0 ) / bands.length;
+	let sxy = 0;
+	let sxx = 0;
+	for( let i = 0; i < xs.length; i++ ) {
+		sxy += ( xs[ i ] - meanX ) * ( bands[ i ] - meanY );
+		sxx += ( xs[ i ] - meanX ) * ( xs[ i ] - meanX );
+	}
+	const slope = sxy / sxx;
+	let deviation = 0;
+	for( let i = 0; i < xs.length; i++ ) {
+		const fit = meanY + slope * ( xs[ i ] - meanX );
+		deviation = Math.max( deviation, Math.abs( bands[ i ] - fit ) );
+	}
+	return { "slope": slope, "deviation": deviation, "bands": bands };
+}
+
+/**
  * First frame whose magnitude exceeds a threshold.
  *
  * @param {Float32Array|number[]} samples - Samples
@@ -381,7 +545,7 @@ function onsetResidual( rendered, carrier, envelope, options ) {
 }
 
 export {
-	SILENCE, automationEnvelope, exponentialFade, firstNonSilent, isSilent, kneeShare,
-	lastNonSilent, linearFade, linearOnset, onsetResidual, peak, referenceResidual, rms,
-	rmsWindows, stopResidual, zeroCrossingFrequency
+	SILENCE, automationEnvelope, correlation, exponentialFade, firstNonSilent, isSilent,
+	kneeShare, lastNonSilent, linearFade, linearOnset, onsetResidual, peak, referenceResidual,
+	risingZeroCrossings, rms, rmsWindows, spectrumSlope, stopResidual, zeroCrossingFrequency
 };

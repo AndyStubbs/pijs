@@ -1,7 +1,8 @@
 /**
  * Offline render tests for synthesized voices: the ADSR envelope, the de-click floor, the
  * single stop path, voice stealing, the slot and live-voice caps, pending requests, the
- * late-start rule, the interim PLAY exemption, and the locked-context policy.
+ * late-start rule, the interim PLAY exemption, and the locked-context policy. Pan, sweep,
+ * and noise spectra are covered in audio-sound-design-browser.test.js.
  *
  * Focused residual checks bypass the limiter and set the master volume to 1, so output is
  * carrier × envelope. Carriers come from a separate offline render in the same engine, and
@@ -298,6 +299,96 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 			assertResidual( residual, engine, "stop", oType );
 			const voice = voiceSources( result.sources )[ 0 ];
 			assert.equal( voice.disconnectCalls, 1 );
+		} );
+	}
+
+	// Noise carriers replay the voice's own recorded buffer source: same buffer, loop, start
+	// time, and random offset
+	for( const oType of [ "white", "pink" ] ) {
+		test( `${oType} noise onset and release match the reference envelope`, async t => {
+			const spec = {
+				"duration": 0.3, "oType": oType, "volume": 0.8, "releaseTime": 0.1
+			};
+			const result = await suite.inHarness( t, { "config": { "duration": 0.6 } }, spec => {
+				$.setSoundLimiter( false );
+				$.setVolume( 1 );
+				$.sound( spec );
+				return __audioHarness.render( { "singlePass": true } ).then( async render => {
+					const source = __audioHarness.sources().find(
+						entry => entry.type === "AudioBufferSourceNode"
+					);
+					return {
+						...render,
+						"source": source,
+						"carrier": await __audioHarness.renderCarrier( { "sourceId": source.id } )
+					};
+				} );
+			}, spec );
+			if( !result ) {
+				return;
+			}
+			assert.ok( result.source.offset >= 0 && result.source.offset < 2 );
+			const left = g_harness.decodeRender( result ).channels[ 0 ];
+			const carrier = g_harness.decodeChannels( [ result.carrier ] )[ 0 ];
+			const onset = g_metrics.linearOnset( LEAD, MIN_RAMP );
+			const onsetCheck = g_metrics.onsetResidual( left, carrier, t => 0.8 * onset( t ), {
+				"sampleRate": RATE, "onset": LEAD, "to": frame( LEAD + 0.05 ), "lead": 0.005
+			} );
+			assert.ok( onsetCheck.silentBefore );
+			assertResidual( onsetCheck, engine, "onset", oType + " onset" );
+			// The release ends with gain set to exactly 0 from 80 dB down; the comparison stops
+			// just before that sample, and the silence check covers what follows
+			const envelope = expectedAdsr( { ...spec, "start": LEAD, "peak": 0.8 } );
+			const release = g_metrics.referenceResidual( left, carrier, envelope, {
+				"sampleRate": RATE, "from": frame( LEAD + 0.25 ), "to": frame( LEAD + 0.399 )
+			} );
+			assertResidual( release, engine, "stop", oType + " release" );
+			assert.ok( g_metrics.isSilent( left, frame( LEAD + 0.4 ) + 1, left.length ) );
+		} );
+
+		test( `stopSound() fades ${oType} noise from the scheduling lead`, async t => {
+			const result = await suite.inHarness( t, {
+				"config": { "duration": 1 }, "needsSuspend": true
+			}, oType => {
+				let id = null;
+				let stoppedAt = null;
+				return __audioHarness.render( { "actions": [
+					{ "time": 0, "run": () => {
+						$.setSoundLimiter( false );
+						$.setVolume( 1 );
+						id = $.sound( { "duration": 2, "oType": oType } );
+					} },
+					{ "time": 0.5, "run": () => {
+						stoppedAt = new AudioContext().currentTime;
+						$.stopSound( id );
+					} }
+				] } ).then( async render => {
+					const source = __audioHarness.sources().find(
+						entry => entry.type === "AudioBufferSourceNode"
+					);
+					return {
+						...render,
+						"stoppedAt": stoppedAt,
+						"source": source,
+						"carrier": await __audioHarness.renderCarrier( { "sourceId": source.id } )
+					};
+				} );
+			}, oType );
+			if( !result ) {
+				return;
+			}
+			const left = g_harness.decodeRender( result ).channels[ 0 ];
+			const carrier = g_harness.decodeChannels( [ result.carrier ] )[ 0 ];
+			const fadeStart = result.stoppedAt + LEAD;
+			const residual = g_metrics.stopResidual(
+				left, carrier, g_metrics.linearFade( fadeStart, STOP_FADE ), {
+					"sampleRate": RATE, "from": frame( result.stoppedAt ),
+					"stopEnd": fadeStart + STOP_FADE, "tail": 0.05
+				}
+			);
+			assert.ok( residual.silentAfter );
+			assertResidual( residual, engine, "stop", oType );
+			assert.equal( result.source.disconnectCalls, 1 );
 		} );
 	}
 
@@ -837,39 +928,6 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 			const start = frame( voice.startTime );
 			assert.ok( g_metrics.peak( left, start, start + frame( 0.008 ) ) > 0.05 );
 		}
-	} );
-
-	test( "pan and frequencyEnd shape the voice; unpanned voices get no panner", async t => {
-		const result = await suite.inHarness( t, { "config": { "duration": 1 } }, () => {
-			$.setSoundLimiter( false );
-			$.sound( { "frequency": 440, "duration": 0.2, "oType": "sine", "pan": -1 } );
-			const panners = __audioHarness.nodeCounts().createStereoPanner;
-			$.sound( {
-				"frequency": 200, "frequencyEnd": 800, "duration": 0.6, "oType": "sine",
-				"delay": 0.15
-			} );
-			return __audioHarness.render( { "singlePass": true } ).then( render => ( {
-				...render, "panners": panners
-			} ) );
-		} );
-		if( !result ) {
-			return;
-		}
-		assert.equal( result.panners, 1 );
-		assert.equal( result.nodeCounts.createStereoPanner, 1 );
-		const [ left, right ] = g_harness.decodeRender( result ).channels;
-		assert.ok( g_metrics.peak( left, frame( 0.05 ), frame( 0.15 ) ) > 0.5 );
-		assert.ok( g_metrics.isSilent( right, 0, frame( 0.15 ) ) );
-		// The sweep starts at 0.15 s and reaches 800 Hz at 0.75 s; only it reaches the right
-		const startPitch = g_metrics.zeroCrossingFrequency(
-			right, RATE, frame( 0.16 ), frame( 0.21 )
-		);
-		const endPitch = g_metrics.zeroCrossingFrequency(
-			right, RATE, frame( 0.7 ), frame( 0.75 )
-		);
-		assert.ok( startPitch > 200 && startPitch < 225, `start pitch ${startPitch}` );
-		assert.ok( endPitch > 750 && endPitch < 800, `end pitch ${endPitch}` );
-		assert.ok( g_metrics.peak( right, frame( 0.2 ), frame( 0.7 ) ) > 0.5 );
 	} );
 
 	test( "frequency is not rounded", async t => {

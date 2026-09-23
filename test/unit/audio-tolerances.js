@@ -49,7 +49,15 @@ const TOLERANCES = {
 	// compressor pre-emphasizes high frequencies and cuts bright waveforms far below its
 	// threshold, so the sound plugin's probe selects the clipper alone there; its value only
 	// records the observed saturation on these deliberately extreme overloads.
-	"limiterKneeShare": { "chromium": 0.01, "firefox": 0.65 }
+	"limiterKneeShare": { "chromium": 0.01, "firefox": 0.65 },
+
+	// Noise spectra: power-density slope error in dB/octave against 0 (white) and -3 (pink),
+	// and the largest octave-band deviation from the fitted slope in dB, measured from 125 Hz
+	// to 8 kHz on seeded 1.75 s sound() renders (audio-sound-design-browser.test.js).
+	// Observed, identical on both engines: white slope -0.002, deviation 0.175; pink slope
+	// -2.967, deviation 0.201.
+	"noiseSlope": { "chromium": 0.15, "firefox": 0.15 },
+	"noiseBandDeviation": { "chromium": 0.5, "firefox": 0.5 }
 };
 
 /**
