@@ -34,7 +34,7 @@ const SOUND_ADVANCED_DECLARATIONS = [
 	"sfx( name: string, variation?: number ): string;",
 	"definePreset( name: string, params: object ): void;",
 	"defineInstrument( instrument: number, params: object | null ): void;",
-	"setBusEffect( bus: string, effect: string | null, options?: object ): void;",
+	"setBusEffect( bus: string, effect: string | object[] | null, options?: object ): void;",
 	"getSoundLevels( bus?: string, spectrum?: boolean, waveform?: boolean ): {",
 	"startRecording( bus?: string, maxDuration?: number, bitDepth?: number ): Promise<void>;",
 	"stopRecording(): Promise<Blob>;",

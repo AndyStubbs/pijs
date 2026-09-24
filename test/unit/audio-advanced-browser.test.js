@@ -279,7 +279,7 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 					return null;
 				};
 				values.codes = [
-					codeOf( () => $.setBusEffect( "sfx", "chorus" ) ),
+					codeOf( () => $.setBusEffect( "sfx", "flanger" ) ),
 					codeOf( () => $.setBusEffect( "drums", "delay" ) ),
 					codeOf( () => $.setBusEffect( "sfx", "delay", { "feedback": 1 } ) ),
 					codeOf( () => $.setBusEffect( "sfx", "reverb", 3 ) )

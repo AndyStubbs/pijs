@@ -2,22 +2,50 @@ title = "setBusEffect"
 category = "sound"
 isScreen = false
 plugin = "sound-advanced"
-summary = "Places a reverb or delay effect on a sound bus."
+summary = "Places an effect, or a chain of effects, on a sound bus."
 description = """
-Requires the sound-advanced plugin. Each bus ("sfx", "music", "audio", or "master") holds one effect; setting a new one replaces the old one, and null removes it. The bus volume is unchanged either way, and it applies after the effect, so muting a bus also silences the effect's tail.
+Requires the sound-advanced plugin. Each bus ("sfx", "music", "audio", or "master") holds one effect or one chain of up to four effects. Setting a new one replaces the old one, and null or an empty array removes it. The bus volume is unchanged either way, and it applies after the effect, so muting a bus also silences the effect's tail.
 
 "reverb" options: time, the length of the reverb tail in seconds (0.1-10, default 2); decay, how quickly the tail dies away (0.1-20, default 3); and mix, the share of reverberated sound (0-1, default 0.3).
 
 "delay" options: time, the echo spacing in seconds (0.01-2, default 0.25); feedback, how much of each echo repeats (0-0.95, default 0.4); and mix, the share of echoed sound (0-1, default 0.3).
+
+"filter" options: type, "lowpass", "highpass", or "bandpass" (default "lowpass"); cutoff, the cutoff frequency in Hz (20-20000, default 1000); and q, the resonance (0.0001-100, default 1). A lowpass filter gives the muffled sound of a pause menu or an underwater scene.
+
+"distortion" options: drive, the amount of saturation (0-1, default 0.5); tone, the cutoff of a lowpass after the distortion in Hz (200-20000, default 4000); and mix (0-1, default 1).
+
+"bitcrush" options: bits, the bit depth (1-16, default 8); rate, how many frames each sample is held, which lowers the sample rate (1-64, default 1); and mix (0-1, default 1). The bitcrusher loads an audio worklet on first use and passes the sound unchanged until it is ready, which takes a few milliseconds.
+
+"chorus" options: rate, the modulation speed in Hz (0.1-10, default 1.5); depth, the delay modulation in milliseconds (0-10, default 3); and mix (0-1, default 0.5).
+
+For a chain, pass an array of objects instead of an effect name, each with an effect property and that effect's options, and omit the options parameter. The effects run in array order.
+
+When the effects and their order match the bus's current ones, setBusEffect updates them in place: the changed options move to their new values over 20 ms, without clicks, and tails continue. Changing a reverb's time or decay or a filter's type builds a new effect instead, which cuts the tail.
 """
 example = """
-$.setBusEffect( "music", "reverb", { "time": 2.5, "mix": 0.4 } );
 $.setBusEffect( "sfx", "delay", { "time": 0.3, "feedback": 0.5 } );
+$.setBusEffect( "music", [
+	{ "effect": "filter", "cutoff": 20000 },
+	{ "effect": "reverb", "time": 2.5, "mix": 0.4 }
+] );
 $.screen( "300x200" );
-$.print( "Press any key" );
+$.print( "Press a key to play" );
+$.print( "Hold space to muffle the music" );
 $.onkey( "any", "down", () => {
 	$.play( "T100 L4 O4 C E G O5 C" );
 	$.sfx( "blip" );
+} );
+$.onkey( "Space", "down", () => {
+	$.setBusEffect( "music", [
+		{ "effect": "filter", "cutoff": 600 },
+		{ "effect": "reverb", "time": 2.5, "mix": 0.4 }
+	] );
+} );
+$.onkey( "Space", "up", () => {
+	$.setBusEffect( "music", [
+		{ "effect": "filter", "cutoff": 20000 },
+		{ "effect": "reverb", "time": 2.5, "mix": 0.4 }
+	] );
 } );
 """
 
@@ -28,11 +56,11 @@ description = "'sfx', 'music', 'audio', or 'master'."
 
 [[parameters]]
 name = "effect"
-type = "string | null"
-description = "'reverb', 'delay', or null to remove the bus effect."
+type = "string | object[] | null"
+description = "'reverb', 'delay', 'filter', 'distortion', 'bitcrush', or 'chorus'; an array of up to four { effect, ...options } objects for a chain; or null to remove the bus effect."
 
 [[parameters]]
 name = "options"
 type = "object"
-description = "Effect options: time, decay, and mix for reverb; time, feedback, and mix for delay."
+description = "Options of a single effect. Omit it for a chain."
 optional = true

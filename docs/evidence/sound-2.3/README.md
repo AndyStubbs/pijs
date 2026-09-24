@@ -18,6 +18,7 @@ compresses them with gzip level 9. Sizes are in bytes.
 | `size-phase5.json` | Phase 5 exit: service v1 completed and frozen, `sound-advanced` plugin | `sound` 2.0.0, `sound-advanced` 1.0.0; M3 |
 | `size-phase6.json` | Phase 6 exit: `setBusVolume()` promoted to core | `sound` 2.0.0, `sound-advanced` 1.0.0; M4 |
 | `size-phase7.json` | Phase 7 exit: core output stage, recording in `sound-advanced` | `sound` 2.0.0, `sound-advanced` 1.0.0 |
+| `size-phase8.json` | Phase 8 exit: bus effects, chains, and in-place updates in `sound-advanced` | `sound` 2.0.0, `sound-advanced` 1.0.0 |
 
 Phase 0 deltas, gzipped:
 
@@ -237,6 +238,54 @@ Other findings:
   `http://audio-test.local` to a routed `http://localhost` origin. The route still answers
   every request, so nothing reaches the network. The harness also swaps its proxy for the real
   context in the `AudioWorkletNode` constructor.
+
+## Phase 8: bus effects
+
+Phase 8 of the expansion plan made four changes in `sound-advanced`; core `sound` did not
+change:
+
+- The `effects` module was rewritten as stage builders with declared rampable options.
+- The filter, distortion, bitcrush, and chorus effects were added.
+- A bus insert can hold a chain of up to four effects, and a matching chain updates in place.
+- The bitcrusher's processor joined the recorder in the shared `worklet` module.
+
+Phase 8 deltas, gzipped:
+
+| Bundle | Phase 7 exit | Phase 8 exit | Delta | Since 2.2 baseline |
+| --- | --- | --- | --- | --- |
+| `sound` plugin | 15,390 | 15,390 | 0 | +9,107 |
+| `pi.lite.min.js` | 48,586 | 48,586 | 0 | +311 |
+| `pi.min.js` | 72,435 | 72,435 | 0 | +9,507 |
+| `sound-advanced` plugin | 7,783 | 9,736 | +1,953 | — |
+
+- **Effects.** Its marginal cost rose from 595 to 2,286 bytes, and it costs 3,158 bytes to
+  promote into core. The growth of 1,691 bytes is about 190 bytes over the plan 8 estimate of
+  1.5 KB, which is a guide, not a limit. Most of it is error messages and the six option
+  tables. The minified `sound-advanced` bundle grew from 21,295 to 26,835 bytes.
+- **Shared worklet.** The recorder's marginal cost fell from 1,787 to 1,232 bytes. Removing
+  the recorder no longer removes the worklet loader, which the bitcrusher also uses. The
+  bitcrusher processor adds its source text to the same module, so one `addModule()` call
+  loads both processors.
+- **Full merge.** Merging all of `sound-advanced` into `pi.min.js` now costs 8,898 bytes.
+
+### Effect measurements
+
+Offline renders in `audio-effects-browser.test.js` check each effect against analytic
+expectations:
+
+- Renders that set their effect before the first action run in Chromium and Firefox.
+- The in-place update renders use timed actions, which need offline `suspend()`, so they run
+  in Chromium only.
+
+| Check | Expectation | Result |
+| --- | --- | --- |
+| Lowpass and highpass filter, 1 kHz cutoff, q 1 | Level of a 2 kHz sine within 2% of the biquad magnitude response | Pass on both engines |
+| Distortion, drive 0, 0.3, 0.8 | Third harmonic below 0.5% of the fundamental at drive 0, rising with drive | Pass on both engines |
+| Bitcrush, bits 3, rate 4 | Every sample on a quarter step, all nine levels used, changes only every fourth frame | Pass on both engines. A realtime Chromium recording at 2 bits held only the five half steps |
+| Chorus, rate 2 Hz, depth 10 ms | Pitch swing of a 440 Hz sine within 15% of 2π · rate · depth · frequency (55 Hz); left and right tracks correlated below −0.9 | Pass on both engines |
+| Chain order | A lowpass after distortion attenuates the added harmonic by the filter response | Pass on both engines |
+| In-place mix ramp | Residual against the carrier times a 20 ms linear ramp within the stop tolerances | Pass in Chromium |
+| In-place chain update | The reverb tail continues and no new convolver is created. Changing reverb `time` rebuilds the chain and cuts the tail | Pass in Chromium |
 
 ## Sample measurements (Phase 3)
 

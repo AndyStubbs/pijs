@@ -1,7 +1,7 @@
 # Pi.js 2.3 Sound Advanced Expansion Plan
 
-Status: Phase 7 implemented (its three-engine listening check is open); Phases 8–10 not
-started
+Status: Phases 7–8 implemented (their three-engine listening checks are open); Phases 9–10
+not started
 Revision 2: the sound-effect generator is `generateSfx()`, repeatable by default, with seed 0
 as the built-in preset and a `variation` parameter (6.1, D17).
 Target release: Pi.js 2.3.0
@@ -237,18 +237,22 @@ signal, so the effect starts within a few milliseconds.
 ### 5.2 Effect chains
 
 `setBusEffect( bus, effect, options )` also accepts an array for `effect`. Each item is an
-object with a `type` and that effect's options. The effects run in array order.
+object with an `effect`, named like the parameter, and that effect's options. The effects run
+in array order. Items use `effect` rather than `type`, so the filter keeps `type` as its own
+option.
 
 ```javascript
 $.setBusEffect( "music", [
-	{ "type": "filter", "cutoff": 800 },
-	{ "type": "reverb", "time": 2.5, "mix": 0.4 }
+	{ "effect": "filter", "type": "highpass", "cutoff": 800 },
+	{ "effect": "reverb", "time": 2.5, "mix": 0.4 }
 ] );
 ```
 
 Service v1 has one insert slot per bus, and the sound plan (4.3.2) already says that chains
 are composed inside a single insert. A chain holds at most 4 effects (`INVALID_EFFECT`
-otherwise). An empty array removes the effect, like `null`.
+otherwise). An empty array removes the effect, like `null`. An item that is not an object or
+names an unknown effect throws `INVALID_EFFECT`. With a chain, the `options` parameter must be
+omitted (`INVALID_OPTIONS`), since each item holds its own options.
 
 ### 5.3 Smooth parameter changes
 
@@ -256,16 +260,20 @@ Today every `setBusEffect` call builds a new insert, which cuts any reverb or de
 this change, a call whose effect types and order match the current insert updates it in place
 instead (D12):
 
-- Options that map to an `AudioParam`, such as `cutoff`, `q`, `mix`, `feedback`, `drive`,
-  `rate`, and `depth`, ramp to their new values over 20 ms.
-- Options that need a rebuild, such as reverb `time` and `decay` and the filter `type`,
+- Options that map to an `AudioParam` ramp linearly to their new values over 20 ms. These are
+  every option except the three below: `cutoff`, `q`, `mix`, `feedback`, delay `time`,
+  `drive`, `tone`, `bits`, `rate`, and `depth`. Distortion `drive` sets a pre-gain into a
+  fixed curve and a make-up gain, so it ramps too.
+- Options that need a rebuild, which are reverb `time` and `decay` and the filter `type`,
   replace the insert as before.
+- A single effect given by name is a chain of one, so repeated calls with the same name also
+  update in place.
 
 This makes transitions like the following click-free and keeps the reverb tail:
 
 ```javascript
-$.setBusEffect( "music", [ { "type": "filter", "cutoff": 20000 }, { "type": "reverb" } ] );
-$.setBusEffect( "music", [ { "type": "filter", "cutoff": 600 }, { "type": "reverb" } ] );
+$.setBusEffect( "music", [ { "effect": "filter", "cutoff": 20000 }, { "effect": "reverb" } ] );
+$.setBusEffect( "music", [ { "effect": "filter", "cutoff": 600 }, { "effect": "reverb" } ] );
 ```
 
 ### 5.4 Tasks
@@ -289,6 +297,28 @@ $.setBusEffect( "music", [ { "type": "filter", "cutoff": 600 }, { "type": "rever
   plan 10.2), and a reverb tail continues through it.
 - Chains apply effects in order. Bus volume and effects still work in either call order.
 - Every new error path has a test. `effects.js` has a size entry.
+
+### 5.6 Exit status
+
+- Tasks 8.1–8.7 are implemented. The effect renders are in `audio-effects-browser.test.js`
+  and the option and chain validation tests are in `sound-advanced.test.js`. The size entry
+  and the measured results are in `docs/evidence/sound-2.3/README.md`.
+- **Filter.** The biquad takes `q` as the Web Audio `Q`, which is in decibels for lowpass and
+  highpass.
+- **Distortion.** A `tanh` curve, shared by every distortion stage, sits between a pre-gain
+  and a make-up gain. Drive 0 is nearly linear, and drive 1 saturates heavily.
+- **Chorus.** Two delays around 15 ms read the downmixed bus. One LFO modulates them in
+  opposite phase, and they are panned hard left and right.
+- **Bitcrush.** The processor holds each sample for `round( rate )` frames and quantizes to
+  steps of 1 / 2^( `bits` − 1 ). A `"stop"` message ends it when the effect is removed.
+  - Until the worklet loads, the stage passes the dry signal, then ramps to its mix.
+  - When the module cannot load, the stage stays dry and the plugin warns once.
+- **Ramps.** Ramps start at the context's current time. They continue any ramp in progress
+  from its recorded value and do not use `cancelAndHoldAtTime`.
+- **Engine coverage.** The per-effect renders run in Chromium and Firefox. The in-place
+  update tests need offline `suspend()`, so they run in Chromium only. WebKit is covered by
+  the listening check.
+- **Open:** the three-engine listening check.
 
 ## 6. Phase 9: Game Features
 
@@ -482,7 +512,7 @@ these commands as part of 1.0.0:
 - New commands: `startRecording()`, `stopRecording()`, `getRecordingState()`,
   `saveRecording()`, `generateSfx()`, `onPlayEvent()`, and `offPlayEvent()`.
 - `setBusEffect()`: new effects `"filter"`, `"distortion"`, `"bitcrush"`, and `"chorus"`;
-  arrays for chains; in-place updates for matching chains.
+  arrays of `{ effect, ...options }` items for chains; in-place updates for matching chains.
 - `getSoundLevels()`: bus `"output"`.
 - `defineInstrument()`: `audio`, `rootFrequency`, and `loop` options.
 - Plugin API (sound service v1): `tapBus` accepts `"output"`; `observePlay` and
@@ -499,11 +529,11 @@ Numbered after the sound plan's D1–D6.
 | D9 | Recording formats | **Resolved (task 7.4):** WAV only: 16-bit PCM by default, 32-bit float as an option. `MediaRecorder` output differs by browser and cannot be tested sample for sample | Resolved |
 | D10 | Concurrent recordings | **Resolved (task 7.4):** one at a time. Several recorders multiply memory, and no common game use needs them | Resolved |
 | D11 | Recording duration limits | **Resolved (task 7.4):** 60 s default, 600 s maximum (about 115 MB at 48 kHz, 16-bit stereo) | Resolved |
-| D12 | Changing effect options without a rebuild | Ramp `AudioParam` options in place when the chain's types and order match. Rebuild otherwise, which cuts tails as today | Task 8.3 |
+| D12 | Changing effect options without a rebuild | **Resolved (task 8.3):** options that map to an `AudioParam` ramp in place over 20 ms when the chain's effects and order match; reverb `time` and `decay` and the filter `type` rebuild, which cuts tails. Chain items name their effect with `effect`, not `type`, so the filter keeps its `type` option | Resolved |
 | D13 | Music sync delivery | Dispatch on animation frames from the audible time; drop notes more than 250 ms late; always deliver `"end"` | Task 9.3 |
 | D14 | PLAY cue markers | Defer to 2.3.x. A cue needs a timed event without a voice, which changes the PLAY extension contract | Task 9.3 |
 | D15 | Songs started before a sample instrument's file loads | Those notes play silence with one warning. Waiting for the file would hold up the whole song, and `ready()` already covers waiting | Task 10.3 |
-| D16 | How the bitcrusher reduces the sample rate | Worklet processor with `bits` and `rate`. A `WaveShaperNode` can reduce bit depth but cannot hold samples, and the worklet loader already exists for recording | Task 8.6 |
+| D16 | How the bitcrusher reduces the sample rate | **Resolved (task 8.6):** a worklet processor with k-rate `bits` and `rate`, registered in the recorder's module. A `WaveShaperNode` can reduce bit depth but cannot hold samples. The stage stays dry until the module loads, and dry with one warning if it cannot load | Resolved |
 | D17 | Whether generated sounds are repeatable by default | **Resolved (revision 2 of this plan): yes.** The command is `generateSfx( category, seed, variation )`. `seed` defaults to 0, which returns the category's built-in preset, and other seeds are fixed variants, so the generator and the presets are one system. Unseeded random output (sfxr style) was rejected: it suits a design tool but not a game, which wants the same sound each time. Randomness comes only from `variation`, which nudges every parameter, unlike `sfx()`'s pitch and length jitter | Resolved |
 
 ## 13. Risks

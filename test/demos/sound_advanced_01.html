@@ -163,6 +163,15 @@
 		<h2>Buses</h2>
 		<div class="controls" id="buses"></div>
 		<p>Bus volume follows the effect, so muting a bus also cuts its reverb or echo tail.</p>
+		<div class="controls">
+			<label class="control"><input type="checkbox" id="muffle"> Muffle music (filter
+				and reverb chain)</label>
+			<label class="control">Cutoff <input type="range" id="muffleCutoff" min="200"
+				max="20000" step="100" value="800"><output id="muffleCutoffValue">800</output>
+			</label>
+		</div>
+		<p>Moving the cutoff updates the chain in place: the filter ramps over 20 ms without
+			clicks, and the reverb tail continues.</p>
 	</div>
 
 	<div class="section">
@@ -232,6 +241,16 @@
 			"pad": [ "@3 T80 O4 L2 C, E, G" ]
 		};
 		const BUSES = [ "sfx", "music", "audio" ];
+
+		// Effect options offered for each bus
+		const BUS_EFFECTS = {
+			"reverb": { "time": 2, "mix": 0.35 },
+			"delay": { "time": 0.3, "feedback": 0.45 },
+			"filter": { "cutoff": 800 },
+			"distortion": { "drive": 0.6, "mix": 0.8 },
+			"bitcrush": { "bits": 4, "rate": 6 },
+			"chorus": { "rate": 1.5, "depth": 4, "mix": 0.5 }
+		};
 		let songs = [];
 		let synthId = null;
 
@@ -377,14 +396,15 @@
 			const effect = document.createElement( "label" );
 			effect.className = "control";
 			effect.innerHTML = `${bus} effect <select><option value="">None</option>` +
-				`<option value="reverb">Reverb</option><option value="delay">Delay</option>` +
-				`</select><span></span>`;
+				Object.keys( BUS_EFFECTS ).map(
+					name => `<option value="${name}">${name}</option>`
+				).join( "" ) + `</select><span></span>`;
 			const select = effect.querySelector( "select" );
 			select.addEventListener( "change", () => {
-				if( select.value === "reverb" ) {
-					$.setBusEffect( bus, "reverb", { "time": 2, "mix": 0.35 } );
-				} else if( select.value === "delay" ) {
-					$.setBusEffect( bus, "delay", { "time": 0.3, "feedback": 0.45 } );
+				if( select.value ) {
+					attempt( "setBusEffect", () => {
+						$.setBusEffect( bus, select.value, BUS_EFFECTS[ select.value ] );
+					} );
 				} else {
 					$.setBusEffect( bus, null );
 				}
@@ -392,6 +412,26 @@
 			} );
 			busControls.appendChild( effect );
 		}
+
+		// Muffled music: a filter and reverb chain whose cutoff ramps in place
+		const muffle = document.getElementById( "muffle" );
+		const muffleCutoff = document.getElementById( "muffleCutoff" );
+		function applyMuffle() {
+			document.getElementById( "muffleCutoffValue" ).textContent = muffleCutoff.value;
+			if( !muffle.checked ) {
+				$.setBusEffect( "music", null );
+				return;
+			}
+			$.setBusEffect( "music", [
+				{ "effect": "filter", "cutoff": Number( muffleCutoff.value ), "q": 4 },
+				{ "effect": "reverb", "time": 2.5, "mix": 0.4 }
+			] );
+		}
+		muffle.addEventListener( "change", () => {
+			applyMuffle();
+			log( `setBusEffect: music ${muffle.checked ? "filter + reverb chain" : "none"}` );
+		} );
+		muffleCutoff.addEventListener( "input", applyMuffle );
 
 		// Recording: start, stop, and save the last WAV file
 		let recording = null;

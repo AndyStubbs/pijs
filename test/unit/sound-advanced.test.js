@@ -250,6 +250,66 @@ test( "effect options take defaults and reject values outside their ranges", () 
 	assert.throws(
 		() => g_effects.resolveEffectOptions( "reverb", 2 ), { "code": "INVALID_OPTIONS" }
 	);
+	assert.deepEqual(
+		g_effects.resolveEffectOptions( "filter", { "type": "highpass" } ),
+		{ "type": "highpass", "cutoff": 1000, "q": 1 }
+	);
+	assert.deepEqual(
+		g_effects.resolveEffectOptions( "distortion", null ),
+		{ "drive": 0.5, "tone": 4000, "mix": 1 }
+	);
+	assert.deepEqual(
+		g_effects.resolveEffectOptions( "bitcrush", { "bits": "4" } ),
+		{ "bits": 4, "rate": 1, "mix": 1 }
+	);
+	assert.deepEqual(
+		g_effects.resolveEffectOptions( "chorus", null ),
+		{ "rate": 1.5, "depth": 3, "mix": 0.5 }
+	);
+	for( const [ effect, options ] of [
+		[ "filter", { "type": "notch" } ], [ "filter", { "cutoff": 10 } ],
+		[ "filter", { "q": 0 } ], [ "distortion", { "tone": 100 } ],
+		[ "bitcrush", { "bits": 0 } ], [ "bitcrush", { "rate": 65 } ],
+		[ "chorus", { "depth": 11 } ], [ "chorus", { "rate": 0 } ]
+	] ) {
+		assert.throws(
+			() => g_effects.resolveEffectOptions( effect, options ),
+			{ "code": "INVALID_EFFECT_OPTION" },
+			`${effect} ${JSON.stringify( options )}`
+		);
+	}
+} );
+
+test( "effect chains resolve in order, and an empty chain removes the effect", () => {
+	assert.equal( g_effects.resolveChain( null ), null );
+	assert.equal( g_effects.resolveChain( [] ), null );
+	assert.deepEqual( g_effects.resolveChain( "filter", { "cutoff": 500 } ), [
+		{ "effect": "filter", "opts": { "type": "lowpass", "cutoff": 500, "q": 1 } }
+	] );
+	assert.deepEqual( g_effects.resolveChain( [
+		{ "effect": "filter", "type": "bandpass" },
+		{ "effect": "reverb", "time": 1 }
+	] ), [
+		{ "effect": "filter", "opts": { "type": "bandpass", "cutoff": 1000, "q": 1 } },
+		{ "effect": "reverb", "opts": { "time": 1, "decay": 3, "mix": 0.3 } }
+	] );
+	const item = { "effect": "delay" };
+	assert.equal( g_effects.resolveChain( [ item, item, item, item ] ).length, 4 );
+	for( const [ effect, options, code ] of [
+		[ "flanger", undefined, "INVALID_EFFECT" ],
+		[ 3, undefined, "INVALID_EFFECT" ],
+		[ [ item, item, item, item, item ], undefined, "INVALID_EFFECT" ],
+		[ [ null ], undefined, "INVALID_EFFECT" ],
+		[ [ "delay" ], undefined, "INVALID_EFFECT" ],
+		[ [ { "effect": "toString" } ], undefined, "INVALID_EFFECT" ],
+		[ [ item ], { "time": 1 }, "INVALID_OPTIONS" ],
+		[ [ { "effect": "delay", "feedback": 1 } ], undefined, "INVALID_EFFECT_OPTION" ]
+	] ) {
+		assert.throws(
+			() => g_effects.resolveChain( effect, options ), { "code": code },
+			JSON.stringify( effect )
+		);
+	}
 } );
 
 test( "levels are the peak magnitude and RMS of the block", () => {

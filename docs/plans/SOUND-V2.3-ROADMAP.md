@@ -1,6 +1,6 @@
 # Pi.js 2.3 Sound Upgrade Roadmap
 
-Status: Phases 0–6 implemented (M4); expansion Phase 7 implemented, Phases 8–10 proposed
+Status: Phases 0–6 implemented (M4); expansion Phases 7–8 implemented, Phases 9–10 proposed
 Design reference: [SOUND-V2.3-PLAN.md](SOUND-V2.3-PLAN.md) (section numbers below refer to it)
 Expansion plan: [SOUND-ADVANCED-V2.3-PLAN.md](SOUND-ADVANCED-V2.3-PLAN.md) (Phases 7–10)
 Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md) (the 2.3 release phase and the other
