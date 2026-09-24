@@ -3,16 +3,9 @@
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_fs from "node:fs";
-import * as g_path from "node:path";
-import * as g_vm from "node:vm";
-import * as g_url from "node:url";
-const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+import * as g_harness from "./vm-module-harness.js";
 const { test } = g_test;
 const assert = g_assert;
-const fs = g_fs;
-const path = g_path;
-const vm = g_vm;
 
 function createHarness() {
 	const images = [];
@@ -54,12 +47,10 @@ function createHarness() {
 			if( name === "src" ) { this.url = ""; }
 		}
 	}
-	const utilsContext = vm.createContext( {
+	const utilsContext = g_harness.loadModule( "src/core/utils.js", {
 		"document": { "createElement": () => ( { "getContext": () => ( {} ) } ) }
 	} );
-	vm.runInContext( fs.readFileSync( path.join( DIRNAME, "../../src/core/utils.js" ), "utf8" )
-		.replace( /export /g, "" ), utilsContext );
-	const context = vm.createContext( {
+	const context = g_harness.loadModule( "src/text/fonts.js", {
 		"console": { "error": message => counts.errors.push( message ) },
 		"g_utils": utilsContext,
 		"g_commands": { "wait": () => counts.wait++, "done": () => counts.done++ },
@@ -68,9 +59,6 @@ function createHarness() {
 		"HTMLImageElement": ImageElement, "HTMLCanvasElement": Canvas, "OffscreenCanvas": Offscreen,
 		"Image": ControlledImage
 	} );
-	const source = fs.readFileSync( path.join( DIRNAME, "../../src/text/fonts.js" ), "utf8" )
-		.replace( /^import .*;\r?\n/gm, "" ).replace( /export /g, "" );
-	vm.runInContext( source, context, { "filename": "text/fonts.js" } );
 	return { "api": context, "images": images, "counts": counts, "failures": failures,
 		"Element": ImageElement, "Canvas": Canvas, "Offscreen": Offscreen };
 }

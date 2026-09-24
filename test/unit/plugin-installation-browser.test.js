@@ -176,3 +176,17 @@ test( "dependency-delayed plugins install on screens that already exist", async 
 		"plugins": [ [ "late-dependent", true ], [ "late-dependency", true ] ]
 	} );
 } );
+
+test( "lite plugins initialize when their real dependencies arrive later", async () => {
+	const page = await context.newPage();
+	try {
+		await page.goto( "http://localhost:8080/" );
+		await page.setContent( "<html><body></body></html>" );
+		await page.addScriptTag( { "url": "/build/pi.lite.js" } );
+		await page.evaluate( () => $.ready() );
+		for( const name of [ "onscreen-keyboard", "pi-vision", "print-table", "keyboard", "pointer" ] ) {
+			await page.addScriptTag( { "url": "/build/plugins/" + name + "/" + name + ".js" } );
+		}
+		assert.equal( await page.evaluate( () => $.getPlugins().every( p => p.initialized ) ), true );
+	} finally { await page.close(); }
+} );

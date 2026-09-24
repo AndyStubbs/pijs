@@ -3,8 +3,7 @@
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_fs from "node:fs";
-import * as g_vm from "node:vm";
+import * as g_harness from "./vm-module-harness.js";
 
 function createHarness( hasImageConstructor = true ) {
 	const calls = [];
@@ -71,19 +70,9 @@ function createHarness( hasImageConstructor = true ) {
 	if( hasImageConstructor ) {
 		globals.HTMLImageElement = ImageSource;
 	}
-	const context = g_vm.createContext( globals );
-	for( const file of [ "context-state", "textures" ] ) {
-		const source = g_fs.readFileSync(
-			new URL( `../../src/renderer/${file}.js`, import.meta.url ), "utf8"
-		).replace( /^import .*;\r?\n/gm, "" ).replace( /export /g, "" );
-		g_vm.runInContext( source, context );
-		if( file === "context-state" ) {
-			context.g_contextState = {
-				"isContextUnavailable": context.isContextUnavailable,
-				"probeContextLoss": context.probeContextLoss
-			};
-		}
-	}
+	const context = g_harness.loadModule( "src/renderer/textures.js", globals, {
+		"contextState": true
+	} );
 	return {
 		"screen": screen, "calls": calls, "textures": context,
 		"image": new ImageSource(), "canvas": new CanvasSource(),

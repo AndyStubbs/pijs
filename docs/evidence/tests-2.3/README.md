@@ -14,10 +14,12 @@ This folder holds measurements and checks for the 2.3 test audit
 | `timings-before.json` | Stage times from two `npm test`-equivalent runs, per-file medians from three isolated runs (with test and skip counts), and per-capture visual times with one worker |
 | `flakes-before.json` | Repeat-run counts and every non-deterministic result |
 | `coverage-map-before.json` | One row per command (146) with the Node, browser, and visual tests that reference it; one row per 2.2 audit contract with its tests |
-| `break-checks.md` | Deliberate breaks in library source that confirm each proposed removal is still caught by a remaining test |
+| `break-checks.md` | Deliberate breaks in library source that confirm each proposed removal is still caught by a remaining test, and the checks repeated after the follow-ups |
+| `timings-after.json` | The same measurements after the accepted findings were applied (2026-09-24) |
+| `flakes-after.json` | Repeat-run counts after the follow-ups, the one visual failure, and a host audio problem seen during the work |
+| `coverage-map-after.json` | The command rows recomputed on the final tree, and each contract's tests in their new suites |
 
-After metrics are added as `timings-after.json` and `flakes-after.json` when the accepted
-findings are done.
+The after files measure `4f57582` plus the follow-up changes, on the same machine and browsers.
 
 ## Measurement notes
 
@@ -41,7 +43,7 @@ findings are done.
 
 ## Orphan baselines (TEST-001)
 
-These are the 74 PNGs in `test/tests/screenshots/` that no fixture produces, 527,161 bytes in
+These are the 74 PNGs in `test/tests/screenshots/` that no fixture produced, 527,161 bytes in
 total:
 
 arc_01, arc_02, arc_03, bezier_01, blend_01, canvas_01, circle_01, circle_02, circle_03, cls_01,
@@ -58,3 +60,5 @@ Most of their fixtures were removed by the October–November 2025 consolidation
 - `screen_comprehensive` became stale when its fixture was renamed `screen_comprehensive_01`.
 - `screen_nocontainer` never had a fixture. It is byte-identical to
   `screen_comprehensive_02.png`.
+
+The follow-ups removed all 74 (TEST-001).

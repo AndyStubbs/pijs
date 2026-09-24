@@ -4,84 +4,16 @@
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_fsPromises from "node:fs/promises";
-import * as g_path from "node:path";
-import * as g_esbuild from "esbuild";
-import * as g_playwright from "@playwright/test";
-import * as g_fs from "node:fs";
-import * as g_url from "node:url";
-const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
-const { test, before, after } = g_test;
+import * as g_harness from "./browser-source-harness.js";
+const { test } = g_test;
 const assert = g_assert;
-const fs = g_fsPromises;
-const path = g_path;
-const esbuild = g_esbuild;
-const { chromium } = g_playwright;
 
-const bundles = {};
-let browser;
-let keyboardBundle;
-
-before( async () => {
-	for( const [ name, entry ] of [ [ "full", "index-full.js" ], [ "lite", "index.js" ] ] ) {
-		const result = await esbuild.build( {
-			"entryPoints": [ path.join( DIRNAME, "../../src", entry ) ],
-			"bundle": true, "write": false, "format": "iife", "target": "es2020",
-			"define": { "__VERSION__": JSON.stringify( JSON.parse( g_fs.readFileSync( new URL( "../../package.json", import.meta.url ), "utf8" ) ).version ) },
-			"loader": { ".vert": "text", ".frag": "text" },
-			"plugins": [ {
-				"name": "test-font-data",
-				"setup": build => {
-					build.onLoad( { "filter": /\.webp$/ }, async args => {
-						const data = await fs.readFile( args.path );
-						const font = { "data": "data:image/webp;base64," + data.toString( "base64" ) };
-						return { "contents": "export default " + JSON.stringify( font ),
-							"loader": "js" };
-					} );
-				}
-			} ]
-		} );
-		bundles[ name ] = result.outputFiles[ 0 ].text;
-	}
-	const plugin = await esbuild.build( {
-		"entryPoints": [ path.join( DIRNAME, "../../plugins/keyboard/index.js" ) ],
-		"bundle": true, "write": false, "format": "iife", "target": "es2020"
-	} );
-	keyboardBundle = plugin.outputFiles[ 0 ].text;
-	browser = await chromium.launch( { "headless": true } );
+const { probe } = g_harness.useBrowserBundles( {
+	"litePlugins": [ "keyboard" ],
+	"timeout": 10000
 } );
 
-after( async () => { await browser?.close(); } );
-
-async function probe( bundle, fn, expectedErrors = [] ) {
-	const page = await browser.newPage();
-	const errors = [];
-	let timeout;
-	page.on( "pageerror", error => errors.push( error.message ) );
-	try {
-		await page.setContent( "<!doctype html><html><body></body></html>" );
-		await page.addScriptTag( { "content": bundles[ bundle ] } );
-		if( bundle === "lite" ) {
-			await page.addScriptTag( { "content": keyboardBundle } );
-		}
-		await page.evaluate( () => $.ready() );
-		const result = await Promise.race( [
-			page.evaluate( fn ),
-			new Promise( ( resolve, reject ) => {
-				timeout = setTimeout( () => reject( new Error( "Input scenario timed out" ) ), 10000 );
-			} )
-		] );
-		// Cross a task boundary to observe errors from all queued microtasks.
-		await page.evaluate( () => new Promise( resolve => setTimeout( resolve, 0 ) ) );
-		assert.deepEqual( errors, expectedErrors );
-		return result;
-	} finally {
-		clearTimeout( timeout );
-		await page.close();
-	}
-}
-
-for( const bundle of [ "full", "lite" ] ) {
+for( const bundle of g_harness.BUNDLES ) {
 	test( `SYS-003 ${bundle}: disposal before and after blinking releases resources`, async () => {
 		const result = await probe( bundle, async () => {
 			const intervals = new Map();
@@ -174,7 +106,8 @@ for( const bundle of [ "full", "lite" ] ) {
 			survivor.pset( 0, 0 );
 			const pixel = survivor.getPixel( 0, 0 );
 			return [ await pending, await replacement, calls, removedError, pixel.r ];
-		}, [ "expected disposal callback" ] ), [ null, "z", 1, "SCREEN_REMOVED", 255 ] );
+		}, undefined, { "errors": [ "expected disposal callback" ] } ),
+		[ null, "z", 1, "SCREEN_REMOVED", 255 ] );
 	} );
 
 	test( `SYS-003 ${bundle}: newest callback input supersedes an outer replacement`, async () => {
@@ -216,7 +149,9 @@ for( const bundle of [ "full", "lite" ] ) {
 			key( "a" );
 			key( "a", "keyup" );
 			return [ once, seen, prevented, released, $.inkey( "a" ) !== null ];
-		}, [ "expected key code callback", "expected any callback" ] ),
+		}, undefined, {
+			"errors": [ "expected key code callback", "expected any callback" ]
+		} ),
 		[ 1, [ "key", "a", "key", "a" ], true, true, true ] );
 	} );
 }

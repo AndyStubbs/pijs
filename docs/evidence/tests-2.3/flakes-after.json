@@ -1,0 +1,49 @@
+{
+	"revision": "4f57582 plus the uncommitted follow-up changes",
+	"date": "2026-09-24",
+	"platform": "Windows 11, Chromium 141, Firefox 142, WebKit 26 (Playwright 1.56.0)",
+	"runs": {
+		"nodeAndBrowserFiles": 5,
+		"nodeAndBrowserSources": "2 stage-timing runs and 3 per-file runs (each file alone); benchmark files 3 per-file runs plus 6 npm run test:benchmark runs",
+		"visualFixtures": 8,
+		"visualSources": "2 stage-timing runs, 1 single-worker run, --repeat-each=5"
+	},
+	"failures": [],
+	"visual": {
+		"full": {
+			"runs": 280,
+			"failed": 1,
+			"flaky": 0,
+			"failures": [
+				{
+					"fixture": "shaders_lifecycle.html",
+					"source": "repeat-each 5",
+					"error": "Error: Screenshot mismatch: 54.80% different",
+					"cause": "shaders_lifecycle's approved baseline is a mid-sequence capture; its timing is pinned to the old runner waits (waitUntil, renderWait) and still races under parallel repeats. Handed off with the fixture's 7 failing checks"
+				}
+			]
+		},
+		"lite": {
+			"runs": 160,
+			"failed": 0,
+			"flaky": 0
+		},
+		"plugins": {
+			"runs": 64,
+			"failed": 0,
+			"flaky": 0
+		}
+	},
+	"environment": [
+		{
+			"files": [
+				"test/unit/audio-stream-browser.test.js",
+				"test/unit/audio-recording-realtime-browser.test.js"
+			],
+			"engine": "firefox",
+			"observed": "During one npm test run, Firefox realtime audio failed: stream media events did not fire and recordings did not decode. The recording file hit the 120 s test limit. The same failures reproduced at 4f57582 in a clean worktree, where the recording file hung until it was killed, and they cleared on their own about 30 minutes later",
+			"cause": "Host audio state, not the test changes"
+		}
+	],
+	"notCovered": "Linux and macOS runs belong to the CI/CD exploration (UPGRADE-V2.3-PLAN.md Section 9)"
+}

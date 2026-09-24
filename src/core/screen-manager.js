@@ -257,7 +257,7 @@ export function getActiveScreen( fnName, isScreenOptional ) {
 	if( m_activeScreenData === null && !isScreenOptional ) {
 		const error = new Error(
 			fnName + ": You are attempting to call a method that requires a screen but there " +
-			"there is currently no active screen. Call $.screen() before calling any graphics " +
+			"is currently no active screen. Call $.screen() before calling any graphics " +
 			"commands."
 		);
 		error.code = "NO_ACTIVE_SCREEN";

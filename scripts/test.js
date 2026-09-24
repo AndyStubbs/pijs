@@ -8,9 +8,16 @@ import * as g_server from "../test/scripts/test-server.js";
 const ROOT = g_path.resolve( g_url.fileURLToPath( new URL( "..", import.meta.url ) ) );
 const PLAYWRIGHT = g_path.join( ROOT, "node_modules/playwright/cli.js" );
 
-/** Discover only immediate maintained files and assign every test exactly once. */
+// A hung wait fails and names its test instead of stalling the workflow. Node applies this limit
+// to each test file's run as a whole as well as to each test, so it leaves room for slow hosts.
+const TEST_TIMEOUT = 120000;
+
+/**
+ * Discover only immediate maintained files and assign every test exactly once. Tests of the
+ * benchmark harness form their own group, outside the correctness workflow.
+ */
 export function discoverTests( root = ROOT ) {
-	const groups = { "unit": [], "browser": [], "types": [] };
+	const groups = { "unit": [], "browser": [], "types": [], "benchmark": [] };
 	for( const directory of [ "test/unit", "test/scripts" ] ) {
 		for( const entry of g_fs.readdirSync( g_path.join( root, directory ), {
 			"withFileTypes": true
@@ -19,6 +26,8 @@ export function discoverTests( root = ROOT ) {
 			let group = "unit";
 			if( entry.name === "package-types-consumer.test.js" ) {
 				group = "types";
+			} else if( directory === "test/unit" && entry.name.startsWith( "benchmark" ) ) {
+				group = "benchmark";
 			} else if( entry.name.endsWith( "-browser.test.js" ) ) {
 				group = "browser";
 			}
@@ -77,8 +86,8 @@ export async function runStages( stages ) {
 /** Parse orchestration options; visual filters are forwarded as individual arguments. */
 export function parseOptions( args ) {
 	const [ command = "all", ...rest ] = args;
-	const commands = [ "all", "unit", "browser", "types", "visual", "patch",
-		"benchmark", "performance-ui", "metadata", "firefox" ];
+	const commands = [ "all", "unit", "browser", "types", "visual", "benchmark",
+		"performance-ui", "metadata", "firefox" ];
 	if( !commands.includes( command ) ) { throw new Error( `Unknown suite: ${command}` ); }
 	const modes = [];
 	const forwarded = [];
@@ -108,16 +117,18 @@ export async function main( args = process.argv.slice( 2 ) ) {
 	const add = ( name, run ) => stages.push( [ name, run ] );
 	const nodeTests = files => {
 		if( !files.length ) { throw new Error( "No maintained tests found for this stage." ); }
-		return runNode( [ "--test", "--test-concurrency=1", ...files ] );
+		return runNode( [
+			"--test", "--test-concurrency=1", `--test-timeout=${TEST_TIMEOUT}`, ...files
+		] );
 	};
 	const isList = command === "visual" && forwarded.includes( "--list" );
-	if( [ "all", "patch", "visual", "firefox" ].includes( command ) && !isList ) {
+	if( [ "all", "visual", "firefox" ].includes( command ) && !isList ) {
 		add( "Test artifact build", () => runNode( [ "scripts/build.js", "--test-only" ] ) );
 	}
-	if( [ "all", "patch", "unit" ].includes( command ) ) {
+	if( [ "all", "unit" ].includes( command ) ) {
 		add( "Node tests", () => nodeTests( groups.unit ) );
 	}
-	if( [ "all", "patch", "browser" ].includes( command ) ) {
+	if( [ "all", "browser" ].includes( command ) ) {
 		add( "Browser regressions", () => nodeTests( groups.browser ) );
 	}
 	if( [ "all", "types" ].includes( command ) ) {
@@ -129,9 +140,7 @@ export async function main( args = process.argv.slice( 2 ) ) {
 		} );
 	}
 	if( command === "benchmark" ) {
-		add( "Benchmark correctness", () => nodeTests(
-			[ ...groups.unit, ...groups.browser ].filter( file => /\/benchmark[^/]*\.test.js$/.test( file ) )
-		) );
+		add( "Benchmark correctness", () => nodeTests( groups.benchmark ) );
 	}
 	if( command === "performance-ui" ) {
 		add( "Performance UI", () => nodeTests(

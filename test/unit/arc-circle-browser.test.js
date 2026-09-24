@@ -1,96 +1,36 @@
 /**
  * SYS-015/SYS-016 WebGL regressions using fresh in-memory full and lite bundles.
- * Set PI_RASTER_VISUAL=true to also compare existing fixtures with approved PNG baselines.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_fsPromises from "node:fs/promises";
-import * as g_path from "node:path";
-import * as g_esbuild from "esbuild";
-import * as g_playwright from "@playwright/test";
-import * as g_pngjs from "pngjs";
-import * as g_toml from "@iarna/toml";
-import * as g_fs from "node:fs";
-import * as g_url from "node:url";
-const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
-const { test, before, after } = g_test;
+import * as g_harness from "./browser-source-harness.js";
+const { test } = g_test;
 const assert = g_assert;
-const fs = g_fsPromises;
-const path = g_path;
-const esbuild = g_esbuild;
-const { chromium } = g_playwright;
-const { PNG } = g_pngjs;
-const toml = g_toml;
 
-const root = path.join( DIRNAME, "../.." );
-const bundles = {};
-let browser;
-
-before( async () => {
-	for( const [ name, entry ] of [ [ "full", "index-full.js" ], [ "lite", "index.js" ] ] ) {
-		const result = await esbuild.build( {
-			"stdin": { "contents": `import "./${entry}";
-import * as manager from "./core/screen-manager.js";
-import * as renderer from "./renderer/renderer.js";
-window.rasterTest = { manager, renderer };`, "resolveDir": path.join( root, "src" ) },
-			"bundle": true, "write": false, "format": "iife", "target": "es2020",
-			"define": { "__VERSION__": JSON.stringify( JSON.parse( g_fs.readFileSync( new URL( "../../package.json", import.meta.url ), "utf8" ) ).version ) },
-			"loader": { ".vert": "text", ".frag": "text" },
-			"plugins": [ {
-				"name": "test-font-data",
-				"setup": build => {
-					build.onLoad( { "filter": /\.webp$/ }, async args => {
-						const data = await fs.readFile( args.path );
-						const font = { "data": "data:image/webp;base64," + data.toString( "base64" ) };
-						return { "contents": "export default " + JSON.stringify( font ),
-							"loader": "js" };
-					} );
-				}
-			} ]
-		} );
-		bundles[ name ] = result.outputFiles[ 0 ].text;
+const { probe } = g_harness.useBrowserBundles( {
+	"expose": "rasterTest",
+	"setup": () => {
+		window.inspect = screen => rasterTest.manager.getScreenData( "test", screen.id );
+		window.pixels = screen => {
+			const data = inspect( screen );
+			const result = rasterTest.renderer.readPixelsRaw(
+				data, 0, 0, data.width, data.height
+			);
+			if( data.gl.getError() !== data.gl.NO_ERROR ) {
+				throw new Error( "WebGL error after readback" );
+			}
+			return Array.from( result );
+		};
+		window.expectEqual = ( actual, expected ) => {
+			if( actual.length !== expected.length ||
+				actual.some( ( value, index ) => value !== expected[ index ] ) ) {
+				throw new Error( "Pixel buffers differ" );
+			}
+		};
 	}
-	browser = await chromium.launch( { "headless": true } );
 } );
 
-after( async () => { await browser?.close(); } );
-
-async function probe( bundle, fn ) {
-	const page = await browser.newPage();
-	const errors = [];
-	page.on( "pageerror", error => errors.push( error.message ) );
-	try {
-		await page.setContent( "<!doctype html><html><body></body></html>" );
-		await page.addScriptTag( { "content": bundles[ bundle ] } );
-		await page.evaluate( () => $.ready() );
-		await page.evaluate( () => {
-			window.inspect = screen => rasterTest.manager.getScreenData( "test", screen.id );
-			window.pixels = screen => {
-				const data = inspect( screen );
-				const result = rasterTest.renderer.readPixelsRaw(
-					data, 0, 0, data.width, data.height
-				);
-				if( data.gl.getError() !== data.gl.NO_ERROR ) {
-					throw new Error( "WebGL error after readback" );
-				}
-				return Array.from( result );
-			};
-			window.expectEqual = ( actual, expected ) => {
-				if( actual.length !== expected.length ||
-					actual.some( ( value, index ) => value !== expected[ index ] ) ) {
-					throw new Error( "Pixel buffers differ" );
-				}
-			};
-		} );
-		const result = await page.evaluate( fn );
-		assert.deepEqual( errors, [] );
-		return result;
-	} finally {
-		await page.close();
-	}
-}
-
-for( const bundle of [ "full", "lite" ] ) {
+for( const bundle of g_harness.BUNDLES ) {
 	test( `SYS-015 ${bundle}: full arcs match circles through public degree APIs`, async () => {
 		const count = await probe( bundle, () => {
 			const screen = $.screen( "48x48" );
@@ -121,67 +61,6 @@ for( const bundle of [ "full", "lite" ] ) {
 			return checked;
 		} );
 		assert.equal( count, 126 );
-	} );
-
-	test( `SYS-015 ${bundle}: equal angles and wrapped partial arcs`, async () => {
-		await probe( bundle, () => {
-			const screen = $.screen( "32x32" );
-			screen.setColor( "white" );
-			for( const start of [ 0, 45, -360 ] ) {
-				screen.arc( 16, 16, 10, start, start );
-				if( pixels( screen ).some( value => value !== 0 ) ) {
-					throw new Error( "Equal angles drew pixels" );
-				}
-			}
-			screen.arc( 16, 16, 10, -45, 45 );
-			const expected = pixels( screen );
-			screen.cls();
-			screen.arc( 16, 16, 10, 315, 45 );
-			expectEqual( pixels( screen ), expected );
-			screen.cls();
-			screen.circle( 16, 16, 10 );
-			const circle = pixels( screen );
-			for( const end of [ 360 - 0.00005 * 180 / Math.PI, -0.00005 * 180 / Math.PI ] ) {
-				screen.cls();
-				screen.arc( 16, 16, 10, 0, end );
-				expectEqual( pixels( screen ), circle );
-			}
-		} );
-	} );
-
-	test( `SYS-016 ${bundle}: translucent outlines contribute once per draw`, async () => {
-		await probe( bundle, () => {
-			const screen = $.screen( "48x48" );
-			screen.setColor( "rgba(255,0,0,0.5)" );
-			screen.setBlend( "alpha" );
-			for( const radius of [ 1, 2, 3, 4, 5, 10, 20 ] ) {
-				const drawFns = [
-					() => screen.circle( 24, 24, radius ),
-					() => screen.arc( 24, 24, radius, 0, 360 )
-				];
-				if( radius > 1 ) {
-					drawFns.push( () => screen.arc( 24, 24, radius, 0, 270 ) );
-				}
-				for( const draw of drawFns ) {
-					screen.cls();
-					draw();
-					const single = pixels( screen );
-					const alphas = single.filter( ( value, i ) => i % 4 === 3 && value );
-					if( alphas.length === 0 || alphas.some( value => value !== 128 ) ) {
-						throw new Error( `Uneven single-draw alpha at radius ${radius}` );
-					}
-					draw();
-					const double = pixels( screen );
-					for( let i = 3; i < double.length; i += 4 ) {
-						let expected = 0;
-						if( single[ i ] ) { expected = 192; }
-						if( double[ i ] !== expected ) {
-							throw new Error( `Incorrect repeated-draw alpha at radius ${radius}` );
-						}
-					}
-				}
-			}
-		} );
 	} );
 
 	test( `SYS-015/SYS-016 ${bundle}: translated clipping survives forced chunks`, async () => {
@@ -245,68 +124,4 @@ for( const bundle of [ "full", "lite" ] ) {
 		} );
 		assert.ok( draws > 4 );
 	} );
-}
-
-if( process.env.PI_RASTER_VISUAL === "true" ) {
-	for( const bundle of [ "full", "lite" ] ) {
-		for( const fixture of [ "graphics_comprehensive", "renderer_comprehensive" ] ) {
-			test( `SYS-015/SYS-016 ${bundle}: visual fixture ${fixture}`, async t => {
-				const html = await fs.readFile(
-					path.join( root, "test/tests/html-core", fixture + ".html" ), "utf8"
-				);
-				const metadata = toml.parse(
-					html.match( /\[\[TOML_START\]\]([\s\S]*?)\[\[TOML_END\]\]/ )[ 1 ]
-				);
-				const page = await browser.newPage( {
-					"viewport": { "width": metadata.width, "height": metadata.height }
-				} );
-				const errors = [];
-				page.on( "pageerror", error => errors.push( error.message ) );
-				try {
-					await page.route( "http://raster.test/**", async route => {
-						const url = new URL( route.request().url() );
-						if( url.pathname === "/build/pi.js" ) {
-							await route.fulfill( { "contentType": "text/javascript",
-								"body": bundles[ bundle ] } );
-							return;
-						}
-						const file = path.resolve( root, "." + decodeURIComponent( url.pathname ) );
-						assert.ok( file.startsWith( root + path.sep ) );
-						await route.fulfill( { "path": file } );
-					} );
-					await page.goto( `http://raster.test/test/tests/html-core/${fixture}.html`, {
-						"waitUntil": "networkidle"
-					} );
-					await page.evaluate( () => $.ready() );
-					await page.waitForTimeout( Math.max( metadata.delay || 0, 200 ) );
-					assert.deepEqual( errors, [] );
-					const actualBuffer = await page.screenshot();
-					const output = path.join( root, "test/tests/screenshots/new",
-						`${fixture}-raster-${bundle}.png` );
-					await fs.mkdir( path.dirname( output ), { "recursive": true } );
-					await fs.writeFile( output, actualBuffer );
-					const actual = PNG.sync.read( actualBuffer );
-					const expected = PNG.sync.read( await fs.readFile(
-						path.join( root, "test/tests/screenshots", fixture + ".png" )
-					) );
-					assert.equal( actual.width, expected.width );
-					assert.equal( actual.height, expected.height );
-					let different = 0;
-					for( let i = 0; i < actual.data.length; i += 4 ) {
-						let difference = 0;
-						for( let channel = 0; channel < 4; channel++ ) {
-							difference += Math.abs( actual.data[ i + channel ] -
-								expected.data[ i + channel ] );
-						}
-						if( difference > 6 ) { different++; }
-					}
-					t.diagnostic( `${different} changed pixels; review ${output}` );
-					assert.ok( different / ( actual.width * actual.height ) < 0.001,
-						"Visual baseline differs; review the saved image before approving changes" );
-				} finally {
-					await page.close();
-				}
-			} );
-		}
-	}
 }

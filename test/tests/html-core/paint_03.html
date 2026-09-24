@@ -27,7 +27,7 @@ $.ready( function () {
 	$.screen( "256x256" );
 	$.setColor( 15 );
 	$.setNoise( 35, 1 );
-	for( i = 0; i < 128; i++ ) {
+	for( let i = 0; i < 128; i++ ) {
 		color[ 1 ] = Math.max( color[ 1 ] - 2, 0 );
 		$.setColor( color );
 		$.rect( i, i, 255 - i * 2 + 1, 255 - i * 2 + 1 );

@@ -4,68 +4,13 @@
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_fsPromises from "node:fs/promises";
-import * as g_path from "node:path";
-import * as g_esbuild from "esbuild";
-import * as g_playwright from "@playwright/test";
-import * as g_fs from "node:fs";
-import * as g_url from "node:url";
-const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
-const { test, before, after } = g_test;
+import * as g_harness from "./browser-source-harness.js";
+const { test } = g_test;
 const assert = g_assert;
-const fs = g_fsPromises;
-const path = g_path;
-const esbuild = g_esbuild;
-const { chromium } = g_playwright;
 
-const bundles = {};
-let browser;
+const { probe } = g_harness.useBrowserBundles();
 
-before( async () => {
-	for( const [ name, entry ] of [ [ "full", "index-full.js" ], [ "lite", "index.js" ] ] ) {
-		const result = await esbuild.build( {
-			"entryPoints": [ path.join( DIRNAME, "../../src", entry ) ],
-			"bundle": true, "write": false, "format": "iife", "target": "es2020",
-			"define": { "__VERSION__": JSON.stringify( JSON.parse( g_fs.readFileSync( new URL( "../../package.json", import.meta.url ), "utf8" ) ).version ) },
-			"loader": { ".vert": "text", ".frag": "text" },
-			"plugins": [ {
-				"name": "test-font-data",
-				"setup": build => {
-					build.onLoad( { "filter": /\.webp$/ }, async args => {
-						const data = await fs.readFile( args.path );
-						const font = { "data": "data:image/webp;base64," + data.toString( "base64" ) };
-						return { "contents": "export default " + JSON.stringify( font ),
-							"loader": "js" };
-					} );
-				}
-			} ]
-		} );
-		bundles[ name ] = result.outputFiles[ 0 ].text;
-	}
-	browser = await chromium.launch( { "headless": true } );
-} );
-
-after( async () => { await browser?.close(); } );
-
-async function probe( bundle, fn ) {
-	const page = await browser.newPage();
-	const errors = [];
-	page.on( "pageerror", error => errors.push( error.message ) );
-	try {
-		await page.setContent( "<!doctype html><html><body></body></html>" );
-		await page.addScriptTag( { "content": bundles[ bundle ] } );
-		await page.evaluate( () => $.ready() );
-		const result = await page.evaluate( fn );
-		// Cross a task boundary to observe errors from all queued microtasks.
-		await page.evaluate( () => new Promise( resolve => setTimeout( resolve, 0 ) ) );
-		assert.deepEqual( errors, [] );
-		return result;
-	} finally {
-		await page.close();
-	}
-}
-
-for( const bundle of [ "full", "lite" ] ) {
+for( const bundle of g_harness.BUNDLES ) {
 	test( `SYS-005 ${bundle}: pending reads reject and surviving screens remain usable`, async () => {
 		assert.deepEqual( await probe( bundle, async () => {
 			const survivor = $.screen( "4x4" );
@@ -88,44 +33,6 @@ for( const bundle of [ "full", "lite" ] ) {
 			replacement.pset( 0, 0 );
 			return [ codes, pixel.r, ( await replacement.getPixelAsync( 0, 0 ) ).b ];
 		} ), [ Array( 4 ).fill( "SCREEN_REMOVED" ), 255, 255 ] );
-	} );
-
-	test( `SYS-005 ${bundle}: removal between readback and conversion rejects`, async () => {
-		assert.deepEqual( await probe( bundle, async () => {
-			const screen = $.screen( "2x2" );
-			const promises = [ screen.getPixelAsync( 0, 0, true ), screen.getAsync( 0, 0, 1, 1 ),
-				screen.getPixelAsync( 0, 0 ), screen.getAsync( 0, 0, 1, 1, 1, false ) ];
-			const settled = Promise.all( promises.map( promise => promise.then(
-				() => "unexpected resolution", error => error.code
-			) ) );
-			queueMicrotask( () => screen.removeScreen() );
-			return settled;
-		} ), Array( 4 ).fill( "SCREEN_REMOVED" ) );
-	} );
-
-	test( `SYS-005 ${bundle}: queued and reentrant filters cancel`, async () => {
-		assert.deepEqual( await probe( bundle, async () => {
-			const counts = [];
-			for( const timing of [ "immediate", "between", "callback" ] ) {
-				const screen = $.screen( "2x2" );
-				let count = 0;
-				screen.filterImg( () => {
-					count++;
-					if( timing === "callback" ) {
-						screen.removeScreen();
-					}
-					return true;
-				} );
-				if( timing === "immediate" ) {
-					screen.removeScreen();
-				} else if( timing === "between" ) {
-					queueMicrotask( () => screen.removeScreen() );
-				}
-				await new Promise( resolve => setTimeout( resolve, 0 ) );
-				counts.push( count );
-			}
-			return counts;
-		} ), [ 0, 0, 1 ] );
 	} );
 
 	test( `SYS-005 ${bundle}: live reads and filters preserve captured views and timing`, async () => {

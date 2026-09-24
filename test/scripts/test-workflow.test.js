@@ -27,6 +27,7 @@ g_test.test( "discovery assigns every maintained file once and excludes snapshot
 		g_fs.mkdirSync( g_path.join( root, directory ), { "recursive": true } );
 	}
 	for( const file of [ "test/unit/a.test.js", "test/unit/a-browser.test.js",
+		"test/unit/benchmark.test.js", "test/unit/benchmark-browser.test.js",
 		"test/scripts/package-types-consumer.test.js", "test/scripts/tool.test.js",
 		"test/performance/snapshot/test/unit/a.test.js" ] ) {
 		g_fs.writeFileSync( g_path.join( root, file ), "" );
@@ -34,7 +35,8 @@ g_test.test( "discovery assigns every maintained file once and excludes snapshot
 	g_assert.deepEqual( g_workflow.discoverTests( root ), {
 		"unit": [ "test/scripts/tool.test.js", "test/unit/a.test.js" ],
 		"browser": [ "test/unit/a-browser.test.js" ],
-		"types": [ "test/scripts/package-types-consumer.test.js" ]
+		"types": [ "test/scripts/package-types-consumer.test.js" ],
+		"benchmark": [ "test/unit/benchmark-browser.test.js", "test/unit/benchmark.test.js" ]
 	} );
 	const real = Object.values( g_workflow.discoverTests() ).flat();
 	const expected = [ "test/unit", "test/scripts" ].flatMap( directory =>

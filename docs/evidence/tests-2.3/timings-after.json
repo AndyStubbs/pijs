@@ -1,0 +1,1088 @@
+{
+	"revision": "4f57582 plus the uncommitted follow-up changes",
+	"date": "2026-09-24",
+	"environment": {
+		"os": "Windows 11 Home 10.0.26200",
+		"cpus": 16,
+		"node": "v22.19.0",
+		"playwright": "1.56.0",
+		"chromium": "141.0.7390.37",
+		"firefox": "142.0.1",
+		"webkit": "26.0",
+		"esbuild": "0.25.10"
+	},
+	"stages": {
+		"note": "Wall-clock ms per npm test stage, two consecutive runs (scratch measure.mjs mirrors scripts/test.js all)",
+		"runs": [
+			{
+				"build": 876,
+				"node": 7340,
+				"browser": 101580,
+				"metadataTypes": 6201,
+				"visualFull": 11957,
+				"visualLite": 4454,
+				"visualPlugins": 3267,
+				"total": 135675
+			},
+			{
+				"build": 957,
+				"node": 6999,
+				"browser": 99862,
+				"metadataTypes": 6250,
+				"visualFull": 12931,
+				"visualLite": 4052,
+				"visualPlugins": 3271,
+				"total": 134322
+			}
+		]
+	},
+	"npmTestCounts": {
+		"node": {
+			"files": 35,
+			"tests": 400
+		},
+		"browser": {
+			"files": 34,
+			"tests": 612,
+			"passed": 406,
+			"skipped": 206
+		},
+		"types": {
+			"files": 1,
+			"tests": 2
+		},
+		"visual": {
+			"full": 35,
+			"lite": 20,
+			"plugins": 8
+		}
+	},
+	"benchmarkCommand": {
+		"note": "Benchmark-harness files, run by npm run test:benchmark and not by npm test",
+		"files": 4,
+		"tests": 25
+	},
+	"perFile": {
+		"note": "Each file run alone with node --test, three runs; tests and skipped from the junit reporter",
+		"files": [
+			{
+				"group": "unit",
+				"file": "test/scripts/build.test.js",
+				"owner": "tooling",
+				"tests": 4,
+				"skipped": 0,
+				"medianMs": 145,
+				"minMs": 145,
+				"maxMs": 152
+			},
+			{
+				"group": "unit",
+				"file": "test/scripts/copy-to-release.test.js",
+				"owner": "tooling",
+				"tests": 24,
+				"skipped": 0,
+				"medianMs": 797,
+				"minMs": 793,
+				"maxMs": 822
+			},
+			{
+				"group": "unit",
+				"file": "test/scripts/generate-metadata.test.js",
+				"owner": "tooling",
+				"tests": 6,
+				"skipped": 0,
+				"medianMs": 123,
+				"minMs": 118,
+				"maxMs": 123
+			},
+			{
+				"group": "unit",
+				"file": "test/scripts/size.test.js",
+				"owner": "tooling",
+				"tests": 4,
+				"skipped": 0,
+				"medianMs": 225,
+				"minMs": 219,
+				"maxMs": 229
+			},
+			{
+				"group": "unit",
+				"file": "test/scripts/test-workflow.test.js",
+				"owner": "tooling",
+				"tests": 9,
+				"skipped": 0,
+				"medianMs": 1461,
+				"minMs": 1436,
+				"maxMs": 1508
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/alpha-conversion.test.js",
+				"owner": "core",
+				"tests": 3,
+				"skipped": 0,
+				"medianMs": 196,
+				"minMs": 196,
+				"maxMs": 206
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/arc-full-turn.test.js",
+				"owner": "core",
+				"tests": 4,
+				"skipped": 0,
+				"medianMs": 125,
+				"minMs": 121,
+				"maxMs": 127
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/audio-lifecycle.test.js",
+				"owner": "sound",
+				"tests": 21,
+				"skipped": 0,
+				"medianMs": 139,
+				"minMs": 137,
+				"maxMs": 140
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/audio-metrics.test.js",
+				"owner": "sound",
+				"tests": 10,
+				"skipped": 0,
+				"medianMs": 190,
+				"minMs": 190,
+				"maxMs": 200
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/batch-reservations.test.js",
+				"owner": "core",
+				"tests": 35,
+				"skipped": 0,
+				"medianMs": 619,
+				"minMs": 599,
+				"maxMs": 626
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/circle-outline.test.js",
+				"owner": "core",
+				"tests": 3,
+				"skipped": 0,
+				"medianMs": 153,
+				"minMs": 151,
+				"maxMs": 153
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/color-validation.test.js",
+				"owner": "core",
+				"tests": 17,
+				"skipped": 0,
+				"medianMs": 147,
+				"minMs": 147,
+				"maxMs": 153
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/font-publication.test.js",
+				"owner": "core",
+				"tests": 15,
+				"skipped": 0,
+				"medianMs": 137,
+				"minMs": 136,
+				"maxMs": 141
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/gamepad-validation.test.js",
+				"owner": "gamepad",
+				"tests": 18,
+				"skipped": 0,
+				"medianMs": 128,
+				"minMs": 124,
+				"maxMs": 129
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/image-lifecycle.test.js",
+				"owner": "core",
+				"tests": 16,
+				"skipped": 0,
+				"medianMs": 129,
+				"minMs": 128,
+				"maxMs": 130
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/keyboard-lifecycle.test.js",
+				"owner": "keyboard",
+				"tests": 20,
+				"skipped": 0,
+				"medianMs": 148,
+				"minMs": 144,
+				"maxMs": 156
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/numeric-boundaries.test.js",
+				"owner": "core",
+				"tests": 54,
+				"skipped": 0,
+				"medianMs": 235,
+				"minMs": 231,
+				"maxMs": 237
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/performance-calibration.test.js",
+				"owner": "tooling",
+				"tests": 3,
+				"skipped": 0,
+				"medianMs": 171,
+				"minMs": 168,
+				"maxMs": 181
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/performance-polygons.test.js",
+				"owner": "tooling",
+				"tests": 2,
+				"skipped": 0,
+				"medianMs": 128,
+				"minMs": 126,
+				"maxMs": 129
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/pixels.test.js",
+				"owner": "core",
+				"tests": 18,
+				"skipped": 0,
+				"medianMs": 183,
+				"minMs": 178,
+				"maxMs": 197
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/plugins.test.js",
+				"owner": "core",
+				"tests": 6,
+				"skipped": 0,
+				"medianMs": 114,
+				"minMs": 114,
+				"maxMs": 122
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/pointer-events.test.js",
+				"owner": "pointer",
+				"tests": 2,
+				"skipped": 0,
+				"medianMs": 110,
+				"minMs": 108,
+				"maxMs": 114
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/polygons.test.js",
+				"owner": "core",
+				"tests": 10,
+				"skipped": 0,
+				"medianMs": 122,
+				"minMs": 122,
+				"maxMs": 123
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/ready.test.js",
+				"owner": "core",
+				"tests": 5,
+				"skipped": 0,
+				"medianMs": 113,
+				"minMs": 112,
+				"maxMs": 117
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/shader-orientation-checks.test.js",
+				"owner": "core",
+				"tests": 2,
+				"skipped": 0,
+				"medianMs": 107,
+				"minMs": 106,
+				"maxMs": 110
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/sound-admission.test.js",
+				"owner": "sound",
+				"tests": 10,
+				"skipped": 0,
+				"medianMs": 115,
+				"minMs": 111,
+				"maxMs": 126
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/sound-advanced-generator.test.js",
+				"owner": "sound",
+				"tests": 9,
+				"skipped": 0,
+				"medianMs": 1222,
+				"minMs": 1217,
+				"maxMs": 1225
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/sound-advanced-wav.test.js",
+				"owner": "sound",
+				"tests": 5,
+				"skipped": 0,
+				"medianMs": 113,
+				"minMs": 110,
+				"maxMs": 119
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/sound-advanced.test.js",
+				"owner": "sound",
+				"tests": 9,
+				"skipped": 0,
+				"medianMs": 120,
+				"minMs": 119,
+				"maxMs": 121
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/sound-envelope.test.js",
+				"owner": "sound",
+				"tests": 8,
+				"skipped": 0,
+				"medianMs": 115,
+				"minMs": 114,
+				"maxMs": 117
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/sound-noise.test.js",
+				"owner": "sound",
+				"tests": 5,
+				"skipped": 0,
+				"medianMs": 466,
+				"minMs": 460,
+				"maxMs": 473
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/sound-play.test.js",
+				"owner": "sound",
+				"tests": 19,
+				"skipped": 0,
+				"medianMs": 122,
+				"minMs": 120,
+				"maxMs": 124
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/sound-samples.test.js",
+				"owner": "sound",
+				"tests": 9,
+				"skipped": 0,
+				"medianMs": 114,
+				"minMs": 111,
+				"maxMs": 117
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/sound-scheduler.test.js",
+				"owner": "sound",
+				"tests": 5,
+				"skipped": 0,
+				"medianMs": 113,
+				"minMs": 113,
+				"maxMs": 115
+			},
+			{
+				"group": "unit",
+				"file": "test/unit/static-texture-cache.test.js",
+				"owner": "core",
+				"tests": 10,
+				"skipped": 0,
+				"medianMs": 125,
+				"minMs": 116,
+				"maxMs": 125
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/alpha-composition-browser.test.js",
+				"owner": "core",
+				"tests": 15,
+				"skipped": 0,
+				"medianMs": 5676,
+				"minMs": 5558,
+				"maxMs": 5677
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/arc-circle-browser.test.js",
+				"owner": "core",
+				"tests": 4,
+				"skipped": 0,
+				"medianMs": 1370,
+				"minMs": 1366,
+				"maxMs": 1374
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-advanced-browser.test.js",
+				"owner": "sound",
+				"tests": 30,
+				"skipped": 19,
+				"medianMs": 2210,
+				"minMs": 2179,
+				"maxMs": 2232
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-bus-browser.test.js",
+				"owner": "sound",
+				"tests": 39,
+				"skipped": 17,
+				"medianMs": 3431,
+				"minMs": 3333,
+				"maxMs": 3439
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-effects-browser.test.js",
+				"owner": "sound",
+				"tests": 30,
+				"skipped": 12,
+				"medianMs": 3227,
+				"minMs": 3221,
+				"maxMs": 3243
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-lifecycle-browser.test.js",
+				"owner": "sound",
+				"tests": 36,
+				"skipped": 8,
+				"medianMs": 3669,
+				"minMs": 3658,
+				"maxMs": 3720
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-play-browser.test.js",
+				"owner": "sound",
+				"tests": 39,
+				"skipped": 26,
+				"medianMs": 2142,
+				"minMs": 2132,
+				"maxMs": 2150
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-recording-browser.test.js",
+				"owner": "sound",
+				"tests": 27,
+				"skipped": 9,
+				"medianMs": 3012,
+				"minMs": 2981,
+				"maxMs": 3049
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-recording-realtime-browser.test.js",
+				"owner": "sound",
+				"tests": 8,
+				"skipped": 0,
+				"medianMs": 5423,
+				"minMs": 5356,
+				"maxMs": 5433
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-reference-browser.test.js",
+				"owner": "sound",
+				"tests": 9,
+				"skipped": 3,
+				"medianMs": 2992,
+				"minMs": 2982,
+				"maxMs": 3020
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-render-browser.test.js",
+				"owner": "sound",
+				"tests": 21,
+				"skipped": 8,
+				"medianMs": 2742,
+				"minMs": 2740,
+				"maxMs": 2768
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-samples-browser.test.js",
+				"owner": "sound",
+				"tests": 45,
+				"skipped": 23,
+				"medianMs": 3035,
+				"minMs": 3009,
+				"maxMs": 3079
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-service-browser.test.js",
+				"owner": "sound",
+				"tests": 57,
+				"skipped": 31,
+				"medianMs": 2777,
+				"minMs": 2771,
+				"maxMs": 2791
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-sound-design-browser.test.js",
+				"owner": "sound",
+				"tests": 27,
+				"skipped": 10,
+				"medianMs": 3386,
+				"minMs": 3353,
+				"maxMs": 3399
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-stream-browser.test.js",
+				"owner": "sound",
+				"tests": 12,
+				"skipped": 0,
+				"medianMs": 8202,
+				"minMs": 8180,
+				"maxMs": 8210
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/audio-voices-browser.test.js",
+				"owner": "sound",
+				"tests": 75,
+				"skipped": 40,
+				"medianMs": 3053,
+				"minMs": 3046,
+				"maxMs": 3055
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/batch-reservations-browser.test.js",
+				"owner": "core",
+				"tests": 10,
+				"skipped": 0,
+				"medianMs": 7502,
+				"minMs": 7432,
+				"maxMs": 7523
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/color-validation-browser.test.js",
+				"owner": "core",
+				"tests": 4,
+				"skipped": 0,
+				"medianMs": 1157,
+				"minMs": 1155,
+				"maxMs": 1183
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/context-recovery-browser.test.js",
+				"owner": "core",
+				"tests": 24,
+				"skipped": 0,
+				"medianMs": 9717,
+				"minMs": 9675,
+				"maxMs": 9780
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/font-publication-browser.test.js",
+				"owner": "core",
+				"tests": 6,
+				"skipped": 0,
+				"medianMs": 2245,
+				"minMs": 2229,
+				"maxMs": 2261
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/gamepad-validation-browser.test.js",
+				"owner": "gamepad",
+				"tests": 4,
+				"skipped": 0,
+				"medianMs": 1062,
+				"minMs": 1052,
+				"maxMs": 1094
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/image-lifecycle-browser.test.js",
+				"owner": "core",
+				"tests": 10,
+				"skipped": 0,
+				"medianMs": 2365,
+				"minMs": 2348,
+				"maxMs": 2480
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/keyboard-lifecycle-browser.test.js",
+				"owner": "keyboard",
+				"tests": 10,
+				"skipped": 0,
+				"medianMs": 2379,
+				"minMs": 2368,
+				"maxMs": 2386
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/performance-report-browser.test.js",
+				"owner": "tooling",
+				"tests": 5,
+				"skipped": 0,
+				"medianMs": 1050,
+				"minMs": 1038,
+				"maxMs": 1076
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/pixel-disposal-browser.test.js",
+				"owner": "core",
+				"tests": 6,
+				"skipped": 0,
+				"medianMs": 1494,
+				"minMs": 1477,
+				"maxMs": 1499
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/plugin-docs-browser.test.js",
+				"owner": "core",
+				"tests": 3,
+				"skipped": 0,
+				"medianMs": 1996,
+				"minMs": 1939,
+				"maxMs": 2031
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/plugin-installation-browser.test.js",
+				"owner": "core",
+				"tests": 5,
+				"skipped": 0,
+				"medianMs": 1269,
+				"minMs": 1223,
+				"maxMs": 1283
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/pointer-browser.test.js",
+				"owner": "pointer",
+				"tests": 4,
+				"skipped": 0,
+				"medianMs": 1352,
+				"minMs": 1334,
+				"maxMs": 1362
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/polygons-bundles-browser.test.js",
+				"owner": "core",
+				"tests": 9,
+				"skipped": 0,
+				"medianMs": 1898,
+				"minMs": 1869,
+				"maxMs": 1931
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/screen-lifecycle-browser.test.js",
+				"owner": "core",
+				"tests": 20,
+				"skipped": 0,
+				"medianMs": 4470,
+				"minMs": 4324,
+				"maxMs": 4482
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/shader-samplers-browser.test.js",
+				"owner": "core",
+				"tests": 6,
+				"skipped": 0,
+				"medianMs": 1594,
+				"minMs": 1576,
+				"maxMs": 1615
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/sound-advanced-bundles-browser.test.js",
+				"owner": "sound",
+				"tests": 8,
+				"skipped": 0,
+				"medianMs": 1560,
+				"minMs": 1521,
+				"maxMs": 1574
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/source-routing-browser.test.js",
+				"owner": "core",
+				"tests": 1,
+				"skipped": 0,
+				"medianMs": 882,
+				"minMs": 882,
+				"maxMs": 899
+			},
+			{
+				"group": "browser",
+				"file": "test/unit/visual-report-browser.test.js",
+				"owner": "tooling",
+				"tests": 3,
+				"skipped": 0,
+				"medianMs": 1496,
+				"minMs": 1488,
+				"maxMs": 1528
+			},
+			{
+				"group": "types",
+				"file": "test/scripts/package-types-consumer.test.js",
+				"owner": "tooling",
+				"tests": 2,
+				"skipped": 0,
+				"medianMs": 6014,
+				"minMs": 6008,
+				"maxMs": 6014
+			},
+			{
+				"group": "benchmark",
+				"file": "test/unit/benchmark-browser.test.js",
+				"owner": "tooling",
+				"tests": 6,
+				"skipped": 0,
+				"medianMs": 13630,
+				"minMs": 13533,
+				"maxMs": 13652
+			},
+			{
+				"group": "benchmark",
+				"file": "test/unit/benchmark-diagnostics.test.js",
+				"owner": "tooling",
+				"tests": 4,
+				"skipped": 0,
+				"medianMs": 736,
+				"minMs": 687,
+				"maxMs": 746
+			},
+			{
+				"group": "benchmark",
+				"file": "test/unit/benchmark-readiness.test.js",
+				"owner": "tooling",
+				"tests": 8,
+				"skipped": 0,
+				"medianMs": 760,
+				"minMs": 759,
+				"maxMs": 761
+			},
+			{
+				"group": "benchmark",
+				"file": "test/unit/benchmark.test.js",
+				"owner": "tooling",
+				"tests": 7,
+				"skipped": 0,
+				"medianMs": 1066,
+				"minMs": 1044,
+				"maxMs": 1096
+			}
+		]
+	},
+	"visual": {
+		"full": {
+			"singleWorkerWallMs": 41606,
+			"sumMs": 39737,
+			"fixtures": [
+				{
+					"fixture": "onpress 01",
+					"ms": 6566
+				},
+				{
+					"fixture": "onpress 02",
+					"ms": 6126
+				},
+				{
+					"fixture": "ontouch 04",
+					"ms": 5391
+				},
+				{
+					"fixture": "onmouse 03",
+					"ms": 3223
+				},
+				{
+					"fixture": "keyboard commands",
+					"ms": 2925
+				},
+				{
+					"fixture": "view comprehensive",
+					"ms": 1577
+				},
+				{
+					"fixture": "inpress 01",
+					"ms": 1459
+				},
+				{
+					"fixture": "shaders lifecycle",
+					"ms": 1293
+				},
+				{
+					"fixture": "keyboard input",
+					"ms": 912
+				},
+				{
+					"fixture": "inmouse 01",
+					"ms": 899
+				},
+				{
+					"fixture": "Shader orientation 2.2",
+					"ms": 727
+				},
+				{
+					"fixture": "intouch 01",
+					"ms": 584
+				},
+				{
+					"fixture": "shaders comprehensive",
+					"ms": 577
+				},
+				{
+					"fixture": "Screen Comprehensive Test",
+					"ms": 559
+				},
+				{
+					"fixture": "paint 02",
+					"ms": 537
+				},
+				{
+					"fixture": "renderer comprehensive",
+					"ms": 471
+				},
+				{
+					"fixture": "Images Comprehensive Test",
+					"ms": 452
+				},
+				{
+					"fixture": "onmouse 02",
+					"ms": 428
+				},
+				{
+					"fixture": "print comprehensive",
+					"ms": 419
+				},
+				{
+					"fixture": "same-context screen composition",
+					"ms": 343
+				},
+				{
+					"fixture": "paint 03",
+					"ms": 327
+				},
+				{
+					"fixture": "setPos 01",
+					"ms": 326
+				},
+				{
+					"fixture": "parameters 01",
+					"ms": 321
+				},
+				{
+					"fixture": "paint 01",
+					"ms": 316
+				},
+				{
+					"fixture": "onclick 01",
+					"ms": 315
+				},
+				{
+					"fixture": "Colors Comprehensive",
+					"ms": 314
+				},
+				{
+					"fixture": "draw comprehensive",
+					"ms": 313
+				},
+				{
+					"fixture": "onmouse 01",
+					"ms": 306
+				},
+				{
+					"fixture": "layers 01",
+					"ms": 302
+				},
+				{
+					"fixture": "graphics comprehensive",
+					"ms": 289
+				},
+				{
+					"fixture": "Screen noCss 2.2",
+					"ms": 256
+				},
+				{
+					"fixture": "screen draw offscreen 01",
+					"ms": 255
+				},
+				{
+					"fixture": "set 01",
+					"ms": 248
+				},
+				{
+					"fixture": "ready 01",
+					"ms": 218
+				},
+				{
+					"fixture": "polygon 01",
+					"ms": 163
+				}
+			],
+			"repeatEach5WallMs": 33496,
+			"repeatEach5Runs": 175
+		},
+		"lite": {
+			"singleWorkerWallMs": 10325,
+			"sumMs": 8479,
+			"fixtures": [
+				{
+					"fixture": "shaders lifecycle",
+					"ms": 1294
+				},
+				{
+					"fixture": "Shader orientation 2.2",
+					"ms": 755
+				},
+				{
+					"fixture": "shaders comprehensive",
+					"ms": 579
+				},
+				{
+					"fixture": "Screen Comprehensive Test",
+					"ms": 573
+				},
+				{
+					"fixture": "paint 02",
+					"ms": 526
+				},
+				{
+					"fixture": "renderer comprehensive",
+					"ms": 471
+				},
+				{
+					"fixture": "Images Comprehensive Test",
+					"ms": 415
+				},
+				{
+					"fixture": "print comprehensive",
+					"ms": 409
+				},
+				{
+					"fixture": "setPos 01",
+					"ms": 331
+				},
+				{
+					"fixture": "draw comprehensive",
+					"ms": 327
+				},
+				{
+					"fixture": "paint 03",
+					"ms": 327
+				},
+				{
+					"fixture": "Colors Comprehensive",
+					"ms": 315
+				},
+				{
+					"fixture": "paint 01",
+					"ms": 311
+				},
+				{
+					"fixture": "parameters 01",
+					"ms": 294
+				},
+				{
+					"fixture": "graphics comprehensive",
+					"ms": 291
+				},
+				{
+					"fixture": "layers 01",
+					"ms": 286
+				},
+				{
+					"fixture": "Screen noCss 2.2",
+					"ms": 272
+				},
+				{
+					"fixture": "screen draw offscreen 01",
+					"ms": 255
+				},
+				{
+					"fixture": "set 01",
+					"ms": 230
+				},
+				{
+					"fixture": "ready 01",
+					"ms": 218
+				}
+			],
+			"repeatEach5WallMs": 15672,
+			"repeatEach5Runs": 100
+		},
+		"plugins": {
+			"singleWorkerWallMs": 5822,
+			"sumMs": 4089,
+			"fixtures": [
+				{
+					"fixture": "onscreen keyboard 01 - text keyboard clicks",
+					"ms": 757
+				},
+				{
+					"fixture": "Pi Vision Window Smoke Test",
+					"ms": 600
+				},
+				{
+					"fixture": "onscreen keyboard 02 - number keyboard touch",
+					"ms": 576
+				},
+				{
+					"fixture": "onscreen keyboard 04 - number input mixed",
+					"ms": 547
+				},
+				{
+					"fixture": "table 01",
+					"ms": 509
+				},
+				{
+					"fixture": "onscreen keyboard 03 - input with clicks",
+					"ms": 490
+				},
+				{
+					"fixture": "example 01",
+					"ms": 414
+				},
+				{
+					"fixture": "Pointer lifecycle 2.1.1",
+					"ms": 196
+				}
+			],
+			"repeatEach5WallMs": 13564,
+			"repeatEach5Runs": 40
+		}
+	}
+}

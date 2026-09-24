@@ -4,182 +4,52 @@
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_fsPromises from "node:fs/promises";
-import * as g_path from "node:path";
-import * as g_esbuild from "esbuild";
-import * as g_playwright from "@playwright/test";
-import * as g_fs from "node:fs";
-import * as g_url from "node:url";
-const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
-const { test, before, after } = g_test;
+import * as g_harness from "./browser-source-harness.js";
+const { test } = g_test;
 const assert = g_assert;
-const fs = g_fsPromises;
-const path = g_path;
-const esbuild = g_esbuild;
-const { chromium } = g_playwright;
 
-const bundles = {};
-let browser;
-
-before( async () => {
-	for( const [ name, entry ] of [ [ "full", "index-full.js" ], [ "lite", "index.js" ] ] ) {
-		const result = await esbuild.build( {
-			"stdin": { "contents": `import "./${entry}";
-import * as manager from "./core/screen-manager.js";
-import * as renderer from "./renderer/renderer.js";
-window.recoveryTest = { manager, renderer };`,
-				"resolveDir": path.join( DIRNAME, "../../src" ) },
-			"bundle": true, "write": false, "format": "iife", "target": "es2020",
-			"define": { "__VERSION__": JSON.stringify( JSON.parse( g_fs.readFileSync( new URL( "../../package.json", import.meta.url ), "utf8" ) ).version ) },
-			"loader": { ".vert": "text", ".frag": "text" },
-			"plugins": [ {
-				"name": "test-font-data",
-				"setup": build => {
-					build.onLoad( { "filter": /\.webp$/ }, async args => {
-						const data = await fs.readFile( args.path );
-						return { "contents": "export default " + JSON.stringify( {
-							"data": "data:image/webp;base64," + data.toString( "base64" )
-						} ), "loader": "js" };
-					} );
-				}
-			} ]
+const { probe } = g_harness.useBrowserBundles( {
+	"expose": "recoveryTest",
+	"setup": () => {
+		window.inspect = screen => recoveryTest.manager.getScreenData( "test", screen.id );
+		window.pixel = ( screen, x = 0, y = 0 ) => {
+			const color = screen.getPixel( x, y );
+			return [ color.r, color.g, color.b, color.a ];
+		};
+		window.contextEvent = ( gl, name ) => new Promise( ( resolve, reject ) => {
+			const timer = setTimeout( () => reject( new Error( name + " timeout" ) ), 10000 );
+			gl.canvas.addEventListener( name, () => {
+				clearTimeout( timer );
+				resolve();
+			}, { "once": true } );
 		} );
-		bundles[ name ] = result.outputFiles[ 0 ].text;
-	}
-	browser = await chromium.launch( { "headless": true } );
-} );
-
-after( async () => { await browser?.close(); } );
-
-async function probe( bundle, fn, arg ) {
-	const page = await browser.newPage();
-	const errors = [];
-	page.on( "pageerror", error => errors.push( error.message ) );
-	page.on( "console", message => {
-		if( message.text().includes( "INVALID_OPERATION" ) ) {
-			errors.push( message.text() );
-		}
-	} );
-	try {
-		await page.setContent( "<!doctype html><html><body></body></html>" );
-		await page.addScriptTag( { "content": bundles[ bundle ] } );
-		await page.evaluate( () => $.ready() );
-		await page.evaluate( () => {
-			window.inspect = screen => recoveryTest.manager.getScreenData( "test", screen.id );
-			window.pixel = ( screen, x = 0, y = 0 ) => {
-				const color = screen.getPixel( x, y );
-				return [ color.r, color.g, color.b, color.a ];
-			};
-			window.contextEvent = ( gl, name ) => new Promise( ( resolve, reject ) => {
-				const timer = setTimeout( () => reject( new Error( name + " timeout" ) ), 10000 );
-				gl.canvas.addEventListener( name, () => {
-					clearTimeout( timer );
-					resolve();
-				}, { "once": true } );
-			} );
-			window.lose = async gl => {
-				const extension = gl.getExtension( "WEBGL_lose_context" );
-				if( !extension ) { throw new Error( "WEBGL_lose_context unavailable" ); }
-				const lost = contextEvent( gl, "webglcontextlost" );
-				extension.loseContext();
-				await lost;
-				// Finish loss-event dispatch before requesting restoration.
-				await new Promise( resolve => setTimeout( resolve, 50 ) );
-				return async () => {
-					const restored = contextEvent( gl, "webglcontextrestored" );
-					extension.restoreContext();
-					await restored;
-				};
-			};
-		} );
-		const result = await page.evaluate( fn, arg );
-		await page.evaluate( () => new Promise( resolve => setTimeout( resolve, 0 ) ) );
-		assert.deepEqual( errors, [] );
-		return result;
-	} finally {
-		await page.close();
-	}
-}
-
-for( const bundle of [ "full", "lite" ] ) {
-	test( `P1 ${bundle}: warm static textures preserve state and recover after loss`, async () => {
-		assert.equal( await probe( bundle, async () => {
-			const screen = $.screen( "4x4" );
-			const data = inspect( screen );
-			const gl = data.gl;
-			const canvas = document.createElement( "canvas" );
-			canvas.width = 2;
-			canvas.height = 2;
-			const ctx = canvas.getContext( "2d" );
-			ctx.fillStyle = "red";
-			ctx.fillRect( 0, 0, 2, 2 );
-			const image = new Image();
-			image.src = canvas.toDataURL();
-			await image.decode();
-			screen.drawImage( image, 0, 0 );
-			if( pixel( screen )[ 0 ] !== 255 ) { throw new Error( "Cold upload failed" ); }
-			const renderer = recoveryTest.renderer;
-			const first = renderer.getWebGL2Texture( data, image );
-			const sentinel = gl.createTexture();
-			const read = gl.createFramebuffer();
-			const draw = gl.createFramebuffer();
-			gl.activeTexture( gl.TEXTURE3 );
-			gl.bindTexture( gl.TEXTURE_2D, sentinel );
-			gl.bindFramebuffer( gl.READ_FRAMEBUFFER, read );
-			gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, draw );
-			const calls = [];
-			const originals = {};
-			for( const name of [ "isContextLost", "getParameter", "activeTexture",
-				"bindTexture", "bindFramebuffer", "texImage2D" ] ) {
-				originals[ name ] = gl[ name ].bind( gl );
-				gl[ name ] = ( ...args ) => {
-					calls.push( name );
-					return originals[ name ]( ...args );
-				};
-			}
-			const cached = renderer.getWebGL2Texture( data, image );
-			for( const name of Object.keys( originals ) ) { gl[ name ] = originals[ name ]; }
-			if(
-				cached !== first || calls.join() !== "isContextLost" ||
-				gl.getParameter( gl.ACTIVE_TEXTURE ) !== gl.TEXTURE3 ||
-				gl.getParameter( gl.TEXTURE_BINDING_2D ) !== sentinel ||
-				gl.getParameter( gl.READ_FRAMEBUFFER_BINDING ) !== read ||
-				gl.getParameter( gl.DRAW_FRAMEBUFFER_BINDING ) !== draw
-			) {
-				throw new Error( "Warm lookup touched GL state" );
-			}
-			gl.bindFramebuffer( gl.READ_FRAMEBUFFER, null );
-			gl.bindFramebuffer( gl.DRAW_FRAMEBUFFER, null );
-			gl.bindTexture( gl.TEXTURE_2D, null );
-			gl.activeTexture( gl.TEXTURE0 );
-			gl.deleteTexture( sentinel );
-			gl.deleteFramebuffer( read );
-			gl.deleteFramebuffer( draw );
-
-			// Probe a warm cache while loss is pending, before the browser dispatches its event.
+		window.lose = async gl => {
 			const extension = gl.getExtension( "WEBGL_lose_context" );
 			if( !extension ) { throw new Error( "WEBGL_lose_context unavailable" ); }
 			const lost = contextEvent( gl, "webglcontextlost" );
 			extension.loseContext();
-			if( renderer.getWebGL2Texture( data, image ) !== null || !data.contextLost ) {
-				throw new Error( "Warm lookup returned a lost texture" );
-			}
 			await lost;
+			// Finish loss-event dispatch before requesting restoration.
 			await new Promise( resolve => setTimeout( resolve, 50 ) );
-			const restored = contextEvent( gl, "webglcontextrestored" );
-			extension.restoreContext();
-			await restored;
-			const second = renderer.getWebGL2Texture( data, image );
-			screen.drawImage( image, 0, 0 );
-			const color = pixel( screen );
-			if( second === first || color.join() !== "255,0,0,255" || gl.getError() !== 0 ) {
-				throw new Error( "Static image failed after restoration" );
-			}
-			screen.removeScreen();
-			return true;
-		} ), true );
-	} );
+			return async () => {
+				const restored = contextEvent( gl, "webglcontextrestored" );
+				extension.restoreContext();
+				await restored;
+			};
+		};
+	},
+	"console": message => message.text().includes( "INVALID_OPERATION" )
+} );
 
+// Operations whose forced flush detects context loss, and recovery allocation failures with
+// the call number that fails.
+const FLUSH_OPERATIONS = [ "pixel", "line", "reserved line", "put", "rectangle", "geometry",
+	"ellipse", "image", "sprite" ];
+const RECOVERY_FAILURES = [ [ "createFramebuffer", 3 ], [ "createTexture", 3 ],
+	[ "createBuffer", 13 ], [ "createVertexArray", 6 ], [ "createProgram", 6 ],
+	[ "createShader", 12 ] ];
+
+for( const bundle of g_harness.BUNDLES ) {
 	test( `SYS-008 ${bundle}: GPU boundaries detect loss before its event`, async () => {
 		assert.equal( await probe( bundle, async () => {
 			for( const operation of [ "pixel", "region", "clear", "shader", "resize", "image",
@@ -238,55 +108,62 @@ void main(){fragColor=texture(u_texture,v_texCoord);}` );
 		} ), [ 0, 1, 2, 0 ] );
 	} );
 
-	for( const operation of [ "pixel", "line", "reserved line", "put", "rectangle", "geometry",
-		"ellipse", "image", "sprite" ] ) {
-		test( `SYS-008 ${bundle}: ${operation} stops when its forced flush detects loss`, async () => {
-			assert.deepEqual( await probe( bundle, async operation => {
-				const screen = $.screen( "32x32" );
-				const data = inspect( screen ); const gl = data.gl;
-				const image = document.createElement( "canvas" ); image.width = 2; image.height = 2;
-				const renderer = recoveryTest.renderer;
-				const operations = {
-					"pixel": [ renderer.POINTS_BATCH, () => screen.pset( 0, 0 ) ],
-					"line": [ renderer.POINTS_BATCH, () => screen.line( 0, 0, 20, 20 ) ],
-					"reserved line": [ renderer.POINTS_BATCH, () => screen.line( 0, 0, 4, 2 ) ],
-					"put": [ renderer.POINTS_REPLACE_BATCH, () => screen.put( [ [ 4 ] ], 0, 0 ) ],
-					"rectangle": [ renderer.GEOMETRY_BATCH,
-						() => renderer.drawRectFilled( data, 0, 0, 8, 8, data.color ) ],
-					"geometry": [ renderer.GEOMETRY_BATCH,
-						() => renderer.drawCachedGeometry( data, 0, 8, 8, 8, data.color ) ],
-					"ellipse": [ renderer.GEOMETRY_BATCH,
-						() => renderer.drawEllipse( data, 8, 8, 6, 4, data.color ) ],
-					"image": [ renderer.IMAGE_BATCH, () => screen.drawImage( image, 0, 0 ) ],
-					"sprite": [ renderer.IMAGE_BATCH,
-						() => renderer.drawSprite( data, image, 0, 0, 2, 2, 0, 0, 2, 2, data.color ) ]
-				};
-				const [ type, draw ] = operations[ operation ];
-				const batch = data.batches[ type ];
-				batch.capacity = 6; batch.maxCapacity = 6; batch.minCapacity = 6;
-				renderer.prepareBatch( data, type, 6 ); batch.count = 6;
-				const extension = gl.getExtension( "WEBGL_lose_context" );
-				if( !extension ) { throw new Error( "WEBGL_lose_context unavailable" ); }
-				const lost = contextEvent( gl, "webglcontextlost" );
-				const nativeCheck = gl.isContextLost.bind( gl );
-				let probesBeforeLoss = 0;
-				if( operation === "image" || operation === "sprite" ) { probesBeforeLoss = 1; }
-				gl.isContextLost = () => {
-					if( probesBeforeLoss-- === 0 ) { extension.loseContext(); }
-					return nativeCheck();
-				};
-				draw(); gl.isContextLost = nativeCheck;
-				const stopped = data.contextLost && data.batchInfo.drawOrder.length === 0;
-				const count = batch.count;
-				await lost; await new Promise( resolve => setTimeout( resolve, 50 ) );
-				const restored = contextEvent( gl, "webglcontextrestored" );
-				extension.restoreContext(); await restored;
-				const blank = pixel( screen );
-				screen.setColor( "blue" ); screen.pset( 0, 0 );
-				return [ stopped, count, blank, pixel( screen ), gl.getError() ];
-			}, operation ), [ true, 6, [ 0, 0, 0, 0 ], [ 0, 0, 255, 255 ], 0 ] );
-		} );
-	}
+	test( `SYS-008 ${bundle}: every operation stops when its forced flush detects loss`,
+		async () => {
+			const results = await probe( bundle, async names => {
+				const results = [];
+				for( const operation of names ) {
+					const screen = $.screen( "32x32" );
+					const data = inspect( screen ); const gl = data.gl;
+					const image = document.createElement( "canvas" ); image.width = 2; image.height = 2;
+					const renderer = recoveryTest.renderer;
+					const operations = {
+						"pixel": [ renderer.POINTS_BATCH, () => screen.pset( 0, 0 ) ],
+						"line": [ renderer.POINTS_BATCH, () => screen.line( 0, 0, 20, 20 ) ],
+						"reserved line": [ renderer.POINTS_BATCH, () => screen.line( 0, 0, 4, 2 ) ],
+						"put": [ renderer.POINTS_REPLACE_BATCH, () => screen.put( [ [ 4 ] ], 0, 0 ) ],
+						"rectangle": [ renderer.GEOMETRY_BATCH,
+							() => renderer.drawRectFilled( data, 0, 0, 8, 8, data.color ) ],
+						"geometry": [ renderer.GEOMETRY_BATCH,
+							() => renderer.drawCachedGeometry( data, 0, 8, 8, 8, data.color ) ],
+						"ellipse": [ renderer.GEOMETRY_BATCH,
+							() => renderer.drawEllipse( data, 8, 8, 6, 4, data.color ) ],
+						"image": [ renderer.IMAGE_BATCH, () => screen.drawImage( image, 0, 0 ) ],
+						"sprite": [ renderer.IMAGE_BATCH,
+							() => renderer.drawSprite( data, image, 0, 0, 2, 2, 0, 0, 2, 2, data.color ) ]
+					};
+					const [ type, draw ] = operations[ operation ];
+					const batch = data.batches[ type ];
+					batch.capacity = 6; batch.maxCapacity = 6; batch.minCapacity = 6;
+					renderer.prepareBatch( data, type, 6 ); batch.count = 6;
+					const extension = gl.getExtension( "WEBGL_lose_context" );
+					if( !extension ) { throw new Error( "WEBGL_lose_context unavailable" ); }
+					const lost = contextEvent( gl, "webglcontextlost" );
+					const nativeCheck = gl.isContextLost.bind( gl );
+					let probesBeforeLoss = 0;
+					if( operation === "image" || operation === "sprite" ) { probesBeforeLoss = 1; }
+					gl.isContextLost = () => {
+						if( probesBeforeLoss-- === 0 ) { extension.loseContext(); }
+						return nativeCheck();
+					};
+					draw(); gl.isContextLost = nativeCheck;
+					const stopped = data.contextLost && data.batchInfo.drawOrder.length === 0;
+					const count = batch.count;
+					await lost; await new Promise( resolve => setTimeout( resolve, 50 ) );
+					const restored = contextEvent( gl, "webglcontextrestored" );
+					extension.restoreContext(); await restored;
+					const blank = pixel( screen );
+					screen.setColor( "blue" ); screen.pset( 0, 0 );
+					results.push( [ operation, stopped, count, blank, pixel( screen ),
+						gl.getError() ] );
+					screen.removeScreen();
+				}
+				return results;
+			}, FLUSH_OPERATIONS );
+			assert.deepEqual( results, FLUSH_OPERATIONS.map( operation => [ operation, true, 6,
+				[ 0, 0, 0, 0 ], [ 0, 0, 255, 255 ], 0 ] ) );
+		}
+	);
 
 	test( `SYS-008 ${bundle}: geometry, text, and blend modes match after recovery`, async () => {
 		assert.equal( await probe( bundle, async () => {
@@ -487,11 +364,10 @@ void main(){fragColor=mix(texture(u_texture,v_texCoord),texture(u_map,v_texCoord
 		} ), [ [ 255, 0, 0, 255 ], true, [ 128, 0, 128, 255 ], [ 160, 0, 96, 255 ], true, 0 ] );
 	} );
 
-	for( const failure of [ [ "createFramebuffer", 3 ], [ "createTexture", 3 ],
-		[ "createBuffer", 13 ], [ "createVertexArray", 6 ], [ "createProgram", 6 ],
-		[ "createShader", 12 ] ] ) {
-		test( `SYS-008 ${bundle}: recovery failure at ${failure[ 0 ]}`, async () => {
-			assert.deepEqual( await probe( bundle, async failure => {
+	test( `SYS-008 ${bundle}: recovery failure at every allocation kind`, async () => {
+		const results = await probe( bundle, async failures => {
+			const results = [];
+			for( const failure of failures ) {
 				const screen = $.screen( "4x4" );
 				const child = $.screen( { "aspect": "4x4", "isOffscreen": true, "parent": screen } );
 				const gl = inspect( screen ).gl;
@@ -510,12 +386,19 @@ void main(){fragColor=mix(texture(u_texture,v_texCoord),texture(u_map,v_texCoord
 				await restore(); Object.assign( gl, originals );
 				screen.pset( 0, 0 ); child.pset( 0, 0 );
 				const state = inspect( screen ).contextState;
-				return [ state.status, state.error.code, inspect( child ).contextLost,
+				results.push( [ failure[ 0 ], state.status, state.error.code,
+					inspect( child ).contextLost,
 					allocated.every( ( [ kind, resource ] ) => !gl[ "is" + kind ]( resource ) ),
-					pixel( screen ), gl.getError() ];
-			}, failure ), [ "failed", "WEBGL_CONTEXT_RESTORE_FAILED", true, true, [ 0, 0, 0, 0 ], 0 ] );
-		} );
-	}
+					pixel( screen ), gl.getError() ] );
+				child.removeScreen();
+				screen.removeScreen();
+			}
+			return results;
+		}, RECOVERY_FAILURES );
+		assert.deepEqual( results, RECOVERY_FAILURES.map( failure => [ failure[ 0 ], "failed",
+			"WEBGL_CONTEXT_RESTORE_FAILED", true, true, [ 0, 0, 0, 0 ], 0 ] ) );
+	} );
+
 	test( `SYS-008 ${bundle}: restores framebuffer and presentation resources`, async () => {
 		const result = await probe( bundle, async () => {
 			const screen = $.screen( "4x4" );

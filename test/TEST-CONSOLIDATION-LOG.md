@@ -318,3 +318,62 @@ Consider creating similar comprehensive tests for:
 4. **Input handling** - Consolidate keyboard, mouse, touch tests
 5. **Paint module** - Consolidate paint tests
 
+
+---
+
+## 2.3 Test Audit Follow-ups
+
+**Date**: September 24, 2026
+
+### Summary
+Applied all 28 findings of the 2.3 test audit (`docs/plans/TESTS-V2.3-AUDIT.md`). Redundant
+browser tests were removed or merged into their Node partners. Suites named after the 2.2 audit
+were split into subject suites. The benchmark-harness tests moved to `npm run test:benchmark`.
+The visual runner's fixed waits were replaced. Every removal names its covering tests in the
+audit, and each was checked with a deliberate break in `src/`.
+
+### Removed Test Files
+1. `test/unit/patch-lifecycle.test.js` - Split into `pixels.test.js`, `ready.test.js`,
+   `plugins.test.js` (renamed from `plugin-services.test.js`), and `pointer-events.test.js`
+2. `test/unit/patch-browser.test.js` - Split into `screen-lifecycle-browser.test.js`,
+   `shader-samplers-browser.test.js`, and `pointer-browser.test.js`, plus one test each in
+   `plugin-installation-browser.test.js` and `image-lifecycle.test.js`. Six redundant cases
+   were removed
+3. `test/unit/ownership-reentrancy-matrix.test.js` - Covered by the image, audio, pixel,
+   plugin, and ready suites
+4. `test/unit/ownership-reentrancy-browser.test.js` - The shared-context child test moved to
+   `screen-lifecycle-browser.test.js`; the rest is covered by subject suites
+5. `test/unit/numeric-boundaries-browser.test.js` - Its `rect` size cases moved to
+   `numeric-boundaries.test.js`
+
+### Removed Test Cases
+- `alpha-composition-browser`: composition through a shared context (4 cases)
+- `arc-circle-browser`: equal angles and wrapped arcs; translucent outlines (4 cases)
+- `color-validation-browser`: setter overloads (4 cases) and the index-key block
+- `context-recovery-browser`: warm static textures (2 cases); operation and recovery-failure
+  loops merged into one test per bundle
+- `font-publication-browser`: synchronous setup failures (4 cases); overload variants merged
+- `image-lifecycle-browser`: cancellation, failed reuse, throwing reentrant callbacks
+  (8 cases); loader variants merged
+- `batch-reservations-browser`: 10000 unique points (2 cases); Full HD paint and put merged;
+  clipped paint modes merged
+- `pixel-disposal-browser`: readback-to-conversion disposal and filter cancellation (4 cases)
+
+### Removed Fixtures and Baselines
+- `test/tests/html-plugins/polygon_01.html` - Duplicate of the core fixture; shares
+  `polygon_01.png`
+- `test/tests/html-core/errors_01.html`, `errors_02.html` and their PNGs - Now assertions in
+  `screen-lifecycle-browser.test.js`
+- 74 orphan baselines with no fixture, listed in `docs/evidence/tests-2.3/README.md`
+- `test/tests/html-manual/temp.html`, `pi-vision-01.html`
+
+### Renamed
+- `screen_overlaping.html` and `view_01.png` → `screen_draw_offscreen_01`
+
+### Test Results
+- **Before**: 421 Node, 695 browser (206 skipped), 68 visual captures, 119 baselines;
+  `npm test` about 174 s
+- **After**: 400 Node, 612 browser (206 skipped), 63 visual captures, 43 baselines;
+  `npm test` about 135 s
+- **Pass Rate**: 100%, apart from one timing race in `shaders_lifecycle` under repeated
+  parallel runs (see the audit, Section 11.2)

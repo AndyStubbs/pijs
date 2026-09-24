@@ -11,7 +11,7 @@ shell-specific environment assignments.
 | --- | --- |
 | `npm test` / `npm run test:all` | Fresh test build, Node tests, browser regressions, metadata/types, then all visual modes |
 | `npm run test:unit` | Immediate Node test files in the maintained unit and script-test directories |
-| `npm run test:browser` | Browser regression files, including benchmark-tool browser correctness |
+| `npm run test:browser` | Browser regression files (`*-browser.test.js`) |
 | `npm run test:types` | Fresh declarations, metadata validation, documentation parity, and package-consumer checks |
 | `npm run test:visual` | Fresh test build and full, lite, and plugin visual suites |
 | `npm run test:visual -- --mode=full` | Full-core visual fixtures |
@@ -20,15 +20,16 @@ shell-specific environment assignments.
 | `npm run test:grep -- "Circle"` | Full-core visuals matching a Playwright title expression |
 | `npm run test:lite:grep -- "Circle"` | Matching lite visuals |
 | `npm run test:plugins:grep -- "pointer"` | Matching plugin visuals |
-| `npm run test:patch` | Fresh test build, Node tests, and browser regressions |
-| `npm run test:benchmark` | Benchmark-tool correctness tests, without measurement campaigns |
+| `npm run test:benchmark` | Benchmark-harness tests (`test/unit/benchmark*.test.js`), without measurement campaigns; not part of `npm test` |
 | `npm run test:performance-ui` | Performance report browser tests |
 | `npm run test:metadata` | Metadata parser and formatting tests |
 | `npm run size` | Minified and gzipped bundle, plugin, and differential sizes in `build/size-report.json` |
 | `npm run sound:references` | Re-record the Pi.js 2.2 reference renders used by the sound lab |
 
 The complete workflow stops at the first failed stage. Node files run sequentially to limit competing
-browser and build processes. Visual workers remain configurable through Playwright arguments:
+browser and build processes. Each Node and browser test, and each test file as a whole, has a
+120-second limit, so a wait that never settles fails with the test's name instead of stalling the
+workflow. Visual workers remain configurable through Playwright arguments:
 
 ```sh
 npm run test:visual -- --mode=full --workers=4
@@ -37,6 +38,27 @@ npm run test:visual -- --list --reporter=list
 
 Discovery visits only maintained test locations. Benchmark campaigns and copied repositories are
 outside discovery. `--list` does not build artifacts or start a server.
+
+## Suite layout
+
+Suites are named for the subject they cover. Logic belongs in a Node test (`<subject>.test.js`)
+that loads the real source module into a `vm` context with stubbed imports; the browser partner
+(`<subject>-browser.test.js`) keeps only what needs a browser, such as WebGL output, DOM layout,
+real image decoding, and the public API wiring of the full and lite bundles. For example,
+`pixels.test.js` checks readback and filter lifetimes against stubs, and
+`pixel-disposal-browser.test.js` checks the same contracts through `removeScreen()` in a page.
+
+Shared helpers:
+
+| Helper | Provides |
+| --- | --- |
+| `test/unit/vm-module-harness.js` | `loadModule()` for Node tests, plus the pixel, ready-queue, and plugin-registry harnesses |
+| `test/unit/browser-source-harness.js` | Fresh in-memory bundles; `useBrowserBundles()` builds full and lite, launches Chromium, and returns a `probe()` that fails on unexpected page errors |
+| `test/unit/rasterization-harness.js` | Arc and circle point capture |
+| `test/unit/audio-*.js` | Audio engines, render harness, sample fixtures, metrics, and tolerances |
+
+Screen lifecycle, shader samplers, plugin installation, and pointer and keyboard behavior each
+have their own browser suite. Pointer and keyboard suites are owned by their plugin workstreams.
 
 ## Release browser coverage
 
@@ -182,7 +204,7 @@ Each visual mode (`full`, `lite`, `plugins`) has independent outputs:
 - `test/test-results/<mode>/screenshots/`, `logs/`, and `traces/`: diagnostic artifacts.
 - `test/playwright-report/<mode>/`: Playwright HTML report.
 
-Full mode contains 36 HTML fixtures, lite selects 22 of those, and plugins contains 9.
+Full mode contains 35 HTML fixtures, lite selects 20 of those, and plugins contains 8.
 Each selected fixture runs once by default. Playwright lists these as tests in one JavaScript
 runner file. Explicit `--repeat-each` repetitions are separate executions; retries are attempts
 within an execution. Copied runners under benchmark campaigns are excluded from discovery.
@@ -228,12 +250,18 @@ Put HTML fixtures in `test/tests/html-core/` or `test/tests/html-plugins/`. Incl
 
 Use `lite = true` only for core fixtures that work with the lite bundle. Initialize drawing through
 `$.ready()`. The optional `commands` string simulates input before capture; supported commands are
-documented at the top of `scripts/run-visual-tests.js`. `expectPageError` allowlists one intentional
-uncaught error by its exact message. Other uncaught page errors fail independently of pixels.
+documented at the top of `test/scripts/run-visual-tests.js`. `expectPageError` allowlists one
+intentional uncaught error by its exact message. Other uncaught page errors fail independently of
+pixels.
 
-The runner waits for fixture assertions (`window.patchResult`), the metadata delay, scripted input,
-and rendering before capture. Images must have identical dimensions. Pixels whose summed RGBA
-difference exceeds 6 count as different; fewer than 0.1% of pixels may differ.
+The runner loads the page, waits for `$.ready()` and for fixture assertions
+(`window.patchResult`), then the metadata delay, scripted input, and two animation frames before
+capture. `expectPatchResult` requires `patchResult` to resolve to that number.
+`waitUntil` (a Playwright load state) and `renderWait` (a fixed wait in milliseconds instead of the
+animation frames) are only for a fixture whose approved baseline depends on capture timing.
+
+Images must have identical dimensions. Pixels whose summed RGBA difference exceeds 6 count as
+different; fewer than 0.1% of pixels may differ.
 
 Run the focused visual command, inspect its candidate PNG, and explicitly approve it only if correct.
 Approved PNGs live in `test/tests/screenshots/`. Missing baselines require this review before the

@@ -61,3 +61,12 @@ These checks back each proposed removal in the 2.3 test audit
   `alpha-composition-browser.test.js:335`. The report names both as covering tests.
 - **Hangs:** under B6 and B7, a regression makes a browser test wait forever instead of fail.
   `scripts/test.js` sets no test timeout, so `npm test` would stop there (TEST-028).
+
+## Checks after the follow-ups
+
+These ran on the final tree, 2026-09-24, with the same method, restoring the source after each.
+
+| ID | Break | Tests that failed | Verdict |
+| --- | --- | --- | --- |
+| B13c | `src/api/graphics.js`: `rect` accepts a non-finite width | `numeric-boundaries.test.js` "COV-003 geometry rejects non-finite rect sizes and rect and line coordinates" | Safe; the browser file is deleted |
+| B18 | `src/api/images.js`: `finishImageLoad` leaves the load unsettled | `image-lifecycle.test.js` "SYS-010 duplicate terminal events cannot release another resource wait" (moved from `patch-browser.test.js:350`) and "synchronous callback errors do not roll back successful registration" | Safe |

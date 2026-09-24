@@ -3,41 +3,21 @@
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_fs from "node:fs";
-import * as g_path from "node:path";
-import * as g_vm from "node:vm";
-import * as g_url from "node:url";
-const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+import * as g_harness from "./vm-module-harness.js";
 const { test } = g_test;
 const assert = g_assert;
-const fs = g_fs;
-const path = g_path;
-const vm = g_vm;
 
 function loadModule( file, globals = {}, constants = [] ) {
-	const source = fs.readFileSync( path.join( DIRNAME, "../../src", file ), "utf8" )
-		.replace( /^import .*;\r?\n/gm, "" )
-		.replace( /^export \{.*\};\r?\n/gm, "" ).replace( /export /g, "" );
-	const context = vm.createContext( { "console": console, ...globals } );
-	vm.runInContext( fs.readFileSync(
-		path.join( DIRNAME, "../../src/renderer/context-state.js" ), "utf8"
-	).replace( /export /g, "" ), context );
-	context.g_contextState = {
-		"isContextUnavailable": context.isContextUnavailable,
-		"getContextGeneration": context.getContextGeneration,
-		"probeContextLoss": context.probeContextLoss
-	};
-	vm.runInContext( source, context, { "filename": file } );
-	for( const name of constants ) {
-		context[ name ] = vm.runInContext( name, context );
-	}
-	return context;
+	return g_harness.loadModule( "src/" + file, globals, {
+		"contextState": true, "expose": constants
+	} );
 }
 
 function createHarness( min = 8, max = 19 ) {
 	const batches = loadModule( "renderer/batches.js", {
 		"window": { "location": { "search": "" } }, "g_blends": { "BLEND_REPLACE": 0 }
-	}, [ "POINTS_BATCH", "GEOMETRY_BATCH", "POINTS_REPLACE_BATCH" ] );
+	}, [ "POINTS_BATCH", "GEOMETRY_BATCH", "POINTS_REPLACE_BATCH", "DEFAULT_POINT_BATCH_SIZE",
+		"MAX_POINT_BATCH_SIZE" ] );
 	const helpers = loadModule( "renderer/draw/batch-helpers.js", { "g_batches": batches } );
 	const emitted = [];
 	const submissions = [];
@@ -271,6 +251,15 @@ test( "SYS-007 zero, exact capacity, growth and exact maximum reservations", () 
 	batches.prepareBatch( screen, 0, 11 );
 	assert.equal( batch.capacity, 19 );
 	assert.equal( screen.batchInfo.drawOrder.length, 1 );
+
+	// Point batches start at their default size and double, so 10000 points need 15000.
+	const sized = createHarness( batches.DEFAULT_POINT_BATCH_SIZE, batches.MAX_POINT_BATCH_SIZE );
+	const points = sized.screen.batches[ sized.batches.POINTS_BATCH ];
+	points.count = 7500;
+	sized.batches.prepareBatch( sized.screen, sized.batches.POINTS_BATCH, 1 );
+	points.count = 10000;
+	sized.batches.prepareBatch( sized.screen, sized.batches.POINTS_BATCH, 1 );
+	assert.equal( points.capacity, 15000 );
 } );
 
 test( "SYS-007 invalid reservations leave queued work, origins and textures untouched", () => {

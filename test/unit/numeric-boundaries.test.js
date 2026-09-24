@@ -3,22 +3,15 @@
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_fs from "node:fs";
-import * as g_path from "node:path";
-import * as g_vm from "node:vm";
-import * as g_url from "node:url";
-const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+import * as g_harness from "./vm-module-harness.js";
 const { test } = g_test;
 const assert = g_assert;
-const fs = g_fs;
-const path = g_path;
-const vm = g_vm;
 
 const nonFinite = [ NaN, Infinity, -Infinity, null, undefined, "x", {} ];
 const outOfRangeTolerance = [ -0.01, 1.01, -1, 2 ];
 
 function loadUtils() {
-	const context = vm.createContext( {
+	return g_harness.loadModule( "src/core/utils.js", {
 		"document": {
 			"createElement": () => ( {
 				"getContext": () => ( {
@@ -33,32 +26,13 @@ function loadUtils() {
 				"height": 1
 			} )
 		}
-	} );
-	vm.runInContext(
-		fs.readFileSync( path.join( DIRNAME, "../../src/core/utils.js" ), "utf8" )
-			.replace( /export const /g, "var " )
-			.replace( /export function /g, "function " )
-			.replace( /export /g, "" ),
-		context,
-		{ "filename": "core/utils.js" }
-	);
-	return context;
+	}, { "exposeConsts": true } );
 }
 
 function loadModule( file, globals = {} ) {
-	const source = fs.readFileSync( path.join( DIRNAME, "../../src", file ), "utf8" )
-		.replace( /^import .*;\r?\n/gm, "" )
-		.replace( /^export \{.*\};\r?\n/gm, "" )
-		.replace( /export const /g, "var " )
-		.replace( /export function /g, "function " )
-		.replace( /export /g, "" );
-	const context = vm.createContext( {
-		"console": console,
-		"structuredClone": structuredClone,
-		...globals
-	} );
-	vm.runInContext( source, context, { "filename": file } );
-	return context;
+	return g_harness.loadModule( "src/" + file, {
+		"structuredClone": structuredClone, ...globals
+	}, { "exposeConsts": true } );
 }
 
 function createViewHarness() {
@@ -423,7 +397,7 @@ for( const value of [ NaN, "90", null, undefined, {}, [] ] ) {
 	} );
 }
 
-test( "COV-003 geometry rejects non-finite rect and line coordinates", () => {
+test( "COV-003 geometry rejects non-finite rect sizes and rect and line coordinates", () => {
 	const h = createGeometryHarness();
 	for( const value of [ NaN, Infinity, -Infinity ] ) {
 		assert.throws(
@@ -436,6 +410,16 @@ test( "COV-003 geometry rejects non-finite rect and line coordinates", () => {
 		);
 		assert.throws(
 			() => h.api.pset( value, 1 ),
+			{ "name": "TypeError", "code": "INVALID_PARAMETER" }
+		);
+	}
+	for( const value of [ NaN, Infinity, -Infinity, null, undefined ] ) {
+		assert.throws(
+			() => h.api.rect( 0, 0, value, 4 ),
+			{ "name": "TypeError", "code": "INVALID_PARAMETER" }
+		);
+		assert.throws(
+			() => h.api.rect( 0, 0, 4, value ),
 			{ "name": "TypeError", "code": "INVALID_PARAMETER" }
 		);
 	}

@@ -9,7 +9,9 @@
 			lite = true
 			width = 640
 			height = 520
+			waitUntil = "networkidle"
 			delay = 250
+			renderWait = 100
 			expectPageError = "expected automatic presentation failure"
 			[[TOML_END]]
 		</script>
@@ -117,7 +119,8 @@ uniform sampler2D u_texture;
 uniform sampler2D u_aux;
 out vec4 fragColor;
 void main() {
-	fragColor = texture(u_aux, v_texCoord);
+	// Reference u_texture so compilers keep the uniform that custom shaders must declare.
+	fragColor = texture(u_texture, v_texCoord) * 0.0 + texture(u_aux, v_texCoord);
 }`.trim();
 
 	const expandedSrc = `

@@ -18,7 +18,7 @@ const { spawnSync } = g_cp;
 const fs = g_fs;
 const os = g_os;
 const path = g_path;
-const test = g_test.test;
+const { test, before, after } = g_test;
 const { generateMetadata } = g_generateMetadata;
 
 const ROOT = path.join( DIRNAME, "..", ".." );
@@ -323,60 +323,55 @@ function runTsc( consumersDir, fileName ) {
 	};
 }
 
+// Both tests compile consumers of one generated package.
+let fixture;
+before( () => { fixture = createConsumerPackage(); } );
+after( () => { fixture?.cleanup(); } );
+
 test( "positive package consumers typecheck against published declarations", () => {
-	const fixture = createConsumerPackage();
-	try {
-		for( const fileName of [
-			"control.mts", "valid-runtime.mts", "valid-lite.mts", "valid-plugins.mts",
-			"valid-sound-advanced.mts"
-		] ) {
-			const result = runTsc( fixture.consumersDir, fileName );
-			assert.equal(
-				result.status,
-				0,
-				`${fileName} should typecheck:\n${result.stdout}${result.stderr}`
-			);
-		}
-	} finally {
-		fixture.cleanup();
+	for( const fileName of [
+		"control.mts", "valid-runtime.mts", "valid-lite.mts", "valid-plugins.mts",
+		"valid-sound-advanced.mts"
+	] ) {
+		const result = runTsc( fixture.consumersDir, fileName );
+		assert.equal(
+			result.status,
+			0,
+			`${fileName} should typecheck:\n${result.stdout}${result.stderr}`
+		);
 	}
 } );
 
 test( "negative package consumers are rejected by published declarations", () => {
-	const fixture = createConsumerPackage();
-	try {
-		const falsePositive = runTsc( fixture.consumersDir, "false-positive.mts" );
-		assert.notEqual( falsePositive.status, 0, "false-positive.mts should fail tsc" );
-		const output = `${falsePositive.stdout}${falsePositive.stderr}`;
-		assert.match( output, /Pi/, "should reject named Pi export" );
-		assert.match( output, /inmouse/, "should reject lite.inmouse()" );
-		assert.match( output, /screen/, "should reject plugin.screen()" );
+	const falsePositive = runTsc( fixture.consumersDir, "false-positive.mts" );
+	assert.notEqual( falsePositive.status, 0, "false-positive.mts should fail tsc" );
+	const output = `${falsePositive.stdout}${falsePositive.stderr}`;
+	assert.match( output, /Pi/, "should reject named Pi export" );
+	assert.match( output, /inmouse/, "should reject lite.inmouse()" );
+	assert.match( output, /screen/, "should reject plugin.screen()" );
 
-		const liteNamed = runTsc( fixture.consumersDir, "false-positive-lite-named.mts" );
-		assert.notEqual(
-			liteNamed.status,
-			0,
-			"false-positive-lite-named.mts should fail tsc"
-		);
-		assert.match(
-			`${liteNamed.stdout}${liteNamed.stderr}`,
-			/Pi/,
-			"should reject named Pi export from lite"
-		);
+	const liteNamed = runTsc( fixture.consumersDir, "false-positive-lite-named.mts" );
+	assert.notEqual(
+		liteNamed.status,
+		0,
+		"false-positive-lite-named.mts should fail tsc"
+	);
+	assert.match(
+		`${liteNamed.stdout}${liteNamed.stderr}`,
+		/Pi/,
+		"should reject named Pi export from lite"
+	);
 
-		// sound-advanced commands exist only when the plugin's declarations are imported
-		const withoutPlugin = runTsc( fixture.consumersDir, "false-positive-sound-advanced.mts" );
-		assert.notEqual(
-			withoutPlugin.status,
-			0,
-			"false-positive-sound-advanced.mts should fail tsc"
-		);
-		assert.match(
-			`${withoutPlugin.stdout}${withoutPlugin.stderr}`,
-			/synth/,
-			"should reject synth() without the sound-advanced plugin"
-		);
-	} finally {
-		fixture.cleanup();
-	}
+	// sound-advanced commands exist only when the plugin's declarations are imported
+	const withoutPlugin = runTsc( fixture.consumersDir, "false-positive-sound-advanced.mts" );
+	assert.notEqual(
+		withoutPlugin.status,
+		0,
+		"false-positive-sound-advanced.mts should fail tsc"
+	);
+	assert.match(
+		`${withoutPlugin.stdout}${withoutPlugin.stderr}`,
+		/synth/,
+		"should reject synth() without the sound-advanced plugin"
+	);
 } );

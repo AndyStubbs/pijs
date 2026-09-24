@@ -3,15 +3,10 @@
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_fs from "node:fs";
-import * as g_path from "node:path";
 import * as g_vm from "node:vm";
-import * as g_url from "node:url";
-const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+import * as g_harness from "./vm-module-harness.js";
 const { test } = g_test;
 const assert = g_assert;
-const fs = g_fs;
-const path = g_path;
 const vm = g_vm;
 
 function harness() {
@@ -47,12 +42,7 @@ function harness() {
 		"document": {}, "$": api
 	};
 	function load( file, extra = {} ) {
-		const source = fs.readFileSync( path.join( DIRNAME, "../..", file ), "utf8" )
-			.replace( /^import .*;\r?\n/gm, "" ).replace( /export default /g, "" )
-			.replace( /export /g, "" );
-		const context = vm.createContext( { ...globals, ...extra } );
-		vm.runInContext( source, context, { "filename": file } );
-		return context;
+		return g_harness.loadModule( file, { ...globals, ...extra } );
 	}
 	const input = load( "plugins/keyboard/input.js" );
 	const keyboard = load( "plugins/keyboard/index.js", {

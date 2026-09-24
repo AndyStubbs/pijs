@@ -148,7 +148,10 @@ function parseTOML( content ) {
 		"height": 200,
 		"delay": 0,
 		"commands": null,
-		"expectPageError": null
+		"expectPageError": null,
+		"expectPatchResult": null,
+		"waitUntil": "load",
+		"renderWait": null
 	};
 
 	// Simple TOML parser for our needs
@@ -195,7 +198,9 @@ function parseTOML( content ) {
 			}
 
 			// Convert numbers
-			if( key === "width" || key === "height" || key === "delay" ) {
+			if( key === "width" || key === "height" || key === "delay" ||
+				key === "expectPatchResult" || key === "renderWait"
+			) {
 				value = parseInt( value );
 			}
 
@@ -770,21 +775,33 @@ test.describe( config.description, () => {
 					"height": metadata.height
 				} );
 
-				// Navigate to test
+				// Navigate to test, then wait for Pi.js to release the page's resource waits.
+				// A fixture that captures mid-sequence can name the load state it was approved at.
 				await page.goto( testFile.url, {
-					"waitUntil": "networkidle",
+					"waitUntil": metadata.waitUntil,
 					"timeout": 30000
 				} );
+				await page.evaluate( () => window.$?.ready() );
 
 				// Assertion fixtures signal completion explicitly, independent of device speed.
-				await page.evaluate( async () => {
-					if( window.patchResult && typeof window.patchResult.then === "function" ) {
-						const result = await window.patchResult;
-						if( result === false ) {
-							throw new Error( "Fixture assertions failed." );
+				// expectPatchResult names the count of checks the fixture must report.
+				await page.evaluate( async expected => {
+					const isPending = window.patchResult &&
+						typeof window.patchResult.then === "function";
+					if( !isPending ) {
+						if( expected !== null ) {
+							throw new Error( "Fixture has no patchResult to compare." );
 						}
+						return;
 					}
-				} );
+					const result = await window.patchResult;
+					if( result === false ) {
+						throw new Error( "Fixture assertions failed." );
+					}
+					if( expected !== null && result !== expected ) {
+						throw new Error( `Fixture reported ${result}; expected ${expected}.` );
+					}
+				}, metadata.expectPatchResult );
 
 				if( TEST_LITE && liteBundleRequests === 0 ) {
 					throw new Error(
@@ -803,8 +820,15 @@ test.describe( config.description, () => {
 					await executeCommands( page, metadata.commands );
 				}
 
-				// Wait for render
-				await page.waitForTimeout( 100 );
+				// Let queued drawing reach the canvas: one frame to render, one to present. A
+				// fixture whose baseline depends on capture timing can name a fixed wait instead.
+				if( metadata.renderWait !== null ) {
+					await page.waitForTimeout( metadata.renderWait );
+				} else {
+					await page.evaluate( () => new Promise( resolve => {
+						requestAnimationFrame( () => requestAnimationFrame( resolve ) );
+					} ) );
+				}
 
 				// Fail on unexpected uncaught page errors independently of pixels
 				const expectedPageError = metadata.expectPageError;

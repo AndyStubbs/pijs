@@ -1,132 +1,71 @@
 /**
  * SYS-007 WebGL regressions using fresh in-memory full and lite bundles.
- * Set PI_BATCH_VISUAL=true to also compare existing fixtures with approved PNG baselines.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_fsPromises from "node:fs/promises";
-import * as g_path from "node:path";
-import * as g_esbuild from "esbuild";
-import * as g_playwright from "@playwright/test";
-import * as g_pngjs from "pngjs";
-import * as g_toml from "@iarna/toml";
-import * as g_fs from "node:fs";
-import * as g_url from "node:url";
-const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
-const { test, before, after } = g_test;
+import * as g_harness from "./browser-source-harness.js";
+const { test } = g_test;
 const assert = g_assert;
-const fs = g_fsPromises;
-const path = g_path;
-const esbuild = g_esbuild;
-const { chromium } = g_playwright;
-const { PNG } = g_pngjs;
-const toml = g_toml;
 
-const root = path.join( DIRNAME, "../.." );
-const bundles = {};
-let browser;
-
-before( async () => {
-	for( const [ name, entry ] of [ [ "full", "index-full.js" ], [ "lite", "index.js" ] ] ) {
-		const result = await esbuild.build( {
-			"stdin": { "contents": `import "./${entry}";
-import * as manager from "./core/screen-manager.js";
-import * as renderer from "./renderer/renderer.js";
-window.batchTest = { manager, renderer };`, "resolveDir": path.join( root, "src" ) },
-			"bundle": true, "write": false, "format": "iife", "target": "es2020",
-			"define": { "__VERSION__": JSON.stringify( JSON.parse( g_fs.readFileSync( new URL( "../../package.json", import.meta.url ), "utf8" ) ).version ) },
-			"loader": { ".vert": "text", ".frag": "text" },
-			"plugins": [ {
-				"name": "test-font-data",
-				"setup": build => {
-					build.onLoad( { "filter": /\.webp$/ }, async args => {
-						const data = await fs.readFile( args.path );
-						const font = { "data": "data:image/webp;base64," + data.toString( "base64" ) };
-						return { "contents": "export default " + JSON.stringify( font ),
-							"loader": "js" };
-					} );
+const { probe } = g_harness.useBrowserBundles( {
+	"expose": "batchTest",
+	"setup": () => {
+		window.inspect = screen => batchTest.manager.getScreenData( "test", screen.id );
+		window.rawPixels = screen => {
+			const data = inspect( screen );
+			const pixels = batchTest.renderer.readPixelsRaw( data, 0, 0, data.width, data.height );
+			if( data.gl.getError() !== data.gl.NO_ERROR ) {
+				throw new Error( "WebGL error after readback" );
+			}
+			return pixels;
+		};
+		window.checkSolid = ( pixels, rgba ) => {
+			for( let i = 0; i < pixels.length; i++ ) {
+				if( pixels[ i ] !== rgba[ i % 4 ] ) {
+					throw new Error( `Unexpected channel ${i}: ${pixels[ i ]}` );
 				}
-			} ]
-		} );
-		bundles[ name ] = result.outputFiles[ 0 ].text;
-	}
-	browser = await chromium.launch( { "headless": true } );
-} );
-
-after( async () => { await browser?.close(); } );
-
-async function probe( bundle, fn, arg ) {
-	const page = await browser.newPage();
-	const errors = [];
-	page.on( "pageerror", error => errors.push( error.message ) );
-	try {
-		await page.setContent( "<!doctype html><html><body></body></html>" );
-		await page.addScriptTag( { "content": bundles[ bundle ] } );
-		await page.evaluate( () => $.ready() );
-		await page.evaluate( () => {
-			window.inspect = screen => batchTest.manager.getScreenData( "test", screen.id );
-			window.rawPixels = screen => {
-				const data = inspect( screen );
-				const pixels = batchTest.renderer.readPixelsRaw( data, 0, 0, data.width, data.height );
-				if( data.gl.getError() !== data.gl.NO_ERROR ) {
-					throw new Error( "WebGL error after readback" );
-				}
-				return pixels;
-			};
-			window.checkSolid = ( pixels, rgba ) => {
-				for( let i = 0; i < pixels.length; i++ ) {
-					if( pixels[ i ] !== rgba[ i % 4 ] ) {
-						throw new Error( `Unexpected channel ${i}: ${pixels[ i ]}` );
-					}
-				}
-			};
-			window.track = screen => {
-				const data = inspect( screen );
-				const gl = data.gl;
-				const drawArrays = gl.drawArrays.bind( gl );
-				const stats = { "pointDraws": 0, "points": 0, "maxPoints": 0 };
-				gl.drawArrays = ( mode, start, count ) => {
-					for( const batch of Object.values( data.batches ) ) {
-						if( batch.type === batchTest.renderer.SHADER_BATCH ) { continue; }
-						if( batch.count > batch.capacity || batch.capacity > batch.maxCapacity ) {
-							throw new Error( "Batch exceeded capacity" );
-						}
-					}
-					if( mode === gl.POINTS ) {
-						stats.pointDraws++;
-						stats.points += count;
-						stats.maxPoints = Math.max( stats.maxPoints, count );
-					}
-					drawArrays( mode, start, count );
-				};
-				return stats;
-			};
-			window.reduceLimits = screen => {
-				const data = inspect( screen );
+			}
+		};
+		window.track = screen => {
+			const data = inspect( screen );
+			const gl = data.gl;
+			const drawArrays = gl.drawArrays.bind( gl );
+			const stats = { "pointDraws": 0, "points": 0, "maxPoints": 0 };
+			gl.drawArrays = ( mode, start, count ) => {
 				for( const batch of Object.values( data.batches ) ) {
 					if( batch.type === batchTest.renderer.SHADER_BATCH ) { continue; }
-					batch.minCapacity = 8;
-					batch.capacity = 8;
-					batch.maxCapacity = 19;
-					batch.vertices = new Float32Array( 8 * batch.vertexComps );
-					batch.colors = new Uint8Array( 8 * batch.colorComps );
-					if( batch.useTexture ) {
-						batch.texCoords = new Float32Array( 8 * batch.texCoordComps );
+					if( batch.count > batch.capacity || batch.capacity > batch.maxCapacity ) {
+						throw new Error( "Batch exceeded capacity" );
 					}
-					batch.capacityChanged = true;
 				}
+				if( mode === gl.POINTS ) {
+					stats.pointDraws++;
+					stats.points += count;
+					stats.maxPoints = Math.max( stats.maxPoints, count );
+				}
+				drawArrays( mode, start, count );
 			};
-		} );
-		const result = await page.evaluate( fn, arg );
-		await page.evaluate( () => new Promise( resolve => setTimeout( resolve, 0 ) ) );
-		assert.deepEqual( errors, [] );
-		return result;
-	} finally {
-		await page.close();
+			return stats;
+		};
+		window.reduceLimits = screen => {
+			const data = inspect( screen );
+			for( const batch of Object.values( data.batches ) ) {
+				if( batch.type === batchTest.renderer.SHADER_BATCH ) { continue; }
+				batch.minCapacity = 8;
+				batch.capacity = 8;
+				batch.maxCapacity = 19;
+				batch.vertices = new Float32Array( 8 * batch.vertexComps );
+				batch.colors = new Uint8Array( 8 * batch.colorComps );
+				if( batch.useTexture ) {
+					batch.texCoords = new Float32Array( 8 * batch.texCoordComps );
+				}
+				batch.capacityChanged = true;
+			}
+		};
 	}
-}
+} );
 
-for( const bundle of [ "full", "lite" ] ) {
+for( const bundle of g_harness.BUNDLES ) {
 	test( `P2 ${bundle}: reserved and chunked lines match individual pixels in mixed views`,
 		async () => {
 			const results = await probe( bundle, () => {
@@ -194,40 +133,39 @@ for( const bundle of [ "full", "lite" ] ) {
 		}
 	);
 
-	test( `SYS-007 ${bundle}: Full HD paint fills every pixel within batch limits`, async t => {
-		const result = await probe( bundle, () => {
-			const screen = $.screen( "1920x1080" );
-			const stats = track( screen );
-			const start = performance.now();
-			screen.paint( 0, 0, "red" );
-			checkSolid( rawPixels( screen ), [ 255, 0, 0, 255 ] );
-			return { ...stats, "ms": Math.round( performance.now() - start ) };
-		} );
-		assert.equal( result.points, 1920 * 1080 );
-		assert.ok( result.pointDraws >= 2 );
-		assert.ok( result.maxPoints <= 1920000 );
-		t.diagnostic( `Full HD paint and complete readback: ${result.ms} ms` );
-	} );
+	test( `SYS-007 ${bundle}: Full HD paint and put fill every pixel within batch limits`,
+		async t => {
+			const result = await probe( bundle, () => {
+				const painted = $.screen( "1920x1080" );
+				const paint = track( painted );
+				const start = performance.now();
+				painted.paint( 0, 0, "red" );
+				checkSolid( rawPixels( painted ), [ 255, 0, 0, 255 ] );
+				const ms = Math.round( performance.now() - start );
+				painted.removeScreen();
 
-	test( `SYS-007 ${bundle}: Full HD put replaces opaque and transparent pixels`, async () => {
-		const result = await probe( bundle, () => {
-			const screen = $.screen( "1920x1080" );
-			const stats = track( screen );
-			screen.setPal( [ "#FF0000" ] );
-			const rows = Array( 1080 ).fill( Array( 1920 ).fill( 1 ) );
-			screen.put( rows, 0, 0 );
-			checkSolid( rawPixels( screen ), [ 255, 0, 0, 255 ] );
-			rows.fill( Array( 1920 ).fill( 0 ) );
-			screen.put( rows, 0, 0 );
-			checkSolid( rawPixels( screen ), [ 255, 0, 0, 255 ] );
-			screen.put( rows, 0, 0, true );
-			checkSolid( rawPixels( screen ), [ 0, 0, 0, 0 ] );
-			return stats;
+				// Put replaces opaque pixels, skips transparent ones, and replaces them on request.
+				const screen = $.screen( "1920x1080" );
+				const put = track( screen );
+				screen.setPal( [ "#FF0000" ] );
+				const rows = Array( 1080 ).fill( Array( 1920 ).fill( 1 ) );
+				screen.put( rows, 0, 0 );
+				checkSolid( rawPixels( screen ), [ 255, 0, 0, 255 ] );
+				rows.fill( Array( 1920 ).fill( 0 ) );
+				screen.put( rows, 0, 0 );
+				checkSolid( rawPixels( screen ), [ 255, 0, 0, 255 ] );
+				screen.put( rows, 0, 0, true );
+				checkSolid( rawPixels( screen ), [ 0, 0, 0, 0 ] );
+				return { "paint": paint, "put": put, "ms": ms };
+			} );
+			assert.equal( result.paint.points, 1920 * 1080 );
+			assert.ok( result.paint.pointDraws >= 2 );
+			assert.ok( result.paint.maxPoints <= 1920000 );
+			assert.equal( result.put.points, 2 * 1920 * 1080 );
+			assert.ok( result.put.pointDraws >= 4 );
+			assert.ok( result.put.maxPoints <= 1920000 );
+			t.diagnostic( `Full HD paint and complete readback: ${result.ms} ms` );
 		} );
-		assert.equal( result.points, 2 * 1920 * 1080 );
-		assert.ok( result.pointDraws >= 4 );
-		assert.ok( result.maxPoints <= 1920000 );
-	} );
 
 	test( `SYS-007 ${bundle}: oversized arc completes and drawing continues`, async () => {
 		const result = await probe( bundle, () => {
@@ -245,22 +183,10 @@ for( const bundle of [ "full", "lite" ] ) {
 		assert.ok( result.maxPoints <= 1920000 );
 	} );
 
-	test( `SYS-007 ${bundle}: 10000 unique points survive buffer growth`, async () => {
-		assert.equal( await probe( bundle, () => {
-			const screen = $.screen( "100x100" );
-			screen.setColor( "red" );
-			for( let y = 0; y < 100; y++ ) {
-				for( let x = 0; x < 100; x++ ) { screen.pset( x, y ); }
-			}
-			const capacity = inspect( screen ).batches[ 0 ].capacity;
-			checkSolid( rawPixels( screen ), [ 255, 0, 0, 255 ] );
-			return capacity;
-		} ), 15000 );
-	} );
-
-	for( const mode of [ "exact", "tolerance", "boundary" ] ) {
-		test( `SYS-007 ${bundle}: clipped ${mode} paint matches across forced flushes`, async () => {
-			const result = await probe( bundle, mode => {
+	test( `SYS-007 ${bundle}: clipped paint modes match across forced flushes`, async () => {
+		const byMode = await probe( bundle, modes => {
+			const byMode = [];
+			for( const mode of modes ) {
 				const results = [];
 				for( const reduced of [ false, true ] ) {
 					const screen = $.screen( "48x32" );
@@ -281,20 +207,24 @@ for( const bundle of [ "full", "lite" ] ) {
 					screen.resetView();
 					const inside = screen.getPixel( 9, 8 );
 					if( inside.r !== 128 || inside.b !== 127 || inside.a !== 255 ) {
-						throw new Error( "Paint did not alpha-blend the seed pixel exactly once" );
+						throw new Error( mode + ": paint did not alpha-blend the seed pixel exactly once" );
 					}
 					const outside = screen.getPixel( 0, 0 );
 					if( outside.r !== 0 || outside.b !== 255 ) {
-						throw new Error( "Paint escaped the view" );
+						throw new Error( mode + ": paint escaped the view" );
 					}
 					results.push( Array.from( rawPixels( screen ) ) );
 					screen.removeScreen();
 				}
-				return results;
-			}, mode );
-			assert.deepEqual( result[ 1 ], result[ 0 ] );
-		} );
-	}
+				byMode.push( results );
+			}
+			return byMode;
+		}, [ "exact", "tolerance", "boundary" ] );
+		assert.equal( byMode.length, 3 );
+		for( const results of byMode ) {
+			assert.deepEqual( results[ 1 ], results[ 0 ] );
+		}
+	} );
 
 	test( `SYS-007 ${bundle}: mixed geometry, points, replacement and textures retain order`,
 		async () => {
@@ -335,97 +265,4 @@ for( const bundle of [ "full", "lite" ] ) {
 			assert.deepEqual( result[ 1 ], result[ 0 ] );
 		}
 	);
-}
-
-if( process.env.PI_BATCH_VISUAL === "true" ) {
-	for( const bundle of [ "full", "lite" ] ) {
-		for( const fixture of [ "paint_01", "paint_02", "paint_03", "graphics_comprehensive",
-			"renderer_comprehensive", "view_comprehensive" ] ) {
-			test( `SYS-007 ${bundle}: existing visual fixture ${fixture}`, async t => {
-				const html = await fs.readFile(
-					path.join( root, "test/tests/html-core", fixture + ".html" ), "utf8"
-				);
-				const metadata = toml.parse(
-					html.match( /\[\[TOML_START\]\]([\s\S]*?)\[\[TOML_END\]\]/ )[ 1 ]
-				);
-				if( bundle === "lite" && metadata.lite !== true ) {
-					t.skip( "Fixture requires full-bundle plugins" );
-					return;
-				}
-				const page = await browser.newPage( {
-					"viewport": { "width": metadata.width, "height": metadata.height }
-				} );
-				const errors = [];
-				page.on( "pageerror", error => errors.push( error.message ) );
-				try {
-					await page.route( "http://batch.test/**", async route => {
-						const url = new URL( route.request().url() );
-						if( url.pathname === "/build/pi.js" ) {
-							await route.fulfill( { "contentType": "text/javascript",
-								"body": bundles[ bundle ] } );
-							return;
-						}
-						const file = path.resolve( root, "." + decodeURIComponent( url.pathname ) );
-						assert.ok( file.startsWith( root + path.sep ) );
-						await route.fulfill( { "path": file } );
-					} );
-					await page.goto( `http://batch.test/test/tests/html-core/${fixture}.html`, {
-						"waitUntil": "networkidle"
-					} );
-					await page.evaluate( async () => {
-						await $.ready();
-						if( window.patchResult ) { await window.patchResult; }
-					} );
-					await page.waitForTimeout( Math.max( metadata.delay || 0, 200 ) );
-					for( const line of ( metadata.commands || "" ).trim().split( "\n" ) ) {
-						const command = line.trim().slice( 0, 2 );
-						const value = line.trim().slice( 2 ).trim();
-						if( command === "DL" ) {
-							await page.waitForTimeout( Number( value ) );
-						} else if( command === "SL" ) {
-							await page.focus( JSON.parse( value ) );
-						} else if( command === "MV" ) {
-							const [ x, y ] = value.split( "," ).map( Number );
-							await page.mouse.move( x, y );
-						} else if( command === "MD" ) {
-							await page.mouse.down();
-						} else if( command === "MU" ) {
-							await page.mouse.up();
-						} else {
-							assert.equal( command, "", "Unsupported fixture command" );
-						}
-					}
-					await page.waitForTimeout( 100 );
-					assert.deepEqual( errors, [] );
-					const actualBuffer = await page.screenshot();
-					const actual = PNG.sync.read( actualBuffer );
-					const expected = PNG.sync.read( await fs.readFile(
-						path.join( root, "test/tests/screenshots", fixture + ".png" )
-					) );
-					assert.equal( actual.width, expected.width );
-					assert.equal( actual.height, expected.height );
-					let different = 0;
-					for( let i = 0; i < actual.data.length; i += 4 ) {
-
-						// Match the existing visual runner's per-pixel channel tolerance.
-						let difference = 0;
-						for( let channel = 0; channel < 4; channel++ ) {
-							difference += Math.abs( actual.data[ i + channel ] -
-								expected.data[ i + channel ] );
-						}
-						if( difference > 6 ) {
-							different++;
-						}
-					}
-					if( different / ( actual.width * actual.height ) >= 0.001 ) {
-						const output = path.join( root, "test/tests/screenshots/new",
-							`${fixture}-sys007-${bundle}.png` );
-						await fs.mkdir( path.dirname( output ), { "recursive": true } );
-						await fs.writeFile( output, actualBuffer );
-						assert.fail( `${different} pixels differ; inspect ${output}` );
-					}
-				} finally { await page.close(); }
-			} );
-		}
-	}
 }

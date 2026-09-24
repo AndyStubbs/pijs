@@ -1,11 +1,32 @@
 /** Asymmetric source and independent pass assertions shared by browser and visual tests. */
+
+// Corner colors of the asymmetric source: top-left, top-right, bottom-left, bottom-right.
+const PATCH_SHADER_CORNERS = [ [ 255, 0, 0 ], [ 0, 255, 0 ], [ 0, 0, 255 ], [ 255, 255, 0 ] ];
+
+/**
+ * Throw unless an RGBA pixel is opaque and matches the expected corner color.
+ *
+ * @param {ArrayLike<number>} pixel - RGBA values.
+ * @param {number} corner - Index into PATCH_SHADER_CORNERS.
+ * @param {string} label - Pass name used in the error message.
+ */
+window.checkPatchShaderPixel = function( pixel, corner, label ) {
+
+	// Allow small video conversion / privacy readback differences, not flipped corners.
+	const tolerance = 3;
+	if( PATCH_SHADER_CORNERS[ corner ].some( ( value, i ) =>
+		Math.abs( value - pixel[ i ] ) > tolerance
+	) || pixel[ 3 ] !== 255 ) {
+		throw new Error( label + ": corner " + corner + " is " + pixel );
+	}
+};
+
 window.runPatchShaderChecks = async function() {
 	await $.ready();
 	const source = document.createElement( "canvas" );
 	source.width = source.height = 8;
 	const context = source.getContext( "2d" );
 	const colors = [ "#ff0000", "#00ff00", "#0000ff", "#ffff00" ];
-	const expected = [ [ 255, 0, 0 ], [ 0, 255, 0 ], [ 0, 0, 255 ], [ 255, 255, 0 ] ];
 	const points = [ [ 1, 1 ], [ 6, 1 ], [ 1, 6 ], [ 6, 6 ] ];
 	colors.forEach( ( color, index ) => {
 		context.fillStyle = color;
@@ -43,20 +64,10 @@ void main() {
 }` );
 	let checked = 0;
 	const results = [];
-	function checkPixel( pixel, corner, label ) {
-
-		// Allow small video conversion / privacy readback differences, not flipped corners.
-		const tolerance = 3;
-		if( expected[ corner ].some( ( value, i ) =>
-			Math.abs( value - pixel[ i ] ) > tolerance
-		) || pixel[ 3 ] !== 255 ) {
-			throw new Error( label + ": corner " + corner + " is " + pixel );
-		}
-	}
 	function check( screen, label ) {
 		points.forEach( ( point, index ) => {
 			const pixel = screen.getPixel( ...point );
-			checkPixel( pixel.array, index, label );
+			checkPatchShaderPixel( pixel.array, index, label );
 		} );
 		checked++;
 	}
@@ -109,7 +120,7 @@ void main() {
 					ctx.drawImage( dest.canvas(), 0, 0, 8, 8 );
 					points.forEach( ( point, corner ) => {
 						const pixel = ctx.getImageData( ...point, 1, 1 ).data;
-						checkPixel( pixel, corner, "display " + index );
+						checkPatchShaderPixel( pixel, corner, "display " + index );
 					} );
 					results.push( ctx.getImageData( 0, 0, 8, 8 ) );
 				}

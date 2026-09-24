@@ -22,7 +22,6 @@
 		"test:plugins:grep": "node scripts/test.js visual --mode=plugins --grep",
 		"test:metadata": "node scripts/test.js metadata",
 		"test:performance-ui": "node scripts/test.js performance-ui",
-		"test:patch": "node scripts/test.js patch",
 		"test:types": "node scripts/test.js types",
 		"server": "node server.js",
 		"size": "node scripts/size.js",

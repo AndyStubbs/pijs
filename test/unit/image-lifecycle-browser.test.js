@@ -4,71 +4,15 @@
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_fsPromises from "node:fs/promises";
-import * as g_path from "node:path";
-import * as g_esbuild from "esbuild";
-import * as g_playwright from "@playwright/test";
-import * as g_fs from "node:fs";
-import * as g_url from "node:url";
-const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
-const { test, before, after } = g_test;
+import * as g_harness from "./browser-source-harness.js";
+const { test } = g_test;
 const assert = g_assert;
-const fs = g_fsPromises;
-const path = g_path;
-const esbuild = g_esbuild;
-const { chromium } = g_playwright;
 
-const bundles = {};
-let browser;
-
-before( async () => {
-	for( const [ name, entry ] of [ [ "full", "index-full.js" ], [ "lite", "index.js" ] ] ) {
-		const result = await esbuild.build( {
-			"entryPoints": [ path.join( DIRNAME, "../../src", entry ) ],
-			"bundle": true, "write": false, "format": "iife", "target": "es2020",
-			"define": { "__VERSION__": JSON.stringify( JSON.parse( g_fs.readFileSync( new URL( "../../package.json", import.meta.url ), "utf8" ) ).version ) },
-			"loader": { ".vert": "text", ".frag": "text" },
-			"plugins": [ {
-				"name": "test-font-data",
-				"setup": build => {
-					build.onLoad( { "filter": /\.webp$/ }, async args => {
-						const data = await fs.readFile( args.path );
-						const font = { "data": "data:image/webp;base64," + data.toString( "base64" ) };
-						return { "contents": "export default " + JSON.stringify( font ),
-							"loader": "js" };
-					} );
-				}
-			} ]
-		} );
-		bundles[ name ] = result.outputFiles[ 0 ].text;
-	}
-	browser = await chromium.launch( { "headless": true } );
+const { probe } = g_harness.useBrowserBundles( {
+	"setup": installImageHarness,
+	"timeout": 10000,
+	"finish": () => imageTest.checkpoint()
 } );
-
-after( async () => { await browser?.close(); } );
-
-async function probe( bundle, fn, arg, expectedErrors = [] ) {
-	const page = await browser.newPage();
-	const errors = [];
-	let timeout;
-	page.on( "pageerror", error => errors.push( error.message ) );
-	try {
-		await page.setContent( "<!doctype html><html><body></body></html>" );
-		await page.addScriptTag( { "content": bundles[ bundle ] } );
-		await page.evaluate( () => $.ready() );
-		await page.evaluate( installImageHarness );
-		const result = await Promise.race( [ page.evaluate( fn, arg ),
-			new Promise( ( resolve, reject ) => {
-				timeout = setTimeout( () => reject( new Error( "Image scenario timed out" ) ), 10000 );
-			} ) ] );
-		await page.evaluate( () => imageTest.checkpoint() );
-		assert.deepEqual( errors, expectedErrors );
-		return result;
-	} finally {
-		clearTimeout( timeout );
-		await page.close();
-	}
-}
 
 /**
  * Use real drawable canvases with controlled image source assignment and terminal DOM events.
@@ -103,47 +47,51 @@ function installImageHarness() {
 	};
 }
 
-for( const bundle of [ "full", "lite" ] ) {
-	for( const loader of [ "loadImage", "loadSpritesheet" ] ) {
-		for( const overload of [ "positional", "object" ] ) {
-			test( `2.2 ${bundle}: ${loader} ${overload} callbacks and readiness`, async () => {
-				const result = await probe( bundle, async ( { loader, overload } ) => {
-					const h = imageTest;
-					const calls = [];
-					for( const eventName of [ "load", "error" ] ) {
-						for( const shouldThrow of [ false, true ] ) {
-							const onLoad = name => {
-								calls.push( [ "load", name ] );
-								if( shouldThrow ) { throw new Error( "expected loader callback" ); }
-							};
-							const onError = error => {
-								calls.push( [ "error", error.type ] );
-								if( shouldThrow ) { throw new Error( "expected loader callback" ); }
-							};
-							if( overload === "object" ) {
-								$[ loader ]( { "src": "source.png", "name": "source",
-									"width": 2, "height": 2, "onLoad": onLoad, "onError": onError } );
-							} else if( loader === "loadImage" ) {
-								$.loadImage( "source.png", "source", onLoad, onError );
-							} else {
-								$.loadSpritesheet( "source.png", "source", 2, 2, 0, onLoad, onError );
-							}
-							const img = h.instances.at( -1 );
-							img.dispatchEvent( new Event( eventName ) );
-							await $.ready();
-							calls.push( h.code( "source" ) );
-							$.removeImage( "source" );
+const LOADER_VARIANTS = [ "loadImage", "loadSpritesheet" ].flatMap( loader => [
+	{ "loader": loader, "overload": "positional" },
+	{ "loader": loader, "overload": "object" }
+] );
+
+for( const bundle of g_harness.BUNDLES ) {
+	test( `2.2 ${bundle}: loader callbacks and readiness for every overload`, async () => {
+		const result = await probe( bundle, async variants => {
+			const results = [];
+			for( const { loader, overload } of variants ) {
+				const h = imageTest;
+				const calls = [];
+				for( const eventName of [ "load", "error" ] ) {
+					for( const shouldThrow of [ false, true ] ) {
+						const onLoad = name => {
+							calls.push( [ "load", name ] );
+							if( shouldThrow ) { throw new Error( "expected loader callback" ); }
+						};
+						const onError = error => {
+							calls.push( [ "error", error.type ] );
+							if( shouldThrow ) { throw new Error( "expected loader callback" ); }
+						};
+						if( overload === "object" ) {
+							$[ loader ]( { "src": "source.png", "name": "source",
+								"width": 2, "height": 2, "onLoad": onLoad, "onError": onError } );
+						} else if( loader === "loadImage" ) {
+							$.loadImage( "source.png", "source", onLoad, onError );
+						} else {
+							$.loadSpritesheet( "source.png", "source", 2, 2, 0, onLoad, onError );
 						}
+						const img = h.instances.at( -1 );
+						img.dispatchEvent( new Event( eventName ) );
+						await $.ready();
+						calls.push( h.code( "source" ) );
+						$.removeImage( "source" );
 					}
-					return calls;
-				}, { "loader": loader, "overload": overload },
-				[ "expected loader callback", "expected loader callback" ] );
-				assert.deepEqual( result, [ [ "load", "source" ], "ready",
-					[ "load", "source" ], "ready", [ "error", "error" ], "IMAGE_LOAD_FAILED",
-					[ "error", "error" ], "IMAGE_LOAD_FAILED" ] );
-			} );
-		}
-	}
+				}
+				results.push( calls );
+			}
+			return results;
+		}, LOADER_VARIANTS, { "errors": Array( 8 ).fill( "expected loader callback" ) } );
+		assert.deepEqual( result, Array( 4 ).fill( [ [ "load", "source" ], "ready",
+			[ "load", "source" ], "ready", [ "error", "error" ], "IMAGE_LOAD_FAILED",
+			[ "error", "error" ], "IMAGE_LOAD_FAILED" ] ) );
+	} );
 
 	test( `2.2 ${bundle}: images and sprites retain source colors across palette changes`,
 		async () => {
@@ -205,84 +153,6 @@ for( const bundle of [ "full", "lite" ] ) {
 			assert.deepEqual( result.samples,
 				Array( 32 ).fill( [ [ 255, 0, 0, 255 ], [ 0, 0, 255, 255 ] ] ).flat() );
 		} );
-
-	test( `SYS-010 ${bundle}: cancellation isolates replacements and readiness`, async () => {
-		assert.deepEqual( await probe( bundle, async () => {
-			const h = imageTest;
-			let callbacks = 0;
-			$.loadImage( { "src": "old.png", "name": "reuse",
-				"onLoad": () => callbacks++, "onError": () => callbacks++ } );
-			const old = h.instances[ 0 ];
-			const ready = old.onload;
-			const error = old.onerror;
-			$.loadImage( "unrelated.png", "unrelated" );
-			let settlements = 0;
-			const promise = $.ready().then( () => settlements++ );
-			$.removeImage( "reuse" );
-			$.removeImage( "reuse" );
-			const removed = h.code( "reuse" );
-			$.loadImage( "new.png", "reuse" );
-			ready(); error( new Event( "error" ) );
-			h.paint( h.instances[ 2 ], "blue" );
-			h.instances[ 2 ].dispatchEvent( new Event( "load" ) );
-			await h.checkpoint();
-			const pending = settlements;
-			$.removeImage( "unrelated" );
-			await promise;
-			const screen = $.screen( "8x8" );
-			screen.drawImage( "reuse", 0, 0 );
-			const pixel = await screen.getPixelAsync( 0, 0 );
-			return [ removed, pending, settlements, callbacks, old.onload, old.onerror,
-				old.src, pixel.r, pixel.b ];
-		} ), [ "IMAGE_NOT_FOUND", 0, 1, 0, null, null, null, 0, 255 ] );
-	} );
-
-	test( `SYS-010 ${bundle}: failed images can be removed and reused repeatedly`, async () => {
-		assert.deepEqual( await probe( bundle, async () => {
-			const h = imageTest;
-			let callbacks = 0;
-			const result = [];
-			for( let i = 0; i < 3; i++ ) {
-				$.loadImage( { "src": "bad.png", "name": "reuse",
-					"onError": () => callbacks++ } );
-				const img = h.instances.at( -1 );
-				const ready = img.onload;
-				const error = img.onerror;
-				img.dispatchEvent( new Event( "error" ) );
-				await $.ready();
-				result.push( h.code( "reuse" ) );
-				$.removeImage( "reuse" );
-				ready(); error();
-				result.push( h.code( "reuse" ) );
-			}
-			return [ result, callbacks ];
-		} ), [ Array( 3 ).fill( [ "IMAGE_LOAD_FAILED", "IMAGE_NOT_FOUND" ] ).flat(), 3 ] );
-	} );
-
-	for( const event of [ "load", "error" ] ) {
-		test( `SYS-010 ${bundle}: throwing reentrant ${event} callbacks settle only old load`,
-			async () => {
-				assert.deepEqual( await probe( bundle, async eventName => {
-					const h = imageTest;
-					const callback = () => {
-						$.removeImage( "reuse" );
-						$.loadImage( "replacement.png", "reuse" );
-						throw new Error( "expected image callback" );
-					};
-					$.loadImage( { "src": "old.png", "name": "reuse",
-						"onLoad": callback, "onError": callback } );
-					let settlements = 0;
-					const promise = $.ready().then( () => settlements++ );
-					h.instances[ 0 ].dispatchEvent( new Event( eventName ) );
-					await h.checkpoint();
-					const pending = settlements;
-					const status = h.code( "reuse" );
-					h.instances[ 1 ].dispatchEvent( new Event( "load" ) );
-					await promise;
-					return [ pending, status, settlements, $.getImage( "reuse" ) === h.instances[ 1 ] ];
-				}, event, [ "expected image callback" ] ), [ 0, "IMAGE_NOT_READY", 1, true ] );
-			} );
-	}
 
 	test( `SYS-010 ${bundle}: spritesheet cancellation preserves replacement metadata`, async () => {
 		assert.deepEqual( await probe( bundle, async () => {

@@ -13,6 +13,8 @@ const BUILD = {
 	"legalComments": "none", "charset": "utf8"
 };
 const RUNNER_FILES = [ "artifacts.js", "browser.js", "statistics.js", "run.js", "target.js" ];
+const RENAME_ATTEMPTS = 5;
+const RENAME_RETRY_CODES = [ "EPERM", "EACCES", "EBUSY" ];
 
 /** SHA-256 over the exact bytes used or persisted. */
 function hash( value ) {
@@ -160,10 +162,23 @@ async function prepare( config ) {
 	return { identity, "fingerprint": hash( JSON.stringify( identity ) ), files };
 }
 
-/** Write JSON by rename so interrupted writes cannot masquerade as complete files. */
+/**
+ * Write JSON by rename so interrupted writes cannot masquerade as complete files. Windows can
+ * briefly hold a new file (indexing or antivirus), so a locked rename is retried.
+ */
 function writeJson( file, data ) {
 	g_fs.writeFileSync( `${file}.tmp`, JSON.stringify( data, null, 2 ) + "\n" );
-	g_fs.renameSync( `${file}.tmp`, file );
+	for( let attempt = 1; ; attempt++ ) {
+		try {
+			g_fs.renameSync( `${file}.tmp`, file );
+			return;
+		} catch( error ) {
+			if( attempt >= RENAME_ATTEMPTS || !RENAME_RETRY_CODES.includes( error.code ) ) {
+				throw error;
+			}
+			Atomics.wait( new Int32Array( new SharedArrayBuffer( 4 ) ), 0, 0, 20 * attempt );
+		}
+	}
 }
 
 /** Verify saved input bytes rather than trusting just their recorded hashes. */

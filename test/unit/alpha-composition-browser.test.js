@@ -1,168 +1,65 @@
 /**
  * SYS-006 browser regressions against fresh in-memory full and lite bundles.
  * Run with node --test test/unit/alpha-composition-browser.test.js; no server is required.
- * Set PI_ALPHA_VISUAL=true to review existing visual fixtures against approved baselines.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
 import * as g_fsPromises from "node:fs/promises";
 import * as g_path from "node:path";
-import * as g_esbuild from "esbuild";
-import * as g_playwright from "@playwright/test";
-import * as g_pngjs from "pngjs";
-import * as g_toml from "@iarna/toml";
-import * as g_fs from "node:fs";
 import * as g_url from "node:url";
+import * as g_harness from "./browser-source-harness.js";
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
-const { test, before, after } = g_test;
+const { test } = g_test;
 const assert = g_assert;
 const fs = g_fsPromises;
 const path = g_path;
-const esbuild = g_esbuild;
-const { chromium } = g_playwright;
-const { PNG } = g_pngjs;
-const toml = g_toml;
 
 const root = path.join( DIRNAME, "../.." );
-const bundles = {};
-let browser;
-
-before( async () => {
-	for( const [ name, entry ] of [ [ "full", "index-full.js" ], [ "lite", "index.js" ] ] ) {
-		const result = await esbuild.build( {
-			"stdin": {
-				"contents": `import "./${entry}";
-					import * as renderer from "./renderer/renderer.js";
-					import * as manager from "./core/screen-manager.js";
-					window.alphaInternals = { renderer, manager };`,
-				"resolveDir": path.join( DIRNAME, "../../src" )
+const { probe } = g_harness.useBrowserBundles( {
+	"expose": "alphaInternals",
+	"setup": () => {
+		window.alphaTest = {
+			"rgba": color => [ color.r, color.g, color.b, color.a ],
+			"data": screen => alphaInternals.manager.getScreenData( "alpha test", screen.id ),
+			"raw": screen => Array.from( alphaInternals.renderer.readPixelsRaw(
+				alphaTest.data( screen ), 0, 0, 1, 1
+			) ),
+			"screen": ( color = [ 0, 0, 0, 0 ], parent = null ) => {
+				const screen = $.screen( {
+					"aspect": "2x2", "isOffscreen": true, "parent": parent
+				} );
+				screen.setColor( color );
+				screen.rect( 0, 0, 2, 2, color );
+				return screen;
 			},
-			"bundle": true, "write": false, "format": "iife", "target": "es2020",
-			"define": { "__VERSION__": JSON.stringify( JSON.parse( g_fs.readFileSync( new URL( "../../package.json", import.meta.url ), "utf8" ) ).version ) },
-			"loader": { ".vert": "text", ".frag": "text" },
-			"plugins": [ {
-				"name": "test-font-data",
-				"setup": build => {
-					build.onLoad( { "filter": /\.webp$/ }, async args => {
-						const data = await fs.readFile( args.path );
-						const font = { "data": "data:image/webp;base64," + data.toString( "base64" ) };
-						return { "contents": "export default " + JSON.stringify( font ),
-							"loader": "js" };
-					} );
+			"canvas": color => {
+				const canvas = document.createElement( "canvas" );
+				canvas.width = canvas.height = 2;
+				const context = canvas.getContext( "2d" );
+				const data = context.createImageData( 2, 2 );
+				for( let i = 0; i < data.data.length; i += 4 ) {
+					data.data.set( color, i );
 				}
-			} ]
-		} );
-		bundles[ name ] = result.outputFiles[ 0 ].text;
+				context.putImageData( data, 0, 0 );
+				return canvas;
+			},
+			"shader": ( body, declarations = "", uniforms = {} ) => $.createShader(
+				`#version 300 es
+				precision highp float;
+				in vec2 v_texCoord;
+				uniform sampler2D u_texture;
+				out vec4 fragColor;
+				${declarations}
+				void main() {
+					vec4 color = texture(u_texture, v_texCoord);
+					${body}
+				}`, uniforms
+			)
+		};
 	}
-	browser = await chromium.launch( { "headless": true } );
 } );
 
-after( async () => { await browser?.close(); } );
-
-async function probe( bundle, fn, argument ) {
-	const page = await browser.newPage();
-	const errors = [];
-	page.on( "pageerror", error => errors.push( error.message ) );
-	try {
-		await page.setContent( "<!doctype html><html><body></body></html>" );
-		await page.addScriptTag( { "content": bundles[ bundle ] } );
-		await page.evaluate( () => $.ready() );
-		await page.evaluate( () => {
-			window.alphaTest = {
-				"rgba": color => [ color.r, color.g, color.b, color.a ],
-				"data": screen => alphaInternals.manager.getScreenData( "alpha test", screen.id ),
-				"raw": screen => Array.from( alphaInternals.renderer.readPixelsRaw(
-					alphaTest.data( screen ), 0, 0, 1, 1
-				) ),
-				"screen": ( color = [ 0, 0, 0, 0 ], parent = null ) => {
-					const screen = $.screen( {
-						"aspect": "2x2", "isOffscreen": true, "parent": parent
-					} );
-					screen.setColor( color );
-					screen.rect( 0, 0, 2, 2, color );
-					return screen;
-				},
-				"canvas": color => {
-					const canvas = document.createElement( "canvas" );
-					canvas.width = canvas.height = 2;
-					const context = canvas.getContext( "2d" );
-					const data = context.createImageData( 2, 2 );
-					for( let i = 0; i < data.data.length; i += 4 ) {
-						data.data.set( color, i );
-					}
-					context.putImageData( data, 0, 0 );
-					return canvas;
-				},
-				"shader": ( body, declarations = "", uniforms = {} ) => $.createShader(
-					`#version 300 es
-					precision highp float;
-					in vec2 v_texCoord;
-					uniform sampler2D u_texture;
-					out vec4 fragColor;
-					${declarations}
-					void main() {
-						vec4 color = texture(u_texture, v_texCoord);
-						${body}
-					}`, uniforms
-				)
-			};
-		} );
-		const result = await page.evaluate( fn, argument );
-		// Cross a task boundary to observe errors from all queued microtasks.
-		await page.evaluate( () => new Promise( resolve => setTimeout( resolve, 0 ) ) );
-		assert.deepEqual( errors, [] );
-		return result;
-	} finally {
-		await page.close();
-	}
-}
-
-for( const bundle of [ "full", "lite" ] ) {
-	for( const shared of [ true, false ] ) {
-		test( `SYS-006 ${bundle}: composition through shared context ${shared}`, async () => {
-			const result = await probe( bundle, () => {
-				const rgba = screen => {
-					const color = screen.getPixel( 0, 0 );
-					return [ color.r, color.g, color.b, color.a ];
-				};
-				const source = document.createElement( "canvas" );
-				source.width = source.height = 2;
-				const context = source.getContext( "2d" );
-				context.fillStyle = "rgba(255,0,0,0.5)";
-				context.fillRect( 0, 0, 2, 2 );
-				const direct = $.screen( "2x2" );
-				direct.setColor( "#0000ff" );
-				direct.rect( 0, 0, 2, 2, "#0000ff" );
-				direct.drawImage( source, 0, 0 );
-				const paths = [];
-				for( const parentContext of [ true, false ] ) {
-					const destination = $.screen( "2x2" );
-					destination.setColor( "#0000ff" );
-					destination.rect( 0, 0, 2, 2, "#0000ff" );
-					let parent = null;
-					if( parentContext ) {
-						parent = destination;
-					}
-					const layer = $.screen( {
-						"aspect": "2x2", "isOffscreen": true, "parent": parent
-					} );
-					layer.drawImage( source, 0, 0 );
-					destination.drawImage( layer, 0, 0 );
-					paths.push( rgba( destination ) );
-				}
-				return { "direct": rgba( direct ), "paths": paths };
-			} );
-			assert.deepEqual( result.direct, [ 128, 0, 127, 255 ] );
-			let index = 1;
-			if( shared ) {
-				index = 0;
-			}
-			assert.deepEqual( result.paths[ index ], result.direct );
-		} );
-	}
-}
-
-for( const bundle of [ "full", "lite" ] ) {
+for( const bundle of g_harness.BUNDLES ) {
 	test( `SYS-006 ${bundle}: nested layers preserve transparent and translucent composition`,
 		async () => {
 			const results = await probe( bundle, () => {
@@ -433,88 +330,3 @@ test( "SYS-006 maintained shader demos compile and return premultiplied pixels",
 		}
 	}, sources );
 } );
-
-if( process.env.PI_ALPHA_VISUAL === "true" ) {
-	for( const bundle of [ "full", "lite" ] ) {
-		for( const fixture of [ "images_comprehensive", "renderer_comprehensive", "shaders_comprehensive",
-			"shaders_lifecycle", "view_comprehensive" ] ) {
-			test( `SYS-006 ${bundle}: visual fixture ${fixture}`, async t => {
-				const html = await fs.readFile(
-					path.join( root, "test/tests/html-core", fixture + ".html" ), "utf8"
-				);
-				const metadata = toml.parse(
-					html.match( /\[\[TOML_START\]\]([\s\S]*?)\[\[TOML_END\]\]/ )[ 1 ]
-				);
-				if( bundle === "lite" && metadata.lite !== true ) {
-					t.skip( "Fixture requires plugins from the full bundle" );
-					return;
-				}
-				const page = await browser.newPage( {
-					"viewport": { "width": metadata.width, "height": metadata.height }
-				} );
-				const errors = [];
-				page.on( "pageerror", error => errors.push( error.message ) );
-				try {
-					await page.route( "http://alpha.test/**", async route => {
-						const url = new URL( route.request().url() );
-						if( url.pathname === "/build/pi.js" ) {
-							await route.fulfill( { "contentType": "text/javascript",
-								"body": bundles[ bundle ] } );
-							return;
-						}
-						const file = path.resolve( root, "." + decodeURIComponent( url.pathname ) );
-						assert.ok( file.startsWith( root + path.sep ) );
-						await route.fulfill( { "path": file } );
-					} );
-					await page.goto( `http://alpha.test/test/tests/html-core/${fixture}.html`, {
-						"waitUntil": "networkidle"
-					} );
-					await page.evaluate( () => $.ready() );
-					for( const line of ( metadata.commands || "" ).trim().split( "\n" ) ) {
-						const [ command, ...args ] = line.trim().split( /\s+/ );
-						if( command === "SL" ) {
-							await page.locator( args.join( " " ).replaceAll( "\"", "" ) ).focus();
-						} else if( command === "DL" ) {
-							await page.waitForTimeout( Number( args[ 0 ] ) );
-						} else if( command === "MV" ) {
-							await page.mouse.move( ...args.join( " " ).split( "," ).map( Number ) );
-						} else if( command === "MD" ) {
-							await page.mouse.down();
-						} else if( command === "MU" ) {
-							await page.mouse.up();
-						} else {
-							assert.equal( command, "", "Unsupported fixture command" );
-						}
-					}
-					await page.waitForTimeout( Math.max( metadata.delay || 0, 200 ) );
-					assert.deepEqual( errors, [] );
-					const actualBuffer = await page.screenshot();
-					const output = path.join( root, "test/tests/screenshots/new",
-						`${fixture}-alpha-${bundle}.png` );
-					await fs.mkdir( path.dirname( output ), { "recursive": true } );
-					await fs.writeFile( output, actualBuffer );
-					const actual = PNG.sync.read( actualBuffer );
-					const expected = PNG.sync.read( await fs.readFile(
-						path.join( root, "test/tests/screenshots", fixture + ".png" )
-					) );
-					assert.equal( actual.width, expected.width );
-					assert.equal( actual.height, expected.height );
-					let different = 0;
-					for( let i = 0; i < actual.data.length; i += 4 ) {
-						let difference = 0;
-						for( let channel = 0; channel < 4; channel++ ) {
-							difference += Math.abs( actual.data[ i + channel ] -
-								expected.data[ i + channel ] );
-						}
-						if( difference > 6 ) { different++; }
-					}
-					t.diagnostic( `${different} changed pixels; review ${output}` );
-					assert.ok( different / ( actual.width * actual.height ) < 0.001,
-						"Visual baseline differs; review the saved image before approving changes" );
-				} finally {
-					await page.close();
-				}
-			} );
-		}
-	}
-}

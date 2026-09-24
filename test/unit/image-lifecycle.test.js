@@ -3,24 +3,16 @@
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_fs from "node:fs";
-import * as g_path from "node:path";
-import * as g_vm from "node:vm";
-import * as g_url from "node:url";
-const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
+import * as g_harness from "./vm-module-harness.js";
 const { test } = g_test;
 const assert = g_assert;
-const fs = g_fs;
-const path = g_path;
-const vm = g_vm;
 
 function createHarness() {
 	const images = [];
 	const counts = { "wait": 0, "done": 0, "deleted": [] };
 	const failures = {};
 	const screens = [];
-	const context = vm.createContext( {
-		"console": console,
+	const context = g_harness.loadModule( "src/api/images.js", {
 		"g_utils": { "isFunction": v => typeof v === "function" },
 		"g_commands": { "wait": () => counts.wait++, "done": () => counts.done++ },
 		"g_screenManager": { "getAllScreensData": () => screens },
@@ -52,9 +44,6 @@ function createHarness() {
 			removeAttribute( name ) { if( name === "src" ) { this.url = ""; } }
 		}
 	} );
-	const source = fs.readFileSync( path.join( DIRNAME, "../../src/api/images.js" ), "utf8" )
-		.replace( /^import .*;\r?\n/gm, "" ).replace( /export /g, "" );
-	vm.runInContext( source, context, { "filename": "src/api/images.js" } );
 	return { "api": context, "images": images, "counts": counts, "failures": failures,
 		"screens": screens };
 }
@@ -86,6 +75,28 @@ test( "SYS-010 pending removal settles once and stale events cannot touch replac
 	assert.equal( h.api.getImage( { "name": "reuse" } ), h.images[ 1 ] );
 	assert.equal( h.counts.done, h.counts.wait );
 	assert.equal( callbacks, 0 );
+} );
+
+test( "SYS-010 duplicate terminal events cannot release another resource wait", () => {
+	const h = createHarness();
+	let calls = 0;
+	h.api.loadImage( { "src": "controlled-a", "onLoad": () => {
+		calls++; throw new Error( "expected" );
+	} } );
+	h.api.loadImage( { "src": "controlled-b", "onError": () => { calls++; } } );
+	const onLoad = h.images[ 0 ].onload;
+	const onError = h.images[ 0 ].onerror;
+	assert.throws( () => onLoad(), { "message": "expected" } );
+	assert.equal( h.images[ 0 ].onload, null );
+	assert.equal( h.images[ 0 ].onerror, null );
+	assert.equal( h.counts.done, 1 );
+	onLoad(); onError( new Error( "duplicate" ) );
+	assert.equal( h.counts.done, 1 );
+	assert.equal( calls, 1 );
+	h.images[ 1 ].onerror( new Error( "controlled" ) );
+	assert.equal( h.counts.wait, 2 );
+	assert.equal( h.counts.done, 2 );
+	assert.equal( calls, 2 );
 } );
 
 for( const terminal of [ "onload", "onerror" ] ) {
