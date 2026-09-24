@@ -1,0 +1,878 @@
+{
+	"revision": "b37e9b8",
+	"engines": {
+		"chromium": {
+			"version": "141.0.7390.37",
+			"probes": {
+				"P1": {
+					"observed": {
+						"every-frame": {
+							"pressed": 1,
+							"released": 1,
+							"axisChanged": 2,
+							"reads": 8
+						},
+						"every-frame-before-loop": {
+							"pressed": 1,
+							"released": 1,
+							"axisChanged": 2,
+							"reads": 8
+						},
+						"timer-every-frame": {
+							"pressed": 1,
+							"released": 1,
+							"axisChanged": 2,
+							"reads": 8
+						},
+						"every-other-frame": {
+							"pressed": 0,
+							"released": 0,
+							"axisChanged": 0,
+							"reads": 4
+						},
+						"timer-every-other-frame": {
+							"pressed": 0,
+							"released": 0,
+							"axisChanged": 0,
+							"reads": 4
+						}
+					},
+					"expected": "each mode: pressed 1, released 1 (axisChanged 2 when every frame is read)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P3": {
+					"observed": {
+						"connectCalls": [
+							0,
+							0
+						]
+					},
+					"expected": "one connect call for pad 0",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P3b": {
+					"observed": {
+						"pressesSeen": 1,
+						"pressesMade": 2
+					},
+					"expected": "2: the exposing press and the ordinary press",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P4": {
+					"observed": {
+						"frames": [
+							{
+								"frame": "idle",
+								"justPressed": false,
+								"pressed": false
+							},
+							{
+								"frame": "press",
+								"justPressed": true,
+								"pressed": true
+							},
+							{
+								"frame": "blurred, held",
+								"justPressed": true,
+								"pressed": true
+							},
+							{
+								"frame": "blurred, released",
+								"justPressed": true,
+								"pressed": true
+							},
+							{
+								"frame": "blurred, released",
+								"justPressed": true,
+								"pressed": true
+							},
+							{
+								"frame": "focused",
+								"justPressed": true,
+								"pressed": true
+							}
+						]
+					},
+					"expected": "justPressed only on the press frame; pressed false once released",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P5": {
+					"observed": {
+						"disconnect": {
+							"laterHandlerCalls": [],
+							"listIndices": [
+								0,
+								1
+							],
+							"ghostConnectedFlag": true
+						},
+						"connectEvent": {
+							"laterHandlerCalls": []
+						},
+						"uncaught": [
+							"Uncaught Error: probe disconnect handler",
+							"Uncaught Error: probe connect handler"
+						]
+					},
+					"expected": "later handlers still run; pad 1 leaves the list; errors are reported",
+					"confirmed": true,
+					"pageErrors": [
+						"probe disconnect handler",
+						"probe connect handler"
+					]
+				},
+				"P5b": {
+					"observed": {
+						"thrownFromOnGamepadConnected": "probe scan handler",
+						"pendingAfterThrow": 0
+					},
+					"expected": "registration succeeds; the loop is scheduled (1 pending frame)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P6": {
+					"observed": {
+						"calls": [
+							"first",
+							"added-during-dispatch"
+						]
+					},
+					"expected": "[\"first\"]: a handler added during dispatch waits for the next event",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P7": {
+					"observed": {
+						"firstHandler": [
+							0
+						],
+						"secondHandler": []
+					},
+					"expected": "both handlers receive pad 0 (metadata: also triggered for connected pads)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P8": {
+					"observed": {
+						"pendingAfterDoubleStart": 1,
+						"readAfterStop": null,
+						"listAfterStop": null,
+						"readAfterRegister": "gamepad object",
+						"connectHandlerCalledWhileStopped": true
+					},
+					"expected": "documented behavior (recorded, not a defect by itself)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P9": {
+					"observed": {
+						"calls": [],
+						"pendingAfterClear": 1
+					},
+					"expected": "screen-level clear leaves global gamepad handlers (or is documented)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P10": {
+					"observed": {
+						"getButton(-1)": null,
+						"getButton(9)": null,
+						"getButton('0')": "object",
+						"getButton('a')": "undefined",
+						"getButtonPressed(9)": null,
+						"getButtonPressed(1.5)": "throws TypeError",
+						"getButtonPressed(NaN)": "throws TypeError",
+						"getButtonPressed()": "throws TypeError",
+						"getButtonJustPressed(9)": false,
+						"getButtonJustPressed(1.5)": "throws TypeError",
+						"getButtonJustReleased(9)": false,
+						"getAxis(9)": 0,
+						"getAxis(1.5)": "undefined",
+						"getAxisChanged(9)": false
+					},
+					"expected": "invalid indices rejected or reported alike; no raw TypeError",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P11": {
+					"observed": {
+						"listIndices": [
+							0,
+							2
+						],
+						"listPosition1Index": 2,
+						"missingIndex": "undefined",
+						"afterStop": null,
+						"negativeIndex": "INVALID_PARAMETERS"
+					},
+					"expected": "recorded; the four return shapes are null, undefined, object, and array",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P12": {
+					"observed": {
+						"samePadObject": true,
+						"sameButtonsArray": false,
+						"sameButtonObject": false,
+						"heldButtonsReferenceSeesPress": false,
+						"sameAxesArray": false,
+						"sameListArray": false,
+						"allocationsPerPadUpdate": "1 buttons array + 1 object per button + axes array + lastAxes copy"
+					},
+					"expected": "live object with stable arrays, or a documented snapshot",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P13": {
+					"observed": {
+						"diagonal (0.15, 0.15), magnitude 0.212": [
+							0,
+							0
+						],
+						"(0.5, 0.1)": [
+							0.375,
+							0
+						],
+						"(0.7071, 0.7071), magnitude 1": [
+							0.6339,
+							0.6339
+						],
+						"sensitivity 1: (0.99, 1)": [
+							0,
+							1
+						],
+						"set({ gamepadSensitivity: 0.5 }): (0.75, 0)": [
+							0.5,
+							0
+						]
+					},
+					"expected": "a radial stick dead zone keeps the diagonal and does not snap (0.5, 0.1)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P14": {
+					"observed": {
+						"gamepadSensitivity": "accepted silently",
+						"unknownOption": "accepted silently",
+						"ingamepadType": "undefined"
+					},
+					"expected": "API.md: unsupported properties are not accepted",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P14b": {
+					"observed": {
+						"ingamepadIndex": 0
+					},
+					"expected": "pad 0",
+					"confirmed": false,
+					"pageErrors": []
+				}
+			},
+			"manualPages": {
+				"gamepad_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'gamepad' is already registered."
+					]
+				},
+				"gamepad_02.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'gamepad' is already registered."
+					]
+				},
+				"gamepad_03.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'gamepad' is already registered."
+					]
+				}
+			}
+		},
+		"firefox": {
+			"version": "142.0.1",
+			"probes": {
+				"P1": {
+					"observed": {
+						"every-frame": {
+							"pressed": 1,
+							"released": 1,
+							"axisChanged": 2,
+							"reads": 8
+						},
+						"every-frame-before-loop": {
+							"pressed": 1,
+							"released": 1,
+							"axisChanged": 2,
+							"reads": 8
+						},
+						"timer-every-frame": {
+							"pressed": 1,
+							"released": 1,
+							"axisChanged": 2,
+							"reads": 8
+						},
+						"every-other-frame": {
+							"pressed": 0,
+							"released": 0,
+							"axisChanged": 0,
+							"reads": 4
+						},
+						"timer-every-other-frame": {
+							"pressed": 0,
+							"released": 0,
+							"axisChanged": 0,
+							"reads": 4
+						}
+					},
+					"expected": "each mode: pressed 1, released 1 (axisChanged 2 when every frame is read)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P3": {
+					"observed": {
+						"connectCalls": [
+							0,
+							0
+						]
+					},
+					"expected": "one connect call for pad 0",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P3b": {
+					"observed": {
+						"pressesSeen": 1,
+						"pressesMade": 2
+					},
+					"expected": "2: the exposing press and the ordinary press",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P4": {
+					"observed": {
+						"frames": [
+							{
+								"frame": "idle",
+								"justPressed": false,
+								"pressed": false
+							},
+							{
+								"frame": "press",
+								"justPressed": true,
+								"pressed": true
+							},
+							{
+								"frame": "blurred, held",
+								"justPressed": true,
+								"pressed": true
+							},
+							{
+								"frame": "blurred, released",
+								"justPressed": true,
+								"pressed": true
+							},
+							{
+								"frame": "blurred, released",
+								"justPressed": true,
+								"pressed": true
+							},
+							{
+								"frame": "focused",
+								"justPressed": true,
+								"pressed": true
+							}
+						]
+					},
+					"expected": "justPressed only on the press frame; pressed false once released",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P5": {
+					"observed": {
+						"disconnect": {
+							"laterHandlerCalls": [],
+							"listIndices": [
+								0,
+								1
+							],
+							"ghostConnectedFlag": true
+						},
+						"connectEvent": {
+							"laterHandlerCalls": []
+						},
+						"uncaught": [
+							"Error: probe disconnect handler",
+							"Error: probe connect handler"
+						]
+					},
+					"expected": "later handlers still run; pad 1 leaves the list; errors are reported",
+					"confirmed": true,
+					"pageErrors": [
+						"probe disconnect handler",
+						"probe connect handler"
+					]
+				},
+				"P5b": {
+					"observed": {
+						"thrownFromOnGamepadConnected": "probe scan handler",
+						"pendingAfterThrow": 0
+					},
+					"expected": "registration succeeds; the loop is scheduled (1 pending frame)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P6": {
+					"observed": {
+						"calls": [
+							"first",
+							"added-during-dispatch"
+						]
+					},
+					"expected": "[\"first\"]: a handler added during dispatch waits for the next event",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P7": {
+					"observed": {
+						"firstHandler": [
+							0
+						],
+						"secondHandler": []
+					},
+					"expected": "both handlers receive pad 0 (metadata: also triggered for connected pads)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P8": {
+					"observed": {
+						"pendingAfterDoubleStart": 1,
+						"readAfterStop": null,
+						"listAfterStop": null,
+						"readAfterRegister": "gamepad object",
+						"connectHandlerCalledWhileStopped": true
+					},
+					"expected": "documented behavior (recorded, not a defect by itself)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P9": {
+					"observed": {
+						"calls": [],
+						"pendingAfterClear": 1
+					},
+					"expected": "screen-level clear leaves global gamepad handlers (or is documented)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P10": {
+					"observed": {
+						"getButton(-1)": null,
+						"getButton(9)": null,
+						"getButton('0')": "object",
+						"getButton('a')": "undefined",
+						"getButtonPressed(9)": null,
+						"getButtonPressed(1.5)": "throws TypeError",
+						"getButtonPressed(NaN)": "throws TypeError",
+						"getButtonPressed()": "throws TypeError",
+						"getButtonJustPressed(9)": false,
+						"getButtonJustPressed(1.5)": "throws TypeError",
+						"getButtonJustReleased(9)": false,
+						"getAxis(9)": 0,
+						"getAxis(1.5)": "undefined",
+						"getAxisChanged(9)": false
+					},
+					"expected": "invalid indices rejected or reported alike; no raw TypeError",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P11": {
+					"observed": {
+						"listIndices": [
+							0,
+							2
+						],
+						"listPosition1Index": 2,
+						"missingIndex": "undefined",
+						"afterStop": null,
+						"negativeIndex": "INVALID_PARAMETERS"
+					},
+					"expected": "recorded; the four return shapes are null, undefined, object, and array",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P12": {
+					"observed": {
+						"samePadObject": true,
+						"sameButtonsArray": false,
+						"sameButtonObject": false,
+						"heldButtonsReferenceSeesPress": false,
+						"sameAxesArray": false,
+						"sameListArray": false,
+						"allocationsPerPadUpdate": "1 buttons array + 1 object per button + axes array + lastAxes copy"
+					},
+					"expected": "live object with stable arrays, or a documented snapshot",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P13": {
+					"observed": {
+						"diagonal (0.15, 0.15), magnitude 0.212": [
+							0,
+							0
+						],
+						"(0.5, 0.1)": [
+							0.375,
+							0
+						],
+						"(0.7071, 0.7071), magnitude 1": [
+							0.6339,
+							0.6339
+						],
+						"sensitivity 1: (0.99, 1)": [
+							0,
+							1
+						],
+						"set({ gamepadSensitivity: 0.5 }): (0.75, 0)": [
+							0.5,
+							0
+						]
+					},
+					"expected": "a radial stick dead zone keeps the diagonal and does not snap (0.5, 0.1)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P14": {
+					"observed": {
+						"gamepadSensitivity": "accepted silently",
+						"unknownOption": "accepted silently",
+						"ingamepadType": "undefined"
+					},
+					"expected": "API.md: unsupported properties are not accepted",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P14b": {
+					"observed": {
+						"ingamepadIndex": 0
+					},
+					"expected": "pad 0",
+					"confirmed": false,
+					"pageErrors": []
+				}
+			},
+			"manualPages": {
+				"gamepad_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'gamepad' is already registered."
+					]
+				},
+				"gamepad_02.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'gamepad' is already registered."
+					]
+				},
+				"gamepad_03.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'gamepad' is already registered."
+					]
+				}
+			}
+		},
+		"webkit": {
+			"version": "26.0",
+			"probes": {
+				"P1": {
+					"observed": {
+						"every-frame": {
+							"pressed": 1,
+							"released": 1,
+							"axisChanged": 2,
+							"reads": 8
+						},
+						"every-frame-before-loop": {
+							"pressed": 1,
+							"released": 1,
+							"axisChanged": 2,
+							"reads": 8
+						},
+						"timer-every-frame": {
+							"pressed": 1,
+							"released": 1,
+							"axisChanged": 2,
+							"reads": 8
+						},
+						"every-other-frame": {
+							"pressed": 0,
+							"released": 0,
+							"axisChanged": 0,
+							"reads": 4
+						},
+						"timer-every-other-frame": {
+							"pressed": 0,
+							"released": 0,
+							"axisChanged": 0,
+							"reads": 4
+						}
+					},
+					"expected": "each mode: pressed 1, released 1 (axisChanged 2 when every frame is read)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P3": {
+					"observed": {
+						"connectCalls": [
+							0,
+							0
+						]
+					},
+					"expected": "one connect call for pad 0",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P3b": {
+					"observed": {
+						"pressesSeen": 1,
+						"pressesMade": 2
+					},
+					"expected": "2: the exposing press and the ordinary press",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P4": {
+					"observed": {
+						"frames": [
+							{
+								"frame": "idle",
+								"justPressed": false,
+								"pressed": false
+							},
+							{
+								"frame": "press",
+								"justPressed": true,
+								"pressed": true
+							},
+							{
+								"frame": "blurred, held",
+								"justPressed": true,
+								"pressed": true
+							},
+							{
+								"frame": "blurred, released",
+								"justPressed": true,
+								"pressed": true
+							},
+							{
+								"frame": "blurred, released",
+								"justPressed": true,
+								"pressed": true
+							},
+							{
+								"frame": "focused",
+								"justPressed": true,
+								"pressed": true
+							}
+						]
+					},
+					"expected": "justPressed only on the press frame; pressed false once released",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P5": {
+					"observed": {
+						"disconnect": {
+							"laterHandlerCalls": [],
+							"listIndices": [
+								0,
+								1
+							],
+							"ghostConnectedFlag": true
+						},
+						"connectEvent": {
+							"laterHandlerCalls": []
+						},
+						"uncaught": [
+							"Script error.",
+							"Script error."
+						]
+					},
+					"expected": "later handlers still run; pad 1 leaves the list; errors are reported",
+					"confirmed": true,
+					"pageErrors": [
+						"probe disconnect handler",
+						"probe connect handler"
+					]
+				},
+				"P5b": {
+					"observed": {
+						"thrownFromOnGamepadConnected": "probe scan handler",
+						"pendingAfterThrow": 0
+					},
+					"expected": "registration succeeds; the loop is scheduled (1 pending frame)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P6": {
+					"observed": {
+						"calls": [
+							"first",
+							"added-during-dispatch"
+						]
+					},
+					"expected": "[\"first\"]: a handler added during dispatch waits for the next event",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P7": {
+					"observed": {
+						"firstHandler": [
+							0
+						],
+						"secondHandler": []
+					},
+					"expected": "both handlers receive pad 0 (metadata: also triggered for connected pads)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P8": {
+					"observed": {
+						"pendingAfterDoubleStart": 1,
+						"readAfterStop": null,
+						"listAfterStop": null,
+						"readAfterRegister": "gamepad object",
+						"connectHandlerCalledWhileStopped": true
+					},
+					"expected": "documented behavior (recorded, not a defect by itself)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P9": {
+					"observed": {
+						"calls": [],
+						"pendingAfterClear": 1
+					},
+					"expected": "screen-level clear leaves global gamepad handlers (or is documented)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P10": {
+					"observed": {
+						"getButton(-1)": null,
+						"getButton(9)": null,
+						"getButton('0')": "object",
+						"getButton('a')": "undefined",
+						"getButtonPressed(9)": null,
+						"getButtonPressed(1.5)": "throws TypeError",
+						"getButtonPressed(NaN)": "throws TypeError",
+						"getButtonPressed()": "throws TypeError",
+						"getButtonJustPressed(9)": false,
+						"getButtonJustPressed(1.5)": "throws TypeError",
+						"getButtonJustReleased(9)": false,
+						"getAxis(9)": 0,
+						"getAxis(1.5)": "undefined",
+						"getAxisChanged(9)": false
+					},
+					"expected": "invalid indices rejected or reported alike; no raw TypeError",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P11": {
+					"observed": {
+						"listIndices": [
+							0,
+							2
+						],
+						"listPosition1Index": 2,
+						"missingIndex": "undefined",
+						"afterStop": null,
+						"negativeIndex": "INVALID_PARAMETERS"
+					},
+					"expected": "recorded; the four return shapes are null, undefined, object, and array",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P12": {
+					"observed": {
+						"samePadObject": true,
+						"sameButtonsArray": false,
+						"sameButtonObject": false,
+						"heldButtonsReferenceSeesPress": false,
+						"sameAxesArray": false,
+						"sameListArray": false,
+						"allocationsPerPadUpdate": "1 buttons array + 1 object per button + axes array + lastAxes copy"
+					},
+					"expected": "live object with stable arrays, or a documented snapshot",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P13": {
+					"observed": {
+						"diagonal (0.15, 0.15), magnitude 0.212": [
+							0,
+							0
+						],
+						"(0.5, 0.1)": [
+							0.375,
+							0
+						],
+						"(0.7071, 0.7071), magnitude 1": [
+							0.6339,
+							0.6339
+						],
+						"sensitivity 1: (0.99, 1)": [
+							0,
+							1
+						],
+						"set({ gamepadSensitivity: 0.5 }): (0.75, 0)": [
+							0.5,
+							0
+						]
+					},
+					"expected": "a radial stick dead zone keeps the diagonal and does not snap (0.5, 0.1)",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P14": {
+					"observed": {
+						"gamepadSensitivity": "accepted silently",
+						"unknownOption": "accepted silently",
+						"ingamepadType": "undefined"
+					},
+					"expected": "API.md: unsupported properties are not accepted",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P14b": {
+					"observed": {
+						"ingamepadIndex": 0
+					},
+					"expected": "pad 0",
+					"confirmed": false,
+					"pageErrors": []
+				}
+			},
+			"manualPages": {
+				"gamepad_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'gamepad' is already registered."
+					]
+				},
+				"gamepad_02.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'gamepad' is already registered."
+					]
+				},
+				"gamepad_03.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'gamepad' is already registered."
+					]
+				}
+			}
+		}
+	}
+}

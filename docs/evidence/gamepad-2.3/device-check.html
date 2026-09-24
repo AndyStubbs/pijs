@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Gamepad Device Check</title>
+	<script src="../../../build/pi.js"></script>
+	<style>
+		body { font: 14px/1.4 monospace; margin: 16px; background: #111; color: #ddd; }
+		h1 { font-size: 18px; }
+		table { border-collapse: collapse; margin: 8px 0; }
+		td, th { border: 1px solid #444; padding: 2px 8px; text-align: left; }
+		button { font: inherit; margin: 4px 4px 4px 0; }
+		#log { white-space: pre-wrap; max-height: 240px; overflow: auto; border: 1px solid #444;
+			padding: 4px; }
+		.warn { color: #fc6; }
+	</style>
+</head>
+<body>
+<!--
+Device check for the gamepad 2.3 audit (docs/plans/GAMEPAD-V2.3-AUDIT.md, Section 6).
+
+Compares what Pi.js reports with the browser's own Gamepad API for the behaviors that
+synthetic probes cannot settle: the privacy gate, connect callbacks, press edges read at two
+rates, state across a focus change, the dead zone, reconnect indices, and vibration.
+Serve the repository with `npm run server`, then open
+http://localhost:8080/docs/evidence/gamepad-2.3/device-check.html
+-->
+<h1>Gamepad device check (Pi.js 2.3 audit)</h1>
+<p>Follow the steps in docs/evidence/gamepad-2.3/README.md, then click
+<b>Copy results</b> and paste them into the conversation.</p>
+<div>
+	<button id="rumble">Rumble pad 0</button>
+	<button id="reset">Reset counters</button>
+	<button id="copy">Copy results</button>
+</div>
+<table id="state"></table>
+<div id="log"></div>
+<script>
+"use strict";
+
+const m_start = performance.now();
+const m_log = [];
+const m_results = {
+	"userAgent": navigator.userAgent,
+	"refreshHz": 0,
+	"piConnectCalls": [],
+	"rawConnectEvents": [],
+	"piDisconnectCalls": [],
+	"rawDisconnectEvents": [],
+	"edges": null,
+	"blurSamples": [],
+	"deadZone": { "rawFramesOutside": 0, "piFramesZero": 0 },
+	"vibration": null
+};
+let m_edges;
+let m_lastRawPressed = false;
+let m_frameTimes = [];
+let m_isFocused = document.hasFocus();
+
+resetEdges();
+
+function log( msg, isWarn ) {
+	const line = ( ( performance.now() - m_start ) / 1000 ).toFixed( 2 ) + "s " + msg;
+	m_log.push( line );
+	const div = document.createElement( "div" );
+	if( isWarn ) {
+		div.className = "warn";
+	}
+	div.textContent = line;
+	document.getElementById( "log" ).prepend( div );
+}
+
+function resetEdges() {
+	m_edges = {
+		"rawPresses": 0,
+		"piFramePresses": 0,
+		"piFrameReleases": 0,
+		"piTimerPresses": 0,
+		"piTimerReleases": 0
+	};
+	m_results.edges = m_edges;
+	m_results.deadZone.rawFramesOutside = 0;
+	m_results.deadZone.piFramesZero = 0;
+}
+
+function rawPad( index ) {
+	const pads = navigator.getGamepads();
+	return pads[ index ] || null;
+}
+
+// Connection callbacks: Pi.js handlers and the browser's own events, side by side.
+$.onGamepadConnected( pad => {
+	m_results.piConnectCalls.push( { "index": pad.index, "id": pad.id, "mapping": pad.mapping } );
+	log( "Pi connect: index " + pad.index + " " + pad.id + " (" + pad.mapping + ")" );
+} );
+$.onGamepadDisconnected( pad => {
+	m_results.piDisconnectCalls.push( { "index": pad.index } );
+	log( "Pi disconnect: index " + pad.index );
+} );
+window.addEventListener( "gamepadconnected", e => {
+	m_results.rawConnectEvents.push( { "index": e.gamepad.index, "id": e.gamepad.id } );
+	log( "Browser gamepadconnected: index " + e.gamepad.index );
+} );
+window.addEventListener( "gamepaddisconnected", e => {
+	m_results.rawDisconnectEvents.push( { "index": e.gamepad.index } );
+	log( "Browser gamepaddisconnected: index " + e.gamepad.index );
+} );
+
+// Focus and visibility, with Pi.js and browser button 0 state sampled on each change.
+function sampleFocus( label ) {
+	const pad = $.ingamepad( 0 );
+	const raw = rawPad( 0 );
+	const sample = {
+		"t": ( ( performance.now() - m_start ) / 1000 ).toFixed( 2 ),
+		"event": label,
+		"piPressed": pad ? pad.getButtonPressed( 0 ) : null,
+		"piJustPressed": pad ? pad.getButtonJustPressed( 0 ) : null,
+		"rawPressed": raw ? raw.buttons[ 0 ].pressed : null
+	};
+	m_results.blurSamples.push( sample );
+	log( label + ": Pi pressed " + sample.piPressed + ", browser pressed " + sample.rawPressed );
+}
+window.addEventListener( "blur", () => { m_isFocused = false; sampleFocus( "blur" ); } );
+window.addEventListener( "focus", () => { m_isFocused = true; sampleFocus( "focus" ); } );
+document.addEventListener( "visibilitychange", () => {
+	sampleFocus( "visibility " + document.visibilityState );
+} );
+
+// While unfocused, record once per second whether Pi.js and the browser disagree.
+setInterval( () => {
+	if( !m_isFocused ) {
+		sampleFocus( "unfocused sample" );
+	}
+}, 1000 );
+
+// Every-frame consumer (requestAnimationFrame), like a typical game loop.
+function frame( time ) {
+	m_frameTimes.push( time );
+	if( m_frameTimes.length > 60 ) {
+		m_frameTimes.shift();
+		const span = m_frameTimes[ m_frameTimes.length - 1 ] - m_frameTimes[ 0 ];
+		m_results.refreshHz = Math.round( 59000 / span );
+	}
+	const pad = $.ingamepad( 0 );
+	const raw = rawPad( 0 );
+	if( raw ) {
+		if( raw.buttons[ 0 ].pressed && !m_lastRawPressed ) {
+			m_edges.rawPresses += 1;
+		}
+		m_lastRawPressed = raw.buttons[ 0 ].pressed;
+
+		// Left stick outside a 0.2 radial dead zone, but reported as centered by Pi.js.
+		const magnitude = Math.hypot( raw.axes[ 0 ], raw.axes[ 1 ] );
+		if( magnitude > 0.2 ) {
+			m_results.deadZone.rawFramesOutside += 1;
+			if( pad && pad.getAxis( 0 ) === 0 && pad.getAxis( 1 ) === 0 ) {
+				m_results.deadZone.piFramesZero += 1;
+			}
+		}
+	}
+	if( pad ) {
+		if( pad.getButtonJustPressed( 0 ) ) {
+			m_edges.piFramePresses += 1;
+		}
+		if( pad.getButtonJustReleased( 0 ) ) {
+			m_edges.piFrameReleases += 1;
+		}
+	}
+	render( pad, raw );
+	requestAnimationFrame( frame );
+}
+requestAnimationFrame( frame );
+
+// Timer consumer at 30 Hz, like a fixed-step game loop.
+setInterval( () => {
+	const pad = $.ingamepad( 0 );
+	if( pad ) {
+		if( pad.getButtonJustPressed( 0 ) ) {
+			m_edges.piTimerPresses += 1;
+		}
+		if( pad.getButtonJustReleased( 0 ) ) {
+			m_edges.piTimerReleases += 1;
+		}
+	}
+}, 1000 / 30 );
+
+function render( pad, raw ) {
+	const rows = [
+		[ "Refresh (Hz)", m_results.refreshHz ],
+		[ "Focused / visibility", m_isFocused + " / " + document.visibilityState ],
+		[ "Pads (Pi.js)", ( $.ingamepad() || [] ).map( p => p.index ).join( ", " ) || "none" ],
+		[ "Pads (browser)", Array.from( navigator.getGamepads() ).filter( p => p )
+			.map( p => p.index ).join( ", " ) || "none" ],
+		[ "Button 0 presses: browser", m_edges.rawPresses ],
+		[ "Button 0 presses: Pi.js every frame", m_edges.piFramePresses ],
+		[ "Button 0 presses: Pi.js 30 Hz timer", m_edges.piTimerPresses ],
+		[ "Button 0 pressed: Pi.js / browser",
+			( pad ? pad.getButtonPressed( 0 ) : "-" ) + " / " +
+			( raw ? raw.buttons[ 0 ].pressed : "-" ) ],
+		[ "Left stick: browser", raw ? raw.axes[ 0 ].toFixed( 3 ) + ", " +
+			raw.axes[ 1 ].toFixed( 3 ) : "-" ],
+		[ "Left stick: Pi.js", pad ? pad.getAxis( 0 ).toFixed( 3 ) + ", " +
+			pad.getAxis( 1 ).toFixed( 3 ) : "-" ],
+		[ "Stick frames outside 0.2 radius / Pi.js centered",
+			m_results.deadZone.rawFramesOutside + " / " + m_results.deadZone.piFramesZero ],
+		[ "vibrationActuator", raw ? String( !!raw.vibrationActuator ) : "-" ]
+	];
+	const table = document.getElementById( "state" );
+	table.innerHTML = "";
+	for( const [ name, value ] of rows ) {
+		const tr = document.createElement( "tr" );
+		const th = document.createElement( "th" );
+		const td = document.createElement( "td" );
+		th.textContent = name;
+		td.textContent = value;
+		tr.append( th, td );
+		table.append( tr );
+	}
+}
+
+document.getElementById( "rumble" ).addEventListener( "click", async () => {
+	const raw = rawPad( 0 );
+	const info = { "vibrationActuator": false, "hapticActuators": false, "played": null };
+	if( raw && raw.vibrationActuator ) {
+		info.vibrationActuator = true;
+		info.effects = raw.vibrationActuator.effects || null;
+		try {
+			info.played = await raw.vibrationActuator.playEffect( "dual-rumble", {
+				"duration": 400, "strongMagnitude": 1, "weakMagnitude": 1
+			} );
+		} catch( error ) {
+			info.played = "error: " + error.message;
+		}
+	} else if( raw && raw.hapticActuators && raw.hapticActuators.length ) {
+		info.hapticActuators = true;
+		try {
+			info.played = await raw.hapticActuators[ 0 ].pulse( 1, 400 );
+		} catch( error ) {
+			info.played = "error: " + error.message;
+		}
+	}
+	m_results.vibration = info;
+	log( "Rumble: " + JSON.stringify( info ) );
+} );
+document.getElementById( "reset" ).addEventListener( "click", () => {
+	resetEdges();
+	log( "Counters reset" );
+} );
+document.getElementById( "copy" ).addEventListener( "click", async () => {
+	const text = JSON.stringify( Object.assign( {}, m_results, { "log": m_log } ), null, 1 );
+	try {
+		await navigator.clipboard.writeText( text );
+		log( "Results copied to the clipboard" );
+	} catch( error ) {
+		const area = document.createElement( "textarea" );
+		area.value = text;
+		area.rows = 20;
+		area.cols = 100;
+		document.body.append( area );
+		log( "Clipboard unavailable; results are in the text box below", true );
+	}
+} );
+</script>
+</body>
+</html>
