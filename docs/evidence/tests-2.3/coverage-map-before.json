@@ -1,0 +1,2972 @@
+{
+	"revision": "bd7bd70",
+	"method": "Command rows: every method in build/reference-2.3.json plus plugin metadata (onscreen-keyboard, print-table, sound-advanced) and plugin commands without metadata (polygon, vis). A test file references a command when it calls it ($.name( / .name( ) or names it as a string. Static; confirmed by reading for zero- and single-reference rows. Contract rows: the 2.2 audit findings (git show 991e340^:docs/SYSTEM-AUDIT-2.2.md) and the files that check them.",
+	"summary": {
+		"commands": 146,
+		"unreferenced": [
+			"core:blitImage",
+			"core:blitSprite",
+			"core:calcWidth",
+			"pointer:offtouch",
+			"gamepad:onGamepadConnected",
+			"gamepad:onGamepadDisconnected",
+			"core:setDefaultAnchor",
+			"gamepad:startGamepad"
+		],
+		"singleReference": [
+			"core:getDefaultPal -> colors_comprehensive.html",
+			"core:getShaderInfo -> shaders_lifecycle.html",
+			"pointer:offclick -> onclick_01.html",
+			"pointer:offpress -> onpress_02.html",
+			"keyboard:removeActionKeys -> keyboard_commands.html",
+			"core:screenToView -> view_comprehensive.html",
+			"pointer:setEnableContextMenu -> patch-browser.test.js",
+			"core:setPrintSize -> print_comprehensive.html",
+			"keyboard:startKeyboard -> keyboard_commands.html",
+			"gamepad:stopGamepad -> gamepad-validation-browser.test.js",
+			"keyboard:stopKeyboard -> keyboard_commands.html",
+			"optional-plugin:printTable -> table_01.html",
+			"optional-plugin:vis -> pi_vision_01.html"
+		]
+	},
+	"commands": [
+		{
+			"command": "addPalColors",
+			"area": "colors",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"image-lifecycle-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "applyShader",
+			"area": "shaders",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"context-recovery-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"shaders_comprehensive.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html"
+			],
+			"references": 6
+		},
+		{
+			"command": "arc",
+			"area": "primitives",
+			"owner": "core",
+			"node": [
+				"arc-full-turn.test.js",
+				"batch-reservations.test.js",
+				"circle-outline.test.js",
+				"numeric-boundaries.test.js"
+			],
+			"browser": [
+				"arc-circle-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"numeric-boundaries-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"graphics_comprehensive.html"
+			],
+			"references": 10
+		},
+		{
+			"command": "bezier",
+			"area": "primitives",
+			"owner": "core",
+			"node": [
+				"batch-reservations.test.js",
+				"numeric-boundaries.test.js"
+			],
+			"browser": [
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"graphics_comprehensive.html",
+				"images_comprehensive.html"
+			],
+			"references": 7
+		},
+		{
+			"command": "blitImage",
+			"area": "images",
+			"owner": "core",
+			"node": [],
+			"browser": [],
+			"visual": [],
+			"note": "keyboard-lifecycle only stubs api.blitImage",
+			"references": 0
+		},
+		{
+			"command": "blitSprite",
+			"area": "images",
+			"owner": "core",
+			"node": [],
+			"browser": [],
+			"visual": [],
+			"references": 0
+		},
+		{
+			"command": "calcWidth",
+			"area": "text",
+			"owner": "core",
+			"node": [],
+			"browser": [],
+			"visual": [],
+			"note": "performance-report-browser only stubs $.calcWidth",
+			"references": 0
+		},
+		{
+			"command": "cancelInput",
+			"area": "keyboard",
+			"owner": "keyboard",
+			"node": [
+				"keyboard-lifecycle.test.js"
+			],
+			"browser": [],
+			"visual": [
+				"onclick_01.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "canvas",
+			"area": "core",
+			"owner": "core",
+			"node": [
+				"image-lifecycle.test.js",
+				"numeric-boundaries.test.js",
+				"performance-calibration.test.js",
+				"static-texture-cache.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"color-validation-browser.test.js",
+				"context-recovery-browser.test.js",
+				"font-publication-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"ownership-reentrancy-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"images_comprehensive.html",
+				"inmouse_01.html",
+				"inpress_01.html",
+				"intouch_01.html",
+				"screen_comprehensive_01.html",
+				"screen_no_css_01.html",
+				"shaders_lifecycle.html",
+				"pi_vision_01.html",
+				"pointer_lifecycle_01.html"
+			],
+			"references": 22
+		},
+		{
+			"command": "circle",
+			"area": "primitives",
+			"owner": "core",
+			"node": [
+				"arc-full-turn.test.js",
+				"batch-reservations.test.js",
+				"circle-outline.test.js",
+				"numeric-boundaries.test.js"
+			],
+			"browser": [
+				"arc-circle-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"color-validation-browser.test.js",
+				"context-recovery-browser.test.js",
+				"numeric-boundaries-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"graphics_comprehensive.html",
+				"images_comprehensive.html",
+				"layers_01.html",
+				"ready_01.html",
+				"renderer_comprehensive.html",
+				"screen_comprehensive_01.html",
+				"screen_no_css_01.html",
+				"set_01.html",
+				"shaders_comprehensive.html",
+				"view_comprehensive.html"
+			],
+			"references": 21
+		},
+		{
+			"command": "clearEvents",
+			"area": "core",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"pointer_lifecycle_01.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "cls",
+			"area": "effects",
+			"owner": "core",
+			"node": [
+				"performance-polygons.test.js"
+			],
+			"browser": [
+				"arc-circle-browser.test.js",
+				"benchmark-browser.test.js",
+				"context-recovery-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"performance-report-browser.test.js"
+			],
+			"visual": [
+				"inpress_01.html",
+				"keyboard_commands.html",
+				"renderer_comprehensive.html",
+				"screen_same_context_01.html",
+				"shaders_comprehensive.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html",
+				"onscreen_keyboard_01.html",
+				"onscreen_keyboard_02.html"
+			],
+			"references": 15
+		},
+		{
+			"command": "createColor",
+			"area": "colors",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"color-validation-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "createImageFromScreen",
+			"area": "images",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"alpha-composition-browser.test.js"
+			],
+			"visual": [
+				"images_comprehensive.html",
+				"view_comprehensive.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "createShader",
+			"area": "shaders",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"context-recovery-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"screen_no_css_01.html",
+				"shaders_comprehensive.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html"
+			],
+			"references": 7
+		},
+		{
+			"command": "draw",
+			"area": "primitives",
+			"owner": "core",
+			"node": [
+				"polygons.test.js"
+			],
+			"browser": [],
+			"visual": [
+				"draw_comprehensive.html",
+				"errors_01.html",
+				"errors_02.html",
+				"setPos_01.html"
+			],
+			"references": 5
+		},
+		{
+			"command": "drawImage",
+			"area": "images",
+			"owner": "core",
+			"node": [
+				"numeric-boundaries.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"context-recovery-browser.test.js",
+				"font-publication-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"images_comprehensive.html",
+				"ready_01.html",
+				"screen_comprehensive_01.html",
+				"screen_no_css_01.html",
+				"screen_overlaping.html",
+				"screen_same_context_01.html",
+				"view_comprehensive.html"
+			],
+			"references": 15
+		},
+		{
+			"command": "drawSprite",
+			"area": "images",
+			"owner": "core",
+			"node": [
+				"numeric-boundaries.test.js"
+			],
+			"browser": [
+				"benchmark-browser.test.js",
+				"context-recovery-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"images_comprehensive.html"
+			],
+			"references": 6
+		},
+		{
+			"command": "ellipse",
+			"area": "primitives",
+			"owner": "core",
+			"node": [
+				"numeric-boundaries.test.js"
+			],
+			"browser": [
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"color-validation-browser.test.js",
+				"context-recovery-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"graphics_comprehensive.html"
+			],
+			"references": 7
+		},
+		{
+			"command": "filterImg",
+			"area": "pixels",
+			"owner": "core",
+			"node": [
+				"patch-lifecycle.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"context-recovery-browser.test.js",
+				"pixel-disposal-browser.test.js"
+			],
+			"visual": [
+				"ready_01.html",
+				"view_comprehensive.html"
+			],
+			"references": 6
+		},
+		{
+			"command": "get",
+			"area": "pixels",
+			"owner": "core",
+			"node": [
+				"batch-reservations.test.js",
+				"font-publication.test.js",
+				"image-lifecycle.test.js",
+				"keyboard-lifecycle.test.js",
+				"ownership-reentrancy-matrix.test.js",
+				"sound-scheduler.test.js",
+				"static-texture-cache.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"audio-lifecycle-browser.test.js",
+				"color-validation-browser.test.js",
+				"context-recovery-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"graphics_comprehensive.html",
+				"inmouse_01.html",
+				"intouch_01.html",
+				"onmouse_01.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html"
+			],
+			"references": 19
+		},
+		{
+			"command": "getAllScreens",
+			"area": "core",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"ownership-reentrancy-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"screen_comprehensive_01.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "getAsync",
+			"area": "pixels",
+			"owner": "core",
+			"node": [
+				"patch-lifecycle.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"context-recovery-browser.test.js",
+				"pixel-disposal-browser.test.js"
+			],
+			"visual": [],
+			"references": 4
+		},
+		{
+			"command": "getAvailableFonts",
+			"area": "text",
+			"owner": "core",
+			"node": [
+				"font-publication.test.js",
+				"numeric-boundaries.test.js"
+			],
+			"browser": [
+				"font-publication-browser.test.js"
+			],
+			"visual": [
+				"print_comprehensive.html"
+			],
+			"references": 4
+		},
+		{
+			"command": "getColor",
+			"area": "colors",
+			"owner": "core",
+			"node": [
+				"polygons.test.js"
+			],
+			"browser": [
+				"color-validation-browser.test.js"
+			],
+			"visual": [],
+			"references": 2
+		},
+		{
+			"command": "getCols",
+			"area": "text",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"performance-report-browser.test.js"
+			],
+			"visual": [
+				"print_comprehensive.html",
+				"view_comprehensive.html",
+				"onscreen_keyboard_01.html",
+				"onscreen_keyboard_02.html"
+			],
+			"references": 5
+		},
+		{
+			"command": "getDefaultColor",
+			"area": "colors",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"color-validation-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "getDefaultPal",
+			"area": "colors",
+			"owner": "core",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"colors_comprehensive.html"
+			],
+			"references": 1
+		},
+		{
+			"command": "getImage",
+			"area": "images",
+			"owner": "core",
+			"node": [
+				"image-lifecycle.test.js",
+				"ownership-reentrancy-matrix.test.js"
+			],
+			"browser": [
+				"benchmark-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"keyboard-lifecycle-browser.test.js",
+				"ownership-reentrancy-browser.test.js"
+			],
+			"visual": [
+				"view_comprehensive.html"
+			],
+			"references": 7
+		},
+		{
+			"command": "getPal",
+			"area": "colors",
+			"owner": "core",
+			"node": [
+				"performance-polygons.test.js"
+			],
+			"browser": [
+				"benchmark-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html",
+				"example_01.html"
+			],
+			"references": 4
+		},
+		{
+			"command": "getPalColor",
+			"area": "colors",
+			"owner": "core",
+			"node": [
+				"color-validation.test.js",
+				"polygons.test.js"
+			],
+			"browser": [
+				"color-validation-browser.test.js"
+			],
+			"visual": [],
+			"references": 3
+		},
+		{
+			"command": "getPalIndex",
+			"area": "colors",
+			"owner": "core",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"colors_comprehensive.html",
+				"view_comprehensive.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "getPixel",
+			"area": "pixels",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"color-validation-browser.test.js",
+				"context-recovery-browser.test.js",
+				"font-publication-browser.test.js",
+				"keyboard-lifecycle-browser.test.js",
+				"ownership-reentrancy-browser.test.js",
+				"patch-browser.test.js",
+				"pixel-disposal-browser.test.js"
+			],
+			"visual": [
+				"graphics_comprehensive.html",
+				"images_comprehensive.html",
+				"screen_no_css_01.html",
+				"screen_same_context_01.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html",
+				"pi_vision_01.html"
+			],
+			"references": 16
+		},
+		{
+			"command": "getPixelAsync",
+			"area": "pixels",
+			"owner": "core",
+			"node": [
+				"ownership-reentrancy-matrix.test.js",
+				"patch-lifecycle.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"context-recovery-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"ownership-reentrancy-browser.test.js",
+				"pixel-disposal-browser.test.js"
+			],
+			"visual": [],
+			"references": 7
+		},
+		{
+			"command": "getPlugins",
+			"area": "plugins",
+			"owner": "core",
+			"node": [
+				"ownership-reentrancy-matrix.test.js",
+				"patch-lifecycle.test.js",
+				"plugin-services.test.js"
+			],
+			"browser": [
+				"patch-browser.test.js",
+				"plugin-docs-browser.test.js",
+				"plugin-installation-browser.test.js",
+				"polygons-bundles-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [],
+			"references": 8
+		},
+		{
+			"command": "getPos",
+			"area": "text",
+			"owner": "core",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"keyboard_commands.html",
+				"print_comprehensive.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "getPosPx",
+			"area": "text",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"keyboard-lifecycle-browser.test.js"
+			],
+			"visual": [
+				"print_comprehensive.html",
+				"view_comprehensive.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "getRows",
+			"area": "text",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"performance-report-browser.test.js"
+			],
+			"visual": [
+				"print_comprehensive.html",
+				"view_comprehensive.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "getScreen",
+			"area": "core",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"benchmark-browser.test.js"
+			],
+			"visual": [
+				"screen_comprehensive_01.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "getShaderInfo",
+			"area": "shaders",
+			"owner": "core",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"shaders_lifecycle.html"
+			],
+			"references": 1
+		},
+		{
+			"command": "getSpritesheetData",
+			"area": "images",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"benchmark-browser.test.js",
+				"image-lifecycle-browser.test.js"
+			],
+			"visual": [
+				"images_comprehensive.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "height",
+			"area": "view",
+			"owner": "core",
+			"node": [
+				"batch-reservations.test.js",
+				"font-publication.test.js",
+				"image-lifecycle.test.js",
+				"keyboard-lifecycle.test.js",
+				"numeric-boundaries.test.js",
+				"ownership-reentrancy-matrix.test.js",
+				"patch-lifecycle.test.js",
+				"performance-polygons.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"arc-circle-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"font-publication-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"numeric-boundaries-browser.test.js",
+				"patch-browser.test.js",
+				"performance-report-browser.test.js"
+			],
+			"visual": [
+				"onclick_01.html",
+				"parameters_01.html",
+				"screen_comprehensive_01.html",
+				"screen_same_context_01.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html",
+				"example_01.html",
+				"pi_vision_01.html"
+			],
+			"references": 25
+		},
+		{
+			"command": "ingamepad",
+			"area": "gamepad",
+			"owner": "gamepad",
+			"node": [
+				"gamepad-validation.test.js"
+			],
+			"browser": [
+				"gamepad-validation-browser.test.js"
+			],
+			"visual": [],
+			"references": 2
+		},
+		{
+			"command": "inkey",
+			"area": "keyboard",
+			"owner": "keyboard",
+			"node": [
+				"keyboard-lifecycle.test.js"
+			],
+			"browser": [
+				"keyboard-lifecycle-browser.test.js"
+			],
+			"visual": [
+				"keyboard_commands.html",
+				"onscreen_keyboard_02.html"
+			],
+			"references": 4
+		},
+		{
+			"command": "inmouse",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"patch-browser.test.js",
+				"plugin-installation-browser.test.js"
+			],
+			"visual": [
+				"inmouse_01.html",
+				"view_comprehensive.html"
+			],
+			"references": 5
+		},
+		{
+			"command": "inpress",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"inpress_01.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "input",
+			"area": "keyboard",
+			"owner": "keyboard",
+			"node": [
+				"keyboard-lifecycle.test.js"
+			],
+			"browser": [
+				"audio-play-browser.test.js",
+				"audio-service-browser.test.js",
+				"keyboard-lifecycle-browser.test.js"
+			],
+			"visual": [
+				"keyboard_input.html",
+				"onclick_01.html",
+				"onscreen_keyboard_03.html",
+				"onscreen_keyboard_04.html"
+			],
+			"references": 8
+		},
+		{
+			"command": "intouch",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"intouch_01.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "line",
+			"area": "primitives",
+			"owner": "core",
+			"node": [
+				"batch-reservations.test.js",
+				"benchmark-readiness.test.js",
+				"benchmark.test.js",
+				"numeric-boundaries.test.js",
+				"polygons.test.js",
+				"test-workflow.test.js"
+			],
+			"browser": [
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"context-recovery-browser.test.js",
+				"patch-browser.test.js",
+				"performance-report-browser.test.js"
+			],
+			"visual": [
+				"draw_comprehensive.html",
+				"graphics_comprehensive.html",
+				"images_comprehensive.html",
+				"inmouse_01.html",
+				"inpress_01.html",
+				"intouch_01.html",
+				"layers_01.html",
+				"onmouse_01.html",
+				"onmouse_02.html",
+				"paint_01.html",
+				"ready_01.html",
+				"screen_comprehensive_01.html",
+				"shaders_comprehensive.html",
+				"view_comprehensive.html",
+				"pi_vision_01.html"
+			],
+			"references": 26
+		},
+		{
+			"command": "loadAudio",
+			"area": "sound",
+			"owner": "sound",
+			"node": [
+				"audio-lifecycle.test.js",
+				"ownership-reentrancy-matrix.test.js"
+			],
+			"browser": [
+				"audio-lifecycle-browser.test.js",
+				"audio-stream-browser.test.js"
+			],
+			"visual": [],
+			"references": 4
+		},
+		{
+			"command": "loadFont",
+			"area": "text",
+			"owner": "core",
+			"node": [
+				"font-publication.test.js",
+				"numeric-boundaries.test.js"
+			],
+			"browser": [
+				"font-publication-browser.test.js",
+				"numeric-boundaries-browser.test.js"
+			],
+			"visual": [
+				"print_comprehensive.html",
+				"set_01.html"
+			],
+			"references": 6
+		},
+		{
+			"command": "loadImage",
+			"area": "images",
+			"owner": "core",
+			"node": [
+				"image-lifecycle.test.js",
+				"ownership-reentrancy-matrix.test.js"
+			],
+			"browser": [
+				"benchmark-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"ownership-reentrancy-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"images_comprehensive.html",
+				"ready_01.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html"
+			],
+			"references": 10
+		},
+		{
+			"command": "loadSpritesheet",
+			"area": "images",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"benchmark-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"images_comprehensive.html"
+			],
+			"references": 4
+		},
+		{
+			"command": "offclick",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"onclick_01.html"
+			],
+			"references": 1
+		},
+		{
+			"command": "offkey",
+			"area": "keyboard",
+			"owner": "keyboard",
+			"node": [
+				"keyboard-lifecycle.test.js"
+			],
+			"browser": [],
+			"visual": [
+				"keyboard_commands.html",
+				"onmouse_01.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "offmouse",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [
+				"patch-lifecycle.test.js"
+			],
+			"browser": [],
+			"visual": [
+				"onmouse_01.html",
+				"pointer_lifecycle_01.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "offpress",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"onpress_02.html"
+			],
+			"references": 1
+		},
+		{
+			"command": "offtouch",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [],
+			"visual": [],
+			"references": 0
+		},
+		{
+			"command": "onclick",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"onclick_01.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "onGamepadConnected",
+			"area": "gamepad",
+			"owner": "gamepad",
+			"node": [],
+			"browser": [],
+			"visual": [],
+			"references": 0
+		},
+		{
+			"command": "onGamepadDisconnected",
+			"area": "gamepad",
+			"owner": "gamepad",
+			"node": [],
+			"browser": [],
+			"visual": [],
+			"references": 0
+		},
+		{
+			"command": "onkey",
+			"area": "keyboard",
+			"owner": "keyboard",
+			"node": [
+				"keyboard-lifecycle.test.js"
+			],
+			"browser": [
+				"keyboard-lifecycle-browser.test.js"
+			],
+			"visual": [
+				"keyboard_commands.html",
+				"onmouse_01.html",
+				"onscreen_keyboard_01.html"
+			],
+			"references": 5
+		},
+		{
+			"command": "onmouse",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [
+				"patch-lifecycle.test.js"
+			],
+			"browser": [
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"onmouse_01.html",
+				"onmouse_02.html",
+				"onmouse_03.html",
+				"pointer_lifecycle_01.html"
+			],
+			"references": 6
+		},
+		{
+			"command": "onpress",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"onpress_01.html",
+				"onpress_02.html",
+				"onscreen_keyboard_04.html",
+				"pointer_lifecycle_01.html"
+			],
+			"references": 5
+		},
+		{
+			"command": "ontouch",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"ontouch_04.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "paint",
+			"area": "primitives",
+			"owner": "core",
+			"node": [
+				"batch-reservations.test.js",
+				"numeric-boundaries.test.js"
+			],
+			"browser": [
+				"batch-reservations-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"numeric-boundaries-browser.test.js"
+			],
+			"visual": [
+				"images_comprehensive.html",
+				"inmouse_01.html",
+				"inpress_01.html",
+				"intouch_01.html",
+				"layers_01.html",
+				"onmouse_01.html",
+				"paint_01.html",
+				"paint_02.html",
+				"paint_03.html",
+				"screen_overlaping.html",
+				"view_comprehensive.html",
+				"example_01.html"
+			],
+			"references": 17
+		},
+		{
+			"command": "pauseAudio",
+			"area": "sound",
+			"owner": "sound",
+			"node": [
+				"audio-lifecycle.test.js"
+			],
+			"browser": [
+				"audio-samples-browser.test.js",
+				"audio-stream-browser.test.js"
+			],
+			"visual": [],
+			"references": 3
+		},
+		{
+			"command": "play",
+			"area": "sound",
+			"owner": "sound",
+			"node": [],
+			"browser": [
+				"audio-advanced-browser.test.js",
+				"audio-bus-browser.test.js",
+				"audio-play-browser.test.js",
+				"audio-recording-browser.test.js",
+				"audio-render-browser.test.js",
+				"audio-service-browser.test.js",
+				"audio-stream-browser.test.js",
+				"audio-voices-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [],
+			"references": 9
+		},
+		{
+			"command": "playAudio",
+			"area": "sound",
+			"owner": "sound",
+			"node": [
+				"audio-lifecycle.test.js",
+				"ownership-reentrancy-matrix.test.js"
+			],
+			"browser": [
+				"audio-bus-browser.test.js",
+				"audio-lifecycle-browser.test.js",
+				"audio-samples-browser.test.js",
+				"audio-service-browser.test.js",
+				"audio-stream-browser.test.js"
+			],
+			"visual": [],
+			"references": 7
+		},
+		{
+			"command": "polygon",
+			"area": "polygons",
+			"owner": "optional-plugin",
+			"node": [
+				"performance-calibration.test.js",
+				"performance-polygons.test.js",
+				"polygons.test.js",
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"benchmark-browser.test.js",
+				"polygons-bundles-browser.test.js"
+			],
+			"visual": [
+				"polygon_01.html",
+				"polygon_01.html"
+			],
+			"references": 8
+		},
+		{
+			"command": "popView",
+			"area": "view",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"arc-circle-browser.test.js",
+				"benchmark-browser.test.js"
+			],
+			"visual": [
+				"polygon_01.html",
+				"view_comprehensive.html",
+				"polygon_01.html"
+			],
+			"references": 5
+		},
+		{
+			"command": "print",
+			"area": "text",
+			"owner": "core",
+			"node": [
+				"performance-calibration.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"benchmark-browser.test.js",
+				"context-recovery-browser.test.js",
+				"font-publication-browser.test.js",
+				"performance-report-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html",
+				"draw_comprehensive.html",
+				"errors_01.html",
+				"errors_02.html",
+				"graphics_comprehensive.html",
+				"images_comprehensive.html",
+				"inmouse_01.html",
+				"inpress_01.html",
+				"intouch_01.html",
+				"keyboard_commands.html",
+				"keyboard_input.html",
+				"layers_01.html",
+				"onclick_01.html",
+				"onmouse_01.html",
+				"onmouse_03.html",
+				"onpress_01.html",
+				"onpress_02.html",
+				"ontouch_04.html",
+				"print_comprehensive.html",
+				"renderer_comprehensive.html",
+				"screen_comprehensive_01.html",
+				"screen_overlaping.html",
+				"screen_same_context_01.html",
+				"setPos_01.html",
+				"set_01.html",
+				"shaders_comprehensive.html",
+				"view_comprehensive.html",
+				"example_01.html",
+				"onscreen_keyboard_01.html",
+				"onscreen_keyboard_02.html",
+				"onscreen_keyboard_03.html",
+				"onscreen_keyboard_04.html",
+				"pi_vision_01.html",
+				"table_01.html"
+			],
+			"references": 40
+		},
+		{
+			"command": "pset",
+			"area": "primitives",
+			"owner": "core",
+			"node": [
+				"numeric-boundaries.test.js",
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"color-validation-browser.test.js",
+				"context-recovery-browser.test.js",
+				"keyboard-lifecycle-browser.test.js",
+				"ownership-reentrancy-browser.test.js",
+				"patch-browser.test.js",
+				"pixel-disposal-browser.test.js"
+			],
+			"visual": [
+				"draw_comprehensive.html",
+				"graphics_comprehensive.html",
+				"images_comprehensive.html",
+				"inmouse_01.html",
+				"inpress_01.html",
+				"intouch_01.html",
+				"onmouse_01.html",
+				"onmouse_02.html",
+				"onmouse_03.html",
+				"onpress_01.html",
+				"onpress_02.html",
+				"ontouch_04.html",
+				"renderer_comprehensive.html",
+				"setPos_01.html",
+				"set_01.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html"
+			],
+			"references": 28
+		},
+		{
+			"command": "pushView",
+			"area": "view",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"arc-circle-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"context-recovery-browser.test.js",
+				"numeric-boundaries-browser.test.js",
+				"pixel-disposal-browser.test.js"
+			],
+			"visual": [
+				"polygon_01.html",
+				"view_comprehensive.html",
+				"polygon_01.html"
+			],
+			"references": 9
+		},
+		{
+			"command": "put",
+			"area": "pixels",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"context-recovery-browser.test.js"
+			],
+			"visual": [
+				"graphics_comprehensive.html",
+				"inmouse_01.html",
+				"intouch_01.html",
+				"onmouse_01.html"
+			],
+			"references": 7
+		},
+		{
+			"command": "ready",
+			"area": "core",
+			"owner": "core",
+			"node": [
+				"audio-lifecycle.test.js",
+				"image-lifecycle.test.js",
+				"patch-lifecycle.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"arc-circle-browser.test.js",
+				"audio-lifecycle-browser.test.js",
+				"audio-recording-realtime-browser.test.js",
+				"audio-stream-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"color-validation-browser.test.js",
+				"context-recovery-browser.test.js",
+				"font-publication-browser.test.js",
+				"gamepad-validation-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"keyboard-lifecycle-browser.test.js",
+				"numeric-boundaries-browser.test.js",
+				"ownership-reentrancy-browser.test.js",
+				"patch-browser.test.js",
+				"pixel-disposal-browser.test.js",
+				"plugin-docs-browser.test.js",
+				"plugin-installation-browser.test.js",
+				"polygons-bundles-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html",
+				"draw_comprehensive.html",
+				"graphics_comprehensive.html",
+				"images_comprehensive.html",
+				"inmouse_01.html",
+				"inpress_01.html",
+				"intouch_01.html",
+				"keyboard_commands.html",
+				"keyboard_input.html",
+				"layers_01.html",
+				"onmouse_01.html",
+				"onmouse_02.html",
+				"paint_01.html",
+				"paint_02.html",
+				"paint_03.html",
+				"parameters_01.html",
+				"polygon_01.html",
+				"print_comprehensive.html",
+				"ready_01.html",
+				"renderer_comprehensive.html",
+				"screen_comprehensive_01.html",
+				"screen_no_css_01.html",
+				"screen_overlaping.html",
+				"screen_same_context_01.html",
+				"setPos_01.html",
+				"set_01.html",
+				"shaders_comprehensive.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html",
+				"example_01.html",
+				"onscreen_keyboard_02.html",
+				"onscreen_keyboard_03.html",
+				"onscreen_keyboard_04.html",
+				"pi_vision_01.html",
+				"pointer_lifecycle_01.html",
+				"polygon_01.html",
+				"table_01.html"
+			],
+			"references": 61
+		},
+		{
+			"command": "rect",
+			"area": "primitives",
+			"owner": "core",
+			"node": [
+				"numeric-boundaries.test.js",
+				"performance-calibration.test.js",
+				"polygons.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"color-validation-browser.test.js",
+				"context-recovery-browser.test.js",
+				"numeric-boundaries-browser.test.js",
+				"patch-browser.test.js",
+				"performance-report-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html",
+				"graphics_comprehensive.html",
+				"images_comprehensive.html",
+				"inmouse_01.html",
+				"inpress_01.html",
+				"intouch_01.html",
+				"onclick_01.html",
+				"onmouse_02.html",
+				"paint_02.html",
+				"paint_03.html",
+				"parameters_01.html",
+				"renderer_comprehensive.html",
+				"screen_comprehensive_01.html",
+				"screen_no_css_01.html",
+				"screen_same_context_01.html",
+				"set_01.html",
+				"shaders_comprehensive.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html",
+				"pi_vision_01.html",
+				"table_01.html"
+			],
+			"references": 32
+		},
+		{
+			"command": "registerPlugin",
+			"area": "plugins",
+			"owner": "core",
+			"node": [
+				"patch-lifecycle.test.js",
+				"plugin-services.test.js",
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"audio-bus-browser.test.js",
+				"audio-lifecycle-browser.test.js",
+				"audio-play-browser.test.js",
+				"audio-service-browser.test.js",
+				"audio-voices-browser.test.js",
+				"patch-browser.test.js",
+				"plugin-docs-browser.test.js",
+				"plugin-installation-browser.test.js"
+			],
+			"visual": [
+				"screen_same_context_01.html",
+				"pi_vision_01.html"
+			],
+			"references": 13
+		},
+		{
+			"command": "removeActionKeys",
+			"area": "keyboard",
+			"owner": "keyboard",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"keyboard_commands.html"
+			],
+			"references": 1
+		},
+		{
+			"command": "removeAllScreens",
+			"area": "graphics",
+			"owner": "core",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"screen_comprehensive_01.html",
+				"screen_no_css_01.html",
+				"shader_orientation_01.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "removeAudio",
+			"area": "sound",
+			"owner": "sound",
+			"node": [
+				"audio-lifecycle.test.js",
+				"ownership-reentrancy-matrix.test.js"
+			],
+			"browser": [
+				"audio-lifecycle-browser.test.js"
+			],
+			"visual": [],
+			"references": 3
+		},
+		{
+			"command": "removeImage",
+			"area": "images",
+			"owner": "core",
+			"node": [
+				"image-lifecycle.test.js",
+				"ownership-reentrancy-matrix.test.js"
+			],
+			"browser": [
+				"image-lifecycle-browser.test.js",
+				"ownership-reentrancy-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"images_comprehensive.html",
+				"shaders_lifecycle.html"
+			],
+			"references": 7
+		},
+		{
+			"command": "removeScreen",
+			"area": "core",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"color-validation-browser.test.js",
+				"context-recovery-browser.test.js",
+				"font-publication-browser.test.js",
+				"keyboard-lifecycle-browser.test.js",
+				"ownership-reentrancy-browser.test.js",
+				"patch-browser.test.js",
+				"pixel-disposal-browser.test.js",
+				"plugin-docs-browser.test.js"
+			],
+			"visual": [
+				"images_comprehensive.html",
+				"screen_comprehensive_01.html",
+				"screen_no_css_01.html",
+				"screen_same_context_01.html",
+				"shaders_lifecycle.html",
+				"pi_vision_01.html",
+				"pointer_lifecycle_01.html"
+			],
+			"references": 17
+		},
+		{
+			"command": "removeShader",
+			"area": "shaders",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"context-recovery-browser.test.js"
+			],
+			"visual": [
+				"screen_no_css_01.html",
+				"shaders_lifecycle.html"
+			],
+			"references": 4
+		},
+		{
+			"command": "resetView",
+			"area": "view",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"batch-reservations-browser.test.js",
+				"context-recovery-browser.test.js",
+				"pixel-disposal-browser.test.js"
+			],
+			"visual": [
+				"view_comprehensive.html"
+			],
+			"references": 4
+		},
+		{
+			"command": "resumeAudio",
+			"area": "sound",
+			"owner": "sound",
+			"node": [
+				"audio-lifecycle.test.js"
+			],
+			"browser": [
+				"audio-samples-browser.test.js",
+				"audio-stream-browser.test.js"
+			],
+			"visual": [],
+			"references": 3
+		},
+		{
+			"command": "screen",
+			"area": "core",
+			"owner": "core",
+			"node": [
+				"batch-reservations.test.js",
+				"color-validation.test.js",
+				"keyboard-lifecycle.test.js",
+				"numeric-boundaries.test.js",
+				"ownership-reentrancy-matrix.test.js",
+				"patch-lifecycle.test.js",
+				"polygons.test.js",
+				"static-texture-cache.test.js",
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"arc-circle-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"color-validation-browser.test.js",
+				"context-recovery-browser.test.js",
+				"font-publication-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"keyboard-lifecycle-browser.test.js",
+				"numeric-boundaries-browser.test.js",
+				"ownership-reentrancy-browser.test.js",
+				"patch-browser.test.js",
+				"pixel-disposal-browser.test.js",
+				"plugin-docs-browser.test.js",
+				"plugin-installation-browser.test.js",
+				"polygons-bundles-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html",
+				"draw_comprehensive.html",
+				"errors_01.html",
+				"errors_02.html",
+				"graphics_comprehensive.html",
+				"images_comprehensive.html",
+				"inmouse_01.html",
+				"inpress_01.html",
+				"intouch_01.html",
+				"keyboard_commands.html",
+				"keyboard_input.html",
+				"layers_01.html",
+				"onclick_01.html",
+				"onmouse_01.html",
+				"onmouse_02.html",
+				"onmouse_03.html",
+				"onpress_01.html",
+				"onpress_02.html",
+				"ontouch_04.html",
+				"paint_01.html",
+				"paint_02.html",
+				"paint_03.html",
+				"parameters_01.html",
+				"polygon_01.html",
+				"print_comprehensive.html",
+				"ready_01.html",
+				"renderer_comprehensive.html",
+				"screen_comprehensive_01.html",
+				"screen_no_css_01.html",
+				"screen_overlaping.html",
+				"screen_same_context_01.html",
+				"setPos_01.html",
+				"set_01.html",
+				"shaders_comprehensive.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html",
+				"example_01.html",
+				"onscreen_keyboard_01.html",
+				"onscreen_keyboard_02.html",
+				"onscreen_keyboard_03.html",
+				"onscreen_keyboard_04.html",
+				"pi_vision_01.html",
+				"pointer_lifecycle_01.html",
+				"polygon_01.html",
+				"table_01.html"
+			],
+			"references": 70
+		},
+		{
+			"command": "screenToView",
+			"area": "view",
+			"owner": "core",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"view_comprehensive.html"
+			],
+			"references": 1
+		},
+		{
+			"command": "set",
+			"area": "core",
+			"owner": "core",
+			"node": [
+				"audio-metrics.test.js",
+				"batch-reservations.test.js",
+				"font-publication.test.js",
+				"gamepad-validation.test.js",
+				"image-lifecycle.test.js",
+				"keyboard-lifecycle.test.js",
+				"ownership-reentrancy-matrix.test.js",
+				"patch-lifecycle.test.js",
+				"sound-envelope.test.js",
+				"static-texture-cache.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"audio-lifecycle-browser.test.js",
+				"font-publication-browser.test.js",
+				"gamepad-validation-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"keyboard-lifecycle-browser.test.js",
+				"pixel-disposal-browser.test.js"
+			],
+			"visual": [
+				"inmouse_01.html",
+				"inpress_01.html",
+				"onmouse_01.html",
+				"onmouse_02.html",
+				"set_01.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html"
+			],
+			"references": 24
+		},
+		{
+			"command": "setActionKeys",
+			"area": "keyboard",
+			"owner": "keyboard",
+			"node": [
+				"keyboard-lifecycle.test.js"
+			],
+			"browser": [
+				"keyboard-lifecycle-browser.test.js"
+			],
+			"visual": [
+				"keyboard_commands.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "setAudio",
+			"area": "sound",
+			"owner": "sound",
+			"node": [
+				"audio-lifecycle.test.js"
+			],
+			"browser": [
+				"audio-samples-browser.test.js",
+				"audio-stream-browser.test.js"
+			],
+			"visual": [],
+			"references": 3
+		},
+		{
+			"command": "setBgColor",
+			"area": "colors",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"color-validation-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html",
+				"layers_01.html",
+				"renderer_comprehensive.html",
+				"screen_comprehensive_01.html",
+				"shaders_comprehensive.html"
+			],
+			"references": 7
+		},
+		{
+			"command": "setBlend",
+			"area": "blending",
+			"owner": "core",
+			"node": [
+				"numeric-boundaries.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"arc-circle-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"context-recovery-browser.test.js",
+				"numeric-boundaries-browser.test.js"
+			],
+			"visual": [
+				"graphics_comprehensive.html",
+				"parameters_01.html",
+				"renderer_comprehensive.html"
+			],
+			"references": 9
+		},
+		{
+			"command": "setBusVolume",
+			"area": "sound",
+			"owner": "sound",
+			"node": [
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"audio-advanced-browser.test.js",
+				"audio-bus-browser.test.js",
+				"audio-effects-browser.test.js",
+				"audio-service-browser.test.js",
+				"audio-voices-browser.test.js"
+			],
+			"visual": [],
+			"references": 6
+		},
+		{
+			"command": "setChar",
+			"area": "text",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"font-publication-browser.test.js"
+			],
+			"visual": [
+				"print_comprehensive.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "setColor",
+			"area": "colors",
+			"owner": "core",
+			"node": [
+				"color-validation.test.js",
+				"performance-calibration.test.js",
+				"performance-polygons.test.js",
+				"polygons.test.js",
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"arc-circle-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"color-validation-browser.test.js",
+				"context-recovery-browser.test.js",
+				"font-publication-browser.test.js",
+				"keyboard-lifecycle-browser.test.js",
+				"ownership-reentrancy-browser.test.js",
+				"patch-browser.test.js",
+				"performance-report-browser.test.js",
+				"pixel-disposal-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html",
+				"draw_comprehensive.html",
+				"graphics_comprehensive.html",
+				"images_comprehensive.html",
+				"inmouse_01.html",
+				"inpress_01.html",
+				"intouch_01.html",
+				"keyboard_commands.html",
+				"keyboard_input.html",
+				"layers_01.html",
+				"onclick_01.html",
+				"onmouse_01.html",
+				"onmouse_02.html",
+				"paint_01.html",
+				"paint_02.html",
+				"paint_03.html",
+				"parameters_01.html",
+				"polygon_01.html",
+				"print_comprehensive.html",
+				"renderer_comprehensive.html",
+				"screen_comprehensive_01.html",
+				"screen_no_css_01.html",
+				"screen_overlaping.html",
+				"screen_same_context_01.html",
+				"setPos_01.html",
+				"set_01.html",
+				"shaders_comprehensive.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html",
+				"example_01.html",
+				"onscreen_keyboard_01.html",
+				"onscreen_keyboard_02.html",
+				"onscreen_keyboard_03.html",
+				"onscreen_keyboard_04.html",
+				"pi_vision_01.html",
+				"polygon_01.html",
+				"table_01.html"
+			],
+			"references": 54
+		},
+		{
+			"command": "setContainerBgColor",
+			"area": "colors",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"color-validation-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html",
+				"renderer_comprehensive.html",
+				"screen_overlaping.html"
+			],
+			"references": 5
+		},
+		{
+			"command": "setDefaultAnchor",
+			"area": "images",
+			"owner": "core",
+			"node": [],
+			"browser": [],
+			"visual": [],
+			"references": 0
+		},
+		{
+			"command": "setDefaultColor",
+			"area": "colors",
+			"owner": "core",
+			"node": [
+				"color-validation.test.js"
+			],
+			"browser": [
+				"color-validation-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "setDefaultFont",
+			"area": "text",
+			"owner": "core",
+			"node": [
+				"font-publication.test.js",
+				"numeric-boundaries.test.js"
+			],
+			"browser": [
+				"font-publication-browser.test.js"
+			],
+			"visual": [],
+			"references": 3
+		},
+		{
+			"command": "setDefaultPal",
+			"area": "colors",
+			"owner": "core",
+			"node": [
+				"color-validation.test.js",
+				"numeric-boundaries.test.js"
+			],
+			"browser": [
+				"color-validation-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html",
+				"graphics_comprehensive.html"
+			],
+			"references": 5
+		},
+		{
+			"command": "setDisplayShader",
+			"area": "shaders",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"context-recovery-browser.test.js",
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"screen_no_css_01.html",
+				"shaders_comprehensive.html",
+				"shaders_lifecycle.html"
+			],
+			"references": 6
+		},
+		{
+			"command": "setDisplayShaderUniforms",
+			"area": "shaders",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"context-recovery-browser.test.js"
+			],
+			"visual": [
+				"shaders_lifecycle.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "setEnableContextMenu",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [
+				"patch-browser.test.js"
+			],
+			"visual": [],
+			"references": 1
+		},
+		{
+			"command": "setFont",
+			"area": "text",
+			"owner": "core",
+			"node": [
+				"font-publication.test.js",
+				"numeric-boundaries.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"benchmark-browser.test.js",
+				"font-publication-browser.test.js",
+				"numeric-boundaries-browser.test.js"
+			],
+			"visual": [
+				"print_comprehensive.html",
+				"screen_comprehensive_01.html",
+				"setPos_01.html",
+				"view_comprehensive.html",
+				"onscreen_keyboard_01.html",
+				"onscreen_keyboard_02.html",
+				"onscreen_keyboard_03.html",
+				"onscreen_keyboard_04.html",
+				"table_01.html"
+			],
+			"references": 15
+		},
+		{
+			"command": "setGamepadSensitivity",
+			"area": "gamepad",
+			"owner": "gamepad",
+			"node": [
+				"gamepad-validation.test.js"
+			],
+			"browser": [
+				"gamepad-validation-browser.test.js"
+			],
+			"visual": [],
+			"references": 2
+		},
+		{
+			"command": "setNoise",
+			"area": "blending",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"alpha-composition-browser.test.js"
+			],
+			"visual": [
+				"paint_02.html",
+				"paint_03.html",
+				"parameters_01.html",
+				"renderer_comprehensive.html"
+			],
+			"references": 5
+		},
+		{
+			"command": "setPal",
+			"area": "colors",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"batch-reservations-browser.test.js",
+				"color-validation-browser.test.js",
+				"image-lifecycle-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html"
+			],
+			"references": 4
+		},
+		{
+			"command": "setPalColors",
+			"area": "colors",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"image-lifecycle-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "setPinchZoom",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"intouch_01.html",
+				"onmouse_02.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "setPos",
+			"area": "text",
+			"owner": "core",
+			"node": [
+				"performance-calibration.test.js"
+			],
+			"browser": [
+				"context-recovery-browser.test.js",
+				"performance-report-browser.test.js"
+			],
+			"visual": [
+				"images_comprehensive.html",
+				"inmouse_01.html",
+				"inpress_01.html",
+				"intouch_01.html",
+				"keyboard_commands.html",
+				"onclick_01.html",
+				"onmouse_01.html",
+				"print_comprehensive.html",
+				"screen_comprehensive_01.html",
+				"setPos_01.html",
+				"view_comprehensive.html",
+				"onscreen_keyboard_01.html",
+				"onscreen_keyboard_02.html",
+				"pi_vision_01.html",
+				"table_01.html"
+			],
+			"references": 18
+		},
+		{
+			"command": "setPosPx",
+			"area": "text",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"benchmark-browser.test.js",
+				"font-publication-browser.test.js",
+				"keyboard-lifecycle-browser.test.js",
+				"performance-report-browser.test.js"
+			],
+			"visual": [
+				"colors_comprehensive.html",
+				"draw_comprehensive.html",
+				"graphics_comprehensive.html",
+				"keyboard_commands.html",
+				"print_comprehensive.html",
+				"renderer_comprehensive.html",
+				"screen_same_context_01.html",
+				"shaders_comprehensive.html",
+				"view_comprehensive.html",
+				"pi_vision_01.html"
+			],
+			"references": 14
+		},
+		{
+			"command": "setPrintSize",
+			"area": "text",
+			"owner": "core",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"print_comprehensive.html"
+			],
+			"references": 1
+		},
+		{
+			"command": "setScreen",
+			"area": "core",
+			"owner": "core",
+			"node": [],
+			"browser": [
+				"benchmark-browser.test.js",
+				"color-validation-browser.test.js",
+				"patch-browser.test.js",
+				"plugin-installation-browser.test.js"
+			],
+			"visual": [
+				"images_comprehensive.html",
+				"screen_comprehensive_01.html",
+				"screen_overlaping.html",
+				"view_comprehensive.html",
+				"pi_vision_01.html",
+				"table_01.html"
+			],
+			"references": 10
+		},
+		{
+			"command": "setSoundLimiter",
+			"area": "sound",
+			"owner": "sound",
+			"node": [],
+			"browser": [
+				"audio-advanced-browser.test.js",
+				"audio-bus-browser.test.js",
+				"audio-effects-browser.test.js",
+				"audio-play-browser.test.js",
+				"audio-recording-browser.test.js",
+				"audio-render-browser.test.js",
+				"audio-samples-browser.test.js",
+				"audio-service-browser.test.js",
+				"audio-sound-design-browser.test.js",
+				"audio-voices-browser.test.js"
+			],
+			"visual": [],
+			"references": 10
+		},
+		{
+			"command": "setVolume",
+			"area": "sound",
+			"owner": "sound",
+			"node": [],
+			"browser": [
+				"audio-advanced-browser.test.js",
+				"audio-bus-browser.test.js",
+				"audio-effects-browser.test.js",
+				"audio-play-browser.test.js",
+				"audio-recording-browser.test.js",
+				"audio-samples-browser.test.js",
+				"audio-service-browser.test.js",
+				"audio-sound-design-browser.test.js",
+				"audio-voices-browser.test.js"
+			],
+			"visual": [],
+			"references": 9
+		},
+		{
+			"command": "setWordBreak",
+			"area": "text",
+			"owner": "core",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"print_comprehensive.html",
+				"screen_overlaping.html",
+				"view_comprehensive.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "sound",
+			"area": "sound",
+			"owner": "sound",
+			"node": [
+				"copy-to-release.test.js",
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"audio-advanced-browser.test.js",
+				"audio-bus-browser.test.js",
+				"audio-effects-browser.test.js",
+				"audio-play-browser.test.js",
+				"audio-recording-browser.test.js",
+				"audio-recording-realtime-browser.test.js",
+				"audio-render-browser.test.js",
+				"audio-samples-browser.test.js",
+				"audio-service-browser.test.js",
+				"audio-sound-design-browser.test.js",
+				"audio-stream-browser.test.js",
+				"audio-voices-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [],
+			"references": 15
+		},
+		{
+			"command": "startGamepad",
+			"area": "gamepad",
+			"owner": "gamepad",
+			"node": [],
+			"browser": [],
+			"visual": [],
+			"references": 0
+		},
+		{
+			"command": "startKeyboard",
+			"area": "keyboard",
+			"owner": "keyboard",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"keyboard_commands.html"
+			],
+			"references": 1
+		},
+		{
+			"command": "startMouse",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"onmouse_03.html",
+				"onpress_01.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "startTouch",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"onpress_01.html",
+				"ontouch_04.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "stopAudio",
+			"area": "sound",
+			"owner": "sound",
+			"node": [
+				"audio-lifecycle.test.js"
+			],
+			"browser": [
+				"audio-samples-browser.test.js",
+				"audio-stream-browser.test.js"
+			],
+			"visual": [],
+			"references": 3
+		},
+		{
+			"command": "stopGamepad",
+			"area": "gamepad",
+			"owner": "gamepad",
+			"node": [],
+			"browser": [
+				"gamepad-validation-browser.test.js"
+			],
+			"visual": [],
+			"references": 1
+		},
+		{
+			"command": "stopKeyboard",
+			"area": "keyboard",
+			"owner": "keyboard",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"keyboard_commands.html"
+			],
+			"references": 1
+		},
+		{
+			"command": "stopMouse",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"onmouse_03.html",
+				"onpress_01.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "stopPlay",
+			"area": "sound",
+			"owner": "sound",
+			"node": [],
+			"browser": [
+				"audio-advanced-browser.test.js",
+				"audio-play-browser.test.js",
+				"audio-render-browser.test.js",
+				"audio-service-browser.test.js",
+				"audio-voices-browser.test.js"
+			],
+			"visual": [],
+			"references": 5
+		},
+		{
+			"command": "stopSound",
+			"area": "sound",
+			"owner": "sound",
+			"node": [
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"audio-samples-browser.test.js",
+				"audio-voices-browser.test.js"
+			],
+			"visual": [],
+			"references": 3
+		},
+		{
+			"command": "stopTouch",
+			"area": "pointer",
+			"owner": "pointer",
+			"node": [],
+			"browser": [
+				"patch-browser.test.js"
+			],
+			"visual": [
+				"onpress_01.html",
+				"ontouch_04.html"
+			],
+			"references": 3
+		},
+		{
+			"command": "viewToScreen",
+			"area": "view",
+			"owner": "core",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"view_comprehensive.html",
+				"pi_vision_01.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "width",
+			"area": "view",
+			"owner": "core",
+			"node": [
+				"batch-reservations.test.js",
+				"font-publication.test.js",
+				"image-lifecycle.test.js",
+				"keyboard-lifecycle.test.js",
+				"numeric-boundaries.test.js",
+				"ownership-reentrancy-matrix.test.js",
+				"patch-lifecycle.test.js",
+				"performance-polygons.test.js"
+			],
+			"browser": [
+				"alpha-composition-browser.test.js",
+				"arc-circle-browser.test.js",
+				"batch-reservations-browser.test.js",
+				"benchmark-browser.test.js",
+				"font-publication-browser.test.js",
+				"image-lifecycle-browser.test.js",
+				"numeric-boundaries-browser.test.js",
+				"patch-browser.test.js",
+				"performance-report-browser.test.js"
+			],
+			"visual": [
+				"onclick_01.html",
+				"parameters_01.html",
+				"screen_comprehensive_01.html",
+				"screen_same_context_01.html",
+				"shaders_lifecycle.html",
+				"view_comprehensive.html",
+				"example_01.html",
+				"pi_vision_01.html"
+			],
+			"references": 25
+		},
+		{
+			"command": "hideKeyboard",
+			"area": "onscreen-keyboard",
+			"owner": "optional-plugin",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"onscreen_keyboard_03.html",
+				"onscreen_keyboard_04.html"
+			],
+			"references": 2
+		},
+		{
+			"command": "showKeyboard",
+			"area": "onscreen-keyboard",
+			"owner": "optional-plugin",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"onscreen_keyboard_01.html",
+				"onscreen_keyboard_02.html",
+				"onscreen_keyboard_03.html",
+				"onscreen_keyboard_04.html"
+			],
+			"references": 4
+		},
+		{
+			"command": "printTable",
+			"area": "print-table",
+			"owner": "optional-plugin",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"table_01.html"
+			],
+			"references": 1
+		},
+		{
+			"command": "defineInstrument",
+			"area": "sound-advanced",
+			"owner": "sound",
+			"node": [
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"audio-advanced-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [],
+			"references": 3
+		},
+		{
+			"command": "definePreset",
+			"area": "sound-advanced",
+			"owner": "sound",
+			"node": [
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"audio-advanced-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [],
+			"references": 3
+		},
+		{
+			"command": "generateSfx",
+			"area": "sound-advanced",
+			"owner": "sound",
+			"node": [
+				"sound-advanced-generator.test.js",
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [],
+			"references": 3
+		},
+		{
+			"command": "getRecordingState",
+			"area": "sound-advanced",
+			"owner": "sound",
+			"node": [
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"audio-recording-browser.test.js",
+				"audio-recording-realtime-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [],
+			"references": 4
+		},
+		{
+			"command": "getSoundLevels",
+			"area": "sound-advanced",
+			"owner": "sound",
+			"node": [
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"audio-advanced-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [],
+			"references": 3
+		},
+		{
+			"command": "saveRecording",
+			"area": "sound-advanced",
+			"owner": "sound",
+			"node": [
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"audio-recording-browser.test.js",
+				"audio-recording-realtime-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [],
+			"references": 4
+		},
+		{
+			"command": "setBusEffect",
+			"area": "sound-advanced",
+			"owner": "sound",
+			"node": [
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"audio-advanced-browser.test.js",
+				"audio-effects-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [],
+			"references": 4
+		},
+		{
+			"command": "sfx",
+			"area": "sound-advanced",
+			"owner": "sound",
+			"node": [
+				"sound-advanced.test.js",
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"audio-advanced-browser.test.js",
+				"audio-bus-browser.test.js",
+				"audio-effects-browser.test.js",
+				"audio-service-browser.test.js",
+				"audio-voices-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [],
+			"references": 8
+		},
+		{
+			"command": "startRecording",
+			"area": "sound-advanced",
+			"owner": "sound",
+			"node": [
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"audio-recording-browser.test.js",
+				"audio-recording-realtime-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [],
+			"references": 4
+		},
+		{
+			"command": "stopRecording",
+			"area": "sound-advanced",
+			"owner": "sound",
+			"node": [
+				"package-types-consumer.test.js"
+			],
+			"browser": [
+				"audio-recording-browser.test.js",
+				"audio-recording-realtime-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [],
+			"references": 4
+		},
+		{
+			"command": "synth",
+			"area": "sound-advanced",
+			"owner": "sound",
+			"node": [
+				"sound-advanced.test.js",
+				"package-types-consumer.test.js",
+				"size.test.js"
+			],
+			"browser": [
+				"audio-advanced-browser.test.js",
+				"audio-service-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"visual": [],
+			"references": 6
+		},
+		{
+			"command": "vis",
+			"area": "pi-vision",
+			"owner": "optional-plugin",
+			"node": [],
+			"browser": [],
+			"visual": [
+				"pi_vision_01.html"
+			],
+			"note": "object API ($.vis.*), missed by the call pattern",
+			"references": 1
+		}
+	],
+	"contracts": [
+		{
+			"id": "SYS-001",
+			"contract": "Active-screen removal rebinds global drawing",
+			"owner": "core",
+			"tests": [
+				"patch-browser.test.js:118,144,167"
+			]
+		},
+		{
+			"id": "SYS-002",
+			"contract": "A throwing ready callback does not abandon other waiters",
+			"owner": "core",
+			"tests": [
+				"patch-lifecycle.test.js:260,299,323,352,373",
+				"ownership-reentrancy-browser.test.js:92"
+			]
+		},
+		{
+			"id": "SYS-003",
+			"contract": "Screen disposal during text input releases the input session",
+			"owner": "keyboard",
+			"tests": [
+				"keyboard-lifecycle.test.js",
+				"keyboard-lifecycle-browser.test.js"
+			]
+		},
+		{
+			"id": "SYS-004",
+			"contract": "Audio load completion releases only its own wait",
+			"owner": "sound",
+			"tests": [
+				"audio-lifecycle.test.js",
+				"audio-lifecycle-browser.test.js"
+			]
+		},
+		{
+			"id": "SYS-005",
+			"contract": "Deferred pixel reads and filters stop after screen disposal",
+			"owner": "core",
+			"tests": [
+				"patch-lifecycle.test.js:94,114,127,175,211",
+				"pixel-disposal-browser.test.js",
+				"ownership-reentrancy-matrix.test.js:234",
+				"ownership-reentrancy-browser.test.js:72"
+			]
+		},
+		{
+			"id": "SYS-006",
+			"contract": "Offscreen composition applies alpha once",
+			"owner": "core",
+			"tests": [
+				"alpha-conversion.test.js",
+				"alpha-composition-browser.test.js"
+			]
+		},
+		{
+			"id": "SYS-007",
+			"contract": "Oversized batch requests chunk; Full HD paint works",
+			"owner": "core",
+			"tests": [
+				"batch-reservations.test.js",
+				"batch-reservations-browser.test.js"
+			]
+		},
+		{
+			"id": "SYS-008",
+			"contract": "Context restoration rebuilds GPU objects",
+			"owner": "core",
+			"tests": [
+				"context-recovery-browser.test.js",
+				"static-texture-cache.test.js",
+				"batch-reservations.test.js",
+				"patch-lifecycle.test.js:142,162"
+			]
+		},
+		{
+			"id": "SYS-009",
+			"contract": "Late plugins initialize existing screens",
+			"owner": "core",
+			"tests": [
+				"plugin-installation-browser.test.js",
+				"plugin-services.test.js",
+				"patch-lifecycle.test.js:383,466",
+				"patch-browser.test.js:701"
+			]
+		},
+		{
+			"id": "SYS-010",
+			"contract": "Loading and failed images can be removed and replaced",
+			"owner": "core",
+			"tests": [
+				"image-lifecycle.test.js",
+				"image-lifecycle-browser.test.js",
+				"ownership-reentrancy-matrix.test.js:193",
+				"ownership-reentrancy-browser.test.js:113",
+				"patch-browser.test.js:186,350,619"
+			]
+		},
+		{
+			"id": "SYS-011",
+			"contract": "Keyboard once-handlers and released keys",
+			"owner": "keyboard",
+			"tests": [
+				"keyboard-lifecycle.test.js",
+				"keyboard-lifecycle-browser.test.js"
+			]
+		},
+		{
+			"id": "SYS-012",
+			"contract": "Declarations match runtime exports",
+			"owner": "tooling",
+			"tests": [
+				"package-types-consumer.test.js",
+				"scripts/validate-type-definitions.js"
+			],
+			"note": "Declaration side only; nothing compares declared commands with runtime objects"
+		},
+		{
+			"id": "SYS-013",
+			"contract": "ESM plugin registration (auto-registers when window.pi exists)",
+			"owner": "core",
+			"tests": [
+				"polygons-bundles-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"note": "Explicit registerPlugin() without window.pi is only type-checked"
+		},
+		{
+			"id": "SYS-014",
+			"contract": "Plugin documentation examples run",
+			"owner": "core",
+			"tests": [
+				"plugin-docs-browser.test.js"
+			]
+		},
+		{
+			"id": "SYS-015",
+			"contract": "360-degree arcs draw full circles",
+			"owner": "core",
+			"tests": [
+				"arc-full-turn.test.js",
+				"arc-circle-browser.test.js"
+			]
+		},
+		{
+			"id": "SYS-016",
+			"contract": "Circle outlines emit each pixel once",
+			"owner": "core",
+			"tests": [
+				"circle-outline.test.js",
+				"arc-circle-browser.test.js"
+			]
+		},
+		{
+			"id": "SYS-017",
+			"contract": "Invalid palette indices leave drawing colors intact",
+			"owner": "core",
+			"tests": [
+				"color-validation.test.js",
+				"color-validation-browser.test.js"
+			]
+		},
+		{
+			"id": "SYS-018",
+			"contract": "Removing pending audio stops its loading work",
+			"owner": "sound",
+			"tests": [
+				"audio-lifecycle.test.js",
+				"audio-lifecycle-browser.test.js",
+				"ownership-reentrancy-matrix.test.js:214"
+			]
+		},
+		{
+			"id": "SYS-019",
+			"contract": "Build fails when an optional plugin build fails",
+			"owner": "tooling",
+			"tests": [
+				"build.test.js"
+			]
+		},
+		{
+			"id": "SYS-020",
+			"contract": "Release copy checks inputs before replacing dist",
+			"owner": "tooling",
+			"tests": [
+				"copy-to-release.test.js"
+			]
+		},
+		{
+			"id": "SYS-021",
+			"contract": "NaN sensitivity rejected for gamepad axes",
+			"owner": "gamepad",
+			"tests": [
+				"gamepad-validation.test.js",
+				"gamepad-validation-browser.test.js"
+			]
+		},
+		{
+			"id": "SYS-022",
+			"contract": "Invalid font sources publish nothing",
+			"owner": "core",
+			"tests": [
+				"font-publication.test.js",
+				"font-publication-browser.test.js",
+				"numeric-boundaries.test.js:357,377"
+			]
+		},
+		{
+			"id": "SYS-023",
+			"contract": "Visual tests fail on uncaught page errors",
+			"owner": "tooling",
+			"tests": [
+				"test-workflow.test.js",
+				"run-visual-tests.js (expectPageError)"
+			]
+		},
+		{
+			"id": "COV-001",
+			"contract": "Touch fixture samples every stroke",
+			"owner": "pointer",
+			"tests": [
+				"intouch_01.html"
+			]
+		},
+		{
+			"id": "COV-002",
+			"contract": "Plugin fixtures have baselines",
+			"owner": "tooling",
+			"tests": [
+				"html-plugins/*.html with screenshots/*.png"
+			]
+		},
+		{
+			"id": "COV-003",
+			"contract": "Numeric boundary tables",
+			"owner": "core",
+			"tests": [
+				"numeric-boundaries.test.js",
+				"numeric-boundaries-browser.test.js"
+			],
+			"note": "pushView and setBlend range checks exist only here"
+		},
+		{
+			"id": "COV-004",
+			"contract": "Ownership and reentrancy",
+			"owner": "core",
+			"tests": [
+				"ownership-reentrancy-matrix.test.js",
+				"ownership-reentrancy-browser.test.js"
+			]
+		},
+		{
+			"id": "COV-005",
+			"contract": "Package declarations compile in a consumer",
+			"owner": "tooling",
+			"tests": [
+				"package-types-consumer.test.js"
+			]
+		}
+	]
+}
