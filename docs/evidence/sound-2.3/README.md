@@ -19,6 +19,7 @@ compresses them with gzip level 9. Sizes are in bytes.
 | `size-phase6.json` | Phase 6 exit: `setBusVolume()` promoted to core | `sound` 2.0.0, `sound-advanced` 1.0.0; M4 |
 | `size-phase7.json` | Phase 7 exit: core output stage, recording in `sound-advanced` | `sound` 2.0.0, `sound-advanced` 1.0.0 |
 | `size-phase8.json` | Phase 8 exit: bus effects, chains, and in-place updates in `sound-advanced` | `sound` 2.0.0, `sound-advanced` 1.0.0 |
+| `size-phase9.json` | Phase 9, tasks 9.1, 9.2, and 9.4: core `observePlay`, `generateSfx()` in `sound-advanced` | `sound` 2.0.0, `sound-advanced` 1.0.0; task 9.3 not started |
 
 Phase 0 deltas, gzipped:
 
@@ -286,6 +287,37 @@ expectations:
 | Chain order | A lowpass after distortion attenuates the added harmonic by the filter response | Pass on both engines |
 | In-place mix ramp | Residual against the carrier times a 20 ms linear ramp within the stop tolerances | Pass in Chromium |
 | In-place chain update | The reverb tail continues and no new convolver is created. Changing reverb `time` rebuilds the chain and cuts the tail | Pass in Chromium |
+
+## Phase 9: game features (tasks 9.1, 9.2, and 9.4)
+
+Phase 9 so far made two changes. Task 9.3, music sync callbacks, waits for the input
+conventions review, so these numbers do not include `sync.js`.
+
+- Core `sound` gained the `observePlay` service member, and PLAY events record their track
+  index (task 9.2).
+- `sound-advanced` gained the `generator` module and `generateSfx()` (task 9.1).
+
+Phase 9 deltas, gzipped:
+
+| Bundle | Phase 8 exit | Phase 9 | Delta | Since 2.2 baseline |
+| --- | --- | --- | --- | --- |
+| `sound` plugin | 15,390 | 15,559 | +169 | +9,276 |
+| `pi.lite.min.js` | 48,586 | 48,586 | 0 | +311 |
+| `pi.min.js` | 72,435 | 72,606 | +171 | +9,678 |
+| `sound-advanced` plugin | 9,736 | 11,163 | +1,427 | — |
+
+- **`observePlay` (task 9.2).** It costs 169 bytes in the `sound` plugin and 171 in
+  `pi.min.js`, including the `track` field on PLAY events and the listener check. The core
+  plugin is 15,559 bytes, 313 under the 15,872-byte target. Full-build growth over the 2.2
+  baseline is 9,678 bytes, 50 under the 9,728-byte target, which leaves little room for the
+  `getAudioBuffer` member of task 10.1.
+- **Generator (task 9.1).** Its marginal cost is 1,356 bytes, within the plan 8 estimate of
+  1.5 KB for Phase 9, which also covered `sync.js`. Most of it is the nine category tables.
+  It imports `presets.js`, so the report groups it with its helpers: removing `presets` now
+  removes the generator too (2,010 bytes), and removing `synth` removes presets, the
+  generator, and instruments (4,664 bytes). Promoting the generator into core, with `synth`
+  and `presets`, costs 3,855 bytes.
+- **Full merge.** Merging all of `sound-advanced` into `pi.min.js` now costs 10,343 bytes.
 
 ## Sample measurements (Phase 3)
 

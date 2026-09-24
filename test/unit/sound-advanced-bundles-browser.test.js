@@ -7,10 +7,11 @@ import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
 import * as g_playwright from "@playwright/test";
 import * as g_source from "./browser-source-harness.js";
+import * as g_generator from "../../plugins/sound-advanced/generator.js";
 
 const COMMANDS = [
-	"defineInstrument", "definePreset", "getRecordingState", "getSoundLevels", "saveRecording",
-	"setBusEffect", "sfx", "startRecording", "stopRecording", "synth"
+	"defineInstrument", "definePreset", "generateSfx", "getRecordingState", "getSoundLevels",
+	"saveRecording", "setBusEffect", "sfx", "startRecording", "stopRecording", "synth"
 ];
 
 let m_browser;
@@ -77,6 +78,9 @@ for( const format of [ "iife", "esm" ] ) {
 								.map( item => item.initialized ),
 							"id": $.synth( { "duration": 0.01, "volume": 0, "oType": "pulse" } ),
 							"sfx": $.sfx( "blip" ),
+							"generated": [
+								$.generateSfx( "laser", 42 ), $.generateSfx( "random", 4294967295 )
+							],
 							"periodic": $.sound( { "duration": 0.01, "oType": "periodic" } ),
 							"peak": levels.peak,
 							"wav": [ wav.type, wav.size ]
@@ -86,6 +90,12 @@ for( const format of [ "iife", "esm" ] ) {
 					g_assert.deepEqual( result.initialized, [ true ] );
 					g_assert.match( result.id, /^sound_\d+$/ );
 					g_assert.match( result.sfx, /^sound_\d+$/ );
+
+					// Generated sounds match the source module in every engine and bundle
+					g_assert.deepEqual( result.generated, [
+						g_generator.generateSfxOptions( "laser", 42, 0, Math.random ),
+						g_generator.generateSfxOptions( "random", 4294967295, 0, Math.random )
+					] );
 					g_assert.match( result.periodic, /^sound_\d+$/ );
 					g_assert.equal( result.peak, 0 );
 					g_assert.equal( result.wav[ 0 ], "audio/wav" );

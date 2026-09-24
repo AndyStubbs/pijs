@@ -2,15 +2,17 @@
  * Contract tests for the sound extension service v1 (plan 4.3.4), using stub extensions:
  * source and insert lifecycles with exactly-once disposal, factory and start failures, early
  * and repeated stops, a stop advancing a future steal deadline, insert detune links, bus
- * insert replacement and removal, bus volume with effects in either order, taps, and the
- * createVoice request paths. The advanced plugin's own modules are covered in
- * audio-advanced-browser.test.js.
+ * insert replacement and removal, bus volume with effects in either order, taps, the
+ * createVoice request paths, and observePlay reports of admitted notes and song ends. The
+ * advanced plugin's own modules are covered in audio-advanced-browser.test.js.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
 import * as g_harness from "./audio-render-harness.js";
 import * as g_metrics from "./audio-metrics.js";
 import * as g_suite from "./audio-browser-suite.js";
+import * as g_fixtures from "./audio-sample-fixtures.js";
+import * as g_play from "../../plugins/sound/play.js";
 const test = g_test.test;
 const assert = g_assert;
 const frame = g_suite.frame;
@@ -20,8 +22,8 @@ const LEAD = g_suite.LEAD;
 const STOP_FADE = g_suite.STOP_FADE;
 
 const SERVICE_MEMBERS = [
-	"createVoice", "getContext", "registerPlayExtension", "registerSource", "scheduleEnvelope",
-	"setBusInsert", "setBusVolume", "stopVoice", "tapBus", "version"
+	"createVoice", "getContext", "observePlay", "registerPlayExtension", "registerSource",
+	"scheduleEnvelope", "setBusInsert", "setBusVolume", "stopVoice", "tapBus", "version"
 ];
 
 /**
@@ -180,6 +182,62 @@ function assertNear( actual, expected, tolerance, label ) {
 
 function channel( result, index = 0 ) {
 	return g_harness.decodeRender( result ).channels[ index ];
+}
+
+/**
+ * PLAY voices recorded by the harness: oscillators started after time zero, in start order
+ *
+ * @param {Array<Object>} sources - Harness source entries
+ * @returns {Array<Object>} Entries
+ */
+function playVoices( sources ) {
+	return sources.filter(
+		source => source.type === "OscillatorNode" && source.startTime !== null &&
+			source.startTime > 0
+	).sort( ( a, b ) => a.startTime - b.startTime || a.id - b.id );
+}
+
+/**
+ * Page function: observe PLAY events while running timed actions. Each action's run is
+ * function source called with the song IDs array and the loop audio ID; events are logged
+ * with the context time they arrived.
+ *
+ * @param {Object} arg - stubs, actions [ { time, run } ], optional loader and wav for loops
+ * @returns {Promise<Object>} Render with events, song IDs, and harness sources
+ */
+async function observeSongs( arg ) {
+	eval( arg.stubs );
+	const service = __stubs.service();
+	const events = [];
+	const ids = [];
+	let loopId = null;
+	if( arg.loader ) {
+		eval( arg.loader );
+		loopId = await __loadWav( arg.wav );
+	}
+	service.observePlay( event => {
+		events.push( {
+			...event, "frozen": Object.isFrozen( event ), "at": new AudioContext().currentTime
+		} );
+	} );
+	const actions = arg.actions.map( action => ( {
+		"time": action.time,
+		"run": () => {
+			$.setSoundLimiter( false );
+			( 0, eval )( action.run )( ids, loopId );
+		}
+	} ) );
+	return __audioHarness.render( { "actions": actions } ).then( render => ( {
+		...render, "events": events, "ids": ids, "sources": __audioHarness.sources()
+	} ) );
+}
+
+function notesOf( result ) {
+	return result.events.filter( event => event.type === "note" );
+}
+
+function endsOf( result ) {
+	return result.events.filter( event => event.type === "end" );
 }
 
 g_suite.describeAudioEngines( "sound extension service", suite => {
@@ -922,5 +980,224 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		}, { "stubs": STUBS } );
 		assert.match( locked.id, /^sound_\d+$/ );
 		assert.deepEqual( locked.events, [] );
+	} );
+
+	test( "observePlay reports each admitted note once, in time order, and the song's end",
+		async t => {
+			const song = "T120 L4 V40 O3 C, L8 V80 O4 MP50 C D E F";
+			const parsed = g_play.parsePlayString( song ).events;
+			const result = await suite.inHarness( t, {
+				"config": { "duration": 1.6 }, "needsSuspend": true
+			}, observeSongs, {
+				"stubs": STUBS,
+				"actions": [ { "time": 0, "run": `ids => { ids.push( $.play( "${song}" ) ); }` } ]
+			} );
+			if( !result ) {
+				return;
+			}
+			assert.deepEqual( result.errors, [] );
+			const trackId = result.ids[ 0 ];
+			const notes = notesOf( result );
+			const voices = playVoices( result.sources );
+			assert.equal( notes.length, parsed.length );
+			assert.equal( voices.length, parsed.length );
+			notes.forEach( ( note, i ) => {
+				const event = parsed[ i ];
+				assert.equal( note.trackId, trackId );
+				assert.equal( note.track, event.track );
+				assertNear( note.time, LEAD + event.time, 1e-9, `note ${i} time` );
+				assertNear( note.time, voices[ i ].startTime, 1e-9, `note ${i} source` );
+				assertNear(
+					note.duration, event.env.gate + event.env.release, 1e-9, `note ${i} length`
+				);
+				assert.equal( note.frequency, event.frequency );
+				assert.equal( note.volume, event.peak );
+				assert.equal( note.frozen, true );
+
+				// Notes are reported ahead of their audible start
+				assert.ok( note.at <= note.time, `note ${i} reported early` );
+			} );
+			assert.deepEqual( notes.map( note => note.track ), [ 0, 1, 1, 1, 1 ] );
+			for( let i = 1; i < notes.length; i++ ) {
+				assert.ok( notes[ i ].time >= notes[ i - 1 ].time );
+			}
+
+			// The end follows the last note's release, once
+			const ends = endsOf( result );
+			assert.equal( ends.length, 1 );
+			assert.equal( ends[ 0 ].trackId, trackId );
+			assert.equal( ends[ 0 ].stopped, false );
+			assert.equal( ends[ 0 ].frozen, true );
+			assert.equal( result.events[ result.events.length - 1 ].type, "end" );
+			const last = notes[ notes.length - 1 ];
+			assert.ok( ends[ 0 ].at >= last.time + last.duration );
+		}
+	);
+
+	test( "stopPlay() reports a stopped end once and no later notes", async t => {
+		const result = await suite.inHarness( t, {
+			"config": { "duration": 1 }, "needsSuspend": true
+		}, observeSongs, {
+			"stubs": STUBS,
+			"actions": [
+				{ "time": 0, "run": "ids => { ids.push( $.play( 'T120 L8 CDEFGAB>CDEFGAB' ) ); }" },
+				{ "time": 0.3, "run": "ids => { ids.push( $.play( 'T120 L8 O3 CDEFGAB' ) ); }" },
+				{ "time": 0.4, "run": "ids => { $.stopPlay( ids[ 0 ] ); }" },
+				{ "time": 0.5, "run": "ids => { $.stopPlay( ids[ 0 ] ); $.stopPlay(); }" },
+				{ "time": 0.6, "run": "ids => { $.stopPlay(); $.stopPlay( ids[ 1 ] ); }" }
+			]
+		} );
+		if( !result ) {
+			return;
+		}
+		assert.deepEqual( result.errors, [] );
+		const [ first, second ] = result.ids;
+		const ends = endsOf( result );
+		assert.deepEqual( ends.map( end => [ end.trackId, end.stopped ] ), [
+			[ first, true ], [ second, true ]
+		] );
+		assertNear( ends[ 0 ].at, 0.4, 0.03, "first stop" );
+		assertNear( ends[ 1 ].at, 0.5, 0.03, "stop all" );
+
+		// Each song's notes were all reported before its end, and every voice was reported
+		for( const end of ends ) {
+			const notes = notesOf( result ).filter( note => note.trackId === end.trackId );
+			assert.ok( notes.length > 0 );
+			assert.ok( notes.every( note => note.at <= end.at ) );
+		}
+		assert.equal( notesOf( result ).length, playVoices( result.sources ).length );
+	} );
+
+	test( "observePlay listeners are isolated, removable, and validated", async t => {
+		const result = await suite.inHarness( t, {
+			"config": { "duration": 1.4 }, "needsSuspend": true
+		}, arg => {
+			eval( arg.stubs );
+			const service = __stubs.service();
+			const logged = [];
+			const error = console.error;
+			console.error = ( ...args ) => {
+				logged.push( String( args[ 0 ] ) );
+			};
+			const counts = { "throwing": 0, "kept": 0, "removed": 0 };
+			service.observePlay( () => {
+				counts.throwing += 1;
+				throw new Error( "listener failed" );
+			} );
+			const kept = () => {
+				counts.kept += 1;
+			};
+			service.observePlay( kept );
+			service.observePlay( kept );
+			const remove = service.observePlay( () => {
+				counts.removed += 1;
+			} );
+			const codes = [ __stubs.codeOf( () => service.observePlay( 5 ) ) ];
+			return __audioHarness.render( { "actions": [
+				{ "time": 0, "run": () => {
+					$.setSoundLimiter( false );
+					$.play( "T120 L8 C D E F" );
+				} },
+				{ "time": 0.3, "run": () => {
+					remove();
+					remove();
+				} }
+			] } ).then( render => {
+				console.error = error;
+				return {
+					...render,
+					"counts": counts,
+					"logged": logged,
+					"codes": codes,
+					"sources": __audioHarness.sources()
+				};
+			} );
+		}, { "stubs": STUBS } );
+		if( !result ) {
+			return;
+		}
+		assert.deepEqual( result.errors, [] );
+		assert.deepEqual( result.codes, [ "INVALID_LISTENER" ] );
+
+		// Four notes and one end; a duplicate registration counts once
+		assert.equal( playVoices( result.sources ).length, 4 );
+		assert.equal( result.counts.throwing, 5 );
+		assert.equal( result.counts.kept, 5 );
+		assert.ok( result.counts.removed > 0 && result.counts.removed < 5 );
+		assert.equal( result.logged.length, 5 );
+		assert.ok( result.logged.every( line => line.startsWith( "sound: Play observer" ) ) );
+	} );
+
+	test( "observePlay does not report expired or skipped notes after a stall", async t => {
+		const release = 0.32;
+		const grace = "T100 L8 SINE O5 P8 A";
+		const songs = [
+			"T255 L64 MS " + "CDEFGAB".repeat( 5 ), "T120 L8 ML O3 C D E F", grace
+		];
+		const total = songs.reduce( ( sum, song ) => {
+			return sum + g_play.parsePlayString( song ).events.length;
+		}, 0 );
+		const result = await suite.inHarness( t, {
+			"config": { "duration": 1.2 }, "needsSuspend": true
+		}, observeSongs, {
+			"stubs": STUBS,
+			"actions": [
+				{ "time": 0, "run": `ids => {
+					ids.push( $.play( "${songs[ 0 ]}" ), $.play( "${songs[ 1 ]}" ) );
+					ids.push( $.play( "${songs[ 2 ]}" ) );
+					__audioHarness.holdTimers( true );
+				}` },
+				{ "time": release, "run": `() => {
+					__audioHarness.holdTimers( false );
+					__audioHarness.advance( 0 );
+				}` }
+			]
+		} );
+		if( !result ) {
+			return;
+		}
+		assert.deepEqual( result.errors, [] );
+		const notes = notesOf( result ).slice().sort( ( a, b ) => a.time - b.time );
+		const voices = playVoices( result.sources );
+		assert.ok( voices.length < total, `${voices.length} of ${total} notes admitted` );
+		assert.equal( notes.length, voices.length );
+		notes.forEach( ( note, i ) => {
+			assertNear( note.time, voices[ i ].startTime, 1e-9, `note ${i}` );
+		} );
+
+		// A note admitted late within grace reports its delayed audible start and the rest of
+		// its length
+		const [ event ] = g_play.parsePlayString( grace ).events;
+		const late = notesOf( result ).filter( note => note.trackId === result.ids[ 2 ] );
+		assert.equal( late.length, 1 );
+		assertNear( late[ 0 ].time, release + LEAD, 1e-9, "grace start" );
+		const end = LEAD + event.time + event.env.gate + event.env.release;
+		assertNear( late[ 0 ].duration, end - late[ 0 ].time, 1e-9, "grace length" );
+		assert.deepEqual( endsOf( result ).map( end => end.stopped ), [ false, false, false ] );
+	} );
+
+	test( "observePlay does not report notes rejected by the voice cap", async t => {
+		const result = await suite.inHarness( t, {
+			"config": { "duration": 0.8 }, "needsSuspend": true
+		}, observeSongs, {
+			"stubs": STUBS,
+			"loader": g_fixtures.PAGE_LOADER,
+			"wav": g_fixtures.wavBase64( g_fixtures.chirp( 0.5, 1 ) ),
+			"actions": [ { "time": 0, "run": `( ids, loopId ) => {
+				for( let i = 0; i < 64; i++ ) {
+					$.playAudio( { "audioId": loopId, "loop": true, "volume": 0.01 } );
+				}
+				ids.push( $.play( "T120 L16 C D E" ) );
+			}` } ]
+		} );
+		if( !result ) {
+			return;
+		}
+		assert.deepEqual( result.errors, [] );
+		assert.equal( playVoices( result.sources ).length, 0 );
+		assert.deepEqual( notesOf( result ), [] );
+		assert.deepEqual( endsOf( result ).map( end => [ end.trackId, end.stopped ] ), [
+			[ result.ids[ 0 ], false ]
+		] );
 	} );
 } );

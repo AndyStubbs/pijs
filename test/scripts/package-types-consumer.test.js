@@ -181,6 +181,9 @@ function createConsumerPackage() {
 			`const coin: string = pi.sfx( "coin", 0.5 );`,
 			`void coin;`,
 			`pi.definePreset( "zap", { frequency: 1800, frequencyEnd: 300 } );`,
+			`const generated: object = pi.generateSfx( "laser", 42, 0.1 );`,
+			`pi.definePreset( "zap", generated );`,
+			`pi.synth( pi.generateSfx( "coin" ) );`,
 			`pi.defineInstrument( 7, { oType: "square" } );`,
 			`pi.defineInstrument( 7, null );`,
 			`pi.setBusEffect( "sfx", "delay", { time: 0.3 } );`,
@@ -208,6 +211,8 @@ function createConsumerPackage() {
 			`pi.saveRecording( "song.wav" );`,
 			`// @ts-expect-error Preset names are strings.`,
 			`pi.sfx( 5 );`,
+			`// @ts-expect-error Categories are strings.`,
+			`pi.generateSfx( 5 );`,
 			""
 		].join( "\n" ),
 		"utf8"

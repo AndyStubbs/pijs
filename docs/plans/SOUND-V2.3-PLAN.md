@@ -1,6 +1,7 @@
 # Pi.js 2.3 Sound Upgrade Plan
 
-Status: Approved; roadmap Phases 0–6 implemented; expansion Phases 7–10 proposed
+Status: Approved; roadmap Phases 0–6 implemented; expansion Phases 7–8 implemented, Phase 9
+in progress, Phase 10 proposed
 Target release: Pi.js 2.3.0
 Companion document: [SOUND-V2.3-ROADMAP.md](SOUND-V2.3-ROADMAP.md)
 Expansion plan: [SOUND-ADVANCED-V2.3-PLAN.md](SOUND-ADVANCED-V2.3-PLAN.md)
@@ -166,6 +167,7 @@ change is needed. This mechanism is general and also available to third-party pl
 | `setBusInsert( bus, insert )` | Places one insert on a bus; `null` removes it |
 | `tapBus( bus, node )` | Connects a bus output in parallel to `node`; returns an untap function. `"output"` taps the fixed stage after the limiter |
 | `registerPlayExtension( name, extension )` | Adds PLAY tokens, per-track state, and note resolution |
+| `observePlay( listener )` | Reports admitted PLAY notes and song ends; returns a function that removes the listener (expansion plan 3.2) |
 
 Buses are named `"sfx"`, `"music"`, `"audio"`, and `"master"`. `tapBus` also accepts
 `"output"`, the fixed stage after the limiter; `setBusVolume` and `setBusInsert` reject it with
@@ -178,10 +180,9 @@ The interface is internal. It is documented in the plugin authoring docs
 contract tests in 4.3.4 pass, and `sound-advanced` 1.0 consumes every member. Later changes
 that break it require bumping `version`; a test pins the member list.
 
-**Proposed v1 additions before release** (expansion plan Section 3, decision D8):
-`observePlay( listener )` reports admitted PLAY notes and song ends, and
-`getAudioBuffer( name )` returns a loaded file's decoded buffer. Each addition updates this
-table when its task lands.
+**v1 additions before release** (expansion plan Section 3, decision D8): `observePlay` was
+added by task 9.2. `getAudioBuffer( name )`, which returns a loaded file's decoded buffer, is
+proposed for task 10.1. Each addition updates this table when its task lands.
 
 - **`createVoice` requests** follow the `sound()` rules: the same validation and error codes
   (an unregistered oType throws `INVALID_OTYPE`), delays beyond the lookahead window held as

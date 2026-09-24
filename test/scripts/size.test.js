@@ -66,11 +66,12 @@ test( "createSizeReport measures bundles, plugins, and differentials", async () 
 	assert.ok( report.notes.some( note => note.includes( "not additive" ) ) );
 } );
 
-test( "sound-advanced differentials cover every module, the synth group, and promotions", () => {
+test( "sound-advanced differentials cover every module, the helper groups, and promotions", () => {
 	const differentials = g_size.getDifferentials();
 	const names = differentials.map( entry => `${entry.kind} ${entry.name}` );
 	const modules = [
-		"periodic-noise", "synth", "effects", "analyser", "presets", "instruments", "recorder"
+		"periodic-noise", "synth", "effects", "analyser", "presets", "generator", "instruments",
+		"recorder"
 	];
 	for( const module of modules ) {
 		assert.ok( names.includes( `marginal sound-advanced/${module}` ), module );
@@ -80,11 +81,12 @@ test( "sound-advanced differentials cover every module, the synth group, and pro
 
 	// Removing the shared synth helper removes its dependents, which are listed as members
 	const group = differentials.find( entry => entry.name === "sound-advanced/synth" );
-	assert.deepEqual( group.members, [ "presets", "instruments" ] );
-	assert.doesNotMatch( group.variant.contents, /synth|presets|instruments/ );
+	assert.deepEqual( group.members, [ "presets", "generator", "instruments" ] );
+	assert.doesNotMatch( group.variant.contents, /synth|presets|generator|instruments/ );
 	const presets = differentials.find( entry => entry.name === "sound-advanced/presets" );
+	assert.deepEqual( presets.members, [ "generator" ] );
 	assert.match( presets.variant.contents, /synth\.js/ );
-	assert.doesNotMatch( presets.variant.contents, /presets\.js/ );
+	assert.doesNotMatch( presets.variant.contents, /presets\.js|generator\.js/ );
 
 	// Marginal variants share one all-modules base; promotions merge into the sound plugin
 	assert.equal( presets.base, group.base );
@@ -94,4 +96,10 @@ test( "sound-advanced differentials cover every module, the synth group, and pro
 	assert.equal( promotion.base, "plugin:sound" );
 	assert.match( promotion.variant.contents, /plugins\/sound\/index\.js/ );
 	assert.match( promotion.variant.contents, /synth\.js[\s\S]*instruments\.js/ );
+
+	// The generator's promotion brings both helpers it depends on
+	const generator = differentials.find(
+		entry => entry.name === "sound-advanced/generator promotion"
+	);
+	assert.match( generator.variant.contents, /synth\.js[\s\S]*presets\.js[\s\S]*generator\.js/ );
 } );

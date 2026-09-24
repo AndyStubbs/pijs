@@ -1,10 +1,11 @@
 /**
  * Pi.js - Sound Advanced Plugin
  *
- * Synthesis, periodic noise, bus effects, level analysis, sound-effect presets, PLAY
- * instruments, and recording to WAV. Every module reaches the core sound plugin only through
- * its extension service, so the plugin shares the core audio context, buses, and voice caps.
- * Each module registers its own commands and can move into core on its own.
+ * Synthesis, periodic noise, bus effects, level analysis, sound-effect presets and a seeded
+ * sound-effect generator, PLAY instruments, and recording to WAV. Every module reaches the
+ * core sound plugin only through its extension service, so the plugin shares the core audio
+ * context, buses, and voice caps. Each module registers its own commands and can move into
+ * core on its own.
  *
  * @module plugins/sound-advanced
  * @version 1.0.0
@@ -14,6 +15,7 @@
 
 import * as g_analyser from "./analyser.js";
 import * as g_effects from "./effects.js";
+import * as g_generator from "./generator.js";
 import * as g_instruments from "./instruments.js";
 import * as g_periodicNoise from "./periodic-noise.js";
 import * as g_presets from "./presets.js";
@@ -25,7 +27,8 @@ const SOUND_SERVICE_VERSION = 1;
 
 // Modules in registration order; periodic noise registers its source type first
 const MODULES = [
-	g_periodicNoise, g_synth, g_effects, g_analyser, g_presets, g_instruments, g_recorder
+	g_periodicNoise, g_synth, g_effects, g_analyser, g_presets, g_generator, g_instruments,
+	g_recorder
 ];
 
 
@@ -61,7 +64,8 @@ if( typeof window !== "undefined" && window.pi ) {
 	window.pi.registerPlugin( {
 		"name": "sound-advanced",
 		"version": "1.0.0",
-		"description": "Synthesis, bus effects, analyser, presets, PLAY instruments, and recording",
+		"description": "Synthesis, bus effects, analyser, presets, generator, PLAY instruments, " +
+			"and recording",
 		"dependencies": [ "sound" ],
 		"init": soundAdvancedPlugin
 	} );

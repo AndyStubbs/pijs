@@ -33,6 +33,7 @@ const SOUND_ADVANCED_DECLARATIONS = [
 	"synth( params: {",
 	"sfx( name: string, variation?: number ): string;",
 	"definePreset( name: string, params: object ): void;",
+	"generateSfx( category: string, seed?: number, variation?: number ): object;",
 	"defineInstrument( instrument: number, params: object | null ): void;",
 	"setBusEffect( bus: string, effect: string | object[] | null, options?: object ): void;",
 	"getSoundLevels( bus?: string, spectrum?: boolean, waveform?: boolean ): {",

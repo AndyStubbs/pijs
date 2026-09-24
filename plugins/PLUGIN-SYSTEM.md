@@ -87,6 +87,7 @@ below requires a new `version`.
 | `setBusInsert( bus, insert )` | Places one effect insert on a bus; `null` removes it |
 | `tapBus( bus, node )` | Connects a bus output to `node` in parallel and returns an untap function; `"output"` taps the signal after the limiter |
 | `registerPlayExtension( name, extension )` | Adds PLAY tokens, per-track state, and per-note voice overrides |
+| `observePlay( listener )` | Reports admitted PLAY notes and song ends to `listener`; returns a function that removes it |
 
 Buses are `"sfx"`, `"music"`, `"audio"`, and `"master"`. `tapBus` also accepts `"output"`,
 the final signal after the limiter, which is what the speakers receive; `setBusVolume` and
@@ -115,6 +116,17 @@ nodes; extensions never receive core nodes.
   which returns overrides for `frequency`, `frequencyEnd`, `gate`, `volume`, `envelope`,
   `pan`, `oType`, and `inserts`, or `null`. Notes resolve when `play()` is called. A prefix
   that core or another extension owns throws `DUPLICATE_PLAY_TOKEN`.
+- **PLAY observers.** When the scheduler admits a note, `listener` receives a frozen
+  `{ type: "note", trackId, track, time, duration, frequency, volume }`. `trackId` is the ID
+  `play()` returned, `track` is the index of the comma-separated track, `time` is the audible
+  start in context time, and `duration` runs from there to the end of the release. Notes are
+  admitted up to the lookahead window before they sound, so a listener that acts at the
+  audible time must schedule that itself. Expired, skipped, and rejected notes are not
+  reported. When a song finishes or `stopPlay()` stops it, `listener` receives `{ type:
+  "end", trackId, stopped }` once; a song with no notes ends during the `play()` call. A
+  listener that throws is logged and does not affect playback or other listeners. Adding the
+  same function twice registers it once. A listener that is not a function throws
+  `INVALID_LISTENER`.
 
 ```javascript
 function wobblePlugin( pluginApi ) {

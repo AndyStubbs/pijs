@@ -76,13 +76,19 @@ function throwCode( ErrorType, message, code ) {
 	throw error;
 }
 
+
+/*************************************************************************************************
+ * Exported Functions
+ ************************************************************************************************/
+
+
 /**
  * Deep copy plain data into a frozen snapshot
  *
  * @param {*} value - Value to copy
  * @returns {*} Snapshot
  */
-function freezeCopy( value ) {
+export function freezeCopy( value ) {
 	if( Array.isArray( value ) ) {
 		return Object.freeze( value.map( freezeCopy ) );
 	}
@@ -95,12 +101,6 @@ function freezeCopy( value ) {
 	}
 	return value;
 }
-
-
-/*************************************************************************************************
- * Exported Functions
- ************************************************************************************************/
-
 
 /**
  * Validate a preset and store a frozen copy of its options

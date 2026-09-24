@@ -60,7 +60,8 @@ export default function playSoundPlugin( pluginApi ) {
 		"setBusVolume": setBusVolume,
 		"setBusInsert": setBusInsert,
 		"tapBus": tapBus,
-		"registerPlayExtension": g_play.registerPlayExtension
+		"registerPlayExtension": g_play.registerPlayExtension,
+		"observePlay": g_play.observePlay
 	} );
 }
 

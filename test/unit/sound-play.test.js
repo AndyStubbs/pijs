@@ -215,6 +215,16 @@ test( "a comma track starts at the previous track's last command with its settin
 	assert.equal( events( "C D,, E" )[ 2 ].time, 0.5 );
 } );
 
+test( "events record the index of their comma-separated track", () => {
+	assert.deepEqual( events( "C2, E2, G2" ).map( event => event.track ), [ 0, 1, 2 ] );
+	assert.deepEqual( events( "T60 L4 C D E, F G" ).map( event => event.track ), [
+		0, 0, 0, 1, 1
+	] );
+
+	// An empty track keeps its index, so later tracks match their position in the string
+	assert.deepEqual( events( "C D,, E" ).map( event => event.track ), [ 0, 0, 2 ] );
+} );
+
 test( "events are immutable snapshots", () => {
 	const [ note ] = events( "[[0,1],[0,0]] C" );
 	assert.ok( Object.isFrozen( note ) );

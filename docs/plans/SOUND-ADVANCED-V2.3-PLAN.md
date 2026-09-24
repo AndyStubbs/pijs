@@ -1,7 +1,8 @@
 # Pi.js 2.3 Sound Advanced Expansion Plan
 
-Status: Phases 7–8 implemented (their three-engine listening checks are open); Phases 9–10
-not started
+Status: Phases 7–8 implemented (their three-engine listening checks are open); Phase 9 tasks
+9.1, 9.2, and the generator part of 9.4 implemented, task 9.3 waiting for the input conventions
+review; Phase 10 not started
 Revision 2: the sound-effect generator is `generateSfx()`, repeatable by default, with seed 0
 as the built-in preset and a `variation` parameter (6.1, D17).
 Target release: Pi.js 2.3.0
@@ -85,6 +86,12 @@ when the song starts. Core therefore adds one service member:
 - Admission happens up to the lookahead window before the note sounds, so listeners hear about
   notes early and must schedule their own dispatch. Rejected and skipped notes are not
   reported. A throwing listener is logged and does not affect playback.
+- `time` is the audible start. A note admitted late within the scheduler's grace starts at the
+  scheduling lead, so its `time` is later than its place in the song and its `duration` is
+  shorter.
+- Events are frozen, and every listener receives the same object. A song with no notes ends
+  during the `play()` call, before the caller has its ID. Adding the same function twice
+  registers it once, and a listener that is not a function throws `INVALID_LISTENER`.
 
 ### 3.3 `getAudioBuffer( name )`
 
@@ -415,6 +422,34 @@ Cue markers in PLAY strings, for events at arbitrary song positions, are deferre
   `"end"` once.
 - A realtime Chromium test checks that dispatch happens within two frames of the audible start
   (with the latency reported by the engine), and that notes delayed by a hidden tab are dropped.
+
+### 6.5 Exit status
+
+- Tasks 9.1, 9.2, and the generator part of 9.4 are implemented. The generator tests are in
+  `sound-advanced-generator.test.js`. The `observePlay` contract tests are in
+  `audio-service-browser.test.js`, and the PLAY track index test is in `sound-play.test.js`.
+  The size entry is in `docs/evidence/sound-2.3/README.md`.
+- **Repeatable draws.** The PRNG is mulberry32, seeded with the seed XOR a hash of the
+  category name, so a seed gives unrelated sounds in different categories.
+  - Seeded draws use only integer operations, multiplication, and addition, never `Math.log`,
+    `Math.exp`, or `Math.pow`, whose results may differ between engines. The bundle test
+    checks that each engine's minified bundle returns the options the Node module returns.
+  - Frequencies and times are drawn as `min + ( max − min ) · r²`, which favors the low end.
+    Other numbers are drawn linearly. Each drawn value is rounded to three decimals.
+  - Every table entry takes one draw in order, even when its condition leaves it out, so an
+    optional parameter never shifts the draws after it.
+- **Tables.** Each category lists weighted choices for `oType`, and where it has them for
+  `filterType`, the arpeggio pattern, and whether `"random"` sweeps. Numeric ranges can depend
+  on a choice: `duty` needs the pulse waveform, filter options a filter, `arpeggioRate` an
+  arpeggio, and `frequencyEnd` in `"random"` a sweep.
+- **Variation.** It applies only to numeric options the sound already has, using the ranges of
+  its category. Seed 0 keeps the preset's options and moves them within those ranges.
+- **Size.** `observePlay` fits in the Section 8 headroom, 50 bytes under the full-build
+  target.
+- **Open:**
+  - Task 9.3, `sync.js` with `onPlayEvent()` and `offPlayEvent()`, and the beat-synced demo
+    visual wait for the input conventions review. D13 and D14 stay open until then.
+  - The listening check of the generator categories across seeds, on all three engines.
 
 ## 7. Phase 10: Sample Instruments
 

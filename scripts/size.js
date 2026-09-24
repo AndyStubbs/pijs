@@ -26,11 +26,16 @@ const DEFAULT_REPORT_FILE = g_path.join( BUILD_DIR, "size-report.json" );
 const ADVANCED_PLUGIN = "sound-advanced";
 
 // sound-advanced modules in registration order. synth.js is a shared helper: presets and
-// instruments import it, so removing it removes them too.
+// instruments import it, so removing it removes them too. generator.js imports presets.js,
+// so removing presets removes the generator.
 const ADVANCED_MODULES = [
-	"periodic-noise", "synth", "effects", "analyser", "presets", "instruments", "recorder"
+	"periodic-noise", "synth", "effects", "analyser", "presets", "generator", "instruments",
+	"recorder"
 ];
-const ADVANCED_HELPERS = { "synth": [ "presets", "instruments" ] };
+const ADVANCED_HELPERS = {
+	"synth": [ "presets", "generator", "instruments" ],
+	"presets": [ "generator" ]
+};
 
 const MAIN_BUNDLES = [
 	{ "name": "pi.min.js", "entry": "index-full.js", "getBanner": g_build.getFullBanner },

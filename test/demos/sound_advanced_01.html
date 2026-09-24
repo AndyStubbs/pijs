@@ -68,8 +68,9 @@
 	<h1>Sound Advanced</h1>
 	<p class="intro">
 		Listening demo for the <code>sound-advanced</code> plugin: <code>synth()</code> with
-		filter, vibrato, tremolo, pulse duty, and arpeggio; periodic noise; presets; PLAY
-		instruments; bus volume and effects; and <code>getSoundLevels()</code>. Build with
+		filter, vibrato, tremolo, pulse duty, and arpeggio; periodic noise; presets;
+		<code>generateSfx()</code>; PLAY instruments; bus volume and effects; and
+		<code>getSoundLevels()</code>. Build with
 		<code>npm run build</code> and serve the repository with <code>npm run server</code>.
 	</p>
 
@@ -145,6 +146,32 @@
 			<input id="variation" type="range" min="0" max="1" step="0.05" value="0.3">
 			<output id="variationOut"></output></label>
 		<div id="presets"></div>
+	</div>
+
+	<div class="section">
+		<h2>Generator</h2>
+		<div class="controls">
+			<label class="control">Category
+				<select id="generatorCategory"></select>
+				<span></span></label>
+			<label class="control">Seed
+				<input id="generatorSeed" type="number" min="0" max="4294967295" step="1"
+					value="0">
+				<span></span></label>
+			<label class="control">Variation
+				<input id="generatorVariation" type="range" min="0" max="1" step="0.05"
+					value="0">
+				<output id="generatorVariationOut"></output></label>
+		</div>
+		<button id="generatorPlay">Play</button>
+		<button id="generatorPrevious">Previous seed</button>
+		<button id="generatorNext">Next seed</button>
+		<button id="generatorRandom">Random seed</button>
+		<button id="generatorSave">Save as preset "generated"</button>
+		<button id="generatorSfx">sfx( "generated" )</button>
+		<p>Seed 0 is the category's built-in preset. The same category and seed always give the
+			same sound; variation nudges every parameter each time it plays.</p>
+		<pre id="generatorOptions"></pre>
 	</div>
 
 	<div class="section">
@@ -343,6 +370,62 @@
 			};
 			presetButtons.appendChild( button );
 		}
+
+		// Generator
+		const generatorCategory = document.getElementById( "generatorCategory" );
+		for( const name of [ ...PRESETS, "random" ] ) {
+			const option = document.createElement( "option" );
+			option.value = name;
+			option.textContent = name;
+			generatorCategory.appendChild( option );
+		}
+
+		function generate() {
+			const options = attempt( "generateSfx", () => $.generateSfx(
+				value( "generatorCategory" ), number( "generatorSeed" ),
+				number( "generatorVariation" )
+			) );
+			if( options ) {
+				document.getElementById( "generatorOptions" ).textContent =
+					JSON.stringify( options, null, 1 );
+			}
+			return options;
+		}
+
+		function playGenerated() {
+			const options = generate();
+			if( options ) {
+				attempt( "synth", () => $.synth( options ) );
+			}
+		}
+
+		function stepSeed( step ) {
+			const seed = Math.min( 4294967295, Math.max( 0, number( "generatorSeed" ) + step ) );
+			document.getElementById( "generatorSeed" ).value = seed;
+			playGenerated();
+		}
+
+		document.getElementById( "generatorPlay" ).onclick = playGenerated;
+		document.getElementById( "generatorPrevious" ).onclick = () => stepSeed( -1 );
+		document.getElementById( "generatorNext" ).onclick = () => stepSeed( 1 );
+		document.getElementById( "generatorRandom" ).onclick = () => {
+			document.getElementById( "generatorSeed" ).value =
+				Math.floor( Math.random() * 4294967296 );
+			playGenerated();
+		};
+		document.getElementById( "generatorSave" ).onclick = () => {
+			const options = generate();
+			if( options ) {
+				attempt( "definePreset", () => $.definePreset( "generated", options ) );
+				log( "definePreset: generated" );
+			}
+		};
+		document.getElementById( "generatorSfx" ).onclick = () => {
+			attempt( "sfx", () => $.sfx( "generated" ) );
+		};
+		generatorCategory.onchange = generate;
+		document.getElementById( "generatorSeed" ).onchange = generate;
+		generate();
 
 		// Instruments
 		function stopSongs() {

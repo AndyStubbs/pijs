@@ -1,0 +1,49 @@
+title = "generateSfx"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Generates a retro sound effect as synth() options from a category and a seed."
+description = """
+Requires the sound-advanced plugin. Returns a frozen object of synth() options and plays nothing, so the result can go to synth(), definePreset(), or a recording. The categories are "coin", "laser", "jump", "hit", "explosion", "powerup", "blip", "select", and "random".
+
+The result is repeatable: the same category and seed return the same options every time. Seed 0 returns the built-in preset with the category's name, so generateSfx( "laser" ) sounds like sfx( "laser" ); defining a preset with that name does not change it. The "random" category has no preset, so its seed 0 is an ordinary generated sound. Every other seed from 1 to 4294967295 is a different variant of the category, such as a different laser for each enemy type.
+
+variation moves every numeric option by a random amount, up to a quarter of its category range at 1, while the waveform, filter type, and arpeggio stay the same. It is the only part of the result that is not repeatable. Small values give repeated sounds such as footsteps and pickups some life.
+
+An unknown category throws INVALID_CATEGORY, a seed that is not an integer from 0 to 4294967295 throws INVALID_SEED, and a variation outside 0-1 throws INVALID_VARIATION.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Press L for the laser preset, V for a variant, H for a hit" );
+$.definePreset( "zap", $.generateSfx( "laser", 42 ) );
+$.onkey( "KeyL", "down", () => {
+	$.synth( $.generateSfx( "laser" ) );
+} );
+$.onkey( "KeyV", "down", () => {
+	$.sfx( "zap" );
+} );
+$.onkey( "KeyH", "down", () => {
+	$.synth( $.generateSfx( "hit", 7, 0.15 ) );
+} );
+"""
+
+[[parameters]]
+name = "category"
+type = "string"
+description = "Sound category: coin, laser, jump, hit, explosion, powerup, blip, select, or random."
+
+[[parameters]]
+name = "seed"
+type = "number"
+description = "Integer from 0 to 4294967295 (default: 0, the built-in preset)."
+optional = true
+
+[[parameters]]
+name = "variation"
+type = "number"
+description = "Random change to every numeric option, 0-1 (default: 0)."
+optional = true
+
+[[returns]]
+type = "object"
+description = "Frozen synth() options."

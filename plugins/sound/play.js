@@ -4,7 +4,8 @@
  * BASIC-style music notation playback (inspired by QBasic PLAY command). A play string is
  * parsed into immutable note events when play() is called; the lookahead scheduler creates
  * each note's voice only when it enters the window. PLAY extensions add tokens, per-track
- * state, and per-note voice overrides.
+ * state, and per-note voice overrides, and observePlay listeners hear about admitted notes
+ * and song ends.
  *
  * @module plugins/sound/play
  */
@@ -61,6 +62,9 @@ const INVALID_PREFIX_PATTERN = /[\d\s,[\]#+.-]/;
 
 const m_songs = new Map();
 let m_lastTrackId = 0;
+
+// observePlay listeners
+const m_playObservers = new Set();
 
 // Registered PLAY extensions in registration order, and extension tokens by prefix
 const m_extensions = [];
@@ -242,9 +246,10 @@ function copyTrackState( state ) {
  * @param {number} frequency - Frequency in Hz
  * @param {number} time - Song time of the note in seconds
  * @param {number} slot - Slot length in seconds
+ * @param {number} track - Index of the note's comma-separated track
  * @returns {Object} Frozen event
  */
-function createNoteEvent( state, frequency, time, slot ) {
+function createNoteEvent( state, frequency, time, slot, track ) {
 	const sounding = slot * state.pace;
 	const releaseTime = Math.max( sounding * state.release / 100, g_envelope.MIN_RAMP );
 	let note = {
@@ -288,6 +293,7 @@ function createNoteEvent( state, frequency, time, slot ) {
 
 	return g_voices.snapshot( {
 		"time": time,
+		"track": track,
 		"frequency": note.frequency,
 		"frequencyEnd": note.frequencyEnd,
 		"peak": note.volume,
@@ -311,7 +317,7 @@ function createNoteEvent( state, frequency, time, slot ) {
  * @param {Object} token - Token from tokenize
  * @param {Object} state - Track settings
  * @param {number} time - Song time of the token in seconds
- * @param {Object} song - Generation context: events, waveTables, warnings
+ * @param {Object} song - Generation context: events, waveTables, warnings, track
  * @returns {number} Song time of the next token
  */
 function applyToken( token, state, time, song ) {
@@ -433,9 +439,28 @@ function applyToken( token, state, time, song ) {
 	}
 	const slot = state.tempo * length * 4;
 	if( frequency > 0 ) {
-		song.events.push( createNoteEvent( state, frequency, time, slot ) );
+		song.events.push( createNoteEvent( state, frequency, time, slot, song.track ) );
 	}
 	return time + slot;
+}
+
+/**
+ * Report a PLAY event to every observePlay listener
+ *
+ * A throwing listener is logged and never affects playback or the other listeners.
+ *
+ * @param {Object} event - Note or end event
+ * @returns {void}
+ */
+function notifyPlay( event ) {
+	Object.freeze( event );
+	for( const listener of Array.from( m_playObservers ) ) {
+		try {
+			listener( event );
+		} catch( error ) {
+			console.error( "sound: Play observer failed:", error );
+		}
+	}
 }
 
 /**
@@ -482,6 +507,15 @@ function playNextEvent( song ) {
 	}, soundId );
 	if( voice ) {
 		song.voices.set( soundId, voice );
+		notifyPlay( {
+			"type": "note",
+			"trackId": song.id,
+			"track": event.track,
+			"time": voice.begin,
+			"duration": voice.end - voice.begin,
+			"frequency": event.frequency,
+			"volume": event.peak
+		} );
 	}
 }
 
@@ -509,6 +543,7 @@ function startSong( song ) {
 		"isDone": () => song.index >= song.events.length && song.voices.size === 0,
 		"onDone": () => {
 			removeSong( song );
+			notifyPlay( { "type": "end", "trackId": song.id, "stopped": false } );
 		}
 	} );
 }
@@ -533,6 +568,7 @@ function stopSong( song ) {
 		g_voices.stopVoice( voice, null, "stop" );
 	}
 	removeSong( song );
+	notifyPlay( { "type": "end", "trackId": song.id, "stopped": true } );
 }
 
 
@@ -630,6 +666,7 @@ export function parsePlayString( playString ) {
 	let time = 0;
 	for( let i = 0; i < trackTexts.length; i++ ) {
 		const tokens = tokenize( trackTexts[ i ] );
+		song.track = i;
 		let nextTime = time;
 		for( const token of tokens ) {
 			nextTime = time;
@@ -648,6 +685,28 @@ export function parsePlayString( playString ) {
 		"events": Object.freeze( song.events ),
 		"trackCount": trackTexts.length,
 		"warnings": song.warnings
+	};
+}
+
+/**
+ * Observe admitted PLAY notes and song ends (extension service method)
+ *
+ * Notes are reported when the scheduler admits them, up to the lookahead window before they
+ * sound: { type: "note", trackId, track, time, duration, frequency, volume }, where time is
+ * the audible start in context time and duration runs to the end of the release. Rejected
+ * and skipped notes are not reported. A finished or stopped song reports { type: "end",
+ * trackId, stopped } once. trackId is the ID play() returned.
+ *
+ * @param {Function} listener - Called with each event
+ * @returns {Function} Removes the listener
+ */
+export function observePlay( listener ) {
+	if( typeof listener !== "function" ) {
+		throwCode( "observePlay: Parameter listener must be a function.", "INVALID_LISTENER" );
+	}
+	m_playObservers.add( listener );
+	return () => {
+		m_playObservers.delete( listener );
 	};
 }
 
