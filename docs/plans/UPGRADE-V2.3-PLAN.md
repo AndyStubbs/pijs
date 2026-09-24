@@ -1,8 +1,8 @@
 # Pi.js 2.3 Upgrade Plan
 
 Status: Sound Phases 0–6 complete, expansion Phases 7–8 implemented, Phase 9 in progress, and
-Phase 10 proposed; test audit follow-ups complete; gamepad audit reviewed; other audits and
-the CI/CD exploration not started
+Phase 10 proposed; test audit follow-ups complete; gamepad audit reviewed; keyboard and
+pointer audits written and awaiting review; other audits and the CI/CD exploration not started
 Target release: Pi.js 2.3.0
 Workstream documents:
 
@@ -38,8 +38,8 @@ the release phase. Each workstream's design and task list live in its own docume
 | Workstream | Scope | Documents | Status |
 | --- | --- | --- | --- |
 | Sound | `plugins/sound/`, `plugins/sound-advanced/` | `SOUND-V2.3-PLAN.md`, `SOUND-V2.3-ROADMAP.md`, `SOUND-ADVANCED-V2.3-PLAN.md` | Phases 0–6 implemented; expansion Phases 7–8 implemented, Phase 9 in progress (9.3 waits for the input review), Phase 10 proposed |
-| Keyboard | `plugins/keyboard/`: key state, action keys, key handlers, `input()` prompts | `KEYBOARD-V2.3-AUDIT.md`, then `KEYBOARD-V2.3-ROADMAP.md` | Audit not started |
-| Pointer | `plugins/pointer/`: mouse, touch, press, click, context menu, pinch zoom | `POINTER-V2.3-AUDIT.md`, then `POINTER-V2.3-ROADMAP.md` | Audit not started |
+| Keyboard | `plugins/keyboard/`: key state, action keys, key handlers, `input()` prompts | `KEYBOARD-V2.3-AUDIT.md`, then `KEYBOARD-V2.3-ROADMAP.md` | Audit written (KEY-001–019, A1–A17); device pass run (Chrome, US layout); awaiting review |
+| Pointer | `plugins/pointer/`: mouse, touch, press, click, context menu, pinch zoom | `POINTER-V2.3-AUDIT.md`, then `POINTER-V2.3-ROADMAP.md` | Audit written (PTR-001–017, B1–B13); Chrome mouse pass done; awaiting review |
 | Gamepad | `plugins/gamepad/`: polling loop, state, sensitivity, connection events | `GAMEPAD-V2.3-AUDIT.md`, then `GAMEPAD-V2.3-ROADMAP.md` | Audit reviewed; PAD-001–017 and all proposals accepted; roadmap waits for the conventions review |
 | Core | `src/`, plugin API, build, metadata, declarations | `CORE-V2.3-AUDIT.md` | Audit not started |
 | Tests | `test/` suites, visual fixtures and baselines, harnesses, `scripts/test.js` | `TESTS-V2.3-AUDIT.md` | Audit accepted; follow-ups complete |

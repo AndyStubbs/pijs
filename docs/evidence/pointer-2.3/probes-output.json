@@ -1,0 +1,1286 @@
+{
+	"revision": "cfc32a9",
+	"engines": {
+		"chromium": {
+			"version": "141.0.7390.37",
+			"probes": {
+				"P1": {
+					"observed": {
+						"afterClearingOtherMode": [],
+						"afterRemovingUnknownFn": []
+					},
+					"expected": {
+						"afterClearingOtherMode": [
+							"mouse down",
+							"press down",
+							"touch start",
+							"press down"
+						],
+						"afterRemovingUnknownFn": [
+							"mouse down",
+							"click"
+						]
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P2": {
+					"observed": {
+						"endHandlerData": [
+							[],
+							[
+								{
+									"x": 10,
+									"y": 10,
+									"action": "end",
+									"id": 1
+								}
+							]
+						],
+						"hitOnLiftInside": 0,
+						"hitOnLiftOutside": 1,
+						"pollAfterSecondLift": [
+							{
+								"x": 10,
+								"y": 10,
+								"action": "end",
+								"id": 1
+							}
+						]
+					},
+					"expected": {
+						"endHandlerData": "[ touch 1 at 10,10 ended ], then [ touch 2 at 80,80 ended ]",
+						"hitOnLiftInside": 1,
+						"hitOnLiftOutside": 0,
+						"pollAfterSecondLift": "touch 1 still down with action start"
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P3": {
+					"observed": {
+						"pressDown": [
+							{
+								"x": 10,
+								"y": 10,
+								"action": "start",
+								"id": 1,
+								"buttons": 1
+							},
+							{
+								"x": 10,
+								"y": 10,
+								"action": "start",
+								"id": 1,
+								"buttons": 1
+							}
+						],
+						"pressUp": [
+							{
+								"x": 10,
+								"y": 10,
+								"action": "end",
+								"id": 1,
+								"buttons": 1
+							},
+							{
+								"x": 10,
+								"y": 10,
+								"action": "up",
+								"id": 1,
+								"buttons": 0
+							}
+						],
+						"clicksInSecondFingerBox": 0
+					},
+					"expected": {
+						"pressDown": "10,10 then 80,80",
+						"pressUp": "80,80 then 10,10, each with action up",
+						"clicksInSecondFingerBox": 1
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P4": {
+					"observed": {
+						"downInUpOut": 0,
+						"downOutUpIn": 1,
+						"touchCancel": 1
+					},
+					"expected": {
+						"downInUpOut": 0,
+						"downOutUpIn": 0,
+						"touchCancel": 0
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P5": {
+					"observed": {
+						"clicks": {
+							"right": 1,
+							"middle": 1
+						},
+						"buttonsInClickData": [
+							0,
+							0
+						]
+					},
+					"expected": {
+						"clicks": {
+							"right": 0,
+							"middle": 0
+						}
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P6": {
+					"observed": {
+						"laterMouse": false,
+						"press": false,
+						"click": false,
+						"laterTouch": false,
+						"touchDefaultPrevented": false,
+						"reportedErrors": 2
+					},
+					"expected": {
+						"laterMouse": true,
+						"press": true,
+						"click": true,
+						"laterTouch": true,
+						"touchDefaultPrevented": true,
+						"reportedErrors": 2
+					},
+					"confirmed": true,
+					"pageErrors": [
+						"probe mouse",
+						"probe touch"
+					]
+				},
+				"P7": {
+					"observed": {
+						"removedHandlerRan": true,
+						"callsOverTwoPresses": 2
+					},
+					"expected": {
+						"removedHandlerRan": false,
+						"callsOverTwoPresses": 3
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P8": {
+					"observed": {
+						"log": [
+							"press move 99"
+						],
+						"inmouseButtons": 1,
+						"inmouseAction": "move",
+						"inpressButtons": 1
+					},
+					"expected": "press up and mouse up dispatched; buttons 0",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P9": {
+					"observed": {
+						"mouseAfterBlur": {
+							"x": 50,
+							"y": 50,
+							"action": "up",
+							"buttons": 0
+						},
+						"mouseHandlersAfterBlur": [],
+						"touchesAfterBlur": 0,
+						"pressAfterTouchBlur": {
+							"x": 40,
+							"y": 40,
+							"action": "up",
+							"id": 3,
+							"buttons": 0
+						},
+						"touchHandlersAfterBlur": [],
+						"buttonsAfterHidden": 1
+					},
+					"expected": "polling and handlers agree: a release reaches the up/end handlers whenever polled state is reset",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P10": {
+					"observed": {
+						"inmouseButtonsAfterStop": 1,
+						"intouchLengthAfterStop": 1,
+						"handlerRegistrationRestartsMouse": false
+					},
+					"expected": {
+						"inmouseButtonsAfterStop": 0,
+						"intouchLengthAfterStop": 0,
+						"handlerRegistrationRestartsMouse": false
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P11": {
+					"observed": {
+						"moves": [
+							[
+								-2,
+								-2
+							],
+							[
+								101,
+								101
+							]
+						]
+					},
+					"expected": "no position outside 0..99, or no event for the border and padding",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P12": {
+					"observed": {
+						"mousePress": [
+							"action",
+							"buttons",
+							"lastX",
+							"lastY",
+							"type",
+							"x",
+							"y"
+						],
+						"mouseLastX": 50,
+						"touchPress": [
+							"action",
+							"buttons",
+							"id",
+							"lastX",
+							"lastY",
+							"touches",
+							"type",
+							"x",
+							"y"
+						],
+						"touchLastX": null,
+						"pressIncludesItself": true,
+						"serializes": false,
+						"touchPressDownAction": "start",
+						"mouseClickAction": "up"
+					},
+					"expected": {
+						"serializes": true,
+						"touchPressDownAction": "down (PressData.action)",
+						"mouseClickAction": "click (ClickData.action)"
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P13": {
+					"observed": {
+						"setEnableContextMenu('false')": "accepted",
+						"contextMenuShownAfterStringFalse": true,
+						"setPinchZoom('false')": "accepted",
+						"bodyTouchActionAfterStringFalse": "",
+						"onmouse bad mode": "Error INVALID_MODE",
+						"onmouse fn not function": "Error INVALID_FUNCTION",
+						"hitBox with fractions": "Error INVALID_HITBOX",
+						"hitBox with negative width": "accepted",
+						"offmouse without mode": "Error INVALID_MODE"
+					},
+					"expected": "non-boolean settings rejected; invalid hit boxes rejected",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P14": {
+					"observed": {
+						"menuPreventedBeforeAnyPointerCommand": false,
+						"menuPreventedAfterInmouse": true,
+						"bodyTouchActionAfterEnable": "",
+						"twoFingerStartPreventedWithPinchEnabled": true,
+						"bodyTouchActionAfterDisable": "none"
+					},
+					"expected": {
+						"menuPreventedBeforeAnyPointerCommand": "true (documented default: disabled)",
+						"twoFingerStartPreventedWithPinchEnabled": false,
+						"bodyTouchActionAfterEnable": "pan-y (the page's own value kept)"
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P15": {
+					"observed": {
+						"inmouseSameObject": false,
+						"intouchSameArray": false,
+						"inpressSameObject": false,
+						"callbackSameObject": false
+					},
+					"expected": "inventory only",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"P16": {
+					"observed": {
+						"log": [
+							{
+								"x": 10,
+								"y": 10,
+								"action": "down",
+								"buttons": 1
+							}
+						],
+						"errors": []
+					},
+					"expected": "one press at 10,10; no errors",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"P17": {
+					"observed": {
+						"gamePressDownsBeforeKeyboard": 1,
+						"gamePressDownsAfterShowAndHide": 0
+					},
+					"expected": {
+						"gamePressDownsBeforeKeyboard": 1,
+						"gamePressDownsAfterShowAndHide": 1
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"T1": {
+					"observed": {
+						"releaseOutside": {
+							"up": 0,
+							"pressUp": 0,
+							"clicks": 0,
+							"menus": 0,
+							"menusPrevented": 0,
+							"buttons": 1,
+							"pressButtons": 1
+						},
+						"afterRightClick": {
+							"up": 1,
+							"pressUp": 1,
+							"clicks": 1,
+							"menus": 1,
+							"menusPrevented": 1,
+							"buttons": 0,
+							"pressButtons": 0
+						},
+						"afterMiddleClick": {
+							"up": 2,
+							"pressUp": 2,
+							"clicks": 2,
+							"menus": 1,
+							"menusPrevented": 1,
+							"buttons": 0,
+							"pressButtons": 0
+						},
+						"afterStaleClick": {
+							"up": 4,
+							"pressUp": 4,
+							"clicks": 3,
+							"menus": 1,
+							"menusPrevented": 1,
+							"buttons": 0,
+							"pressButtons": 0
+						}
+					},
+					"expected": {
+						"releaseOutside": "up 1, pressUp 1, buttons 0",
+						"rightAndMiddleClicks": 0,
+						"staleClicks": 0
+					},
+					"confirmed": true,
+					"pageErrors": []
+				}
+			},
+			"manualPages": {
+				"contextmenu_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'pointer' is already registered."
+					]
+				},
+				"ontouch_01.html": {
+					"pageErrors": []
+				},
+				"ontouch_02.html": {
+					"pageErrors": []
+				},
+				"ontouch_03.html": {
+					"pageErrors": [
+						"$.render is not a function"
+					]
+				},
+				"clearevents_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'pointer' is already registered.",
+						"registerPlugin: Plugin 'keyboard' is already registered."
+					]
+				},
+				"clearevents_02.html": {
+					"pageErrors": []
+				},
+				"events_comprehensive.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'pointer' is already registered."
+					]
+				}
+			}
+		},
+		"firefox": {
+			"version": "142.0.1",
+			"probes": {
+				"P1": {
+					"observed": {
+						"afterClearingOtherMode": [],
+						"afterRemovingUnknownFn": []
+					},
+					"expected": {
+						"afterClearingOtherMode": [
+							"mouse down",
+							"press down",
+							"touch start",
+							"press down"
+						],
+						"afterRemovingUnknownFn": [
+							"mouse down",
+							"click"
+						]
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P2": {
+					"observed": {
+						"endHandlerData": [
+							[],
+							[
+								{
+									"x": 10,
+									"y": 10,
+									"action": "end",
+									"id": 1
+								}
+							]
+						],
+						"hitOnLiftInside": 0,
+						"hitOnLiftOutside": 1,
+						"pollAfterSecondLift": [
+							{
+								"x": 10,
+								"y": 10,
+								"action": "end",
+								"id": 1
+							}
+						]
+					},
+					"expected": {
+						"endHandlerData": "[ touch 1 at 10,10 ended ], then [ touch 2 at 80,80 ended ]",
+						"hitOnLiftInside": 1,
+						"hitOnLiftOutside": 0,
+						"pollAfterSecondLift": "touch 1 still down with action start"
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P3": {
+					"observed": {
+						"pressDown": [
+							{
+								"x": 10,
+								"y": 10,
+								"action": "start",
+								"id": 1,
+								"buttons": 1
+							},
+							{
+								"x": 10,
+								"y": 10,
+								"action": "start",
+								"id": 1,
+								"buttons": 1
+							}
+						],
+						"pressUp": [
+							{
+								"x": 10,
+								"y": 10,
+								"action": "end",
+								"id": 1,
+								"buttons": 1
+							},
+							{
+								"x": 10,
+								"y": 10,
+								"action": "up",
+								"id": 1,
+								"buttons": 0
+							}
+						],
+						"clicksInSecondFingerBox": 0
+					},
+					"expected": {
+						"pressDown": "10,10 then 80,80",
+						"pressUp": "80,80 then 10,10, each with action up",
+						"clicksInSecondFingerBox": 1
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P4": {
+					"observed": {
+						"downInUpOut": 0,
+						"downOutUpIn": 1,
+						"touchCancel": 1
+					},
+					"expected": {
+						"downInUpOut": 0,
+						"downOutUpIn": 0,
+						"touchCancel": 0
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P5": {
+					"observed": {
+						"clicks": {
+							"right": 1,
+							"middle": 1
+						},
+						"buttonsInClickData": [
+							0,
+							0
+						]
+					},
+					"expected": {
+						"clicks": {
+							"right": 0,
+							"middle": 0
+						}
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P6": {
+					"observed": {
+						"laterMouse": false,
+						"press": false,
+						"click": false,
+						"laterTouch": false,
+						"touchDefaultPrevented": false,
+						"reportedErrors": 2
+					},
+					"expected": {
+						"laterMouse": true,
+						"press": true,
+						"click": true,
+						"laterTouch": true,
+						"touchDefaultPrevented": true,
+						"reportedErrors": 2
+					},
+					"confirmed": true,
+					"pageErrors": [
+						"probe mouse",
+						"probe touch"
+					]
+				},
+				"P7": {
+					"observed": {
+						"removedHandlerRan": true,
+						"callsOverTwoPresses": 2
+					},
+					"expected": {
+						"removedHandlerRan": false,
+						"callsOverTwoPresses": 3
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P8": {
+					"observed": {
+						"log": [
+							"press move 99"
+						],
+						"inmouseButtons": 1,
+						"inmouseAction": "move",
+						"inpressButtons": 1
+					},
+					"expected": "press up and mouse up dispatched; buttons 0",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P9": {
+					"observed": {
+						"mouseAfterBlur": {
+							"x": 50,
+							"y": 50,
+							"action": "up",
+							"buttons": 0
+						},
+						"mouseHandlersAfterBlur": [],
+						"touchesAfterBlur": 0,
+						"pressAfterTouchBlur": {
+							"x": 40,
+							"y": 40,
+							"action": "up",
+							"id": 3,
+							"buttons": 0
+						},
+						"touchHandlersAfterBlur": [],
+						"buttonsAfterHidden": 1
+					},
+					"expected": "polling and handlers agree: a release reaches the up/end handlers whenever polled state is reset",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P10": {
+					"observed": {
+						"inmouseButtonsAfterStop": 1,
+						"intouchLengthAfterStop": 1,
+						"handlerRegistrationRestartsMouse": false
+					},
+					"expected": {
+						"inmouseButtonsAfterStop": 0,
+						"intouchLengthAfterStop": 0,
+						"handlerRegistrationRestartsMouse": false
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P11": {
+					"observed": {
+						"moves": [
+							[
+								-2,
+								-2
+							],
+							[
+								101,
+								101
+							]
+						]
+					},
+					"expected": "no position outside 0..99, or no event for the border and padding",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P12": {
+					"observed": {
+						"mousePress": [
+							"action",
+							"buttons",
+							"lastX",
+							"lastY",
+							"type",
+							"x",
+							"y"
+						],
+						"mouseLastX": 50,
+						"touchPress": [
+							"action",
+							"buttons",
+							"id",
+							"lastX",
+							"lastY",
+							"touches",
+							"type",
+							"x",
+							"y"
+						],
+						"touchLastX": null,
+						"pressIncludesItself": true,
+						"serializes": false,
+						"touchPressDownAction": "start",
+						"mouseClickAction": "up"
+					},
+					"expected": {
+						"serializes": true,
+						"touchPressDownAction": "down (PressData.action)",
+						"mouseClickAction": "click (ClickData.action)"
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P13": {
+					"observed": {
+						"setEnableContextMenu('false')": "accepted",
+						"contextMenuShownAfterStringFalse": true,
+						"setPinchZoom('false')": "accepted",
+						"bodyTouchActionAfterStringFalse": "",
+						"onmouse bad mode": "Error INVALID_MODE",
+						"onmouse fn not function": "Error INVALID_FUNCTION",
+						"hitBox with fractions": "Error INVALID_HITBOX",
+						"hitBox with negative width": "accepted",
+						"offmouse without mode": "Error INVALID_MODE"
+					},
+					"expected": "non-boolean settings rejected; invalid hit boxes rejected",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P14": {
+					"observed": {
+						"menuPreventedBeforeAnyPointerCommand": false,
+						"menuPreventedAfterInmouse": true,
+						"bodyTouchActionAfterEnable": "",
+						"twoFingerStartPreventedWithPinchEnabled": true,
+						"bodyTouchActionAfterDisable": "none"
+					},
+					"expected": {
+						"menuPreventedBeforeAnyPointerCommand": "true (documented default: disabled)",
+						"twoFingerStartPreventedWithPinchEnabled": false,
+						"bodyTouchActionAfterEnable": "pan-y (the page's own value kept)"
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P15": {
+					"observed": {
+						"inmouseSameObject": false,
+						"intouchSameArray": false,
+						"inpressSameObject": false,
+						"callbackSameObject": false
+					},
+					"expected": "inventory only",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"P16": {
+					"observed": {
+						"log": [
+							{
+								"x": 10,
+								"y": 10,
+								"action": "down",
+								"buttons": 1
+							}
+						],
+						"errors": []
+					},
+					"expected": "one press at 10,10; no errors",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"P17": {
+					"observed": {
+						"gamePressDownsBeforeKeyboard": 1,
+						"gamePressDownsAfterShowAndHide": 0
+					},
+					"expected": {
+						"gamePressDownsBeforeKeyboard": 1,
+						"gamePressDownsAfterShowAndHide": 1
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"T1": {
+					"observed": {
+						"releaseOutside": {
+							"up": 0,
+							"pressUp": 0,
+							"clicks": 0,
+							"menus": 0,
+							"menusPrevented": 0,
+							"buttons": 1,
+							"pressButtons": 1
+						},
+						"afterRightClick": {
+							"up": 1,
+							"pressUp": 1,
+							"clicks": 1,
+							"menus": 1,
+							"menusPrevented": 1,
+							"buttons": 0,
+							"pressButtons": 0
+						},
+						"afterMiddleClick": {
+							"up": 2,
+							"pressUp": 2,
+							"clicks": 2,
+							"menus": 1,
+							"menusPrevented": 1,
+							"buttons": 0,
+							"pressButtons": 0
+						},
+						"afterStaleClick": {
+							"up": 4,
+							"pressUp": 4,
+							"clicks": 3,
+							"menus": 1,
+							"menusPrevented": 1,
+							"buttons": 0,
+							"pressButtons": 0
+						}
+					},
+					"expected": {
+						"releaseOutside": "up 1, pressUp 1, buttons 0",
+						"rightAndMiddleClicks": 0,
+						"staleClicks": 0
+					},
+					"confirmed": true,
+					"pageErrors": []
+				}
+			},
+			"manualPages": {
+				"contextmenu_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'pointer' is already registered."
+					]
+				},
+				"ontouch_01.html": {
+					"pageErrors": []
+				},
+				"ontouch_02.html": {
+					"pageErrors": []
+				},
+				"ontouch_03.html": {
+					"pageErrors": [
+						"$.render is not a function"
+					]
+				},
+				"clearevents_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'pointer' is already registered.",
+						"registerPlugin: Plugin 'keyboard' is already registered."
+					]
+				},
+				"clearevents_02.html": {
+					"pageErrors": []
+				},
+				"events_comprehensive.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'pointer' is already registered."
+					]
+				}
+			}
+		},
+		"webkit": {
+			"version": "26.0",
+			"probes": {
+				"P1": {
+					"observed": {
+						"afterClearingOtherMode": [],
+						"afterRemovingUnknownFn": []
+					},
+					"expected": {
+						"afterClearingOtherMode": [
+							"mouse down",
+							"press down",
+							"touch start",
+							"press down"
+						],
+						"afterRemovingUnknownFn": [
+							"mouse down",
+							"click"
+						]
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P2": {
+					"observed": {
+						"endHandlerData": [
+							[],
+							[
+								{
+									"x": 10,
+									"y": 10,
+									"action": "end",
+									"id": 1
+								}
+							]
+						],
+						"hitOnLiftInside": 0,
+						"hitOnLiftOutside": 1,
+						"pollAfterSecondLift": [
+							{
+								"x": 10,
+								"y": 10,
+								"action": "end",
+								"id": 1
+							}
+						]
+					},
+					"expected": {
+						"endHandlerData": "[ touch 1 at 10,10 ended ], then [ touch 2 at 80,80 ended ]",
+						"hitOnLiftInside": 1,
+						"hitOnLiftOutside": 0,
+						"pollAfterSecondLift": "touch 1 still down with action start"
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P3": {
+					"observed": {
+						"pressDown": [
+							{
+								"x": 10,
+								"y": 10,
+								"action": "start",
+								"id": 1,
+								"buttons": 1
+							},
+							{
+								"x": 10,
+								"y": 10,
+								"action": "start",
+								"id": 1,
+								"buttons": 1
+							}
+						],
+						"pressUp": [
+							{
+								"x": 10,
+								"y": 10,
+								"action": "end",
+								"id": 1,
+								"buttons": 1
+							},
+							{
+								"x": 10,
+								"y": 10,
+								"action": "up",
+								"id": 1,
+								"buttons": 0
+							}
+						],
+						"clicksInSecondFingerBox": 0
+					},
+					"expected": {
+						"pressDown": "10,10 then 80,80",
+						"pressUp": "80,80 then 10,10, each with action up",
+						"clicksInSecondFingerBox": 1
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P4": {
+					"observed": {
+						"downInUpOut": 0,
+						"downOutUpIn": 1,
+						"touchCancel": 1
+					},
+					"expected": {
+						"downInUpOut": 0,
+						"downOutUpIn": 0,
+						"touchCancel": 0
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P5": {
+					"observed": {
+						"clicks": {
+							"right": 1,
+							"middle": 1
+						},
+						"buttonsInClickData": [
+							0,
+							0
+						]
+					},
+					"expected": {
+						"clicks": {
+							"right": 0,
+							"middle": 0
+						}
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P6": {
+					"observed": {
+						"laterMouse": false,
+						"press": false,
+						"click": false,
+						"laterTouch": false,
+						"touchDefaultPrevented": false,
+						"reportedErrors": 2
+					},
+					"expected": {
+						"laterMouse": true,
+						"press": true,
+						"click": true,
+						"laterTouch": true,
+						"touchDefaultPrevented": true,
+						"reportedErrors": 2
+					},
+					"confirmed": true,
+					"pageErrors": [
+						"probe mouse",
+						"probe touch"
+					]
+				},
+				"P7": {
+					"observed": {
+						"removedHandlerRan": true,
+						"callsOverTwoPresses": 2
+					},
+					"expected": {
+						"removedHandlerRan": false,
+						"callsOverTwoPresses": 3
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P8": {
+					"observed": {
+						"log": [
+							"press move 99"
+						],
+						"inmouseButtons": 1,
+						"inmouseAction": "move",
+						"inpressButtons": 1
+					},
+					"expected": "press up and mouse up dispatched; buttons 0",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P9": {
+					"observed": {
+						"mouseAfterBlur": {
+							"x": 50,
+							"y": 50,
+							"action": "up",
+							"buttons": 0
+						},
+						"mouseHandlersAfterBlur": [],
+						"touchesAfterBlur": 0,
+						"pressAfterTouchBlur": {
+							"x": 40,
+							"y": 40,
+							"action": "up",
+							"id": 3,
+							"buttons": 0
+						},
+						"touchHandlersAfterBlur": [],
+						"buttonsAfterHidden": 1
+					},
+					"expected": "polling and handlers agree: a release reaches the up/end handlers whenever polled state is reset",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P10": {
+					"observed": {
+						"inmouseButtonsAfterStop": 1,
+						"intouchLengthAfterStop": 1,
+						"handlerRegistrationRestartsMouse": false
+					},
+					"expected": {
+						"inmouseButtonsAfterStop": 0,
+						"intouchLengthAfterStop": 0,
+						"handlerRegistrationRestartsMouse": false
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P11": {
+					"observed": {
+						"moves": [
+							[
+								-2,
+								-2
+							],
+							[
+								101,
+								101
+							]
+						]
+					},
+					"expected": "no position outside 0..99, or no event for the border and padding",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P12": {
+					"observed": {
+						"mousePress": [
+							"action",
+							"buttons",
+							"lastX",
+							"lastY",
+							"type",
+							"x",
+							"y"
+						],
+						"mouseLastX": 50,
+						"touchPress": [
+							"action",
+							"buttons",
+							"id",
+							"lastX",
+							"lastY",
+							"touches",
+							"type",
+							"x",
+							"y"
+						],
+						"touchLastX": null,
+						"pressIncludesItself": true,
+						"serializes": false,
+						"touchPressDownAction": "start",
+						"mouseClickAction": "up"
+					},
+					"expected": {
+						"serializes": true,
+						"touchPressDownAction": "down (PressData.action)",
+						"mouseClickAction": "click (ClickData.action)"
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P13": {
+					"observed": {
+						"setEnableContextMenu('false')": "accepted",
+						"contextMenuShownAfterStringFalse": true,
+						"setPinchZoom('false')": "accepted",
+						"bodyTouchActionAfterStringFalse": "",
+						"onmouse bad mode": "Error INVALID_MODE",
+						"onmouse fn not function": "Error INVALID_FUNCTION",
+						"hitBox with fractions": "Error INVALID_HITBOX",
+						"hitBox with negative width": "accepted",
+						"offmouse without mode": "Error INVALID_MODE"
+					},
+					"expected": "non-boolean settings rejected; invalid hit boxes rejected",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P14": {
+					"observed": {
+						"menuPreventedBeforeAnyPointerCommand": false,
+						"menuPreventedAfterInmouse": true,
+						"bodyTouchActionAfterEnable": "",
+						"twoFingerStartPreventedWithPinchEnabled": true,
+						"bodyTouchActionAfterDisable": "none"
+					},
+					"expected": {
+						"menuPreventedBeforeAnyPointerCommand": "true (documented default: disabled)",
+						"twoFingerStartPreventedWithPinchEnabled": false,
+						"bodyTouchActionAfterEnable": "pan-y (the page's own value kept)"
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"P15": {
+					"observed": {
+						"inmouseSameObject": false,
+						"intouchSameArray": false,
+						"inpressSameObject": false,
+						"callbackSameObject": false
+					},
+					"expected": "inventory only",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"P16": {
+					"observed": {
+						"log": [
+							{
+								"x": 10,
+								"y": 10,
+								"action": "down",
+								"buttons": 1
+							}
+						],
+						"errors": []
+					},
+					"expected": "one press at 10,10; no errors",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"P17": {
+					"observed": {
+						"gamePressDownsBeforeKeyboard": 1,
+						"gamePressDownsAfterShowAndHide": 0
+					},
+					"expected": {
+						"gamePressDownsBeforeKeyboard": 1,
+						"gamePressDownsAfterShowAndHide": 1
+					},
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"T1": {
+					"observed": {
+						"releaseOutside": {
+							"up": 0,
+							"pressUp": 0,
+							"clicks": 0,
+							"menus": 0,
+							"menusPrevented": 0,
+							"buttons": 1,
+							"pressButtons": 1
+						},
+						"afterRightClick": {
+							"up": 1,
+							"pressUp": 1,
+							"clicks": 1,
+							"menus": 1,
+							"menusPrevented": 1,
+							"buttons": 0,
+							"pressButtons": 0
+						},
+						"afterMiddleClick": {
+							"up": 2,
+							"pressUp": 2,
+							"clicks": 2,
+							"menus": 1,
+							"menusPrevented": 1,
+							"buttons": 0,
+							"pressButtons": 0
+						},
+						"afterStaleClick": {
+							"up": 4,
+							"pressUp": 4,
+							"clicks": 3,
+							"menus": 1,
+							"menusPrevented": 1,
+							"buttons": 0,
+							"pressButtons": 0
+						}
+					},
+					"expected": {
+						"releaseOutside": "up 1, pressUp 1, buttons 0",
+						"rightAndMiddleClicks": 0,
+						"staleClicks": 0
+					},
+					"confirmed": true,
+					"pageErrors": []
+				}
+			},
+			"manualPages": {
+				"contextmenu_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'pointer' is already registered."
+					]
+				},
+				"ontouch_01.html": {
+					"pageErrors": []
+				},
+				"ontouch_02.html": {
+					"pageErrors": []
+				},
+				"ontouch_03.html": {
+					"pageErrors": [
+						"TypeError: $.render is not a function. (In '$.render()', '$.render' is undefined)"
+					]
+				},
+				"clearevents_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'pointer' is already registered.",
+						"registerPlugin: Plugin 'keyboard' is already registered."
+					]
+				},
+				"clearevents_02.html": {
+					"pageErrors": []
+				},
+				"events_comprehensive.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'pointer' is already registered."
+					]
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,239 @@
+{
+	"version": "2.3.0",
+	"generatedAt": "2026-09-24T21:25:38.747Z",
+	"gzipLevel": 9,
+	"bundles": {
+		"pi.min.js": {
+			"bytes": 208078,
+			"gzip": 72604
+		},
+		"pi.lite.min.js": {
+			"bytes": 137458,
+			"gzip": 48585
+		}
+	},
+	"plugins": {
+		"example-plugin": {
+			"version": "1.0.0",
+			"bytes": 1756,
+			"gzip": 846
+		},
+		"gamepad": {
+			"version": "1.0.0",
+			"bytes": 4006,
+			"gzip": 1428
+		},
+		"keyboard": {
+			"version": "1.0.0",
+			"bytes": 8436,
+			"gzip": 3110
+		},
+		"onscreen-keyboard": {
+			"version": "1.0.0",
+			"bytes": 6876,
+			"gzip": 2606
+		},
+		"pens": {
+			"version": "1.0.0",
+			"bytes": 242,
+			"gzip": 204
+		},
+		"pi-vision": {
+			"version": null,
+			"bytes": 13925,
+			"gzip": 4762
+		},
+		"pointer": {
+			"version": "1.0.0",
+			"bytes": 12738,
+			"gzip": 3951
+		},
+		"polygons": {
+			"version": "1.0.0",
+			"bytes": 3582,
+			"gzip": 1660
+		},
+		"print-table": {
+			"version": "1.0.0",
+			"bytes": 5441,
+			"gzip": 2046
+		},
+		"sound": {
+			"version": "2.0.0",
+			"bytes": 42607,
+			"gzip": 15559
+		},
+		"sound-advanced": {
+			"version": "1.0.0",
+			"bytes": 31605,
+			"gzip": 11163
+		}
+	},
+	"differentials": [
+		{
+			"name": "sound-advanced/periodic-noise",
+			"kind": "marginal",
+			"base": "sound-advanced (all modules)",
+			"baseGzip": 10566,
+			"variant": "sound-advanced without periodic-noise",
+			"variantGzip": 10218,
+			"cost": 348
+		},
+		{
+			"name": "sound-advanced/synth",
+			"kind": "marginal",
+			"base": "sound-advanced (all modules)",
+			"baseGzip": 10566,
+			"variant": "sound-advanced without synth, presets, generator, instruments",
+			"variantGzip": 5902,
+			"cost": 4664,
+			"members": [
+				"presets",
+				"generator",
+				"instruments"
+			]
+		},
+		{
+			"name": "sound-advanced/effects",
+			"kind": "marginal",
+			"base": "sound-advanced (all modules)",
+			"baseGzip": 10566,
+			"variant": "sound-advanced without effects",
+			"variantGzip": 8280,
+			"cost": 2286
+		},
+		{
+			"name": "sound-advanced/analyser",
+			"kind": "marginal",
+			"base": "sound-advanced (all modules)",
+			"baseGzip": 10566,
+			"variant": "sound-advanced without analyser",
+			"variantGzip": 10156,
+			"cost": 410
+		},
+		{
+			"name": "sound-advanced/presets",
+			"kind": "marginal",
+			"base": "sound-advanced (all modules)",
+			"baseGzip": 10566,
+			"variant": "sound-advanced without presets, generator",
+			"variantGzip": 8556,
+			"cost": 2010,
+			"members": [
+				"generator"
+			]
+		},
+		{
+			"name": "sound-advanced/generator",
+			"kind": "marginal",
+			"base": "sound-advanced (all modules)",
+			"baseGzip": 10566,
+			"variant": "sound-advanced without generator",
+			"variantGzip": 9210,
+			"cost": 1356
+		},
+		{
+			"name": "sound-advanced/instruments",
+			"kind": "marginal",
+			"base": "sound-advanced (all modules)",
+			"baseGzip": 10566,
+			"variant": "sound-advanced without instruments",
+			"variantGzip": 9865,
+			"cost": 701
+		},
+		{
+			"name": "sound-advanced/recorder",
+			"kind": "marginal",
+			"base": "sound-advanced (all modules)",
+			"baseGzip": 10566,
+			"variant": "sound-advanced without recorder",
+			"variantGzip": 9355,
+			"cost": 1211
+		},
+		{
+			"name": "sound-advanced/periodic-noise promotion",
+			"kind": "promotion",
+			"base": "plugin:sound",
+			"baseGzip": 15559,
+			"variant": "sound + periodic-noise",
+			"variantGzip": 15966,
+			"cost": 407
+		},
+		{
+			"name": "sound-advanced/synth promotion",
+			"kind": "promotion",
+			"base": "plugin:sound",
+			"baseGzip": 15559,
+			"variant": "sound + synth",
+			"variantGzip": 17408,
+			"cost": 1849
+		},
+		{
+			"name": "sound-advanced/effects promotion",
+			"kind": "promotion",
+			"base": "plugin:sound",
+			"baseGzip": 15559,
+			"variant": "sound + effects",
+			"variantGzip": 18696,
+			"cost": 3137
+		},
+		{
+			"name": "sound-advanced/analyser promotion",
+			"kind": "promotion",
+			"base": "plugin:sound",
+			"baseGzip": 15559,
+			"variant": "sound + analyser",
+			"variantGzip": 16010,
+			"cost": 451
+		},
+		{
+			"name": "sound-advanced/presets promotion",
+			"kind": "promotion",
+			"base": "plugin:sound",
+			"baseGzip": 15559,
+			"variant": "sound + synth + presets",
+			"variantGzip": 18025,
+			"cost": 2466
+		},
+		{
+			"name": "sound-advanced/generator promotion",
+			"kind": "promotion",
+			"base": "plugin:sound",
+			"baseGzip": 15559,
+			"variant": "sound + synth + presets + generator",
+			"variantGzip": 19414,
+			"cost": 3855
+		},
+		{
+			"name": "sound-advanced/instruments promotion",
+			"kind": "promotion",
+			"base": "plugin:sound",
+			"baseGzip": 15559,
+			"variant": "sound + synth + instruments",
+			"variantGzip": 18108,
+			"cost": 2549
+		},
+		{
+			"name": "sound-advanced/recorder promotion",
+			"kind": "promotion",
+			"base": "plugin:sound",
+			"baseGzip": 15559,
+			"variant": "sound + recorder",
+			"variantGzip": 17603,
+			"cost": 2044
+		},
+		{
+			"name": "sound-advanced full merge",
+			"kind": "fullMerge",
+			"base": "bundle:pi.min.js",
+			"baseGzip": 72604,
+			"variant": "pi.min.js + sound-advanced",
+			"variantGzip": 82947,
+			"cost": 10343
+		}
+	],
+	"notes": [
+		"Sizes are bytes of the minified IIFE bundle and its gzip level 9 compression.",
+		"Marginal costs are not additive: gzip shares context across modules. Compare them with the plugin total and the full-merge cost."
+	]
+}

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Keyboard Device Check</title>
+	<script src="../../../build/pi.js"></script>
+	<style>
+		body { font: 14px/1.4 monospace; margin: 16px; background: #111; color: #ddd; }
+		h1 { font-size: 18px; }
+		table { border-collapse: collapse; margin: 8px 0; }
+		td, th { border: 1px solid #444; padding: 2px 8px; text-align: left; }
+		button { font: inherit; margin: 4px 4px 4px 0; }
+		#screen { width: 480px; height: 150px; }
+		#log { white-space: pre-wrap; max-height: 240px; overflow: auto; border: 1px solid #444;
+			padding: 4px; }
+		#spacer { height: 2000px; }
+		.warn { color: #fc6; }
+	</style>
+</head>
+<body>
+<!--
+Device check for the keyboard 2.3 audit (docs/plans/KEYBOARD-V2.3-AUDIT.md, Section 6).
+
+Compares what Pi.js reports with the browser's own key events for the behaviors that
+synthetic probes cannot settle: key identity under real layouts, held state across focus
+changes and modifier release order, auto-repeat, IME composition, and what input() does with
+Space, Tab, and paste. Serve the repository with `npm run server`, then open
+http://localhost:8080/docs/evidence/keyboard-2.3/device-check.html
+-->
+<h1>Keyboard device check (Pi.js 2.3 audit)</h1>
+<p>Follow the steps in docs/evidence/keyboard-2.3/README.md, then click
+<b>Copy results</b> and paste them into the conversation.</p>
+<div>
+	<button id="text">Start text input()</button>
+	<button id="number">Start number input()</button>
+	<button id="reset">Reset</button>
+	<button id="copy">Copy results</button>
+</div>
+<div id="screen"></div>
+<table id="state"></table>
+<div id="log"></div>
+<div id="spacer"></div>
+<script>
+"use strict";
+
+const m_start = performance.now();
+const m_log = [];
+const m_rawHeld = new Map();
+const m_seenKeys = new Set();
+const m_stuck = new Set();
+let m_results;
+let m_isComposing = false;
+
+reset();
+
+$.screen( { "aspect": "320x100", "container": "screen" } );
+$.print( "Pi.js screen for input()" );
+
+function reset() {
+	m_results = {
+		"userAgent": navigator.userAgent,
+		"layout": {},
+		"stuck": [],
+		"blurSamples": [],
+		"repeat": { "rawRepeats": 0, "piDefault": 0, "piAllowRepeat": 0 },
+		"composition": [],
+		"inputs": [],
+		"metaSamples": []
+	};
+	m_stuck.clear();
+}
+
+function time() {
+	return Number( ( ( performance.now() - m_start ) / 1000 ).toFixed( 2 ) );
+}
+
+function log( msg, isWarn ) {
+	const line = time().toFixed( 2 ) + "s " + msg;
+	m_log.push( line );
+	const div = document.createElement( "div" );
+	if( isWarn ) {
+		div.className = "warn";
+	}
+	div.textContent = line;
+	const box = document.getElementById( "log" );
+	box.appendChild( div );
+	box.scrollTop = box.scrollHeight;
+}
+
+function describe( event ) {
+	const mods = [];
+	for( const name of [ "shiftKey", "ctrlKey", "altKey", "metaKey" ] ) {
+		if( event[ name ] ) {
+			mods.push( name.replace( "Key", "" ) );
+		}
+	}
+	return `${event.type} key=${JSON.stringify( event.key )} code=${event.code}` +
+		` loc=${event.location} rep=${event.repeat} comp=${event.isComposing}` +
+		` mods=${mods.join( "+" )} target=${event.target.tagName || "window"}`;
+}
+
+// Browser view of the keyboard, on the bubbling phase after Pi.js's capture listener
+window.addEventListener( "keydown", event => {
+	log( describe( event ) );
+	m_seenKeys.add( event.key );
+	m_rawHeld.set( event.code, event.key );
+	if( event.repeat ) {
+		m_results.repeat.rawRepeats += 1;
+	}
+	if( [ "KeyA", "KeyQ", "KeyZ", "KeyY", "KeyW", "Semicolon" ].includes( event.code ) ) {
+		m_results.layout[ event.code ] = event.key;
+	}
+	if( event.isComposing || event.key === "Process" ) {
+		m_results.composition.push( { "t": time(), "type": "keydown", "key": event.key,
+			"code": event.code, "isComposing": event.isComposing } );
+	}
+	if( event.metaKey && event.key !== "Meta" ) {
+		m_results.metaSamples.push( { "t": time(), "down": event.code } );
+	}
+} );
+window.addEventListener( "keyup", event => {
+	log( describe( event ) );
+	m_seenKeys.add( event.key );
+	m_rawHeld.delete( event.code );
+	if( event.key === "Meta" || event.metaKey ) {
+		m_results.metaSamples.push( { "t": time(), "up": event.code } );
+	}
+} );
+for( const type of [ "compositionstart", "compositionupdate", "compositionend" ] ) {
+	window.addEventListener( type, event => {
+		m_isComposing = type !== "compositionend";
+		m_results.composition.push( { "t": time(), "type": type, "data": event.data } );
+		log( `${type} data=${JSON.stringify( event.data )}` );
+	} );
+}
+window.addEventListener( "blur", () => {
+	const sample = { "t": time(), "event": "blur", "rawHeld": [ ...m_rawHeld.keys() ] };
+	setTimeout( () => {
+		sample.piHeld100ms = $.inkey().map( k => k.code );
+		m_results.blurSamples.push( sample );
+		log( "blur " + JSON.stringify( sample ) );
+	}, 100 );
+} );
+window.addEventListener( "focus", () => {
+	const sample = {
+		"t": time(), "event": "focus", "rawHeld": [ ...m_rawHeld.keys() ],
+		"piHeld": $.inkey().map( k => k.code )
+	};
+	m_results.blurSamples.push( sample );
+	log( "focus " + JSON.stringify( sample ) );
+} );
+document.addEventListener( "visibilitychange", () => {
+	log( "visibility " + document.visibilityState );
+} );
+
+// Pi.js handlers: default (no repeat) and allowRepeat
+$.onkey( "any", "down", () => { m_results.repeat.piDefault += 1; } );
+$.onkey( "any", "down", data => {
+	if( data.repeat ) {
+		m_results.repeat.piAllowRepeat += 1;
+	}
+}, false, true );
+
+// Each frame: a key value Pi.js reports held that the browser has released is stuck
+function frame() {
+	const rawValues = new Set( m_rawHeld.values() );
+	for( const value of m_seenKeys ) {
+		const isPiHeld = $.inkey( value ) !== null;
+		const isRawHeld = rawValues.has( value ) || m_rawHeld.has( value );
+		if( isPiHeld && !isRawHeld && !m_stuck.has( value ) ) {
+			m_stuck.add( value );
+			m_results.stuck.push( { "t": time(), "key": value } );
+			log( `STUCK: Pi.js reports ${JSON.stringify( value )} held after release`, true );
+		} else if( !isPiHeld && m_stuck.has( value ) ) {
+			m_stuck.delete( value );
+		}
+	}
+	render();
+	requestAnimationFrame( frame );
+}
+requestAnimationFrame( frame );
+
+function render() {
+	const rows = [
+		[ "Browser held (code: key)", [ ...m_rawHeld ].map( p => p.join( ": " ) ).join( ", " ) ],
+		[ "Pi.js inkey()", $.inkey().map( k => k.code + ": " + k.key ).join( ", " ) ],
+		[ "Stuck key values", [ ...m_stuck ].join( ", " ) ],
+		[ "Layout (code → key)", JSON.stringify( m_results.layout ) ],
+		[ "Repeats raw / Pi default / Pi allowRepeat", m_results.repeat.rawRepeats + " / " +
+			m_results.repeat.piDefault + " / " + m_results.repeat.piAllowRepeat ],
+		[ "Composing", String( m_isComposing ) ],
+		[ "Focus / visibility / active element", document.hasFocus() + " / " +
+			document.visibilityState + " / " + document.activeElement.tagName ],
+		[ "scrollY", String( Math.round( window.scrollY ) ) ]
+	];
+	const table = document.getElementById( "state" );
+	table.innerHTML = "";
+	for( const [ name, value ] of rows ) {
+		const tr = document.createElement( "tr" );
+		const th = document.createElement( "th" );
+		const td = document.createElement( "td" );
+		th.textContent = name;
+		td.textContent = value;
+		tr.append( th, td );
+		table.appendChild( tr );
+	}
+}
+
+async function startInput( isNumber ) {
+	document.activeElement.blur();
+	const record = { "t": time(), "isNumber": isNumber, "scrollBefore": window.scrollY };
+	log( "input() started" );
+	const value = await $.input( { "prompt": isNumber ? "Number: " : "Text: ",
+		"isNumber": isNumber, "allowNegative": isNumber } );
+	record.value = value;
+	record.scrollAfter = window.scrollY;
+	record.activeElementAfter = document.activeElement.tagName;
+	m_results.inputs.push( record );
+	log( "input() resolved " + JSON.stringify( record ) );
+}
+
+document.getElementById( "text" ).addEventListener( "click", () => startInput( false ) );
+document.getElementById( "number" ).addEventListener( "click", () => startInput( true ) );
+document.getElementById( "reset" ).addEventListener( "click", () => {
+	reset();
+	log( "reset" );
+} );
+document.getElementById( "copy" ).addEventListener( "click", async () => {
+	const text = JSON.stringify( m_results, null, 1 );
+	try {
+		await navigator.clipboard.writeText( text );
+		log( "Results copied" );
+	} catch( error ) {
+		log( "Clipboard unavailable; results follow" );
+		log( text );
+	}
+} );
+</script>
+</body>
+</html>

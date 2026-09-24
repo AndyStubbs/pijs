@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pointer Device Check</title>
+	<script src="../../../build/pi.js"></script>
+	<style>
+		body { font: 14px/1.4 monospace; margin: 16px; background: #111; color: #ddd; }
+		h1 { font-size: 18px; }
+		table { border-collapse: collapse; margin: 8px 0; }
+		td, th { border: 1px solid #444; padding: 2px 8px; text-align: left; }
+		button { font: inherit; margin: 4px 4px 4px 0; }
+		#host { width: 400px; height: 300px; margin: 16px 0; }
+		#host canvas { border: 8px solid #555; }
+		#log { white-space: pre-wrap; max-height: 240px; overflow: auto; border: 1px solid #444;
+			padding: 4px; }
+		.warn { color: #fc6; }
+	</style>
+</head>
+<body>
+<!--
+Device check for the pointer 2.3 audit (docs/plans/POINTER-V2.3-AUDIT.md, Section 6).
+
+Compares what Pi.js reports with the browser's own mouse events for the behaviors that
+synthetic probes cannot settle: a release outside the canvas, non-primary buttons, stale
+clicks, state across a focus change, the wheel, the context menu, and coordinates on the
+canvas border. Serve the repository with `npm run server`, then open
+http://localhost:8080/docs/evidence/pointer-2.3/device-check.html
+-->
+<h1>Pointer device check (Pi.js 2.3 audit)</h1>
+<p>Follow the steps in docs/evidence/pointer-2.3/README.md, then click
+<b>Copy results</b> and paste them into the conversation. The green box is the click box.</p>
+<div>
+	<button id="reset">Reset counters</button>
+	<button id="menu">Enable context menu</button>
+	<button id="copy">Copy results</button>
+</div>
+<div id="host"></div>
+<table id="state"></table>
+<div id="log"></div>
+<script>
+"use strict";
+
+const CLICK_BOX = { "x": 20, "y": 20, "width": 60, "height": 40 };
+const m_start = performance.now();
+const m_log = [];
+const m_results = {
+	"userAgent": navigator.userAgent,
+	"steps": {},
+	"focusSamples": [],
+	"contextMenuEnabled": false
+};
+let m_counts;
+let m_rawButtons = 0;
+
+resetCounts();
+
+function log( msg, isWarn ) {
+	const line = ( ( performance.now() - m_start ) / 1000 ).toFixed( 2 ) + "s " + msg;
+	m_log.push( line );
+	const div = document.createElement( "div" );
+	if( isWarn ) {
+		div.className = "warn";
+	}
+	div.textContent = line;
+	document.getElementById( "log" ).prepend( div );
+}
+
+function resetCounts() {
+	m_counts = {
+		"rawDown": 0, "rawUp": 0, "rawUpOutsideCanvas": 0, "rawWheel": 0,
+		"rawContextMenu": 0, "rawContextMenuPrevented": 0,
+		"piMouseDown": 0, "piMouseUp": 0, "piPressDown": 0, "piPressUp": 0,
+		"piClicks": 0, "piClickButtons": [],
+		"minX": null, "maxX": null, "minY": null, "maxY": null
+	};
+}
+
+function snapshot( name ) {
+	const mouse = $.inmouse();
+	const press = $.inpress();
+	const entry = {
+		"counts": JSON.parse( JSON.stringify( m_counts ) ),
+		"piMouse": { "x": mouse.x, "y": mouse.y, "buttons": mouse.buttons, "action": mouse.action },
+		"piPressButtons": press.buttons,
+		"rawButtons": m_rawButtons
+	};
+	m_results.steps[ name ] = entry;
+	log( "Recorded " + name + ": " + JSON.stringify( entry.counts ) );
+}
+
+const screen = $.screen( { "aspect": "200x150", "container": document.getElementById( "host" ) } );
+const canvas = screen.canvas();
+
+// Pi.js handlers
+$.onmouse( "down", () => { m_counts.piMouseDown += 1; } );
+$.onmouse( "up", () => { m_counts.piMouseUp += 1; } );
+$.onmouse( "move", data => {
+	if( m_counts.minX === null ) {
+		m_counts.minX = data.x;
+		m_counts.maxX = data.x;
+		m_counts.minY = data.y;
+		m_counts.maxY = data.y;
+	}
+	m_counts.minX = Math.min( m_counts.minX, data.x );
+	m_counts.maxX = Math.max( m_counts.maxX, data.x );
+	m_counts.minY = Math.min( m_counts.minY, data.y );
+	m_counts.maxY = Math.max( m_counts.maxY, data.y );
+} );
+$.onpress( "down", () => { m_counts.piPressDown += 1; } );
+$.onpress( "up", () => { m_counts.piPressUp += 1; } );
+$.onclick( data => {
+	m_counts.piClicks += 1;
+	m_counts.piClickButtons.push( data.buttons );
+	log( "Pi click at " + data.x + "," + data.y );
+}, false, CLICK_BOX );
+
+// Raw browser events, observed on the window after Pi.js's canvas listeners
+window.addEventListener( "mousedown", e => {
+	m_counts.rawDown += 1;
+	m_rawButtons = e.buttons;
+} );
+window.addEventListener( "mouseup", e => {
+	m_counts.rawUp += 1;
+	m_rawButtons = e.buttons;
+	if( e.target !== canvas ) {
+		m_counts.rawUpOutsideCanvas += 1;
+	}
+} );
+window.addEventListener( "mousemove", e => {
+	m_rawButtons = e.buttons;
+} );
+window.addEventListener( "wheel", () => { m_counts.rawWheel += 1; }, { "passive": true } );
+window.addEventListener( "contextmenu", e => {
+	if( e.target !== canvas ) {
+		return;
+	}
+	m_counts.rawContextMenu += 1;
+	if( e.defaultPrevented ) {
+		m_counts.rawContextMenuPrevented += 1;
+	}
+} );
+
+function focusSample( name ) {
+	const mouse = $.inmouse();
+	const sample = {
+		"event": name,
+		"t": Math.round( performance.now() - m_start ),
+		"visibility": document.visibilityState,
+		"piButtons": mouse.buttons,
+		"piAction": mouse.action,
+		"rawButtons": m_rawButtons,
+		"piMouseUp": m_counts.piMouseUp,
+		"piPressUp": m_counts.piPressUp
+	};
+	m_results.focusSamples.push( sample );
+	log( "Focus " + JSON.stringify( sample ), sample.piButtons !== 0 );
+}
+window.addEventListener( "blur", () => focusSample( "blur" ) );
+window.addEventListener( "focus", () => focusSample( "focus" ) );
+document.addEventListener( "visibilitychange", () => focusSample( "visibility" ) );
+
+document.getElementById( "reset" ).addEventListener( "click", () => {
+	resetCounts();
+	log( "Counters reset" );
+} );
+document.getElementById( "menu" ).addEventListener( "click", e => {
+	m_results.contextMenuEnabled = !m_results.contextMenuEnabled;
+	$.setEnableContextMenu( m_results.contextMenuEnabled );
+	if( m_results.contextMenuEnabled ) {
+		e.target.textContent = "Disable context menu";
+	} else {
+		e.target.textContent = "Enable context menu";
+	}
+	log( "Context menu enabled: " + m_results.contextMenuEnabled );
+} );
+document.getElementById( "copy" ).addEventListener( "click", () => {
+	m_results.log = m_log;
+	const text = JSON.stringify( m_results, null, 1 );
+	navigator.clipboard.writeText( text ).then(
+		() => log( "Results copied" ),
+		() => {
+			log( "Clipboard unavailable; results printed to the console", true );
+			console.log( text );
+		}
+	);
+} );
+
+// Step buttons are keyboard shortcuts so the mouse stays free: 1-8 record a step.
+window.addEventListener( "keydown", e => {
+	if( e.key >= "1" && e.key <= "8" ) {
+		snapshot( "step" + e.key );
+	}
+} );
+
+function draw() {
+	$.cls();
+	$.setColor( 2 );
+	$.rect( CLICK_BOX );
+	const mouse = $.inmouse();
+	if( mouse.buttons ) {
+		$.setColor( 14 );
+	} else {
+		$.setColor( 7 );
+	}
+	$.circle( mouse.x, mouse.y, 3 );
+	const rows = [
+		[ "Pi inmouse", `x ${mouse.x} y ${mouse.y} buttons ${mouse.buttons} ${mouse.action}` ],
+		[ "Pi inpress buttons", $.inpress().buttons ],
+		[ "Browser buttons", m_rawButtons ],
+		[ "Down: browser / Pi mouse / Pi press",
+			`${m_counts.rawDown} / ${m_counts.piMouseDown} / ${m_counts.piPressDown}` ],
+		[ "Up: browser (outside canvas) / Pi mouse / Pi press",
+			`${m_counts.rawUp} (${m_counts.rawUpOutsideCanvas}) / ${m_counts.piMouseUp} / ` +
+			`${m_counts.piPressUp}` ],
+		[ "Pi clicks (buttons)", `${m_counts.piClicks} (${m_counts.piClickButtons.join( "," )})` ],
+		[ "Wheel: browser / Pi", `${m_counts.rawWheel} / no API` ],
+		[ "Context menu on canvas: events / prevented",
+			`${m_counts.rawContextMenu} / ${m_counts.rawContextMenuPrevented}` ],
+		[ "Move range x / y",
+			`${m_counts.minX}..${m_counts.maxX} / ${m_counts.minY}..${m_counts.maxY}` ]
+	];
+	document.getElementById( "state" ).innerHTML = rows.map(
+		r => `<tr><th>${r[ 0 ]}</th><td>${r[ 1 ]}</td></tr>`
+	).join( "" );
+	requestAnimationFrame( draw );
+}
+requestAnimationFrame( draw );
+log( "Ready. Screen 200x150; canvas border 8px." );
+</script>
+</body>
+</html>

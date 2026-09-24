@@ -1,0 +1,938 @@
+{
+	"revision": "cfc32a9",
+	"engines": {
+		"chromium": {
+			"version": "141.0.7390.37",
+			"probes": {
+				"K1": {
+					"observed": {
+						"inkeyA": true,
+						"inkeyKeyA": false,
+						"inkeyAll": [],
+						"comboAEnterFiredAfterRelease": 1,
+						"inkeyLowerWAfterRelease": true
+					},
+					"expected": "no key is held after every key is released; the combo never fires",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K1b": {
+					"observed": {
+						"shiftWhileShiftLeftHeld": null,
+						"shiftLeft": "ShiftLeft",
+						"oneWhileDigit1Held": null,
+						"digit1": "Digit1"
+					},
+					"expected": "inkey( \"Shift\" ) and inkey( \"1\" ) report the key still held",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K2": {
+					"observed": {
+						"settledAfterClearAndEnter": "pending",
+						"callbackCallsBeforeOwnerCancel": 0,
+						"globalHandlerRegisteredBeforeClearFired": 0,
+						"settledAfterOwnerCancelInput": null
+					},
+					"expected": "clearEvents cancels the prompt (API.md: event clearing resolves null), or leaves it working",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K3": {
+					"observed": {
+						"objectFormUndefined": "throws INVALID_PARAMETERS",
+						"positionalUndefined": "throws INVALID_PARAMETERS",
+						"objectFormOmitted": "accepted",
+						"nullNoLimit": "accepted"
+					},
+					"expected": "every form is accepted",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K4": {
+					"observed": {
+						"outcomes": {
+							"press": "accepted",
+							"DOWN": "accepted",
+							"keydown": "accepted",
+							"offkeyBadMode": "accepted",
+							"emptyCombo": "accepted"
+						},
+						"fired": {
+							"press": 0,
+							"DOWN": 0,
+							"keydown": 0
+						}
+					},
+					"expected": "mode other than \"up\" or \"down\", and an empty combo, throw INVALID_PARAMETERS",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K5": {
+					"observed": {
+						"onceHandlerCallsAfterOffkey": 1,
+						"allowRepeatHandlerCallsAfterOffkey": 1,
+						"handlerCallsAfterOffkeyWithoutMode": 1
+					},
+					"expected": "offkey( key, mode, fn ) removes the handler; the toml marks mode optional",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K6": {
+					"observed": {
+						"callerArrayAfterOnkey": [
+							"Control",
+							"KeyS"
+						],
+						"duplicateComboCallsPerPress": 2,
+						"comboDataIsArray": true,
+						"comboDataOrder": [
+							"ControlLeft",
+							"KeyQ"
+						]
+					},
+					"expected": "the caller's array is unchanged; a key listed twice fires once",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K7": {
+					"observed": {
+						"sameObjectReturnedTwice": true,
+						"codeAfterMutation": "Mutated",
+						"arrayIsNewEachCall": true
+					},
+					"expected": "callers cannot change plugin state through a returned object",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K8": {
+					"observed": {
+						"handlerCallsAfterRegisterAndPoll": 0,
+						"promptSettledAfterEnterWhileStopped": "pending",
+						"fieldFocusedBeforeStart": true,
+						"fieldFocusedAfterStart": false
+					},
+					"expected": "API.md: polling and handler registration start the tracker",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K9": {
+					"observed": {
+						"spaceDefaultPrevented": false,
+						"tabDefaultPrevented": false,
+						"valueAfterSpaceTabCtrlV": " v",
+						"onkeyEnterCallsDuringPrompt": 1,
+						"promptAfterEnterFromFocusedButton": "pending"
+					},
+					"expected": "typed keys do not scroll or move focus; Ctrl+V does not type \"v\"; game handlers do not see prompt keys",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K10": {
+					"observed": {
+						"minusPastMaxLength2": -12,
+						"integerNumpadDecimal": 1,
+						"numberWithSpace": 4,
+						"leadingDecimalPoint5": 5,
+						"integerWithoutIsNumber": "12",
+						"negativeWithoutAllowNegative": 3
+					},
+					"expected": "maxLength 2 holds \"-1\" at most; integer input has no decimal point; \".5\" is accepted; isInteger returns a number",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K11": {
+					"observed": {
+						"midLine": {
+							"before": {
+								"x": 24,
+								"y": 0
+							},
+							"after": {
+								"x": 24,
+								"y": 8
+							}
+						},
+						"scaled": {
+							"before": {
+								"x": 0,
+								"y": 0
+							},
+							"after": {
+								"x": 0,
+								"y": 8
+							},
+							"row": 0
+						},
+						"longValue": {
+							"cols": 26,
+							"promptAndValueChars": 31,
+							"after": {
+								"col": 0,
+								"row": 1
+							}
+						}
+					},
+					"expected": "after Enter the cursor is at column 0 of the line below everything the prompt drew",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K12": {
+					"observed": {
+						"shadowInputHandlerCalls": 1,
+						"shadowInputHeld": true,
+						"lightDomInputHeld": false
+					},
+					"expected": "typing into a shadow-root input is ignored, like a light-DOM input",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K13": {
+					"observed": {
+						"anyUpData": [
+							{
+								"shiftKey": false,
+								"key": "a"
+							}
+						],
+						"keyBUpCallsForPressWhileStopped": 0
+					},
+					"expected": "the up handler gets the keyup's state (shiftKey true); a release is reported even if the press was not seen",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K14": {
+					"observed": {
+						"value": "",
+						"processHeldAfterRelease": true
+					},
+					"expected": "the composed text \"に\" is entered; no key stays held after release",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K18": {
+					"observed": {
+						"down": 1,
+						"up": 1,
+						"held": true,
+						"released": true
+					},
+					"expected": "one down, one up, held while pressed, released after",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"K20": {
+					"observed": {
+						"spacePreventedAfterSecondSet": true,
+						"spacePreventedAfterSetSetting": true,
+						"nonStringElements": "accepted"
+					},
+					"expected": "a set command replaces the set; non-string keys throw",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K19": {
+					"observed": {
+						"inkeyType": "undefined",
+						"inputType": "undefined"
+					},
+					"expected": "record only",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"K19b": {
+					"observed": {
+						"down": 1,
+						"up": 1,
+						"held": true,
+						"released": true
+					},
+					"expected": "one down, one up, held while pressed, released after",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"K1n": {
+					"observed": {
+						"inkeyA": true,
+						"inkeyKeyA": false
+					},
+					"expected": "no key held after release",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K9n": {
+					"observed": {
+						"value": " v",
+						"scrollY": 630
+					},
+					"expected": "the prompt value is \" \" and the page does not scroll",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K15": {
+					"observed": {
+						"codeForQ": "q",
+						"hideKeyboardAfterSymbolsTap": "throws Cannot read properties of null (reading 'key')",
+						"removeScreenAfterSymbolsTap": "throws Cannot read properties of null (reading 'key')"
+					},
+					"expected": "a key press reports code \"KeyQ\"; hideKeyboard and removeScreen succeed",
+					"confirmed": true,
+					"pageErrors": []
+				}
+			},
+			"manualPages": {
+				"clearevents_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'pointer' is already registered.",
+						"registerPlugin: Plugin 'keyboard' is already registered."
+					]
+				},
+				"events_comprehensive.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'pointer' is already registered."
+					]
+				},
+				"gamepad_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'gamepad' is already registered."
+					]
+				},
+				"input_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered."
+					]
+				},
+				"onkey_sound_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'sound' is already registered."
+					]
+				}
+			}
+		},
+		"firefox": {
+			"version": "142.0.1",
+			"probes": {
+				"K1": {
+					"observed": {
+						"inkeyA": true,
+						"inkeyKeyA": false,
+						"inkeyAll": [],
+						"comboAEnterFiredAfterRelease": 1,
+						"inkeyLowerWAfterRelease": true
+					},
+					"expected": "no key is held after every key is released; the combo never fires",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K1b": {
+					"observed": {
+						"shiftWhileShiftLeftHeld": null,
+						"shiftLeft": "ShiftLeft",
+						"oneWhileDigit1Held": null,
+						"digit1": "Digit1"
+					},
+					"expected": "inkey( \"Shift\" ) and inkey( \"1\" ) report the key still held",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K2": {
+					"observed": {
+						"settledAfterClearAndEnter": "pending",
+						"callbackCallsBeforeOwnerCancel": 0,
+						"globalHandlerRegisteredBeforeClearFired": 0,
+						"settledAfterOwnerCancelInput": null
+					},
+					"expected": "clearEvents cancels the prompt (API.md: event clearing resolves null), or leaves it working",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K3": {
+					"observed": {
+						"objectFormUndefined": "throws INVALID_PARAMETERS",
+						"positionalUndefined": "throws INVALID_PARAMETERS",
+						"objectFormOmitted": "accepted",
+						"nullNoLimit": "accepted"
+					},
+					"expected": "every form is accepted",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K4": {
+					"observed": {
+						"outcomes": {
+							"press": "accepted",
+							"DOWN": "accepted",
+							"keydown": "accepted",
+							"offkeyBadMode": "accepted",
+							"emptyCombo": "accepted"
+						},
+						"fired": {
+							"press": 0,
+							"DOWN": 0,
+							"keydown": 0
+						}
+					},
+					"expected": "mode other than \"up\" or \"down\", and an empty combo, throw INVALID_PARAMETERS",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K5": {
+					"observed": {
+						"onceHandlerCallsAfterOffkey": 1,
+						"allowRepeatHandlerCallsAfterOffkey": 1,
+						"handlerCallsAfterOffkeyWithoutMode": 1
+					},
+					"expected": "offkey( key, mode, fn ) removes the handler; the toml marks mode optional",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K6": {
+					"observed": {
+						"callerArrayAfterOnkey": [
+							"Control",
+							"KeyS"
+						],
+						"duplicateComboCallsPerPress": 2,
+						"comboDataIsArray": true,
+						"comboDataOrder": [
+							"ControlLeft",
+							"KeyQ"
+						]
+					},
+					"expected": "the caller's array is unchanged; a key listed twice fires once",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K7": {
+					"observed": {
+						"sameObjectReturnedTwice": true,
+						"codeAfterMutation": "Mutated",
+						"arrayIsNewEachCall": true
+					},
+					"expected": "callers cannot change plugin state through a returned object",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K8": {
+					"observed": {
+						"handlerCallsAfterRegisterAndPoll": 0,
+						"promptSettledAfterEnterWhileStopped": "pending",
+						"fieldFocusedBeforeStart": true,
+						"fieldFocusedAfterStart": false
+					},
+					"expected": "API.md: polling and handler registration start the tracker",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K9": {
+					"observed": {
+						"spaceDefaultPrevented": false,
+						"tabDefaultPrevented": false,
+						"valueAfterSpaceTabCtrlV": " v",
+						"onkeyEnterCallsDuringPrompt": 1,
+						"promptAfterEnterFromFocusedButton": "pending"
+					},
+					"expected": "typed keys do not scroll or move focus; Ctrl+V does not type \"v\"; game handlers do not see prompt keys",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K10": {
+					"observed": {
+						"minusPastMaxLength2": -12,
+						"integerNumpadDecimal": 1,
+						"numberWithSpace": 4,
+						"leadingDecimalPoint5": 5,
+						"integerWithoutIsNumber": "12",
+						"negativeWithoutAllowNegative": 3
+					},
+					"expected": "maxLength 2 holds \"-1\" at most; integer input has no decimal point; \".5\" is accepted; isInteger returns a number",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K11": {
+					"observed": {
+						"midLine": {
+							"before": {
+								"x": 24,
+								"y": 0
+							},
+							"after": {
+								"x": 24,
+								"y": 8
+							}
+						},
+						"scaled": {
+							"before": {
+								"x": 0,
+								"y": 0
+							},
+							"after": {
+								"x": 0,
+								"y": 8
+							},
+							"row": 0
+						},
+						"longValue": {
+							"cols": 26,
+							"promptAndValueChars": 31,
+							"after": {
+								"col": 0,
+								"row": 1
+							}
+						}
+					},
+					"expected": "after Enter the cursor is at column 0 of the line below everything the prompt drew",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K12": {
+					"observed": {
+						"shadowInputHandlerCalls": 1,
+						"shadowInputHeld": true,
+						"lightDomInputHeld": false
+					},
+					"expected": "typing into a shadow-root input is ignored, like a light-DOM input",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K13": {
+					"observed": {
+						"anyUpData": [
+							{
+								"shiftKey": false,
+								"key": "a"
+							}
+						],
+						"keyBUpCallsForPressWhileStopped": 0
+					},
+					"expected": "the up handler gets the keyup's state (shiftKey true); a release is reported even if the press was not seen",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K14": {
+					"observed": {
+						"value": "",
+						"processHeldAfterRelease": true
+					},
+					"expected": "the composed text \"に\" is entered; no key stays held after release",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K18": {
+					"observed": {
+						"down": 1,
+						"up": 1,
+						"held": true,
+						"released": true
+					},
+					"expected": "one down, one up, held while pressed, released after",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"K20": {
+					"observed": {
+						"spacePreventedAfterSecondSet": true,
+						"spacePreventedAfterSetSetting": true,
+						"nonStringElements": "accepted"
+					},
+					"expected": "a set command replaces the set; non-string keys throw",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K19": {
+					"observed": {
+						"inkeyType": "undefined",
+						"inputType": "undefined"
+					},
+					"expected": "record only",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"K19b": {
+					"observed": {
+						"down": 1,
+						"up": 1,
+						"held": true,
+						"released": true
+					},
+					"expected": "one down, one up, held while pressed, released after",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"K1n": {
+					"observed": {
+						"inkeyA": true,
+						"inkeyKeyA": false
+					},
+					"expected": "no key held after release",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K9n": {
+					"observed": {
+						"value": " v",
+						"scrollY": 686
+					},
+					"expected": "the prompt value is \" \" and the page does not scroll",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K15": {
+					"observed": {
+						"codeForQ": "q",
+						"hideKeyboardAfterSymbolsTap": "throws can't access property \"key\", keyEvent is null",
+						"removeScreenAfterSymbolsTap": "throws can't access property \"key\", keyEvent is null"
+					},
+					"expected": "a key press reports code \"KeyQ\"; hideKeyboard and removeScreen succeed",
+					"confirmed": true,
+					"pageErrors": []
+				}
+			},
+			"manualPages": {
+				"clearevents_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'pointer' is already registered.",
+						"registerPlugin: Plugin 'keyboard' is already registered."
+					]
+				},
+				"events_comprehensive.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'pointer' is already registered."
+					]
+				},
+				"gamepad_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'gamepad' is already registered."
+					]
+				},
+				"input_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered."
+					]
+				},
+				"onkey_sound_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'sound' is already registered."
+					]
+				}
+			}
+		},
+		"webkit": {
+			"version": "26.0",
+			"probes": {
+				"K1": {
+					"observed": {
+						"inkeyA": true,
+						"inkeyKeyA": false,
+						"inkeyAll": [],
+						"comboAEnterFiredAfterRelease": 1,
+						"inkeyLowerWAfterRelease": true
+					},
+					"expected": "no key is held after every key is released; the combo never fires",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K1b": {
+					"observed": {
+						"shiftWhileShiftLeftHeld": null,
+						"shiftLeft": "ShiftLeft",
+						"oneWhileDigit1Held": null,
+						"digit1": "Digit1"
+					},
+					"expected": "inkey( \"Shift\" ) and inkey( \"1\" ) report the key still held",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K2": {
+					"observed": {
+						"settledAfterClearAndEnter": "pending",
+						"callbackCallsBeforeOwnerCancel": 0,
+						"globalHandlerRegisteredBeforeClearFired": 0,
+						"settledAfterOwnerCancelInput": null
+					},
+					"expected": "clearEvents cancels the prompt (API.md: event clearing resolves null), or leaves it working",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K3": {
+					"observed": {
+						"objectFormUndefined": "throws INVALID_PARAMETERS",
+						"positionalUndefined": "throws INVALID_PARAMETERS",
+						"objectFormOmitted": "accepted",
+						"nullNoLimit": "accepted"
+					},
+					"expected": "every form is accepted",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K4": {
+					"observed": {
+						"outcomes": {
+							"press": "accepted",
+							"DOWN": "accepted",
+							"keydown": "accepted",
+							"offkeyBadMode": "accepted",
+							"emptyCombo": "accepted"
+						},
+						"fired": {
+							"press": 0,
+							"DOWN": 0,
+							"keydown": 0
+						}
+					},
+					"expected": "mode other than \"up\" or \"down\", and an empty combo, throw INVALID_PARAMETERS",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K5": {
+					"observed": {
+						"onceHandlerCallsAfterOffkey": 1,
+						"allowRepeatHandlerCallsAfterOffkey": 1,
+						"handlerCallsAfterOffkeyWithoutMode": 1
+					},
+					"expected": "offkey( key, mode, fn ) removes the handler; the toml marks mode optional",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K6": {
+					"observed": {
+						"callerArrayAfterOnkey": [
+							"Control",
+							"KeyS"
+						],
+						"duplicateComboCallsPerPress": 2,
+						"comboDataIsArray": true,
+						"comboDataOrder": [
+							"ControlLeft",
+							"KeyQ"
+						]
+					},
+					"expected": "the caller's array is unchanged; a key listed twice fires once",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K7": {
+					"observed": {
+						"sameObjectReturnedTwice": true,
+						"codeAfterMutation": "Mutated",
+						"arrayIsNewEachCall": true
+					},
+					"expected": "callers cannot change plugin state through a returned object",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K8": {
+					"observed": {
+						"handlerCallsAfterRegisterAndPoll": 0,
+						"promptSettledAfterEnterWhileStopped": "pending",
+						"fieldFocusedBeforeStart": true,
+						"fieldFocusedAfterStart": false
+					},
+					"expected": "API.md: polling and handler registration start the tracker",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K9": {
+					"observed": {
+						"spaceDefaultPrevented": false,
+						"tabDefaultPrevented": false,
+						"valueAfterSpaceTabCtrlV": " v",
+						"onkeyEnterCallsDuringPrompt": 1,
+						"promptAfterEnterFromFocusedButton": "pending"
+					},
+					"expected": "typed keys do not scroll or move focus; Ctrl+V does not type \"v\"; game handlers do not see prompt keys",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K10": {
+					"observed": {
+						"minusPastMaxLength2": -12,
+						"integerNumpadDecimal": 1,
+						"numberWithSpace": 4,
+						"leadingDecimalPoint5": 5,
+						"integerWithoutIsNumber": "12",
+						"negativeWithoutAllowNegative": 3
+					},
+					"expected": "maxLength 2 holds \"-1\" at most; integer input has no decimal point; \".5\" is accepted; isInteger returns a number",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K11": {
+					"observed": {
+						"midLine": {
+							"before": {
+								"x": 24,
+								"y": 0
+							},
+							"after": {
+								"x": 24,
+								"y": 8
+							}
+						},
+						"scaled": {
+							"before": {
+								"x": 0,
+								"y": 0
+							},
+							"after": {
+								"x": 0,
+								"y": 8
+							},
+							"row": 0
+						},
+						"longValue": {
+							"cols": 26,
+							"promptAndValueChars": 31,
+							"after": {
+								"col": 0,
+								"row": 1
+							}
+						}
+					},
+					"expected": "after Enter the cursor is at column 0 of the line below everything the prompt drew",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K12": {
+					"observed": {
+						"shadowInputHandlerCalls": 1,
+						"shadowInputHeld": true,
+						"lightDomInputHeld": false
+					},
+					"expected": "typing into a shadow-root input is ignored, like a light-DOM input",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K13": {
+					"observed": {
+						"anyUpData": [
+							{
+								"shiftKey": false,
+								"key": "a"
+							}
+						],
+						"keyBUpCallsForPressWhileStopped": 0
+					},
+					"expected": "the up handler gets the keyup's state (shiftKey true); a release is reported even if the press was not seen",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K14": {
+					"observed": {
+						"value": "",
+						"processHeldAfterRelease": true
+					},
+					"expected": "the composed text \"に\" is entered; no key stays held after release",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K18": {
+					"observed": {
+						"down": 1,
+						"up": 1,
+						"held": true,
+						"released": true
+					},
+					"expected": "one down, one up, held while pressed, released after",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"K20": {
+					"observed": {
+						"spacePreventedAfterSecondSet": true,
+						"spacePreventedAfterSetSetting": true,
+						"nonStringElements": "accepted"
+					},
+					"expected": "a set command replaces the set; non-string keys throw",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K19": {
+					"observed": {
+						"inkeyType": "undefined",
+						"inputType": "undefined"
+					},
+					"expected": "record only",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"K19b": {
+					"observed": {
+						"down": 1,
+						"up": 1,
+						"held": true,
+						"released": true
+					},
+					"expected": "one down, one up, held while pressed, released after",
+					"confirmed": false,
+					"pageErrors": []
+				},
+				"K1n": {
+					"observed": {
+						"inkeyA": true,
+						"inkeyKeyA": false
+					},
+					"expected": "no key held after release",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K9n": {
+					"observed": {
+						"value": " v",
+						"scrollY": 576
+					},
+					"expected": "the prompt value is \" \" and the page does not scroll",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"K15": {
+					"observed": {
+						"codeForQ": "q",
+						"hideKeyboardAfterSymbolsTap": "throws null is not an object (evaluating 'keyEvent.key')",
+						"removeScreenAfterSymbolsTap": "throws null is not an object (evaluating 'keyEvent.key')"
+					},
+					"expected": "a key press reports code \"KeyQ\"; hideKeyboard and removeScreen succeed",
+					"confirmed": true,
+					"pageErrors": []
+				}
+			},
+			"manualPages": {
+				"clearevents_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'pointer' is already registered.",
+						"registerPlugin: Plugin 'keyboard' is already registered."
+					]
+				},
+				"events_comprehensive.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'pointer' is already registered."
+					]
+				},
+				"gamepad_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'gamepad' is already registered."
+					]
+				},
+				"input_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered."
+					]
+				},
+				"onkey_sound_01.html": {
+					"pageErrors": [
+						"registerPlugin: Plugin 'keyboard' is already registered.",
+						"registerPlugin: Plugin 'sound' is already registered."
+					]
+				}
+			}
+		}
+	}
+}
