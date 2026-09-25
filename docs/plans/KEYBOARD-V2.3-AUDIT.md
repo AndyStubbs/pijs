@@ -1,7 +1,7 @@
 # Pi.js 2.3 Keyboard Audit
 
-Status: Reviewed 2026-09-25; every finding and proposal accepted (Section 9); the roadmap
-waits for the input conventions review
+Status: Reviewed 2026-09-25; every finding and proposal accepted (Section 9); the input
+conventions are decided (plan Section 6.1), which take precedence over this report
 Plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md), Section 5
 Evidence: [docs/evidence/keyboard-2.3/](../evidence/keyboard-2.3/README.md)
 

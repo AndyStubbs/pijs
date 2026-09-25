@@ -2,7 +2,8 @@
 
 Status: Sound Phases 0–6 complete, expansion Phases 7–8 implemented, Phase 9 in progress, and
 Phase 10 proposed; test audit follow-ups complete; gamepad, keyboard, pointer, and core audits
-reviewed; input conventions review and CI/CD exploration not started
+reviewed; input conventions review complete (Section 6.1); input roadmaps not started; CI/CD
+exploration not started
 Target release: Pi.js 2.3.0
 Workstream documents:
 
@@ -37,10 +38,10 @@ the release phase. Each workstream's design and task list live in its own docume
 
 | Workstream | Scope | Documents | Status |
 | --- | --- | --- | --- |
-| Sound | `plugins/sound/`, `plugins/sound-advanced/` | `SOUND-V2.3-PLAN.md`, `SOUND-V2.3-ROADMAP.md`, `SOUND-ADVANCED-V2.3-PLAN.md` | Phases 0–6 implemented; expansion Phases 7–8 implemented, Phase 9 in progress (9.3 waits for the input review), Phase 10 proposed |
-| Keyboard | `plugins/keyboard/`: key state, action keys, key handlers, `input()` prompts | `KEYBOARD-V2.3-AUDIT.md`, then `KEYBOARD-V2.3-ROADMAP.md` | Audit reviewed; KEY-001–019 and A1–A17 accepted (A16 in 2.3.0); roadmap waits for the conventions review |
-| Pointer | `plugins/pointer/`: mouse, touch, press, click, context menu, pinch zoom | `POINTER-V2.3-AUDIT.md`, then `POINTER-V2.3-ROADMAP.md` | Audit reviewed; PTR-001–017 and B1–B13 accepted (B11 in 2.3.0); roadmap waits for the conventions review |
-| Gamepad | `plugins/gamepad/`: polling loop, state, sensitivity, connection events | `GAMEPAD-V2.3-AUDIT.md`, then `GAMEPAD-V2.3-ROADMAP.md` | Audit reviewed; PAD-001–017 and all proposals accepted; roadmap waits for the conventions review |
+| Sound | `plugins/sound/`, `plugins/sound-advanced/` | `SOUND-V2.3-PLAN.md`, `SOUND-V2.3-ROADMAP.md`, `SOUND-ADVANCED-V2.3-PLAN.md` | Phases 0–6 implemented; expansion Phases 7–8 implemented, Phase 9 in progress (9.3 ready: `onPlay`/`offPlay`, I2), Phase 10 proposed |
+| Keyboard | `plugins/keyboard/`: key state, action keys, key handlers, `input()` prompts | `KEYBOARD-V2.3-AUDIT.md`, then `KEYBOARD-V2.3-ROADMAP.md` | Audit reviewed; KEY-001–019 and A1–A17 accepted (A16 in 2.3.0); conventions decided (Section 6.1); roadmap not started |
+| Pointer | `plugins/pointer/`: mouse, touch, press, click, context menu, pinch zoom | `POINTER-V2.3-AUDIT.md`, then `POINTER-V2.3-ROADMAP.md` | Audit reviewed; PTR-001–017 and B1–B13 accepted (B11 in 2.3.0); conventions decided (Section 6.1); roadmap not started |
+| Gamepad | `plugins/gamepad/`: polling loop, state, sensitivity, connection events | `GAMEPAD-V2.3-AUDIT.md`, then `GAMEPAD-V2.3-ROADMAP.md` | Audit reviewed; PAD-001–017 and all proposals accepted; conventions decided (Section 6.1); roadmap not started |
 | Core | `src/`, plugin API, build, metadata, declarations | `CORE-V2.3-AUDIT.md` | Audit reviewed; CORE-001–020 accepted; C4 rejected (documented instead), C7 approved as the only core API change |
 | Tests | `test/` suites, visual fixtures and baselines, harnesses, `scripts/test.js` | `TESTS-V2.3-AUDIT.md` | Audit accepted; follow-ups complete |
 | CI/CD | Cross-platform test runs, CI pipeline, release automation | `CI-V2.3-EXPLORATION.md`, then `CI-V2.3-ROADMAP.md` | Exploration not started |
@@ -97,15 +98,16 @@ CI/CD exploration ──► portability fixes and CI roadmap ──────�
   (Section 8.3), so the test audit never edits tests that a roadmap is about to replace.
 - If the exploration leads to re-recording visual baselines (G4), that happens once, as its
   own reviewed task, before input roadmap implementation starts.
-- Input roadmaps can run in parallel once approved. A change to `keyboard` or `pointer` also
-  updates `onscreen-keyboard` and `pi-vision`, which depend on them (Section 10).
+- Input roadmaps can run in parallel once approved. `onscreen-keyboard` and `pi-vision`, which
+  depend on `keyboard` and `pointer`, are not updated (I15). G7 is decided before the first
+  input roadmap task that breaks them.
 
 ### Milestones
 
 | Milestone | Contents | Gate |
 | --- | --- | --- |
 | U1: Audits complete | Core, keyboard, pointer, gamepad, and test audit reports; CI/CD exploration results | Each report reviewed; every finding accepted, rejected, or deferred |
-| U2: Roadmaps approved | Input conventions decisions; keyboard, pointer, gamepad, and CI roadmaps | Open decisions G1–G6 closed; each input roadmap has a compatibility summary |
+| U2: Roadmaps approved | Input conventions decisions; keyboard, pointer, gamepad, and CI roadmaps | Open decisions G1–G7 closed; each input roadmap has a compatibility summary |
 | U3: Implementation complete | Sound Phases 6–10 (sound M5); all input roadmaps; accepted core fixes, test removals, and portability fixes | Every workstream's exit criteria met with `npm test` green |
 | U4: Release | Section 11 | Pi.js 2.3.0 snapshot created |
 
@@ -236,6 +238,35 @@ It covers:
 The decisions are recorded in this section as numbered items (I1, I2, …), with the affected
 audit findings, before the roadmaps are approved. Closing the review also closes G2 and G3 in
 Section 13.
+
+### 6.1 Decisions
+
+Recorded 2026-09-25. They apply to `keyboard`, `pointer`, and `gamepad`, and to the handler
+commands of `sound-advanced` (task 9.3). Where an item changes an accepted audit proposal, the
+item takes precedence and the roadmap follows it.
+
+| ID | Decision | Affects |
+| --- | --- | --- |
+| I1 | **camelCase names.** Every input command is camelCase: `inX` for polling, `onX`/`offX` for handlers, `startX`/`stopX`, and `setX` for settings. Renames: `inkey`, `onkey`, `offkey` become `inKey`, `onKey`, `offKey`. `inmouse`, `onmouse`, `offmouse` become `inMouse`, `onMouse`, `offMouse`, and likewise for touch (`inTouch`, `onTouch`, `offTouch`) and press (`inPress`, `onPress`, `offPress`). `onclick`, `offclick` become `onClick`, `offClick`. `ingamepad` becomes `inGamepad`. Other commands keep their names except where I2, I12, or an accepted audit item renames them | All three plugins; A5, B11 |
+| I2 | **Handler signature.** `onX( [selector,] mode, fn, once, …extras )` and `offX( [selector,] mode, fn )`. Commands with one event have no mode: `onClick( fn, once, hitBox, customData )`, `onWheel( fn, once, hitBox, customData )`. Gamepad connection handlers become `onGamepad( mode, fn, once )` and `offGamepad( mode, fn )` with modes `"connect"` and `"disconnect"`, replacing `onGamepadConnected` and `onGamepadDisconnected`. Music sync (task 9.3) is `onPlay( mode, fn, once )` and `offPlay( mode, fn )` with modes `"note"` and `"end"`, replacing the planned `onPlayEvent`/`offPlayEvent`. The object form of each command follows its parameter names | A5, PAD-012, B11, sound 6.2 |
+| I3 | **Pointer modes.** `onMouse`, `onTouch`, and `onPress` all use `"down"`, `"move"`, and `"up"`, matching the `action` field of B7's data. `onTouch( "start" )` and `onTouch( "end" )` throw an `INVALID_MODE` error that names the new mode | B7, PTR-013 |
+| I4 | **Removal.** A handler is identified by its selector (key or key set), mode, and function; `once`, `allowRepeat`, hit boxes, and custom data are ignored. Registering the same function for the same selector and mode again does nothing, as in the DOM. `offX( mode )` without a function removes every handler of that mode. `offX( null, fn )`, or the object form without `mode`, removes the function from every mode. Omitting both throws; use `clearEvents()`. Keyboard's selector is always required | KEY-007, A14, PTR-009, B1, A5 |
+| I5 | **Start and stop.** Tracking starts on first use: the first read, handler registration, or a setting that needs tracking. Listeners are attached then, not at plugin load. After `stopX()`, tracking stays stopped until `startX()`. While stopped, reads return empty state, and handlers stay registered but are not called. A stop releases held input as I6 describes. The `input()` prompt keeps its own listener (keyboard A2) | KEY-006, A13, PAD-012, PTR-010, B12, A12 |
+| I6 | **Cancelled input.** A release the player did not make is dispatched through the normal `"up"` mode with `cancelled: true` in its data. This covers the page becoming hidden, a stop command, `touchcancel`, and, for keyboard, window blur. Keyboard's blur, which clears held keys silently today, dispatches `"up"` for each held key. Gamepad has no button handlers; its polled state is released as gamepad A2 describes | B3, B5, PTR-007, KEY-011, A8 |
+| I7 | **Polled and callback objects.** Reads do not allocate. Keyboard and pointer data objects are created once per event and frozen; a single-item read returns the latest one until the next event, and handlers receive the same objects. List reads (`inKey()`, `inTouch()`) return a frozen array that is replaced when the state changes. Gamepad pads are live objects updated in place once per frame, and `inGamepad()` reuses one array per frame (gamepad A7); both are documented as live | KEY-013, A10, B13, PAD-009, A7 |
+| I8 | **Dispatch.** State is updated before dispatch. Handlers added during a dispatch first run in the next one. A handler removed during a dispatch does not run later in it. A `once` handler is removed before it runs. Each handler runs in its own `try`, and a throw is reported with `console.error` without stopping the others | PAD-003, PAD-007, PTR-006, PTR-009, A3, B1, B2 |
+| I9 | **Return shapes.** A single-item read returns the object or `null`, never `undefined`. A list read always returns an array, empty when nothing is held, connected, or tracking is stopped | PAD-010, A6 |
+| I10 | **`clearEvents` scope.** Per-screen handlers (mouse, touch, press, click, wheel) are cleared only for the calling screen. Global handlers (keyboard, gamepad, play) are cleared everywhere, whichever screen calls. `"click"` and `"wheel"` become their own types, so `"press"` no longer clears clicks. `sound-advanced` registers `"play"`. The keyboard prompt follows keyboard A2 | KEY-002, KEY-016, A15, PAD-012 |
+| I11 | **Validation errors.** `TypeError` for a wrong type and `RangeError` for a value out of range, with a per-parameter code (`INVALID_MODE`, `INVALID_FUNCTION`, `INVALID_KEY`, `INVALID_HITBOX`, `INVALID_INDEX`, and so on) and a message starting `"<command>: "`. Keyboard and gamepad stop using `INVALID_PARAMETERS`. Core keeps its own codes (plan §3) | KEY-009, A7, PAD-008, A8, PTR-012, B9 |
+| I12 | **Settings.** Settings are named for the feature, and boolean settings take `isEnabled`. `setEnableContextMenu` becomes `setContextMenu( isEnabled )` with option `contextMenu`. `setPinchZoom( isEnabled )` keeps its name and becomes a screen command (pointer B10). `setGamepadDeadZone` is as accepted (gamepad A9) | B10, PTR-014, A9 |
+| I13 | **Gamepad names.** Standard-mapping names are positional and camelCase. Buttons: `south`, `east`, `west`, `north`, `leftShoulder`, `rightShoulder`, `leftTrigger`, `rightTrigger`, `select`, `start`, `leftStick`, `rightStick`, `dpadUp`, `dpadDown`, `dpadLeft`, `dpadRight`, `home`. Axes: `leftX`, `leftY`, `rightX`, `rightY` | A10 |
+| I14 | **Key names.** Codes (`"KeyA"`, `"ArrowLeft"`) are documented for game controls and values (`"a"`) for text; both keep working. Combinations match when their keys are held, even if other keys are also held; there is no exact-match option in 2.3 | KEY-001, A1 |
+| I15 | **Dependents (closes G2).** The conventions apply to the core plugins: `keyboard`, `pointer`, `gamepad`, `sound`, `polygons`, and `sound-advanced`. `onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` are not updated in 2.3, even where a renamed command or changed data shape breaks them. What happens to those plugins and their fixtures is G7 | Keyboard §8 dependents, CORE-004 |
+| I16 | **Old names (closes G3).** No aliases. Renamed and removed commands are unregistered, so old code fails at its first call; the upgrade guide lists every rename. Old handler modes and option names fail with validation errors (I3, core C7) | All renames |
+
+**Compatibility.** I1, I2, I3, I10's `"press"` change, I11's error codes, and I12's rename are
+breaking. Each input roadmap lists them in its compatibility summary. Under G1, each plugin
+moves to 2.0.0 with its first breaking change.
 
 ## 7. Core Audit
 
@@ -432,8 +463,9 @@ These apply to every workstream. Workstream roadmaps can add rules but not relax
 - **User documentation:** `API.md`, plugin READMEs, `docs/GAMEPAD.md`, and the hand-written
   llms references (`llms.txt`, `llms-full.txt`, `examples.txt`) are updated only in the release
   phase, once behavior is final. Plan documents record intermediate decisions.
-- **Dependents:** a change to `keyboard` or `pointer` updates `onscreen-keyboard`, `pi-vision`,
-  demos, and fixtures that use it in the same task, and the plugin visual suite must pass.
+- **Dependents:** a change to an input plugin updates the demos, fixtures, and manual pages that
+  use it in the same task. `onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` are not
+  updated in 2.3 (I15); their handling is G7.
 - **Size:** each input roadmap records its plugin's size at the audit baseline and at each
   phase exit, using `npm run size`.
 - **Tracking:** each roadmap phase is a GitHub milestone, and each task is an issue titled with
@@ -500,12 +532,13 @@ If the schedule slips:
 
 | ID | Decision | Recommendation | Resolve by |
 | --- | --- | --- | --- |
-| G1 | Input plugin versions after breaking changes | Move each plugin to 2.0.0 with its first breaking change, as `sound` did | U2 |
-| G2 | Whether the input conventions apply to `onscreen-keyboard` and `pi-vision` in 2.3 | Update them only where a core input plugin change requires it; defer broader alignment | Input conventions review |
-| G3 | Aliases for renamed input commands | No aliases: removed names fail as unknown commands, matching the 2.2 image palette and 2.3 sound changes. An alias is acceptable only for a widely used command where it adds almost nothing to the size | Input conventions review |
+| G1 | Input plugin versions after breaking changes | **Closed 2026-09-25:** each plugin moves to 2.0.0 with its first breaking change, as `sound` did. The I1 renames make that the first task for `keyboard`, `pointer`, and `gamepad` | Closed |
+| G2 | Whether the input conventions apply to `onscreen-keyboard` and `pi-vision` in 2.3 | **Closed 2026-09-25 (I15):** no. Only the core plugins and `sound-advanced` are updated; `onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` are left as they are, even where the changes break them | Closed |
+| G3 | Aliases for renamed input commands | **Closed 2026-09-25 (I16):** no aliases. Renamed commands are unregistered and fail at their first call; the upgrade guide lists every rename | Closed |
 | G4 | How visual baselines work across platforms | Decide from the exploration's data. Prefer one baseline set rendered the same way on every platform; keep per-platform sets as the fallback | CI/CD exploration review |
 | G5 | Whether CI must be running before 2.3.0 ships | No. Portability fixes ship in 2.3.0; the pipeline follows when ready | CI/CD exploration review |
 | G6 | How much of publishing is automated | Automate release verification on tags (build, checks, `npm pack --dry-run`); keep `npm publish` manual for 2.3.0 | CI/CD exploration review |
+| G7 | What happens to `onscreen-keyboard` and `pi-vision`, which the I1–I3 changes break, and their plugin visual fixtures (`onscreen_keyboard_01–04`, `pi_vision_01`) | Maintainer's choice: remove the plugins from the repository, or keep them out of the build and the gating plugin suite until they are updated. Tests are never dropped only to make a suite pass (Section 8.3), so the choice is recorded explicitly | Before the first input roadmap task that breaks them |
 
 ## 14. Risks
 
@@ -513,7 +546,7 @@ If the schedule slips:
 | --- | --- | --- |
 | Breaking changes in four plugins at once | Large upgrade effort for existing games | One upgrade guide; shared conventions; loud errors; per-plugin breaking changes ship as a set |
 | Input behavior depends on devices and browsers | Tests pass but real devices misbehave | Synthetic-event browser tests for logic; a manual device pass at release; audits record what cannot be automated |
-| Dependent plugins break | `onscreen-keyboard` or `pi-vision` stop working | Dependents are updated in the same task; plugin visual suite at every phase exit |
+| Dependent plugins break | `onscreen-keyboard` and `pi-vision` stop working after the input renames | Accepted (I15); G7 decides whether they are removed or kept out of the build and gating suite |
 | Audits grow into rewrites | Schedule slips before any fix lands | Audits only record findings; changes go through reviewed roadmaps |
 | Full-build size growth | `pi.min.js` grows beyond the sound targets | Per-plugin size reporting at each phase exit |
 | Sound expansion delays the release | The sound workstream reopens after it closed | Expansion phases are cut independently, before any core sound item; recording is cut last, and its core output stage ships in 2.3.0 even if the plugin part slips |
@@ -525,8 +558,9 @@ If the schedule slips:
 
 ## 15. Out of Scope for 2.3
 
-- Redesigning optional plugins (`polygons`, `print-table`, `onscreen-keyboard`, `pi-vision`,
-  `pens`), except where they depend on a changed input plugin.
+- Redesigning `polygons`.
+- Any change to `print-table`, `onscreen-keyboard`, `pi-vision`, or `pens`, including updates
+  for changed input plugins (I15, G7).
 - New input device types, such as MIDI, WebXR controllers, or motion sensors.
 - A full rendering re-audit or new performance campaign.
 - Replacing the test frameworks (Playwright and `node:test`).

@@ -1,7 +1,7 @@
 # Pi.js 2.3 Sound Upgrade Roadmap
 
 Status: Phases 0–6 implemented (M4); expansion Phases 7–8 implemented, Phase 9 in progress
-(task 9.3 waits for the input conventions review), Phase 10 proposed
+(task 9.3 ready after the input conventions review), Phase 10 proposed
 Design reference: [SOUND-V2.3-PLAN.md](SOUND-V2.3-PLAN.md) (section numbers below refer to it)
 Expansion plan: [SOUND-ADVANCED-V2.3-PLAN.md](SOUND-ADVANCED-V2.3-PLAN.md) (Phases 7–10)
 Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md) (the 2.3 release phase and the other
@@ -558,13 +558,13 @@ the workstream reads in one place.
 | --- | --- | --- | --- |
 | 7 | Recording: `startRecording()`, `stopRecording()`, `getRecordingState()`, `saveRecording()`, WAV encoding, `getSoundLevels( "output" )` | Output stage after the limiter; `tapBus( "output" )` | 3.1, 4 |
 | 8 | Bus effects: filter, distortion, bitcrusher, chorus, chains, in-place updates | None | 5 |
-| 9 | `generateSfx()` generator; `onPlayEvent()`/`offPlayEvent()` music sync | `observePlay` service member | 3.2, 6 |
+| 9 | `generateSfx()` generator; `onPlay()`/`offPlay()` music sync | `observePlay` service member | 3.2, 6 |
 | 10 | Sample instruments through `defineInstrument()` | `getAudioBuffer` service member | 3.3, 7 |
 
 - Phases run in order of priority, but Phase 8 needs only the shared worklet loader (task 7.2)
   from Phase 7, and task 9.1 needs nothing from it, so both can run in parallel with Phase 7.
-- Task 9.3 waits for the input conventions review (general plan Section 6), which decides the
-  handler naming it follows.
+- Task 9.3 follows the input conventions (general plan Section 6.1), which name its commands
+  `onPlay()` and `offPlay()`.
 - Each phase ends with `npm test` green, a size entry in `docs/evidence/sound-2.3/README.md`,
   and a listening check in `sound_advanced_01.html`, as for Phases 0–6.
 - The expansion plan's decisions are D7–D17, numbered after D1–D6 in the sound plan.

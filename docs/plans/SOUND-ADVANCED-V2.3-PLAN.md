@@ -1,8 +1,8 @@
 # Pi.js 2.3 Sound Advanced Expansion Plan
 
 Status: Phases 7–8 implemented (their three-engine listening checks are open); Phase 9 tasks
-9.1, 9.2, and the generator part of 9.4 implemented, task 9.3 waiting for the input conventions
-review; Phase 10 not started
+9.1, 9.2, and the generator part of 9.4 implemented, task 9.3 ready (the input conventions
+review named its commands `onPlay()` and `offPlay()`); Phase 10 not started
 Revision 2: the sound-effect generator is `generateSfx()`, repeatable by default, with seed 0
 as the built-in preset and a `variation` parameter (6.1, D17).
 Target release: Pi.js 2.3.0
@@ -379,9 +379,9 @@ $.sfx( "zap" );
 
 ### 6.2 Music sync callbacks
 
-`onPlayEvent( event, callback )` and `offPlayEvent( event, callback )` let games react to
-music. `event` is `"note"` or `"end"`. Callbacks receive the objects defined in Section 3.2,
-plus `delay`, the seconds between the note's audible start and the dispatch.
+`onPlay( mode, fn, once )` and `offPlay( mode, fn )` let games react to music. `mode` is
+`"note"` or `"end"`. Callbacks receive the objects defined in Section 3.2, plus `delay`, the
+seconds between the note's audible start and the dispatch.
 
 - **Delivery.** The plugin queues events from `observePlay` and dispatches them from its own
   `requestAnimationFrame` loop, which runs only while events are queued. A note is dispatched
@@ -391,9 +391,11 @@ plus `delay`, the seconds between the note's audible start and the dispatch.
   visible, are dropped rather than delivered in a burst (D13). `"end"` is always delivered.
 - **Stopping.** `stopPlay()` drops the song's queued note events and delivers its `"end"`
   with `stopped: true`.
-- **Naming.** The input conventions review (general plan Section 6) decides handler naming
-  and signatures. These commands follow its decisions (items I1, I2, …) before task 9.3
-  starts.
+- **Conventions.** The commands follow the input conventions (general plan Section 6.1):
+  camelCase names and the `onX( mode, fn, once )` signature (I1, I2); removal by mode and
+  function, with `offPlay( mode )` removing every handler of that mode (I4); frozen callback
+  objects (I7); the shared dispatch rules (I8); and a `"play"` type for `clearEvents()`
+  that clears every play handler, whichever screen calls (I10).
 
 Cue markers in PLAY strings, for events at arbitrary song positions, are deferred (D14).
 
@@ -403,7 +405,7 @@ Cue markers in PLAY strings, for events at arbitrary song positions, are deferre
 | --- | --- | --- |
 | 9.1 | `generator.js`: `generateSfx()`, seed 0 presets, category tables, seeded PRNG, variation, Node tests | 6.1 |
 | 9.2 | Core `observePlay` service member, admission and end reporting, contract tests, size entry | 3.2 |
-| 9.3 | `sync.js`: `onPlayEvent()`/`offPlayEvent()`, dispatch loop, latency mapping, late drop | 6.2 |
+| 9.3 | `sync.js`: `onPlay()`/`offPlay()`, dispatch loop, latency mapping, late drop, `clearEvents( "play" )` | 6.2 |
 | 9.4 | Metadata, types, and demo: a generator panel with seed entry and a beat-synced visual | — |
 
 ### 6.4 Exit criteria
@@ -447,8 +449,8 @@ Cue markers in PLAY strings, for events at arbitrary song positions, are deferre
 - **Size.** `observePlay` fits in the Section 8 headroom, 50 bytes under the full-build
   target.
 - **Open:**
-  - Task 9.3, `sync.js` with `onPlayEvent()` and `offPlayEvent()`, and the beat-synced demo
-    visual wait for the input conventions review. D13 and D14 stay open until then.
+  - Task 9.3, `sync.js` with `onPlay()` and `offPlay()`, and the beat-synced demo visual.
+    The conventions review is complete; D13 and D14 are settled in task 9.3.
   - The listening check of the generator categories across seeds, on all three engines.
 
 ## 7. Phase 10: Sample Instruments
@@ -545,7 +547,7 @@ All changes are additive. `sound-advanced` has not been released, so its release
 these commands as part of 1.0.0:
 
 - New commands: `startRecording()`, `stopRecording()`, `getRecordingState()`,
-  `saveRecording()`, `generateSfx()`, `onPlayEvent()`, and `offPlayEvent()`.
+  `saveRecording()`, `generateSfx()`, `onPlay()`, and `offPlay()`.
 - `setBusEffect()`: new effects `"filter"`, `"distortion"`, `"bitcrush"`, and `"chorus"`;
   arrays of `{ effect, ...options }` items for chains; in-place updates for matching chains.
 - `getSoundLevels()`: bus `"output"`.
