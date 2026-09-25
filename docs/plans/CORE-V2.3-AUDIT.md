@@ -777,8 +777,9 @@ tracked in the follow-up table below as in 2.2. Order:
 
 User documentation is written in the release phase (R.2, R.3), as the standing rules require:
 - C10's description of characters outside the font table.
-- CORE-004: `clearEvents()` also removes the handlers that `onscreen-keyboard` and
-  `pi-vision` register.
+- CORE-004: `clearEvents()` also removes handlers that a plugin registers through the public
+  input commands. This is written for plugin authors (plugin guides); no plugin that remains
+  in 2.3 is affected once `onscreen-keyboard` and `pi-vision` are removed (upgrade plan §3.1).
 - The `set()` and `removeScreen` text in `API.md`.
 
 **Scope-cut order:**
@@ -852,7 +853,7 @@ recorded 2026-09-25.
 | CORE-001 | Offscreen context not restored after its last screen | Accepted | P2. Fixed by C1 |
 | CORE-002 | Failed plugin stays half-installed | Accepted | P2. Fixed by C2 |
 | CORE-003 | Bundled plugin loaded after Full breaks the page | Accepted | P2. Fixed by C3: skip on the same version, warn on a mismatch |
-| CORE-004 | `clearEvents()` removes plugin-internal subscriptions | Accepted | P2. Documentation only (C4 rejected): `API.md` says that `clearEvents()` also removes the handlers `onscreen-keyboard` and `pi-vision` register. No mechanism is needed from §6 |
+| CORE-004 | `clearEvents()` removes plugin-internal subscriptions | Accepted | P2. Documentation only (C4 rejected): `API.md` and the plugin guides say that `clearEvents()` also removes handlers a plugin registers through the public input commands. The two affected plugins, `onscreen-keyboard` and `pi-vision`, are removed in 2.3 (upgrade plan §3.1, G7). No mechanism is needed from §6 |
 | CORE-005 | Release package types wrong under `nodenext` | Accepted | P2. Fixed by C5 |
 | CORE-006 | Init errors thrown to the wrong caller | Accepted | Fixed by C2 |
 | CORE-007 | Explicit `undefined` not treated as omitted | Accepted | Fixed by C6 |

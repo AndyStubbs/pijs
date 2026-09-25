@@ -2,8 +2,8 @@
 
 Status: Sound Phases 0–6 complete, expansion Phases 7–8 implemented, Phase 9 in progress, and
 Phase 10 proposed; test audit follow-ups complete; gamepad, keyboard, pointer, and core audits
-reviewed; input conventions review complete (Section 6.1); input roadmaps not started; CI/CD
-exploration not started
+reviewed; input conventions review complete (Section 6.1); input roadmaps not started; plugin
+removal (Section 3.1) not started; CI/CD exploration not started
 Target release: Pi.js 2.3.0
 Workstream documents:
 
@@ -30,6 +30,8 @@ Pi.js 2.3 is an API-quality release for the core plugins. It covers four plugins
    faster without losing coverage.
 5. **CI/CD and cross-platform:** explore what it takes for the tests to pass on Linux, macOS,
    and Windows, and how continuous integration and release automation should run them.
+6. **Plugin removal:** remove the incomplete non-core plugins `onscreen-keyboard`,
+   `pi-vision`, `print-table`, and `pens` from the repository (Section 3.1).
 
 This plan covers what the workstreams share: the audit method, sequencing, standing rules, and
 the release phase. Each workstream's design and task list live in its own documents.
@@ -45,6 +47,7 @@ the release phase. Each workstream's design and task list live in its own docume
 | Core | `src/`, plugin API, build, metadata, declarations | `CORE-V2.3-AUDIT.md` | Audit reviewed; CORE-001–020 accepted; C4 rejected (documented instead), C7 approved as the only core API change |
 | Tests | `test/` suites, visual fixtures and baselines, harnesses, `scripts/test.js` | `TESTS-V2.3-AUDIT.md` | Audit accepted; follow-ups complete |
 | CI/CD | Cross-platform test runs, CI pipeline, release automation | `CI-V2.3-EXPLORATION.md`, then `CI-V2.3-ROADMAP.md` | Exploration not started |
+| Plugin removal | `plugins/onscreen-keyboard/`, `plugins/pi-vision/`, `plugins/print-table/`, `plugins/pens/`, and their metadata, fixtures, and tests | This plan, Section 3.1 | Decided (G7); not started |
 | Release | Documentation, upgrade guide, version checks, snapshot | This plan, Section 11 | Waits for the other workstreams |
 
 All workstream documents live in `docs/plans/`. Measurements and other evidence go in
@@ -64,6 +67,33 @@ These decisions apply to every workstream and are fixed for this plan.
 | Package version | Staged at `2.3.0` / `"2.3"` by sound task 0.2 and shared by all workstreams. Every API change is layered under `metadata/pi-2.3/` |
 | Plan location | Plans, audits, and roadmaps go in `docs/plans/`. The user-facing `docs/UPGRADE-V2.3.md` is written only in the release phase |
 | Upgrade guide | One guide for the whole release, assembled from each workstream's compatibility summary |
+| Plugins | The repository keeps the core plugins (`sound`, `keyboard`, `pointer`, `gamepad`, `polygons`), `sound-advanced`, and `example-plugin`. The incomplete non-core plugins are removed (Section 3.1) |
+
+### 3.1 Plugin removal
+
+`onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` are incomplete, are not part of the
+release package, and are not maintained. The input conventions (Section 6.1) break
+`onscreen-keyboard` and `pi-vision`, and `onscreen-keyboard` needs `print-table`. `pens` is
+already marked deprecated in its README. All four are removed from the repository in 2.3 (G7).
+`example-plugin` stays as the template for plugin authors, and `sound-advanced` stays as part of
+the sound workstream.
+
+| # | Task |
+| --- | --- |
+| P.1 | Delete `plugins/onscreen-keyboard/`, `plugins/pi-vision/`, `plugins/print-table/`, and `plugins/pens/`. `scripts/build.js` discovers plugin folders, so the build needs no other change; confirm `build/plugins/` no longer contains them after a clean build |
+| P.2 | Delete `metadata/plugin-onscreen-keyboard/` and `metadata/plugin-print-table/`, which feed no output today (core audit §2.3) |
+| P.3 | Delete the plugin visual fixtures `onscreen_keyboard_01`–`04`, `pi_vision_01`, and `table_01` from `test/tests/html-plugins/` with their approved PNGs in `test/tests/screenshots/`, and the manual page `test/tests/html-manual/pi_vision_window_01.html`. Record the removals in `test/TEST-CONSOLIDATION-LOG.md` as feature removals, not coverage reductions (Section 8.3) |
+| P.4 | Update tests that use the removed plugins as fixtures without testing them: the late-dependency test in `test/unit/plugin-installation-browser.test.js` (use a remaining dependent pair, such as `sound-advanced` loaded before `sound`, in place of `onscreen-keyboard` and `pi-vision`), and `test/scripts/size.test.js` (use `example-plugin` in place of `pens`). Each rewritten test must still fail under the break it was written to catch |
+| P.5 | Search the tree for remaining references (`git grep` for the four names and their fixture names) outside `docs/archive/`, `docs/evidence/`, and `releases/`, which record history and are not changed. Fix live references in plugin guides, plans, and tooling |
+| P.6 | Write the removal's compatibility summary below, the input to `UPGRADE-V2.3.md` (R.4): each removed plugin, what it did, and that its source remains available at the `v2.2.0` tag |
+
+The removal is independent of the other workstreams and can start at once. It must land before
+the first input roadmap task that breaks `onscreen-keyboard` or `pi-vision`, so no roadmap has
+to keep them building or passing. Exit criteria: `npm test` is green, including the plugin
+visual suite with the six fixtures removed, and a clean `npm run build` produces no output for
+the removed plugins.
+
+**Compatibility summary:** written by P.6.
 
 ## 4. Sequencing
 
@@ -79,6 +109,8 @@ Gamepad audit  ─┘   review               roadmaps                    │
 Test audit ──► accepted removals ────────────────────────────────────┤
                                                                      │
 CI/CD exploration ──► portability fixes and CI roadmap ──────────────┤
+                                                                     │
+Plugin removal (Section 3.1) ────────────────────────────────────────┤
                                                                      ▼
                                                            Release (Section 11)
 ```
@@ -99,8 +131,8 @@ CI/CD exploration ──► portability fixes and CI roadmap ──────�
 - If the exploration leads to re-recording visual baselines (G4), that happens once, as its
   own reviewed task, before input roadmap implementation starts.
 - Input roadmaps can run in parallel once approved. `onscreen-keyboard` and `pi-vision`, which
-  depend on `keyboard` and `pointer`, are not updated (I15). G7 is decided before the first
-  input roadmap task that breaks them.
+  depend on `keyboard` and `pointer`, are not updated (I15). They are removed with `print-table`
+  and `pens` (Section 3.1) before the first input roadmap task that would break them.
 
 ### Milestones
 
@@ -108,7 +140,7 @@ CI/CD exploration ──► portability fixes and CI roadmap ──────�
 | --- | --- | --- |
 | U1: Audits complete | Core, keyboard, pointer, gamepad, and test audit reports; CI/CD exploration results | Each report reviewed; every finding accepted, rejected, or deferred |
 | U2: Roadmaps approved | Input conventions decisions; keyboard, pointer, gamepad, and CI roadmaps | Open decisions G1–G7 closed; each input roadmap has a compatibility summary |
-| U3: Implementation complete | Sound Phases 6–10 (sound M5); all input roadmaps; accepted core fixes, test removals, and portability fixes | Every workstream's exit criteria met with `npm test` green |
+| U3: Implementation complete | Sound Phases 6–10 (sound M5); all input roadmaps; accepted core fixes, test removals, and portability fixes; plugin removal (Section 3.1) | Every workstream's exit criteria met with `npm test` green |
 | U4: Release | Section 11 | Pi.js 2.3.0 snapshot created |
 
 ## 5. Input Plugin Audits
@@ -139,8 +171,8 @@ Each audit produces:
   `docs/llms/pi.d.ts`, hand-written `docs/llms/` references, plugin READMEs, and
   `docs/GAMEPAD.md`.
 - **Dependents:** `onscreen-keyboard` depends on `pointer` and `keyboard`; `pi-vision` depends
-  on `pointer`. Demos in `test/` and visual fixtures in `test/tests/html-core/` also use the
-  input commands.
+  on `pointer`. Both are removed in 2.3 (Section 3.1). Demos in `test/` and visual fixtures in
+  `test/tests/html-core/` also use the input commands.
 
 ### 5.3 Common checklist
 
@@ -261,7 +293,7 @@ item takes precedence and the roadmap follows it.
 | I12 | **Settings.** Settings are named for the feature, and boolean settings take `isEnabled`. `setEnableContextMenu` becomes `setContextMenu( isEnabled )` with option `contextMenu`. `setPinchZoom( isEnabled )` keeps its name and becomes a screen command (pointer B10). `setGamepadDeadZone` is as accepted (gamepad A9) | B10, PTR-014, A9 |
 | I13 | **Gamepad names.** Standard-mapping names are positional and camelCase. Buttons: `south`, `east`, `west`, `north`, `leftShoulder`, `rightShoulder`, `leftTrigger`, `rightTrigger`, `select`, `start`, `leftStick`, `rightStick`, `dpadUp`, `dpadDown`, `dpadLeft`, `dpadRight`, `home`. Axes: `leftX`, `leftY`, `rightX`, `rightY` | A10 |
 | I14 | **Key names.** Codes (`"KeyA"`, `"ArrowLeft"`) are documented for game controls and values (`"a"`) for text; both keep working. Combinations match when their keys are held, even if other keys are also held; there is no exact-match option in 2.3 | KEY-001, A1 |
-| I15 | **Dependents (closes G2).** The conventions apply to the core plugins: `keyboard`, `pointer`, `gamepad`, `sound`, `polygons`, and `sound-advanced`. `onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` are not updated in 2.3, even where a renamed command or changed data shape breaks them. What happens to those plugins and their fixtures is G7 | Keyboard §8 dependents, CORE-004 |
+| I15 | **Dependents (closes G2).** The conventions apply to the core plugins: `keyboard`, `pointer`, `gamepad`, `sound`, `polygons`, and `sound-advanced`. `onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` are not updated; they are removed in 2.3 with their fixtures (Section 3.1, G7) | Keyboard §8 dependents, CORE-004 |
 | I16 | **Old names (closes G3).** No aliases. Renamed and removed commands are unregistered, so old code fails at its first call; the upgrade guide lists every rename. Old handler modes and option names fail with validation errors (I3, core C7) | All renames |
 
 **Compatibility.** I1, I2, I3, I10's `"press"` change, I11's error codes, and I12's rename are
@@ -465,7 +497,7 @@ These apply to every workstream. Workstream roadmaps can add rules but not relax
   phase, once behavior is final. Plan documents record intermediate decisions.
 - **Dependents:** a change to an input plugin updates the demos, fixtures, and manual pages that
   use it in the same task. `onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` are not
-  updated in 2.3 (I15); their handling is G7.
+  updated; they are removed (Section 3.1).
 - **Size:** each input roadmap records its plugin's size at the audit baseline and at each
   phase exit, using `npm run size`.
 - **Tracking:** each roadmap phase is a GitHub milestone, and each task is an issue titled with
@@ -487,6 +519,7 @@ Phase 6 size review.
 - Every accepted core finding is fixed. Any finding not fixed is explicitly deferred.
 - Every accepted test-audit item is done or explicitly deferred, and the after metrics are
   recorded.
+- The plugin removal (Section 3.1) is complete.
 - `npm test` passes on Linux, macOS, and Windows, or each remaining difference is recorded in
   the CI roadmap.
 - All open decisions in every 2.3 plan are closed.
@@ -498,7 +531,7 @@ Phase 6 size review.
 | R.1 | Confirm the entry criteria and record any deferrals in the owning documents |
 | R.2 | Rewrite the `API.md` Sound and Music section and the Input sections (Keyboard; Mouse, Touch, and Press; Gamepad), plus any core section a core fix changed, to describe final behavior |
 | R.3 | Update `docs/llms/` references and examples, commit the regenerated `pi.d.ts`, and update plugin READMEs (including the `sound-advanced` README for the expansion commands) and `docs/GAMEPAD.md` |
-| R.4 | Write `docs/UPGRADE-V2.3.md` from the compatibility summaries: sound plan Section 11, expansion plan Section 11, each input roadmap, and the core audit |
+| R.4 | Write `docs/UPGRADE-V2.3.md` from the compatibility summaries: sound plan Section 11, expansion plan Section 11, each input roadmap, the core audit, and the plugin removal (Section 3.1) |
 | R.5 | Update `releases/pi-latest/README.md` and `CHANGELOG.md`, and point `releases/PUBLISH.md` at the 2.3 upgrade guide |
 | R.6 | Verify that `package.json` (2.3.0), every plugin banner (`sound` 2.0.0, `sound-advanced` 1.0.0, and the `keyboard`, `pointer`, and `gamepad` versions set by their roadmaps), the release `package.json`, and the declaration headers agree |
 | R.7 | Full `npm test` and `npm run test:firefox`, the three-engine sound listening pass (including recording and saving a WAV), the input manual device pass, then the release snapshot following `releases/PUBLISH.md` |
@@ -533,12 +566,12 @@ If the schedule slips:
 | ID | Decision | Recommendation | Resolve by |
 | --- | --- | --- | --- |
 | G1 | Input plugin versions after breaking changes | **Closed 2026-09-25:** each plugin moves to 2.0.0 with its first breaking change, as `sound` did. The I1 renames make that the first task for `keyboard`, `pointer`, and `gamepad` | Closed |
-| G2 | Whether the input conventions apply to `onscreen-keyboard` and `pi-vision` in 2.3 | **Closed 2026-09-25 (I15):** no. Only the core plugins and `sound-advanced` are updated; `onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` are left as they are, even where the changes break them | Closed |
+| G2 | Whether the input conventions apply to `onscreen-keyboard` and `pi-vision` in 2.3 | **Closed 2026-09-25 (I15):** no. Only the core plugins and `sound-advanced` are updated; `onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` are not updated and are removed (G7) | Closed |
 | G3 | Aliases for renamed input commands | **Closed 2026-09-25 (I16):** no aliases. Renamed commands are unregistered and fail at their first call; the upgrade guide lists every rename | Closed |
 | G4 | How visual baselines work across platforms | Decide from the exploration's data. Prefer one baseline set rendered the same way on every platform; keep per-platform sets as the fallback | CI/CD exploration review |
 | G5 | Whether CI must be running before 2.3.0 ships | No. Portability fixes ship in 2.3.0; the pipeline follows when ready | CI/CD exploration review |
 | G6 | How much of publishing is automated | Automate release verification on tags (build, checks, `npm pack --dry-run`); keep `npm publish` manual for 2.3.0 | CI/CD exploration review |
-| G7 | What happens to `onscreen-keyboard` and `pi-vision`, which the I1–I3 changes break, and their plugin visual fixtures (`onscreen_keyboard_01–04`, `pi_vision_01`) | Maintainer's choice: remove the plugins from the repository, or keep them out of the build and the gating plugin suite until they are updated. Tests are never dropped only to make a suite pass (Section 8.3), so the choice is recorded explicitly | Before the first input roadmap task that breaks them |
+| G7 | What happens to `onscreen-keyboard` and `pi-vision`, which the I1–I3 changes break, and their plugin visual fixtures (`onscreen_keyboard_01–04`, `pi_vision_01`) | **Closed 2026-09-25:** remove them from the repository, together with the other incomplete non-core plugins `print-table` and `pens` and all their fixtures and metadata (Section 3.1). `example-plugin` and `sound-advanced` stay. The fixtures go because their features go, not to make a suite pass (Section 8.3) | Closed |
 
 ## 14. Risks
 
@@ -546,7 +579,7 @@ If the schedule slips:
 | --- | --- | --- |
 | Breaking changes in four plugins at once | Large upgrade effort for existing games | One upgrade guide; shared conventions; loud errors; per-plugin breaking changes ship as a set |
 | Input behavior depends on devices and browsers | Tests pass but real devices misbehave | Synthetic-event browser tests for logic; a manual device pass at release; audits record what cannot be automated |
-| Dependent plugins break | `onscreen-keyboard` and `pi-vision` stop working after the input renames | Accepted (I15); G7 decides whether they are removed or kept out of the build and gating suite |
+| Removed plugins are still in use | Games that load `onscreen-keyboard`, `pi-vision`, `print-table`, or `pens` lose them in 2.3 | Accepted (G7). None is in the release package; the upgrade guide lists each removal and points to the `v2.2.0` source |
 | Audits grow into rewrites | Schedule slips before any fix lands | Audits only record findings; changes go through reviewed roadmaps |
 | Full-build size growth | `pi.min.js` grows beyond the sound targets | Per-plugin size reporting at each phase exit |
 | Sound expansion delays the release | The sound workstream reopens after it closed | Expansion phases are cut independently, before any core sound item; recording is cut last, and its core output stage ships in 2.3.0 even if the plugin part slips |
@@ -559,8 +592,8 @@ If the schedule slips:
 ## 15. Out of Scope for 2.3
 
 - Redesigning `polygons`.
-- Any change to `print-table`, `onscreen-keyboard`, `pi-vision`, or `pens`, including updates
-  for changed input plugins (I15, G7).
+- Updating or replacing `print-table`, `onscreen-keyboard`, `pi-vision`, or `pens`; they are
+  removed (Section 3.1).
 - New input device types, such as MIDI, WebXR controllers, or motion sensors.
 - A full rendering re-audit or new performance campaign.
 - Replacing the test frameworks (Playwright and `node:test`).
