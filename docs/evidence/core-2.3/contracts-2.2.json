@@ -1,0 +1,679 @@
+{
+	"revision": "96279b9",
+	"measured": "2026-09-24",
+	"method": "Each contract maps to its tests through docs/evidence/tests-2.3/coverage-map-after.json. Each listed suite was run alone with node --test --test-concurrency=1; visual contracts use the full npm test run at the same revision. P1 contracts were also checked with a deliberate break in a scratch copy of the tree.",
+	"contracts": [
+		{
+			"id": "SYS-001",
+			"owner": "core",
+			"contract": "Active-screen removal rebinds global drawing",
+			"tests": [
+				"screen-lifecycle-browser.test.js (SYS-001 tests)"
+			],
+			"suites": {
+				"test/unit/screen-lifecycle-browser.test.js": {
+					"tests": 20,
+					"pass": 20,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass",
+			"breakCheck": {
+				"change": "removeScreen() sets the next active screen without rebuilding global bindings",
+				"file": "src/core/screen-manager.js",
+				"caughtBy": {
+					"test/unit/screen-lifecycle-browser.test.js": "4 failing tests"
+				}
+			}
+		},
+		{
+			"id": "SYS-002",
+			"owner": "core",
+			"contract": "A throwing ready callback does not abandon other waiters",
+			"tests": [
+				"ready.test.js"
+			],
+			"suites": {
+				"test/unit/ready.test.js": {
+					"tests": 5,
+					"pass": 5,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass",
+			"breakCheck": {
+				"change": "checkReady() calls callbacks without isolating a throw",
+				"file": "src/core/commands.js",
+				"caughtBy": {
+					"test/unit/ready.test.js": "1 failing test"
+				}
+			}
+		},
+		{
+			"id": "SYS-003",
+			"owner": "keyboard",
+			"contract": "Screen disposal during text input releases the input session",
+			"tests": [
+				"keyboard-lifecycle.test.js",
+				"keyboard-lifecycle-browser.test.js"
+			],
+			"suites": {
+				"test/unit/keyboard-lifecycle.test.js": {
+					"tests": 20,
+					"pass": 20,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/keyboard-lifecycle-browser.test.js": {
+					"tests": 10,
+					"pass": 10,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass",
+			"breakCheck": {
+				"change": "screen removal no longer disposes an active input() prompt",
+				"file": "plugins/keyboard/input.js",
+				"caughtBy": {
+					"test/unit/keyboard-lifecycle.test.js": "12 or more failing tests (list capped at 12)",
+					"test/unit/keyboard-lifecycle-browser.test.js": "4 failing tests"
+				}
+			}
+		},
+		{
+			"id": "SYS-004",
+			"owner": "sound",
+			"contract": "Audio load completion releases only its own wait",
+			"tests": [
+				"audio-lifecycle.test.js",
+				"audio-lifecycle-browser.test.js"
+			],
+			"suites": {
+				"test/unit/audio-lifecycle.test.js": {
+					"tests": 21,
+					"pass": 21,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/audio-lifecycle-browser.test.js": {
+					"tests": 36,
+					"pass": 28,
+					"fail": 0,
+					"skipped": 8
+				}
+			},
+			"result": "pass",
+			"breakCheck": {
+				"change": "settleLoad() releases a readiness wait every time it is called",
+				"file": "plugins/sound/samples.js",
+				"caughtBy": {
+					"test/unit/audio-lifecycle.test.js": "8 failing tests",
+					"test/unit/audio-lifecycle-browser.test.js": "6 failing tests"
+				}
+			}
+		},
+		{
+			"id": "SYS-005",
+			"owner": "core",
+			"contract": "Deferred pixel reads and filters stop after screen disposal",
+			"tests": [
+				"pixels.test.js",
+				"pixel-disposal-browser.test.js"
+			],
+			"suites": {
+				"test/unit/pixels.test.js": {
+					"tests": 18,
+					"pass": 18,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/pixel-disposal-browser.test.js": {
+					"tests": 6,
+					"pass": 6,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-006",
+			"owner": "core",
+			"contract": "Offscreen composition applies alpha once",
+			"tests": [
+				"alpha-conversion.test.js",
+				"alpha-composition-browser.test.js"
+			],
+			"suites": {
+				"test/unit/alpha-conversion.test.js": {
+					"tests": 3,
+					"pass": 3,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/alpha-composition-browser.test.js": {
+					"tests": 15,
+					"pass": 15,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-007",
+			"owner": "core",
+			"contract": "Oversized batch requests chunk; Full HD paint works",
+			"tests": [
+				"batch-reservations.test.js",
+				"batch-reservations-browser.test.js"
+			],
+			"suites": {
+				"test/unit/batch-reservations.test.js": {
+					"tests": 35,
+					"pass": 35,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/batch-reservations-browser.test.js": {
+					"tests": 10,
+					"pass": 10,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-008",
+			"owner": "core",
+			"contract": "Context restoration rebuilds GPU objects",
+			"tests": [
+				"context-recovery-browser.test.js",
+				"static-texture-cache.test.js",
+				"batch-reservations.test.js",
+				"pixels.test.js (SYS-008 tests)"
+			],
+			"suites": {
+				"test/unit/context-recovery-browser.test.js": {
+					"tests": 24,
+					"pass": 24,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/static-texture-cache.test.js": {
+					"tests": 10,
+					"pass": 10,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/batch-reservations.test.js": {
+					"tests": 35,
+					"pass": 35,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/pixels.test.js": {
+					"tests": 18,
+					"pass": 18,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-009",
+			"owner": "core",
+			"contract": "Late plugins initialize existing screens",
+			"tests": [
+				"plugin-installation-browser.test.js",
+				"plugins.test.js"
+			],
+			"suites": {
+				"test/unit/plugin-installation-browser.test.js": {
+					"tests": 5,
+					"pass": 5,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/plugins.test.js": {
+					"tests": 6,
+					"pass": 6,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-010",
+			"owner": "core",
+			"contract": "Loading and failed images can be removed and replaced",
+			"tests": [
+				"image-lifecycle.test.js",
+				"image-lifecycle-browser.test.js"
+			],
+			"suites": {
+				"test/unit/image-lifecycle.test.js": {
+					"tests": 16,
+					"pass": 16,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/image-lifecycle-browser.test.js": {
+					"tests": 10,
+					"pass": 10,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-011",
+			"owner": "keyboard",
+			"contract": "Keyboard once-handlers and released keys",
+			"tests": [
+				"keyboard-lifecycle.test.js",
+				"keyboard-lifecycle-browser.test.js"
+			],
+			"suites": {
+				"test/unit/keyboard-lifecycle.test.js": {
+					"tests": 20,
+					"pass": 20,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/keyboard-lifecycle-browser.test.js": {
+					"tests": 10,
+					"pass": 10,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-012",
+			"owner": "tooling",
+			"contract": "Declarations match runtime exports",
+			"tests": [
+				"package-types-consumer.test.js",
+				"scripts/validate-type-definitions.js"
+			],
+			"suites": {
+				"test/scripts/package-types-consumer.test.js": {
+					"tests": 2,
+					"pass": 2,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-013",
+			"owner": "core",
+			"contract": "ESM plugin registration (auto-registers when window.pi exists)",
+			"tests": [
+				"polygons-bundles-browser.test.js",
+				"sound-advanced-bundles-browser.test.js"
+			],
+			"suites": {
+				"test/unit/polygons-bundles-browser.test.js": {
+					"tests": 9,
+					"pass": 9,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/sound-advanced-bundles-browser.test.js": {
+					"tests": 8,
+					"pass": 8,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-014",
+			"owner": "core",
+			"contract": "Plugin documentation examples run",
+			"tests": [
+				"plugin-docs-browser.test.js"
+			],
+			"suites": {
+				"test/unit/plugin-docs-browser.test.js": {
+					"tests": 3,
+					"pass": 3,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-015",
+			"owner": "core",
+			"contract": "360-degree arcs draw full circles",
+			"tests": [
+				"arc-full-turn.test.js",
+				"arc-circle-browser.test.js"
+			],
+			"suites": {
+				"test/unit/arc-full-turn.test.js": {
+					"tests": 4,
+					"pass": 4,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/arc-circle-browser.test.js": {
+					"tests": 4,
+					"pass": 4,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-016",
+			"owner": "core",
+			"contract": "Circle outlines emit each pixel once",
+			"tests": [
+				"circle-outline.test.js",
+				"arc-circle-browser.test.js"
+			],
+			"suites": {
+				"test/unit/circle-outline.test.js": {
+					"tests": 3,
+					"pass": 3,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/arc-circle-browser.test.js": {
+					"tests": 4,
+					"pass": 4,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-017",
+			"owner": "core",
+			"contract": "Invalid palette indices leave drawing colors intact",
+			"tests": [
+				"color-validation.test.js",
+				"color-validation-browser.test.js"
+			],
+			"suites": {
+				"test/unit/color-validation.test.js": {
+					"tests": 17,
+					"pass": 17,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/color-validation-browser.test.js": {
+					"tests": 4,
+					"pass": 4,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-018",
+			"owner": "sound",
+			"contract": "Removing pending audio stops its loading work",
+			"tests": [
+				"audio-lifecycle.test.js",
+				"audio-lifecycle-browser.test.js"
+			],
+			"suites": {
+				"test/unit/audio-lifecycle.test.js": {
+					"tests": 21,
+					"pass": 21,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/audio-lifecycle-browser.test.js": {
+					"tests": 36,
+					"pass": 28,
+					"fail": 0,
+					"skipped": 8
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-019",
+			"owner": "tooling",
+			"contract": "Build fails when an optional plugin build fails",
+			"tests": [
+				"build.test.js"
+			],
+			"suites": {
+				"test/scripts/build.test.js": {
+					"tests": 4,
+					"pass": 4,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-020",
+			"owner": "tooling",
+			"contract": "Release copy checks inputs before replacing dist",
+			"tests": [
+				"copy-to-release.test.js"
+			],
+			"suites": {
+				"test/scripts/copy-to-release.test.js": {
+					"tests": 24,
+					"pass": 24,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-021",
+			"owner": "gamepad",
+			"contract": "NaN sensitivity rejected for gamepad axes",
+			"tests": [
+				"gamepad-validation.test.js",
+				"gamepad-validation-browser.test.js"
+			],
+			"suites": {
+				"test/unit/gamepad-validation.test.js": {
+					"tests": 18,
+					"pass": 18,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/gamepad-validation-browser.test.js": {
+					"tests": 4,
+					"pass": 4,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-022",
+			"owner": "core",
+			"contract": "Invalid font sources publish nothing",
+			"tests": [
+				"font-publication.test.js",
+				"font-publication-browser.test.js",
+				"numeric-boundaries.test.js (font tables)"
+			],
+			"suites": {
+				"test/unit/font-publication.test.js": {
+					"tests": 15,
+					"pass": 15,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/font-publication-browser.test.js": {
+					"tests": 6,
+					"pass": 6,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/numeric-boundaries.test.js": {
+					"tests": 54,
+					"pass": 54,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "SYS-023",
+			"owner": "tooling",
+			"contract": "Visual tests fail on uncaught page errors",
+			"tests": [
+				"test-workflow.test.js",
+				"run-visual-tests.js (expectPageError)"
+			],
+			"suites": {
+				"test/scripts/test-workflow.test.js": {
+					"tests": 9,
+					"pass": 9,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"visual": "npm test visual stages: full 35, lite 20, plugins 8 passed; page errors fail tests",
+			"result": "pass"
+		},
+		{
+			"id": "COV-001",
+			"owner": "pointer",
+			"contract": "Touch fixture samples every stroke",
+			"tests": [
+				"intouch_01.html"
+			],
+			"suites": {},
+			"visual": "npm test visual full: intouch 01 passed",
+			"result": "pass"
+		},
+		{
+			"id": "COV-002",
+			"owner": "tooling",
+			"contract": "Plugin fixtures have baselines",
+			"tests": [
+				"html-plugins/*.html with screenshots/*.png"
+			],
+			"suites": {},
+			"visual": "npm test visual plugins: 8 passed, 0 skipped",
+			"result": "pass"
+		},
+		{
+			"id": "COV-003",
+			"owner": "core",
+			"contract": "Numeric boundary tables",
+			"tests": [
+				"numeric-boundaries.test.js"
+			],
+			"suites": {
+				"test/unit/numeric-boundaries.test.js": {
+					"tests": 54,
+					"pass": 54,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "COV-004",
+			"owner": "core",
+			"contract": "Ownership and reentrancy",
+			"tests": [
+				"image-lifecycle.test.js",
+				"audio-lifecycle.test.js",
+				"pixels.test.js",
+				"pixel-disposal-browser.test.js",
+				"plugins.test.js",
+				"ready.test.js",
+				"screen-lifecycle-browser.test.js (shared-context child)"
+			],
+			"suites": {
+				"test/unit/image-lifecycle.test.js": {
+					"tests": 16,
+					"pass": 16,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/audio-lifecycle.test.js": {
+					"tests": 21,
+					"pass": 21,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/pixels.test.js": {
+					"tests": 18,
+					"pass": 18,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/pixel-disposal-browser.test.js": {
+					"tests": 6,
+					"pass": 6,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/plugins.test.js": {
+					"tests": 6,
+					"pass": 6,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/ready.test.js": {
+					"tests": 5,
+					"pass": 5,
+					"fail": 0,
+					"skipped": 0
+				},
+				"test/unit/screen-lifecycle-browser.test.js": {
+					"tests": 20,
+					"pass": 20,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		},
+		{
+			"id": "COV-005",
+			"owner": "tooling",
+			"contract": "Package declarations compile in a consumer",
+			"tests": [
+				"package-types-consumer.test.js"
+			],
+			"suites": {
+				"test/scripts/package-types-consumer.test.js": {
+					"tests": 2,
+					"pass": 2,
+					"fail": 0,
+					"skipped": 0
+				}
+			},
+			"result": "pass"
+		}
+	]
+}

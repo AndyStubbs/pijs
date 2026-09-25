@@ -1,8 +1,8 @@
 # Pi.js 2.3 Upgrade Plan
 
 Status: Sound Phases 0–6 complete, expansion Phases 7–8 implemented, Phase 9 in progress, and
-Phase 10 proposed; test audit follow-ups complete; gamepad audit reviewed; keyboard and
-pointer audits written and awaiting review; other audits and the CI/CD exploration not started
+Phase 10 proposed; test audit follow-ups complete; gamepad audit reviewed; keyboard, pointer,
+and core audits written and awaiting review; CI/CD exploration not started
 Target release: Pi.js 2.3.0
 Workstream documents:
 
@@ -41,7 +41,7 @@ the release phase. Each workstream's design and task list live in its own docume
 | Keyboard | `plugins/keyboard/`: key state, action keys, key handlers, `input()` prompts | `KEYBOARD-V2.3-AUDIT.md`, then `KEYBOARD-V2.3-ROADMAP.md` | Audit written (KEY-001–019, A1–A17); device pass run (Chrome, US layout); awaiting review |
 | Pointer | `plugins/pointer/`: mouse, touch, press, click, context menu, pinch zoom | `POINTER-V2.3-AUDIT.md`, then `POINTER-V2.3-ROADMAP.md` | Audit written (PTR-001–017, B1–B13); Chrome mouse pass done; awaiting review |
 | Gamepad | `plugins/gamepad/`: polling loop, state, sensitivity, connection events | `GAMEPAD-V2.3-AUDIT.md`, then `GAMEPAD-V2.3-ROADMAP.md` | Audit reviewed; PAD-001–017 and all proposals accepted; roadmap waits for the conventions review |
-| Core | `src/`, plugin API, build, metadata, declarations | `CORE-V2.3-AUDIT.md` | Audit not started |
+| Core | `src/`, plugin API, build, metadata, declarations | `CORE-V2.3-AUDIT.md` | Audit written (CORE-001–020, C1–C11); 2.2 contracts pass; awaiting review |
 | Tests | `test/` suites, visual fixtures and baselines, harnesses, `scripts/test.js` | `TESTS-V2.3-AUDIT.md` | Audit accepted; follow-ups complete |
 | CI/CD | Cross-platform test runs, CI pipeline, release automation | `CI-V2.3-EXPLORATION.md`, then `CI-V2.3-ROADMAP.md` | Exploration not started |
 | Release | Documentation, upgrade guide, version checks, snapshot | This plan, Section 11 | Waits for the other workstreams |

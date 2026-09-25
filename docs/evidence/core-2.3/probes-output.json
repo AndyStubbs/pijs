@@ -1,0 +1,833 @@
+{
+	"revision": "96279b9",
+	"engines": {
+		"chromium": {
+			"version": "141.0.7390.37",
+			"probes": {
+				"C01": {
+					"observed": {
+						"control": {
+							"sameContext": true,
+							"isContextLost": false,
+							"restoreError": null,
+							"pixel": [
+								255,
+								0,
+								0,
+								255
+							]
+						},
+						"removed": {
+							"sameContext": true,
+							"isContextLost": true,
+							"restoreError": null,
+							"pixel": [
+								0,
+								0,
+								0,
+								0
+							]
+						}
+					},
+					"expected": "both scenarios draw red [255,0,0,255] on a restored context",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C02": {
+					"observed": {
+						"registerError": "PLUGIN_INIT_FAILED",
+						"globalBadCmd": "undefined",
+						"newScreenBadCmd": "function",
+						"screenInit": 1,
+						"setBad": 1,
+						"clear": 1,
+						"reregister": "DUPLICATE_PLUGIN"
+					},
+					"expected": "PLUGIN_INIT_FAILED; no badCmd anywhere; no calls; the name can be reused",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C02b": {
+					"observed": {
+						"registerError": "PLUGIN_INIT_FAILED",
+						"global": "undefined",
+						"first": "function",
+						"second": "function",
+						"third": "function"
+					},
+					"expected": "PLUGIN_INIT_FAILED and lateCmd on no screen",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C03": {
+					"observed": {
+						"nested": {
+							"inner": "returned",
+							"outer": "registerPlugin: Failed to initialize plugin 'inner': inner failed",
+							"outerInitialized": true
+						},
+						"pending": {
+							"registerA": "registerPlugin: Failed to initialize plugin 'b': b failed",
+							"states": [
+								"b:false",
+								"c:true",
+								"a:true"
+							]
+						}
+					},
+					"expected": "each registerPlugin call reports only its own plugin's failure",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C06": {
+					"observed": {
+						"setPos(undefined, 2)": "INVALID_COL",
+						"setPos(null, 2)": "ok",
+						"paint(5, 5, 2, 0, undefined)": "INVALID_PARAMETER",
+						"paint(5, 5, 2, 0)": "ok",
+						"loadSpritesheet(c, 'a', undefined, undefined)": "INVALID_DIMENSIONS",
+						"loadSpritesheet(c, 'b', 8, 8, undefined)": "INVALID_MARGIN",
+						"set({ color: undefined })": "INVALID_PARAMETER",
+						"set({ color: null })": "ok"
+					},
+					"expected": "every undefined case behaves like its omitted or null form: ok",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C07": {
+					"observed": {
+						"noScreen": "TypeError: Cannot read properties of null (reading 'pal')",
+						"unknown": "ok",
+						"nonObject": "ok",
+						"inherited": "TypeError: parameterNames is not iterable",
+						"liteVolume": "ok",
+						"litePinchZoom": "ok"
+					},
+					"expected": "unknown, inherited, and unavailable names and a missing screen throw coded errors",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C08": {
+					"observed": {
+						"getPal()": 254,
+						"getPal(false)": 255,
+						"getPal(true)": 255,
+						"getDefaultPal()": 254,
+						"getDefaultPal(false)": 255
+					},
+					"expected": "false matches the default and excludes index 0",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C09": {
+					"observed": {
+						"results": {
+							"font1": {
+								"before": 16,
+								"afterSolidGlyph": 16,
+								"expected": 48
+							},
+							"font2": {
+								"before": 28,
+								"afterSolidGlyph": 64,
+								"expected": 64
+							}
+						},
+						"texImage2DPerHELLO": {
+							"font1": 6,
+							"font2": 0
+						}
+					},
+					"expected": "setChar changes the drawn glyph on both fonts; printing uploads nothing",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C10": {
+					"observed": "TypeError (code undefined): Cannot read properties of undefined (reading 'name')",
+					"expected": "an image, or a coded error",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C11": {
+					"observed": {
+						"x2e9": [
+							20,
+							20,
+							20,
+							20,
+							20
+						],
+						"x3e9": [
+							20,
+							1,
+							1,
+							20,
+							20
+						]
+					},
+					"expected": "rows 0-4 fully lit (20 pixels) in both",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C12": {
+					"observed": {
+						"arc(0, 360) pixels": 40,
+						"arc(0, Infinity) pixels": 40,
+						"arc(Infinity, Infinity) pixels": 0,
+						"loadFont(width 0)": 5,
+						"loadFont(width 6.4)": "number",
+						"loadFont(margin -1)": "number",
+						"setPrintSize(1, 1, -6) then getPos().col": "Infinity"
+					},
+					"expected": "non-finite angles, zero or fractional sizes, and negative margins or padding throw coded errors",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C13": {
+					"observed": {
+						"日": {
+							"lit": 0,
+							"cursorX": 6
+						},
+						"😀": {
+							"lit": 0,
+							"cursorX": 12
+						},
+						"é": {
+							"lit": 18,
+							"cursorX": 6
+						},
+						"é draws cell 233": true,
+						"é matches CP437 é (cell 130)": false,
+						"calcWidth(😀)": 12
+					},
+					"expected": "documented handling; é drawn as é; one cell per character",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C14": {
+					"observed": {
+						"removeScreen()": "TypeError (code undefined): Cannot convert undefined or null to object",
+						"removeScreen(null)": "TypeError (code undefined): Cannot convert undefined or null to object",
+						"removeScreen({ screen })": "ok",
+						"screensAfterObjectForm": 1
+					},
+					"expected": "coded errors for missing screens; the object form removes the screen",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C04": {
+					"observed": {
+						"iife": {
+							"appRan": "function",
+							"pageErrors": [
+								"registerPlugin: Plugin 'keyboard' is already registered."
+							]
+						},
+						"esm": {
+							"appRan": null,
+							"pageErrors": [
+								"registerPlugin: Plugin 'keyboard' is already registered."
+							]
+						}
+					},
+					"expected": "the already bundled plugin is skipped and the application runs",
+					"confirmed": true
+				},
+				"C05": {
+					"observed": {
+						"beforeClear": [
+							"-",
+							"-",
+							"-",
+							"-",
+							"-",
+							"-",
+							"-",
+							"-",
+							"-",
+							"-"
+						],
+						"afterClearPress": []
+					},
+					"expected": "the key registers before and after the user clears press events",
+					"confirmed": true,
+					"pageErrors": []
+				}
+			}
+		},
+		"firefox": {
+			"version": "142.0.1",
+			"probes": {
+				"C01": {
+					"observed": {
+						"control": {
+							"sameContext": true,
+							"isContextLost": false,
+							"restoreError": null,
+							"pixel": [
+								255,
+								0,
+								0,
+								255
+							]
+						},
+						"removed": {
+							"sameContext": true,
+							"isContextLost": true,
+							"restoreError": null,
+							"pixel": [
+								0,
+								0,
+								0,
+								0
+							]
+						}
+					},
+					"expected": "both scenarios draw red [255,0,0,255] on a restored context",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C02": {
+					"observed": {
+						"registerError": "PLUGIN_INIT_FAILED",
+						"globalBadCmd": "undefined",
+						"newScreenBadCmd": "function",
+						"screenInit": 1,
+						"setBad": 1,
+						"clear": 1,
+						"reregister": "DUPLICATE_PLUGIN"
+					},
+					"expected": "PLUGIN_INIT_FAILED; no badCmd anywhere; no calls; the name can be reused",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C02b": {
+					"observed": {
+						"registerError": "PLUGIN_INIT_FAILED",
+						"global": "undefined",
+						"first": "function",
+						"second": "function",
+						"third": "function"
+					},
+					"expected": "PLUGIN_INIT_FAILED and lateCmd on no screen",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C03": {
+					"observed": {
+						"nested": {
+							"inner": "returned",
+							"outer": "registerPlugin: Failed to initialize plugin 'inner': inner failed",
+							"outerInitialized": true
+						},
+						"pending": {
+							"registerA": "registerPlugin: Failed to initialize plugin 'b': b failed",
+							"states": [
+								"b:false",
+								"c:true",
+								"a:true"
+							]
+						}
+					},
+					"expected": "each registerPlugin call reports only its own plugin's failure",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C06": {
+					"observed": {
+						"setPos(undefined, 2)": "INVALID_COL",
+						"setPos(null, 2)": "ok",
+						"paint(5, 5, 2, 0, undefined)": "INVALID_PARAMETER",
+						"paint(5, 5, 2, 0)": "ok",
+						"loadSpritesheet(c, 'a', undefined, undefined)": "INVALID_DIMENSIONS",
+						"loadSpritesheet(c, 'b', 8, 8, undefined)": "INVALID_MARGIN",
+						"set({ color: undefined })": "INVALID_PARAMETER",
+						"set({ color: null })": "ok"
+					},
+					"expected": "every undefined case behaves like its omitted or null form: ok",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C07": {
+					"observed": {
+						"noScreen": "TypeError: can't access property \"pal\", screenData is null",
+						"unknown": "ok",
+						"nonObject": "ok",
+						"inherited": "TypeError: can't access property Symbol.iterator, parameterNames is undefined",
+						"liteVolume": "ok",
+						"litePinchZoom": "ok"
+					},
+					"expected": "unknown, inherited, and unavailable names and a missing screen throw coded errors",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C08": {
+					"observed": {
+						"getPal()": 254,
+						"getPal(false)": 255,
+						"getPal(true)": 255,
+						"getDefaultPal()": 254,
+						"getDefaultPal(false)": 255
+					},
+					"expected": "false matches the default and excludes index 0",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C09": {
+					"observed": {
+						"results": {
+							"font1": {
+								"before": 16,
+								"afterSolidGlyph": 16,
+								"expected": 48
+							},
+							"font2": {
+								"before": 28,
+								"afterSolidGlyph": 64,
+								"expected": 64
+							}
+						},
+						"texImage2DPerHELLO": {
+							"font1": 6,
+							"font2": 0
+						}
+					},
+					"expected": "setChar changes the drawn glyph on both fonts; printing uploads nothing",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C10": {
+					"observed": "TypeError (code undefined): can't access property \"name\", options is undefined",
+					"expected": "an image, or a coded error",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C11": {
+					"observed": {
+						"x2e9": [
+							20,
+							20,
+							20,
+							20,
+							20
+						],
+						"x3e9": [
+							20,
+							1,
+							1,
+							20,
+							20
+						]
+					},
+					"expected": "rows 0-4 fully lit (20 pixels) in both",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C12": {
+					"observed": {
+						"arc(0, 360) pixels": 40,
+						"arc(0, Infinity) pixels": 40,
+						"arc(Infinity, Infinity) pixels": 0,
+						"loadFont(width 0)": 5,
+						"loadFont(width 6.4)": "number",
+						"loadFont(margin -1)": "number",
+						"setPrintSize(1, 1, -6) then getPos().col": "Infinity"
+					},
+					"expected": "non-finite angles, zero or fractional sizes, and negative margins or padding throw coded errors",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C13": {
+					"observed": {
+						"日": {
+							"lit": 0,
+							"cursorX": 6
+						},
+						"😀": {
+							"lit": 0,
+							"cursorX": 12
+						},
+						"é": {
+							"lit": 18,
+							"cursorX": 6
+						},
+						"é draws cell 233": true,
+						"é matches CP437 é (cell 130)": false,
+						"calcWidth(😀)": 12
+					},
+					"expected": "documented handling; é drawn as é; one cell per character",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C14": {
+					"observed": {
+						"removeScreen()": "TypeError (code undefined): can't convert undefined to object",
+						"removeScreen(null)": "TypeError (code undefined): can't convert null to object",
+						"removeScreen({ screen })": "ok",
+						"screensAfterObjectForm": 1
+					},
+					"expected": "coded errors for missing screens; the object form removes the screen",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C04": {
+					"observed": {
+						"iife": {
+							"appRan": "function",
+							"pageErrors": [
+								"registerPlugin: Plugin 'keyboard' is already registered."
+							]
+						},
+						"esm": {
+							"appRan": null,
+							"pageErrors": [
+								"registerPlugin: Plugin 'keyboard' is already registered."
+							]
+						}
+					},
+					"expected": "the already bundled plugin is skipped and the application runs",
+					"confirmed": true
+				},
+				"C05": {
+					"observed": {
+						"beforeClear": [
+							"-",
+							"-",
+							"-",
+							"-",
+							"-"
+						],
+						"afterClearPress": []
+					},
+					"expected": "the key registers before and after the user clears press events",
+					"confirmed": true,
+					"pageErrors": []
+				}
+			}
+		},
+		"webkit": {
+			"version": "26.0",
+			"probes": {
+				"C01": {
+					"observed": {
+						"control": {
+							"sameContext": true,
+							"isContextLost": false,
+							"restoreError": null,
+							"pixel": [
+								255,
+								0,
+								0,
+								255
+							]
+						},
+						"removed": {
+							"sameContext": true,
+							"isContextLost": true,
+							"restoreError": null,
+							"pixel": [
+								0,
+								0,
+								0,
+								0
+							]
+						}
+					},
+					"expected": "both scenarios draw red [255,0,0,255] on a restored context",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C02": {
+					"observed": {
+						"registerError": "PLUGIN_INIT_FAILED",
+						"globalBadCmd": "undefined",
+						"newScreenBadCmd": "function",
+						"screenInit": 1,
+						"setBad": 1,
+						"clear": 1,
+						"reregister": "DUPLICATE_PLUGIN"
+					},
+					"expected": "PLUGIN_INIT_FAILED; no badCmd anywhere; no calls; the name can be reused",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C02b": {
+					"observed": {
+						"registerError": "PLUGIN_INIT_FAILED",
+						"global": "undefined",
+						"first": "function",
+						"second": "function",
+						"third": "function"
+					},
+					"expected": "PLUGIN_INIT_FAILED and lateCmd on no screen",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C03": {
+					"observed": {
+						"nested": {
+							"inner": "returned",
+							"outer": "registerPlugin: Failed to initialize plugin 'inner': inner failed",
+							"outerInitialized": true
+						},
+						"pending": {
+							"registerA": "registerPlugin: Failed to initialize plugin 'b': b failed",
+							"states": [
+								"b:false",
+								"c:true",
+								"a:true"
+							]
+						}
+					},
+					"expected": "each registerPlugin call reports only its own plugin's failure",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C06": {
+					"observed": {
+						"setPos(undefined, 2)": "INVALID_COL",
+						"setPos(null, 2)": "ok",
+						"paint(5, 5, 2, 0, undefined)": "INVALID_PARAMETER",
+						"paint(5, 5, 2, 0)": "ok",
+						"loadSpritesheet(c, 'a', undefined, undefined)": "INVALID_DIMENSIONS",
+						"loadSpritesheet(c, 'b', 8, 8, undefined)": "INVALID_MARGIN",
+						"set({ color: undefined })": "INVALID_PARAMETER",
+						"set({ color: null })": "ok"
+					},
+					"expected": "every undefined case behaves like its omitted or null form: ok",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C07": {
+					"observed": {
+						"noScreen": "TypeError: null is not an object (evaluating 'screenData.pal')",
+						"unknown": "ok",
+						"nonObject": "ok",
+						"inherited": "TypeError: undefined is not an object (evaluating 'parameterNames')",
+						"liteVolume": "ok",
+						"litePinchZoom": "ok"
+					},
+					"expected": "unknown, inherited, and unavailable names and a missing screen throw coded errors",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C08": {
+					"observed": {
+						"getPal()": 254,
+						"getPal(false)": 255,
+						"getPal(true)": 255,
+						"getDefaultPal()": 254,
+						"getDefaultPal(false)": 255
+					},
+					"expected": "false matches the default and excludes index 0",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C09": {
+					"observed": {
+						"results": {
+							"font1": {
+								"before": 16,
+								"afterSolidGlyph": 16,
+								"expected": 48
+							},
+							"font2": {
+								"before": 28,
+								"afterSolidGlyph": 64,
+								"expected": 64
+							}
+						},
+						"texImage2DPerHELLO": {
+							"font1": 6,
+							"font2": 0
+						}
+					},
+					"expected": "setChar changes the drawn glyph on both fonts; printing uploads nothing",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C10": {
+					"observed": "TypeError (code undefined): undefined is not an object (evaluating 'options.name')",
+					"expected": "an image, or a coded error",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C11": {
+					"observed": {
+						"x2e9": [
+							20,
+							20,
+							20,
+							20,
+							20
+						],
+						"x3e9": [
+							20,
+							1,
+							1,
+							20,
+							20
+						]
+					},
+					"expected": "rows 0-4 fully lit (20 pixels) in both",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C12": {
+					"observed": {
+						"arc(0, 360) pixels": 40,
+						"arc(0, Infinity) pixels": 40,
+						"arc(Infinity, Infinity) pixels": 0,
+						"loadFont(width 0)": 5,
+						"loadFont(width 6.4)": "number",
+						"loadFont(margin -1)": "number",
+						"setPrintSize(1, 1, -6) then getPos().col": "Infinity"
+					},
+					"expected": "non-finite angles, zero or fractional sizes, and negative margins or padding throw coded errors",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C13": {
+					"observed": {
+						"日": {
+							"lit": 0,
+							"cursorX": 6
+						},
+						"😀": {
+							"lit": 0,
+							"cursorX": 12
+						},
+						"é": {
+							"lit": 18,
+							"cursorX": 6
+						},
+						"é draws cell 233": true,
+						"é matches CP437 é (cell 130)": false,
+						"calcWidth(😀)": 12
+					},
+					"expected": "documented handling; é drawn as é; one cell per character",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C14": {
+					"observed": {
+						"removeScreen()": "TypeError (code undefined): undefined is not an object (evaluating 'Object.getPrototypeOf(screenId)')",
+						"removeScreen(null)": "TypeError (code undefined): null is not an object (evaluating 'Object.getPrototypeOf(screenId)')",
+						"removeScreen({ screen })": "ok",
+						"screensAfterObjectForm": 1
+					},
+					"expected": "coded errors for missing screens; the object form removes the screen",
+					"confirmed": true,
+					"pageErrors": []
+				},
+				"C04": {
+					"observed": {
+						"iife": {
+							"appRan": "function",
+							"pageErrors": [
+								"registerPlugin: Plugin 'keyboard' is already registered."
+							]
+						},
+						"esm": {
+							"appRan": null,
+							"pageErrors": [
+								"registerPlugin: Plugin 'keyboard' is already registered."
+							]
+						}
+					},
+					"expected": "the already bundled plugin is skipped and the application runs",
+					"confirmed": true
+				},
+				"C05": {
+					"observed": {
+						"beforeClear": [
+							"-",
+							"-",
+							"-",
+							"-",
+							"-"
+						],
+						"afterClearPress": []
+					},
+					"expected": "the key registers before and after the user clears press events",
+					"confirmed": true,
+					"pageErrors": []
+				}
+			}
+		}
+	},
+	"declarations": {
+		"observed": {
+			"screen-remove.mts": {
+				"bundler": [
+					"error TS2339: Property 'removeScreen' does not exist on type 'Screen'."
+				],
+				"nodenext": [
+					"error TS2339: Property 'screen' does not exist on type '<package>'."
+				]
+			},
+			"lite-keyboard.mts": {
+				"bundler": [
+					"error TS2339: Property 'inkey' does not exist on type 'API'.",
+					"error TS2403: Subsequent variable declarations must have the same type.  Variable 'pi' must be of type 'API', but here has type 'API'.",
+					"error TS2403: Subsequent variable declarations must have the same type.  Variable '$' must be of type 'API', but here has type 'API'."
+				],
+				"nodenext": [
+					"error TS2339: Property 'inkey' does not exist on type '<package>'.",
+					"error TS2403: Subsequent variable declarations must have the same type.  Variable 'pi' must be of type 'API', but here has type 'API'.",
+					"error TS2403: Subsequent variable declarations must have the same type.  Variable '$' must be of type 'API', but here has type 'API'."
+				]
+			},
+			"lite-sound-advanced.mts": {
+				"bundler": [
+					"error TS2339: Property 'synth' does not exist on type 'API'.",
+					"error TS2403: Subsequent variable declarations must have the same type.  Variable 'pi' must be of type 'API', but here has type 'API'.",
+					"error TS2403: Subsequent variable declarations must have the same type.  Variable '$' must be of type 'API', but here has type 'API'."
+				],
+				"nodenext": [
+					"error TS2339: Property 'synth' does not exist on type '<package>'.",
+					"error TS2403: Subsequent variable declarations must have the same type.  Variable 'pi' must be of type 'API', but here has type 'API'.",
+					"error TS2403: Subsequent variable declarations must have the same type.  Variable '$' must be of type 'API', but here has type 'API'."
+				]
+			},
+			"plugin-addcommand.mts": {
+				"bundler": [
+					"error TS2554: Expected 5 arguments, but got 4."
+				],
+				"nodenext": [
+					"error TS2554: Expected 5 arguments, but got 4."
+				]
+			},
+			"lite-options.mts": {
+				"bundler": "compiles",
+				"nodenext": [
+					"error TS2339: Property 'set' does not exist on type '<package>'."
+				]
+			},
+			"default-import.mts": {
+				"bundler": "compiles",
+				"nodenext": [
+					"error TS2339: Property 'screen' does not exist on type '<package>'."
+				]
+			}
+		},
+		"expected": {
+			"screen-remove.mts": "compiles",
+			"lite-keyboard.mts": "compiles",
+			"lite-sound-advanced.mts": "compiles",
+			"plugin-addcommand.mts": "compiles",
+			"lite-options.mts": "error",
+			"default-import.mts": "compiles"
+		},
+		"confirmed": true,
+		"mismatches": [
+			"screen-remove.mts",
+			"lite-keyboard.mts",
+			"lite-sound-advanced.mts",
+			"plugin-addcommand.mts",
+			"lite-options.mts",
+			"default-import.mts"
+		]
+	}
+}
