@@ -1,7 +1,7 @@
 # Pi.js 2.3 Keyboard Audit
 
-Status: Written 2026-09-24; device pass run in Chrome 153 with a US layout (Section 6.3);
-awaiting maintainer review (Section 9)
+Status: Reviewed 2026-09-25; every finding and proposal accepted (Section 9); the roadmap
+waits for the input conventions review
 Plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md), Section 5
 Evidence: [docs/evidence/keyboard-2.3/](../evidence/keyboard-2.3/README.md)
 
@@ -799,32 +799,34 @@ changes what its events produce.
 
 ## 9. Review Decisions
 
-The maintainer marks each item accepted, rejected, or deferred (plan §5.6).
+The maintainer marks each item accepted, rejected, or deferred (plan §5.6). Decisions
+recorded 2026-09-25.
 
 | ID | Summary | Decision | Notes |
 | --- | --- | --- | --- |
-| KEY-001 | Key-value state sticks or releases early | Pending | |
-| KEY-002 | `clearEvents()` from another screen strands a prompt | Pending | |
-| KEY-003 | Prompt does not own the keyboard | Pending | |
-| KEY-004 | Shadow-DOM inputs reach game handlers | Pending | |
-| KEY-005 | Prompt layout | Pending | |
-| KEY-006 | `stopKeyboard()` not undone; strands prompts | Pending | |
-| KEY-007 | `offkey()` needs every flag | Pending | |
-| KEY-008 | Numeric prompt edge cases | Pending | |
-| KEY-009 | Validation gaps | Pending | |
-| KEY-010 | Caller's array sorted; duplicates fire twice | Pending | |
-| KEY-011 | Release data and unseen presses | Pending | |
-| KEY-012 | `startKeyboard()` blurs focus | Pending | |
-| KEY-013 | Live key data | Pending | |
-| KEY-014 | `setActionKeys()` adds | Pending | |
-| KEY-015 | No composed or pasted text | Pending | |
-| KEY-016 | `clearEvents()` scope | Pending | |
-| KEY-017 | Documentation and declarations | Pending | |
-| KEY-018 | Manual pages register twice | Pending | |
-| KEY-019 | Missing automated tests | Pending | |
-| A1–A10 | Fixes | Pending | |
-| A11 | Prompt keys withheld from handlers | Pending | Breaking |
-| A12 | `setActionKeys()` replaces | Pending | Breaking |
-| A13–A15 | Start rule, handler identity, `clearEvents` scope | Pending | §6 |
-| A16 | Hidden text field for IME, paste, and mobile | Pending | Additive |
-| A17 | `input()` stays in the plugin | Pending | |
+| KEY-001 | Key-value state sticks or releases early | Accepted | P1. Fixed by A1. Confirmed on hardware in Chrome |
+| KEY-002 | `clearEvents()` from another screen strands a prompt | Accepted | Fixed by A2 |
+| KEY-003 | Prompt does not own the keyboard | Accepted | Fixed by A3 and A11. Confirmed on hardware in Chrome |
+| KEY-004 | Shadow-DOM inputs reach game handlers | Accepted | Fixed by A4 |
+| KEY-005 | Prompt layout | Accepted | Fixed by A5 |
+| KEY-006 | `stopKeyboard()` not undone; strands prompts | Accepted | Prompt part fixed by A2; start rule decided in §6 (A13) |
+| KEY-007 | `offkey()` needs every flag | Accepted | Rule decided in §6 (A14) |
+| KEY-008 | Numeric prompt edge cases | Accepted | Fixed by A6 |
+| KEY-009 | Validation gaps | Accepted | Fixed by A7 |
+| KEY-010 | Caller's array sorted; duplicates fire twice | Accepted | Fixed by A7 |
+| KEY-011 | Release data and unseen presses | Accepted | Fixed by A8 |
+| KEY-012 | `startKeyboard()` blurs focus | Accepted | Fixed by A9 |
+| KEY-013 | Live key data | Accepted | Fixed by A10 |
+| KEY-014 | `setActionKeys()` adds | Accepted | Fixed by A12 (breaking) |
+| KEY-015 | No composed or pasted text | Accepted | Fixed by A16 in 2.3.0; paste also by A3 |
+| KEY-016 | `clearEvents()` scope | Accepted | Rule decided in §6 (A15) |
+| KEY-017 | Documentation and declarations | Accepted | Metadata and declarations in roadmap Phase 1; `API.md`, README, and llms references in R.2 and R.3 |
+| KEY-018 | Manual pages register twice | Accepted | Roadmap Phase 1; self-registration after Full is CORE-003 |
+| KEY-019 | Missing automated tests | Accepted | Section 5.2 |
+| A1–A9 | Fixes | Accepted | Roadmap Phase 1 |
+| A10 | Frozen key data | Accepted | Fix |
+| A11 | Prompt keys withheld from handlers | Accepted | Breaking |
+| A12 | `setActionKeys()` replaces | Accepted | Breaking |
+| A13–A15 | Start rule, handler identity, `clearEvents` scope | Accepted | Rules decided in §6 |
+| A16 | Hidden text field for IME, paste, and mobile | Accepted | Additive, in 2.3.0, overriding the audit's 2.3.x recommendation. IME composition and a mobile soft keyboard are added to the release device pass (R.7), since neither could be tested in the audit |
+| A17 | `input()` stays in the plugin | Accepted | No change |

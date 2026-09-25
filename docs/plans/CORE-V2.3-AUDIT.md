@@ -1,6 +1,7 @@
 # Pi.js 2.3 Core Audit
 
-Status: Written 2026-09-24; awaiting maintainer review (Section 9)
+Status: Reviewed 2026-09-25; C4 rejected, every other finding and proposal accepted
+(Section 9)
 Plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md), Section 7
 Evidence: [docs/evidence/core-2.3/](../evidence/core-2.3/README.md)
 
@@ -757,13 +758,12 @@ Ranked by value. Each starts from the probe that reproduces its finding.
 
 ## 7. Recommended Roadmap
 
-Only C4 and C7 change the core API, so a short `CORE-V2.3-ROADMAP.md` is needed for them
-(plan §7.2). The other items are fixes, tracked in a follow-up table in this report as in 2.2.
-Proposed order:
+After review, only C7 changes the core API, so a short `CORE-V2.3-ROADMAP.md` is needed for it
+(plan §7.2). C4 was decided as documentation only (Section 9). The other items are fixes,
+tracked in the follow-up table below as in 2.2. Order:
 
 **Phase 1: before the input roadmaps are approved.** The input plugins build on these:
 - C2 and C3 (plugin installation and self-registration).
-- The C4 decision in the conventions review.
 - C5's plugin declaration changes, because every input roadmap regenerates its plugin's
   declarations.
 
@@ -771,14 +771,15 @@ Proposed order:
 - C1, C6, C8.
 - C5's manifest and declaration fixes.
 - C11.
-- The tests in Section 5.2.
+- The tests in Section 5.2, except item 5, which C4's decision removes.
 
-**Phase 3: after approval:**
-- C7, with the compatibility summary.
-- C4's implementation, in the task that moves `onscreen-keyboard` and `pi-vision` to it.
+**Phase 3:** C7, with the compatibility summary.
 
-User documentation (C10, and the `set()` and `removeScreen` text in `API.md`) is written in
-the release phase (R.2, R.3), as the standing rules require.
+User documentation is written in the release phase (R.2, R.3), as the standing rules require:
+- C10's description of characters outside the font table.
+- CORE-004: `clearEvents()` also removes the handlers that `onscreen-keyboard` and
+  `pi-vision` register.
+- The `set()` and `removeScreen` text in `API.md`.
 
 **Scope-cut order:**
 1. C8 and C10's Latin-1 mapping.
@@ -791,15 +792,15 @@ Phase 1 and CORE-001 are not cut.
 
 | Order | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 1 | Transactional plugin installation and error routing | CORE-002, CORE-006 | Pending review |
-| 2 | Skip duplicate self-registration | CORE-003 | Pending review |
-| 3 | Plugin-internal subscriptions | CORE-004 | Waits for §6 |
-| 4 | Declarations and release manifest | CORE-005, CORE-015, CORE-016, CORE-017 | Pending review |
-| 5 | Offscreen context lifetime | CORE-001 | Pending review |
-| 6 | Option and value handling | CORE-007, CORE-009, CORE-011, CORE-012, CORE-013 | Pending review |
-| 7 | Canvas texture uploads, `setChar`, and cache bounds | CORE-010, CORE-018 | Pending review |
-| 8 | Strict `set()` | CORE-008 | Pending review |
-| 9 | Packaging details | CORE-019 | Pending review |
+| 1 | Transactional plugin installation and error routing | CORE-002, CORE-006 | Accepted |
+| 2 | Skip duplicate self-registration | CORE-003 | Accepted |
+| 3 | Document that `clearEvents()` reaches dependent plugins' handlers | CORE-004 | Accepted; release phase (R.2) |
+| 4 | Declarations and release manifest | CORE-005, CORE-015, CORE-016, CORE-017 | Accepted |
+| 5 | Offscreen context lifetime | CORE-001 | Accepted |
+| 6 | Option and value handling | CORE-007, CORE-009, CORE-011, CORE-012, CORE-013 | Accepted |
+| 7 | Canvas texture uploads, `setChar`, and cache bounds | CORE-010, CORE-018 | Accepted |
+| 8 | Strict `set()` | CORE-008 | Accepted; `CORE-V2.3-ROADMAP.md` |
+| 9 | Packaging details | CORE-019 | Accepted |
 | 10 | Tests | CORE-020 | With each task |
 
 ## 8. Handoffs
@@ -815,7 +816,7 @@ The core audit's answer to each item the input audits handed to it:
 | `set()` accepts unknown options | Gamepad (P14) | Confirmed, CORE-008; C7 |
 | `parseOptions` keeps an explicit `undefined` | KEY-009 | Confirmed, CORE-007; C6 |
 | `addCommand` JSDoc example | Gamepad | Confirmed, CORE-017 |
-| Plugin-internal subscriptions and `clearEvents` | Pointer | Confirmed, CORE-004; mechanism for §6 |
+| Plugin-internal subscriptions and `clearEvents` | Pointer | Confirmed, CORE-004. Review decision: documented, no core mechanism (C4 rejected) |
 | `getCanvasContentRect()` content-box rule | PTR-011 | Not a core defect. It returns the canvas content box by design and is shared with `noCss` sizing (`screen-manager.js:1184,1248`). Clamping or dropping border and padding points belongs to the pointer plugin |
 | Font glyph mapping for typed text | Keyboard (A16) | Confirmed and documented, CORE-014 |
 | Frame hook for input plugins | Gamepad | None in 2.3 (C9) |
@@ -843,30 +844,34 @@ Core facts the review needs:
 
 ## 9. Review Decisions
 
-The maintainer marks each item accepted, rejected, or deferred (plan §5.6).
+The maintainer marks each item accepted, rejected, or deferred (plan §5.6). Decisions
+recorded 2026-09-25.
 
 | ID | Summary | Decision | Notes |
 | --- | --- | --- | --- |
-| CORE-001 | Offscreen context not restored after its last screen | | P2. Fixed by C1 |
-| CORE-002 | Failed plugin stays half-installed | | P2. Fixed by C2 |
-| CORE-003 | Bundled plugin loaded after Full breaks the page | | P2. Fixed by C3 |
-| CORE-004 | `clearEvents()` removes plugin-internal subscriptions | | P2. C4, mechanism in §6 |
-| CORE-005 | Release package types wrong under `nodenext` | | P2. Fixed by C5 |
-| CORE-006 | Init errors thrown to the wrong caller | | Fixed by C2 |
-| CORE-007 | Explicit `undefined` not treated as omitted | | Fixed by C6 |
-| CORE-008 | `set()` accepts unknown names | | C7 (breaking) |
-| CORE-009 | `getPal( false )` includes index 0 | | Fixed by C6 |
-| CORE-010 | `setChar()` ignored on the default font | | Fixed by C8 |
-| CORE-011 | `getImage()` of an offscreen screen | | Fixed by C6 |
-| CORE-012 | Polygon coordinates past 2³¹ wrap | | Fixed by C6 |
-| CORE-013 | Numeric validation gaps | | Fixed by C6 |
-| CORE-014 | Text outside the font table undocumented | | C10 |
-| CORE-015 | `removeScreen` forms and declarations | | Fixed by C5 and C6 |
-| CORE-016 | Plugin declarations for Lite | | Fixed by C5 |
-| CORE-017 | `addCommand` declaration and example | | Fixed by C5 |
-| CORE-018 | Circle geometry cache unbounded | | Fixed by C8 |
-| CORE-019 | Release packaging details | | C11 |
-| CORE-020 | Missing checks | | Section 5.2 |
-| C4 | Plugin-internal subscriptions | | Additive; core API approval |
-| C7 | Strict `set()` | | Breaking; core API approval |
-| C9 | No frame hook in 2.3 | | |
+| CORE-001 | Offscreen context not restored after its last screen | Accepted | P2. Fixed by C1 |
+| CORE-002 | Failed plugin stays half-installed | Accepted | P2. Fixed by C2 |
+| CORE-003 | Bundled plugin loaded after Full breaks the page | Accepted | P2. Fixed by C3: skip on the same version, warn on a mismatch |
+| CORE-004 | `clearEvents()` removes plugin-internal subscriptions | Accepted | P2. Documentation only (C4 rejected): `API.md` says that `clearEvents()` also removes the handlers `onscreen-keyboard` and `pi-vision` register. No mechanism is needed from §6 |
+| CORE-005 | Release package types wrong under `nodenext` | Accepted | P2. Fixed by C5 |
+| CORE-006 | Init errors thrown to the wrong caller | Accepted | Fixed by C2 |
+| CORE-007 | Explicit `undefined` not treated as omitted | Accepted | Fixed by C6 |
+| CORE-008 | `set()` accepts unknown names | Accepted | Fixed by C7 (breaking) |
+| CORE-009 | `getPal( false )` includes index 0 | Accepted | Fixed by C6 |
+| CORE-010 | `setChar()` ignored on the default font | Accepted | Fixed by C8 |
+| CORE-011 | `getImage()` of an offscreen screen | Accepted | Fixed by C6 |
+| CORE-012 | Polygon coordinates past 2³¹ wrap | Accepted | Fixed by C6 |
+| CORE-013 | Numeric validation gaps | Accepted | Fixed by C6 |
+| CORE-014 | Text outside the font table undocumented | Accepted | Documented in R.2 (C10). The Latin-1 to CP437 mapping is deferred to a later release, although keyboard A16 lets typed accented text reach `print()` in 2.3.0 |
+| CORE-015 | `removeScreen` forms and declarations | Accepted | Fixed by C5 and C6 |
+| CORE-016 | Plugin declarations for Lite | Accepted | Fixed by C5 |
+| CORE-017 | `addCommand` declaration and example | Accepted | Fixed by C5 |
+| CORE-018 | Circle geometry cache unbounded | Accepted | Fixed by C8 |
+| CORE-019 | Release packaging details | Accepted | Fixed by C11: rename, `"private": true`, and the changelog in the tarball |
+| CORE-020 | Missing checks | Accepted | Section 5.2, without item 5 |
+| C1–C3, C5, C6, C8 | Fixes | Accepted | Follow-up table |
+| C4 | Plugin-internal subscriptions | Rejected | Core API stays as is; CORE-004 is documented instead |
+| C7 | Strict `set()` | Accepted | Breaking core API change, approved. `CORE-V2.3-ROADMAP.md` |
+| C9 | No frame hook in 2.3 | Accepted | |
+| C10 | Document text outside the font table | Accepted | Latin-1 mapping deferred |
+| C11 | Release packaging | Accepted | R.5 and R.6; the rename can land any time |

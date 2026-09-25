@@ -1,7 +1,7 @@
 # Pi.js 2.3 Pointer Audit
 
-Status: Complete 2026-09-24, including the Chrome mouse device pass; awaiting maintainer
-review (Section 9)
+Status: Reviewed 2026-09-25; every finding and proposal accepted (Section 9); the roadmap
+waits for the input conventions review
 Plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md), Section 5
 Evidence: [docs/evidence/pointer-2.3/](../evidence/pointer-2.3/README.md)
 
@@ -622,30 +622,31 @@ Phase 1 is not cut.
 
 ## 9. Review Decisions
 
-The maintainer marks each item accepted, rejected, or deferred (plan §5.6).
+The maintainer marks each item accepted, rejected, or deferred (plan §5.6). Decisions
+recorded 2026-09-25.
 
 | ID | Summary | Decision | Notes |
 | --- | --- | --- | --- |
-| PTR-001 | Removing a handler can disable all handlers of that type | | P1. Reachable through the on-screen keyboard. Fixed by B1 |
-| PTR-002 | Touch end reports the touches still down | | Fixed by B3 |
-| PTR-003 | Press and click follow the first touch | | Fixed by B4 |
-| PTR-004 | Release outside the canvas lost | | Confirmed with trusted input and in Chrome 153. Fixed by B5/B6 |
-| PTR-005 | Click listeners stay armed; cancelled touches click | | Confirmed with trusted input and in Chrome 153 (mouse part). Fixed by B3/B4 |
-| PTR-006 | A throwing handler breaks the rest of the event | | Fixed by B2 |
-| PTR-007 | Blur resets polling without telling handlers | | Confirmed in Chrome 153, where the button was still held at blur. Fixed by B5 |
-| PTR-008 | `onclick` fires for right and middle buttons | | Confirmed with trusted input and in Chrome 153. Fixed by B4 |
-| PTR-009 | `once` removes other registrations; removed handlers run | | Fixed by B1 |
-| PTR-010 | Stop commands keep held state | | Fixed by B5 |
-| PTR-011 | Border and padding points map outside the screen | | Confirmed in Chrome 153 (x -4 to 203, y -5 to 153). Fixed by B8 |
-| PTR-012 | Settings and hit boxes not validated consistently | | Fixed by B8/B9 |
-| PTR-013 | Press, touch, and click data disagree | | Fixed by B7 (breaking) |
-| PTR-014 | Pinch zoom page-wide; context menu suppressed late | | Fixed by B10 (breaking) |
-| PTR-015 | Metadata, declarations, `API.md` gaps | | Metadata and declarations in the roadmap; `API.md` in R.2 |
-| PTR-016 | Manual pointer pages do not load cleanly | | Roadmap Phase 1 |
-| PTR-017 | Missing automated tests | | Roadmap Phase 1, Section 5.2 |
-| B1–B5, B8, B9, B12 | Fixes | | |
-| B6 | Pointer Events path | | Observable changes listed in the compatibility summary |
-| B7 | One data shape | | Breaking |
-| B10 | Per-screen gesture settings | | Breaking |
-| B11 | Wheel input | | Additive |
-| B13 | Allocation and live objects | | Decided in §6 |
+| PTR-001 | Removing a handler can disable all handlers of that type | Accepted | P1. Reachable through the on-screen keyboard. Fixed by B1 |
+| PTR-002 | Touch end reports the touches still down | Accepted | Fixed by B3 |
+| PTR-003 | Press and click follow the first touch | Accepted | Fixed by B4 |
+| PTR-004 | Release outside the canvas lost | Accepted | Confirmed with trusted input and in Chrome 153. Fixed by B5/B6 |
+| PTR-005 | Click listeners stay armed; cancelled touches click | Accepted | Confirmed with trusted input and in Chrome 153 (mouse part). Fixed by B3/B4 |
+| PTR-006 | A throwing handler breaks the rest of the event | Accepted | Fixed by B2 |
+| PTR-007 | Blur resets polling without telling handlers | Accepted | Confirmed in Chrome 153, where the button was still held at blur. Fixed by B5 |
+| PTR-008 | `onclick` fires for right and middle buttons | Accepted | Confirmed with trusted input and in Chrome 153. Fixed by B4 |
+| PTR-009 | `once` removes other registrations; removed handlers run | Accepted | Fixed by B1 |
+| PTR-010 | Stop commands keep held state | Accepted | Fixed by B5 |
+| PTR-011 | Border and padding points map outside the screen | Accepted | Confirmed in Chrome 153 (x -4 to 203, y -5 to 153). Fixed by B8 |
+| PTR-012 | Settings and hit boxes not validated consistently | Accepted | Fixed by B8/B9 |
+| PTR-013 | Press, touch, and click data disagree | Accepted | Fixed by B7 (breaking) |
+| PTR-014 | Pinch zoom page-wide; context menu suppressed late | Accepted | Fixed by B10 (breaking) |
+| PTR-015 | Metadata, declarations, `API.md` gaps | Accepted | Metadata and declarations in the roadmap; `API.md` in R.2 |
+| PTR-016 | Manual pointer pages do not load cleanly | Accepted | Roadmap Phase 1 |
+| PTR-017 | Missing automated tests | Accepted | Roadmap Phase 1, Section 5.2 |
+| B1–B5, B8, B9, B12 | Fixes | Accepted | Roadmap Phase 1. B8: presses that start on the border or padding are ignored |
+| B6 | Pointer Events path | Accepted | Observable changes listed in the compatibility summary |
+| B7 | One data shape | Accepted | Breaking |
+| B10 | Per-screen gesture settings | Accepted | Breaking |
+| B11 | Wheel input | Accepted | Additive, in 2.3.0; handler shape follows §6 |
+| B13 | Allocation and live objects | Accepted | Decided in §6 |
