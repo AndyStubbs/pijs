@@ -46,7 +46,13 @@ for( const mode of [ "full", "lite", "plugins" ] ) {
 			const reset = page.waitForRequest( "**/api/reset-base-image" );
 			await page.locator( "#resetBaseBtn" ).click();
 			g_assert.equal( ( await reset ).postDataJSON().mode, mode );
+
+			// The rejected request ends with an alert, and a key pressed while it is open is
+			// lost. Close the modal once the button is re-enabled after the alert, and wait for
+			// it to hide, so it cannot cover the next click.
+			await page.locator( "#resetBaseBtn:enabled" ).waitFor();
 			await page.keyboard.press( "Escape" );
+			await page.locator( "#diffModal" ).waitFor( { "state": "hidden" } );
 			await page.locator( ".section-header" ).filter( { "hasText": "Skipped Tests" } ).click();
 			await page.locator( ".test-item.skipped .view-diff-btn" ).click();
 			const approve = page.waitForRequest( "**/api/approve-new-test" );
