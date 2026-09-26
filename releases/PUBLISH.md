@@ -37,9 +37,11 @@ git tag -a v2.2.0 -m "Release v2.2.0"
 git push origin v2.2.0
 ```
 
-Copy `releases/pi-latest/dist` to a versioned snapshot. Replace `2.2.0` with the current
-version from `releases/pi-latest/package.json`:
+Copy `releases/pi-latest/dist` to the versioned snapshot `releases/pi-<version>`, named from
+the version in `releases/pi-latest/package.json`:
 
-```bat
-xcopy /E /I /Y releases\pi-latest\dist releases\pi-2.2.0
+```sh
+npm run snapshot
 ```
+
+The command refuses to overwrite an existing snapshot.

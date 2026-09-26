@@ -13,6 +13,7 @@
 		"test:benchmark": "node scripts/test.js benchmark",
 		"build": "node scripts/build.js",
 		"copy-to-release": "node scripts/copy-to-release.js",
+		"snapshot": "node scripts/snapshot.js",
 		"metadata": "node scripts/generate-metadata.js",
 		"test": "node scripts/test.js all",
 		"test:grep": "node scripts/test.js visual --mode=full --grep",
