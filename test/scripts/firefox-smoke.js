@@ -1,4 +1,11 @@
-/** Release compatibility assertions against built full/lite bundles in Firefox. */
+/**
+ * Release compatibility assertions against built full/lite bundles in Firefox.
+ *
+ * Firefox launches with webgl.force-enabled, which gives WebGL2 on GPU-less Windows machines
+ * (through WARP) and does not change rendering where a GPU is available. Headless Firefox on
+ * Linux never gets WebGL; set PI_FIREFOX_HEADED=true and run under xvfb-run there, where it
+ * renders with Mesa's llvmpipe.
+ */
 import * as g_assert from "node:assert/strict";
 import * as g_fs from "node:fs";
 import * as g_path from "node:path";
@@ -10,6 +17,35 @@ import * as g_browser from "../performance/benchmark/browser.js";
 
 const ROOT = g_url.fileURLToPath( new URL( "../../", import.meta.url ) );
 const OUTPUT = g_path.join( ROOT, "test/test-results/firefox" );
+const FIREFOX_PREFS = { "webgl.force-enabled": true };
+
+/**
+ * Parses PI_FIREFOX_HEADED.
+ *
+ * @param {string|undefined} value - "true" for a headed browser; "false", empty, or undefined
+ *   for headless
+ * @returns {boolean} True to launch Firefox headed
+ */
+function parseHeaded( value ) {
+	if( value === undefined || value.trim() === "" || value.trim() === "false" ) {
+		return false;
+	}
+	if( value.trim() === "true" ) {
+		return true;
+	}
+	throw new Error( `PI_FIREFOX_HEADED: unknown value "${value}"; use true or false.` );
+}
+
+/** WebGL2 renderer of a page, or null when WebGL2 is unavailable. */
+async function webglRenderer( page ) {
+	return page.evaluate( () => {
+		const gl = document.createElement( "canvas" ).getContext( "webgl2" );
+		if( !gl ) {
+			return null;
+		}
+		return gl.getParameter( gl.RENDERER );
+	} );
+}
 
 /** Assert sprite frame selection, asymmetric shader sampling, and basic drawing. */
 async function rendering( page ) {
@@ -140,8 +176,26 @@ async function main() {
 	const report = { "date": new Date().toISOString(), "browser": "firefox", "tests": [] };
 	let browser;
 	try {
-		browser = await g_playwright.firefox.launch( { "headless": true, "timeout": 30000 } );
+		const headed = parseHeaded( process.env.PI_FIREFOX_HEADED );
+		report.headed = headed;
+		report.firefoxUserPrefs = FIREFOX_PREFS;
+		browser = await g_playwright.firefox.launch( {
+			"headless": !headed, "timeout": 30000, "firefoxUserPrefs": FIREFOX_PREFS
+		} );
 		report.version = browser.version();
+		const probe = await browser.newPage();
+		report.renderer = await webglRenderer( probe );
+		await probe.close();
+		let mode = "headless";
+		if( headed ) {
+			mode = "headed";
+		}
+		console.log( `Firefox ${report.version}, ${mode}, ` +
+			`WebGL2 renderer: ${report.renderer || "unavailable"}` );
+		if( !report.renderer && !headed ) {
+			console.error( "Firefox has no WebGL2 here. On Linux without a GPU, run headed " +
+				"under Xvfb: PI_FIREFOX_HEADED=true xvfb-run -a npm run test:firefox" );
+		}
 		await g_server.withTestServer( ROOT, async url => {
 			for( const mode of [ "full", "lite" ] ) {
 				let files = [ "pi.js" ];
