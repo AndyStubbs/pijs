@@ -300,8 +300,8 @@ endings (CI-007) affect the build output rather than a script.
 
 **Recommendation: GitHub Actions.** The repository is on GitHub, and hosted runners are free
 for public repositories, macOS included. E2 used three runners at once without queueing,
-within the free plan's limits of 20 concurrent jobs and 5 concurrent macOS jobs. The plan's
-tracking already uses GitHub milestones and issues.
+within the free plan's limits of 20 concurrent jobs and 5 concurrent macOS jobs, and pull
+requests already live there.
 
 Alternatives considered:
 

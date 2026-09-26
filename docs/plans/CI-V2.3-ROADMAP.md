@@ -1,8 +1,9 @@
 # Pi.js 2.3 CI/CD Roadmap
 
 Status: Phase 1 complete (milestone C1, 2026-09-26); Phase 2 in progress (tasks 2.1, 2.3–2.5,
-and 2.8 done); Phase 3 in progress (tasks 3.1 and 3.2 done; 3.3 written, done with its first
-green run on `main`). Next: 3.9 (see Task order)
+and 2.8 done); Phase 3 in progress (tasks 3.1–3.3 and 3.9 done; `ci.yml` first green on `main`
+in run 36266162164, 2026-09-26). Next: 2.2, 2.6, and 2.7 through pull requests, then 3.4–3.8
+(see Task order)
 Exploration: [CI-V2.3-EXPLORATION.md](CI-V2.3-EXPLORATION.md) (the `CI-0xx` items, questions,
 and sections below refer to it)
 Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md) (Section 9, decisions G4–G6 and G8)
@@ -62,10 +63,10 @@ Task 3.3 itself lands on `main` directly, and its first push run is the first `c
 
 - **One short-lived branch per task,** named after the task, such as
   `ci-2.2-release-snapshot`.
-- **The pull-request title is the task's issue title,** such as
+- **The pull-request title is the task's number and name,** such as
   `CI 2.2: Portable release snapshot`. The description follows the pull-request guidelines in
-  `AGENTS.md`: the behavior change, the validation commands run, the linked issue, and
-  before/after screenshots for rendering changes.
+  `AGENTS.md`: the behavior change, the validation commands run, and before/after screenshots
+  for rendering changes. The roadmaps record progress; tasks are not tracked as GitHub issues.
 - **Merge only with `ci.yml` green** on Linux and Windows. A red check is fixed or explained in
   the pull request, never merged over. Until task 3.8 makes the checks required, this is a
   rule, not a setting.
@@ -78,8 +79,8 @@ The other 2.3 workstreams follow the same practice from that point on.
 ### GitHub CLI setup
 
 The maintainer installs the GitHub CLI (`gh`) once, as part of task 3.9, and manages every
-commit, pull request, and issue with it. An assistant working in the repository leaves its
-changes uncommitted and gives the commands instead. On Windows:
+branch, commit, and pull request. An assistant working in the repository leaves its changes
+uncommitted and gives each command in chat for the maintainer to run. On Windows:
 
 1. Install it: `winget install --id GitHub.cli`, then open a new terminal so `gh` is on the
    `PATH`.
@@ -100,7 +101,6 @@ Everyday commands once it is set up:
 | `gh pr merge --squash --delete-branch` | Squash-merges a green pull request and deletes its branch |
 | `gh run list --workflow ci.yml` | Lists recent `ci.yml` runs |
 | `gh run view <id> --log-failed` | Shows the log of a run's failed steps |
-| `gh issue create --title "CI 2.2: Portable release snapshot" --milestone "CI Phase 2"` | Opens a task issue |
 
 ### Milestones
 
@@ -125,8 +125,8 @@ Everyday commands once it is set up:
 - `test/README.md` is updated in the task that changes a command, an environment variable, or
   a requirement.
 - User documentation (`API.md`, `docs/llms/`) is not affected by this roadmap.
-- Task numbers are sequential within a phase and become GitHub issue titles, such as
-  `CI 1.1: Pin the Chromium renderer`. A task added later takes the next free number.
+- Task numbers are sequential within a phase and name each task's branch and pull request, such
+  as `CI 2.2: Portable release snapshot`. A task added later takes the next free number.
 
 ### Coordination with other workstreams
 
@@ -218,7 +218,7 @@ runners, macOS included, cost nothing. This phase does not block 2.3.0 (G5). Tas
 | 3.6 | **Release workflow (`release.yml`).**<br>• Triggers: a `v*` tag, and manual runs.<br>• Runs the `ci.yml` test matrix.<br>• A Linux `package` job then:<br>&nbsp;&nbsp;• builds and runs `npm run copy-to-release`;<br>&nbsp;&nbsp;• checks that the tag, `package.json`, `releases/pi-latest/package.json`, and the plugin banners agree (R.6);<br>&nbsp;&nbsp;• runs `npm pack --dry-run` and `npm pack` in `releases/pi-latest`;<br>&nbsp;&nbsp;• attaches the tarball to a draft GitHub release.<br>• `npm publish` stays manual and publishes that tarball | G6, Q8 |
 | 3.7 | **Documentation.** Add a CI section to `test/README.md`: the workflows, what each runs, and how to reproduce a CI failure locally. In the publish guide, add the release workflow and the rule that the published tarball is the one the release workflow verified | Q7, Q8 |
 | 3.8 | **Required checks.** The maintainer configures branch protection on `main`. The Linux and Windows `test` jobs and the `size` job become required after one week green. The macOS `test` job becomes required after two weeks green | Q6 |
-| 3.9 | **GitHub CLI and pull requests.** The maintainer installs and signs in to `gh` (GitHub CLI setup, above). Create the GitHub milestones for Phases 2 and 3, and issues for their open tasks. From the first green `ci.yml` run on `main`, follow Branches and pull requests | Q6 |
+| 3.9 | **GitHub CLI and pull requests.** The maintainer installs and signs in to `gh` (GitHub CLI setup, above). From the first green `ci.yml` run on `main`, follow Branches and pull requests | Q6 |
 
 Exit criteria:
 
@@ -285,9 +285,9 @@ No public API, command, or behavior changes. Nothing in this roadmap needs an en
 
 ## Tracking
 
-- **Progress:** each phase is a GitHub milestone, with one issue per task, titled like
-  `CI 1.1: Pin the Chromium renderer`. Task 3.9 creates the milestones and issues for the open
-  tasks. After 3.3, each task's pull request uses the issue's title and closes the issue.
+- **Progress:** the Status line and the task tables record progress. After 3.3, each task lands
+  through one pull request titled with its number and name, such as
+  `CI 2.2: Portable release snapshot`.
 - **Decisions:** any change to G4–G6 or G8 updates the upgrade plan's Section 13 and the
   exploration's Section 8 in the same commit.
 - **Evidence:** baseline re-record differences (task 1.4) and the first workflow timings
