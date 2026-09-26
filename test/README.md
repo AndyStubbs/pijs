@@ -225,7 +225,8 @@ Existing browser regressions that intercept localhost requests keep their isolat
 Each visual mode (`full`, `lite`, `plugins`) has independent outputs:
 
 - `test/test-results/<mode>/results.html`: comparison and baseline-review page.
-- `test/test-results/<mode>/summary.json`: unique outcomes, attempts, and pending approvals.
+- `test/test-results/<mode>/summary.json`: unique outcomes, attempts, pending approvals, and
+  report-only pixel mismatches.
 - `test/test-results/<mode>/screenshots/`, `logs/`, and `traces/`: diagnostic artifacts.
 - `test/playwright-report/<mode>/`: Playwright HTML report.
 
@@ -287,6 +288,14 @@ animation frames) are only for a fixture whose approved baseline depends on capt
 
 Images must have identical dimensions. Pixels whose summed RGBA difference exceeds 6 count as
 different; fewer than 0.1% of pixels may differ.
+
+Set `PI_VISUAL_PIXELS=report` for a platform whose renderer cannot match the baselines, such as
+the macOS CI jobs. A pixel mismatch then passes the test and is recorded instead: as a
+`pixel-mismatch` annotation with the baseline and capture attached in the Playwright report, as
+`pixelMismatch` in `summary.json`, on the results page, and as a
+`Pixel mismatch (report only): <fixture>: <percent>` console line per fixture. Page errors,
+fixture assertions, missing baselines, and image size differences still fail. Unset or `fail`
+keeps the default; any other value fails.
 
 Run the focused visual command, inspect its candidate PNG, and explicitly approve it only if correct.
 Approved PNGs live in `test/tests/screenshots/`. Missing baselines require this review before the

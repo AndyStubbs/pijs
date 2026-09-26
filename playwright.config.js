@@ -15,6 +15,11 @@ if( ![ "full", "lite", "plugins" ].includes( MODE ) ) {
 	throw new Error( "Invalid PI_TEST_MODE" );
 }
 
+// PI_VISUAL_PIXELS=report records pixel mismatches without failing (run-visual-tests.js)
+if( ![ undefined, "", "fail", "report" ].includes( process.env.PI_VISUAL_PIXELS ) ) {
+	throw new Error( "Invalid PI_VISUAL_PIXELS; use fail or report" );
+}
+
 let retries = 0;
 let workers;
 if( process.env.CI ) {

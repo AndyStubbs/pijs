@@ -95,6 +95,9 @@ const TEST_MODE = process.env.PI_TEST_MODE || "full";
 let TEST_TYPE = "core";
 if( TEST_MODE === "plugins" ) { TEST_TYPE = "plugins"; }
 const TEST_LITE = TEST_MODE === "lite";
+
+// Report-only pixel mode, for platforms whose renderer cannot match the baselines
+const REPORT_PIXELS = process.env.PI_VISUAL_PIXELS === "report";
 const TEST_CONFIG = {
 	"core": {
 		"testsDir": "../tests/html-core",
@@ -880,16 +883,34 @@ test.describe( config.description, () => {
 					return;
 				}
 
-				// Compare with reference
+				// Compare with reference. In report-only pixel mode, a pixel mismatch is recorded
+				// as an annotation with both images attached, and the test passes; size and file
+				// errors still fail.
 				const comparison = compareImages( referencePath, screenshotPath );
+				const reportMismatch = REPORT_PIXELS && !comparison.match && !comparison.error;
 
-				if( comparison.match ) {
+				if( comparison.match || reportMismatch ) {
+					let pixelMismatch = "";
+					if( reportMismatch ) {
+						pixelMismatch = `${comparison.diffPercent}% pixels different`;
+						test.info().annotations.push( {
+							"type": "pixel-mismatch",
+							"description": pixelMismatch
+						} );
+						await test.info().attach( "baseline", {
+							"path": referencePath, "contentType": "image/png"
+						} );
+						await test.info().attach( "capture", {
+							"path": screenshotPath, "contentType": "image/png"
+						} );
+					}
 					results.passed++;
 					results.tests.push( {
 						"name": metadata.name,
 						"file": testFile.file,
 						"url": testFile.url,
 						"status": "passed",
+						"pixelMismatch": pixelMismatch,
 						"screenshotName": testName
 					} );
 				} else {

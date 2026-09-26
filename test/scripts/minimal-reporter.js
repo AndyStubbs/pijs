@@ -10,6 +10,7 @@ export function summarizeTest( test, mode ) {
 	if( test.outcome() === "flaky" ) { status = "flaky"; }
 	const annotation = test.annotations.find( item => item.type === "screenshot-name" );
 	const skip = test.annotations.find( item => item.type === "skip-reason" );
+	const mismatch = test.annotations.find( item => item.type === "pixel-mismatch" );
 	const screenshotName = annotation?.description || test.title;
 	let directory = "html-core";
 	if( mode === "plugins" ) { directory = "html-plugins"; }
@@ -19,6 +20,7 @@ export function summarizeTest( test, mode ) {
 		"screenshotName": screenshotName, "status": status,
 		"error": result.error?.message || skip?.description || "",
 		"pendingBaseline": !!skip?.description.includes( "No reference screenshot" ),
+		"pixelMismatch": mismatch?.description || "",
 		"retries": Math.max( 0, test.results.length - 1 )
 	};
 }
@@ -55,6 +57,7 @@ export default class MinimalReporter {
 			"failed": count( "failed" ), "timedOut": count( "timedOut" ),
 			"interrupted": count( "interrupted" ), "skipped": count( "skipped" ),
 			"pendingBaselines": tests.filter( test => test.pendingBaseline ).length,
+			"pixelMismatches": tests.filter( test => test.pixelMismatch ).length,
 			"retries": tests.reduce( ( total, test ) => total + test.retries, 0 ),
 			"status": result.status, "tests": tests
 		};
@@ -68,6 +71,12 @@ export default class MinimalReporter {
 		console.log( `Finished in ${ ( ( Date.now() - this.startTime ) / 1000 ).toFixed( 1 ) }s` );
 		for( const [ key, value ] of Object.entries( summary ) ) {
 			if( key !== "tests" ) { console.log( `${key}: ${value}` ); }
+		}
+
+		// Report-only pixel mode passes mismatches, so name them for CI logs
+		for( const test of tests.filter( item => item.pixelMismatch ) ) {
+			console.log( `Pixel mismatch (report only): ${test.screenshotName}: ` +
+				test.pixelMismatch );
 		}
 		const directory = g_path.resolve( this.outputRoot, "test/test-results", this.mode );
 		g_fs.mkdirSync( directory, { "recursive": true } );

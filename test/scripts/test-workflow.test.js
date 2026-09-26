@@ -129,7 +129,8 @@ g_test.test(
 } );
 
 g_test.test( "reporter counts final outcomes once and isolates all visual modes", t => {
-	t.mock.method( console, "log", () => {} );
+	const lines = [];
+	t.mock.method( console, "log", line => lines.push( line ) );
 	t.mock.method( console, "error", () => {} );
 	const root = temporaryDirectory( t );
 	const oldStrict = process.env.PI_TEST_STRICT;
@@ -148,6 +149,9 @@ g_test.test( "reporter counts final outcomes once and isolates all visual modes"
 		if( status === "skipped" ) {
 			annotations.push( { "type": "skip-reason", "description": "No reference screenshot" } );
 		}
+		if( status === "passed" ) {
+			annotations.push( { "type": "pixel-mismatch", "description": "0.13% pixels different" } );
+		}
 		return { "id": String( index ), "title": status, "results": results,
 			"annotations": annotations, "outcome": () => status };
 	} );
@@ -162,9 +166,15 @@ g_test.test( "reporter counts final outcomes once and isolates all visual modes"
 		g_assert.equal( summary.total, 6 );
 		g_assert.equal( summary.retries, 1 );
 		g_assert.equal( summary.pendingBaselines, 1 );
+		g_assert.equal( summary.pixelMismatches, 1 );
 		g_assert.equal( summary.status, "failed" );
 		for( const status of statuses ) { g_assert.equal( summary[ status ], 1 ); }
+		g_assert.ok( lines.includes(
+			"Pixel mismatch (report only): fixture_0: 0.13% pixels different"
+		) );
+		lines.length = 0;
 		const html = g_fs.readFileSync( g_path.join( directory, "results.html" ), "utf8" );
+		g_assert.ok( html.includes( "Pixel mismatch (report only): 0.13% pixels different" ) );
 		g_assert.ok( html.includes( `/test/test-results/${mode}/screenshots/fixture_0.png` ) );
 		g_assert.ok( html.includes( `/test/playwright-report/${mode}/` ) );
 		g_assert.ok( html.includes( `const TEST_MODE = "${mode}"` ) );
