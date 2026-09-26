@@ -1,0 +1,125 @@
+{
+	"step": "E2 (with E3, E4, and E6 on runners)",
+	"run": "https://github.com/AndyStubbs/pijs/actions/runs/36212469703",
+	"date": "2026-09-26",
+	"source": "Branch ci-exploration at d5548cb (48bb54f plus .github/ci-exploration/ and the probes); raw logs, probe output, and captures were committed by the workflow to the ci-exploration-results branch",
+	"note": "GitHub sets CI=true, so the stages marked (CI) use 1 worker and 2 retries. Other visual stages ran with CI unset. The Playwright reporter prints no fixture names, so failing fixtures are identified from the pixel probe and capture comparisons.",
+	"runners": {
+		"ubuntu-24.04": {
+			"image": "ubuntu24/20260920.314.1", "arch": "X64", "cpus": 4, "node": "v22.23.2",
+			"checkout": "LF, no CRLF files",
+			"audioDevice": "none (no PulseAudio or ALSA device)",
+			"renderers": {
+				"chromium": "SwiftShader Subzero (ANGLE Vulkan), with and without flags",
+				"firefox": "no WebGL2 context",
+				"webkit": "Apple GPU (masked), AudioContext and OfflineAudioContext available"
+			},
+			"stageSeconds": {
+				"npmCi": 5, "browsers": 63, "unit": 5, "browser": 229, "types": 7, "visualCi": 48,
+				"firefox": 4, "size": 0, "visualLocal": 23, "visualRepeat3": 53
+			},
+			"unit": { "tests": 400, "fail": 0 },
+			"browser": {
+				"tests": 611, "pass": 496, "fail": 47, "skipped": 67,
+				"failures": [
+					"WebKit: the 40 missing-tolerance failures seen in WSL",
+					"Firefox stream mode (realtime): 5 of 6 tests fail with no audio device",
+					"audio-recording-realtime-browser: the recording does not decode ('invalid content'), then the file hits the 120 s limit"
+				]
+			},
+			"types": "pass",
+			"visual": {
+				"ci": "full 34 + 1 flaky, lite 20, plugins 7 of 8 (pointer_lifecycle_01)",
+				"local": "full 34 of 35 (the workflow stops before lite and plugins)",
+				"repeat3": "full 103 of 105",
+				"pixelsVsBaselines": "49 of 63 identical; pointer_lifecycle_01 fails at 8.08%; every other capture within tolerance",
+				"vsWindowsLocal": "59 of 63 byte-identical; different: inpress_01, intouch_01, keyboard_commands (timing), pointer_lifecycle_01 (font)"
+			},
+			"firefoxCheck": "fail: every check throws 'Failed to create WebGL2 context'",
+			"flags": {
+				"--disable-gpu --enable-unsafe-swiftshader": "60 of 63 identical to the default run; only the timing fixtures differ",
+				"--use-angle=swiftshader --enable-unsafe-swiftshader": "print_comprehensive and renderer_comprehensive also differ"
+			},
+			"webkitTrial": "95 of 95 pass with Chromium's and with Firefox's tolerances; calibration ranges identical to WSL",
+			"realtimeWithPulseNullSink": {
+				"tests": 20, "pass": 17, "fail": 3,
+				"firefox": "pass",
+				"chromium": "recording: 'context advanced 0.0116 s'; stream: 'element at 0.5, expected 0.9012'"
+			}
+		},
+		"windows-2025": {
+			"image": "win25-vs2026/20260922.246.2", "arch": "X64", "cpus": 4, "node": "v22.23.2",
+			"checkout": "core.autocrlf=true, 235 CRLF files",
+			"audioDevice": "no sound device; Audiosrv service running",
+			"renderers": {
+				"chromium": "SwiftShader Subzero (ANGLE Vulkan), with and without flags",
+				"firefox": "no WebGL2 context",
+				"webkit": "Apple GPU (masked), no Web Audio"
+			},
+			"stageSeconds": {
+				"npmCi": 6, "browsers": 25, "unit": 11, "browser": 292, "types": 13, "visualCi": 60,
+				"firefox": 7, "size": 1, "visualLocal": 46, "visualRepeat3": 122
+			},
+			"unit": { "tests": 400, "fail": 0 },
+			"browser": {
+				"tests": 611, "pass": 396, "fail": 8, "skipped": 206,
+				"failures": [
+					"Firefox stream mode (realtime): 5 of 6 tests fail with no audio device",
+					"audio-recording-realtime-browser: the recording does not decode, then the file hits the 120 s limit",
+					"visual-report-browser 'full: comparison and approval requests use the selected mode': the diff modal still covers the page when the test clicks the Skipped Tests header (click timeout)"
+				]
+			},
+			"types": "pass",
+			"visual": {
+				"ci": "all pass: 35, 20, 8",
+				"local": "all pass",
+				"repeat3": "all pass: 105, 60, 24",
+				"pixelsVsBaselines": "51 of 63 identical; all within tolerance",
+				"vsWindowsLocal": "61 of 63 byte-identical; different: inpress_01, keyboard_commands (timing)"
+			},
+			"firefoxCheck": "fail: every check throws 'Failed to create WebGL2 context'",
+			"flags": {
+				"--disable-gpu --enable-unsafe-swiftshader": "identical to the default run except the timing fixtures",
+				"--use-angle=swiftshader --enable-unsafe-swiftshader": "print_comprehensive and renderer_comprehensive differ; 1 failure"
+			},
+			"sizeReport": "pi.min.js 208,248 bytes against 207,944 on Linux and macOS: the CRLF checkout embeds \\r in the shader sources"
+		},
+		"macos-15": {
+			"image": "macos15/20260907.0337.1", "arch": "ARM64", "cpus": 3, "node": "v22.23.2",
+			"checkout": "LF, no CRLF files",
+			"audioDevice": "Apple Virtual Sound Device (default output, 2 channels, 48 kHz)",
+			"renderers": {
+				"chromium": "SwiftShader LLVM 10.0.0 (ANGLE Vulkan), with and without flags",
+				"firefox": "Apple M1, or similar",
+				"webkit": "Apple GPU (masked), AudioContext and OfflineAudioContext available"
+			},
+			"stageSeconds": {
+				"npmCi": 2, "browsers": 31, "unit": 10, "browser": 177, "types": 7, "visualCi": 74,
+				"firefox": 5, "size": 1, "visualLocal": 58, "visualRepeat3": 179
+			},
+			"unit": { "tests": 400, "fail": 0 },
+			"browser": {
+				"tests": 612, "pass": 503, "fail": 42, "skipped": 67,
+				"failures": [
+					"WebKit: the 40 missing-tolerance failures",
+					"Firefox stream mode (realtime): 2 of 6 fail on position timing ('element at 1.745333, expected 1.947')"
+				]
+			},
+			"types": "pass",
+			"visual": {
+				"ci": "full 31 + 1 flaky, 3 failed (the workflow stops before lite and plugins)",
+				"local": "full 30 of 35",
+				"repeat3": "full 91 of 105",
+				"pixelsVsBaselines": "26 of 35 identical; over tolerance: paint_02 0.139%, paint_03 0.205%, inpress_01 0.119% (timing)",
+				"vsWindowsLocal": "28 of 35 byte-identical. Renderer differences: paint_02 0.127% and paint_03 0.217% over tolerance; parameters_01, renderer_comprehensive, set_01 within tolerance. Timing: inpress_01, keyboard_commands"
+			},
+			"firefoxCheck": "pass",
+			"flags": {
+				"--disable-gpu --enable-unsafe-swiftshader": "the same renderer differences against Windows; shaders_lifecycle also differed (11.2%) in its single run, a known flaky fixture",
+				"--use-angle=swiftshader --enable-unsafe-swiftshader": "print_comprehensive and renderer_comprehensive also change"
+			},
+			"webkitTrial": "95 of 95 pass with Chromium's and with Firefox's tolerances; valid stop residual max 2.87e-7",
+			"sizeReport": "identical to Linux"
+		}
+	}
+}

@@ -1,0 +1,23 @@
+{
+	"step": "E4 (local, before E2)",
+	"date": "2026-09-25",
+	"revision": "48bb54f",
+	"environment": "Ubuntu 24.04.1 under WSL 2, Node 22.23.3, Playwright 1.56.0, Chromium 141.0.7390.37",
+	"method": "The full visual suite ran without CI set, once with the default launch and once per flag set, through a configuration override that sets use.launchOptions.args (.github/ci-exploration/swiftshader.config.js on the ci-exploration branch). The captures of each run were compared byte for byte with the default run. Two more default runs measured run-to-run variation.",
+	"defaultReruns": {
+		"identical": 33,
+		"different": [ "inpress_01", "keyboard_commands" ],
+		"note": "Both are input fixtures whose captures depend on timing"
+	},
+	"variants": [
+		{ "args": "--enable-unsafe-swiftshader", "failed": 0, "identical": 33, "different": [ "inpress_01", "keyboard_commands" ] },
+		{ "args": "--disable-gpu", "failed": 0, "identical": 33, "different": [ "inpress_01", "keyboard_commands" ] },
+		{ "args": "--disable-gpu --enable-unsafe-swiftshader", "failed": 0, "identical": 33, "different": [ "inpress_01", "keyboard_commands" ] },
+		{ "args": "--use-angle=swiftshader", "failed": 1, "identical": 31, "different": [ "inpress_01", "keyboard_commands", "print_comprehensive", "renderer_comprehensive" ] },
+		{ "args": "--use-angle=swiftshader --enable-unsafe-swiftshader", "failed": 1, "identical": 31, "different": [ "inpress_01", "keyboard_commands", "print_comprehensive", "renderer_comprehensive" ], "repeats": 3, "note": "renderer_comprehensive fails in every run (0.12% of pixels over tolerance); print_comprehensive passes (0.046%)" },
+		{ "args": "--use-angle=swiftshader-webgl", "failed": 1, "identical": 32, "different": [ "inpress_01", "intouch_01", "keyboard_commands" ] },
+		{ "args": "--use-gl=angle --use-angle=swiftshader-webgl", "failed": 0, "identical": 32, "different": [ "inpress_01", "intouch_01", "keyboard_commands" ] },
+		{ "args": "--use-angle=swiftshader --disable-gpu-compositing", "failed": 1, "identical": 33, "different": [ "inpress_01", "shaders_lifecycle" ] }
+	],
+	"conclusion": "The WebGL renderer string is SwiftShader in every case, but --use-angle=swiftshader also changes how CSS-scaled canvases are composited, which changes print_comprehensive and renderer_comprehensive. --enable-unsafe-swiftshader and --disable-gpu reproduce the default renders. Failures in the swiftshader-webgl and disable-gpu-compositing runs are the timing-sensitive fixtures, not the flags."
+}

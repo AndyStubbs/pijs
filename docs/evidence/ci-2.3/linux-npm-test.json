@@ -1,0 +1,63 @@
+{
+	"command": "npm test, then npm run test:types, npm run test:visual, CI=1 npm run test:visual, and npm run test:firefox",
+	"revision": "48bb54f",
+	"date": "2026-09-25",
+	"environment": {
+		"os": "Ubuntu 24.04.1 LTS under WSL 2 (kernel 6.18.33.2-microsoft-standard-WSL2)",
+		"cpus": 16,
+		"node": "v22.23.3",
+		"playwright": "1.56.0",
+		"chromium": "141.0.7390.37",
+		"firefox": "142.0.1",
+		"webkit": "26.0",
+		"checkout": "Fresh git clone in the Linux file system (~/pijs-ci); no CRLF files",
+		"systemLibraries": "sudo npx playwright install-deps",
+		"audio": "WSLg PulseAudio server (PULSE_SERVER=unix:/mnt/wslg/PulseServer), which hosted runners do not have"
+	},
+	"npmTest": {
+		"exitCode": 1,
+		"stoppedAt": "Browser regressions",
+		"wallSeconds": 101,
+		"node": { "tests": 400, "pass": 400, "fail": 0, "skipped": 0, "durationMs": 5361 },
+		"browser": { "tests": 612, "pass": 505, "fail": 40, "skipped": 67, "durationMs": 89606 }
+	},
+	"browserFailures": {
+		"engine": "webkit (all 40; Chromium and Firefox pass, including the realtime audio suites)",
+		"cause": "test/unit/audio-tolerances.js has no recorded WebKit value for the metric, and the lookup throws by design",
+		"suites": [
+			"sound buses and limiter", "sound effects", "sound play", "audio engines",
+			"audio render harness", "sound samples", "sound design", "sound voices"
+		],
+		"metrics": {
+			"stopResidualMax": 14,
+			"samplePosition": 10,
+			"onsetResidualMax": 7,
+			"limiterKneeShare": 4,
+			"noiseSlope": 2,
+			"mixDeterminism": 1,
+			"envelopeTiming": 1,
+			"abruptSeparation": 1
+		}
+	},
+	"types": { "exitCode": 0, "tests": 2, "pass": 2, "wallSeconds": 6 },
+	"visual": {
+		"default": {
+			"exitCode": 1,
+			"wallSeconds": 17,
+			"full": { "total": 35, "passed": 35, "seconds": 10.4 },
+			"lite": { "total": 20, "passed": 20, "seconds": 2.6 },
+			"plugins": { "total": 8, "passed": 7, "failed": 1, "seconds": 1.6 },
+			"failure": "pointer_lifecycle_01: 8.08% of pixels over tolerance (DOM text in the system monospace font)"
+		},
+		"ciSet": {
+			"exitCode": 1,
+			"wallSeconds": 49,
+			"workers": 1,
+			"full": { "total": 35, "passed": 35, "seconds": 30.8 },
+			"lite": { "total": 20, "passed": 20, "seconds": 8.6 },
+			"plugins": { "total": 8, "passed": 7, "failed": 1, "retries": 2, "seconds": 6.8 }
+		},
+		"crossPlatform": "61 of 63 captures are byte-identical to the Windows captures of the same revision. The two that differ are pointer_lifecycle_01 (system font) and keyboard_commands (varies between runs on Windows as well)"
+	},
+	"firefox": { "exitCode": 0, "wallSeconds": 4, "checks": "full and lite rendering, context recovery, and sizing-input all passed" }
+}

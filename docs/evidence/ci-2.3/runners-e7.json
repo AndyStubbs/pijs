@@ -1,0 +1,39 @@
+{
+	"step": "E7",
+	"run": "https://github.com/AndyStubbs/pijs/actions/runs/36214772060",
+	"date": "2026-09-26",
+	"source": "Branch ci-exploration at b9b5878 (.github/ci-exploration/e7.sh and firefox-webgl.mjs); raw output on the temporary ci-exploration-results-e7 branch",
+	"method": "Firefox 142.0.1 (Playwright 1.56.0) was launched once per preference set and probed for WebGL2 and WebGL1, recording the context-creation failure message. On Linux the probe ran again after installing Mesa's EGL and GLES packages, headless and then headed under xvfb-run. The first working set then ran npm run test:firefox through an exploration-only patch of the launch options in firefox-smoke.js.",
+	"variants": [
+		"default",
+		"webgl.force-enabled",
+		"webgl.force-enabled + webgl.disable-fail-if-major-performance-caveat",
+		"webgl.force-enabled + gfx.webrender.software",
+		"webgl.force-enabled + webgl.out-of-process=false",
+		"webgl.force-enabled + webgl.angle.force-warp",
+		"webgl.force-enabled + LIBGL_ALWAYS_SOFTWARE=1",
+		"all of the above except webgl.out-of-process"
+	],
+	"windows-2025": {
+		"default": "WebGL2 refused: 'AllowWebgl2:false restricts context creation on this system'; WebGL1 available",
+		"forceEnabled": "WebGL2 on ANGLE (Microsoft Basic Render Driver, Direct3D 11), i.e. WARP; same with every other variant",
+		"inProcessWebgl": "the page crashes (also on the maintainer's machine)",
+		"firefoxCheck": "pass, 6 of 6, with { \"webgl.force-enabled\": true }"
+	},
+	"ubuntu-24.04": {
+		"headless": "every variant fails, before and after adding libegl1, libegl-mesa0, and libgles2: 'tryNativeGL', 'Exhausted GL driver options (FEATURE_FAILURE_WEBGL_EXHAUSTED_DRIVERS)'; the default also reports AllowWebgl2:false",
+		"headedUnderXvfb": "WebGL2 on llvmpipe with every variant, including the default",
+		"glPackagesBefore": "libgl1-mesa-dri and libglx-mesa0 were already installed by playwright install --with-deps",
+		"glPackagesAdded": [ "libegl1", "libegl-mesa0", "libgles2" ],
+		"isolation": "The headed probe ran after the EGL packages were added, so whether headed Firefox needs them was not isolated",
+		"firefoxCheck": "pass, 6 of 6, headed under xvfb-run with default preferences"
+	},
+	"macos-15": {
+		"all": "WebGL2 on 'Apple M1, or similar' with every variant, including in-process WebGL",
+		"firefoxCheck": "pass, 6 of 6, with default preferences"
+	},
+	"maintainerWindows": {
+		"note": "Local test of the probe before the run",
+		"all": "WebGL2 on the NVIDIA GPU; with webgl.angle.force-warp, on WARP; in-process WebGL crashes the page"
+	}
+}

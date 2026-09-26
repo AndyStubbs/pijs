@@ -1,0 +1,39 @@
+{
+	"step": "E6",
+	"date": "2026-09-25",
+	"revision": "48bb54f",
+	"environment": "Ubuntu 24.04.1 under WSL 2, Node 22.23.3, Playwright 1.56.0, WebKit 26.0",
+	"method": "In a scratch clone, test/unit/audio-tolerances.js was given a WebKit value for every metric, copied from another engine (.github/ci-exploration/webkit-trial.mjs on the ci-exploration branch). The 8 WebKit render suites then ran with PI_AUDIO_ENGINES=webkit and PI_AUDIO_CALIBRATE=1. The tolerance file in the repository was not changed.",
+	"suites": [
+		"audio-bus-browser", "audio-effects-browser", "audio-play-browser", "audio-reference-browser",
+		"audio-render-browser", "audio-samples-browser", "audio-sound-design-browser",
+		"audio-voices-browser"
+	],
+	"trials": {
+		"firefoxTolerances": { "tests": 95, "pass": 95, "fail": 0, "skipped": 0 },
+		"chromiumTolerances": { "tests": 95, "pass": 95, "fail": 0, "skipped": 0 }
+	},
+	"mixDeterminism": "Passes at Firefox's value of 0, so WebKit multi-voice mixes are bit-identical across page loads",
+	"calibration": {
+		"note": "Printed by audio-reference-browser.test.js; residuals normalized by the fixture's reference peak",
+		"webkit": {
+			"stopValid": { "max": [ 8.43e-9, 2.90e-7 ], "rms": [ 1.59e-9, 8.90e-8 ] },
+			"stopAbrupt": { "max": [ 0.886, 1 ], "rms": [ 0.243, 0.420 ] },
+			"onsetValid": { "max": [ 5.35e-8, 3.57e-7 ], "rms": [ 8.50e-9, 5.70e-8 ] },
+			"onsetAbrupt": { "max": [ 0.853, 1.040 ], "rms": [ 0.118, 0.223 ] }
+		},
+		"chromium": {
+			"stopValid": { "max": [ 8.95e-9, 2.83e-7 ], "rms": [ 1.66e-9, 8.95e-8 ] },
+			"stopAbrupt": { "max": [ 0.886, 1 ], "rms": [ 0.243, 0.420 ] },
+			"onsetValid": { "max": [ 5.56e-8, 3.38e-7 ], "rms": [ 8.37e-9, 5.77e-8 ] },
+			"onsetAbrupt": { "max": [ 0.853, 1.040 ], "rms": [ 0.118, 0.223 ] }
+		},
+		"firefox": {
+			"stopValid": { "max": [ 8.52e-9, 7.63e-3 ], "rms": [ 1.33e-9, 1.42e-3 ] },
+			"stopAbrupt": { "max": [ 0.881, 1 ], "rms": [ 0.245, 0.416 ] },
+			"onsetValid": { "max": [ 1.57e-8, 3.16e-3 ], "rms": [ 1.96e-9, 1.04e-3 ] },
+			"onsetAbrupt": { "max": [ 0.853, 1.032 ], "rms": [ 0.120, 0.225 ] }
+		}
+	},
+	"conclusion": "Linux WebKit renders match Chromium's precision. Chromium's recorded tolerances fit every WebKit test, with the same separation between valid fades and abrupt clicks."
+}

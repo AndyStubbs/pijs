@@ -1,0 +1,106 @@
+{
+	"probe": "pixels",
+	"date": "2026-09-25T22:24:03.325Z",
+	"environment": {
+		"platform": "Windows_NT 10.0.26200 x64",
+		"cpus": 16,
+		"node": "v22.19.0",
+		"playwright": "1.56.0",
+		"revision": "48bb54f"
+	},
+	"results": {
+		"captures": 70,
+		"compared": 64,
+		"identical": 53,
+		"differing": [
+			{
+				"mode": "full",
+				"capture": "draw_comprehensive.png",
+				"changedPixels": 2,
+				"overTolerancePixels": 2,
+				"overTolerancePercent": 0.0007,
+				"maxChannelSum": 595
+			},
+			{
+				"mode": "full",
+				"capture": "keyboard_commands.png",
+				"changedPixels": 46,
+				"overTolerancePixels": 46,
+				"overTolerancePercent": 0.015,
+				"maxChannelSum": 340
+			},
+			{
+				"mode": "full",
+				"capture": "keyboard_input.png",
+				"changedPixels": 146,
+				"overTolerancePixels": 146,
+				"overTolerancePercent": 0.0475,
+				"maxChannelSum": 170
+			},
+			{
+				"mode": "full",
+				"capture": "paint_02.png",
+				"changedPixels": 17025,
+				"overTolerancePixels": 12,
+				"overTolerancePercent": 0.0183,
+				"maxChannelSum": 403
+			},
+			{
+				"mode": "full",
+				"capture": "paint_03.png",
+				"changedPixels": 13907,
+				"overTolerancePixels": 53,
+				"overTolerancePercent": 0.0809,
+				"maxChannelSum": 268
+			},
+			{
+				"mode": "full",
+				"capture": "parameters_01.png",
+				"changedPixels": 556,
+				"overTolerancePixels": 0,
+				"overTolerancePercent": 0,
+				"maxChannelSum": 3
+			},
+			{
+				"mode": "lite",
+				"capture": "draw_comprehensive.png",
+				"changedPixels": 2,
+				"overTolerancePixels": 2,
+				"overTolerancePercent": 0.0007,
+				"maxChannelSum": 595
+			},
+			{
+				"mode": "lite",
+				"capture": "paint_02.png",
+				"changedPixels": 17025,
+				"overTolerancePixels": 12,
+				"overTolerancePercent": 0.0183,
+				"maxChannelSum": 403
+			},
+			{
+				"mode": "lite",
+				"capture": "paint_03.png",
+				"changedPixels": 13907,
+				"overTolerancePixels": 53,
+				"overTolerancePercent": 0.0809,
+				"maxChannelSum": 268
+			},
+			{
+				"mode": "lite",
+				"capture": "parameters_01.png",
+				"changedPixels": 556,
+				"overTolerancePixels": 0,
+				"overTolerancePercent": 0,
+				"maxChannelSum": 3
+			},
+			{
+				"mode": "plugins",
+				"capture": "onscreen_keyboard_01.png",
+				"changedPixels": 69,
+				"overTolerancePixels": 69,
+				"overTolerancePercent": 0.0616,
+				"maxChannelSum": 510
+			}
+		]
+	}
+}

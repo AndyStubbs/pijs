@@ -3,7 +3,7 @@
 Status: Sound Phases 0–6 complete, expansion Phases 7–8 implemented, Phase 9 in progress, and
 Phase 10 proposed; test audit follow-ups complete; gamepad, keyboard, pointer, and core audits
 reviewed; input conventions review complete (Section 6.1); input roadmaps not started; plugin
-removal (Section 3.1) not started; CI/CD exploration not started
+removal (Section 3.1) not started; CI/CD exploration complete and waiting for review
 Target release: Pi.js 2.3.0
 Workstream documents:
 
@@ -46,7 +46,7 @@ the release phase. Each workstream's design and task list live in its own docume
 | Gamepad | `plugins/gamepad/`: polling loop, state, sensitivity, connection events | `GAMEPAD-V2.3-AUDIT.md`, then `GAMEPAD-V2.3-ROADMAP.md` | Audit reviewed; PAD-001–017 and all proposals accepted; conventions decided (Section 6.1); roadmap not started |
 | Core | `src/`, plugin API, build, metadata, declarations | `CORE-V2.3-AUDIT.md` | Audit reviewed; CORE-001–020 accepted; C4 rejected (documented instead), C7 approved as the only core API change |
 | Tests | `test/` suites, visual fixtures and baselines, harnesses, `scripts/test.js` | `TESTS-V2.3-AUDIT.md` | Audit accepted; follow-ups complete |
-| CI/CD | Cross-platform test runs, CI pipeline, release automation | `CI-V2.3-EXPLORATION.md`, then `CI-V2.3-ROADMAP.md` | Exploration not started |
+| CI/CD | Cross-platform test runs, CI pipeline, release automation | `CI-V2.3-EXPLORATION.md`, then `CI-V2.3-ROADMAP.md` | Exploration complete (Windows, WSL, and hosted Linux, Windows, and macOS runners); waiting for review. Proposes CI-001–CI-013 |
 | Plugin removal | `plugins/onscreen-keyboard/`, `plugins/pi-vision/`, `plugins/print-table/`, `plugins/pens/`, and their metadata, fixtures, and tests | This plan, Section 3.1 | Decided (G7); not started |
 | Release | Documentation, upgrade guide, version checks, snapshot | This plan, Section 11 | Waits for the other workstreams |
 
@@ -568,10 +568,11 @@ If the schedule slips:
 | G1 | Input plugin versions after breaking changes | **Closed 2026-09-25:** each plugin moves to 2.0.0 with its first breaking change, as `sound` did. The I1 renames make that the first task for `keyboard`, `pointer`, and `gamepad` | Closed |
 | G2 | Whether the input conventions apply to `onscreen-keyboard` and `pi-vision` in 2.3 | **Closed 2026-09-25 (I15):** no. Only the core plugins and `sound-advanced` are updated; `onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` are not updated and are removed (G7) | Closed |
 | G3 | Aliases for renamed input commands | **Closed 2026-09-25 (I16):** no aliases. Renamed commands are unregistered and fail at their first call; the upgrade guide lists every rename | Closed |
-| G4 | How visual baselines work across platforms | Decide from the exploration's data. Prefer one baseline set rendered the same way on every platform; keep per-platform sets as the fallback | CI/CD exploration review |
+| G4 | How visual baselines work across platforms | Decide from the exploration's data. Prefer one baseline set rendered the same way on every platform; keep per-platform sets as the fallback. The exploration recommends one set with pinned SwiftShader flags. Pixel comparisons would be required on Linux and Windows, whose captures match, and report-only on macOS, whose SwiftShader backend differs on 2 fixtures (`CI-V2.3-EXPLORATION.md` Q2) | CI/CD exploration review |
 | G5 | Whether CI must be running before 2.3.0 ships | No. Portability fixes ship in 2.3.0; the pipeline follows when ready | CI/CD exploration review |
 | G6 | How much of publishing is automated | Automate release verification on tags (build, checks, `npm pack --dry-run`); keep `npm publish` manual for 2.3.0 | CI/CD exploration review |
 | G7 | What happens to `onscreen-keyboard` and `pi-vision`, which the I1–I3 changes break, and their plugin visual fixtures (`onscreen_keyboard_01–04`, `pi_vision_01`) | **Closed 2026-09-25:** remove them from the repository, together with the other incomplete non-core plugins `print-table` and `pens` and all their fixtures and metadata (Section 3.1). `example-plugin` and `sound-advanced` stay. The fixtures go because their features go, not to make a suite pass (Section 8.3) | Closed |
+| G8 | The Node floor in `engines` (`>=18.0.0` today) | Raise it to `>=22`: Node 18 and 20 are past end of life, and CI tests 22 and 24 (`CI-V2.3-EXPLORATION.md` Section 8) | CI/CD exploration review |
 
 ## 14. Risks
 

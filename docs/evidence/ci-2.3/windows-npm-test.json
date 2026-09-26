@@ -1,0 +1,27 @@
+{
+	"command": "npm test",
+	"revision": "48bb54f",
+	"date": "2026-09-25",
+	"environment": {
+		"os": "Windows 11 Home 10.0.26200",
+		"cpus": 16,
+		"node": "v22.19.0",
+		"npm": "11.19.1",
+		"playwright": "1.56.0",
+		"chromium": "141.0.7390.37",
+		"firefox": "142.0.1",
+		"webkit": "26.0",
+		"ci": false
+	},
+	"exitCode": 0,
+	"wallSeconds": 146,
+	"stages": {
+		"node": { "tests": 400, "pass": 400, "fail": 0, "skipped": 0, "durationMs": 7609 },
+		"browser": { "tests": 612, "pass": 406, "fail": 0, "skipped": 206, "durationMs": 107156 },
+		"types": { "tests": 2, "pass": 2, "fail": 0, "skipped": 0, "durationMs": 6704 },
+		"visualFull": { "total": 35, "passed": 35, "failed": 0, "flaky": 0 },
+		"visualLite": { "total": 20, "passed": 20, "failed": 0, "flaky": 0 },
+		"visualPlugins": { "total": 8, "passed": 8, "failed": 0, "flaky": 0 }
+	},
+	"notes": "Skipped browser tests are engine-capability skips (WebKit without Web Audio, Firefox without offline suspend). Visual runs used Playwright's default worker count; a separate npm run test:visual took 24 s."
+}
