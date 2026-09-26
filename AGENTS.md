@@ -17,7 +17,7 @@ Manual demos and performance checks have dedicated directories under `test/`.
 
 ## Build, Test, and Development Commands
 
-- `npm install` installs the Node 18+ development dependencies.
+- `npm install` installs the Node 22+ development dependencies.
 - `npm run build` uses esbuild to produce full, lite, ESM, IIFE, and plugin bundles.
 - `npm run server` serves the repository at `http://localhost:8080/` for demos and tests.
 - `npm test` runs the complete correctness workflow: test build, Node/browser regressions,

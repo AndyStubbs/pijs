@@ -1,6 +1,6 @@
 # Correctness testing
 
-Install Node 18+, run `npm install`, and install Chromium with `npx playwright install chromium`.
+Install Node 22+, run `npm install`, and install Chromium with `npx playwright install chromium`.
 The audio browser tests also need Firefox and WebKit: `npx playwright install firefox webkit`.
 Run commands from the repository root. The command wrappers work on Windows and POSIX without
 shell-specific environment assignments.

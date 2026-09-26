@@ -8,7 +8,7 @@ Historical integration campaigns are stored outside the repository; see the
 
 ## Fixed-work CLI
 
-Install the repository's Node 18+ dependencies and Playwright Chromium. Run from the repository
+Install the repository's Node 22+ dependencies and Playwright Chromium. Run from the repository
 root, using source directories that contain `package.json` and `src/index-full.js`:
 
 ```powershell
