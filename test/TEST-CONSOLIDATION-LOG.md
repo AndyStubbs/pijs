@@ -377,3 +377,39 @@ audit, and each was checked with a deliberate break in `src/`.
   `npm test` about 135 s
 - **Pass Rate**: 100%, apart from one timing race in `shaders_lifecycle` under repeated
   parallel runs (see the audit, Section 11.2)
+
+## 2.3 Plugin Removal
+
+Date: 2026-09-26. Plan: `docs/plans/UPGRADE-V2.3-PLAN.md`, Section 3.1 (G7).
+
+### Summary
+`onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` were removed from the repository
+with their fixtures. These are feature removals, not coverage reductions: every removed test
+covered a removed plugin, and no remaining feature lost a test.
+
+### Removed Fixtures and Baselines
+- `test/tests/html-plugins/onscreen_keyboard_01.html` to `onscreen_keyboard_04.html` and their
+  PNGs - `onscreen-keyboard`
+- `test/tests/html-plugins/pi_vision_01.html` and its PNG - `pi-vision`
+- `test/tests/html-plugins/table_01.html` and its PNG - `print-table`
+- `test/tests/html-manual/pi_vision_window_01.html` - `pi-vision` manual page
+
+### Rewritten Tests
+Two tests used removed plugins as fixtures without testing them. Each was rewritten, and each
+still fails under the breaks the original caught:
+1. `plugin-installation-browser.test.js`, "lite plugins initialize when their real
+   dependencies arrive later": loads `sound-advanced` before `sound` in place of
+   `onscreen-keyboard` and `pi-vision` before `keyboard` and `pointer`. It now also checks that
+   `sound-advanced` waits uninitialized until `sound` arrives. The old and new versions both
+   fail when the dependency resolver makes a single pass, and when a dependency must be
+   registered before its dependent.
+2. `size.test.js`, "createSizeReport measures bundles, plugins, and differentials": measures
+   `example-plugin` in place of `pens`. The old and new versions both fail when the report
+   ignores the requested plugin list. Neither catches a plugin measured as empty, since an
+   empty input still gzips to about 20 bytes.
+
+### Test Results
+- **Before**: 400 Node, 612 browser (206 skipped), 63 visual captures (plugins 8), 43 baselines
+- **After**: 400 Node, 612 browser (206 skipped), 57 visual captures (plugins 2), 37 baselines;
+  `npm test` about 155 s
+- **Pass Rate**: 100%

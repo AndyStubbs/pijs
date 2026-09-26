@@ -3,8 +3,8 @@
 Status: Sound Phases 0–6 complete, expansion Phases 7–8 implemented, Phase 9 in progress, and
 Phase 10 proposed; test audit follow-ups complete; gamepad, keyboard, pointer, and core audits
 reviewed; input conventions review complete (Section 6.1); input roadmaps not started; plugin
-removal (Section 3.1) not started; CI/CD exploration reviewed;
-CI roadmap drafted, not started
+removal (Section 3.1) complete; CI/CD exploration reviewed; CI roadmap Phase 1 in progress
+(tasks 1.1–1.3 done)
 Target release: Pi.js 2.3.0
 Workstream documents:
 
@@ -48,7 +48,7 @@ the release phase. Each workstream's design and task list live in its own docume
 | Core | `src/`, plugin API, build, metadata, declarations | `CORE-V2.3-AUDIT.md` | Audit reviewed; CORE-001–020 accepted; C4 rejected (documented instead), C7 approved as the only core API change |
 | Tests | `test/` suites, visual fixtures and baselines, harnesses, `scripts/test.js` | `TESTS-V2.3-AUDIT.md` | Audit accepted; follow-ups complete |
 | CI/CD | Cross-platform test runs, CI pipeline, release automation | `CI-V2.3-EXPLORATION.md`, then `CI-V2.3-ROADMAP.md` | Exploration reviewed; all recommendations accepted (G4–G6 and G8 closed). Roadmap drafted: Phases 1–2 for 2.3.0, and Phase 3 (the pipeline) when ready |
-| Plugin removal | `plugins/onscreen-keyboard/`, `plugins/pi-vision/`, `plugins/print-table/`, `plugins/pens/`, and their metadata, fixtures, and tests | This plan, Section 3.1 | Decided (G7); not started |
+| Plugin removal | `plugins/onscreen-keyboard/`, `plugins/pi-vision/`, `plugins/print-table/`, `plugins/pens/`, and their metadata, fixtures, and tests | This plan, Section 3.1 | Complete 2026-09-26 (P.1–P.6) |
 | Release | Documentation, upgrade guide, version checks, snapshot | This plan, Section 11 | Waits for the other workstreams |
 
 All workstream documents live in `docs/plans/`. Measurements and other evidence go in
