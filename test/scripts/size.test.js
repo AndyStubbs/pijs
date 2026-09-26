@@ -35,14 +35,14 @@ test( "computeDifferentialCost follows each measurement direction", () => {
 
 test( "createSizeReport measures bundles, plugins, and differentials", async () => {
 	const report = await g_size.createSizeReport( {
-		"plugins": [ "pens" ],
+		"plugins": [ "example-plugin" ],
 		"differentials": [ {
-			"name": "pens merged into lite",
+			"name": "example-plugin merged into lite",
 			"kind": "promotion",
 			"base": "bundle:pi.lite.min.js",
 			"variant": {
-				"label": "lite + pens",
-				"contents": 'import "./src/index.js";\nimport "./plugins/pens/index.js";\n'
+				"label": "lite + example-plugin",
+				"contents": 'import "./src/index.js";\nimport "./plugins/example-plugin/index.js";\n'
 			}
 		} ]
 	} );
@@ -55,8 +55,8 @@ test( "createSizeReport measures bundles, plugins, and differentials", async () 
 		assert.ok( report.bundles[ name ].gzip > 0 );
 	}
 	assert.ok( report.bundles[ "pi.min.js" ].bytes > report.bundles[ "pi.lite.min.js" ].bytes );
-	assert.deepEqual( Object.keys( report.plugins ), [ "pens" ] );
-	assert.ok( report.plugins.pens.gzip > 0 );
+	assert.deepEqual( Object.keys( report.plugins ), [ "example-plugin" ] );
+	assert.ok( report.plugins[ "example-plugin" ].gzip > 0 );
 	assert.equal( report.differentials.length, 1 );
 
 	const differential = report.differentials[ 0 ];

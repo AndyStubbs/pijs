@@ -183,9 +183,14 @@ test( "lite plugins initialize when their real dependencies arrive later", async
 		await page.setContent( "<html><body></body></html>" );
 		await page.addScriptTag( { "url": "/build/pi.lite.js" } );
 		await page.evaluate( () => $.ready() );
-		for( const name of [ "onscreen-keyboard", "pi-vision", "print-table", "keyboard", "pointer" ] ) {
-			await page.addScriptTag( { "url": "/build/plugins/" + name + "/" + name + ".js" } );
-		}
-		assert.equal( await page.evaluate( () => $.getPlugins().every( p => p.initialized ) ), true );
+		const pluginStates = () => page.evaluate(
+			() => $.getPlugins().map( plugin => [ plugin.name, plugin.initialized ] )
+		);
+
+		// sound-advanced depends on sound, which Lite does not bundle: it waits until sound loads
+		await page.addScriptTag( { "url": "/build/plugins/sound-advanced/sound-advanced.js" } );
+		assert.deepEqual( await pluginStates(), [ [ "sound-advanced", false ] ] );
+		await page.addScriptTag( { "url": "/build/plugins/sound/sound.js" } );
+		assert.deepEqual( await pluginStates(), [ [ "sound-advanced", true ], [ "sound", true ] ] );
 	} finally { await page.close(); }
 } );

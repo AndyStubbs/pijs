@@ -94,7 +94,16 @@ to keep them building or passing. Exit criteria: `npm test` is green, including 
 visual suite with the six fixtures removed, and a clean `npm run build` produces no output for
 the removed plugins.
 
-**Compatibility summary:** written by P.6.
+**Compatibility summary** (the input to `UPGRADE-V2.3.md`, R.4). None of the four plugins was
+part of the release package, so projects that use the package's builds are not affected. The
+source of each remains available at the `v2.2.0` tag.
+
+| Removed plugin | What it provided | For projects that used it |
+| --- | --- | --- |
+| `onscreen-keyboard` | `showKeyboard()` and `hideKeyboard()`: a virtual keyboard for touch devices, drawn with `print-table`, that fed keystrokes to `input()` and the keyboard handlers | No replacement in 2.3. Build it from the `v2.2.0` source; it needs the pre-2.3 `keyboard` and `pointer` APIs (Section 6.1) |
+| `pi-vision` | Retro character-cell windows and controls under `$.vis` | No replacement in 2.3. Build it from the `v2.2.0` source; it needs the pre-2.3 `pointer` API |
+| `print-table` | `printTable( items, tableFormat, borderStyle, isCentered )`: ASCII tables with borders | No replacement in 2.3. Build it from the `v2.2.0` source |
+| `pens` | Nothing: an incomplete, deprecated stub that registered no commands | None needed |
 
 ## 4. Sequencing
 
