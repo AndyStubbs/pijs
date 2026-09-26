@@ -315,8 +315,8 @@ Detailed in Section 6:
 
 - **Pull requests:** Linux and Windows, required once CI-003, CI-004, CI-005, CI-007, CI-011,
   and CI-013 land. Until then they run as non-required checks.
-- **`main`:** adds macOS. Its assertion tests are required, and its pixel results are
-  report-only (G4).
+- **`main`:** adds macOS. Its pixel results are report-only (G4). It is not a required check,
+  since it does not run on pull requests (roadmap task 3.8).
 - **Linux setup:** `npx playwright install --with-deps` (63 s) or the Playwright container
   image. **Windows and macOS setup:** a Playwright browser cache keyed on the Playwright
   version.
