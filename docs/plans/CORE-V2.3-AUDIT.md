@@ -801,7 +801,7 @@ Phase 1 and CORE-001 are not cut.
 | 6 | Option and value handling | CORE-007, CORE-009, CORE-011, CORE-012, CORE-013 | Accepted |
 | 7 | Canvas texture uploads, `setChar`, and cache bounds | CORE-010, CORE-018 | Accepted |
 | 8 | Strict `set()` | CORE-008 | Accepted; `CORE-V2.3-ROADMAP.md` |
-| 9 | Packaging details | CORE-019 | Accepted |
+| 9 | Packaging details | CORE-019 | Accepted. The `releases/PUBLISH.md` rename is done (CI roadmap task 2.1, 2026-09-26); `"private": true` and the changelog in the tarball remain |
 | 10 | Tests | CORE-020 | With each task |
 
 ## 8. Handoffs
