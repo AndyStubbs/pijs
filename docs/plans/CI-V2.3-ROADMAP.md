@@ -1,7 +1,7 @@
 # Pi.js 2.3 CI/CD Roadmap
 
-Status: Phase 1 complete (milestone C1, 2026-09-26); Phase 2 in progress (tasks 2.1 and 2.3
-done). Next: 2.4, 2.5, 2.8, then 3.1–3.3 and 3.9 (see Task order)
+Status: Phase 1 complete (milestone C1, 2026-09-26); Phase 2 in progress (tasks 2.1, 2.3, and
+2.4 done). Next: 2.5, 2.8, then 3.1–3.3 and 3.9 (see Task order)
 Exploration: [CI-V2.3-EXPLORATION.md](CI-V2.3-EXPLORATION.md) (the `CI-0xx` items, questions,
 and sections below refer to it)
 Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md) (Section 9, decisions G4–G6 and G8)
@@ -176,7 +176,7 @@ before `ci.yml`, and 2.2, 2.6, and 2.7 after it, through pull requests.
 | 2.1 | **Case-only renames.** Rename `releases/publish.md` to `PUBLISH.md` and `docs/gamepad.md` to `GAMEPAD.md` in git, in two steps on Windows (to a temporary name, then to the final name). Check that the `paths` probe reports no mismatches | CI-001, core C11 |
 | 2.2 | **Portable release snapshot.** Add a Node script with an npm command, such as `npm run snapshot`, that copies `releases/pi-latest/dist` to `releases/pi-<version>` and refuses to overwrite an existing snapshot. Add its test to `test/scripts/`. Replace the `xcopy` step in the publish guide | CI-002 |
 | 2.3 | **Realtime audio switch.** When `PI_AUDIO_REALTIME=0`, `audio-stream-browser.test.js` and `audio-recording-realtime-browser.test.js` skip with a stated reason. Local runs keep them by default. Document the variable in `test/README.md` | CI-005, Section 2.4 |
-| 2.4 | **WebKit audio tolerances.** Add WebKit values to `test/unit/audio-tolerances.js`: Chromium's values and `mixDeterminism` 0. Record the WebKit calibration ranges from `linux-webkit-audio.json` and the macOS runner in the comments. Update the engine table in `test/README.md` to cover WebKit on Linux and macOS | CI-011, Section 2.4 |
+| 2.4 | **WebKit audio tolerances.** Add WebKit values to `test/unit/audio-tolerances.js`: Chromium's values, including `mixDeterminism` (repeated renders differ as Chromium's do; `webkit-mix-determinism.json`). Record the WebKit calibration ranges from `linux-webkit-audio.json` and the macOS runner in the comments. Update the engine table in `test/README.md` to cover WebKit on Linux and macOS | CI-011, Section 2.4 |
 | 2.5 | **Visual report race.** In `visual-report-browser.test.js`, "comparison and approval requests use the selected mode" waits for the diff modal to close before clicking the section header | CI-013 |
 | 2.6 | **Firefox WebGL on GPU-less machines.** Launch Firefox in `firefox-smoke.js` with `firefoxUserPrefs: { "webgl.force-enabled": true }`. Add a headed option (such as `PI_FIREFOX_HEADED=true`) for running under `xvfb-run` on Linux. Document both in `test/README.md` | CI-012, E7 |
 | 2.7 | **Node 22.** Set `engines` to `>=22` in `package.json`. Update the Node version in `AGENTS.md`, `test/README.md`, and `test/performance/README.md` | G8 |
@@ -239,7 +239,8 @@ Exit criteria:
   between runs within tolerance on Linux and Windows. `inpress_01` exceeded it once on macOS
   (0.12%). Their owners are listed under Coordination.
 - **WebKit audio:** all 95 WebKit render tests pass with Chromium's tolerances on Linux and
-  macOS. WebKit mixes are bit-identical between page loads.
+  macOS. Like Chromium's, WebKit multi-voice mixes can differ in the last bits between page
+  loads (task 2.4).
 - **Realtime audio:** no hosted-runner arrangement passes both engines. With no device, Firefox
   fails. With a PulseAudio null sink, Chromium's clock stalls. On macOS's virtual device, two
   Firefox position checks miss the 120 ms limit.

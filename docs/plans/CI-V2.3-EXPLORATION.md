@@ -168,8 +168,9 @@ suites. The tolerance file in the repository was not changed.
 | macOS runner | 95 of 95 | 95 of 95 | 2.87e-7 |
 
 For comparison, the maximum valid stop residual is 2.8e-7 for Chromium and 7.6e-3 for Firefox.
-The abrupt fixtures keep the same separation. WebKit multi-voice mixes are bit-identical across
-page loads: they pass Firefox's `mixDeterminism` of 0.
+The abrupt fixtures keep the same separation. WebKit multi-voice mixes passed Firefox's
+`mixDeterminism` of 0 in these trials, but repeated runs in task 2.4 differ by 4.9e-7 in about
+a third of page loads, as Chromium's do (`webkit-mix-determinism.json`).
 
 **Realtime audio (E3).** `audio-stream-browser` and `audio-recording-realtime-browser` play
 through a real `AudioContext`:
@@ -388,7 +389,7 @@ three platforms, or what the release needs (plan Section 9.4).
 | CI-008 | Timing-sensitive visual fixtures: `inpress_01`, `intouch_01`, `keyboard_commands`, and `shaders_lifecycle` | Owned elsewhere | Pointer and keyboard roadmaps, and the test audit handoff. Nightly repeats track them |
 | CI-009 | Re-record all baselines once, after CI-003, in one reviewed task | Yes | Clears the same drift seen on every platform (Section 2.3) |
 | CI-010 | The workflows in Section 6 | No (G5) | Ships when ready |
-| CI-011 | Add WebKit values to `test/unit/audio-tolerances.js`: Chromium's values, `mixDeterminism` 0, and the WebKit calibration ranges in the comments | Yes | 95 of 95 pass on Linux and macOS (Section 2.4). With the sound workstream |
+| CI-011 | Add WebKit values to `test/unit/audio-tolerances.js`: Chromium's values, including `mixDeterminism`, and the WebKit calibration ranges in the comments | Yes | 95 of 95 pass on Linux and macOS (Section 2.4). With the sound workstream |
 | CI-012 | Firefox WebGL on runners: launch Firefox in `firefox-smoke.js` with `firefoxUserPrefs: { "webgl.force-enabled": true }`. On Linux CI, install `libegl1`, `libegl-mesa0`, and `libgles2`, and run the check headed under `xvfb-run` through a launch option (such as `PI_FIREFOX_HEADED=true`) | No (CI only) | E7: the check passes 6 of 6 on all three runners. The preference does not change rendering on GPU machines (probed locally). Headed Firefox was tested only after the EGL packages were added; E7 did not isolate whether they are needed, and they take 2 s to install |
 | CI-013 | Fix the race in `visual-report-browser.test.js` ("comparison and approval requests use the selected mode"): wait for the diff modal to close before clicking the section header | Yes | Failed on the Windows runner. The modal intercepted the click |
 

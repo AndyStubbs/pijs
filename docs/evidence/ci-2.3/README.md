@@ -28,6 +28,7 @@ is deleted after review, so `runners.json` is the record.
 | `linux-renderer-flags.json` | Step E4 run locally: the full visual suite under eight Chromium flag sets, compared byte for byte with the default launch |
 | `runners.json` | Step E2 on `ubuntu-24.04`, `windows-2025`, and `macos-15`: stage times and results, renderers, audio devices, failures by cause, pixel and capture comparisons, flag variants, the WebKit trials, realtime audio with a PulseAudio null sink, and size reports |
 | `runners-e7.json` | Step E7: Firefox WebGL on the three runners under eight preference sets, with Mesa's EGL packages and Xvfb on Linux, and the Firefox check with the working set |
+| `webkit-mix-determinism.json` | CI roadmap task 2.4: repeated WebKit multi-voice mix renders, which differ between page loads as Chromium's do, so WebKit's `mixDeterminism` is Chromium's value |
 | `baseline-rerecord.json` | CI roadmap task 1.4: each baseline that changed when every baseline was re-recorded, with its pixel differences and cause, and the lite, run-to-run, and Linux checks |
 | `paths.json` | Tracked files whose name case differs from the working tree, and file references whose case differs from the tracked name. It does not depend on the platform |
 

@@ -104,11 +104,13 @@ reason in the test output:
 | --- | --- | --- | --- |
 | Chromium 141 | Yes | Yes | All renders, including clock-driven tests |
 | Firefox 142 | Yes | No | Single-pass renders; clock-driven tests skip |
+| WebKit 26 (Playwright, Linux and macOS) | Yes | Yes | All renders, including clock-driven tests |
 | WebKit 26 (Playwright, Windows) | No | No | Stream-mode (media element) lifecycle tests only |
 
-Playwright's Windows WebKit build has no `AudioContext` or `OfflineAudioContext`. Render
-coverage for WebKit needs a platform whose WebKit build includes Web Audio, and Safari needs
-manual listening. Firefox also lacks `AudioParam.cancelAndHoldAtTime()`.
+Playwright's Windows WebKit build has no `AudioContext` or `OfflineAudioContext`, so WebKit
+render coverage comes from Linux (WSL or CI) and macOS. WebKit uses Chromium's tolerances,
+including `mixDeterminism`: like Chromium, it mixes a node's inputs in an address-dependent
+order. Safari still needs manual listening. Firefox also lacks `AudioParam.cancelAndHoldAtTime()`.
 
 The harness also records AudioParam automation calls and source lifetimes through prototype
 wrappers (`probes()`, `sources()`, `liveSources()`), withholds timers to simulate a stalled main

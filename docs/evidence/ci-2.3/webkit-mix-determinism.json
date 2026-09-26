@@ -1,0 +1,12 @@
+{
+	"task": "CI roadmap 2.4",
+	"date": "2026-09-26",
+	"revisions": [ "48bb54f", "09c4186" ],
+	"environment": "Ubuntu 24.04.1 under WSL 2, Node 22.23.3, Playwright 1.56.0, WebKit 26.0",
+	"method": "A scratch clone with WebKit tolerances and mixDeterminism 0. The test 'seeded multi-voice mixes match within the engine mix tolerance' (audio-render-browser.test.js) ran with PI_AUDIO_ENGINES=webkit, 20 times at 09c4186 and 6 times at 48bb54f.",
+	"results": {
+		"09c4186": { "runs": 20, "identical": 14, "different": 6, "maxDifference": 4.880130290985107e-7 },
+		"48bb54f": { "runs": 6, "identical": 5, "different": 1, "maxDifference": 4.880130290985107e-7 }
+	},
+	"conclusion": "WebKit multi-voice mixes are not bit-identical between page loads. Every difference is the same 4.88e-7, the size Chromium shows (4.8e-7) from its address-dependent input order. The E6 trial's pass at 0 (linux-webkit-audio.json) was one lucky run. No library source changed between the two revisions. WebKit uses Chromium's mixDeterminism, 2e-6."
+}
