@@ -25,6 +25,7 @@
 		"test:types": "node scripts/test.js types",
 		"server": "node server.js",
 		"size": "node scripts/size.js",
+		"size:diff": "node scripts/size-diff.js",
 		"sound:references": "node test/scripts/record-sound-references.js",
 		"test:all": "node scripts/test.js all",
 		"test:unit": "node scripts/test.js unit",
