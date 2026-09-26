@@ -1,8 +1,8 @@
 # Pi.js 2.3 CI/CD Roadmap
 
 Status: Phases 1 and 2 complete (milestones C1 and C2, 2026-09-26); Phase 3 in progress (tasks
-3.1–3.4 and 3.9 done; `ci.yml` first green on `main` in run 36266162164, 2026-09-26). Next:
-3.5–3.8 through pull requests (see Task order)
+3.1–3.5 and 3.9 done; `ci.yml` first green on `main` in run 36266162164, 2026-09-26). Next:
+3.6–3.8 through pull requests (see Task order)
 Exploration: [CI-V2.3-EXPLORATION.md](CI-V2.3-EXPLORATION.md) (the `CI-0xx` items, questions,
 and sections below refer to it)
 Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md) (Section 9, decisions G4–G6 and G8)
@@ -215,7 +215,7 @@ Tasks 3.4–3.8 follow it.
 | 3.2 | **Size diff.** Add a script that compares two `build/size-report.json` files and writes a Markdown table of the byte and gzip changes per bundle and plugin. Add its test to `test/scripts/` | Q6 |
 | 3.3 | **Pull-request workflow (`ci.yml`).**<br>• Triggers: pull requests, and pushes to `main`.<br>• `test` job: `npm ci`, the browsers (`--with-deps` on Linux; a cache keyed on the Playwright version on Windows and macOS), and `npm test` with `PI_AUDIO_REALTIME=0`. It runs on `ubuntu-24.04` and `windows-2025`, and on `main` also on `macos-15` with `PI_VISUAL_PIXELS=report`.<br>• `size` job (Linux): builds the base branch and the change, and writes the size diff to the job summary.<br>• Permissions: `contents: read`, and `pull_request`, never `pull_request_target`.<br>• Concurrency cancels superseded runs.<br>• Artifacts: test results, reports, and captures on failure, kept 14 days | CI-010, Q6 |
 | 3.4 | **Firefox check in `ci.yml`.** The `test` job runs `npm run test:firefox` after `npm test`, also when `npm test` fails; on Linux, headed under `xvfb-run` with Mesa's EGL packages (task 2.6). There is no nightly workflow: development comes in bursts, so pull requests and pushes to `main` cover what a schedule would (decided 2026-09-26). Node 24, repeated visual runs, and a macOS realtime-audio job are not scheduled; the realtime suites run in local `npm test` | CI-010, CI-012, Q6, Q7 |
-| 3.5 | **Dependabot** for GitHub Actions versions (`.github/dependabot.yml`), weekly | Section 6 |
+| 3.5 | **Dependabot** for GitHub Actions versions (`.github/dependabot.yml`), weekly. It opens a pull request only when an action has a new version, with all such updates grouped into one | Section 6 |
 | 3.6 | **Release workflow (`release.yml`).**<br>• Triggers: a `v*` tag, and manual runs.<br>• Runs the `ci.yml` test matrix.<br>• A Linux `package` job then:<br>&nbsp;&nbsp;• builds and runs `npm run copy-to-release`;<br>&nbsp;&nbsp;• checks that the tag, `package.json`, `releases/pi-latest/package.json`, and the plugin banners agree (R.6);<br>&nbsp;&nbsp;• runs `npm pack --dry-run` and `npm pack` in `releases/pi-latest`;<br>&nbsp;&nbsp;• attaches the tarball to a draft GitHub release.<br>• `npm publish` stays manual and publishes that tarball | G6, Q8 |
 | 3.7 | **Documentation.** Add a CI section to `test/README.md`: the workflows, what each runs, and how to reproduce a CI failure locally. In the publish guide, add the release workflow and the rule that the published tarball is the one the release workflow verified | Q7, Q8 |
 | 3.8 | **Required checks.** The maintainer configures branch protection on `main`. The Linux and Windows `test` jobs and the `size` job become required after one week green. The macOS `test` job becomes required after two weeks green | Q6 |
