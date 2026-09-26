@@ -58,6 +58,9 @@ for( const mode of [ "full", "lite", "plugins" ] ) {
 			const approve = page.waitForRequest( "**/api/approve-new-test" );
 			await page.locator( "#approveTestBtn" ).click();
 			g_assert.equal( ( await approve ).postDataJSON().mode, mode );
+
+			// Let the rejected request's alert be accepted before the page closes
+			await page.locator( "#approveTestBtn:enabled" ).waitFor();
 			g_assert.deepEqual( errors, [] );
 			g_assert.equal( await page.getByText( "Playwright Report" ).getAttribute( "href" ),
 				`/test/playwright-report/${mode}/` );
