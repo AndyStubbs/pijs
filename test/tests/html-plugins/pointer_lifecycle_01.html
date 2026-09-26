@@ -13,14 +13,27 @@
 	<script src="../../../build/pi.lite.js"></script>
 	<script src="../../../build/plugins/pointer/pointer.js"></script>
 	<style>
-		body { margin: 20px; background: #18202b; color: #79d0be; font: 16px monospace; }
+		body { margin: 20px; background: #18202b; }
 		#host { position: absolute; left: -100px; width: 8px; height: 8px; }
+		#results { display: flex; gap: 8px; }
+		#results div { width: 24px; height: 24px; background: #3a4656; }
+		#results div.pass { background: #79d0be; }
 	</style>
 </head>
 <body>
 	<div id="host"></div>
-	<pre id="results">Checking pointer lifecycle...</pre>
+
+	<!-- One square per check, in order; each turns green when its check passes. Squares rather
+	than text keep system fonts, which differ across platforms, out of the capture. -->
+	<div id="results">
+		<div title="Immediate listener removal"></div>
+		<div title="Immediate event clearing"></div>
+		<div title="Offscreen target diagnostic"></div>
+		<div title="Screen disposal"></div>
+	</div>
 	<script>
+		const results = document.querySelectorAll( "#results div" );
+		const pass = index => { results[ index ].className = "pass"; };
 		window.patchResult = $.ready().then( async () => {
 			const screen = $.screen( { "aspect": "8x8", "container": "host", "noCss": true } );
 			let count = 0;
@@ -29,22 +42,25 @@
 			screen.offmouse( "move", listener );
 			screen.canvas().dispatchEvent( new MouseEvent( "mousemove" ) );
 			if( count !== 0 ) { throw new Error( "immediate removal" ); }
+			pass( 0 );
 			screen.onmouse( "move", listener );
 			screen.clearEvents();
 			screen.canvas().dispatchEvent( new MouseEvent( "mousemove" ) );
 			if( count !== 0 ) { throw new Error( "immediate clear" ); }
+			pass( 1 );
 			const offscreen = $.screen( { "aspect": "8x8", "isOffscreen": true, "parent": screen } );
 			let rejected = false;
 			try { $.onpress( "down", listener ); } catch( error ) {
 				rejected = error.code === "OFFSCREEN_INPUT_UNSUPPORTED";
 			}
 			if( !rejected ) { throw new Error( "offscreen diagnostic" ); }
+			pass( 2 );
 			screen.onmouse( "move", listener );
 			offscreen.removeScreen(); screen.removeScreen();
 			await new Promise( resolve => setTimeout( resolve, 20 ) );
-			document.getElementById( "results" ).textContent =
-				"PASS  Immediate listener removal\nPASS  Immediate event clearing\n" +
-				"PASS  Offscreen target diagnostic\nPASS  Screen disposal";
+			if( count === 0 ) {
+				pass( 3 );
+			}
 			return count === 0;
 		} );
 	</script>
