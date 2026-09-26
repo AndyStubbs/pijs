@@ -60,7 +60,7 @@ Phase 0  Foundations ──► Phase 1  Bus & Voice ──► Phase 2  Sound Des
 - Metadata, generated type checks, and signature tests accompany each API change in its phase.
   The release phase assembles the final release documentation and declarations.
 - The standing rules in the general plan (Section 10) also apply.
-- Task numbers are sequential within a phase and become GitHub issue titles, so a task added
+- Task numbers are sequential within a phase and name each task's pull request, so a task added
   later takes the next free number rather than a letter suffix.
 
 ## Phase 0: Foundations
@@ -585,8 +585,9 @@ held back instead of shipping unimplemented.
 
 ## Tracking
 
-- **Progress:** each phase is tracked as a GitHub milestone, with one issue per task number
-  (e.g. `Sound 1.6: New sound() signature and ADSR`).
+- **Progress:** the Status line and the task tables record progress. Each task lands through
+  its own pull request, titled with its number (e.g. `Sound 1.6: New sound() signature and
+  ADSR`).
 - **Decisions:** closing an open decision updates Section 12 of the plan in the same commit.
 - **Size history:** size reports from each phase exit are kept in `docs/evidence/sound-2.3/` so
   the core-merge decision can see the trend.

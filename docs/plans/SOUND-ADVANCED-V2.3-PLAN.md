@@ -586,8 +586,8 @@ Numbered after the sound plan's D1–D6.
 
 ## 14. Tracking
 
-- Phases 7–10 are GitHub milestones, and each task is an issue titled like
-  `Sound 7.4: Recorder module`.
+- The Status line and the task tables record progress. Each task lands through its own pull
+  request, titled like `Sound 7.4: Recorder module`.
 - Closing a decision updates Section 12 of this plan in the same commit. When a decision
   changes the service, Section 4.3 of the sound plan is updated in the same commit.
 - `API.md`, the plugin README, and the llms references are updated in the release phase

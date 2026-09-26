@@ -511,8 +511,9 @@ These apply to every workstream. Workstream roadmaps can add rules but not relax
   updated; they are removed (Section 3.1).
 - **Size:** each input roadmap records its plugin's size at the audit baseline and at each
   phase exit, using `npm run size`.
-- **Tracking:** each roadmap phase is a GitHub milestone, and each task is an issue titled with
-  its workstream and number, such as `Keyboard 1.2: Unify handler signatures`.
+- **Tracking:** each roadmap's status line and task tables record its progress. Once `ci.yml`
+  runs (CI roadmap task 3.3), each task lands through its own pull request, titled with its
+  workstream and number, such as `Keyboard 1.2: Unify handler signatures`.
 - **Decisions:** closing an open decision updates the document that owns it in the same commit.
 - **Commits:** short, imperative, and focused on one change.
 
