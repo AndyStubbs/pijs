@@ -79,6 +79,30 @@ g_test.test( "Playwright does not load campaign runner copies", t => {
 	g_assert.match( result.stdout, /Total: 1 test in 1 file/ );
 } );
 
+g_test.test( "CI retries once, fails on flaky tests, and keeps default workers", () => {
+	const source = "const config = ( await import( " +
+		JSON.stringify( g_url.pathToFileURL( g_path.join( ROOT, "playwright.config.js" ) ).href ) +
+		" ) ).default; console.log( JSON.stringify( { \"retries\": config.retries, " +
+		"\"failOnFlakyTests\": config.failOnFlakyTests, \"workers\": config.workers ?? null, " +
+		"\"forbidOnly\": config.forbidOnly } ) );";
+	const settings = ci => {
+		const env = { ...process.env };
+		delete env.CI;
+		if( ci ) { env.CI = "true"; }
+		const result = g_childProcess.spawnSync( process.execPath,
+			[ "--input-type=module", "-e", source ],
+			{ "cwd": ROOT, "env": env, "encoding": "utf8", "timeout": 30000 } );
+		g_assert.equal( result.status, 0, result.stderr );
+		return JSON.parse( result.stdout );
+	};
+	g_assert.deepEqual( settings( true ), {
+		"retries": 1, "failOnFlakyTests": true, "workers": null, "forbidOnly": true
+	} );
+	g_assert.deepEqual( settings( false ), {
+		"retries": 0, "failOnFlakyTests": false, "workers": null, "forbidOnly": false
+	} );
+} );
+
 g_test.test(
 	"process invocation preserves shell-sensitive arguments and reports failures", async () => {
 	for( const code of [ 0, 2 ] ) {

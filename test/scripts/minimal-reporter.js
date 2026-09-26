@@ -85,6 +85,11 @@ export default class MinimalReporter {
 		g_fs.writeFileSync( g_path.join( directory, "results.html" ),
 			g_resultsPageGenerator.generateResultsPage( summary, this.mode ) );
 		console.log( `Review: /test/test-results/${this.mode}/results.html (npm run server)` );
+		const failures = summary.failed + summary.timedOut + summary.interrupted;
+		if( result.status === "failed" && failures === 0 && summary.flaky > 0 ) {
+			console.error( "Flaky tests fail runs with CI set (failOnFlakyTests); " +
+				"see the Retry lines above." );
+		}
 		if( pending ) {
 			console.error( "Baseline approval is pending; complete correctness validation failed." );
 			return { "status": "failed" };

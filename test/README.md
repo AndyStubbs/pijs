@@ -238,7 +238,9 @@ Legacy report URLs redirect to the current full or plugin report through the dev
 
 The console prints selected tests and workers once. Completion markers count unique tests:
 `.` passed, `R` flaky, `F` failed, `T` timed out, `I` interrupted, and `S` skipped. Retries are
-reported separately. Local runs have no automatic retries; CI allows two retries.
+reported separately. Local runs have no automatic retries. With `CI` set, as in GitHub Actions,
+a failed test is retried once, with a trace, and a test that passes only on the retry is flaky
+and fails the run (`failOnFlakyTests`). Workers keep Playwright's default in both cases.
 
 For interactive review, run `npm run server` and open
 `http://localhost:8080/test/test-results/full/results.html` (substitute the desired mode).

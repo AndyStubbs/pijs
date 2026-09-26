@@ -20,11 +20,11 @@ if( ![ undefined, "", "fail", "report" ].includes( process.env.PI_VISUAL_PIXELS 
 	throw new Error( "Invalid PI_VISUAL_PIXELS; use fail or report" );
 }
 
+// CI retries a failure once, so a flaky fixture is identified with a trace, and then fails the
+// run on it (failOnFlakyTests) instead of hiding it. Workers keep Playwright's default.
 let retries = 0;
-let workers;
 if( process.env.CI ) {
-	retries = 2;
-	workers = 1;
+	retries = 1;
 }
 
 export default defineConfig( {
@@ -33,7 +33,7 @@ export default defineConfig( {
 	"fullyParallel": true,
 	"forbidOnly": !!process.env.CI,
 	"retries": retries,
-	"workers": workers,
+	"failOnFlakyTests": !!process.env.CI,
 	"globalSetup": g_path.join( DIRNAME, "test/scripts/global-setup.js" ),
 	"reporter": [
 		[ g_path.join( DIRNAME, "test/scripts/minimal-reporter.js" ) ],
