@@ -5,6 +5,23 @@ The audio browser tests also need Firefox and WebKit: `npx playwright install fi
 Run commands from the repository root. The command wrappers work on Windows and POSIX without
 shell-specific environment assignments.
 
+## Line endings
+
+`.gitattributes` stores and checks out text files with LF on every platform, whatever
+`core.autocrlf` is set to. Builds are then byte-identical on Windows, Linux, and macOS: CRLF
+shader sources would otherwise embed `\r` in the bundles. Binary assets are never converted,
+and the versioned snapshots in `releases/pi-<version>/` keep their published bytes.
+
+A clone checked out before this rule may still hold CRLF files. Refresh them once, with no
+uncommitted work, since the second command discards local changes:
+
+```sh
+git rm --cached -r -q .
+git reset --hard
+```
+
+Afterwards, `git ls-files --eol` lists no `w/crlf` or `w/mixed` files.
+
 ## Commands
 
 | Command | Coverage |

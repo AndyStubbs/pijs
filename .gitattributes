@@ -1,4 +1,25 @@
-*.toml text eol=lf
-*.js text eol=lf
-*.json text eol=lf
-*.ts text eol=lf
+# Text files are stored and checked out with LF line endings on every platform, whatever the
+# local core.autocrlf setting, so builds and tests do not depend on the checkout
+# (docs/plans/CI-V2.3-EXPLORATION.md, CI-007).
+* text=auto eol=lf
+
+# Binary assets are never converted
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.bmp binary
+*.ico binary
+*.wav binary
+*.WAV binary
+*.mp3 binary
+*.ogg binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.pdn binary
+
+# Versioned release snapshots are frozen: their bytes stay exactly as published
+releases/pi-[0-9]*/** -text
