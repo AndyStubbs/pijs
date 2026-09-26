@@ -111,12 +111,23 @@ function createSnapshot( options = {} ) {
 	return { "version": version, "destination": destination, "files": files };
 }
 
+/**
+ * Whether this file is the process entry point. Both paths are resolved through symlinks:
+ * import.meta.url is already resolved, and a script started through a symlinked directory,
+ * such as macOS's /var/folders, would otherwise never run.
+ *
+ * @returns {boolean} True when run as a command
+ */
 function isMainModule() {
 	const entry = process.argv[ 1 ];
 	if( !entry ) {
 		return false;
 	}
-	return g_url.pathToFileURL( g_path.resolve( entry ) ).href === import.meta.url;
+	try {
+		return g_fs.realpathSync( entry ) === g_fs.realpathSync( g_url.fileURLToPath( import.meta.url ) );
+	} catch( error ) {
+		return false;
+	}
 }
 
 if( isMainModule() ) {
