@@ -289,6 +289,10 @@ capture. `expectPatchResult` requires `patchResult` to resolve to that number.
 `waitUntil` (a Playwright load state) and `renderWait` (a fixed wait in milliseconds instead of the
 animation frames) are only for a fixture whose approved baseline depends on capture timing.
 
+`ciSkip` names why a fixture is flaky on CI runners and who owns the fix. With `CI` set, the
+fixture is skipped and the console prints `Skipped: <fixture>: Skipped in CI: <reason>`; local
+runs still run it. Remove `ciSkip` in the change that fixes the fixture.
+
 Images must have identical dimensions. Pixels whose summed RGBA difference exceeds 6 count as
 different; fewer than 0.1% of pixels may differ.
 
