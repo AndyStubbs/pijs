@@ -786,10 +786,19 @@ void main() {
 			done();
 		}, 50 );
 
+		// A container resize reaches the screen through its ResizeObserver, which the browser
+		// delivers in the next rendering update, after that frame's animation callbacks. The
+		// second animation frame therefore follows it on any machine; a fixed delay does not.
+		function afterResize( callback ) {
+			requestAnimationFrame( function() {
+				requestAnimationFrame( callback );
+			} );
+		}
+
 		setTimeout( function() {
 			box.style.width = "32px";
 			box.style.height = "24px";
-			setTimeout( function() {
+			afterResize( function() {
 				assertEq( rs.width(), 32, "width after shrink" );
 				const shrinkPx = rs.getPosPx();
 				assert( shrinkPx.x <= 32, "cursor x after shrink" );
@@ -798,7 +807,7 @@ void main() {
 
 				box.style.width = "80px";
 				box.style.height = "60px";
-				setTimeout( function() {
+				afterResize( function() {
 					assertEq( rs.width(), 32, "width after grow" );
 					rs.setColor( 4 );
 					rs.pset( 28, 4 );
@@ -807,8 +816,8 @@ void main() {
 					assert( growPx.x >= 0 && growPx.x <= 32, "cursor valid x" );
 					assert( growPx.y >= 0 && growPx.y <= 20, "cursor valid y" );
 					done();
-				}, 80 );
-			}, 80 );
+				} );
+			} );
 		}, 80 );
 	} );
 </script>

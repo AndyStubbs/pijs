@@ -238,7 +238,9 @@ Exit criteria:
   the compositing of CSS-scaled canvases and fails `renderer_comprehensive`.
 - **Timing-sensitive fixtures:** `inpress_01`, `intouch_01`, and `keyboard_commands` vary
   between runs within tolerance on Linux and Windows. `inpress_01` exceeded it once on macOS
-  (0.12%). Their owners are listed under Coordination.
+  (0.12%). Their owners are listed under Coordination. `view_comprehensive` checked a container
+  resize after a fixed 80 ms and failed its first attempt in the first macOS `ci.yml` run; it
+  now waits two animation frames, which always follow the resize.
 - **WebKit audio:** all 95 WebKit render tests pass with Chromium's tolerances on Linux and
   macOS. Like Chromium's, WebKit multi-voice mixes can differ in the last bits between page
   loads (task 2.4).
