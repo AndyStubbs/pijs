@@ -584,7 +584,7 @@ If the schedule slips:
 | G5 | Whether CI must be running before 2.3.0 ships | **Closed 2026-09-26:** no. The portability fixes (CI roadmap Phases 1–2) ship in 2.3.0, and the pipeline (Phase 3) follows when ready | Closed |
 | G6 | How much of publishing is automated | **Closed 2026-09-26:** on a version tag, CI verifies the build and tests, packs the tarball, and attaches it to a draft GitHub release. `npm publish` stays manual for 2.3.0 (CI roadmap task 3.6) | Closed |
 | G7 | What happens to `onscreen-keyboard` and `pi-vision`, which the I1–I3 changes break, and their plugin visual fixtures (`onscreen_keyboard_01–04`, `pi_vision_01`) | **Closed 2026-09-25:** remove them from the repository, together with the other incomplete non-core plugins `print-table` and `pens` and all their fixtures and metadata (Section 3.1). `example-plugin` and `sound-advanced` stay. The fixtures go because their features go, not to make a suite pass (Section 8.3) | Closed |
-| G8 | The Node floor in `engines` (`>=18.0.0` today) | **Closed 2026-09-26:** raised to `>=22`, since Node 18 and 20 are past end of life and CI tests 22 and 24 (CI roadmap task 2.7) | Closed |
+| G8 | The Node floor in `engines` (`>=18.0.0` today) | **Closed 2026-09-26:** raised to `>=22`, since Node 18 and 20 are past end of life and CI tests 22 (CI roadmap task 2.7) | Closed |
 
 ## 14. Risks
 
@@ -600,7 +600,7 @@ If the schedule slips:
 | A removed test was the only check of a behavior | A regression goes unnoticed | Each removal names its covering tests, with a deliberate-break check where practical; the coverage map must not lose entries |
 | Test audit collides with workstream rewrites | Duplicate or conflicting test changes | Changes in an active workstream's area are handed to its roadmap |
 | Rendering differs across platforms | All baselines need re-recording and review | Decide G4 from data; re-record once, as its own reviewed task, before input implementation |
-| CI cost or flaky CI | Slow feedback, or failures that get ignored | Expensive matrix jobs run nightly; flaky tests are tracked and fixed, not retried away |
+| CI cost or flaky CI | Slow feedback, or failures that get ignored | macOS runs only on `main`; flaky tests are skipped in CI with their owner until fixed, not retried away |
 
 ## 15. Out of Scope for 2.3
 

@@ -1,8 +1,8 @@
 # Pi.js 2.3 CI/CD Roadmap
 
 Status: Phases 1 and 2 complete (milestones C1 and C2, 2026-09-26); Phase 3 in progress (tasks
-3.1–3.3 and 3.9 done; `ci.yml` first green on `main` in run 36266162164, 2026-09-26). Next:
-3.4–3.8 through pull requests (see Task order)
+3.1–3.4 and 3.9 done; `ci.yml` first green on `main` in run 36266162164, 2026-09-26). Next:
+3.5–3.8 through pull requests (see Task order)
 Exploration: [CI-V2.3-EXPLORATION.md](CI-V2.3-EXPLORATION.md) (the `CI-0xx` items, questions,
 and sections below refer to it)
 Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md) (Section 9, decisions G4–G6 and G8)
@@ -107,7 +107,7 @@ Everyday commands once it is set up:
 | --- | --- | --- |
 | C1: Stable baselines | Phase 1 | Chromium's renderer is pinned. Baselines are re-recorded and reviewed. Windows and Linux builds are byte-identical |
 | C2: Portable tests | Phase 2 | `npm test` and `npm run test:firefox` pass on Windows and Linux. The remaining macOS difference is handled by the report-only pixel mode |
-| C3: CI running | Phase 3 | Pull-request, nightly, and release workflows green. Required checks configured |
+| C3: CI running | Phase 3 | Pull-request and release workflows green, with the Firefox check in `ci.yml`. Required checks configured |
 
 ### Standing rules for every phase
 
@@ -204,16 +204,17 @@ the 0.1% limit. The macOS jobs therefore run the visual suites in report-only pi
 
 ## Phase 3: Pipeline
 
-The workflows follow the exploration's Section 6 and G6. The repository is public, so hosted
-runners, macOS included, cost nothing. This phase does not block 2.3.0 (G5). Tasks 3.1–3.3 and
-3.9 come before the rest of Phase 2 (Task order). Tasks 3.4–3.8 follow it.
+The workflows follow the exploration's Section 6 and G6, without its nightly workflow (task
+3.4). The repository is public, so hosted runners, macOS included, cost nothing. This phase
+does not block 2.3.0 (G5). Tasks 3.1–3.3 and 3.9 come before the rest of Phase 2 (Task order).
+Tasks 3.4–3.8 follow it.
 
 | # | Task | Exploration |
 | --- | --- | --- |
 | 3.1 | **CI test settings.** In `playwright.config.js`, with `CI` set, use `retries: 1` with `failOnFlakyTests`, and default workers instead of 1 | CI-006 |
 | 3.2 | **Size diff.** Add a script that compares two `build/size-report.json` files and writes a Markdown table of the byte and gzip changes per bundle and plugin. Add its test to `test/scripts/` | Q6 |
 | 3.3 | **Pull-request workflow (`ci.yml`).**<br>• Triggers: pull requests, and pushes to `main`.<br>• `test` job: `npm ci`, the browsers (`--with-deps` on Linux; a cache keyed on the Playwright version on Windows and macOS), and `npm test` with `PI_AUDIO_REALTIME=0`. It runs on `ubuntu-24.04` and `windows-2025`, and on `main` also on `macos-15` with `PI_VISUAL_PIXELS=report`.<br>• `size` job (Linux): builds the base branch and the change, and writes the size diff to the job summary.<br>• Permissions: `contents: read`, and `pull_request`, never `pull_request_target`.<br>• Concurrency cancels superseded runs.<br>• Artifacts: test results, reports, and captures on failure, kept 14 days | CI-010, Q6 |
-| 3.4 | **Nightly workflow (`nightly.yml`).**<br>• Triggers: a daily schedule, and manual runs.<br>• `test` on all three platforms, with macOS in report-only pixel mode.<br>• `npm run test:firefox` on all three; on Linux, with Mesa's EGL packages and headed under `xvfb-run`.<br>• The visual suites with `--repeat-each=3`.<br>• Node 24 alongside Node 22.<br>• A report-only realtime-audio job on macOS, which runs the two realtime suites without failing the workflow | CI-010, CI-008, Q6, Q7 |
+| 3.4 | **Firefox check in `ci.yml`.** The `test` job runs `npm run test:firefox` after `npm test`, also when `npm test` fails; on Linux, headed under `xvfb-run` with Mesa's EGL packages (task 2.6). There is no nightly workflow: development comes in bursts, so pull requests and pushes to `main` cover what a schedule would (decided 2026-09-26). Node 24, repeated visual runs, and a macOS realtime-audio job are not scheduled; the realtime suites run in local `npm test` | CI-010, CI-012, Q6, Q7 |
 | 3.5 | **Dependabot** for GitHub Actions versions (`.github/dependabot.yml`), weekly | Section 6 |
 | 3.6 | **Release workflow (`release.yml`).**<br>• Triggers: a `v*` tag, and manual runs.<br>• Runs the `ci.yml` test matrix.<br>• A Linux `package` job then:<br>&nbsp;&nbsp;• builds and runs `npm run copy-to-release`;<br>&nbsp;&nbsp;• checks that the tag, `package.json`, `releases/pi-latest/package.json`, and the plugin banners agree (R.6);<br>&nbsp;&nbsp;• runs `npm pack --dry-run` and `npm pack` in `releases/pi-latest`;<br>&nbsp;&nbsp;• attaches the tarball to a draft GitHub release.<br>• `npm publish` stays manual and publishes that tarball | G6, Q8 |
 | 3.7 | **Documentation.** Add a CI section to `test/README.md`: the workflows, what each runs, and how to reproduce a CI failure locally. In the publish guide, add the release workflow and the rule that the published tarball is the one the release workflow verified | Q7, Q8 |
@@ -222,9 +223,8 @@ runners, macOS included, cost nothing. This phase does not block 2.3.0 (G5). Tas
 
 Exit criteria:
 
-- `ci.yml` passes on a pull request on Linux and Windows, and on `main` on all three platforms.
-- `nightly.yml` passes three nights in a row. Any flaky fixture it reports is filed with the
-  owning workstream.
+- `ci.yml`, including the Firefox check, passes on a pull request on Linux and Windows, and on
+  `main` on all three platforms.
 - A manual `release.yml` run produces a draft release whose tarball has the same file list as
   a local `npm pack --dry-run`.
 - The required checks are configured.
@@ -258,11 +258,9 @@ Exit criteria:
 
 If the schedule slips, cut in this order. Earlier items go first.
 
-1. **Tasks 3.4–3.8** (nightly, Dependabot, release workflow, CI documentation, required
-   checks) move after 2.3.0. R.7 then runs the release checks by hand.
+1. **Tasks 3.4–3.8** (Firefox check in `ci.yml`, Dependabot, release workflow, CI
+   documentation, required checks) move after 2.3.0. R.7 then runs the release checks by hand.
 2. **Phase 3 as a whole** moves after 2.3.0 (G5).
-3. **Task 2.6** (Firefox on GPU-less machines) moves with Phase 3. It matters only in CI, since
-   the maintainer's machine has a GPU.
 
 Phase 1 is not cut: plan Section 4 requires the baseline re-record before input
 implementation, and task 1.3 keeps release builds independent of the checkout. Tasks 2.1–2.5,
