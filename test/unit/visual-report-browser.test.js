@@ -2,7 +2,7 @@
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
 import * as g_fs from "node:fs";
-import * as g_playwright from "@playwright/test";
+import * as g_chromiumLaunch from "./chromium-launch.js";
 import * as g_report from "../scripts/results-page-generator.js";
 
 let m_browser;
@@ -10,7 +10,7 @@ const IMAGE = g_fs.readFileSync( new URL(
 	"../tests/screenshots/colors_comprehensive.png", import.meta.url
 ) );
 
-g_test.before( async () => { m_browser = await g_playwright.chromium.launch(); } );
+g_test.before( async () => { m_browser = await g_chromiumLaunch.launchChromium(); } );
 g_test.after( async () => { await m_browser?.close(); } );
 
 for( const mode of [ "full", "lite", "plugins" ] ) {

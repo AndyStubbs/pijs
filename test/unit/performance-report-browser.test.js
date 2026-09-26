@@ -5,14 +5,13 @@ import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
 import * as g_path from "node:path";
 import * as g_esbuild from "esbuild";
-import * as g_playwright from "@playwright/test";
+import * as g_chromiumLaunch from "./chromium-launch.js";
 import * as g_url from "node:url";
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
 const { test, before, after } = g_test;
 const assert = g_assert;
 const path = g_path;
 const esbuild = g_esbuild;
-const { chromium } = g_playwright;
 
 let browser;
 let reportBundle;
@@ -27,7 +26,7 @@ before( async () => {
 		"target": "es2020"
 	} );
 	reportBundle = result.outputFiles[ 0 ].text;
-	browser = await chromium.launch( { "headless": true } );
+	browser = await g_chromiumLaunch.launchChromium();
 } );
 
 after( async () => { await browser?.close(); } );

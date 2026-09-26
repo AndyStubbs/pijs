@@ -5,6 +5,7 @@
  * comma-separated subset, such as "chromium,firefox", to run fewer engines while iterating.
  */
 import * as g_playwright from "@playwright/test";
+import * as g_chromiumLaunch from "./chromium-launch.js";
 
 const ALL_ENGINES = [ "chromium", "firefox", "webkit" ];
 const INSTALL_HINT = "Install the audio test engines with: npx playwright install firefox webkit";
@@ -66,6 +67,11 @@ async function launchEngine( name, options = {} ) {
 	let launchOptions = { "headless": true };
 	if( options.realtimeAudio ) {
 		launchOptions = { ...launchOptions, ...REALTIME_OPTIONS[ name ] };
+	}
+
+	// Chromium keeps the renderer flags every browser test uses, next to the realtime flags
+	if( name === "chromium" ) {
+		launchOptions = g_chromiumLaunch.chromiumLaunchOptions( launchOptions );
 	}
 	try {
 		return await g_playwright[ name ].launch( launchOptions );

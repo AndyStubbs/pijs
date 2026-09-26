@@ -1,7 +1,7 @@
 /** Full bundle availability, standalone Lite installation, and benchmark polygon isolation. */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_playwright from "@playwright/test";
+import * as g_chromiumLaunch from "./chromium-launch.js";
 import * as g_source from "./browser-source-harness.js";
 import * as g_artifacts from "../performance/benchmark/artifacts.js";
 import * as g_run from "../performance/benchmark/run.js";
@@ -9,7 +9,7 @@ import * as g_run from "../performance/benchmark/run.js";
 let m_browser;
 
 g_test.before( async () => {
-	m_browser = await g_playwright.chromium.launch( { "headless": true } );
+	m_browser = await g_chromiumLaunch.launchChromium();
 } );
 
 g_test.after( async () => { await m_browser?.close(); } );

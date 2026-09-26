@@ -1,11 +1,11 @@
 /** Verify minified requests receive actual minified code, including cached plugin routes. */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_playwright from "@playwright/test";
+import * as g_chromiumLaunch from "./chromium-launch.js";
 import * as g_harness from "./browser-source-harness.js";
 
 g_test.test( "source routing keeps minified core and plugin cache entries distinct", async () => {
-	const browser = await g_playwright.chromium.launch( { "headless": true } );
+	const browser = await g_chromiumLaunch.launchChromium();
 	try {
 		const context = await g_harness.createSourceContext( browser );
 		const page = await context.newPage();

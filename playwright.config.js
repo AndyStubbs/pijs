@@ -6,6 +6,7 @@
 import * as g_playwright from "@playwright/test";
 import * as g_path from "node:path";
 import * as g_url from "node:url";
+import * as g_chromiumLaunch from "./test/unit/chromium-launch.js";
 
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
 const { defineConfig, devices } = g_playwright;
@@ -45,7 +46,10 @@ export default defineConfig( {
 	"projects": [
 		{
 			"name": "chromium",
-			"use": { ...devices[ "Desktop Chrome" ] }
+			"use": {
+				...devices[ "Desktop Chrome" ],
+				"launchOptions": { "args": [ ...g_chromiumLaunch.CHROMIUM_ARGS ] }
+			}
 		}
 	]
 } );

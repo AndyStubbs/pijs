@@ -1,6 +1,8 @@
 # Pi.js 2.3 CI/CD and Cross-Platform Exploration
 
-Status: Exploration complete (E1–E7). It waits for maintainer review.
+Status: Exploration complete (E1–E7) and reviewed 2026-09-26. Every recommendation was
+accepted (Sections 8 and 9), and the accepted items are scheduled in
+[CI-V2.3-ROADMAP.md](CI-V2.3-ROADMAP.md).
 Revision: `48bb54f`
 Plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md), Section 9
 Evidence: [`docs/evidence/ci-2.3/`](../evidence/ci-2.3/README.md)
@@ -390,12 +392,24 @@ three platforms, or what the release needs (plan Section 9.4).
 | CI-012 | Firefox WebGL on runners: launch Firefox in `firefox-smoke.js` with `firefoxUserPrefs: { "webgl.force-enabled": true }`. On Linux CI, install `libegl1`, `libegl-mesa0`, and `libgles2`, and run the check headed under `xvfb-run` through a launch option (such as `PI_FIREFOX_HEADED=true`) | No (CI only) | E7: the check passes 6 of 6 on all three runners. The preference does not change rendering on GPU machines (probed locally). Headed Firefox was tested only after the EGL packages were added; E7 did not isolate whether they are needed, and they take 2 s to install |
 | CI-013 | Fix the race in `visual-report-browser.test.js` ("comparison and approval requests use the selected mode"): wait for the diff modal to close before clicking the section header | Yes | Failed on the Windows runner. The modal intercepted the click |
 
-## 8. Open Decisions
+## 8. Decisions
 
-| ID | Decision | Recommendation | Resolve by |
-| --- | --- | --- | --- |
-| G4 | How visual baselines work across platforms | One set with pinned SwiftShader flags. Pixel comparisons are required on Linux and Windows and report-only on macOS (Q2) | Exploration review |
-| G5 | Whether CI must be running before 2.3.0 ships | No. The fixes marked "Yes" in Section 7 ship in 2.3.0 | Exploration review |
-| G6 | How much of publishing is automated | Tag-triggered verification and a draft release. `npm publish` stays manual for 2.3.0 (Q8) | Exploration review |
-| G8 | The Node floor in `engines` | `>=22`. Node 18 and 20 are past end of life, and CI tests 22 and 24 | Exploration review |
-| E-C | Delete the temporary branches `ci-exploration`, `ci-exploration-results`, and `ci-exploration-results-e7` | Delete after this review. `runners.json` and `runners-e7.json` keep the results | Exploration review |
+Recorded 2026-09-26. The maintainer accepted every recommendation.
+
+| ID | Decision | Outcome |
+| --- | --- | --- |
+| G4 | How visual baselines work across platforms | **Closed:** one baseline set with pinned SwiftShader flags. Pixel comparisons are required on Linux and Windows and report-only on macOS (Q2) |
+| G5 | Whether CI must be running before 2.3.0 ships | **Closed:** no. The fixes marked "Yes" in Section 7 ship in 2.3.0 |
+| G6 | How much of publishing is automated | **Closed:** tag-triggered verification and a draft release. `npm publish` stays manual for 2.3.0 (Q8) |
+| G8 | The Node floor in `engines` | **Closed:** `>=22`. Node 18 and 20 are past end of life, and CI tests 22 and 24 |
+| E-C | Delete the temporary exploration branches | **Done 2026-09-26.** `ci-exploration`, `ci-exploration-results`, and `ci-exploration-results-e7` are deleted. `runners.json` and `runners-e7.json` keep the results |
+
+## 9. Review Decisions
+
+| ID | Decision | Notes |
+| --- | --- | --- |
+| CI-001–CI-007 | Accepted | Roadmap Phases 1–3 |
+| CI-008 | Accepted as a handoff | The pointer and keyboard roadmaps own the timing-sensitive fixtures. CI's nightly repeats report them |
+| CI-009–CI-013 | Accepted | Roadmap Phases 1–3 |
+
+The accepted items are scheduled in [CI-V2.3-ROADMAP.md](CI-V2.3-ROADMAP.md).

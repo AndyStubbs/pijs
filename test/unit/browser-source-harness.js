@@ -9,7 +9,7 @@ import * as g_fs from "node:fs";
 import * as g_url from "node:url";
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_playwright from "@playwright/test";
+import * as g_chromiumLaunch from "./chromium-launch.js";
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
 const fs = g_fsPromises;
 const path = g_path;
@@ -182,7 +182,7 @@ function useBrowserBundles( options = {} ) {
 
 	g_test.before( async () => {
 		suite.scripts = await buildBundles( options );
-		suite.browser = await g_playwright.chromium.launch( { "headless": true } );
+		suite.browser = await g_chromiumLaunch.launchChromium();
 	} );
 	g_test.after( async () => { await suite.browser?.close(); } );
 

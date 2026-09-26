@@ -5,7 +5,7 @@
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_playwright from "@playwright/test";
+import * as g_chromiumLaunch from "./chromium-launch.js";
 import * as g_source from "./browser-source-harness.js";
 import * as g_generator from "../../plugins/sound-advanced/generator.js";
 
@@ -17,7 +17,7 @@ const COMMANDS = [
 let m_browser;
 
 g_test.before( async () => {
-	m_browser = await g_playwright.chromium.launch( { "headless": true } );
+	m_browser = await g_chromiumLaunch.launchChromium();
 } );
 
 g_test.after( async () => { await m_browser?.close(); } );

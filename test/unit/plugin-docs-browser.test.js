@@ -6,7 +6,7 @@ import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
 import * as g_fs from "node:fs";
 import * as g_path from "node:path";
-import * as g_playwright from "@playwright/test";
+import * as g_chromiumLaunch from "./chromium-launch.js";
 import * as g_browserSourceHarness from "./browser-source-harness.js";
 import * as g_url from "node:url";
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
@@ -14,7 +14,6 @@ const { test, before, after } = g_test;
 const assert = g_assert;
 const fs = g_fs;
 const path = g_path;
-const { chromium } = g_playwright;
 const { createSourceContext } = g_browserSourceHarness;
 
 const ROOT = path.resolve( DIRNAME, "../.." );
@@ -39,7 +38,7 @@ let m_browser;
 let m_context;
 
 before( async () => {
-	m_browser = await chromium.launch( { "headless": true } );
+	m_browser = await g_chromiumLaunch.launchChromium();
 	m_context = await createSourceContext( m_browser );
 } );
 

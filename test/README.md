@@ -55,6 +55,7 @@ Shared helpers:
 | `test/unit/vm-module-harness.js` | `loadModule()` for Node tests, plus the pixel, ready-queue, and plugin-registry harnesses |
 | `test/unit/browser-source-harness.js` | Fresh in-memory bundles; `useBrowserBundles()` builds full and lite, launches Chromium, and returns a `probe()` that fails on unexpected page errors |
 | `test/unit/rasterization-harness.js` | Arc and circle point capture |
+| `test/unit/chromium-launch.js` | `launchChromium()` and the renderer flags (`--disable-gpu --enable-unsafe-swiftshader`) that every Chromium browser test and the visual suite use, so WebGL renders with SwiftShader on every platform. Launch Chromium through it, not with `chromium.launch()`. The benchmark keeps its own flags |
 | `test/unit/audio-*.js` | Audio engines, render harness, sample fixtures, metrics, and tolerances |
 
 Screen lifecycle, shader samplers, plugin installation, and pointer and keyboard behavior each

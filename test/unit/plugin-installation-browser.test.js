@@ -4,18 +4,17 @@
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_playwright from "@playwright/test";
+import * as g_chromiumLaunch from "./chromium-launch.js";
 import * as g_browserSourceHarness from "./browser-source-harness.js";
 const { test, before, after } = g_test;
 const assert = g_assert;
-const { chromium } = g_playwright;
 const { createSourceContext } = g_browserSourceHarness;
 
 let browser;
 let context;
 
 before( async () => {
-	browser = await chromium.launch( { "headless": true } );
+	browser = await g_chromiumLaunch.launchChromium();
 	context = await createSourceContext( browser );
 } );
 
