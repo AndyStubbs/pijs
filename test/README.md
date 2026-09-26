@@ -87,6 +87,13 @@ CSS sizing, and keyboard/mouse input checks. Install Firefox with
 `npx playwright install firefox` first. Browser versions and results are saved under
 `test/test-results/firefox/`. This check uses assertions, without Chromium PNG baselines.
 
+Firefox launches with the `webgl.force-enabled` preference, which gives it WebGL2 on Windows
+machines without a GPU, through WARP. Headless Firefox on Linux never gets WebGL there. Set
+`PI_FIREFOX_HEADED=true` to launch it headed, and run it under Xvfb:
+`PI_FIREFOX_HEADED=true xvfb-run -a npm run test:firefox`. Headed Firefox then renders with Mesa's
+llvmpipe. Any value other than `true`, `false`, or unset fails. The console and `summary.json`
+record the launch mode and the WebGL2 renderer.
+
 Safari itself is not tested because macOS hardware is unavailable. WebKit coverage comes from
 Playwright's WebKit build as described below; iOS-specific audio behavior needs a device.
 
