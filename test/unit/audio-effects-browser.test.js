@@ -437,6 +437,50 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 		assert.equal( tails[ 1 ].convolvers, 2 );
 	} );
 
+	test( "in-place updates survive garbage collection of AudioParam wrappers", async t => {
+
+		// WebKit replaces an unreferenced AudioParam wrapper after garbage collection, which
+		// once lost the effects' ramp records. Collect after building, while the crusher's
+		// worklet loads, and again before updating every rampable option in place.
+		const collect = `for( let round = 0; round < 30; round++ ) {
+			let junk = [];
+			for( let i = 0; i < 100000; i++ ) { junk.push( { "i": i } ); }
+			junk = null;
+		}`;
+		const result = await suite.inHarness( t, {
+			"config": { "duration": 0.2 }
+		}, renderEffects, {
+			"setup": SETUP + `
+				$.setBusEffect( "sfx", [
+					{ "effect": "delay", "time": 0.1, "feedback": 0.2, "mix": 0.2 },
+					{ "effect": "filter", "cutoff": 8000, "q": 1 },
+					{ "effect": "distortion", "drive": 0.2, "tone": 8000, "mix": 0.5 },
+					{ "effect": "chorus", "rate": 1, "depth": 2, "mix": 0.3 }
+				] );
+				$.setBusEffect( "music", "reverb", { "time": 0.5, "mix": 0.2 } );
+				$.setBusEffect( "audio", "bitcrush", { "bits": 8, "rate": 2, "mix": 0.5 } );
+				${collect}`,
+			"waitForCrusher": true,
+			"actions": [ { "time": 0, "code": `
+				${collect}
+				$.setBusEffect( "sfx", [
+					{ "effect": "delay", "time": 0.2, "feedback": 0.3, "mix": 0.4 },
+					{ "effect": "filter", "cutoff": 4000, "q": 2 },
+					{ "effect": "distortion", "drive": 0.4, "tone": 6000, "mix": 0.6 },
+					{ "effect": "chorus", "rate": 2, "depth": 3, "mix": 0.4 }
+				] );
+				$.setBusEffect( "music", "reverb", { "time": 0.5, "mix": 0.4 } );
+				$.setBusEffect( "audio", "bitcrush", { "bits": 4, "rate": 4, "mix": 0.8 } );` } ]
+		} );
+		if( !result ) {
+			return;
+		}
+
+		// Updated in place: one delay line plus the chorus's two, and no second convolver
+		assert.equal( result.nodeCounts.createDelay, 3 );
+		assert.equal( result.nodeCounts.createConvolver, 1 );
+	} );
+
 	test( "setBusEffect validates chains and the new effects", async t => {
 		const result = await suite.inHarness( t, {}, () => {
 			const codeOf = fn => {

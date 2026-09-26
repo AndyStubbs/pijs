@@ -44,9 +44,6 @@ const m_impulses = new Map();
 // Shared distortion curve, created on first use
 let m_driveCurve = null;
 
-// Ramp records by AudioParam: { from, to, t0, t1 }
-const m_ramps = new WeakMap();
-
 // Current chain by bus: { context, chain, stages }
 const m_chains = new Map();
 
@@ -74,15 +71,20 @@ function throwCode( ErrorType, message, code ) {
 }
 
 /**
- * Set an AudioParam immediately and record the value for later ramps
+ * Set an AudioParam immediately and record the value for later ramps in its stage's ramp map.
  *
+ * The map holds the parameter for the stage's lifetime, which keeps the engine returning the
+ * same AudioParam object for it: WebKit replaces a DOM wrapper that nothing references after
+ * garbage collection, so a record keyed by an unreferenced parameter would be lost.
+ *
+ * @param {Map} ramps - Stage ramp records by AudioParam: { from, to, t0, t1 }
  * @param {AudioParam} param - Parameter
  * @param {number} value - Value
  * @returns {void}
  */
-function setParam( param, value ) {
+function setParam( ramps, param, value ) {
 	param.value = value;
-	m_ramps.set( param, { "from": value, "to": value, "t0": 0, "t1": 0 } );
+	ramps.set( param, { "from": value, "to": value, "t0": 0, "t1": 0 } );
 }
 
 /**
@@ -90,13 +92,14 @@ function setParam( param, value ) {
  * The current value comes from the ramp record, not param.value, which engines report
  * differently during automation.
  *
+ * @param {Map} ramps - Stage ramp records by AudioParam
  * @param {AudioParam} param - Parameter set with setParam
  * @param {number} target - Target value
  * @param {number} time - Context time at which the ramp begins
  * @returns {void}
  */
-function rampParam( param, target, time ) {
-	const ramp = m_ramps.get( param );
+function rampParam( ramps, param, target, time ) {
+	const ramp = ramps.get( param );
 	let current = ramp.to;
 	if( time <= ramp.t0 ) {
 		current = ramp.from;
@@ -110,7 +113,7 @@ function rampParam( param, target, time ) {
 		param.setValueAtTime( current, time );
 	}
 	param.linearRampToValueAtTime( target, time + RAMP_TIME );
-	m_ramps.set( param, { "from": current, "to": target, "t0": time, "t1": time + RAMP_TIME } );
+	ramps.set( param, { "from": current, "to": target, "t0": time, "t1": time + RAMP_TIME } );
 }
 
 /**
@@ -175,15 +178,16 @@ function driveGains( drive ) {
  * @param {AudioNode|null} wetInput - First node of the wet chain; null leaves it unconnected
  * @param {AudioNode|null} wetOutput - Last node of the wet chain
  * @param {Array<AudioNode>} nodes - Wet chain nodes to disconnect on dispose
- * @returns {Object} Stage: input, output, dry, wet, nodes
+ * @param {Map} ramps - Ramp records of the wet chain's parameters
+ * @returns {Object} Stage: input, output, dry, wet, nodes, ramps
  */
-function createMixStage( context, mix, wetInput, wetOutput, nodes ) {
+function createMixStage( context, mix, wetInput, wetOutput, nodes, ramps ) {
 	const input = context.createGain();
 	const output = context.createGain();
 	const dry = context.createGain();
 	const wet = context.createGain();
-	setParam( dry.gain, 1 - mix );
-	setParam( wet.gain, mix );
+	setParam( ramps, dry.gain, 1 - mix );
+	setParam( ramps, wet.gain, mix );
 	input.connect( dry );
 	dry.connect( output );
 	if( wetInput ) {
@@ -196,7 +200,8 @@ function createMixStage( context, mix, wetInput, wetOutput, nodes ) {
 		"output": output,
 		"dry": dry,
 		"wet": wet,
-		"nodes": [ input, dry, wet, output ].concat( nodes )
+		"nodes": [ input, dry, wet, output ].concat( nodes ),
+		"ramps": ramps
 	};
 }
 
@@ -224,7 +229,7 @@ function mixTargets( stage, mix ) {
 function buildReverb( context, opts ) {
 	const convolver = context.createConvolver();
 	convolver.buffer = getImpulse( context, opts.time, opts.decay );
-	return createMixStage( context, opts.mix, convolver, convolver, [ convolver ] );
+	return createMixStage( context, opts.mix, convolver, convolver, [ convolver ], new Map() );
 }
 
 /**
@@ -235,13 +240,14 @@ function buildReverb( context, opts ) {
  * @returns {Object} Stage
  */
 function buildDelay( context, opts ) {
+	const ramps = new Map();
 	const delay = context.createDelay( MAX_DELAY_TIME );
-	setParam( delay.delayTime, opts.time );
+	setParam( ramps, delay.delayTime, opts.time );
 	const feedback = context.createGain();
-	setParam( feedback.gain, opts.feedback );
+	setParam( ramps, feedback.gain, opts.feedback );
 	delay.connect( feedback );
 	feedback.connect( delay );
-	const stage = createMixStage( context, opts.mix, delay, delay, [ delay, feedback ] );
+	const stage = createMixStage( context, opts.mix, delay, delay, [ delay, feedback ], ramps );
 	stage.delay = delay;
 	stage.feedback = feedback;
 	return stage;
@@ -255,11 +261,14 @@ function buildDelay( context, opts ) {
  * @returns {Object} Stage
  */
 function buildFilter( context, opts ) {
+	const ramps = new Map();
 	const filter = context.createBiquadFilter();
 	filter.type = opts.type;
-	setParam( filter.frequency, opts.cutoff );
-	setParam( filter.Q, opts.q );
-	return { "input": filter, "output": filter, "filter": filter, "nodes": [ filter ] };
+	setParam( ramps, filter.frequency, opts.cutoff );
+	setParam( ramps, filter.Q, opts.q );
+	return {
+		"input": filter, "output": filter, "filter": filter, "nodes": [ filter ], "ramps": ramps
+	};
 }
 
 /**
@@ -272,20 +281,21 @@ function buildFilter( context, opts ) {
  */
 function buildDistortion( context, opts ) {
 	const [ preGain, makeUpGain ] = driveGains( opts.drive );
+	const ramps = new Map();
 	const pre = context.createGain();
-	setParam( pre.gain, preGain );
+	setParam( ramps, pre.gain, preGain );
 	const shaper = context.createWaveShaper();
 	shaper.curve = getDriveCurve();
 	shaper.oversample = "2x";
 	const tone = context.createBiquadFilter();
-	setParam( tone.frequency, opts.tone );
+	setParam( ramps, tone.frequency, opts.tone );
 	const makeUp = context.createGain();
-	setParam( makeUp.gain, makeUpGain );
+	setParam( ramps, makeUp.gain, makeUpGain );
 	pre.connect( shaper );
 	shaper.connect( tone );
 	tone.connect( makeUp );
 	const stage = createMixStage(
-		context, opts.mix, pre, makeUp, [ pre, shaper, tone, makeUp ]
+		context, opts.mix, pre, makeUp, [ pre, shaper, tone, makeUp ], ramps
 	);
 	stage.pre = pre;
 	stage.tone = tone;
@@ -302,9 +312,10 @@ function buildDistortion( context, opts ) {
  * @returns {Object} Stage
  */
 function buildChorus( context, opts ) {
+	const ramps = new Map();
 	const lfo = context.createOscillator();
-	setParam( lfo.frequency, opts.rate );
-	const stage = createMixStage( context, opts.mix, null, null, [ lfo ] );
+	setParam( ramps, lfo.frequency, opts.rate );
+	const stage = createMixStage( context, opts.mix, null, null, [ lfo ], ramps );
 	stage.depths = [];
 	for( const side of [ -1, 1 ] ) {
 
@@ -314,7 +325,7 @@ function buildChorus( context, opts ) {
 		delay.channelCountMode = "explicit";
 		delay.delayTime.value = CHORUS_DELAY;
 		const depth = context.createGain();
-		setParam( depth.gain, side * opts.depth / 1000 );
+		setParam( ramps, depth.gain, side * opts.depth / 1000 );
 		const panner = context.createStereoPanner();
 		panner.pan.value = side;
 		lfo.connect( depth );
@@ -343,7 +354,7 @@ function buildChorus( context, opts ) {
  * @returns {Object} Stage
  */
 function buildBitcrush( context, opts ) {
-	const stage = createMixStage( context, 0, null, null, [] );
+	const stage = createMixStage( context, 0, null, null, [], new Map() );
 	stage.opts = opts;
 	stage.pending = true;
 	g_worklet.loadWorklet( context ).then( () => {
@@ -357,7 +368,7 @@ function buildBitcrush( context, opts ) {
 			"parameterData": { "bits": stage.opts.bits, "rate": stage.opts.rate }
 		} );
 		for( const name of [ "bits", "rate" ] ) {
-			setParam( node.parameters.get( name ), stage.opts[ name ] );
+			setParam( stage.ramps, node.parameters.get( name ), stage.opts[ name ] );
 		}
 		stage.input.connect( node );
 		node.connect( stage.wet );
@@ -369,7 +380,7 @@ function buildBitcrush( context, opts ) {
 		};
 		stage.pending = false;
 		for( const [ param, target ] of mixTargets( stage, stage.opts.mix ) ) {
-			rampParam( param, target, context.currentTime );
+			rampParam( stage.ramps, param, target, context.currentTime );
 		}
 	}, () => {
 		if( !m_crushWarned ) {
@@ -724,7 +735,7 @@ export function register( pluginApi, service ) {
 					const value = item.opts[ name ];
 					if( value !== stage.opts[ name ] ) {
 						for( const [ param, target ] of ramp[ name ]( stage, value ) ) {
-							rampParam( param, target, time );
+							rampParam( stage.ramps, param, target, time );
 						}
 					}
 				}
