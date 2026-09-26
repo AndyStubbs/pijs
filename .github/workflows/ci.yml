@@ -4,7 +4,7 @@
 # pushes to main. Realtime audio suites are skipped (no runner has a usable audio device), and
 # macOS runs the visual suites in report-only pixel mode, because its SwiftShader backend
 # differs from the baselines (G4). GitHub sets CI, so playwright.config.js retries a failure
-# once and fails on flaky tests.
+# once and fails on flaky tests. The same job then runs the Firefox check (task 3.4).
 #
 # size: builds the base and the change and writes the size diff to the job summary.
 name: CI
@@ -75,6 +75,18 @@ jobs:
           fi
 
       - run: npm test
+
+      # Firefox's release checks, run even when npm test fails. Firefox gets WebGL2 through
+      # webgl.force-enabled on Windows; on Linux only headed, under Xvfb with Mesa (task 2.6).
+      - name: Firefox check
+        if: ${{ !cancelled() }}
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo apt-get install -y --no-install-recommends xvfb libegl1 libegl-mesa0 libgles2
+            PI_FIREFOX_HEADED=true xvfb-run -a npm run test:firefox
+          else
+            npm run test:firefox
+          fi
 
       - name: Upload test results
         if: failure()

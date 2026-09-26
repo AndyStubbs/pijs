@@ -70,9 +70,9 @@ Recommendations in brief:
 - **Baselines (G4):** one baseline set with pinned SwiftShader flags, compared pixel for pixel
   on Linux and Windows. macOS runs the assertion tests, and its pixel results are reported
   without failing the run.
-- **Realtime audio:** the realtime suites run locally and in a report-only nightly job, not in
-  the CI gate.
-- **When CI runs:** Linux and Windows on every pull request; macOS on `main` and nightly.
+- **Realtime audio:** the realtime suites run locally, not in CI.
+- **When CI runs:** Linux and Windows on every pull request; macOS on `main`. There is no
+  nightly run (decided 2026-09-26, roadmap task 3.4).
 - **Release:** verification on tags, with `npm publish` kept manual for 2.3.0.
 
 ## 2. Results
@@ -315,13 +315,13 @@ Detailed in Section 6:
 
 - **Pull requests:** Linux and Windows, required once CI-003, CI-004, CI-005, CI-007, CI-011,
   and CI-013 land. Until then they run as non-required checks.
-- **`main` and nightly:** adds macOS. Its assertion tests are required, and its pixel results
-  are report-only (G4).
+- **`main`:** adds macOS. Its assertion tests are required, and its pixel results are
+  report-only (G4).
 - **Linux setup:** `npx playwright install --with-deps` (63 s) or the Playwright container
   image. **Windows and macOS setup:** a Playwright browser cache keyed on the Playwright
   version.
-- **Flakes:** `retries: 1` with `failOnFlakyTests`, and default workers (CI-006). Nightly adds
-  `--repeat-each=3` visuals, which E2 ran on every runner in 1–3 minutes.
+- **Flakes:** `retries: 1` with `failOnFlakyTests`, and default workers (CI-006).
+  `--repeat-each=3` visuals, which E2 ran on every runner in 1–3 minutes, are not scheduled.
 - **Artifacts:** the size report on every run. Test results, reports, and captures on failure,
   kept 14 days.
 - **Size diff:** a job summary against the base branch, from the Linux job, whose build matches
@@ -331,8 +331,8 @@ Detailed in Section 6:
 ### Q7. What stays manual
 
 - **Baseline approval.** CI uploads captures and never writes baselines.
-- **Realtime audio suites.** They run in local `npm test` on machines with an audio device and
-  in the report-only nightly job (CI-005).
+- **Realtime audio suites.** They run in local `npm test` on machines with an audio device
+  (CI-005).
 - **Listening checks, the input device pass, Safari, and hardware-GPU checks** (plan R.7).
 - **Performance and benchmark campaigns.**
 
@@ -359,8 +359,7 @@ ship in 2.3.0.
 
 | Workflow | Trigger | Jobs and matrix | Wall time |
 | --- | --- | --- | --- |
-| `ci.yml` | Pull request, push to `main` | `test` (`npm test` with `PI_AUDIO_REALTIME=0`) on `ubuntu-24.04` and `windows-2025`. `macos-15` added on `main`. `size` on Linux | 5–7 min per job, in parallel |
-| `nightly.yml` | Daily, manual | `test` on all three platforms, plus `test:firefox` (Linux under `xvfb-run`), `--repeat-each=3` visuals, and a report-only realtime-audio job on macOS | 10–15 min per job |
+| `ci.yml` | Pull request, push to `main` | `test` (`npm test` with `PI_AUDIO_REALTIME=0`, then `test:firefox`, on Linux under `xvfb-run`) on `ubuntu-24.04` and `windows-2025`. `macos-15` added on `main`. `size` on Linux | 5–7 min per job, in parallel |
 | `release.yml` | Tag `v*`, manual | `verify` as `ci.yml`, then `package` on Linux: copy to release, pack, version checks, draft release | About 10 min |
 
 Common settings:
@@ -369,7 +368,9 @@ Common settings:
 - Concurrency groups cancel superseded pull-request runs.
 - Current major versions of the actions (`checkout@v7`, `setup-node@v7`, `upload-artifact@v7`,
   `download-artifact@v8`), kept current by Dependabot.
-- Node 22, and Node 24 on nightly once G8 is decided.
+- Node 22.
+- No nightly workflow: development comes in bursts, so pull requests and pushes to `main` cover
+  what a schedule would (decided 2026-09-26, roadmap task 3.4).
 - Playwright pinned to the locked version. An upgrade is its own change, with a baseline review.
 
 ## 7. Portability Fixes and CI Changes
@@ -386,7 +387,7 @@ three platforms, or what the release needs (plan Section 9.4).
 | CI-005 | Make the realtime suites (`audio-stream-browser`, `audio-recording-realtime-browser`) skip with a stated reason when `PI_AUDIO_REALTIME=0`. CI sets it; local runs keep them | Yes | Section 2.4. Without it, the recording file costs 120 s per run, and Firefox fails on every device-less runner |
 | CI-006 | CI settings in `playwright.config.js`: `retries: 1` with `failOnFlakyTests`, and default workers | No (CI only) | Visuals take 1.3–2.1 times as long with 1 worker |
 | CI-007 | `.gitattributes`: `* text=auto eol=lf`, with binary markers for PNG, WAV, WebP, and fonts; then re-check out once on Windows | **Yes** | Release builds differ by checkout: `pi.min.js` is 207,944 bytes on Linux and macOS, 208,078 locally, and 208,248 on the Windows runner |
-| CI-008 | Timing-sensitive visual fixtures: `inpress_01`, `intouch_01`, `keyboard_commands`, and `shaders_lifecycle` | Owned elsewhere | Pointer and keyboard roadmaps, and the test audit handoff. Nightly repeats track them |
+| CI-008 | Timing-sensitive visual fixtures: `inpress_01`, `intouch_01`, `keyboard_commands`, and `shaders_lifecycle` | Owned elsewhere | Pointer and keyboard roadmaps, and the test audit handoff. CI skips the flaky ones until fixed (`ciSkip`, roadmap task 2.9) |
 | CI-009 | Re-record all baselines once, after CI-003, in one reviewed task | Yes | Clears the same drift seen on every platform (Section 2.3) |
 | CI-010 | The workflows in Section 6 | No (G5) | Ships when ready |
 | CI-011 | Add WebKit values to `test/unit/audio-tolerances.js`: Chromium's values, including `mixDeterminism`, and the WebKit calibration ranges in the comments | Yes | 95 of 95 pass on Linux and macOS (Section 2.4). With the sound workstream |
@@ -402,7 +403,7 @@ Recorded 2026-09-26. The maintainer accepted every recommendation.
 | G4 | How visual baselines work across platforms | **Closed:** one baseline set with pinned SwiftShader flags. Pixel comparisons are required on Linux and Windows and report-only on macOS (Q2) |
 | G5 | Whether CI must be running before 2.3.0 ships | **Closed:** no. The fixes marked "Yes" in Section 7 ship in 2.3.0 |
 | G6 | How much of publishing is automated | **Closed:** tag-triggered verification and a draft release. `npm publish` stays manual for 2.3.0 (Q8) |
-| G8 | The Node floor in `engines` | **Closed:** `>=22`. Node 18 and 20 are past end of life, and CI tests 22 and 24 |
+| G8 | The Node floor in `engines` | **Closed:** `>=22`. Node 18 and 20 are past end of life, and CI tests 22 |
 | E-C | Delete the temporary exploration branches | **Done 2026-09-26.** `ci-exploration`, `ci-exploration-results`, and `ci-exploration-results-e7` are deleted. `runners.json` and `runners-e7.json` keep the results |
 
 ## 9. Review Decisions
@@ -410,7 +411,7 @@ Recorded 2026-09-26. The maintainer accepted every recommendation.
 | ID | Decision | Notes |
 | --- | --- | --- |
 | CI-001–CI-007 | Accepted | Roadmap Phases 1–3 |
-| CI-008 | Accepted as a handoff | The pointer and keyboard roadmaps own the timing-sensitive fixtures. CI's nightly repeats report them |
+| CI-008 | Accepted as a handoff | The pointer and keyboard roadmaps own the timing-sensitive fixtures. CI skips the flaky ones until fixed (`ciSkip`, roadmap task 2.9) |
 | CI-009–CI-013 | Accepted | Roadmap Phases 1–3 |
 
 The accepted items are scheduled in [CI-V2.3-ROADMAP.md](CI-V2.3-ROADMAP.md).
