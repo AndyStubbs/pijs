@@ -1,0 +1,88 @@
+# Release verification (CI roadmap task 3.6, docs/plans/CI-V2.3-ROADMAP.md, decision G6).
+#
+# On a v* tag, or run by hand: runs ci.yml's test matrix on all three platforms, then builds the
+# package on Linux, checks that its versions agree (R.6), packs it, and attaches the tarball to
+# the version's draft GitHub release. npm publish stays manual and publishes that tarball. A
+# published release is never changed.
+name: Release
+
+on:
+  push:
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  package:
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+
+      # The build also copies its output to releases/pi-latest (copy-to-release)
+      - run: npm run build
+
+      # A tag run checks the tag against the versions; a manual run releases package.json's
+      - name: Check versions
+        id: version
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            npm run release:check -- --tag="$GITHUB_REF_NAME"
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          else
+            npm run release:check
+            echo "tag=v$( node -p "require( './package.json' ).version" )" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pack
+        id: pack
+        working-directory: releases/pi-latest
+        run: |
+          npm pack --dry-run
+          npm pack --json --pack-destination "$RUNNER_TEMP" > "$RUNNER_TEMP/pack.json"
+          name=$( node -p "require( process.env.RUNNER_TEMP + '/pack.json' )[ 0 ].filename" )
+          echo "file=$RUNNER_TEMP/$name" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package
+          path: ${{ steps.pack.outputs.file }}
+          retention-days: 14
+
+      # Attach the tarball to the version's draft release, creating the draft when there is
+      # none. A draft from an earlier run is updated to this commit; a published release fails
+      # the run and is left unchanged.
+      - name: Draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.version.outputs.tag }}
+          FILE: ${{ steps.pack.outputs.file }}
+        run: |
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          notes="Verified by $run_url from commit $GITHUB_SHA. Publish the attached tarball"
+          notes="$notes with npm publish, then publish this release."
+          draft=$( gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null || true )
+          if [ "$draft" = "false" ]; then
+            echo "::error::Release $TAG is already published; it was not changed."
+            exit 1
+          elif [ "$draft" = "true" ]; then
+            gh release edit "$TAG" --target "$GITHUB_SHA" --notes "$notes"
+            gh release upload "$TAG" "$FILE" --clobber
+          else
+            gh release create "$TAG" "$FILE" --draft --target "$GITHUB_SHA" \
+              --title "Pi.js ${TAG#v}" --notes "$notes"
+          fi

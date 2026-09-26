@@ -41,6 +41,7 @@ Afterwards, `git ls-files --eol` lists no `w/crlf` or `w/mixed` files.
 | `npm run test:performance-ui` | Performance report browser tests |
 | `npm run test:metadata` | Metadata parser and formatting tests |
 | `npm run size` | Minified and gzipped bundle, plugin, and differential sizes in `build/size-report.json` |
+| `npm run release:check [-- --tag=v<version>]` | After `npm run build`, checks that the tag, `package.json`, `releases/pi-latest/package.json`, and the bundle and declaration version banners agree (the release workflow runs it) |
 | `npm run size:diff -- <base.json> <head.json>` | Markdown table of the byte and gzip changes per bundle and plugin between two size reports, printed to stdout (CI's size job summary) |
 | `npm run sound:references` | Re-record the Pi.js 2.2 reference renders used by the sound lab |
 
