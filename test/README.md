@@ -239,7 +239,7 @@ Each visual mode (`full`, `lite`, `plugins`) has independent outputs:
 - `test/test-results/<mode>/screenshots/`, `logs/`, and `traces/`: diagnostic artifacts.
 - `test/playwright-report/<mode>/`: Playwright HTML report.
 
-Full mode contains 35 HTML fixtures, lite selects 20 of those, and plugins contains 8.
+Full mode contains 35 HTML fixtures, lite selects 20 of those, and plugins contains 2.
 Each selected fixture runs once by default. Playwright lists these as tests in one JavaScript
 runner file. Explicit `--repeat-each` repetitions are separate executions; retries are attempts
 within an execution. Copied runners under benchmark campaigns are excluded from discovery.
@@ -260,6 +260,50 @@ Never approve changed images merely to make a test pass.
 Missing baselines produce candidate screenshots and a pending-review result. Focused visual runs
 allow this review workflow; `npm test` fails while baseline approvals remain outstanding. Rerun
 validation after any deliberate baseline change.
+
+## Continuous integration
+
+GitHub Actions runs three things from `.github/`:
+
+| File | Runs on | What it runs |
+| --- | --- | --- |
+| `workflows/ci.yml` | Every pull request and push to `main` | `test`: `npm test`, then `npm run test:firefox`, on `ubuntu-24.04` and `windows-2025`, and on `macos-15` for pushes to `main`. `size`: the size report of the change and its base, with `npm run size:diff` in the job summary |
+| `workflows/release.yml` | A `v*` tag, or a manual run | The `ci.yml` jobs on all three platforms, then a Linux `package` job: `npm run build`, `npm run release:check`, `npm pack`, and the tarball attached to the version's draft GitHub release ([publish guide](../releases/PUBLISH.md)) |
+| `dependabot.yml` | Weekly | A pull request when a GitHub Action used by the workflows has a new version |
+
+The `test` job differs from a local `npm test` in these settings:
+
+- `CI` is set: a failed visual test is retried once and a flaky one fails the run, and fixtures
+  with `ciSkip` are skipped.
+- `PI_AUDIO_REALTIME=0`: runners have no audio device, so the realtime audio suites skip.
+- `PI_VISUAL_PIXELS=report` on macOS, whose SwiftShader backend differs from the baselines in a
+  few fixtures; its pixel mismatches are printed without failing.
+- The Firefox check runs headed under `xvfb-run` on Linux.
+
+A pull request merges only with `ci.yml` green on Linux and Windows; the CI roadmap's "Branches
+and pull requests" section has the full rules. When a job fails, its log names the failing
+test, and the job uploads `test/test-results/` and `test/playwright-report/` as an artifact kept
+14 days:
+
+```sh
+gh run view <run-id> --log-failed
+gh run download <run-id> --name test-results-<os>
+```
+
+To reproduce a failure locally, run the same stage with the CI settings. In bash (Linux, macOS,
+or WSL):
+
+```sh
+CI=true PI_AUDIO_REALTIME=0 npm test
+CI=true npm run test:grep -- "fixture name"
+PI_VISUAL_PIXELS=report CI=true npm run test:visual
+PI_FIREFOX_HEADED=true xvfb-run -a npm run test:firefox
+```
+
+In PowerShell, set the variables first, for example `$env:CI = "true"`, then run the command.
+Windows failures reproduce on Windows. For a Linux failure, use a fresh clone in WSL with its own
+`npm ci` and `npx playwright install --with-deps chromium firefox webkit`, not the Windows
+working tree. For a visual test that may be flaky, add `--repeat-each=5` to a focused visual run.
 
 ## Performance and integration evidence
 
