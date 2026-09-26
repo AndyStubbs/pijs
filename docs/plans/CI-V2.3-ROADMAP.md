@@ -1,9 +1,8 @@
 # Pi.js 2.3 CI/CD Roadmap
 
-Status: Phases 1 and 2 complete (milestones C1 and C2, 2026-09-26); Phase 3 in progress (tasks
-3.1–3.7 and 3.9 done; `ci.yml` first green on `main` in run 36266162164, and `release.yml`'s
-first manual run, 36276727365, drafted `v2.3.0` with the verified tarball, 2026-09-26). Next:
-3.8, required checks, after a week of green runs (see Task order)
+Status: Complete. Phases 1–3 done (milestones C1–C3, 2026-09-26): `ci.yml` first green on `main`
+in run 36266162164; `release.yml`'s first manual run, 36276727365, drafted `v2.3.0` with the
+verified tarball; branch protection on `main` requires the Linux, Windows, and size checks
 Exploration: [CI-V2.3-EXPLORATION.md](CI-V2.3-EXPLORATION.md) (the `CI-0xx` items, questions,
 and sections below refer to it)
 Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md) (Section 9, decisions G4–G6 and G8)
@@ -68,8 +67,8 @@ Task 3.3 itself lands on `main` directly, and its first push run is the first `c
   `AGENTS.md`: the behavior change, the validation commands run, and before/after screenshots
   for rendering changes. The roadmaps record progress; tasks are not tracked as GitHub issues.
 - **Merge only with `ci.yml` green** on Linux and Windows. A red check is fixed or explained in
-  the pull request, never merged over. Until task 3.8 makes the checks required, this is a
-  rule, not a setting.
+  the pull request, never merged over. Branch protection on `main` requires these checks
+  (task 3.8).
 - **Squash-merge small tasks,** so `main` keeps one commit per task. Keep a merge commit for
   larger work with meaningful steps, such as the input roadmaps' breaking API changes.
 - **Delete the branch after merging.**
@@ -219,7 +218,7 @@ Tasks 3.4–3.8 follow it.
 | 3.5 | **Dependabot** for GitHub Actions versions (`.github/dependabot.yml`), weekly. It opens a pull request only when an action has a new version, with all such updates grouped into one | Section 6 |
 | 3.6 | **Release workflow (`release.yml`).**<br>• Triggers: a `v*` tag, and manual runs.<br>• Runs the `ci.yml` test matrix, macOS included, by calling `ci.yml` (`workflow_call`).<br>• A Linux `package` job then:<br>&nbsp;&nbsp;• builds, which runs `copy-to-release`;<br>&nbsp;&nbsp;• checks that the tag, `package.json`, `releases/pi-latest/package.json`, the library bundle and declaration banners, and the plugin banners agree (R.6), with `npm run release:check` (`scripts/release-check.js`, tested in `test/scripts/`);<br>&nbsp;&nbsp;• runs `npm pack --dry-run` and `npm pack` in `releases/pi-latest`;<br>&nbsp;&nbsp;• attaches the tarball to the version's draft GitHub release, creating it or updating an earlier draft. A published release fails the run and is not changed.<br>• `npm publish` stays manual and publishes that tarball | G6, Q8 |
 | 3.7 | **Documentation.** Add a CI section to `test/README.md`: the workflows, what each runs, and how to reproduce a CI failure locally. In the publish guide, add the release workflow and the rule that the published tarball is the one the release workflow verified | Q7, Q8 |
-| 3.8 | **Required checks.** The maintainer configures branch protection on `main`. The Linux and Windows `test` jobs and the `size` job become required after one week green. The macOS `test` job becomes required after two weeks green | Q6 |
+| 3.8 | **Required checks.** The maintainer configures branch protection on `main` requiring `test (ubuntu-24.04)`, `test (windows-2025)`, and `size`, with branches not required to be up to date and admins able to override. They became required after 14 consecutive green `ci.yml` runs (7 pull requests, 7 pushes to `main`); with development in bursts, green runs measure stability better than weeks. `test (macos-15)` is not required: it runs only on pushes to `main`, so a pull request would wait for it forever. It keeps checking every push to `main` | Q6 |
 | 3.9 | **GitHub CLI and pull requests.** The maintainer installs and signs in to `gh` (GitHub CLI setup, above). From the first green `ci.yml` run on `main`, follow Branches and pull requests | Q6 |
 
 Exit criteria:
