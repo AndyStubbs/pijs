@@ -1,0 +1,69 @@
+{
+	"task": "CI roadmap 1.4: re-record every visual baseline once",
+	"date": "2026-09-26",
+	"revision": "5e64233 (after tasks 1.1-1.3 and the plugin removal)",
+	"environment": "Windows 11, Node 22.19.0, Playwright 1.56.0, Chromium 141.0.7390.37 with --disable-gpu --enable-unsafe-swiftshader",
+	"method": "npm run test:visual ran twice on Windows. Every capture was compared with its approved baseline and between the two runs, full-mode and lite-mode captures of the same fixture were compared, and the Linux (WSL) captures were compared with the Windows ones. The maintainer reviewed a sheet of baseline, capture, and change map for each capture with changed pixels before the baselines were replaced.",
+	"baselines": 37,
+	"unchanged": 30,
+	"changedPixels": [
+		{
+			"fixture": "draw_comprehensive",
+			"size": "640x480",
+			"changedPixels": 2,
+			"overTolerancePixels": 2,
+			"overTolerancePercent": 0.0007,
+			"maxChannelSum": 595,
+			"cause": "Two isolated pixels"
+		},
+		{
+			"fixture": "keyboard_input",
+			"size": "640x480",
+			"changedPixels": 146,
+			"overTolerancePixels": 146,
+			"overTolerancePercent": 0.0475,
+			"maxChannelSum": 170,
+			"cause": "Stale baseline: test 5 read 'Cancelled as expected: This is a test', which the current fixture cannot print. Cancellation resolves with null (docs/API.md), and the new capture reads 'Cancelled as expected: null'"
+		},
+		{
+			"fixture": "paint_02",
+			"size": "256x256",
+			"changedPixels": 17025,
+			"overTolerancePixels": 12,
+			"overTolerancePercent": 0.0183,
+			"maxChannelSum": 403,
+			"cause": "Seeded drawing noise (setNoise( 25, 5 )) renders slightly different values than when the baseline was approved; the pixels over tolerance are flood-fill edges moved by the noise"
+		},
+		{
+			"fixture": "paint_03",
+			"size": "256x256",
+			"changedPixels": 13907,
+			"overTolerancePixels": 53,
+			"overTolerancePercent": 0.0809,
+			"maxChannelSum": 268,
+			"cause": "Seeded drawing noise (setNoise( 35, 1 )), as paint_02"
+		},
+		{
+			"fixture": "parameters_01",
+			"size": "100x100",
+			"changedPixels": 556,
+			"overTolerancePixels": 0,
+			"overTolerancePercent": 0,
+			"maxChannelSum": 3,
+			"cause": "Color values differ by at most 3; not visible"
+		}
+	],
+	"encodingOnly": {
+		"fixtures": [
+			"paint_01",
+			"screen_draw_offscreen_01"
+		],
+		"note": "Identical pixels; only the PNG encoding bytes differed. Re-recorded so every baseline is byte-identical to a current capture"
+	},
+	"checks": {
+		"liteMatchesFull": "all 20 lite captures byte-identical to the full-mode capture of the same fixture",
+		"runToRun": "only keyboard_commands differed between the two Windows runs (timing, CI-008); its baseline was kept",
+		"linuxVsWindows": "55 of 57 captures byte-identical; inpress_01 and keyboard_commands differ (timing, CI-008)",
+		"afterReplacement": "Windows and Linux: all 57 captures pass, and every capture is byte-identical to its baseline except keyboard_commands"
+	}
+}
