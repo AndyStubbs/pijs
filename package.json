@@ -45,7 +45,7 @@
 	},
 	"homepage": "https://www.pijs.org",
 	"engines": {
-		"node": ">=18.0.0"
+		"node": ">=22"
 	},
 	"devDependencies": {
 		"@iarna/toml": "^2.2.3",
