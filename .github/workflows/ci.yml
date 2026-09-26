@@ -1,0 +1,122 @@
+# Pull-request checks (CI roadmap task 3.3, docs/plans/CI-V2.3-ROADMAP.md).
+#
+# test: npm test on Linux and Windows for every pull request and push to main, and on macOS for
+# pushes to main. Realtime audio suites are skipped (no runner has a usable audio device), and
+# macOS runs the visual suites in report-only pixel mode, because its SwiftShader backend
+# differs from the baselines (G4). GitHub sets CI, so playwright.config.js retries a failure
+# once and fails on flaky tests.
+#
+# size: builds the base and the change and writes the size diff to the job summary.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels its superseded run; runs on main all complete
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-24.04, windows-2025, macos-15 ]
+
+        # macOS runs on pushes to main only; an empty value excludes nothing
+        exclude:
+          - os: ${{ github.event_name == 'pull_request' && 'macos-15' || '' }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      PI_AUDIO_REALTIME: "0"
+      PI_VISUAL_PIXELS: ${{ matrix.os == 'macos-15' && 'report' || 'fail' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+
+      # Linux installs the browsers with their system libraries. Windows and macOS restore
+      # the browsers from a cache keyed on the locked Playwright version.
+      - name: Playwright version and browser path
+        id: playwright
+        run: |
+          echo "version=$( npx playwright --version | cut -d ' ' -f 2 )" >> "$GITHUB_OUTPUT"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            echo "path=~/AppData/Local/ms-playwright" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=~/Library/Caches/ms-playwright" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Browser cache
+        if: runner.os != 'Linux'
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.playwright.outputs.path }}
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - name: Install browsers
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            npx playwright install --with-deps chromium firefox webkit
+          else
+            npx playwright install chromium firefox webkit
+          fi
+
+      - run: npm test
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            test/test-results/
+            test/playwright-report/
+          retention-days: 14
+
+  size:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Size of the change
+        run: |
+          npm ci --no-audit --no-fund
+          npm run size -- --out="$RUNNER_TEMP/head.json"
+
+      # A push that creates main has no previous commit to compare with
+      - name: Check out the base
+        if: env.BASE_SHA != '0000000000000000000000000000000000000000'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.BASE_SHA }}
+          path: base
+      - name: Size of the base
+        if: env.BASE_SHA != '0000000000000000000000000000000000000000'
+        working-directory: base
+        run: |
+          npm ci --no-audit --no-fund
+          npm run size -- --out="$RUNNER_TEMP/base.json"
+      - name: Size diff
+        if: env.BASE_SHA != '0000000000000000000000000000000000000000'
+        run: |
+          node scripts/size-diff.js "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/head.json" \
+            >> "$GITHUB_STEP_SUMMARY"

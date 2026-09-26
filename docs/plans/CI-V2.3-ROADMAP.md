@@ -1,8 +1,8 @@
 # Pi.js 2.3 CI/CD Roadmap
 
 Status: Phase 1 complete (milestone C1, 2026-09-26); Phase 2 in progress (tasks 2.1, 2.3–2.5,
-and 2.8 done); Phase 3 in progress (tasks 3.1 and 3.2 done). Next: 3.3 and 3.9 (see Task
-order)
+and 2.8 done); Phase 3 in progress (tasks 3.1 and 3.2 done; 3.3 written, done with its first
+green run on `main`). Next: 3.9 (see Task order)
 Exploration: [CI-V2.3-EXPLORATION.md](CI-V2.3-EXPLORATION.md) (the `CI-0xx` items, questions,
 and sections below refer to it)
 Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md) (Section 9, decisions G4–G6 and G8)
