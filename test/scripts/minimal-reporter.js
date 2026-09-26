@@ -78,6 +78,12 @@ export default class MinimalReporter {
 			console.log( `Pixel mismatch (report only): ${test.screenshotName}: ` +
 				test.pixelMismatch );
 		}
+
+		// Name fixtures skipped for a reason other than a pending baseline, such as ciSkip
+		for( const test of tests.filter( item => item.status === "skipped" &&
+			!item.pendingBaseline && item.error ) ) {
+			console.log( `Skipped: ${test.screenshotName}: ${test.error}` );
+		}
 		const directory = g_path.resolve( this.outputRoot, "test/test-results", this.mode );
 		g_fs.mkdirSync( directory, { "recursive": true } );
 		g_fs.writeFileSync( g_path.join( directory, "summary.json" ),

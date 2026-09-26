@@ -730,6 +730,14 @@ test.describe( config.description, () => {
 			const testName = metadata.file || metadata.name;
 			let liteBundleRequests = 0;
 
+			// A fixture with ciSkip is flaky on CI runners; it runs locally until its owner
+			// fixes it, and CI reports it as skipped with the reason
+			if( process.env.CI && metadata.ciSkip ) {
+				const reason = `Skipped in CI: ${metadata.ciSkip}`;
+				test.info().annotations.push( { "type": "skip-reason", "description": reason } );
+				test.skip( true, reason );
+			}
+
 			results.total++;
 
 			// Check if reference exists before running test
