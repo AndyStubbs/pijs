@@ -3,7 +3,8 @@
  * that audio may start without a gesture. A recorded tone decodes with decodeAudioData at
  * the context's sample rate with the expected length and level, a suspended context captures
  * nothing, and saveRecording() downloads the Blob under its file name. WebKit is skipped:
- * Playwright's Windows build has no Web Audio API.
+ * Playwright's Windows build has no Web Audio API. Set PI_AUDIO_REALTIME=0 to skip the suite on
+ * machines without an audio device.
  *
  * Offline recording accuracy is covered in audio-recording-browser.test.js.
  */
@@ -44,6 +45,9 @@ let root = null;
 let server = null;
 
 before( async () => {
+	if( g_audioEngines.REALTIME_SKIP ) {
+		return;
+	}
 	root = await g_fs.mkdtemp( g_path.join( g_os.tmpdir(), "pi-audio-recording-" ) );
 	const bundle = await g_sourceHarness.buildSource( "src/index-full.js" );
 	const plugin = await g_sourceHarness.buildSource( "plugins/sound-advanced/index.js" );
@@ -64,7 +68,9 @@ after( async () => {
 	}
 } );
 
-describe( "sound recording (realtime)", { "concurrency": true }, () => {
+describe( "sound recording (realtime)", {
+	"concurrency": true, "skip": g_audioEngines.REALTIME_SKIP
+}, () => {
 	for( const engine of ENGINES ) {
 		describe( engine, { "concurrency": 1 }, () => {
 			let browser = null;

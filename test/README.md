@@ -158,6 +158,11 @@ Firefox, whose media start lags by up to 89 ms. The same file checks a decoded i
 rendered position after a rate change against the position model within 0.05 s of content,
 which is the realtime check on the scheduling lead. WebKit is skipped.
 
+The realtime suites, `audio-stream-browser.test.js` and
+`audio-recording-realtime-browser.test.js`, need an audio output device. Set
+`PI_AUDIO_REALTIME=0` to skip them on machines without one, as CI does; the test output states
+the reason. Unset or `1` runs them, and any other value fails.
+
 Focused level and timing checks call `setSoundLimiter( false )`: Chromium's compressor delays
 its output by about 6 ms, and the limiter changes levels above its threshold.
 

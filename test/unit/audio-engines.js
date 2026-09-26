@@ -3,6 +3,7 @@
  *
  * Audio tests run in Chromium, Firefox, and WebKit from one command. Set PI_AUDIO_ENGINES to a
  * comma-separated subset, such as "chromium,firefox", to run fewer engines while iterating.
+ * Set PI_AUDIO_REALTIME=0 to skip the realtime suites on machines without an audio device.
  */
 import * as g_playwright from "@playwright/test";
 import * as g_chromiumLaunch from "./chromium-launch.js";
@@ -39,6 +40,27 @@ function parseEngines( value ) {
 }
 
 const AUDIO_ENGINES = parseEngines( process.env.PI_AUDIO_ENGINES );
+
+/**
+ * Parses the realtime audio switch from PI_AUDIO_REALTIME.
+ *
+ * The realtime suites play through a real AudioContext and need an audio output device, which
+ * CI runners lack.
+ *
+ * @param {string|undefined} value - "0" to skip; "1", empty, or undefined to run
+ * @returns {string|false} The skip reason, or false to run the realtime suites
+ */
+function parseRealtime( value ) {
+	if( value === undefined || value.trim() === "" || value.trim() === "1" ) {
+		return false;
+	}
+	if( value.trim() === "0" ) {
+		return "PI_AUDIO_REALTIME=0: realtime audio needs an audio output device";
+	}
+	throw new Error( `PI_AUDIO_REALTIME: unknown value "${value}"; use 0 or 1.` );
+}
+
+const REALTIME_SKIP = parseRealtime( process.env.PI_AUDIO_REALTIME );
 
 /**
  * Launch options that let a realtime AudioContext and media elements play without a user
@@ -126,4 +148,7 @@ async function createReusablePage( browser, initScript ) {
 	};
 }
 
-export { ALL_ENGINES, AUDIO_ENGINES, createReusablePage, launchEngine, parseEngines };
+export {
+	ALL_ENGINES, AUDIO_ENGINES, REALTIME_SKIP, createReusablePage, launchEngine, parseEngines,
+	parseRealtime
+};

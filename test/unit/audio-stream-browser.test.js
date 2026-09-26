@@ -8,7 +8,8 @@
  * It asserts observable state rather than rendered samples: readiness at canplay, media event
  * order, element positions after play, pause, resume, and rate changes, replacement, rate
  * limits, and audibility at the stream rate bounds. WebKit is skipped: Playwright's Windows
- * build has no Web Audio API.
+ * build has no Web Audio API. Set PI_AUDIO_REALTIME=0 to skip the suite on machines without an
+ * audio device.
  *
  * Timing tolerance: element and timer timing make stream positions approximate (plan 7.3).
  * Positions are compared with the elapsed wall time since each call. Observed with
@@ -144,6 +145,9 @@ let root = null;
 let server = null;
 
 before( async () => {
+	if( g_audioEngines.REALTIME_SKIP ) {
+		return;
+	}
 	root = await g_fs.mkdtemp( g_path.join( g_os.tmpdir(), "pi-audio-stream-" ) );
 	const bundle = await g_sourceHarness.buildSource( "src/index-full.js" );
 	await g_fs.writeFile( g_path.join( root, "pi.js" ), bundle );
@@ -169,7 +173,9 @@ after( async () => {
 	}
 } );
 
-describe( "stream mode (realtime)", { "concurrency": true }, () => {
+describe( "stream mode (realtime)", {
+	"concurrency": true, "skip": g_audioEngines.REALTIME_SKIP
+}, () => {
 	for( const engine of ENGINES ) {
 		describe( engine, { "concurrency": 1 }, () => {
 			let browser = null;
