@@ -755,3 +755,41 @@ test( "KEY-005 a long value scrolls within one line (K11)", async () => {
 	assert.equal( h.first.prints[ h.first.prints.length - 1 ], "?" + typed.slice( -14 ) );
 	empty( h );
 } );
+
+test( "KEY-008 numeric prompts keep to their patterns (K10)", async () => {
+	const cases = [
+		[ "maxLength counts the sign", { "isNumber": true, "allowNegative": true,
+			"maxLength": 2 }, [ "1", "2", "-" ], 12 ],
+		[ "a sign within maxLength", { "isNumber": true, "allowNegative": true,
+			"maxLength": 2 }, [ "-", "1", "2" ], -1 ],
+		[ "a leading decimal point", { "isNumber": true }, [ ".", "5" ], 0.5 ],
+		[ "one decimal point", { "isNumber": true }, [ "1", ".", "2", ".", "3" ], 1.23 ],
+		[ "no decimal point in integers", { "isNumber": true, "isInteger": true },
+			[ "1", [ ".", "NumpadDecimal" ], "0" ], 10 ],
+		[ "no spaces", { "isNumber": true }, [ " ", "4", " " ], 4 ],
+		[ "isInteger alone returns a number", { "isInteger": true }, [ "1", "2", "a" ], 12 ],
+		[ "no sign without allowNegative", { "isNumber": true }, [ "-", "3" ], 3 ],
+		[ "+ removes the sign", { "isNumber": true, "allowNegative": true },
+			[ "5", "-", "+" ], 5 ],
+		[ "the Equal key is not +", { "isNumber": true, "allowNegative": true },
+			[ "-", "5", [ "=", "Equal" ] ], -5 ],
+		[ "no digits is 0", { "isNumber": true, "allowNegative": true }, [ "-", "." ], 0 ],
+		[ "negative zero is 0", { "isInteger": true, "allowNegative": true }, [ "-", "0" ], 0 ],
+		[ "text prompts take any character", {}, [ "-", " ", "." ], "- ." ]
+	];
+	for( const [ name, options, keys, expected ] of cases ) {
+		const h = harness();
+		const pending = h.start( h.first, null, options );
+		for( const key of keys ) {
+			if( Array.isArray( key ) ) {
+				h.key( key[ 0 ], "down", { "code": key[ 1 ] } );
+			} else {
+				h.key( key );
+			}
+		}
+		h.key( "Enter" );
+		const value = await pending;
+		assert.ok( Object.is( value, expected ), `${name}: ${value}` );
+		empty( h );
+	}
+} );
