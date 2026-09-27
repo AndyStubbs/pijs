@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<title>Data Edit</title>
-		<script src="../build/dist/pi.js"></script>
+		<script src="../build/pi.js"></script>
 		<style>
 			html, body {
 				background-color: black;
@@ -555,14 +555,14 @@ async function stateDataSize() {
 	// Get the width
 	let width = -1;
 	while( width < 5 || width > 50 ) {
-		width = await $.input( "Width (5 - 50): ", null, true, true, false );
+		width = await $.input( "Width (5 - 50): ", null, null, true, true, false );
 	}
 	g_size[ 0 ] = width;
 
 	// Get the height
 	let height = -1;
 	while( height < 5 || height > 50 ) {
-		height = await $.input( "Height (5 - 50): ", null, true, true, false );
+		height = await $.input( "Height (5 - 50): ", null, null, true, true, false );
 	}
 	g_size[ 1 ] = height;
 

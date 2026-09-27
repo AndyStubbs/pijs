@@ -446,3 +446,26 @@ keeps its drawing check.
 - **Before**: `keyboard-lifecycle` 20 Node tests; `keyboard-lifecycle-browser` 10
 - **After**: `keyboard-lifecycle` 22 Node tests; `keyboard-lifecycle-browser` 6
 - **Pass Rate**: 100%
+
+## 2.3 Keyboard 1.12: Manual Pages
+
+Date: 2026-09-27. Plan: `docs/plans/v2.3/ROADMAP.md`, Section 5.1, task 1.12 (KEY-018,
+`docs/plans/v2.3/AUDIT-TESTS.md` §5.3).
+
+### Removed Test Files
+1. `test/tests/html-manual/input_01.html` - A manual `input()` page. Each case is covered:
+   - Text input: the `keyboard_input` visual fixture (tests 1 and 6) and the Node prompt tests
+     in `keyboard-lifecycle.test.js`.
+   - Number, integer, and negative number with a callback: `keyboard_input` (tests 1-3) and the
+     Node test "KEY-008 numeric prompts keep to their patterns (K10)".
+   - A custom cursor (`"$"`): the new Node test "SYS-003 a custom cursor is drawn after the
+     value and hidden when the prompt ends", which checks the printed line. It was not added to
+     the `keyboard_input` fixture: the fixture is captured after every prompt has ended, when
+     no cursor is drawn, and holding a prompt open for the capture would depend on the 500 ms
+     blink. Break: the prompt ignores its `cursor` option; that test and "KEY-005 a long value
+     scrolls within one line (K11)" fail.
+
+### Test Results
+- **Before**: `keyboard-lifecycle` 42 Node tests
+- **After**: `keyboard-lifecycle` 43 Node tests
+- **Pass Rate**: 100%

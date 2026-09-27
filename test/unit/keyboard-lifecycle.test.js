@@ -918,3 +918,18 @@ test( "KEY-017 setActionKeys() adds keys and removeActionKeys() removes them (K2
 		[ [ false, false ], [ true, true ] ] );
 	assert.deepEqual( prevented( "KeyB" ), [ false, false ] );
 } );
+
+test( "SYS-003 a custom cursor is drawn after the value and hidden when the prompt ends",
+	async () => {
+		const h = harness();
+		const pending = h.start( h.first, null, {
+			"prompt": "Age? ", "cursor": "$", "isNumber": true
+		} );
+		h.key( "4" );
+		h.key( "2" );
+		assert.equal( h.first.prints[ h.first.prints.length - 1 ], "Age? 42$" );
+		h.key( "Enter" );
+		assert.equal( await pending, 42 );
+		assert.equal( h.first.prints[ h.first.prints.length - 1 ], "Age? 42" );
+		empty( h );
+	} );
