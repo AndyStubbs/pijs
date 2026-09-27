@@ -882,3 +882,22 @@ test( "KEY-012 starting the keyboard keeps focus, and start and stop are idempot
 		assert.deepEqual( calls, [ "KeyB" ] );
 		assert.equal( h.api.inkey( "KeyB" ).code, "KeyB" );
 	} );
+
+test( "KEY-013 key data cannot be changed through inkey() or handlers (K7)", () => {
+	const h = harness();
+	const received = [];
+	h.api.onkey( "KeyA", "down", data => received.push( data ) );
+	h.api.onkey( [ "KeyA", "KeyB" ], "up", data => received.push( data ) );
+	h.api.onkey( "any", "up", data => received.push( data ) );
+	h.key( "a", "down", { "code": "KeyA" } );
+	h.key( "b", "down", { "code": "KeyB" } );
+	const polled = h.api.inkey( "KeyA" );
+	assert.throws( () => { polled.code = "Mutated"; }, TypeError );
+	assert.throws( () => { received[ 0 ].key = "Mutated"; }, TypeError );
+	assert.equal( h.api.inkey( "KeyA" ).code, "KeyA" );
+	assert.notEqual( h.api.inkey(), h.api.inkey(), "each list read is a new array" );
+	h.key( "b", "up", { "code": "KeyB" } );
+	const [ , combination, release ] = received;
+	assert.ok( combination.every( data => Object.isFrozen( data ) ) );
+	assert.ok( Object.isFrozen( release ) );
+} );

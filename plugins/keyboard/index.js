@@ -380,11 +380,14 @@ function invokeHandler( handler, data ) {
 /**
  * Copy the state of a key event into key data.
  *
+ * The data is frozen, because the same object is stored as held state, returned by inkey(),
+ * and passed to handlers: callers must not be able to change plugin state through it.
+ *
  * @param {KeyboardEvent} event - Keydown or keyup event
- * @returns {Object} Key data
+ * @returns {Object} Frozen key data
  */
 function createKeyData( event ) {
-	return {
+	return Object.freeze( {
 		"code": event.code,
 		"key": event.key,
 		"location": event.location,
@@ -393,7 +396,7 @@ function createKeyData( event ) {
 		"metaKey": event.metaKey,
 		"shiftKey": event.shiftKey,
 		"repeat": event.repeat
-	};
+	} );
 }
 
 /**
