@@ -752,7 +752,7 @@ the [ROADMAP](ROADMAP.md#5-keyboard) tasks that implement each item.
 | KEY-008 | Numeric prompt edge cases | Accepted | Fixed by A6 (Keyboard 1.7, done) |
 | KEY-009 | Validation gaps | Accepted | Fixed by A7 with I11 codes (Keyboard 2.7) |
 | KEY-010 | Caller's array sorted; duplicates fire twice | Accepted | Fixed by A7 (Keyboard 2.7) |
-| KEY-011 | Release data and unseen presses | Accepted | Fixed by A8 (Keyboard 1.8); blur releases by I6 (Keyboard 2.4) |
+| KEY-011 | Release data and unseen presses | Accepted | Fixed by A8 (Keyboard 1.8, done); blur releases by I6 (Keyboard 2.4) |
 | KEY-012 | `startKeyboard()` blurs focus | Accepted | Fixed by A9 (Keyboard 1.9) |
 | KEY-013 | Live key data | Accepted | Fixed by A10 (Keyboard 1.10) and I7 (Keyboard 2.5) |
 | KEY-014 | `setActionKeys()` adds | Accepted | Fixed by A12 (Keyboard 2.9, breaking) |
