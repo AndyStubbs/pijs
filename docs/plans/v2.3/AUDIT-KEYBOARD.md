@@ -754,7 +754,7 @@ the [ROADMAP](ROADMAP.md#5-keyboard) tasks that implement each item.
 | KEY-010 | Caller's array sorted; duplicates fire twice | Accepted | Fixed by A7 (Keyboard 2.7) |
 | KEY-011 | Release data and unseen presses | Accepted | Fixed by A8 (Keyboard 1.8, done); blur releases by I6 (Keyboard 2.4) |
 | KEY-012 | `startKeyboard()` blurs focus | Accepted | Fixed by A9 (Keyboard 1.9, done) |
-| KEY-013 | Live key data | Accepted | Fixed by A10 (Keyboard 1.10) and I7 (Keyboard 2.5) |
+| KEY-013 | Live key data | Accepted | Fixed by A10 (Keyboard 1.10, done) and I7 (Keyboard 2.5) |
 | KEY-014 | `setActionKeys()` adds | Accepted | Fixed by A12 (Keyboard 2.9, breaking) |
 | KEY-015 | No composed or pasted text | Accepted | Fixed by A16 in 2.3.0 (Keyboard 3.1); paste also by A3 |
 | KEY-016 | `clearEvents()` scope | Accepted | Rule I10 (Keyboard 2.6) |
