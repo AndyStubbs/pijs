@@ -19,7 +19,7 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 | 1 | Approve [Keyboard](#5-keyboard), [Pointer](#6-pointer), and [Gamepad](#7-gamepad) | Maintainer review of the drafted input phases; reaches milestone U2 | Nothing |
 | 2 | Keyboard 1.1, Pointer 1.1, Gamepad 1.1 | Start the three input Phase 1s, in parallel | 1 |
 | 3 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
-| 4 | [Core 5–7, 9–12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
+| 4 | [Core 5–13](#32-phase-2-fixes) | Remaining core fixes, tests, and the two approved API changes, in any order. Core 8 and Core 13 land before the pointer and gamepad Phase 2 sets | Nothing. Can run in parallel |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -27,7 +27,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
-| Core | [3](#3-core) | Phase 1 done. Core 1, 2, and 4 done, 9 tasks left | Core 5–7, 9–12 |
+| Core | [3](#3-core) | Phase 1 done. Core 1, 2, and 4 done, 10 tasks left | Core 5–13 |
 | Sound | [4](#4-sound) | Phases 0–9 done; Phases 10–11 not started | Sound 10.1 |
 | Keyboard | [5](#5-keyboard) | Draft, awaiting approval | Approval |
 | Pointer | [6](#6-pointer) | Draft, awaiting approval | Approval |
@@ -78,7 +78,7 @@ Pi.js 2.3 is an API-quality release for the core plugins:
 | --- | --- |
 | Compatibility | Breaking changes are allowed in `sound`, `keyboard`, `pointer`, and `gamepad` when an accepted audit or design item justifies them. Each needs a recorded rationale and an entry in its workstream's compatibility summary |
 | Core API | Core stays stable unless a change fixes a confirmed defect or serves an accepted plugin change. Each core API change needs explicit maintainer approval. C7 (strict `set()`) is the only one approved |
-| Removed APIs | Removed or renamed commands and parameters fail loudly: an unknown command, or a validation error that names the change. Values are never silently reinterpreted. No aliases (I16) |
+| Removed APIs | Removed or renamed commands and parameters fail loudly: an unknown command, or a validation error that names the change. Values are never silently reinterpreted. No aliases (I16). One exception: a parameter removed from a removal command (`offX()`) is ignored when it can no longer change which handler is removed, such as `offKey`'s `once` and `allowRepeat` under I4 |
 | Plugin versions | A plugin's banner moves to the next major version with its first breaking change, and to a new minor version for additive changes only. The version changes in the task that makes the change. `sound` is 2.0.0 and `sound-advanced` 1.0.0; the input plugins move to 2.0.0 with their Phase 2 (G1) |
 | Package version | Staged at `2.3.0` / `"2.3"` (Sound 0.2). Every API change is layered under `metadata/pi-2.3/` |
 | Upgrade guide | One user-facing `docs/UPGRADE-V2.3.md` for the whole release, written in R.4 from the workstreams' compatibility summaries |
@@ -209,19 +209,39 @@ item takes precedence.
 | I1 | **camelCase names.** Every input command is camelCase: `inX` for polling, `onX`/`offX` for handlers, `startX`/`stopX`, and `setX` for settings. Renames: `inkey`, `onkey`, `offkey` become `inKey`, `onKey`, `offKey`. `inmouse`, `onmouse`, `offmouse` become `inMouse`, `onMouse`, `offMouse`, and likewise for touch (`inTouch`, `onTouch`, `offTouch`) and press (`inPress`, `onPress`, `offPress`). `onclick`, `offclick` become `onClick`, `offClick`. `ingamepad` becomes `inGamepad`. Other commands keep their names except where I2, I12, or an accepted audit item renames them | All three plugins; gamepad A5, pointer B11 |
 | I2 | **Handler signature.** `onX( [selector,] mode, fn, once, …extras )` and `offX( [selector,] mode, fn )`. Commands with one event have no mode: `onClick( fn, once, hitBox, customData )`, `onWheel( fn, once, hitBox, customData )`. Gamepad connection handlers become `onGamepad( mode, fn, once )` and `offGamepad( mode, fn )` with modes `"connect"` and `"disconnect"`, replacing `onGamepadConnected` and `onGamepadDisconnected`. Music sync is `onPlay( mode, fn, once )` and `offPlay( mode, fn )` with modes `"note"` and `"end"`. The object form of each command follows its parameter names | Gamepad A5, PAD-012, pointer B11, Sound 9.3 |
 | I3 | **Pointer modes.** `onMouse`, `onTouch`, and `onPress` all use `"down"`, `"move"`, and `"up"`, matching the `action` field of pointer B7's data. `onTouch( "start" )` and `onTouch( "end" )` throw an `INVALID_MODE` error that names the new mode | Pointer B7, PTR-013 |
-| I4 | **Removal.** A handler is identified by its selector (key or key set), mode, and function; `once`, `allowRepeat`, hit boxes, and custom data are ignored. Registering the same function for the same selector and mode again does nothing, as in the DOM. `offX( mode )` without a function removes every handler of that mode. `offX( null, fn )`, or the object form without `mode`, removes the function from every mode. Omitting both throws; use `clearEvents()`. Keyboard's selector is always required | KEY-007, keyboard A14, PTR-009, pointer B1, gamepad A5 |
-| I5 | **Start and stop.** Tracking starts on first use: the first read, handler registration, or a setting that needs tracking. Listeners are attached then, not at plugin load. After `stopX()`, tracking stays stopped until `startX()`. While stopped, reads return empty state, and handlers stay registered but are not called. A stop releases held input as I6 describes. The `input()` prompt keeps its own listener (keyboard A2) | KEY-006, keyboard A13, PAD-012, PTR-010, pointer B12, gamepad A12 |
-| I6 | **Cancelled input.** A release the player did not make is dispatched through the normal `"up"` mode with `cancelled: true` in its data. This covers the page becoming hidden, a stop command, `touchcancel`, and, for keyboard, window blur. Keyboard's blur, which clears held keys silently today, dispatches `"up"` for each held key. Gamepad has no button handlers; its polled state is released as gamepad A2 describes | Pointer B3, B5, PTR-007, KEY-011, keyboard A8 |
+| I4 | **Removal.** A handler is identified by its selector (key or key set), mode, and function; `once`, `allowRepeat`, hit boxes, and custom data are ignored. Registering the same function for the same selector and mode again does nothing, as in the DOM. `offX( mode )` without a function removes every handler of that mode. `offX( null, fn )`, or the object form without `mode`, removes the function from every mode. Omitting both throws `TypeError` with code `INVALID_MODE` and a message that points to `clearEvents()`. Commands with one event (`offClick`, `offWheel`) have an implied mode, so calling them without a function removes every handler of that command for the screen. Keyboard's selector is always required | KEY-007, keyboard A14, PTR-009, pointer B1, gamepad A5 |
+| I5 | **Start and stop.** Tracking starts on first use: the first read, handler registration, or a setting that needs tracking. Listeners are attached then, not at plugin load. After `stopX()`, tracking stays stopped until `startX()`. While stopped, reads return empty state, and handlers stay registered but are not called. A stop releases held input as I6 describes. The `input()` prompt keeps its own listener (keyboard A2). Per-canvas defaults that track no input, such as suppressing the context menu, apply from screen creation. Keyboard's `setActionKeys()` and `set( { actionKeys } )` start tracking, and pointer sets the canvas `touch-action` when touch or press tracking starts on that screen (pointer B10) | KEY-006, keyboard A13, PAD-012, PTR-010, pointer B12, gamepad A12 |
+| I6 | **Cancelled input.** A release the player did not make is dispatched through the normal `"up"` mode with `cancelled: true` in its data. This covers the page becoming hidden, a stop command, `touchcancel` and `pointercancel`, and, for keyboard, window blur, an event from an editable target, and an `input()` prompt taking the keyboard. Keyboard's blur and editable-target reset, which clear held keys silently today, dispatch `"up"` for each held key; a second trigger finds nothing held. A cancelled release never clicks. Every pointer and keyboard data object carries a boolean `cancelled`, `false` unless cancelled; a cancelled keyboard `"up"` copies the last keydown's fields with `repeat: false`. Gamepad has no button handlers; a hidden page and `stopGamepad()` release its polled state as gamepad A2 describes | Pointer B3, B5, PTR-007, KEY-011, keyboard A8 |
 | I7 | **Polled and callback objects.** Reads do not allocate. Keyboard and pointer data objects are created once per event and frozen; a single-item read returns the latest one until the next event, and handlers receive the same objects. List reads (`inKey()`, `inTouch()`) return a frozen array that is replaced when the state changes. Gamepad pads are live objects updated in place once per frame, and `inGamepad()` reuses one array per frame (gamepad A7); both are documented as live | KEY-013, keyboard A10, pointer B13, PAD-009, gamepad A7 |
-| I8 | **Dispatch.** State is updated before dispatch. Handlers added during a dispatch first run in the next one. A handler removed during a dispatch does not run later in it. A `once` handler is removed before it runs. Each handler runs in its own `try`, and a throw is reported with `console.error` without stopping the others | PAD-003, PAD-007, PTR-006, PTR-009, gamepad A3, pointer B1, B2 |
+| I8 | **Dispatch.** State is updated before dispatch. Handlers added during a dispatch first run in the next one. A handler removed during a dispatch does not run later in it. A `once` handler is removed before it runs. Each handler runs in its own `try`, and a throw is reported with `console.error` without stopping the others. Keyboard combinations match a release against the keys held just before it: a combination's `"up"` handlers run when a keyup releases one of its keys while all of them were held, with the keyup data for the released key and the held data for the others | PAD-003, PAD-007, PTR-006, PTR-009, gamepad A3, pointer B1, B2 |
 | I9 | **Return shapes.** A single-item read returns the object or `null`, never `undefined`. A list read always returns an array, empty when nothing is held, connected, or tracking is stopped | PAD-010, gamepad A6 |
-| I10 | **`clearEvents` scope.** Per-screen handlers (mouse, touch, press, click, wheel) are cleared only for the calling screen. Global handlers (keyboard, gamepad, play) are cleared everywhere, whichever screen calls. `"click"` and `"wheel"` become their own types, so `"press"` no longer clears clicks. `sound-advanced` registers `"play"`. The keyboard prompt follows keyboard A2 | KEY-002, KEY-016, keyboard A15, PAD-012 |
-| I11 | **Validation errors.** `TypeError` for a wrong type and `RangeError` for a value out of range, with a per-parameter code (`INVALID_MODE`, `INVALID_FUNCTION`, `INVALID_KEY`, `INVALID_HITBOX`, `INVALID_INDEX`, and so on) and a message starting `"<command>: "`. Keyboard and gamepad stop using `INVALID_PARAMETERS`. Core keeps its own codes | KEY-009, keyboard A7, PAD-008, gamepad A8, PTR-012, pointer B9 |
+| I10 | **`clearEvents` scope.** A screen's `clearEvents()` clears per-screen handlers (mouse, touch, press, click, wheel) for that screen only; `$.clearEvents()` clears them on every screen (Core 13). Global handlers (keyboard, gamepad, play) are cleared everywhere, whichever form is called. `"click"` becomes its own type, so `"press"` no longer clears clicks, and `"wheel"` arrives with wheel input (pointer B11). `sound-advanced` registers `"play"`. The keyboard prompt follows keyboard A2: `$.clearEvents( "keyboard" )` cancels every prompt, and a screen's `clearEvents` cancels only its own | KEY-002, KEY-016, keyboard A15, PAD-012 |
+| I11 | **Validation errors.** `TypeError` for a wrong type and `RangeError` for a value out of range, with the per-parameter codes in the table below and a message starting `"<command>: "` (for a pad helper, the method name). Every flag is a boolean or omitted. An index that can never be valid throws; a well-formed index with nothing behind it, such as button 20 on a pad with 16 buttons, returns the empty value (`false`, `0`, or `null`). Keyboard, pointer, and gamepad stop using `INVALID_PARAMETERS` and plain `Error`. Core keeps its own codes | KEY-009, keyboard A7, PAD-008, gamepad A8, PTR-012, pointer B9 |
 | I12 | **Settings.** Settings are named for the feature, and boolean settings take `isEnabled`. `setEnableContextMenu` becomes `setContextMenu( isEnabled )` with option `contextMenu`. `setPinchZoom( isEnabled )` keeps its name and becomes a screen command (pointer B10). `setGamepadDeadZone` is as accepted (gamepad A9) | Pointer B10, PTR-014, gamepad A9 |
 | I13 | **Gamepad names.** Standard-mapping names are positional and camelCase. Buttons: `south`, `east`, `west`, `north`, `leftShoulder`, `rightShoulder`, `leftTrigger`, `rightTrigger`, `select`, `start`, `leftStick`, `rightStick`, `dpadUp`, `dpadDown`, `dpadLeft`, `dpadRight`, `home`. Axes: `leftX`, `leftY`, `rightX`, `rightY` | Gamepad A10 |
 | I14 | **Key names.** Codes (`"KeyA"`, `"ArrowLeft"`) are documented for game controls and values (`"a"`) for text; both keep working. Combinations match when their keys are held, even if other keys are also held; there is no exact-match option in 2.3 | KEY-001, keyboard A1 |
 | I15 | **Dependents.** The conventions apply to the core plugins and `sound-advanced`. `onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` are not updated; they are removed (P.1–P.6) | CORE-004 |
 | I16 | **Old names.** No aliases. Renamed and removed commands are unregistered, so old code fails at its first call; the upgrade guide lists every rename. Old handler modes and option names fail with validation errors (I3, core C7) | All renames |
+
+**I11 codes.** One table for the input plugins and `sound-advanced`, decided 2026-09-27. A new
+parameter takes a code named after it.
+
+| Code | Parameters | `TypeError` | `RangeError` |
+| --- | --- | --- | --- |
+| `INVALID_MODE` | `mode` of every `onX`/`offX`; `offX()` with neither mode nor function (I4) | Not a string, or both omitted | Not a mode of the command |
+| `INVALID_FUNCTION` | `fn` | Not a function | — |
+| `INVALID_ONCE` | `once` | Not a boolean | — |
+| `INVALID_ALLOW_REPEAT` | Keyboard `allowRepeat` | Not a boolean | — |
+| `INVALID_KEY` | Keyboard `key` of `onKey`, `offKey`, `inKey` | Not a string or an array of strings | Empty string or empty array |
+| `INVALID_KEYS` | `setActionKeys`, `removeActionKeys` | Not an array of strings | Empty string in the array |
+| `INVALID_PROMPT`, `INVALID_CURSOR` | `input()` `prompt`, `cursor` | Not a string | — |
+| `INVALID_MAX_LENGTH` | `input()` `maxLength` | Not an integer | Below 1 |
+| `INVALID_IS_NUMBER`, `INVALID_IS_INTEGER`, `INVALID_ALLOW_NEGATIVE` | `input()` flags | Not a boolean | — |
+| `INVALID_IS_ENABLED` | `isEnabled` of `setContextMenu`, `setPinchZoom` | Not a boolean | — |
+| `INVALID_HITBOX` | Pointer `hitBox` | Not an object with finite `x`, `y`, `width`, `height` | Negative width or height |
+| `INVALID_INDEX` | `gamepadIndex`, button and axis indices, and I13 names | Not an integer or a name | Negative, or an unknown name |
+| `INVALID_DEAD_ZONE` | `setGamepadDeadZone` | Not a finite number | Outside 0 to under 1 |
+| `INVALID_DURATION`, `INVALID_STRONG`, `INVALID_WEAK` | `vibrateGamepad` | Not a finite number | Negative duration; magnitude outside 0–1 |
 
 I1, I2, I3, I10's `"press"` change, I11's error codes, and I12's rename are breaking. Each lands
 in its plugin's Phase 2 and is listed in its compatibility summary.
@@ -255,7 +275,8 @@ In any order, in parallel with the input work.
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| Core 8 | **Strict `set()` (C7, breaking, approved).** `set()` throws `INVALID_OPTION` for unknown or unavailable names, and the no-screen error for screen settings. Tests: `set()` names in the Node suites (C07), including Full-only options in Lite | [CORE-008](AUDIT-CORE.md#core-008) | — |
+| Core 8 | **Strict `set()` (C7, breaking, approved).** `set()` throws `INVALID_OPTION` for unknown or unavailable names, and the no-screen error for screen settings. Tests: `set()` names in the Node suites (C07), including Full-only options in Lite. Not cut: the I16 rule for renamed options (`enableContextMenu`, `gamepadSensitivity`) depends on it, so it lands before 2.3.0 with the pointer and gamepad Phase 2 sets | [CORE-008](AUDIT-CORE.md#core-008) | — |
+| Core 13 | **`$.clearEvents()` clears every screen (I10, breaking, approved 2026-09-27).** `$.clearEvents()` passes no screen to the clear handlers, so per-screen handlers are cleared on every screen; a screen's `clearEvents()` still passes itself. The plugin API does not change: clear handlers already treat no screen as every screen. Tests: pointer handlers on two screens cleared by each form, and the keyboard prompt rule of I10. Lands before the pointer Phase 2 set (pointer 2.6) | — | — |
 
 Core 3 (document that `clearEvents()` reaches handlers a plugin registers through the public
 input commands, CORE-004, in place of the rejected C4) and C10 (the characters each built-in
@@ -271,6 +292,9 @@ Input to `UPGRADE-V2.3.md` (R.4):
 - **C7 (breaking):** "`set()` now throws `INVALID_OPTION` for an option it does not recognize,
   including options from plugins that are not loaded. Remove the option, fix its spelling, or
   load the plugin that provides it."
+- **Core 13 (breaking):** "`$.clearEvents()` now clears mouse, touch, press, and click handlers
+  on every screen, not only the active one. Call `clearEvents()` on a screen to clear only that
+  screen."
 - **C3:** "The standalone plugin entry points (`pijs-web/plugins/…`) are for Lite. Loading one
   that the Full bundle already includes throws `DUPLICATE_PLUGIN`."
 - **C5:** "TypeScript projects using `nodenext` module resolution now get the package's types.
@@ -337,8 +361,9 @@ The upgrade guide's sound entries come from
 
 **Draft, awaiting approval.** Findings: [AUDIT-KEYBOARD.md](AUDIT-KEYBOARD.md). Proposals
 A1–A17: [AUDIT-KEYBOARD §4](AUDIT-KEYBOARD.md#4-proposed-api). Probe IDs (K1, K9n, …) name the
-reproductions in `docs/evidence/keyboard-2.3/probes.js`, where each test starts. Baseline:
-1.0.0, 3,110 bytes gzipped.
+reproductions in `docs/evidence/keyboard-2.3/probes.js`, where each test starts. The probe
+script builds the removed `print-table` and `onscreen-keyboard` plugins, so it no longer runs as
+written; tests are written from its probe code. Baseline: 1.0.0, 3,110 bytes gzipped.
 
 The order differs from the audit's recommendation in one way. Validation (A7) moves from
 Phase 1 to Phase 2, so it lands once with the I11 error codes instead of twice.
@@ -346,11 +371,11 @@ Phase 1 to Phase 2, so it lands once with the I11 error codes instead of twice.
 ### 5.1 Phase 1: fixes and tests
 
 No API change; the version stays 1.0.0. Pure logic tests go in `keyboard-lifecycle.test.js`,
-whose `vm` harness drives `onKeyDown` and `onKeyUp` directly.
+whose `vm` harness task 1.1 extends to dispatch real listener events.
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 1.1 | **Test harness.** Fix the Node harness's `undefined`-to-`null` conversion. Reduce `keyboard-lifecycle-browser` to real `KeyboardEvent` dispatch and cursor rendering, since its SYS-003 tests repeat the Node tests | [KEY-019](AUDIT-KEYBOARD.md#key-019), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
+| 1.1 | **Test harness.** Map command arguments with the real `parseOptions` from `src/core/utils.js`, so both the positional and object forms run and the harness follows core when Core 6 lands. Capture the `window` and `document` listeners the plugin adds and dispatch events through them, with `target`, `composedPath()`, and `getModifierState()`, so the prompt listener (1.3), shadow roots (1.5), and start and stop (2.3) can be tested in Node. Reduce `keyboard-lifecycle-browser` to real `KeyboardEvent` dispatch and cursor rendering, since its SYS-003 tests repeat the Node tests | [KEY-019](AUDIT-KEYBOARD.md#key-019), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
 | 1.2 | **Held state by code (A1).** Held state keyed by `code`, each held code recording the `key` of its latest keydown; a value stays held until every key producing it is released. Tests: modifier released first, two keys with one value, `"Process"` (K1, K1b, K14), and one native-keyboard case in the browser test (K1n) | [KEY-001](AUDIT-KEYBOARD.md#key-001) (P1) | — |
 | 1.3 | **Prompt listener (A2).** The prompt reads keys from its own listener, added when it starts and removed when it ends. `stopKeyboard()` and handler clearing no longer affect it. `clearEvents( "keyboard" )` cancels the prompt when called with no screen or from the owning screen. Tests: `clearEvents( "keyboard" )` with prompts on two screens (K2); a prompt during a stop | [KEY-002](AUDIT-KEYBOARD.md#key-002), [KEY-006](AUDIT-KEYBOARD.md#key-006) | — |
 | 1.4 | **Prompt owns the keyboard (A3).** While a prompt is active, it prevents the default action of every key it receives; ignores Ctrl and Meta keydowns except AltGr; inserts pasted text. Tests: default prevention, Ctrl and AltGr, Tab, paste (K9, K9n) | [KEY-003](AUDIT-KEYBOARD.md#key-003) | — |
@@ -358,32 +383,36 @@ whose `vm` harness drives `onKeyDown` and `onKeyUp` directly.
 | 1.6 | **Prompt layout (A5).** Use the print cursor's height, end at column 0, keep to one line, and scroll the shown value. Browser test after inline text, with scaled print, and with long input (K11) | [KEY-005](AUDIT-KEYBOARD.md#key-005) | — |
 | 1.7 | **Numeric prompts (A6).** Validate against patterns instead of `Number()`. Test: the numeric rules (K10) | [KEY-008](AUDIT-KEYBOARD.md#key-008) | — |
 | 1.8 | **Release data (A8).** Up handlers receive keyup data; a keyup with no recorded press still runs single-key and `"any"` up handlers. Test: release data and releases of unseen presses (K13) | [KEY-011](AUDIT-KEYBOARD.md#key-011) | — |
-| 1.9 | **Focus kept on start (A9).** `startKeyboard()` no longer blurs the focused element. Lifecycle tests: start, stop, repeated calls, focus kept (K8). They also give `startKeyboard`, `stopKeyboard`, and `removeActionKeys` their first assertion tests | [KEY-012](AUDIT-KEYBOARD.md#key-012), [KEY-019](AUDIT-KEYBOARD.md#key-019) | — |
-| 1.10 | **Frozen key data (A10).** Freeze key data objects before they are stored | [KEY-013](AUDIT-KEYBOARD.md#key-013) | — |
-| 1.11 | **Metadata for current behavior.** Correct the metadata and declarations that misstate today's behavior: `input` return type and `maxLength`, cursor default, `onkey`/`offkey` types, and the broken examples. Tests: `removeActionKeys` and `set( { "actionKeys" } )` (K20) | [KEY-017](AUDIT-KEYBOARD.md#key-017) | — |
-| 1.12 | **Manual pages.** Remove the second plugin script from `clearevents_01`, `events_comprehensive`, `gamepad_01`, `input_01`, and `onkey_sound_01`. Remove or merge `html-manual/input_01`, which overlaps `keyboard_input` | [KEY-018](AUDIT-KEYBOARD.md#key-018), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
+| 1.9 | **Focus kept on start (A9).** `startKeyboard()` no longer blurs the focused element. Lifecycle tests: start, stop, repeated calls, focus kept (K8). They also give `startKeyboard` and `stopKeyboard` their first assertion tests | [KEY-012](AUDIT-KEYBOARD.md#key-012), [KEY-019](AUDIT-KEYBOARD.md#key-019) | — |
+| 1.10 | **Frozen key data (A10).** Freeze key data objects before they are stored. Test: writes to key data fail (K7) | [KEY-013](AUDIT-KEYBOARD.md#key-013) | — |
+| 1.11 | **Metadata for current behavior.** Correct, as `metadata/pi-2.3/` overrides, the metadata that misstates today's behavior: `input` return type and `maxLength`, cursor default, `onkey`/`offkey` types, `startKeyboard`'s claim that the plugin starts automatically, `setActionKeys`'s summary (it adds), and the broken examples. The Lite declaration gap is closed by Core 4. Tests: `removeActionKeys` and the adding `set( { "actionKeys" } )` (K20); 2.9 changes the latter | [KEY-017](AUDIT-KEYBOARD.md#key-017) | — |
+| 1.12 | **Manual pages and tools.** Remove every plugin script that the Full bundle already includes from `clearevents_01`, `events_comprehensive`, `gamepad_01`, `input_01`, and `onkey_sound_01`; this task owns those shared pages for all three input plugins. Merge `html-manual/input_01`'s custom-cursor case into `keyboard_input`, then remove `input_01` and log it in `test/TEST-CONSOLIDATION-LOG.md`. Fix `tools/dataedit.html`, which loads a missing `../build/dist/pi.js`, and the `input()` calls in `tools/charedit.html` and `tools/dataedit.html` that pass booleans as `cursor` | [KEY-018](AUDIT-KEYBOARD.md#key-018), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
 | 1.13 | **`keyboard_commands` timing.** Make the fixture deterministic on CI runners, and cut its 2.0 s of `DL` waits | [CI-008](AUDIT-CI.md#ci-008), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
 
-**Exit criteria:** KEY-001–006, KEY-008, KEY-011–013, KEY-018, and KEY-019 fixed with tests;
-`npm test` green; size recorded in `docs/evidence/keyboard-2.3/`.
+**Exit criteria:** KEY-001, KEY-002, KEY-004, KEY-005, KEY-008, KEY-012, KEY-018, KEY-019, and
+CI-008 fixed with tests; the Phase 1 parts of KEY-003, KEY-006, KEY-011, and KEY-013 fixed with
+tests (their Phase 2 tasks complete them); KEY-017's metadata corrected; `npm test` green; size
+recorded in `docs/evidence/keyboard-2.3/`.
 
 ### 5.2 Phase 2: API (breaking set, 2.0.0)
 
 Built on one branch and landed as a set (Section 1.4). Each task updates metadata, declarations,
 signature tests, and every demo, fixture, manual page, and `tools/` page (`charedit.html`,
-`dataedit.html`) that uses the changed command.
+`dataedit.html`) that uses the changed command, plus `test/scripts/firefox-smoke.js`,
+`test/scripts/package-types-consumer.test.js`, and the evidence `device-check.html` that
+Section 8.3 uses.
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
 | 2.1 | **Renames and 2.0.0 (I1, I16).** `inkey`, `onkey`, `offkey` become `inKey`, `onKey`, `offKey`, with the old names in `_removed.toml`. The banner moves to 2.0.0 | — | — |
-| 2.2 | **Handler signature and removal (I2, I4, A14).** `onKey( key, mode, fn, once, allowRepeat )`; `offKey( key, mode, fn )` matches key set, mode, and function only; `offKey( key, mode )` removes every handler of the mode; `offKey( key, null, fn )` removes from both modes; duplicate registrations are ignored. Metadata examples use codes for game controls (I14) | [KEY-007](AUDIT-KEYBOARD.md#key-007) | — |
-| 2.3 | **Start and stop (I5, A13).** Listeners attach on first use, not at plugin load; `stopKeyboard()` holds until `startKeyboard()`; reads return empty state while stopped | [KEY-006](AUDIT-KEYBOARD.md#key-006) | — |
-| 2.4 | **Cancelled input (I6).** Blur and stop dispatch `"up"` with `cancelled: true` for each held key | [KEY-011](AUDIT-KEYBOARD.md#key-011) | — |
-| 2.5 | **Reads and dispatch (I7, I8, I9).** `inKey()` returns a frozen array replaced when the state changes; `inKey( key )` returns the object or `null`; dispatch follows I8 | [KEY-013](AUDIT-KEYBOARD.md#key-013) | — |
-| 2.6 | **`clearEvents` scope (I10, A15).** `clearEvents( "keyboard" )` clears every keyboard handler from any screen; the prompt follows task 1.3 | [KEY-016](AUDIT-KEYBOARD.md#key-016) | — |
-| 2.7 | **Validation (A7, I11).** `mode` must be `"up"` or `"down"`; `key` a non-empty string or array of them, copied and de-duplicated; action keys strings; `maxLength: undefined` means no limit; `inKey()` rejects non-strings. `TypeError`/`RangeError` with per-parameter codes instead of `INVALID_PARAMETERS`. Tests: validation and combination arrays (K3, K4, K6, K20) | [KEY-009](AUDIT-KEYBOARD.md#key-009), [KEY-010](AUDIT-KEYBOARD.md#key-010) | — |
-| 2.8 | **Prompt keys withheld (A11).** While a prompt is active, its keys do not reach `onKey()` handlers or `inKey()` | [KEY-003](AUDIT-KEYBOARD.md#key-003) | — |
-| 2.9 | **`setActionKeys()` replaces (A12).** The command and `set( { "actionKeys": … } )` replace the set; `removeActionKeys()` is unchanged | [KEY-014](AUDIT-KEYBOARD.md#key-014) | — |
+| 2.2 | **Handler signature and removal (I2, I4, A14).** `onKey( key, mode, fn, once, allowRepeat )`; `offKey( key, mode, fn )` matches key set, mode, and function only, and its old `once` and `allowRepeat` arguments are ignored (§1.2); `offKey( key, mode )` removes every handler of the mode; `offKey( key, null, fn )` and the object form without `mode` remove from both modes; `offKey( key )` throws `INVALID_MODE`; duplicate registrations are ignored. Metadata examples use codes for game controls (I14). Test: removal forms (K5) | [KEY-007](AUDIT-KEYBOARD.md#key-007) | — |
+| 2.3 | **Start and stop (I5, A13).** Listeners, including `blur` and `visibilitychange`, attach on first use, not at plugin load; `setActionKeys()` and `set( { actionKeys } )` count as first use; `stopKeyboard()` holds until `startKeyboard()`; reads return empty state while stopped. Test: each start trigger, and handlers not called while stopped | [KEY-006](AUDIT-KEYBOARD.md#key-006) | — |
+| 2.4 | **Cancelled input (I6).** Blur, a hidden page, stop, an event from an editable target, and a prompt taking the keyboard dispatch `"up"` with `cancelled: true` for each held key. Key data carries `cancelled`, `false` unless cancelled; a cancelled `"up"` copies the last keydown's fields with `repeat: false`. Test: each trigger, and no second release | [KEY-011](AUDIT-KEYBOARD.md#key-011) | — |
+| 2.5 | **Reads and dispatch (I7, I8, I9).** `inKey()` returns a frozen array replaced when the state changes; `inKey( key )` returns the object or `null`; dispatch follows I8, so state is updated first and handler errors go to `console.error` instead of a rethrow. Combination `"up"` handlers follow I8's release rule. Test: the SYS-011 keyup test keeps its combination and gains `inKey( "a" ) === null` inside the handler | [KEY-013](AUDIT-KEYBOARD.md#key-013) | — |
+| 2.6 | **`clearEvents` scope (I10, A15).** `clearEvents( "keyboard" )` clears every keyboard handler from any screen; the prompt follows I10 and task 1.3. Test: both forms, with prompts on two screens | [KEY-016](AUDIT-KEYBOARD.md#key-016) | — |
+| 2.7 | **Validation (A7, I11).** `mode` must be `"up"` or `"down"`; `key` a non-empty string or array of them, copied and de-duplicated; action keys strings; `once` and `allowRepeat` booleans; `maxLength: undefined` means no limit (with Core 6's `undefined` mapping); `inKey()` rejects non-strings. Codes from the I11 table. Tests: validation and combination arrays (K3, K4, K6, K20) | [KEY-009](AUDIT-KEYBOARD.md#key-009), [KEY-010](AUDIT-KEYBOARD.md#key-010) | — |
+| 2.8 | **Prompt keys withheld (A11).** While a prompt is active, its keys do not reach `onKey()` handlers or `inKey()`. Keys held when the prompt starts are released as 2.4 describes. Test: a key held across the prompt's start | [KEY-003](AUDIT-KEYBOARD.md#key-003) | — |
+| 2.9 | **`setActionKeys()` replaces (A12).** The command and `set( { "actionKeys": … } )` replace the set; `removeActionKeys()` is unchanged. Test: replacing sets (K20), updating task 1.11's test | [KEY-014](AUDIT-KEYBOARD.md#key-014) | — |
 
 **Exit criteria:** every Phase 2 item in, `npm test` green, the compatibility summary complete,
 and size recorded.
@@ -395,6 +424,9 @@ and size recorded.
 | 3.1 | **Composed, pasted, and mobile text (A16).** A hidden, focused text field while a prompt is active, for IME composition, paste, and mobile soft keyboards; its events bypass the editable-target filter. Measure its size | [KEY-015](AUDIT-KEYBOARD.md#key-015) | — |
 | 3.2 | **Release inputs.** Complete the compatibility summary below, add the plugin's open device checks to Section 8.3, and record the final size | — | — |
 
+**Exit criteria:** KEY-015 fixed with tests, `npm test` green, the compatibility summary
+complete, and the final size recorded.
+
 ### 5.4 Compatibility summary
 
 Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.2:
@@ -402,12 +434,20 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.2:
 - **Renames (I1):** `inkey` → `inKey`, `onkey` → `onKey`, `offkey` → `offKey`. The old names
   are unregistered (I16).
 - **`offKey()` (I4):** matches on key, mode, and function only; `once` and `allowRepeat` are
-  ignored.
+  ignored. `offKey( key, mode )` removes every handler of that mode, and `offKey( key )` throws.
+  Registering the same function for the same key and mode again does nothing, so code that
+  registered twice now runs once.
 - **Start rule (I5):** the plugin starts on first use; `stopKeyboard()` holds until
   `startKeyboard()`.
-- **Blur (I6):** held keys are released through `"up"` handlers with `cancelled: true`.
+- **Cancelled releases (I6):** blur, a hidden page, `stopKeyboard()`, typing into a text field,
+  and an `input()` prompt release held keys through `"up"` handlers with `cancelled: true`. Key
+  data has a `cancelled` field.
+- **Dispatch (I8):** state is updated before handlers run, so `inKey()` inside an `"up"` handler
+  no longer reports the released key. A handler that throws is reported with `console.error`
+  instead of being rethrown, so `window` error listeners no longer see it.
 - **Errors (I11):** validation throws `TypeError` or `RangeError` with per-parameter codes
-  instead of `INVALID_PARAMETERS`.
+  instead of `INVALID_PARAMETERS`. `inKey( "" )` and `inKey( 0 )` now throw instead of returning
+  the list.
 - **A11:** "Keys typed into an `input()` prompt no longer reach `onKey()` handlers or `inKey()`.
   Handle the prompt's result instead of watching for Enter."
 - **A12:** "`setActionKeys()` replaces the action keys. Pass every key in one call, or use
@@ -419,48 +459,56 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.2:
 
 **Draft, awaiting approval.** Findings: [AUDIT-POINTER.md](AUDIT-POINTER.md). Proposals B1–B13:
 [AUDIT-POINTER §4](AUDIT-POINTER.md#4-proposed-api). Probe IDs (P1, T1, …) name the
-reproductions in `docs/evidence/pointer-2.3/probes.js`. Baseline: 1.0.0, 3,951 bytes gzipped.
+reproductions in `docs/evidence/pointer-2.3/probes.js`. The probe script builds the removed
+`print-table` and `onscreen-keyboard` plugins, so it no longer runs as written; tests are written
+from its probe code. Baseline: 1.0.0, 3,951 bytes gzipped.
 
-Dispatch logic tests go in `pointer-events.test.js` and event wiring in
-`pointer-browser.test.js`. Two changes from the audit's order: validation (B9) moves to Phase 2
-to land once with I11, and the steps that updated `onscreen-keyboard` and `pi-vision` are dropped,
-since both plugins are removed.
+Dispatch logic tests go in `pointer-events.test.js`, which task 1.1 extends with a harness that
+drives `mouse.js`, `touch.js`, and `press.js` against fake `window`, `document`, and canvas
+objects; event wiring goes in `pointer-browser.test.js`. Two changes from the audit's order:
+validation (B9) moves to Phase 2 to land once with I11, and the steps that updated
+`onscreen-keyboard` and `pi-vision` are dropped, since both plugins are removed.
 
 ### 6.1 Phase 1: fixes and tests
 
-No API change; the version stays 1.0.0. B3 and B4 keep today's data shape here; the action names
-change in Phase 2.
+No breaking change; the version stays 1.0.0. B3 and B4 keep today's data shape here, plus the
+additive `cancelled` field (I6); the action names change in Phase 2. Phase 1 ships even if
+Phase 2 is cut, so its release fixes stand on their own.
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 1.1 | **Handler bookkeeping (B1).** Dispatch whenever a mode has handlers, without counters; `off*( mode, fn )` removes only matching registrations; `once` removes only its own; a handler removed during a dispatch does not run later in it. Tests: clearing one mode, removing unknown functions, `once` with a duplicate (P1, P7) | [PTR-001](AUDIT-POINTER.md#ptr-001) (P1), [PTR-009](AUDIT-POINTER.md#ptr-009) | — |
+| 1.1 | **Handler bookkeeping (B1).** First, the Node harness described above. Dispatch whenever a mode has handlers, without counters; `off*( mode, fn )` removes only matching registrations; `once` removes only its own; a handler removed during a dispatch does not run later in it. Tests: clearing one mode, removing unknown functions, `once` with a duplicate (P1, P7, today's semantics; 2.4 changes it) | [PTR-001](AUDIT-POINTER.md#ptr-001) (P1), [PTR-009](AUDIT-POINTER.md#ptr-009) | — |
 | 1.2 | **Dispatch isolation (B2).** Update state and prevent defaults before dispatch; each handler in its own `try`, errors to `console.error`. Tests: throwing mouse, press, and touch handlers, with `preventDefault()` still applied (P6) | [PTR-006](AUDIT-POINTER.md#ptr-006) | — |
-| 1.3 | **Per-touch tracking (B3).** Track touches from `changedTouches`: `end` reports the touch that ended at its last position, each touch keeps its own action, hit boxes test the changed touches, `touchcancel` never clicks. Tests: end and cancel data, per-touch actions (P2, P3) | [PTR-002](AUDIT-POINTER.md#ptr-002), [PTR-005](AUDIT-POINTER.md#ptr-005) | — |
-| 1.4 | **Primary pointer and clicks (B4).** Press follows the primary pointer; clicks are per pointer, armed by a primary-button down inside the box and fired by a release inside it. Tests: press and click with two fingers, button filtering, stale arming (P4, P5) | [PTR-003](AUDIT-POINTER.md#ptr-003), [PTR-005](AUDIT-POINTER.md#ptr-005), [PTR-008](AUDIT-POINTER.md#ptr-008) | — |
-| 1.5 | **Every press ends with one release (B5).** A `window` listener while a button is held; release held buttons and touches on `visibilitychange` to hidden and on `stopMouse()`/`stopTouch()`, marked `cancelled: true` (I6); ignore a release for a button that is not held. Tests: release outside the canvas with trusted input, blur, hidden page, stop commands (T1, P8, P9, P10) | [PTR-004](AUDIT-POINTER.md#ptr-004), [PTR-007](AUDIT-POINTER.md#ptr-007), [PTR-010](AUDIT-POINTER.md#ptr-010) | — |
-| 1.6 | **Border and padding (B8).** Ignore presses that start on the border or padding; report captured moves and releases at their true position; hit boxes accept any finite `x`, `y` and non-negative size. Test: coordinates on the border and padding (P11) | [PTR-011](AUDIT-POINTER.md#ptr-011), [PTR-012](AUDIT-POINTER.md#ptr-012) | — |
-| 1.7 | **Listeners on first start (B12).** Attach the `window` listeners on the first start instead of at registration | — | — |
-| 1.8 | **Metadata and manual pages.** Correct the metadata and declarations for current behavior; make the manual pointer pages load cleanly. Test: Lite with the standalone plugin (P16) | [PTR-015](AUDIT-POINTER.md#ptr-015), [PTR-016](AUDIT-POINTER.md#ptr-016) | — |
-| 1.9 | **Fixtures.** Make `inpress_01` and `intouch_01` deterministic on CI runners and remove their `ciSkip`. Merge the near-duplicate fixtures: `onpress_01`, `onpress_02`, and `ontouch_04` run identical scripts, `onmouse_03` repeats them without touch, and `inmouse_01`, `intouch_01`, `inpress_01`, and `onmouse_01` repeat one drag. Remove the duplicates among the pointer tests that TEST-014 and TEST-015 moved from the `patch-*` suites. Add tests for `offtouch`, and a second for `offclick`, `offpress`, and `setEnableContextMenu`. Remove the manual pages `ontouch_01`–`03` and `events_comprehensive` where the automated fixtures cover them | [PTR-017](AUDIT-POINTER.md#ptr-017), [CI-008](AUDIT-CI.md#ci-008), [AUDIT-TESTS §5.2](AUDIT-TESTS.md#52-pointer) | — |
+| 1.3 | **Per-touch tracking (B3).** Track touches from `changedTouches`: `end` reports the touch that ended at its last position, each touch keeps its own action, hit boxes test the changed touches, `touchcancel` never clicks and releases with `cancelled: true` (I6). Update `test/scripts/run-visual-tests.js` so `TE` sends the ended touch in `changedTouches`, and `test/README.md` with it. Tests: end and cancel data, per-touch actions (P2, P3) | [PTR-002](AUDIT-POINTER.md#ptr-002), [PTR-005](AUDIT-POINTER.md#ptr-005) | — |
+| 1.4 | **Primary pointer and clicks (B4).** Press follows the primary pointer; clicks are per pointer, armed by a primary-button down inside the box, fired by a release inside it, and disarmed by any other release or a cancel. Tests: press and click with two fingers, button filtering, stale arming (P4, P5) | [PTR-003](AUDIT-POINTER.md#ptr-003), [PTR-005](AUDIT-POINTER.md#ptr-005), [PTR-008](AUDIT-POINTER.md#ptr-008) | — |
+| 1.5 | **Every press ends with one release (B5).** A `window` listener while a button is held; release held buttons and touches on `visibilitychange` to hidden and on `stopMouse()`/`stopTouch()`, marked `cancelled: true` (I6); drop the reset on window `blur`; ignore a release for a button that is not held. If Phase 2 is cut, this is the shipping fix (Section 10). Tests: release outside the canvas with trusted input, blur, hidden page, stop commands (T1, P8, P9, P10) | [PTR-004](AUDIT-POINTER.md#ptr-004), [PTR-007](AUDIT-POINTER.md#ptr-007), [PTR-010](AUDIT-POINTER.md#ptr-010) | — |
+| 1.6 | **Border and padding (B8).** Ignore presses that start on the border or padding; report captured moves and releases at their true position; hit boxes accept any finite `x`, `y` and non-negative size, and a negative size throws `RangeError` with `INVALID_HITBOX`. Test: coordinates on the border and padding (P11) | [PTR-011](AUDIT-POINTER.md#ptr-011), [PTR-012](AUDIT-POINTER.md#ptr-012) | — |
+| 1.7 | **Listeners on first start (B12).** Attach the `visibilitychange` listener on the first start instead of at registration; the `blur` listeners go in 1.5 | — | — |
+| 1.8 | **Metadata and manual pages.** Correct the metadata for current behavior; the Lite declaration gap is closed by Core 4. Make the manual pointer pages that keyboard 1.12 does not own load cleanly. Test: Lite with the standalone plugin (P16) | [PTR-015](AUDIT-POINTER.md#ptr-015), [PTR-016](AUDIT-POINTER.md#ptr-016) | — |
+| 1.9 | **Fixtures.** Make `inpress_01` and `intouch_01` deterministic on CI runners and remove their `ciSkip`. Merge the near-duplicate fixtures: `onpress_01`, `onpress_02`, and `ontouch_04` run identical scripts, `onmouse_03` repeats them without touch, and `inmouse_01`, `intouch_01`, `inpress_01`, and `onmouse_01` repeat one drag. Keep `intouch_01`, the COV-001 contract fixture; in each other duplicate group keep one fixture and log the rest in `test/TEST-CONSOLIDATION-LOG.md`. Remove the three duplicate tests that TEST-014 and TEST-015 moved: `pointer-browser.test.js:25` (repeats the `pointer_lifecycle_01` visual), `pointer-browser.test.js:143` (repeats `:105`), and `pointer-events.test.js:34`. Add tests for `offtouch`, and a second for `offclick`, `offpress`, and `setEnableContextMenu`, in the 1.1 harness. Remove the manual pages `ontouch_01` and `ontouch_02` where the automated fixtures cover them; keep `ontouch_03` and `events_comprehensive`, which the Section 8.3 touch checks use | [PTR-017](AUDIT-POINTER.md#ptr-017), [CI-008](AUDIT-CI.md#ci-008), [AUDIT-TESTS §5.2](AUDIT-TESTS.md#52-pointer) | — |
 
-**Exit criteria:** PTR-001–012 and PTR-015–017 fixed with tests; no pointer fixture carries
-`ciSkip`; `npm test` green; size recorded in `docs/evidence/pointer-2.3/`.
+**Exit criteria:** PTR-001–011, PTR-016, and PTR-017 fixed with tests; PTR-012's hit-box part
+fixed with tests (2.8 completes it); PTR-015's metadata corrected (R.2 and R.3 complete it); no
+pointer fixture carries `ciSkip`; `npm test` green; size recorded in `docs/evidence/pointer-2.3/`.
 
 ### 6.2 Phase 2: Pointer Events and API (breaking set, 2.0.0)
 
 Built on one branch and landed as a set. Each task updates metadata, declarations, signature
-tests, and the demos, fixtures, and manual pages that use the changed command.
+tests, and the demos, fixtures, and manual pages that use the changed command, plus the `tools/`
+pages, `scripts/validate-type-definitions.js`, `test/scripts/firefox-smoke.js`,
+`test/scripts/package-types-consumer.test.js`, `test/unit/plugin-installation-browser.test.js`,
+and the evidence `device-check.html` that Section 8.3 uses. Core 8 and Core 13 land first.
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 2.1 | **Renames and 2.0.0 (I1, I16).** `inMouse`, `onMouse`, `offMouse`, `inTouch`, `onTouch`, `offTouch`, `inPress`, `onPress`, `offPress`, `onClick`, `offClick`. The banner moves to 2.0.0 | — | — |
-| 2.2 | **One Pointer Events path (B6).** `pointerdown`/`pointermove`/`pointerup`/`pointercancel` on the canvas with `setPointerCapture()`, and `touch-action` instead of `preventDefault()` on `touchstart`. Mouse commands observe mouse and pen, touch commands touch, press the primary pointer. Replaces the Phase 1 window listeners | [PTR-004](AUDIT-POINTER.md#ptr-004), [PTR-006](AUDIT-POINTER.md#ptr-006) | — |
-| 2.3 | **One data shape and modes (B7, I3).** `{ x, y, lastX, lastY, buttons, action, type, id }` for mouse, touch, and press; modes `"down"`, `"move"`, `"up"`; `onTouch( "start" )` and `"end"` throw `INVALID_MODE`; click data has `action: "click"`. Test: data shapes, including serializing `inPress()` (P12) | [PTR-013](AUDIT-POINTER.md#ptr-013) | — |
-| 2.4 | **Handler signature and removal (I2, I4).** `onClick( fn, once, hitBox, customData )`; `offX( mode )` and `offX( null, fn )` forms | [PTR-009](AUDIT-POINTER.md#ptr-009) | — |
-| 2.5 | **Start, stop, and reads (I5, I7, I9, B13).** Tracking starts on first use; data objects frozen and created once per event; list reads return frozen arrays replaced on change | [PTR-010](AUDIT-POINTER.md#ptr-010) | — |
-| 2.6 | **`clearEvents` scope (I10).** `"click"` and `"wheel"` become their own types; `"press"` no longer clears clicks | — | — |
-| 2.7 | **Gesture settings (B10, I12).** `setContextMenu( isEnabled )` replaces `setEnableContextMenu`, suppressing the menu from screen creation; `setPinchZoom( isEnabled )` becomes a screen command that sets the canvas `touch-action`, never `<body>`. Test: context-menu default, pinch zoom on the canvas (P13, P14) | [PTR-014](AUDIT-POINTER.md#ptr-014) | — |
-| 2.8 | **Validation (B9, I11).** `isEnabled` and `once` must be booleans or omitted; per-parameter codes and error types | [PTR-012](AUDIT-POINTER.md#ptr-012) | — |
+| 2.1 | **Renames and 2.0.0 (I1, I16).** `inMouse`, `onMouse`, `offMouse`, `inTouch`, `onTouch`, `offTouch`, `inPress`, `onPress`, `offPress`, `onClick`, `offClick`, with the old names in `_removed.toml`. The banner moves to 2.0.0 | — | — |
+| 2.2 | **One Pointer Events path (B6).** `pointerdown`/`pointermove`/`pointerup`/`pointercancel` on the canvas with `setPointerCapture()`, and `touch-action` instead of `preventDefault()` on `touchstart`. Mouse commands observe mouse and pen, touch commands touch, press the primary pointer. `pointercancel` releases with `cancelled: true` (I6). `setPointerCapture()` is guarded for pointers the browser does not track. Replaces only the Phase 1 window listener; the hidden-page and stop releases stay. The visual runner and `pointer-browser.test.js` move from synthetic `TouchEvent`s to pointer events or CDP touch input, with `test/README.md` updated | [PTR-004](AUDIT-POINTER.md#ptr-004), [PTR-006](AUDIT-POINTER.md#ptr-006) | — |
+| 2.3 | **One data shape and modes (B7, I3).** `{ x, y, lastX, lastY, buttons, action, type, id, cancelled }` for mouse, touch, and press, with press data adding `touches`, frozen copies of the active touches; modes `"down"`, `"move"`, `"up"`; `onTouch( "start" )` and `"end"` throw `INVALID_MODE`; click data has `action: "click"`. Test: data shapes, including serializing `inPress()` (P12) | [PTR-013](AUDIT-POINTER.md#ptr-013) | — |
+| 2.4 | **Handler signature and removal (I2, I4).** `onClick( fn, once, hitBox, customData )`; `offX( mode )` and `offX( null, fn )` forms; `offX()` with neither throws `INVALID_MODE`; `offClick()` without a function removes every click handler of the screen (implied mode); duplicate registrations are ignored, so the 1.1 duplicate-`once` test changes | [PTR-009](AUDIT-POINTER.md#ptr-009) | — |
+| 2.5 | **Start, stop, and reads (I5, I7, I8, I9, B13).** Tracking starts on first use; data objects frozen and created once per event; list reads return frozen arrays replaced on change; `inMouse()` and `inPress()` return `null` before the first event and while stopped. Test: no allocation per read (P15) | [PTR-010](AUDIT-POINTER.md#ptr-010) | — |
+| 2.6 | **`clearEvents` scope (I10).** `"click"` becomes its own type; `"press"` no longer clears clicks; `$.clearEvents()` clears every screen through Core 13, and the plugin's no-screen branch is tested. Test: both forms on two screens | — | — |
+| 2.7 | **Gesture settings (B10, I12).** `setContextMenu( isEnabled )` replaces `setEnableContextMenu`; the menu is suppressed from screen creation (I5), and `setContextMenu()` no longer starts mouse tracking. The canvas gets `touch-action: none` when touch or press tracking starts on its screen, including `noCss` screens; `setPinchZoom( isEnabled )` becomes a screen command that sets the canvas `touch-action` at any time, never `<body>`. The old option `enableContextMenu` fails through Core 8. Test: context-menu default, `touch-action` before and after tracking, pinch zoom on the canvas (P13, P14) | [PTR-014](AUDIT-POINTER.md#ptr-014) | — |
+| 2.8 | **Validation (B9, I11).** `isEnabled` and `once` must be booleans or omitted; the existing plain `Error`s for mode, function, and hit box become `TypeError` or `RangeError`; codes from the I11 table | [PTR-012](AUDIT-POINTER.md#ptr-012) | — |
 
 **Exit criteria:** every Phase 2 item in, `npm test` green, the compatibility summary complete,
 and size recorded.
@@ -469,7 +517,7 @@ and size recorded.
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 3.1 | **Wheel input (B11).** `onWheel( fn, once, hitBox, customData )` and `offWheel( fn )`, deltas normalized to pixels, page scrolling prevented while a wheel handler is registered for the screen. Estimated 200–300 bytes gzipped | — | — |
+| 3.1 | **Wheel input (B11).** `onWheel( fn, once, hitBox, customData )` and `offWheel( fn )`, deltas normalized to pixels, page scrolling prevented while a wheel handler is registered for the screen, and a `"wheel"` type for `clearEvents()`. Estimated 200–300 bytes gzipped | — | — |
 | 3.2 | **Release inputs.** Complete the compatibility summary below, add the open device checks to Section 8.3, and record the final size. The new plugin README is written in R.3 | — | — |
 
 ### 6.4 Compatibility summary
@@ -485,10 +533,22 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.2:
 - **B10:** "`setPinchZoom()` is a screen command and sets `touch-action` on that screen's
   canvas; it no longer changes `<body>`. The context menu is suppressed from screen creation."
 - **B6 observable changes:** pen input is reported with `type: "pen"`; a drag that leaves the
-  canvas keeps reporting moves and its release; a press that starts on the canvas border is
-  ignored.
+  canvas keeps reporting moves.
+- **Phase 1 fixes (B4, B5, B8, PTR-008):** a drag released outside the canvas reports its
+  release; blur no longer resets polled state, and hiding the page or a stop command calls the
+  `"up"` handlers with `cancelled: true`; press follows only the primary touch; right and middle
+  buttons no longer click; a press that starts on the canvas border or padding is ignored; a
+  negative hit-box size throws.
+- **I4:** registering the same function for the same mode again does nothing; `offX( null, fn )`
+  removes a function from every mode; `offX()` with neither argument throws.
+- **I7 and I9:** data objects and list arrays are frozen; `inMouse()` and `inPress()` return
+  `null` before the first event.
 - **I10:** `clearEvents( "press" )` no longer clears click handlers; use `"click"`.
-- **Errors (I11):** validation throws with per-parameter codes.
+- **I12:** `set( { enableContextMenu } )` becomes `set( { contextMenu } )`, and
+  `set( { pinchZoom } )` needs a screen.
+- **Errors (I11):** validation throws `TypeError` or `RangeError` with per-parameter codes instead
+  of plain `Error`; `"false"` and other non-booleans for `isEnabled` and `once` throw instead of
+  being coerced.
 - **B11:** additive; no upgrade entry.
 
 ## 7. Gamepad
@@ -498,6 +558,8 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.2:
 reproductions in `docs/evidence/gamepad-2.3/probes.js`. Baseline: 1.0.0, 1,428 bytes gzipped.
 
 Pure logic tests go in `gamepad-validation.test.js`, whose `vm` harness scripts pads and frames;
+task 1.1 moves it onto the shared `vm-module-harness.js` and extends it to dispatch `window` and
+`document` events (connection, `visibilitychange`) and to register `clearEvents` handlers.
 `gamepad-validation-browser` keeps only bundle wiring. One change from the audit's order: helper
 validation (A8) moves to Phase 2 to land once with I11.
 
@@ -507,30 +569,33 @@ No API change; the version stays 1.0.0.
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 1.1 | **One updater (A1).** The polling loop is the only updater; edges report what happened since the previous read, and reads in one frame agree; connection events do not consume edges. Tests: edges read every frame, every other frame, and from timers; the exposing press (P1, P3, P3b) | [PAD-001](AUDIT-GAMEPAD.md#pad-001), [PAD-017](AUDIT-GAMEPAD.md#pad-017) | — |
-| 1.2 | **Visibility, not blur (A2).** Keep polling while visible; on `visibilitychange` to hidden, release every button, zero the axes, and clear edges. Test: blur and focus (P4) | [PAD-002](AUDIT-GAMEPAD.md#pad-002) | — |
-| 1.3 | **Dispatch isolation (A3).** Dispatch from a copy of the handler list, each handler in its own `try`; update the pad list before dispatch; schedule the loop before the start-up scan. Tests: throwing handlers, pad removal, handlers added during dispatch (P5, P5b, P6) | [PAD-003](AUDIT-GAMEPAD.md#pad-003) (P1), [PAD-004](AUDIT-GAMEPAD.md#pad-004), [PAD-007](AUDIT-GAMEPAD.md#pad-007) | — |
-| 1.4 | **Connection replay (A4).** New connect handlers receive the pads already connected; no second dispatch for a tracked, connected index. Test: replay and duplicate events (P7) | [PAD-005](AUDIT-GAMEPAD.md#pad-005), [PAD-006](AUDIT-GAMEPAD.md#pad-006) | — |
+| 1.1 | **One updater (A1).** First, the harness extension above. The polling loop is the only updater and accumulates edges every frame. A read is any `ingamepad()` call or pad helper call, including on a pad object the game kept; the first read in an animation frame takes the edges accumulated since the last frame with a read, and every other read in that frame, from any code, sees the same result. A press and a release between two reads are both reported. `getAxisChanged` compares with the value at the previous read. The first read starts polling (I5) and runs one immediate update without edges. A newly recorded pad starts with every button released, so the press that exposed it is reported on the next read; connect handlers see the pad before that edge. Connection events do not consume edges. Tests: edges read every frame, every other frame, and from timers; a tap between reads; the exposing press (P1, P3b) | [PAD-001](AUDIT-GAMEPAD.md#pad-001), [PAD-017](AUDIT-GAMEPAD.md#pad-017) | — |
+| 1.2 | **Visibility, not blur (A2).** Keep polling while visible; on `visibilitychange` to hidden, release every button, zero the axes, and clear edges. The first update after the page is visible again records the current state without edges, so a button held on return reads as pressed but not just pressed. Tests: blur and focus (P4), and a hidden page, which no probe covers | [PAD-002](AUDIT-GAMEPAD.md#pad-002) | — |
+| 1.3 | **Dispatch isolation (A3).** Dispatch follows I8: handlers added during a dispatch run in the next one, a handler removed during a dispatch does not run later in it, and a `once` handler is removed before it runs; each handler in its own `try`; update the pad list before dispatch; schedule the loop before the start-up scan. Tests: throwing handlers, pad removal, handlers added during dispatch (P5, P5b, P6) | [PAD-003](AUDIT-GAMEPAD.md#pad-003) (P1), [PAD-004](AUDIT-GAMEPAD.md#pad-004), [PAD-007](AUDIT-GAMEPAD.md#pad-007) | — |
+| 1.4 | **Connection replay (A4).** New connect handlers receive the pads already connected; no second dispatch for a tracked, connected index; each handler receives each connected pad once, so the start-up scan and the replay never both deliver to the same handler. Test: replay and duplicate events (P3, P7) | [PAD-005](AUDIT-GAMEPAD.md#pad-005), [PAD-006](AUDIT-GAMEPAD.md#pad-006) | — |
 | 1.5 | **Stable live objects (A7).** Update `buttons`, each button, and `axes` in place; the list form reuses one array per frame. Test: stable objects and no per-frame allocation (P12) | [PAD-009](AUDIT-GAMEPAD.md#pad-009) | — |
-| 1.6 | **Listeners on first start (A12).** Add the blur and focus listeners on the first start, and remove the `webkitGetGamepads` fallback. Tests: lifecycle, including start, stop, repeat start, reads and registration after stop (P8); first tests for `startGamepad` and the connection handlers | [PAD-016](AUDIT-GAMEPAD.md#pad-016), [AUDIT-TESTS §5.4](AUDIT-TESTS.md#54-gamepad) | — |
-| 1.7 | **Metadata and manual pages.** Correct the metadata and declarations for current behavior; remove the second plugin script from the manual gamepad pages. Reduce `gamepad-validation-browser` to bundle wiring, and add Lite with the standalone plugin to it (P14b) | [PAD-014](AUDIT-GAMEPAD.md#pad-014), [PAD-015](AUDIT-GAMEPAD.md#pad-015) | — |
+| 1.6 | **Listeners on first start (A12).** Add the `visibilitychange` and connection listeners on the first start, and remove the `webkitGetGamepads` fallback. Tests: lifecycle, including start, stop, repeat start, reads and registration after stop (P8), asserting today's behavior that 2.3 changes; first tests for `startGamepad` and the connection handlers | [PAD-016](AUDIT-GAMEPAD.md#pad-016), [AUDIT-TESTS §5.4](AUDIT-TESTS.md#54-gamepad) | — |
+| 1.7 | **Metadata and manual pages.** Correct the metadata for current behavior; the Lite declaration gap is closed by Core 4. Remove the extra plugin scripts from the manual gamepad pages that keyboard 1.12 does not own, and fix `gamepad_03`'s `if( m_gamepadIndex )`, which skips pad 0. Reduce `gamepad-validation-browser` to bundle wiring; it already runs Lite with the standalone plugin (P14b) | [PAD-014](AUDIT-GAMEPAD.md#pad-014), [PAD-015](AUDIT-GAMEPAD.md#pad-015) | — |
 
-**Exit criteria:** PAD-001–007, PAD-009, and PAD-014–017 fixed with tests; `npm test` green;
-size recorded in `docs/evidence/gamepad-2.3/`.
+**Exit criteria:** PAD-001–007, PAD-009, PAD-015, PAD-016, and PAD-017 fixed with tests;
+PAD-014's metadata corrected (R.2 completes it); `npm test` green; size recorded in
+`docs/evidence/gamepad-2.3/`.
 
 ### 7.2 Phase 2: API (breaking set, 2.0.0)
 
 Built on one branch and landed as a set. Each task updates metadata, declarations, signature
-tests, and the manual pages and `test/gamepad.html`.
+tests, and the pages that use the changed command: the manual gamepad pages,
+`html-manual/clearevents_02`, `events_comprehensive`, and the evidence `device-check.html` that
+Section 8.3 uses. Core 8 lands first.
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 2.1 | **Rename and 2.0.0 (I1, I16).** `ingamepad` becomes `inGamepad`. The banner moves to 2.0.0 | — | — |
-| 2.2 | **Connection handlers (A5, I2, I4).** `onGamepad( mode, fn, once )` and `offGamepad( mode, fn )` with modes `"connect"` and `"disconnect"`, replacing `onGamepadConnected` and `onGamepadDisconnected` | [PAD-012](AUDIT-GAMEPAD.md#pad-012) | — |
-| 2.3 | **Start, stop, and `clearEvents` (I5, I10).** Polling starts on first use; `stopGamepad()` holds until `startGamepad()`; `clearEvents( "gamepad" )` clears every handler from any screen. Test: `clearEvents` scope and the handlers left afterward (P9) | [PAD-012](AUDIT-GAMEPAD.md#pad-012) | — |
+| 2.1 | **Rename and 2.0.0 (I1, I16).** `ingamepad` becomes `inGamepad`, with the old name in `_removed.toml`. The banner moves to 2.0.0 | — | — |
+| 2.2 | **Connection handlers (A5, I2, I4, I8).** `onGamepad( mode, fn, once )` and `offGamepad( mode, fn )` with modes `"connect"` and `"disconnect"`, replacing `onGamepadConnected` and `onGamepadDisconnected`, which go in `_removed.toml` | [PAD-012](AUDIT-GAMEPAD.md#pad-012) | — |
+| 2.3 | **Start, stop, and `clearEvents` (I5, I6, I10).** Polling starts on first use; `stopGamepad()` holds until `startGamepad()`, even when a handler is registered; `stopGamepad()` releases buttons, zeroes axes, and clears edges as a hidden page does, and the first update after `startGamepad()` has no edges; connection handlers are not called while stopped; `clearEvents( "gamepad" )` clears every handler from any screen. Tests, in the `vm` harness: stop and restart, handlers while stopped, `clearEvents` scope and the handlers left afterward (P9) | [PAD-012](AUDIT-GAMEPAD.md#pad-012) | — |
 | 2.4 | **Return shapes (A6, I9).** `inGamepad()` always returns an array; `inGamepad( index )` returns the pad or `null`. Test: return shapes and index gaps (P11) | [PAD-010](AUDIT-GAMEPAD.md#pad-010) | — |
-| 2.5 | **Validation (A8, I11).** Helper indices must be integers; out-of-range reads return `false`, `0`, or `null`; per-parameter codes instead of `INVALID_PARAMETERS`. Test: helper validation and out-of-range values (P10) | [PAD-008](AUDIT-GAMEPAD.md#pad-008) | — |
-| 2.6 | **Radial dead zone (A9, I12).** Radial for the two standard sticks, per-axis for other axes; `setGamepadSensitivity` becomes `setGamepadDeadZone` with option `gamepadDeadZone`, range 0 to under 1. Test: dead-zone model per axis pair (P13) | [PAD-011](AUDIT-GAMEPAD.md#pad-011) | — |
+| 2.5 | **Validation (A8, I11).** Indices for `inGamepad()` and the helpers must be integers: a non-integer throws `TypeError` and a negative index `RangeError`, both `INVALID_INDEX`; a well-formed index with nothing behind it returns `false`, `0`, or `null`. `onGamepad` validates `mode`, `fn`, and `once`. Codes from the I11 table instead of `INVALID_PARAMETERS`. Test: helper validation and out-of-range values (P10) | [PAD-008](AUDIT-GAMEPAD.md#pad-008) | — |
+| 2.6 | **Radial dead zone (A9, I12).** Radial for the two standard sticks, per-axis for other axes; `setGamepadSensitivity` becomes `setGamepadDeadZone` with option `gamepadDeadZone`, range 0 to under 1 (`RangeError`, `INVALID_DEAD_ZONE`), with the old name in `_removed.toml`; the old option fails through Core 8. The SYS-021 sensitivity tests move to `setGamepadDeadZone`. Test: dead-zone model per axis pair (P13) | [PAD-011](AUDIT-GAMEPAD.md#pad-011) | — |
 
 **Exit criteria:** every Phase 2 item in, `npm test` green, the compatibility summary complete,
 and size recorded.
@@ -557,9 +622,20 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.3:
 - **A9:** "`setGamepadSensitivity()` is now `setGamepadDeadZone()`, and
   `set( { gamepadSensitivity } )` is now `set( { gamepadDeadZone } )`. Stick values are
   measured radially, so diagonal movement near the center is no longer lost."
-- **I5 and I10:** polling starts on first use, and `clearEvents( "gamepad" )` from any screen
-  clears every gamepad handler.
+- **I16:** `ingamepad`, `onGamepadConnected`, `onGamepadDisconnected`, and
+  `setGamepadSensitivity` are unregistered.
+- **I5 and I6:** `stopGamepad()` holds even when a handler is registered, releases every button,
+  and stops connection handlers until `startGamepad()`.
+- **A1:** "just pressed", "just released", and "axis changed" report what happened since the
+  previous read, shared by every reader in the same frame, so timer-driven and slower loops see
+  every press.
+- **A4:** a connect handler registered later receives the pads already connected. Code that also
+  loops over `inGamepad()` to set up players can set one up twice.
+- **A7 and I7:** pads, their `buttons` and `axes`, and the list are live objects updated in
+  place. Copy them to keep a snapshot.
 - **Errors (I11):** validation throws with per-parameter codes instead of `INVALID_PARAMETERS`.
+  `getButton( "0" )` and other non-integer indices throw, and `setGamepadDeadZone( 1 )` throws
+  where `setGamepadSensitivity( 1 )` was accepted.
 - **A10 and A11:** additive; no upgrade entry.
 
 ## 8. Release
@@ -616,8 +692,10 @@ in its workstream's evidence folder.
 - [ ] Pointer: the mouse pass in Firefox and Safari; touch and multi-touch on a phone or tablet
   (PTR-002, PTR-003); `touchcancel` from a system gesture (PTR-005); pinch zoom with
   `setPinchZoom` on and off (PTR-014); compatibility mouse events after a tap; long-press
-  context menu; iOS double-tap zoom; pen input.
-- [ ] Gamepad: Safari, if macOS hardware is available; `vibrateGamepad()` in Chrome (A11).
+  context menu; iOS double-tap zoom; pen input. Use `html-manual/events_comprehensive` and
+  `ontouch_03`.
+- [ ] Gamepad: re-check PAD-001, PAD-002, and PAD-017 in Chrome and Firefox with a controller;
+  Safari, if macOS hardware is available; `vibrateGamepad()` in Chrome (A11).
 
 **Other:** a hardware-GPU check of the visual demos, and baseline approval for any fixture
 re-recorded during the release.
@@ -663,14 +741,18 @@ If the schedule slips, cut in this order. Earlier items go first.
    - Pointer B6: B5 keeps its window listeners, and B10 keeps `preventDefault()` with a
      per-screen flag.
    - Gamepad A9: the dead zone keeps its name and gains the radial model as a fix.
-6. **Core:** C8, then C7 (which leaves `set()` lenient and documents that), then C11's
-   changelog item. Other P3 findings are deferred; P1 and P2 findings are fixed or accepted as
-   known issues.
+6. **Core:** C8, then Core 13 (`$.clearEvents()` keeps clearing only the active screen, and
+   I10 says so), then C11's changelog item. Other P3 findings are deferred; P1 and P2 findings
+   are fixed or accepted as known issues.
 7. **An input plugin's Phase 2 as a set.** Its breaking changes move to the next minor release
    together, so users update each API once. Its Phase 1 fixes and Phase 3 additive items still
-   ship in 2.3.0.
+   ship in 2.3.0; Phase 3 items that validate input use the I11 codes either way.
 
-Not cut: the input plugins' Phase 1, Core 4, and Core 5 (CORE-001).
+Not cut: the input plugins' Phase 1, Core 4, Core 5 (CORE-001), and Core 8 (C7), which the I16
+rule for renamed options depends on. If Core 8 has to be cut anyway, its fallback is that the
+pointer and gamepad plugins register their old setter names (`setEnableContextMenu`,
+`setGamepadSensitivity`) as commands that throw an error naming the new command, which also
+covers the old `set()` options.
 
 ## 11. Risks
 
