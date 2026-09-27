@@ -1,0 +1,44 @@
+title = "inkey"
+category = "keyboard"
+isScreen = false
+plugin = "keyboard"
+summary = "Gets the current state of a key or all pressed keys."
+description = """
+Retrieves key state information. If a key is provided, returns the key data object for that key
+if it is currently pressed, or null if it is not. The key can be named by its code (e.g.,
+"KeyA"), which names a physical key, or by its key value (e.g., "a"), which names the character
+it types. A key value is held while any key that produced it is held, such as either Shift key
+for "Shift"; the most recent press is returned.
+
+If no key is provided, returns a new array of the key data objects of all pressed keys.
+
+Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat. They
+are frozen.
+"""
+example = """
+$.screen( "300x200" );
+requestAnimationFrame( run );
+function run() {
+	const keys = $.inkey();
+	$.cls();
+	$.print( "Press any key" );
+	for( const keyData of keys ) {
+		$.print( "--------------------------" );
+		$.print( "key:      " + keyData.key );
+		$.print( "location: " + keyData.location );
+		$.print( "code:     " + keyData.code );
+	}
+	requestAnimationFrame( run );
+}
+"""
+
+[[parameters]]
+name = "key"
+type = "string"
+description = "Key code or key value to check. If omitted, returns all pressed keys."
+optional = true
+
+[[returns]]
+type = "object | array | null"
+typeDesc = "*Many"
+description = "Key data object if key is pressed, array of all pressed keys if no key specified, or null if key not pressed."

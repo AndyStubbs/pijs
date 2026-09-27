@@ -289,7 +289,7 @@ declare namespace Pi {
 	 */
 	interface Options extends PluginOptions {
 		/**
-		 * Sets keys that should prevent default browser behavior.
+		 * Adds keys whose default browser behavior is prevented.
 		 */
 		actionKeys?: Array<string>;
 
@@ -1340,22 +1340,26 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Prompts the user for text input with a blinking cursor.
 		 *
-		 * Displays a prompt and waits for the user to enter text. The input appears at the current print cursor position with a blinking cursor. Supports validation for numbers, integers, and maximum length.
+		 * Displays a prompt at the print cursor and waits for the user to type a value. Enter completes the input and Escape cancels it. Returns a Promise that resolves with the value, or null if the input is cancelled, and optionally calls a callback function with the same value.
 		 *
-		 * The input is completed when Enter is pressed, or cancelled when Escape is pressed. Returns a Promise that resolves with the input value (or null if cancelled), and optionally calls a callback function.
+		 * The prompt keeps to one line: when the value would reach the right edge, the end of the value is shown. After the input ends, printing continues at column 0 of the line below the prompt.
 		 *
-		 * For numeric input, empty input or just "-" returns 0. For integer input, decimal points are not allowed.
+		 * While the prompt is active it reads keys itself, so it works even after stopKeyboard(). It prevents the default action of the keys it handles, so typing does not scroll the page or move focus. Shortcuts with Ctrl or Meta are left to the browser, except AltGr, which types; pasted text is inserted one character at a time by the same rules as typed text. Keys typed into an editable element on the page, such as an input field, are ignored.
+		 *
+		 * With isNumber or isInteger, the value is a number. Only digits, one decimal point unless isInteger is set, and a leading minus sign with allowNegative are accepted. Typing "-" adds the minus sign at the start, and "+" removes it; the minus sign counts toward maxLength. A value with no digits resolves to 0.
+		 *
+		 * The input is cancelled by cancelInput(), by clearEvents( "keyboard" ) called with no screen or from the screen that owns the prompt, by removing that screen, or by starting another input.
 		 * @param prompt Prompt text to display before the input field.
-		 * @param fn Optional callback function called with the input value when input completes.
-		 * @param cursor Cursor character to display. Defaults to block character (█).
-		 * @param isNumber If true, only allows numeric input.
-		 * @param isInteger If true, only allows integer input (no decimals).
-		 * @param allowNegative If true, allows negative numbers (for numeric input).
-		 * @param maxLength Maximum length of the input string. If null, no limit.
-		 * @returns Promise that resolves with the input value (string or number) or null if cancelled.
+		 * @param fn Optional callback function called with the input value, or null if cancelled.
+		 * @param cursor Cursor character to display. Defaults to character code 219, which the built-in fonts draw as a block.
+		 * @param isNumber If true, only accepts a number and resolves with a number.
+		 * @param isInteger If true, only accepts an integer, with no decimal point, and resolves with a number, with or without isNumber.
+		 * @param allowNegative If true, a numeric input accepts a leading minus sign.
+		 * @param maxLength Maximum length of the input, including a minus sign. Null or omitted for no limit.
+		 * @returns Promise that resolves with the input value, a number for numeric input, or null if cancelled.
 		 */
-		input( params: { "prompt": string; "fn"?: ( message: string ) => void; "cursor"?: string; "isNumber"?: boolean; "isInteger"?: boolean; "allowNegative"?: boolean; "maxLength"?: number } ): Promise<string>;
-		input( prompt: string, fn?: ( message: string ) => void, cursor?: string, isNumber?: boolean, isInteger?: boolean, allowNegative?: boolean, maxLength?: number ): Promise<string>;
+		input( params: { "prompt": string; "fn"?: ( value: string | number | null ) => void; "cursor"?: string; "isNumber"?: boolean; "isInteger"?: boolean; "allowNegative"?: boolean; "maxLength"?: number | null } ): Promise<string | number | null>;
+		input( prompt: string, fn?: ( value: string | number | null ) => void, cursor?: string, isNumber?: boolean, isInteger?: boolean, allowNegative?: boolean, maxLength?: number | null ): Promise<string | number | null>;
 
 		/**
 		 * Gets the current touch state and starts tracking if needed.
@@ -2094,11 +2098,11 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Gets the current state of a key or all pressed keys.
 		 *
-		 * Retrieves key state information. If a key is provided (as a string), returns the key data object for that key if it's currently pressed, or null if not pressed. The key can be specified by its code (e.g., "KeyA") or key value (e.g., "a").
+		 * Retrieves key state information. If a key is provided, returns the key data object for that key if it is currently pressed, or null if it is not. The key can be named by its code (e.g., "KeyA"), which names a physical key, or by its key value (e.g., "a"), which names the character it types. A key value is held while any key that produced it is held, such as either Shift key for "Shift"; the most recent press is returned.
 		 *
-		 * If no key is provided, returns an array of all currently pressed key data objects.
+		 * If no key is provided, returns a new array of the key data objects of all pressed keys.
 		 *
-		 * Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat.
+		 * Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat. They are frozen.
 		 * @param key Key code or key value to check. If omitted, returns all pressed keys.
 		 * @returns Key data object if key is pressed, array of all pressed keys if no key specified, or null if key not pressed.
 		 */
@@ -2171,7 +2175,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a key event handler.
 		 *
-		 * Removes a previously registered key event handler. All parameters must match the original onkey call exactly for the handler to be removed.
+		 * Removes a previously registered key event handler. The key, mode, callback, once, and allowRepeat must all match the original onkey call for the handler to be removed; a combination matches when it holds the same keys, in any order.
 		 * @param key Key code/key value string or array of keys that matches the original handler.
 		 * @param mode Event mode ("up" or "down") that matches the original handler.
 		 * @param fn Callback function that matches the original handler.
@@ -2179,8 +2183,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param allowRepeat AllowRepeat flag that matches the original handler.
 		 * @returns This function does not return a value.
 		 */
-		offkey( params: { "key": string | any[]; "mode"?: string; "fn": ( keyData: object ) => void; "once"?: boolean; "allowRepeat"?: boolean } ): void;
-		offkey( key: string | any[], mode: string | undefined, fn: ( keyData: object ) => void, once?: boolean, allowRepeat?: boolean ): void;
+		offkey( params: { "key": string | any[]; "mode": string; "fn": ( keyData: object | object[] ) => void; "once"?: boolean; "allowRepeat"?: boolean } ): void;
+		offkey( key: string | any[], mode: string, fn: ( keyData: object | object[] ) => void, once?: boolean, allowRepeat?: boolean ): void;
 
 		/**
 		 * Registers a callback function for when a gamepad is connected.
@@ -2209,20 +2213,24 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Registers a callback function for key events.
 		 *
-		 * Registers a callback function that will be called when a key event occurs. Supports single keys or key combinations. The callback receives key data object(s) depending on whether it's a single key or combination.
+		 * Registers a callback function that will be called when a key event occurs. Keys can be named by code (e.g., "KeyA", "Space"), which names a physical key whatever the layout and modifiers, or by key value (e.g., "a", " "), which names the character it types. Codes suit game controls.
 		 *
-		 * For single keys, the callback receives one key data object. For combinations, it receives an array of key data objects for all keys in the combination.
+		 * For single keys, the callback receives one key data object. A combination, given as an array of keys, runs when all of its keys are held, and its callback receives an array with the key data of each key in the order given.
 		 *
-		 * Use "any" as the key to listen for any key press. In this case, the callback receives the key data for the specific key that was pressed.
+		 * Use "any" as the key to listen for every key. The callback receives the key data of the key that was pressed or released.
+		 *
+		 * A "down" callback receives the key data of the keydown. An "up" callback receives the key data of the keyup, so its modifier state is the state at the release. A release runs the handlers of the key's code, of the value it reports, and of the value the key was pressed with, when a modifier changed it during the hold. Single-key and "any" up handlers run even for a key whose press was not seen. A combination's up handler runs when one of its keys is released while all were held, with the release data for that key.
+		 *
+		 * Key data objects are frozen. Keys typed into an editable element, such as an input field, are ignored. A callback that throws does not stop the others; its error is rethrown afterward.
 		 * @param key Key code/key value string, array of keys for combinations, or "any" for any key.
 		 * @param mode Event mode: "up" for key release, "down" for key press.
-		 * @param fn Callback function that receives key data object(s) when the event occurs.
+		 * @param fn Callback function that receives the key data, or an array of key data for a combination.
 		 * @param once If true, the handler is removed after being called once.
 		 * @param allowRepeat If true, allows the handler to fire on key repeat (when key is held down).
 		 * @returns This function does not return a value.
 		 */
-		onkey( params: { "key": string | any[]; "mode": string; "fn": ( keyData: object ) => void; "once"?: boolean; "allowRepeat"?: boolean } ): void;
-		onkey( key: string | any[], mode: string, fn: ( keyData: object ) => void, once?: boolean, allowRepeat?: boolean ): void;
+		onkey( params: { "key": string | any[]; "mode": string; "fn": ( keyData: object | object[] ) => void; "once"?: boolean; "allowRepeat"?: boolean } ): void;
+		onkey( key: string | any[], mode: string, fn: ( keyData: object | object[] ) => void, once?: boolean, allowRepeat?: boolean ): void;
 
 		/**
 		 * Pauses an audio instance, every instance of an audio ID, or all audio.
@@ -2473,11 +2481,11 @@ original thrown value if the callback throws synchronously. Callback return valu
 		screen( aspect: string, container?: string | HTMLElement, isOffscreen?: boolean, resizeCallback?: ( screenApi: Screen, fromSize: Size, toSize: Size ) => void, parent?: number | Screen, noCss?: boolean ): Screen;
 
 		/**
-		 * Sets keys that should prevent default browser behavior.
+		 * Adds keys whose default browser behavior is prevented.
 		 *
-		 * Adds keys to the action keys set. Action keys will have their default browser behavior prevented (e.g., preventing page scrolling with arrow keys). This is useful for game controls where you don't want the browser to handle certain keys.
+		 * Adds keys to the action keys set. Action keys have their default browser behavior prevented on keydown and keyup, for example page scrolling with the arrow keys or Space. This is useful for game controls where you don't want the browser to handle certain keys.
 		 *
-		 * Keys can be specified by code (e.g., "ArrowUp") or key value (e.g., "Arrow Up").
+		 * Keys already in the set stay in it; use removeActionKeys() to remove keys. set( { "actionKeys": [ ... ] } ) also adds. Keys can be specified by code (e.g., "ArrowUp", "Space") or key value (e.g., " ").
 		 * @param keys Array of key codes or key values to add as action keys.
 		 * @returns This function does not return a value.
 		 */
@@ -2643,9 +2651,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Starts keyboard input monitoring.
 		 *
-		 * Starts the keyboard input monitoring system. This initializes event listeners for keydown and keyup events.
-		 *
-		 * Note: the keyboard automatically starts when key commands are called, but this command can be used to restart it after calling stopKeyboard.
+		 * Starts the keyboard input monitoring system by adding the keydown and keyup listeners. The keyboard starts when the plugin loads, so this command is only needed after stopKeyboard(). Registering a handler or calling inkey() does not restart a stopped keyboard. Calling it again while the keyboard is running has no effect, and starting keeps the focused element's focus.
 		 * @returns This function does not return a value.
 		 */
 		startKeyboard(): void;
@@ -2671,7 +2677,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops keyboard input monitoring.
 		 *
-		 * Stops the keyboard input monitoring system. This removes event listeners and clears all key states. Keyboard events will no longer be tracked until startKeyboard is called again.
+		 * Stops the keyboard input monitoring system. This removes the keydown and keyup listeners and clears all key states. Keyboard events are no longer tracked until startKeyboard() is called again; registering a handler or calling inkey() does not restart it. An input() prompt keeps reading keys while the keyboard is stopped.
 		 * @returns This function does not return a value.
 		 */
 		stopKeyboard(): void;

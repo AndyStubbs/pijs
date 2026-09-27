@@ -1,0 +1,81 @@
+title = "onkey"
+category = "keyboard"
+isScreen = false
+plugin = "keyboard"
+summary = "Registers a callback function for key events."
+description = """
+Registers a callback function that will be called when a key event occurs. Keys can be named by
+code (e.g., "KeyA", "Space"), which names a physical key whatever the layout and modifiers, or
+by key value (e.g., "a", " "), which names the character it types. Codes suit game controls.
+
+For single keys, the callback receives one key data object. A combination, given as an array of
+keys, runs when all of its keys are held, and its callback receives an array with the key data
+of each key in the order given.
+
+Use "any" as the key to listen for every key. The callback receives the key data of the key
+that was pressed or released.
+
+A "down" callback receives the key data of the keydown. An "up" callback receives the key data
+of the keyup, so its modifier state is the state at the release. A release runs the handlers of
+the key's code, of the value it reports, and of the value the key was pressed with, when a
+modifier changed it during the hold. Single-key and "any" up handlers run even for a key whose
+press was not seen. A combination's up handler runs when one of its keys is released while all
+were held, with the release data for that key.
+
+Key data objects are frozen. Keys typed into an editable element, such as an input field, are
+ignored. A callback that throws does not stop the others; its error is rethrown afterward.
+"""
+example = """
+$.screen( "300x200" );
+$.onkey( "Enter", "down", ( keyData ) => {
+	$.print( "Enter pressed!" );
+} );
+
+// Key combination
+$.onkey( [ "ControlLeft", "KeyS" ], "down", ( keys ) => {
+	$.print( "Ctrl+S pressed!" );
+} );
+
+// One-time handler
+$.onkey( "Space", "down", () => {
+	$.print( "Space pressed once!" );
+}, true );
+
+// Listen for any key
+$.onkey( "any", "down", ( keyData ) => {
+	$.print( `Key ${keyData.key} pressed` );
+} );
+"""
+
+[[parameters]]
+name = "key"
+type = "string | array"
+typeDesc = "*Many"
+description = "Key code/key value string, array of keys for combinations, or \"any\" for any key."
+
+[[parameters]]
+name = "mode"
+type = "string"
+description = "Event mode: \"up\" for key release, \"down\" for key press."
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( keyData: object | object[] ) => void"
+description = "Callback function that receives the key data, or an array of key data for a combination."
+
+[[parameters]]
+name = "once"
+type = "boolean"
+description = "If true, the handler is removed after being called once."
+optional = true
+
+[[parameters]]
+name = "allowRepeat"
+type = "boolean"
+description = "If true, allows the handler to fire on key repeat (when key is held down)."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

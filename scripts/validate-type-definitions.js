@@ -141,6 +141,17 @@ const REQUIRED_DECLARATIONS = [
 			"noCss?: boolean ): Screen;"
 	},
 	{
+		"name": "input resolves with a string, a number, or null",
+		"text": "input( prompt: string, fn?: ( value: string | number | null ) => void, " +
+			"cursor?: string, isNumber?: boolean, isInteger?: boolean, " +
+			"allowNegative?: boolean, maxLength?: number | null ): Promise<string | number | null>;"
+	},
+	{
+		"name": "onkey callbacks receive key data or a combination array",
+		"text": "onkey( key: string | any[], mode: string, fn: ( keyData: object | object[] ) " +
+			"=> void, once?: boolean, allowRepeat?: boolean ): void;"
+	},
+	{
 		"name": "plugin service provider",
 		"text": "provideService: ( service: object ) => void;"
 	},

@@ -235,4 +235,22 @@ for( const bundle of g_harness.BUNDLES ) {
 			[ 30, true, 0 ]
 		] );
 	} );
+
+	test( `KEY-017 ${bundle}: set( { actionKeys } ) adds action keys (K20)`, async () => {
+		assert.deepEqual( await probe( bundle, () => {
+			function prevented( code ) {
+				const event = new KeyboardEvent( "keydown", {
+					"key": " ", "code": code, "cancelable": true
+				} );
+				window.dispatchEvent( event );
+				window.dispatchEvent( new KeyboardEvent( "keyup", { "key": " ", "code": code } ) );
+				return event.defaultPrevented;
+			}
+			$.setActionKeys( [ "Space" ] );
+			$.set( { "actionKeys": [ "KeyB" ] } );
+			const afterSet = [ prevented( "Space" ), prevented( "KeyB" ) ];
+			$.removeActionKeys( [ "Space", "KeyB" ] );
+			return [ afterSet, prevented( "Space" ), prevented( "KeyB" ) ];
+		} ), [ [ true, true ], false, false ] );
+	} );
 }

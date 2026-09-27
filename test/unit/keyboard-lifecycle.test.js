@@ -901,3 +901,20 @@ test( "KEY-013 key data cannot be changed through inkey() or handlers (K7)", () 
 	assert.ok( combination.every( data => Object.isFrozen( data ) ) );
 	assert.ok( Object.isFrozen( release ) );
 } );
+
+test( "KEY-017 setActionKeys() adds keys and removeActionKeys() removes them (K20)", () => {
+	const h = harness();
+	const prevented = code => {
+		const down = h.key( "x", "down", { "code": code } ).defaultPrevented;
+		const up = h.key( "x", "up", { "code": code } ).defaultPrevented;
+		return [ down, up ];
+	};
+	h.api.setActionKeys( [ "Space" ] );
+	h.api.setActionKeys( [ "KeyA" ] );
+	assert.deepEqual( [ prevented( "Space" ), prevented( "KeyA" ) ],
+		[ [ true, true ], [ true, true ] ], "a second call adds to the set" );
+	h.api.removeActionKeys( [ "Space" ] );
+	assert.deepEqual( [ prevented( "Space" ), prevented( "KeyA" ) ],
+		[ [ false, false ], [ true, true ] ] );
+	assert.deepEqual( prevented( "KeyB" ), [ false, false ] );
+} );
