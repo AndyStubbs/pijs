@@ -11,7 +11,7 @@ import * as g_harness from "./browser-source-harness.js";
 const { test } = g_test;
 const assert = g_assert;
 
-const { probe } = g_harness.useBrowserBundles( {
+const { probe, open } = g_harness.useBrowserBundles( {
 	"litePlugins": [ "keyboard" ],
 	"timeout": 10000
 } );
@@ -96,4 +96,33 @@ for( const bundle of g_harness.BUNDLES ) {
 		} ),
 		[ 1, [ "key", "a", "key", "a" ], true, true, true ] );
 	} );
+
+	test( `KEY-001 ${bundle}: native keys released with a different value are not held (K1n)`,
+		async () => {
+			const { page, errors } = await open( bundle );
+			try {
+				await page.evaluate( () => $.ready() );
+				const keyboard = page.keyboard;
+				const held = () => page.evaluate( () => [
+					$.inkey( "A" ) !== null, $.inkey( "KeyA" ) !== null,
+					$.inkey( "w" ) !== null, $.inkey( "W" ) !== null, $.inkey().length
+				] );
+				await keyboard.down( "Shift" );
+				await keyboard.down( "KeyA" );
+				const whileHeld = await page.evaluate( () => $.inkey( "A" )?.code );
+				await keyboard.up( "Shift" );
+				await keyboard.up( "KeyA" );
+				const afterA = await held();
+				await keyboard.down( "KeyW" );
+				await keyboard.down( "Shift" );
+				await keyboard.up( "KeyW" );
+				await keyboard.up( "Shift" );
+				assert.equal( whileHeld, "KeyA" );
+				assert.deepEqual( afterA, [ false, false, false, false, 0 ] );
+				assert.deepEqual( await held(), [ false, false, false, false, 0 ] );
+				assert.deepEqual( errors, [] );
+			} finally {
+				await page.close();
+			}
+		} );
 }

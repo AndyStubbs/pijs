@@ -15,9 +15,9 @@ import * as g_input from "./input.js";
 // Input tags that we don't want to capture
 const INPUT_TAGS = new Set( [ "INPUT", "TEXTAREA", "SELECT", "BUTTON" ] );
 
-// Key information containers
-const m_inCodes = {};
-const m_inKeys = {};
+// Held keys by code, in press order. Each entry is the data of the code's latest keydown, so a
+// key value is held while any code whose latest keydown produced it is held.
+const m_heldCodes = new Map();
 const m_actionKeys = new Set();
 const m_onKeyHandlers = {};
 
@@ -117,28 +117,11 @@ function inkey( options ) {
 			throw error;
 		}
 
-		// Get key by code property
-		if( m_inCodes[ key ] ) {
-			return m_inCodes[ key ];
-		}
-
-		// Get key by key property
-		if( m_inKeys[ key ] ) {
-			return m_inKeys[ key ];
-		}
-
-		return null;
+		return findHeldKey( key );
 	}
 
-	// If inkey is blank return all key codes
-	const keyCodes = [];
-	for( const code in m_inCodes ) {
-		if( m_inCodes[ code ] ) {
-			keyCodes.push( m_inCodes[ code ] );
-		}
-	}
-
-	return keyCodes;
+	// If inkey is blank return all held keys
+	return Array.from( m_heldCodes.values() );
 }
 
 /**
@@ -322,8 +305,10 @@ function onKeyDown( event ) {
 		"shiftKey": event.shiftKey,
 		"repeat": event.repeat
 	};
-	m_inCodes[ event.code ] = keyData;
-	m_inKeys[ event.key ] = keyData;
+
+	// The latest keydown of a code moves it to the end, so value lookups find the latest press
+	m_heldCodes.delete( event.code );
+	m_heldCodes.set( event.code, keyData );
 
 	triggerKeyEventHandlers( event, "down", event.code );
 	if( event.code !== event.key ) {
@@ -342,8 +327,7 @@ function onKeyUp( event ) {
 		clearInKeys();
 		return;
 	}
-	const codeData = m_inCodes[ event.code ];
-	const keyData = m_inKeys[ event.key ];
+	const codeData = m_heldCodes.get( event.code );
 	try {
 		triggerKeyEventHandlers( event, "up", event.code );
 		if( event.code !== event.key ) {
@@ -352,12 +336,10 @@ function onKeyUp( event ) {
 		triggerKeyEventHandlers( event, "up", "any" );
 	} finally {
 
-		// Preserve a new press dispatched by a release callback.
-		if( m_inCodes[ event.code ] === codeData ) {
-			delete m_inCodes[ event.code ];
-		}
-		if( m_inKeys[ event.key ] === keyData ) {
-			delete m_inKeys[ event.key ];
+		// Release by code, whatever value the release reports; preserve a new press dispatched
+		// by a release callback.
+		if( m_heldCodes.get( event.code ) === codeData ) {
+			m_heldCodes.delete( event.code );
 		}
 		if( m_actionKeys.has( event.code ) || m_actionKeys.has( event.key ) ) {
 			event.preventDefault();
@@ -421,10 +403,7 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 
 		// For "any" key handlers, pass the current key data
 		if( isAnyKey ) {
-			let keyData = m_inCodes[ event.code ];
-			if( !keyData ) {
-				keyData = m_inKeys[ event.key ];
-			}
+			const keyData = m_heldCodes.get( event.code );
 
 			// In case stopKeyboard gets called in another key event handler keyData will be blank
 			if( keyData !== undefined ) {
@@ -434,16 +413,9 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 		}
 
 		// For specific key handlers, check combo and pass combo data
-		const isAllKeysPressed = handler.combo.every( key => m_inKeys[ key ] || m_inCodes[ key ] );
+		const comboData = handler.combo.map( key => findHeldKey( key ) );
 
-		if( isAllKeysPressed ) {
-			const comboData = handler.combo.map( key => {
-				if( m_inKeys[ key ] ) {
-					return m_inKeys[ key ];
-				}
-				return m_inCodes[ key ];
-			} );
-
+		if( comboData.every( keyData => keyData !== null ) ) {
 			if( comboData.length === 1 ) {
 				invokeHandler( handler, comboData[ 0 ] );
 			} else {
@@ -479,14 +451,30 @@ function isFromEditableTarget ( event ) {
 }
 
 function clearInKeys() {
+	m_heldCodes.clear();
+}
 
-	// Clear all key states
-	for( const code in m_inCodes ) {
-		delete m_inCodes[ code ];
+/**
+ * Find a held key by code, or by key value.
+ *
+ * A code is checked first. A key value is held while any held code's latest keydown produced
+ * it; when several do, the most recent press is returned.
+ *
+ * @param {string} key - Key code, such as "KeyA", or key value, such as "a".
+ * @returns {Object|null} Key data of the held key, or null.
+ */
+function findHeldKey( key ) {
+	const codeData = m_heldCodes.get( key );
+	if( codeData ) {
+		return codeData;
 	}
-	for( const key in m_inKeys ) {
-		delete m_inKeys[ key ];
+	let keyData = null;
+	for( const data of m_heldCodes.values() ) {
+		if( data.key === key ) {
+			keyData = data;
+		}
 	}
+	return keyData;
 }
 
 
