@@ -1,9 +1,9 @@
 # Pi.js 2.3 Gamepad Audit
 
-Status: Reviewed 2026-09-24; every finding and proposal accepted (Section 9); the input
-conventions are decided (plan Section 6.1), which take precedence over this report
-Plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md), Section 5
-Evidence: [docs/evidence/gamepad-2.3/](../evidence/gamepad-2.3/README.md)
+Reviewed 2026-09-24: every finding and proposal accepted (Section 8). Where they differ, the
+input conventions ([ROADMAP §2](ROADMAP.md#2-input-conventions)) take precedence over this report.
+Implementation and status: [ROADMAP §7](ROADMAP.md#7-gamepad)
+Evidence: [docs/evidence/gamepad-2.3/](../../evidence/gamepad-2.3/README.md)
 
 ## 1. Summary
 
@@ -83,7 +83,7 @@ current.
 
 - The standalone `build/plugins/gamepad/gamepad.d.ts` declares only the init function, so a
   Lite user who loads the plugin gets no command types. Full-bundled plugins have no
-  `metadata/plugin-<name>/` folder (handoff to the core audit, Section 8).
+  `metadata/plugin-<name>/` folder (handoff to the core audit, Section 7).
 - `build/pi.lite.d.ts:180,372` declares `GamepadData` and `gamepadSensitivity`, although Lite
   has no gamepad plugin.
 - The IIFE build registers itself when `window.pi` exists (`:435-442`). Loading it after the
@@ -95,6 +95,8 @@ Priorities follow the 2.2 audit: **P1** blocks a supported workflow or corrupts 
 **P2** is incorrect behavior under a specific trigger; **P3** is a lower-impact contract
 defect. Line numbers refer to `plugins/gamepad/index.js` at `b37e9b8` unless another file is
 named. Each finding names its probe in `probes.js`; the results are in `probes-output.json`.
+
+<a id="pad-001"></a>
 
 ### PAD-001 — P2 — defect — Button and axis edges are lost unless every frame is read
 
@@ -141,6 +143,8 @@ drop most "just pressed" events, so jump or fire buttons do not work reliably.
 **Proposed fix:** make the loop the only updater, and report edges that happened since the
 previous read, with reads in the same frame seeing the same result (Section 4, A1).
 
+<a id="pad-002"></a>
+
 ### PAD-002 — P2 — defect — Blur freezes gamepad state, repeating edges and holding buttons
 
 **Locations:** `onWindowBlur()` `:403-412`, `onWindowFocus()` `:414-420`, the guard at
@@ -181,6 +185,8 @@ release every button and clear edges when the page is hidden (Section 4, A2). Fi
 real input to an unfocused page, and Chrome reports held buttons as released, so polling gives
 the correct state in both.
 
+<a id="pad-003"></a>
+
 ### PAD-003 — P1 — defect — A throwing handler stops dispatch and leaves a ghost gamepad
 
 **Locations:** `gamepadConnected()` `:213-222`, `gamepadDisconnected()` `:224-239`.
@@ -210,6 +216,8 @@ stays until a pad connects at the same index. This matches the 2.2 precedent SYS
 **Proposed fix:** remove the pad before dispatch, call each handler from a snapshot of the
 list, and report each throw without stopping the others (Section 4, A3).
 
+<a id="pad-004"></a>
+
 ### PAD-004 — P2 — defect — A throwing scan handler escapes and leaves polling off
 
 **Locations:** `startGamepad()` `:74-91`, `scanForGamepads()` `:252-275`.
@@ -231,6 +239,8 @@ handler's message and no frame is pending.
 updates until it happens to call another starting command.
 
 **Proposed fix:** the same dispatch isolation as PAD-003. Schedule the loop before the scan.
+
+<a id="pad-005"></a>
 
 ### PAD-005 — P2 — defect — Later connect handlers are never told about connected pads
 
@@ -255,6 +265,8 @@ never runs for them.
 **Proposed fix:** replay the currently connected pads to each new connect handler
 (Section 4, A4).
 
+<a id="pad-006"></a>
+
 ### PAD-006 — P3 — defect — A connection event for a tracked pad fires handlers again
 
 **Locations:** `gamepadConnected()` `:213-222`.
@@ -277,6 +289,8 @@ seen to.
 **Proposed fix:** ignore connection events for a tracked index that is still connected, or
 treat them as a reconnect (Section 4, A4).
 
+<a id="pad-007"></a>
+
 ### PAD-007 — P3 — defect — A handler added during dispatch runs in the same dispatch
 
 **Locations:** the `for…of` loops at `:219`, `:234`, `:270`.
@@ -294,6 +308,8 @@ event.
 **Impact:** handlers that register handlers see the event twice or out of order.
 
 **Proposed fix:** dispatch from a copy of the list (Section 4, A3).
+
+<a id="pad-008"></a>
 
 ### PAD-008 — P3 — defect — Helper methods crash on non-integers and disagree on range
 
@@ -320,6 +336,8 @@ reported with one consistent value.
 
 **Proposed fix:** Section 4, A8.
 
+<a id="pad-009"></a>
+
 ### PAD-009 — P3 — API — The pad object is live but its arrays are replaced every update
 
 **Locations:** `updateGamepad()` `:360-392`.
@@ -340,6 +358,8 @@ index allocates and sorts a new array on every call.
 Allocation).
 
 **Proposed fix:** Section 4, A7.
+
+<a id="pad-010"></a>
 
 ### PAD-010 — P3 — API — `ingamepad()` has four return shapes
 
@@ -363,6 +383,8 @@ The declared type is `object | any[]`.
 **Impact:** games need three checks. The declaration hides all of them.
 
 **Proposed fix:** Section 4, A6.
+
+<a id="pad-011"></a>
 
 ### PAD-011 — P3 — API — The per-axis dead zone distorts stick input
 
@@ -393,6 +415,8 @@ less sensitive.
 
 **Proposed fix:** Section 4, A9.
 
+<a id="pad-012"></a>
+
 ### PAD-012 — P3 — API — Handlers have no removal or once, and any screen clears them
 
 **Locations:** `onGamepadConnected()` `:175-186`, `onGamepadDisconnected()` `:194-205`,
@@ -413,7 +437,9 @@ stays stopped until the game starts polling again.
 **Impact:** modular games cannot remove one handler; a scene that clears its own screen's
 events removes other scenes' gamepad handlers.
 
-**Proposed fix:** decided by the conventions review (Section 4, A5; Section 8).
+**Proposed fix:** A5, in the shape the input conventions decided (I2, I4, I10).
+
+<a id="pad-013"></a>
 
 ### PAD-013 — P2 — documentation — `GAMEPAD.md` documents the removed 1.2 API
 
@@ -438,6 +464,8 @@ methods.
 
 **Proposed fix:** rewrite the guide for the final 2.3 API in the release phase (R.3).
 
+<a id="pad-014"></a>
+
 ### PAD-014 — P3 — documentation — Metadata, declarations, and `API.md` misstate behavior
 
 **Locations:** Section 2.
@@ -458,9 +486,11 @@ methods.
 **Impact:** TypeScript users cannot call the helper methods without casts, and the reference
 does not say what the commands return.
 
-**Proposed fix:** update metadata and declarations with each roadmap task, as the standing
-rules require. Correct the metadata for current behavior in the first roadmap phase, and
-update `API.md` in the release phase.
+**Proposed fix:** correct the metadata for current behavior (Gamepad 1.7), then update
+metadata and declarations with each API change, as the standing rules require. Update `API.md`
+in the release phase.
+
+<a id="pad-015"></a>
 
 ### PAD-015 — P3 — test gap — The manual gamepad pages register the plugin twice
 
@@ -482,8 +512,10 @@ plugin is already registered.
 device pass.
 
 **Proposed fix:** drop the standalone script from Full pages, or load Lite plus the plugin, and
-test the index against `null`. This is the gamepad roadmap's task (plan §8.3). The
-self-registration behavior is handed to the core audit (Section 8).
+test the index against `null` (Gamepad 1.7). The self-registration behavior is handed to the
+core audit (Section 7).
+
+<a id="pad-016"></a>
 
 ### PAD-016 — P3 — test gap — Most gamepad behavior has no automated test
 
@@ -495,11 +527,14 @@ self-registration behavior is handed to the core audit (Section 8).
 `onGamepadConnected`, and `onGamepadDisconnected` have no test, and `stopGamepad` appears only
 in a `finally`. No test covers buttons, edges, connection dispatch, `clearEvents( "gamepad" )`,
 blur and focus, return shapes, or the helper methods. The test audit handed these gaps to this
-workstream (TESTS-V2.3-AUDIT.md §5.4).
+workstream (AUDIT-TESTS.md §5.4).
 
 **Impact:** PAD-001 to PAD-012 and PAD-017 could appear or return without a failing test.
 
-**Proposed fix:** Section 5.2.
+**Proposed fix:** a test with each fix, starting from the probe that reproduces its finding
+([ROADMAP §7](ROADMAP.md#7-gamepad)).
+
+<a id="pad-017"></a>
 
 ### PAD-017 — P3 — defect — The press that exposes a pad is never reported as just pressed
 
@@ -556,7 +591,8 @@ Firefox on Windows; Safari was not checked.
 ## 4. Proposed API
 
 Each item is marked **fix** (restores documented or expected behavior), **additive**, or
-**breaking**. Names and handler shapes marked "§6" wait for the input conventions review.
+**breaking**. Items marked "§6" were left to the input conventions, which decided them
+([ROADMAP §2](ROADMAP.md#2-input-conventions)).
 Dependents: no other plugin uses gamepad; the manual pages and `test/gamepad.html` do. The
 first breaking item moves the plugin to 2.0.0 (G1).
 
@@ -575,15 +611,6 @@ first breaking item moves the plugin to 2.0.0 (G1).
 | A11 | `vibrateGamepad( gamepadIndex, duration, strong, weak )` using `playEffect( "dual-rumble" )`, returning whether the pad supports it. It covers Chromium and desktop Safari; Firefox and iOS return false. The device pass played `dual-rumble` on an Xbox One controller in Chrome 153; Firefox 156 exposed no actuator. Estimated under 150 bytes gzipped. Recommended in scope; the alternative is to leave `vibrationActuator` as the only access | additive | — |
 | A12 | Remove the `webkitGetGamepads` fallback. Add the blur and focus listeners on the first start instead of at plugin registration, so Full pages that never use a gamepad attach nothing | fix | — |
 
-**Upgrade-guide sketches:**
-- **A6:** "`ingamepad()` always returns an array, and `ingamepad( i )` returns `null` for a
-  missing pad. Replace `if( pads )` checks with a length check, and `=== undefined` with
-  `=== null`."
-- **A9:** "`setGamepadSensitivity()` is now `setGamepadDeadZone()`, and
-  `set( { gamepadSensitivity } )` is now `set( { gamepadDeadZone } )`. Stick values are
-  measured radially, so diagonal movement near the center is no longer lost."
-- **A5:** depends on §6. If the handlers are renamed, list each old name and its replacement.
-
 ## 5. Coverage Map
 
 ### 5.1 Current coverage
@@ -599,25 +626,6 @@ first breaking item moves the plugin to 2.0.0 (G1).
 | Buttons and edges | — | — | `gamepad_01`, `gamepad_03` |
 | `clearEvents( "gamepad" )` | — | — | `clearevents_02`, `events_comprehensive` (no-throw only) |
 | Blur and focus, lifecycle, helper validation, Lite plus plugin | — | — | — |
-
-### 5.2 Tests to add first
-
-Ranked by value. Each test starts from the probe that reproduces its finding. Following the
-standing rules, pure logic goes in the Node test (`gamepad-validation.test.js`, whose `vm`
-harness already scripts pads and frames), and only bundle wiring goes in the browser test.
-
-1. Edges by read timing: every frame, every other frame, timer reads (P1, PAD-001).
-2. Dispatch isolation: throwing handlers, pad removal, handlers added during dispatch (P5,
-   P5b, P6).
-3. Blur and focus: released state and cleared edges (P4, PAD-002).
-4. Connection replay, duplicate events, and the exposing press (P7, P3, P3b).
-5. Lifecycle: start, stop, repeat start, reads and registration after stop (P8).
-6. `clearEvents( "gamepad" )` scope and the handlers left afterward (P9).
-7. Helper validation and out-of-range values (P10).
-8. Return shapes and index gaps (P11).
-9. Stable objects and no per-frame allocation (P12).
-10. Dead-zone model per axis pair (P13).
-11. Lite with the standalone plugin, in the existing browser file (P14b).
 
 ## 6. Validation
 
@@ -668,44 +676,12 @@ focus change, stick dead-zone loss, reconnect indices, and vibration.
 | `id` | `"Xbox One Game Controller (STANDARD GAMEPAD)"` | `"xinput"` |
 | Vibration | `dual-rumble` played | No `vibrationActuator` or `hapticActuators`; nothing to play |
 
-**Open device checks,** for the release pass (R.7): Safari, if macOS hardware is available.
-
-## 7. Recommended Roadmap
-
-`GAMEPAD-V2.3-ROADMAP.md` is written from the accepted items after the conventions review.
-Proposed order:
-
-**Phase 1 — Fixes and tests (no API change):**
-- A1–A4, A7, A8, A12.
-- Metadata corrections for current behavior (PAD-014).
-- The manual page fixes (PAD-015).
-- The tests in Section 5.2.
-
-These can start once the roadmap is approved, and they do not depend on §6.
-
-**Phase 2 — API (after §6):**
-- A5, A6, A9, A10, and A11.
-- The version moves to 2.0.0 with the first breaking change.
-- Each task updates metadata, declarations, and signature tests.
-
-**Phase 3 — Release inputs:**
-- The compatibility summary.
-- The device checks still open for R.7.
-- Size at each phase exit.
-
-The user documentation (`GAMEPAD.md`, `API.md`, the llms references) is rewritten in the
-release phase (R.2, R.3), as the standing rules require.
-
-**Scope-cut order:**
-1. A10 and A11 (additive, can follow in 2.3.x).
-2. A9 (then the dead zone keeps its name and gains the radial model as a fix).
-3. Phase 2 as a set, per plan §12.3.
-
-Phase 1 is not cut.
-
-## 8. Handoffs
+## 7. Handoffs
 
 ### Core audit
+
+The core audit's answer to each item is in
+[AUDIT-CORE §7](AUDIT-CORE.md#7-handoffs).
 
 | Item | Detail |
 | --- | --- |
@@ -715,45 +691,33 @@ Phase 1 is not cut.
 | `addCommand` JSDoc | The example at `src/core/plugins.js:71` puts the parameter array in the `isScreen` slot |
 | Frame hook | Core has no animation-frame hook, so gamepad runs its own loop and each input plugin decides its own timing. Record whether input plugins need one |
 
-### Input conventions review (§6)
+## 8. Review Decisions
 
-| Item | Detail |
-| --- | --- |
-| Handler names | `onGamepadConnected` is camel case; keyboard uses `onkey`/`offkey`; gamepad has no `off` |
-| Handler shape | `once`, removal identity, and whether connection handlers take a pad index |
-| Callback data | Connect handlers receive the live pad object; disconnect handlers a plain copy |
-| Auto-start | Reads and handler registration start polling; registration also undoes `stopGamepad()` |
-| Return shapes | Polling returns `null`, `undefined`, an object, or an array (PAD-010) |
-| Global handlers and `clearEvents` | Whether a screen's `clearEvents` clears global input handlers |
-| Error codes | Gamepad uses `INVALID_PARAMETERS` with a `TypeError` for every validation error |
-
-## 9. Review Decisions
-
-The maintainer marks each item accepted, rejected, or deferred (plan §5.6). Decisions
-recorded 2026-09-24.
+The maintainer marked each item accepted, rejected, or deferred on 2026-09-24. The Notes name
+the [ROADMAP](ROADMAP.md#7-gamepad) tasks that implement each item.
 
 | ID | Summary | Decision | Notes |
 | --- | --- | --- | --- |
-| PAD-001 | Edges lost unless every frame is read | Accepted | Fixed by A1. Confirmed on hardware in Chrome and Firefox |
-| PAD-002 | Blur freezes state | Accepted | Fixed by A2. Confirmed on hardware in Chrome and Firefox |
-| PAD-003 | Throwing handler stops dispatch, ghost pad | Accepted | Fixed by A3. P1 |
-| PAD-004 | Throwing scan handler escapes, polling off | Accepted | Fixed by A3 |
-| PAD-005 | Later connect handlers miss connected pads | Accepted | Fixed by A4 |
-| PAD-006 | Duplicate connect for a tracked pad | Accepted | Fixed by A4. Not seen on hardware; the guard is kept because it is cheap |
-| PAD-007 | Handler added during dispatch runs at once | Accepted | Fixed by A3 |
-| PAD-008 | Helper index validation and range values | Accepted | Fixed by A8 |
-| PAD-009 | Live object with replaced arrays | Accepted | Fixed by A7 |
-| PAD-010 | Four `ingamepad()` return shapes | Accepted | Fixed by A6 (breaking) |
-| PAD-011 | Per-axis dead zone | Accepted | Fixed by A9 (breaking) |
-| PAD-012 | No handler removal; screen-wide clear | Accepted | Fixed by A5; the shape follows the conventions review |
+| PAD-001 | Edges lost unless every frame is read | Accepted | Fixed by A1 (Gamepad 1.1). Confirmed on hardware in Chrome and Firefox |
+| PAD-002 | Blur freezes state | Accepted | Fixed by A2 (Gamepad 1.2). Confirmed on hardware in Chrome and Firefox |
+| PAD-003 | Throwing handler stops dispatch, ghost pad | Accepted | Fixed by A3 (Gamepad 1.3). P1 |
+| PAD-004 | Throwing scan handler escapes, polling off | Accepted | Fixed by A3 (Gamepad 1.3) |
+| PAD-005 | Later connect handlers miss connected pads | Accepted | Fixed by A4 (Gamepad 1.4) |
+| PAD-006 | Duplicate connect for a tracked pad | Accepted | Fixed by A4 (Gamepad 1.4). Not seen on hardware; the guard is kept because it is cheap |
+| PAD-007 | Handler added during dispatch runs at once | Accepted | Fixed by A3 (Gamepad 1.3) |
+| PAD-008 | Helper index validation and range values | Accepted | Fixed by A8 with I11 codes (Gamepad 2.5) |
+| PAD-009 | Live object with replaced arrays | Accepted | Fixed by A7 (Gamepad 1.5) |
+| PAD-010 | Four `ingamepad()` return shapes | Accepted | Fixed by A6 (Gamepad 2.4, breaking) |
+| PAD-011 | Per-axis dead zone | Accepted | Fixed by A9 (Gamepad 2.6, breaking) |
+| PAD-012 | No handler removal; screen-wide clear | Accepted | Fixed by A5 in the I2 shape (Gamepad 2.2, 2.3) |
 | PAD-013 | `GAMEPAD.md` documents the removed API | Accepted | Rewritten in the release phase (R.3) |
-| PAD-014 | Metadata, declarations, `API.md` gaps | Accepted | Metadata and declarations in the roadmap; `API.md` in R.2 |
-| PAD-015 | Manual pages register the plugin twice | Accepted | Roadmap Phase 1. Self-registration handed to the core audit |
-| PAD-016 | Missing automated tests | Accepted | Roadmap Phase 1, Section 5.2 |
-| PAD-017 | The exposing press is not reported | Accepted | Fixed by A1. Confirmed on hardware in Chrome and Firefox |
-| A1–A4, A7, A8, A12 | Fixes | Accepted | Roadmap Phase 1; no API change |
-| A5 | Handler removal and `once` (§6) | Accepted | Names and signatures decided by the conventions review |
-| A6 | Return shapes | Accepted | Breaking; moves the plugin to 2.0.0 |
+| PAD-014 | Metadata, declarations, `API.md` gaps | Accepted | Metadata and declarations in Gamepad 1.7, then with each API change; `API.md` in R.2 |
+| PAD-015 | Manual pages register the plugin twice | Accepted | Gamepad 1.7. Self-registration after Full is CORE-003 |
+| PAD-016 | Missing automated tests | Accepted | A test with each fix; lifecycle tests in Gamepad 1.6 |
+| PAD-017 | The exposing press is not reported | Accepted | Fixed by A1 (Gamepad 1.1). Confirmed on hardware in Chrome and Firefox |
+| A1–A4, A7, A8, A12 | Fixes | Accepted | Gamepad Phase 1, except A8, which lands with I11 in Gamepad 2.5 |
+| A5 | Handler removal and `once` (§6) | Accepted | Decided by I2 and I4: `onGamepad()` and `offGamepad()` |
+| A6 | Return shapes | Accepted | Breaking |
 | A9 | Radial dead zone and rename | Accepted | Breaking: radial stick dead zone, and `setGamepadSensitivity` becomes `setGamepadDeadZone` (`gamepadDeadZone`). The old name fails as an unknown command (G3) |
-| A10 | Standard-mapping names | Accepted | Additive. The name set follows the conventions review |
-| A11 | `vibrateGamepad()` | Accepted | Additive. Returns false where unsupported (Firefox 156, iOS Safari) |
+| A10 | Standard-mapping names | Accepted | Additive. The names are I13 (Gamepad 3.1) |
+| A11 | `vibrateGamepad()` | Accepted | Additive (Gamepad 3.2). Returns false where unsupported (Firefox 156, iOS Safari) |

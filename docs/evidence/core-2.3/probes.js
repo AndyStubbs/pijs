@@ -1,5 +1,5 @@
 /**
- * Core 2.3 audit probes: reproductions for the findings in docs/plans/CORE-V2.3-AUDIT.md.
+ * Core 2.3 audit probes: reproductions for the findings in docs/plans/v2.3/AUDIT-CORE.md.
  *
  * Browser probes run in Chromium, Firefox, and WebKit against fresh in-memory bundles of the
  * current source and use only the public API. Declaration probes compile small consumers with

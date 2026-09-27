@@ -1,7 +1,7 @@
 # Sound 2.3 Evidence
 
-Measurements recorded at sound roadmap phase exits
-([SOUND-V2.3-ROADMAP.md](../../plans/SOUND-V2.3-ROADMAP.md)). Size reports come from
+Measurements recorded at sound phase exits
+([ROADMAP.md](../../plans/v2.3/ROADMAP.md)). Size reports come from
 `npm run size`, which builds the minified IIFE bundles in memory with the release options and
 compresses them with gzip level 9. Sizes are in bytes.
 
@@ -79,7 +79,7 @@ rule for samples, and its error messages are a large share of the minified text.
 **Variance.** The plugin is 36 bytes under the 14 KB (14,336 bytes) target, and full-build
 growth is 8,379 bytes, 187 bytes over the 8 KB (8,192 bytes) target, before the Phase 4 PLAY
 scheduler. The targets are checked at M2 (Phase 4 exit), so Phase 4 either offsets its own
-growth and this overrun, or records a variance for the release size review (roadmap 6.1).
+growth and this overrun, or records a variance for the release size review (Sound 6.1).
 
 Phase 4 deltas, gzipped:
 
@@ -98,7 +98,7 @@ scheduler streams, PLAY extensions, event snapshots, and voice inserts.
 **M2 size check.** The core `sound` plugin is 14,108 bytes, 228 under the 14 KB (14,336 byte)
 target. Full-build growth over the 2.2 baseline is 8,232 bytes, **40 bytes over** the 8 KB
 (8,192 byte) target, down from 187 over at Phase 3. This variance is recorded for the release
-size review (roadmap 6.1). The core API is complete, so later growth comes only from Phase 6
+size review (Sound 6.1). The core API is complete, so later growth comes only from Phase 6
 promotions, which that review decides.
 
 Phase 5 deltas, gzipped:
@@ -121,7 +121,7 @@ minified text; consolidating the shape checks saved 162 minified bytes and no gz
 **Size variance for the release review.** The core `sound` plugin is 15,284 bytes, **948 over**
 the 14 KB (14,336 byte) target. Full-build growth over the 2.2 baseline is 9,403 bytes,
 **1,211 over** the 8 KB (8,192 byte) target. The targets were set before the service's Phase 5
-members were measured; roadmap 6.1 decides whether they are raised or code moves.
+members were measured; Sound 6.1 decides whether they are raised or code moves.
 
 Minified bytes by module in the `sound-advanced` bundle: `synth.js` 6,560, `instruments.js`
 2,609, `presets.js` 2,389, `effects.js` 2,053, `analyser.js` 1,208, `periodic-noise.js` 979,
@@ -149,7 +149,7 @@ volume costs 75 bytes to promote.
 
 ## Phase 6 size review
 
-The release size review (roadmap 6.1) decided where each `sound-advanced` module belongs from
+The release size review (Sound 6.1) decided where each `sound-advanced` module belongs from
 the Phase 5 differentials above, and task 6.2 applied the result.
 
 - **`buses` promoted (D4).** Per-bus volume is common in games (separate music and effects
@@ -187,8 +187,8 @@ with 276 bytes of headroom. No variance remains.
 
 ## Phase 7: recording
 
-Phase 7 of the expansion plan
-([SOUND-ADVANCED-V2.3-PLAN.md](../../plans/SOUND-ADVANCED-V2.3-PLAN.md)) added the core output
+Phase 7 of the expansion design
+([DESIGN-SOUND-ADVANCED.md](../../plans/v2.3/DESIGN-SOUND-ADVANCED.md)) added the core output
 stage behind `tapBus( "output" )` and the `recorder` module, with its `wav` and `worklet`
 helpers, to `sound-advanced`.
 
@@ -242,7 +242,7 @@ Other findings:
 
 ## Phase 8: bus effects
 
-Phase 8 of the expansion plan made four changes in `sound-advanced`; core `sound` did not
+Phase 8 of the expansion design made four changes in `sound-advanced`; core `sound` did not
 change:
 
 - The `effects` module was rewritten as stage builders with declared rampable options.

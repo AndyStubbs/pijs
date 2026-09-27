@@ -1,9 +1,13 @@
 # Pi.js 2.3 Pointer Audit
 
-Status: Reviewed 2026-09-25; every finding and proposal accepted (Section 9); the input
-conventions are decided (plan Section 6.1), which take precedence over this report
-Plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md), Section 5
-Evidence: [docs/evidence/pointer-2.3/](../evidence/pointer-2.3/README.md)
+Reviewed 2026-09-25: every finding and proposal accepted (Section 8). Where they differ, the
+input conventions ([ROADMAP §2](ROADMAP.md#2-input-conventions)) take precedence over this report.
+Implementation and status: [ROADMAP §6](ROADMAP.md#6-pointer)
+Evidence: [docs/evidence/pointer-2.3/](../../evidence/pointer-2.3/README.md)
+
+`onscreen-keyboard` and `pi-vision`, the dependents this audit examined, were removed in 2.3
+(ROADMAP P.1–P.6). Findings that mention them keep the reproduction as it was at the audited
+revision.
 
 ## 1. Summary
 
@@ -115,6 +119,8 @@ Priorities follow the 2.2 audit: **P1** blocks a supported workflow or corrupts 
 defect. Line numbers refer to `plugins/pointer/` at `cfc32a9` unless another file is named.
 Each finding names its probe in `probes.js`; the results are in `probes-output.json`.
 
+<a id="ptr-001"></a>
+
 ### PTR-001 — P1 — defect — Removing a handler can disable all handlers of that type
 
 **Locations:** `mouse.js:182-214`, `touch.js:148-180`, `press.js:89-183`,
@@ -148,6 +154,8 @@ keyboard shown and hidden once, the game's press handler ran 0 times for a press
 received before. `pi-vision` registers its press handlers once per screen and never again
 (`window.js:333-347`), so the same sequence can stop its window dragging (not probed).
 
+<a id="ptr-002"></a>
+
 ### PTR-002 — P2 — defect — Touch end reports the touches still down, not the one that ended
 
 **Locations:** `updateTouch()` `touch.js:239-262`, `touchEnd()` `:225-237`, hit-box
@@ -166,6 +174,8 @@ fires for a finger that lifted at (80, 80). `intouch()` then reports touch 1 wit
 `"end"`. Every touch in an event takes that event's action, so a `move` marks stationary
 touches as moving too.
 
+<a id="ptr-003"></a>
+
 ### PTR-003 — P2 — defect — Press and click follow the first touch, not the one that changed
 
 **Locations:** `getTouchPress()` `press.js:238-284`, `touch.js:207-236`.
@@ -183,6 +193,8 @@ never fires. `onscreen-keyboard` reads every finger from `inpress().touches`, bu
 all keys on each press `up` (`plugins/onscreen-keyboard/index.js:342-350`), and press `up`
 fires whenever any finger lifts, so lifting one finger releases keys other fingers still hold.
 
+<a id="ptr-004"></a>
+
 ### PTR-004 — P2 — defect — A release outside the canvas is never seen
 
 **Locations:** `startMouse()` `mouse.js:95-101` (canvas listeners only, no pointer capture).
@@ -196,6 +208,8 @@ element under the cursor; Pi.js dispatches no `up` and polling keeps `buttons: 1
 `inpress().buttons: 1` until the next event on the canvas. Moves outside the canvas are not
 reported, so a drag stops at the edge. A game polling `buttons` sees the button held; a drag
 handler waiting for `up` never finishes (`pi-vision` window dragging is one).
+
+<a id="ptr-005"></a>
 
 ### PTR-005 — P2 — defect — Click listeners stay armed; cancelled touches click
 
@@ -212,6 +226,8 @@ touch is not a tap.
 **Actual:** the first press arms the listener and the release outside does not disarm it, so
 the second press clicks, with trusted input as well. The cancelled touch clicks. Browsers send
 `touchcancel` when they take over a gesture, such as a scroll, zoom, or system edge swipe.
+
+<a id="ptr-006"></a>
 
 ### PTR-006 — P2 — defect — A throwing handler breaks the rest of the event
 
@@ -230,6 +246,8 @@ was not armed on down, so the release does not click. The touch start is not pre
 `preventDefault()` comes after the dispatch. On a touch device the browser then runs its default
 action (scrolling or zooming) and sends compatibility mouse events, which `onpress` handlers
 receive as a second press (device check, R.7).
+
+<a id="ptr-007"></a>
 
 ### PTR-007 — P2 — defect — Blur resets polling without telling handlers
 
@@ -251,6 +269,8 @@ and the page stayed visible, while Pi.js already reported it released. The up ha
 later, when Chrome delivered the real release to the unfocused page. The blur reset is
 therefore wrong as well as incomplete: B5 drops it.
 
+<a id="ptr-008"></a>
+
 ### PTR-008 — P3 — defect — `onclick` fires for the right and middle buttons
 
 **Locations:** `mouseDown()`/`mouseUp()` `mouse.js:238-264`; `triggerClickListeners()`
@@ -263,6 +283,8 @@ click on a game button should not activate it.
 
 **Actual:** both fire `onclick`, with trusted input in all three engines. The click data has
 `buttons: 0` (the state after release), so the handler cannot tell which button was used.
+
+<a id="ptr-009"></a>
 
 ### PTR-009 — P3 — defect — `once` removes other registrations; removed handlers still run
 
@@ -278,6 +300,8 @@ that dispatch, as with DOM events.
 **Actual:** 2 calls: the `once` wrapper removes every registration of the function. The removed
 handler still runs, because dispatch uses a copy made before the first handler.
 
+<a id="ptr-010"></a>
+
 ### PTR-010 — P3 — defect — `stopMouse()` and `stopTouch()` keep held state
 
 **Locations:** `stopMouse()` `mouse.js:110-123`, `stopTouch()` `touch.js:102-114`.
@@ -289,6 +313,8 @@ handler still runs, because dispatch uses a copy made before the first handler.
 
 **Actual:** `inmouse().buttons` stays 1 and `intouch()` keeps the touch for as long as input is
 stopped. `inpress()` reports the same.
+
+<a id="ptr-011"></a>
 
 ### PTR-011 — P3 — defect — Border and padding points map outside the screen
 
@@ -304,6 +330,8 @@ whole border box, while the mapping uses the content box. Drawing or hit-testing
 indexes by position gets out-of-range values; the core `noCss` layout and user CSS both
 produce borders and padding.
 
+<a id="ptr-012"></a>
+
 ### PTR-012 — P3 — defect — Settings and hit boxes are not validated consistently
 
 **Locations:** `setEnableContextMenu()` `mouse.js:156-160`, `setPinchZoom()`
@@ -318,7 +346,9 @@ accept any finite position and reject negative sizes.
 **Actual:** the string `"false"` enables the context menu and pinch zoom. `once` is coerced the
 same way. A hit box with `x: 0.5` throws `INVALID_HITBOX`, although positions from views or
 scaling are often fractional; a negative width is accepted and never matches. Handler
-validation throws plain `Error`s, while gamepad throws `TypeError`s (Section 8).
+validation throws plain `Error`s, while gamepad throws `TypeError`s (settled by I11).
+
+<a id="ptr-013"></a>
 
 ### PTR-013 — P3 — API — Press, touch, and click data disagree
 
@@ -337,6 +367,8 @@ is the press object itself, so `JSON.stringify( $.inpress() )` throws. Touch pre
 `lastX` is a number on the first event and touch `lastX` is `null`. Click data has action
 `"up"` against the documented `"click"`. `buttons` is a bitmask for mouse and 0 or 1 for touch.
 
+<a id="ptr-014"></a>
+
 ### PTR-014 — P3 — API — Pinch zoom is page-wide; context-menu suppression starts late
 
 **Locations:** `setPinchZoom()` `touch.js:188-195`, `touchStart()` `:208`,
@@ -354,6 +386,8 @@ even with pinch zoom enabled, because `touchstart` is always prevented. `setPinc
 erases the page's `pan-y`, and `setPinchZoom( false )` sets `touch-action: none` on `<body>`,
 which stops panning and zooming on every element of the page, not only the canvas. The
 setting belongs on the canvas, per screen.
+
+<a id="ptr-015"></a>
 
 ### PTR-015 — P3 — documentation — Metadata, declarations, and `API.md` misstate behavior
 
@@ -375,6 +409,8 @@ setting belongs on the canvas, per screen.
 - The `stopTouch` JSDoc (`touch.js:97`) says it resets state.
 - The plugin has no README.
 
+<a id="ptr-016"></a>
+
 ### PTR-016 — P3 — test gap — Manual pointer pages do not load cleanly
 
 **Locations:** `test/tests/html-manual/contextmenu_01.html:19-20`,
@@ -386,6 +422,8 @@ setting belongs on the canvas, per screen.
 standalone plugins, so registration throws `DUPLICATE_PLUGIN`. `ontouch_03` calls
 `$.render()`, which does not exist in 2.x, and throws on load. The same in every engine. The
 standalone pages are what a maintainer would use for the touch checks in R.7.
+
+<a id="ptr-017"></a>
 
 ### PTR-017 — P3 — test gap — Most pointer behavior has no automated test
 
@@ -404,7 +442,7 @@ These are not findings; each needs a device or a decision to confirm.
   `clearEvents( "press" )` removes the `onpress` handlers that `pi-vision` and
   `onscreen-keyboard` registered, and `pi-vision` never registers them again
   (`window.js:333-347`). Whether user-level `clearEvents` should reach plugin-internal
-  subscriptions is a conventions question (Section 8).
+  subscriptions was settled by CORE-004: documented, with no core mechanism.
 - **Default click hit box:** `onclick` without a hit box stores the screen size at
   registration. If a screen's logical size changes later, the box is stale. No resize path that
   changes the logical size was found.
@@ -417,8 +455,9 @@ These are not findings; each needs a device or a decision to confirm.
 
 ## 4. Proposed API
 
-Dependents: `onscreen-keyboard` and `pi-vision` use press data and handlers; demos and the
-visual fixtures use every command. The first breaking item moves the plugin to 2.0.0 (G1).
+Items marked **§6** were left to the input conventions, which decided them
+([ROADMAP §2](ROADMAP.md#2-input-conventions)). Dependents: the demos and visual fixtures use
+every command. The first breaking item moves the plugin to 2.0.0 (G1).
 
 | ID | Change | Kind | Findings |
 | --- | --- | --- | --- |
@@ -434,19 +473,7 @@ visual fixtures use every command. The first breaking item moves the plugin to 2
 | B10 | Browser-gesture settings per screen, on the canvas: pinch zoom and panning through the canvas `touch-action` (default `none`), never `<body>`; context menu suppressed from screen creation. `setPinchZoom` becomes a screen command; its name and `setEnableContextMenu`'s follow §6 | breaking | PTR-014 |
 | B11 | Wheel input: `onwheel( fn, once, hitBox, customData )` and `offwheel( fn )`, with deltas normalized to pixels and page scrolling prevented while a wheel handler is registered for the screen. Games use the wheel for zoom, weapon switching, and scrolling lists. Estimated 200–300 bytes gzipped. Polled wheel state is not proposed; it would lose deltas between reads as PAD-001 did | additive | — |
 | B12 | Attach the `window` listeners on the first start instead of at registration, as gamepad A12 does | fix | — |
-| B13 | Allocation: polling returns a new object each call and each event allocates its data. Decide with gamepad A7 in §6 whether polling returns stable live objects; callbacks keep per-event objects | §6 | — |
-
-**Upgrade-guide sketches:**
-- **B7:** "Press, touch, and click data share one shape. Touch presses report `action` as
-  `"down"`, `"move"`, and `"up"` instead of `"start"`, `"move"`, and `"end"`; `lastX` and
-  `lastY` start at the current position instead of `null`; click data has `action: "click"`.
-  `inpress().touches` holds copies, so it no longer contains the press object itself."
-- **B10:** "`setPinchZoom()` is a screen command and sets `touch-action` on that screen's
-  canvas; it no longer changes `<body>`. The context menu is suppressed from screen creation."
-- **B6 observable changes:** pen input is reported with `type: "pen"`; a drag that leaves the
-  canvas keeps reporting moves and its release; a press that starts on the canvas border is
-  ignored.
-- **B11:** additive; no upgrade entry.
+| B13 | Allocation: polling returns a new object each call and each event allocates its data. Decide with gamepad A7 in §6 whether polling returns stable live objects; callbacks keep per-event objects | §6: I7, frozen per-event objects | — |
 
 ## 5. Coverage Map
 
@@ -470,27 +497,6 @@ visual fixtures use every command. The first breaking item moves the plugin to 2
 | `setEnableContextMenu` | — | offscreen only | — | `contextmenu_01` |
 | `clearEvents( "mouse" \| "touch" \| "press" )` | — | — | — | `clearevents_01–02`, `events_comprehensive` |
 | Counters, multi-touch, releases outside the canvas, blur, stop state, throwing handlers, clicks by button, `touchcancel`, `setPinchZoom`, validation | — | — | — | — |
-
-### 5.2 Tests to add first
-
-Ranked by value. Each test starts from the probe that reproduces its finding. Following the
-standing rules, pure dispatch logic goes in the Node test (`pointer-events.test.js`), and event
-wiring goes in the browser test (`pointer-browser.test.js`), which can reuse the probes'
-synthetic touch events.
-
-1. Handler bookkeeping: clearing one mode, removing unknown functions, `once` with a duplicate,
-   and the on-screen keyboard show/hide sequence (P1, P7, P17).
-2. Multi-touch: end and cancel data, per-touch actions, press and click with two fingers (P2,
-   P3, P4).
-3. Release tracking: release outside the canvas with trusted input, blur, hidden page, and stop
-   commands (T1, P8, P9, P10).
-4. Dispatch isolation: throwing mouse, press, and touch handlers; `preventDefault()` still
-   applied (P6).
-5. Clicks: button filtering and stale arming (P4, P5).
-6. Coordinates on the border and padding (P11).
-7. Settings: context-menu default, pinch zoom on the canvas, and validation (P13, P14).
-8. Data shapes, including serialization of `inpress()` (P12).
-9. Lite with the standalone plugin (P16), in the existing browser file.
 
 ## 6. Validation
 
@@ -551,52 +557,12 @@ on blur, and ignores a release for a button that is not held.
 
 Firefox was not run.
 
-**Open device checks,** for the release pass (R.7): the mouse pass in Firefox and Safari; touch
-and multi-touch on a phone or tablet
-(PTR-002, PTR-003), `touchcancel` from a system gesture (PTR-005), pinch zoom with
-`setPinchZoom` on and off (PTR-014), compatibility mouse events after a tap, long-press
-context menu, iOS double-tap zoom, and pen input.
-
-## 7. Recommended Roadmap
-
-`POINTER-V2.3-ROADMAP.md` is written from the accepted items after the conventions review.
-Proposed order:
-
-**Phase 1 — Fixes and tests (no API change):**
-- B1, B2, B5 (window listeners for releases), B8, B12.
-- B3 and B4 where they keep the current data shape; the action names follow in Phase 2.
-- Metadata corrections for current behavior (PTR-015).
-- The manual page fixes (PTR-016).
-- The tests in Section 5.2.
-
-B1 fixes the P1 finding and is the first task. These can start once the roadmap is approved,
-and they do not depend on §6.
-
-**Phase 2 — Pointer Events and API (after §6):**
-- B6, which replaces the listeners behind the Phase 1 fixes.
-- B7, B9, B10, B11, and B13.
-- The version moves to 2.0.0 with the first breaking change.
-- Each task updates metadata, declarations, signature tests, and the dependents
-  (`onscreen-keyboard`, `pi-vision`), with the plugin visual suite passing.
-
-**Phase 3 — Release inputs:**
-- The compatibility summary.
-- The device checks still open for R.7.
-- Size at each phase exit.
-
-The user documentation (`API.md`, the llms references, and a new plugin README) is written in
-the release phase (R.2, R.3), as the standing rules require.
-
-**Scope-cut order:**
-1. B11 (additive, can follow in 2.3.x).
-2. B6 (then B5 keeps window listeners and B10 keeps `preventDefault()` with a per-screen flag).
-3. Phase 2 breaking items as a set, per plan §12.3.
-
-Phase 1 is not cut.
-
-## 8. Handoffs
+## 7. Handoffs
 
 ### Core audit
+
+The core audit's answer to each item is in
+[AUDIT-CORE §7](AUDIT-CORE.md#7-handoffs).
 
 | Item | Detail |
 | --- | --- |
@@ -605,48 +571,33 @@ Phase 1 is not cut.
 | `canvas-layout.js` | Pointer mapping and presentation sizing share `getCanvasContentRect()`; its content-box rule is why border points map outside the screen (PTR-011). Rotation and skew are unsupported by design |
 | Plugin-internal subscriptions and `clearEvents` | `clearEvents()` on a screen removes handlers that plugins registered for their own use (`pi-vision`, `onscreen-keyboard`). Decide whether plugins need subscriptions that user-level `clearEvents` does not reach |
 
-### Input conventions review (§6)
+## 8. Review Decisions
 
-| Item | Detail |
-| --- | --- |
-| Handler names | `onmouse`/`offmouse`, `ontouch`, `onpress`, `onclick` are lower case with a mode argument; gamepad uses `onGamepadConnected` with no `off`; keyboard uses `onkey`/`offkey` |
-| Handler shape | Mode strings, `once` as a positional boolean, hit boxes, and `customData` on every pointer handler; removal by mode and function; `off*()` cannot clear all modes |
-| Dispatch semantics | Pointer snapshots additions (as gamepad A3 will); B1 proposes that removals take effect at once, as in the DOM. One rule for all three plugins |
-| Cancelled input | How a release caused by blur, hiding, `stop*()`, or `touchcancel` is marked in the data (B3, B5), and whether keyboard and gamepad releases on blur use the same marker |
-| Callback data | Pointer callbacks get per-event objects; gamepad passes the live pad object. B7 proposes one pointer data shape |
-| Auto-start | Reads and handler registration start tracking, but not after an explicit stop; the same question as gamepad |
-| Return shapes and allocation | `inmouse()` and `inpress()` return new objects each call; gamepad A7 proposes live objects (B13) |
-| Settings names | `setEnableContextMenu( isEnabled )` against `setPinchZoom( isEnabled )`, one screen command and one global |
-| Error codes | Pointer throws `Error` with `INVALID_MODE`, `INVALID_FUNCTION`, `INVALID_HITBOX`, and `TypeError` with `OFFSCREEN_INPUT_UNSUPPORTED`; gamepad throws `TypeError` with `INVALID_PARAMETERS` |
-| Global handlers and `clearEvents` | Pointer handlers are per screen; `clearEvents( "press" )` also clears clicks |
-
-## 9. Review Decisions
-
-The maintainer marks each item accepted, rejected, or deferred (plan §5.6). Decisions
-recorded 2026-09-25.
+The maintainer marked each item accepted, rejected, or deferred on 2026-09-25. The Notes name
+the [ROADMAP](ROADMAP.md#6-pointer) tasks that implement each item.
 
 | ID | Summary | Decision | Notes |
 | --- | --- | --- | --- |
-| PTR-001 | Removing a handler can disable all handlers of that type | Accepted | P1. Reachable through the on-screen keyboard. Fixed by B1 |
-| PTR-002 | Touch end reports the touches still down | Accepted | Fixed by B3 |
-| PTR-003 | Press and click follow the first touch | Accepted | Fixed by B4 |
-| PTR-004 | Release outside the canvas lost | Accepted | Confirmed with trusted input and in Chrome 153. Fixed by B5/B6 |
-| PTR-005 | Click listeners stay armed; cancelled touches click | Accepted | Confirmed with trusted input and in Chrome 153 (mouse part). Fixed by B3/B4 |
-| PTR-006 | A throwing handler breaks the rest of the event | Accepted | Fixed by B2 |
-| PTR-007 | Blur resets polling without telling handlers | Accepted | Confirmed in Chrome 153, where the button was still held at blur. Fixed by B5 |
-| PTR-008 | `onclick` fires for right and middle buttons | Accepted | Confirmed with trusted input and in Chrome 153. Fixed by B4 |
-| PTR-009 | `once` removes other registrations; removed handlers run | Accepted | Fixed by B1 |
-| PTR-010 | Stop commands keep held state | Accepted | Fixed by B5 |
-| PTR-011 | Border and padding points map outside the screen | Accepted | Confirmed in Chrome 153 (x -4 to 203, y -5 to 153). Fixed by B8 |
-| PTR-012 | Settings and hit boxes not validated consistently | Accepted | Fixed by B8/B9 |
-| PTR-013 | Press, touch, and click data disagree | Accepted | Fixed by B7 (breaking) |
-| PTR-014 | Pinch zoom page-wide; context menu suppressed late | Accepted | Fixed by B10 (breaking) |
-| PTR-015 | Metadata, declarations, `API.md` gaps | Accepted | Metadata and declarations in the roadmap; `API.md` in R.2 |
-| PTR-016 | Manual pointer pages do not load cleanly | Accepted | Roadmap Phase 1 |
-| PTR-017 | Missing automated tests | Accepted | Roadmap Phase 1, Section 5.2 |
-| B1–B5, B8, B9, B12 | Fixes | Accepted | Roadmap Phase 1. B8: presses that start on the border or padding are ignored |
+| PTR-001 | Removing a handler can disable all handlers of that type | Accepted | P1. Reachable through the on-screen keyboard. Fixed by B1 (Pointer 1.1) |
+| PTR-002 | Touch end reports the touches still down | Accepted | Fixed by B3 (Pointer 1.3) |
+| PTR-003 | Press and click follow the first touch | Accepted | Fixed by B4 (Pointer 1.4) |
+| PTR-004 | Release outside the canvas lost | Accepted | Confirmed with trusted input and in Chrome 153. Fixed by B5/B6 (Pointer 1.5, 2.2) |
+| PTR-005 | Click listeners stay armed; cancelled touches click | Accepted | Confirmed with trusted input and in Chrome 153 (mouse part). Fixed by B3/B4 (Pointer 1.3, 1.4) |
+| PTR-006 | A throwing handler breaks the rest of the event | Accepted | Fixed by B2 (Pointer 1.2) |
+| PTR-007 | Blur resets polling without telling handlers | Accepted | Confirmed in Chrome 153, where the button was still held at blur. Fixed by B5 (Pointer 1.5) |
+| PTR-008 | `onclick` fires for right and middle buttons | Accepted | Confirmed with trusted input and in Chrome 153. Fixed by B4 (Pointer 1.4) |
+| PTR-009 | `once` removes other registrations; removed handlers run | Accepted | Fixed by B1 (Pointer 1.1); removal rule I4 (Pointer 2.4) |
+| PTR-010 | Stop commands keep held state | Accepted | Fixed by B5 (Pointer 1.5) |
+| PTR-011 | Border and padding points map outside the screen | Accepted | Confirmed in Chrome 153 (x -4 to 203, y -5 to 153). Fixed by B8 (Pointer 1.6) |
+| PTR-012 | Settings and hit boxes not validated consistently | Accepted | Fixed by B8/B9 (Pointer 1.6, 2.8) |
+| PTR-013 | Press, touch, and click data disagree | Accepted | Fixed by B7 (Pointer 2.3, breaking) |
+| PTR-014 | Pinch zoom page-wide; context menu suppressed late | Accepted | Fixed by B10 (Pointer 2.7, breaking) |
+| PTR-015 | Metadata, declarations, `API.md` gaps | Accepted | Metadata and declarations in Pointer 1.8, then with each API change; `API.md` in R.2 |
+| PTR-016 | Manual pointer pages do not load cleanly | Accepted | Pointer 1.8 |
+| PTR-017 | Missing automated tests | Accepted | A test with each fix; fixtures in Pointer 1.9 |
+| B1–B5, B8, B9, B12 | Fixes | Accepted | Pointer Phase 1, except B9, which lands with I11 in Pointer 2.8. B8: presses that start on the border or padding are ignored |
 | B6 | Pointer Events path | Accepted | Observable changes listed in the compatibility summary |
 | B7 | One data shape | Accepted | Breaking |
 | B10 | Per-screen gesture settings | Accepted | Breaking |
-| B11 | Wheel input | Accepted | Additive, in 2.3.0; handler shape follows §6 |
-| B13 | Allocation and live objects | Accepted | Decided in §6 |
+| B11 | Wheel input | Accepted | Additive, in 2.3.0 (Pointer 3.1); handler shape follows I2 |
+| B13 | Allocation and live objects | Accepted | Decided by I7 (Pointer 2.5) |

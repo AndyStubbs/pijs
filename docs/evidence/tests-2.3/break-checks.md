@@ -1,7 +1,7 @@
 # Break Checks
 
 These checks back each proposed removal in the 2.3 test audit
-([TESTS-V2.3-AUDIT.md](../../plans/TESTS-V2.3-AUDIT.md)).
+([AUDIT-TESTS.md](../../plans/v2.3/AUDIT-TESTS.md)).
 
 ## Method
 

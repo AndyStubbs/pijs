@@ -1,18 +1,16 @@
 # Pi.js 2.3 CI/CD and Cross-Platform Exploration
 
-Status: Exploration complete (E1–E7) and reviewed 2026-09-26. Every recommendation was
-accepted (Sections 8 and 9), and the accepted items are scheduled in
-[CI-V2.3-ROADMAP.md](CI-V2.3-ROADMAP.md).
+Exploration complete (E1–E7) and reviewed 2026-09-26: every recommendation accepted
+(Section 8). The resulting decisions are G4–G6 and G8, and the implementation is CI 1.1–3.9
+([ROADMAP §13.3](ROADMAP.md#133-cicd), complete).
 Revision: `48bb54f`
-Plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md), Section 9
-Evidence: [`docs/evidence/ci-2.3/`](../evidence/ci-2.3/README.md)
+Evidence: [`docs/evidence/ci-2.3/`](../../evidence/ci-2.3/README.md)
 
 ## 1. Summary
 
 The exploration asks what it takes for `npm test` to pass on Linux, macOS, and Windows, and how
 continuous integration and release automation should run it. It records findings and
-recommendations and does not change code, tests, or baselines. Accepted items become
-`CI-V2.3-ROADMAP.md`.
+recommendations and does not change code, tests, or baselines.
 
 It ran `npm test` and the Firefox check in five environments:
 
@@ -72,7 +70,7 @@ Recommendations in brief:
   without failing the run.
 - **Realtime audio:** the realtime suites run locally, not in CI.
 - **When CI runs:** Linux and Windows on every pull request; macOS on `main`. There is no
-  nightly run (decided 2026-09-26, roadmap task 3.4).
+  nightly run (decided 2026-09-26, CI 3.4).
 - **Release:** verification on tags, with `npm publish` kept manual for 2.3.0.
 
 ## 2. Results
@@ -238,7 +236,7 @@ Without the realtime suites, the stage would take about 100–160 s.
 | # | Step | Result |
 | --- | --- | --- |
 | E1 | Linux locally, in WSL, from a fresh clone | Done 2026-09-25 (Sections 2.2–2.4) |
-| E2 | All three platforms on hosted runners. The throwaway branch `ci-exploration` runs every stage timed, without stopping on failures. A final job commits the raw results to `ci-exploration-results` | Done 2026-09-26, run 36212469703. Both branches are deleted once this report is reviewed |
+| E2 | All three platforms on hosted runners. The throwaway branch `ci-exploration` runs every stage timed, without stopping on failures. A final job commits the raw results to `ci-exploration-results` | Done 2026-09-26, run 36212469703. The exploration branches were deleted on 2026-09-26; `runners.json` and `runners-e7.json` keep the results |
 | E3 | Realtime audio with no device, with a PulseAudio null sink, and with macOS's virtual device | Done (Section 2.4) |
 | E4 | Renderer flag sets compared with the default launch | Done locally (8 flag sets) and on each runner (2 flag sets) |
 | E5 | Analysis | This document |
@@ -316,7 +314,7 @@ Detailed in Section 6:
 - **Pull requests:** Linux and Windows, required once CI-003, CI-004, CI-005, CI-007, CI-011,
   and CI-013 land. Until then they run as non-required checks.
 - **`main`:** adds macOS. Its pixel results are report-only (G4). It is not a required check,
-  since it does not run on pull requests (roadmap task 3.8).
+  since it does not run on pull requests (CI 3.8).
 - **Linux setup:** `npx playwright install --with-deps` (63 s) or the Playwright container
   image. **Windows and macOS setup:** a Playwright browser cache keyed on the Playwright
   version.
@@ -370,48 +368,36 @@ Common settings:
   `download-artifact@v8`), kept current by Dependabot.
 - Node 22.
 - No nightly workflow: development comes in bursts, so pull requests and pushes to `main` cover
-  what a schedule would (decided 2026-09-26, roadmap task 3.4).
+  what a schedule would (decided 2026-09-26, CI 3.4).
 - Playwright pinned to the locked version. An upgrade is its own change, with a baseline review.
 
 ## 7. Portability Fixes and CI Changes
 
-Candidates for `CI-V2.3-ROADMAP.md`. "For 2.3.0" marks what `npm test` needs to pass on all
-three platforms, or what the release needs (plan Section 9.4).
+Proposed fixes. "For 2.3.0" marks what `npm test` needs to pass on all three platforms, or
+what the release needs.
 
 | ID | Change | For 2.3.0 | Evidence and notes |
 | --- | --- | --- | --- |
-| CI-001 | Rename `releases/publish.md` to `PUBLISH.md` and `docs/gamepad.md` to `GAMEPAD.md` in git (in two steps on Windows) | Yes | `paths.json`. The first rename is core C11 |
-| CI-002 | Replace the publish guide's `xcopy` with a Node script, such as `npm run snapshot` | Yes | The only platform-specific release step |
-| CI-003 | Pin `--disable-gpu --enable-unsafe-swiftshader` in `playwright.config.js` and in one shared Chromium launch helper used by `test/unit/` | Yes | Reproduces today's captures on Linux and Windows. Not `--use-angle=swiftshader`. The benchmark keeps its own flags |
-| CI-004 | Keep the system-font text out of the `pointer_lifecycle_01` capture: hide it once it is checked, or capture only the canvas | Yes | 8.08% over tolerance on Linux. One baseline, reviewed |
-| CI-005 | Make the realtime suites (`audio-stream-browser`, `audio-recording-realtime-browser`) skip with a stated reason when `PI_AUDIO_REALTIME=0`. CI sets it; local runs keep them | Yes | Section 2.4. Without it, the recording file costs 120 s per run, and Firefox fails on every device-less runner |
-| CI-006 | CI settings in `playwright.config.js`: `retries: 1` with `failOnFlakyTests`, and default workers | No (CI only) | Visuals take 1.3–2.1 times as long with 1 worker |
-| CI-007 | `.gitattributes`: `* text=auto eol=lf`, with binary markers for PNG, WAV, WebP, and fonts; then re-check out once on Windows | **Yes** | Release builds differ by checkout: `pi.min.js` is 207,944 bytes on Linux and macOS, 208,078 locally, and 208,248 on the Windows runner |
-| CI-008 | Timing-sensitive visual fixtures: `inpress_01`, `intouch_01`, `keyboard_commands`, and `shaders_lifecycle` | Owned elsewhere | Pointer and keyboard roadmaps, and the test audit handoff. CI skips the flaky ones until fixed (`ciSkip`, roadmap task 2.9) |
-| CI-009 | Re-record all baselines once, after CI-003, in one reviewed task | Yes | Clears the same drift seen on every platform (Section 2.3) |
-| CI-010 | The workflows in Section 6 | No (G5) | Ships when ready |
-| CI-011 | Add WebKit values to `test/unit/audio-tolerances.js`: Chromium's values, including `mixDeterminism`, and the WebKit calibration ranges in the comments | Yes | 95 of 95 pass on Linux and macOS (Section 2.4). With the sound workstream |
-| CI-012 | Firefox WebGL on runners: launch Firefox in `firefox-smoke.js` with `firefoxUserPrefs: { "webgl.force-enabled": true }`. On Linux CI, install `libegl1`, `libegl-mesa0`, and `libgles2`, and run the check headed under `xvfb-run` through a launch option (such as `PI_FIREFOX_HEADED=true`) | No (CI only) | E7: the check passes 6 of 6 on all three runners. The preference does not change rendering on GPU machines (probed locally). Headed Firefox was tested only after the EGL packages were added; E7 did not isolate whether they are needed, and they take 2 s to install |
-| CI-013 | Fix the race in `visual-report-browser.test.js` ("comparison and approval requests use the selected mode"): wait for the diff modal to close before clicking the section header | Yes | Failed on the Windows runner. The modal intercepted the click |
+| <a id="ci-001"></a>CI-001 | Rename `releases/publish.md` to `PUBLISH.md` and `docs/gamepad.md` to `GAMEPAD.md` in git (in two steps on Windows) | Yes | `paths.json`. The first rename is core C11 |
+| <a id="ci-002"></a>CI-002 | Replace the publish guide's `xcopy` with a Node script, such as `npm run snapshot` | Yes | The only platform-specific release step |
+| <a id="ci-003"></a>CI-003 | Pin `--disable-gpu --enable-unsafe-swiftshader` in `playwright.config.js` and in one shared Chromium launch helper used by `test/unit/` | Yes | Reproduces today's captures on Linux and Windows. Not `--use-angle=swiftshader`. The benchmark keeps its own flags |
+| <a id="ci-004"></a>CI-004 | Keep the system-font text out of the `pointer_lifecycle_01` capture: hide it once it is checked, or capture only the canvas | Yes | 8.08% over tolerance on Linux. One baseline, reviewed |
+| <a id="ci-005"></a>CI-005 | Make the realtime suites (`audio-stream-browser`, `audio-recording-realtime-browser`) skip with a stated reason when `PI_AUDIO_REALTIME=0`. CI sets it; local runs keep them | Yes | Section 2.4. Without it, the recording file costs 120 s per run, and Firefox fails on every device-less runner |
+| <a id="ci-006"></a>CI-006 | CI settings in `playwright.config.js`: `retries: 1` with `failOnFlakyTests`, and default workers | No (CI only) | Visuals take 1.3–2.1 times as long with 1 worker |
+| <a id="ci-007"></a>CI-007 | `.gitattributes`: `* text=auto eol=lf`, with binary markers for PNG, WAV, WebP, and fonts; then re-check out once on Windows | **Yes** | Release builds differ by checkout: `pi.min.js` is 207,944 bytes on Linux and macOS, 208,078 locally, and 208,248 on the Windows runner |
+| <a id="ci-008"></a>CI-008 | Timing-sensitive visual fixtures: `inpress_01`, `intouch_01`, `keyboard_commands`, and `shaders_lifecycle` | Owned elsewhere | Pointer 1.9, Keyboard 1.13, and Core 11. CI skips the flaky ones until fixed (`ciSkip`, CI 2.9) |
+| <a id="ci-009"></a>CI-009 | Re-record all baselines once, after CI-003, in one reviewed task | Yes | Clears the same drift seen on every platform (Section 2.3) |
+| <a id="ci-010"></a>CI-010 | The workflows in Section 6 | No (G5) | Ships when ready |
+| <a id="ci-011"></a>CI-011 | Add WebKit values to `test/unit/audio-tolerances.js`: Chromium's values, including `mixDeterminism`, and the WebKit calibration ranges in the comments | Yes | 95 of 95 pass on Linux and macOS (Section 2.4). With the sound workstream |
+| <a id="ci-012"></a>CI-012 | Firefox WebGL on runners: launch Firefox in `firefox-smoke.js` with `firefoxUserPrefs: { "webgl.force-enabled": true }`. On Linux CI, install `libegl1`, `libegl-mesa0`, and `libgles2`, and run the check headed under `xvfb-run` through a launch option (such as `PI_FIREFOX_HEADED=true`) | No (CI only) | E7: the check passes 6 of 6 on all three runners. The preference does not change rendering on GPU machines (probed locally). Headed Firefox was tested only after the EGL packages were added; E7 did not isolate whether they are needed, and they take 2 s to install |
+| <a id="ci-013"></a>CI-013 | Fix the race in `visual-report-browser.test.js` ("comparison and approval requests use the selected mode"): wait for the diff modal to close before clicking the section header | Yes | Failed on the Windows runner. The modal intercepted the click |
 
-## 8. Decisions
-
-Recorded 2026-09-26. The maintainer accepted every recommendation.
-
-| ID | Decision | Outcome |
-| --- | --- | --- |
-| G4 | How visual baselines work across platforms | **Closed:** one baseline set with pinned SwiftShader flags. Pixel comparisons are required on Linux and Windows and report-only on macOS (Q2) |
-| G5 | Whether CI must be running before 2.3.0 ships | **Closed:** no. The fixes marked "Yes" in Section 7 ship in 2.3.0 |
-| G6 | How much of publishing is automated | **Closed:** tag-triggered verification and a draft release. `npm publish` stays manual for 2.3.0 (Q8) |
-| G8 | The Node floor in `engines` | **Closed:** `>=22`. Node 18 and 20 are past end of life, and CI tests 22 |
-| E-C | Delete the temporary exploration branches | **Done 2026-09-26.** `ci-exploration`, `ci-exploration-results`, and `ci-exploration-results-e7` are deleted. `runners.json` and `runners-e7.json` keep the results |
-
-## 9. Review Decisions
+## 8. Review Decisions
 
 | ID | Decision | Notes |
 | --- | --- | --- |
-| CI-001–CI-007 | Accepted | Roadmap Phases 1–3 |
-| CI-008 | Accepted as a handoff | The pointer and keyboard roadmaps own the timing-sensitive fixtures. CI skips the flaky ones until fixed (`ciSkip`, roadmap task 2.9) |
-| CI-009–CI-013 | Accepted | Roadmap Phases 1–3 |
+| CI-001–CI-007 | Accepted | Done: CI 2.1, 2.2, 1.1, 1.2, 2.3, 3.1, 1.3 |
+| CI-008 | Accepted as a handoff | Pointer 1.9, Keyboard 1.13, and Core 11 own the timing-sensitive fixtures. CI skips the flaky ones until fixed (`ciSkip`, CI 2.9) |
+| CI-009–CI-013 | Accepted | Done: CI 1.4, 3.3–3.4, 2.4, 2.6, 2.5 |
 
-The accepted items are scheduled in [CI-V2.3-ROADMAP.md](CI-V2.3-ROADMAP.md).
+The decisions G4–G6 and G8 are recorded in [ROADMAP §9.1](ROADMAP.md#91-release-decisions).

@@ -1,8 +1,10 @@
 # Pi.js 2.3 Test Audit
 
-Status: All findings accepted; follow-ups complete (2026-09-24)
-Plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md), Section 8
-Evidence: [docs/evidence/tests-2.3/](../evidence/tests-2.3/README.md)
+Reviewed 2026-09-24: every finding accepted and applied
+([ROADMAP §13.2](ROADMAP.md#132-tests)). Open handoffs to other workstreams are ROADMAP tasks,
+named in Section 5.
+Evidence, including the after metrics:
+[docs/evidence/tests-2.3/](../../evidence/tests-2.3/README.md)
 
 ## 1. Summary
 
@@ -155,7 +157,7 @@ the 58 s single-worker full run.
 - All 612 visual runs passed.
 
 These runs cover Windows only. The CI/CD exploration's runs on Linux and macOS will add to this
-list (plan Section 9).
+list ([AUDIT-CI.md](AUDIT-CI.md)).
 
 ## 3. Coverage Map
 
@@ -232,6 +234,8 @@ the test-level removals with deliberate breaks.
 
 ### Baselines and fixtures
 
+<a id="test-001"></a>
+
 #### TEST-001 — remove — 74 orphan baselines
 
 - **Location:** `test/tests/screenshots/`.
@@ -248,6 +252,8 @@ the test-level removals with deliberate breaks.
 - **Saves:** no time; 0.5 MB of tracked files.
 - **Log entry:** removing them is logged in `TEST-CONSOLIDATION-LOG.md`.
 
+<a id="test-002"></a>
+
 #### TEST-002 — remove — Plugin copy of `polygon_01`
 
 - **Location:** `test/tests/html-plugins/polygon_01.html`.
@@ -260,6 +266,8 @@ the test-level removals with deliberate breaks.
   - spans, winding and outline: `polygons.test.js`.
 - **Saves:** one plugins capture (0.75 s of worker time); removes the shared-baseline collision.
 
+<a id="test-003"></a>
+
 #### TEST-003 — rename — `screen_overlaping.html`
 
 - **Problem:**
@@ -269,6 +277,8 @@ the test-level removals with deliberate breaks.
 - **Change:** rename the fixture and its baseline to one name, such as `screen_draw_offscreen_01`,
   and update the title. The pixels do not change, so the baseline needs no new review.
 - **Saves:** no time.
+
+<a id="test-024"></a>
 
 #### TEST-024 — move — `errors_01` and `errors_02` fixtures
 
@@ -284,6 +294,8 @@ the test-level removals with deliberate breaks.
   after that decision.
 - **Saves:** 4 captures (about 0.4 s).
 
+<a id="test-025"></a>
+
 #### TEST-025 — remove — Dead code in `paint_02`
 
 - **Problem:** `paint_02` imports `seedrandom` and calls `Math.seedrandom`, which has no effect
@@ -294,6 +306,8 @@ the test-level removals with deliberate breaks.
 - **Saves:** no time.
 
 ### Redundant tests in the 2.2 contract suites
+
+<a id="test-004"></a>
 
 #### TEST-004 — remove, move — The `ownership-reentrancy` pair (COV-004)
 
@@ -313,6 +327,8 @@ the test-level removals with deliberate breaks.
 - **Result:** once :126 moves and sound decides on :214, both files are deleted.
 - **Saves:** about 1.7 s (one browser file of 1.6 s, one Node file).
 
+<a id="test-005"></a>
+
 #### TEST-005 — merge — `numeric-boundaries-browser.test.js` (COV-003)
 
 - **Problem:** its one test per bundle repeats the Node table through positional public calls.
@@ -325,6 +341,8 @@ the test-level removals with deliberate breaks.
   `batch-reservations-browser` (pushView, paint, rect) and `arc-circle-browser` (arc).
 - **Saves:** about 0.9 s.
 
+<a id="test-006"></a>
+
 #### TEST-006 — remove — `color-validation-browser.test.js:80` and a duplicate block (SYS-017)
 
 - **Problem:**
@@ -335,6 +353,8 @@ the test-level removals with deliberate breaks.
   - :124, DOM background and fill validation (`INVALID_COLOR` is tested only there);
   - :153, CSS string parsing, which needs a real canvas.
 - **Saves:** about 1.3 s.
+
+<a id="test-007"></a>
 
 #### TEST-007 — remove — `arc-circle-browser.test.js:126` and `:152` (SYS-015, SYS-016)
 
@@ -347,6 +367,8 @@ the test-level removals with deliberate breaks.
   - :187, clipping across forced chunks.
 - **Saves:** about 0.5 s.
 
+<a id="test-008"></a>
+
 #### TEST-008 — remove, merge — `font-publication-browser.test.js` (SYS-022)
 
 - **Remove:** :213 "synchronous setup failures release readiness" (4 cases), which repeats
@@ -354,6 +376,8 @@ the test-level removals with deliberate breaks.
 - **Merge:** fold the positional and object variants of :165 and :243 into one test each per
   bundle. Both overloads stay in :165.
 - **Saves:** about 1.0 s.
+
+<a id="test-009"></a>
 
 #### TEST-009 — remove, merge — `image-lifecycle-browser.test.js` (SYS-010)
 
@@ -369,6 +393,8 @@ the test-level removals with deliberate breaks.
 - **Merge:** fold the four loader and overload variants of :109 into one looped test per bundle.
 - **Saves:** about 1.7 s.
 
+<a id="test-010"></a>
+
 #### TEST-010 — remove — `alpha-composition-browser.test.js:122` (SYS-006)
 
 - **Problem:** the two "composition through shared context" variants run the same probe and each
@@ -379,6 +405,8 @@ the test-level removals with deliberate breaks.
   - the absolute value: :197, :239 and :335.
 - **Saves:** about 1.1 s.
 
+<a id="test-011"></a>
+
 #### TEST-011 — remove, merge — `batch-reservations-browser.test.js` (SYS-007)
 
 - **Remove:** :248 "10000 unique points survive growth". Its behavior is
@@ -388,6 +416,8 @@ the test-level removals with deliberate breaks.
   - Full HD paint :197 and put :212 into one page per bundle;
   - the three modes of :262 into one test per bundle.
 - **Saves:** about 1.5 s.
+
+<a id="test-012"></a>
 
 #### TEST-012 — remove, merge — `context-recovery-browser.test.js` (SYS-008)
 
@@ -401,6 +431,8 @@ the test-level removals with deliberate breaks.
   Each still needs its own loss, but they can share a page and one setup.
 - **Saves:** about 3.4 s.
 
+<a id="test-013"></a>
+
 #### TEST-013 — remove — `pixel-disposal-browser.test.js:93` and `:106` (SYS-005)
 
 - **Problem:** both repeat Node tests that count calls exactly:
@@ -411,6 +443,8 @@ the test-level removals with deliberate breaks.
 - **Saves:** about 0.5 s.
 
 ### Suites organized by history
+
+<a id="test-014"></a>
 
 #### TEST-014 — move — Split `patch-lifecycle.test.js`
 
@@ -426,6 +460,8 @@ The 27 cases move to subject suites. The pixel tests at :94 and :114 stay as Nod
 
 **Saves:** no time. The file name then describes its subject, and the `createPixelHarness` copy
 in the ownership matrix goes with TEST-004.
+
+<a id="test-015"></a>
 
 #### TEST-015 — move, remove — Split `patch-browser.test.js`
 
@@ -460,6 +496,8 @@ errors.
 **Saves:** about 2.7 s of redundant cases. The file becomes two, so the net saving is about
 2 s.
 
+<a id="test-016"></a>
+
 #### TEST-016 — rename — The `test:patch` command
 
 - **Problem:** `npm run test:patch` runs the test build, then every Node and browser test. It
@@ -471,6 +509,8 @@ errors.
 - **Saves:** no time.
 
 ### Harness duplication
+
+<a id="test-017"></a>
 
 #### TEST-017 — remove — The `PI_ALPHA_VISUAL`, `PI_RASTER_VISUAL` and `PI_BATCH_VISUAL` blocks
 
@@ -487,6 +527,8 @@ errors.
 - **Change:** remove the three blocks, their pngjs and TOML imports, and the `new/` output.
 - **Saves:** no time; about 240 lines.
 
+<a id="test-018"></a>
+
 #### TEST-018 — merge — One browser probe and bundle helper
 
 - **Duplicated code:**
@@ -500,6 +542,8 @@ errors.
 - **Saves:** little time, since a build takes 16–40 ms. The value is about 300 lines less and
   consistent page-error checks.
 
+<a id="test-019"></a>
+
 #### TEST-019 — merge — One Node `vm` module loader
 
 - **Duplicated code:**
@@ -512,6 +556,8 @@ errors.
 
 ### Speed and flakes
 
+<a id="test-020"></a>
+
 #### TEST-020 — move — Benchmark tooling tests out of `npm test`
 
 - **Problem:** `benchmark.test.js`, `benchmark-diagnostics.test.js`,
@@ -520,9 +566,11 @@ errors.
   the slowest file in the browser stage.
 - **Change:** run them only through `npm run test:benchmark`, which already selects them. Run
   that before performance campaigns and, once CI exists, on a schedule.
-- **Needs a maintainer decision:** this narrows what `npm test` checks. Section 10 of the plan
-  describes `npm test` as the correctness gate.
+- **Needs a maintainer decision:** this narrows what `npm test` checks. The 2.3 standing rules
+  describe `npm test` as the correctness gate.
 - **Saves:** about 16.3 s.
+
+<a id="test-021"></a>
 
 #### TEST-021 — fix flake — `benchmark.test.js` "campaign failures and resume…"
 
@@ -532,6 +580,8 @@ errors.
   can fail.
 - **Change:** retry the rename a few times on `EPERM`, `EACCES` or `EBUSY` with a short delay.
   The fix belongs in the tool, not the test, since campaigns hit the same path.
+
+<a id="test-022"></a>
 
 #### TEST-022 — speed up — Visual runner waits
 
@@ -548,6 +598,8 @@ errors.
 - **Saves:** about 0.55 s per capture. That is about 4 s locally, and about 37 s with the single
   worker `playwright.config.js` uses when `CI` is set.
 
+<a id="test-023"></a>
+
 #### TEST-023 — speed up — `package-types-consumer.test.js`
 
 - **Problem:** each of its two tests calls `generateMetadata()` before type-checking. The
@@ -555,6 +607,8 @@ errors.
 - **Change:** generate once per file, in `before()`, and share the consumer package between the
   two tests.
 - **Saves:** unmeasured, within the file's 6.2 s. Measure after the change.
+
+<a id="test-028"></a>
 
 #### TEST-028 — fix flake — No timeout on Node and browser test stages
 
@@ -571,6 +625,8 @@ errors.
 
 ### Manual pages and documentation
 
+<a id="test-026"></a>
+
 #### TEST-026 — remove, rename — Manual pages
 
 - **Remove:**
@@ -581,6 +637,8 @@ errors.
   with `contextmenu_01.html`.
 
 Manual pages about input and sound go to their workstreams (Section 5).
+
+<a id="test-027"></a>
 
 #### TEST-027 — rename — Stale test documentation and configuration
 
@@ -594,55 +652,56 @@ Manual pages about input and sound go to their workstreams (Section 5).
 
 ## 5. Handoffs
 
-Under plan Section 8.3, test changes in an area another workstream is rewriting go to that
-workstream's roadmap. Coverage gaps go to their owner.
+Test changes in an area another workstream is rewriting go to that workstream, and coverage gaps
+go to their owner. The last column names the ROADMAP task that takes each item.
 
 ### 5.1 Sound
 
-| Item | Detail |
-| --- | --- |
-| Firefox launches | Each audio suite launches its own Firefox, at about 1.4 s each (14 launches, about 20 s of the 51 s sound browser time). One engine process per stage, or a smaller Firefox subset in `npm test` with the full set in `test:firefox`, would cut most of it |
-| Permanent skips | 206 skipped cases on Windows: 139 WebKit (no Web Audio API) and 67 Firefox (no offline `suspend()`). Skipping at the suite level when the engine lacks the API would keep the report readable; the launch itself is cheap (0.2 s) |
-| COV-004 audio case | `ownership-reentrancy-matrix.test.js:214` repeats `audio-lifecycle.test.js:80` (retry timing). Remove it or move it with TEST-004 |
-| Helper duplication | `near()` is defined in `sound-advanced`, `sound-envelope`, `sound-play`, and `sound-samples` Node tests |
-| 2.2 references | `test/scripts/record-sound-references.js` and `test/media/sound-2.2/` record 2.2 sound behavior; the roadmap decides whether they are still needed |
-| Node and browser pairs | The `sound-*` Node tests and `audio-*` browser tests pair up by module; the roadmap reviews them against the rule in plan Section 8.2 |
+| Item | Detail | Task |
+| --- | --- | --- |
+| Firefox launches | Each audio suite launches its own Firefox, at about 1.4 s each (14 launches, about 20 s of the 51 s sound browser time). One engine process per stage, or a smaller Firefox subset in `npm test` with the full set in `test:firefox`, would cut most of it | Sound 11.1 |
+| Permanent skips | 206 skipped cases on Windows: 139 WebKit (no Web Audio API) and 67 Firefox (no offline `suspend()`). Skipping at the suite level when the engine lacks the API would keep the report readable; the launch itself is cheap (0.2 s) | Sound 11.2 |
+| COV-004 audio case | `ownership-reentrancy-matrix.test.js:214` repeats `audio-lifecycle.test.js:80` (retry timing). Remove it or move it with TEST-004 | Done (TEST-004) |
+| Helper duplication | `near()` is defined in `sound-advanced`, `sound-envelope`, `sound-play`, and `sound-samples` Node tests | Sound 11.3 |
+| 2.2 references | `test/scripts/record-sound-references.js` and `test/media/sound-2.2/` record 2.2 sound behavior; decide whether they are still needed | Sound 11.4 |
+| Node and browser pairs | The `sound-*` Node tests and `audio-*` browser tests pair up by module; review them against the Node and browser rule | Sound 11.5 |
 
 ### 5.2 Pointer
 
-| Item | Detail |
-| --- | --- |
-| Near-duplicate fixtures | `onpress_01`, `onpress_02`, and `ontouch_04` run identical command scripts (6.5–6.8 s each with one worker); `onmouse_03` is the same scenario without touch. `inmouse_01`, `intouch_01`, `inpress_01`, and `onmouse_01` repeat one X-drag at the same size. The first four take 24.5 s of single-worker time, the longest captures in the suite |
-| `patch-*` pointer tests | `patch-lifecycle` :427, :450 (the latter repeats `pointer_lifecycle_01`); `patch-browser` :83 (repeats the visual run), :380, :469 (repeats :380), and the pointer part of :256 |
-| Gaps | `offtouch` has no test; `offclick`, `offpress`, and `setEnableContextMenu` have one each |
-| Manual pages | `ontouch_01`–`03` and `events_comprehensive` overlap the automated fixtures |
+| Item | Detail | Task |
+| --- | --- | --- |
+| Near-duplicate fixtures | `onpress_01`, `onpress_02`, and `ontouch_04` run identical command scripts (6.5–6.8 s each with one worker); `onmouse_03` is the same scenario without touch. `inmouse_01`, `intouch_01`, `inpress_01`, and `onmouse_01` repeat one X-drag at the same size. The first four take 24.5 s of single-worker time, the longest captures in the suite | Pointer 1.9 |
+| `patch-*` pointer tests | `patch-lifecycle` :427, :450 (the latter repeats `pointer_lifecycle_01`); `patch-browser` :83 (repeats the visual run), :380, :469 (repeats :380), and the pointer part of :256 | Moved to the pointer suites by TEST-014 and TEST-015; duplicates in Pointer 1.9 |
+| Gaps | `offtouch` has no test; `offclick`, `offpress`, and `setEnableContextMenu` have one each | Pointer 1.9 |
+| Manual pages | `ontouch_01`–`03` and `events_comprehensive` overlap the automated fixtures | Pointer 1.9 |
 
 ### 5.3 Keyboard
 
-| Item | Detail |
-| --- | --- |
-| Waits | `keyboard_commands` spends 2.0 s in 35 `DL` commands |
-| Node and browser pair | The SYS-003 browser tests in `keyboard-lifecycle-browser` repeat the Node test titles; the browser file needs to keep only real `KeyboardEvent` dispatch and cursor rendering |
-| Gaps | `startKeyboard`, `stopKeyboard`, and `removeActionKeys` are covered only by `keyboard_commands` |
-| Manual page | `html-manual/input_01` overlaps `keyboard_input` |
+| Item | Detail | Task |
+| --- | --- | --- |
+| Waits | `keyboard_commands` spends 2.0 s in 35 `DL` commands | Keyboard 1.13 |
+| Node and browser pair | The SYS-003 browser tests in `keyboard-lifecycle-browser` repeat the Node test titles; the browser file needs to keep only real `KeyboardEvent` dispatch and cursor rendering | Keyboard 1.1 |
+| Gaps | `startKeyboard`, `stopKeyboard`, and `removeActionKeys` are covered only by `keyboard_commands` | Keyboard 1.9 |
+| Manual page | `html-manual/input_01` overlaps `keyboard_input` | Keyboard 1.12 |
 
 ### 5.4 Gamepad
 
-| Item | Detail |
-| --- | --- |
-| Node and browser pair | `gamepad-validation-browser` adds only bundle wiring to the Node test |
-| Gaps | `startGamepad`, `onGamepadConnected`, and `onGamepadDisconnected` have no test; `stopGamepad` has one |
+| Item | Detail | Task |
+| --- | --- | --- |
+| Node and browser pair | `gamepad-validation-browser` adds only bundle wiring to the Node test | Gamepad 1.7 |
+| Gaps | `startGamepad`, `onGamepadConnected`, and `onGamepadDisconnected` have no test; `stopGamepad` has one | Gamepad 1.6 |
 
 ### 5.5 Core audit
 
-| Item | Detail |
-| --- | --- |
-| Gaps | `blitImage`, `blitSprite`, `setDefaultAnchor`, and `calcWidth` have no test |
-| Error message | The `NO_ACTIVE_SCREEN` message reads "there there" (`src/core/screen-manager.js:259`), and the `errors_01` baseline records it |
-| SYS-012 | Declarations are checked against metadata and compiled by consumers, but nothing compares the declared command set with the runtime objects of each bundle |
-| SYS-013 | Explicit `registerPlugin()` without `window.pi`, the documented alternative to ESM auto-registration, is only type-checked |
-| Visual-only commands | `getDefaultPal`, `getShaderInfo`, `screenToView`, and `setPrintSize` are checked only by one fixture's pixels |
-| Filter cleanup hook | Break check B2a: removing the `cancelFilter` pre-cleanup hook (`src/api/pixels.js:37`) changes nothing observable, because the per-pixel check at `:417` already stops the filter. The comment at `:391` says there is no per-pixel check. Either the hook or the check is redundant |
+| Item | Detail | Task |
+| --- | --- | --- |
+| Gaps | `blitImage`, `blitSprite`, `setDefaultAnchor`, and `calcWidth` have no test | Core 12 |
+| Error message | The `NO_ACTIVE_SCREEN` message reads "there there" (`src/core/screen-manager.js:259`), and the `errors_01` baseline records it | Done (TEST-024) |
+| SYS-012 | Declarations are checked against metadata and compiled by consumers, but nothing compares the declared command set with the runtime objects of each bundle | Core 10 |
+| SYS-013 | Explicit `registerPlugin()` without `window.pi`, the documented alternative to ESM auto-registration, is only type-checked | Core 12 |
+| Visual-only commands | `getDefaultPal`, `getShaderInfo`, `screenToView`, and `setPrintSize` are checked only by one fixture's pixels | Core 12 |
+| Filter cleanup hook | Break check B2a: removing the `cancelFilter` pre-cleanup hook (`src/api/pixels.js:37`) changes nothing observable, because the per-pixel check at `:417` already stops the filter. The comment at `:391` says there is no per-pixel check. Either the hook or the check is redundant | Core 12 |
+| `shaders_lifecycle` | Found by TEST-022: with its sampler shader fixed, the fixture's check sequence runs to the end, and 7 checks fail: sampler contexts, automatic presentation after removal and failure, and shader disposal. It needs those fixes and a deterministic capture with a reviewed baseline. Until then it can race under heavy parallel load, and CI skips it (`ciSkip`) | Core 11 |
 
 ### 5.6 CI/CD exploration
 
@@ -706,138 +765,3 @@ Two breaks also showed that a regression can make a test hang instead of fail:
 | Visual per-capture times | `PLAYWRIGHT_JSON_OUTPUT_NAME=<mode>.json node scripts/test.js visual --mode=<mode> --workers=1 --reporter=json` |
 | Visual flakes | The same command with `--repeat-each=5` instead of `--workers=1` |
 | Coverage map | Every method in `build/reference-2.3.json` and `metadata/plugin-*/`, searched in `test/unit`, `test/scripts`, and the fixtures |
-
-## 9. Recommended Order
-
-1. **Cleanups with no coverage risk:** TEST-001, TEST-003, TEST-017, TEST-021, TEST-025,
-   TEST-026, TEST-027, TEST-028.
-2. **Shared harnesses:** TEST-019, then TEST-018, so the moved tests land on them.
-3. **Moves:** TEST-014, TEST-015, then TEST-004 (after sound decides on the audio case).
-4. **Removals and merges:** TEST-005 to TEST-013, TEST-002, TEST-024.
-5. **Speed-ups:** TEST-022, with a full baseline check in all modes; TEST-023; and TEST-020 if
-   accepted.
-6. Record the after metrics with the commands in Section 8, and add the removals to
-   `test/TEST-CONSOLIDATION-LOG.md`.
-
-Each step ends with `npm test` green. No baseline is re-recorded except where a merged fixture
-needs one (none are proposed).
-
-## 10. Follow-up
-
-**Decision:** accepted, rejected, or deferred, recorded by the maintainer.
-**After:** the measured result once the item is done.
-
-| ID | Class | Summary | Estimated saving | Decision | After |
-| --- | --- | --- | --- | --- | --- |
-| TEST-001 | remove | 74 orphan baselines | 0.5 MB | Accepted | 74 PNGs (527,161 bytes) removed; 43 baselines remain, all used |
-| TEST-002 | remove | Plugin copy of `polygon_01` | 0.75 s worker time | Accepted | Removed; plugins mode has 8 fixtures |
-| TEST-003 | rename | `screen_overlaping` → one fixture and baseline name | — | Accepted | Fixture and baseline renamed `screen_draw_offscreen_01` |
-| TEST-004 | remove, move | `ownership-reentrancy` pair | 1.7 s | Accepted; the audio case (:214) is removed, as it repeats `audio-lifecycle.test.js:80` | Both files deleted; the shared-context child test moved to `screen-lifecycle-browser` (−1.7 s) |
-| TEST-005 | merge | `numeric-boundaries-browser` into the Node table | 0.9 s | Accepted | `rect` width and height cases added; B13(c) now fails the Node test; browser file deleted (−0.9 s) |
-| TEST-006 | remove | `color-validation-browser` :80, lines 174–177 | 1.3 s | Accepted | 8 → 4 cases; 2.3 → 1.2 s |
-| TEST-007 | remove | `arc-circle-browser` :126, :152 | 0.5 s | Accepted | 8 → 4 cases; 1.9 → 1.4 s |
-| TEST-008 | remove, merge | `font-publication-browser` :213, overload variants | 1.0 s | Accepted | 14 → 6 cases; 2.8 → 2.2 s |
-| TEST-009 | remove, merge | `image-lifecycle-browser` :209, :240, :263, :109 | 1.7 s | Accepted | 24 → 10 cases; 4.1 → 2.4 s |
-| TEST-010 | remove | `alpha-composition-browser` :122 | 1.1 s | Accepted | 19 → 15 cases; 6.7 → 5.7 s |
-| TEST-011 | remove, merge | `batch-reservations-browser` :248, :197/:212, :262 | 1.5 s | Accepted | 18 → 10 cases; 8.4 → 7.5 s; the 15000 capacity check moved to the Node test |
-| TEST-012 | remove, merge | `context-recovery-browser` :105, :243, :493 | 3.4 s | Accepted | 52 → 24 cases; 12.6 → 9.7 s |
-| TEST-013 | remove | `pixel-disposal-browser` :93, :106 | 0.5 s | Accepted | 10 → 6 cases; 2.0 → 1.5 s |
-| TEST-014 | move | Split `patch-lifecycle` | — | Accepted | Split into `pixels.test.js`, `ready.test.js`, `plugins.test.js` and the pointer-owned `pointer-events.test.js` |
-| TEST-015 | move, remove | Split `patch-browser` | 2 s | Accepted | Split into `screen-lifecycle-browser`, `shader-samplers-browser` and the pointer-owned `pointer-browser`; 5.9 → 7.4 s, because the moved tests now also run the lite bundle (Section 11.2) |
-| TEST-016 | rename | Remove `test:patch` | — | Accepted | Removed |
-| TEST-017 | remove | Env-gated visual blocks | — | Accepted | Removed (257 lines) |
-| TEST-018 | merge | Shared browser probe and bundle helper | small | Accepted | `useBrowserBundles()` in `browser-source-harness.js`; 10 suites converted |
-| TEST-019 | merge | Shared Node `vm` loader | — | Accepted | `vm-module-harness.js`; 11 private loaders replaced |
-| TEST-020 | move | Benchmark tests to `test:benchmark` | 16.3 s | Accepted; `npm test` no longer runs the benchmark harness | 4 files, 25 tests, 16.2 s moved to `test:benchmark` |
-| TEST-021 | fix flake | Retry the benchmark manifest rename on Windows | — | Accepted | No failure in 9 runs of the four files |
-| TEST-022 | speed up | Visual runner waits | 4 s (37 s at one worker) | Accepted, with one fixture exception (Section 11.2) | Visual stages 31.3 → 20.0 s; single-worker captures 88.5 → 57.8 s |
-| TEST-023 | speed up | Generate package metadata once | unmeasured | Accepted | 6.2 → 6.0 s; `tsc` dominates |
-| TEST-024 | move | `errors_01`/`errors_02` to assertions | 0.4 s | Accepted; the "there there" message typo is fixed first | Message fixed; both errors asserted in `screen-lifecycle-browser`; fixtures and baselines removed |
-| TEST-025 | remove | Dead code in `paint_02` | — | Accepted | Done |
-| TEST-026 | remove, rename | Manual pages | — | Accepted | Done |
-| TEST-027 | rename | Stale test documentation and configuration | — | Accepted | Done |
-| TEST-028 | fix flake | Test timeout for Node and browser stages | — | Accepted, with a 120 s limit (Section 11.2) | 120 s limit; an audio hang at `4f57582` would now fail by name (Section 11.2) |
-
-After metrics are in Section 11.
-
-## 11. Follow-up Results
-
-All 28 findings were accepted and applied on 2026-09-24, on top of `4f57582`, in the order of
-Section 9. The after measurements used the commands in Section 8 on the same machine. They are
-recorded in `timings-after.json`, `flakes-after.json` and `coverage-map-after.json` in the
-evidence folder.
-
-### 11.1 After metrics
-
-| Stage | Before (s, two runs) | After (s, two runs) |
-| --- | --- | --- |
-| Test artifact build | 1.1, 0.9 | 0.9, 1.0 |
-| Node tests | 9.6, 9.6 | 7.3, 7.0 |
-| Browser regressions | 126.0, 125.8 | 101.6, 99.9 |
-| Metadata and types | 6.5, 6.4 | 6.2, 6.3 |
-| Visual full | 23.0, 20.9 | 12.0, 12.9 |
-| Visual lite | 5.2, 5.2 | 4.5, 4.1 |
-| Visual plugins | 4.1, 4.1 | 3.3, 3.3 |
-| **Total** | **175.5, 172.8** | **135.7, 134.3** |
-
-`npm test` is about **39 s (22%) faster**, against the estimate of 35 s:
-- **Benchmark tests moved:** 16.3 s, as estimated.
-- **Browser removals and merges:** about 11.6 s, against an estimate of 15 s. The moved
-  `patch-browser` tests cost 1.5 s more than before (Section 11.2).
-- **Visual waits:** about 11 s at 8 workers, against an estimate of 4 s. Single-worker captures
-  went from 88.5 s to 57.8 s across the three modes. The four pointer fixtures are now the only
-  captures over 3 s.
-
-| Count | Before | After |
-| --- | --- | --- |
-| Node tests in `npm test` | 421 | 400 |
-| Browser tests in `npm test` | 695 (489 pass, 206 skip) | 612 (406 pass, 206 skip) |
-| Visual captures (full, lite, plugins) | 37, 22, 9 | 35, 20, 8 |
-| Approved baselines | 119 | 43 |
-| Test files (`test/unit` and `test/scripts`) | 72 | 74 |
-| Benchmark-harness tests (`npm run test:benchmark` only) | in `npm test` | 25 |
-
-**Coverage.** Recomputing the command map loses no command's last reference. The unreferenced
-and single-reference lists are the same as before, except that `setEnableContextMenu` is now
-referenced from `pointer-browser`. Every SYS and COV contract still has a test. The map lists
-the new homes, such as `ready.test.js` for SYS-002 and `screen-lifecycle-browser` for SYS-001.
-
-**Flakes.** No Node or browser test failed in the measured runs. Each Node and browser file ran
-5 times, and the benchmark files 9 times. Of 504 visual captures, one failed: `shaders_lifecycle`
-under `--repeat-each=5` (Section 11.2).
-
-### 11.2 Notes and deviations
-
-- **TEST-022 and `shaders_lifecycle`.**
-  - *What happened:* the faster waits exposed a bug in this fixture. Its approved baseline,
-    last recorded on 2026-08-26, is a capture taken partway through its check sequence.
-    Section 22's sampler shader declared `u_texture` without using it. Compilers strip an
-    unused uniform, so `applyShader` threw `MISSING_U_TEXTURE` and ended the sequence on
-    both software and GPU WebGL. The old waits usually captured just before that point.
-  - *Changes:* the shader now samples `u_texture`. The fixture keeps its old capture timing
-    through two new TOML options: `waitUntil = "networkidle"` and `renderWait = 100`.
-  - *What is still open:* with the fix, the sequence runs to the end, and 7 of its checks fail:
-    sampler contexts, automatic presentation after removal and failure, and shader disposal.
-    Those checks, and a deterministic capture with a reviewed baseline, go to the core audit.
-    Until then the fixture can still race under heavy parallel load (1 of its 16 measured runs).
-- **TEST-028.** The limit is 120 s, not 60 s. Node applies `--test-timeout` to each test file's
-  run as a whole as well as to each test, and the slowest file takes about 14 s. This mattered in
-  practice: during the follow-up work, Firefox realtime audio failed on the host for about
-  30 minutes. `audio-recording-realtime-browser` then failed at the limit, while the same file
-  at `4f57582` hung until it was killed.
-- **TEST-015.** The moved screen, sampler and noCss tests now run in both the full and the lite
-  bundles, and fail on unexpected page errors. That added about 1.5 s, but covers the lite bundle
-  for the first time. The pointer tests moved unchanged into `pointer-events.test.js` and
-  `pointer-browser.test.js` for the pointer roadmap (Section 5.2). The :256 test was split:
-  its layout checks moved to `screen-lifecycle-browser` and its pointer checks to
-  `pointer-browser`. The visual runner now checks `expectPatchResult = 132` for
-  `shader_orientation_01`. `shader-orientation-checks.test.js` tests the shared corner checker
-  in Node.
-- **TEST-011.** The Node test asserts the real default point capacity: 7500, doubled to 15000.
-- **TEST-021.** The retry changes `test/performance/benchmark/artifacts.js`, a runner file that
-  campaign fingerprints hash. Campaigns recorded before this change have a different runner
-  fingerprint.
-- **TEST-027.** The `.gitignore` entries for `test/tests/logs/` and `test/tests/screenshots/new/`
-  stay, because stale local copies of both folders can exist. Nothing writes them any more.
-- **Break checks.** B13(c) and a new check for the moved duplicate-terminal-event test were run
-  on the final tree (`break-checks.md`).

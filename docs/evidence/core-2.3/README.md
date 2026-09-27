@@ -1,7 +1,7 @@
 # Core 2.3 Evidence
 
 This folder holds measurements and reproductions for the 2.3 core audit
-([CORE-V2.3-AUDIT.md](../../plans/CORE-V2.3-AUDIT.md)). It records:
+([AUDIT-CORE.md](../../plans/v2.3/AUDIT-CORE.md)). It records:
 - **Revision:** `96279b9`, measured 2026-09-24. The audit changed no library code or tests.
 - **Machine:** Windows 11 Home 10.0.26200, 16 logical CPUs, Node 22.19.0.
 - **Browsers:** Playwright 1.56.0 with Chromium 141.0.7390.37, Firefox 142.0.1 and WebKit 26.0.

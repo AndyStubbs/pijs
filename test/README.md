@@ -292,10 +292,9 @@ runs always test. To check a local change, run
 `git diff --name-only main | node scripts/ci-changes.js`, which prints `true` when CI tests it.
 
 A pull request merges only with the `ci` check green; it summarizes `test` on Linux and Windows
-and `size`. The CI roadmap's "Branches and pull requests" section has the full rules. When a job
-fails, its log names the failing
-test, and the job uploads `test/test-results/` and `test/playwright-report/` as an artifact kept
-14 days:
+and `size`. The 2.3 ROADMAP (`docs/plans/v2.3/ROADMAP.md`, Section 1.4) has the full rules.
+When a job fails, its log names the failing test, and the job uploads `test/test-results/` and
+`test/playwright-report/` as an artifact kept 14 days:
 
 ```sh
 gh run view <run-id> --log-failed

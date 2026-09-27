@@ -1,4 +1,4 @@
-# Pull-request checks (CI roadmap task 3.3, docs/plans/CI-V2.3-ROADMAP.md).
+# Pull-request checks (CI 3.3, docs/plans/v2.3/ROADMAP.md).
 #
 # changes: decides whether the change needs test and size. They skip when every changed file is
 # documentation or tooling that no test reads (scripts/ci-changes.js has the list). Release runs

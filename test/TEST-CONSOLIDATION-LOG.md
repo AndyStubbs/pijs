@@ -326,7 +326,7 @@ Consider creating similar comprehensive tests for:
 **Date**: September 24, 2026
 
 ### Summary
-Applied all 28 findings of the 2.3 test audit (`docs/plans/TESTS-V2.3-AUDIT.md`). Redundant
+Applied all 28 findings of the 2.3 test audit (`docs/plans/v2.3/AUDIT-TESTS.md`). Redundant
 browser tests were removed or merged into their Node partners. Suites named after the 2.2 audit
 were split into subject suites. The benchmark-harness tests moved to `npm run test:benchmark`.
 The visual runner's fixed waits were replaced. Every removal names its covering tests in the
@@ -380,7 +380,7 @@ audit, and each was checked with a deliberate break in `src/`.
 
 ## 2.3 Plugin Removal
 
-Date: 2026-09-26. Plan: `docs/plans/UPGRADE-V2.3-PLAN.md`, Section 3.1 (G7).
+Date: 2026-09-26. Plan: `docs/plans/v2.3/ROADMAP.md`, Section 13.1 (G7).
 
 ### Summary
 `onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` were removed from the repository

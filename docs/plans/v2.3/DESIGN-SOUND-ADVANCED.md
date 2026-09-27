@@ -1,20 +1,15 @@
-# Pi.js 2.3 Sound Advanced Expansion Plan
+# Pi.js 2.3 Sound Advanced Expansion Design
 
-Status: Phases 7–8 implemented (their three-engine listening checks are open); Phase 9 tasks
-9.1, 9.2, and the generator part of 9.4 implemented, task 9.3 ready (the input conventions
-review named its commands `onPlay()` and `offPlay()`); Phase 10 not started
-Revision 2: the sound-effect generator is `generateSfx()`, repeatable by default, with seed 0
-as the built-in preset and a `variation` parameter (6.1, D17).
-Target release: Pi.js 2.3.0
-Parent documents: [SOUND-V2.3-PLAN.md](SOUND-V2.3-PLAN.md) (design, referred to below as "the
-sound plan"), [SOUND-V2.3-ROADMAP.md](SOUND-V2.3-ROADMAP.md) (Phases 0–6), and
-[UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md) (release)
+Design for the Phases 7–10 expansion of `sound-advanced`: revision 2, approved. Implementation
+and status: [ROADMAP §4](ROADMAP.md#4-sound), with the completed tasks in
+[ROADMAP §13.4](ROADMAP.md#134-sound). The base design is
+[DESIGN-SOUND.md](DESIGN-SOUND.md), referred to below as "the sound design".
 
 ## 1. Purpose
 
-`sound-advanced` 1.0.0 (sound roadmap Phase 5) covers synthesis, two bus effects, a level
+`sound-advanced` 1.0.0 (Sound Phase 5) covers synthesis, two bus effects, a level
 analyser, presets, and PLAY instruments. It is about 6 KB gzipped, and most of that is
-`synth()`. This plan expands the plugin before 2.3.0 ships so that it covers what games
+`synth()`. This design expands the plugin before 2.3.0 ships so that it covers what games
 commonly ask of an audio library beyond playback:
 
 1. **Recording:** capture what Pi.js plays, or a single bus, and save it as a WAV file.
@@ -24,8 +19,8 @@ commonly ask of an audio library beyond playback:
    `play()`.
 4. **Sample instruments:** loaded audio used as a pitched `play()` instrument.
 
-The work continues the sound workstream as Phases 7–10, so tasks are tracked as `Sound 7.1`
-and onward. The rules of the sound roadmap and the general plan (Section 10) apply.
+The work continues the sound workstream as Phases 7–10, tracked in the ROADMAP as `Sound 7.1`
+and onward.
 
 ## 2. Scope Decisions
 
@@ -34,11 +29,11 @@ and onward. The rules of the sound roadmap and the general plan (Section 10) app
 | Location | Every new command lives in `sound-advanced`. Core `sound` changes only where a feature cannot reach what it needs through service v1 (Section 3) |
 | Recording source | Pi.js output only: the final signal after the limiter, or one bus. No microphone input |
 | Recording format | 16-bit PCM WAV by default, 32-bit float WAV as an option (D9) |
-| Recording time | Real time only. Faster-than-real-time export is out of scope (Section 10) |
+| Recording time | Real time only. Faster-than-real-time export is out of scope (Section 9) |
 | Worklets | AudioWorklet is used for capture and the bitcrusher, not for synthesis. Both share one loader |
 | Versions | `sound` stays 2.0.0 and `sound-advanced` stays 1.0.0: neither has been released, so these additions are part of their first release (D8) |
-| Service | Additions go into service v1 before 2.3.0 ships (D8). After release, any change to the service follows the sound plan's versioning rule |
-| Order | Phases in priority order; the scope-cut order (Section 9) removes them from the end |
+| Service | Additions go into service v1 before 2.3.0 ships (D8). After release, any change to the service follows the sound design's versioning rule |
+| Order | Phases in priority order; the scope-cut order (ROADMAP §10) removes them from the end |
 
 ## 3. Core Changes
 
@@ -53,7 +48,7 @@ The core `sound` plugin needs three small additions. Each is measured on its own
 ### 3.1 Output tap
 
 Today `tapBus( "master", node )` connects after the master gain and before the limiter
-(sound plan 4.3.2). A recording from that point would miss the limiter, and a loud mix would
+(sound design 4.3.2). A recording from that point would miss the limiter, and a loud mix would
 hard-clip when it is converted to 16-bit samples. Taps cannot connect after the limiter,
 because the limiter's route changes when `setSoundLimiter()` turns it on or off.
 
@@ -162,7 +157,7 @@ plugins/sound-advanced/
   whose source text, which the minifier still compacts, is turned into a `blob:` URL and
   passed to `context.audioWorklet.addModule()` once per context. Callers receive a shared
   promise; a failed load is forgotten, so a later call retries. The bitcrusher (Phase 8) registers its processor in the same
-  module. `file://` pages are already unsupported for audio (sound plan Section 2), and
+  module. `file://` pages are already unsupported for audio (sound design Section 2), and
   `http://localhost` and HTTPS are secure contexts, so AudioWorklet is available wherever Pi.js
   audio runs.
 - **Capture.** A recorder `AudioWorkletNode` with two input channels (`channelCountMode:
@@ -186,43 +181,13 @@ plugins/sound-advanced/
 - **Download.** `saveRecording` creates an object URL and a detached `<a download>`, clicks
   it, and revokes the URL on the next task.
 
-### 4.3 Tasks
+### 4.3 Implementation notes
 
-| # | Task | § |
-| --- | --- | --- |
-| 7.1 | Core output stage; `tapBus( "output" )`; contract test across `setSoundLimiter()` toggles; size entry | 3.1 |
-| 7.2 | `worklet.js` shared loader; confirm processing without outputs in Chromium and Firefox, offline and realtime | 4.2 |
-| 7.3 | `wav.js` encoder with Node tests: header fields, PCM clamping, float mode, odd lengths | 4.2 |
-| 7.4 | `recorder.js`: start, stop, flush, state, `maxDuration`, errors, and `RECORDING_UNAVAILABLE` | 4.1, 4.2 |
-| 7.5 | `saveRecording()` with a Playwright download test | 4.1 |
-| 7.6 | `getSoundLevels( "output" )` | 4.1 |
-| 7.7 | Metadata in `metadata/plugin-sound-advanced/`, generated types, and record and save controls in `sound_advanced_01.html` | — |
-
-### 4.4 Exit criteria
-
-- In an offline render, a float recording of `"output"` equals the rendered destination
-  buffer sample for sample, with the limiter on and off. A 16-bit recording is within one
-  quantization step.
-- A per-bus recording contains that bus only.
-- Recordings keep their last quantum, stop at `maxDuration`, and capture nothing while the
-  context is suspended.
-- A realtime test in Chromium and Firefox records a known tone, decodes the Blob with
-  `decodeAudioData`, and checks its length, sample rate, and peak.
-- Every error code has a test, and a failed worklet load returns the state to `"idle"`.
-- The listening check covers recording and saving in `sound_advanced_01.html` on all three
-  engines (Safari for WebKit).
-
-### 4.5 Exit status
-
-- Tasks 7.1–7.7 are implemented. The offline tests are in `audio-recording-browser.test.js`,
-  the realtime and download tests in `audio-recording-realtime-browser.test.js`, the encoder
-  tests in `sound-advanced-wav.test.js`, and the output-stage contract tests in
-  `audio-service-browser.test.js`.
-- Automated tests run in Chromium and Firefox. Playwright's WebKit build on Windows has no Web
-  Audio API, so WebKit is covered by the listening check only.
-- The Phase 7 size entry is in `docs/evidence/sound-2.3/README.md`. The recorder costs about
-  250 bytes more than the Section 8 estimate, and the core output stage fits in the headroom.
-- **Open:** the three-engine listening check.
+- **Tests:** offline in `audio-recording-browser.test.js`, realtime and download in
+  `audio-recording-realtime-browser.test.js`, the encoder in `sound-advanced-wav.test.js`, and
+  the output-stage contracts in `audio-service-browser.test.js`.
+- The recorder costs about 250 bytes more than the Section 8 estimate, and the core output
+  stage fits in the headroom.
 
 ## 5. Phase 8: Bus Effects
 
@@ -255,7 +220,7 @@ $.setBusEffect( "music", [
 ] );
 ```
 
-Service v1 has one insert slot per bus, and the sound plan (4.3.2) already says that chains
+Service v1 has one insert slot per bus, and the sound design (4.3.2) already says that chains
 are composed inside a single insert. A chain holds at most 4 effects (`INVALID_EFFECT`
 otherwise). An empty array removes the effect, like `null`. An item that is not an object or
 names an unknown effect throws `INVALID_EFFECT`. With a chain, the `options` parameter must be
@@ -283,33 +248,10 @@ $.setBusEffect( "music", [ { "effect": "filter", "cutoff": 20000 }, { "effect": 
 $.setBusEffect( "music", [ { "effect": "filter", "cutoff": 600 }, { "effect": "reverb" } ] );
 ```
 
-### 5.4 Tasks
+### 5.4 Implementation notes
 
-| # | Task | § |
-| --- | --- | --- |
-| 8.1 | Refactor `effects.js` so each effect is a stage builder with a declared list of rampable options | 5.3 |
-| 8.2 | Effect chains in one insert; validation and chain limit | 5.2 |
-| 8.3 | In-place updates for matching chains; rebuild for other options | 5.3 |
-| 8.4 | `"filter"` and `"distortion"` | 5.1 |
-| 8.5 | `"chorus"` | 5.1 |
-| 8.6 | `"bitcrush"` processor in the shared worklet module | 5.1 |
-| 8.7 | Metadata, types, and demo controls for chains and new effects | — |
-
-### 5.5 Exit criteria
-
-- Offline renders check each effect against analytic expectations: filter attenuation at one
-  octave past the cutoff, distortion harmonics that rise with `drive`, bitcrusher
-  quantization levels and held frames, and chorus modulation depth.
-- An in-place update produces no discontinuity above the de-click reference threshold (sound
-  plan 10.2), and a reverb tail continues through it.
-- Chains apply effects in order. Bus volume and effects still work in either call order.
-- Every new error path has a test. `effects.js` has a size entry.
-
-### 5.6 Exit status
-
-- Tasks 8.1–8.7 are implemented. The effect renders are in `audio-effects-browser.test.js`
-  and the option and chain validation tests are in `sound-advanced.test.js`. The size entry
-  and the measured results are in `docs/evidence/sound-2.3/README.md`.
+- **Tests:** effect renders in `audio-effects-browser.test.js`; option and chain validation in
+  `sound-advanced.test.js`. The measured results are in `docs/evidence/sound-2.3/README.md`.
 - **Filter.** The biquad takes `q` as the Web Audio `Q`, which is in decibels for lowpass and
   highpass.
 - **Distortion.** A `tanh` curve, shared by every distortion stage, sits between a pre-gain
@@ -322,10 +264,8 @@ $.setBusEffect( "music", [ { "effect": "filter", "cutoff": 600 }, { "effect": "r
   - When the module cannot load, the stage stays dry and the plugin warns once.
 - **Ramps.** Ramps start at the context's current time. They continue any ramp in progress
   from its recorded value and do not use `cancelAndHoldAtTime`.
-- **Engine coverage.** The per-effect renders run in Chromium and Firefox. The in-place
-  update tests need offline `suspend()`, so they run in Chromium only. WebKit is covered by
-  the listening check.
-- **Open:** the three-engine listening check.
+- **Engine coverage.** The in-place update tests need offline `suspend()`, so Firefox skips
+  them.
 
 ## 6. Phase 9: Game Features
 
@@ -362,7 +302,7 @@ parameters (D17).
 - **Validation codes:** `INVALID_CATEGORY`, `INVALID_SEED` (not an integer in range), and
   `INVALID_VARIATION`.
 - **Dependencies.** `generator.js` imports `BUILT_IN_PRESETS` from `presets.js`, a documented
-  sibling dependency like `synth.js`. The size report lists them as a group (sound plan 9.1).
+  sibling dependency like `synth.js`. The size report lists them as a group (sound design 9.1).
 
 ```javascript
 // The built-in laser, then a repeatable variant of it
@@ -391,7 +331,8 @@ seconds between the note's audible start and the dispatch.
   visible, are dropped rather than delivered in a burst (D13). `"end"` is always delivered.
 - **Stopping.** `stopPlay()` drops the song's queued note events and delivers its `"end"`
   with `stopped: true`.
-- **Conventions.** The commands follow the input conventions (general plan Section 6.1):
+- **Conventions.** The commands follow the input conventions
+  ([ROADMAP §2](ROADMAP.md#2-input-conventions)):
   camelCase names and the `onX( mode, fn, once )` signature (I1, I2); removal by mode and
   function, with `offPlay( mode )` removing every handler of that mode (I4); frozen callback
   objects (I7); the shared dispatch rules (I8); and a `"play"` type for `clearEvents()`
@@ -399,38 +340,10 @@ seconds between the note's audible start and the dispatch.
 
 Cue markers in PLAY strings, for events at arbitrary song positions, are deferred (D14).
 
-### 6.3 Tasks
+### 6.3 Implementation notes
 
-| # | Task | § |
-| --- | --- | --- |
-| 9.1 | `generator.js`: `generateSfx()`, seed 0 presets, category tables, seeded PRNG, variation, Node tests | 6.1 |
-| 9.2 | Core `observePlay` service member, admission and end reporting, contract tests, size entry | 3.2 |
-| 9.3 | `sync.js`: `onPlay()`/`offPlay()`, dispatch loop, latency mapping, late drop, `clearEvents( "play" )` | 6.2 |
-| 9.4 | Metadata, types, and demo: a generator panel with seed entry and a beat-synced visual | — |
-
-### 6.4 Exit criteria
-
-- Node tests for `generateSfx`:
-  - Seed 0 equals the built-in preset for each of the eight preset categories.
-  - Each category's ranges contain its built-in preset.
-  - A fixed list of seeds per category matches recorded options, so a PRNG or table change
-    fails the test.
-  - 10,000 seeds per category, each with variation 0 and 1, all pass `synth()` validation.
-  - With variation 0 every call is identical; with variation above 0, every parameter stays
-    in its category range.
-- In a clock-driven offline render, `observePlay` reports every admitted note once, with the
-  context time the render shows it starting, and never reports rejected or skipped notes.
-- Events reach listeners in time order. `stopPlay()` suppresses queued notes and sends
-  `"end"` once.
-- A realtime Chromium test checks that dispatch happens within two frames of the audible start
-  (with the latency reported by the engine), and that notes delayed by a hidden tab are dropped.
-
-### 6.5 Exit status
-
-- Tasks 9.1, 9.2, and the generator part of 9.4 are implemented. The generator tests are in
-  `sound-advanced-generator.test.js`. The `observePlay` contract tests are in
-  `audio-service-browser.test.js`, and the PLAY track index test is in `sound-play.test.js`.
-  The size entry is in `docs/evidence/sound-2.3/README.md`.
+- **Tests:** the generator in `sound-advanced-generator.test.js`, the `observePlay` contracts in
+  `audio-service-browser.test.js`, and the PLAY track index in `sound-play.test.js`.
 - **Repeatable draws.** The PRNG is mulberry32, seeded with the seed XOR a hash of the
   category name, so a seed gives unrelated sounds in different categories.
   - Seeded draws use only integer operations, multiplication, and addition, never `Math.log`,
@@ -448,10 +361,6 @@ Cue markers in PLAY strings, for events at arbitrary song positions, are deferre
   its category. Seed 0 keeps the preset's options and moves them within those ranges.
 - **Size.** `observePlay` fits in the Section 8 headroom, 50 bytes under the full-build
   target.
-- **Open:**
-  - Task 9.3, `sync.js` with `onPlay()` and `offPlay()`, and the beat-synced demo visual.
-    The conventions review is complete; D13 and D14 are settled in task 9.3.
-  - The listening check of the generator categories across seeds, on all three engines.
 
 ## 7. Phase 10: Sample Instruments
 
@@ -469,7 +378,7 @@ $.play( "@7 T100 O4 L4 C E G O5 C" );
   (`"sample:piano"`). Its factory gets the buffer from `getAudioBuffer` (Section 3.3) and sets
   `playbackRate` to `frequency / rootFrequency`, scheduling `frequencyEnd` sweeps on it. The
   source returns `frequency: null` and the buffer source's `detune` parameter, so vibrato and
-  arpeggios still work (sound plan 4.3.1).
+  arpeggios still work (sound design 4.3.1).
 - **Envelope.** The instrument's envelope and filter apply as for synthesized notes. A
   non-looping sample ends at the earlier of its buffer end and the note's release.
 - **Not ready.** A note whose file is still loading, streamed, or removed plays silence, and
@@ -479,23 +388,9 @@ $.play( "@7 T100 O4 L4 C E G O5 C" );
   `loop` a boolean. Setting `audio` together with a waveform `oType` throws
   `INVALID_INSTRUMENT`.
 
-| # | Task | § |
-| --- | --- | --- |
-| 10.1 | Core `getAudioBuffer` service member, contract test, size entry | 3.3 |
-| 10.2 | Sample source factory, per-name registration, pitch and detune | 7 |
-| 10.3 | `defineInstrument` options, validation, not-ready behavior | 7 |
-| 10.4 | Metadata, types, and a sample instrument in the demo | 7 |
-
-Exit criteria:
-
-- An offline render of a sine sample shows the expected pitch for notes across three octaves,
-  and the envelope and loop behavior match the synthesized case.
-- Vibrato on a sample instrument modulates its pitch.
-- Not-ready files play silence with one warning, never an error.
-
 ## 8. Size
 
-`sound-advanced` has no fixed size cap (sound plan 9.1), but every new module and core change
+`sound-advanced` has no fixed size cap (sound design 9.1), but every new module and core change
 gets a size entry at its phase exit in `docs/evidence/sound-2.3/README.md`, with its marginal
 cost. `npm run size` gains the new modules.
 
@@ -505,30 +400,14 @@ that space. The output stage is a few dozen bytes and `getAudioBuffer` is one ac
 `observePlay` is the largest. If a change does not fit, the options are, in order:
 
 1. Make it smaller.
-2. Cut the phase that needs it (Section 9).
+2. Cut the phase that needs it (ROADMAP §10).
 3. Raise the target, with the reason recorded, as the Phase 1 and Phase 6 reviews did.
 
 The expected plugin growth is roughly 1.5 KB for Phase 7, 1.5 KB for Phase 8, 1.5 KB for
 Phase 9, and 0.5 KB for Phase 10, taking `sound-advanced` from about 6 KB to about 11 KB
 gzipped. These are estimates to check against, not limits.
 
-## 9. Scope-Cut Order
-
-These phases are cut before any item in the sound roadmap's scope-cut order. Earlier items go
-first:
-
-1. **Phase 10, sample instruments.** The `getAudioBuffer` service member is not added.
-2. **Music sync (tasks 9.2–9.4).** `observePlay` is not added. The generator still ships.
-3. **Chorus and bitcrusher (tasks 8.5–8.6).** Chains, in-place updates, filter, and
-   distortion still ship.
-4. **The rest of Phase 8.**
-5. **Phase 7, recording.** Cut last. If recording slips, it ships in a 2.3.x plugin release,
-   and its core output stage ships in 2.3.0 so the plugin needs no core update.
-
-A cut phase moves to a 2.3.x release of `sound-advanced`. Its core service members are then
-additive changes to a released service, and the service's versioning rule applies.
-
-## 10. Out of Scope for 2.3
+## 9. Out of Scope for 2.3
 
 - **Faster-than-real-time export**, such as rendering a `play()` string to WAV through an
   `OfflineAudioContext`. Core voices, buses, and the scheduler are bound to one realtime
@@ -541,7 +420,9 @@ additive changes to a released service, and the service's versioning rule applie
 - **PLAY cue markers** (D14).
 - **Several recordings at once** (D10).
 
-## 11. Compatibility Summary (input to `UPGRADE-V2.3.md`)
+## 10. Compatibility Summary
+
+Input to the 2.3 upgrade guide (ROADMAP R.4).
 
 All changes are additive. `sound-advanced` has not been released, so its release notes list
 these commands as part of 1.0.0:
@@ -555,9 +436,9 @@ these commands as part of 1.0.0:
 - Plugin API (sound service v1): `tapBus` accepts `"output"`; `observePlay` and
   `getAudioBuffer` are added.
 
-## 12. Open Decisions
+## 11. Decisions
 
-Numbered after the sound plan's D1–D6.
+Numbered after the sound design's D1–D6.
 
 | ID | Decision | Recommendation | Resolve by |
 | --- | --- | --- | --- |
@@ -571,9 +452,9 @@ Numbered after the sound plan's D1–D6.
 | D14 | PLAY cue markers | Defer to 2.3.x. A cue needs a timed event without a voice, which changes the PLAY extension contract | Task 9.3 |
 | D15 | Songs started before a sample instrument's file loads | Those notes play silence with one warning. Waiting for the file would hold up the whole song, and `ready()` already covers waiting | Task 10.3 |
 | D16 | How the bitcrusher reduces the sample rate | **Resolved (task 8.6):** a worklet processor with k-rate `bits` and `rate`, registered in the recorder's module. A `WaveShaperNode` can reduce bit depth but cannot hold samples. The stage stays dry until the module loads, and dry with one warning if it cannot load | Resolved |
-| D17 | Whether generated sounds are repeatable by default | **Resolved (revision 2 of this plan): yes.** The command is `generateSfx( category, seed, variation )`. `seed` defaults to 0, which returns the category's built-in preset, and other seeds are fixed variants, so the generator and the presets are one system. Unseeded random output (sfxr style) was rejected: it suits a design tool but not a game, which wants the same sound each time. Randomness comes only from `variation`, which nudges every parameter, unlike `sfx()`'s pitch and length jitter | Resolved |
+| D17 | Whether generated sounds are repeatable by default | **Resolved (revision 2 of this design): yes.** The command is `generateSfx( category, seed, variation )`. `seed` defaults to 0, which returns the category's built-in preset, and other seeds are fixed variants, so the generator and the presets are one system. Unseeded random output (sfxr style) was rejected: it suits a design tool but not a game, which wants the same sound each time. Randomness comes only from `variation`, which nudges every parameter, unlike `sfx()`'s pitch and length jitter | Resolved |
 
-## 13. Risks
+## 12. Risks
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
@@ -582,14 +463,4 @@ Numbered after the sound plan's D1–D6.
 | Long recordings use a lot of memory | Mobile tabs crash | 60 s default, 600 s cap, `Int16` storage |
 | Core size headroom is small | Core targets exceeded | Size entry per core change; the Section 8 order; the scope-cut order |
 | Sync timing differs by engine and device | Visuals drift from music | Map times with `getOutputTimestamp()` and `outputLatency`; realtime test; listening and watching check on each engine |
-| The plan adds work after the sound workstream closed | Release waits on sound again | Phases can be cut independently; recording is cut last and its core stage ships even if the plugin part slips |
-
-## 14. Tracking
-
-- The Status line and the task tables record progress. Each task lands through its own pull
-  request, titled like `Sound 7.4: Recorder module`.
-- Closing a decision updates Section 12 of this plan in the same commit. When a decision
-  changes the service, Section 4.3 of the sound plan is updated in the same commit.
-- `API.md`, the plugin README, and the llms references are updated in the release phase
-  (general plan R.2 and R.3), not in these phases. Metadata and generated types are committed
-  with each API change.
+| The expansion adds work after the sound workstream closed | Release waits on sound again | Phases can be cut independently; recording is cut last and its core stage ships even if the plugin part slips |

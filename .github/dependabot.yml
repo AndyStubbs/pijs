@@ -1,4 +1,4 @@
-# Keeps the GitHub Actions versions in .github/workflows current (CI roadmap task 3.5).
+# Keeps the GitHub Actions versions in .github/workflows current (CI 3.5).
 # Dependabot checks weekly and opens a pull request only when an action has a new version;
 # all such updates arrive together in one pull request, which runs ci.yml like any other.
 version: 2
