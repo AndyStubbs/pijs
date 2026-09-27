@@ -12,6 +12,7 @@ This folder holds measurements and reproductions for the 2.3 keyboard audit
 | File | Contents |
 | --- | --- |
 | `size-baseline.json` | `npm run size -- --out=docs/evidence/keyboard-2.3/size-baseline.json` at the revision |
+| `size-phase1.json` | The same command at the exit of keyboard Phase 1 (tasks 1.1–1.13), 2026-09-27 |
 | `probes.js` | Reproductions K1–K20, run in Chromium, Firefox and WebKit against fresh in-memory bundles of the current source, plus a load check of the manual pages that load the keyboard plugin |
 | `probes-output.json` | Observed and expected results per engine and probe, with page errors |
 | `device-check.html` | A page for the physical-keyboard pass: Pi.js key state next to the browser's own key events |
@@ -28,6 +29,21 @@ This folder holds measurements and reproductions for the 2.3 keyboard audit
 The standalone plugin is about 4.3% of `pi.min.js` by gzip size. `npm run size` has no
 differential for the plugin's marginal cost inside the Full bundle; the standalone figure is
 the upper bound.
+
+## Size at Phase 1 exit
+
+`size-phase1.json`, measured after keyboard tasks 1.1–1.13. The standalone plugin is still
+1.0.0; Phase 1 changed no API.
+
+| Bundle | Bytes | Gzip | Gzip change |
+| --- | --- | --- | --- |
+| `keyboard` plugin 1.0.0 (standalone IIFE) | 9,492 | 3,490 | +380 |
+| `pi.min.js` (Full, includes keyboard) | 210,435 | 73,318 | +714 |
+| `pi.lite.min.js` (no keyboard) | 138,765 | 48,947 | +362 |
+
+The keyboard growth is the prompt's own key and paste listeners, its layout and numeric
+patterns, held state by code, and release data. The Full change also includes core changes
+since the baseline, which Lite shares (+362), so the keyboard's share of it is about 350 bytes.
 
 ## Probes
 
