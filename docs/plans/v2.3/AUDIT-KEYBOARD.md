@@ -749,7 +749,7 @@ the [ROADMAP](ROADMAP.md#5-keyboard) tasks that implement each item.
 | KEY-005 | Prompt layout | Accepted | Fixed by A5 (Keyboard 1.6, done) |
 | KEY-006 | `stopKeyboard()` not undone; strands prompts | Accepted | Prompt part fixed by A2 (Keyboard 1.3, done); start rule I5 (Keyboard 2.3) |
 | KEY-007 | `offkey()` needs every flag | Accepted | Rule I4 (Keyboard 2.2) |
-| KEY-008 | Numeric prompt edge cases | Accepted | Fixed by A6 (Keyboard 1.7) |
+| KEY-008 | Numeric prompt edge cases | Accepted | Fixed by A6 (Keyboard 1.7, done) |
 | KEY-009 | Validation gaps | Accepted | Fixed by A7 with I11 codes (Keyboard 2.7) |
 | KEY-010 | Caller's array sorted; duplicates fire twice | Accepted | Fixed by A7 (Keyboard 2.7) |
 | KEY-011 | Release data and unseen presses | Accepted | Fixed by A8 (Keyboard 1.8); blur releases by I6 (Keyboard 2.4) |

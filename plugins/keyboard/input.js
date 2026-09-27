@@ -10,6 +10,14 @@
 
 const CURSOR_BLINK = 500;
 
+// Values a numeric prompt may hold while typing, by whether it takes decimals and a sign
+const NUMBER_PATTERNS = {
+	"decimal": /^\d*\.?\d*$/,
+	"signedDecimal": /^-?\d*\.?\d*$/,
+	"integer": /^\d*$/,
+	"signedInteger": /^-?\d*$/
+};
+
 // Input state
 let m_inputData = null;
 let m_inputRequest = 0;
@@ -295,7 +303,7 @@ function onInputKeyDown( inputData, keyData ) {
 
 	// Handle single length keys
 	} else if( keyData.key && keyData.key.length === 1 ) {
-		insertCharacter( inputData, keyData.key, keyData.code );
+		insertCharacter( inputData, keyData.key );
 	}
 
 	showPrompt( inputData );
@@ -321,7 +329,7 @@ function onInputPaste( inputData, event ) {
 	}
 	for( const char of text ) {
 		if( char.length === 1 && char >= " " && char !== "\u007f" ) {
-			insertCharacter( inputData, char, null );
+			insertCharacter( inputData, char );
 		}
 	}
 	showPrompt( inputData );
@@ -330,57 +338,57 @@ function onInputPaste( inputData, event ) {
 /**
  * Insert one typed or pasted character, following the prompt's numeric and length rules
  *
+ * A numeric prompt (isNumber or isInteger) keeps a value that matches its pattern: digits, one
+ * decimal point unless isInteger, and a leading minus with allowNegative. Typing "-" adds the
+ * minus at the start and "+" removes it. The minus counts toward maxLength.
+ *
  * @param {Object} inputData - Prompt session
  * @param {string} char - Character to insert
- * @param {string|null} code - Key code of a typed character, or null for pasted text
  * @returns {void}
  */
-function insertCharacter( inputData, char, code ) {
-	let inputHandled = false;
-
-	// Handle +/- numbers
-	if( inputData.isNumber && inputData.allowNegative ) {
-
-		// If user enters a "-" then insert "-" at the start
+function insertCharacter( inputData, char ) {
+	const isNumeric = inputData.isNumber || inputData.isInteger;
+	const val = inputData.val;
+	let next = val + char;
+	if( isNumeric && inputData.allowNegative ) {
 		if( char === "-" ) {
-			if( inputData.val.charAt( 0 ) !== "-" ) {
-				inputData.val = "-" + inputData.val;
+			if( val.charAt( 0 ) === "-" ) {
+				return;
 			}
-			inputHandled = true;
-
-		// Any time the user enters a "+" key then replace the minus symbol
-		} else if(
-			( char === "+" || code === "Equal" ) &&
-			inputData.val.charAt( 0 ) === "-"
-		) {
-			inputData.val = inputData.val.substring( 1 );
-			inputHandled = true;
+			next = "-" + val;
+		} else if( char === "+" ) {
+			if( val.charAt( 0 ) === "-" ) {
+				inputData.val = val.substring( 1 );
+			}
+			return;
 		}
 	}
-
-	// Don't allow decimal points for integer number
-	if( inputData.isInteger && ( code === "Period" || char === "." ) ) {
-		inputHandled = true;
+	if( inputData.maxLength !== null && next.length > inputData.maxLength ) {
+		return;
 	}
+	if( isNumeric && !getNumberPattern( inputData ).test( next ) ) {
+		return;
+	}
+	inputData.val = next;
+}
 
-	// If the input is valid append the next character and validate
-	if( !inputHandled ) {
-
-		// Check maxLength before appending
-		if(
-			inputData.maxLength === null || inputData.val.length < inputData.maxLength
-		) {
-			inputData.val += char;
-
-			// Make sure it's a valid number or valid integer
-			if(
-				( inputData.isNumber && isNaN( Number( inputData.val ) ) ) ||
-				( inputData.isInteger && !Number.isInteger( Number( inputData.val ) ) )
-			) {
-				inputData.val = inputData.val.substring( 0, inputData.val.length - 1 );
-			}
+/**
+ * The pattern a numeric prompt's value must match while typing
+ *
+ * @param {Object} inputData - Prompt session
+ * @returns {RegExp} Pattern
+ */
+function getNumberPattern( inputData ) {
+	if( inputData.isInteger ) {
+		if( inputData.allowNegative ) {
+			return NUMBER_PATTERNS.signedInteger;
 		}
+		return NUMBER_PATTERNS.integer;
 	}
+	if( inputData.allowNegative ) {
+		return NUMBER_PATTERNS.signedDecimal;
+	}
+	return NUMBER_PATTERNS.decimal;
 }
 
 function showPrompt( inputData, hideCursorOverride ) {
@@ -445,13 +453,15 @@ function finishInput( isCancel, isDisposal = false ) {
 	let val = inputData.val;
 	if( isCancel ) {
 		val = null;
-	} else if( inputData.isNumber ) {
-		if( val === "" || val === "-" ) {
+	} else if( inputData.isNumber || inputData.isInteger ) {
+
+		// A value with no digits, such as "", "-", or ".", is 0, and so is "-0"
+		if( /^-?\.?$/.test( val ) ) {
 			val = 0;
 		} else {
 			val = Number( val );
-			if( inputData.isInteger ) {
-				val = Math.floor( val );
+			if( val === 0 ) {
+				val = 0;
 			}
 		}
 	}
