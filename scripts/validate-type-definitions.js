@@ -54,6 +54,10 @@ const SOUND_ADVANCED_DECLARATIONS = [
 	"getRecordingState(): { state: \"idle\" | \"starting\" | \"recording\" | \"full\"; " +
 		"duration: number };",
 	"saveRecording( blob: Blob, filename?: string ): void;",
+	"onPlay( mode: \"note\" | \"end\", fn: ( data: { type: \"note\"; trackId: number; ",
+	"} | { type: \"end\"; trackId: number; stopped: boolean; delay: number } ) => void, " +
+		"once?: boolean ): void;",
+	"offPlay( mode?: \"note\" | \"end\" | null, fn?: ( data: ",
 	"declare function sound_advancedPlugin( pluginApi: PluginAPI ): void;"
 ];
 

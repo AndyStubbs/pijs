@@ -1,0 +1,46 @@
+title = "offPlay"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Removes PLAY note or song end handlers registered with onPlay()."
+description = """
+Requires the sound-advanced plugin. A handler is identified by its mode and function; once does not matter. With a mode and a function, that handler is removed. With a mode and no function, every handler of that mode is removed. With null as the mode and a function, the function is removed from both modes.
+
+Giving neither a mode nor a function throws INVALID_MODE; use clearEvents( "play" ) to remove every handler. A mode other than "note", "end", or null throws INVALID_MODE, and fn that is not a function throws INVALID_FUNCTION.
+"""
+example = """
+$.screen( "300x200" );
+let notes = 0;
+function countNote() {
+	notes += 1;
+	$.cls();
+	$.print( "Notes: " + notes );
+}
+$.onPlay( "note", countNote );
+$.onkey( "any", "down", () => {
+	$.play( "T120 O4 L8 C D E F G A B O5 C" );
+}, true );
+
+// Stop counting after two seconds; the song keeps playing
+setTimeout( () => {
+	$.offPlay( "note", countNote );
+}, 2000 );
+"""
+
+[[parameters]]
+name = "mode"
+type = "\"note\" | \"end\" | null"
+typeDesc = "string"
+description = "\"note\" or \"end\", or null to remove fn from both modes."
+optional = true
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( data: { type: \"note\"; trackId: number; track: number; time: number; duration: number; frequency: number; volume: number; delay: number } | { type: \"end\"; trackId: number; stopped: boolean; delay: number } ) => void"
+description = "Handler to remove. If omitted, every handler of the mode is removed."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

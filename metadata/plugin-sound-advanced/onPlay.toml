@@ -1,0 +1,51 @@
+title = "onPlay"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Registers a handler for PLAY notes or song ends, called when the music is heard."
+description = """
+Requires the sound-advanced plugin. Use it to sync visuals and game events to music started with play(). mode "note" calls fn for each note as it starts to sound, and "end" once when a song finishes or is stopped with stopPlay().
+
+A note's data is { type, trackId, track, time, duration, frequency, volume, delay }. trackId is the ID play() returned, track is the index of the comma-separated track, time is the note's audible start in audio context time, duration runs to the end of its release in seconds, and volume is its peak volume. An end's data is { type, trackId, stopped, delay }, where stopped is true after stopPlay(). delay is the seconds between the audible moment and the call. Every handler of an event receives the same frozen object.
+
+Handlers run on animation frames, on the first frame at or after the moment the note reaches the speakers, including the output latency the browser reports. Notes whose frame comes more than 250 ms late, for example while the tab is hidden, are skipped rather than delivered in a burst. Song ends are always delivered, and stopPlay() skips the song's remaining notes.
+
+Registering the same function for the same mode again does nothing. A handler that throws is reported with console.error without stopping the others. clearEvents( "play" ) removes every handler. A mode other than "note" or "end" throws INVALID_MODE, fn that is not a function throws INVALID_FUNCTION, and once that is not a boolean throws INVALID_ONCE.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Press any key to play" );
+$.onPlay( "note", ( note ) => {
+	$.setColor( 1 + note.track * 3 );
+	$.circle( Math.log2( note.frequency / 110 ) * 60, 100 + note.track * 40, 6, 1 );
+} );
+$.onPlay( "end", () => {
+	$.print( "Song over" );
+} );
+$.onkey( "any", "down", () => {
+	$.cls();
+	$.play( "T120 O4 L8 C E G O5 C O4 G E C4, T120 O2 L2 C G" );
+}, true );
+"""
+
+[[parameters]]
+name = "mode"
+type = "\"note\" | \"end\""
+typeDesc = "string"
+description = "\"note\" for each note as it sounds, or \"end\" when a song finishes or is stopped."
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( data: { type: \"note\"; trackId: number; track: number; time: number; duration: number; frequency: number; volume: number; delay: number } | { type: \"end\"; trackId: number; stopped: boolean; delay: number } ) => void"
+description = "Handler called with the event's frozen data."
+
+[[parameters]]
+name = "once"
+type = "boolean"
+description = "Remove the handler after its first call (default: false)."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
