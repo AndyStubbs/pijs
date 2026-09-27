@@ -29,7 +29,7 @@ Optional version and description are stored for getPlugins. Optional dependencie
 
 Installation is all or nothing. The plugin's commands, settings, screen data, screen hooks, and clearEvents handlers take effect only after init and installation on existing screens both succeed. If either throws, none of them remain and the plugin's state in getPlugins is "failed"; side effects of the plugin's own code are not undone. A failure throws PLUGIN_INIT_FAILED from the registerPlugin call that registered the plugin. A plugin that fails while another call is resolving it, such as one waiting on the dependency that call registers, is reported with console.error instead. Plugins that depend on a failed plugin stay pending. Registering a failed plugin's name again retries it; any other duplicate name throws DUPLICATE_PLUGIN.
 
-If screens already exist when the plugin initializes, its commands and screen data are added to those screens and its screen init functions run once. Screens created later receive the same registrations automatically. Plugin scripts register themselves when loaded after Pi.js; do not register the same plugin twice.
+If screens already exist when the plugin initializes, its commands and screen data are added to those screens and its screen init functions run once. Screens created later receive the same registrations automatically. Plugin scripts register themselves when loaded after Pi.js. The standalone scripts of plugins that the Full bundle includes are for Lite; loading one after the Full bundle throws DUPLICATE_PLUGIN.
 """
 example = """
 $.registerPlugin( {

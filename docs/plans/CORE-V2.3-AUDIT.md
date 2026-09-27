@@ -1,7 +1,8 @@
 # Pi.js 2.3 Core Audit
 
 Status: Reviewed 2026-09-25; C4 rejected, every other finding and proposal accepted
-(Section 9). Follow-up task 1 done (Section 7)
+(Section 9). C3 changed to documentation only on 2026-09-27. Follow-up tasks 1 and 2 done
+(Section 7)
 Plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md), Section 7
 Evidence: [docs/evidence/core-2.3/](../evidence/core-2.3/README.md)
 
@@ -677,7 +678,7 @@ that change core API are marked **approval**.
 | --- | --- | --- | --- |
 | C1 | Discard the shared offscreen context when its last screen is removed, so the next offscreen screen creates a fresh one | fix | CORE-001 |
 | C2 | Plugin installation is transactional: registrations are collected and applied only after init and screen installation succeed; a failed plugin leaves nothing, including its `m_plugins` entry. A failure is thrown from the call that registered the plugin; failures resolved during another call are reported with `console.error` and visible in `getPlugins()` | fix | CORE-002, CORE-006 |
-| C3 | Self-registration skips a plugin whose name is already registered at the same version, and warns on a version mismatch. Explicit `registerPlugin()` keeps throwing `DUPLICATE_PLUGIN` | fix | CORE-003 |
+| C3 | Document that the standalone plugin entry points are for Lite; loading a plugin that Pi.js already includes throws `DUPLICATE_PLUGIN` (changed from a self-registration skip on 2026-09-27, Section 9) | documentation | CORE-003 |
 | C4 | Plugin-internal subscriptions: a registration option, or plugin-owned handler tables, that user-level `clearEvents()` does not reach. Mechanism settled in §6 | additive, approval | CORE-004 |
 | C5 | Declarations: `"type": "module"` in the release manifest; plugin declarations augment Full and Lite; globals declared once; Lite `Options` and types limited to Lite; `addCommand`'s last parameter optional; `Screen.removeScreen()` declared | fix | CORE-005, CORE-015, CORE-016, CORE-017 |
 | C6 | Option and value handling: `parseOptions` maps `undefined` to `null`; `getPal( false )` excludes index 0; `getImage( screen )` fixed; polygon spans clipped; numeric checks for `arc`, `loadFont`, and `setPrintSize`; `removeScreen` object form and coded errors | fix | CORE-007, CORE-009, CORE-011, CORE-012, CORE-013, CORE-015 |
@@ -694,8 +695,8 @@ Lite's `set()` starts to throw.
 - **C7:** "`set()` now throws `INVALID_OPTION` for an option it does not recognize, including
   options from plugins that are not loaded. Remove the option, fix its spelling, or load the
   plugin that provides it."
-- **C3:** "Importing a plugin that the Full bundle already includes no longer throws. It does
-  nothing. The standalone plugin entry points are for Lite."
+- **C3:** "The standalone plugin entry points (`pijs-web/plugins/…`) are for Lite. Loading one
+  that the Full bundle already includes throws `DUPLICATE_PLUGIN`."
 - **C5:** "TypeScript projects using `nodenext` module resolution now get the package's types.
   Lite projects that load a plugin get that plugin's command types."
 
@@ -725,7 +726,8 @@ Ranked by value. Each starts from the probe that reproduces its finding.
    `package-types-consumer.test.js` (declaration probes).
 3. Offscreen context loss after every member has gone, in `context-recovery-browser.test.js`
    (C01).
-4. Duplicate self-registration after Full, IIFE and ESM (C04).
+4. Duplicate self-registration after Full, IIFE and ESM (C04). Covered by the existing
+   `polygons-bundles-browser.test.js`, which asserts the documented `DUPLICATE_PLUGIN` (C3).
 5. `clearEvents()` leaves plugin-internal subscriptions working (C05), once C4 is decided.
 6. A generated check that every registered command and setting has metadata with matching
    parameters.
@@ -759,11 +761,11 @@ Ranked by value. Each starts from the probe that reproduces its finding.
 ## 7. Recommended Roadmap
 
 After review, only C7 changes the core API, so a short `CORE-V2.3-ROADMAP.md` is needed for it
-(plan §7.2). C4 was decided as documentation only (Section 9). The other items are fixes,
+(plan §7.2). C4 and C3 were decided as documentation only (Section 9). The other items are fixes,
 tracked in the follow-up table below as in 2.2. Order:
 
 **Phase 1: before the input roadmaps are approved.** The input plugins build on these:
-- C2 and C3 (plugin installation and self-registration).
+- C2 (plugin installation). C3 was first planned here; it is now documentation (below).
 - C5's plugin declaration changes, because every input roadmap regenerates its plugin's
   declarations.
 
@@ -781,6 +783,7 @@ User documentation is written in the release phase (R.2, R.3), as the standing r
   input commands. This is written for plugin authors (plugin guides); no plugin that remains
   in 2.3 is affected once `onscreen-keyboard` and `pi-vision` are removed (upgrade plan §3.1).
 - The `set()` and `removeScreen` text in `API.md`.
+- C3: the standalone plugin entry points are for Lite (follow-up task 2 lists the documents).
 
 **Scope-cut order:**
 1. C8 and C10's Latin-1 mapping.
@@ -794,7 +797,7 @@ Phase 1 and CORE-001 are not cut.
 | Order | Task | Findings | Status |
 | --- | --- | --- | --- |
 | 1 | Transactional plugin installation and error routing | CORE-002, CORE-006 | Done 2026-09-27. Registrations are collected during init and committed after installation succeeds; screen installation rolls back; `getPlugins()` reports `state`; a failed name can be registered again; registration after init throws `REGISTRATION_CLOSED` |
-| 2 | Skip duplicate self-registration | CORE-003 | Accepted |
+| 2 | Document Lite-only plugin entry points | CORE-003 | Documentation only (review change 2026-09-27); release phase (R.3, R.5): `releases/pi-latest/README.md` says the plugin entry points are for Lite and lists `polygons` and `sound-advanced`; `plugins/README.md:36`, `plugins/polygons/README.md:10`, and `docs/llms/llms-full.txt:130` state the Lite-only rule |
 | 3 | Document that `clearEvents()` reaches dependent plugins' handlers | CORE-004 | Accepted; release phase (R.2) |
 | 4 | Declarations and release manifest | CORE-005, CORE-015, CORE-016, CORE-017 | Accepted |
 | 5 | Offscreen context lifetime | CORE-001 | Accepted |
@@ -812,7 +815,7 @@ The core audit's answer to each item the input audits handed to it:
 
 | Item | Raised by | Result |
 | --- | --- | --- |
-| Self-registration after Full throws `DUPLICATE_PLUGIN` | PAD-015, PTR-016, KEY-018 | Confirmed, CORE-003; fixed by C3 |
+| Self-registration after Full throws `DUPLICATE_PLUGIN` | PAD-015, PTR-016, KEY-018 | Confirmed, CORE-003; documented, not changed (C3). Manual pages that load a plugin after Full are fixed in each input roadmap's Phase 1 by loading Lite or dropping the extra script |
 | Standalone plugin declarations; Lite declares Full-only types | Gamepad, pointer, keyboard | Confirmed, CORE-016; fixed by C5 |
 | `set()` accepts unknown options | Gamepad (P14) | Confirmed, CORE-008; C7 |
 | `parseOptions` keeps an explicit `undefined` | KEY-009 | Confirmed, CORE-007; C6 |
@@ -852,7 +855,7 @@ recorded 2026-09-25.
 | --- | --- | --- | --- |
 | CORE-001 | Offscreen context not restored after its last screen | Accepted | P2. Fixed by C1 |
 | CORE-002 | Failed plugin stays half-installed | Accepted | P2. Fixed by C2 |
-| CORE-003 | Bundled plugin loaded after Full breaks the page | Accepted | P2. Fixed by C3: skip on the same version, warn on a mismatch |
+| CORE-003 | Bundled plugin loaded after Full breaks the page | Accepted | P2. Documentation only (changed 2026-09-27): the throw stays, and the standalone entry points are documented as Lite-only (C3). Self-registration is not changed |
 | CORE-004 | `clearEvents()` removes plugin-internal subscriptions | Accepted | P2. Documentation only (C4 rejected): `API.md` and the plugin guides say that `clearEvents()` also removes handlers a plugin registers through the public input commands. The two affected plugins, `onscreen-keyboard` and `pi-vision`, are removed in 2.3 (upgrade plan §3.1, G7). No mechanism is needed from §6 |
 | CORE-005 | Release package types wrong under `nodenext` | Accepted | P2. Fixed by C5 |
 | CORE-006 | Init errors thrown to the wrong caller | Accepted | Fixed by C2 |
@@ -870,7 +873,8 @@ recorded 2026-09-25.
 | CORE-018 | Circle geometry cache unbounded | Accepted | Fixed by C8 |
 | CORE-019 | Release packaging details | Accepted | Fixed by C11: rename, `"private": true`, and the changelog in the tarball |
 | CORE-020 | Missing checks | Accepted | Section 5.2, without item 5 |
-| C1–C3, C5, C6, C8 | Fixes | Accepted | Follow-up table |
+| C1, C2, C5, C6, C8 | Fixes | Accepted | Follow-up table |
+| C3 | Lite-only plugin entry points | Accepted | Changed on 2026-09-27 from a self-registration skip to documentation (R.3, R.5) |
 | C4 | Plugin-internal subscriptions | Rejected | Core API stays as is; CORE-004 is documented instead |
 | C7 | Strict `set()` | Accepted | Breaking core API change, approved. `CORE-V2.3-ROADMAP.md` |
 | C9 | No frame hook in 2.3 | Accepted | |
