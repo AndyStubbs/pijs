@@ -152,4 +152,33 @@ for( const bundle of g_harness.BUNDLES ) {
 				await page.close();
 			}
 		} );
+
+	test( `KEY-004 ${bundle}: keys typed into a shadow-root input are ignored (K12)`, async () => {
+		const { page, errors } = await open( bundle );
+		try {
+			await page.evaluate( () => {
+				const host = document.createElement( "div" );
+				document.body.appendChild( host );
+				const input = document.createElement( "input" );
+				host.attachShadow( { "mode": "open" } ).appendChild( input );
+				window.__calls = [];
+				$.onkey( "KeyA", "down", () => window.__calls.push( "KeyA" ) );
+				input.focus();
+			} );
+			await page.keyboard.down( "KeyA" );
+			const whileTyping = await page.evaluate( () => [
+				window.__calls.length, $.inkey( "KeyA" ) !== null,
+				document.activeElement.shadowRoot.activeElement.value
+			] );
+			await page.keyboard.up( "KeyA" );
+			await page.evaluate( () => document.activeElement.blur() );
+			await page.keyboard.press( "KeyA" );
+			const afterBlur = await page.evaluate( () => window.__calls.length );
+			assert.deepEqual( whileTyping, [ 0, false, "a" ] );
+			assert.equal( afterBlur, 1, "keys outside the input are game input" );
+			assert.deepEqual( errors, [] );
+		} finally {
+			await page.close();
+		}
+	} );
 }

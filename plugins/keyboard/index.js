@@ -425,8 +425,25 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 	}
 }
 
-function isFromEditableTarget ( event ) {
-	const element = event.target;
+/**
+ * Whether an event comes from an element that takes text, such as an input or a
+ * contenteditable element.
+ *
+ * Listeners on `window` see `event.target` retargeted to the host of an open shadow root, so
+ * the original target is read from the composed path. A closed shadow root keeps its internals
+ * out of the path, and its host is checked instead.
+ *
+ * @param {Event} event - Keyboard or clipboard event
+ * @returns {boolean} True when the event comes from an editable element
+ */
+function isFromEditableTarget( event ) {
+	let element = event.target;
+	if( typeof event.composedPath === "function" ) {
+		const path = event.composedPath();
+		if( path.length > 0 ) {
+			element = path[ 0 ];
+		}
+	}
 	if( !element ) {
 		return false;
 	}
@@ -441,7 +458,7 @@ function isFromEditableTarget ( event ) {
 		return true;
 	}
 
-	// Inputs inside shadow roots
+	// Custom text controls, such as web components with a textbox role
 	const role = element.getAttribute && element.getAttribute( "role" );
 	if( role === "textbox" || role === "searchbox" ) {
 		return true;

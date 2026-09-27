@@ -680,3 +680,31 @@ test( "KEY-003 pasted text is inserted by the prompt's rules (K9)", async () => 
 	empty( h );
 	assert.equal( paste( h, "after" ).defaultPrevented, false, "no listener after the prompt" );
 } );
+
+test( "KEY-004 keys typed into an input inside a shadow root are ignored (K12)", async () => {
+	const h = harness();
+	const calls = [];
+	h.api.onkey( "KeyA", "down", data => calls.push( data.code ) );
+	const host = createElement( "DIV" );
+	const shadowInput = createElement( "INPUT" );
+	const path = [ shadowInput, host, h.body, h.document, h.window ];
+
+	// A window listener sees the shadow host as the target
+	h.key( "a", "down", { "code": "KeyA", "target": host, "path": path } );
+	assert.deepEqual( calls, [] );
+	assert.equal( h.api.inkey( "KeyA" ), null );
+	h.key( "a", "up", { "code": "KeyA", "target": host, "path": path } );
+
+	// A key on the host itself is game input
+	h.key( "a", "down", { "code": "KeyA", "target": host, "path": [ host, h.body ] } );
+	assert.deepEqual( calls, [ "KeyA" ] );
+	h.key( "a", "up", { "code": "KeyA", "target": host, "path": [ host, h.body ] } );
+
+	// The prompt follows the same rule
+	const pending = h.start();
+	h.key( "x", "down", { "target": host, "path": path } );
+	h.key( "y" );
+	h.key( "Enter" );
+	assert.equal( await pending, "y" );
+	empty( h );
+} );
