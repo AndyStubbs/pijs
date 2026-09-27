@@ -295,16 +295,7 @@ function onKeyDown( event ) {
 		clearInKeys();
 		return;
 	}
-	const keyData = {
-		"code": event.code,
-		"key": event.key,
-		"location": event.location,
-		"altKey": event.altKey,
-		"ctrlKey": event.ctrlKey,
-		"metaKey": event.metaKey,
-		"shiftKey": event.shiftKey,
-		"repeat": event.repeat
-	};
+	const keyData = createKeyData( event );
 
 	// The latest keydown of a code moves it to the end, so value lookups find the latest press
 	m_heldCodes.delete( event.code );
@@ -328,12 +319,23 @@ function onKeyUp( event ) {
 		return;
 	}
 	const codeData = m_heldCodes.get( event.code );
+
+	// Up handlers get the keyup's data, and run for the code, the value the keyup reports, and
+	// the value the key was pressed with, which differs when a modifier changed during the hold.
+	// A keyup whose press was not seen still reaches single-key and "any" handlers.
+	const names = [ event.code ];
+	if( !names.includes( event.key ) ) {
+		names.push( event.key );
+	}
+	if( codeData && !names.includes( codeData.key ) ) {
+		names.push( codeData.key );
+	}
+	const release = { "data": createKeyData( event ), "names": names };
 	try {
-		triggerKeyEventHandlers( event, "up", event.code );
-		if( event.code !== event.key ) {
-			triggerKeyEventHandlers( event, "up", event.key );
+		for( const name of names ) {
+			triggerKeyEventHandlers( event, "up", name, release );
 		}
-		triggerKeyEventHandlers( event, "up", "any" );
+		triggerKeyEventHandlers( event, "up", "any", release );
 	} finally {
 
 		// Release by code, whatever value the release reports; preserve a new press dispatched
@@ -376,7 +378,40 @@ function invokeHandler( handler, data ) {
 	}
 }
 
-function triggerKeyEventHandlers( event, mode, keyOrCode ) {
+/**
+ * Copy the state of a key event into key data.
+ *
+ * @param {KeyboardEvent} event - Keydown or keyup event
+ * @returns {Object} Key data
+ */
+function createKeyData( event ) {
+	return {
+		"code": event.code,
+		"key": event.key,
+		"location": event.location,
+		"altKey": event.altKey,
+		"ctrlKey": event.ctrlKey,
+		"metaKey": event.metaKey,
+		"shiftKey": event.shiftKey,
+		"repeat": event.repeat
+	};
+}
+
+/**
+ * Run the handlers registered under one key name for a key event.
+ *
+ * A down handler runs when all of its keys are held, with their held data. An up handler for a
+ * single key runs with the release data; a combination's up handler runs when all of its keys
+ * were held, with the release data for the released key and the held data for the others.
+ *
+ * @param {KeyboardEvent} event - Keydown or keyup event
+ * @param {string} mode - "down" or "up"
+ * @param {string} keyOrCode - Handler bucket: a key code, a key value, or "any"
+ * @param {Object} [release] - For keyups: { data, names }, the release data and the names of
+ *   the released key
+ * @returns {void}
+ */
+function triggerKeyEventHandlers( event, mode, keyOrCode, release = null ) {
 	const handlers = m_onKeyHandlers[ keyOrCode ];
 	if( !handlers ) {
 		return;
@@ -401,9 +436,12 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 			continue;
 		}
 
-		// For "any" key handlers, pass the current key data
+		// For "any" key handlers, pass the release data or the current key data
 		if( isAnyKey ) {
-			const keyData = m_heldCodes.get( event.code );
+			let keyData = m_heldCodes.get( event.code );
+			if( release ) {
+				keyData = release.data;
+			}
 
 			// In case stopKeyboard gets called in another key event handler keyData will be blank
 			if( keyData !== undefined ) {
@@ -412,10 +450,22 @@ function triggerKeyEventHandlers( event, mode, keyOrCode ) {
 			continue;
 		}
 
+		if( release && handler.combo.length === 1 ) {
+			invokeHandler( handler, release.data );
+			continue;
+		}
+
 		// For specific key handlers, check combo and pass combo data
 		const comboData = handler.combo.map( key => findHeldKey( key ) );
 
 		if( comboData.every( keyData => keyData !== null ) ) {
+			if( release ) {
+				handler.combo.forEach( ( key, index ) => {
+					if( release.names.includes( key ) ) {
+						comboData[ index ] = release.data;
+					}
+				} );
+			}
 			if( comboData.length === 1 ) {
 				invokeHandler( handler, comboData[ 0 ] );
 			} else {

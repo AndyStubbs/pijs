@@ -793,3 +793,57 @@ test( "KEY-008 numeric prompts keep to their patterns (K10)", async () => {
 		empty( h );
 	}
 } );
+
+test( "KEY-011 up handlers receive the keyup's data (K13)", () => {
+	const h = harness();
+	const any = [];
+	const single = [];
+	h.api.onkey( "any", "up", data => any.push( data ) );
+	h.api.onkey( "KeyA", "up", data => single.push( data ) );
+	h.key( "a", "down", { "code": "KeyA" } );
+	h.key( "a", "up", { "code": "KeyA", "shiftKey": true } );
+	assert.deepEqual( any.map( data => [ data.code, data.shiftKey ] ), [ [ "KeyA", true ] ] );
+	assert.equal( single[ 0 ], any[ 0 ], "handlers share the release data" );
+	assert.equal( h.api.inkey( "KeyA" ), null );
+} );
+
+test( "KEY-011 a release whose press was not seen still reaches up handlers (K13)", () => {
+	const h = harness();
+	const calls = [];
+	h.api.onkey( "KeyB", "up", data => calls.push( `KeyB ${data.key}` ) );
+	h.api.onkey( "any", "up", data => calls.push( `any ${data.code}` ) );
+	h.api.onkey( [ "KeyA", "KeyB" ], "up", () => calls.push( "combination" ) );
+	h.api.stopKeyboard();
+	h.key( "b", "down", { "code": "KeyB" } );
+	h.api.startKeyboard();
+	h.key( "a", "down", { "code": "KeyA" } );
+	h.key( "b", "up", { "code": "KeyB" } );
+	assert.deepEqual( calls, [ "KeyB b", "any KeyB" ],
+		"a combination still needs every key held" );
+} );
+
+test( "KEY-011 a release runs the handlers of the value the key was pressed with", () => {
+	const h = harness();
+	const calls = [];
+	for( const name of [ "A", "a", "KeyA" ] ) {
+		h.api.onkey( name, "up", data => calls.push( `${name} ${data.key}` ) );
+	}
+	h.key( "Shift", "down", { "code": "ShiftLeft", "shiftKey": true } );
+	h.key( "A", "down", { "code": "KeyA", "shiftKey": true } );
+	h.key( "Shift", "up", { "code": "ShiftLeft" } );
+	h.key( "a", "up", { "code": "KeyA" } );
+	assert.deepEqual( calls, [ "KeyA a", "a a", "A a" ] );
+} );
+
+test( "KEY-011 a combination's up handler gets the release data for the released key", () => {
+	const h = harness();
+	const seen = [];
+	h.api.onkey( [ "KeyA", "KeyB" ], "up", data => seen.push( data ) );
+	h.key( "a", "down", { "code": "KeyA" } );
+	h.key( "b", "down", { "code": "KeyB" } );
+	const heldA = h.api.inkey( "KeyA" );
+	h.key( "b", "up", { "code": "KeyB", "altKey": true } );
+	assert.equal( seen.length, 1 );
+	assert.equal( seen[ 0 ][ 0 ], heldA );
+	assert.deepEqual( [ seen[ 0 ][ 1 ].code, seen[ 0 ][ 1 ].altKey ], [ "KeyB", true ] );
+} );
