@@ -1,7 +1,8 @@
 /**
  * Plugin registry tests against the real registry module with stubbed command and screen
- * dependencies: dependency order, cycles, failures, reentrant registration, validation, and
- * services through pluginApi.provideService() and pluginApi.getService().
+ * dependencies: dependency order, cycles, failures, reentrant registration, validation,
+ * services through pluginApi.provideService() and pluginApi.getService(), transactional
+ * installation, and which call reports a failure.
  */
 import * as g_assert from "node:assert/strict";
 import * as g_test from "node:test";
@@ -11,6 +12,12 @@ const test = g_test.test;
 
 function plugin( name, dependencies, init ) {
 	return { "name": name, "dependencies": dependencies, "init": init };
+}
+
+// getPlugins() returns an array from the module's realm; copy it for strict comparison
+function states( commands, filter = () => true ) {
+	return Array.from( commands.getPlugins() ).filter( filter )
+		.map( item => [ item.name, item.state ] );
 }
 
 test( "a dependency's service is available during and after the consumer's init", () => {
@@ -128,7 +135,163 @@ test( "plugin cycles, failure, reentrant registration, and validation remain det
 		} );
 	}
 	register( config( "default-dependencies", undefined ) );
-	assert.equal( commands.getPlugins().filter( item => !item.initialized ).length, 5 );
+	assert.deepEqual(
+		states( commands, item => !item.initialized ),
+		[
+			[ "cycle-a", "pending" ], [ "cycle-b", "pending" ], [ "missing", "pending" ],
+			[ "blocked", "pending" ], [ "failed", "failed" ]
+		]
+	);
+} );
+
+test( "a failed plugin commits nothing and its name can be registered again", () => {
+	const registrations = [];
+	const commands = g_harness.createPluginRegistry( undefined, {
+		"registrations": registrations
+	} );
+	const cleared = [];
+	assert.throws( () => commands.registerPlugin( plugin( "bad", [], api => {
+		api.addCommand( "badCmd", () => 1, true, [] );
+		api.addCommand( "setBad", () => {}, false, [ "value" ] );
+		api.addScreenDataItem( "badData", 1 );
+		api.addScreenDataItemGetter( "badGetter", () => 1 );
+		api.addScreenInitFunction( function badInit() {} );
+		api.addScreenPreCleanupFunction( function badPreCleanup() {} );
+		api.addScreenCleanupFunction( function badCleanup() {} );
+		api.registerClearEvents( "bad", () => cleared.push( "bad" ) );
+		throw new Error( "expected" );
+	} ) ), { "code": "PLUGIN_INIT_FAILED" } );
+	assert.deepEqual( registrations, [] );
+	commands.clearEvents( null, {} );
+	assert.deepEqual( cleared, [] );
+	assert.deepEqual( states( commands ), [ [ "bad", "failed" ] ] );
+
+	// The retry replaces the failed record and releases the plugin that waits on it
+	const initialized = [];
+	commands.registerPlugin( plugin( "dependent", [ "bad" ], () => {
+		initialized.push( "dependent" );
+	} ) );
+	commands.registerPlugin( plugin( "bad", [], api => {
+		api.addCommand( "goodCmd", () => 1, true, [] );
+		api.registerClearEvents( "bad", () => cleared.push( "bad" ) );
+		initialized.push( "bad" );
+	} ) );
+	assert.deepEqual( initialized, [ "bad", "dependent" ] );
+	assert.deepEqual( registrations, [ [ "command", "goodCmd" ] ] );
+	commands.clearEvents( null, {} );
+	assert.deepEqual( cleared, [ "bad" ] );
+	assert.deepEqual( states( commands ), [
+		[ "dependent", "initialized" ], [ "bad", "initialized" ]
+	] );
+} );
+
+test( "a failure installing on existing screens commits nothing", () => {
+	const registrations = [];
+	const commands = g_harness.createPluginRegistry( undefined, {
+		"registrations": registrations,
+		"installScreenExtensions": () => {
+			throw new Error( "screen failed" );
+		}
+	} );
+	assert.throws( () => commands.registerPlugin( plugin( "late", [], api => {
+		api.addCommand( "lateCmd", () => 1, true, [] );
+		api.addScreenInitFunction( function lateInit() {} );
+	} ) ), { "code": "PLUGIN_INIT_FAILED", "message": /'late': screen failed/ } );
+	assert.deepEqual( registrations, [] );
+	assert.equal( commands.getPlugins()[ 0 ].state, "failed" );
+} );
+
+test( "each registerPlugin call throws only its own plugin's failure", () => {
+	const logged = [];
+	const commands = g_harness.createPluginRegistry( undefined, {
+		"console": { "error": message => logged.push( message ) }
+	} );
+	const register = commands.registerPlugin;
+	const fail = message => () => {
+		throw new Error( message );
+	};
+	const failure = ( name, message ) => {
+		return `registerPlugin: Failed to initialize plugin '${name}': ${message}`;
+	};
+
+	// Nested: inner is resolved after outer's init, so the outer call logs it
+	let innerOutcome = "threw";
+	register( plugin( "outer", [], () => {
+		register( plugin( "inner", [], fail( "inner failed" ) ) );
+		innerOutcome = "returned";
+	} ) );
+	assert.equal( innerOutcome, "returned" );
+	assert.deepEqual( logged, [ failure( "inner", "inner failed" ) ] );
+
+	// Pending: b fails while a's call resolves it
+	logged.length = 0;
+	register( plugin( "b", [ "a" ], fail( "b failed" ) ) );
+	register( plugin( "c", [ "a" ], () => {} ) );
+	register( plugin( "a", [], () => {} ) );
+	assert.deepEqual( logged, [ failure( "b", "b failed" ) ] );
+
+	// Own failure: thrown to its call, while another failure in the same pass is logged
+	logged.length = 0;
+	assert.throws( () => register( plugin( "h", [], () => {
+		register( plugin( "k", [], fail( "k failed" ) ) );
+		throw new Error( "h failed" );
+	} ) ), { "code": "PLUGIN_INIT_FAILED", "message": /'h': h failed/ } );
+	assert.deepEqual( logged, [ failure( "k", "k failed" ) ] );
+
+	assert.deepEqual( states( commands ), [
+		[ "outer", "initialized" ], [ "inner", "failed" ], [ "b", "failed" ],
+		[ "c", "initialized" ], [ "a", "initialized" ], [ "h", "failed" ], [ "k", "failed" ]
+	] );
+} );
+
+test( "registration methods throw REGISTRATION_CLOSED after init", () => {
+	const registrations = [];
+	const commands = g_harness.createPluginRegistry( undefined, {
+		"registrations": registrations
+	} );
+	const apis = [];
+	commands.registerPlugin( plugin( "succeeded", [], api => apis.push( api ) ) );
+	assert.throws( () => commands.registerPlugin( plugin( "failed", [], api => {
+		apis.push( api );
+		throw new Error( "expected" );
+	} ) ), { "code": "PLUGIN_INIT_FAILED" } );
+	const calls = [
+		[ "addCommand", [ "lateCmd", () => {}, false, [] ] ],
+		[ "addScreenDataItem", [ "late", 1 ] ],
+		[ "addScreenDataItemGetter", [ "late", () => 1 ] ],
+		[ "addScreenInitFunction", [ () => {} ] ],
+		[ "addScreenPreCleanupFunction", [ () => {} ] ],
+		[ "addScreenCleanupFunction", [ () => {} ] ],
+		[ "registerClearEvents", [ "late", () => {} ] ]
+	];
+	for( const api of apis ) {
+		for( const [ method, args ] of calls ) {
+			assert.throws( () => api[ method ]( ...args ), {
+				"code": "REGISTRATION_CLOSED", "message": new RegExp( `^${method}: ` )
+			} );
+		}
+	}
+	assert.deepEqual( registrations, [] );
+} );
+
+test( "registerClearEvents rejects names committed earlier or pending in the same plugin", () => {
+	const commands = g_harness.createPluginRegistry();
+	commands.registerPlugin( plugin( "first", [], api => {
+		api.registerClearEvents( "Shared", () => {} );
+	} ) );
+	const errors = [];
+	commands.registerPlugin( plugin( "second", [], api => {
+		for( const name of [ "shared", "own", "OWN" ] ) {
+			try {
+				api.registerClearEvents( name, () => {} );
+			} catch( error ) {
+				errors.push( [ name, error.code ] );
+			}
+		}
+	} ) );
+	assert.deepEqual( errors, [
+		[ "shared", "DUPLICATE_HANDLER" ], [ "OWN", "DUPLICATE_HANDLER" ]
+	] );
 } );
 
 test( "plugin dependencies resolve in initialization order after late registration", () => {
