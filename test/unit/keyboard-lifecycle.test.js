@@ -1,5 +1,10 @@
 /**
  * SYS-003 and SYS-011 regressions using real keyboard modules and controlled resources.
+ *
+ * The harness maps command arguments with core's real parseOptions, so the positional and object
+ * forms behave as in the bundles. Key events are dispatched through the listeners the plugin adds
+ * to the fake window and document, so they reach the plugin only while those listeners are
+ * attached, and carry a target, composedPath(), and getModifierState() as browser events do.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
@@ -9,23 +14,97 @@ const { test } = g_test;
 const assert = g_assert;
 const vm = g_vm;
 
+// Core's option mapping. It shares this realm's Object, so the object literals tests pass are
+// recognized as the object form; its color checker only needs a canvas stub at load.
+const m_utils = g_harness.loadModule( "src/core/utils.js", {
+	"Object": Object,
+	"document": { "createElement": () => ( { "getContext": () => ( {} ) } ) }
+} );
+
+/**
+ * A fake event target that records listeners and dispatches to them as the DOM does: capture
+ * listeners first, each registration once, and listeners removed during a dispatch skipped.
+ *
+ * @param {Object} [properties] - Extra properties of the target.
+ * @returns {Object} Event target with a `listeners` list.
+ */
+function createEventTarget( properties = {} ) {
+	const listeners = [];
+	function isCapture( options ) {
+		return options === true || Boolean( options && options.capture );
+	}
+	function find( type, fn, options ) {
+		const capture = isCapture( options );
+		return listeners.find( listener => {
+			return listener.type === type && listener.fn === fn && listener.capture === capture;
+		} );
+	}
+	return {
+		...properties,
+		"listeners": listeners,
+		"addEventListener": ( type, fn, options ) => {
+			if( !find( type, fn, options ) ) {
+				listeners.push( { "type": type, "fn": fn, "capture": isCapture( options ) } );
+			}
+		},
+		"removeEventListener": ( type, fn, options ) => {
+			const listener = find( type, fn, options );
+			if( listener ) {
+				listeners.splice( listeners.indexOf( listener ), 1 );
+			}
+		},
+		"dispatchEvent": event => {
+			const matching = listeners.filter( listener => listener.type === event.type );
+			const ordered = [
+				...matching.filter( listener => listener.capture ),
+				...matching.filter( listener => !listener.capture )
+			];
+			for( const listener of ordered ) {
+				if( listeners.includes( listener ) ) {
+					listener.fn( event );
+				}
+			}
+			return !event.defaultPrevented;
+		}
+	};
+}
+
+/**
+ * A fake element for event targets.
+ *
+ * @param {string} tagName - Upper-case tag name.
+ * @param {Object} [properties] - Extra properties, such as `isContentEditable`.
+ * @returns {Object} Element.
+ */
+function createElement( tagName, properties = {} ) {
+	return {
+		"tagName": tagName,
+		"isContentEditable": false,
+		"getAttribute": () => null,
+		"blur": () => {},
+		...properties
+	};
+}
+
 function harness() {
 	const timers = new Map();
 	const images = new Map();
 	const microtasks = [];
 	const hooks = [];
 	const commands = {};
+	const screenCommands = [];
 	const api = {};
+	const clock = { "now": 1000 };
 	let nextTimer = 0;
 	const pluginApi = {
 		"getApi": () => api,
 		"utils": { "queueMicrotask": fn => microtasks.push( fn ) },
-		"addCommand": ( name, fn, screen, params ) => {
+		"addCommand": ( name, fn, isScreen, params ) => {
 			commands[ name ] = fn;
-			if( !screen ) {
-				api[ name ] = ( ...args ) => fn( Object.fromEntries(
-					params.map( ( param, i ) => [ param, args[ i ] ?? null ] )
-				) );
+			if( isScreen ) {
+				screenCommands.push( { "name": name, "fn": fn, "params": params } );
+			} else {
+				api[ name ] = ( ...args ) => fn( m_utils.parseOptions( args, params ) );
 			}
 		},
 		"addScreenCleanupFunction": () => {},
@@ -34,12 +113,17 @@ function harness() {
 	};
 	api.getImage = name => images.get( name );
 	api.removeImage = name => images.delete( name );
+	const body = createElement( "BODY" );
+	const window = createEventTarget();
+	const document = createEventTarget( { "body": body, "activeElement": body } );
 	const globals = {
 		"console": console,
 		"setInterval": fn => { timers.set( ++nextTimer, fn ); return nextTimer; },
 		"clearInterval": id => timers.delete( id ),
-		"window": { "addEventListener": () => {}, "removeEventListener": () => {} },
-		"document": {}, "$": api
+		"Date": { "now": () => clock.now },
+		"window": window,
+		"document": document,
+		"$": api
 	};
 	function load( file, extra = {} ) {
 		return g_harness.loadModule( file, { ...globals, ...extra } );
@@ -52,6 +136,11 @@ function harness() {
 	function screen() {
 		const data = { "isRemoved": false, "width": 100, "font": { "height": 8 },
 			"printCursor": { "x": 3, "y": 8 }, "draws": 0, "api": {} };
+		for( const command of screenCommands ) {
+			data.api[ command.name ] = ( ...args ) => {
+				return command.fn( data, m_utils.parseOptions( args, command.params ) );
+			};
+		}
 		data.api.getPos = () => ( { "col": 0, "row": 1 } );
 		data.api.getRows = () => 10;
 		data.api.getPosPx = () => ( { ...data.printCursor } );
@@ -70,22 +159,55 @@ function harness() {
 	api.getPosPx = first.api.getPosPx;
 	api.setPosPx = first.api.setPosPx;
 	function start( owner = first, fn = null, options = {} ) {
-		return commands.input( owner, { "prompt": "Name?", "fn": fn, "cursor": null,
-			"maxLength": null, ...options } );
+		return owner.api.input( { "prompt": "Name?", "fn": fn, ...options } );
 	}
 	function dispose( owner = first ) {
 		owner.isRemoved = true;
 		for( const hook of hooks ) { hook( owner ); }
 	}
-	function key( name = "a", mode = "down", repeat = false ) {
-		const event = { "key": name, "code": name, "repeat": repeat,
-			"preventDefault": () => { event.prevented = true; } };
-		if( mode === "up" ) { keyboard.onKeyUp( event ); }
-		else { keyboard.onKeyDown( event ); }
+
+	/**
+	 * Dispatch a key event through the window listeners.
+	 *
+	 * @param {string} [name] - Key value; also the code unless `init.code` is given.
+	 * @param {string} [mode] - "down" or "up".
+	 * @param {Object} [init] - Event fields: `code`, `repeat`, `altKey`, `ctrlKey`, `metaKey`,
+	 *   `shiftKey`, `target`, `path` for composedPath(), and `modifiers` for extra states.
+	 * @returns {Object} The dispatched event.
+	 */
+	function key( name = "a", mode = "down", init = {} ) {
+		const target = init.target || body;
+		let type = "keydown";
+		if( mode === "up" ) {
+			type = "keyup";
+		}
+		const event = {
+			"type": type,
+			"key": name,
+			"code": init.code ?? name,
+			"location": 0,
+			"repeat": Boolean( init.repeat ),
+			"altKey": Boolean( init.altKey ),
+			"ctrlKey": Boolean( init.ctrlKey ),
+			"metaKey": Boolean( init.metaKey ),
+			"shiftKey": Boolean( init.shiftKey ),
+			"target": target,
+			"defaultPrevented": false,
+			"composedPath": () => init.path || [ target, body, document, window ],
+			"getModifierState": state => {
+				const states = {
+					"Alt": event.altKey, "Control": event.ctrlKey, "Meta": event.metaKey,
+					"Shift": event.shiftKey, ...init.modifiers
+				};
+				return Boolean( states[ state ] );
+			},
+			"preventDefault": () => { event.defaultPrevented = true; }
+		};
+		window.dispatchEvent( event );
 		return event;
 	}
 	return { api, keyboard, input, commands, timers, images, microtasks, first, screen,
-		start, dispose, key };
+		start, dispose, key, window, document, body, clock };
 }
 
 function empty( h ) {
@@ -95,30 +217,39 @@ function empty( h ) {
 	assert.equal( vm.runInContext( "m_onKeyHandlers.any?.length ?? 0", h.keyboard ), 0 );
 }
 
-test( "SYS-003 disposal settles once without drawing and releases resources", async () => {
-	const h = harness();
-	const values = [];
-	const promise = h.start( h.first, value => values.push( value ) );
-	const queuedTick = [ ...h.timers.values() ][ 0 ];
-	const y = h.first.printCursor.y;
-	h.dispose();
-	h.dispose();
-	assert.equal( h.first.draws, 0 );
-	assert.equal( h.first.printCursor.y, y );
-	empty( h );
-	assert.doesNotThrow( queuedTick );
-	assert.equal( await promise, null );
-	assert.deepEqual( values, [ null ] );
-	assert.throws( () => h.start(), { "code": "SCREEN_REMOVED" } );
-	for( let i = 0; i < 3; i++ ) {
-		const next = h.screen();
-		const replacement = h.start( next );
-		h.key( "x" );
-		h.key( "Enter" );
-		assert.equal( await replacement, "x" );
-		empty( h );
-	}
-} );
+for( const phase of [ "before", "after" ] ) {
+	test( `SYS-003 disposal ${phase} blinking settles once without drawing and releases resources`,
+		async () => {
+			const h = harness();
+			const values = [];
+			const promise = h.start( h.first, value => values.push( value ) );
+			const queuedTick = [ ...h.timers.values() ][ 0 ];
+			if( phase === "after" ) {
+				h.clock.now += 600;
+				queuedTick();
+				assert.ok( h.first.draws > 0, "the blink redraws the prompt" );
+			}
+			const draws = h.first.draws;
+			const y = h.first.printCursor.y;
+			h.dispose();
+			h.dispose();
+			assert.equal( h.first.draws, draws );
+			assert.equal( h.first.printCursor.y, y );
+			empty( h );
+			assert.doesNotThrow( queuedTick );
+			assert.equal( await promise, null );
+			assert.deepEqual( values, [ null ] );
+			assert.throws( () => h.start(), { "code": "SCREEN_REMOVED" } );
+			for( let i = 0; i < 3; i++ ) {
+				const next = h.screen();
+				const replacement = h.start( next );
+				h.key( "x" );
+				h.key( "Enter" );
+				assert.equal( await replacement, "x" );
+				empty( h );
+			}
+		} );
+}
 
 test( "SYS-003 disposal only cancels its own prompt", async () => {
 	const h = harness();
@@ -135,9 +266,19 @@ test( "SYS-003 throwing disposal callback cannot interrupt cleanup or replacemen
 	const error = new Error( "input callback" );
 	const next = h.screen();
 	let replacement;
-	const promise = h.start( h.first, () => { replacement = h.start( next ); throw error; } );
+	let removedCode = null;
+	const promise = h.start( h.first, () => {
+		try {
+			h.start( h.first );
+		} catch( removed ) {
+			removedCode = removed.code;
+		}
+		replacement = h.start( next );
+		throw error;
+	} );
 	assert.doesNotThrow( () => h.dispose() );
 	assert.equal( await promise, null );
+	assert.equal( removedCode, "SCREEN_REMOVED", "the removed owner rejects a new prompt" );
 	assert.equal( h.microtasks.length, 1 );
 	assert.throws( h.microtasks.shift(), value => value === error );
 	assert.equal( h.timers.size, 1 );
@@ -262,7 +403,7 @@ test( "SYS-011 keyup errors preserve combinations, release and default preventio
 	assert.doesNotThrow( () => { event = h.key( "a", "up" ); } );
 	assert.deepEqual( seen, [ 2, "a" ] );
 	assert.equal( h.api.inkey( "a" ), null );
-	assert.equal( event.prevented, true );
+	assert.equal( event.defaultPrevented, true );
 	assert.equal( h.microtasks.length, 2 );
 	for( const error of errors ) { assert.throws( h.microtasks.shift(), value => value === error ); }
 } );
@@ -288,7 +429,7 @@ test( "SYS-011 dispatch skips removed handlers and preserves repeat filtering", 
 	h.key( "a" );
 	assert.equal( calls, 0 );
 	h.api.onkey( "a", "down", removed, true );
-	h.key( "a", "down", true );
+	h.key( "a", "down", { "repeat": true } );
 	assert.equal( calls, 0 );
 	h.key( "a" );
 	assert.equal( calls, 1 );
@@ -300,4 +441,16 @@ test( "SYS-011 clear during dispatch invalidates copied handlers", () => {
 	h.api.onkey( "a", "down", () => assert.fail( "removed callback invoked" ) );
 	assert.doesNotThrow( () => h.key( "a" ) );
 	assert.equal( h.microtasks.length, 0 );
+} );
+
+test( "SYS-011 object-form handlers register and remove like the positional form", () => {
+	const h = harness();
+	const seen = [];
+	const fn = data => seen.push( data.code );
+	h.api.onkey( { "key": "KeyA", "mode": "down", "fn": fn } );
+	h.key( "a", "down", { "code": "KeyA" } );
+	h.api.offkey( { "key": "KeyA", "mode": "down", "fn": fn } );
+	h.key( "a", "down", { "code": "KeyA" } );
+	assert.deepEqual( seen, [ "KeyA" ] );
+	assert.equal( h.api.inkey( { "key": "KeyA" } ).key, "a" );
 } );

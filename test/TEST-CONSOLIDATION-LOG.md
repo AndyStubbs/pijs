@@ -413,3 +413,36 @@ still fails under the breaks the original caught:
 - **After**: 400 Node, 612 browser (206 skipped), 57 visual captures (plugins 2), 37 baselines;
   `npm test` about 155 s
 - **Pass Rate**: 100%
+
+## 2.3 Keyboard 1.1: Test Harness
+
+Date: 2026-09-27. Plan: `docs/plans/v2.3/ROADMAP.md`, Section 5.1, task 1.1 (KEY-019,
+`docs/plans/v2.3/AUDIT-TESTS.md` §5.3).
+
+### Summary
+The Node harness in `keyboard-lifecycle.test.js` now maps command arguments with core's
+`parseOptions` and dispatches key events through the listeners the plugin adds to a fake
+`window` and `document`. `keyboard-lifecycle-browser.test.js` keeps only what needs a browser:
+real `KeyboardEvent` dispatch, prompt rendering at its owner's cursor, and drawing after a
+prompt's screen is removed.
+
+### Removed Test Cases
+Each removal was checked by a deliberate break in `plugins/keyboard/input.js`, made and reverted
+in the working tree:
+1. `keyboard-lifecycle-browser`: "disposal before and after blinking releases resources" (full
+   and lite). Covered by the Node tests "SYS-003 disposal before blinking…" and "…after
+   blinking…", which now run the blink tick before disposal, and by the browser test "nonactive
+   owner renders at its own cursor" for real key dispatch to a prompt. Break: disposal no longer
+   clears the blink interval; 11 Node tests fail, including both disposal tests.
+2. `keyboard-lifecycle-browser`: "newest callback input supersedes an outer replacement" (full
+   and lite). Covered by the Node test "SYS-003 newest reentrant input wins over an outer
+   replacement". Break: a superseded request is no longer discarded; that Node test fails.
+
+The Node test "SYS-003 throwing disposal callback cannot interrupt cleanup or replacement" also
+gained the browser test's check that the removed owner rejects a new prompt; the browser test
+keeps its drawing check.
+
+### Test Results
+- **Before**: `keyboard-lifecycle` 20 Node tests; `keyboard-lifecycle-browser` 10
+- **After**: `keyboard-lifecycle` 22 Node tests; `keyboard-lifecycle-browser` 6
+- **Pass Rate**: 100%
