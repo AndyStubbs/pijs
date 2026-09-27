@@ -30,7 +30,7 @@ const ADVANCED_PLUGIN = "sound-advanced";
 // so removing presets removes the generator.
 const ADVANCED_MODULES = [
 	"periodic-noise", "synth", "effects", "analyser", "presets", "generator", "instruments",
-	"recorder"
+	"sync", "recorder"
 ];
 const ADVANCED_HELPERS = {
 	"synth": [ "presets", "generator", "instruments" ],

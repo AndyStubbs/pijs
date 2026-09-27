@@ -1,8 +1,9 @@
 /**
  * Unit tests for the pure parts of the sound-advanced plugin: pulse wave tables, the LFSR
  * sequence, synth option validation and voice specs, preset and instrument snapshots, effect
- * options, and level measurement. The modules are imported directly; nothing here creates an
- * AudioContext or invokes an insert factory.
+ * options, level measurement, and the music sync queue and dispatch rules on a fake clock. The
+ * modules are imported directly; nothing here creates an AudioContext or invokes an insert
+ * factory.
  */
 import * as g_assert from "node:assert/strict";
 import * as g_test from "node:test";
@@ -12,6 +13,7 @@ import * as g_instruments from "../../plugins/sound-advanced/instruments.js";
 import * as g_periodicNoise from "../../plugins/sound-advanced/periodic-noise.js";
 import * as g_presets from "../../plugins/sound-advanced/presets.js";
 import * as g_synth from "../../plugins/sound-advanced/synth.js";
+import * as g_sync from "../../plugins/sound-advanced/sync.js";
 const assert = g_assert;
 const test = g_test.test;
 
@@ -317,4 +319,218 @@ test( "levels are the peak magnitude and RMS of the block", () => {
 	const levels = g_analyser.measureLevels( Float32Array.from( [ 0.5, -1, 0.5, 0 ] ) );
 	assert.equal( levels.peak, 1 );
 	near( levels.rms, Math.sqrt( 1.5 / 4 ) );
+} );
+
+/**
+ * A music sync instance on a fake clock. Page time is context time × 1000 plus the offset,
+ * and frames run only when the test calls frame( now ).
+ *
+ * @returns {Object} { sync, host, frames, emit, frame }
+ */
+function createSyncHarness() {
+	const frames = [];
+	const host = {
+		"listener": null,
+		"observeCount": 0,
+		"offset": 0,
+		"contextNow": 0,
+		"pageNow": 0,
+		"observePlay": listener => {
+			host.listener = listener;
+			host.observeCount += 1;
+			return () => {
+				host.listener = null;
+			};
+		},
+		"now": () => host.pageNow,
+		"contextTime": () => host.contextNow,
+		"pageOffset": () => host.offset,
+		"requestFrame": fn => {
+			frames.push( fn );
+		}
+	};
+	return {
+		"sync": g_sync.createPlaySync( host ),
+		"host": host,
+		"frames": frames,
+		"emit": event => host.listener( Object.freeze( event ) ),
+		"frame": now => {
+			host.pageNow = now;
+			for( const fn of frames.splice( 0 ) ) {
+				fn();
+			}
+		}
+	};
+}
+
+/**
+ * An observePlay note event
+ *
+ * @param {number} trackId - Song ID
+ * @param {number} time - Audible start in context time
+ * @returns {Object} Note event
+ */
+function playNote( trackId, time ) {
+	return {
+		"type": "note", "trackId": trackId, "track": 0, "time": time, "duration": 0.1,
+		"frequency": 440, "volume": 0.5
+	};
+}
+
+test( "music sync dispatches events at their audible time, in order, with their delay", () => {
+	const harness = createSyncHarness();
+	const received = [];
+	const other = [];
+	harness.sync.onPlay( { "mode": "note", "fn": data => received.push( data ) } );
+	harness.sync.onPlay( { "mode": "note", "fn": data => other.push( data ) } );
+	assert.equal( harness.host.observeCount, 1, "observing starts once, with the first handler" );
+	assert.equal( harness.frames.length, 0, "no frame runs while nothing is queued" );
+
+	harness.host.offset = 100;
+	harness.emit( playNote( 1, 1.0 ) );
+	harness.emit( playNote( 1, 0.5 ) );
+	assert.equal( harness.frames.length, 1, "queued events share one pending frame" );
+	harness.frame( 590 );
+	assert.equal( received.length, 0, "nothing is due before its audible time" );
+	harness.frame( 620 );
+	assert.deepEqual( received.map( data => data.time ), [ 0.5 ] );
+	near( received[ 0 ].delay, 0.02 );
+	assert.ok( Object.isFrozen( received[ 0 ] ) );
+	assert.equal( other[ 0 ], received[ 0 ], "handlers share one callback object" );
+	assert.equal( received[ 0 ].frequency, 440 );
+	harness.frame( 1100 );
+	assert.deepEqual( received.map( data => data.time ), [ 0.5, 1.0 ] );
+	assert.equal( received[ 1 ].delay, 0 );
+	assert.equal( harness.frames.length, 0, "the loop stops when the queue is empty" );
+} );
+
+test( "music sync drops late notes but always delivers song ends", () => {
+	const harness = createSyncHarness();
+	const notes = [];
+	const ends = [];
+	harness.sync.onPlay( { "mode": "note", "fn": data => notes.push( data ) } );
+	harness.sync.onPlay( { "mode": "end", "fn": data => ends.push( data ) } );
+	harness.emit( playNote( 1, 0.1 ) );
+	harness.emit( playNote( 1, 1.0 ) );
+	harness.host.contextNow = 0.4;
+	harness.emit( { "type": "end", "trackId": 1, "stopped": false } );
+
+	// 250 ms late is still delivered; later than that is dropped
+	harness.frame( 350 );
+	assert.deepEqual( notes.map( data => data.time ), [ 0.1 ] );
+	near( notes[ 0 ].delay, 0.25 );
+	harness.frame( 5000 );
+	assert.deepEqual( notes.map( data => data.time ), [ 0.1 ] );
+	assert.equal( ends.length, 1 );
+	assert.equal( ends[ 0 ].stopped, false );
+	near( ends[ 0 ].delay, 4.6 );
+} );
+
+test( "a stopped song's queued notes are dropped and its end is delivered once", () => {
+	const harness = createSyncHarness();
+	const events = [];
+	harness.sync.onPlay( { "mode": "note", "fn": data => events.push( data ) } );
+	harness.sync.onPlay( { "mode": "end", "fn": data => events.push( data ) } );
+	harness.emit( playNote( 1, 0.2 ) );
+	harness.emit( playNote( 2, 0.2 ) );
+	harness.emit( playNote( 1, 0.3 ) );
+	harness.host.contextNow = 0.1;
+	harness.emit( { "type": "end", "trackId": 1, "stopped": true } );
+	harness.frame( 400 );
+	assert.deepEqual(
+		events.map( data => `${data.type}:${data.trackId}` ), [ "end:1", "note:2" ],
+		"the end is heard at the context time it was reported, before track 2's note"
+	);
+	assert.equal( events[ 0 ].stopped, true );
+} );
+
+test( "music sync handlers follow the input conventions for removal and dispatch", t => {
+	const errors = [];
+	t.mock.method( console, "error", ( ...args ) => errors.push( args ) );
+	const harness = createSyncHarness();
+	const calls = [];
+	const counted = () => calls.push( "counted" );
+	const once = () => calls.push( "once" );
+	const throwing = () => {
+		calls.push( "throwing" );
+		throw new Error( "handler failure" );
+	};
+	const late = () => calls.push( "late" );
+	const removed = () => calls.push( "removed" );
+	const adding = () => {
+		calls.push( "adding" );
+		harness.sync.onPlay( { "mode": "note", "fn": late } );
+		harness.sync.offPlay( { "mode": "note", "fn": removed } );
+	};
+	harness.sync.onPlay( { "mode": "note", "fn": counted } );
+	harness.sync.onPlay( { "mode": "note", "fn": counted, "once": true } );
+	harness.sync.onPlay( { "mode": "note", "fn": once, "once": true } );
+	harness.sync.onPlay( { "mode": "note", "fn": throwing } );
+	harness.sync.onPlay( { "mode": "note", "fn": adding } );
+	harness.sync.onPlay( { "mode": "note", "fn": removed } );
+	harness.emit( playNote( 1, 0.1 ) );
+	harness.emit( playNote( 1, 0.2 ) );
+	harness.frame( 150 );
+	assert.deepEqual( calls, [ "counted", "once", "throwing", "adding" ] );
+	assert.equal( errors.length, 1 );
+	assert.match( errors[ 0 ][ 0 ], /^onPlay: / );
+	calls.length = 0;
+	harness.frame( 250 );
+	assert.deepEqual( calls, [ "counted", "throwing", "adding", "late" ] );
+
+	// A function without a mode leaves every mode; a mode without a function empties it
+	harness.sync.onPlay( { "mode": "end", "fn": counted } );
+	harness.sync.offPlay( { "fn": counted } );
+	harness.sync.offPlay( { "mode": "note", "fn": null } );
+	assert.equal( harness.host.listener, null, "observing stops with the last handler" );
+	harness.sync.onPlay( { "mode": "note", "fn": late } );
+	harness.emit( playNote( 1, 0.3 ) );
+	harness.sync.clear();
+	assert.equal( harness.host.listener, null );
+	calls.length = 0;
+	harness.frame( 400 );
+	assert.deepEqual( calls, [], "clearing drops the queue" );
+} );
+
+test( "music sync validates handler modes, functions, and flags", () => {
+	const harness = createSyncHarness();
+	const fn = () => {};
+	const cases = [
+		[ "onPlay", { "mode": 5, "fn": fn }, TypeError, "INVALID_MODE" ],
+		[ "onPlay", { "mode": "start", "fn": fn }, RangeError, "INVALID_MODE" ],
+		[ "onPlay", { "mode": "note", "fn": "fn" }, TypeError, "INVALID_FUNCTION" ],
+		[ "onPlay", { "mode": "note", "fn": fn, "once": 1 }, TypeError, "INVALID_ONCE" ],
+		[ "offPlay", {}, TypeError, "INVALID_MODE" ],
+		[ "offPlay", { "mode": "beat" }, RangeError, "INVALID_MODE" ],
+		[ "offPlay", { "mode": "note", "fn": 5 }, TypeError, "INVALID_FUNCTION" ]
+	];
+	for( const [ command, options, ErrorType, code ] of cases ) {
+		assert.throws(
+			() => harness.sync[ command ]( options ),
+			error => error instanceof ErrorType && error.code === code &&
+				error.message.startsWith( `${command}: ` ),
+			`${command} ${JSON.stringify( options )}`
+		);
+	}
+	assert.equal( harness.host.observeCount, 0, "rejected handlers do not start observing" );
+} );
+
+test( "context time maps to page time from the output timestamp or the reported latency", () => {
+	const stamped = {
+		"currentTime": 2,
+		"outputLatency": 0.05,
+		"getOutputTimestamp": () => ( { "contextTime": 1.9, "performanceTime": 5000 } )
+	};
+	assert.equal( g_sync.getPageOffset( stamped, 9999 ), 5000 - 1900 );
+
+	// Before output starts the timestamp is zero, and the render time plus latency stands in
+	const starting = {
+		"currentTime": 2,
+		"outputLatency": 0.05,
+		"baseLatency": 0.01,
+		"getOutputTimestamp": () => ( { "contextTime": 0, "performanceTime": 0 } )
+	};
+	near( g_sync.getPageOffset( starting, 6000 ), 6000 - 1950 );
+	near( g_sync.getPageOffset( { "currentTime": 2, "baseLatency": 0.01 }, 6000 ), 6000 - 1990 );
+	assert.equal( g_sync.getPageOffset( { "currentTime": 2 }, 6000 ), 4000 );
 } );
