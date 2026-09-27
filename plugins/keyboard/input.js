@@ -203,6 +203,12 @@ function startInput( inputData ) {
 		}
 	};
 	window.addEventListener( "keydown", inputData.keyListener, { "capture": true } );
+	inputData.pasteListener = event => {
+		if( !m_isFromEditableTarget( event ) ) {
+			onInputPaste( inputData, event );
+		}
+	};
+	window.addEventListener( "paste", inputData.pasteListener, { "capture": true } );
 
 	// Add interval for blinking cursor
 	inputData.interval = setInterval( () => {
@@ -250,6 +256,11 @@ function captureBackground( inputData ) {
 /**
  * Handle a keydown for the active prompt
  *
+ * The prompt owns the keyboard: it prevents the default action of every key it handles, so
+ * typing does not scroll the page, move focus, or activate a focused control. Shortcuts with
+ * Ctrl or Meta are left to the browser, so Ctrl+V pastes; AltGr, which some browsers report as
+ * Ctrl and Alt, types.
+ *
  * @param {Object} inputData - Prompt session
  * @param {KeyboardEvent} keyData - Keydown event
  * @returns {void}
@@ -258,7 +269,13 @@ function onInputKeyDown( inputData, keyData ) {
 	if( m_inputData !== inputData ) {
 		return;
 	}
-
+	const isAltGraph = Boolean(
+		keyData.getModifierState && keyData.getModifierState( "AltGraph" )
+	);
+	if( ( keyData.ctrlKey || keyData.metaKey ) && !isAltGraph ) {
+		return;
+	}
+	keyData.preventDefault();
 
 	// Handle Enter Key - Complete Input
 	if( keyData.key === "Enter" ) {
@@ -278,57 +295,92 @@ function onInputKeyDown( inputData, keyData ) {
 
 	// Handle single length keys
 	} else if( keyData.key && keyData.key.length === 1 ) {
-
-		let inputHandled = false;
-
-		// Handle +/- numbers
-		if( inputData.isNumber && inputData.allowNegative ) {
-
-			// If user enters a "-" then insert "-" at the start
-			if( keyData.key === "-" ) {
-				if( inputData.val.charAt( 0 ) !== "-" ) {
-					inputData.val = "-" + inputData.val;
-				}
-				inputHandled = true;
-
-			// Any time the user enters a "+" key then replace the minus symbol
-			} else if(
-				( keyData.key === "+" || keyData.code === "Equal" ) &&
-				inputData.val.charAt( 0 ) === "-"
-			) {
-				inputData.val = inputData.val.substring( 1 );
-				inputHandled = true;
-			}
-		}
-
-		// Don't allow decimal points for integer number
-		if( inputData.isInteger && keyData.code === "Period" ) {
-			inputHandled = true;
-		}
-
-		// If the input is valid append the next character and validate
-		if( !inputHandled ) {
-
-			// Check maxLength before appending
-			if(
-				inputData.maxLength !== null && inputData.val.length >= inputData.maxLength
-			) {
-				inputHandled = true;
-			} else {
-				inputData.val += keyData.key;
-
-				// Make sure it's a valid number or valid integer
-				if(
-					( inputData.isNumber && isNaN( Number( inputData.val ) ) ) ||
-					( inputData.isInteger && !Number.isInteger( Number( inputData.val ) ) )
-				) {
-					inputData.val = inputData.val.substring( 0, inputData.val.length - 1 );
-				}
-			}
-		}
+		insertCharacter( inputData, keyData.key, keyData.code );
 	}
 
 	showPrompt( inputData );
+}
+
+/**
+ * Insert pasted text into the active prompt, one character at a time, by the typing rules
+ *
+ * Line breaks and other control characters are dropped.
+ *
+ * @param {Object} inputData - Prompt session
+ * @param {ClipboardEvent} event - Paste event
+ * @returns {void}
+ */
+function onInputPaste( inputData, event ) {
+	if( m_inputData !== inputData ) {
+		return;
+	}
+	event.preventDefault();
+	let text = "";
+	if( event.clipboardData ) {
+		text = event.clipboardData.getData( "text" );
+	}
+	for( const char of text ) {
+		if( char.length === 1 && char >= " " && char !== "\u007f" ) {
+			insertCharacter( inputData, char, null );
+		}
+	}
+	showPrompt( inputData );
+}
+
+/**
+ * Insert one typed or pasted character, following the prompt's numeric and length rules
+ *
+ * @param {Object} inputData - Prompt session
+ * @param {string} char - Character to insert
+ * @param {string|null} code - Key code of a typed character, or null for pasted text
+ * @returns {void}
+ */
+function insertCharacter( inputData, char, code ) {
+	let inputHandled = false;
+
+	// Handle +/- numbers
+	if( inputData.isNumber && inputData.allowNegative ) {
+
+		// If user enters a "-" then insert "-" at the start
+		if( char === "-" ) {
+			if( inputData.val.charAt( 0 ) !== "-" ) {
+				inputData.val = "-" + inputData.val;
+			}
+			inputHandled = true;
+
+		// Any time the user enters a "+" key then replace the minus symbol
+		} else if(
+			( char === "+" || code === "Equal" ) &&
+			inputData.val.charAt( 0 ) === "-"
+		) {
+			inputData.val = inputData.val.substring( 1 );
+			inputHandled = true;
+		}
+	}
+
+	// Don't allow decimal points for integer number
+	if( inputData.isInteger && ( code === "Period" || char === "." ) ) {
+		inputHandled = true;
+	}
+
+	// If the input is valid append the next character and validate
+	if( !inputHandled ) {
+
+		// Check maxLength before appending
+		if(
+			inputData.maxLength === null || inputData.val.length < inputData.maxLength
+		) {
+			inputData.val += char;
+
+			// Make sure it's a valid number or valid integer
+			if(
+				( inputData.isNumber && isNaN( Number( inputData.val ) ) ) ||
+				( inputData.isInteger && !Number.isInteger( Number( inputData.val ) ) )
+			) {
+				inputData.val = inputData.val.substring( 0, inputData.val.length - 1 );
+			}
+		}
+	}
 }
 
 function showPrompt( inputData, hideCursorOverride ) {
@@ -415,6 +467,9 @@ function releaseInput( inputData ) {
 	if( inputData.keyListener ) {
 		window.removeEventListener( "keydown", inputData.keyListener, { "capture": true } );
 	}
+	if( inputData.pasteListener ) {
+		window.removeEventListener( "paste", inputData.pasteListener, { "capture": true } );
+	}
 	try {
 		if( inputData.backgroundImageName ) {
 			api.removeImage( inputData.backgroundImageName );
@@ -426,6 +481,7 @@ function releaseInput( inputData ) {
 		inputData.backgroundImage = null;
 		inputData.backgroundImageName = null;
 		inputData.keyListener = null;
+		inputData.pasteListener = null;
 		inputData.interval = null;
 		inputData.fn = null;
 		inputData.resolve = null;
