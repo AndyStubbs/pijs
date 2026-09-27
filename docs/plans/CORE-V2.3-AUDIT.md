@@ -1,7 +1,7 @@
 # Pi.js 2.3 Core Audit
 
 Status: Reviewed 2026-09-25; C4 rejected, every other finding and proposal accepted
-(Section 9)
+(Section 9). Follow-up task 1 done (Section 7)
 Plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md), Section 7
 Evidence: [docs/evidence/core-2.3/](../evidence/core-2.3/README.md)
 
@@ -793,7 +793,7 @@ Phase 1 and CORE-001 are not cut.
 
 | Order | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 1 | Transactional plugin installation and error routing | CORE-002, CORE-006 | Accepted |
+| 1 | Transactional plugin installation and error routing | CORE-002, CORE-006 | Done 2026-09-27. Registrations are collected during init and committed after installation succeeds; screen installation rolls back; `getPlugins()` reports `state`; a failed name can be registered again; registration after init throws `REGISTRATION_CLOSED` |
 | 2 | Skip duplicate self-registration | CORE-003 | Accepted |
 | 3 | Document that `clearEvents()` reaches dependent plugins' handlers | CORE-004 | Accepted; release phase (R.2) |
 | 4 | Declarations and release manifest | CORE-005, CORE-015, CORE-016, CORE-017 | Accepted |

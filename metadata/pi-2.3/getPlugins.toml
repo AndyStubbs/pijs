@@ -1,0 +1,23 @@
+title = "getPlugins"
+category = "plugins"
+isScreen = false
+summary = "Returns a list of registered plugins and their status."
+description = """
+Returns an array of plugin info objects including name, version, description, initialized, and state. state is "pending" while a plugin waits for its dependencies, "initialized" after it installs, and "failed" after its init or installation throws. A failed plugin stays listed until its name is registered again.
+"""
+example = """
+const plugins = $.getPlugins();
+$.screen( "300x200" );
+for( const plugin of plugins ) {
+	$.print( `Plugin:      ${plugin.name} (${plugin.version}): ${plugin.state}` );
+	$.print( `Description: ${plugin.description}` );
+	$.print();
+}
+"""
+
+parameters = []
+
+[[returns]]
+type = "Array<object>"
+typeDesc = "*Array"
+description = "Array of plugin info objects: { name, version, description, initialized, state }."

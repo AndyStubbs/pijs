@@ -213,9 +213,11 @@ export function addScreenCleanupFunction( fn ) {
  * Install one newly initialized plugin on screens that predate the plugin.
  *
  * Static and dynamic data are initialized before screen commands and plugin init hooks, matching
- * the relevant portions of normal screen creation without replaying earlier module hooks.
+ * the relevant portions of normal screen creation without replaying earlier module hooks. If
+ * any step throws, the screen data and command bindings it set are restored on every screen
+ * before the error is rethrown. Side effects of the plugin's own hooks are not undone.
  *
- * @param {Array<Object>} screens - Live screen states captured before plugin initialization.
+ * @param {Array<Object>} screens - Live screen states captured after plugin initialization.
  * @param {Object} extensions - Screen registrations contributed by the plugin.
  * @param {Array<Object>} extensions.dataItems - Static screen data registrations.
  * @param {Array<Object>} extensions.dataItemGetters - Dynamic screen data registrations.
@@ -224,23 +226,52 @@ export function addScreenCleanupFunction( fn ) {
  * @returns {void}
  */
 export function installScreenExtensions( screens, extensions ) {
-	for( const screenData of screens ) {
-		if( screenData.isRemoved ) {
-			continue;
-		}
 
-		for( const item of extensions.dataItems ) {
-			screenData[ item.name ] = structuredClone( item.value );
-		}
-		for( const itemGetter of extensions.dataItemGetters ) {
-			screenData[ itemGetter.name ] = structuredClone( itemGetter.fn() );
-		}
+	// Record each property before it is set, so a failure can restore it
+	const undo = [];
+	const record = ( target, name ) => {
+		undo.push( {
+			"target": target, "name": name,
+			"hadValue": Object.prototype.hasOwnProperty.call( target, name ),
+			"value": target[ name ]
+		} );
+	};
 
-		g_commands.processScreenCommands( screenData, extensions.commands );
+	try {
+		for( const screenData of screens ) {
+			if( screenData.isRemoved ) {
+				continue;
+			}
 
-		for( const fn of extensions.initFunctions ) {
-			fn( screenData );
+			for( const item of extensions.dataItems ) {
+				record( screenData, item.name );
+				screenData[ item.name ] = structuredClone( item.value );
+			}
+			for( const itemGetter of extensions.dataItemGetters ) {
+				record( screenData, itemGetter.name );
+				screenData[ itemGetter.name ] = structuredClone( itemGetter.fn() );
+			}
+
+			for( const command of extensions.commands ) {
+				if( command.isScreen ) {
+					record( screenData.api, command.name );
+				}
+			}
+			g_commands.processScreenCommands( screenData, extensions.commands );
+
+			for( const fn of extensions.initFunctions ) {
+				fn( screenData );
+			}
 		}
+	} catch( error ) {
+		for( const entry of undo.reverse() ) {
+			if( entry.hadValue ) {
+				entry.target[ entry.name ] = entry.value;
+			} else {
+				delete entry.target[ entry.name ];
+			}
+		}
+		throw error;
 	}
 }
 

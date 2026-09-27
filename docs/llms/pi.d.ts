@@ -471,32 +471,32 @@ declare namespace Pi {
 	 */
 	interface PluginAPI {
 		/**
-		 * Register a new command.
+		 * During init, register a new command.
 		 */
 		addCommand: ( name: string, fn: ( ...args: any[] ) => any, isScreen: boolean, parameterNames: string[], isScreenOptional: boolean ) => void;
 
 		/**
-		 * Add persistent data to each screen.
+		 * During init, add persistent data to each screen.
 		 */
 		addScreenDataItem: ( name: string, defaultValue: any ) => void;
 
 		/**
-		 * Add a dynamic data getter for screens.
+		 * During init, add a dynamic data getter for screens.
 		 */
 		addScreenDataItemGetter: ( name: string, getterFn: Function ) => void;
 
 		/**
-		 * Register a function to run when screens are created.
+		 * During init, register a function to run when screens are created.
 		 */
 		addScreenInitFunction: ( initFn: Function ) => void;
 
 		/**
-		 * Run after isRemoved is set, before renderer cleanup; cancel work without redrawing.
+		 * During init, register a function to run after isRemoved is set, before renderer cleanup; it cancels work without redrawing.
 		 */
 		addScreenPreCleanupFunction: ( cleanupFn: ( screenData: any ) => void ) => void;
 
 		/**
-		 * Register a function to run when screens are destroyed.
+		 * During init, register a function to run when screens are destroyed.
 		 */
 		addScreenCleanupFunction: ( cleanupFn: Function ) => void;
 
@@ -541,7 +541,7 @@ declare namespace Pi {
 		done: () => void;
 
 		/**
-		 * Register a clearEvents handler for a specific event type.
+		 * During init, register a clearEvents handler for a specific event type.
 		 */
 		registerClearEvents: ( name: string, handler: Function ) => void;
 
@@ -2044,8 +2044,8 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Returns a list of registered plugins and their status.
 		 *
-		 * Returns an array of plugin info objects including name, version, description, and initialized state.
-		 * @returns Array of plugin info objects: { name, version, description, initialized }.
+		 * Returns an array of plugin info objects including name, version, description, initialized, and state. state is "pending" while a plugin waits for its dependencies, "initialized" after it installs, and "failed" after its init or installation throws. A failed plugin stays listed until its name is registered again.
+		 * @returns Array of plugin info objects: { name, version, description, initialized, state }.
 		 */
 		getPlugins(): Array<object>;
 
@@ -2336,7 +2336,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 *
 		 * Registers a plugin that adds commands and per-screen behavior to Pi.js. Provide a unique name and an init function. init receives a pluginApi object; this is a callback argument, not a return value. Commands registered with addCommand appear on the Pi.js API and accept the same positional or options-object calling style as built-in commands.
 		 *
-		 * pluginApi methods and properties:
+		 * pluginApi methods and properties (the add and register methods work only while init runs, and throw REGISTRATION_CLOSED afterward):
 		 *
 		 * - **addCommand**(name, fn, isScreen, parameterNames, isScreenOptional): Add a command. Screen commands receive (screenData, options); global commands receive (options). Use screenData.api to draw. isScreenOptional allows a screen command when no screen is active.
 		 * - **addScreenDataItem**(name, defaultValue): Attach cloned data to every screen.
@@ -2356,7 +2356,9 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 * - **provideService**(service): During init, publish one service object for plugins that depend on this plugin. A second call throws DUPLICATE_SERVICE, a non-object throws INVALID_SERVICE, and a call after init throws SERVICE_PROVIDE_CLOSED.
 		 * - **getService**(pluginName): Return the service of a plugin listed in dependencies. Throws SERVICE_NOT_AVAILABLE when the plugin is not a declared dependency, is not initialized, or provided no service.
 		 *
-		 * Optional version and description are stored for getPlugins. Optional dependencies are other plugin names that must initialize first. Omit dependencies, or pass an empty array, if there are none. Missing or cyclic dependencies stay pending. A failed initializer throws PLUGIN_INIT_FAILED and is not retried; plugins that depend on it stay pending. Duplicate names throw DUPLICATE_PLUGIN.
+		 * Optional version and description are stored for getPlugins. Optional dependencies are other plugin names that must initialize first. Omit dependencies, or pass an empty array, if there are none. Missing or cyclic dependencies stay pending.
+		 *
+		 * Installation is all or nothing. The plugin's commands, settings, screen data, screen hooks, and clearEvents handlers take effect only after init and installation on existing screens both succeed. If either throws, none of them remain and the plugin's state in getPlugins is "failed"; side effects of the plugin's own code are not undone. A failure throws PLUGIN_INIT_FAILED from the registerPlugin call that registered the plugin. A plugin that fails while another call is resolving it, such as one waiting on the dependency that call registers, is reported with console.error instead. Plugins that depend on a failed plugin stay pending. Registering a failed plugin's name again retries it; any other duplicate name throws DUPLICATE_PLUGIN.
 		 *
 		 * If screens already exist when the plugin initializes, its commands and screen data are added to those screens and its screen init functions run once. Screens created later receive the same registrations automatically. Plugin scripts register themselves when loaded after Pi.js; do not register the same plugin twice.
 		 * @param name Unique plugin name.

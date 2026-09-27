@@ -102,13 +102,17 @@ function registerPlugin( options ) {
 	}
 	options = { ...options, "dependencies": dependencies.slice() };
 
-	// Check for duplicate
-	if( m_plugins.some( p => p.name === options.name ) ) {
-		const error = new Error(
-			`registerPlugin: Plugin '${options.name}' is already registered.`
-		);
-		error.code = "DUPLICATE_PLUGIN";
-		throw error;
+	// Check for duplicate; a failed plugin's record is replaced so its name can be retried
+	const existingIndex = m_plugins.findIndex( p => p.name === options.name );
+	if( existingIndex !== -1 ) {
+		if( m_plugins[ existingIndex ].state !== "failed" ) {
+			const error = new Error(
+				`registerPlugin: Plugin '${options.name}' is already registered.`
+			);
+			error.code = "DUPLICATE_PLUGIN";
+			throw error;
+		}
+		m_plugins.splice( existingIndex, 1 );
 	}
 
 	// Store plugin info
@@ -123,16 +127,31 @@ function registerPlugin( options ) {
 
 	m_plugins.push( pluginInfo );
 
-	resolveDependencies();
+	// Only this plugin's failure is thrown to this call; other plugins resolved here are logged
+	let ownError = null;
+	for( const failure of resolveDependencies() ) {
+		if( failure.plugin === pluginInfo ) {
+			ownError = failure.error;
+		} else {
+			console.error( failure.error.message );
+		}
+	}
+	if( ownError ) {
+		throw ownError;
+	}
 }
 
-/** Resolve registrations, including those made by initializers, without recursive entry. */
+/**
+ * Resolve registrations, including those made by initializers, without recursive entry.
+ *
+ * @returns {Array<Object>} Plugins that failed during this pass, as `{ plugin, error }`.
+ */
 function resolveDependencies() {
 	if( m_isResolving ) {
-		return;
+		return [];
 	}
 	m_isResolving = true;
-	let firstError = null;
+	const failures = [];
 	try {
 		let progress = true;
 		while( progress ) {
@@ -151,9 +170,7 @@ function resolveDependencies() {
 					plugin.state = "initialized";
 				} catch( error ) {
 					plugin.state = "failed";
-					if( !firstError ) {
-						firstError = error;
-					}
+					failures.push( { "plugin": plugin, "error": error } );
 				}
 				progress = true;
 			}
@@ -161,27 +178,33 @@ function resolveDependencies() {
 	} finally {
 		m_isResolving = false;
 	}
-	if( firstError ) {
-		throw firstError;
-	}
+	return failures;
 }
 
 /**
  * Get list of registered plugins
  *
- * @returns {Array<Object>} Array of plugin info objects with name, version, description
+ * @returns {Array<Object>} Plugin info objects with name, version, description, initialized,
+ * and state ("pending", "initialized", or "failed")
  *
  * @example
  * const plugins = pi.getPlugins();
  * console.log( plugins ); // [{ name: "my-plugin", version: "1.0.0", ... }]
  */
 function getPlugins() {
-	return m_plugins.map( p => ( {
-		"name": p.name,
-		"version": p.version,
-		"description": p.description,
-		"initialized": p.initialized
-	} ) );
+	return m_plugins.map( p => {
+		let state = p.state;
+		if( state === "initializing" ) {
+			state = "pending";
+		}
+		return {
+			"name": p.name,
+			"version": p.version,
+			"description": p.description,
+			"initialized": p.initialized,
+			"state": state
+		};
+	} );
 }
 
 /**
@@ -251,8 +274,10 @@ function clearEvents( screenData, options ) {
 
 
 /**
- * Register a clearEvents handler function with a name
+ * Register a clearEvents handler function with a name. The handler is recorded in the plugin's
+ * extensions and takes effect only if the plugin initializes.
  *
+ * @param {Object} extensions - Calling plugin's pending registrations from initializePlugin
  * @param {string} name - Name of the event type (e.g., "keyboard", "mouse", "touch", "press")
  * @param {Function} handler - Function to call when clearEvents is invoked for this type
  * @param {Object} [handler.screenData] - Screen data passed from clearEvents (may be null)
@@ -263,7 +288,7 @@ function clearEvents( screenData, options ) {
  *   // Clear keyboard events for this plugin
  * } );
  */
-function registerClearEvents( name, handler ) {
+function registerClearEvents( extensions, name, handler ) {
 	if( !name || typeof name !== "string" ) {
 		const error = new TypeError( "registerClearEvents: name must be a non-empty string." );
 		error.code = "INVALID_NAME";
@@ -278,7 +303,9 @@ function registerClearEvents( name, handler ) {
 
 	const lowerName = name.toLowerCase();
 
-	if( m_clearEventsHandlers[ lowerName ] ) {
+	const isDuplicate = m_clearEventsHandlers[ lowerName ] ||
+		extensions.clearEvents.some( item => item.name === lowerName );
+	if( isDuplicate ) {
 		const error = new Error(
 			`registerClearEvents: Handler with name "${name}" is already registered.`
 		);
@@ -286,44 +313,69 @@ function registerClearEvents( name, handler ) {
 		throw error;
 	}
 
-	m_clearEventsHandlers[ lowerName ] = handler;
+	extensions.clearEvents.push( { "name": lowerName, "handler": handler } );
 }
 
-// Initialize a plugin
+/**
+ * Initialize a plugin transactionally. Its registrations are collected during init, installed
+ * on existing screens, and committed globally only when both succeed, so a failed plugin leaves
+ * no commands, settings, screen hooks, or clear handlers behind.
+ *
+ * @param {Object} pluginInfo - Registration record of the plugin to initialize
+ * @returns {void}
+ */
 function initializePlugin( pluginInfo ) {
 	if( pluginInfo.initialized ) {
 		return;
 	}
-	const existingScreens = g_screenManager.getAllScreensData();
 	const extensions = {
 		"commands": [],
 		"dataItems": [],
 		"dataItemGetters": [],
-		"initFunctions": []
+		"initFunctions": [],
+		"preCleanupFunctions": [],
+		"cleanupFunctions": [],
+		"clearEvents": []
 	};
 
-	// The service is published only after init succeeds, so a failed plugin exposes nothing
-	const serviceState = { "isOpen": false, "hasService": false, "service": null };
+	// Registrations and the service are accepted only while init runs
+	const session = { "isOpen": false, "hasService": false, "service": null };
+	const register = ( method, fn ) => ( ...args ) => {
+		if( !session.isOpen ) {
+			const error = new Error(
+				`${method}: Plugin '${pluginInfo.name}' can register only during init.`
+			);
+			error.code = "REGISTRATION_CLOSED";
+			throw error;
+		}
+		fn( ...args );
+	};
 
 	// Create plugin API
 	const pluginApi = {
-		"addCommand": ( ...args ) => {
-			extensions.commands.push( g_commands.addCommand( ...args ) );
-		},
-		"addScreenDataItem": ( name, value ) => {
-			g_screenManager.addScreenDataItem( name, value );
+		"addCommand": register(
+			"addCommand", ( name, fn, isScreen, parameterNames, isScreenOptional ) => {
+				extensions.commands.push( {
+					"name": name, "fn": fn, "isScreen": isScreen,
+					"parameterNames": parameterNames, "isScreenOptional": isScreenOptional
+				} );
+			}
+		),
+		"addScreenDataItem": register( "addScreenDataItem", ( name, value ) => {
 			extensions.dataItems.push( { "name": name, "value": value } );
-		},
-		"addScreenDataItemGetter": ( name, fn ) => {
-			g_screenManager.addScreenDataItemGetter( name, fn );
+		} ),
+		"addScreenDataItemGetter": register( "addScreenDataItemGetter", ( name, fn ) => {
 			extensions.dataItemGetters.push( { "name": name, "fn": fn } );
-		},
-		"addScreenInitFunction": fn => {
-			g_screenManager.addScreenInitFunction( fn );
+		} ),
+		"addScreenInitFunction": register( "addScreenInitFunction", fn => {
 			extensions.initFunctions.push( fn );
-		},
-		"addScreenPreCleanupFunction": g_screenManager.addScreenPreCleanupFunction,
-		"addScreenCleanupFunction": g_screenManager.addScreenCleanupFunction,
+		} ),
+		"addScreenPreCleanupFunction": register( "addScreenPreCleanupFunction", fn => {
+			extensions.preCleanupFunctions.push( fn );
+		} ),
+		"addScreenCleanupFunction": register( "addScreenCleanupFunction", fn => {
+			extensions.cleanupFunctions.push( fn );
+		} ),
 		"getActiveScreen": g_screenManager.getActiveScreen,
 		"getScreenData": g_screenManager.getScreenData,
 		"getAllScreensData": g_screenManager.getAllScreensData,
@@ -332,25 +384,24 @@ function initializePlugin( pluginInfo ) {
 		"utils": g_utils,
 		"wait": g_commands.wait,
 		"done": g_commands.done,
-		"registerClearEvents": registerClearEvents,
-		"provideService": service => provideService( serviceState, service ),
+		"registerClearEvents": register( "registerClearEvents", ( name, handler ) => {
+			registerClearEvents( extensions, name, handler );
+		} ),
+		"provideService": service => provideService( session, service ),
 		"getService": pluginName => getService( pluginInfo, pluginName )
 	};
 
-	// Initialize plugin
+	// Initialize plugin, then install it on every screen, including screens created during init
 	try {
-		serviceState.isOpen = true;
+		session.isOpen = true;
 		try {
 			pluginInfo.config.init( pluginApi );
 		} finally {
-			serviceState.isOpen = false;
+			session.isOpen = false;
 		}
-		g_screenManager.installScreenExtensions( existingScreens, extensions );
-		g_commands.processCommands( m_api, extensions.commands );
-		if( serviceState.hasService ) {
-			pluginInfo.service = serviceState.service;
-		}
-		pluginInfo.initialized = true;
+		g_screenManager.installScreenExtensions(
+			g_screenManager.getAllScreensData(), extensions
+		);
 	} catch( error ) {
 		const pluginError = new Error(
 			`registerPlugin: Failed to initialize plugin '${pluginInfo.name}': ${error.message}`
@@ -359,17 +410,55 @@ function initializePlugin( pluginInfo ) {
 		pluginError.originalError = error;
 		throw pluginError;
 	}
+
+	commitExtensions( extensions );
+	if( session.hasService ) {
+		pluginInfo.service = session.service;
+	}
+	pluginInfo.initialized = true;
+}
+
+/**
+ * Apply an initialized plugin's registrations to the global registries and the public API.
+ *
+ * @param {Object} extensions - Registrations collected by initializePlugin
+ * @returns {void}
+ */
+function commitExtensions( extensions ) {
+	const commands = extensions.commands.map( command => g_commands.addCommand(
+		command.name, command.fn, command.isScreen, command.parameterNames,
+		command.isScreenOptional
+	) );
+	for( const item of extensions.dataItems ) {
+		g_screenManager.addScreenDataItem( item.name, item.value );
+	}
+	for( const item of extensions.dataItemGetters ) {
+		g_screenManager.addScreenDataItemGetter( item.name, item.fn );
+	}
+	for( const fn of extensions.initFunctions ) {
+		g_screenManager.addScreenInitFunction( fn );
+	}
+	for( const fn of extensions.preCleanupFunctions ) {
+		g_screenManager.addScreenPreCleanupFunction( fn );
+	}
+	for( const fn of extensions.cleanupFunctions ) {
+		g_screenManager.addScreenCleanupFunction( fn );
+	}
+	for( const item of extensions.clearEvents ) {
+		m_clearEventsHandlers[ item.name ] = item.handler;
+	}
+	g_commands.processCommands( m_api, commands );
 }
 
 /**
  * Stores the service object a plugin exposes to plugins that depend on it.
  *
- * @param {Object} serviceState - Per-plugin service state from initializePlugin
+ * @param {Object} session - Per-plugin init session from initializePlugin
  * @param {Object} service - Service object
  * @returns {void}
  */
-function provideService( serviceState, service ) {
-	if( !serviceState.isOpen ) {
+function provideService( session, service ) {
+	if( !session.isOpen ) {
 		const error = new Error( "provideService: Services can only be provided during init." );
 		error.code = "SERVICE_PROVIDE_CLOSED";
 		throw error;
@@ -379,13 +468,13 @@ function provideService( serviceState, service ) {
 		error.code = "INVALID_SERVICE";
 		throw error;
 	}
-	if( serviceState.hasService ) {
+	if( session.hasService ) {
 		const error = new Error( "provideService: This plugin has already provided a service." );
 		error.code = "DUPLICATE_SERVICE";
 		throw error;
 	}
-	serviceState.hasService = true;
-	serviceState.service = service;
+	session.hasService = true;
+	session.service = service;
 }
 
 /**

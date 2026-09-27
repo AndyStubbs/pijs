@@ -11,37 +11,37 @@ functionality.
 name = "addCommand"
 type = "function"
 signature = "( name: string, fn: ( ...args: any[] ) => any, isScreen: boolean, parameterNames: string[], isScreenOptional: boolean ) => void"
-description = "Register a new command."
+description = "During init, register a new command."
 
 [[objects.properties]]
 name = "addScreenDataItem"
 type = "function"
 signature = "( name: string, defaultValue: any ) => void"
-description = "Add persistent data to each screen."
+description = "During init, add persistent data to each screen."
 
 [[objects.properties]]
 name = "addScreenDataItemGetter"
 type = "function"
 signature = "( name: string, getterFn: Function ) => void"
-description = "Add a dynamic data getter for screens."
+description = "During init, add a dynamic data getter for screens."
 
 [[objects.properties]]
 name = "addScreenInitFunction"
 type = "function"
 signature = "( initFn: Function ) => void"
-description = "Register a function to run when screens are created."
+description = "During init, register a function to run when screens are created."
 
 [[objects.properties]]
 name = "addScreenPreCleanupFunction"
 type = "function"
 signature = "( cleanupFn: ( screenData: any ) => void ) => void"
-description = "Run after isRemoved is set, before renderer cleanup; cancel work without redrawing."
+description = "During init, register a function to run after isRemoved is set, before renderer cleanup; it cancels work without redrawing."
 
 [[objects.properties]]
 name = "addScreenCleanupFunction"
 type = "function"
 signature = "( cleanupFn: Function ) => void"
-description = "Register a function to run when screens are destroyed."
+description = "During init, register a function to run when screens are destroyed."
 
 [[objects.properties]]
 name = "getActiveScreen"
@@ -94,7 +94,7 @@ description = "Decrement resource wait counter."
 name = "registerClearEvents"
 type = "function"
 signature = "( name: string, handler: Function ) => void"
-description = "Register a clearEvents handler for a specific event type."
+description = "During init, register a clearEvents handler for a specific event type."
 
 [[objects.properties]]
 name = "provideService"

@@ -1,5 +1,6 @@
 /**
- * SYS-009 late plugin installation regressions against fresh full and lite bundles.
+ * SYS-009 late plugin installation and CORE-002 failed-installation rollback regressions against
+ * fresh full and lite bundles.
  * Run with node --test test/unit/plugin-installation-browser.test.js.
  */
 import * as g_test from "node:test";
@@ -104,6 +105,101 @@ for( const bundle of [ "pi.js", "pi.lite.js" ] ) {
 				"values": [] },
 			"getterCalls": 3,
 			"initCalls": 3
+		} );
+	} );
+
+	test( `a failed plugin installs nothing and can be registered again in ${bundle}`, async () => {
+		assert.deepEqual( await probe( bundle, () => {
+			$.registerPlugin( { "name": "inspector", "init": pluginApi => {
+				pluginApi.addCommand( "hasData", ( screenData, options ) => {
+					return Object.prototype.hasOwnProperty.call( screenData, options.name );
+				}, true, [ "name" ] );
+			} } );
+			const existing = $.screen( "8x8" );
+			const calls = { "setBad": 0, "screenInit": 0, "clear": 0 };
+			let registerError = null;
+			try {
+				$.registerPlugin( { "name": "bad", "init": pluginApi => {
+					pluginApi.addCommand( "badCmd", () => "bad", true, [] );
+					pluginApi.addCommand( "setBad", () => calls.setBad++, false, [ "value" ] );
+					pluginApi.addScreenDataItem( "badData", 1 );
+					pluginApi.addScreenInitFunction( () => calls.screenInit++ );
+					pluginApi.registerClearEvents( "bad", () => calls.clear++ );
+					throw new Error( "init failed" );
+				} } );
+			} catch( error ) {
+				registerError = error.code;
+			}
+			const created = $.screen( "8x8" );
+			$.set( { "bad": 7 } );
+			$.clearEvents();
+			const failed = {
+				"registerError": registerError,
+				"commandTypes": [ typeof $.badCmd, typeof existing.badCmd, typeof created.badCmd ],
+				"hasData": [ existing.hasData( "badData" ), created.hasData( "badData" ) ],
+				"calls": { ...calls },
+				"state": $.getPlugins().find( item => item.name === "bad" ).state
+			};
+
+			$.registerPlugin( { "name": "bad", "init": pluginApi => {
+				pluginApi.addCommand( "badCmd", () => "retried", true, [] );
+			} } );
+			return {
+				"failed": failed,
+				"retried": [ $.badCmd(), existing.badCmd(), created.badCmd() ],
+				"state": $.getPlugins().find( item => item.name === "bad" ).state
+			};
+		} ), {
+			"failed": {
+				"registerError": "PLUGIN_INIT_FAILED",
+				"commandTypes": [ "undefined", "undefined", "undefined" ],
+				"hasData": [ false, false ],
+				"calls": { "setBad": 0, "screenInit": 0, "clear": 0 },
+				"state": "failed"
+			},
+			"retried": [ "retried", "retried", "retried" ],
+			"state": "initialized"
+		} );
+	} );
+
+	test( `a failure installing on existing screens is rolled back in ${bundle}`, async () => {
+		assert.deepEqual( await probe( bundle, () => {
+			$.registerPlugin( { "name": "inspector", "init": pluginApi => {
+				pluginApi.addCommand( "hasData", ( screenData, options ) => {
+					return Object.prototype.hasOwnProperty.call( screenData, options.name );
+				}, true, [ "name" ] );
+			} } );
+			const first = $.screen( "8x8" );
+			const second = $.screen( "8x8" );
+			let initCalls = 0;
+			let registerError = null;
+			try {
+				$.registerPlugin( { "name": "late", "init": pluginApi => {
+					pluginApi.addScreenDataItem( "lateData", 1 );
+					pluginApi.addCommand( "lateCmd", () => 1, true, [] );
+					pluginApi.addScreenInitFunction( screenData => {
+						initCalls++;
+						if( screenData.id === second.id ) {
+							throw new Error( "second screen failed" );
+						}
+					} );
+				} } );
+			} catch( error ) {
+				registerError = error.code;
+			}
+			const third = $.screen( "8x8" );
+			const screens = [ first, second, third ];
+			return {
+				"registerError": registerError,
+				"commandTypes": [ typeof $.lateCmd, ...screens.map( item => typeof item.lateCmd ) ],
+				"hasData": screens.map( item => item.hasData( "lateData" ) ),
+				"initCalls": initCalls
+			};
+		} ), {
+			"registerError": "PLUGIN_INIT_FAILED",
+			"commandTypes": [ "undefined", "undefined", "undefined", "undefined" ],
+			"hasData": [ false, false, false ],
+			"initCalls": 2
 		} );
 	} );
 }

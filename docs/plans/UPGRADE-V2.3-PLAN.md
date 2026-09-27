@@ -2,9 +2,9 @@
 
 Status: Sound Phases 0–6 complete, expansion Phases 7–8 implemented, Phase 9 in progress, and
 Phase 10 proposed; test audit follow-ups complete; gamepad, keyboard, pointer, and core audits
-reviewed; input conventions review complete (Section 6.1); input roadmaps not started; plugin
-removal (Section 3.1) complete; CI/CD exploration reviewed; CI roadmap Phase 1 complete
-(baselines re-recorded), Phase 2 not started
+reviewed; core follow-up task 1 done; input conventions review complete (Section 6.1); input
+roadmaps not started; plugin removal (Section 3.1) complete; CI/CD exploration reviewed; CI
+roadmap complete (C1–C3)
 Target release: Pi.js 2.3.0
 Workstream documents:
 
@@ -45,7 +45,7 @@ the release phase. Each workstream's design and task list live in its own docume
 | Keyboard | `plugins/keyboard/`: key state, action keys, key handlers, `input()` prompts | `KEYBOARD-V2.3-AUDIT.md`, then `KEYBOARD-V2.3-ROADMAP.md` | Audit reviewed; KEY-001–019 and A1–A17 accepted (A16 in 2.3.0); conventions decided (Section 6.1); roadmap not started |
 | Pointer | `plugins/pointer/`: mouse, touch, press, click, context menu, pinch zoom | `POINTER-V2.3-AUDIT.md`, then `POINTER-V2.3-ROADMAP.md` | Audit reviewed; PTR-001–017 and B1–B13 accepted (B11 in 2.3.0); conventions decided (Section 6.1); roadmap not started |
 | Gamepad | `plugins/gamepad/`: polling loop, state, sensitivity, connection events | `GAMEPAD-V2.3-AUDIT.md`, then `GAMEPAD-V2.3-ROADMAP.md` | Audit reviewed; PAD-001–017 and all proposals accepted; conventions decided (Section 6.1); roadmap not started |
-| Core | `src/`, plugin API, build, metadata, declarations | `CORE-V2.3-AUDIT.md` | Audit reviewed; CORE-001–020 accepted; C4 rejected (documented instead), C7 approved as the only core API change |
+| Core | `src/`, plugin API, build, metadata, declarations | `CORE-V2.3-AUDIT.md` | Audit reviewed; CORE-001–020 accepted; C4 rejected (documented instead), C7 approved as the only core API change. Follow-up task 1 (transactional plugin installation) done |
 | Tests | `test/` suites, visual fixtures and baselines, harnesses, `scripts/test.js` | `TESTS-V2.3-AUDIT.md` | Audit accepted; follow-ups complete |
 | CI/CD | Cross-platform test runs, CI pipeline, release automation | `CI-V2.3-EXPLORATION.md`, then `CI-V2.3-ROADMAP.md` | Exploration reviewed; all recommendations accepted (G4–G6 and G8 closed). Roadmap complete: renderer pinned, LF checkouts, baselines re-recorded (C1); `npm test` and `npm run test:firefox` passing on Windows and Linux (C2); `ci.yml` on pull requests and `main`, `release.yml` drafting verified releases, and required checks on `main` (C3) |
 | Plugin removal | `plugins/onscreen-keyboard/`, `plugins/pi-vision/`, `plugins/print-table/`, `plugins/pens/`, and their metadata, fixtures, and tests | This plan, Section 3.1 | Complete 2026-09-26 (P.1–P.6) |

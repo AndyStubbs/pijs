@@ -165,23 +165,49 @@ function createReadyHarness( readyState = "complete" ) {
  * The real plugin registry with stubbed command and screen dependencies.
  *
  * @param {Function} [queueMicrotask] - Microtask scheduler; queued work is dropped by default.
+ * @param {Object} [options] - Stub options.
+ * @param {Array<Array>} [options.registrations] - Receives `[ kind, name ]` for every global
+ *   registration, where kind is `"command"` or the screen-manager function's name.
+ * @param {Function} [options.installScreenExtensions] - Stub for installing on existing screens.
+ * @param {Object} [options.console] - Console stub, for plugin failures that are logged.
  * @returns {Object} The registered commands, such as `registerPlugin` and `getPlugins`.
  */
-function createPluginRegistry( queueMicrotask = () => {} ) {
+function createPluginRegistry( queueMicrotask = () => {}, options = {} ) {
 	const commands = {};
+	const registrations = options.registrations || [];
+	const screenStub = kind => ( nameOrFn ) => {
+		if( typeof nameOrFn === "string" ) {
+			registrations.push( [ kind, nameOrFn ] );
+		} else {
+			registrations.push( [ kind, nameOrFn.name ] );
+		}
+	};
 	const module = loadModule( "src/core/plugins.js", {
 		"g_commands": {
-			"addCommand": ( name, fn ) => { commands[ name ] = fn; },
+			"addCommand": ( name, fn ) => {
+				commands[ name ] = fn;
+				registrations.push( [ "command", name ] );
+				return { "name": name, "fn": fn };
+			},
 			"processCommands": () => {}
 		},
 		"g_screenManager": {
 			"getAllScreensData": () => [],
-			"installScreenExtensions": () => {}
+			"installScreenExtensions": options.installScreenExtensions || ( () => {} ),
+			"addScreenDataItem": screenStub( "addScreenDataItem" ),
+			"addScreenDataItemGetter": screenStub( "addScreenDataItemGetter" ),
+			"addScreenInitFunction": screenStub( "addScreenInitFunction" ),
+			"addScreenPreCleanupFunction": screenStub( "addScreenPreCleanupFunction" ),
+			"addScreenCleanupFunction": screenStub( "addScreenCleanupFunction" )
 		},
 		"g_utils": {},
-		"queueMicrotask": queueMicrotask
+		"queueMicrotask": queueMicrotask,
+		"console": options.console || console
 	} );
 	module.init( {} );
+
+	// Only plugin registrations are recorded, not the registry's own commands
+	registrations.length = 0;
 	return commands;
 }
 
