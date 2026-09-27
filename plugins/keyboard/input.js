@@ -228,16 +228,15 @@ function captureBackground( inputData ) {
 		screenData.api.setPos( pos.col, pos.row - 1 );
 	}
 
-	// Get current position to capture background region
+	// Capture one print line, at the print size, from the cursor to the right edge of the view
 	const posPx = screenData.api.getPosPx();
-	const font = screenData.font;
-	const width = screenData.width;
-	const height = font.height;
-
-	// Capture background region using createImageFromScreen
-	// Capture from the pixel position until the end the screen
-	const captureWidth = width - posPx.x;
-	const captureHeight = height;
+	const printCursor = screenData.printCursor;
+	let viewWidth = screenData.width;
+	if( screenData.view ) {
+		viewWidth = screenData.view.width;
+	}
+	const captureWidth = viewWidth - posPx.x;
+	const captureHeight = printCursor.height;
 
 	screenData.api.createImageFromScreen( {
 		"name": inputData.backgroundImageName ,
@@ -251,6 +250,7 @@ function captureBackground( inputData ) {
 	inputData.captureY = posPx.y;
 	inputData.captureWidth = captureWidth;
 	inputData.captureHeight = captureHeight;
+	inputData.lineChars = Math.floor( captureWidth / printCursor.width );
 }
 
 /**
@@ -389,7 +389,17 @@ function showPrompt( inputData, hideCursorOverride ) {
 	}
 
 	const screenData = inputData.screenData;
-	let msg = inputData.prompt + inputData.val;
+
+	// Keep to one line: when the value would reach the edge, show its end, leaving room for the
+	// cursor so the line does not shift as it blinks
+	let val = inputData.val;
+	const valueChars = Math.max(
+		inputData.lineChars - inputData.prompt.length - inputData.cursor.length, 0
+	);
+	if( val.length > valueChars ) {
+		val = val.substring( val.length - valueChars );
+	}
+	let msg = inputData.prompt + val;
 
 	// Blink cursor after every blink duration
 	if( !hideCursorOverride ) {
@@ -450,7 +460,10 @@ function finishInput( isCancel, isDisposal = false ) {
 	try {
 		if( !isDisposal && !screenData.isRemoved ) {
 			showPrompt( inputData, true );
-			screenData.printCursor.y += screenData.font.height;
+
+			// Continue at column 0 of the line below the prompt
+			screenData.printCursor.x = 0;
+			screenData.printCursor.y = inputData.captureY + inputData.captureHeight;
 		}
 	} catch( error ) {
 		reportInputError( error );

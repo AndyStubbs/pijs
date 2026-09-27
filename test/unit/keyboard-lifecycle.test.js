@@ -136,7 +136,8 @@ function harness() {
 	keyboard.keyboardPlugin( pluginApi );
 	function screen() {
 		const data = { "isRemoved": false, "width": 100, "font": { "height": 8 },
-			"printCursor": { "x": 3, "y": 8 }, "draws": 0, "api": {} };
+			"printCursor": { "x": 3, "y": 8, "width": 6, "height": 8 }, "draws": 0,
+			"prints": [], "captures": [], "api": {} };
 		for( const command of screenCommands ) {
 			data.api[ command.name ] = ( ...args ) => {
 				return command.fn( data, m_utils.parseOptions( args, command.params ) );
@@ -144,15 +145,28 @@ function harness() {
 		}
 		data.api.getPos = () => ( { "col": 0, "row": 1 } );
 		data.api.getRows = () => 10;
-		data.api.getPosPx = () => ( { ...data.printCursor } );
+		data.api.getPosPx = () => ( { "x": data.printCursor.x, "y": data.printCursor.y } );
 		data.api.setPosPx = ( x, y ) => {
-			if( typeof x === "object" ) { data.printCursor = { ...x }; }
-			else { data.printCursor = { "x": x, "y": y }; }
+			if( typeof x === "object" ) {
+				data.printCursor.x = x.x;
+				data.printCursor.y = x.y;
+			} else {
+				data.printCursor.x = x;
+				data.printCursor.y = y;
+			}
 		};
-		data.api.createImageFromScreen = options => images.set( options.name, {} );
-		data.api.blitImage = data.api.print = () => {
+		data.api.createImageFromScreen = options => {
+			data.captures.push( options );
+			images.set( options.name, {} );
+		};
+		data.api.blitImage = () => {
 			assert.equal( data.isRemoved, false, "must not redraw during disposal" );
 			data.draws++;
+		};
+		data.api.print = msg => {
+			assert.equal( data.isRemoved, false, "must not redraw during disposal" );
+			data.draws++;
+			data.prints.push( msg );
 		};
 		return data;
 	}
@@ -706,5 +720,38 @@ test( "KEY-004 keys typed into an input inside a shadow root are ignored (K12)",
 	h.key( "y" );
 	h.key( "Enter" );
 	assert.equal( await pending, "y" );
+	empty( h );
+} );
+
+test( "KEY-005 the prompt captures and advances one print line at the print size (K11)",
+	async () => {
+		const h = harness();
+		h.first.printCursor.height = 16;
+		h.first.printCursor.width = 12;
+		const pending = h.start( h.first, null, { "prompt": "?" } );
+		const capture = h.first.captures[ 0 ];
+		assert.deepEqual( [ capture.x1, capture.y1, capture.x2, capture.y2 ], [ 3, 8, 99, 23 ] );
+		h.key( "a" );
+		h.key( "Enter" );
+		assert.equal( await pending, "a" );
+		assert.deepEqual( h.api.getPosPx(), { "x": 0, "y": 24 },
+			"the next print starts at column 0 below the prompt" );
+		empty( h );
+	} );
+
+test( "KEY-005 a long value scrolls within one line (K11)", async () => {
+	const h = harness();
+
+	// 97 pixels from x 3 hold 16 six-pixel characters: "?", 14 of the value, and the cursor
+	const pending = h.start( h.first, null, { "prompt": "?", "cursor": "_" } );
+	const typed = "abcdefghijklmnopqrstuvwxyz0123";
+	for( const char of typed ) {
+		h.key( char );
+	}
+	const shown = h.first.prints[ h.first.prints.length - 1 ];
+	assert.equal( shown, "?" + typed.slice( -14 ) + "_" );
+	h.key( "Enter" );
+	assert.equal( await pending, typed, "the whole value is returned" );
+	assert.equal( h.first.prints[ h.first.prints.length - 1 ], "?" + typed.slice( -14 ) );
 	empty( h );
 } );

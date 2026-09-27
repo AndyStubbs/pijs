@@ -181,4 +181,58 @@ for( const bundle of g_harness.BUNDLES ) {
 			await page.close();
 		}
 	} );
+
+	test( `KEY-005 ${bundle}: prompt layout follows the print cursor (K11)`, async () => {
+		assert.deepEqual( await probe( bundle, async () => {
+			function press( key ) {
+				window.dispatchEvent( new KeyboardEvent( "keydown", {
+					"key": key, "code": key, "cancelable": true
+				} ) );
+			}
+
+			// Palette indices other than the background in a rectangle
+			function drawn( screen, x, y, width, height ) {
+				return screen.get( x, y, width, height, 0, true ).flat().filter( i => i !== 0 )
+					.length;
+			}
+			const screen = $.screen( "160x80" );
+
+			// After inline text: the next line starts at column 0
+			screen.print( "Name", true );
+			let pending = screen.input( "?" );
+			press( "Enter" );
+			await pending;
+			const midLine = screen.getPosPx();
+
+			// Scaled print: the whole line is restored and the cursor moves one scaled line
+			screen.cls();
+			screen.setPos( 0, 0 );
+			screen.setPrintSize( 2, 2 );
+			pending = screen.input( "?" );
+			press( "W" );
+			press( "Backspace" );
+			press( "Enter" );
+			await pending;
+			const scaled = [ screen.getPosPx(), drawn( screen, 12, 0, 12, 16 ) ];
+			screen.setPrintSize( 1, 1 );
+
+			// A long value keeps to one line and shows its end
+			screen.cls();
+			screen.setPos( 0, 0 );
+			pending = screen.input( "?" );
+			for( const key of "abcdefghijklmnopqrstuvwxyz0123" ) {
+				press( key );
+			}
+			press( "Enter" );
+			const value = await pending;
+			const long = [
+				value.length, drawn( screen, 144, 0, 6, 8 ) > 0, drawn( screen, 150, 0, 10, 16 )
+			];
+			return [ midLine, scaled, long ];
+		} ), [
+			{ "x": 0, "y": 8 },
+			[ { "x": 0, "y": 16 }, 0 ],
+			[ 30, true, 0 ]
+		] );
+	} );
 }
