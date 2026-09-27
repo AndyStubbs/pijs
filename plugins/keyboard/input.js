@@ -17,6 +17,9 @@ let m_inputRequest = 0;
 // Store pluginApi reference for use in functions
 let m_pluginApi = null;
 
+// Editable-target test shared with the keyboard plugin's own listeners
+let m_isFromEditableTarget = null;
+
 
 /*************************************************************************************************
  * Input Command Registration
@@ -27,11 +30,13 @@ let m_pluginApi = null;
  * Initialize input command
  *
  * @param {Object} pluginApi - Plugin API provided by Pi.js
+ * @param {Function} isFromEditableTarget - Whether a key event comes from an editable element
  * @returns {void}
  */
-export function initInput( pluginApi ) {
+export function initInput( pluginApi, isFromEditableTarget ) {
 
 	m_pluginApi = pluginApi;
+	m_isFromEditableTarget = isFromEditableTarget;
 	pluginApi.addScreenPreCleanupFunction( disposeInput );
 
 	// Register screen commands
@@ -182,7 +187,6 @@ function cancelInput( screenData ) {
 
 
 function startInput( inputData ) {
-	const api = m_pluginApi.getApi();
 
 	// Create unique image name for background
 	const key = `${Date.now()}_${Math.random().toString( 36 ).substring( 2, 9 )}`;
@@ -191,9 +195,14 @@ function startInput( inputData ) {
 	// Capture the background image
 	captureBackground( inputData );
 
-	// Add input event listener
-	inputData.keyHandler = keyData => onInputKeyDown( inputData, keyData );
-	api.onkey( "any", "down", inputData.keyHandler, false, true );
+	// The prompt reads keys from its own listener, so stopKeyboard() and cleared key handlers
+	// cannot strand it
+	inputData.keyListener = event => {
+		if( !m_isFromEditableTarget( event ) ) {
+			onInputKeyDown( inputData, event );
+		}
+	};
+	window.addEventListener( "keydown", inputData.keyListener, { "capture": true } );
 
 	// Add interval for blinking cursor
 	inputData.interval = setInterval( () => {
@@ -238,6 +247,13 @@ function captureBackground( inputData ) {
 	inputData.captureHeight = captureHeight;
 }
 
+/**
+ * Handle a keydown for the active prompt
+ *
+ * @param {Object} inputData - Prompt session
+ * @param {KeyboardEvent} keyData - Keydown event
+ * @returns {void}
+ */
 function onInputKeyDown( inputData, keyData ) {
 	if( m_inputData !== inputData ) {
 		return;
@@ -396,12 +412,8 @@ function finishInput( isCancel, isDisposal = false ) {
 function releaseInput( inputData ) {
 	const api = m_pluginApi.getApi();
 	clearInterval( inputData.interval );
-	try {
-		if( inputData.keyHandler ) {
-			api.offkey( "any", "down", inputData.keyHandler, false, true );
-		}
-	} catch( error ) {
-		reportInputError( error );
+	if( inputData.keyListener ) {
+		window.removeEventListener( "keydown", inputData.keyListener, { "capture": true } );
 	}
 	try {
 		if( inputData.backgroundImageName ) {
@@ -413,7 +425,7 @@ function releaseInput( inputData ) {
 		inputData.screenData = null;
 		inputData.backgroundImage = null;
 		inputData.backgroundImageName = null;
-		inputData.keyHandler = null;
+		inputData.keyListener = null;
 		inputData.interval = null;
 		inputData.fn = null;
 		inputData.resolve = null;

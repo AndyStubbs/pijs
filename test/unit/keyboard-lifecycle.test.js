@@ -93,6 +93,7 @@ function harness() {
 	const hooks = [];
 	const commands = {};
 	const screenCommands = [];
+	const clearHandlers = {};
 	const api = {};
 	const clock = { "now": 1000 };
 	let nextTimer = 0;
@@ -109,7 +110,7 @@ function harness() {
 		},
 		"addScreenCleanupFunction": () => {},
 		"addScreenPreCleanupFunction": fn => hooks.push( fn ),
-		"registerClearEvents": () => {}
+		"registerClearEvents": ( name, fn ) => { clearHandlers[ name ] = fn; }
 	};
 	api.getImage = name => images.get( name );
 	api.removeImage = name => images.delete( name );
@@ -206,11 +207,26 @@ function harness() {
 		window.dispatchEvent( event );
 		return event;
 	}
+
+	/**
+	 * Run a registered clearEvents handler as core does.
+	 *
+	 * @param {string} type - clearEvents type, such as "keyboard".
+	 * @param {Object|null} [screenData] - Calling screen, or null for no screen.
+	 * @returns {void}
+	 */
+	function clearEvents( type, screenData = null ) {
+		clearHandlers[ type ]( screenData );
+	}
 	return { api, keyboard, input, commands, timers, images, microtasks, first, screen,
-		start, dispose, key, window, document, body, clock };
+		start, dispose, key, clearEvents, window, document, body, clock };
 }
 
 function empty( h ) {
+	const promptListeners = h.window.listeners.filter( listener => {
+		return listener.type === "keydown" && listener.fn !== h.keyboard.onKeyDown;
+	} );
+	assert.equal( promptListeners.length, 0, "the prompt removes its key listener" );
 	assert.equal( h.timers.size, 0 );
 	assert.equal( h.images.size, 0 );
 	assert.equal( vm.runInContext( "m_inputData", h.input ), null );
@@ -531,4 +547,59 @@ test( "KEY-001 a composing keydown does not stay held as Process (K14)", () => {
 	assert.equal( h.api.inkey( "Process" ), null );
 	assert.equal( h.api.inkey( "KeyN" ), null );
 	assert.equal( h.api.inkey().length, 0 );
+} );
+
+test( "KEY-002 clearEvents( \"keyboard\" ) cancels only the owner's prompt (K2)", async () => {
+	const h = harness();
+	const other = h.screen();
+
+	// From another screen: the prompt keeps working
+	const kept = h.start();
+	h.clearEvents( "keyboard", other );
+	h.key( "x" );
+	h.key( "Enter" );
+	assert.equal( await kept, "x" );
+	empty( h );
+
+	// From the owning screen, or with no screen: the prompt is cancelled
+	for( const caller of [ h.first, null ] ) {
+		const values = [];
+		const cancelled = h.start( h.first, value => values.push( value ) );
+		h.clearEvents( "keyboard", caller );
+		h.key( "y" );
+		assert.equal( await cancelled, null );
+		assert.deepEqual( values, [ null ] );
+		empty( h );
+	}
+} );
+
+test( "KEY-006 a prompt reads keys while the keyboard is stopped", async () => {
+	const h = harness();
+	h.api.stopKeyboard();
+	const started = h.start();
+	h.key( "a" );
+	h.key( "Enter" );
+	assert.equal( await started, "a" );
+	assert.equal( h.api.inkey( "a" ), null, "the stopped keyboard tracks nothing" );
+	empty( h );
+
+	// Stopping during a prompt does not strand it
+	h.api.startKeyboard();
+	const running = h.start();
+	h.key( "b" );
+	h.api.stopKeyboard();
+	h.key( "c" );
+	h.key( "Enter" );
+	assert.equal( await running, "bc" );
+	empty( h );
+} );
+
+test( "SYS-003 the prompt ignores keys typed into editable elements", async () => {
+	const h = harness();
+	const pending = h.start();
+	h.key( "x", "down", { "target": createElement( "INPUT" ) } );
+	h.key( "y" );
+	h.key( "Enter" );
+	assert.equal( await pending, "y" );
+	empty( h );
 } );

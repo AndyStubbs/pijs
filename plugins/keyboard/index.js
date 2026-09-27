@@ -54,7 +54,7 @@ export default function keyboardPlugin( pluginApi ) {
 	pluginApi.addCommand( "offkey", offkey, false, [ "key", "mode", "fn", "once", "allowRepeat" ] );
 
 	// Initialize input command
-	g_input.initInput( pluginApi );
+	g_input.initInput( pluginApi, isFromEditableTarget );
 
 	// Register clearEvents handler
 	pluginApi.registerClearEvents( "keyboard", clearKeyboardEvents );
