@@ -1,5 +1,5 @@
 /**
- * CI/CD exploration probes (docs/plans/CI-V2.3-EXPLORATION.md).
+ * CI/CD exploration probes (docs/plans/v2.3/AUDIT-CI.md).
  *
  * Run from the repository root:
  *

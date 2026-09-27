@@ -1,6 +1,6 @@
 /**
  * Pointer 2.3 audit probes: reproductions for the findings in
- * docs/plans/POINTER-V2.3-AUDIT.md, run against fresh in-memory bundles of the current source
+ * docs/plans/v2.3/AUDIT-POINTER.md, run against fresh in-memory bundles of the current source
  * in Chromium, Firefox, and WebKit.
  *
  * Each probe creates a 100x100 screen, dispatches synthetic mouse and touch events on its

@@ -1,9 +1,9 @@
 # Pi.js 2.3 Keyboard Audit
 
-Status: Reviewed 2026-09-25; every finding and proposal accepted (Section 9); the input
-conventions are decided (plan Section 6.1), which take precedence over this report
-Plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md), Section 5
-Evidence: [docs/evidence/keyboard-2.3/](../evidence/keyboard-2.3/README.md)
+Reviewed 2026-09-25: every finding and proposal accepted (Section 8). Where they differ, the
+input conventions ([ROADMAP §2](ROADMAP.md#2-input-conventions)) take precedence over this report.
+Implementation and status: [ROADMAP §5](ROADMAP.md#5-keyboard)
+Evidence: [docs/evidence/keyboard-2.3/](../../evidence/keyboard-2.3/README.md)
 
 ## 1. Summary
 
@@ -89,7 +89,7 @@ entries, so the pi-2.0 entries are current.
 - The standalone `build/plugins/keyboard/keyboard.d.ts` declares only the init function, and
   `build/pi.lite.d.ts` has no keyboard commands, so a Lite user who loads the plugin gets no
   command types (K19 shows the commands do exist at runtime). Full-bundled plugins have no
-  `metadata/plugin-<name>/` folder (handoff to the core audit, Section 8).
+  `metadata/plugin-<name>/` folder (handoff to the core audit, Section 7).
 - The plugin registers itself whenever `window.pi` exists (`:520-528`). The comment says IIFE
   mode, but the ESM build does the same, because both core builds set `window.pi`
   (`src/index.js:63-66`). Loading it after Full throws `DUPLICATE_PLUGIN` (KEY-018), and so
@@ -101,6 +101,8 @@ Priorities follow the 2.2 audit: **P1** blocks a supported workflow or corrupts 
 **P2** is incorrect behavior under a specific trigger; **P3** is a lower-impact contract
 defect. Line numbers refer to `plugins/keyboard/index.js` at `cfc32a9` unless another file is
 named. Each finding names its probe in `probes.js`; the results are in `probes-output.json`.
+
+<a id="key-001"></a>
 
 ### KEY-001 — P1 — defect — Key-value state is keyed by value, so keys stick or release early
 
@@ -148,6 +150,8 @@ own examples use codes, which are not affected.
 **Proposed fix:** keep held state by code only, record each code's key value from its latest
 keydown, and answer value lookups from the held codes (Section 4, A1).
 
+<a id="key-002"></a>
+
 ### KEY-002 — P2 — defect — `clearEvents()` from another screen strands the active prompt
 
 **Locations:** `clearKeyboardEvents()` `:505-517`, `input.js` `startInput()` `:196`,
@@ -182,6 +186,8 @@ prompt is open on another screen, such as a HUD overlay, hangs any `await $.inpu
 **Proposed fix:** the prompt reads keys from its own listener, not the public handler table, so
 clearing handlers cannot break it; cancellation follows `cancelInput()`'s screen rule (Section
 4, A2).
+
+<a id="key-003"></a>
 
 ### KEY-003 — P2 — defect — The prompt does not own the keyboard while it is active
 
@@ -222,6 +228,8 @@ that binds Space or Enter reacts to typing.
 (Section 4, A3). Withholding prompt keys from game handlers changes documented behavior and is
 proposed separately (A11).
 
+<a id="key-004"></a>
+
 ### KEY-004 — P2 — defect — Keys typed into a shadow-DOM input reach game handlers
 
 **Locations:** `isFromEditableTarget()` `:456-479`.
@@ -244,6 +252,8 @@ panels) send the player's typing to the game. If a typed key is an action key, s
 `preventDefault()` also stops it from being typed.
 
 **Proposed fix:** read the original target from `event.composedPath()[ 0 ]` (Section 4, A4).
+
+<a id="key-005"></a>
 
 ### KEY-005 — P2 — defect — Prompt layout ignores print scale, line length, and mid-line starts
 
@@ -278,6 +288,8 @@ input longer than the rest of the line is invisible.
 **Proposed fix:** use the print cursor's height and advance to column 0; keep the prompt to one
 line by scrolling the shown value (Section 4, A5).
 
+<a id="key-006"></a>
+
 ### KEY-006 — P2 — defect — `stopKeyboard()` is not undone by use, and strands prompts
 
 **Locations:** `startKeyboard()` `:74-84`, `stopKeyboard()` `:91-101`; `input.js:196`.
@@ -310,6 +322,8 @@ restart stays deaf; a prompt during the pause hangs.
 **Proposed fix:** the prompt keeps its own listener while active, so it works regardless of
 `stopKeyboard()` (Section 4, A2). The start rule follows the conventions review (A13).
 
+<a id="key-007"></a>
+
 ### KEY-007 — P3 — API — `offkey()` needs every flag of the registration
 
 **Locations:** `offkey()` `:245-300`.
@@ -331,6 +345,8 @@ rule in its description, but its parameter table contradicts it.
 it fires, the caller must repeat `once: true`.
 
 **Proposed fix:** decided with handler identity in the conventions review (Section 4, A14).
+
+<a id="key-008"></a>
 
 ### KEY-008 — P3 — defect — Numeric prompts accept or change values unexpectedly
 
@@ -359,6 +375,8 @@ physical position that types other characters on non-US layouts.
 **Proposed fix:** validate against a pattern instead of `Number()`, and count the sign toward
 `maxLength` (Section 4, A6).
 
+<a id="key-009"></a>
+
 ### KEY-009 — P3 — defect — Validation gaps in `onkey`, `offkey`, `setActionKeys`, `input`
 
 **Locations:** `onkey()` `:194-210`, `offkey()` `:252-262`, `setActionKeys()` `:153-160`,
@@ -384,6 +402,8 @@ means the default.
 
 **Proposed fix:** Section 4, A7.
 
+<a id="key-010"></a>
+
 ### KEY-010 — P3 — defect — `onkey()` sorts the caller's array and counts duplicates twice
 
 **Locations:** `onkey()` `:213-236`, `offkey()` `:265-271`.
@@ -403,6 +423,8 @@ names with no separator; no real key names collide, so this is noted only.
 
 **Proposed fix:** Section 4, A7.
 
+<a id="key-011"></a>
+
 ### KEY-011 — P3 — defect — Release handlers get press data; unseen presses never release
 
 **Locations:** `triggerKeyEventHandlers()` `:423-452`, `onKeyUp()` `:345-352`.
@@ -421,6 +443,8 @@ happened while stopped, or while an editable element had focus, never run on rel
 
 **Proposed fix:** Section 4, A8.
 
+<a id="key-012"></a>
+
 ### KEY-012 — P3 — defect — `startKeyboard()` blurs the focused element
 
 **Locations:** `startKeyboard()` `:81-83`, plugin init `:44`.
@@ -435,6 +459,8 @@ keeps typing out of the game.
 **Evidence:** K8 in all three engines (`fieldFocusedAfterStart: false`). Not documented anywhere.
 
 **Proposed fix:** remove the blur (Section 4, A9).
+
+<a id="key-013"></a>
 
 ### KEY-013 — P3 — API — `inkey( key )` and handlers get the plugin's live state
 
@@ -452,6 +478,8 @@ press. `inkey()` with no key returns a new array each call, holding the same obj
 
 **Proposed fix:** Section 4, A10.
 
+<a id="key-014"></a>
+
 ### KEY-014 — P3 — API — `setActionKeys()` adds to the set
 
 **Locations:** `setActionKeys()` `:150-161`; `src/core/commands.js:88`.
@@ -467,6 +495,8 @@ also adds.
 **Evidence:** K20 in all three engines.
 
 **Proposed fix:** Section 4, A12 (breaking).
+
+<a id="key-015"></a>
 
 ### KEY-015 — P3 — API — The prompt cannot receive composed or pasted text
 
@@ -487,6 +517,8 @@ editable element has focus is a device question (Section 6.3, step 9).
 
 **Proposed fix:** an optional hidden text field for the prompt (Section 4, A16).
 
+<a id="key-016"></a>
+
 ### KEY-016 — P3 — API — `clearEvents()` on any screen clears every keyboard handler
 
 **Locations:** `clearKeyboardEvents()` `:505-517`.
@@ -498,6 +530,8 @@ no longer runs (`globalHandlerRegisteredBeforeClearFired: 0`).
 and prompt cancellation is per screen (KEY-002). This is the same question as PAD-012.
 
 **Proposed fix:** decided by the conventions review (Section 4, A15).
+
+<a id="key-017"></a>
 
 ### KEY-017 — P3 — documentation — Metadata, declarations, `API.md`, and README misstate behavior
 
@@ -524,8 +558,10 @@ and prompt cancellation is per screen (KEY-002). This is the same question as PA
 - **Declarations:** Lite and standalone declarations have no keyboard commands (Section 2.3).
 - **`clearEvents`:** `API.md:375-377` (KEY-002).
 
-**Proposed fix:** metadata and declarations in roadmap Phase 1; `API.md`, the README, and the
-llms references in the release phase (R.2, R.3).
+**Proposed fix:** metadata and declarations for current behavior (Keyboard 1.11), then with
+each API change; `API.md`, the README, and the llms references in the release phase (R.2, R.3).
+
+<a id="key-018"></a>
 
 ### KEY-018 — P3 — test gap — Five manual pages register the plugin twice
 
@@ -538,8 +574,10 @@ llms references in the release phase (R.2, R.3).
 check in `probes.js`). The pages keep working because Full already has the plugin. Some also
 load `pointer`, `gamepad`, or `sound` twice.
 
-**Proposed fix:** remove the extra script tags (roadmap Phase 1); self-registration after Full
-is handed to the core audit, as PAD-015 was.
+**Proposed fix:** remove the extra script tags (Keyboard 1.12). Self-registration after Full
+is documented instead of changed (CORE-003).
+
+<a id="key-019"></a>
 
 ### KEY-019 — P3 — test gap — Lifecycle, editable targets, and `input()` rules are untested
 
@@ -551,7 +589,8 @@ is handed to the core audit, as PAD-015 was.
 prompt's effect on default actions. The Node harness converts `undefined` to `null`, so it
 cannot see KEY-009's `maxLength` case.
 
-**Proposed fix:** the tests in Section 5.2.
+**Proposed fix:** a test with each fix, starting from the probe that reproduces its finding
+([ROADMAP §5](ROADMAP.md#5-keyboard)).
 
 ### Unconfirmed concerns
 
@@ -574,9 +613,9 @@ Windows; the layout, input-method, and macOS items stay open for the release pas
   non-modifier key when Meta is released. No macOS hardware is available. The Windows check
   (device step 7) is not an analogue after all: Windows handled Win+E itself, the page saw only
   the Meta keydown, and the window then lost focus.
-- **Mobile soft keyboards.** Not tested. `onscreen-keyboard` is the supported alternative today.
-- **`isTrusted`.** The plugin accepts script-dispatched events. `onscreen-keyboard` depends on
-  this, so it is noted, not proposed for change.
+- **Mobile soft keyboards.** Not tested. A16 targets them, and the release pass checks them.
+- **`isTrusted`.** The plugin accepts script-dispatched events. This is noted, not proposed for
+  change.
 - **Initialization rollback.** If init threw after `startKeyboard()`, the listeners would stay
   attached. No path reaches it today, since a duplicate registration fails before init.
 - **Safari.** Not available.
@@ -584,11 +623,10 @@ Windows; the layout, input-method, and macOS items stay open for the release pas
 ## 4. Proposed API
 
 Each item is marked **fix** (restores documented or expected behavior), **additive**,
-**breaking**, or **§6** (waits for the input conventions review). Dependents:
-`onscreen-keyboard` sends synthetic events and reads nothing from the plugin; demos, fixtures,
-manual pages, `tools/charedit.html`, and `tools/dataedit.html` use `onkey`, `offkey`, `inkey`,
-and `input`. `pi-vision` does not use keyboard. The first breaking item moves the plugin to
-2.0.0 (G1).
+**breaking**, or **§6**: left to the input conventions, which decided it (the I-number in the
+Kind column, [ROADMAP §2](ROADMAP.md#2-input-conventions)). Dependents: demos, fixtures, manual
+pages, `tools/charedit.html`, and `tools/dataedit.html` use `onkey`, `offkey`, `inkey`, and
+`input`. The first breaking item moves the plugin to 2.0.0 (G1).
 
 | ID | Change | Kind | Findings |
 | --- | --- | --- | --- |
@@ -604,20 +642,11 @@ and `input`. `pi-vision` does not use keyboard. The first breaking item moves th
 | A10 | Key data objects are frozen before they are stored, so polling and handlers cannot change plugin state. `inkey()` still returns a new array | fix | KEY-013 |
 | A11 | While a prompt is active, its keys do not reach `onkey()` handlers or `inkey()`, as a focused text field would behave | breaking | KEY-003 |
 | A12 | `setActionKeys( keys )` replaces the set, so the command and `set( { "actionKeys": … } )` behave as settings do. `removeActionKeys()` is unchanged | breaking | KEY-014 |
-| A13 | One start rule for all input plugins: either reads and registration undo `stopKeyboard()` (the documented rule), or the stop holds until `startKeyboard()` (the runtime rule). Documentation or runtime changes to match | §6 | KEY-006 |
-| A14 | Handler identity for removal: match on key set, mode, and `fn`, ignoring `once` and `allowRepeat`; whether an omitted mode removes both modes | §6 | KEY-007 |
-| A15 | `clearEvents( "keyboard" )` scope for global handlers, decided with PAD-012 | §6 | KEY-016 |
+| A13 | One start rule for all input plugins: either reads and registration undo `stopKeyboard()` (the documented rule), or the stop holds until `startKeyboard()` (the runtime rule). Documentation or runtime changes to match | §6: I5, the runtime rule | KEY-006 |
+| A14 | Handler identity for removal: match on key set, mode, and `fn`, ignoring `once` and `allowRepeat`; whether an omitted mode removes both modes | §6: I4 | KEY-007 |
+| A15 | `clearEvents( "keyboard" )` scope for global handlers, decided with PAD-012 | §6: I10, cleared everywhere | KEY-016 |
 | A16 | A hidden, focused text field while a prompt is active, for composition (IME) input, paste, and mobile soft keyboards. Its events bypass the editable-target filter. Size to be measured in the roadmap. The device pass could not test an input method, so recommended for 2.3.x unless one is tested before the roadmap is approved | additive | KEY-015 |
 | A17 | `input()` stays in the keyboard plugin. It depends only on core printing and image commands; moving it would save nothing in Full and would break Lite pages that load the keyboard plugin for prompts | no change | — |
-
-**Upgrade-guide sketches:**
-- **A11:** "Keys typed into an `input()` prompt no longer reach `onkey()` handlers or `inkey()`.
-  Handle the prompt's result instead of watching for Enter."
-- **A12:** "`setActionKeys()` replaces the action keys. Pass every key in one call, or use
-  `removeActionKeys()` to remove some."
-- **A10:** not breaking for documented use. Code that wrote to a key data object now fails
-  silently, or throws in strict mode.
-- **A13–A15:** depend on §6. If `offkey()` matching changes, say which flags it ignores.
 
 ## 5. Coverage Map
 
@@ -639,29 +668,6 @@ and `input`. `pi-vision` does not use keyboard. The first breaking item moves th
 | `clearEvents( "keyboard" )` | `keyboard-lifecycle` (no screen; during dispatch) | — | — | `clearevents_01`, `clearevents_02`, `events_comprehensive` (no-throw only) |
 | Lite plus standalone plugin | — | `keyboard-lifecycle-browser` (Lite bundle), `plugin-installation-browser` | — | — |
 | Trusted (native) key input | — | `firefox-smoke` (one `onkey`) | Every keyboard fixture (Playwright keyboard) | — |
-
-### 5.2 Tests to add first
-
-Ranked by value. Each test starts from the probe that reproduces its finding. Following the
-standing rules, pure logic goes in the Node test (`keyboard-lifecycle.test.js`, whose `vm`
-harness drives `onKeyDown` and `onKeyUp` directly), and only what needs a browser goes in the
-browser test. Fix the harness's `undefined`-to-`null` conversion first.
-
-1. Held state by code: modifier released first, two keys with one value, `"Process"` (K1, K1b,
-   K14; KEY-001). Add one native-keyboard case to the browser test (K1n).
-2. `clearEvents( "keyboard" )` with prompts on two screens (K2; KEY-002, KEY-016).
-3. Prompt key ownership: default prevention, Ctrl and AltGr, Tab, handlers during a prompt (K9,
-   K9n; KEY-003).
-4. Lifecycle: start, stop, repeated calls, registration and polling after a stop, a prompt
-   during a stop, focus kept on start (K8; KEY-006, KEY-012). This removes the three
-   single-reference commands.
-5. Editable targets, including shadow roots, in the browser test (K12; KEY-004).
-6. Validation and combination arrays (K3, K4, K6, K20; KEY-009, KEY-010).
-7. Numeric prompt rules (K10; KEY-008).
-8. Prompt layout after inline text, with scaled print, and with long input, in the browser test
-   (K11; KEY-005).
-9. Release data and releases of unseen presses (K13; KEY-011).
-10. `removeActionKeys` and `set( { "actionKeys" } )` (K20; KEY-014).
 
 ## 6. Validation
 
@@ -714,49 +720,12 @@ The page's own record of browser-held keys is stale after a blur, since it learn
 only from keyup events. The focus results above therefore use its blur and focus samples of
 Pi.js state, not its browser column.
 
-**Open device checks,** for the release pass (R.7): a non-US layout with AltGr, an input
-method, and Safari and macOS Meta, if macOS hardware is available.
-
-## 7. Recommended Roadmap
-
-`KEYBOARD-V2.3-ROADMAP.md` is written from the accepted items after the conventions review.
-Proposed order:
-
-**Phase 1 — Fixes and tests (no API change):**
-- A1–A10.
-- Metadata and declaration corrections for current behavior (KEY-017).
-- The manual page fixes (KEY-018).
-- The tests in Section 5.2.
-
-These can start once the roadmap is approved, and they do not depend on §6. A1 and A8 change
-what `onscreen-keyboard`'s synthetic events produce only in the ways the fixes intend; its
-visual suite runs at each task's end.
-
-**Phase 2 — API (after §6):**
-- A11–A15.
-- The version moves to 2.0.0 with the first breaking change.
-- Each task updates metadata, declarations, and signature tests, and checks the demos,
-  fixtures, and `tools/` pages that use the changed command.
-
-**Phase 3 — Release inputs:**
-- A16 if kept in 2.3.
-- The compatibility summary.
-- The device checks still open for R.7.
-- Size at each phase exit.
-
-The user documentation (`API.md`, the README, the llms references) is rewritten in the release
-phase (R.2, R.3), as the standing rules require.
-
-**Scope-cut order:**
-1. A16 (additive, can follow in 2.3.x).
-2. A12 (then `setActionKeys()` keeps adding, and the documentation says so).
-3. Phase 2 as a set, per plan §12.3.
-
-Phase 1 is not cut.
-
-## 8. Handoffs
+## 7. Handoffs
 
 ### Core audit
+
+The core audit's answer to each item is in
+[AUDIT-CORE §7](AUDIT-CORE.md#7-handoffs).
 
 | Item | Detail |
 | --- | --- |
@@ -766,67 +735,36 @@ Phase 1 is not cut.
 | Font glyph mapping | `print()` maps character codes through the font's table (`src/text/print.js:484`), so characters outside it, including most non-Latin text typed into a prompt, are not drawn. Relevant if A16 lands |
 | Frame hook | Keyboard is event-driven and does not need one |
 
-### Input conventions review (§6)
+## 8. Review Decisions
 
-Keyboard's answers to the questions the gamepad audit raised:
-
-| Item | Keyboard today |
-| --- | --- |
-| Handler names | `onkey` / `offkey`, lowercase; gamepad uses `onGamepadConnected` with no `off` |
-| Handler shape | `onkey( key, mode, fn, once, allowRepeat )`; removal matches every argument, including the flags (KEY-007) |
-| Callback data | One key: the press's data object, shared with `inkey()` (KEY-013). Combination: an array in sorted name order. Release handlers get the press's data (KEY-011) |
-| Auto-start | Starts at plugin load. `stopKeyboard()` holds until `startKeyboard()`; reads and registration do not restart, although the documentation says they do (KEY-006) |
-| Return shapes | `inkey()`: a new array; `inkey( key )`: object or `null`. After a stop: `[]` and `null` |
-| Global handlers and `clearEvents` | `clearEvents( "keyboard" )` from any screen clears every handler, but cancels only that screen's prompt (KEY-002, KEY-016) |
-| Error codes | `TypeError` with `INVALID_PARAMETERS` for validation; `Error` with `SCREEN_REMOVED` for `input()` on a screen being removed |
-| Names: codes or values | Both accepted in one namespace, codes checked first. The review should recommend one for documentation (codes for game controls) |
-| Modifier matching | Combinations allow extra held keys: `[ "Control", "KeyC" ]` also matches Ctrl+Shift+C. Decide whether an exact-match option is wanted |
-
-### Dependents (G2)
-
-`onscreen-keyboard` 1.0.0, confirmed by K15 in all three engines:
-- It sends `code` equal to the character (`"q"`, not `"KeyQ"`), so code-based handlers and
-  `inkey( "KeyQ" )` never see on-screen presses.
-- Tapping the SYMBOLS or CapsLock key stores `null` in its active-key map, and `onKeyboardUp()`
-  does not remove it (`plugins/onscreen-keyboard/index.js:342-354`, `:396`, `:420`). A later
-  `hideKeyboard()` or `removeScreen()` then throws "Cannot read properties of null" from
-  `simulateKeyRelease()`.
-- Its +/- key sends `"-"`, which the prompt only ever prepends, so it cannot remove a minus.
-- It works only while the keyboard is started.
-
-Per G2, these are recorded for the owner rather than fixed by this roadmap, except where A1 or A7
-changes what its events produce.
-
-## 9. Review Decisions
-
-The maintainer marks each item accepted, rejected, or deferred (plan §5.6). Decisions
-recorded 2026-09-25.
+The maintainer marked each item accepted, rejected, or deferred on 2026-09-25. The Notes name
+the [ROADMAP](ROADMAP.md#5-keyboard) tasks that implement each item.
 
 | ID | Summary | Decision | Notes |
 | --- | --- | --- | --- |
-| KEY-001 | Key-value state sticks or releases early | Accepted | P1. Fixed by A1. Confirmed on hardware in Chrome |
-| KEY-002 | `clearEvents()` from another screen strands a prompt | Accepted | Fixed by A2 |
-| KEY-003 | Prompt does not own the keyboard | Accepted | Fixed by A3 and A11. Confirmed on hardware in Chrome |
-| KEY-004 | Shadow-DOM inputs reach game handlers | Accepted | Fixed by A4 |
-| KEY-005 | Prompt layout | Accepted | Fixed by A5 |
-| KEY-006 | `stopKeyboard()` not undone; strands prompts | Accepted | Prompt part fixed by A2; start rule decided in §6 (A13) |
-| KEY-007 | `offkey()` needs every flag | Accepted | Rule decided in §6 (A14) |
-| KEY-008 | Numeric prompt edge cases | Accepted | Fixed by A6 |
-| KEY-009 | Validation gaps | Accepted | Fixed by A7 |
-| KEY-010 | Caller's array sorted; duplicates fire twice | Accepted | Fixed by A7 |
-| KEY-011 | Release data and unseen presses | Accepted | Fixed by A8 |
-| KEY-012 | `startKeyboard()` blurs focus | Accepted | Fixed by A9 |
-| KEY-013 | Live key data | Accepted | Fixed by A10 |
-| KEY-014 | `setActionKeys()` adds | Accepted | Fixed by A12 (breaking) |
-| KEY-015 | No composed or pasted text | Accepted | Fixed by A16 in 2.3.0; paste also by A3 |
-| KEY-016 | `clearEvents()` scope | Accepted | Rule decided in §6 (A15) |
-| KEY-017 | Documentation and declarations | Accepted | Metadata and declarations in roadmap Phase 1; `API.md`, README, and llms references in R.2 and R.3 |
-| KEY-018 | Manual pages register twice | Accepted | Roadmap Phase 1; self-registration after Full is CORE-003 |
-| KEY-019 | Missing automated tests | Accepted | Section 5.2 |
-| A1–A9 | Fixes | Accepted | Roadmap Phase 1 |
+| KEY-001 | Key-value state sticks or releases early | Accepted | P1. Fixed by A1 (Keyboard 1.2). Confirmed on hardware in Chrome |
+| KEY-002 | `clearEvents()` from another screen strands a prompt | Accepted | Fixed by A2 (Keyboard 1.3) |
+| KEY-003 | Prompt does not own the keyboard | Accepted | Fixed by A3 and A11 (Keyboard 1.4, 2.8). Confirmed on hardware in Chrome |
+| KEY-004 | Shadow-DOM inputs reach game handlers | Accepted | Fixed by A4 (Keyboard 1.5) |
+| KEY-005 | Prompt layout | Accepted | Fixed by A5 (Keyboard 1.6) |
+| KEY-006 | `stopKeyboard()` not undone; strands prompts | Accepted | Prompt part fixed by A2 (Keyboard 1.3); start rule I5 (Keyboard 2.3) |
+| KEY-007 | `offkey()` needs every flag | Accepted | Rule I4 (Keyboard 2.2) |
+| KEY-008 | Numeric prompt edge cases | Accepted | Fixed by A6 (Keyboard 1.7) |
+| KEY-009 | Validation gaps | Accepted | Fixed by A7 with I11 codes (Keyboard 2.7) |
+| KEY-010 | Caller's array sorted; duplicates fire twice | Accepted | Fixed by A7 (Keyboard 2.7) |
+| KEY-011 | Release data and unseen presses | Accepted | Fixed by A8 (Keyboard 1.8); blur releases by I6 (Keyboard 2.4) |
+| KEY-012 | `startKeyboard()` blurs focus | Accepted | Fixed by A9 (Keyboard 1.9) |
+| KEY-013 | Live key data | Accepted | Fixed by A10 (Keyboard 1.10) and I7 (Keyboard 2.5) |
+| KEY-014 | `setActionKeys()` adds | Accepted | Fixed by A12 (Keyboard 2.9, breaking) |
+| KEY-015 | No composed or pasted text | Accepted | Fixed by A16 in 2.3.0 (Keyboard 3.1); paste also by A3 |
+| KEY-016 | `clearEvents()` scope | Accepted | Rule I10 (Keyboard 2.6) |
+| KEY-017 | Documentation and declarations | Accepted | Metadata and declarations in Keyboard 1.11; `API.md`, README, and llms references in R.2 and R.3 |
+| KEY-018 | Manual pages register twice | Accepted | Keyboard 1.12; self-registration after Full is CORE-003 |
+| KEY-019 | Missing automated tests | Accepted | A test with each fix; harness in Keyboard 1.1 |
+| A1–A9 | Fixes | Accepted | Keyboard Phase 1, except A7, which lands with I11 in Phase 2 |
 | A10 | Frozen key data | Accepted | Fix |
 | A11 | Prompt keys withheld from handlers | Accepted | Breaking |
 | A12 | `setActionKeys()` replaces | Accepted | Breaking |
-| A13–A15 | Start rule, handler identity, `clearEvents` scope | Accepted | Rules decided in §6 |
-| A16 | Hidden text field for IME, paste, and mobile | Accepted | Additive, in 2.3.0, overriding the audit's 2.3.x recommendation. IME composition and a mobile soft keyboard are added to the release device pass (R.7), since neither could be tested in the audit |
+| A13–A15 | Start rule, handler identity, `clearEvents` scope | Accepted | Decided by I5, I4, and I10 |
+| A16 | Hidden text field for IME, paste, and mobile | Accepted | Additive, in 2.3.0, overriding the audit's 2.3.x recommendation. IME composition and a mobile soft keyboard are added to the release device pass ([ROADMAP §8.3](ROADMAP.md#83-manual-release-checks)), since neither could be tested in the audit |
 | A17 | `input()` stays in the plugin | Accepted | No change |

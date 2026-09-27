@@ -1,6 +1,6 @@
 /**
  * Keyboard 2.3 audit probes: reproductions for the findings in
- * docs/plans/KEYBOARD-V2.3-AUDIT.md, run against fresh in-memory bundles of the current source
+ * docs/plans/v2.3/AUDIT-KEYBOARD.md, run against fresh in-memory bundles of the current source
  * in Chromium, Firefox, and WebKit.
  *
  * Each probe dispatches synthetic `KeyboardEvent`s, runs one scenario, and records what it

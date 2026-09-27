@@ -1,7 +1,7 @@
 /**
  * Pi.js Release Version Check
  *
- * Verifies that a built release agrees on its versions (upgrade plan R.6): the tag, the root
+ * Verifies that a built release agrees on its versions (ROADMAP R.6): the tag, the root
  * package.json, releases/pi-latest/package.json, the @version banners of the library bundles,
  * the Version headers of the library declarations, and each plugin bundle's @version against
  * its plugins/<name>/banner.json. Every mismatch is reported, not only the first.

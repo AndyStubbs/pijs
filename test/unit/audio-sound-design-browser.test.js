@@ -1,6 +1,6 @@
 /**
  * Offline render tests for the core sound palette: white and pink noise, the pan law, and
- * the frequencyEnd sweep (sound roadmap Phase 2).
+ * the frequencyEnd sweep (Sound Phase 2).
  *
  * Renders bypass the limiter and set the master volume to 1, so output is source × envelope.
  * The pan and sweep expectations are written here from the plan (5, 6.1, 10.2), not from the

@@ -1,6 +1,6 @@
 # Text files are stored and checked out with LF line endings on every platform, whatever the
 # local core.autocrlf setting, so builds and tests do not depend on the checkout
-# (docs/plans/CI-V2.3-EXPLORATION.md, CI-007).
+# (docs/plans/v2.3/AUDIT-CI.md, CI-007).
 * text=auto eol=lf
 
 # Binary assets are never converted

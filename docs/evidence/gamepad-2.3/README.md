@@ -1,7 +1,7 @@
 # Gamepad 2.3 Evidence
 
 This folder holds measurements and reproductions for the 2.3 gamepad audit
-([GAMEPAD-V2.3-AUDIT.md](../../plans/GAMEPAD-V2.3-AUDIT.md)). It records:
+([AUDIT-GAMEPAD.md](../../plans/v2.3/AUDIT-GAMEPAD.md)). It records:
 - **Revision:** `b37e9b8`, measured 2026-09-24. The audit changed no library code or tests.
 - **Machine:** Windows 11 Home 10.0.26200, 16 logical CPUs, Node 22.19.0.
 - **Browsers:** Playwright 1.56.0 with Chromium 141.0.7390.37, Firefox 142.0.1 and WebKit 26.0.

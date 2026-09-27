@@ -1,10 +1,9 @@
 # Pi.js 2.3 Core Audit
 
-Status: Reviewed 2026-09-25; C4 rejected, every other finding and proposal accepted
-(Section 9). C3 changed to documentation only on 2026-09-27. Follow-up tasks 1 and 2 done
-(Section 7)
-Plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md), Section 7
-Evidence: [docs/evidence/core-2.3/](../evidence/core-2.3/README.md)
+Reviewed 2026-09-25: C4 rejected, every other finding and proposal accepted (Section 8). C3
+changed to documentation only on 2026-09-27.
+Implementation and status: [ROADMAP §3](ROADMAP.md#3-core)
+Evidence: [docs/evidence/core-2.3/](../../evidence/core-2.3/README.md)
 
 ## 1. Summary
 
@@ -13,7 +12,7 @@ Evidence: [docs/evidence/core-2.3/](../evidence/core-2.3/README.md)
 - **Environment:** Windows 11 Home 10.0.26200, 16 logical CPUs, Node 22.19.0, Playwright
   1.56.0 (Chromium 141.0.7390.37, Firefox 142.0.1, WebKit 26.0), esbuild 0.25.10,
   TypeScript 5.6.3.
-- **Scope:** the five areas of plan §7.1:
+- **Scope:** five areas:
   - The 2.2 contracts.
   - The changes since `694d02a` in `src/`, `scripts/`, `metadata/`, and the polygons plugin
     (about 6,300 inserted lines in 102 files).
@@ -124,7 +123,7 @@ behavior:
   exists. The tarball has 75 files, 2.80 MB packed, about 7 MB of it source maps.
 - **Scripts:** portable. `scripts/test.js` spawns Node without a shell, and no script uses
   `xcopy`, `.cmd`, or a hard-coded separator. The only Windows-only step is the `xcopy` in the
-  publish guide, already in the CI/CD exploration's scope (plan §9.1).
+  publish guide, already in the CI/CD exploration's scope.
 
 ## 3. Findings
 
@@ -133,6 +132,8 @@ Priorities follow the 2.2 audit: **P1** blocks a supported workflow or corrupts 
 defect. Line numbers refer to `96279b9`. Each finding names its probe in `probes.js`; the
 results are in `probes-output.json`. Every browser probe gives the same result in Chromium,
 Firefox, and WebKit.
+
+<a id="core-001"></a>
 
 ### CORE-001 — P2 — defect — The shared offscreen context cannot recover once it has no screens
 
@@ -169,6 +170,8 @@ resize, or leave while the context is lost, but not a loss after every member ha
 
 **Proposed fix:** discard `m_offscreenContext` when its last screen is removed, or keep its
 listeners for the context's lifetime (Section 4, C1).
+
+<a id="core-002"></a>
 
 ### CORE-002 — P2 — defect — A failed plugin initialization leaves its registrations installed
 
@@ -214,6 +217,8 @@ successful late installation only.
 it only after init succeeds, as services are. Remove the record from `m_plugins` on failure
 (Section 4, C2).
 
+<a id="core-003"></a>
+
 ### CORE-003 — P2 — defect — A bundled plugin loaded after Full breaks the page
 
 **Locations:** each bundled plugin's self-registration block (for example
@@ -250,6 +255,8 @@ without saying they are for Lite. It omits `polygons` and `sound-advanced`.
 same version and warns on a version mismatch. `registerPlugin()` keeps throwing
 `DUPLICATE_PLUGIN` for explicit calls. Document the Lite-only entry points (Section 4, C3).
 
+<a id="core-004"></a>
+
 ### CORE-004 — P2 — defect — `clearEvents()` removes plugin-internal subscriptions
 
 **Locations:** `plugins/pointer/press.js:185-193` (clearing replaces the handler table),
@@ -279,8 +286,10 @@ two bundled optional plugins.
 
 **Proposed fix:** core gives plugins a way to subscribe that user-level `clearEvents()` does
 not reach. For example, a flag on internal registrations that the clear handler skips, or
-plugin-owned handler tables (Section 4, C4). The mechanism is decided in the conventions
-review (§6), since it shapes every input plugin's handler tables.
+plugin-owned handler tables (Section 4, C4). The review rejected C4: the behavior is documented
+instead (Section 8).
+
+<a id="core-005"></a>
 
 ### CORE-005 — P2 — defect — The release package is typed wrongly under `nodenext`
 
@@ -311,6 +320,8 @@ resolution.
 **Proposed fix:** add `"type": "module"` to `releases/base-package.json`, and compile the
 consumers under both resolutions (Section 4, C5).
 
+<a id="core-006"></a>
+
 ### CORE-006 — P3 — defect — Plugin initialization errors are thrown to the wrong caller
 
 **Locations:** `src/core/plugins.js:130-166` (`resolveDependencies()` throws the first failure
@@ -334,6 +345,8 @@ failure and may treat its own plugin as missing.
 **Proposed fix:** throw a plugin's failure from its own `registerPlugin()` call when that call
 resolved it. Report failures resolved during another call with `console.error` and in
 `getPlugins()` (Section 4, C2).
+
+<a id="core-007"></a>
 
 ### CORE-007 — P3 — defect — An explicit `undefined` is not treated as an omitted argument
 
@@ -363,6 +376,8 @@ including `undefined`, where an omitted argument becomes `null`). The affected c
 **Proposed fix:** `parseOptions` maps `undefined` to `null`, positionally and by name
 (Section 4, C6).
 
+<a id="core-008"></a>
+
 ### CORE-008 — P3 — defect — `set()` accepts unknown names and fails uncoded on some inputs
 
 **Locations:** `src/core/commands.js:300-330`, `commands.js:90` (settings are a plain object),
@@ -390,6 +405,8 @@ the mistake.
 `INVALID_OPTION` for unknown names, and the no-screen error for screen settings (Section 4,
 C7).
 
+<a id="core-009"></a>
+
 ### CORE-009 — P3 — defect — `getPal( false )` includes index 0
 
 **Locations:** `src/api/colors.js:174`, `:313` (`include0 === null`).
@@ -403,6 +420,8 @@ is excluded by default.
 **Evidence:** C08, identical in all three engines.
 
 **Proposed fix:** test `include0` for truthiness after defaulting (Section 4, C6).
+
+<a id="core-010"></a>
 
 ### CORE-010 — P3 — defect — `setChar()` has no effect on the default font
 
@@ -433,6 +452,8 @@ does much more GPU work than printing with image fonts.
 **Proposed fix:** mark static canvas sources clean after upload, and draw `setChar` edits
 into the source canvas as well, so they also survive a context restore (Section 4, C8).
 
+<a id="core-011"></a>
+
 ### CORE-011 — P3 — defect — `getImage()` of an offscreen screen throws a raw `TypeError`
 
 **Locations:** `src/api/images.js:452-455` calls `createImageFromScreen( imgScreenData )`
@@ -450,6 +471,8 @@ is also unclear.
 
 **Proposed fix:** decide what `getImage( screen )` returns, then pass an options object
 (Section 4, C6).
+
+<a id="core-012"></a>
 
 ### CORE-012 — P3 — defect — Polygon coordinates past 2³¹ wrap
 
@@ -471,6 +494,8 @@ integers but tests nothing between 2³¹ and 2⁵³.
 
 **Proposed fix:** clip the rows and span ends to the screen before storing them (Section 4,
 C6).
+
+<a id="core-013"></a>
 
 ### CORE-013 — P3 — defect — Numeric validation gaps in `arc`, `loadFont`, and `setPrintSize`
 
@@ -497,6 +522,8 @@ throw coded errors, as `x`, `y`, and `radius` already do. The 2.2 numeric bounda
 
 **Proposed fix:** extend the finite, integer, and range checks, with rows in
 `numeric-boundaries.test.js` (Section 4, C6).
+
+<a id="core-014"></a>
 
 ### CORE-014 — P3 — documentation — Text outside the font's character table is undocumented
 
@@ -526,6 +553,8 @@ character.
 **Proposed fix:** document the current behavior in the release phase (R.2). Whether to map
 Latin-1 to CP437, or add a replacement glyph, is a separate decision (Section 4, C10).
 
+<a id="core-015"></a>
+
 ### CORE-015 — P3 — API — `removeScreen` forms disagree with their declarations
 
 **Locations:** `src/core/screen-manager.js:121-128`, `metadata/pi-2.0/removeScreen.toml`,
@@ -545,6 +574,8 @@ Latin-1 to CP437, or add a replacement glyph, is a separate decision (Section 4,
 
 **Proposed fix:** accept the object form, throw the core screen errors for missing or
 unknown screens, and declare `Screen.removeScreen()` (Section 4, C6).
+
+<a id="core-016"></a>
 
 ### CORE-016 — P3 — documentation — Plugin declarations do not serve Lite users
 
@@ -571,6 +602,8 @@ unknown screens, and declare `Screen.removeScreen()` (Section 4, C6).
 **Proposed fix:** generate each plugin's declarations from its metadata, augmenting both the
 Full and Lite API types, and declare the globals once (Section 4, C5).
 
+<a id="core-017"></a>
+
 ### CORE-017 — P3 — documentation — `addCommand` declaration and example disagree with runtime
 
 **Locations:** `metadata/pi-2.3/_objects.toml:11-13`, `src/core/plugins.js:71`.
@@ -585,6 +618,8 @@ registration succeeds and the command then throws "parameterNames is not iterabl
 **Proposed fix:** mark `isScreenOptional` optional in the signature, and correct the example
 (Section 4, C5).
 
+<a id="core-018"></a>
+
 ### CORE-018 — P3 — defect — The filled-circle geometry cache never evicts
 
 **Locations:** `src/renderer/draw/geometry.js:26`, `:292-312`.
@@ -598,6 +633,8 @@ contrast, is capped at 1,000 entries.
 
 **Proposed fix:** cap the cache, or skip caching above a radius (Section 4, C8).
 
+<a id="core-019"></a>
+
 ### CORE-019 — P3 — documentation — Release and repository packaging details
 
 **Locations:** `releases/publish.md`, the root and release `package.json`,
@@ -605,7 +642,7 @@ contrast, is capped at 1,000 entries.
 
 - **File name case:** git tracks `releases/publish.md`, while the plan and the Windows working
   tree use `PUBLISH.md`. On a case-sensitive checkout, the references in
-  `UPGRADE-V2.3-PLAN.md` (§9.1 and R.5, R.7) do not resolve.
+  the 2.3 upgrade plan do not resolve.
 - **Root package:** the root `package.json` has no `"private": true`. `npm pack --dry-run` from
   the root lists 1,102 files, 12.9 MB, so an accidental `npm publish` from the root would ship
   the tests, releases, and build output.
@@ -613,7 +650,9 @@ contrast, is capped at 1,000 entries.
   longer adds changelogs automatically.
 - **Package README:** the plugin list is incomplete (CORE-003).
 
-**Proposed fix:** release-phase tasks R.5 and R.6 (Section 4, C11).
+**Proposed fix:** Section 4, C11.
+
+<a id="core-020"></a>
 
 ### CORE-020 — P3 — test gap — Checks that would have caught these findings are missing
 
@@ -670,7 +709,7 @@ These are not findings.
 ## 4. Proposed Changes
 
 Each item is marked **fix** (restores documented or expected behavior), **additive**, or
-**breaking**. Under plan §3, core stays stable unless a change fixes a confirmed defect or
+**breaking**. Under the core API rule ([ROADMAP §1.2](ROADMAP.md#12-scope-decisions)), core stays stable unless a change fixes a confirmed defect or
 serves an accepted plugin change, and each core API change needs maintainer approval; items
 that change core API are marked **approval**.
 
@@ -679,26 +718,17 @@ that change core API are marked **approval**.
 | C1 | Discard the shared offscreen context when its last screen is removed, so the next offscreen screen creates a fresh one | fix | CORE-001 |
 | C2 | Plugin installation is transactional: registrations are collected and applied only after init and screen installation succeed; a failed plugin leaves nothing, including its `m_plugins` entry. A failure is thrown from the call that registered the plugin; failures resolved during another call are reported with `console.error` and visible in `getPlugins()` | fix | CORE-002, CORE-006 |
 | C3 | Document that the standalone plugin entry points are for Lite; loading a plugin that Pi.js already includes throws `DUPLICATE_PLUGIN` (changed from a self-registration skip on 2026-09-27, Section 9) | documentation | CORE-003 |
-| C4 | Plugin-internal subscriptions: a registration option, or plugin-owned handler tables, that user-level `clearEvents()` does not reach. Mechanism settled in §6 | additive, approval | CORE-004 |
+| C4 | Plugin-internal subscriptions: a registration option, or plugin-owned handler tables, that user-level `clearEvents()` does not reach. Rejected in review (Section 8) | additive, approval | CORE-004 |
 | C5 | Declarations: `"type": "module"` in the release manifest; plugin declarations augment Full and Lite; globals declared once; Lite `Options` and types limited to Lite; `addCommand`'s last parameter optional; `Screen.removeScreen()` declared | fix | CORE-005, CORE-015, CORE-016, CORE-017 |
 | C6 | Option and value handling: `parseOptions` maps `undefined` to `null`; `getPal( false )` excludes index 0; `getImage( screen )` fixed; polygon spans clipped; numeric checks for `arc`, `loadFont`, and `setPrintSize`; `removeScreen` object form and coded errors | fix | CORE-007, CORE-009, CORE-011, CORE-012, CORE-013, CORE-015 |
 | C7 | `set()` throws `INVALID_OPTION` for unknown or unavailable names and the no-screen error for screen settings | breaking | CORE-008 |
 | C8 | Static canvas textures are uploaded once; `setChar` also edits the source canvas; the circle geometry cache is bounded | fix | CORE-010, CORE-018 |
-| C9 | No core frame hook in 2.3. Gamepad's own loop serves its roadmap (A1), and keyboard and pointer are event-driven. Revisit if a second input plugin needs frame-aligned updates | none | Handoff |
+| C9 | No core frame hook in 2.3. Gamepad's own loop serves its fix (gamepad A1), and keyboard and pointer are event-driven. Revisit if a second input plugin needs frame-aligned updates | none | Handoff |
 | C10 | Document the characters each built-in font draws and the one-cell-per-UTF-16-unit rule (R.2). Mapping Latin-1 to CP437 is deferred | documentation | CORE-014 |
 | C11 | Release packaging: rename to `releases/PUBLISH.md` in git, `"private": true` in the root manifest, and ship `CHANGELOG.md` in the tarball | fix | CORE-019 |
 
 C7 is the only breaking change. Code that passes a misspelled option or a Full-only option to
 Lite's `set()` starts to throw.
-
-**Upgrade-guide sketches:**
-- **C7:** "`set()` now throws `INVALID_OPTION` for an option it does not recognize, including
-  options from plugins that are not loaded. Remove the option, fix its spelling, or load the
-  plugin that provides it."
-- **C3:** "The standalone plugin entry points (`pijs-web/plugins/…`) are for Lite. Loading one
-  that the Full bundle already includes throws `DUPLICATE_PLUGIN`."
-- **C5:** "TypeScript projects using `nodenext` module resolution now get the package's types.
-  Lite projects that load a plugin get that plugin's command types."
 
 ## 5. Coverage Map
 
@@ -715,26 +745,6 @@ Limited to the §7.1 areas. The 2.2 contracts are mapped one by one in `contract
 | Fonts and printing | `font-publication` (15) | `font-publication-browser` (6), `alpha-composition-browser` | `setChar` on font 1; characters outside the table |
 | Package and declarations | `build.test.js`, `copy-to-release.test.js` (24) | — | `package-types-consumer` (2): `bundler` only, no Lite plus plugin, no `nodenext` |
 | Metadata against runtime | — | — | No comparison exists |
-
-### 5.2 Tests to add first
-
-Ranked by value. Each starts from the probe that reproduces its finding.
-
-1. Transactional plugin installation: init and screen-install failures leave nothing, and
-   the name can be registered again (C02, C02b, C03).
-2. Type consumers under `nodenext`, and Lite with each exported plugin, in
-   `package-types-consumer.test.js` (declaration probes).
-3. Offscreen context loss after every member has gone, in `context-recovery-browser.test.js`
-   (C01).
-4. Duplicate self-registration after Full, IIFE and ESM (C04). Covered by the existing
-   `polygons-bundles-browser.test.js`, which asserts the documented `DUPLICATE_PLUGIN` (C3).
-5. `clearEvents()` leaves plugin-internal subscriptions working (C05), once C4 is decided.
-6. A generated check that every registered command and setting has metadata with matching
-   parameters.
-7. `parseOptions` with explicit `undefined`, and `set()` names, in the Node suites (C06, C07).
-8. `setChar` on the default font (C09).
-9. Numeric boundary rows for `arc`, `loadFont`, `setPrintSize`, and polygon extents (C11,
-   C12).
 
 ## 6. Validation
 
@@ -758,56 +768,7 @@ Ranked by value. Each starts from the probe that reproduces its finding.
   plugin metadata. Hot-path commands installed directly on the API were checked at runtime.
 - CORE-018's memory figure was calculated from the vertex layout, not measured.
 
-## 7. Recommended Roadmap
-
-After review, only C7 changes the core API, so a short `CORE-V2.3-ROADMAP.md` is needed for it
-(plan §7.2). C4 and C3 were decided as documentation only (Section 9). The other items are fixes,
-tracked in the follow-up table below as in 2.2. Order:
-
-**Phase 1: before the input roadmaps are approved.** The input plugins build on these:
-- C2 (plugin installation). C3 was first planned here; it is now documentation (below).
-- C5's plugin declaration changes, because every input roadmap regenerates its plugin's
-  declarations.
-
-**Phase 2: fixes, in any order:**
-- C1, C6, C8.
-- C5's manifest and declaration fixes.
-- C11.
-- The tests in Section 5.2, except item 5, which C4's decision removes.
-
-**Phase 3:** C7, with the compatibility summary.
-
-User documentation is written in the release phase (R.2, R.3), as the standing rules require:
-- C10's description of characters outside the font table.
-- CORE-004: `clearEvents()` also removes handlers that a plugin registers through the public
-  input commands. This is written for plugin authors (plugin guides); no plugin that remains
-  in 2.3 is affected once `onscreen-keyboard` and `pi-vision` are removed (upgrade plan §3.1).
-- The `set()` and `removeScreen` text in `API.md`.
-- C3: the standalone plugin entry points are for Lite (follow-up task 2 lists the documents).
-
-**Scope-cut order:**
-1. C8 and C10's Latin-1 mapping.
-2. C7, which leaves `set()` lenient and documents that.
-3. C11's changelog item.
-
-Phase 1 and CORE-001 are not cut.
-
-### Follow-up table
-
-| Order | Task | Findings | Status |
-| --- | --- | --- | --- |
-| 1 | Transactional plugin installation and error routing | CORE-002, CORE-006 | Done 2026-09-27. Registrations are collected during init and committed after installation succeeds; screen installation rolls back; `getPlugins()` reports `state`; a failed name can be registered again; registration after init throws `REGISTRATION_CLOSED` |
-| 2 | Document Lite-only plugin entry points | CORE-003 | Documentation only (review change 2026-09-27); release phase (R.3, R.5): `releases/pi-latest/README.md` says the plugin entry points are for Lite and lists `polygons` and `sound-advanced`; `plugins/README.md:36`, `plugins/polygons/README.md:10`, and `docs/llms/llms-full.txt:130` state the Lite-only rule |
-| 3 | Document that `clearEvents()` reaches dependent plugins' handlers | CORE-004 | Accepted; release phase (R.2) |
-| 4 | Declarations and release manifest | CORE-005, CORE-015, CORE-016, CORE-017 | Accepted |
-| 5 | Offscreen context lifetime | CORE-001 | Accepted |
-| 6 | Option and value handling | CORE-007, CORE-009, CORE-011, CORE-012, CORE-013 | Accepted |
-| 7 | Canvas texture uploads, `setChar`, and cache bounds | CORE-010, CORE-018 | Accepted |
-| 8 | Strict `set()` | CORE-008 | Accepted; `CORE-V2.3-ROADMAP.md` |
-| 9 | Packaging details | CORE-019 | Accepted. The `releases/PUBLISH.md` rename is done (CI roadmap task 2.1, 2026-09-26); `"private": true` and the changelog in the tarball remain |
-| 10 | Tests | CORE-020 | With each task |
-
-## 8. Handoffs
+## 7. Handoffs
 
 ### Input audits
 
@@ -825,7 +786,7 @@ The core audit's answer to each item the input audits handed to it:
 | Font glyph mapping for typed text | Keyboard (A16) | Confirmed and documented, CORE-014 |
 | Frame hook for input plugins | Gamepad | None in 2.3 (C9) |
 
-### Input conventions review (§6)
+### Input conventions review
 
 Core facts the review needs:
 
@@ -840,43 +801,37 @@ Core facts the review needs:
 | Getters | `width()`, `height()`, and `canvas()` have no `get` prefix; `getCols()`, `getRows()`, and `getPos()` do |
 | Callbacks | `ready()` takes a callback and returns a promise; `loadImage` and `loadSpritesheet` take `onLoad` and `onError`; `loadAudio` and `loadFont` take neither and use `ready()` |
 
-### CI/CD exploration (§9)
+## 8. Review Decisions
 
-- The publish guide's `xcopy` step is the only Windows-only workflow step. The scripts are
-  portable (Section 2.3).
-- CORE-019's file name case difference will surface on the first Linux or macOS checkout.
-
-## 9. Review Decisions
-
-The maintainer marks each item accepted, rejected, or deferred (plan §5.6). Decisions
-recorded 2026-09-25.
+The maintainer marked each item accepted, rejected, or deferred on 2026-09-25. The Notes name
+the [ROADMAP](ROADMAP.md#3-core) tasks that implement each item.
 
 | ID | Summary | Decision | Notes |
 | --- | --- | --- | --- |
-| CORE-001 | Offscreen context not restored after its last screen | Accepted | P2. Fixed by C1 |
-| CORE-002 | Failed plugin stays half-installed | Accepted | P2. Fixed by C2 |
-| CORE-003 | Bundled plugin loaded after Full breaks the page | Accepted | P2. Documentation only (changed 2026-09-27): the throw stays, and the standalone entry points are documented as Lite-only (C3). Self-registration is not changed |
-| CORE-004 | `clearEvents()` removes plugin-internal subscriptions | Accepted | P2. Documentation only (C4 rejected): `API.md` and the plugin guides say that `clearEvents()` also removes handlers a plugin registers through the public input commands. The two affected plugins, `onscreen-keyboard` and `pi-vision`, are removed in 2.3 (upgrade plan §3.1, G7). No mechanism is needed from §6 |
-| CORE-005 | Release package types wrong under `nodenext` | Accepted | P2. Fixed by C5 |
-| CORE-006 | Init errors thrown to the wrong caller | Accepted | Fixed by C2 |
-| CORE-007 | Explicit `undefined` not treated as omitted | Accepted | Fixed by C6 |
-| CORE-008 | `set()` accepts unknown names | Accepted | Fixed by C7 (breaking) |
-| CORE-009 | `getPal( false )` includes index 0 | Accepted | Fixed by C6 |
-| CORE-010 | `setChar()` ignored on the default font | Accepted | Fixed by C8 |
-| CORE-011 | `getImage()` of an offscreen screen | Accepted | Fixed by C6 |
-| CORE-012 | Polygon coordinates past 2³¹ wrap | Accepted | Fixed by C6 |
-| CORE-013 | Numeric validation gaps | Accepted | Fixed by C6 |
+| CORE-001 | Offscreen context not restored after its last screen | Accepted | P2. Fixed by C1 (Core 5) |
+| CORE-002 | Failed plugin stays half-installed | Accepted | P2. Fixed by C2 (Core 1, done) |
+| CORE-003 | Bundled plugin loaded after Full breaks the page | Accepted | P2. Documentation only (changed 2026-09-27): the throw stays, and the standalone entry points are documented as Lite-only (C3). Self-registration is not changed (Core 2, done) |
+| CORE-004 | `clearEvents()` removes plugin-internal subscriptions | Accepted | P2. Documentation only (C4 rejected): `API.md` and the plugin guides say that `clearEvents()` also removes handlers a plugin registers through the public input commands. The two affected plugins, `onscreen-keyboard` and `pi-vision`, are removed in 2.3 (G7). No core mechanism is needed. Written in R.2 (Core 3) |
+| CORE-005 | Release package types wrong under `nodenext` | Accepted | P2. Fixed by C5 (Core 4) |
+| CORE-006 | Init errors thrown to the wrong caller | Accepted | Fixed by C2 (Core 1, done) |
+| CORE-007 | Explicit `undefined` not treated as omitted | Accepted | Fixed by C6 (Core 6) |
+| CORE-008 | `set()` accepts unknown names | Accepted | Fixed by C7 (Core 8, breaking) |
+| CORE-009 | `getPal( false )` includes index 0 | Accepted | Fixed by C6 (Core 6) |
+| CORE-010 | `setChar()` ignored on the default font | Accepted | Fixed by C8 (Core 7) |
+| CORE-011 | `getImage()` of an offscreen screen | Accepted | Fixed by C6 (Core 6) |
+| CORE-012 | Polygon coordinates past 2³¹ wrap | Accepted | Fixed by C6 (Core 6) |
+| CORE-013 | Numeric validation gaps | Accepted | Fixed by C6 (Core 6) |
 | CORE-014 | Text outside the font table undocumented | Accepted | Documented in R.2 (C10). The Latin-1 to CP437 mapping is deferred to a later release, although keyboard A16 lets typed accented text reach `print()` in 2.3.0 |
-| CORE-015 | `removeScreen` forms and declarations | Accepted | Fixed by C5 and C6 |
-| CORE-016 | Plugin declarations for Lite | Accepted | Fixed by C5 |
-| CORE-017 | `addCommand` declaration and example | Accepted | Fixed by C5 |
-| CORE-018 | Circle geometry cache unbounded | Accepted | Fixed by C8 |
-| CORE-019 | Release packaging details | Accepted | Fixed by C11: rename, `"private": true`, and the changelog in the tarball |
-| CORE-020 | Missing checks | Accepted | Section 5.2, without item 5 |
-| C1, C2, C5, C6, C8 | Fixes | Accepted | Follow-up table |
-| C3 | Lite-only plugin entry points | Accepted | Changed on 2026-09-27 from a self-registration skip to documentation (R.3, R.5) |
+| CORE-015 | `removeScreen` forms and declarations | Accepted | Fixed by C5 and C6 (Core 4; Core 6) |
+| CORE-016 | Plugin declarations for Lite | Accepted | Fixed by C5 (Core 4) |
+| CORE-017 | `addCommand` declaration and example | Accepted | Fixed by C5 (Core 4) |
+| CORE-018 | Circle geometry cache unbounded | Accepted | Fixed by C8 (Core 7) |
+| CORE-019 | Release packaging details | Accepted | Fixed by C11: rename, `"private": true`, and the changelog in the tarball (Core 9) |
+| CORE-020 | Missing checks | Accepted | A test with each fix, and Core 10 |
+| C1, C2, C5, C6, C8 | Fixes | Accepted | Core 5, Core 1, Core 4, Core 6, Core 7 |
+| C3 | Lite-only plugin entry points | Accepted | Changed on 2026-09-27 from a self-registration skip to documentation (Core 2, R.3) |
 | C4 | Plugin-internal subscriptions | Rejected | Core API stays as is; CORE-004 is documented instead |
-| C7 | Strict `set()` | Accepted | Breaking core API change, approved. `CORE-V2.3-ROADMAP.md` |
+| C7 | Strict `set()` | Accepted | Breaking core API change, approved (Core 8) |
 | C9 | No frame hook in 2.3 | Accepted | |
 | C10 | Document text outside the font table | Accepted | Latin-1 mapping deferred |
-| C11 | Release packaging | Accepted | R.5 and R.6; the rename can land any time |
+| C11 | Release packaging | Accepted | Core 9; the rename landed in CI 2.1 |

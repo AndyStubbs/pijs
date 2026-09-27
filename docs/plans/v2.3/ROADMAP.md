@@ -1,0 +1,982 @@
+# Pi.js 2.3 Roadmap
+
+Target release: Pi.js 2.3.0
+Last updated: 2026-09-27
+
+This is the definitive plan for 2.3. It holds every implementation step, the status of every
+workstream, and every cross-cutting decision. The audits record findings only, and the design
+documents record design only. When a task lands, update its row and the index below in the same
+pull request.
+
+## Index
+
+### Next steps
+
+Work in progress, in the order to take it up. Rows that can run in parallel say so.
+
+| Order | Task | What | Waits on |
+| --- | --- | --- | --- |
+| 1 | [Core 4](#31-phase-1-before-input-implementation) | Declarations and release manifest (C5) | Nothing. Gates input implementation |
+| 2 | [Sound 9.3](#41-phase-9-game-features-remaining) | `onPlay()` and `offPlay()` music sync | Nothing. Can run in parallel with 1 |
+| 3 | Approve [Keyboard](#5-keyboard), [Pointer](#6-pointer), and [Gamepad](#7-gamepad) | Maintainer review of the drafted input phases; reaches milestone U2 | Nothing |
+| 4 | Keyboard 1.1, Pointer 1.1, Gamepad 1.1 | Start the three input Phase 1s, in parallel | 1 and 3 |
+| 5 | [Core 5–7, 9–12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
+| 6 | [Sound 10.1](#42-phase-10-sample-instruments) | Sample instruments | Sound 9.3, by priority |
+
+Open manual checks are collected in the [release checklist](#83-manual-release-checks).
+
+### Workstream status
+
+| Workstream | Section | Status | Next |
+| --- | --- | --- | --- |
+| Core | [3](#3-core) | Phase 1 in progress. Core 1–2 done, 10 tasks left | Core 4 |
+| Sound | [4](#4-sound) | Phases 0–8 done; Phase 9 in progress; Phases 10–11 not started | Sound 9.3 |
+| Keyboard | [5](#5-keyboard) | Draft, awaiting approval | Approval |
+| Pointer | [6](#6-pointer) | Draft, awaiting approval | Approval |
+| Gamepad | [7](#7-gamepad) | Draft, awaiting approval | Approval |
+| Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
+| CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.9) | — |
+| Plugin removal | [13.1](#131-plugin-removal) | Complete (P.1–P.6) | — |
+| Release | [8](#8-release) | Waits for the other workstreams | R.1 |
+
+### Documents
+
+All in `docs/plans/v2.3/`, with evidence in `docs/evidence/<workstream>-2.3/`.
+
+| Document | Holds | Evidence |
+| --- | --- | --- |
+| `ROADMAP.md` | Tasks, status, decisions, rules (this document) | — |
+| [AUDIT-CORE.md](AUDIT-CORE.md) | Core findings CORE-001–020 and proposals C1–C11 | [core-2.3](../../evidence/core-2.3/README.md) |
+| [AUDIT-KEYBOARD.md](AUDIT-KEYBOARD.md) | Keyboard findings KEY-001–019 and proposals A1–A17 | [keyboard-2.3](../../evidence/keyboard-2.3/README.md) |
+| [AUDIT-POINTER.md](AUDIT-POINTER.md) | Pointer findings PTR-001–017 and proposals B1–B13 | [pointer-2.3](../../evidence/pointer-2.3/README.md) |
+| [AUDIT-GAMEPAD.md](AUDIT-GAMEPAD.md) | Gamepad findings PAD-001–017 and proposals A1–A12 | [gamepad-2.3](../../evidence/gamepad-2.3/README.md) |
+| [AUDIT-TESTS.md](AUDIT-TESTS.md) | Test suite findings TEST-001–028 and handoffs | [tests-2.3](../../evidence/tests-2.3/README.md) |
+| [AUDIT-CI.md](AUDIT-CI.md) | Cross-platform and CI/CD findings CI-001–013 | [ci-2.3](../../evidence/ci-2.3/README.md) |
+| [DESIGN-SOUND.md](DESIGN-SOUND.md) | Core `sound` 2.0.0 and `sound-advanced` 1.0.0 design; D1–D6 | [sound-2.3](../../evidence/sound-2.3/README.md) |
+| [DESIGN-SOUND-ADVANCED.md](DESIGN-SOUND-ADVANCED.md) | `sound-advanced` expansion design (Phases 7–10); D7–D17 | [sound-2.3](../../evidence/sound-2.3/README.md) |
+
+## 1. Scope and Rules
+
+### 1.1 Goals
+
+Pi.js 2.3 is an API-quality release for the core plugins:
+
+1. **Sound:** rebuild the `sound` plugin on one Web Audio graph, add `sound-advanced`, and
+   expand it with recording, more bus effects, a sound-effect generator, music sync, and sample
+   instruments.
+2. **Keyboard, pointer, and gamepad:** fix the audited defects and move all three to one API
+   convention (Section 2). Breaking changes are allowed where the audits showed a clear
+   improvement.
+3. **Core:** fix the findings of a lighter re-audit of the core library, focused on the plugin
+   API, packaging, and declarations.
+4. **Tests:** remove redundant tests so the suite is smaller and faster with the same coverage.
+5. **CI/CD:** make the tests pass on Linux, macOS, and Windows, and run them in GitHub Actions.
+6. **Plugin removal:** remove the incomplete non-core plugins `onscreen-keyboard`,
+   `pi-vision`, `print-table`, and `pens`.
+
+### 1.2 Scope decisions
+
+| Topic | Decision |
+| --- | --- |
+| Compatibility | Breaking changes are allowed in `sound`, `keyboard`, `pointer`, and `gamepad` when an accepted audit or design item justifies them. Each needs a recorded rationale and an entry in its workstream's compatibility summary |
+| Core API | Core stays stable unless a change fixes a confirmed defect or serves an accepted plugin change. Each core API change needs explicit maintainer approval. C7 (strict `set()`) is the only one approved |
+| Removed APIs | Removed or renamed commands and parameters fail loudly: an unknown command, or a validation error that names the change. Values are never silently reinterpreted. No aliases (I16) |
+| Plugin versions | A plugin's banner moves to the next major version with its first breaking change, and to a new minor version for additive changes only. The version changes in the task that makes the change. `sound` is 2.0.0 and `sound-advanced` 1.0.0; the input plugins move to 2.0.0 with their Phase 2 (G1) |
+| Package version | Staged at `2.3.0` / `"2.3"` (Sound 0.2). Every API change is layered under `metadata/pi-2.3/` |
+| Upgrade guide | One user-facing `docs/UPGRADE-V2.3.md` for the whole release, written in R.4 from the workstreams' compatibility summaries |
+| Plugins | The repository keeps the core plugins (`sound`, `keyboard`, `pointer`, `gamepad`, `polygons`), `sound-advanced`, and `example-plugin` |
+
+### 1.3 Standing rules
+
+Every task in every workstream follows these rules.
+
+**Tests**
+
+- Each task ends with `npm test` green on the maintainer's Windows machine and with `ci.yml`
+  green on Linux and Windows. Each change ships with its tests.
+- Before adding a test, look for an existing test of the same behavior and extend it where that
+  fits. Pure logic goes in the Node test; the browser test keeps only what needs a browser.
+- New and changed tests do not depend on the host platform: no shell-specific commands,
+  hard-coded path separators, or line-ending assumptions.
+- A test is removed only when another maintained test covers the same behavior. The removal
+  names the covering tests, with a deliberate break in the library where practical, and the
+  coverage map loses no entry. A test is never removed to make a suite pass. Removals are logged
+  in `test/TEST-CONSOLIDATION-LOG.md`.
+- A task that finds a defect in another workstream's area reports it to that workstream instead
+  of working around it in a test.
+
+**Visual baselines**
+
+- Baselines change only after an image-by-image review with `scripts/visual-review.js`. A
+  baseline is deleted only with its fixture, and a merged fixture gets a newly reviewed
+  baseline.
+- Tolerances are never loosened to make a platform pass. macOS runs pixel comparisons in the
+  report-only mode (`PI_VISUAL_PIXELS=report`, G4).
+- A fixture that is flaky on CI runners carries `ciSkip` with its reason and owner. The owner
+  removes it with the fix.
+
+**API changes**
+
+- Metadata, generated declarations, and signature tests accompany each API change in its task.
+  `docs/llms/pi.d.ts` is regenerated by every `npm run build`; commit it with the change.
+- A change to an input plugin updates the demos, fixtures, manual pages, and `tools/` pages that
+  use it, in the same task.
+- Each workstream records its plugin's gzipped size (`npm run size`) at every phase exit, in its
+  evidence folder.
+
+**Documentation**
+
+- `API.md`, plugin READMEs, `docs/GAMEPAD.md`, and the hand-written llms references
+  (`llms.txt`, `llms-full.txt`, `examples.txt`) change only in the release phase (R.2, R.3), once
+  behavior is final.
+- `test/README.md` changes in the task that changes a test command, environment variable, or
+  requirement.
+- Closing a decision updates the document that owns it (Section 9) in the same commit.
+
+**Sound**
+
+- Each sound phase ends with a listening check of its demo in Chromium, Firefox, and WebKit
+  (Safari). Checks that cannot run yet are listed in Section 8.3.
+
+### 1.4 Working practice
+
+Every task lands through its own short-lived branch and pull request:
+
+- **Branch** named after the task, such as `keyboard-1.2-held-state`.
+- **Pull-request title** is the task's workstream, number, and name, such as
+  `Keyboard 1.2: Held state by code`. The description gives the behavior change, the
+  validation commands run, and before/after screenshots for rendering changes (`AGENTS.md`).
+- **Merge only with `ci.yml` green.** Branch protection on `main` requires the `ci` check. A
+  red check is fixed or explained, never merged over.
+- **Squash-merge** small tasks, so `main` keeps one commit per task. An input plugin's Phase 2
+  (its breaking set) is built on one long-lived branch and lands with a merge commit, so the set
+  can be held back as a unit (Section 10).
+- **Delete the branch** after merging.
+- **Task numbers** are sequential within a phase. A task added later takes the next free
+  number.
+
+The maintainer manages every branch, commit, and pull request with the GitHub CLI. An assistant
+working in the repository leaves its changes uncommitted and gives each command in chat.
+
+| Command | Does |
+| --- | --- |
+| `gh pr create --fill --base main` | Opens a pull request for the current branch |
+| `gh pr checks --watch` | Follows the pull request's `ci.yml` checks |
+| `gh pr merge --squash --delete-branch` | Squash-merges a green pull request and deletes its branch |
+| `gh run view <id> --log-failed` | Shows the log of a run's failed steps |
+
+Setup on a new machine: `winget install --id GitHub.cli`, then `gh auth login` (GitHub.com,
+HTTPS, web browser login, `gh` as the git credential helper), then check with `gh auth status`.
+
+### 1.5 Sequencing and milestones
+
+```
+Core Phase 1 (Core 4) ─────────────────┐
+                                        ▼
+Input roadmap approval (U2) ──► Keyboard, Pointer, Gamepad
+                                Phase 1 ► Phase 2 ► Phase 3 ──────┐
+Core Phases 2–3 ─────────────────────────────────────────────────┤
+Sound Phases 9–11 ────────────────────────────────────────────────┤
+                                                                  ▼
+                                                     Release (Section 8)
+```
+
+- The three input plugins run in parallel. Each finishes Phase 1 before starting Phase 2.
+- Core 4 lands before any input task that regenerates declarations, so the input plugins
+  regenerate them once, against the new declaration layout.
+- Sound, core Phases 2–3, and the input plugins do not depend on each other.
+
+| Milestone | Contents | Status |
+| --- | --- | --- |
+| U1: Audits complete | Core, keyboard, pointer, gamepad, and test audits; CI exploration; every finding decided | Done 2026-09-26 |
+| U2: Roadmaps approved | Sections 3–7 approved; G1–G8 closed | Core, sound, and CI approved; input sections waiting |
+| U3: Implementation complete | Every workstream's exit criteria met with `npm test` green | Open |
+| U4: Release | Section 8; the `releases/pi-2.3.0` snapshot exists | Open |
+
+Workstream milestones:
+
+- **Sound:** M1 core foundation, M2 core complete, M3 `sound-advanced` 1.0.0, and M4 size
+  review are done. M5, expansion complete, closes when Phases 9–10 are done or cut and D13–D15
+  are closed.
+- **CI:** CI milestones C1 (stable baselines), C2 (portable tests), and C3 (CI running) are done.
+
+## 2. Input Conventions
+
+Decided 2026-09-25. They apply to `keyboard`, `pointer`, and `gamepad`, and to the handler
+commands of `sound-advanced` (Sound 9.3). Where an item changes an accepted audit proposal, the
+item takes precedence.
+
+| ID | Decision | Affects |
+| --- | --- | --- |
+| I1 | **camelCase names.** Every input command is camelCase: `inX` for polling, `onX`/`offX` for handlers, `startX`/`stopX`, and `setX` for settings. Renames: `inkey`, `onkey`, `offkey` become `inKey`, `onKey`, `offKey`. `inmouse`, `onmouse`, `offmouse` become `inMouse`, `onMouse`, `offMouse`, and likewise for touch (`inTouch`, `onTouch`, `offTouch`) and press (`inPress`, `onPress`, `offPress`). `onclick`, `offclick` become `onClick`, `offClick`. `ingamepad` becomes `inGamepad`. Other commands keep their names except where I2, I12, or an accepted audit item renames them | All three plugins; gamepad A5, pointer B11 |
+| I2 | **Handler signature.** `onX( [selector,] mode, fn, once, …extras )` and `offX( [selector,] mode, fn )`. Commands with one event have no mode: `onClick( fn, once, hitBox, customData )`, `onWheel( fn, once, hitBox, customData )`. Gamepad connection handlers become `onGamepad( mode, fn, once )` and `offGamepad( mode, fn )` with modes `"connect"` and `"disconnect"`, replacing `onGamepadConnected` and `onGamepadDisconnected`. Music sync is `onPlay( mode, fn, once )` and `offPlay( mode, fn )` with modes `"note"` and `"end"`. The object form of each command follows its parameter names | Gamepad A5, PAD-012, pointer B11, Sound 9.3 |
+| I3 | **Pointer modes.** `onMouse`, `onTouch`, and `onPress` all use `"down"`, `"move"`, and `"up"`, matching the `action` field of pointer B7's data. `onTouch( "start" )` and `onTouch( "end" )` throw an `INVALID_MODE` error that names the new mode | Pointer B7, PTR-013 |
+| I4 | **Removal.** A handler is identified by its selector (key or key set), mode, and function; `once`, `allowRepeat`, hit boxes, and custom data are ignored. Registering the same function for the same selector and mode again does nothing, as in the DOM. `offX( mode )` without a function removes every handler of that mode. `offX( null, fn )`, or the object form without `mode`, removes the function from every mode. Omitting both throws; use `clearEvents()`. Keyboard's selector is always required | KEY-007, keyboard A14, PTR-009, pointer B1, gamepad A5 |
+| I5 | **Start and stop.** Tracking starts on first use: the first read, handler registration, or a setting that needs tracking. Listeners are attached then, not at plugin load. After `stopX()`, tracking stays stopped until `startX()`. While stopped, reads return empty state, and handlers stay registered but are not called. A stop releases held input as I6 describes. The `input()` prompt keeps its own listener (keyboard A2) | KEY-006, keyboard A13, PAD-012, PTR-010, pointer B12, gamepad A12 |
+| I6 | **Cancelled input.** A release the player did not make is dispatched through the normal `"up"` mode with `cancelled: true` in its data. This covers the page becoming hidden, a stop command, `touchcancel`, and, for keyboard, window blur. Keyboard's blur, which clears held keys silently today, dispatches `"up"` for each held key. Gamepad has no button handlers; its polled state is released as gamepad A2 describes | Pointer B3, B5, PTR-007, KEY-011, keyboard A8 |
+| I7 | **Polled and callback objects.** Reads do not allocate. Keyboard and pointer data objects are created once per event and frozen; a single-item read returns the latest one until the next event, and handlers receive the same objects. List reads (`inKey()`, `inTouch()`) return a frozen array that is replaced when the state changes. Gamepad pads are live objects updated in place once per frame, and `inGamepad()` reuses one array per frame (gamepad A7); both are documented as live | KEY-013, keyboard A10, pointer B13, PAD-009, gamepad A7 |
+| I8 | **Dispatch.** State is updated before dispatch. Handlers added during a dispatch first run in the next one. A handler removed during a dispatch does not run later in it. A `once` handler is removed before it runs. Each handler runs in its own `try`, and a throw is reported with `console.error` without stopping the others | PAD-003, PAD-007, PTR-006, PTR-009, gamepad A3, pointer B1, B2 |
+| I9 | **Return shapes.** A single-item read returns the object or `null`, never `undefined`. A list read always returns an array, empty when nothing is held, connected, or tracking is stopped | PAD-010, gamepad A6 |
+| I10 | **`clearEvents` scope.** Per-screen handlers (mouse, touch, press, click, wheel) are cleared only for the calling screen. Global handlers (keyboard, gamepad, play) are cleared everywhere, whichever screen calls. `"click"` and `"wheel"` become their own types, so `"press"` no longer clears clicks. `sound-advanced` registers `"play"`. The keyboard prompt follows keyboard A2 | KEY-002, KEY-016, keyboard A15, PAD-012 |
+| I11 | **Validation errors.** `TypeError` for a wrong type and `RangeError` for a value out of range, with a per-parameter code (`INVALID_MODE`, `INVALID_FUNCTION`, `INVALID_KEY`, `INVALID_HITBOX`, `INVALID_INDEX`, and so on) and a message starting `"<command>: "`. Keyboard and gamepad stop using `INVALID_PARAMETERS`. Core keeps its own codes | KEY-009, keyboard A7, PAD-008, gamepad A8, PTR-012, pointer B9 |
+| I12 | **Settings.** Settings are named for the feature, and boolean settings take `isEnabled`. `setEnableContextMenu` becomes `setContextMenu( isEnabled )` with option `contextMenu`. `setPinchZoom( isEnabled )` keeps its name and becomes a screen command (pointer B10). `setGamepadDeadZone` is as accepted (gamepad A9) | Pointer B10, PTR-014, gamepad A9 |
+| I13 | **Gamepad names.** Standard-mapping names are positional and camelCase. Buttons: `south`, `east`, `west`, `north`, `leftShoulder`, `rightShoulder`, `leftTrigger`, `rightTrigger`, `select`, `start`, `leftStick`, `rightStick`, `dpadUp`, `dpadDown`, `dpadLeft`, `dpadRight`, `home`. Axes: `leftX`, `leftY`, `rightX`, `rightY` | Gamepad A10 |
+| I14 | **Key names.** Codes (`"KeyA"`, `"ArrowLeft"`) are documented for game controls and values (`"a"`) for text; both keep working. Combinations match when their keys are held, even if other keys are also held; there is no exact-match option in 2.3 | KEY-001, keyboard A1 |
+| I15 | **Dependents.** The conventions apply to the core plugins and `sound-advanced`. `onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` are not updated; they are removed (P.1–P.6) | CORE-004 |
+| I16 | **Old names.** No aliases. Renamed and removed commands are unregistered, so old code fails at its first call; the upgrade guide lists every rename. Old handler modes and option names fail with validation errors (I3, core C7) | All renames |
+
+I1, I2, I3, I10's `"press"` change, I11's error codes, and I12's rename are breaking. Each lands
+in its plugin's Phase 2 and is listed in its compatibility summary.
+
+## 3. Core
+
+Findings: [AUDIT-CORE.md](AUDIT-CORE.md). Proposals C1–C11:
+[AUDIT-CORE.md §4](AUDIT-CORE.md#4-proposed-changes). Core 1–2 are done
+([Section 13.5](#135-core)). The task numbers follow the audit's follow-up order, so Core 3–10
+keep their original numbers and Core 11–12 are the test audit's handoffs.
+
+### 3.1 Phase 1: before input implementation
+
+| # | Task | Findings | Status |
+| --- | --- | --- | --- |
+| Core 4 | **Declarations and release manifest (C5).** Add `"type": "module"` to the release manifest. Make plugin declarations augment both Full and Lite, and declare globals once. Limit Lite `Options` and types to Lite. Make `addCommand`'s last parameter optional, and declare `Screen.removeScreen()`. Tests: type consumers under `nodenext`, and Lite with each exported plugin, in `package-types-consumer.test.js` | [CORE-005](AUDIT-CORE.md#core-005), [CORE-015](AUDIT-CORE.md#core-015), [CORE-016](AUDIT-CORE.md#core-016), [CORE-017](AUDIT-CORE.md#core-017) | Next |
+
+### 3.2 Phase 2: fixes
+
+In any order, in parallel with the input work.
+
+| # | Task | Findings | Status |
+| --- | --- | --- | --- |
+| Core 5 | **Offscreen context lifetime (C1).** Discard the shared offscreen context when its last screen is removed. Test: context loss after every member has gone, in `context-recovery-browser.test.js` (probe C01) | [CORE-001](AUDIT-CORE.md#core-001) | — |
+| Core 6 | **Option and value handling (C6).** `parseOptions` maps `undefined` to `null`. `getPal( false )` excludes index 0. Fix `getImage( screen )` for offscreen screens. Clip polygon spans. Add numeric checks for `arc`, `loadFont`, and `setPrintSize`. Give `removeScreen` its object form and coded errors. Tests: `parseOptions` with explicit `undefined` in the Node suites (C06); numeric boundary rows for `arc`, `loadFont`, `setPrintSize`, and polygon extents (C11, C12) | [CORE-007](AUDIT-CORE.md#core-007), [CORE-009](AUDIT-CORE.md#core-009), [CORE-011](AUDIT-CORE.md#core-011), [CORE-012](AUDIT-CORE.md#core-012), [CORE-013](AUDIT-CORE.md#core-013), [CORE-015](AUDIT-CORE.md#core-015) | — |
+| Core 7 | **Canvas textures, `setChar`, cache bounds (C8).** Upload static canvas textures once, make `setChar` also edit the source canvas, and bound the circle geometry cache. Test: `setChar` on the default font (C09) | [CORE-010](AUDIT-CORE.md#core-010), [CORE-018](AUDIT-CORE.md#core-018) | — |
+| Core 9 | **Packaging (C11).** Add `"private": true` to the root manifest, and ship `CHANGELOG.md` in the release tarball. The `releases/PUBLISH.md` rename is done (CI 2.1) | [CORE-019](AUDIT-CORE.md#core-019) | — |
+| Core 10 | **Metadata against runtime.** A generated check that every registered command and setting in each bundle has metadata with matching parameters, and that the declared command set matches the runtime objects (test audit SYS-012 gap) | [CORE-020](AUDIT-CORE.md#core-020), [AUDIT-TESTS §5.5](AUDIT-TESTS.md#55-core-audit) | — |
+| Core 11 | **`shaders_lifecycle`.** Fix the 7 failing checks the fixture's full sequence exposes: sampler contexts, automatic presentation after removal and failure, and shader disposal. Make the capture deterministic, re-record and review its baseline, and remove its `ciSkip` | [AUDIT-TESTS §5.5](AUDIT-TESTS.md#55-core-audit) | — |
+| Core 12 | **Test audit coverage gaps.** Tests for `blitImage`, `blitSprite`, `setDefaultAnchor`, and `calcWidth`; for explicit `registerPlugin()` without `window.pi` (SYS-013); and assertions for the visual-only `getDefaultPal`, `getShaderInfo`, `screenToView`, and `setPrintSize`. Resolve the redundant filter cleanup: remove the `cancelFilter` pre-cleanup hook or the per-pixel check in `src/api/pixels.js`, and correct the comment that says there is no per-pixel check | [AUDIT-TESTS §5.5](AUDIT-TESTS.md#55-core-audit) | — |
+
+### 3.3 Phase 3: API change
+
+| # | Task | Findings | Status |
+| --- | --- | --- | --- |
+| Core 8 | **Strict `set()` (C7, breaking, approved).** `set()` throws `INVALID_OPTION` for unknown or unavailable names, and the no-screen error for screen settings. Tests: `set()` names in the Node suites (C07), including Full-only options in Lite | [CORE-008](AUDIT-CORE.md#core-008) | — |
+
+Core 3 (document that `clearEvents()` reaches handlers a plugin registers through the public
+input commands, CORE-004, in place of the rejected C4) and C10 (the characters each built-in
+font draws, CORE-014) are written in the release phase (R.2).
+
+**Exit criteria:** every accepted CORE finding is fixed or explicitly deferred. No core task is
+left open except C10's Latin-1 mapping, which is deferred to a later release.
+
+### 3.4 Compatibility summary
+
+Input to `UPGRADE-V2.3.md` (R.4):
+
+- **C7 (breaking):** "`set()` now throws `INVALID_OPTION` for an option it does not recognize,
+  including options from plugins that are not loaded. Remove the option, fix its spelling, or
+  load the plugin that provides it."
+- **C3:** "The standalone plugin entry points (`pijs-web/plugins/…`) are for Lite. Loading one
+  that the Full bundle already includes throws `DUPLICATE_PLUGIN`."
+- **C5:** "TypeScript projects using `nodenext` module resolution now get the package's types.
+  Lite projects that load a plugin get that plugin's command types."
+- **C2:** a plugin whose initialization fails leaves nothing installed, and its name can be
+  registered again. `getPlugins()` reports each plugin's `state`, and registering after
+  initialization throws `REGISTRATION_CLOSED`.
+
+## 4. Sound
+
+Design: [DESIGN-SOUND.md](DESIGN-SOUND.md) (Phases 0–6) and
+[DESIGN-SOUND-ADVANCED.md](DESIGN-SOUND-ADVANCED.md) (Phases 7–10). Phases 0–8, 9.1, 9.2, and
+the generator part of 9.4 are done ([Section 13.4](#134-sound)).
+
+### 4.1 Phase 9: game features (remaining)
+
+Design: [DESIGN-SOUND-ADVANCED §6](DESIGN-SOUND-ADVANCED.md#6-phase-9-game-features).
+
+| # | Task | Status |
+| --- | --- | --- |
+| 9.3 | **Music sync (`sync.js`).** `onPlay( mode, fn, once )` and `offPlay( mode, fn )` with modes `"note"` and `"end"`, following I1, I2, I4, I7, I8, and I10. A dispatch loop on animation frames that runs only while events are queued; context time mapped to page time with `getOutputTimestamp()` and `outputLatency`; notes more than 250 ms late dropped; `"end"` always delivered; `clearEvents( "play" )`. Closes D13 and D14 | Next |
+| 9.4 | **Metadata, types, and demo.** The generator panel is done. Remaining: metadata and types for `onPlay` and `offPlay`, and a beat-synced visual in `sound_advanced_01.html` | Partly done |
+
+**Exit criteria:**
+
+- In a clock-driven offline render, `observePlay` reports every admitted note once, with the
+  context time the render shows it starting, and never reports rejected or skipped notes.
+- Events reach listeners in time order. `stopPlay()` suppresses queued notes and sends `"end"`
+  once.
+- A realtime Chromium test checks that dispatch happens within two frames of the audible start
+  (with the latency the engine reports), and that notes delayed by a hidden tab are dropped.
+- A size entry in `docs/evidence/sound-2.3/README.md`, and the listening check (Section 8.3).
+
+### 4.2 Phase 10: sample instruments
+
+Design: [DESIGN-SOUND-ADVANCED §7](DESIGN-SOUND-ADVANCED.md#7-phase-10-sample-instruments).
+
+| # | Task | Status |
+| --- | --- | --- |
+| 10.1 | Core `getAudioBuffer` service member, contract test, member pin update, size entry | — |
+| 10.2 | Sample source factory, per-name registration, pitch by playback rate, and detune | — |
+| 10.3 | `defineInstrument` `audio`, `rootFrequency`, and `loop` options, validation, and not-ready behavior. Closes D15 | — |
+| 10.4 | Metadata, types, and a sample instrument in the demo | — |
+
+**Exit criteria:**
+
+- An offline render of a sine sample shows the expected pitch for notes across three octaves,
+  and the envelope and loop behavior match the synthesized case.
+- Vibrato on a sample instrument modulates its pitch.
+- Not-ready files play silence with one warning, never an error.
+- A size entry, and the listening check (Section 8.3).
+
+### 4.3 Phase 11: test upkeep
+
+The test audit's sound handoffs ([AUDIT-TESTS §5.1](AUDIT-TESTS.md#51-sound)). They change only
+tests, so they can continue after 2.3.0 (Section 10).
+
+| # | Task | Status |
+| --- | --- | --- |
+| 11.1 | One Firefox process per test stage instead of one per audio suite (about 20 s of the sound browser time), or a smaller Firefox subset in `npm test` with the full set in `test:firefox` | — |
+| 11.2 | Skip at the suite level when an engine lacks Web Audio or offline `suspend()`, instead of per test, so the report stays readable | — |
+| 11.3 | One shared `near()` helper for the `sound-advanced`, `sound-envelope`, `sound-play`, and `sound-samples` Node tests | — |
+| 11.4 | Decide whether `test/scripts/record-sound-references.js` and `test/media/sound-2.2/` are still needed, and remove them if not | — |
+| 11.5 | Review the `sound-*` Node and `audio-*` browser test pairs against the Node/browser rule (Section 1.3) | — |
+
+### 4.4 Compatibility summary
+
+The upgrade guide's sound entries come from
+[DESIGN-SOUND §11](DESIGN-SOUND.md#11-compatibility-summary) (core
+`sound` 2.0.0) and
+[DESIGN-SOUND-ADVANCED §10](DESIGN-SOUND-ADVANCED.md#10-compatibility-summary)
+(the expansion). Each task that changes the sound API keeps them current.
+
+## 5. Keyboard
+
+**Draft, awaiting approval.** Findings: [AUDIT-KEYBOARD.md](AUDIT-KEYBOARD.md). Proposals
+A1–A17: [AUDIT-KEYBOARD §4](AUDIT-KEYBOARD.md#4-proposed-api). Probe IDs (K1, K9n, …) name the
+reproductions in `docs/evidence/keyboard-2.3/probes.js`, where each test starts. Baseline:
+1.0.0, 3,110 bytes gzipped.
+
+The order differs from the audit's recommendation in one way. Validation (A7) moves from
+Phase 1 to Phase 2, so it lands once with the I11 error codes instead of twice.
+
+### 5.1 Phase 1: fixes and tests
+
+No API change; the version stays 1.0.0. Pure logic tests go in `keyboard-lifecycle.test.js`,
+whose `vm` harness drives `onKeyDown` and `onKeyUp` directly.
+
+| # | Task | Findings | Status |
+| --- | --- | --- | --- |
+| 1.1 | **Test harness.** Fix the Node harness's `undefined`-to-`null` conversion. Reduce `keyboard-lifecycle-browser` to real `KeyboardEvent` dispatch and cursor rendering, since its SYS-003 tests repeat the Node tests | [KEY-019](AUDIT-KEYBOARD.md#key-019), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
+| 1.2 | **Held state by code (A1).** Held state keyed by `code`, each held code recording the `key` of its latest keydown; a value stays held until every key producing it is released. Tests: modifier released first, two keys with one value, `"Process"` (K1, K1b, K14), and one native-keyboard case in the browser test (K1n) | [KEY-001](AUDIT-KEYBOARD.md#key-001) (P1) | — |
+| 1.3 | **Prompt listener (A2).** The prompt reads keys from its own listener, added when it starts and removed when it ends. `stopKeyboard()` and handler clearing no longer affect it. `clearEvents( "keyboard" )` cancels the prompt when called with no screen or from the owning screen. Tests: `clearEvents( "keyboard" )` with prompts on two screens (K2); a prompt during a stop | [KEY-002](AUDIT-KEYBOARD.md#key-002), [KEY-006](AUDIT-KEYBOARD.md#key-006) | — |
+| 1.4 | **Prompt owns the keyboard (A3).** While a prompt is active, it prevents the default action of every key it receives; ignores Ctrl and Meta keydowns except AltGr; inserts pasted text. Tests: default prevention, Ctrl and AltGr, Tab, paste (K9, K9n) | [KEY-003](AUDIT-KEYBOARD.md#key-003) | — |
+| 1.5 | **Shadow-DOM editable targets (A4).** Read `event.composedPath()[ 0 ]`. Browser test with shadow roots (K12) | [KEY-004](AUDIT-KEYBOARD.md#key-004) | — |
+| 1.6 | **Prompt layout (A5).** Use the print cursor's height, end at column 0, keep to one line, and scroll the shown value. Browser test after inline text, with scaled print, and with long input (K11) | [KEY-005](AUDIT-KEYBOARD.md#key-005) | — |
+| 1.7 | **Numeric prompts (A6).** Validate against patterns instead of `Number()`. Test: the numeric rules (K10) | [KEY-008](AUDIT-KEYBOARD.md#key-008) | — |
+| 1.8 | **Release data (A8).** Up handlers receive keyup data; a keyup with no recorded press still runs single-key and `"any"` up handlers. Test: release data and releases of unseen presses (K13) | [KEY-011](AUDIT-KEYBOARD.md#key-011) | — |
+| 1.9 | **Focus kept on start (A9).** `startKeyboard()` no longer blurs the focused element. Lifecycle tests: start, stop, repeated calls, focus kept (K8). They also give `startKeyboard`, `stopKeyboard`, and `removeActionKeys` their first assertion tests | [KEY-012](AUDIT-KEYBOARD.md#key-012), [KEY-019](AUDIT-KEYBOARD.md#key-019) | — |
+| 1.10 | **Frozen key data (A10).** Freeze key data objects before they are stored | [KEY-013](AUDIT-KEYBOARD.md#key-013) | — |
+| 1.11 | **Metadata for current behavior.** Correct the metadata and declarations that misstate today's behavior: `input` return type and `maxLength`, cursor default, `onkey`/`offkey` types, and the broken examples. Tests: `removeActionKeys` and `set( { "actionKeys" } )` (K20) | [KEY-017](AUDIT-KEYBOARD.md#key-017) | — |
+| 1.12 | **Manual pages.** Remove the second plugin script from `clearevents_01`, `events_comprehensive`, `gamepad_01`, `input_01`, and `onkey_sound_01`. Remove or merge `html-manual/input_01`, which overlaps `keyboard_input` | [KEY-018](AUDIT-KEYBOARD.md#key-018), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
+| 1.13 | **`keyboard_commands` timing.** Make the fixture deterministic on CI runners, and cut its 2.0 s of `DL` waits | [CI-008](AUDIT-CI.md#ci-008), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
+
+**Exit criteria:** KEY-001–006, KEY-008, KEY-011–013, KEY-018, and KEY-019 fixed with tests;
+`npm test` green; size recorded in `docs/evidence/keyboard-2.3/`.
+
+### 5.2 Phase 2: API (breaking set, 2.0.0)
+
+Built on one branch and landed as a set (Section 1.4). Each task updates metadata, declarations,
+signature tests, and every demo, fixture, manual page, and `tools/` page (`charedit.html`,
+`dataedit.html`) that uses the changed command.
+
+| # | Task | Findings | Status |
+| --- | --- | --- | --- |
+| 2.1 | **Renames and 2.0.0 (I1, I16).** `inkey`, `onkey`, `offkey` become `inKey`, `onKey`, `offKey`, with the old names in `_removed.toml`. The banner moves to 2.0.0 | — | — |
+| 2.2 | **Handler signature and removal (I2, I4, A14).** `onKey( key, mode, fn, once, allowRepeat )`; `offKey( key, mode, fn )` matches key set, mode, and function only; `offKey( key, mode )` removes every handler of the mode; `offKey( key, null, fn )` removes from both modes; duplicate registrations are ignored. Metadata examples use codes for game controls (I14) | [KEY-007](AUDIT-KEYBOARD.md#key-007) | — |
+| 2.3 | **Start and stop (I5, A13).** Listeners attach on first use, not at plugin load; `stopKeyboard()` holds until `startKeyboard()`; reads return empty state while stopped | [KEY-006](AUDIT-KEYBOARD.md#key-006) | — |
+| 2.4 | **Cancelled input (I6).** Blur and stop dispatch `"up"` with `cancelled: true` for each held key | [KEY-011](AUDIT-KEYBOARD.md#key-011) | — |
+| 2.5 | **Reads and dispatch (I7, I8, I9).** `inKey()` returns a frozen array replaced when the state changes; `inKey( key )` returns the object or `null`; dispatch follows I8 | [KEY-013](AUDIT-KEYBOARD.md#key-013) | — |
+| 2.6 | **`clearEvents` scope (I10, A15).** `clearEvents( "keyboard" )` clears every keyboard handler from any screen; the prompt follows task 1.3 | [KEY-016](AUDIT-KEYBOARD.md#key-016) | — |
+| 2.7 | **Validation (A7, I11).** `mode` must be `"up"` or `"down"`; `key` a non-empty string or array of them, copied and de-duplicated; action keys strings; `maxLength: undefined` means no limit; `inKey()` rejects non-strings. `TypeError`/`RangeError` with per-parameter codes instead of `INVALID_PARAMETERS`. Tests: validation and combination arrays (K3, K4, K6, K20) | [KEY-009](AUDIT-KEYBOARD.md#key-009), [KEY-010](AUDIT-KEYBOARD.md#key-010) | — |
+| 2.8 | **Prompt keys withheld (A11).** While a prompt is active, its keys do not reach `onKey()` handlers or `inKey()` | [KEY-003](AUDIT-KEYBOARD.md#key-003) | — |
+| 2.9 | **`setActionKeys()` replaces (A12).** The command and `set( { "actionKeys": … } )` replace the set; `removeActionKeys()` is unchanged | [KEY-014](AUDIT-KEYBOARD.md#key-014) | — |
+
+**Exit criteria:** every Phase 2 item in, `npm test` green, the compatibility summary complete,
+and size recorded.
+
+### 5.3 Phase 3: additive and release inputs
+
+| # | Task | Findings | Status |
+| --- | --- | --- | --- |
+| 3.1 | **Composed, pasted, and mobile text (A16).** A hidden, focused text field while a prompt is active, for IME composition, paste, and mobile soft keyboards; its events bypass the editable-target filter. Measure its size | [KEY-015](AUDIT-KEYBOARD.md#key-015) | — |
+| 3.2 | **Release inputs.** Complete the compatibility summary below, add the plugin's open device checks to Section 8.3, and record the final size | — | — |
+
+### 5.4 Compatibility summary
+
+Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.2:
+
+- **Renames (I1):** `inkey` → `inKey`, `onkey` → `onKey`, `offkey` → `offKey`. The old names
+  are unregistered (I16).
+- **`offKey()` (I4):** matches on key, mode, and function only; `once` and `allowRepeat` are
+  ignored.
+- **Start rule (I5):** the plugin starts on first use; `stopKeyboard()` holds until
+  `startKeyboard()`.
+- **Blur (I6):** held keys are released through `"up"` handlers with `cancelled: true`.
+- **Errors (I11):** validation throws `TypeError` or `RangeError` with per-parameter codes
+  instead of `INVALID_PARAMETERS`.
+- **A11:** "Keys typed into an `input()` prompt no longer reach `onKey()` handlers or `inKey()`.
+  Handle the prompt's result instead of watching for Enter."
+- **A12:** "`setActionKeys()` replaces the action keys. Pass every key in one call, or use
+  `removeActionKeys()` to remove some."
+- **A10 and I7:** not breaking for documented use. Code that wrote to a key data object or the
+  array from `inKey()` now fails silently, or throws in strict mode.
+
+## 6. Pointer
+
+**Draft, awaiting approval.** Findings: [AUDIT-POINTER.md](AUDIT-POINTER.md). Proposals B1–B13:
+[AUDIT-POINTER §4](AUDIT-POINTER.md#4-proposed-api). Probe IDs (P1, T1, …) name the
+reproductions in `docs/evidence/pointer-2.3/probes.js`. Baseline: 1.0.0, 3,951 bytes gzipped.
+
+Dispatch logic tests go in `pointer-events.test.js` and event wiring in
+`pointer-browser.test.js`. Two changes from the audit's order: validation (B9) moves to Phase 2
+to land once with I11, and the steps that updated `onscreen-keyboard` and `pi-vision` are dropped,
+since both plugins are removed.
+
+### 6.1 Phase 1: fixes and tests
+
+No API change; the version stays 1.0.0. B3 and B4 keep today's data shape here; the action names
+change in Phase 2.
+
+| # | Task | Findings | Status |
+| --- | --- | --- | --- |
+| 1.1 | **Handler bookkeeping (B1).** Dispatch whenever a mode has handlers, without counters; `off*( mode, fn )` removes only matching registrations; `once` removes only its own; a handler removed during a dispatch does not run later in it. Tests: clearing one mode, removing unknown functions, `once` with a duplicate (P1, P7) | [PTR-001](AUDIT-POINTER.md#ptr-001) (P1), [PTR-009](AUDIT-POINTER.md#ptr-009) | — |
+| 1.2 | **Dispatch isolation (B2).** Update state and prevent defaults before dispatch; each handler in its own `try`, errors to `console.error`. Tests: throwing mouse, press, and touch handlers, with `preventDefault()` still applied (P6) | [PTR-006](AUDIT-POINTER.md#ptr-006) | — |
+| 1.3 | **Per-touch tracking (B3).** Track touches from `changedTouches`: `end` reports the touch that ended at its last position, each touch keeps its own action, hit boxes test the changed touches, `touchcancel` never clicks. Tests: end and cancel data, per-touch actions (P2, P3) | [PTR-002](AUDIT-POINTER.md#ptr-002), [PTR-005](AUDIT-POINTER.md#ptr-005) | — |
+| 1.4 | **Primary pointer and clicks (B4).** Press follows the primary pointer; clicks are per pointer, armed by a primary-button down inside the box and fired by a release inside it. Tests: press and click with two fingers, button filtering, stale arming (P4, P5) | [PTR-003](AUDIT-POINTER.md#ptr-003), [PTR-005](AUDIT-POINTER.md#ptr-005), [PTR-008](AUDIT-POINTER.md#ptr-008) | — |
+| 1.5 | **Every press ends with one release (B5).** A `window` listener while a button is held; release held buttons and touches on `visibilitychange` to hidden and on `stopMouse()`/`stopTouch()`, marked `cancelled: true` (I6); ignore a release for a button that is not held. Tests: release outside the canvas with trusted input, blur, hidden page, stop commands (T1, P8, P9, P10) | [PTR-004](AUDIT-POINTER.md#ptr-004), [PTR-007](AUDIT-POINTER.md#ptr-007), [PTR-010](AUDIT-POINTER.md#ptr-010) | — |
+| 1.6 | **Border and padding (B8).** Ignore presses that start on the border or padding; report captured moves and releases at their true position; hit boxes accept any finite `x`, `y` and non-negative size. Test: coordinates on the border and padding (P11) | [PTR-011](AUDIT-POINTER.md#ptr-011), [PTR-012](AUDIT-POINTER.md#ptr-012) | — |
+| 1.7 | **Listeners on first start (B12).** Attach the `window` listeners on the first start instead of at registration | — | — |
+| 1.8 | **Metadata and manual pages.** Correct the metadata and declarations for current behavior; make the manual pointer pages load cleanly. Test: Lite with the standalone plugin (P16) | [PTR-015](AUDIT-POINTER.md#ptr-015), [PTR-016](AUDIT-POINTER.md#ptr-016) | — |
+| 1.9 | **Fixtures.** Make `inpress_01` and `intouch_01` deterministic on CI runners and remove their `ciSkip`. Merge the near-duplicate fixtures: `onpress_01`, `onpress_02`, and `ontouch_04` run identical scripts, `onmouse_03` repeats them without touch, and `inmouse_01`, `intouch_01`, `inpress_01`, and `onmouse_01` repeat one drag. Remove the duplicates among the pointer tests that TEST-014 and TEST-015 moved from the `patch-*` suites. Add tests for `offtouch`, and a second for `offclick`, `offpress`, and `setEnableContextMenu`. Remove the manual pages `ontouch_01`–`03` and `events_comprehensive` where the automated fixtures cover them | [PTR-017](AUDIT-POINTER.md#ptr-017), [CI-008](AUDIT-CI.md#ci-008), [AUDIT-TESTS §5.2](AUDIT-TESTS.md#52-pointer) | — |
+
+**Exit criteria:** PTR-001–012 and PTR-015–017 fixed with tests; no pointer fixture carries
+`ciSkip`; `npm test` green; size recorded in `docs/evidence/pointer-2.3/`.
+
+### 6.2 Phase 2: Pointer Events and API (breaking set, 2.0.0)
+
+Built on one branch and landed as a set. Each task updates metadata, declarations, signature
+tests, and the demos, fixtures, and manual pages that use the changed command.
+
+| # | Task | Findings | Status |
+| --- | --- | --- | --- |
+| 2.1 | **Renames and 2.0.0 (I1, I16).** `inMouse`, `onMouse`, `offMouse`, `inTouch`, `onTouch`, `offTouch`, `inPress`, `onPress`, `offPress`, `onClick`, `offClick`. The banner moves to 2.0.0 | — | — |
+| 2.2 | **One Pointer Events path (B6).** `pointerdown`/`pointermove`/`pointerup`/`pointercancel` on the canvas with `setPointerCapture()`, and `touch-action` instead of `preventDefault()` on `touchstart`. Mouse commands observe mouse and pen, touch commands touch, press the primary pointer. Replaces the Phase 1 window listeners | [PTR-004](AUDIT-POINTER.md#ptr-004), [PTR-006](AUDIT-POINTER.md#ptr-006) | — |
+| 2.3 | **One data shape and modes (B7, I3).** `{ x, y, lastX, lastY, buttons, action, type, id }` for mouse, touch, and press; modes `"down"`, `"move"`, `"up"`; `onTouch( "start" )` and `"end"` throw `INVALID_MODE`; click data has `action: "click"`. Test: data shapes, including serializing `inPress()` (P12) | [PTR-013](AUDIT-POINTER.md#ptr-013) | — |
+| 2.4 | **Handler signature and removal (I2, I4).** `onClick( fn, once, hitBox, customData )`; `offX( mode )` and `offX( null, fn )` forms | [PTR-009](AUDIT-POINTER.md#ptr-009) | — |
+| 2.5 | **Start, stop, and reads (I5, I7, I9, B13).** Tracking starts on first use; data objects frozen and created once per event; list reads return frozen arrays replaced on change | [PTR-010](AUDIT-POINTER.md#ptr-010) | — |
+| 2.6 | **`clearEvents` scope (I10).** `"click"` and `"wheel"` become their own types; `"press"` no longer clears clicks | — | — |
+| 2.7 | **Gesture settings (B10, I12).** `setContextMenu( isEnabled )` replaces `setEnableContextMenu`, suppressing the menu from screen creation; `setPinchZoom( isEnabled )` becomes a screen command that sets the canvas `touch-action`, never `<body>`. Test: context-menu default, pinch zoom on the canvas (P13, P14) | [PTR-014](AUDIT-POINTER.md#ptr-014) | — |
+| 2.8 | **Validation (B9, I11).** `isEnabled` and `once` must be booleans or omitted; per-parameter codes and error types | [PTR-012](AUDIT-POINTER.md#ptr-012) | — |
+
+**Exit criteria:** every Phase 2 item in, `npm test` green, the compatibility summary complete,
+and size recorded.
+
+### 6.3 Phase 3: additive and release inputs
+
+| # | Task | Findings | Status |
+| --- | --- | --- | --- |
+| 3.1 | **Wheel input (B11).** `onWheel( fn, once, hitBox, customData )` and `offWheel( fn )`, deltas normalized to pixels, page scrolling prevented while a wheel handler is registered for the screen. Estimated 200–300 bytes gzipped | — | — |
+| 3.2 | **Release inputs.** Complete the compatibility summary below, add the open device checks to Section 8.3, and record the final size. The new plugin README is written in R.3 | — | — |
+
+### 6.4 Compatibility summary
+
+Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.2:
+
+- **Renames (I1):** every mouse, touch, press, and click command moves to camelCase, and
+  `setEnableContextMenu` becomes `setContextMenu` (I12). The old names are unregistered.
+- **B7 and I3:** "Press, touch, and click data share one shape. Touch handlers use the modes
+  `"down"`, `"move"`, and `"up"` instead of `"start"`, `"move"`, and `"end"`; `lastX` and
+  `lastY` start at the current position instead of `null`; click data has `action: "click"`.
+  `inPress().touches` holds copies, so it no longer contains the press object itself."
+- **B10:** "`setPinchZoom()` is a screen command and sets `touch-action` on that screen's
+  canvas; it no longer changes `<body>`. The context menu is suppressed from screen creation."
+- **B6 observable changes:** pen input is reported with `type: "pen"`; a drag that leaves the
+  canvas keeps reporting moves and its release; a press that starts on the canvas border is
+  ignored.
+- **I10:** `clearEvents( "press" )` no longer clears click handlers; use `"click"`.
+- **Errors (I11):** validation throws with per-parameter codes.
+- **B11:** additive; no upgrade entry.
+
+## 7. Gamepad
+
+**Draft, awaiting approval.** Findings: [AUDIT-GAMEPAD.md](AUDIT-GAMEPAD.md). Proposals A1–A12:
+[AUDIT-GAMEPAD §4](AUDIT-GAMEPAD.md#4-proposed-api). Probe IDs (P1, P5b, …) name the
+reproductions in `docs/evidence/gamepad-2.3/probes.js`. Baseline: 1.0.0, 1,428 bytes gzipped.
+
+Pure logic tests go in `gamepad-validation.test.js`, whose `vm` harness scripts pads and frames;
+`gamepad-validation-browser` keeps only bundle wiring. One change from the audit's order: helper
+validation (A8) moves to Phase 2 to land once with I11.
+
+### 7.1 Phase 1: fixes and tests
+
+No API change; the version stays 1.0.0.
+
+| # | Task | Findings | Status |
+| --- | --- | --- | --- |
+| 1.1 | **One updater (A1).** The polling loop is the only updater; edges report what happened since the previous read, and reads in one frame agree; connection events do not consume edges. Tests: edges read every frame, every other frame, and from timers; the exposing press (P1, P3, P3b) | [PAD-001](AUDIT-GAMEPAD.md#pad-001), [PAD-017](AUDIT-GAMEPAD.md#pad-017) | — |
+| 1.2 | **Visibility, not blur (A2).** Keep polling while visible; on `visibilitychange` to hidden, release every button, zero the axes, and clear edges. Test: blur and focus (P4) | [PAD-002](AUDIT-GAMEPAD.md#pad-002) | — |
+| 1.3 | **Dispatch isolation (A3).** Dispatch from a copy of the handler list, each handler in its own `try`; update the pad list before dispatch; schedule the loop before the start-up scan. Tests: throwing handlers, pad removal, handlers added during dispatch (P5, P5b, P6) | [PAD-003](AUDIT-GAMEPAD.md#pad-003) (P1), [PAD-004](AUDIT-GAMEPAD.md#pad-004), [PAD-007](AUDIT-GAMEPAD.md#pad-007) | — |
+| 1.4 | **Connection replay (A4).** New connect handlers receive the pads already connected; no second dispatch for a tracked, connected index. Test: replay and duplicate events (P7) | [PAD-005](AUDIT-GAMEPAD.md#pad-005), [PAD-006](AUDIT-GAMEPAD.md#pad-006) | — |
+| 1.5 | **Stable live objects (A7).** Update `buttons`, each button, and `axes` in place; the list form reuses one array per frame. Test: stable objects and no per-frame allocation (P12) | [PAD-009](AUDIT-GAMEPAD.md#pad-009) | — |
+| 1.6 | **Listeners on first start (A12).** Add the blur and focus listeners on the first start, and remove the `webkitGetGamepads` fallback. Tests: lifecycle, including start, stop, repeat start, reads and registration after stop (P8); first tests for `startGamepad` and the connection handlers | [PAD-016](AUDIT-GAMEPAD.md#pad-016), [AUDIT-TESTS §5.4](AUDIT-TESTS.md#54-gamepad) | — |
+| 1.7 | **Metadata and manual pages.** Correct the metadata and declarations for current behavior; remove the second plugin script from the manual gamepad pages. Reduce `gamepad-validation-browser` to bundle wiring, and add Lite with the standalone plugin to it (P14b) | [PAD-014](AUDIT-GAMEPAD.md#pad-014), [PAD-015](AUDIT-GAMEPAD.md#pad-015) | — |
+
+**Exit criteria:** PAD-001–007, PAD-009, and PAD-014–017 fixed with tests; `npm test` green;
+size recorded in `docs/evidence/gamepad-2.3/`.
+
+### 7.2 Phase 2: API (breaking set, 2.0.0)
+
+Built on one branch and landed as a set. Each task updates metadata, declarations, signature
+tests, and the manual pages and `test/gamepad.html`.
+
+| # | Task | Findings | Status |
+| --- | --- | --- | --- |
+| 2.1 | **Rename and 2.0.0 (I1, I16).** `ingamepad` becomes `inGamepad`. The banner moves to 2.0.0 | — | — |
+| 2.2 | **Connection handlers (A5, I2, I4).** `onGamepad( mode, fn, once )` and `offGamepad( mode, fn )` with modes `"connect"` and `"disconnect"`, replacing `onGamepadConnected` and `onGamepadDisconnected` | [PAD-012](AUDIT-GAMEPAD.md#pad-012) | — |
+| 2.3 | **Start, stop, and `clearEvents` (I5, I10).** Polling starts on first use; `stopGamepad()` holds until `startGamepad()`; `clearEvents( "gamepad" )` clears every handler from any screen. Test: `clearEvents` scope and the handlers left afterward (P9) | [PAD-012](AUDIT-GAMEPAD.md#pad-012) | — |
+| 2.4 | **Return shapes (A6, I9).** `inGamepad()` always returns an array; `inGamepad( index )` returns the pad or `null`. Test: return shapes and index gaps (P11) | [PAD-010](AUDIT-GAMEPAD.md#pad-010) | — |
+| 2.5 | **Validation (A8, I11).** Helper indices must be integers; out-of-range reads return `false`, `0`, or `null`; per-parameter codes instead of `INVALID_PARAMETERS`. Test: helper validation and out-of-range values (P10) | [PAD-008](AUDIT-GAMEPAD.md#pad-008) | — |
+| 2.6 | **Radial dead zone (A9, I12).** Radial for the two standard sticks, per-axis for other axes; `setGamepadSensitivity` becomes `setGamepadDeadZone` with option `gamepadDeadZone`, range 0 to under 1. Test: dead-zone model per axis pair (P13) | [PAD-011](AUDIT-GAMEPAD.md#pad-011) | — |
+
+**Exit criteria:** every Phase 2 item in, `npm test` green, the compatibility summary complete,
+and size recorded.
+
+### 7.3 Phase 3: additive and release inputs
+
+| # | Task | Findings | Status |
+| --- | --- | --- | --- |
+| 3.1 | **Standard names (A10, I13).** Helper methods accept the I13 button and axis names; numbers still work | — | — |
+| 3.2 | **Vibration (A11).** `vibrateGamepad( gamepadIndex, duration, strong, weak )` through `playEffect( "dual-rumble" )`, returning whether the pad supports it. Estimated under 150 bytes gzipped | — | — |
+| 3.3 | **Release inputs.** Complete the compatibility summary below, add the open device checks to Section 8.3, and record the final size | — | — |
+
+### 7.4 Compatibility summary
+
+Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.3:
+
+- **Rename (I1):** `ingamepad` → `inGamepad`.
+- **I2:** `onGamepadConnected( fn )` and `onGamepadDisconnected( fn )` become
+  `onGamepad( "connect", fn )` and `onGamepad( "disconnect", fn )`, with `offGamepad()` to
+  remove them.
+- **A6:** "`inGamepad()` always returns an array, and `inGamepad( i )` returns `null` for a
+  missing pad. Replace `if( pads )` checks with a length check, and `=== undefined` with
+  `=== null`."
+- **A9:** "`setGamepadSensitivity()` is now `setGamepadDeadZone()`, and
+  `set( { gamepadSensitivity } )` is now `set( { gamepadDeadZone } )`. Stick values are
+  measured radially, so diagonal movement near the center is no longer lost."
+- **I5 and I10:** polling starts on first use, and `clearEvents( "gamepad" )` from any screen
+  clears every gamepad handler.
+- **Errors (I11):** validation throws with per-parameter codes instead of `INVALID_PARAMETERS`.
+- **A10 and A11:** additive; no upgrade entry.
+
+## 8. Release
+
+### 8.1 Entry criteria
+
+- Every workstream in Sections 3–7 has met its exit criteria, or a cut is recorded under
+  Section 10.
+- Every accepted finding is fixed or explicitly deferred in its audit's Review Decisions.
+- D13–D15 and every other open decision are closed (Section 9).
+- `npm test` passes on Linux, macOS (report-only pixels), and Windows through `ci.yml`.
+
+### 8.2 Tasks
+
+| # | Task | Status |
+| --- | --- | --- |
+| R.1 | Confirm the entry criteria and record any deferrals in the owning documents | — |
+| R.2 | Rewrite the `API.md` Sound and Music section and the Input sections (Keyboard; Mouse, Touch, and Press; Gamepad) to describe final behavior. Also: the `set()` and `removeScreen` text (Core 6, Core 8); that `clearEvents()` also removes handlers a plugin registers through the public input commands, written for plugin authors (Core 3, CORE-004); and the characters each built-in font draws and the one-cell-per-UTF-16-unit rule (C10, CORE-014) | — |
+| R.3 | Update the `docs/llms/` references and examples, commit the regenerated `pi.d.ts`, and update the plugin READMEs: `sound-advanced` for the expansion commands, a new pointer README, keyboard, and `docs/GAMEPAD.md` (PAD-013). State that the standalone plugin entry points are for Lite (C3) | — |
+| R.4 | Write `docs/UPGRADE-V2.3.md` from the compatibility summaries: core (Section 3.4), sound (Section 4.4), keyboard (5.4), pointer (6.4), gamepad (7.4), and plugin removal (13.1) | — |
+| R.5 | Update `releases/pi-latest/README.md` and `CHANGELOG.md` (including the CI build note in Section 13.3), and point `releases/PUBLISH.md` at the 2.3 upgrade guide | — |
+| R.6 | Verify that `package.json` (2.3.0), every plugin banner (`sound` 2.0.0, `sound-advanced` 1.0.0, `keyboard`, `pointer`, and `gamepad` 2.0.0), the release `package.json`, and the declaration headers agree, with `npm run release:check` | — |
+| R.7 | Run `npm test` and `npm run test:firefox`, the manual checks in Section 8.3, then tag `v2.3.0` so `release.yml` drafts the release, create the snapshot with `npm run snapshot`, and publish the verified tarball by hand | — |
+
+**Exit criteria:** every decision closed; the upgrade guide reviewed; `npm test` green and the
+manual checks recorded; the `releases/pi-2.3.0` snapshot created.
+
+### 8.3 Manual release checks
+
+Checks that automated tests cannot cover, collected from every workstream. Record each result
+in its workstream's evidence folder.
+
+**Sound listening pass,** in Chromium, Firefox, and Safari:
+
+- [ ] `sound_lab_01.html`: envelopes, limiter, noise, pan sweep, sweeps, the D1 prototype; WebKit
+  envelope timing (Phases 1–2).
+- [ ] `sound_samples_01.html`: samples, and the 64-slot budget by ear with mixed synth and
+  sample load (Phase 3).
+- [ ] `sound_play_01.html`: tune the default PLAY envelope (MA 15, MD 20, MH 65, MR 20) by ear,
+  and a long song in a hidden tab (Phase 4).
+- [ ] `sound_advanced_01.html`: synth features, presets, instruments, bus effects, level meter
+  (Phase 5); recording and saving a WAV (Phase 7); new effects and chains (Phase 8); generator
+  categories across seeds and the beat-synced visual (Phase 9); a sample instrument (Phase 10).
+- [ ] Autoplay unlock on desktop and on an iOS or Android device.
+- [ ] A stream instance deferred while locked starts on the unlocking gesture, in desktop Safari
+  or on iOS.
+- [ ] iOS mute switch behavior under the `"ambient"` session (D5).
+
+**Input device pass:**
+
+- [ ] Keyboard: a non-US layout with AltGr; an input method (IME) and a mobile soft keyboard
+  (A16); Safari and macOS Meta, if macOS hardware is available.
+- [ ] Pointer: the mouse pass in Firefox and Safari; touch and multi-touch on a phone or tablet
+  (PTR-002, PTR-003); `touchcancel` from a system gesture (PTR-005); pinch zoom with
+  `setPinchZoom` on and off (PTR-014); compatibility mouse events after a tap; long-press
+  context menu; iOS double-tap zoom; pen input.
+- [ ] Gamepad: Safari, if macOS hardware is available; `vibrateGamepad()` in Chrome (A11).
+
+**Other:** a hardware-GPU check of the visual demos, and baseline approval for any fixture
+re-recorded during the release.
+
+## 9. Decisions
+
+### 9.1 Release decisions
+
+All closed.
+
+| ID | Decision | Outcome |
+| --- | --- | --- |
+| G1 | Input plugin versions after breaking changes | **Closed 2026-09-25:** each plugin moves to 2.0.0 with its first breaking change, as `sound` did: the I1 renames that open its Phase 2 |
+| G2 | Whether the input conventions apply to `onscreen-keyboard` and `pi-vision` | **Closed 2026-09-25 (I15):** no; they are removed |
+| G3 | Aliases for renamed input commands | **Closed 2026-09-25 (I16):** no aliases. Renamed commands are unregistered and fail at their first call; the upgrade guide lists every rename |
+| G4 | How visual baselines work across platforms | **Closed 2026-09-26:** one baseline set, with Chromium pinned to SwiftShader (`--disable-gpu --enable-unsafe-swiftshader`). Pixel comparisons are required on Linux and Windows, whose captures match, and report-only on macOS, whose SwiftShader backend differs on 2 fixtures ([AUDIT-CI Q2](AUDIT-CI.md#q2-how-should-visual-comparison-work-across-platforms)) |
+| G5 | Whether CI must be running before 2.3.0 ships | **Closed 2026-09-26:** no. Moot: CI has run since CI 3.3 |
+| G6 | How much of publishing is automated | **Closed 2026-09-26:** on a version tag, CI verifies the build and tests, packs the tarball, and attaches it to a draft GitHub release. `npm publish` stays manual for 2.3.0 |
+| G7 | What happens to `onscreen-keyboard`, `pi-vision`, and their fixtures | **Closed 2026-09-25:** removed with `print-table` and `pens`, and all their fixtures and metadata (P.1–P.6). The fixtures went because their features went, not to make a suite pass |
+| G8 | The Node floor in `engines` | **Closed 2026-09-26:** `>=22`, since Node 18 and 20 are past end of life and CI tests 22 (CI 2.7) |
+
+### 9.2 Other decision records
+
+- **Input conventions I1–I16:** Section 2.
+- **Sound D1–D6:** [DESIGN-SOUND §12](DESIGN-SOUND.md#12-decisions), all resolved.
+- **Sound expansion D7–D17:**
+  [DESIGN-SOUND-ADVANCED §11](DESIGN-SOUND-ADVANCED.md#11-decisions). Open: D13 and D14
+  (closed by Sound 9.3) and D15 (closed by Sound 10.3).
+- **Finding decisions:** the Review Decisions section of each audit.
+
+## 10. Scope-Cut Order
+
+If the schedule slips, cut in this order. Earlier items go first.
+
+1. **Test upkeep:** Sound 11.1–11.5 and the test-only parts of Core 12. They do not change the
+   package and can continue after 2.3.0.
+2. **Sound Phase 10**, sample instruments. The `getAudioBuffer` service member is not added.
+3. **Sound 9.3–9.4 music sync.** The generator ships; the `observePlay` service member (9.2)
+   stays in core.
+4. **Input additive items:** keyboard A16, pointer B11, gamepad A10 and A11 move to 2.3.x.
+5. **Single breaking items,** each with its fallback:
+   - Keyboard A12: `setActionKeys()` keeps adding, and the documentation says so.
+   - Pointer B6: B5 keeps its window listeners, and B10 keeps `preventDefault()` with a
+     per-screen flag.
+   - Gamepad A9: the dead zone keeps its name and gains the radial model as a fix.
+6. **Core:** C8, then C7 (which leaves `set()` lenient and documents that), then C11's
+   changelog item. Other P3 findings are deferred; P1 and P2 findings are fixed or accepted as
+   known issues.
+7. **An input plugin's Phase 2 as a set.** Its breaking changes move to the next minor release
+   together, so users update each API once. Its Phase 1 fixes and Phase 3 additive items still
+   ship in 2.3.0.
+
+Not cut: the input plugins' Phase 1, Core 4, and Core 5 (CORE-001).
+
+## 11. Risks
+
+| Risk | Impact | Mitigation |
+| --- | --- | --- |
+| Breaking changes in four plugins at once | Large upgrade effort for existing games | One upgrade guide; shared conventions; loud errors; each plugin's breaking changes ship as a set |
+| Input behavior depends on devices and browsers | Tests pass but real devices misbehave | Synthetic-event tests for logic; the manual device pass (Section 8.3); audits record what cannot be automated |
+| Removed plugins are still in use | Games that load a removed plugin lose it | Accepted (G7). None was in the release package; the upgrade guide points to the `v2.2.0` source |
+| Full-build size growth | `pi.min.js` grows beyond the sound targets | Size at every phase exit; the sound size order in [DESIGN-SOUND-ADVANCED §8](DESIGN-SOUND-ADVANCED.md#8-size) |
+| Sound expansion delays the release | The release waits on sound | Expansion phases are cut independently (Section 10) |
+| A merged or removed test was the only check of a behavior | A regression goes unnoticed | The removal rules in Section 1.3 |
+
+Sound design risks are in [DESIGN-SOUND §13](DESIGN-SOUND.md#13-risks) and
+[DESIGN-SOUND-ADVANCED §12](DESIGN-SOUND-ADVANCED.md#12-risks).
+
+## 12. Out of Scope for 2.3
+
+- Redesigning `polygons`.
+- New input device types, such as MIDI, WebXR controllers, or motion sensors.
+- A full rendering re-audit or a new performance campaign.
+- Replacing the test frameworks (Playwright and `node:test`).
+- A core frame hook for input plugins (C9); a self-hosted GPU runner; a `safaridriver`
+  harness; a nightly CI workflow.
+- Sound items listed in [DESIGN-SOUND §14](DESIGN-SOUND.md#14-out-of-scope-for-23) and
+  [DESIGN-SOUND-ADVANCED §9](DESIGN-SOUND-ADVANCED.md#9-out-of-scope-for-23).
+
+## 13. Completed Work
+
+One row per task. The details are in git history and the pull requests.
+
+### 13.1 Plugin removal
+
+Done 2026-09-26. Exit criteria met: `npm test` green with the six fixtures removed, and a clean
+build produces no output for the removed plugins.
+
+| # | Task |
+| --- | --- |
+| P.1 | Deleted `plugins/onscreen-keyboard/`, `pi-vision/`, `print-table/`, and `pens/` |
+| P.2 | Deleted `metadata/plugin-onscreen-keyboard/` and `metadata/plugin-print-table/` |
+| P.3 | Deleted the fixtures `onscreen_keyboard_01`–`04`, `pi_vision_01`, `table_01`, their baselines, and the manual page `pi_vision_window_01`; logged as feature removals in `test/TEST-CONSOLIDATION-LOG.md` |
+| P.4 | Rewrote the tests that used the removed plugins as fixtures: the late-dependency test (now `sound-advanced` before `sound`) and `size.test.js` (now `example-plugin`) |
+| P.5 | Fixed the remaining live references outside `docs/archive/`, `docs/evidence/`, and `releases/` |
+| P.6 | Wrote the compatibility summary below |
+
+**Compatibility summary** (input to R.4). None of the four plugins was part of the release
+package, so projects that use the package's builds are not affected. The source of each remains
+available at the `v2.2.0` tag.
+
+| Removed plugin | What it provided | For projects that used it |
+| --- | --- | --- |
+| `onscreen-keyboard` | `showKeyboard()` and `hideKeyboard()`: a virtual keyboard for touch devices, drawn with `print-table`, that fed keystrokes to `input()` and the keyboard handlers | No replacement in 2.3. Build it from the `v2.2.0` source; it needs the pre-2.3 `keyboard` and `pointer` APIs |
+| `pi-vision` | Retro character-cell windows and controls under `$.vis` | No replacement in 2.3. Build it from the `v2.2.0` source; it needs the pre-2.3 `pointer` API |
+| `print-table` | `printTable( items, tableFormat, borderStyle, isCentered )`: ASCII tables with borders | No replacement in 2.3. Build it from the `v2.2.0` source |
+| `pens` | Nothing: an incomplete, deprecated stub that registered no commands | None needed |
+
+### 13.2 Tests
+
+All 28 findings of [AUDIT-TESTS.md](AUDIT-TESTS.md) were accepted and applied on 2026-09-24.
+`npm test` went from about 174 s to 135 s. The after metrics and deviations are in the
+[evidence README](../../evidence/tests-2.3/README.md). Handoffs to other workstreams are tasks
+in their sections: Core 10–12, Sound 11.1–11.5, Keyboard 1.1, 1.12–1.13, Pointer 1.9, and
+Gamepad 1.6.
+
+| ID | Outcome |
+| --- | --- |
+| TEST-001 | 74 orphan baselines removed |
+| TEST-002 | Plugin copy of `polygon_01` removed |
+| TEST-003 | `screen_overlaping` renamed `screen_draw_offscreen_01` |
+| TEST-004 | `ownership-reentrancy` pair deleted; the shared-context test moved to `screen-lifecycle-browser` |
+| TEST-005 | `numeric-boundaries-browser` merged into the Node table |
+| TEST-006 | `color-validation-browser` 8 → 4 cases |
+| TEST-007 | `arc-circle-browser` 8 → 4 cases |
+| TEST-008 | `font-publication-browser` 14 → 6 cases |
+| TEST-009 | `image-lifecycle-browser` 24 → 10 cases |
+| TEST-010 | `alpha-composition-browser` 19 → 15 cases |
+| TEST-011 | `batch-reservations-browser` 18 → 10 cases |
+| TEST-012 | `context-recovery-browser` 52 → 24 cases |
+| TEST-013 | `pixel-disposal-browser` 10 → 6 cases |
+| TEST-014 | `patch-lifecycle` split into subject suites |
+| TEST-015 | `patch-browser` split into subject suites |
+| TEST-016 | `test:patch` removed |
+| TEST-017 | Env-gated visual blocks removed |
+| TEST-018 | Shared `useBrowserBundles()` browser helper |
+| TEST-019 | Shared `vm-module-harness.js` Node loader |
+| TEST-020 | Benchmark tests moved to `npm run test:benchmark` |
+| TEST-021 | Benchmark manifest rename retried on Windows |
+| TEST-022 | Visual runner waits cut |
+| TEST-023 | Package metadata generated once |
+| TEST-024 | `errors_01` and `errors_02` moved to assertions; message typo fixed |
+| TEST-025 | Dead code in `paint_02` removed |
+| TEST-026 | Manual pages removed or renamed |
+| TEST-027 | Stale test documentation and configuration fixed |
+| TEST-028 | 120 s timeout on the Node and browser stages |
+
+### 13.3 CI/CD
+
+Complete 2026-09-26 (CI milestones C1–C3). `ci.yml` was first green on `main` in run
+36266162164; `release.yml`'s first manual run, 36276727365, drafted `v2.3.0` with the verified
+tarball. Findings: [AUDIT-CI.md](AUDIT-CI.md).
+
+| # | Task | Findings |
+| --- | --- | --- |
+| 1.1 | Pinned the Chromium renderer (`--disable-gpu --enable-unsafe-swiftshader`) in a shared launch helper and `playwright.config.js` | [CI-003](AUDIT-CI.md#ci-003) |
+| 1.2 | Kept system fonts out of the `pointer_lifecycle_01` capture | [CI-004](AUDIT-CI.md#ci-004) |
+| 1.3 | LF line endings everywhere (`.gitattributes`) | [CI-007](AUDIT-CI.md#ci-007) |
+| 1.4 | Re-recorded every visual baseline once, after P.3 | [CI-009](AUDIT-CI.md#ci-009) |
+| 2.1 | Case-only renames of `releases/PUBLISH.md` and `docs/GAMEPAD.md` | [CI-001](AUDIT-CI.md#ci-001) |
+| 2.2 | Portable release snapshot (`npm run snapshot`) | [CI-002](AUDIT-CI.md#ci-002) |
+| 2.3 | Realtime audio switch (`PI_AUDIO_REALTIME=0`) | [CI-005](AUDIT-CI.md#ci-005) |
+| 2.4 | WebKit audio tolerances | [CI-011](AUDIT-CI.md#ci-011) |
+| 2.5 | Visual report modal race | [CI-013](AUDIT-CI.md#ci-013) |
+| 2.6 | Firefox WebGL on GPU-less machines (`PI_FIREFOX_HEADED`) | [CI-012](AUDIT-CI.md#ci-012) |
+| 2.7 | Node 22 in `engines` (G8) | — |
+| 2.8 | Report-only pixel mode (`PI_VISUAL_PIXELS=report`) | — |
+| 2.9 | `ciSkip` for known flaky fixtures | [CI-008](AUDIT-CI.md#ci-008) |
+| 3.1 | CI test settings: `retries: 1` with `failOnFlakyTests`, default workers | [CI-006](AUDIT-CI.md#ci-006) |
+| 3.2 | Size diff script | — |
+| 3.3 | Pull-request workflow `ci.yml` | [CI-010](AUDIT-CI.md#ci-010) |
+| 3.4 | Firefox check in `ci.yml`; no nightly workflow | [CI-010](AUDIT-CI.md#ci-010) |
+| 3.5 | Dependabot for GitHub Actions | — |
+| 3.6 | Release workflow `release.yml` and `npm run release:check` | — |
+| 3.7 | CI documentation in `test/README.md` and the publish guide | — |
+| 3.8 | Required checks on `main` ([#12](https://github.com/AndyStubbs/pijs/pull/12)); documentation-only changes skip the test jobs ([#15](https://github.com/AndyStubbs/pijs/pull/15)) | — |
+| 3.9 | GitHub CLI and pull-request practice (Section 1.4) | — |
+
+**Compatibility summary.** No public API changes, so nothing goes in the upgrade guide. For the
+changelog (R.5): built on Windows, `pi.min.js` and `pi.lite.min.js` lose about 134 bytes of `\r`
+characters, so builds are identical on every platform. For contributors: Node 22 or later,
+LF checkouts on Windows, and the test variables `PI_AUDIO_REALTIME`, `PI_VISUAL_PIXELS`, and
+`PI_FIREFOX_HEADED`, all described in `test/README.md`.
+
+### 13.4 Sound
+
+Design section numbers refer to [DESIGN-SOUND.md](DESIGN-SOUND.md) for Phases 0–6 and
+[DESIGN-SOUND-ADVANCED.md](DESIGN-SOUND-ADVANCED.md) for Phases 7–9. What later work builds on
+is in [DESIGN-SOUND §15](DESIGN-SOUND.md#15-implementation-notes), and each phase's size is in
+the [evidence README](../../evidence/sound-2.3/README.md).
+
+**Phase 0: foundations (M1)**
+
+| # | Task | § |
+| --- | --- | --- |
+| 0.1 | Build report for plugin bundles; `npm run size` with `build/size-report.json`; 2.2 baseline | 9.1 |
+| 0.2 | Staged the 2.3 version and `metadata/pi-2.3/` | 9.2 |
+| 0.3 | Resolved D6 (service API names) | 12 |
+| 0.4 | `provideService()` / `getService()` | 4.3 |
+| 0.5 | Firefox and WebKit projects for the audio browser tests | 10.3 |
+| 0.6 | `OfflineAudioContext` render harness | 10.1 |
+| 0.7 | Reference residual checks and calibrated tolerances | 10.2 |
+| 0.8 | 2.2 reference renders | 10.3 |
+| 0.9 | Split `sound.js` into modules with no behavior change | 4.1 |
+| 0.10 | `sound_lab_01.html` scaffold | 10.3 |
+
+**Phase 1: bus safety and envelope (M1)**
+
+| # | Task | § |
+| --- | --- | --- |
+| 1.1 | Bus graph with effect slots and output gains | 5 |
+| 1.2 | Bus-volume service method | 4.3.2 |
+| 1.3 | `setVolume()` on the master gain only | 5.1 |
+| 1.4 | Two-stage limiter and `setSoundLimiter()` | 5.2 |
+| 1.5 | `envelope.js` | 6.2 |
+| 1.6 | New `sound()` signature; `sound` 2.0.0 | 6.1, 9.2, 12 |
+| 1.7 | `MIN_RAMP`, `SCHEDULE_LEAD`, single `stopVoice()` fade path | 6.2, 6.3 |
+| 1.8 | Voice lifecycle states and caps; interim PLAY exemption | 6.3 |
+| 1.9 | Occupancy-interval admission and stealing | 6.3 |
+| 1.10 | Hard-cap cleanup order | 6.3 |
+| 1.11 | Late requests | 8.1 |
+| 1.12 | Autoplay unlock; resolved D3 | 5.3, 12 |
+| 1.13 | Removed the `webkitAudioContext` fallback | 3 |
+
+**Phase 2: core sound design (M2)**
+
+| # | Task | § |
+| --- | --- | --- |
+| 2.1 | `noise.js` | 6.4 |
+| 2.2 | White and pink noise in `sound()` | 6.1 |
+| 2.3 | Conditional panner and `pan` | 5, 6.1 |
+| 2.4 | `frequencyEnd` sweep | 6.1 |
+| 2.5 | Sound lab controls for noise, pan, and sweep | 10.3 |
+| 2.6 | Resolved D1 | 12 |
+
+**Phase 3: sample engine (M2)**
+
+| # | Task | § |
+| --- | --- | --- |
+| 3.1 | Decode-mode loading | 7.2 |
+| 3.2 | Stream-mode loading | 5.3, 7.2 |
+| 3.3 | Sample instances | 7.1, 7.3 |
+| 3.4 | `stopAudio()`, `pauseAudio()`, `resumeAudio()` | 7.1, 7.3 |
+| 3.5 | Position model and `setAudio()` in every state | 6.3, 7.3 |
+| 3.6 | Per-mode `playbackRate` validation | 7.1 |
+| 3.7 | Removed `poolSize` and pool terminology | 7.1, 11 |
+| 3.8 | Rewrote the audio lifecycle tests | 10.3 |
+| 3.9 | Stream-mode realtime browser test | 10.3 |
+| 3.10 | `sound_samples_01.html`; resolved D5 | 10.3, 12 |
+| 3.11 | Shared-cap admission and protected loops | 6.3 |
+| 3.12 | Late samples | 8.1 |
+
+**Phase 4: music engine (M2)**
+
+| # | Task | § |
+| --- | --- | --- |
+| 4.1 | Scheduler for `play()` events with hidden-tab lookahead | 8.1 |
+| 4.2 | `play()` on the scheduler; removed the interim PLAY exemption | 8.1 |
+| 4.3 | `stopPlay()` for pending and active notes | 8.1 |
+| 4.4 | Tokenizer rewrite | 8.2 |
+| 4.5 | `registerPlayExtension` | 4.3.3, 8.2 |
+| 4.6 | Immutable event snapshots | 4.3 |
+| 4.7 | Default PLAY envelope | 8.2 |
+| 4.8 | Late PLAY notes | 8.1 |
+
+**Phase 5: `sound-advanced` 1.0.0 (M3)**
+
+| # | Task | § |
+| --- | --- | --- |
+| 5.1 | Plugin scaffold | 4.2, 4.3 |
+| 5.2 | Source, insert, bus, and tap contracts | 4.3 |
+| 5.3 | `synth.js` filter and filter envelope | 9 |
+| 5.4 | `synth.js` LFOs, pulse duty, arpeggio | 9 |
+| 5.5 | `periodic-noise.js` | 9 |
+| 5.6 | Public `setBusVolume()` (moved to core in 6.2) | 9 |
+| 5.7 | Reverb and delay | 9 |
+| 5.8 | `getSoundLevels()` | 9 |
+| 5.9 | `sfx()`, `definePreset()`, built-in presets | 9 |
+| 5.10 | `defineInstrument()` and `@n` | 9 |
+| 5.11 | Plugin README, types, and demo | 10.3 |
+| 5.12 | Froze service v1 | 4.3 |
+
+**Phase 6: size review (M4)**
+
+| # | Task | § |
+| --- | --- | --- |
+| 6.1 | Size review; resolved D4 (`setBusVolume()` is core) | 9.1, 12 |
+| 6.2 | Applied the promotion; no full merge | 9.1 |
+
+**Phase 7: recording** (design §3.1, §4)
+
+| # | Task |
+| --- | --- |
+| 7.1 | Core output stage and `tapBus( "output" )` |
+| 7.2 | Shared worklet loader |
+| 7.3 | `wav.js` encoder |
+| 7.4 | `recorder.js` |
+| 7.5 | `saveRecording()` |
+| 7.6 | `getSoundLevels( "output" )` |
+| 7.7 | Metadata, types, and demo controls |
+
+**Phase 8: bus effects** (design §5)
+
+| # | Task |
+| --- | --- |
+| 8.1 | Effect stage builders |
+| 8.2 | Effect chains |
+| 8.3 | In-place updates |
+| 8.4 | `"filter"` and `"distortion"` |
+| 8.5 | `"chorus"` |
+| 8.6 | `"bitcrush"` |
+| 8.7 | Metadata, types, and demo controls |
+
+**Phase 9: game features, done part** (design §3.2, §6)
+
+| # | Task |
+| --- | --- |
+| 9.1 | `generateSfx()` |
+| 9.2 | Core `observePlay` service member |
+| 9.4 | Generator part: metadata, types, and the generator panel |
+
+### 13.5 Core
+
+| # | Task | Findings | Ref |
+| --- | --- | --- | --- |
+| Core 1 | Transactional plugin installation and error routing (C2): registrations committed after installation succeeds; screen installation rolls back; `getPlugins()` reports `state`; registration after init throws `REGISTRATION_CLOSED` | [CORE-002](AUDIT-CORE.md#core-002), [CORE-006](AUDIT-CORE.md#core-006) | [#13](https://github.com/AndyStubbs/pijs/pull/13) |
+| Core 2 | Documented the Lite-only plugin entry points (C3) in `plugins/README.md`, `plugins/polygons/README.md`, and `llms-full.txt`; the release README follows in R.3 | [CORE-003](AUDIT-CORE.md#core-003) | [#14](https://github.com/AndyStubbs/pijs/pull/14) |
+
+## 14. Glossary
+
+| Prefix | Meaning | Defined in |
+| --- | --- | --- |
+| KEY-, PTR-, PAD-, CORE-, TEST-, CI- | Findings | The matching audit |
+| Keyboard A1–A17, pointer B1–B13, gamepad A1–A12, core C1–C11 | Proposed changes | Each audit's proposed changes section |
+| I1–I16 | Input conventions | Section 2 |
+| G1–G8 | Release decisions | Section 9.1 |
+| D1–D17 | Sound decisions | The sound design documents |
+| P.1–P.6, R.1–R.7 | Plugin removal and release tasks | Sections 13.1 and 8.2 |
+| U1–U4 | Release milestones | Section 1.5 |
+| M1–M5 | Sound milestones | Section 1.5 |
+| K1…, P1…, T1…, C01… | Probes in `docs/evidence/<workstream>-2.3/probes.js` | The evidence folders |
+
+**ID collisions:** keyboard and gamepad both number their proposals A1 onward, and the CI
+milestones C1–C3 share names with core proposals C1–C11. This document always qualifies them
+("keyboard A1", "CI milestone C1").
+
+**Priorities:** **P1** blocks a supported workflow or corrupts shared state; **P2** is
+incorrect behavior under a specific trigger; **P3** is a lower-impact contract defect.

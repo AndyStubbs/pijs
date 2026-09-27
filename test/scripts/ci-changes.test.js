@@ -15,7 +15,7 @@ const SCRIPT = g_url.fileURLToPath( new URL( "../../scripts/ci-changes.js", impo
 
 test( "documentation and tooling files are skippable", () => {
 	for( const file of [
-		"README.md", "test/README.md", "docs/plans/CI-V2.3-ROADMAP.md",
+		"README.md", "test/README.md", "docs/plans/v2.3/ROADMAP.md",
 		"docs/llms/llms.txt", "docs/evidence/ci-2.3/runners.json", "docs/pijs-logo2.webp",
 		"tools/fonts/gen-fonts.js", ".vscode/settings.json", "LICENSE", "TODO.txt",
 		"AGENTS.md", ".cursorrules", ".github/dependabot.yml"

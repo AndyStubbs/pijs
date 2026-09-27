@@ -1,33 +1,16 @@
-# Pi.js 2.3 Sound Upgrade Plan
+# Pi.js 2.3 Sound Design
 
-Status: Approved; roadmap Phases 0–6 implemented; expansion Phases 7–8 implemented, Phase 9
-in progress, Phase 10 proposed
-Target release: Pi.js 2.3.0
-Companion document: [SOUND-V2.3-ROADMAP.md](SOUND-V2.3-ROADMAP.md)
-Expansion plan: [SOUND-ADVANCED-V2.3-PLAN.md](SOUND-ADVANCED-V2.3-PLAN.md)
-Release plan: [UPGRADE-V2.3-PLAN.md](UPGRADE-V2.3-PLAN.md)
-Revision 11 added the `sound-advanced` expansion (Phases 7–10: recording, more bus effects, a
-sound-effect generator, music sync, and sample instruments) in its own plan. Recording moved
-into scope (14), and the proposed service additions are listed in 4.3. Revision 10 recorded the Phase 6 size review: the public `setBusVolume()` command moved to core
-(D4), the other `sound-advanced` modules stay in the plugin, and the soft size targets were
-raised to 15.5 KB and 9.5 KB (9.1).
-Revision 9: sound becomes one workstream of the 2.3 release. The release gate, including version
-checks and the upgrade guide, moves to the general upgrade plan; roadmap Phase 6 keeps the size
-review (9.1, 9.2, 12). Revision 8 froze the extension service v1 (4.3) after Phase 5. It added
-the source factory spec, the voice-insert `detune` output for pitch modulation, and the
-`createVoice` error label, and gave the `sound-advanced` parameters their final names and units
-(9). Revision 7 recorded
-the Phase 4 PLAY decisions in 8.2: equal-temperament pitch, unknown commands warned and
-ignored, dotted explicit lengths, accidentals across octave boundaries, and the comma-track
-timing kept from 2.2. Revision 6 added the scheduling lead, the PLAY slot and release
-placement, harness state masking, the stream-mode realtime test, D2, sweep validation,
-duplicate PLAY token prefixes, and the live-voice cap name.
+Design for the core `sound` plugin 2.0.0 and `sound-advanced` 1.0.0: revision 11, approved.
+Implementation and status: [ROADMAP §4](ROADMAP.md#4-sound), with the completed tasks in
+[ROADMAP §13.4](ROADMAP.md#134-sound). The expansion of `sound-advanced` (Phases 7–10) is
+designed in [DESIGN-SOUND-ADVANCED.md](DESIGN-SOUND-ADVANCED.md). Section numbers are stable,
+because code comments and tests cite them.
 
 ## 1. Purpose
 
 Pi.js 2.3 rebuilds the sound subsystem on a single Web Audio graph. Sound is one workstream of
-the 2.3 release; the general upgrade plan covers the keyboard, pointer, gamepad, and core audits
-and the release phase. The sound work has two goals:
+the 2.3 release; the [ROADMAP](ROADMAP.md) covers the other workstreams and the release phase.
+The sound work has two goals:
 
 1. Make the core `sound` plugin clean, click-free, and safe from clipping while keeping it small.
 2. Add a separate `sound-advanced` plugin for synthesis, effects, presets, and instruments that
@@ -58,7 +41,7 @@ These decisions were made during scoping and are treated as fixed for this plan.
 | Limiter | Compressor plus soft clipper with an absolute ±1.0 ceiling; on by default, can be disabled |
 | Autoplay | Core unlocks the audio context on the first user gesture |
 | Verification | Deterministic `OfflineAudioContext` tests, one realtime browser test for stream mode and the scheduling lead, and manual listening demos |
-| Plan location | `docs/plans/`; user-facing `UPGRADE-V2.3.md` is written in the release phase of the general plan |
+| Plan location | `docs/plans/v2.3/`; the user-facing upgrade guide is written in the release phase (ROADMAP R.4) |
 | Versions | `sound` plugin 2.0.0; `sound-advanced` plugin 1.0.0 |
 
 ## 3. Current State (Pi.js 2.2)
@@ -167,7 +150,7 @@ change is needed. This mechanism is general and also available to third-party pl
 | `setBusInsert( bus, insert )` | Places one insert on a bus; `null` removes it |
 | `tapBus( bus, node )` | Connects a bus output in parallel to `node`; returns an untap function. `"output"` taps the fixed stage after the limiter |
 | `registerPlayExtension( name, extension )` | Adds PLAY tokens, per-track state, and note resolution |
-| `observePlay( listener )` | Reports admitted PLAY notes and song ends; returns a function that removes the listener (expansion plan 3.2) |
+| `observePlay( listener )` | Reports admitted PLAY notes and song ends; returns a function that removes the listener (expansion design 3.2) |
 
 Buses are named `"sfx"`, `"music"`, `"audio"`, and `"master"`. `tapBus` also accepts
 `"output"`, the fixed stage after the limiter; `setBusVolume` and `setBusInsert` reject it with
@@ -180,7 +163,7 @@ The interface is internal. It is documented in the plugin authoring docs
 contract tests in 4.3.4 pass, and `sound-advanced` 1.0 consumes every member. Later changes
 that break it require bumping `version`; a test pins the member list.
 
-**v1 additions before release** (expansion plan Section 3, decision D8): `observePlay` was
+**v1 additions before release** (expansion design Section 3, decision D8): `observePlay` was
 added by task 9.2. `getAudioBuffer( name )`, which returns a loaded file's decoded buffer, is
 proposed for task 10.1. Each addition updates this table when its task lands.
 
@@ -1110,8 +1093,8 @@ and full-merge cost next to them.
   generator keeps `build/reference-2.2.json` as the frozen 2.2 API and writes
   `build/reference-2.3.json` for the new one.
 - **Plugin versions.** The `sound` banner becomes 2.0.0 with its first breaking change
-  (Phase 1). `sound-advanced` is created at 1.0.0 (Phase 5). The release phase of the general
-  plan verifies that the package, plugin banners, release `package.json`, and declaration
+  (Phase 1). `sound-advanced` is created at 1.0.0 (Phase 5). The release phase (ROADMAP R.6)
+  verifies that the package, plugin banners, release `package.json`, and declaration
   headers agree; it does not bump anything.
 - **Working tree and `pi-latest`.** A normal build copies the working tree into
   `releases/pi-latest` under the staged version. Nothing publishes automatically, and
@@ -1297,7 +1280,9 @@ Click checks compare against an expected waveform rather than require raw RMS to
   - `sound_play_01.html`: PLAY envelopes, noise percussion, instruments.
   - `sound_advanced_01.html`: synth, effects, presets, analyser visualizer.
 
-## 11. Compatibility Summary (input to `UPGRADE-V2.3.md`)
+## 11. Compatibility Summary
+
+Input to the 2.3 upgrade guide (ROADMAP R.4).
 
 - `sound()`: `attack`/`decay` removed; new envelope parameters and positional order.
   Frequency is no longer rounded. The default envelope and de-click floor change the sound
@@ -1353,7 +1338,7 @@ Click checks compare against an expected waveform rather than require raw RMS to
   audio mixes with audio from other apps (D5).
 - Plugin API: `provideService()` and `getService()` are added.
 
-## 12. Open Decisions
+## 12. Decisions
 
 Each item has a recommendation and a phase by which it must be resolved.
 
@@ -1397,3 +1382,94 @@ Each item has a recommendation and a phase by which it must be resolved.
 - Microphone input.
 - Per-screen audio routing.
 - Global pause of synth sounds and `play()` (sample instances support pause).
+
+## 15. Implementation Notes
+
+Internal contracts and test tooling that the implementation settled in Phases 0–6 and that later
+work builds on. Decisions are in Section 12, per-phase sizes in
+`docs/evidence/sound-2.3/README.md`, and the task list in the ROADMAP.
+
+### 15.1 Test tooling
+
+- **Engines:** Chromium supports offline `suspend()`. Firefox renders offline but has no
+  `suspend()`, so its clock-driven tests skip. Playwright's WebKit has Web Audio on Linux and
+  macOS but not on Windows, where it runs only the media-element lifecycle tests. The engine
+  table is in `test/README.md`.
+- **Tolerances** per metric and engine are in `test/unit/audio-tolerances.js`. Chromium and
+  WebKit mix multiple inputs in an address-dependent order, so a seeded multi-voice mix is
+  identical only within a recorded float tolerance. Single-source seeded renders are
+  bit-identical.
+- **Harness helpers:** automation and source probes, `holdTimers()`, `advanceWall()`,
+  `simulateInterruption()`, `renderCarrier()` (which also replays a recorded buffer source with
+  `{ sourceId }`), and a wait for page-started offline renders. Metrics include
+  `spectrumSlope()`, `correlation()`, and `risingZeroCrossings()`, with the `noiseSlope` and
+  `noiseBandDeviation` tolerances.
+- **Loaders:** Node tests load `samples.js` into a `vm` sandbox with a `g_context` stub
+  (`audio-sample-sandbox.js`). `describeAudioEngines()` loads plugin source bundles through
+  `{ "plugins": [ ... ] }`, and `launchEngine()` accepts `{ "realtimeAudio": true }`.
+- **Test server:** `test/scripts/test-server.js` serves byte ranges, which media elements need to
+  seek.
+- **Manual pages** use the 2.3 `loadAudio()` signature. `audiopool_01.html` keeps its name
+  because the frozen performance campaign manifests list it.
+
+### 15.2 Voices and scheduling
+
+- **Admission and cleanup** are pure functions in `voices.js` (`planAdmission`,
+  `chooseCleanup`) with Node tests.
+- **Shared voice records:** `voices.js` exports `createVoiceRecord()`, `admitVoice()`,
+  `registerVoice()`, and `releaseVoice()`. Sample instances build their own nodes and pass a
+  `fade( fadeStart, deadline )` hook, which `stopVoice()` calls instead of the synth envelope
+  fade, plus `onDispose`. `admitVoice()` runs live-voice cleanup, occupancy admission, and victim
+  commits for any voice; `inherit: true` skips slot planning for stream replacement.
+- **`startVoice( spec, soundId )`** is the single synth entry point: late-start rule,
+  admission, and caps. It returns the voice record or `null`. `nextSoundId()` is exported. Specs
+  accept `inserts` (frozen `{ factory, params }` descriptors) and `onDispose`. The service's
+  `createVoice` builds on it.
+- **Voice inserts** are created inside admission's build step only. They chain between the source
+  and the envelope gain, get `start( begin, gateEnd )` and `stop( end )` at build,
+  `stop( deadline )` on every fade, `stop( now )` on hard stops, and `dispose()` exactly once.
+  A throwing factory or `start` disposes the inserts created so far.
+- **Scheduler:** pending records are generic `{ id, kind, start, run }` items. Sample requests
+  use kind `"audio"`. `scheduler.js` also exports `addStream( stream )` and
+  `removeStream( id )`: a stream is `{ id, kind, peek, take, isDone, onDone }`, where `peek()`
+  returns the next item's context start time, `take()` creates it and must advance, and
+  `onDone()` runs once when the scheduler removes a finished stream. Streams merge with pending
+  records in start order under the window-fill rule and do not count toward
+  `MAX_PENDING_SOUNDS`. Hiding the page runs a tick at once.
+- **Command scope:** `stopSound()` stops only synth voices, and `stopAudio()` only sample
+  instances.
+
+### 15.3 Sources and samples
+
+- **Noise:** `noise.js` exports `NOISE_TYPES`, `isNoiseType()`, and
+  `createNoiseSource( context, type )`, which returns a looping buffer source and a random start
+  offset. Voices start it with `source.start( begin, offset )`.
+- **Sample graph:** every instance is source → fade gain → volume gain → panner → audio bus.
+  Fades, including stops and steals, act only on the fade gain; `setAudio()` ramps only the
+  volume gain and the panner. The pan level factor (Section 5) applies to mono buffers only.
+- **Position model:** `resolveBudget`, `consumedAt`, `rateAt`, `timeForContent`,
+  `addRateSegment`, `wrapPosition`, and `isPlaybackRateValid` are pure exports of `samples.js`
+  with Node tests. Finite budgets pass the native duration and also schedule a fade and `stop()`
+  at the predicted end, which move on rate changes.
+- **Stream mode** keeps one element and one `MediaElementAudioSourceNode` per audio ID. A
+  replacement fades the outgoing instance, then seeks and plays from a timer at the fade end.
+- **PLAY parsing** happens at `play()` time, including for songs deferred by a locked context.
+  `parsePlayString()` and `tokenize()` are pure exports tested in Node (`sound-play.test.js`).
+
+### 15.4 `sound-advanced` layout
+
+- Each module exports `register( pluginApi, service )`. `index.js` checks that the service is
+  version 1 (`INCOMPATIBLE_SOUND_SERVICE` otherwise) and registers the modules in order, with
+  periodic noise first. `presets.js` and `instruments.js` import `synth.js`, the only sibling
+  dependency besides the generator's import of `presets.js`. Pulse waves are wave tables, not a
+  registered source.
+- `releases/base-package.json` exports `./plugins/sound-advanced`. The package-types consumer
+  test type-checks the commands with the plugin imported and rejects `synth()` without it.
+- The public `setBusVolume()` is registered by core beside `setVolume()` over the same
+  validating function (D4). Its metadata is `metadata/pi-2.3/sound-setBusVolume.toml`, so
+  `pi.d.ts` declares the command and a `busVolume` setting.
+- **Tests:** `audio-service-browser.test.js` pins the service member list and runs the 4.3.4
+  contracts with stub extensions; `audio-advanced-browser.test.js` renders each module offline,
+  one of them single-pass so Firefox covers synth voices; `sound-advanced.test.js` holds the Node
+  tests; `sound-advanced-bundles-browser.test.js` loads the IIFE and ESM bundles with Full and
+  Lite.
