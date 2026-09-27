@@ -223,10 +223,11 @@ function harness() {
 }
 
 function empty( h ) {
+	const plugin = [ h.keyboard.onKeyDown, h.keyboard.onKeyUp, h.keyboard.clearInKeys ];
 	const promptListeners = h.window.listeners.filter( listener => {
-		return listener.type === "keydown" && listener.fn !== h.keyboard.onKeyDown;
+		return !plugin.includes( listener.fn );
 	} );
-	assert.equal( promptListeners.length, 0, "the prompt removes its key listener" );
+	assert.equal( promptListeners.length, 0, "the prompt removes its listeners" );
 	assert.equal( h.timers.size, 0 );
 	assert.equal( h.images.size, 0 );
 	assert.equal( vm.runInContext( "m_inputData", h.input ), null );
@@ -602,4 +603,80 @@ test( "SYS-003 the prompt ignores keys typed into editable elements", async () =
 	h.key( "Enter" );
 	assert.equal( await pending, "y" );
 	empty( h );
+} );
+
+/**
+ * Dispatch a paste event through the window listeners.
+ *
+ * @param {Object} h - Harness.
+ * @param {string} text - Clipboard text.
+ * @param {Object} [target] - Event target.
+ * @returns {Object} The dispatched event.
+ */
+function paste( h, text, target = h.body ) {
+	const event = {
+		"type": "paste",
+		"target": target,
+		"defaultPrevented": false,
+		"clipboardData": { "getData": format => {
+			assert.equal( format, "text" );
+			return text;
+		} },
+		"composedPath": () => [ target, h.body, h.document, h.window ],
+		"preventDefault": () => { event.defaultPrevented = true; }
+	};
+	h.window.dispatchEvent( event );
+	return event;
+}
+
+test( "KEY-003 the prompt prevents the default action of the keys it handles (K9)", async () => {
+	const h = harness();
+	const pending = h.start();
+	const handled = [ h.key( " " ), h.key( "Tab" ), h.key( "a" ), h.key( "Backspace" ),
+		h.key( "ArrowDown" ), h.key( "b", "down", { "repeat": true } ) ];
+	assert.deepEqual( handled.map( event => event.defaultPrevented ),
+		[ true, true, true, true, true, true ] );
+	const enter = h.key( "Enter" );
+	assert.equal( enter.defaultPrevented, true );
+	assert.equal( await pending, " b" );
+	empty( h );
+	assert.equal( h.key( " " ).defaultPrevented, false, "keys are the page's again" );
+} );
+
+test( "KEY-003 Ctrl and Meta shortcuts are left to the browser, AltGr types (K9)", async () => {
+	const h = harness();
+	const pending = h.start();
+	const shortcuts = [
+		h.key( "v", "down", { "code": "KeyV", "ctrlKey": true } ),
+		h.key( "c", "down", { "code": "KeyC", "metaKey": true } ),
+		h.key( "a", "down", { "code": "KeyA", "ctrlKey": true, "shiftKey": true } )
+	];
+	assert.deepEqual( shortcuts.map( event => event.defaultPrevented ), [ false, false, false ] );
+	const altGraph = h.key( "@", "down", {
+		"code": "KeyQ", "ctrlKey": true, "altKey": true, "modifiers": { "AltGraph": true }
+	} );
+	assert.equal( altGraph.defaultPrevented, true );
+	h.key( "Enter" );
+	assert.equal( await pending, "@" );
+	empty( h );
+} );
+
+test( "KEY-003 pasted text is inserted by the prompt's rules (K9)", async () => {
+	const h = harness();
+	const text = h.start();
+	const event = paste( h, "hi\nthere\t!" );
+	assert.equal( event.defaultPrevented, true );
+	assert.equal( paste( h, "ignored", createElement( "TEXTAREA" ) ).defaultPrevented, false );
+	h.key( "Enter" );
+	assert.equal( await text, "hithere!" );
+	empty( h );
+
+	const number = h.start( h.first, null, {
+		"isNumber": true, "isInteger": true, "allowNegative": true, "maxLength": 4
+	} );
+	paste( h, "-12a.34567" );
+	h.key( "Enter" );
+	assert.equal( await number, -123 );
+	empty( h );
+	assert.equal( paste( h, "after" ).defaultPrevented, false, "no listener after the prompt" );
 } );

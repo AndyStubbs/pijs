@@ -125,4 +125,31 @@ for( const bundle of g_harness.BUNDLES ) {
 				await page.close();
 			}
 		} );
+
+	test( `KEY-003 ${bundle}: native keys typed into a prompt stay in the prompt (K9n)`,
+		async () => {
+			const { page, errors } = await open( bundle, { "html": "<!doctype html><html><body>" +
+				"<button>Button</button><div style=\"height:3000px\"></div></body></html>" } );
+			try {
+				await page.evaluate( () => {
+					$.screen( { "aspect": "160x80", "noCss": true } );
+					window.__value = "pending";
+					$.input( "?" ).then( value => { window.__value = value; } );
+				} );
+				const keyboard = page.keyboard;
+				await keyboard.press( "Space" );
+				await keyboard.press( "Tab" );
+				await keyboard.press( "KeyA" );
+				await keyboard.press( "Control+KeyV" );
+				await keyboard.press( "Enter" );
+				const result = await page.evaluate( () => [
+					window.__value, Math.round( window.scrollY ),
+					document.activeElement === document.body
+				] );
+				assert.deepEqual( result, [ " a", 0, true ] );
+				assert.deepEqual( errors, [] );
+			} finally {
+				await page.close();
+			}
+		} );
 }
