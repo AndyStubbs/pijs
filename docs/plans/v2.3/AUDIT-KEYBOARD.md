@@ -746,7 +746,7 @@ the [ROADMAP](ROADMAP.md#5-keyboard) tasks that implement each item.
 | KEY-002 | `clearEvents()` from another screen strands a prompt | Accepted | Fixed by A2 (Keyboard 1.3, done) |
 | KEY-003 | Prompt does not own the keyboard | Accepted | Fixed by A3 and A11 (Keyboard 1.4, done; 2.8). Confirmed on hardware in Chrome |
 | KEY-004 | Shadow-DOM inputs reach game handlers | Accepted | Fixed by A4 (Keyboard 1.5, done) |
-| KEY-005 | Prompt layout | Accepted | Fixed by A5 (Keyboard 1.6) |
+| KEY-005 | Prompt layout | Accepted | Fixed by A5 (Keyboard 1.6, done) |
 | KEY-006 | `stopKeyboard()` not undone; strands prompts | Accepted | Prompt part fixed by A2 (Keyboard 1.3, done); start rule I5 (Keyboard 2.3) |
 | KEY-007 | `offkey()` needs every flag | Accepted | Rule I4 (Keyboard 2.2) |
 | KEY-008 | Numeric prompt edge cases | Accepted | Fixed by A6 (Keyboard 1.7) |
