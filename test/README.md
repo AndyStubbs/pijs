@@ -169,8 +169,15 @@ Firefox, whose media start lags by up to 89 ms. The same file checks a decoded i
 rendered position after a rate change against the position model within 0.05 s of content,
 which is the realtime check on the scheduling lead. WebKit is skipped.
 
-The realtime suites, `audio-stream-browser.test.js` and
-`audio-recording-realtime-browser.test.js`, need an audio output device. Set
+`audio-sync-realtime-browser.test.js` plays songs through a real `AudioContext` in Chromium
+and checks that `onPlay()` handlers run within two animation frames of each note's audible
+start, taken as the context time minus the reported `outputLatency`. A one-second main-thread
+stall stands in for a hidden tab, which a headless page never is: notes admitted before the
+stall are dropped, and the song's end is still delivered.
+
+The realtime suites, `audio-stream-browser.test.js`,
+`audio-recording-realtime-browser.test.js`, and `audio-sync-realtime-browser.test.js`, need an
+audio output device. Set
 `PI_AUDIO_REALTIME=0` to skip them on machines without one, as CI does; the test output states
 the reason. Unset or `1` runs them, and any other value fails.
 

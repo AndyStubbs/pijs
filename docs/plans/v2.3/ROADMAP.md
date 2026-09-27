@@ -16,11 +16,11 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Sound 9.3](#41-phase-9-game-features-remaining) | `onPlay()` and `offPlay()` music sync | Nothing |
+| 1 | [Sound 9.4](#41-phase-9-game-features-remaining) | Music sync metadata, types, and the beat-synced demo visual; Phase 9 exit | Nothing |
 | 2 | Approve [Keyboard](#5-keyboard), [Pointer](#6-pointer), and [Gamepad](#7-gamepad) | Maintainer review of the drafted input phases; reaches milestone U2 | Nothing. Can run in parallel with 1 |
 | 3 | Keyboard 1.1, Pointer 1.1, Gamepad 1.1 | Start the three input Phase 1s, in parallel | 2 |
 | 4 | [Core 5–7, 9–12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
-| 5 | [Sound 10.1](#42-phase-10-sample-instruments) | Sample instruments | Sound 9.3, by priority |
+| 5 | [Sound 10.1](#42-phase-10-sample-instruments) | Sample instruments | Sound 9.4, by priority |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -29,7 +29,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
 | Core | [3](#3-core) | Phase 1 done. Core 1, 2, and 4 done, 9 tasks left | Core 5–7, 9–12 |
-| Sound | [4](#4-sound) | Phases 0–8 done; Phase 9 in progress; Phases 10–11 not started | Sound 9.3 |
+| Sound | [4](#4-sound) | Phases 0–8 done; Phase 9 in progress; Phases 10–11 not started | Sound 9.4 |
 | Keyboard | [5](#5-keyboard) | Draft, awaiting approval | Approval |
 | Pointer | [6](#6-pointer) | Draft, awaiting approval | Approval |
 | Gamepad | [7](#7-gamepad) | Draft, awaiting approval | Approval |
@@ -286,7 +286,7 @@ Input to `UPGRADE-V2.3.md` (R.4):
 ## 4. Sound
 
 Design: [DESIGN-SOUND.md](DESIGN-SOUND.md) (Phases 0–6) and
-[DESIGN-SOUND-ADVANCED.md](DESIGN-SOUND-ADVANCED.md) (Phases 7–10). Phases 0–8, 9.1, 9.2, and
+[DESIGN-SOUND-ADVANCED.md](DESIGN-SOUND-ADVANCED.md) (Phases 7–10). Phases 0–8, 9.1–9.3, and
 the generator part of 9.4 are done ([Section 13.4](#134-sound)).
 
 ### 4.1 Phase 9: game features (remaining)
@@ -295,8 +295,7 @@ Design: [DESIGN-SOUND-ADVANCED §6](DESIGN-SOUND-ADVANCED.md#6-phase-9-game-feat
 
 | # | Task | Status |
 | --- | --- | --- |
-| 9.3 | **Music sync (`sync.js`).** `onPlay( mode, fn, once )` and `offPlay( mode, fn )` with modes `"note"` and `"end"`, following I1, I2, I4, I7, I8, and I10. A dispatch loop on animation frames that runs only while events are queued; context time mapped to page time with `getOutputTimestamp()` and `outputLatency`; notes more than 250 ms late dropped; `"end"` always delivered; `clearEvents( "play" )`. Closes D13 and D14 | Next |
-| 9.4 | **Metadata, types, and demo.** The generator panel is done. Remaining: metadata and types for `onPlay` and `offPlay`, and a beat-synced visual in `sound_advanced_01.html` | Partly done |
+| 9.4 | **Metadata, types, and demo.** The generator panel is done. Remaining: metadata and types for `onPlay` and `offPlay`, and a beat-synced visual in `sound_advanced_01.html` | Next |
 
 **Exit criteria:**
 
@@ -951,6 +950,7 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | --- | --- |
 | 9.1 | `generateSfx()` |
 | 9.2 | Core `observePlay` service member |
+| 9.3 | Music sync (`sync.js`): `onPlay( mode, fn, once )` and `offPlay( mode, fn )` with modes `"note"` and `"end"`, dispatched on animation frames at the audible time; notes more than 250 ms late dropped; `clearEvents( "play" )`. Closed D13 and D14 |
 | 9.4 | Generator part: metadata, types, and the generator panel |
 
 ### 13.5 Core
