@@ -1,6 +1,9 @@
 /**
- * SYS-003 and SYS-011 browser regressions against fresh in-memory full and lite bundles.
- * Run with node --test test/unit/keyboard-lifecycle-browser.test.js; no server is required.
+ * SYS-003 and SYS-011 browser regressions against fresh in-memory full and lite bundles: what a
+ * browser adds to the Node tests in keyboard-lifecycle.test.js, which are real KeyboardEvent
+ * dispatch, prompt rendering at its owner's cursor, and drawing after a prompt's screen is
+ * removed. Run with node --test test/unit/keyboard-lifecycle-browser.test.js; no server is
+ * required.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
@@ -14,55 +17,6 @@ const { probe } = g_harness.useBrowserBundles( {
 } );
 
 for( const bundle of g_harness.BUNDLES ) {
-	test( `SYS-003 ${bundle}: disposal before and after blinking releases resources`, async () => {
-		const result = await probe( bundle, async () => {
-			const intervals = new Map();
-			const originalSet = window.setInterval;
-			const originalClear = window.clearInterval;
-			window.setInterval = ( fn, delay ) => {
-				const id = originalSet( fn, delay );
-				intervals.set( id, fn );
-				return id;
-			};
-			window.clearInterval = id => { intervals.delete( id ); originalClear( id ); };
-			const results = [];
-			for( const blink of [ false, true ] ) {
-				const survivor = $.screen( "160x80" );
-				const owner = $.screen( "160x80" );
-				let imageName;
-				const capture = owner.createImageFromScreen;
-				owner.createImageFromScreen = options => {
-					imageName = options.name;
-					return capture( options );
-				};
-				const values = [];
-				const promise = owner.input( "Name?", value => values.push( value ) );
-				if( blink ) {
-					const now = Date.now;
-					const later = now() + 600;
-					Date.now = () => later;
-					for( const tick of intervals.values() ) { tick(); }
-					Date.now = now;
-				}
-				owner.removeScreen();
-				let missing = false;
-				try { $.getImage( imageName ); } catch( error ) { missing = true; }
-				const pending = intervals.size;
-				const settled = await promise;
-				const next = survivor.input( "Again?" );
-				window.dispatchEvent( new KeyboardEvent( "keydown", { "key": "x", "code": "KeyX" } ) );
-				window.dispatchEvent( new KeyboardEvent( "keydown", { "key": "Enter", "code": "Enter" } ) );
-				results.push( [ settled, values, missing, pending, await next, intervals.size ] );
-				survivor.removeScreen();
-			}
-			await new Promise( resolve => setTimeout( resolve, 150 ) );
-			return results;
-		} );
-		assert.deepEqual( result, [
-			[ null, [ null ], true, 0, "x", 0 ], [ null, [ null ], true, 0, "x", 0 ]
-		] );
-	} );
-
 	test( `SYS-003 ${bundle}: nonactive owner renders at its own cursor`, async () => {
 		assert.deepEqual( await probe( bundle, async () => {
 			const owner = $.screen( "160x80" );
@@ -108,18 +62,6 @@ for( const bundle of g_harness.BUNDLES ) {
 			return [ await pending, await replacement, calls, removedError, pixel.r ];
 		}, undefined, { "errors": [ "expected disposal callback" ] } ),
 		[ null, "z", 1, "SCREEN_REMOVED", 255 ] );
-	} );
-
-	test( `SYS-003 ${bundle}: newest callback input supersedes an outer replacement`, async () => {
-		assert.deepEqual( await probe( bundle, async () => {
-			const screen = $.screen( "160x80" );
-			let newest;
-			const oldest = screen.input( "Old?", () => { newest = screen.input( "Newest?" ); } );
-			const outer = screen.input( "Outer?" );
-			window.dispatchEvent( new KeyboardEvent( "keydown", { "key": "n", "code": "KeyN" } ) );
-			window.dispatchEvent( new KeyboardEvent( "keydown", { "key": "Enter", "code": "Enter" } ) );
-			return [ await oldest, await outer, await newest ];
-		} ), [ null, null, "n" ] );
 	} );
 
 	test( `SYS-011 ${bundle}: reentrant once and throwing keyup preserve state`, async () => {

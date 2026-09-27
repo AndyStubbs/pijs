@@ -16,10 +16,9 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | Approve [Keyboard](#5-keyboard), [Pointer](#6-pointer), and [Gamepad](#7-gamepad) | Maintainer review of the drafted input phases; reaches milestone U2 | Nothing |
-| 2 | Keyboard 1.1, Pointer 1.1, Gamepad 1.1 | Start the three input Phase 1s, in parallel | 1 |
-| 3 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
-| 4 | [Core 5–13](#32-phase-2-fixes) | Remaining core fixes, tests, and the two approved API changes, in any order. Core 8 and Core 13 land before the pointer and gamepad Phase 2 sets | Nothing. Can run in parallel |
+| 1 | [Keyboard 1.2](#51-phase-1-fixes-and-tests), [Pointer 1.1](#61-phase-1-fixes-and-tests), [Gamepad 1.1](#71-phase-1-fixes-and-tests) | Continue the three input Phase 1s, in parallel | Nothing |
+| 2 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
+| 3 | [Core 5–13](#32-phase-2-fixes) | Remaining core fixes, tests, and the two approved API changes, in any order. Core 8 and Core 13 land before the pointer and gamepad Phase 2 sets | Nothing. Can run in parallel |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -29,9 +28,9 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | --- | --- | --- | --- |
 | Core | [3](#3-core) | Phase 1 done. Core 1, 2, and 4 done, 10 tasks left | Core 5–13 |
 | Sound | [4](#4-sound) | Phases 0–9 done; Phases 10–11 not started | Sound 10.1 |
-| Keyboard | [5](#5-keyboard) | Draft, awaiting approval | Approval |
-| Pointer | [6](#6-pointer) | Draft, awaiting approval | Approval |
-| Gamepad | [7](#7-gamepad) | Draft, awaiting approval | Approval |
+| Keyboard | [5](#5-keyboard) | Phase 1 in progress. 1.1 done | Keyboard 1.2 |
+| Pointer | [6](#6-pointer) | Approved; Phase 1 not started | Pointer 1.1 |
+| Gamepad | [7](#7-gamepad) | Approved; Phase 1 not started | Gamepad 1.1 |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
 | CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.9) | — |
 | Plugin removal | [13.1](#131-plugin-removal) | Complete (P.1–P.6) | — |
@@ -187,7 +186,7 @@ Sound Phases 9–11 ────────────────────
 | Milestone | Contents | Status |
 | --- | --- | --- |
 | U1: Audits complete | Core, keyboard, pointer, gamepad, and test audits; CI exploration; every finding decided | Done 2026-09-26 |
-| U2: Roadmaps approved | Sections 3–7 approved; G1–G8 closed | Core, sound, and CI approved; input sections waiting |
+| U2: Roadmaps approved | Sections 3–7 approved; G1–G8 closed | Done 2026-09-27 |
 | U3: Implementation complete | Every workstream's exit criteria met with `npm test` green | Open |
 | U4: Release | Section 8; the `releases/pi-2.3.0` snapshot exists | Open |
 
@@ -359,7 +358,7 @@ The upgrade guide's sound entries come from
 
 ## 5. Keyboard
 
-**Draft, awaiting approval.** Findings: [AUDIT-KEYBOARD.md](AUDIT-KEYBOARD.md). Proposals
+**Approved 2026-09-27.** Findings: [AUDIT-KEYBOARD.md](AUDIT-KEYBOARD.md). Proposals
 A1–A17: [AUDIT-KEYBOARD §4](AUDIT-KEYBOARD.md#4-proposed-api). Probe IDs (K1, K9n, …) name the
 reproductions in `docs/evidence/keyboard-2.3/probes.js`, where each test starts. The probe
 script builds the removed `print-table` and `onscreen-keyboard` plugins, so it no longer runs as
@@ -371,11 +370,11 @@ Phase 1 to Phase 2, so it lands once with the I11 error codes instead of twice.
 ### 5.1 Phase 1: fixes and tests
 
 No API change; the version stays 1.0.0. Pure logic tests go in `keyboard-lifecycle.test.js`,
-whose `vm` harness task 1.1 extends to dispatch real listener events.
+whose `vm` harness maps arguments with core's `parseOptions` and dispatches events through the
+plugin's listeners (task 1.1, done: [Section 13.6](#136-keyboard)).
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 1.1 | **Test harness.** Map command arguments with the real `parseOptions` from `src/core/utils.js`, so both the positional and object forms run and the harness follows core when Core 6 lands. Capture the `window` and `document` listeners the plugin adds and dispatch events through them, with `target`, `composedPath()`, and `getModifierState()`, so the prompt listener (1.3), shadow roots (1.5), and start and stop (2.3) can be tested in Node. Reduce `keyboard-lifecycle-browser` to real `KeyboardEvent` dispatch and cursor rendering, since its SYS-003 tests repeat the Node tests | [KEY-019](AUDIT-KEYBOARD.md#key-019), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
 | 1.2 | **Held state by code (A1).** Held state keyed by `code`, each held code recording the `key` of its latest keydown; a value stays held until every key producing it is released. Tests: modifier released first, two keys with one value, `"Process"` (K1, K1b, K14), and one native-keyboard case in the browser test (K1n) | [KEY-001](AUDIT-KEYBOARD.md#key-001) (P1) | — |
 | 1.3 | **Prompt listener (A2).** The prompt reads keys from its own listener, added when it starts and removed when it ends. `stopKeyboard()` and handler clearing no longer affect it. `clearEvents( "keyboard" )` cancels the prompt when called with no screen or from the owning screen. Tests: `clearEvents( "keyboard" )` with prompts on two screens (K2); a prompt during a stop | [KEY-002](AUDIT-KEYBOARD.md#key-002), [KEY-006](AUDIT-KEYBOARD.md#key-006) | — |
 | 1.4 | **Prompt owns the keyboard (A3).** While a prompt is active, it prevents the default action of every key it receives; ignores Ctrl and Meta keydowns except AltGr; inserts pasted text. Tests: default prevention, Ctrl and AltGr, Tab, paste (K9, K9n) | [KEY-003](AUDIT-KEYBOARD.md#key-003) | — |
@@ -457,7 +456,7 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.2:
 
 ## 6. Pointer
 
-**Draft, awaiting approval.** Findings: [AUDIT-POINTER.md](AUDIT-POINTER.md). Proposals B1–B13:
+**Approved 2026-09-27.** Findings: [AUDIT-POINTER.md](AUDIT-POINTER.md). Proposals B1–B13:
 [AUDIT-POINTER §4](AUDIT-POINTER.md#4-proposed-api). Probe IDs (P1, T1, …) name the
 reproductions in `docs/evidence/pointer-2.3/probes.js`. The probe script builds the removed
 `print-table` and `onscreen-keyboard` plugins, so it no longer runs as written; tests are written
@@ -553,7 +552,7 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.2:
 
 ## 7. Gamepad
 
-**Draft, awaiting approval.** Findings: [AUDIT-GAMEPAD.md](AUDIT-GAMEPAD.md). Proposals A1–A12:
+**Approved 2026-09-27.** Findings: [AUDIT-GAMEPAD.md](AUDIT-GAMEPAD.md). Proposals A1–A12:
 [AUDIT-GAMEPAD §4](AUDIT-GAMEPAD.md#4-proposed-api). Probe IDs (P1, P5b, …) name the
 reproductions in `docs/evidence/gamepad-2.3/probes.js`. Baseline: 1.0.0, 1,428 bytes gzipped.
 
@@ -1029,6 +1028,12 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | Core 1 | Transactional plugin installation and error routing (C2): registrations committed after installation succeeds; screen installation rolls back; `getPlugins()` reports `state`; registration after init throws `REGISTRATION_CLOSED` | [CORE-002](AUDIT-CORE.md#core-002), [CORE-006](AUDIT-CORE.md#core-006) | [#13](https://github.com/AndyStubbs/pijs/pull/13) |
 | Core 2 | Documented the Lite-only plugin entry points (C3) in `plugins/README.md`, `plugins/polygons/README.md`, and `llms-full.txt`; the release README follows in R.3 | [CORE-003](AUDIT-CORE.md#core-003) | [#14](https://github.com/AndyStubbs/pijs/pull/14) |
 | Core 4 | Declarations and release manifest (C5): `"type": "module"` in the release manifest; plugin declarations augment Lite, and `sound-advanced` both Full and Lite, through `PluginCommands`, `PluginScreenCommands`, and `PluginOptions`; object types only a plugin uses move from Lite to that plugin's declarations; Lite `Options` holds Lite settings only; the global `pi` and `$` are declared by Full only; `addCommand`'s `isScreenOptional` is optional and its JSDoc example is corrected; `Screen.removeScreen()` is declared. Type consumers compile under `bundler` and `nodenext`, including Lite with each exported plugin | [CORE-005](AUDIT-CORE.md#core-005), [CORE-015](AUDIT-CORE.md#core-015), [CORE-016](AUDIT-CORE.md#core-016), [CORE-017](AUDIT-CORE.md#core-017) | — |
+
+### 13.6 Keyboard
+
+| # | Task | Findings | Ref |
+| --- | --- | --- | --- |
+| 1.1 | Test harness: `keyboard-lifecycle.test.js` maps arguments with core's `parseOptions`, so both forms run, and dispatches key events through the plugin's `window` and `document` listeners with `target`, `composedPath()`, and `getModifierState()`, on a controllable clock. `keyboard-lifecycle-browser` keeps real `KeyboardEvent` dispatch, cursor rendering, and drawing after removal; two duplicate tests were removed (`test/TEST-CONSOLIDATION-LOG.md`) | [KEY-019](AUDIT-KEYBOARD.md#key-019), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
 
 ## 14. Glossary
 

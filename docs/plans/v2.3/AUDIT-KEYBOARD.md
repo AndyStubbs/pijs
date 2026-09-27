@@ -760,7 +760,7 @@ the [ROADMAP](ROADMAP.md#5-keyboard) tasks that implement each item.
 | KEY-016 | `clearEvents()` scope | Accepted | Rule I10 (Keyboard 2.6) |
 | KEY-017 | Documentation and declarations | Accepted | Metadata and declarations in Keyboard 1.11; `API.md`, README, and llms references in R.2 and R.3 |
 | KEY-018 | Manual pages register twice | Accepted | Keyboard 1.12; self-registration after Full is CORE-003 |
-| KEY-019 | Missing automated tests | Accepted | A test with each fix; harness in Keyboard 1.1 |
+| KEY-019 | Missing automated tests | Accepted | A test with each fix; harness in Keyboard 1.1 (done) |
 | A1–A9 | Fixes | Accepted | Keyboard Phase 1, except A7, which lands with I11 in Phase 2 |
 | A10 | Frozen key data | Accepted | Fix |
 | A11 | Prompt keys withheld from handlers | Accepted | Breaking |
