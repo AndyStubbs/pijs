@@ -223,7 +223,7 @@ async function getNewFont() {
 	$.print();
 	$.setPos( $.getPos() );
 
-	font = await $.input( "Select Font: ", null, true, true, false );
+	font = await $.input( "Select Font: ", null, null, true, true, false );
 	font = fonts.find( f => f.id === font );
 	if( font === undefined ) {
 		$.print( "Invalid selection!\n" );

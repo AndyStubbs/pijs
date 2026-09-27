@@ -16,7 +16,7 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Keyboard 1.12](#51-phase-1-fixes-and-tests), [Pointer 1.1](#61-phase-1-fixes-and-tests), [Gamepad 1.1](#71-phase-1-fixes-and-tests) | Continue the three input Phase 1s, in parallel | Nothing |
+| 1 | [Keyboard 1.13](#51-phase-1-fixes-and-tests), [Pointer 1.1](#61-phase-1-fixes-and-tests), [Gamepad 1.1](#71-phase-1-fixes-and-tests) | Continue the three input Phase 1s, in parallel | Nothing |
 | 2 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
 | 3 | [Core 5–13](#32-phase-2-fixes) | Remaining core fixes, tests, and the two approved API changes, in any order. Core 8 and Core 13 land before the pointer and gamepad Phase 2 sets | Nothing. Can run in parallel |
 
@@ -28,7 +28,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | --- | --- | --- | --- |
 | Core | [3](#3-core) | Phase 1 done. Core 1, 2, and 4 done, 10 tasks left | Core 5–13 |
 | Sound | [4](#4-sound) | Phases 0–9 done; Phases 10–11 not started | Sound 10.1 |
-| Keyboard | [5](#5-keyboard) | Phase 1 in progress. 1.1–1.11 done | Keyboard 1.12 |
+| Keyboard | [5](#5-keyboard) | Phase 1 in progress. 1.1–1.12 done | Keyboard 1.13 |
 | Pointer | [6](#6-pointer) | Approved; Phase 1 not started | Pointer 1.1 |
 | Gamepad | [7](#7-gamepad) | Approved; Phase 1 not started | Gamepad 1.1 |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
@@ -371,11 +371,10 @@ Phase 1 to Phase 2, so it lands once with the I11 error codes instead of twice.
 
 No API change; the version stays 1.0.0. Pure logic tests go in `keyboard-lifecycle.test.js`,
 whose `vm` harness maps arguments with core's `parseOptions` and dispatches events through the
-plugin's listeners (task 1.1). Tasks 1.1–1.11 are done ([Section 13.6](#136-keyboard)).
+plugin's listeners (task 1.1). Tasks 1.1–1.12 are done ([Section 13.6](#136-keyboard)).
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 1.12 | **Manual pages and tools.** Remove every plugin script that the Full bundle already includes from `clearevents_01`, `events_comprehensive`, `gamepad_01`, `input_01`, and `onkey_sound_01`; this task owns those shared pages for all three input plugins. Merge `html-manual/input_01`'s custom-cursor case into `keyboard_input`, then remove `input_01` and log it in `test/TEST-CONSOLIDATION-LOG.md`. Fix `tools/dataedit.html`, which loads a missing `../build/dist/pi.js`, and the `input()` calls in `tools/charedit.html` and `tools/dataedit.html` that pass booleans as `cursor` | [KEY-018](AUDIT-KEYBOARD.md#key-018), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
 | 1.13 | **`keyboard_commands` timing.** Make the fixture deterministic on CI runners, and cut its 2.0 s of `DL` waits | [CI-008](AUDIT-CI.md#ci-008), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
 
 **Exit criteria:** KEY-001, KEY-002, KEY-004, KEY-005, KEY-008, KEY-012, KEY-018, KEY-019, and
@@ -1033,7 +1032,8 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | 1.8 | Release data (A8): up handlers receive data from the keyup event. A keyup runs the up handlers of its code, of the value it reports, and of the value the key was pressed with, when that differs because a modifier changed during the hold. Single-key and `"any"` up handlers run even when the press was not seen; a combination's up handler still needs every key held, and gets the release data for the released key and the held data for the others. Tests: release data, unseen presses, a changed value, and combination data (K13) in `keyboard-lifecycle.test.js` | [KEY-011](AUDIT-KEYBOARD.md#key-011) | [#28](https://github.com/AndyStubbs/pijs/pull/28) |
 | 1.9 | Focus kept on start (A9): `startKeyboard()`, which also runs at plugin load, no longer blurs the focused element. Lifecycle test (K8) in `keyboard-lifecycle.test.js`, the first assertions for `startKeyboard` and `stopKeyboard`: plugin load and start keep focus; start and stop attach and remove the listeners once each, however often they are called; a stop clears held keys and holds, through handler registration and reads, until `startKeyboard()` | [KEY-012](AUDIT-KEYBOARD.md#key-012), [KEY-019](AUDIT-KEYBOARD.md#key-019) | [#29](https://github.com/AndyStubbs/pijs/pull/29) |
 | 1.10 | Frozen key data (A10): key data objects, both held keydown data and keyup release data, are frozen when they are created, so `inkey()` and handlers cannot change plugin state through them; `inkey()` still returns a new array. Test: writes to polled and handler data fail, and combination and release data are frozen (K7), in `keyboard-lifecycle.test.js` | [KEY-013](AUDIT-KEYBOARD.md#key-013) | [#30](https://github.com/AndyStubbs/pijs/pull/30) |
-| 1.11 | Metadata for current behavior: `metadata/pi-2.3/` overrides for `input` (resolves with a string, a number, or `null`; callback type; the cursor default is character code 219; `maxLength` takes `null`; the numeric, paste, layout, and cancellation rules of tasks 1.3–1.7), `inkey` (value lookups, frozen data, a working example), `onkey` and `offkey` (callbacks receive an array for combinations; `offkey`'s `mode` is required; codes and values; release data; the example removes the right function), `setActionKeys` (it adds; codes and values), `startKeyboard` (no automatic restart; focus kept), and `stopKeyboard` (a prompt keeps working). Tests: `input` and `onkey` signatures in `validate-type-definitions.js` and the Lite keyboard type consumer; action keys added by `setActionKeys()` and removed by `removeActionKeys()` in `keyboard-lifecycle.test.js`, and added by `set( { "actionKeys" } )` in `keyboard-lifecycle-browser.test.js` (K20); 2.9 changes the adding tests | [KEY-017](AUDIT-KEYBOARD.md#key-017) | — |
+| 1.11 | Metadata for current behavior: `metadata/pi-2.3/` overrides for `input` (resolves with a string, a number, or `null`; callback type; the cursor default is character code 219; `maxLength` takes `null`; the numeric, paste, layout, and cancellation rules of tasks 1.3–1.7), `inkey` (value lookups, frozen data, a working example), `onkey` and `offkey` (callbacks receive an array for combinations; `offkey`'s `mode` is required; codes and values; release data; the example removes the right function), `setActionKeys` (it adds; codes and values), `startKeyboard` (no automatic restart; focus kept), and `stopKeyboard` (a prompt keeps working). Tests: `input` and `onkey` signatures in `validate-type-definitions.js` and the Lite keyboard type consumer; action keys added by `setActionKeys()` and removed by `removeActionKeys()` in `keyboard-lifecycle.test.js`, and added by `set( { "actionKeys" } )` in `keyboard-lifecycle-browser.test.js` (K20); 2.9 changes the adding tests | [KEY-017](AUDIT-KEYBOARD.md#key-017) | [#31](https://github.com/AndyStubbs/pijs/pull/31) |
+| 1.12 | Manual pages and tools: removed the plugin scripts that Full already includes from `clearevents_01`, `events_comprehensive`, `gamepad_01`, and `onkey_sound_01`, which now load without errors. Removed `html-manual/input_01`; its custom-cursor case is covered by a Node test that checks the printed line rather than by `keyboard_input`, whose capture is taken after every prompt has ended, and each removal is logged in `test/TEST-CONSOLIDATION-LOG.md`. `tools/dataedit.html` loads `../build/pi.js`, and the `input()` calls in `tools/charedit.html` and `tools/dataedit.html` pass `cursor` in its place. `tools/charedit.html` still calls the removed `$.util` helpers, which is outside this task | [KEY-018](AUDIT-KEYBOARD.md#key-018), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
 
 ## 14. Glossary
 
