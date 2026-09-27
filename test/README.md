@@ -267,7 +267,7 @@ GitHub Actions runs three things from `.github/`:
 
 | File | Runs on | What it runs |
 | --- | --- | --- |
-| `workflows/ci.yml` | Every pull request and push to `main` | `test`: `npm test`, then `npm run test:firefox`, on `ubuntu-24.04` and `windows-2025`, and on `macos-15` for pushes to `main`. `size`: the size report of the change and its base, with `npm run size:diff` in the job summary |
+| `workflows/ci.yml` | Every pull request and push to `main` | `changes`: decides whether the change needs `test` and `size` (below). `test`: `npm test`, then `npm run test:firefox`, on `ubuntu-24.04` and `windows-2025`, and on `macos-15` for pushes to `main`. `size`: the size report of the change and its base, with `npm run size:diff` in the job summary. `ci`: passes when the other jobs succeeded or were skipped |
 | `workflows/release.yml` | A `v*` tag, or a manual run | The `ci.yml` jobs on all three platforms, then a Linux `package` job: `npm run build`, `npm run release:check`, `npm pack`, and the tarball attached to the version's draft GitHub release ([publish guide](../releases/PUBLISH.md)) |
 | `dependabot.yml` | Weekly | A pull request when a GitHub Action used by the workflows has a new version |
 
@@ -280,8 +280,20 @@ The `test` job differs from a local `npm test` in these settings:
   few fixtures; its pixel mismatches are printed without failing.
 - The Firefox check runs headed under `xvfb-run` on Linux.
 
-A pull request merges only with `ci.yml` green on Linux and Windows; the CI roadmap's "Branches
-and pull requests" section has the full rules. When a job fails, its log names the failing
+`test` and `size` skip when every changed file is one that no test reads:
+
+- Markdown files, except those in `plugins/`, whose guides run as tests.
+- Files in `docs/`, except `docs/llms/pi.d.ts`, which must match the built declarations.
+- Files in `tools/` and `.vscode/`.
+- `LICENSE`, `TODO.txt`, `AGENTS.md`, `.cursorrules`, and `.github/dependabot.yml`.
+
+`scripts/ci-changes.js` holds this list, and `test/scripts/ci-changes.test.js` covers it. Release
+runs always test. To check a local change, run
+`git diff --name-only main | node scripts/ci-changes.js`, which prints `true` when CI tests it.
+
+A pull request merges only with the `ci` check green; it summarizes `test` on Linux and Windows
+and `size`. The CI roadmap's "Branches and pull requests" section has the full rules. When a job
+fails, its log names the failing
 test, and the job uploads `test/test-results/` and `test/playwright-report/` as an artifact kept
 14 days:
 

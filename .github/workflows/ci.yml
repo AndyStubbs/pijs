@@ -1,5 +1,9 @@
 # Pull-request checks (CI roadmap task 3.3, docs/plans/CI-V2.3-ROADMAP.md).
 #
+# changes: decides whether the change needs test and size. They skip when every changed file is
+# documentation or tooling that no test reads (scripts/ci-changes.js has the list). Release runs
+# and pushes without a base always test.
+#
 # test: npm test on Linux and Windows for every pull request and push to main, and on macOS for
 # pushes to main. Realtime audio suites are skipped (no runner has a usable audio device), and
 # macOS runs the visual suites in report-only pixel mode, because its SwiftShader backend
@@ -7,6 +11,8 @@
 # once and fails on flaky tests. The same job then runs the Firefox check (task 3.4).
 #
 # size: builds the base and the change and writes the size diff to the job summary.
+#
+# ci: the required check. It passes when changes, test, and size each succeeded or were skipped.
 #
 # release.yml runs this workflow as its test stage (workflow_call), with macOS included.
 name: CI
@@ -26,8 +32,52 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      tests: ${{ steps.decide.outputs.tests }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # The base is the pull request's base or, for a push to a branch, the previous commit.
+      # Release runs, tag pushes, new branches, and a base that cannot be fetched (after a
+      # force-push) run the tests.
+      - name: Decide
+        id: decide
+        env:
+          BASE_SHA: >-
+            ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha ||
+            github.event_name == 'push' && startsWith( github.ref, 'refs/heads/' ) &&
+            github.event.before || '' }}
+        run: |
+          tests=true
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]
+          then
+            echo "No base commit: running the tests." >> "$GITHUB_STEP_SUMMARY"
+          elif git fetch --no-tags --depth=1 origin "$BASE_SHA" &&
+            files=$( git diff --name-only "$BASE_SHA" "$GITHUB_SHA" )
+          then
+            tests=$( printf '%s\n' "$files" | node scripts/ci-changes.js )
+            {
+              echo "Changed files:"
+              echo '```'
+              printf '%s\n' "$files"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Cannot diff against $BASE_SHA: running the tests." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "Tests needed: $tests" >> "$GITHUB_STEP_SUMMARY"
+          echo "tests=$tests" >> "$GITHUB_OUTPUT"
+
   test:
     name: test (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.tests == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -102,6 +152,8 @@ jobs:
           retention-days: 14
 
   size:
+    needs: changes
+    if: needs.changes.outputs.tests == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -143,3 +195,22 @@ jobs:
         run: |
           node scripts/size-diff.js "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/head.json" \
             >> "$GITHUB_STEP_SUMMARY"
+
+  # The single required check: a failure, a cancellation, or a failed changes job fails it
+  ci:
+    needs: [ changes, test, size ]
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Results
+        env:
+          RESULTS: ${{ join( needs.*.result, ' ' ) }}
+        run: |
+          echo "changes, test, size: $RESULTS"
+          for result in $RESULTS; do
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+              echo "::error::A CI job ended with $result."
+              exit 1
+            fi
+          done
