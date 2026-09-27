@@ -15,6 +15,7 @@ This folder holds measurements and reproductions for the 2.3 core audit
 | --- | --- |
 | `contracts-2.2.json` | Each 2.2 audit contract (SYS-001–023, COV-001–005), its tests, the result of running each suite alone, and the deliberate-break results for the P1 contracts |
 | `size-baseline.json` | `npm run size -- --out=docs/evidence/core-2.3/size-baseline.json` at the revision |
+| `size-phase1.json` | `npm run size -- --out=docs/evidence/core-2.3/size-phase1.json` after Core 1, 2, and 4, the exit of core Phase 1, 2026-09-27 |
 | `probes.js` | Browser reproductions C01–C14, run in Chromium, Firefox and WebKit against fresh in-memory bundles of the current source, and declaration probes compiled with TypeScript |
 | `probes-output.json` | Observed and expected results per engine and probe, with page errors, and the TypeScript errors per consumer and module resolution |
 
@@ -57,6 +58,17 @@ the copy:
 
 Merging `sound-advanced` into Full would add 10.10 KB gzipped. The size report has no version
 for `pi-vision` because its bundle has no version banner.
+
+## Size at Phase 1 exit
+
+`size-phase1.json`, measured after Core 1, 2, and 4. The change is against the baseline above
+and covers every commit since `96279b9`, not only the core tasks. Core 4 changed declarations
+only. The `gamepad`, `keyboard`, `pointer`, `polygons`, and `sound` bundles are unchanged.
+
+| Bundle | Bytes | Gzip | Gzip change |
+| --- | --- | --- | --- |
+| `pi.min.js` (Full) | 209,385 | 72,976 | +372 |
+| `pi.lite.min.js` | 138,765 | 48,947 | +362 |
 
 ## Probes
 

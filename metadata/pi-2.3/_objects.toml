@@ -10,7 +10,7 @@ functionality.
 [[objects.properties]]
 name = "addCommand"
 type = "function"
-signature = "( name: string, fn: ( ...args: any[] ) => any, isScreen: boolean, parameterNames: string[], isScreenOptional: boolean ) => void"
+signature = "( name: string, fn: ( ...args: any[] ) => any, isScreen: boolean, parameterNames: string[], isScreenOptional?: boolean ) => void"
 description = "During init, register a new command."
 
 [[objects.properties]]

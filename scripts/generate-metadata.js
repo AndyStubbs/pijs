@@ -193,7 +193,7 @@ function buildMethodReferenceEntry( name, metadata ) {
 	}
 	syntax += ");";
 
-	return {
+	const entry = {
 		"name": name,
 		"category": metadata.category || "",
 		"isScreen": Boolean( metadata.isScreen ),
@@ -205,6 +205,12 @@ function buildMethodReferenceEntry( name, metadata ) {
 		"returns": returns,
 		"example": metadata.example || ""
 	};
+
+	// A global command whose screens also carry a parameterless form that acts on themselves
+	if( metadata.screenForm ) {
+		entry.screenForm = { "summary": metadata.screenForm.summary || "" };
+	}
+	return entry;
 }
 
 function formatTypeScriptType( rawType, fallback = "any" ) {
@@ -529,7 +535,7 @@ function buildAPIObject( screenMethods, apiMethods ) {
 	};
 }
 
-function buildObjectInterface( objectData ) {
+function buildObjectInterface( objectData, heritage = "" ) {
 	const lines = [];
 	const title = objectData.title || "";
 	const summary = ( objectData.summary || "" ).trim();
@@ -568,7 +574,11 @@ function buildObjectInterface( objectData ) {
 	}
 
 	// Interface declaration
-	lines.push( `\tinterface ${title} {` );
+	if( heritage ) {
+		lines.push( `\tinterface ${title} extends ${heritage} {` );
+	} else {
+		lines.push( `\tinterface ${title} {` );
+	}
 
 	// Properties
 	properties.forEach( ( property, index ) => {
@@ -607,26 +617,44 @@ function buildObjectInterfaces( objects ) {
 		if( index > 0 ) {
 			lines.push( "" );
 		}
-		const interfaceLines = buildObjectInterface( objectData );
+
+		// Settings of separately loaded plugins join the set() options
+		let heritage = "";
+		if( objectData.title === "Options" ) {
+			heritage = "PluginOptions";
+		}
+		const interfaceLines = buildObjectInterface( objectData, heritage );
 		interfaceLines.forEach( ( line ) => lines.push( line ) );
 	} );
 	return lines;
 }
 
-function buildTypeDefinitions( screenMethods, apiMethods, objects ) {
+/**
+ * Builds the lines of a declaration file for the Full or Lite API.
+ *
+ * @param {Array<Object>} screenMethods - Commands on each screen, including screen forms
+ * @param {Array<Object>} apiMethods - Commands on the global API only
+ * @param {Array<Object>} objects - Object types to declare
+ * @param {Object} target - Declaration target
+ * @param {string} target.moduleName - Package path that plugin declarations augment
+ * @param {boolean} target.declareGlobals - Whether to declare the global pi and $
+ * @returns {string[]} Declaration lines
+ */
+function buildTypeDefinitions( screenMethods, apiMethods, objects, target ) {
 	const lines = [];
 	const packageVersion = packageJson.version;
 
 	lines.push( "/**" );
 	lines.push(
-		" * Commands added by separately loaded plugins. A plugin's declaration file augments"
+		" * Commands, screen commands, and settings added by separately loaded plugins. A plugin's"
 	);
-	lines.push(
-		" * this interface with `declare module \"pijs-web\"`, so importing the plugin adds its"
-	);
-	lines.push( " * commands to the API." );
+	const augmentation = `\`declare module "${target.moduleName}"\``;
+	lines.push( ` * declaration file augments these interfaces with ${augmentation},` );
+	lines.push( " * so importing the plugin adds its commands to the API." );
 	lines.push( " */" );
 	lines.push( "export interface PluginCommands {}" );
+	lines.push( "export interface PluginScreenCommands {}" );
+	lines.push( "export interface PluginOptions {}" );
 	lines.push( "" );
 	lines.push( "declare namespace Pi {" );
 
@@ -644,7 +672,7 @@ function buildTypeDefinitions( screenMethods, apiMethods, objects ) {
 	}
 
 	// Screen interface
-	lines.push( "\tinterface Screen {" );
+	lines.push( "\tinterface Screen extends PluginScreenCommands {" );
 	buildInterfaceMethods( lines, screenMethods );
 	lines.push( "\t}" );
 	lines.push( "" );
@@ -673,13 +701,20 @@ function buildTypeDefinitions( screenMethods, apiMethods, objects ) {
 	lines.push( "export type API = Pi.API;" );
 	lines.push( "export type Screen = Pi.Screen;" );
 	lines.push( "" );
-	lines.push(
-		"// Global augmentation for IIFE / non-module script usage"
-	);
-	lines.push( "declare global {" );
-	lines.push( "\tvar pi: Pi.API;" );
-	lines.push( "\tvar $: Pi.API;" );
-	lines.push( "}" );
+	if( target.declareGlobals ) {
+		lines.push(
+			"// Global augmentation for IIFE / non-module script usage"
+		);
+		lines.push( "declare global {" );
+		lines.push( "\tvar pi: Pi.API;" );
+		lines.push( "\tvar $: Pi.API;" );
+		lines.push( "}" );
+	} else {
+		lines.push(
+			"// The global pi and $ are declared only by the Full declarations, so the Full and"
+		);
+		lines.push( "// Lite declarations can load together without conflicting globals." );
+	}
 
 	// TODO-LATER: Research if it makes sense to limit typeDefinition lines count.
 	// If the intellisense works better with 80 or 100 characters per line then it will be
@@ -794,7 +829,10 @@ function generateMetadata( { testOnly = false } = {} ) {
 			RELEASE_LITE_TYPE_DEFINITION_FILE
 		);
 	}
-	writePluginTypeDefinitions( testOnly );
+	writePluginTypeDefinitions(
+		testOnly, Array.from( methodNameToMetadata.values() ),
+		Array.from( objectNameToMetadata.values() )
+	);
 }
 
 function getReleasePluginNames() {
@@ -833,24 +871,120 @@ function readPluginMethods( pluginName ) {
 }
 
 /**
- * Builds a plugin declaration file: its commands augment PluginCommands in "pijs-web", and
- * the default export is the plugin initializer.
+ * Builds a top-level interface from interface lines built for namespace level.
+ *
+ * @param {string} name - Interface name
+ * @param {Function} buildMembers - Pushes the member lines, indented for namespace level
+ * @returns {string[]} Interface lines
+ */
+function buildTopLevelInterface( name, buildMembers ) {
+	const memberLines = [];
+	buildMembers( memberLines );
+	return [
+		`interface ${name} {`,
+		...memberLines.map( ( line ) => line.replace( /^\t/, "" ) ),
+		"}",
+		""
+	];
+}
+
+/**
+ * Builds a plugin declaration file. The plugin's commands, screen commands, and settings
+ * augment the API it can be loaded with, and the default export is the plugin initializer.
+ *
+ * A plugin that the Full bundle includes is loaded standalone only with Lite, since loading it
+ * after Full throws DUPLICATE_PLUGIN. Its commands come from the layered pi-X.Y metadata, and
+ * its file declares the object types only it uses, which Lite omits. Any other plugin reads its
+ * commands from metadata/plugin-<name>/ and augments both Full and Lite.
  *
  * @param {string} pluginName - Plugin name
+ * @param {Array<Object>} fullMethods - Layered method reference entries of the latest version
+ * @param {Array<Object>} fullObjects - Layered object metadata of the latest version
  * @returns {string} Declaration file contents
  */
-function buildPluginTypeDefinitions( pluginName ) {
+function buildPluginTypeDefinitions( pluginName, fullMethods, fullObjects ) {
 	const camelName = pluginName.replace( /-/g, "_" );
-	const lines = [ `import type { PluginAPI } from "pijs-web";`, "" ];
-	const methods = readPluginMethods( pluginName );
+	const typePrefix = pluginName.split( "-" )
+		.map( ( part ) => part.charAt( 0 ).toUpperCase() + part.slice( 1 ) )
+		.join( "" );
+
+	let methods = fullMethods.filter( ( m ) => m.plugin === pluginName );
+	let objects = [];
+	let moduleNames;
 	if( methods.length > 0 ) {
+		const owners = findObjectOwners( fullMethods, fullObjects );
+		objects = fullObjects.filter( ( obj ) => owners.get( obj.title ) === pluginName );
+		moduleNames = [ "pijs-web/lite" ];
+	} else {
+		methods = readPluginMethods( pluginName );
+		moduleNames = [ "pijs-web", "pijs-web/lite" ];
+	}
+	methods.sort( ( a, b ) => a.name.localeCompare( b.name ) );
+	const screenMethods = methods.filter( ( m ) => m.isScreen );
+	const apiMethods = methods.filter( ( m ) => !m.isScreen );
+	const options = buildOptionsObject( methods.filter( ( m ) => m.name.startsWith( "set" ) ) );
+
+	// Full and Lite declare unrelated PluginAPI types, so a plugin for both accepts either
+	const lines = [];
+	if( moduleNames.length === 1 ) {
+		lines.push( `import type { PluginAPI } from "${moduleNames[ 0 ]}";`, "" );
+	} else {
+		lines.push(
+			`import type { PluginAPI as FullPluginAPI } from "pijs-web";`,
+			`import type { PluginAPI as LitePluginAPI } from "pijs-web/lite";`,
+			"",
+			"type PluginAPI = FullPluginAPI | LitePluginAPI;",
+			""
+		);
+	}
+	if( objects.length > 0 ) {
+		lines.push( `// Object types used only by the ${pluginName} plugin` );
+		for( const objectData of objects ) {
+			buildObjectInterface( objectData ).forEach( ( line ) => {
+				lines.push( line.replace( /^\t/, "" ) );
+			} );
+			lines.push( "" );
+		}
+	}
+
+	// Each augmented interface extends one local interface, so members are declared once
+	const augmentations = [];
+	if( apiMethods.length > 0 ) {
 		lines.push( `// Commands the ${pluginName} plugin adds to the Pi.js API` );
-		lines.push( `declare module "pijs-web" {` );
-		lines.push( "\tinterface PluginCommands {" );
-		buildInterfaceMethods( lines, methods );
-		lines.push( "\t}" );
-		lines.push( "}" );
+		lines.push( ...buildTopLevelInterface( `${typePrefix}Commands`, ( memberLines ) => {
+			buildInterfaceMethods( memberLines, apiMethods );
+		} ) );
+		augmentations.push( `interface PluginCommands extends ${typePrefix}Commands {}` );
+	}
+	if( screenMethods.length > 0 ) {
+		lines.push( `// Commands the ${pluginName} plugin adds to the API and each screen` );
+		lines.push( ...buildTopLevelInterface( `${typePrefix}ScreenCommands`, ( memberLines ) => {
+			buildInterfaceMethods( memberLines, screenMethods );
+		} ) );
+		augmentations.push(
+			`interface PluginScreenCommands extends ${typePrefix}ScreenCommands {}`
+		);
+	}
+	if( options.properties.length > 0 ) {
+		const optionsObject = {
+			...options,
+			"title": `${typePrefix}Options`,
+			"summary": `Settings the ${pluginName} plugin adds to the set() options.`,
+			"description": ""
+		};
+		buildObjectInterface( optionsObject ).forEach(
+			( line ) => lines.push( line.replace( /^\t/, "" ) )
+		);
 		lines.push( "" );
+		augmentations.push( `interface PluginOptions extends ${typePrefix}Options {}` );
+	}
+	if( augmentations.length > 0 ) {
+		for( const moduleName of moduleNames ) {
+			lines.push( `declare module "${moduleName}" {` );
+			augmentations.forEach( ( line ) => lines.push( `\t${line}` ) );
+			lines.push( "}" );
+			lines.push( "" );
+		}
 	}
 	lines.push(
 		`/**`,
@@ -863,10 +997,18 @@ function buildPluginTypeDefinitions( pluginName ) {
 	return lines.join( "\n" );
 }
 
-function writePluginTypeDefinitions( testOnly ) {
+/**
+ * Writes the declaration file of each plugin the release package exports.
+ *
+ * @param {boolean} testOnly - Whether to write only to build/
+ * @param {Array<Object>} fullMethods - Layered method reference entries of the latest version
+ * @param {Array<Object>} fullObjects - Layered object metadata of the latest version
+ * @returns {void}
+ */
+function writePluginTypeDefinitions( testOnly, fullMethods, fullObjects ) {
 	const pluginNames = getReleasePluginNames();
 	for( const pluginName of pluginNames ) {
-		const contents = buildPluginTypeDefinitions( pluginName );
+		const contents = buildPluginTypeDefinitions( pluginName, fullMethods, fullObjects );
 		const buildPath = path.join(
 			BUILD_DIR, "plugins", pluginName, `${pluginName}.d.ts`
 		);
@@ -887,18 +1029,116 @@ function writePluginTypeDefinitions( testOnly ) {
 	}
 }
 
+/**
+ * Adds the screen form of each global command that has one to a list of screen commands.
+ *
+ * @param {Array<Object>} screenMethods - Screen commands
+ * @param {Array<Object>} apiMethods - Global commands
+ * @returns {Array<Object>} Screen commands and screen forms sorted by name
+ */
+function withScreenForms( screenMethods, apiMethods ) {
+	const screenForms = apiMethods.filter( ( m ) => m.screenForm ).map( ( m ) => ( {
+		"name": m.name,
+		"summary": m.screenForm.summary,
+		"parameters": [],
+		"returns": m.returns
+	} ) );
+	return [ ...screenMethods, ...screenForms ].sort( ( a, b ) => a.name.localeCompare( b.name ) );
+}
+
+/**
+ * Lists the object type names that a type expression references.
+ *
+ * @param {string} text - Type expression or signature
+ * @param {Set<string>} titles - Known object type names
+ * @returns {string[]} Referenced object type names
+ */
+function findTypeReferences( text, titles ) {
+	const words = ( text || "" ).match( /[A-Za-z_]\w*/g ) || [];
+	return words.filter( ( word ) => titles.has( word ) );
+}
+
+/**
+ * Finds the plugin that owns each object type.
+ *
+ * An object belongs to a plugin when that plugin's commands are its only users, directly or
+ * through other objects. Lite omits such objects, and the plugin's declaration file declares
+ * them. Objects used by core commands, by several plugins, or by nothing belong to core.
+ *
+ * @param {Array<Object>} methods - Method reference entries, including plugin commands
+ * @param {Array<Object>} objects - Object metadata
+ * @returns {Map<string, string>} Object name to owning plugin name, or "" for core
+ */
+function findObjectOwners( methods, objects ) {
+
+	// Screen, API, and Options are built from the commands, so they are not users themselves
+	const graphObjects = objects.filter( ( obj ) => {
+		return ![ "Screen", "API", "Options" ].includes( obj.title );
+	} );
+	const titles = new Set( graphObjects.map( ( obj ) => obj.title ) );
+	const users = new Map( graphObjects.map( ( obj ) => [ obj.title, new Set() ] ) );
+
+	for( const method of methods ) {
+		const texts = [ method.returns?.type ];
+		for( const parameter of method.parameters || [] ) {
+			texts.push( parameter.type, parameter.signature );
+		}
+		for( const text of texts ) {
+			for( const title of findTypeReferences( text, titles ) ) {
+				users.get( title ).add( method.plugin || "" );
+			}
+		}
+	}
+
+	// An object's users also use every object it references
+	const references = new Map( graphObjects.map( ( obj ) => {
+		const texts = [ obj.typeAlias ];
+		for( const property of obj.properties || [] ) {
+			texts.push( property.type, property.signature );
+		}
+		const referenced = texts.flatMap( ( text ) => findTypeReferences( text, titles ) );
+		return [ obj.title, referenced.filter( ( title ) => title !== obj.title ) ];
+	} ) );
+	let isChanged = true;
+	while( isChanged ) {
+		isChanged = false;
+		for( const [ title, referenced ] of references ) {
+			for( const target of referenced ) {
+				for( const user of users.get( title ) ) {
+					if( !users.get( target ).has( user ) ) {
+						users.get( target ).add( user );
+						isChanged = true;
+					}
+				}
+			}
+		}
+	}
+
+	const owners = new Map();
+	for( const [ title, objectUsers ] of users ) {
+		const [ onlyUser ] = objectUsers;
+		if( objectUsers.size === 1 && onlyUser ) {
+			owners.set( title, onlyUser );
+		} else {
+			owners.set( title, "" );
+		}
+	}
+	return owners;
+}
+
 function writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata, testOnly ) {
 	const referenceMethods = Array.from( methodNameToMetadata.values() ).sort(
 		( a, b ) => a.name.localeCompare( b.name )
 	);
 	const screenMethods = referenceMethods.filter( ( m ) => m.isScreen );
 	const apiMethods = referenceMethods.filter( ( m ) => !m.isScreen );
+	const screenInterfaceMethods = withScreenForms( screenMethods, apiMethods );
 
 	// Create Screen and API objects
-	const screenObject = buildScreenObject( screenMethods );
+	const screenObject = buildScreenObject( screenInterfaceMethods );
 	screenObject.description = formatDescription( screenObject.description );
 	objectNameToMetadata.set( "Screen", screenObject );
-	
+
 	const apiObject = buildAPIObject( screenMethods, apiMethods );
 	apiObject.description = formatDescription( apiObject.description );
 	objectNameToMetadata.set( "API", apiObject );
@@ -911,17 +1151,34 @@ function writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata, 
 	const fullOutputs = [ TYPE_DEFINITION_FILE ];
 	if( !testOnly ) { fullOutputs.push( DOCS_TYPE_DEFINITION_FILE ); }
 	writeTypeDefinitions(
-		version, buildTypeDefinitions( screenMethods, apiMethods, objects ),
+		version,
+		buildTypeDefinitions( screenInterfaceMethods, apiMethods, objects, {
+			"moduleName": "pijs-web", "declareGlobals": true
+		} ),
 		fullOutputs
 	);
 
-	// Lite declarations omit plugin-registered commands
+	// Lite declarations omit plugin commands, settings, and the object types only plugins use
 	const liteMethods = referenceMethods.filter( ( m ) => !m.plugin );
 	const liteScreenMethods = liteMethods.filter( ( m ) => m.isScreen );
 	const liteApiMethods = liteMethods.filter( ( m ) => !m.isScreen );
+	const owners = findObjectOwners( referenceMethods, objects );
+	const liteObjects = objects
+		.filter( ( obj ) => !owners.get( obj.title ) )
+		.map( ( obj ) => {
+			if( obj.title === "Options" ) {
+				return buildOptionsObject(
+					liteMethods.filter( ( m ) => m.name.startsWith( "set" ) )
+				);
+			}
+			return obj;
+		} );
 	writeTypeDefinitions(
 		version,
-		buildTypeDefinitions( liteScreenMethods, liteApiMethods, objects ),
+		buildTypeDefinitions(
+			withScreenForms( liteScreenMethods, liteApiMethods ), liteApiMethods, liteObjects,
+			{ "moduleName": "pijs-web/lite", "declareGlobals": false }
+		),
 		[ LITE_TYPE_DEFINITION_FILE ]
 	);
 }
