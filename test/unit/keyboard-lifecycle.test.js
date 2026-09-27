@@ -77,13 +77,15 @@ function createEventTarget( properties = {} ) {
  * @returns {Object} Element.
  */
 function createElement( tagName, properties = {} ) {
-	return {
+	const element = {
 		"tagName": tagName,
 		"isContentEditable": false,
+		"blurs": 0,
 		"getAttribute": () => null,
-		"blur": () => {},
 		...properties
 	};
+	element.blur = () => { element.blurs += 1; };
+	return element;
 }
 
 function harness() {
@@ -847,3 +849,36 @@ test( "KEY-011 a combination's up handler gets the release data for the released
 	assert.equal( seen[ 0 ][ 0 ], heldA );
 	assert.deepEqual( [ seen[ 0 ][ 1 ].code, seen[ 0 ][ 1 ].altKey ], [ "KeyB", true ] );
 } );
+
+test( "KEY-012 starting the keyboard keeps focus, and start and stop are idempotent (K8)",
+	() => {
+		const h = harness();
+		const listeners = type => h.window.listeners.filter( listener => {
+			return listener.type === type && listener.capture;
+		} ).length;
+		assert.equal( h.body.blurs, 0, "plugin load leaves focus alone" );
+		assert.deepEqual( [ listeners( "keydown" ), listeners( "keyup" ) ], [ 1, 1 ] );
+
+		// Stop removes the listeners and the held keys, and holds until startKeyboard()
+		const calls = [];
+		h.key( "a", "down", { "code": "KeyA" } );
+		h.api.stopKeyboard();
+		h.api.stopKeyboard();
+		assert.deepEqual( [ listeners( "keydown" ), listeners( "keyup" ) ], [ 0, 0 ] );
+		assert.equal( h.api.inkey( "KeyA" ), null );
+		h.api.onkey( "KeyB", "down", data => calls.push( data.code ) );
+		h.key( "b", "down", { "code": "KeyB" } );
+		assert.equal( h.api.inkey( "KeyB" ), null );
+		assert.deepEqual( calls, [], "registration and reads do not restart the keyboard" );
+
+		// Start attaches the listeners once and keeps the focused element
+		const field = createElement( "INPUT" );
+		h.document.activeElement = field;
+		h.api.startKeyboard();
+		h.api.startKeyboard();
+		assert.equal( field.blurs, 0 );
+		assert.deepEqual( [ listeners( "keydown" ), listeners( "keyup" ) ], [ 1, 1 ] );
+		h.key( "b", "down", { "code": "KeyB" } );
+		assert.deepEqual( calls, [ "KeyB" ] );
+		assert.equal( h.api.inkey( "KeyB" ).code, "KeyB" );
+	} );

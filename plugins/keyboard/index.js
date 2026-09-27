@@ -69,6 +69,8 @@ export default function keyboardPlugin( pluginApi ) {
 /**
  * Start keyboard event handling.
  *
+ * Focus is left where it is: keys typed into an editable element are ignored anyway.
+ *
  * @returns {void}
  */
 function startKeyboard() {
@@ -78,9 +80,6 @@ function startKeyboard() {
 	window.addEventListener( "keydown", onKeyDown, { "capture": true } );
 	window.addEventListener( "keyup", onKeyUp, { "capture": true } );
 	m_isKeyboardActive = true;
-	if( document.activeElement ) {
-		document.activeElement.blur();
-	}
 }
 
 /**
