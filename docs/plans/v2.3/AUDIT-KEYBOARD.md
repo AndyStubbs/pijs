@@ -742,7 +742,7 @@ the [ROADMAP](ROADMAP.md#5-keyboard) tasks that implement each item.
 
 | ID | Summary | Decision | Notes |
 | --- | --- | --- | --- |
-| KEY-001 | Key-value state sticks or releases early | Accepted | P1. Fixed by A1 (Keyboard 1.2). Confirmed on hardware in Chrome |
+| KEY-001 | Key-value state sticks or releases early | Accepted | P1. Fixed by A1 (Keyboard 1.2, done). Confirmed on hardware in Chrome |
 | KEY-002 | `clearEvents()` from another screen strands a prompt | Accepted | Fixed by A2 (Keyboard 1.3) |
 | KEY-003 | Prompt does not own the keyboard | Accepted | Fixed by A3 and A11 (Keyboard 1.4, 2.8). Confirmed on hardware in Chrome |
 | KEY-004 | Shadow-DOM inputs reach game handlers | Accepted | Fixed by A4 (Keyboard 1.5) |

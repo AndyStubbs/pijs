@@ -454,3 +454,81 @@ test( "SYS-011 object-form handlers register and remove like the positional form
 	assert.deepEqual( seen, [ "KeyA" ] );
 	assert.equal( h.api.inkey( { "key": "KeyA" } ).key, "a" );
 } );
+
+/**
+ * Press or release Shift with the given side.
+ *
+ * @param {Object} h - Harness.
+ * @param {string} mode - "down" or "up".
+ * @param {string} [code] - "ShiftLeft" or "ShiftRight".
+ * @returns {Object} The dispatched event.
+ */
+function shift( h, mode, code = "ShiftLeft" ) {
+	return h.key( "Shift", mode, { "code": code, "shiftKey": mode === "down" } );
+}
+
+test( "KEY-001 a key released with a different value is no longer held (K1)", () => {
+	const h = harness();
+	let combos = 0;
+	h.api.onkey( [ "A", "Enter" ], "down", () => { combos++; } );
+
+	// Shift released before the letter: pressed as "A", released as "a"
+	shift( h, "down" );
+	h.key( "A", "down", { "code": "KeyA", "shiftKey": true } );
+	assert.equal( h.api.inkey( "A" ).code, "KeyA" );
+	assert.equal( h.api.inkey( "a" ), null );
+	shift( h, "up" );
+	assert.equal( h.api.inkey( "A" ).code, "KeyA", "the letter is still held" );
+	h.key( "a", "up", { "code": "KeyA" } );
+	assert.equal( h.api.inkey( "A" ), null );
+	assert.equal( h.api.inkey( "KeyA" ), null );
+	assert.equal( h.api.inkey().length, 0 );
+	h.key( "Enter" );
+	h.key( "Enter", "up" );
+	assert.equal( combos, 0, "a released value never completes a combination" );
+
+	// Shift pressed during the hold: pressed as "w", released as "W"
+	h.key( "w", "down", { "code": "KeyW" } );
+	shift( h, "down" );
+	h.key( "W", "up", { "code": "KeyW", "shiftKey": true } );
+	shift( h, "up" );
+	assert.equal( h.api.inkey( "w" ), null );
+	assert.equal( h.api.inkey( "W" ), null );
+	assert.equal( h.api.inkey().length, 0 );
+
+	// A held value still completes a combination
+	shift( h, "down" );
+	h.key( "A", "down", { "code": "KeyA", "shiftKey": true } );
+	h.key( "Enter", "down", { "shiftKey": true } );
+	assert.equal( combos, 1 );
+} );
+
+test( "KEY-001 a value stays held until every key producing it is released (K1b)", () => {
+	const h = harness();
+	shift( h, "down", "ShiftLeft" );
+	shift( h, "down", "ShiftRight" );
+	assert.equal( h.api.inkey( "Shift" ).code, "ShiftRight", "the latest press answers" );
+	shift( h, "up", "ShiftRight" );
+	assert.equal( h.api.inkey( "Shift" ).code, "ShiftLeft" );
+	assert.equal( h.api.inkey( "ShiftRight" ), null );
+	shift( h, "up", "ShiftLeft" );
+	assert.equal( h.api.inkey( "Shift" ), null );
+
+	h.key( "1", "down", { "code": "Digit1" } );
+	h.key( "1", "down", { "code": "Numpad1" } );
+	h.key( "1", "up", { "code": "Numpad1" } );
+	assert.equal( h.api.inkey( "1" ).code, "Digit1" );
+	h.key( "1", "up", { "code": "Digit1" } );
+	assert.equal( h.api.inkey( "1" ), null );
+	assert.equal( h.api.inkey().length, 0 );
+} );
+
+test( "KEY-001 a composing keydown does not stay held as Process (K14)", () => {
+	const h = harness();
+	h.key( "Process", "down", { "code": "KeyN" } );
+	assert.equal( h.api.inkey( "Process" ).code, "KeyN" );
+	h.key( "n", "up", { "code": "KeyN" } );
+	assert.equal( h.api.inkey( "Process" ), null );
+	assert.equal( h.api.inkey( "KeyN" ), null );
+	assert.equal( h.api.inkey().length, 0 );
+} );
