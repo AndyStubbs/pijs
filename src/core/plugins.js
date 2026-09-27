@@ -68,7 +68,7 @@ export function init( api ) {
  *   "version": "1.0.0",
  *   "description": "My custom plugin",
  *   "init": ( pluginApi ) => {
- *     pluginApi.addCommand( "myCommand", myFn, [ "param1" ] );
+ *     pluginApi.addCommand( "myCommand", myFn, false, [ "param1" ] );
  *   }
  * } );
  */

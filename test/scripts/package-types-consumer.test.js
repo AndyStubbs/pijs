@@ -1,8 +1,9 @@
 /**
  * Pi.js package type-consumer fixtures.
  *
- * These files are compiled with tsc --strict against a local pijs-web package
- * layout to verify published declarations match runtime contracts.
+ * These files are compiled with tsc --strict, under both bundler and nodenext module
+ * resolution, against a local pijs-web package layout to verify published declarations match
+ * runtime contracts.
  */
 import * as g_assert from "node:assert/strict";
 import * as g_cp from "node:child_process";
@@ -24,6 +25,60 @@ const { generateMetadata } = g_generateMetadata;
 const ROOT = path.join( DIRNAME, "..", ".." );
 const BASE_PACKAGE_PATH = path.join( ROOT, "releases", "base-package.json" );
 const TSC_PATH = path.join( ROOT, "node_modules", "typescript", "bin", "tsc" );
+const RESOLUTIONS = [ "bundler", "nodenext" ];
+
+// Lite with each exported plugin: the plugin's commands and settings, and a command of another
+// plugin that stays undeclared. Full already bundles every plugin except sound-advanced.
+const LITE_PLUGIN_CONSUMERS = {
+	"gamepad": [
+		`const pads: object | any[] = lite.ingamepad();`,
+		`lite.onGamepadConnected( ( pad ) => { const id: string = pad.id; void id; } );`,
+		`lite.set( { gamepadSensitivity: 0.5 } );`,
+		`void pads;`,
+		`// @ts-expect-error Keyboard commands need the keyboard plugin.`,
+		`lite.inkey();`
+	],
+	"keyboard": [
+		`lite.onkey( "KeyA", "down", () => {} );`,
+		`void lite.screen( "8x8" ).input( "Name?" );`,
+		`lite.set( { actionKeys: [ "ArrowUp" ] } );`,
+		`// @ts-expect-error Gamepad commands need the gamepad plugin.`,
+		`lite.ingamepad();`
+	],
+	"pointer": [
+		`const screen = lite.screen( "8x8" );`,
+		`const x: number = screen.inmouse().x;`,
+		`lite.onclick( ( click ) => { void click.buttons; }, false,`,
+		`\t{ x: 0, y: 0, width: 4, height: 4 } );`,
+		`lite.set( { pinchZoom: true, enableContextMenu: false } );`,
+		`void x;`,
+		`// @ts-expect-error The plugin initializer is not the API.`,
+		`pointer.screen( "8x8" );`,
+		`// @ts-expect-error Sound commands need the sound plugin.`,
+		`lite.sound( 440 );`
+	],
+	"sound": [
+		`const id: string = lite.sound( 440, 0.25 );`,
+		`lite.setBusVolume( "music", 0.5 );`,
+		`lite.set( { volume: 0.5, soundLimiter: true } );`,
+		`void id;`,
+		`// @ts-expect-error Polygon commands need the polygons plugin.`,
+		`lite.polygon( [ 0, 0, 6, 0, 3, 6 ] );`
+	],
+	"polygons": [
+		`lite.screen( "8x8" ).polygon( [ 0, 0, 6, 0, 3, 6 ], "red" );`,
+		`lite.polygon( { points: [ { x: 0, y: 0 }, { x: 6, y: 0 }, { x: 3, y: 6 } ] } );`,
+		`// @ts-expect-error Pointer commands need the pointer plugin.`,
+		`lite.inmouse();`
+	],
+	"sound-advanced": [
+		`const id: string = lite.synth( { frequency: 220 } );`,
+		`lite.stopSound( id );`,
+		`lite.set( { busEffect: { bus: "sfx", effect: "delay" } } );`,
+		`// @ts-expect-error Keyboard commands need the keyboard plugin.`,
+		`lite.inkey();`
+	]
+};
 
 /**
  * Creates a temporary pijs-web package with generated declaration files.
@@ -99,8 +154,6 @@ function createConsumerPackage() {
 		path.join( consumersDir, "valid-runtime.mts" ),
 		[
 			`import pi, { pi as named, $ } from "pijs-web";`,
-			`import pointer from "pijs-web/plugins/pointer";`,
-			`pi.registerPlugin( { name: "pointer-consumer", init: pointer } );`,
 			`const version: "${rootPkg.version}" = pi.version;`,
 			`named.screen( "8x8" );`,
 			`$.screen( "8x8" );`,
@@ -120,6 +173,11 @@ function createConsumerPackage() {
 			`// @ts-expect-error Point objects need both coordinates.`,
 			`polygonScreen.polygon( [ { x: 1 } ] );`,
 			`pi.setBusVolume( "music", 0.5 );`,
+			`polygonScreen.removeScreen();`,
+			`pi.registerPlugin( { name: "commands-consumer", init: ( api ) => {`,
+			`\tapi.addCommand( "hello", () => 1, false, [] );`,
+			`\tapi.addCommand( "helloScreen", () => 1, true, [ "x" ], true );`,
+			`} } );`,
 			`void version;`,
 			""
 		].join( "\n" ),
@@ -141,37 +199,51 @@ function createConsumerPackage() {
 			`screen.polygon( { points: [ 0, 0, 6, 0, 3, 6 ] } );`,
 			`// @ts-expect-error Lite does not bundle sound.`,
 			`lite.setBusVolume( "music", 0.5 );`,
+			`// @ts-expect-error Lite has no sound settings.`,
+			`lite.set( { volume: 0.5 } );`,
+			`// @ts-expect-error Lite has no pointer settings.`,
+			`lite.set( { pinchZoom: true } );`,
+			`lite.set( { color: "red", font: 1 } );`,
+			`screen.removeScreen();`,
 			""
 		].join( "\n" ),
 		"utf8"
 	);
 
-	fs.writeFileSync(
-		path.join( consumersDir, "valid-plugins.mts" ),
-		[
-			`import pi from "pijs-web";`,
-			`import gamepad from "pijs-web/plugins/gamepad";`,
-			`import keyboard from "pijs-web/plugins/keyboard";`,
-			`import pointer from "pijs-web/plugins/pointer";`,
-			`import sound from "pijs-web/plugins/sound";`,
-			`import polygons from "pijs-web/plugins/polygons";`,
-			`pi.registerPlugin( { name: "gamepad-consumer", init: gamepad } );`,
-			`pi.registerPlugin( { name: "keyboard-consumer", init: keyboard } );`,
-			`pi.registerPlugin( { name: "pointer-consumer", init: pointer } );`,
-			`pi.registerPlugin( { name: "sound-consumer", init: sound } );`,
-			`pi.registerPlugin( { name: "polygons-consumer", init: polygons } );`,
-			""
-		].join( "\n" ),
-		"utf8"
+	assert.deepEqual(
+		Object.keys( LITE_PLUGIN_CONSUMERS ).sort(), [ ...pluginNames ].sort(),
+		"every exported plugin needs a Lite consumer"
 	);
+	for( const [ pluginName, body ] of Object.entries( LITE_PLUGIN_CONSUMERS ) ) {
+		const initName = pluginName.replace( /-(\w)/g, ( match, letter ) => letter.toUpperCase() );
+		const lines = [ `import lite from "pijs-web/lite";` ];
+		if( pluginName === "sound-advanced" ) {
+			lines.push(
+				`import sound from "pijs-web/plugins/sound";`,
+				`import ${initName} from "pijs-web/plugins/${pluginName}";`,
+				`lite.registerPlugin( { name: "sound", init: sound } );`,
+				`lite.registerPlugin( {`,
+				`\tname: "${pluginName}", dependencies: [ "sound" ], init: ${initName}`,
+				`} );`
+			);
+		} else {
+			lines.push(
+				`import ${initName} from "pijs-web/plugins/${pluginName}";`,
+				`lite.registerPlugin( { name: "${pluginName}", init: ${initName} } );`
+			);
+		}
+		fs.writeFileSync(
+			path.join( consumersDir, `lite-${pluginName}.mts` ),
+			[ ...lines, ...body, "" ].join( "\n" ),
+			"utf8"
+		);
+	}
 
 	fs.writeFileSync(
 		path.join( consumersDir, "valid-sound-advanced.mts" ),
 		[
 			`import pi from "pijs-web";`,
-			`import sound from "pijs-web/plugins/sound";`,
 			`import soundAdvanced from "pijs-web/plugins/sound-advanced";`,
-			`pi.registerPlugin( { name: "sound", init: sound } );`,
 			`pi.registerPlugin( {`,
 			`\tname: "sound-advanced", dependencies: [ "sound" ], init: soundAdvanced`,
 			`} );`,
@@ -233,10 +305,8 @@ function createConsumerPackage() {
 		[
 			`import { Pi } from "pijs-web";`,
 			`import lite from "pijs-web/lite";`,
-			`import pointer from "pijs-web/plugins/pointer";`,
 			`Pi.screen( "8x8" );`,
 			`lite.inmouse();`,
-			`pointer.screen( "8x8" );`,
 			""
 		].join( "\n" ),
 		"utf8"
@@ -264,24 +334,6 @@ function createConsumerPackage() {
 		"utf8"
 	);
 
-	fs.writeFileSync(
-		path.join( consumersDir, "tsconfig.json" ),
-		`${JSON.stringify( {
-			"compilerOptions": {
-				"strict": true,
-				"module": "ESNext",
-				"moduleResolution": "node16",
-				"target": "ES2020",
-				"lib": [ "ES2020", "DOM" ],
-				"noEmit": true,
-				"skipLibCheck": false,
-				"types": []
-			},
-			"include": [ "./*.mts" ]
-		}, null, "\t" )}\n`,
-		"utf8"
-	);
-
 	return {
 		"packageRoot": packageRoot,
 		"consumersDir": consumersDir,
@@ -290,22 +342,28 @@ function createConsumerPackage() {
 }
 
 /**
- * Runs tsc against a consumer file.
+ * Runs tsc against a consumer file. Naming the file on the command line leaves skipLibCheck
+ * off, so conflicts between the package's declaration files are reported.
  *
- * @param {string} consumersDir - Consumer directory with tsconfig.json.
+ * @param {string} consumersDir - Consumer directory.
  * @param {string} fileName - Consumer file name.
+ * @param {string} resolution - Module resolution: "bundler" or "nodenext".
  * @returns {{ status: number, stdout: string, stderr: string }}
  */
-function runTsc( consumersDir, fileName ) {
+function runTsc( consumersDir, fileName, resolution ) {
 	assert.ok( fs.existsSync( TSC_PATH ), `Missing TypeScript compiler: ${TSC_PATH}` );
+	let moduleKind = "esnext";
+	if( resolution === "nodenext" ) {
+		moduleKind = "nodenext";
+	}
 	const result = spawnSync(
 		process.execPath,
 		[
 			TSC_PATH,
 			"--noEmit",
 			"--strict",
-			"--module", "esnext",
-			"--moduleResolution", "bundler",
+			"--module", moduleKind,
+			"--moduleResolution", resolution,
 			"--target", "ES2020",
 			"--lib", "es2020,dom",
 			path.join( consumersDir, fileName )
@@ -329,49 +387,60 @@ before( () => { fixture = createConsumerPackage(); } );
 after( () => { fixture?.cleanup(); } );
 
 test( "positive package consumers typecheck against published declarations", () => {
-	for( const fileName of [
-		"control.mts", "valid-runtime.mts", "valid-lite.mts", "valid-plugins.mts",
-		"valid-sound-advanced.mts"
-	] ) {
-		const result = runTsc( fixture.consumersDir, fileName );
-		assert.equal(
-			result.status,
-			0,
-			`${fileName} should typecheck:\n${result.stdout}${result.stderr}`
-		);
+	const fileNames = [
+		"control.mts", "valid-runtime.mts", "valid-lite.mts", "valid-sound-advanced.mts",
+		...Object.keys( LITE_PLUGIN_CONSUMERS ).map( ( name ) => `lite-${name}.mts` )
+	];
+	for( const resolution of RESOLUTIONS ) {
+		for( const fileName of fileNames ) {
+			const result = runTsc( fixture.consumersDir, fileName, resolution );
+			assert.equal(
+				result.status,
+				0,
+				`${fileName} should typecheck under ${resolution}:\n` +
+					`${result.stdout}${result.stderr}`
+			);
+		}
 	}
 } );
 
 test( "negative package consumers are rejected by published declarations", () => {
-	const falsePositive = runTsc( fixture.consumersDir, "false-positive.mts" );
-	assert.notEqual( falsePositive.status, 0, "false-positive.mts should fail tsc" );
-	const output = `${falsePositive.stdout}${falsePositive.stderr}`;
-	assert.match( output, /Pi/, "should reject named Pi export" );
-	assert.match( output, /inmouse/, "should reject lite.inmouse()" );
-	assert.match( output, /screen/, "should reject plugin.screen()" );
+	for( const resolution of RESOLUTIONS ) {
+		const falsePositive = runTsc( fixture.consumersDir, "false-positive.mts", resolution );
+		assert.notEqual(
+			falsePositive.status, 0, `false-positive.mts should fail under ${resolution}`
+		);
+		const output = `${falsePositive.stdout}${falsePositive.stderr}`;
+		assert.match( output, /Pi/, "should reject named Pi export" );
+		assert.match( output, /inmouse/, "should reject lite.inmouse() without pointer" );
 
-	const liteNamed = runTsc( fixture.consumersDir, "false-positive-lite-named.mts" );
-	assert.notEqual(
-		liteNamed.status,
-		0,
-		"false-positive-lite-named.mts should fail tsc"
-	);
-	assert.match(
-		`${liteNamed.stdout}${liteNamed.stderr}`,
-		/Pi/,
-		"should reject named Pi export from lite"
-	);
+		const liteNamed = runTsc(
+			fixture.consumersDir, "false-positive-lite-named.mts", resolution
+		);
+		assert.notEqual(
+			liteNamed.status,
+			0,
+			`false-positive-lite-named.mts should fail under ${resolution}`
+		);
+		assert.match(
+			`${liteNamed.stdout}${liteNamed.stderr}`,
+			/Pi/,
+			"should reject named Pi export from lite"
+		);
 
-	// sound-advanced commands exist only when the plugin's declarations are imported
-	const withoutPlugin = runTsc( fixture.consumersDir, "false-positive-sound-advanced.mts" );
-	assert.notEqual(
-		withoutPlugin.status,
-		0,
-		"false-positive-sound-advanced.mts should fail tsc"
-	);
-	assert.match(
-		`${withoutPlugin.stdout}${withoutPlugin.stderr}`,
-		/synth/,
-		"should reject synth() without the sound-advanced plugin"
-	);
+		// sound-advanced commands exist only when the plugin's declarations are imported
+		const withoutPlugin = runTsc(
+			fixture.consumersDir, "false-positive-sound-advanced.mts", resolution
+		);
+		assert.notEqual(
+			withoutPlugin.status,
+			0,
+			`false-positive-sound-advanced.mts should fail under ${resolution}`
+		);
+		assert.match(
+			`${withoutPlugin.stdout}${withoutPlugin.stderr}`,
+			/synth/,
+			"should reject synth() without the sound-advanced plugin"
+		);
+	}
 } );

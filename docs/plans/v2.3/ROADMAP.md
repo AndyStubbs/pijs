@@ -16,12 +16,11 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Core 4](#31-phase-1-before-input-implementation) | Declarations and release manifest (C5) | Nothing. Gates input implementation |
-| 2 | [Sound 9.3](#41-phase-9-game-features-remaining) | `onPlay()` and `offPlay()` music sync | Nothing. Can run in parallel with 1 |
-| 3 | Approve [Keyboard](#5-keyboard), [Pointer](#6-pointer), and [Gamepad](#7-gamepad) | Maintainer review of the drafted input phases; reaches milestone U2 | Nothing |
-| 4 | Keyboard 1.1, Pointer 1.1, Gamepad 1.1 | Start the three input Phase 1s, in parallel | 1 and 3 |
-| 5 | [Core 5–7, 9–12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
-| 6 | [Sound 10.1](#42-phase-10-sample-instruments) | Sample instruments | Sound 9.3, by priority |
+| 1 | [Sound 9.3](#41-phase-9-game-features-remaining) | `onPlay()` and `offPlay()` music sync | Nothing |
+| 2 | Approve [Keyboard](#5-keyboard), [Pointer](#6-pointer), and [Gamepad](#7-gamepad) | Maintainer review of the drafted input phases; reaches milestone U2 | Nothing. Can run in parallel with 1 |
+| 3 | Keyboard 1.1, Pointer 1.1, Gamepad 1.1 | Start the three input Phase 1s, in parallel | 2 |
+| 4 | [Core 5–7, 9–12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
+| 5 | [Sound 10.1](#42-phase-10-sample-instruments) | Sample instruments | Sound 9.3, by priority |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -29,7 +28,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
-| Core | [3](#3-core) | Phase 1 in progress. Core 1–2 done, 10 tasks left | Core 4 |
+| Core | [3](#3-core) | Phase 1 done. Core 1, 2, and 4 done, 9 tasks left | Core 5–7, 9–12 |
 | Sound | [4](#4-sound) | Phases 0–8 done; Phase 9 in progress; Phases 10–11 not started | Sound 9.3 |
 | Keyboard | [5](#5-keyboard) | Draft, awaiting approval | Approval |
 | Pointer | [6](#6-pointer) | Draft, awaiting approval | Approval |
@@ -231,15 +230,13 @@ in its plugin's Phase 2 and is listed in its compatibility summary.
 ## 3. Core
 
 Findings: [AUDIT-CORE.md](AUDIT-CORE.md). Proposals C1–C11:
-[AUDIT-CORE.md §4](AUDIT-CORE.md#4-proposed-changes). Core 1–2 are done
+[AUDIT-CORE.md §4](AUDIT-CORE.md#4-proposed-changes). Core 1, 2, and 4 are done
 ([Section 13.5](#135-core)). The task numbers follow the audit's follow-up order, so Core 3–10
 keep their original numbers and Core 11–12 are the test audit's handoffs.
 
 ### 3.1 Phase 1: before input implementation
 
-| # | Task | Findings | Status |
-| --- | --- | --- | --- |
-| Core 4 | **Declarations and release manifest (C5).** Add `"type": "module"` to the release manifest. Make plugin declarations augment both Full and Lite, and declare globals once. Limit Lite `Options` and types to Lite. Make `addCommand`'s last parameter optional, and declare `Screen.removeScreen()`. Tests: type consumers under `nodenext`, and Lite with each exported plugin, in `package-types-consumer.test.js` | [CORE-005](AUDIT-CORE.md#core-005), [CORE-015](AUDIT-CORE.md#core-015), [CORE-016](AUDIT-CORE.md#core-016), [CORE-017](AUDIT-CORE.md#core-017) | Next |
+Done: Core 1, 2, and 4 ([Section 13.5](#135-core)).
 
 ### 3.2 Phase 2: fixes
 
@@ -278,7 +275,10 @@ Input to `UPGRADE-V2.3.md` (R.4):
 - **C3:** "The standalone plugin entry points (`pijs-web/plugins/…`) are for Lite. Loading one
   that the Full bundle already includes throws `DUPLICATE_PLUGIN`."
 - **C5:** "TypeScript projects using `nodenext` module resolution now get the package's types.
-  Lite projects that load a plugin get that plugin's command types."
+  Lite projects that load a plugin get that plugin's command, screen command, and setting
+  types. The standalone declarations of the plugins that Full bundles type them for Lite only.
+  The global `pi` and `$` are declared by the Full declarations only, so Lite projects use
+  the module's exports."
 - **C2:** a plugin whose initialization fails leaves nothing installed, and its name can be
   registered again. `getPlugins()` reports each plugin's `state`, and registering after
   initialization throws `REGISTRATION_CLOSED`.
@@ -959,6 +959,7 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | --- | --- | --- | --- |
 | Core 1 | Transactional plugin installation and error routing (C2): registrations committed after installation succeeds; screen installation rolls back; `getPlugins()` reports `state`; registration after init throws `REGISTRATION_CLOSED` | [CORE-002](AUDIT-CORE.md#core-002), [CORE-006](AUDIT-CORE.md#core-006) | [#13](https://github.com/AndyStubbs/pijs/pull/13) |
 | Core 2 | Documented the Lite-only plugin entry points (C3) in `plugins/README.md`, `plugins/polygons/README.md`, and `llms-full.txt`; the release README follows in R.3 | [CORE-003](AUDIT-CORE.md#core-003) | [#14](https://github.com/AndyStubbs/pijs/pull/14) |
+| Core 4 | Declarations and release manifest (C5): `"type": "module"` in the release manifest; plugin declarations augment Lite, and `sound-advanced` both Full and Lite, through `PluginCommands`, `PluginScreenCommands`, and `PluginOptions`; object types only a plugin uses move from Lite to that plugin's declarations; Lite `Options` holds Lite settings only; the global `pi` and `$` are declared by Full only; `addCommand`'s `isScreenOptional` is optional and its JSDoc example is corrected; `Screen.removeScreen()` is declared. Type consumers compile under `bundler` and `nodenext`, including Lite with each exported plugin | [CORE-005](AUDIT-CORE.md#core-005), [CORE-015](AUDIT-CORE.md#core-015), [CORE-016](AUDIT-CORE.md#core-016), [CORE-017](AUDIT-CORE.md#core-017) | — |
 
 ## 14. Glossary
 

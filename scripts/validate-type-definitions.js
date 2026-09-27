@@ -26,10 +26,22 @@ const SOUND_ADVANCED_TYPE_FILE = path.join(
 	DIRNAME, "..", "build", "plugins", "sound-advanced", "sound-advanced.d.ts"
 );
 
-// Commands of a standalone plugin, declared in its own file rather than pi.d.ts
+const KEYBOARD_TYPE_FILE = path.join(
+	DIRNAME, "..", "build", "plugins", "keyboard", "keyboard.d.ts"
+);
+const POINTER_TYPE_FILE = path.join(
+	DIRNAME, "..", "build", "plugins", "pointer", "pointer.d.ts"
+);
+
+// Commands of a standalone plugin, declared in its own file rather than pi.d.ts, augmenting
+// both Full and Lite
 const SOUND_ADVANCED_DECLARATIONS = [
-	"declare module \"pijs-web\" {",
-	"interface PluginCommands {",
+	"type PluginAPI = FullPluginAPI | LitePluginAPI;",
+	"interface SoundAdvancedCommands {",
+	"declare module \"pijs-web\" {\n\tinterface PluginCommands extends SoundAdvancedCommands {}",
+	"declare module \"pijs-web/lite\" {\n" +
+		"\tinterface PluginCommands extends SoundAdvancedCommands {}",
+	"interface PluginOptions extends SoundAdvancedOptions {}",
 	"synth( params: {",
 	"sfx( name: string, variation?: number ): string;",
 	"definePreset( name: string, params: object ): void;",
@@ -209,8 +221,26 @@ function validateTypeDefinitions() {
 	const requiredExports = [
 		{ "name": "plugin command interface", "text": "export interface PluginCommands {}" },
 		{
+			"name": "plugin screen command interface",
+			"text": "export interface PluginScreenCommands {}"
+		},
+		{ "name": "plugin options interface", "text": "export interface PluginOptions {}" },
+		{
 			"name": "API extension by plugin commands",
 			"text": "interface API extends Screen, PluginCommands {"
+		},
+		{
+			"name": "Screen extension by plugin screen commands",
+			"text": "interface Screen extends PluginScreenCommands {"
+		},
+		{
+			"name": "Options extension by plugin settings",
+			"text": "interface Options extends PluginOptions {"
+		},
+		{ "name": "screen form of removeScreen", "text": "\t\tremoveScreen(): void;" },
+		{
+			"name": "addCommand with optional isScreenOptional",
+			"text": "parameterNames: string[], isScreenOptional?: boolean ) => void;"
 		},
 		{ "name": "named pi and $ exports", "text": "export { pi, $ };" },
 		{ "name": "default pi export", "text": "export default pi;" },
@@ -250,6 +280,46 @@ function validateTypeDefinitions() {
 	}
 	if( !/^\t\tinmouse\(/m.test( buildTypes ) ) {
 		throw new Error( "Full type definitions are missing plugin command inmouse." );
+	}
+
+	// Lite omits the settings and object types of bundled plugins, and leaves the global pi and
+	// $ to the Full declarations so the two files can load together
+	if( /^\t\t(actionKeys|pinchZoom|volume)\?:/m.test( liteTypes ) ) {
+		throw new Error( "Lite type definitions incorrectly include plugin settings." );
+	}
+	if( /^\tinterface (MouseData|GamepadData|HitBox) \{/m.test( liteTypes ) ) {
+		throw new Error( "Lite type definitions incorrectly include plugin object types." );
+	}
+	if( liteTypes.includes( "declare global" ) ) {
+		throw new Error( "Lite type definitions incorrectly declare the global pi and $." );
+	}
+	if( !buildTypes.includes( "declare global {\n\tvar pi: Pi.API;\n\tvar $: Pi.API;\n}" ) ) {
+		throw new Error( "Full type definitions are missing the global pi and $." );
+	}
+
+	// Plugins that Full bundles augment Lite only and declare the object types only they use
+	const keyboardTypes = readTypeFile( KEYBOARD_TYPE_FILE );
+	for( const text of [
+		"import type { PluginAPI } from \"pijs-web/lite\";",
+		"declare module \"pijs-web/lite\" {\n\tinterface PluginCommands extends KeyboardCommands {}"
+	] ) {
+		if( !keyboardTypes.includes( text ) ) {
+			throw new Error( `keyboard type definitions are missing: ${text}` );
+		}
+	}
+	if( keyboardTypes.includes( "declare module \"pijs-web\" {" ) ) {
+		throw new Error( "keyboard type definitions incorrectly augment the Full API." );
+	}
+	const pointerTypes = readTypeFile( POINTER_TYPE_FILE );
+	for( const text of [
+		"interface MouseData {",
+		"interface HitBox {",
+		"interface PluginScreenCommands extends PointerScreenCommands {}",
+		"interface PluginOptions extends PointerOptions {}"
+	] ) {
+		if( !pointerTypes.includes( text ) ) {
+			throw new Error( `pointer type definitions are missing: ${text}` );
+		}
 	}
 
 	// Standalone plugin commands stay out of pi.d.ts and augment it from the plugin file

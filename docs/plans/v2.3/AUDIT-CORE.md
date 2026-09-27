@@ -812,7 +812,7 @@ the [ROADMAP](ROADMAP.md#3-core) tasks that implement each item.
 | CORE-002 | Failed plugin stays half-installed | Accepted | P2. Fixed by C2 (Core 1, done) |
 | CORE-003 | Bundled plugin loaded after Full breaks the page | Accepted | P2. Documentation only (changed 2026-09-27): the throw stays, and the standalone entry points are documented as Lite-only (C3). Self-registration is not changed (Core 2, done) |
 | CORE-004 | `clearEvents()` removes plugin-internal subscriptions | Accepted | P2. Documentation only (C4 rejected): `API.md` and the plugin guides say that `clearEvents()` also removes handlers a plugin registers through the public input commands. The two affected plugins, `onscreen-keyboard` and `pi-vision`, are removed in 2.3 (G7). No core mechanism is needed. Written in R.2 (Core 3) |
-| CORE-005 | Release package types wrong under `nodenext` | Accepted | P2. Fixed by C5 (Core 4) |
+| CORE-005 | Release package types wrong under `nodenext` | Accepted | P2. Fixed by C5 (Core 4, done) |
 | CORE-006 | Init errors thrown to the wrong caller | Accepted | Fixed by C2 (Core 1, done) |
 | CORE-007 | Explicit `undefined` not treated as omitted | Accepted | Fixed by C6 (Core 6) |
 | CORE-008 | `set()` accepts unknown names | Accepted | Fixed by C7 (Core 8, breaking) |
@@ -822,9 +822,9 @@ the [ROADMAP](ROADMAP.md#3-core) tasks that implement each item.
 | CORE-012 | Polygon coordinates past 2³¹ wrap | Accepted | Fixed by C6 (Core 6) |
 | CORE-013 | Numeric validation gaps | Accepted | Fixed by C6 (Core 6) |
 | CORE-014 | Text outside the font table undocumented | Accepted | Documented in R.2 (C10). The Latin-1 to CP437 mapping is deferred to a later release, although keyboard A16 lets typed accented text reach `print()` in 2.3.0 |
-| CORE-015 | `removeScreen` forms and declarations | Accepted | Fixed by C5 and C6 (Core 4; Core 6) |
-| CORE-016 | Plugin declarations for Lite | Accepted | Fixed by C5 (Core 4) |
-| CORE-017 | `addCommand` declaration and example | Accepted | Fixed by C5 (Core 4) |
+| CORE-015 | `removeScreen` forms and declarations | Accepted | Fixed by C5 and C6 (Core 4, done; Core 6) |
+| CORE-016 | Plugin declarations for Lite | Accepted | Fixed by C5 (Core 4, done) |
+| CORE-017 | `addCommand` declaration and example | Accepted | Fixed by C5 (Core 4, done) |
 | CORE-018 | Circle geometry cache unbounded | Accepted | Fixed by C8 (Core 7) |
 | CORE-019 | Release packaging details | Accepted | Fixed by C11: rename, `"private": true`, and the changelog in the tarball (Core 9) |
 | CORE-020 | Missing checks | Accepted | A test with each fix, and Core 10 |

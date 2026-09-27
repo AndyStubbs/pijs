@@ -3,6 +3,7 @@
 	"version": "[VERSION]",
 	"majorVersion": "[MAJOR-VERSION]",
 	"description": "Retro2D graphics, sound, and input library for javascript",
+	"type": "module",
 	"types": "dist/pi.d.ts",
 	"unpkg": "dist/pi.min.js",
 	"jsdelivr": "dist/pi.min.js",

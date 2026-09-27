@@ -5,11 +5,13 @@
  * License: Apache-2.0
  */
 /**
- * Commands added by separately loaded plugins. A plugin's declaration file augments
- * this interface with `declare module "pijs-web"`, so importing the plugin adds its
- * commands to the API.
+ * Commands, screen commands, and settings added by separately loaded plugins. A plugin's
+ * declaration file augments these interfaces with `declare module "pijs-web"`,
+ * so importing the plugin adds its commands to the API.
  */
 export interface PluginCommands {}
+export interface PluginScreenCommands {}
+export interface PluginOptions {}
 
 declare namespace Pi {
 	/**
@@ -285,7 +287,7 @@ declare namespace Pi {
 	 *
 	 * Options object used with the set() command to apply multiple settings in a single call. Any command registered as a "setX" command is available as an option with the lowercased name (e.g., setColor => { "color": ... }).
 	 */
-	interface Options {
+	interface Options extends PluginOptions {
 		/**
 		 * Sets keys that should prevent default browser behavior.
 		 */
@@ -473,7 +475,7 @@ declare namespace Pi {
 		/**
 		 * During init, register a new command.
 		 */
-		addCommand: ( name: string, fn: ( ...args: any[] ) => any, isScreen: boolean, parameterNames: string[], isScreenOptional: boolean ) => void;
+		addCommand: ( name: string, fn: ( ...args: any[] ) => any, isScreen: boolean, parameterNames: string[], isScreenOptional?: boolean ) => void;
 
 		/**
 		 * During init, add persistent data to each screen.
@@ -844,7 +846,7 @@ declare namespace Pi {
 		type: string;
 	}
 
-	interface Screen {
+	interface Screen extends PluginScreenCommands {
 		/**
 		 * Appends new colors to the current palette and returns their indices.
 		 *
@@ -1628,6 +1630,12 @@ screen is removed before deferred processing completes, or with the original rea
 		 */
 		rect( params: { "x": number; "y": number; "width": number; "height": number; "fillColor"?: any } ): void;
 		rect( x: number, y: number, width: number, height: number, fillColor?: any ): void;
+
+		/**
+		 * Removes this screen and cleans up all associated resources.
+		 * @returns This function does not return a value.
+		 */
+		removeScreen(): void;
 
 		/**
 		 * Clears the view stack and resets to full screen.
