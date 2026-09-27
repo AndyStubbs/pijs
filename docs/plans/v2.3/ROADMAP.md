@@ -16,7 +16,7 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Keyboard 1.3](#51-phase-1-fixes-and-tests), [Pointer 1.1](#61-phase-1-fixes-and-tests), [Gamepad 1.1](#71-phase-1-fixes-and-tests) | Continue the three input Phase 1s, in parallel | Nothing |
+| 1 | [Keyboard 1.4](#51-phase-1-fixes-and-tests), [Pointer 1.1](#61-phase-1-fixes-and-tests), [Gamepad 1.1](#71-phase-1-fixes-and-tests) | Continue the three input Phase 1s, in parallel | Nothing |
 | 2 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
 | 3 | [Core 5–13](#32-phase-2-fixes) | Remaining core fixes, tests, and the two approved API changes, in any order. Core 8 and Core 13 land before the pointer and gamepad Phase 2 sets | Nothing. Can run in parallel |
 
@@ -28,7 +28,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | --- | --- | --- | --- |
 | Core | [3](#3-core) | Phase 1 done. Core 1, 2, and 4 done, 10 tasks left | Core 5–13 |
 | Sound | [4](#4-sound) | Phases 0–9 done; Phases 10–11 not started | Sound 10.1 |
-| Keyboard | [5](#5-keyboard) | Phase 1 in progress. 1.1–1.2 done | Keyboard 1.3 |
+| Keyboard | [5](#5-keyboard) | Phase 1 in progress. 1.1–1.3 done | Keyboard 1.4 |
 | Pointer | [6](#6-pointer) | Approved; Phase 1 not started | Pointer 1.1 |
 | Gamepad | [7](#7-gamepad) | Approved; Phase 1 not started | Gamepad 1.1 |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
@@ -371,11 +371,10 @@ Phase 1 to Phase 2, so it lands once with the I11 error codes instead of twice.
 
 No API change; the version stays 1.0.0. Pure logic tests go in `keyboard-lifecycle.test.js`,
 whose `vm` harness maps arguments with core's `parseOptions` and dispatches events through the
-plugin's listeners (task 1.1). Tasks 1.1–1.2 are done ([Section 13.6](#136-keyboard)).
+plugin's listeners (task 1.1). Tasks 1.1–1.3 are done ([Section 13.6](#136-keyboard)).
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 1.3 | **Prompt listener (A2).** The prompt reads keys from its own listener, added when it starts and removed when it ends. `stopKeyboard()` and handler clearing no longer affect it. `clearEvents( "keyboard" )` cancels the prompt when called with no screen or from the owning screen. Tests: `clearEvents( "keyboard" )` with prompts on two screens (K2); a prompt during a stop | [KEY-002](AUDIT-KEYBOARD.md#key-002), [KEY-006](AUDIT-KEYBOARD.md#key-006) | — |
 | 1.4 | **Prompt owns the keyboard (A3).** While a prompt is active, it prevents the default action of every key it receives; ignores Ctrl and Meta keydowns except AltGr; inserts pasted text. Tests: default prevention, Ctrl and AltGr, Tab, paste (K9, K9n) | [KEY-003](AUDIT-KEYBOARD.md#key-003) | — |
 | 1.5 | **Shadow-DOM editable targets (A4).** Read `event.composedPath()[ 0 ]`. Browser test with shadow roots (K12) | [KEY-004](AUDIT-KEYBOARD.md#key-004) | — |
 | 1.6 | **Prompt layout (A5).** Use the print cursor's height, end at column 0, keep to one line, and scroll the shown value. Browser test after inline text, with scaled print, and with long input (K11) | [KEY-005](AUDIT-KEYBOARD.md#key-005) | — |
@@ -1033,7 +1032,8 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | # | Task | Findings | Ref |
 | --- | --- | --- | --- |
 | 1.1 | Test harness: `keyboard-lifecycle.test.js` maps arguments with core's `parseOptions`, so both forms run, and dispatches key events through the plugin's `window` and `document` listeners with `target`, `composedPath()`, and `getModifierState()`, on a controllable clock. `keyboard-lifecycle-browser` keeps real `KeyboardEvent` dispatch, cursor rendering, and drawing after removal; two duplicate tests were removed (`test/TEST-CONSOLIDATION-LOG.md`) | [KEY-019](AUDIT-KEYBOARD.md#key-019), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | [#21](https://github.com/AndyStubbs/pijs/pull/21) |
-| 1.2 | Held state by code (A1): one table of held codes, each with the data of its latest keydown; a keyup releases by code whatever value it reports; a value lookup or combination is satisfied by any held code with that value, the latest press first. Tests: modifier released first, two keys with one value, `"Process"` (K1, K1b, K14) in `keyboard-lifecycle.test.js`, and native keys (K1n) in `keyboard-lifecycle-browser.test.js` | [KEY-001](AUDIT-KEYBOARD.md#key-001) (P1) | — |
+| 1.2 | Held state by code (A1): one table of held codes, each with the data of its latest keydown; a keyup releases by code whatever value it reports; a value lookup or combination is satisfied by any held code with that value, the latest press first. Tests: modifier released first, two keys with one value, `"Process"` (K1, K1b, K14) in `keyboard-lifecycle.test.js`, and native keys (K1n) in `keyboard-lifecycle-browser.test.js` | [KEY-001](AUDIT-KEYBOARD.md#key-001) (P1) | [#22](https://github.com/AndyStubbs/pijs/pull/22) |
+| 1.3 | Prompt listener (A2): the prompt reads keys from its own capture `keydown` listener on `window`, added when it starts and removed when it ends, with the plugin's editable-target filter. `stopKeyboard()` and cleared key handlers no longer affect it; `clearEvents( "keyboard" )` cancels it only with no screen or from the owning screen. Tests: `clearEvents( "keyboard" )` from another screen, the owner, and no screen (K2); a prompt started and continued while stopped; keys from editable elements; no listener left after a prompt | [KEY-002](AUDIT-KEYBOARD.md#key-002), [KEY-006](AUDIT-KEYBOARD.md#key-006) | — |
 
 ## 14. Glossary
 
