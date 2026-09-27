@@ -16,11 +16,10 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Sound 9.4](#41-phase-9-game-features-remaining) | Music sync metadata, types, and the beat-synced demo visual; Phase 9 exit | Nothing |
-| 2 | Approve [Keyboard](#5-keyboard), [Pointer](#6-pointer), and [Gamepad](#7-gamepad) | Maintainer review of the drafted input phases; reaches milestone U2 | Nothing. Can run in parallel with 1 |
-| 3 | Keyboard 1.1, Pointer 1.1, Gamepad 1.1 | Start the three input Phase 1s, in parallel | 2 |
+| 1 | Approve [Keyboard](#5-keyboard), [Pointer](#6-pointer), and [Gamepad](#7-gamepad) | Maintainer review of the drafted input phases; reaches milestone U2 | Nothing |
+| 2 | Keyboard 1.1, Pointer 1.1, Gamepad 1.1 | Start the three input Phase 1s, in parallel | 1 |
+| 3 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
 | 4 | [Core 5–7, 9–12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
-| 5 | [Sound 10.1](#42-phase-10-sample-instruments) | Sample instruments | Sound 9.4, by priority |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -29,7 +28,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
 | Core | [3](#3-core) | Phase 1 done. Core 1, 2, and 4 done, 9 tasks left | Core 5–7, 9–12 |
-| Sound | [4](#4-sound) | Phases 0–8 done; Phase 9 in progress; Phases 10–11 not started | Sound 9.4 |
+| Sound | [4](#4-sound) | Phases 0–9 done; Phases 10–11 not started | Sound 10.1 |
 | Keyboard | [5](#5-keyboard) | Draft, awaiting approval | Approval |
 | Pointer | [6](#6-pointer) | Draft, awaiting approval | Approval |
 | Gamepad | [7](#7-gamepad) | Draft, awaiting approval | Approval |
@@ -286,26 +285,13 @@ Input to `UPGRADE-V2.3.md` (R.4):
 ## 4. Sound
 
 Design: [DESIGN-SOUND.md](DESIGN-SOUND.md) (Phases 0–6) and
-[DESIGN-SOUND-ADVANCED.md](DESIGN-SOUND-ADVANCED.md) (Phases 7–10). Phases 0–8, 9.1–9.3, and
-the generator part of 9.4 are done ([Section 13.4](#134-sound)).
+[DESIGN-SOUND-ADVANCED.md](DESIGN-SOUND-ADVANCED.md) (Phases 7–10). Phases 0–9 are done
+([Section 13.4](#134-sound)).
 
-### 4.1 Phase 9: game features (remaining)
+### 4.1 Phase 9: game features
 
-Design: [DESIGN-SOUND-ADVANCED §6](DESIGN-SOUND-ADVANCED.md#6-phase-9-game-features).
-
-| # | Task | Status |
-| --- | --- | --- |
-| 9.4 | **Metadata, types, and demo.** The generator panel is done. Remaining: metadata and types for `onPlay` and `offPlay`, and a beat-synced visual in `sound_advanced_01.html` | Next |
-
-**Exit criteria:**
-
-- In a clock-driven offline render, `observePlay` reports every admitted note once, with the
-  context time the render shows it starting, and never reports rejected or skipped notes.
-- Events reach listeners in time order. `stopPlay()` suppresses queued notes and sends `"end"`
-  once.
-- A realtime Chromium test checks that dispatch happens within two frames of the audible start
-  (with the latency the engine reports), and that notes delayed by a hidden tab are dropped.
-- A size entry in `docs/evidence/sound-2.3/README.md`, and the listening check (Section 8.3).
+Done ([Section 13.4](#134-sound)). Its listening check is in the
+[release checklist](#83-manual-release-checks).
 
 ### 4.2 Phase 10: sample instruments
 
@@ -616,7 +602,8 @@ in its workstream's evidence folder.
   and a long song in a hidden tab (Phase 4).
 - [ ] `sound_advanced_01.html`: synth features, presets, instruments, bus effects, level meter
   (Phase 5); recording and saving a WAV (Phase 7); new effects and chains (Phase 8); generator
-  categories across seeds and the beat-synced visual (Phase 9); a sample instrument (Phase 10).
+  categories across seeds, and the beat-synced visual watched against the music in each
+  engine, including a tab hidden mid-song (Phase 9); a sample instrument (Phase 10).
 - [ ] Autoplay unlock on desktop and on an iOS or Android device.
 - [ ] A stream instance deferred while locked starts on the unlocking gesture, in desktop Safari
   or on iOS.
@@ -944,14 +931,14 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | 8.6 | `"bitcrush"` |
 | 8.7 | Metadata, types, and demo controls |
 
-**Phase 9: game features, done part** (design §3.2, §6)
+**Phase 9: game features** (design §3.2, §6)
 
 | # | Task |
 | --- | --- |
 | 9.1 | `generateSfx()` |
 | 9.2 | Core `observePlay` service member |
 | 9.3 | Music sync (`sync.js`): `onPlay( mode, fn, once )` and `offPlay( mode, fn )` with modes `"note"` and `"end"`, dispatched on animation frames at the audible time; notes more than 250 ms late dropped; `clearEvents( "play" )`. Closed D13 and D14 |
-| 9.4 | Generator part: metadata, types, and the generator panel |
+| 9.4 | Metadata and types for `generateSfx()`, `onPlay()`, and `offPlay()`; the generator panel and the beat-synced music sync panel in `sound_advanced_01.html`; the Phase 9 size entry |
 
 ### 13.5 Core
 

@@ -11,7 +11,8 @@ import * as g_generator from "../../plugins/sound-advanced/generator.js";
 
 const COMMANDS = [
 	"defineInstrument", "definePreset", "generateSfx", "getRecordingState", "getSoundLevels",
-	"saveRecording", "setBusEffect", "sfx", "startRecording", "stopRecording", "synth"
+	"offPlay", "onPlay", "saveRecording", "setBusEffect", "sfx", "startRecording",
+	"stopRecording", "synth"
 ];
 
 let m_browser;

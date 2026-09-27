@@ -69,8 +69,8 @@
 	<p class="intro">
 		Listening demo for the <code>sound-advanced</code> plugin: <code>synth()</code> with
 		filter, vibrato, tremolo, pulse duty, and arpeggio; periodic noise; presets;
-		<code>generateSfx()</code>; PLAY instruments; bus volume and effects; and
-		<code>getSoundLevels()</code>. Build with
+		<code>generateSfx()</code>; PLAY instruments; music sync with <code>onPlay()</code>;
+		bus volume and effects; <code>getSoundLevels()</code>; and recording. Build with
 		<code>npm run build</code> and serve the repository with <code>npm run server</code>.
 	</p>
 
@@ -184,6 +184,18 @@
 		<p>"Redefine while queued" starts a song with instrument 9, then redefines 9 as a
 			quiet sine; the playing song keeps its sound, and the next click uses the new
 			definition.</p>
+	</div>
+
+	<div class="section">
+		<h2>Music sync</h2>
+		<button id="syncSong">Play synced song</button>
+		<label><input type="checkbox" id="syncOn" checked> Sync handlers on</label>
+		<span id="syncStats"></span>
+		<canvas id="syncCanvas" width="900" height="160"></canvas>
+		<p>Each note flashes when it is heard, in a lane for its track, placed by pitch. The
+			ring pulses on the first track's notes. Songs from the Instruments section sync
+			too. Unchecking the box calls <code>offPlay()</code>; hiding the tab mid-song skips
+			the late notes instead of flashing them all at once.</p>
 	</div>
 
 	<div class="section">
@@ -462,6 +474,91 @@
 		}
 		document.getElementById( "stopSongs" ).onclick = stopSongs;
 
+		// Music sync: note flashes by track and pitch, and a ring on the first track's notes
+		const SYNC_SONG = [
+			"@1 T120 O4 L8 C E G E C E G E D F A F D F A F",
+			"@2 T120 O2 L4 C C D D",
+			"@6 T120 L8 " + "C P C P ".repeat( 4 )
+		];
+		const flashes = [];
+		const syncStats = { "notes": 0, "ends": 0, "delay": 0 };
+		let pulse = 0;
+
+		function onSyncNote( note ) {
+			syncStats.notes += 1;
+			syncStats.delay = note.delay;
+			flashes.push( {
+				"track": note.track,
+				"pitch": Math.log2( Math.max( note.frequency, 30 ) / 30 ) / 7,
+				"volume": note.volume,
+				"until": performance.now() + Math.max( note.duration, 0.1 ) * 1000,
+				"length": Math.max( note.duration, 0.1 ) * 1000
+			} );
+			if( note.track === 0 ) {
+				pulse = 1;
+			}
+		}
+
+		function onSyncEnd( end ) {
+			syncStats.ends += 1;
+			log( `onPlay end: track ${end.trackId}${end.stopped ? " (stopped)" : ""}` );
+		}
+
+		function setSync( isOn ) {
+			if( isOn ) {
+				$.onPlay( "note", onSyncNote );
+				$.onPlay( "end", onSyncEnd );
+			} else {
+				$.offPlay( null, onSyncNote );
+				$.offPlay( "end" );
+			}
+		}
+		setSync( true );
+		document.getElementById( "syncOn" ).onchange = event => setSync( event.target.checked );
+		document.getElementById( "syncSong" ).onclick = () => {
+			stopSongs();
+			for( const song of SYNC_SONG ) {
+				const trackId = attempt( "play", () => $.play( song ) );
+				if( trackId ) {
+					songs.push( trackId );
+				}
+			}
+		};
+
+		const syncCanvas = document.getElementById( "syncCanvas" );
+		const syncContext = syncCanvas.getContext( "2d" );
+		function drawSync() {
+			const now = performance.now();
+			const width = syncCanvas.width;
+			const height = syncCanvas.height;
+			syncContext.fillStyle = "#1a1a1a";
+			syncContext.fillRect( 0, 0, width, height );
+			const lanes = 3;
+			const laneHeight = height / lanes;
+			for( let i = flashes.length - 1; i >= 0; i-- ) {
+				const flash = flashes[ i ];
+				const left = ( flash.until - now ) / flash.length;
+				if( left <= 0 ) {
+					flashes.splice( i, 1 );
+					continue;
+				}
+				const hue = [ 45, 200, 320 ][ flash.track % lanes ];
+				syncContext.fillStyle = `hsla( ${hue}, 80%, 60%, ${left} )`;
+				const x = 140 + flash.pitch * ( width - 180 );
+				const size = 10 + flash.volume * 30;
+				syncContext.fillRect( x - size / 2, ( flash.track % lanes ) * laneHeight +
+					( laneHeight - size ) / 2, size, size );
+			}
+			syncContext.strokeStyle = `rgba( 255, 255, 255, ${0.2 + pulse * 0.8} )`;
+			syncContext.lineWidth = 2 + pulse * 6;
+			syncContext.beginPath();
+			syncContext.arc( 60, height / 2, 20 + pulse * 25, 0, Math.PI * 2 );
+			syncContext.stroke();
+			pulse *= 0.85;
+			document.getElementById( "syncStats" ).textContent = `notes ${syncStats.notes}, ` +
+				`ends ${syncStats.ends}, last delay ${( syncStats.delay * 1000 ).toFixed( 1 )} ms`;
+		}
+
 		// Buses
 		const busControls = document.getElementById( "buses" );
 		for( const bus of BUSES ) {
@@ -560,6 +657,7 @@
 			context.fillRect( 0, height - 12, levels.peak * width, 8 );
 			const state = $.getRecordingState();
 			recordState.textContent = `${state.state} ${state.duration.toFixed( 1 )} s`;
+			drawSync();
 			requestAnimationFrame( draw );
 		}
 		draw();
