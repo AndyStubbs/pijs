@@ -1,0 +1,44 @@
+title = "setActionKeys"
+category = "keyboard"
+isScreen = false
+plugin = "keyboard"
+summary = "Adds keys whose default browser behavior is prevented."
+description = """
+Adds keys to the action keys set. Action keys have their default browser behavior prevented on
+keydown and keyup, for example page scrolling with the arrow keys or Space. This is useful for
+game controls where you don't want the browser to handle certain keys.
+
+Keys already in the set stay in it; use removeActionKeys() to remove keys. set( { "actionKeys":
+[ ... ] } ) also adds. Keys can be specified by code (e.g., "ArrowUp", "Space") or key value
+(e.g., " ").
+"""
+example = """
+$.screen( "200x200" );
+$.setActionKeys( [ "ControlLeft", "KeyS" ] );
+setInterval( function () {
+	const keys = $.inkey();
+	$.cls();
+	$.print( "Press Ctrl+S." );
+	if( $.inkey( "Control" ) ) {
+		$.print( "Control key is pressed." );
+	} else {
+		$.print( "Control key is not pressed." );
+	}
+	for( const keyData of keys ) {
+		$.print( "--------------------------" );
+		$.print( "key:      " + keyData.key );
+		$.print( "location: " + keyData.location );
+		$.print( "code:     " + keyData.code );
+	}
+}, 60 );
+"""
+
+[[parameters]]
+name = "keys"
+type = "Array<string>"
+typeDesc = "*Array"
+description = "Array of key codes or key values to add as action keys."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

@@ -1,0 +1,26 @@
+title = "stopKeyboard"
+category = "keyboard"
+isScreen = false
+plugin = "keyboard"
+summary = "Stops keyboard input monitoring."
+description = """
+Stops the keyboard input monitoring system. This removes the keydown and keyup listeners and
+clears all key states. Keyboard events are no longer tracked until startKeyboard() is called
+again; registering a handler or calling inkey() does not restart it. An input() prompt keeps
+reading keys while the keyboard is stopped.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Keyboard will be stopped in 3 seconds." );
+$.onkey( "any", "down", () => {
+	$.print( "Key pressed!" );
+} );
+setTimeout( () => {
+	$.print( "Keyboard is now stopped" );
+	$.stopKeyboard();
+}, 3000 );
+"""
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

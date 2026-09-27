@@ -40,7 +40,10 @@ const LITE_PLUGIN_CONSUMERS = {
 	],
 	"keyboard": [
 		`lite.onkey( "KeyA", "down", () => {} );`,
-		`void lite.screen( "8x8" ).input( "Name?" );`,
+		`const age: Promise<string | number | null> = lite.screen( "8x8" ).input(`,
+		`	"Age?", ( value: string | number | null ) => { void value; }, "_", true, true,`,
+		`	false, null );`,
+		`void age;`,
 		`lite.set( { actionKeys: [ "ArrowUp" ] } );`,
 		`// @ts-expect-error Gamepad commands need the gamepad plugin.`,
 		`lite.ingamepad();`
