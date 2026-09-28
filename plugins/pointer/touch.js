@@ -88,7 +88,7 @@ export function registerTouch( pluginApi, helpers ) {
 			screenData.canvas.addEventListener( "touchstart", touchStart, options );
 			screenData.canvas.addEventListener( "touchmove", touchMove, options );
 			screenData.canvas.addEventListener( "touchend", touchEnd, options );
-			screenData.canvas.addEventListener( "touchcancel", touchEnd, options );
+			screenData.canvas.addEventListener( "touchcancel", touchCancel, options );
 			screenData.touchStarted = true;
 		}
 	}
@@ -108,7 +108,7 @@ export function registerTouch( pluginApi, helpers ) {
 			screenData.canvas.removeEventListener( "touchstart", touchStart );
 			screenData.canvas.removeEventListener( "touchmove", touchMove );
 			screenData.canvas.removeEventListener( "touchend", touchEnd );
-			screenData.canvas.removeEventListener( "touchcancel", touchEnd );
+			screenData.canvas.removeEventListener( "touchcancel", touchCancel );
 			screenData.touchStarted = false;
 		}
 	}
@@ -184,12 +184,11 @@ export function registerTouch( pluginApi, helpers ) {
 		if( screenData == null ) {
 			return;
 		}
-		updateTouch( screenData, e, "start" );
+		const changed = updateTouch( screenData, e, "start", false );
 
 		// Suppress browser gestures and compatibility mouse events before any handler runs
 		e.preventDefault();
-		const touchData = getTouch( screenData );
-		m_triggerEventListeners( "start", touchData, screenData.onTouchEventListeners );
+		m_triggerEventListeners( "start", changed, screenData.onTouchEventListeners );
 		g_press.triggerPressListeners( screenData, "down", g_press.getTouchPress( screenData ) );
 		g_press.triggerClickListeners( screenData, g_press.getTouchPress( screenData ), "down" );
 	}
@@ -199,63 +198,119 @@ export function registerTouch( pluginApi, helpers ) {
 		if( screenData == null ) {
 			return;
 		}
-		updateTouch( screenData, e, "move" );
-		const touchData = getTouch( screenData );
-		m_triggerEventListeners( "move", touchData, screenData.onTouchEventListeners );
+		const changed = updateTouch( screenData, e, "move", false );
+		m_triggerEventListeners( "move", changed, screenData.onTouchEventListeners );
 		g_press.triggerPressListeners( screenData, "move", g_press.getTouchPress( screenData ) );
 	}
 
 	function touchEnd( e ) {
+		endTouches( e, false );
+	}
+
+	function touchCancel( e ) {
+		endTouches( e, true );
+	}
+
+	/**
+	 * Release the touches an event ended. A cancelled touch, one the browser took over, is
+	 * released with `cancelled: true` and never clicks.
+	 *
+	 * @param {TouchEvent} e - The `touchend` or `touchcancel` event.
+	 * @param {boolean} isCancelled - Whether the browser cancelled the touches.
+	 * @returns {void}
+	 */
+	function endTouches( e, isCancelled ) {
 		const screenData = getScreenDataFromEvent( e );
 		if( screenData == null ) {
 			return;
 		}
-		updateTouch( screenData, e, "end" );
-		const touchData = getTouch( screenData );
-		m_triggerEventListeners( "end", touchData, screenData.onTouchEventListeners );
-		g_press.triggerPressListeners( screenData, "up", g_press.getTouchPress( screenData ) );
-		g_press.triggerClickListeners( screenData, g_press.getTouchPress( screenData ), "up" );
+		const changed = updateTouch( screenData, e, "end", isCancelled );
+		m_triggerEventListeners( "end", changed, screenData.onTouchEventListeners );
+		const pressData = g_press.getTouchPress( screenData );
+		if( isCancelled ) {
+			pressData.cancelled = true;
+			g_press.triggerPressListeners( screenData, "up", pressData );
+			g_press.cancelClickListeners( screenData );
+		} else {
+			g_press.triggerPressListeners( screenData, "up", pressData );
+			g_press.triggerClickListeners( screenData, g_press.getTouchPress( screenData ), "up" );
+		}
 	}
 
-	function updateTouch( screenData, e, action ) {
+	/**
+	 * Apply the touches an event changed. Other touches keep their state and action, and an
+	 * ended touch is reported at the position where it lifted, then removed. `lastTouches`
+	 * keeps every touch of the event, including ended ones, for the press that follows the last
+	 * touch's release.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {TouchEvent} e - Touch event.
+	 * @param {string} action - `"start"`, `"move"`, or `"end"`.
+	 * @param {boolean} isCancelled - Whether the browser cancelled the touches.
+	 * @returns {Array<Object>} Copies of the changed touches, in event order.
+	 */
+	function updateTouch( screenData, e, action, isCancelled ) {
+		const eventTouches = {};
+		for( const id in screenData.touches ) {
+			eventTouches[ id ] = screenData.touches[ id ];
+		}
 		const newTouches = {};
-		for( let j = 0; j < e.touches.length; j++ ) {
-			const touch = e.touches[ j ];
-			const touchData = g_target.pointerPosition( screenData, touch );
-			if( !touchData ) {
-				continue;
+		const changed = [];
+		for( let j = 0; j < e.changedTouches.length; j++ ) {
+			const touch = e.changedTouches[ j ];
+			const previous = screenData.touches[ touch.identifier ];
+			let position = g_target.pointerPosition( screenData, touch );
+			if( !position ) {
+				if( !previous ) {
+					continue;
+				}
+				position = previous;
 			}
-			touchData.id = touch.identifier;
-			if( screenData.touches[ touchData.id ] ) {
-				touchData.lastX = screenData.touches[ touchData.id ].x;
-				touchData.lastY = screenData.touches[ touchData.id ].y;
-			} else {
-				touchData.lastX = null;
-				touchData.lastY = null;
+			const touchData = {
+				"x": position.x,
+				"y": position.y,
+				"id": touch.identifier,
+				"lastX": null,
+				"lastY": null,
+				"action": action,
+				"cancelled": isCancelled
+			};
+			if( previous ) {
+				touchData.lastX = previous.x;
+				touchData.lastY = previous.y;
 			}
-			touchData.action = action;
-			newTouches[ touchData.id ] = touchData;
+			eventTouches[ touchData.id ] = touchData;
+			changed.push( copyTouch( touchData ) );
+		}
+		for( const id in eventTouches ) {
+			if( eventTouches[ id ].action !== "end" ) {
+				newTouches[ id ] = eventTouches[ id ];
+			}
 		}
 
-		screenData.lastTouches = screenData.touches;
+		screenData.lastTouches = eventTouches;
 		screenData.touches = newTouches;
 		screenData.lastEvent = "touch";
+		return changed;
+	}
+
+	function copyTouch( touch ) {
+		return {
+			"x": touch.x,
+			"y": touch.y,
+			"id": touch.id,
+			"lastX": touch.lastX,
+			"lastY": touch.lastY,
+			"action": touch.action,
+			"cancelled": touch.cancelled,
+			"type": "touch"
+		};
 	}
 
 	function getTouch( screenData ) {
 		const touchArr = [];
 		for( const i in screenData.touches ) {
-			const touch = screenData.touches[ i ];
-			const touchData = {
-				"x": touch.x,
-				"y": touch.y,
-				"id": touch.id,
-				"lastX": touch.lastX,
-				"lastY": touch.lastY,
-				"action": touch.action,
-				"type": "touch"
-			};
-			touchArr.push( touchData );
+			touchArr.push( copyTouch( screenData.touches[ i ] ) );
 		}
 		return touchArr;
 	}

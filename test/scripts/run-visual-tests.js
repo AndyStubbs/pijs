@@ -20,7 +20,7 @@
  * - TS x,y - Touch start
  * - TM x,y - Touch move
  * - TM x,y,steps - Touch move with steps
- * - TE - Touch end
+ * - TE - Touch end at the last touch position
  * - DL ms - Delay in milliseconds
  * - SL "selector" - Select element (focus target for subsequent events)
  * 
@@ -520,24 +520,28 @@ async function executeCommand( page, command ) {
 			break;
 
 		// Touch end
-		case "TE":
-			logMove( "TE", { "id": cmdContext.touch.id } );
+		case "TE": {
+			const endX = Math.round( cmdContext.touch.x );
+			const endY = Math.round( cmdContext.touch.y );
+			logMove( "TE", { "x": endX, "y": endY, "id": cmdContext.touch.id } );
 			await dispatchTouch(
 				page,
 				cmdContext.target,
 				"touchend",
-				[],
+				[ endX, endY ],
 				cmdContext.touch.id
 			);
 			cmdContext.touch.id += 1;
 			break;
+		}
 	}
 
 	return null;
 }
 
 /**
- * Dispatch touch event to page
+ * Dispatch touch event to page. The touch is in `changedTouches`, and in `touches` unless the
+ * event ends it, as browsers report a single touch.
  * 
  * @param {Object} page - Playwright page object
  * @param {string} target - CSS selector for target element
@@ -579,7 +583,10 @@ async function dispatchTouch( page, target, name, data, id ) {
 					"rotationAngle": 10,
 					"force": 0.5
 				} );
-				touchConfig.touches.push( touch );
+				if( eventName !== "touchend" ) {
+					touchConfig.touches.push( touch );
+					touchConfig.targetTouches.push( touch );
+				}
 				touchConfig.changedTouches.push( touch );
 			}
 

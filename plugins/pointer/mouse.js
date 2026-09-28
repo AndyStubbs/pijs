@@ -130,6 +130,7 @@ export function registerMouse( pluginApi, helpers ) {
 		mouse.lastY = screenData.mouse.lastY;
 		mouse.buttons = screenData.mouse.buttons;
 		mouse.action = screenData.mouse.action;
+		mouse.cancelled = false;
 		mouse.type = "mouse";
 		return mouse;
 	}

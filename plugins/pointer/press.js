@@ -199,6 +199,22 @@ export function triggerClickListeners( screenData, data, clickStatus ) {
 }
 
 /**
+ * Disarm every click listener on the screen, so a press the browser cancelled never clicks.
+ *
+ * @param {Object} screenData - Screen state.
+ * @returns {void}
+ */
+export function cancelClickListeners( screenData ) {
+	const listeners = screenData.onClickEventListeners.click;
+	if( !listeners ) {
+		return;
+	}
+	for( const listener of listeners ) {
+		listener.clickDown = false;
+	}
+}
+
+/**
  * Convert active or recently released touches into a press-state snapshot.
  *
  * @param {Object} screenData - Screen state.
@@ -215,6 +231,7 @@ export function getTouchPress( screenData ) {
 				"lastX": touch.lastX,
 				"lastY": touch.lastY,
 				"action": touch.action,
+				"cancelled": touch.cancelled,
 				"type": "touch"
 			};
 			if( action !== undefined ) {
@@ -247,6 +264,7 @@ export function getTouchPress( screenData ) {
 			"lastY": -1,
 			"action": "none",
 			"buttons": 0,
+			"cancelled": false,
 			"type": "touch"
 		};
 	}
