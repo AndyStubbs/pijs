@@ -5,7 +5,6 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Gamepad Test 03 - Command Sequence Test</title>
 	<script src="../../../build/pi.js"></script>
-	<script src="../../../build/plugins/gamepad/gamepad.js"></script>
 	<style>body { background-color: gray; }</style>
 </head>
 <body>
@@ -118,7 +117,7 @@ function draw() {
 		$.print( "All tests completed successfully!" );
 	}
 
-	if( m_gamepadIndex ) {
+	if( m_gamepadIndex !== null ) {
 		drawFooter();
 	}
 

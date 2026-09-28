@@ -1,0 +1,58 @@
+title = "ingamepad"
+category = "gamepad"
+isScreen = false
+plugin = "gamepad"
+summary = "Gets gamepad data for a specific gamepad or all gamepads."
+description = """
+Reads the connected gamepads. With a gamepadIndex, returns the GamepadData for that index, or
+undefined when no pad has it. Without one, or with null, returns every connected pad in index
+order, in one live array that is refilled on each call.
+
+The first read starts polling, unless stopGamepad() was called; after stopGamepad(), every read
+returns null until startGamepad() or a handler registration starts polling again. The first read
+records the current state without reporting buttons already held as just pressed.
+
+Pads are live objects updated in place. The first read in each animation frame reports what
+happened since the last frame that had a read, and every other read in the frame sees the same
+values; see GamepadData.
+
+An index that is not a non-negative integer throws a TypeError with code INVALID_PARAMETERS.
+"""
+example = """
+$.screen( "300x200" );
+let x = 150;
+let y = 100;
+let lt = 0;
+requestAnimationFrame( run );
+function run( t ) {
+	let gamepads = $.ingamepad();
+	let factor = ( t - lt ) * 0.5;
+	lt = t;
+	$.cls();
+	if( gamepads.length > 0 ) {
+		x = Math.min( Math.max( x + gamepads[ 0 ].axes[ 0 ] * factor, 0 ), 299 );
+		y = Math.min( Math.max( y + gamepads[ 0 ].axes[ 1 ] * factor, 0 ), 199 );
+		if( gamepads[ 0 ].getButtonPressed( 0 ) ) {
+			$.setColor( 2 );
+		} else {
+			$.setColor( 15 );
+		}
+		$.circle( Math.floor( x ), Math.floor( y ) , 9 );
+		$.pset( Math.floor( x ), Math.floor( y ) );
+	}
+	requestAnimationFrame( run );
+}
+"""
+
+[[parameters]]
+name = "gamepadIndex"
+type = "number"
+description = "Gamepad index to read. If omitted or null, returns every connected pad."
+optional = true
+
+[[returns]]
+type = "GamepadData | Array<GamepadData> | null | undefined"
+typeDesc = "*Many"
+description = """
+The pad for the index, or undefined when none has it; every connected pad when no index is \
+given; null while polling is stopped."""

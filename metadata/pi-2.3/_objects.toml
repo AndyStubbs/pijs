@@ -394,3 +394,138 @@ or stopTouch() was called. False otherwise."""
 name = "type"
 type = "string"
 description = "Input type, always 'touch' for touch data."
+
+# ============================================================================
+# GamepadButton
+# ============================================================================
+[[objects]]
+title = "GamepadButton"
+summary = "State of one gamepad button."
+description = """
+One entry of GamepadData.buttons. It is live: the same object is updated in place on each
+read.
+"""
+
+[[objects.properties]]
+name = "pressed"
+type = "boolean"
+description = "Whether the button is held."
+
+[[objects.properties]]
+name = "value"
+type = "number"
+description = "How far the button is pressed, from 0 to 1."
+
+[[objects.properties]]
+name = "pressStarted"
+type = "boolean"
+description = "Whether the button was pressed since the previous read."
+
+[[objects.properties]]
+name = "pressReleased"
+type = "boolean"
+description = "Whether the button was released since the previous read."
+
+# ============================================================================
+# GamepadData
+# ============================================================================
+[[objects]]
+title = "GamepadData"
+summary = "Gamepad state and helper methods."
+description = """
+A connected gamepad, returned by ingamepad() and passed to onGamepadConnected callbacks. The
+object is live: the same object is returned on every read and updated in place, including its
+buttons array, each button, axes, and lastAxes. Copy values to keep a snapshot.
+
+A read is an ingamepad() call or a call to one of the methods below, including on a pad kept
+from an earlier read. The first read in each animation frame updates every pad with what
+happened since the last frame that had a read, so a press and a release between two reads are
+both reported; every other read in the same frame sees the same values.
+
+A pad starts with every button released, so a button held when the pad appears, such as the
+press that makes the browser expose it, is reported as just pressed on a later read. Button and
+axis numbers follow the browser's Gamepad API; the standard mapping has 17 buttons and 4 axes.
+"""
+
+[[objects.properties]]
+name = "index"
+type = "number"
+description = "The browser's index for the pad, a non-negative integer."
+
+[[objects.properties]]
+name = "id"
+type = "string"
+description = "Gamepad identifier string."
+
+[[objects.properties]]
+name = "connected"
+type = "boolean"
+description = "Connection status."
+
+[[objects.properties]]
+name = "mapping"
+type = "string"
+description = "Gamepad mapping type, such as 'standard', or an empty string."
+
+[[objects.properties]]
+name = "timestamp"
+type = "number"
+description = "The browser's timestamp of the pad state at the last read."
+
+[[objects.properties]]
+name = "vibrationActuator"
+type = "any"
+description = "The browser's vibration actuator for the pad, or null."
+
+[[objects.properties]]
+name = "buttons"
+type = "Array<GamepadButton>"
+description = "Button states, in the browser's button order."
+
+[[objects.properties]]
+name = "axes"
+type = "Array<number>"
+description = """
+Axis values from -1 to 1 after the dead zone set by setGamepadSensitivity(): values inside it \
+read 0, and values outside it are scaled to start from 0."""
+
+[[objects.properties]]
+name = "lastAxes"
+type = "Array<number>"
+description = "Axis values at the previous read."
+
+[[objects.properties]]
+name = "getButton"
+type = "function"
+signature = "( buttonIndex: number ) => GamepadButton | null"
+description = "Reads the button object, or null for an index outside the buttons array."
+
+[[objects.properties]]
+name = "getButtonPressed"
+type = "function"
+signature = "( buttonIndex: number ) => boolean | null"
+description = "Reads whether the button is held, or null for an index outside the buttons array."
+
+[[objects.properties]]
+name = "getButtonJustPressed"
+type = "function"
+signature = "( buttonIndex: number ) => boolean"
+description = "Reads whether the button was pressed since the previous read; false out of range."
+
+[[objects.properties]]
+name = "getButtonJustReleased"
+type = "function"
+signature = "( buttonIndex: number ) => boolean"
+description = "Reads whether the button was released since the previous read; false out of range."
+
+[[objects.properties]]
+name = "getAxis"
+type = "function"
+signature = "( axisIndex: number ) => number"
+description = "Reads the axis value; 0 for an index outside the axes array."
+
+[[objects.properties]]
+name = "getAxisChanged"
+type = "function"
+signature = "( axisIndex: number ) => boolean"
+description = "Reads whether the axis value differs from the previous read; false out of range."

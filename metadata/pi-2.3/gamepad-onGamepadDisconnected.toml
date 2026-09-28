@@ -1,0 +1,34 @@
+title = "onGamepadDisconnected"
+category = "gamepad"
+isScreen = false
+plugin = "gamepad"
+summary = "Registers a callback function for when a gamepad is disconnected."
+description = """
+Registers a callback that runs when a gamepad disconnects. The callback receives the pad's
+index, id, mapping, and connected status (false), not its GamepadData. The pad has already left
+the list that ingamepad() returns when the callback runs.
+
+Registering starts polling, even after stopGamepad(). A callback that throws is reported with
+console.error(), and the other callbacks still run. clearEvents( "gamepad" ) removes every
+callback.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Connect gamepad and press a button or move an axis to connect" );
+$.onGamepadConnected( ( gamepad ) => {
+	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
+} );
+$.onGamepadDisconnected( ( gamepad ) => {
+	$.print( `Gamepad ${gamepad.index} disconnected: ${gamepad.id}` );
+} );
+"""
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( data: { index: number, id: string, mapping: string, connected: boolean } ) => void"
+description = "Callback function that receives the pad's index, id, mapping, and connected status."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

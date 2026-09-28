@@ -539,3 +539,33 @@ test outside the offscreen check).
 - **After**: `pointer-events` 23 Node tests; `pointer-browser` 3; 30 full and 20 lite visual
   fixtures
 - **Pass Rate**: 100%
+
+## 2.3 Gamepad 1.7: Browser Test Wiring
+
+Date: 2026-09-28. Plan: `docs/plans/v2.3/ROADMAP.md`, Section 7.1, task 1.7 (PAD-015,
+`docs/plans/v2.3/AUDIT-TESTS.md` §5.4).
+
+### Summary
+`gamepad-validation-browser.test.js` keeps only bundle wiring, since the Node harness in
+`gamepad-validation.test.js` (Gamepad 1.1-1.6) tests the plugin's logic. For the Full bundle and
+for Lite with the standalone plugin, each with positional and object arguments, it checks that
+the six commands are registered, that one valid and one invalid dead zone reach the plugin, that
+a pad is read through `navigator.getGamepads()`, and that `clearEvents( "gamepad" )` is known.
+
+### Removed Test Cases
+Each removal was checked by a deliberate break in `plugins/gamepad/index.js`, made and reverted
+in the working tree:
+1. The 13 invalid sensitivity values checked per bundle and argument form, each followed by an
+   axis update. Covered by the 16 Node tests "SYS-021 invalid sensitivity ... preserves
+   polling", and by the browser test's remaining invalid value, which still crosses both
+   argument forms in both bundles. Break: a string sensitivity is accepted; nine Node tests
+   fail.
+2. The boundary sensitivities 0, -0, 0.5, and 1 per bundle and argument form. Covered by the
+   Node test "SYS-021 default, fractional and boundary sensitivities retain finite axis
+   output". Break: a sensitivity of 1 is not clamped below 1; that test fails.
+
+### Test Results
+- **Before**: `gamepad-validation-browser` 4 tests, each running the full validation matrix
+- **After**: `gamepad-validation-browser` 4 tests of bundle wiring; `gamepad-validation` 35
+  Node tests
+- **Pass Rate**: 100%
