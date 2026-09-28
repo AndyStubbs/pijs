@@ -1,7 +1,7 @@
 /**
  * Pointer regressions against a fresh in-memory full bundle: offscreen command validation, noCss
- * pointer bounds, and a release outside the canvas with trusted input. Owned by the pointer
- * workstream.
+ * pointer bounds, a release outside the canvas with trusted input, and the screens that each
+ * form of clearEvents() clears. Owned by the pointer workstream.
  * Run with node --test test/unit/pointer-browser.test.js; no server is required.
  */
 import * as g_test from "node:test";
@@ -173,4 +173,66 @@ test( "a trusted mouse release outside the canvas is released once (T1)", async 
 	} finally {
 		await page.close();
 	}
+} );
+
+test( "Core 13: a screen's clearEvents() clears its own pointer handlers, $.clearEvents() every " +
+	"screen's (I10)", async () => {
+	assert.deepEqual( await probe( () => {
+		const first = $.screen( { "aspect": "8x8", "container": "host" } );
+		const second = $.screen( { "aspect": "8x8", "container": "host" } );
+		const screens = [ [ "first", first ], [ "second", second ] ];
+
+		// A mouse press and a touch on one canvas, each released
+		function input( screen ) {
+			const canvas = screen.canvas();
+			const rect = canvas.getBoundingClientRect();
+			const at = { "clientX": rect.left + 1, "clientY": rect.top + 1 };
+			canvas.dispatchEvent( new MouseEvent( "mousedown", {
+				"bubbles": true, "button": 0, "buttons": 1, ...at
+			} ) );
+			window.dispatchEvent( new MouseEvent( "mouseup", {
+				"bubbles": true, "button": 0, "buttons": 0, ...at
+			} ) );
+			const touch = new Touch( { "identifier": 1, "target": canvas, ...at } );
+			canvas.dispatchEvent( new TouchEvent( "touchstart", {
+				"bubbles": true, "cancelable": true, "touches": [ touch ],
+				"changedTouches": [ touch ]
+			} ) );
+			canvas.dispatchEvent( new TouchEvent( "touchend", {
+				"bubbles": true, "cancelable": true, "touches": [], "changedTouches": [ touch ]
+			} ) );
+		}
+
+		// The second screen is the active one
+		const cases = [
+			() => first.clearEvents(),
+			() => second.clearEvents( "mouse" ),
+			() => $.clearEvents(),
+			() => $.clearEvents( "touch" ),
+			() => $.clearEvents( "press" )
+		];
+		return cases.map( clear => {
+			const log = new Set();
+			for( const [ name, screen ] of screens ) {
+				screen.onmouse( "down", () => log.add( name + " mouse" ) );
+				screen.ontouch( "start", () => log.add( name + " touch" ) );
+				screen.onpress( "down", () => log.add( name + " press" ) );
+				screen.onclick( () => log.add( name + " click" ) );
+			}
+			clear();
+			input( first );
+			input( second );
+			first.clearEvents();
+			second.clearEvents();
+			return Array.from( log ).sort();
+		} );
+	} ), [
+		[ "second click", "second mouse", "second press", "second touch" ],
+		[ "first click", "first mouse", "first press", "first touch", "second click",
+			"second press", "second touch" ],
+		[],
+		[ "first click", "first mouse", "first press", "second click", "second mouse",
+			"second press" ],
+		[ "first mouse", "first touch", "second mouse", "second touch" ]
+	] );
 } );

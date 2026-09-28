@@ -162,7 +162,7 @@ test( "a failed plugin commits nothing and its name can be registered again", ()
 		throw new Error( "expected" );
 	} ) ), { "code": "PLUGIN_INIT_FAILED" } );
 	assert.deepEqual( registrations, [] );
-	commands.clearEvents( null, {} );
+	commands.clearEvents( {} );
 	assert.deepEqual( cleared, [] );
 	assert.deepEqual( states( commands ), [ [ "bad", "failed" ] ] );
 
@@ -178,7 +178,7 @@ test( "a failed plugin commits nothing and its name can be registered again", ()
 	} ) );
 	assert.deepEqual( initialized, [ "bad", "dependent" ] );
 	assert.deepEqual( registrations, [ [ "command", "goodCmd" ] ] );
-	commands.clearEvents( null, {} );
+	commands.clearEvents( {} );
 	assert.deepEqual( cleared, [ "bad" ] );
 	assert.deepEqual( states( commands ), [
 		[ "dependent", "initialized" ], [ "bad", "initialized" ]
@@ -292,6 +292,18 @@ test( "registerClearEvents rejects names committed earlier or pending in the sam
 	assert.deepEqual( errors, [
 		[ "shared", "DUPLICATE_HANDLER" ], [ "OWN", "DUPLICATE_HANDLER" ]
 	] );
+} );
+
+test( "Core 13: $.clearEvents() passes no screen to the clear handlers (I10)", () => {
+	const commands = g_harness.createPluginRegistry();
+	const seen = [];
+	commands.registerPlugin( plugin( "probe", [], api => {
+		api.registerClearEvents( "first", screenData => seen.push( [ "first", screenData ] ) );
+		api.registerClearEvents( "second", screenData => seen.push( [ "second", screenData ] ) );
+	} ) );
+	commands.clearEvents( {} );
+	commands.clearEvents( { "type": "second" } );
+	assert.deepEqual( seen, [ [ "first", null ], [ "second", null ], [ "second", null ] ] );
 } );
 
 test( "plugin dependencies resolve in initialization order after late registration", () => {

@@ -137,13 +137,14 @@ function harness() {
 	}
 
 	/**
-	 * Clear handlers as `clearEvents()` does.
+	 * Clear handlers as `clearEvents()` does: `$.clearEvents()` passes no screen, and a screen's
+	 * `clearEvents()` passes that screen.
 	 *
 	 * @param {string} [type] - Handler type; all pointer types when omitted.
 	 * @param {Object|null} [screenData] - Screen to clear; every screen when `null`.
 	 * @returns {void}
 	 */
-	function clearEvents( type, screenData = activeScreen ) {
+	function clearEvents( type, screenData = null ) {
 		let types = [ type ];
 		if( type === undefined ) {
 			types = Object.keys( clearHandlers );

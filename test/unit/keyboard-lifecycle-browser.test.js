@@ -108,15 +108,16 @@ for( const bundle of g_harness.BUNDLES ) {
 					window.dispatchEvent( new KeyboardEvent( "keyup", init ) );
 				}
 
-				// The second screen is the active one, so $.clearEvents() is called from it
+				// The second screen is the active one; $.clearEvents() cancels every prompt, the
+				// first screen's included
 				const first = $.screen( "160x80" );
 				const second = $.screen( "160x80" );
 				const cases = [
 					[ first, () => second.clearEvents( "keyboard" ) ],
 					[ second, () => first.clearEvents( "keyboard" ) ],
 					[ first, () => first.clearEvents( "keyboard" ) ],
-					[ second, () => $.clearEvents( "keyboard" ) ],
-					[ second, () => $.clearEvents() ]
+					[ first, () => $.clearEvents( "keyboard" ) ],
+					[ first, () => $.clearEvents() ]
 				];
 				const results = [];
 				for( const [ owner, clear ] of cases ) {
