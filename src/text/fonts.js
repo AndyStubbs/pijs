@@ -85,14 +85,19 @@ function loadDefaultFonts() {
 	} );
 	g_fnt6x6.data = "";
 
-	// 6x8 font - default font
+	// 6x8 font - default font. Its canvas is Pi.js's own and never changes except through
+	// setChar, so it is uploaded once per context, and setChar can edit it in place
+	const defaultImage = g_fnt6x8.getFontImage();
+	defaultImage.isDirty = false;
+	defaultImage.version = 0;
 	m_defaultFontId = loadFont( {
-		"src": g_fnt6x8.getFontImage(),
+		"src": defaultImage,
 		"width": 6,
 		"height": 8,
 		"margin": 0,
 		"charset": null
 	} );
+	m_fontMap.get( m_defaultFontId ).isEditable = true;
 
 	// 8x8 font
 	loadFont( {
@@ -219,7 +224,10 @@ function loadFont( options ) {
 		"charset": charset,
 		"image": null,
 		"atlasWidth": null,
-		"atlasHeight": null
+		"atlasHeight": null,
+
+		// Whether image is a static canvas that setChar may edit
+		"isEditable": false
 	};
 
 	// Complete synchronous setup before assigning an ID or publishing the font.
@@ -524,6 +532,39 @@ function setChar( screenData, options ) {
 		}
 	}
 
-	// Update only the glyph region in the GPU texture
-	g_renderer.updateWebGL2TextureSubImage( screenData, font.image, buf, sw, sh, sx, sy );
+	// Edit the glyph in the font's own canvas. The new version reaches every screen's texture
+	// on its next lookup, after any text already queued with the old glyph is drawn, and a
+	// restored context uploads the edited canvas
+	const atlas = getEditableAtlas( font );
+	const context = atlas.getContext( "2d" );
+	const glyph = context.createImageData( sw, sh );
+	glyph.data.set( buf );
+	context.putImageData( glyph, sx, sy );
+	atlas.version += 1;
+}
+
+/**
+ * The font's image as a static canvas that setChar may edit. An image, or a canvas the font
+ * does not own, is copied into a new canvas the first time, so the source is never modified,
+ * and the textures of the old image are released on every screen.
+ *
+ * @param {Object} font - Font object with a loaded image
+ * @returns {HTMLCanvasElement} Editable atlas canvas
+ */
+function getEditableAtlas( font ) {
+	if( font.isEditable ) {
+		return font.image;
+	}
+	const canvas = document.createElement( "canvas" );
+	canvas.width = font.atlasWidth;
+	canvas.height = font.atlasHeight;
+	canvas.getContext( "2d" ).drawImage( font.image, 0, 0 );
+	canvas.isDirty = false;
+	canvas.version = 0;
+	for( const screenData of g_screenManager.getAllScreensData() ) {
+		g_renderer.deleteWebGL2Texture( screenData, font.image );
+	}
+	font.image = canvas;
+	font.isEditable = true;
+	return canvas;
 }

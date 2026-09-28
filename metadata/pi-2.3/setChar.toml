@@ -1,0 +1,41 @@
+title = "setChar"
+category = "text"
+isScreen = true
+summary = "Sets a custom character bitmap in the current font."
+description = """
+Modifies a character in the current screen's font atlas by replacing its bitmap data. The character
+must exist in the font's character set. The data can be provided as a 2D array of 0/1 values or
+as a hex-encoded string.
+
+The font is shared, so the change applies on every screen that uses it, from the next time the
+character is printed; text printed before the change keeps the old glyph. The edit is made to the
+font's own copy of its image, so the image or canvas it was loaded from is not modified, and the
+change survives a lost and restored WebGL context.
+"""
+example = """
+$.screen( "300x200" );
+$.setFont( 2 );
+$.setChar( 97, "1092ba547cc6fe92" );
+$.setChar( 98, "423c2418187e1818" );
+$.setChar( 99, "7cd67cfec6aafe00" );
+$.setChar( 100, "00183c667e5a42c3" );
+$.setChar( 101, "008199FFDBFFBD18" );
+
+$.print( " abcde f" );
+"""
+
+[[parameters]]
+name = "charCode"
+type = "number | string"
+typeDesc = "*Many"
+description = "Character code (number) or single-character string to modify."
+
+[[parameters]]
+name = "data"
+type = "array | string"
+typeDesc = "*Many"
+description = "Character bitmap as 2D array [[row...], ...] where 1=on, 0=off, or hex-encoded string."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

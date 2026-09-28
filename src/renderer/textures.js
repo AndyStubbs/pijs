@@ -15,6 +15,9 @@ import * as g_batches from "./batches.js";
 
 const m_textureSizes = new WeakMap();
 
+// The version of a static canvas source that each texture last received
+const m_textureVersions = new WeakMap();
+
 
 /*************************************************************************************************
  * Module Initialization
@@ -67,6 +70,7 @@ function copyImageToTexture( screenData, img, texture ) {
 			"width": img.videoWidth || img.naturalWidth || img.width,
 			"height": img.videoHeight || img.naturalHeight || img.height
 		} );
+		m_textureVersions.set( texture, img.version );
 	} finally {
 		gl.pixelStorei( gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, premultiply );
 		gl.bindFramebuffer( gl.READ_FRAMEBUFFER, read );
@@ -262,10 +266,13 @@ function resolveWebGL2Texture( screenData, img ) {
 			img.isMock
 		) {
 
-			// If the img.isDirty is not defined then assume it's dirty, otherwise only if it's
-			// explicitly set to false then we don't perform the copy, this makes it so that the
-			// default behavior is to copy the texture.
-			if( !isVideo && img.isDirty === false ) {
+			// A canvas is copied on every lookup unless it is marked static with isDirty set
+			// to false. A static canvas that is edited, as setChar edits a font atlas, bumps
+			// its version, and each texture is copied again once for the new version.
+			if(
+				!isVideo && img.isDirty === false &&
+				m_textureVersions.get( texture ) === img.version
+			) {
 				return texture;
 			}
 

@@ -1849,7 +1849,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * Modifies a character in the current screen's font atlas by replacing its bitmap data. The character must exist in the font's character set. The data can be provided as a 2D array of 0/1 values or as a hex-encoded string.
 		 *
-		 * This updates the WebGL texture for the font, so the change is immediately visible when that character is printed.
+		 * The font is shared, so the change applies on every screen that uses it, from the next time the character is printed; text printed before the change keeps the old glyph. The edit is made to the font's own copy of its image, so the image or canvas it was loaded from is not modified, and the change survives a lost and restored WebGL context.
 		 * @param charCode Character code (number) or single-character string to modify.
 		 * @param data Character bitmap as 2D array [[row...], ...] where 1=on, 0=off, or hex-encoded string.
 		 * @returns This function does not return a value.
