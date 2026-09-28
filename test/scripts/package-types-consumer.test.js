@@ -280,6 +280,7 @@ function createConsumerPackage() {
 			`pi.synth( pi.generateSfx( "coin" ) );`,
 			`pi.defineInstrument( 7, { oType: "square" } );`,
 			`pi.defineInstrument( 7, null );`,
+			`pi.defineInstrument( 8, { audio: "piano", rootFrequency: 440, loop: true } );`,
 			`pi.setBusEffect( "sfx", "delay", { time: 0.3 } );`,
 			`pi.setBusEffect( "sfx", null );`,
 			`pi.setBusEffect( "music", [`,

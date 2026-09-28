@@ -8,7 +8,9 @@ Requires the sound-advanced plugin. Stores synth() options as instrument number 
 
 An instrument replaces only the options it sets. oType (including "pulse" with duty) replaces the waveform. attackTime, decayTime, sustainLevel, and releaseTime are in seconds and replace the note's envelope stage; stages left out keep the play() values from MA, MD, MH, and MR. volume scales each note's volume, and pan replaces its position. frequency fixes the pitch of every note, which suits drums, and frequencyEnd sweeps each note to that pitch. Filter, vibrato, tremolo, and arpeggio options apply to every note.
 
-play() reads the instrument when it is called, so redefining an instrument changes later songs only, not a song already playing. params of null removes the instrument.
+A sample instrument plays an audio file instead of a waveform. audio is the name of a file loaded with loadAudio(); rootFrequency (default 261.63, C4) is the pitch at which the file plays at its own speed, and each note changes the playback rate, so pitch and length change together. loop (default false) repeats the file until the note's release ends; otherwise the note ends when the file does, if that is sooner. The envelope, volume, pan, frequency, frequencyEnd, filter, vibrato, tremolo, and arpeggio options apply as for synthesized instruments. The file does not have to be loaded when the instrument is defined. audio must be a non-empty string (INVALID_AUDIO), rootFrequency a finite number greater than 0 (INVALID_ROOT_FREQUENCY), and loop a boolean (INVALID_LOOP). audio with oType, or rootFrequency or loop without audio, throws INVALID_INSTRUMENT.
+
+play() reads the instrument when it is called, so redefining an instrument changes later songs only, not a song already playing. A sample instrument's notes in a song started while its file is loading, or is streamed, are silent, with one console warning per instrument and play() call; wait with ready() first. params of null removes the instrument.
 
 Built-in instruments: 1 square lead, 2 pluck bass, 3 pad, 4 noise snare, 5 hi-hat, and 6 kick drum.
 """
@@ -24,8 +26,11 @@ $.defineInstrument( 7, {
 } );
 $.screen( "300x200" );
 $.print( "Press any key to play" );
+$.loadAudio( "piano-c4.ogg", "piano" );
+$.defineInstrument( 8, { "audio": "piano", "releaseTime": 0.3 } );
 $.onKey( "any", "down", () => {
 	$.play( "@7 T140 O4 L8 C E G O5 C4, @2 O2 L4 C G, @6 L4 C C" );
+	$.play( "@8 T140 O3 L4 C G O4 C O3 G" );
 } );
 """
 
@@ -37,4 +42,4 @@ description = "Instrument number, 1-255."
 [[parameters]]
 name = "params"
 type = "object | null"
-description = "synth() options, or null to remove the instrument."
+description = "synth() options, plus audio, rootFrequency, and loop for a sample instrument, or null to remove the instrument."
