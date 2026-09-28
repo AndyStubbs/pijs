@@ -645,23 +645,21 @@ function findHeldKey( key, held = m_heldCodes ) {
 
 
 /**
- * Clear all keyboard event handlers
- * Called by clearEvents command and exported for use by other modules
+ * Clear keyboard events for clearEvents( "keyboard" ). Key handlers are global, so every handler
+ * is removed whichever screen calls, and handlers removed during a dispatch do not run later in
+ * it. The input() prompt is cancelled when no screen is given or the screen owns it. Tracking,
+ * held keys, and action keys are unchanged.
  *
- * @param {Object} [screenData] - Screen data to clear events for specific screen
+ * @param {Object|null} [screenData] - The calling screen, or none.
  * @returns {void}
  */
 export function clearKeyboardEvents( screenData ) {
-
-	// Clear all keyboard event handlers
-	for( const mode in m_onKeyHandlers ) {
-		for( const handler of m_onKeyHandlers[ mode ] ) {
+	for( const key in m_onKeyHandlers ) {
+		for( const handler of m_onKeyHandlers[ key ] ) {
 			handler.isRemoved = true;
 		}
-		delete m_onKeyHandlers[ mode ];
+		delete m_onKeyHandlers[ key ];
 	}
-
-	// Cancel all active input prompts
 	g_input.cancelAllInputs( screenData );
 }
 

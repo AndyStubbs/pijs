@@ -99,6 +99,40 @@ for( const bundle of g_harness.BUNDLES ) {
 		] ] );
 	} );
 
+	test( `KEY-016 ${bundle}: clearEvents( "keyboard" ) clears key handlers from any screen (I10)`,
+		async () => {
+			assert.deepEqual( await probe( bundle, async () => {
+				function type( key, code ) {
+					const init = { "key": key, "code": code };
+					window.dispatchEvent( new KeyboardEvent( "keydown", init ) );
+					window.dispatchEvent( new KeyboardEvent( "keyup", init ) );
+				}
+
+				// The second screen is the active one, so $.clearEvents() is called from it
+				const first = $.screen( "160x80" );
+				const second = $.screen( "160x80" );
+				const cases = [
+					[ first, () => second.clearEvents( "keyboard" ) ],
+					[ second, () => first.clearEvents( "keyboard" ) ],
+					[ first, () => first.clearEvents( "keyboard" ) ],
+					[ second, () => $.clearEvents( "keyboard" ) ],
+					[ second, () => $.clearEvents() ]
+				];
+				const results = [];
+				for( const [ owner, clear ] of cases ) {
+					let calls = 0;
+					$.onKey( "KeyA", "down", () => calls++ );
+					$.onKey( "any", "up", () => calls++ );
+					const prompt = owner.input( "?" );
+					clear();
+					type( "a", "KeyA" );
+					type( "Enter", "Enter" );
+					results.push( [ calls, await prompt ] );
+				}
+				return results;
+			} ), [ [ 0, "a" ], [ 0, "a" ], [ 0, null ], [ 0, null ], [ 0, null ] ] );
+		} );
+
 	test( `KEY-001 ${bundle}: native keys released with a different value are not held (K1n)`,
 		async () => {
 			const { page, errors } = await open( bundle );

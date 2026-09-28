@@ -1129,7 +1129,7 @@ declare namespace Pi {
 		 *
 		 * Clears queued/registered events. If type is provided, clears only that event type; otherwise clears events for all registered types.
 		 *
-		 * The pointer plugin registers "mouse", "touch", and "press"; "press" also clears click handlers. The gamepad plugin registers "gamepad", which removes every onGamepadConnected and onGamepadDisconnected callback, whichever screen it is called from. Clearing handlers does not stop tracking or polling.
+		 * The pointer plugin registers "mouse", "touch", and "press"; "press" also clears click handlers. The gamepad plugin registers "gamepad", which removes every onGamepadConnected and onGamepadDisconnected callback, whichever screen it is called from. The keyboard plugin registers "keyboard", which removes every onKey() handler, whichever screen it is called from, and cancels an input() prompt only when called from the screen that owns it; $.clearEvents() is called from the active screen. Clearing handlers does not stop tracking or polling.
 		 * @param type Optional type to clear (e.g., "keyboard", "mouse", "touch", "press", "gamepad").
 		 * @returns This function does not return a value.
 		 */
