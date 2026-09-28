@@ -20,8 +20,11 @@ const m_gamepads = {};
 
 // Per pad: the state the loop last saw, and the edges it accumulated since the last read
 const m_padStates = {};
-const m_onConnectHandlers = [];
-const m_onDisconnectHandlers = [];
+
+// Handler registrations: { fn, isRemoved }. A registration removed during a dispatch is
+// skipped for the rest of it
+let m_onConnectHandlers = [];
+let m_onDisconnectHandlers = [];
 
 let m_isInitialized = false;
 let m_isStopped = false;
@@ -77,6 +80,16 @@ export default function gamepadPlugin( pluginApi ) {
  * @returns {void}
  */
 function startGamepad() {
+
+	// Remove explicit stops
+	m_isStopped = false;
+
+	// Schedule the loop before the scan, so a failing connect handler cannot leave it off
+	if( !m_isLooping ) {
+		m_isLooping = true;
+		m_gamepadLoopId = requestAnimationFrame( gamepadLoop );
+	}
+
 	if( !m_isInitialized ) {
 		window.addEventListener( "gamepadconnected", gamepadConnected );
 		window.addEventListener( "gamepaddisconnected", gamepadDisconnected );
@@ -84,14 +97,6 @@ function startGamepad() {
 
 		// Scan for already-connected gamepads
 		scanForGamepads();
-	}
-
-	// Remove explicit stops
-	m_isStopped = false;
-
-	if( !m_isLooping ) {
-		m_isLooping = true;
-		m_gamepadLoopId = requestAnimationFrame( gamepadLoop );
 	}
 }
 
@@ -190,7 +195,7 @@ function onGamepadConnected( options ) {
 		throw error;
 	}
 
-	m_onConnectHandlers.push( fn );
+	m_onConnectHandlers.push( { "fn": fn, "isRemoved": false } );
 	startGamepad();
 }
 
@@ -209,7 +214,7 @@ function onGamepadDisconnected( options ) {
 		throw error;
 	}
 
-	m_onDisconnectHandlers.push( fn );
+	m_onDisconnectHandlers.push( { "fn": fn, "isRemoved": false } );
 	startGamepad();
 }
 
@@ -225,15 +230,10 @@ function gamepadConnected( e ) {
 	recordGamepad( e.gamepad );
 
 	// Trigger connect handlers
-	const gamepadData = m_gamepads[ e.gamepad.index ];
-	for( const handler of m_onConnectHandlers ) {
-		handler( gamepadData );
-	}
+	dispatch( m_onConnectHandlers, m_gamepads[ e.gamepad.index ], "onGamepadConnected" );
 }
 
 function gamepadDisconnected( e ) {
-
-	// Trigger disconnect handlers
 	const data = {
 		"index": e.gamepad.index,
 		"id": e.gamepad.id,
@@ -241,12 +241,35 @@ function gamepadDisconnected( e ) {
 		"connected": e.gamepad.connected
 	};
 
-	for( const handler of m_onDisconnectHandlers ) {
-		handler( data );
-	}
-
+	// The pad leaves the list before the handlers run, so a failing handler cannot keep it
 	delete m_gamepads[ e.gamepad.index ];
 	delete m_padStates[ e.gamepad.index ];
+
+	// Trigger disconnect handlers
+	dispatch( m_onDisconnectHandlers, data, "onGamepadDisconnected" );
+}
+
+/**
+ * Call each handler with the data. Handlers added during the dispatch first run in the next
+ * one, and a handler removed during it does not run later in it. A handler that throws is
+ * reported with `console.error`, and the others still run.
+ *
+ * @param {Array<Object>} handlers - Handler registrations.
+ * @param {Object} data - Data passed to each handler.
+ * @param {string} command - Command that registered the handlers, for error messages.
+ * @returns {void}
+ */
+function dispatch( handlers, data, command ) {
+	for( const handler of handlers.slice() ) {
+		if( handler.isRemoved ) {
+			continue;
+		}
+		try {
+			handler.fn( data );
+		} catch( error ) {
+			console.error( `${command}: Handler failed:`, error );
+		}
+	}
 }
 
 function gamepadLoop() {
@@ -276,17 +299,16 @@ function scanForGamepads() {
 		gamepads = [];
 	}
 
-	// Add any gamepads that are already connected but not in our list
+	// Add any gamepads that are already connected but not in our list, then tell the handlers
+	const found = [];
 	for( let i = 0; i < gamepads.length; i++ ) {
 		if( gamepads[ i ] && !( gamepads[ i ].index in m_gamepads ) ) {
 			recordGamepad( gamepads[ i ] );
-
-			// Trigger connect handlers for pre-connected gamepads
-			const gamepadData = m_gamepads[ gamepads[ i ].index ];
-			for( const handler of m_onConnectHandlers ) {
-				handler( gamepadData );
-			}
+			found.push( m_gamepads[ gamepads[ i ].index ] );
 		}
+	}
+	for( const gamepadData of found ) {
+		dispatch( m_onConnectHandlers, gamepadData, "onGamepadConnected" );
 	}
 }
 
@@ -532,8 +554,11 @@ function onVisibilityChange() {
  * @returns {void}
  */
 function clearGamepadEvents( screenData ) {
-	m_onConnectHandlers.length = 0;
-	m_onDisconnectHandlers.length = 0;
+	for( const handler of m_onConnectHandlers.concat( m_onDisconnectHandlers ) ) {
+		handler.isRemoved = true;
+	}
+	m_onConnectHandlers = [];
+	m_onDisconnectHandlers = [];
 }
 
 // Auto-register in IIFE mode (when loaded via <script> tag)

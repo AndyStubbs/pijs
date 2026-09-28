@@ -430,3 +430,80 @@ test( "PAD-002 a hidden page releases the pads until it is visible again", () =>
 	h.frame();
 	assert.deepEqual( state(), [ false, false, true, 1 ] );
 } );
+
+test( "PAD-003 a throwing handler is reported and leaves no ghost pad (P5)", () => {
+	const h = createHarness();
+	h.setPad( 0 );
+	h.setPad( 1 );
+	h.$.startGamepad();
+	h.frame();
+	const later = [];
+	h.$.onGamepadDisconnected( () => { throw new Error( "disconnect handler" ); } );
+	h.$.onGamepadDisconnected( data => {
+		later.push( [ data.index, Array.from( h.$.ingamepad(), pad => pad.index ) ] );
+	} );
+	h.disconnect( 1 );
+	h.frame();
+	assert.deepEqual( later, [ [ 1, [ 0 ] ] ] );
+	assert.deepEqual( Array.from( h.$.ingamepad(), pad => pad.index ), [ 0 ] );
+
+	// The connect path
+	h.clearEvents();
+	const laterConnect = [];
+	h.$.onGamepadConnected( () => { throw new Error( "connect handler" ); } );
+	h.$.onGamepadConnected( pad => { laterConnect.push( pad.index ); } );
+	h.setPad( 2 );
+	h.connect( 2 );
+	assert.deepEqual( laterConnect, [ 2 ] );
+	assert.deepEqual( h.errors.map( args => [ args[ 0 ], args[ 1 ].message ] ), [
+		[ "onGamepadDisconnected: Handler failed:", "disconnect handler" ],
+		[ "onGamepadConnected: Handler failed:", "connect handler" ]
+	] );
+} );
+
+test( "PAD-004 a throwing handler in the start-up scan leaves polling running (P5b)", () => {
+	const h = createHarness();
+	h.setPad( 0 );
+	h.setPad( 1 );
+	const seen = [];
+	h.$.onGamepadConnected( pad => {
+		seen.push( pad.index );
+		throw new Error( "scan handler" );
+	} );
+	assert.deepEqual( seen, [ 0, 1 ] );
+	assert.equal( h.frames.size, 1 );
+	assert.equal( h.errors.length, 2 );
+	h.setPad( 0, { "buttons": [ true, false, false, false ] } );
+	h.frame();
+	assert.equal( h.$.ingamepad( 0 ).getButtonJustPressed( 0 ), true );
+} );
+
+test( "PAD-007 handlers added or cleared during a dispatch wait for the next event (P6)", () => {
+	const h = createHarness();
+	const calls = [];
+	h.$.startGamepad();
+	h.$.onGamepadConnected( () => {
+		calls.push( "first" );
+		if( calls.length === 1 ) {
+			h.$.onGamepadConnected( () => { calls.push( "added" ); } );
+		}
+	} );
+	h.setPad( 0 );
+	h.connect( 0 );
+	assert.deepEqual( calls, [ "first" ] );
+	h.setPad( 1 );
+	h.connect( 1 );
+	assert.deepEqual( calls, [ "first", "first", "added" ] );
+
+	// A clear during a dispatch stops the rest of it
+	calls.length = 0;
+	h.clearEvents();
+	h.$.onGamepadDisconnected( () => {
+		calls.push( "clearing" );
+		h.clearEvents();
+	} );
+	h.$.onGamepadDisconnected( () => { calls.push( "cleared" ); } );
+	h.disconnect( 0 );
+	h.disconnect( 1 );
+	assert.deepEqual( calls, [ "clearing" ] );
+} );
