@@ -20,7 +20,12 @@ of the keyup, so its modifier state is the state at the release. A release runs 
 the key's code, of the value it reports, and of the value the key was pressed with, when a
 modifier changed it during the hold. Single-key and "any" up handlers run even for a key whose
 press was not seen. A combination's up handler runs when one of its keys is released while all
-were held, with the release data for that key.
+were held, with the release data for that key and the held data for the others.
+
+Key state is updated before handlers run: in a "down" handler, inKey() reports the pressed key,
+and in an "up" handler, it no longer reports the released key. A handler registered while an
+event is being handled first runs for the next event, and a handler removed then is not called
+for the rest of it.
 
 Keys the player did not release are released through the "up" handlers too, with cancelled set
 to true: when the window loses focus, the page is hidden, stopKeyboard() is called, a key comes
@@ -35,7 +40,7 @@ called.
 
 Key data objects are frozen and carry cancelled, false unless the release was cancelled. Keys
 typed into an editable element, such as an input field, are ignored. A callback that throws
-does not stop the others; its error is rethrown afterward.
+does not stop the others; its error is reported with console.error().
 """
 example = """
 $.screen( "300x200" );

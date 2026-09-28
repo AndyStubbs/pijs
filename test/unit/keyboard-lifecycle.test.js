@@ -44,6 +44,7 @@ function harness() {
 	const timers = new Map();
 	const images = new Map();
 	const microtasks = [];
+	const errors = [];
 	const hooks = [];
 	const commands = {};
 	const screenCommands = [];
@@ -72,7 +73,7 @@ function harness() {
 	const window = g_harness.createEventTarget();
 	const document = g_harness.createEventTarget( { "body": body, "activeElement": body } );
 	const globals = {
-		"console": console,
+		"console": { "error": ( ...args ) => errors.push( args ) },
 		"setInterval": fn => { timers.set( ++nextTimer, fn ); return nextTimer; },
 		"clearInterval": id => timers.delete( id ),
 		"Date": { "now": () => clock.now },
@@ -186,7 +187,7 @@ function harness() {
 	function clearEvents( type, screenData = null ) {
 		clearHandlers[ type ]( screenData );
 	}
-	return { api, keyboard, input, commands, timers, images, microtasks, first, screen,
+	return { api, keyboard, input, commands, timers, images, microtasks, errors, first, screen,
 		start, dispose, key, clearEvents, window, document, body, clock };
 }
 
@@ -367,8 +368,8 @@ for( const binding of [ "a", "any", [ "a", "b" ] ] ) {
 			assert.equal( calls, 1 );
 			assert.equal( vm.runInContext( "Object.keys( m_onKeyHandlers ).length", h.keyboard ), 0 );
 			if( behavior === "throw" ) {
-				assert.equal( h.microtasks.length, 1 );
-				assert.throws( h.microtasks.shift(), value => value === error );
+				assert.equal( h.errors.length, 1 );
+				assert.equal( h.errors[ 0 ][ 1 ], error );
 			}
 		} );
 	}
@@ -380,17 +381,22 @@ test( "SYS-011 keyup errors preserve combinations, release and default preventio
 	const seen = [];
 	h.api.setActionKeys( [ "a" ] );
 	h.api.onKey( "a", "up", () => { throw errors[ 0 ]; } );
-	h.api.onKey( [ "a", "b" ], "up", data => seen.push( data.length ) );
+	h.api.onKey( [ "a", "b" ], "up", data => {
+		seen.push( data.length, h.api.inKey( "a" ) === null );
+	} );
 	h.api.onKey( "any", "up", () => { throw errors[ 1 ]; } );
 	h.api.onKey( "any", "up", data => seen.push( data.key ) );
 	h.key( "a" ); h.key( "b" );
 	let event;
 	assert.doesNotThrow( () => { event = h.key( "a", "up" ); } );
-	assert.deepEqual( seen, [ 2, "a" ] );
+	assert.deepEqual( seen, [ 2, true, "a" ], "the combination runs with the key released" );
 	assert.equal( h.api.inKey( "a" ), null );
 	assert.equal( event.defaultPrevented, true );
-	assert.equal( h.microtasks.length, 2 );
-	for( const error of errors ) { assert.throws( h.microtasks.shift(), value => value === error ); }
+	assert.deepEqual( h.errors.map( args => [ args[ 0 ], args[ 1 ] ] ), [
+		[ "onKey: Handler for \"up\" failed:", errors[ 0 ] ],
+		[ "onKey: Handler for \"up\" failed:", errors[ 1 ] ]
+	] );
+	assert.equal( h.microtasks.length, 0, "handler errors are not rethrown" );
 } );
 
 test( "SYS-011 nested keydown survives outer keyup cleanup", () => {
@@ -425,7 +431,7 @@ test( "SYS-011 clear during dispatch invalidates copied handlers", () => {
 	h.api.onKey( "a", "down", () => h.keyboard.clearKeyboardEvents() );
 	h.api.onKey( "a", "down", () => assert.fail( "removed callback invoked" ) );
 	assert.doesNotThrow( () => h.key( "a" ) );
-	assert.equal( h.microtasks.length, 0 );
+	assert.deepEqual( h.errors, [] );
 } );
 
 test( "SYS-011 object-form handlers register and remove like the positional form", () => {
@@ -856,11 +862,72 @@ test( "KEY-013 key data cannot be changed through inKey() or handlers (K7)", () 
 	assert.throws( () => { polled.code = "Mutated"; }, TypeError );
 	assert.throws( () => { received[ 0 ].key = "Mutated"; }, TypeError );
 	assert.equal( h.api.inKey( "KeyA" ).code, "KeyA" );
-	assert.notEqual( h.api.inKey(), h.api.inKey(), "each list read is a new array" );
+	assert.throws( () => { h.api.inKey().pop(); }, { "name": "TypeError" } );
 	h.key( "b", "up", { "code": "KeyB" } );
 	const [ , combination, release ] = received;
 	assert.ok( combination.every( data => Object.isFrozen( data ) ) );
 	assert.ok( Object.isFrozen( release ) );
+} );
+
+test( "KEY-013 inKey() returns one frozen array until the held keys change (I7, I9)", () => {
+	const h = harness();
+	const empty = h.api.inKey();
+	assert.equal( empty.length, 0 );
+	assert.ok( Object.isFrozen( empty ) );
+	assert.equal( h.api.inKey(), empty, "reads do not allocate" );
+	h.key( "a", "down", { "code": "KeyA" } );
+	const held = h.api.inKey();
+	assert.notEqual( held, empty, "a press replaces the array" );
+	assert.ok( Object.isFrozen( held ) );
+	assert.equal( h.api.inKey(), held );
+	assert.equal( held[ 0 ], h.api.inKey( "KeyA" ) );
+	h.key( "a", "down", { "code": "KeyA", "repeat": true } );
+	assert.notEqual( h.api.inKey(), held, "a repeat replaces the key data" );
+	const repeated = h.api.inKey();
+	h.key( "a", "up", { "code": "KeyA" } );
+	assert.notEqual( h.api.inKey(), repeated, "a release replaces the array" );
+	assert.equal( h.api.inKey().length, 0 );
+	assert.equal( repeated.length, 1, "an earlier array keeps its keys" );
+	assert.strictEqual( h.api.inKey( "KeyA" ), null );
+	assert.strictEqual( h.api.inKey( "b" ), null );
+} );
+
+test( "KEY-013 state is updated before handlers run, and each runs once per event (I8)", () => {
+	const h = harness();
+	const log = [];
+	h.api.onKey( "KeyA", "down", data => {
+		log.push( [ "down", h.api.inKey( "KeyA" ) === data, h.api.inKey().length ] );
+
+		// Handlers added during a dispatch first run in the next one
+		h.api.onKey( "any", "down", () => log.push( "added" ), true );
+	} );
+	h.api.onKey( "KeyA", "up", data => {
+		log.push( [ "up", h.api.inKey( "KeyA" ), h.api.inKey( "a" ), h.api.inKey().length,
+			data.code ] );
+	} );
+
+	// A combination registered under the key's code and value runs once
+	h.api.onKey( [ "KeyA", "a" ], "down", data => log.push( [ "both", data.length ] ) );
+	h.key( "a", "down", { "code": "KeyA" } );
+	assert.deepEqual( log, [ [ "down", true, 1 ], [ "both", 2 ] ] );
+	h.key( "a", "up", { "code": "KeyA" } );
+	assert.deepEqual( log.slice( 2 ), [ [ "up", null, null, 0, "KeyA" ] ] );
+	h.key( "b", "down", { "code": "KeyB" } );
+	assert.deepEqual( log.slice( 3 ), [ "added" ] );
+} );
+
+test( "KEY-013 a throwing handler is reported and the others still run (I8)", () => {
+	const h = harness();
+	const error = new Error( "down" );
+	const log = [];
+	h.api.onKey( "KeyA", "down", () => { throw error; } );
+	h.api.onKey( "a", "down", () => log.push( "value" ) );
+	h.api.onKey( "any", "down", () => log.push( "any" ) );
+	assert.doesNotThrow( () => h.key( "a", "down", { "code": "KeyA" } ) );
+	assert.deepEqual( log, [ "value", "any" ] );
+	assert.deepEqual( h.errors.map( args => [ args[ 0 ], args[ 1 ] ] ),
+		[ [ "onKey: Handler for \"down\" failed:", error ] ] );
+	assert.equal( h.microtasks.length, 0 );
 } );
 
 test( "KEY-017 setActionKeys() adds keys and removeActionKeys() removes them (K20)", () => {

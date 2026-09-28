@@ -21,12 +21,14 @@ const m_heldCodes = new Map();
 const m_actionKeys = new Set();
 const m_onKeyHandlers = {};
 
+// Frozen list of the held key data returned by inKey(), rebuilt on the first read after a change
+let m_heldList = null;
+
 // Status variables. Tracking starts on first use; after stopKeyboard() it stays stopped until
 // startKeyboard()
 let m_isKeyboardActive = false;
 let m_isStopped = false;
 let m_isReleaseListening = false;
-let m_pluginApi = null;
 
 
 /*************************************************************************************************
@@ -42,7 +44,6 @@ let m_pluginApi = null;
  * @returns {void}
  */
 export default function keyboardPlugin( pluginApi ) {
-	m_pluginApi = pluginApi;
 
 	// Register global commands
 	pluginApi.addCommand( "startKeyboard", startKeyboard, false, [] );
@@ -121,10 +122,11 @@ function stopKeyboard() {
 }
 
 /**
- * Read one active key event or all active key events.
+ * Read one held key, or all held keys. A list read returns the same frozen array until the held
+ * keys change, so polling does not allocate.
  *
  * @param {Object} options - Command options.
- * @returns {Object|Array<Object>|null}
+ * @returns {Object|Array<Object>|null} Key data or null for one key; a frozen array for all.
  */
 function inKey( options ) {
 	const key = options.key;
@@ -142,7 +144,7 @@ function inKey( options ) {
 	}
 
 	// If inKey is blank return all held keys
-	return Array.from( m_heldCodes.values() );
+	return getHeldKeys();
 }
 
 /**
@@ -185,9 +187,9 @@ function removeActionKeys( options ) {
 }
 
 /**
- * Register a handler; callback errors are reported asynchronously without stopping dispatch. A
- * handler is identified by its key set, mode, and function, so registering the same function for
- * the same keys and mode again does nothing.
+ * Register a handler; callback errors are reported with `console.error` without stopping
+ * dispatch. A handler is identified by its key set, mode, and function, so registering the same
+ * function for the same keys and mode again does nothing.
  *
  * @param {Object} options - Command options.
  * @returns {void}
@@ -324,17 +326,19 @@ function onKeyDown( event ) {
 		releaseHeldKeys();
 		return;
 	}
-	const keyData = createKeyData( event );
 
-	// The latest keydown of a code moves it to the end, so value lookups find the latest press
+	// The key is held before its handlers run. The latest keydown of a code moves it to the end,
+	// so value lookups find the latest press
+	const keyData = createKeyData( event );
 	m_heldCodes.delete( event.code );
 	m_heldCodes.set( event.code, keyData );
+	m_heldList = null;
 
-	triggerKeyEventHandlers( event, "down", event.code );
+	const names = [ event.code ];
 	if( event.code !== event.key ) {
-		triggerKeyEventHandlers( event, "down", event.key );
+		names.push( event.key );
 	}
-	triggerKeyEventHandlers( event, "down", "any" );
+	dispatchKey( event, "down", names, null );
 	if( m_actionKeys.has( event.code ) || m_actionKeys.has( event.key ) ) {
 		event.preventDefault();
 	}
@@ -359,35 +363,31 @@ function onKeyUp( event ) {
 	if( codeData && !names.includes( codeData.key ) ) {
 		names.push( codeData.key );
 	}
-	try {
-		releaseKey( event, codeData, { "data": createKeyData( event ), "names": names } );
-	} finally {
-		if( m_actionKeys.has( event.code ) || m_actionKeys.has( event.key ) ) {
-			event.preventDefault();
-		}
+	releaseKey( event, createKeyData( event ), names );
+	if( m_actionKeys.has( event.code ) || m_actionKeys.has( event.key ) ) {
+		event.preventDefault();
 	}
 }
 
 /**
- * Run the up handlers of a released key, then release it by code, whatever value the release
- * reports. A new press dispatched by a release callback is kept.
+ * Release a key by code, whatever value the release reports, then run its up handlers: in them,
+ * the key is no longer held. Combinations are matched against the keys held just before.
  *
  * @param {Object} event - The keyup, or `{ code, key, repeat }` for a cancelled release.
- * @param {Object|undefined} codeData - The held data of the code before the release.
- * @param {Object} release - `{ data, names }`: the release data and the released key's names.
+ * @param {Object} data - The release data.
+ * @param {Array<string>} names - The released key's names: its code and values.
  * @returns {void}
  */
-function releaseKey( event, codeData, release ) {
-	try {
-		for( const name of release.names ) {
-			triggerKeyEventHandlers( event, "up", name, release );
-		}
-		triggerKeyEventHandlers( event, "up", "any", release );
-	} finally {
-		if( m_heldCodes.get( event.code ) === codeData ) {
-			m_heldCodes.delete( event.code );
-		}
+function releaseKey( event, data, names ) {
+	const heldBefore = new Map( m_heldCodes );
+	if( m_heldCodes.delete( event.code ) ) {
+		m_heldList = null;
 	}
+	dispatchKey( event, "up", names, {
+		"data": data,
+		"names": names,
+		"heldBefore": heldBefore
+	} );
 }
 
 /**
@@ -399,7 +399,7 @@ function releaseKey( event, codeData, release ) {
  * @returns {void}
  */
 function releaseHeldKeys() {
-	for( const keyData of Array.from( m_heldCodes.values() ) ) {
+	for( const keyData of getHeldKeys() ) {
 
 		// A handler of an earlier release can release or press keys itself
 		if( m_heldCodes.get( keyData.code ) !== keyData ) {
@@ -411,8 +411,20 @@ function releaseHeldKeys() {
 		}
 		const data = Object.freeze( { ...keyData, "repeat": false, "cancelled": true } );
 		const event = { "code": keyData.code, "key": keyData.key, "repeat": false };
-		releaseKey( event, keyData, { "data": data, "names": names } );
+		releaseKey( event, data, names );
 	}
+}
+
+/**
+ * The held key data in press order, as a frozen array that is replaced when the keys change.
+ *
+ * @returns {Array<Object>} Frozen array of key data.
+ */
+function getHeldKeys() {
+	if( m_heldList === null ) {
+		m_heldList = Object.freeze( Array.from( m_heldCodes.values() ) );
+	}
+	return m_heldList;
 }
 
 function onVisibilityChange() {
@@ -438,7 +450,14 @@ function removeHandler( handler ) {
 	}
 }
 
-/** Isolate each callback while preserving the original error for browser error reporting. */
+/**
+ * Call a handler. A `once` handler is removed first, so a dispatch started inside it does not
+ * call it again. A handler that throws is reported with `console.error`, and the others still run.
+ *
+ * @param {Object} handler - The registration.
+ * @param {Object|Array<Object>} data - Key data, or an array of key data for a combination.
+ * @returns {void}
+ */
 function invokeHandler( handler, data ) {
 	if( handler.once ) {
 		removeHandler( handler );
@@ -446,7 +465,7 @@ function invokeHandler( handler, data ) {
 	try {
 		handler.fn( data );
 	} catch( error ) {
-		m_pluginApi.utils.queueMicrotask( () => { throw error; } );
+		console.error( `onKey: Handler for "${handler.mode}" failed:`, error );
 	}
 }
 
@@ -474,81 +493,83 @@ function createKeyData( event ) {
 }
 
 /**
- * Run the handlers registered under one key name for a key event.
- *
- * A down handler runs when all of its keys are held, with their held data. An up handler for a
- * single key runs with the release data; a combination's up handler runs when all of its keys
- * were held, with the release data for the released key and the held data for the others.
+ * Run the handlers of a key event: those registered under the key's names, then the "any"
+ * handlers. State is already updated. Handlers added during the dispatch first run in the next
+ * one, a handler removed during it does not run later in it, and a combination registered under
+ * several of the names runs once.
  *
  * @param {KeyboardEvent} event - Keydown or keyup event
  * @param {string} mode - "down" or "up"
- * @param {string} keyOrCode - Handler bucket: a key code, a key value, or "any"
- * @param {Object} [release] - For keyups: { data, names }, the release data and the names of
- *   the released key
+ * @param {Array<string>} names - The key's code and values
+ * @param {Object|null} release - For releases: { data, names, heldBefore }, the release data,
+ *   the names of the released key, and the held keys just before the release
  * @returns {void}
  */
-function triggerKeyEventHandlers( event, mode, keyOrCode, release = null ) {
-	const handlers = m_onKeyHandlers[ keyOrCode ];
-	if( !handlers ) {
-		return;
+function dispatchKey( event, mode, names, release ) {
+	const handlers = new Set();
+	for( const name of names.concat( "any" ) ) {
+		for( const handler of m_onKeyHandlers[ name ] || [] ) {
+			if( handler.mode === mode && ( !event.repeat || handler.allowRepeat ) ) {
+				handlers.add( handler );
+			}
+		}
 	}
-
-	const isAnyKey = keyOrCode === "any";
-	const handlersCopy = handlers.slice();
-
-	for( let i = 0; i < handlersCopy.length; i += 1 ) {
-		const handler = handlersCopy[ i ];
-
-		if( handler.mode !== mode ) {
-			continue;
-		}
-
-		if( event.repeat && !handler.allowRepeat ) {
-			continue;
-		}
-
-		// Need to check if handler has been removed in case a previous handler includes an offKey
+	for( const handler of handlers ) {
 		if( handler.isRemoved ) {
 			continue;
 		}
-
-		// For "any" key handlers, pass the release data or the current key data
-		if( isAnyKey ) {
-			let keyData = m_heldCodes.get( event.code );
-			if( release ) {
-				keyData = release.data;
-			}
-
-			// In case stopKeyboard gets called in another key event handler keyData will be blank
-			if( keyData !== undefined ) {
-				invokeHandler( handler, keyData );
-			}
-			continue;
-		}
-
-		if( release && handler.combo.length === 1 ) {
-			invokeHandler( handler, release.data );
-			continue;
-		}
-
-		// For specific key handlers, check combo and pass combo data
-		const comboData = handler.combo.map( key => findHeldKey( key ) );
-
-		if( comboData.every( keyData => keyData !== null ) ) {
-			if( release ) {
-				handler.combo.forEach( ( key, index ) => {
-					if( release.names.includes( key ) ) {
-						comboData[ index ] = release.data;
-					}
-				} );
-			}
-			if( comboData.length === 1 ) {
-				invokeHandler( handler, comboData[ 0 ] );
-			} else {
-				invokeHandler( handler, comboData );
-			}
+		const data = getHandlerData( handler, event, release );
+		if( data !== null ) {
+			invokeHandler( handler, data );
 		}
 	}
+}
+
+/**
+ * The data a handler receives for a key event, or null when it does not run.
+ *
+ * A down handler runs while all of its keys are held, with their held data. An up handler for a
+ * single key runs with the release data; a combination's up handler runs when all of its keys
+ * were held just before the release, with the release data for the released key and the held
+ * data for the others.
+ *
+ * @param {Object} handler - The registration.
+ * @param {KeyboardEvent} event - Keydown or keyup event
+ * @param {Object|null} release - Release details, as for dispatchKey().
+ * @returns {Object|Array<Object>|null} Key data, an array of key data, or null.
+ */
+function getHandlerData( handler, event, release ) {
+	if( handler.combo.length === 1 && handler.combo[ 0 ] === "any" ) {
+		if( release ) {
+			return release.data;
+		}
+
+		// A handler earlier in the dispatch can release the key, as stopKeyboard() does
+		return m_heldCodes.get( event.code ) || null;
+	}
+	if( release && handler.combo.length === 1 ) {
+		return release.data;
+	}
+
+	let held = m_heldCodes;
+	if( release ) {
+		held = release.heldBefore;
+	}
+	const comboData = handler.combo.map( key => findHeldKey( key, held ) );
+	if( comboData.includes( null ) ) {
+		return null;
+	}
+	if( release ) {
+		handler.combo.forEach( ( key, index ) => {
+			if( release.names.includes( key ) ) {
+				comboData[ index ] = release.data;
+			}
+		} );
+	}
+	if( comboData.length === 1 ) {
+		return comboData[ 0 ];
+	}
+	return comboData;
 }
 
 /**
@@ -600,15 +621,16 @@ function isFromEditableTarget( event ) {
  * it; when several do, the most recent press is returned.
  *
  * @param {string} key - Key code, such as "KeyA", or key value, such as "a".
+ * @param {Map<string, Object>} [held] - Held keys by code; the current ones by default.
  * @returns {Object|null} Key data of the held key, or null.
  */
-function findHeldKey( key ) {
-	const codeData = m_heldCodes.get( key );
+function findHeldKey( key, held = m_heldCodes ) {
+	const codeData = held.get( key );
 	if( codeData ) {
 		return codeData;
 	}
 	let keyData = null;
-	for( const data of m_heldCodes.values() ) {
+	for( const data of held.values() ) {
 		if( data.key === key ) {
 			keyData = data;
 		}

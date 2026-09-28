@@ -66,6 +66,8 @@ for( const bundle of g_harness.BUNDLES ) {
 
 	test( `SYS-011 ${bundle}: reentrant once and throwing keyup preserve state`, async () => {
 		assert.deepEqual( await probe( bundle, () => {
+			const reported = [];
+			console.error = ( label, error ) => reported.push( `${label} ${error.message}` );
 			function key( name, mode = "keydown" ) {
 				const event = new KeyboardEvent( mode, {
 					"key": name, "code": "Key" + name.toUpperCase(), "cancelable": true
@@ -90,11 +92,11 @@ for( const bundle of g_harness.BUNDLES ) {
 			$.onKey( "a", "up", () => key( "a" ), true );
 			key( "a" );
 			key( "a", "keyup" );
-			return [ once, seen, prevented, released, $.inKey( "a" ) !== null ];
-		}, undefined, {
-			"errors": [ "expected key code callback", "expected any callback" ]
-		} ),
-		[ 1, [ "key", "a", "key", "a" ], true, true, true ] );
+			return [ once, seen, prevented, released, $.inKey( "a" ) !== null, reported ];
+		} ), [ 1, [ "key", "a", "key", "a" ], true, true, true, [
+			"onKey: Handler for \"up\" failed: expected key code callback",
+			"onKey: Handler for \"up\" failed: expected any callback"
+		] ] );
 	} );
 
 	test( `KEY-001 ${bundle}: native keys released with a different value are not held (K1n)`,

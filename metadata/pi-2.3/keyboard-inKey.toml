@@ -10,7 +10,9 @@ if it is currently pressed, or null if it is not. The key can be named by its co
 it types. A key value is held while any key that produced it is held, such as either Shift key
 for "Shift"; the most recent press is returned.
 
-If no key is provided, returns a new array of the key data objects of all pressed keys.
+If no key is provided, returns a frozen array of the key data objects of all pressed keys,
+ordered by each key's latest keydown, or an empty array. The same array is returned until a key is
+pressed or released, so reading it every frame does not allocate.
 
 The first call starts keyboard tracking, unless stopKeyboard() was called; keys pressed before
 tracking starts are not reported.
