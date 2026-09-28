@@ -31,17 +31,17 @@ $.setBusEffect( "music", [
 $.screen( "300x200" );
 $.print( "Press a key to play" );
 $.print( "Hold space to muffle the music" );
-$.onkey( "any", "down", () => {
+$.onKey( "any", "down", () => {
 	$.play( "T100 L4 O4 C E G O5 C" );
 	$.sfx( "blip" );
 } );
-$.onkey( "Space", "down", () => {
+$.onKey( "Space", "down", () => {
 	$.setBusEffect( "music", [
 		{ "effect": "filter", "cutoff": 600 },
 		{ "effect": "reverb", "time": 2.5, "mix": 0.4 }
 	] );
 } );
-$.onkey( "Space", "up", () => {
+$.onKey( "Space", "up", () => {
 	$.setBusEffect( "music", [
 		{ "effect": "filter", "cutoff": 20000 },
 		{ "effect": "reverb", "time": 2.5, "mix": 0.4 }

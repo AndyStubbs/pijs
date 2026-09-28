@@ -1243,13 +1243,13 @@ void main() {
 				player.invulnerableTimer--;
 			}
 
-			if( $.inkey( "ArrowLeft" ) || $.inkey( "KeyA" ) ) {
+			if( $.inKey( "ArrowLeft" ) || $.inKey( "KeyA" ) ) {
 				player.x -= player.speed;
 			}
-			if( $.inkey( "ArrowRight" ) || $.inkey( "KeyD" ) ) {
+			if( $.inKey( "ArrowRight" ) || $.inKey( "KeyD" ) ) {
 				player.x += player.speed;
 			}
-			if( $.inkey( "Space" ) || $.inkey( "KeyZ" ) ) {
+			if( $.inKey( "Space" ) || $.inKey( "KeyZ" ) ) {
 				fireBullet();
 			}
 
@@ -1630,13 +1630,13 @@ void main() {
 		}
 	}
 
-	$.onkey( "Space", "down", function() {
+	$.onKey( "Space", "down", function() {
 		if( gameState === "title" || gameState === "gameover" ) {
 			resetGame();
 		}
 	} );
 
-	$.onkey( "Enter", "down", function() {
+	$.onKey( "Enter", "down", function() {
 		if( gameState === "title" || gameState === "gameover" ) {
 			resetGame();
 		}

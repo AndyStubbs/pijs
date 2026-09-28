@@ -1,4 +1,4 @@
-title = "onkey"
+title = "onKey"
 category = "keyboard"
 isScreen = false
 plugin = "keyboard"
@@ -27,22 +27,22 @@ ignored. A callback that throws does not stop the others; its error is rethrown 
 """
 example = """
 $.screen( "300x200" );
-$.onkey( "Enter", "down", ( keyData ) => {
+$.onKey( "Enter", "down", ( keyData ) => {
 	$.print( "Enter pressed!" );
 } );
 
 // Key combination
-$.onkey( [ "ControlLeft", "KeyS" ], "down", ( keys ) => {
+$.onKey( [ "ControlLeft", "KeyS" ], "down", ( keys ) => {
 	$.print( "Ctrl+S pressed!" );
 } );
 
 // One-time handler
-$.onkey( "Space", "down", () => {
+$.onKey( "Space", "down", () => {
 	$.print( "Space pressed once!" );
 }, true );
 
 // Listen for any key
-$.onkey( "any", "down", ( keyData ) => {
+$.onKey( "any", "down", ( keyData ) => {
 	$.print( `Key ${keyData.key} pressed` );
 } );
 """

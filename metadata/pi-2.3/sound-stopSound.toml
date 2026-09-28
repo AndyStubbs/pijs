@@ -9,7 +9,7 @@ Stops a specific sound by sound ID, or stops all sounds if soundId is null. A so
 example = """
 $.screen( "300x200" );
 $.print( "Press any key to hear sound" );
-$.onkey( "any", "down", () => {
+$.onKey( "any", "down", () => {
 	const soundId = $.sound( 440, 5 );
 	setTimeout( () => {
 		$.stopSound( soundId );

@@ -32,7 +32,7 @@ const printTimeouts = [];
 let totalDuration = 0;
 $.screen( "300x200" );
 $.print( "Press any key to hear the song" );
-$.onkey( "any", "down", () => {
+$.onKey( "any", "down", () => {
 	for( let i = 0; i < data.length; i += 3 ) {
 		const length = data[ i + 1 ] / 18.2;
 		const word = data[ i + 2 ];

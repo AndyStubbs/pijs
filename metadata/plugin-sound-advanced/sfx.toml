@@ -13,13 +13,13 @@ A name that is not defined throws PRESET_NOT_FOUND.
 example = """
 $.screen( "300x200" );
 $.print( "Press C for a coin, J to jump, or L for a laser" );
-$.onkey( "KeyC", "down", () => {
+$.onKey( "KeyC", "down", () => {
 	$.sfx( "coin" );
 } );
-$.onkey( "KeyJ", "down", () => {
+$.onKey( "KeyJ", "down", () => {
 	$.sfx( "jump", 0.3 );
 } );
-$.onkey( "KeyL", "down", () => {
+$.onKey( "KeyL", "down", () => {
 	$.sfx( "laser", 0.5 );
 } );
 """

@@ -24,7 +24,7 @@ $.defineInstrument( 7, {
 } );
 $.screen( "300x200" );
 $.print( "Press any key to play" );
-$.onkey( "any", "down", () => {
+$.onKey( "any", "down", () => {
 	$.play( "@7 T140 O4 L8 C E G O5 C4, @2 O2 L4 C G, @6 L4 C C" );
 } );
 """

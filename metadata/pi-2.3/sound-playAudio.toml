@@ -17,7 +17,7 @@ $.screen( "300x200" );
 const bomb = $.loadAudio( "media/bomb.wav" );
 $.ready( function () {
 	$.print( "Press any key to play bomb sound." );
-	$.onkey( "any", "down", () => {
+	$.onKey( "any", "down", () => {
 		$.print( "BOOM ", true );
 		$.playAudio( {
 			"audioId": bomb, "playbackRate": 0.75 + Math.random() * 0.5,

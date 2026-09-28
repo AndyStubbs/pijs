@@ -137,7 +137,7 @@ for( const type of [ "compositionstart", "compositionupdate", "compositionend" ]
 window.addEventListener( "blur", () => {
 	const sample = { "t": time(), "event": "blur", "rawHeld": [ ...m_rawHeld.keys() ] };
 	setTimeout( () => {
-		sample.piHeld100ms = $.inkey().map( k => k.code );
+		sample.piHeld100ms = $.inKey().map( k => k.code );
 		m_results.blurSamples.push( sample );
 		log( "blur " + JSON.stringify( sample ) );
 	}, 100 );
@@ -145,7 +145,7 @@ window.addEventListener( "blur", () => {
 window.addEventListener( "focus", () => {
 	const sample = {
 		"t": time(), "event": "focus", "rawHeld": [ ...m_rawHeld.keys() ],
-		"piHeld": $.inkey().map( k => k.code )
+		"piHeld": $.inKey().map( k => k.code )
 	};
 	m_results.blurSamples.push( sample );
 	log( "focus " + JSON.stringify( sample ) );
@@ -155,8 +155,8 @@ document.addEventListener( "visibilitychange", () => {
 } );
 
 // Pi.js handlers: default (no repeat) and allowRepeat
-$.onkey( "any", "down", () => { m_results.repeat.piDefault += 1; } );
-$.onkey( "any", "down", data => {
+$.onKey( "any", "down", () => { m_results.repeat.piDefault += 1; } );
+$.onKey( "any", "down", data => {
 	if( data.repeat ) {
 		m_results.repeat.piAllowRepeat += 1;
 	}
@@ -166,7 +166,7 @@ $.onkey( "any", "down", data => {
 function frame() {
 	const rawValues = new Set( m_rawHeld.values() );
 	for( const value of m_seenKeys ) {
-		const isPiHeld = $.inkey( value ) !== null;
+		const isPiHeld = $.inKey( value ) !== null;
 		const isRawHeld = rawValues.has( value ) || m_rawHeld.has( value );
 		if( isPiHeld && !isRawHeld && !m_stuck.has( value ) ) {
 			m_stuck.add( value );
@@ -184,7 +184,7 @@ requestAnimationFrame( frame );
 function render() {
 	const rows = [
 		[ "Browser held (code: key)", [ ...m_rawHeld ].map( p => p.join( ": " ) ).join( ", " ) ],
-		[ "Pi.js inkey()", $.inkey().map( k => k.code + ": " + k.key ).join( ", " ) ],
+		[ "Pi.js inKey()", $.inKey().map( k => k.code + ": " + k.key ).join( ", " ) ],
 		[ "Stuck key values", [ ...m_stuck ].join( ", " ) ],
 		[ "Layout (code → key)", JSON.stringify( m_results.layout ) ],
 		[ "Repeats raw / Pi default / Pi allowRepeat", m_results.repeat.rawRepeats + " / " +

@@ -17,7 +17,7 @@ $.definePreset( "zap", {
 } );
 $.screen( "300x200" );
 $.print( "Press any key to zap" );
-$.onkey( "any", "down", () => {
+$.onKey( "any", "down", () => {
 	$.sfx( "zap", 0.2 );
 } );
 """

@@ -22,7 +22,7 @@ $.onPlay( "note", ( note ) => {
 $.onPlay( "end", () => {
 	$.print( "Song over" );
 } );
-$.onkey( "any", "down", () => {
+$.onKey( "any", "down", () => {
 	$.cls();
 	$.play( "T120 O4 L8 C E G O5 C O4 G E C4, T120 O2 L2 C G" );
 }, true );

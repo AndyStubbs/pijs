@@ -16,13 +16,13 @@ example = """
 $.screen( "300x200" );
 $.print( "Press L for the laser preset, V for a variant, H for a hit" );
 $.definePreset( "zap", $.generateSfx( "laser", 42 ) );
-$.onkey( "KeyL", "down", () => {
+$.onKey( "KeyL", "down", () => {
 	$.synth( $.generateSfx( "laser" ) );
 } );
-$.onkey( "KeyV", "down", () => {
+$.onKey( "KeyV", "down", () => {
 	$.sfx( "zap" );
 } );
-$.onkey( "KeyH", "down", () => {
+$.onKey( "KeyH", "down", () => {
 	$.synth( $.generateSfx( "hit", 7, 0.15 ) );
 } );
 """

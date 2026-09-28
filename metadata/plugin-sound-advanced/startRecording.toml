@@ -15,7 +15,7 @@ A 16-bit stereo recording at 48 kHz uses about 11.5 MB of memory per minute; a 3
 example = """
 $.screen( "300x200" );
 $.print( "Press any key to record a tune" );
-$.onkey( "any", "down", async () => {
+$.onKey( "any", "down", async () => {
 	await $.startRecording();
 	$.play( "T140 L8 O4 C E G O5 C4" );
 	$.print( "Recording..." );

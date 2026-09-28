@@ -2242,8 +2242,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param key Key code or key value to check. If omitted, returns all pressed keys.
 		 * @returns Key data object if key is pressed, array of all pressed keys if no key specified, or null if key not pressed.
 		 */
-		inkey( params: { "key"?: string } ): object | any[] | null;
-		inkey( key?: string ): object | any[] | null;
+		inKey( params: { "key"?: string } ): object | any[] | null;
+		inKey( key?: string ): object | any[] | null;
 
 		/**
 		 * Loads an audio file for playback with playAudio.
@@ -2311,7 +2311,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a key event handler.
 		 *
-		 * Removes a previously registered key event handler. The key, mode, callback, once, and allowRepeat must all match the original onkey call for the handler to be removed; a combination matches when it holds the same keys, in any order.
+		 * Removes a previously registered key event handler. The key, mode, callback, once, and allowRepeat must all match the original onKey call for the handler to be removed; a combination matches when it holds the same keys, in any order.
 		 * @param key Key code/key value string or array of keys that matches the original handler.
 		 * @param mode Event mode ("up" or "down") that matches the original handler.
 		 * @param fn Callback function that matches the original handler.
@@ -2319,8 +2319,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param allowRepeat AllowRepeat flag that matches the original handler.
 		 * @returns This function does not return a value.
 		 */
-		offkey( params: { "key": string | any[]; "mode": string; "fn": ( keyData: object | object[] ) => void; "once"?: boolean; "allowRepeat"?: boolean } ): void;
-		offkey( key: string | any[], mode: string, fn: ( keyData: object | object[] ) => void, once?: boolean, allowRepeat?: boolean ): void;
+		offKey( params: { "key": string | any[]; "mode": string; "fn": ( keyData: object | object[] ) => void; "once"?: boolean; "allowRepeat"?: boolean } ): void;
+		offKey( key: string | any[], mode: string, fn: ( keyData: object | object[] ) => void, once?: boolean, allowRepeat?: boolean ): void;
 
 		/**
 		 * Registers a callback function for when a gamepad is connected.
@@ -2367,8 +2367,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param allowRepeat If true, allows the handler to fire on key repeat (when key is held down).
 		 * @returns This function does not return a value.
 		 */
-		onkey( params: { "key": string | any[]; "mode": string; "fn": ( keyData: object | object[] ) => void; "once"?: boolean; "allowRepeat"?: boolean } ): void;
-		onkey( key: string | any[], mode: string, fn: ( keyData: object | object[] ) => void, once?: boolean, allowRepeat?: boolean ): void;
+		onKey( params: { "key": string | any[]; "mode": string; "fn": ( keyData: object | object[] ) => void; "once"?: boolean; "allowRepeat"?: boolean } ): void;
+		onKey( key: string | any[], mode: string, fn: ( keyData: object | object[] ) => void, once?: boolean, allowRepeat?: boolean ): void;
 
 		/**
 		 * Pauses an audio instance, every instance of an audio ID, or all audio.
@@ -2791,7 +2791,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Starts keyboard input monitoring.
 		 *
-		 * Starts the keyboard input monitoring system by adding the keydown and keyup listeners. The keyboard starts when the plugin loads, so this command is only needed after stopKeyboard(). Registering a handler or calling inkey() does not restart a stopped keyboard. Calling it again while the keyboard is running has no effect, and starting keeps the focused element's focus.
+		 * Starts the keyboard input monitoring system by adding the keydown and keyup listeners. The keyboard starts when the plugin loads, so this command is only needed after stopKeyboard(). Registering a handler or calling inKey() does not restart a stopped keyboard. Calling it again while the keyboard is running has no effect, and starting keeps the focused element's focus.
 		 * @returns This function does not return a value.
 		 */
 		startKeyboard(): void;
@@ -2819,7 +2819,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops keyboard input monitoring.
 		 *
-		 * Stops the keyboard input monitoring system. This removes the keydown and keyup listeners and clears all key states. Keyboard events are no longer tracked until startKeyboard() is called again; registering a handler or calling inkey() does not restart it. An input() prompt keeps reading keys while the keyboard is stopped.
+		 * Stops the keyboard input monitoring system. This removes the keydown and keyup listeners and clears all key states. Keyboard events are no longer tracked until startKeyboard() is called again; registering a handler or calling inKey() does not restart it. An input() prompt keeps reading keys while the keyboard is stopped.
 		 * @returns This function does not return a value.
 		 */
 		stopKeyboard(): void;

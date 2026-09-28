@@ -11,7 +11,7 @@ duration is the length captured so far, in seconds. It counts audio as it arrive
 example = """
 $.screen( "300x200" );
 $.print( "Press any key to start recording" );
-$.onkey( "any", "down", () => {
+$.onKey( "any", "down", () => {
 	$.startRecording( "output", 5 );
 	$.play( "T120 L4 O4 C D E F G A B O5 C" );
 }, true );

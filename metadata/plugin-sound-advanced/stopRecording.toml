@@ -13,15 +13,15 @@ Stopping while the recording is still starting waits for it to start. Calling st
 example = """
 $.screen( "300x200" );
 $.print( "Press R to record, S to stop and save" );
-$.onkey( "r", "down", async () => {
+$.onKey( "r", "down", async () => {
 	await $.startRecording( "sfx" );
 	$.print( "Recording sound effects" );
 }, true );
-$.onkey( "s", "down", async () => {
+$.onKey( "s", "down", async () => {
 	const wav = await $.stopRecording();
 	$.saveRecording( wav, "effects.wav" );
 }, true );
-$.onkey( "Space", "down", () => {
+$.onKey( "Space", "down", () => {
 	$.sound( 440 + Math.random() * 440, 0.2 );
 } );
 """

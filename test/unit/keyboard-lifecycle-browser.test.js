@@ -74,23 +74,23 @@ for( const bundle of g_harness.BUNDLES ) {
 				return event.defaultPrevented;
 			}
 			let once = 0;
-			$.onkey( [ "KeyA", "b" ], "down", () => {
+			$.onKey( [ "KeyA", "b" ], "down", () => {
 				once++;
 				if( once === 1 ) { key( "a" ); }
 			}, true );
 			key( "b" ); key( "a" ); key( "a" );
 			const seen = [];
 			$.setActionKeys( [ "a" ] );
-			$.onkey( "KeyA", "up", () => { throw new Error( "expected key code callback" ); }, true );
-			$.onkey( "a", "up", () => seen.push( "key" ) );
-			$.onkey( "any", "up", () => { throw new Error( "expected any callback" ); }, true );
-			$.onkey( "any", "up", data => seen.push( data.key ) );
+			$.onKey( "KeyA", "up", () => { throw new Error( "expected key code callback" ); }, true );
+			$.onKey( "a", "up", () => seen.push( "key" ) );
+			$.onKey( "any", "up", () => { throw new Error( "expected any callback" ); }, true );
+			$.onKey( "any", "up", data => seen.push( data.key ) );
 			const prevented = key( "a", "keyup" );
-			const released = $.inkey( "KeyA" ) === null && $.inkey( "a" ) === null;
-			$.onkey( "a", "up", () => key( "a" ), true );
+			const released = $.inKey( "KeyA" ) === null && $.inKey( "a" ) === null;
+			$.onKey( "a", "up", () => key( "a" ), true );
 			key( "a" );
 			key( "a", "keyup" );
-			return [ once, seen, prevented, released, $.inkey( "a" ) !== null ];
+			return [ once, seen, prevented, released, $.inKey( "a" ) !== null ];
 		}, undefined, {
 			"errors": [ "expected key code callback", "expected any callback" ]
 		} ),
@@ -104,12 +104,12 @@ for( const bundle of g_harness.BUNDLES ) {
 				await page.evaluate( () => $.ready() );
 				const keyboard = page.keyboard;
 				const held = () => page.evaluate( () => [
-					$.inkey( "A" ) !== null, $.inkey( "KeyA" ) !== null,
-					$.inkey( "w" ) !== null, $.inkey( "W" ) !== null, $.inkey().length
+					$.inKey( "A" ) !== null, $.inKey( "KeyA" ) !== null,
+					$.inKey( "w" ) !== null, $.inKey( "W" ) !== null, $.inKey().length
 				] );
 				await keyboard.down( "Shift" );
 				await keyboard.down( "KeyA" );
-				const whileHeld = await page.evaluate( () => $.inkey( "A" )?.code );
+				const whileHeld = await page.evaluate( () => $.inKey( "A" )?.code );
 				await keyboard.up( "Shift" );
 				await keyboard.up( "KeyA" );
 				const afterA = await held();
@@ -162,12 +162,12 @@ for( const bundle of g_harness.BUNDLES ) {
 				const input = document.createElement( "input" );
 				host.attachShadow( { "mode": "open" } ).appendChild( input );
 				window.__calls = [];
-				$.onkey( "KeyA", "down", () => window.__calls.push( "KeyA" ) );
+				$.onKey( "KeyA", "down", () => window.__calls.push( "KeyA" ) );
 				input.focus();
 			} );
 			await page.keyboard.down( "KeyA" );
 			const whileTyping = await page.evaluate( () => [
-				window.__calls.length, $.inkey( "KeyA" ) !== null,
+				window.__calls.length, $.inKey( "KeyA" ) !== null,
 				document.activeElement.shadowRoot.activeElement.value
 			] );
 			await page.keyboard.up( "KeyA" );
