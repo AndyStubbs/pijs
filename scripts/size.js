@@ -27,7 +27,8 @@ const ADVANCED_PLUGIN = "sound-advanced";
 
 // sound-advanced modules in registration order. synth.js is a shared helper: presets and
 // instruments import it, so removing it removes them too. generator.js imports presets.js,
-// so removing presets removes the generator.
+// so removing presets removes the generator. sample-source.js registers nothing itself; only
+// instruments.js imports it, so the instruments entries include it.
 const ADVANCED_MODULES = [
 	"periodic-noise", "synth", "effects", "analyser", "presets", "generator", "instruments",
 	"sync", "recorder"

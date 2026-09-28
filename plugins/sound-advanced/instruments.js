@@ -4,13 +4,15 @@
  * PLAY instruments: defineInstrument() stores synth() options under a number, and a PLAY
  * extension claims the `@n` token to select one per track. Each note resolves its instrument
  * while play() builds the song, so redefining an instrument affects later play() calls only.
- * Instruments build their inserts through synth.js (documented dependency).
+ * Instruments build their inserts through synth.js and play loaded audio files through
+ * sample-source.js (documented dependencies).
  *
  * @module plugins/sound-advanced/instruments
  */
 
 "use strict";
 
+import * as g_sampleSource from "./sample-source.js";
 import * as g_synth from "./synth.js";
 
 export const EXTENSION_NAME = "instruments";
@@ -72,6 +74,80 @@ function throwCode( ErrorType, message, code ) {
 }
 
 
+/**
+ * Validate a sample instrument's audio, rootFrequency, and loop options
+ *
+ * @param {Object} params - defineInstrument params
+ * @returns {Object|null} { audio, rootFrequency, loop }, or null without audio
+ */
+function readSampleOptions( params ) {
+	const audio = params.audio;
+	if( audio == null ) {
+		if( params.rootFrequency != null || params.loop != null ) {
+			throwCode(
+				Error, "defineInstrument: Parameters rootFrequency and loop require audio.",
+				"INVALID_INSTRUMENT"
+			);
+		}
+		return null;
+	}
+	if( typeof audio !== "string" ) {
+		throwCode(
+			TypeError, "defineInstrument: Parameter audio must be a string.", "INVALID_AUDIO"
+		);
+	}
+	if( audio === "" ) {
+		throwCode(
+			RangeError, "defineInstrument: Parameter audio must not be empty.", "INVALID_AUDIO"
+		);
+	}
+	if( params.oType != null ) {
+		throwCode(
+			Error, "defineInstrument: Parameters audio and oType cannot be used together.",
+			"INVALID_INSTRUMENT"
+		);
+	}
+	let rootFrequency = g_sampleSource.DEFAULT_ROOT_FREQUENCY;
+	if( params.rootFrequency != null ) {
+		rootFrequency = params.rootFrequency;
+		if( typeof rootFrequency !== "number" ) {
+			throwCode(
+				TypeError, "defineInstrument: Parameter rootFrequency must be a number.",
+				"INVALID_ROOT_FREQUENCY"
+			);
+		}
+		if( !( rootFrequency > 0 && rootFrequency < Infinity ) ) {
+			throwCode(
+				RangeError,
+				"defineInstrument: Parameter rootFrequency must be a finite number greater " +
+				"than 0.",
+				"INVALID_ROOT_FREQUENCY"
+			);
+		}
+	}
+	let loop = false;
+	if( params.loop != null ) {
+		loop = params.loop;
+		if( typeof loop !== "boolean" ) {
+			throwCode(
+				TypeError, "defineInstrument: Parameter loop must be a boolean.", "INVALID_LOOP"
+			);
+		}
+	}
+	return { "audio": audio, "rootFrequency": rootFrequency, "loop": loop };
+}
+
+/**
+ * Whether a sample instrument's file has a decoded buffer
+ *
+ * @param {Object} instrument - Stored instrument with audio and service
+ * @returns {boolean} True when the file is loaded in decode mode
+ */
+function isSampleReady( instrument ) {
+	return instrument.service.getAudioBuffer( instrument.audio ) !== null;
+}
+
+
 /*************************************************************************************************
  * Exported Functions
  ************************************************************************************************/
@@ -82,13 +158,16 @@ function throwCode( ErrorType, message, code ) {
  *
  * Only the options an instrument sets replace the PLAY values: oType, envelope times,
  * pan, and a fixed frequency or sweep target. volume scales the note volume. Filter, LFO,
- * and arpeggio options become voice inserts.
+ * and arpeggio options become voice inserts. With audio, notes play that loaded file through
+ * a sample source type, pitched from rootFrequency.
  *
  * @param {number} instrument - Instrument number, 1-255
- * @param {Object|null} params - synth() options, or null to remove the instrument
+ * @param {Object|null} params - synth() options plus audio, rootFrequency, and loop, or null
+ * to remove the instrument
+ * @param {Object} [service] - Sound extension service; required with audio
  * @returns {void}
  */
-export function storeInstrument( instrument, params ) {
+export function storeInstrument( instrument, params, service ) {
 	if( !Number.isInteger( instrument ) || instrument < 1 || instrument > MAX_INSTRUMENT ) {
 		throwCode(
 			RangeError,
@@ -108,6 +187,7 @@ export function storeInstrument( instrument, params ) {
 		);
 	}
 	const resolved = g_synth.resolveSynthOptions( "defineInstrument", params );
+	const sample = readSampleOptions( params );
 	const envelope = {};
 	let hasEnvelope = false;
 	for( const field of ENVELOPE_FIELDS ) {
@@ -123,10 +203,19 @@ export function storeInstrument( instrument, params ) {
 		"volume": null,
 		"pan": null,
 		"frequency": null,
-		"frequencyEnd": resolved.frequencyEnd
+		"frequencyEnd": resolved.frequencyEnd,
+		"audio": null,
+		"service": null
 	};
 	if( params.oType != null ) {
 		record.oType = g_synth.resolveOType( resolved );
+	}
+	if( sample !== null ) {
+		record.oType = g_sampleSource.getSampleType(
+			service, sample.audio, sample.rootFrequency, sample.loop
+		);
+		record.audio = sample.audio;
+		record.service = service;
 	}
 	if( hasEnvelope ) {
 		record.envelope = Object.freeze( envelope );
@@ -146,7 +235,11 @@ export function storeInstrument( instrument, params ) {
 /**
  * Voice overrides for one PLAY note under the track's instrument
  *
- * @param {Object} state - Track state { instrument }
+ * A sample instrument whose file is not loaded when play() is called, or is streamed, plays
+ * that call's notes silently, with one warning per instrument and play() call (D15).
+ *
+ * @param {Object} state - Track state { instrument, warned }; warned is shared by the tracks
+ * of one play() call
  * @param {Object} note - Frozen note from the PLAY parser
  * @returns {Object|null} Overrides, or null for the default sound
  */
@@ -156,13 +249,23 @@ export function resolveNote( state, note ) {
 		return null;
 	}
 	const overrides = {};
+	if( instrument.audio !== null && !isSampleReady( instrument ) ) {
+		if( !state.warned.has( state.instrument ) ) {
+			state.warned.add( state.instrument );
+			console.warn(
+				`play: Audio "${instrument.audio}" of instrument ${state.instrument} is not ` +
+				"loaded, or is streamed; its notes are silent."
+			);
+		}
+		overrides.volume = 0;
+	}
 	if( instrument.oType !== null ) {
 		overrides.oType = instrument.oType;
 	}
 	if( instrument.envelope !== null ) {
 		overrides.envelope = instrument.envelope;
 	}
-	if( instrument.volume !== null ) {
+	if( instrument.volume !== null && overrides.volume !== 0 ) {
 		overrides.volume = note.volume * instrument.volume;
 	}
 	if( instrument.pan !== null ) {
@@ -200,7 +303,7 @@ export function resolveNote( state, note ) {
  */
 export function register( pluginApi, service ) {
 	for( const key of Object.keys( BUILT_IN_INSTRUMENTS ) ) {
-		storeInstrument( Number( key ), BUILT_IN_INSTRUMENTS[ key ] );
+		storeInstrument( Number( key ), BUILT_IN_INSTRUMENTS[ key ], service );
 	}
 
 	service.registerPlayExtension( EXTENSION_NAME, {
@@ -209,8 +312,8 @@ export function register( pluginApi, service ) {
 				state.instrument = value ?? 0;
 			}
 		},
-		"initState": () => ( { "instrument": 0 } ),
-		"copyState": ( state ) => ( { "instrument": state.instrument } ),
+		"initState": () => ( { "instrument": 0, "warned": new Set() } ),
+		"copyState": ( state ) => ( { "instrument": state.instrument, "warned": state.warned } ),
 		"resolveNote": resolveNote
 	} );
 
@@ -223,14 +326,16 @@ export function register( pluginApi, service ) {
 	 * Define PLAY instrument n, selected in a play string with @n; @0 is the default sound
 	 *
 	 * Built-in instruments: 1 square lead, 2 pluck bass, 3 pad, 4 noise snare, 5 hat, and
-	 * 6 kick. Redefining one affects later play() calls only.
+	 * 6 kick. Redefining one affects later play() calls only. With audio, the instrument plays
+	 * a file loaded with loadAudio(), pitched from rootFrequency, looping if loop is true.
 	 *
 	 * @param {Object} options - Command options
 	 * @param {number} options.instrument - Instrument number, 1-255
-	 * @param {Object|null} options.params - synth() options, or null to remove it
+	 * @param {Object|null} options.params - synth() options plus audio, rootFrequency, and
+	 * loop, or null to remove it
 	 * @returns {void}
 	 */
 	function defineInstrument( options ) {
-		storeInstrument( options.instrument, options.params );
+		storeInstrument( options.instrument, options.params, service );
 	}
 }
