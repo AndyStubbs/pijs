@@ -132,36 +132,27 @@ function inKey( options ) {
 	const key = options.key;
 	startOnUse();
 
-	if( key ) {
-
-		if( typeof key !== "string" ) {
-			const error = new TypeError( "inKey: key must be a string." );
-			error.code = "INVALID_PARAMETERS";
-			throw error;
-		}
-
-		return findHeldKey( key );
+	// Without a key, return all held keys
+	if( key == null ) {
+		return getHeldKeys();
 	}
-
-	// If inKey is blank return all held keys
-	return getHeldKeys();
+	if( typeof key !== "string" ) {
+		throwCode( TypeError, "inKey: key must be a string.", "INVALID_KEY" );
+	}
+	if( key === "" ) {
+		throwCode( RangeError, "inKey: key must not be empty.", "INVALID_KEY" );
+	}
+	return findHeldKey( key );
 }
 
 /**
- * Set the keys whose browser defaults are suppressed.
+ * Add keys whose browser defaults are suppressed.
  *
  * @param {Object} options - Command options.
  * @returns {void}
  */
 function setActionKeys( options ) {
-	const keys = options.keys;
-
-	if( !Array.isArray( keys ) ) {
-		const error = new TypeError( "setActionKeys: keys must be an array." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
-	}
-	for( const key of keys ) {
+	for( const key of readActionKeys( "setActionKeys", options.keys ) ) {
 		m_actionKeys.add( key );
 	}
 	startOnUse();
@@ -174,14 +165,7 @@ function setActionKeys( options ) {
  * @returns {void}
  */
 function removeActionKeys( options ) {
-	const keys = options.keys;
-
-	if( !Array.isArray( keys ) ) {
-		const error = new TypeError( "removeActionKeys: keys must be an array." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
-	}
-	for( const key of keys ) {
+	for( const key of readActionKeys( "removeActionKeys", options.keys ) ) {
 		m_actionKeys.delete( key );
 	}
 }
@@ -195,40 +179,20 @@ function removeActionKeys( options ) {
  * @returns {void}
  */
 function onKey( options ) {
-	const key = options.key;
+	const combo = readKeys( "onKey", options.key );
 	const mode = options.mode;
 	const fn = options.fn;
-	const once = !!options.once;
-	const allowRepeat = !!options.allowRepeat;
-
-	if( !key || ( typeof key !== "string" && !Array.isArray( key ) ) ) {
-		const error = new TypeError( "onKey: key must be a string or an array of strings." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
-	}
-
-	if( !mode || ( typeof mode !== "string" ) ) {
-		const error = new TypeError( "onKey: mode must be a string with value of up or down." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
-	}
-
+	readMode( "onKey", mode );
 	if( typeof fn !== "function" ) {
-		const error = new TypeError( "onKey: fn must be a function." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
+		throwCode( TypeError, "onKey: fn must be a function.", "INVALID_FUNCTION" );
 	}
-
-	// Normalize key into an array for easier processing
-	let combo;
-	if( typeof key === "string" ) {
-		combo = [ key ];
-	} else {
-		combo = key;
-	}
+	const once = readFlag( "onKey", "once", options.once, "INVALID_ONCE" );
+	const allowRepeat = readFlag(
+		"onKey", "allowRepeat", options.allowRepeat, "INVALID_ALLOW_REPEAT"
+	);
 
 	startOnUse();
-	const comboKey = combo.sort().join( "" );
+	const comboKey = getComboKey( combo );
 	for( const existing of m_onKeyHandlers[ combo[ 0 ] ] || [] ) {
 		if( existing.comboKey === comboKey && existing.mode === mode && existing.fn === fn ) {
 			return;
@@ -245,7 +209,7 @@ function onKey( options ) {
 		"isRemoved": false
 	};
 
-	// Add a on key handler for each of the key codes - in combo all must be pressed
+	// Add the handler under each of its keys; a combination runs when all are held
 	for( const key of combo ) {
 		if( !m_onKeyHandlers[ key ] ) {
 			m_onKeyHandlers[ key ] = [];
@@ -263,41 +227,27 @@ function onKey( options ) {
  * @returns {void}
  */
 function offKey( options ) {
-	const key = options.key;
+	const combo = readKeys( "offKey", options.key );
 	const mode = options.mode;
 	const fn = options.fn;
 
-	if( !key || ( typeof key !== "string" && !Array.isArray( key ) ) ) {
-		const error = new TypeError( "offKey: key must be a string or an array of strings." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
-	}
-
 	if( mode == null && fn == null ) {
-		const error = new TypeError(
+		throwCode(
+			TypeError,
 			"offKey: mode or fn is required. To remove every key handler, call " +
-			"clearEvents( \"keyboard\" )."
+			"clearEvents( \"keyboard\" ).",
+			"INVALID_MODE"
 		);
-		error.code = "INVALID_MODE";
-		throw error;
 	}
-
+	if( mode != null ) {
+		readMode( "offKey", mode );
+	}
 	if( fn != null && typeof fn !== "function" ) {
-		const error = new TypeError( "offKey: callback must be a function." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
+		throwCode( TypeError, "offKey: fn must be a function.", "INVALID_FUNCTION" );
 	}
-
-	// Normalize key into an array for easier processing
-	let combo;
-	if( typeof key === "string" ) {
-		combo = [ key ];
-	} else {
-		combo = key;
-	}
-	const comboKey = combo.sort().join( "" );
 
 	// Find the handlers, then remove each from every key it is registered under
+	const comboKey = getComboKey( combo );
 	const matches = [];
 	for( const handler of m_onKeyHandlers[ combo[ 0 ] ] || [] ) {
 		if(
@@ -311,6 +261,128 @@ function offKey( options ) {
 	for( const handler of matches ) {
 		removeHandler( handler );
 	}
+}
+
+
+/*************************************************************************************************
+ * Validation
+ ************************************************************************************************/
+
+
+/**
+ * Throw an error with an error code.
+ *
+ * @param {Function} ErrorType - Error constructor.
+ * @param {string} message - Error message.
+ * @param {string} code - Error code.
+ * @returns {never}
+ */
+function throwCode( ErrorType, message, code ) {
+	const error = new ErrorType( message );
+	error.code = code;
+	throw error;
+}
+
+/**
+ * Check a key or combination, and return its keys: a copy of the array in the order given, with
+ * duplicates removed, so later changes to the caller's array do not affect the handler.
+ *
+ * @param {string} command - Command name for error messages.
+ * @param {string|Array<string>} key - A key name, or an array of key names.
+ * @returns {Array<string>} The keys.
+ */
+function readKeys( command, key ) {
+	const isString = typeof key === "string";
+	const isArray = Array.isArray( key ) && key.every( item => typeof item === "string" );
+	if( !isString && !isArray ) {
+		throwCode(
+			TypeError, `${command}: key must be a string or an array of strings.`, "INVALID_KEY"
+		);
+	}
+	let keys;
+	if( isString ) {
+		keys = [ key ];
+	} else {
+		keys = Array.from( new Set( key ) );
+	}
+	if( keys.length === 0 || keys.includes( "" ) ) {
+		throwCode(
+			RangeError, `${command}: key must be a non-empty string or a non-empty array.`,
+			"INVALID_KEY"
+		);
+	}
+
+	// "any" matches every key on its own, so a combination with it could never run
+	if( keys.length > 1 && keys.includes( "any" ) ) {
+		throwCode(
+			RangeError, `${command}: "any" cannot be part of a combination.`, "INVALID_KEY"
+		);
+	}
+	return keys;
+}
+
+/**
+ * The identity of a key set, whatever the order of its keys.
+ *
+ * @param {Array<string>} keys - Keys without duplicates.
+ * @returns {string} Key set identity.
+ */
+function getComboKey( keys ) {
+	return JSON.stringify( keys.slice().sort() );
+}
+
+/**
+ * Check a handler mode.
+ *
+ * @param {string} command - Command name for error messages.
+ * @param {*} mode - The mode.
+ * @returns {void}
+ */
+function readMode( command, mode ) {
+	if( typeof mode !== "string" ) {
+		throwCode( TypeError, `${command}: mode must be "up" or "down".`, "INVALID_MODE" );
+	}
+	if( mode !== "up" && mode !== "down" ) {
+		throwCode( RangeError, `${command}: mode must be "up" or "down".`, "INVALID_MODE" );
+	}
+}
+
+/**
+ * Check an optional flag.
+ *
+ * @param {string} command - Command name for error messages.
+ * @param {string} name - Parameter name.
+ * @param {*} value - Flag value.
+ * @param {string} code - Error code.
+ * @returns {boolean} The flag, false when omitted.
+ */
+function readFlag( command, name, value, code ) {
+	if( value == null ) {
+		return false;
+	}
+	if( typeof value !== "boolean" ) {
+		throwCode( TypeError, `${command}: ${name} must be a boolean.`, code );
+	}
+	return value;
+}
+
+/**
+ * Check a list of action keys.
+ *
+ * @param {string} command - Command name for error messages.
+ * @param {Array<string>} keys - Key codes or key values.
+ * @returns {Array<string>} The keys.
+ */
+function readActionKeys( command, keys ) {
+	if( !Array.isArray( keys ) || !keys.every( key => typeof key === "string" ) ) {
+		throwCode( TypeError, `${command}: keys must be an array of strings.`, "INVALID_KEYS" );
+	}
+	if( keys.includes( "" ) ) {
+		throwCode(
+			RangeError, `${command}: keys must not contain an empty string.`, "INVALID_KEYS"
+		);
+	}
+	return keys;
 }
 
 

@@ -14,6 +14,9 @@ form), removes the callback from both modes. A key alone throws a TypeError with
 INVALID_MODE; clearEvents( "keyboard" ) removes every key handler.
 
 A handler removed while a key event is being dispatched does not run later in that dispatch.
+
+The key, mode, and callback are checked as onKey() checks them, with codes INVALID_KEY,
+INVALID_MODE, and INVALID_FUNCTION.
 """
 example = """
 $.screen( "300x200" );
