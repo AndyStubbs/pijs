@@ -613,7 +613,7 @@ Windows; the layout, input-method, and macOS items stay open for the release pas
   non-modifier key when Meta is released. No macOS hardware is available. The Windows check
   (device step 7) is not an analogue after all: Windows handled Win+E itself, the page saw only
   the Meta keydown, and the window then lost focus.
-- **Mobile soft keyboards.** Not tested. A16 targets them, and the release pass checks them.
+- **Mobile soft keyboards.** Not tested, and not supported: A16 was dropped.
 - **`isTrusted`.** The plugin accepts script-dispatched events. This is noted, not proposed for
   change.
 - **Initialization rollback.** If init threw after `startKeyboard()`, the listeners would stay
@@ -732,7 +732,7 @@ The core audit's answer to each item is in
 | Standalone plugin declarations | As for gamepad: no `metadata/plugin-keyboard/`, so `keyboard.d.ts` declares only the init function, and `pi.lite.d.ts` has no keyboard commands |
 | Self-registration | The IIFE and ESM plugin modules register themselves whenever `window.pi` exists (KEY-018, KEY-017's README case). Decide whether self-registration should skip a plugin that is already registered |
 | `parseOptions` and `undefined` | An explicit `undefined` stays `undefined` instead of the `null` default (`src/core/utils.js:35-71`), so `null` checks in commands reject it (KEY-009). Other commands may share this |
-| Font glyph mapping | `print()` maps character codes through the font's table (`src/text/print.js:484`), so characters outside it, including most non-Latin text typed into a prompt, are not drawn. Relevant if A16 lands |
+| Font glyph mapping | `print()` maps character codes through the font's table (`src/text/print.js:484`), so characters outside it, including most non-Latin text typed into a prompt, are not drawn |
 | Frame hook | Keyboard is event-driven and does not need one |
 
 ## 8. Review Decisions
@@ -756,7 +756,7 @@ the [ROADMAP](ROADMAP.md#5-keyboard) tasks that implement each item.
 | KEY-012 | `startKeyboard()` blurs focus | Accepted | Fixed by A9 (Keyboard 1.9, done) |
 | KEY-013 | Live key data | Accepted | Fixed by A10 (Keyboard 1.10, done) and I7 (Keyboard 2.5) |
 | KEY-014 | `setActionKeys()` adds | Accepted | Fixed by A12 (Keyboard 2.9, breaking) |
-| KEY-015 | No composed or pasted text | Accepted | Fixed by A16 in 2.3.0 (Keyboard 3.1); paste also by A3 |
+| KEY-015 | No composed or pasted text | Accepted in part | Paste fixed by A3 (Keyboard 1.4, done). Composed and mobile text are not planned: A16 dropped 2026-09-28 |
 | KEY-016 | `clearEvents()` scope | Accepted | Rule I10 (Keyboard 2.6) |
 | KEY-017 | Documentation and declarations | Accepted | Metadata and declarations in Keyboard 1.11 (done); `API.md`, README, and llms references in R.2 and R.3 |
 | KEY-018 | Manual pages register twice | Accepted | Keyboard 1.12 (done); self-registration after Full is CORE-003 |
@@ -766,5 +766,5 @@ the [ROADMAP](ROADMAP.md#5-keyboard) tasks that implement each item.
 | A11 | Prompt keys withheld from handlers | Accepted | Breaking |
 | A12 | `setActionKeys()` replaces | Accepted | Breaking |
 | A13–A15 | Start rule, handler identity, `clearEvents` scope | Accepted | Decided by I5, I4, and I10 |
-| A16 | Hidden text field for IME, paste, and mobile | Accepted | Additive, in 2.3.0, overriding the audit's 2.3.x recommendation. IME composition and a mobile soft keyboard are added to the release device pass ([ROADMAP §8.3](ROADMAP.md#83-manual-release-checks)), since neither could be tested in the audit |
+| A16 | Hidden text field for IME, paste, and mobile | Dropped | Dropped 2026-09-28: not wanted for this library. Paste works through the prompt (A3) |
 | A17 | `input()` stays in the plugin | Accepted | No change |

@@ -547,8 +547,8 @@ characters outside the table are handled, and that one cell is used per UTF-16 u
 **Evidence:** C13, identical in all three engines.
 
 **Impact:** Latin-1 text draws the wrong glyphs without warning. This matters for the
-keyboard audit's proposed text field for IME and paste input (A16), which would accept any
-character.
+keyboard audit's proposed text field for IME and paste input (A16, since dropped), which
+would accept any character.
 
 **Proposed fix:** document the current behavior in the release phase (R.2). Whether to map
 Latin-1 to CP437, or add a replacement glyph, is a separate decision (Section 4, C10).
@@ -783,7 +783,7 @@ The core audit's answer to each item the input audits handed to it:
 | `addCommand` JSDoc example | Gamepad | Confirmed, CORE-017 |
 | Plugin-internal subscriptions and `clearEvents` | Pointer | Confirmed, CORE-004. Review decision: documented, no core mechanism (C4 rejected) |
 | `getCanvasContentRect()` content-box rule | PTR-011 | Not a core defect. It returns the canvas content box by design and is shared with `noCss` sizing (`screen-manager.js:1184,1248`). Clamping or dropping border and padding points belongs to the pointer plugin |
-| Font glyph mapping for typed text | Keyboard (A16) | Confirmed and documented, CORE-014 |
+| Font glyph mapping for typed text | Keyboard (A16, since dropped) | Confirmed and documented, CORE-014 |
 | Frame hook for input plugins | Gamepad | None in 2.3 (C9) |
 
 ### Input conventions review
@@ -821,7 +821,7 @@ the [ROADMAP](ROADMAP.md#3-core) tasks that implement each item.
 | CORE-011 | `getImage()` of an offscreen screen | Accepted | Fixed by C6 (Core 6) |
 | CORE-012 | Polygon coordinates past 2³¹ wrap | Accepted | Fixed by C6 (Core 6) |
 | CORE-013 | Numeric validation gaps | Accepted | Fixed by C6 (Core 6) |
-| CORE-014 | Text outside the font table undocumented | Accepted | Documented in R.2 (C10). The Latin-1 to CP437 mapping is deferred to a later release, although keyboard A16 lets typed accented text reach `print()` in 2.3.0 |
+| CORE-014 | Text outside the font table undocumented | Accepted | Documented in R.2 (C10). The Latin-1 to CP437 mapping is deferred to a later release |
 | CORE-015 | `removeScreen` forms and declarations | Accepted | Fixed by C5 and C6 (Core 4, done; Core 6) |
 | CORE-016 | Plugin declarations for Lite | Accepted | Fixed by C5 (Core 4, done) |
 | CORE-017 | `addCommand` declaration and example | Accepted | Fixed by C5 (Core 4, done) |
