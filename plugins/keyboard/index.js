@@ -151,13 +151,16 @@ function inKey( options ) {
 }
 
 /**
- * Add keys whose browser defaults are suppressed.
+ * Set the keys whose browser defaults are suppressed, replacing the previous set. The keys are
+ * checked first, so an invalid call leaves the set unchanged.
  *
  * @param {Object} options - Command options.
  * @returns {void}
  */
 function setActionKeys( options ) {
-	for( const key of readActionKeys( "setActionKeys", options.keys ) ) {
+	const keys = readActionKeys( "setActionKeys", options.keys );
+	m_actionKeys.clear();
+	for( const key of keys ) {
 		m_actionKeys.add( key );
 	}
 	startOnUse();

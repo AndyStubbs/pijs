@@ -387,7 +387,7 @@ declare namespace Pi {
 	 */
 	interface Options extends PluginOptions {
 		/**
-		 * Adds keys whose default browser behavior is prevented.
+		 * Sets the keys whose default browser behavior is prevented.
 		 */
 		actionKeys?: Array<string>;
 
@@ -2641,14 +2641,14 @@ original thrown value if the callback throws synchronously. Callback return valu
 		screen( aspect: string, container?: string | HTMLElement, isOffscreen?: boolean, resizeCallback?: ( screenApi: Screen, fromSize: Size, toSize: Size ) => void, parent?: number | Screen, noCss?: boolean ): Screen;
 
 		/**
-		 * Adds keys whose default browser behavior is prevented.
+		 * Sets the keys whose default browser behavior is prevented.
 		 *
-		 * Adds keys to the action keys set. Action keys have their default browser behavior prevented on keydown and keyup, for example page scrolling with the arrow keys or Space. This is useful for game controls where you don't want the browser to handle certain keys.
+		 * Sets the action keys, replacing the previous set. Action keys have their default browser behavior prevented on keydown and keyup, for example page scrolling with the arrow keys or Space. This is useful for game controls where you don't want the browser to handle certain keys.
 		 *
-		 * Keys already in the set stay in it; use removeActionKeys() to remove keys. set( { "actionKeys": [ ... ] } ) also adds. Keys can be specified by code (e.g., "ArrowUp", "Space") or key value (e.g., " "). Setting action keys starts keyboard tracking, unless stopKeyboard() was called.
+		 * Pass every action key in one call; an empty array clears them. set( { "actionKeys": [ ... ] } ) sets them the same way, and removeActionKeys() removes some of them. Keys can be specified by code (e.g., "ArrowUp", "Space") or key value (e.g., " "). Setting action keys starts keyboard tracking, unless stopKeyboard() was called.
 		 *
-		 * Keys that are not an array of strings throw a TypeError, and an empty string in the array a RangeError, with code INVALID_KEYS.
-		 * @param keys Array of key codes or key values to add as action keys.
+		 * Keys that are not an array of strings throw a TypeError, and an empty string in the array a RangeError, with code INVALID_KEYS; the set is then left unchanged.
+		 * @param keys Array of key codes or key values that become the action keys.
 		 * @returns This function does not return a value.
 		 */
 		setActionKeys( params: { "keys": Array<string> } ): void;
