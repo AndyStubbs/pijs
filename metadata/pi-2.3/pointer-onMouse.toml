@@ -15,10 +15,12 @@ with cancelled set to true when the browser cancels the pointer, the page is hid
 is called with a button held; moves and releases report their true position, which can be outside
 the screen.
 
-A handler runs until it is removed. Registering the same function again adds a second registration,
-and once removes only its own registration, before the handler runs. Handlers added during an event
-first run for the next event; a handler removed during an event does not run later in it. A handler
-that throws is reported with console.error(), and the other handlers still run.
+A handler runs until it is removed. A handler is identified by its mode and callback:
+registering the same callback for the same mode again does nothing, whatever its once, hitBox, and
+customData, and offMouse removes it by those two. once removes the registration before the handler
+runs. Handlers added during an event first run for the next event; a handler removed during an
+event does not run later in it. A handler that throws is reported with console.error(), and the
+other handlers still run.
 
 Requires an onscreen screen.
 """

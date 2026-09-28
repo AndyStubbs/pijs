@@ -16,10 +16,12 @@ A touch that starts on the canvas keeps reporting moves and its end when it leav
 While touch is tracked, the canvas has touch-action set to none, so the browser does not scroll or
 zoom with touches that start there. Registering starts tracking unless stopTouch() was called.
 
-A handler runs until it is removed. Registering the same function again adds a second registration,
-and once removes only its own registration, before the handler runs. Handlers added during an event
-first run for the next event; a handler removed during an event does not run later in it. A handler
-that throws is reported with console.error(), and the other handlers still run.
+A handler runs until it is removed. A handler is identified by its mode and callback:
+registering the same callback for the same mode again does nothing, whatever its once, hitBox, and
+customData, and offTouch removes it by those two. once removes the registration before the handler
+runs. Handlers added during an event first run for the next event; a handler removed during an
+event does not run later in it. A handler that throws is reported with console.error(), and the
+other handlers still run.
 
 Requires an onscreen screen.
 """

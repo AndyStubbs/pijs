@@ -349,6 +349,8 @@ function validateTypeDefinitions() {
 		"interface MouseData {",
 		"interface TouchData {",
 		"touches: Array<TouchData>;",
+		"offMouse( mode?: string | null, fn?: ( mouseData: MouseData, customData?: object ) " +
+			"=> void ): void;",
 		"cancelled: boolean;",
 		"interface HitBox {",
 		"interface PluginScreenCommands extends PointerScreenCommands {}",

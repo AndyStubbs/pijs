@@ -82,14 +82,15 @@ export function registerPress( pluginApi, helpers ) {
 
 		onevent(
 			mode, fn, once, hitBox, [ "down", "up", "move" ], "onPress",
-			screenData.onPressEventListeners, null, null, customData
+			screenData.onPressEventListeners, customData
 		);
 		g_mouse.startMouseInternal( screenData );
 		g_touch.startTouchInternal( screenData );
 	}
 
 	/**
-	 * Remove matching combined press listeners.
+	 * Remove matching combined press listeners: by mode and function, every handler of a mode, or
+	 * a function from every mode.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @param {Object} options - Command options.
@@ -101,7 +102,7 @@ export function registerPress( pluginApi, helpers ) {
 
 		offevent(
 			mode, fn, [ "down", "up", "move" ], "offPress",
-			screenData.onPressEventListeners
+			screenData.onPressEventListeners, "press"
 		);
 	}
 
@@ -130,14 +131,15 @@ export function registerPress( pluginApi, helpers ) {
 
 		onevent(
 			"click", fn, once, hitBox, [ "click" ], "onClick",
-			screenData.onClickEventListeners, null, null, customData
+			screenData.onClickEventListeners, customData
 		);
 		g_mouse.startMouseInternal( screenData );
 		g_touch.startTouchInternal( screenData );
 	}
 
 	/**
-	 * Remove matching click listeners.
+	 * Remove matching click listeners. Click has one mode, so without a function every click
+	 * handler of the screen is removed.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @param {Object} options - Command options.
@@ -147,7 +149,7 @@ export function registerPress( pluginApi, helpers ) {
 		const fn = options.fn;
 		offevent(
 			"click", fn, [ "click" ], "offClick",
-			screenData.onClickEventListeners
+			screenData.onClickEventListeners, "press"
 		);
 	}
 

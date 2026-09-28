@@ -14,9 +14,10 @@ disarms it, so right and middle clicks, a drag that leaves the box, and a cancel
 click.
 
 If no hitBox is provided, the screen's size when the handler is registered is used. A handler runs
-until it is removed. Registering the same function again adds a second registration, and once
-removes only its own registration, before the handler runs. Handlers added during an event first
-run for the next event; a handler removed during an event does not run later in it. A handler that
+until it is removed. A handler is identified by its callback: registering the same callback again
+does nothing, whatever its once, hitBox, and customData, and offClick removes it by the callback.
+once removes the registration before the handler runs. Handlers added during an event first run
+for the next event; a handler removed during an event does not run later in it. A handler that
 throws is reported with console.error(), and the other handlers still run.
 
 Requires an onscreen screen.
