@@ -26,8 +26,9 @@ const m_utils = g_harness.loadModule( "src/core/utils.js", {
  * The real gamepad plugin with scripted pads.
  *
  * @returns {Object} `{ $, commands, setPad, removePad, connect, disconnect, frame,
- *   requestAnimationFrame, hide, clearEvents, frames, errors }`. `$` maps arguments as the
- *   bundles do; `commands` holds the plugin's functions, which take an options object.
+ *   requestAnimationFrame, hide, clearEvents, frames, errors, padStates }`. `$` maps arguments
+ *   as the bundles do; `commands` holds the plugin's functions, which take an options object;
+ *   `padStates` is the plugin's internal per-pad state.
  */
 function createHarness() {
 	const commands = {};
@@ -51,7 +52,7 @@ function createHarness() {
 		"navigator": { "getGamepads": () => pads.slice() },
 		"requestAnimationFrame": requestAnimationFrame,
 		"cancelAnimationFrame": id => frames.delete( id )
-	} );
+	}, { "expose": [ "m_padStates" ] } );
 	plugin.gamepadPlugin( {
 		"addCommand": ( name, fn, isScreen, params ) => {
 			commands[ name ] = fn;
@@ -144,7 +145,8 @@ function createHarness() {
 		"frames": frames,
 		"window": window,
 		"document": document,
-		"errors": errors
+		"errors": errors,
+		"padStates": plugin.m_padStates
 	};
 }
 
@@ -559,4 +561,39 @@ test( "PAD-006 a connection event for a tracked pad is not dispatched again (P3)
 	h.connect( 0 );
 	h.connect( 0 );
 	assert.deepEqual( calls, [ 0, 0 ] );
+} );
+
+test( "PAD-009 pads and the pad list are live objects updated in place (P12)", () => {
+	const h = createHarness();
+	h.setPad( 0 );
+	h.setPad( 1 );
+	const pad = h.$.ingamepad( 0 );
+	const list = h.$.ingamepad();
+	const current = () => {
+		return {
+			"buttons": pad.buttons, "button": pad.buttons[ 0 ], "axes": pad.axes,
+			"lastAxes": pad.lastAxes, "state": h.padStates[ 0 ].buttons[ 0 ],
+			"stateAxes": h.padStates[ 0 ].axes, "stateButtons": h.padStates[ 0 ].buttons
+		};
+	};
+	const kept = current();
+	h.setPad( 0, { "buttons": [ true, false, false, false ], "axes": [ 1, 0, 0, 0 ] } );
+	h.frame();
+	assert.equal( h.$.ingamepad( 0 ), pad );
+	assert.equal( h.$.ingamepad(), list );
+	assert.deepEqual( Array.from( list, item => item.index ), [ 0, 1 ] );
+	const now = current();
+	for( const key in kept ) {
+		assert.equal( now[ key ], kept[ key ], key );
+	}
+	assert.deepEqual( [ kept.button.pressed, kept.button.pressStarted, kept.axes[ 0 ],
+		kept.lastAxes[ 0 ] ], [ true, true, 1, 0 ] );
+
+	// A hidden page and a disconnect keep the same objects too
+	h.hide();
+	assert.deepEqual( [ pad.getButtonPressed( 0 ), kept.button.pressed, kept.axes[ 0 ] ],
+		[ false, false, 0 ] );
+	h.disconnect( 1 );
+	assert.equal( h.$.ingamepad(), list );
+	assert.deepEqual( Array.from( list, item => item.index ), [ 0 ] );
 } );
