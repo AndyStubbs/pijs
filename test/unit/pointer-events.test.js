@@ -142,13 +142,14 @@ function harness() {
 	 * @param {number} x - Screen x.
 	 * @param {number} y - Screen y.
 	 * @param {number} [buttons] - Buttons held after the event.
+	 * @param {number} [button] - The button that changed; 0 is the primary button.
 	 * @param {Object} [screenData] - Target screen.
 	 * @returns {Object} The dispatched event.
 	 */
-	function mouse( type, x, y, buttons = 0, screenData = activeScreen ) {
+	function mouse( type, x, y, buttons = 0, button = 0, screenData = activeScreen ) {
 		const event = {
 			"type": type, "target": screenData.canvas, "clientX": x + 0.5, "clientY": y + 0.5,
-			"buttons": buttons, "defaultPrevented": false,
+			"buttons": buttons, "button": button, "defaultPrevented": false,
 			"preventDefault": () => { event.defaultPrevented = true; }
 		};
 		screenData.canvas.dispatchEvent( event );
@@ -481,7 +482,7 @@ test( "pointer touchcancel releases with cancelled and never clicks (P4)", () =>
 	assert.equal( clicks, 0 );
 	assert.equal( $.intouch().length, 0 );
 
-	// The cancel disarmed the click, so a later press from outside the box does not click
+	// A touch that starts outside the box and ends inside it does not click
 	const outside = { "id": 2, "x": 50, "y": 50 };
 	h.touch( "touchstart", [ outside ] );
 	h.touch( "touchend", [], [ { "id": 2, "x": 10, "y": 10 } ] );
@@ -492,4 +493,89 @@ test( "pointer touchcancel releases with cancelled and never clicks (P4)", () =>
 	h.tap( 10, 10 );
 	assert.equal( clicks, 1 );
 	assert.equal( $.inmouse().cancelled, false );
+} );
+
+test( "pointer press follows the primary touch, and each touch clicks on its own (P3)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	const clicks = [];
+	$.onpress( "down", data => log.push( [ "down", data.id, data.x, data.buttons ] ) );
+	$.onpress( "move", data => log.push( [ "move", data.id, data.x, data.buttons ] ) );
+	$.onpress( "up", data => log.push( [ "up", data.id, data.x, data.buttons, data.action ] ) );
+	$.onclick( data => clicks.push( [ data.id, data.x, data.action, data.buttons ] ), false,
+		{ "x": 70, "y": 70, "width": 20, "height": 20 } );
+	const first = { "id": 1, "x": 10, "y": 10 };
+	const second = { "id": 2, "x": 80, "y": 80 };
+	const moved = { "id": 2, "x": 82, "y": 80 };
+	h.touch( "touchstart", [ first ], [ first ] );
+	h.touch( "touchstart", [ first, second ], [ second ] );
+	h.touch( "touchmove", [ first, moved ], [ moved ] );
+	const held = $.inpress();
+	assert.deepEqual( [ held.id, held.x, held.buttons ], [ 1, 10, 1 ] );
+	assert.deepEqual( Array.from( held.touches, touch => touch.id ), [ 1, 2 ] );
+	h.touch( "touchend", [ first ], [ moved ] );
+	assert.deepEqual( log, [ [ "down", 1, 10, 1 ] ] );
+	assert.deepEqual( clicks, [ [ 2, 82, "up", 0 ] ] );
+	h.touch( "touchend", [], [ first ] );
+	assert.deepEqual( log, [ [ "down", 1, 10, 1 ], [ "up", 1, 10, 0, "up" ] ] );
+	assert.equal( $.inpress().buttons, 0 );
+
+	// After the primary touch lifts, no touch is primary until every touch is up
+	log.length = 0;
+	const third = { "id": 3, "x": 30, "y": 30 };
+	h.touch( "touchstart", [ first ], [ first ] );
+	h.touch( "touchstart", [ first, second ], [ second ] );
+	h.touch( "touchend", [ second ], [ first ] );
+	h.touch( "touchstart", [ second, third ], [ third ] );
+	h.touch( "touchmove", [ second, third ], [ second, third ] );
+	h.touch( "touchend", [], [ second, third ] );
+	h.touch( "touchstart", [ third ], [ third ] );
+	assert.deepEqual( log, [
+		[ "down", 1, 10, 1 ], [ "up", 1, 10, 0, "up" ], [ "down", 3, 30, 1 ]
+	] );
+} );
+
+test( "pointer clicks need the primary mouse button (P5)", () => {
+	const h = harness();
+	const $ = h.$;
+	let clicks = 0;
+	const presses = [];
+	$.onclick( () => { clicks += 1; } );
+	$.onpress( "down", data => presses.push( data.buttons ) );
+	for( const [ button, buttons ] of [ [ 2, 2 ], [ 1, 4 ] ] ) {
+		h.mouse( "mousedown", 30, 30, buttons, button );
+		h.mouse( "mouseup", 30, 30, 0, button );
+	}
+	assert.equal( clicks, 0 );
+	assert.deepEqual( presses, [ 2, 4 ] );
+	h.click( 30, 30 );
+	assert.equal( clicks, 1 );
+} );
+
+test( "pointer a click needs the down and the release inside its box (P4)", () => {
+	const h = harness();
+	const $ = h.$;
+	let clicks = 0;
+	$.onclick( () => { clicks += 1; }, false, { "x": 0, "y": 0, "width": 20, "height": 20 } );
+
+	// Down inside and up outside, then down outside and up inside
+	h.mouse( "mousedown", 10, 10, 1 );
+	h.mouse( "mousemove", 50, 50, 1 );
+	h.mouse( "mouseup", 50, 50 );
+	h.mouse( "mousedown", 50, 50, 1 );
+	h.mouse( "mousemove", 10, 10, 1 );
+	h.mouse( "mouseup", 10, 10 );
+	assert.equal( clicks, 0 );
+
+	// The same with a touch, which is released where it lifts
+	h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
+	h.touch( "touchend", [], [ { "id": 1, "x": 50, "y": 50 } ] );
+	h.touch( "touchstart", [ { "id": 2, "x": 50, "y": 50 } ] );
+	h.touch( "touchend", [], [ { "id": 2, "x": 10, "y": 10 } ] );
+	assert.equal( clicks, 0 );
+
+	h.click( 10, 10 );
+	h.tap( 10, 10 );
+	assert.equal( clicks, 2 );
 } );

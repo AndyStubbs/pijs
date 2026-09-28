@@ -39,7 +39,8 @@ export function registerTouch( pluginApi, helpers ) {
 	pluginApi.addScreenDataItem( "touchStopped", false );
 	pluginApi.addScreenDataItem( "touchStarted", false );
 	pluginApi.addScreenDataItem( "touches", {} );
-	pluginApi.addScreenDataItem( "lastTouches", {} );
+	pluginApi.addScreenDataItem( "primaryTouchId", null );
+	pluginApi.addScreenDataItem( "touchPress", null );
 	pluginApi.addScreenDataItem( "onTouchEventListeners", {} );
 
 	pluginApi.addScreenInitFunction( initTouchData );
@@ -184,13 +185,32 @@ export function registerTouch( pluginApi, helpers ) {
 		if( screenData == null ) {
 			return;
 		}
+		let isIdle = true;
+		for( const id in screenData.touches ) {
+			isIdle = false;
+			break;
+		}
 		const changed = updateTouch( screenData, e, "start", false );
+
+		// A touch is primary when it starts with no other touch down, as in Pointer Events
+		if( isIdle && changed.length > 0 ) {
+			screenData.primaryTouchId = changed[ 0 ].id;
+		}
+		const primary = findTouch( changed, screenData.primaryTouchId );
+		if( primary ) {
+			setTouchPress( screenData, primary, primary.action, 1 );
+		}
 
 		// Suppress browser gestures and compatibility mouse events before any handler runs
 		e.preventDefault();
 		m_triggerEventListeners( "start", changed, screenData.onTouchEventListeners );
-		g_press.triggerPressListeners( screenData, "down", g_press.getTouchPress( screenData ) );
-		g_press.triggerClickListeners( screenData, g_press.getTouchPress( screenData ), "down" );
+		if( primary ) {
+			const pressData = g_press.getTouchPress( screenData );
+			g_press.triggerPressListeners( screenData, "down", pressData );
+		}
+		for( const touch of changed ) {
+			g_press.triggerClickListeners( screenData, touch, "down", touch.id );
+		}
 	}
 
 	function touchMove( e ) {
@@ -199,8 +219,15 @@ export function registerTouch( pluginApi, helpers ) {
 			return;
 		}
 		const changed = updateTouch( screenData, e, "move", false );
+		const primary = findTouch( changed, screenData.primaryTouchId );
+		if( primary ) {
+			setTouchPress( screenData, primary, primary.action, 1 );
+		}
 		m_triggerEventListeners( "move", changed, screenData.onTouchEventListeners );
-		g_press.triggerPressListeners( screenData, "move", g_press.getTouchPress( screenData ) );
+		if( primary ) {
+			const pressData = g_press.getTouchPress( screenData );
+			g_press.triggerPressListeners( screenData, "move", pressData );
+		}
 	}
 
 	function touchEnd( e ) {
@@ -212,8 +239,8 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 
 	/**
-	 * Release the touches an event ended. A cancelled touch, one the browser took over, is
-	 * released with `cancelled: true` and never clicks.
+	 * Release the touches an event ended. The primary touch releases the press. A cancelled
+	 * touch, one the browser took over, is released with `cancelled: true` and never clicks.
 	 *
 	 * @param {TouchEvent} e - The `touchend` or `touchcancel` event.
 	 * @param {boolean} isCancelled - Whether the browser cancelled the touches.
@@ -225,23 +252,61 @@ export function registerTouch( pluginApi, helpers ) {
 			return;
 		}
 		const changed = updateTouch( screenData, e, "end", isCancelled );
-		m_triggerEventListeners( "end", changed, screenData.onTouchEventListeners );
-		const pressData = g_press.getTouchPress( screenData );
-		if( isCancelled ) {
-			pressData.cancelled = true;
-			g_press.triggerPressListeners( screenData, "up", pressData );
-			g_press.cancelClickListeners( screenData );
-		} else {
-			g_press.triggerPressListeners( screenData, "up", pressData );
-			g_press.triggerClickListeners( screenData, g_press.getTouchPress( screenData ), "up" );
+		const primary = findTouch( changed, screenData.primaryTouchId );
+		if( primary ) {
+			setTouchPress( screenData, primary, "up", 0 );
+			screenData.primaryTouchId = null;
 		}
+		m_triggerEventListeners( "end", changed, screenData.onTouchEventListeners );
+		if( primary ) {
+			g_press.triggerPressListeners( screenData, "up", g_press.getTouchPress( screenData ) );
+		}
+		for( const touch of changed ) {
+			if( isCancelled ) {
+				g_press.triggerClickListeners( screenData, touch, "cancel", touch.id );
+			} else {
+				const clickData = g_press.getTouchPress( screenData, {
+					...touch, "action": "up", "buttons": 0
+				} );
+				g_press.triggerClickListeners( screenData, clickData, "up", touch.id );
+			}
+		}
+	}
+
+	function findTouch( touches, id ) {
+		for( const touch of touches ) {
+			if( touch.id === id ) {
+				return touch;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Record the press of the primary touch.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {Object} touch - The primary touch's data.
+	 * @param {string} action - Press action.
+	 * @param {number} buttons - 1 while the touch is down, 0 after its release.
+	 * @returns {void}
+	 */
+	function setTouchPress( screenData, touch, action, buttons ) {
+		screenData.touchPress = {
+			"x": touch.x,
+			"y": touch.y,
+			"id": touch.id,
+			"lastX": touch.lastX,
+			"lastY": touch.lastY,
+			"action": action,
+			"cancelled": touch.cancelled,
+			"buttons": buttons
+		};
 	}
 
 	/**
 	 * Apply the touches an event changed. Other touches keep their state and action, and an
-	 * ended touch is reported at the position where it lifted, then removed. `lastTouches`
-	 * keeps every touch of the event, including ended ones, for the press that follows the last
-	 * touch's release.
+	 * ended touch is reported at the position where it lifted, then removed.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @param {TouchEvent} e - Touch event.
@@ -250,11 +315,10 @@ export function registerTouch( pluginApi, helpers ) {
 	 * @returns {Array<Object>} Copies of the changed touches, in event order.
 	 */
 	function updateTouch( screenData, e, action, isCancelled ) {
-		const eventTouches = {};
-		for( const id in screenData.touches ) {
-			eventTouches[ id ] = screenData.touches[ id ];
-		}
 		const newTouches = {};
+		for( const id in screenData.touches ) {
+			newTouches[ id ] = screenData.touches[ id ];
+		}
 		const changed = [];
 		for( let j = 0; j < e.changedTouches.length; j++ ) {
 			const touch = e.changedTouches[ j ];
@@ -279,16 +343,14 @@ export function registerTouch( pluginApi, helpers ) {
 				touchData.lastX = previous.x;
 				touchData.lastY = previous.y;
 			}
-			eventTouches[ touchData.id ] = touchData;
+			if( action === "end" ) {
+				delete newTouches[ touchData.id ];
+			} else {
+				newTouches[ touchData.id ] = touchData;
+			}
 			changed.push( copyTouch( touchData ) );
 		}
-		for( const id in eventTouches ) {
-			if( eventTouches[ id ].action !== "end" ) {
-				newTouches[ id ] = eventTouches[ id ];
-			}
-		}
 
-		screenData.lastTouches = eventTouches;
 		screenData.touches = newTouches;
 		screenData.lastEvent = "touch";
 		return changed;
@@ -326,8 +388,12 @@ export function registerTouch( pluginApi, helpers ) {
 	function onWindowBlurTouch() {
 		const allScreensData = pluginApi.getAllScreensData();
 		for( const screenData of allScreensData ) {
-			screenData.lastTouches = screenData.touches;
 			screenData.touches = {};
+			screenData.primaryTouchId = null;
+			if( screenData.touchPress !== null ) {
+				screenData.touchPress.action = "up";
+				screenData.touchPress.buttons = 0;
+			}
 		}
 	}
 

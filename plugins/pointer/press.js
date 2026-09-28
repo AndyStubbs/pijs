@@ -19,10 +19,10 @@ export function registerPress( pluginApi, helpers ) {
 	const onevent = helpers.onevent;
 	const offevent = helpers.offevent;
 	const removeAllListeners = helpers.removeAllListeners;
-	const triggerEventListenersLocal = helpers.triggerEventListeners;
 
-	// Expose trigger for other modules via module-level binding
-	m_triggerEventListeners = triggerEventListenersLocal;
+	// Expose the triggers for other modules via module-level bindings
+	m_triggerEventListeners = helpers.triggerEventListeners;
+	m_triggerClickListeners = helpers.triggerClickListeners;
 
 	pluginApi.addScreenDataItem( "onPressEventListeners", {} );
 	pluginApi.addScreenDataItem( "onClickEventListeners", {} );
@@ -167,8 +167,9 @@ export function registerPress( pluginApi, helpers ) {
 	};
 }
 
-// Module-level reference to event trigger helper
+// Module-level references to the event trigger helpers
 let m_triggerEventListeners = null;
+let m_triggerClickListeners = null;
 
 /**
  * Dispatch a press event to active listeners on the screen.
@@ -185,77 +186,32 @@ export function triggerPressListeners( screenData, mode, data ) {
 }
 
 /**
- * Dispatch a click event to active listeners on the screen.
+ * Update the screen's click listeners for one pointer: a primary-button down arms, its release
+ * fires inside the hit box, and any other release or a cancel disarms.
  *
  * @param {Object} screenData - Screen state.
- * @param {Object} data - Pointer event data.
- * @param {string} clickStatus - Click status used to filter listeners.
+ * @param {Object} data - Pointer data; for `"up"`, the click data.
+ * @param {string} action - `"down"`, `"up"`, or `"cancel"`.
+ * @param {string|number} pointerId - `"mouse"`, or the touch identifier.
  * @returns {void}
  */
-export function triggerClickListeners( screenData, data, clickStatus ) {
-	if( m_triggerEventListeners ) {
-		m_triggerEventListeners( "click", data, screenData.onClickEventListeners, clickStatus );
+export function triggerClickListeners( screenData, data, action, pointerId ) {
+	if( m_triggerClickListeners ) {
+		m_triggerClickListeners( data, screenData.onClickEventListeners, action, pointerId );
 	}
 }
 
 /**
- * Disarm every click listener on the screen, so a press the browser cancelled never clicks.
+ * Build touch press data: the primary touch while it is down, then its release. `touches` holds
+ * the press itself followed by the other touches still down.
  *
  * @param {Object} screenData - Screen state.
- * @returns {void}
- */
-export function cancelClickListeners( screenData ) {
-	const listeners = screenData.onClickEventListeners.click;
-	if( !listeners ) {
-		return;
-	}
-	for( const listener of listeners ) {
-		listener.clickDown = false;
-	}
-}
-
-/**
- * Convert active or recently released touches into a press-state snapshot.
- *
- * @param {Object} screenData - Screen state.
+ * @param {Object} [record] - Touch fields and `buttons`; the screen's touch press by default.
+ *   Click data passes the released touch.
  * @returns {Object}
  */
-export function getTouchPress( screenData ) {
-	function copyTouches( touches, touchArr, action ) {
-		for( const i in touches ) {
-			const touch = touches[ i ];
-			const touchData = {
-				"x": touch.x,
-				"y": touch.y,
-				"id": touch.id,
-				"lastX": touch.lastX,
-				"lastY": touch.lastY,
-				"action": touch.action,
-				"cancelled": touch.cancelled,
-				"type": "touch"
-			};
-			if( action !== undefined ) {
-				touchData.action = action;
-			}
-			touchArr.push( touchData );
-		}
-	}
-
-	const touchArr = [];
-	copyTouches( screenData.touches, touchArr );
-	if( touchArr.length === 0 ) {
-		copyTouches( screenData.lastTouches, touchArr, "up" );
-	}
-	if( touchArr.length > 0 ) {
-		const touchData = touchArr[ 0 ];
-		if( touchData.action === "up" ) {
-			touchData.buttons = 0;
-		} else {
-			touchData.buttons = 1;
-		}
-		touchData.touches = touchArr;
-		return touchData;
-	} else {
+export function getTouchPress( screenData, record = screenData.touchPress ) {
+	if( record === null ) {
 		return {
 			"x": -1,
 			"y": -1,
@@ -268,6 +224,35 @@ export function getTouchPress( screenData ) {
 			"type": "touch"
 		};
 	}
+	const press = {
+		"x": record.x,
+		"y": record.y,
+		"id": record.id,
+		"lastX": record.lastX,
+		"lastY": record.lastY,
+		"action": record.action,
+		"cancelled": record.cancelled,
+		"type": "touch",
+		"buttons": record.buttons
+	};
+	const touches = [ press ];
+	for( const id in screenData.touches ) {
+		const touch = screenData.touches[ id ];
+		if( touch.id !== record.id ) {
+			touches.push( {
+				"x": touch.x,
+				"y": touch.y,
+				"id": touch.id,
+				"lastX": touch.lastX,
+				"lastY": touch.lastY,
+				"action": touch.action,
+				"cancelled": touch.cancelled,
+				"type": "touch"
+			} );
+		}
+	}
+	press.touches = touches;
+	return press;
 }
 
 
