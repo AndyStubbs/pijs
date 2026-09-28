@@ -4,10 +4,12 @@ isScreen = false
 plugin = "keyboard"
 summary = "Starts keyboard input monitoring."
 description = """
-Starts the keyboard input monitoring system by adding the keydown and keyup listeners. The
-keyboard starts when the plugin loads, so this command is only needed after stopKeyboard().
-Registering a handler or calling inKey() does not restart a stopped keyboard. Calling it again
-while the keyboard is running has no effect, and starting keeps the focused element's focus.
+Starts the keyboard input monitoring system by adding the keydown, keyup, and blur listeners.
+The keyboard also starts on first use: the first inKey() call, onKey() registration, or
+setActionKeys() call, including set( { "actionKeys": [ ... ] } ). The plugin adds no listener
+before then, so keys pressed earlier are not tracked. This command is needed only after
+stopKeyboard(), which nothing else undoes. Calling it again while the keyboard is running has
+no effect, and starting keeps the focused element's focus.
 """
 example = """
 $.screen( "300x200" );

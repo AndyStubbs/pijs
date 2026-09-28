@@ -24,7 +24,9 @@ were held, with the release data for that key.
 
 A handler is identified by its key or combination, its mode, and its callback: registering the
 same callback for the same keys and mode again does nothing, whatever its once and allowRepeat
-flags, and offKey removes it by those three.
+flags, and offKey removes it by those three. Registering starts keyboard tracking, unless
+stopKeyboard() was called; handlers stay registered while the keyboard is stopped, but are not
+called.
 
 Key data objects are frozen. Keys typed into an editable element, such as an input field, are
 ignored. A callback that throws does not stop the others; its error is rethrown afterward.

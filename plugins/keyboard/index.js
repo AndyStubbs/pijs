@@ -21,8 +21,11 @@ const m_heldCodes = new Map();
 const m_actionKeys = new Set();
 const m_onKeyHandlers = {};
 
-// Status variables
+// Status variables. Tracking starts on first use; after stopKeyboard() it stays stopped until
+// startKeyboard()
 let m_isKeyboardActive = false;
+let m_isStopped = false;
+let m_isBlurListening = false;
 let m_pluginApi = null;
 
 
@@ -32,17 +35,14 @@ let m_pluginApi = null;
 
 
 /**
- * Register keyboard commands, input handling, and screen cleanup hooks.
+ * Register keyboard commands, input handling, and screen cleanup hooks. Listeners are added on
+ * first use, so a page that never reads the keyboard attaches none.
  *
  * @param {Object} pluginApi - Plugin registration and screen access API.
  * @returns {void}
  */
 export default function keyboardPlugin( pluginApi ) {
 	m_pluginApi = pluginApi;
-
-	// Initialize keyboard on plugin load
-	startKeyboard();
-	window.addEventListener( "blur", clearInKeys );
 
 	// Register global commands
 	pluginApi.addCommand( "startKeyboard", startKeyboard, false, [] );
@@ -67,27 +67,46 @@ export default function keyboardPlugin( pluginApi ) {
 
 
 /**
- * Start keyboard event handling.
+ * Start keyboard event handling, and undo stopKeyboard().
  *
  * Focus is left where it is: keys typed into an editable element are ignored anyway.
  *
  * @returns {void}
  */
 function startKeyboard() {
+	m_isStopped = false;
 	if( m_isKeyboardActive ) {
 		return;
 	}
 	window.addEventListener( "keydown", onKeyDown, { "capture": true } );
 	window.addEventListener( "keyup", onKeyUp, { "capture": true } );
+	if( !m_isBlurListening ) {
+		window.addEventListener( "blur", clearInKeys );
+		m_isBlurListening = true;
+	}
 	m_isKeyboardActive = true;
 }
 
 /**
- * Stop keyboard event handling and clear active key state.
+ * Start tracking on first use: a read, a handler registration, or action keys. Nothing restarts
+ * tracking after stopKeyboard() except startKeyboard().
+ *
+ * @returns {void}
+ */
+function startOnUse() {
+	if( !m_isStopped ) {
+		startKeyboard();
+	}
+}
+
+/**
+ * Stop keyboard event handling and clear active key state. Tracking stays stopped until
+ * startKeyboard(); handlers stay registered but are not called.
  *
  * @returns {void}
  */
 function stopKeyboard() {
+	m_isStopped = true;
 	if( !m_isKeyboardActive ) {
 		return;
 	}
@@ -107,6 +126,7 @@ function stopKeyboard() {
  */
 function inKey( options ) {
 	const key = options.key;
+	startOnUse();
 
 	if( key ) {
 
@@ -140,6 +160,7 @@ function setActionKeys( options ) {
 	for( const key of keys ) {
 		m_actionKeys.add( key );
 	}
+	startOnUse();
 }
 
 /**
@@ -202,6 +223,7 @@ function onKey( options ) {
 		combo = key;
 	}
 
+	startOnUse();
 	const comboKey = combo.sort().join( "" );
 	for( const existing of m_onKeyHandlers[ combo[ 0 ] ] || [] ) {
 		if( existing.comboKey === comboKey && existing.mode === mode && existing.fn === fn ) {

@@ -2238,6 +2238,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * If no key is provided, returns a new array of the key data objects of all pressed keys.
 		 *
+		 * The first call starts keyboard tracking, unless stopKeyboard() was called; keys pressed before tracking starts are not reported.
+		 *
 		 * Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat. They are frozen.
 		 * @param key Key code or key value to check. If omitted, returns all pressed keys.
 		 * @returns Key data object if key is pressed, array of all pressed keys if no key specified, or null if key not pressed.
@@ -2361,7 +2363,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * A "down" callback receives the key data of the keydown. An "up" callback receives the key data of the keyup, so its modifier state is the state at the release. A release runs the handlers of the key's code, of the value it reports, and of the value the key was pressed with, when a modifier changed it during the hold. Single-key and "any" up handlers run even for a key whose press was not seen. A combination's up handler runs when one of its keys is released while all were held, with the release data for that key.
 		 *
-		 * A handler is identified by its key or combination, its mode, and its callback: registering the same callback for the same keys and mode again does nothing, whatever its once and allowRepeat flags, and offKey removes it by those three.
+		 * A handler is identified by its key or combination, its mode, and its callback: registering the same callback for the same keys and mode again does nothing, whatever its once and allowRepeat flags, and offKey removes it by those three. Registering starts keyboard tracking, unless stopKeyboard() was called; handlers stay registered while the keyboard is stopped, but are not called.
 		 *
 		 * Key data objects are frozen. Keys typed into an editable element, such as an input field, are ignored. A callback that throws does not stop the others; its error is rethrown afterward.
 		 * @param key Key code/key value string, array of keys for combinations, or "any" for any key.
@@ -2627,7 +2629,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 *
 		 * Adds keys to the action keys set. Action keys have their default browser behavior prevented on keydown and keyup, for example page scrolling with the arrow keys or Space. This is useful for game controls where you don't want the browser to handle certain keys.
 		 *
-		 * Keys already in the set stay in it; use removeActionKeys() to remove keys. set( { "actionKeys": [ ... ] } ) also adds. Keys can be specified by code (e.g., "ArrowUp", "Space") or key value (e.g., " ").
+		 * Keys already in the set stay in it; use removeActionKeys() to remove keys. set( { "actionKeys": [ ... ] } ) also adds. Keys can be specified by code (e.g., "ArrowUp", "Space") or key value (e.g., " "). Setting action keys starts keyboard tracking, unless stopKeyboard() was called.
 		 * @param keys Array of key codes or key values to add as action keys.
 		 * @returns This function does not return a value.
 		 */
@@ -2795,7 +2797,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Starts keyboard input monitoring.
 		 *
-		 * Starts the keyboard input monitoring system by adding the keydown and keyup listeners. The keyboard starts when the plugin loads, so this command is only needed after stopKeyboard(). Registering a handler or calling inKey() does not restart a stopped keyboard. Calling it again while the keyboard is running has no effect, and starting keeps the focused element's focus.
+		 * Starts the keyboard input monitoring system by adding the keydown, keyup, and blur listeners. The keyboard also starts on first use: the first inKey() call, onKey() registration, or setActionKeys() call, including set( { "actionKeys": [ ... ] } ). The plugin adds no listener before then, so keys pressed earlier are not tracked. This command is needed only after stopKeyboard(), which nothing else undoes. Calling it again while the keyboard is running has no effect, and starting keeps the focused element's focus.
 		 * @returns This function does not return a value.
 		 */
 		startKeyboard(): void;
@@ -2823,7 +2825,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops keyboard input monitoring.
 		 *
-		 * Stops the keyboard input monitoring system. This removes the keydown and keyup listeners and clears all key states. Keyboard events are no longer tracked until startKeyboard() is called again; registering a handler or calling inKey() does not restart it. An input() prompt keeps reading keys while the keyboard is stopped.
+		 * Stops the keyboard input monitoring system. This removes the keydown and keyup listeners and clears all key states. Keyboard events are no longer tracked until startKeyboard() is called again: while stopped, inKey() reports no keys, and handlers stay registered but are not called. Calling inKey(), registering a handler, or setting action keys does not restart it. An input() prompt keeps reading keys while the keyboard is stopped.
 		 * @returns This function does not return a value.
 		 */
 		stopKeyboard(): void;
