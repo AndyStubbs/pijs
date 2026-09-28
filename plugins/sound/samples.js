@@ -1281,6 +1281,27 @@ function validatePlaybackRate( name, rate, stream ) {
 
 
 /*************************************************************************************************
+ * Sound Service
+ ************************************************************************************************/
+
+
+/**
+ * Get the decoded buffer of a loaded audio file, for the sound service. The buffer is shared
+ * with core playback, so extensions must not modify it.
+ *
+ * @param {string} name - Audio ID returned from loadAudio
+ * @returns {AudioBuffer|null} The buffer of a loaded decode-mode file; null while it loads,
+ * for streamed files, and for unknown names
+ */
+export function getAudioBuffer( name ) {
+	if( Object.prototype.hasOwnProperty.call( m_audio, name ) ) {
+		return m_audio[ name ].buffer;
+	}
+	return null;
+}
+
+
+/*************************************************************************************************
  * Plugin Registration
  ************************************************************************************************/
 

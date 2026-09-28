@@ -16,7 +16,7 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
+| 1 | [Sound 10.2](#42-phase-10-sample-instruments) | Sample source factory for sample instruments: per-name registration, pitch by playback rate, and detune | Nothing. Can run in parallel |
 | 2 | [Core 5–7, 9–12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
 | 3 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Nothing |
 | 4 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Nothing |
@@ -28,7 +28,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
 | Core | [3](#3-core) | Phases 1 and 3 done. Core 1, 2, 4, 8, and 13 done, 8 tasks left | Core 5–7, 9–12 |
-| Sound | [4](#4-sound) | Phases 0–9 done; Phases 10–11 not started | Sound 10.1 |
+| Sound | [4](#4-sound) | Phases 0–9 done; Phase 10: task 10.1 done, 3 tasks left; Phase 11 not started | Sound 10.2 |
 | Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Pointer | [6](#6-pointer) | Phase 1 done; Phase 2 not started | Pointer 2.1 |
 | Gamepad | [7](#7-gamepad) | Phase 1 done; Phase 2 not started | Gamepad 2.1 |
@@ -323,10 +323,10 @@ Done ([Section 13.4](#134-sound)). Its listening check is in the
 ### 4.2 Phase 10: sample instruments
 
 Design: [DESIGN-SOUND-ADVANCED §7](DESIGN-SOUND-ADVANCED.md#7-phase-10-sample-instruments).
+Done: task 10.1 ([Section 13.4](#134-sound)).
 
 | # | Task | Status |
 | --- | --- | --- |
-| 10.1 | Core `getAudioBuffer` service member, contract test, member pin update, size entry | — |
 | 10.2 | Sample source factory, per-name registration, pitch by playback rate, and detune | — |
 | 10.3 | `defineInstrument` `audio`, `rootFrequency`, and `loop` options, validation, and not-ready behavior. Closes D15 | — |
 | 10.4 | Metadata, types, and a sample instrument in the demo | — |
@@ -1020,6 +1020,12 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | 9.2 | Core `observePlay` service member |
 | 9.3 | Music sync (`sync.js`): `onPlay( mode, fn, once )` and `offPlay( mode, fn )` with modes `"note"` and `"end"`, dispatched on animation frames at the audible time; notes more than 250 ms late dropped; `clearEvents( "play" )`. Closed D13 and D14 |
 | 9.4 | Metadata and types for `generateSfx()`, `onPlay()`, and `offPlay()`; the generator panel and the beat-synced music sync panel in `sound_advanced_01.html`; the Phase 9 size entry |
+
+**Phase 10: sample instruments** (design §3.3, §7)
+
+| # | Task |
+| --- | --- |
+| 10.1 | Core `getAudioBuffer( name )` service member: the decoded buffer of a loaded decode-mode file, `null` while loading, for streamed files, and for unknown or removed names; documented in `plugins/PLUGIN-SYSTEM.md` with the rule that the shared buffer is not modified. Tests: the member pin and a contract test in `audio-service-browser.test.js`, and a streamed file in `audio-stream-browser.test.js`. Size: +55 bytes in the `sound` plugin, 258 under its target |
 
 ### 13.5 Core
 

@@ -327,6 +327,25 @@ generator part of 9.4, before task 9.3.
   `sound-advanced` bundle grew from 31,605 to 34,310 bytes.
 - **Full merge.** Merging all of `sound-advanced` into `pi.min.js` now costs 11,476 bytes.
 
+## Phase 10: sample instruments
+
+Size entries for each task, measured against `main` before the task, gzipped. The phase exit
+adds `size-phase10.json`.
+
+| Bundle | Before | After | Delta |
+| --- | --- | --- | --- |
+| `sound` plugin | 15,559 | 15,614 | +55 |
+| `pi.min.js` | 75,518 | 75,547 | +29 |
+| `pi.lite.min.js` | 49,111 | 49,111 | 0 |
+| `sound-advanced` plugin | 12,301 | 12,301 | 0 |
+
+- **`getAudioBuffer` (task 10.1).** Measured against `main` at `905bd78`. The member costs 55
+  bytes in the `sound` plugin, which is 15,614 bytes, 258 under the 15,872-byte target, and
+  29 in `pi.min.js`. The sound share of full-build growth over the 2.2 baseline is now 9,707
+  bytes, 21 under the 9,728-byte target. `pi.min.js` itself grew from 72,976 to 75,518 bytes
+  between the Phase 9 exit and this task through the keyboard and core work, none of it sound
+  code.
+
 ## Sample measurements (Phase 3)
 
 Decoded instances are compared with the fixture content at the modeled position times the
