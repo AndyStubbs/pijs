@@ -39,8 +39,9 @@ stopKeyboard() was called; handlers stay registered while the keyboard is stoppe
 called.
 
 Key data objects are frozen and carry cancelled, false unless the release was cancelled. Keys
-typed into an editable element, such as an input field, are ignored. A callback that throws
-does not stop the others; its error is reported with console.error().
+typed into an editable element, such as an input field, are ignored, and so are the keys of an
+active input() prompt. A callback that throws does not stop the others; its error is reported
+with console.error().
 
 The key is a non-empty string or a non-empty array of them. The array is copied, so changing it
 later does not change the handler, and a key listed twice counts once; "any" cannot be part of
