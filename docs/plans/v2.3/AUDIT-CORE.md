@@ -827,7 +827,7 @@ the [ROADMAP](ROADMAP.md#3-core) tasks that implement each item.
 | CORE-017 | `addCommand` declaration and example | Accepted | Fixed by C5 (Core 4, done) |
 | CORE-018 | Circle geometry cache unbounded | Accepted | Fixed by C8 (Core 7, done): a 4 MB least-recently-used budget |
 | CORE-019 | Release packaging details | Accepted | Fixed by C11: rename, `"private": true`, and the changelog in the tarball (Core 9, done). The package README's plugin list follows in R.3 (CORE-003) |
-| CORE-020 | Missing checks | Accepted | A test with each fix, and Core 10 |
+| CORE-020 | Missing checks | Accepted | A test with each fix, and Core 10 (done): the runtime command set of each bundle is compared with the metadata |
 | C1, C2, C5, C6, C8 | Fixes | Accepted | Core 5, 1, 4, 6, and 7 (done) |
 | C3 | Lite-only plugin entry points | Accepted | Changed on 2026-09-27 from a self-registration skip to documentation (Core 2, R.3) |
 | C4 | Plugin-internal subscriptions | Rejected | Core API stays as is; CORE-004 is documented instead |

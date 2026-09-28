@@ -41,7 +41,8 @@ async function buildSource( entry, format = "iife", minify = false, options = {}
 			"contents": `import "./${entry}";
 				import * as manager from "./src/core/screen-manager.js";
 				import * as renderer from "./src/renderer/renderer.js";
-				window.${options.expose} = { manager, renderer };`,
+				import * as commands from "./src/core/commands.js";
+				window.${options.expose} = { manager, renderer, commands };`,
 			"resolveDir": root
 		} };
 	}
