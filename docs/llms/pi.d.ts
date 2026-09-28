@@ -2236,7 +2236,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * Retrieves key state information. If a key is provided, returns the key data object for that key if it is currently pressed, or null if it is not. The key can be named by its code (e.g., "KeyA"), which names a physical key, or by its key value (e.g., "a"), which names the character it types. A key value is held while any key that produced it is held, such as either Shift key for "Shift"; the most recent press is returned.
 		 *
-		 * If no key is provided, returns a new array of the key data objects of all pressed keys.
+		 * If no key is provided, returns a frozen array of the key data objects of all pressed keys, ordered by each key's latest keydown, or an empty array. The same array is returned until a key is pressed or released, so reading it every frame does not allocate.
 		 *
 		 * The first call starts keyboard tracking, unless stopKeyboard() was called; keys pressed before tracking starts are not reported.
 		 *
@@ -2361,13 +2361,15 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * Use "any" as the key to listen for every key. The callback receives the key data of the key that was pressed or released.
 		 *
-		 * A "down" callback receives the key data of the keydown. An "up" callback receives the key data of the keyup, so its modifier state is the state at the release. A release runs the handlers of the key's code, of the value it reports, and of the value the key was pressed with, when a modifier changed it during the hold. Single-key and "any" up handlers run even for a key whose press was not seen. A combination's up handler runs when one of its keys is released while all were held, with the release data for that key.
+		 * A "down" callback receives the key data of the keydown. An "up" callback receives the key data of the keyup, so its modifier state is the state at the release. A release runs the handlers of the key's code, of the value it reports, and of the value the key was pressed with, when a modifier changed it during the hold. Single-key and "any" up handlers run even for a key whose press was not seen. A combination's up handler runs when one of its keys is released while all were held, with the release data for that key and the held data for the others.
+		 *
+		 * Key state is updated before handlers run: in a "down" handler, inKey() reports the pressed key, and in an "up" handler, it no longer reports the released key. A handler registered while an event is being handled first runs for the next event, and a handler removed then is not called for the rest of it.
 		 *
 		 * Keys the player did not release are released through the "up" handlers too, with cancelled set to true: when the window loses focus, the page is hidden, stopKeyboard() is called, a key comes from an editable element, or an input() prompt starts. Their key data copies the last keydown, with repeat set to false. Each held key is released once; a later trigger finds nothing held.
 		 *
 		 * A handler is identified by its key or combination, its mode, and its callback: registering the same callback for the same keys and mode again does nothing, whatever its once and allowRepeat flags, and offKey removes it by those three. Registering starts keyboard tracking, unless stopKeyboard() was called; handlers stay registered while the keyboard is stopped, but are not called.
 		 *
-		 * Key data objects are frozen and carry cancelled, false unless the release was cancelled. Keys typed into an editable element, such as an input field, are ignored. A callback that throws does not stop the others; its error is rethrown afterward.
+		 * Key data objects are frozen and carry cancelled, false unless the release was cancelled. Keys typed into an editable element, such as an input field, are ignored. A callback that throws does not stop the others; its error is reported with console.error().
 		 * @param key Key code/key value string, array of keys for combinations, or "any" for any key.
 		 * @param mode Event mode: "up" for key release, "down" for key press.
 		 * @param fn Callback function that receives the key data, or an array of key data for a combination.
