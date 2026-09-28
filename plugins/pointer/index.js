@@ -84,18 +84,19 @@ export default function pointerPlugin( pluginApi ) {
 		}
 	} );
 
-	// Screen cleanup
+	// Screen cleanup. Handlers are cleared before tracking stops, so the release of held input
+	// reaches no handler of a screen being removed
 	pluginApi.addScreenCleanupFunction( ( screenData ) => {
+		mouseApi.clearMouseEvents( screenData );
+		touchApi.clearTouchEvents( screenData );
+		pressApi.clearPressEvents( screenData );
+		pressApi.clearClickEvents( screenData );
 		if( screenData.mouseStarted ) {
 			mouseApi.stopMouse( screenData );
 		}
 		if( screenData.touchStarted ) {
 			touchApi.stopTouch( screenData );
 		}
-		mouseApi.clearMouseEvents( screenData );
-		touchApi.clearTouchEvents( screenData );
-		pressApi.clearPressEvents( screenData );
-		pressApi.clearClickEvents( screenData );
 	} );
 }
 

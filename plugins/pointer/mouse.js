@@ -10,6 +10,9 @@ import * as g_press from "./press.js";
 // Module-level reference to startMouseInternal function
 let m_startMouseInternal = null;
 
+// The `buttons` bit of each `MouseEvent.button` value
+const BUTTON_BITS = [ 1, 4, 2, 8, 16 ];
+
 /**
  * Start mouse tracking through the registered mouse implementation.
  *
@@ -35,6 +38,11 @@ export function registerMouse( pluginApi, helpers ) {
 	const m_removeAllListeners = helpers.removeAllListeners;
 	const m_triggerEventListeners = helpers.triggerEventListeners;
 
+	// Screens with a mouse button held. While any is held, a window listener receives the
+	// release, wherever it happens
+	const m_heldScreens = new Set();
+	let m_isWindowListening = false;
+
 	pluginApi.addScreenDataItem( "mouseStopped", false );
 	pluginApi.addScreenDataItem( "mouseStarted", false );
 	pluginApi.addScreenDataItem( "mouse", null );
@@ -47,7 +55,7 @@ export function registerMouse( pluginApi, helpers ) {
 	} );
 
 	pluginApi.addScreenInitFunction( initMouseData );
-	window.addEventListener( "blur", onWindowBlurMouse );
+	document.addEventListener( "visibilitychange", onVisibilityChangeMouse );
 
 	pluginApi.addCommand( "startMouse", startMouse, true, [] );
 	pluginApi.addCommand( "stopMouse", stopMouse, true, [] );
@@ -65,7 +73,8 @@ export function registerMouse( pluginApi, helpers ) {
 			"lastX": Math.floor( screenData.width / 2 ),
 			"lastY": Math.floor( screenData.height / 2 ),
 			"buttons": 0,
-			"action": "none"
+			"action": "none",
+			"cancelled": false
 		};
 	}
 
@@ -95,19 +104,20 @@ export function registerMouse( pluginApi, helpers ) {
 		if( !screenData.mouseStarted ) {
 			screenData.canvas.addEventListener( "mousemove", mouseMove );
 			screenData.canvas.addEventListener( "mousedown", mouseDown );
-			screenData.canvas.addEventListener( "mouseup", mouseUp );
 			screenData.canvas.addEventListener( "contextmenu", onContextMenu );
 			screenData.mouseStarted = true;
 		}
 	}
 
 	/**
-	 * Stop tracking mouse events on the screen.
+	 * Stop tracking mouse events on the screen. Held buttons are released first, through the
+	 * `"up"` handlers with `cancelled: true`.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @returns {void}
 	 */
 	function stopMouse( screenData ) {
+		releaseHeldMouse( screenData );
 
 		// Explicitly set mouse to stoppedto prevent mouse commands from starting mouse when
 		// use explicitly sets it to true
@@ -116,7 +126,6 @@ export function registerMouse( pluginApi, helpers ) {
 		if( screenData.mouseStarted ) {
 			screenData.canvas.removeEventListener( "mousemove", mouseMove );
 			screenData.canvas.removeEventListener( "mousedown", mouseDown );
-			screenData.canvas.removeEventListener( "mouseup", mouseUp );
 			screenData.canvas.removeEventListener( "contextmenu", onContextMenu );
 			screenData.mouseStarted = false;
 		}
@@ -130,7 +139,7 @@ export function registerMouse( pluginApi, helpers ) {
 		mouse.lastY = screenData.mouse.lastY;
 		mouse.buttons = screenData.mouse.buttons;
 		mouse.action = screenData.mouse.action;
-		mouse.cancelled = false;
+		mouse.cancelled = screenData.mouse.cancelled;
 		mouse.type = "mouse";
 		return mouse;
 	}
@@ -214,6 +223,7 @@ export function registerMouse( pluginApi, helpers ) {
 			return;
 		}
 		updateMouse( screenData, e, "move" );
+		updateHeld( screenData );
 		const mouseData = getMouse( screenData );
 		m_triggerEventListeners( "move", mouseData, screenData.onMouseEventListeners );
 		g_press.triggerPressListeners( screenData, "move", mouseData );
@@ -225,6 +235,7 @@ export function registerMouse( pluginApi, helpers ) {
 			return;
 		}
 		updateMouse( screenData, e, "down" );
+		updateHeld( screenData );
 		const mouseData = getMouse( screenData );
 		m_triggerEventListeners( "down", mouseData, screenData.onMouseEventListeners );
 		g_press.triggerPressListeners( screenData, "down", mouseData );
@@ -233,21 +244,86 @@ export function registerMouse( pluginApi, helpers ) {
 		}
 	}
 
+	/**
+	 * Release a button on every screen that holds it. The listener is on `window`, so a release
+	 * outside the canvas arrives; a release for a button that is not held, such as a late
+	 * release after a hidden page released it, is ignored.
+	 *
+	 * @param {MouseEvent} e - The `mouseup` event.
+	 * @returns {void}
+	 */
 	function mouseUp( e ) {
-		const screenData = getScreenDataFromEvent( e );
-		if( !screenData ) {
+		const bit = BUTTON_BITS[ e.button ];
+		if( bit === undefined ) {
 			return;
 		}
-		updateMouse( screenData, e, "up" );
+		for( const screenData of Array.from( m_heldScreens ) ) {
+			if( ( screenData.mouse.buttons & bit ) === 0 ) {
+				continue;
+			}
+			updateMouse( screenData, e, "up" );
+			updateHeld( screenData );
+
+			// Only the primary button clicks; any other release disarms
+			if( e.button === 0 ) {
+				dispatchRelease( screenData, "up" );
+			} else {
+				dispatchRelease( screenData, "cancel" );
+			}
+		}
+	}
+
+	/**
+	 * Release every held button of a screen that the player did not release: the page was
+	 * hidden or tracking stopped. The release never clicks.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {void}
+	 */
+	function releaseHeldMouse( screenData ) {
+		if( !screenData.mouse || screenData.mouse.buttons === 0 ) {
+			return;
+		}
+		const mouse = screenData.mouse;
+		screenData.mouse = {
+			"x": mouse.x,
+			"y": mouse.y,
+			"lastX": mouse.x,
+			"lastY": mouse.y,
+			"buttons": 0,
+			"action": "up",
+			"cancelled": true
+		};
+		updateHeld( screenData );
+		dispatchRelease( screenData, "cancel" );
+	}
+
+	function dispatchRelease( screenData, clickAction ) {
 		const mouseData = getMouse( screenData );
 		m_triggerEventListeners( "up", mouseData, screenData.onMouseEventListeners );
 		g_press.triggerPressListeners( screenData, "up", mouseData );
+		g_press.triggerClickListeners( screenData, mouseData, clickAction, "mouse" );
+	}
 
-		// Only the primary button clicks; any other release disarms
-		if( e.button === 0 ) {
-			g_press.triggerClickListeners( screenData, mouseData, "up", "mouse" );
+	/**
+	 * Track whether the screen holds a button, and keep the window release listener attached
+	 * only while some screen does.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {void}
+	 */
+	function updateHeld( screenData ) {
+		if( screenData.mouse.buttons !== 0 ) {
+			m_heldScreens.add( screenData );
 		} else {
-			g_press.triggerClickListeners( screenData, mouseData, "cancel", "mouse" );
+			m_heldScreens.delete( screenData );
+		}
+		if( m_heldScreens.size > 0 && !m_isWindowListening ) {
+			window.addEventListener( "mouseup", mouseUp, true );
+			m_isWindowListening = true;
+		} else if( m_heldScreens.size === 0 && m_isWindowListening ) {
+			window.removeEventListener( "mouseup", mouseUp, true );
+			m_isWindowListening = false;
 		}
 	}
 
@@ -263,9 +339,11 @@ export function registerMouse( pluginApi, helpers ) {
 	}
 
 	function updateMouse( screenData, e, action ) {
-		const position = g_target.pointerPosition( screenData, e );
+
+		// A canvas with an empty content box keeps the last position
+		let position = g_target.pointerPosition( screenData, e );
 		if( !position ) {
-			return;
+			position = screenData.mouse;
 		}
 		const { "x": x, "y": y } = position;
 
@@ -287,7 +365,8 @@ export function registerMouse( pluginApi, helpers ) {
 			"lastX": lastX,
 			"lastY": lastY,
 			"buttons": e.buttons,
-			"action": action
+			"action": action,
+			"cancelled": false
 		};
 		screenData.lastEvent = "mouse";
 	}
@@ -300,11 +379,18 @@ export function registerMouse( pluginApi, helpers ) {
 		return pluginApi.getScreenData( "mouse-event", screenId );
 	}
 
-	function onWindowBlurMouse() {
-		const allScreensData = pluginApi.getAllScreensData();
-		for( const screenData of allScreensData ) {
-			screenData.mouse.buttons = 0;
-			screenData.mouse.action = "up";
+	/**
+	 * Release held buttons when the page is hidden. Blur changes nothing: browsers keep
+	 * delivering input, including the release, to an unfocused page.
+	 *
+	 * @returns {void}
+	 */
+	function onVisibilityChangeMouse() {
+		if( document.visibilityState !== "hidden" ) {
+			return;
+		}
+		for( const screenData of Array.from( m_heldScreens ) ) {
+			releaseHeldMouse( screenData );
 		}
 	}
 

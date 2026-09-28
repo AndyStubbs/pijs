@@ -1,6 +1,7 @@
 /**
  * Pointer regressions against a fresh in-memory full bundle and the pointer lifecycle fixture:
- * offscreen command validation and noCss pointer bounds. Owned by the pointer workstream.
+ * offscreen command validation, noCss pointer bounds, and a release outside the canvas with
+ * trusted input. Owned by the pointer workstream.
  * Run with node --test test/unit/pointer-browser.test.js; no server is required.
  */
 import * as g_test from "node:test";
@@ -149,4 +150,37 @@ test( "offscreen pointer commands report the invoked command", async () => {
 			return [ error.name, error.code, error.message.startsWith( "inpress: Screen " ) ];
 		}
 	} ), [ "TypeError", "OFFSCREEN_INPUT_UNSUPPORTED", true ] );
+} );
+
+test( "a trusted mouse release outside the canvas is released once (T1)", async () => {
+	const page = await context.newPage();
+	try {
+		await page.goto( "http://localhost:8080/" );
+		await page.setContent( "<html><body style='margin:0'>" +
+			"<div id='host' style='width:200px;height:200px'></div></body></html>" );
+		await page.addScriptTag( { "url": "/build/pi.js" } );
+		await page.evaluate( () => $.ready() );
+		await page.evaluate( () => {
+			$.screen( { "aspect": "100x100", "container": "host" } );
+			window.log = [];
+			$.onmouse( "up", data => window.log.push( [ "mouse up", data.buttons ] ) );
+			$.onpress( "up", data => window.log.push( [ "press up", data.buttons ] ) );
+		} );
+		const box = await page.locator( "canvas" ).boundingBox();
+		await page.mouse.move( box.x + box.width / 2, box.y + box.height / 2 );
+		await page.mouse.down();
+		await page.mouse.move( box.x + box.width + 150, box.y + 50, { "steps": 4 } );
+		await page.mouse.up();
+
+		// A second press and release outside the canvas is not the canvas's
+		await page.mouse.down();
+		await page.mouse.up();
+		assert.deepEqual( await page.evaluate( () => ( {
+			"log": window.log, "buttons": $.inmouse().buttons, "press": $.inpress().buttons
+		} ) ), {
+			"log": [ [ "mouse up", 0 ], [ "press up", 0 ] ], "buttons": 0, "press": 0
+		} );
+	} finally {
+		await page.close();
+	}
 } );

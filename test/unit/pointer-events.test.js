@@ -4,8 +4,9 @@
  * The harness loads `mouse.js`, `touch.js`, `press.js`, and the plugin entry into `vm` contexts
  * and maps command arguments with core's real parseOptions, so the positional and object forms
  * behave as in the bundles. Mouse and touch events are dispatched through the listeners the
- * plugin adds to fake canvases, so they reach the plugin only while tracking is started. Each
- * canvas maps client coordinates one to one onto its screen.
+ * plugin adds to fake canvases, so they reach the plugin only while tracking is started; mouse
+ * events then bubble to the fake window. Each canvas maps client coordinates one to one onto its
+ * screen.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
@@ -23,13 +24,15 @@ const m_utils = g_harness.loadModule( "src/core/utils.js", {
 /**
  * The real pointer plugin on fake screens.
  *
- * @returns {Object} `{ $, screen, clearEvents, mouse, touch, click, tap, errors }`. `$` runs
- *   global commands on the first screen; `screen()` adds a screen whose `api` holds the screen
- *   commands; `errors` holds the arguments of each `console.error()` call.
+ * @returns {Object} `{ $, screen, removeScreen, clearEvents, mouse, mouseOutside, touch,
+ *   click, tap, hide, window, errors }`. `$` runs global commands on the first screen;
+ *   `screen()` adds a screen whose `api` holds the screen commands; `errors` holds the
+ *   arguments of each `console.error()` call.
  */
 function harness() {
 	const screenDataItems = {};
 	const initFunctions = [];
+	const cleanupFunctions = [];
 	const screenCommands = [];
 	const clearHandlers = {};
 	const screens = {};
@@ -40,7 +43,7 @@ function harness() {
 		"utils": m_utils,
 		"addScreenDataItem": ( name, value ) => { screenDataItems[ name ] = value; },
 		"addScreenInitFunction": fn => initFunctions.push( fn ),
-		"addScreenCleanupFunction": () => {},
+		"addScreenCleanupFunction": fn => cleanupFunctions.push( fn ),
 		"addCommand": ( name, fn, isScreen, params ) => {
 			if( isScreen ) {
 				screenCommands.push( { "name": name, "fn": fn, "params": params } );
@@ -59,7 +62,9 @@ function harness() {
 	const globals = {
 		"console": { "error": ( ...args ) => errors.push( args ) },
 		"window": g_harness.createEventTarget(),
-		"document": { "body": { "style": {} } }
+		"document": g_harness.createEventTarget( {
+			"body": { "style": {} }, "visibilityState": "visible"
+		} )
 	};
 
 	// The modules import each other, so each namespace is read when a function runs
@@ -119,6 +124,19 @@ function harness() {
 	screen();
 
 	/**
+	 * Remove a screen as core does: its cleanup functions run, then it is gone.
+	 *
+	 * @param {Object} screenData - Screen to remove.
+	 * @returns {void}
+	 */
+	function removeScreen( screenData ) {
+		for( const fn of cleanupFunctions ) {
+			fn( screenData );
+		}
+		delete screens[ screenData.id ];
+	}
+
+	/**
 	 * Clear handlers as `clearEvents()` does.
 	 *
 	 * @param {string} [type] - Handler type; all pointer types when omitted.
@@ -136,7 +154,7 @@ function harness() {
 	}
 
 	/**
-	 * Dispatch a mouse event through the canvas listeners.
+	 * Dispatch a mouse event through the canvas listeners, then the window listeners.
 	 *
 	 * @param {string} type - Event type, such as `"mousedown"`.
 	 * @param {number} x - Screen x.
@@ -153,7 +171,42 @@ function harness() {
 			"preventDefault": () => { event.defaultPrevented = true; }
 		};
 		screenData.canvas.dispatchEvent( event );
+		globals.window.dispatchEvent( event );
 		return event;
+	}
+
+	/**
+	 * Dispatch a mouse event outside every canvas, through the window listeners only.
+	 *
+	 * @param {string} type - Event type, such as `"mouseup"`.
+	 * @param {number} x - Client x, in the first screen's coordinates.
+	 * @param {number} y - Client y, in the first screen's coordinates.
+	 * @param {number} [buttons] - Buttons held after the event.
+	 * @param {number} [button] - The button that changed; 0 is the primary button.
+	 * @returns {Object} The dispatched event.
+	 */
+	function mouseOutside( type, x, y, buttons = 0, button = 0 ) {
+		const event = {
+			"type": type, "target": globals.document.body, "clientX": x + 0.5,
+			"clientY": y + 0.5, "buttons": buttons, "button": button
+		};
+		globals.window.dispatchEvent( event );
+		return event;
+	}
+
+	/**
+	 * Hide the page, or show it again.
+	 *
+	 * @param {boolean} [isHidden] - Whether the page becomes hidden.
+	 * @returns {void}
+	 */
+	function hide( isHidden = true ) {
+		if( isHidden ) {
+			globals.document.visibilityState = "hidden";
+		} else {
+			globals.document.visibilityState = "visible";
+		}
+		globals.document.dispatchEvent( { "type": "visibilitychange" } );
 	}
 
 	/**
@@ -207,8 +260,10 @@ function harness() {
 	}
 
 	return {
-		"$": api, "screen": screen, "clearEvents": clearEvents, "mouse": mouse, "touch": touch,
-		"click": click, "tap": tap, "errors": errors
+		"$": api, "screen": screen, "removeScreen": removeScreen, "clearEvents": clearEvents,
+		"mouse": mouse,
+		"mouseOutside": mouseOutside, "touch": touch, "click": click, "tap": tap, "hide": hide,
+		"window": globals.window, "errors": errors
 	};
 }
 
@@ -578,4 +633,123 @@ test( "pointer a click needs the down and the release inside its box (P4)", () =
 	h.click( 10, 10 );
 	h.tap( 10, 10 );
 	assert.equal( clicks, 2 );
+} );
+
+/**
+ * Whether the plugin listens for `mouseup` on the window.
+ *
+ * @param {Object} h - Harness.
+ * @returns {boolean}
+ */
+function hasWindowMouseUp( h ) {
+	return h.window.listeners.some( listener => listener.type === "mouseup" );
+}
+
+test( "pointer a mouse release outside the canvas is released once (P8)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	$.onmouse( "up", data => log.push( [ "mouse up", data.x, data.buttons, data.cancelled ] ) );
+	$.onpress( "up", data => log.push( [ "press up", data.x, data.buttons ] ) );
+	assert.equal( hasWindowMouseUp( h ), false );
+	h.mouse( "mousedown", 50, 50, 1 );
+	assert.equal( hasWindowMouseUp( h ), true );
+	h.mouse( "mousemove", 99, 50, 1 );
+	h.mouseOutside( "mouseup", 150, 50 );
+	assert.deepEqual( log, [ [ "mouse up", 150, 0, false ], [ "press up", 150, 0 ] ] );
+	assert.equal( $.inmouse().buttons, 0 );
+	assert.equal( hasWindowMouseUp( h ), false );
+
+	// A release for a button that is not held is ignored, on the canvas or outside it
+	h.mouseOutside( "mouseup", 150, 50 );
+	h.mouse( "mouseup", 50, 50 );
+	h.mouse( "mousedown", 50, 50, 1 );
+	h.mouse( "mouseup", 50, 50, 1, 2 );
+	assert.equal( log.length, 2 );
+	assert.equal( $.inmouse().buttons, 1 );
+} );
+
+test( "pointer blur leaves held input alone (P9)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	$.onmouse( "up", () => log.push( "mouse up" ) );
+	$.ontouch( "end", () => log.push( "touch end" ) );
+	h.mouse( "mousedown", 50, 50, 1 );
+	h.touch( "touchstart", [ { "id": 3, "x": 40, "y": 40 } ] );
+	h.window.dispatchEvent( { "type": "blur" } );
+	assert.deepEqual( log, [] );
+	assert.equal( $.inmouse().buttons, 1 );
+	assert.equal( $.intouch().length, 1 );
+	assert.equal( $.inpress().buttons, 1 );
+	assert.equal( h.window.listeners.some( listener => listener.type === "blur" ), false );
+} );
+
+test( "pointer a hidden page releases held input with cancelled (P9)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	let clicks = 0;
+	$.onmouse( "up", data => log.push( [ "mouse up", data.buttons, data.cancelled ] ) );
+	$.ontouch( "end", data => log.push( [ "touch end", data[ 0 ].id, data[ 0 ].cancelled ] ) );
+	$.onpress( "up", data => log.push( [ "press up", data.type, data.cancelled ] ) );
+	$.onclick( () => { clicks += 1; } );
+	h.mouse( "mousedown", 50, 50, 1 );
+	h.touch( "touchstart", [ { "id": 3, "x": 40, "y": 40 } ] );
+	h.hide();
+	assert.deepEqual( log, [
+		[ "mouse up", 0, true ], [ "press up", "mouse", true ],
+		[ "touch end", 3, true ], [ "press up", "touch", true ]
+	] );
+	assert.deepEqual( [ $.inmouse().buttons, $.inmouse().cancelled ], [ 0, true ] );
+	assert.equal( $.intouch().length, 0 );
+	assert.equal( hasWindowMouseUp( h ), false );
+
+	// The late real releases, a second hide, and showing the page release nothing again
+	h.mouseOutside( "mouseup", 50, 50 );
+	h.touch( "touchend", [], [ { "id": 3, "x": 40, "y": 40 } ] );
+	h.hide();
+	h.hide( false );
+	assert.equal( log.length, 4 );
+	assert.equal( clicks, 0 );
+	assert.deepEqual( h.errors, [] );
+} );
+
+test( "pointer stop commands release held input with cancelled (P10)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	$.onmouse( "up", data => log.push( [ "mouse up", data.cancelled ] ) );
+	$.ontouch( "end", data => log.push( [ "touch end", data[ 0 ].cancelled ] ) );
+	h.mouse( "mousedown", 50, 50, 1 );
+	$.stopMouse();
+	assert.deepEqual( log, [ [ "mouse up", true ] ] );
+	assert.equal( $.inmouse().buttons, 0 );
+	assert.equal( hasWindowMouseUp( h ), false );
+	h.touch( "touchstart", [ { "id": 4, "x": 40, "y": 40 } ] );
+	$.stopTouch();
+	assert.deepEqual( log[ 1 ], [ "touch end", true ] );
+	assert.equal( $.intouch().length, 0 );
+
+	// Stopping again finds nothing held, and registration does not restart tracking
+	$.stopMouse();
+	$.stopTouch();
+	$.onmouse( "down", () => log.push( "down" ) );
+	h.mouse( "mousedown", 50, 50, 1 );
+	assert.equal( log.length, 2 );
+} );
+
+test( "pointer removing a screen with input held calls none of its handlers", () => {
+	const h = harness();
+	const $ = h.$;
+	const other = h.screen();
+	const log = [];
+	other.api.onmouse( "up", () => log.push( "mouse up" ) );
+	other.api.ontouch( "end", () => log.push( "touch end" ) );
+	h.mouse( "mousedown", 5, 5, 1, 0, other );
+	h.touch( "touchstart", [ { "id": 1, "x": 5, "y": 5 } ], undefined, other );
+	h.removeScreen( other );
+	assert.deepEqual( log, [] );
+	assert.equal( hasWindowMouseUp( h ), false );
+	assert.equal( $.inmouse().buttons, 0 );
 } );

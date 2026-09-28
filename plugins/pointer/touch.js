@@ -44,7 +44,7 @@ export function registerTouch( pluginApi, helpers ) {
 	pluginApi.addScreenDataItem( "onTouchEventListeners", {} );
 
 	pluginApi.addScreenInitFunction( initTouchData );
-	window.addEventListener( "blur", onWindowBlurTouch );
+	document.addEventListener( "visibilitychange", onVisibilityChangeTouch );
 
 	pluginApi.addCommand( "startTouch", startTouch, true, [] );
 	pluginApi.addCommand( "stopTouch", stopTouch, true, [] );
@@ -95,12 +95,14 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 
 	/**
-	 * Stop tracking touch events and reset the screen touch state.
+	 * Stop tracking touch events. Held touches are released first, through the `"end"`
+	 * handlers with `cancelled: true`.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @returns {void}
 	 */
 	function stopTouch( screenData ) {
+		releaseHeldTouches( screenData );
 
 		//Clear explicit touchStopped
 		screenData.touchStopped = true;
@@ -203,6 +205,9 @@ export function registerTouch( pluginApi, helpers ) {
 
 		// Suppress browser gestures and compatibility mouse events before any handler runs
 		e.preventDefault();
+		if( changed.length === 0 ) {
+			return;
+		}
 		m_triggerEventListeners( "start", changed, screenData.onTouchEventListeners );
 		if( primary ) {
 			const pressData = g_press.getTouchPress( screenData );
@@ -219,6 +224,9 @@ export function registerTouch( pluginApi, helpers ) {
 			return;
 		}
 		const changed = updateTouch( screenData, e, "move", false );
+		if( changed.length === 0 ) {
+			return;
+		}
 		const primary = findTouch( changed, screenData.primaryTouchId );
 		if( primary ) {
 			setTouchPress( screenData, primary, primary.action, 1 );
@@ -252,6 +260,45 @@ export function registerTouch( pluginApi, helpers ) {
 			return;
 		}
 		const changed = updateTouch( screenData, e, "end", isCancelled );
+		dispatchTouchRelease( screenData, changed, isCancelled );
+	}
+
+	/**
+	 * Release every held touch of a screen that the player did not release: the page was
+	 * hidden or tracking stopped. Each touch ends where it was last seen, with
+	 * `cancelled: true`, and never clicks.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {void}
+	 */
+	function releaseHeldTouches( screenData ) {
+		const changed = [];
+		for( const id in screenData.touches ) {
+			const touch = screenData.touches[ id ];
+			changed.push( copyTouch( {
+				...touch, "lastX": touch.x, "lastY": touch.y, "action": "end", "cancelled": true
+			} ) );
+		}
+		if( changed.length === 0 ) {
+			return;
+		}
+		screenData.touches = {};
+		dispatchTouchRelease( screenData, changed, true );
+	}
+
+	/**
+	 * Dispatch the release of ended touches, whose state is already removed: the `"end"`
+	 * handlers, the press release if the primary touch ended, and the clicks.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {Array<Object>} changed - The ended touches.
+	 * @param {boolean} isCancelled - Whether the release was cancelled.
+	 * @returns {void}
+	 */
+	function dispatchTouchRelease( screenData, changed, isCancelled ) {
+		if( changed.length === 0 ) {
+			return;
+		}
 		const primary = findTouch( changed, screenData.primaryTouchId );
 		if( primary ) {
 			setTouchPress( screenData, primary, "up", 0 );
@@ -306,7 +353,8 @@ export function registerTouch( pluginApi, helpers ) {
 
 	/**
 	 * Apply the touches an event changed. Other touches keep their state and action, and an
-	 * ended touch is reported at the position where it lifted, then removed.
+	 * ended touch is reported at the position where it lifted, then removed; an end for a touch
+	 * that is not held is ignored.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @param {TouchEvent} e - Touch event.
@@ -323,6 +371,11 @@ export function registerTouch( pluginApi, helpers ) {
 		for( let j = 0; j < e.changedTouches.length; j++ ) {
 			const touch = e.changedTouches[ j ];
 			const previous = screenData.touches[ touch.identifier ];
+
+			// A touch that is not held has nothing to end, such as one a hidden page released
+			if( action === "end" && !previous ) {
+				continue;
+			}
 			let position = g_target.pointerPosition( screenData, touch );
 			if( !position ) {
 				if( !previous ) {
@@ -385,14 +438,18 @@ export function registerTouch( pluginApi, helpers ) {
 		return pluginApi.getScreenData( "touch-event", screenId );
 	}
 
-	function onWindowBlurTouch() {
-		const allScreensData = pluginApi.getAllScreensData();
-		for( const screenData of allScreensData ) {
-			screenData.touches = {};
-			screenData.primaryTouchId = null;
-			if( screenData.touchPress !== null ) {
-				screenData.touchPress.action = "up";
-				screenData.touchPress.buttons = 0;
+	/**
+	 * Release held touches when the page is hidden.
+	 *
+	 * @returns {void}
+	 */
+	function onVisibilityChangeTouch() {
+		if( document.visibilityState !== "hidden" ) {
+			return;
+		}
+		for( const screenData of pluginApi.getAllScreensData() ) {
+			if( screenData.touches ) {
+				releaseHeldTouches( screenData );
 			}
 		}
 	}
