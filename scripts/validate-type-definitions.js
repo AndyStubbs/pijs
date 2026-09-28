@@ -152,6 +152,15 @@ const REQUIRED_DECLARATIONS = [
 			"=> void, once?: boolean, allowRepeat?: boolean ): void;"
 	},
 	{
+		"name": "ingamepad return shapes",
+		"text": "ingamepad( gamepadIndex?: number ): GamepadData | Array<GamepadData> | null | " +
+			"undefined;"
+	},
+	{
+		"name": "gamepad helper methods",
+		"text": "getButtonJustPressed: ( buttonIndex: number ) => boolean;"
+	},
+	{
 		"name": "ontouch callbacks receive the changed touches",
 		"text": "ontouch( mode: string, fn: ( touches: Array<TouchData>, customData?: object ) " +
 			"=> void, once?: boolean, hitBox?: HitBox, customData?: any ): void;"

@@ -12,6 +12,7 @@ This folder holds measurements and reproductions for the 2.3 gamepad audit
 | File | Contents |
 | --- | --- |
 | `size-baseline.json` | `npm run size -- --out=docs/evidence/gamepad-2.3/size-baseline.json` at the revision |
+| `size-phase1.json` | The same command at the exit of gamepad Phase 1 (tasks 1.1–1.7), 2026-09-28 |
 | `probes.js` | Reproductions P1–P14b (including P3b and P5b), run in Chromium, Firefox and WebKit against fresh in-memory bundles of the current source, plus a load check of the manual gamepad pages |
 | `probes-output.json` | Observed and expected results per engine and probe, with page errors |
 | `device-check.html` | A page for the physical-controller pass: Pi.js state next to the browser's own Gamepad API |
@@ -27,6 +28,24 @@ This folder holds measurements and reproductions for the 2.3 gamepad audit
 The standalone plugin is about 2.0% of `pi.min.js` by gzip size. `npm run size` has no
 differential for the plugin's marginal cost inside the Full bundle; the standalone figure is
 the upper bound.
+
+## Size at Phase 1 exit
+
+`size-phase1.json`, measured after gamepad tasks 1.1–1.7. The standalone plugin is still 1.0.0;
+Phase 1 changed no API.
+
+| Bundle | Bytes | Gzip | Gzip change |
+| --- | --- | --- | --- |
+| `gamepad` plugin 1.0.0 (standalone IIFE) | 5,590 | 2,022 | +594 |
+| `pi.min.js` (Full, includes gamepad) | 213,654 | 74,713 | +2,109 |
+| `pi.lite.min.js` (no gamepad) | 138,765 | 48,947 | +362 |
+
+The gamepad growth is the separate per-pad state with accumulated edges, the in-place updates
+of live pads and the list, the page-visibility release, isolated dispatch with once-per-pad
+connect delivery and replay, and the listeners added on the first start. The Full change also
+includes keyboard and pointer Phase 1 and core changes since the baseline; Lite has not changed
+since pointer Phase 1 exit (48,947), so gamepad Phase 1 added 539 bytes to Full (74,174 to
+74,713).
 
 ## Probes
 

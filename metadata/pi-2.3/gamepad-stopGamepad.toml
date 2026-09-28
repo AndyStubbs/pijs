@@ -1,0 +1,40 @@
+title = "stopGamepad"
+category = "gamepad"
+isScreen = false
+plugin = "gamepad"
+summary = "Stops the gamepad input loop."
+description = """
+Stops polling. While stopped, ingamepad() returns null and does not restart polling, and pads
+keep the state of the last update. startGamepad() resumes polling, and so does registering an
+onGamepadConnected or onGamepadDisconnected callback.
+
+Connection events are still tracked while stopped: the connection callbacks run, and pads join
+and leave the list.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Connect gamepad and press a button or move an axis to connect" );
+$.onGamepadConnected( ( gamepad ) => {
+	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
+	setTimeout( () => {
+		$.print( "Gamepad is now stopped" );
+		$.stopGamepad();
+	}, 3000 );
+} );
+
+run();
+function run() {
+	const gamepad = $.ingamepad( 0 );
+	if( gamepad ) {
+		const vAxis = gamepad.getAxis( 0 );
+		$.cls();
+		$.print( "Game will stop in 3 seconds" );
+		$.circle( Math.floor( 300 * ( vAxis / 2 ) ) + 150, 100, 8 );
+	}
+	requestAnimationFrame( run );
+}
+"""
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

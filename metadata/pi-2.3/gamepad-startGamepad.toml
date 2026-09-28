@@ -1,0 +1,45 @@
+title = "startGamepad"
+category = "gamepad"
+isScreen = false
+plugin = "gamepad"
+summary = "Starts the gamepad input loop and begins monitoring for gamepad connections."
+description = """
+Starts polling gamepads once per animation frame. Polling also starts on first use: the first
+ingamepad() call or handler registration. Calling it again while polling does nothing.
+
+The first start adds the connection and page-visibility listeners and scans for pads that are
+already connected, passing each to the onGamepadConnected callbacks. The plugin adds no listener
+before then.
+
+Polling continues while the window loses focus but the page stays visible. When the page is
+hidden, every button is released and the axes read 0, without reporting a release; when it is
+visible again, a button still held reads as pressed, not as just pressed.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Connect gamepad and press a button or move an axis to connect" );
+$.onGamepadConnected( ( gamepad ) => {
+	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
+	$.print( "Game is will start in 3 seconds" );
+	$.stopGamepad();
+	setTimeout( () => {
+		$.print( "Gamepad is now started" );
+		$.startGamepad();
+	}, 3000 );
+} );
+
+run();
+function run() {
+	const gamepad = $.ingamepad( 0 );
+	if( gamepad ) {
+		const vAxis = gamepad.getAxis( 0 );
+		$.cls();
+		$.circle( Math.floor( 300 * ( vAxis / 2 ) ) + 150, 100, 8 );
+	}
+	requestAnimationFrame( run );
+}
+"""
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

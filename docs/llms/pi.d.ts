@@ -190,13 +190,44 @@ declare namespace Pi {
 	}
 
 	/**
-	 * Gamepad state and event data.
+	 * State of one gamepad button.
 	 *
-	 * Gamepad data object containing connection status, button states, axis values, and helper methods. Returned by ingamepad() and passed to gamepad event callbacks (onGamepadConnected, onGamepadDisconnected).
+	 * One entry of GamepadData.buttons. It is live: the same object is updated in place on each read.
+	 */
+	interface GamepadButton {
+		/**
+		 * Whether the button is held.
+		 */
+		pressed: boolean;
+
+		/**
+		 * How far the button is pressed, from 0 to 1.
+		 */
+		value: number;
+
+		/**
+		 * Whether the button was pressed since the previous read.
+		 */
+		pressStarted: boolean;
+
+		/**
+		 * Whether the button was released since the previous read.
+		 */
+		pressReleased: boolean;
+	}
+
+	/**
+	 * Gamepad state and helper methods.
+	 *
+	 * A connected gamepad, returned by ingamepad() and passed to onGamepadConnected callbacks. The object is live: the same object is returned on every read and updated in place, including its buttons array, each button, axes, and lastAxes. Copy values to keep a snapshot.
+	 *
+	 * A read is an ingamepad() call or a call to one of the methods below, including on a pad kept from an earlier read. The first read in each animation frame updates every pad with what happened since the last frame that had a read, so a press and a release between two reads are both reported; every other read in the same frame sees the same values.
+	 *
+	 * A pad starts with every button released, so a button held when the pad appears, such as the press that makes the browser expose it, is reported as just pressed on a later read. Button and axis numbers follow the browser's Gamepad API; the standard mapping has 17 buttons and 4 axes.
 	 */
 	interface GamepadData {
 		/**
-		 * Gamepad index (0-3).
+		 * The browser's index for the pad, a non-negative integer.
 		 */
 		index: number;
 
@@ -211,19 +242,64 @@ declare namespace Pi {
 		connected: boolean;
 
 		/**
-		 * Gamepad mapping type.
+		 * Gamepad mapping type, such as 'standard', or an empty string.
 		 */
 		mapping: string;
 
 		/**
-		 * Array of button objects with pressed, value, pressStarted, pressReleased properties.
+		 * The browser's timestamp of the pad state at the last read.
 		 */
-		buttons: Array<object>;
+		timestamp: number;
 
 		/**
-		 * Array of axis values (-1.0 to 1.0).
+		 * The browser's vibration actuator for the pad, or null.
+		 */
+		vibrationActuator: any;
+
+		/**
+		 * Button states, in the browser's button order.
+		 */
+		buttons: Array<GamepadButton>;
+
+		/**
+		 * Axis values from -1 to 1 after the dead zone set by setGamepadSensitivity(): values inside it read 0, and values outside it are scaled to start from 0.
 		 */
 		axes: Array<number>;
+
+		/**
+		 * Axis values at the previous read.
+		 */
+		lastAxes: Array<number>;
+
+		/**
+		 * Reads the button object, or null for an index outside the buttons array.
+		 */
+		getButton: ( buttonIndex: number ) => GamepadButton | null;
+
+		/**
+		 * Reads whether the button is held, or null for an index outside the buttons array.
+		 */
+		getButtonPressed: ( buttonIndex: number ) => boolean | null;
+
+		/**
+		 * Reads whether the button was pressed since the previous read; false out of range.
+		 */
+		getButtonJustPressed: ( buttonIndex: number ) => boolean;
+
+		/**
+		 * Reads whether the button was released since the previous read; false out of range.
+		 */
+		getButtonJustReleased: ( buttonIndex: number ) => boolean;
+
+		/**
+		 * Reads the axis value; 0 for an index outside the axes array.
+		 */
+		getAxis: ( axisIndex: number ) => number;
+
+		/**
+		 * Reads whether the axis value differs from the previous read; false out of range.
+		 */
+		getAxisChanged: ( axisIndex: number ) => boolean;
 	}
 
 	/**
@@ -1053,8 +1129,8 @@ declare namespace Pi {
 		 *
 		 * Clears queued/registered events. If type is provided, clears only that event type; otherwise clears events for all registered types.
 		 *
-		 * The pointer plugin registers "mouse", "touch", and "press"; "press" also clears click handlers. Clearing pointer handlers does not stop tracking.
-		 * @param type Optional type to clear (e.g., "keyboard", "mouse", "touch", "press").
+		 * The pointer plugin registers "mouse", "touch", and "press"; "press" also clears click handlers. The gamepad plugin registers "gamepad", which removes every onGamepadConnected and onGamepadDisconnected callback, whichever screen it is called from. Clearing handlers does not stop tracking or polling.
+		 * @param type Optional type to clear (e.g., "keyboard", "mouse", "touch", "press", "gamepad").
 		 * @returns This function does not return a value.
 		 */
 		clearEvents( params: { "type"?: string } ): void;
@@ -2142,26 +2218,18 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Gets gamepad data for a specific gamepad or all gamepads.
 		 *
-		 * Retrieves gamepad data. If gamepadIndex is provided, returns the gamepad object for that index, or undefined if not found. If gamepadIndex is null or undefined, returns an array of all connected gamepads sorted by index.
+		 * Reads the connected gamepads. With a gamepadIndex, returns the GamepadData for that index, or undefined when no pad has it. Without one, or with null, returns every connected pad in index order, in one live array that is refilled on each call.
 		 *
-		 * The returned gamepad object contains:
-		 * - **index**: Gamepad index
-		 * - **id**: Gamepad identifier string
-		 * - **connected**: Connection status
-		 * - **mapping**: Gamepad mapping type
-		 * - **buttons**: Array of button objects with pressed, value, pressStarted, pressReleased
-		 * - **axes**: Array of axis values (-1.0 to 1.0)
-		 * - **getButton(buttonIndex)**: Get button object by index
-		 * - **getButtonPressed(buttonIndex)**: Get button pressed state
-		 * - **getButtonJustPressed(buttonIndex)**: Get if button was just pressed this frame
-		 * - **getButtonJustReleased(buttonIndex)**: Get if button was just released this frame
-		 * - **getAxis(axisIndex)**: Get axis value
-		 * - **getAxisChanged(axisIndex)**: Get if axis value changed this frame
-		 * @param gamepadIndex Gamepad index to retrieve. If null/undefined, returns all gamepads.
-		 * @returns Gamepad object if index provided, or array of all gamepads if index is null/undefined.
+		 * The first read starts polling, unless stopGamepad() was called; after stopGamepad(), every read returns null until startGamepad() or a handler registration starts polling again. The first read records the current state without reporting buttons already held as just pressed.
+		 *
+		 * Pads are live objects updated in place. The first read in each animation frame reports what happened since the last frame that had a read, and every other read in the frame sees the same values; see GamepadData.
+		 *
+		 * An index that is not a non-negative integer throws a TypeError with code INVALID_PARAMETERS.
+		 * @param gamepadIndex Gamepad index to read. If omitted or null, returns every connected pad.
+		 * @returns The pad for the index, or undefined when none has it; every connected pad when no index is given; null while polling is stopped.
 		 */
-		ingamepad( params: { "gamepadIndex"?: number } ): object | any[];
-		ingamepad( gamepadIndex?: number ): object | any[];
+		ingamepad( params: { "gamepadIndex"?: number } ): GamepadData | Array<GamepadData> | null | undefined;
+		ingamepad( gamepadIndex?: number ): GamepadData | Array<GamepadData> | null | undefined;
 
 		/**
 		 * Gets the current state of a key or all pressed keys.
@@ -2257,10 +2325,12 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Registers a callback function for when a gamepad is connected.
 		 *
-		 * Registers a callback function that will be called whenever a gamepad is connected. The callback receives a gamepad data object with index, id, mapping, and other properties.
+		 * Registers a callback that runs when a gamepad connects, with its GamepadData. The callback also receives each pad that is already connected when it is registered, in index order. It receives each connection once, whether it learns of the pad from the start-up scan, this replay, or a connection event; a pad that disconnects and connects again is a new connection.
 		 *
-		 * Multiple callbacks can be registered. The callback will also be triggered for any gamepads that are already connected when the callback is registered.
-		 * @param fn Callback function that receives (gamepad) when a gamepad connects.
+		 * The pad passed to the callback has every button released; a button held when it connected is reported as just pressed on a later read. A callback registered by another gamepad callback receives the connected pads after that callback's dispatch ends.
+		 *
+		 * Registering starts polling, even after stopGamepad(). A callback that throws is reported with console.error(), and the other callbacks still run. clearEvents( "gamepad" ) removes every callback.
+		 * @param fn Callback function that receives the pad when it connects.
 		 * @returns This function does not return a value.
 		 */
 		onGamepadConnected( params: { "fn": ( gamepadData: GamepadData ) => void } ): void;
@@ -2269,14 +2339,14 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Registers a callback function for when a gamepad is disconnected.
 		 *
-		 * Registers a callback function that will be called whenever a gamepad is disconnected. The callback receives a gamepad data object with index, id, mapping, and connected status.
+		 * Registers a callback that runs when a gamepad disconnects. The callback receives the pad's index, id, mapping, and connected status (false), not its GamepadData. The pad has already left the list that ingamepad() returns when the callback runs.
 		 *
-		 * Multiple callbacks can be registered.
-		 * @param fn Callback function that receives (gamepad) when a gamepad disconnects.
+		 * Registering starts polling, even after stopGamepad(). A callback that throws is reported with console.error(), and the other callbacks still run. clearEvents( "gamepad" ) removes every callback.
+		 * @param fn Callback function that receives the pad's index, id, mapping, and connected status.
 		 * @returns This function does not return a value.
 		 */
-		onGamepadDisconnected( params: { "fn": ( gamepadData: GamepadData ) => void } ): void;
-		onGamepadDisconnected( fn: ( gamepadData: GamepadData ) => void ): void;
+		onGamepadDisconnected( params: { "fn": ( data: { index: number, id: string, mapping: string, connected: boolean } ) => void } ): void;
+		onGamepadDisconnected( fn: ( data: { index: number, id: string, mapping: string, connected: boolean } ) => void ): void;
 
 		/**
 		 * Registers a callback function for key events.
@@ -2619,10 +2689,10 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Sets the dead zone sensitivity for gamepad analog sticks.
 		 *
-		 * Sets the sensitivity threshold for analog stick axes. Values below this threshold will be treated as zero to account for stick drift. The sensitivity value must be between 0 and 1.
+		 * Sets the dead zone applied to every gamepad axis, to hide stick drift. The default is 0.2. An axis value whose size is below the dead zone reads 0; a larger value is scaled so that it starts from 0 at the edge of the dead zone and still reaches 1 at full tilt. Each axis is handled on its own.
 		 *
-		 * A value of 0 means no dead zone (all input is registered). A value of 1 means maximum dead zone (almost no input registered). Typical values are around 0.1-0.3.
-		 * @param sensitivity Sensitivity threshold between 0 and 1 (0 = no dead zone, 1 = maximum dead zone).
+		 * The value must be a number from 0 to 1: 0 means no dead zone, and 1 is treated as 0.99999. Anything else throws a TypeError with code INVALID_PARAMETERS and keeps the previous setting. The new dead zone applies from the next update. It can also be set with set( { "gamepadSensitivity": value } ).
+		 * @param sensitivity Dead zone from 0 to 1 (0 = no dead zone). The default is 0.2.
 		 * @returns This function does not return a value.
 		 */
 		setGamepadSensitivity( params: { "sensitivity": number } ): void;
@@ -2709,9 +2779,11 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Starts the gamepad input loop and begins monitoring for gamepad connections.
 		 *
-		 * Starts the gamepad input monitoring system. This initializes event listeners for gamepad connections/disconnections and begins polling gamepad state. The gamepad loop runs automatically once started and will continue until stopGamepad is called.
+		 * Starts polling gamepads once per animation frame. Polling also starts on first use: the first ingamepad() call or handler registration. Calling it again while polling does nothing.
 		 *
-		 * If gamepads are already connected when this is called, they will be automatically detected and added to the gamepad list.
+		 * The first start adds the connection and page-visibility listeners and scans for pads that are already connected, passing each to the onGamepadConnected callbacks. The plugin adds no listener before then.
+		 *
+		 * Polling continues while the window loses focus but the page stays visible. When the page is hidden, every button is released and the axes read 0, without reporting a release; when it is visible again, a button still held reads as pressed, not as just pressed.
 		 * @returns This function does not return a value.
 		 */
 		startGamepad(): void;
@@ -2737,7 +2809,9 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops the gamepad input loop.
 		 *
-		 * Stops the gamepad input monitoring loop. This will cancel the animation frame loop that polls gamepad state. Gamepad connection/disconnection events will still be tracked, but button and axis updates will stop until startGamepad is called again.
+		 * Stops polling. While stopped, ingamepad() returns null and does not restart polling, and pads keep the state of the last update. startGamepad() resumes polling, and so does registering an onGamepadConnected or onGamepadDisconnected callback.
+		 *
+		 * Connection events are still tracked while stopped: the connection callbacks run, and pads join and leave the list.
 		 * @returns This function does not return a value.
 		 */
 		stopGamepad(): void;

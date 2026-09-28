@@ -31,10 +31,17 @@ const RESOLUTIONS = [ "bundler", "nodenext" ];
 // plugin that stays undeclared. Full already bundles every plugin except sound-advanced.
 const LITE_PLUGIN_CONSUMERS = {
 	"gamepad": [
-		`const pads: object | any[] = lite.ingamepad();`,
+		`const pads = lite.ingamepad();`,
+		`if( Array.isArray( pads ) && pads.length > 0 ) {`,
+		`\tconst pressed: boolean = pads[ 0 ].getButtonJustPressed( 0 );`,
+		`\tvoid pressed;`,
+		`}`,
 		`lite.onGamepadConnected( ( pad ) => { const id: string = pad.id; void id; } );`,
+		`lite.onGamepadDisconnected( ( data ) => {`,
+		`\tconst index: number = data.index;`,
+		`\tvoid index;`,
+		`} );`,
 		`lite.set( { gamepadSensitivity: 0.5 } );`,
-		`void pads;`,
 		`// @ts-expect-error Keyboard commands need the keyboard plugin.`,
 		`lite.inkey();`
 	],

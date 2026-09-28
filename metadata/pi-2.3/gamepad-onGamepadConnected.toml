@@ -1,0 +1,36 @@
+title = "onGamepadConnected"
+category = "gamepad"
+isScreen = false
+plugin = "gamepad"
+summary = "Registers a callback function for when a gamepad is connected."
+description = """
+Registers a callback that runs when a gamepad connects, with its GamepadData. The callback also
+receives each pad that is already connected when it is registered, in index order. It receives
+each connection once, whether it learns of the pad from the start-up scan, this replay, or a
+connection event; a pad that disconnects and connects again is a new connection.
+
+The pad passed to the callback has every button released; a button held when it connected is
+reported as just pressed on a later read. A callback registered by another gamepad callback
+receives the connected pads after that callback's dispatch ends.
+
+Registering starts polling, even after stopGamepad(). A callback that throws is reported with
+console.error(), and the other callbacks still run. clearEvents( "gamepad" ) removes every
+callback.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Connect gamepad and press a button or move an axis to connect" );
+$.onGamepadConnected( ( gamepad ) => {
+	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
+} );
+"""
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( gamepadData: GamepadData ) => void"
+description = "Callback function that receives the pad when it connects."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
