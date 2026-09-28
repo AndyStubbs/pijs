@@ -4,8 +4,8 @@ isScreen = false
 plugin = "keyboard"
 summary = "Stops keyboard input monitoring."
 description = """
-Stops the keyboard input monitoring system. This removes the keydown and keyup listeners and
-clears all key states. Keyboard events are no longer tracked until startKeyboard() is called
+Stops the keyboard input monitoring system. Held keys are released first, through the "up"
+handlers with cancelled set to true; then the keydown and keyup listeners are removed. Keyboard events are no longer tracked until startKeyboard() is called
 again: while stopped, inKey() reports no keys, and handlers stay registered but are not called.
 Calling inKey(), registering a handler, or setting action keys does not restart it. An input()
 prompt keeps reading keys while the keyboard is stopped.

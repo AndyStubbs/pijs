@@ -15,8 +15,8 @@ If no key is provided, returns a new array of the key data objects of all presse
 The first call starts keyboard tracking, unless stopKeyboard() was called; keys pressed before
 tracking starts are not reported.
 
-Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat. They
-are frozen.
+Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat,
+cancelled. They are frozen.
 """
 example = """
 $.screen( "300x200" );

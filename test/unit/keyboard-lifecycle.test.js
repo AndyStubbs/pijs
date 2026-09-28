@@ -191,7 +191,7 @@ function harness() {
 }
 
 function empty( h ) {
-	const plugin = [ h.keyboard.onKeyDown, h.keyboard.onKeyUp, h.keyboard.clearInKeys ];
+	const plugin = [ h.keyboard.onKeyDown, h.keyboard.onKeyUp, h.keyboard.releaseHeldKeys ];
 	const promptListeners = h.window.listeners.filter( listener => {
 		return !plugin.includes( listener.fn );
 	} );
@@ -959,7 +959,7 @@ test( "KEY-007 offKey matches key set, mode, and function, in every removal form
 	}
 } );
 
-test( "KEY-007 registering the same function for the same keys and mode again does nothing", () => {
+test( "KEY-007 registering the same function for the same keys and mode does nothing", () => {
 	const h = harness();
 	const $ = h.api;
 	let calls = 0;
@@ -1031,4 +1031,57 @@ test( "KEY-006 tracking starts on first use and stays stopped until startKeyboar
 	h.key( "a", "up", { "code": "KeyA" } );
 	h.key( "a", "down", { "code": "KeyA" } );
 	assert.deepEqual( calls, [ "a" ] );
+} );
+
+test( "KEY-011 cancelled input releases held keys once through the up handlers (I6)", () => {
+	const triggers = {
+		"blur": h => h.window.dispatchEvent( { "type": "blur" } ),
+		"hidden page": h => {
+			h.document.visibilityState = "hidden";
+			h.document.dispatchEvent( { "type": "visibilitychange" } );
+		},
+		"stop": h => h.api.stopKeyboard(),
+		"editable target": h => {
+			h.key( "x", "down", { "code": "KeyX", "target": createElement( "INPUT" ) } );
+		},
+		"prompt": h => { h.start(); }
+	};
+	for( const [ name, trigger ] of Object.entries( triggers ) ) {
+		const h = harness();
+		const log = [];
+		h.api.onKey( "KeyA", "up", data => {
+			log.push( [ "KeyA", data.key, data.shiftKey, data.repeat, data.cancelled ] );
+		} );
+		h.api.onKey( "A", "up", data => log.push( [ "A", data.cancelled ] ) );
+		h.api.onKey( [ "ShiftLeft", "KeyA" ], "up", data => {
+			const items = Array.from( data, item => item.code + " " + item.cancelled );
+			log.push( [ "combo", ...items ] );
+		} );
+		h.api.onKey( "any", "up", data => log.push( [ "any", data.code, data.cancelled ] ) );
+		h.key( "Shift", "down", { "code": "ShiftLeft", "shiftKey": true } );
+		h.key( "A", "down", { "code": "KeyA", "shiftKey": true } );
+		h.key( "A", "down", { "code": "KeyA", "shiftKey": true, "repeat": true } );
+		trigger( h );
+		assert.deepEqual( log, [
+			[ "combo", "KeyA false", "ShiftLeft true" ],
+			[ "any", "ShiftLeft", true ],
+			[ "KeyA", "A", true, false, true ],
+			[ "A", true ],
+			[ "any", "KeyA", true ]
+		], name );
+		assert.equal( h.api.inKey().length, 0, name );
+
+		// A later trigger finds nothing held
+		h.window.dispatchEvent( { "type": "blur" } );
+		assert.equal( log.length, 5, name );
+	}
+
+	// Key data that is not cancelled says so
+	const h = harness();
+	const seen = [];
+	h.api.onKey( "any", "down", data => seen.push( data.cancelled ) );
+	h.api.onKey( "any", "up", data => seen.push( data.cancelled ) );
+	h.key( "a", "down", { "code": "KeyA" } );
+	h.key( "a", "up", { "code": "KeyA" } );
+	assert.deepEqual( seen, [ false, false ] );
 } );

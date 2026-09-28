@@ -25,7 +25,7 @@ const m_onKeyHandlers = {};
 // startKeyboard()
 let m_isKeyboardActive = false;
 let m_isStopped = false;
-let m_isBlurListening = false;
+let m_isReleaseListening = false;
 let m_pluginApi = null;
 
 
@@ -54,7 +54,7 @@ export default function keyboardPlugin( pluginApi ) {
 	pluginApi.addCommand( "offKey", offKey, false, [ "key", "mode", "fn" ] );
 
 	// Initialize input command
-	g_input.initInput( pluginApi, isFromEditableTarget );
+	g_input.initInput( pluginApi, isFromEditableTarget, releaseHeldKeys );
 
 	// Register clearEvents handler
 	pluginApi.registerClearEvents( "keyboard", clearKeyboardEvents );
@@ -80,9 +80,12 @@ function startKeyboard() {
 	}
 	window.addEventListener( "keydown", onKeyDown, { "capture": true } );
 	window.addEventListener( "keyup", onKeyUp, { "capture": true } );
-	if( !m_isBlurListening ) {
-		window.addEventListener( "blur", clearInKeys );
-		m_isBlurListening = true;
+
+	// Held keys are released, as cancelled, when the window loses focus or the page is hidden
+	if( !m_isReleaseListening ) {
+		window.addEventListener( "blur", releaseHeldKeys );
+		document.addEventListener( "visibilitychange", onVisibilityChange );
+		m_isReleaseListening = true;
 	}
 	m_isKeyboardActive = true;
 }
@@ -100,8 +103,9 @@ function startOnUse() {
 }
 
 /**
- * Stop keyboard event handling and clear active key state. Tracking stays stopped until
- * startKeyboard(); handlers stay registered but are not called.
+ * Stop keyboard event handling. Held keys are released first, through the "up" handlers with
+ * `cancelled: true`. Tracking stays stopped until startKeyboard(); handlers stay registered but
+ * are not called.
  *
  * @returns {void}
  */
@@ -110,12 +114,10 @@ function stopKeyboard() {
 	if( !m_isKeyboardActive ) {
 		return;
 	}
+	releaseHeldKeys();
 	window.removeEventListener( "keydown", onKeyDown, { "capture": true } );
 	window.removeEventListener( "keyup", onKeyUp, { "capture": true } );
 	m_isKeyboardActive = false;
-
-	// Clear keys to prevent any after effects
-	clearInKeys();
 }
 
 /**
@@ -317,9 +319,9 @@ function offKey( options ) {
 
 function onKeyDown( event ) {
 
-	// Ignore typing when focus is inside an editable
+	// Ignore typing when focus is inside an editable, and release the keys held until then
 	if( isFromEditableTarget( event ) ) {
-		clearInKeys();
+		releaseHeldKeys();
 		return;
 	}
 	const keyData = createKeyData( event );
@@ -340,9 +342,9 @@ function onKeyDown( event ) {
 
 function onKeyUp( event ) {
 
-	// Ignore typing when focus is inside an editable
+	// Ignore typing when focus is inside an editable, and release the keys held until then
 	if( isFromEditableTarget( event ) ) {
-		clearInKeys();
+		releaseHeldKeys();
 		return;
 	}
 	const codeData = m_heldCodes.get( event.code );
@@ -357,22 +359,65 @@ function onKeyUp( event ) {
 	if( codeData && !names.includes( codeData.key ) ) {
 		names.push( codeData.key );
 	}
-	const release = { "data": createKeyData( event ), "names": names };
 	try {
-		for( const name of names ) {
+		releaseKey( event, codeData, { "data": createKeyData( event ), "names": names } );
+	} finally {
+		if( m_actionKeys.has( event.code ) || m_actionKeys.has( event.key ) ) {
+			event.preventDefault();
+		}
+	}
+}
+
+/**
+ * Run the up handlers of a released key, then release it by code, whatever value the release
+ * reports. A new press dispatched by a release callback is kept.
+ *
+ * @param {Object} event - The keyup, or `{ code, key, repeat }` for a cancelled release.
+ * @param {Object|undefined} codeData - The held data of the code before the release.
+ * @param {Object} release - `{ data, names }`: the release data and the released key's names.
+ * @returns {void}
+ */
+function releaseKey( event, codeData, release ) {
+	try {
+		for( const name of release.names ) {
 			triggerKeyEventHandlers( event, "up", name, release );
 		}
 		triggerKeyEventHandlers( event, "up", "any", release );
 	} finally {
-
-		// Release by code, whatever value the release reports; preserve a new press dispatched
-		// by a release callback.
 		if( m_heldCodes.get( event.code ) === codeData ) {
 			m_heldCodes.delete( event.code );
 		}
-		if( m_actionKeys.has( event.code ) || m_actionKeys.has( event.key ) ) {
-			event.preventDefault();
+	}
+}
+
+/**
+ * Release every held key that the player did not release: the window lost focus, the page was
+ * hidden, the keyboard was stopped, a key came from an editable element, or a prompt took the
+ * keyboard. Each key's "up" handlers run with a copy of its last keydown data, with
+ * `repeat: false` and `cancelled: true`. A second trigger finds nothing held.
+ *
+ * @returns {void}
+ */
+function releaseHeldKeys() {
+	for( const keyData of Array.from( m_heldCodes.values() ) ) {
+
+		// A handler of an earlier release can release or press keys itself
+		if( m_heldCodes.get( keyData.code ) !== keyData ) {
+			continue;
 		}
+		const names = [ keyData.code ];
+		if( !names.includes( keyData.key ) ) {
+			names.push( keyData.key );
+		}
+		const data = Object.freeze( { ...keyData, "repeat": false, "cancelled": true } );
+		const event = { "code": keyData.code, "key": keyData.key, "repeat": false };
+		releaseKey( event, keyData, { "data": data, "names": names } );
+	}
+}
+
+function onVisibilityChange() {
+	if( document.visibilityState === "hidden" ) {
+		releaseHeldKeys();
 	}
 }
 
@@ -423,7 +468,8 @@ function createKeyData( event ) {
 		"ctrlKey": event.ctrlKey,
 		"metaKey": event.metaKey,
 		"shiftKey": event.shiftKey,
-		"repeat": event.repeat
+		"repeat": event.repeat,
+		"cancelled": false
 	} );
 }
 
@@ -545,10 +591,6 @@ function isFromEditableTarget( event ) {
 	}
 
 	return false;
-}
-
-function clearInKeys() {
-	m_heldCodes.clear();
 }
 
 /**
