@@ -469,3 +469,73 @@ Date: 2026-09-27. Plan: `docs/plans/v2.3/ROADMAP.md`, Section 5.1, task 1.12 (KE
 - **Before**: `keyboard-lifecycle` 42 Node tests
 - **After**: `keyboard-lifecycle` 43 Node tests
 - **Pass Rate**: 100%
+
+## 2.3 Pointer 1.9: Fixtures
+
+Date: 2026-09-27. Plan: `docs/plans/v2.3/ROADMAP.md`, Section 6.1, task 1.9 (PTR-017, CI-008,
+`docs/plans/v2.3/AUDIT-TESTS.md` §5.2).
+
+### Summary
+`intouch_01` and `inpress_01` read their polled state after every input event instead of on a
+15 ms interval or an animation frame, and their `DL` waits are gone. Five runs gave captures
+byte-identical to the approved baselines, so neither baseline changed, and both lose their
+`ciSkip`. Two groups of near-duplicate fixtures were reduced: the X-drag group keeps
+`intouch_01` (the COV-001 contract fixture) and `inpress_01` (the only visual that drives one
+polled command with both mouse and touch), and the identical-script group keeps `onpress_01`.
+The Node harness in `pointer-events.test.js` (Pointer 1.1-1.8) covers the logic the removed
+fixtures exercised.
+
+### Removed Test Files
+Each removal was checked by a deliberate break in `plugins/pointer/`, made and reverted in the
+working tree:
+1. `test/tests/html-core/inmouse_01.html` and its baseline - `inmouse()` polled while dragging.
+   Covered by `inpress_01` (its mouse drag reads `inmouse()` through `inpress()`), the browser
+   test "noCss pointer bounds follow host layout, margins, and transforms", and the Node tests
+   that read `inmouse()`. Break: polled data reports x + 1; `inpress_01`, that browser test, and
+   the Node tests P8, P11, and P13 fail.
+2. `test/tests/html-core/onmouse_01.html` and its baseline - `onmouse()` handlers drawing a
+   drag. Covered by the Node tests of mouse handlers (P1, P6, P7, P11) and the trusted-input
+   browser test (T1). Break: mouse `"down"` handlers are not called; six Node tests fail.
+3. `test/tests/html-core/onmouse_03.html` and its baseline - `onmouse()` with `stopMouse()` and
+   `startMouse()`. Covered by the Node test "pointer stop commands release held input with
+   cancelled (P10)", which now also restarts tracking, and by `onpress_01`. Break:
+   `stopMouse()` keeps its canvas listeners; that test fails.
+4. `test/tests/html-core/onpress_02.html` and its baseline - `onpress()` and `offpress()`.
+   Covered by `onpress_01` and the new Node test "pointer offpress and offclick remove only the
+   given function". Break: `offpress()` removes nothing; that test fails.
+5. `test/tests/html-core/ontouch_04.html` and its baseline - `ontouch()` with `stopTouch()` and
+   `startTouch()`. Covered by the Node touch tests (P1, P2, P6, P11, and the new `offtouch`
+   test), the P10 test, which now checks that a touch after `stopTouch()` reaches no handler
+   and that `startTouch()` resumes, and by `intouch_01` and `onpress_01`. Breaks: touch
+   `"start"` handlers are not called (six Node tests fail); `stopTouch()` keeps its canvas
+   listeners (the P10 test fails).
+6. `test/tests/html-manual/ontouch_01.html` and `ontouch_02.html` - manual pages drawing touches
+   with `ontouch()`. Covered by the Node touch tests and `intouch_01`. `ontouch_03` and
+   `events_comprehensive` stay for the device checks in the roadmap's Section 8.3.
+
+### Removed Test Cases
+1. `pointer-events.test.js`: "pointer registration can be removed in the same turn". Covered by
+   the Node tests of removal, including the new `offtouch` test and "pointer offpress and
+   offclick remove only the given function". Break: `offevent` removes nothing; five Node tests
+   fail.
+2. `pointer-browser.test.js`: "pointer lifecycle fixture clears subscriptions before disposal",
+   which repeated the `pointer_lifecycle_01` plugin visual. Covered by that visual, whose squares
+   stay grey when a check fails. Break: `offmouse()` removes nothing; `pointer_lifecycle_01`
+   fails in `npm run test:plugins`.
+3. `pointer-browser.test.js`: "offscreen pointer commands report the invoked command", which
+   repeated the message check of "offscreen pointer validation precedes all state changes and
+   subscriptions" for one command. Break: the error message names `pointer` instead of the
+   command; the remaining test fails.
+
+### Added Test Cases
+`pointer-events.test.js`: `offtouch()` by function and by mode (its first test); a second test
+for `offpress()` and `offclick()`, by function and, for `offclick()`, without one; and
+`setEnableContextMenu()` before tracking, while tracking, and after `stopMouse()` (its first
+test outside the offscreen check).
+
+### Test Results
+- **Before**: `pointer-events` 21 Node tests; `pointer-browser` 5; 35 full and 20 lite visual
+  fixtures
+- **After**: `pointer-events` 23 Node tests; `pointer-browser` 3; 30 full and 20 lite visual
+  fixtures
+- **Pass Rate**: 100%

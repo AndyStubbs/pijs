@@ -12,6 +12,7 @@ This folder holds measurements and reproductions for the 2.3 pointer audit
 | File | Contents |
 | --- | --- |
 | `size-baseline.json` | `npm run size -- --out=docs/evidence/pointer-2.3/size-baseline.json` at the revision |
+| `size-phase1.json` | The same command at the exit of pointer Phase 1 (tasks 1.1–1.9), 2026-09-27 |
 | `probes.js` | Reproductions P1–P17 and T1, run in Chromium, Firefox and WebKit against fresh in-memory bundles of the current source, plus a load check of the manual pointer pages |
 | `probes-output.json` | Observed and expected results per engine and probe, with page errors |
 | `device-check.html` | A page for the manual mouse pass: Pi.js state next to the browser's own mouse events |
@@ -27,6 +28,24 @@ This folder holds measurements and reproductions for the 2.3 pointer audit
 The standalone plugin is about 5.4% of `pi.min.js` by gzip size. It carries its own copy of
 `src/core/canvas-layout.js`, which the Full bundle shares with core, so the standalone figure
 is an upper bound on the plugin's marginal cost inside Full.
+
+## Size at Phase 1 exit
+
+`size-phase1.json`, measured after pointer tasks 1.1–1.9. The standalone plugin is still 1.0.0;
+Phase 1 changed no API.
+
+| Bundle | Bytes | Gzip | Gzip change |
+| --- | --- | --- | --- |
+| `pointer` plugin 1.0.0 (standalone IIFE) | 14,240 | 4,773 | +822 |
+| `pi.min.js` (Full, includes pointer) | 212,018 | 74,174 | +1,570 |
+| `pi.lite.min.js` (no pointer) | 138,765 | 48,947 | +362 |
+
+The pointer growth is per-touch tracking and the primary touch's press record, per-pointer
+click arming, the window release listener and held-button tracking, the releases for a hidden
+page and the stop commands, dispatch isolation, and the checks for presses on the border. The
+Full change also includes keyboard Phase 1 and core changes since the baseline; Lite has not
+changed since keyboard Phase 1 exit (48,947), so pointer Phase 1 added 856 bytes to Full
+(73,318 to 74,174).
 
 ## Probes
 

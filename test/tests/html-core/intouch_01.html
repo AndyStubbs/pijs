@@ -6,19 +6,14 @@
 			[[TOML_START]]
 			file = "intouch_01"
 			name = "intouch 01"
-			ciSkip = "input timing varies on CI runners (CI-008); Pointer 1.9 owns the fix"
 			width = 320
 			height = 200
 			commands = """
-				DL 30
 				SL "canvas"
 				TS 10, 10
-				DL 10
 				TM 310, 190, 6
 				TE
-				DL 40
 				TS 10, 190
-				DL 10
 				TM 310, 10, 6
 				TE
 			"""
@@ -44,7 +39,15 @@ $.ready( function () {
 	$.paint( 1, 1, 16 );
 	$.setColor( 15 );
 	var corner = $.get(0, 0, 8, 14);
-	setInterval( function () {
+
+	// Read the touches after every touch event, once the plugin has seen it, so each state is
+	// drawn once whatever the timing
+	draw();
+	for( var type of [ "touchstart", "touchmove", "touchend", "touchcancel" ] ) {
+		$.canvas().addEventListener( type, draw );
+	}
+
+	function draw() {
 		var touches = $.intouch();
 		$.put( corner, 0, 0 );
 		$.setPos(0, 0);
@@ -68,7 +71,7 @@ $.ready( function () {
 		} else {
 			isDrawing = false;
 		}
-	}, 15 );
+	}
 } );
 </script>
 </body>

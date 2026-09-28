@@ -6,22 +6,16 @@
 			[[TOML_START]]
 			file = "inpress_01"
 			name = "inpress 01"
-			ciSkip = "input timing varies on CI runners (CI-008); Pointer 1.9 owns the fix"
 			width = 160
 			height = 100
 			commands = """
 				MV 10, 10
 				MD
-				DL 10
 				MV 70, 90, 15
-				DL 60
 				MU
 				SL "canvas"
-				DL 60
 				TS 90, 10
-				DL 10
 				TM 150, 90, 15
-				DL 60
 				TE
 			"""
 			[[TOML_END]]
@@ -47,8 +41,17 @@
 		$.rect( 0, 0, 8, 14 );
 		$.paint( 1, 1, 16 );
 		$.setColor( 15 );
-		animation();
-		function animation () {
+
+		// Read the press after every input event, once the plugin has seen it, so each state
+		// is drawn once whatever the timing. The release listener is on the window, where the
+		// plugin receives releases
+		draw();
+		for( var type of [ "mousedown", "mousemove", "touchstart", "touchmove", "touchend" ] ) {
+			$.canvas().addEventListener( type, draw );
+		}
+		window.addEventListener( "mouseup", draw );
+
+		function draw() {
 			$.cls( 0, 0, 75, 8 );
 			var mouse = $.inpress();
 			if( mouse.x !== -1 ) {
@@ -67,7 +70,6 @@
 			} else {
 				isDrawing = false;
 			}
-			requestAnimationFrame( animation );
 		}
 	} );
 </script>
