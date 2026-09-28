@@ -276,10 +276,10 @@ test( "late Pointer installation initializes existing lite screens", async () =>
 		await page.addScriptTag( { "url": "/build/plugins/pointer/pointer.js" } );
 		assert.equal( await setPinchZoom(), "ok" );
 		assert.deepEqual( await page.evaluate( () => ( {
-			"commands": [ typeof first.inmouse, typeof second.inmouse, typeof $.inmouse ],
-			"first": first.inmouse(),
-			"second": second.inmouse(),
-			"global": $.inmouse(),
+			"commands": [ typeof first.inMouse, typeof second.inMouse, typeof $.inMouse ],
+			"first": first.inMouse(),
+			"second": second.inMouse(),
+			"global": $.inMouse(),
 			"initialized": $.getPlugins().find( plugin => plugin.name === "pointer" ).initialized
 		} ) ), {
 			"commands": [ "function", "function", "function" ],
@@ -295,8 +295,8 @@ test( "late Pointer installation initializes existing lite screens", async () =>
 		// Press input reaches the late plugin, and blur and a hidden page do not throw (P16)
 		assert.deepEqual( await page.evaluate( () => {
 			const log = [];
-			$.onpress( "down", data => log.push( [ data.x, data.y, data.buttons ] ) );
-			$.onpress( "up", data => log.push( [ data.action, data.cancelled ] ) );
+			$.onPress( "down", data => log.push( [ data.x, data.y, data.buttons ] ) );
+			$.onPress( "up", data => log.push( [ data.action, data.cancelled ] ) );
 			const canvas = first.canvas();
 			const rect = canvas.getBoundingClientRect();
 			canvas.dispatchEvent( new MouseEvent( "mousedown", {

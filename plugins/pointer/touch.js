@@ -50,11 +50,11 @@ export function registerTouch( pluginApi, helpers ) {
 
 	pluginApi.addCommand( "startTouch", startTouch, true, [] );
 	pluginApi.addCommand( "stopTouch", stopTouch, true, [] );
-	pluginApi.addCommand( "intouch", intouch, true, [] );
+	pluginApi.addCommand( "inTouch", inTouch, true, [] );
 	pluginApi.addCommand(
-		"ontouch", ontouch, true, [ "mode", "fn", "once", "hitBox", "customData" ]
+		"onTouch", onTouch, true, [ "mode", "fn", "once", "hitBox", "customData" ]
 	);
-	pluginApi.addCommand( "offtouch", offtouch, true, [ "mode", "fn" ] );
+	pluginApi.addCommand( "offTouch", offTouch, true, [ "mode", "fn" ] );
 	pluginApi.addCommand( "setPinchZoom", setPinchZoom, false, [ "isEnabled" ] );
 
 	function initTouchData( screenData ) {
@@ -128,8 +128,8 @@ export function registerTouch( pluginApi, helpers ) {
 	 * @param {Object} screenData - Screen state.
 	 * @returns {Array<Object>}
 	 */
-	function intouch( screenData ) {
-		g_target.validatePointerTarget( screenData, "intouch" );
+	function inTouch( screenData ) {
+		g_target.validatePointerTarget( screenData, "inTouch" );
 		startTouchInternal( screenData );
 		return getTouch( screenData );
 	}
@@ -141,8 +141,8 @@ export function registerTouch( pluginApi, helpers ) {
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function ontouch( screenData, options ) {
-		g_target.validatePointerTarget( screenData, "ontouch" );
+	function onTouch( screenData, options ) {
+		g_target.validatePointerTarget( screenData, "onTouch" );
 		const mode = options.mode;
 		const fn = options.fn;
 		const once = options.once;
@@ -150,7 +150,7 @@ export function registerTouch( pluginApi, helpers ) {
 		const customData = options.customData;
 
 		m_onevent(
-			mode, fn, once, hitBox, [ "start", "end", "move" ], "ontouch",
+			mode, fn, once, hitBox, [ "start", "end", "move" ], "onTouch",
 			screenData.onTouchEventListeners, null, null, customData
 		);
 		startTouchInternal( screenData );
@@ -163,12 +163,12 @@ export function registerTouch( pluginApi, helpers ) {
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function offtouch( screenData, options ) {
+	function offTouch( screenData, options ) {
 		const mode = options.mode;
 		const fn = options.fn;
 
 		m_offevent(
-			mode, fn, [ "start", "end", "move" ], "offtouch",
+			mode, fn, [ "start", "end", "move" ], "offTouch",
 			screenData.onTouchEventListeners
 		);
 	}

@@ -1,4 +1,4 @@
-title = "inmouse"
+title = "inMouse"
 category = "pointer"
 isScreen = true
 plugin = "pointer"
@@ -17,7 +17,7 @@ example = """
 $.screen( "300x200" );
 requestAnimationFrame( run );
 function run() {
-	const mouse = $.inmouse();
+	const mouse = $.inMouse();
 
 	// Draw while a button is held
 	if( mouse.buttons > 0 ) {

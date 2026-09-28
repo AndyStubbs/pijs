@@ -78,8 +78,8 @@ function resetCounts() {
 }
 
 function snapshot( name ) {
-	const mouse = $.inmouse();
-	const press = $.inpress();
+	const mouse = $.inMouse();
+	const press = $.inPress();
 	const entry = {
 		"counts": JSON.parse( JSON.stringify( m_counts ) ),
 		"piMouse": { "x": mouse.x, "y": mouse.y, "buttons": mouse.buttons, "action": mouse.action },
@@ -94,9 +94,9 @@ const screen = $.screen( { "aspect": "200x150", "container": document.getElement
 const canvas = screen.canvas();
 
 // Pi.js handlers
-$.onmouse( "down", () => { m_counts.piMouseDown += 1; } );
-$.onmouse( "up", () => { m_counts.piMouseUp += 1; } );
-$.onmouse( "move", data => {
+$.onMouse( "down", () => { m_counts.piMouseDown += 1; } );
+$.onMouse( "up", () => { m_counts.piMouseUp += 1; } );
+$.onMouse( "move", data => {
 	if( m_counts.minX === null ) {
 		m_counts.minX = data.x;
 		m_counts.maxX = data.x;
@@ -108,9 +108,9 @@ $.onmouse( "move", data => {
 	m_counts.minY = Math.min( m_counts.minY, data.y );
 	m_counts.maxY = Math.max( m_counts.maxY, data.y );
 } );
-$.onpress( "down", () => { m_counts.piPressDown += 1; } );
-$.onpress( "up", () => { m_counts.piPressUp += 1; } );
-$.onclick( data => {
+$.onPress( "down", () => { m_counts.piPressDown += 1; } );
+$.onPress( "up", () => { m_counts.piPressUp += 1; } );
+$.onClick( data => {
 	m_counts.piClicks += 1;
 	m_counts.piClickButtons.push( data.buttons );
 	log( "Pi click at " + data.x + "," + data.y );
@@ -143,7 +143,7 @@ window.addEventListener( "contextmenu", e => {
 } );
 
 function focusSample( name ) {
-	const mouse = $.inmouse();
+	const mouse = $.inMouse();
 	const sample = {
 		"event": name,
 		"t": Math.round( performance.now() - m_start ),
@@ -198,7 +198,7 @@ function draw() {
 	$.cls();
 	$.setColor( 2 );
 	$.rect( CLICK_BOX );
-	const mouse = $.inmouse();
+	const mouse = $.inMouse();
 	if( mouse.buttons ) {
 		$.setColor( 14 );
 	} else {
@@ -206,8 +206,8 @@ function draw() {
 	}
 	$.circle( mouse.x, mouse.y, 3 );
 	const rows = [
-		[ "Pi inmouse", `x ${mouse.x} y ${mouse.y} buttons ${mouse.buttons} ${mouse.action}` ],
-		[ "Pi inpress buttons", $.inpress().buttons ],
+		[ "Pi inMouse", `x ${mouse.x} y ${mouse.y} buttons ${mouse.buttons} ${mouse.action}` ],
+		[ "Pi inPress buttons", $.inPress().buttons ],
 		[ "Browser buttons", m_rawButtons ],
 		[ "Down: browser / Pi mouse / Pi press",
 			`${m_counts.rawDown} / ${m_counts.piMouseDown} / ${m_counts.piPressDown}` ],

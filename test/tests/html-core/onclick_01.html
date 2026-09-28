@@ -70,10 +70,10 @@ drawBox( hitbox2 );
 drawBox( hitbox3 );
 drawBox( hitbox4 );
 
-$.onclick( clickOne, false, hitbox, "button1" );
-$.onclick( clickTwo, false, hitbox2, { "name": "button2", "val": 7 } );
-$.onclick( clickThree, true, hitbox3, "button3" );
-$.onclick( clickFour, true, hitbox4, "button4" );
+$.onClick( clickOne, false, hitbox, "button1" );
+$.onClick( clickTwo, false, hitbox2, { "name": "button2", "val": 7 } );
+$.onClick( clickThree, true, hitbox3, "button3" );
+$.onClick( clickFour, true, hitbox4, "button4" );
 
 ( async () => {
 	$.setColor( 7 );
@@ -110,8 +110,8 @@ function clickTwo( data, customData ) {
 }
 
 function clickThree( data, customData ) {
-	$.offclick( clickOne, false, hitbox );
-	$.offclick( clickTwo, false, hitbox2 );
+	$.offClick( clickOne, false, hitbox );
+	$.offClick( clickTwo, false, hitbox2 );
 	$.cancelInput();
 	$.setColor( 4 );
 	drawBox( hitbox3 );
@@ -121,9 +121,9 @@ function clickThree( data, customData ) {
 }
 
 function clickFour( data, customData ) {
-	$.offclick( clickOne, false, hitbox );
-	$.offclick( clickTwo, false, hitbox2 );
-	$.offclick( clickThree, true, hitbox3 );
+	$.offClick( clickOne, false, hitbox );
+	$.offClick( clickTwo, false, hitbox2 );
+	$.offClick( clickThree, true, hitbox3 );
 	$.cancelInput();
 	$.setColor( 4 );
 	drawBox( hitbox4 );

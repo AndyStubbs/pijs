@@ -16,7 +16,7 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Nothing |
+| 1 | [Pointer 2.2](#62-phase-2-pointer-events-and-api-breaking-set-200) | Continue the pointer breaking set on its long-lived branch (Section 1.4) | Nothing |
 | 2 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Nothing |
 | 3 | [Sound 11.1–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
 
@@ -29,7 +29,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Core | [3](#3-core) | Complete (Phases 1–3); Core 3 and C10 are written in R.2 | — |
 | Sound | [4](#4-sound) | Phases 0–10 done. Its listening checks are in Section 8.3; Phase 11 not started | Sound 11.1–11.5 |
 | Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
-| Pointer | [6](#6-pointer) | Phase 1 done; Phase 2 not started | Pointer 2.1 |
+| Pointer | [6](#6-pointer) | Phase 1 done; Phase 2: 2.1 done, 7 tasks left | Pointer 2.2 |
 | Gamepad | [7](#7-gamepad) | Phase 1 done; Phase 2 not started | Gamepad 2.1 |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
 | CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.10) | — |
@@ -494,11 +494,10 @@ tests, and the demos, fixtures, and manual pages that use the changed command, p
 pages, `scripts/validate-type-definitions.js`, `test/scripts/firefox-smoke.js`,
 `test/scripts/package-types-consumer.test.js`, `test/unit/plugin-installation-browser.test.js`,
 and the evidence `device-check.html` that Section 8.3 uses. Core 8 and Core 13, which it
-depends on, are done.
+depends on, are done. Done: 2.1 ([Section 13.7](#137-pointer)).
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 2.1 | **Renames and 2.0.0 (I1, I16).** `inMouse`, `onMouse`, `offMouse`, `inTouch`, `onTouch`, `offTouch`, `inPress`, `onPress`, `offPress`, `onClick`, `offClick`, with the old names in `_removed.toml`. The banner moves to 2.0.0 | — | — |
 | 2.2 | **One Pointer Events path (B6).** `pointerdown`/`pointermove`/`pointerup`/`pointercancel` on the canvas with `setPointerCapture()`, and `touch-action` instead of `preventDefault()` on `touchstart`. Mouse commands observe mouse and pen, touch commands touch, press the primary pointer. `pointercancel` releases with `cancelled: true` (I6). `setPointerCapture()` is guarded for pointers the browser does not track. Replaces only the Phase 1 window listener; the hidden-page and stop releases stay. The visual runner and `pointer-browser.test.js` move from synthetic `TouchEvent`s to pointer events or CDP touch input, with `test/README.md` updated | [PTR-004](AUDIT-POINTER.md#ptr-004), [PTR-006](AUDIT-POINTER.md#ptr-006) | — |
 | 2.3 | **One data shape and modes (B7, I3).** `{ x, y, lastX, lastY, buttons, action, type, id, cancelled }` for mouse, touch, and press, with press data adding `touches`, frozen copies of the active touches; modes `"down"`, `"move"`, `"up"`; `onTouch( "start" )` and `"end"` throw `INVALID_MODE`; click data has `action: "click"`. Test: data shapes, including serializing `inPress()` (P12) | [PTR-013](AUDIT-POINTER.md#ptr-013) | — |
 | 2.4 | **Handler signature and removal (I2, I4).** `onClick( fn, once, hitBox, customData )`; `offX( mode )` and `offX( null, fn )` forms; `offX()` with neither throws `INVALID_MODE`; `offClick()` without a function removes every click handler of the screen (implied mode); duplicate registrations are ignored, so the 1.1 duplicate-`once` test changes | [PTR-009](AUDIT-POINTER.md#ptr-009) | — |
@@ -521,8 +520,11 @@ and size recorded.
 
 Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.2:
 
-- **Renames (I1):** every mouse, touch, press, and click command moves to camelCase, and
-  `setEnableContextMenu` becomes `setContextMenu` (I12). The old names are unregistered.
+- **Version (G1):** the pointer plugin is 2.0.0.
+- **Renames (I1):** every mouse, touch, press, and click command moves to camelCase:
+  `inMouse`, `onMouse`, `offMouse`, `inTouch`, `onTouch`, `offTouch`, `inPress`, `onPress`,
+  `offPress`, `onClick`, and `offClick`; and `setEnableContextMenu` becomes `setContextMenu`
+  (I12). The old names are unregistered, so old code fails at its first call.
 - **B7 and I3:** "Press, touch, and click data share one shape. Touch handlers use the modes
   `"down"`, `"move"`, and `"up"` instead of `"start"`, `"move"`, and `"end"`; `lastX` and
   `lastY` start at the current position instead of `null`; click data has `action: "click"`.
@@ -533,7 +535,7 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.2:
   canvas keeps reporting moves.
 - **Phase 1 fixes (B3, B4, B5, B8, PTR-008):** touch handlers receive the touches the event
   changed, so `"end"` handlers receive the touch that lifted, and hit boxes test those touches;
-  each touch in `intouch()` keeps its own action; a touch the browser cancels calls the `"end"`
+  each touch in `inTouch()` keeps its own action; a touch the browser cancels calls the `"end"`
   and press `"up"` handlers with `cancelled: true` and never clicks; a drag released outside the
   canvas reports its release, and a release for a button or touch that is not held is ignored;
   blur no longer resets polled state, and hiding the page or a stop command calls the `"up"`
@@ -1089,6 +1091,7 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | 1.7 | Listeners on first start (B12): the mouse and touch `visibilitychange` listeners are added to `document` when mouse or touch tracking first starts on any screen, once each, instead of at plugin load, and stay for the page's life; the `window` `mouseup` listener is attached only while a button is held (1.5), and the `blur` listeners are gone (1.5). A page that loads the plugin without using pointer input attaches no `window` or `document` listener. Test: no listener after load, one per module after starts on two screens and a stop and restart | — | [#40](https://github.com/AndyStubbs/pijs/pull/40) |
 | 1.8 | Metadata and manual pages: `metadata/pi-2.3/` overrides for all 17 pointer commands and `clearEvents`, and current `HitBox`, `MouseData`, `PressData`, `ClickData`, and `TouchData` objects, describing Phase 1 behavior: first-use start and sticky stops, releases outside the canvas and cancelled releases, presses on the border ignored and true positions, changed touches for touch handlers, the primary pointer for press, per-pointer clicks, handler bookkeeping and isolation, finite hit boxes, the context-menu and pinch-zoom behavior, `"press"` clearing clicks, and `cancelled` and nullable `lastX`/`lastY` in the data types; the `startMouse` reference to `getMouse()` and the always-true `lastX !== undefined` examples are gone, and "Requires an onscreen screen" is stated only for the commands that check it. `html-manual/contextmenu_01` no longer loads the standalone plugin after Full, and `ontouch_03` no longer calls the removed `$.render()` and `pi.util.clamp()`; every manual pointer page loads without errors in Chromium. Tests: the `ontouch` signature and the `TouchData` fields in `validate-type-definitions.js` and the Lite pointer type consumer; a press, blur, and a hidden page with Lite and the standalone plugin loaded after its screens (P16) in the late-installation test | [PTR-015](AUDIT-POINTER.md#ptr-015), [PTR-016](AUDIT-POINTER.md#ptr-016) | [#41](https://github.com/AndyStubbs/pijs/pull/41) |
 | 1.9 | Fixtures: `intouch_01` and `inpress_01` read their polled state after every input event instead of on a 15 ms interval or an animation frame, and their `DL` waits are gone; five runs gave captures byte-identical to the approved baselines, so no baseline changed, and both lose their `ciSkip`. The X-drag group keeps `intouch_01` (COV-001) and `inpress_01` (the one polled command driven by mouse and touch) and removes `inmouse_01` and `onmouse_01`; the identical-script group keeps `onpress_01` and removes `onpress_02`, `ontouch_04`, and `onmouse_03`; the manual pages `ontouch_01` and `ontouch_02` are removed. The duplicate tests `pointer-events` "registration can be removed in the same turn" and `pointer-browser` "lifecycle fixture clears subscriptions" and "offscreen pointer commands report the invoked command" are removed. New Node tests: `offtouch()` (its first), `offpress()` and `offclick()` (a second), and `setEnableContextMenu()`; the P10 test also checks touch after `stopTouch()` and restarting. Each removal names its covering tests and a deliberate break in `test/TEST-CONSOLIDATION-LOG.md`; every pointer command keeps a test. Visual fixtures: 35 to 30 full, 20 Lite. Phase 1 exit: size recorded in `docs/evidence/pointer-2.3/README.md` (plugin +822 bytes gzipped) | [PTR-017](AUDIT-POINTER.md#ptr-017), [CI-008](AUDIT-CI.md#ci-008), [AUDIT-TESTS §5.2](AUDIT-TESTS.md#52-pointer) | [#42](https://github.com/AndyStubbs/pijs/pull/42) |
+| 2.1 | Renames and 2.0.0 (I1, I16): the plugin registers `inMouse`, `onMouse`, `offMouse`, `inTouch`, `onTouch`, `offTouch`, `inPress`, `onPress`, `offPress`, `onClick`, and `offClick`, whose error messages start with the new names, and no longer registers the lowercase names, which `metadata/pi-2.3/_removed.toml` lists; the banner, the IIFE registration, and the module header are 2.0.0. The 2.3 metadata files and titles are renamed, `screen` gains a 2.3 override for its `inMouse()` mention, and the declarations are regenerated. Call sites move in the tests, fixtures (whose file and fixture names stay), manual pages, `galaga.html`, `tools/`, the Firefox smoke test, the type checks, and the evidence `device-check.html`. Test: the new names are registered and the old ones are not (`pointer-events.test.js`) | — | — |
 
 ### 13.8 Gamepad
 

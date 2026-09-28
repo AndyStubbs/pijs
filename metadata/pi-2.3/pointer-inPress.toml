@@ -1,4 +1,4 @@
-title = "inpress"
+title = "inPress"
 category = "pointer"
 isScreen = true
 plugin = "pointer"
@@ -19,7 +19,7 @@ $.screen( "300x200" );
 $.setPinchZoom( false );
 requestAnimationFrame( run );
 function run() {
-	const press = $.inpress();
+	const press = $.inPress();
 
 	// Draw while pressed
 	if( press.buttons > 0 && press.lastX !== null ) {

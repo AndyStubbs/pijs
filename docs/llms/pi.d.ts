@@ -17,7 +17,7 @@ declare namespace Pi {
 	/**
 	 * Click event data (mouse or touch).
 	 *
-	 * The data of the release that completed a click, passed to onclick callbacks. For the mouse, it is the MouseData of the release; for a touch, it has the PressData fields of the touch that clicked, with buttons 0.
+	 * The data of the release that completed a click, passed to onClick callbacks. For the mouse, it is the MouseData of the release; for a touch, it has the PressData fields of the touch that clicked, with buttons 0.
 	 */
 	interface ClickData {
 		/**
@@ -305,7 +305,7 @@ declare namespace Pi {
 	/**
 	 * Rectangular area used for hit detection in event handlers.
 	 *
-	 * A rectangular area in screen pixels that restricts a pointer handler (onclick, onmouse, onpress, ontouch) to input inside it. A point is inside when x <= point.x < x + width and y <= point.y < y + height, so the left and top edges are included and the right and bottom edges are not.
+	 * A rectangular area in screen pixels that restricts a pointer handler (onClick, onMouse, onPress, onTouch) to input inside it. A point is inside when x <= point.x < x + width and y <= point.y < y + height, so the left and top edges are included and the right and bottom edges are not.
 	 *
 	 * Every value must be a finite number, and fractions are allowed. A negative width or height throws a RangeError with code INVALID_HITBOX.
 	 */
@@ -334,7 +334,7 @@ declare namespace Pi {
 	/**
 	 * Mouse state and event data.
 	 *
-	 * Mouse data containing position, button state, action, and previous position. Returned by inmouse() and passed to onmouse callbacks. Each read and each callback receives a new object.
+	 * Mouse data containing position, button state, action, and previous position. Returned by inMouse() and passed to onMouse callbacks. Each read and each callback receives a new object.
 	 *
 	 * Positions are in screen pixels. Moves over the canvas border or padding, and a release outside the canvas, report their true position, which can be outside the screen.
 	 */
@@ -693,7 +693,7 @@ declare namespace Pi {
 	/**
 	 * Press state data (mouse or touch).
 	 *
-	 * Press data from the primary pointer: the mouse, or the primary touch. Returned by inpress() and passed to onpress callbacks; type tells which input it came from.
+	 * Press data from the primary pointer: the mouse, or the primary touch. Returned by inPress() and passed to onPress callbacks; type tells which input it came from.
 	 *
 	 * For the mouse, it is the MouseData of the event. For touch, it is the primary touch, plus buttons (1 while it is down, 0 after its release), and touches, which holds this press object followed by the other touches still down. A touch is primary when it starts with no other touch down, and stays primary until it lifts; after that, no touch is primary until every touch is up.
 	 */
@@ -922,7 +922,7 @@ declare namespace Pi {
 	/**
 	 * Single touch point data.
 	 *
-	 * Data for one touch point. intouch() returns the touches still down, and ontouch callbacks receive the touches the event changed. Each read and each callback receives new objects.
+	 * Data for one touch point. inTouch() returns the touches still down, and onTouch callbacks receive the touches the event changed. Each read and each callback receives new objects.
 	 */
 	interface TouchData {
 		/**
@@ -1451,7 +1451,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 * Requires an onscreen screen.
 		 * @returns Mouse data object with position, buttons, and action properties.
 		 */
-		inmouse(): MouseData;
+		inMouse(): MouseData;
 
 		/**
 		 * Gets the current press state (mouse or touch) and starts tracking if needed.
@@ -1463,7 +1463,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 * Requires an onscreen screen.
 		 * @returns Press data of the primary pointer, from the mouse or touch.
 		 */
-		inpress(): PressData;
+		inPress(): PressData;
 
 		/**
 		 * Prompts the user for text input with a blinking cursor.
@@ -1503,7 +1503,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 * Requires an onscreen screen.
 		 * @returns Touches still down; empty when none is down.
 		 */
-		intouch(): Array<TouchData>;
+		inTouch(): Array<TouchData>;
 
 		/**
 		 * Draws a line on the screen.
@@ -1527,8 +1527,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param fn Callback function to remove. If omitted or null, removes every click handler.
 		 * @returns This function does not return a value.
 		 */
-		offclick( params: { "fn"?: ( clickData: ClickData, customData?: object ) => void } ): void;
-		offclick( fn?: ( clickData: ClickData, customData?: object ) => void ): void;
+		offClick( params: { "fn"?: ( clickData: ClickData, customData?: object ) => void } ): void;
+		offClick( fn?: ( clickData: ClickData, customData?: object ) => void ): void;
 
 		/**
 		 * Removes a mouse event handler.
@@ -1538,8 +1538,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
 		 */
-		offmouse( params: { "mode": string; "fn"?: ( mouseData: MouseData, customData?: object ) => void } ): void;
-		offmouse( mode: string, fn?: ( mouseData: MouseData, customData?: object ) => void ): void;
+		offMouse( params: { "mode": string; "fn"?: ( mouseData: MouseData, customData?: object ) => void } ): void;
+		offMouse( mode: string, fn?: ( mouseData: MouseData, customData?: object ) => void ): void;
 
 		/**
 		 * Removes a press event handler.
@@ -1549,8 +1549,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
 		 */
-		offpress( params: { "mode": string; "fn"?: ( pressData: PressData, customData?: object ) => void } ): void;
-		offpress( mode: string, fn?: ( pressData: PressData, customData?: object ) => void ): void;
+		offPress( params: { "mode": string; "fn"?: ( pressData: PressData, customData?: object ) => void } ): void;
+		offPress( mode: string, fn?: ( pressData: PressData, customData?: object ) => void ): void;
 
 		/**
 		 * Removes a touch event handler.
@@ -1560,8 +1560,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
 		 */
-		offtouch( params: { "mode": string; "fn"?: ( touches: Array<TouchData>, customData?: object ) => void } ): void;
-		offtouch( mode: string, fn?: ( touches: Array<TouchData>, customData?: object ) => void ): void;
+		offTouch( params: { "mode": string; "fn"?: ( touches: Array<TouchData>, customData?: object ) => void } ): void;
+		offTouch( mode: string, fn?: ( touches: Array<TouchData>, customData?: object ) => void ): void;
 
 		/**
 		 * Registers a callback function for click events (mouse or touch).
@@ -1579,8 +1579,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param customData Optional custom data passed to the callback function.
 		 * @returns This function does not return a value.
 		 */
-		onclick( params: { "fn": ( clickData: ClickData, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
-		onclick( fn: ( clickData: ClickData, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
+		onClick( params: { "fn": ( clickData: ClickData, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
+		onClick( fn: ( clickData: ClickData, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
 
 		/**
 		 * Registers a callback function for mouse events.
@@ -1599,13 +1599,13 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param customData Optional custom data passed to the callback function.
 		 * @returns This function does not return a value.
 		 */
-		onmouse( params: { "mode": string; "fn": ( mouseData: MouseData, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
-		onmouse( mode: string, fn: ( mouseData: MouseData, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
+		onMouse( params: { "mode": string; "fn": ( mouseData: MouseData, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
+		onMouse( mode: string, fn: ( mouseData: MouseData, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
 
 		/**
 		 * Registers a callback function for press events (mouse or touch).
 		 *
-		 * Registers a callback that runs for press events of the primary pointer, the mouse or the primary touch, with the press data and the optional custom data. Other touches reach ontouch handlers and intouch() only. With a hitBox, the callback runs only for presses inside it.
+		 * Registers a callback that runs for press events of the primary pointer, the mouse or the primary touch, with the press data and the optional custom data. Other touches reach onTouch handlers and inTouch() only. With a hitBox, the callback runs only for presses inside it.
 		 *
 		 * 'up' runs for the mouse release anywhere and for the primary touch's release, with cancelled set to true for a release the player did not make: a cancelled touch, a hidden page, or a stop command. A press that starts on the canvas border or padding is ignored. Registering starts mouse and touch tracking unless stopped.
 		 *
@@ -1619,13 +1619,13 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param customData Optional custom data passed to the callback function.
 		 * @returns This function does not return a value.
 		 */
-		onpress( params: { "mode": string; "fn": ( pressData: PressData, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
-		onpress( mode: string, fn: ( pressData: PressData, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
+		onPress( params: { "mode": string; "fn": ( pressData: PressData, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
+		onPress( mode: string, fn: ( pressData: PressData, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
 
 		/**
 		 * Registers a callback function for touch events.
 		 *
-		 * Registers a callback that runs when a touch event occurs, with the touches the event changed and the optional custom data: 'start' receives the touches that started, 'move' the touches that moved, and 'end' the touches that ended, at the position where they lifted. Use intouch() for every touch still down.
+		 * Registers a callback that runs when a touch event occurs, with the touches the event changed and the optional custom data: 'start' receives the touches that started, 'move' the touches that moved, and 'end' the touches that ended, at the position where they lifted. Use inTouch() for every touch still down.
 		 *
 		 * With a hitBox, the callback receives only the changed touches inside it, and runs only when there is one. 'end' also runs with cancelled set to true when the browser cancels a touch, the page is hidden, or stopTouch() is called. A touch that starts on the canvas border or padding is ignored. While touch is tracked, touchstart on the canvas is prevented, which stops browser gestures that start there. Registering starts tracking unless stopTouch() was called.
 		 *
@@ -1639,8 +1639,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param customData Optional custom data passed to the callback function.
 		 * @returns This function does not return a value.
 		 */
-		ontouch( params: { "mode": string; "fn": ( touches: Array<TouchData>, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
-		ontouch( mode: string, fn: ( touches: Array<TouchData>, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
+		onTouch( params: { "mode": string; "fn": ( touches: Array<TouchData>, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
+		onTouch( mode: string, fn: ( touches: Array<TouchData>, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
 
 		/**
 		 * Flood fills an area with a color, with optional tolerance or boundary color.
@@ -2057,7 +2057,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Starts mouse input tracking for this screen.
 		 *
-		 * Starts mouse tracking on the screen canvas. Tracking also starts on first use: the first inmouse(), inpress(), or handler registration. After stopMouse(), only startMouse() starts tracking again.
+		 * Starts mouse tracking on the screen canvas. Tracking also starts on first use: the first inMouse(), inPress(), or handler registration. After stopMouse(), only startMouse() starts tracking again.
 		 *
 		 * When the page is hidden, held buttons are released through the 'up' handlers, with cancelled set to true.
 		 *
@@ -2069,7 +2069,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Starts touch input tracking for this screen.
 		 *
-		 * Starts touch tracking on the screen canvas. Tracking also starts on first use: the first intouch(), inpress(), or handler registration. After stopTouch(), only startTouch() starts tracking again.
+		 * Starts touch tracking on the screen canvas. Tracking also starts on first use: the first inTouch(), inPress(), or handler registration. After stopTouch(), only startTouch() starts tracking again.
 		 *
 		 * When the page is hidden, held touches are released through the 'end' handlers, with cancelled set to true.
 		 *
@@ -2081,9 +2081,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Stops mouse input tracking for this screen.
 		 *
-		 * Stops mouse tracking on the screen canvas. Held buttons are released first: the onmouse and onpress 'up' handlers run with cancelled set to true, and no click fires.
+		 * Stops mouse tracking on the screen canvas. Held buttons are released first: the onMouse and onPress 'up' handlers run with cancelled set to true, and no click fires.
 		 *
-		 * While stopped, handlers stay registered but are not called, and inmouse() returns the last state. Reads and handler registration do not restart tracking; call startMouse().
+		 * While stopped, handlers stay registered but are not called, and inMouse() returns the last state. Reads and handler registration do not restart tracking; call startMouse().
 		 * @returns This function does not return a value.
 		 */
 		stopMouse(): void;
@@ -2091,9 +2091,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Stops touch input tracking for this screen.
 		 *
-		 * Stops touch tracking on the screen canvas. Held touches are released first: the ontouch 'end' handlers, and the onpress 'up' handlers for the primary touch, run with cancelled set to true, and no click fires.
+		 * Stops touch tracking on the screen canvas. Held touches are released first: the onTouch 'end' handlers, and the onPress 'up' handlers for the primary touch, run with cancelled set to true, and no click fires.
 		 *
-		 * While stopped, handlers stay registered but are not called, and intouch() returns the last state. Reads and handler registration do not restart tracking; call startTouch().
+		 * While stopped, handlers stay registered but are not called, and inTouch() returns the last state. Reads and handler registration do not restart tracking; call startTouch().
 		 * @returns This function does not return a value.
 		 */
 		stopTouch(): void;
@@ -2636,7 +2636,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 *
 		 * For offscreen screens, only exact pixel dimensions (x) are allowed. An offscreen screen can use an  existing screen as its parent to share that screen's WebGL context. This allows drawImage to use  the offscreen framebuffer directly for faster drawing. The parent controls rendering-context  affinity only and does not establish lifecycle ownership.
 		 *
-		 *  Creating a screen makes it active. Pointer input requires an onscreen target, so after creating an offscreen buffer call setScreen on the visible screen or use visible.inmouse().
+		 *  Creating a screen makes it active. Pointer input requires an onscreen target, so after creating an offscreen buffer call setScreen on the visible screen or use visible.inMouse().
 		 * @param aspect Aspect ratio string in format (width)(x|e|m)(height), e.g., '300x200', '100e00', '300m200'.
 		 * @param container DOM element or element ID string to use as container. Defaults to document.body.
 		 * @param isOffscreen If true, creates an offscreen canvas that is not displayed. Requires exact pixel dimensions.

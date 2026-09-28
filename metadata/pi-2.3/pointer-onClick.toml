@@ -1,4 +1,4 @@
-title = "onclick"
+title = "onClick"
 category = "pointer"
 isScreen = true
 plugin = "pointer"
@@ -23,7 +23,7 @@ Requires an onscreen screen.
 """
 example = """
 $.screen( "300x200" );
-$.onclick( ( clickData ) => {
+$.onClick( ( clickData ) => {
 	$.setPosPx( clickData.x, clickData.y );
 	$.print( `Clicked`, true );
 } );

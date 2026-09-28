@@ -1,4 +1,4 @@
-title = "intouch"
+title = "inTouch"
 category = "pointer"
 isScreen = true
 plugin = "pointer"
@@ -18,7 +18,7 @@ $.screen( "300x200" );
 requestAnimationFrame( run );
 function run() {
 	$.cls();
-	const touches = $.intouch();
+	const touches = $.inTouch();
 	for( const touch of touches ) {
 		$.print( `Touch ${touch.id} at ${touch.x}, ${touch.y}` );
 	}

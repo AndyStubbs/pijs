@@ -1,8 +1,8 @@
-title = "offpress"
+title = "offTouch"
 category = "pointer"
 isScreen = true
 plugin = "pointer"
-summary = "Removes a press event handler."
+summary = "Removes a touch event handler."
 description = """
 Removes every registration of the function for the mode. If fn is omitted or null, removes every
 handler of the mode. Handlers of other modes are not affected. A handler removed during an event
@@ -10,38 +10,38 @@ does not run later in it.
 """
 example = """
 $.screen( "300x200" );
-$.print( "Move mouse or touch to paint screen, click/touch up to stop." );
-$.onpress( "move", pressMove );
-$.onpress( "up", pressStop, true );
+$.print( "Touch and drag to paint screen, touch up to stop." );
+$.onTouch( "move", touchMove );
+$.onTouch( "end", touchStop, true );
 
-// Press move function receives pressData and optional customData
-function pressMove( pressData, customData ) {
-	$.setPosPx( pressData.x, pressData.y );
+// Touch move function receives the touches that moved and optional customData
+function touchMove( touches, customData ) {
+	$.setPosPx( touches[ 0 ].x, touches[ 0 ].y );
 	var pos = $.getPos();
 	$.setPos( pos.col, pos.row );
 	$.setColor( 8 );
 	$.print( "+", true );
 }
 
-// Press stop function receives pressData and optional customData
-function pressStop( pressData, customData ) {
+// Touch stop function receives the touches that ended and optional customData
+function touchStop( touches, customData ) {
 	$.setColor( 14 );
 	var pos = $.getPos();
 	$.setPos( pos.col - 4, pos.row );
 	$.print( "Stopped!", true );
-	$.offpress( "move", pressMove );
+	$.offTouch( "move", touchMove );
 }
 """
 
 [[parameters]]
 name = "mode"
 type = "string"
-description = "Event mode ('down', 'up', or 'move') of the handler."
+description = "Event mode ('start', 'end', or 'move') of the handler."
 
 [[parameters]]
 name = "fn"
 type = "function"
-signature = "( pressData: PressData, customData?: object ) => void"
+signature = "( touches: Array<TouchData>, customData?: object ) => void"
 description = "Callback function to remove. If omitted or null, removes every handler of the mode."
 optional = true
 
