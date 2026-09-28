@@ -356,9 +356,9 @@ page errors fail independently of pixels.
 
 The runner loads the page, waits for `$.ready()` and for fixture assertions
 (`window.patchResult`), then the metadata delay, scripted input, and two animation frames before
-capture. `expectPatchResult` requires `patchResult` to resolve to that number.
-`waitUntil` (a Playwright load state) and `renderWait` (a fixed wait in milliseconds instead of the
-animation frames) are only for a fixture whose approved baseline depends on capture timing.
+capture. `expectPatchResult` requires `patchResult` to resolve to that number. A fixture whose
+drawing runs asynchronously resolves `patchResult` when it finishes, so its capture does not
+depend on timing.
 
 `ciSkip` names why a fixture is flaky on CI runners and who owns the fix. With `CI` set, the
 fixture is skipped and the console prints `Skipped: <fixture>: Skipped in CI: <reason>`; local

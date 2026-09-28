@@ -6,13 +6,10 @@
 			[[TOML_START]]
 			file = "shaders_lifecycle"
 			name = "shaders lifecycle"
-			ciSkip = "known flaky capture; Core 11 owns the fix"
 			lite = true
 			width = 640
 			height = 520
-			waitUntil = "networkidle"
-			delay = 250
-			renderWait = 100
+			expectPatchResult = 122
 			expectPageError = "expected automatic presentation failure"
 			[[TOML_END]]
 		</script>
@@ -180,8 +177,17 @@ void main() {
 
 	const logEl = document.getElementById( "log" );
 	let failed = 0;
+	let checked = 0;
+
+	// The runner captures once the sequence resolves patchResult with its check count, or fails
+	// the fixture on false, so the capture never depends on timing
+	let finishChecks;
+	window.patchResult = new Promise( resolve => {
+		finishChecks = resolve;
+	} );
 
 	function check( name, cond ) {
+		checked += 1;
 		if( cond ) {
 			return;
 		}
@@ -857,6 +863,7 @@ void main() {
 
 		// 23. Separate- and shared-context screens are normalized as sampler inputs
 		const separateSource = $.screen( "2x2", null, true );
+		separateSource.setColor( "#00FF00" );
 		separateSource.rect( 0, 0, 2, 2, "#00FF00" );
 		same.applyShader( sampler, { "u_aux": separateSource } );
 		const separatePixel = same.getPixel( 0, 0 );
@@ -867,6 +874,7 @@ void main() {
 		const sharedSource = $.screen( {
 			"aspect": "2x2", "isOffscreen": true, "parent": same
 		} );
+		sharedSource.setColor( "#0000FF" );
 		sharedSource.rect( 0, 0, 2, 2, "#0000FF" );
 		same.applyShader( sampler, { "u_aux": sharedSource } );
 		const sharedPixel = same.getPixel( 0, 0 );
@@ -911,6 +919,7 @@ void main() {
 		document.body.appendChild( removalBox );
 		const removalDestination = $.screen( "2x2", removalBox );
 		const removalSource = $.screen( "2x2", null, true );
+		removalSource.setColor( "#00FF00" );
 		removalSource.rect( 0, 0, 2, 2, "#00FF00" );
 		removalDestination.setDisplayShader( sampler, { "u_aux": removalSource } );
 		let removalInfo = removalDestination.getShaderInfo( sampler );
@@ -919,6 +928,7 @@ void main() {
 		removalInfo = removalDestination.getShaderInfo( sampler );
 		check( "removed sampler display cleared", !removalInfo.screen.displayActive );
 		const removalPresents = watchDefaultPresents( removalDestination.canvas() );
+		removalDestination.setColor( "#FF0000" );
 		removalDestination.rect( 0, 0, 2, 2, "#FF0000" );
 		await Promise.resolve();
 		let removalPixel = readCanvasPixel( removalDestination.canvas(), 0, 0 );
@@ -927,6 +937,7 @@ void main() {
 			removalPresents.count() === 1 && removalPixel.r > 240 && removalPixel.g < 16
 		);
 		removalPresents.reset();
+		removalDestination.setColor( "#0000FF" );
 		removalDestination.rect( 0, 0, 2, 2, "#0000FF" );
 		await Promise.resolve();
 		removalPixel = readCanvasPixel( removalDestination.canvas(), 0, 0 );
@@ -970,8 +981,10 @@ void main() {
 			return originalRecoveryDrawArrays.call( recoveryGl, mode, first, count );
 		};
 		try {
+			recoveryScreen.setColor( "#FF0000" );
 			recoveryScreen.rect( 0, 0, 2, 2, "#FF0000" );
 			await waitMs( 0 );
+			recoveryScreen.setColor( "#00FF00" );
 			recoveryScreen.rect( 0, 0, 2, 2, "#00FF00" );
 			await waitMs( 0 );
 		} finally {
@@ -1065,9 +1078,10 @@ void main() {
 			invalidDisplaySamplerCode === "INVALID_UNIFORM_VALUE"
 		);
 
-		// 28. Shader diagnostics and deterministic disposal
+		// 28. Shader diagnostics and deterministic disposal. The shader keeps green and blue only,
+		// so a pass or display that uses it is visible
 		const disposable = $.createShader( tintSrc, {
-			"u_tint": [ 1, 1, 1, 1 ],
+			"u_tint": [ 0, 1, 1, 1 ],
 			"u_gain": new Float32Array( [ 1 ] )
 		} );
 		const disposeScreen = $.screen( "2x2", null, true );
@@ -1076,22 +1090,30 @@ void main() {
 		check( "unused screen diagnostics", !disposeInfo.screen.compiled );
 		check( "unused reflection is empty", disposeInfo.screen.uniforms.length === 0 );
 		check( "shader diagnostics include source", disposeInfo.fragmentSource === tintSrc );
-		disposeInfo.uniforms.u_tint[ 0 ] = 0;
+		disposeInfo.uniforms.u_tint[ 1 ] = 0;
 		disposeInfo.screen.uniforms.push( { "name": "changed" } );
 		disposeInfo = disposeScreen.getShaderInfo( disposable );
-		check( "diagnostic defaults are copied", disposeInfo.uniforms.u_tint[ 0 ] === 1 );
+		check( "diagnostic defaults are copied", disposeInfo.uniforms.u_tint[ 1 ] === 1 );
 		check( "diagnostic collections are copied", disposeInfo.screen.uniforms.length === 0 );
 
 		const disposeShared = $.screen( {
 			"aspect": "2x2", "isOffscreen": true, "parent": same
 		} );
-		disposeScreen.rect( 0, 0, 2, 2, "#FF0000" );
+		disposeScreen.setColor( "#FFFFFF" );
+		disposeScreen.rect( 0, 0, 2, 2, "#FFFFFF" );
 		disposeScreen.applyShader( disposable );
+		disposeShared.setColor( "#00FF00" );
 		disposeShared.rect( 0, 0, 2, 2, "#00FF00" );
 		disposeShared.applyShader( disposable );
+		same.setColor( "#FF0000" );
 		same.rect( 0, 0, 1, 1, "#FF0000" );
 		same.getPixel( 0, 0 );
 		same.setDisplayShader( disposable );
+		const filteredPixel = readCanvasPixel( same.canvas(), 0, 0 );
+		check(
+			"display shader filters before disposal",
+			filteredPixel.r < 16 && filteredPixel.g < 16 && filteredPixel.b < 16
+		);
 		disposeInfo = disposeScreen.getShaderInfo( disposable );
 		check( "aggregate compiled screen count", disposeInfo.compiledScreenCount === 3 );
 		check( "aggregate queued shader count", disposeInfo.queuedPassCount === 2 );
@@ -1204,6 +1226,9 @@ void main() {
 			summary.className = "fail";
 			summary.textContent = failed + " CHECKS FAILED";
 			logEl.insertBefore( summary, logEl.firstChild );
+			finishChecks( false );
+		} else {
+			finishChecks( checked );
 		}
 	} );
 </script>

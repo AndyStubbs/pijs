@@ -152,9 +152,7 @@ function parseTOML( content ) {
 		"delay": 0,
 		"commands": null,
 		"expectPageError": null,
-		"expectPatchResult": null,
-		"waitUntil": "load",
-		"renderWait": null
+		"expectPatchResult": null
 	};
 
 	// Simple TOML parser for our needs
@@ -202,7 +200,7 @@ function parseTOML( content ) {
 
 			// Convert numbers
 			if( key === "width" || key === "height" || key === "delay" ||
-				key === "expectPatchResult" || key === "renderWait"
+				key === "expectPatchResult"
 			) {
 				value = parseInt( value );
 			}
@@ -793,10 +791,9 @@ test.describe( config.description, () => {
 					"height": metadata.height
 				} );
 
-				// Navigate to test, then wait for Pi.js to release the page's resource waits.
-				// A fixture that captures mid-sequence can name the load state it was approved at.
+				// Navigate to test, then wait for Pi.js to release the page's resource waits
 				await page.goto( testFile.url, {
-					"waitUntil": metadata.waitUntil,
+					"waitUntil": "load",
 					"timeout": 30000
 				} );
 				await page.evaluate( () => window.$?.ready() );
@@ -838,15 +835,10 @@ test.describe( config.description, () => {
 					await executeCommands( page, metadata.commands );
 				}
 
-				// Let queued drawing reach the canvas: one frame to render, one to present. A
-				// fixture whose baseline depends on capture timing can name a fixed wait instead.
-				if( metadata.renderWait !== null ) {
-					await page.waitForTimeout( metadata.renderWait );
-				} else {
-					await page.evaluate( () => new Promise( resolve => {
-						requestAnimationFrame( () => requestAnimationFrame( resolve ) );
-					} ) );
-				}
+				// Let queued drawing reach the canvas: one frame to render, one to present
+				await page.evaluate( () => new Promise( resolve => {
+					requestAnimationFrame( () => requestAnimationFrame( resolve ) );
+				} ) );
 
 				// Fail on unexpected uncaught page errors independently of pixels
 				const expectedPageError = metadata.expectPageError;
