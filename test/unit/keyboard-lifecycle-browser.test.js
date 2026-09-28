@@ -102,6 +102,9 @@ for( const bundle of g_harness.BUNDLES ) {
 			const { page, errors } = await open( bundle );
 			try {
 				await page.evaluate( () => $.ready() );
+
+				// The first read starts tracking (I5)
+				await page.evaluate( () => $.inKey() );
 				const keyboard = page.keyboard;
 				const held = () => page.evaluate( () => [
 					$.inKey( "A" ) !== null, $.inKey( "KeyA" ) !== null,
@@ -236,7 +239,7 @@ for( const bundle of g_harness.BUNDLES ) {
 		] );
 	} );
 
-	test( `KEY-017 ${bundle}: set( { actionKeys } ) adds action keys (K20)`, async () => {
+	test( `KEY-017 ${bundle}: set( { actionKeys } ) starts tracking and adds keys (K20)`, async () => {
 		assert.deepEqual( await probe( bundle, () => {
 			function prevented( code ) {
 				const event = new KeyboardEvent( "keydown", {
@@ -246,11 +249,14 @@ for( const bundle of g_harness.BUNDLES ) {
 				window.dispatchEvent( new KeyboardEvent( "keyup", { "key": " ", "code": code } ) );
 				return event.defaultPrevented;
 			}
-			$.setActionKeys( [ "Space" ] );
+
+			// set() is the first use on the page, so it starts tracking (I5)
 			$.set( { "actionKeys": [ "KeyB" ] } );
-			const afterSet = [ prevented( "Space" ), prevented( "KeyB" ) ];
+			const afterSet = prevented( "KeyB" );
+			$.setActionKeys( [ "Space" ] );
+			const afterBoth = [ prevented( "Space" ), prevented( "KeyB" ) ];
 			$.removeActionKeys( [ "Space", "KeyB" ] );
-			return [ afterSet, prevented( "Space" ), prevented( "KeyB" ) ];
-		} ), [ [ true, true ], false, false ] );
+			return [ afterSet, afterBoth, prevented( "Space" ), prevented( "KeyB" ) ];
+		} ), [ true, [ true, true ], false, false ] );
 	} );
 }

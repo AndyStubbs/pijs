@@ -10,7 +10,7 @@ game controls where you don't want the browser to handle certain keys.
 
 Keys already in the set stay in it; use removeActionKeys() to remove keys. set( { "actionKeys":
 [ ... ] } ) also adds. Keys can be specified by code (e.g., "ArrowUp", "Space") or key value
-(e.g., " ").
+(e.g., " "). Setting action keys starts keyboard tracking, unless stopKeyboard() was called.
 """
 example = """
 $.screen( "200x200" );

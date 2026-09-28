@@ -490,6 +490,9 @@ test( "KEY-001 a key released with a different value is no longer held (K1)", ()
 
 test( "KEY-001 a value stays held until every key producing it is released (K1b)", () => {
 	const h = harness();
+
+	// The first read starts tracking (I5)
+	h.api.inKey();
 	shift( h, "down", "ShiftLeft" );
 	shift( h, "down", "ShiftRight" );
 	assert.equal( h.api.inKey( "Shift" ).code, "ShiftRight", "the latest press answers" );
@@ -510,6 +513,7 @@ test( "KEY-001 a value stays held until every key producing it is released (K1b)
 
 test( "KEY-001 a composing keydown does not stay held as Process (K14)", () => {
 	const h = harness();
+	h.api.inKey();
 	h.key( "Process", "down", { "code": "KeyN" } );
 	assert.equal( h.api.inKey( "Process" ).code, "KeyN" );
 	h.key( "n", "up", { "code": "KeyN" } );
@@ -809,6 +813,11 @@ test( "KEY-012 starting the keyboard keeps focus, and start and stop are idempot
 			return listener.type === type && listener.capture;
 		} ).length;
 		assert.equal( h.body.blurs, 0, "plugin load leaves focus alone" );
+
+		// Plugin load attaches nothing; the first read starts tracking (I5)
+		assert.deepEqual( h.window.listeners, [] );
+		h.api.inKey();
+		h.api.inKey();
 		assert.deepEqual( [ listeners( "keydown" ), listeners( "keyup" ) ], [ 1, 1 ] );
 
 		// Stop removes the listeners and the held keys, and holds until startKeyboard()
@@ -976,4 +985,50 @@ test( "KEY-007 registering the same function for the same keys and mode again do
 	h.key( "a", "up", { "code": "KeyA" } );
 	h.key( "a", "down", { "code": "KeyA" } );
 	assert.equal( calls, 5 );
+} );
+
+test( "KEY-006 tracking starts on first use and stays stopped until startKeyboard() (I5)", () => {
+	const types = h => Array.from( h.window.listeners, listener => listener.type ).sort();
+	const tracked = [ "blur", "keydown", "keyup" ];
+
+	// Before any use, keys are not tracked
+	const idle = harness();
+	idle.key( "a", "down", { "code": "KeyA" } );
+	assert.deepEqual( types( idle ), [] );
+	assert.equal( idle.api.inKey( "KeyA" ), null );
+
+	// Each first use starts tracking, once
+	for( const use of [
+		h => h.api.inKey( "KeyA" ),
+		h => h.api.onKey( "KeyA", "down", () => {} ),
+		h => h.api.setActionKeys( [ "Space" ] )
+	] ) {
+		const h = harness();
+		use( h );
+		use( h );
+		assert.deepEqual( types( h ), tracked );
+		h.key( "a", "down", { "code": "KeyA" } );
+		assert.equal( h.api.inKey( "KeyA" ).code, "KeyA" );
+	}
+
+	// A prompt uses its own listener and does not start tracking
+	const prompting = harness();
+	prompting.start();
+	assert.equal( types( prompting ).filter( type => type === "keyup" ).length, 0 );
+
+	// After a stop, handlers stay registered but are not called, and reads report nothing,
+	// whatever is used, until startKeyboard()
+	const h = harness();
+	const calls = [];
+	h.api.onKey( "KeyA", "down", () => calls.push( "a" ) );
+	h.api.stopKeyboard();
+	h.api.onKey( "KeyB", "down", () => calls.push( "b" ) );
+	h.api.setActionKeys( [ "KeyA" ] );
+	h.key( "a", "down", { "code": "KeyA" } );
+	h.key( "b", "down", { "code": "KeyB" } );
+	assert.deepEqual( [ calls, h.api.inKey().length, types( h ) ], [ [], 0, [ "blur" ] ] );
+	h.api.startKeyboard();
+	h.key( "a", "up", { "code": "KeyA" } );
+	h.key( "a", "down", { "code": "KeyA" } );
+	assert.deepEqual( calls, [ "a" ] );
 } );
