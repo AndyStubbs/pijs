@@ -25,8 +25,9 @@ Device check for the keyboard 2.3 audit (docs/plans/v2.3/AUDIT-KEYBOARD.md, Sect
 Compares what Pi.js reports with the browser's own key events for the behaviors that
 synthetic probes cannot settle: key identity under real layouts, held state across focus
 changes and modifier release order, auto-repeat, IME composition, and what input() does with
-Space, Tab, and paste. Serve the repository with `npm run server`, then open
-http://localhost:8080/docs/evidence/keyboard-2.3/device-check.html
+Space, Tab, and paste. For the release pass it also shows cancelled releases (I6) and key
+handler calls while a prompt is active (A11). Serve the repository with `npm run server`, then
+open http://localhost:8080/docs/evidence/keyboard-2.3/device-check.html
 -->
 <h1>Keyboard device check (Pi.js 2.3 audit)</h1>
 <p>Follow the steps in docs/evidence/keyboard-2.3/README.md, then click
@@ -51,6 +52,7 @@ const m_seenKeys = new Set();
 const m_stuck = new Set();
 let m_results;
 let m_isComposing = false;
+let m_isPrompting = false;
 
 reset();
 
@@ -66,7 +68,9 @@ function reset() {
 		"repeat": { "rawRepeats": 0, "piDefault": 0, "piAllowRepeat": 0 },
 		"composition": [],
 		"inputs": [],
-		"metaSamples": []
+		"metaSamples": [],
+		"cancelled": [],
+		"promptHandlerCalls": 0
 	};
 	m_stuck.clear();
 }
@@ -155,12 +159,28 @@ document.addEventListener( "visibilitychange", () => {
 } );
 
 // Pi.js handlers: default (no repeat) and allowRepeat
-$.onKey( "any", "down", () => { m_results.repeat.piDefault += 1; } );
+$.onKey( "any", "down", () => {
+	m_results.repeat.piDefault += 1;
+	if( m_isPrompting ) {
+		m_results.promptHandlerCalls += 1;
+	}
+} );
 $.onKey( "any", "down", data => {
 	if( data.repeat ) {
 		m_results.repeat.piAllowRepeat += 1;
 	}
 }, false, true );
+
+// Releases the player did not make arrive as cancelled (I6); a prompt's keys, including its
+// Enter keyup, reach no handler (A11)
+$.onKey( "any", "up", data => {
+	if( data.cancelled ) {
+		m_results.cancelled.push( { "t": time(), "code": data.code } );
+		log( "Pi.js cancelled release " + data.code );
+	} else if( m_isPrompting ) {
+		m_results.promptHandlerCalls += 1;
+	}
+} );
 
 // Each frame: a key value Pi.js reports held that the browser has released is stuck
 function frame() {
@@ -190,6 +210,8 @@ function render() {
 		[ "Repeats raw / Pi default / Pi allowRepeat", m_results.repeat.rawRepeats + " / " +
 			m_results.repeat.piDefault + " / " + m_results.repeat.piAllowRepeat ],
 		[ "Composing", String( m_isComposing ) ],
+		[ "Cancelled releases (I6)", m_results.cancelled.map( r => r.code ).join( ", " ) ],
+		[ "Key handler calls during input() (A11)", String( m_results.promptHandlerCalls ) ],
 		[ "Focus / visibility / active element", document.hasFocus() + " / " +
 			document.visibilityState + " / " + document.activeElement.tagName ],
 		[ "scrollY", String( Math.round( window.scrollY ) ) ]
@@ -211,8 +233,13 @@ async function startInput( isNumber ) {
 	document.activeElement.blur();
 	const record = { "t": time(), "isNumber": isNumber, "scrollBefore": window.scrollY };
 	log( "input() started" );
+
+	// Handler calls count from the start until a second after the end, which covers the keyup
+	// of the Enter that ends the prompt
+	m_isPrompting = true;
 	const value = await $.input( { "prompt": isNumber ? "Number: " : "Text: ",
 		"isNumber": isNumber, "allowNegative": isNumber } );
+	setTimeout( () => { m_isPrompting = false; }, 1000 );
 	record.value = value;
 	record.scrollAfter = window.scrollY;
 	record.activeElementAfter = document.activeElement.tagName;

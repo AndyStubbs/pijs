@@ -16,7 +16,7 @@ This folder holds measurements and reproductions for the 2.3 keyboard audit
 | `size-phase2.json` | The same command at the exit of keyboard Phase 2 (tasks 2.1–2.9), 2026-09-28 |
 | `probes.js` | Reproductions K1–K20, run in Chromium, Firefox and WebKit against fresh in-memory bundles of the current source, plus a load check of the manual pages that load the keyboard plugin |
 | `probes-output.json` | Observed and expected results per engine and probe, with page errors |
-| `device-check.html` | A page for the physical-keyboard pass: Pi.js key state next to the browser's own key events |
+| `device-check.html` | A page for the physical-keyboard pass: Pi.js key state next to the browser's own key events, cancelled releases, and key handler calls during a prompt |
 
 ## Size baseline
 
@@ -61,6 +61,14 @@ The keyboard growth is cancelled releases and their listeners, the frozen list a
 dispatch, validation with per-parameter codes, and the prompt's withheld keys. The Full change
 also includes the pointer (+822 standalone) and gamepad (+594) Phase 1 work merged since the
 Phase 1 measurement; Lite has no plugins and core did not change.
+
+## Final size
+
+The keyboard's final 2.3 size is the Phase 2 exit size above. Measured again on `main` at
+`44d1fb1`, after the Phase 2 set landed and A16 was dropped, with the same command: every
+figure in `size-phase2.json` matched, so no new file was recorded. The standalone plugin 2.0.0
+is 10,955 bytes, 4,206 gzipped: 1,096 bytes more than the 3,110-byte baseline, of which Phase
+1 added 380 and Phase 2 716.
 
 ## Probes
 
@@ -110,7 +118,8 @@ and in the audit report, Section 6.3.
 9. **IME** (if a Japanese or Chinese input method is installed). Switch to it, click
    **Start text input()**, type `nihon`, choose a conversion, press Enter to commit, then press
    Enter again. Note what the prompt shows.
-10. Click **Copy results** and paste the JSON into the conversation.
+10. **Hidden tab.** Hold D, press Ctrl+Tab to another tab, release both keys there, and return.
+11. Click **Copy results** and paste the JSON into the conversation.
 
 **Results (2026-09-24),** Chrome 153 on Windows 11 with a US keyboard layout. Steps 6 and 9
 were not run: no other layout or input method was available.
@@ -125,3 +134,30 @@ were not run: no other layout or input method was available.
 
 The page's "Browser held" record learns releases only from keyup events, so it is stale after
 a blur: its `rawHeld` samples at later blurs and focuses still list D and Alt.
+
+### Release pass
+
+The keyboard's manual release check, from
+[ROADMAP §8.3](../../plans/v2.3/ROADMAP.md#83-manual-release-checks), run after the Phase 2 set
+landed. Run steps 3–5, 8, and 10 in Chrome, Firefox, and Safari;
+step 6 with any non-US layout available; and step 9 if an input method is installed. On macOS,
+replace step 7 with: hold Cmd, press and release A, then release Cmd, in Chrome and Safari.
+Record the results here.
+
+Expected results:
+- **Step 3:** no stuck key values (A1).
+- **Step 4:** Pi.js holds nothing after each blur, and "Cancelled releases" lists the keys held
+  at each blur (I6).
+- **Step 5:** the `allowRepeat` counter follows the browser's repeats; the default counter does
+  not.
+- **Step 6:** codes name physical positions and values follow the layout; AltGr+Q types "@" in
+  the prompt (A3).
+- **Step 7 on macOS:** a key released while Cmd is held may stay held until the window loses
+  focus. This is the audit's open macOS Meta item, a platform limit, so record the result
+  rather than fail it.
+- **Step 8:** Space does not scroll, Tab does not move focus, Ctrl+V pastes, Enter resolves the
+  text, and "Key handler calls during input()" stays 0 (A3, A11).
+- **Step 9:** no key stays held. Composed text is not supported (A16 was dropped), so the
+  prompt may not show it.
+- **Step 10:** "Cancelled releases" lists D and Ctrl, the keys held when the tab was hidden
+  (I6).
