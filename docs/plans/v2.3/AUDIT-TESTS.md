@@ -701,7 +701,7 @@ go to their owner. The last column names the ROADMAP task that takes each item.
 | SYS-013 | Explicit `registerPlugin()` without `window.pi`, the documented alternative to ESM auto-registration, is only type-checked | Core 12 |
 | Visual-only commands | `getDefaultPal`, `getShaderInfo`, `screenToView`, and `setPrintSize` are checked only by one fixture's pixels | Core 12 |
 | Filter cleanup hook | Break check B2a: removing the `cancelFilter` pre-cleanup hook (`src/api/pixels.js:37`) changes nothing observable, because the per-pixel check at `:417` already stops the filter. The comment at `:391` says there is no per-pixel check. Either the hook or the check is redundant | Core 12 |
-| `shaders_lifecycle` | Found by TEST-022: with its sampler shader fixed, the fixture's check sequence runs to the end, and 7 checks fail: sampler contexts, automatic presentation after removal and failure, and shader disposal. It needs those fixes and a deterministic capture with a reviewed baseline. Until then it can race under heavy parallel load, and CI skips it (`ciSkip`) | Core 11 |
+| `shaders_lifecycle` | Found by TEST-022: with its sampler shader fixed, the fixture's check sequence runs to the end, and 7 checks fail: sampler contexts, automatic presentation after removal and failure, and shader disposal. It needs those fixes and a deterministic capture with a reviewed baseline. Until then it can race under heavy parallel load, and CI skips it (`ciSkip`) | Core 11, done: the failures were fixture defects, and the capture waits for `patchResult` |
 
 ### 5.6 CI/CD exploration
 
