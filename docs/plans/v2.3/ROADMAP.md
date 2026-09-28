@@ -17,8 +17,8 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
 | 1 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
-| 2 | [Core 5–7, 9–13](#32-phase-2-fixes) | Remaining core fixes, tests, and the approved `$.clearEvents()` change, in any order. Core 13 lands before the pointer Phase 2 set | Nothing. Can run in parallel |
-| 3 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Core 13 |
+| 2 | [Core 5–7, 9–12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
+| 3 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Nothing |
 | 4 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Nothing |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
@@ -27,10 +27,10 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
-| Core | [3](#3-core) | Phase 1 done. Core 1, 2, 4, and 8 done, 9 tasks left | Core 5–7, 9–13 |
+| Core | [3](#3-core) | Phases 1 and 3 done. Core 1, 2, 4, 8, and 13 done, 8 tasks left | Core 5–7, 9–12 |
 | Sound | [4](#4-sound) | Phases 0–9 done; Phases 10–11 not started | Sound 10.1 |
 | Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
-| Pointer | [6](#6-pointer) | Phase 1 done; Phase 2 not started | Pointer 2.1, after Core 13 |
+| Pointer | [6](#6-pointer) | Phase 1 done; Phase 2 not started | Pointer 2.1 |
 | Gamepad | [7](#7-gamepad) | Phase 1 done; Phase 2 not started | Gamepad 2.1 |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
 | CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.10) | — |
@@ -249,7 +249,7 @@ in its plugin's Phase 2 and is listed in its compatibility summary.
 ## 3. Core
 
 Findings: [AUDIT-CORE.md](AUDIT-CORE.md). Proposals C1–C11:
-[AUDIT-CORE.md §4](AUDIT-CORE.md#4-proposed-changes). Core 1, 2, 4, and 8 are done
+[AUDIT-CORE.md §4](AUDIT-CORE.md#4-proposed-changes). Core 1, 2, 4, 8, and 13 are done
 ([Section 13.5](#135-core)). The task numbers follow the audit's follow-up order, so Core 3–10
 keep their original numbers and Core 11–12 are the test audit's handoffs.
 
@@ -273,11 +273,10 @@ In any order, in parallel with the input work.
 
 ### 3.3 Phase 3: API change
 
-Done: Core 8 ([Section 13.5](#135-core)).
+Phase 3 is done: Core 8 and Core 13 ([Section 13.5](#135-core)).
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| Core 13 | **`$.clearEvents()` clears every screen (I10, breaking, approved 2026-09-27).** `$.clearEvents()` passes no screen to the clear handlers, so per-screen handlers are cleared on every screen; a screen's `clearEvents()` still passes itself. The plugin API does not change: clear handlers already treat no screen as every screen. Tests: pointer handlers on two screens cleared by each form, and the keyboard prompt rule of I10. Lands before the pointer Phase 2 set (pointer 2.6) | — | — |
 
 Core 3 (document that `clearEvents()` reaches handlers a plugin registers through the public
 input commands, CORE-004, in place of the rejected C4) and C10 (the characters each built-in
@@ -297,8 +296,8 @@ Input to `UPGRADE-V2.3.md` (R.4):
   instead of a raw `TypeError`. Every name is checked first, so a call that throws applies no
   setting.
 - **Core 13 (breaking):** "`$.clearEvents()` now clears mouse, touch, press, and click handlers
-  on every screen, not only the active one. Call `clearEvents()` on a screen to clear only that
-  screen."
+  on every screen, not only the active one, and cancels an `input()` prompt on any screen. Call
+  `clearEvents()` on a screen to clear only that screen."
 - **C3:** "The standalone plugin entry points (`pijs-web/plugins/…`) are for Lite. Loading one
   that the Full bundle already includes throws `DUPLICATE_PLUGIN`."
 - **C5:** "TypeScript projects using `nodenext` module resolution now get the package's types.
@@ -494,8 +493,8 @@ Built on one branch and landed as a set. Each task updates metadata, declaration
 tests, and the demos, fixtures, and manual pages that use the changed command, plus the `tools/`
 pages, `scripts/validate-type-definitions.js`, `test/scripts/firefox-smoke.js`,
 `test/scripts/package-types-consumer.test.js`, `test/unit/plugin-installation-browser.test.js`,
-and the evidence `device-check.html` that Section 8.3 uses. Core 13 lands first; Core 8 is
-done.
+and the evidence `device-check.html` that Section 8.3 uses. Core 8 and Core 13, which it
+depends on, are done.
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
@@ -504,7 +503,7 @@ done.
 | 2.3 | **One data shape and modes (B7, I3).** `{ x, y, lastX, lastY, buttons, action, type, id, cancelled }` for mouse, touch, and press, with press data adding `touches`, frozen copies of the active touches; modes `"down"`, `"move"`, `"up"`; `onTouch( "start" )` and `"end"` throw `INVALID_MODE`; click data has `action: "click"`. Test: data shapes, including serializing `inPress()` (P12) | [PTR-013](AUDIT-POINTER.md#ptr-013) | — |
 | 2.4 | **Handler signature and removal (I2, I4).** `onClick( fn, once, hitBox, customData )`; `offX( mode )` and `offX( null, fn )` forms; `offX()` with neither throws `INVALID_MODE`; `offClick()` without a function removes every click handler of the screen (implied mode); duplicate registrations are ignored, so the 1.1 duplicate-`once` test changes | [PTR-009](AUDIT-POINTER.md#ptr-009) | — |
 | 2.5 | **Start, stop, and reads (I5, I7, I8, I9, B13).** Tracking starts on first use; data objects frozen and created once per event; list reads return frozen arrays replaced on change; `inMouse()` and `inPress()` return `null` before the first event and while stopped. Test: no allocation per read (P15) | [PTR-010](AUDIT-POINTER.md#ptr-010) | — |
-| 2.6 | **`clearEvents` scope (I10).** `"click"` becomes its own type; `"press"` no longer clears clicks; `$.clearEvents()` clears every screen through Core 13, and the plugin's no-screen branch is tested. Test: both forms on two screens | — | — |
+| 2.6 | **`clearEvents` scope (I10).** `"click"` becomes its own type; `"press"` no longer clears clicks; `$.clearEvents()` clears every screen (Core 13, done, whose browser test covers the plugin's no-screen branch). Test: both forms on two screens, with `"click"` cleared on its own | — | — |
 | 2.7 | **Gesture settings (B10, I12).** `setContextMenu( isEnabled )` replaces `setEnableContextMenu`; the menu is suppressed from screen creation (I5), and `setContextMenu()` no longer starts mouse tracking. The canvas gets `touch-action: none` when touch or press tracking starts on its screen, including `noCss` screens; `setPinchZoom( isEnabled )` becomes a screen command that sets the canvas `touch-action` at any time, never `<body>`. The old option `enableContextMenu` fails through Core 8. Test: context-menu default, `touch-action` before and after tracking, pinch zoom on the canvas (P13, P14) | [PTR-014](AUDIT-POINTER.md#ptr-014) | — |
 | 2.8 | **Validation (B9, I11).** `isEnabled` and `once` must be booleans or omitted; the existing plain `Error`s for mode, function, and hit box become `TypeError` or `RangeError`; codes from the I11 table | [PTR-012](AUDIT-POINTER.md#ptr-012) | — |
 
@@ -744,8 +743,7 @@ If the schedule slips, cut in this order. Earlier items go first.
    - Pointer B6: B5 keeps its window listeners, and B10 keeps `preventDefault()` with a
      per-screen flag.
    - Gamepad A9: the dead zone keeps its name and gains the radial model as a fix.
-6. **Core:** C8, then Core 13 (`$.clearEvents()` keeps clearing only the active screen, and
-   I10 says so), then C11's changelog item. Other P3 findings are deferred; P1 and P2 findings
+6. **Core:** C8, then C11's changelog item. Other P3 findings are deferred; P1 and P2 findings
    are fixed or accepted as known issues.
 7. **An input plugin's Phase 2 as a set.** Its breaking changes move to the next minor release
    together, so users update each API once. Its Phase 1 fixes and Phase 3 additive items still
@@ -1030,7 +1028,8 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | Core 1 | Transactional plugin installation and error routing (C2): registrations committed after installation succeeds; screen installation rolls back; `getPlugins()` reports `state`; registration after init throws `REGISTRATION_CLOSED` | [CORE-002](AUDIT-CORE.md#core-002), [CORE-006](AUDIT-CORE.md#core-006) | [#13](https://github.com/AndyStubbs/pijs/pull/13) |
 | Core 2 | Documented the Lite-only plugin entry points (C3) in `plugins/README.md`, `plugins/polygons/README.md`, and `llms-full.txt`; the release README follows in R.3 | [CORE-003](AUDIT-CORE.md#core-003) | [#14](https://github.com/AndyStubbs/pijs/pull/14) |
 | Core 4 | Declarations and release manifest (C5): `"type": "module"` in the release manifest; plugin declarations augment Lite, and `sound-advanced` both Full and Lite, through `PluginCommands`, `PluginScreenCommands`, and `PluginOptions`; object types only a plugin uses move from Lite to that plugin's declarations; Lite `Options` holds Lite settings only; the global `pi` and `$` are declared by Full only; `addCommand`'s `isScreenOptional` is optional and its JSDoc example is corrected; `Screen.removeScreen()` is declared. Type consumers compile under `bundler` and `nodenext`, including Lite with each exported plugin | [CORE-005](AUDIT-CORE.md#core-005), [CORE-015](AUDIT-CORE.md#core-015), [CORE-016](AUDIT-CORE.md#core-016), [CORE-017](AUDIT-CORE.md#core-017) | [#17](https://github.com/AndyStubbs/pijs/pull/17) |
-| Core 8 | Strict `set()` (C7, breaking): every option name is checked before any setting applies; a name that is not a registered setting, including an inherited name such as `toString` or a setting of a plugin that is not loaded, throws `RangeError` `INVALID_OPTION`; options that are not an object throw `TypeError` `INVALID_OPTIONS`; a screen setting with no active screen throws `NO_ACTIVE_SCREEN`, unless a `screen` option before it provides one. Settings are held in a null-prototype table, and the unused `addSetting` export is removed. Tests: `test/unit/settings.test.js` (C07) and the Full and Lite cases in `plugin-installation-browser.test.js`, including a Lite setting that appears when its plugin loads; `metadata/pi-2.3/set.toml` | [CORE-008](AUDIT-CORE.md#core-008) | — |
+| Core 8 | Strict `set()` (C7, breaking): every option name is checked before any setting applies; a name that is not a registered setting, including an inherited name such as `toString` or a setting of a plugin that is not loaded, throws `RangeError` `INVALID_OPTION`; options that are not an object throw `TypeError` `INVALID_OPTIONS`; a screen setting with no active screen throws `NO_ACTIVE_SCREEN`, unless a `screen` option before it provides one. Settings are held in a null-prototype table, and the unused `addSetting` export is removed. Tests: `test/unit/settings.test.js` (C07) and the Full and Lite cases in `plugin-installation-browser.test.js`, including a Lite setting that appears when its plugin loads; `metadata/pi-2.3/set.toml` | [CORE-008](AUDIT-CORE.md#core-008) | [#65](https://github.com/AndyStubbs/pijs/pull/65) |
+| Core 13 | `$.clearEvents()` clears every screen (I10, breaking): the global command passes no screen to the clear handlers, and each screen's `clearEvents()` passes that screen; the plugin API is unchanged, since every clear handler already treats no screen as every screen. So `$.clearEvents()` clears pointer handlers on every screen and cancels an `input()` prompt on any screen. Metadata: `clearEvents` describes both forms. Tests: the registry passes no screen from the global form (`plugins.test.js`); mouse, touch, press, and click handlers on two screens cleared by each form and by type (`pointer-browser.test.js`); KEY-016's `$` forms now cancel a prompt on the screen that is not active. The pointer Node harness clears as `$.clearEvents()` does | — | — |
 
 ### 13.6 Keyboard
 

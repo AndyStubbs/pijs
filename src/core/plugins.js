@@ -12,6 +12,7 @@ import * as g_commands from "./commands.js";
 import * as g_screenManager from "./screen-manager.js";
 import * as g_utils from "./utils.js";
 
+const CLEAR_EVENTS_PARAMETERS = [ "type" ];
 const m_plugins = [];
 let m_isResolving = false;
 const m_clearEventsHandlers = {};
@@ -40,9 +41,18 @@ export function init( api ) {
 	g_commands.addCommand(
 		"getPlugins", getPlugins, false, []
 	);
+
+	// $.clearEvents() passes no screen, so per-screen handlers are cleared on every screen; a
+	// screen's clearEvents() passes that screen
 	g_commands.addCommand(
-		"clearEvents", clearEvents, true, [ "type" ], true
+		"clearEvents", options => clearEvents( null, options ), false, CLEAR_EVENTS_PARAMETERS
 	);
+	g_screenManager.addScreenInitFunction( screenData => {
+		screenData.api.clearEvents = ( ...args ) => {
+			const options = g_utils.parseOptions( args, CLEAR_EVENTS_PARAMETERS );
+			return clearEvents( screenData, options );
+		};
+	} );
 }
 
 
@@ -208,9 +218,11 @@ function getPlugins() {
 }
 
 /**
- * Clear all events from all plugins or a specific plugin type
+ * Clear all events from all plugins or a specific plugin type. Each clear handler receives the
+ * screen: null from $.clearEvents(), which clears per-screen handlers on every screen, or the
+ * screen whose clearEvents() was called, which clears them on that screen only.
  *
- * @param {Object} screenData - Screen data object (may be null)
+ * @param {Object|null} screenData - The calling screen, or null for every screen
  * @param {Object} options - Options object
  * @param {string} [options.type] - Optional type to clear (e.g., "keyboard", "mouse", "touch",
  * "press")
