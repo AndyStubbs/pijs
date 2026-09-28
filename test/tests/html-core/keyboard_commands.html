@@ -11,83 +11,47 @@
 			delay = 0
 			commands = """
 				KD "KeyA"
-				DL 15
 				KU "KeyA"
-				DL 15
 				KT "The quick brown fox"
-				DL 15
 				KD "Control"
-				DL 15
 				KD "KeyC"
-				DL 15
 				KU "KeyC"
-				DL 15
 				KU "Control"
-				DL 250
 				KP "KeyZ"
-				DL 250
 				KP "KeyZ"
-				DL 250
 				KP "KeyZ"
-				DL 250
-				DL 100
+				KP "KeyR"
 				KP "KeyA"
-				DL 15
 				KP "KeyS"
-				DL 15
 				KP "KeyD"
-				DL 15
 				KP "KeyW"
-				DL 15
 				KD "Control"
-				DL 15
 				KD "KeyS"
-				DL 15
 				KU "KeyS"
-				DL 15
 				KU "Control"
-				DL 200
-
 
 				KD "a"
-				DL 30
 				KU "a"
-				DL 30
 
 				KD "A"
-				DL 30
 				KU "A"
-				DL 30
 
 				KD "Shift"
-				DL 30
 				KD "A"
-				DL 30
-
 				KU "Shift"
-				DL 30
 				KU "A"
-				DL 30
 
 				KD "KeyS"
-				DL 30
 				KU "KeyS"
-				DL 30
 
 				KD "KeyD"
-				DL 30
 				KU "KeyD"
-				DL 30
 
 				KD "KeyW"
-				DL 30
 				KU "KeyW"
-				DL 30
 
 				KD "KeyE"
-				DL 30
 				KU "KeyE"
-				DL 100
 			"""
 			[[TOML_END]]
 		</script>
@@ -143,9 +107,6 @@
 		}
 
 		function anyKeyDown( keyData ) {
-			if( !keyData ) {
-				debugger;
-			}
 			gridPrint( 0, keyData.key, 300, 0, 200, 30 );
 		}
 
@@ -153,7 +114,7 @@
 			$.print( "Ctrl+C combo detected!" );
 			$.removeActionKeys( [ "KeyC" ] );
 			$.print( "removeActionKeys: [KeyC] removed" );
-			$.print( "Stopping Keyboard for 1 second..." );
+			$.print( "Stopping Keyboard until R is pressed..." );
 
 			// Add Control + S event
 			$.onkey( [ "Control", "KeyS" ], "up", controlPlusSup );
@@ -161,10 +122,16 @@
 			// Remove Control + KeyC event
 			$.offkey( [ "Control", "KeyC" ], "down", controlPlusCdown );
 			$.stopKeyboard();
-			setTimeout( () => {
-				$.startKeyboard();
-				$.print( "Keyboard restarted" );
-			}, 1000 );
+
+			// Keys pressed while stopped are not tracked; the page restarts the keyboard from
+			// its own listener, so the fixture does not depend on timers
+			window.addEventListener( "keydown", function restart( event ) {
+				if( event.code === "KeyR" ) {
+					window.removeEventListener( "keydown", restart );
+					$.startKeyboard();
+					$.print( "Keyboard restarted" );
+				}
+			} );
 		}
 
 		function controlPlusSup( comboData ) {
@@ -183,7 +150,7 @@
 			$.offkey( [ "Control", "KeyS" ], "up", controlPlusSup );
 
 			// Start the next set of tests
-			setTimeout( startInkeyTesting, 200 );
+			startInkeyTesting();
 		}
 	}
 
@@ -191,11 +158,15 @@
 		$.setColor( 15 );
 		$.print( "\n=== INKEY TESTS ===\n" );
 		$.setColor( 7 );
-		$.print( "Testing inkey() with setInterval..." );
-		
+		$.print( "Testing inkey() after each key event..." );
+
+		// Read inkey() after every key event, once the plugin's capture listener has updated
+		// the held keys, so each state is seen exactly once whatever the timing
 		let allKeyLine = 0;
 		let lastLine = "";
-		const inkeyInterval = setInterval( function() {
+		window.addEventListener( "keydown", readKeys );
+		window.addEventListener( "keyup", readKeys );
+		function readKeys() {
 			
 			// Test inkey with no parameters - show all pressed keys
 			const allKeys = $.inkey();
@@ -267,14 +238,14 @@
 			}
 			
 			if( $.inkey( "KeyE" ) ) {
-				clearInterval( inkeyInterval );
+				window.removeEventListener( "keydown", readKeys );
+				window.removeEventListener( "keyup", readKeys );
 				$.setColor( 15 );
 				$.print( "\n=== ALL TESTS COMPLETE ===\n" );
 				$.setColor( 7 );
 				$.print( "Check results above for test outcomes" );
 			}
-
-		}, 15 );
+		}
 	}
 
 	const keyCounts = { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0 };
