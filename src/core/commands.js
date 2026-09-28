@@ -12,7 +12,8 @@
 import * as g_utils from "./utils.js";
 import * as g_screenManager from "./screen-manager.js";
 
-const m_settings = {};
+// Null prototype, so option names such as "toString" are not found as inherited members
+const m_settings = Object.create( null );
 const m_commands = [];
 let m_api = null;
 let m_readyCallbacks = [];
@@ -88,7 +89,11 @@ export function addCommand( name, fn, isScreen, parameterNames, isScreenOptional
 	if( name.startsWith( "set" ) && name !== "set" ) {
 		const settingName = name.substring( 3, 4 ).toLowerCase() + name.substring( 4 );
 		m_settings[ settingName ] = {
-			"fn": fn, "isScreen": isScreen, "parameterNames": parameterNames, "isProcessed": false
+			"fn": fn,
+			"isScreen": isScreen,
+			"parameterNames": parameterNames,
+			"isScreenOptional": isScreenOptional === true,
+			"isProcessed": false
 		};
 	}
 
@@ -293,58 +298,88 @@ function checkReady() {
  * Global settings command
  *
  * This can get called from either the global api or directly from a screenData.api.
- * screenData can be null if no screen is available
+ * screenData can be null if no screen is available. Every option name is checked before any
+ * setting is applied, so an unknown name, or a screen setting with no screen, applies nothing.
+ * Options set to null are skipped.
  * @param {Object} screenData - Screen state.
  * @param {Object} options - Command options.
  * @returns {void}
+ * @throws {TypeError} INVALID_OPTIONS when options is not an object.
+ * @throws {RangeError} INVALID_OPTION when a name is not a registered setting.
+ * @throws {Error} NO_ACTIVE_SCREEN when a screen setting has no screen to apply to.
  */
 export function set( screenData, options ) {
 
 	// Unpack options
 	options = options.options;
+	if( !g_utils.isObjectLiteral( options ) ) {
+		const error = new TypeError( "set: Parameter options must be an object." );
+		error.code = "INVALID_OPTIONS";
+		throw error;
+	}
+	const optionNames = Object.keys( options );
+	checkOptionNames( screenData, options, optionNames );
 
 	// Loop through all the options
-	for( const optionName in options ) {
+	for( const optionName of optionNames ) {
 
 		// Skip blanks
 		if( options[ optionName ] === null ) {
 			continue;
 		}
 
-		// If the option is a valid setting
-		if( m_settings[ optionName ] ) {
+		// Get the setting data
+		const setting = m_settings[ optionName ];
+		const optionValues = options[ optionName ];
 
-			// Get the setting data
-			const setting = m_settings[ optionName ];
-			const optionValues = options[ optionName ];
+		// Parse the options from the setting
+		const argsArray = [ optionValues ];
+		const parsedOptions = g_utils.parseOptions( argsArray, setting.parameterNames );
 
-			// Parse the options from the setting
-			const argsArray = [ optionValues ];
-			const parsedOptions = g_utils.parseOptions( argsArray, setting.parameterNames );
+		// Call the setting function
+		if( setting.isScreen ) {
+			setting.fn( screenData, parsedOptions );
+		} else {
+			setting.fn( parsedOptions );
+		}
 
-			// Call the setting function
-			if( setting.isScreen ) {
-				setting.fn( screenData, parsedOptions );
-			} else {
-				setting.fn( parsedOptions );
-			}
-
-			// If we just set the screen then update the screenData to the new active screen
-			if( optionName === "screen" ) {
-				screenData = g_screenManager.getActiveScreen();
-			}
+		// If we just set the screen then update the screenData to the new active screen
+		if( optionName === "screen" ) {
+			screenData = g_screenManager.getActiveScreen();
 		}
 	}
 }
 
 /**
- * Register a function that applies a global or screen setting.
+ * Check every option name of a set() call before any setting is applied. A screen option earlier
+ * in the object provides the screen for the screen settings after it.
  *
- * @param {string} name - Command or setting name.
- * @param {Function} fn - Command or setting implementation.
- * @param {boolean} isScreen - Whether the implementation receives screen state.
+ * @param {Object|null} screenData - Screen state the call starts with.
+ * @param {Object} options - Options object passed to set().
+ * @param {Array<string>} optionNames - Option names in the order they are applied.
  * @returns {void}
  */
-export function addSetting( name, fn, isScreen ) {
-	m_settings[ name ] = { "fn": fn, "isScreen": isScreen };
+function checkOptionNames( screenData, options, optionNames ) {
+	let hasScreen = screenData !== null;
+	for( const optionName of optionNames ) {
+		const setting = m_settings[ optionName ];
+		if( setting === undefined ) {
+			const error = new RangeError(
+				`set: Option "${optionName}" is not a setting. Check its spelling, or load the ` +
+				"plugin that provides it."
+			);
+			error.code = "INVALID_OPTION";
+			throw error;
+		}
+		if( options[ optionName ] === null ) {
+			continue;
+		}
+		if( optionName === "screen" ) {
+			hasScreen = true;
+		} else if( setting.isScreen && !setting.isScreenOptional && !hasScreen ) {
+
+			// Throws the core no-screen error, since there is no active screen
+			g_screenManager.getActiveScreen( "set" );
+		}
+	}
 }

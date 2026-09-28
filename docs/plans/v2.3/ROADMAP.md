@@ -1,7 +1,7 @@
 # Pi.js 2.3 Roadmap
 
 Target release: Pi.js 2.3.0
-Last updated: 2026-09-27
+Last updated: 2026-09-28
 
 This is the definitive plan for 2.3. It holds every implementation step, the status of every
 workstream, and every cross-cutting decision. The audits record findings only, and the design
@@ -17,9 +17,9 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
 | 1 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
-| 2 | [Core 5–13](#32-phase-2-fixes) | Remaining core fixes, tests, and the two approved API changes, in any order. Core 8 and Core 13 land before the pointer and gamepad Phase 2 sets | Nothing. Can run in parallel |
-| 3 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Core 8 and Core 13 |
-| 4 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Core 8 |
+| 2 | [Core 5–7, 9–13](#32-phase-2-fixes) | Remaining core fixes, tests, and the approved `$.clearEvents()` change, in any order. Core 13 lands before the pointer Phase 2 set | Nothing. Can run in parallel |
+| 3 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Core 13 |
+| 4 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Nothing |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -27,11 +27,11 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
-| Core | [3](#3-core) | Phase 1 done. Core 1, 2, and 4 done, 10 tasks left | Core 5–13 |
+| Core | [3](#3-core) | Phase 1 done. Core 1, 2, 4, and 8 done, 9 tasks left | Core 5–7, 9–13 |
 | Sound | [4](#4-sound) | Phases 0–9 done; Phases 10–11 not started | Sound 10.1 |
 | Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
-| Pointer | [6](#6-pointer) | Phase 1 done; Phase 2 not started | Pointer 2.1, after Core 8 and Core 13 |
-| Gamepad | [7](#7-gamepad) | Phase 1 done; Phase 2 not started | Gamepad 2.1, after Core 8 |
+| Pointer | [6](#6-pointer) | Phase 1 done; Phase 2 not started | Pointer 2.1, after Core 13 |
+| Gamepad | [7](#7-gamepad) | Phase 1 done; Phase 2 not started | Gamepad 2.1 |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
 | CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.10) | — |
 | Plugin removal | [13.1](#131-plugin-removal) | Complete (P.1–P.6) | — |
@@ -249,7 +249,7 @@ in its plugin's Phase 2 and is listed in its compatibility summary.
 ## 3. Core
 
 Findings: [AUDIT-CORE.md](AUDIT-CORE.md). Proposals C1–C11:
-[AUDIT-CORE.md §4](AUDIT-CORE.md#4-proposed-changes). Core 1, 2, and 4 are done
+[AUDIT-CORE.md §4](AUDIT-CORE.md#4-proposed-changes). Core 1, 2, 4, and 8 are done
 ([Section 13.5](#135-core)). The task numbers follow the audit's follow-up order, so Core 3–10
 keep their original numbers and Core 11–12 are the test audit's handoffs.
 
@@ -273,9 +273,10 @@ In any order, in parallel with the input work.
 
 ### 3.3 Phase 3: API change
 
+Done: Core 8 ([Section 13.5](#135-core)).
+
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| Core 8 | **Strict `set()` (C7, breaking, approved).** `set()` throws `INVALID_OPTION` for unknown or unavailable names, and the no-screen error for screen settings. Tests: `set()` names in the Node suites (C07), including Full-only options in Lite. Not cut: the I16 rule for renamed options (`enableContextMenu`, `gamepadSensitivity`) depends on it, so it lands before 2.3.0 with the pointer and gamepad Phase 2 sets | [CORE-008](AUDIT-CORE.md#core-008) | — |
 | Core 13 | **`$.clearEvents()` clears every screen (I10, breaking, approved 2026-09-27).** `$.clearEvents()` passes no screen to the clear handlers, so per-screen handlers are cleared on every screen; a screen's `clearEvents()` still passes itself. The plugin API does not change: clear handlers already treat no screen as every screen. Tests: pointer handlers on two screens cleared by each form, and the keyboard prompt rule of I10. Lands before the pointer Phase 2 set (pointer 2.6) | — | — |
 
 Core 3 (document that `clearEvents()` reaches handlers a plugin registers through the public
@@ -291,7 +292,10 @@ Input to `UPGRADE-V2.3.md` (R.4):
 
 - **C7 (breaking):** "`set()` now throws `INVALID_OPTION` for an option it does not recognize,
   including options from plugins that are not loaded. Remove the option, fix its spelling, or
-  load the plugin that provides it."
+  load the plugin that provides it." Also: options that are not an object throw
+  `INVALID_OPTIONS`, and a screen setting with no active screen throws `NO_ACTIVE_SCREEN`
+  instead of a raw `TypeError`. Every name is checked first, so a call that throws applies no
+  setting.
 - **Core 13 (breaking):** "`$.clearEvents()` now clears mouse, touch, press, and click handlers
   on every screen, not only the active one. Call `clearEvents()` on a screen to clear only that
   screen."
@@ -490,7 +494,8 @@ Built on one branch and landed as a set. Each task updates metadata, declaration
 tests, and the demos, fixtures, and manual pages that use the changed command, plus the `tools/`
 pages, `scripts/validate-type-definitions.js`, `test/scripts/firefox-smoke.js`,
 `test/scripts/package-types-consumer.test.js`, `test/unit/plugin-installation-browser.test.js`,
-and the evidence `device-check.html` that Section 8.3 uses. Core 8 and Core 13 land first.
+and the evidence `device-check.html` that Section 8.3 uses. Core 13 lands first; Core 8 is
+done.
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
@@ -579,7 +584,7 @@ PAD-014's metadata corrected (R.2 completes it); `npm test` green; size recorded
 Built on one branch and landed as a set. Each task updates metadata, declarations, signature
 tests, and the pages that use the changed command: the manual gamepad pages,
 `html-manual/clearevents_02`, `events_comprehensive`, and the evidence `device-check.html` that
-Section 8.3 uses. Core 8 lands first.
+Section 8.3 uses. Core 8, which it depends on, is done.
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
@@ -746,11 +751,8 @@ If the schedule slips, cut in this order. Earlier items go first.
    together, so users update each API once. Its Phase 1 fixes and Phase 3 additive items still
    ship in 2.3.0; Phase 3 items that validate input use the I11 codes either way.
 
-Not cut: the input plugins' Phase 1, Core 4, Core 5 (CORE-001), and Core 8 (C7), which the I16
-rule for renamed options depends on. If Core 8 has to be cut anyway, its fallback is that the
-pointer and gamepad plugins register their old setter names (`setEnableContextMenu`,
-`setGamepadSensitivity`) as commands that throw an error naming the new command, which also
-covers the old `set()` options.
+Not cut: the input plugins' Phase 1, Core 4, Core 5 (CORE-001), and Core 8 (C7, done), which
+the I16 rule for renamed options depends on.
 
 ## 11. Risks
 
@@ -1027,7 +1029,8 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | --- | --- | --- | --- |
 | Core 1 | Transactional plugin installation and error routing (C2): registrations committed after installation succeeds; screen installation rolls back; `getPlugins()` reports `state`; registration after init throws `REGISTRATION_CLOSED` | [CORE-002](AUDIT-CORE.md#core-002), [CORE-006](AUDIT-CORE.md#core-006) | [#13](https://github.com/AndyStubbs/pijs/pull/13) |
 | Core 2 | Documented the Lite-only plugin entry points (C3) in `plugins/README.md`, `plugins/polygons/README.md`, and `llms-full.txt`; the release README follows in R.3 | [CORE-003](AUDIT-CORE.md#core-003) | [#14](https://github.com/AndyStubbs/pijs/pull/14) |
-| Core 4 | Declarations and release manifest (C5): `"type": "module"` in the release manifest; plugin declarations augment Lite, and `sound-advanced` both Full and Lite, through `PluginCommands`, `PluginScreenCommands`, and `PluginOptions`; object types only a plugin uses move from Lite to that plugin's declarations; Lite `Options` holds Lite settings only; the global `pi` and `$` are declared by Full only; `addCommand`'s `isScreenOptional` is optional and its JSDoc example is corrected; `Screen.removeScreen()` is declared. Type consumers compile under `bundler` and `nodenext`, including Lite with each exported plugin | [CORE-005](AUDIT-CORE.md#core-005), [CORE-015](AUDIT-CORE.md#core-015), [CORE-016](AUDIT-CORE.md#core-016), [CORE-017](AUDIT-CORE.md#core-017) | — |
+| Core 4 | Declarations and release manifest (C5): `"type": "module"` in the release manifest; plugin declarations augment Lite, and `sound-advanced` both Full and Lite, through `PluginCommands`, `PluginScreenCommands`, and `PluginOptions`; object types only a plugin uses move from Lite to that plugin's declarations; Lite `Options` holds Lite settings only; the global `pi` and `$` are declared by Full only; `addCommand`'s `isScreenOptional` is optional and its JSDoc example is corrected; `Screen.removeScreen()` is declared. Type consumers compile under `bundler` and `nodenext`, including Lite with each exported plugin | [CORE-005](AUDIT-CORE.md#core-005), [CORE-015](AUDIT-CORE.md#core-015), [CORE-016](AUDIT-CORE.md#core-016), [CORE-017](AUDIT-CORE.md#core-017) | [#17](https://github.com/AndyStubbs/pijs/pull/17) |
+| Core 8 | Strict `set()` (C7, breaking): every option name is checked before any setting applies; a name that is not a registered setting, including an inherited name such as `toString` or a setting of a plugin that is not loaded, throws `RangeError` `INVALID_OPTION`; options that are not an object throw `TypeError` `INVALID_OPTIONS`; a screen setting with no active screen throws `NO_ACTIVE_SCREEN`, unless a `screen` option before it provides one. Settings are held in a null-prototype table, and the unused `addSetting` export is removed. Tests: `test/unit/settings.test.js` (C07) and the Full and Lite cases in `plugin-installation-browser.test.js`, including a Lite setting that appears when its plugin loads; `metadata/pi-2.3/set.toml` | [CORE-008](AUDIT-CORE.md#core-008) | — |
 
 ### 13.6 Keyboard
 

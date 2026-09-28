@@ -1803,12 +1803,14 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Applies multiple settings in a single call using an options object.
 		 *
-		 * Sets one or more global or screen-scoped settings. Any command registered as a "setX" command is available as an option with the lowercased name (e.g., setColor => { "color": ... }).
+		 * Sets one or more global or screen-scoped settings. Any command registered as a "setX" command is available as an option with the lowercased name (e.g., setColor => { "color": ... }), including the settings of loaded plugins.
 		 *
 		 * Behavior:
-		 * - May be called before or after a screen exists; screen-scoped settings are applied to the active   screen if available.
+		 * - May be called before or after a screen exists; screen-scoped settings are applied to the active   screen. A "screen" option makes its screen active for the settings after it.
 		 * - Settings routed to non-screen commands are applied globally.
-		 * @param options Object whose keys map to available settings (e.g., { "screen": "300x200", "color": 2 }).
+		 * - Options set to null are skipped.
+		 * - Every option name is checked before any setting is applied. A name that is not a setting,   including a setting of a plugin that is not loaded, throws a RangeError with code   INVALID_OPTION, and options that are not an object throw a TypeError with code   INVALID_OPTIONS. A screen setting with no active screen throws NO_ACTIVE_SCREEN.
+		 * @param options Object whose keys map to available settings (e.g., { "color": 2, "font": 1 }).
 		 * @returns This function does not return a value.
 		 */
 		set( params: { "options": Options } ): void;
