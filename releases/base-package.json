@@ -7,7 +7,7 @@
 	"types": "dist/pi.d.ts",
 	"unpkg": "dist/pi.min.js",
 	"jsdelivr": "dist/pi.min.js",
-	"files": [ "dist" ],
+	"files": [ "dist", "CHANGELOG.md" ],
 	"exports": {
 		".": {
 			"types": "./dist/pi.d.ts",

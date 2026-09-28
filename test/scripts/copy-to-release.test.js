@@ -1,7 +1,8 @@
 /**
  * Pi.js Release Copy Tests
  *
- * Verifies that release distribution replacement is transactional.
+ * Verifies that release distribution replacement is transactional, and that the committed
+ * manifests package what they should (CORE-019).
  */
 import * as g_assert from "node:assert/strict";
 import * as g_fs from "node:fs";
@@ -473,3 +474,18 @@ test( "backup cleanup failure retains both distributions and previous metadata",
 	assertPreviousPackage( fixture );
 	assert.equal( fs.existsSync( backupDir.slice( 0, -"-backup".length ) ), false );
 } );
+
+test( "CORE-019 the release package ships its changelog; the root package cannot be published",
+	() => {
+		const root = path.resolve( import.meta.dirname, "../.." );
+		const readJson = file => JSON.parse( fs.readFileSync( path.join( root, file ), "utf8" ) );
+
+		// npm always packs README and LICENSE; files names everything else
+		const files = [ "dist", "CHANGELOG.md" ];
+		assert.deepEqual( readJson( "releases/base-package.json" ).files, files );
+		assert.deepEqual( readJson( "releases/pi-latest/package.json" ).files, files );
+		for( const file of files.concat( "README.md", "LICENSE" ) ) {
+			assert.ok( fs.existsSync( path.join( root, "releases/pi-latest", file ) ), file );
+		}
+		assert.equal( readJson( "package.json" ).private, true );
+	} );
