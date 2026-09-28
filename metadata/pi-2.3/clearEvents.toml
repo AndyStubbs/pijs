@@ -8,8 +8,10 @@ events for all registered types.
 
 The pointer plugin registers "mouse", "touch", and "press"; "press" also clears click handlers.
 The gamepad plugin registers "gamepad", which removes every onGamepadConnected and
-onGamepadDisconnected callback, whichever screen it is called from. Clearing handlers does not
-stop tracking or polling.
+onGamepadDisconnected callback, whichever screen it is called from. The keyboard plugin
+registers "keyboard", which removes every onKey() handler, whichever screen it is called from,
+and cancels an input() prompt only when called from the screen that owns it; $.clearEvents()
+is called from the active screen. Clearing handlers does not stop tracking or polling.
 """
 example = """
 $.screen( "300x200" );

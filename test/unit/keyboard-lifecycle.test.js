@@ -552,6 +552,54 @@ test( "KEY-002 clearEvents( \"keyboard\" ) cancels only the owner's prompt (K2)"
 	}
 } );
 
+test( "KEY-016 clearEvents( \"keyboard\" ) clears every key handler from any screen (I10)",
+	async () => {
+		const h = harness();
+		const second = h.screen();
+		function type( key, code ) {
+			h.key( key, "down", { "code": code } );
+			h.key( key, "up", { "code": code } );
+		}
+		function register( calls ) {
+			h.api.onKey( "KeyA", "down", () => calls.push( "single" ) );
+			h.api.onKey( [ "KeyA", "KeyB" ], "down", () => calls.push( "combination" ) );
+			h.api.onKey( "any", "up", data => calls.push( data.code ) );
+		}
+
+		// Without clearing, the handlers run
+		const control = [];
+		register( control );
+		h.key( "b", "down", { "code": "KeyB" } );
+		type( "a", "KeyA" );
+		h.key( "b", "up", { "code": "KeyB" } );
+		assert.deepEqual( control, [ "single", "combination", "KeyA", "KeyB" ] );
+		h.clearEvents( "keyboard" );
+
+		// A prompt on either screen: clearing from the other screen keeps it, and clearing from
+		// its own screen or with no screen cancels it; the handlers go in every case
+		const results = [];
+		for( const [ owner, other ] of [ [ h.first, second ], [ second, h.first ] ] ) {
+			for( const caller of [ other, owner, null ] ) {
+				const calls = [];
+				register( calls );
+				const prompt = h.start( owner );
+				h.clearEvents( "keyboard", caller );
+				h.key( "b", "down", { "code": "KeyB" } );
+				h.key( "a", "down", { "code": "KeyA" } );
+				const held = h.api.inKey().length;
+				h.key( "a", "up", { "code": "KeyA" } );
+				h.key( "b", "up", { "code": "KeyB" } );
+				type( "Enter", "Enter" );
+				results.push( [ calls.length, held, await prompt ] );
+				empty( h );
+			}
+		}
+		assert.deepEqual( results, [
+			[ 0, 2, "ba" ], [ 0, 2, null ], [ 0, 2, null ],
+			[ 0, 2, "ba" ], [ 0, 2, null ], [ 0, 2, null ]
+		], "tracking continues after clearing" );
+	} );
+
 test( "KEY-006 a prompt reads keys while the keyboard is stopped", async () => {
 	const h = harness();
 	h.api.stopKeyboard();
