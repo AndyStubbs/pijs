@@ -25,6 +25,11 @@ export const FILLED_ELLIPSE = 1;
 // Example: "circle:32" for a circle of radius 32
 const m_geometryCache = new Map();
 
+// The cache holds at most this many vertex coordinates, about 4 MB, and evicts the least
+// recently used geometry first. Geometry larger than that is generated for each draw
+const MAX_CACHED_COORDINATES = 1048576;
+let m_cachedCoordinates = 0;
+
 // Cached vertex data structure:
 // {
 //   "vertexCount": number,
@@ -292,8 +297,13 @@ function generateSinglePixelGeometry() {
 function getCachedGeometry( cacheType, unit ) {
 
 	const cacheKey = `${cacheType}:${unit}`;
-	if( m_geometryCache.has( cacheKey ) ) {
-		return m_geometryCache.get( cacheKey );
+	const cached = m_geometryCache.get( cacheKey );
+	if( cached ) {
+
+		// Move the entry to the end, so eviction takes the least recently used first
+		m_geometryCache.delete( cacheKey );
+		m_geometryCache.set( cacheKey, cached );
+		return cached;
 	}
 
 	// Parse cache key to determine what to generate
@@ -305,10 +315,34 @@ function getCachedGeometry( cacheType, unit ) {
 		throw new Error( `Unknown geometry cache type: ${cacheType}` );
 	}
 
-	// Cache the geometry
-	m_geometryCache.set( cacheKey, geometry );
+	// Cache the geometry, then evict the oldest entries while over the limit
+	const size = getCoordinateCount( geometry );
+	if( size <= MAX_CACHED_COORDINATES ) {
+		m_geometryCache.set( cacheKey, geometry );
+		m_cachedCoordinates += size;
+		for( const [ key, entry ] of m_geometryCache ) {
+			if( m_cachedCoordinates <= MAX_CACHED_COORDINATES ) {
+				break;
+			}
+			m_geometryCache.delete( key );
+			m_cachedCoordinates -= getCoordinateCount( entry );
+		}
+	}
 
 	return geometry;
+}
+
+/**
+ * Number of vertex coordinates a cached geometry holds
+ *
+ * @param {Object} geometry - Geometry data with a vertices array or null
+ * @returns {number} Coordinate count
+ */
+function getCoordinateCount( geometry ) {
+	if( geometry.vertices ) {
+		return geometry.vertices.length;
+	}
+	return 0;
 }
 
 

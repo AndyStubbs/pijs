@@ -58,7 +58,7 @@ function createHarness( min = 8, max = 19 ) {
 	}
 	const globals = { "g_batches": batches, "g_batchHelpers": helpers };
 	const geometry = loadModule( "renderer/draw/geometry.js", globals,
-		[ "FILLED_CIRCLE", "m_geometryCache" ] );
+		[ "FILLED_CIRCLE", "m_geometryCache", "MAX_CACHED_COORDINATES" ] );
 	const shapes = {};
 	for( const name of [ "lines", "circles", "arcs", "ellipses", "bezier" ] ) {
 		shapes[ name ] = loadModule( `renderer/draw/${name}.js`, {
@@ -419,6 +419,40 @@ for( const [ min, max ] of [ [ 3, 3 ], [ 4, 7 ], [ 8, 19 ], [ 12, 25 ] ] ) {
 		assert.equal( reservations.at( -1 ).count, reservations.at( -1 ).remaining );
 	} );
 }
+
+test( "CORE-018 circle geometry stays within its cache budget, least recently used out first",
+	() => {
+		const h = createHarness();
+		const cache = h.geometry.m_geometryCache;
+		const get = radius => h.geometry.getCachedGeometry( h.geometry.FILLED_CIRCLE, radius );
+		const key = radius => `${h.geometry.FILLED_CIRCLE}:${radius}`;
+		const total = () => Array.from( cache.values() ).reduce( ( sum, entry ) => {
+			return sum + entry.vertices.length;
+		}, 0 );
+
+		// Without a bound, these radii would hold several times the budget
+		const first = get( 600 );
+		assert.equal( get( 600 ), first );
+		let unbounded = 0;
+		for( let radius = 600; radius < 1000; radius++ ) {
+			get( radius );
+			unbounded += get( radius ).vertices.length;
+
+			// Keep the first circle in use, so it is never the least recently used
+			get( 600 );
+		}
+		assert.ok( unbounded > h.geometry.MAX_CACHED_COORDINATES * 4 );
+		assert.ok( total() <= h.geometry.MAX_CACHED_COORDINATES );
+		assert.equal( get( 600 ), first );
+		assert.ok( cache.has( key( 999 ) ) );
+		assert.ok( !cache.has( key( 601 ) ) );
+
+		// Geometry larger than the whole budget is not cached
+		const huge = get( 50000 );
+		assert.ok( huge.vertices.length > h.geometry.MAX_CACHED_COORDINATES );
+		assert.ok( !cache.has( key( 50000 ) ) );
+		assert.ok( cache.has( key( 999 ) ) );
+	} );
 
 test( "P3 final short chunk copies only remaining complete triangles", () => {
 	const h = createHarness( 12, 25 );

@@ -1,5 +1,6 @@
 /**
- * SYS-022 font publication regressions using fresh in-memory full and lite bundles.
+ * SYS-022 font publication and CORE-010 setChar regressions using fresh in-memory full and lite
+ * bundles.
  * Run with node --test test/unit/font-publication-browser.test.js; no server is required.
  */
 import * as g_test from "node:test";
@@ -186,4 +187,78 @@ for( const bundle of g_harness.BUNDLES ) {
 			}, overload, { "console": [ "loadFont: Unable to load image for font." ] } );
 		}
 	} );
+
+	test( `CORE-010 ${bundle}: setChar edits the font on every screen and survives a restore`,
+		async () => {
+			const results = await probe( bundle, async () => {
+				const solid = width => {
+					return Array.from( { "length": 8 }, () => Array( width ).fill( 1 ) );
+				};
+
+				// Lit pixels in the first character cell after printing "A" there
+				const printA = ( screen, width ) => {
+					screen.cls();
+					screen.setPos( 0, 0 );
+					screen.print( "A", true );
+					let lit = 0;
+					for( let y = 0; y < 8; y++ ) {
+						for( let x = 0; x < width; x++ ) {
+							if( screen.getPixel( x, y ).a > 0 ) {
+								lit++;
+							}
+						}
+					}
+					return lit;
+				};
+				const contextEvent = ( gl, name ) => new Promise( resolve => {
+					gl.canvas.addEventListener( name, resolve, { "once": true } );
+				} );
+
+				// The default font's canvas is uploaded once, not once per character
+				const first = $.screen( "32x16" );
+				const gl = first.canvas().getContext( "webgl2" );
+				const results = { "stock": printA( first, 6 ) };
+				let uploads = 0;
+				const upload = gl.texImage2D;
+				gl.texImage2D = function( ...args ) {
+					uploads++;
+					return upload.apply( this, args );
+				};
+				first.print( "HELLO" );
+				first.getPixel( 0, 0 );
+				results.uploadsForHello = uploads;
+
+				first.setChar( "A", solid( 6 ) );
+				results.edited = printA( first, 6 );
+				const second = $.screen( "32x16" );
+				results.newScreen = printA( second, 6 );
+
+				// An image font is copied on its first edit, and the edit reaches every screen
+				first.setFont( 2 );
+				second.setFont( 2 );
+				results.imageStock = printA( second, 8 );
+				first.setChar( "A", solid( 8 ) );
+				results.imageEdited = [ printA( first, 8 ), printA( second, 8 ) ];
+
+				// A lost and restored context uploads the edited canvases
+				const extension = gl.getExtension( "WEBGL_lose_context" );
+				const lost = contextEvent( gl, "webglcontextlost" );
+				extension.loseContext();
+				await lost;
+				await new Promise( resolve => setTimeout( resolve, 50 ) );
+				const restored = contextEvent( gl, "webglcontextrestored" );
+				extension.restoreContext();
+				await restored;
+				results.restored = [ printA( first, 8 ) ];
+				first.setFont( 1 );
+				results.restored.push( printA( first, 6 ) );
+				return results;
+			} );
+			assert.ok( results.imageStock > 0 && results.imageStock < 64, "stock image glyph" );
+			delete results.imageStock;
+			assert.deepEqual( results, {
+				"stock": 16, "uploadsForHello": 0, "edited": 48, "newScreen": 48,
+				"imageEdited": [ 64, 64 ], "restored": [ 64, 48 ]
+			} );
+		} );
 }
