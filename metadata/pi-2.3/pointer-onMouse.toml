@@ -5,11 +5,13 @@ plugin = "pointer"
 summary = "Registers a callback function for mouse events."
 description = """
 Registers a callback that runs when a mouse event occurs, with the mouse data and the optional
-custom data. With a hitBox, the callback runs only for events inside it. Registering starts
-tracking unless stopMouse() was called.
+custom data. Mouse commands also observe pens, whose data has type set to 'pen'. With a hitBox,
+the callback runs only for events inside it. Registering starts tracking unless stopMouse() was
+called.
 
-A press that starts on the canvas border or padding is ignored. 'up' runs for a release anywhere,
-including outside the canvas, and with cancelled set to true when the page is hidden or stopMouse()
+A press that starts on the canvas border or padding is ignored. A press on the canvas keeps
+reporting moves while it leaves the canvas, and 'up' runs for its release anywhere. 'up' also runs
+with cancelled set to true when the browser cancels the pointer, the page is hidden, or stopMouse()
 is called with a button held; moves and releases report their true position, which can be outside
 the screen.
 

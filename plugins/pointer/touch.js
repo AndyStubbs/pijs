@@ -1,11 +1,13 @@
 /**
- * Touch registration for Pointer plugin.
+ * Touch registration for Pointer plugin. Touch commands observe touch pointers through the shared
+ * Pointer Events listeners; each pointer is one touch, identified by its `pointerId`.
  */
 
 "use strict";
 
 import * as g_target from "./target.js";
 import * as g_press from "./press.js";
+import * as g_listeners from "./listeners.js";
 
 // Module-level reference to startTouchInternal function
 let m_startTouchInternal = null;
@@ -39,6 +41,9 @@ export function registerTouch( pluginApi, helpers ) {
 	// The page-visibility listener is added when tracking first starts, not at plugin load
 	let m_isVisibilityListening = false;
 
+	// The canvas `touch-action` before touch tracking set it, restored when tracking stops
+	const m_touchActions = new WeakMap();
+
 	pluginApi.addScreenDataItem( "touchStopped", false );
 	pluginApi.addScreenDataItem( "touchStarted", false );
 	pluginApi.addScreenDataItem( "touches", {} );
@@ -64,6 +69,13 @@ export function registerTouch( pluginApi, helpers ) {
 			"move": []
 		};
 	}
+
+	g_listeners.setHandlers( "touch", {
+		"pointerdown": touchStart,
+		"pointermove": touchMove,
+		"pointerup": ( screenData, e ) => endTouches( screenData, e, false ),
+		"pointercancel": ( screenData, e ) => endTouches( screenData, e, true )
+	}, getScreenDataFromEvent );
 
 	function startTouchInternal( screenData ) {
 		if( !screenData.touchStopped ) {
@@ -91,11 +103,12 @@ export function registerTouch( pluginApi, helpers ) {
 			m_isVisibilityListening = true;
 		}
 		if( !screenData.touchStarted ) {
-			const options = { "passive": false };
-			screenData.canvas.addEventListener( "touchstart", touchStart, options );
-			screenData.canvas.addEventListener( "touchmove", touchMove, options );
-			screenData.canvas.addEventListener( "touchend", touchEnd, options );
-			screenData.canvas.addEventListener( "touchcancel", touchCancel, options );
+
+			// The browser keeps touches on the canvas for the page instead of scrolling or
+			// zooming with them
+			m_touchActions.set( screenData, screenData.canvas.style.touchAction );
+			screenData.canvas.style.touchAction = "none";
+			g_listeners.track( screenData, "touch" );
 			screenData.touchStarted = true;
 		}
 	}
@@ -114,10 +127,9 @@ export function registerTouch( pluginApi, helpers ) {
 		screenData.touchStopped = true;
 
 		if( screenData.touchStarted ) {
-			screenData.canvas.removeEventListener( "touchstart", touchStart );
-			screenData.canvas.removeEventListener( "touchmove", touchMove );
-			screenData.canvas.removeEventListener( "touchend", touchEnd );
-			screenData.canvas.removeEventListener( "touchcancel", touchCancel );
+			g_listeners.untrack( screenData, "touch" );
+			screenData.canvas.style.touchAction = m_touchActions.get( screenData );
+			m_touchActions.delete( screenData );
 			screenData.touchStarted = false;
 		}
 	}
@@ -188,11 +200,14 @@ export function registerTouch( pluginApi, helpers ) {
 		}
 	}
 
-	function touchStart( e ) {
-		const screenData = getScreenDataFromEvent( e );
-		if( screenData == null ) {
-			return;
-		}
+	/**
+	 * A touch starts. A touch that starts on the canvas border or padding is ignored.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {PointerEvent} e - The `pointerdown` event.
+	 * @returns {boolean} Whether the touch was accepted, so its pointer is captured.
+	 */
+	function touchStart( screenData, e ) {
 		let isIdle = true;
 		for( const id in screenData.touches ) {
 			isIdle = false;
@@ -208,11 +223,8 @@ export function registerTouch( pluginApi, helpers ) {
 		if( primary ) {
 			setTouchPress( screenData, primary, primary.action, 1 );
 		}
-
-		// Suppress browser gestures and compatibility mouse events before any handler runs
-		e.preventDefault();
 		if( changed.length === 0 ) {
-			return;
+			return false;
 		}
 		m_triggerEventListeners( "start", changed, screenData.onTouchEventListeners );
 		if( primary ) {
@@ -222,13 +234,10 @@ export function registerTouch( pluginApi, helpers ) {
 		for( const touch of changed ) {
 			g_press.triggerClickListeners( screenData, touch, "down", touch.id );
 		}
+		return true;
 	}
 
-	function touchMove( e ) {
-		const screenData = getScreenDataFromEvent( e );
-		if( screenData == null ) {
-			return;
-		}
+	function touchMove( screenData, e ) {
 		const changed = updateTouch( screenData, e, "move", false );
 		if( changed.length === 0 ) {
 			return;
@@ -244,27 +253,16 @@ export function registerTouch( pluginApi, helpers ) {
 		}
 	}
 
-	function touchEnd( e ) {
-		endTouches( e, false );
-	}
-
-	function touchCancel( e ) {
-		endTouches( e, true );
-	}
-
 	/**
-	 * Release the touches an event ended. The primary touch releases the press. A cancelled
+	 * Release the touch an event ended. The primary touch releases the press. A cancelled
 	 * touch, one the browser took over, is released with `cancelled: true` and never clicks.
 	 *
-	 * @param {TouchEvent} e - The `touchend` or `touchcancel` event.
-	 * @param {boolean} isCancelled - Whether the browser cancelled the touches.
+	 * @param {Object} screenData - Screen state.
+	 * @param {PointerEvent} e - The `pointerup` or `pointercancel` event.
+	 * @param {boolean} isCancelled - Whether the browser cancelled the touch.
 	 * @returns {void}
 	 */
-	function endTouches( e, isCancelled ) {
-		const screenData = getScreenDataFromEvent( e );
-		if( screenData == null ) {
-			return;
-		}
+	function endTouches( screenData, e, isCancelled ) {
 		const changed = updateTouch( screenData, e, "end", isCancelled );
 		dispatchTouchRelease( screenData, changed, isCancelled );
 	}
@@ -358,66 +356,59 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 
 	/**
-	 * Apply the touches an event changed. Other touches keep their state and action, and an
+	 * Apply the touch a pointer event changed. Other touches keep their state and action, and an
 	 * ended touch is reported at the position where it lifted, then removed. A touch that starts
 	 * off the screen is ignored, and so are moves and ends of touches that are not held; moves
 	 * and ends report their true position, which can be outside the screen.
 	 *
 	 * @param {Object} screenData - Screen state.
-	 * @param {TouchEvent} e - Touch event.
+	 * @param {PointerEvent} e - Touch pointer event.
 	 * @param {string} action - `"start"`, `"move"`, or `"end"`.
-	 * @param {boolean} isCancelled - Whether the browser cancelled the touches.
-	 * @returns {Array<Object>} Copies of the changed touches, in event order.
+	 * @param {boolean} isCancelled - Whether the browser cancelled the touch.
+	 * @returns {Array<Object>} A copy of the changed touch, or none.
 	 */
 	function updateTouch( screenData, e, action, isCancelled ) {
+		screenData.lastEvent = "touch";
+		const previous = screenData.touches[ e.pointerId ];
+		let position = g_target.pointerPosition( screenData, e );
+		if( action === "start" ) {
+
+			// A touch that starts on the canvas border or padding is ignored
+			if( !g_target.isOnScreen( screenData, position ) ) {
+				return [];
+			}
+		} else if( !previous ) {
+
+			// Only touches that started on the screen are tracked: a touch that started on the
+			// border, or one a hidden page released, has nothing to move or end
+			return [];
+		} else if( !position ) {
+			position = previous;
+		}
+		const touchData = {
+			"x": position.x,
+			"y": position.y,
+			"id": e.pointerId,
+			"lastX": null,
+			"lastY": null,
+			"action": action,
+			"cancelled": isCancelled
+		};
+		if( previous ) {
+			touchData.lastX = previous.x;
+			touchData.lastY = previous.y;
+		}
 		const newTouches = {};
 		for( const id in screenData.touches ) {
 			newTouches[ id ] = screenData.touches[ id ];
 		}
-		const changed = [];
-		for( let j = 0; j < e.changedTouches.length; j++ ) {
-			const touch = e.changedTouches[ j ];
-			const previous = screenData.touches[ touch.identifier ];
-
-			let position = g_target.pointerPosition( screenData, touch );
-			if( action === "start" ) {
-
-				// A touch that starts on the canvas border or padding is ignored
-				if( !g_target.isOnScreen( screenData, position ) ) {
-					continue;
-				}
-			} else if( !previous ) {
-
-				// Only touches that started on the screen are tracked: a touch that started on
-				// the border, or one a hidden page released, has nothing to move or end
-				continue;
-			} else if( !position ) {
-				position = previous;
-			}
-			const touchData = {
-				"x": position.x,
-				"y": position.y,
-				"id": touch.identifier,
-				"lastX": null,
-				"lastY": null,
-				"action": action,
-				"cancelled": isCancelled
-			};
-			if( previous ) {
-				touchData.lastX = previous.x;
-				touchData.lastY = previous.y;
-			}
-			if( action === "end" ) {
-				delete newTouches[ touchData.id ];
-			} else {
-				newTouches[ touchData.id ] = touchData;
-			}
-			changed.push( copyTouch( touchData ) );
+		if( action === "end" ) {
+			delete newTouches[ touchData.id ];
+		} else {
+			newTouches[ touchData.id ] = touchData;
 		}
-
 		screenData.touches = newTouches;
-		screenData.lastEvent = "touch";
-		return changed;
+		return [ copyTouch( touchData ) ];
 	}
 
 	function copyTouch( touch ) {
@@ -446,7 +437,7 @@ export function registerTouch( pluginApi, helpers ) {
 		if( screenId === undefined ) {
 			return null;
 		}
-		return pluginApi.getScreenData( "touch-event", screenId );
+		return pluginApi.getScreenData( "pointer-event", screenId );
 	}
 
 	/**

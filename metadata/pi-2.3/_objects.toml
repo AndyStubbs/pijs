@@ -201,7 +201,7 @@ with a button held. False otherwise."""
 [[objects.properties]]
 name = "type"
 type = "string"
-description = "Input type, always 'mouse' for mouse data."
+description = "Input type: 'pen' for a pen, otherwise 'mouse'."
 
 # ============================================================================
 # PressData

@@ -1,12 +1,12 @@
 /**
  * Pointer dispatch regressions against the real plugin modules. Owned by the pointer workstream.
  *
- * The harness loads `mouse.js`, `touch.js`, `press.js`, and the plugin entry into `vm` contexts
- * and maps command arguments with core's real parseOptions, so the positional and object forms
- * behave as in the bundles. Mouse and touch events are dispatched through the listeners the
- * plugin adds to fake canvases, so they reach the plugin only while tracking is started; mouse
- * events then bubble to the fake window. Each canvas maps client coordinates one to one onto its
- * screen.
+ * The harness loads `listeners.js`, `mouse.js`, `touch.js`, `press.js`, and the plugin entry into
+ * `vm` contexts and maps command arguments with core's real parseOptions, so the positional and
+ * object forms behave as in the bundles. Its mouse and touch helpers dispatch the pointer events a
+ * browser sends, through the listeners the plugin adds to fake canvases, so they reach the plugin
+ * only while tracking is started. A fake canvas captures pointers, so a captured pointer's events
+ * reach it from outside. Each canvas maps client coordinates one to one onto its screen.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
@@ -29,6 +29,9 @@ const m_utils = g_harness.loadModule( "src/core/utils.js", {
  *   `screen()` adds a screen whose `api` holds the screen commands; `errors` holds the
  *   arguments of each `console.error()` call.
  */
+// The `buttons` bit of each `button` value
+const BUTTON_BITS = [ 1, 4, 2, 8, 16 ];
+
 function harness() {
 	const screenDataItems = {};
 	const initFunctions = [];
@@ -80,11 +83,14 @@ function harness() {
 			}
 		}
 	} );
+	modules.listeners = load( "plugins/pointer/listeners.js" );
 	modules.mouse = load( "plugins/pointer/mouse.js", {
-		"g_target": modules.target, "g_press": lazy( "press" )
+		"g_target": modules.target, "g_press": lazy( "press" ),
+		"g_listeners": modules.listeners
 	} );
 	modules.touch = load( "plugins/pointer/touch.js", {
-		"g_target": modules.target, "g_press": lazy( "press" )
+		"g_target": modules.target, "g_press": lazy( "press" ),
+		"g_listeners": modules.listeners
 	} );
 	modules.press = load( "plugins/pointer/press.js", {
 		"g_target": modules.target, "g_mouse": modules.mouse, "g_touch": modules.touch
@@ -99,8 +105,12 @@ function harness() {
 
 	function screen( width = 100, height = 100 ) {
 		const id = nextScreenId++;
+
+		// A canvas captures pointers as browsers do: the captured pointer's events go to it
 		const canvas = g_harness.createEventTarget( {
-			"width": width, "height": height, "dataset": { "screenId": String( id ) }
+			"width": width, "height": height, "dataset": { "screenId": String( id ) },
+			"style": {}, "captures": new Set(),
+			"setPointerCapture": pointerId => canvas.captures.add( pointerId )
 		} );
 		const data = {
 			...structuredClone( screenDataItems ),
@@ -155,9 +165,60 @@ function harness() {
 	}
 
 	/**
-	 * Dispatch a mouse event through the canvas listeners, then the window listeners.
+	 * The pointer event a browser sends for a mouse action. A press or release while another
+	 * button stays held is a chorded `pointermove` naming the button; `"contextmenu"` passes
+	 * through.
 	 *
-	 * @param {string} type - Event type, such as `"mousedown"`.
+	 * @param {string} type - `"mousedown"`, `"mousemove"`, `"mouseup"`, or `"contextmenu"`.
+	 * @param {number} buttons - Buttons held after the event.
+	 * @param {number} button - The button that changed.
+	 * @returns {Object} `{ type, button }` of the pointer event.
+	 */
+	function mouseEvent( type, buttons, button ) {
+		const bit = BUTTON_BITS[ button ] || 0;
+		if( type === "mousedown" && ( buttons & ~bit ) === 0 ) {
+			return { "type": "pointerdown", "button": button };
+		}
+		if( type === "mouseup" && buttons === 0 ) {
+			return { "type": "pointerup", "button": button };
+		}
+		if( type === "mousedown" || type === "mouseup" ) {
+			return { "type": "pointermove", "button": button };
+		}
+		if( type === "mousemove" ) {
+			return { "type": "pointermove", "button": -1 };
+		}
+		return { "type": type, "button": button };
+	}
+
+	/**
+	 * Dispatch a pointer event to the canvas that captured its pointer, or else to a target.
+	 * A release or cancel ends the capture.
+	 *
+	 * @param {Object} event - Pointer event.
+	 * @param {Object|null} target - Canvas under the pointer, or null outside every canvas.
+	 * @returns {Object} The dispatched event.
+	 */
+	function dispatchPointer( event, target ) {
+		for( const data of Object.values( screens ) ) {
+			if( data.canvas.captures.has( event.pointerId ) ) {
+				target = data.canvas;
+			}
+		}
+		if( target ) {
+			event.target = target;
+			target.dispatchEvent( event );
+			if( event.type === "pointerup" || event.type === "pointercancel" ) {
+				target.captures.delete( event.pointerId );
+			}
+		}
+		return event;
+	}
+
+	/**
+	 * Dispatch the pointer events of a mouse action on a screen's canvas.
+	 *
+	 * @param {string} type - Mouse action, such as `"mousedown"`.
 	 * @param {number} x - Screen x.
 	 * @param {number} y - Screen y.
 	 * @param {number} [buttons] - Buttons held after the event.
@@ -166,20 +227,21 @@ function harness() {
 	 * @returns {Object} The dispatched event.
 	 */
 	function mouse( type, x, y, buttons = 0, button = 0, screenData = activeScreen ) {
+		const pointer = mouseEvent( type, buttons, button );
 		const event = {
-			"type": type, "target": screenData.canvas, "clientX": x + 0.5, "clientY": y + 0.5,
-			"buttons": buttons, "button": button, "defaultPrevented": false,
+			"type": pointer.type, "pointerId": 1, "pointerType": "mouse", "isPrimary": true,
+			"clientX": x + 0.5, "clientY": y + 0.5, "buttons": buttons,
+			"button": pointer.button, "defaultPrevented": false,
 			"preventDefault": () => { event.defaultPrevented = true; }
 		};
-		screenData.canvas.dispatchEvent( event );
-		globals.window.dispatchEvent( event );
-		return event;
+		return dispatchPointer( event, screenData.canvas );
 	}
 
 	/**
-	 * Dispatch a mouse event outside every canvas, through the window listeners only.
+	 * Dispatch a mouse action outside every canvas: only a canvas that captured the mouse
+	 * receives it.
 	 *
-	 * @param {string} type - Event type, such as `"mouseup"`.
+	 * @param {string} type - Mouse action, such as `"mouseup"`.
 	 * @param {number} x - Client x, in the first screen's coordinates.
 	 * @param {number} y - Client y, in the first screen's coordinates.
 	 * @param {number} [buttons] - Buttons held after the event.
@@ -187,12 +249,12 @@ function harness() {
 	 * @returns {Object} The dispatched event.
 	 */
 	function mouseOutside( type, x, y, buttons = 0, button = 0 ) {
+		const pointer = mouseEvent( type, buttons, button );
 		const event = {
-			"type": type, "target": globals.document.body, "clientX": x + 0.5,
-			"clientY": y + 0.5, "buttons": buttons, "button": button
+			"type": pointer.type, "pointerId": 1, "pointerType": "mouse", "isPrimary": true,
+			"clientX": x + 0.5, "clientY": y + 0.5, "buttons": buttons, "button": pointer.button
 		};
-		globals.window.dispatchEvent( event );
-		return event;
+		return dispatchPointer( event, null );
 	}
 
 	/**
@@ -211,28 +273,25 @@ function harness() {
 	}
 
 	/**
-	 * Dispatch a touch event through the canvas listeners.
+	 * Dispatch the pointer events of a touch action: one per changed touch, as browsers send.
 	 *
-	 * @param {string} type - Event type, such as `"touchstart"`.
+	 * @param {string} type - Touch action, such as `"touchstart"`.
 	 * @param {Array<Object>} touches - Touches down after the event, as `{ id, x, y }`.
 	 * @param {Array<Object>} [changed] - Touches the event changed.
 	 * @param {Object} [screenData] - Target screen.
-	 * @returns {Object} The dispatched event.
+	 * @returns {Array<Object>} The dispatched events.
 	 */
 	function touch( type, touches, changed = touches, screenData = activeScreen ) {
-		const make = item => {
-			return {
-				"identifier": item.id, "target": screenData.canvas,
-				"clientX": item.x + 0.5, "clientY": item.y + 0.5
-			};
+		const types = {
+			"touchstart": [ "pointerdown", 0, 1 ], "touchmove": [ "pointermove", -1, 1 ],
+			"touchend": [ "pointerup", 0, 0 ], "touchcancel": [ "pointercancel", 0, 0 ]
 		};
-		const event = {
-			"type": type, "target": screenData.canvas, "touches": touches.map( make ),
-			"changedTouches": changed.map( make ), "defaultPrevented": false,
-			"preventDefault": () => { event.defaultPrevented = true; }
-		};
-		screenData.canvas.dispatchEvent( event );
-		return event;
+		const [ pointerType, button, buttons ] = types[ type ];
+		return changed.map( item => dispatchPointer( {
+			"type": pointerType, "pointerId": item.id, "pointerType": "touch",
+			"isPrimary": false, "clientX": item.x + 0.5, "clientY": item.y + 0.5,
+			"button": button, "buttons": buttons
+		}, screenData.canvas ) );
 	}
 
 	/**
@@ -425,12 +484,12 @@ test( "pointer handlers that throw are reported and do not stop the event (P6)",
 	h.click( 10, 10 );
 	assert.deepEqual( log, [ "mouse down", "press down", "click" ] );
 
-	// The touch start is prevented before its handlers run, so a throw cannot skip it
+	// The canvas's touch-action keeps the touch from the browser, so a throw cannot lose it
 	log.length = 0;
 	$.onTouch( "start", () => { throw new Error( "touch" ); } );
 	$.onTouch( "start", () => log.push( "touch start" ) );
-	const event = h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
-	assert.equal( event.defaultPrevented, true );
+	const [ event ] = h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
+	assert.equal( event.target.style.touchAction, "none" );
 	assert.deepEqual( log, [ "touch start", "press down" ] );
 	assert.deepEqual( h.errors.map( args => [ args[ 0 ], args[ 1 ].message ] ), [
 		[ "onMouse: Handler for \"down\" failed:", "mouse" ],
@@ -637,30 +696,21 @@ test( "pointer a click needs the down and the release inside its box (P4)", () =
 	assert.equal( clicks, 2 );
 } );
 
-/**
- * Whether the plugin listens for `mouseup` on the window.
- *
- * @param {Object} h - Harness.
- * @returns {boolean}
- */
-function hasWindowMouseUp( h ) {
-	return h.window.listeners.some( listener => listener.type === "mouseup" );
-}
-
 test( "pointer a mouse release outside the canvas is released once (P8)", () => {
 	const h = harness();
 	const $ = h.$;
 	const log = [];
 	$.onMouse( "up", data => log.push( [ "mouse up", data.x, data.buttons, data.cancelled ] ) );
 	$.onPress( "up", data => log.push( [ "press up", data.x, data.buttons ] ) );
-	assert.equal( hasWindowMouseUp( h ), false );
-	h.mouse( "mousedown", 50, 50, 1 );
-	assert.equal( hasWindowMouseUp( h ), true );
+
+	// The press captures the mouse, so its release arrives from outside the canvas
+	const canvas = h.mouse( "mousedown", 50, 50, 1 ).target;
+	assert.equal( canvas.captures.has( 1 ), true );
 	h.mouse( "mousemove", 99, 50, 1 );
 	h.mouseOutside( "mouseup", 150, 50 );
 	assert.deepEqual( log, [ [ "mouse up", 150, 0, false ], [ "press up", 150, 0 ] ] );
 	assert.equal( $.inMouse().buttons, 0 );
-	assert.equal( hasWindowMouseUp( h ), false );
+	assert.equal( canvas.captures.has( 1 ), false );
 
 	// A release for a button that is not held is ignored, on the canvas or outside it
 	h.mouseOutside( "mouseup", 150, 50 );
@@ -705,7 +755,6 @@ test( "pointer a hidden page releases held input with cancelled (P9)", () => {
 	] );
 	assert.deepEqual( [ $.inMouse().buttons, $.inMouse().cancelled ], [ 0, true ] );
 	assert.equal( $.inTouch().length, 0 );
-	assert.equal( hasWindowMouseUp( h ), false );
 
 	// The late real releases, a second hide, and showing the page release nothing again
 	h.mouseOutside( "mouseup", 50, 50 );
@@ -727,7 +776,6 @@ test( "pointer stop commands release held input with cancelled (P10)", () => {
 	$.stopMouse();
 	assert.deepEqual( log, [ [ "mouse up", true ] ] );
 	assert.equal( $.inMouse().buttons, 0 );
-	assert.equal( hasWindowMouseUp( h ), false );
 	h.touch( "touchstart", [ { "id": 4, "x": 40, "y": 40 } ] );
 	$.stopTouch();
 	assert.deepEqual( log[ 1 ], [ "touch end", true ] );
@@ -761,7 +809,7 @@ test( "pointer removing a screen with input held calls none of its handlers", ()
 	h.touch( "touchstart", [ { "id": 1, "x": 5, "y": 5 } ], undefined, other );
 	h.removeScreen( other );
 	assert.deepEqual( log, [] );
-	assert.equal( hasWindowMouseUp( h ), false );
+	assert.deepEqual( other.canvas.listeners, [] );
 	assert.equal( $.inMouse().buttons, 0 );
 } );
 
@@ -922,4 +970,87 @@ test( "pointer setEnableContextMenu controls the menu while mouse tracking runs"
 	assert.equal( menu(), false );
 	$.startMouse();
 	assert.equal( menu(), true );
+} );
+
+test( "pointer chorded buttons arrive as moves and press and release each button (B6)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	$.onMouse( "down", data => log.push( [ "down", data.buttons ] ) );
+	$.onMouse( "up", data => log.push( [ "up", data.buttons ] ) );
+	let clicks = 0;
+	$.onClick( () => { clicks += 1; } );
+	h.mouse( "mousedown", 10, 10, 1 );
+	h.mouse( "mousedown", 10, 10, 3, 2 );
+	h.mouse( "mouseup", 10, 10, 1, 2 );
+	h.mouse( "mouseup", 10, 10, 0 );
+	assert.deepEqual( log, [ [ "down", 1 ], [ "down", 3 ], [ "up", 1 ], [ "up", 0 ] ] );
+
+	// The right button's release disarmed the click, as a mouseup of it did
+	assert.equal( clicks, 0 );
+	h.click( 10, 10 );
+	assert.equal( clicks, 1 );
+} );
+
+test( "pointer pointercancel and pens: a cancelled mouse release, and pen data (B6, I6)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	$.onMouse( "up", data => log.push( [ data.action, data.cancelled, data.type ] ) );
+	let clicks = 0;
+	$.onClick( () => { clicks += 1; } );
+	h.mouse( "mousedown", 10, 10, 1 );
+	h.mouse( "pointercancel", 10, 10 );
+	assert.deepEqual( log, [ [ "up", true, "mouse" ] ] );
+	assert.equal( clicks, 0 );
+	assert.equal( $.inMouse().buttons, 0 );
+
+	// Mouse commands observe pens, reported as such
+	const canvas = h.mouse( "mousemove", 1, 1 ).target;
+	canvas.dispatchEvent( {
+		"type": "pointerdown", "pointerId": 5, "pointerType": "pen", "target": canvas,
+		"clientX": 20.5, "clientY": 20.5, "button": 0, "buttons": 1
+	} );
+	assert.deepEqual( [ $.inMouse().type, $.inMouse().x, $.inMouse().buttons ], [ "pen", 20, 1 ] );
+	assert.equal( canvas.captures.has( 5 ), true );
+} );
+
+test( "pointer a refused capture still tracks the press over the canvas (B6)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	$.onPress( "up", data => log.push( data.buttons ) );
+	const canvas = h.mouse( "mousemove", 1, 1 ).target;
+	canvas.setPointerCapture = () => {
+		throw new Error( "NotFoundError" );
+	};
+	h.mouse( "mousedown", 10, 10, 1 );
+	h.mouse( "mouseup", 12, 10 );
+	assert.deepEqual( log, [ 0 ] );
+} );
+
+test( "pointer mouse and touch share one set of canvas listeners and touch-action (B6)", () => {
+	const h = harness();
+	const $ = h.$;
+	const canvas = h.mouse( "mousemove", 1, 1 ).target;
+	const types = () => canvas.listeners.map( listener => listener.type ).sort();
+	canvas.style.touchAction = "pan-y";
+	$.startMouse();
+	$.startTouch();
+	assert.deepEqual( types(), [
+		"contextmenu", "pointercancel", "pointerdown", "pointermove", "pointerup"
+	] );
+	assert.equal( canvas.style.touchAction, "none" );
+
+	// Each stops its own pointers; the listeners go with the last
+	$.stopTouch();
+	assert.equal( canvas.style.touchAction, "pan-y" );
+	const starts = [];
+	$.onTouch( "start", () => starts.push( "touch" ) );
+	$.stopTouch();
+	h.touch( "touchstart", [ { "id": 1, "x": 5, "y": 5 } ] );
+	assert.deepEqual( starts, [] );
+	assert.equal( types().length, 5 );
+	$.stopMouse();
+	assert.deepEqual( types(), [] );
 } );

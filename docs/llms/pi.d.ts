@@ -375,7 +375,7 @@ declare namespace Pi {
 		cancelled: boolean;
 
 		/**
-		 * Input type, always 'mouse' for mouse data.
+		 * Input type: 'pen' for a pen, otherwise 'mouse'.
 		 */
 		type: string;
 	}
@@ -1585,9 +1585,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Registers a callback function for mouse events.
 		 *
-		 * Registers a callback that runs when a mouse event occurs, with the mouse data and the optional custom data. With a hitBox, the callback runs only for events inside it. Registering starts tracking unless stopMouse() was called.
+		 * Registers a callback that runs when a mouse event occurs, with the mouse data and the optional custom data. Mouse commands also observe pens, whose data has type set to 'pen'. With a hitBox, the callback runs only for events inside it. Registering starts tracking unless stopMouse() was called.
 		 *
-		 * A press that starts on the canvas border or padding is ignored. 'up' runs for a release anywhere, including outside the canvas, and with cancelled set to true when the page is hidden or stopMouse() is called with a button held; moves and releases report their true position, which can be outside the screen.
+		 * A press that starts on the canvas border or padding is ignored. A press on the canvas keeps reporting moves while it leaves the canvas, and 'up' runs for its release anywhere. 'up' also runs with cancelled set to true when the browser cancels the pointer, the page is hidden, or stopMouse() is called with a button held; moves and releases report their true position, which can be outside the screen.
 		 *
 		 * A handler runs until it is removed. Registering the same function again adds a second registration, and once removes only its own registration, before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
 		 *
@@ -1625,9 +1625,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Registers a callback function for touch events.
 		 *
-		 * Registers a callback that runs when a touch event occurs, with the touches the event changed and the optional custom data: 'start' receives the touches that started, 'move' the touches that moved, and 'end' the touches that ended, at the position where they lifted. Use inTouch() for every touch still down.
+		 * Registers a callback that runs when a touch event occurs, with the touch it changed, in an array, and the optional custom data: 'start' receives the touch that started, 'move' the touch that moved, and 'end' the touch that ended, at the position where it lifted. Each touch is reported by its own event. Use inTouch() for every touch still down.
 		 *
-		 * With a hitBox, the callback receives only the changed touches inside it, and runs only when there is one. 'end' also runs with cancelled set to true when the browser cancels a touch, the page is hidden, or stopTouch() is called. A touch that starts on the canvas border or padding is ignored. While touch is tracked, touchstart on the canvas is prevented, which stops browser gestures that start there. Registering starts tracking unless stopTouch() was called.
+		 * With a hitBox, the callback receives only the changed touches inside it, and runs only when there is one. 'end' also runs with cancelled set to true when the browser cancels a touch, the page is hidden, or stopTouch() is called. A touch that starts on the canvas border or padding is ignored. A touch that starts on the canvas keeps reporting moves and its end when it leaves the canvas. While touch is tracked, the canvas has touch-action set to none, so the browser does not scroll or zoom with touches that start there. Registering starts tracking unless stopTouch() was called.
 		 *
 		 * A handler runs until it is removed. Registering the same function again adds a second registration, and once removes only its own registration, before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
 		 *
@@ -2069,7 +2069,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Starts touch input tracking for this screen.
 		 *
-		 * Starts touch tracking on the screen canvas. Tracking also starts on first use: the first inTouch(), inPress(), or handler registration. After stopTouch(), only startTouch() starts tracking again.
+		 * Starts touch tracking on the screen canvas, and sets its touch-action style to none so the browser does not scroll or zoom with touches on it; stopTouch() restores the previous value. Tracking also starts on first use: the first inTouch(), inPress(), or handler registration. After stopTouch(), only startTouch() starts tracking again.
 		 *
 		 * When the page is hidden, held touches are released through the 'end' handlers, with cancelled set to true.
 		 *
@@ -2735,7 +2735,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 *
 		 * Sets the touch-action style of the document body: an empty value when enabled, 'none' when disabled, replacing any touch-action the page set on the body. Disabling it stops pinch zoom and panning on the whole page, not only the canvas.
 		 *
-		 * This is a global setting. While touch is tracked on a screen, touchstart on its canvas is always prevented, so a pinch cannot start on the canvas even when pinch zoom is enabled. Any truthy value enables pinch zoom.
+		 * This is a global setting. While touch is tracked on a screen, its canvas has touch-action set to none, so a pinch cannot start on the canvas even when pinch zoom is enabled. Any truthy value enables pinch zoom.
 		 * @param isEnabled If true, enables pinch zoom. If false, disables it.
 		 * @returns This function does not return a value.
 		 */

@@ -299,9 +299,10 @@ test( "late Pointer installation initializes existing lite screens", async () =>
 			$.onPress( "up", data => log.push( [ data.action, data.cancelled ] ) );
 			const canvas = first.canvas();
 			const rect = canvas.getBoundingClientRect();
-			canvas.dispatchEvent( new MouseEvent( "mousedown", {
-				"bubbles": true, "button": 0, "buttons": 1,
-				"clientX": rect.left + rect.width * 0.25, "clientY": rect.top + rect.height * 0.5
+			canvas.dispatchEvent( new PointerEvent( "pointerdown", {
+				"bubbles": true, "pointerId": 1, "pointerType": "mouse", "button": 0,
+				"buttons": 1, "clientX": rect.left + rect.width * 0.25,
+				"clientY": rect.top + rect.height * 0.5
 			} ) );
 			window.dispatchEvent( new Event( "blur" ) );
 			Object.defineProperty( document, "visibilityState", {

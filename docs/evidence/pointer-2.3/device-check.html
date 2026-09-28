@@ -116,20 +116,35 @@ $.onClick( data => {
 	log( "Pi click at " + data.x + "," + data.y );
 }, false, CLICK_BOX );
 
-// Raw browser events, observed on the window after Pi.js's canvas listeners
-window.addEventListener( "mousedown", e => {
+// Raw browser mouse and pen pointer events, observed on the window after Pi.js's canvas
+// listeners. A press captures its pointer, so a release outside the canvas still targets it;
+// whether the release is outside is decided by its position
+const isMousePointer = e => e.pointerType !== "touch";
+window.addEventListener( "pointerdown", e => {
+	if( !isMousePointer( e ) ) {
+		return;
+	}
 	m_counts.rawDown += 1;
 	m_rawButtons = e.buttons;
 } );
-window.addEventListener( "mouseup", e => {
+window.addEventListener( "pointerup", e => {
+	if( !isMousePointer( e ) ) {
+		return;
+	}
 	m_counts.rawUp += 1;
 	m_rawButtons = e.buttons;
-	if( e.target !== canvas ) {
+	const rect = canvas.getBoundingClientRect();
+	if(
+		e.clientX < rect.left || e.clientX >= rect.right || e.clientY < rect.top ||
+		e.clientY >= rect.bottom
+	) {
 		m_counts.rawUpOutsideCanvas += 1;
 	}
 } );
-window.addEventListener( "mousemove", e => {
-	m_rawButtons = e.buttons;
+window.addEventListener( "pointermove", e => {
+	if( isMousePointer( e ) ) {
+		m_rawButtons = e.buttons;
+	}
 } );
 window.addEventListener( "wheel", () => { m_counts.rawWheel += 1; }, { "passive": true } );
 window.addEventListener( "contextmenu", e => {

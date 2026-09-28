@@ -80,7 +80,8 @@ void main() { fragColor = texture(u_texture, v_texCoord); }` );
 		await waitForSize( 60, 30, "canvas observer" );
 		screen.inMouse();
 		const rect = canvas.getBoundingClientRect();
-		canvas.dispatchEvent( new MouseEvent( "mousemove", {
+		canvas.dispatchEvent( new PointerEvent( "pointermove", {
+			"pointerId": 1, "pointerType": "mouse", "button": -1,
 			"clientX": rect.left + 8 + 30, "clientY": rect.top + 8 + 15
 		} ) );
 		if( screen.inMouse().x !== 4 || screen.inMouse().y !== 4 ) {
@@ -89,11 +90,10 @@ void main() { fragColor = texture(u_texture, v_texCoord); }` );
 		screen.inTouch();
 		style.textContent += "#host canvas {margin-left:27px;transform:scale(1.5)}";
 		const moved = canvas.getBoundingClientRect();
-		const touch = new Touch( { "identifier": 7, "target": canvas,
+		canvas.dispatchEvent( new PointerEvent( "pointerdown", {
+			"pointerId": 7, "pointerType": "touch", "button": 0, "buttons": 1,
 			"clientX": moved.left + ( 8 + 30 ) * 1.5,
-			"clientY": moved.top + ( 8 + 15 ) * 1.5 } );
-		canvas.dispatchEvent( new TouchEvent( "touchstart", {
-			"touches": [ touch ], "changedTouches": [ touch ]
+			"clientY": moved.top + ( 8 + 15 ) * 1.5
 		} ) );
 		const touches = screen.inTouch();
 		if( touches[ 0 ].x !== 4 || touches[ 0 ].y !== 4 ) {
@@ -175,6 +175,52 @@ test( "a trusted mouse release outside the canvas is released once (T1)", async 
 	}
 } );
 
+test( "a trusted touch drag that leaves the canvas ends once, with touch-action none (B6)",
+	async () => {
+		const page = await context.newPage();
+		try {
+			await page.goto( "http://localhost:8080/" );
+			await page.setContent( "<html><body style='margin:0'>" +
+				"<div id='host' style='width:200px;height:200px'></div></body></html>" );
+			await page.addScriptTag( { "url": "/build/pi.js" } );
+			await page.evaluate( () => $.ready() );
+			await page.evaluate( () => {
+				window.screen1 = $.screen( { "aspect": "100x100", "container": "host" } );
+				window.log = [];
+				$.onTouch( "start", data => window.log.push( [ "start", data.length ] ) );
+				$.onTouch( "end", data => window.log.push( [ "end", data[ 0 ].x > 100,
+					data[ 0 ].cancelled ] ) );
+				$.onPress( "up", data => window.log.push( [ "press up", data.buttons ] ) );
+			} );
+			const box = await page.locator( "canvas" ).boundingBox();
+			const cdp = await page.context().newCDPSession( page );
+			const point = ( x, y ) => [ { "x": x, "y": y, "id": 1 } ];
+			const x = box.x + box.width / 2;
+			const y = box.y + box.height / 2;
+			await cdp.send( "Input.dispatchTouchEvent", {
+				"type": "touchStart", "touchPoints": point( x, y )
+			} );
+			for( let step = 1; step <= 4; step++ ) {
+				await cdp.send( "Input.dispatchTouchEvent", {
+					"type": "touchMove", "touchPoints": point( x + step * 60, y )
+				} );
+			}
+			await cdp.send( "Input.dispatchTouchEvent", {
+				"type": "touchEnd", "touchPoints": []
+			} );
+			assert.deepEqual( await page.evaluate( () => ( {
+				"log": window.log, "touches": $.inTouch().length,
+				"touchAction": getComputedStyle( screen1.canvas() ).touchAction
+			} ) ), {
+				"log": [ [ "start", 1 ], [ "end", true, false ], [ "press up", 0 ] ],
+				"touches": 0, "touchAction": "none"
+			} );
+		} finally {
+			await page.close();
+		}
+	}
+);
+
 test( "Core 13: a screen's clearEvents() clears its own pointer handlers, $.clearEvents() every " +
 	"screen's (I10)", async () => {
 	assert.deepEqual( await probe( () => {
@@ -186,21 +232,17 @@ test( "Core 13: a screen's clearEvents() clears its own pointer handlers, $.clea
 		function input( screen ) {
 			const canvas = screen.canvas();
 			const rect = canvas.getBoundingClientRect();
-			const at = { "clientX": rect.left + 1, "clientY": rect.top + 1 };
-			canvas.dispatchEvent( new MouseEvent( "mousedown", {
-				"bubbles": true, "button": 0, "buttons": 1, ...at
-			} ) );
-			window.dispatchEvent( new MouseEvent( "mouseup", {
-				"bubbles": true, "button": 0, "buttons": 0, ...at
-			} ) );
-			const touch = new Touch( { "identifier": 1, "target": canvas, ...at } );
-			canvas.dispatchEvent( new TouchEvent( "touchstart", {
-				"bubbles": true, "cancelable": true, "touches": [ touch ],
-				"changedTouches": [ touch ]
-			} ) );
-			canvas.dispatchEvent( new TouchEvent( "touchend", {
-				"bubbles": true, "cancelable": true, "touches": [], "changedTouches": [ touch ]
-			} ) );
+			const pointer = ( type, pointerType, pointerId, buttons ) => {
+				canvas.dispatchEvent( new PointerEvent( type, {
+					"bubbles": true, "pointerId": pointerId, "pointerType": pointerType,
+					"button": 0, "buttons": buttons,
+					"clientX": rect.left + 1, "clientY": rect.top + 1
+				} ) );
+			};
+			pointer( "pointerdown", "mouse", 1, 1 );
+			pointer( "pointerup", "mouse", 1, 0 );
+			pointer( "pointerdown", "touch", 2, 1 );
+			pointer( "pointerup", "touch", 2, 0 );
 		}
 
 		// The second screen is the active one

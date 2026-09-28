@@ -38,14 +38,15 @@
 			const screen = $.screen( { "aspect": "8x8", "container": "host", "noCss": true } );
 			let count = 0;
 			const listener = () => count++;
+			const move = () => new PointerEvent( "pointermove", { "pointerType": "mouse" } );
 			screen.onMouse( "move", listener );
 			screen.offMouse( "move", listener );
-			screen.canvas().dispatchEvent( new MouseEvent( "mousemove" ) );
+			screen.canvas().dispatchEvent( move() );
 			if( count !== 0 ) { throw new Error( "immediate removal" ); }
 			pass( 0 );
 			screen.onMouse( "move", listener );
 			screen.clearEvents();
-			screen.canvas().dispatchEvent( new MouseEvent( "mousemove" ) );
+			screen.canvas().dispatchEvent( move() );
 			if( count !== 0 ) { throw new Error( "immediate clear" ); }
 			pass( 1 );
 			const offscreen = $.screen( { "aspect": "8x8", "isOffscreen": true, "parent": screen } );
