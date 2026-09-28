@@ -18,8 +18,6 @@ import * as g_renderer from "../renderer/renderer.js";
 import * as g_textures from "../renderer/textures.js";
 import * as g_view from "./view.js";
 
-const m_activeFilters = new WeakMap();
-
 
 /*************************************************************************************************
  * Module Commands
@@ -34,7 +32,6 @@ const m_activeFilters = new WeakMap();
  */
 export function init( api ) {
 	registerCommands();
-	g_screenManager.addScreenPreCleanupFunction( cancelFilter );
 
 	// Stable API - do not route through addCommand for hot path put
 	api.put = ( data, x, y, include0 ) => {
@@ -279,20 +276,6 @@ function convertColorsToIndices( screenData, colors, width, asIndex, tolerance )
  ************************************************************************************************/
 
 /**
- * Stop an active filter through its existing loop bounds before screen resources are released.
- *
- * @param {Object} screenData - Screen being removed
- * @returns {void}
- */
-function cancelFilter( screenData ) {
-	const cancel = m_activeFilters.get( screenData );
-	if( cancel ) {
-		cancel();
-	}
-}
-
-
-/**
  * Apply a filter function to a region of the screen.
  * Disposal cancels queued work; disposal inside the callback stops further pixels and upload.
  *
@@ -388,54 +371,47 @@ function applyFilter( screenData, filter, x1, y1, width, height, viewSnap ) {
 	const filteredData = new Uint8Array( width * height * 4 );
 	const pixelData = new Uint8ClampedArray( 4 );
 
-	// Cleanup shortens the loops without adding a disposal check to every pixel.
-	m_activeFilters.set( screenData, () => {
-		width = 0;
-		height = 0;
-	} );
-	try {
-		for( let y = 0; y < height; y++ ) {
-			for( let x = 0; x < width; x++ ) {
+	// The check after each callback stops the filter when the callback removes the screen or
+	// the context is lost, before any further pixel or the upload
+	for( let y = 0; y < height; y++ ) {
+		for( let x = 0; x < width; x++ ) {
 
-				// Convert top-left y to bottom-left y for reading from pixelData.
-				const srcRow = ( height - 1 ) - y;
-				const srcIndex = ( srcRow * width + x ) * 4;
+			// Convert top-left y to bottom-left y for reading from pixelData.
+			const srcRow = ( height - 1 ) - y;
+			const srcIndex = ( srcRow * width + x ) * 4;
 
-				// Populate the temporary buffer with current pixel's RGBA8.
-				pixelData[ 0 ] = imageData[ srcIndex ];
-				pixelData[ 1 ] = imageData[ srcIndex + 1 ];
-				pixelData[ 2 ] = imageData[ srcIndex + 2 ];
-				pixelData[ 3 ] = imageData[ srcIndex + 3 ];
+			// Populate the temporary buffer with current pixel's RGBA8.
+			pixelData[ 0 ] = imageData[ srcIndex ];
+			pixelData[ 1 ] = imageData[ srcIndex + 1 ];
+			pixelData[ 2 ] = imageData[ srcIndex + 2 ];
+			pixelData[ 3 ] = imageData[ srcIndex + 3 ];
 
-				// Output index is in bottom-left origin format (same as pixelData).
-				const dstIndex = ( srcRow * width + x ) * 4;
+			// Output index is in bottom-left origin format (same as pixelData).
+			const dstIndex = ( srcRow * width + x ) * 4;
 
-				// Call filter using the captured view's top-left coordinates.
-				const localX = ( x1 + x ) - viewSnap.originX;
-				const localY = ( y1 + y ) - viewSnap.originY;
-				const keep = filter( pixelData, localX, localY );
-				if( screenData.isRemoved || g_contextState.isContextUnavailable( screenData ) ) {
-					return;
-				}
-				if( keep ) {
+			// Call filter using the captured view's top-left coordinates.
+			const localX = ( x1 + x ) - viewSnap.originX;
+			const localY = ( y1 + y ) - viewSnap.originY;
+			const keep = filter( pixelData, localX, localY );
+			if( screenData.isRemoved || g_contextState.isContextUnavailable( screenData ) ) {
+				return;
+			}
+			if( keep ) {
 
-					// These local buffers remain valid even if the callback removed the screen.
-					filteredData[ dstIndex     ] = pixelData[ 0 ];
-					filteredData[ dstIndex + 1 ] = pixelData[ 1 ];
-					filteredData[ dstIndex + 2 ] = pixelData[ 2 ];
-					filteredData[ dstIndex + 3 ] = pixelData[ 3 ];
-				} else {
+				// These local buffers remain valid even if the callback removed the screen.
+				filteredData[ dstIndex     ] = pixelData[ 0 ];
+				filteredData[ dstIndex + 1 ] = pixelData[ 1 ];
+				filteredData[ dstIndex + 2 ] = pixelData[ 2 ];
+				filteredData[ dstIndex + 3 ] = pixelData[ 3 ];
+			} else {
 
-					// A rejected pixel becomes transparent.
-					filteredData[ dstIndex     ] = 0;
-					filteredData[ dstIndex + 1 ] = 0;
-					filteredData[ dstIndex + 2 ] = 0;
-					filteredData[ dstIndex + 3 ] = 0;
-				}
+				// A rejected pixel becomes transparent.
+				filteredData[ dstIndex     ] = 0;
+				filteredData[ dstIndex + 1 ] = 0;
+				filteredData[ dstIndex + 2 ] = 0;
+				filteredData[ dstIndex + 3 ] = 0;
 			}
 		}
-	} finally {
-		m_activeFilters.delete( screenData );
 	}
 
 	// A callback may have removed the screen; never upload to its disposed texture.

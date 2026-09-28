@@ -92,4 +92,34 @@ for( const bundle of g_harness.BUNDLES ) {
 			} ), [ [ [ 254, 254 ], [ 254, 254 ], [ 254, 254 ], [ 254, 254 ], [ 255, 255 ] ],
 				[ 0, 0, 0, 0 ] ] );
 		} );
+
+	test( `Core 12 ${bundle}: getDefaultPal returns copies of the palette new screens get`,
+		async () => {
+			assert.deepEqual( await probe( bundle, () => {
+				const rgba = color => [ color.r, color.g, color.b, color.a ];
+				const first = $.screen( "4x4" );
+				const matches = JSON.stringify( $.getDefaultPal().map( rgba ) ) ===
+					JSON.stringify( first.getPal().map( rgba ) );
+
+				// Changing a returned color does not change the default palette
+				$.getDefaultPal()[ 0 ].r = 1;
+				const unchanged = $.getDefaultPal()[ 0 ].r !== 1;
+
+				// A new default palette reaches later screens only; its first color is index 1
+				$.setDefaultPal( [ "#000000", "#123456", "#ABCDEF" ] );
+				const later = $.screen( "4x4" );
+				return {
+					"matches": matches,
+					"unchanged": unchanged,
+					"defaults": $.getDefaultPal().map( rgba ),
+					"later": later.getPal().map( rgba ),
+					"firstLength": first.getPal().length > 2
+				};
+			} ), {
+				"matches": true, "unchanged": true,
+				"defaults": [ [ 0, 0, 0, 255 ], [ 18, 52, 86, 255 ], [ 171, 205, 239, 255 ] ],
+				"later": [ [ 0, 0, 0, 255 ], [ 18, 52, 86, 255 ], [ 171, 205, 239, 255 ] ],
+				"firstLength": true
+			} );
+		} );
 }
