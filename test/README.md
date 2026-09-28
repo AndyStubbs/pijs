@@ -349,9 +349,10 @@ Put HTML fixtures in `test/tests/html-core/` or `test/tests/html-plugins/`. Incl
 
 Use `lite = true` only for core fixtures that work with the lite bundle. Initialize drawing through
 `$.ready()`. The optional `commands` string simulates input before capture; supported commands are
-documented at the top of `test/scripts/run-visual-tests.js`. `expectPageError` allowlists one
-intentional uncaught error by its exact message. Other uncaught page errors fail independently of
-pixels.
+documented at the top of `test/scripts/run-visual-tests.js`. Touch commands send one touch in
+`changedTouches`, as browsers do; `TE` ends it at its last position with an empty `touches` list.
+`expectPageError` allowlists one intentional uncaught error by its exact message. Other uncaught
+page errors fail independently of pixels.
 
 The runner loads the page, waits for `$.ready()` and for fixture assertions
 (`window.patchResult`), then the metadata delay, scripted input, and two animation frames before

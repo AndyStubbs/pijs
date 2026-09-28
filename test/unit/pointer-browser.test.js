@@ -92,7 +92,9 @@ void main() { fragColor = texture(u_texture, v_texCoord); }` );
 		const touch = new Touch( { "identifier": 7, "target": canvas,
 			"clientX": moved.left + ( 8 + 30 ) * 1.5,
 			"clientY": moved.top + ( 8 + 15 ) * 1.5 } );
-		canvas.dispatchEvent( new TouchEvent( "touchstart", { "touches": [ touch ] } ) );
+		canvas.dispatchEvent( new TouchEvent( "touchstart", {
+			"touches": [ touch ], "changedTouches": [ touch ]
+		} ) );
 		const touches = screen.intouch();
 		if( touches[ 0 ].x !== 4 || touches[ 0 ].y !== 4 ) {
 			throw new Error( "fresh touch position after movement and scaling" );

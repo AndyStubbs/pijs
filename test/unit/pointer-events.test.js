@@ -382,3 +382,114 @@ test( "pointer handlers that throw are reported and do not stop the event (P6)",
 		[ "onpress: Handler for \"down\" failed:", "press" ]
 	] );
 } );
+
+/**
+ * The fields of touch data that the tracking sets.
+ *
+ * @param {Object|Array<Object>} data - Touch or press data.
+ * @returns {Object|Array<Object>} `{ id, x, y, lastX, lastY, action, cancelled }` per touch.
+ */
+function touchSummary( data ) {
+	if( Array.isArray( data ) ) {
+		return Array.from( data, touchSummary );
+	}
+	return {
+		"id": data.id, "x": data.x, "y": data.y, "lastX": data.lastX, "lastY": data.lastY,
+		"action": data.action, "cancelled": data.cancelled
+	};
+}
+
+test( "pointer touch end reports the touch that lifted, and hit boxes test it (P2)", () => {
+	const h = harness();
+	const $ = h.$;
+	const ends = [];
+	let hits = 0;
+	$.ontouch( "end", data => ends.push( touchSummary( data ) ) );
+	$.ontouch( "end", () => { hits += 1; }, false, { "x": 0, "y": 0, "width": 20, "height": 20 } );
+
+	// One finger lifts inside the hit box, where it moved last
+	h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
+	h.touch( "touchmove", [ { "id": 1, "x": 12, "y": 12 } ] );
+	h.touch( "touchend", [], [ { "id": 1, "x": 12, "y": 12 } ] );
+	assert.deepEqual( ends, [ [ {
+		"id": 1, "x": 12, "y": 12, "lastX": 12, "lastY": 12, "action": "end", "cancelled": false
+	} ] ] );
+	assert.equal( hits, 1 );
+	assert.equal( $.intouch().length, 0 );
+
+	// A second finger lifts outside the box while the first stays down inside it
+	const first = { "id": 1, "x": 10, "y": 10 };
+	const second = { "id": 2, "x": 80, "y": 80 };
+	h.touch( "touchstart", [ first ], [ first ] );
+	h.touch( "touchstart", [ first, second ], [ second ] );
+	h.touch( "touchend", [ first ], [ second ] );
+	assert.deepEqual( ends[ 1 ], [ {
+		"id": 2, "x": 80, "y": 80, "lastX": 80, "lastY": 80, "action": "end", "cancelled": false
+	} ] );
+	assert.equal( hits, 1 );
+	assert.deepEqual( touchSummary( $.intouch() ), [ {
+		"id": 1, "x": 10, "y": 10, "lastX": null, "lastY": null, "action": "start",
+		"cancelled": false
+	} ] );
+} );
+
+test( "pointer touches keep their own actions and handlers get the changed touches (P2)", () => {
+	const h = harness();
+	const $ = h.$;
+	const starts = [];
+	const moves = [];
+	$.ontouch( "start", data => starts.push( Array.from( data, touch => touch.id ) ) );
+	$.ontouch( "move", data => moves.push( touchSummary( data ) ) );
+	const first = { "id": 1, "x": 10, "y": 10 };
+	const second = { "id": 2, "x": 50, "y": 50 };
+	h.touch( "touchstart", [ first ], [ first ] );
+	h.touch( "touchstart", [ first, second ], [ second ] );
+	h.touch( "touchmove", [ first, { "id": 2, "x": 55, "y": 54 } ], [
+		{ "id": 2, "x": 55, "y": 54 }
+	] );
+	assert.deepEqual( starts, [ [ 1 ], [ 2 ] ] );
+	assert.deepEqual( moves, [ [ {
+		"id": 2, "x": 55, "y": 54, "lastX": 50, "lastY": 50, "action": "move", "cancelled": false
+	} ] ] );
+	assert.deepEqual( Array.from( $.intouch(), touch => [ touch.id, touch.action ] ), [
+		[ 1, "start" ], [ 2, "move" ]
+	] );
+
+	// Polled and handler data are copies of the tracked state
+	$.intouch()[ 0 ].x = 99;
+	assert.equal( $.intouch()[ 0 ].x, 10 );
+} );
+
+test( "pointer touchcancel releases with cancelled and never clicks (P4)", () => {
+	const h = harness();
+	const $ = h.$;
+	const ends = [];
+	const pressUps = [];
+	let clicks = 0;
+	$.ontouch( "end", data => ends.push( touchSummary( data ) ) );
+	$.onpress( "up", data => pressUps.push( touchSummary( data ) ) );
+	$.onclick( () => { clicks += 1; }, false, { "x": 0, "y": 0, "width": 20, "height": 20 } );
+	const item = { "id": 1, "x": 10, "y": 10 };
+	h.touch( "touchstart", [ item ] );
+	h.touch( "touchcancel", [], [ item ] );
+	assert.deepEqual( ends, [ [ {
+		"id": 1, "x": 10, "y": 10, "lastX": 10, "lastY": 10, "action": "end", "cancelled": true
+	} ] ] );
+	assert.deepEqual( pressUps, [ {
+		"id": 1, "x": 10, "y": 10, "lastX": 10, "lastY": 10, "action": "up", "cancelled": true
+	} ] );
+	assert.equal( clicks, 0 );
+	assert.equal( $.intouch().length, 0 );
+
+	// The cancel disarmed the click, so a later press from outside the box does not click
+	const outside = { "id": 2, "x": 50, "y": 50 };
+	h.touch( "touchstart", [ outside ] );
+	h.touch( "touchend", [], [ { "id": 2, "x": 10, "y": 10 } ] );
+	assert.equal( clicks, 0 );
+	assert.equal( pressUps[ 1 ].cancelled, false );
+
+	// A tap still clicks, and mouse data carries the field as well
+	h.tap( 10, 10 );
+	assert.equal( clicks, 1 );
+	assert.equal( $.inmouse().cancelled, false );
+} );
