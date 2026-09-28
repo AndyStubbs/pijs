@@ -25,12 +25,15 @@ const m_utils = g_harness.loadModule( "src/core/utils.js", {
 /**
  * The real gamepad plugin with scripted pads.
  *
+ * @param {Object} [options] - Harness options.
+ * @param {Object} [options.navigator] - A navigator in place of one whose `getGamepads()`
+ *   returns the scripted pads.
  * @returns {Object} `{ $, commands, setPad, removePad, connect, disconnect, frame,
  *   requestAnimationFrame, hide, clearEvents, frames, errors, padStates }`. `$` maps arguments
  *   as the bundles do; `commands` holds the plugin's functions, which take an options object;
  *   `padStates` is the plugin's internal per-pad state.
  */
-function createHarness() {
+function createHarness( options = {} ) {
 	const commands = {};
 	const api = {};
 	const clearHandlers = {};
@@ -49,7 +52,7 @@ function createHarness() {
 		"console": { "error": ( ...args ) => errors.push( args ) },
 		"window": window,
 		"document": document,
-		"navigator": { "getGamepads": () => pads.slice() },
+		"navigator": options.navigator || { "getGamepads": () => pads.slice() },
 		"requestAnimationFrame": requestAnimationFrame,
 		"cancelAnimationFrame": id => frames.delete( id )
 	}, { "expose": [ "m_padStates" ] } );
@@ -596,4 +599,63 @@ test( "PAD-009 pads and the pad list are live objects updated in place (P12)", (
 	h.disconnect( 1 );
 	assert.equal( h.$.ingamepad(), list );
 	assert.deepEqual( Array.from( list, item => item.index ), [ 0 ] );
+} );
+
+test( "PAD-016 gamepad adds its listeners and loop only when polling starts", () => {
+	const h = createHarness();
+	const types = target => Array.from( target.listeners, listener => listener.type ).sort();
+	assert.deepEqual( [ types( h.window ), types( h.document ), h.frames.size ], [ [], [], 0 ] );
+	h.$.startGamepad();
+	h.$.startGamepad();
+	const started = [ [ "gamepadconnected", "gamepaddisconnected" ], [ "visibilitychange" ], 1 ];
+	assert.deepEqual( [ types( h.window ), types( h.document ), h.frames.size ], started );
+
+	// Stopping cancels the loop; starting again adds nothing twice
+	h.$.stopGamepad();
+	assert.equal( h.frames.size, 0 );
+	h.$.startGamepad();
+	h.$.startGamepad();
+	assert.deepEqual( [ types( h.window ), types( h.document ), h.frames.size ], started );
+} );
+
+test( "PAD-016 lifecycle: stop, reads, and registration after a stop (P8)", () => {
+	const h = createHarness();
+	h.setPad( 0 );
+	h.$.startGamepad();
+	h.frame();
+	h.$.stopGamepad();
+
+	// While stopped, reads return null and do not restart polling
+	assert.equal( h.$.ingamepad( 0 ), null );
+	assert.equal( h.$.ingamepad(), null );
+	assert.equal( h.frames.size, 0 );
+
+	// Today, registering a handler restarts polling after a stop; Gamepad 2.3 changes this
+	const connected = [];
+	const disconnected = [];
+	h.$.onGamepadConnected( pad => { connected.push( pad.index ); } );
+	h.$.onGamepadDisconnected( data => { disconnected.push( [ data.index, data.connected ] ); } );
+	assert.equal( h.frames.size, 1 );
+	assert.equal( h.$.ingamepad( 0 ).index, 0 );
+
+	// Today, connection handlers run while stopped; Gamepad 2.3 changes this
+	h.$.stopGamepad();
+	h.setPad( 1 );
+	h.connect( 1 );
+	h.disconnect( 0 );
+	assert.deepEqual( [ connected, disconnected ], [ [ 0, 1 ], [ [ 0, false ] ] ] );
+
+	// startGamepad() resumes polling, and the pad list reflects the events
+	h.$.startGamepad();
+	h.frame();
+	assert.deepEqual( Array.from( h.$.ingamepad(), pad => pad.index ), [ 1 ] );
+} );
+
+test( "PAD-016 gamepad reads only navigator.getGamepads()", () => {
+	const pad = { "index": 0, "id": "pad 0", "connected": true, "mapping": "standard",
+		"timestamp": 0, "buttons": [], "axes": [] };
+	const h = createHarness( { "navigator": { "webkitGetGamepads": () => [ pad ] } } );
+	assert.equal( h.$.ingamepad().length, 0 );
+	h.frame();
+	assert.equal( h.$.ingamepad().length, 0 );
 } );
