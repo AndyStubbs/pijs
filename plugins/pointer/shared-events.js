@@ -44,14 +44,21 @@ export function createEventHelpers( pluginApi ) {
 
 		if( hitBox ) {
 			if(
-				!Number.isInteger( hitBox.x ) ||
-				!Number.isInteger( hitBox.y ) ||
-				!Number.isInteger( hitBox.width ) ||
-				!Number.isInteger( hitBox.height )
+				!Number.isFinite( hitBox.x ) ||
+				!Number.isFinite( hitBox.y ) ||
+				!Number.isFinite( hitBox.width ) ||
+				!Number.isFinite( hitBox.height )
 			) {
 				const error = new Error(
 					`${name}: hitBox must have properties x, y, width, and height whose values ` +
-					"are integers."
+					"are finite numbers."
+				);
+				error.code = "INVALID_HITBOX";
+				throw error;
+			}
+			if( hitBox.width < 0 || hitBox.height < 0 ) {
+				const error = new RangeError(
+					`${name}: hitBox width and height must not be negative.`
 				);
 				error.code = "INVALID_HITBOX";
 				throw error;

@@ -222,7 +222,9 @@ export function registerMouse( pluginApi, helpers ) {
 		if( !screenData ) {
 			return;
 		}
-		updateMouse( screenData, e, "move" );
+
+		// Buttons pressed off the screen are not held, so a drag from outside reports none
+		updateMouse( screenData, e, "move", screenData.mouse.buttons & e.buttons );
 		updateHeld( screenData );
 		const mouseData = getMouse( screenData );
 		m_triggerEventListeners( "move", mouseData, screenData.onMouseEventListeners );
@@ -234,7 +236,16 @@ export function registerMouse( pluginApi, helpers ) {
 		if( !screenData ) {
 			return;
 		}
-		updateMouse( screenData, e, "down" );
+
+		// A press that starts on the canvas border or padding is ignored
+		if( !g_target.isOnScreen( screenData, g_target.pointerPosition( screenData, e ) ) ) {
+			return;
+		}
+		let bit = BUTTON_BITS[ e.button ];
+		if( bit === undefined ) {
+			bit = 0;
+		}
+		updateMouse( screenData, e, "down", ( screenData.mouse.buttons & e.buttons ) | bit );
 		updateHeld( screenData );
 		const mouseData = getMouse( screenData );
 		m_triggerEventListeners( "down", mouseData, screenData.onMouseEventListeners );
@@ -261,7 +272,7 @@ export function registerMouse( pluginApi, helpers ) {
 			if( ( screenData.mouse.buttons & bit ) === 0 ) {
 				continue;
 			}
-			updateMouse( screenData, e, "up" );
+			updateMouse( screenData, e, "up", screenData.mouse.buttons & e.buttons & ~bit );
 			updateHeld( screenData );
 
 			// Only the primary button clicks; any other release disarms
@@ -338,7 +349,17 @@ export function registerMouse( pluginApi, helpers ) {
 		}
 	}
 
-	function updateMouse( screenData, e, action ) {
+	/**
+	 * Record a mouse event at its true position, which is outside the screen for a move or
+	 * release over the border, the padding, or beyond the canvas.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {MouseEvent} e - Mouse event.
+	 * @param {string} action - `"down"`, `"move"`, or `"up"`.
+	 * @param {number} buttons - Buttons held on the screen after the event.
+	 * @returns {void}
+	 */
+	function updateMouse( screenData, e, action, buttons ) {
 
 		// A canvas with an empty content box keeps the last position
 		let position = g_target.pointerPosition( screenData, e );
@@ -364,7 +385,7 @@ export function registerMouse( pluginApi, helpers ) {
 			"y": y,
 			"lastX": lastX,
 			"lastY": lastY,
-			"buttons": e.buttons,
+			"buttons": buttons,
 			"action": action,
 			"cancelled": false
 		};
