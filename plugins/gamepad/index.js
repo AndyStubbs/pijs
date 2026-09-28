@@ -17,6 +17,9 @@
 
 
 const m_gamepads = {};
+
+// Per pad: the state the loop last saw, and the edges it accumulated since the last read
+const m_padStates = {};
 const m_onConnectHandlers = [];
 const m_onDisconnectHandlers = [];
 
@@ -26,7 +29,7 @@ let m_isLooping = false;
 let m_gamepadLoopId = null;
 let m_axesSensitivity = 0.2;
 let m_tick = 0;
-let m_lastGamepadUpdateTick = -1;
+let m_lastReadTick = -1;
 
 
 /*************************************************************************************************
@@ -109,7 +112,8 @@ function stopGamepad() {
 }
 
 /**
- * Read one gamepad or all connected gamepads, unless polling was explicitly stopped.
+ * Read one gamepad or all connected gamepads, unless polling was explicitly stopped. The first
+ * read starts polling and records the current state without edges.
  *
  * @param {Object} options - Command options.
  * @returns {Object|Array<Object>|null|undefined}
@@ -121,8 +125,11 @@ function ingamepad( options ) {
 	if( m_isStopped ) {
 		return null;
 	}
-	startGamepad();
-	updateGamepads();
+	if( !m_isLooping ) {
+		startGamepad();
+		updateGamepads( false );
+	}
+	readGamepads();
 
 	// If no index specified, return all gamepads
 	if( gamepadIndex === null || gamepadIndex === undefined ) {
@@ -212,7 +219,8 @@ function onGamepadDisconnected( options ) {
 
 function gamepadConnected( e ) {
 
-	updateGamepad( e.gamepad );
+	// Record a new pad without consuming edges; the loop reports the press that exposed it
+	recordGamepad( e.gamepad );
 
 	// Trigger connect handlers
 	const gamepadData = m_gamepads[ e.gamepad.index ];
@@ -236,6 +244,7 @@ function gamepadDisconnected( e ) {
 	}
 
 	delete m_gamepads[ e.gamepad.index ];
+	delete m_padStates[ e.gamepad.index ];
 }
 
 function gamepadLoop() {
@@ -243,7 +252,7 @@ function gamepadLoop() {
 		return;
 	}
 
-	updateGamepads();
+	updateGamepads( true );
 
 	m_tick += 1;
 	m_gamepadLoopId = requestAnimationFrame( gamepadLoop );
@@ -263,7 +272,7 @@ function scanForGamepads() {
 	// Add any gamepads that are already connected but not in our list
 	for( let i = 0; i < gamepads.length; i++ ) {
 		if( gamepads[ i ] && !( gamepads[ i ].index in m_gamepads ) ) {
-			updateGamepad( gamepads[ i ] );
+			recordGamepad( gamepads[ i ] );
 
 			// Trigger connect handlers for pre-connected gamepads
 			const gamepadData = m_gamepads[ gamepads[ i ].index ];
@@ -274,14 +283,15 @@ function scanForGamepads() {
 	}
 }
 
-function updateGamepads() {
+/**
+ * Update every connected pad from the browser. Only the polling loop and the first read call
+ * this; reads never update.
+ *
+ * @param {boolean} isEdges - Whether changes are accumulated as edges for the next read.
+ * @returns {void}
+ */
+function updateGamepads( isEdges ) {
 	let gamepads;
-
-	// Prevent updateGamepads from triggering multiple times in the same loop
-	if( m_lastGamepadUpdateTick === m_tick ) {
-		return;
-	}
-	m_lastGamepadUpdateTick = m_tick;
 
 	if( "getGamepads" in navigator ) {
 		gamepads = navigator.getGamepads();
@@ -295,7 +305,43 @@ function updateGamepads() {
 		if( !gamepad || !gamepad.connected ) {
 			continue;
 		}
-		updateGamepad( gamepad );
+		recordGamepad( gamepad );
+		updateGamepad( gamepad, isEdges );
+	}
+}
+
+/**
+ * Publish the loop's state to the pad objects on the first read in each frame: the edges
+ * accumulated since the last frame with a read, and the axes at the previous read. Every other
+ * read in the frame, from any code, sees the same result.
+ *
+ * @returns {void}
+ */
+function readGamepads() {
+	if( m_lastReadTick === m_tick ) {
+		return;
+	}
+	m_lastReadTick = m_tick;
+	for( const index in m_gamepads ) {
+		const gamepadData = m_gamepads[ index ];
+		const state = m_padStates[ index ];
+		const buttons = [];
+		for( let i = 0; i < state.buttons.length; i += 1 ) {
+			buttons.push( {
+				"pressed": state.buttons[ i ].pressed,
+				"value": state.buttons[ i ].value,
+				"pressStarted": state.pressStarted[ i ] === true,
+				"pressReleased": state.pressReleased[ i ] === true
+			} );
+		}
+		gamepadData.buttons = buttons;
+		gamepadData.lastAxes = gamepadData.axes;
+		gamepadData.axes = state.axes.slice();
+		gamepadData.timestamp = state.timestamp;
+		gamepadData.connected = state.connected;
+		gamepadData.vibrationActuator = state.vibrationActuator;
+		state.pressStarted = [];
+		state.pressReleased = [];
 	}
 }
 
@@ -314,38 +360,44 @@ function createNewGamepadData( gamepadDataRaw ) {
 		"buttons": []
 	};
 
-	// Attach event listeners with helper functions
+	// Helper methods; each is a read, so it publishes the frame's state first
 	newGamepadData.getButton = function( buttonIndex ) {
+		readGamepads();
 		if( buttonIndex < 0 || buttonIndex >= this.buttons.length ) {
 			return null;
 		}
 		return this.buttons[ buttonIndex ];
 	};
 	newGamepadData.getButtonPressed = function( buttonIndex ) {
+		readGamepads();
 		if( buttonIndex < 0 || buttonIndex >= this.buttons.length ) {
 			return null;
 		}
 		return this.buttons[ buttonIndex ].pressed;
 	};
 	newGamepadData.getButtonJustPressed = function( buttonIndex ) {
+		readGamepads();
 		if( buttonIndex < 0 || buttonIndex >= this.buttons.length ) {
 			return false;
 		}
 		return this.buttons[ buttonIndex ].pressStarted;
 	};
 	newGamepadData.getButtonJustReleased = function( buttonIndex ) {
+		readGamepads();
 		if( buttonIndex < 0 || buttonIndex >= this.buttons.length ) {
 			return false;
 		}
 		return this.buttons[ buttonIndex ].pressReleased;
 	};
 	newGamepadData.getAxis = function( axisIndex ) {
+		readGamepads();
 		if( axisIndex < 0 || axisIndex >= this.axes.length ) {
 			return 0;
 		}
 		return this.axes[ axisIndex ];
 	};
 	newGamepadData.getAxisChanged = function( axisIndex ) {
+		readGamepads();
 		if( axisIndex < 0 || axisIndex >= this.axes.length ) {
 			return false;
 		}
@@ -357,38 +409,75 @@ function createNewGamepadData( gamepadDataRaw ) {
 	return newGamepadData;
 }
 
-function updateGamepad( gamepadRawData ) {
-	let gamepadData = m_gamepads[ gamepadRawData.index ];
-	if( !gamepadData ) {
-		gamepadData = createNewGamepadData( gamepadRawData );
-		m_gamepads[ gamepadRawData.index ] = gamepadData;
+/**
+ * Record a pad that is not tracked yet. It starts with every button released, so a button
+ * held when it appears, such as the press that exposed it, is reported by the next update.
+ *
+ * @param {Gamepad} gamepadRawData - The browser's pad.
+ * @returns {void}
+ */
+function recordGamepad( gamepadRawData ) {
+	const index = gamepadRawData.index;
+	if( m_gamepads[ index ] ) {
+		return;
 	}
-
-	// Update buttons
-	const newButtons = [];
+	const gamepadData = createNewGamepadData( gamepadRawData );
+	const state = {
+		"buttons": [],
+		"axes": [],
+		"pressStarted": [],
+		"pressReleased": [],
+		"timestamp": gamepadRawData.timestamp,
+		"connected": gamepadRawData.connected,
+		"vibrationActuator": gamepadRawData.vibrationActuator
+	};
 	for( let i = 0; i < gamepadRawData.buttons.length; i += 1 ) {
-		const buttonNew = gamepadRawData.buttons[ i ];
-		const buttonOld = gamepadData.buttons[ i ] || { "pressed": false };
-		newButtons.push( {
-			"pressed": buttonNew.pressed,
-			"value": buttonNew.value,
-			"pressStarted": !buttonOld.pressed && buttonNew.pressed,
-			"pressReleased": buttonOld.pressed && !buttonNew.pressed
+		state.buttons.push( { "pressed": false, "value": 0 } );
+		gamepadData.buttons.push( {
+			"pressed": false, "value": 0, "pressStarted": false, "pressReleased": false
 		} );
 	}
-	gamepadData.buttons = newButtons;
-
-	// Update Axes
-	gamepadData.lastAxes = gamepadData.axes.slice();
-	gamepadData.axes = [];
-	for( let i = 0; i < gamepadRawData.axes.length; i++ ) {
-		gamepadData.axes.push( smoothAxis( gamepadRawData.axes[ i ] ) );
+	for( let i = 0; i < gamepadRawData.axes.length; i += 1 ) {
+		state.axes.push( smoothAxis( gamepadRawData.axes[ i ] ) );
 	}
+	gamepadData.axes = state.axes.slice();
+	gamepadData.lastAxes = state.axes.slice();
+	m_gamepads[ index ] = gamepadData;
+	m_padStates[ index ] = state;
+}
 
-	// Update Raw Data
-	gamepadData.timestamp = gamepadRawData.timestamp;
-	gamepadData.connected = gamepadRawData.connected;
-	gamepadData.vibrationActuator = gamepadRawData.vibrationActuator;
+/**
+ * Update a tracked pad's state from the browser, accumulating presses and releases until the
+ * next read. A press and a release between two reads are both kept.
+ *
+ * @param {Gamepad} gamepadRawData - The browser's pad.
+ * @param {boolean} isEdges - Whether changes are accumulated as edges.
+ * @returns {void}
+ */
+function updateGamepad( gamepadRawData, isEdges ) {
+	const state = m_padStates[ gamepadRawData.index ];
+	for( let i = 0; i < gamepadRawData.buttons.length; i += 1 ) {
+		const buttonNew = gamepadRawData.buttons[ i ];
+		let wasPressed = false;
+		if( state.buttons[ i ] ) {
+			wasPressed = state.buttons[ i ].pressed;
+		}
+		if( isEdges ) {
+			if( !wasPressed && buttonNew.pressed ) {
+				state.pressStarted[ i ] = true;
+			} else if( wasPressed && !buttonNew.pressed ) {
+				state.pressReleased[ i ] = true;
+			}
+		}
+		state.buttons[ i ] = { "pressed": buttonNew.pressed, "value": buttonNew.value };
+	}
+	state.axes = [];
+	for( let i = 0; i < gamepadRawData.axes.length; i += 1 ) {
+		state.axes.push( smoothAxis( gamepadRawData.axes[ i ] ) );
+	}
+	state.timestamp = gamepadRawData.timestamp;
+	state.connected = gamepadRawData.connected;
+	state.vibrationActuator = gamepadRawData.vibrationActuator;
 }
 
 function smoothAxis( axis ) {
