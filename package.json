@@ -1,5 +1,6 @@
 {
 	"name": "pijs",
+	"private": true,
 	"version": "2.3.0",
 	"majorVersion": "2.3",
 	"description": "Retro2D graphics, sound, and input library for javascript",
