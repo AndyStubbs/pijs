@@ -234,6 +234,25 @@ test( "late Pointer installation initializes existing lite screens", async () =>
 				"action": "none", "cancelled": false, "type": "mouse" },
 			"initialized": true
 		} );
+
+		// Press input reaches the late plugin, and blur and a hidden page do not throw (P16)
+		assert.deepEqual( await page.evaluate( () => {
+			const log = [];
+			$.onpress( "down", data => log.push( [ data.x, data.y, data.buttons ] ) );
+			$.onpress( "up", data => log.push( [ data.action, data.cancelled ] ) );
+			const canvas = first.canvas();
+			const rect = canvas.getBoundingClientRect();
+			canvas.dispatchEvent( new MouseEvent( "mousedown", {
+				"bubbles": true, "button": 0, "buttons": 1,
+				"clientX": rect.left + rect.width * 0.25, "clientY": rect.top + rect.height * 0.5
+			} ) );
+			window.dispatchEvent( new Event( "blur" ) );
+			Object.defineProperty( document, "visibilityState", {
+				"configurable": true, "get": () => "hidden"
+			} );
+			document.dispatchEvent( new Event( "visibilitychange" ) );
+			return log;
+		} ), [ [ 2, 3, 1 ], [ "up", true ] ] );
 		assert.deepEqual( errors, [] );
 	} finally {
 		await page.close();

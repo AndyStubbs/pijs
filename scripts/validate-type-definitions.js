@@ -152,6 +152,11 @@ const REQUIRED_DECLARATIONS = [
 			"=> void, once?: boolean, allowRepeat?: boolean ): void;"
 	},
 	{
+		"name": "ontouch callbacks receive the changed touches",
+		"text": "ontouch( mode: string, fn: ( touches: Array<TouchData>, customData?: object ) " +
+			"=> void, once?: boolean, hitBox?: HitBox, customData?: any ): void;"
+	},
+	{
 		"name": "plugin service provider",
 		"text": "provideService: ( service: object ) => void;"
 	},
@@ -328,6 +333,9 @@ function validateTypeDefinitions() {
 	const pointerTypes = readTypeFile( POINTER_TYPE_FILE );
 	for( const text of [
 		"interface MouseData {",
+		"interface TouchData {",
+		"lastX: number | null;",
+		"cancelled: boolean;",
 		"interface HitBox {",
 		"interface PluginScreenCommands extends PointerScreenCommands {}",
 		"interface PluginOptions extends PointerOptions {}"

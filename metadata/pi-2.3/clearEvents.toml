@@ -1,0 +1,45 @@
+title = "clearEvents"
+category = "core"
+isScreen = true
+summary = "Clears events from all plugins or a specific plugin event type."
+description = """
+Clears queued/registered events. If type is provided, clears only that event type; otherwise clears
+events for all registered types.
+
+The pointer plugin registers "mouse", "touch", and "press"; "press" also clears click handlers.
+Clearing pointer handlers does not stop tracking.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Move mouse or touch to paint screen click/touch up to stop." );
+$.onpress( "move", pressMove );
+$.onpress( "up", pressStop );
+
+// Press move function
+function pressMove( data ) {
+	$.setPosPx( data.x, data.y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 8 );
+	$.print( "+", true );
+}
+
+// Press stop function
+function pressStop() {
+	$.setColor( 14 );
+	var pos = $.getPos();
+	$.setPos( pos.col - 4, pos.row );
+	$.print( "Stopped!", true );
+	$.clearEvents();
+}
+"""
+
+[[parameters]]
+name = "type"
+type = "string"
+description = "Optional type to clear (e.g., \"keyboard\", \"mouse\", \"touch\", \"press\")."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."
