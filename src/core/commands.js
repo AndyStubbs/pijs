@@ -12,7 +12,7 @@
 import * as g_utils from "./utils.js";
 import * as g_screenManager from "./screen-manager.js";
 
-const m_settings = {};
+const m_settings = Object.create( null );
 const m_commands = [];
 let m_api = null;
 let m_readyCallbacks = [];
@@ -293,46 +293,78 @@ function checkReady() {
  * Global settings command
  *
  * This can get called from either the global api or directly from a screenData.api.
- * screenData can be null if no screen is available
+ * screenData can be null if no screen is available. Every option name is checked before any
+ * setting is applied, so a rejected call changes nothing.
  * @param {Object} screenData - Screen state.
  * @param {Object} options - Command options.
  * @returns {void}
+ * @throws {TypeError} INVALID_OPTIONS when options is not an object
+ * @throws {TypeError} INVALID_OPTION when a name is not a registered setting
+ * @throws {Error} NO_ACTIVE_SCREEN when a screen setting has no screen to apply to
  */
 export function set( screenData, options ) {
 
 	// Unpack options
 	options = options.options;
+	if( typeof options !== "object" || options === null || Array.isArray( options ) ) {
+		const error = new TypeError( "set: Parameter options must be an object." );
+		error.code = "INVALID_OPTIONS";
+		throw error;
+	}
 
-	// Loop through all the options
-	for( const optionName in options ) {
+	// Validate every name first; a "screen" option supplies the screen for the ones after it.
+	// m_settings has no prototype, so inherited names such as "toString" are not settings.
+	const optionNames = Object.keys( options );
+	let hasScreen = screenData !== null;
+	for( const optionName of optionNames ) {
+		if( !( optionName in m_settings ) ) {
+			const error = new TypeError(
+				`set: Unknown option "${optionName}". Check its spelling, or load the plugin ` +
+				"that provides it."
+			);
+			error.code = "INVALID_OPTION";
+			throw error;
+		}
+
+		// Skip blanks
+		if( options[ optionName ] === null ) {
+			continue;
+		}
+		if( optionName === "screen" ) {
+			hasScreen = true;
+		} else if( m_settings[ optionName ].isScreen && !hasScreen ) {
+			const error = new Error(
+				`set: Option "${optionName}" requires a screen but there is currently no active ` +
+				"screen. Call $.screen() before setting it."
+			);
+			error.code = "NO_ACTIVE_SCREEN";
+			throw error;
+		}
+	}
+
+	// Apply the settings in order
+	for( const optionName of optionNames ) {
 
 		// Skip blanks
 		if( options[ optionName ] === null ) {
 			continue;
 		}
 
-		// If the option is a valid setting
-		if( m_settings[ optionName ] ) {
+		// Parse the options from the setting
+		const setting = m_settings[ optionName ];
+		const argsArray = [ options[ optionName ] ];
+		const parsedOptions = g_utils.parseOptions( argsArray, setting.parameterNames );
 
-			// Get the setting data
-			const setting = m_settings[ optionName ];
-			const optionValues = options[ optionName ];
+		// Call the setting function
+		if( setting.isScreen ) {
+			setting.fn( screenData, parsedOptions );
+		} else {
+			setting.fn( parsedOptions );
+		}
 
-			// Parse the options from the setting
-			const argsArray = [ optionValues ];
-			const parsedOptions = g_utils.parseOptions( argsArray, setting.parameterNames );
-
-			// Call the setting function
-			if( setting.isScreen ) {
-				setting.fn( screenData, parsedOptions );
-			} else {
-				setting.fn( parsedOptions );
-			}
-
-			// If we just set the screen then update the screenData to the new active screen
-			if( optionName === "screen" ) {
-				screenData = g_screenManager.getActiveScreen();
-			}
+		// If we just set the screen then update the screenData to the new active screen
+		if( optionName === "screen" ) {
+			screenData = g_screenManager.getActiveScreen();
 		}
 	}
 }

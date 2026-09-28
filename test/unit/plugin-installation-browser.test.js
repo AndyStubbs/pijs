@@ -131,10 +131,16 @@ for( const bundle of [ "pi.js", "pi.lite.js" ] ) {
 				registerError = error.code;
 			}
 			const created = $.screen( "8x8" );
-			$.set( { "bad": 7 } );
+			let setError = null;
+			try {
+				$.set( { "bad": 7 } );
+			} catch( error ) {
+				setError = error.code;
+			}
 			$.clearEvents();
 			const failed = {
 				"registerError": registerError,
+				"setError": setError,
 				"commandTypes": [ typeof $.badCmd, typeof existing.badCmd, typeof created.badCmd ],
 				"hasData": [ existing.hasData( "badData" ), created.hasData( "badData" ) ],
 				"calls": { ...calls },
@@ -152,6 +158,7 @@ for( const bundle of [ "pi.js", "pi.lite.js" ] ) {
 		} ), {
 			"failed": {
 				"registerError": "PLUGIN_INIT_FAILED",
+				"setError": "INVALID_OPTION",
 				"commandTypes": [ "undefined", "undefined", "undefined" ],
 				"hasData": [ false, false ],
 				"calls": { "setBad": 0, "screenInit": 0, "clear": 0 },
