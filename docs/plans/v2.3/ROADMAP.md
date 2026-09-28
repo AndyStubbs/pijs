@@ -16,7 +16,7 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Pointer 1.2](#61-phase-1-fixes-and-tests), [Gamepad 1.1](#71-phase-1-fixes-and-tests) | Continue the pointer and gamepad Phase 1s, in parallel | Nothing |
+| 1 | [Pointer 1.3](#61-phase-1-fixes-and-tests), [Gamepad 1.1](#71-phase-1-fixes-and-tests) | Continue the pointer and gamepad Phase 1s, in parallel | Nothing |
 | 2 | [Keyboard 2.1](#52-phase-2-api-breaking-set-200) | Start the keyboard breaking set on one long-lived branch (Section 1.4) | Nothing. Can run in parallel with 1 |
 | 3 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
 | 4 | [Core 5–13](#32-phase-2-fixes) | Remaining core fixes, tests, and the two approved API changes, in any order. Core 8 and Core 13 land before the pointer and gamepad Phase 2 sets | Nothing. Can run in parallel |
@@ -30,7 +30,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Core | [3](#3-core) | Phase 1 done. Core 1, 2, and 4 done, 10 tasks left | Core 5–13 |
 | Sound | [4](#4-sound) | Phases 0–9 done; Phases 10–11 not started | Sound 10.1 |
 | Keyboard | [5](#5-keyboard) | Phase 1 done; Phase 2 not started | Keyboard 2.1 |
-| Pointer | [6](#6-pointer) | Phase 1: 1.1 done, 8 tasks left | Pointer 1.2 |
+| Pointer | [6](#6-pointer) | Phase 1: 1.1–1.2 done, 7 tasks left | Pointer 1.3 |
 | Gamepad | [7](#7-gamepad) | Approved; Phase 1 not started | Gamepad 1.1 |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
 | CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.9) | — |
@@ -461,12 +461,11 @@ are dropped, since both plugins are removed.
 
 No breaking change; the version stays 1.0.0. B3 and B4 keep today's data shape here, plus the
 additive `cancelled` field (I6); the action names change in Phase 2. Phase 1 ships even if
-Phase 2 is cut, so its release fixes stand on their own. Done: 1.1
+Phase 2 is cut, so its release fixes stand on their own. Done: 1.1–1.2
 ([Section 13.7](#137-pointer)).
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 1.2 | **Dispatch isolation (B2).** Update state and prevent defaults before dispatch; each handler in its own `try`, errors to `console.error`. Tests: throwing mouse, press, and touch handlers, with `preventDefault()` still applied (P6) | [PTR-006](AUDIT-POINTER.md#ptr-006) | — |
 | 1.3 | **Per-touch tracking (B3).** Track touches from `changedTouches`: `end` reports the touch that ended at its last position, each touch keeps its own action, hit boxes test the changed touches, `touchcancel` never clicks and releases with `cancelled: true` (I6). Update `test/scripts/run-visual-tests.js` so `TE` sends the ended touch in `changedTouches`, and `test/README.md` with it. Tests: end and cancel data, per-touch actions (P2, P3) | [PTR-002](AUDIT-POINTER.md#ptr-002), [PTR-005](AUDIT-POINTER.md#ptr-005) | — |
 | 1.4 | **Primary pointer and clicks (B4).** Press follows the primary pointer; clicks are per pointer, armed by a primary-button down inside the box, fired by a release inside it, and disarmed by any other release or a cancel. Tests: press and click with two fingers, button filtering, stale arming (P4, P5) | [PTR-003](AUDIT-POINTER.md#ptr-003), [PTR-005](AUDIT-POINTER.md#ptr-005), [PTR-008](AUDIT-POINTER.md#ptr-008) | — |
 | 1.5 | **Every press ends with one release (B5).** A `window` listener while a button is held; release held buttons and touches on `visibilitychange` to hidden and on `stopMouse()`/`stopTouch()`, marked `cancelled: true` (I6); drop the reset on window `blur`; ignore a release for a button that is not held. If Phase 2 is cut, this is the shipping fix (Section 10). Tests: release outside the canvas with trusted input, blur, hidden page, stop commands (T1, P8, P9, P10) | [PTR-004](AUDIT-POINTER.md#ptr-004), [PTR-007](AUDIT-POINTER.md#ptr-007), [PTR-010](AUDIT-POINTER.md#ptr-010) | — |
@@ -1040,7 +1039,8 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 
 | # | Task | Findings | Ref |
 | --- | --- | --- | --- |
-| 1.1 | Handler bookkeeping (B1): dispatch runs whenever a mode has handlers, and the per-type counters that `off*()` adjusted by guesswork are gone. `off*( mode, fn )` removes only that function's registrations in that mode; a `once` registration removes only itself, before its handler runs; a handler removed or cleared during a dispatch does not run later in it. Harness: `pointer-events.test.js` loads `mouse.js`, `touch.js`, `press.js`, and the plugin entry into `vm` contexts, maps arguments with core's `parseOptions`, and dispatches mouse and touch events through the plugin's canvas listeners; the fake event target moved from `keyboard-lifecycle.test.js` to `vm-module-harness.js` for the pointer and gamepad harnesses. Tests: clearing one mode, removing functions that were never added, removal and clearing during a dispatch, and `once` with a duplicate registration (P1, P7, today's duplicate semantics) | [PTR-001](AUDIT-POINTER.md#ptr-001) (P1), [PTR-009](AUDIT-POINTER.md#ptr-009) | — |
+| 1.1 | Handler bookkeeping (B1): dispatch runs whenever a mode has handlers, and the per-type counters that `off*()` adjusted by guesswork are gone. `off*( mode, fn )` removes only that function's registrations in that mode; a `once` registration removes only itself, before its handler runs; a handler removed or cleared during a dispatch does not run later in it. Harness: `pointer-events.test.js` loads `mouse.js`, `touch.js`, `press.js`, and the plugin entry into `vm` contexts, maps arguments with core's `parseOptions`, and dispatches mouse and touch events through the plugin's canvas listeners; the fake event target moved from `keyboard-lifecycle.test.js` to `vm-module-harness.js` for the pointer and gamepad harnesses. Tests: clearing one mode, removing functions that were never added, removal and clearing during a dispatch, and `once` with a duplicate registration (P1, P7, today's duplicate semantics) | [PTR-001](AUDIT-POINTER.md#ptr-001) (P1), [PTR-009](AUDIT-POINTER.md#ptr-009) | [#34](https://github.com/AndyStubbs/pijs/pull/34) |
+| 1.2 | Dispatch isolation (B2): each mouse, touch, press, and click handler runs in its own `try`, and a throw is reported with `console.error`, naming the command and mode, so the other handlers and the press and click dispatches of the same event still run. `touchstart` is prevented before any handler runs; state was already updated before dispatch. The harness stubs `console.error`. Test: throwing mouse, press, click, and touch handlers, with the touch start still prevented (P6) | [PTR-006](AUDIT-POINTER.md#ptr-006) | — |
 
 ## 14. Glossary
 
