@@ -50,16 +50,13 @@ let m_isReturning = false;
 
 
 /**
- * Register gamepad commands and the page visibility handler.
+ * Register gamepad commands. Listeners are added when polling first starts, so a page that
+ * never uses a gamepad attaches none.
  *
  * @param {Object} pluginApi - Plugin registration and screen access API.
  * @returns {void}
  */
 export default function gamepadPlugin( pluginApi ) {
-
-	// Release pads when the page is hidden. Blur changes nothing: browsers keep delivering
-	// gamepad input to a visible page without focus
-	document.addEventListener( "visibilitychange", onVisibilityChange );
 
 	// Register global commands
 	pluginApi.addCommand( "startGamepad", startGamepad, false, [] );
@@ -100,6 +97,10 @@ function startGamepad() {
 	if( !m_isInitialized ) {
 		window.addEventListener( "gamepadconnected", gamepadConnected );
 		window.addEventListener( "gamepaddisconnected", gamepadDisconnected );
+
+		// Release pads when the page is hidden. Blur changes nothing: browsers keep delivering
+		// gamepad input to a visible page without focus
+		document.addEventListener( "visibilitychange", onVisibilityChange );
 		m_isInitialized = true;
 
 		// Scan for already-connected gamepads
@@ -334,16 +335,20 @@ function gamepadLoop() {
 	m_gamepadLoopId = requestAnimationFrame( gamepadLoop );
 }
 
-function scanForGamepads() {
-	let gamepads;
-
+/**
+ * The browser's pad list, with `null` for empty slots, or an empty list without the Gamepad API.
+ *
+ * @returns {Array<Gamepad|null>}
+ */
+function getBrowserGamepads() {
 	if( "getGamepads" in navigator ) {
-		gamepads = navigator.getGamepads();
-	} else if( "webkitGetGamepads" in navigator ) {
-		gamepads = navigator.webkitGetGamepads();
-	} else {
-		gamepads = [];
+		return navigator.getGamepads();
 	}
+	return [];
+}
+
+function scanForGamepads() {
+	const gamepads = getBrowserGamepads();
 
 	// Add any gamepads that are already connected but not in our list, then tell the handlers
 	const found = [];
@@ -366,15 +371,7 @@ function scanForGamepads() {
  * @returns {void}
  */
 function updateGamepads( isEdges ) {
-	let gamepads;
-
-	if( "getGamepads" in navigator ) {
-		gamepads = navigator.getGamepads();
-	} else if( "webkitGetGamepads" in navigator ) {
-		gamepads = navigator.webkitGetGamepads();
-	} else {
-		gamepads = [];
-	}
+	const gamepads = getBrowserGamepads();
 
 	for( const gamepad of gamepads ) {
 		if( !gamepad || !gamepad.connected ) {
