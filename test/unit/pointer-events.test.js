@@ -402,6 +402,7 @@ test( "pointer once removes only its own registration (P7)", () => {
 
 	// A once touch handler that starts a nested dispatch is not called again by it
 	let touches = 0;
+	h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
 	$.ontouch( "move", () => {
 		touches += 1;
 		h.touch( "touchmove", [ { "id": 1, "x": 12, "y": 12 } ] );
@@ -752,4 +753,71 @@ test( "pointer removing a screen with input held calls none of its handlers", ()
 	assert.deepEqual( log, [] );
 	assert.equal( hasWindowMouseUp( h ), false );
 	assert.equal( $.inmouse().buttons, 0 );
+} );
+
+test( "pointer presses on the border are ignored, and moves report true positions (P11)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	$.onmouse( "down", data => log.push( [ "mouse down", data.x, data.y ] ) );
+	$.onmouse( "move", data => log.push( [ "mouse move", data.x, data.y, data.buttons ] ) );
+	$.onmouse( "up", data => log.push( [ "mouse up", data.x, data.y ] ) );
+	$.ontouch( "start", data => log.push( [ "touch start", data[ 0 ].x ] ) );
+	$.ontouch( "move", data => log.push( [ "touch move", data[ 0 ].x ] ) );
+	$.ontouch( "end", data => log.push( [ "touch end", data[ 0 ].x ] ) );
+	$.onpress( "down", data => log.push( [ "press down", data.x ] ) );
+
+	// A mouse press on the border, dragged onto the screen, is never held
+	h.mouse( "mousedown", -2, -2, 1 );
+	h.mouse( "mousemove", 10, 10, 1 );
+	h.mouse( "mouseup", 10, 10 );
+	assert.deepEqual( log, [ [ "mouse move", 10, 10, 0 ] ] );
+	assert.equal( $.inmouse().buttons, 0 );
+
+	// A press on the screen reports its moves and release over the border where they happen
+	log.length = 0;
+	h.mouse( "mousedown", 99, 99, 1 );
+	h.mouse( "mousemove", 101, 101, 1 );
+	h.mouse( "mouseup", 101, 101 );
+	assert.deepEqual( log, [
+		[ "mouse down", 99, 99 ], [ "press down", 99 ], [ "mouse move", 101, 101, 1 ],
+		[ "mouse up", 101, 101 ]
+	] );
+
+	// The same for touch: a touch that starts on the border is not tracked
+	log.length = 0;
+	h.touch( "touchstart", [ { "id": 1, "x": 100, "y": 50 } ] );
+	h.touch( "touchmove", [ { "id": 1, "x": 90, "y": 50 } ] );
+	h.touch( "touchend", [], [ { "id": 1, "x": 90, "y": 50 } ] );
+	assert.deepEqual( log, [] );
+	assert.equal( $.intouch().length, 0 );
+	h.touch( "touchstart", [ { "id": 2, "x": 99, "y": 50 } ] );
+	h.touch( "touchmove", [ { "id": 2, "x": 103, "y": 50 } ] );
+	h.touch( "touchend", [], [ { "id": 2, "x": 104, "y": 50 } ] );
+	assert.deepEqual( log, [
+		[ "touch start", 99 ], [ "press down", 99 ], [ "touch move", 103 ], [ "touch end", 104 ]
+	] );
+} );
+
+test( "pointer hit boxes take finite positions and reject negative sizes (P13)", () => {
+	const h = harness();
+	const $ = h.$;
+	let clicks = 0;
+	$.onclick( () => { clicks += 1; }, false, { "x": 9.5, "y": 9.5, "width": 1.5, "height": 1 } );
+	h.click( 10, 10 );
+	h.click( 11, 10 );
+	assert.equal( clicks, 1 );
+	for( const [ box, type ] of [
+		[ { "x": 0, "y": 0, "width": -1, "height": 5 }, RangeError ],
+		[ { "x": 0, "y": 0, "width": 5, "height": -0.5 }, RangeError ],
+		[ { "x": NaN, "y": 0, "width": 5, "height": 5 }, Error ],
+		[ { "x": 0, "y": 0, "width": Infinity, "height": 5 }, Error ],
+		[ { "x": "0", "y": 0, "width": 5, "height": 5 }, Error ]
+	] ) {
+		assert.throws( () => $.onmouse( "down", () => {}, false, box ), error => {
+			return error.name === type.name && error.code === "INVALID_HITBOX" &&
+				error.message.startsWith( "onmouse: hitBox" );
+		} );
+	}
+	$.onpress( "down", () => {}, false, { "x": -5, "y": -5, "width": 0, "height": 0 } );
 } );

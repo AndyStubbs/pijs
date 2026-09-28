@@ -353,8 +353,9 @@ export function registerTouch( pluginApi, helpers ) {
 
 	/**
 	 * Apply the touches an event changed. Other touches keep their state and action, and an
-	 * ended touch is reported at the position where it lifted, then removed; an end for a touch
-	 * that is not held is ignored.
+	 * ended touch is reported at the position where it lifted, then removed. A touch that starts
+	 * off the screen is ignored, and so are moves and ends of touches that are not held; moves
+	 * and ends report their true position, which can be outside the screen.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @param {TouchEvent} e - Touch event.
@@ -372,15 +373,19 @@ export function registerTouch( pluginApi, helpers ) {
 			const touch = e.changedTouches[ j ];
 			const previous = screenData.touches[ touch.identifier ];
 
-			// A touch that is not held has nothing to end, such as one a hidden page released
-			if( action === "end" && !previous ) {
-				continue;
-			}
 			let position = g_target.pointerPosition( screenData, touch );
-			if( !position ) {
-				if( !previous ) {
+			if( action === "start" ) {
+
+				// A touch that starts on the canvas border or padding is ignored
+				if( !g_target.isOnScreen( screenData, position ) ) {
 					continue;
 				}
+			} else if( !previous ) {
+
+				// Only touches that started on the screen are tracked: a touch that started on
+				// the border, or one a hidden page released, has nothing to move or end
+				continue;
+			} else if( !position ) {
 				position = previous;
 			}
 			const touchData = {

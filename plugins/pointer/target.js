@@ -39,3 +39,14 @@ export function pointerPosition( screenData, event ) {
 		"y": Math.floor( ( event.clientY - rect.top ) / rect.height * screenData.height )
 	};
 }
+
+/**
+ * Whether a position is on the screen. Points on the canvas border or padding map outside it.
+ * @param {Object} screenData - Input target
+ * @param {{x: number, y: number}|null} position - Logical position from `pointerPosition()`
+ * @returns {boolean} True when the position is inside the screen
+ */
+export function isOnScreen( screenData, position ) {
+	return position !== null && position.x >= 0 && position.y >= 0 &&
+		position.x < screenData.width && position.y < screenData.height;
+}
