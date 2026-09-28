@@ -808,7 +808,7 @@ the [ROADMAP](ROADMAP.md#3-core) tasks that implement each item.
 
 | ID | Summary | Decision | Notes |
 | --- | --- | --- | --- |
-| CORE-001 | Offscreen context not restored after its last screen | Accepted | P2. Fixed by C1 (Core 5) |
+| CORE-001 | Offscreen context not restored after its last screen | Accepted | P2. Fixed by C1 (Core 5, done) |
 | CORE-002 | Failed plugin stays half-installed | Accepted | P2. Fixed by C2 (Core 1, done) |
 | CORE-003 | Bundled plugin loaded after Full breaks the page | Accepted | P2. Documentation only (changed 2026-09-27): the throw stays, and the standalone entry points are documented as Lite-only (C3). Self-registration is not changed (Core 2, done) |
 | CORE-004 | `clearEvents()` removes plugin-internal subscriptions | Accepted | P2. Documentation only (C4 rejected): `API.md` and the plugin guides say that `clearEvents()` also removes handlers a plugin registers through the public input commands. The two affected plugins, `onscreen-keyboard` and `pi-vision`, are removed in 2.3 (G7). No core mechanism is needed. Written in R.2 (Core 3) |
@@ -828,7 +828,7 @@ the [ROADMAP](ROADMAP.md#3-core) tasks that implement each item.
 | CORE-018 | Circle geometry cache unbounded | Accepted | Fixed by C8 (Core 7) |
 | CORE-019 | Release packaging details | Accepted | Fixed by C11: rename, `"private": true`, and the changelog in the tarball (Core 9) |
 | CORE-020 | Missing checks | Accepted | A test with each fix, and Core 10 |
-| C1, C2, C5, C6, C8 | Fixes | Accepted | Core 5, Core 1, Core 4, Core 6, Core 7 |
+| C1, C2, C5, C6, C8 | Fixes | Accepted | Core 5 (done), Core 1 (done), Core 4 (done), Core 6, Core 7 |
 | C3 | Lite-only plugin entry points | Accepted | Changed on 2026-09-27 from a self-registration skip to documentation (Core 2, R.3) |
 | C4 | Plugin-internal subscriptions | Rejected | Core API stays as is; CORE-004 is documented instead |
 | C7 | Strict `set()` | Accepted | Breaking core API change, approved (Core 8, done) |

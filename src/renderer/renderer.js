@@ -352,16 +352,34 @@ function createTextureAndFBO( screenData ) {
  */
 export function cleanup( screenData ) {
 	const state = screenData.contextState;
+	let discarded = null;
 	if( state ) {
 		state.screens.delete( screenData );
 		if( state.screens.size === 0 ) {
 			state.canvas.removeEventListener( "webglcontextlost", state.lostHandler );
 			state.canvas.removeEventListener( "webglcontextrestored", state.restoredHandler );
 			m_contexts.delete( state.gl );
+
+			// Without listeners, a later loss of the shared offscreen context would never be
+			// restored, so the next offscreen screen creates a new canvas and context instead
+			if( state.gl === m_offscreenContext ) {
+				m_offscreenContext = null;
+				discarded = state.gl;
+				g_screenManager.releaseOffscreenCanvas( state.canvas );
+			}
 		}
 		screenData.contextState = null;
 	}
 	releaseResources( screenData );
+
+	// Release a discarded context now rather than when it is collected, since browsers limit
+	// how many contexts a page may hold
+	if( discarded !== null && !discarded.isContextLost() ) {
+		const extension = discarded.getExtension( "WEBGL_lose_context" );
+		if( extension ) {
+			extension.loseContext();
+		}
+	}
 }
 
 /** Release only currently owned GPU objects, including partially constructed resources. */

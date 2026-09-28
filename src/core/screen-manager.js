@@ -315,6 +315,19 @@ export function assertScreenAvailable( screenData ) {
 }
 
 /**
+ * Stop sharing a canvas among new offscreen screens, so the next one creates a new canvas and
+ * with it a new WebGL context. The renderer calls this when it discards the shared context.
+ *
+ * @param {HTMLCanvasElement} canvas - Canvas whose context was discarded
+ * @returns {void}
+ */
+export function releaseOffscreenCanvas( canvas ) {
+	if( m_offscreenCanvas === canvas ) {
+		m_offscreenCanvas = null;
+	}
+}
+
+/**
  * Get screen data by screen id.
  *
  * Throws INVALID_SCREEN_ID if the id is not found.
