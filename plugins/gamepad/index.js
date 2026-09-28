@@ -30,6 +30,8 @@ let m_gamepadLoopId = null;
 let m_axesSensitivity = 0.2;
 let m_tick = 0;
 let m_lastReadTick = -1;
+let m_isHidden = false;
+let m_isReturning = false;
 
 
 /*************************************************************************************************
@@ -38,16 +40,16 @@ let m_lastReadTick = -1;
 
 
 /**
- * Register gamepad commands and window focus handlers.
+ * Register gamepad commands and the page visibility handler.
  *
  * @param {Object} pluginApi - Plugin registration and screen access API.
  * @returns {void}
  */
 export default function gamepadPlugin( pluginApi ) {
 
-	// Add window blur/focus handlers
-	window.addEventListener( "blur", onWindowBlur );
-	window.addEventListener( "focus", onWindowFocus );
+	// Release pads when the page is hidden. Blur changes nothing: browsers keep delivering
+	// gamepad input to a visible page without focus
+	document.addEventListener( "visibilitychange", onVisibilityChange );
 
 	// Register global commands
 	pluginApi.addCommand( "startGamepad", startGamepad, false, [] );
@@ -252,7 +254,12 @@ function gamepadLoop() {
 		return;
 	}
 
-	updateGamepads( true );
+	// While the page is hidden, pads keep their released state; the first update after it is
+	// visible again records the current state without edges
+	if( !m_isHidden ) {
+		updateGamepads( !m_isReturning );
+		m_isReturning = false;
+	}
 
 	m_tick += 1;
 	m_gamepadLoopId = requestAnimationFrame( gamepadLoop );
@@ -489,22 +496,31 @@ function smoothAxis( axis ) {
 	return axis;
 }
 
-function onWindowBlur() {
-
-	// Pause gamepad loop when window loses focus
-	if( m_isLooping ) {
-		if( m_gamepadLoopId ) {
-			cancelAnimationFrame( m_gamepadLoopId );
-			m_gamepadLoopId = null;
+/**
+ * Release every button, zero the axes, and clear pending edges when the page is hidden, so a
+ * button held then is not reported as held or as just released. Updates wait until the page is
+ * visible again.
+ *
+ * @returns {void}
+ */
+function onVisibilityChange() {
+	if( document.visibilityState === "hidden" ) {
+		m_isHidden = true;
+		for( const index in m_padStates ) {
+			const state = m_padStates[ index ];
+			for( let i = 0; i < state.buttons.length; i += 1 ) {
+				state.buttons[ i ] = { "pressed": false, "value": 0 };
+			}
+			state.axes = state.axes.map( () => 0 );
+			state.pressStarted = [];
+			state.pressReleased = [];
 		}
-	}
-}
 
-function onWindowFocus() {
-
-	// Resume gamepad loop when window regains focus
-	if( m_isLooping && !m_gamepadLoopId ) {
-		m_gamepadLoopId = requestAnimationFrame( gamepadLoop );
+		// The next read publishes the released state, even within a frame already read
+		m_lastReadTick = -1;
+	} else if( m_isHidden ) {
+		m_isHidden = false;
+		m_isReturning = true;
 	}
 }
 
