@@ -16,10 +16,10 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Sound 10.4](#42-phase-10-sample-instruments) | Sample instruments: metadata, types, a sample instrument in the demo, and the Phase 10 exit (size file, listening check) | Nothing. Can run in parallel |
-| 2 | [Core 5–7, 9–12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
-| 3 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Nothing |
-| 4 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Nothing |
+| 1 | [Core 5–7, 9–12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
+| 2 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Nothing |
+| 3 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Nothing |
+| 4 | [Sound 11.1–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -28,7 +28,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
 | Core | [3](#3-core) | Phases 1 and 3 done. Core 1, 2, 4, 8, and 13 done, 8 tasks left | Core 5–7, 9–12 |
-| Sound | [4](#4-sound) | Phases 0–9 done; Phase 10: tasks 10.1–10.3 done, 1 task left; Phase 11 not started | Sound 10.4 |
+| Sound | [4](#4-sound) | Phases 0–10 done. Its listening checks are in Section 8.3; Phase 11 not started | Sound 11.1–11.5 |
 | Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Pointer | [6](#6-pointer) | Phase 1 done; Phase 2 not started | Pointer 2.1 |
 | Gamepad | [7](#7-gamepad) | Phase 1 done; Phase 2 not started | Gamepad 2.1 |
@@ -193,9 +193,8 @@ Sound Phases 9–11 ────────────────────
 
 Workstream milestones:
 
-- **Sound:** M1 core foundation, M2 core complete, M3 `sound-advanced` 1.0.0, and M4 size
-  review are done. M5, expansion complete, closes when Phases 9–10 are done or cut and D13–D15
-  are closed.
+- **Sound:** M1 core foundation, M2 core complete, M3 `sound-advanced` 1.0.0, M4 size
+  review, and M5 expansion complete (Phases 7–10, D7–D17 closed) are done.
 - **CI:** CI milestones C1 (stable baselines), C2 (portable tests), and C3 (CI running) are done.
 
 ## 2. Input Conventions
@@ -312,7 +311,7 @@ Input to `UPGRADE-V2.3.md` (R.4):
 ## 4. Sound
 
 Design: [DESIGN-SOUND.md](DESIGN-SOUND.md) (Phases 0–6) and
-[DESIGN-SOUND-ADVANCED.md](DESIGN-SOUND-ADVANCED.md) (Phases 7–10). Phases 0–9 are done
+[DESIGN-SOUND-ADVANCED.md](DESIGN-SOUND-ADVANCED.md) (Phases 7–10). Phases 0–10 are done
 ([Section 13.4](#134-sound)).
 
 ### 4.1 Phase 9: game features
@@ -323,19 +322,14 @@ Done ([Section 13.4](#134-sound)). Its listening check is in the
 ### 4.2 Phase 10: sample instruments
 
 Design: [DESIGN-SOUND-ADVANCED §7](DESIGN-SOUND-ADVANCED.md#7-phase-10-sample-instruments).
-Done: tasks 10.1–10.3 ([Section 13.4](#134-sound)).
-
-| # | Task | Status |
-| --- | --- | --- |
-| 10.4 | Metadata, types, and a sample instrument in the demo | — |
-
-**Exit criteria:**
+Done ([Section 13.4](#134-sound)). Every exit criterion is met in `npm test` except the
+listening check, which is in the [release checklist](#83-manual-release-checks):
 
 - An offline render of a sine sample shows the expected pitch for notes across three octaves,
   and the envelope and loop behavior match the synthesized case.
 - Vibrato on a sample instrument modulates its pitch.
 - Not-ready files play silence with one warning, never an error.
-- A size entry, and the listening check (Section 8.3).
+- A size entry (`size-phase10.json`).
 
 ### 4.3 Phase 11: test upkeep
 
@@ -677,7 +671,8 @@ in its workstream's evidence folder.
 - [ ] `sound_advanced_01.html`: synth features, presets, instruments, bus effects, level meter
   (Phase 5); recording and saving a WAV (Phase 7); new effects and chains (Phase 8); generator
   categories across seeds, and the beat-synced visual watched against the music in each
-  engine, including a tab hidden mid-song (Phase 9); a sample instrument (Phase 10).
+  engine, including a tab hidden mid-song (Phase 9); the plucked and looped sample
+  instruments across their range, and a song started before its file loads (Phase 10).
 - [ ] Autoplay unlock on desktop and on an iOS or Android device.
 - [ ] A stream instance deferred while locked starts on the unlocking gesture, in desktop Safari
   or on iOS.
@@ -1026,6 +1021,7 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | 10.1 | Core `getAudioBuffer( name )` service member: the decoded buffer of a loaded decode-mode file, `null` while loading, for streamed files, and for unknown or removed names; documented in `plugins/PLUGIN-SYSTEM.md` with the rule that the shared buffer is not modified. Tests: the member pin and a contract test in `audio-service-browser.test.js`, and a streamed file in `audio-stream-browser.test.js`. Size: +55 bytes in the `sound` plugin, 258 under its target |
 | 10.2 | `sample-source.js`: a source type registered on first use for each audio name, root frequency, and loop setting (`sample:"piano"`, `@392`, `:loop`), since a factory receives only the voice spec and PLAY observers report the note's own frequency; the factory reads the buffer per voice, sets `playbackRate` to `frequency / rootFrequency` with core's sweep rule, returns `frequency: null` and the buffer source's `detune`, loops or ends with the file, plays silence without a buffer, and plays each note from the file's start. Tests: type names, registration, the source contract, and the rate schedule in `sound-advanced.test.js`; offline renders through a page probe (`audio-sample-source-probe.js`, the new `sources` option of `audio-browser-suite.js`): three octaves, another root frequency, a sweep, vibrato, one-shot and looped ends, and a missing file, plus a single-pass case for Firefox. Not yet in the plugin bundle, so no size change |
 | 10.3 | Sample instruments: `defineInstrument` takes `audio`, `rootFrequency` (default 261.63), and `loop` (default `false`) and plays the file through a `sample-source.js` type; the other `synth()` options apply as before. Validation: `INVALID_AUDIO`, `INVALID_ROOT_FREQUENCY`, `INVALID_LOOP`, and `INVALID_INSTRUMENT` for `audio` with an `oType`, or `rootFrequency` or `loop` without `audio`. A note resolved while its file is not loaded, or is streamed, plays at volume 0 with one warning per instrument and `play()` call. Closed D15. Tests: validation and not-ready resolution in `sound-advanced.test.js`; offline renders of three octaves, a root frequency, a sweep, vibrato, loop and one-shot ends, a missing file with its one warning, and an envelope matching the oscillator's, plus a single-pass case for Firefox. The 10.2 page probe and its `sources` suite option are removed, since instruments cover every case. Size: +744 bytes in `sound-advanced`, which now includes `sample-source.js` |
+| 10.4 | `defineInstrument` metadata describes sample instruments, their errors, and the not-ready rule, with a sample instrument in its example; a type consumer passes `audio`, `rootFrequency`, and `loop`. `sound_advanced_01.html` gains a Sample instruments section: a plucked C4 string and a looped organ tone made in the page as WAV files and loaded with `loadAudio()`, and a song started before its file loads. Phase 10 exit: `size-phase10.json`, and M5 closed |
 
 ### 13.5 Core
 

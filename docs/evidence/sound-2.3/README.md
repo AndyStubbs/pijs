@@ -20,6 +20,7 @@ compresses them with gzip level 9. Sizes are in bytes.
 | `size-phase7.json` | Phase 7 exit: core output stage, recording in `sound-advanced` | `sound` 2.0.0, `sound-advanced` 1.0.0 |
 | `size-phase8.json` | Phase 8 exit: bus effects, chains, and in-place updates in `sound-advanced` | `sound` 2.0.0, `sound-advanced` 1.0.0 |
 | `size-phase9.json` | Phase 9 exit: core `observePlay`, `generateSfx()` and music sync in `sound-advanced` | `sound` 2.0.0, `sound-advanced` 1.0.0 |
+| `size-phase10.json` | Phase 10 exit: core `getAudioBuffer`, sample instruments in `sound-advanced` | `sound` 2.0.0, `sound-advanced` 1.0.0; M5 |
 
 Phase 0 deltas, gzipped:
 
@@ -329,8 +330,10 @@ generator part of 9.4, before task 9.3.
 
 ## Phase 10: sample instruments
 
-Size entries for each task, measured against `main` before the task, gzipped. The phase exit
-adds `size-phase10.json`.
+Size entries for each task, measured against `main` before the task, gzipped. The exit
+measurement, `size-phase10.json`, was taken after task 10.4, whose metadata and demo add no
+bundle code, so it equals the "After 10.3" column. Since the 2.2 baseline, the `sound` plugin
+has grown by 9,331 bytes, `pi.lite.min.js` by 836, and `pi.min.js` by 12,619.
 
 | Bundle | Before 10.1 | After 10.1 | After 10.3 | Phase 10 delta |
 | --- | --- | --- | --- | --- |
