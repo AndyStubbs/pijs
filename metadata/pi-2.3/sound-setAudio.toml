@@ -13,7 +13,7 @@ let instance = null;
 let rate = 1;
 $.ready( function () {
 	$.print( "Press up and down to change the pitch" );
-	$.onkey( "any", "down", key => {
+	$.onKey( "any", "down", key => {
 		if( instance === null ) {
 			instance = $.playAudio( { "audioId": engine, "loop": true, "volume": 0.5 } );
 		}

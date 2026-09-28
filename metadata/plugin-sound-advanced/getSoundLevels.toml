@@ -13,7 +13,7 @@ The first call on a bus starts measuring it and returns silence, so call it ever
 example = """
 $.screen( "300x200" );
 $.print( "Press any key to play" );
-$.onkey( "any", "down", () => {
+$.onKey( "any", "down", () => {
 	$.play( "T120 L8 O4 C E G O5 C O4 G E C" );
 } );
 function draw() {

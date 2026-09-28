@@ -147,8 +147,8 @@ const REQUIRED_DECLARATIONS = [
 			"allowNegative?: boolean, maxLength?: number | null ): Promise<string | number | null>;"
 	},
 	{
-		"name": "onkey callbacks receive key data or a combination array",
-		"text": "onkey( key: string | any[], mode: string, fn: ( keyData: object | object[] ) " +
+		"name": "onKey callbacks receive key data or a combination array",
+		"text": "onKey( key: string | any[], mode: string, fn: ( keyData: object | object[] ) " +
 			"=> void, once?: boolean, allowRepeat?: boolean ): void;"
 	},
 	{

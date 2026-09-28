@@ -12,14 +12,14 @@ const music = $.loadAudio( "media/sound.wav" );
 let instance = null;
 $.ready( function () {
 	$.print( "Hold any key to play the music" );
-	$.onkey( "any", "down", () => {
+	$.onKey( "any", "down", () => {
 		if( instance === null ) {
 			instance = $.playAudio( { "audioId": music, "loop": true } );
 		} else {
 			$.resumeAudio( instance );
 		}
 	} );
-	$.onkey( "any", "up", () => {
+	$.onKey( "any", "up", () => {
 		if( instance !== null ) {
 			$.pauseAudio( instance );
 		}

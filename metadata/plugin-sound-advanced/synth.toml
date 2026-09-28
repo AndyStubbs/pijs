@@ -17,7 +17,7 @@ Sounds play on the sound-effects bus and follow the same delay, voice, and autop
 example = """
 $.screen( "300x200" );
 $.print( "Press any key for a filtered pulse with vibrato" );
-$.onkey( "any", "down", () => {
+$.onKey( "any", "down", () => {
 	$.synth( {
 		"frequency": 220,
 		"duration": 0.6,

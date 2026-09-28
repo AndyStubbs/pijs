@@ -91,10 +91,10 @@
 		$.setActionKeys( [ "Control", "KeyA", "KeyS", "KeyZ" ] );
 
 		// Set up event handlers
-		$.onkey( "KeyA", "down", aKeyDown );
-		$.onkey( "a", "up", aKeyUp );		
-		$.onkey( "any", "down", anyKeyDown );
-		$.onkey( [ "Control", "KeyC" ], "down", controlPlusCdown );
+		$.onKey( "KeyA", "down", aKeyDown );
+		$.onKey( "a", "up", aKeyUp );		
+		$.onKey( "any", "down", anyKeyDown );
+		$.onKey( [ "Control", "KeyC" ], "down", controlPlusCdown );
 
 		$.print( "Event handlers set. Waiting for key events..." );
 
@@ -117,10 +117,10 @@
 			$.print( "Stopping Keyboard until R is pressed..." );
 
 			// Add Control + S event
-			$.onkey( [ "Control", "KeyS" ], "up", controlPlusSup );
+			$.onKey( [ "Control", "KeyS" ], "up", controlPlusSup );
 
 			// Remove Control + KeyC event
-			$.offkey( [ "Control", "KeyC" ], "down", controlPlusCdown );
+			$.offKey( [ "Control", "KeyC" ], "down", controlPlusCdown );
 			$.stopKeyboard();
 
 			// Keys pressed while stopped are not tracked; the page restarts the keyboard from
@@ -143,11 +143,11 @@
 
 			$.removeActionKeys( [ "Control", "KeyS" ] );
 
-			// Remove onkey handlers
-			$.offkey( "KeyA", "down", aKeyDown );
-			$.offkey( "a", "up", aKeyUp );
-			$.offkey( "any", "down", anyKeyDown );
-			$.offkey( [ "Control", "KeyS" ], "up", controlPlusSup );
+			// Remove onKey handlers
+			$.offKey( "KeyA", "down", aKeyDown );
+			$.offKey( "a", "up", aKeyUp );
+			$.offKey( "any", "down", anyKeyDown );
+			$.offKey( [ "Control", "KeyS" ], "up", controlPlusSup );
 
 			// Start the next set of tests
 			startInkeyTesting();
@@ -160,7 +160,7 @@
 		$.setColor( 7 );
 		$.print( "Testing inkey() after each key event..." );
 
-		// Read inkey() after every key event, once the plugin's capture listener has updated
+		// Read inKey() after every key event, once the plugin's capture listener has updated
 		// the held keys, so each state is seen exactly once whatever the timing
 		let allKeyLine = 0;
 		let lastLine = "";
@@ -168,8 +168,8 @@
 		window.addEventListener( "keyup", readKeys );
 		function readKeys() {
 			
-			// Test inkey with no parameters - show all pressed keys
-			const allKeys = $.inkey();
+			// Test inKey with no parameters - show all pressed keys
+			const allKeys = $.inKey();
 			if( allKeys.length > 0 ) {
 
 				$.setColor( 2 );
@@ -197,47 +197,47 @@
 				}
 			}
 			
-			// Test inkey with specific key codes
-			const keyA = $.inkey( "KeyA" );
+			// Test inKey with specific key codes
+			const keyA = $.inKey( "KeyA" );
 			if( keyA ) {
 				$.setColor( 3 );
 				gridPrint( 2, keyA.key, 300, 300, 200, 20 );
 			}
 			
-			// Test inkey with key names
-			const keyLowerA = $.inkey( "a" );
+			// Test inKey with key names
+			const keyLowerA = $.inKey( "a" );
 			if( keyLowerA ) {
 				$.setColor( 5 );
 				gridPrint( 3, keyLowerA.key, 300, 320, 200, 20 );
 			}
 
-			// Test inkey with key names
-			const keyUpperA = $.inkey( "A" );
+			// Test inKey with key names
+			const keyUpperA = $.inKey( "A" );
 			if( keyUpperA ) {
 				$.setColor( 6 );
 				gridPrint( 4, keyUpperA.key, 300, 340, 200, 20 );
 			}
 			
-			// Test inkey with other common keys
-			const keyS = $.inkey( "KeyS" );
+			// Test inKey with other common keys
+			const keyS = $.inKey( "KeyS" );
 			if( keyS ) {
 				$.setColor( 9 );
 				gridPrint( 5, keyS.key, 300, 360, 200, 20 );
 			}
 			
-			const keyD = $.inkey( "KeyD" );
+			const keyD = $.inKey( "KeyD" );
 			if( keyD ) {
 				$.setColor( 10 );
 				gridPrint( 6, keyD.key, 300, 380, 200, 20 );
 			}
 			
-			const keyW = $.inkey( "KeyW" );
+			const keyW = $.inKey( "KeyW" );
 			if( keyW ) {
 				$.setColor( 11 );
 				gridPrint( 7, keyW.key, 300, 400, 200, 20 );
 			}
 			
-			if( $.inkey( "KeyE" ) ) {
+			if( $.inKey( "KeyE" ) ) {
 				window.removeEventListener( "keydown", readKeys );
 				window.removeEventListener( "keyup", readKeys );
 				$.setColor( 15 );
@@ -263,7 +263,7 @@
 		let x = startX + ( col * charWidth );
 		let y = startY + row * charHeight;
 		
-		// Check if we're still within bounds - Save 240-480 for inkey tests
+		// Check if we're still within bounds - Save 240-480 for inKey tests
 		if( y < startY + maxHeight ) {
 			$.setPosPx( x, y );
 			$.print( msg, true );

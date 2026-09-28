@@ -11,7 +11,7 @@ Volume is a multiplier: 0 = silent, 1 = full volume. The default is 0.75.
 example = """
 $.screen( "300x200" );
 $.print( "Press any key to hear some music" );
-$.onkey( "any", "down", () => {
+$.onKey( "any", "down", () => {
 	$.setVolume( 0.15 );
 	$.play( "Q1o3L8ED+ED+Eo2Bo3DCL2o2A" );
 	setTimeout( () => {

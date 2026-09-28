@@ -16,10 +16,10 @@ example = """
 $.screen( "200x200" );
 $.setActionKeys( [ "ControlLeft", "KeyS" ] );
 setInterval( function () {
-	const keys = $.inkey();
+	const keys = $.inKey();
 	$.cls();
 	$.print( "Press Ctrl+S." );
-	if( $.inkey( "Control" ) ) {
+	if( $.inKey( "Control" ) ) {
 		$.print( "Control key is pressed." );
 	} else {
 		$.print( "Control key is not pressed." );

@@ -356,7 +356,7 @@ for( const binding of [ "a", "any", [ "a", "b" ] ] ) {
 			const h = harness();
 			let calls = 0;
 			const error = new Error( "key callback" );
-			h.api.onkey( binding, "down", () => {
+			h.api.onKey( binding, "down", () => {
 				calls++;
 				if( behavior === "throw" ) { throw error; }
 				if( calls === 1 ) { h.key( "a" ); }
@@ -379,15 +379,15 @@ test( "SYS-011 keyup errors preserve combinations, release and default preventio
 	const errors = [ new Error( "first" ), new Error( "second" ) ];
 	const seen = [];
 	h.api.setActionKeys( [ "a" ] );
-	h.api.onkey( "a", "up", () => { throw errors[ 0 ]; } );
-	h.api.onkey( [ "a", "b" ], "up", data => seen.push( data.length ) );
-	h.api.onkey( "any", "up", () => { throw errors[ 1 ]; } );
-	h.api.onkey( "any", "up", data => seen.push( data.key ) );
+	h.api.onKey( "a", "up", () => { throw errors[ 0 ]; } );
+	h.api.onKey( [ "a", "b" ], "up", data => seen.push( data.length ) );
+	h.api.onKey( "any", "up", () => { throw errors[ 1 ]; } );
+	h.api.onKey( "any", "up", data => seen.push( data.key ) );
 	h.key( "a" ); h.key( "b" );
 	let event;
 	assert.doesNotThrow( () => { event = h.key( "a", "up" ); } );
 	assert.deepEqual( seen, [ 2, "a" ] );
-	assert.equal( h.api.inkey( "a" ), null );
+	assert.equal( h.api.inKey( "a" ), null );
 	assert.equal( event.defaultPrevented, true );
 	assert.equal( h.microtasks.length, 2 );
 	for( const error of errors ) { assert.throws( h.microtasks.shift(), value => value === error ); }
@@ -395,25 +395,25 @@ test( "SYS-011 keyup errors preserve combinations, release and default preventio
 
 test( "SYS-011 nested keydown survives outer keyup cleanup", () => {
 	const h = harness();
-	h.api.onkey( "a", "up", () => h.key( "a" ), true );
+	h.api.onKey( "a", "up", () => h.key( "a" ), true );
 	h.key( "a" );
-	const original = h.api.inkey( "a" );
+	const original = h.api.inKey( "a" );
 	h.key( "a", "up" );
-	assert.notEqual( h.api.inkey( "a" ), null );
-	assert.notEqual( h.api.inkey( "a" ), original );
+	assert.notEqual( h.api.inKey( "a" ), null );
+	assert.notEqual( h.api.inKey( "a" ), original );
 	h.key( "a", "up" );
-	assert.equal( h.api.inkey( "a" ), null );
+	assert.equal( h.api.inKey( "a" ), null );
 } );
 
 test( "SYS-011 dispatch skips removed handlers and preserves repeat filtering", () => {
 	const h = harness();
 	let calls = 0;
 	const removed = () => { calls++; };
-	h.api.onkey( "a", "down", () => h.api.offkey( "a", "down", removed ), true );
-	h.api.onkey( "a", "down", removed );
+	h.api.onKey( "a", "down", () => h.api.offKey( "a", "down", removed ), true );
+	h.api.onKey( "a", "down", removed );
 	h.key( "a" );
 	assert.equal( calls, 0 );
-	h.api.onkey( "a", "down", removed, true );
+	h.api.onKey( "a", "down", removed, true );
 	h.key( "a", "down", { "repeat": true } );
 	assert.equal( calls, 0 );
 	h.key( "a" );
@@ -422,8 +422,8 @@ test( "SYS-011 dispatch skips removed handlers and preserves repeat filtering", 
 
 test( "SYS-011 clear during dispatch invalidates copied handlers", () => {
 	const h = harness();
-	h.api.onkey( "a", "down", () => h.keyboard.clearKeyboardEvents() );
-	h.api.onkey( "a", "down", () => assert.fail( "removed callback invoked" ) );
+	h.api.onKey( "a", "down", () => h.keyboard.clearKeyboardEvents() );
+	h.api.onKey( "a", "down", () => assert.fail( "removed callback invoked" ) );
 	assert.doesNotThrow( () => h.key( "a" ) );
 	assert.equal( h.microtasks.length, 0 );
 } );
@@ -432,12 +432,12 @@ test( "SYS-011 object-form handlers register and remove like the positional form
 	const h = harness();
 	const seen = [];
 	const fn = data => seen.push( data.code );
-	h.api.onkey( { "key": "KeyA", "mode": "down", "fn": fn } );
+	h.api.onKey( { "key": "KeyA", "mode": "down", "fn": fn } );
 	h.key( "a", "down", { "code": "KeyA" } );
-	h.api.offkey( { "key": "KeyA", "mode": "down", "fn": fn } );
+	h.api.offKey( { "key": "KeyA", "mode": "down", "fn": fn } );
 	h.key( "a", "down", { "code": "KeyA" } );
 	assert.deepEqual( seen, [ "KeyA" ] );
-	assert.equal( h.api.inkey( { "key": "KeyA" } ).key, "a" );
+	assert.equal( h.api.inKey( { "key": "KeyA" } ).key, "a" );
 } );
 
 /**
@@ -455,19 +455,19 @@ function shift( h, mode, code = "ShiftLeft" ) {
 test( "KEY-001 a key released with a different value is no longer held (K1)", () => {
 	const h = harness();
 	let combos = 0;
-	h.api.onkey( [ "A", "Enter" ], "down", () => { combos++; } );
+	h.api.onKey( [ "A", "Enter" ], "down", () => { combos++; } );
 
 	// Shift released before the letter: pressed as "A", released as "a"
 	shift( h, "down" );
 	h.key( "A", "down", { "code": "KeyA", "shiftKey": true } );
-	assert.equal( h.api.inkey( "A" ).code, "KeyA" );
-	assert.equal( h.api.inkey( "a" ), null );
+	assert.equal( h.api.inKey( "A" ).code, "KeyA" );
+	assert.equal( h.api.inKey( "a" ), null );
 	shift( h, "up" );
-	assert.equal( h.api.inkey( "A" ).code, "KeyA", "the letter is still held" );
+	assert.equal( h.api.inKey( "A" ).code, "KeyA", "the letter is still held" );
 	h.key( "a", "up", { "code": "KeyA" } );
-	assert.equal( h.api.inkey( "A" ), null );
-	assert.equal( h.api.inkey( "KeyA" ), null );
-	assert.equal( h.api.inkey().length, 0 );
+	assert.equal( h.api.inKey( "A" ), null );
+	assert.equal( h.api.inKey( "KeyA" ), null );
+	assert.equal( h.api.inKey().length, 0 );
 	h.key( "Enter" );
 	h.key( "Enter", "up" );
 	assert.equal( combos, 0, "a released value never completes a combination" );
@@ -477,9 +477,9 @@ test( "KEY-001 a key released with a different value is no longer held (K1)", ()
 	shift( h, "down" );
 	h.key( "W", "up", { "code": "KeyW", "shiftKey": true } );
 	shift( h, "up" );
-	assert.equal( h.api.inkey( "w" ), null );
-	assert.equal( h.api.inkey( "W" ), null );
-	assert.equal( h.api.inkey().length, 0 );
+	assert.equal( h.api.inKey( "w" ), null );
+	assert.equal( h.api.inKey( "W" ), null );
+	assert.equal( h.api.inKey().length, 0 );
 
 	// A held value still completes a combination
 	shift( h, "down" );
@@ -492,30 +492,30 @@ test( "KEY-001 a value stays held until every key producing it is released (K1b)
 	const h = harness();
 	shift( h, "down", "ShiftLeft" );
 	shift( h, "down", "ShiftRight" );
-	assert.equal( h.api.inkey( "Shift" ).code, "ShiftRight", "the latest press answers" );
+	assert.equal( h.api.inKey( "Shift" ).code, "ShiftRight", "the latest press answers" );
 	shift( h, "up", "ShiftRight" );
-	assert.equal( h.api.inkey( "Shift" ).code, "ShiftLeft" );
-	assert.equal( h.api.inkey( "ShiftRight" ), null );
+	assert.equal( h.api.inKey( "Shift" ).code, "ShiftLeft" );
+	assert.equal( h.api.inKey( "ShiftRight" ), null );
 	shift( h, "up", "ShiftLeft" );
-	assert.equal( h.api.inkey( "Shift" ), null );
+	assert.equal( h.api.inKey( "Shift" ), null );
 
 	h.key( "1", "down", { "code": "Digit1" } );
 	h.key( "1", "down", { "code": "Numpad1" } );
 	h.key( "1", "up", { "code": "Numpad1" } );
-	assert.equal( h.api.inkey( "1" ).code, "Digit1" );
+	assert.equal( h.api.inKey( "1" ).code, "Digit1" );
 	h.key( "1", "up", { "code": "Digit1" } );
-	assert.equal( h.api.inkey( "1" ), null );
-	assert.equal( h.api.inkey().length, 0 );
+	assert.equal( h.api.inKey( "1" ), null );
+	assert.equal( h.api.inKey().length, 0 );
 } );
 
 test( "KEY-001 a composing keydown does not stay held as Process (K14)", () => {
 	const h = harness();
 	h.key( "Process", "down", { "code": "KeyN" } );
-	assert.equal( h.api.inkey( "Process" ).code, "KeyN" );
+	assert.equal( h.api.inKey( "Process" ).code, "KeyN" );
 	h.key( "n", "up", { "code": "KeyN" } );
-	assert.equal( h.api.inkey( "Process" ), null );
-	assert.equal( h.api.inkey( "KeyN" ), null );
-	assert.equal( h.api.inkey().length, 0 );
+	assert.equal( h.api.inKey( "Process" ), null );
+	assert.equal( h.api.inKey( "KeyN" ), null );
+	assert.equal( h.api.inKey().length, 0 );
 } );
 
 test( "KEY-002 clearEvents( \"keyboard\" ) cancels only the owner's prompt (K2)", async () => {
@@ -549,7 +549,7 @@ test( "KEY-006 a prompt reads keys while the keyboard is stopped", async () => {
 	h.key( "a" );
 	h.key( "Enter" );
 	assert.equal( await started, "a" );
-	assert.equal( h.api.inkey( "a" ), null, "the stopped keyboard tracks nothing" );
+	assert.equal( h.api.inKey( "a" ), null, "the stopped keyboard tracks nothing" );
 	empty( h );
 
 	// Stopping during a prompt does not strand it
@@ -652,7 +652,7 @@ test( "KEY-003 pasted text is inserted by the prompt's rules (K9)", async () => 
 test( "KEY-004 keys typed into an input inside a shadow root are ignored (K12)", async () => {
 	const h = harness();
 	const calls = [];
-	h.api.onkey( "KeyA", "down", data => calls.push( data.code ) );
+	h.api.onKey( "KeyA", "down", data => calls.push( data.code ) );
 	const host = createElement( "DIV" );
 	const shadowInput = createElement( "INPUT" );
 	const path = [ shadowInput, host, h.body, h.document, h.window ];
@@ -660,7 +660,7 @@ test( "KEY-004 keys typed into an input inside a shadow root are ignored (K12)",
 	// A window listener sees the shadow host as the target
 	h.key( "a", "down", { "code": "KeyA", "target": host, "path": path } );
 	assert.deepEqual( calls, [] );
-	assert.equal( h.api.inkey( "KeyA" ), null );
+	assert.equal( h.api.inKey( "KeyA" ), null );
 	h.key( "a", "up", { "code": "KeyA", "target": host, "path": path } );
 
 	// A key on the host itself is game input
@@ -752,21 +752,21 @@ test( "KEY-011 up handlers receive the keyup's data (K13)", () => {
 	const h = harness();
 	const any = [];
 	const single = [];
-	h.api.onkey( "any", "up", data => any.push( data ) );
-	h.api.onkey( "KeyA", "up", data => single.push( data ) );
+	h.api.onKey( "any", "up", data => any.push( data ) );
+	h.api.onKey( "KeyA", "up", data => single.push( data ) );
 	h.key( "a", "down", { "code": "KeyA" } );
 	h.key( "a", "up", { "code": "KeyA", "shiftKey": true } );
 	assert.deepEqual( any.map( data => [ data.code, data.shiftKey ] ), [ [ "KeyA", true ] ] );
 	assert.equal( single[ 0 ], any[ 0 ], "handlers share the release data" );
-	assert.equal( h.api.inkey( "KeyA" ), null );
+	assert.equal( h.api.inKey( "KeyA" ), null );
 } );
 
 test( "KEY-011 a release whose press was not seen still reaches up handlers (K13)", () => {
 	const h = harness();
 	const calls = [];
-	h.api.onkey( "KeyB", "up", data => calls.push( `KeyB ${data.key}` ) );
-	h.api.onkey( "any", "up", data => calls.push( `any ${data.code}` ) );
-	h.api.onkey( [ "KeyA", "KeyB" ], "up", () => calls.push( "combination" ) );
+	h.api.onKey( "KeyB", "up", data => calls.push( `KeyB ${data.key}` ) );
+	h.api.onKey( "any", "up", data => calls.push( `any ${data.code}` ) );
+	h.api.onKey( [ "KeyA", "KeyB" ], "up", () => calls.push( "combination" ) );
 	h.api.stopKeyboard();
 	h.key( "b", "down", { "code": "KeyB" } );
 	h.api.startKeyboard();
@@ -780,7 +780,7 @@ test( "KEY-011 a release runs the handlers of the value the key was pressed with
 	const h = harness();
 	const calls = [];
 	for( const name of [ "A", "a", "KeyA" ] ) {
-		h.api.onkey( name, "up", data => calls.push( `${name} ${data.key}` ) );
+		h.api.onKey( name, "up", data => calls.push( `${name} ${data.key}` ) );
 	}
 	h.key( "Shift", "down", { "code": "ShiftLeft", "shiftKey": true } );
 	h.key( "A", "down", { "code": "KeyA", "shiftKey": true } );
@@ -792,10 +792,10 @@ test( "KEY-011 a release runs the handlers of the value the key was pressed with
 test( "KEY-011 a combination's up handler gets the release data for the released key", () => {
 	const h = harness();
 	const seen = [];
-	h.api.onkey( [ "KeyA", "KeyB" ], "up", data => seen.push( data ) );
+	h.api.onKey( [ "KeyA", "KeyB" ], "up", data => seen.push( data ) );
 	h.key( "a", "down", { "code": "KeyA" } );
 	h.key( "b", "down", { "code": "KeyB" } );
-	const heldA = h.api.inkey( "KeyA" );
+	const heldA = h.api.inKey( "KeyA" );
 	h.key( "b", "up", { "code": "KeyB", "altKey": true } );
 	assert.equal( seen.length, 1 );
 	assert.equal( seen[ 0 ][ 0 ], heldA );
@@ -817,10 +817,10 @@ test( "KEY-012 starting the keyboard keeps focus, and start and stop are idempot
 		h.api.stopKeyboard();
 		h.api.stopKeyboard();
 		assert.deepEqual( [ listeners( "keydown" ), listeners( "keyup" ) ], [ 0, 0 ] );
-		assert.equal( h.api.inkey( "KeyA" ), null );
-		h.api.onkey( "KeyB", "down", data => calls.push( data.code ) );
+		assert.equal( h.api.inKey( "KeyA" ), null );
+		h.api.onKey( "KeyB", "down", data => calls.push( data.code ) );
 		h.key( "b", "down", { "code": "KeyB" } );
-		assert.equal( h.api.inkey( "KeyB" ), null );
+		assert.equal( h.api.inKey( "KeyB" ), null );
 		assert.deepEqual( calls, [], "registration and reads do not restart the keyboard" );
 
 		// Start attaches the listeners once and keeps the focused element
@@ -832,22 +832,22 @@ test( "KEY-012 starting the keyboard keeps focus, and start and stop are idempot
 		assert.deepEqual( [ listeners( "keydown" ), listeners( "keyup" ) ], [ 1, 1 ] );
 		h.key( "b", "down", { "code": "KeyB" } );
 		assert.deepEqual( calls, [ "KeyB" ] );
-		assert.equal( h.api.inkey( "KeyB" ).code, "KeyB" );
+		assert.equal( h.api.inKey( "KeyB" ).code, "KeyB" );
 	} );
 
-test( "KEY-013 key data cannot be changed through inkey() or handlers (K7)", () => {
+test( "KEY-013 key data cannot be changed through inKey() or handlers (K7)", () => {
 	const h = harness();
 	const received = [];
-	h.api.onkey( "KeyA", "down", data => received.push( data ) );
-	h.api.onkey( [ "KeyA", "KeyB" ], "up", data => received.push( data ) );
-	h.api.onkey( "any", "up", data => received.push( data ) );
+	h.api.onKey( "KeyA", "down", data => received.push( data ) );
+	h.api.onKey( [ "KeyA", "KeyB" ], "up", data => received.push( data ) );
+	h.api.onKey( "any", "up", data => received.push( data ) );
 	h.key( "a", "down", { "code": "KeyA" } );
 	h.key( "b", "down", { "code": "KeyB" } );
-	const polled = h.api.inkey( "KeyA" );
+	const polled = h.api.inKey( "KeyA" );
 	assert.throws( () => { polled.code = "Mutated"; }, TypeError );
 	assert.throws( () => { received[ 0 ].key = "Mutated"; }, TypeError );
-	assert.equal( h.api.inkey( "KeyA" ).code, "KeyA" );
-	assert.notEqual( h.api.inkey(), h.api.inkey(), "each list read is a new array" );
+	assert.equal( h.api.inKey( "KeyA" ).code, "KeyA" );
+	assert.notEqual( h.api.inKey(), h.api.inKey(), "each list read is a new array" );
 	h.key( "b", "up", { "code": "KeyB" } );
 	const [ , combination, release ] = received;
 	assert.ok( combination.every( data => Object.isFrozen( data ) ) );
@@ -885,3 +885,14 @@ test( "SYS-003 a custom cursor is drawn after the value and hidden when the prom
 		assert.equal( h.first.prints[ h.first.prints.length - 1 ], "Age? 42" );
 		empty( h );
 	} );
+
+test( "keyboard registers inKey, onKey, and offKey, and not the old names (I1, I16)", () => {
+	const h = harness();
+	for( const name of [ "inKey", "onKey", "offKey" ] ) {
+		assert.equal( typeof h.commands[ name ], "function", name );
+	}
+	for( const name of [ "inkey", "onkey", "offkey" ] ) {
+		assert.equal( h.commands[ name ], undefined, name );
+		assert.throws( () => h.api[ name ]( "KeyA" ), TypeError );
+	}
+} );

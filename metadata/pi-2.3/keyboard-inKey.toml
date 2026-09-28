@@ -1,4 +1,4 @@
-title = "inkey"
+title = "inKey"
 category = "keyboard"
 isScreen = false
 plugin = "keyboard"
@@ -19,7 +19,7 @@ example = """
 $.screen( "300x200" );
 requestAnimationFrame( run );
 function run() {
-	const keys = $.inkey();
+	const keys = $.inKey();
 	$.cls();
 	$.print( "Press any key" );
 	for( const keyData of keys ) {

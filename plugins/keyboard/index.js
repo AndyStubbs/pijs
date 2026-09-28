@@ -5,7 +5,7 @@
  * and action key management.
  *
  * @module plugins/keyboard
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 "use strict";
@@ -47,11 +47,11 @@ export default function keyboardPlugin( pluginApi ) {
 	// Register global commands
 	pluginApi.addCommand( "startKeyboard", startKeyboard, false, [] );
 	pluginApi.addCommand( "stopKeyboard", stopKeyboard, false, [] );
-	pluginApi.addCommand( "inkey", inkey, false, [ "key" ] );
+	pluginApi.addCommand( "inKey", inKey, false, [ "key" ] );
 	pluginApi.addCommand( "setActionKeys", setActionKeys, false, [ "keys" ] );
 	pluginApi.addCommand( "removeActionKeys", removeActionKeys, false, [ "keys" ] );
-	pluginApi.addCommand( "onkey", onkey, false, [ "key", "mode", "fn", "once", "allowRepeat" ] );
-	pluginApi.addCommand( "offkey", offkey, false, [ "key", "mode", "fn", "once", "allowRepeat" ] );
+	pluginApi.addCommand( "onKey", onKey, false, [ "key", "mode", "fn", "once", "allowRepeat" ] );
+	pluginApi.addCommand( "offKey", offKey, false, [ "key", "mode", "fn", "once", "allowRepeat" ] );
 
 	// Initialize input command
 	g_input.initInput( pluginApi, isFromEditableTarget );
@@ -105,13 +105,13 @@ function stopKeyboard() {
  * @param {Object} options - Command options.
  * @returns {Object|Array<Object>|null}
  */
-function inkey( options ) {
+function inKey( options ) {
 	const key = options.key;
 
 	if( key ) {
 
 		if( typeof key !== "string" ) {
-			const error = new TypeError( "inkey: key must be a string." );
+			const error = new TypeError( "inKey: key must be a string." );
 			error.code = "INVALID_PARAMETERS";
 			throw error;
 		}
@@ -119,7 +119,7 @@ function inkey( options ) {
 		return findHeldKey( key );
 	}
 
-	// If inkey is blank return all held keys
+	// If inKey is blank return all held keys
 	return Array.from( m_heldCodes.values() );
 }
 
@@ -166,7 +166,7 @@ function removeActionKeys( options ) {
  * @param {Object} options - Command options.
  * @returns {void}
  */
-function onkey( options ) {
+function onKey( options ) {
 	const key = options.key;
 	const mode = options.mode;
 	const fn = options.fn;
@@ -174,19 +174,19 @@ function onkey( options ) {
 	const allowRepeat = !!options.allowRepeat;
 
 	if( !key || ( typeof key !== "string" && !Array.isArray( key ) ) ) {
-		const error = new TypeError( "onkey: key must be a string or an array of strings." );
+		const error = new TypeError( "onKey: key must be a string or an array of strings." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
 	}
 
 	if( !mode || ( typeof mode !== "string" ) ) {
-		const error = new TypeError( "onkey: mode must be a string with value of up or down." );
+		const error = new TypeError( "onKey: mode must be a string with value of up or down." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
 	}
 
 	if( typeof fn !== "function" ) {
-		const error = new TypeError( "onkey: fn must be a function." );
+		const error = new TypeError( "onKey: fn must be a function." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
 	}
@@ -224,7 +224,7 @@ function onkey( options ) {
  * @param {Object} options - Command options.
  * @returns {void}
  */
-function offkey( options ) {
+function offKey( options ) {
 	const key = options.key;
 	const mode = options.mode;
 	const fn = options.fn;
@@ -232,13 +232,13 @@ function offkey( options ) {
 	const allowRepeat = !!options.allowRepeat;
 
 	if( !key || ( typeof key !== "string" && !Array.isArray( key ) ) ) {
-		const error = new TypeError( "offkey: key must be a string or an array of strings." );
+		const error = new TypeError( "offKey: key must be a string or an array of strings." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
 	}
 
 	if( typeof fn !== "function" ) {
-		const error = new TypeError( "offkey: callback must be a function." );
+		const error = new TypeError( "offKey: callback must be a function." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
 	}
@@ -380,7 +380,7 @@ function invokeHandler( handler, data ) {
 /**
  * Copy the state of a key event into key data.
  *
- * The data is frozen, because the same object is stored as held state, returned by inkey(),
+ * The data is frozen, because the same object is stored as held state, returned by inKey(),
  * and passed to handlers: callers must not be able to change plugin state through it.
  *
  * @param {KeyboardEvent} event - Keydown or keyup event
@@ -433,7 +433,7 @@ function triggerKeyEventHandlers( event, mode, keyOrCode, release = null ) {
 			continue;
 		}
 
-		// Need to check if handler has been removed in case a previous handler includes an offkey
+		// Need to check if handler has been removed in case a previous handler includes an offKey
 		if( handler.isRemoved ) {
 			continue;
 		}
@@ -578,7 +578,7 @@ export function clearKeyboardEvents( screenData ) {
 if( typeof window !== "undefined" && window.pi ) {
 	window.pi.registerPlugin( {
 		"name": "keyboard",
-		"version": "1.0.0",
+		"version": "2.0.0",
 		"description": "Keyboard input handling for Pi.js",
 		"init": keyboardPlugin
 	} );

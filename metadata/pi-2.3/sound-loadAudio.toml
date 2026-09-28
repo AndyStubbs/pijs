@@ -15,7 +15,7 @@ $.screen( "300x200" );
 $.loadAudio( "media/bomb.wav", "bomb" );
 $.ready( function () {
 	$.print( "Press any key to play bomb sound." );
-	$.onkey( "any", "down", () => {
+	$.onKey( "any", "down", () => {
 		$.print( "BOOM ", true );
 		$.playAudio( "bomb" );
 	}, false, true );

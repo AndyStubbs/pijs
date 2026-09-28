@@ -58,12 +58,12 @@ $.onGamepadDisconnected( ( data ) => {
 } );
 
 // Sensitivity controls
-$.onkey( "ArrowUp", "down", () => {
+$.onKey( "ArrowUp", "down", () => {
 	sensitivity = Math.min( 1, sensitivity + 0.05 );
 	$.setGamepadSensitivity( sensitivity );
 } );
 
-$.onkey( "ArrowDown", "down", () => {
+$.onKey( "ArrowDown", "down", () => {
 	sensitivity = Math.max( 0, sensitivity - 0.05 );
 	$.setGamepadSensitivity( sensitivity );
 } );

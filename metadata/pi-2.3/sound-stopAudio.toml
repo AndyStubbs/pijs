@@ -11,7 +11,7 @@ $.screen( "300x200" );
 const audio = $.loadAudio( "media/sound.wav" );
 $.ready( function () {
 	$.print( "Press any key to hear sound" );
-	$.onkey( "any", "down", () => {
+	$.onKey( "any", "down", () => {
 		const instance = $.playAudio( audio );
 		setTimeout( function () {
 			$.stopAudio( instance );
