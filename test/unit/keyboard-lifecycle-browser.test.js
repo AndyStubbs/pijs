@@ -292,7 +292,15 @@ for( const bundle of g_harness.BUNDLES ) {
 			$.setActionKeys( [ "Space" ] );
 			const afterBoth = [ prevented( "Space" ), prevented( "KeyB" ) ];
 			$.removeActionKeys( [ "Space", "KeyB" ] );
-			return [ afterSet, afterBoth, prevented( "Space" ), prevented( "KeyB" ) ];
-		} ), [ true, [ true, true ], false, false ] );
+
+			// set() checks the keys as setActionKeys() does
+			let invalid = null;
+			try {
+				$.set( { "actionKeys": [ 1 ] } );
+			} catch( error ) {
+				invalid = [ error.name, error.code ];
+			}
+			return [ afterSet, afterBoth, prevented( "Space" ), prevented( "KeyB" ), invalid ];
+		} ), [ true, [ true, true ], false, false, [ "TypeError", "INVALID_KEYS" ] ] );
 	} );
 }

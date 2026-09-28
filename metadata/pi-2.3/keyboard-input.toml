@@ -25,6 +25,12 @@ with no digits resolves to 0.
 
 The input is cancelled by cancelInput(), by clearEvents( "keyboard" ) called with no screen or
 from the screen that owns the prompt, by removing that screen, or by starting another input.
+
+The prompt and cursor are strings, the callback a function, and isNumber, isInteger, and
+allowNegative booleans; maxLength is an integer of at least 1. Omitted values, null or
+undefined, take their defaults. Invalid options throw a TypeError, or a RangeError for a
+maxLength below 1, with code INVALID_PROMPT, INVALID_FUNCTION, INVALID_CURSOR,
+INVALID_IS_NUMBER, INVALID_IS_INTEGER, INVALID_ALLOW_NEGATIVE, or INVALID_MAX_LENGTH.
 """
 example = """
 $.screen( "300x200" );
@@ -54,7 +60,7 @@ optional = true
 [[parameters]]
 name = "cursor"
 type = "string"
-description = "Cursor character to display. Defaults to character code 219, which the built-in fonts draw as a block."
+description = "Cursor character to display. Omitted or empty, it is character code 219, which the built-in fonts draw as a block."
 optional = true
 
 [[parameters]]
@@ -79,7 +85,7 @@ optional = true
 name = "maxLength"
 type = "number | null"
 typeDesc = "number"
-description = "Maximum length of the input, including a minus sign. Null or omitted for no limit."
+description = "Maximum length of the input, at least 1, including a minus sign. Null or omitted for no limit."
 optional = true
 
 [[returns]]

@@ -92,42 +92,34 @@ function input( screenData, options ) {
 	}
 	const prompt = options.prompt;
 	const fn = options.fn;
-	let cursor;
-	if( options.cursor ) {
-		cursor = options.cursor;
-	} else {
-		cursor = String.fromCharCode( 219 );
-	}
-	const isNumber = !!options.isNumber;
-	const isInteger = !!options.isInteger;
-	const allowNegative = !!options.allowNegative;
-	const maxLength = options.maxLength;
-
 	if( typeof prompt !== "string" ) {
-		const error = new TypeError( "input: prompt must be a string" );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
+		throwCode( TypeError, "input: prompt must be a string.", "INVALID_PROMPT" );
+	}
+	if( fn != null && typeof fn !== "function" ) {
+		throwCode( TypeError, "input: fn must be a function.", "INVALID_FUNCTION" );
 	}
 
-	if( fn && typeof fn !== "function" ) {
-		const error = new TypeError( "input: fn must be a function." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
+	// An omitted or empty cursor draws the block
+	let cursor = options.cursor;
+	if( cursor == null || cursor === "" ) {
+		cursor = String.fromCharCode( 219 );
+	} else if( typeof cursor !== "string" ) {
+		throwCode( TypeError, "input: cursor must be a string.", "INVALID_CURSOR" );
 	}
+	const isNumber = readFlag( "isNumber", options.isNumber, "INVALID_IS_NUMBER" );
+	const isInteger = readFlag( "isInteger", options.isInteger, "INVALID_IS_INTEGER" );
+	const allowNegative = readFlag(
+		"allowNegative", options.allowNegative, "INVALID_ALLOW_NEGATIVE"
+	);
 
-	if( typeof cursor !== "string" ) {
-		const error = new TypeError( "input: cursor must be a string" );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
-	}
-
-	if(
-		maxLength !== null &&
-		( typeof maxLength !== "number" || maxLength < 0 || !Number.isInteger( maxLength ) )
-	) {
-		const error = new TypeError( "input: maxLength must be a non-negative integer" );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
+	// An omitted maxLength, null or undefined, means no limit
+	let maxLength = options.maxLength;
+	if( maxLength == null ) {
+		maxLength = null;
+	} else if( !Number.isInteger( maxLength ) ) {
+		throwCode( TypeError, "input: maxLength must be an integer.", "INVALID_MAX_LENGTH" );
+	} else if( maxLength < 1 ) {
+		throwCode( RangeError, "input: maxLength must be at least 1.", "INVALID_MAX_LENGTH" );
 	}
 
 	// Create promise for async/await support
@@ -518,6 +510,38 @@ function releaseInput( inputData ) {
 		inputData.resolve = null;
 		inputData.reject = null;
 	}
+}
+
+/**
+ * Throw an error with an error code.
+ *
+ * @param {Function} ErrorType - Error constructor.
+ * @param {string} message - Error message.
+ * @param {string} code - Error code.
+ * @returns {never}
+ */
+function throwCode( ErrorType, message, code ) {
+	const error = new ErrorType( message );
+	error.code = code;
+	throw error;
+}
+
+/**
+ * Check an optional input() flag.
+ *
+ * @param {string} name - Parameter name.
+ * @param {*} value - Flag value.
+ * @param {string} code - Error code.
+ * @returns {boolean} The flag, false when omitted.
+ */
+function readFlag( name, value, code ) {
+	if( value == null ) {
+		return false;
+	}
+	if( typeof value !== "boolean" ) {
+		throwCode( TypeError, `input: ${name} must be a boolean.`, code );
+	}
+	return value;
 }
 
 /** Invoke a completion callback without interrupting disposal or a replacement request. */

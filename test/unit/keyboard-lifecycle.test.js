@@ -1010,6 +1010,152 @@ test( "SYS-003 a custom cursor is drawn after the value and hidden when the prom
 		empty( h );
 	} );
 
+/**
+ * Assert that a call throws an I11 validation error.
+ *
+ * @param {Function} fn - The call.
+ * @param {string} name - "TypeError" or "RangeError"; errors come from the module's realm.
+ * @param {string} code - Error code.
+ * @param {string} command - Command that starts the message.
+ * @returns {void}
+ */
+function assertInvalid( fn, name, code, command ) {
+	assert.throws( fn, error => {
+		assert.deepEqual( [ error.name, error.code ], [ name, code ], error.message );
+		assert.ok( error.message.startsWith( `${command}: ` ), error.message );
+		return true;
+	} );
+}
+
+test( "KEY-009 key commands reject invalid arguments with the I11 codes (K3, K4, K20)", () => {
+	const h = harness();
+	const fn = () => {};
+	const $ = h.api;
+	const cases = [
+
+		// Modes are "up" or "down"; a mode from another API or in capitals fails
+		[ () => $.onKey( "KeyA", "press", fn ), "RangeError", "INVALID_MODE", "onKey" ],
+		[ () => $.onKey( "KeyA", "DOWN", fn ), "RangeError", "INVALID_MODE", "onKey" ],
+		[ () => $.onKey( "KeyA", "keydown", fn ), "RangeError", "INVALID_MODE", "onKey" ],
+		[ () => $.onKey( "KeyA", 1, fn ), "TypeError", "INVALID_MODE", "onKey" ],
+		[ () => $.onKey( "KeyA", null, fn ), "TypeError", "INVALID_MODE", "onKey" ],
+		[ () => $.offKey( "KeyA", "press", fn ), "RangeError", "INVALID_MODE", "offKey" ],
+		[ () => $.offKey( "KeyA", 1 ), "TypeError", "INVALID_MODE", "offKey" ],
+
+		// Keys are a non-empty string or a non-empty array of them
+		[ () => $.onKey( [], "down", fn ), "RangeError", "INVALID_KEY", "onKey" ],
+		[ () => $.onKey( "", "down", fn ), "RangeError", "INVALID_KEY", "onKey" ],
+		[ () => $.onKey( [ "KeyA", "" ], "down", fn ), "RangeError", "INVALID_KEY", "onKey" ],
+		[ () => $.onKey( [ "any", "KeyA" ], "down", fn ), "RangeError", "INVALID_KEY", "onKey" ],
+		[ () => $.onKey( [ "KeyA", 1 ], "down", fn ), "TypeError", "INVALID_KEY", "onKey" ],
+		[ () => $.onKey( 5, "down", fn ), "TypeError", "INVALID_KEY", "onKey" ],
+		[ () => $.onKey( null, "down", fn ), "TypeError", "INVALID_KEY", "onKey" ],
+		[ () => $.offKey( [], "down" ), "RangeError", "INVALID_KEY", "offKey" ],
+		[ () => $.offKey( 5, "down" ), "TypeError", "INVALID_KEY", "offKey" ],
+		[ () => $.inKey( "" ), "RangeError", "INVALID_KEY", "inKey" ],
+		[ () => $.inKey( 0 ), "TypeError", "INVALID_KEY", "inKey" ],
+		[ () => $.inKey( false ), "TypeError", "INVALID_KEY", "inKey" ],
+		[ () => $.inKey( [ "KeyA" ] ), "TypeError", "INVALID_KEY", "inKey" ],
+
+		// Functions and flags
+		[ () => $.onKey( "KeyA", "down", "fn" ), "TypeError", "INVALID_FUNCTION", "onKey" ],
+		[ () => $.offKey( "KeyA", "down", "fn" ), "TypeError", "INVALID_FUNCTION", "offKey" ],
+		[ () => $.onKey( "KeyA", "down", fn, 1 ), "TypeError", "INVALID_ONCE", "onKey" ],
+		[ () => $.onKey( "KeyA", "down", fn, "true" ), "TypeError", "INVALID_ONCE", "onKey" ],
+		[
+			() => $.onKey( "KeyA", "down", fn, false, 0 ),
+			"TypeError", "INVALID_ALLOW_REPEAT", "onKey"
+		],
+
+		// Action keys are arrays of non-empty strings
+		[ () => $.setActionKeys( [ 1, null ] ), "TypeError", "INVALID_KEYS", "setActionKeys" ],
+		[ () => $.setActionKeys( "Space" ), "TypeError", "INVALID_KEYS", "setActionKeys" ],
+		[ () => $.setActionKeys( [ "" ] ), "RangeError", "INVALID_KEYS", "setActionKeys" ],
+		[ () => $.removeActionKeys( [ 1 ] ), "TypeError", "INVALID_KEYS", "removeActionKeys" ],
+		[ () => $.removeActionKeys( [ "" ] ), "RangeError", "INVALID_KEYS", "removeActionKeys" ]
+	];
+	for( const [ call, name, code, command ] of cases ) {
+		assertInvalid( call, name, code, command );
+	}
+	assert.equal( vm.runInContext( "Object.keys( m_onKeyHandlers ).length", h.keyboard ), 0,
+		"failed calls register nothing" );
+	assert.equal( vm.runInContext( "m_actionKeys.size", h.keyboard ), 0 );
+
+	// Omitted values take their defaults
+	assert.equal( $.inKey( null ).length, 0 );
+	assert.equal( $.inKey( undefined ).length, 0 );
+	$.onKey( "KeyA", "down", fn, null, undefined );
+	$.onKey( { "key": "KeyB", "mode": "up", "fn": fn } );
+	$.setActionKeys( [] );
+	$.offKey( "KeyA", null, fn );
+	$.offKey( "KeyB", "up" );
+	assert.equal( vm.runInContext( "Object.keys( m_onKeyHandlers ).length", h.keyboard ), 0 );
+} );
+
+test( "KEY-009 input() rejects invalid options with the I11 codes (K3)", async () => {
+	const h = harness();
+	const input = ( ...args ) => h.first.api.input( ...args );
+	const cases = [
+		[ { "prompt": 5 }, "TypeError", "INVALID_PROMPT" ],
+		[ { "prompt": "?", "fn": "done" }, "TypeError", "INVALID_FUNCTION" ],
+		[ { "prompt": "?", "cursor": 5 }, "TypeError", "INVALID_CURSOR" ],
+		[ { "prompt": "?", "isNumber": 1 }, "TypeError", "INVALID_IS_NUMBER" ],
+		[ { "prompt": "?", "isInteger": "yes" }, "TypeError", "INVALID_IS_INTEGER" ],
+		[ { "prompt": "?", "allowNegative": 0 }, "TypeError", "INVALID_ALLOW_NEGATIVE" ],
+		[ { "prompt": "?", "maxLength": 1.5 }, "TypeError", "INVALID_MAX_LENGTH" ],
+		[ { "prompt": "?", "maxLength": "5" }, "TypeError", "INVALID_MAX_LENGTH" ],
+		[ { "prompt": "?", "maxLength": 0 }, "RangeError", "INVALID_MAX_LENGTH" ],
+		[ { "prompt": "?", "maxLength": -1 }, "RangeError", "INVALID_MAX_LENGTH" ]
+	];
+	for( const [ options, name, code ] of cases ) {
+		assertInvalid( () => input( options ), name, code, "input" );
+		empty( h );
+	}
+
+	// An omitted maxLength means no limit, in the object and positional forms
+	const forms = [
+		[ { "prompt": "?", "maxLength": undefined } ],
+		[ { "prompt": "?", "maxLength": null } ],
+		[ "?", null, null, false, false, false, undefined ]
+	];
+	for( const args of forms ) {
+		const pending = input( ...args );
+		for( const key of "abcdefghijklmnopqrstuvwxyz" ) {
+			h.key( key );
+		}
+		h.key( "Enter" );
+		assert.equal( await pending, "abcdefghijklmnopqrstuvwxyz" );
+		empty( h );
+	}
+} );
+
+test( "KEY-010 a combination array is copied, kept in order, and de-duplicated (K6)", () => {
+	const h = harness();
+	const calls = [];
+	const combo = [ "KeyS", "ControlLeft" ];
+	const save = data => calls.push( Array.from( data, item => item.code ).join( "+" ) );
+	h.api.onKey( combo, "down", save );
+	assert.deepEqual( combo, [ "KeyS", "ControlLeft" ], "the caller's array is not sorted" );
+
+	// Changing the caller's array does not change the registration
+	combo[ 0 ] = "KeyQ";
+	combo.push( "KeyX" );
+
+	// The same keys in another order, or with a duplicate, are the same handler
+	h.api.onKey( [ "ControlLeft", "KeyS", "KeyS" ], "down", save );
+	h.api.onKey( [ "KeyD", "KeyD" ], "down", data => calls.push( data.code ) );
+	h.key( "Control", "down", { "code": "ControlLeft", "ctrlKey": true } );
+	h.key( "s", "down", { "code": "KeyS", "ctrlKey": true } );
+	h.key( "d", "down", { "code": "KeyD", "ctrlKey": true } );
+	assert.deepEqual( calls, [ "KeyS+ControlLeft", "KeyD" ],
+		"data follows the order given, and a key listed twice counts once" );
+
+	// offKey matches the key set whatever the order and duplicates
+	h.api.offKey( [ "ControlLeft", "ControlLeft", "KeyS" ], "down", save );
+	h.key( "s", "down", { "code": "KeyS", "ctrlKey": true } );
+	assert.equal( calls.length, 2 );
+} );
+
 test( "keyboard registers inKey, onKey, and offKey, and not the old names (I1, I16)", () => {
 	const h = harness();
 	for( const name of [ "inKey", "onKey", "offKey" ] ) {
@@ -1178,7 +1324,7 @@ test( "KEY-011 cancelled input releases held keys once through the up handlers (
 		h.key( "A", "down", { "code": "KeyA", "shiftKey": true, "repeat": true } );
 		trigger( h );
 		assert.deepEqual( log, [
-			[ "combo", "KeyA false", "ShiftLeft true" ],
+			[ "combo", "ShiftLeft true", "KeyA false" ],
 			[ "any", "ShiftLeft", true ],
 			[ "KeyA", "A", true, false, true ],
 			[ "A", true ],

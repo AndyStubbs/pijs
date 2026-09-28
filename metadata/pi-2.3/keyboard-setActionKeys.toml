@@ -11,6 +11,9 @@ game controls where you don't want the browser to handle certain keys.
 Keys already in the set stay in it; use removeActionKeys() to remove keys. set( { "actionKeys":
 [ ... ] } ) also adds. Keys can be specified by code (e.g., "ArrowUp", "Space") or key value
 (e.g., " "). Setting action keys starts keyboard tracking, unless stopKeyboard() was called.
+
+Keys that are not an array of strings throw a TypeError, and an empty string in the array a
+RangeError, with code INVALID_KEYS.
 """
 example = """
 $.screen( "200x200" );

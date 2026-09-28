@@ -41,6 +41,13 @@ called.
 Key data objects are frozen and carry cancelled, false unless the release was cancelled. Keys
 typed into an editable element, such as an input field, are ignored. A callback that throws
 does not stop the others; its error is reported with console.error().
+
+The key is a non-empty string or a non-empty array of them. The array is copied, so changing it
+later does not change the handler, and a key listed twice counts once; "any" cannot be part of
+a combination. The mode is "up" or "down", and once and allowRepeat are booleans or omitted.
+Invalid arguments throw a TypeError for a wrong type or a RangeError for an empty key or an
+unknown mode, with code INVALID_KEY, INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or
+INVALID_ALLOW_REPEAT.
 """
 example = """
 $.screen( "300x200" );

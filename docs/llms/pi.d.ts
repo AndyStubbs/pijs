@@ -1473,13 +1473,15 @@ screen is removed before deferred processing completes, or with the original rea
 		 * With isNumber or isInteger, the value is a number. Only digits, one decimal point unless isInteger is set, and a leading minus sign with allowNegative are accepted. Typing "-" adds the minus sign at the start, and "+" removes it; the minus sign counts toward maxLength. A value with no digits resolves to 0.
 		 *
 		 * The input is cancelled by cancelInput(), by clearEvents( "keyboard" ) called with no screen or from the screen that owns the prompt, by removing that screen, or by starting another input.
+		 *
+		 * The prompt and cursor are strings, the callback a function, and isNumber, isInteger, and allowNegative booleans; maxLength is an integer of at least 1. Omitted values, null or undefined, take their defaults. Invalid options throw a TypeError, or a RangeError for a maxLength below 1, with code INVALID_PROMPT, INVALID_FUNCTION, INVALID_CURSOR, INVALID_IS_NUMBER, INVALID_IS_INTEGER, INVALID_ALLOW_NEGATIVE, or INVALID_MAX_LENGTH.
 		 * @param prompt Prompt text to display before the input field.
 		 * @param fn Optional callback function called with the input value, or null if cancelled.
-		 * @param cursor Cursor character to display. Defaults to character code 219, which the built-in fonts draw as a block.
+		 * @param cursor Cursor character to display. Omitted or empty, it is character code 219, which the built-in fonts draw as a block.
 		 * @param isNumber If true, only accepts a number and resolves with a number.
 		 * @param isInteger If true, only accepts an integer, with no decimal point, and resolves with a number, with or without isNumber.
 		 * @param allowNegative If true, a numeric input accepts a leading minus sign.
-		 * @param maxLength Maximum length of the input, including a minus sign. Null or omitted for no limit.
+		 * @param maxLength Maximum length of the input, at least 1, including a minus sign. Null or omitted for no limit.
 		 * @returns Promise that resolves with the input value, a number for numeric input, or null if cancelled.
 		 */
 		input( params: { "prompt": string; "fn"?: ( value: string | number | null ) => void; "cursor"?: string; "isNumber"?: boolean; "isInteger"?: boolean; "allowNegative"?: boolean; "maxLength"?: number | null } ): Promise<string | number | null>;
@@ -2241,6 +2243,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * The first call starts keyboard tracking, unless stopKeyboard() was called; keys pressed before tracking starts are not reported.
 		 *
 		 * Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat, cancelled. They are frozen.
+		 *
+		 * A key that is not a string throws a TypeError, and an empty string a RangeError, with code INVALID_KEY; null is the same as no key.
 		 * @param key Key code or key value to check. If omitted, returns all pressed keys.
 		 * @returns Key data object if key is pressed, array of all pressed keys if no key specified, or null if key not pressed.
 		 */
@@ -2318,6 +2322,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * With a key, a mode, and a callback, removes that handler. Without a callback, removes every handler of the mode for the key. With a callback and no mode (null, or no mode in the object form), removes the callback from both modes. A key alone throws a TypeError with code INVALID_MODE; clearEvents( "keyboard" ) removes every key handler.
 		 *
 		 * A handler removed while a key event is being dispatched does not run later in that dispatch.
+		 *
+		 * The key, mode, and callback are checked as onKey() checks them, with codes INVALID_KEY, INVALID_MODE, and INVALID_FUNCTION.
 		 * @param key Key code, key value, "any", or combination array of the handlers to remove.
 		 * @param mode Event mode ("up" or "down"). If omitted or null, fn is removed from both modes.
 		 * @param fn Callback to remove. If omitted, every handler of the mode is removed.
@@ -2370,6 +2376,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * A handler is identified by its key or combination, its mode, and its callback: registering the same callback for the same keys and mode again does nothing, whatever its once and allowRepeat flags, and offKey removes it by those three. Registering starts keyboard tracking, unless stopKeyboard() was called; handlers stay registered while the keyboard is stopped, but are not called.
 		 *
 		 * Key data objects are frozen and carry cancelled, false unless the release was cancelled. Keys typed into an editable element, such as an input field, are ignored. A callback that throws does not stop the others; its error is reported with console.error().
+		 *
+		 * The key is a non-empty string or a non-empty array of them. The array is copied, so changing it later does not change the handler, and a key listed twice counts once; "any" cannot be part of a combination. The mode is "up" or "down", and once and allowRepeat are booleans or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for an empty key or an unknown mode, with code INVALID_KEY, INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_ALLOW_REPEAT.
 		 * @param key Key code/key value string, array of keys for combinations, or "any" for any key.
 		 * @param mode Event mode: "up" for key release, "down" for key press.
 		 * @param fn Callback function that receives the key data, or an array of key data for a combination.
@@ -2539,6 +2547,8 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 * Removes keys from the action keys set.
 		 *
 		 * Removes keys from the action keys set. These keys will no longer have their default browser behavior prevented.
+		 *
+		 * Keys that are not an array of strings throw a TypeError, and an empty string in the array a RangeError, with code INVALID_KEYS.
 		 * @param keys Array of key codes or key values to remove from action keys.
 		 * @returns This function does not return a value.
 		 */
@@ -2634,6 +2644,8 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 * Adds keys to the action keys set. Action keys have their default browser behavior prevented on keydown and keyup, for example page scrolling with the arrow keys or Space. This is useful for game controls where you don't want the browser to handle certain keys.
 		 *
 		 * Keys already in the set stay in it; use removeActionKeys() to remove keys. set( { "actionKeys": [ ... ] } ) also adds. Keys can be specified by code (e.g., "ArrowUp", "Space") or key value (e.g., " "). Setting action keys starts keyboard tracking, unless stopKeyboard() was called.
+		 *
+		 * Keys that are not an array of strings throw a TypeError, and an empty string in the array a RangeError, with code INVALID_KEYS.
 		 * @param keys Array of key codes or key values to add as action keys.
 		 * @returns This function does not return a value.
 		 */
