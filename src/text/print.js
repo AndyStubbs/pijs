@@ -300,10 +300,10 @@ function setWordBreak( screenData, options ) {
  * @returns {void}
  */
 function setPrintSize( screenData, options ) {
-	const scaleWidth = g_utils.getFloat( options.scaleWidth, null );
-	const scaleHeight = g_utils.getFloat( options.scaleHeight, null );
-	const padX = g_utils.getInt( options.padX, null );
-	const padY = g_utils.getInt( options.padY, null );
+	const scaleWidth = readPrintSize( options.scaleWidth, false );
+	const scaleHeight = readPrintSize( options.scaleHeight, false );
+	const padX = readPrintSize( options.padX, true );
+	const padY = readPrintSize( options.padY, true );
 
 	if(
 		( scaleWidth !== null && scaleWidth <= 0 ) || ( scaleHeight !== null && scaleHeight <= 0 )
@@ -312,6 +312,14 @@ function setPrintSize( screenData, options ) {
 			"setPrintSize: Parameters scaleWidth and scaleHeight must be a number greater than 0."
 		);
 		error.code = "INVALID_SIZE";
+		throw error;
+	}
+
+	if( ( padX !== null && padX < 0 ) || ( padY !== null && padY < 0 ) ) {
+		const error = new RangeError(
+			"setPrintSize: Parameters padX and padY must be 0 or greater."
+		);
+		error.code = "INVALID_PADDING";
 		throw error;
 	}
 
@@ -333,6 +341,37 @@ function setPrintSize( screenData, options ) {
 
 	// Update print cursor dimensions
 	updatePrintCursorDimensions( screenData );
+}
+
+/**
+ * Read one setPrintSize parameter: null when omitted, otherwise a finite number, and an integer
+ * for padding
+ *
+ * @param {*} value - Parameter value
+ * @param {boolean} isPadding - Whether the value is a padding, which must be an integer
+ * @returns {number|null} Value, or null when omitted
+ */
+function readPrintSize( value, isPadding ) {
+	if( value === null ) {
+		return null;
+	}
+	const parsed = g_utils.getFloat( value, null );
+	if( isPadding ) {
+		if( parsed === null || !Number.isInteger( parsed ) ) {
+			const error = new TypeError(
+				"setPrintSize: Parameters padX and padY must be integers."
+			);
+			error.code = "INVALID_PADDING";
+			throw error;
+		}
+	} else if( parsed === null ) {
+		const error = new TypeError(
+			"setPrintSize: Parameters scaleWidth and scaleHeight must be finite numbers."
+		);
+		error.code = "INVALID_SIZE";
+		throw error;
+	}
+	return parsed;
 }
 
 /**

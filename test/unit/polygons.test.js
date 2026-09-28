@@ -22,17 +22,25 @@ function createHarness() {
 	let currentColor = palette[ 2 ];
 	let parseCount = 0;
 	let command;
-	const screen = { "api": {
-		"getColor": () => ( { ...currentColor } ),
-		"setColor": color => { currentColor = color; },
-		"getPalColor": index => palette[ index ] ?? null,
-		"rect": ( ...args ) => {
-			calls.push( { "kind": "rect", "args": args, "color": currentColor.key } );
+
+	// A view large enough that the existing cases are not clipped: local -100 to 899
+	const screen = {
+		"view": {
+			"originX": 100, "originY": 100,
+			"clipX": 0, "clipY": 0, "clipWidth": 1000, "clipHeight": 1000
 		},
-		"line": ( ...args ) => {
-			calls.push( { "kind": "line", "args": args, "color": currentColor.key } );
+		"api": {
+			"getColor": () => ( { ...currentColor } ),
+			"setColor": color => { currentColor = color; },
+			"getPalColor": index => palette[ index ] ?? null,
+			"rect": ( ...args ) => {
+				calls.push( { "kind": "rect", "args": args, "color": currentColor.key } );
+			},
+			"line": ( ...args ) => {
+				calls.push( { "kind": "line", "args": args, "color": currentColor.key } );
+			}
 		}
-	} };
+	};
 	g_polygons.default( {
 		"addCommand": ( name, fn, isScreen, parameters ) => {
 			g_assert.equal( name, "polygon" );
@@ -50,6 +58,7 @@ function createHarness() {
 	} );
 	return {
 		"screen": screen,
+		"setView": view => Object.assign( screen.view, view ),
 		"calls": calls,
 		"parseCount": () => parseCount,
 		"draw": ( points, fillColor ) => {
@@ -215,6 +224,45 @@ g_test.test( "outline calls stay lazy and cache reuse preserves coordinates and 
 	// A huge vertical range is safe for outline-only calls because no sweep occurs.
 	h.draw( [ 0, -1000000000, 4, 0, 0, 1000000000 ] );
 	g_assert.equal( h.calls.length, 3 );
+} );
+
+g_test.test( "CORE-012 fill spans are clipped to the visible view before they are stored", () => {
+	const h = createHarness();
+	const rows = ( count, x1, x2 ) => Array.from( { "length": count }, ( value, y ) => {
+		return [ y, x1, x2 ];
+	} );
+	h.setView( { "originX": 0, "originY": 0, "clipWidth": 20, "clipHeight": 12 } );
+
+	// Span ends past 2^31 are clipped instead of wrapping
+	const wide = [ 0, 0, 3000000000, 0, 0, 10 ];
+	h.draw( wide, 1 );
+	g_assert.deepEqual( h.spans(), rows( 10, 0, 19 ) );
+
+	// A polygon billions of rows tall sweeps only the visible rows
+	h.draw( [ 0, -2000000000, 10, -2000000000, 10, 2000000000, 0, 2000000000 ], 1 );
+	g_assert.deepEqual( h.spans(), rows( 12, 0, 10 ) );
+
+	// Edges that begin above the view start at their crossing on its first row
+	h.draw( [ -5, -5, 5, -5, 5, 5, -5, 5 ], 1 );
+	g_assert.deepEqual( h.spans(), rows( 5, 0, 5 ) );
+	h.draw( [ 0, -10, 20, 10, 0, 10 ], 1 );
+	g_assert.deepEqual( h.spans(), [
+		[ 0, 0, 10 ], [ 1, 0, 11 ], [ 2, 0, 12 ], [ 3, 0, 13 ], [ 4, 0, 14 ], [ 5, 0, 15 ],
+		[ 6, 0, 16 ], [ 7, 0, 17 ], [ 8, 0, 18 ], [ 9, 0, 19 ]
+	] );
+
+	// Cached spans follow a change of view, including its origin
+	h.setView( { "originX": 5, "originY": 5, "clipX": 5, "clipY": 5, "clipWidth": 4,
+		"clipHeight": 3 } );
+	h.draw( wide, 1 );
+	g_assert.deepEqual( h.spans(), rows( 3, 0, 3 ) );
+
+	// Off the view, or in an empty view, nothing is filled but the outline is still drawn
+	h.draw( [ 100, 100, 110, 100, 100, 110 ], 1 );
+	g_assert.deepEqual( h.spans(), [] );
+	h.setView( { "clipWidth": 0 } );
+	g_assert.equal( h.draw( wide, 1 ).filter( call => call.kind === "line" ).length, 3 );
+	g_assert.deepEqual( h.spans(), [] );
 } );
 
 g_test.test( "invalid coordinates and fill colors retain parameter error codes", () => {

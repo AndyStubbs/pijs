@@ -1,8 +1,8 @@
 /**
- * CORE-008 set() regressions against the real command and utility modules: option names are
- * checked before any setting applies, and a screen setting with no screen throws the core
- * no-screen error. Bundle-level cases (Full-only settings in Lite) are in
- * plugin-installation-browser.test.js.
+ * CORE-008 set() and CORE-007 option regressions against the real command and utility
+ * modules: option names are checked before any setting applies, a screen setting with no
+ * screen throws the core no-screen error, and an explicit undefined argument counts as omitted.
+ * Bundle-level cases (Full-only settings in Lite) are in plugin-installation-browser.test.js.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
@@ -82,7 +82,12 @@ function createSettingsHarness( hasScreen = false ) {
 			}
 			return api.set( realmJson.parse( JSON.stringify( value ) ) );
 		},
-		"calls": calls
+		"calls": calls,
+		"parseOptions": ( args, names ) => ( { ...context.parseOptions( args, names ) } ),
+
+		// Values that JSON cannot carry, such as undefined, built in the modules' realm
+		"evaluate": source => g_vm.runInContext( "(" + source + ")", context ),
+		"api": api
 	};
 }
 
@@ -150,4 +155,28 @@ test( "CORE-008 a screen setting with no screen throws before any setting applie
 		[ "screen", null, { "screen": 4 } ],
 		[ "color", 4, { "color": 5 } ]
 	] );
+} );
+
+test( "CORE-007 an explicit undefined is treated as an omitted argument", () => {
+	const h = createSettingsHarness( true );
+	const names = [ "col", "row", "margin" ];
+	assert.deepEqual( h.parseOptions( [ undefined, 2 ], names ), {
+		"col": null, "row": 2, "margin": null
+	} );
+	assert.deepEqual( h.parseOptions( [ 1, undefined, undefined ], names ), {
+		"col": 1, "row": null, "margin": null
+	} );
+	assert.deepEqual(
+		h.parseOptions( [ h.evaluate( "{ \"col\": undefined, \"row\": 2 }" ) ], names ),
+		{ "col": null, "row": 2, "margin": null }
+	);
+
+	// Other falsy values are kept
+	assert.deepEqual( h.parseOptions( [ 0, false, "" ], names ), {
+		"col": 0, "row": false, "margin": ""
+	} );
+
+	// set() skips an undefined option as it skips null
+	h.api.set( h.evaluate( "{ \"color\": undefined, \"defaultPal\": [ 3 ] }" ) );
+	assert.deepEqual( h.calls, [ [ "defaultPal", null, { "pal": [ 3 ] } ] ] );
 } );

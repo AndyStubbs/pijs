@@ -116,13 +116,13 @@ export function buildApi( sharedScreenData ) {
 			throw error;
 		}
 
-		// Validate angle parameters (numbers in radians)
+		// Validate angle parameters (finite numbers in radians)
 		if(
-			typeof angle1 !== "number" || isNaN( angle1 ) ||
-			typeof angle2 !== "number" || isNaN( angle2 )
+			typeof angle1 !== "number" || !Number.isFinite( angle1 ) ||
+			typeof angle2 !== "number" || !Number.isFinite( angle2 )
 		) {
 			const error = new TypeError(
-				"arc: Parameters angle1 and angle2 must be numbers (in radians)."
+				"arc: Parameters angle1 and angle2 must be finite numbers (in degrees)."
 			);
 			error.code = "INVALID_PARAMETER";
 			throw error;

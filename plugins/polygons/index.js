@@ -52,8 +52,10 @@ export default function polygonsPlugin( pluginApi ) {
 					"polygon: Parameter 'fillColor' must be a valid color."
 				);
 			}
-			if( polygonData.spans === null ) {
-				polygonData.spans = generateSpans( polygonData.coordinates );
+			const bounds = getVisibleBounds( screenData );
+			if( polygonData.spans === null || polygonData.spanBounds !== bounds.key ) {
+				polygonData.spans = generateSpans( polygonData.coordinates, bounds );
+				polygonData.spanBounds = bounds.key;
 			}
 			drawFill( screenData, polygonData, fillColor, outlineColor );
 			if( fillColor.key === outlineColor.key ) {
@@ -76,7 +78,8 @@ export default function polygonsPlugin( pluginApi ) {
  *
  * @param {Array|TypedArray} points - Raw polygon points
  * @param {Function} getInt - Pi.js integer parser
- * @returns {{ coordinates: Float64Array, spans: Int32Array|null }} Polygon data
+ * @returns {{ coordinates: Float64Array, spans: Int32Array|null, spanBounds: string|null }}
+ * Polygon data; spans are cached for the visible bounds they were clipped to
  */
 function getPolygonData( points, getInt ) {
 	if( !isPointCollection( points ) ) {
@@ -94,7 +97,8 @@ function getPolygonData( points, getInt ) {
 	validatePolygon( coordinates );
 	const polygonData = {
 		"coordinates": coordinates,
-		"spans": null
+		"spans": null,
+		"spanBounds": null
 	};
 	m_polygonCache.set( points, polygonData );
 	return polygonData;
@@ -279,23 +283,45 @@ function buildEdgeTable( coordinates ) {
 }
 
 /**
+ * The rows and columns of the active view that can be drawn, in local coordinates.
+ *
+ * @param {Object} screenData - Active Pi.js screen data
+ * @returns {{ minX: number, minY: number, maxX: number, maxY: number, key: string }} Inclusive
+ * bounds, empty when maxX < minX or maxY < minY, and a key for the span cache
+ */
+function getVisibleBounds( screenData ) {
+	const view = screenData.view;
+	const minX = view.clipX - view.originX;
+	const minY = view.clipY - view.originY;
+	const maxX = minX + view.clipWidth - 1;
+	const maxY = minY + view.clipHeight - 1;
+	return {
+		"minX": minX, "minY": minY, "maxX": maxX, "maxY": maxY,
+		"key": minX + "," + minY + "," + maxX + "," + maxY
+	};
+}
+
+/**
  * Generate inclusive X spans with a nonzero-winding Active Edge List sweep.
- * Crossing edges cover yMin <= y < yMax; horizontal edges are not crossings.
+ * Crossing edges cover yMin <= y < yMax; horizontal edges are not crossings. Only visible rows
+ * are swept, and spans are clipped to the visible columns, so coordinates far off screen cost
+ * nothing and every stored value fits an Int32Array.
  *
  * @param {Float64Array} coordinates - Normalized polygon coordinates
+ * @param {Object} bounds - Visible bounds from getVisibleBounds
  * @returns {Int32Array} Inclusive spans stored as y, xStart, xEnd triplets
  */
-function generateSpans( coordinates ) {
+function generateSpans( coordinates, bounds ) {
 	const edges = buildEdgeTable( coordinates );
 	const active = [];
 	const spans = [];
 	let edgeIndex = 0;
-	if( edges.length === 0 ) {
+	if( edges.length === 0 || bounds.maxX < bounds.minX || bounds.maxY < bounds.minY ) {
 		return new Int32Array( 0 );
 	}
 
-	let y = edges[ 0 ].yMin;
-	while( edgeIndex < edges.length || active.length > 0 ) {
+	let y = Math.max( edges[ 0 ].yMin, bounds.minY );
+	while( ( edgeIndex < edges.length || active.length > 0 ) && y <= bounds.maxY ) {
 
 		// Compact the AEL before adding all edges beginning on this row.
 		let length = 0;
@@ -305,8 +331,14 @@ function generateSpans( coordinates ) {
 			}
 		}
 		active.length = length;
-		while( edgeIndex < edges.length && edges[ edgeIndex ].yMin === y ) {
-			active.push( edges[ edgeIndex++ ] );
+
+		// An edge that began above the first visible row starts at its crossing on this row
+		while( edgeIndex < edges.length && edges[ edgeIndex ].yMin <= y ) {
+			const edge = edges[ edgeIndex++ ];
+			if( y < edge.yMax ) {
+				edge.x += ( y - edge.yMin ) * edge.inverseSlope;
+				active.push( edge );
+			}
 		}
 		active.sort( function( a, b ) {
 			return a.x - b.x || a.index - b.index;
@@ -320,7 +352,11 @@ function generateSpans( coordinates ) {
 			}
 			winding += edge.direction;
 			if( winding === 0 ) {
-				appendSpan( spans, y, Math.round( leftX ), Math.round( edge.x ) );
+				const startX = Math.max( Math.round( leftX ), bounds.minX );
+				const endX = Math.min( Math.round( edge.x ), bounds.maxX );
+				if( startX <= endX ) {
+					appendSpan( spans, y, startX, endX );
+				}
 			}
 		}
 		for( const edge of active ) {

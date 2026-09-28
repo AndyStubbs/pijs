@@ -166,12 +166,11 @@ function setDefaultPal( options ) {
  * @returns {Array<Object>}
  */
 function getDefaultPal( options ) {
-	const include0 = options.include0 ?? null;
 	const filteredPal = [];
 
-	// Set the start index to 0 if including 0 which is the transparent black color
+	// Index 0, transparent black, is included only when include0 is true
 	let startIndex = 0;
-	if( include0 === null ) {
+	if( !options.include0 ) {
 		startIndex = 1;
 	}
 
@@ -305,12 +304,11 @@ function getColor( screenData, options ) {
  * @returns {Array<Object>}
  */
 function getPal( screenData, options ) {
-	const include0 = options.include0 ?? null;
 	const filteredPal = [];
 
-	// Set the start index to 0 if including 0 which is the transparent black color
+	// Index 0, transparent black, is included only when include0 is true
 	let startIndex = 0;
-	if( include0 === null ) {
+	if( !options.include0 ) {
 		startIndex = 1;
 	}
 

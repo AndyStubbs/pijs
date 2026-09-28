@@ -233,4 +233,28 @@ for( const bundle of g_harness.BUNDLES ) {
 					failures, failed, $.getImage( "native" ).naturalWidth ];
 			} ), [ 0, "IMAGE_NOT_FOUND", 255, null, null, 1, "IMAGE_LOAD_FAILED", 2 ] );
 		} );
+
+	test( `CORE-011 ${bundle}: getImage of a screen returns a canvas, a copy when offscreen`,
+		async () => {
+			assert.deepEqual( await probe( bundle, () => {
+				const onscreen = $.screen( "4x4" );
+				const offscreen = $.screen( { "aspect": "3x2", "isOffscreen": true } );
+				offscreen.setColor( "red" );
+				offscreen.pset( 2, 1 );
+				const copy = $.getImage( offscreen );
+				const again = $.getImage( { "name": offscreen } );
+				const pixels = copy.getContext( "2d" ).getImageData( 0, 0, 3, 2 ).data;
+				return {
+					"onscreen": $.getImage( onscreen ) === onscreen.canvas(),
+					"isCanvas": copy instanceof HTMLCanvasElement,
+					"size": [ copy.width, copy.height ],
+					"copies": again !== copy,
+					"red": Array.from( pixels.slice( 20, 24 ) ),
+					"blank": Array.from( pixels.slice( 0, 4 ) )
+				};
+			} ), {
+				"onscreen": true, "isCanvas": true, "size": [ 3, 2 ], "copies": true,
+				"red": [ 255, 0, 0, 255 ], "blank": [ 0, 0, 0, 0 ]
+			} );
+		} );
 }

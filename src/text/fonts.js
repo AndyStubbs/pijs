@@ -147,16 +147,34 @@ function loadDefaultFonts() {
  */
 function loadFont( options ) {
 	const fontSrc = options.src;
-	const width = g_utils.getInt( options.width, null );
-	const height = g_utils.getInt( options.height, null );
-	const margin = g_utils.getInt( options.margin, 0 );
+	const width = g_utils.getFloat( options.width, null );
+	const height = g_utils.getFloat( options.height, null );
+	let margin = 0;
+	if( options.margin != null ) {
+		margin = g_utils.getFloat( options.margin, NaN );
+	}
 	const cellWidth = width + margin * 2;
 	const cellHeight = height + margin * 2;
 	let charset = options.charset;
 
-	if( width === null || height === null ) {
+	if( !Number.isInteger( width ) || !Number.isInteger( height ) ) {
 		const error = new TypeError( "loadFont: width and height must be integers." );
 		error.code = "INVALID_DIMENSIONS";
+		throw error;
+	}
+	if( width < 1 || height < 1 ) {
+		const error = new RangeError( "loadFont: width and height must be at least 1." );
+		error.code = "INVALID_DIMENSIONS";
+		throw error;
+	}
+	if( !Number.isInteger( margin ) ) {
+		const error = new TypeError( "loadFont: margin must be an integer." );
+		error.code = "INVALID_MARGIN";
+		throw error;
+	}
+	if( margin < 0 ) {
+		const error = new RangeError( "loadFont: margin must be 0 or greater." );
+		error.code = "INVALID_MARGIN";
 		throw error;
 	}
 

@@ -49,7 +49,7 @@ export function parseOptions( args, parameterNames ) {
 		for( const name of parameterNames ) {
 			if( name in inputOptions ) {
 				isNamedParameterFound = true;
-				resultOptions[ name ] = inputOptions[ name ];
+				resultOptions[ name ] = inputOptions[ name ] ?? null;
 			}
 		}
 	}
@@ -62,7 +62,7 @@ export function parseOptions( args, parameterNames ) {
 		// If args[ i ] is out of bounds, it remains null from initialization
 		for( let i = 0; i < parameterNames.length; i++ ) {
 			if( i < args.length ) {
-				resultOptions[ parameterNames[ i ] ] = args[ i ];
+				resultOptions[ parameterNames[ i ] ] = args[ i ] ?? null;
 			}
 		}
 	}

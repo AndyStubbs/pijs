@@ -300,7 +300,7 @@ function checkReady() {
  * This can get called from either the global api or directly from a screenData.api.
  * screenData can be null if no screen is available. Every option name is checked before any
  * setting is applied, so an unknown name, or a screen setting with no screen, applies nothing.
- * Options set to null are skipped.
+ * Options set to null or undefined are skipped.
  * @param {Object} screenData - Screen state.
  * @param {Object} options - Command options.
  * @returns {void}
@@ -324,7 +324,7 @@ export function set( screenData, options ) {
 	for( const optionName of optionNames ) {
 
 		// Skip blanks
-		if( options[ optionName ] === null ) {
+		if( options[ optionName ] == null ) {
 			continue;
 		}
 
@@ -371,7 +371,7 @@ function checkOptionNames( screenData, options, optionNames ) {
 			error.code = "INVALID_OPTION";
 			throw error;
 		}
-		if( options[ optionName ] === null ) {
+		if( options[ optionName ] == null ) {
 			continue;
 		}
 		if( optionName === "screen" ) {
