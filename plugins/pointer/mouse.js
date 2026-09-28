@@ -1,11 +1,13 @@
 /**
- * Mouse registration for Pointer plugin.
+ * Mouse registration for Pointer plugin. Mouse commands observe mouse and pen pointers through
+ * the shared Pointer Events listeners.
  */
 
 "use strict";
 
 import * as g_target from "./target.js";
 import * as g_press from "./press.js";
+import * as g_listeners from "./listeners.js";
 
 // Module-level reference to startMouseInternal function
 let m_startMouseInternal = null;
@@ -38,10 +40,8 @@ export function registerMouse( pluginApi, helpers ) {
 	const m_removeAllListeners = helpers.removeAllListeners;
 	const m_triggerEventListeners = helpers.triggerEventListeners;
 
-	// Screens with a mouse button held. While any is held, a window listener receives the
-	// release, wherever it happens
+	// Screens with a mouse button held, released when the page is hidden
 	const m_heldScreens = new Set();
-	let m_isWindowListening = false;
 
 	// The page-visibility listener is added when tracking first starts, not at plugin load
 	let m_isVisibilityListening = false;
@@ -76,9 +76,17 @@ export function registerMouse( pluginApi, helpers ) {
 			"lastY": Math.floor( screenData.height / 2 ),
 			"buttons": 0,
 			"action": "none",
-			"cancelled": false
+			"cancelled": false,
+			"type": "mouse"
 		};
 	}
+
+	g_listeners.setHandlers( "mouse", {
+		"pointerdown": mouseDown,
+		"pointermove": mouseMove,
+		"pointerup": mouseUp,
+		"pointercancel": releaseHeldMouse
+	}, getScreenDataFromEvent );
 
 	function startMouseInternal( screenData ) {
 
@@ -108,8 +116,7 @@ export function registerMouse( pluginApi, helpers ) {
 			m_isVisibilityListening = true;
 		}
 		if( !screenData.mouseStarted ) {
-			screenData.canvas.addEventListener( "mousemove", mouseMove );
-			screenData.canvas.addEventListener( "mousedown", mouseDown );
+			g_listeners.track( screenData, "mouse" );
 			screenData.canvas.addEventListener( "contextmenu", onContextMenu );
 			screenData.mouseStarted = true;
 		}
@@ -130,8 +137,7 @@ export function registerMouse( pluginApi, helpers ) {
 		screenData.mouseStopped = true;
 
 		if( screenData.mouseStarted ) {
-			screenData.canvas.removeEventListener( "mousemove", mouseMove );
-			screenData.canvas.removeEventListener( "mousedown", mouseDown );
+			g_listeners.untrack( screenData, "mouse" );
 			screenData.canvas.removeEventListener( "contextmenu", onContextMenu );
 			screenData.mouseStarted = false;
 		}
@@ -146,7 +152,7 @@ export function registerMouse( pluginApi, helpers ) {
 		mouse.buttons = screenData.mouse.buttons;
 		mouse.action = screenData.mouse.action;
 		mouse.cancelled = screenData.mouse.cancelled;
-		mouse.type = "mouse";
+		mouse.type = screenData.mouse.type;
 		return mouse;
 	}
 
@@ -223,9 +229,22 @@ export function registerMouse( pluginApi, helpers ) {
 		};
 	}
 
-	function mouseMove( e ) {
-		const screenData = getScreenDataFromEvent( e );
-		if( !screenData ) {
+	/**
+	 * A mouse or pen move. A button pressed or released while another is held arrives as a
+	 * move whose `button` names it, as Pointer Events report chorded buttons.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {PointerEvent} e - The `pointermove` event.
+	 * @returns {void}
+	 */
+	function mouseMove( screenData, e ) {
+		if( e.button >= 0 ) {
+			const bit = BUTTON_BITS[ e.button ];
+			if( bit !== undefined && ( e.buttons & bit ) !== 0 ) {
+				mouseDown( screenData, e );
+			} else {
+				mouseUp( screenData, e );
+			}
 			return;
 		}
 
@@ -237,15 +256,16 @@ export function registerMouse( pluginApi, helpers ) {
 		g_press.triggerPressListeners( screenData, "move", mouseData );
 	}
 
-	function mouseDown( e ) {
-		const screenData = getScreenDataFromEvent( e );
-		if( !screenData ) {
-			return;
-		}
-
-		// A press that starts on the canvas border or padding is ignored
+	/**
+	 * A button press. A press that starts on the canvas border or padding is ignored.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {PointerEvent} e - The `pointerdown` event, or a chorded `pointermove`.
+	 * @returns {boolean} Whether the press was accepted, so its pointer is captured.
+	 */
+	function mouseDown( screenData, e ) {
 		if( !g_target.isOnScreen( screenData, g_target.pointerPosition( screenData, e ) ) ) {
-			return;
+			return false;
 		}
 		let bit = BUTTON_BITS[ e.button ];
 		if( bit === undefined ) {
@@ -259,40 +279,37 @@ export function registerMouse( pluginApi, helpers ) {
 		if( e.button === 0 ) {
 			g_press.triggerClickListeners( screenData, mouseData, "down", "mouse" );
 		}
+		return true;
 	}
 
 	/**
-	 * Release a button on every screen that holds it. The listener is on `window`, so a release
-	 * outside the canvas arrives; a release for a button that is not held, such as a late
-	 * release after a hidden page released it, is ignored.
+	 * A button release. The pressed pointer is captured, so a release outside the canvas
+	 * arrives here; a release for a button that is not held, such as a late release after a
+	 * hidden page released it, is ignored.
 	 *
-	 * @param {MouseEvent} e - The `mouseup` event.
+	 * @param {Object} screenData - Screen state.
+	 * @param {PointerEvent} e - The `pointerup` event, or a chorded `pointermove`.
 	 * @returns {void}
 	 */
-	function mouseUp( e ) {
+	function mouseUp( screenData, e ) {
 		const bit = BUTTON_BITS[ e.button ];
-		if( bit === undefined ) {
+		if( bit === undefined || ( screenData.mouse.buttons & bit ) === 0 ) {
 			return;
 		}
-		for( const screenData of Array.from( m_heldScreens ) ) {
-			if( ( screenData.mouse.buttons & bit ) === 0 ) {
-				continue;
-			}
-			updateMouse( screenData, e, "up", screenData.mouse.buttons & e.buttons & ~bit );
-			updateHeld( screenData );
+		updateMouse( screenData, e, "up", screenData.mouse.buttons & e.buttons & ~bit );
+		updateHeld( screenData );
 
-			// Only the primary button clicks; any other release disarms
-			if( e.button === 0 ) {
-				dispatchRelease( screenData, "up" );
-			} else {
-				dispatchRelease( screenData, "cancel" );
-			}
+		// Only the primary button clicks; any other release disarms
+		if( e.button === 0 ) {
+			dispatchRelease( screenData, "up" );
+		} else {
+			dispatchRelease( screenData, "cancel" );
 		}
 	}
 
 	/**
 	 * Release every held button of a screen that the player did not release: the page was
-	 * hidden or tracking stopped. The release never clicks.
+	 * hidden, tracking stopped, or the browser cancelled the pointer. The release never clicks.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @returns {void}
@@ -309,7 +326,8 @@ export function registerMouse( pluginApi, helpers ) {
 			"lastY": mouse.y,
 			"buttons": 0,
 			"action": "up",
-			"cancelled": true
+			"cancelled": true,
+			"type": mouse.type
 		};
 		updateHeld( screenData );
 		dispatchRelease( screenData, "cancel" );
@@ -323,8 +341,7 @@ export function registerMouse( pluginApi, helpers ) {
 	}
 
 	/**
-	 * Track whether the screen holds a button, and keep the window release listener attached
-	 * only while some screen does.
+	 * Track whether the screen holds a button.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @returns {void}
@@ -334,13 +351,6 @@ export function registerMouse( pluginApi, helpers ) {
 			m_heldScreens.add( screenData );
 		} else {
 			m_heldScreens.delete( screenData );
-		}
-		if( m_heldScreens.size > 0 && !m_isWindowListening ) {
-			window.addEventListener( "mouseup", mouseUp, true );
-			m_isWindowListening = true;
-		} else if( m_heldScreens.size === 0 && m_isWindowListening ) {
-			window.removeEventListener( "mouseup", mouseUp, true );
-			m_isWindowListening = false;
 		}
 	}
 
@@ -360,7 +370,7 @@ export function registerMouse( pluginApi, helpers ) {
 	 * release over the border, the padding, or beyond the canvas.
 	 *
 	 * @param {Object} screenData - Screen state.
-	 * @param {MouseEvent} e - Mouse event.
+	 * @param {PointerEvent} e - Mouse or pen pointer event.
 	 * @param {string} action - `"down"`, `"move"`, or `"up"`.
 	 * @param {number} buttons - Buttons held on the screen after the event.
 	 * @returns {void}
@@ -393,9 +403,23 @@ export function registerMouse( pluginApi, helpers ) {
 			"lastY": lastY,
 			"buttons": buttons,
 			"action": action,
-			"cancelled": false
+			"cancelled": false,
+			"type": getPointerType( e )
 		};
 		screenData.lastEvent = "mouse";
+	}
+
+	/**
+	 * The `type` of mouse data: `"pen"` for a pen, `"mouse"` otherwise.
+	 *
+	 * @param {PointerEvent} e - Mouse or pen pointer event.
+	 * @returns {string}
+	 */
+	function getPointerType( e ) {
+		if( e.pointerType === "pen" ) {
+			return "pen";
+		}
+		return "mouse";
 	}
 
 	function getScreenDataFromEvent( e ) {
@@ -403,7 +427,7 @@ export function registerMouse( pluginApi, helpers ) {
 		if( screenId === undefined ) {
 			return null;
 		}
-		return pluginApi.getScreenData( "mouse-event", screenId );
+		return pluginApi.getScreenData( "pointer-event", screenId );
 	}
 
 	/**

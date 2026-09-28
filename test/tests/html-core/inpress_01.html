@@ -42,14 +42,13 @@
 		$.paint( 1, 1, 16 );
 		$.setColor( 15 );
 
-		// Read the press after every input event, once the plugin has seen it, so each state
-		// is drawn once whatever the timing. The release listener is on the window, where the
-		// plugin receives releases
+		// Read the press after every pointer event, once the plugin has seen it, so each state
+		// is drawn once whatever the timing. A press captures its pointer, so the release
+		// arrives at the canvas too
 		draw();
-		for( var type of [ "mousedown", "mousemove", "touchstart", "touchmove", "touchend" ] ) {
+		for( var type of [ "pointerdown", "pointermove", "pointerup", "pointercancel" ] ) {
 			$.canvas().addEventListener( type, draw );
 		}
-		window.addEventListener( "mouseup", draw );
 
 		function draw() {
 			$.cls( 0, 0, 75, 8 );

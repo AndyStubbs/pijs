@@ -581,7 +581,7 @@ the [ROADMAP](ROADMAP.md#6-pointer) tasks that implement each item.
 | PTR-001 | Removing a handler can disable all handlers of that type | Accepted | P1. Reachable through the on-screen keyboard. Fixed by B1 (Pointer 1.1) |
 | PTR-002 | Touch end reports the touches still down | Accepted | Fixed by B3 (Pointer 1.3) |
 | PTR-003 | Press and click follow the first touch | Accepted | Fixed by B4 (Pointer 1.4) |
-| PTR-004 | Release outside the canvas lost | Accepted | Confirmed with trusted input and in Chrome 153. Fixed by B5/B6 (Pointer 1.5, 2.2) |
+| PTR-004 | Release outside the canvas lost | Accepted | Confirmed with trusted input and in Chrome 153. Fixed by B5/B6 (Pointer 1.5 and 2.2, done) |
 | PTR-005 | Click listeners stay armed; cancelled touches click | Accepted | Confirmed with trusted input and in Chrome 153 (mouse part). Fixed by B3/B4 (Pointer 1.3, 1.4) |
 | PTR-006 | A throwing handler breaks the rest of the event | Accepted | Fixed by B2 (Pointer 1.2) |
 | PTR-007 | Blur resets polling without telling handlers | Accepted | Confirmed in Chrome 153, where the button was still held at blur. Fixed by B5 (Pointer 1.5) |
@@ -596,7 +596,7 @@ the [ROADMAP](ROADMAP.md#6-pointer) tasks that implement each item.
 | PTR-016 | Manual pointer pages do not load cleanly | Accepted | Pointer 1.8 (done) |
 | PTR-017 | Missing automated tests | Accepted | A test with each fix; fixtures in Pointer 1.9 (done) |
 | B1–B5, B8, B9, B12 | Fixes | Accepted | Pointer Phase 1, except B9, which lands with I11 in Pointer 2.8. B8: presses that start on the border or padding are ignored |
-| B6 | Pointer Events path | Accepted | Observable changes listed in the compatibility summary |
+| B6 | Pointer Events path | Accepted | Done (Pointer 2.2). Observable changes listed in the compatibility summary |
 | B7 | One data shape | Accepted | Breaking |
 | B10 | Per-screen gesture settings | Accepted | Breaking |
 | B11 | Wheel input | Accepted | Additive, in 2.3.0 (Pointer 3.1); handler shape follows I2 |

@@ -8,8 +8,8 @@ Sets the touch-action style of the document body: an empty value when enabled, '
 disabled, replacing any touch-action the page set on the body. Disabling it stops pinch zoom and
 panning on the whole page, not only the canvas.
 
-This is a global setting. While touch is tracked on a screen, touchstart on its canvas is always
-prevented, so a pinch cannot start on the canvas even when pinch zoom is enabled. Any truthy value
+This is a global setting. While touch is tracked on a screen, its canvas has touch-action set to
+none, so a pinch cannot start on the canvas even when pinch zoom is enabled. Any truthy value
 enables pinch zoom.
 """
 example = """

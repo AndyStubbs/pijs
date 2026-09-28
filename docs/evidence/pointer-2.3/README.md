@@ -15,7 +15,7 @@ This folder holds measurements and reproductions for the 2.3 pointer audit
 | `size-phase1.json` | The same command at the exit of pointer Phase 1 (tasks 1.1–1.9), 2026-09-27 |
 | `probes.js` | Reproductions P1–P17 and T1, run in Chromium, Firefox and WebKit against fresh in-memory bundles of the current source, plus a load check of the manual pointer pages |
 | `probes-output.json` | Observed and expected results per engine and probe, with page errors |
-| `device-check.html` | A page for the manual mouse pass: Pi.js state next to the browser's own mouse events |
+| `device-check.html` | A page for the manual mouse pass: Pi.js state next to the browser's own mouse and pen pointer events (mouse events before Pointer 2.2) |
 
 ## Size baseline
 

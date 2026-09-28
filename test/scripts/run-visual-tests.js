@@ -17,7 +17,7 @@
  * - MC [button] - Mouse click
  * - MV x,y - Mouse move to position
  * - MV x,y,steps - Mouse move with steps
- * - TS x,y - Touch start
+ * - TS x,y - Touch start (touch pointer events; see dispatchTouch)
  * - TM x,y - Touch move
  * - TM x,y,steps - Touch move with steps
  * - TE - Touch end at the last touch position
@@ -538,64 +538,52 @@ async function executeCommand( page, command ) {
 }
 
 /**
- * Dispatch touch event to page. The touch is in `changedTouches`, and in `touches` unless the
- * event ends it, as browsers report a single touch.
- * 
+ * Dispatch the pointer event a browser sends for a touch action to the target element: a
+ * `pointerdown`, `pointermove`, or `pointerup` with `pointerType` "touch". Touch pointer ids start
+ * at 100, clear of the mouse pointer's.
+ *
  * @param {Object} page - Playwright page object
  * @param {string} target - CSS selector for target element
- * @param {string} name - Touch event name
+ * @param {string} name - Touch action: "touchstart", "touchmove", or "touchend"
  * @param {Array} data - Touch coordinates [x, y]
  * @param {number} id - Touch identifier
  * @returns {Promise<void>}
  */
 async function dispatchTouch( page, target, name, data, id ) {
-	const coords = Array.isArray( data ) && data.length >= 2 ? 
-		[ parseInt( data[ 0 ] ), parseInt( data[ 1 ] ) ] : 
-		[];
-
+	const coordinates = [ parseInt( data[ 0 ] ), parseInt( data[ 1 ] ) ];
 	await page.evaluate(
-		( { selector, eventName, coordinates, touchId } ) => {
-			const targetElement = selector ? 
-				document.querySelector( selector ) : 
-				document.querySelector( "canvas" );
-
-			const touchConfig = {
-				"cancelable": true,
-				"bubbles": true,
-				"touches": [],
-				"targetTouches": [],
-				"changedTouches": [],
-				"shiftKey": false
-			};
-
-			if( coordinates.length >= 2 ) {
-				const touch = new Touch( {
-					"identifier": touchId,
-					"target": targetElement,
-					"clientX": coordinates[ 0 ],
-					"clientY": coordinates[ 1 ],
-					"pageX": coordinates[ 0 ],
-					"pageY": coordinates[ 1 ],
-					"radiusX": 2.5,
-					"radiusY": 2.5,
-					"rotationAngle": 10,
-					"force": 0.5
-				} );
-				if( eventName !== "touchend" ) {
-					touchConfig.touches.push( touch );
-					touchConfig.targetTouches.push( touch );
-				}
-				touchConfig.changedTouches.push( touch );
+		( { selector, eventName, point, pointerId } ) => {
+			let targetElement = document.querySelector( "canvas" );
+			if( selector ) {
+				targetElement = document.querySelector( selector );
 			}
-
-			const event = new TouchEvent( eventName, touchConfig );
-			targetElement.dispatchEvent( event );
+			const types = {
+				"touchstart": [ "pointerdown", 0, 1 ],
+				"touchmove": [ "pointermove", -1, 1 ],
+				"touchend": [ "pointerup", 0, 0 ]
+			};
+			const [ type, button, buttons ] = types[ eventName ];
+			targetElement.dispatchEvent( new PointerEvent( type, {
+				"bubbles": true,
+				"cancelable": true,
+				"composed": true,
+				"pointerId": pointerId,
+				"pointerType": "touch",
+				"isPrimary": true,
+				"button": button,
+				"buttons": buttons,
+				"clientX": point[ 0 ],
+				"clientY": point[ 1 ],
+				"width": 5,
+				"height": 5,
+				"pressure": 0.5
+			} ) );
 		},
-		{ 
-			"selector": target, 
-			"eventName": name, 
-			"coordinates": coords, 
-			"touchId": id 
+		{
+			"selector": target,
+			"eventName": name,
+			"point": coordinates,
+			"pointerId": 100 + id
 		}
 	);
 }

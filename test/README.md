@@ -349,8 +349,9 @@ Put HTML fixtures in `test/tests/html-core/` or `test/tests/html-plugins/`. Incl
 
 Use `lite = true` only for core fixtures that work with the lite bundle. Initialize drawing through
 `$.ready()`. The optional `commands` string simulates input before capture; supported commands are
-documented at the top of `test/scripts/run-visual-tests.js`. Touch commands send one touch in
-`changedTouches`, as browsers do; `TE` ends it at its last position with an empty `touches` list.
+documented at the top of `test/scripts/run-visual-tests.js`. Touch commands send the pointer
+events a browser sends for one touch (`pointerdown`, `pointermove`, `pointerup` with
+`pointerType` "touch") to the target element; `TE` ends the touch at its last position.
 `expectPageError` allowlists one intentional uncaught error by its exact message. Other uncaught
 page errors fail independently of pixels.
 
