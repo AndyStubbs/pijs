@@ -21,10 +21,14 @@ const m_gamepads = {};
 // Per pad: the state the loop last saw, and the edges it accumulated since the last read
 const m_padStates = {};
 
-// Handler registrations: { fn, isRemoved }. A registration removed during a dispatch is
-// skipped for the rest of it
+// Handler registrations: { fn, isRemoved }, and for connect handlers `delivered`, the pads the
+// handler has received. A registration removed during a dispatch is skipped for the rest of it
 let m_onConnectHandlers = [];
 let m_onDisconnectHandlers = [];
+
+// Connect handlers registered during a dispatch receive the connected pads after it ends
+let m_dispatchDepth = 0;
+const m_pendingReplays = [];
 
 let m_isInitialized = false;
 let m_isStopped = false;
@@ -181,7 +185,8 @@ function setGamepadSensitivity( options ) {
 }
 
 /**
- * Register a callback for gamepad connections.
+ * Register a callback for gamepad connections. The callback also receives the pads that are
+ * already connected, once each.
  *
  * @param {Object} options - Command options.
  * @returns {void}
@@ -195,8 +200,14 @@ function onGamepadConnected( options ) {
 		throw error;
 	}
 
-	m_onConnectHandlers.push( { "fn": fn, "isRemoved": false } );
+	const handler = { "fn": fn, "isRemoved": false, "delivered": new WeakSet() };
+	m_onConnectHandlers.push( handler );
 	startGamepad();
+	if( m_dispatchDepth > 0 ) {
+		m_pendingReplays.push( handler );
+	} else {
+		replayConnected( handler );
+	}
 }
 
 /**
@@ -229,7 +240,8 @@ function gamepadConnected( e ) {
 	// Record a new pad without consuming edges; the loop reports the press that exposed it
 	recordGamepad( e.gamepad );
 
-	// Trigger connect handlers
+	// Trigger connect handlers. A handler that already received this pad, from the scan, a
+	// replay, or an earlier event for the same connection, is not called again
 	dispatch( m_onConnectHandlers, m_gamepads[ e.gamepad.index ], "onGamepadConnected" );
 }
 
@@ -251,8 +263,9 @@ function gamepadDisconnected( e ) {
 
 /**
  * Call each handler with the data. Handlers added during the dispatch first run in the next
- * one, and a handler removed during it does not run later in it. A handler that throws is
- * reported with `console.error`, and the others still run.
+ * one, and a handler removed during it does not run later in it. A connect handler receives
+ * each pad once. A handler that throws is reported with `console.error`, and the others still
+ * run.
  *
  * @param {Array<Object>} handlers - Handler registrations.
  * @param {Object} data - Data passed to each handler.
@@ -260,15 +273,41 @@ function gamepadDisconnected( e ) {
  * @returns {void}
  */
 function dispatch( handlers, data, command ) {
+	m_dispatchDepth += 1;
 	for( const handler of handlers.slice() ) {
 		if( handler.isRemoved ) {
 			continue;
+		}
+		if( handler.delivered ) {
+			if( handler.delivered.has( data ) ) {
+				continue;
+			}
+			handler.delivered.add( data );
 		}
 		try {
 			handler.fn( data );
 		} catch( error ) {
 			console.error( `${command}: Handler failed:`, error );
 		}
+	}
+	m_dispatchDepth -= 1;
+	if( m_dispatchDepth === 0 ) {
+		while( m_pendingReplays.length > 0 ) {
+			replayConnected( m_pendingReplays.shift() );
+		}
+	}
+}
+
+/**
+ * Deliver the pads already connected to a new connect handler, in index order. A pad the
+ * handler already received, such as from the start-up scan, is skipped.
+ *
+ * @param {Object} handler - Connect handler registration.
+ * @returns {void}
+ */
+function replayConnected( handler ) {
+	for( const gamepadData of Object.values( m_gamepads ) ) {
+		dispatch( [ handler ], gamepadData, "onGamepadConnected" );
 	}
 }
 
