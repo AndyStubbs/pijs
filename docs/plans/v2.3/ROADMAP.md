@@ -16,7 +16,7 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Pointer 1.1](#61-phase-1-fixes-and-tests), [Gamepad 1.1](#71-phase-1-fixes-and-tests) | Continue the pointer and gamepad Phase 1s, in parallel | Nothing |
+| 1 | [Pointer 1.2](#61-phase-1-fixes-and-tests), [Gamepad 1.1](#71-phase-1-fixes-and-tests) | Continue the pointer and gamepad Phase 1s, in parallel | Nothing |
 | 2 | [Keyboard 2.1](#52-phase-2-api-breaking-set-200) | Start the keyboard breaking set on one long-lived branch (Section 1.4) | Nothing. Can run in parallel with 1 |
 | 3 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
 | 4 | [Core 5–13](#32-phase-2-fixes) | Remaining core fixes, tests, and the two approved API changes, in any order. Core 8 and Core 13 land before the pointer and gamepad Phase 2 sets | Nothing. Can run in parallel |
@@ -30,7 +30,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Core | [3](#3-core) | Phase 1 done. Core 1, 2, and 4 done, 10 tasks left | Core 5–13 |
 | Sound | [4](#4-sound) | Phases 0–9 done; Phases 10–11 not started | Sound 10.1 |
 | Keyboard | [5](#5-keyboard) | Phase 1 done; Phase 2 not started | Keyboard 2.1 |
-| Pointer | [6](#6-pointer) | Approved; Phase 1 not started | Pointer 1.1 |
+| Pointer | [6](#6-pointer) | Phase 1: 1.1 done, 8 tasks left | Pointer 1.2 |
 | Gamepad | [7](#7-gamepad) | Approved; Phase 1 not started | Gamepad 1.1 |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
 | CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.9) | — |
@@ -451,21 +451,21 @@ reproductions in `docs/evidence/pointer-2.3/probes.js`. The probe script builds 
 `print-table` and `onscreen-keyboard` plugins, so it no longer runs as written; tests are written
 from its probe code. Baseline: 1.0.0, 3,951 bytes gzipped.
 
-Dispatch logic tests go in `pointer-events.test.js`, which task 1.1 extends with a harness that
-drives `mouse.js`, `touch.js`, and `press.js` against fake `window`, `document`, and canvas
-objects; event wiring goes in `pointer-browser.test.js`. Two changes from the audit's order:
-validation (B9) moves to Phase 2 to land once with I11, and the steps that updated
-`onscreen-keyboard` and `pi-vision` are dropped, since both plugins are removed.
+Dispatch logic tests go in `pointer-events.test.js`, whose harness (task 1.1) drives `mouse.js`,
+`touch.js`, and `press.js` against fake `window`, `document`, and canvas objects; event wiring
+goes in `pointer-browser.test.js`. Two changes from the audit's order: validation (B9) moves to
+Phase 2 to land once with I11, and the steps that updated `onscreen-keyboard` and `pi-vision`
+are dropped, since both plugins are removed.
 
 ### 6.1 Phase 1: fixes and tests
 
 No breaking change; the version stays 1.0.0. B3 and B4 keep today's data shape here, plus the
 additive `cancelled` field (I6); the action names change in Phase 2. Phase 1 ships even if
-Phase 2 is cut, so its release fixes stand on their own.
+Phase 2 is cut, so its release fixes stand on their own. Done: 1.1
+([Section 13.7](#137-pointer)).
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 1.1 | **Handler bookkeeping (B1).** First, the Node harness described above. Dispatch whenever a mode has handlers, without counters; `off*( mode, fn )` removes only matching registrations; `once` removes only its own; a handler removed during a dispatch does not run later in it. Tests: clearing one mode, removing unknown functions, `once` with a duplicate (P1, P7, today's semantics; 2.4 changes it) | [PTR-001](AUDIT-POINTER.md#ptr-001) (P1), [PTR-009](AUDIT-POINTER.md#ptr-009) | — |
 | 1.2 | **Dispatch isolation (B2).** Update state and prevent defaults before dispatch; each handler in its own `try`, errors to `console.error`. Tests: throwing mouse, press, and touch handlers, with `preventDefault()` still applied (P6) | [PTR-006](AUDIT-POINTER.md#ptr-006) | — |
 | 1.3 | **Per-touch tracking (B3).** Track touches from `changedTouches`: `end` reports the touch that ended at its last position, each touch keeps its own action, hit boxes test the changed touches, `touchcancel` never clicks and releases with `cancelled: true` (I6). Update `test/scripts/run-visual-tests.js` so `TE` sends the ended touch in `changedTouches`, and `test/README.md` with it. Tests: end and cancel data, per-touch actions (P2, P3) | [PTR-002](AUDIT-POINTER.md#ptr-002), [PTR-005](AUDIT-POINTER.md#ptr-005) | — |
 | 1.4 | **Primary pointer and clicks (B4).** Press follows the primary pointer; clicks are per pointer, armed by a primary-button down inside the box, fired by a release inside it, and disarmed by any other release or a cancel. Tests: press and click with two fingers, button filtering, stale arming (P4, P5) | [PTR-003](AUDIT-POINTER.md#ptr-003), [PTR-005](AUDIT-POINTER.md#ptr-005), [PTR-008](AUDIT-POINTER.md#ptr-008) | — |
@@ -1034,7 +1034,13 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | 1.10 | Frozen key data (A10): key data objects, both held keydown data and keyup release data, are frozen when they are created, so `inkey()` and handlers cannot change plugin state through them; `inkey()` still returns a new array. Test: writes to polled and handler data fail, and combination and release data are frozen (K7), in `keyboard-lifecycle.test.js` | [KEY-013](AUDIT-KEYBOARD.md#key-013) | [#30](https://github.com/AndyStubbs/pijs/pull/30) |
 | 1.11 | Metadata for current behavior: `metadata/pi-2.3/` overrides for `input` (resolves with a string, a number, or `null`; callback type; the cursor default is character code 219; `maxLength` takes `null`; the numeric, paste, layout, and cancellation rules of tasks 1.3–1.7), `inkey` (value lookups, frozen data, a working example), `onkey` and `offkey` (callbacks receive an array for combinations; `offkey`'s `mode` is required; codes and values; release data; the example removes the right function), `setActionKeys` (it adds; codes and values), `startKeyboard` (no automatic restart; focus kept), and `stopKeyboard` (a prompt keeps working). Tests: `input` and `onkey` signatures in `validate-type-definitions.js` and the Lite keyboard type consumer; action keys added by `setActionKeys()` and removed by `removeActionKeys()` in `keyboard-lifecycle.test.js`, and added by `set( { "actionKeys" } )` in `keyboard-lifecycle-browser.test.js` (K20); 2.9 changes the adding tests | [KEY-017](AUDIT-KEYBOARD.md#key-017) | [#31](https://github.com/AndyStubbs/pijs/pull/31) |
 | 1.12 | Manual pages and tools: removed the plugin scripts that Full already includes from `clearevents_01`, `events_comprehensive`, `gamepad_01`, and `onkey_sound_01`, which now load without errors. Removed `html-manual/input_01`; its custom-cursor case is covered by a Node test that checks the printed line rather than by `keyboard_input`, whose capture is taken after every prompt has ended, and each removal is logged in `test/TEST-CONSOLIDATION-LOG.md`. `tools/dataedit.html` loads `../build/pi.js`, and the `input()` calls in `tools/charedit.html` and `tools/dataedit.html` pass `cursor` in its place. `tools/charedit.html` still calls the removed `$.util` helpers, which is outside this task | [KEY-018](AUDIT-KEYBOARD.md#key-018), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | [#32](https://github.com/AndyStubbs/pijs/pull/32) |
-| 1.13 | `keyboard_commands` timing: the fixture no longer depends on timers. The keyboard is restarted by the page's own listener for R instead of a 1-second timeout; the `inkey()` section reads the held keys after every key event instead of polling every 15 ms, so each state is drawn once; the section starts directly instead of after 200 ms; and the 2.0 s of `DL` waits are gone. Five runs gave byte-identical captures; the baseline was re-recorded and reviewed. Phase 1 exit: size recorded in `docs/evidence/keyboard-2.3/README.md` (plugin +380 bytes gzipped) | [CI-008](AUDIT-CI.md#ci-008), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | — |
+| 1.13 | `keyboard_commands` timing: the fixture no longer depends on timers. The keyboard is restarted by the page's own listener for R instead of a 1-second timeout; the `inkey()` section reads the held keys after every key event instead of polling every 15 ms, so each state is drawn once; the section starts directly instead of after 200 ms; and the 2.0 s of `DL` waits are gone. Five runs gave byte-identical captures; the baseline was re-recorded and reviewed. Phase 1 exit: size recorded in `docs/evidence/keyboard-2.3/README.md` (plugin +380 bytes gzipped) | [CI-008](AUDIT-CI.md#ci-008), [AUDIT-TESTS §5.3](AUDIT-TESTS.md#53-keyboard) | [#33](https://github.com/AndyStubbs/pijs/pull/33) |
+
+### 13.7 Pointer
+
+| # | Task | Findings | Ref |
+| --- | --- | --- | --- |
+| 1.1 | Handler bookkeeping (B1): dispatch runs whenever a mode has handlers, and the per-type counters that `off*()` adjusted by guesswork are gone. `off*( mode, fn )` removes only that function's registrations in that mode; a `once` registration removes only itself, before its handler runs; a handler removed or cleared during a dispatch does not run later in it. Harness: `pointer-events.test.js` loads `mouse.js`, `touch.js`, `press.js`, and the plugin entry into `vm` contexts, maps arguments with core's `parseOptions`, and dispatches mouse and touch events through the plugin's canvas listeners; the fake event target moved from `keyboard-lifecycle.test.js` to `vm-module-harness.js` for the pointer and gamepad harnesses. Tests: clearing one mode, removing functions that were never added, removal and clearing during a dispatch, and `once` with a duplicate registration (P1, P7, today's duplicate semantics) | [PTR-001](AUDIT-POINTER.md#ptr-001) (P1), [PTR-009](AUDIT-POINTER.md#ptr-009) | — |
 
 ## 14. Glossary
 

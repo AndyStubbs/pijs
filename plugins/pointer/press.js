@@ -18,14 +18,13 @@ import * as g_touch from "./touch.js";
 export function registerPress( pluginApi, helpers ) {
 	const onevent = helpers.onevent;
 	const offevent = helpers.offevent;
+	const removeAllListeners = helpers.removeAllListeners;
 	const triggerEventListenersLocal = helpers.triggerEventListeners;
 
 	// Expose trigger for other modules via module-level binding
 	m_triggerEventListeners = triggerEventListenersLocal;
 
-	pluginApi.addScreenDataItem( "pressEventListenersActive", 0 );
 	pluginApi.addScreenDataItem( "onPressEventListeners", {} );
-	pluginApi.addScreenDataItem( "clickEventListenersActive", 0 );
 	pluginApi.addScreenDataItem( "onClickEventListeners", {} );
 
 	pluginApi.addScreenInitFunction( initPressData );
@@ -81,16 +80,12 @@ export function registerPress( pluginApi, helpers ) {
 		const hitBox = options.hitBox;
 		const customData = options.customData;
 
-		const isValid = onevent(
+		onevent(
 			mode, fn, once, hitBox, [ "down", "up", "move" ], "onpress",
 			screenData.onPressEventListeners, null, null, customData
 		);
-
-		if( isValid ) {
-			g_mouse.startMouseInternal( screenData );
-			g_touch.startTouchInternal( screenData );
-			screenData.pressEventListenersActive += 1;
-		}
+		g_mouse.startMouseInternal( screenData );
+		g_touch.startTouchInternal( screenData );
 	}
 
 	/**
@@ -104,21 +99,10 @@ export function registerPress( pluginApi, helpers ) {
 		const mode = options.mode;
 		const fn = options.fn;
 
-		const isValid = offevent(
+		offevent(
 			mode, fn, [ "down", "up", "move" ], "offpress",
 			screenData.onPressEventListeners
 		);
-
-		if( isValid ) {
-			if( fn == null ) {
-				screenData.pressEventListenersActive = 0;
-			} else {
-				screenData.pressEventListenersActive -= 1;
-				if( screenData.pressEventListenersActive < 0 ) {
-					screenData.pressEventListenersActive = 0;
-				}
-			}
-		}
 	}
 
 	/**
@@ -144,16 +128,12 @@ export function registerPress( pluginApi, helpers ) {
 			};
 		}
 
-		const isValid = onevent(
+		onevent(
 			"click", fn, once, hitBox, [ "click" ], "onclick",
 			screenData.onClickEventListeners, null, null, customData
 		);
-
-		if( isValid ) {
-			g_mouse.startMouseInternal( screenData );
-			g_touch.startTouchInternal( screenData );
-			screenData.clickEventListenersActive += 1;
-		}
+		g_mouse.startMouseInternal( screenData );
+		g_touch.startTouchInternal( screenData );
 	}
 
 	/**
@@ -165,31 +145,20 @@ export function registerPress( pluginApi, helpers ) {
 	 */
 	function offclick( screenData, options ) {
 		const fn = options.fn;
-		const isValid = offevent(
+		offevent(
 			"click", fn, [ "click" ], "offclick",
 			screenData.onClickEventListeners
 		);
-
-		if( isValid ) {
-			if( fn == null ) {
-				screenData.clickEventListenersActive = 0;
-			} else {
-				screenData.clickEventListenersActive -= 1;
-				if( screenData.clickEventListenersActive < 0 ) {
-					screenData.clickEventListenersActive = 0;
-				}
-			}
-		}
 	}
 
 	function clearPressEvents( screenData ) {
+		removeAllListeners( screenData.onPressEventListeners );
 		screenData.onPressEventListeners = {};
-		screenData.pressEventListenersActive = 0;
 	}
 
 	function clearClickEvents( screenData ) {
+		removeAllListeners( screenData.onClickEventListeners );
 		screenData.onClickEventListeners = {};
-		screenData.clickEventListenersActive = 0;
 	}
 
 	return {
@@ -210,7 +179,7 @@ let m_triggerEventListeners = null;
  * @returns {void}
  */
 export function triggerPressListeners( screenData, mode, data ) {
-	if( screenData.pressEventListenersActive > 0 && m_triggerEventListeners ) {
+	if( m_triggerEventListeners ) {
 		m_triggerEventListeners( mode, data, screenData.onPressEventListeners );
 	}
 }
@@ -224,7 +193,7 @@ export function triggerPressListeners( screenData, mode, data ) {
  * @returns {void}
  */
 export function triggerClickListeners( screenData, data, clickStatus ) {
-	if( screenData.clickEventListenersActive > 0 && m_triggerEventListeners ) {
+	if( m_triggerEventListeners ) {
 		m_triggerEventListeners( "click", data, screenData.onClickEventListeners, clickStatus );
 	}
 }
