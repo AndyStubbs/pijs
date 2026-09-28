@@ -402,14 +402,22 @@ export function buildApi( sharedScreenData ) {
 	 * BLIT IMAGE Command
 	 **********************************************************************************************/
 
-	// Draw image with blending disabled
+	// White, the default blit color, skips parsing; other colors are parsed as drawImage does
+	const getBlitColor = color => {
+		if( color == null ) {
+			return DEFAULT_BLIT_COLOR;
+		}
+		return sharedGetColorValueByRawInput( sharedScreenData, color ) ?? DEFAULT_BLIT_COLOR;
+	};
+
+	// Draw image with blending disabled. Omitted values take their defaults in both the
+	// positional and object forms, and a given color is parsed as drawImage parses it
 	const blitImageFn = ( img, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad ) => {
 		const pAnchorX = anchorX ?? sharedScreenData.defaultAnchorX;
 		const pAnchorY = anchorY ?? sharedScreenData.defaultAnchorY;
-		const pColor = color ?? DEFAULT_BLIT_COLOR;
 		sharedDrawImage(
-			sharedScreenData, img, x, y, pColor, pAnchorX, pAnchorY, scaleX, scaleY, angleRad,
-			sharedImageReplaceBatch
+			sharedScreenData, img, x ?? 0, y ?? 0, getBlitColor( color ), pAnchorX, pAnchorY,
+			scaleX ?? 1, scaleY ?? 1, angleRad ?? 0, sharedImageReplaceBatch
 		);
 		sharedSetImageDirty( sharedScreenData );
 	};
@@ -441,21 +449,20 @@ export function buildApi( sharedScreenData ) {
 	 * BLIT SPRITE Command
 	 **********************************************************************************************/
 
-	// Draw image with blending disabled
+	// Draw a sprite frame with blending disabled, with defaults and colors as in blitImage
 	const blitSpriteFn = (
 		name, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angleRad
 	) => {
 		const spriteData = sharedGetStoredImage( name );
-		const frameData = spriteData.frames[ frame ];
+		const frameData = spriteData.frames[ frame ?? 0 ];
 		const img = spriteData.image;
 		const pAnchorX = anchorX ?? sharedScreenData.defaultAnchorX;
 		const pAnchorY = anchorY ?? sharedScreenData.defaultAnchorY;
-		const pColor = color ?? DEFAULT_BLIT_COLOR;
 		sharedDrawSprite(
 			sharedScreenData, img,
 			frameData.x, frameData.y, frameData.width, frameData.height,
-			x, y, frameData.width, frameData.height,
-			pColor, pAnchorX, pAnchorY, scaleX, scaleY, angleRad,
+			x ?? 0, y ?? 0, frameData.width, frameData.height,
+			getBlitColor( color ), pAnchorX, pAnchorY, scaleX ?? 1, scaleY ?? 1, angleRad ?? 0,
 			sharedImageReplaceBatch
 		);
 		sharedSetImageDirty( sharedScreenData );

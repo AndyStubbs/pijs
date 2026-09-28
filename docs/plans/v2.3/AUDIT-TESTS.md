@@ -695,12 +695,12 @@ go to their owner. The last column names the ROADMAP task that takes each item.
 
 | Item | Detail | Task |
 | --- | --- | --- |
-| Gaps | `blitImage`, `blitSprite`, `setDefaultAnchor`, and `calcWidth` have no test | Core 12 |
+| Gaps | `blitImage`, `blitSprite`, `setDefaultAnchor`, and `calcWidth` have no test | Core 12, done |
 | Error message | The `NO_ACTIVE_SCREEN` message reads "there there" (`src/core/screen-manager.js:259`), and the `errors_01` baseline records it | Done (TEST-024) |
 | SYS-012 | Declarations are checked against metadata and compiled by consumers, but nothing compares the declared command set with the runtime objects of each bundle | Core 10, done (`metadata-runtime-browser.test.js`) |
-| SYS-013 | Explicit `registerPlugin()` without `window.pi`, the documented alternative to ESM auto-registration, is only type-checked | Core 12 |
-| Visual-only commands | `getDefaultPal`, `getShaderInfo`, `screenToView`, and `setPrintSize` are checked only by one fixture's pixels | Core 12 |
-| Filter cleanup hook | Break check B2a: removing the `cancelFilter` pre-cleanup hook (`src/api/pixels.js:37`) changes nothing observable, because the per-pixel check at `:417` already stops the filter. The comment at `:391` says there is no per-pixel check. Either the hook or the check is redundant | Core 12 |
+| SYS-013 | Explicit `registerPlugin()` without `window.pi`, the documented alternative to ESM auto-registration, is only type-checked | Core 12, done (`polygons-bundles-browser.test.js`) |
+| Visual-only commands | `getDefaultPal`, `getShaderInfo`, `screenToView`, and `setPrintSize` are checked only by one fixture's pixels | Core 12, done: `getShaderInfo` through Core 11 and `setPrintSize` through Core 6 |
+| Filter cleanup hook | Break check B2a: removing the `cancelFilter` pre-cleanup hook (`src/api/pixels.js:37`) changes nothing observable, because the per-pixel check at `:417` already stops the filter. The comment at `:391` says there is no per-pixel check. Either the hook or the check is redundant | Core 12, done: the hook is removed and the per-pixel check kept |
 | `shaders_lifecycle` | Found by TEST-022: with its sampler shader fixed, the fixture's check sequence runs to the end, and 7 checks fail: sampler contexts, automatic presentation after removal and failure, and shader disposal. It needs those fixes and a deterministic capture with a reviewed baseline. Until then it can race under heavy parallel load, and CI skips it (`ciSkip`) | Core 11, done: the failures were fixture defects, and the capture waits for `patchResult` |
 
 ### 5.6 CI/CD exploration

@@ -257,4 +257,84 @@ for( const bundle of g_harness.BUNDLES ) {
 				"red": [ 255, 0, 0, 255 ], "blank": [ 0, 0, 0, 0 ]
 			} );
 		} );
+
+	test( `Core 12 ${bundle}: blitImage and blitSprite replace pixels at the default anchor`,
+		async () => {
+			assert.deepEqual( await probe( bundle, async () => {
+				const rgba = ( screen, x, y ) => {
+					const pixel = screen.getPixel( x, y );
+					return [ pixel.r, pixel.g, pixel.b, pixel.a ];
+				};
+
+				// A 2x2 source: a half-transparent blue pixel, the rest opaque green
+				const source = document.createElement( "canvas" );
+				source.width = 2;
+				source.height = 2;
+				const context = source.getContext( "2d" );
+				context.fillStyle = "#00FF00";
+				context.fillRect( 0, 0, 2, 2 );
+				context.clearRect( 0, 0, 1, 1 );
+				context.fillStyle = "rgba(0, 0, 255, 0.5)";
+				context.fillRect( 0, 0, 1, 1 );
+
+				// Blits replace the red background instead of blending with it
+				const screen = $.screen( "8x8" );
+				screen.setColor( "#FF0000" );
+				screen.rect( 0, 0, 8, 8, "#FF0000" );
+				screen.blitImage( source, 0, 0 );
+				screen.drawImage( source, 4, 0 );
+				const drawn = rgba( screen, 4, 0 );
+				const results = {
+					"blit": rgba( screen, 0, 0 ),
+					"drawBlends": drawn[ 0 ] > 100 && drawn[ 2 ] > 100 && drawn[ 3 ] === 255
+				};
+
+				// Object form, scale, and a color multiplier
+				screen.blitImage( { "img": source, "x": 0, "y": 4, "scaleX": 2, "scaleY": 2,
+					"color": "#FF0000" } );
+				results.scaled = [ rgba( screen, 3, 7 ), rgba( screen, 1, 5 ) ];
+
+				// The default anchor places both blits and draws, per screen
+				const anchored = $.screen( "8x8" );
+				anchored.setDefaultAnchor( 1, 1 );
+				anchored.blitImage( source, 8, 8 );
+				results.anchored = [ rgba( anchored, 7, 7 ), rgba( anchored, 5, 5 ) ];
+				results.otherScreen = rgba( screen, 7, 7 );
+				const codes = [];
+				for( const [ x, y ] of [ [ 2, 0 ], [ 0, -0.5 ], [ null, 0 ], [ "a", 0 ] ] ) {
+					try {
+						anchored.setDefaultAnchor( x, y );
+					} catch( error ) {
+						codes.push( error.code );
+					}
+				}
+				results.anchorCodes = codes;
+
+				// blitSprite draws a spritesheet frame, positionally or as an object
+				const sheet = document.createElement( "canvas" );
+				sheet.width = 4;
+				sheet.height = 2;
+				const sheetContext = sheet.getContext( "2d" );
+				sheetContext.fillStyle = "#FF00FF";
+				sheetContext.fillRect( 0, 0, 2, 2 );
+				sheetContext.fillStyle = "#00FFFF";
+				sheetContext.fillRect( 2, 0, 2, 2 );
+				$.loadSpritesheet( sheet, "blit_sheet", 2, 2 );
+				await $.ready();
+				const sprites = $.screen( "8x8" );
+				sprites.blitSprite( "blit_sheet", 1, 0, 0 );
+				sprites.blitSprite( { "name": "blit_sheet", "frame": 0, "x": 4, "y": 4 } );
+				results.sprites = [ rgba( sprites, 1, 1 ), rgba( sprites, 5, 5 ),
+					rgba( sprites, 3, 3 ) ];
+				return results;
+			} ), {
+				"blit": [ 0, 0, 255, 128 ], "drawBlends": true,
+				"scaled": [ [ 0, 0, 0, 255 ], [ 0, 0, 0, 128 ] ],
+				"anchored": [ [ 0, 255, 0, 255 ], [ 0, 0, 0, 0 ] ],
+				"otherScreen": [ 255, 0, 0, 255 ],
+				"anchorCodes": [ "INVALID_ANCHOR", "INVALID_ANCHOR", "INVALID_ANCHOR",
+					"INVALID_ANCHOR" ],
+				"sprites": [ [ 0, 255, 255, 255 ], [ 255, 0, 255, 255 ], [ 0, 0, 0, 0 ] ]
+			} );
+		} );
 }

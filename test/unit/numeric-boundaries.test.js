@@ -280,6 +280,33 @@ test( "COV-003 pushView rejects negative width and height", () => {
 	assert.equal( h.screen.view.stack.length, 0 );
 } );
 
+test( "Core 12 screenToView and viewToScreen follow nested views and reject non-integers", () => {
+	const h = createViewHarness();
+	const toView = ( x, y ) => ( { ...h.api.screenToViewCmd( h.screen, { "x": x, "y": y } ) } );
+	const toScreen = ( x, y ) => ( { ...h.api.viewToScreenCmd( h.screen, { "x": x, "y": y } ) } );
+	assert.deepEqual( toView( 7, 9 ), { "x": 7, "y": 9 } );
+	h.api.pushViewCmd( h.screen, { "x": 5, "y": 6, "width": 10, "height": 8 } );
+	assert.deepEqual( toView( 7, 9 ), { "x": 2, "y": 3 } );
+	assert.deepEqual( toScreen( 2, 3 ), { "x": 7, "y": 9 } );
+
+	// A nested view is relative to its parent, and points outside the view still convert
+	h.api.pushViewCmd( h.screen, { "x": 1, "y": 2, "width": 4, "height": 4 } );
+	assert.deepEqual( toView( 7, 9 ), { "x": 1, "y": 1 } );
+	assert.deepEqual( toScreen( -2, 20 ), { "x": 4, "y": 28 } );
+	h.api.popViewCmd( h.screen );
+	assert.deepEqual( toView( 7, 9 ), { "x": 2, "y": 3 } );
+
+	// Rounded like other coordinates; missing and non-finite values throw
+	assert.deepEqual( toView( 7.4, 8.6 ), { "x": 2, "y": 3 } );
+	for( const [ x, y ] of [ [ null, 1 ], [ 1, NaN ], [ Infinity, 1 ], [ "x", 1 ] ] ) {
+		for( const convert of [ toView, toScreen ] ) {
+			assert.throws(
+				() => convert( x, y ), { "name": "TypeError", "code": "INVALID_PARAMETER" }
+			);
+		}
+	}
+} );
+
 test( "COV-003 pushView accepts zero-size and rounded finite integers", () => {
 	const h = createViewHarness();
 	h.api.pushViewCmd( h.screen, { "x": 1.4, "y": 2.6, "width": 0, "height": 0 } );

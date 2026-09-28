@@ -16,10 +16,9 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Core 12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
-| 2 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Nothing |
-| 3 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Nothing |
-| 4 | [Sound 11.1–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
+| 1 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Nothing |
+| 2 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Nothing |
+| 3 | [Sound 11.1–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -27,7 +26,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
-| Core | [3](#3-core) | Phases 1 and 3 done. Core 1, 2, 4–11, and 13 done, 2 tasks left | Core 12 |
+| Core | [3](#3-core) | Complete (Phases 1–3); Core 3 and C10 are written in R.2 | — |
 | Sound | [4](#4-sound) | Phases 0–10 done. Its listening checks are in Section 8.3; Phase 11 not started | Sound 11.1–11.5 |
 | Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Pointer | [6](#6-pointer) | Phase 1 done; Phase 2 not started | Pointer 2.1 |
@@ -248,8 +247,8 @@ in its plugin's Phase 2 and is listed in its compatibility summary.
 ## 3. Core
 
 Findings: [AUDIT-CORE.md](AUDIT-CORE.md). Proposals C1–C11:
-[AUDIT-CORE.md §4](AUDIT-CORE.md#4-proposed-changes). Core 1, 2, 4–11, and 13 are done
-([Section 13.5](#135-core)). The task numbers follow the audit's follow-up order, so Core 3–10
+[AUDIT-CORE.md §4](AUDIT-CORE.md#4-proposed-changes). Core 1, 2, and 4–13 are done
+([Section 13.5](#135-core)); Core 3 is documentation for R.2. The task numbers follow the audit's follow-up order, so Core 3–10
 keep their original numbers and Core 11–12 are the test audit's handoffs.
 
 ### 3.1 Phase 1: before input implementation
@@ -258,11 +257,11 @@ Done: Core 1, 2, and 4 ([Section 13.5](#135-core)).
 
 ### 3.2 Phase 2: fixes
 
-In any order, in parallel with the input work.
+Phase 2 is done ([Section 13.5](#135-core)). The size at the exit of Phases 2 and 3 is in
+`docs/evidence/core-2.3/`.
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| Core 12 | **Test audit coverage gaps.** Tests for `blitImage`, `blitSprite`, `setDefaultAnchor`, and `calcWidth`; for explicit `registerPlugin()` without `window.pi` (SYS-013); and assertions for the visual-only `getDefaultPal`, `getShaderInfo`, `screenToView`, and `setPrintSize`. Resolve the redundant filter cleanup: remove the `cancelFilter` pre-cleanup hook or the per-pixel check in `src/api/pixels.js`, and correct the comment that says there is no per-pixel check | [AUDIT-TESTS §5.5](AUDIT-TESTS.md#55-core-audit) | — |
 
 ### 3.3 Phase 3: API change
 
@@ -299,6 +298,9 @@ Input to `UPGRADE-V2.3.md` (R.4):
   omitted; `getPal( false )` and `getDefaultPal( false )` exclude index 0, as the default does;
   `getImage()` of an offscreen screen returns a canvas copy of its pixels; and `polygon()` fills
   coordinates far off the screen correctly.
+- **Core 12:** `blitImage()` and `blitSprite()` accept every color form `drawImage()` accepts,
+  where a color made the pixels transparent, and their object forms apply the documented
+  defaults, where an omitted scale drew nothing.
 - **C8:** "`setChar()` now works on every font, including the default font, and changes the
   character on every screen that uses the font. It edits the font's own copy of its image, so
   an image or canvas passed to `loadFont()` is left unchanged." Printing with the default font
@@ -1041,7 +1043,8 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | Core 7 | Canvas textures, `setChar`, and cache bounds (C8): a canvas marked static (`isDirty` false) is uploaded once per context, and again only when its `version` changes; the default font's canvas is static. `setChar` draws the glyph into the font's own canvas and bumps its version, so every screen picks up the edit on its next lookup, after text queued with the old glyph, and a restored context uploads it; an image font, or one loaded from a caller's canvas, is copied into an owned canvas on its first edit, and the old image's textures are released. The filled-circle geometry cache holds at most 1,048,576 coordinates (about 4 MB), evicting the least recently used first, and does not cache geometry larger than that. Metadata: `setChar`. Tests: `font-publication-browser.test.js` (C09) in both bundles: the default font's edit, a later screen, an image font edited on two screens, a context restore, and no uploads while printing; `batch-reservations.test.js`: the cache budget and eviction order | [CORE-010](AUDIT-CORE.md#core-010), [CORE-018](AUDIT-CORE.md#core-018) | [#73](https://github.com/AndyStubbs/pijs/pull/73) |
 | Core 9 | Packaging (C11): the root `package.json` is `"private": true`, so npm refuses to publish the development tree; `releases/base-package.json` and `releases/pi-latest/package.json` list `CHANGELOG.md` in `files`, so the tarball ships it with the README and LICENSE (checked with `npm pack --dry-run` in `releases/pi-latest`). The `releases/PUBLISH.md` rename landed in CI 2.1. Test: `copy-to-release.test.js` checks both manifests' `files`, that each entry exists in the release package, and the root's `private` | [CORE-019](AUDIT-CORE.md#core-019) | [#74](https://github.com/AndyStubbs/pijs/pull/74) |
 | Core 10 | Metadata against runtime: `metadata-runtime-browser.test.js` compares each bundle's runtime with the metadata the declarations come from. Full is compared with the core and bundled-plugin metadata; Lite, with every plugin loaded standalone including `sound-advanced`, also with `metadata/plugin-sound-advanced`. Every registered command must have metadata with the same parameter names in order, and the functions on `$` and on a screen must be exactly the declared commands and screen commands, which also covers the screen flag, the forms installed outside the registry (`removeScreen`, a screen's `clearEvents`), and settings, which are the `set` commands. No mismatch was found. Support: `commands.getCommandDescriptors()`, `layerMetadata()` and `readPluginMethods()` exported from `scripts/generate-metadata.js` (its output is unchanged), and the harness `expose` option includes the command module. Break checks: a renamed parameter, a missing metadata file, and an undocumented command each fail | [CORE-020](AUDIT-CORE.md#core-020), [AUDIT-TESTS §5.5](AUDIT-TESTS.md#55-core-audit) | [#75](https://github.com/AndyStubbs/pijs/pull/75) |
-| Core 11 | `shaders_lifecycle`: the 7 failing checks were fixture defects, not library ones. A 2x2 `rect()` fill is covered by its outline, drawn in the current color, so the sampler sources in sections 23, 25, 26, and 28 were gray; each now sets its color first. Section 28's shader was an identity tint, so its disposal checks could not tell it from no shader; it now keeps green and blue only, over a white source, with a new check that the display shader filters before disposal. The fixture resolves `window.patchResult` with its check count (`expectPatchResult = 122`), so the runner captures once the sequence ends; `waitUntil`, `delay`, `renderWait`, and `ciSkip` are removed, and the runner's `waitUntil` and `renderWait` options, which only this fixture used, are removed with their `test/README.md` text. The capture matches the approved baseline in full and lite, so it is unchanged. Checks: 10 of 10 repeats, and the full visual suite 3 times (90 of 90); removing the renderer's rescheduling safeguard now fails the fixture | [AUDIT-TESTS §5.5](AUDIT-TESTS.md#55-core-audit) | — |
+| Core 11 | `shaders_lifecycle`: the 7 failing checks were fixture defects, not library ones. A 2x2 `rect()` fill is covered by its outline, drawn in the current color, so the sampler sources in sections 23, 25, 26, and 28 were gray; each now sets its color first. Section 28's shader was an identity tint, so its disposal checks could not tell it from no shader; it now keeps green and blue only, over a white source, with a new check that the display shader filters before disposal. The fixture resolves `window.patchResult` with its check count (`expectPatchResult = 122`), so the runner captures once the sequence ends; `waitUntil`, `delay`, `renderWait`, and `ciSkip` are removed, and the runner's `waitUntil` and `renderWait` options, which only this fixture used, are removed with their `test/README.md` text. The capture matches the approved baseline in full and lite, so it is unchanged. Checks: 10 of 10 repeats, and the full visual suite 3 times (90 of 90); removing the renderer's rescheduling safeguard now fails the fixture | [AUDIT-TESTS §5.5](AUDIT-TESTS.md#55-core-audit) | [#76](https://github.com/AndyStubbs/pijs/pull/76) |
+| Core 12 | Test audit coverage gaps: `blitImage`, `blitSprite`, and `setDefaultAnchor` (`image-lifecycle-browser.test.js`: replace mode, scale, color, the default anchor per screen, its errors, and sprite frames), `calcWidth` (`font-publication-browser.test.js`), `screenToView` and `viewToScreen` (`numeric-boundaries.test.js`), and `getDefaultPal` values (`color-validation-browser.test.js`); `getShaderInfo` and `setPrintSize` are asserted since Core 11 and Core 6. SYS-013: an ESM plugin imported before Pi.js registers explicitly (`polygons-bundles-browser.test.js`). The tests found two blit defects, now fixed: any color made the pixels transparent, and the object forms drew nothing when a scale was omitted. Filter cleanup: the `cancelFilter` pre-cleanup hook is removed, since the check after each callback already stops the filter on removal and also on context loss, which a new case covers; removing that check fails both cases. Size: `size-phases2-3.json` | [AUDIT-TESTS §5.5](AUDIT-TESTS.md#55-core-audit) | — |
 | Core 13 | `$.clearEvents()` clears every screen (I10, breaking): the global command passes no screen to the clear handlers, and each screen's `clearEvents()` passes that screen; the plugin API is unchanged, since every clear handler already treats no screen as every screen. So `$.clearEvents()` clears pointer handlers on every screen and cancels an `input()` prompt on any screen. Metadata: `clearEvents` describes both forms. Tests: the registry passes no screen from the global form (`plugins.test.js`); mouse, touch, press, and click handlers on two screens cleared by each form and by type (`pointer-browser.test.js`); KEY-016's `$` forms now cancel a prompt on the screen that is not active. The pointer Node harness clears as `$.clearEvents()` does | — | [#66](https://github.com/AndyStubbs/pijs/pull/66) |
 | Core 5 | Offscreen context lifetime (C1): when the last screen of the shared offscreen context is removed, the renderer discards the context and releases it with `WEBGL_lose_context`, and the screen manager stops sharing its canvas (`releaseOffscreenCanvas`), since `getContext()` on that canvas would return the old context. The next standalone offscreen screen creates a new canvas and context with its own loss and restore listeners. A child screen keeps the context in use after its standalone parent goes. Test: `context-recovery-browser.test.js` (C01), in Full and Lite: the last member removed while the context works and while it is lost, a child keeping the context shared, the next screens drawing on a new shared context, the old context released, and the new context recovering from its own loss | [CORE-001](AUDIT-CORE.md#core-001) | [#71](https://github.com/AndyStubbs/pijs/pull/71) |
 

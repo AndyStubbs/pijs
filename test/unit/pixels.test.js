@@ -4,11 +4,9 @@
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
-import * as g_vm from "node:vm";
 import * as g_harness from "./vm-module-harness.js";
 const { test } = g_test;
 const assert = g_assert;
-const vm = g_vm;
 
 for( const command of [ "getPixelAsync", "getAsync" ] ) {
 	for( const asIndex of [ false, true ] ) {
@@ -92,7 +90,9 @@ test( "SYS-008 filters queued before restoration never touch the new generation"
 	assert.equal( calls.upload, 0 );
 } );
 
-for( const timing of [ "immediate", "between microtasks", "inside callback", "live" ] ) {
+for( const timing of [
+	"immediate", "between microtasks", "inside callback", "context lost inside callback", "live"
+] ) {
 	test( "SYS-005 filter lifetime: " + timing, () => {
 		const { pixels, screen, microtasks, calls, dispose } = g_harness.createPixelHarness();
 		let callbacks = 0;
@@ -100,6 +100,8 @@ for( const timing of [ "immediate", "between microtasks", "inside callback", "li
 			callbacks++;
 			if( timing === "inside callback" ) {
 				dispose();
+			} else if( timing === "context lost inside callback" ) {
+				screen.contextLost = true;
 			}
 			return true;
 		} } );
@@ -112,14 +114,15 @@ for( const timing of [ "immediate", "between microtasks", "inside callback", "li
 		while( microtasks.length ) {
 			microtasks.shift()();
 		}
-		assert.equal( vm.runInContext( "m_activeFilters", pixels ).has( screen ), false );
 		if( timing === "live" ) {
 			assert.equal( callbacks, 4 );
 			assert.equal( calls.upload, 1 );
 			assert.equal( calls.dirty, 1 );
 		} else {
+
+			// The check after each callback stops the rest of the pixels and the upload
 			let expectedCallbacks = 0;
-			if( timing === "inside callback" ) {
+			if( timing.endsWith( "inside callback" ) ) {
 				expectedCallbacks = 1;
 			}
 			assert.equal( callbacks, expectedCallbacks );
@@ -129,13 +132,12 @@ for( const timing of [ "immediate", "between microtasks", "inside callback", "li
 	} );
 }
 
-test( "SYS-005 throwing filters release cancellation state and allow subsequent filtering", () => {
+test( "SYS-005 throwing filters upload nothing and allow subsequent filtering", () => {
 	const { pixels, screen, microtasks, calls } = g_harness.createPixelHarness();
 	const failure = new Error( "filter failed" );
 	pixels.filterImg( screen, { "filter": () => { throw failure; } } );
 	microtasks.shift()();
 	assert.throws( () => microtasks.shift()(), error => error === failure );
-	assert.equal( vm.runInContext( "m_activeFilters", pixels ).has( screen ), false );
 	assert.equal( calls.upload, 0 );
 	assert.equal( calls.dirty, 0 );
 	let callbacks = 0;

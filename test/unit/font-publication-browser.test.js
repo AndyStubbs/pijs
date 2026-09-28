@@ -261,4 +261,24 @@ for( const bundle of g_harness.BUNDLES ) {
 				"imageEdited": [ 64, 64 ], "restored": [ 64, 48 ]
 			} );
 		} );
+
+	test( `Core 12 ${bundle}: calcWidth follows the font, print size, and padding`, async () => {
+		assert.deepEqual( await probe( bundle, () => {
+			const screen = $.screen( "320x200" );
+			const widths = [ screen.calcWidth( "HELLO" ), screen.calcWidth( "" ),
+				screen.calcWidth() ];
+			screen.setPrintSize( 2, 1, 1 );
+			widths.push( screen.calcWidth( "HELLO" ) );
+			screen.setFont( 2 );
+			widths.push( screen.calcWidth( { "msg": "HI" } ) );
+
+			// The width matches the printed text's advance
+			screen.setPrintSize( 1, 1, 0 );
+			screen.setFont( 1 );
+			screen.setPos( 0, 0 );
+			screen.print( "HELLO", true );
+			widths.push( screen.getPosPx().x );
+			return widths;
+		} ), [ 30, 0, 0, 70, 36, 30 ] );
+	} );
 }

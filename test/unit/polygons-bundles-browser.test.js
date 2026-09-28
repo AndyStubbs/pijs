@@ -1,4 +1,7 @@
-/** Full bundle availability, standalone Lite installation, and benchmark polygon isolation. */
+/**
+ * Full bundle availability, standalone Lite installation, explicit registration of an ESM
+ * plugin imported before Pi.js (SYS-013), and benchmark polygon isolation.
+ */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
 import * as g_chromiumLaunch from "./chromium-launch.js";
@@ -95,6 +98,55 @@ for( const format of [ "iife", "esm" ] ) {
 		}
 	}
 }
+
+// SYS-013: a plugin imported before Pi.js cannot see window.pi, so it does not register
+// itself, and its default export is registered explicitly, as plugins/README.md describes
+g_test.test( "SYS-013 an ESM plugin imported before Pi.js is registered explicitly", async () => {
+	const [ core, plugin ] = await Promise.all( [
+		g_source.buildSource( "src/index.js", "esm", true ),
+		g_source.buildSource( "plugins/polygons/index.js", "esm", true )
+	] );
+	const page = await m_browser.newPage();
+	const errors = [];
+	page.on( "pageerror", error => errors.push( error ) );
+	try {
+		await page.route( "http://polygons.test/**", route => {
+			const url = route.request().url();
+			if( url.endsWith( ".js" ) ) {
+				let body = core;
+				if( url.endsWith( "/plugin.js" ) ) { body = plugin; }
+				return route.fulfill( { "contentType": "application/javascript", "body": body } );
+			}
+			return route.fulfill( {
+				"contentType": "text/html", "body": "<!doctype html><body>"
+			} );
+		} );
+		await page.goto( "http://polygons.test/" );
+		g_assert.deepEqual( await page.evaluate( async () => {
+			const pluginModule = await import( "/plugin.js" );
+			const piBeforeCore = typeof window.pi;
+			const pi = ( await import( "/core.js" ) ).default;
+			const before = pi.getPlugins().length;
+			pi.registerPlugin( { "name": "polygons", "init": pluginModule.default } );
+			await pi.ready();
+			const screen = pi.screen( "16x16" );
+			pi.polygon( [ 1, 1, 12, 1, 6, 12 ], 4 );
+			const pixel = screen.getPixel( 6, 4 );
+			return {
+				"piBeforeCore": piBeforeCore,
+				"pluginsBefore": before,
+				"plugins": pi.getPlugins().map( item => [ item.name, item.state ] ),
+				"filled": pixel.a === 255 && pixel.r > 100
+			};
+		} ), {
+			"piBeforeCore": "undefined", "pluginsBefore": 0,
+			"plugins": [ [ "polygons", "initialized" ] ], "filled": true
+		} );
+		g_assert.deepEqual( errors, [] );
+	} finally {
+		await page.close();
+	}
+} );
 
 /** Load a classic bundle or verify the ESM core exports share the browser API. */
 async function loadBundle( page, format, name ) {
