@@ -51,7 +51,7 @@ export default function keyboardPlugin( pluginApi ) {
 	pluginApi.addCommand( "setActionKeys", setActionKeys, false, [ "keys" ] );
 	pluginApi.addCommand( "removeActionKeys", removeActionKeys, false, [ "keys" ] );
 	pluginApi.addCommand( "onKey", onKey, false, [ "key", "mode", "fn", "once", "allowRepeat" ] );
-	pluginApi.addCommand( "offKey", offKey, false, [ "key", "mode", "fn", "once", "allowRepeat" ] );
+	pluginApi.addCommand( "offKey", offKey, false, [ "key", "mode", "fn" ] );
 
 	// Initialize input command
 	g_input.initInput( pluginApi, isFromEditableTarget );
@@ -162,7 +162,10 @@ function removeActionKeys( options ) {
 }
 
 /**
- *  Register a handler; callback errors are reported asynchronously without stopping dispatch.
+ * Register a handler; callback errors are reported asynchronously without stopping dispatch. A
+ * handler is identified by its key set, mode, and function, so registering the same function for
+ * the same keys and mode again does nothing.
+ *
  * @param {Object} options - Command options.
  * @returns {void}
  */
@@ -199,8 +202,15 @@ function onKey( options ) {
 		combo = key;
 	}
 
+	const comboKey = combo.sort().join( "" );
+	for( const existing of m_onKeyHandlers[ combo[ 0 ] ] || [] ) {
+		if( existing.comboKey === comboKey && existing.mode === mode && existing.fn === fn ) {
+			return;
+		}
+	}
+
 	const handler = {
-		"comboKey": combo.sort().join( "" ),
+		"comboKey": comboKey,
 		"combo": combo,
 		"mode": mode,
 		"fn": fn,
@@ -219,7 +229,9 @@ function onKey( options ) {
 }
 
 /**
- * Remove matching keyboard listeners.
+ * Remove matching keyboard listeners. A handler matches by key set, mode, and function: without a
+ * function, every handler of the mode is removed, and without a mode, the function is removed
+ * from both modes.
  *
  * @param {Object} options - Command options.
  * @returns {void}
@@ -228,8 +240,6 @@ function offKey( options ) {
 	const key = options.key;
 	const mode = options.mode;
 	const fn = options.fn;
-	const once = !!options.once;
-	const allowRepeat = !!options.allowRepeat;
 
 	if( !key || ( typeof key !== "string" && !Array.isArray( key ) ) ) {
 		const error = new TypeError( "offKey: key must be a string or an array of strings." );
@@ -237,7 +247,16 @@ function offKey( options ) {
 		throw error;
 	}
 
-	if( typeof fn !== "function" ) {
+	if( mode == null && fn == null ) {
+		const error = new TypeError(
+			"offKey: mode or fn is required. To remove every key handler, call " +
+			"clearEvents( \"keyboard\" )."
+		);
+		error.code = "INVALID_MODE";
+		throw error;
+	}
+
+	if( fn != null && typeof fn !== "function" ) {
 		const error = new TypeError( "offKey: callback must be a function." );
 		error.code = "INVALID_PARAMETERS";
 		throw error;
@@ -252,32 +271,19 @@ function offKey( options ) {
 	}
 	const comboKey = combo.sort().join( "" );
 
-	// Find the handlers and remove them
-	for( const key of combo ) {
-		const handlers = m_onKeyHandlers[ key ];
-		if( !handlers ) {
-			continue;
+	// Find the handlers, then remove each from every key it is registered under
+	const matches = [];
+	for( const handler of m_onKeyHandlers[ combo[ 0 ] ] || [] ) {
+		if(
+			handler.comboKey === comboKey &&
+			( mode == null || handler.mode === mode ) &&
+			( fn == null || handler.fn === fn )
+		) {
+			matches.push( handler );
 		}
-		const toRemove = [];
-		for( let i = 0; i < handlers.length; i += 1 ) {
-			const handler = handlers[ i ];
-			if(
-				handler.comboKey === comboKey &&
-				handler.mode === mode &&
-				handler.fn === fn &&
-				handler.once === once &&
-				handler.allowRepeat === allowRepeat
-			) {
-				toRemove.push( i );
-				handler.isRemoved = true;
-			}
-		}
-		for( let i = toRemove.length - 1; i >= 0; i -= 1 ) {
-			handlers.splice( toRemove[ i ], 1 );
-		}
-		if( handlers.length === 0 ) {
-			delete m_onKeyHandlers[ key ];
-		}
+	}
+	for( const handler of matches ) {
+		removeHandler( handler );
 	}
 }
 

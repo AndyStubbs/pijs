@@ -152,6 +152,11 @@ const REQUIRED_DECLARATIONS = [
 			"=> void, once?: boolean, allowRepeat?: boolean ): void;"
 	},
 	{
+		"name": "offKey removes by key, mode, and function",
+		"text": "offKey( key: string | any[], mode?: string | null, fn?: ( keyData: object | " +
+			"object[] ) => void ): void;"
+	},
+	{
 		"name": "ingamepad return shapes",
 		"text": "ingamepad( gamepadIndex?: number ): GamepadData | Array<GamepadData> | null | " +
 			"undefined;"

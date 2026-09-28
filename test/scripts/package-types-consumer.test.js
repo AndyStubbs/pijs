@@ -46,7 +46,10 @@ const LITE_PLUGIN_CONSUMERS = {
 		`lite.inKey();`
 	],
 	"keyboard": [
-		`lite.onKey( "KeyA", "down", () => {} );`,
+		`const jump = () => {};`,
+		`lite.onKey( "KeyA", "down", jump );`,
+		`lite.offKey( "KeyA", null, jump );`,
+		`lite.offKey( { key: "KeyA", mode: "down" } );`,
 		`const age: Promise<string | number | null> = lite.screen( "8x8" ).input(`,
 		`	"Age?", ( value: string | number | null ) => { void value; }, "_", true, true,`,
 		`	false, null );`,

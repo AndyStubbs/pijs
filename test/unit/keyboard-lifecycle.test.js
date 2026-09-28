@@ -896,3 +896,84 @@ test( "keyboard registers inKey, onKey, and offKey, and not the old names (I1, I
 		assert.throws( () => h.api[ name ]( "KeyA" ), TypeError );
 	}
 } );
+
+test( "KEY-007 offKey matches key set, mode, and function, in every removal form (K5)", () => {
+	const h = harness();
+	const $ = h.api;
+	const calls = [];
+	const tap = ( name, code ) => {
+		h.key( name, "down", { "code": code } );
+		h.key( name, "up", { "code": code } );
+	};
+	const log = label => () => calls.push( label );
+
+	// once and allowRepeat do not take part in removal; the old arguments are ignored
+	const onceFn = log( "once" );
+	const repeatFn = log( "repeat" );
+	$.onKey( "KeyA", "down", onceFn, true );
+	$.onKey( "KeyB", "down", repeatFn, false, true );
+	$.offKey( "KeyA", "down", onceFn );
+	$.offKey( "KeyB", "down", repeatFn, true, false );
+	tap( "a", "KeyA" );
+	tap( "b", "KeyB" );
+	assert.deepEqual( calls, [] );
+
+	// Without a mode, the function leaves both modes, in the object and positional forms
+	const both = log( "both" );
+	$.onKey( "KeyC", "down", both );
+	$.onKey( "KeyC", "up", both );
+	$.offKey( { "key": "KeyC", "fn": both } );
+	$.onKey( [ "Control", "KeyD" ], "down", both );
+	$.onKey( [ "KeyD", "Control" ], "up", both );
+	$.offKey( [ "KeyD", "Control" ], null, both );
+	tap( "c", "KeyC" );
+	h.key( "Control", "down", { "code": "Control" } );
+	tap( "d", "KeyD" );
+	h.key( "Control", "up", { "code": "Control" } );
+	assert.deepEqual( calls, [] );
+
+	// Without a function, every handler of the mode leaves; the other mode stays
+	$.onKey( "KeyE", "down", log( "e down 1" ) );
+	$.onKey( "KeyE", "down", log( "e down 2" ) );
+	$.onKey( "KeyE", "up", log( "e up" ) );
+	$.offKey( "KeyE", "down" );
+	tap( "e", "KeyE" );
+	assert.deepEqual( calls, [ "e up" ] );
+
+	// Neither a mode nor a function throws
+	for( const args of [ [ "KeyE" ], [ { "key": "KeyE" } ], [ "KeyE", null, null ] ] ) {
+		assert.throws( () => $.offKey( ...args ), error => {
+			return error.name === "TypeError" && error.code === "INVALID_MODE" &&
+				error.message.startsWith( "offKey: " ) &&
+				error.message.includes( "clearEvents( \"keyboard\" )" );
+		} );
+	}
+} );
+
+test( "KEY-007 registering the same function for the same keys and mode again does nothing", () => {
+	const h = harness();
+	const $ = h.api;
+	let calls = 0;
+	const fn = () => { calls += 1; };
+	$.onKey( "KeyA", "down", fn );
+	$.onKey( "KeyA", "down", fn, true, true );
+	$.onKey( [ "Shift", "KeyA" ], "down", fn );
+	$.onKey( [ "KeyA", "Shift" ], "down", fn );
+	h.key( "a", "down", { "code": "KeyA" } );
+	h.key( "a", "up", { "code": "KeyA" } );
+	assert.equal( calls, 1 );
+
+	// The first registration stands: it is not once, so it runs again
+	h.key( "a", "down", { "code": "KeyA" } );
+	h.key( "a", "up", { "code": "KeyA" } );
+	assert.equal( calls, 2 );
+	h.key( "Shift", "down", { "code": "Shift" } );
+	h.key( "a", "down", { "code": "KeyA" } );
+	assert.equal( calls, 4 );
+
+	// One offKey removes it
+	$.offKey( "KeyA", "down", fn );
+	h.key( "a", "up", { "code": "KeyA" } );
+	h.key( "a", "down", { "code": "KeyA" } );
+	assert.equal( calls, 5 );
+} );

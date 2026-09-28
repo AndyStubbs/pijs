@@ -22,13 +22,22 @@ modifier changed it during the hold. Single-key and "any" up handlers run even f
 press was not seen. A combination's up handler runs when one of its keys is released while all
 were held, with the release data for that key.
 
+A handler is identified by its key or combination, its mode, and its callback: registering the
+same callback for the same keys and mode again does nothing, whatever its once and allowRepeat
+flags, and offKey removes it by those three.
+
 Key data objects are frozen. Keys typed into an editable element, such as an input field, are
 ignored. A callback that throws does not stop the others; its error is rethrown afterward.
 """
 example = """
 $.screen( "300x200" );
-$.onKey( "Enter", "down", ( keyData ) => {
-	$.print( "Enter pressed!" );
+
+// Game controls use codes, which name the physical key on every layout
+$.onKey( "KeyW", "down", () => {
+	$.print( "Up" );
+} );
+$.onKey( "Space", "down", () => {
+	$.print( "Jump" );
 } );
 
 // Key combination
@@ -37,8 +46,8 @@ $.onKey( [ "ControlLeft", "KeyS" ], "down", ( keys ) => {
 } );
 
 // One-time handler
-$.onKey( "Space", "down", () => {
-	$.print( "Space pressed once!" );
+$.onKey( "Enter", "down", () => {
+	$.print( "Enter pressed once!" );
 }, true );
 
 // Listen for any key
