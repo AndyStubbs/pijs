@@ -28,8 +28,12 @@ let m_pluginApi = null;
 // Editable-target test shared with the keyboard plugin's own listeners
 let m_isFromEditableTarget = null;
 
-// Releases the keys the keyboard plugin holds, when a prompt takes the keyboard
-let m_releaseHeldKeys = null;
+// Called when a prompt takes the keyboard: the keyboard plugin releases its held keys
+let m_takeKeyboard = null;
+
+// Key events a prompt read, so the keyboard plugin withholds them even when the prompt's listener
+// runs first and the key ends the prompt
+const m_promptEvents = new WeakSet();
 
 
 /*************************************************************************************************
@@ -42,14 +46,15 @@ let m_releaseHeldKeys = null;
  *
  * @param {Object} pluginApi - Plugin API provided by Pi.js
  * @param {Function} isFromEditableTarget - Whether a key event comes from an editable element
- * @param {Function} releaseHeldKeys - Releases held keys with `cancelled: true`
+ * @param {Function} takeKeyboard - Called when a prompt starts; releases held keys with
+ *   `cancelled: true`
  * @returns {void}
  */
-export function initInput( pluginApi, isFromEditableTarget, releaseHeldKeys ) {
+export function initInput( pluginApi, isFromEditableTarget, takeKeyboard ) {
 
 	m_pluginApi = pluginApi;
 	m_isFromEditableTarget = isFromEditableTarget;
-	m_releaseHeldKeys = releaseHeldKeys;
+	m_takeKeyboard = takeKeyboard;
 	pluginApi.addScreenPreCleanupFunction( disposeInput );
 
 	// Register screen commands
@@ -194,7 +199,7 @@ function cancelInput( screenData ) {
 function startInput( inputData ) {
 
 	// The prompt takes the keyboard, so keys held now are released, as cancelled
-	m_releaseHeldKeys();
+	m_takeKeyboard();
 
 	// Create unique image name for background
 	const key = `${Date.now()}_${Math.random().toString( 36 ).substring( 2, 9 )}`;
@@ -207,6 +212,7 @@ function startInput( inputData ) {
 	// cannot strand it
 	inputData.keyListener = event => {
 		if( !m_isFromEditableTarget( event ) ) {
+			m_promptEvents.add( event );
 			onInputKeyDown( inputData, event );
 		}
 	};
@@ -565,6 +571,18 @@ function disposeInput( screenData ) {
 	if( m_inputData && m_inputData.screenData === screenData ) {
 		finishInput( true, true );
 	}
+}
+
+/**
+ * Whether a key event belongs to a prompt: a prompt is active, or the event is one a prompt read,
+ * such as the Enter that ended it. The keyboard plugin withholds these events from key handlers
+ * and held keys.
+ *
+ * @param {Object} event - Keydown or keyup event
+ * @returns {boolean} True when the event belongs to a prompt
+ */
+export function isPromptKey( event ) {
+	return m_inputData !== null || m_promptEvents.has( event );
 }
 
 /**

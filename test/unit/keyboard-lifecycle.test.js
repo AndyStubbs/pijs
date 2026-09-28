@@ -594,10 +594,69 @@ test( "KEY-016 clearEvents( \"keyboard\" ) clears every key handler from any scr
 				empty( h );
 			}
 		}
+
+		// Tracking continues after clearing; a prompt that is kept takes its keys (A11)
 		assert.deepEqual( results, [
-			[ 0, 2, "ba" ], [ 0, 2, null ], [ 0, 2, null ],
-			[ 0, 2, "ba" ], [ 0, 2, null ], [ 0, 2, null ]
-		], "tracking continues after clearing" );
+			[ 0, 0, "ba" ], [ 0, 2, null ], [ 0, 2, null ],
+			[ 0, 0, "ba" ], [ 0, 2, null ], [ 0, 2, null ]
+		] );
+	} );
+
+test( "KEY-003 a prompt's keys do not reach key handlers or inKey() (A11)", async () => {
+	const h = harness();
+	const log = [];
+	h.api.onKey( "any", "down", data => log.push( `down ${data.code}` ) );
+	h.api.onKey( "any", "up", data => log.push( `up ${data.code} ${data.cancelled}` ) );
+	h.api.onKey( "Enter", "down", () => log.push( "Enter handler" ) );
+
+	// A key held across the prompt's start is released once, as cancelled
+	h.key( "w", "down", { "code": "KeyW" } );
+	const pending = h.start();
+	assert.deepEqual( log, [ "down KeyW", "up KeyW true" ] );
+	assert.equal( h.api.inKey().length, 0 );
+
+	// Typed keys, and releases while the prompt is active, are the prompt's
+	h.key( "a", "down", { "code": "KeyA" } );
+	const whileTyping = [ h.api.inKey( "KeyA" ), h.api.inKey().length ];
+	h.key( "a", "up", { "code": "KeyA" } );
+	h.key( "w", "up", { "code": "KeyW" } );
+	h.key( "b", "down", { "code": "KeyB" } );
+
+	// So is the Enter that ends it, and releases after it ends of keys pressed during it
+	h.key( "Enter", "down", { "code": "Enter" } );
+	assert.equal( await pending, "ab" );
+	h.key( "Enter", "up", { "code": "Enter" } );
+	h.key( "b", "up", { "code": "KeyB" } );
+	assert.deepEqual( whileTyping, [ null, 0 ] );
+	assert.deepEqual( log, [ "down KeyW", "up KeyW true" ] );
+
+	// After the prompt, keys reach the handlers again, including a key the prompt withheld
+	h.key( "b", "down", { "code": "KeyB" } );
+	h.key( "b", "up", { "code": "KeyB" } );
+	assert.deepEqual( log.slice( 2 ), [ "down KeyB", "up KeyB false" ] );
+} );
+
+test( "KEY-003 the key that ends a prompt is withheld whichever listener runs first (A11)",
+	async () => {
+		const h = harness();
+		const calls = [];
+
+		// The prompt's listener is added first, so it reads Enter and ends before the plugin's
+		const pending = h.start();
+		h.api.onKey( "Enter", "down", () => calls.push( "down" ) );
+		h.api.onKey( "Enter", "up", () => calls.push( "up" ) );
+		h.api.setActionKeys( [ "Enter" ] );
+		h.key( "x" );
+		const down = h.key( "Enter" );
+		assert.equal( await pending, "x" );
+		const up = h.key( "Enter", "up" );
+		assert.deepEqual( calls, [] );
+		assert.equal( h.api.inKey( "Enter" ), null );
+		assert.deepEqual( [ down.defaultPrevented, up.defaultPrevented ], [ true, true ],
+			"an action key keeps its default prevented" );
+		empty( h );
+		h.key( "Enter" );
+		assert.deepEqual( calls, [ "down" ] );
 	} );
 
 test( "KEY-006 a prompt reads keys while the keyboard is stopped", async () => {

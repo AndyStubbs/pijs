@@ -172,6 +172,11 @@ for( const bundle of g_harness.BUNDLES ) {
 			try {
 				await page.evaluate( () => {
 					$.screen( { "aspect": "160x80", "noCss": true } );
+
+					// Game handlers registered before the prompt see none of its keys (A11)
+					window.__keys = [];
+					$.onKey( "any", "down", data => window.__keys.push( data.code ) );
+					$.onKey( "any", "up", data => window.__keys.push( data.code ) );
 					window.__value = "pending";
 					$.input( "?" ).then( value => { window.__value = value; } );
 				} );
@@ -183,9 +188,13 @@ for( const bundle of g_harness.BUNDLES ) {
 				await keyboard.press( "Enter" );
 				const result = await page.evaluate( () => [
 					window.__value, Math.round( window.scrollY ),
-					document.activeElement === document.body
+					document.activeElement === document.body, window.__keys.length
 				] );
-				assert.deepEqual( result, [ " a", 0, true ] );
+				await keyboard.press( "KeyB" );
+				const after = await page.evaluate( () => window.__keys );
+				assert.deepEqual( result, [ " a", 0, true, 0 ] );
+				assert.deepEqual( after, [ "KeyB", "KeyB" ],
+					"keys after the prompt are game input" );
 				assert.deepEqual( errors, [] );
 			} finally {
 				await page.close();

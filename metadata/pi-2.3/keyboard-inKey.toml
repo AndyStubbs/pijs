@@ -15,7 +15,7 @@ ordered by each key's latest keydown, or an empty array. The same array is retur
 pressed or released, so reading it every frame does not allocate.
 
 The first call starts keyboard tracking, unless stopKeyboard() was called; keys pressed before
-tracking starts are not reported.
+tracking starts are not reported. Keys typed into an input() prompt are not reported either.
 
 Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat,
 cancelled. They are frozen.

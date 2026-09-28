@@ -1468,7 +1468,9 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * The prompt keeps to one line: when the value would reach the right edge, the end of the value is shown. After the input ends, printing continues at column 0 of the line below the prompt.
 		 *
-		 * While the prompt is active it reads keys itself, so it works even after stopKeyboard(). It prevents the default action of the keys it handles, so typing does not scroll the page or move focus. Shortcuts with Ctrl or Meta are left to the browser, except AltGr, which types; pasted text is inserted one character at a time by the same rules as typed text. Keys typed into an editable element on the page, such as an input field, are ignored. Keys held when the prompt starts are released through the onKey() "up" handlers, with cancelled set to true.
+		 * While the prompt is active it reads keys itself, so it works even after stopKeyboard(). It prevents the default action of the keys it handles, so typing does not scroll the page or move focus. Shortcuts with Ctrl or Meta are left to the browser, except AltGr, which types; pasted text is inserted one character at a time by the same rules as typed text. Keys typed into an editable element on the page, such as an input field, are ignored.
+		 *
+		 * The prompt's keys are its own: they do not reach onKey() handlers or inKey(), including the key that ends the prompt and the later release of keys pressed during it. Keys held when the prompt starts are released through the onKey() "up" handlers, with cancelled set to true, and their later release is not reported again.
 		 *
 		 * With isNumber or isInteger, the value is a number. Only digits, one decimal point unless isInteger is set, and a leading minus sign with allowNegative are accepted. Typing "-" adds the minus sign at the start, and "+" removes it; the minus sign counts toward maxLength. A value with no digits resolves to 0.
 		 *
@@ -2240,7 +2242,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * If no key is provided, returns a frozen array of the key data objects of all pressed keys, ordered by each key's latest keydown, or an empty array. The same array is returned until a key is pressed or released, so reading it every frame does not allocate.
 		 *
-		 * The first call starts keyboard tracking, unless stopKeyboard() was called; keys pressed before tracking starts are not reported.
+		 * The first call starts keyboard tracking, unless stopKeyboard() was called; keys pressed before tracking starts are not reported. Keys typed into an input() prompt are not reported either.
 		 *
 		 * Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat, cancelled. They are frozen.
 		 *
@@ -2375,7 +2377,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * A handler is identified by its key or combination, its mode, and its callback: registering the same callback for the same keys and mode again does nothing, whatever its once and allowRepeat flags, and offKey removes it by those three. Registering starts keyboard tracking, unless stopKeyboard() was called; handlers stay registered while the keyboard is stopped, but are not called.
 		 *
-		 * Key data objects are frozen and carry cancelled, false unless the release was cancelled. Keys typed into an editable element, such as an input field, are ignored. A callback that throws does not stop the others; its error is reported with console.error().
+		 * Key data objects are frozen and carry cancelled, false unless the release was cancelled. Keys typed into an editable element, such as an input field, are ignored, and so are the keys of an active input() prompt. A callback that throws does not stop the others; its error is reported with console.error().
 		 *
 		 * The key is a non-empty string or a non-empty array of them. The array is copied, so changing it later does not change the handler, and a key listed twice counts once; "any" cannot be part of a combination. The mode is "up" or "down", and once and allowRepeat are booleans or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for an empty key or an unknown mode, with code INVALID_KEY, INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_ALLOW_REPEAT.
 		 * @param key Key code/key value string, array of keys for combinations, or "any" for any key.

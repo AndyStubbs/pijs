@@ -21,6 +21,11 @@ const m_heldCodes = new Map();
 const m_actionKeys = new Set();
 const m_onKeyHandlers = {};
 
+// Codes whose keyup is withheld from handlers: keys pressed while a prompt was active, and keys
+// released as cancelled when a prompt started. A later keydown of the code outside a prompt
+// clears it.
+const m_withheldCodes = new Set();
+
 // Frozen list of the held key data returned by inKey(), rebuilt on the first read after a change
 let m_heldList = null;
 
@@ -55,7 +60,7 @@ export default function keyboardPlugin( pluginApi ) {
 	pluginApi.addCommand( "offKey", offKey, false, [ "key", "mode", "fn" ] );
 
 	// Initialize input command
-	g_input.initInput( pluginApi, isFromEditableTarget, releaseHeldKeys );
+	g_input.initInput( pluginApi, isFromEditableTarget, withholdHeldKeys );
 
 	// Register clearEvents handler
 	pluginApi.registerClearEvents( "keyboard", clearKeyboardEvents );
@@ -399,6 +404,14 @@ function onKeyDown( event ) {
 		return;
 	}
 
+	// Keys typed into a prompt are the prompt's, as keys typed into a text field are
+	if( g_input.isPromptKey( event ) ) {
+		m_withheldCodes.add( event.code );
+		preventActionKey( event );
+		return;
+	}
+	m_withheldCodes.delete( event.code );
+
 	// The key is held before its handlers run. The latest keydown of a code moves it to the end,
 	// so value lookups find the latest press
 	const keyData = createKeyData( event );
@@ -411,9 +424,7 @@ function onKeyDown( event ) {
 		names.push( event.key );
 	}
 	dispatchKey( event, "down", names, null );
-	if( m_actionKeys.has( event.code ) || m_actionKeys.has( event.key ) ) {
-		event.preventDefault();
-	}
+	preventActionKey( event );
 }
 
 function onKeyUp( event ) {
@@ -421,6 +432,13 @@ function onKeyUp( event ) {
 	// Ignore typing when focus is inside an editable, and release the keys held until then
 	if( isFromEditableTarget( event ) ) {
 		releaseHeldKeys();
+		return;
+	}
+
+	// The prompt's keys are withheld through their release, even after the prompt ends
+	const isWithheld = m_withheldCodes.delete( event.code );
+	if( isWithheld || g_input.isPromptKey( event ) ) {
+		preventActionKey( event );
 		return;
 	}
 	const codeData = m_heldCodes.get( event.code );
@@ -436,6 +454,16 @@ function onKeyUp( event ) {
 		names.push( codeData.key );
 	}
 	releaseKey( event, createKeyData( event ), names );
+	preventActionKey( event );
+}
+
+/**
+ * Prevent the browser default of an action key, whether or not its event is dispatched.
+ *
+ * @param {KeyboardEvent} event - Keydown or keyup event
+ * @returns {void}
+ */
+function preventActionKey( event ) {
 	if( m_actionKeys.has( event.code ) || m_actionKeys.has( event.key ) ) {
 		event.preventDefault();
 	}
@@ -497,6 +525,19 @@ function getHeldKeys() {
 		m_heldList = Object.freeze( Array.from( m_heldCodes.values() ) );
 	}
 	return m_heldList;
+}
+
+/**
+ * A prompt takes the keyboard: held keys are released as cancelled, and their keyups are
+ * withheld with the prompt's keys, so no key is released twice.
+ *
+ * @returns {void}
+ */
+function withholdHeldKeys() {
+	for( const code of m_heldCodes.keys() ) {
+		m_withheldCodes.add( code );
+	}
+	releaseHeldKeys();
 }
 
 function onVisibilityChange() {
