@@ -73,7 +73,7 @@ export function createEventHelpers( pluginApi ) {
 			"once": once,
 			"hitBox": hitBox,
 			"extraData": extraData,
-			"clickDown": false,
+			"armedPointers": null,
 			"isRemoved": false,
 			"customData": customData,
 			"name": name
@@ -180,7 +180,7 @@ export function createEventHelpers( pluginApi ) {
 		}
 	}
 
-	function triggerEventListeners( mode, data, listenerArr, clickStatus ) {
+	function triggerEventListeners( mode, data, listenerArr ) {
 		if( !listenerArr[ mode ] ) {
 			return;
 		}
@@ -193,10 +193,6 @@ export function createEventHelpers( pluginApi ) {
 			const listener = temp[ i ];
 
 			if( listener.isRemoved ) {
-				continue;
-			}
-
-			if( clickStatus === "up" && !listener.clickDown ) {
 				continue;
 			}
 
@@ -223,15 +219,48 @@ export function createEventHelpers( pluginApi ) {
 				}
 
 				if( isHit ) {
-					if( clickStatus === "down" ) {
-						listener.clickDown = true;
-					} else {
-						listener.clickDown = false;
-						runListener( listenerArr, mode, listener, newData );
-					}
+					runListener( listenerArr, mode, listener, newData );
 				}
 			} else {
 				runListener( listenerArr, mode, listener, data );
+			}
+		}
+	}
+
+	/**
+	 * Update click listeners for one pointer. A primary-button down inside a listener's hit box
+	 * arms it for that pointer; that pointer's release inside the box fires it; any other
+	 * release, or a cancel, disarms it.
+	 *
+	 * @param {Object} data - Pointer data; for `"up"`, the click data.
+	 * @param {Object} listenerArr - Click registrations by mode.
+	 * @param {string} action - `"down"` for a primary-button down, `"up"` for its release, or
+	 *   `"cancel"` for any other release or a cancel.
+	 * @param {string|number} pointerId - `"mouse"`, or the touch identifier.
+	 * @returns {void}
+	 */
+	function triggerClickListeners( data, listenerArr, action, pointerId ) {
+		if( !listenerArr.click ) {
+			return;
+		}
+		const temp = listenerArr.click.slice();
+		for( const listener of temp ) {
+			if( listener.isRemoved ) {
+				continue;
+			}
+			const isHit = utils.inRange( data, listener.hitBox );
+			if( action === "down" ) {
+				if( isHit ) {
+					if( listener.armedPointers === null ) {
+						listener.armedPointers = new Set();
+					}
+					listener.armedPointers.add( pointerId );
+				}
+			} else if( listener.armedPointers !== null ) {
+				const wasArmed = listener.armedPointers.delete( pointerId );
+				if( wasArmed && isHit && action === "up" ) {
+					runListener( listenerArr, "click", listener, data );
+				}
 			}
 		}
 	}
@@ -240,7 +269,8 @@ export function createEventHelpers( pluginApi ) {
 		"onevent": onevent,
 		"offevent": offevent,
 		"removeAllListeners": removeAllListeners,
-		"triggerEventListeners": triggerEventListeners
+		"triggerEventListeners": triggerEventListeners,
+		"triggerClickListeners": triggerClickListeners
 	};
 }
 

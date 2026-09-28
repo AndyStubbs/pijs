@@ -228,7 +228,9 @@ export function registerMouse( pluginApi, helpers ) {
 		const mouseData = getMouse( screenData );
 		m_triggerEventListeners( "down", mouseData, screenData.onMouseEventListeners );
 		g_press.triggerPressListeners( screenData, "down", mouseData );
-		g_press.triggerClickListeners( screenData, mouseData, "down" );
+		if( e.button === 0 ) {
+			g_press.triggerClickListeners( screenData, mouseData, "down", "mouse" );
+		}
 	}
 
 	function mouseUp( e ) {
@@ -240,7 +242,13 @@ export function registerMouse( pluginApi, helpers ) {
 		const mouseData = getMouse( screenData );
 		m_triggerEventListeners( "up", mouseData, screenData.onMouseEventListeners );
 		g_press.triggerPressListeners( screenData, "up", mouseData );
-		g_press.triggerClickListeners( screenData, mouseData, "up" );
+
+		// Only the primary button clicks; any other release disarms
+		if( e.button === 0 ) {
+			g_press.triggerClickListeners( screenData, mouseData, "up", "mouse" );
+		} else {
+			g_press.triggerClickListeners( screenData, mouseData, "cancel", "mouse" );
+		}
 	}
 
 	function onContextMenu( e ) {
