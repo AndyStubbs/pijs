@@ -95,8 +95,7 @@ $.setEnableContextMenu( false );
 $.setFont( 2 );
 drawDisplay();
 
-$.setActionKey( "Control" );
-$.setActionKey( "m" );
+$.setActionKeys( [ "Control", "m" ] );
 $.onkey( [ "Control", "m" ], "down", showMenu );
 $.onkey( "1", "up", processKey );
 $.onkey( "2", "up", processKey );
@@ -106,6 +105,54 @@ $.onkey( "Escape", "up", processEscape );
 
 $.onmouse( "down", processMouse );
 $.onmouse( "move", processMouse );
+
+// Char data is a width x height grid of 0/1 values stored row by row, four bits per hex digit
+// with the high bit first, the same format setChar reads.
+function hexToData( hex, width, height ) {
+	var data, x, y, bit, digit;
+
+	data = [];
+	bit = 0;
+	for( y = 0; y < height; y++ ) {
+		data.push( [] );
+		for( x = 0; x < width; x++ ) {
+			digit = parseInt( hex.charAt( Math.floor( bit / 4 ) ), 16 );
+			if( isNaN( digit ) ) {
+				digit = 0;
+			}
+			data[ y ].push( ( digit >> ( 3 - bit % 4 ) ) & 1 );
+			bit += 1;
+		}
+	}
+
+	return data;
+}
+
+function dataToHex( data ) {
+	var hex, digit, bit, x, y;
+
+	hex = "";
+	digit = 0;
+	bit = 0;
+	for( y = 0; y < data.length; y++ ) {
+		for( x = 0; x < data[ y ].length; x++ ) {
+			digit = digit * 2 + data[ y ][ x ];
+			bit += 1;
+			if( bit === 4 ) {
+				hex += digit.toString( 16 );
+				digit = 0;
+				bit = 0;
+			}
+		}
+	}
+
+	// Pad a final partial digit with zeros so no pixels are dropped
+	if( bit > 0 ) {
+		hex += ( digit << ( 4 - bit ) ).toString( 16 );
+	}
+
+	return hex;
+}
 
 function processMouse( mouse ) {
 	var x, y;
@@ -123,7 +170,7 @@ function processMouse( mouse ) {
 			} else {
 				g.data[ y ][ x ] = 0;
 			}
-			g.char = $.util.dataToHex( g.data );
+			g.char = dataToHex( g.data );
 			drawDisplay();
 		}
 	}
@@ -163,7 +210,7 @@ function drawChar() {
 
 	$.rect( g.left, g.top, g.right, g.bottom );
 	$.setColor( 7 );
-	g.data = $.util.hexToData( g.char, g.width, g.height );
+	g.data = hexToData( g.char, g.width, g.height );
 	for( y = 0; y < g.height; y++ ) {
 		for( x = 0; x < g.width; x++ ) {
 			if( g.data[ y ][ x ] === 1 ) {
@@ -224,6 +271,10 @@ async function getNewFont() {
 	$.setPos( $.getPos() );
 
 	font = await $.input( "Select Font: ", null, null, true, true, false );
+	if( font === null ) {
+		drawDisplay();
+		return;
+	}
 	font = fonts.find( f => f.id === font );
 	if( font === undefined ) {
 		$.print( "Invalid selection!\n" );
@@ -233,7 +284,7 @@ async function getNewFont() {
 
 	$.print( "You have selected " + font.id + " " + font.width + "x" + font.height );
 	confirm = await $.input( "Do you wish to proceed? (y/n): " );
-	if( confirm.charAt( 0 ).toLowerCase() === "y" ) {
+	if( confirm !== null && confirm.charAt( 0 ).toLowerCase() === "y" ) {
 		g.width = font.width;
 		g.height = font.height;
 		g.char = "0";
