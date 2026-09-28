@@ -116,7 +116,7 @@ test( "offscreen pointer validation precedes all state changes and subscriptions
 			const state = () => JSON.stringify( [ data.mouseStopped, data.touchStopped,
 				data.mouseStarted, data.touchStarted, data.onMouseEventListeners,
 				data.onTouchEventListeners, data.onPressEventListeners, data.onClickEventListeners,
-				data.mouseEventListenersActive, data.isContextMenuEnabled ] );
+				data.isContextMenuEnabled ] );
 			const before = state();
 			for( const command of [ "inmouse", "intouch", "inpress", "startMouse", "startTouch",
 				"onmouse", "ontouch", "onpress", "onclick", "setEnableContextMenu" ] ) {

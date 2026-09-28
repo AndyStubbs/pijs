@@ -1,12 +1,212 @@
 /**
- * Pointer shared-event dispatch regressions against the real plugin module. Owned by the
- * pointer workstream.
+ * Pointer dispatch regressions against the real plugin modules. Owned by the pointer workstream.
+ *
+ * The harness loads `mouse.js`, `touch.js`, `press.js`, and the plugin entry into `vm` contexts
+ * and maps command arguments with core's real parseOptions, so the positional and object forms
+ * behave as in the bundles. Mouse and touch events are dispatched through the listeners the
+ * plugin adds to fake canvases, so they reach the plugin only while tracking is started. Each
+ * canvas maps client coordinates one to one onto its screen.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
 import * as g_harness from "./vm-module-harness.js";
 const { test } = g_test;
 const assert = g_assert;
+
+// Core's option mapping and hit-box test. It shares this realm's Object, so the object literals
+// tests pass are recognized as the object form; its color checker only needs a canvas stub.
+const m_utils = g_harness.loadModule( "src/core/utils.js", {
+	"Object": Object,
+	"document": { "createElement": () => ( { "getContext": () => ( {} ) } ) }
+} );
+
+/**
+ * The real pointer plugin on fake screens.
+ *
+ * @returns {Object} `{ $, screen, clearEvents, mouse, touch }`. `$` runs global commands on the
+ *   first screen; `screen()` adds a screen whose `api` holds the screen commands.
+ */
+function harness() {
+	const screenDataItems = {};
+	const initFunctions = [];
+	const screenCommands = [];
+	const clearHandlers = {};
+	const screens = {};
+	const api = {};
+	let nextScreenId = 1;
+	let activeScreen = null;
+	const pluginApi = {
+		"utils": m_utils,
+		"addScreenDataItem": ( name, value ) => { screenDataItems[ name ] = value; },
+		"addScreenInitFunction": fn => initFunctions.push( fn ),
+		"addScreenCleanupFunction": () => {},
+		"addCommand": ( name, fn, isScreen, params ) => {
+			if( isScreen ) {
+				screenCommands.push( { "name": name, "fn": fn, "params": params } );
+				api[ name ] = ( ...args ) => {
+					return fn( activeScreen, m_utils.parseOptions( args, params ) );
+				};
+			} else {
+				api[ name ] = ( ...args ) => fn( m_utils.parseOptions( args, params ) );
+			}
+		},
+		"registerClearEvents": ( name, fn ) => { clearHandlers[ name ] = fn; },
+		"getScreenData": ( fnName, screenId ) => screens[ screenId ],
+		"getAllScreensData": () => Object.values( screens )
+	};
+	const globals = {
+		"window": g_harness.createEventTarget(),
+		"document": { "body": { "style": {} } }
+	};
+
+	// The modules import each other, so each namespace is read when a function runs
+	const modules = {};
+	const lazy = name => new Proxy( {}, { "get": ( target, key ) => modules[ name ][ key ] } );
+	function load( file, extra ) {
+		return g_harness.loadModule( file, { ...globals, ...extra } );
+	}
+	modules.target = load( "plugins/pointer/target.js", {
+		"g_canvasLayout": {
+			"getCanvasContentRect": canvas => {
+				return { "left": 0, "top": 0, "width": canvas.width, "height": canvas.height };
+			}
+		}
+	} );
+	modules.mouse = load( "plugins/pointer/mouse.js", {
+		"g_target": modules.target, "g_press": lazy( "press" )
+	} );
+	modules.touch = load( "plugins/pointer/touch.js", {
+		"g_target": modules.target, "g_press": lazy( "press" )
+	} );
+	modules.press = load( "plugins/pointer/press.js", {
+		"g_target": modules.target, "g_mouse": modules.mouse, "g_touch": modules.touch
+	} );
+	const plugin = load( "plugins/pointer/index.js", {
+		"g_sharedEvents": load( "plugins/pointer/shared-events.js" ),
+		"g_mouse": modules.mouse,
+		"g_touch": modules.touch,
+		"g_press": modules.press
+	} );
+	plugin.pointerPlugin( pluginApi );
+
+	function screen( width = 100, height = 100 ) {
+		const id = nextScreenId++;
+		const canvas = g_harness.createEventTarget( {
+			"width": width, "height": height, "dataset": { "screenId": String( id ) }
+		} );
+		const data = {
+			...structuredClone( screenDataItems ),
+			"id": id, "width": width, "height": height, "canvas": canvas, "isOffscreen": false,
+			"api": {}
+		};
+		for( const command of screenCommands ) {
+			data.api[ command.name ] = ( ...args ) => {
+				return command.fn( data, m_utils.parseOptions( args, command.params ) );
+			};
+		}
+		screens[ id ] = data;
+		for( const fn of initFunctions ) {
+			fn( data );
+		}
+		if( activeScreen === null ) {
+			activeScreen = data;
+		}
+		return data;
+	}
+	screen();
+
+	/**
+	 * Clear handlers as `clearEvents()` does.
+	 *
+	 * @param {string} [type] - Handler type; all pointer types when omitted.
+	 * @param {Object|null} [screenData] - Screen to clear; every screen when `null`.
+	 * @returns {void}
+	 */
+	function clearEvents( type, screenData = activeScreen ) {
+		let types = [ type ];
+		if( type === undefined ) {
+			types = Object.keys( clearHandlers );
+		}
+		for( const name of types ) {
+			clearHandlers[ name ]( screenData );
+		}
+	}
+
+	/**
+	 * Dispatch a mouse event through the canvas listeners.
+	 *
+	 * @param {string} type - Event type, such as `"mousedown"`.
+	 * @param {number} x - Screen x.
+	 * @param {number} y - Screen y.
+	 * @param {number} [buttons] - Buttons held after the event.
+	 * @param {Object} [screenData] - Target screen.
+	 * @returns {Object} The dispatched event.
+	 */
+	function mouse( type, x, y, buttons = 0, screenData = activeScreen ) {
+		const event = {
+			"type": type, "target": screenData.canvas, "clientX": x + 0.5, "clientY": y + 0.5,
+			"buttons": buttons, "defaultPrevented": false,
+			"preventDefault": () => { event.defaultPrevented = true; }
+		};
+		screenData.canvas.dispatchEvent( event );
+		return event;
+	}
+
+	/**
+	 * Dispatch a touch event through the canvas listeners.
+	 *
+	 * @param {string} type - Event type, such as `"touchstart"`.
+	 * @param {Array<Object>} touches - Touches down after the event, as `{ id, x, y }`.
+	 * @param {Array<Object>} [changed] - Touches the event changed.
+	 * @param {Object} [screenData] - Target screen.
+	 * @returns {Object} The dispatched event.
+	 */
+	function touch( type, touches, changed = touches, screenData = activeScreen ) {
+		const make = item => {
+			return {
+				"identifier": item.id, "target": screenData.canvas,
+				"clientX": item.x + 0.5, "clientY": item.y + 0.5
+			};
+		};
+		const event = {
+			"type": type, "target": screenData.canvas, "touches": touches.map( make ),
+			"changedTouches": changed.map( make ), "defaultPrevented": false,
+			"preventDefault": () => { event.defaultPrevented = true; }
+		};
+		screenData.canvas.dispatchEvent( event );
+		return event;
+	}
+
+	/**
+	 * A mouse press and release at one point.
+	 *
+	 * @param {number} x - Screen x.
+	 * @param {number} y - Screen y.
+	 * @returns {void}
+	 */
+	function click( x, y ) {
+		mouse( "mousedown", x, y, 1 );
+		mouse( "mouseup", x, y );
+	}
+
+	/**
+	 * A one-finger tap at one point.
+	 *
+	 * @param {number} x - Screen x.
+	 * @param {number} y - Screen y.
+	 * @returns {void}
+	 */
+	function tap( x, y ) {
+		const item = { "id": 1, "x": x, "y": y };
+		touch( "touchstart", [ item ] );
+		touch( "touchend", [], [ item ] );
+	}
+
+	return {
+		"$": api, "screen": screen, "clearEvents": clearEvents, "mouse": mouse, "touch": touch,
+		"click": click, "tap": tap
+	};
+}
 
 test( "pointer dispatch snapshots exclude new listeners and once survives nested dispatch", () => {
 	const module = g_harness.loadModule( "plugins/pointer/shared-events.js" );
@@ -40,9 +240,113 @@ test( "pointer registration can be removed in the same turn", () => {
 	const listeners = {};
 	const fn = () => {};
 	helpers.onevent( "move", fn, false, null, [ "move" ], "onmouse", listeners );
-	assert.equal( helpers.offevent( "move", fn, [ "move" ], "offmouse", listeners ), true );
+	helpers.offevent( "move", fn, [ "move" ], "offmouse", listeners );
 	for( const timer of timers ) {
 		timer();
 	}
 	assert.equal( listeners.move, undefined );
+} );
+
+test( "pointer clearing one mode keeps the handlers of the other modes (P1)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	const other = () => {};
+	$.onmouse( "down", () => log.push( "mouse down" ) );
+	$.onmouse( "move", other );
+	$.offmouse( "move" );
+	$.ontouch( "start", () => log.push( "touch start" ) );
+	$.ontouch( "move", other );
+	$.offtouch( "move" );
+	$.onpress( "down", () => log.push( "press down" ) );
+	$.onpress( "up", other );
+	$.offpress( "up" );
+	h.click( 10, 10 );
+	h.tap( 10, 10 );
+	assert.deepEqual( log, [ "mouse down", "press down", "touch start", "press down" ] );
+} );
+
+test( "pointer removing a function that was never added keeps registered handlers (P1)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	const other = () => {};
+	$.onmouse( "down", () => log.push( "mouse down" ) );
+	$.offmouse( "down", other );
+	$.ontouch( { "mode": "start", "fn": () => log.push( "touch start" ) } );
+	$.offtouch( { "mode": "start", "fn": other } );
+	$.onpress( "up", () => log.push( "press up" ) );
+	$.offpress( "up", other );
+	$.onclick( () => log.push( "click" ) );
+	$.offclick( other );
+	h.click( 20, 20 );
+	h.tap( 20, 20 );
+	assert.deepEqual( log, [
+		"mouse down", "press up", "click", "touch start", "press up", "click"
+	] );
+
+	// Removing every registration of each type still stops only that type
+	log.length = 0;
+	$.offmouse( "down" );
+	$.offclick();
+	h.click( 20, 20 );
+	assert.deepEqual( log, [ "press up" ] );
+} );
+
+test( "pointer handlers removed during a dispatch do not run later in it (P7)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	const removed = () => log.push( "removed" );
+	$.onmouse( "down", () => {
+		log.push( "first" );
+		$.offmouse( "down", removed );
+	} );
+	$.onmouse( "down", removed );
+	h.click( 10, 10 );
+	assert.deepEqual( log, [ "first" ] );
+
+	// A clear during a dispatch skips the rest of the dispatch, and handlers added in it wait
+	log.length = 0;
+	$.onpress( "down", () => {
+		log.push( "press" );
+		h.clearEvents( "press" );
+		$.onpress( "down", () => log.push( "added" ) );
+	} );
+	$.onpress( "down", () => log.push( "cleared" ) );
+	h.click( 10, 10 );
+	assert.deepEqual( log, [ "first", "press" ] );
+	h.click( 10, 10 );
+	assert.deepEqual( log, [ "first", "press", "first", "added" ] );
+} );
+
+test( "pointer once removes only its own registration (P7)", () => {
+	const h = harness();
+	const $ = h.$;
+	let calls = 0;
+	const fn = () => { calls += 1; };
+
+	// Registering a function twice registers it twice until Pointer 2.4 (I4)
+	$.onmouse( "down", fn, true );
+	$.onmouse( "down", fn );
+	h.click( 10, 10 );
+	h.click( 10, 10 );
+	assert.equal( calls, 3 );
+
+	// A once click is spent by the click it fires for, not by the press that arms it
+	let clicks = 0;
+	const box = { "x": 0, "y": 0, "width": 20, "height": 20 };
+	$.onclick( () => { clicks += 1; }, true, box );
+	h.click( 10, 10 );
+	h.click( 10, 10 );
+	assert.equal( clicks, 1 );
+
+	// A once touch handler that starts a nested dispatch is not called again by it
+	let touches = 0;
+	$.ontouch( "move", () => {
+		touches += 1;
+		h.touch( "touchmove", [ { "id": 1, "x": 12, "y": 12 } ] );
+	}, true );
+	h.touch( "touchmove", [ { "id": 1, "x": 11, "y": 11 } ] );
+	assert.equal( touches, 1 );
 } );

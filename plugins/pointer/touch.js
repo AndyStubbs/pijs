@@ -33,13 +33,13 @@ export function registerTouch( pluginApi, helpers ) {
 
 	const m_onevent = helpers.onevent;
 	const m_offevent = helpers.offevent;
+	const m_removeAllListeners = helpers.removeAllListeners;
 	const m_triggerEventListeners = helpers.triggerEventListeners;
 
 	pluginApi.addScreenDataItem( "touchStopped", false );
 	pluginApi.addScreenDataItem( "touchStarted", false );
 	pluginApi.addScreenDataItem( "touches", {} );
 	pluginApi.addScreenDataItem( "lastTouches", {} );
-	pluginApi.addScreenDataItem( "touchEventListenersActive", 0 );
 	pluginApi.addScreenDataItem( "onTouchEventListeners", {} );
 
 	pluginApi.addScreenInitFunction( initTouchData );
@@ -140,15 +140,11 @@ export function registerTouch( pluginApi, helpers ) {
 		const hitBox = options.hitBox;
 		const customData = options.customData;
 
-		const isValid = m_onevent(
+		m_onevent(
 			mode, fn, once, hitBox, [ "start", "end", "move" ], "ontouch",
 			screenData.onTouchEventListeners, null, null, customData
 		);
-
-		if( isValid ) {
-			startTouchInternal( screenData );
-			screenData.touchEventListenersActive += 1;
-		}
+		startTouchInternal( screenData );
 	}
 
 	/**
@@ -162,21 +158,10 @@ export function registerTouch( pluginApi, helpers ) {
 		const mode = options.mode;
 		const fn = options.fn;
 
-		const isValid = m_offevent(
+		m_offevent(
 			mode, fn, [ "start", "end", "move" ], "offtouch",
 			screenData.onTouchEventListeners
 		);
-
-		if( isValid ) {
-			if( fn == null ) {
-				screenData.touchEventListenersActive = 0;
-			} else {
-				screenData.touchEventListenersActive -= 1;
-				if( screenData.touchEventListenersActive < 0 ) {
-					screenData.touchEventListenersActive = 0;
-				}
-			}
-		}
 	}
 
 	/**
@@ -201,9 +186,7 @@ export function registerTouch( pluginApi, helpers ) {
 		}
 		updateTouch( screenData, e, "start" );
 		const touchData = getTouch( screenData );
-		if( screenData.touchEventListenersActive > 0 ) {
-			m_triggerEventListeners( "start", touchData, screenData.onTouchEventListeners );
-		}
+		m_triggerEventListeners( "start", touchData, screenData.onTouchEventListeners );
 		g_press.triggerPressListeners( screenData, "down", g_press.getTouchPress( screenData ) );
 		e.preventDefault();
 		g_press.triggerClickListeners( screenData, g_press.getTouchPress( screenData ), "down" );
@@ -216,9 +199,7 @@ export function registerTouch( pluginApi, helpers ) {
 		}
 		updateTouch( screenData, e, "move" );
 		const touchData = getTouch( screenData );
-		if( screenData.touchEventListenersActive > 0 ) {
-			m_triggerEventListeners( "move", touchData, screenData.onTouchEventListeners );
-		}
+		m_triggerEventListeners( "move", touchData, screenData.onTouchEventListeners );
 		g_press.triggerPressListeners( screenData, "move", g_press.getTouchPress( screenData ) );
 	}
 
@@ -229,9 +210,7 @@ export function registerTouch( pluginApi, helpers ) {
 		}
 		updateTouch( screenData, e, "end" );
 		const touchData = getTouch( screenData );
-		if( screenData.touchEventListenersActive > 0 ) {
-			m_triggerEventListeners( "end", touchData, screenData.onTouchEventListeners );
-		}
+		m_triggerEventListeners( "end", touchData, screenData.onTouchEventListeners );
 		g_press.triggerPressListeners( screenData, "up", g_press.getTouchPress( screenData ) );
 		g_press.triggerClickListeners( screenData, g_press.getTouchPress( screenData ), "up" );
 	}
@@ -296,8 +275,8 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 
 	function clearTouchEvents( screenData ) {
+		m_removeAllListeners( screenData.onTouchEventListeners );
 		screenData.onTouchEventListeners = {};
-		screenData.touchEventListenersActive = 0;
 	}
 
 	return {

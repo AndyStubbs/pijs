@@ -58,19 +58,10 @@ export function createEventHelpers( pluginApi ) {
 			}
 		}
 
-		const originalFn = fn;
 		let newMode = mode;
 
 		if( typeof extraId === "string" ) {
 			newMode = mode + extraId;
-		}
-
-		let wrappedFn = fn;
-		if( once ) {
-			wrappedFn = ( data, customData ) => {
-				offevent( mode, originalFn, modes, name, listenerArr, extraId );
-				originalFn( data, customData );
-			};
 		}
 
 		if( !listenerArr[ newMode ] ) {
@@ -78,15 +69,14 @@ export function createEventHelpers( pluginApi ) {
 		}
 
 		listenerArr[ newMode ].push( {
-			"fn": wrappedFn,
+			"fn": fn,
+			"once": once,
 			"hitBox": hitBox,
 			"extraData": extraData,
 			"clickDown": false,
-			"originalFn": originalFn,
+			"isRemoved": false,
 			"customData": customData
 		} );
-
-		return true;
 	}
 
 	function offevent( mode, fn, modes, name, listenerArr, extraId ) {
@@ -119,22 +109,69 @@ export function createEventHelpers( pluginApi ) {
 			throw error;
 		}
 
-		if( listenerArr[ mode ] ) {
-			if( isClear ) {
-				delete listenerArr[ mode ];
-			} else {
-				for( let i = listenerArr[ mode ].length - 1; i >= 0; i-- ) {
-					if( listenerArr[ mode ][ i ].originalFn === fn ) {
-						listenerArr[ mode ].splice( i, 1 );
-					}
-				}
-				if( listenerArr[ mode ].length === 0 ) {
-					delete listenerArr[ mode ];
-				}
-			}
-			return true;
+		const listeners = listenerArr[ mode ];
+		if( !listeners ) {
+			return;
 		}
-		return false;
+		for( let i = listeners.length - 1; i >= 0; i-- ) {
+			if( isClear || listeners[ i ].fn === fn ) {
+				removeListener( listenerArr, mode, listeners[ i ] );
+			}
+		}
+	}
+
+	/**
+	 * Remove one registration. It is marked removed so a dispatch already in progress skips it.
+	 *
+	 * @param {Object} listenerArr - Registrations by mode.
+	 * @param {string} mode - Mode key of the registration.
+	 * @param {Object} listener - The registration.
+	 * @returns {void}
+	 */
+	function removeListener( listenerArr, mode, listener ) {
+		listener.isRemoved = true;
+		const listeners = listenerArr[ mode ];
+		if( !listeners ) {
+			return;
+		}
+		const index = listeners.indexOf( listener );
+		if( index !== -1 ) {
+			listeners.splice( index, 1 );
+		}
+		if( listeners.length === 0 ) {
+			delete listenerArr[ mode ];
+		}
+	}
+
+	/**
+	 * Mark every registration removed, for a clear that replaces the registration object.
+	 *
+	 * @param {Object} listenerArr - Registrations by mode.
+	 * @returns {void}
+	 */
+	function removeAllListeners( listenerArr ) {
+		for( const mode in listenerArr ) {
+			for( const listener of listenerArr[ mode ] ) {
+				listener.isRemoved = true;
+			}
+		}
+	}
+
+	/**
+	 * Call a registration's handler. A `once` registration is removed first, so a dispatch
+	 * started inside the handler does not call it again.
+	 *
+	 * @param {Object} listenerArr - Registrations by mode.
+	 * @param {string} mode - Mode key of the registration.
+	 * @param {Object} listener - The registration.
+	 * @param {*} data - Event data for the handler.
+	 * @returns {void}
+	 */
+	function runListener( listenerArr, mode, listener, data ) {
+		if( listener.once ) {
+			removeListener( listenerArr, mode, listener );
+		}
+		listener.fn( data, listener.customData );
 	}
 
 	function triggerEventListeners( mode, data, listenerArr, clickStatus ) {
@@ -142,10 +179,16 @@ export function createEventHelpers( pluginApi ) {
 			return;
 		}
 
+		// Handlers added during this dispatch wait for the next one; handlers removed during it
+		// are skipped
 		const temp = listenerArr[ mode ].slice();
 
 		for( let i = 0; i < temp.length; i++ ) {
 			const listener = temp[ i ];
+
+			if( listener.isRemoved ) {
+				continue;
+			}
 
 			if( clickStatus === "up" && !listener.clickDown ) {
 				continue;
@@ -178,11 +221,11 @@ export function createEventHelpers( pluginApi ) {
 						listener.clickDown = true;
 					} else {
 						listener.clickDown = false;
-						listener.fn( newData, listener.customData );
+						runListener( listenerArr, mode, listener, newData );
 					}
 				}
 			} else {
-				listener.fn( data, listener.customData );
+				runListener( listenerArr, mode, listener, data );
 			}
 		}
 	}
@@ -190,6 +233,7 @@ export function createEventHelpers( pluginApi ) {
 	return {
 		"onevent": onevent,
 		"offevent": offevent,
+		"removeAllListeners": removeAllListeners,
 		"triggerEventListeners": triggerEventListeners
 	};
 }

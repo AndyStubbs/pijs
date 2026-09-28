@@ -32,6 +32,7 @@ export function startMouseInternal( screenData ) {
 export function registerMouse( pluginApi, helpers ) {
 	const m_onevent = helpers.onevent;
 	const m_offevent = helpers.offevent;
+	const m_removeAllListeners = helpers.removeAllListeners;
 	const m_triggerEventListeners = helpers.triggerEventListeners;
 
 	pluginApi.addScreenDataItem( "mouseStopped", false );
@@ -39,7 +40,6 @@ export function registerMouse( pluginApi, helpers ) {
 	pluginApi.addScreenDataItem( "mouse", null );
 	pluginApi.addScreenDataItem( "lastEvent", null );
 	pluginApi.addScreenDataItem( "isContextMenuEnabled", false );
-	pluginApi.addScreenDataItem( "mouseEventListenersActive", 0 );
 	pluginApi.addScreenDataItem( "onMouseEventListeners", {
 		"down": [],
 		"up": [],
@@ -174,15 +174,11 @@ export function registerMouse( pluginApi, helpers ) {
 		const hitBox = options.hitBox;
 		const customData = options.customData;
 
-		const isValid = m_onevent(
+		m_onevent(
 			mode, fn, once, hitBox, [ "down", "up", "move" ], "onmouse",
 			screenData.onMouseEventListeners, null, null, customData
 		);
-
-		if( isValid ) {
-			startMouseInternal( screenData );
-			screenData.mouseEventListenersActive += 1;
-		}
+		startMouseInternal( screenData );
 	}
 
 	/**
@@ -196,30 +192,19 @@ export function registerMouse( pluginApi, helpers ) {
 		const mode = options.mode;
 		const fn = options.fn;
 
-		const isValid = m_offevent(
+		m_offevent(
 			mode, fn, [ "down", "up", "move" ], "offmouse",
 			screenData.onMouseEventListeners
 		);
-
-		if( isValid ) {
-			if( fn == null ) {
-				screenData.mouseEventListenersActive = 0;
-			} else {
-				screenData.mouseEventListenersActive -= 1;
-				if( screenData.mouseEventListenersActive < 0 ) {
-					screenData.mouseEventListenersActive = 0;
-				}
-			}
-		}
 	}
 
 	function clearMouseEvents( screenData ) {
+		m_removeAllListeners( screenData.onMouseEventListeners );
 		screenData.onMouseEventListeners = {
 			"down": [],
 			"up": [],
 			"move": []
 		};
-		screenData.mouseEventListenersActive = 0;
 	}
 
 	function mouseMove( e ) {
@@ -229,9 +214,7 @@ export function registerMouse( pluginApi, helpers ) {
 		}
 		updateMouse( screenData, e, "move" );
 		const mouseData = getMouse( screenData );
-		if( screenData.mouseEventListenersActive > 0 ) {
-			m_triggerEventListeners( "move", mouseData, screenData.onMouseEventListeners );
-		}
+		m_triggerEventListeners( "move", mouseData, screenData.onMouseEventListeners );
 		g_press.triggerPressListeners( screenData, "move", mouseData );
 	}
 
@@ -242,9 +225,7 @@ export function registerMouse( pluginApi, helpers ) {
 		}
 		updateMouse( screenData, e, "down" );
 		const mouseData = getMouse( screenData );
-		if( screenData.mouseEventListenersActive > 0 ) {
-			m_triggerEventListeners( "down", mouseData, screenData.onMouseEventListeners );
-		}
+		m_triggerEventListeners( "down", mouseData, screenData.onMouseEventListeners );
 		g_press.triggerPressListeners( screenData, "down", mouseData );
 		g_press.triggerClickListeners( screenData, mouseData, "down" );
 	}
@@ -256,9 +237,7 @@ export function registerMouse( pluginApi, helpers ) {
 		}
 		updateMouse( screenData, e, "up" );
 		const mouseData = getMouse( screenData );
-		if( screenData.mouseEventListenersActive > 0 ) {
-			m_triggerEventListeners( "up", mouseData, screenData.onMouseEventListeners );
-		}
+		m_triggerEventListeners( "up", mouseData, screenData.onMouseEventListeners );
 		g_press.triggerPressListeners( screenData, "up", mouseData );
 		g_press.triggerClickListeners( screenData, mouseData, "up" );
 	}

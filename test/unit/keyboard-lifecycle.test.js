@@ -22,54 +22,6 @@ const m_utils = g_harness.loadModule( "src/core/utils.js", {
 } );
 
 /**
- * A fake event target that records listeners and dispatches to them as the DOM does: capture
- * listeners first, each registration once, and listeners removed during a dispatch skipped.
- *
- * @param {Object} [properties] - Extra properties of the target.
- * @returns {Object} Event target with a `listeners` list.
- */
-function createEventTarget( properties = {} ) {
-	const listeners = [];
-	function isCapture( options ) {
-		return options === true || Boolean( options && options.capture );
-	}
-	function find( type, fn, options ) {
-		const capture = isCapture( options );
-		return listeners.find( listener => {
-			return listener.type === type && listener.fn === fn && listener.capture === capture;
-		} );
-	}
-	return {
-		...properties,
-		"listeners": listeners,
-		"addEventListener": ( type, fn, options ) => {
-			if( !find( type, fn, options ) ) {
-				listeners.push( { "type": type, "fn": fn, "capture": isCapture( options ) } );
-			}
-		},
-		"removeEventListener": ( type, fn, options ) => {
-			const listener = find( type, fn, options );
-			if( listener ) {
-				listeners.splice( listeners.indexOf( listener ), 1 );
-			}
-		},
-		"dispatchEvent": event => {
-			const matching = listeners.filter( listener => listener.type === event.type );
-			const ordered = [
-				...matching.filter( listener => listener.capture ),
-				...matching.filter( listener => !listener.capture )
-			];
-			for( const listener of ordered ) {
-				if( listeners.includes( listener ) ) {
-					listener.fn( event );
-				}
-			}
-			return !event.defaultPrevented;
-		}
-	};
-}
-
-/**
  * A fake element for event targets.
  *
  * @param {string} tagName - Upper-case tag name.
@@ -117,8 +69,8 @@ function harness() {
 	api.getImage = name => images.get( name );
 	api.removeImage = name => images.delete( name );
 	const body = createElement( "BODY" );
-	const window = createEventTarget();
-	const document = createEventTarget( { "body": body, "activeElement": body } );
+	const window = g_harness.createEventTarget();
+	const document = g_harness.createEventTarget( { "body": body, "activeElement": body } );
 	const globals = {
 		"console": console,
 		"setInterval": fn => { timers.set( ++nextTimer, fn ); return nextTimer; },
