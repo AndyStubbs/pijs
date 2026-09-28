@@ -374,11 +374,16 @@ $.defineInstrument( 7, { "audio": "piano", "rootFrequency": 261.63, "releaseTime
 $.play( "@7 T100 O4 L4 C E G O5 C" );
 ```
 
-- **Source.** The plugin registers a source type per audio name on first use
-  (`"sample:piano"`). Its factory gets the buffer from `getAudioBuffer` (Section 3.3) and sets
-  `playbackRate` to `frequency / rootFrequency`, scheduling `frequencyEnd` sweeps on it. The
-  source returns `frequency: null` and the buffer source's `detune` parameter, so vibrato and
-  arpeggios still work (sound design 4.3.1).
+- **Source (`sample-source.js`, task 10.2).** The plugin registers a source type on first use
+  for each audio name, root frequency, and loop setting: `sample:"piano"`, with `@392` for
+  another root frequency and `:loop` for a looping sample. A source factory receives only the
+  voice spec, and the note's frequency must stay the musical pitch that PLAY observers report,
+  so the root frequency and loop setting are part of the type. The factory gets the buffer
+  from `getAudioBuffer` (Section 3.3) when each voice is built and sets `playbackRate` to
+  `frequency / rootFrequency`, scheduling `frequencyEnd` sweeps on it as core schedules an
+  oscillator's. The source returns `frequency: null` and the buffer source's `detune`
+  parameter, so vibrato and arpeggios still work (sound design 4.3.1). A note plays the file
+  from its start, so a late note keeps the sample's attack.
 - **Envelope.** The instrument's envelope and filter apply as for synthesized notes. A
   non-looping sample ends at the earlier of its buffer end and the note's release.
 - **Not ready.** A note whose file is still loading, streamed, or removed plays silence, and

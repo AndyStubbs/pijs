@@ -1,8 +1,9 @@
 /**
  * Offline render tests for the sound-advanced plugin: synth() filter and filter envelope,
  * vibrato, tremolo, pulse duty, and arpeggio; periodic noise; bus reverb and delay and their
- * interaction with bus volume; getSoundLevels(); the built-in presets; and PLAY instruments.
- * Each page loads the full bundle followed by the plugin's source bundle.
+ * interaction with bus volume; getSoundLevels(); the built-in presets; PLAY instruments; and
+ * sample source types. Each page loads the full bundle followed by the plugin's source bundle
+ * and the sample source probe (audio-sample-source-probe.js).
  *
  * Tone levels are measured with a single-bin DFT written here, independent of the plugin.
  */
@@ -11,12 +12,20 @@ import * as g_assert from "node:assert/strict";
 import * as g_harness from "./audio-render-harness.js";
 import * as g_metrics from "./audio-metrics.js";
 import * as g_suite from "./audio-browser-suite.js";
+import * as g_fixtures from "./audio-sample-fixtures.js";
 const test = g_test.test;
 const assert = g_assert;
 const frame = g_suite.frame;
 
 const RATE = g_harness.SAMPLE_RATE;
 const LEAD = g_suite.LEAD;
+
+// Sample fixture: 2 s of a C4 sine, the default root frequency of a sample source
+const C4 = 261.63;
+const SAMPLE_DATA = Int16Array.from( { "length": 2 * RATE }, ( value, i ) => {
+	return Math.round( 0.5 * Math.sin( 2 * Math.PI * C4 * i / RATE ) * 32767 );
+} );
+const SAMPLE_WAV = g_fixtures.wavBase64( [ SAMPLE_DATA ] );
 
 const PRESETS = [ "coin", "laser", "jump", "hit", "explosion", "powerup", "blip", "select" ];
 
@@ -545,4 +554,110 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 			assert.equal( noise.length, 2 );
 		}
 	);
-}, { "plugins": [ "sound-advanced" ] } );
+
+	// Single-pass render, so engines without offline suspend() also cover sample sources
+	test( "sample sources render in one pass at their playback rates", async t => {
+		const result = await suite.inHarness( t, { "config": { "duration": 0.6 } }, async arg => {
+			eval( arg.loader );
+			$.setSoundLimiter( false );
+			$.setVolume( 1 );
+			const id = await __loadWav( arg.wav );
+			$.sound( { "frequency": arg.c4 * 2, "duration": 0.4, "volume": 0.25,
+				"oType": __sampleType( id, arg.c4, false ) } );
+			$.sound( { "frequency": 196, "duration": 0.4, "volume": 0.25,
+				"oType": __sampleType( id, 392, true ) } );
+			return __audioHarness.render( { "singlePass": true } );
+		}, { "loader": g_fixtures.PAGE_LOADER, "wav": SAMPLE_WAV, "c4": C4 } );
+		if( !result ) {
+			return;
+		}
+
+		// Rates 2 and 0.5 move the C4 file up and down an octave; nothing sounds at C4
+		const left = channel( result );
+		const from = frame( LEAD + 0.05 );
+		const to = frame( LEAD + 0.35 );
+		for( const frequency of [ C4 * 2, C4 / 2 ] ) {
+			const amplitude = toneAmplitude( left, frequency, from, to );
+			assert.ok( amplitude > 0.1, `${frequency} Hz amplitude ${amplitude}` );
+		}
+		assert.ok( toneAmplitude( left, C4, from, to ) < 0.01 );
+	} );
+
+	test( "sample sources play a loaded file pitched by playback rate, with sweeps and detune",
+		async t => {
+			const result = await suite.inHarness( t, {
+				"config": { "duration": 6 }, "needsSuspend": true
+			}, async arg => {
+				eval( arg.loader );
+				$.setSoundLimiter( false );
+				$.setVolume( 1 );
+				const id = await __loadWav( arg.wav );
+				const type = __sampleType( id, arg.c4, false );
+				const note = ( delay, options ) => {
+					$.sound( { "frequency": arg.c4, "duration": 0.3, "volume": 0.5,
+						"oType": type, "delay": delay, "attackTime": 0.005,
+						"releaseTime": 0.01, ...options } );
+				};
+
+				// Three octaves, a root frequency of G4, and a sweep up an octave
+				[ 0.5, 1, 2, 4 ].forEach( ( ratio, index ) => {
+					note( 0.4 * index, { "frequency": arg.c4 * ratio } );
+				} );
+				note( 1.6, { "frequency": 392, "oType": __sampleType( id, 392, false ) } );
+				note( 2, { "frequencyEnd": arg.c4 * 2, "duration": 0.4 } );
+
+				// Vibrato reaches the source's detune
+				$.synth( { "frequency": arg.c4, "duration": 0.6, "volume": 0.5, "oType": type,
+					"delay": 2.6, "vibratoRate": 4, "vibratoDepth": 100 } );
+
+				// At four times the rate, the 2 s file lasts 0.5 s unless it loops
+				note( 3.4, { "frequency": arg.c4 * 4, "duration": 0.8 } );
+				note( 4.4, { "frequency": arg.c4 * 4, "duration": 0.8,
+					"oType": __sampleType( id, arg.c4, true ) } );
+
+				// A name with no loaded file plays silence
+				note( 5.4, { "oType": __sampleType( "missing", arg.c4, false ) } );
+				return __audioHarness.render( {} );
+			}, { "loader": g_fixtures.PAGE_LOADER, "wav": SAMPLE_WAV, "c4": C4 } );
+			if( !result ) {
+				return;
+			}
+			const left = channel( result );
+			const pitch = ( from, to ) => g_metrics.zeroCrossingFrequency(
+				left, RATE, frame( LEAD + from ), frame( LEAD + to )
+			);
+			[ 0.5, 1, 2, 4 ].forEach( ( ratio, index ) => {
+				const expected = C4 * ratio;
+				assertNear(
+					pitch( 0.4 * index + 0.05, 0.4 * index + 0.25 ), expected, expected * 0.005,
+					`ratio ${ratio}`
+				);
+			} );
+			assertNear( pitch( 1.65, 1.85 ), C4, C4 * 0.005, "root frequency" );
+
+			// The sweep rises exponentially over the 0.4 s gate; compare at each window's middle
+			for( const from of [ 0.01, 0.18, 0.34 ] ) {
+				const expected = C4 * Math.pow( 2, ( from + 0.025 ) / 0.4 );
+				assertNear(
+					pitch( 2 + from, 2 + from + 0.05 ), expected, expected * 0.015, `sweep ${from}`
+				);
+			}
+
+			const vibrato = frequencyTrack( left, LEAD + 2.65, LEAD + 3.15, 0.025 );
+			const high = C4 * Math.pow( 2, 1 / 12 );
+			const low = C4 / Math.pow( 2, 1 / 12 );
+			const top = Math.max( ...vibrato );
+			const bottom = Math.min( ...vibrato );
+			assert.ok( top > high - 8, `vibrato max ${top}` );
+			assert.ok( bottom < low + 8, `vibrato min ${bottom}` );
+
+			// The one-shot ends with its file; the looped note plays to its release
+			assertNear( pitch( 3.45, 3.85 ), C4 * 4, C4 * 4 * 0.005, "one-shot" );
+			assert.ok( g_metrics.isSilent( left, frame( LEAD + 3.91 ), frame( LEAD + 4.2 ) ) );
+			assertNear( pitch( 4.95, 5.15 ), C4 * 4, C4 * 4 * 0.005, "loop" );
+			assert.ok( g_metrics.isSilent( left, frame( LEAD + 5.3 ), left.length ) );
+		} );
+}, {
+	"plugins": [ "sound-advanced" ],
+	"sources": [ "test/unit/audio-sample-source-probe.js" ]
+} );
