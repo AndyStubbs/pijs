@@ -151,6 +151,7 @@ change is needed. This mechanism is general and also available to third-party pl
 | `tapBus( bus, node )` | Connects a bus output in parallel to `node`; returns an untap function. `"output"` taps the fixed stage after the limiter |
 | `registerPlayExtension( name, extension )` | Adds PLAY tokens, per-track state, and note resolution |
 | `observePlay( listener )` | Reports admitted PLAY notes and song ends; returns a function that removes the listener (expansion design 3.2) |
+| `getAudioBuffer( name )` | The decoded buffer of a loaded decode-mode file, or `null`; shared, so extensions do not modify it (expansion design 3.3) |
 
 Buses are named `"sfx"`, `"music"`, `"audio"`, and `"master"`. `tapBus` also accepts
 `"output"`, the fixed stage after the limiter; `setBusVolume` and `setBusInsert` reject it with
@@ -164,8 +165,8 @@ contract tests in 4.3.4 pass, and `sound-advanced` 1.0 consumes every member. La
 that break it require bumping `version`; a test pins the member list.
 
 **v1 additions before release** (expansion design Section 3, decision D8): `observePlay` was
-added by task 9.2. `getAudioBuffer( name )`, which returns a loaded file's decoded buffer, is
-proposed for task 10.1. Each addition updates this table when its task lands.
+added by task 9.2 and `getAudioBuffer` by task 10.1. Each addition updates this table when its
+task lands.
 
 - **`createVoice` requests** follow the `sound()` rules: the same validation and error codes
   (an unregistered oType throws `INVALID_OTYPE`), delays beyond the lookahead window held as

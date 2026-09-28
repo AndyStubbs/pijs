@@ -88,6 +88,7 @@ below requires a new `version`.
 | `tapBus( bus, node )` | Connects a bus output to `node` in parallel and returns an untap function; `"output"` taps the signal after the limiter |
 | `registerPlayExtension( name, extension )` | Adds PLAY tokens, per-track state, and per-note voice overrides |
 | `observePlay( listener )` | Reports admitted PLAY notes and song ends to `listener`; returns a function that removes it |
+| `getAudioBuffer( name )` | The decoded `AudioBuffer` of a file loaded with `loadAudio()`, or `null` |
 
 Buses are `"sfx"`, `"music"`, `"audio"`, and `"master"`. `tapBus` also accepts `"output"`,
 the final signal after the limiter, which is what the speakers receive; `setBusVolume` and
@@ -127,6 +128,10 @@ nodes; extensions never receive core nodes.
   listener that throws is logged and does not affect playback or other listeners. Adding the
   same function twice registers it once. A listener that is not a function throws
   `INVALID_LISTENER`.
+- **Audio buffers.** `getAudioBuffer( name )` takes the audio ID that `loadAudio()` returned.
+  It returns `null` while the file is loading, for streamed files, and for unknown or removed
+  names. The buffer is shared with core playback, so an extension must not modify it; read it
+  or play it through its own `AudioBufferSourceNode`.
 
 ```javascript
 function wobblePlugin( pluginApi ) {

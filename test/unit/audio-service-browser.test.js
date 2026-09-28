@@ -3,8 +3,10 @@
  * source and insert lifecycles with exactly-once disposal, factory and start failures, early
  * and repeated stops, a stop advancing a future steal deadline, insert detune links, bus
  * insert replacement and removal, bus volume with effects in either order, taps, the
- * createVoice request paths, and observePlay reports of admitted notes and song ends. The
- * advanced plugin's own modules are covered in audio-advanced-browser.test.js.
+ * createVoice request paths, observePlay reports of admitted notes and song ends, and the
+ * decoded buffers getAudioBuffer returns. Streamed files are checked in
+ * audio-stream-browser.test.js. The advanced plugin's own modules are covered in
+ * audio-advanced-browser.test.js.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
@@ -22,8 +24,9 @@ const LEAD = g_suite.LEAD;
 const STOP_FADE = g_suite.STOP_FADE;
 
 const SERVICE_MEMBERS = [
-	"createVoice", "getContext", "observePlay", "registerPlayExtension", "registerSource",
-	"scheduleEnvelope", "setBusInsert", "setBusVolume", "stopVoice", "tapBus", "version"
+	"createVoice", "getAudioBuffer", "getContext", "observePlay", "registerPlayExtension",
+	"registerSource", "scheduleEnvelope", "setBusInsert", "setBusVolume", "stopVoice", "tapBus",
+	"version"
 ];
 
 /**
@@ -1200,4 +1203,44 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 			[ result.ids[ 0 ], false ]
 		] );
 	} );
+
+	test( "getAudioBuffer returns a loaded decode-mode file's shared buffer, else null",
+		async t => {
+			const result = await suite.inHarness( t, {}, async arg => {
+				eval( arg.stubs );
+				const service = __stubs.service();
+				const bytes = Uint8Array.from( atob( arg.wav ), c => c.charCodeAt( 0 ) );
+				const blob = new Blob( [ bytes ], { "type": "audio/wav" } );
+				const id = $.loadAudio( URL.createObjectURL( blob ), "chirp" );
+				const loading = service.getAudioBuffer( id );
+				await __audioHarness.settle( $.ready(), 5000 );
+				const buffer = service.getAudioBuffer( "chirp" );
+				const unknown = [ "missing", "toString", "__proto__", undefined, null ].map(
+					name => service.getAudioBuffer( name )
+				);
+				const same = service.getAudioBuffer( "chirp" ) === buffer;
+				$.removeAudio( "chirp" );
+				return {
+					"loading": loading,
+					"isBuffer": buffer instanceof AudioBuffer,
+					"duration": buffer.duration,
+					"channels": buffer.numberOfChannels,
+					"same": same,
+					"unknown": unknown,
+					"removed": service.getAudioBuffer( "chirp" )
+				};
+			}, { "stubs": STUBS, "wav": g_fixtures.wavBase64( g_fixtures.chirp( 0.5, 1 ) ) } );
+			if( !result ) {
+				return;
+			}
+			assert.deepEqual( result, {
+				"loading": null,
+				"isBuffer": true,
+				"duration": 0.5,
+				"channels": 1,
+				"same": true,
+				"unknown": [ null, null, null, null, null ],
+				"removed": null
+			} );
+		} );
 } );

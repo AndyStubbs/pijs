@@ -7,7 +7,8 @@
  * that audio may start without a gesture, from generated WAV files served by the test server.
  * It asserts observable state rather than rendered samples: readiness at canplay, media event
  * order, element positions after play, pause, resume, and rate changes, replacement, rate
- * limits, and audibility at the stream rate bounds. WebKit is skipped: Playwright's Windows
+ * limits, audibility at the stream rate bounds, and no decoded buffer for sound extensions
+ * (getAudioBuffer). WebKit is skipped: Playwright's Windows
  * build has no Web Audio API. Set PI_AUDIO_REALTIME=0 to skip the suite on machines without an
  * audio device.
  *
@@ -210,6 +211,24 @@ describe( "stream mode (realtime)", {
 				assert.deepEqual( errors, [] );
 				return result;
 			}
+
+			test( "a streamed file has no buffer for sound extensions", async () => {
+				const result = await run( async () => {
+					let service = null;
+					pi.registerPlugin( {
+						"name": "buffer-probe",
+						"dependencies": [ "sound" ],
+						"init": api => {
+							service = api.getService( "sound" );
+						}
+					} );
+					const id = $.loadAudio( "tone.wav", "tone", true );
+					const loading = service.getAudioBuffer( id );
+					await $.ready();
+					return [ loading, service.getAudioBuffer( id ), __elements.length ];
+				} );
+				assert.deepEqual( result, [ null, null, 1 ] );
+			} );
 
 			test( "play, pause, resume, and rate changes track the element position", async () => {
 				const result = await run( async () => {
