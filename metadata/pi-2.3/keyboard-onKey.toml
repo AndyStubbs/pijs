@@ -22,14 +22,20 @@ modifier changed it during the hold. Single-key and "any" up handlers run even f
 press was not seen. A combination's up handler runs when one of its keys is released while all
 were held, with the release data for that key.
 
+Keys the player did not release are released through the "up" handlers too, with cancelled set
+to true: when the window loses focus, the page is hidden, stopKeyboard() is called, a key comes
+from an editable element, or an input() prompt starts. Their key data copies the last keydown,
+with repeat set to false. Each held key is released once; a later trigger finds nothing held.
+
 A handler is identified by its key or combination, its mode, and its callback: registering the
 same callback for the same keys and mode again does nothing, whatever its once and allowRepeat
 flags, and offKey removes it by those three. Registering starts keyboard tracking, unless
 stopKeyboard() was called; handlers stay registered while the keyboard is stopped, but are not
 called.
 
-Key data objects are frozen. Keys typed into an editable element, such as an input field, are
-ignored. A callback that throws does not stop the others; its error is rethrown afterward.
+Key data objects are frozen and carry cancelled, false unless the release was cancelled. Keys
+typed into an editable element, such as an input field, are ignored. A callback that throws
+does not stop the others; its error is rethrown afterward.
 """
 example = """
 $.screen( "300x200" );

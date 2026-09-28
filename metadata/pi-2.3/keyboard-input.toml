@@ -15,7 +15,8 @@ While the prompt is active it reads keys itself, so it works even after stopKeyb
 prevents the default action of the keys it handles, so typing does not scroll the page or move
 focus. Shortcuts with Ctrl or Meta are left to the browser, except AltGr, which types; pasted
 text is inserted one character at a time by the same rules as typed text. Keys typed into an
-editable element on the page, such as an input field, are ignored.
+editable element on the page, such as an input field, are ignored. Keys held when the prompt
+starts are released through the onKey() "up" handlers, with cancelled set to true.
 
 With isNumber or isInteger, the value is a number. Only digits, one decimal point unless
 isInteger is set, and a leading minus sign with allowNegative are accepted. Typing "-" adds the

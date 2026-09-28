@@ -28,6 +28,9 @@ let m_pluginApi = null;
 // Editable-target test shared with the keyboard plugin's own listeners
 let m_isFromEditableTarget = null;
 
+// Releases the keys the keyboard plugin holds, when a prompt takes the keyboard
+let m_releaseHeldKeys = null;
+
 
 /*************************************************************************************************
  * Input Command Registration
@@ -39,12 +42,14 @@ let m_isFromEditableTarget = null;
  *
  * @param {Object} pluginApi - Plugin API provided by Pi.js
  * @param {Function} isFromEditableTarget - Whether a key event comes from an editable element
+ * @param {Function} releaseHeldKeys - Releases held keys with `cancelled: true`
  * @returns {void}
  */
-export function initInput( pluginApi, isFromEditableTarget ) {
+export function initInput( pluginApi, isFromEditableTarget, releaseHeldKeys ) {
 
 	m_pluginApi = pluginApi;
 	m_isFromEditableTarget = isFromEditableTarget;
+	m_releaseHeldKeys = releaseHeldKeys;
 	pluginApi.addScreenPreCleanupFunction( disposeInput );
 
 	// Register screen commands
@@ -195,6 +200,9 @@ function cancelInput( screenData ) {
 
 
 function startInput( inputData ) {
+
+	// The prompt takes the keyboard, so keys held now are released, as cancelled
+	m_releaseHeldKeys();
 
 	// Create unique image name for background
 	const key = `${Date.now()}_${Math.random().toString( 36 ).substring( 2, 9 )}`;

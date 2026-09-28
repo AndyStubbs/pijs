@@ -4,7 +4,8 @@ isScreen = false
 plugin = "keyboard"
 summary = "Starts keyboard input monitoring."
 description = """
-Starts the keyboard input monitoring system by adding the keydown, keyup, and blur listeners.
+Starts the keyboard input monitoring system by adding the keydown and keyup listeners, and the
+blur and page-visibility listeners that release held keys.
 The keyboard also starts on first use: the first inKey() call, onKey() registration, or
 setActionKeys() call, including set( { "actionKeys": [ ... ] } ). The plugin adds no listener
 before then, so keys pressed earlier are not tracked. This command is needed only after
