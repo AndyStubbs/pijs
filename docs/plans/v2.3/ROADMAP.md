@@ -16,7 +16,7 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Gamepad 1.2](#71-phase-1-fixes-and-tests) | Continue the gamepad Phase 1 | Nothing |
+| 1 | [Gamepad 1.3](#71-phase-1-fixes-and-tests) | Continue the gamepad Phase 1 | Nothing |
 | 2 | [Keyboard 2.1](#52-phase-2-api-breaking-set-200) | Start the keyboard breaking set on one long-lived branch (Section 1.4) | Nothing. Can run in parallel with 1 |
 | 3 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
 | 4 | [Core 5–13](#32-phase-2-fixes) | Remaining core fixes, tests, and the two approved API changes, in any order. Core 8 and Core 13 land before the pointer and gamepad Phase 2 sets | Nothing. Can run in parallel |
@@ -32,7 +32,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Sound | [4](#4-sound) | Phases 0–9 done; Phases 10–11 not started | Sound 10.1 |
 | Keyboard | [5](#5-keyboard) | Phase 1 done; Phase 2 not started | Keyboard 2.1 |
 | Pointer | [6](#6-pointer) | Phase 1 done; Phase 2 not started | Pointer 2.1, after Core 8 and Core 13 |
-| Gamepad | [7](#7-gamepad) | Phase 1: 1.1 done, 6 tasks left | Gamepad 1.2 |
+| Gamepad | [7](#7-gamepad) | Phase 1: 1.1–1.2 done, 5 tasks left | Gamepad 1.3 |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
 | CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.9) | — |
 | Plugin removal | [13.1](#131-plugin-removal) | Complete (P.1–P.6) | — |
@@ -552,11 +552,10 @@ validation (A8) moves to Phase 2 to land once with I11.
 
 ### 7.1 Phase 1: fixes and tests
 
-No API change; the version stays 1.0.0. Done: 1.1 ([Section 13.8](#138-gamepad)).
+No API change; the version stays 1.0.0. Done: 1.1–1.2 ([Section 13.8](#138-gamepad)).
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 1.2 | **Visibility, not blur (A2).** Keep polling while visible; on `visibilitychange` to hidden, release every button, zero the axes, and clear edges. The first update after the page is visible again records the current state without edges, so a button held on return reads as pressed but not just pressed. Tests: blur and focus (P4), and a hidden page, which no probe covers | [PAD-002](AUDIT-GAMEPAD.md#pad-002) | — |
 | 1.3 | **Dispatch isolation (A3).** Dispatch follows I8: handlers added during a dispatch run in the next one, a handler removed during a dispatch does not run later in it, and a `once` handler is removed before it runs; each handler in its own `try`; update the pad list before dispatch; schedule the loop before the start-up scan. Tests: throwing handlers, pad removal, handlers added during dispatch (P5, P5b, P6) | [PAD-003](AUDIT-GAMEPAD.md#pad-003) (P1), [PAD-004](AUDIT-GAMEPAD.md#pad-004), [PAD-007](AUDIT-GAMEPAD.md#pad-007) | — |
 | 1.4 | **Connection replay (A4).** New connect handlers receive the pads already connected; no second dispatch for a tracked, connected index; each handler receives each connected pad once, so the start-up scan and the replay never both deliver to the same handler. Test: replay and duplicate events (P3, P7) | [PAD-005](AUDIT-GAMEPAD.md#pad-005), [PAD-006](AUDIT-GAMEPAD.md#pad-006) | — |
 | 1.5 | **Stable live objects (A7).** Update `buttons`, each button, and `axes` in place; the list form reuses one array per frame. Test: stable objects and no per-frame allocation (P12) | [PAD-009](AUDIT-GAMEPAD.md#pad-009) | — |
@@ -615,6 +614,9 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.3:
 - **A1:** "just pressed", "just released", and "axis changed" report what happened since the
   previous read, shared by every reader in the same frame, so timer-driven and slower loops see
   every press.
+- **A2:** input keeps updating when the window loses focus but the page stays visible, where it
+  used to freeze. Hiding the page releases every button and centers the axes, without reporting
+  a release; a button still held when the page returns reads as pressed, not just pressed.
 - **A4:** a connect handler registered later receives the pads already connected. Code that also
   loops over `inGamepad()` to set up players can set one up twice.
 - **A7 and I7:** pads, their `buttons` and `axes`, and the list are live objects updated in
@@ -1052,7 +1054,8 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 
 | # | Task | Findings | Ref |
 | --- | --- | --- | --- |
-| 1.1 | One updater (A1): the polling loop is the only updater. It keeps each pad's state apart from the pad object and accumulates presses and releases every frame. A read, any `ingamepad()` call or pad helper call, including on a pad object the game kept, publishes that state to the pad objects on the first read in each loop frame: the edges since the last frame with a read, `lastAxes` as the axes at the previous read, and the current buttons and axes; every other read in the frame sees the same result, and a press and a release between reads are both reported. The read that starts polling records the current state without edges. A pad recorded by a connection event, the start-up scan, or the loop starts with every button released, so the press that exposed it is reported on the next read, after the connect handlers have seen the pad; connection events never update a tracked pad, so they consume no edges. The per-tick update guard is gone. Harness: `gamepad-validation.test.js` loads the plugin with `vm-module-harness.js`, maps arguments with core's `parseOptions`, scripts pads and animation frames, dispatches connection and `visibilitychange` events through fake `window` and `document` targets, and keeps the `clearEvents` handler; the SYS-021 tests run on it unchanged. Tests: every-frame, every-other-frame, and timer readers, before and after the plugin loop (P1); a tap between reads; one result per frame from any code; the first read; the exposing press (P3b); a connection event after an edge | [PAD-001](AUDIT-GAMEPAD.md#pad-001), [PAD-017](AUDIT-GAMEPAD.md#pad-017) | — |
+| 1.1 | One updater (A1): the polling loop is the only updater. It keeps each pad's state apart from the pad object and accumulates presses and releases every frame. A read, any `ingamepad()` call or pad helper call, including on a pad object the game kept, publishes that state to the pad objects on the first read in each loop frame: the edges since the last frame with a read, `lastAxes` as the axes at the previous read, and the current buttons and axes; every other read in the frame sees the same result, and a press and a release between reads are both reported. The read that starts polling records the current state without edges. A pad recorded by a connection event, the start-up scan, or the loop starts with every button released, so the press that exposed it is reported on the next read, after the connect handlers have seen the pad; connection events never update a tracked pad, so they consume no edges. The per-tick update guard is gone. Harness: `gamepad-validation.test.js` loads the plugin with `vm-module-harness.js`, maps arguments with core's `parseOptions`, scripts pads and animation frames, dispatches connection and `visibilitychange` events through fake `window` and `document` targets, and keeps the `clearEvents` handler; the SYS-021 tests run on it unchanged. Tests: every-frame, every-other-frame, and timer readers, before and after the plugin loop (P1); a tap between reads; one result per frame from any code; the first read; the exposing press (P3b); a connection event after an edge | [PAD-001](AUDIT-GAMEPAD.md#pad-001), [PAD-017](AUDIT-GAMEPAD.md#pad-017) | [#43](https://github.com/AndyStubbs/pijs/pull/43) |
+| 1.2 | Visibility, not blur (A2): the `window` `blur` and `focus` listeners, which paused the loop and froze the last snapshot, are removed, so polling continues on a visible page without focus. A `visibilitychange` listener on `document`, added at registration until 1.6, releases every button, zeroes the axes, and clears pending edges when the page is hidden, and the next read publishes that state even within a frame already read; the loop skips updates while the page is hidden, and its first update after the page is visible again records the current state without edges, so a button held on return reads as pressed but not just pressed. Tests: blur and focus with a press and release (P4), and a hidden page with a press pending, frames while hidden, and the return with the button held | [PAD-002](AUDIT-GAMEPAD.md#pad-002) | — |
 
 ## 14. Glossary
 

@@ -371,3 +371,62 @@ test( "PAD-001 connection events do not consume edges", () => {
 	h.connect( 0 );
 	assert.equal( pad.getButtonJustPressed( 0 ), true );
 } );
+
+test( "PAD-002 blur and focus leave polling running (P4)", () => {
+	const h = createHarness();
+	const frames = [];
+	let label = "";
+	function userLoop() {
+		const pad = h.$.ingamepad( 0 );
+		frames.push( [ label, pad.getButtonJustPressed( 0 ), pad.getButtonPressed( 0 ) ] );
+		h.requestAnimationFrame( userLoop );
+	}
+	h.setPad( 0 );
+	h.$.startGamepad();
+	h.requestAnimationFrame( userLoop );
+	label = "idle";
+	h.frame();
+	label = "press";
+	h.setPad( 0, { "buttons": [ true, false, false, false ] } );
+	h.frame();
+	h.window.dispatchEvent( { "type": "blur" } );
+	label = "blurred, held";
+	h.frame();
+	label = "blurred, released";
+	h.setPad( 0, { "buttons": [ false, false, false, false ] } );
+	h.frame();
+	h.window.dispatchEvent( { "type": "focus" } );
+	label = "focused";
+	h.frame();
+	assert.deepEqual( frames, [
+		[ "idle", false, false ], [ "press", true, true ], [ "blurred, held", false, true ],
+		[ "blurred, released", false, false ], [ "focused", false, false ]
+	] );
+	assert.deepEqual( h.window.listeners.filter( listener => {
+		return listener.type === "blur" || listener.type === "focus";
+	} ), [] );
+} );
+
+test( "PAD-002 a hidden page releases the pads until it is visible again", () => {
+	const h = createHarness();
+	h.setPad( 0 );
+	const pad = h.$.ingamepad( 0 );
+	h.setPad( 0, { "buttons": [ true, false, false, false ], "axes": [ 1, 0, 0, 0 ] } );
+	h.frame();
+
+	// Hidden before the press was read: the button reads as released, with no edges
+	h.hide();
+	const state = () => [ pad.getButtonPressed( 0 ), pad.getButtonJustPressed( 0 ),
+		pad.getButtonJustReleased( 0 ), pad.getAxis( 0 ) ];
+	assert.deepEqual( state(), [ false, false, false, 0 ] );
+	h.frame( 2 );
+	assert.deepEqual( state(), [ false, false, false, 0 ] );
+
+	// On return, a button still held reads as pressed but not just pressed
+	h.hide( false );
+	h.frame();
+	assert.deepEqual( state(), [ true, false, false, 1 ] );
+	h.setPad( 0, { "buttons": [ false, false, false, false ] } );
+	h.frame();
+	assert.deepEqual( state(), [ false, false, true, 1 ] );
+} );
