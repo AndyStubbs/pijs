@@ -742,18 +742,14 @@ function parseMetadata( raw ) {
 	return normalizeParsedStrings( toml.parse( normalizedRaw ) );
 }
 
-/** Generate metadata; testOnly confines writes to ignored build artifacts. */
-function generateMetadata( { testOnly = false } = {} ) {
-	ensureDirectories();
-
+/**
+ * Layer the versioned metadata folders from oldest to newest.
+ *
+ * @param {Function} [onVersion] - Called after each version with ( version, methods, objects )
+ * @returns {{ methods: Map, objects: Map, versionCount: number }} The newest layered metadata
+ */
+function layerMetadata( onVersion = () => {} ) {
 	const versionFolders = getVersionFolders();
-
-	// Early exit if no folders found
-	if( versionFolders.length === 0 ) {
-		console.log( "No metadata folders found" );
-		return;
-	}
-
 	const methodNameToMetadata = new Map();
 	const objectNameToMetadata = new Map();
 
@@ -814,9 +810,29 @@ function generateMetadata( { testOnly = false } = {} ) {
 			objectNameToMetadata.set( "Options", optionsObject );
 		}
 
-		// Write output for current version
 		const version = folderName.substring( folderName.indexOf( "-" ) + 1 );
-		writeOutputFiles( version, methodNameToMetadata, objectNameToMetadata, testOnly );
+		onVersion( version, methodNameToMetadata, objectNameToMetadata );
+	}
+	return {
+		"methods": methodNameToMetadata,
+		"objects": objectNameToMetadata,
+		"versionCount": versionFolders.length
+	};
+}
+
+/** Generate metadata; testOnly confines writes to ignored build artifacts. */
+function generateMetadata( { testOnly = false } = {} ) {
+	ensureDirectories();
+
+	// Write output for each version as it is layered
+	const layered = layerMetadata( ( version, methods, objects ) => {
+		writeOutputFiles( version, methods, objects, testOnly );
+	} );
+
+	// Early exit if no folders found
+	if( layered.versionCount === 0 ) {
+		console.log( "No metadata folders found" );
+		return;
 	}
 
 	if( !testOnly ) {
@@ -830,8 +846,8 @@ function generateMetadata( { testOnly = false } = {} ) {
 		);
 	}
 	writePluginTypeDefinitions(
-		testOnly, Array.from( methodNameToMetadata.values() ),
-		Array.from( objectNameToMetadata.values() )
+		testOnly, Array.from( layered.methods.values() ),
+		Array.from( layered.objects.values() )
 	);
 }
 
@@ -1234,6 +1250,6 @@ if( isMainModule() ) {
 }
 
 export {
-	formatDescription, generateMetadata, normalizeNewlines, normalizeParsedStrings, parseMetadata,
-	sortVersionFolders
+	formatDescription, generateMetadata, layerMetadata, normalizeNewlines, normalizeParsedStrings,
+	parseMetadata, readPluginMethods, sortVersionFolders
 };

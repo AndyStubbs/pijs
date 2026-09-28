@@ -101,6 +101,18 @@ export function addCommand( name, fn, isScreen, parameterNames, isScreenOptional
 }
 
 /**
+ * Describe every registered command, for checking the runtime against its metadata.
+ *
+ * @returns {Array<Object>} Copies of { name, parameterNames } in registration order
+ */
+export function getCommandDescriptors() {
+	return m_commands.map( command => ( {
+		"name": command.name,
+		"parameterNames": command.parameterNames.slice()
+	} ) );
+}
+
+/**
  * Install queued commands on the public API.
  *
  * @param {Object} api - Public Pi.js API.
