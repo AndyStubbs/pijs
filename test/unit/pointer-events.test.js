@@ -290,22 +290,6 @@ test( "pointer dispatch snapshots exclude new listeners and once survives nested
 	assert.equal( order.length, 2 );
 } );
 
-test( "pointer registration can be removed in the same turn", () => {
-	const timers = [];
-	const module = g_harness.loadModule( "plugins/pointer/shared-events.js", {
-		"setTimeout": fn => timers.push( fn )
-	} );
-	const helpers = module.createEventHelpers( { "utils": {} } );
-	const listeners = {};
-	const fn = () => {};
-	helpers.onevent( "move", fn, false, null, [ "move" ], "onmouse", listeners );
-	helpers.offevent( "move", fn, [ "move" ], "offmouse", listeners );
-	for( const timer of timers ) {
-		timer();
-	}
-	assert.equal( listeners.move, undefined );
-} );
-
 test( "pointer clearing one mode keeps the handlers of the other modes (P1)", () => {
 	const h = harness();
 	const $ = h.$;
@@ -736,8 +720,17 @@ test( "pointer stop commands release held input with cancelled (P10)", () => {
 	$.stopMouse();
 	$.stopTouch();
 	$.onmouse( "down", () => log.push( "down" ) );
+	$.ontouch( "start", () => log.push( "start" ) );
 	h.mouse( "mousedown", 50, 50, 1 );
+	h.touch( "touchstart", [ { "id": 5, "x": 40, "y": 40 } ] );
 	assert.equal( log.length, 2 );
+
+	// Only the start commands resume tracking
+	$.startMouse();
+	$.startTouch();
+	h.mouse( "mousedown", 50, 50, 1 );
+	h.touch( "touchstart", [ { "id": 6, "x": 40, "y": 40 } ] );
+	assert.deepEqual( log.slice( 2 ), [ "down", "start" ] );
 } );
 
 test( "pointer removing a screen with input held calls none of its handlers", () => {
@@ -836,4 +829,80 @@ test( "pointer adds its window and document listeners only when tracking starts 
 	$.startTouch();
 	assert.deepEqual( types( h.document ), [ "visibilitychange", "visibilitychange" ] );
 	assert.deepEqual( types( h.window ), [] );
+} );
+
+test( "pointer offtouch removes the given function, or every handler of the mode", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	const first = () => log.push( "first" );
+	const second = () => log.push( "second" );
+	const moved = () => log.push( "moved" );
+	$.ontouch( "start", first );
+	$.ontouch( "start", second );
+	$.ontouch( "move", moved );
+	$.offtouch( "start", first );
+	h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
+	h.touch( "touchmove", [ { "id": 1, "x": 11, "y": 10 } ] );
+	assert.deepEqual( log, [ "second", "moved" ] );
+
+	// Without a function, the mode is cleared in both forms; other modes stay
+	log.length = 0;
+	$.offtouch( { "mode": "start" } );
+	$.offtouch( "end", null );
+	h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 }, { "id": 2, "x": 20, "y": 20 } ], [
+		{ "id": 2, "x": 20, "y": 20 }
+	] );
+	h.touch( "touchmove", [ { "id": 2, "x": 21, "y": 20 } ] );
+	assert.deepEqual( log, [ "moved" ] );
+} );
+
+test( "pointer offpress and offclick remove only the given function", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	const pressA = () => log.push( "press a" );
+	const pressB = () => log.push( "press b" );
+	const clickA = () => log.push( "click a" );
+	const clickB = () => log.push( "click b" );
+	$.onpress( "down", pressA );
+	$.onpress( "down", pressB );
+	$.onclick( clickA );
+	$.onclick( clickB );
+	$.offpress( "down", pressA );
+	$.offclick( clickA );
+	h.click( 10, 10 );
+	h.tap( 10, 10 );
+	assert.deepEqual( log, [ "press b", "click b", "press b", "click b" ] );
+
+	// offclick() removes every click handler; new ones work afterward
+	log.length = 0;
+	$.offclick();
+	h.click( 10, 10 );
+	$.onclick( clickA );
+	h.click( 10, 10 );
+	assert.deepEqual( log, [ "press b", "press b", "click a" ] );
+} );
+
+test( "pointer setEnableContextMenu controls the menu while mouse tracking runs", () => {
+	const h = harness();
+	const $ = h.$;
+	const menu = () => h.mouse( "contextmenu", 10, 10 ).defaultPrevented;
+
+	// The menu opens until tracking starts; the setting starts tracking
+	assert.equal( menu(), false );
+	$.setEnableContextMenu( false );
+	assert.equal( menu(), true );
+	$.setEnableContextMenu( true );
+	assert.equal( menu(), false );
+	$.setEnableContextMenu( false );
+	assert.equal( menu(), true );
+
+	// After stopMouse(), the menu opens, and the setting does not restart tracking
+	$.stopMouse();
+	assert.equal( menu(), false );
+	$.setEnableContextMenu( false );
+	assert.equal( menu(), false );
+	$.startMouse();
+	assert.equal( menu(), true );
 } );

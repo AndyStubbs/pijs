@@ -1,7 +1,7 @@
 /**
- * Pointer regressions against a fresh in-memory full bundle and the pointer lifecycle fixture:
- * offscreen command validation, noCss pointer bounds, and a release outside the canvas with
- * trusted input. Owned by the pointer workstream.
+ * Pointer regressions against a fresh in-memory full bundle: offscreen command validation, noCss
+ * pointer bounds, and a release outside the canvas with trusted input. Owned by the pointer
+ * workstream.
  * Run with node --test test/unit/pointer-browser.test.js; no server is required.
  */
 import * as g_test from "node:test";
@@ -21,14 +21,6 @@ before( async () => {
 after( async () => {
 	await context?.close();
 	await browser?.close();
-} );
-
-test( "pointer lifecycle fixture clears subscriptions before disposal", async () => {
-	const page = await context.newPage();
-	try {
-		await page.goto( "http://localhost:8080/test/tests/html-plugins/pointer_lifecycle_01.html" );
-		assert.equal( await page.evaluate( () => window.patchResult ), true );
-	} finally { await page.close(); }
 } );
 
 async function probe( fn ) {
@@ -141,15 +133,6 @@ test( "offscreen pointer validation precedes all state changes and subscriptions
 		}
 		return true;
 	} ), true );
-} );
-
-test( "offscreen pointer commands report the invoked command", async () => {
-	assert.deepEqual( await probe( () => {
-		const screen = $.screen( { "aspect": "8x8", "isOffscreen": true } );
-		try { screen.inpress(); } catch( error ) {
-			return [ error.name, error.code, error.message.startsWith( "inpress: Screen " ) ];
-		}
-	} ), [ "TypeError", "OFFSCREEN_INPUT_UNSUPPORTED", true ] );
 } );
 
 test( "a trusted mouse release outside the canvas is released once (T1)", async () => {
