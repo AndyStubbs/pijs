@@ -744,20 +744,20 @@ the [ROADMAP](ROADMAP.md#5-keyboard) tasks that implement each item.
 | --- | --- | --- | --- |
 | KEY-001 | Key-value state sticks or releases early | Accepted | P1. Fixed by A1 (Keyboard 1.2, done). Confirmed on hardware in Chrome |
 | KEY-002 | `clearEvents()` from another screen strands a prompt | Accepted | Fixed by A2 (Keyboard 1.3, done) |
-| KEY-003 | Prompt does not own the keyboard | Accepted | Fixed by A3 and A11 (Keyboard 1.4, done; 2.8). Confirmed on hardware in Chrome |
+| KEY-003 | Prompt does not own the keyboard | Accepted | Fixed by A3 and A11 (Keyboard 1.4 and 2.8, done). Confirmed on hardware in Chrome |
 | KEY-004 | Shadow-DOM inputs reach game handlers | Accepted | Fixed by A4 (Keyboard 1.5, done) |
 | KEY-005 | Prompt layout | Accepted | Fixed by A5 (Keyboard 1.6, done) |
-| KEY-006 | `stopKeyboard()` not undone; strands prompts | Accepted | Prompt part fixed by A2 (Keyboard 1.3, done); start rule I5 (Keyboard 2.3) |
-| KEY-007 | `offkey()` needs every flag | Accepted | Rule I4 (Keyboard 2.2) |
+| KEY-006 | `stopKeyboard()` not undone; strands prompts | Accepted | Prompt part fixed by A2 (Keyboard 1.3, done); start rule I5 (Keyboard 2.3, done) |
+| KEY-007 | `offkey()` needs every flag | Accepted | Rule I4 (Keyboard 2.2, done) |
 | KEY-008 | Numeric prompt edge cases | Accepted | Fixed by A6 (Keyboard 1.7, done) |
-| KEY-009 | Validation gaps | Accepted | Fixed by A7 with I11 codes (Keyboard 2.7) |
-| KEY-010 | Caller's array sorted; duplicates fire twice | Accepted | Fixed by A7 (Keyboard 2.7) |
-| KEY-011 | Release data and unseen presses | Accepted | Fixed by A8 (Keyboard 1.8, done); blur releases by I6 (Keyboard 2.4) |
+| KEY-009 | Validation gaps | Accepted | Fixed by A7 with I11 codes (Keyboard 2.7, done) |
+| KEY-010 | Caller's array sorted; duplicates fire twice | Accepted | Fixed by A7 (Keyboard 2.7, done) |
+| KEY-011 | Release data and unseen presses | Accepted | Fixed by A8 (Keyboard 1.8, done); blur releases by I6 (Keyboard 2.4, done) |
 | KEY-012 | `startKeyboard()` blurs focus | Accepted | Fixed by A9 (Keyboard 1.9, done) |
-| KEY-013 | Live key data | Accepted | Fixed by A10 (Keyboard 1.10, done) and I7 (Keyboard 2.5) |
-| KEY-014 | `setActionKeys()` adds | Accepted | Fixed by A12 (Keyboard 2.9, breaking) |
+| KEY-013 | Live key data | Accepted | Fixed by A10 (Keyboard 1.10) and I7 (Keyboard 2.5), done |
+| KEY-014 | `setActionKeys()` adds | Accepted | Fixed by A12 (Keyboard 2.9, breaking, done) |
 | KEY-015 | No composed or pasted text | Accepted in part | Paste fixed by A3 (Keyboard 1.4, done). Composed and mobile text are not planned: A16 dropped 2026-09-28 |
-| KEY-016 | `clearEvents()` scope | Accepted | Rule I10 (Keyboard 2.6) |
+| KEY-016 | `clearEvents()` scope | Accepted | Rule I10 (Keyboard 2.6, done) |
 | KEY-017 | Documentation and declarations | Accepted | Metadata and declarations in Keyboard 1.11 (done); `API.md`, README, and llms references in R.2 and R.3 |
 | KEY-018 | Manual pages register twice | Accepted | Keyboard 1.12 (done); self-registration after Full is CORE-003 |
 | KEY-019 | Missing automated tests | Accepted | A test with each fix; harness in Keyboard 1.1 (done) |

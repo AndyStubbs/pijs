@@ -16,11 +16,10 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Keyboard 3.1](#53-phase-3-release-inputs) | Release inputs: finish the compatibility summary, add the open device checks to Section 8.3, and record the final size | Nothing |
-| 2 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
-| 3 | [Core 5–13](#32-phase-2-fixes) | Remaining core fixes, tests, and the two approved API changes, in any order. Core 8 and Core 13 land before the pointer and gamepad Phase 2 sets | Nothing. Can run in parallel |
-| 4 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Core 8 and Core 13 |
-| 5 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Core 8 |
+| 1 | [Sound 10.1](#42-phase-10-sample-instruments) | Core `getAudioBuffer` service member for sample instruments | Nothing. Can run in parallel |
+| 2 | [Core 5–13](#32-phase-2-fixes) | Remaining core fixes, tests, and the two approved API changes, in any order. Core 8 and Core 13 land before the pointer and gamepad Phase 2 sets | Nothing. Can run in parallel |
+| 3 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Core 8 and Core 13 |
+| 4 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Core 8 |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -30,7 +29,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | --- | --- | --- | --- |
 | Core | [3](#3-core) | Phase 1 done. Core 1, 2, and 4 done, 10 tasks left | Core 5–13 |
 | Sound | [4](#4-sound) | Phases 0–9 done; Phases 10–11 not started | Sound 10.1 |
-| Keyboard | [5](#5-keyboard) | Phases 1 and 2 done; Phase 3: 1 task left | Keyboard 3.1 |
+| Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Pointer | [6](#6-pointer) | Phase 1 done; Phase 2 not started | Pointer 2.1, after Core 8 and Core 13 |
 | Gamepad | [7](#7-gamepad) | Phase 1 done; Phase 2 not started | Gamepad 2.1, after Core 8 |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
@@ -403,9 +402,10 @@ and size recorded.
 
 ### 5.3 Phase 3: release inputs
 
+Phase 3 is done: task 3.1 ([Section 13.6](#136-keyboard)).
+
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 3.1 | **Release inputs.** Complete the compatibility summary below, add the plugin's open device checks to Section 8.3, and record the final size | — | — |
 
 **Exit criteria:** `npm test` green, the compatibility summary complete, and the final size
 recorded.
@@ -414,6 +414,7 @@ recorded.
 
 Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.1:
 
+- **Version (G1):** the keyboard plugin is 2.0.0.
 - **Renames (I1):** `inkey` → `inKey`, `onkey` → `onKey`, `offkey` → `offKey`. The old names
   are unregistered (I16).
 - **`offKey()` (I4):** matches on key, mode, and function only; `once` and `allowRepeat` are
@@ -429,17 +430,29 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.1:
   data has a `cancelled` field.
 - **Dispatch (I8):** state is updated before handlers run, so `inKey()` inside an `"up"` handler
   no longer reports the released key. A handler that throws is reported with `console.error`
-  instead of being rethrown, so `window` error listeners no longer see it.
+  instead of being rethrown, so `window` error listeners no longer see it. A handler registered
+  during a key event first runs for the next one, and a combination that lists both a key's
+  code and its value runs once per event.
 - **Errors (I11):** validation throws `TypeError` or `RangeError` with per-parameter codes
   instead of `INVALID_PARAMETERS`. `inKey( "" )` and `inKey( 0 )` now throw instead of returning
   the list. Modes other than `"up"` and `"down"`, empty keys, `"any"` in a combination,
   non-boolean `once`, `allowRepeat`, and `input()` flags, and `maxLength: 0` now throw.
 - **Combinations (A7):** the key array is copied and de-duplicated, so the caller's array is no
   longer sorted, and a combination's callback receives its key data in the order given.
-- **A11:** "Keys typed into an `input()` prompt no longer reach `onKey()` handlers or `inKey()`.
-  Handle the prompt's result instead of watching for Enter."
+- **A11:** "Keys typed into an `input()` prompt no longer reach `onKey()` handlers or `inKey()`,
+  including the Enter that ends it. Handle the prompt's result instead of watching for Enter."
 - **A12:** "`setActionKeys()` and `set( { "actionKeys": … } )` replace the action keys. Pass
   every key in one call, or use `removeActionKeys()` to remove some."
+- **Phase 1 fixes (A1–A6, A8, A9):** a key is released by its code whatever value its keyup
+  reports, so a letter pressed with Shift no longer stays held, and a key value is held while
+  any key that produced it is held. `input()` reads its own keys, so it works after
+  `stopKeyboard()`; it prevents the default action of the keys it handles, so Space no longer
+  scrolls and Tab no longer moves focus; Ctrl and Meta shortcuts are left to the browser, and
+  pasted text is inserted. Keys typed into an input inside a shadow root are ignored. The prompt
+  keeps to one line, and printing continues on the line below it. Numeric prompts resolve with a
+  number, `isInteger` alone included, and a value with no digits resolves to 0. `"up"` handlers
+  receive the keyup's data, and a keyup whose press was not seen still reaches single-key and
+  `"any"` handlers. `startKeyboard()` no longer blurs the focused element.
 - **A10 and I7:** not breaking for documented use. Code that wrote to a key data object or the
   array from `inKey()` now fails silently, or throws in strict mode.
 
@@ -670,8 +683,10 @@ in its workstream's evidence folder.
 
 **Input device pass:**
 
-- [ ] Keyboard: a non-US layout with AltGr; Safari and macOS Meta, if macOS hardware is
-  available.
+- [ ] Keyboard: the release pass in `docs/evidence/keyboard-2.3/README.md`, in Chrome, Firefox,
+  and Safari: stuck keys (A1), cancelled releases on blur and on a hidden tab (I6), auto-repeat,
+  and the prompt's keys (A3, A11); a non-US layout with AltGr; an input method leaves no key
+  held; macOS Cmd, if macOS hardware is available.
 - [ ] Pointer: the mouse pass in Firefox and Safari; touch and multi-touch on a phone or tablet
   (PTR-002, PTR-003); `touchcancel` from a system gesture (PTR-005); pinch zoom with
   `setPinchZoom` on and off (PTR-014); compatibility mouse events after a tap; long-press
@@ -1040,6 +1055,7 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | 2.7 | Validation (A7, I11): `onKey` and `offKey` take a key that is a non-empty string or a non-empty array of strings (`INVALID_KEY`: `TypeError` for a wrong type, `RangeError` for an empty string or array, and for `"any"` inside a combination, which could never run); the array is copied and de-duplicated in the order given, so the caller's array is no longer sorted, combination data follows the order given, and the key-set identity is a sorted JSON copy. `mode` is `"up"` or `"down"` (`INVALID_MODE`, `RangeError` for another string); `fn` uses `INVALID_FUNCTION`; `once` and `allowRepeat` are booleans or omitted (`INVALID_ONCE`, `INVALID_ALLOW_REPEAT`). `inKey()` treats `null` and `undefined` as no key and throws `INVALID_KEY` for other non-strings and `""`. Action keys, including `set( { actionKeys } )`, are arrays of non-empty strings (`INVALID_KEYS`). `input()` uses `INVALID_PROMPT`, `INVALID_FUNCTION`, `INVALID_CURSOR`, the three flag codes, and `INVALID_MAX_LENGTH` (`TypeError` for a non-integer, `RangeError` below 1); `null` and `undefined` take the defaults, so `maxLength: undefined` works before Core 6, and an empty cursor keeps the block. Each file has a `throwCode` helper, as `sound-advanced` does; `INVALID_PARAMETERS` is gone from the plugin. Metadata: `onKey`, `offKey`, `inKey`, `setActionKeys`, `removeActionKeys`, `input`; compatibility summary 5.4. Tests: every rejected argument with its error type, code, and command prefix, and the defaults for omitted values; `input()` options, including `maxLength` omitted in both forms; the caller's array, order, duplicates, and `offKey` matching (K6); `set( { actionKeys } )` in the browser (K20); the I6 test's combination data now in the order given | [KEY-009](AUDIT-KEYBOARD.md#key-009), [KEY-010](AUDIT-KEYBOARD.md#key-010) | [#59](https://github.com/AndyStubbs/pijs/pull/59) |
 | 2.8 | Prompt keys withheld (A11): while an `input()` prompt is active, key events do not reach `onKey()` handlers or `inKey()`, as keys typed into a text field do not. The prompt's listener marks each event it reads (`isPromptKey()` in `input.js`: a prompt is active, or a prompt read the event), so the Enter that ends a prompt is withheld whichever listener runs first. A keyup is also withheld when its code's keydown was, or when the prompt's start released the key as cancelled (task 2.4), so no key is released twice; a later keydown of the code outside a prompt clears this. Action keys keep their default prevented while withheld. The prompt calls the plugin's `withholdHeldKeys()` when it starts. `charedit.html` and `dataedit.html` no longer run their menu handlers for digits typed into their prompts. Metadata: `input`, `onKey`, `inKey`. Tests: a key held across the prompt's start, typed keys, releases during and after the prompt, the ending Enter, and keys reaching handlers again afterward; the ending key with the prompt's listener first and an action key; the native-keyboard prompt test (K9n) with game handlers; the 2.6 test's held count while its kept prompt is active | [KEY-003](AUDIT-KEYBOARD.md#key-003) | [#60](https://github.com/AndyStubbs/pijs/pull/60) |
 | 2.9 | `setActionKeys()` replaces (A12): the command and `set( { "actionKeys": … } )` replace the action keys; the keys are checked first, so an invalid call leaves the set unchanged, and an empty array clears it. `removeActionKeys()` is unchanged. No demo, fixture, tool page, or manual page called `setActionKeys()` twice; the keyboard README still shows adding, for R.3. Metadata: `setActionKeys` (summary, description, and parameter); compatibility summary 5.4. Size at the Phase 2 exit in `docs/evidence/keyboard-2.3/size-phase2.json` and its README: the standalone plugin 2.0.0 is 4,206 bytes gzipped (+716 since Phase 1). Tests: task 1.11's Node test now replaces sets, keeps the set after an invalid call, removes some keys, and clears with an empty array; the browser test replaces through both the command and `set()` (K20) | [KEY-014](AUDIT-KEYBOARD.md#key-014) | [#61](https://github.com/AndyStubbs/pijs/pull/61) |
+| 3.1 | Release inputs: the compatibility summary (5.4) completed with the plugin version, the Phase 1 fixes, dispatch timing, and the prompt's Enter; the keyboard's device checks in Section 8.3 point to a release pass in `docs/evidence/keyboard-2.3/README.md`, with expected results per step and a new hidden-tab step; `device-check.html` shows cancelled releases (I6) and key handler calls during a prompt (A11), checked headless in Chromium. The final size, measured on `main` at `44d1fb1`, equals the Phase 2 exit: 4,206 bytes gzipped for the standalone plugin 2.0.0, +1,096 since the baseline | — | — |
 
 ### 13.7 Pointer
 
