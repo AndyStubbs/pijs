@@ -288,6 +288,54 @@ void main(){fragColor=texture(u_texture,v_texCoord)+texture(u_map,v_texCoord);}`
 		} ), [ [ 0, 0, 255, 255 ], false, 0 ] );
 	} );
 
+	test( `CORE-001 ${bundle}: the next offscreen screen after the last one gets a new context`,
+		async () => {
+			assert.deepEqual( await probe( bundle, async () => {
+				const results = [];
+
+				// The last member leaves while the context works, and while it is lost (C01)
+				for( const isLost of [ false, true ] ) {
+					const a = $.screen( { "aspect": "4x4", "isOffscreen": true } );
+					const child = $.screen( {
+						"aspect": "2x2", "isOffscreen": true, "parent": a
+					} );
+					const old = inspect( a ).gl;
+					if( isLost ) {
+						await lose( old );
+					}
+
+					// A child keeps the context in use after its parent's standalone screen goes
+					a.removeScreen();
+					const shared = $.screen( { "aspect": "2x2", "isOffscreen": true } );
+					const isShared = inspect( shared ).gl === old;
+					child.removeScreen();
+					shared.removeScreen();
+
+					const b = $.screen( { "aspect": "4x4", "isOffscreen": true } );
+					const c = $.screen( { "aspect": "2x2", "isOffscreen": true } );
+					const gl = inspect( b ).gl;
+					b.setColor( "red" ); b.pset( 1, 1 );
+					c.setColor( "blue" ); c.pset( 0, 0 );
+					results.push( [ isShared, gl !== old, inspect( c ).gl === gl,
+						old.isContextLost(), pixel( b, 1, 1 ), pixel( c ), gl.getError() ] );
+					b.removeScreen();
+					c.removeScreen();
+				}
+
+				// The new context recovers from its own loss
+				const d = $.screen( { "aspect": "4x4", "isOffscreen": true } );
+				const restore = await lose( inspect( d ).gl );
+				await restore();
+				d.setColor( "green" ); d.pset( 2, 2 );
+				results.push( [ pixel( d, 2, 2 ), inspect( d ).contextLost ] );
+				return results;
+			} ), [
+				[ true, true, true, true, [ 255, 0, 0, 255 ], [ 0, 0, 255, 255 ], 0 ],
+				[ true, true, true, true, [ 255, 0, 0, 255 ], [ 0, 0, 255, 255 ], 0 ],
+				[ [ 0, 128, 0, 255 ], false ]
+			] );
+		} );
+
 	test( `SYS-008 ${bundle}: discards suspended work and returns transparent reads`, async () => {
 		assert.deepEqual( await probe( bundle, async () => {
 			const screen = $.screen( "16x16" );
