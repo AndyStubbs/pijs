@@ -2311,16 +2311,18 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a key event handler.
 		 *
-		 * Removes a previously registered key event handler. The key, mode, callback, once, and allowRepeat must all match the original onKey call for the handler to be removed; a combination matches when it holds the same keys, in any order.
-		 * @param key Key code/key value string or array of keys that matches the original handler.
-		 * @param mode Event mode ("up" or "down") that matches the original handler.
-		 * @param fn Callback function that matches the original handler.
-		 * @param once Once flag that matches the original handler.
-		 * @param allowRepeat AllowRepeat flag that matches the original handler.
+		 * Removes key event handlers registered with onKey. A handler is identified by its key or combination, its mode, and its callback; the once and allowRepeat flags it was registered with do not matter. A combination matches when it holds the same keys, in any order.
+		 *
+		 * With a key, a mode, and a callback, removes that handler. Without a callback, removes every handler of the mode for the key. With a callback and no mode (null, or no mode in the object form), removes the callback from both modes. A key alone throws a TypeError with code INVALID_MODE; clearEvents( "keyboard" ) removes every key handler.
+		 *
+		 * A handler removed while a key event is being dispatched does not run later in that dispatch.
+		 * @param key Key code, key value, "any", or combination array of the handlers to remove.
+		 * @param mode Event mode ("up" or "down"). If omitted or null, fn is removed from both modes.
+		 * @param fn Callback to remove. If omitted, every handler of the mode is removed.
 		 * @returns This function does not return a value.
 		 */
-		offKey( params: { "key": string | any[]; "mode": string; "fn": ( keyData: object | object[] ) => void; "once"?: boolean; "allowRepeat"?: boolean } ): void;
-		offKey( key: string | any[], mode: string, fn: ( keyData: object | object[] ) => void, once?: boolean, allowRepeat?: boolean ): void;
+		offKey( params: { "key": string | any[]; "mode"?: string | null; "fn"?: ( keyData: object | object[] ) => void } ): void;
+		offKey( key: string | any[], mode?: string | null, fn?: ( keyData: object | object[] ) => void ): void;
 
 		/**
 		 * Registers a callback function for when a gamepad is connected.
@@ -2358,6 +2360,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * Use "any" as the key to listen for every key. The callback receives the key data of the key that was pressed or released.
 		 *
 		 * A "down" callback receives the key data of the keydown. An "up" callback receives the key data of the keyup, so its modifier state is the state at the release. A release runs the handlers of the key's code, of the value it reports, and of the value the key was pressed with, when a modifier changed it during the hold. Single-key and "any" up handlers run even for a key whose press was not seen. A combination's up handler runs when one of its keys is released while all were held, with the release data for that key.
+		 *
+		 * A handler is identified by its key or combination, its mode, and its callback: registering the same callback for the same keys and mode again does nothing, whatever its once and allowRepeat flags, and offKey removes it by those three.
 		 *
 		 * Key data objects are frozen. Keys typed into an editable element, such as an input field, are ignored. A callback that throws does not stop the others; its error is rethrown afterward.
 		 * @param key Key code/key value string, array of keys for combinations, or "any" for any key.
