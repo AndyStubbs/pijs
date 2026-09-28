@@ -65,12 +65,19 @@ in vec2 v_texCoord;
 uniform sampler2D u_texture;
 out vec4 fragColor;
 void main() { fragColor = texture(u_texture, v_texCoord); }` );
-		const settle = () => new Promise( resolve => setTimeout( resolve, 80 ) );
+
+		// A resize arrives through a ResizeObserver, whose timing varies by runner
+		const waitForSize = async ( width, height, message ) => {
+			const start = performance.now();
+			while( canvas.width !== width || canvas.height !== height ) {
+				if( performance.now() - start > 2000 ) { throw new Error( message ); }
+				await new Promise( resolve => setTimeout( resolve, 10 ) );
+			}
+		};
 		screen.setDisplayShader( identity );
-		await settle();
+		await waitForSize( 80, 40, "backing size" );
 		style.textContent += "#host canvas {width:60px;height:30px;margin-left:17px}";
-		await settle();
-		if( canvas.width !== 60 || canvas.height !== 30 ) { throw new Error( "canvas observer" ); }
+		await waitForSize( 60, 30, "canvas observer" );
 		screen.inmouse();
 		const rect = canvas.getBoundingClientRect();
 		canvas.dispatchEvent( new MouseEvent( "mousemove", {
