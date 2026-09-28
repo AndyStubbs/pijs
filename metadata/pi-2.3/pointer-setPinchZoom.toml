@@ -1,0 +1,27 @@
+title = "setPinchZoom"
+category = "pointer"
+isScreen = false
+plugin = "pointer"
+summary = "Enables or disables browser pinch zoom gestures."
+description = """
+Sets the touch-action style of the document body: an empty value when enabled, 'none' when
+disabled, replacing any touch-action the page set on the body. Disabling it stops pinch zoom and
+panning on the whole page, not only the canvas.
+
+This is a global setting. While touch is tracked on a screen, touchstart on its canvas is always
+prevented, so a pinch cannot start on the canvas even when pinch zoom is enabled. Any truthy value
+enables pinch zoom.
+"""
+example = """
+$.setPinchZoom( false ); // Disable pinch zoom for game controls
+$.setPinchZoom( true ); // Re-enable pinch zoom
+"""
+
+[[parameters]]
+name = "isEnabled"
+type = "boolean"
+description = "If true, enables pinch zoom. If false, disables it."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

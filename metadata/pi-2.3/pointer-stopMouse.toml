@@ -1,0 +1,33 @@
+title = "stopMouse"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Stops mouse input tracking for this screen."
+description = """
+Stops mouse tracking on the screen canvas. Held buttons are released first: the onmouse and onpress
+'up' handlers run with cancelled set to true, and no click fires.
+
+While stopped, handlers stay registered but are not called, and inmouse() returns the last state.
+Reads and handler registration do not restart tracking; call startMouse().
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Mouse will be stopped in 3 seconds." );
+$.onmouse( "move", ( mouseData ) => {
+	$.setPosPx( mouseData.x, mouseData.y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 13 );
+	$.print( "+", true );
+} );
+setTimeout( () => {
+	$.setPos( 0, 1 );
+	$.setColor( 7 );
+	$.print( "Mouse is stopped" );
+	$.stopMouse();
+}, 3000 );
+"""
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

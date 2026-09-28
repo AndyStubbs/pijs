@@ -1,0 +1,79 @@
+title = "onpress"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Registers a callback function for press events (mouse or touch)."
+description = """
+Registers a callback that runs for press events of the primary pointer, the mouse or the primary
+touch, with the press data and the optional custom data. Other touches reach ontouch handlers and
+intouch() only. With a hitBox, the callback runs only for presses inside it.
+
+'up' runs for the mouse release anywhere and for the primary touch's release, with cancelled set to
+true for a release the player did not make: a cancelled touch, a hidden page, or a stop command. A
+press that starts on the canvas border or padding is ignored. Registering starts mouse and touch
+tracking unless stopped.
+
+A handler runs until it is removed. Registering the same function again adds a second registration,
+and once removes only its own registration, before the handler runs. Handlers added during an event
+first run for the next event; a handler removed during an event does not run later in it. A handler
+that throws is reported with console.error(), and the other handlers still run.
+
+Requires an onscreen screen.
+"""
+example = """
+$.screen( "300x200" );
+$.onpress( "down", ( pressData ) => {
+	$.setPosPx( pressData.x, pressData.y );
+	$.print( `(${pressData.x}, ${pressData.y})` );
+} );
+
+// With hit box
+const hitBox = { "x": 10, "y": 10, "width": 100, "height": 50 };
+$.setColor( 2 );
+$.rect( hitBox );
+$.setColor( 7 );
+$.onpress( "move", ( pressData ) => {
+	$.setColor( 3 );
+	$.pset( pressData.x, pressData.y );
+	$.setColor( 7 );
+}, false, hitBox );
+
+// One-time handler
+$.onpress( "up", () => {
+	$.setPos( 0, 12 )
+	$.print( "press released once", true, true );
+}, true );
+"""
+
+[[parameters]]
+name = "mode"
+type = "string"
+description = "Event mode: 'down', 'up', or 'move'."
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( pressData: PressData, customData?: object ) => void"
+description = "Callback function that receives (pressData, customData)."
+
+[[parameters]]
+name = "once"
+type = "boolean"
+description = "If true, this registration is removed before the callback's first run."
+optional = true
+
+[[parameters]]
+name = "hitBox"
+type = "HitBox"
+description = "Optional area; the callback runs only for presses inside it."
+optional = true
+
+[[parameters]]
+name = "customData"
+type = "any"
+description = "Optional custom data passed to the callback function."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

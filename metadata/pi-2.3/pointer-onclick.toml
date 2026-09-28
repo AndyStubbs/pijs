@@ -1,0 +1,58 @@
+title = "onclick"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Registers a callback function for click events (mouse or touch)."
+description = """
+Registers a callback that runs when a pointer is pressed and released inside the hit box: the left
+mouse button, or any single touch. Each pointer clicks on its own, so a second finger's tap inside
+the box clicks while the first is still down.
+
+A press inside the box arms the click for that pointer, and its release inside the box fires it
+with the release data. A release outside the box, a release of another mouse button, or a cancel
+disarms it, so right and middle clicks, a drag that leaves the box, and a cancelled touch never
+click.
+
+If no hitBox is provided, the screen's size when the handler is registered is used. A handler runs
+until it is removed. Registering the same function again adds a second registration, and once
+removes only its own registration, before the handler runs. Handlers added during an event first
+run for the next event; a handler removed during an event does not run later in it. A handler that
+throws is reported with console.error(), and the other handlers still run.
+
+Requires an onscreen screen.
+"""
+example = """
+$.screen( "300x200" );
+$.onclick( ( clickData ) => {
+	$.setPosPx( clickData.x, clickData.y );
+	$.print( `Clicked`, true );
+} );
+"""
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( clickData: ClickData, customData?: object ) => void"
+description = "Callback function that receives (clickData, customData)."
+
+[[parameters]]
+name = "once"
+type = "boolean"
+description = "If true, this registration is removed before the callback's first run."
+optional = true
+
+[[parameters]]
+name = "hitBox"
+type = "HitBox"
+description = "Optional area the press and release must both be inside. Defaults to the screen."
+optional = true
+
+[[parameters]]
+name = "customData"
+type = "any"
+description = "Optional custom data passed to the callback function."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

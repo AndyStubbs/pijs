@@ -1,0 +1,37 @@
+title = "startTouch"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Starts touch input tracking for this screen."
+description = """
+Starts touch tracking on the screen canvas. Tracking also starts on first use: the first intouch(),
+inpress(), or handler registration. After stopTouch(), only startTouch() starts tracking again.
+
+When the page is hidden, held touches are released through the 'end' handlers, with cancelled set
+to true.
+
+Requires an onscreen screen.
+"""
+example = """
+$.screen( "300x200" );
+$.stopTouch();
+$.print( "Touch will be enabled in 3 seconds." );
+$.ontouch( "move", ( touches ) => {
+	const touch = touches[ 0 ];
+	$.setPosPx( touch.x, touch.y );
+	var pos = $.getPos();
+	$.setPos( pos.col, pos.row );
+	$.setColor( 13 );
+	$.print( "+", true );
+} );
+setTimeout( () => {
+	$.setPos( 0, 1 );
+	$.setColor( 7 );
+	$.print( "Touch is enabled" );
+	$.startTouch();
+}, 3000 );
+"""
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

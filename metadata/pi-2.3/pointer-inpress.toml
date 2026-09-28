@@ -1,0 +1,35 @@
+title = "inpress"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Gets the current press state (mouse or touch) and starts tracking if needed."
+description = """
+Returns the press of the primary pointer, from whichever input was used last: the mouse data, or
+the primary touch. A touch is primary when it starts with no other touch down, and stays primary
+until it lifts; the other touches are listed in touches but do not move the press. After the
+primary touch lifts, the press keeps its release, with buttons 0 and action 'up', until the next
+primary touch.
+
+Returns a new object on each call. Mouse and touch tracking start on the first read unless stopped.
+
+Requires an onscreen screen.
+"""
+example = """
+$.screen( "300x200" );
+$.setPinchZoom( false );
+requestAnimationFrame( run );
+function run() {
+	const press = $.inpress();
+
+	// Draw while pressed
+	if( press.buttons > 0 && press.lastX !== null ) {
+		$.setColor( 15 );
+		$.line( press.lastX, press.lastY, press.x, press.y );
+	}
+	requestAnimationFrame( run );
+}
+"""
+
+[[returns]]
+type = "PressData"
+description = "Press data of the primary pointer, from the mouse or touch."

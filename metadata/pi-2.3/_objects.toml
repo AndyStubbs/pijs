@@ -107,3 +107,290 @@ name = "getService"
 type = "function"
 signature = "( pluginName: string ) => any"
 description = "Return the service of an initialized plugin named in this plugin's dependencies."
+
+# ============================================================================
+# HitBox
+# ============================================================================
+[[objects]]
+title = "HitBox"
+summary = "Rectangular area used for hit detection in event handlers."
+description = """
+A rectangular area in screen pixels that restricts a pointer handler (onclick, onmouse,
+onpress, ontouch) to input inside it. A point is inside when x <= point.x < x + width and
+y <= point.y < y + height, so the left and top edges are included and the right and bottom
+edges are not.
+
+Every value must be a finite number, and fractions are allowed. A negative width or height
+throws a RangeError with code INVALID_HITBOX.
+"""
+
+[[objects.properties]]
+name = "x"
+type = "number"
+description = "Left edge X coordinate in pixels."
+
+[[objects.properties]]
+name = "y"
+type = "number"
+description = "Top edge Y coordinate in pixels."
+
+[[objects.properties]]
+name = "width"
+type = "number"
+description = "Width of the rectangle in pixels; 0 or more."
+
+[[objects.properties]]
+name = "height"
+type = "number"
+description = "Height of the rectangle in pixels; 0 or more."
+
+# ============================================================================
+# MouseData
+# ============================================================================
+[[objects]]
+title = "MouseData"
+summary = "Mouse state and event data."
+description = """
+Mouse data containing position, button state, action, and previous position. Returned by
+inmouse() and passed to onmouse callbacks. Each read and each callback receives a new object.
+
+Positions are in screen pixels. Moves over the canvas border or padding, and a release
+outside the canvas, report their true position, which can be outside the screen.
+"""
+
+[[objects.properties]]
+name = "x"
+type = "number"
+description = "Current X coordinate in pixels."
+
+[[objects.properties]]
+name = "y"
+type = "number"
+description = "Current Y coordinate in pixels."
+
+[[objects.properties]]
+name = "lastX"
+type = "number"
+description = "X coordinate before this event; the current X before the first event."
+
+[[objects.properties]]
+name = "lastY"
+type = "number"
+description = "Y coordinate before this event; the current Y before the first event."
+
+[[objects.properties]]
+name = "buttons"
+type = "number"
+description = """
+Bitmask of the buttons held (0 = none, 1 = left, 2 = right, 4 = middle). Only buttons pressed \
+on the screen count: a press that starts on the canvas border, the padding, or outside the \
+canvas is not held."""
+
+[[objects.properties]]
+name = "action"
+type = "string"
+description = "Last action: 'none' before the first event, then 'down', 'move', or 'up'."
+
+[[objects.properties]]
+name = "cancelled"
+type = "boolean"
+description = """
+True for a release the player did not make: the page was hidden or stopMouse() was called \
+with a button held. False otherwise."""
+
+[[objects.properties]]
+name = "type"
+type = "string"
+description = "Input type, always 'mouse' for mouse data."
+
+# ============================================================================
+# PressData
+# ============================================================================
+[[objects]]
+title = "PressData"
+summary = "Press state data (mouse or touch)."
+description = """
+Press data from the primary pointer: the mouse, or the primary touch. Returned by inpress()
+and passed to onpress callbacks; type tells which input it came from.
+
+For the mouse, it is the MouseData of the event. For touch, it is the primary touch, plus
+buttons (1 while it is down, 0 after its release), and touches, which holds this press object
+followed by the other touches still down. A touch is primary when it starts with no other
+touch down, and stays primary until it lifts; after that, no touch is primary until every
+touch is up.
+"""
+
+[[objects.properties]]
+name = "x"
+type = "number"
+description = "Current X coordinate in pixels."
+
+[[objects.properties]]
+name = "y"
+type = "number"
+description = "Current Y coordinate in pixels."
+
+[[objects.properties]]
+name = "lastX"
+type = "number | null"
+description = "X coordinate before this event; null on a touch's first event."
+
+[[objects.properties]]
+name = "lastY"
+type = "number | null"
+description = "Y coordinate before this event; null on a touch's first event."
+
+[[objects.properties]]
+name = "buttons"
+type = "number"
+description = "Mouse: the MouseData button bitmask. Touch: 1 while the primary touch is down, 0 after."
+
+[[objects.properties]]
+name = "action"
+type = "string"
+description = """
+Mouse: 'none', 'down', 'move', or 'up'. Touch: 'start' or 'move' while the primary touch is \
+down, then 'up'; 'none' when no touch press has been seen."""
+
+[[objects.properties]]
+name = "cancelled"
+type = "boolean"
+description = "True for a release the player did not make, as in MouseData and TouchData."
+
+[[objects.properties]]
+name = "type"
+type = "string"
+description = "Input type: 'mouse' or 'touch'."
+
+[[objects.properties]]
+name = "id"
+type = "number"
+description = "Touch only: the primary touch's identifier."
+optional = true
+
+[[objects.properties]]
+name = "touches"
+type = "Array<TouchData>"
+description = """
+Touch only: this press object, followed by the other touches still down. The array contains \
+the press itself, so the press cannot be serialized with JSON.stringify()."""
+optional = true
+
+# ============================================================================
+# ClickData
+# ============================================================================
+[[objects]]
+title = "ClickData"
+summary = "Click event data (mouse or touch)."
+description = """
+The data of the release that completed a click, passed to onclick callbacks. For the mouse, it
+is the MouseData of the release; for a touch, it has the PressData fields of the touch that
+clicked, with buttons 0.
+"""
+
+[[objects.properties]]
+name = "x"
+type = "number"
+description = "X coordinate of the release in pixels."
+
+[[objects.properties]]
+name = "y"
+type = "number"
+description = "Y coordinate of the release in pixels."
+
+[[objects.properties]]
+name = "lastX"
+type = "number"
+description = "X coordinate before the release."
+
+[[objects.properties]]
+name = "lastY"
+type = "number"
+description = "Y coordinate before the release."
+
+[[objects.properties]]
+name = "buttons"
+type = "number"
+description = "Buttons still held after the release."
+
+[[objects.properties]]
+name = "action"
+type = "string"
+description = "Always 'up', the release that completed the click."
+
+[[objects.properties]]
+name = "cancelled"
+type = "boolean"
+description = "Always false: a cancelled release never clicks."
+
+[[objects.properties]]
+name = "type"
+type = "string"
+description = "Input type: 'mouse' or 'touch'."
+
+[[objects.properties]]
+name = "id"
+type = "number"
+description = "Touch only: the identifier of the touch that clicked."
+optional = true
+
+[[objects.properties]]
+name = "touches"
+type = "Array<TouchData>"
+description = "Touch only: this click object, followed by the touches still down."
+optional = true
+
+# ============================================================================
+# TouchData
+# ============================================================================
+[[objects]]
+title = "TouchData"
+summary = "Single touch point data."
+description = """
+Data for one touch point. intouch() returns the touches still down, and ontouch callbacks
+receive the touches the event changed. Each read and each callback receives new objects.
+"""
+
+[[objects.properties]]
+name = "x"
+type = "number"
+description = """
+Current X coordinate in pixels. A touch that moves or ends outside the screen reports its true \
+position, which can be outside the screen."""
+
+[[objects.properties]]
+name = "y"
+type = "number"
+description = "Current Y coordinate in pixels."
+
+[[objects.properties]]
+name = "id"
+type = "number"
+description = "Touch identifier, the same for every event of one touch."
+
+[[objects.properties]]
+name = "lastX"
+type = "number | null"
+description = "X coordinate before this event; null on the touch's first event."
+
+[[objects.properties]]
+name = "lastY"
+type = "number | null"
+description = "Y coordinate before this event; null on the touch's first event."
+
+[[objects.properties]]
+name = "action"
+type = "string"
+description = "This touch's last action: 'start', 'move', or 'end'."
+
+[[objects.properties]]
+name = "cancelled"
+type = "boolean"
+description = """
+True for an end the player did not make: the browser cancelled the touch, the page was hidden, \
+or stopTouch() was called. False otherwise."""
+
+[[objects.properties]]
+name = "type"
+type = "string"
+description = "Input type, always 'touch' for touch data."
