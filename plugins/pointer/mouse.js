@@ -43,6 +43,9 @@ export function registerMouse( pluginApi, helpers ) {
 	const m_heldScreens = new Set();
 	let m_isWindowListening = false;
 
+	// The page-visibility listener is added when tracking first starts, not at plugin load
+	let m_isVisibilityListening = false;
+
 	pluginApi.addScreenDataItem( "mouseStopped", false );
 	pluginApi.addScreenDataItem( "mouseStarted", false );
 	pluginApi.addScreenDataItem( "mouse", null );
@@ -55,7 +58,6 @@ export function registerMouse( pluginApi, helpers ) {
 	} );
 
 	pluginApi.addScreenInitFunction( initMouseData );
-	document.addEventListener( "visibilitychange", onVisibilityChangeMouse );
 
 	pluginApi.addCommand( "startMouse", startMouse, true, [] );
 	pluginApi.addCommand( "stopMouse", stopMouse, true, [] );
@@ -101,6 +103,10 @@ export function registerMouse( pluginApi, helpers ) {
 		//Clear explicit mouseStopped
 		screenData.mouseStopped = false;
 
+		if( !m_isVisibilityListening ) {
+			document.addEventListener( "visibilitychange", onVisibilityChangeMouse );
+			m_isVisibilityListening = true;
+		}
 		if( !screenData.mouseStarted ) {
 			screenData.canvas.addEventListener( "mousemove", mouseMove );
 			screenData.canvas.addEventListener( "mousedown", mouseDown );

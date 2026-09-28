@@ -25,7 +25,7 @@ const m_utils = g_harness.loadModule( "src/core/utils.js", {
  * The real pointer plugin on fake screens.
  *
  * @returns {Object} `{ $, screen, removeScreen, clearEvents, mouse, mouseOutside, touch,
- *   click, tap, hide, window, errors }`. `$` runs global commands on the first screen;
+ *   click, tap, hide, window, document, errors }`. `$` runs global commands on the first screen;
  *   `screen()` adds a screen whose `api` holds the screen commands; `errors` holds the
  *   arguments of each `console.error()` call.
  */
@@ -263,7 +263,7 @@ function harness() {
 		"$": api, "screen": screen, "removeScreen": removeScreen, "clearEvents": clearEvents,
 		"mouse": mouse,
 		"mouseOutside": mouseOutside, "touch": touch, "click": click, "tap": tap, "hide": hide,
-		"window": globals.window, "errors": errors
+		"window": globals.window, "document": globals.document, "errors": errors
 	};
 }
 
@@ -820,4 +820,20 @@ test( "pointer hit boxes take finite positions and reject negative sizes (P13)",
 		} );
 	}
 	$.onpress( "down", () => {}, false, { "x": -5, "y": -5, "width": 0, "height": 0 } );
+} );
+
+test( "pointer adds its window and document listeners only when tracking starts (B12)", () => {
+	const h = harness();
+	const $ = h.$;
+	const types = target => Array.from( target.listeners, listener => listener.type ).sort();
+	assert.deepEqual( types( h.window ), [] );
+	assert.deepEqual( types( h.document ), [] );
+	$.inmouse();
+	h.screen().api.startMouse();
+	assert.deepEqual( types( h.document ), [ "visibilitychange" ] );
+	$.intouch();
+	$.stopTouch();
+	$.startTouch();
+	assert.deepEqual( types( h.document ), [ "visibilitychange", "visibilitychange" ] );
+	assert.deepEqual( types( h.window ), [] );
 } );
