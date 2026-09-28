@@ -64,8 +64,8 @@ export function registerTouch( pluginApi, helpers ) {
 
 	function initTouchData( screenData ) {
 		screenData.onTouchEventListeners = {
-			"start": [],
-			"end": [],
+			"down": [],
+			"up": [],
 			"move": []
 		};
 	}
@@ -114,7 +114,7 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 
 	/**
-	 * Stop tracking touch events. Held touches are released first, through the `"end"`
+	 * Stop tracking touch events. Held touches are released first, through the `"up"`
 	 * handlers with `cancelled: true`.
 	 *
 	 * @param {Object} screenData - Screen state.
@@ -161,8 +161,9 @@ export function registerTouch( pluginApi, helpers ) {
 		const hitBox = options.hitBox;
 		const customData = options.customData;
 
+		checkRenamedMode( mode, "onTouch" );
 		m_onevent(
-			mode, fn, once, hitBox, [ "start", "end", "move" ], "onTouch",
+			mode, fn, once, hitBox, [ "down", "up", "move" ], "onTouch",
 			screenData.onTouchEventListeners, null, null, customData
 		);
 		startTouchInternal( screenData );
@@ -179,10 +180,30 @@ export function registerTouch( pluginApi, helpers ) {
 		const mode = options.mode;
 		const fn = options.fn;
 
+		checkRenamedMode( mode, "offTouch" );
 		m_offevent(
-			mode, fn, [ "start", "end", "move" ], "offTouch",
+			mode, fn, [ "down", "up", "move" ], "offTouch",
 			screenData.onTouchEventListeners
 		);
+	}
+
+	/**
+	 * Name the new mode for a touch mode that was renamed (I3).
+	 *
+	 * @param {*} mode - Requested mode.
+	 * @param {string} command - Command name for the message.
+	 * @returns {void}
+	 */
+	function checkRenamedMode( mode, command ) {
+		const renamed = { "start": "down", "end": "up" };
+		if( mode === "start" || mode === "end" ) {
+			const error = new Error(
+				`${command}: mode "${mode}" is now "${renamed[ mode ]}"; touch modes are ` +
+				"down, up, and move."
+			);
+			error.code = "INVALID_MODE";
+			throw error;
+		}
 	}
 
 	/**
@@ -213,7 +234,7 @@ export function registerTouch( pluginApi, helpers ) {
 			isIdle = false;
 			break;
 		}
-		const changed = updateTouch( screenData, e, "start", false );
+		const changed = updateTouch( screenData, e, "down", false );
 
 		// A touch is primary when it starts with no other touch down, as in Pointer Events
 		if( isIdle && changed.length > 0 ) {
@@ -226,7 +247,7 @@ export function registerTouch( pluginApi, helpers ) {
 		if( changed.length === 0 ) {
 			return false;
 		}
-		m_triggerEventListeners( "start", changed, screenData.onTouchEventListeners );
+		m_triggerEventListeners( "down", changed, screenData.onTouchEventListeners );
 		if( primary ) {
 			const pressData = g_press.getTouchPress( screenData );
 			g_press.triggerPressListeners( screenData, "down", pressData );
@@ -263,7 +284,7 @@ export function registerTouch( pluginApi, helpers ) {
 	 * @returns {void}
 	 */
 	function endTouches( screenData, e, isCancelled ) {
-		const changed = updateTouch( screenData, e, "end", isCancelled );
+		const changed = updateTouch( screenData, e, "up", isCancelled );
 		dispatchTouchRelease( screenData, changed, isCancelled );
 	}
 
@@ -280,7 +301,8 @@ export function registerTouch( pluginApi, helpers ) {
 		for( const id in screenData.touches ) {
 			const touch = screenData.touches[ id ];
 			changed.push( copyTouch( {
-				...touch, "lastX": touch.x, "lastY": touch.y, "action": "end", "cancelled": true
+				...touch, "lastX": touch.x, "lastY": touch.y, "buttons": 0, "action": "up",
+				"cancelled": true
 			} ) );
 		}
 		if( changed.length === 0 ) {
@@ -291,7 +313,7 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 
 	/**
-	 * Dispatch the release of ended touches, whose state is already removed: the `"end"`
+	 * Dispatch the release of ended touches, whose state is already removed: the `"up"`
 	 * handlers, the press release if the primary touch ended, and the clicks.
 	 *
 	 * @param {Object} screenData - Screen state.
@@ -308,7 +330,7 @@ export function registerTouch( pluginApi, helpers ) {
 			setTouchPress( screenData, primary, "up", 0 );
 			screenData.primaryTouchId = null;
 		}
-		m_triggerEventListeners( "end", changed, screenData.onTouchEventListeners );
+		m_triggerEventListeners( "up", changed, screenData.onTouchEventListeners );
 		if( primary ) {
 			g_press.triggerPressListeners( screenData, "up", g_press.getTouchPress( screenData ) );
 		}
@@ -316,10 +338,7 @@ export function registerTouch( pluginApi, helpers ) {
 			if( isCancelled ) {
 				g_press.triggerClickListeners( screenData, touch, "cancel", touch.id );
 			} else {
-				const clickData = g_press.getTouchPress( screenData, {
-					...touch, "action": "up", "buttons": 0
-				} );
-				g_press.triggerClickListeners( screenData, clickData, "up", touch.id );
+				g_press.triggerClickListeners( screenData, touch, "up", touch.id );
 			}
 		}
 	}
@@ -343,16 +362,9 @@ export function registerTouch( pluginApi, helpers ) {
 	 * @returns {void}
 	 */
 	function setTouchPress( screenData, touch, action, buttons ) {
-		screenData.touchPress = {
-			"x": touch.x,
-			"y": touch.y,
-			"id": touch.id,
-			"lastX": touch.lastX,
-			"lastY": touch.lastY,
-			"action": action,
-			"cancelled": touch.cancelled,
-			"buttons": buttons
-		};
+		screenData.touchPress = g_target.createPointerData( {
+			...touch, "action": action, "buttons": buttons
+		} );
 	}
 
 	/**
@@ -363,7 +375,7 @@ export function registerTouch( pluginApi, helpers ) {
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @param {PointerEvent} e - Touch pointer event.
-	 * @param {string} action - `"start"`, `"move"`, or `"end"`.
+	 * @param {string} action - `"down"`, `"move"`, or `"up"`.
 	 * @param {boolean} isCancelled - Whether the browser cancelled the touch.
 	 * @returns {Array<Object>} A copy of the changed touch, or none.
 	 */
@@ -371,7 +383,7 @@ export function registerTouch( pluginApi, helpers ) {
 		screenData.lastEvent = "touch";
 		const previous = screenData.touches[ e.pointerId ];
 		let position = g_target.pointerPosition( screenData, e );
-		if( action === "start" ) {
+		if( action === "down" ) {
 
 			// A touch that starts on the canvas border or padding is ignored
 			if( !g_target.isOnScreen( screenData, position ) ) {
@@ -385,13 +397,22 @@ export function registerTouch( pluginApi, helpers ) {
 		} else if( !position ) {
 			position = previous;
 		}
+
+
+		// A touch's first event reports its own position as the last one; contact is button 1
+		let buttons = 1;
+		if( action === "up" ) {
+			buttons = 0;
+		}
 		const touchData = {
 			"x": position.x,
 			"y": position.y,
-			"id": e.pointerId,
-			"lastX": null,
-			"lastY": null,
+			"lastX": position.x,
+			"lastY": position.y,
+			"buttons": buttons,
 			"action": action,
+			"type": "touch",
+			"id": e.pointerId,
 			"cancelled": isCancelled
 		};
 		if( previous ) {
@@ -402,7 +423,7 @@ export function registerTouch( pluginApi, helpers ) {
 		for( const id in screenData.touches ) {
 			newTouches[ id ] = screenData.touches[ id ];
 		}
-		if( action === "end" ) {
+		if( action === "up" ) {
 			delete newTouches[ touchData.id ];
 		} else {
 			newTouches[ touchData.id ] = touchData;
@@ -412,16 +433,7 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 
 	function copyTouch( touch ) {
-		return {
-			"x": touch.x,
-			"y": touch.y,
-			"id": touch.id,
-			"lastX": touch.lastX,
-			"lastY": touch.lastY,
-			"action": touch.action,
-			"cancelled": touch.cancelled,
-			"type": "touch"
-		};
+		return g_target.createPointerData( touch );
 	}
 
 	function getTouch( screenData ) {

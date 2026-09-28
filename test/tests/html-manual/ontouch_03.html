@@ -34,7 +34,7 @@ $.ready( function () {
 	$.rect( hitbox.x, hitbox.y, hitbox.width, hitbox.height );
 	$.setColor( 2 );
 	
-	$.onTouch( "start", function ( touches, customData ) {
+	$.onTouch( "down", function ( touches, customData ) {
 		var i, touch;
 		console.log( customData );
 		for( i = 0; i < touches.length; i++ ) {
@@ -53,7 +53,7 @@ $.ready( function () {
 			}
 		}
 	}, false, hitbox );
-	$.onTouch( "end", function ( touches ) {
+	$.onTouch( "up", function ( touches ) {
 		var i, touch;
 		for( i = 0; i < touches.length; i++ ) {
 			touch = touches[ i ];

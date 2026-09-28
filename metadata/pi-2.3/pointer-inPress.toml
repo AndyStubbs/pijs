@@ -22,7 +22,7 @@ function run() {
 	const press = $.inPress();
 
 	// Draw while pressed
-	if( press.buttons > 0 && press.lastX !== null ) {
+	if( press.buttons > 0 ) {
 		$.setColor( 15 );
 		$.line( press.lastX, press.lastY, press.x, press.y );
 	}

@@ -4,7 +4,7 @@ isScreen = true
 plugin = "pointer"
 summary = "Stops touch input tracking for this screen."
 description = """
-Stops touch tracking on the screen canvas. Held touches are released first: the onTouch 'end'
+Stops touch tracking on the screen canvas. Held touches are released first: the onTouch 'up'
 handlers, and the onPress 'up' handlers for the primary touch, run with cancelled set to true, and
 no click fires.
 

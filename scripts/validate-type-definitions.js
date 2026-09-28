@@ -348,7 +348,7 @@ function validateTypeDefinitions() {
 	for( const text of [
 		"interface MouseData {",
 		"interface TouchData {",
-		"lastX: number | null;",
+		"touches: Array<TouchData>;",
 		"cancelled: boolean;",
 		"interface HitBox {",
 		"interface PluginScreenCommands extends PointerScreenCommands {}",

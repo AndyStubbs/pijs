@@ -65,7 +65,7 @@ const LITE_PLUGIN_CONSUMERS = {
 		`const x: number = screen.inMouse().x;`,
 		`lite.onClick( ( click ) => { void click.buttons; }, false,`,
 		`\t{ x: 0, y: 0, width: 4, height: 4 } );`,
-		`lite.onTouch( "end", ( touches ) => {`,
+		`lite.onTouch( "up", ( touches ) => {`,
 		`\tconst lastX: number | null = touches[ 0 ].lastX;`,
 		`\tconst cancelled: boolean = touches[ 0 ].cancelled;`,
 		`\tvoid lastX;`,

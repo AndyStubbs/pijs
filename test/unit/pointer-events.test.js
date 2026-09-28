@@ -374,7 +374,7 @@ test( "pointer clearing one mode keeps the handlers of the other modes (P1)", ()
 	$.onMouse( "down", () => log.push( "mouse down" ) );
 	$.onMouse( "move", other );
 	$.offMouse( "move" );
-	$.onTouch( "start", () => log.push( "touch start" ) );
+	$.onTouch( "down", () => log.push( "touch start" ) );
 	$.onTouch( "move", other );
 	$.offTouch( "move" );
 	$.onPress( "down", () => log.push( "press down" ) );
@@ -392,8 +392,8 @@ test( "pointer removing a function that was never added keeps registered handler
 	const other = () => {};
 	$.onMouse( "down", () => log.push( "mouse down" ) );
 	$.offMouse( "down", other );
-	$.onTouch( { "mode": "start", "fn": () => log.push( "touch start" ) } );
-	$.offTouch( { "mode": "start", "fn": other } );
+	$.onTouch( { "mode": "down", "fn": () => log.push( "touch start" ) } );
+	$.offTouch( { "mode": "down", "fn": other } );
 	$.onPress( "up", () => log.push( "press up" ) );
 	$.offPress( "up", other );
 	$.onClick( () => log.push( "click" ) );
@@ -486,8 +486,8 @@ test( "pointer handlers that throw are reported and do not stop the event (P6)",
 
 	// The canvas's touch-action keeps the touch from the browser, so a throw cannot lose it
 	log.length = 0;
-	$.onTouch( "start", () => { throw new Error( "touch" ); } );
-	$.onTouch( "start", () => log.push( "touch start" ) );
+	$.onTouch( "down", () => { throw new Error( "touch" ); } );
+	$.onTouch( "down", () => log.push( "touch start" ) );
 	const [ event ] = h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
 	assert.equal( event.target.style.touchAction, "none" );
 	assert.deepEqual( log, [ "touch start", "press down" ] );
@@ -495,7 +495,7 @@ test( "pointer handlers that throw are reported and do not stop the event (P6)",
 		[ "onMouse: Handler for \"down\" failed:", "mouse" ],
 		[ "onPress: Handler for \"down\" failed:", "press" ],
 		[ "onClick: Handler for \"click\" failed:", "click" ],
-		[ "onTouch: Handler for \"start\" failed:", "touch" ],
+		[ "onTouch: Handler for \"down\" failed:", "touch" ],
 		[ "onPress: Handler for \"down\" failed:", "press" ]
 	] );
 } );
@@ -521,15 +521,15 @@ test( "pointer touch end reports the touch that lifted, and hit boxes test it (P
 	const $ = h.$;
 	const ends = [];
 	let hits = 0;
-	$.onTouch( "end", data => ends.push( touchSummary( data ) ) );
-	$.onTouch( "end", () => { hits += 1; }, false, { "x": 0, "y": 0, "width": 20, "height": 20 } );
+	$.onTouch( "up", data => ends.push( touchSummary( data ) ) );
+	$.onTouch( "up", () => { hits += 1; }, false, { "x": 0, "y": 0, "width": 20, "height": 20 } );
 
 	// One finger lifts inside the hit box, where it moved last
 	h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
 	h.touch( "touchmove", [ { "id": 1, "x": 12, "y": 12 } ] );
 	h.touch( "touchend", [], [ { "id": 1, "x": 12, "y": 12 } ] );
 	assert.deepEqual( ends, [ [ {
-		"id": 1, "x": 12, "y": 12, "lastX": 12, "lastY": 12, "action": "end", "cancelled": false
+		"id": 1, "x": 12, "y": 12, "lastX": 12, "lastY": 12, "action": "up", "cancelled": false
 	} ] ] );
 	assert.equal( hits, 1 );
 	assert.equal( $.inTouch().length, 0 );
@@ -541,11 +541,11 @@ test( "pointer touch end reports the touch that lifted, and hit boxes test it (P
 	h.touch( "touchstart", [ first, second ], [ second ] );
 	h.touch( "touchend", [ first ], [ second ] );
 	assert.deepEqual( ends[ 1 ], [ {
-		"id": 2, "x": 80, "y": 80, "lastX": 80, "lastY": 80, "action": "end", "cancelled": false
+		"id": 2, "x": 80, "y": 80, "lastX": 80, "lastY": 80, "action": "up", "cancelled": false
 	} ] );
 	assert.equal( hits, 1 );
 	assert.deepEqual( touchSummary( $.inTouch() ), [ {
-		"id": 1, "x": 10, "y": 10, "lastX": null, "lastY": null, "action": "start",
+		"id": 1, "x": 10, "y": 10, "lastX": 10, "lastY": 10, "action": "down",
 		"cancelled": false
 	} ] );
 } );
@@ -555,7 +555,7 @@ test( "pointer touches keep their own actions and handlers get the changed touch
 	const $ = h.$;
 	const starts = [];
 	const moves = [];
-	$.onTouch( "start", data => starts.push( Array.from( data, touch => touch.id ) ) );
+	$.onTouch( "down", data => starts.push( Array.from( data, touch => touch.id ) ) );
 	$.onTouch( "move", data => moves.push( touchSummary( data ) ) );
 	const first = { "id": 1, "x": 10, "y": 10 };
 	const second = { "id": 2, "x": 50, "y": 50 };
@@ -569,7 +569,7 @@ test( "pointer touches keep their own actions and handlers get the changed touch
 		"id": 2, "x": 55, "y": 54, "lastX": 50, "lastY": 50, "action": "move", "cancelled": false
 	} ] ] );
 	assert.deepEqual( Array.from( $.inTouch(), touch => [ touch.id, touch.action ] ), [
-		[ 1, "start" ], [ 2, "move" ]
+		[ 1, "down" ], [ 2, "move" ]
 	] );
 
 	// Polled and handler data are copies of the tracked state
@@ -583,14 +583,14 @@ test( "pointer touchcancel releases with cancelled and never clicks (P4)", () =>
 	const ends = [];
 	const pressUps = [];
 	let clicks = 0;
-	$.onTouch( "end", data => ends.push( touchSummary( data ) ) );
+	$.onTouch( "up", data => ends.push( touchSummary( data ) ) );
 	$.onPress( "up", data => pressUps.push( touchSummary( data ) ) );
 	$.onClick( () => { clicks += 1; }, false, { "x": 0, "y": 0, "width": 20, "height": 20 } );
 	const item = { "id": 1, "x": 10, "y": 10 };
 	h.touch( "touchstart", [ item ] );
 	h.touch( "touchcancel", [], [ item ] );
 	assert.deepEqual( ends, [ [ {
-		"id": 1, "x": 10, "y": 10, "lastX": 10, "lastY": 10, "action": "end", "cancelled": true
+		"id": 1, "x": 10, "y": 10, "lastX": 10, "lastY": 10, "action": "up", "cancelled": true
 	} ] ] );
 	assert.deepEqual( pressUps, [ {
 		"id": 1, "x": 10, "y": 10, "lastX": 10, "lastY": 10, "action": "up", "cancelled": true
@@ -632,7 +632,7 @@ test( "pointer press follows the primary touch, and each touch clicks on its own
 	assert.deepEqual( Array.from( held.touches, touch => touch.id ), [ 1, 2 ] );
 	h.touch( "touchend", [ first ], [ moved ] );
 	assert.deepEqual( log, [ [ "down", 1, 10, 1 ] ] );
-	assert.deepEqual( clicks, [ [ 2, 82, "up", 0 ] ] );
+	assert.deepEqual( clicks, [ [ 2, 82, "click", 0 ] ] );
 	h.touch( "touchend", [], [ first ] );
 	assert.deepEqual( log, [ [ "down", 1, 10, 1 ], [ "up", 1, 10, 0, "up" ] ] );
 	assert.equal( $.inPress().buttons, 0 );
@@ -726,7 +726,7 @@ test( "pointer blur leaves held input alone (P9)", () => {
 	const $ = h.$;
 	const log = [];
 	$.onMouse( "up", () => log.push( "mouse up" ) );
-	$.onTouch( "end", () => log.push( "touch end" ) );
+	$.onTouch( "up", () => log.push( "touch end" ) );
 	h.mouse( "mousedown", 50, 50, 1 );
 	h.touch( "touchstart", [ { "id": 3, "x": 40, "y": 40 } ] );
 	h.window.dispatchEvent( { "type": "blur" } );
@@ -743,7 +743,7 @@ test( "pointer a hidden page releases held input with cancelled (P9)", () => {
 	const log = [];
 	let clicks = 0;
 	$.onMouse( "up", data => log.push( [ "mouse up", data.buttons, data.cancelled ] ) );
-	$.onTouch( "end", data => log.push( [ "touch end", data[ 0 ].id, data[ 0 ].cancelled ] ) );
+	$.onTouch( "up", data => log.push( [ "touch end", data[ 0 ].id, data[ 0 ].cancelled ] ) );
 	$.onPress( "up", data => log.push( [ "press up", data.type, data.cancelled ] ) );
 	$.onClick( () => { clicks += 1; } );
 	h.mouse( "mousedown", 50, 50, 1 );
@@ -771,7 +771,7 @@ test( "pointer stop commands release held input with cancelled (P10)", () => {
 	const $ = h.$;
 	const log = [];
 	$.onMouse( "up", data => log.push( [ "mouse up", data.cancelled ] ) );
-	$.onTouch( "end", data => log.push( [ "touch end", data[ 0 ].cancelled ] ) );
+	$.onTouch( "up", data => log.push( [ "touch end", data[ 0 ].cancelled ] ) );
 	h.mouse( "mousedown", 50, 50, 1 );
 	$.stopMouse();
 	assert.deepEqual( log, [ [ "mouse up", true ] ] );
@@ -785,7 +785,7 @@ test( "pointer stop commands release held input with cancelled (P10)", () => {
 	$.stopMouse();
 	$.stopTouch();
 	$.onMouse( "down", () => log.push( "down" ) );
-	$.onTouch( "start", () => log.push( "start" ) );
+	$.onTouch( "down", () => log.push( "start" ) );
 	h.mouse( "mousedown", 50, 50, 1 );
 	h.touch( "touchstart", [ { "id": 5, "x": 40, "y": 40 } ] );
 	assert.equal( log.length, 2 );
@@ -804,7 +804,7 @@ test( "pointer removing a screen with input held calls none of its handlers", ()
 	const other = h.screen();
 	const log = [];
 	other.api.onMouse( "up", () => log.push( "mouse up" ) );
-	other.api.onTouch( "end", () => log.push( "touch end" ) );
+	other.api.onTouch( "up", () => log.push( "touch end" ) );
 	h.mouse( "mousedown", 5, 5, 1, 0, other );
 	h.touch( "touchstart", [ { "id": 1, "x": 5, "y": 5 } ], undefined, other );
 	h.removeScreen( other );
@@ -820,9 +820,9 @@ test( "pointer presses on the border are ignored, and moves report true position
 	$.onMouse( "down", data => log.push( [ "mouse down", data.x, data.y ] ) );
 	$.onMouse( "move", data => log.push( [ "mouse move", data.x, data.y, data.buttons ] ) );
 	$.onMouse( "up", data => log.push( [ "mouse up", data.x, data.y ] ) );
-	$.onTouch( "start", data => log.push( [ "touch start", data[ 0 ].x ] ) );
+	$.onTouch( "down", data => log.push( [ "touch start", data[ 0 ].x ] ) );
 	$.onTouch( "move", data => log.push( [ "touch move", data[ 0 ].x ] ) );
-	$.onTouch( "end", data => log.push( [ "touch end", data[ 0 ].x ] ) );
+	$.onTouch( "up", data => log.push( [ "touch end", data[ 0 ].x ] ) );
 	$.onPress( "down", data => log.push( [ "press down", data.x ] ) );
 
 	// A mouse press on the border, dragged onto the screen, is never held
@@ -903,18 +903,18 @@ test( "pointer offTouch removes the given function, or every handler of the mode
 	const first = () => log.push( "first" );
 	const second = () => log.push( "second" );
 	const moved = () => log.push( "moved" );
-	$.onTouch( "start", first );
-	$.onTouch( "start", second );
+	$.onTouch( "down", first );
+	$.onTouch( "down", second );
 	$.onTouch( "move", moved );
-	$.offTouch( "start", first );
+	$.offTouch( "down", first );
 	h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
 	h.touch( "touchmove", [ { "id": 1, "x": 11, "y": 10 } ] );
 	assert.deepEqual( log, [ "second", "moved" ] );
 
 	// Without a function, the mode is cleared in both forms; other modes stay
 	log.length = 0;
-	$.offTouch( { "mode": "start" } );
-	$.offTouch( "end", null );
+	$.offTouch( { "mode": "down" } );
+	$.offTouch( "up", null );
 	h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 }, { "id": 2, "x": 20, "y": 20 } ], [
 		{ "id": 2, "x": 20, "y": 20 }
 	] );
@@ -1046,11 +1046,69 @@ test( "pointer mouse and touch share one set of canvas listeners and touch-actio
 	$.stopTouch();
 	assert.equal( canvas.style.touchAction, "pan-y" );
 	const starts = [];
-	$.onTouch( "start", () => starts.push( "touch" ) );
+	$.onTouch( "down", () => starts.push( "touch" ) );
 	$.stopTouch();
 	h.touch( "touchstart", [ { "id": 1, "x": 5, "y": 5 } ] );
 	assert.deepEqual( starts, [] );
 	assert.equal( types().length, 5 );
 	$.stopMouse();
 	assert.deepEqual( types(), [] );
+} );
+
+test( "pointer mouse, touch, press, and click data share one shape (B7, I3, P12)", () => {
+	const h = harness();
+	const $ = h.$;
+	const keys = [ "x", "y", "lastX", "lastY", "buttons", "action", "type", "id", "cancelled" ];
+	const seen = {};
+	$.onMouse( "down", data => { seen.mouse = data; } );
+	$.onTouch( "down", data => { seen.touch = data[ 0 ]; } );
+	$.onTouch( "up", data => { seen.touchUp = data[ 0 ]; } );
+	$.onPress( "down", data => { seen.press = data; } );
+	$.onClick( data => { seen.click = data; } );
+
+	// A mouse's first event reports its own position as the last one
+	h.click( 10, 12 );
+	assert.deepEqual( Object.keys( seen.mouse ), keys );
+	assert.deepEqual( [ seen.mouse.lastX, seen.mouse.lastY ], [ 10, 12 ] );
+	assert.deepEqual( Object.keys( seen.press ), [ ...keys, "touches" ] );
+	assert.equal( seen.press.touches.length, 0 );
+	assert.deepEqual( Object.keys( seen.click ), keys );
+	assert.deepEqual( [ seen.click.action, seen.click.type ], [ "click", "mouse" ] );
+	assert.deepEqual( Object.keys( $.inPress() ), [ ...keys, "touches" ] );
+
+	// Touches: modes and actions down, move, up; contact is button 1; lastX starts at x
+	h.touch( "touchstart", [ { "id": 3, "x": 20, "y": 20 } ] );
+	h.touch( "touchstart", [ { "id": 3, "x": 20, "y": 20 }, { "id": 4, "x": 30, "y": 30 } ], [
+		{ "id": 4, "x": 30, "y": 30 }
+	] );
+	assert.deepEqual( Object.keys( seen.touch ), keys );
+	assert.deepEqual(
+		[ seen.touch.action, seen.touch.buttons, seen.touch.lastX, seen.touch.type ],
+		[ "down", 1, 30, "touch" ]
+	);
+
+	// Press data holds separate frozen copies of the touches down, so it serializes
+	const press = $.inPress();
+	assert.deepEqual( Object.keys( press ), [ ...keys, "touches" ] );
+	assert.deepEqual( [ press.action, press.id ], [ "down", 3 ] );
+	assert.deepEqual( Array.from( press.touches, touch => [ touch.id, touch.action ] ), [
+		[ 3, "down" ], [ 4, "down" ]
+	] );
+	assert.ok( Object.isFrozen( press.touches ) && Object.isFrozen( press.touches[ 0 ] ) );
+	assert.equal( JSON.parse( JSON.stringify( press ) ).touches.length, 2 );
+	h.touch( "touchend", [ { "id": 3, "x": 20, "y": 20 } ], [ { "id": 4, "x": 30, "y": 30 } ] );
+	assert.deepEqual( [ seen.touchUp.action, seen.touchUp.buttons ], [ "up", 0 ] );
+	assert.deepEqual(
+		[ seen.click.type, seen.click.id, seen.click.action ], [ "touch", 4, "click" ]
+	);
+
+	// The old touch modes name their replacements
+	for( const [ command, mode, renamed ] of [
+		[ "onTouch", "start", "down" ], [ "offTouch", "end", "up" ]
+	] ) {
+		assert.throws( () => $[ command ]( mode, () => {} ), error => {
+			return error.code === "INVALID_MODE" &&
+				error.message.startsWith( `${command}: mode "${mode}" is now "${renamed}"` );
+		} );
+	}
 } );

@@ -9,7 +9,7 @@ does not scroll or zoom with touches on it; stopTouch() restores the previous va
 starts on first use: the first inTouch(), inPress(), or handler registration. After stopTouch(),
 only startTouch() starts tracking again.
 
-When the page is hidden, held touches are released through the 'end' handlers, with cancelled set
+When the page is hidden, held touches are released through the 'up' handlers, with cancelled set
 to true.
 
 Requires an onscreen screen.

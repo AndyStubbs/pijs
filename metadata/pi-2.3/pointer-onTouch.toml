@@ -5,12 +5,12 @@ plugin = "pointer"
 summary = "Registers a callback function for touch events."
 description = """
 Registers a callback that runs when a touch event occurs, with the touch it changed, in an array,
-and the optional custom data: 'start' receives the touch that started, 'move' the touch that moved,
-and 'end' the touch that ended, at the position where it lifted. Each touch is reported by its own
+and the optional custom data: 'down' receives the touch that started, 'move' the touch that moved,
+and 'up' the touch that ended, at the position where it lifted. Each touch is reported by its own
 event. Use inTouch() for every touch still down.
 
 With a hitBox, the callback receives only the changed touches inside it, and runs only when there
-is one. 'end' also runs with cancelled set to true when the browser cancels a touch, the page is
+is one. 'up' also runs with cancelled set to true when the browser cancels a touch, the page is
 hidden, or stopTouch() is called. A touch that starts on the canvas border or padding is ignored.
 A touch that starts on the canvas keeps reporting moves and its end when it leaves the canvas.
 While touch is tracked, the canvas has touch-action set to none, so the browser does not scroll or
@@ -25,7 +25,7 @@ Requires an onscreen screen.
 """
 example = """
 $.screen( "300x200" );
-$.onTouch( "start", ( touches ) => {
+$.onTouch( "down", ( touches ) => {
 	for( const touch of touches ) {
 		$.setPosPx( touch.x, touch.y );
 		$.print( `Touch ${touch.id} started` );
@@ -44,7 +44,7 @@ $.onTouch( "move", ( touches ) => {
 [[parameters]]
 name = "mode"
 type = "string"
-description = "Event mode: 'start', 'end', or 'move'."
+description = "Event mode: 'down', 'up', or 'move'. Any other mode throws INVALID_MODE."
 
 [[parameters]]
 name = "fn"
