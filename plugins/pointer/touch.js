@@ -185,10 +185,12 @@ export function registerTouch( pluginApi, helpers ) {
 			return;
 		}
 		updateTouch( screenData, e, "start" );
+
+		// Suppress browser gestures and compatibility mouse events before any handler runs
+		e.preventDefault();
 		const touchData = getTouch( screenData );
 		m_triggerEventListeners( "start", touchData, screenData.onTouchEventListeners );
 		g_press.triggerPressListeners( screenData, "down", g_press.getTouchPress( screenData ) );
-		e.preventDefault();
 		g_press.triggerClickListeners( screenData, g_press.getTouchPress( screenData ), "down" );
 	}
 

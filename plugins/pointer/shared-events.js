@@ -75,7 +75,8 @@ export function createEventHelpers( pluginApi ) {
 			"extraData": extraData,
 			"clickDown": false,
 			"isRemoved": false,
-			"customData": customData
+			"customData": customData,
+			"name": name
 		} );
 	}
 
@@ -159,7 +160,8 @@ export function createEventHelpers( pluginApi ) {
 
 	/**
 	 * Call a registration's handler. A `once` registration is removed first, so a dispatch
-	 * started inside the handler does not call it again.
+	 * started inside the handler does not call it again. A handler that throws is reported with
+	 * `console.error`, so the other handlers and dispatches of the event still run.
 	 *
 	 * @param {Object} listenerArr - Registrations by mode.
 	 * @param {string} mode - Mode key of the registration.
@@ -171,7 +173,11 @@ export function createEventHelpers( pluginApi ) {
 		if( listener.once ) {
 			removeListener( listenerArr, mode, listener );
 		}
-		listener.fn( data, listener.customData );
+		try {
+			listener.fn( data, listener.customData );
+		} catch( error ) {
+			console.error( `${listener.name}: Handler for "${mode}" failed:`, error );
+		}
 	}
 
 	function triggerEventListeners( mode, data, listenerArr, clickStatus ) {

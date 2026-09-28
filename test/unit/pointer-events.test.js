@@ -23,8 +23,9 @@ const m_utils = g_harness.loadModule( "src/core/utils.js", {
 /**
  * The real pointer plugin on fake screens.
  *
- * @returns {Object} `{ $, screen, clearEvents, mouse, touch }`. `$` runs global commands on the
- *   first screen; `screen()` adds a screen whose `api` holds the screen commands.
+ * @returns {Object} `{ $, screen, clearEvents, mouse, touch, click, tap, errors }`. `$` runs
+ *   global commands on the first screen; `screen()` adds a screen whose `api` holds the screen
+ *   commands; `errors` holds the arguments of each `console.error()` call.
  */
 function harness() {
 	const screenDataItems = {};
@@ -54,7 +55,9 @@ function harness() {
 		"getScreenData": ( fnName, screenId ) => screens[ screenId ],
 		"getAllScreensData": () => Object.values( screens )
 	};
+	const errors = [];
 	const globals = {
+		"console": { "error": ( ...args ) => errors.push( args ) },
 		"window": g_harness.createEventTarget(),
 		"document": { "body": { "style": {} } }
 	};
@@ -204,7 +207,7 @@ function harness() {
 
 	return {
 		"$": api, "screen": screen, "clearEvents": clearEvents, "mouse": mouse, "touch": touch,
-		"click": click, "tap": tap
+		"click": click, "tap": tap, "errors": errors
 	};
 }
 
@@ -349,4 +352,33 @@ test( "pointer once removes only its own registration (P7)", () => {
 	}, true );
 	h.touch( "touchmove", [ { "id": 1, "x": 11, "y": 11 } ] );
 	assert.equal( touches, 1 );
+} );
+
+test( "pointer handlers that throw are reported and do not stop the event (P6)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	$.onmouse( "down", () => { throw new Error( "mouse" ); } );
+	$.onmouse( "down", () => log.push( "mouse down" ) );
+	$.onpress( "down", () => { throw new Error( "press" ); } );
+	$.onpress( "down", () => log.push( "press down" ) );
+	$.onclick( () => { throw new Error( "click" ); } );
+	$.onclick( () => log.push( "click" ) );
+	h.click( 10, 10 );
+	assert.deepEqual( log, [ "mouse down", "press down", "click" ] );
+
+	// The touch start is prevented before its handlers run, so a throw cannot skip it
+	log.length = 0;
+	$.ontouch( "start", () => { throw new Error( "touch" ); } );
+	$.ontouch( "start", () => log.push( "touch start" ) );
+	const event = h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
+	assert.equal( event.defaultPrevented, true );
+	assert.deepEqual( log, [ "touch start", "press down" ] );
+	assert.deepEqual( h.errors.map( args => [ args[ 0 ], args[ 1 ].message ] ), [
+		[ "onmouse: Handler for \"down\" failed:", "mouse" ],
+		[ "onpress: Handler for \"down\" failed:", "press" ],
+		[ "onclick: Handler for \"click\" failed:", "click" ],
+		[ "ontouch: Handler for \"start\" failed:", "touch" ],
+		[ "onpress: Handler for \"down\" failed:", "press" ]
+	] );
 } );
