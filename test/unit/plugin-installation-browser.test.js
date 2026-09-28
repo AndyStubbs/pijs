@@ -284,11 +284,11 @@ test( "late Pointer installation initializes existing lite screens", async () =>
 		} ) ), {
 			"commands": [ "function", "function", "function" ],
 			"first": { "x": 4, "y": 3, "lastX": 4, "lastY": 3, "buttons": 0,
-				"action": "none", "cancelled": false, "type": "mouse" },
+				"action": "none", "type": "mouse", "id": -1, "cancelled": false },
 			"second": { "x": 5, "y": 2, "lastX": 5, "lastY": 2, "buttons": 0,
-				"action": "none", "cancelled": false, "type": "mouse" },
+				"action": "none", "type": "mouse", "id": -1, "cancelled": false },
 			"global": { "x": 4, "y": 3, "lastX": 4, "lastY": 3, "buttons": 0,
-				"action": "none", "cancelled": false, "type": "mouse" },
+				"action": "none", "type": "mouse", "id": -1, "cancelled": false },
 			"initialized": true
 		} );
 

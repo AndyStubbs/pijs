@@ -1,5 +1,6 @@
 /**
- * Pointer target validation and current viewport-to-screen conversion.
+ * Pointer target validation, current viewport-to-screen conversion, and the data shape that
+ * mouse, touch, press, and click data share.
  * @module plugins/pointer/target
  */
 import * as g_canvasLayout from "../../src/core/canvas-layout.js";
@@ -37,6 +38,27 @@ export function pointerPosition( screenData, event ) {
 	return {
 		"x": Math.floor( ( event.clientX - rect.left ) / rect.width * screenData.width ),
 		"y": Math.floor( ( event.clientY - rect.top ) / rect.height * screenData.height )
+	};
+}
+
+/**
+ * Pointer data in the one shape that mouse, touch, press, and click data share. Press data adds
+ * `touches`.
+ * @param {Object} record - `x`, `y`, `lastX`, `lastY`, `buttons`, `action`, `type`, `id`, and
+ *   `cancelled`
+ * @returns {Object} A new data object with exactly those fields, in that order
+ */
+export function createPointerData( record ) {
+	return {
+		"x": record.x,
+		"y": record.y,
+		"lastX": record.lastX,
+		"lastY": record.lastY,
+		"buttons": record.buttons,
+		"action": record.action,
+		"type": record.type,
+		"id": record.id,
+		"cancelled": record.cancelled
 	};
 }
 

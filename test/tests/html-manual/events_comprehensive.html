@@ -451,49 +451,49 @@
 
 	function testBasicTouchStart() {
 		try {
-			$.onTouch( "start", ontouchstart );
+			$.onTouch( "down", ontouchstart );
 		} catch( e ) {
 			printTestResult( "testBasicTouchStart", false );
 		}
 
 		function ontouchstart( touches ) {
-			if( touches && touches.length > 0 && touches[ 0 ].action === "start" ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "down" ) {
 				printTestResult( "testBasicTouchStart", true );
 			} else {
 				printTestResult( "testBasicTouchStart", false );
 			}
-			$.offTouch( "start", ontouchstart );
+			$.offTouch( "down", ontouchstart );
 			nextTest( tests, test++ );
 		}
 	}
 
 	function testBasicTouchEnd() {
 		try {
-			$.onTouch( "end", ontouchend );
+			$.onTouch( "up", ontouchend );
 		} catch( e ) {
 			printTestResult( "testBasicTouchEnd", false );
 		}
 
 		function ontouchend( touches ) {
-			if( touches && touches.length > 0 && touches[ 0 ].action === "end" ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "up" ) {
 				printTestResult( "testBasicTouchEnd", true );
 			} else {
 				printTestResult( "testBasicTouchEnd", false );
 			}
-			$.offTouch( "end", ontouchend );
+			$.offTouch( "up", ontouchend );
 			nextTest( tests, test++ );
 		}
 	}
 
 	function testBasicTouchStartOnce() {
 		try {
-			$.onTouch( "start", ontouchstart, true );
+			$.onTouch( "down", ontouchstart, true );
 		} catch( e ) {
 			printTestResult( "testBasicTouchStartOnce", false );
 		}
 
 		function ontouchstart( touches ) {
-			if( touches && touches.length > 0 && touches[ 0 ].action === "start" ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "down" ) {
 				printTestResult( "testBasicTouchStartOnce", true );
 			} else {
 				printTestResult( "testBasicTouchStartOnce", false );
@@ -507,13 +507,13 @@
 		$.setColor( 15 );
 		$.rect( hitBox );
 		try {
-			$.onTouch( "start", ontouchstart, true, hitBox );
+			$.onTouch( "down", ontouchstart, true, hitBox );
 		} catch( e ) {
 			printTestResult( "testHitboxTouchStart", false );
 		}
 
 		function ontouchstart( touches ) {
-			if( touches && touches.length > 0 && touches[ 0 ].action === "start" ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "down" ) {
 				printTestResult( "testHitboxTouchStart", true );
 				$.setColor( 2 );
 			} else {
@@ -530,13 +530,16 @@
 		$.setColor( 15 );
 		$.rect( hitBox );
 		try {
-			$.onTouch( "start", ontouchstart, true, hitBox, { "cool": "beans" } );
+			$.onTouch( "down", ontouchstart, true, hitBox, { "cool": "beans" } );
 		} catch( e ) {
 			printTestResult( "testHitboxTouchStartWithData", false );
 		}
 
 		function ontouchstart( touches, customData ) {
-			if( touches && touches.length > 0 && touches[ 0 ].action === "start" && customData.cool ) {
+			if(
+				touches && touches.length > 0 && touches[ 0 ].action === "down" &&
+				customData.cool
+			) {
 				printTestResult( "testHitboxTouchStartWithData", true );
 				$.setColor( 2 );
 			} else {

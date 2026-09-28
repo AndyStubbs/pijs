@@ -187,8 +187,8 @@ test( "a trusted touch drag that leaves the canvas ends once, with touch-action 
 			await page.evaluate( () => {
 				window.screen1 = $.screen( { "aspect": "100x100", "container": "host" } );
 				window.log = [];
-				$.onTouch( "start", data => window.log.push( [ "start", data.length ] ) );
-				$.onTouch( "end", data => window.log.push( [ "end", data[ 0 ].x > 100,
+				$.onTouch( "down", data => window.log.push( [ "start", data.length ] ) );
+				$.onTouch( "up", data => window.log.push( [ "end", data[ 0 ].x > 100,
 					data[ 0 ].cancelled ] ) );
 				$.onPress( "up", data => window.log.push( [ "press up", data.buttons ] ) );
 			} );
@@ -257,7 +257,7 @@ test( "Core 13: a screen's clearEvents() clears its own pointer handlers, $.clea
 			const log = new Set();
 			for( const [ name, screen ] of screens ) {
 				screen.onMouse( "down", () => log.add( name + " mouse" ) );
-				screen.onTouch( "start", () => log.add( name + " touch" ) );
+				screen.onTouch( "down", () => log.add( name + " touch" ) );
 				screen.onPress( "down", () => log.add( name + " press" ) );
 				screen.onClick( () => log.add( name + " click" ) );
 			}

@@ -76,8 +76,9 @@ export function registerMouse( pluginApi, helpers ) {
 			"lastY": Math.floor( screenData.height / 2 ),
 			"buttons": 0,
 			"action": "none",
-			"cancelled": false,
-			"type": "mouse"
+			"type": "mouse",
+			"id": -1,
+			"cancelled": false
 		};
 	}
 
@@ -144,16 +145,7 @@ export function registerMouse( pluginApi, helpers ) {
 	}
 
 	function getMouse( screenData ) {
-		const mouse = {};
-		mouse.x = screenData.mouse.x;
-		mouse.y = screenData.mouse.y;
-		mouse.lastX = screenData.mouse.lastX;
-		mouse.lastY = screenData.mouse.lastY;
-		mouse.buttons = screenData.mouse.buttons;
-		mouse.action = screenData.mouse.action;
-		mouse.cancelled = screenData.mouse.cancelled;
-		mouse.type = screenData.mouse.type;
-		return mouse;
+		return g_target.createPointerData( screenData.mouse );
 	}
 
 	/**
@@ -253,7 +245,7 @@ export function registerMouse( pluginApi, helpers ) {
 		updateHeld( screenData );
 		const mouseData = getMouse( screenData );
 		m_triggerEventListeners( "move", mouseData, screenData.onMouseEventListeners );
-		g_press.triggerPressListeners( screenData, "move", mouseData );
+		g_press.triggerPressListeners( screenData, "move", g_press.getMousePress( mouseData ) );
 	}
 
 	/**
@@ -275,7 +267,7 @@ export function registerMouse( pluginApi, helpers ) {
 		updateHeld( screenData );
 		const mouseData = getMouse( screenData );
 		m_triggerEventListeners( "down", mouseData, screenData.onMouseEventListeners );
-		g_press.triggerPressListeners( screenData, "down", mouseData );
+		g_press.triggerPressListeners( screenData, "down", g_press.getMousePress( mouseData ) );
 		if( e.button === 0 ) {
 			g_press.triggerClickListeners( screenData, mouseData, "down", "mouse" );
 		}
@@ -326,8 +318,9 @@ export function registerMouse( pluginApi, helpers ) {
 			"lastY": mouse.y,
 			"buttons": 0,
 			"action": "up",
-			"cancelled": true,
-			"type": mouse.type
+			"type": mouse.type,
+			"id": mouse.id,
+			"cancelled": true
 		};
 		updateHeld( screenData );
 		dispatchRelease( screenData, "cancel" );
@@ -336,7 +329,7 @@ export function registerMouse( pluginApi, helpers ) {
 	function dispatchRelease( screenData, clickAction ) {
 		const mouseData = getMouse( screenData );
 		m_triggerEventListeners( "up", mouseData, screenData.onMouseEventListeners );
-		g_press.triggerPressListeners( screenData, "up", mouseData );
+		g_press.triggerPressListeners( screenData, "up", g_press.getMousePress( mouseData ) );
 		g_press.triggerClickListeners( screenData, mouseData, clickAction, "mouse" );
 	}
 
@@ -384,16 +377,12 @@ export function registerMouse( pluginApi, helpers ) {
 		}
 		const { "x": x, "y": y } = position;
 
+		// The first event of the mouse reports its own position as the last one
 		let lastX = x;
 		let lastY = y;
-
-		if( screenData.mouse ) {
-			if( screenData.mouse.x !== undefined ) {
-				lastX = screenData.mouse.x;
-			}
-			if( screenData.mouse.y !== undefined ) {
-				lastY = screenData.mouse.y;
-			}
+		if( screenData.mouse.action !== "none" ) {
+			lastX = screenData.mouse.x;
+			lastY = screenData.mouse.y;
 		}
 
 		screenData.mouse = {
@@ -403,8 +392,9 @@ export function registerMouse( pluginApi, helpers ) {
 			"lastY": lastY,
 			"buttons": buttons,
 			"action": action,
-			"cancelled": false,
-			"type": getPointerType( e )
+			"type": getPointerType( e ),
+			"id": e.pointerId,
+			"cancelled": false
 		};
 		screenData.lastEvent = "mouse";
 	}

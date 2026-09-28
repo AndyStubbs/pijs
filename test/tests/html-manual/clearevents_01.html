@@ -145,7 +145,7 @@
 		}
 
 		function setupTouch() {
-			$.onTouch( "start", ( data ) => {
+			$.onTouch( "down", ( data ) => {
 				log( `Touch: Touch started at (${data[0].x}, ${data[0].y})` );
 			} );
 			log( "✓ Touch handler added" );

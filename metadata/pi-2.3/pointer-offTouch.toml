@@ -12,7 +12,7 @@ example = """
 $.screen( "300x200" );
 $.print( "Touch and drag to paint screen, touch up to stop." );
 $.onTouch( "move", touchMove );
-$.onTouch( "end", touchStop, true );
+$.onTouch( "up", touchStop, true );
 
 // Touch move function receives the touches that moved and optional customData
 function touchMove( touches, customData ) {
@@ -36,7 +36,7 @@ function touchStop( touches, customData ) {
 [[parameters]]
 name = "mode"
 type = "string"
-description = "Event mode ('start', 'end', or 'move') of the handler."
+description = "Event mode ('down', 'up', or 'move') of the handler."
 
 [[parameters]]
 name = "fn"
