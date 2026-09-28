@@ -440,19 +440,21 @@ function loadSpritesheet( options ) {
 }
 
 /**
- * Gets the image by name and returns the DOM element (Image or Canvas).
+ * Gets the image by name and returns the DOM element (Image or Canvas). A screen gives its
+ * canvas; an offscreen screen, which has no canvas of its own, gives a new canvas holding a copy
+ * of its pixels.
  *
  * @param {Object} options - Options
- * @param {string} [options.name] - Optional name for the image
+ * @param {string|Object} options.name - Image name, or a screen
  * @returns {Object} Actual image
  */
 function getImage( options ) {
 	const img = getImageFromRawInput( options.name, "getImage" );
-
-	// For offscreen screens then call createImageFromScreen
 	if( img.isMock ) {
 		const imgScreenData = g_screenManager.getScreenData( "getImage", img.dataset.screenId );
-		return createImageFromScreen( imgScreenData );
+		return createCanvasFromScreenRegion(
+			imgScreenData, 0, 0, imgScreenData.width, imgScreenData.height
+		);
 	}
 	return img;
 }

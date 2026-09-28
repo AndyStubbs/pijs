@@ -1011,6 +1011,8 @@ declare namespace Pi {
 		 * This function renders a circular arc segment to the active canvas.
 		 *
 		 * The angles are measured in degrees, clockwise from the positive x-axis. Equal start and end angles draw nothing. A difference of 360 degrees or more draws one complete outline matching circle(). Shorter differences wrap clockwise from the starting angle to the ending angle.
+		 *
+		 * The angles must be finite numbers; any other value throws a TypeError with code INVALID_PARAMETER.
 		 * @param x The x coordinate of the center point of the arc's circle.
 		 * @param y The y coordinate of the center point of the arc's circle.
 		 * @param radius The radius of the arc's circle.
@@ -2030,13 +2032,13 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Sets the scale factor for printed text.
 		 *
-		 * Sets the horizontal and vertical scale factors for bitmap font rendering. This allows you to make text larger or smaller. Scale values must be numbers greater than 0.
+		 * Sets the horizontal and vertical scale factors for bitmap font rendering. This allows you to make text larger or smaller. Scale values must be finite numbers greater than 0 (INVALID_SIZE).
 		 *
-		 * Use padX and padY to add extra padding between characters when the print to the screen.
-		 * @param scaleWidth Horizontal scale factor (must be number >= 0).
-		 * @param scaleHeight Vertical scale factor (must be number >= 0).
-		 * @param padX Extra horizontal padding between characters in pixels. Defaults to 0.
-		 * @param padY Extra vertical padding between lines in pixels. Defaults to 0.
+		 * Use padX and padY to add extra padding between characters when they print to the screen. Padding must be an integer of 0 or more (INVALID_PADDING). Omitted parameters keep their current values.
+		 * @param scaleWidth Horizontal scale factor; a number greater than 0.
+		 * @param scaleHeight Vertical scale factor; a number greater than 0.
+		 * @param padX Extra horizontal padding between characters in pixels; an integer of 0 or more. Defaults to 0.
+		 * @param padY Extra vertical padding between lines in pixels; an integer of 0 or more. Defaults to 0.
 		 * @returns This function does not return a value.
 		 */
 		setPrintSize( params: { "scaleWidth"?: number; "scaleHeight"?: number; "padX"?: number; "padY"?: number } ): void;
@@ -2196,14 +2198,14 @@ screen is removed before deferred processing completes, or with the original rea
 		getDefaultPal( include0?: boolean ): Array<PiColor>;
 
 		/**
-		 * Gets the image element by name.
+		 * Gets the image element by name, or a screen's canvas.
 		 *
-		 * Returns the underlying Image or Canvas element for a previously loaded image.
-		 * @param name Image name.
+		 * Returns the underlying Image or Canvas element for a previously loaded image. Given a screen, it returns the screen's canvas; for an offscreen screen, which has no canvas of its own, it returns a new canvas holding a copy of the screen's pixels.
+		 * @param name Image name, or a screen.
 		 * @returns The actual Image or Canvas element.
 		 */
-		getImage( params: { "name": string } ): HTMLImageElement | HTMLCanvasElement;
-		getImage( name: string ): HTMLImageElement | HTMLCanvasElement;
+		getImage( params: { "name": string | Screen } ): HTMLImageElement | HTMLCanvasElement;
+		getImage( name: string | Screen ): HTMLImageElement | HTMLCanvasElement;
 
 		/**
 		 * Returns a list of registered plugins and their status.
@@ -2281,10 +2283,12 @@ screen is removed before deferred processing completes, or with the original rea
 		 * If charset is not provided, defaults to characters 0-255. The charset can be an array of character codes or a string of characters.
 		 *
 		 * Returns a font ID that can be used with setFont. After calling loadFont, you should call $.ready() to wait for the image to load before using the font.
+		 *
+		 * width and height must be integers of at least 1 (INVALID_DIMENSIONS), and margin an integer of 0 or more (INVALID_MARGIN): a TypeError for a value that is not an integer, and a RangeError for one out of range.
 		 * @param src Font image source: URL string, Image element, or Canvas element.
-		 * @param width Character width in pixels (glyph width, excluding margin).
-		 * @param height Character height in pixels (glyph height, excluding margin).
-		 * @param margin Margin around each character cell in pixels. Defaults to 0.
+		 * @param width Character width in pixels (glyph width, excluding margin); an integer of at least 1.
+		 * @param height Character height in pixels (glyph height, excluding margin); an integer of at least 1.
+		 * @param margin Margin around each character cell in pixels; an integer of 0 or more. Defaults to 0.
 		 * @param charset Character set as array of character codes or string. Defaults to 0-255 (ASCII) if not provided.
 		 * @returns Font ID that can be used with setFont.
 		 */
@@ -2592,8 +2596,8 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 *
 		 * Removes a screen from the page and cleans up all WebGL2 resources, event handlers, and DOM elements. After removal, the screen object becomes invalid and calling methods on it will throw errors.
 		 *
-		 * Can be called either as a global function with a screen ID/object, or as a method on a screen API object.
-		 * @param screen Screen ID (number) or screen API object to remove.
+		 * Can be called either as a global function with a screen ID/object, or as a method on a screen API object. The global form also takes { "screen": screen }. A missing, unknown, or already removed screen throws INVALID_SCREEN_ID.
+		 * @param screen Screen ID (number) or screen API object to remove. Required in the global form; the declaration marks it optional because each screen's own removeScreen() takes none.
 		 * @returns This function does not return a value.
 		 */
 		removeScreen( params: { "screen"?: number | Screen } ): void;

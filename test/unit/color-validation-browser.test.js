@@ -77,4 +77,19 @@ for( const bundle of g_harness.BUNDLES ) {
 			}
 		} );
 	} );
+
+	test( `CORE-009 ${bundle}: getPal and getDefaultPal include index 0 only when asked`,
+		async () => {
+			assert.deepEqual( await probe( bundle, () => {
+				$.screen( "4x4" );
+				const counts = [];
+				for( const include0 of [ undefined, false, null, 0, true ] ) {
+					counts.push( [ $.getPal( include0 ).length,
+						$.getDefaultPal( include0 ).length ] );
+				}
+				const first = $.getPal( true )[ 0 ];
+				return [ counts, [ first.r, first.g, first.b, first.a ] ];
+			} ), [ [ [ 254, 254 ], [ 254, 254 ], [ 254, 254 ], [ 254, 254 ], [ 255, 255 ] ],
+				[ 0, 0, 0, 0 ] ] );
+		} );
 }

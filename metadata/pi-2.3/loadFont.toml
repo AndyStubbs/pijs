@@ -1,0 +1,68 @@
+title = "loadFont"
+category = "text"
+isScreen = false
+summary = "Loads a bitmap font from an image source."
+description = """
+Loads a bitmap font from an image URL or Image/Canvas element. The font image should contain
+characters arranged in a grid. Each character cell is width+margin*2 by height+margin*2 pixels.
+
+If charset is not provided, defaults to characters 0-255. The charset can be an array of character
+codes or a string of characters.
+
+Returns a font ID that can be used with setFont. After calling loadFont, you should call $.ready()
+to wait for the image to load before using the font.
+
+width and height must be integers of at least 1 (INVALID_DIMENSIONS), and margin an integer of 0
+or more (INVALID_MARGIN): a TypeError for a value that is not an integer, and a RangeError for
+one out of range.
+"""
+example = """
+const fontId = $.loadFont( {
+	"src": "media/gnsh.png",
+	"width": 5,
+	"height": 12,
+	"margin": 0,
+	"charset": " !\\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]" +
+			   "^_`abcdefghijklmnopqrstuvwxyz{|}~"
+} );
+$.ready( () => {
+	$.screen( "300x200" );
+	$.setFont( fontId );
+	$.setBgColor( "#555" );
+	$.setPosPx( 0, 85 );
+	$.print( "The quick brown fox jumped over the lazy dogs! 123456789", true, true );
+} );
+"""
+
+[[parameters]]
+name = "src"
+type = "string | HTMLImageElement | HTMLCanvasElement"
+typeDesc = "*Many"
+description = "Font image source: URL string, Image element, or Canvas element."
+
+[[parameters]]
+name = "width"
+type = "number"
+description = "Character width in pixels (glyph width, excluding margin); an integer of at least 1."
+
+[[parameters]]
+name = "height"
+type = "number"
+description = "Character height in pixels (glyph height, excluding margin); an integer of at least 1."
+
+[[parameters]]
+name = "margin"
+type = "number"
+description = "Margin around each character cell in pixels; an integer of 0 or more. Defaults to 0."
+optional = true
+
+[[parameters]]
+name = "charset"
+type = "Array<number> | string"
+typeDesc = "*Many"
+description = "Character set as array of character codes or string. Defaults to 0-255 (ASCII) if not provided."
+optional = true
+
+[[returns]]
+type = "number"
+description = "Font ID that can be used with setFont."

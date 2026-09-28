@@ -1,7 +1,8 @@
 /**
  * Screen lifecycle regressions against fresh in-memory full and lite bundles: removal and
  * active-screen rebinding (SYS-001), allocation and initializer rollback, shared-context
- * ownership, noCss host layout, and errors for missing screens and invalid draw strings.
+ * ownership, noCss host layout, errors for missing screens and invalid draw strings, and the
+ * removeScreen forms (CORE-015).
  * Run with node --test test/unit/screen-lifecycle-browser.test.js; no server is required.
  */
 import * as g_test from "node:test";
@@ -334,4 +335,37 @@ for( const bundle of g_harness.BUNDLES ) {
 				[ "TypeError", "INVALID_PARAMETER", "draw: Parameter drawString must be a string." ]
 			] );
 		} );
+
+	test( `CORE-015 ${bundle}: removeScreen takes a screen, an id, or an object, and throws for ` +
+		"missing screens", async () => {
+		assert.deepEqual( await probe( bundle, () => {
+			const code = fn => {
+				try {
+					fn();
+					return "ok";
+				} catch( error ) {
+					return error.code;
+				}
+			};
+			const screens = [ 1, 2, 3, 4 ].map( () => $.screen( "4x4" ) );
+			const results = [
+				code( () => $.removeScreen( screens[ 0 ] ) ),
+				code( () => $.removeScreen( screens[ 1 ].id ) ),
+				code( () => $.removeScreen( { "screen": screens[ 2 ] } ) ),
+				code( () => $.removeScreen( { "screen": screens[ 3 ].id } ) )
+			];
+			const missing = [ () => $.removeScreen(), () => $.removeScreen( null ),
+				() => $.removeScreen( undefined ), () => $.removeScreen( {} ),
+				() => $.removeScreen( 999 ), () => $.removeScreen( screens[ 0 ] ),
+				() => $.removeScreen( { "screen": screens[ 1 ] } ) ].map( code );
+			const kept = $.screen( "4x4" );
+			kept.removeScreen();
+			return { "results": results, "missing": missing,
+				"removed": code( () => kept.pset( 0, 0 ) ) };
+		} ), {
+			"results": [ "ok", "ok", "ok", "ok" ],
+			"missing": Array( 7 ).fill( "INVALID_SCREEN_ID" ),
+			"removed": "DELETED_METHOD"
+		} );
+	} );
 }

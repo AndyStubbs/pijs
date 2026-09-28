@@ -226,6 +226,7 @@ function createConsumerPackage() {
 			`// @ts-expect-error Lite has no pointer settings.`,
 			`lite.set( { pinchZoom: true } );`,
 			`lite.set( { color: "red", font: 1 } );`,
+			`lite.removeScreen( { screen: screen } );`,
 			`screen.removeScreen();`,
 			""
 		].join( "\n" ),

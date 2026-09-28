@@ -1,5 +1,7 @@
 /**
- * COV-003 finite/integer/range tables for views, blends, paint, fonts, and geometry.
+ * COV-003 finite/integer/range tables for views, blends, paint, fonts, print size, and
+ * geometry, with the CORE-013 rows for arc angles, loadFont sizes and margins, and
+ * setPrintSize.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
@@ -179,6 +181,28 @@ function createFontHarness() {
 	return { "api": fonts, "Canvas": Canvas };
 }
 
+function createPrintHarness() {
+	const print = loadModule( "text/print.js", {
+		"g_utils": loadUtils(),
+		"g_commands": { "addCommand": () => {} },
+		"g_screenManager": {
+			"addScreenDataItem": () => {},
+			"addScreenInitFunction": () => {}
+		},
+		"g_renderer": {},
+		"g_textures": {},
+		"g_sprites": {}
+	} );
+	const screen = {
+		"font": { "width": 6, "height": 8 },
+		"view": { "width": 60, "height": 40 },
+		"printCursor": {
+			"x": 0, "y": 0, "scaleWidth": 1, "scaleHeight": 1, "padX": 0, "padY": 0
+		}
+	};
+	return { "api": print, "screen": screen };
+}
+
 function createGeometryHarness() {
 	const utils = loadUtils();
 	const colors = loadModule( "api/colors.js", {
@@ -347,6 +371,68 @@ for( const value of nonFinite ) {
 	} );
 }
 
+test( "CORE-013 loadFont sizes are integers of at least 1, and margins 0 or more", () => {
+	const h = createFontHarness();
+	const canvas = new h.Canvas();
+	const load = ( width, height, margin ) => h.api.loadFont( {
+		"src": canvas, "width": width, "height": height, "margin": margin
+	} );
+	for( const [ width, height, margin, name, code ] of [
+		[ 0, 8, 0, "RangeError", "INVALID_DIMENSIONS" ],
+		[ 6, -1, 0, "RangeError", "INVALID_DIMENSIONS" ],
+		[ 6.4, 8, 0, "TypeError", "INVALID_DIMENSIONS" ],
+		[ 6, 8.5, 0, "TypeError", "INVALID_DIMENSIONS" ],
+		[ 6, 8, -1, "RangeError", "INVALID_MARGIN" ],
+		[ 6, 8, 1.5, "TypeError", "INVALID_MARGIN" ],
+		[ 6, 8, NaN, "TypeError", "INVALID_MARGIN" ],
+		[ 6, 8, "x", "TypeError", "INVALID_MARGIN" ]
+	] ) {
+		assert.throws(
+			() => load( width, height, margin ), { "name": name, "code": code },
+			`${width}x${height} margin ${String( margin )}`
+		);
+	}
+	assert.equal( h.api.getAvailableFonts().length, 0 );
+
+	// The smallest sizes and margins, and an omitted margin, are accepted
+	assert.equal( load( 1, 1, 0 ), 0 );
+	assert.equal( load( 6, 8, 2 ), 1 );
+	assert.equal( load( 6, 8, null ), 2 );
+} );
+
+test( "CORE-013 setPrintSize takes finite scales and integer padding of 0 or more", () => {
+	const h = createPrintHarness();
+	const set = options => h.api.setPrintSize( h.screen, {
+		"scaleWidth": null, "scaleHeight": null, "padX": null, "padY": null, ...options
+	} );
+	for( const [ options, name, code ] of [
+		[ { "scaleWidth": 0 }, "RangeError", "INVALID_SIZE" ],
+		[ { "scaleHeight": -1 }, "RangeError", "INVALID_SIZE" ],
+		[ { "scaleWidth": Infinity }, "TypeError", "INVALID_SIZE" ],
+		[ { "scaleHeight": "x" }, "TypeError", "INVALID_SIZE" ],
+		[ { "padX": -6 }, "RangeError", "INVALID_PADDING" ],
+		[ { "padY": -1 }, "RangeError", "INVALID_PADDING" ],
+		[ { "padX": 1.5 }, "TypeError", "INVALID_PADDING" ],
+		[ { "padY": NaN }, "TypeError", "INVALID_PADDING" ]
+	] ) {
+		assert.throws( () => set( options ), { "name": name, "code": code },
+			JSON.stringify( options ) );
+	}
+	assert.deepEqual( { ...h.screen.printCursor }, {
+		"x": 0, "y": 0, "scaleWidth": 1, "scaleHeight": 1, "padX": 0, "padY": 0
+	} );
+
+	// Valid values apply, and omitted ones keep their current values
+	set( { "scaleWidth": 2, "padX": 4 } );
+	set( { "padY": 0 } );
+	const cursor = h.screen.printCursor;
+	assert.deepEqual(
+		[ cursor.scaleWidth, cursor.scaleHeight, cursor.padX, cursor.padY, cursor.width,
+			cursor.cols ],
+		[ 2, 1, 4, 0, 20, 3 ]
+	);
+} );
+
 for( const fontId of [ -1, 1, NaN, Infinity, null, undefined ] ) {
 	test( `COV-003 setFont rejects invalid fontId ${String( fontId )}`, () => {
 		const h = createFontHarness();
@@ -382,7 +468,7 @@ for( const value of [ NaN, Infinity, -Infinity, null, undefined ] ) {
 	} );
 }
 
-for( const value of [ NaN, "90", null, undefined, {}, [] ] ) {
+for( const value of [ NaN, Infinity, -Infinity, "90", null, undefined, {}, [] ] ) {
 	test( `COV-003 geometry rejects invalid arc angle ${String( value )}`, () => {
 		const h = createGeometryHarness();
 		assert.throws(

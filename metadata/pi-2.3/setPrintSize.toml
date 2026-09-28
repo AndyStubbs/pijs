@@ -1,0 +1,49 @@
+title = "setPrintSize"
+category = "text"
+isScreen = true
+summary = "Sets the scale factor for printed text."
+description = """
+Sets the horizontal and vertical scale factors for bitmap font rendering. This allows you to
+make text larger or smaller. Scale values must be finite numbers greater than 0 (INVALID_SIZE).
+
+Use padX and padY to add extra padding between characters when they print to the screen. Padding
+must be an integer of 0 or more (INVALID_PADDING). Omitted parameters keep their current values.
+"""
+example = """
+$.screen( "320x200" );
+$.setFont( 1 );
+$.print( "Normal size" );
+$.setPrintSize( 2, 2 );
+$.print( "Double size" );
+$.setPrintSize( { "scaleWidth": 1, "scaleHeight": 2.5 } );
+$.print( "Ultra thin tall font" );
+"""
+
+[[parameters]]
+name = "scaleWidth"
+type = "number"
+description = "Horizontal scale factor; a number greater than 0."
+optional = true
+
+[[parameters]]
+name = "scaleHeight"
+type = "number"
+description = "Vertical scale factor; a number greater than 0."
+optional = true
+
+[[parameters]]
+name = "padX"
+type = "number"
+description = "Extra horizontal padding between characters in pixels; an integer of 0 or more. Defaults to 0."
+optional = true
+
+[[parameters]]
+name = "padY"
+type = "number"
+description = "Extra vertical padding between lines in pixels; an integer of 0 or more. Defaults to 0."
+optional = true
+
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

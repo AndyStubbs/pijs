@@ -16,7 +16,7 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Core 6, 7, 9–12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
+| 1 | [Core 7, 9–12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
 | 2 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Nothing |
 | 3 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Nothing |
 | 4 | [Sound 11.1–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
@@ -27,7 +27,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
-| Core | [3](#3-core) | Phases 1 and 3 done. Core 1, 2, 4, 5, 8, and 13 done, 7 tasks left | Core 6, 7, 9–12 |
+| Core | [3](#3-core) | Phases 1 and 3 done. Core 1, 2, 4–6, 8, and 13 done, 6 tasks left | Core 7, 9–12 |
 | Sound | [4](#4-sound) | Phases 0–10 done. Its listening checks are in Section 8.3; Phase 11 not started | Sound 11.1–11.5 |
 | Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Pointer | [6](#6-pointer) | Phase 1 done; Phase 2 not started | Pointer 2.1 |
@@ -248,7 +248,7 @@ in its plugin's Phase 2 and is listed in its compatibility summary.
 ## 3. Core
 
 Findings: [AUDIT-CORE.md](AUDIT-CORE.md). Proposals C1–C11:
-[AUDIT-CORE.md §4](AUDIT-CORE.md#4-proposed-changes). Core 1, 2, 4, 5, 8, and 13 are done
+[AUDIT-CORE.md §4](AUDIT-CORE.md#4-proposed-changes). Core 1, 2, 4–6, 8, and 13 are done
 ([Section 13.5](#135-core)). The task numbers follow the audit's follow-up order, so Core 3–10
 keep their original numbers and Core 11–12 are the test audit's handoffs.
 
@@ -262,7 +262,6 @@ In any order, in parallel with the input work.
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| Core 6 | **Option and value handling (C6).** `parseOptions` maps `undefined` to `null`. `getPal( false )` excludes index 0. Fix `getImage( screen )` for offscreen screens. Clip polygon spans. Add numeric checks for `arc`, `loadFont`, and `setPrintSize`. Give `removeScreen` its object form and coded errors. Tests: `parseOptions` with explicit `undefined` in the Node suites (C06); numeric boundary rows for `arc`, `loadFont`, `setPrintSize`, and polygon extents (C11, C12) | [CORE-007](AUDIT-CORE.md#core-007), [CORE-009](AUDIT-CORE.md#core-009), [CORE-011](AUDIT-CORE.md#core-011), [CORE-012](AUDIT-CORE.md#core-012), [CORE-013](AUDIT-CORE.md#core-013), [CORE-015](AUDIT-CORE.md#core-015) | — |
 | Core 7 | **Canvas textures, `setChar`, cache bounds (C8).** Upload static canvas textures once, make `setChar` also edit the source canvas, and bound the circle geometry cache. Test: `setChar` on the default font (C09) | [CORE-010](AUDIT-CORE.md#core-010), [CORE-018](AUDIT-CORE.md#core-018) | — |
 | Core 9 | **Packaging (C11).** Add `"private": true` to the root manifest, and ship `CHANGELOG.md` in the release tarball. The `releases/PUBLISH.md` rename is done (CI 2.1) | [CORE-019](AUDIT-CORE.md#core-019) | — |
 | Core 10 | **Metadata against runtime.** A generated check that every registered command and setting in each bundle has metadata with matching parameters, and that the declared command set matches the runtime objects (test audit SYS-012 gap) | [CORE-020](AUDIT-CORE.md#core-020), [AUDIT-TESTS §5.5](AUDIT-TESTS.md#55-core-audit) | — |
@@ -296,6 +295,14 @@ Input to `UPGRADE-V2.3.md` (R.4):
 - **Core 13 (breaking):** "`$.clearEvents()` now clears mouse, touch, press, and click handlers
   on every screen, not only the active one, and cancels an `input()` prompt on any screen. Call
   `clearEvents()` on a screen to clear only that screen."
+- **C6 (fixes that reject input they used to accept):** "`arc()` angles must be finite.
+  `loadFont()` sizes must be integers of at least 1 and its margin an integer of 0 or more.
+  `setPrintSize()` scales must be finite numbers, and padding an integer of 0 or more.
+  `$.removeScreen()` throws `INVALID_SCREEN_ID` for a missing, unknown, or already removed
+  screen instead of doing nothing." Also: an argument passed as `undefined` now counts as
+  omitted; `getPal( false )` and `getDefaultPal( false )` exclude index 0, as the default does;
+  `getImage()` of an offscreen screen returns a canvas copy of its pixels; and `polygon()` fills
+  coordinates far off the screen correctly.
 - **C3:** "The standalone plugin entry points (`pijs-web/plugins/…`) are for Lite. Loading one
   that the Full bundle already includes throws `DUPLICATE_PLUGIN`."
 - **C5:** "TypeScript projects using `nodenext` module resolution now get the package's types.
@@ -1030,8 +1037,9 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | Core 2 | Documented the Lite-only plugin entry points (C3) in `plugins/README.md`, `plugins/polygons/README.md`, and `llms-full.txt`; the release README follows in R.3 | [CORE-003](AUDIT-CORE.md#core-003) | [#14](https://github.com/AndyStubbs/pijs/pull/14) |
 | Core 4 | Declarations and release manifest (C5): `"type": "module"` in the release manifest; plugin declarations augment Lite, and `sound-advanced` both Full and Lite, through `PluginCommands`, `PluginScreenCommands`, and `PluginOptions`; object types only a plugin uses move from Lite to that plugin's declarations; Lite `Options` holds Lite settings only; the global `pi` and `$` are declared by Full only; `addCommand`'s `isScreenOptional` is optional and its JSDoc example is corrected; `Screen.removeScreen()` is declared. Type consumers compile under `bundler` and `nodenext`, including Lite with each exported plugin | [CORE-005](AUDIT-CORE.md#core-005), [CORE-015](AUDIT-CORE.md#core-015), [CORE-016](AUDIT-CORE.md#core-016), [CORE-017](AUDIT-CORE.md#core-017) | [#17](https://github.com/AndyStubbs/pijs/pull/17) |
 | Core 8 | Strict `set()` (C7, breaking): every option name is checked before any setting applies; a name that is not a registered setting, including an inherited name such as `toString` or a setting of a plugin that is not loaded, throws `RangeError` `INVALID_OPTION`; options that are not an object throw `TypeError` `INVALID_OPTIONS`; a screen setting with no active screen throws `NO_ACTIVE_SCREEN`, unless a `screen` option before it provides one. Settings are held in a null-prototype table, and the unused `addSetting` export is removed. Tests: `test/unit/settings.test.js` (C07) and the Full and Lite cases in `plugin-installation-browser.test.js`, including a Lite setting that appears when its plugin loads; `metadata/pi-2.3/set.toml` | [CORE-008](AUDIT-CORE.md#core-008) | [#65](https://github.com/AndyStubbs/pijs/pull/65) |
+| Core 6 | Option and value handling (C6): `parseOptions` maps `undefined` to `null`, positionally and by name, and `set()` skips an `undefined` option as it skips `null` (CORE-007); `getPal( false )` and `getDefaultPal( false )` exclude index 0 (CORE-009); `getImage()` of an offscreen screen returns a new canvas holding a copy of its pixels, and of any other screen its canvas (CORE-011); `polygon()` sweeps only the visible rows and clips span ends to the visible columns, with spans cached per view bounds (CORE-012); `arc()` angles must be finite, `loadFont()` sizes integers of at least 1 and margins integers of 0 or more (`INVALID_DIMENSIONS`, `INVALID_MARGIN`), and `setPrintSize()` scales finite and padding integers of 0 or more (`INVALID_SIZE`, `INVALID_PADDING`) (CORE-013); `$.removeScreen()` takes `{ "screen": screen }` and throws `INVALID_SCREEN_ID` for a missing, unknown, or removed screen; its `screen` parameter stays optional in the declarations, because the global API extends `Screen`, whose `removeScreen()` takes none (CORE-015). Metadata for `arc`, `getImage`, `loadFont`, `removeScreen`, and `setPrintSize`. Tests: `settings.test.js` (C06), `numeric-boundaries.test.js` (C12), `polygons.test.js` (C11), and in both bundles `color-validation-browser.test.js` (C08), `image-lifecycle-browser.test.js` (C10), and `screen-lifecycle-browser.test.js` (C14); a type consumer uses the `removeScreen` forms | [CORE-007](AUDIT-CORE.md#core-007), [CORE-009](AUDIT-CORE.md#core-009), [CORE-011](AUDIT-CORE.md#core-011), [CORE-012](AUDIT-CORE.md#core-012), [CORE-013](AUDIT-CORE.md#core-013), [CORE-015](AUDIT-CORE.md#core-015) | — |
 | Core 13 | `$.clearEvents()` clears every screen (I10, breaking): the global command passes no screen to the clear handlers, and each screen's `clearEvents()` passes that screen; the plugin API is unchanged, since every clear handler already treats no screen as every screen. So `$.clearEvents()` clears pointer handlers on every screen and cancels an `input()` prompt on any screen. Metadata: `clearEvents` describes both forms. Tests: the registry passes no screen from the global form (`plugins.test.js`); mouse, touch, press, and click handlers on two screens cleared by each form and by type (`pointer-browser.test.js`); KEY-016's `$` forms now cancel a prompt on the screen that is not active. The pointer Node harness clears as `$.clearEvents()` does | — | [#66](https://github.com/AndyStubbs/pijs/pull/66) |
-| Core 5 | Offscreen context lifetime (C1): when the last screen of the shared offscreen context is removed, the renderer discards the context and releases it with `WEBGL_lose_context`, and the screen manager stops sharing its canvas (`releaseOffscreenCanvas`), since `getContext()` on that canvas would return the old context. The next standalone offscreen screen creates a new canvas and context with its own loss and restore listeners. A child screen keeps the context in use after its standalone parent goes. Test: `context-recovery-browser.test.js` (C01), in Full and Lite: the last member removed while the context works and while it is lost, a child keeping the context shared, the next screens drawing on a new shared context, the old context released, and the new context recovering from its own loss | [CORE-001](AUDIT-CORE.md#core-001) | — |
+| Core 5 | Offscreen context lifetime (C1): when the last screen of the shared offscreen context is removed, the renderer discards the context and releases it with `WEBGL_lose_context`, and the screen manager stops sharing its canvas (`releaseOffscreenCanvas`), since `getContext()` on that canvas would return the old context. The next standalone offscreen screen creates a new canvas and context with its own loss and restore listeners. A child screen keeps the context in use after its standalone parent goes. Test: `context-recovery-browser.test.js` (C01), in Full and Lite: the last member removed while the context works and while it is lost, a child keeping the context shared, the next screens drawing on a new shared context, the old context released, and the new context recovering from its own loss | [CORE-001](AUDIT-CORE.md#core-001) | [#71](https://github.com/AndyStubbs/pijs/pull/71) |
 
 ### 13.6 Keyboard
 

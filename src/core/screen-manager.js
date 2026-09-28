@@ -117,14 +117,14 @@ export function init( api ) {
 
 	registerCommands();
 
-	// Special command removeScreen
-	api.removeScreen = ( screenId ) => {
-		if( Object.getPrototypeOf( screenId ) === SCREEN_API_PROTO ) {
-			screenId = screenId.id;
+	// Special command removeScreen: a screen, its id, or { "screen": screen }. A missing,
+	// unknown, or already removed screen throws INVALID_SCREEN_ID
+	api.removeScreen = ( ...args ) => {
+		let screen = g_utils.parseOptions( args, [ "screen" ] ).screen;
+		if( screen !== null && Object.getPrototypeOf( screen ) === SCREEN_API_PROTO ) {
+			screen = screen.id;
 		}
-		if( m_screens[ screenId ] ) {
-			return removeScreen( m_screens[ screenId ] );
-		}
+		return removeScreen( getScreenData( "removeScreen", screen ) );
 	};
 
 	// Add screenObj remove screen command

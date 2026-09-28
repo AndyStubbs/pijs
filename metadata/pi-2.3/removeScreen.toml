@@ -7,7 +7,8 @@ Removes a screen from the page and cleans up all WebGL2 resources, event handler
 After removal, the screen object becomes invalid and calling methods on it will throw errors.
 
 Can be called either as a global function with a screen ID/object, or as a method on a screen API
-object.
+object. The global form also takes { "screen": screen }. A missing, unknown, or already removed
+screen throws INVALID_SCREEN_ID.
 """
 example = """
 const screen1 = $.screen( "320x200" );
@@ -26,7 +27,7 @@ summary = "Removes this screen and cleans up all associated resources."
 name = "screen"
 type = "number | Screen"
 typeDesc = "*Many"
-description = "Screen ID (number) or screen API object to remove."
+description = "Screen ID (number) or screen API object to remove. Required in the global form; the declaration marks it optional because each screen's own removeScreen() takes none."
 optional = true
 
 [[returns]]
