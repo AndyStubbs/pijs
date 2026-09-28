@@ -454,9 +454,12 @@ test( "PAD-003 a throwing handler is reported and leaves no ghost pad (P5)", () 
 	h.$.onGamepadConnected( pad => { laterConnect.push( pad.index ); } );
 	h.setPad( 2 );
 	h.connect( 2 );
-	assert.deepEqual( laterConnect, [ 2 ] );
+
+	// Both handlers also received pad 0, which was already connected
+	assert.deepEqual( laterConnect, [ 0, 2 ] );
 	assert.deepEqual( h.errors.map( args => [ args[ 0 ], args[ 1 ].message ] ), [
 		[ "onGamepadDisconnected: Handler failed:", "disconnect handler" ],
+		[ "onGamepadConnected: Handler failed:", "connect handler" ],
 		[ "onGamepadConnected: Handler failed:", "connect handler" ]
 	] );
 } );
@@ -482,18 +485,21 @@ test( "PAD-007 handlers added or cleared during a dispatch wait for the next eve
 	const h = createHarness();
 	const calls = [];
 	h.$.startGamepad();
-	h.$.onGamepadConnected( () => {
-		calls.push( "first" );
+	h.$.onGamepadConnected( pad => {
+		calls.push( "first " + pad.index );
 		if( calls.length === 1 ) {
-			h.$.onGamepadConnected( () => { calls.push( "added" ); } );
+			h.$.onGamepadConnected( added => { calls.push( "added " + added.index ); } );
+			calls.push( "registered" );
 		}
 	} );
 	h.setPad( 0 );
 	h.connect( 0 );
-	assert.deepEqual( calls, [ "first" ] );
+
+	// The new handler receives the connected pad after the dispatch, not within it
+	assert.deepEqual( calls, [ "first 0", "registered", "added 0" ] );
 	h.setPad( 1 );
 	h.connect( 1 );
-	assert.deepEqual( calls, [ "first", "first", "added" ] );
+	assert.deepEqual( calls.slice( 3 ), [ "first 1", "added 1" ] );
 
 	// A clear during a dispatch stops the rest of it
 	calls.length = 0;
@@ -506,4 +512,51 @@ test( "PAD-007 handlers added or cleared during a dispatch wait for the next eve
 	h.disconnect( 0 );
 	h.disconnect( 1 );
 	assert.deepEqual( calls, [ "clearing" ] );
+} );
+
+test( "PAD-005 new connect handlers receive the pads already connected, once (P7)", () => {
+	const h = createHarness();
+	h.setPad( 0 );
+	h.setPad( 2 );
+	const first = [];
+	const second = [];
+	const third = [];
+
+	// The start-up scan delivers to the first handler; the replay does not repeat it
+	h.$.onGamepadConnected( pad => { first.push( pad.index ); } );
+	h.$.onGamepadConnected( pad => { second.push( pad.index ); } );
+	assert.deepEqual( [ first, second ], [ [ 0, 2 ], [ 0, 2 ] ] );
+
+	// A pad the loop recorded before its event reaches every handler once, whenever it
+	// registered
+	h.setPad( 1 );
+	h.frame();
+	h.$.onGamepadConnected( pad => { third.push( pad.index ); } );
+	h.connect( 1 );
+	assert.deepEqual( [ first, second, third ], [ [ 0, 2, 1 ], [ 0, 2, 1 ], [ 0, 1, 2 ] ] );
+
+	// Polling first, then registering, also replays
+	const h2 = createHarness();
+	h2.setPad( 0 );
+	h2.$.ingamepad();
+	const late = [];
+	h2.$.onGamepadConnected( pad => { late.push( pad.index ); } );
+	assert.deepEqual( late, [ 0 ] );
+} );
+
+test( "PAD-006 a connection event for a tracked pad is not dispatched again (P3)", () => {
+	const h = createHarness();
+	h.setPad( 0 );
+	const calls = [];
+	h.$.onGamepadConnected( pad => { calls.push( pad.index ); } );
+	h.connect( 0 );
+	h.connect( 0 );
+	assert.deepEqual( calls, [ 0 ] );
+
+	// A reconnect is a new connection
+	h.disconnect( 0 );
+	h.setPad( 0 );
+	h.connect( 0 );
+	h.connect( 0 );
+	assert.deepEqual( calls, [ 0, 0 ] );
 } );
