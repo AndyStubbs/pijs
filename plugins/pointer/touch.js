@@ -36,6 +36,9 @@ export function registerTouch( pluginApi, helpers ) {
 	const m_removeAllListeners = helpers.removeAllListeners;
 	const m_triggerEventListeners = helpers.triggerEventListeners;
 
+	// The page-visibility listener is added when tracking first starts, not at plugin load
+	let m_isVisibilityListening = false;
+
 	pluginApi.addScreenDataItem( "touchStopped", false );
 	pluginApi.addScreenDataItem( "touchStarted", false );
 	pluginApi.addScreenDataItem( "touches", {} );
@@ -44,7 +47,6 @@ export function registerTouch( pluginApi, helpers ) {
 	pluginApi.addScreenDataItem( "onTouchEventListeners", {} );
 
 	pluginApi.addScreenInitFunction( initTouchData );
-	document.addEventListener( "visibilitychange", onVisibilityChangeTouch );
 
 	pluginApi.addCommand( "startTouch", startTouch, true, [] );
 	pluginApi.addCommand( "stopTouch", stopTouch, true, [] );
@@ -84,6 +86,10 @@ export function registerTouch( pluginApi, helpers ) {
 		// Clear explicit touch stopped
 		screenData.touchStopped = false;
 
+		if( !m_isVisibilityListening ) {
+			document.addEventListener( "visibilitychange", onVisibilityChangeTouch );
+			m_isVisibilityListening = true;
+		}
 		if( !screenData.touchStarted ) {
 			const options = { "passive": false };
 			screenData.canvas.addEventListener( "touchstart", touchStart, options );
