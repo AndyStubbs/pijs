@@ -284,32 +284,44 @@ for( const bundle of g_harness.BUNDLES ) {
 		] );
 	} );
 
-	test( `KEY-017 ${bundle}: set( { actionKeys } ) starts tracking and adds keys (K20)`, async () => {
-		assert.deepEqual( await probe( bundle, () => {
-			function prevented( code ) {
-				const event = new KeyboardEvent( "keydown", {
-					"key": " ", "code": code, "cancelable": true
-				} );
-				window.dispatchEvent( event );
-				window.dispatchEvent( new KeyboardEvent( "keyup", { "key": " ", "code": code } ) );
-				return event.defaultPrevented;
-			}
+	test( `KEY-014 ${bundle}: set( { actionKeys } ) starts tracking and replaces keys (K20)`,
+		async () => {
+			assert.deepEqual( await probe( bundle, () => {
+				function prevented( code ) {
+					const event = new KeyboardEvent( "keydown", {
+						"key": " ", "code": code, "cancelable": true
+					} );
+					window.dispatchEvent( event );
+					const up = { "key": " ", "code": code };
+					window.dispatchEvent( new KeyboardEvent( "keyup", up ) );
+					return event.defaultPrevented;
+				}
 
-			// set() is the first use on the page, so it starts tracking (I5)
-			$.set( { "actionKeys": [ "KeyB" ] } );
-			const afterSet = prevented( "KeyB" );
-			$.setActionKeys( [ "Space" ] );
-			const afterBoth = [ prevented( "Space" ), prevented( "KeyB" ) ];
-			$.removeActionKeys( [ "Space", "KeyB" ] );
+				// set() is the first use on the page, so it starts tracking (I5)
+				$.set( { "actionKeys": [ "KeyB" ] } );
+				const afterSet = prevented( "KeyB" );
 
-			// set() checks the keys as setActionKeys() does
-			let invalid = null;
-			try {
-				$.set( { "actionKeys": [ 1 ] } );
-			} catch( error ) {
-				invalid = [ error.name, error.code ];
-			}
-			return [ afterSet, afterBoth, prevented( "Space" ), prevented( "KeyB" ), invalid ];
-		} ), [ true, [ true, true ], false, false, [ "TypeError", "INVALID_KEYS" ] ] );
-	} );
+				// setActionKeys() and set() each replace the set (A12)
+				$.setActionKeys( [ "Space" ] );
+				const afterCommand = [ prevented( "Space" ), prevented( "KeyB" ) ];
+				$.set( { "actionKeys": [ "KeyB" ] } );
+				const afterSetting = [ prevented( "Space" ), prevented( "KeyB" ) ];
+				$.removeActionKeys( [ "KeyB" ] );
+
+				// set() checks the keys as setActionKeys() does
+				let invalid = null;
+				try {
+					$.set( { "actionKeys": [ 1 ] } );
+				} catch( error ) {
+					invalid = [ error.name, error.code ];
+				}
+				return [
+					afterSet, afterCommand, afterSetting, prevented( "Space" ), prevented( "KeyB" ),
+					invalid
+				];
+			} ), [
+				true, [ true, false ], [ false, true ], false, false,
+				[ "TypeError", "INVALID_KEYS" ]
+			] );
+		} );
 }

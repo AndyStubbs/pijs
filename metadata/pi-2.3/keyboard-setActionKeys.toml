@@ -2,18 +2,20 @@ title = "setActionKeys"
 category = "keyboard"
 isScreen = false
 plugin = "keyboard"
-summary = "Adds keys whose default browser behavior is prevented."
+summary = "Sets the keys whose default browser behavior is prevented."
 description = """
-Adds keys to the action keys set. Action keys have their default browser behavior prevented on
-keydown and keyup, for example page scrolling with the arrow keys or Space. This is useful for
-game controls where you don't want the browser to handle certain keys.
+Sets the action keys, replacing the previous set. Action keys have their default browser
+behavior prevented on keydown and keyup, for example page scrolling with the arrow keys or
+Space. This is useful for game controls where you don't want the browser to handle certain
+keys.
 
-Keys already in the set stay in it; use removeActionKeys() to remove keys. set( { "actionKeys":
-[ ... ] } ) also adds. Keys can be specified by code (e.g., "ArrowUp", "Space") or key value
-(e.g., " "). Setting action keys starts keyboard tracking, unless stopKeyboard() was called.
+Pass every action key in one call; an empty array clears them. set( { "actionKeys": [ ... ] } )
+sets them the same way, and removeActionKeys() removes some of them. Keys can be specified by
+code (e.g., "ArrowUp", "Space") or key value (e.g., " "). Setting action keys starts keyboard
+tracking, unless stopKeyboard() was called.
 
 Keys that are not an array of strings throw a TypeError, and an empty string in the array a
-RangeError, with code INVALID_KEYS.
+RangeError, with code INVALID_KEYS; the set is then left unchanged.
 """
 example = """
 $.screen( "200x200" );
@@ -40,7 +42,7 @@ setInterval( function () {
 name = "keys"
 type = "Array<string>"
 typeDesc = "*Array"
-description = "Array of key codes or key values to add as action keys."
+description = "Array of key codes or key values that become the action keys."
 
 [[returns]]
 type = "void"

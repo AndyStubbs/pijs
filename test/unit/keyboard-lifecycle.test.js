@@ -1037,22 +1037,32 @@ test( "KEY-013 a throwing handler is reported and the others still run (I8)", ()
 	assert.equal( h.microtasks.length, 0 );
 } );
 
-test( "KEY-017 setActionKeys() adds keys and removeActionKeys() removes them (K20)", () => {
-	const h = harness();
-	const prevented = code => {
-		const down = h.key( "x", "down", { "code": code } ).defaultPrevented;
-		const up = h.key( "x", "up", { "code": code } ).defaultPrevented;
-		return [ down, up ];
-	};
-	h.api.setActionKeys( [ "Space" ] );
-	h.api.setActionKeys( [ "KeyA" ] );
-	assert.deepEqual( [ prevented( "Space" ), prevented( "KeyA" ) ],
-		[ [ true, true ], [ true, true ] ], "a second call adds to the set" );
-	h.api.removeActionKeys( [ "Space" ] );
-	assert.deepEqual( [ prevented( "Space" ), prevented( "KeyA" ) ],
-		[ [ false, false ], [ true, true ] ] );
-	assert.deepEqual( prevented( "KeyB" ), [ false, false ] );
-} );
+test( "KEY-014 setActionKeys() replaces the set and removeActionKeys() removes (K20, A12)",
+	() => {
+		const h = harness();
+		const prevented = code => {
+			const down = h.key( "x", "down", { "code": code } ).defaultPrevented;
+			const up = h.key( "x", "up", { "code": code } ).defaultPrevented;
+			return [ down, up ];
+		};
+		h.api.setActionKeys( [ "Space", "KeyW" ] );
+		h.api.setActionKeys( [ "KeyA", "KeyW" ] );
+		assert.deepEqual( [ prevented( "Space" ), prevented( "KeyA" ), prevented( "KeyW" ) ],
+			[ [ false, false ], [ true, true ], [ true, true ] ],
+			"a second call replaces the set" );
+
+		// An invalid call leaves the set as it was
+		assert.throws( () => h.api.setActionKeys( [ "KeyB", 1 ] ), { "name": "TypeError" } );
+		assert.deepEqual( [ prevented( "KeyA" ), prevented( "KeyB" ) ],
+			[ [ true, true ], [ false, false ] ] );
+
+		// removeActionKeys() removes only the keys given, and an empty set clears every key
+		h.api.removeActionKeys( [ "KeyW" ] );
+		assert.deepEqual( [ prevented( "KeyA" ), prevented( "KeyW" ) ],
+			[ [ true, true ], [ false, false ] ] );
+		h.api.setActionKeys( [] );
+		assert.deepEqual( prevented( "KeyA" ), [ false, false ] );
+	} );
 
 test( "SYS-003 a custom cursor is drawn after the value and hidden when the prompt ends",
 	async () => {
