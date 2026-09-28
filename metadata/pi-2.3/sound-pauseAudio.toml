@@ -13,7 +13,7 @@ let instance = null;
 let paused = false;
 $.ready( function () {
 	$.print( "Press any key to play, then to pause and resume" );
-	$.onkey( "any", "down", () => {
+	$.onKey( "any", "down", () => {
 		if( instance === null ) {
 			instance = $.playAudio( { "audioId": music, "loop": true } );
 		} else if( paused ) {

@@ -144,7 +144,7 @@ async function inputAndSizing( page ) {
 		canvas.style.cssText = "display:block;width:320px;height:200px";
 		window.smoke = { "screen": screen, "canvas": canvas, "keys": 0, "mouse": null };
 		screen.onmouse( "down", data => { smoke.mouse = { "x": data.x, "y": data.y }; } );
-		$.onkey( "a", "down", () => { smoke.keys++; } );
+		$.onKey( "a", "down", () => { smoke.keys++; } );
 		const shader = $.createShader( `#version 300 es
 precision mediump float;
 in vec2 v_texCoord;

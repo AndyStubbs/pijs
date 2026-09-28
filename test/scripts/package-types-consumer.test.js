@@ -43,15 +43,20 @@ const LITE_PLUGIN_CONSUMERS = {
 		`} );`,
 		`lite.set( { gamepadSensitivity: 0.5 } );`,
 		`// @ts-expect-error Keyboard commands need the keyboard plugin.`,
-		`lite.inkey();`
+		`lite.inKey();`
 	],
 	"keyboard": [
-		`lite.onkey( "KeyA", "down", () => {} );`,
+		`const jump = () => {};`,
+		`lite.onKey( "KeyA", "down", jump );`,
+		`lite.offKey( "KeyA", null, jump );`,
+		`lite.offKey( { key: "KeyA", mode: "down" } );`,
 		`const age: Promise<string | number | null> = lite.screen( "8x8" ).input(`,
 		`	"Age?", ( value: string | number | null ) => { void value; }, "_", true, true,`,
 		`	false, null );`,
 		`void age;`,
 		`lite.set( { actionKeys: [ "ArrowUp" ] } );`,
+		`// @ts-expect-error onkey is renamed onKey.`,
+		`lite.onkey( "KeyA", "down", () => {} );`,
 		`// @ts-expect-error Gamepad commands need the gamepad plugin.`,
 		`lite.ingamepad();`
 	],
@@ -93,7 +98,7 @@ const LITE_PLUGIN_CONSUMERS = {
 		`lite.set( { busEffect: { bus: "sfx", effect: "delay" } } );`,
 		`lite.onPlay( "end", ( data ) => { void data.delay; } );`,
 		`// @ts-expect-error Keyboard commands need the keyboard plugin.`,
-		`lite.inkey();`
+		`lite.inKey();`
 	]
 };
 

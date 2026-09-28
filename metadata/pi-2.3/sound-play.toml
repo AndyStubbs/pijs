@@ -72,7 +72,7 @@ const tracks = [
 	"[[0,1,0,-1],[0,0,0,0]] T120 O3 L4 MP-100 G MP100 A MP0 B>C"
 ];
 $.print( "Press any key to play music" );
-$.onkey( "any", "down", () => {
+$.onKey( "any", "down", () => {
 	let t = 0;
 	for( const track of tracks ) {
 		setTimeout( () => {

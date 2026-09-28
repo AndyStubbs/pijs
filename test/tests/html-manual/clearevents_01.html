@@ -131,7 +131,7 @@
 		}
 
 		function setupKeyboard() {
-			$.onkey( "any", "down", ( data ) => {
+			$.onKey( "any", "down", ( data ) => {
 				log( `Keyboard: Key "${data.key}" pressed` );
 			} );
 			log( "✓ Keyboard handler added" );

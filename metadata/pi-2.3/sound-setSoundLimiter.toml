@@ -15,7 +15,7 @@ $.screen( "300x200" );
 $.print( "Press any key to hear a chord without the limiter" );
 $.setSoundLimiter( false );
 $.setVolume( 0.2 );
-$.onkey( "any", "down", () => {
+$.onKey( "any", "down", () => {
 	$.sound( 262, 1, 0.5 );
 	$.sound( 330, 1, 0.5 );
 	$.sound( 392, 1, 0.5 );

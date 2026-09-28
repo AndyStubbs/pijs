@@ -12,7 +12,7 @@ let bombAudio = $.loadAudio( "media/bomb.wav" );
 $.ready( function () {
 	$.print( "Press any key to try to play bomb sound." );
 	$.removeAudio( bombAudio );
-	$.onkey( "any", "down", () => {
+	$.onKey( "any", "down", () => {
 		try {
 			$.playAudio( bombAudio );
 		} catch (e) {

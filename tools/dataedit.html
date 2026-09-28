@@ -120,26 +120,26 @@ document.getElementById( "copy-btn" ).addEventListener( "click", copyButtonClick
 
 function setupMenuInput() {
 	if( !g_menuInputActive ) {
-		$.onkey( "Digit0", "down", stateMenu );
-		$.onkey( "Digit1", "down", stateColor );
-		$.onkey( "Digit2", "down", stateDataSize );
-		$.onkey( "Digit3", "down", toggleGrid );
-		$.onkey( "Digit4", "down", stateManageData );
-		$.onkey( "Digit5", "down", statePaletteColor );
-		$.onkey( "Digit6", "down", stateManagePalette );
+		$.onKey( "Digit0", "down", stateMenu );
+		$.onKey( "Digit1", "down", stateColor );
+		$.onKey( "Digit2", "down", stateDataSize );
+		$.onKey( "Digit3", "down", toggleGrid );
+		$.onKey( "Digit4", "down", stateManageData );
+		$.onKey( "Digit5", "down", statePaletteColor );
+		$.onKey( "Digit6", "down", stateManagePalette );
 		g_menuInputActive = true;
 	}
 }
 
 function removeMenuInput() {
 	if( g_menuInputActive ) {
-		$.offkey( "Digit0", "down", stateMenu );
-		$.offkey( "Digit1", "down", stateColor );
-		$.offkey( "Digit2", "down", stateDataSize );
-		$.offkey( "Digit3", "down", toggleGrid );
-		$.offkey( "Digit4", "down", stateManageData );
-		$.offkey( "Digit5", "down", statePaletteColor );
-		$.offkey( "Digit6", "down", stateManagePalette );
+		$.offKey( "Digit0", "down", stateMenu );
+		$.offKey( "Digit1", "down", stateColor );
+		$.offKey( "Digit2", "down", stateDataSize );
+		$.offKey( "Digit3", "down", toggleGrid );
+		$.offKey( "Digit4", "down", stateManageData );
+		$.offKey( "Digit5", "down", statePaletteColor );
+		$.offKey( "Digit6", "down", stateManagePalette );
 		g_menuInputActive = false;
 	}
 }
@@ -314,20 +314,20 @@ function stateDraw() {
 		$.onmouse( "down", drawMouseDown );
 		$.onmouse( "move", drawMouseMove );
 		$.onmouse( "up", drawMouseUp );
-		$.onkey( "ArrowLeft", "down", shiftLeft );
-		$.onkey( "ArrowUp", "down", shiftUp );
-		$.onkey( "ArrowRight", "down", shiftRight );
-		$.onkey( "ArrowDown", "down", shiftDown );
+		$.onKey( "ArrowLeft", "down", shiftLeft );
+		$.onKey( "ArrowUp", "down", shiftUp );
+		$.onKey( "ArrowRight", "down", shiftRight );
+		$.onKey( "ArrowDown", "down", shiftDown );
 	}
 
 	function stopDrawing() {
 		$.offmouse( "down", drawMouseDown );
 		$.offmouse( "move", drawMouseMove );
 		$.offmouse( "up", drawMouseUp );
-		$.offkey( "ArrowLeft", "down", shiftLeft );
-		$.offkey( "ArrowUp", "down", shiftUp );
-		$.offkey( "ArrowRight", "down", shiftRight );
-		$.offkey( "ArrowDown", "down", shiftDown );
+		$.offKey( "ArrowLeft", "down", shiftLeft );
+		$.offKey( "ArrowUp", "down", shiftUp );
+		$.offKey( "ArrowRight", "down", shiftRight );
+		$.offKey( "ArrowDown", "down", shiftDown );
 	}
 
 	function drawMouseDown( mouse ) {

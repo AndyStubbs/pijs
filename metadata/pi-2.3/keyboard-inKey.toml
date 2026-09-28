@@ -1,4 +1,4 @@
-title = "inkey"
+title = "inKey"
 category = "keyboard"
 isScreen = false
 plugin = "keyboard"
@@ -10,16 +10,24 @@ if it is currently pressed, or null if it is not. The key can be named by its co
 it types. A key value is held while any key that produced it is held, such as either Shift key
 for "Shift"; the most recent press is returned.
 
-If no key is provided, returns a new array of the key data objects of all pressed keys.
+If no key is provided, returns a frozen array of the key data objects of all pressed keys,
+ordered by each key's latest keydown, or an empty array. The same array is returned until a key is
+pressed or released, so reading it every frame does not allocate.
 
-Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat. They
-are frozen.
+The first call starts keyboard tracking, unless stopKeyboard() was called; keys pressed before
+tracking starts are not reported. Keys typed into an input() prompt are not reported either.
+
+Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat,
+cancelled. They are frozen.
+
+A key that is not a string throws a TypeError, and an empty string a RangeError, with code
+INVALID_KEY; null is the same as no key.
 """
 example = """
 $.screen( "300x200" );
 requestAnimationFrame( run );
 function run() {
-	const keys = $.inkey();
+	const keys = $.inKey();
 	$.cls();
 	$.print( "Press any key" );
 	for( const keyData of keys ) {

@@ -96,12 +96,12 @@ $.setFont( 2 );
 drawDisplay();
 
 $.setActionKeys( [ "Control", "m" ] );
-$.onkey( [ "Control", "m" ], "down", showMenu );
-$.onkey( "1", "up", processKey );
-$.onkey( "2", "up", processKey );
-$.onkey( "3", "up", processKey );
-$.onkey( "4", "up", processKey );
-$.onkey( "Escape", "up", processEscape );
+$.onKey( [ "Control", "m" ], "down", showMenu );
+$.onKey( "1", "up", processKey );
+$.onKey( "2", "up", processKey );
+$.onKey( "3", "up", processKey );
+$.onKey( "4", "up", processKey );
+$.onKey( "Escape", "up", processEscape );
 
 $.onmouse( "down", processMouse );
 $.onmouse( "move", processMouse );

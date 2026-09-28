@@ -5,7 +5,7 @@
 		<script type="text/toml">
 			[[TOML_START]]
 			file = "onkey_sound_01"
-			name = "onkey and sound 01"
+			name = "onKey and sound 01"
 			width = 300
 			height = 200
 			delay = 0
@@ -25,7 +25,7 @@
 	$.ready( function () {
 		$.screen( "300x200" );
 		$.print( "Press any key to make a sound." );
-		$.onkey( "any", "down", start );
+		$.onKey( "any", "down", start );
 	} );
 	function start() {
 		$.playAudio( sound );

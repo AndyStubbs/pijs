@@ -9,13 +9,13 @@ Requires the sound-advanced plugin. Starts a browser download of a Blob, usually
 example = """
 $.screen( "300x200" );
 $.print( "Press any key to record one second" );
-$.onkey( "any", "down", async () => {
+$.onKey( "any", "down", async () => {
 	await $.startRecording();
 	$.sound( 220, 0.8 );
 	setTimeout( async () => {
 		const wav = await $.stopRecording();
 		$.print( "Press any key to save" );
-		$.onkey( "any", "down", () => {
+		$.onKey( "any", "down", () => {
 			$.saveRecording( wav, "note.wav" );
 		}, true );
 	}, 1000 );

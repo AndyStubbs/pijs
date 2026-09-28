@@ -17,7 +17,7 @@ function countNote() {
 	$.print( "Notes: " + notes );
 }
 $.onPlay( "note", countNote );
-$.onkey( "any", "down", () => {
+$.onKey( "any", "down", () => {
 	$.play( "T120 O4 L8 C D E F G A B O5 C" );
 }, true );
 

@@ -11,7 +11,7 @@ $.screen( "300x200" );
 $.print( "Press M to toggle music" );
 let isMuted = false;
 $.play( "T120 L8 O4 C E G E C E G E" );
-$.onkey( "KeyM", "down", () => {
+$.onKey( "KeyM", "down", () => {
 	isMuted = !isMuted;
 	if( isMuted ) {
 		$.setBusVolume( "music", 0 );
