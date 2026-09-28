@@ -19,8 +19,8 @@ that screen's prompt. Clearing handlers does not stop tracking or polling.
 example = """
 $.screen( "300x200" );
 $.print( "Move mouse or touch to paint screen click/touch up to stop." );
-$.onpress( "move", pressMove );
-$.onpress( "up", pressStop );
+$.onPress( "move", pressMove );
+$.onPress( "up", pressStop );
 
 // Press move function
 function pressMove( data ) {

@@ -4,7 +4,7 @@
  * Mouse, touch, and press handling ported from alpha.1 as a plugin.
  *
  * @module plugins/pointer
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 "use strict";
@@ -105,7 +105,7 @@ export default function pointerPlugin( pluginApi ) {
 if( typeof window !== "undefined" && window.pi ) {
 	window.pi.registerPlugin( {
 		"name": "pointer",
-		"version": "1.0.0",
+		"version": "2.0.0",
 		"description": "Mouse and touch input handling for Pi.js",
 		"init": pointerPlugin
 	} );

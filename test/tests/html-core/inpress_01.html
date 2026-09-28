@@ -53,7 +53,7 @@
 
 		function draw() {
 			$.cls( 0, 0, 75, 8 );
-			var mouse = $.inpress();
+			var mouse = $.inPress();
 			if( mouse.x !== -1 ) {
 				$.setPos( 0, 0 );
 				$.print( `${mouse.buttons} (${mouse.x}, ${mouse.y})` );

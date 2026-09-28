@@ -29,13 +29,13 @@ export function registerPress( pluginApi, helpers ) {
 
 	pluginApi.addScreenInitFunction( initPressData );
 
-	pluginApi.addCommand( "inpress", inpress, true, [] );
+	pluginApi.addCommand( "inPress", inPress, true, [] );
 	pluginApi.addCommand(
-		"onpress", onpress, true, [ "mode", "fn", "once", "hitBox", "customData" ]
+		"onPress", onPress, true, [ "mode", "fn", "once", "hitBox", "customData" ]
 	);
-	pluginApi.addCommand( "offpress", offpress, true, [ "mode", "fn" ] );
-	pluginApi.addCommand( "onclick", onclick, true, [ "fn", "once", "hitBox", "customData" ] );
-	pluginApi.addCommand( "offclick", offclick, true, [ "fn" ] );
+	pluginApi.addCommand( "offPress", offPress, true, [ "mode", "fn" ] );
+	pluginApi.addCommand( "onClick", onClick, true, [ "fn", "once", "hitBox", "customData" ] );
+	pluginApi.addCommand( "offClick", offClick, true, [ "fn" ] );
 
 	function initPressData( screenData ) {
 		screenData.onPressEventListeners = {
@@ -54,14 +54,14 @@ export function registerPress( pluginApi, helpers ) {
 	 * @param {Object} screenData - Screen state.
 	 * @returns {Object}
 	 */
-	function inpress( screenData ) {
-		g_target.validatePointerTarget( screenData, "inpress" );
+	function inPress( screenData ) {
+		g_target.validatePointerTarget( screenData, "inPress" );
 		g_mouse.startMouseInternal( screenData );
 		g_touch.startTouchInternal( screenData );
 		if( screenData.lastEvent === "touch" ) {
 			return getTouchPress( screenData );
 		} else {
-			return screenData.api.inmouse();
+			return screenData.api.inMouse();
 		}
 	}
 
@@ -72,8 +72,8 @@ export function registerPress( pluginApi, helpers ) {
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function onpress( screenData, options ) {
-		g_target.validatePointerTarget( screenData, "onpress" );
+	function onPress( screenData, options ) {
+		g_target.validatePointerTarget( screenData, "onPress" );
 		const mode = options.mode;
 		const fn = options.fn;
 		const once = options.once;
@@ -81,7 +81,7 @@ export function registerPress( pluginApi, helpers ) {
 		const customData = options.customData;
 
 		onevent(
-			mode, fn, once, hitBox, [ "down", "up", "move" ], "onpress",
+			mode, fn, once, hitBox, [ "down", "up", "move" ], "onPress",
 			screenData.onPressEventListeners, null, null, customData
 		);
 		g_mouse.startMouseInternal( screenData );
@@ -95,12 +95,12 @@ export function registerPress( pluginApi, helpers ) {
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function offpress( screenData, options ) {
+	function offPress( screenData, options ) {
 		const mode = options.mode;
 		const fn = options.fn;
 
 		offevent(
-			mode, fn, [ "down", "up", "move" ], "offpress",
+			mode, fn, [ "down", "up", "move" ], "offPress",
 			screenData.onPressEventListeners
 		);
 	}
@@ -112,8 +112,8 @@ export function registerPress( pluginApi, helpers ) {
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function onclick( screenData, options ) {
-		g_target.validatePointerTarget( screenData, "onclick" );
+	function onClick( screenData, options ) {
+		g_target.validatePointerTarget( screenData, "onClick" );
 		const fn = options.fn;
 		const once = options.once;
 		let hitBox = options.hitBox;
@@ -129,7 +129,7 @@ export function registerPress( pluginApi, helpers ) {
 		}
 
 		onevent(
-			"click", fn, once, hitBox, [ "click" ], "onclick",
+			"click", fn, once, hitBox, [ "click" ], "onClick",
 			screenData.onClickEventListeners, null, null, customData
 		);
 		g_mouse.startMouseInternal( screenData );
@@ -143,10 +143,10 @@ export function registerPress( pluginApi, helpers ) {
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function offclick( screenData, options ) {
+	function offClick( screenData, options ) {
 		const fn = options.fn;
 		offevent(
-			"click", fn, [ "click" ], "offclick",
+			"click", fn, [ "click" ], "offClick",
 			screenData.onClickEventListeners
 		);
 	}

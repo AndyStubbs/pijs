@@ -1,0 +1,77 @@
+title = "screen"
+category = "core"
+isScreen = false
+summary = "Creates a new screen (canvas) with specified dimensions and aspect ratio."
+description = """
+Creates a WebGL 2 screen, makes it the active drawing target, and returns its Screen API object. Call screen before any graphics commands. Drawing writes into a logical framebuffer at the screen's resolution; Pi.js then presents that framebuffer to the canvas.
+
+**aspect** uses `(width)(x|e|m)(height)`:
+
+- **x**: Exact pixel dimensions (e.g., "320x200")
+- **e**: Extend the logical area to fill the container while keeping the aspect ratio (e.g., "320e200")
+- **m**: Scale by integer multiples of the target resolution (e.g., "320m200")
+
+For offscreen screens, only exact pixel dimensions (x) are allowed. An offscreen screen can use an 
+existing screen as its parent to share that screen's WebGL context. This allows drawImage to use 
+the offscreen framebuffer directly for faster drawing. The parent controls rendering-context 
+affinity only and does not establish lifecycle ownership.
+
+
+Creating a screen makes it active. Pointer input requires an onscreen target, so after creating an offscreen buffer call setScreen on the visible screen or use visible.inMouse().
+"""
+example = """
+const parent = $.screen( { "aspect": "320x200" } );
+const offscreen = $.screen( {
+	"aspect": "160x100",
+	"isOffscreen": true,
+	"parent": parent
+} );
+
+$.cls( 1 );
+$.circle( 80, 50, 32, "red" );
+
+$.setScreen( parent );
+$.drawImage( offscreen, 80, 50 );
+"""
+
+[[parameters]]
+name = "aspect"
+type = "string"
+description = "Aspect ratio string in format (width)(x|e|m)(height), e.g., '300x200', '100e00', '300m200'."
+
+[[parameters]]
+name = "container"
+type = "string | HTMLElement"
+typeDesc = "*Many"
+description = "DOM element or element ID string to use as container. Defaults to document.body."
+optional = true
+
+[[parameters]]
+name = "isOffscreen"
+type = "boolean"
+description = "If true, creates an offscreen canvas that is not displayed. Requires exact pixel dimensions."
+optional = true
+
+[[parameters]]
+name = "resizeCallback"
+type = "function"
+signature = "( screenApi: Screen, fromSize: Size, toSize: Size ) => void"
+description = "Callback function called when screen is resized. Receives (screenApi, fromSize, toSize)."
+optional = true
+
+[[parameters]]
+name = "parent"
+type = "number | Screen"
+typeDesc = "*Many"
+description = "Existing screen ID or screen API object whose WebGL context the offscreen screen uses. Only valid when isOffscreen is true. Enables fast drawImage calls directly from the offscreen framebuffer and does not establish lifecycle ownership."
+optional = true
+
+[[parameters]]
+name = "noCss"
+type = "boolean"
+description = "If true, Pi.js does not write automatic canvas, container, html, or body styles. Supply canvas layout in your own CSS. The canvas is still appended and its size and WebGL resources are managed. Explicit background commands still apply requested styles. Logical x/e/m dimensions follow the container; display shader backing size follows the canvas CSS content size. Hidden hosts keep their last valid size and recover when visible."
+optional = true
+
+[[returns]]
+type = "Screen"
+description = "Screen API object with all graphics command and screen=true and id property."

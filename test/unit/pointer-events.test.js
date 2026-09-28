@@ -268,6 +268,22 @@ function harness() {
 	};
 }
 
+test( "pointer registers camelCase commands, and not the old names (I1, I16)", () => {
+	const h = harness();
+	const renames = {
+		"inmouse": "inMouse", "onmouse": "onMouse", "offmouse": "offMouse",
+		"intouch": "inTouch", "ontouch": "onTouch", "offtouch": "offTouch",
+		"inpress": "inPress", "onpress": "onPress", "offpress": "offPress",
+		"onclick": "onClick", "offclick": "offClick"
+	};
+	h.screen();
+	for( const [ oldName, newName ] of Object.entries( renames ) ) {
+		assert.equal( typeof h.$[ newName ], "function", newName );
+		assert.equal( h.$[ oldName ], undefined, oldName );
+		assert.throws( () => h.$[ oldName ]( "down", () => {} ), TypeError );
+	}
+} );
+
 test( "pointer dispatch snapshots exclude new listeners and once survives nested dispatch", () => {
 	const module = g_harness.loadModule( "plugins/pointer/shared-events.js" );
 	const helpers = module.createEventHelpers( { "utils": { "inRange": () => true } } );
@@ -275,7 +291,7 @@ test( "pointer dispatch snapshots exclude new listeners and once survives nested
 	const order = [];
 	const on = ( fn, once = false ) => helpers.onevent(
 		"move", fn, once, { "x": 0, "y": 0, "width": 8, "height": 8 },
-		[ "move" ], "onmouse", listeners, null, null, "custom"
+		[ "move" ], "onMouse", listeners, null, null, "custom"
 	);
 	const dispatch = () => helpers.triggerEventListeners( "move", { "x": 1, "y": 1 }, listeners );
 	on( ( data, custom ) => {
@@ -286,7 +302,7 @@ test( "pointer dispatch snapshots exclude new listeners and once survives nested
 	}, true );
 	dispatch();
 	assert.deepEqual( order, [ "once", "new" ] );
-	helpers.offevent( "move", null, [ "move" ], "offmouse", listeners );
+	helpers.offevent( "move", null, [ "move" ], "offMouse", listeners );
 	dispatch();
 	assert.equal( order.length, 2 );
 } );
@@ -296,15 +312,15 @@ test( "pointer clearing one mode keeps the handlers of the other modes (P1)", ()
 	const $ = h.$;
 	const log = [];
 	const other = () => {};
-	$.onmouse( "down", () => log.push( "mouse down" ) );
-	$.onmouse( "move", other );
-	$.offmouse( "move" );
-	$.ontouch( "start", () => log.push( "touch start" ) );
-	$.ontouch( "move", other );
-	$.offtouch( "move" );
-	$.onpress( "down", () => log.push( "press down" ) );
-	$.onpress( "up", other );
-	$.offpress( "up" );
+	$.onMouse( "down", () => log.push( "mouse down" ) );
+	$.onMouse( "move", other );
+	$.offMouse( "move" );
+	$.onTouch( "start", () => log.push( "touch start" ) );
+	$.onTouch( "move", other );
+	$.offTouch( "move" );
+	$.onPress( "down", () => log.push( "press down" ) );
+	$.onPress( "up", other );
+	$.offPress( "up" );
 	h.click( 10, 10 );
 	h.tap( 10, 10 );
 	assert.deepEqual( log, [ "mouse down", "press down", "touch start", "press down" ] );
@@ -315,14 +331,14 @@ test( "pointer removing a function that was never added keeps registered handler
 	const $ = h.$;
 	const log = [];
 	const other = () => {};
-	$.onmouse( "down", () => log.push( "mouse down" ) );
-	$.offmouse( "down", other );
-	$.ontouch( { "mode": "start", "fn": () => log.push( "touch start" ) } );
-	$.offtouch( { "mode": "start", "fn": other } );
-	$.onpress( "up", () => log.push( "press up" ) );
-	$.offpress( "up", other );
-	$.onclick( () => log.push( "click" ) );
-	$.offclick( other );
+	$.onMouse( "down", () => log.push( "mouse down" ) );
+	$.offMouse( "down", other );
+	$.onTouch( { "mode": "start", "fn": () => log.push( "touch start" ) } );
+	$.offTouch( { "mode": "start", "fn": other } );
+	$.onPress( "up", () => log.push( "press up" ) );
+	$.offPress( "up", other );
+	$.onClick( () => log.push( "click" ) );
+	$.offClick( other );
 	h.click( 20, 20 );
 	h.tap( 20, 20 );
 	assert.deepEqual( log, [
@@ -331,8 +347,8 @@ test( "pointer removing a function that was never added keeps registered handler
 
 	// Removing every registration of each type still stops only that type
 	log.length = 0;
-	$.offmouse( "down" );
-	$.offclick();
+	$.offMouse( "down" );
+	$.offClick();
 	h.click( 20, 20 );
 	assert.deepEqual( log, [ "press up" ] );
 } );
@@ -342,22 +358,22 @@ test( "pointer handlers removed during a dispatch do not run later in it (P7)", 
 	const $ = h.$;
 	const log = [];
 	const removed = () => log.push( "removed" );
-	$.onmouse( "down", () => {
+	$.onMouse( "down", () => {
 		log.push( "first" );
-		$.offmouse( "down", removed );
+		$.offMouse( "down", removed );
 	} );
-	$.onmouse( "down", removed );
+	$.onMouse( "down", removed );
 	h.click( 10, 10 );
 	assert.deepEqual( log, [ "first" ] );
 
 	// A clear during a dispatch skips the rest of the dispatch, and handlers added in it wait
 	log.length = 0;
-	$.onpress( "down", () => {
+	$.onPress( "down", () => {
 		log.push( "press" );
 		h.clearEvents( "press" );
-		$.onpress( "down", () => log.push( "added" ) );
+		$.onPress( "down", () => log.push( "added" ) );
 	} );
-	$.onpress( "down", () => log.push( "cleared" ) );
+	$.onPress( "down", () => log.push( "cleared" ) );
 	h.click( 10, 10 );
 	assert.deepEqual( log, [ "first", "press" ] );
 	h.click( 10, 10 );
@@ -371,8 +387,8 @@ test( "pointer once removes only its own registration (P7)", () => {
 	const fn = () => { calls += 1; };
 
 	// Registering a function twice registers it twice until Pointer 2.4 (I4)
-	$.onmouse( "down", fn, true );
-	$.onmouse( "down", fn );
+	$.onMouse( "down", fn, true );
+	$.onMouse( "down", fn );
 	h.click( 10, 10 );
 	h.click( 10, 10 );
 	assert.equal( calls, 3 );
@@ -380,7 +396,7 @@ test( "pointer once removes only its own registration (P7)", () => {
 	// A once click is spent by the click it fires for, not by the press that arms it
 	let clicks = 0;
 	const box = { "x": 0, "y": 0, "width": 20, "height": 20 };
-	$.onclick( () => { clicks += 1; }, true, box );
+	$.onClick( () => { clicks += 1; }, true, box );
 	h.click( 10, 10 );
 	h.click( 10, 10 );
 	assert.equal( clicks, 1 );
@@ -388,7 +404,7 @@ test( "pointer once removes only its own registration (P7)", () => {
 	// A once touch handler that starts a nested dispatch is not called again by it
 	let touches = 0;
 	h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
-	$.ontouch( "move", () => {
+	$.onTouch( "move", () => {
 		touches += 1;
 		h.touch( "touchmove", [ { "id": 1, "x": 12, "y": 12 } ] );
 	}, true );
@@ -400,28 +416,28 @@ test( "pointer handlers that throw are reported and do not stop the event (P6)",
 	const h = harness();
 	const $ = h.$;
 	const log = [];
-	$.onmouse( "down", () => { throw new Error( "mouse" ); } );
-	$.onmouse( "down", () => log.push( "mouse down" ) );
-	$.onpress( "down", () => { throw new Error( "press" ); } );
-	$.onpress( "down", () => log.push( "press down" ) );
-	$.onclick( () => { throw new Error( "click" ); } );
-	$.onclick( () => log.push( "click" ) );
+	$.onMouse( "down", () => { throw new Error( "mouse" ); } );
+	$.onMouse( "down", () => log.push( "mouse down" ) );
+	$.onPress( "down", () => { throw new Error( "press" ); } );
+	$.onPress( "down", () => log.push( "press down" ) );
+	$.onClick( () => { throw new Error( "click" ); } );
+	$.onClick( () => log.push( "click" ) );
 	h.click( 10, 10 );
 	assert.deepEqual( log, [ "mouse down", "press down", "click" ] );
 
 	// The touch start is prevented before its handlers run, so a throw cannot skip it
 	log.length = 0;
-	$.ontouch( "start", () => { throw new Error( "touch" ); } );
-	$.ontouch( "start", () => log.push( "touch start" ) );
+	$.onTouch( "start", () => { throw new Error( "touch" ); } );
+	$.onTouch( "start", () => log.push( "touch start" ) );
 	const event = h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
 	assert.equal( event.defaultPrevented, true );
 	assert.deepEqual( log, [ "touch start", "press down" ] );
 	assert.deepEqual( h.errors.map( args => [ args[ 0 ], args[ 1 ].message ] ), [
-		[ "onmouse: Handler for \"down\" failed:", "mouse" ],
-		[ "onpress: Handler for \"down\" failed:", "press" ],
-		[ "onclick: Handler for \"click\" failed:", "click" ],
-		[ "ontouch: Handler for \"start\" failed:", "touch" ],
-		[ "onpress: Handler for \"down\" failed:", "press" ]
+		[ "onMouse: Handler for \"down\" failed:", "mouse" ],
+		[ "onPress: Handler for \"down\" failed:", "press" ],
+		[ "onClick: Handler for \"click\" failed:", "click" ],
+		[ "onTouch: Handler for \"start\" failed:", "touch" ],
+		[ "onPress: Handler for \"down\" failed:", "press" ]
 	] );
 } );
 
@@ -446,8 +462,8 @@ test( "pointer touch end reports the touch that lifted, and hit boxes test it (P
 	const $ = h.$;
 	const ends = [];
 	let hits = 0;
-	$.ontouch( "end", data => ends.push( touchSummary( data ) ) );
-	$.ontouch( "end", () => { hits += 1; }, false, { "x": 0, "y": 0, "width": 20, "height": 20 } );
+	$.onTouch( "end", data => ends.push( touchSummary( data ) ) );
+	$.onTouch( "end", () => { hits += 1; }, false, { "x": 0, "y": 0, "width": 20, "height": 20 } );
 
 	// One finger lifts inside the hit box, where it moved last
 	h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
@@ -457,7 +473,7 @@ test( "pointer touch end reports the touch that lifted, and hit boxes test it (P
 		"id": 1, "x": 12, "y": 12, "lastX": 12, "lastY": 12, "action": "end", "cancelled": false
 	} ] ] );
 	assert.equal( hits, 1 );
-	assert.equal( $.intouch().length, 0 );
+	assert.equal( $.inTouch().length, 0 );
 
 	// A second finger lifts outside the box while the first stays down inside it
 	const first = { "id": 1, "x": 10, "y": 10 };
@@ -469,7 +485,7 @@ test( "pointer touch end reports the touch that lifted, and hit boxes test it (P
 		"id": 2, "x": 80, "y": 80, "lastX": 80, "lastY": 80, "action": "end", "cancelled": false
 	} ] );
 	assert.equal( hits, 1 );
-	assert.deepEqual( touchSummary( $.intouch() ), [ {
+	assert.deepEqual( touchSummary( $.inTouch() ), [ {
 		"id": 1, "x": 10, "y": 10, "lastX": null, "lastY": null, "action": "start",
 		"cancelled": false
 	} ] );
@@ -480,8 +496,8 @@ test( "pointer touches keep their own actions and handlers get the changed touch
 	const $ = h.$;
 	const starts = [];
 	const moves = [];
-	$.ontouch( "start", data => starts.push( Array.from( data, touch => touch.id ) ) );
-	$.ontouch( "move", data => moves.push( touchSummary( data ) ) );
+	$.onTouch( "start", data => starts.push( Array.from( data, touch => touch.id ) ) );
+	$.onTouch( "move", data => moves.push( touchSummary( data ) ) );
 	const first = { "id": 1, "x": 10, "y": 10 };
 	const second = { "id": 2, "x": 50, "y": 50 };
 	h.touch( "touchstart", [ first ], [ first ] );
@@ -493,13 +509,13 @@ test( "pointer touches keep their own actions and handlers get the changed touch
 	assert.deepEqual( moves, [ [ {
 		"id": 2, "x": 55, "y": 54, "lastX": 50, "lastY": 50, "action": "move", "cancelled": false
 	} ] ] );
-	assert.deepEqual( Array.from( $.intouch(), touch => [ touch.id, touch.action ] ), [
+	assert.deepEqual( Array.from( $.inTouch(), touch => [ touch.id, touch.action ] ), [
 		[ 1, "start" ], [ 2, "move" ]
 	] );
 
 	// Polled and handler data are copies of the tracked state
-	$.intouch()[ 0 ].x = 99;
-	assert.equal( $.intouch()[ 0 ].x, 10 );
+	$.inTouch()[ 0 ].x = 99;
+	assert.equal( $.inTouch()[ 0 ].x, 10 );
 } );
 
 test( "pointer touchcancel releases with cancelled and never clicks (P4)", () => {
@@ -508,9 +524,9 @@ test( "pointer touchcancel releases with cancelled and never clicks (P4)", () =>
 	const ends = [];
 	const pressUps = [];
 	let clicks = 0;
-	$.ontouch( "end", data => ends.push( touchSummary( data ) ) );
-	$.onpress( "up", data => pressUps.push( touchSummary( data ) ) );
-	$.onclick( () => { clicks += 1; }, false, { "x": 0, "y": 0, "width": 20, "height": 20 } );
+	$.onTouch( "end", data => ends.push( touchSummary( data ) ) );
+	$.onPress( "up", data => pressUps.push( touchSummary( data ) ) );
+	$.onClick( () => { clicks += 1; }, false, { "x": 0, "y": 0, "width": 20, "height": 20 } );
 	const item = { "id": 1, "x": 10, "y": 10 };
 	h.touch( "touchstart", [ item ] );
 	h.touch( "touchcancel", [], [ item ] );
@@ -521,7 +537,7 @@ test( "pointer touchcancel releases with cancelled and never clicks (P4)", () =>
 		"id": 1, "x": 10, "y": 10, "lastX": 10, "lastY": 10, "action": "up", "cancelled": true
 	} ] );
 	assert.equal( clicks, 0 );
-	assert.equal( $.intouch().length, 0 );
+	assert.equal( $.inTouch().length, 0 );
 
 	// A touch that starts outside the box and ends inside it does not click
 	const outside = { "id": 2, "x": 50, "y": 50 };
@@ -533,7 +549,7 @@ test( "pointer touchcancel releases with cancelled and never clicks (P4)", () =>
 	// A tap still clicks, and mouse data carries the field as well
 	h.tap( 10, 10 );
 	assert.equal( clicks, 1 );
-	assert.equal( $.inmouse().cancelled, false );
+	assert.equal( $.inMouse().cancelled, false );
 } );
 
 test( "pointer press follows the primary touch, and each touch clicks on its own (P3)", () => {
@@ -541,10 +557,10 @@ test( "pointer press follows the primary touch, and each touch clicks on its own
 	const $ = h.$;
 	const log = [];
 	const clicks = [];
-	$.onpress( "down", data => log.push( [ "down", data.id, data.x, data.buttons ] ) );
-	$.onpress( "move", data => log.push( [ "move", data.id, data.x, data.buttons ] ) );
-	$.onpress( "up", data => log.push( [ "up", data.id, data.x, data.buttons, data.action ] ) );
-	$.onclick( data => clicks.push( [ data.id, data.x, data.action, data.buttons ] ), false,
+	$.onPress( "down", data => log.push( [ "down", data.id, data.x, data.buttons ] ) );
+	$.onPress( "move", data => log.push( [ "move", data.id, data.x, data.buttons ] ) );
+	$.onPress( "up", data => log.push( [ "up", data.id, data.x, data.buttons, data.action ] ) );
+	$.onClick( data => clicks.push( [ data.id, data.x, data.action, data.buttons ] ), false,
 		{ "x": 70, "y": 70, "width": 20, "height": 20 } );
 	const first = { "id": 1, "x": 10, "y": 10 };
 	const second = { "id": 2, "x": 80, "y": 80 };
@@ -552,7 +568,7 @@ test( "pointer press follows the primary touch, and each touch clicks on its own
 	h.touch( "touchstart", [ first ], [ first ] );
 	h.touch( "touchstart", [ first, second ], [ second ] );
 	h.touch( "touchmove", [ first, moved ], [ moved ] );
-	const held = $.inpress();
+	const held = $.inPress();
 	assert.deepEqual( [ held.id, held.x, held.buttons ], [ 1, 10, 1 ] );
 	assert.deepEqual( Array.from( held.touches, touch => touch.id ), [ 1, 2 ] );
 	h.touch( "touchend", [ first ], [ moved ] );
@@ -560,7 +576,7 @@ test( "pointer press follows the primary touch, and each touch clicks on its own
 	assert.deepEqual( clicks, [ [ 2, 82, "up", 0 ] ] );
 	h.touch( "touchend", [], [ first ] );
 	assert.deepEqual( log, [ [ "down", 1, 10, 1 ], [ "up", 1, 10, 0, "up" ] ] );
-	assert.equal( $.inpress().buttons, 0 );
+	assert.equal( $.inPress().buttons, 0 );
 
 	// After the primary touch lifts, no touch is primary until every touch is up
 	log.length = 0;
@@ -582,8 +598,8 @@ test( "pointer clicks need the primary mouse button (P5)", () => {
 	const $ = h.$;
 	let clicks = 0;
 	const presses = [];
-	$.onclick( () => { clicks += 1; } );
-	$.onpress( "down", data => presses.push( data.buttons ) );
+	$.onClick( () => { clicks += 1; } );
+	$.onPress( "down", data => presses.push( data.buttons ) );
 	for( const [ button, buttons ] of [ [ 2, 2 ], [ 1, 4 ] ] ) {
 		h.mouse( "mousedown", 30, 30, buttons, button );
 		h.mouse( "mouseup", 30, 30, 0, button );
@@ -598,7 +614,7 @@ test( "pointer a click needs the down and the release inside its box (P4)", () =
 	const h = harness();
 	const $ = h.$;
 	let clicks = 0;
-	$.onclick( () => { clicks += 1; }, false, { "x": 0, "y": 0, "width": 20, "height": 20 } );
+	$.onClick( () => { clicks += 1; }, false, { "x": 0, "y": 0, "width": 20, "height": 20 } );
 
 	// Down inside and up outside, then down outside and up inside
 	h.mouse( "mousedown", 10, 10, 1 );
@@ -635,15 +651,15 @@ test( "pointer a mouse release outside the canvas is released once (P8)", () => 
 	const h = harness();
 	const $ = h.$;
 	const log = [];
-	$.onmouse( "up", data => log.push( [ "mouse up", data.x, data.buttons, data.cancelled ] ) );
-	$.onpress( "up", data => log.push( [ "press up", data.x, data.buttons ] ) );
+	$.onMouse( "up", data => log.push( [ "mouse up", data.x, data.buttons, data.cancelled ] ) );
+	$.onPress( "up", data => log.push( [ "press up", data.x, data.buttons ] ) );
 	assert.equal( hasWindowMouseUp( h ), false );
 	h.mouse( "mousedown", 50, 50, 1 );
 	assert.equal( hasWindowMouseUp( h ), true );
 	h.mouse( "mousemove", 99, 50, 1 );
 	h.mouseOutside( "mouseup", 150, 50 );
 	assert.deepEqual( log, [ [ "mouse up", 150, 0, false ], [ "press up", 150, 0 ] ] );
-	assert.equal( $.inmouse().buttons, 0 );
+	assert.equal( $.inMouse().buttons, 0 );
 	assert.equal( hasWindowMouseUp( h ), false );
 
 	// A release for a button that is not held is ignored, on the canvas or outside it
@@ -652,22 +668,22 @@ test( "pointer a mouse release outside the canvas is released once (P8)", () => 
 	h.mouse( "mousedown", 50, 50, 1 );
 	h.mouse( "mouseup", 50, 50, 1, 2 );
 	assert.equal( log.length, 2 );
-	assert.equal( $.inmouse().buttons, 1 );
+	assert.equal( $.inMouse().buttons, 1 );
 } );
 
 test( "pointer blur leaves held input alone (P9)", () => {
 	const h = harness();
 	const $ = h.$;
 	const log = [];
-	$.onmouse( "up", () => log.push( "mouse up" ) );
-	$.ontouch( "end", () => log.push( "touch end" ) );
+	$.onMouse( "up", () => log.push( "mouse up" ) );
+	$.onTouch( "end", () => log.push( "touch end" ) );
 	h.mouse( "mousedown", 50, 50, 1 );
 	h.touch( "touchstart", [ { "id": 3, "x": 40, "y": 40 } ] );
 	h.window.dispatchEvent( { "type": "blur" } );
 	assert.deepEqual( log, [] );
-	assert.equal( $.inmouse().buttons, 1 );
-	assert.equal( $.intouch().length, 1 );
-	assert.equal( $.inpress().buttons, 1 );
+	assert.equal( $.inMouse().buttons, 1 );
+	assert.equal( $.inTouch().length, 1 );
+	assert.equal( $.inPress().buttons, 1 );
 	assert.equal( h.window.listeners.some( listener => listener.type === "blur" ), false );
 } );
 
@@ -676,10 +692,10 @@ test( "pointer a hidden page releases held input with cancelled (P9)", () => {
 	const $ = h.$;
 	const log = [];
 	let clicks = 0;
-	$.onmouse( "up", data => log.push( [ "mouse up", data.buttons, data.cancelled ] ) );
-	$.ontouch( "end", data => log.push( [ "touch end", data[ 0 ].id, data[ 0 ].cancelled ] ) );
-	$.onpress( "up", data => log.push( [ "press up", data.type, data.cancelled ] ) );
-	$.onclick( () => { clicks += 1; } );
+	$.onMouse( "up", data => log.push( [ "mouse up", data.buttons, data.cancelled ] ) );
+	$.onTouch( "end", data => log.push( [ "touch end", data[ 0 ].id, data[ 0 ].cancelled ] ) );
+	$.onPress( "up", data => log.push( [ "press up", data.type, data.cancelled ] ) );
+	$.onClick( () => { clicks += 1; } );
 	h.mouse( "mousedown", 50, 50, 1 );
 	h.touch( "touchstart", [ { "id": 3, "x": 40, "y": 40 } ] );
 	h.hide();
@@ -687,8 +703,8 @@ test( "pointer a hidden page releases held input with cancelled (P9)", () => {
 		[ "mouse up", 0, true ], [ "press up", "mouse", true ],
 		[ "touch end", 3, true ], [ "press up", "touch", true ]
 	] );
-	assert.deepEqual( [ $.inmouse().buttons, $.inmouse().cancelled ], [ 0, true ] );
-	assert.equal( $.intouch().length, 0 );
+	assert.deepEqual( [ $.inMouse().buttons, $.inMouse().cancelled ], [ 0, true ] );
+	assert.equal( $.inTouch().length, 0 );
 	assert.equal( hasWindowMouseUp( h ), false );
 
 	// The late real releases, a second hide, and showing the page release nothing again
@@ -705,23 +721,23 @@ test( "pointer stop commands release held input with cancelled (P10)", () => {
 	const h = harness();
 	const $ = h.$;
 	const log = [];
-	$.onmouse( "up", data => log.push( [ "mouse up", data.cancelled ] ) );
-	$.ontouch( "end", data => log.push( [ "touch end", data[ 0 ].cancelled ] ) );
+	$.onMouse( "up", data => log.push( [ "mouse up", data.cancelled ] ) );
+	$.onTouch( "end", data => log.push( [ "touch end", data[ 0 ].cancelled ] ) );
 	h.mouse( "mousedown", 50, 50, 1 );
 	$.stopMouse();
 	assert.deepEqual( log, [ [ "mouse up", true ] ] );
-	assert.equal( $.inmouse().buttons, 0 );
+	assert.equal( $.inMouse().buttons, 0 );
 	assert.equal( hasWindowMouseUp( h ), false );
 	h.touch( "touchstart", [ { "id": 4, "x": 40, "y": 40 } ] );
 	$.stopTouch();
 	assert.deepEqual( log[ 1 ], [ "touch end", true ] );
-	assert.equal( $.intouch().length, 0 );
+	assert.equal( $.inTouch().length, 0 );
 
 	// Stopping again finds nothing held, and registration does not restart tracking
 	$.stopMouse();
 	$.stopTouch();
-	$.onmouse( "down", () => log.push( "down" ) );
-	$.ontouch( "start", () => log.push( "start" ) );
+	$.onMouse( "down", () => log.push( "down" ) );
+	$.onTouch( "start", () => log.push( "start" ) );
 	h.mouse( "mousedown", 50, 50, 1 );
 	h.touch( "touchstart", [ { "id": 5, "x": 40, "y": 40 } ] );
 	assert.equal( log.length, 2 );
@@ -739,34 +755,34 @@ test( "pointer removing a screen with input held calls none of its handlers", ()
 	const $ = h.$;
 	const other = h.screen();
 	const log = [];
-	other.api.onmouse( "up", () => log.push( "mouse up" ) );
-	other.api.ontouch( "end", () => log.push( "touch end" ) );
+	other.api.onMouse( "up", () => log.push( "mouse up" ) );
+	other.api.onTouch( "end", () => log.push( "touch end" ) );
 	h.mouse( "mousedown", 5, 5, 1, 0, other );
 	h.touch( "touchstart", [ { "id": 1, "x": 5, "y": 5 } ], undefined, other );
 	h.removeScreen( other );
 	assert.deepEqual( log, [] );
 	assert.equal( hasWindowMouseUp( h ), false );
-	assert.equal( $.inmouse().buttons, 0 );
+	assert.equal( $.inMouse().buttons, 0 );
 } );
 
 test( "pointer presses on the border are ignored, and moves report true positions (P11)", () => {
 	const h = harness();
 	const $ = h.$;
 	const log = [];
-	$.onmouse( "down", data => log.push( [ "mouse down", data.x, data.y ] ) );
-	$.onmouse( "move", data => log.push( [ "mouse move", data.x, data.y, data.buttons ] ) );
-	$.onmouse( "up", data => log.push( [ "mouse up", data.x, data.y ] ) );
-	$.ontouch( "start", data => log.push( [ "touch start", data[ 0 ].x ] ) );
-	$.ontouch( "move", data => log.push( [ "touch move", data[ 0 ].x ] ) );
-	$.ontouch( "end", data => log.push( [ "touch end", data[ 0 ].x ] ) );
-	$.onpress( "down", data => log.push( [ "press down", data.x ] ) );
+	$.onMouse( "down", data => log.push( [ "mouse down", data.x, data.y ] ) );
+	$.onMouse( "move", data => log.push( [ "mouse move", data.x, data.y, data.buttons ] ) );
+	$.onMouse( "up", data => log.push( [ "mouse up", data.x, data.y ] ) );
+	$.onTouch( "start", data => log.push( [ "touch start", data[ 0 ].x ] ) );
+	$.onTouch( "move", data => log.push( [ "touch move", data[ 0 ].x ] ) );
+	$.onTouch( "end", data => log.push( [ "touch end", data[ 0 ].x ] ) );
+	$.onPress( "down", data => log.push( [ "press down", data.x ] ) );
 
 	// A mouse press on the border, dragged onto the screen, is never held
 	h.mouse( "mousedown", -2, -2, 1 );
 	h.mouse( "mousemove", 10, 10, 1 );
 	h.mouse( "mouseup", 10, 10 );
 	assert.deepEqual( log, [ [ "mouse move", 10, 10, 0 ] ] );
-	assert.equal( $.inmouse().buttons, 0 );
+	assert.equal( $.inMouse().buttons, 0 );
 
 	// A press on the screen reports its moves and release over the border where they happen
 	log.length = 0;
@@ -784,7 +800,7 @@ test( "pointer presses on the border are ignored, and moves report true position
 	h.touch( "touchmove", [ { "id": 1, "x": 90, "y": 50 } ] );
 	h.touch( "touchend", [], [ { "id": 1, "x": 90, "y": 50 } ] );
 	assert.deepEqual( log, [] );
-	assert.equal( $.intouch().length, 0 );
+	assert.equal( $.inTouch().length, 0 );
 	h.touch( "touchstart", [ { "id": 2, "x": 99, "y": 50 } ] );
 	h.touch( "touchmove", [ { "id": 2, "x": 103, "y": 50 } ] );
 	h.touch( "touchend", [], [ { "id": 2, "x": 104, "y": 50 } ] );
@@ -797,7 +813,7 @@ test( "pointer hit boxes take finite positions and reject negative sizes (P13)",
 	const h = harness();
 	const $ = h.$;
 	let clicks = 0;
-	$.onclick( () => { clicks += 1; }, false, { "x": 9.5, "y": 9.5, "width": 1.5, "height": 1 } );
+	$.onClick( () => { clicks += 1; }, false, { "x": 9.5, "y": 9.5, "width": 1.5, "height": 1 } );
 	h.click( 10, 10 );
 	h.click( 11, 10 );
 	assert.equal( clicks, 1 );
@@ -808,12 +824,12 @@ test( "pointer hit boxes take finite positions and reject negative sizes (P13)",
 		[ { "x": 0, "y": 0, "width": Infinity, "height": 5 }, Error ],
 		[ { "x": "0", "y": 0, "width": 5, "height": 5 }, Error ]
 	] ) {
-		assert.throws( () => $.onmouse( "down", () => {}, false, box ), error => {
+		assert.throws( () => $.onMouse( "down", () => {}, false, box ), error => {
 			return error.name === type.name && error.code === "INVALID_HITBOX" &&
-				error.message.startsWith( "onmouse: hitBox" );
+				error.message.startsWith( "onMouse: hitBox" );
 		} );
 	}
-	$.onpress( "down", () => {}, false, { "x": -5, "y": -5, "width": 0, "height": 0 } );
+	$.onPress( "down", () => {}, false, { "x": -5, "y": -5, "width": 0, "height": 0 } );
 } );
 
 test( "pointer adds its window and document listeners only when tracking starts (B12)", () => {
@@ -822,35 +838,35 @@ test( "pointer adds its window and document listeners only when tracking starts 
 	const types = target => Array.from( target.listeners, listener => listener.type ).sort();
 	assert.deepEqual( types( h.window ), [] );
 	assert.deepEqual( types( h.document ), [] );
-	$.inmouse();
+	$.inMouse();
 	h.screen().api.startMouse();
 	assert.deepEqual( types( h.document ), [ "visibilitychange" ] );
-	$.intouch();
+	$.inTouch();
 	$.stopTouch();
 	$.startTouch();
 	assert.deepEqual( types( h.document ), [ "visibilitychange", "visibilitychange" ] );
 	assert.deepEqual( types( h.window ), [] );
 } );
 
-test( "pointer offtouch removes the given function, or every handler of the mode", () => {
+test( "pointer offTouch removes the given function, or every handler of the mode", () => {
 	const h = harness();
 	const $ = h.$;
 	const log = [];
 	const first = () => log.push( "first" );
 	const second = () => log.push( "second" );
 	const moved = () => log.push( "moved" );
-	$.ontouch( "start", first );
-	$.ontouch( "start", second );
-	$.ontouch( "move", moved );
-	$.offtouch( "start", first );
+	$.onTouch( "start", first );
+	$.onTouch( "start", second );
+	$.onTouch( "move", moved );
+	$.offTouch( "start", first );
 	h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 } ] );
 	h.touch( "touchmove", [ { "id": 1, "x": 11, "y": 10 } ] );
 	assert.deepEqual( log, [ "second", "moved" ] );
 
 	// Without a function, the mode is cleared in both forms; other modes stay
 	log.length = 0;
-	$.offtouch( { "mode": "start" } );
-	$.offtouch( "end", null );
+	$.offTouch( { "mode": "start" } );
+	$.offTouch( "end", null );
 	h.touch( "touchstart", [ { "id": 1, "x": 10, "y": 10 }, { "id": 2, "x": 20, "y": 20 } ], [
 		{ "id": 2, "x": 20, "y": 20 }
 	] );
@@ -858,7 +874,7 @@ test( "pointer offtouch removes the given function, or every handler of the mode
 	assert.deepEqual( log, [ "moved" ] );
 } );
 
-test( "pointer offpress and offclick remove only the given function", () => {
+test( "pointer offPress and offClick remove only the given function", () => {
 	const h = harness();
 	const $ = h.$;
 	const log = [];
@@ -866,21 +882,21 @@ test( "pointer offpress and offclick remove only the given function", () => {
 	const pressB = () => log.push( "press b" );
 	const clickA = () => log.push( "click a" );
 	const clickB = () => log.push( "click b" );
-	$.onpress( "down", pressA );
-	$.onpress( "down", pressB );
-	$.onclick( clickA );
-	$.onclick( clickB );
-	$.offpress( "down", pressA );
-	$.offclick( clickA );
+	$.onPress( "down", pressA );
+	$.onPress( "down", pressB );
+	$.onClick( clickA );
+	$.onClick( clickB );
+	$.offPress( "down", pressA );
+	$.offClick( clickA );
 	h.click( 10, 10 );
 	h.tap( 10, 10 );
 	assert.deepEqual( log, [ "press b", "click b", "press b", "click b" ] );
 
-	// offclick() removes every click handler; new ones work afterward
+	// offClick() removes every click handler; new ones work afterward
 	log.length = 0;
-	$.offclick();
+	$.offClick();
 	h.click( 10, 10 );
-	$.onclick( clickA );
+	$.onClick( clickA );
 	h.click( 10, 10 );
 	assert.deepEqual( log, [ "press b", "press b", "click a" ] );
 } );

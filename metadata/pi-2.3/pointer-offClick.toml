@@ -1,4 +1,4 @@
-title = "offclick"
+title = "offClick"
 category = "pointer"
 isScreen = true
 plugin = "pointer"
@@ -14,17 +14,17 @@ const handler = ( clickData ) => {
 	$.setColor( 3 );
 	$.print( "Clicked!", true );
 };
-$.onclick( handler );
+$.onClick( handler );
 let countDown = 5;
 const interval = setInterval( () => {
 	$.setColor( 7 );
 	$.setPos( 0, 5 - countDown );
-	$.print( `Count down to offclick: ${countDown}` );
+	$.print( `Count down to offClick: ${countDown}` );
 	countDown -= 1;
 	if( countDown === -1 ) {
 		$.print( "Click is now disabled!" );
 		clearInterval( interval );
-		$.offclick( handler );
+		$.offClick( handler );
 	}
 }, 1000 );
 """

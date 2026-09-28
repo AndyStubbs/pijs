@@ -46,11 +46,11 @@ $.ready( function () {
 	$.rect( hitbox.x - 1, hitbox.y - 1, hitbox.width, hitbox.height );
 	$.setColor( 2 );
 	
-	$.onmouse( "down", function ( data ) {
+	$.onMouse( "down", function ( data ) {
 		$.pset( data.x, data.y );
 		isDrawing = true;
 	}, false, hitbox );
-	$.onmouse( "move", function ( data ) {
+	$.onMouse( "move", function ( data ) {
 		if( isDrawing ) {
 			data.x = clamp( data.x, hitbox.x, hitbox.x + hitbox.width - 2 );
 			data.y = clamp( data.y, hitbox.y, hitbox.y + hitbox.height - 2 );
@@ -59,7 +59,7 @@ $.ready( function () {
 			$.line( data.x, data.y, data.lastX, data.lastY );
 		}
 	}, false, hitbox );
-	$.onmouse( "up", function ( data ) {
+	$.onMouse( "up", function ( data ) {
 		isDrawing = false;
 	}, false );
 } );

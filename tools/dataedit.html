@@ -311,9 +311,9 @@ function stateDraw() {
 	}
 
 	function startDrawing() {
-		$.onmouse( "down", drawMouseDown );
-		$.onmouse( "move", drawMouseMove );
-		$.onmouse( "up", drawMouseUp );
+		$.onMouse( "down", drawMouseDown );
+		$.onMouse( "move", drawMouseMove );
+		$.onMouse( "up", drawMouseUp );
 		$.onKey( "ArrowLeft", "down", shiftLeft );
 		$.onKey( "ArrowUp", "down", shiftUp );
 		$.onKey( "ArrowRight", "down", shiftRight );
@@ -321,9 +321,9 @@ function stateDraw() {
 	}
 
 	function stopDrawing() {
-		$.offmouse( "down", drawMouseDown );
-		$.offmouse( "move", drawMouseMove );
-		$.offmouse( "up", drawMouseUp );
+		$.offMouse( "down", drawMouseDown );
+		$.offMouse( "move", drawMouseMove );
+		$.offMouse( "up", drawMouseUp );
 		$.offKey( "ArrowLeft", "down", shiftLeft );
 		$.offKey( "ArrowUp", "down", shiftUp );
 		$.offKey( "ArrowRight", "down", shiftRight );
@@ -515,7 +515,7 @@ function stateColor() {
 		}
 	}
 
-	$.onmouse( "down", mouseDown, false, hitBox );
+	$.onMouse( "down", mouseDown, false, hitBox );
 
 	function mouseDown( mouse ) {
 		let c = -1;
@@ -539,7 +539,7 @@ function stateColor() {
 	}
 
 	function resetInput() {
-		$.offmouse( "down", mouseDown );
+		$.offMouse( "down", mouseDown );
 	}
 }
 
@@ -689,8 +689,8 @@ function statePaletteColor() {
 		}
 	}
 
-	$.onmouse( "move", getPickColor, false, hitBox );
-	$.onmouse( "up", setPickColor, true );
+	$.onMouse( "move", getPickColor, false, hitBox );
+	$.onMouse( "up", setPickColor, true );
 
 	function getPickColor( mouse ) {
 		if( mouse.buttons > 0 ) {
@@ -705,13 +705,13 @@ function statePaletteColor() {
 			$.setPalColor( g_color, color );
 			saveState();
 		}
-		$.offmouse( "move", getPickColor );
+		$.offMouse( "move", getPickColor );
 		stateDraw();
 	}
 
 	function clearInput() {
-		$.offmouse( "move", getPickColor );
-		$.offmouse( "up", setPickColor );
+		$.offMouse( "move", getPickColor );
+		$.offMouse( "up", setPickColor );
 	}
 
 	function generateColor( x, y, xRange, yRange ) {

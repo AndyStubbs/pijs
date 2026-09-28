@@ -1,4 +1,4 @@
-title = "ontouch"
+title = "onTouch"
 category = "pointer"
 isScreen = true
 plugin = "pointer"
@@ -6,7 +6,7 @@ summary = "Registers a callback function for touch events."
 description = """
 Registers a callback that runs when a touch event occurs, with the touches the event changed and
 the optional custom data: 'start' receives the touches that started, 'move' the touches that moved,
-and 'end' the touches that ended, at the position where they lifted. Use intouch() for every touch
+and 'end' the touches that ended, at the position where they lifted. Use inTouch() for every touch
 still down.
 
 With a hitBox, the callback receives only the changed touches inside it, and runs only when there
@@ -24,14 +24,14 @@ Requires an onscreen screen.
 """
 example = """
 $.screen( "300x200" );
-$.ontouch( "start", ( touches ) => {
+$.onTouch( "start", ( touches ) => {
 	for( const touch of touches ) {
 		$.setPosPx( touch.x, touch.y );
 		$.print( `Touch ${touch.id} started` );
 	}
 } );
 
-$.ontouch( "move", ( touches ) => {
+$.onTouch( "move", ( touches ) => {
 	$.setColor( 3 );
 	for( const touch of touches ) {
 		$.line( touch.lastX, touch.lastY, touch.x, touch.y );

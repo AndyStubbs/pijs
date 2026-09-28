@@ -78,15 +78,15 @@ void main() { fragColor = texture(u_texture, v_texCoord); }` );
 		await waitForSize( 80, 40, "backing size" );
 		style.textContent += "#host canvas {width:60px;height:30px;margin-left:17px}";
 		await waitForSize( 60, 30, "canvas observer" );
-		screen.inmouse();
+		screen.inMouse();
 		const rect = canvas.getBoundingClientRect();
 		canvas.dispatchEvent( new MouseEvent( "mousemove", {
 			"clientX": rect.left + 8 + 30, "clientY": rect.top + 8 + 15
 		} ) );
-		if( screen.inmouse().x !== 4 || screen.inmouse().y !== 4 ) {
+		if( screen.inMouse().x !== 4 || screen.inMouse().y !== 4 ) {
 			throw new Error( "content coordinates" );
 		}
-		screen.intouch();
+		screen.inTouch();
 		style.textContent += "#host canvas {margin-left:27px;transform:scale(1.5)}";
 		const moved = canvas.getBoundingClientRect();
 		const touch = new Touch( { "identifier": 7, "target": canvas,
@@ -95,7 +95,7 @@ void main() { fragColor = texture(u_texture, v_texCoord); }` );
 		canvas.dispatchEvent( new TouchEvent( "touchstart", {
 			"touches": [ touch ], "changedTouches": [ touch ]
 		} ) );
-		const touches = screen.intouch();
+		const touches = screen.inTouch();
 		if( touches[ 0 ].x !== 4 || touches[ 0 ].y !== 4 ) {
 			throw new Error( "fresh touch position after movement and scaling" );
 		}
@@ -120,8 +120,8 @@ test( "offscreen pointer validation precedes all state changes and subscriptions
 				data.onTouchEventListeners, data.onPressEventListeners, data.onClickEventListeners,
 				data.isContextMenuEnabled ] );
 			const before = state();
-			for( const command of [ "inmouse", "intouch", "inpress", "startMouse", "startTouch",
-				"onmouse", "ontouch", "onpress", "onclick", "setEnableContextMenu" ] ) {
+			for( const command of [ "inMouse", "inTouch", "inPress", "startMouse", "startTouch",
+				"onMouse", "onTouch", "onPress", "onClick", "setEnableContextMenu" ] ) {
 				for( const target of [ $, buffer ] ) {
 					let rejected = false;
 					try { target[ command ]( { "mode": "down", "fn": () => {} } ); }
@@ -133,8 +133,8 @@ test( "offscreen pointer validation precedes all state changes and subscriptions
 					if( !rejected || state() !== before ) { throw new Error( command ); }
 				}
 			}
-			visible.inmouse(); visible.intouch(); visible.inpress();
-			$.setScreen( visible ); $.inmouse(); $.intouch(); $.inpress();
+			visible.inMouse(); visible.inTouch(); visible.inPress();
+			$.setScreen( visible ); $.inMouse(); $.inTouch(); $.inPress();
 			buffer.clearEvents(); buffer.removeScreen();
 			await new Promise( resolve => setTimeout( resolve, 10 ) );
 		}
@@ -153,8 +153,8 @@ test( "a trusted mouse release outside the canvas is released once (T1)", async 
 		await page.evaluate( () => {
 			$.screen( { "aspect": "100x100", "container": "host" } );
 			window.log = [];
-			$.onmouse( "up", data => window.log.push( [ "mouse up", data.buttons ] ) );
-			$.onpress( "up", data => window.log.push( [ "press up", data.buttons ] ) );
+			$.onMouse( "up", data => window.log.push( [ "mouse up", data.buttons ] ) );
+			$.onPress( "up", data => window.log.push( [ "press up", data.buttons ] ) );
 		} );
 		const box = await page.locator( "canvas" ).boundingBox();
 		await page.mouse.move( box.x + box.width / 2, box.y + box.height / 2 );
@@ -166,7 +166,7 @@ test( "a trusted mouse release outside the canvas is released once (T1)", async 
 		await page.mouse.down();
 		await page.mouse.up();
 		assert.deepEqual( await page.evaluate( () => ( {
-			"log": window.log, "buttons": $.inmouse().buttons, "press": $.inpress().buttons
+			"log": window.log, "buttons": $.inMouse().buttons, "press": $.inPress().buttons
 		} ) ), {
 			"log": [ [ "mouse up", 0 ], [ "press up", 0 ] ], "buttons": 0, "press": 0
 		} );
@@ -214,10 +214,10 @@ test( "Core 13: a screen's clearEvents() clears its own pointer handlers, $.clea
 		return cases.map( clear => {
 			const log = new Set();
 			for( const [ name, screen ] of screens ) {
-				screen.onmouse( "down", () => log.add( name + " mouse" ) );
-				screen.ontouch( "start", () => log.add( name + " touch" ) );
-				screen.onpress( "down", () => log.add( name + " press" ) );
-				screen.onclick( () => log.add( name + " click" ) );
+				screen.onMouse( "down", () => log.add( name + " mouse" ) );
+				screen.onTouch( "start", () => log.add( name + " touch" ) );
+				screen.onPress( "down", () => log.add( name + " press" ) );
+				screen.onClick( () => log.add( name + " click" ) );
 			}
 			clear();
 			input( first );

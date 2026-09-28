@@ -61,12 +61,12 @@ export function registerMouse( pluginApi, helpers ) {
 
 	pluginApi.addCommand( "startMouse", startMouse, true, [] );
 	pluginApi.addCommand( "stopMouse", stopMouse, true, [] );
-	pluginApi.addCommand( "inmouse", inmouse, true, [] );
+	pluginApi.addCommand( "inMouse", inMouse, true, [] );
 	pluginApi.addCommand( "setEnableContextMenu", setEnableContextMenu, true, [ "isEnabled" ] );
 	pluginApi.addCommand(
-		"onmouse", onmouse, true, [ "mode", "fn", "once", "hitBox", "customData" ]
+		"onMouse", onMouse, true, [ "mode", "fn", "once", "hitBox", "customData" ]
 	);
-	pluginApi.addCommand( "offmouse", offmouse, true, [ "mode", "fn" ] );
+	pluginApi.addCommand( "offMouse", offMouse, true, [ "mode", "fn" ] );
 
 	function initMouseData( screenData ) {
 		screenData.mouse = {
@@ -156,8 +156,8 @@ export function registerMouse( pluginApi, helpers ) {
 	 * @param {Object} screenData - Screen state.
 	 * @returns {Object}
 	 */
-	function inmouse( screenData ) {
-		g_target.validatePointerTarget( screenData, "inmouse" );
+	function inMouse( screenData ) {
+		g_target.validatePointerTarget( screenData, "inMouse" );
 		startMouseInternal( screenData );
 		return getMouse( screenData );
 	}
@@ -182,8 +182,8 @@ export function registerMouse( pluginApi, helpers ) {
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function onmouse( screenData, options ) {
-		g_target.validatePointerTarget( screenData, "onmouse" );
+	function onMouse( screenData, options ) {
+		g_target.validatePointerTarget( screenData, "onMouse" );
 		const mode = options.mode;
 		const fn = options.fn;
 		const once = options.once;
@@ -191,7 +191,7 @@ export function registerMouse( pluginApi, helpers ) {
 		const customData = options.customData;
 
 		m_onevent(
-			mode, fn, once, hitBox, [ "down", "up", "move" ], "onmouse",
+			mode, fn, once, hitBox, [ "down", "up", "move" ], "onMouse",
 			screenData.onMouseEventListeners, null, null, customData
 		);
 		startMouseInternal( screenData );
@@ -204,12 +204,12 @@ export function registerMouse( pluginApi, helpers ) {
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function offmouse( screenData, options ) {
+	function offMouse( screenData, options ) {
 		const mode = options.mode;
 		const fn = options.fn;
 
 		m_offevent(
-			mode, fn, [ "down", "up", "move" ], "offmouse",
+			mode, fn, [ "down", "up", "move" ], "offMouse",
 			screenData.onMouseEventListeners
 		);
 	}

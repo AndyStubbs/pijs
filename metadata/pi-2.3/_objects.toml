@@ -115,8 +115,8 @@ description = "Return the service of an initialized plugin named in this plugin'
 title = "HitBox"
 summary = "Rectangular area used for hit detection in event handlers."
 description = """
-A rectangular area in screen pixels that restricts a pointer handler (onclick, onmouse,
-onpress, ontouch) to input inside it. A point is inside when x <= point.x < x + width and
+A rectangular area in screen pixels that restricts a pointer handler (onClick, onMouse,
+onPress, onTouch) to input inside it. A point is inside when x <= point.x < x + width and
 y <= point.y < y + height, so the left and top edges are included and the right and bottom
 edges are not.
 
@@ -152,7 +152,7 @@ title = "MouseData"
 summary = "Mouse state and event data."
 description = """
 Mouse data containing position, button state, action, and previous position. Returned by
-inmouse() and passed to onmouse callbacks. Each read and each callback receives a new object.
+inMouse() and passed to onMouse callbacks. Each read and each callback receives a new object.
 
 Positions are in screen pixels. Moves over the canvas border or padding, and a release
 outside the canvas, report their true position, which can be outside the screen.
@@ -210,8 +210,8 @@ description = "Input type, always 'mouse' for mouse data."
 title = "PressData"
 summary = "Press state data (mouse or touch)."
 description = """
-Press data from the primary pointer: the mouse, or the primary touch. Returned by inpress()
-and passed to onpress callbacks; type tells which input it came from.
+Press data from the primary pointer: the mouse, or the primary touch. Returned by inPress()
+and passed to onPress callbacks; type tells which input it came from.
 
 For the mouse, it is the MouseData of the event. For touch, it is the primary touch, plus
 buttons (1 while it is down, 0 after its release), and touches, which holds this press object
@@ -283,7 +283,7 @@ optional = true
 title = "ClickData"
 summary = "Click event data (mouse or touch)."
 description = """
-The data of the release that completed a click, passed to onclick callbacks. For the mouse, it
+The data of the release that completed a click, passed to onClick callbacks. For the mouse, it
 is the MouseData of the release; for a touch, it has the PressData fields of the touch that
 clicked, with buttons 0.
 """
@@ -347,7 +347,7 @@ optional = true
 title = "TouchData"
 summary = "Single touch point data."
 description = """
-Data for one touch point. intouch() returns the touches still down, and ontouch callbacks
+Data for one touch point. inTouch() returns the touches still down, and onTouch callbacks
 receive the touches the event changed. Each read and each callback receives new objects.
 """
 
