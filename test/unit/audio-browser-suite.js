@@ -41,9 +41,8 @@ function frame( seconds ) {
  *
  * @param {string} title - Top-level describe title
  * @param {Function} defineTests - Called with { engine, inHarness, getSession, getBundle }
- * @param {Object} [suiteOptions] - { plugins, sources }: plugin names whose source bundles every
- * page loads after the full bundle, in order, then repository-relative entry files, such as
- * test page entries, built and loaded the same way
+ * @param {Object} [suiteOptions] - { plugins }: plugin names whose source bundles every page
+ * loads after the full bundle, in order
  * @returns {void}
  */
 function describeAudioEngines( title, defineTests, suiteOptions = {} ) {
@@ -51,11 +50,9 @@ function describeAudioEngines( title, defineTests, suiteOptions = {} ) {
 	let pluginBundles = [];
 	before( async () => {
 		fullBundle = await g_harness.buildFullBundle();
-		const entries = ( suiteOptions.plugins || [] ).map( name => `plugins/${name}/index.js` )
-			.concat( suiteOptions.sources || [] );
-		pluginBundles = await Promise.all(
-			entries.map( entry => g_sourceHarness.buildSource( entry ) )
-		);
+		pluginBundles = await Promise.all( ( suiteOptions.plugins || [] ).map(
+			name => g_sourceHarness.buildSource( `plugins/${name}/index.js` )
+		) );
 	} );
 
 	describe( title, { "concurrency": true }, () => {

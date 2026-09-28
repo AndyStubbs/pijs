@@ -332,12 +332,12 @@ generator part of 9.4, before task 9.3.
 Size entries for each task, measured against `main` before the task, gzipped. The phase exit
 adds `size-phase10.json`.
 
-| Bundle | Before | After | Delta |
-| --- | --- | --- | --- |
-| `sound` plugin | 15,559 | 15,614 | +55 |
-| `pi.min.js` | 75,518 | 75,547 | +29 |
-| `pi.lite.min.js` | 49,111 | 49,111 | 0 |
-| `sound-advanced` plugin | 12,301 | 12,301 | 0 |
+| Bundle | Before 10.1 | After 10.1 | After 10.3 | Phase 10 delta |
+| --- | --- | --- | --- | --- |
+| `sound` plugin | 15,559 | 15,614 | 15,614 | +55 |
+| `pi.min.js` | 75,518 | 75,547 | 75,547 | +29 |
+| `pi.lite.min.js` | 49,111 | 49,111 | 49,111 | 0 |
+| `sound-advanced` plugin | 12,301 | 12,301 | 13,045 | +744 |
 
 - **`getAudioBuffer` (task 10.1).** Measured against `main` at `905bd78`. The member costs 55
   bytes in the `sound` plugin, which is 15,614 bytes, 258 under the 15,872-byte target, and
@@ -345,6 +345,14 @@ adds `size-phase10.json`.
   bytes, 21 under the 9,728-byte target. `pi.min.js` itself grew from 72,976 to 75,518 bytes
   between the Phase 9 exit and this task through the keyboard and core work, none of it sound
   code.
+- **Sample source (task 10.2).** Nothing in the plugin imported `sample-source.js` yet, so
+  task 10.2 changed no bundle.
+- **Sample instruments (task 10.3).** Measured against `main` at `b44487c`. `sound-advanced`
+  grew by 744 bytes to 13,045, with `sample-source.js` and the instrument validation. The
+  instruments' marginal cost rose from 696 to 1,434 bytes, and it includes `sample-source.js`,
+  which only instruments import. Promoting instruments into core now costs 3,255 bytes, and
+  merging all of `sound-advanced` into `pi.min.js` 12,280. The plan 8 estimate for Phase 10
+  was about 0.5 KB, a guide rather than a limit. Core bundles are unchanged.
 
 ## Sample measurements (Phase 3)
 

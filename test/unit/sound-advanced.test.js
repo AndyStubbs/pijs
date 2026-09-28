@@ -1,9 +1,10 @@
 /**
  * Unit tests for the pure parts of the sound-advanced plugin: pulse wave tables, the LFSR
  * sequence, synth option validation and voice specs, preset and instrument snapshots, effect
- * options, level measurement, the music sync queue and dispatch rules on a fake clock, and
- * sample source types and their playback-rate schedule on a fake context. The modules are
- * imported directly; nothing here creates an AudioContext or invokes an insert factory.
+ * options, level measurement, the music sync queue and dispatch rules on a fake clock, sample
+ * source types and their playback-rate schedule on a fake context, and sample instruments. The
+ * modules are imported directly; nothing here creates an AudioContext or invokes an insert
+ * factory.
  */
 import * as g_assert from "node:assert/strict";
 import * as g_test from "node:test";
@@ -683,4 +684,82 @@ test( "a sample's playback rate follows the note's sweep, from its progress when
 	assert.deepEqual( schedule( { "frequencyEnd": 100, "offset": 0.6 } ).events, [
 		[ "set", 0.5, 1.6 ]
 	] );
+} );
+
+test( "sample instruments validate audio, rootFrequency, and loop", () => {
+	const h = fakeSampleHarness();
+	const store = params => g_instruments.storeInstrument( 30, params, h.service );
+	const cases = [
+		[ { "audio": 5 }, "TypeError", "INVALID_AUDIO" ],
+		[ { "audio": "" }, "RangeError", "INVALID_AUDIO" ],
+		[ { "audio": "drum", "oType": "sine" }, "Error", "INVALID_INSTRUMENT" ],
+		[ { "audio": "drum", "oType": "pulse" }, "Error", "INVALID_INSTRUMENT" ],
+		[ { "rootFrequency": 440 }, "Error", "INVALID_INSTRUMENT" ],
+		[ { "oType": "sine", "loop": true }, "Error", "INVALID_INSTRUMENT" ],
+		[ { "audio": "drum", "rootFrequency": "440" }, "TypeError", "INVALID_ROOT_FREQUENCY" ],
+		[ { "audio": "drum", "rootFrequency": 0 }, "RangeError", "INVALID_ROOT_FREQUENCY" ],
+		[ { "audio": "drum", "rootFrequency": -1 }, "RangeError", "INVALID_ROOT_FREQUENCY" ],
+		[ { "audio": "drum", "rootFrequency": NaN }, "RangeError", "INVALID_ROOT_FREQUENCY" ],
+		[
+			{ "audio": "drum", "rootFrequency": Infinity }, "RangeError",
+			"INVALID_ROOT_FREQUENCY"
+		],
+		[ { "audio": "drum", "loop": 1 }, "TypeError", "INVALID_LOOP" ]
+	];
+	for( const [ params, name, code ] of cases ) {
+		assert.throws( () => store( params ), { "name": name, "code": code }, code );
+	}
+	assert.deepEqual( h.registered, [] );
+
+	// Omitted and null options take their defaults
+	store( { "audio": "drum", "rootFrequency": null, "loop": null } );
+	store( { "audio": "drum", "rootFrequency": 110, "loop": true } );
+	store( null );
+	assert.deepEqual( h.registered.map( item => item[ 0 ] ), [
+		"sample:\"drum\"", "sample:\"drum\"@110:loop"
+	] );
+} );
+
+test( "sample instruments play their file, or silence with one warning per play() call", t => {
+	const h = fakeSampleHarness();
+	const warnings = [];
+	t.mock.method( console, "warn", message => warnings.push( message ) );
+	g_instruments.storeInstrument( 31, {
+		"audio": "keys", "rootFrequency": 440, "volume": 0.5, "releaseTime": 0.2
+	}, h.service );
+	g_instruments.storeInstrument( 32, { "audio": "pads" }, h.service );
+	const note = Object.freeze( {
+		"frequency": 262, "frequencyEnd": null, "time": 0, "gate": 0.3, "volume": 0.8,
+		"envelope": Object.freeze( {
+			"attackTime": 0.05, "decayTime": 0.07, "sustainLevel": 0.65, "releaseTime": 0.09
+		} ),
+		"pan": 0, "oType": "triangle", "waveTables": null, "inserts": null
+	} );
+
+	// Not loaded: silent, and one warning per instrument for the tracks of one play() call
+	const first = { "instrument": 31, "warned": new Set() };
+	const comma = { "instrument": 31, "warned": first.warned };
+	const other = { "instrument": 32, "warned": first.warned };
+	const silent = g_instruments.resolveNote( first, note );
+	assert.deepEqual( silent, {
+		"oType": "sample:\"keys\"@440", "envelope": { "releaseTime": 0.2 }, "volume": 0
+	} );
+	assert.equal( g_instruments.resolveNote( comma, note ).volume, 0 );
+	assert.equal( g_instruments.resolveNote( other, note ).volume, 0 );
+	assert.deepEqual( warnings, [
+		"play: Audio \"keys\" of instrument 31 is not loaded, or is streamed; its notes are " +
+		"silent.",
+		"play: Audio \"pads\" of instrument 32 is not loaded, or is streamed; its notes are " +
+		"silent."
+	] );
+
+	// Loaded by a later play() call: the instrument's own volume, and no warning
+	h.buffers.set( "keys", { "duration": 1 } );
+	const loaded = g_instruments.resolveNote( { "instrument": 31, "warned": new Set() }, note );
+	near( loaded.volume, 0.4 );
+	assert.equal( loaded.oType, "sample:\"keys\"@440" );
+	g_instruments.resolveNote( { "instrument": 32, "warned": new Set() }, note );
+	assert.equal( warnings.length, 3 );
+	g_instruments.storeInstrument( 31, null );
+	g_instruments.storeInstrument( 32, null );
 } );

@@ -386,12 +386,17 @@ $.play( "@7 T100 O4 L4 C E G O5 C" );
   from its start, so a late note keeps the sample's attack.
 - **Envelope.** The instrument's envelope and filter apply as for synthesized notes. A
   non-looping sample ends at the earlier of its buffer end and the note's release.
-- **Not ready.** A note whose file is still loading, streamed, or removed plays silence, and
-  the plugin warns once per instrument and `play()` call. `play()` reads instruments when it is
-  called, so a song started before the file loads stays silent for those notes (D15).
-- **Validation.** `audio` must be a string, `rootFrequency` a positive finite number, and
-  `loop` a boolean. Setting `audio` together with a waveform `oType` throws
-  `INVALID_INSTRUMENT`.
+- **Not ready (task 10.3).** `play()` resolves each note when it is called. A note whose
+  file is still loading or is streamed then has volume 0, and the plugin warns once per
+  instrument and `play()` call, so a song started before the file loads stays silent for those
+  notes even if the file loads while it plays (D15). The notes keep their timing, and PLAY
+  observers still receive them, with volume 0. A file removed after `play()` leaves its source
+  without a buffer, so its remaining notes are silent too.
+- **Validation (task 10.3).** `audio` must be a non-empty string (`INVALID_AUDIO`: `TypeError`
+  for another type, `RangeError` when empty), `rootFrequency` a finite number greater than 0
+  (`INVALID_ROOT_FREQUENCY`), and `loop` a boolean (`INVALID_LOOP`). Setting `audio` together
+  with any `oType`, or `rootFrequency` or `loop` without `audio`, throws `INVALID_INSTRUMENT`.
+  The file does not need to be loaded, or even requested, when the instrument is defined.
 
 ## 8. Size
 
@@ -455,7 +460,7 @@ Numbered after the sound design's D1–D6.
 | D12 | Changing effect options without a rebuild | **Resolved (task 8.3):** options that map to an `AudioParam` ramp in place over 20 ms when the chain's effects and order match; reverb `time` and `decay` and the filter `type` rebuild, which cuts tails. Chain items name their effect with `effect`, not `type`, so the filter keeps its `type` option | Resolved |
 | D13 | Music sync delivery | **Resolved (task 9.3):** dispatch on animation frames at the audible time, and drop notes more than 250 ms late; `"end"` is always delivered. The audible time comes from `getOutputTimestamp()`, which already includes the output latency; before output starts, or where it is missing, the render time plus `outputLatency` (or `baseLatency`) stands in | Resolved |
 | D14 | PLAY cue markers | **Resolved (task 9.3):** deferred to 2.3.x. A cue needs a timed event without a voice, which changes the PLAY extension contract | Resolved |
-| D15 | Songs started before a sample instrument's file loads | Those notes play silence with one warning. Waiting for the file would hold up the whole song, and `ready()` already covers waiting | Task 10.3 |
+| D15 | Songs started before a sample instrument's file loads | **Resolved (task 10.3):** notes resolved while the file is not loaded play at volume 0, with one warning per instrument and `play()` call, and stay silent if the file loads during the song. Waiting for the file would hold up the whole song, and `ready()` already covers waiting | Resolved |
 | D16 | How the bitcrusher reduces the sample rate | **Resolved (task 8.6):** a worklet processor with k-rate `bits` and `rate`, registered in the recorder's module. A `WaveShaperNode` can reduce bit depth but cannot hold samples. The stage stays dry until the module loads, and dry with one warning if it cannot load | Resolved |
 | D17 | Whether generated sounds are repeatable by default | **Resolved (revision 2 of this design): yes.** The command is `generateSfx( category, seed, variation )`. `seed` defaults to 0, which returns the category's built-in preset, and other seeds are fixed variants, so the generator and the presets are one system. Unseeded random output (sfxr style) was rejected: it suits a design tool but not a game, which wants the same sound each time. Randomness comes only from `variation`, which nudges every parameter, unlike `sfx()`'s pitch and length jitter | Resolved |
 
