@@ -815,7 +815,7 @@ the [ROADMAP](ROADMAP.md#3-core) tasks that implement each item.
 | CORE-005 | Release package types wrong under `nodenext` | Accepted | P2. Fixed by C5 (Core 4, done) |
 | CORE-006 | Init errors thrown to the wrong caller | Accepted | Fixed by C2 (Core 1, done) |
 | CORE-007 | Explicit `undefined` not treated as omitted | Accepted | Fixed by C6 (Core 6) |
-| CORE-008 | `set()` accepts unknown names | Accepted | Fixed by C7 (Core 8, breaking) |
+| CORE-008 | `set()` accepts unknown names | Accepted | Fixed by C7 (Core 8, breaking, done) |
 | CORE-009 | `getPal( false )` includes index 0 | Accepted | Fixed by C6 (Core 6) |
 | CORE-010 | `setChar()` ignored on the default font | Accepted | Fixed by C8 (Core 7) |
 | CORE-011 | `getImage()` of an offscreen screen | Accepted | Fixed by C6 (Core 6) |
@@ -831,7 +831,7 @@ the [ROADMAP](ROADMAP.md#3-core) tasks that implement each item.
 | C1, C2, C5, C6, C8 | Fixes | Accepted | Core 5, Core 1, Core 4, Core 6, Core 7 |
 | C3 | Lite-only plugin entry points | Accepted | Changed on 2026-09-27 from a self-registration skip to documentation (Core 2, R.3) |
 | C4 | Plugin-internal subscriptions | Rejected | Core API stays as is; CORE-004 is documented instead |
-| C7 | Strict `set()` | Accepted | Breaking core API change, approved (Core 8) |
+| C7 | Strict `set()` | Accepted | Breaking core API change, approved (Core 8, done) |
 | C9 | No frame hook in 2.3 | Accepted | |
 | C10 | Document text outside the font table | Accepted | Latin-1 mapping deferred |
 | C11 | Release packaging | Accepted | Core 9; the rename landed in CI 2.1 |

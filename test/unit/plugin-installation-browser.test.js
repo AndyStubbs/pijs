@@ -1,6 +1,6 @@
 /**
- * SYS-009 late plugin installation and CORE-002 failed-installation rollback regressions against
- * fresh full and lite bundles.
+ * SYS-009 late plugin installation, CORE-002 failed-installation rollback, and CORE-008 set()
+ * option availability regressions against fresh full and lite bundles.
  * Run with node --test test/unit/plugin-installation-browser.test.js.
  */
 import * as g_test from "node:test";
@@ -131,10 +131,16 @@ for( const bundle of [ "pi.js", "pi.lite.js" ] ) {
 				registerError = error.code;
 			}
 			const created = $.screen( "8x8" );
-			$.set( { "bad": 7 } );
+			let setError = null;
+			try {
+				$.set( { "bad": 7 } );
+			} catch( error ) {
+				setError = error.code;
+			}
 			$.clearEvents();
 			const failed = {
 				"registerError": registerError,
+				"setError": setError,
 				"commandTypes": [ typeof $.badCmd, typeof existing.badCmd, typeof created.badCmd ],
 				"hasData": [ existing.hasData( "badData" ), created.hasData( "badData" ) ],
 				"calls": { ...calls },
@@ -152,6 +158,7 @@ for( const bundle of [ "pi.js", "pi.lite.js" ] ) {
 		} ), {
 			"failed": {
 				"registerError": "PLUGIN_INIT_FAILED",
+				"setError": "INVALID_OPTION",
 				"commandTypes": [ "undefined", "undefined", "undefined" ],
 				"hasData": [ false, false ],
 				"calls": { "setBad": 0, "screenInit": 0, "clear": 0 },
@@ -159,6 +166,44 @@ for( const bundle of [ "pi.js", "pi.lite.js" ] ) {
 			},
 			"retried": [ "retried", "retried", "retried" ],
 			"state": "initialized"
+		} );
+	} );
+
+	test( `set() accepts only the settings of loaded plugins in ${bundle}`, async () => {
+
+		// Lite includes neither Sound nor Pointer
+		let pluginSetting = "INVALID_OPTION RangeError";
+		if( bundle === "pi.js" ) {
+			pluginSetting = "ok";
+		}
+		assert.deepEqual( await probe( bundle, () => {
+			const outcome = fn => {
+				try {
+					fn();
+					return "ok";
+				} catch( error ) {
+					return error.code + " " + error.name;
+				}
+			};
+			const noScreen = outcome( () => $.set( { "color": 1 } ) );
+			$.screen( "8x8" );
+			return {
+				"noScreen": noScreen,
+				"unknown": outcome( () => $.set( { "notARealOption": 1 } ) ),
+				"inherited": outcome( () => $.set( { "toString": 1 } ) ),
+				"nonObject": outcome( () => $.set( 5 ) ),
+				"volume": outcome( () => $.set( { "volume": 0.5 } ) ),
+				"pinchZoom": outcome( () => $.set( { "pinchZoom": false } ) ),
+				"color": outcome( () => $.set( { "color": 2 } ) )
+			};
+		} ), {
+			"noScreen": "NO_ACTIVE_SCREEN Error",
+			"unknown": "INVALID_OPTION RangeError",
+			"inherited": "INVALID_OPTION RangeError",
+			"nonObject": "INVALID_OPTIONS TypeError",
+			"volume": pluginSetting,
+			"pinchZoom": pluginSetting,
+			"color": "ok"
 		} );
 	} );
 
@@ -217,7 +262,19 @@ test( "late Pointer installation initializes existing lite screens", async () =>
 			window.second = $.screen( "10x4" );
 			$.setScreen( first );
 		} );
+
+		// A plugin's settings are options of set() once the plugin is loaded (CORE-008)
+		const setPinchZoom = () => page.evaluate( () => {
+			try {
+				$.set( { "pinchZoom": false } );
+				return "ok";
+			} catch( error ) {
+				return error.code;
+			}
+		} );
+		assert.equal( await setPinchZoom(), "INVALID_OPTION" );
 		await page.addScriptTag( { "url": "/build/plugins/pointer/pointer.js" } );
+		assert.equal( await setPinchZoom(), "ok" );
 		assert.deepEqual( await page.evaluate( () => ( {
 			"commands": [ typeof first.inmouse, typeof second.inmouse, typeof $.inmouse ],
 			"first": first.inmouse(),
