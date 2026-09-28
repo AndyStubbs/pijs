@@ -34,7 +34,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Pointer | [6](#6-pointer) | Phase 1 done; Phase 2 not started | Pointer 2.1, after Core 8 and Core 13 |
 | Gamepad | [7](#7-gamepad) | Phase 1 done; Phase 2 not started | Gamepad 2.1, after Core 8 |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
-| CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.9) | — |
+| CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.10) | — |
 | Plugin removal | [13.1](#131-plugin-removal) | Complete (P.1–P.6) | — |
 | Release | [8](#8-release) | Waits for the other workstreams | R.1 |
 
@@ -861,6 +861,7 @@ tarball. Findings: [AUDIT-CI.md](AUDIT-CI.md).
 | 3.7 | CI documentation in `test/README.md` and the publish guide | — |
 | 3.8 | Required checks on `main` ([#12](https://github.com/AndyStubbs/pijs/pull/12)); documentation-only changes skip the test jobs ([#15](https://github.com/AndyStubbs/pijs/pull/15)) | — |
 | 3.9 | GitHub CLI and pull-request practice (Section 1.4) | — |
+| 3.10 | Resize waits: the noCss tests in `screen-lifecycle-browser.test.js` and `pointer-browser.test.js` wait up to 2 s for the canvas to reach each expected size instead of a fixed 80 ms, which a macOS runner missed after Gamepad 1.6 (run 36427632948); checks that nothing changes keep the fixed wait | [CI-008](AUDIT-CI.md#ci-008) |
 
 **Compatibility summary.** No public API changes, so nothing goes in the upgrade guide. For the
 changelog (R.5): built on Windows, `pi.min.js` and `pi.lite.min.js` lose about 134 bytes of `\r`

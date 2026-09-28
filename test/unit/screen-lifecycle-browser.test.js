@@ -182,18 +182,25 @@ for( const bundle of g_harness.BUNDLES ) {
 	out vec4 fragColor;
 	void main() { fragColor = texture(u_texture, v_texCoord); }` );
 			const settle = () => new Promise( resolve => setTimeout( resolve, 80 ) );
+
+			// A resize arrives through a ResizeObserver, whose timing varies by runner, so
+			// expected sizes are awaited; checks that nothing changes still wait a fixed time
+			const waitForSize = async ( width, height, message ) => {
+				const start = performance.now();
+				while( canvas.width !== width || canvas.height !== height ) {
+					if( performance.now() - start > 2000 ) { throw new Error( message ); }
+					await new Promise( resolve => setTimeout( resolve, 10 ) );
+				}
+			};
 			screen.setDisplayShader( identity );
-			await settle();
-			if( canvas.width !== 80 || canvas.height !== 40 ) { throw new Error( "backing size" ); }
+			await waitForSize( 80, 40, "backing size" );
 			style.textContent += "#host canvas {width:60px;height:30px;margin-left:17px}";
-			await settle();
-			if( canvas.width !== 60 || canvas.height !== 30 ) { throw new Error( "canvas observer" ); }
+			await waitForSize( 60, 30, "canvas observer" );
 			style.textContent += "#host {display:none}";
 			await settle();
 			if( canvas.width !== 60 || canvas.height !== 30 ) { throw new Error( "hidden allocation" ); }
 			style.textContent += "#host {display:block} #host canvas {width:90px;height:45px}";
-			await settle();
-			if( canvas.width !== 90 || canvas.height !== 45 ) { throw new Error( "visible allocation" ); }
+			await waitForSize( 90, 45, "visible allocation" );
 			screen.setDisplayShader( null );
 			if( canvas.width !== 8 || canvas.height !== 8 ) { throw new Error( "logical backing" ); }
 			const untouched = canvas.getAttribute( "style" ) === null &&
