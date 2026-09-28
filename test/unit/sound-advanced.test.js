@@ -1,9 +1,9 @@
 /**
  * Unit tests for the pure parts of the sound-advanced plugin: pulse wave tables, the LFSR
  * sequence, synth option validation and voice specs, preset and instrument snapshots, effect
- * options, level measurement, and the music sync queue and dispatch rules on a fake clock. The
- * modules are imported directly; nothing here creates an AudioContext or invokes an insert
- * factory.
+ * options, level measurement, the music sync queue and dispatch rules on a fake clock, and
+ * sample source types and their playback-rate schedule on a fake context. The modules are
+ * imported directly; nothing here creates an AudioContext or invokes an insert factory.
  */
 import * as g_assert from "node:assert/strict";
 import * as g_test from "node:test";
@@ -12,6 +12,7 @@ import * as g_effects from "../../plugins/sound-advanced/effects.js";
 import * as g_instruments from "../../plugins/sound-advanced/instruments.js";
 import * as g_periodicNoise from "../../plugins/sound-advanced/periodic-noise.js";
 import * as g_presets from "../../plugins/sound-advanced/presets.js";
+import * as g_sampleSource from "../../plugins/sound-advanced/sample-source.js";
 import * as g_synth from "../../plugins/sound-advanced/synth.js";
 import * as g_sync from "../../plugins/sound-advanced/sync.js";
 const assert = g_assert;
@@ -533,4 +534,153 @@ test( "context time maps to page time from the output timestamp or the reported 
 	near( g_sync.getPageOffset( starting, 6000 ), 6000 - 1950 );
 	near( g_sync.getPageOffset( { "currentTime": 2, "baseLatency": 0.01 }, 6000 ), 6000 - 1990 );
 	assert.equal( g_sync.getPageOffset( { "currentTime": 2 }, 6000 ), 4000 );
+} );
+
+/**
+ * A fake playback-rate or detune parameter that records its automation.
+ *
+ * @returns {Object} Parameter with `value` and an `events` log
+ */
+function fakeParam() {
+	const param = {
+		"value": 1,
+		"events": [],
+		"setValueAtTime": ( value, time ) => param.events.push( [ "set", value, time ] ),
+		"exponentialRampToValueAtTime": ( value, time ) => {
+			param.events.push( [ "ramp", value, time ] );
+		}
+	};
+	return param;
+}
+
+/**
+ * A fake audio context whose buffer sources record their calls, and a fake sound service
+ * whose buffers can change between notes.
+ *
+ * @returns {Object} `{ context, service, nodes, buffers, registered }`
+ */
+function fakeSampleHarness() {
+	const nodes = [];
+	const buffers = new Map();
+	const registered = [];
+	const context = {
+		"createBufferSource": () => {
+			const node = {
+				"buffer": null,
+				"loop": false,
+				"onended": null,
+				"playbackRate": fakeParam(),
+				"detune": fakeParam(),
+				"calls": [],
+				"start": when => node.calls.push( [ "start", when ] ),
+				"stop": when => node.calls.push( [ "stop", when ] ),
+				"disconnect": () => node.calls.push( [ "disconnect" ] )
+			};
+			nodes.push( node );
+			return node;
+		}
+	};
+	const service = {
+		"getAudioBuffer": name => buffers.get( name ) ?? null,
+		"registerSource": ( type, factory ) => registered.push( [ type, factory ] )
+	};
+	return { context, service, nodes, buffers, registered };
+}
+
+test( "sample source types are named per audio name, root frequency, and loop", () => {
+	const name = g_sampleSource.sampleTypeName;
+	assert.equal( g_sampleSource.DEFAULT_ROOT_FREQUENCY, 261.63 );
+	assert.equal( name( "piano", 261.63, false ), "sample:\"piano\"" );
+	assert.equal( name( "piano", 392, false ), "sample:\"piano\"@392" );
+	assert.equal( name( "piano", 261.63, true ), "sample:\"piano\":loop" );
+	assert.equal( name( "piano", 392, true ), "sample:\"piano\"@392:loop" );
+
+	// Quoting keeps names that look like settings apart
+	const types = [
+		name( "a", 261.63, true ), name( "a\":loop", 261.63, false ), name( "a@1", 261.63, false ),
+		name( "a", 1, false ), name( "a\"@1", 261.63, false )
+	];
+	assert.equal( new Set( types ).size, types.length );
+
+	// Each setting registers once, and the name is returned every time
+	const h = fakeSampleHarness();
+	const first = g_sampleSource.getSampleType( h.service, "once", 261.63, false );
+	assert.equal( g_sampleSource.getSampleType( h.service, "once", 261.63, false ), first );
+	g_sampleSource.getSampleType( h.service, "once", 261.63, true );
+	g_sampleSource.getSampleType( h.service, "once", 440, false );
+	assert.deepEqual( h.registered.map( item => item[ 0 ] ), [
+		"sample:\"once\"", "sample:\"once\":loop", "sample:\"once\"@440"
+	] );
+} );
+
+test( "a sample source reads the buffer per note and follows the source contract", () => {
+	const h = fakeSampleHarness();
+	g_sampleSource.getSampleType( h.service, "later", 261.63, false );
+	g_sampleSource.getSampleType( h.service, "later", 440, true );
+	const [ once, looped ] = h.registered.map( item => item[ 1 ] );
+	const spec = Object.freeze( {
+		"oType": "sample", "frequency": 523.26, "frequencyEnd": null, "start": 1, "gate": 0.5,
+		"end": 1.6, "offset": 0
+	} );
+
+	// Not loaded yet: no buffer, so the note is silent
+	const silent = once( h.context, spec );
+	assert.equal( h.nodes[ 0 ].buffer, null );
+	assert.equal( silent.output, h.nodes[ 0 ] );
+
+	const buffer = { "duration": 2 };
+	h.buffers.set( "later", buffer );
+	const source = looped( h.context, spec );
+	const node = h.nodes[ 1 ];
+	assert.equal( node.buffer, buffer );
+	assert.equal( node.loop, true );
+	assert.equal( h.nodes[ 0 ].loop, false );
+	near( h.nodes[ 0 ].playbackRate.value, 2 );
+	near( node.playbackRate.value, 523.26 / 440 );
+	assert.equal( source.frequency, null );
+	assert.equal( source.detune, node.detune );
+
+	// Stops only move earlier, the end callback is the node's, and dispose runs once
+	const ended = () => {};
+	source.onEnded( ended );
+	assert.equal( node.onended, ended );
+	source.start( 1 );
+	source.stop( 1.6 );
+	source.stop( 1.7 );
+	source.stop( 1.2 );
+	source.dispose();
+	source.dispose();
+	assert.equal( node.onended, null );
+	assert.deepEqual( node.calls, [
+		[ "start", 1 ], [ "stop", 1.6 ], [ "stop", 1.2 ], [ "disconnect" ]
+	] );
+} );
+
+test( "a sample's playback rate follows the note's sweep, from its progress when late", () => {
+	const schedule = spec => {
+		const param = fakeParam();
+		g_sampleSource.scheduleRate( param, {
+			"frequency": 400, "frequencyEnd": null, "start": 1, "gate": 0.5, "offset": 0,
+			...spec
+		}, 200 );
+		return param;
+	};
+	const fixed = schedule( {} );
+	near( fixed.value, 2 );
+	assert.deepEqual( fixed.events, [] );
+	assert.deepEqual( schedule( { "frequencyEnd": 100 } ).events, [
+		[ "set", 2, 1 ], [ "ramp", 0.5, 1.5 ]
+	] );
+
+	// A quarter of the way through the gate, the rate is a quarter of the way down in octaves
+	const late = schedule( { "frequencyEnd": 100, "offset": 0.125 } ).events;
+	assert.equal( late.length, 2 );
+	near( late[ 0 ][ 1 ], 2 * Math.pow( 0.25, 0.25 ) );
+	near( late[ 0 ][ 2 ], 1.125 );
+	assert.deepEqual( late[ 1 ], [ "ramp", 0.5, 1.5 ] );
+
+	// Past the gate, the rate holds the sweep's end
+	assert.deepEqual( schedule( { "frequencyEnd": 100, "offset": 0.6 } ).events, [
+		[ "set", 0.5, 1.6 ]
+	] );
 } );

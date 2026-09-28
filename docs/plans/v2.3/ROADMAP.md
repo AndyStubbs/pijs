@@ -16,7 +16,7 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Sound 10.2](#42-phase-10-sample-instruments) | Sample source factory for sample instruments: per-name registration, pitch by playback rate, and detune | Nothing. Can run in parallel |
+| 1 | [Sound 10.3](#42-phase-10-sample-instruments) | Sample instruments: `defineInstrument` `audio`, `rootFrequency`, and `loop` options, validation, and not-ready behavior; closes D15 | Nothing. Can run in parallel |
 | 2 | [Core 5–7, 9–12](#32-phase-2-fixes) | Remaining core fixes and tests, in any order | Nothing. Can run in parallel |
 | 3 | [Pointer 2.1](#62-phase-2-pointer-events-and-api-breaking-set-200) | Start the pointer breaking set on one long-lived branch (Section 1.4) | Nothing |
 | 4 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Nothing |
@@ -28,7 +28,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
 | Core | [3](#3-core) | Phases 1 and 3 done. Core 1, 2, 4, 8, and 13 done, 8 tasks left | Core 5–7, 9–12 |
-| Sound | [4](#4-sound) | Phases 0–9 done; Phase 10: task 10.1 done, 3 tasks left; Phase 11 not started | Sound 10.2 |
+| Sound | [4](#4-sound) | Phases 0–9 done; Phase 10: tasks 10.1 and 10.2 done, 2 tasks left; Phase 11 not started | Sound 10.3 |
 | Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Pointer | [6](#6-pointer) | Phase 1 done; Phase 2 not started | Pointer 2.1 |
 | Gamepad | [7](#7-gamepad) | Phase 1 done; Phase 2 not started | Gamepad 2.1 |
@@ -323,12 +323,11 @@ Done ([Section 13.4](#134-sound)). Its listening check is in the
 ### 4.2 Phase 10: sample instruments
 
 Design: [DESIGN-SOUND-ADVANCED §7](DESIGN-SOUND-ADVANCED.md#7-phase-10-sample-instruments).
-Done: task 10.1 ([Section 13.4](#134-sound)).
+Done: tasks 10.1 and 10.2 ([Section 13.4](#134-sound)).
 
 | # | Task | Status |
 | --- | --- | --- |
-| 10.2 | Sample source factory, per-name registration, pitch by playback rate, and detune | — |
-| 10.3 | `defineInstrument` `audio`, `rootFrequency`, and `loop` options, validation, and not-ready behavior. Closes D15 | — |
+| 10.3 | `defineInstrument` `audio`, `rootFrequency`, and `loop` options, validation, and not-ready behavior, through `sample-source.js` (10.2); the module joins `sound-advanced` and `npm run size`, and the sample source probe in `audio-advanced-browser.test.js` gives way to instruments where they cover the same case. Closes D15 | — |
 | 10.4 | Metadata, types, and a sample instrument in the demo | — |
 
 **Exit criteria:**
@@ -1026,6 +1025,7 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | # | Task |
 | --- | --- |
 | 10.1 | Core `getAudioBuffer( name )` service member: the decoded buffer of a loaded decode-mode file, `null` while loading, for streamed files, and for unknown or removed names; documented in `plugins/PLUGIN-SYSTEM.md` with the rule that the shared buffer is not modified. Tests: the member pin and a contract test in `audio-service-browser.test.js`, and a streamed file in `audio-stream-browser.test.js`. Size: +55 bytes in the `sound` plugin, 258 under its target |
+| 10.2 | `sample-source.js`: a source type registered on first use for each audio name, root frequency, and loop setting (`sample:"piano"`, `@392`, `:loop`), since a factory receives only the voice spec and PLAY observers report the note's own frequency; the factory reads the buffer per voice, sets `playbackRate` to `frequency / rootFrequency` with core's sweep rule, returns `frequency: null` and the buffer source's `detune`, loops or ends with the file, plays silence without a buffer, and plays each note from the file's start. Tests: type names, registration, the source contract, and the rate schedule in `sound-advanced.test.js`; offline renders through a page probe (`audio-sample-source-probe.js`, the new `sources` option of `audio-browser-suite.js`): three octaves, another root frequency, a sweep, vibrato, one-shot and looped ends, and a missing file, plus a single-pass case for Firefox. Not yet in the plugin bundle, so no size change |
 
 ### 13.5 Core
 
