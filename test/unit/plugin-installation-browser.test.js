@@ -276,32 +276,30 @@ test( "late Pointer installation initializes existing lite screens", async () =>
 		await page.addScriptTag( { "url": "/build/plugins/pointer/pointer.js" } );
 		assert.equal( await setPinchZoom(), "ok" );
 		assert.deepEqual( await page.evaluate( () => ( {
-			"commands": [ typeof first.inmouse, typeof second.inmouse, typeof $.inmouse ],
-			"first": first.inmouse(),
-			"second": second.inmouse(),
-			"global": $.inmouse(),
+			"commands": [ typeof first.inMouse, typeof second.inMouse, typeof $.inMouse ],
+			"first": first.inMouse(),
+			"second": second.inMouse(),
+			"global": $.inMouse(),
 			"initialized": $.getPlugins().find( plugin => plugin.name === "pointer" ).initialized
 		} ) ), {
 			"commands": [ "function", "function", "function" ],
-			"first": { "x": 4, "y": 3, "lastX": 4, "lastY": 3, "buttons": 0,
-				"action": "none", "cancelled": false, "type": "mouse" },
-			"second": { "x": 5, "y": 2, "lastX": 5, "lastY": 2, "buttons": 0,
-				"action": "none", "cancelled": false, "type": "mouse" },
-			"global": { "x": 4, "y": 3, "lastX": 4, "lastY": 3, "buttons": 0,
-				"action": "none", "cancelled": false, "type": "mouse" },
+			"first": null,
+			"second": null,
+			"global": null,
 			"initialized": true
 		} );
 
 		// Press input reaches the late plugin, and blur and a hidden page do not throw (P16)
 		assert.deepEqual( await page.evaluate( () => {
 			const log = [];
-			$.onpress( "down", data => log.push( [ data.x, data.y, data.buttons ] ) );
-			$.onpress( "up", data => log.push( [ data.action, data.cancelled ] ) );
+			$.onPress( "down", data => log.push( [ data.x, data.y, data.buttons ] ) );
+			$.onPress( "up", data => log.push( [ data.action, data.cancelled ] ) );
 			const canvas = first.canvas();
 			const rect = canvas.getBoundingClientRect();
-			canvas.dispatchEvent( new MouseEvent( "mousedown", {
-				"bubbles": true, "button": 0, "buttons": 1,
-				"clientX": rect.left + rect.width * 0.25, "clientY": rect.top + rect.height * 0.5
+			canvas.dispatchEvent( new PointerEvent( "pointerdown", {
+				"bubbles": true, "pointerId": 1, "pointerType": "mouse", "button": 0,
+				"buttons": 1, "clientX": rect.left + rect.width * 0.25,
+				"clientY": rect.top + rect.height * 0.5
 			} ) );
 			window.dispatchEvent( new Event( "blur" ) );
 			Object.defineProperty( document, "visibilityState", {

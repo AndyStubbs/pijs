@@ -1,0 +1,34 @@
+title = "inMouse"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Gets the current mouse state and starts tracking if needed."
+description = """
+Returns the mouse data of the latest mouse event, for use in an animation loop. The data is
+frozen, and it is the same object the event's onMouse handlers received; every read returns it
+until the next mouse event. Returns null before the first mouse event and while mouse tracking is
+stopped. Tracking starts on the first read unless stopMouse() was called.
+
+buttons counts only buttons pressed on the screen, and a release outside the canvas is seen, so a
+drag that ends anywhere releases its button.
+
+Requires an onscreen screen.
+"""
+example = """
+$.screen( "300x200" );
+requestAnimationFrame( run );
+function run() {
+	const mouse = $.inMouse();
+
+	// Draw while a button is held; there is no mouse data before the first event
+	if( mouse !== null && mouse.buttons > 0 ) {
+		$.setColor( 14 );
+		$.line( mouse.lastX, mouse.lastY, mouse.x, mouse.y );
+	}
+	requestAnimationFrame( run );
+}
+"""
+
+[[returns]]
+type = "MouseData | null"
+description = "Frozen mouse data of the latest event, or null before it and while stopped."

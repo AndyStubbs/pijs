@@ -265,17 +265,17 @@
 
 	function testEnableContextMenu() {
 		try {
-			$.setEnableContextMenu( true );
-			printTestResult( "setEnableContextMenu true", true );
+			$.setContextMenu( true );
+			printTestResult( "setContextMenu true", true );
 		} catch( e ) {
-			printTestResult( "setEnableContextMenu true", false );
+			printTestResult( "setContextMenu true", false );
 		}
 		
 		try {
-			$.setEnableContextMenu( false );
-			printTestResult( "setEnableContextMenu false", true);
+			$.setContextMenu( false );
+			printTestResult( "setContextMenu false", true);
 		} catch( e ) {
-			printTestResult( "setEnableContextMenu false", false );
+			printTestResult( "setContextMenu false", false );
 		}
 
 		nextTest( tests, test++ );
@@ -283,7 +283,7 @@
 	
 	function testBasicMouseDown() {
 		try {
-			$.onmouse( "down", onmousedown );
+			$.onMouse( "down", onmousedown );
 		} catch( e ) {
 			printTestResult( "testBasicMouseDown", false);
 		}
@@ -294,14 +294,14 @@
 			} else {
 				printTestResult( "testBasicMouseDown", false );
 			}
-			$.offmouse( "down", onmousedown );
+			$.offMouse( "down", onmousedown );
 			nextTest( tests, test++ );
 		}
 	}
 
 	function testBasicMouseUp() {
 		try {
-			$.onmouse( "up", onmouseup );
+			$.onMouse( "up", onmouseup );
 		} catch( e ) {
 			printTestResult( "testBasicMouseUp", false);
 		}
@@ -312,7 +312,7 @@
 			} else {
 				printTestResult( "testBasicMouseUp", false );
 			}
-			$.offmouse( "up", onmouseup );
+			$.offMouse( "up", onmouseup );
 
 			nextTest( tests, test++ );
 		}
@@ -320,7 +320,7 @@
 
 	function testBasicMouseDownOnce() {
 		try {
-			$.onmouse( "down", onmousedown, true );
+			$.onMouse( "down", onmousedown, true );
 		} catch( e ) {
 			printTestResult( "testBasicMouseDownOnce", false);
 		}
@@ -342,7 +342,7 @@
 		$.setColor( 15 );
 		$.rect( hitBox );
 		try {
-			$.onmouse( "down", onmousedown, true, hitBox );
+			$.onMouse( "down", onmousedown, true, hitBox );
 		} catch( e ) {
 			printTestResult( "testHitboxMouseDown", false);
 		}
@@ -365,7 +365,7 @@
 		$.setColor( 15 );
 		$.rect( hitBox );
 		try {
-			$.onmouse( "down", onmousedown, true, hitBox, { "cool": "beans" } );
+			$.onMouse( "down", onmousedown, true, hitBox, { "cool": "beans" } );
 		} catch( e ) {
 			printTestResult( "testHitboxMouseDownWithData", false);
 		}
@@ -385,7 +385,7 @@
 
 	function testBasicMouseMoveOnce() {
 		try {
-			$.onmouse( "move", onmousedown, true );
+			$.onMouse( "move", onmousedown, true );
 		} catch( e ) {
 			printTestResult( "testBasicMouseMoveOnce", false);
 		}
@@ -409,7 +409,10 @@
 		let testButton2 = true;
 
 		const interval = setInterval( () => {
-			const mouse = $.inmouse();
+			const mouse = $.inMouse();
+			if( mouse === null ) {
+				return;
+			}
 			if( testMoveX && lastX && mouse.x !== lastX ) {
 				printTestResult( "testInMouseMoveX", true );
 				testMoveX = false;
@@ -451,49 +454,49 @@
 
 	function testBasicTouchStart() {
 		try {
-			$.ontouch( "start", ontouchstart );
+			$.onTouch( "down", ontouchstart );
 		} catch( e ) {
 			printTestResult( "testBasicTouchStart", false );
 		}
 
 		function ontouchstart( touches ) {
-			if( touches && touches.length > 0 && touches[ 0 ].action === "start" ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "down" ) {
 				printTestResult( "testBasicTouchStart", true );
 			} else {
 				printTestResult( "testBasicTouchStart", false );
 			}
-			$.offtouch( "start", ontouchstart );
+			$.offTouch( "down", ontouchstart );
 			nextTest( tests, test++ );
 		}
 	}
 
 	function testBasicTouchEnd() {
 		try {
-			$.ontouch( "end", ontouchend );
+			$.onTouch( "up", ontouchend );
 		} catch( e ) {
 			printTestResult( "testBasicTouchEnd", false );
 		}
 
 		function ontouchend( touches ) {
-			if( touches && touches.length > 0 && touches[ 0 ].action === "end" ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "up" ) {
 				printTestResult( "testBasicTouchEnd", true );
 			} else {
 				printTestResult( "testBasicTouchEnd", false );
 			}
-			$.offtouch( "end", ontouchend );
+			$.offTouch( "up", ontouchend );
 			nextTest( tests, test++ );
 		}
 	}
 
 	function testBasicTouchStartOnce() {
 		try {
-			$.ontouch( "start", ontouchstart, true );
+			$.onTouch( "down", ontouchstart, true );
 		} catch( e ) {
 			printTestResult( "testBasicTouchStartOnce", false );
 		}
 
 		function ontouchstart( touches ) {
-			if( touches && touches.length > 0 && touches[ 0 ].action === "start" ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "down" ) {
 				printTestResult( "testBasicTouchStartOnce", true );
 			} else {
 				printTestResult( "testBasicTouchStartOnce", false );
@@ -507,13 +510,13 @@
 		$.setColor( 15 );
 		$.rect( hitBox );
 		try {
-			$.ontouch( "start", ontouchstart, true, hitBox );
+			$.onTouch( "down", ontouchstart, true, hitBox );
 		} catch( e ) {
 			printTestResult( "testHitboxTouchStart", false );
 		}
 
 		function ontouchstart( touches ) {
-			if( touches && touches.length > 0 && touches[ 0 ].action === "start" ) {
+			if( touches && touches.length > 0 && touches[ 0 ].action === "down" ) {
 				printTestResult( "testHitboxTouchStart", true );
 				$.setColor( 2 );
 			} else {
@@ -530,13 +533,16 @@
 		$.setColor( 15 );
 		$.rect( hitBox );
 		try {
-			$.ontouch( "start", ontouchstart, true, hitBox, { "cool": "beans" } );
+			$.onTouch( "down", ontouchstart, true, hitBox, { "cool": "beans" } );
 		} catch( e ) {
 			printTestResult( "testHitboxTouchStartWithData", false );
 		}
 
 		function ontouchstart( touches, customData ) {
-			if( touches && touches.length > 0 && touches[ 0 ].action === "start" && customData.cool ) {
+			if(
+				touches && touches.length > 0 && touches[ 0 ].action === "down" &&
+				customData.cool
+			) {
 				printTestResult( "testHitboxTouchStartWithData", true );
 				$.setColor( 2 );
 			} else {
@@ -550,7 +556,7 @@
 
 	function testBasicTouchMoveOnce() {
 		try {
-			$.ontouch( "move", ontouchmove, true );
+			$.onTouch( "move", ontouchmove, true );
 		} catch( e ) {
 			printTestResult( "testBasicTouchMoveOnce", false );
 		}
@@ -573,7 +579,7 @@
 		let testTouchCount = true;
 
 		const interval = setInterval( () => {
-			const touches = $.intouch();
+			const touches = $.inTouch();
 			if( testMoveX && lastX && touches.length > 0 && touches[ 0 ].x !== lastX ) {
 				printTestResult( "testInTouchMoveX", true );
 				testMoveX = false;
@@ -614,7 +620,7 @@
 
 	function testBasicPressDown() {
 		try {
-			$.onpress( "down", onpressdown );
+			$.onPress( "down", onpressdown );
 		} catch( e ) {
 			printTestResult( "testBasicPressDown", false );
 		}
@@ -625,14 +631,14 @@
 			} else {
 				printTestResult( "testBasicPressDown", false );
 			}
-			$.offpress( "down", onpressdown );
+			$.offPress( "down", onpressdown );
 			nextTest( tests, test++ );
 		}
 	}
 
 	function testBasicPressUp() {
 		try {
-			$.onpress( "up", onpressup );
+			$.onPress( "up", onpressup );
 		} catch( e ) {
 			printTestResult( "testBasicPressUp", false );
 		}
@@ -643,14 +649,14 @@
 			} else {
 				printTestResult( "testBasicPressUp", false );
 			}
-			$.offpress( "up", onpressup );
+			$.offPress( "up", onpressup );
 			nextTest( tests, test++ );
 		}
 	}
 
 	function testBasicPressDownOnce() {
 		try {
-			$.onpress( "down", onpressdown, true );
+			$.onPress( "down", onpressdown, true );
 		} catch( e ) {
 			printTestResult( "testBasicPressDownOnce", false );
 		}
@@ -672,7 +678,7 @@
 		$.setColor( 15 );
 		$.rect( hitBox );
 		try {
-			$.onpress( "down", onpressdown, true, hitBox );
+			$.onPress( "down", onpressdown, true, hitBox );
 		} catch( e ) {
 			printTestResult( "testHitboxPressDown", false );
 		}
@@ -696,7 +702,7 @@
 		$.setColor( 15 );
 		$.rect( hitBox );
 		try {
-			$.onpress( "down", onpressdown, true, hitBox, { "cool": "beans" } );
+			$.onPress( "down", onpressdown, true, hitBox, { "cool": "beans" } );
 		} catch( e ) {
 			printTestResult( "testHitboxPressDownWithData", false );
 		}
@@ -716,7 +722,7 @@
 
 	function testBasicPressMoveOnce() {
 		try {
-			$.onpress( "move", onpressmove, true );
+			$.onPress( "move", onpressmove, true );
 		} catch( e ) {
 			printTestResult( "testBasicPressMoveOnce", false );
 		}
@@ -739,7 +745,10 @@
 		let testButtons = true;
 
 		const interval = setInterval( () => {
-			const press = $.inpress();
+			const press = $.inPress();
+			if( press === null ) {
+				return;
+			}
 			if( testMoveX && lastX && press.x !== lastX ) {
 				printTestResult( "testInPressMoveX", true );
 				testMoveX = false;
@@ -764,18 +773,18 @@
 
 	function testBasicClick() {
 		try {
-			$.onclick( onclick );
+			$.onClick( onclick );
 		} catch( e ) {
 			printTestResult( "testBasicClick", false );
 		}
 
-		function onclick( data ) {
+		function onClick( data ) {
 			if( data && data.action === "up" ) {
 				printTestResult( "testBasicClick", true );
 			} else {
 				printTestResult( "testBasicClick", false );
 			}
-			$.offclick( onclick );
+			$.offClick( onclick );
 			nextTest( tests, test++ );
 		}
 	}
@@ -785,12 +794,12 @@
 		$.setColor( 15 );
 		$.rect( hitBox );
 		try {
-			$.onclick( onclick, true, hitBox );
+			$.onClick( onclick, true, hitBox );
 		} catch( e ) {
 			printTestResult( "testHitboxClick", false );
 		}
 
-		function onclick( data ) {
+		function onClick( data ) {
 			if( data && data.action === "up" ) {
 				printTestResult( "testHitboxClick", true );
 				$.setColor( 2 );
@@ -808,12 +817,12 @@
 		$.setColor( 15 );
 		$.rect( hitBox );
 		try {
-			$.onclick( onclick, true, hitBox, { "cool": "beans" } );
+			$.onClick( onclick, true, hitBox, { "cool": "beans" } );
 		} catch( e ) {
 			printTestResult( "testHitboxClickWithData", false );
 		}
 
-		function onclick( data, customData ) {
+		function onClick( data, customData ) {
 			if( data && data.action === "up" && customData.cool ) {
 				printTestResult( "testHitboxClickWithData", true );
 				$.setColor( 2 );

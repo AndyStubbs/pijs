@@ -4,8 +4,8 @@ isScreen = true
 plugin = "pointer"
 summary = "Starts mouse input tracking for this screen."
 description = """
-Starts mouse tracking on the screen canvas. Tracking also starts on first use: the first inmouse(),
-inpress(), or handler registration. After stopMouse(), only startMouse() starts tracking again.
+Starts mouse tracking on the screen canvas. Tracking also starts on first use: the first inMouse(),
+inPress(), or handler registration. After stopMouse(), only startMouse() starts tracking again.
 
 When the page is hidden, held buttons are released through the 'up' handlers, with cancelled set to
 true.
@@ -16,7 +16,7 @@ example = """
 $.screen( "300x200" );
 $.stopMouse();
 $.print( "Mouse will be enabled in 3 seconds." );
-$.onmouse( "move", ( mouseData ) => {
+$.onMouse( "move", ( mouseData ) => {
 	$.setPosPx( mouseData.x, mouseData.y );
 	var pos = $.getPos();
 	$.setPos( pos.col, pos.row );

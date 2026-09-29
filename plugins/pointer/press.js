@@ -24,18 +24,21 @@ export function registerPress( pluginApi, helpers ) {
 	m_triggerEventListeners = helpers.triggerEventListeners;
 	m_triggerClickListeners = helpers.triggerClickListeners;
 
+
+	// The latest press data, or null before the first event and while its input is stopped
+	pluginApi.addScreenDataItem( "press", null );
 	pluginApi.addScreenDataItem( "onPressEventListeners", {} );
 	pluginApi.addScreenDataItem( "onClickEventListeners", {} );
 
 	pluginApi.addScreenInitFunction( initPressData );
 
-	pluginApi.addCommand( "inpress", inpress, true, [] );
+	pluginApi.addCommand( "inPress", inPress, true, [] );
 	pluginApi.addCommand(
-		"onpress", onpress, true, [ "mode", "fn", "once", "hitBox", "customData" ]
+		"onPress", onPress, true, [ "mode", "fn", "once", "hitBox", "customData" ]
 	);
-	pluginApi.addCommand( "offpress", offpress, true, [ "mode", "fn" ] );
-	pluginApi.addCommand( "onclick", onclick, true, [ "fn", "once", "hitBox", "customData" ] );
-	pluginApi.addCommand( "offclick", offclick, true, [ "fn" ] );
+	pluginApi.addCommand( "offPress", offPress, true, [ "mode", "fn" ] );
+	pluginApi.addCommand( "onClick", onClick, true, [ "fn", "once", "hitBox", "customData" ] );
+	pluginApi.addCommand( "offClick", offClick, true, [ "fn" ] );
 
 	function initPressData( screenData ) {
 		screenData.onPressEventListeners = {
@@ -49,20 +52,17 @@ export function registerPress( pluginApi, helpers ) {
 	}
 
 	/**
-	 * Read the most recent mouse or touch press state.
+	 * Read the latest press data, from the mouse or the touches: the frozen object of the last
+	 * event, or null before the first event and while the input it came from is stopped.
 	 *
 	 * @param {Object} screenData - Screen state.
-	 * @returns {Object}
+	 * @returns {Object|null}
 	 */
-	function inpress( screenData ) {
-		g_target.validatePointerTarget( screenData, "inpress" );
+	function inPress( screenData ) {
+		g_target.validatePointerTarget( screenData, "inPress" );
 		g_mouse.startMouseInternal( screenData );
 		g_touch.startTouchInternal( screenData );
-		if( screenData.lastEvent === "touch" ) {
-			return getTouchPress( screenData );
-		} else {
-			return screenData.api.inmouse();
-		}
+		return screenData.press;
 	}
 
 	/**
@@ -72,8 +72,8 @@ export function registerPress( pluginApi, helpers ) {
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function onpress( screenData, options ) {
-		g_target.validatePointerTarget( screenData, "onpress" );
+	function onPress( screenData, options ) {
+		g_target.validatePointerTarget( screenData, "onPress" );
 		const mode = options.mode;
 		const fn = options.fn;
 		const once = options.once;
@@ -81,27 +81,28 @@ export function registerPress( pluginApi, helpers ) {
 		const customData = options.customData;
 
 		onevent(
-			mode, fn, once, hitBox, [ "down", "up", "move" ], "onpress",
-			screenData.onPressEventListeners, null, null, customData
+			mode, fn, once, hitBox, [ "down", "up", "move" ], "onPress",
+			screenData.onPressEventListeners, customData
 		);
 		g_mouse.startMouseInternal( screenData );
 		g_touch.startTouchInternal( screenData );
 	}
 
 	/**
-	 * Remove matching combined press listeners.
+	 * Remove matching combined press listeners: by mode and function, every handler of a mode, or
+	 * a function from every mode.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function offpress( screenData, options ) {
+	function offPress( screenData, options ) {
 		const mode = options.mode;
 		const fn = options.fn;
 
 		offevent(
-			mode, fn, [ "down", "up", "move" ], "offpress",
-			screenData.onPressEventListeners
+			mode, fn, [ "down", "up", "move" ], "offPress",
+			screenData.onPressEventListeners, "press"
 		);
 	}
 
@@ -112,8 +113,8 @@ export function registerPress( pluginApi, helpers ) {
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function onclick( screenData, options ) {
-		g_target.validatePointerTarget( screenData, "onclick" );
+	function onClick( screenData, options ) {
+		g_target.validatePointerTarget( screenData, "onClick" );
 		const fn = options.fn;
 		const once = options.once;
 		let hitBox = options.hitBox;
@@ -129,25 +130,26 @@ export function registerPress( pluginApi, helpers ) {
 		}
 
 		onevent(
-			"click", fn, once, hitBox, [ "click" ], "onclick",
-			screenData.onClickEventListeners, null, null, customData
+			"click", fn, once, hitBox, [ "click" ], "onClick",
+			screenData.onClickEventListeners, customData
 		);
 		g_mouse.startMouseInternal( screenData );
 		g_touch.startTouchInternal( screenData );
 	}
 
 	/**
-	 * Remove matching click listeners.
+	 * Remove matching click listeners. Click has one mode, so without a function every click
+	 * handler of the screen is removed.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function offclick( screenData, options ) {
+	function offClick( screenData, options ) {
 		const fn = options.fn;
 		offevent(
-			"click", fn, [ "click" ], "offclick",
-			screenData.onClickEventListeners
+			"click", fn, [ "click" ], "offClick",
+			screenData.onClickEventListeners, "click"
 		);
 	}
 
@@ -187,72 +189,47 @@ export function triggerPressListeners( screenData, mode, data ) {
 
 /**
  * Update the screen's click listeners for one pointer: a primary-button down arms, its release
- * fires inside the hit box, and any other release or a cancel disarms.
+ * fires inside the hit box, and any other release or a cancel disarms. Click data is the
+ * release's pointer data with `action: "click"`.
  *
  * @param {Object} screenData - Screen state.
- * @param {Object} data - Pointer data; for `"up"`, the click data.
+ * @param {Object} data - Pointer data of the down or release.
  * @param {string} action - `"down"`, `"up"`, or `"cancel"`.
  * @param {string|number} pointerId - `"mouse"`, or the touch identifier.
  * @returns {void}
  */
 export function triggerClickListeners( screenData, data, action, pointerId ) {
 	if( m_triggerClickListeners ) {
+		if( action === "up" ) {
+			data = g_target.createPointerData( { ...data, "action": "click" } );
+		}
 		m_triggerClickListeners( data, screenData.onClickEventListeners, action, pointerId );
 	}
 }
 
+// Mouse press data has no touches
+const NO_TOUCHES = Object.freeze( [] );
+
 /**
- * Build touch press data: the primary touch while it is down, then its release. `touches` holds
- * the press itself followed by the other touches still down.
+ * Build frozen mouse press data: the mouse data with an empty `touches`.
  *
- * @param {Object} screenData - Screen state.
- * @param {Object} [record] - Touch fields and `buttons`; the screen's touch press by default.
- *   Click data passes the released touch.
+ * @param {Object} mouseData - Mouse data.
  * @returns {Object}
  */
-export function getTouchPress( screenData, record = screenData.touchPress ) {
-	if( record === null ) {
-		return {
-			"x": -1,
-			"y": -1,
-			"id": -1,
-			"lastX": -1,
-			"lastY": -1,
-			"action": "none",
-			"buttons": 0,
-			"cancelled": false,
-			"type": "touch"
-		};
-	}
-	const press = {
-		"x": record.x,
-		"y": record.y,
-		"id": record.id,
-		"lastX": record.lastX,
-		"lastY": record.lastY,
-		"action": record.action,
-		"cancelled": record.cancelled,
-		"type": "touch",
-		"buttons": record.buttons
-	};
-	const touches = [ press ];
-	for( const id in screenData.touches ) {
-		const touch = screenData.touches[ id ];
-		if( touch.id !== record.id ) {
-			touches.push( {
-				"x": touch.x,
-				"y": touch.y,
-				"id": touch.id,
-				"lastX": touch.lastX,
-				"lastY": touch.lastY,
-				"action": touch.action,
-				"cancelled": touch.cancelled,
-				"type": "touch"
-			} );
-		}
-	}
-	press.touches = touches;
-	return press;
+export function getMousePress( mouseData ) {
+	return Object.freeze( { ...mouseData, "touches": NO_TOUCHES } );
+}
+
+/**
+ * Build frozen touch press data: the primary touch while it is down, then its release.
+ * `touches` is the screen's frozen list of the touches still down, as separate objects, so the
+ * data serializes.
+ *
+ * @param {Object} screenData - Screen state, with a touch press.
+ * @returns {Object}
+ */
+export function getTouchPress( screenData ) {
+	return Object.freeze( { ...screenData.touchPress, "touches": screenData.touchList } );
 }
 
 

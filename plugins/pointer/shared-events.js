@@ -5,6 +5,20 @@
 "use strict";
 
 /**
+ * Throw a validation error with an error code.
+ *
+ * @param {Function} ErrorType - `TypeError` or `RangeError`.
+ * @param {string} message - Error message, starting with the command name.
+ * @param {string} code - Error code.
+ * @returns {never}
+ */
+function throwCode( ErrorType, message, code ) {
+	const error = new ErrorType( message );
+	error.code = code;
+	throw error;
+}
+
+/**
  * Create shared pointer listener registration, removal, and dispatch helpers.
  *
  * @param {Object} pluginApi - Plugin registration and screen access API.
@@ -14,72 +28,67 @@ export function createEventHelpers( pluginApi ) {
 
 	const utils = pluginApi.utils;
 
-	function onevent(
-		mode, fn, once, hitBox, modes, name, listenerArr, extraId, extraData, customData
-	) {
-		let modeFound = false;
-
-		for( let i = 0; i < modes.length; i++ ) {
-			if( mode === modes[ i ] ) {
-				modeFound = true;
-				break;
-			}
+	/**
+	 * Register a handler. A handler is identified by its mode and function, so registering the
+	 * same function for the same mode again does nothing, whatever its `once`, hit box, and
+	 * custom data.
+	 *
+	 * @param {string} mode - Event mode.
+	 * @param {Function} fn - Handler.
+	 * @param {boolean} once - Remove the registration before its first run.
+	 * @param {Object|null} hitBox - Area the event must be inside.
+	 * @param {Array<string>} modes - Modes of the command.
+	 * @param {string} name - Command name for error messages.
+	 * @param {Object} listenerArr - Registrations by mode.
+	 * @param {*} customData - Data passed to the handler.
+	 * @returns {void}
+	 */
+	function onevent( mode, fn, once, hitBox, modes, name, listenerArr, customData ) {
+		checkMode( name, mode, modes );
+		checkFunction( name, fn );
+		if( once != null && typeof once !== "boolean" ) {
+			throwCode( TypeError, `${name}: once must be a boolean.`, "INVALID_ONCE" );
 		}
+		once = once === true;
 
-		if( !modeFound ) {
-			const error = new Error(
-				`${name}: mode needs to be one of the following: ${modes.join( ", " )}.`
-			);
-			error.code = "INVALID_MODE";
-			throw error;
-		}
-
-		once = !!( once );
-
-		if( typeof fn !== "function" ) {
-			const error = new Error( `${name}: fn is not a valid function.` );
-			error.code = "INVALID_FUNCTION";
-			throw error;
-		}
-
-		if( hitBox ) {
+		if( hitBox != null ) {
 			if(
+				typeof hitBox !== "object" ||
 				!Number.isFinite( hitBox.x ) ||
 				!Number.isFinite( hitBox.y ) ||
 				!Number.isFinite( hitBox.width ) ||
 				!Number.isFinite( hitBox.height )
 			) {
-				const error = new Error(
-					`${name}: hitBox must have properties x, y, width, and height whose values ` +
-					"are finite numbers."
+				throwCode(
+					TypeError,
+					`${name}: hitBox must be an object with properties x, y, width, and height ` +
+					"whose values are finite numbers.",
+					"INVALID_HITBOX"
 				);
-				error.code = "INVALID_HITBOX";
-				throw error;
 			}
 			if( hitBox.width < 0 || hitBox.height < 0 ) {
-				const error = new RangeError(
-					`${name}: hitBox width and height must not be negative.`
+				throwCode(
+					RangeError,
+					`${name}: hitBox width and height must not be negative.`,
+					"INVALID_HITBOX"
 				);
-				error.code = "INVALID_HITBOX";
-				throw error;
 			}
 		}
 
-		let newMode = mode;
-
-		if( typeof extraId === "string" ) {
-			newMode = mode + extraId;
+		if( !listenerArr[ mode ] ) {
+			listenerArr[ mode ] = [];
 		}
 
-		if( !listenerArr[ newMode ] ) {
-			listenerArr[ newMode ] = [];
+		for( const listener of listenerArr[ mode ] ) {
+			if( listener.fn === fn ) {
+				return;
+			}
 		}
 
-		listenerArr[ newMode ].push( {
+		listenerArr[ mode ].push( {
 			"fn": fn,
 			"once": once,
 			"hitBox": hitBox,
-			"extraData": extraData,
 			"armedPointers": null,
 			"isRemoved": false,
 			"customData": customData,
@@ -87,44 +96,79 @@ export function createEventHelpers( pluginApi ) {
 		} );
 	}
 
-	function offevent( mode, fn, modes, name, listenerArr, extraId ) {
-		let modeFound = false;
-
-		for( let i = 0; i < modes.length; i++ ) {
-			if( mode === modes[ i ] ) {
-				modeFound = true;
-				break;
-			}
-		}
-
-		if( !modeFound ) {
-			const error = new Error(
-				`${name}: mode needs to be one of the following: ${modes.join( ", " )}.`
+	/**
+	 * Remove handlers by mode and function. Without a function, every handler of the mode is
+	 * removed; without a mode, the function is removed from every mode. Omitting both throws.
+	 *
+	 * @param {string|null} mode - Event mode, or null for every mode.
+	 * @param {Function|null} fn - Handler, or null for every handler of the mode.
+	 * @param {Array<string>} modes - Modes of the command.
+	 * @param {string} name - Command name for error messages.
+	 * @param {Object} listenerArr - Registrations by mode.
+	 * @param {string} clearType - `clearEvents()` type that removes every handler.
+	 * @returns {void}
+	 */
+	function offevent( mode, fn, modes, name, listenerArr, clearType ) {
+		if( mode == null && fn == null ) {
+			throwCode(
+				TypeError,
+				`${name}: mode or fn is required. To remove every handler, call ` +
+				`clearEvents( "${clearType}" ).`,
+				"INVALID_MODE"
 			);
-			error.code = "INVALID_MODE";
-			throw error;
 		}
 
-		if( typeof extraId === "string" ) {
-			mode += extraId;
+		let offModes = modes;
+		if( mode != null ) {
+			checkMode( name, mode, modes );
+			offModes = [ mode ];
+		}
+		if( fn != null ) {
+			checkFunction( name, fn );
 		}
 
-		const isClear = fn == null;
-
-		if( !isClear && typeof fn !== "function" ) {
-			const error = new Error( `${name}: fn is not a valid function.` );
-			error.code = "INVALID_FUNCTION";
-			throw error;
-		}
-
-		const listeners = listenerArr[ mode ];
-		if( !listeners ) {
-			return;
-		}
-		for( let i = listeners.length - 1; i >= 0; i-- ) {
-			if( isClear || listeners[ i ].fn === fn ) {
-				removeListener( listenerArr, mode, listeners[ i ] );
+		for( const offMode of offModes ) {
+			const listeners = listenerArr[ offMode ];
+			if( !listeners ) {
+				continue;
 			}
+			for( let i = listeners.length - 1; i >= 0; i-- ) {
+				if( fn == null || listeners[ i ].fn === fn ) {
+					removeListener( listenerArr, offMode, listeners[ i ] );
+				}
+			}
+		}
+	}
+
+	/**
+	 * Check a handler mode: `TypeError` for a mode that is not a string, `RangeError` for one
+	 * that is not a mode of the command, both with code `INVALID_MODE`.
+	 *
+	 * @param {string} name - Command name for error messages.
+	 * @param {*} mode - Requested mode.
+	 * @param {Array<string>} modes - Modes of the command.
+	 * @returns {void}
+	 */
+	function checkMode( name, mode, modes ) {
+		const message = `${name}: mode must be one of the following: ${modes.join( ", " )}.`;
+		if( typeof mode !== "string" ) {
+			throwCode( TypeError, message, "INVALID_MODE" );
+		}
+		if( !modes.includes( mode ) ) {
+			throwCode( RangeError, message, "INVALID_MODE" );
+		}
+	}
+
+	/**
+	 * Check a handler function.
+	 *
+	 * @param {string} name - Command name for error messages.
+	 * @param {*} fn - Requested handler.
+	 * @returns {void}
+	 */
+	function checkFunction( name, fn ) {
+		if( typeof fn !== "function" ) {
+			throwCode( TypeError, `${name}: fn must be a function.`, "INVALID_FUNCTION" );
 		}
 	}
 
@@ -218,6 +262,7 @@ export function createEventHelpers( pluginApi ) {
 					if( newData.length > 0 ) {
 						isHit = true;
 					}
+					Object.freeze( newData );
 				} else {
 					newData = data;
 					if( utils.inRange( data, listener.hitBox ) ) {

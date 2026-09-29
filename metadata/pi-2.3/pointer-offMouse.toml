@@ -1,18 +1,27 @@
-title = "offmouse"
+title = "offMouse"
 category = "pointer"
 isScreen = true
 plugin = "pointer"
 summary = "Removes a mouse event handler."
 description = """
-Removes every registration of the function for the mode. If fn is omitted or null, removes every
-handler of the mode. Handlers of other modes are not affected. A handler removed during an event
-does not run later in it.
+Removes mouse event handlers registered with onMouse. A handler is identified by its mode and
+callback; the once, hitBox, and customData it was registered with do not matter.
+
+With a mode and a callback, removes that handler. Without a callback, removes every handler of the
+mode. With a callback and no mode (null, or no mode in the object form), removes the callback from
+every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "mouse" ) removes
+every mouse handler.
+
+A handler removed during an event does not run later in it.
+
+The mode and callback are checked as onMouse() checks them, with codes INVALID_MODE and
+INVALID_FUNCTION.
 """
 example = """
 $.screen( "300x200" );
 $.print( "Move mouse to paint screen, click to stop." );
-$.onmouse( "move", mouseMove );
-$.onmouse( "up", mouseStop, true );
+$.onMouse( "move", mouseMove );
+$.onMouse( "up", mouseStop, true );
 
 // Mouse move function receives mouseData and optional customData
 function mouseMove( mouseData, customData ) {
@@ -29,14 +38,15 @@ function mouseStop( mouseData, customData ) {
 	var pos = $.getPos();
 	$.setPos( pos.col - 4, pos.row );
 	$.print( "Stopped!", true );
-	$.offmouse( "move", mouseMove );
+	$.offMouse( "move", mouseMove );
 }
 """
 
 [[parameters]]
 name = "mode"
-type = "string"
-description = "Event mode ('down', 'up', or 'move') of the handler."
+type = "string | null"
+description = "Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode."
+optional = true
 
 [[parameters]]
 name = "fn"

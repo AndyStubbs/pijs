@@ -1,18 +1,27 @@
-title = "offtouch"
+title = "offTouch"
 category = "pointer"
 isScreen = true
 plugin = "pointer"
 summary = "Removes a touch event handler."
 description = """
-Removes every registration of the function for the mode. If fn is omitted or null, removes every
-handler of the mode. Handlers of other modes are not affected. A handler removed during an event
-does not run later in it.
+Removes touch event handlers registered with onTouch. A handler is identified by its mode and
+callback; the once, hitBox, and customData it was registered with do not matter.
+
+With a mode and a callback, removes that handler. Without a callback, removes every handler of the
+mode. With a callback and no mode (null, or no mode in the object form), removes the callback from
+every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "touch" ) removes
+every touch handler.
+
+A handler removed during an event does not run later in it.
+
+The mode and callback are checked as onTouch() checks them, with codes INVALID_MODE and
+INVALID_FUNCTION.
 """
 example = """
 $.screen( "300x200" );
 $.print( "Touch and drag to paint screen, touch up to stop." );
-$.ontouch( "move", touchMove );
-$.ontouch( "end", touchStop, true );
+$.onTouch( "move", touchMove );
+$.onTouch( "up", touchStop, true );
 
 // Touch move function receives the touches that moved and optional customData
 function touchMove( touches, customData ) {
@@ -29,14 +38,15 @@ function touchStop( touches, customData ) {
 	var pos = $.getPos();
 	$.setPos( pos.col - 4, pos.row );
 	$.print( "Stopped!", true );
-	$.offtouch( "move", touchMove );
+	$.offTouch( "move", touchMove );
 }
 """
 
 [[parameters]]
 name = "mode"
-type = "string"
-description = "Event mode ('start', 'end', or 'move') of the handler."
+type = "string | null"
+description = "Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode."
+optional = true
 
 [[parameters]]
 name = "fn"

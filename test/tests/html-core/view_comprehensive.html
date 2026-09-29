@@ -197,7 +197,7 @@ void main() {
 		// #s1 120x80 at (8,368)  #s2 at (136,368)  #box 80x60 at (264,368)
 		main = $.screen( "640x360", "main" );
 		$.setFont( 1 );
-		$.set( { "enableContextMenu": false } );
+		$.set( { "contextMenu": false } );
 
 		// Translation + screenToView
 		$.pushView( 8, 8, 72, 52 );
@@ -715,8 +715,8 @@ void main() {
 		let last = { "x": 0, "y": 0 };
 		let isDrawing = false;
 		setInterval( function() {
-			const mouse = $.inmouse();
-			if( mouse.buttons > 0 ) {
+			const mouse = $.inMouse();
+			if( mouse !== null && mouse.buttons > 0 ) {
 				if( !isDrawing ) {
 					$.pset( mouse.x, mouse.y );
 				} else if( mouse.x !== last.x || mouse.y !== last.y ) {

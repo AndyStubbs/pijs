@@ -138,28 +138,28 @@
 		}
 
 		function setupMouse() {
-			$.onmouse( "move", ( data ) => {
+			$.onMouse( "move", ( data ) => {
 				log( `Mouse: Moved to (${data.x}, ${data.y})` );
 			} );
 			log( "✓ Mouse handler added" );
 		}
 
 		function setupTouch() {
-			$.ontouch( "start", ( data ) => {
+			$.onTouch( "down", ( data ) => {
 				log( `Touch: Touch started at (${data[0].x}, ${data[0].y})` );
 			} );
 			log( "✓ Touch handler added" );
 		}
 
 		function setupPress() {
-			$.onpress( "down", ( data ) => {
+			$.onPress( "down", ( data ) => {
 				log( `Press: Press down at (${data.x}, ${data.y})` );
 			} );
 			log( "✓ Press handler added" );
 		}
 
 		function setupClick() {
-			$.onclick( ( data ) => {
+			$.onClick( ( data ) => {
 				log( `Click: Clicked at (${data.x}, ${data.y})` );
 			} );
 			log( "✓ Click handler added" );

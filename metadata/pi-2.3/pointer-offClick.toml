@@ -1,11 +1,13 @@
-title = "offclick"
+title = "offClick"
 category = "pointer"
 isScreen = true
 plugin = "pointer"
 summary = "Removes a click event handler."
 description = """
-Removes every registration of the function. If fn is omitted or null, removes every click handler
-of the screen. A handler removed during an event does not run later in it.
+Removes the click handler registered with the function; the once, hitBox, and customData it was
+registered with do not matter. Click has one mode, so if fn is omitted or null, removes every click
+handler of the screen. A handler removed during an event does not run later in it. The callback
+is checked as onClick() checks it, with code INVALID_FUNCTION.
 """
 example = """
 $.screen( "300x200" );
@@ -14,17 +16,17 @@ const handler = ( clickData ) => {
 	$.setColor( 3 );
 	$.print( "Clicked!", true );
 };
-$.onclick( handler );
+$.onClick( handler );
 let countDown = 5;
 const interval = setInterval( () => {
 	$.setColor( 7 );
 	$.setPos( 0, 5 - countDown );
-	$.print( `Count down to offclick: ${countDown}` );
+	$.print( `Count down to offClick: ${countDown}` );
 	countDown -= 1;
 	if( countDown === -1 ) {
 		$.print( "Click is now disabled!" );
 		clearInterval( interval );
-		$.offclick( handler );
+		$.offClick( handler );
 	}
 }, 1000 );
 """

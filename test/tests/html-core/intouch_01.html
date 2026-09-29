@@ -40,15 +40,15 @@ $.ready( function () {
 	$.setColor( 15 );
 	var corner = $.get(0, 0, 8, 14);
 
-	// Read the touches after every touch event, once the plugin has seen it, so each state is
-	// drawn once whatever the timing
+	// Read the touches after every pointer event, once the plugin has seen it, so each state
+	// is drawn once whatever the timing
 	draw();
-	for( var type of [ "touchstart", "touchmove", "touchend", "touchcancel" ] ) {
+	for( var type of [ "pointerdown", "pointermove", "pointerup", "pointercancel" ] ) {
 		$.canvas().addEventListener( type, draw );
 	}
 
 	function draw() {
-		var touches = $.intouch();
+		var touches = $.inTouch();
 		$.put( corner, 0, 0 );
 		$.setPos(0, 0);
 		$.print( touches.length );

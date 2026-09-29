@@ -34,7 +34,7 @@ $.ready( function () {
 	$.rect( hitbox.x, hitbox.y, hitbox.width, hitbox.height );
 	$.setColor( 2 );
 	
-	$.ontouch( "start", function ( touches, customData ) {
+	$.onTouch( "down", function ( touches, customData ) {
 		var i, touch;
 		console.log( customData );
 		for( i = 0; i < touches.length; i++ ) {
@@ -42,7 +42,7 @@ $.ready( function () {
 			$.pset( touch.x, touch.y );
 		}
 	}, false, hitbox, "Touch Start" );
-	$.ontouch( "move", function ( touches ) {
+	$.onTouch( "move", function ( touches ) {
 		var i, touch;
 		for( i = 0; i < touches.length; i++ ) {
 			touch = touches[ i ];
@@ -53,7 +53,7 @@ $.ready( function () {
 			}
 		}
 	}, false, hitbox );
-	$.ontouch( "end", function ( touches ) {
+	$.onTouch( "up", function ( touches ) {
 		var i, touch;
 		for( i = 0; i < touches.length; i++ ) {
 			touch = touches[ i ];

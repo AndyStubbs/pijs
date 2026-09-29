@@ -13,9 +13,10 @@ This folder holds measurements and reproductions for the 2.3 pointer audit
 | --- | --- |
 | `size-baseline.json` | `npm run size -- --out=docs/evidence/pointer-2.3/size-baseline.json` at the revision |
 | `size-phase1.json` | The same command at the exit of pointer Phase 1 (tasks 1.1–1.9), 2026-09-27 |
+| `size-phase2.json` | The same command at the exit of pointer Phase 2 (tasks 2.1–2.8), 2026-09-28 |
 | `probes.js` | Reproductions P1–P17 and T1, run in Chromium, Firefox and WebKit against fresh in-memory bundles of the current source, plus a load check of the manual pointer pages |
 | `probes-output.json` | Observed and expected results per engine and probe, with page errors |
-| `device-check.html` | A page for the manual mouse pass: Pi.js state next to the browser's own mouse events |
+| `device-check.html` | A page for the manual mouse pass: Pi.js state next to the browser's own mouse and pen pointer events (mouse events before Pointer 2.2) |
 
 ## Size baseline
 
@@ -46,6 +47,23 @@ page and the stop commands, dispatch isolation, and the checks for presses on th
 Full change also includes keyboard Phase 1 and core changes since the baseline; Lite has not
 changed since keyboard Phase 1 exit (48,947), so pointer Phase 1 added 856 bytes to Full
 (73,318 to 74,174).
+
+## Size at Phase 2 exit
+
+`size-phase2.json`, measured on the `pointer-2` branch after pointer tasks 2.1–2.8. The
+standalone plugin is 2.0.0.
+
+| Bundle | Bytes | Gzip | Gzip change from Phase 1 |
+| --- | --- | --- | --- |
+| `pointer` plugin 2.0.0 (standalone IIFE) | 14,573 | 5,056 | +283 |
+| `pi.min.js` (Full, includes pointer) | 218,422 | 76,528 | +2,354 |
+| `pi.lite.min.js` (no pointer) | 141,180 | 49,675 | +728 |
+
+The pointer growth is the Pointer Events listeners with pointer capture, the frozen per-event
+data and press records, the removal forms and duplicate check, the per-screen gesture settings,
+and validation with per-parameter codes; the touch-event and window-release code they replace
+is gone. The Full change also includes keyboard Phase 2 (+716 standalone), gamepad Phase 1
+(+594), and the core tasks merged since the Phase 1 measurement, which Lite's +728 reflects.
 
 ## Probes
 

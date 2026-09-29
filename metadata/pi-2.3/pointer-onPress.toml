@@ -1,28 +1,34 @@
-title = "onpress"
+title = "onPress"
 category = "pointer"
 isScreen = true
 plugin = "pointer"
 summary = "Registers a callback function for press events (mouse or touch)."
 description = """
 Registers a callback that runs for press events of the primary pointer, the mouse or the primary
-touch, with the press data and the optional custom data. Other touches reach ontouch handlers and
-intouch() only. With a hitBox, the callback runs only for presses inside it.
+touch, with the press data and the optional custom data. Other touches reach onTouch handlers and
+inTouch() only. With a hitBox, the callback runs only for presses inside it.
 
 'up' runs for the mouse release anywhere and for the primary touch's release, with cancelled set to
 true for a release the player did not make: a cancelled touch, a hidden page, or a stop command. A
 press that starts on the canvas border or padding is ignored. Registering starts mouse and touch
 tracking unless stopped.
 
-A handler runs until it is removed. Registering the same function again adds a second registration,
-and once removes only its own registration, before the handler runs. Handlers added during an event
-first run for the next event; a handler removed during an event does not run later in it. A handler
-that throws is reported with console.error(), and the other handlers still run.
+A handler runs until it is removed. A handler is identified by its mode and callback:
+registering the same callback for the same mode again does nothing, whatever its once, hitBox, and
+customData, and offPress removes it by those two. once removes the registration before the handler
+runs. Handlers added during an event first run for the next event; a handler removed during an
+event does not run later in it. A handler that throws is reported with console.error(), and the
+other handlers still run.
+
+The mode is 'down', 'up', or 'move', and once is a boolean or omitted. Invalid arguments throw a
+TypeError for a wrong type or a RangeError for an unknown mode or a negative hitBox size, with
+code INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
 
 Requires an onscreen screen.
 """
 example = """
 $.screen( "300x200" );
-$.onpress( "down", ( pressData ) => {
+$.onPress( "down", ( pressData ) => {
 	$.setPosPx( pressData.x, pressData.y );
 	$.print( `(${pressData.x}, ${pressData.y})` );
 } );
@@ -32,14 +38,14 @@ const hitBox = { "x": 10, "y": 10, "width": 100, "height": 50 };
 $.setColor( 2 );
 $.rect( hitBox );
 $.setColor( 7 );
-$.onpress( "move", ( pressData ) => {
+$.onPress( "move", ( pressData ) => {
 	$.setColor( 3 );
 	$.pset( pressData.x, pressData.y );
 	$.setColor( 7 );
 }, false, hitBox );
 
 // One-time handler
-$.onpress( "up", () => {
+$.onPress( "up", () => {
 	$.setPos( 0, 12 )
 	$.print( "press released once", true, true );
 }, true );

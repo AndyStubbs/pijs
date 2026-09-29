@@ -1,7 +1,19 @@
 # Commands and objects removed in Pi.js 2.3.
 methods = [
 	"inkey",
+	"inmouse",
+	"inpress",
+	"intouch",
+	"offclick",
 	"offkey",
-	"onkey"
+	"offmouse",
+	"offpress",
+	"offtouch",
+	"onclick",
+	"onkey",
+	"onmouse",
+	"onpress",
+	"ontouch",
+	"setEnableContextMenu"
 ]
 objects = []

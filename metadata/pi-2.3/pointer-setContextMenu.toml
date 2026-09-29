@@ -1,0 +1,30 @@
+title = "setContextMenu"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Enables or disables the right-click context menu."
+description = """
+Controls whether the browser's context menu opens on the screen canvas. The menu is suppressed
+from screen creation, whether or not mouse tracking runs, so right-clicks reach the mouse handlers
+instead; enable it here to let it open. The setting does not start mouse tracking, and stopping
+mouse tracking does not change it. isEnabled is a boolean, or omitted to suppress the menu; any
+other value throws a TypeError with code INVALID_IS_ENABLED.
+
+The option contextMenu of set() calls this command.
+
+Requires an onscreen screen.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Right-click to open the context menu." );
+$.setContextMenu( true );
+"""
+
+[[parameters]]
+name = "isEnabled"
+type = "boolean"
+description = "If true, the context menu opens. If false, it is suppressed."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

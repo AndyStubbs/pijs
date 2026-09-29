@@ -1,12 +1,13 @@
-title = "intouch"
+title = "inTouch"
 category = "pointer"
 isScreen = true
 plugin = "pointer"
 summary = "Gets the current touch state and starts tracking if needed."
 description = """
-Returns the touches still down, ordered by identifier, as new objects on each call; the array is
-empty when no touch is down. Each touch has its own action. Tracking starts on the first read
-unless stopTouch() was called.
+Returns the touches still down, ordered by identifier; the array is empty when no touch is down
+and while touch tracking is stopped. Each touch has its own action. The array and its touches are
+frozen: every read returns the same array until a touch changes, and each touch is the object the
+onTouch handlers received. Tracking starts on the first read unless stopTouch() was called.
 
 A touch that starts on the canvas border or padding is not tracked. Held touches are released when
 the page is hidden or stopTouch() is called.
@@ -18,7 +19,7 @@ $.screen( "300x200" );
 requestAnimationFrame( run );
 function run() {
 	$.cls();
-	const touches = $.intouch();
+	const touches = $.inTouch();
 	for( const touch of touches ) {
 		$.print( `Touch ${touch.id} at ${touch.x}, ${touch.y}` );
 	}

@@ -1,0 +1,81 @@
+title = "onTouch"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Registers a callback function for touch events."
+description = """
+Registers a callback that runs when a touch event occurs, with the touch it changed, in an array,
+and the optional custom data: 'down' receives the touch that started, 'move' the touch that moved,
+and 'up' the touch that ended, at the position where it lifted. Each touch is reported by its own
+event. Use inTouch() for every touch still down.
+
+With a hitBox, the callback receives only the changed touches inside it, and runs only when there
+is one. 'up' also runs with cancelled set to true when the browser cancels a touch, the page is
+hidden, or stopTouch() is called. A touch that starts on the canvas border or padding is ignored.
+A touch that starts on the canvas keeps reporting moves and its end when it leaves the canvas.
+While touch is tracked, the canvas has touch-action set to none, so the browser does not scroll or
+zoom with touches that start there. Registering starts tracking unless stopTouch() was called.
+
+A handler runs until it is removed. A handler is identified by its mode and callback:
+registering the same callback for the same mode again does nothing, whatever its once, hitBox, and
+customData, and offTouch removes it by those two. once removes the registration before the handler
+runs. Handlers added during an event first run for the next event; a handler removed during an
+event does not run later in it. A handler that throws is reported with console.error(), and the
+other handlers still run.
+
+The mode is 'down', 'up', or 'move', and once is a boolean or omitted. Invalid arguments throw a
+TypeError for a wrong type or a RangeError for an unknown mode or a negative hitBox size, with
+code INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
+
+Requires an onscreen screen.
+"""
+example = """
+$.screen( "300x200" );
+$.onTouch( "down", ( touches ) => {
+	for( const touch of touches ) {
+		$.setPosPx( touch.x, touch.y );
+		$.print( `Touch ${touch.id} started` );
+	}
+} );
+
+$.onTouch( "move", ( touches ) => {
+	$.setColor( 3 );
+	for( const touch of touches ) {
+		$.line( touch.lastX, touch.lastY, touch.x, touch.y );
+	}
+	$.setColor( 7 );
+} );
+"""
+
+[[parameters]]
+name = "mode"
+type = "string"
+description = "Event mode: 'down', 'up', or 'move'. Any other mode throws INVALID_MODE."
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( touches: Array<TouchData>, customData?: object ) => void"
+description = "Callback function that receives (touches, customData) with the changed touches."
+
+[[parameters]]
+name = "once"
+type = "boolean"
+description = "If true, this registration is removed before the callback's first run."
+optional = true
+
+[[parameters]]
+name = "hitBox"
+type = "HitBox"
+description = "Optional area; the callback receives only the changed touches inside it."
+optional = true
+
+[[parameters]]
+name = "customData"
+type = "any"
+description = "Optional custom data passed to the callback function."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

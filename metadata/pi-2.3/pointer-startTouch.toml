@@ -4,10 +4,12 @@ isScreen = true
 plugin = "pointer"
 summary = "Starts touch input tracking for this screen."
 description = """
-Starts touch tracking on the screen canvas. Tracking also starts on first use: the first intouch(),
-inpress(), or handler registration. After stopTouch(), only startTouch() starts tracking again.
+Starts touch tracking on the screen canvas, and sets its touch-action style to none so the browser
+does not scroll or zoom with touches on it; stopTouch() restores the previous value. Tracking also
+starts on first use: the first inTouch(), inPress(), or handler registration. After stopTouch(),
+only startTouch() starts tracking again.
 
-When the page is hidden, held touches are released through the 'end' handlers, with cancelled set
+When the page is hidden, held touches are released through the 'up' handlers, with cancelled set
 to true.
 
 Requires an onscreen screen.
@@ -16,7 +18,7 @@ example = """
 $.screen( "300x200" );
 $.stopTouch();
 $.print( "Touch will be enabled in 3 seconds." );
-$.ontouch( "move", ( touches ) => {
+$.onTouch( "move", ( touches ) => {
 	const touch = touches[ 0 ];
 	$.setPosPx( touch.x, touch.y );
 	var pos = $.getPos();

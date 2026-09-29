@@ -17,7 +17,7 @@ declare namespace Pi {
 	/**
 	 * Click event data (mouse or touch).
 	 *
-	 * The data of the release that completed a click, passed to onclick callbacks. For the mouse, it is the MouseData of the release; for a touch, it has the PressData fields of the touch that clicked, with buttons 0.
+	 * The data of the release that completed a click, passed to onClick callbacks, with action 'click'. It has the MouseData or TouchData fields of the release, and is frozen.
 	 */
 	interface ClickData {
 		/**
@@ -46,29 +46,24 @@ declare namespace Pi {
 		buttons: number;
 
 		/**
-		 * Always 'up', the release that completed the click.
+		 * Always 'click'.
 		 */
 		action: string;
+
+		/**
+		 * Input type: 'mouse', 'pen', or 'touch'.
+		 */
+		type: string;
+
+		/**
+		 * Pointer identifier of the mouse, pen, or touch that clicked.
+		 */
+		id: number;
 
 		/**
 		 * Always false: a cancelled release never clicks.
 		 */
 		cancelled: boolean;
-
-		/**
-		 * Input type: 'mouse' or 'touch'.
-		 */
-		type: string;
-
-		/**
-		 * Touch only: the identifier of the touch that clicked.
-		 */
-		id?: number;
-
-		/**
-		 * Touch only: this click object, followed by the touches still down.
-		 */
-		touches?: Array<TouchData>;
 	}
 
 	/**
@@ -305,7 +300,7 @@ declare namespace Pi {
 	/**
 	 * Rectangular area used for hit detection in event handlers.
 	 *
-	 * A rectangular area in screen pixels that restricts a pointer handler (onclick, onmouse, onpress, ontouch) to input inside it. A point is inside when x <= point.x < x + width and y <= point.y < y + height, so the left and top edges are included and the right and bottom edges are not.
+	 * A rectangular area in screen pixels that restricts a pointer handler (onClick, onMouse, onPress, onTouch) to input inside it. A point is inside when x <= point.x < x + width and y <= point.y < y + height, so the left and top edges are included and the right and bottom edges are not.
 	 *
 	 * Every value must be a finite number, and fractions are allowed. A negative width or height throws a RangeError with code INVALID_HITBOX.
 	 */
@@ -334,28 +329,28 @@ declare namespace Pi {
 	/**
 	 * Mouse state and event data.
 	 *
-	 * Mouse data containing position, button state, action, and previous position. Returned by inmouse() and passed to onmouse callbacks. Each read and each callback receives a new object.
+	 * Mouse data containing position, button state, action, and previous position. Returned by inMouse() and passed to onMouse callbacks. Mouse, touch, press, and click data share one shape: x, y, lastX, lastY, buttons, action, type, id, and cancelled. The data is created once per event and frozen: reads and handlers of the event receive the same object.
 	 *
 	 * Positions are in screen pixels. Moves over the canvas border or padding, and a release outside the canvas, report their true position, which can be outside the screen.
 	 */
 	interface MouseData {
 		/**
-		 * Current X coordinate in pixels.
+		 * X coordinate in pixels.
 		 */
 		x: number;
 
 		/**
-		 * Current Y coordinate in pixels.
+		 * Y coordinate in pixels.
 		 */
 		y: number;
 
 		/**
-		 * X coordinate before this event; the current X before the first event.
+		 * X coordinate before this event; the current X on a pointer's first event.
 		 */
 		lastX: number;
 
 		/**
-		 * Y coordinate before this event; the current Y before the first event.
+		 * Y coordinate before this event; the current Y on a pointer's first event.
 		 */
 		lastY: number;
 
@@ -365,19 +360,24 @@ declare namespace Pi {
 		buttons: number;
 
 		/**
-		 * Last action: 'none' before the first event, then 'down', 'move', or 'up'.
+		 * Last action: 'down', 'move', or 'up'.
 		 */
 		action: string;
 
 		/**
-		 * True for a release the player did not make: the page was hidden or stopMouse() was called with a button held. False otherwise.
-		 */
-		cancelled: boolean;
-
-		/**
-		 * Input type, always 'mouse' for mouse data.
+		 * Input type: 'pen' for a pen, otherwise 'mouse'.
 		 */
 		type: string;
+
+		/**
+		 * Pointer identifier of the mouse or pen.
+		 */
+		id: number;
+
+		/**
+		 * True for a release the player did not make: the browser cancelled the pointer, the page was hidden, or stopMouse() was called with a button held. False otherwise.
+		 */
+		cancelled: boolean;
 	}
 
 	/**
@@ -427,6 +427,11 @@ declare namespace Pi {
 		containerBgColor?: any;
 
 		/**
+		 * Enables or disables the right-click context menu.
+		 */
+		contextMenu?: boolean;
+
+		/**
 		 * Sets the default anchor point for images when drawing on the current screen.
 		 */
 		defaultAnchor?: { "x": number; "y": number };
@@ -457,11 +462,6 @@ declare namespace Pi {
 		displayShaderUniforms?: ShaderUniforms;
 
 		/**
-		 * Enables or disables the right-click context menu.
-		 */
-		enableContextMenu?: boolean;
-
-		/**
 		 * Sets the font for the current screen.
 		 */
 		font?: number;
@@ -487,7 +487,7 @@ declare namespace Pi {
 		palColors?: { "indices": Array<number>; "colors": Array<any> };
 
 		/**
-		 * Enables or disables browser pinch zoom gestures.
+		 * Enables or disables browser pinch zoom on the screen canvas.
 		 */
 		pinchZoom?: boolean;
 
@@ -693,30 +693,28 @@ declare namespace Pi {
 	/**
 	 * Press state data (mouse or touch).
 	 *
-	 * Press data from the primary pointer: the mouse, or the primary touch. Returned by inpress() and passed to onpress callbacks; type tells which input it came from.
-	 *
-	 * For the mouse, it is the MouseData of the event. For touch, it is the primary touch, plus buttons (1 while it is down, 0 after its release), and touches, which holds this press object followed by the other touches still down. A touch is primary when it starts with no other touch down, and stays primary until it lifts; after that, no touch is primary until every touch is up.
+	 * Press data from the primary pointer: the mouse, or the primary touch. Returned by inPress() and passed to onPress callbacks; type tells which input it came from. It has the fields of MouseData or TouchData, plus touches. A touch is primary when it starts with no other touch down, and stays primary until it lifts; after that, no touch is primary until every touch is up. Press data is created once per event and frozen, and can be serialized with JSON.stringify().
 	 */
 	interface PressData {
 		/**
-		 * Current X coordinate in pixels.
+		 * X coordinate in pixels.
 		 */
 		x: number;
 
 		/**
-		 * Current Y coordinate in pixels.
+		 * Y coordinate in pixels.
 		 */
 		y: number;
 
 		/**
-		 * X coordinate before this event; null on a touch's first event.
+		 * X coordinate before this event; the current X on a pointer's first event.
 		 */
-		lastX: number | null;
+		lastX: number;
 
 		/**
-		 * Y coordinate before this event; null on a touch's first event.
+		 * Y coordinate before this event; the current Y on a pointer's first event.
 		 */
-		lastY: number | null;
+		lastY: number;
 
 		/**
 		 * Mouse: the MouseData button bitmask. Touch: 1 while the primary touch is down, 0 after.
@@ -724,9 +722,19 @@ declare namespace Pi {
 		buttons: number;
 
 		/**
-		 * Mouse: 'none', 'down', 'move', or 'up'. Touch: 'start' or 'move' while the primary touch is down, then 'up'; 'none' when no touch press has been seen.
+		 * Last action: 'down', 'move', or 'up'.
 		 */
 		action: string;
+
+		/**
+		 * Input type: 'mouse', 'pen', or 'touch'.
+		 */
+		type: string;
+
+		/**
+		 * Pointer identifier of the mouse, pen, or primary touch.
+		 */
+		id: number;
 
 		/**
 		 * True for a release the player did not make, as in MouseData and TouchData.
@@ -734,19 +742,9 @@ declare namespace Pi {
 		cancelled: boolean;
 
 		/**
-		 * Input type: 'mouse' or 'touch'.
+		 * The frozen inTouch() list of the touches still down; empty for the mouse.
 		 */
-		type: string;
-
-		/**
-		 * Touch only: the primary touch's identifier.
-		 */
-		id?: number;
-
-		/**
-		 * Touch only: this press object, followed by the other touches still down. The array contains the press itself, so the press cannot be serialized with JSON.stringify().
-		 */
-		touches?: Array<TouchData>;
+		touches: Array<TouchData>;
 	}
 
 	/**
@@ -922,7 +920,7 @@ declare namespace Pi {
 	/**
 	 * Single touch point data.
 	 *
-	 * Data for one touch point. intouch() returns the touches still down, and ontouch callbacks receive the touches the event changed. Each read and each callback receives new objects.
+	 * Data for one touch point. inTouch() returns the touches still down, and onTouch callbacks receive the touch the event changed, in an array. Touch data is created once per event and frozen: the touch in the handlers' array is the same object inTouch() lists.
 	 */
 	interface TouchData {
 		/**
@@ -936,34 +934,39 @@ declare namespace Pi {
 		y: number;
 
 		/**
-		 * Touch identifier, the same for every event of one touch.
+		 * X coordinate before this event; the current X on the touch's first event.
 		 */
-		id: number;
+		lastX: number;
 
 		/**
-		 * X coordinate before this event; null on the touch's first event.
+		 * Y coordinate before this event; the current Y on the touch's first event.
 		 */
-		lastX: number | null;
+		lastY: number;
 
 		/**
-		 * Y coordinate before this event; null on the touch's first event.
+		 * 1 while the touch is down, 0 when it ends.
 		 */
-		lastY: number | null;
+		buttons: number;
 
 		/**
-		 * This touch's last action: 'start', 'move', or 'end'.
+		 * This touch's last action: 'down', 'move', or 'up'.
 		 */
 		action: string;
-
-		/**
-		 * True for an end the player did not make: the browser cancelled the touch, the page was hidden, or stopTouch() was called. False otherwise.
-		 */
-		cancelled: boolean;
 
 		/**
 		 * Input type, always 'touch' for touch data.
 		 */
 		type: string;
+
+		/**
+		 * Touch identifier, the same for every event of one touch.
+		 */
+		id: number;
+
+		/**
+		 * True for an end the player did not make: the browser cancelled the touch, the page was hidden, or stopTouch() was called. False otherwise.
+		 */
+		cancelled: boolean;
 	}
 
 	interface Screen extends PluginScreenCommands {
@@ -1133,8 +1136,8 @@ declare namespace Pi {
 		 *
 		 * $.clearEvents() clears per-screen handlers on every screen. A screen's clearEvents(), such as screen.clearEvents(), clears them on that screen only.
 		 *
-		 * The pointer plugin registers "mouse", "touch", and "press"; "press" also clears click handlers. These handlers are per-screen. The gamepad plugin registers "gamepad", which removes every onGamepadConnected and onGamepadDisconnected callback, whichever form is called. The keyboard plugin registers "keyboard", which removes every onKey() handler, whichever form is called; $.clearEvents() also cancels every input() prompt, and a screen's clearEvents() cancels only that screen's prompt. Clearing handlers does not stop tracking or polling.
-		 * @param type Optional type to clear (e.g., "keyboard", "mouse", "touch", "press", "gamepad").
+		 * The pointer plugin registers "mouse", "touch", "press", and "click", each clearing only the handlers of its command: onMouse, onTouch, onPress, and onClick. These handlers are per-screen. The gamepad plugin registers "gamepad", which removes every onGamepadConnected and onGamepadDisconnected callback, whichever form is called. The keyboard plugin registers "keyboard", which removes every onKey() handler, whichever form is called; $.clearEvents() also cancels every input() prompt, and a screen's clearEvents() cancels only that screen's prompt. Clearing handlers does not stop tracking or polling.
+		 * @param type Optional type to clear (e.g., "keyboard", "mouse", "click", "gamepad").
 		 * @returns This function does not return a value.
 		 */
 		clearEvents( params: { "type"?: string } ): void;
@@ -1444,26 +1447,26 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Gets the current mouse state and starts tracking if needed.
 		 *
-		 * Returns the current mouse state for use in an animation loop, as a new object on each call. Tracking starts on the first read unless stopMouse() was called.
+		 * Returns the mouse data of the latest mouse event, for use in an animation loop. The data is frozen, and it is the same object the event's onMouse handlers received; every read returns it until the next mouse event. Returns null before the first mouse event and while mouse tracking is stopped. Tracking starts on the first read unless stopMouse() was called.
 		 *
-		 * Before the first mouse event, the position is the center of the screen and the action is 'none'. buttons counts only buttons pressed on the screen, and a release outside the canvas is seen, so a drag that ends anywhere releases its button.
+		 * buttons counts only buttons pressed on the screen, and a release outside the canvas is seen, so a drag that ends anywhere releases its button.
 		 *
 		 * Requires an onscreen screen.
-		 * @returns Mouse data object with position, buttons, and action properties.
+		 * @returns Frozen mouse data of the latest event, or null before it and while stopped.
 		 */
-		inmouse(): MouseData;
+		inMouse(): MouseData | null;
 
 		/**
 		 * Gets the current press state (mouse or touch) and starts tracking if needed.
 		 *
 		 * Returns the press of the primary pointer, from whichever input was used last: the mouse data, or the primary touch. A touch is primary when it starts with no other touch down, and stays primary until it lifts; the other touches are listed in touches but do not move the press. After the primary touch lifts, the press keeps its release, with buttons 0 and action 'up', until the next primary touch.
 		 *
-		 * Returns a new object on each call. Mouse and touch tracking start on the first read unless stopped.
+		 * The data is frozen, and it is the same object the event's onPress handlers received; every read returns it until the next mouse or touch event. Returns null before the first event, and while the input the latest press came from is stopped. Mouse and touch tracking start on the first read unless stopped.
 		 *
 		 * Requires an onscreen screen.
-		 * @returns Press data of the primary pointer, from the mouse or touch.
+		 * @returns Frozen press data of the primary pointer, from the mouse or touch, or null.
 		 */
-		inpress(): PressData;
+		inPress(): PressData | null;
 
 		/**
 		 * Prompts the user for text input with a blinking cursor.
@@ -1496,14 +1499,14 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Gets the current touch state and starts tracking if needed.
 		 *
-		 * Returns the touches still down, ordered by identifier, as new objects on each call; the array is empty when no touch is down. Each touch has its own action. Tracking starts on the first read unless stopTouch() was called.
+		 * Returns the touches still down, ordered by identifier; the array is empty when no touch is down and while touch tracking is stopped. Each touch has its own action. The array and its touches are frozen: every read returns the same array until a touch changes, and each touch is the object the onTouch handlers received. Tracking starts on the first read unless stopTouch() was called.
 		 *
 		 * A touch that starts on the canvas border or padding is not tracked. Held touches are released when the page is hidden or stopTouch() is called.
 		 *
 		 * Requires an onscreen screen.
 		 * @returns Touches still down; empty when none is down.
 		 */
-		intouch(): Array<TouchData>;
+		inTouch(): Array<TouchData>;
 
 		/**
 		 * Draws a line on the screen.
@@ -1523,45 +1526,63 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a click event handler.
 		 *
-		 * Removes every registration of the function. If fn is omitted or null, removes every click handler of the screen. A handler removed during an event does not run later in it.
+		 * Removes the click handler registered with the function; the once, hitBox, and customData it was registered with do not matter. Click has one mode, so if fn is omitted or null, removes every click handler of the screen. A handler removed during an event does not run later in it. The callback is checked as onClick() checks it, with code INVALID_FUNCTION.
 		 * @param fn Callback function to remove. If omitted or null, removes every click handler.
 		 * @returns This function does not return a value.
 		 */
-		offclick( params: { "fn"?: ( clickData: ClickData, customData?: object ) => void } ): void;
-		offclick( fn?: ( clickData: ClickData, customData?: object ) => void ): void;
+		offClick( params: { "fn"?: ( clickData: ClickData, customData?: object ) => void } ): void;
+		offClick( fn?: ( clickData: ClickData, customData?: object ) => void ): void;
 
 		/**
 		 * Removes a mouse event handler.
 		 *
-		 * Removes every registration of the function for the mode. If fn is omitted or null, removes every handler of the mode. Handlers of other modes are not affected. A handler removed during an event does not run later in it.
-		 * @param mode Event mode ('down', 'up', or 'move') of the handler.
+		 * Removes mouse event handlers registered with onMouse. A handler is identified by its mode and callback; the once, hitBox, and customData it was registered with do not matter.
+		 *
+		 * With a mode and a callback, removes that handler. Without a callback, removes every handler of the mode. With a callback and no mode (null, or no mode in the object form), removes the callback from every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "mouse" ) removes every mouse handler.
+		 *
+		 * A handler removed during an event does not run later in it.
+		 *
+		 * The mode and callback are checked as onMouse() checks them, with codes INVALID_MODE and INVALID_FUNCTION.
+		 * @param mode Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode.
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
 		 */
-		offmouse( params: { "mode": string; "fn"?: ( mouseData: MouseData, customData?: object ) => void } ): void;
-		offmouse( mode: string, fn?: ( mouseData: MouseData, customData?: object ) => void ): void;
+		offMouse( params: { "mode"?: string | null; "fn"?: ( mouseData: MouseData, customData?: object ) => void } ): void;
+		offMouse( mode?: string | null, fn?: ( mouseData: MouseData, customData?: object ) => void ): void;
 
 		/**
 		 * Removes a press event handler.
 		 *
-		 * Removes every registration of the function for the mode. If fn is omitted or null, removes every handler of the mode. Handlers of other modes are not affected. A handler removed during an event does not run later in it.
-		 * @param mode Event mode ('down', 'up', or 'move') of the handler.
+		 * Removes press event handlers registered with onPress. A handler is identified by its mode and callback; the once, hitBox, and customData it was registered with do not matter.
+		 *
+		 * With a mode and a callback, removes that handler. Without a callback, removes every handler of the mode. With a callback and no mode (null, or no mode in the object form), removes the callback from every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "press" ) removes every press handler.
+		 *
+		 * A handler removed during an event does not run later in it.
+		 *
+		 * The mode and callback are checked as onPress() checks them, with codes INVALID_MODE and INVALID_FUNCTION.
+		 * @param mode Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode.
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
 		 */
-		offpress( params: { "mode": string; "fn"?: ( pressData: PressData, customData?: object ) => void } ): void;
-		offpress( mode: string, fn?: ( pressData: PressData, customData?: object ) => void ): void;
+		offPress( params: { "mode"?: string | null; "fn"?: ( pressData: PressData, customData?: object ) => void } ): void;
+		offPress( mode?: string | null, fn?: ( pressData: PressData, customData?: object ) => void ): void;
 
 		/**
 		 * Removes a touch event handler.
 		 *
-		 * Removes every registration of the function for the mode. If fn is omitted or null, removes every handler of the mode. Handlers of other modes are not affected. A handler removed during an event does not run later in it.
-		 * @param mode Event mode ('start', 'end', or 'move') of the handler.
+		 * Removes touch event handlers registered with onTouch. A handler is identified by its mode and callback; the once, hitBox, and customData it was registered with do not matter.
+		 *
+		 * With a mode and a callback, removes that handler. Without a callback, removes every handler of the mode. With a callback and no mode (null, or no mode in the object form), removes the callback from every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "touch" ) removes every touch handler.
+		 *
+		 * A handler removed during an event does not run later in it.
+		 *
+		 * The mode and callback are checked as onTouch() checks them, with codes INVALID_MODE and INVALID_FUNCTION.
+		 * @param mode Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode.
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
 		 */
-		offtouch( params: { "mode": string; "fn"?: ( touches: Array<TouchData>, customData?: object ) => void } ): void;
-		offtouch( mode: string, fn?: ( touches: Array<TouchData>, customData?: object ) => void ): void;
+		offTouch( params: { "mode"?: string | null; "fn"?: ( touches: Array<TouchData>, customData?: object ) => void } ): void;
+		offTouch( mode?: string | null, fn?: ( touches: Array<TouchData>, customData?: object ) => void ): void;
 
 		/**
 		 * Registers a callback function for click events (mouse or touch).
@@ -1570,7 +1591,9 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * A press inside the box arms the click for that pointer, and its release inside the box fires it with the release data. A release outside the box, a release of another mouse button, or a cancel disarms it, so right and middle clicks, a drag that leaves the box, and a cancelled touch never click.
 		 *
-		 * If no hitBox is provided, the screen's size when the handler is registered is used. A handler runs until it is removed. Registering the same function again adds a second registration, and once removes only its own registration, before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 * If no hitBox is provided, the screen's size when the handler is registered is used. A handler runs until it is removed. A handler is identified by its callback: registering the same callback again does nothing, whatever its once, hitBox, and customData, and offClick removes it by the callback. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 *
+		 * once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for a negative hitBox size, with code INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
 		 *
 		 * Requires an onscreen screen.
 		 * @param fn Callback function that receives (clickData, customData).
@@ -1579,17 +1602,19 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param customData Optional custom data passed to the callback function.
 		 * @returns This function does not return a value.
 		 */
-		onclick( params: { "fn": ( clickData: ClickData, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
-		onclick( fn: ( clickData: ClickData, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
+		onClick( params: { "fn": ( clickData: ClickData, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
+		onClick( fn: ( clickData: ClickData, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
 
 		/**
 		 * Registers a callback function for mouse events.
 		 *
-		 * Registers a callback that runs when a mouse event occurs, with the mouse data and the optional custom data. With a hitBox, the callback runs only for events inside it. Registering starts tracking unless stopMouse() was called.
+		 * Registers a callback that runs when a mouse event occurs, with the mouse data and the optional custom data. Mouse commands also observe pens, whose data has type set to 'pen'. With a hitBox, the callback runs only for events inside it. Registering starts tracking unless stopMouse() was called.
 		 *
-		 * A press that starts on the canvas border or padding is ignored. 'up' runs for a release anywhere, including outside the canvas, and with cancelled set to true when the page is hidden or stopMouse() is called with a button held; moves and releases report their true position, which can be outside the screen.
+		 * A press that starts on the canvas border or padding is ignored. A press on the canvas keeps reporting moves while it leaves the canvas, and 'up' runs for its release anywhere. 'up' also runs with cancelled set to true when the browser cancels the pointer, the page is hidden, or stopMouse() is called with a button held; moves and releases report their true position, which can be outside the screen.
 		 *
-		 * A handler runs until it is removed. Registering the same function again adds a second registration, and once removes only its own registration, before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 * A handler runs until it is removed. A handler is identified by its mode and callback: registering the same callback for the same mode again does nothing, whatever its once, hitBox, and customData, and offMouse removes it by those two. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 *
+		 * The mode is 'down', 'up', or 'move', and once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for an unknown mode or a negative hitBox size, with code INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
 		 *
 		 * Requires an onscreen screen.
 		 * @param mode Event mode: 'down', 'up', or 'move'.
@@ -1599,17 +1624,19 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param customData Optional custom data passed to the callback function.
 		 * @returns This function does not return a value.
 		 */
-		onmouse( params: { "mode": string; "fn": ( mouseData: MouseData, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
-		onmouse( mode: string, fn: ( mouseData: MouseData, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
+		onMouse( params: { "mode": string; "fn": ( mouseData: MouseData, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
+		onMouse( mode: string, fn: ( mouseData: MouseData, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
 
 		/**
 		 * Registers a callback function for press events (mouse or touch).
 		 *
-		 * Registers a callback that runs for press events of the primary pointer, the mouse or the primary touch, with the press data and the optional custom data. Other touches reach ontouch handlers and intouch() only. With a hitBox, the callback runs only for presses inside it.
+		 * Registers a callback that runs for press events of the primary pointer, the mouse or the primary touch, with the press data and the optional custom data. Other touches reach onTouch handlers and inTouch() only. With a hitBox, the callback runs only for presses inside it.
 		 *
 		 * 'up' runs for the mouse release anywhere and for the primary touch's release, with cancelled set to true for a release the player did not make: a cancelled touch, a hidden page, or a stop command. A press that starts on the canvas border or padding is ignored. Registering starts mouse and touch tracking unless stopped.
 		 *
-		 * A handler runs until it is removed. Registering the same function again adds a second registration, and once removes only its own registration, before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 * A handler runs until it is removed. A handler is identified by its mode and callback: registering the same callback for the same mode again does nothing, whatever its once, hitBox, and customData, and offPress removes it by those two. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 *
+		 * The mode is 'down', 'up', or 'move', and once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for an unknown mode or a negative hitBox size, with code INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
 		 *
 		 * Requires an onscreen screen.
 		 * @param mode Event mode: 'down', 'up', or 'move'.
@@ -1619,28 +1646,30 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param customData Optional custom data passed to the callback function.
 		 * @returns This function does not return a value.
 		 */
-		onpress( params: { "mode": string; "fn": ( pressData: PressData, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
-		onpress( mode: string, fn: ( pressData: PressData, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
+		onPress( params: { "mode": string; "fn": ( pressData: PressData, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
+		onPress( mode: string, fn: ( pressData: PressData, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
 
 		/**
 		 * Registers a callback function for touch events.
 		 *
-		 * Registers a callback that runs when a touch event occurs, with the touches the event changed and the optional custom data: 'start' receives the touches that started, 'move' the touches that moved, and 'end' the touches that ended, at the position where they lifted. Use intouch() for every touch still down.
+		 * Registers a callback that runs when a touch event occurs, with the touch it changed, in an array, and the optional custom data: 'down' receives the touch that started, 'move' the touch that moved, and 'up' the touch that ended, at the position where it lifted. Each touch is reported by its own event. Use inTouch() for every touch still down.
 		 *
-		 * With a hitBox, the callback receives only the changed touches inside it, and runs only when there is one. 'end' also runs with cancelled set to true when the browser cancels a touch, the page is hidden, or stopTouch() is called. A touch that starts on the canvas border or padding is ignored. While touch is tracked, touchstart on the canvas is prevented, which stops browser gestures that start there. Registering starts tracking unless stopTouch() was called.
+		 * With a hitBox, the callback receives only the changed touches inside it, and runs only when there is one. 'up' also runs with cancelled set to true when the browser cancels a touch, the page is hidden, or stopTouch() is called. A touch that starts on the canvas border or padding is ignored. A touch that starts on the canvas keeps reporting moves and its end when it leaves the canvas. While touch is tracked, the canvas has touch-action set to none, so the browser does not scroll or zoom with touches that start there. Registering starts tracking unless stopTouch() was called.
 		 *
-		 * A handler runs until it is removed. Registering the same function again adds a second registration, and once removes only its own registration, before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 * A handler runs until it is removed. A handler is identified by its mode and callback: registering the same callback for the same mode again does nothing, whatever its once, hitBox, and customData, and offTouch removes it by those two. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 *
+		 * The mode is 'down', 'up', or 'move', and once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for an unknown mode or a negative hitBox size, with code INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
 		 *
 		 * Requires an onscreen screen.
-		 * @param mode Event mode: 'start', 'end', or 'move'.
+		 * @param mode Event mode: 'down', 'up', or 'move'. Any other mode throws INVALID_MODE.
 		 * @param fn Callback function that receives (touches, customData) with the changed touches.
 		 * @param once If true, this registration is removed before the callback's first run.
 		 * @param hitBox Optional area; the callback receives only the changed touches inside it.
 		 * @param customData Optional custom data passed to the callback function.
 		 * @returns This function does not return a value.
 		 */
-		ontouch( params: { "mode": string; "fn": ( touches: Array<TouchData>, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
-		ontouch( mode: string, fn: ( touches: Array<TouchData>, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
+		onTouch( params: { "mode": string; "fn": ( touches: Array<TouchData>, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
+		onTouch( mode: string, fn: ( touches: Array<TouchData>, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
 
 		/**
 		 * Flood fills an area with a color, with optional tolerance or boundary color.
@@ -1878,6 +1907,20 @@ screen is removed before deferred processing completes, or with the original rea
 		setContainerBgColor( color: any ): void;
 
 		/**
+		 * Enables or disables the right-click context menu.
+		 *
+		 * Controls whether the browser's context menu opens on the screen canvas. The menu is suppressed from screen creation, whether or not mouse tracking runs, so right-clicks reach the mouse handlers instead; enable it here to let it open. The setting does not start mouse tracking, and stopping mouse tracking does not change it. isEnabled is a boolean, or omitted to suppress the menu; any other value throws a TypeError with code INVALID_IS_ENABLED.
+		 *
+		 * The option contextMenu of set() calls this command.
+		 *
+		 * Requires an onscreen screen.
+		 * @param isEnabled If true, the context menu opens. If false, it is suppressed.
+		 * @returns This function does not return a value.
+		 */
+		setContextMenu( params: { "isEnabled": boolean } ): void;
+		setContextMenu( isEnabled: boolean ): void;
+
+		/**
 		 * Sets the default anchor point for images when drawing on the current screen.
 		 *
 		 * Sets the default anchor point for all image and sprite drawing operations on this screen. The anchor point defines the relative starting position to draw the image, based a percentage of the image size using the x/y coordinates as a starting point.
@@ -1944,20 +1987,6 @@ screen is removed before deferred processing completes, or with the original rea
 		setDisplayShaderUniforms( uniforms: ShaderUniforms ): void;
 
 		/**
-		 * Enables or disables the right-click context menu.
-		 *
-		 * Controls whether the browser's context menu opens on the screen canvas. The menu is suppressed while mouse tracking runs, unless it is enabled here, so right-clicks reach the mouse handlers instead. Before mouse tracking starts, the menu opens normally.
-		 *
-		 * Calling this command starts mouse tracking unless stopMouse() was called. Any truthy value enables the menu.
-		 *
-		 * Requires an onscreen screen.
-		 * @param isEnabled If true, the context menu opens. If false, it is suppressed while mouse tracking runs.
-		 * @returns This function does not return a value.
-		 */
-		setEnableContextMenu( params: { "isEnabled": boolean } ): void;
-		setEnableContextMenu( isEnabled: boolean ): void;
-
-		/**
 		 * Sets the font for the current screen.
 		 *
 		 * Sets the active font for text rendering on the current screen. The font must already be loaded using loadFont. Several default fonts are preloaded: 0=6x6, 1=6x8 (default), 2=8x8, 3=8x14, 4=8x16.
@@ -2006,6 +2035,20 @@ screen is removed before deferred processing completes, or with the original rea
 		 */
 		setPalColors( params: { "indices": Array<number>; "colors": Array<any> } ): void;
 		setPalColors( indices: Array<number>, colors: Array<any> ): void;
+
+		/**
+		 * Enables or disables browser pinch zoom on the screen canvas.
+		 *
+		 * Sets the touch-action style of the screen canvas, at any time: 'pinch-zoom' when enabled, so a pinch that starts on the canvas zooms the page, and 'none' when disabled, so every touch on the canvas stays with the screen. The rest of the page, including the body, is not changed. isEnabled is a boolean, or omitted to disable pinch zoom; any other value throws a TypeError with code INVALID_IS_ENABLED.
+		 *
+		 * Without this setting, the canvas has touch-action set to none while touch tracking runs, and stopping tracking restores the canvas's previous value. After this setting, tracking keeps its value. The setting does not start touch tracking. The option pinchZoom of set() calls this command.
+		 *
+		 * Requires an onscreen screen.
+		 * @param isEnabled If true, a pinch on the canvas zooms the page. If false, it does not.
+		 * @returns This function does not return a value.
+		 */
+		setPinchZoom( params: { "isEnabled": boolean } ): void;
+		setPinchZoom( isEnabled: boolean ): void;
 
 		/**
 		 * Sets the print cursor position using column and row coordinates.
@@ -2057,7 +2100,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Starts mouse input tracking for this screen.
 		 *
-		 * Starts mouse tracking on the screen canvas. Tracking also starts on first use: the first inmouse(), inpress(), or handler registration. After stopMouse(), only startMouse() starts tracking again.
+		 * Starts mouse tracking on the screen canvas. Tracking also starts on first use: the first inMouse(), inPress(), or handler registration. After stopMouse(), only startMouse() starts tracking again.
 		 *
 		 * When the page is hidden, held buttons are released through the 'up' handlers, with cancelled set to true.
 		 *
@@ -2069,9 +2112,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Starts touch input tracking for this screen.
 		 *
-		 * Starts touch tracking on the screen canvas. Tracking also starts on first use: the first intouch(), inpress(), or handler registration. After stopTouch(), only startTouch() starts tracking again.
+		 * Starts touch tracking on the screen canvas, and sets its touch-action style to none so the browser does not scroll or zoom with touches on it; stopTouch() restores the previous value. Tracking also starts on first use: the first inTouch(), inPress(), or handler registration. After stopTouch(), only startTouch() starts tracking again.
 		 *
-		 * When the page is hidden, held touches are released through the 'end' handlers, with cancelled set to true.
+		 * When the page is hidden, held touches are released through the 'up' handlers, with cancelled set to true.
 		 *
 		 * Requires an onscreen screen.
 		 * @returns This function does not return a value.
@@ -2081,9 +2124,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Stops mouse input tracking for this screen.
 		 *
-		 * Stops mouse tracking on the screen canvas. Held buttons are released first: the onmouse and onpress 'up' handlers run with cancelled set to true, and no click fires.
+		 * Stops mouse tracking on the screen canvas. Held buttons are released first: the onMouse and onPress 'up' handlers run with cancelled set to true, and no click fires.
 		 *
-		 * While stopped, handlers stay registered but are not called, and inmouse() returns the last state. Reads and handler registration do not restart tracking; call startMouse().
+		 * While stopped, handlers stay registered but are not called, inMouse() returns null, and inPress() returns null when its latest press came from the mouse. Reads and handler registration do not restart tracking; call startMouse().
 		 * @returns This function does not return a value.
 		 */
 		stopMouse(): void;
@@ -2091,9 +2134,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Stops touch input tracking for this screen.
 		 *
-		 * Stops touch tracking on the screen canvas. Held touches are released first: the ontouch 'end' handlers, and the onpress 'up' handlers for the primary touch, run with cancelled set to true, and no click fires.
+		 * Stops touch tracking on the screen canvas. Held touches are released first: the onTouch 'up' handlers, and the onPress 'up' handlers for the primary touch, run with cancelled set to true, and no click fires.
 		 *
-		 * While stopped, handlers stay registered but are not called, and intouch() returns the last state. Reads and handler registration do not restart tracking; call startTouch().
+		 * While stopped, handlers stay registered but are not called, inTouch() returns an empty array, and inPress() returns null when its latest press came from a touch. Reads and handler registration do not restart tracking; call startTouch().
 		 * @returns This function does not return a value.
 		 */
 		stopTouch(): void;
@@ -2636,7 +2679,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 *
 		 * For offscreen screens, only exact pixel dimensions (x) are allowed. An offscreen screen can use an  existing screen as its parent to share that screen's WebGL context. This allows drawImage to use  the offscreen framebuffer directly for faster drawing. The parent controls rendering-context  affinity only and does not establish lifecycle ownership.
 		 *
-		 *  Creating a screen makes it active. Pointer input requires an onscreen target, so after creating an offscreen buffer call setScreen on the visible screen or use visible.inmouse().
+		 *  Creating a screen makes it active. Pointer input requires an onscreen target, so after creating an offscreen buffer call setScreen on the visible screen or use visible.inMouse().
 		 * @param aspect Aspect ratio string in format (width)(x|e|m)(height), e.g., '300x200', '100e00', '300m200'.
 		 * @param container DOM element or element ID string to use as container. Defaults to document.body.
 		 * @param isOffscreen If true, creates an offscreen canvas that is not displayed. Requires exact pixel dimensions.
@@ -2729,18 +2772,6 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 */
 		setGamepadSensitivity( params: { "sensitivity": number } ): void;
 		setGamepadSensitivity( sensitivity: number ): void;
-
-		/**
-		 * Enables or disables browser pinch zoom gestures.
-		 *
-		 * Sets the touch-action style of the document body: an empty value when enabled, 'none' when disabled, replacing any touch-action the page set on the body. Disabling it stops pinch zoom and panning on the whole page, not only the canvas.
-		 *
-		 * This is a global setting. While touch is tracked on a screen, touchstart on its canvas is always prevented, so a pinch cannot start on the canvas even when pinch zoom is enabled. Any truthy value enables pinch zoom.
-		 * @param isEnabled If true, enables pinch zoom. If false, disables it.
-		 * @returns This function does not return a value.
-		 */
-		setPinchZoom( params: { "isEnabled": boolean } ): void;
-		setPinchZoom( isEnabled: boolean ): void;
 
 		/**
 		 * Sets the active screen for graphics commands.

@@ -62,16 +62,25 @@ const LITE_PLUGIN_CONSUMERS = {
 	],
 	"pointer": [
 		`const screen = lite.screen( "8x8" );`,
-		`const x: number = screen.inmouse().x;`,
-		`lite.onclick( ( click ) => { void click.buttons; }, false,`,
+		`const x: number | undefined = screen.inMouse()?.x;`,
+		`// @ts-expect-error inMouse() is null before the first mouse event.`,
+		`void screen.inMouse().x;`,
+		`lite.onClick( ( click ) => { void click.buttons; }, false,`,
 		`\t{ x: 0, y: 0, width: 4, height: 4 } );`,
-		`lite.ontouch( "end", ( touches ) => {`,
+		`lite.onTouch( "up", ( touches ) => {`,
 		`\tconst lastX: number | null = touches[ 0 ].lastX;`,
 		`\tconst cancelled: boolean = touches[ 0 ].cancelled;`,
 		`\tvoid lastX;`,
 		`\tvoid cancelled;`,
 		`} );`,
-		`lite.set( { pinchZoom: true, enableContextMenu: false } );`,
+		`const paint = (): void => {};`,
+		`lite.offMouse( null, paint );`,
+		`lite.offTouch( { fn: paint } );`,
+		`lite.offPress( "down" );`,
+		`lite.set( { pinchZoom: true, contextMenu: false } );`,
+		`screen.setPinchZoom( false );`,
+		`// @ts-expect-error The context-menu option is contextMenu.`,
+		`lite.set( { enableContextMenu: false } );`,
 		`void x;`,
 		`// @ts-expect-error The plugin initializer is not the API.`,
 		`pointer.screen( "8x8" );`,
@@ -90,7 +99,7 @@ const LITE_PLUGIN_CONSUMERS = {
 		`lite.screen( "8x8" ).polygon( [ 0, 0, 6, 0, 3, 6 ], "red" );`,
 		`lite.polygon( { points: [ { x: 0, y: 0 }, { x: 6, y: 0 }, { x: 3, y: 6 } ] } );`,
 		`// @ts-expect-error Pointer commands need the pointer plugin.`,
-		`lite.inmouse();`
+		`lite.inMouse();`
 	],
 	"sound-advanced": [
 		`const id: string = lite.synth( { frequency: 220 } );`,
@@ -351,7 +360,7 @@ function createConsumerPackage() {
 			`import { Pi } from "pijs-web";`,
 			`import lite from "pijs-web/lite";`,
 			`Pi.screen( "8x8" );`,
-			`lite.inmouse();`,
+			`lite.inMouse();`,
 			""
 		].join( "\n" ),
 		"utf8"
@@ -457,7 +466,7 @@ test( "negative package consumers are rejected by published declarations", () =>
 		);
 		const output = `${falsePositive.stdout}${falsePositive.stderr}`;
 		assert.match( output, /Pi/, "should reject named Pi export" );
-		assert.match( output, /inmouse/, "should reject lite.inmouse() without pointer" );
+		assert.match( output, /inMouse/, "should reject lite.inMouse() without pointer" );
 
 		const liteNamed = runTsc(
 			fixture.consumersDir, "false-positive-lite-named.mts", resolution

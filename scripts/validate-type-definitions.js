@@ -166,8 +166,8 @@ const REQUIRED_DECLARATIONS = [
 		"text": "getButtonJustPressed: ( buttonIndex: number ) => boolean;"
 	},
 	{
-		"name": "ontouch callbacks receive the changed touches",
-		"text": "ontouch( mode: string, fn: ( touches: Array<TouchData>, customData?: object ) " +
+		"name": "onTouch callbacks receive the changed touches",
+		"text": "onTouch( mode: string, fn: ( touches: Array<TouchData>, customData?: object ) " +
 			"=> void, once?: boolean, hitBox?: HitBox, customData?: any ): void;"
 	},
 	{
@@ -309,11 +309,11 @@ function validateTypeDefinitions() {
 	const liteTypes = readTypeFile(
 		path.join( DIRNAME, "..", "build", "pi.lite.d.ts" )
 	);
-	if( /^\t\tinmouse\(/m.test( liteTypes ) ) {
-		throw new Error( "Lite type definitions incorrectly include plugin command inmouse." );
+	if( /^\t\tinMouse\(/m.test( liteTypes ) ) {
+		throw new Error( "Lite type definitions incorrectly include plugin command inMouse." );
 	}
-	if( !/^\t\tinmouse\(/m.test( buildTypes ) ) {
-		throw new Error( "Full type definitions are missing plugin command inmouse." );
+	if( !/^\t\tinMouse\(/m.test( buildTypes ) ) {
+		throw new Error( "Full type definitions are missing plugin command inMouse." );
 	}
 
 	// Lite omits the settings and object types of bundled plugins, and leaves the global pi and
@@ -348,7 +348,13 @@ function validateTypeDefinitions() {
 	for( const text of [
 		"interface MouseData {",
 		"interface TouchData {",
-		"lastX: number | null;",
+		"touches: Array<TouchData>;",
+		"inMouse(): MouseData | null;",
+		"inPress(): PressData | null;",
+		"setContextMenu( isEnabled: boolean ): void;",
+		"contextMenu?: boolean;",
+		"offMouse( mode?: string | null, fn?: ( mouseData: MouseData, customData?: object ) " +
+			"=> void ): void;",
 		"cancelled: boolean;",
 		"interface HitBox {",
 		"interface PluginScreenCommands extends PointerScreenCommands {}",
