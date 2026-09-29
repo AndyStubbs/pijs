@@ -650,8 +650,10 @@ test( "pointer touches keep their own actions and handlers get the changed touch
 		[ 1, "down" ], [ 2, "move" ]
 	] );
 
-	// Polled and handler data are copies of the tracked state
-	$.inTouch()[ 0 ].x = 99;
+	// Polled and handler data are frozen, so neither can change the tracked state
+	assert.throws( () => {
+		$.inTouch()[ 0 ].x = 99;
+	}, TypeError );
 	assert.equal( $.inTouch()[ 0 ].x, 10 );
 } );
 
@@ -686,6 +688,7 @@ test( "pointer touchcancel releases with cancelled and never clicks (P4)", () =>
 	// A tap still clicks, and mouse data carries the field as well
 	h.tap( 10, 10 );
 	assert.equal( clicks, 1 );
+	h.mouse( "mousemove", 50, 50 );
 	assert.equal( $.inMouse().cancelled, false );
 } );
 
@@ -853,11 +856,12 @@ test( "pointer stop commands release held input with cancelled (P10)", () => {
 	h.mouse( "mousedown", 50, 50, 1 );
 	$.stopMouse();
 	assert.deepEqual( log, [ [ "mouse up", true ] ] );
-	assert.equal( $.inMouse().buttons, 0 );
+	assert.equal( $.inMouse(), null );
 	h.touch( "touchstart", [ { "id": 4, "x": 40, "y": 40 } ] );
 	$.stopTouch();
 	assert.deepEqual( log[ 1 ], [ "touch end", true ] );
 	assert.equal( $.inTouch().length, 0 );
+	assert.equal( $.inPress(), null );
 
 	// Stopping again finds nothing held, and registration does not restart tracking
 	$.stopMouse();
@@ -888,7 +892,7 @@ test( "pointer removing a screen with input held calls none of its handlers", ()
 	h.removeScreen( other );
 	assert.deepEqual( log, [] );
 	assert.deepEqual( other.canvas.listeners, [] );
-	assert.equal( $.inMouse().buttons, 0 );
+	assert.equal( $.inMouse(), null );
 } );
 
 test( "pointer presses on the border are ignored, and moves report true positions (P11)", () => {
@@ -1131,6 +1135,65 @@ test( "pointer mouse and touch share one set of canvas listeners and touch-actio
 	assert.equal( types().length, 5 );
 	$.stopMouse();
 	assert.deepEqual( types(), [] );
+} );
+
+test( "pointer reads return the frozen data of the last event, or null (I5, I7, I9, P15)", () => {
+	const h = harness();
+	const $ = h.$;
+	const seen = {};
+	$.onMouse( "move", data => { seen.mouse = data; } );
+	$.onPress( "move", data => { seen.press = data; } );
+	$.onTouch( "down", data => { seen.touches = data; } );
+	$.onClick( data => { seen.click = data; } );
+
+	// Nothing to report before the first event; the empty touch list is frozen too
+	assert.equal( $.inMouse(), null );
+	assert.equal( $.inPress(), null );
+	assert.equal( $.inTouch(), $.inTouch() );
+	assert.ok( Object.isFrozen( $.inTouch() ) && $.inTouch().length === 0 );
+
+	// A read returns the object its handlers received, the same one until the next event
+	h.mouse( "mousemove", 10, 10 );
+	const mouse = $.inMouse();
+	assert.equal( mouse, seen.mouse );
+	assert.equal( $.inMouse(), mouse );
+	assert.equal( $.inPress(), seen.press );
+	assert.equal( $.inPress(), $.inPress() );
+	assert.ok( Object.isFrozen( mouse ) && Object.isFrozen( seen.press ) );
+	assert.ok( Object.isFrozen( seen.press.touches ) );
+	h.mouse( "mousemove", 11, 10 );
+	assert.notEqual( $.inMouse(), mouse );
+	assert.equal( $.inMouse(), seen.mouse );
+	h.click( 11, 10 );
+	assert.ok( Object.isFrozen( seen.click ) );
+
+	// The touch list is replaced when a touch changes, and holds the handlers' objects
+	h.touch( "touchstart", [ { "id": 1, "x": 20, "y": 20 } ] );
+	const touches = $.inTouch();
+	assert.equal( $.inTouch(), touches );
+	assert.equal( touches[ 0 ], seen.touches[ 0 ] );
+	assert.ok( Object.isFrozen( touches ) && Object.isFrozen( seen.touches ) );
+	assert.ok( Object.isFrozen( touches[ 0 ] ) );
+	assert.equal( $.inPress().touches, touches );
+	assert.equal( $.inPress(), $.inPress() );
+	h.touch( "touchmove", [ { "id": 1, "x": 21, "y": 20 } ] );
+	assert.notEqual( $.inTouch(), touches );
+	assert.equal( $.inTouch()[ 0 ].x, 21 );
+
+	// A stop empties the reads of its input; the press follows the input it came from
+	$.stopMouse();
+	assert.equal( $.inMouse(), null );
+	assert.equal( $.inPress().type, "touch" );
+	$.stopTouch();
+	assert.equal( $.inPress(), null );
+	assert.equal( $.inTouch().length, 0 );
+
+	// A restart reports nothing until the next event
+	$.startMouse();
+	assert.equal( $.inMouse(), null );
+	h.mouse( "mousemove", 12, 10 );
+	assert.equal( $.inMouse().x, 12 );
+	assert.equal( $.inPress().type, "mouse" );
 } );
 
 test( "pointer mouse, touch, press, and click data share one shape (B7, I3, P12)", () => {

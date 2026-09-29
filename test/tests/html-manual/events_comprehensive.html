@@ -410,6 +410,9 @@
 
 		const interval = setInterval( () => {
 			const mouse = $.inMouse();
+			if( mouse === null ) {
+				return;
+			}
 			if( testMoveX && lastX && mouse.x !== lastX ) {
 				printTestResult( "testInMouseMoveX", true );
 				testMoveX = false;
@@ -743,6 +746,9 @@
 
 		const interval = setInterval( () => {
 			const press = $.inPress();
+			if( press === null ) {
+				return;
+			}
 			if( testMoveX && lastX && press.x !== lastX ) {
 				printTestResult( "testInPressMoveX", true );
 				testMoveX = false;

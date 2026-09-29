@@ -716,7 +716,7 @@ void main() {
 		let isDrawing = false;
 		setInterval( function() {
 			const mouse = $.inMouse();
-			if( mouse.buttons > 0 ) {
+			if( mouse !== null && mouse.buttons > 0 ) {
 				if( !isDrawing ) {
 					$.pset( mouse.x, mouse.y );
 				} else if( mouse.x !== last.x || mouse.y !== last.y ) {

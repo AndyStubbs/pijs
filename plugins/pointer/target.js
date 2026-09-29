@@ -43,13 +43,13 @@ export function pointerPosition( screenData, event ) {
 
 /**
  * Pointer data in the one shape that mouse, touch, press, and click data share. Press data adds
- * `touches`.
+ * `touches`. Data is created once per event and frozen, so reads and handlers share it.
  * @param {Object} record - `x`, `y`, `lastX`, `lastY`, `buttons`, `action`, `type`, `id`, and
  *   `cancelled`
- * @returns {Object} A new data object with exactly those fields, in that order
+ * @returns {Object} A new frozen data object with exactly those fields, in that order
  */
 export function createPointerData( record ) {
-	return {
+	return Object.freeze( {
 		"x": record.x,
 		"y": record.y,
 		"lastX": record.lastX,
@@ -59,7 +59,7 @@ export function createPointerData( record ) {
 		"type": record.type,
 		"id": record.id,
 		"cancelled": record.cancelled
-	};
+	} );
 }
 
 /**

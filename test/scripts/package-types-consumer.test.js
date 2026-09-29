@@ -62,7 +62,9 @@ const LITE_PLUGIN_CONSUMERS = {
 	],
 	"pointer": [
 		`const screen = lite.screen( "8x8" );`,
-		`const x: number = screen.inMouse().x;`,
+		`const x: number | undefined = screen.inMouse()?.x;`,
+		`// @ts-expect-error inMouse() is null before the first mouse event.`,
+		`void screen.inMouse().x;`,
 		`lite.onClick( ( click ) => { void click.buttons; }, false,`,
 		`\t{ x: 0, y: 0, width: 4, height: 4 } );`,
 		`lite.onTouch( "up", ( touches ) => {`,

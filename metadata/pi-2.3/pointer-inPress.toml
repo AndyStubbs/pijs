@@ -10,7 +10,10 @@ until it lifts; the other touches are listed in touches but do not move the pres
 primary touch lifts, the press keeps its release, with buttons 0 and action 'up', until the next
 primary touch.
 
-Returns a new object on each call. Mouse and touch tracking start on the first read unless stopped.
+The data is frozen, and it is the same object the event's onPress handlers received; every read
+returns it until the next mouse or touch event. Returns null before the first event, and while the
+input the latest press came from is stopped. Mouse and touch tracking start on the first read
+unless stopped.
 
 Requires an onscreen screen.
 """
@@ -21,8 +24,8 @@ requestAnimationFrame( run );
 function run() {
 	const press = $.inPress();
 
-	// Draw while pressed
-	if( press.buttons > 0 ) {
+	// Draw while pressed; there is no press data before the first event
+	if( press !== null && press.buttons > 0 ) {
 		$.setColor( 15 );
 		$.line( press.lastX, press.lastY, press.x, press.y );
 	}
@@ -31,5 +34,5 @@ function run() {
 """
 
 [[returns]]
-type = "PressData"
-description = "Press data of the primary pointer, from the mouse or touch."
+type = "PressData | null"
+description = "Frozen press data of the primary pointer, from the mouse or touch, or null."
