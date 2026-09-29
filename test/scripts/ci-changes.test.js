@@ -16,7 +16,7 @@ const SCRIPT = g_url.fileURLToPath( new URL( "../../scripts/ci-changes.js", impo
 test( "documentation and tooling files are skippable", () => {
 	for( const file of [
 		"README.md", "test/README.md", "docs/plans/v2.3/ROADMAP.md",
-		"docs/llms/llms.txt", "docs/evidence/ci-2.3/runners.json", "docs/pijs-logo2.webp",
+		"docs/UPGRADE-V2.1.md", "docs/evidence/ci-2.3/runners.json", "docs/pijs-logo2.webp",
 		"tools/fonts/gen-fonts.js", ".vscode/settings.json", "LICENSE", "TODO.txt",
 		"AGENTS.md", ".cursorrules", ".github/dependabot.yml"
 	] ) {
@@ -26,7 +26,9 @@ test( "documentation and tooling files are skippable", () => {
 
 test( "files that tests, builds, or size reports read are not skippable", () => {
 	for( const file of [
-		"docs/llms/pi.d.ts", "docs/API.md", "docs/UPGRADE-V2.3.md", "releases/pi-latest/README.md",
+		"docs/llms/pi.d.ts", "docs/llms/llms.txt", "docs/llms/examples.txt", "docs/API.md",
+		"docs/GAMEPAD.md",
+		"docs/UPGRADE-V2.3.md", "releases/pi-latest/README.md",
 		"releases/pi-latest/CHANGELOG.md", "releases/PUBLISH.md", "plugins/PLUGIN-QUICKSTART.md",
 		"plugins/README.md",
 		"src/api/graphics.js", "plugins/sound/index.js", "metadata/pi-2.3/circle.json",

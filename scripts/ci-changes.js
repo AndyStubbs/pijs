@@ -20,13 +20,15 @@ const SKIPPABLE_FILES = [
 const SKIPPABLE_DIRECTORIES = [ "docs/", "tools/", ".vscode/" ];
 
 // Files inside skippable areas that tests do read: validate-type-definitions.js compares
-// docs/llms/pi.d.ts with the build, api-reference.test.js checks docs/API.md against the
-// metadata, upgrade-guide.test.js checks the 2.3 upgrade guide's renames, release-docs.test.js
-// checks the release package's documents against its manifest, and plugin-docs-browser.test.js
-// runs the plugin guides
+// docs/llms/pi.d.ts with the build; api-reference.test.js and llms-references.test.js check
+// docs/API.md and the other docs/llms/ references against the metadata; plugin-guides.test.js
+// checks docs/GAMEPAD.md with the plugin READMEs; upgrade-guide.test.js checks the 2.3 upgrade
+// guide's renames; release-docs.test.js checks the release package's documents against its
+// manifest; and plugin-docs-browser.test.js runs the plugin guides
 const TESTED_FILES = [
-	"docs/llms/pi.d.ts", "docs/API.md", "docs/UPGRADE-V2.3.md", "releases/pi-latest/README.md",
-	"releases/pi-latest/CHANGELOG.md", "releases/PUBLISH.md"
+	"docs/llms/pi.d.ts", "docs/llms/llms.txt", "docs/llms/llms-full.txt",
+	"docs/llms/examples.txt", "docs/API.md", "docs/GAMEPAD.md", "docs/UPGRADE-V2.3.md",
+	"releases/pi-latest/README.md", "releases/pi-latest/CHANGELOG.md", "releases/PUBLISH.md"
 ];
 const TESTED_MARKDOWN_DIRECTORIES = [ "plugins/" ];
 
