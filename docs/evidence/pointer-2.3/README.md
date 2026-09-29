@@ -209,3 +209,15 @@ Expected results:
   the page and the second does (PTR-014). The long press opens no menu. Record whether the
   double-tap zooms, especially on iOS.
 - **Step 13:** "Pi inMouse" reports type pen while the pen draws.
+
+### Release pass results
+
+The maintainer ran the pass on 2026-09-29 on Windows 11 and reported the results in the conversation; browser versions and the pages' copied JSON were not recorded. Steps 9–12 ran on an Android phone in Chrome, from an HTTPS test site.
+
+| Steps | Chrome (Windows) | Firefox (Windows) | Chrome (Android) |
+| --- | --- | --- | --- |
+| 1–8: mouse, including the context menu from creation, a release outside the canvas, a hidden tab, and the wheel | Pass | Pass | — |
+| 9–12: taps and two-finger clicks, a drag off the canvas, a system gesture, pinch zoom off and on, long press, double-tap | — | — | Pass |
+
+Not available: Safari (no macOS hardware), iOS touch and double-tap zoom (no iOS device), and
+a pen (step 13).

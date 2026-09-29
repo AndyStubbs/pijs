@@ -161,3 +161,18 @@ Expected results:
   prompt may not show it.
 - **Step 10:** "Cancelled releases" lists D and Ctrl, the keys held when the tab was hidden
   (I6).
+
+### Release pass results
+
+The maintainer ran the pass on 2026-09-29 on Windows 11 and reported the results in the conversation; browser versions and the pages' copied JSON were not recorded.
+
+| Step | Chrome | Firefox |
+| --- | --- | --- |
+| 3: Shift release order | Pass | Pass |
+| 4: focus change | Pass | Pass |
+| 5: auto-repeat | Pass | Pass |
+| 8: prompt keys | Pass | Pass |
+| 10: hidden tab | Pass | Pass |
+
+Not available: step 6 (no non-US layout), step 9 (no input method), and the macOS Cmd check and
+Safari (no macOS hardware).

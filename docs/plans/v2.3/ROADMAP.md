@@ -689,41 +689,51 @@ in its workstream's evidence folder.
 
 **Sound listening pass,** in Chromium, Firefox, and Safari:
 
-- [ ] `sound_lab_01.html`: envelopes, limiter, noise, pan sweep, sweeps, the D1 prototype; WebKit
+- [x] `sound_lab_01.html`: envelopes, limiter, noise, pan sweep, sweeps, the D1 prototype; WebKit
   envelope timing (Phases 1–2).
-- [ ] `sound_samples_01.html`: samples, and the 64-slot budget by ear with mixed synth and
+- [x] `sound_samples_01.html`: samples, and the 64-slot budget by ear with mixed synth and
   sample load (Phase 3).
-- [ ] `sound_play_01.html`: tune the default PLAY envelope (MA 15, MD 20, MH 65, MR 20) by ear,
+- [x] `sound_play_01.html`: tune the default PLAY envelope (MA 15, MD 20, MH 65, MR 20) by ear,
   and a long song in a hidden tab (Phase 4).
-- [ ] `sound_advanced_01.html`: synth features, presets, instruments, bus effects, level meter
+- [x] `sound_advanced_01.html`: synth features, presets, instruments, bus effects, level meter
   (Phase 5); recording and saving a WAV (Phase 7); new effects and chains (Phase 8); generator
   categories across seeds, and the beat-synced visual watched against the music in each
   engine, including a tab hidden mid-song (Phase 9); the plucked and looped sample
   instruments across their range, and a song started before its file loads (Phase 10).
-- [ ] Autoplay unlock on desktop and on an iOS or Android device.
+- [x] Autoplay unlock on desktop and on an iOS or Android device.
 - [ ] A stream instance deferred while locked starts on the unlocking gesture, in desktop Safari
-  or on iOS.
-- [ ] iOS mute switch behavior under the `"ambient"` session (D5).
+  or on iOS. Not available for 2.3.0: no macOS or iOS hardware.
+- [ ] iOS mute switch behavior under the `"ambient"` session (D5). Not available for 2.3.0: no iOS
+  device.
 
 **Input device pass:**
 
-- [ ] Keyboard: the release pass in `docs/evidence/keyboard-2.3/README.md`, in Chrome, Firefox,
+- [x] Keyboard: the release pass in `docs/evidence/keyboard-2.3/README.md`, in Chrome, Firefox,
   and Safari: stuck keys (A1), cancelled releases on blur and on a hidden tab (I6), auto-repeat,
   and the prompt's keys (A3, A11); a non-US layout with AltGr; an input method leaves no key
   held; macOS Cmd, if macOS hardware is available.
-- [ ] Pointer: the release pass in `docs/evidence/pointer-2.3/README.md`: the mouse in Chrome,
+- [x] Pointer: the release pass in `docs/evidence/pointer-2.3/README.md`: the mouse in Chrome,
   Firefox, and Safari, including a release outside the canvas, the context menu from screen
   creation (B10), a hidden tab with a button held (I6), and the wheel with and without a handler
   (B11); touch and multi-touch on a phone or tablet in Chrome and Safari (PTR-002, PTR-003); a
   system gesture's `touchcancel` (PTR-005); pinch zoom with `setPinchZoom` on and off, the long
   press, and iOS double-tap zoom (PTR-014); a pen, if one is available.
-- [ ] Gamepad: the release pass in `docs/evidence/gamepad-2.3/README.md`, in Chrome and Firefox
+- [x] Gamepad: the release pass in `docs/evidence/gamepad-2.3/README.md`, in Chrome and Firefox
   with a controller and in Safari if macOS hardware is available: the connect replay (A4),
   press edges (A1, PAD-001, PAD-017), focus and a hidden tab (A2, PAD-002), the radial dead zone
   (A9), reconnects, a stop and restart (I5, I6), names (A10), and `vibrateGamepad()` (A11).
 
 **Other:** a hardware-GPU check of the visual demos, and baseline approval for any fixture
 re-recorded during the release.
+
+**Results (2026-09-29):** the maintainer ran the pass on Windows 11 in Chrome and Firefox, with
+a standard-mapping controller, and on an Android phone in Chrome, and reported every check
+passing; each workstream's evidence README records the steps. The sound pass found the Firefox
+first-sound defect, fixed by R.7a before the rest of the pass. Firefox not vibrating is the
+expected A11 result. The hardware-GPU look at the visual demos passed, and no fixture was
+re-recorded. Not available, for want of hardware: Safari and every macOS item, iOS (the mute
+switch, a stream deferred while locked, double-tap zoom), a pen, a non-US layout, and an input
+method.
 
 ## 9. Decisions
 

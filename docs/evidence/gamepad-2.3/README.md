@@ -192,3 +192,21 @@ Expected results:
   stick: Pi.js" row (A10, I13).
 - **Step 9:** Chrome and Safari vibrate and log `true`; Firefox logs `false` and nothing
   vibrates (A11).
+
+### Release pass results
+
+The maintainer ran the pass on 2026-09-29 on Windows 11 and reported the results in the conversation; browser versions and the pages' copied JSON were not recorded. The controller was a standard-mapping controller.
+
+| Step | Chrome | Firefox |
+| --- | --- | --- |
+| 1: connect replay | Pass | Pass |
+| 2: 20 presses | Pass | Pass |
+| 3: focus change | Pass | Pass |
+| 4: hidden tab | Pass | Pass |
+| 5: radial dead zone | Pass | Pass |
+| 6: reconnect | Pass | Pass |
+| 7: stop and restart | Pass | Pass |
+| 8: names | Pass | Pass |
+| 9: `vibrateGamepad()` | Vibrates | No vibration, as expected: Firefox has no vibration actuator, so the call returns `false` (A11) |
+
+Not available: Safari (no macOS hardware).
