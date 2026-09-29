@@ -588,7 +588,9 @@ its place in the timeline, later ones are skipped, and future ones keep their ti
 
 Until the page receives its first user gesture, the browser keeps audio locked. One-shot sounds
 requested while locked return an ID but play nothing; looping audio and songs start when audio
-unlocks. Audio requires a page served over HTTP or HTTPS.
+unlocks. Sounds requested in the handlers of the unlocking gesture play, including the first
+sound of a page, whose call creates the audio context. Audio requires a page served over HTTP or
+HTTPS.
 
 ### Synthesized Sound
 

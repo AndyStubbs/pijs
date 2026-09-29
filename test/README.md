@@ -114,8 +114,9 @@ shared server, that a suite's `close()` leaves it for the next one, that the ser
 the stage, that suites read the stage's probe, and that a suite reports each skip once.
 
 The offline render harness (`test/unit/audio-render-harness.js`) replaces the page's
-`AudioContext`, timers, clocks, `Math.random`, and visibility before any bundle loads, then renders
-into an `OfflineAudioContext`. Suites read each engine's support before defining their tests:
+`AudioContext`, timers, clocks, `Math.random`, visibility, and user activation (which it reports
+as none, since Playwright's `evaluate()` runs with activation) before any bundle loads, then
+renders into an `OfflineAudioContext`. Suites read each engine's support before defining their tests:
 an engine without Web Audio is skipped as a whole, and tests that need clock-driven renders,
 defined with `clockTest()` instead of `test()`, run last in a "clock-driven renders" group that
 an engine without offline `suspend()` skips. The test output names each reason once per suite:
@@ -173,6 +174,13 @@ frame from the rate schedule, so a position error of one frame fails the check.
 `audio-lifecycle-browser.test.js` checks readiness and removal with controlled `fetch` results
 and media events in the full and lite bundles, without the render harness. Its decoded-audio
 group needs Web Audio; the stream-mode tests run in every engine.
+
+`audio-unlock-browser.test.js` launches each engine with audio requiring a user gesture and
+clicks a real button: the `sound()` call in the click handler, which creates the audio context,
+starts its oscillator, and a `sound()` call as the page loads does not. Firefox creates that
+context suspended, so it is the engine that fails without the fix; headless Chromium allows
+audio without a gesture, which the test reports. It counts oscillator starts, so it needs no
+audio device.
 
 `describeAudioEngines()` accepts `{ "plugins": [ ... ] }` to load plugin source bundles after
 the full bundle in every page. `sound-advanced-bundles-browser.test.js` checks the plugin's IIFE
