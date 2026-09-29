@@ -5,6 +5,31 @@ Measurements recorded at sound phase exits
 `npm run size`, which builds the minified IIFE bundles in memory with the release options and
 compresses them with gzip level 9. Sizes are in bytes.
 
+## Release listening pass (R.7)
+
+The listening checks from [ROADMAP §8.3](../../plans/v2.3/ROADMAP.md#83-manual-release-checks),
+run on 2026-09-29 by the maintainer, who reported the results in the conversation; browser
+versions were not recorded. The pages were served by `npm run server` on Windows 11, and from an
+HTTPS test site on an Android phone.
+
+| Check | Chrome (Windows) | Firefox (Windows) | Chrome (Android) |
+| --- | --- | --- | --- |
+| `sound_lab_01.html`: envelopes, waveforms and noise, limiter, pan sweep and sweeps, the D1 prototype, A/B against 2.2 | Pass | Pass after the R.7a fix | Pass |
+| `sound_samples_01.html`: samples, the 64-slot budget with mixed load | Pass | Pass | Pass |
+| `sound_play_01.html`: the default PLAY envelope by ear, a long song in a hidden tab | Pass | Pass | Pass |
+| `sound_advanced_01.html`: synth, presets, instruments, bus effects and chains, levels, recording, generator, synced visuals, sample instruments | Pass | Pass | Pass |
+| Autoplay unlock: the first tap or click plays | Pass | Pass after the R.7a fix | Pass |
+
+Firefox played nothing on the first button press of the sound lab and every press after it.
+The first sound command created the audio context inside the click handler, and Firefox
+creates such a context suspended, so the locked-context policy dropped the sound. R.7a fixed it
+before the rest of the pass: a context created during user activation is resumed as the
+unlocking gesture ([ROADMAP §13.9](../../plans/v2.3/ROADMAP.md#139-release)).
+
+Not available: Safari and WebKit timing by ear (no macOS hardware), a stream deferred while
+locked in Safari or iOS, and the iOS mute switch under the `"ambient"` session (D5); no iOS
+device.
+
 ## Size reports
 
 | File | Source tree | Notes |
