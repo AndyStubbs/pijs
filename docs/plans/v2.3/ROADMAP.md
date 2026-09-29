@@ -16,9 +16,8 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Pointer 3.2](#63-phase-3-additive-and-release-inputs) | Pointer release inputs: the compatibility summary, the device checks, and the final size | Nothing |
-| 2 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Nothing |
-| 3 | [Sound 11.1–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
+| 1 | [Gamepad 2.1](#72-phase-2-api-breaking-set-200) | Start the gamepad breaking set on one long-lived branch (Section 1.4) | Nothing |
+| 2 | [Sound 11.1–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -29,7 +28,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Core | [3](#3-core) | Complete (Phases 1–3); Core 3 and C10 are written in R.2 | — |
 | Sound | [4](#4-sound) | Phases 0–10 done. Its listening checks are in Section 8.3; Phase 11 not started | Sound 11.1–11.5 |
 | Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
-| Pointer | [6](#6-pointer) | Phases 1–2 done; Phase 3: 3.1 done, 1 task left | Pointer 3.2 |
+| Pointer | [6](#6-pointer) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Gamepad | [7](#7-gamepad) | Phase 1 done; Phase 2 not started | Gamepad 2.1 |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
 | CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.10) | — |
@@ -506,11 +505,10 @@ and size recorded.
 
 ### 6.3 Phase 3: additive and release inputs
 
-Done: 3.1 ([Section 13.7](#137-pointer)).
+Phase 3 is done: tasks 3.1–3.2 ([Section 13.7](#137-pointer)).
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 3.2 | **Release inputs.** Complete the compatibility summary below, add the open device checks to Section 8.3, and record the final size. The new plugin README is written in R.3 | — | — |
 
 ### 6.4 Compatibility summary
 
@@ -538,20 +536,25 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.2:
   of Pi.js preventing `touchstart`; a pointer the browser cancels releases a held mouse button
   with `cancelled: true`.
 - **Phase 1 fixes (B3, B4, B5, B8, PTR-008):** touch handlers receive the touches the event
-  changed, so `"end"` handlers receive the touch that lifted, and hit boxes test those touches;
-  each touch in `inTouch()` keeps its own action; a touch the browser cancels calls the `"end"`
-  and press `"up"` handlers with `cancelled: true` and never clicks; a drag released outside the
-  canvas reports its release, and a release for a button or touch that is not held is ignored;
+  changed, so touch `"up"` handlers receive the touch that lifted, and hit boxes test those
+  touches; each touch in `inTouch()` keeps its own action; a touch the browser cancels calls the
+  touch and press `"up"` handlers with `cancelled: true` and never clicks; a drag released outside
+  the canvas reports its release, and a release for a button or touch that is not held is ignored;
   blur no longer resets polled state, and hiding the page or a stop command calls the `"up"`
-  handlers with `cancelled: true`; press follows only the primary touch;
-  a click needs the same pointer's down and release inside its box, and each finger clicks on
-  its own; right and middle buttons no longer click; a press that starts on the canvas border or
-  padding is ignored, and a drag that starts off the screen reports no buttons; hit boxes accept
-  fractional values, and a negative hit-box size throws.
+  handlers with `cancelled: true`; press follows only the primary touch; a click needs the same
+  pointer's down and release inside its box, and each finger clicks on its own; right and middle
+  buttons no longer click; a press that starts on the canvas border or padding is ignored, and a
+  drag that starts off the screen reports no buttons; hit boxes accept fractional values, and a
+  negative hit-box size throws.
 - **I4:** registering the same function for the same mode again does nothing, whatever its
   `once`, hit box, and custom data, so a function registered with and without `once` runs once;
   `offX( null, fn )` removes a function from every mode; `offX()` with neither argument throws
   `TypeError` with code `INVALID_MODE`.
+- **Dispatch (I8, B1, B2):** state is updated before handlers run. A handler that throws is
+  reported with `console.error`, and the event's other handlers still run. A handler registered
+  during an event first runs for the next one, a handler removed during an event does not run
+  later in it, and `once` removes only its own registration, before the handler runs, so
+  removing one handler no longer disables the others of its mode.
 - **I7 and I9:** data objects and list arrays are frozen and created once per event, so a read
   returns the object the handlers received, the same one until the next event, and `inTouch()`
   the same array until a touch changes; `inMouse()` and `inPress()` return `null` before the
@@ -704,11 +707,12 @@ in its workstream's evidence folder.
   and Safari: stuck keys (A1), cancelled releases on blur and on a hidden tab (I6), auto-repeat,
   and the prompt's keys (A3, A11); a non-US layout with AltGr; an input method leaves no key
   held; macOS Cmd, if macOS hardware is available.
-- [ ] Pointer: the mouse pass in Firefox and Safari; touch and multi-touch on a phone or tablet
-  (PTR-002, PTR-003); `touchcancel` from a system gesture (PTR-005); pinch zoom with
-  `setPinchZoom` on and off (PTR-014); compatibility mouse events after a tap; long-press
-  context menu; iOS double-tap zoom; pen input. Use `html-manual/events_comprehensive` and
-  `ontouch_03`.
+- [ ] Pointer: the release pass in `docs/evidence/pointer-2.3/README.md`: the mouse in Chrome,
+  Firefox, and Safari, including a release outside the canvas, the context menu from screen
+  creation (B10), a hidden tab with a button held (I6), and the wheel with and without a handler
+  (B11); touch and multi-touch on a phone or tablet in Chrome and Safari (PTR-002, PTR-003); a
+  system gesture's `touchcancel` (PTR-005); pinch zoom with `setPinchZoom` on and off, the long
+  press, and iOS double-tap zoom (PTR-014); a pen, if one is available.
 - [ ] Gamepad: re-check PAD-001, PAD-002, and PAD-017 in Chrome and Firefox with a controller;
   Safari, if macOS hardware is available; `vibrateGamepad()` in Chrome (A11).
 
@@ -1109,7 +1113,8 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | 2.6 | `clearEvents` scope (I10): the plugin registers `"click"` as its own type, so `"press"` clears only `onPress` handlers and `"click"` only `onClick` handlers. The four types share one registration helper in `index.js`: a screen's `clearEvents()` clears that screen, and `$.clearEvents()`, which passes no screen (Core 13), clears every screen. `offClick` names `"click"` as its clear type. Metadata: `clearEvents` lists the four pointer types and the commands each clears. Tests: `"press"` keeps clicks, and `"click"` on one screen and on every screen, in the Node harness; the Core 13 browser test's `"press"` case keeps clicks and gains `first.clearEvents( "click" )` and `$.clearEvents( "click" )` | — | [#83](https://github.com/AndyStubbs/pijs/pull/83) |
 | 2.7 | Gesture settings (B10, I12): `setContextMenu( isEnabled )` replaces `setEnableContextMenu`, which goes in `_removed.toml`; option `contextMenu`, and the old option `enableContextMenu` fails through Core 8. The `contextmenu` listener is added at screen init for onscreen canvases and removed at screen cleanup, so the menu is suppressed from screen creation whether or not mouse tracking runs; `setContextMenu()` no longer starts mouse tracking, and `stopMouse()` no longer lets the menu open. `setPinchZoom( isEnabled )` is a screen command that validates its target and sets the canvas `touch-action` at any time, `"pinch-zoom"` or `"none"`, never `<body>`, without starting touch tracking. Touch tracking still sets `none` when it starts and restores the previous value when it stops, unless `setPinchZoom()` set the canvas, whose value it then keeps; `noCss` canvases are no different. Metadata: `setContextMenu` replaces `setEnableContextMenu`, and `setPinchZoom` is a screen command describing the canvas values; the type check pins `setContextMenu` and `contextMenu`. Tests: the menu from screen creation, per screen, without starting tracking, after `stopMouse()`, and with no listener left on a removed screen; `setPinchZoom` before, during, and after tracking, on one canvas only, and never on `<body>` (P13, P14); the B6 listener test keeps `contextmenu` after both stops; a browser test with a `noCss` screen covers the menu, `touch-action`, `set( { contextMenu, pinchZoom } )`, `<body>`, and the old option and command; the offscreen validation test covers `setContextMenu` and `setPinchZoom`; the Lite type consumer sets `contextMenu` and rejects `enableContextMenu`. Fixtures, manual pages, `tools/charedit.html`, `tools/dataedit.html`, and the evidence `device-check.html` use the new names | [PTR-014](AUDIT-POINTER.md#ptr-014) | [#84](https://github.com/AndyStubbs/pijs/pull/84) |
 | 2.8 | Validation (B9, I11): the shared handler helpers check the mode (`TypeError` for a non-string, `RangeError` for an unknown mode, `INVALID_MODE`), the function (`TypeError`, `INVALID_FUNCTION`), `once` (a boolean or omitted, else `TypeError`, `INVALID_ONCE`), and the hit box (`TypeError` for anything but an object with finite `x`, `y`, `width`, and `height`, including `false` and numbers; `RangeError` for a negative size, `INVALID_HITBOX`), with messages starting with the command name. The renamed touch modes throw `RangeError`. `setContextMenu` and `setPinchZoom` take a boolean `isEnabled`, or omitted for `false`; any other value throws `TypeError` with `INVALID_IS_ENABLED` and changes nothing. No plain `Error` is left in the plugin. Metadata: the `onX` and `offX` descriptions give the rules and codes, and the settings their `isEnabled` rule. Tests: every code and error type for registration, removal, and settings, exact messages, nothing registered or changed by a rejected call, and `once` omitted, `null`, or boolean (P13); the hit-box test expects `TypeError` and covers non-objects. Phase 2 exit: `docs/evidence/pointer-2.3/size-phase2.json` and its README section (standalone 2.0.0: 5,056 bytes gzipped, +283 from Phase 1) | [PTR-012](AUDIT-POINTER.md#ptr-012) | [#85](https://github.com/AndyStubbs/pijs/pull/85) |
-| 3.1 | Wheel input (B11): a new `wheel.js` registers `onWheel( fn, once, hitBox, customData )` and `offWheel( fn )` through the shared handler helpers, so identity, `once`, hit boxes, dispatch isolation, and I11 validation match the other commands. A screen's canvas has a non-passive `wheel` listener only while the screen has wheel handlers; it calls `preventDefault()`, so the page does not scroll with the wheel over the canvas, and it goes with the last handler, including a spent `once` handler, `offWheel()`, `clearEvents( "wheel" )`, and screen removal. Handlers receive frozen `{ x, y, deltaX, deltaY }` at the screen position, with deltas in CSS pixels: lines are 16 pixels and pages the window size. Wheel needs no tracking, so the mouse start and stop commands do not affect it. `clearEvents` gains the `"wheel"` type (I10). Metadata: `onWheel`, `offWheel`, `WheelData`, and the `clearEvents` types; the type check pins `WheelData` and the `onWheel` signature. Tests: pixel, line, and page deltas, frozen data, custom data, hit boxes, `once`, identity, the listener and prevented scroll only while handlers exist, `offWheel()`, `clearEvents( "wheel" )` on one screen and every screen, screen removal, and validation, in the Node harness (whose fake listeners now record `passive`); a trusted wheel in Chromium reaches the handler at its screen position without scrolling the page, and scrolls it after `offWheel`; the Lite type consumer registers and removes a wheel handler. Size: the standalone plugin is 5,440 bytes gzipped, +384 over Phase 2, above the 200–300 byte estimate | — | — |
+| 3.1 | Wheel input (B11): a new `wheel.js` registers `onWheel( fn, once, hitBox, customData )` and `offWheel( fn )` through the shared handler helpers, so identity, `once`, hit boxes, dispatch isolation, and I11 validation match the other commands. A screen's canvas has a non-passive `wheel` listener only while the screen has wheel handlers; it calls `preventDefault()`, so the page does not scroll with the wheel over the canvas, and it goes with the last handler, including a spent `once` handler, `offWheel()`, `clearEvents( "wheel" )`, and screen removal. Handlers receive frozen `{ x, y, deltaX, deltaY }` at the screen position, with deltas in CSS pixels: lines are 16 pixels and pages the window size. Wheel needs no tracking, so the mouse start and stop commands do not affect it. `clearEvents` gains the `"wheel"` type (I10). Metadata: `onWheel`, `offWheel`, `WheelData`, and the `clearEvents` types; the type check pins `WheelData` and the `onWheel` signature. Tests: pixel, line, and page deltas, frozen data, custom data, hit boxes, `once`, identity, the listener and prevented scroll only while handlers exist, `offWheel()`, `clearEvents( "wheel" )` on one screen and every screen, screen removal, and validation, in the Node harness (whose fake listeners now record `passive`); a trusted wheel in Chromium reaches the handler at its screen position without scrolling the page, and scrolls it after `offWheel`; the Lite type consumer registers and removes a wheel handler. Size: the standalone plugin is 5,440 bytes gzipped, +384 over Phase 2, above the 200–300 byte estimate | — | [#87](https://github.com/AndyStubbs/pijs/pull/87) |
+| 3.2 | Release inputs: the compatibility summary (6.4) completed with dispatch (I8, B1, B2) and the Phase 1 fixes in the new touch mode names; the pointer's device checks in Section 8.3 point to a release pass in `docs/evidence/pointer-2.3/README.md`, with 13 steps and expected results for the mouse, the wheel, a hidden tab, touches, a system gesture, pinch zoom, and a pen. `device-check.html` works with the 2.0.0 API again (`inMouse()` and `inPress()` are `null` before the first event, which stopped its drawing after Pointer 2.5) and shows cancelled releases, touches, the wheel with a handler toggle and the page scroll, the canvas `touch-action` with a pinch-zoom toggle, and the pointer type; a **Record step** button serves touch devices. Checked headless in Chromium with trusted mouse, wheel, and touch input and no page errors. The final size, `size-final.json` on `main` at `603ef3f`: 5,440 bytes gzipped for the standalone plugin 2.0.0, +1,489 since the baseline. The audit's status table marks every finding done | — | — |
 
 ### 13.8 Gamepad
 

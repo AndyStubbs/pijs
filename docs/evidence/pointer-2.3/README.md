@@ -14,9 +14,10 @@ This folder holds measurements and reproductions for the 2.3 pointer audit
 | `size-baseline.json` | `npm run size -- --out=docs/evidence/pointer-2.3/size-baseline.json` at the revision |
 | `size-phase1.json` | The same command at the exit of pointer Phase 1 (tasks 1.1–1.9), 2026-09-27 |
 | `size-phase2.json` | The same command at the exit of pointer Phase 2 (tasks 2.1–2.8), 2026-09-28 |
+| `size-final.json` | The same command on `main` at `603ef3f`, after Phase 3 task 3.1, 2026-09-28 |
 | `probes.js` | Reproductions P1–P17 and T1, run in Chromium, Firefox and WebKit against fresh in-memory bundles of the current source, plus a load check of the manual pointer pages |
 | `probes-output.json` | Observed and expected results per engine and probe, with page errors |
-| `device-check.html` | A page for the manual mouse pass: Pi.js state next to the browser's own mouse and pen pointer events (mouse events before Pointer 2.2) |
+| `device-check.html` | A page for the manual device passes: Pi.js state next to the browser's own pointer events for the mouse, pens, and touches, with cancelled releases, the wheel, the context menu, and pinch zoom (mouse events before Pointer 2.2) |
 
 ## Size baseline
 
@@ -64,6 +65,22 @@ data and press records, the removal forms and duplicate check, the per-screen ge
 and validation with per-parameter codes; the touch-event and window-release code they replace
 is gone. The Full change also includes keyboard Phase 2 (+716 standalone), gamepad Phase 1
 (+594), and the core tasks merged since the Phase 1 measurement, which Lite's +728 reflects.
+
+## Final size
+
+`size-final.json`, measured on `main` at `603ef3f`, after the Phase 2 set landed and Phase 3
+task 3.1 added wheel input. The standalone plugin is 2.0.0.
+
+| Bundle | Bytes | Gzip | Gzip change from Phase 2 |
+| --- | --- | --- | --- |
+| `pointer` plugin 2.0.0 (standalone IIFE) | 15,984 | 5,440 | +384 |
+| `pi.min.js` (Full, includes pointer) | 219,833 | 76,928 | +400 |
+| `pi.lite.min.js` (no pointer) | 141,180 | 49,675 | 0 |
+
+The growth is wheel input (B11): `onWheel` and `offWheel`, delta normalization, and the canvas
+listener that is added and removed with the screen's wheel handlers. It is above the 200–300
+byte estimate. The standalone plugin is 1,489 bytes more than the 3,951-byte baseline, of which
+Phase 1 added 822, Phase 2 283, and Phase 3 384.
 
 ## Probes
 
@@ -131,3 +148,64 @@ for the audit, so the touch checks are listed as open for the release pass (R.7)
 | 9 | Border moves: x -4 to 203, y -5 to 153, against 0–199 and 0–149 |
 
 An earlier blur without a held button hid the page 25 ms later; Pi.js and the browser agreed.
+
+### Release pass
+
+The pointer's manual release check, from
+[ROADMAP §8.3](../../plans/v2.3/ROADMAP.md#83-manual-release-checks), run after the Phase 2 set
+landed, on `device-check.html` as it is now. Run steps 1–8 with a mouse in Chrome, Firefox, and
+Safari; steps 9–12 on a phone or tablet in Chrome and Safari; and step 13 with a pen, if one is
+available. After each step, press its number key, or set **Step** and click **Record step** on
+a touch device. Then click **Copy results** and record the results here.
+
+1. Open the page. Before any other input, right-click the canvas.
+2. Click **Reset counters**. Press the left button inside the canvas, drag off the canvas and
+   off the page area, and release there.
+3. Click **Reset counters**. Right-click, then middle-click, inside the green box. Press inside
+   the box, drag out of it, and release; press outside it, drag in, and release.
+4. Hold the left button over the canvas, switch windows with Alt+Tab, release the button there,
+   and click back into the page title bar.
+5. Hold the left button over the canvas, switch tabs with Ctrl+Tab while holding it, release,
+   and return to the tab.
+6. Click **Reset counters**. Turn the wheel over the canvas a few notches, and scroll with two
+   fingers on a trackpad, if one is available. Click **Remove wheel handler** and do the same
+   again.
+7. Click **Enable context menu** and right-click the canvas.
+8. Click **Reset counters**, then move the mouse slowly across all four edges of the canvas,
+   over the border.
+9. Click **Reset counters**. Tap inside the green box with one finger. Then put one finger
+   down in the box, a second finger down in the box, and lift the second before the first.
+10. Touch the canvas, drag the finger off the canvas and off the page area, and lift it there.
+11. Touch the canvas and, with the finger still down, start a system gesture: swipe from the
+    screen edge to go back or to switch apps. Return to the page.
+12. Pinch on the canvas. Click **Enable pinch zoom** and pinch again. Long-press the canvas,
+    and double-tap it.
+13. Draw on the canvas with the pen.
+
+Expected results:
+- **Step 1:** "Context menu on canvas" is 1 / 1: the menu is suppressed from screen creation,
+  before any mouse tracking (B10, PTR-014).
+- **Step 2:** the browser counts 1 up outside the canvas, and Pi.js 1 mouse up and 1 press up;
+  both report buttons 0 afterward (PTR-004).
+- **Step 3:** 0 Pi.js clicks: right and middle buttons do not click, and a click needs its
+  press and release inside the box (PTR-005, PTR-008).
+- **Step 4:** at the blur the Pi.js buttons stay 1, as the browser's do, and the up handlers run
+  when the release arrives, with no cancelled release (PTR-007).
+- **Step 5:** "Cancelled releases" counts 1 mouse and 1 press, dispatched when the tab was
+  hidden, and no click (I6).
+- **Step 6:** with the handler, the Pi.js wheel count follows the browser's, the delta sum is in
+  pixels, and "Page scrollY" does not change; without it, the Pi.js count stays and the page
+  scrolls (B11).
+- **Step 7:** the context menu opens, and the prevented count does not grow.
+- **Step 8:** the move range reaches past 0..199 / 0..149 over the border: true positions, as
+  in the audit results above.
+- **Step 9:** the Pi.js touch downs and ups match the browser's, and each finger clicks on its
+  own: "by" lists each touch (PTR-002, PTR-003).
+- **Step 10:** the page does not scroll, Pi.js counts one touch up, and no touch stays held.
+- **Step 11:** if the browser cancels the touch, its cancel count and the Pi.js touch
+  cancelled count match, and no click fires (PTR-005). Some systems end the touch instead;
+  record which.
+- **Step 12:** "Canvas touch-action" reads none, then pinch-zoom; the first pinch does not zoom
+  the page and the second does (PTR-014). The long press opens no menu. Record whether the
+  double-tap zooms, especially on iOS.
+- **Step 13:** "Pi inMouse" reports type pen while the pen draws.
