@@ -719,5 +719,5 @@ the [ROADMAP](ROADMAP.md#7-gamepad) tasks that implement each item.
 | A5 | Handler removal and `once` (§6) | Accepted | Decided by I2 and I4: `onGamepad()` and `offGamepad()`. Done (Gamepad 2.2 and 2.3) |
 | A6 | Return shapes | Accepted | Done (Gamepad 2.4). Breaking; listed in the compatibility summary |
 | A9 | Radial dead zone and rename | Accepted | Breaking: radial stick dead zone, and `setGamepadSensitivity` becomes `setGamepadDeadZone` (`gamepadDeadZone`). The old name fails as an unknown command (G3). Done (Gamepad 2.6) |
-| A10 | Standard-mapping names | Accepted | Additive. The names are I13 (Gamepad 3.1) |
+| A10 | Standard-mapping names | Accepted | Done (Gamepad 3.1). Additive; the names are I13 |
 | A11 | `vibrateGamepad()` | Accepted | Additive (Gamepad 3.2). Returns false where unsupported (Firefox 156, iOS Safari) |

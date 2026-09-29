@@ -220,7 +220,9 @@ declare namespace Pi {
 	 *
 	 * A pad starts with every button released, so a button held when the pad appears, such as the press that makes the browser expose it, is reported as just pressed on a later read. Button and axis numbers follow the browser's Gamepad API; the standard mapping has 17 buttons and 4 axes.
 	 *
-	 * The methods take a non-negative integer index. Another value throws a TypeError, and a negative index a RangeError, both with code INVALID_INDEX and a message starting with the method name. An index past the pad's buttons or axes returns the empty value: null from getButton(), 0 from getAxis(), and false from the other methods.
+	 * The methods take a non-negative integer index or a standard-mapping name, which reads the button or axis at that position on any pad. Buttons: south, east, west, north, leftShoulder, rightShoulder, leftTrigger, rightTrigger, select, start, leftStick, rightStick, dpadUp, dpadDown, dpadLeft, dpadRight, and home (0 to 16). Axes: leftX, leftY, rightX, and rightY (0 to 3). Names are exact, and a button method does not take an axis name.
+	 *
+	 * A value that is neither an integer nor a string throws a TypeError, and a negative index or an unknown name a RangeError, both with code INVALID_INDEX and a message starting with the method name. An index past the pad's buttons or axes returns the empty value: null from getButton(), 0 from getAxis(), and false from the other methods.
 	 */
 	interface GamepadData {
 		/**
@@ -271,32 +273,32 @@ declare namespace Pi {
 		/**
 		 * Reads the button object, or null past the buttons array.
 		 */
-		getButton: ( buttonIndex: number ) => GamepadButton | null;
+		getButton: ( buttonIndex: number | string ) => GamepadButton | null;
 
 		/**
 		 * Reads whether the button is held; false past the buttons array.
 		 */
-		getButtonPressed: ( buttonIndex: number ) => boolean;
+		getButtonPressed: ( buttonIndex: number | string ) => boolean;
 
 		/**
 		 * Reads whether the button was pressed since the previous read; false past the array.
 		 */
-		getButtonJustPressed: ( buttonIndex: number ) => boolean;
+		getButtonJustPressed: ( buttonIndex: number | string ) => boolean;
 
 		/**
 		 * Reads whether the button was released since the previous read; false past the array.
 		 */
-		getButtonJustReleased: ( buttonIndex: number ) => boolean;
+		getButtonJustReleased: ( buttonIndex: number | string ) => boolean;
 
 		/**
 		 * Reads the axis value; 0 past the axes array.
 		 */
-		getAxis: ( axisIndex: number ) => number;
+		getAxis: ( axisIndex: number | string ) => number;
 
 		/**
 		 * Reads whether the axis value differs from the previous read; false past the array.
 		 */
-		getAxisChanged: ( axisIndex: number ) => boolean;
+		getAxisChanged: ( axisIndex: number | string ) => boolean;
 	}
 
 	/**

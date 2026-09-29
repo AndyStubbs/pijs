@@ -876,22 +876,25 @@ test( "PAD-008 indices must be integers, and an index past the pad reads empty (
 		check( () => h.$.inGamepad( -1 ), "RangeError",
 			"inGamepad: gamepadIndex must not be negative." );
 
-		// Every helper checks its index the same way, before it reads
+		// Every helper checks its index the same way, before it reads; a string is a name
+		// (Gamepad 3.1), so "0" is an unknown name
 		const helpers = [
-			[ "getButton", "buttonIndex", null ],
-			[ "getButtonPressed", "buttonIndex", false ],
-			[ "getButtonJustPressed", "buttonIndex", false ],
-			[ "getButtonJustReleased", "buttonIndex", false ],
-			[ "getAxis", "axisIndex", 0 ],
-			[ "getAxisChanged", "axisIndex", false ]
+			[ "getButton", "buttonIndex", null, "a button" ],
+			[ "getButtonPressed", "buttonIndex", false, "a button" ],
+			[ "getButtonJustPressed", "buttonIndex", false, "a button" ],
+			[ "getButtonJustReleased", "buttonIndex", false, "a button" ],
+			[ "getAxis", "axisIndex", 0, "an axis" ],
+			[ "getAxisChanged", "axisIndex", false, "an axis" ]
 		];
-		for( const [ name, parameter, empty ] of helpers ) {
-			for( const index of [ 1.5, NaN, "0", undefined ] ) {
+		for( const [ name, parameter, empty, kind ] of helpers ) {
+			for( const index of [ 1.5, NaN, undefined, true ] ) {
 				check( () => pad[ name ]( index ), "TypeError",
-					`${name}: ${parameter} must be an integer.` );
+					`${name}: ${parameter} must be an integer or ${kind} name.` );
 			}
 			check( () => pad[ name ]( -1 ), "RangeError",
 				`${name}: ${parameter} must not be negative.` );
+			check( () => pad[ name ]( "0" ), "RangeError",
+				`${name}: ${parameter} "0" is not ${kind} name.` );
 
 			// Past the pad's four buttons and four axes: the empty value
 			assert.equal( pad[ name ]( 20 ), empty, name );
@@ -909,6 +912,58 @@ test( "PAD-008 indices must be integers, and an index past the pad reads empty (
 		h.$.onGamepad( "disconnect", () => {}, false );
 	}
 );
+
+test( "gamepad helpers accept the standard-mapping names (A10, I13)", () => {
+	const h = createHarness();
+	const buttons = [
+		"south", "east", "west", "north", "leftShoulder", "rightShoulder", "leftTrigger",
+		"rightTrigger", "select", "start", "leftStick", "rightStick", "dpadUp", "dpadDown",
+		"dpadLeft", "dpadRight", "home"
+	];
+	const axes = [ "leftX", "leftY", "rightX", "rightY" ];
+	h.setPad( 0, {
+		"buttons": buttons.map( ( name, index ) => index % 2 === 0 ),
+		"axes": [ 0.5, -0.5, 0.9, 0 ]
+	} );
+	h.$.inGamepad();
+	h.frame();
+	const pad = h.$.inGamepad( 0 );
+
+	// Each name reads the button or axis at its standard position
+	for( const [ index, name ] of buttons.entries() ) {
+		assert.equal( pad.getButtonPressed( name ), pad.getButtonPressed( index ), name );
+		assert.equal( pad.getButton( name ), pad.getButton( index ), name );
+		assert.equal( pad.getButtonJustPressed( name ), pad.getButtonJustPressed( index ), name );
+	}
+	assert.equal( pad.getButtonPressed( "south" ), true );
+	assert.equal( pad.getButtonPressed( "east" ), false );
+	for( const [ index, name ] of axes.entries() ) {
+		assert.equal( pad.getAxis( name ), pad.getAxis( index ), name );
+		assert.equal( pad.getAxisChanged( name ), pad.getAxisChanged( index ), name );
+	}
+	assert.ok( pad.getAxis( "rightX" ) > 0 );
+
+	// A release is reported by name too
+	h.setPad( 0, { "buttons": buttons.map( () => false ) } );
+	h.frame();
+	assert.equal( pad.getButtonJustReleased( "south" ), true );
+	assert.equal( pad.getButtonJustReleased( "east" ), false );
+
+	// Names are exact, and a button name is not an axis name
+	for( const [ method, value, kind ] of [
+		[ "getButtonPressed", "South", "a button" ], [ "getButton", "leftX", "a button" ],
+		[ "getAxis", "south", "an axis" ], [ "getAxisChanged", "", "an axis" ]
+	] ) {
+		let parameter = "buttonIndex";
+		if( kind === "an axis" ) {
+			parameter = "axisIndex";
+		}
+		assert.throws( () => pad[ method ]( value ), error => {
+			return error.name === "RangeError" && error.code === "INVALID_INDEX" &&
+				error.message === `${method}: ${parameter} "${value}" is not ${kind} name.`;
+		} );
+	}
+} );
 
 test( "PAD-016 the first update after startGamepad() reports no edges (I6)", () => {
 	const h = createHarness();

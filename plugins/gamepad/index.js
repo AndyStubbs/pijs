@@ -27,6 +27,14 @@ const m_padList = [];
 // The modes of onGamepad() and offGamepad()
 const MODES = [ "connect", "disconnect" ];
 
+// Standard-mapping names (I13), by position; the helpers accept them in place of indices
+const BUTTON_NAMES = [
+	"south", "east", "west", "north", "leftShoulder", "rightShoulder", "leftTrigger",
+	"rightTrigger", "select", "start", "leftStick", "rightStick", "dpadUp", "dpadDown",
+	"dpadLeft", "dpadRight", "home"
+];
+const AXIS_NAMES = [ "leftX", "leftY", "rightX", "rightY" ];
+
 // Handler registrations by mode: { fn, once, isRemoved }, and for connect handlers `delivered`,
 // the pads the handler has received. A registration removed during a dispatch is skipped for the
 // rest of it
@@ -363,6 +371,59 @@ function checkIndex( command, name, index ) {
 }
 
 /**
+ * Read a helper's button or axis: a standard-mapping name, which gives its position, or an index
+ * checked as checkIndex() does. A name that is not in the list throws a RangeError with code
+ * `INVALID_INDEX`, and a value that is neither a string nor an integer a TypeError.
+ *
+ * @param {string} command - Method name for error messages.
+ * @param {string} name - Parameter name for error messages.
+ * @param {*} value - Requested index or name.
+ * @param {Array<string>} names - The names, by position.
+ * @param {string} kind - `"button"` or `"axis"`, for error messages.
+ * @returns {number} The index.
+ */
+function readHelperIndex( command, name, value, names, kind ) {
+	if( typeof value === "string" ) {
+		const index = names.indexOf( value );
+		if( index === -1 ) {
+			throwCode(
+				RangeError, `${command}: ${name} "${value}" is not ${kind} name.`, "INVALID_INDEX"
+			);
+		}
+		return index;
+	}
+	if( !Number.isInteger( value ) ) {
+		throwCode(
+			TypeError, `${command}: ${name} must be an integer or ${kind} name.`, "INVALID_INDEX"
+		);
+	}
+	checkIndex( command, name, value );
+	return value;
+}
+
+/**
+ * Read a helper's button: a button name, or a non-negative integer.
+ *
+ * @param {string} command - Method name for error messages.
+ * @param {*} value - Requested button.
+ * @returns {number} The button index.
+ */
+function readButton( command, value ) {
+	return readHelperIndex( command, "buttonIndex", value, BUTTON_NAMES, "a button" );
+}
+
+/**
+ * Read a helper's axis: an axis name, or a non-negative integer.
+ *
+ * @param {string} command - Method name for error messages.
+ * @param {*} value - Requested axis.
+ * @returns {number} The axis index.
+ */
+function readAxis( command, value ) {
+	return readHelperIndex( command, "axisIndex", value, AXIS_NAMES, "an axis" );
+}
+
+/**
  * Remove one registration. It is marked removed so a dispatch already in progress skips it.
  *
  * @param {string} mode - Mode of the registration.
@@ -614,56 +675,57 @@ function createNewGamepadData( gamepadDataRaw ) {
 		"buttons": []
 	};
 
-	// Helper methods; each is a read, so it publishes the frame's state first. An index must be
-	// a non-negative integer; one past the pad's buttons or axes returns the empty value
+	// Helper methods; each is a read, so it publishes the frame's state first. A button or axis
+	// is a standard-mapping name or a non-negative integer; one past the pad's buttons or axes
+	// returns the empty value
 	newGamepadData.getButton = function( buttonIndex ) {
-		checkIndex( "getButton", "buttonIndex", buttonIndex );
+		const index = readButton( "getButton", buttonIndex );
 		readGamepads();
-		if( buttonIndex >= this.buttons.length ) {
+		if( index >= this.buttons.length ) {
 			return null;
 		}
-		return this.buttons[ buttonIndex ];
+		return this.buttons[ index ];
 	};
 	newGamepadData.getButtonPressed = function( buttonIndex ) {
-		checkIndex( "getButtonPressed", "buttonIndex", buttonIndex );
+		const index = readButton( "getButtonPressed", buttonIndex );
 		readGamepads();
-		if( buttonIndex >= this.buttons.length ) {
+		if( index >= this.buttons.length ) {
 			return false;
 		}
-		return this.buttons[ buttonIndex ].pressed;
+		return this.buttons[ index ].pressed;
 	};
 	newGamepadData.getButtonJustPressed = function( buttonIndex ) {
-		checkIndex( "getButtonJustPressed", "buttonIndex", buttonIndex );
+		const index = readButton( "getButtonJustPressed", buttonIndex );
 		readGamepads();
-		if( buttonIndex >= this.buttons.length ) {
+		if( index >= this.buttons.length ) {
 			return false;
 		}
-		return this.buttons[ buttonIndex ].pressStarted;
+		return this.buttons[ index ].pressStarted;
 	};
 	newGamepadData.getButtonJustReleased = function( buttonIndex ) {
-		checkIndex( "getButtonJustReleased", "buttonIndex", buttonIndex );
+		const index = readButton( "getButtonJustReleased", buttonIndex );
 		readGamepads();
-		if( buttonIndex >= this.buttons.length ) {
+		if( index >= this.buttons.length ) {
 			return false;
 		}
-		return this.buttons[ buttonIndex ].pressReleased;
+		return this.buttons[ index ].pressReleased;
 	};
 	newGamepadData.getAxis = function( axisIndex ) {
-		checkIndex( "getAxis", "axisIndex", axisIndex );
+		const index = readAxis( "getAxis", axisIndex );
 		readGamepads();
-		if( axisIndex >= this.axes.length ) {
+		if( index >= this.axes.length ) {
 			return 0;
 		}
-		return this.axes[ axisIndex ];
+		return this.axes[ index ];
 	};
 	newGamepadData.getAxisChanged = function( axisIndex ) {
-		checkIndex( "getAxisChanged", "axisIndex", axisIndex );
+		const index = readAxis( "getAxisChanged", axisIndex );
 		readGamepads();
-		if( axisIndex >= this.axes.length ) {
+		if( index >= this.axes.length ) {
 			return false;
 		}
-		const current = this.axes[ axisIndex ];
-		const last = this.lastAxes[ axisIndex ] || 0;
+		const current = this.axes[ index ];
+		const last = this.lastAxes[ index ] || 0;
 		return current !== last;
 	};
 

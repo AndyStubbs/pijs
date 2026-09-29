@@ -508,10 +508,16 @@ A pad starts with every button released, so a button held when the pad appears, 
 press that makes the browser expose it, is reported as just pressed on a later read. Button and
 axis numbers follow the browser's Gamepad API; the standard mapping has 17 buttons and 4 axes.
 
-The methods take a non-negative integer index. Another value throws a TypeError, and a negative
-index a RangeError, both with code INVALID_INDEX and a message starting with the method name. An
-index past the pad's buttons or axes returns the empty value: null from getButton(), 0 from
-getAxis(), and false from the other methods.
+The methods take a non-negative integer index or a standard-mapping name, which reads the
+button or axis at that position on any pad. Buttons: south, east, west, north, leftShoulder,
+rightShoulder, leftTrigger, rightTrigger, select, start, leftStick, rightStick, dpadUp, dpadDown,
+dpadLeft, dpadRight, and home (0 to 16). Axes: leftX, leftY, rightX, and rightY (0 to 3). Names
+are exact, and a button method does not take an axis name.
+
+A value that is neither an integer nor a string throws a TypeError, and a negative index or an
+unknown name a RangeError, both with code INVALID_INDEX and a message starting with the method
+name. An index past the pad's buttons or axes returns the empty value: null from getButton(), 0
+from getAxis(), and false from the other methods.
 """
 
 [[objects.properties]]
@@ -565,35 +571,35 @@ description = "Axis values at the previous read."
 [[objects.properties]]
 name = "getButton"
 type = "function"
-signature = "( buttonIndex: number ) => GamepadButton | null"
+signature = "( buttonIndex: number | string ) => GamepadButton | null"
 description = "Reads the button object, or null past the buttons array."
 
 [[objects.properties]]
 name = "getButtonPressed"
 type = "function"
-signature = "( buttonIndex: number ) => boolean"
+signature = "( buttonIndex: number | string ) => boolean"
 description = "Reads whether the button is held; false past the buttons array."
 
 [[objects.properties]]
 name = "getButtonJustPressed"
 type = "function"
-signature = "( buttonIndex: number ) => boolean"
+signature = "( buttonIndex: number | string ) => boolean"
 description = "Reads whether the button was pressed since the previous read; false past the array."
 
 [[objects.properties]]
 name = "getButtonJustReleased"
 type = "function"
-signature = "( buttonIndex: number ) => boolean"
+signature = "( buttonIndex: number | string ) => boolean"
 description = "Reads whether the button was released since the previous read; false past the array."
 
 [[objects.properties]]
 name = "getAxis"
 type = "function"
-signature = "( axisIndex: number ) => number"
+signature = "( axisIndex: number | string ) => number"
 description = "Reads the axis value; 0 past the axes array."
 
 [[objects.properties]]
 name = "getAxisChanged"
 type = "function"
-signature = "( axisIndex: number ) => boolean"
+signature = "( axisIndex: number | string ) => boolean"
 description = "Reads whether the axis value differs from the previous read; false past the array."
