@@ -215,9 +215,10 @@ the observed extremes before changing them.
 `sound_play_01.html` play them for the A/B checks in the release listening pass.
 `record-sound-references.test.js` checks the manifest against the script's presets and the
 demos, and `record-sound-references-browser.test.js` re-renders each preset in Chromium and
-compares it with its file. Presets that mix several voices can differ by one 16-bit step between
-renders, because Chromium sums a node's inputs in an address-dependent order, so the check
-allows that step.
+compares it with its file, allowing one 16-bit step per sample: presets that mix several voices
+differ by that step between renders, because Chromium sums a node's inputs in an
+address-dependent order, and macOS Chromium differs from the Windows recording by it in
+hundreds of samples of a single voice.
 
 ### Listening check
 
