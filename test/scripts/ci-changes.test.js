@@ -26,7 +26,8 @@ test( "documentation and tooling files are skippable", () => {
 
 test( "files that tests, builds, or size reports read are not skippable", () => {
 	for( const file of [
-		"docs/llms/pi.d.ts", "plugins/PLUGIN-QUICKSTART.md", "plugins/README.md",
+		"docs/llms/pi.d.ts", "docs/UPGRADE-V2.3.md", "plugins/PLUGIN-QUICKSTART.md",
+		"plugins/README.md",
 		"src/api/graphics.js", "plugins/sound/index.js", "metadata/pi-2.3/circle.json",
 		"test/demos/shader_demo_01.html", "test/tests/html-core/circle_01.html",
 		"releases/pi-2.2.0/pi.js", "scripts/build.js", "package.json", "package-lock.json",

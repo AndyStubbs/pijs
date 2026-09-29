@@ -16,11 +16,10 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [R.2–R.4](#82-tasks) | `API.md`, the llms references and plugin READMEs, and the upgrade guide, in any order | Nothing. Can run in parallel |
-| 2 | [R.5](#82-tasks) | Package README, changelog, and `PUBLISH.md` | R.4 |
-| 3 | [R.6](#82-tasks) | Version check with `npm run release:check` | R.2–R.5 |
-| 4 | [R.7](#82-tasks) | Tests, the manual checks in Section 8.3, tag, snapshot, and publish | R.6 |
-| 5 | [Sound 11.6](#43-phase-11-test-upkeep) | Remove the Pi.js 2.2 sound references | The 2.3.0 listening pass (R.7) |
+| 1 | [R.2, R.3, R.5](#82-tasks) | `API.md`; the llms references and plugin READMEs; the package README, changelog, and `PUBLISH.md`; in any order | Nothing. Can run in parallel |
+| 2 | [R.6](#82-tasks) | Version check with `npm run release:check` | R.2, R.3, R.5 |
+| 3 | [R.7](#82-tasks) | Tests, the manual checks in Section 8.3, tag, snapshot, and publish | R.6 |
+| 4 | [Sound 11.6](#43-phase-11-test-upkeep) | Remove the Pi.js 2.2 sound references | The 2.3.0 listening pass (R.7) |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -36,7 +35,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
 | CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.11) | — |
 | Plugin removal | [13.1](#131-plugin-removal) | Complete (P.1–P.6) | — |
-| Release | [8](#8-release) | R.1 done: the entry criteria are met ([Section 13.9](#139-release)) | R.2–R.4 |
+| Release | [8](#8-release) | R.1 and R.4 done ([Section 13.9](#139-release)) | R.2, R.3, R.5 |
 
 ### Documents
 
@@ -676,13 +675,12 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.3:
 
 ### 8.2 Tasks
 
-Done: R.1 ([Section 13.9](#139-release)).
+Done: R.1 and R.4 ([Section 13.9](#139-release)).
 
 | # | Task | Status |
 | --- | --- | --- |
 | R.2 | Rewrite the `API.md` Sound and Music section and the Input sections (Keyboard; Mouse, Touch, and Press; Gamepad) to describe final behavior. Also: the `set()` and `removeScreen` text (Core 6, Core 8); that `clearEvents()` also removes handlers a plugin registers through the public input commands, written for plugin authors (Core 3, CORE-004); and the characters each built-in font draws and the one-cell-per-UTF-16-unit rule (C10, CORE-014) | — |
 | R.3 | Update the `docs/llms/` references and examples, commit the regenerated `pi.d.ts`, and update the plugin READMEs: `sound-advanced` for the expansion commands, a new pointer README, keyboard, and `docs/GAMEPAD.md` (PAD-013). State that the standalone plugin entry points are for Lite (C3) | — |
-| R.4 | Write `docs/UPGRADE-V2.3.md` from the compatibility summaries: core (Section 3.4), sound (Section 4.4), keyboard (5.4), pointer (6.4), gamepad (7.4), and plugin removal (13.1) | — |
 | R.5 | Update `releases/pi-latest/README.md` and `CHANGELOG.md` (including the CI build note in Section 13.3), and point `releases/PUBLISH.md` at the 2.3 upgrade guide | — |
 | R.6 | Verify that `package.json` (2.3.0), every plugin banner (`sound` 2.0.0, `sound-advanced` 1.0.0, `keyboard`, `pointer`, and `gamepad` 2.0.0), the release `package.json`, and the declaration headers agree, with `npm run release:check` | — |
 | R.7 | Run `npm test` and `npm run test:firefox`, the manual checks in Section 8.3, then tag `v2.3.0` so `release.yml` drafts the release, create the snapshot with `npm run snapshot`, and publish the verified tarball by hand | — |
@@ -1167,6 +1165,7 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | # | Task |
 | --- | --- |
 | R.1 | Entry criteria confirmed on 2026-09-29 (Section 8.1). **Workstreams:** every task in Sections 3–7 is done, and each exit criterion is met: the findings each phase names are fixed with tests, the compatibility summaries (3.4, 4.4, 5.4, 6.4, 7.4) are complete, and sizes are in each `docs/evidence/<workstream>-2.3/` folder; the keyboard's final size is its Phase 2 file, which a later measurement matched. Sound 11.6 is scheduled after the listening pass, not cut. **Findings:** every accepted finding in the five audits is done, documented in R.2 and R.3 (CORE-003, CORE-004, CORE-014, CORE-019's package README, KEY-017, PTR-015, PAD-013, PAD-014), or deferred where its audit records it: C10's Latin-1 to CP437 mapping (CORE-014, Section 3.3). KEY-015's composed and mobile text is not planned (A16 dropped), and C4 was rejected. D14's PLAY cue markers are deferred to 2.3.x in DESIGN-SOUND-ADVANCED. Hardware and device confirmations are in the Section 8.3 checks. No new deferrals. **Decisions:** G1–G8, I1–I16, D1–D17, and each audit's Review Decisions are closed; Section 9.2 no longer calls D13–D15 open. **CI:** `ci.yml` on `main` passed on Linux, macOS (report-only pixels), and Windows at `1a34df9` (run 36595808091), after the macOS reference-test fix in Sound 11.5. Stale statuses updated: the test audit's pointer, keyboard, and gamepad handoffs (§5.2–5.4) are marked done with their tasks, and CI-008 records that no fixture carries `ciSkip`. Milestone U3 is done |
+| R.4 | Upgrade guide: `docs/UPGRADE-V2.3.md`, in the form of the 2.2 guide, from the compatibility summaries in Sections 3.4, 5.4, 6.4, 7.4, and 13.1 and in DESIGN-SOUND §11 and DESIGN-SOUND-ADVANCED §10. It opens with a table of every renamed command, old and new, since renamed commands have no aliases (G3); then additions (`sound` commands, the `sound-advanced` 1.0.0 plugin, wheel input, gamepad names and vibration, `cancelled`, plugin services); compatibility changes for core, TypeScript, sound (`sound()` with the argument-7 example, audio files, voices and timing, PLAY, error codes), the shared input conventions, keyboard, pointer, and gamepad; the removed plugins; and fixes. Checked against the source where a summary was terse: `MP` is PLAY pan and `MH` the sustain level, `setBusVolume()` also takes the `audio` bus, and `sound-advanced` is in neither bundle. Test: `test/scripts/upgrade-guide.test.js` checks that the rename table lists every command in `metadata/pi-2.3/_removed.toml`; dropping `offkey` from it fails the test. `scripts/ci-changes.js` no longer skips CI for a change to the guide alone, since a test reads it; its test and `test/README.md` list the file. R.5 links the guide from the changelog and `PUBLISH.md` |
 
 ## 14. Glossary
 

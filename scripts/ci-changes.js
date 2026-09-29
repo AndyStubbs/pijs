@@ -20,8 +20,9 @@ const SKIPPABLE_FILES = [
 const SKIPPABLE_DIRECTORIES = [ "docs/", "tools/", ".vscode/" ];
 
 // Files inside skippable areas that tests do read: validate-type-definitions.js compares
-// docs/llms/pi.d.ts with the build, and plugin-docs-browser.test.js runs the plugin guides
-const TESTED_FILES = [ "docs/llms/pi.d.ts" ];
+// docs/llms/pi.d.ts with the build, upgrade-guide.test.js checks the 2.3 upgrade guide's renames,
+// and plugin-docs-browser.test.js runs the plugin guides
+const TESTED_FILES = [ "docs/llms/pi.d.ts", "docs/UPGRADE-V2.3.md" ];
 const TESTED_MARKDOWN_DIRECTORIES = [ "plugins/" ];
 
 /**
