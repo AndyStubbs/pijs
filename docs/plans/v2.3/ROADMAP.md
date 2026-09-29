@@ -16,7 +16,7 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Sound 11.3–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
+| 1 | [Sound 11.4–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -25,7 +25,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
 | Core | [3](#3-core) | Complete (Phases 1–3); Core 3 and C10 are written in R.2 | — |
-| Sound | [4](#4-sound) | Phases 0–10 done. Its listening checks are in Section 8.3; Phase 11: 11.1–11.2 done, 3 tasks left | Sound 11.3–11.5 |
+| Sound | [4](#4-sound) | Phases 0–10 done. Its listening checks are in Section 8.3; Phase 11: 11.1–11.3 done, 2 tasks left | Sound 11.4–11.5 |
 | Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Pointer | [6](#6-pointer) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Gamepad | [7](#7-gamepad) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
@@ -340,12 +340,11 @@ listening check, which is in the [release checklist](#83-manual-release-checks):
 ### 4.3 Phase 11: test upkeep
 
 The test audit's sound handoffs ([AUDIT-TESTS §5.1](AUDIT-TESTS.md#51-sound)). They change only
-tests, so they can continue after 2.3.0 (Section 10). Done: 11.1 and 11.2
+tests, so they can continue after 2.3.0 (Section 10). Done: 11.1–11.3
 ([Section 13.4](#134-sound)).
 
 | # | Task | Status |
 | --- | --- | --- |
-| 11.3 | One shared `near()` helper for the `sound-advanced`, `sound-envelope`, `sound-play`, and `sound-samples` Node tests | — |
 | 11.4 | Decide whether `test/scripts/record-sound-references.js` and `test/media/sound-2.2/` are still needed, and remove them if not | — |
 | 11.5 | Review the `sound-*` Node and `audio-*` browser test pairs against the Node/browser rule (Section 1.3) | — |
 
@@ -1065,6 +1064,7 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | --- | --- |
 | 11.1 | One Firefox per test stage: `withSharedFirefox()` in `test/unit/audio-engines.js` starts one headless Firefox server for a stage and passes its endpoint in `PI_AUDIO_FIREFOX_ENDPOINT`; `launchEngine( "firefox" )` connects to it, and a suite's `close()` only disconnects, so the next suite reuses it. The browser regressions stage of `scripts/test.js` (`npm test`, `npm run test:browser`) runs its files inside it; the realtime suites, which need autoplay preferences, and focused `node --test` runs launch their own, and without Firefox in `PI_AUDIO_ENGINES` nothing is started. The 15 audio browser files, run as the stage runs them with `PI_AUDIO_REALTIME=0`, took 30 s instead of 41 s on the development machine, with the same 236 passes and 211 skips. `test/README.md` describes it. Test: `audio-engines-browser.test.js`: two suites in turn connect, run a page, and close, and the server is gone after the stage |
 | 11.2 | Suite-level skips: suites read each engine's Web Audio support before defining tests, so an engine without Web Audio is one skipped block and the tests that need offline `suspend()` are one skipped group, each named once per suite. `probeSupport()` in `test/unit/audio-engines.js` checks `AudioContext`, `OfflineAudioContext`, and its `suspend()` on a blank page; `withAudioEngines()` (formerly `withSharedFirefox()`) probes once per stage, through the shared Firefox server, and passes the result in `PI_AUDIO_SUPPORT`; `loadSupport()` reads it, or probes when a focused `node --test` run has none. `describeAudioEngines()` skips an engine without Web Audio, and its new `clockTest()` defines a test in a "clock-driven renders" group that runs after the engine's other tests and that an engine without `suspend()` skips; the 60 test definitions that passed `needsSuspend` (68 tests with their loops) use it, and `inHarness()` no longer takes the test context or the `needsWebAudio` and `needsSuspend` options. The reference suite skips such an engine, and the lifecycle suite moves its four Web Audio tests per bundle into a "decoded audio" group, so its stream-mode tests still run on Windows WebKit. The two tests that ran without Web Audio (harness timers, `sound()` validation) now skip with the rest of Windows WebKit; they still run in Chromium and Firefox. Six clock-test titles lost a word or two to stay under 100 columns. With `PI_AUDIO_REALTIME=0` on the development machine, the 211 skipped tests became 24 skipped suites and groups (11 WebKit engines, nine Firefox clock-driven groups, one decoded-audio group, three realtime suites), with 237 passes, as before: two new tests, two fewer WebKit runs. `test/README.md` describes it. Tests: `audio-engines-browser.test.js`: the stage's probe covers every engine and Chromium supports both; a suite reads the stage's probe and probes when it misses an engine; a fixture suite in a child process reports a missing Web Audio engine and a missing-`suspend()` group as one skip each, never runs the skipped test, and runs the group when `suspend()` is present. Removing either skip, or ignoring the stage's probe, fails them |
+| 11.3 | Shared `near()`: `test/unit/assert-near.js` exports `near( actual, expected, tolerance = 1e-9 )`, which asserts an absolute difference up to the tolerance with both values and the tolerance in the message, and rejects NaN. The `sound-advanced`, `sound-envelope`, `sound-play`, and `sound-samples` Node tests import it in place of their own copies; `sound-samples` passes its 1e-12 `EPSILON` on each call, and its comparison is now inclusive (`<=`) like the others. `sound-envelope` now reports failures in the shared message. The four browser suites' `assertNear()`, which takes a label, is left as is. `test/README.md` describes it. Test: `assert-near.test.js`: differences up to the tolerance pass, including the boundary and the default; larger ones in either direction and NaN on either side fail with the message. A strict comparison, a missing `Math.abs()`, a looser default, or a NaN-accepting check each fails it |
 
 ### 13.5 Core
 

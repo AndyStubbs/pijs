@@ -7,11 +7,13 @@
  */
 import * as g_assert from "node:assert/strict";
 import * as g_test from "node:test";
+import * as g_assertNear from "./assert-near.js";
 import * as g_envelope from "../../plugins/sound/envelope.js";
 import * as g_play from "../../plugins/sound/play.js";
 import * as g_voices from "../../plugins/sound/voices.js";
 const assert = g_assert;
 const test = g_test.test;
+const near = g_assertNear.near;
 
 // The 2.2 note table for N1-N115; the formula replaces it
 const TABLE_2_2 = [
@@ -42,13 +44,6 @@ function names( text ) {
 
 function events( playString ) {
 	return g_play.parsePlayString( playString ).events;
-}
-
-function near( actual, expected, tolerance = 1e-9 ) {
-	assert.ok(
-		Math.abs( actual - expected ) <= tolerance,
-		`${actual} is not within ${tolerance} of ${expected}`
-	);
 }
 
 function envelopeEnd( event ) {

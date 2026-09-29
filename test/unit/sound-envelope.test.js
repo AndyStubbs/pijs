@@ -3,9 +3,11 @@
  */
 import * as g_assert from "node:assert/strict";
 import * as g_test from "node:test";
+import * as g_assertNear from "./assert-near.js";
 import * as g_envelope from "../../plugins/sound/envelope.js";
 const assert = g_assert;
 const test = g_test.test;
+const near = g_assertNear.near;
 
 const LN_10000 = Math.log( 10000 );
 
@@ -14,12 +16,6 @@ function env( params ) {
 		"duration": 1, "attackTime": 0, "decayTime": 0, "sustainLevel": 1, "releaseTime": 0.1,
 		...params
 	} );
-}
-
-function near( actual, expected, tolerance = 1e-9 ) {
-	assert.ok(
-		Math.abs( actual - expected ) <= tolerance, `expected ${expected}, got ${actual}`
-	);
 }
 
 /** Evaluate an event list the way an AudioParam does, independent of envelopeValueAt. */

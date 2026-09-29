@@ -5,17 +5,13 @@
  */
 import * as g_assert from "node:assert/strict";
 import * as g_test from "node:test";
+import * as g_assertNear from "./assert-near.js";
 import * as g_samples from "../../plugins/sound/samples.js";
 const assert = g_assert;
 const test = g_test.test;
+const near = g_assertNear.near;
 
 const EPSILON = 1e-12;
-
-function near( actual, expected ) {
-	assert.ok(
-		Math.abs( actual - expected ) < EPSILON, `expected ${expected}, received ${actual}`
-	);
-}
 
 test( "budgets: zero is the end of the file, or unbounded when looping", () => {
 	assert.equal( g_samples.resolveBudget( 2, 0.5, 0, false ), 1.5 );
@@ -36,9 +32,9 @@ test( "consumed content sums rate × length over segments", () => {
 	];
 	assert.equal( g_samples.consumedAt( segments, 0.5 ), 0 );
 	assert.equal( g_samples.consumedAt( segments, 1 ), 0 );
-	near( g_samples.consumedAt( segments, 1.5 ), 0.5 );
-	near( g_samples.consumedAt( segments, 2.5 ), 2 );
-	near( g_samples.consumedAt( segments, 4 ), 3.5 );
+	near( g_samples.consumedAt( segments, 1.5 ), 0.5, EPSILON );
+	near( g_samples.consumedAt( segments, 2.5 ), 2, EPSILON );
+	near( g_samples.consumedAt( segments, 4 ), 3.5, EPSILON );
 	assert.equal( g_samples.rateAt( segments, 0 ), 1 );
 	assert.equal( g_samples.rateAt( segments, 2 ), 2 );
 	assert.equal( g_samples.rateAt( segments, 10 ), 0.5 );
@@ -47,14 +43,14 @@ test( "consumed content sums rate × length over segments", () => {
 test( "end prediction inverts the segment sum at several rates", () => {
 	for( const rate of [ 0.0625, 0.5, 1, 2, 16 ] ) {
 		const segments = [ { "time": 0.25, "rate": rate } ];
-		near( g_samples.timeForContent( segments, 1 ), 0.25 + 1 / rate );
+		near( g_samples.timeForContent( segments, 1 ), 0.25 + 1 / rate, EPSILON );
 	}
 	const segments = [
 		{ "time": 0, "rate": 1 }, { "time": 1, "rate": 2 }, { "time": 2, "rate": 0.5 }
 	];
 	for( const content of [ 0.5, 1, 2, 3, 3.5, 10 ] ) {
 		const time = g_samples.timeForContent( segments, content );
-		near( g_samples.consumedAt( segments, time ), content );
+		near( g_samples.consumedAt( segments, time ), content, EPSILON );
 	}
 	assert.equal( g_samples.timeForContent( segments, Infinity ), Infinity );
 } );
@@ -87,14 +83,14 @@ test( "a delayed loop's late position includes rate changes made while pending",
 	const segments = [ { "time": 1, "rate": 1 } ];
 	g_samples.addRateSegment( segments, 1.5, 2 );
 	const skipped = g_samples.consumedAt( segments, 2 );
-	near( skipped, 1.5 );
-	near( g_samples.wrapPosition( 0.25, skipped, 1, true ), 0.75 );
+	near( skipped, 1.5, EPSILON );
+	near( g_samples.wrapPosition( 0.25, skipped, 1, true ), 0.75, EPSILON );
 } );
 
 test( "positions wrap by file length only when looping", () => {
-	near( g_samples.wrapPosition( 0.5, 3.25, 2, true ), 1.75 );
-	near( g_samples.wrapPosition( 0.5, 1, 2, false ), 1.5 );
-	near( g_samples.wrapPosition( 5, 0, 2, true ), 1 );
+	near( g_samples.wrapPosition( 0.5, 3.25, 2, true ), 1.75, EPSILON );
+	near( g_samples.wrapPosition( 0.5, 1, 2, false ), 1.5, EPSILON );
+	near( g_samples.wrapPosition( 5, 0, 2, true ), 1, EPSILON );
 } );
 
 test( "playback rate bounds depend on the loading mode", () => {
