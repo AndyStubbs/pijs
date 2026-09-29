@@ -219,6 +219,8 @@ declare namespace Pi {
 	 * A read is an inGamepad() call or a call to one of the methods below, including on a pad kept from an earlier read. The first read in each animation frame updates every pad with what happened since the last frame that had a read, so a press and a release between two reads are both reported; every other read in the same frame sees the same values.
 	 *
 	 * A pad starts with every button released, so a button held when the pad appears, such as the press that makes the browser expose it, is reported as just pressed on a later read. Button and axis numbers follow the browser's Gamepad API; the standard mapping has 17 buttons and 4 axes.
+	 *
+	 * The methods take a non-negative integer index. Another value throws a TypeError, and a negative index a RangeError, both with code INVALID_INDEX and a message starting with the method name. An index past the pad's buttons or axes returns the empty value: null from getButton(), 0 from getAxis(), and false from the other methods.
 	 */
 	interface GamepadData {
 		/**
@@ -267,32 +269,32 @@ declare namespace Pi {
 		lastAxes: Array<number>;
 
 		/**
-		 * Reads the button object, or null for an index outside the buttons array.
+		 * Reads the button object, or null past the buttons array.
 		 */
 		getButton: ( buttonIndex: number ) => GamepadButton | null;
 
 		/**
-		 * Reads whether the button is held, or null for an index outside the buttons array.
+		 * Reads whether the button is held; false past the buttons array.
 		 */
-		getButtonPressed: ( buttonIndex: number ) => boolean | null;
+		getButtonPressed: ( buttonIndex: number ) => boolean;
 
 		/**
-		 * Reads whether the button was pressed since the previous read; false out of range.
+		 * Reads whether the button was pressed since the previous read; false past the array.
 		 */
 		getButtonJustPressed: ( buttonIndex: number ) => boolean;
 
 		/**
-		 * Reads whether the button was released since the previous read; false out of range.
+		 * Reads whether the button was released since the previous read; false past the array.
 		 */
 		getButtonJustReleased: ( buttonIndex: number ) => boolean;
 
 		/**
-		 * Reads the axis value; 0 for an index outside the axes array.
+		 * Reads the axis value; 0 past the axes array.
 		 */
 		getAxis: ( axisIndex: number ) => number;
 
 		/**
-		 * Reads whether the axis value differs from the previous read; false out of range.
+		 * Reads whether the axis value differs from the previous read; false past the array.
 		 */
 		getAxisChanged: ( axisIndex: number ) => boolean;
 	}
@@ -2362,7 +2364,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * Pads are live objects updated in place. The first read in each animation frame reports what happened since the last frame that had a read, and every other read in the frame sees the same values; see GamepadData.
 		 *
-		 * An index that is not a non-negative integer throws a TypeError with code INVALID_PARAMETERS.
+		 * A gamepadIndex that is not an integer throws a TypeError, and a negative one a RangeError, both with code INVALID_INDEX; a well-formed index with no pad behind it returns null.
 		 * @param gamepadIndex Gamepad index to read. If omitted or null, returns every connected pad.
 		 * @returns The pad for the index, or null when none has it or polling is stopped; with no index, an array of every connected pad, empty while polling is stopped.
 		 */
@@ -2494,7 +2496,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * A callback runs until it is removed. A callback is identified by its mode and function: registering the same function for the same mode again does nothing, whatever its once, and offGamepad removes it by those two. once removes the registration before the callback runs, so a 'connect' callback with once receives one pad, the replay included. Callbacks added during a dispatch first run for the next one; a callback removed during a dispatch does not run later in it. A callback that throws is reported with console.error(), and the other callbacks still run. clearEvents( "gamepad" ) removes every callback.
 		 *
-		 * Registering starts polling, unless stopGamepad() was called; a 'connect' callback registered while stopped receives the connected pads when startGamepad() resumes polling. The mode is 'connect' or 'disconnect': another string throws a RangeError and a non-string a TypeError, with code INVALID_MODE; a fn that is not a function throws a TypeError with code INVALID_FUNCTION.
+		 * Registering starts polling, unless stopGamepad() was called; a 'connect' callback registered while stopped receives the connected pads when startGamepad() resumes polling. The mode is 'connect' or 'disconnect': another string throws a RangeError and a non-string a TypeError, with code INVALID_MODE; a fn that is not a function throws a TypeError with code INVALID_FUNCTION; and once is a boolean or omitted, else a TypeError with code INVALID_ONCE.
 		 * @param mode Event mode: 'connect' or 'disconnect'.
 		 * @param fn Callback that receives GamepadData or GamepadDisconnectData, by mode.
 		 * @param once If true, this registration is removed before the callback's first run.

@@ -705,7 +705,7 @@ the [ROADMAP](ROADMAP.md#7-gamepad) tasks that implement each item.
 | PAD-005 | Later connect handlers miss connected pads | Accepted | Fixed by A4 (Gamepad 1.4) |
 | PAD-006 | Duplicate connect for a tracked pad | Accepted | Fixed by A4 (Gamepad 1.4). Not seen on hardware; the guard is kept because it is cheap |
 | PAD-007 | Handler added during dispatch runs at once | Accepted | Fixed by A3 (Gamepad 1.3) |
-| PAD-008 | Helper index validation and range values | Accepted | Fixed by A8 with I11 codes (Gamepad 2.5) |
+| PAD-008 | Helper index validation and range values | Accepted | Fixed by A8 with I11 codes (Gamepad 2.5, done) |
 | PAD-009 | Live object with replaced arrays | Accepted | Fixed by A7 (Gamepad 1.5) |
 | PAD-010 | Four `ingamepad()` return shapes | Accepted | Fixed by A6 (Gamepad 2.4, breaking, done) |
 | PAD-011 | Per-axis dead zone | Accepted | Fixed by A9 (Gamepad 2.6, breaking) |
@@ -715,7 +715,7 @@ the [ROADMAP](ROADMAP.md#7-gamepad) tasks that implement each item.
 | PAD-015 | Manual pages register the plugin twice | Accepted | Gamepad 1.7 (done). Self-registration after Full is CORE-003 |
 | PAD-016 | Missing automated tests | Accepted | A test with each fix; lifecycle tests in Gamepad 1.6 (done) |
 | PAD-017 | The exposing press is not reported | Accepted | Fixed by A1 (Gamepad 1.1). Confirmed on hardware in Chrome and Firefox |
-| A1–A4, A7, A8, A12 | Fixes | Accepted | Gamepad Phase 1, except A8, which lands with I11 in Gamepad 2.5 |
+| A1–A4, A7, A8, A12 | Fixes | Accepted | Gamepad Phase 1, except A8, which landed with I11 in Gamepad 2.5 |
 | A5 | Handler removal and `once` (§6) | Accepted | Decided by I2 and I4: `onGamepad()` and `offGamepad()`. Done (Gamepad 2.2 and 2.3) |
 | A6 | Return shapes | Accepted | Done (Gamepad 2.4). Breaking; listed in the compatibility summary |
 | A9 | Radial dead zone and rename | Accepted | Breaking: radial stick dead zone, and `setGamepadSensitivity` becomes `setGamepadDeadZone` (`gamepadDeadZone`). The old name fails as an unknown command (G3) |
