@@ -265,17 +265,17 @@
 
 	function testEnableContextMenu() {
 		try {
-			$.setEnableContextMenu( true );
-			printTestResult( "setEnableContextMenu true", true );
+			$.setContextMenu( true );
+			printTestResult( "setContextMenu true", true );
 		} catch( e ) {
-			printTestResult( "setEnableContextMenu true", false );
+			printTestResult( "setContextMenu true", false );
 		}
 		
 		try {
-			$.setEnableContextMenu( false );
-			printTestResult( "setEnableContextMenu false", true);
+			$.setContextMenu( false );
+			printTestResult( "setContextMenu false", true);
 		} catch( e ) {
-			printTestResult( "setEnableContextMenu false", false );
+			printTestResult( "setContextMenu false", false );
 		}
 
 		nextTest( tests, test++ );

@@ -1067,28 +1067,68 @@ test( "pointer offPress and offClick remove only the given function", () => {
 	assert.deepEqual( log, [ "press b", "press b", "click a" ] );
 } );
 
-test( "pointer setEnableContextMenu controls the menu while mouse tracking runs", () => {
+test( "pointer setContextMenu controls the menu from screen creation (B10, I12, P14)", () => {
 	const h = harness();
 	const $ = h.$;
 	const menu = () => h.mouse( "contextmenu", 10, 10 ).defaultPrevented;
+	const canvas = h.mouse( "contextmenu", 1, 1 ).target;
+	const types = () => canvas.listeners.map( listener => listener.type );
 
-	// The menu opens until tracking starts; the setting starts tracking
-	assert.equal( menu(), false );
-	$.setEnableContextMenu( false );
+	// The menu is suppressed before any tracking, and the setting starts none
 	assert.equal( menu(), true );
-	$.setEnableContextMenu( true );
+	$.setContextMenu( true );
 	assert.equal( menu(), false );
-	$.setEnableContextMenu( false );
+	$.setContextMenu( false );
 	assert.equal( menu(), true );
+	assert.deepEqual( types(), [ "contextmenu" ] );
+	assert.equal( $.setEnableContextMenu, undefined );
 
-	// After stopMouse(), the menu opens, and the setting does not restart tracking
-	$.stopMouse();
-	assert.equal( menu(), false );
-	$.setEnableContextMenu( false );
-	assert.equal( menu(), false );
+	// Stopping mouse tracking keeps the setting
 	$.startMouse();
+	$.stopMouse();
 	assert.equal( menu(), true );
+	$.setContextMenu( true );
+	assert.equal( menu(), false );
+
+	// The setting is per screen, and a removed screen keeps no listener
+	const other = h.screen();
+	assert.equal( h.mouse( "contextmenu", 1, 1, 0, 0, other ).defaultPrevented, true );
+	h.removeScreen( other );
+	assert.deepEqual( other.canvas.listeners, [] );
 } );
+
+test( "pointer setPinchZoom sets the canvas touch-action at any time, never body (B10, P14)",
+	() => {
+		const h = harness();
+		const $ = h.$;
+		const canvas = h.mouse( "contextmenu", 1, 1 ).target;
+		const other = h.screen();
+		canvas.style.touchAction = "pan-y";
+		other.canvas.style.touchAction = "pan-y";
+		h.document.body.style.touchAction = "pan-x";
+
+		// The setting applies before tracking, does not start it, and touches only its canvas
+		$.setPinchZoom( true );
+		assert.equal( canvas.style.touchAction, "pinch-zoom" );
+		assert.deepEqual( canvas.listeners.map( listener => listener.type ), [ "contextmenu" ] );
+		assert.equal( other.canvas.style.touchAction, "pan-y" );
+
+		// Tracking keeps the setting, and a stop does not restore the page's value over it
+		$.startTouch();
+		assert.equal( canvas.style.touchAction, "pinch-zoom" );
+		$.setPinchZoom( false );
+		assert.equal( canvas.style.touchAction, "none" );
+		$.stopTouch();
+		assert.equal( canvas.style.touchAction, "none" );
+
+		// Without the setting, tracking sets none and a stop restores the page's value
+		other.api.startTouch();
+		assert.equal( other.canvas.style.touchAction, "none" );
+		other.api.stopTouch();
+		assert.equal( other.canvas.style.touchAction, "pan-y" );
+		assert.equal( h.document.body.style.touchAction, "pan-x" );
+	}
+);
 
 test( "pointer chorded buttons arrive as moves and press and release each button (B6)", () => {
 	const h = harness();
@@ -1160,7 +1200,8 @@ test( "pointer mouse and touch share one set of canvas listeners and touch-actio
 	] );
 	assert.equal( canvas.style.touchAction, "none" );
 
-	// Each stops its own pointers; the listeners go with the last
+	// Each stops its own pointers; the pointer listeners go with the last, and the context
+	// menu stays suppressed
 	$.stopTouch();
 	assert.equal( canvas.style.touchAction, "pan-y" );
 	const starts = [];
@@ -1170,7 +1211,7 @@ test( "pointer mouse and touch share one set of canvas listeners and touch-actio
 	assert.deepEqual( starts, [] );
 	assert.equal( types().length, 5 );
 	$.stopMouse();
-	assert.deepEqual( types(), [] );
+	assert.deepEqual( types(), [ "contextmenu" ] );
 } );
 
 test( "pointer reads return the frozen data of the last event, or null (I5, I7, I9, P15)", () => {

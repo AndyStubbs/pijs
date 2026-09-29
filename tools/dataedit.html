@@ -109,7 +109,7 @@ document.getElementById( "close-btn" ).addEventListener( "click", () => {
 // Setup Menu
 $.ready( () => {
 	g_screen = $.screen( { "aspect": "320x200", "willReadFrequently": true } );
-	$.setEnableContextMenu( false );
+	$.setContextMenu( false );
 	$.setFont( 2 );
 	loadState();
 	stateDraw();

@@ -351,6 +351,8 @@ function validateTypeDefinitions() {
 		"touches: Array<TouchData>;",
 		"inMouse(): MouseData | null;",
 		"inPress(): PressData | null;",
+		"setContextMenu( isEnabled: boolean ): void;",
+		"contextMenu?: boolean;",
 		"offMouse( mode?: string | null, fn?: ( mouseData: MouseData, customData?: object ) " +
 			"=> void ): void;",
 		"cancelled: boolean;",

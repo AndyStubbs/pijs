@@ -1,7 +1,7 @@
 /**
  * Pointer regressions against a fresh in-memory full bundle: offscreen command validation, noCss
- * pointer bounds, a release outside the canvas with trusted input, and the screens that each
- * form of clearEvents() clears. Owned by the pointer workstream.
+ * pointer bounds, gesture settings on the canvas, a release outside the canvas with trusted input,
+ * and the screens that each form of clearEvents() clears. Owned by the pointer workstream.
  * Run with node --test test/unit/pointer-browser.test.js; no server is required.
  */
 import * as g_test from "node:test";
@@ -118,10 +118,10 @@ test( "offscreen pointer validation precedes all state changes and subscriptions
 			const state = () => JSON.stringify( [ data.mouseStopped, data.touchStopped,
 				data.mouseStarted, data.touchStarted, data.onMouseEventListeners,
 				data.onTouchEventListeners, data.onPressEventListeners, data.onClickEventListeners,
-				data.isContextMenuEnabled ] );
+				data.isContextMenuEnabled, data.isPinchZoomEnabled ] );
 			const before = state();
 			for( const command of [ "inMouse", "inTouch", "inPress", "startMouse", "startTouch",
-				"onMouse", "onTouch", "onPress", "onClick", "setEnableContextMenu" ] ) {
+				"onMouse", "onTouch", "onPress", "onClick", "setContextMenu", "setPinchZoom" ] ) {
 				for( const target of [ $, buffer ] ) {
 					let rejected = false;
 					try { target[ command ]( { "mode": "down", "fn": () => {} } ); }
@@ -141,6 +141,40 @@ test( "offscreen pointer validation precedes all state changes and subscriptions
 		return true;
 	} ), true );
 } );
+
+test( "gesture settings act on the canvas from screen creation, never body (B10, I12)",
+	async () => {
+		assert.deepEqual( await probe( () => {
+			document.body.style.touchAction = "pan-y";
+			const screen = $.screen( { "aspect": "8x8", "container": "host", "noCss": true } );
+			const canvas = screen.canvas();
+			const menu = () => {
+				return !canvas.dispatchEvent( new MouseEvent( "contextmenu", {
+					"bubbles": true, "cancelable": true
+				} ) );
+			};
+			const created = [ menu(), canvas.style.touchAction ];
+			screen.onTouch( "down", () => {} );
+			const tracked = canvas.style.touchAction;
+			$.set( { "contextMenu": true, "pinchZoom": true } );
+			const set = [ menu(), canvas.style.touchAction, document.body.style.touchAction ];
+			let oldOption = "ok";
+			try {
+				$.set( { "enableContextMenu": false } );
+			} catch( error ) {
+				oldOption = error.code;
+			}
+			screen.removeScreen();
+			return {
+				"created": created, "tracked": tracked, "set": set, "oldOption": oldOption,
+				"oldCommand": typeof $.setEnableContextMenu
+			};
+		} ), {
+			"created": [ true, "" ], "tracked": "none", "set": [ false, "pinch-zoom", "pan-y" ],
+			"oldOption": "INVALID_OPTION", "oldCommand": "undefined"
+		} );
+	}
+);
 
 test( "a trusted mouse release outside the canvas is released once (T1)", async () => {
 	const page = await context.newPage();

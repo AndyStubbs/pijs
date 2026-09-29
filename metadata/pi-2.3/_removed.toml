@@ -13,6 +13,7 @@ methods = [
 	"onkey",
 	"onmouse",
 	"onpress",
-	"ontouch"
+	"ontouch",
+	"setEnableContextMenu"
 ]
 objects = []
