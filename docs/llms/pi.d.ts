@@ -2356,18 +2356,18 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Gets gamepad data for a specific gamepad or all gamepads.
 		 *
-		 * Reads the connected gamepads. With a gamepadIndex, returns the GamepadData for that index, or undefined when no pad has it. Without one, or with null, returns every connected pad in index order, in one live array that is refilled on each call.
+		 * Reads the connected gamepads. With a gamepadIndex, returns the GamepadData for that index, or null when no pad has it. Without one, or with null, always returns an array: every connected pad in index order, in one live array that is refilled on each call, and empty when no pad is connected. The list is compact, so a pad's position in it is not always its index; use its index property.
 		 *
-		 * The first read starts polling, unless stopGamepad() was called; after stopGamepad(), every read returns null until startGamepad() starts polling again. The first read records the current state without reporting buttons already held as just pressed.
+		 * The first read starts polling, unless stopGamepad() was called; after stopGamepad(), the list form returns an empty array and the index form null, until startGamepad() starts polling again. The first read records the current state without reporting buttons already held as just pressed.
 		 *
 		 * Pads are live objects updated in place. The first read in each animation frame reports what happened since the last frame that had a read, and every other read in the frame sees the same values; see GamepadData.
 		 *
 		 * An index that is not a non-negative integer throws a TypeError with code INVALID_PARAMETERS.
 		 * @param gamepadIndex Gamepad index to read. If omitted or null, returns every connected pad.
-		 * @returns The pad for the index, or undefined when none has it; every connected pad when no index is given; null while polling is stopped.
+		 * @returns The pad for the index, or null when none has it or polling is stopped; with no index, an array of every connected pad, empty while polling is stopped.
 		 */
-		inGamepad( params: { "gamepadIndex"?: number } ): GamepadData | Array<GamepadData> | null | undefined;
-		inGamepad( gamepadIndex?: number ): GamepadData | Array<GamepadData> | null | undefined;
+		inGamepad( params: { "gamepadIndex"?: number } ): GamepadData | Array<GamepadData> | null;
+		inGamepad( gamepadIndex?: number ): GamepadData | Array<GamepadData> | null;
 
 		/**
 		 * Gets the current state of a key or all pressed keys.
@@ -2964,7 +2964,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops the gamepad input loop.
 		 *
-		 * Stops polling until startGamepad(). While stopped, inGamepad() returns null, and neither reads nor onGamepad() registrations restart polling. Every button is released and the axes read 0, without reporting a release, as when the page is hidden: a pad kept from an earlier read reports no button held.
+		 * Stops polling until startGamepad(). While stopped, inGamepad() returns an empty array and inGamepad( index ) returns null; neither reads nor onGamepad() registrations restart polling. Every button is released and the axes read 0, without reporting a release, as when the page is hidden: a pad kept from an earlier read reports no button held.
 		 *
 		 * Connection callbacks are not called while stopped, and pads do not join or leave the list. startGamepad() catches up: pads that disconnected while stopped are removed through the 'disconnect' callbacks, and the 'connect' callbacks receive the pads that connected.
 		 * @returns This function does not return a value.

@@ -189,7 +189,7 @@ function render( pad, raw ) {
 	const rows = [
 		[ "Refresh (Hz)", m_results.refreshHz ],
 		[ "Focused / visibility", m_isFocused + " / " + document.visibilityState ],
-		[ "Pads (Pi.js)", ( $.inGamepad() || [] ).map( p => p.index ).join( ", " ) || "none" ],
+		[ "Pads (Pi.js)", $.inGamepad().map( p => p.index ).join( ", " ) || "none" ],
 		[ "Pads (browser)", Array.from( navigator.getGamepads() ).filter( p => p )
 			.map( p => p.index ).join( ", " ) || "none" ],
 		[ "Button 0 presses: browser", m_edges.rawPresses ],

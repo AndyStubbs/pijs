@@ -4,10 +4,10 @@ isScreen = false
 plugin = "gamepad"
 summary = "Stops the gamepad input loop."
 description = """
-Stops polling until startGamepad(). While stopped, inGamepad() returns null, and neither reads
-nor onGamepad() registrations restart polling. Every button is released and the axes read 0,
-without reporting a release, as when the page is hidden: a pad kept from an earlier read reports
-no button held.
+Stops polling until startGamepad(). While stopped, inGamepad() returns an empty array and
+inGamepad( index ) returns null; neither reads nor onGamepad() registrations restart polling. Every
+button is released and the axes read 0, without reporting a release, as when the page is hidden: a
+pad kept from an earlier read reports no button held.
 
 Connection callbacks are not called while stopped, and pads do not join or leave the list.
 startGamepad() catches up: pads that disconnected while stopped are removed through the
