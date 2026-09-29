@@ -57,6 +57,20 @@ $.circle( 400, 300, 50 );
 
 ---
 
+## Sound and input
+
+- **Sound** - Synthesized voices with ADSR envelopes, sweeps, noise, and pan; PLAY music
+  strings; decoded and streamed audio files with pause, resume, and playback rate; `sfx`,
+  `music`, and `audio` buses with their own volumes and an output limiter
+- **Sound Advanced plugin** - Synth features, presets and generated sound effects, PLAY
+  instruments, bus effects and effect chains, level meters, WAV recording, and handlers timed
+  to the music
+- **Input** - Keyboard, mouse, touch, pen, and wheel input, and gamepads with standard button
+  names and vibration. Every input plugin registers handlers by mode and function, removes
+  them the same way, and reports releases it cancels on blur or a hidden page
+
+---
+
 ## Package Exports
 
 This package provides multiple entry points:
@@ -66,10 +80,19 @@ This package provides multiple entry points:
 - **Lite Version:** `import $ from "pijs-web/lite"` - Smaller bundle without some features
 
 ### Plugins
+
+The Full library includes the gamepad, keyboard, pointer, polygons, and sound plugins. Their
+standalone entry points are for Lite; loading one with the Full library throws
+`DUPLICATE_PLUGIN`.
+
 - `pijs-web/plugins/gamepad` - Gamepad/controller support
 - `pijs-web/plugins/keyboard` - Keyboard input handling
-- `pijs-web/plugins/pointer` - Mouse and touch input
+- `pijs-web/plugins/pointer` - Mouse, touch, pen, and wheel input
+- `pijs-web/plugins/polygons` - Polygon drawing
 - `pijs-web/plugins/sound` - Sound and audio functionality
+
+`pijs-web/plugins/sound-advanced` is in neither library. Load it after the Full library, or
+after Lite and the sound plugin.
 
 ---
 
@@ -120,13 +143,12 @@ Requires a browser with WebGL2 enabled.
 
 ## Release validation
 
-Chromium is the primary correctness and visual-test target. Firefox receives targeted
-compatibility checks for rendering, sprites, shaders, context recovery, sizing, and input.
-WebGL2 availability alone does not establish tested compatibility for a browser version.
+Chromium is the primary correctness and visual-test target, on Linux, Windows, and macOS.
+Firefox receives targeted compatibility checks for rendering, sprites, shaders, context
+recovery, sizing, and input, and runs the audio tests. Playwright's WebKit build runs the audio
+tests on Linux and macOS. Safari itself has no automated tests, and iOS audio behavior needs a
+device. WebGL2 availability alone does not establish tested compatibility for a browser
+version.
 
-Safari testing is skipped for v2.2 because macOS hardware is unavailable. Validation is deferred
-until community testing support becomes available for a future version.
-
-See the [v2.2 update guide](https://github.com/AndyStubbs/pijs/blob/main/docs/UPGRADE-V2.2.md)
-for additions, fixes, and compatibility changes. Performance improvements are workload- and
-configuration-dependent; no universal browser speedup is claimed.
+See the [v2.3 update guide](https://github.com/AndyStubbs/pijs/blob/main/docs/UPGRADE-V2.3.md)
+for additions, fixes, and compatibility changes, including the renamed input commands.
