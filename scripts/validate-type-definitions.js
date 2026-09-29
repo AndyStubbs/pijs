@@ -171,7 +171,7 @@ const REQUIRED_DECLARATIONS = [
 	},
 	{
 		"name": "gamepad helper methods",
-		"text": "getButtonJustPressed: ( buttonIndex: number ) => boolean;"
+		"text": "getButtonJustPressed: ( buttonIndex: number | string ) => boolean;"
 	},
 	{
 		"name": "onTouch callbacks receive the changed touches",
