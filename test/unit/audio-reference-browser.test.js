@@ -4,7 +4,7 @@
  * Valid analytic fades must pass across waveforms, frequencies, phases, and noise seeds.
  * Deliberately abrupt onsets and stops at nonzero carrier amplitude must fail by a recorded
  * margin. Tolerances live in audio-tolerances.js; set PI_AUDIO_CALIBRATE=1 to print the
- * observed extremes when recalibrating.
+ * observed extremes when recalibrating. An engine without Web Audio is skipped as a whole.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
@@ -18,18 +18,19 @@ const assert = g_assert;
 
 const NO_WEB_AUDIO = "this engine build has no Web Audio API (Playwright WebKit on Windows)";
 const FIXTURES = g_fixtures.buildFixtures();
+
+// Read before any test is defined, since a skipped engine is decided at definition
+const SUPPORT = await g_audioEngines.loadSupport();
+
 /**
  * Renders every fixture in one document and measures it.
  *
  * @param {Object} browser - Playwright browser for the engine
- * @returns {Promise<Object[]|null>} Measurements, or null without Web Audio
+ * @returns {Promise<Object[]>} Measurements
  */
 async function measureAll( browser ) {
 	const session = await g_harness.createHarnessSession( browser );
 	const harness = await session.open();
-	if( !harness.support.webAudio ) {
-		return null;
-	}
 	const specs = FIXTURES.map( fixture => ( {
 		"source": fixture.source,
 		"automation": fixture.automation,
@@ -79,27 +80,25 @@ function report( engine, results ) {
 // Engines run in parallel; each engine renders its fixtures once before its tests
 describe( "audio engines", { "concurrency": true }, () => {
 	for( const engine of g_audioEngines.AUDIO_ENGINES ) {
-		describe( engine, { "concurrency": 1 }, () => {
+		let skip = false;
+		if( !SUPPORT[ engine ].webAudio ) {
+			skip = NO_WEB_AUDIO;
+		}
+		describe( engine, { "concurrency": 1, "skip": skip }, () => {
 			let browser = null;
 			let results = null;
 
 			before( async () => {
 				browser = await g_audioEngines.launchEngine( engine );
 				results = await measureAll( browser );
-				if( results ) {
-					report( engine, results );
-				}
+				report( engine, results );
 			} );
 
 			after( async () => {
 				await browser?.close();
 			} );
 
-			test( "valid fades pass the reference residual checks", t => {
-				if( !results ) {
-					t.skip( NO_WEB_AUDIO );
-					return;
-				}
+			test( "valid fades pass the reference residual checks", () => {
 				for( const { fixture, measure } of results.filter( item => item.fixture.valid ) ) {
 					const prefix = residualPrefix( fixture );
 					const maxTolerance = g_tolerances.getTolerance( `${prefix}Max`, engine );
@@ -114,11 +113,7 @@ describe( "audio engines", { "concurrency": true }, () => {
 				}
 			} );
 
-			test( "abrupt onsets and stops fail by the recorded margin", t => {
-				if( !results ) {
-					t.skip( NO_WEB_AUDIO );
-					return;
-				}
+			test( "abrupt onsets and stops fail by the recorded margin", () => {
 				const separation = g_tolerances.getTolerance( "abruptSeparation", engine );
 				const abrupt = results.filter( item => !item.fixture.valid );
 				assert.ok( abrupt.length >= 30 );
@@ -134,11 +129,7 @@ describe( "audio engines", { "concurrency": true }, () => {
 				}
 			} );
 
-			test( "a correct 100 Hz sawtooth fade passes although its 1 ms RMS rises", t => {
-				if( !results ) {
-					t.skip( NO_WEB_AUDIO );
-					return;
-				}
+			test( "a correct 100 Hz sawtooth fade passes although its 1 ms RMS rises", () => {
 				const item = results.find( entry => entry.fixture.valid &&
 					entry.fixture.name === "sawtooth 100 Hz linear stop, phase 0" );
 				const start = Math.floor( item.fixture.time * g_harness.SAMPLE_RATE );

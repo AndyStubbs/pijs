@@ -153,6 +153,7 @@ function assertNear( actual, expected, tolerance, label ) {
 
 g_suite.describeAudioEngines( "sound play", suite => {
 	const engine = suite.engine;
+	const clockTest = suite.clockTest;
 
 	// Existing play strings: notes start at their timeline positions with the right pitch
 	const regressionSongs = [
@@ -163,11 +164,11 @@ g_suite.describeAudioEngines( "sound play", suite => {
 		"T60 C D E F T120 C D E F T180 C D E F"
 	];
 	for( const song of regressionSongs ) {
-		test( `renders the notes and timing of "${song}"`, async t => {
+		clockTest( `renders the notes and timing of "${song}"`, async () => {
 			const events = g_play.parsePlayString( song ).events;
 			const duration = eventEnd( events[ events.length - 1 ] ) + 0.2;
-			const result = await suite.inHarness( t, {
-				"config": { "duration": duration }, "needsSuspend": true
+			const result = await suite.inHarness( {
+				"config": { "duration": duration }
 			}, renderSongs, { "songs": [ song ] } );
 			if( !result ) {
 				return;
@@ -203,12 +204,12 @@ g_suite.describeAudioEngines( "sound play", suite => {
 		} );
 	}
 
-	test( "a hidden-tab dense song fills the larger window within the fill headroom",
-		async t => {
+	clockTest( "a hidden-tab dense song fills the larger window within the fill headroom",
+		async () => {
 			const line = "T255 L32 " + "CDEFGABC".repeat( 8 );
 			const songs = [ "O3 " + line, "O4 " + line, "O5 " + line, "WQ V30 O2 " + line ];
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 2.2 }, "needsSuspend": true
+			const result = await suite.inHarness( {
+				"config": { "duration": 2.2 }
 			}, renderSongs, { "songs": songs, "hidden": true } );
 			if( !result ) {
 				return;
@@ -244,11 +245,11 @@ g_suite.describeAudioEngines( "sound play", suite => {
 		}
 	);
 
-	test( "a long song keeps its live voices bounded", async t => {
+	clockTest( "a long song keeps its live voices bounded", async () => {
 		const song = "T255 L64 MS " + "CDEFGAB".repeat( 22 );
 		const events = g_play.parsePlayString( song ).events;
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 2.5 }, "needsSuspend": true
+		const result = await suite.inHarness( {
+			"config": { "duration": 2.5 }
 		}, renderSongs, { "songs": [ song ] } );
 		if( !result ) {
 			return;
@@ -266,15 +267,15 @@ g_suite.describeAudioEngines( "sound play", suite => {
 		assert.equal( result.live[ result.live.length - 1 ], 0 );
 	} );
 
-	test( "after a stall, late notes expire or are skipped and future notes keep their time",
-		async t => {
+	clockTest( "after a stall, late notes expire or are skipped and future notes keep their time",
+		async () => {
 			const release = 0.32;
 
 			// Short notes expire even within grace; the longer notes are skipped beyond it
 			const songs = [ "T255 L64 MS " + "CDEFGAB".repeat( 5 ), "T120 L8 ML O3 C D E F" ];
 			const events = songs.flatMap( song => g_play.parsePlayString( song ).events );
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 1.2 }, "needsSuspend": true
+			const result = await suite.inHarness( {
+				"config": { "duration": 1.2 }
 			}, renderSongs, { "songs": songs, "holdTimers": true, "releaseAt": release } );
 			if( !result ) {
 				return;
@@ -311,13 +312,13 @@ g_suite.describeAudioEngines( "sound play", suite => {
 		}
 	);
 
-	test( "a note late within grace starts at its timeline position with an onset fade",
-		async t => {
+	clockTest( "a note late within grace starts at its timeline position with an onset fade",
+		async () => {
 			const release = 0.32;
 			const song = "T100 L8 SINE O5 P8 A";
 			const [ event ] = g_play.parsePlayString( song ).events;
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 0.8 }, "needsSuspend": true
+			const result = await suite.inHarness( {
+				"config": { "duration": 0.8 }
 			}, renderSongs, {
 				"songs": [ song ],
 				"holdTimers": true,
@@ -354,12 +355,12 @@ g_suite.describeAudioEngines( "sound play", suite => {
 		}
 	);
 
-	test( "wall time passing while the audio clock is frozen keeps the song position",
-		async t => {
+	clockTest( "wall time passing while the audio clock is frozen keeps the song position",
+		async () => {
 			const song = "T120 L8 C D E F";
 			const events = g_play.parsePlayString( song ).events;
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 1.2 }, "needsSuspend": true
+			const result = await suite.inHarness( {
+				"config": { "duration": 1.2 }
 			}, renderSongs, { "songs": [ song ], "wallAt": 0.1 } );
 			if( !result ) {
 				return;
@@ -373,9 +374,9 @@ g_suite.describeAudioEngines( "sound play", suite => {
 		}
 	);
 
-	test( "stopPlay() cancels scheduled notes and fades the sounding one", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.2 }, "needsSuspend": true
+	clockTest( "stopPlay() cancels scheduled notes and fades the sounding one", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.2 }
 		}, () => {
 			let trackId = null;
 			let stoppedAt = null;
@@ -409,9 +410,9 @@ g_suite.describeAudioEngines( "sound play", suite => {
 		assert.ok( g_metrics.isSilent( left, silentFrom, left.length ) );
 	} );
 
-	test( "stopPlay() advances a retiring note's steal deadline", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1 }, "needsSuspend": true
+	clockTest( "stopPlay() advances a retiring note's steal deadline", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1 }
 		}, () => {
 			let trackId = null;
 			let stoppedAt = null;
@@ -449,10 +450,10 @@ g_suite.describeAudioEngines( "sound play", suite => {
 		assert.ok( g_metrics.isSilent( left, silentFrom, left.length ) );
 	} );
 
-	test( "PLAY extension state, snapshots, and inserts created only for admitted notes",
-		async t => {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 2 }, "needsSuspend": true
+	clockTest( "PLAY extension state, snapshots, and inserts created only for admitted notes",
+		async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 2 }
 			}, () => {
 				const log = { "gains": [], "starts": 0, "disposed": 0, "afterPlay": null };
 				const preset = { "gain": 0.5 };

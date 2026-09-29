@@ -1,8 +1,8 @@
 /**
  * SYS-004 and SYS-018 browser regressions against fresh in-memory full and lite bundles, for
  * decoded (fetch + decodeAudioData) and streamed (media element) audio. Runs in every engine
- * from audio-engines.js. Run with node --test test/unit/audio-lifecycle-browser.test.js; no
- * server is required.
+ * from audio-engines.js; an engine without Web Audio skips the decoded-audio group. Run with
+ * node --test test/unit/audio-lifecycle-browser.test.js; no server is required.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
@@ -16,8 +16,10 @@ const NO_WEB_AUDIO = "this engine build has no Web Audio API (Playwright WebKit 
 const bundles = {};
 const browsers = {};
 const pages = {};
-const webAudio = {};
 let audioBundle;
+
+// Read before any test is defined, since a skipped group is decided at definition
+const SUPPORT = await g_audioEngines.loadSupport();
 
 before( async () => {
 	bundles.full = await g_sourceHarness.buildSource( "src/index-full.js" );
@@ -181,14 +183,14 @@ function installAudioHarness() {
 // Engines run in parallel; each engine's tests share one page and run in order
 describe( "audio engines", { "concurrency": true }, () => {
 	for( const engine of g_audioEngines.AUDIO_ENGINES ) {
+		let skipDecoded = false;
+		if( !SUPPORT[ engine ].webAudio ) {
+			skipDecoded = NO_WEB_AUDIO;
+		}
 		describe( engine, { "concurrency": 1 }, () => {
 			before( async () => {
 				browsers[ engine ] = await g_audioEngines.launchEngine( engine );
 				pages[ engine ] = await g_audioEngines.createReusablePage( browsers[ engine ] );
-				const page = await pages[ engine ].load();
-				webAudio[ engine ] = await page.evaluate(
-					() => typeof AudioContext === "function"
-				);
 			} );
 
 			after( async () => {
@@ -230,20 +232,6 @@ describe( "audio engines", { "concurrency": true }, () => {
 						assert.deepEqual( result, [ 0, 0, 1, 0, 1, true ] );
 					} );
 
-				for( const timing of [ "fetching", "retry", "decoding" ] ) {
-					test( `SYS-018 ${bundle}: ${timing} removal cancels and isolates a replacement`,
-						async t => {
-							if( !webAudio[ engine ] ) {
-								t.skip( NO_WEB_AUDIO );
-								return;
-							}
-							assert.deepEqual(
-								await probe( engine, bundle, removalScenario, timing ),
-								[ 0, 0, 1, "number", 2, true ]
-							);
-						} );
-				}
-
 				test( `SYS-018 ${bundle}: stream removal releases the element and isolates a ` +
 					"replacement", async () => {
 					const result = await probe( engine, bundle, async () => {
@@ -271,13 +259,23 @@ describe( "audio engines", { "concurrency": true }, () => {
 					} );
 					assert.deepEqual( result, [ 0, 1, 2, true ] );
 				} );
+			}
 
-				test( `SYS-004 ${bundle}: retry success and terminal failure settle independently`,
-					async t => {
-						if( !webAudio[ engine ] ) {
-							t.skip( NO_WEB_AUDIO );
-							return;
-						}
+			// Decoded audio needs Web Audio; streamed audio plays through media elements
+			describe( "decoded audio", { "concurrency": 1, "skip": skipDecoded }, () => {
+				for( const bundle of [ "full", "lite" ] ) {
+					for( const timing of [ "fetching", "retry", "decoding" ] ) {
+						test( `SYS-018 ${bundle}: ${timing} removal cancels and isolates a ` +
+							"replacement", async () => {
+							assert.deepEqual(
+								await probe( engine, bundle, removalScenario, timing ),
+								[ 0, 0, 1, "number", 2, true ]
+							);
+						} );
+					}
+
+					test( `SYS-004 ${bundle}: retry success and terminal failure settle ` +
+						"independently", async () => {
 						const result = await probe( engine, bundle, async () => {
 							const h = audioTest;
 							const retried = $.loadAudio( "retry.wav", "retried" );
@@ -311,7 +309,8 @@ describe( "audio engines", { "concurrency": true }, () => {
 							result, [ false, true, "number", "AUDIO_NOT_LOADED", 3, 0 ]
 						);
 					} );
-			}
+				}
+			} );
 		} );
 	}
 } );

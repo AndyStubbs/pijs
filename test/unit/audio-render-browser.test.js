@@ -19,9 +19,10 @@ const frame = g_suite.frame;
 
 g_suite.describeAudioEngines( "audio render harness", suite => {
 	const engine = suite.engine;
+	const clockTest = suite.clockTest;
 
-	test( "renders a sound() call with the expected peak and length", async t => {
-		const result = await suite.inHarness( t, { "config": { "duration": 1 } }, () => {
+	test( "renders a sound() call with the expected peak and length", async () => {
+		const result = await suite.inHarness( { "config": { "duration": 1 } }, () => {
 			$.setSoundLimiter( false );
 			$.sound( 440, 0.5, 1, "sine" );
 			return __audioHarness.render( { "singlePass": true } );
@@ -56,9 +57,9 @@ g_suite.describeAudioEngines( "audio render harness", suite => {
 		assert.equal( rendered.nodeCounts.createOscillator, 1 );
 	} );
 
-	test( "clock-driven play() stops mid-song through stopPlay()", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 2 }, "needsSuspend": true
+	clockTest( "clock-driven play() stops mid-song through stopPlay()", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 2 }
 		}, () => {
 			let trackId = null;
 			let stoppedAt = null;
@@ -97,9 +98,9 @@ g_suite.describeAudioEngines( "audio render harness", suite => {
 		assert.equal( rendered.nodeCounts.createOscillator, 3 );
 	} );
 
-	test( "state masking yields one voice per sound() call at every step", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 3 }, "needsSuspend": true
+	clockTest( "state masking yields one voice per sound() call at every step", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 3 }
 		}, () => {
 			const context = new AudioContext();
 			const seen = { "handler": 0, "listener": 0, "notRunning": 0, "calls": 0 };
@@ -141,10 +142,10 @@ g_suite.describeAudioEngines( "audio render harness", suite => {
 		assert.ok( result.statechanges.native >= result.steps );
 	} );
 
-	test( "seeded renders are identical across page loads", async t => {
+	test( "seeded renders are identical across page loads", async () => {
 		const renders = [];
 		for( let run = 0; run < 2; run++ ) {
-			const result = await suite.inHarness( t, {
+			const result = await suite.inHarness( {
 				"config": { "duration": 0.5, "seed": 1234 }
 			}, () => {
 				const context = new AudioContext();
@@ -172,10 +173,10 @@ g_suite.describeAudioEngines( "audio render harness", suite => {
 		assert.ok( g_metrics.peak( left ) > 0.5 );
 	} );
 
-	test( "seeded multi-voice mixes match within the engine mix tolerance", async t => {
+	test( "seeded multi-voice mixes match within the engine mix tolerance", async () => {
 		const renders = [];
 		for( let run = 0; run < 2; run++ ) {
-			const result = await suite.inHarness( t, {
+			const result = await suite.inHarness( {
 				"config": { "duration": 0.5, "seed": 1234 }
 			}, () => {
 				const frequencies = [];
@@ -203,8 +204,8 @@ g_suite.describeAudioEngines( "audio render harness", suite => {
 		assert.ok( g_metrics.peak( first ) > 0.1 );
 	} );
 
-	test( "virtual timers, clock, and visibility follow the harness", async t => {
-		const result = await suite.inHarness( t, { "needsWebAudio": false }, () => {
+	test( "virtual timers, clock, and visibility follow the harness", async () => {
+		const result = await suite.inHarness( {}, () => {
 			const order = [];
 			const start = performance.now();
 			const dateStart = Date.now();
@@ -248,8 +249,8 @@ g_suite.describeAudioEngines( "audio render harness", suite => {
 		} );
 	} );
 
-	test( "a locked context reports suspended until a simulated gesture", async t => {
-		const result = await suite.inHarness( t, { "config": { "locked": true } }, () => {
+	test( "a locked context reports suspended until a simulated gesture", async () => {
+		const result = await suite.inHarness( { "config": { "locked": true } }, () => {
 			const context = new AudioContext();
 			const states = [ context.state ];
 			let events = 0;

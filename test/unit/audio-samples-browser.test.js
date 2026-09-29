@@ -76,9 +76,10 @@ function sampleSources( sources ) {
 
 g_suite.describeAudioEngines( "sound samples", suite => {
 	const engine = suite.engine;
+	const clockTest = suite.clockTest;
 
-	test( "offset and default duration play to the end of the file", async t => {
-		const result = await suite.inHarness( t, { "config": { "duration": 0.8 } }, async arg => {
+	test( "offset and default duration play to the end of the file", async () => {
+		const result = await suite.inHarness( { "config": { "duration": 0.8 } }, async arg => {
 			eval( arg.loader );
 			$.setSoundLimiter( false );
 			$.setVolume( 1 );
@@ -109,8 +110,8 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 	} );
 
 	for( const rate of [ 0.5, 2 ] ) {
-		test( `content duration at rate ${rate} matches the position model`, async t => {
-			const result = await suite.inHarness( t, {
+		test( `content duration at rate ${rate} matches the position model`, async () => {
+			const result = await suite.inHarness( {
 				"config": { "duration": 1.2 }
 			}, async arg => {
 				eval( arg.loader );
@@ -138,8 +139,8 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 		} );
 	}
 
-	test( "a finite loop wraps at the file end and stops after its budget", async t => {
-		const result = await suite.inHarness( t, { "config": { "duration": 1.4 } }, async arg => {
+	test( "a finite loop wraps at the file end and stops after its budget", async () => {
+		const result = await suite.inHarness( { "config": { "duration": 1.4 } }, async arg => {
 			eval( arg.loader );
 			$.setSoundLimiter( false );
 			$.setVolume( 1 );
@@ -163,8 +164,8 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 		assert.ok( g_metrics.isSilent( left, frame( end ) + 1, left.length ) );
 	} );
 
-	test( "stereo buffers keep both channels and their level at center pan", async t => {
-		const result = await suite.inHarness( t, { "config": { "duration": 0.7 } }, async arg => {
+	test( "stereo buffers keep both channels and their level at center pan", async () => {
+		const result = await suite.inHarness( { "config": { "duration": 0.7 } }, async arg => {
 			eval( arg.loader );
 			$.setSoundLimiter( false );
 			$.setVolume( 1 );
@@ -188,8 +189,8 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 		}
 	} );
 
-	test( "a mono buffer's louder channel stays at its volume when panned", async t => {
-		const result = await suite.inHarness( t, { "config": { "duration": 0.7 } }, async arg => {
+	test( "a mono buffer's louder channel stays at its volume when panned", async () => {
+		const result = await suite.inHarness( { "config": { "duration": 0.7 } }, async arg => {
 			eval( arg.loader );
 			$.setSoundLimiter( false );
 			$.setVolume( 1 );
@@ -216,9 +217,9 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 		);
 	} );
 
-	test( "position after rate changes matches the model to the sample", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1 }, "needsSuspend": true
+	clockTest( "position after rate changes matches the model to the sample", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1 }
 		}, async arg => {
 			eval( arg.loader );
 			$.setSoundLimiter( false );
@@ -258,9 +259,9 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 		);
 	} );
 
-	test( "pause and resume honor the saved position and remaining content", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.2 }, "needsSuspend": true
+	clockTest( "pause and resume honor the saved position and remaining content", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.2 }
 		}, async arg => {
 			eval( arg.loader );
 			$.setSoundLimiter( false );
@@ -323,9 +324,9 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 		assert.equal( sampleSources( result.sources ).length, 2 );
 	} );
 
-	test( "setAudio applies to pending, scheduled, and paused instances", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.6 }, "needsSuspend": true
+	clockTest( "setAudio applies to pending, scheduled, and paused instances", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.6 }
 		}, async arg => {
 			eval( arg.loader );
 			$.setSoundLimiter( false );
@@ -401,9 +402,9 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 		);
 	} );
 
-	test( "stopAudio fades samples; stopSound and stopAudio stay separate", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 0.8 }, "needsSuspend": true
+	clockTest( "stopAudio fades samples; stopSound and stopAudio stay separate", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 0.8 }
 		}, async arg => {
 			eval( arg.loader );
 			$.setSoundLimiter( false );
@@ -456,9 +457,9 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 		assert.ok( residual.max <= tolerance, `stop residual ${residual.max} > ${tolerance}` );
 	} );
 
-	test( "late samples expire, start within grace, or are skipped; loops catch up", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.4 }, "needsSuspend": true
+	clockTest( "late samples expire, start in grace, or are skipped; loops catch up", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.4 }
 		}, async arg => {
 			eval( arg.loader );
 			const id = await __loadWav( arg.wav );
@@ -525,10 +526,10 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 		assert.ok( Math.abs( future.startTime - ( release + 0.3 ) ) < 1e-9 );
 	} );
 
-	test( "SFX floods preserve loops, and protected-only capacity rejects new voices",
-		async t => {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 0.8 }, "needsSuspend": true
+	clockTest( "SFX floods preserve loops, and protected-only capacity rejects new voices",
+		async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 0.8 }
 			}, async arg => {
 				eval( arg.loader );
 				const id = await __loadWav( arg.wav );
@@ -591,9 +592,9 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 			assert.equal( result.counts.afterStop, 2 );
 		} );
 
-	test( "delayed loops hold a slot only from admission", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1 }, "needsSuspend": true
+	clockTest( "delayed loops hold a slot only from admission", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1 }
 		}, async arg => {
 			eval( arg.loader );
 			const id = await __loadWav( arg.wav );
@@ -639,9 +640,9 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 		assert.ok( first.stopTime < 1, "the synth voice was stolen for the admitted loop" );
 	} );
 
-	test( "a 200-request sample flood stays within the shared caps", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1 }, "needsSuspend": true
+	clockTest( "a 200-request sample flood stays within the shared caps", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1 }
 		}, async arg => {
 			eval( arg.loader );
 			const id = await __loadWav( arg.wav );
@@ -687,8 +688,8 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 		assert.equal( peak, 64 );
 	} );
 
-	test( "a locked context drops sample one-shots and defers loops", async t => {
-		const result = await suite.inHarness( t, {
+	test( "a locked context drops sample one-shots and defers loops", async () => {
+		const result = await suite.inHarness( {
 			"config": { "duration": 0.5, "locked": true }
 		}, async arg => {
 			eval( arg.loader );

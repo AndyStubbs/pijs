@@ -63,10 +63,11 @@ function toDb( ratio ) {
 
 g_suite.describeAudioEngines( "sound design", suite => {
 	const engine = suite.engine;
+	const clockTest = suite.clockTest;
 
 	for( const oType of [ "white", "pink" ] ) {
-		test( `${oType} noise has its spectrum and peak (seeded)`, async t => {
-			const result = await suite.inHarness( t, { "config": { "duration": 2 } }, oType => {
+		test( `${oType} noise has its spectrum and peak (seeded)`, async () => {
+			const result = await suite.inHarness( { "config": { "duration": 2 } }, oType => {
 				$.setSoundLimiter( false );
 				$.setVolume( 1 );
 				$.sound( { "duration": 1.8, "volume": 0.6, "oType": oType } );
@@ -96,8 +97,8 @@ g_suite.describeAudioEngines( "sound design", suite => {
 		} );
 	}
 
-	test( "noise buffers are created lazily, once per type", async t => {
-		const result = await suite.inHarness( t, { "config": { "duration": 0.5 } }, () => {
+	test( "noise buffers are created lazily, once per type", async () => {
+		const result = await suite.inHarness( { "config": { "duration": 0.5 } }, () => {
 			$.setSoundLimiter( false );
 			$.sound( { "duration": 0.1, "volume": 0.1 } );
 			const before = __audioHarness.nodeCounts();
@@ -118,8 +119,8 @@ g_suite.describeAudioEngines( "sound design", suite => {
 		assert.equal( result.nodeCounts.createOscillator, 1 );
 	} );
 
-	test( "noise voices start at random offsets and loop without dropouts", async t => {
-		const result = await suite.inHarness( t, { "config": { "duration": 3.5 } }, () => {
+	test( "noise voices start at random offsets and loop without dropouts", async () => {
+		const result = await suite.inHarness( { "config": { "duration": 3.5 } }, () => {
 			$.setSoundLimiter( false );
 			$.setVolume( 1 );
 			$.sound( { "duration": 3, "oType": "white", "pan": -1 } );
@@ -152,13 +153,13 @@ g_suite.describeAudioEngines( "sound design", suite => {
 		}
 	} );
 
-	test( "noise ignores frequency and frequencyEnd (D1)", async t => {
+	test( "noise ignores frequency and frequencyEnd (D1)", async () => {
 		const renders = [];
 		for( const call of [
 			{ "frequency": 100 },
 			{ "frequency": 2000, "frequencyEnd": 50 }
 		] ) {
-			const result = await suite.inHarness( t, { "config": { "duration": 0.5 } }, call => {
+			const result = await suite.inHarness( { "config": { "duration": 0.5 } }, call => {
 				$.setSoundLimiter( false );
 				$.sound( { ...call, "duration": 0.3, "oType": "white" } );
 				return __audioHarness.render( { "singlePass": true } );
@@ -173,10 +174,10 @@ g_suite.describeAudioEngines( "sound design", suite => {
 	} );
 
 	test( "panned voices follow the equal-power ratio with the louder channel at volume",
-		async t => {
+		async () => {
 			const measured = [];
 			for( const pan of [ -1, -0.5, -0.25, 0, 0.25, 0.5, 1 ] ) {
-				const result = await suite.inHarness( t, { "config": { "duration": 0.4 } },
+				const result = await suite.inHarness( { "config": { "duration": 0.4 } },
 					pan => {
 						$.setSoundLimiter( false );
 						$.setVolume( 1 );
@@ -230,12 +231,12 @@ g_suite.describeAudioEngines( "sound design", suite => {
 	);
 
 	for( const [ from, to ] of [ [ 200, 800 ], [ 800, 200 ] ] ) {
-		test( `a ${from} to ${to} Hz sweep follows the exponential curve`, async t => {
+		test( `a ${from} to ${to} Hz sweep follows the exponential curve`, async () => {
 			const call = {
 				"frequency": from, "frequencyEnd": to, "duration": 0.6, "oType": "sine",
 				"releaseTime": 0.3
 			};
-			const result = await suite.inHarness( t, { "config": { "duration": 1 } }, call => {
+			const result = await suite.inHarness( { "config": { "duration": 1 } }, call => {
 				$.setSoundLimiter( false );
 				$.setVolume( 1 );
 				$.sound( call );
@@ -260,9 +261,9 @@ g_suite.describeAudioEngines( "sound design", suite => {
 		} );
 	}
 
-	test( "a late-started sweep begins at its timeline frequency", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.2 }, "needsSuspend": true
+	clockTest( "a late-started sweep begins at its timeline frequency", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.2 }
 		}, () => {
 			const release = 0.32;
 			return __audioHarness.render( { "actions": [

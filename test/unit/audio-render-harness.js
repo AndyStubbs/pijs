@@ -656,7 +656,7 @@ const HARNESS_INIT_SCRIPT = `( () => {
  * document with the harness installed before the bundles load.
  *
  * @param {Object} browser - Playwright browser
- * @returns {Promise<Object>} { open( options ), getSupport(), close() }
+ * @returns {Promise<Object>} { open( options ), close() }
  */
 async function createHarnessSession( browser ) {
 	const reusable = await g_audioEngines.createReusablePage( browser, HARNESS_INIT_SCRIPT );
@@ -693,19 +693,7 @@ async function createHarnessSession( browser ) {
 		return { "page": page, "support": support, "errors": reusable.errors };
 	}
 
-	/**
-	 * Returns the engine's Web Audio support, loading one empty document the first time.
-	 *
-	 * @returns {Promise<{ webAudio: boolean, offlineSuspend: boolean }>} Support flags
-	 */
-	async function getSupport() {
-		if( support === null ) {
-			await open();
-		}
-		return support;
-	}
-
-	return { "open": open, "getSupport": getSupport, "close": reusable.close };
+	return { "open": open, "close": reusable.close };
 }
 
 /**

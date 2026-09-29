@@ -244,9 +244,10 @@ function endsOf( result ) {
 }
 
 g_suite.describeAudioEngines( "sound extension service", suite => {
+	const clockTest = suite.clockTest;
 
-	test( "service v1 exposes the frozen member list", async t => {
-		const result = await suite.inHarness( t, {}, arg => {
+	test( "service v1 exposes the frozen member list", async () => {
+		const result = await suite.inHarness( {}, arg => {
 			eval( arg.stubs );
 			const service = __stubs.service();
 			return { "keys": Object.keys( service ).sort(), "version": service.version };
@@ -258,8 +259,8 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		assert.equal( result.version, 1 );
 	} );
 
-	test( "registerSource and createVoice validate their arguments", async t => {
-		const result = await suite.inHarness( t, {}, arg => {
+	test( "registerSource and createVoice validate their arguments", async () => {
+		const result = await suite.inHarness( {}, arg => {
 			eval( arg.stubs );
 			const service = __stubs.service();
 			const source = __stubs.makeSource( "a" );
@@ -319,8 +320,8 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 	} );
 
 	test( "a registered source and its insert follow the lifecycle order and dispose once",
-		async t => {
-			const result = await suite.inHarness( t, { "config": { "duration": 1 } }, arg => {
+		async () => {
+			const result = await suite.inHarness( { "config": { "duration": 1 } }, arg => {
 				eval( arg.stubs );
 				const service = __stubs.service();
 				service.registerSource( "stub", __stubs.makeSource( "source" ) );
@@ -362,10 +363,10 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		}
 	);
 
-	test( "explicit and repeated earlier stops move source and insert deadlines forward",
-		async t => {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 1.5 }, "needsSuspend": true
+	clockTest( "explicit and repeated earlier stops move source and insert deadlines forward",
+		async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 1.5 }
 			}, arg => {
 				eval( arg.stubs );
 				const service = __stubs.service();
@@ -412,8 +413,8 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 	);
 
 	test( "a scheduled source cancelled before it sounds is stopped and disposed at once",
-		async t => {
-			const result = await suite.inHarness( t, { "config": { "duration": 0.6 } }, arg => {
+		async () => {
+			const result = await suite.inHarness( { "config": { "duration": 0.6 } }, arg => {
 				eval( arg.stubs );
 				const service = __stubs.service();
 				service.registerSource( "stub", __stubs.makeSource( "source" ) );
@@ -442,8 +443,8 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		}
 	);
 
-	test( "throwing factories and starts leave no partial voice", async t => {
-		const result = await suite.inHarness( t, { "config": { "duration": 0.5 } }, arg => {
+	test( "throwing factories and starts leave no partial voice", async () => {
+		const result = await suite.inHarness( { "config": { "duration": 0.5 } }, arg => {
 			eval( arg.stubs );
 			const service = __stubs.service();
 			const makeSource = __stubs.makeSource;
@@ -498,10 +499,10 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		assert.ok( g_metrics.isSilent( channel( result ), 0, frame( 0.5 ) ) );
 	} );
 
-	test( "an explicit stop advances a future steal deadline before its fade begins",
-		async t => {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 0.8 }, "needsSuspend": true
+	clockTest( "an explicit stop advances a future steal deadline before its fade begins",
+		async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 0.8 }
 			}, arg => {
 				eval( arg.stubs );
 				const service = __stubs.service();
@@ -554,8 +555,8 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 	);
 
 	test( "insert detune outputs modulate the source pitch and are unlinked on dispose",
-		async t => {
-			const result = await suite.inHarness( t, { "config": { "duration": 1 } }, arg => {
+		async () => {
+			const result = await suite.inHarness( { "config": { "duration": 1 } }, arg => {
 				eval( arg.stubs );
 				const service = __stubs.service();
 				service.registerSource( "stub", __stubs.makeSource( "source" ) );
@@ -611,10 +612,10 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		}
 	);
 
-	test( "bus inserts replace and remove cleanly, and bus volume is independent of them",
-		async t => {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 2.4 }, "needsSuspend": true
+	clockTest( "bus inserts replace and remove cleanly, and bus volume is independent of them",
+		async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 2.4 }
 			}, arg => {
 				eval( arg.stubs );
 				const service = __stubs.service();
@@ -694,10 +695,10 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		}
 	);
 
-	test( "muting a bus silences an effect tail without disposing of the effect",
-		async t => {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 1.5 }, "needsSuspend": true
+	clockTest( "muting a bus silences an effect tail without disposing of the effect",
+		async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 1.5 }
 			}, arg => {
 				eval( arg.stubs );
 				const service = __stubs.service();
@@ -742,9 +743,9 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		}
 	);
 
-	test( "taps read a bus in parallel and untap only their own connection", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.2 }, "needsSuspend": true
+	clockTest( "taps read a bus in parallel and untap only their own connection", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.2 }
 		}, arg => {
 			eval( arg.stubs );
 			const service = __stubs.service();
@@ -808,8 +809,8 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		assert.ok( g_metrics.peak( left, frame( 0.6 ), frame( 0.9 ) ) > 0.4 );
 	} );
 
-	test( "only tapBus accepts the output stage", async t => {
-		const result = await suite.inHarness( t, {}, arg => {
+	test( "only tapBus accepts the output stage", async () => {
+		const result = await suite.inHarness( {}, arg => {
 			eval( arg.stubs );
 			const service = __stubs.service();
 			const codeOf = __stubs.codeOf;
@@ -847,9 +848,9 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		assert.equal( result.command, "INVALID_BUS" );
 	} );
 
-	test( "an output tap matches the destination as the limiter turns off and on", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.2 }, "needsSuspend": true
+	clockTest( "an output tap matches the destination with the limiter off and on", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.2 }
 		}, arg => {
 			eval( arg.stubs );
 			const service = __stubs.service();
@@ -925,9 +926,9 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		assert.ok( peaks.false > peaks.true, `unlimited ${peaks.false}, limited ${peaks.true}` );
 	} );
 
-	test( "createVoice requests follow the pending, bus, and locked-context rules", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.6 }, "needsSuspend": true
+	clockTest( "createVoice requests follow pending, bus, and locked-context rules", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.6 }
 		}, arg => {
 			eval( arg.stubs );
 			const service = __stubs.service();
@@ -970,7 +971,7 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		const onset = g_metrics.firstNonSilent( left.subarray( frame( 0.5 ) ) ) + frame( 0.5 );
 		assertNear( onset / RATE, 1, 0.002, "pending start" );
 
-		const locked = await suite.inHarness( t, {
+		const locked = await suite.inHarness( {
 			"config": { "duration": 0.5, "locked": true }
 		}, arg => {
 			eval( arg.stubs );
@@ -985,12 +986,12 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		assert.deepEqual( locked.events, [] );
 	} );
 
-	test( "observePlay reports each admitted note once, in time order, and the song's end",
-		async t => {
+	clockTest( "observePlay reports each admitted note once, in time order, and the song's end",
+		async () => {
 			const song = "T120 L4 V40 O3 C, L8 V80 O4 MP50 C D E F";
 			const parsed = g_play.parsePlayString( song ).events;
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 1.6 }, "needsSuspend": true
+			const result = await suite.inHarness( {
+				"config": { "duration": 1.6 }
 			}, observeSongs, {
 				"stubs": STUBS,
 				"actions": [ { "time": 0, "run": `ids => { ids.push( $.play( "${song}" ) ); }` } ]
@@ -1037,9 +1038,9 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		}
 	);
 
-	test( "stopPlay() reports a stopped end once and no later notes", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1 }, "needsSuspend": true
+	clockTest( "stopPlay() reports a stopped end once and no later notes", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1 }
 		}, observeSongs, {
 			"stubs": STUBS,
 			"actions": [
@@ -1071,9 +1072,9 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		assert.equal( notesOf( result ).length, playVoices( result.sources ).length );
 	} );
 
-	test( "observePlay listeners are isolated, removable, and validated", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.4 }, "needsSuspend": true
+	clockTest( "observePlay listeners are isolated, removable, and validated", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.4 }
 		}, arg => {
 			eval( arg.stubs );
 			const service = __stubs.service();
@@ -1131,7 +1132,7 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		assert.ok( result.logged.every( line => line.startsWith( "sound: Play observer" ) ) );
 	} );
 
-	test( "observePlay does not report expired or skipped notes after a stall", async t => {
+	clockTest( "observePlay does not report expired or skipped notes after a stall", async () => {
 		const release = 0.32;
 		const grace = "T100 L8 SINE O5 P8 A";
 		const songs = [
@@ -1140,8 +1141,8 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		const total = songs.reduce( ( sum, song ) => {
 			return sum + g_play.parsePlayString( song ).events.length;
 		}, 0 );
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.2 }, "needsSuspend": true
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.2 }
 		}, observeSongs, {
 			"stubs": STUBS,
 			"actions": [
@@ -1179,9 +1180,9 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 		assert.deepEqual( endsOf( result ).map( end => end.stopped ), [ false, false, false ] );
 	} );
 
-	test( "observePlay does not report notes rejected by the voice cap", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 0.8 }, "needsSuspend": true
+	clockTest( "observePlay does not report notes rejected by the voice cap", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 0.8 }
 		}, observeSongs, {
 			"stubs": STUBS,
 			"loader": g_fixtures.PAGE_LOADER,
@@ -1205,8 +1206,8 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 	} );
 
 	test( "getAudioBuffer returns a loaded decode-mode file's shared buffer, else null",
-		async t => {
-			const result = await suite.inHarness( t, {}, async arg => {
+		async () => {
+			const result = await suite.inHarness( {}, async arg => {
 				eval( arg.stubs );
 				const service = __stubs.service();
 				const bytes = Uint8Array.from( atob( arg.wav ), c => c.charCodeAt( 0 ) );

@@ -133,9 +133,10 @@ function voiceSources( sources ) {
 
 g_suite.describeAudioEngines( "sound voices", suite => {
 	const engine = suite.engine;
+	const clockTest = suite.clockTest;
 
-	test( "sound() validates its parameters", async t => {
-		const codes = await suite.inHarness( t, { "needsWebAudio": false }, () => {
+	test( "sound() validates its parameters", async () => {
+		const codes = await suite.inHarness( {}, () => {
 			const calls = [
 				{ "duration": -1 },
 				{ "volume": 2 },
@@ -176,12 +177,12 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 		] );
 	} );
 
-	test( "envelope stages follow the analytic ADSR timing", async t => {
+	test( "envelope stages follow the analytic ADSR timing", async () => {
 		const spec = {
 			"frequency": 1000, "duration": 0.4, "volume": 1, "oType": "sine",
 			"attackTime": 0.05, "decayTime": 0.1, "sustainLevel": 0.5, "releaseTime": 0.2
 		};
-		const result = await suite.inHarness( t, { "config": { "duration": 1 } }, spec => {
+		const result = await suite.inHarness( { "config": { "duration": 1 } }, spec => {
 			$.setSoundLimiter( false );
 			$.setVolume( 1 );
 			$.sound( spec );
@@ -231,8 +232,8 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 	} );
 
 	for( const oType of [ "sine", "square", "sawtooth" ] ) {
-		test( `a zero-attack ${oType} onset uses the 3 ms floor`, async t => {
-			const result = await suite.inHarness( t, { "config": { "duration": 0.5 } }, oType => {
+		test( `a zero-attack ${oType} onset uses the 3 ms floor`, async () => {
+			const result = await suite.inHarness( { "config": { "duration": 0.5 } }, oType => {
 				$.setSoundLimiter( false );
 				$.setVolume( 1 );
 				$.sound( { "frequency": 440, "duration": 0.3, "oType": oType, "volume": 0.8 } );
@@ -258,9 +259,9 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 	}
 
 	for( const oType of [ "sine", "square", "sawtooth" ] ) {
-		test( `stopSound() fades a ${oType} voice from the scheduling lead`, async t => {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 1 }, "needsSuspend": true
+		clockTest( `stopSound() fades a ${oType} voice from the scheduling lead`, async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 1 }
 			}, oType => {
 				let id = null;
 				let stoppedAt = null;
@@ -305,11 +306,11 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 	// Noise carriers replay the voice's own recorded buffer source: same buffer, loop, start
 	// time, and random offset
 	for( const oType of [ "white", "pink" ] ) {
-		test( `${oType} noise onset and release match the reference envelope`, async t => {
+		test( `${oType} noise onset and release match the reference envelope`, async () => {
 			const spec = {
 				"duration": 0.3, "oType": oType, "volume": 0.8, "releaseTime": 0.1
 			};
-			const result = await suite.inHarness( t, { "config": { "duration": 0.6 } }, spec => {
+			const result = await suite.inHarness( { "config": { "duration": 0.6 } }, spec => {
 				$.setSoundLimiter( false );
 				$.setVolume( 1 );
 				$.sound( spec );
@@ -346,9 +347,9 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 			assert.ok( g_metrics.isSilent( left, frame( LEAD + 0.4 ) + 1, left.length ) );
 		} );
 
-		test( `stopSound() fades ${oType} noise from the scheduling lead`, async t => {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 1 }, "needsSuspend": true
+		clockTest( `stopSound() fades ${oType} noise from the scheduling lead`, async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 1 }
 			}, oType => {
 				let id = null;
 				let stoppedAt = null;
@@ -392,9 +393,9 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 		} );
 	}
 
-	test( "stopPlay() fades a sounding note from its current envelope value", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.5 }, "needsSuspend": true
+	clockTest( "stopPlay() fades a sounding note from its current envelope value", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.5 }
 		}, () => {
 			let trackId = null;
 			let stoppedAt = null;
@@ -439,9 +440,9 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 
 	for( const delay of [ 0, 0.1 ] ) {
 		const label = delay === 0 ? "an immediate" : "a future";
-		test( `${label} steal fades the oldest voice while the new voice starts`, async t => {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 1 }, "needsSuspend": true
+		clockTest( `${label} steal fades the oldest voice as the new voice starts`, async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 1 }
 			}, delay => {
 				let requestedAt = null;
 				return __audioHarness.render( { "actions": [
@@ -503,9 +504,9 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 		} );
 	}
 
-	test( "an explicit stop during a future-steal wait brings the fade forward", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1 }, "needsSuspend": true
+	clockTest( "an explicit stop during a future-steal wait brings the fade forward", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1 }
 		}, () => {
 			let victimId = null;
 			let requestedAt = null;
@@ -570,9 +571,9 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 		assert.equal( victimSource.disconnectCalls, 1 );
 	} );
 
-	test( "repeated earlier stops keep continuity and dispose once", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.2 }, "needsSuspend": true
+	clockTest( "repeated earlier stops keep continuity and dispose once", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.2 }
 		}, () => {
 			let service = null;
 			pi.registerPlugin( {
@@ -635,9 +636,9 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 		assert.equal( voice.disconnectCalls, 1 );
 	} );
 
-	test( "immediate automation lands at least two render quanta ahead", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1 }, "needsSuspend": true
+	clockTest( "immediate automation lands at least two render quanta ahead", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1 }
 		}, () => {
 			let service = null;
 			pi.registerPlugin( {
@@ -690,9 +691,9 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 		}
 	} );
 
-	test( "a flood of delayed sound() calls stays within the voice caps", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 3 }, "needsSuspend": true
+	clockTest( "a flood of delayed sound() calls stays within the voice caps", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 3 }
 		}, () => {
 			let maxLive = 0;
 			let overflowCode = null;
@@ -736,9 +737,9 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 		assert.equal( overlap, 64 );
 	} );
 
-	test( "the live-voice cap frees the oldest audible retiring voice first", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1 }, "needsSuspend": true
+	clockTest( "the live-voice cap frees the oldest audible retiring voice first", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1 }
 		}, () => {
 			let liveAfter = [];
 			let calledAt = null;
@@ -788,9 +789,9 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 		assert.ok( peakSlotOverlap( voices ) <= 64 );
 	} );
 
-	test( "a long voice is not stolen for voices it does not overlap", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1 }, "needsSuspend": true
+	clockTest( "a long voice is not stolen for voices it does not overlap", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1 }
 		}, () => {
 			return __audioHarness.render( { "actions": [
 				{ "time": 0, "run": () => {
@@ -815,9 +816,9 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 		assert.equal( voices[ 0 ].stopCalls, 1 );
 	} );
 
-	test( "late requests expire, start within grace, or are skipped", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.2 }, "needsSuspend": true
+	clockTest( "late requests expire, start within grace, or are skipped", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.2 }
 		}, () => {
 			const release = 0.32;
 			const ids = {};
@@ -882,9 +883,9 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 		assertResidual( residual, engine, "onset", "late start" );
 	} );
 
-	test( "wall time passing while the audio clock is frozen skips nothing", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1 }, "needsSuspend": true
+	clockTest( "wall time passing while the audio clock is frozen skips nothing", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1 }
 		}, () => {
 			return __audioHarness.render( { "actions": [
 				{ "time": 0, "run": () => {
@@ -904,8 +905,8 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 		assert.ok( Math.abs( voices[ 0 ].startTime - 0.5 ) < 1e-9 );
 	} );
 
-	test( "frequency is not rounded", async t => {
-		const result = await suite.inHarness( t, { "config": { "duration": 2 } }, () => {
+	test( "frequency is not rounded", async () => {
+		const result = await suite.inHarness( { "config": { "duration": 2 } }, () => {
 			$.setSoundLimiter( false );
 			$.sound( { "frequency": 60.5, "duration": 1.8, "oType": "sine" } );
 			return __audioHarness.render( { "singlePass": true } );
@@ -919,8 +920,8 @@ g_suite.describeAudioEngines( "sound voices", suite => {
 	} );
 
 	test( "a locked context drops one-shots, defers songs, and re-arms on interruption",
-		async t => {
-			const result = await suite.inHarness( t, { "config": { "locked": true } }, () => {
+		async () => {
+			const result = await suite.inHarness( { "config": { "locked": true } }, () => {
 				const oscillators = () => __audioHarness.nodeCounts().createOscillator || 0;
 				const gesture = type => document.dispatchEvent( new Event( type ) );
 				const log = {};

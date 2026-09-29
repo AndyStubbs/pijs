@@ -100,10 +100,11 @@ function renderActions( arg ) {
 const SETUP = "$.setSoundLimiter( false ); $.setVolume( 1 );";
 
 g_suite.describeAudioEngines( "sound advanced", suite => {
+	const clockTest = suite.clockTest;
 
-	test( "the lowpass filter and its envelope shape the harmonics", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 2 }, "needsSuspend": true
+	clockTest( "the lowpass filter and its envelope shape the harmonics", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 2 }
 		}, renderActions, { "actions": [
 			{ "time": 0, "code": SETUP + `
 				$.synth( { "frequency": 220, "duration": 0.4, "volume": 0.5,
@@ -134,9 +135,9 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		assert.ok( closed < open * 0.1, `envelope ${closed} vs ${open}` );
 	} );
 
-	test( "vibrato, arpeggio, and tremolo modulate pitch and level", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 2.4 }, "needsSuspend": true
+	clockTest( "vibrato, arpeggio, and tremolo modulate pitch and level", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 2.4 }
 		}, renderActions, { "actions": [
 			{ "time": 0, "code": SETUP + `
 				$.synth( { "frequency": 440, "duration": 0.6, "volume": 0.5, "oType": "sine",
@@ -180,8 +181,8 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 	} );
 
 	// Single-pass render, so engines without offline suspend() also cover synth voices
-	test( "synth pulse, vibrato, and periodic voices render in one pass", async t => {
-		const result = await suite.inHarness( t, {
+	test( "synth pulse, vibrato, and periodic voices render in one pass", async () => {
+		const result = await suite.inHarness( {
 			"config": { "duration": 0.8 }
 		}, renderActions, { "actions": [
 			{ "time": 0, "code": SETUP + `
@@ -207,9 +208,9 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		assert.ok( Math.max( ...vibrato ) < high + 3 );
 	} );
 
-	test( "pulse duty sets the harmonic content", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1.2 }, "needsSuspend": true
+	clockTest( "pulse duty sets the harmonic content", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1.2 }
 		}, renderActions, { "actions": [
 			{ "time": 0, "code": SETUP + `
 				$.synth( { "frequency": 200, "duration": 0.4, "volume": 0.5, "oType": "pulse",
@@ -234,10 +235,10 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		assert.ok( peak > 0.4 && peak <= 0.55, `pulse peak ${peak}` );
 	} );
 
-	test( "periodic noise repeats every 93 clock steps and follows its clock sweep",
-		async t => {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 1.2 }, "needsSuspend": true
+	clockTest( "periodic noise repeats every 93 clock steps and follows its clock sweep",
+		async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 1.2 }
 			}, renderActions, { "actions": [
 				{ "time": 0, "code": SETUP + `
 					values.id = $.sound( { "frequency": 9300, "duration": 0.4, "volume": 0.5,
@@ -274,9 +275,9 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		}
 	);
 
-	test( "setBusVolume and setBusEffect work in either order; effects validate", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 3.2 }, "needsSuspend": true
+	clockTest( "setBusVolume and setBusEffect work in any order; effects validate", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 3.2 }
 		}, renderActions, { "actions": [
 			{ "time": 0, "code": SETUP + `
 				const codeOf = fn => {
@@ -348,10 +349,10 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		assertNear( g_metrics.peak( left, frame( 2.7 ), frame( 2.78 ) ), 0.2, 0.01, "master" );
 	} );
 
-	test( "getSoundLevels reports levels, spectrum, and waveform after the bus volume",
-		async t => {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 0.8 }, "needsSuspend": true
+	clockTest( "getSoundLevels reports levels, spectrum, and waveform after the bus volume",
+		async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 0.8 }
 			}, renderActions, { "actions": [
 				{ "time": 0, "code": SETUP + `
 					values.silent = $.getSoundLevels();
@@ -405,9 +406,9 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		}
 	);
 
-	test( "getSoundLevels measures the output after the limiter", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 0.6 }, "needsSuspend": true
+	clockTest( "getSoundLevels measures the output after the limiter", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 0.6 }
 		}, renderActions, { "actions": [
 			{ "time": 0, "code": `
 				$.setVolume( 1 );
@@ -433,8 +434,8 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		);
 	} );
 
-	test( "built-in presets play within the limiter ceiling; custom presets validate",
-		async t => {
+	clockTest( "built-in presets play within the limiter ceiling; custom presets validate",
+		async () => {
 			const actions = PRESETS.map( ( name, index ) => ( {
 				"time": index * 0.8,
 				"code": `values.ids = values.ids || []; values.ids.push( $.sfx( "${name}", 0.5 ) );`
@@ -460,8 +461,8 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 				params.frequency = 20;
 				values.ids.push( $.sfx( { "name": "mine" } ) );
 				values.mineAt = new AudioContext().currentTime;` } );
-			const result = await suite.inHarness( t, {
-				"config": { "duration": PRESETS.length * 0.8 + 0.4 }, "needsSuspend": true
+			const result = await suite.inHarness( {
+				"config": { "duration": PRESETS.length * 0.8 + 0.4 }
 			}, renderActions, { "actions": actions } );
 			if( !result ) {
 				return;
@@ -492,11 +493,11 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		}
 	);
 
-	test( "PLAY instruments resolve at play() time and build inserts only for admitted notes",
-		async t => {
+	clockTest( "PLAY instruments resolve at play() time and build inserts only for admitted notes",
+		async () => {
 			const song = "@2 T120 L8 " + "C".repeat( 40 );
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 4 }, "needsSuspend": true
+			const result = await suite.inHarness( {
+				"config": { "duration": 4 }
 			}, renderActions, { "actions": [
 				{ "time": 0, "code": SETUP + `
 					$.defineInstrument( 10, { "oType": "sine", "sustainLevel": 1,
@@ -556,8 +557,8 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 	);
 
 	// Single-pass render, so engines without offline suspend() also cover sample instruments
-	test( "sample instruments render in one pass at their playback rates", async t => {
-		const result = await suite.inHarness( t, { "config": { "duration": 0.6 } }, async arg => {
+	test( "sample instruments render in one pass at their playback rates", async () => {
+		const result = await suite.inHarness( { "config": { "duration": 0.6 } }, async arg => {
 			eval( arg.loader );
 			$.setSoundLimiter( false );
 			$.setVolume( 1 );
@@ -583,10 +584,11 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		assert.ok( toneAmplitude( left, C4 / 2, from, to ) < 0.01 );
 	} );
 
-	test( "sample instruments play a loaded file across octaves, with sweeps, vibrato, and loops",
-		async t => {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 9.4 }, "needsSuspend": true
+	clockTest(
+		"sample instruments play a loaded file across octaves, with sweeps, vibrato, and loops",
+		async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 9.4 }
 			}, async arg => {
 				eval( arg.loader );
 				$.setSoundLimiter( false );

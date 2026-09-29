@@ -106,20 +106,24 @@ The audio browser tests (`audio-*-browser.test.js`) run in Chromium, Firefox, an
 Firefox takes over a second to launch, so the browser regressions stage of `npm test` and
 `npm run test:browser` starts one Firefox server and passes its endpoint to the test files in
 `PI_AUDIO_FIREFOX_ENDPOINT`; each audio suite connects to it instead of launching Firefox, and
-the realtime suites, which need autoplay preferences, still launch their own. A focused
-`node --test` run of one file has no server and launches Firefox itself.
-`audio-engines-browser.test.js` checks that suites connect to the shared server, that a suite's
-`close()` leaves it for the next one, and that it closes with the stage.
+the realtime suites, which need autoplay preferences, still launch their own. The stage also
+probes each engine's Web Audio support once and passes it in `PI_AUDIO_SUPPORT`. A focused
+`node --test` run of one file has neither: it launches Firefox itself and probes the engines
+before defining its tests. `audio-engines-browser.test.js` checks that suites connect to the
+shared server, that a suite's `close()` leaves it for the next one, that the server closes with
+the stage, that suites read the stage's probe, and that a suite reports each skip once.
 
 The offline render harness (`test/unit/audio-render-harness.js`) replaces the page's
 `AudioContext`, timers, clocks, `Math.random`, and visibility before any bundle loads, then renders
-into an `OfflineAudioContext`. Engine support determines which tests run; the rest skip with the
-reason in the test output:
+into an `OfflineAudioContext`. Suites read each engine's support before defining their tests:
+an engine without Web Audio is skipped as a whole, and tests that need clock-driven renders,
+defined with `clockTest()` instead of `test()`, run last in a "clock-driven renders" group that
+an engine without offline `suspend()` skips. The test output names each reason once per suite:
 
 | Engine | Web Audio | Offline `suspend()` | Harness coverage |
 | --- | --- | --- | --- |
 | Chromium 141 | Yes | Yes | All renders, including clock-driven tests |
-| Firefox 142 | Yes | No | Single-pass renders; clock-driven tests skip |
+| Firefox 142 | Yes | No | Single-pass renders; the clock-driven group skips |
 | WebKit 26 (Playwright, Linux and macOS) | Yes | Yes | All renders, including clock-driven tests |
 | WebKit 26 (Playwright, Windows) | No | No | Stream-mode (media element) lifecycle tests only |
 
@@ -158,7 +162,8 @@ Sample tests load generated 16-bit chirp WAV files through `blob:` URLs
 frame from the rate schedule, so a position error of one frame fails the check.
 
 `audio-lifecycle-browser.test.js` checks readiness and removal with controlled `fetch` results
-and media events in the full and lite bundles, without the render harness.
+and media events in the full and lite bundles, without the render harness. Its decoded-audio
+group needs Web Audio; the stream-mode tests run in every engine.
 
 `describeAudioEngines()` accepts `{ "plugins": [ ... ] }` to load plugin source bundles after
 the full bundle in every page. `sound-advanced-bundles-browser.test.js` checks the plugin's IIFE
