@@ -42,6 +42,35 @@ export function pointerPosition( screenData, event ) {
 }
 
 /**
+ * Throw a validation error with an error code.
+ * @param {Function} ErrorType - `TypeError` or `RangeError`
+ * @param {string} message - Error message, starting with the command name
+ * @param {string} code - Error code
+ * @returns {never}
+ */
+export function throwCode( ErrorType, message, code ) {
+	const error = new ErrorType( message );
+	error.code = code;
+	throw error;
+}
+
+/**
+ * Read the `isEnabled` of a setting: a boolean, or false when omitted.
+ * @param {string} command - Command name for the error message
+ * @param {*} isEnabled - Requested value
+ * @returns {boolean} The setting
+ */
+export function readIsEnabled( command, isEnabled ) {
+	if( isEnabled == null ) {
+		return false;
+	}
+	if( typeof isEnabled !== "boolean" ) {
+		throwCode( TypeError, `${command}: isEnabled must be a boolean.`, "INVALID_IS_ENABLED" );
+	}
+	return isEnabled;
+}
+
+/**
  * Pointer data in the one shape that mouse, touch, press, and click data share. Press data adds
  * `touches`. Data is created once per event and frozen, so reads and handlers share it.
  * @param {Object} record - `x`, `y`, `lastX`, `lastY`, `buttons`, `action`, `type`, `id`, and

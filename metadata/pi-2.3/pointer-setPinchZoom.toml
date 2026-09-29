@@ -6,8 +6,9 @@ summary = "Enables or disables browser pinch zoom on the screen canvas."
 description = """
 Sets the touch-action style of the screen canvas, at any time: 'pinch-zoom' when enabled, so a
 pinch that starts on the canvas zooms the page, and 'none' when disabled, so every touch on the
-canvas stays with the screen. The rest of the page, including the body, is not changed. Any
-truthy value enables pinch zoom.
+canvas stays with the screen. The rest of the page, including the body, is not changed.
+isEnabled is a boolean, or omitted to disable pinch zoom; any other value throws a TypeError with
+code INVALID_IS_ENABLED.
 
 Without this setting, the canvas has touch-action set to none while touch tracking runs, and
 stopping tracking restores the canvas's previous value. After this setting, tracking keeps its

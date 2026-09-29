@@ -13,6 +13,9 @@ every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents
 every touch handler.
 
 A handler removed during an event does not run later in it.
+
+The mode and callback are checked as onTouch() checks them, with codes INVALID_MODE and
+INVALID_FUNCTION.
 """
 example = """
 $.screen( "300x200" );

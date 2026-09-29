@@ -6,7 +6,8 @@ summary = "Removes a click event handler."
 description = """
 Removes the click handler registered with the function; the once, hitBox, and customData it was
 registered with do not matter. Click has one mode, so if fn is omitted or null, removes every click
-handler of the screen. A handler removed during an event does not run later in it.
+handler of the screen. A handler removed during an event does not run later in it. The callback
+is checked as onClick() checks it, with code INVALID_FUNCTION.
 """
 example = """
 $.screen( "300x200" );
