@@ -5,11 +5,15 @@ plugin = "gamepad"
 summary = "Starts the gamepad input loop and begins monitoring for gamepad connections."
 description = """
 Starts polling gamepads once per animation frame. Polling also starts on first use: the first
-inGamepad() call or handler registration. Calling it again while polling does nothing.
+inGamepad() call or onGamepad() registration. After stopGamepad(), only startGamepad() starts it
+again. Calling it while polling does nothing.
 
 The first start adds the connection and page-visibility listeners and scans for pads that are
 already connected, passing each to the 'connect' callbacks of onGamepad(). The plugin adds no
-listener before then.
+listener before then. A start after stopGamepad() catches up with the connections made while
+stopped: pads that left are removed through the 'disconnect' callbacks, and each 'connect'
+callback receives the connected pads it has not received. Its first update records the current
+state, so a button pressed while stopped reads as pressed, not as just pressed.
 
 Polling continues while the window loses focus but the page stays visible. When the page is
 hidden, every button is released and the axes read 0, without reporting a release; when it is

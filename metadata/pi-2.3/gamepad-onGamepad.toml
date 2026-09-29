@@ -23,9 +23,10 @@ dispatch first run for the next one; a callback removed during a dispatch does n
 it. A callback that throws is reported with console.error(), and the other callbacks still run.
 clearEvents( "gamepad" ) removes every callback.
 
-Registering starts polling, even after stopGamepad(). The mode is 'connect' or 'disconnect':
-another string throws a RangeError and a non-string a TypeError, with code INVALID_MODE; a fn
-that is not a function throws a TypeError with code INVALID_FUNCTION.
+Registering starts polling, unless stopGamepad() was called; a 'connect' callback registered while
+stopped receives the connected pads when startGamepad() resumes polling. The mode is 'connect' or
+'disconnect': another string throws a RangeError and a non-string a TypeError, with code
+INVALID_MODE; a fn that is not a function throws a TypeError with code INVALID_FUNCTION.
 """
 example = """
 $.screen( "300x200" );

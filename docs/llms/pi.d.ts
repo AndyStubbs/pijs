@@ -2358,7 +2358,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * Reads the connected gamepads. With a gamepadIndex, returns the GamepadData for that index, or undefined when no pad has it. Without one, or with null, returns every connected pad in index order, in one live array that is refilled on each call.
 		 *
-		 * The first read starts polling, unless stopGamepad() was called; after stopGamepad(), every read returns null until startGamepad() or a handler registration starts polling again. The first read records the current state without reporting buttons already held as just pressed.
+		 * The first read starts polling, unless stopGamepad() was called; after stopGamepad(), every read returns null until startGamepad() starts polling again. The first read records the current state without reporting buttons already held as just pressed.
 		 *
 		 * Pads are live objects updated in place. The first read in each animation frame reports what happened since the last frame that had a read, and every other read in the frame sees the same values; see GamepadData.
 		 *
@@ -2494,7 +2494,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * A callback runs until it is removed. A callback is identified by its mode and function: registering the same function for the same mode again does nothing, whatever its once, and offGamepad removes it by those two. once removes the registration before the callback runs, so a 'connect' callback with once receives one pad, the replay included. Callbacks added during a dispatch first run for the next one; a callback removed during a dispatch does not run later in it. A callback that throws is reported with console.error(), and the other callbacks still run. clearEvents( "gamepad" ) removes every callback.
 		 *
-		 * Registering starts polling, even after stopGamepad(). The mode is 'connect' or 'disconnect': another string throws a RangeError and a non-string a TypeError, with code INVALID_MODE; a fn that is not a function throws a TypeError with code INVALID_FUNCTION.
+		 * Registering starts polling, unless stopGamepad() was called; a 'connect' callback registered while stopped receives the connected pads when startGamepad() resumes polling. The mode is 'connect' or 'disconnect': another string throws a RangeError and a non-string a TypeError, with code INVALID_MODE; a fn that is not a function throws a TypeError with code INVALID_FUNCTION.
 		 * @param mode Event mode: 'connect' or 'disconnect'.
 		 * @param fn Callback that receives GamepadData or GamepadDisconnectData, by mode.
 		 * @param once If true, this registration is removed before the callback's first run.
@@ -2934,9 +2934,9 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Starts the gamepad input loop and begins monitoring for gamepad connections.
 		 *
-		 * Starts polling gamepads once per animation frame. Polling also starts on first use: the first inGamepad() call or handler registration. Calling it again while polling does nothing.
+		 * Starts polling gamepads once per animation frame. Polling also starts on first use: the first inGamepad() call or onGamepad() registration. After stopGamepad(), only startGamepad() starts it again. Calling it while polling does nothing.
 		 *
-		 * The first start adds the connection and page-visibility listeners and scans for pads that are already connected, passing each to the 'connect' callbacks of onGamepad(). The plugin adds no listener before then.
+		 * The first start adds the connection and page-visibility listeners and scans for pads that are already connected, passing each to the 'connect' callbacks of onGamepad(). The plugin adds no listener before then. A start after stopGamepad() catches up with the connections made while stopped: pads that left are removed through the 'disconnect' callbacks, and each 'connect' callback receives the connected pads it has not received. Its first update records the current state, so a button pressed while stopped reads as pressed, not as just pressed.
 		 *
 		 * Polling continues while the window loses focus but the page stays visible. When the page is hidden, every button is released and the axes read 0, without reporting a release; when it is visible again, a button still held reads as pressed, not as just pressed.
 		 * @returns This function does not return a value.
@@ -2964,9 +2964,9 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops the gamepad input loop.
 		 *
-		 * Stops polling. While stopped, inGamepad() returns null and does not restart polling, and pads keep the state of the last update. startGamepad() resumes polling, and so does registering an onGamepad() callback.
+		 * Stops polling until startGamepad(). While stopped, inGamepad() returns null, and neither reads nor onGamepad() registrations restart polling. Every button is released and the axes read 0, without reporting a release, as when the page is hidden: a pad kept from an earlier read reports no button held.
 		 *
-		 * Connection events are still tracked while stopped: the connection callbacks run, and pads join and leave the list.
+		 * Connection callbacks are not called while stopped, and pads do not join or leave the list. startGamepad() catches up: pads that disconnected while stopped are removed through the 'disconnect' callbacks, and the 'connect' callbacks receive the pads that connected.
 		 * @returns This function does not return a value.
 		 */
 		stopGamepad(): void;

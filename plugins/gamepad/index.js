@@ -82,7 +82,9 @@ export default function gamepadPlugin( pluginApi ) {
 
 
 /**
- * Start gamepad polling and initialize connection listeners when needed.
+ * Start gamepad polling, adding the connection listeners on the first start. Calling it while
+ * polling does nothing. A start after stopGamepad() catches up with the connections made and
+ * lost while stopped, and its first update reports no edges.
  *
  * @returns {void}
  */
@@ -90,12 +92,13 @@ function startGamepad() {
 
 	// Remove explicit stops
 	m_isStopped = false;
-
-	// Schedule the loop before the scan, so a failing connect handler cannot leave it off
-	if( !m_isLooping ) {
-		m_isLooping = true;
-		m_gamepadLoopId = requestAnimationFrame( gamepadLoop );
+	if( m_isLooping ) {
+		return;
 	}
+
+	// Schedule the loop before the connection handlers run, so a failing one cannot leave it off
+	m_isLooping = true;
+	m_gamepadLoopId = requestAnimationFrame( gamepadLoop );
 
 	if( !m_isInitialized ) {
 		window.addEventListener( "gamepadconnected", gamepadConnected );
@@ -105,20 +108,34 @@ function startGamepad() {
 		// gamepad input to a visible page without focus
 		document.addEventListener( "visibilitychange", onVisibilityChange );
 		m_isInitialized = true;
+	} else {
 
-		// Scan for already-connected gamepads
-		scanForGamepads();
+		// Buttons held through the stop read as pressed, not as just pressed
+		m_isReturning = true;
+	}
+	syncConnections();
+}
+
+/**
+ * Start polling on first use: a read or a handler registration. After stopGamepad(), only
+ * startGamepad() starts it again.
+ *
+ * @returns {void}
+ */
+function startGamepadInternal() {
+	if( !m_isStopped ) {
+		startGamepad();
 	}
 }
 
 /**
- * Stop gamepad polling and prevent reads from restarting it automatically.
+ * Stop gamepad polling until startGamepad(). Every button is released and the axes read 0,
+ * without reporting a release, as when the page is hidden; connection handlers are not called
+ * while stopped.
  *
  * @returns {void}
  */
 function stopGamepad() {
-
-	// Explicitly stop gamepad to prevent autostart when inGamepad is called
 	m_isStopped = true;
 	if( m_isLooping ) {
 		m_isLooping = false;
@@ -127,6 +144,7 @@ function stopGamepad() {
 			m_gamepadLoopId = null;
 		}
 	}
+	releasePads();
 }
 
 /**
@@ -222,7 +240,12 @@ function onGamepad( options ) {
 		}
 		m_handlers[ mode ].push( handler );
 	}
-	startGamepad();
+
+	// While stopped, a connect handler receives the connected pads when polling starts again
+	startGamepadInternal();
+	if( m_isStopped ) {
+		return;
+	}
 	if( mode === "connect" ) {
 		if( m_dispatchDepth > 0 ) {
 			m_pendingReplays.push( handler );
@@ -336,6 +359,11 @@ function removeHandler( mode, handler ) {
 
 function gamepadConnected( e ) {
 
+	// While stopped, the next start catches up with the connection
+	if( m_isStopped ) {
+		return;
+	}
+
 	// Record a new pad without consuming edges; the loop reports the press that exposed it
 	recordGamepad( e.gamepad );
 
@@ -345,18 +373,30 @@ function gamepadConnected( e ) {
 }
 
 function gamepadDisconnected( e ) {
+
+	// While stopped, the next start catches up with the disconnection
+	if( m_isStopped ) {
+		return;
+	}
+	removeGamepad( e.gamepad );
+}
+
+/**
+ * Remove a pad from the list and call the disconnect handlers. The pad leaves the list before
+ * the handlers run, so a failing handler cannot keep it.
+ *
+ * @param {Object} gamepad - The browser's pad, or the tracked pad data.
+ * @returns {void}
+ */
+function removeGamepad( gamepad ) {
 	const data = {
-		"index": e.gamepad.index,
-		"id": e.gamepad.id,
-		"mapping": e.gamepad.mapping,
-		"connected": e.gamepad.connected
+		"index": gamepad.index,
+		"id": gamepad.id,
+		"mapping": gamepad.mapping,
+		"connected": false
 	};
-
-	// The pad leaves the list before the handlers run, so a failing handler cannot keep it
-	delete m_gamepads[ e.gamepad.index ];
-	delete m_padStates[ e.gamepad.index ];
-
-	// Trigger disconnect handlers
+	delete m_gamepads[ gamepad.index ];
+	delete m_padStates[ gamepad.index ];
 	dispatch( m_handlers.disconnect, "disconnect", data );
 }
 
@@ -441,18 +481,27 @@ function getBrowserGamepads() {
 	return [];
 }
 
-function scanForGamepads() {
-	const gamepads = getBrowserGamepads();
-
-	// Add any gamepads that are already connected but not in our list, then tell the handlers
-	const found = [];
-	for( let i = 0; i < gamepads.length; i++ ) {
-		if( gamepads[ i ] && !( gamepads[ i ].index in m_gamepads ) ) {
-			recordGamepad( gamepads[ i ] );
-			found.push( m_gamepads[ gamepads[ i ].index ] );
+/**
+ * Bring the pad list in line with the browser when polling starts: pads that are gone are
+ * removed through the disconnect handlers, new pads are recorded, and every connect handler
+ * receives each connected pad it has not received yet, in index order.
+ *
+ * @returns {void}
+ */
+function syncConnections() {
+	const present = {};
+	for( const gamepad of getBrowserGamepads() ) {
+		if( gamepad && gamepad.connected ) {
+			present[ gamepad.index ] = true;
+			recordGamepad( gamepad );
 		}
 	}
-	for( const gamepadData of found ) {
+	for( const gamepadData of Object.values( m_gamepads ) ) {
+		if( !present[ gamepadData.index ] ) {
+			removeGamepad( gamepadData );
+		}
+	}
+	for( const gamepadData of Object.values( m_gamepads ) ) {
 		dispatch( m_handlers.connect, "connect", gamepadData );
 	}
 }
@@ -685,23 +734,31 @@ function smoothAxis( axis ) {
 function onVisibilityChange() {
 	if( document.visibilityState === "hidden" ) {
 		m_isHidden = true;
-		for( const index in m_padStates ) {
-			const state = m_padStates[ index ];
-			for( const button of state.buttons ) {
-				button.pressed = false;
-				button.value = 0;
-			}
-			state.axes.fill( 0 );
-			state.pressStarted.length = 0;
-			state.pressReleased.length = 0;
-		}
-
-		// The next read publishes the released state, even within a frame already read
-		m_lastReadTick = -1;
+		releasePads();
 	} else if( m_isHidden ) {
 		m_isHidden = false;
 		m_isReturning = true;
 	}
+}
+
+/**
+ * Release every button, zero the axes, and clear pending edges, for a hidden page or a stop.
+ * The next read publishes the released state, even within a frame already read.
+ *
+ * @returns {void}
+ */
+function releasePads() {
+	for( const index in m_padStates ) {
+		const state = m_padStates[ index ];
+		for( const button of state.buttons ) {
+			button.pressed = false;
+			button.value = 0;
+		}
+		state.axes.fill( 0 );
+		state.pressStarted.length = 0;
+		state.pressReleased.length = 0;
+	}
+	m_lastReadTick = -1;
 }
 
 /**

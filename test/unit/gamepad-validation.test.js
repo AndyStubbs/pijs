@@ -144,7 +144,7 @@ function createHarness( options = {} ) {
 			}
 			document.dispatchEvent( { "type": "visibilitychange" } );
 		},
-		"clearEvents": () => clearHandlers.gamepad( null ),
+		"clearEvents": ( screenData = null ) => clearHandlers.gamepad( screenData ),
 		"frames": frames,
 		"window": window,
 		"document": document,
@@ -716,37 +716,93 @@ test( "PAD-016 gamepad adds its listeners and loop only when polling starts", ()
 	assert.deepEqual( [ types( h.window ), types( h.document ), h.frames.size ], started );
 } );
 
-test( "PAD-016 lifecycle: stop, reads, and registration after a stop (P8)", () => {
+test( "PAD-016 stopGamepad() holds until startGamepad() and releases the pads (I5, I6, P8)",
+	() => {
+		const h = createHarness();
+		h.setPad( 0, { "buttons": [ true, false, false, false ], "axes": [ 0.9, 0, 0, 0 ] } );
+		h.$.startGamepad();
+		h.frame();
+		const pad = h.$.inGamepad( 0 );
+		assert.equal( pad.getButtonPressed( 0 ), true );
+		h.$.stopGamepad();
+
+		// While stopped, reads return null and do not restart polling, and a kept pad reads
+		// released, without a release edge, as on a hidden page
+		assert.equal( h.$.inGamepad( 0 ), null );
+		assert.equal( h.$.inGamepad(), null );
+		assert.equal( h.frames.size, 0 );
+		assert.deepEqual(
+			[ pad.getButtonPressed( 0 ), pad.getButtonJustReleased( 0 ), pad.getAxis( 0 ) ],
+			[ false, false, 0 ]
+		);
+
+		// Registering handlers does not restart polling, and connection events call no handler
+		const connected = [];
+		const disconnected = [];
+		h.$.onGamepad( "connect", item => { connected.push( item.index ); } );
+		h.$.onGamepad( "disconnect", data => {
+			disconnected.push( [ data.index, data.connected ] );
+		} );
+		assert.equal( h.frames.size, 0 );
+		assert.equal( h.$.inGamepad(), null );
+		h.setPad( 1 );
+		h.connect( 1 );
+		h.disconnect( 0 );
+		assert.deepEqual( [ connected, disconnected ], [ [], [] ] );
+
+		// startGamepad() catches up with the pad that left and the pad that arrived
+		h.$.startGamepad();
+		assert.deepEqual( [ connected, disconnected ], [ [ 1 ], [ [ 0, false ] ] ] );
+		assert.equal( h.frames.size, 1 );
+		h.frame();
+		assert.deepEqual( Array.from( h.$.inGamepad(), item => item.index ), [ 1 ] );
+
+		// A start while polling does nothing
+		h.$.startGamepad();
+		assert.deepEqual( [ connected, disconnected ], [ [ 1 ], [ [ 0, false ] ] ] );
+	}
+);
+
+test( "PAD-016 the first update after startGamepad() reports no edges (I6)", () => {
 	const h = createHarness();
 	h.setPad( 0 );
-	h.$.startGamepad();
+	h.$.inGamepad();
 	h.frame();
 	h.$.stopGamepad();
 
-	// While stopped, reads return null and do not restart polling
-	assert.equal( h.$.inGamepad( 0 ), null );
-	assert.equal( h.$.inGamepad(), null );
-	assert.equal( h.frames.size, 0 );
+	// A button pressed while stopped reads as held, not as just pressed
+	h.setPad( 0, { "buttons": [ true, false, false, false ] } );
+	h.$.startGamepad();
+	h.frame();
+	const pad = h.$.inGamepad( 0 );
+	assert.deepEqual(
+		[ pad.getButtonPressed( 0 ), pad.getButtonJustPressed( 0 ) ], [ true, false ]
+	);
 
-	// Today, registering a handler restarts polling after a stop; Gamepad 2.3 changes this
-	const connected = [];
-	const disconnected = [];
-	h.$.onGamepad( "connect", pad => { connected.push( pad.index ); } );
-	h.$.onGamepad( "disconnect", data => { disconnected.push( [ data.index, data.connected ] ); } );
-	assert.equal( h.frames.size, 1 );
-	assert.equal( h.$.inGamepad( 0 ).index, 0 );
+	// Later updates report edges again
+	h.setPad( 0, { "buttons": [ false, false, false, false ] } );
+	h.frame();
+	assert.equal( h.$.inGamepad( 0 ).getButtonJustReleased( 0 ), true );
+} );
 
-	// Today, connection handlers run while stopped; Gamepad 2.3 changes this
-	h.$.stopGamepad();
+test( "PAD-012 clearEvents( \"gamepad\" ) from any screen clears every handler (I10, P9)", () => {
+	const h = createHarness();
+	const log = [];
+	h.$.onGamepad( "connect", item => log.push( "connect " + item.index ) );
+	h.$.onGamepad( "disconnect", data => log.push( "disconnect " + data.index ) );
+
+	// A screen's clearEvents() passes that screen; the gamepad handlers are global
+	h.clearEvents( { "id": 2 } );
+	h.setPad( 0 );
+	h.connect( 0 );
+	h.disconnect( 0 );
+	assert.deepEqual( log, [] );
+
+	// Handlers registered afterward run
+	h.$.onGamepad( "connect", item => log.push( "after " + item.index ) );
 	h.setPad( 1 );
 	h.connect( 1 );
-	h.disconnect( 0 );
-	assert.deepEqual( [ connected, disconnected ], [ [ 0, 1 ], [ [ 0, false ] ] ] );
-
-	// startGamepad() resumes polling, and the pad list reflects the events
-	h.$.startGamepad();
-	h.frame();
-	assert.deepEqual( Array.from( h.$.inGamepad(), pad => pad.index ), [ 1 ] );
+	assert.deepEqual( log, [ "after 1" ] );
 } );
 
 test( "PAD-016 gamepad reads only navigator.getGamepads()", () => {
