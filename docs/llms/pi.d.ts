@@ -427,6 +427,11 @@ declare namespace Pi {
 		containerBgColor?: any;
 
 		/**
+		 * Enables or disables the right-click context menu.
+		 */
+		contextMenu?: boolean;
+
+		/**
 		 * Sets the default anchor point for images when drawing on the current screen.
 		 */
 		defaultAnchor?: { "x": number; "y": number };
@@ -457,11 +462,6 @@ declare namespace Pi {
 		displayShaderUniforms?: ShaderUniforms;
 
 		/**
-		 * Enables or disables the right-click context menu.
-		 */
-		enableContextMenu?: boolean;
-
-		/**
 		 * Sets the font for the current screen.
 		 */
 		font?: number;
@@ -487,7 +487,7 @@ declare namespace Pi {
 		palColors?: { "indices": Array<number>; "colors": Array<any> };
 
 		/**
-		 * Enables or disables browser pinch zoom gestures.
+		 * Enables or disables browser pinch zoom on the screen canvas.
 		 */
 		pinchZoom?: boolean;
 
@@ -1893,6 +1893,20 @@ screen is removed before deferred processing completes, or with the original rea
 		setContainerBgColor( color: any ): void;
 
 		/**
+		 * Enables or disables the right-click context menu.
+		 *
+		 * Controls whether the browser's context menu opens on the screen canvas. The menu is suppressed from screen creation, whether or not mouse tracking runs, so right-clicks reach the mouse handlers instead; enable it here to let it open. The setting does not start mouse tracking, and stopping mouse tracking does not change it. Any truthy value enables the menu.
+		 *
+		 * The option contextMenu of set() calls this command.
+		 *
+		 * Requires an onscreen screen.
+		 * @param isEnabled If true, the context menu opens. If false, it is suppressed.
+		 * @returns This function does not return a value.
+		 */
+		setContextMenu( params: { "isEnabled": boolean } ): void;
+		setContextMenu( isEnabled: boolean ): void;
+
+		/**
 		 * Sets the default anchor point for images when drawing on the current screen.
 		 *
 		 * Sets the default anchor point for all image and sprite drawing operations on this screen. The anchor point defines the relative starting position to draw the image, based a percentage of the image size using the x/y coordinates as a starting point.
@@ -1959,20 +1973,6 @@ screen is removed before deferred processing completes, or with the original rea
 		setDisplayShaderUniforms( uniforms: ShaderUniforms ): void;
 
 		/**
-		 * Enables or disables the right-click context menu.
-		 *
-		 * Controls whether the browser's context menu opens on the screen canvas. The menu is suppressed while mouse tracking runs, unless it is enabled here, so right-clicks reach the mouse handlers instead. Before mouse tracking starts, the menu opens normally.
-		 *
-		 * Calling this command starts mouse tracking unless stopMouse() was called. Any truthy value enables the menu.
-		 *
-		 * Requires an onscreen screen.
-		 * @param isEnabled If true, the context menu opens. If false, it is suppressed while mouse tracking runs.
-		 * @returns This function does not return a value.
-		 */
-		setEnableContextMenu( params: { "isEnabled": boolean } ): void;
-		setEnableContextMenu( isEnabled: boolean ): void;
-
-		/**
 		 * Sets the font for the current screen.
 		 *
 		 * Sets the active font for text rendering on the current screen. The font must already be loaded using loadFont. Several default fonts are preloaded: 0=6x6, 1=6x8 (default), 2=8x8, 3=8x14, 4=8x16.
@@ -2021,6 +2021,20 @@ screen is removed before deferred processing completes, or with the original rea
 		 */
 		setPalColors( params: { "indices": Array<number>; "colors": Array<any> } ): void;
 		setPalColors( indices: Array<number>, colors: Array<any> ): void;
+
+		/**
+		 * Enables or disables browser pinch zoom on the screen canvas.
+		 *
+		 * Sets the touch-action style of the screen canvas, at any time: 'pinch-zoom' when enabled, so a pinch that starts on the canvas zooms the page, and 'none' when disabled, so every touch on the canvas stays with the screen. The rest of the page, including the body, is not changed. Any truthy value enables pinch zoom.
+		 *
+		 * Without this setting, the canvas has touch-action set to none while touch tracking runs, and stopping tracking restores the canvas's previous value. After this setting, tracking keeps its value. The setting does not start touch tracking. The option pinchZoom of set() calls this command.
+		 *
+		 * Requires an onscreen screen.
+		 * @param isEnabled If true, a pinch on the canvas zooms the page. If false, it does not.
+		 * @returns This function does not return a value.
+		 */
+		setPinchZoom( params: { "isEnabled": boolean } ): void;
+		setPinchZoom( isEnabled: boolean ): void;
 
 		/**
 		 * Sets the print cursor position using column and row coordinates.
@@ -2744,18 +2758,6 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 */
 		setGamepadSensitivity( params: { "sensitivity": number } ): void;
 		setGamepadSensitivity( sensitivity: number ): void;
-
-		/**
-		 * Enables or disables browser pinch zoom gestures.
-		 *
-		 * Sets the touch-action style of the document body: an empty value when enabled, 'none' when disabled, replacing any touch-action the page set on the body. Disabling it stops pinch zoom and panning on the whole page, not only the canvas.
-		 *
-		 * This is a global setting. While touch is tracked on a screen, its canvas has touch-action set to none, so a pinch cannot start on the canvas even when pinch zoom is enabled. Any truthy value enables pinch zoom.
-		 * @param isEnabled If true, enables pinch zoom. If false, disables it.
-		 * @returns This function does not return a value.
-		 */
-		setPinchZoom( params: { "isEnabled": boolean } ): void;
-		setPinchZoom( isEnabled: boolean ): void;
 
 		/**
 		 * Sets the active screen for graphics commands.

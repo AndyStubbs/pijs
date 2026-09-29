@@ -55,6 +55,7 @@ export default function pointerPlugin( pluginApi ) {
 		if( screenData.touchStarted ) {
 			touchApi.stopTouch( screenData );
 		}
+		mouseApi.cleanupContextMenu( screenData );
 	} );
 }
 

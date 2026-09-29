@@ -182,7 +182,7 @@ document.getElementById( "reset" ).addEventListener( "click", () => {
 } );
 document.getElementById( "menu" ).addEventListener( "click", e => {
 	m_results.contextMenuEnabled = !m_results.contextMenuEnabled;
-	$.setEnableContextMenu( m_results.contextMenuEnabled );
+	$.setContextMenu( m_results.contextMenuEnabled );
 	if( m_results.contextMenuEnabled ) {
 		e.target.textContent = "Disable context menu";
 	} else {

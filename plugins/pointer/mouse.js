@@ -52,6 +52,7 @@ export function registerMouse( pluginApi, helpers ) {
 	// The latest mouse data, or null before the first event and while stopped
 	pluginApi.addScreenDataItem( "mouse", null );
 	pluginApi.addScreenDataItem( "isContextMenuEnabled", false );
+	pluginApi.addScreenInitFunction( initContextMenu );
 	pluginApi.addScreenDataItem( "onMouseEventListeners", {
 		"down": [],
 		"up": [],
@@ -61,7 +62,7 @@ export function registerMouse( pluginApi, helpers ) {
 	pluginApi.addCommand( "startMouse", startMouse, true, [] );
 	pluginApi.addCommand( "stopMouse", stopMouse, true, [] );
 	pluginApi.addCommand( "inMouse", inMouse, true, [] );
-	pluginApi.addCommand( "setEnableContextMenu", setEnableContextMenu, true, [ "isEnabled" ] );
+	pluginApi.addCommand( "setContextMenu", setContextMenu, true, [ "isEnabled" ] );
 	pluginApi.addCommand(
 		"onMouse", onMouse, true, [ "mode", "fn", "once", "hitBox", "customData" ]
 	);
@@ -103,7 +104,6 @@ export function registerMouse( pluginApi, helpers ) {
 		}
 		if( !screenData.mouseStarted ) {
 			g_listeners.track( screenData, "mouse" );
-			screenData.canvas.addEventListener( "contextmenu", onContextMenu );
 			screenData.mouseStarted = true;
 		}
 	}
@@ -129,7 +129,6 @@ export function registerMouse( pluginApi, helpers ) {
 
 		if( screenData.mouseStarted ) {
 			g_listeners.untrack( screenData, "mouse" );
-			screenData.canvas.removeEventListener( "contextmenu", onContextMenu );
 			screenData.mouseStarted = false;
 		}
 	}
@@ -148,16 +147,43 @@ export function registerMouse( pluginApi, helpers ) {
 	}
 
 	/**
-	 * Enable or suppress the browser context menu for the screen.
+	 * Suppress the browser context menu on a new onscreen canvas. The menu tracks no input, so
+	 * it is suppressed from screen creation, whether or not mouse tracking runs.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {void}
+	 */
+	function initContextMenu( screenData ) {
+		if( screenData.isOffscreen || !screenData.canvas ) {
+			return;
+		}
+		screenData.canvas.addEventListener( "contextmenu", onContextMenu );
+	}
+
+	/**
+	 * Remove the context-menu listener of a screen being removed.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {void}
+	 */
+	function cleanupContextMenu( screenData ) {
+		if( screenData.isOffscreen || !screenData.canvas ) {
+			return;
+		}
+		screenData.canvas.removeEventListener( "contextmenu", onContextMenu );
+	}
+
+	/**
+	 * Enable or suppress the browser context menu for the screen. The setting does not start
+	 * mouse tracking.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function setEnableContextMenu( screenData, options ) {
-		g_target.validatePointerTarget( screenData, "setEnableContextMenu" );
+	function setContextMenu( screenData, options ) {
+		g_target.validatePointerTarget( screenData, "setContextMenu" );
 		screenData.isContextMenuEnabled = !!( options.isEnabled );
-		startMouseInternal( screenData );
 	}
 
 	/**
@@ -455,7 +481,8 @@ export function registerMouse( pluginApi, helpers ) {
 
 	return {
 		"stopMouse": stopMouse,
-		"clearMouseEvents": clearMouseEvents
+		"clearMouseEvents": clearMouseEvents,
+		"cleanupContextMenu": cleanupContextMenu
 	};
 }
 

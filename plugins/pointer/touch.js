@@ -45,6 +45,7 @@ export function registerTouch( pluginApi, helpers ) {
 	let m_isVisibilityListening = false;
 
 	// The canvas `touch-action` before touch tracking set it, restored when tracking stops
+	// unless setPinchZoom() set it since
 	const m_touchActions = new WeakMap();
 
 	pluginApi.addScreenDataItem( "touchStopped", false );
@@ -55,6 +56,9 @@ export function registerTouch( pluginApi, helpers ) {
 	// since screen data items are copied without their freeze
 	pluginApi.addScreenDataItem( "touchList", null );
 	pluginApi.addScreenDataItem( "primaryTouchId", null );
+
+	// The setPinchZoom() setting, or null while the screen has none
+	pluginApi.addScreenDataItem( "isPinchZoomEnabled", null );
 	pluginApi.addScreenDataItem( "touchPress", null );
 	pluginApi.addScreenDataItem( "onTouchEventListeners", {} );
 
@@ -67,7 +71,7 @@ export function registerTouch( pluginApi, helpers ) {
 		"onTouch", onTouch, true, [ "mode", "fn", "once", "hitBox", "customData" ]
 	);
 	pluginApi.addCommand( "offTouch", offTouch, true, [ "mode", "fn" ] );
-	pluginApi.addCommand( "setPinchZoom", setPinchZoom, false, [ "isEnabled" ] );
+	pluginApi.addCommand( "setPinchZoom", setPinchZoom, true, [ "isEnabled" ] );
 
 	function initTouchData( screenData ) {
 		screenData.touchList = NO_TOUCHES;
@@ -113,9 +117,11 @@ export function registerTouch( pluginApi, helpers ) {
 		if( !screenData.touchStarted ) {
 
 			// The browser keeps touches on the canvas for the page instead of scrolling or
-			// zooming with them
-			m_touchActions.set( screenData, screenData.canvas.style.touchAction );
-			screenData.canvas.style.touchAction = "none";
+			// zooming with them, unless setPinchZoom() already set the canvas
+			if( screenData.isPinchZoomEnabled === null ) {
+				m_touchActions.set( screenData, screenData.canvas.style.touchAction );
+				screenData.canvas.style.touchAction = "none";
+			}
 			g_listeners.track( screenData, "touch" );
 			screenData.touchStarted = true;
 		}
@@ -140,8 +146,10 @@ export function registerTouch( pluginApi, helpers ) {
 
 		if( screenData.touchStarted ) {
 			g_listeners.untrack( screenData, "touch" );
-			screenData.canvas.style.touchAction = m_touchActions.get( screenData );
-			m_touchActions.delete( screenData );
+			if( m_touchActions.has( screenData ) ) {
+				screenData.canvas.style.touchAction = m_touchActions.get( screenData );
+				m_touchActions.delete( screenData );
+			}
 			screenData.touchStarted = false;
 		}
 	}
@@ -221,17 +229,24 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 
 	/**
-	 * Enable or suppress browser pinch zoom.
+	 * Enable or suppress browser pinch zoom on the screen's canvas, at any time, through its
+	 * `touch-action`: `"pinch-zoom"` lets a pinch that starts on the canvas zoom the page, and
+	 * `"none"` keeps every touch on the canvas for the screen. The setting replaces the value
+	 * touch tracking sets and restores, and does not start tracking.
 	 *
+	 * @param {Object} screenData - Screen state.
 	 * @param {Object} options - Command options.
 	 * @returns {void}
 	 */
-	function setPinchZoom( options ) {
+	function setPinchZoom( screenData, options ) {
+		g_target.validatePointerTarget( screenData, "setPinchZoom" );
 		const isEnabled = !!( options.isEnabled );
+		screenData.isPinchZoomEnabled = isEnabled;
+		m_touchActions.delete( screenData );
 		if( isEnabled ) {
-			document.body.style.touchAction = "";
+			screenData.canvas.style.touchAction = "pinch-zoom";
 		} else {
-			document.body.style.touchAction = "none";
+			screenData.canvas.style.touchAction = "none";
 		}
 	}
 
