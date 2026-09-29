@@ -350,7 +350,7 @@ test( "pointer dispatch snapshots exclude new listeners and once survives nested
 	const order = [];
 	const on = ( fn, once = false ) => helpers.onevent(
 		"move", fn, once, { "x": 0, "y": 0, "width": 8, "height": 8 },
-		[ "move" ], "onMouse", listeners, null, null, "custom"
+		[ "move" ], "onMouse", listeners, "custom"
 	);
 	const dispatch = () => helpers.triggerEventListeners( "move", { "x": 1, "y": 1 }, listeners );
 	on( ( data, custom ) => {
@@ -361,7 +361,7 @@ test( "pointer dispatch snapshots exclude new listeners and once survives nested
 	}, true );
 	dispatch();
 	assert.deepEqual( order, [ "once", "new" ] );
-	helpers.offevent( "move", null, [ "move" ], "offMouse", listeners );
+	helpers.offevent( "move", null, [ "move" ], "offMouse", listeners, "mouse" );
 	dispatch();
 	assert.equal( order.length, 2 );
 } );
@@ -439,14 +439,20 @@ test( "pointer handlers removed during a dispatch do not run later in it (P7)", 
 	assert.deepEqual( log, [ "first", "press", "first", "added" ] );
 } );
 
-test( "pointer once removes only its own registration (P7)", () => {
+test( "pointer once removes its registration; a second registration is ignored (P7, I4)", () => {
 	const h = harness();
 	const $ = h.$;
 	let calls = 0;
 	const fn = () => { calls += 1; };
 
-	// Registering a function twice registers it twice until Pointer 2.4 (I4)
+	// The second registration of the function for the mode does nothing, whatever its once
 	$.onMouse( "down", fn, true );
+	$.onMouse( "down", fn );
+	h.click( 10, 10 );
+	h.click( 10, 10 );
+	assert.equal( calls, 1 );
+
+	// Once the once registration is spent, the function can be registered again
 	$.onMouse( "down", fn );
 	h.click( 10, 10 );
 	h.click( 10, 10 );
@@ -469,6 +475,78 @@ test( "pointer once removes only its own registration (P7)", () => {
 	}, true );
 	h.touch( "touchmove", [ { "id": 1, "x": 11, "y": 11 } ] );
 	assert.equal( touches, 1 );
+} );
+
+test( "pointer handlers are identified by mode and function (I4)", () => {
+	const h = harness();
+	const $ = h.$;
+	const log = [];
+	const fn = data => log.push( data.action );
+	const box = { "x": 0, "y": 0, "width": 5, "height": 5 };
+
+	// A second registration with other flags, a hit box, or custom data does nothing
+	$.onMouse( "down", fn );
+	$.onMouse( "down", fn, true, box, "custom" );
+	$.onPress( { "mode": "down", "fn": fn, "hitBox": box } );
+	$.onPress( "down", fn );
+	$.onClick( fn );
+	$.onClick( fn, true, box );
+	h.click( 10, 10 );
+	assert.deepEqual( log, [ "down", "click" ] );
+
+	// The same function in another mode is its own handler
+	log.length = 0;
+	$.offPress( "down", fn );
+	$.onMouse( "up", fn );
+	h.click( 10, 10 );
+	assert.deepEqual( log, [ "down", "up", "click" ] );
+
+	// Without a mode, the function is removed from every mode
+	log.length = 0;
+	const other = () => log.push( "other" );
+	$.onMouse( "move", other );
+	$.offMouse( null, fn );
+	h.click( 10, 10 );
+	$.offClick( fn );
+	h.mouse( "mousemove", 11, 11 );
+	assert.deepEqual( log, [ "click", "other" ] );
+	log.length = 0;
+	$.onTouch( "down", fn );
+	$.onTouch( "up", fn );
+	$.onTouch( "move", other );
+	$.offTouch( { "fn": fn } );
+	$.onPress( "down", fn );
+	$.onPress( "up", fn );
+	$.offPress( null, fn );
+	h.tap( 10, 10 );
+	h.touch( "touchstart", [ { "id": 3, "x": 10, "y": 10 } ] );
+	h.touch( "touchmove", [ { "id": 3, "x": 11, "y": 11 } ] );
+	assert.deepEqual( log, [ "other" ] );
+
+	// Omitting both the mode and the function throws, naming the clear that removes every handler
+	const commands = [ [ "offMouse", "mouse" ], [ "offTouch", "touch" ], [ "offPress", "press" ] ];
+	for( const [ name, type ] of commands ) {
+		for( const args of [ [], [ null, null ], [ { "mode": null, "fn": null } ] ] ) {
+			assert.throws( () => $[ name ]( ...args ), error => {
+				assert.equal( error.name, "TypeError" );
+				assert.equal( error.code, "INVALID_MODE" );
+				assert.equal(
+					error.message,
+					`${name}: mode or fn is required. To remove every handler, call ` +
+					`clearEvents( "${type}" ).`
+				);
+				return true;
+			} );
+		}
+	}
+	assert.equal( log.length, 1 );
+
+	// Click has one mode, so offClick() without a function removes every click handler
+	$.onClick( () => log.push( "a" ) );
+	$.onClick( () => log.push( "b" ) );
+	$.offClick();
+	h.click( 10, 10 );
+	assert.deepEqual( log, [ "other" ] );
 } );
 
 test( "pointer handlers that throw are reported and do not stop the event (P6)", () => {

@@ -190,13 +190,14 @@ export function registerMouse( pluginApi, helpers ) {
 
 		m_onevent(
 			mode, fn, once, hitBox, [ "down", "up", "move" ], "onMouse",
-			screenData.onMouseEventListeners, null, null, customData
+			screenData.onMouseEventListeners, customData
 		);
 		startMouseInternal( screenData );
 	}
 
 	/**
-	 * Remove matching mouse listeners.
+	 * Remove matching mouse listeners: by mode and function, every handler of a mode, or a
+	 * function from every mode.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @param {Object} options - Command options.
@@ -208,7 +209,7 @@ export function registerMouse( pluginApi, helpers ) {
 
 		m_offevent(
 			mode, fn, [ "down", "up", "move" ], "offMouse",
-			screenData.onMouseEventListeners
+			screenData.onMouseEventListeners, "mouse"
 		);
 	}
 

@@ -164,13 +164,14 @@ export function registerTouch( pluginApi, helpers ) {
 		checkRenamedMode( mode, "onTouch" );
 		m_onevent(
 			mode, fn, once, hitBox, [ "down", "up", "move" ], "onTouch",
-			screenData.onTouchEventListeners, null, null, customData
+			screenData.onTouchEventListeners, customData
 		);
 		startTouchInternal( screenData );
 	}
 
 	/**
-	 * Remove matching touch listeners.
+	 * Remove matching touch listeners: by mode and function, every handler of a mode, or a
+	 * function from every mode.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @param {Object} options - Command options.
@@ -183,7 +184,7 @@ export function registerTouch( pluginApi, helpers ) {
 		checkRenamedMode( mode, "offTouch" );
 		m_offevent(
 			mode, fn, [ "down", "up", "move" ], "offTouch",
-			screenData.onTouchEventListeners
+			screenData.onTouchEventListeners, "touch"
 		);
 	}
 

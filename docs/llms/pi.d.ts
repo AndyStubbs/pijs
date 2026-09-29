@@ -1526,7 +1526,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a click event handler.
 		 *
-		 * Removes every registration of the function. If fn is omitted or null, removes every click handler of the screen. A handler removed during an event does not run later in it.
+		 * Removes the click handler registered with the function; the once, hitBox, and customData it was registered with do not matter. Click has one mode, so if fn is omitted or null, removes every click handler of the screen. A handler removed during an event does not run later in it.
 		 * @param fn Callback function to remove. If omitted or null, removes every click handler.
 		 * @returns This function does not return a value.
 		 */
@@ -1536,35 +1536,47 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a mouse event handler.
 		 *
-		 * Removes every registration of the function for the mode. If fn is omitted or null, removes every handler of the mode. Handlers of other modes are not affected. A handler removed during an event does not run later in it.
-		 * @param mode Event mode ('down', 'up', or 'move') of the handler.
+		 * Removes mouse event handlers registered with onMouse. A handler is identified by its mode and callback; the once, hitBox, and customData it was registered with do not matter.
+		 *
+		 * With a mode and a callback, removes that handler. Without a callback, removes every handler of the mode. With a callback and no mode (null, or no mode in the object form), removes the callback from every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "mouse" ) removes every mouse handler.
+		 *
+		 * A handler removed during an event does not run later in it.
+		 * @param mode Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode.
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
 		 */
-		offMouse( params: { "mode": string; "fn"?: ( mouseData: MouseData, customData?: object ) => void } ): void;
-		offMouse( mode: string, fn?: ( mouseData: MouseData, customData?: object ) => void ): void;
+		offMouse( params: { "mode"?: string | null; "fn"?: ( mouseData: MouseData, customData?: object ) => void } ): void;
+		offMouse( mode?: string | null, fn?: ( mouseData: MouseData, customData?: object ) => void ): void;
 
 		/**
 		 * Removes a press event handler.
 		 *
-		 * Removes every registration of the function for the mode. If fn is omitted or null, removes every handler of the mode. Handlers of other modes are not affected. A handler removed during an event does not run later in it.
-		 * @param mode Event mode ('down', 'up', or 'move') of the handler.
+		 * Removes press event handlers registered with onPress. A handler is identified by its mode and callback; the once, hitBox, and customData it was registered with do not matter.
+		 *
+		 * With a mode and a callback, removes that handler. Without a callback, removes every handler of the mode. With a callback and no mode (null, or no mode in the object form), removes the callback from every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "press" ) removes every press handler.
+		 *
+		 * A handler removed during an event does not run later in it.
+		 * @param mode Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode.
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
 		 */
-		offPress( params: { "mode": string; "fn"?: ( pressData: PressData, customData?: object ) => void } ): void;
-		offPress( mode: string, fn?: ( pressData: PressData, customData?: object ) => void ): void;
+		offPress( params: { "mode"?: string | null; "fn"?: ( pressData: PressData, customData?: object ) => void } ): void;
+		offPress( mode?: string | null, fn?: ( pressData: PressData, customData?: object ) => void ): void;
 
 		/**
 		 * Removes a touch event handler.
 		 *
-		 * Removes every registration of the function for the mode. If fn is omitted or null, removes every handler of the mode. Handlers of other modes are not affected. A handler removed during an event does not run later in it.
-		 * @param mode Event mode ('down', 'up', or 'move') of the handler.
+		 * Removes touch event handlers registered with onTouch. A handler is identified by its mode and callback; the once, hitBox, and customData it was registered with do not matter.
+		 *
+		 * With a mode and a callback, removes that handler. Without a callback, removes every handler of the mode. With a callback and no mode (null, or no mode in the object form), removes the callback from every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "touch" ) removes every touch handler.
+		 *
+		 * A handler removed during an event does not run later in it.
+		 * @param mode Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode.
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
 		 */
-		offTouch( params: { "mode": string; "fn"?: ( touches: Array<TouchData>, customData?: object ) => void } ): void;
-		offTouch( mode: string, fn?: ( touches: Array<TouchData>, customData?: object ) => void ): void;
+		offTouch( params: { "mode"?: string | null; "fn"?: ( touches: Array<TouchData>, customData?: object ) => void } ): void;
+		offTouch( mode?: string | null, fn?: ( touches: Array<TouchData>, customData?: object ) => void ): void;
 
 		/**
 		 * Registers a callback function for click events (mouse or touch).
@@ -1573,7 +1585,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * A press inside the box arms the click for that pointer, and its release inside the box fires it with the release data. A release outside the box, a release of another mouse button, or a cancel disarms it, so right and middle clicks, a drag that leaves the box, and a cancelled touch never click.
 		 *
-		 * If no hitBox is provided, the screen's size when the handler is registered is used. A handler runs until it is removed. Registering the same function again adds a second registration, and once removes only its own registration, before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 * If no hitBox is provided, the screen's size when the handler is registered is used. A handler runs until it is removed. A handler is identified by its callback: registering the same callback again does nothing, whatever its once, hitBox, and customData, and offClick removes it by the callback. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
 		 *
 		 * Requires an onscreen screen.
 		 * @param fn Callback function that receives (clickData, customData).
@@ -1592,7 +1604,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * A press that starts on the canvas border or padding is ignored. A press on the canvas keeps reporting moves while it leaves the canvas, and 'up' runs for its release anywhere. 'up' also runs with cancelled set to true when the browser cancels the pointer, the page is hidden, or stopMouse() is called with a button held; moves and releases report their true position, which can be outside the screen.
 		 *
-		 * A handler runs until it is removed. Registering the same function again adds a second registration, and once removes only its own registration, before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 * A handler runs until it is removed. A handler is identified by its mode and callback: registering the same callback for the same mode again does nothing, whatever its once, hitBox, and customData, and offMouse removes it by those two. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
 		 *
 		 * Requires an onscreen screen.
 		 * @param mode Event mode: 'down', 'up', or 'move'.
@@ -1612,7 +1624,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * 'up' runs for the mouse release anywhere and for the primary touch's release, with cancelled set to true for a release the player did not make: a cancelled touch, a hidden page, or a stop command. A press that starts on the canvas border or padding is ignored. Registering starts mouse and touch tracking unless stopped.
 		 *
-		 * A handler runs until it is removed. Registering the same function again adds a second registration, and once removes only its own registration, before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 * A handler runs until it is removed. A handler is identified by its mode and callback: registering the same callback for the same mode again does nothing, whatever its once, hitBox, and customData, and offPress removes it by those two. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
 		 *
 		 * Requires an onscreen screen.
 		 * @param mode Event mode: 'down', 'up', or 'move'.
@@ -1632,7 +1644,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * With a hitBox, the callback receives only the changed touches inside it, and runs only when there is one. 'up' also runs with cancelled set to true when the browser cancels a touch, the page is hidden, or stopTouch() is called. A touch that starts on the canvas border or padding is ignored. A touch that starts on the canvas keeps reporting moves and its end when it leaves the canvas. While touch is tracked, the canvas has touch-action set to none, so the browser does not scroll or zoom with touches that start there. Registering starts tracking unless stopTouch() was called.
 		 *
-		 * A handler runs until it is removed. Registering the same function again adds a second registration, and once removes only its own registration, before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 * A handler runs until it is removed. A handler is identified by its mode and callback: registering the same callback for the same mode again does nothing, whatever its once, hitBox, and customData, and offTouch removes it by those two. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
 		 *
 		 * Requires an onscreen screen.
 		 * @param mode Event mode: 'down', 'up', or 'move'. Any other mode throws INVALID_MODE.

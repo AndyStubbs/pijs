@@ -586,7 +586,7 @@ the [ROADMAP](ROADMAP.md#6-pointer) tasks that implement each item.
 | PTR-006 | A throwing handler breaks the rest of the event | Accepted | Fixed by B2 (Pointer 1.2) |
 | PTR-007 | Blur resets polling without telling handlers | Accepted | Confirmed in Chrome 153, where the button was still held at blur. Fixed by B5 (Pointer 1.5) |
 | PTR-008 | `onclick` fires for right and middle buttons | Accepted | Confirmed with trusted input and in Chrome 153. Fixed by B4 (Pointer 1.4) |
-| PTR-009 | `once` removes other registrations; removed handlers run | Accepted | Fixed by B1 (Pointer 1.1); removal rule I4 (Pointer 2.4) |
+| PTR-009 | `once` removes other registrations; removed handlers run | Accepted | Fixed by B1 (Pointer 1.1); removal rule I4 (Pointer 2.4, done) |
 | PTR-010 | Stop commands keep held state | Accepted | Fixed by B5 (Pointer 1.5) |
 | PTR-011 | Border and padding points map outside the screen | Accepted | Confirmed in Chrome 153 (x -4 to 203, y -5 to 153). Fixed by B8 (Pointer 1.6) |
 | PTR-012 | Settings and hit boxes not validated consistently | Accepted | Fixed by B8/B9 (Pointer 1.6, 2.8) |

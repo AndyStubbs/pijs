@@ -14,9 +14,22 @@ export function createEventHelpers( pluginApi ) {
 
 	const utils = pluginApi.utils;
 
-	function onevent(
-		mode, fn, once, hitBox, modes, name, listenerArr, extraId, extraData, customData
-	) {
+	/**
+	 * Register a handler. A handler is identified by its mode and function, so registering the
+	 * same function for the same mode again does nothing, whatever its `once`, hit box, and
+	 * custom data.
+	 *
+	 * @param {string} mode - Event mode.
+	 * @param {Function} fn - Handler.
+	 * @param {boolean} once - Remove the registration before its first run.
+	 * @param {Object|null} hitBox - Area the event must be inside.
+	 * @param {Array<string>} modes - Modes of the command.
+	 * @param {string} name - Command name for error messages.
+	 * @param {Object} listenerArr - Registrations by mode.
+	 * @param {*} customData - Data passed to the handler.
+	 * @returns {void}
+	 */
+	function onevent( mode, fn, once, hitBox, modes, name, listenerArr, customData ) {
 		let modeFound = false;
 
 		for( let i = 0; i < modes.length; i++ ) {
@@ -65,21 +78,20 @@ export function createEventHelpers( pluginApi ) {
 			}
 		}
 
-		let newMode = mode;
-
-		if( typeof extraId === "string" ) {
-			newMode = mode + extraId;
+		if( !listenerArr[ mode ] ) {
+			listenerArr[ mode ] = [];
 		}
 
-		if( !listenerArr[ newMode ] ) {
-			listenerArr[ newMode ] = [];
+		for( const listener of listenerArr[ mode ] ) {
+			if( listener.fn === fn ) {
+				return;
+			}
 		}
 
-		listenerArr[ newMode ].push( {
+		listenerArr[ mode ].push( {
 			"fn": fn,
 			"once": once,
 			"hitBox": hitBox,
-			"extraData": extraData,
 			"armedPointers": null,
 			"isRemoved": false,
 			"customData": customData,
@@ -87,43 +99,55 @@ export function createEventHelpers( pluginApi ) {
 		} );
 	}
 
-	function offevent( mode, fn, modes, name, listenerArr, extraId ) {
-		let modeFound = false;
-
-		for( let i = 0; i < modes.length; i++ ) {
-			if( mode === modes[ i ] ) {
-				modeFound = true;
-				break;
-			}
-		}
-
-		if( !modeFound ) {
-			const error = new Error(
-				`${name}: mode needs to be one of the following: ${modes.join( ", " )}.`
+	/**
+	 * Remove handlers by mode and function. Without a function, every handler of the mode is
+	 * removed; without a mode, the function is removed from every mode. Omitting both throws.
+	 *
+	 * @param {string|null} mode - Event mode, or null for every mode.
+	 * @param {Function|null} fn - Handler, or null for every handler of the mode.
+	 * @param {Array<string>} modes - Modes of the command.
+	 * @param {string} name - Command name for error messages.
+	 * @param {Object} listenerArr - Registrations by mode.
+	 * @param {string} clearType - `clearEvents()` type that removes every handler.
+	 * @returns {void}
+	 */
+	function offevent( mode, fn, modes, name, listenerArr, clearType ) {
+		if( mode == null && fn == null ) {
+			const error = new TypeError(
+				`${name}: mode or fn is required. To remove every handler, call ` +
+				`clearEvents( "${clearType}" ).`
 			);
 			error.code = "INVALID_MODE";
 			throw error;
 		}
 
-		if( typeof extraId === "string" ) {
-			mode += extraId;
+		let offModes = modes;
+		if( mode != null ) {
+			if( !modes.includes( mode ) ) {
+				const error = new Error(
+					`${name}: mode needs to be one of the following: ${modes.join( ", " )}.`
+				);
+				error.code = "INVALID_MODE";
+				throw error;
+			}
+			offModes = [ mode ];
 		}
 
-		const isClear = fn == null;
-
-		if( !isClear && typeof fn !== "function" ) {
+		if( fn != null && typeof fn !== "function" ) {
 			const error = new Error( `${name}: fn is not a valid function.` );
 			error.code = "INVALID_FUNCTION";
 			throw error;
 		}
 
-		const listeners = listenerArr[ mode ];
-		if( !listeners ) {
-			return;
-		}
-		for( let i = listeners.length - 1; i >= 0; i-- ) {
-			if( isClear || listeners[ i ].fn === fn ) {
-				removeListener( listenerArr, mode, listeners[ i ] );
+		for( const offMode of offModes ) {
+			const listeners = listenerArr[ offMode ];
+			if( !listeners ) {
+				continue;
+			}
+			for( let i = listeners.length - 1; i >= 0; i-- ) {
+				if( fn == null || listeners[ i ].fn === fn ) {
+					removeListener( listenerArr, offMode, listeners[ i ] );
+				}
 			}
 		}
 	}
