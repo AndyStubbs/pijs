@@ -6,11 +6,14 @@
  * names in the same order, and the functions on $ and on a screen must be exactly the declared
  * commands, which also checks each command's screen flag, including the forms installed outside
  * the registry (removeScreen, and a screen's clearEvents). Settings are the set-prefixed
- * commands, so they are covered.
+ * commands, so they are covered. Every plugin of each bundle also registers the version in its
+ * plugins/<name>/banner.json, which the bundle banners carry (ROADMAP R.6).
  * Run with node --test test/unit/metadata-runtime-browser.test.js.
  */
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
+import * as g_fs from "node:fs";
+import * as g_path from "node:path";
 import * as g_harness from "./browser-source-harness.js";
 import * as g_generateMetadata from "../../scripts/generate-metadata.js";
 const { test } = g_test;
@@ -80,5 +83,33 @@ for( const bundle of g_harness.BUNDLES ) {
 		} ).map( method => method.name ).sort();
 		assert.deepEqual( runtime.api, declared );
 		assert.deepEqual( runtime.screen, screenDeclared );
+	} );
+}
+
+/**
+ * The version in a plugin's banner.json.
+ *
+ * @param {string} name - Plugin name, which is its directory under plugins/
+ * @returns {string} Version
+ */
+function bannerVersion( name ) {
+	const file = g_path.join( import.meta.dirname, "..", "..", "plugins", name, "banner.json" );
+	return JSON.parse( g_fs.readFileSync( file, "utf8" ) ).version;
+}
+
+for( const bundle of g_harness.BUNDLES ) {
+	test( `R.6 ${bundle}: every plugin registers the version in its banner`, async () => {
+		const plugins = await probe( bundle, () => {
+			return $.getPlugins().map( plugin => [ plugin.name, plugin.version, plugin.state ] );
+		} );
+		const expected = [ "gamepad", "keyboard", "pointer", "polygons", "sound" ];
+		if( bundle === "lite" ) {
+			expected.push( "sound-advanced" );
+		}
+		assert.deepEqual( plugins.map( plugin => plugin[ 0 ] ).sort(), expected );
+		for( const [ name, version, state ] of plugins ) {
+			assert.equal( state, "initialized", name );
+			assert.equal( version, bannerVersion( name ), `${name} registers ${version}` );
+		}
 	} );
 }
