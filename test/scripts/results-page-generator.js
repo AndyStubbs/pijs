@@ -13,6 +13,19 @@ const path = g_path;
 // Determine test type and paths
 const SCREENSHOT_BASE = "/test/tests/screenshots";
 
+/**
+ * The note for a fixture whose pixel mismatch was captured once more, or an empty string.
+ *
+ * @param {Object} test - Test record from summary.json.
+ * @returns {string} HTML.
+ */
+function recaptureNote( test ) {
+	if( !test.recapture ) {
+		return "";
+	}
+	return `<div class="error-msg">Recapture: ${test.recapture}</div>`;
+}
+
 // Generate HTML results page
 function generateResultsPage( results, mode = "full" ) {
 	const TEST_NAME = mode;
@@ -44,7 +57,8 @@ function generateResultsPage( results, mode = "full" ) {
 		`Flaky: ${results.flaky || 0}; timed out: ${results.timedOut || 0}; ` +
 		`interrupted: ${results.interrupted || 0}; retries: ${results.retries || 0}; ` +
 		`pending baselines: ${results.pendingBaselines || 0}; ` +
-		`pixel mismatches (report only): ${results.pixelMismatches || 0}` );
+		`pixel mismatches (report only): ${results.pixelMismatches || 0}; ` +
+		`recaptures: ${results.recaptures || 0}` );
 	html = html.replace( "{{SKIPPED}}", results.skipped );
 	html = html.replace( "{{PASS_RATE}}", passRate );
 	html = html.replace( "var(--pass-rate-color)", passRateColor );
@@ -80,6 +94,7 @@ function generateResultsPage( results, mode = "full" ) {
 						</div>
 						<div class="test-details">${test.file}</div>
 						${test.error ? `<div class="error-msg">${test.error}</div>` : ""}
+						${recaptureNote( test )}
 					</div>
 					<div class="test-actions">
 						<button class="view-diff-btn" onclick="showDiffModal('${test.name}', '${baseName}', '${refPath}', '${newPath}')">View Comparison</button>
@@ -123,6 +138,7 @@ function generateResultsPage( results, mode = "full" ) {
 						</div>
 						<div class="test-details">${test.file}</div>
 						${test.pixelMismatch ? `<div class="error-msg">Pixel mismatch (report only): ${test.pixelMismatch}</div>` : ""}
+						${recaptureNote( test )}
 					</div>
 					<div class="test-actions">
 						<button class="view-diff-btn" onclick="showDiffModal('${test.name}', '${baseName}', '${refPath}', '${newPath}')">View Comparison</button>

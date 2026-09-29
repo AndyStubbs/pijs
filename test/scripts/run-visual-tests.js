@@ -38,6 +38,7 @@ import * as g_playwright from "@playwright/test";
 import * as g_fs from "node:fs";
 import * as g_path from "node:path";
 import * as g_pngjs from "pngjs";
+import * as g_visualRecapture from "./visual-recapture.js";
 import * as g_url from "node:url";
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
 const { test, expect } = g_playwright;
@@ -878,10 +879,32 @@ test.describe( config.description, () => {
 					return;
 				}
 
-				// Compare with reference. In report-only pixel mode, a pixel mismatch is recorded
-				// as an annotation with both images attached, and the test passes; size and file
-				// errors still fail.
-				const comparison = compareImages( referencePath, screenshotPath );
+				// Compare with reference. A pixel mismatch is captured once more, since a capture
+				// can come back with blank canvases that the next frame does not repeat; the
+				// recapture is annotated and the first capture attached. In report-only pixel mode,
+				// a pixel mismatch is recorded as an annotation with both images attached, and the
+				// test passes; size and file errors still fail.
+				const firstCapturePath = test.info().outputPath( `${testName}-first-capture.png` );
+				const compared = await g_visualRecapture.compareWithRecapture(
+					() => compareImages( referencePath, screenshotPath ),
+					async () => {
+						fs.copyFileSync( screenshotPath, firstCapturePath );
+						await page.evaluate( () => new Promise( resolve => {
+							requestAnimationFrame( () => requestAnimationFrame( resolve ) );
+						} ) );
+						await page.screenshot( { "path": screenshotPath, "fullPage": false } );
+					}
+				);
+				const comparison = compared.comparison;
+				if( compared.recapture ) {
+					test.info().annotations.push( {
+						"type": "recapture",
+						"description": compared.recapture
+					} );
+					await test.info().attach( "first capture", {
+						"path": firstCapturePath, "contentType": "image/png"
+					} );
+				}
 				const reportMismatch = REPORT_PIXELS && !comparison.match && !comparison.error;
 
 				if( comparison.match || reportMismatch ) {

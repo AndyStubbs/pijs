@@ -11,6 +11,7 @@ export function summarizeTest( test, mode ) {
 	const annotation = test.annotations.find( item => item.type === "screenshot-name" );
 	const skip = test.annotations.find( item => item.type === "skip-reason" );
 	const mismatch = test.annotations.find( item => item.type === "pixel-mismatch" );
+	const recapture = test.annotations.find( item => item.type === "recapture" );
 	const screenshotName = annotation?.description || test.title;
 	let directory = "html-core";
 	if( mode === "plugins" ) { directory = "html-plugins"; }
@@ -21,6 +22,7 @@ export function summarizeTest( test, mode ) {
 		"error": result.error?.message || skip?.description || "",
 		"pendingBaseline": !!skip?.description.includes( "No reference screenshot" ),
 		"pixelMismatch": mismatch?.description || "",
+		"recapture": recapture?.description || "",
 		"retries": Math.max( 0, test.results.length - 1 )
 	};
 }
@@ -58,6 +60,7 @@ export default class MinimalReporter {
 			"interrupted": count( "interrupted" ), "skipped": count( "skipped" ),
 			"pendingBaselines": tests.filter( test => test.pendingBaseline ).length,
 			"pixelMismatches": tests.filter( test => test.pixelMismatch ).length,
+			"recaptures": tests.filter( test => test.recapture ).length,
 			"retries": tests.reduce( ( total, test ) => total + test.retries, 0 ),
 			"status": result.status, "tests": tests
 		};
@@ -77,6 +80,11 @@ export default class MinimalReporter {
 		for( const test of tests.filter( item => item.pixelMismatch ) ) {
 			console.log( `Pixel mismatch (report only): ${test.screenshotName}: ` +
 				test.pixelMismatch );
+		}
+
+		// A recaptured fixture passed or failed on its second capture; name it for CI logs
+		for( const test of tests.filter( item => item.recapture ) ) {
+			console.log( `Recapture: ${test.screenshotName}: ${test.recapture}` );
 		}
 
 		// Name fixtures skipped for a reason other than a pending baseline, such as ciSkip

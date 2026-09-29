@@ -241,8 +241,8 @@ Existing browser regressions that intercept localhost requests keep their isolat
 Each visual mode (`full`, `lite`, `plugins`) has independent outputs:
 
 - `test/test-results/<mode>/results.html`: comparison and baseline-review page.
-- `test/test-results/<mode>/summary.json`: unique outcomes, attempts, pending approvals, and
-  report-only pixel mismatches.
+- `test/test-results/<mode>/summary.json`: unique outcomes, attempts, pending approvals,
+  report-only pixel mismatches, and recaptures.
 - `test/test-results/<mode>/screenshots/`, `logs/`, and `traces/`: diagnostic artifacts.
 - `test/playwright-report/<mode>/`: Playwright HTML report.
 
@@ -367,6 +367,14 @@ runs still run it. Remove `ciSkip` in the change that fixes the fixture.
 
 Images must have identical dimensions. Pixels whose summed RGBA difference exceeds 6 count as
 different; fewer than 0.1% of pixels may differ.
+
+A pixel mismatch is captured once more before it counts: the runner waits two animation frames,
+captures again, and compares that capture instead. Chromium can return a capture with blank
+canvases that the next frame does not repeat; a real rendering difference captures the same way
+again and still fails. Every recapture is reported, whether the second capture matched or not: as a
+`recapture` annotation with the first capture attached in the Playwright report, as `recapture` in
+`summary.json` and the `recaptures` count, on the results page, and as a `Recapture: <fixture>:
+<description>` console line per fixture. A size difference or a missing image is not recaptured.
 
 Set `PI_VISUAL_PIXELS=report` for a platform whose renderer cannot match the baselines, such as
 the macOS CI jobs. A pixel mismatch then passes the test and is recorded instead: as a
