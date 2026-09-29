@@ -148,17 +148,31 @@ function stopGamepad() {
 }
 
 /**
- * Read one gamepad or all connected gamepads, unless polling was explicitly stopped. The first
- * read starts polling and records the current state without edges.
+ * Read one gamepad, or every connected gamepad. The list form always returns the same live
+ * array, refilled in index order, and empty while polling is stopped; the index form returns
+ * the pad, or null when no pad has the index or polling is stopped. The first read starts
+ * polling, unless it was stopped, and records the current state without edges.
  *
  * @param {Object} options - Command options.
- * @returns {Object|Array<Object>|null|undefined}
+ * @returns {Object|Array<Object>|null}
  */
 function inGamepad( options ) {
 	const gamepadIndex = options.gamepadIndex;
+	const isList = gamepadIndex === null || gamepadIndex === undefined;
+	if( !isList && ( !Number.isInteger( gamepadIndex ) || gamepadIndex < 0 ) ) {
+		const error = new TypeError(
+			"inGamepad: gamepadIndex must be a non-negative integer or null."
+		);
+		error.code = "INVALID_PARAMETERS";
+		throw error;
+	}
 
-	// If stopped explicitly then return without auto starting
+	// While stopped, reads return empty state and do not restart polling
 	if( m_isStopped ) {
+		if( isList ) {
+			m_padList.length = 0;
+			return m_padList;
+		}
 		return null;
 	}
 	if( !m_isLooping ) {
@@ -167,26 +181,18 @@ function inGamepad( options ) {
 	}
 	readGamepads();
 
-	// If no index specified, return all gamepads in index order, in the same live array
-	if( gamepadIndex === null || gamepadIndex === undefined ) {
+	if( isList ) {
 		m_padList.length = 0;
 		for( const index in m_gamepads ) {
 			m_padList.push( m_gamepads[ index ] );
 		}
 		return m_padList;
 	}
-
-	// Validate gamepadIndex
-	if( !Number.isInteger( gamepadIndex ) || gamepadIndex < 0 ) {
-		const error = new TypeError(
-			"inGamepad: gamepadIndex must be a non-negative integer or null."
-		);
-		error.code = "INVALID_PARAMETERS";
-		throw error;
+	const gamepadData = m_gamepads[ gamepadIndex ];
+	if( gamepadData === undefined ) {
+		return null;
 	}
-
-	// Return specific gamepad or undefined if not found
-	return m_gamepads[ gamepadIndex ];
+	return gamepadData;
 }
 
 /**

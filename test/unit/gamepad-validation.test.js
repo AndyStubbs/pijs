@@ -726,10 +726,10 @@ test( "PAD-016 stopGamepad() holds until startGamepad() and releases the pads (I
 		assert.equal( pad.getButtonPressed( 0 ), true );
 		h.$.stopGamepad();
 
-		// While stopped, reads return null and do not restart polling, and a kept pad reads
-		// released, without a release edge, as on a hidden page
+		// While stopped, reads return empty state and do not restart polling, and a kept pad
+		// reads released, without a release edge, as on a hidden page
 		assert.equal( h.$.inGamepad( 0 ), null );
-		assert.equal( h.$.inGamepad(), null );
+		assert.equal( h.$.inGamepad().length, 0 );
 		assert.equal( h.frames.size, 0 );
 		assert.deepEqual(
 			[ pad.getButtonPressed( 0 ), pad.getButtonJustReleased( 0 ), pad.getAxis( 0 ) ],
@@ -744,7 +744,7 @@ test( "PAD-016 stopGamepad() holds until startGamepad() and releases the pads (I
 			disconnected.push( [ data.index, data.connected ] );
 		} );
 		assert.equal( h.frames.size, 0 );
-		assert.equal( h.$.inGamepad(), null );
+		assert.equal( h.$.inGamepad().length, 0 );
 		h.setPad( 1 );
 		h.connect( 1 );
 		h.disconnect( 0 );
@@ -762,6 +762,41 @@ test( "PAD-016 stopGamepad() holds until startGamepad() and releases the pads (I
 		assert.deepEqual( [ connected, disconnected ], [ [ 1 ], [ [ 0, false ] ] ] );
 	}
 );
+
+test( "PAD-010 inGamepad() always returns an array, and inGamepad( index ) the pad or null " +
+	"(A6, I9, P11)", () => {
+	const h = createHarness();
+
+	// No pad: an empty array, and null for any index
+	const list = h.$.inGamepad();
+	assert.ok( Array.isArray( list ) );
+	assert.equal( list.length, 0 );
+	assert.equal( h.$.inGamepad( 0 ), null );
+
+	// Pads at 0 and 2: the list is compact and in index order, and the gap reads null
+	h.setPad( 0 );
+	h.setPad( 2 );
+	h.connect( 0 );
+	h.connect( 2 );
+	assert.equal( h.$.inGamepad(), list );
+	assert.deepEqual( Array.from( list, pad => pad.index ), [ 0, 2 ] );
+	assert.equal( h.$.inGamepad( 1 ), null );
+	assert.equal( h.$.inGamepad( { "gamepadIndex": 2 } ).index, 2 );
+	assert.equal( h.$.inGamepad( null ), list );
+
+	// A disconnected pad reads null
+	h.disconnect( 0 );
+	assert.equal( h.$.inGamepad( 0 ), null );
+	assert.deepEqual( Array.from( h.$.inGamepad(), pad => pad.index ), [ 2 ] );
+
+	// While stopped, the same array is empty and every index reads null
+	h.$.stopGamepad();
+	assert.equal( h.$.inGamepad(), list );
+	assert.equal( list.length, 0 );
+	assert.equal( h.$.inGamepad( 2 ), null );
+	h.$.startGamepad();
+	assert.deepEqual( Array.from( h.$.inGamepad(), pad => pad.index ), [ 2 ] );
+} );
 
 test( "PAD-016 the first update after startGamepad() reports no edges (I6)", () => {
 	const h = createHarness();
