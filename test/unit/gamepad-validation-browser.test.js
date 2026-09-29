@@ -36,17 +36,20 @@ for( const bundle of g_harness.BUNDLES ) {
 				}
 				function read( index ) {
 					if( overload === "object" ) {
-						return $.ingamepad( { "gamepadIndex": index } );
+						return $.inGamepad( { "gamepadIndex": index } );
 					}
-					return $.ingamepad( index );
+					return $.inGamepad( index );
 				}
 				try {
-					for( const name of [ "startGamepad", "stopGamepad", "ingamepad",
+					for( const name of [ "startGamepad", "stopGamepad", "inGamepad",
 						"setGamepadSensitivity", "onGamepadConnected", "onGamepadDisconnected" ]
 					) {
 						if( typeof $[ name ] !== "function" ) {
 							throw new Error( `Missing command ${name}` );
 						}
+					}
+					if( $.ingamepad !== undefined ) {
+						throw new Error( "The old name ingamepad is still registered" );
 					}
 
 					// The dead zone reaches the plugin, and the first read records the pad
@@ -62,7 +65,7 @@ for( const bundle of g_harness.BUNDLES ) {
 					) {
 						throw new Error( "Expected a validation error" );
 					}
-					if( $.ingamepad().length !== 1 ) {
+					if( $.inGamepad().length !== 1 ) {
 						throw new Error( "Expected one pad in the list" );
 					}
 					$.clearEvents( "gamepad" );

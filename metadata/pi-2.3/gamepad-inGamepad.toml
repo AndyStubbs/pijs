@@ -1,4 +1,4 @@
-title = "ingamepad"
+title = "inGamepad"
 category = "gamepad"
 isScreen = false
 plugin = "gamepad"
@@ -25,7 +25,7 @@ let y = 100;
 let lt = 0;
 requestAnimationFrame( run );
 function run( t ) {
-	let gamepads = $.ingamepad();
+	let gamepads = $.inGamepad();
 	let factor = ( t - lt ) * 0.5;
 	lt = t;
 	$.cls();

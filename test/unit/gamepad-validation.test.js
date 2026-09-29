@@ -164,9 +164,9 @@ function createSensitivityHarness() {
 	h.poll = () => {
 		assert.equal( h.frames.size, 1 );
 		h.frame();
-		return Array.from( h.commands.ingamepad( { "gamepadIndex": 0 } ).axes );
+		return Array.from( h.commands.inGamepad( { "gamepadIndex": 0 } ).axes );
 	};
-	h.commands.ingamepad( { "gamepadIndex": 0 } );
+	h.commands.inGamepad( { "gamepadIndex": 0 } );
 	return h;
 }
 
@@ -195,6 +195,13 @@ for( const [ index, value ] of invalidValues.entries() ) {
 		checkAxes( h.poll(), [ 0.5, -0.5, 0, 0, 0, 1, -1 ] );
 	} );
 }
+
+test( "gamepad registers inGamepad, and not the old name (I1, I16)", () => {
+	const h = createHarness();
+	assert.equal( typeof h.$.inGamepad, "function" );
+	assert.equal( h.$.ingamepad, undefined );
+	assert.equal( h.commands.ingamepad, undefined );
+} );
 
 test( "SYS-021 rejected NaN cannot contaminate a subsequent axis update", () => {
 	const h = createSensitivityHarness();
@@ -241,7 +248,7 @@ function runEdgeConsumer( mode ) {
 	const counts = { "pressed": 0, "released": 0, "axisChanged": 0 };
 	let frameIndex = 0;
 	function read() {
-		const pad = h.$.ingamepad( 0 );
+		const pad = h.$.inGamepad( 0 );
 		if( pad.getButtonJustPressed( 0 ) ) {
 			counts.pressed += 1;
 		}
@@ -289,12 +296,12 @@ test( "PAD-001 every consumer sees each press, release, and axis change once (P1
 test( "PAD-001 a press and release between two reads are both reported", () => {
 	const h = createHarness();
 	h.setPad( 0 );
-	const pad = h.$.ingamepad( 0 );
+	const pad = h.$.inGamepad( 0 );
 	h.setPad( 0, { "buttons": [ true, false, false, false ], "axes": [ 0.8, 0, 0, 0 ] } );
 	h.frame();
 	h.setPad( 0, { "buttons": [ false, false, false, false ], "axes": [ 0, 0, 0, 0 ] } );
 	h.frame();
-	h.$.ingamepad( 0 );
+	h.$.inGamepad( 0 );
 	assert.deepEqual( [ pad.getButtonJustPressed( 0 ), pad.getButtonJustReleased( 0 ),
 		pad.getButtonPressed( 0 ) ], [ true, true, false ] );
 
@@ -308,15 +315,15 @@ test( "PAD-001 a press and release between two reads are both reported", () => {
 test( "PAD-001 every read in a frame sees the same edges, from any code", () => {
 	const h = createHarness();
 	h.setPad( 0 );
-	const kept = h.$.ingamepad( 0 );
+	const kept = h.$.inGamepad( 0 );
 	h.setPad( 0, { "buttons": [ true, false, false, false ] } );
 	h.frame();
 
 	// A helper on a kept pad is a read; a later read in the same frame sees the same result
 	assert.equal( kept.getButtonJustPressed( 0 ), true );
-	assert.equal( h.$.ingamepad( 0 ).getButtonJustPressed( 0 ), true );
-	assert.equal( h.$.ingamepad()[ 0 ].buttons[ 0 ].pressStarted, true );
-	assert.equal( kept, h.$.ingamepad( 0 ) );
+	assert.equal( h.$.inGamepad( 0 ).getButtonJustPressed( 0 ), true );
+	assert.equal( h.$.inGamepad()[ 0 ].buttons[ 0 ].pressStarted, true );
+	assert.equal( kept, h.$.inGamepad( 0 ) );
 	h.frame();
 	assert.equal( kept.getButtonJustPressed( 0 ), false );
 	assert.equal( kept.getButtonPressed( 0 ), true );
@@ -326,7 +333,7 @@ test( "PAD-001 the first read starts polling without reporting buttons already h
 	const h = createHarness();
 	h.setPad( 0, { "buttons": [ true, false, false, false ], "axes": [ 1, 0, 0, 0 ] } );
 	assert.equal( h.frames.size, 0 );
-	const pad = h.$.ingamepad( 0 );
+	const pad = h.$.inGamepad( 0 );
 	assert.equal( h.frames.size, 1 );
 	assert.deepEqual( [ pad.getButtonPressed( 0 ), pad.getButtonJustPressed( 0 ),
 		pad.getAxis( 0 ), pad.getAxisChanged( 0 ) ], [ true, false, 1, false ] );
@@ -340,7 +347,7 @@ test( "PAD-017 the press that exposes a pad is reported once (P3b)", () => {
 		seen.push( [ pad.index, pad.buttons[ 0 ].pressed ] );
 	} );
 	function userLoop() {
-		const pad = h.$.ingamepad( 0 );
+		const pad = h.$.inGamepad( 0 );
 		if( pad && pad.getButtonJustPressed( 0 ) ) {
 			presses += 1;
 		}
@@ -368,7 +375,7 @@ test( "PAD-017 the press that exposes a pad is reported once (P3b)", () => {
 test( "PAD-001 connection events do not consume edges", () => {
 	const h = createHarness();
 	h.setPad( 0 );
-	const pad = h.$.ingamepad( 0 );
+	const pad = h.$.inGamepad( 0 );
 	h.setPad( 0, { "buttons": [ true, false, false, false ] } );
 	h.frame( 2 );
 
@@ -382,7 +389,7 @@ test( "PAD-002 blur and focus leave polling running (P4)", () => {
 	const frames = [];
 	let label = "";
 	function userLoop() {
-		const pad = h.$.ingamepad( 0 );
+		const pad = h.$.inGamepad( 0 );
 		frames.push( [ label, pad.getButtonJustPressed( 0 ), pad.getButtonPressed( 0 ) ] );
 		h.requestAnimationFrame( userLoop );
 	}
@@ -415,7 +422,7 @@ test( "PAD-002 blur and focus leave polling running (P4)", () => {
 test( "PAD-002 a hidden page releases the pads until it is visible again", () => {
 	const h = createHarness();
 	h.setPad( 0 );
-	const pad = h.$.ingamepad( 0 );
+	const pad = h.$.inGamepad( 0 );
 	h.setPad( 0, { "buttons": [ true, false, false, false ], "axes": [ 1, 0, 0, 0 ] } );
 	h.frame();
 
@@ -445,12 +452,12 @@ test( "PAD-003 a throwing handler is reported and leaves no ghost pad (P5)", () 
 	const later = [];
 	h.$.onGamepadDisconnected( () => { throw new Error( "disconnect handler" ); } );
 	h.$.onGamepadDisconnected( data => {
-		later.push( [ data.index, Array.from( h.$.ingamepad(), pad => pad.index ) ] );
+		later.push( [ data.index, Array.from( h.$.inGamepad(), pad => pad.index ) ] );
 	} );
 	h.disconnect( 1 );
 	h.frame();
 	assert.deepEqual( later, [ [ 1, [ 0 ] ] ] );
-	assert.deepEqual( Array.from( h.$.ingamepad(), pad => pad.index ), [ 0 ] );
+	assert.deepEqual( Array.from( h.$.inGamepad(), pad => pad.index ), [ 0 ] );
 
 	// The connect path
 	h.clearEvents();
@@ -483,7 +490,7 @@ test( "PAD-004 a throwing handler in the start-up scan leaves polling running (P
 	assert.equal( h.errors.length, 2 );
 	h.setPad( 0, { "buttons": [ true, false, false, false ] } );
 	h.frame();
-	assert.equal( h.$.ingamepad( 0 ).getButtonJustPressed( 0 ), true );
+	assert.equal( h.$.inGamepad( 0 ).getButtonJustPressed( 0 ), true );
 } );
 
 test( "PAD-007 handlers added or cleared during a dispatch wait for the next event (P6)", () => {
@@ -543,7 +550,7 @@ test( "PAD-005 new connect handlers receive the pads already connected, once (P7
 	// Polling first, then registering, also replays
 	const h2 = createHarness();
 	h2.setPad( 0 );
-	h2.$.ingamepad();
+	h2.$.inGamepad();
 	const late = [];
 	h2.$.onGamepadConnected( pad => { late.push( pad.index ); } );
 	assert.deepEqual( late, [ 0 ] );
@@ -570,8 +577,8 @@ test( "PAD-009 pads and the pad list are live objects updated in place (P12)", (
 	const h = createHarness();
 	h.setPad( 0 );
 	h.setPad( 1 );
-	const pad = h.$.ingamepad( 0 );
-	const list = h.$.ingamepad();
+	const pad = h.$.inGamepad( 0 );
+	const list = h.$.inGamepad();
 	const current = () => {
 		return {
 			"buttons": pad.buttons, "button": pad.buttons[ 0 ], "axes": pad.axes,
@@ -582,8 +589,8 @@ test( "PAD-009 pads and the pad list are live objects updated in place (P12)", (
 	const kept = current();
 	h.setPad( 0, { "buttons": [ true, false, false, false ], "axes": [ 1, 0, 0, 0 ] } );
 	h.frame();
-	assert.equal( h.$.ingamepad( 0 ), pad );
-	assert.equal( h.$.ingamepad(), list );
+	assert.equal( h.$.inGamepad( 0 ), pad );
+	assert.equal( h.$.inGamepad(), list );
 	assert.deepEqual( Array.from( list, item => item.index ), [ 0, 1 ] );
 	const now = current();
 	for( const key in kept ) {
@@ -597,7 +604,7 @@ test( "PAD-009 pads and the pad list are live objects updated in place (P12)", (
 	assert.deepEqual( [ pad.getButtonPressed( 0 ), kept.button.pressed, kept.axes[ 0 ] ],
 		[ false, false, 0 ] );
 	h.disconnect( 1 );
-	assert.equal( h.$.ingamepad(), list );
+	assert.equal( h.$.inGamepad(), list );
 	assert.deepEqual( Array.from( list, item => item.index ), [ 0 ] );
 } );
 
@@ -626,8 +633,8 @@ test( "PAD-016 lifecycle: stop, reads, and registration after a stop (P8)", () =
 	h.$.stopGamepad();
 
 	// While stopped, reads return null and do not restart polling
-	assert.equal( h.$.ingamepad( 0 ), null );
-	assert.equal( h.$.ingamepad(), null );
+	assert.equal( h.$.inGamepad( 0 ), null );
+	assert.equal( h.$.inGamepad(), null );
 	assert.equal( h.frames.size, 0 );
 
 	// Today, registering a handler restarts polling after a stop; Gamepad 2.3 changes this
@@ -636,7 +643,7 @@ test( "PAD-016 lifecycle: stop, reads, and registration after a stop (P8)", () =
 	h.$.onGamepadConnected( pad => { connected.push( pad.index ); } );
 	h.$.onGamepadDisconnected( data => { disconnected.push( [ data.index, data.connected ] ); } );
 	assert.equal( h.frames.size, 1 );
-	assert.equal( h.$.ingamepad( 0 ).index, 0 );
+	assert.equal( h.$.inGamepad( 0 ).index, 0 );
 
 	// Today, connection handlers run while stopped; Gamepad 2.3 changes this
 	h.$.stopGamepad();
@@ -648,14 +655,14 @@ test( "PAD-016 lifecycle: stop, reads, and registration after a stop (P8)", () =
 	// startGamepad() resumes polling, and the pad list reflects the events
 	h.$.startGamepad();
 	h.frame();
-	assert.deepEqual( Array.from( h.$.ingamepad(), pad => pad.index ), [ 1 ] );
+	assert.deepEqual( Array.from( h.$.inGamepad(), pad => pad.index ), [ 1 ] );
 } );
 
 test( "PAD-016 gamepad reads only navigator.getGamepads()", () => {
 	const pad = { "index": 0, "id": "pad 0", "connected": true, "mapping": "standard",
 		"timestamp": 0, "buttons": [], "axes": [] };
 	const h = createHarness( { "navigator": { "webkitGetGamepads": () => [ pad ] } } );
-	assert.equal( h.$.ingamepad().length, 0 );
+	assert.equal( h.$.inGamepad().length, 0 );
 	h.frame();
-	assert.equal( h.$.ingamepad().length, 0 );
+	assert.equal( h.$.inGamepad().length, 0 );
 } );

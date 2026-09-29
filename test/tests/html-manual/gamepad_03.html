@@ -43,42 +43,42 @@ const m_steps = [
 	}, {
 		"name": "getButton",
 		"instructions": "Press button 0: A/B/X",
-		"check": () => $.ingamepad( m_gamepadIndex ).getButton( 0 ).pressed,
+		"check": () => $.inGamepad( m_gamepadIndex ).getButton( 0 ).pressed,
 		"status": "incomplete"
 	}, {
 		"name": "getButtonPressed",
 		"instructions": "Press button 1: B/O/A",
-		"check": () => $.ingamepad( m_gamepadIndex ).getButtonPressed( 1 ),
+		"check": () => $.inGamepad( m_gamepadIndex ).getButtonPressed( 1 ),
 		"status": "incomplete"
 	}, {
 		"name": "getButtonJustPressed",
 		"instructions": "Press button 2: X/Square/Y",
-		"check": () => $.ingamepad( m_gamepadIndex ).getButtonJustPressed( 2 ),
+		"check": () => $.inGamepad( m_gamepadIndex ).getButtonJustPressed( 2 ),
 		"status": "incomplete"
 	}, {
 		"name": "getButtonJustReleased",
 		"instructions": "Press and release button 3: Y/Triangle/X",
-		"check": () => $.ingamepad( m_gamepadIndex ).getButtonJustReleased( 3 ),
+		"check": () => $.inGamepad( m_gamepadIndex ).getButtonJustReleased( 3 ),
 		"status": "incomplete"
 	}, {
 		"name": "getAxis",
 		"instructions": "Move the left control stick horizontally",
-		"check": () => $.ingamepad( m_gamepadIndex ).getAxis( 0 ),
+		"check": () => $.inGamepad( m_gamepadIndex ).getAxis( 0 ),
 		"status": "incomplete"
 	}, {
 		"name": "getAxis2",
 		"instructions": "Move the left control stick vertically",
-		"check": () => $.ingamepad( m_gamepadIndex ).getAxis( 1 ),
+		"check": () => $.inGamepad( m_gamepadIndex ).getAxis( 1 ),
 		"status": "incomplete"
 	}, {
 		"name": "getAxisChanged",
 		"instructions": "Move the right control stick horizontally",
-		"check": () => $.ingamepad( m_gamepadIndex ).getAxisChanged( 2 ),
+		"check": () => $.inGamepad( m_gamepadIndex ).getAxisChanged( 2 ),
 		"status": "incomplete"
 	}, {
 		"name": "getAxisChanged2",
 		"instructions": "Move the right control stick vertically",
-		"check": () => $.ingamepad( m_gamepadIndex ).getAxisChanged( 3 ),
+		"check": () => $.inGamepad( m_gamepadIndex ).getAxisChanged( 3 ),
 		"status": "incomplete"
 	}, {
 		"name": "onGamepadDisconnected",
@@ -153,7 +153,7 @@ function waitForNextStep() {
 	
 	let isZeroed = true;
 	if( m_gamepadIndex !== null ) {
-		const gamepad = $.ingamepad( m_gamepadIndex );
+		const gamepad = $.inGamepad( m_gamepadIndex );
 		for( const axis of gamepad.axes ) {
 			if( axis !== 0 ) {
 				isZeroed = false;
@@ -188,7 +188,7 @@ function waitForNextStep() {
 function drawFooter() {
 	let rows = $.getRows();
 	$.setPos( 0, rows - 3 );
-	const gamepad = $.ingamepad( m_gamepadIndex );
+	const gamepad = $.inGamepad( m_gamepadIndex );
 
 	$.setColor( 15 );
 	$.print( "ID:      ", true );

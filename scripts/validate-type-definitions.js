@@ -157,8 +157,8 @@ const REQUIRED_DECLARATIONS = [
 			"object[] ) => void ): void;"
 	},
 	{
-		"name": "ingamepad return shapes",
-		"text": "ingamepad( gamepadIndex?: number ): GamepadData | Array<GamepadData> | null | " +
+		"name": "inGamepad return shapes",
+		"text": "inGamepad( gamepadIndex?: number ): GamepadData | Array<GamepadData> | null | " +
 			"undefined;"
 	},
 	{

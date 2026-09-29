@@ -1,5 +1,6 @@
 # Commands and objects removed in Pi.js 2.3.
 methods = [
+	"ingamepad",
 	"inkey",
 	"inmouse",
 	"inpress",

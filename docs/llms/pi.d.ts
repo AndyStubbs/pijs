@@ -214,9 +214,9 @@ declare namespace Pi {
 	/**
 	 * Gamepad state and helper methods.
 	 *
-	 * A connected gamepad, returned by ingamepad() and passed to onGamepadConnected callbacks. The object is live: the same object is returned on every read and updated in place, including its buttons array, each button, axes, and lastAxes. Copy values to keep a snapshot.
+	 * A connected gamepad, returned by inGamepad() and passed to onGamepadConnected callbacks. The object is live: the same object is returned on every read and updated in place, including its buttons array, each button, axes, and lastAxes. Copy values to keep a snapshot.
 	 *
-	 * A read is an ingamepad() call or a call to one of the methods below, including on a pad kept from an earlier read. The first read in each animation frame updates every pad with what happened since the last frame that had a read, so a press and a release between two reads are both reported; every other read in the same frame sees the same values.
+	 * A read is an inGamepad() call or a call to one of the methods below, including on a pad kept from an earlier read. The first read in each animation frame updates every pad with what happened since the last frame that had a read, so a press and a release between two reads are both reported; every other read in the same frame sees the same values.
 	 *
 	 * A pad starts with every button released, so a button held when the pad appears, such as the press that makes the browser expose it, is reported as just pressed on a later read. Button and axis numbers follow the browser's Gamepad API; the standard mapping has 17 buttons and 4 axes.
 	 */
@@ -2339,8 +2339,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * @param gamepadIndex Gamepad index to read. If omitted or null, returns every connected pad.
 		 * @returns The pad for the index, or undefined when none has it; every connected pad when no index is given; null while polling is stopped.
 		 */
-		ingamepad( params: { "gamepadIndex"?: number } ): GamepadData | Array<GamepadData> | null | undefined;
-		ingamepad( gamepadIndex?: number ): GamepadData | Array<GamepadData> | null | undefined;
+		inGamepad( params: { "gamepadIndex"?: number } ): GamepadData | Array<GamepadData> | null | undefined;
+		inGamepad( gamepadIndex?: number ): GamepadData | Array<GamepadData> | null | undefined;
 
 		/**
 		 * Gets the current state of a key or all pressed keys.
@@ -2460,7 +2460,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Registers a callback function for when a gamepad is disconnected.
 		 *
-		 * Registers a callback that runs when a gamepad disconnects. The callback receives the pad's index, id, mapping, and connected status (false), not its GamepadData. The pad has already left the list that ingamepad() returns when the callback runs.
+		 * Registers a callback that runs when a gamepad disconnects. The callback receives the pad's index, id, mapping, and connected status (false), not its GamepadData. The pad has already left the list that inGamepad() returns when the callback runs.
 		 *
 		 * Registering starts polling, even after stopGamepad(). A callback that throws is reported with console.error(), and the other callbacks still run. clearEvents( "gamepad" ) removes every callback.
 		 * @param fn Callback function that receives the pad's index, id, mapping, and connected status.
@@ -2900,7 +2900,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Starts the gamepad input loop and begins monitoring for gamepad connections.
 		 *
-		 * Starts polling gamepads once per animation frame. Polling also starts on first use: the first ingamepad() call or handler registration. Calling it again while polling does nothing.
+		 * Starts polling gamepads once per animation frame. Polling also starts on first use: the first inGamepad() call or handler registration. Calling it again while polling does nothing.
 		 *
 		 * The first start adds the connection and page-visibility listeners and scans for pads that are already connected, passing each to the onGamepadConnected callbacks. The plugin adds no listener before then.
 		 *
@@ -2930,7 +2930,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops the gamepad input loop.
 		 *
-		 * Stops polling. While stopped, ingamepad() returns null and does not restart polling, and pads keep the state of the last update. startGamepad() resumes polling, and so does registering an onGamepadConnected or onGamepadDisconnected callback.
+		 * Stops polling. While stopped, inGamepad() returns null and does not restart polling, and pads keep the state of the last update. startGamepad() resumes polling, and so does registering an onGamepadConnected or onGamepadDisconnected callback.
 		 *
 		 * Connection events are still tracked while stopped: the connection callbacks run, and pads join and leave the list.
 		 * @returns This function does not return a value.

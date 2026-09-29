@@ -31,7 +31,7 @@ const RESOLUTIONS = [ "bundler", "nodenext" ];
 // plugin that stays undeclared. Full already bundles every plugin except sound-advanced.
 const LITE_PLUGIN_CONSUMERS = {
 	"gamepad": [
-		`const pads = lite.ingamepad();`,
+		`const pads = lite.inGamepad();`,
 		`if( Array.isArray( pads ) && pads.length > 0 ) {`,
 		`\tconst pressed: boolean = pads[ 0 ].getButtonJustPressed( 0 );`,
 		`\tvoid pressed;`,
@@ -58,7 +58,7 @@ const LITE_PLUGIN_CONSUMERS = {
 		`// @ts-expect-error onkey is renamed onKey.`,
 		`lite.onkey( "KeyA", "down", () => {} );`,
 		`// @ts-expect-error Gamepad commands need the gamepad plugin.`,
-		`lite.ingamepad();`
+		`lite.inGamepad();`
 	],
 	"pointer": [
 		`const screen = lite.screen( "8x8" );`,
