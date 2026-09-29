@@ -8,6 +8,7 @@
  */
 import * as g_assert from "node:assert/strict";
 import * as g_test from "node:test";
+import * as g_assertNear from "./assert-near.js";
 import * as g_analyser from "../../plugins/sound-advanced/analyser.js";
 import * as g_effects from "../../plugins/sound-advanced/effects.js";
 import * as g_instruments from "../../plugins/sound-advanced/instruments.js";
@@ -18,13 +19,7 @@ import * as g_synth from "../../plugins/sound-advanced/synth.js";
 import * as g_sync from "../../plugins/sound-advanced/sync.js";
 const assert = g_assert;
 const test = g_test.test;
-
-function near( actual, expected, tolerance = 1e-9 ) {
-	assert.ok(
-		Math.abs( actual - expected ) <= tolerance,
-		`${actual} is not within ${tolerance} of ${expected}`
-	);
-}
+const near = g_assertNear.near;
 
 /**
  * Evaluate a Fourier series at a phase in [0, 1).

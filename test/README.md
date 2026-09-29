@@ -157,6 +157,10 @@ through `test/unit/audio-browser-suite.js`:
 | `sound-samples.test.js` | Sample position model: budgets, rate segments, end prediction (Node) |
 | `audio-lifecycle.test.js` | Sample loading, retries, removal, IDs, validation (Node sandbox) |
 
+The sound Node tests compare numbers with `near( actual, expected, tolerance )` from
+`test/unit/assert-near.js`, which allows an absolute difference up to the tolerance (1e-9 by
+default) and never accepts NaN.
+
 Sample tests load generated 16-bit chirp WAV files through `blob:` URLs
 (`test/unit/audio-sample-fixtures.js`). Their references integrate the content position per
 frame from the rate schedule, so a position error of one frame fails the check.
