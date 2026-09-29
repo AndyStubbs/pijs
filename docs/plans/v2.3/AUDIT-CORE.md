@@ -821,7 +821,7 @@ the [ROADMAP](ROADMAP.md#3-core) tasks that implement each item.
 | CORE-011 | `getImage()` of an offscreen screen | Accepted | Fixed by C6 (Core 6, done): returns a canvas copy of the screen's pixels |
 | CORE-012 | Polygon coordinates past 2³¹ wrap | Accepted | Fixed by C6 (Core 6, done) |
 | CORE-013 | Numeric validation gaps | Accepted | Fixed by C6 (Core 6, done) |
-| CORE-014 | Text outside the font table undocumented | Accepted | Documented in R.2 (C10). The Latin-1 to CP437 mapping is deferred to a later release |
+| CORE-014 | Text outside the font table undocumented | Accepted | Documented in R.2 (C10, done). The Latin-1 to CP437 mapping is deferred to a later release |
 | CORE-015 | `removeScreen` forms and declarations | Accepted | Fixed by C5 and C6 (Core 4 and Core 6, done) |
 | CORE-016 | Plugin declarations for Lite | Accepted | Fixed by C5 (Core 4, done) |
 | CORE-017 | `addCommand` declaration and example | Accepted | Fixed by C5 (Core 4, done) |

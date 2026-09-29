@@ -592,7 +592,7 @@ the [ROADMAP](ROADMAP.md#6-pointer) tasks that implement each item.
 | PTR-012 | Settings and hit boxes not validated consistently | Accepted | Fixed by B8/B9 (Pointer 1.6 and 2.8, done) |
 | PTR-013 | Press, touch, and click data disagree | Accepted | Fixed by B7 (Pointer 2.3, breaking, done) |
 | PTR-014 | Pinch zoom page-wide; context menu suppressed late | Accepted | Fixed by B10 (Pointer 2.7, breaking, done). Pinch zoom on devices in the release pass |
-| PTR-015 | Metadata, declarations, `API.md` gaps | Accepted | Metadata and declarations in Pointer 1.8 (done), then with each API change; `API.md` in R.2 |
+| PTR-015 | Metadata, declarations, `API.md` gaps | Accepted | Metadata and declarations in Pointer 1.8 (done), then with each API change; `API.md` in R.2 (done) |
 | PTR-016 | Manual pointer pages do not load cleanly | Accepted | Pointer 1.8 (done) |
 | PTR-017 | Missing automated tests | Accepted | A test with each fix; fixtures in Pointer 1.9 (done) |
 | B1–B5, B8, B9, B12 | Fixes | Accepted | Pointer Phase 1, except B9, which landed with I11 in Pointer 2.8. B8: presses that start on the border or padding are ignored |

@@ -320,9 +320,10 @@ The `test` job differs from a local `npm test` in these settings:
 - Markdown files, except those in `plugins/`, whose guides run as tests, and the release
   package's `README.md` and `CHANGELOG.md` and `releases/PUBLISH.md`, which
   `test/scripts/release-docs.test.js` checks against `releases/pi-latest/package.json`.
-- Files in `docs/`, except `docs/llms/pi.d.ts`, which must match the built declarations, and
-  `docs/UPGRADE-V2.3.md`, whose renamed-command table `test/scripts/upgrade-guide.test.js`
-  checks against `metadata/pi-2.3/_removed.toml`.
+- Files in `docs/`, except `docs/llms/pi.d.ts`, which must match the built declarations;
+  `docs/API.md`, which `test/scripts/api-reference.test.js` checks names every command, no
+  removed one, and the package version; and `docs/UPGRADE-V2.3.md`, whose renamed-command
+  table `test/scripts/upgrade-guide.test.js` checks against `metadata/pi-2.3/_removed.toml`.
 - Files in `tools/` and `.vscode/`.
 - `LICENSE`, `TODO.txt`, `AGENTS.md`, `.cursorrules`, and `.github/dependabot.yml`.
 

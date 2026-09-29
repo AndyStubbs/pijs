@@ -245,6 +245,12 @@ screen is active.
 Call `provideService()` during `init` to publish one service object. Another plugin that lists
 yours in its `dependencies` can read it with `getService( pluginName )`.
 
+`clearEvents()` removes every handler of its type, including handlers your plugin registers
+through the public input commands, such as `onPress()` or `onKey()`, and does not restore them.
+A plugin that needs input should poll it, for example with `inPress()`, or register its handlers
+again. `registerClearEvents( name, handler )` runs `handler` when `clearEvents()` clears your own
+event type `name`.
+
 ## 💡 Pro Tips
 
 1. **Auto-register IIFE plugins** - Add the auto-register code at the end

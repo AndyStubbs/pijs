@@ -711,7 +711,7 @@ the [ROADMAP](ROADMAP.md#7-gamepad) tasks that implement each item.
 | PAD-011 | Per-axis dead zone | Accepted | Fixed by A9 (Gamepad 2.6, breaking, done) |
 | PAD-012 | No handler removal; screen-wide clear | Accepted | Fixed by A5 in the I2 shape (Gamepad 2.2 and 2.3, done) |
 | PAD-013 | `GAMEPAD.md` documents the removed API | Accepted | Rewritten in the release phase (R.3) |
-| PAD-014 | Metadata, declarations, `API.md` gaps | Accepted | Metadata and declarations in Gamepad 1.7 (done), then with each API change; `API.md` in R.2 |
+| PAD-014 | Metadata, declarations, `API.md` gaps | Accepted | Metadata and declarations in Gamepad 1.7 (done), then with each API change; `API.md` in R.2 (done) |
 | PAD-015 | Manual pages register the plugin twice | Accepted | Gamepad 1.7 (done). Self-registration after Full is CORE-003 |
 | PAD-016 | Missing automated tests | Accepted | A test with each fix; lifecycle tests in Gamepad 1.6 (done) |
 | PAD-017 | The exposing press is not reported | Accepted | Fixed by A1 (Gamepad 1.1, done). Confirmed on hardware in Chrome and Firefox |
