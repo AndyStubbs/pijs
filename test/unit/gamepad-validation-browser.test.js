@@ -42,7 +42,7 @@ for( const bundle of g_harness.BUNDLES ) {
 				}
 				try {
 					for( const name of [ "startGamepad", "stopGamepad", "inGamepad",
-						"setGamepadDeadZone", "onGamepad", "offGamepad" ]
+						"setGamepadDeadZone", "onGamepad", "offGamepad", "vibrateGamepad" ]
 					) {
 						if( typeof $[ name ] !== "function" ) {
 							throw new Error( `Missing command ${name}` );

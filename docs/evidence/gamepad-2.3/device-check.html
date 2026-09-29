@@ -31,6 +31,7 @@ http://localhost:8080/docs/evidence/gamepad-2.3/device-check.html
 <b>Copy results</b> and paste them into the conversation.</p>
 <div>
 	<button id="rumble">Rumble pad 0</button>
+	<button id="vibrate">vibrateGamepad pad 0</button>
 	<button id="reset">Reset counters</button>
 	<button id="copy">Copy results</button>
 </div>
@@ -242,6 +243,11 @@ document.getElementById( "rumble" ).addEventListener( "click", async () => {
 	}
 	m_results.vibration = info;
 	log( "Rumble: " + JSON.stringify( info ) );
+} );
+document.getElementById( "vibrate" ).addEventListener( "click", () => {
+	const supported = $.vibrateGamepad( 0, 400, 1, 1 );
+	m_results.vibrateGamepad = supported;
+	log( "vibrateGamepad( 0, 400, 1, 1 ) returned " + supported );
 } );
 document.getElementById( "reset" ).addEventListener( "click", () => {
 	resetEdges();

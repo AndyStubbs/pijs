@@ -251,7 +251,7 @@ declare namespace Pi {
 		timestamp: number;
 
 		/**
-		 * The browser's vibration actuator for the pad, or null.
+		 * The browser's vibration actuator for the pad, or null. See vibrateGamepad().
 		 */
 		vibrationActuator: any;
 
@@ -3004,6 +3004,21 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 */
 		stopSound( params: { "soundId"?: string } ): void;
 		stopSound( soundId?: string ): void;
+
+		/**
+		 * Rumbles a gamepad's vibration motors.
+		 *
+		 * Plays the "dual-rumble" effect of the pad's vibration actuator for duration milliseconds, with the strong (low-frequency) and weak (high-frequency) motors at the given magnitudes. Returns true when the pad supports the effect and false when it does not, such as in Firefox and iOS Safari, or when no pad has the index; nothing plays then. Browsers may cap the duration, and a new effect replaces one that is still playing; a duration of 0 stops the rumble.
+		 *
+		 * Vibration reads the browser's pad directly, so it needs no polling and does not start it. The gamepadIndex is a non-negative integer (INVALID_INDEX); duration is a finite number that is not negative (INVALID_DURATION); strong and weak are finite numbers from 0 to 1, and 1 when omitted (INVALID_STRONG, INVALID_WEAK). A value of the wrong type throws a TypeError, and one out of range a RangeError.
+		 * @param gamepadIndex Index of the pad to rumble.
+		 * @param duration Rumble length in milliseconds.
+		 * @param strong Strong (low-frequency) motor magnitude from 0 to 1. The default is 1.
+		 * @param weak Weak (high-frequency) motor magnitude from 0 to 1. The default is 1.
+		 * @returns True when the pad supports the dual-rumble effect and it was started.
+		 */
+		vibrateGamepad( params: { "gamepadIndex": number; "duration": number; "strong"?: number; "weak"?: number } ): boolean;
+		vibrateGamepad( gamepadIndex: number, duration: number, strong?: number, weak?: number ): boolean;
 
 		/**
 		 * Current Pi.js version string.

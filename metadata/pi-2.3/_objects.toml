@@ -548,7 +548,7 @@ description = "The browser's timestamp of the pad state at the last read."
 [[objects.properties]]
 name = "vibrationActuator"
 type = "any"
-description = "The browser's vibration actuator for the pad, or null."
+description = "The browser's vibration actuator for the pad, or null. See vibrateGamepad()."
 
 [[objects.properties]]
 name = "buttons"

@@ -170,6 +170,11 @@ const REQUIRED_DECLARATIONS = [
 		"text": "setGamepadDeadZone( deadZone: number ): void;"
 	},
 	{
+		"name": "vibrateGamepad reports support",
+		"text": "vibrateGamepad( gamepadIndex: number, duration: number, strong?: number, " +
+			"weak?: number ): boolean;"
+	},
+	{
 		"name": "gamepad helper methods",
 		"text": "getButtonJustPressed: ( buttonIndex: number | string ) => boolean;"
 	},
