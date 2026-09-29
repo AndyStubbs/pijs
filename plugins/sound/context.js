@@ -322,6 +322,16 @@ function runUnlockCallbacks() {
 }
 
 /**
+ * Whether the page is handling a user gesture now (transient user activation)
+ *
+ * @returns {boolean} True inside a gesture's activation window; false where unsupported
+ */
+function hasUserActivation() {
+	return typeof navigator !== "undefined" && !!navigator.userActivation &&
+		navigator.userActivation.isActive === true;
+}
+
+/**
  * First user gesture while locked: resume, then start deferred requests in the same call
  * stack so they run under the gesture's user activation
  *
@@ -418,6 +428,14 @@ export function getAudioContext() {
 		m_audioContext.addEventListener( "statechange", handleStateChange );
 		if( m_audioContext.state !== "running" ) {
 			armUnlock();
+
+			// A context created inside a gesture's handlers, such as by the first sound() in a
+			// click handler, starts suspended in Firefox until it resumes on its own. The
+			// gesture listeners did not exist when that gesture began, so resume as they would
+			// have, and keep the gesture's requests
+			if( hasUserActivation() ) {
+				handleUnlockGesture();
+			}
 		}
 	}
 

@@ -163,6 +163,13 @@ function installAudioRenderHarness( config ) {
 		}
 	} );
 
+	// User activation: Playwright's page.evaluate() runs with activation that the page's own
+	// code would not have, so the harness reports none; simulateGesture() is the gesture
+	Object.defineProperty( navigator, "userActivation", {
+		"configurable": true,
+		"get": () => ( { "isActive": false, "hasBeenActive": false } )
+	} );
+
 	// Wrapped OfflineAudioContext
 	const webAudio = typeof NativeOfflineAudioContext === "function";
 	const offlineSuspend = webAudio &&
