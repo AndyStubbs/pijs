@@ -118,9 +118,6 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 					"filterAmount": 4, "filterAttackTime": 0, "filterDecayTime": 0.6,
 					"filterSustainLevel": 0 } );` }
 		] } );
-		if( !result ) {
-			return;
-		}
 		const left = channel( result );
 		const dry = toneAmplitude( left, 2200, frame( 0.1 ), frame( 0.3 ) );
 		const filtered = toneAmplitude( left, 2200, frame( 0.7 ), frame( 0.9 ) );
@@ -150,9 +147,6 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 				$.synth( { "frequency": 440, "duration": 0.6, "volume": 0.5, "oType": "sine",
 					"tremoloRate": 5, "tremoloDepth": 0.8 } );` }
 		] } );
-		if( !result ) {
-			return;
-		}
 		const left = channel( result );
 		const vibrato = frequencyTrack( left, 0.05, 0.6, 0.025 );
 		const high = 440 * Math.pow( 2, 1 / 12 );
@@ -193,9 +187,6 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 				values.periodic = $.sound( { "duration": 0.1, "volume": 0,
 					"oType": "periodic" } );` }
 		] } );
-		if( !result ) {
-			return;
-		}
 		assert.match( result.values.periodic, /^sound_\d+$/ );
 		const left = channel( result );
 		const right = channel( result, 1 );
@@ -219,9 +210,6 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 				$.synth( { "frequency": 200, "duration": 0.4, "volume": 0.5, "oType": "pulse",
 					"duty": 0.25 } );` }
 		] } );
-		if( !result ) {
-			return;
-		}
 		const left = channel( result );
 		function ratio( from ) {
 			const fundamental = toneAmplitude( left, 200, frame( from ), frame( from + 0.3 ) );
@@ -247,9 +235,6 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 					$.synth( { "frequency": 9300, "frequencyEnd": 4650, "duration": 0.4,
 						"volume": 0.5, "oType": "periodic" } );` }
 			] } );
-			if( !result ) {
-				return;
-			}
 			const left = channel( result );
 
 			// One period is 93 / 9300 s = 480 frames
@@ -275,25 +260,11 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		}
 	);
 
-	clockTest( "setBusVolume and setBusEffect work in any order; effects validate", async () => {
+	clockTest( "setBusVolume and setBusEffect work in either order", async () => {
 		const result = await suite.inHarness( {
 			"config": { "duration": 3.2 }
 		}, renderActions, { "actions": [
 			{ "time": 0, "code": SETUP + `
-				const codeOf = fn => {
-					try {
-						fn();
-					} catch( error ) {
-						return error.code;
-					}
-					return null;
-				};
-				values.codes = [
-					codeOf( () => $.setBusEffect( "sfx", "flanger" ) ),
-					codeOf( () => $.setBusEffect( "drums", "delay" ) ),
-					codeOf( () => $.setBusEffect( "sfx", "delay", { "feedback": 1 } ) ),
-					codeOf( () => $.setBusEffect( "sfx", "reverb", 3 ) )
-				];
 				$.setBusVolume( "sfx", 0.5 );
 				$.sound( { "duration": 0.2, "volume": 0.8, "oType": "sine" } );` },
 
@@ -320,12 +291,6 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 				$.setBusVolume( "master", 0.5 );
 				$.sound( { "duration": 0.2, "volume": 0.8, "oType": "sine" } );` }
 		] } );
-		if( !result ) {
-			return;
-		}
-		assert.deepEqual( result.values.codes, [
-			"INVALID_EFFECT", "INVALID_BUS", "INVALID_EFFECT_OPTION", "INVALID_OPTIONS"
-		] );
 		const left = channel( result );
 		assertNear( g_metrics.peak( left, frame( 0.05 ), frame( 0.18 ) ), 0.4, 0.01, "volume" );
 
@@ -385,9 +350,6 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 						values.busCode = error.code;
 					}` }
 			] } );
-			if( !result ) {
-				return;
-			}
 			const values = result.values;
 			assert.equal( values.silent.peak, 0 );
 			assert.equal( values.silent.spectrum, null );
@@ -422,9 +384,6 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 				values.master = $.getSoundLevels( "master" ).peak;
 				values.output = $.getSoundLevels( "output" ).peak;` }
 		] } );
-		if( !result ) {
-			return;
-		}
 
 		// The master tap is before the limiter, so it is over full scale; the output is not
 		assert.ok( result.values.master > 1, `master ${result.values.master}` );
@@ -452,9 +411,7 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 				values.codes = [
 					codeOf( () => $.sfx( "missing" ) ),
 					codeOf( () => $.sfx( "coin", 2 ) ),
-					codeOf( () => $.definePreset( "", {} ) ),
-					codeOf( () => $.definePreset( "bad", { "filterType": "comb" } ) ),
-					codeOf( () => $.definePreset( "bad", { "volume": 3 } ) )
+					codeOf( () => $.definePreset( "", {} ) )
 				];
 				const params = { "frequency": 330, "duration": 0.1, "oType": "square" };
 				$.definePreset( "mine", params );
@@ -464,12 +421,8 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 			const result = await suite.inHarness( {
 				"config": { "duration": PRESETS.length * 0.8 + 0.4 }
 			}, renderActions, { "actions": actions } );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result.values.codes, [
-				"PRESET_NOT_FOUND", "INVALID_VARIATION", "INVALID_PRESET_NAME",
-				"INVALID_FILTER_TYPE", "INVALID_VOLUME"
+				"PRESET_NOT_FOUND", "INVALID_VARIATION", "INVALID_PRESET_NAME"
 			] );
 			assert.equal( result.values.ids.length, PRESETS.length + 1 );
 			for( const channelData of g_harness.decodeRender( result ).channels ) {
@@ -527,9 +480,6 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 						source => [ source.type, source.startTime ]
 					);` }
 			] } );
-			if( !result ) {
-				return;
-			}
 			const values = result.values;
 			assert.equal( values.code, "INVALID_INSTRUMENT" );
 
@@ -569,9 +519,6 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 			$.play( "T120 L4 @20 O5 C, @21 O4 G" );
 			return __audioHarness.render( { "singlePass": true } );
 		}, { "loader": g_fixtures.PAGE_LOADER, "wav": SAMPLE_WAV } );
-		if( !result ) {
-			return;
-		}
 
 		// C5 plays the C4 file at rate 2; G4 with a G4 root plays it at rate 1
 		const left = channel( result );
@@ -639,9 +586,6 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 					return { ...render, "warnings": warnings };
 				} );
 			}, { "loader": g_fixtures.PAGE_LOADER, "wav": SAMPLE_WAV, "c4": C4 } );
-			if( !result ) {
-				return;
-			}
 			const left = channel( result );
 			const pitch = ( from, to ) => g_metrics.zeroCrossingFrequency(
 				left, RATE, frame( LEAD + from ), frame( LEAD + to )

@@ -569,3 +569,50 @@ in the working tree:
 - **After**: `gamepad-validation-browser` 4 tests of bundle wiring; `gamepad-validation` 35
   Node tests
 - **Pass Rate**: 100%
+
+## 2.3 Sound 11.5: Node and Browser Pairs
+
+Date: 2026-09-29. Plan: `docs/plans/v2.3/ROADMAP.md`, Section 4.3, task 11.5
+(`docs/plans/v2.3/AUDIT-TESTS.md` §5.1).
+
+### Summary
+The `sound-*` Node tests and the `audio-*` browser tests were reviewed against the rule that
+pure logic goes in the Node test and the browser test keeps only what needs a browser. The
+browser tests render audio, drive the harness, or validate arguments in code that only the bundled
+command layer reaches (`sound()`, `setBusVolume()`, the recording commands, the extension
+service, `sfx()`), so they stay. Three validation blocks repeated cases that the Node tests check
+on the plugin modules directly; they now keep only the cases that go through the command.
+
+### Removed Test Cases
+Each removal was checked by a deliberate break in `plugins/sound-advanced/`, made and reverted in
+the working tree:
+1. `audio-effects-browser.test.js`, "setBusEffect validates chains and the new effects" (now
+   "setBusEffect passes on chain errors, checks the bus, and takes an object"): the five-effect
+   chain, the string chain entry, the chain with separate options, the notch filter, the chorus
+   depth of 11, and the accepted four-effect chain. Covered by the `sound-advanced.test.js` tests
+   "effect options take defaults and reject values outside their ranges" and "effect chains
+   resolve in order, and an empty chain removes the effect". Breaks: a chain of five is allowed;
+   the chain test fails. The effect filter accepts `"notch"`, or the chorus depth accepts 11; the
+   options test fails. The kept cases are an unknown effect, the output bus, and the object form.
+2. `audio-advanced-browser.test.js`, "setBusVolume and setBusEffect work in any order; effects
+   validate" (now "... work in either order"): its four `setBusEffect()` error codes. The unknown
+   effect, the delay feedback of 1, and the numeric reverb options are covered by the same two
+   Node tests; the unknown bus takes the same check as the output bus in the effects test. Break:
+   that check reports another code; the effects test fails.
+3. `audio-advanced-browser.test.js`, "built-in presets play within the limiter ceiling; custom
+   presets validate": `definePreset()` with `filterType: "comb"` and with a volume of 3. Covered by
+   the Node test "synth options take sound() defaults and validate every parameter", and
+   `definePreset()` still reaches the preset rules through its empty-name case. Break: the synth
+   accepts a `"comb"` filter type; that Node test fails.
+
+### Rewritten Tests
+The 114 `if( !result ) { return; }` guards after `suite.inHarness()` calls, left from the
+per-test skips that Sound 11.2 replaced, are removed: `inHarness()` no longer returns null, so a
+page function that returned nothing would have passed its test silently. Every test still passes
+without them.
+
+### Test Results
+- **Before**: 237 audio browser passes with `PI_AUDIO_REALTIME=0`; 18 validation cases in the
+  three tests above
+- **After**: 237 audio browser passes; 6 validation cases
+- **Pass Rate**: 100%

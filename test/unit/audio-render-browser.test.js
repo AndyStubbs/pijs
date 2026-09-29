@@ -27,9 +27,6 @@ g_suite.describeAudioEngines( "audio render harness", suite => {
 			$.sound( 440, 0.5, 1, "sine" );
 			return __audioHarness.render( { "singlePass": true } );
 		} );
-		if( !result ) {
-			return;
-		}
 		const rendered = g_harness.decodeRender( result );
 		const left = rendered.channels[ 0 ];
 		assert.equal( rendered.sampleRate, g_harness.SAMPLE_RATE );
@@ -78,9 +75,6 @@ g_suite.describeAudioEngines( "audio render harness", suite => {
 				]
 			} ).then( render => ( { ...render, "stoppedAt": stoppedAt } ) );
 		} );
-		if( !result ) {
-			return;
-		}
 		const rendered = g_harness.decodeRender( result );
 		const left = rendered.channels[ 0 ];
 		assert.equal( rendered.clockDriven, true );
@@ -126,9 +120,6 @@ g_suite.describeAudioEngines( "audio render harness", suite => {
 				}
 			} ).then( render => ( { ...render, "seen": seen, "ids": ids.size } ) );
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		assert.ok( result.seen.calls >= 100, `calls ${result.seen.calls}` );
 		assert.equal( result.nodeCounts.createOscillator, result.seen.calls );
@@ -162,9 +153,6 @@ g_suite.describeAudioEngines( "audio render harness", suite => {
 				const single = __audioHarness.render( { "singlePass": true } );
 				return single.then( render => ( { ...render, "next": Math.random() } ) );
 			} );
-			if( !result ) {
-				return;
-			}
 			renders.push( result );
 		}
 		assert.equal( renders[ 0 ].next, renders[ 1 ].next );
@@ -188,9 +176,6 @@ g_suite.describeAudioEngines( "audio render harness", suite => {
 				return __audioHarness.render( { "singlePass": true } )
 					.then( render => ( { ...render, "frequencies": frequencies } ) );
 			} );
-			if( !result ) {
-				return;
-			}
 			renders.push( g_harness.decodeRender( result ) );
 		}
 		assert.deepEqual( renders[ 0 ].frequencies, renders[ 1 ].frequencies );
@@ -262,9 +247,6 @@ g_suite.describeAudioEngines( "audio render harness", suite => {
 			__audioHarness.simulateGesture();
 			return { "states": states, "events": events };
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result, { "states": [ "suspended", "running" ], "events": 1 } );
 	} );
 } );

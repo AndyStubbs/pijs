@@ -157,6 +157,11 @@ through `test/unit/audio-browser-suite.js`:
 | `sound-samples.test.js` | Sample position model: budgets, rate segments, end prediction (Node) |
 | `audio-lifecycle.test.js` | Sample loading, retries, removal, IDs, validation (Node sandbox) |
 
+The Node tests check the sound modules' logic directly: envelopes, admission, the position
+model, PLAY parsing, and the `sound-advanced` option, effect, preset, and sync rules. The browser
+tests keep what needs a page: rendered audio, the harness, and argument checks that only the
+bundled command layer reaches, with one case per rule that a Node test already covers.
+
 The sound Node tests compare numbers with `near( actual, expected, tolerance )` from
 `test/unit/assert-near.js`, which allows an absolute difference up to the tolerance (1e-9 by
 default) and never accepts NaN.
