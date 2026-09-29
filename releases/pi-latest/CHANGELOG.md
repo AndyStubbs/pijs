@@ -1,3 +1,23 @@
+## [2.3.0]
+
+- Rewrote the `sound` plugin (2.0.0) on sfx, music, and audio buses with an output limiter:
+  ADSR envelopes, one voice budget, audio instances you can pause, resume, and change, and
+  streamed audio. Added the `sound-advanced` plugin (1.0.0): synth features, presets and
+  generated sound effects, instruments, bus effects, level meters, WAV recording, and handlers
+  timed to the music.
+- The `keyboard`, `pointer`, and `gamepad` plugins (2.0.0) share one set of input conventions:
+  camelCase command names, handlers identified by mode and function, cancelled releases, and
+  errors with per-parameter codes. Added wheel input, gamepad button names, and vibration.
+- `set()` rejects unknown options, `clearEvents()` clears pointer handlers on every screen,
+  and core validation, fonts, offscreen screens, plugin registration, and package types were
+  fixed. The `onscreen-keyboard`, `pi-vision`, `print-table`, and `pens` plugins, which were
+  not part of this package, were removed.
+- Builds are identical on every platform: a Windows build no longer adds about 134 bytes of
+  carriage returns to `pi.min.js` and `pi.lite.min.js`.
+- Renamed commands have no aliases. See the
+  [v2.3 update guide](https://github.com/AndyStubbs/pijs/blob/main/docs/UPGRADE-V2.3.md) for
+  the complete changes and required upgrade adjustments.
+
 ## [2.2.0]
 
 - Added host-controlled canvas layout and WebGL context recovery; corrected rendering,
