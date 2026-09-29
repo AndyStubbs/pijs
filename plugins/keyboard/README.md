@@ -1,272 +1,162 @@
 # Keyboard Plugin
 
-Keyboard input handling plugin for Pi.js. Provides key state tracking, event handlers, and action key management.
+Keyboard input for Pi.js 2.3: key state polling, key handlers and combinations, action keys that
+keep the browser from scrolling, and a text or numeric `input()` prompt. The plugin is 2.0.0.
 
-## Features
+## Loading
 
-- **Key State Tracking**: Track which keys are currently pressed
-- **Event Handlers**: Register callbacks for key press/release events
-- **Key Combinations**: Support for multi-key combinations
-- **Action Keys**: Prevent default browser behavior for specific keys
-- **Auto-initialization**: Keyboard starts automatically when plugin loads
+Pi.js Full includes the keyboard plugin in both its IIFE and ESM builds; loading the standalone
+plugin as well throws `DUPLICATE_PLUGIN`. The standalone plugin is for Pi.js Lite:
+
+```html
+<script src="./vendor/pi.lite.js"></script>
+<script src="./vendor/keyboard.min.js"></script>
+```
+
+```javascript
+import pi from "./vendor/pi.lite.esm.min.js";
+import "./vendor/keyboard.esm.min.js";
+```
+
+With npm, the Lite plugin is `pijs-web/plugins/keyboard`. In the Pi.js repository, build it with
+`node scripts/build-plugin.js keyboard`, which writes `build/plugins/keyboard/`.
 
 ## Commands
 
-### `startKeyboard()`
+| Command | Purpose |
+| --- | --- |
+| `inKey( key )` | The key data of a held key, or `null`; without a key, every held key |
+| `onKey( key, mode, fn, once, allowRepeat )` | Registers a `"down"` or `"up"` handler |
+| `offKey( key, mode, fn )` | Removes key handlers |
+| `setActionKeys( keys )` | Replaces the keys whose browser default is prevented |
+| `removeActionKeys( keys )` | Removes some action keys |
+| `startKeyboard()`, `stopKeyboard()` | Start or stop keyboard tracking |
+| `input( prompt, fn, cursor, isNumber, isInteger, allowNegative, maxLength )` | Prompts for text or a number |
+| `cancelInput()` | Cancels the active prompt |
 
-Starts keyboard event listening. Called automatically when the plugin loads.
+Every command also takes one options object, such as `$.onKey( { "key": "Space", "mode": "down",
+"fn": jump } )`.
 
-**Returns:** void
+## Keys
 
-**Example:**
+Name a key by its code, such as `"KeyA"`, `"Space"`, `"ArrowLeft"`, or `"ShiftLeft"`, which names
+a physical key whatever the keyboard layout and modifiers, or by its value, such as `"a"`, `" "`,
+or `"Shift"`, which names the character it types. Codes suit game controls. A value is held while
+any key that produced it is held.
+
+Key data is frozen and has `code`, `key`, `location`, `altKey`, `ctrlKey`, `metaKey`, `shiftKey`,
+`repeat`, and `cancelled`.
+
 ```javascript
-pi.startKeyboard();
-```
+function update() {
+	if( $.inKey( "ArrowLeft" ) ) {
+		playerX -= 2;
+	}
 
-### `stopKeyboard()`
-
-Stops keyboard event listening and clears all key states.
-
-**Returns:** void
-
-**Example:**
-```javascript
-pi.stopKeyboard();
-```
-
-### `inkey( key )`
-
-Gets the current state of a key or all keys.
-
-**Parameters:**
-- `key` (string, optional): Key code or key name to check. If omitted, returns array of all pressed keys.
-
-**Returns:** Key data object if key specified and pressed, `null` if not pressed, or array of all pressed key data objects if no key specified.
-
-**Key Data Object:**
-```javascript
-{
-	code: "KeyA",        // Physical key code
-	key: "a",           // Character key value
-	location: 0,        // Key location (0=standard, 1=left, 2=right)
-	altKey: false,      // Alt key modifier
-	ctrlKey: false,     // Ctrl key modifier
-	metaKey: false,     // Meta key modifier
-	shiftKey: false,    // Shift key modifier
-	repeat: false       // Key repeat flag
+	// Every held key, ordered by its latest keydown
+	for( const keyData of $.inKey() ) {
+		$.print( keyData.code );
+	}
+	requestAnimationFrame( update );
 }
 ```
 
-**Example:**
+`inKey()` without a key returns the same frozen array until a key is pressed or released, so
+reading it every frame does not allocate.
+
+## Handlers
+
 ```javascript
-// Check if 'a' key is pressed
-const keyData = pi.inkey( "KeyA" );
-if( keyData ) {
-	console.log( "A key is pressed!" );
+function jump( keyData ) {
+	player.jump();
 }
+$.onKey( "Space", "down", jump );
 
-// Get all currently pressed keys
-const allKeys = pi.inkey();
-console.log( allKeys.length + " keys pressed" );
-```
-
-### `setActionKeys( keys )`
-
-Sets keys that should prevent default browser behavior (e.g., prevent scrolling with arrow keys).
-
-**Parameters:**
-- `keys` (Array<string>): Array of key codes or key names to treat as action keys.
-
-**Returns:** void
-
-**Example:**
-```javascript
-// Prevent arrow keys from scrolling
-pi.setActionKeys( [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight" ] );
-```
-
-### `removeActionKeys( keys )`
-
-Removes keys from the action keys set.
-
-**Parameters:**
-- `keys` (Array<string>): Array of key codes or key names to remove from action keys.
-
-**Returns:** void
-
-**Example:**
-```javascript
-pi.removeActionKeys( [ "ArrowUp", "ArrowDown" ] );
-```
-
-### `onkey( key, mode, fn, once, allowRepeat )`
-
-Registers a callback function for key events.
-
-**Parameters:**
-- `key` (string|Array<string>): Key code, key name, or array of keys for combinations. Use `"any"` to listen to all keys.
-- `mode` (string): Event mode - `"down"` for key press, `"up"` for key release.
-- `fn` (Function): Callback function that receives key data.
-- `once` (boolean, optional): If `true`, handler is removed after first trigger. Defaults to `false`.
-- `allowRepeat` (boolean, optional): If `true`, handler fires on key repeat. Defaults to `false`.
-
-**Returns:** void
-
-**Example:**
-```javascript
-// Listen for single key press
-pi.onkey( "KeyA", "down", ( keyData ) => {
-	console.log( "A key pressed!" );
+// Every key
+$.onKey( "any", "down", function( keyData ) {
+	console.log( keyData.key );
 } );
 
-// Listen for key combination (Ctrl+S)
-pi.onkey( [ "ControlLeft", "KeyS" ], "down", ( comboData ) => {
-	console.log( "Save shortcut pressed!" );
+// A combination runs when all its keys are held, with their data in the order given
+$.onKey( [ "ControlLeft", "KeyS" ], "down", function( keys ) {
+	save();
 } );
 
-// Listen for any key
-pi.onkey( "any", "down", ( keyData ) => {
-	console.log( "Key pressed:", keyData.key );
-} );
+// Once, then removed
+$.onKey( "Enter", "down", start, true );
 
-// One-time handler
-pi.onkey( "Enter", "down", ( keyData ) => {
-	console.log( "Enter pressed once" );
-}, true );
+$.offKey( "Space", "down", jump );
 ```
 
-### `offkey( key, mode, fn, once, allowRepeat )`
+- A handler is identified by its key or combination, its mode, and its function. Registering the
+  same one again does nothing, whatever its `once` and `allowRepeat`.
+- `offKey( key, mode, fn )` removes that handler, `offKey( key, mode )` every handler of the mode,
+  and `offKey( key, null, fn )` the function from both modes. `offKey( key )` alone throws.
+- `"down"` handlers receive the keydown's data and run for key repeats only with `allowRepeat`.
+  `"up"` handlers receive the keyup's data.
+- Key state is updated before handlers run: in an `"up"` handler, `inKey()` no longer reports the
+  released key. A handler registered during a key event first runs for the next one.
+- A handler that throws is reported with `console.error()`, and the other handlers still run.
+- A combination's array is copied, and a key listed twice counts once; `"any"` cannot be part of
+  one.
 
-Removes a previously registered key event handler.
+## Cancelled Releases
 
-**Parameters:**
-- `key` (string|Array<string>): Key code, key name, or array of keys that was used in `onkey()`.
-- `mode` (string): Event mode - `"down"` or `"up"`.
-- `fn` (Function): The callback function that was registered.
-- `once` (boolean, optional): Must match the `once` value used in `onkey()`.
-- `allowRepeat` (boolean, optional): Must match the `allowRepeat` value used in `onkey()`.
+Keys the player did not release are released through the `"up"` handlers, with
+`cancelled: true`: when the window loses focus, the page is hidden, `stopKeyboard()` is called, a
+key comes from an editable element, or an `input()` prompt starts. Each held key is released once.
 
-**Returns:** void
+Keys typed into an editable element on the page, such as an input field, are ignored.
 
-**Example:**
-```javascript
-function handleKey( keyData ) {
-	console.log( "Key:", keyData.key );
-}
+## Starting and Stopping
 
-// Register handler
-pi.onkey( "KeyA", "down", handleKey );
-
-// Later, remove handler
-pi.offkey( "KeyA", "down", handleKey );
-```
-
-## Usage
-
-### Browser (IIFE)
-
-```html
-<script src="../../build/pi.min.js"></script>
-<script src="dist/keyboard.min.js"></script>
-
-<script>
-	pi.ready( () => {
-		pi.screen( { "aspect": "300x200" } );
-		
-		// Keyboard is automatically started
-		pi.onkey( "KeyA", "down", ( keyData ) => {
-			console.log( "A key pressed!" );
-		} );
-	} );
-</script>
-```
-
-### ES Modules
-
-```javascript
-import pi from "../../build/pi.esm.min.js";
-import keyboardPlugin from "./plugins/keyboard/dist/keyboard.esm.min.js";
-
-pi.registerPlugin( {
-	"name": "keyboard",
-	"init": keyboardPlugin
-} );
-
-pi.ready( () => {
-	pi.screen( { "aspect": "300x200" } );
-	
-	// Keyboard is automatically started
-	pi.onkey( "KeyA", "down", ( keyData ) => {
-		console.log( "A key pressed!" );
-	} );
-} );
-```
-
-## Key Codes and Names
-
-Common key codes and names:
-
-- **Letters**: `KeyA`, `KeyB`, `KeyC`, etc. (or `"a"`, `"b"`, `"c"` as key names)
-- **Numbers**: `Digit1`, `Digit2`, etc. (or `"1"`, `"2"` as key names)
-- **Arrow Keys**: `ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`
-- **Modifiers**: `ControlLeft`, `ControlRight`, `ShiftLeft`, `ShiftRight`, `AltLeft`, `AltRight`
-- **Special**: `Enter`, `Space`, `Backspace`, `Escape`, `Tab`, `Delete`
-- **Function Keys**: `F1`, `F2`, etc.
-
-## Key Combinations
-
-You can listen for key combinations by passing an array of keys:
-
-```javascript
-// Ctrl+Shift+S
-pi.onkey( [ "ControlLeft", "ShiftLeft", "KeyS" ], "down", ( comboData ) => {
-	console.log( "Save with shift!" );
-} );
-```
-
-The callback receives an array of key data objects when multiple keys are specified, or a single key data object for single keys.
+The keyboard starts on first use: the first `inKey()` call, `onKey()` registration, or
+`setActionKeys()` call. Before then the plugin adds no listeners, so earlier key presses are not
+tracked; call `startKeyboard()` to track from an earlier point. `stopKeyboard()` releases held
+keys and holds until `startKeyboard()`: reads and registrations do not restart it, and handlers
+stay registered but are not called.
 
 ## Action Keys
 
-Action keys prevent default browser behavior. This is useful for game controls where you don't want the page to scroll when arrow keys are pressed:
+```javascript
+// Arrow keys and Space no longer scroll the page
+$.setActionKeys( [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space" ] );
+
+$.removeActionKeys( [ "Space" ] );
+```
+
+`setActionKeys()` and `set( { "actionKeys": [ ... ] } )` replace the action keys, so pass every
+key in one call; an empty array clears them.
+
+## Input Prompt
 
 ```javascript
-// Prevent arrow keys from scrolling
-pi.setActionKeys( [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight" ] );
-
-// Prevent spacebar from scrolling
-pi.setActionKeys( [ "Space" ] );
+const name = await $.input( "Name: " );
+const age = await $.input( { "prompt": "Age: ", "isInteger": true, "maxLength": 3 } );
 ```
 
-## Building
+`input()` shows a prompt at the print cursor and returns a promise. Enter completes it and Escape
+cancels it, which resolves `null`. Only one prompt is active at a time.
 
-This plugin is **built automatically** when you run:
+- The prompt reads its own keys, so it works after `stopKeyboard()`, and its keys, including the
+  Enter that ends it, do not reach `onKey()` handlers or `inKey()`.
+- It prevents the default action of the keys it handles; Ctrl and Meta shortcuts are left to the
+  browser, and pasted text is inserted.
+- The prompt keeps to one line, and printing continues on the line below it.
+- With `isNumber` or `isInteger`, the value is a number, and a value with no digits is 0.
+- `cancelInput()`, another `input()`, `clearEvents( "keyboard" )`, or removing the prompt's screen
+  cancels it.
 
-```bash
-node scripts/build.js
-```
+## Clearing and Errors
 
-Or build just this plugin:
+`clearEvents( "keyboard" )` removes every key handler. `$.clearEvents()` also cancels every
+prompt, and a screen's `clearEvents()` cancels only that screen's prompt. Clearing does not stop
+tracking.
 
-```bash
-node scripts/build-plugin.js keyboard
-```
-
-This creates (in the `dist/` directory):
-- `keyboard.esm.js` (ES Module)
-- `keyboard.esm.min.js` (ES Module, minified)
-- `keyboard.js` (IIFE for browsers)
-- `keyboard.min.js` (IIFE, minified)
-
-## Notes
-
-- Keyboard automatically starts when the plugin loads
-- Keyboard events are ignored when focus is inside editable elements (input, textarea, etc.)
-- All key states are cleared when the window loses focus
-- The `"any"` key handler receives the current key data as a parameter
-- Key combinations require all keys in the array to be pressed simultaneously
+Invalid arguments throw a `TypeError` for a wrong type or a `RangeError` for a value out of range,
+with a code for the parameter: `INVALID_KEY`, `INVALID_MODE`, `INVALID_FUNCTION`, `INVALID_ONCE`,
+`INVALID_ALLOW_REPEAT`, `INVALID_KEYS`, and the `input()` codes.
 
 ## License
 
 Apache-2.0
-

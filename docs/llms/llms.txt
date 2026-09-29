@@ -1,4 +1,4 @@
-# Pi.js 2.2.0 - Quick Reference for LLMs
+# Pi.js 2.3.0 - Quick Reference for LLMs
 
 ## Overview
 
@@ -7,8 +7,12 @@ The global API is available as `pi` and, when it is not already defined, `$`.
 
 ## Key Facts
 
-- Version: 2.2.0
-- Full bundles gamepad, keyboard, sound, pointer, and polygons. Lite requires standalone plugins.
+- Version: 2.3.0
+- Full bundles gamepad, keyboard, sound, pointer, and polygons. Their standalone plugins are for
+  Lite only: loading one after Full throws `DUPLICATE_PLUGIN`. `sound-advanced` is in neither
+  bundle; load it after Full, or after Lite and `sound`.
+- Input commands are camelCase: `inKey`, `onKey`, `inMouse`, `onPress`, `inGamepad`.
+  The lowercase 2.2 names are not registered.
 - `polygon( points, fillColor )` draws a closed outline with optional nonzero-winding fill.
 - Polygon points accept flat arrays, typed arrays, or `{ x, y }` arrays; replace them to edit vertices.
 - Create a screen before calling screen-scoped commands.
@@ -93,9 +97,10 @@ $.screen( "320x200" );
 $.pushView( 20, 20, 120, 80 );
 $.cls();
 
-const mouse = $.inmouse();
-const localMouse = $.screenToView( mouse.x, mouse.y );
-if( mouse.buttons & 1 ) {
+// inMouse() is null until the first mouse event
+const mouse = $.inMouse();
+if( mouse && ( mouse.buttons & 1 ) ) {
+	const localMouse = $.screenToView( mouse.x, mouse.y );
 	$.circle( localMouse.x, localMouse.y, 3, "white" );
 }
 
@@ -103,20 +108,80 @@ $.popView();
 $.resetView();
 ```
 
-Keyboard polling and events start tracking automatically:
+The first read or handler registration starts tracking. Name keys by code, such as `"KeyA"`
+or `"Space"`, for game controls:
 
 ```javascript
-if( $.inkey( "ArrowLeft" ) ) {
+if( $.inKey( "ArrowLeft" ) ) {
 	playerX -= 1;
 }
 
-$.onkey( "Space", "down", function( keyData ) {
-	console.log( keyData );
+function jump( keyData ) {
+	console.log( keyData.code );
+}
+$.onKey( "Space", "down", jump );
+$.offKey( "Space", "down", jump );
+```
+
+A handler is identified by its mode and function, so registering it twice runs it once, and
+`offX( mode, fn )` removes it. Handlers run after state updates; one that throws is reported
+with `console.error()`. Releases caused by blur, a hidden page, or a stop command reach `"up"`
+handlers with `cancelled: true`.
+
+Mouse, touch, press, and click data share one frozen shape: `x`, `y`, `lastX`, `lastY`,
+`buttons`, `action`, `type`, `id`, and `cancelled`. Pointer modes are `"down"`, `"move"`, and
+`"up"`. Touch handlers receive an array with the one touch that changed. `inMouse()` and
+`inPress()` return `null` before the first event.
+
+```javascript
+$.onPress( "down", function( press ) {
+	$.pset( press.x, press.y, "yellow" );
+} );
+$.onWheel( function( wheel ) {
+	zoom += wheel.deltaY * 0.001;
 } );
 ```
 
-Mouse and press callbacks receive one data object. Touch callbacks receive an array of touch
-objects.
+Gamepads are live objects updated in place; read them once per frame:
+
+```javascript
+const pad = $.inGamepad( 0 );
+if( pad && pad.getButtonJustPressed( "south" ) ) {
+	jump();
+}
+const x = pad ? pad.getAxis( "leftX" ) : 0;
+```
+
+`inGamepad()` without an index always returns an array. Button names follow the standard
+mapping: `south`, `east`, `west`, `north`, shoulders, triggers, `dpadUp`, and so on; axes are
+`leftX`, `leftY`, `rightX`, and `rightY`.
+
+## Sound
+
+Sound needs a page served over HTTP(S) and plays after the first user gesture.
+
+```javascript
+$.sound( 440, 0.2, 0.5, "square" );
+$.sound( {
+	"frequency": 220, "frequencyEnd": 880, "duration": 0.3,
+	"attackTime": 0.01, "releaseTime": 0.2
+} );
+const song = $.play( "T140 L8 O4 C E G >C" );
+$.stopPlay( song );
+
+$.loadAudio( "music.ogg", "music", true );
+await $.ready();
+const instance = $.playAudio( "music", 0.6, 0, 0, true );
+$.pauseAudio( instance );
+$.resumeAudio( instance );
+$.setBusVolume( "music", 0.5 );
+```
+
+`sound()` positions are `frequency`, `duration`, `volume`, `oType`, `delay`, `attackTime`,
+`decayTime`, `sustainLevel`, `releaseTime`, `pan`, and `frequencyEnd`. `playAudio()` returns an
+instance ID for `stopAudio`, `pauseAudio`, `resumeAudio`, and `setAudio`. Sound, music, and
+audio share 64 voices and mix on the `"sfx"`, `"music"`, and `"audio"` buses into the master
+volume and an output limiter.
 
 ## Shaders
 
@@ -198,7 +263,7 @@ Logical x/e/m dimensions follow the container; display shader backing size follo
 canvas CSS content size before transforms. Canvas and container changes are observed. Hidden hosts retain their last
 valid allocation and recover when visible. Offscreen screens accept noCss as a no-op.
 Pointer input requires an onscreen target: screen creation changes the active screen, so use
-visible.inmouse() or setScreen(visible) after creating an offscreen buffer.
+visible.inMouse() or setScreen(visible) after creating an offscreen buffer.
 
 v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same
 orientation as u_texture.
@@ -208,8 +273,5 @@ resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise 
 upload is retained. No video rendering loop is created.
 
 Image onLoad/onError exceptions remain visible and release their resource wait exactly once.
-Pointer subscriptions register synchronously; additions during dispatch enter later snapshots.
-Replaying pooled audio clears that slot's old duration timer, including full-length playback.
-Plugin dependencies resolve after successful initialization, including late registrations;
-missing, cyclic, and failed dependencies remain initialized:false. Initializers run at most once.
+Plugin installation is all or nothing; missing and cyclic dependencies stay pending.
 Failed screen creation rolls back its DOM, observers, commands, and GPU resources.

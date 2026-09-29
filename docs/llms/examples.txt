@@ -1,4 +1,4 @@
-# Pi.js 2.2.0 Code Examples
+# Pi.js 2.3.0 Code Examples
 
 This file contains example code snippets demonstrating how to use Pi.js for various tasks.
 
@@ -8,6 +8,8 @@ This file contains example code snippets demonstrating how to use Pi.js for vari
 - Task: Framebuffer shader -> see section ### Framebuffer Shader
 - Task: Display shader -> see section ### Display Shader Uniforms
 - Task: Offscreen composition -> see section ### Parented Offscreen Screen
+- Task: Gamepad controls -> see section ### Gamepad Input
+- Task: Music and sound files -> see section ### Audio Files
 - Task: Pong Game -> see section ### Pong Game
 - Task: Mary Had A Little Lamb -> see section ### Mary Had A Little Lamb
 - Task: Retro City Intro -> see section ### Retro City
@@ -59,7 +61,7 @@ them with local content:
 $.screen( "320x200" );
 $.pushView( 40, 20, 100, 80 );
 
-$.onpress( "down", function( press ) {
+$.onPress( "down", function( press ) {
 	const local = $.screenToView( press.x, press.y );
 	if( local.x >= 0 && local.x < $.width() && local.y >= 0 && local.y < $.height() ) {
 		$.circle( local.x, local.y, 3, "white" );
@@ -384,16 +386,16 @@ $.ready( function() {
 	function gameLoop() {
 		$.cls();
 		
-		if( $.inkey( "ArrowLeft" ) ) {
+		if( $.inKey( "ArrowLeft" ) ) {
 			x -= 5;
 		}
-		if( $.inkey( "ArrowRight" ) ) {
+		if( $.inKey( "ArrowRight" ) ) {
 			x += 5;
 		}
-		if( $.inkey( "ArrowUp" ) ) {
+		if( $.inKey( "ArrowUp" ) ) {
 			y -= 5;
 		}
-		if( $.inkey( "ArrowDown" ) ) {
+		if( $.inKey( "ArrowDown" ) ) {
 			y += 5;
 		}
 		
@@ -416,19 +418,19 @@ $.ready( function() {
 	let x = 320;
 	let y = 240;
 	
-	$.onkey( "ArrowLeft", "down", function() {
+	$.onKey( "ArrowLeft", "down", function() {
 		x -= 10;
 	} );
 	
-	$.onkey( "ArrowRight", "down", function() {
+	$.onKey( "ArrowRight", "down", function() {
 		x += 10;
 	} );
 	
-	$.onkey( "ArrowUp", "down", function() {
+	$.onKey( "ArrowUp", "down", function() {
 		y -= 10;
 	} );
 	
-	$.onkey( "ArrowDown", "down", function() {
+	$.onKey( "ArrowDown", "down", function() {
 		y += 10;
 	} );
 	
@@ -450,14 +452,14 @@ $.ready( function() {
 	$.setColor( 15 );
 	$.print( "Click and drag to draw" );
 	
-	$.onmouse( "down", function( e ) {
+	$.onMouse( "down", function( e ) {
 		if( e.buttons & 1 ) {
 			$.setColor( 15 );
 			$.pset( e.x, e.y );
 		}
 	} );
 	
-	$.onmouse( "move", function( e ) {
+	$.onMouse( "move", function( e ) {
 		if( e.buttons & 1 ) {
 			$.setColor( 15 );
 			$.pset( e.x, e.y );
@@ -471,13 +473,13 @@ $.ready( function() {
 $.ready( function() {
 	$.screen( "640x480" );
 	
-	$.ontouch( "start", function( touches ) {
+	$.onTouch( "down", function( touches ) {
 		for( const touch of touches ) {
 			$.circle( touch.x, touch.y, 10, 15 );
 		}
 	} );
 	
-	$.ontouch( "move", function( touches ) {
+	$.onTouch( "move", function( touches ) {
 		for( const touch of touches ) {
 			$.circle( touch.x, touch.y, 10, 15 );
 		}
@@ -491,17 +493,72 @@ $.ready( function() {
 	$.screen( "640x480" );
 	
 	// Works with both mouse and touch
-	$.onpress( "down", function( e ) {
+	$.onPress( "down", function( e ) {
 		$.setColor( 15 );
 		$.circle( e.x, e.y, 20 );
 	} );
 	
-	$.onpress( "move", function( e ) {
+	$.onPress( "move", function( e ) {
 		if( e.buttons > 0 ) {
 			$.setColor( 15 );
 			$.pset( e.x, e.y );
 		}
 	} );
+} );
+```
+
+### Clicks and Wheel
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+	$.setColor( 15 );
+	$.rect( 20, 20, 120, 40 );
+	$.setPosPx( 36, 36 );
+	$.print( "Click me", true );
+
+	// Runs when the same pointer presses and releases inside the box
+	$.onClick( function( click, label ) {
+		$.print( label + " at " + click.x + ", " + click.y );
+	}, false, { "x": 20, "y": 20, "width": 120, "height": 40 }, "Button" );
+
+	// The page does not scroll with the wheel over the canvas while this is registered
+	let radius = 20;
+	$.onWheel( function( wheel ) {
+		radius = Math.max( 5, radius - wheel.deltaY * 0.05 );
+		$.circle( 320, 240, radius );
+	} );
+} );
+```
+
+### Gamepad Input
+```javascript
+$.ready( function() {
+	$.screen( "640x480" );
+	$.setGamepadDeadZone( 0.15 );
+
+	let x = 320;
+	let y = 240;
+
+	$.onGamepad( "connect", function( pad ) {
+		$.print( "Connected: " + pad.id );
+	} );
+
+	function update() {
+
+		// Read once per frame; the pad object updates in place
+		const pad = $.inGamepad( 0 );
+		if( pad ) {
+			x += pad.getAxis( "leftX" ) * 4;
+			y += pad.getAxis( "leftY" ) * 4;
+			if( pad.getButtonJustPressed( "south" ) ) {
+				$.vibrateGamepad( 0, 100, 0.8, 0.4 );
+			}
+		}
+		$.cls();
+		$.circle( x, y, 20, 15 );
+		requestAnimationFrame( update );
+	}
+	update();
 } );
 ```
 
@@ -541,13 +598,21 @@ $.ready( function() {
 	$.sound( { "frequency": 440, "duration": 0.5, "oType": "triangle" } );
 	$.sound( { "frequency": 440, "duration": 0.5, "oType": "sawtooth" } );
 	
-	// With envelope
+	// With an ADSR envelope: attack, decay to the sustain level, then release
 	$.sound( {
 		"frequency": 440,
 		"duration": 1.0,
-		"attack": 0.2,
-		"decay": 0.3
+		"attackTime": 0.2,
+		"decayTime": 0.3,
+		"sustainLevel": 0.6,
+		"releaseTime": 0.4
 	} );
+
+	// A sweep from 220 Hz to 880 Hz, panned left
+	$.sound( { "frequency": 220, "frequencyEnd": 880, "duration": 0.3, "pan": -0.8 } );
+
+	// White or pink noise
+	$.sound( { "duration": 0.2, "oType": "white", "releaseTime": 0.15 } );
 } );
 ```
 
@@ -592,6 +657,34 @@ $.sound( { "frequency": 440, "duration": 0.5 } );
 
 $.setVolume( 0.25 );  // 25%
 $.sound( { "frequency": 440, "duration": 0.5 } );
+```
+
+### Audio Files
+```javascript
+$.ready( async function() {
+	$.screen( "640x480" );
+
+	// Decoded into memory: many instances, sample-accurate timing
+	$.loadAudio( "jump.wav", "jump" );
+
+	// Streamed through a media element: long music files
+	$.loadAudio( "theme.ogg", "theme", true );
+	await $.ready();
+
+	const music = $.playAudio( { "audioId": "theme", "volume": 0.5, "loop": true } );
+	$.onKey( "Space", "down", function() {
+		$.playAudio( "jump", 1, 0, 0, false, 1 + Math.random() * 0.2 );
+	} );
+	$.onKey( "KeyP", "down", function() {
+		$.pauseAudio( music );
+	} );
+	$.onKey( "KeyR", "down", function() {
+		$.resumeAudio( music );
+	} );
+
+	// Each bus has its own volume: "sfx", "music", "audio", or "master"
+	$.setBusVolume( "audio", 0.8 );
+} );
 ```
 
 ## Images and Sprites
@@ -740,16 +833,16 @@ $.ready( function() {
 		$.cls();
 		
 		// Handle input
-		if( $.inkey( "ArrowLeft" ) ) {
+		if( $.inKey( "ArrowLeft" ) ) {
 			playerX -= 5;
 		}
-		if( $.inkey( "ArrowRight" ) ) {
+		if( $.inKey( "ArrowRight" ) ) {
 			playerX += 5;
 		}
-		if( $.inkey( "ArrowUp" ) ) {
+		if( $.inKey( "ArrowUp" ) ) {
 			playerY -= 5;
 		}
-		if( $.inkey( "ArrowDown" ) ) {
+		if( $.inKey( "ArrowDown" ) ) {
 			playerY += 5;
 		}
 		
@@ -789,10 +882,10 @@ $.ready( function() {
 		$.cls();
 		
 		// Update player
-		if( $.inkey( "ArrowLeft" ) ) playerX -= 5;
-		if( $.inkey( "ArrowRight" ) ) playerX += 5;
-		if( $.inkey( "ArrowUp" ) ) playerY -= 5;
-		if( $.inkey( "ArrowDown" ) ) playerY += 5;
+		if( $.inKey( "ArrowLeft" ) ) playerX -= 5;
+		if( $.inKey( "ArrowRight" ) ) playerX += 5;
+		if( $.inKey( "ArrowUp" ) ) playerY -= 5;
+		if( $.inKey( "ArrowDown" ) ) playerY += 5;
 		
 		// Check collision
 		if( checkCollision( playerX, playerY, 20, enemyX, enemyY, 20 ) ) {
@@ -1036,7 +1129,7 @@ $.ready( function() {
 	$.print( "Press any key to play " + String.fromCharCode( 13 ) );
 
 	// Require a keypress before playing audio
-	$.onkey( "any", "down", function() {
+	$.onKey( "any", "down", function() {
 		$.cls();
 		$.setPos( 1, 1 );
 		$.print( String.fromCharCode( 13 ) + " Playing..." );

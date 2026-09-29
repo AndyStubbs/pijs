@@ -322,7 +322,9 @@ The `test` job differs from a local `npm test` in these settings:
   `test/scripts/release-docs.test.js` checks against `releases/pi-latest/package.json`.
 - Files in `docs/`, except `docs/llms/pi.d.ts`, which must match the built declarations;
   `docs/API.md`, which `test/scripts/api-reference.test.js` checks names every command, no
-  removed one, and the package version; and `docs/UPGRADE-V2.3.md`, whose renamed-command
+  removed one, and the package version; the `docs/llms/` references, whose calls, removed names,
+  version, and examples `test/scripts/llms-references.test.js` checks; `docs/GAMEPAD.md`, which
+  `test/scripts/plugin-guides.test.js` checks with the plugin READMEs; and `docs/UPGRADE-V2.3.md`, whose renamed-command
   table `test/scripts/upgrade-guide.test.js` checks against `metadata/pi-2.3/_removed.toml`.
 - Files in `tools/` and `.vscode/`.
 - `LICENSE`, `TODO.txt`, `AGENTS.md`, `.cursorrules`, and `.github/dependabot.yml`.

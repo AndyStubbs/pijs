@@ -758,7 +758,7 @@ the [ROADMAP](ROADMAP.md#5-keyboard) tasks that implement each item.
 | KEY-014 | `setActionKeys()` adds | Accepted | Fixed by A12 (Keyboard 2.9, breaking, done) |
 | KEY-015 | No composed or pasted text | Accepted in part | Paste fixed by A3 (Keyboard 1.4, done). Composed and mobile text are not planned: A16 dropped 2026-09-28 |
 | KEY-016 | `clearEvents()` scope | Accepted | Rule I10 (Keyboard 2.6, done) |
-| KEY-017 | Documentation and declarations | Accepted | Metadata and declarations in Keyboard 1.11 (done); `API.md` in R.2 (done); README and llms references in R.3 |
+| KEY-017 | Documentation and declarations | Accepted | Metadata and declarations in Keyboard 1.11 (done); `API.md` in R.2 and the README and llms references in R.3 (done) |
 | KEY-018 | Manual pages register twice | Accepted | Keyboard 1.12 (done); self-registration after Full is CORE-003 |
 | KEY-019 | Missing automated tests | Accepted | A test with each fix; harness in Keyboard 1.1 (done) |
 | A1–A9 | Fixes | Accepted | Keyboard Phase 1, except A7, which lands with I11 in Phase 2 |
