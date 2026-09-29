@@ -24,19 +24,19 @@ let m_waitingTimeout = false;
 let m_gamepadIndex = null;
 let m_waitTime = 0;
 
-$.onGamepadConnected( ( gamepad ) => {
+$.onGamepad( "connect", ( gamepad ) => {
 	m_gamepadIndex = gamepad.index;
 	m_isConnected = true;
 } );
 
-$.onGamepadDisconnected( () => {
+$.onGamepad( "disconnect", () => {
 	m_gamepadIndex = null;
 	m_isConnected = false;
 } )
 
 const m_steps = [
 	{
-		"name": "onGamepadConnected",
+		"name": "onGamepad connect",
 		"instructions": "Connect a gamepad and press a button or move an axis.",
 		"check": () => m_isConnected,
 		"status": "incomplete"
@@ -81,12 +81,12 @@ const m_steps = [
 		"check": () => $.inGamepad( m_gamepadIndex ).getAxisChanged( 3 ),
 		"status": "incomplete"
 	}, {
-		"name": "onGamepadDisconnected",
+		"name": "onGamepad disconnect",
 		"instructions": "Disconnect the gamepad",
 		"check": () => !m_isConnected,
 		"status": "incomplete"
 	}, {
-		"name": "onGamepadConnected2",
+		"name": "onGamepad connect again",
 		"instructions": "Reconnect the gamepad and press a button or move an axes.",
 		"check": () => m_isConnected,
 		"status": "incomplete"

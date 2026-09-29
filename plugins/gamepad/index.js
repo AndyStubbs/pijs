@@ -24,10 +24,13 @@ const m_padStates = {};
 // The list form of inGamepad(): one live array, refilled in place
 const m_padList = [];
 
-// Handler registrations: { fn, isRemoved }, and for connect handlers `delivered`, the pads the
-// handler has received. A registration removed during a dispatch is skipped for the rest of it
-let m_onConnectHandlers = [];
-let m_onDisconnectHandlers = [];
+// The modes of onGamepad() and offGamepad()
+const MODES = [ "connect", "disconnect" ];
+
+// Handler registrations by mode: { fn, once, isRemoved }, and for connect handlers `delivered`,
+// the pads the handler has received. A registration removed during a dispatch is skipped for the
+// rest of it
+let m_handlers = { "connect": [], "disconnect": [] };
 
 // Connect handlers registered during a dispatch receive the connected pads after it ends
 let m_dispatchDepth = 0;
@@ -65,8 +68,8 @@ export default function gamepadPlugin( pluginApi ) {
 	pluginApi.addCommand(
 		"setGamepadSensitivity", setGamepadSensitivity, false, [ "sensitivity" ]
 	);
-	pluginApi.addCommand( "onGamepadConnected", onGamepadConnected, false, [ "fn" ] );
-	pluginApi.addCommand( "onGamepadDisconnected", onGamepadDisconnected, false, [ "fn" ] );
+	pluginApi.addCommand( "onGamepad", onGamepad, false, [ "mode", "fn", "once" ] );
+	pluginApi.addCommand( "offGamepad", offGamepad, false, [ "mode", "fn" ] );
 
 	// Register clearEvents handler
 	pluginApi.registerClearEvents( "gamepad", clearGamepadEvents );
@@ -193,54 +196,142 @@ function setGamepadSensitivity( options ) {
 }
 
 /**
- * Register a callback for gamepad connections. The callback also receives the pads that are
- * already connected, once each.
+ * Register a callback for gamepad connections or disconnections. A connect callback also
+ * receives the pads that are already connected, once each. A handler is identified by its mode
+ * and function, so registering the same function for the same mode again does nothing.
  *
  * @param {Object} options - Command options.
  * @returns {void}
  */
-function onGamepadConnected( options ) {
+function onGamepad( options ) {
+	const mode = options.mode;
 	const fn = options.fn;
+	checkMode( "onGamepad", mode );
+	checkFunction( "onGamepad", fn );
 
-	if( typeof fn !== "function" ) {
-		const error = new TypeError( "onGamepadConnected: fn must be a function." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
+	let handler = null;
+	for( const registered of m_handlers[ mode ] ) {
+		if( registered.fn === fn ) {
+			handler = registered;
+		}
 	}
-
-	const handler = { "fn": fn, "isRemoved": false, "delivered": new WeakSet() };
-	m_onConnectHandlers.push( handler );
+	if( handler === null ) {
+		handler = { "fn": fn, "once": !!( options.once ), "isRemoved": false };
+		if( mode === "connect" ) {
+			handler.delivered = new WeakSet();
+		}
+		m_handlers[ mode ].push( handler );
+	}
 	startGamepad();
-	if( m_dispatchDepth > 0 ) {
-		m_pendingReplays.push( handler );
-	} else {
-		replayConnected( handler );
+	if( mode === "connect" ) {
+		if( m_dispatchDepth > 0 ) {
+			m_pendingReplays.push( handler );
+		} else {
+			replayConnected( handler );
+		}
 	}
 }
 
 /**
- * Register a callback for gamepad disconnections.
+ * Remove gamepad callbacks by mode and function. Without a function, every callback of the mode
+ * is removed; without a mode, the function is removed from both modes. Omitting both throws.
  *
  * @param {Object} options - Command options.
  * @returns {void}
  */
-function onGamepadDisconnected( options ) {
+function offGamepad( options ) {
+	const mode = options.mode;
 	const fn = options.fn;
-
-	if( typeof fn !== "function" ) {
-		const error = new TypeError( "onGamepadDisconnected: fn must be a function." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
+	if( mode == null && fn == null ) {
+		throwCode(
+			TypeError,
+			"offGamepad: mode or fn is required. To remove every handler, call " +
+			"clearEvents( \"gamepad\" ).",
+			"INVALID_MODE"
+		);
 	}
-
-	m_onDisconnectHandlers.push( { "fn": fn, "isRemoved": false } );
-	startGamepad();
+	let modes = MODES;
+	if( mode != null ) {
+		checkMode( "offGamepad", mode );
+		modes = [ mode ];
+	}
+	if( fn != null ) {
+		checkFunction( "offGamepad", fn );
+	}
+	for( const eachMode of modes ) {
+		for( const handler of m_handlers[ eachMode ].slice() ) {
+			if( fn == null || handler.fn === fn ) {
+				removeHandler( eachMode, handler );
+			}
+		}
+	}
 }
 
 
 /*************************************************************************************************
  * Internal Helper Functions
  ************************************************************************************************/
+
+
+/**
+ * Throw a validation error with an error code.
+ *
+ * @param {Function} ErrorType - `TypeError` or `RangeError`.
+ * @param {string} message - Error message, starting with the command name.
+ * @param {string} code - Error code.
+ * @returns {never}
+ */
+function throwCode( ErrorType, message, code ) {
+	const error = new ErrorType( message );
+	error.code = code;
+	throw error;
+}
+
+/**
+ * Check a handler mode: `TypeError` for a mode that is not a string, `RangeError` for another
+ * string, both with code `INVALID_MODE`.
+ *
+ * @param {string} command - Command name for error messages.
+ * @param {*} mode - Requested mode.
+ * @returns {void}
+ */
+function checkMode( command, mode ) {
+	const message = `${command}: mode must be "connect" or "disconnect".`;
+	if( typeof mode !== "string" ) {
+		throwCode( TypeError, message, "INVALID_MODE" );
+	}
+	if( !MODES.includes( mode ) ) {
+		throwCode( RangeError, message, "INVALID_MODE" );
+	}
+}
+
+/**
+ * Check a handler function.
+ *
+ * @param {string} command - Command name for error messages.
+ * @param {*} fn - Requested handler.
+ * @returns {void}
+ */
+function checkFunction( command, fn ) {
+	if( typeof fn !== "function" ) {
+		throwCode( TypeError, `${command}: fn must be a function.`, "INVALID_FUNCTION" );
+	}
+}
+
+/**
+ * Remove one registration. It is marked removed so a dispatch already in progress skips it.
+ *
+ * @param {string} mode - Mode of the registration.
+ * @param {Object} handler - The registration.
+ * @returns {void}
+ */
+function removeHandler( mode, handler ) {
+	handler.isRemoved = true;
+	const index = m_handlers[ mode ].indexOf( handler );
+	if( index !== -1 ) {
+		m_handlers[ mode ].splice( index, 1 );
+	}
+}
 
 
 function gamepadConnected( e ) {
@@ -250,7 +341,7 @@ function gamepadConnected( e ) {
 
 	// Trigger connect handlers. A handler that already received this pad, from the scan, a
 	// replay, or an earlier event for the same connection, is not called again
-	dispatch( m_onConnectHandlers, m_gamepads[ e.gamepad.index ], "onGamepadConnected" );
+	dispatch( m_handlers.connect, "connect", m_gamepads[ e.gamepad.index ] );
 }
 
 function gamepadDisconnected( e ) {
@@ -266,21 +357,21 @@ function gamepadDisconnected( e ) {
 	delete m_padStates[ e.gamepad.index ];
 
 	// Trigger disconnect handlers
-	dispatch( m_onDisconnectHandlers, data, "onGamepadDisconnected" );
+	dispatch( m_handlers.disconnect, "disconnect", data );
 }
 
 /**
  * Call each handler with the data. Handlers added during the dispatch first run in the next
  * one, and a handler removed during it does not run later in it. A connect handler receives
- * each pad once. A handler that throws is reported with `console.error`, and the others still
- * run.
+ * each pad once. A `once` handler is removed before it runs. A handler that throws is reported
+ * with `console.error`, and the others still run.
  *
  * @param {Array<Object>} handlers - Handler registrations.
+ * @param {string} mode - `"connect"` or `"disconnect"`.
  * @param {Object} data - Data passed to each handler.
- * @param {string} command - Command that registered the handlers, for error messages.
  * @returns {void}
  */
-function dispatch( handlers, data, command ) {
+function dispatch( handlers, mode, data ) {
 	m_dispatchDepth += 1;
 	for( const handler of handlers.slice() ) {
 		if( handler.isRemoved ) {
@@ -292,10 +383,13 @@ function dispatch( handlers, data, command ) {
 			}
 			handler.delivered.add( data );
 		}
+		if( handler.once ) {
+			removeHandler( mode, handler );
+		}
 		try {
 			handler.fn( data );
 		} catch( error ) {
-			console.error( `${command}: Handler failed:`, error );
+			console.error( `onGamepad: Handler for "${mode}" failed:`, error );
 		}
 	}
 	m_dispatchDepth -= 1;
@@ -315,7 +409,7 @@ function dispatch( handlers, data, command ) {
  */
 function replayConnected( handler ) {
 	for( const gamepadData of Object.values( m_gamepads ) ) {
-		dispatch( [ handler ], gamepadData, "onGamepadConnected" );
+		dispatch( [ handler ], "connect", gamepadData );
 	}
 }
 
@@ -359,7 +453,7 @@ function scanForGamepads() {
 		}
 	}
 	for( const gamepadData of found ) {
-		dispatch( m_onConnectHandlers, gamepadData, "onGamepadConnected" );
+		dispatch( m_handlers.connect, "connect", gamepadData );
 	}
 }
 
@@ -618,11 +712,10 @@ function onVisibilityChange() {
  * @returns {void}
  */
 function clearGamepadEvents( screenData ) {
-	for( const handler of m_onConnectHandlers.concat( m_onDisconnectHandlers ) ) {
+	for( const handler of m_handlers.connect.concat( m_handlers.disconnect ) ) {
 		handler.isRemoved = true;
 	}
-	m_onConnectHandlers = [];
-	m_onDisconnectHandlers = [];
+	m_handlers = { "connect": [], "disconnect": [] };
 }
 
 // Auto-register in IIFE mode (when loaded via <script> tag)

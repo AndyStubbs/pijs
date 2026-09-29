@@ -90,11 +90,11 @@ function rawPad( index ) {
 }
 
 // Connection callbacks: Pi.js handlers and the browser's own events, side by side.
-$.onGamepadConnected( pad => {
+$.onGamepad( "connect", pad => {
 	m_results.piConnectCalls.push( { "index": pad.index, "id": pad.id, "mapping": pad.mapping } );
 	log( "Pi connect: index " + pad.index + " " + pad.id + " (" + pad.mapping + ")" );
 } );
-$.onGamepadDisconnected( pad => {
+$.onGamepad( "disconnect", pad => {
 	m_results.piDisconnectCalls.push( { "index": pad.index } );
 	log( "Pi disconnect: index " + pad.index );
 } );

@@ -214,7 +214,7 @@ declare namespace Pi {
 	/**
 	 * Gamepad state and helper methods.
 	 *
-	 * A connected gamepad, returned by inGamepad() and passed to onGamepadConnected callbacks. The object is live: the same object is returned on every read and updated in place, including its buttons array, each button, axes, and lastAxes. Copy values to keep a snapshot.
+	 * A connected gamepad, returned by inGamepad() and passed to onGamepad( "connect" ) callbacks. The object is live: the same object is returned on every read and updated in place, including its buttons array, each button, axes, and lastAxes. Copy values to keep a snapshot.
 	 *
 	 * A read is an inGamepad() call or a call to one of the methods below, including on a pad kept from an earlier read. The first read in each animation frame updates every pad with what happened since the last frame that had a read, so a press and a release between two reads are both reported; every other read in the same frame sees the same values.
 	 *
@@ -295,6 +295,33 @@ declare namespace Pi {
 		 * Reads whether the axis value differs from the previous read; false out of range.
 		 */
 		getAxisChanged: ( axisIndex: number ) => boolean;
+	}
+
+	/**
+	 * Data passed to onGamepad( 'disconnect' ) callbacks.
+	 *
+	 * The disconnected pad's identity. Its GamepadData is no longer in the list that inGamepad() returns.
+	 */
+	interface GamepadDisconnectData {
+		/**
+		 * Index the pad had.
+		 */
+		index: number;
+
+		/**
+		 * The browser's id string for the pad.
+		 */
+		id: string;
+
+		/**
+		 * The pad's mapping, such as 'standard'.
+		 */
+		mapping: string;
+
+		/**
+		 * Always false.
+		 */
+		connected: boolean;
 	}
 
 	/**
@@ -1163,7 +1190,7 @@ declare namespace Pi {
 		 *
 		 * $.clearEvents() clears per-screen handlers on every screen. A screen's clearEvents(), such as screen.clearEvents(), clears them on that screen only.
 		 *
-		 * The pointer plugin registers "mouse", "touch", "press", "click", and "wheel", each clearing only the handlers of its command: onMouse, onTouch, onPress, onClick, and onWheel. These handlers are per-screen. The gamepad plugin registers "gamepad", which removes every onGamepadConnected and onGamepadDisconnected callback, whichever form is called. The keyboard plugin registers "keyboard", which removes every onKey() handler, whichever form is called; $.clearEvents() also cancels every input() prompt, and a screen's clearEvents() cancels only that screen's prompt. Clearing handlers does not stop tracking or polling.
+		 * The pointer plugin registers "mouse", "touch", "press", "click", and "wheel", each clearing only the handlers of its command: onMouse, onTouch, onPress, onClick, and onWheel. These handlers are per-screen. The gamepad plugin registers "gamepad", which removes every onGamepad() callback, whichever form is called. The keyboard plugin registers "keyboard", which removes every onKey() handler, whichever form is called; $.clearEvents() also cancels every input() prompt, and a screen's clearEvents() cancels only that screen's prompt. Clearing handlers does not stop tracking or polling.
 		 * @param type Optional type to clear (e.g., "keyboard", "mouse", "click", "gamepad").
 		 * @returns This function does not return a value.
 		 */
@@ -2426,6 +2453,21 @@ screen is removed before deferred processing completes, or with the original rea
 		loadSpritesheet( src: string | HTMLImageElement | HTMLCanvasElement, name?: string, width?: number, height?: number, margin?: number, onLoad?: ( name: string ) => void, onError?: ( error: Error ) => void ): string;
 
 		/**
+		 * Removes a gamepad connection or disconnection callback.
+		 *
+		 * Removes callbacks registered with onGamepad. A callback is identified by its mode and function; the once it was registered with does not matter.
+		 *
+		 * With a mode and a function, removes that callback. Without a function, removes every callback of the mode. With a function and no mode (null, or no mode in the object form), removes the function from both modes. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "gamepad" ) removes every callback.
+		 *
+		 * A callback removed during a dispatch does not run later in it. The mode and function are checked as onGamepad() checks them, with codes INVALID_MODE and INVALID_FUNCTION.
+		 * @param mode 'connect' or 'disconnect'. If omitted or null, fn is removed from both modes.
+		 * @param fn Callback to remove. If omitted or null, every callback of the mode is removed.
+		 * @returns This function does not return a value.
+		 */
+		offGamepad( params: { "mode"?: string | null; "fn"?: ( data: GamepadData | GamepadDisconnectData ) => void } ): void;
+		offGamepad( mode?: string | null, fn?: ( data: GamepadData | GamepadDisconnectData ) => void ): void;
+
+		/**
 		 * Removes a key event handler.
 		 *
 		 * Removes key event handlers registered with onKey. A handler is identified by its key or combination, its mode, and its callback; the once and allowRepeat flags it was registered with do not matter. A combination matches when it holds the same keys, in any order.
@@ -2444,30 +2486,22 @@ screen is removed before deferred processing completes, or with the original rea
 		offKey( key: string | any[], mode?: string | null, fn?: ( keyData: object | object[] ) => void ): void;
 
 		/**
-		 * Registers a callback function for when a gamepad is connected.
+		 * Registers a callback function for gamepad connections or disconnections.
 		 *
-		 * Registers a callback that runs when a gamepad connects, with its GamepadData. The callback also receives each pad that is already connected when it is registered, in index order. It receives each connection once, whether it learns of the pad from the start-up scan, this replay, or a connection event; a pad that disconnects and connects again is a new connection.
+		 * Registers a callback for the mode: 'connect' runs when a gamepad connects, with its GamepadData, and 'disconnect' runs when one disconnects, with its GamepadDisconnectData.
 		 *
-		 * The pad passed to the callback has every button released; a button held when it connected is reported as just pressed on a later read. A callback registered by another gamepad callback receives the connected pads after that callback's dispatch ends.
+		 * A 'connect' callback also receives each pad that is already connected when it is registered, in index order. It receives each connection once, whether it learns of the pad from the start-up scan, this replay, or a connection event; a pad that disconnects and connects again is a new connection. The pad passed to it has every button released; a button held when it connected is reported as just pressed on a later read. A 'connect' callback registered by another gamepad callback receives the connected pads after that callback's dispatch ends. A pad has already left the list that inGamepad() returns when the 'disconnect' callbacks run.
 		 *
-		 * Registering starts polling, even after stopGamepad(). A callback that throws is reported with console.error(), and the other callbacks still run. clearEvents( "gamepad" ) removes every callback.
-		 * @param fn Callback function that receives the pad when it connects.
+		 * A callback runs until it is removed. A callback is identified by its mode and function: registering the same function for the same mode again does nothing, whatever its once, and offGamepad removes it by those two. once removes the registration before the callback runs, so a 'connect' callback with once receives one pad, the replay included. Callbacks added during a dispatch first run for the next one; a callback removed during a dispatch does not run later in it. A callback that throws is reported with console.error(), and the other callbacks still run. clearEvents( "gamepad" ) removes every callback.
+		 *
+		 * Registering starts polling, even after stopGamepad(). The mode is 'connect' or 'disconnect': another string throws a RangeError and a non-string a TypeError, with code INVALID_MODE; a fn that is not a function throws a TypeError with code INVALID_FUNCTION.
+		 * @param mode Event mode: 'connect' or 'disconnect'.
+		 * @param fn Callback that receives GamepadData or GamepadDisconnectData, by mode.
+		 * @param once If true, this registration is removed before the callback's first run.
 		 * @returns This function does not return a value.
 		 */
-		onGamepadConnected( params: { "fn": ( gamepadData: GamepadData ) => void } ): void;
-		onGamepadConnected( fn: ( gamepadData: GamepadData ) => void ): void;
-
-		/**
-		 * Registers a callback function for when a gamepad is disconnected.
-		 *
-		 * Registers a callback that runs when a gamepad disconnects. The callback receives the pad's index, id, mapping, and connected status (false), not its GamepadData. The pad has already left the list that inGamepad() returns when the callback runs.
-		 *
-		 * Registering starts polling, even after stopGamepad(). A callback that throws is reported with console.error(), and the other callbacks still run. clearEvents( "gamepad" ) removes every callback.
-		 * @param fn Callback function that receives the pad's index, id, mapping, and connected status.
-		 * @returns This function does not return a value.
-		 */
-		onGamepadDisconnected( params: { "fn": ( data: { index: number, id: string, mapping: string, connected: boolean } ) => void } ): void;
-		onGamepadDisconnected( fn: ( data: { index: number, id: string, mapping: string, connected: boolean } ) => void ): void;
+		onGamepad( params: { "mode": string; "fn": ( data: GamepadData | GamepadDisconnectData ) => void; "once"?: boolean } ): void;
+		onGamepad( mode: string, fn: ( data: GamepadData | GamepadDisconnectData ) => void, once?: boolean ): void;
 
 		/**
 		 * Registers a callback function for key events.
@@ -2902,7 +2936,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 *
 		 * Starts polling gamepads once per animation frame. Polling also starts on first use: the first inGamepad() call or handler registration. Calling it again while polling does nothing.
 		 *
-		 * The first start adds the connection and page-visibility listeners and scans for pads that are already connected, passing each to the onGamepadConnected callbacks. The plugin adds no listener before then.
+		 * The first start adds the connection and page-visibility listeners and scans for pads that are already connected, passing each to the 'connect' callbacks of onGamepad(). The plugin adds no listener before then.
 		 *
 		 * Polling continues while the window loses focus but the page stays visible. When the page is hidden, every button is released and the axes read 0, without reporting a release; when it is visible again, a button still held reads as pressed, not as just pressed.
 		 * @returns This function does not return a value.
@@ -2930,7 +2964,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops the gamepad input loop.
 		 *
-		 * Stops polling. While stopped, inGamepad() returns null and does not restart polling, and pads keep the state of the last update. startGamepad() resumes polling, and so does registering an onGamepadConnected or onGamepadDisconnected callback.
+		 * Stops polling. While stopped, inGamepad() returns null and does not restart polling, and pads keep the state of the last update. startGamepad() resumes polling, and so does registering an onGamepad() callback.
 		 *
 		 * Connection events are still tracked while stopped: the connection callbacks run, and pads join and leave the list.
 		 * @returns This function does not return a value.
