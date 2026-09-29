@@ -663,7 +663,7 @@ go to their owner. The last column names the ROADMAP task that takes each item.
 | Permanent skips | 206 skipped cases on Windows: 139 WebKit (no Web Audio API) and 67 Firefox (no offline `suspend()`). Skipping at the suite level when the engine lacks the API would keep the report readable; the launch itself is cheap (0.2 s) | Done (Sound 11.2): one skip per engine without Web Audio and per clock-driven group without `suspend()` |
 | COV-004 audio case | `ownership-reentrancy-matrix.test.js:214` repeats `audio-lifecycle.test.js:80` (retry timing). Remove it or move it with TEST-004 | Done (TEST-004) |
 | Helper duplication | `near()` is defined in `sound-advanced`, `sound-envelope`, `sound-play`, and `sound-samples` Node tests | Done (Sound 11.3): `test/unit/assert-near.js` |
-| 2.2 references | `test/scripts/record-sound-references.js` and `test/media/sound-2.2/` record 2.2 sound behavior; decide whether they are still needed | Sound 11.4 |
+| 2.2 references | `test/scripts/record-sound-references.js` and `test/media/sound-2.2/` record 2.2 sound behavior; decide whether they are still needed | Done (Sound 11.4): kept for the 2.3.0 listening pass and now tested; Sound 11.6 removes them after it |
 | Node and browser pairs | The `sound-*` Node tests and `audio-*` browser tests pair up by module; review them against the Node and browser rule | Sound 11.5 |
 
 ### 5.2 Pointer

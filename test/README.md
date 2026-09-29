@@ -43,7 +43,7 @@ Afterwards, `git ls-files --eol` lists no `w/crlf` or `w/mixed` files.
 | `npm run size` | Minified and gzipped bundle, plugin, and differential sizes in `build/size-report.json` |
 | `npm run release:check [-- --tag=v<version>]` | After `npm run build`, checks that the tag, `package.json`, `releases/pi-latest/package.json`, and the bundle and declaration version banners agree (the release workflow runs it) |
 | `npm run size:diff -- <base.json> <head.json>` | Markdown table of the byte and gzip changes per bundle and plugin between two size reports, printed to stdout (CI's size job summary) |
-| `npm run sound:references` | Re-record the Pi.js 2.2 reference renders used by the sound lab |
+| `npm run sound:references` | Re-record the Pi.js 2.2 reference renders used by the sound demos |
 
 The complete workflow stops at the first failed stage. Node files run sequentially to limit competing
 browser and build processes. Each Node and browser test, and each test file as a whole, has a
@@ -206,7 +206,13 @@ envelope (`test/unit/audio-metrics.js`). Tolerances are recorded per metric and 
 the observed extremes before changing them.
 
 `npm run sound:references` re-records the Pi.js 2.2 reference renders in
-`test/media/sound-2.2/` from the frozen `releases/pi-2.2.0/pi.js` bundle.
+`test/media/sound-2.2/` from the frozen `releases/pi-2.2.0/pi.js` bundle. `sound_lab_01.html` and
+`sound_play_01.html` play them for the A/B checks in the release listening pass.
+`record-sound-references.test.js` checks the manifest against the script's presets and the
+demos, and `record-sound-references-browser.test.js` re-renders each preset in Chromium and
+compares it with its file. Presets that mix several voices can differ by one 16-bit step between
+renders, because Chromium sums a node's inputs in an address-dependent order, so the check
+allows that step.
 
 ### Listening check
 
