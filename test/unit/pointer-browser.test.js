@@ -1,7 +1,8 @@
 /**
  * Pointer regressions against a fresh in-memory full bundle: offscreen command validation, noCss
- * pointer bounds, gesture settings on the canvas, a release outside the canvas with trusted input,
- * and the screens that each form of clearEvents() clears. Owned by the pointer workstream.
+ * pointer bounds, gesture settings on the canvas, a release outside the canvas and a wheel with
+ * trusted input, and the screens that each form of clearEvents() clears. Owned by the pointer
+ * workstream.
  * Run with node --test test/unit/pointer-browser.test.js; no server is required.
  */
 import * as g_test from "node:test";
@@ -175,6 +176,40 @@ test( "gesture settings act on the canvas from screen creation, never body (B10,
 		} );
 	}
 );
+
+test( "a trusted wheel over the canvas reaches onWheel and scrolls the page only without " +
+	"handlers (B11)", async () => {
+	const page = await context.newPage();
+	try {
+		await page.goto( "http://localhost:8080/" );
+		await page.setContent( "<html><body style='margin:0;height:3000px'>" +
+			"<div id='host' style='width:200px;height:200px'></div></body></html>" );
+		await page.addScriptTag( { "url": "/build/pi.js" } );
+		await page.evaluate( () => $.ready() );
+		await page.evaluate( () => {
+			$.screen( { "aspect": "100x100", "container": "host" } );
+			window.log = [];
+			window.handler = data => window.log.push( [ data.x, data.y, data.deltaY ] );
+			$.onWheel( window.handler );
+		} );
+		const box = await page.locator( "canvas" ).boundingBox();
+		await page.mouse.move( box.x + box.width / 4, box.y + box.height / 2 );
+		await page.mouse.wheel( 0, 120 );
+		await page.waitForFunction( () => window.log.length === 1 );
+		const handled = await page.evaluate( () => ( {
+			"log": window.log, "scrollY": window.scrollY
+		} ) );
+		assert.deepEqual( handled, { "log": [ [ 25, 50, 120 ] ], "scrollY": 0 } );
+
+		// Without a handler, the same wheel scrolls the page
+		await page.evaluate( () => $.offWheel( window.handler ) );
+		await page.mouse.wheel( 0, 120 );
+		await page.waitForFunction( () => window.scrollY > 0 );
+		assert.equal( await page.evaluate( () => window.log.length ), 1 );
+	} finally {
+		await page.close();
+	}
+} );
 
 test( "a trusted mouse release outside the canvas is released once (T1)", async () => {
 	const page = await context.newPage();

@@ -1,0 +1,66 @@
+title = "onWheel"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Registers a callback function for mouse wheel and trackpad scroll events."
+description = """
+Registers a callback that runs when the wheel turns, or a trackpad scrolls, over the screen
+canvas, with the wheel data and the optional custom data. Deltas are in CSS pixels whatever the
+browser reports: a line is 16 pixels and a page is the window's width or height. With a hitBox,
+the callback runs only for wheel events inside it.
+
+While the screen has a wheel handler, the page does not scroll with the wheel over the canvas;
+when the last handler is removed, it scrolls again. Wheel handlers need no tracking, so the mouse
+start and stop commands do not affect them.
+
+A handler runs until it is removed. A handler is identified by its callback: registering the same
+callback again does nothing, whatever its once, hitBox, and customData, and offWheel removes it by
+the callback. once removes the registration before the handler runs. Handlers added during an
+event first run for the next event; a handler removed during an event does not run later in it.
+A handler that throws is reported with console.error(), and the other handlers still run.
+
+once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a
+RangeError for a negative hitBox size, with code INVALID_FUNCTION, INVALID_ONCE, or
+INVALID_HITBOX.
+
+Requires an onscreen screen.
+"""
+example = """
+$.screen( "300x200" );
+let zoom = 1;
+$.onWheel( ( wheelData ) => {
+
+	// Zoom in when the wheel turns up, and out when it turns down
+	zoom = Math.min( Math.max( zoom - wheelData.deltaY / 500, 0.25 ), 4 );
+	$.cls();
+	$.print( `Zoom: ${zoom.toFixed( 2 )}` );
+} );
+"""
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( wheelData: WheelData, customData?: object ) => void"
+description = "Callback function that receives (wheelData, customData)."
+
+[[parameters]]
+name = "once"
+type = "boolean"
+description = "If true, this registration is removed before the callback's first run."
+optional = true
+
+[[parameters]]
+name = "hitBox"
+type = "HitBox"
+description = "Optional area the wheel event must be inside. Defaults to the whole canvas."
+optional = true
+
+[[parameters]]
+name = "customData"
+type = "any"
+description = "Optional custom data passed to the callback function."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

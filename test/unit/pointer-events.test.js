@@ -25,9 +25,9 @@ const m_utils = g_harness.loadModule( "src/core/utils.js", {
  * The real pointer plugin on fake screens.
  *
  * @returns {Object} `{ $, screen, removeScreen, clearEvents, mouse, mouseOutside, touch,
- *   click, tap, hide, window, document, errors }`. `$` runs global commands on the first screen;
- *   `screen()` adds a screen whose `api` holds the screen commands; `errors` holds the
- *   arguments of each `console.error()` call.
+ *   click, tap, hide, wheel, window, document, errors }`. `$` runs global commands on the
+ *   first screen; `screen()` adds a screen whose `api` holds the screen commands; `errors`
+ *   holds the arguments of each `console.error()` call.
  */
 // The `buttons` bit of each `button` value
 const BUTTON_BITS = [ 1, 4, 2, 8, 16 ];
@@ -64,7 +64,7 @@ function harness() {
 	const errors = [];
 	const globals = {
 		"console": { "error": ( ...args ) => errors.push( args ) },
-		"window": g_harness.createEventTarget(),
+		"window": g_harness.createEventTarget( { "innerWidth": 800, "innerHeight": 600 } ),
 		"document": g_harness.createEventTarget( {
 			"body": { "style": {} }, "visibilityState": "visible"
 		} )
@@ -95,11 +95,13 @@ function harness() {
 	modules.press = load( "plugins/pointer/press.js", {
 		"g_target": modules.target, "g_mouse": modules.mouse, "g_touch": modules.touch
 	} );
+	modules.wheel = load( "plugins/pointer/wheel.js", { "g_target": modules.target } );
 	const plugin = load( "plugins/pointer/index.js", {
 		"g_sharedEvents": load( "plugins/pointer/shared-events.js" ),
 		"g_mouse": modules.mouse,
 		"g_touch": modules.touch,
-		"g_press": modules.press
+		"g_press": modules.press,
+		"g_wheel": modules.wheel
 	} );
 	plugin.pointerPlugin( pluginApi );
 
@@ -238,6 +240,28 @@ function harness() {
 	}
 
 	/**
+	 * Dispatch a wheel event on a screen's canvas.
+	 *
+	 * @param {number} x - Screen x.
+	 * @param {number} y - Screen y.
+	 * @param {number} deltaX - Horizontal delta, in `deltaMode` units.
+	 * @param {number} deltaY - Vertical delta, in `deltaMode` units.
+	 * @param {number} [deltaMode] - 0 for pixels, 1 for lines, 2 for pages.
+	 * @param {Object} [screenData] - Target screen.
+	 * @returns {Object} The dispatched event.
+	 */
+	function wheel( x, y, deltaX, deltaY, deltaMode = 0, screenData = activeScreen ) {
+		const event = {
+			"type": "wheel", "clientX": x + 0.5, "clientY": y + 0.5, "deltaX": deltaX,
+			"deltaY": deltaY, "deltaMode": deltaMode, "target": screenData.canvas,
+			"defaultPrevented": false,
+			"preventDefault": () => { event.defaultPrevented = true; }
+		};
+		screenData.canvas.dispatchEvent( event );
+		return event;
+	}
+
+	/**
 	 * Dispatch a mouse action outside every canvas: only a canvas that captured the mouse
 	 * receives it.
 	 *
@@ -323,6 +347,7 @@ function harness() {
 		"$": api, "screen": screen, "removeScreen": removeScreen, "clearEvents": clearEvents,
 		"mouse": mouse,
 		"mouseOutside": mouseOutside, "touch": touch, "click": click, "tap": tap, "hide": hide,
+		"wheel": wheel,
 		"window": globals.window, "document": globals.document, "errors": errors
 	};
 }
@@ -1069,6 +1094,92 @@ test( "pointer validation throws TypeError or RangeError with the I11 codes (B9,
 		$.setPinchZoom( { "isEnabled": null } );
 		assert.equal( menu(), true );
 		assert.equal( canvas.style.touchAction, "none" );
+	}
+);
+
+test( "pointer wheel handlers get pixel deltas and prevent scrolling while registered (B11)",
+	() => {
+		const h = harness();
+		const $ = h.$;
+		const canvas = h.mouse( "contextmenu", 1, 1 ).target;
+		const wheelListeners = () => canvas.listeners.filter( item => item.type === "wheel" );
+		const log = [];
+		const fn = ( data, custom ) => log.push( [ data, custom ] );
+
+		// No listener, and no prevented scroll, until a handler is registered
+		assert.equal( h.wheel( 10, 10, 0, 3 ).defaultPrevented, false );
+		assert.deepEqual( wheelListeners(), [] );
+		$.onWheel( fn, false, null, "custom" );
+		$.onWheel( fn, true );
+		assert.deepEqual( wheelListeners().map( item => item.passive ), [ false ] );
+
+		// Pixels, lines, and pages become pixels, in frozen data at the screen position
+		assert.equal( h.wheel( 10, 20, 0, 5 ).defaultPrevented, true );
+		h.wheel( 10, 20, 2, 3, 1 );
+		h.wheel( 10, 20, 1, -1, 2 );
+		assert.deepEqual( log.map( item => JSON.parse( JSON.stringify( item ) ) ), [
+			[ { "x": 10, "y": 20, "deltaX": 0, "deltaY": 5 }, "custom" ],
+			[ { "x": 10, "y": 20, "deltaX": 32, "deltaY": 48 }, "custom" ],
+			[ { "x": 10, "y": 20, "deltaX": 800, "deltaY": -600 }, "custom" ]
+		] );
+		assert.ok( Object.isFrozen( log[ 0 ][ 0 ] ) );
+
+		// A hit box filters the handler, while the whole canvas keeps the page from scrolling
+		log.length = 0;
+		const boxed = data => log.push( [ "boxed", data.x ] );
+		$.onWheel( boxed, false, { "x": 0, "y": 0, "width": 5, "height": 5 } );
+		$.onWheel( data => log.push( [ "once", data.x ] ), true );
+		h.wheel( 2, 2, 0, 1 );
+		h.wheel( 50, 50, 0, 1 );
+		const calls = log.map( item => {
+			if( typeof item[ 0 ] === "string" ) {
+				return item;
+			}
+			return "fn";
+		} );
+		assert.deepEqual( calls, [ "fn", [ "boxed", 2 ], [ "once", 2 ], "fn" ] );
+
+		// Removing the last handler removes the listener, so the page scrolls again
+		$.offWheel( fn );
+		$.offWheel( boxed );
+		assert.deepEqual( wheelListeners(), [] );
+		assert.equal( h.wheel( 10, 10, 0, 3 ).defaultPrevented, false );
+
+		// A once handler that was the last one removes the listener after it runs
+		$.onWheel( () => log.push( "last" ), true );
+		h.wheel( 10, 10, 0, 1 );
+		assert.deepEqual( wheelListeners(), [] );
+
+		// offWheel() and clearEvents( "wheel" ) remove every handler of a screen, or of all
+		const other = h.screen();
+		$.onWheel( fn );
+		other.api.onWheel( fn );
+		h.clearEvents( "wheel", other );
+		assert.equal( h.wheel( 10, 10, 0, 1, 0, other ).defaultPrevented, false );
+		assert.equal( wheelListeners().length, 1 );
+		other.api.onWheel( fn );
+		h.clearEvents( "wheel" );
+		assert.deepEqual( wheelListeners(), [] );
+		assert.deepEqual( other.canvas.listeners.filter( item => item.type === "wheel" ), [] );
+		$.onWheel( fn );
+		$.onWheel( boxed );
+		$.offWheel();
+		assert.deepEqual( wheelListeners(), [] );
+
+		// A removed screen keeps no wheel listener
+		other.api.onWheel( fn );
+		h.removeScreen( other );
+		assert.deepEqual( other.canvas.listeners, [] );
+
+		// Validation follows the other handler commands (I11)
+		const check = ( call, type, code ) => {
+			assert.throws( call, error => error.name === type && error.code === code );
+		};
+		check( () => $.onWheel( "fn" ), "TypeError", "INVALID_FUNCTION" );
+		check( () => $.onWheel( fn, "true" ), "TypeError", "INVALID_ONCE" );
+		check( () => $.onWheel( fn, false, false ), "TypeError", "INVALID_HITBOX" );
+		check( () => $.offWheel( 5 ), "TypeError", "INVALID_FUNCTION" );
+		assert.deepEqual( wheelListeners(), [] );
 	}
 );
 

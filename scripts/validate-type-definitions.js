@@ -352,6 +352,9 @@ function validateTypeDefinitions() {
 		"inMouse(): MouseData | null;",
 		"inPress(): PressData | null;",
 		"setContextMenu( isEnabled: boolean ): void;",
+		"interface WheelData {",
+		"onWheel( fn: ( wheelData: WheelData, customData?: object ) => void, once?: boolean, " +
+			"hitBox?: HitBox, customData?: any ): void;",
 		"contextMenu?: boolean;",
 		"offMouse( mode?: string | null, fn?: ( mouseData: MouseData, customData?: object ) " +
 			"=> void ): void;",

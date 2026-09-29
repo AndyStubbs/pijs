@@ -396,6 +396,37 @@ or stopTouch() was called. False otherwise.
 """
 
 # ============================================================================
+# WheelData
+# ============================================================================
+[[objects]]
+title = "WheelData"
+summary = "Wheel event data."
+description = """
+Data for one wheel event, passed to onWheel callbacks. It is created once per event and frozen.
+Deltas are in CSS pixels: positive deltaY scrolls down, and positive deltaX scrolls right.
+"""
+
+[[objects.properties]]
+name = "x"
+type = "number"
+description = "X coordinate of the pointer in pixels; outside the screen over the border."
+
+[[objects.properties]]
+name = "y"
+type = "number"
+description = "Y coordinate of the pointer in pixels."
+
+[[objects.properties]]
+name = "deltaX"
+type = "number"
+description = "Horizontal scroll amount in CSS pixels."
+
+[[objects.properties]]
+name = "deltaY"
+type = "number"
+description = "Vertical scroll amount in CSS pixels; positive when the wheel turns down."
+
+# ============================================================================
 # GamepadButton
 # ============================================================================
 [[objects]]
