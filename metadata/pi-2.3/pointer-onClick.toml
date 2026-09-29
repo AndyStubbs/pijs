@@ -20,6 +20,10 @@ once removes the registration before the handler runs. Handlers added during an 
 for the next event; a handler removed during an event does not run later in it. A handler that
 throws is reported with console.error(), and the other handlers still run.
 
+once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a
+RangeError for a negative hitBox size, with code INVALID_FUNCTION, INVALID_ONCE, or
+INVALID_HITBOX.
+
 Requires an onscreen screen.
 """
 example = """

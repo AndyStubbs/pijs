@@ -219,12 +219,12 @@ export function registerTouch( pluginApi, helpers ) {
 	function checkRenamedMode( mode, command ) {
 		const renamed = { "start": "down", "end": "up" };
 		if( mode === "start" || mode === "end" ) {
-			const error = new Error(
+			g_target.throwCode(
+				RangeError,
 				`${command}: mode "${mode}" is now "${renamed[ mode ]}"; touch modes are ` +
-				"down, up, and move."
+				"down, up, and move.",
+				"INVALID_MODE"
 			);
-			error.code = "INVALID_MODE";
-			throw error;
 		}
 	}
 
@@ -240,7 +240,7 @@ export function registerTouch( pluginApi, helpers ) {
 	 */
 	function setPinchZoom( screenData, options ) {
 		g_target.validatePointerTarget( screenData, "setPinchZoom" );
-		const isEnabled = !!( options.isEnabled );
+		const isEnabled = g_target.readIsEnabled( "setPinchZoom", options.isEnabled );
 		screenData.isPinchZoomEnabled = isEnabled;
 		m_touchActions.delete( screenData );
 		if( isEnabled ) {

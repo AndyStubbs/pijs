@@ -595,7 +595,7 @@ the [ROADMAP](ROADMAP.md#6-pointer) tasks that implement each item.
 | PTR-015 | Metadata, declarations, `API.md` gaps | Accepted | Metadata and declarations in Pointer 1.8 (done), then with each API change; `API.md` in R.2 |
 | PTR-016 | Manual pointer pages do not load cleanly | Accepted | Pointer 1.8 (done) |
 | PTR-017 | Missing automated tests | Accepted | A test with each fix; fixtures in Pointer 1.9 (done) |
-| B1–B5, B8, B9, B12 | Fixes | Accepted | Pointer Phase 1, except B9, which lands with I11 in Pointer 2.8. B8: presses that start on the border or padding are ignored |
+| B1–B5, B8, B9, B12 | Fixes | Accepted | Pointer Phase 1, except B9, which landed with I11 in Pointer 2.8. B8: presses that start on the border or padding are ignored |
 | B6 | Pointer Events path | Accepted | Done (Pointer 2.2). Observable changes listed in the compatibility summary |
 | B7 | One data shape | Accepted | Done (Pointer 2.3). Breaking; listed in the compatibility summary |
 | B10 | Per-screen gesture settings | Accepted | Done (Pointer 2.7). Breaking; listed in the compatibility summary |

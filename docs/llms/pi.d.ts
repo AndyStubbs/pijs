@@ -1526,7 +1526,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a click event handler.
 		 *
-		 * Removes the click handler registered with the function; the once, hitBox, and customData it was registered with do not matter. Click has one mode, so if fn is omitted or null, removes every click handler of the screen. A handler removed during an event does not run later in it.
+		 * Removes the click handler registered with the function; the once, hitBox, and customData it was registered with do not matter. Click has one mode, so if fn is omitted or null, removes every click handler of the screen. A handler removed during an event does not run later in it. The callback is checked as onClick() checks it, with code INVALID_FUNCTION.
 		 * @param fn Callback function to remove. If omitted or null, removes every click handler.
 		 * @returns This function does not return a value.
 		 */
@@ -1541,6 +1541,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * With a mode and a callback, removes that handler. Without a callback, removes every handler of the mode. With a callback and no mode (null, or no mode in the object form), removes the callback from every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "mouse" ) removes every mouse handler.
 		 *
 		 * A handler removed during an event does not run later in it.
+		 *
+		 * The mode and callback are checked as onMouse() checks them, with codes INVALID_MODE and INVALID_FUNCTION.
 		 * @param mode Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode.
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
@@ -1556,6 +1558,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * With a mode and a callback, removes that handler. Without a callback, removes every handler of the mode. With a callback and no mode (null, or no mode in the object form), removes the callback from every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "press" ) removes every press handler.
 		 *
 		 * A handler removed during an event does not run later in it.
+		 *
+		 * The mode and callback are checked as onPress() checks them, with codes INVALID_MODE and INVALID_FUNCTION.
 		 * @param mode Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode.
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
@@ -1571,6 +1575,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * With a mode and a callback, removes that handler. Without a callback, removes every handler of the mode. With a callback and no mode (null, or no mode in the object form), removes the callback from every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "touch" ) removes every touch handler.
 		 *
 		 * A handler removed during an event does not run later in it.
+		 *
+		 * The mode and callback are checked as onTouch() checks them, with codes INVALID_MODE and INVALID_FUNCTION.
 		 * @param mode Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode.
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
@@ -1586,6 +1592,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * A press inside the box arms the click for that pointer, and its release inside the box fires it with the release data. A release outside the box, a release of another mouse button, or a cancel disarms it, so right and middle clicks, a drag that leaves the box, and a cancelled touch never click.
 		 *
 		 * If no hitBox is provided, the screen's size when the handler is registered is used. A handler runs until it is removed. A handler is identified by its callback: registering the same callback again does nothing, whatever its once, hitBox, and customData, and offClick removes it by the callback. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 *
+		 * once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for a negative hitBox size, with code INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
 		 *
 		 * Requires an onscreen screen.
 		 * @param fn Callback function that receives (clickData, customData).
@@ -1605,6 +1613,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * A press that starts on the canvas border or padding is ignored. A press on the canvas keeps reporting moves while it leaves the canvas, and 'up' runs for its release anywhere. 'up' also runs with cancelled set to true when the browser cancels the pointer, the page is hidden, or stopMouse() is called with a button held; moves and releases report their true position, which can be outside the screen.
 		 *
 		 * A handler runs until it is removed. A handler is identified by its mode and callback: registering the same callback for the same mode again does nothing, whatever its once, hitBox, and customData, and offMouse removes it by those two. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 *
+		 * The mode is 'down', 'up', or 'move', and once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for an unknown mode or a negative hitBox size, with code INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
 		 *
 		 * Requires an onscreen screen.
 		 * @param mode Event mode: 'down', 'up', or 'move'.
@@ -1626,6 +1636,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * A handler runs until it is removed. A handler is identified by its mode and callback: registering the same callback for the same mode again does nothing, whatever its once, hitBox, and customData, and offPress removes it by those two. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
 		 *
+		 * The mode is 'down', 'up', or 'move', and once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for an unknown mode or a negative hitBox size, with code INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
+		 *
 		 * Requires an onscreen screen.
 		 * @param mode Event mode: 'down', 'up', or 'move'.
 		 * @param fn Callback function that receives (pressData, customData).
@@ -1645,6 +1657,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * With a hitBox, the callback receives only the changed touches inside it, and runs only when there is one. 'up' also runs with cancelled set to true when the browser cancels a touch, the page is hidden, or stopTouch() is called. A touch that starts on the canvas border or padding is ignored. A touch that starts on the canvas keeps reporting moves and its end when it leaves the canvas. While touch is tracked, the canvas has touch-action set to none, so the browser does not scroll or zoom with touches that start there. Registering starts tracking unless stopTouch() was called.
 		 *
 		 * A handler runs until it is removed. A handler is identified by its mode and callback: registering the same callback for the same mode again does nothing, whatever its once, hitBox, and customData, and offTouch removes it by those two. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 *
+		 * The mode is 'down', 'up', or 'move', and once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for an unknown mode or a negative hitBox size, with code INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
 		 *
 		 * Requires an onscreen screen.
 		 * @param mode Event mode: 'down', 'up', or 'move'. Any other mode throws INVALID_MODE.
@@ -1895,7 +1909,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Enables or disables the right-click context menu.
 		 *
-		 * Controls whether the browser's context menu opens on the screen canvas. The menu is suppressed from screen creation, whether or not mouse tracking runs, so right-clicks reach the mouse handlers instead; enable it here to let it open. The setting does not start mouse tracking, and stopping mouse tracking does not change it. Any truthy value enables the menu.
+		 * Controls whether the browser's context menu opens on the screen canvas. The menu is suppressed from screen creation, whether or not mouse tracking runs, so right-clicks reach the mouse handlers instead; enable it here to let it open. The setting does not start mouse tracking, and stopping mouse tracking does not change it. isEnabled is a boolean, or omitted to suppress the menu; any other value throws a TypeError with code INVALID_IS_ENABLED.
 		 *
 		 * The option contextMenu of set() calls this command.
 		 *
@@ -2025,7 +2039,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Enables or disables browser pinch zoom on the screen canvas.
 		 *
-		 * Sets the touch-action style of the screen canvas, at any time: 'pinch-zoom' when enabled, so a pinch that starts on the canvas zooms the page, and 'none' when disabled, so every touch on the canvas stays with the screen. The rest of the page, including the body, is not changed. Any truthy value enables pinch zoom.
+		 * Sets the touch-action style of the screen canvas, at any time: 'pinch-zoom' when enabled, so a pinch that starts on the canvas zooms the page, and 'none' when disabled, so every touch on the canvas stays with the screen. The rest of the page, including the body, is not changed. isEnabled is a boolean, or omitted to disable pinch zoom; any other value throws a TypeError with code INVALID_IS_ENABLED.
 		 *
 		 * Without this setting, the canvas has touch-action set to none while touch tracking runs, and stopping tracking restores the canvas's previous value. After this setting, tracking keeps its value. The setting does not start touch tracking. The option pinchZoom of set() calls this command.
 		 *

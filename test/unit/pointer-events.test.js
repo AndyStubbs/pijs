@@ -986,9 +986,11 @@ test( "pointer hit boxes take finite positions and reject negative sizes (P13)",
 	for( const [ box, type ] of [
 		[ { "x": 0, "y": 0, "width": -1, "height": 5 }, RangeError ],
 		[ { "x": 0, "y": 0, "width": 5, "height": -0.5 }, RangeError ],
-		[ { "x": NaN, "y": 0, "width": 5, "height": 5 }, Error ],
-		[ { "x": 0, "y": 0, "width": Infinity, "height": 5 }, Error ],
-		[ { "x": "0", "y": 0, "width": 5, "height": 5 }, Error ]
+		[ { "x": NaN, "y": 0, "width": 5, "height": 5 }, TypeError ],
+		[ { "x": 0, "y": 0, "width": Infinity, "height": 5 }, TypeError ],
+		[ { "x": "0", "y": 0, "width": 5, "height": 5 }, TypeError ],
+		[ 5, TypeError ],
+		[ false, TypeError ]
 	] ) {
 		assert.throws( () => $.onMouse( "down", () => {}, false, box ), error => {
 			return error.name === type.name && error.code === "INVALID_HITBOX" &&
@@ -997,6 +999,78 @@ test( "pointer hit boxes take finite positions and reject negative sizes (P13)",
 	}
 	$.onPress( "down", () => {}, false, { "x": -5, "y": -5, "width": 0, "height": 0 } );
 } );
+
+test( "pointer validation throws TypeError or RangeError with the I11 codes (B9, I11, P13)",
+	() => {
+		const h = harness();
+		const $ = h.$;
+		const log = [];
+		const fn = () => log.push( "called" );
+		const check = ( call, type, code, message ) => {
+			assert.throws( call, error => {
+				assert.deepEqual( [ error.name, error.code ], [ type, code ] );
+				if( message ) {
+					assert.equal( error.message, message );
+				}
+				return true;
+			} );
+		};
+
+		// Handler registration and removal
+		for( const name of [ "onMouse", "onTouch", "onPress" ] ) {
+			const modes = "down, up, move";
+			check( () => $[ name ]( 5, fn ), "TypeError", "INVALID_MODE",
+				`${name}: mode must be one of the following: ${modes}.` );
+			check( () => $[ name ]( "sideways", fn ), "RangeError", "INVALID_MODE",
+				`${name}: mode must be one of the following: ${modes}.` );
+			check( () => $[ name ]( "down", "fn" ), "TypeError", "INVALID_FUNCTION",
+				`${name}: fn must be a function.` );
+			for( const once of [ "false", 1, 0 ] ) {
+				check( () => $[ name ]( "down", fn, once ), "TypeError", "INVALID_ONCE",
+					`${name}: once must be a boolean.` );
+			}
+			const off = "off" + name.slice( 2 );
+			check( () => $[ off ]( 5, fn ), "TypeError", "INVALID_MODE" );
+			check( () => $[ off ]( "sideways", fn ), "RangeError", "INVALID_MODE" );
+			check( () => $[ off ]( "down", "fn" ), "TypeError", "INVALID_FUNCTION",
+				`${off}: fn must be a function.` );
+		}
+		check( () => $.onTouch( "start", fn ), "RangeError", "INVALID_MODE" );
+		check( () => $.onClick( "fn" ), "TypeError", "INVALID_FUNCTION",
+			"onClick: fn must be a function." );
+		check( () => $.onClick( fn, "true" ), "TypeError", "INVALID_ONCE" );
+		check( () => $.offClick( 5 ), "TypeError", "INVALID_FUNCTION" );
+
+		// A rejected registration registers nothing; once may be omitted, null, or a boolean
+		h.click( 10, 10 );
+		assert.deepEqual( log, [] );
+		$.onMouse( "down", fn, null );
+		$.onPress( "down", fn, false );
+		$.onClick( fn, true );
+		h.click( 10, 10 );
+		h.click( 10, 10 );
+		assert.equal( log.length, 5 );
+
+		// Settings take a boolean, or false when omitted, and a rejected value changes nothing
+		const menu = () => h.mouse( "contextmenu", 10, 10 ).defaultPrevented;
+		const canvas = h.mouse( "contextmenu", 1, 1 ).target;
+		$.setContextMenu( true );
+		$.setPinchZoom( true );
+		for( const [ name, value ] of [
+			[ "setContextMenu", "false" ], [ "setContextMenu", 0 ],
+			[ "setPinchZoom", "false" ], [ "setPinchZoom", 1 ]
+		] ) {
+			check( () => $[ name ]( value ), "TypeError", "INVALID_IS_ENABLED",
+				`${name}: isEnabled must be a boolean.` );
+		}
+		assert.equal( menu(), false );
+		assert.equal( canvas.style.touchAction, "pinch-zoom" );
+		$.setContextMenu();
+		$.setPinchZoom( { "isEnabled": null } );
+		assert.equal( menu(), true );
+		assert.equal( canvas.style.touchAction, "none" );
+	}
+);
 
 test( "pointer adds its window and document listeners only when tracking starts (B12)", () => {
 	const h = harness();

@@ -183,7 +183,9 @@ export function registerMouse( pluginApi, helpers ) {
 	 */
 	function setContextMenu( screenData, options ) {
 		g_target.validatePointerTarget( screenData, "setContextMenu" );
-		screenData.isContextMenuEnabled = !!( options.isEnabled );
+		screenData.isContextMenuEnabled = g_target.readIsEnabled(
+			"setContextMenu", options.isEnabled
+		);
 	}
 
 	/**
