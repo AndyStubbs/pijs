@@ -222,7 +222,7 @@ test( "a trusted touch drag that leaves the canvas ends once, with touch-action 
 );
 
 test( "Core 13: a screen's clearEvents() clears its own pointer handlers, $.clearEvents() every " +
-	"screen's (I10)", async () => {
+	"screen's, and click is its own type (I10)", async () => {
 	assert.deepEqual( await probe( () => {
 		const first = $.screen( { "aspect": "8x8", "container": "host" } );
 		const second = $.screen( { "aspect": "8x8", "container": "host" } );
@@ -251,7 +251,9 @@ test( "Core 13: a screen's clearEvents() clears its own pointer handlers, $.clea
 			() => second.clearEvents( "mouse" ),
 			() => $.clearEvents(),
 			() => $.clearEvents( "touch" ),
-			() => $.clearEvents( "press" )
+			() => $.clearEvents( "press" ),
+			() => first.clearEvents( "click" ),
+			() => $.clearEvents( "click" )
 		];
 		return cases.map( clear => {
 			const log = new Set();
@@ -275,6 +277,11 @@ test( "Core 13: a screen's clearEvents() clears its own pointer handlers, $.clea
 		[],
 		[ "first click", "first mouse", "first press", "second click", "second mouse",
 			"second press" ],
-		[ "first mouse", "first touch", "second mouse", "second touch" ]
+		[ "first click", "first mouse", "first touch", "second click", "second mouse",
+			"second touch" ],
+		[ "first mouse", "first press", "first touch", "second click", "second mouse",
+			"second press", "second touch" ],
+		[ "first mouse", "first press", "first touch", "second mouse", "second press",
+			"second touch" ]
 	] );
 } );

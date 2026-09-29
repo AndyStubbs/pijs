@@ -549,6 +549,42 @@ test( "pointer handlers are identified by mode and function (I4)", () => {
 	assert.deepEqual( log, [ "other" ] );
 } );
 
+test( "pointer clearEvents types each clear their own handlers, on one or every screen (I10)",
+	() => {
+		const h = harness();
+		const $ = h.$;
+		const other = h.screen();
+		const log = [];
+		const register = ( api, name ) => {
+			api.onMouse( "down", () => log.push( name + " mouse" ) );
+			api.onTouch( "down", () => log.push( name + " touch" ) );
+			api.onPress( "down", () => log.push( name + " press" ) );
+			api.onClick( () => log.push( name + " click" ) );
+		};
+		const input = () => {
+			log.length = 0;
+			h.click( 5, 5 );
+			h.tap( 5, 5 );
+			h.mouse( "mousedown", 5, 5, 1, 0, other );
+			h.mouse( "mouseup", 5, 5, 0, 0, other );
+			return log.slice().sort();
+		};
+		register( $, "main" );
+		register( other.api, "other" );
+
+		// "press" keeps click handlers, and "click" clears only clicks
+		h.clearEvents( "press" );
+		assert.deepEqual( input(), [
+			"main click", "main click", "main mouse", "main touch", "other click", "other mouse"
+		] );
+		h.clearEvents( "click", other );
+		assert.deepEqual( input(), [ "main click", "main click", "main mouse", "main touch",
+			"other mouse" ] );
+		h.clearEvents( "click" );
+		assert.deepEqual( input(), [ "main mouse", "main touch", "other mouse" ] );
+	}
+);
+
 test( "pointer handlers that throw are reported and do not stop the event (P6)", () => {
 	const h = harness();
 	const $ = h.$;
