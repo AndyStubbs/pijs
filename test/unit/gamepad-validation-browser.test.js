@@ -18,7 +18,7 @@ for( const bundle of g_harness.BUNDLES ) {
 		test( `${bundle}: gamepad commands are wired with ${overload} arguments`, async () => {
 			await probe( bundle, overload => {
 				const pad = { "index": 0, "id": "test-pad", "connected": true,
-					"mapping": "standard", "timestamp": 0, "buttons": [],
+					"mapping": "", "timestamp": 0, "buttons": [],
 					"axes": [ 0.5, -0.5, 0.1, -0.1, 0, 1, -1 ] };
 				const nativeRequest = window.requestAnimationFrame;
 				const nativeCancel = window.cancelAnimationFrame;
@@ -29,9 +29,9 @@ for( const bundle of g_harness.BUNDLES ) {
 				window.cancelAnimationFrame = () => {};
 				function set( value ) {
 					if( overload === "object" ) {
-						$.setGamepadSensitivity( { "sensitivity": value } );
+						$.setGamepadDeadZone( { "deadZone": value } );
 					} else {
-						$.setGamepadSensitivity( value );
+						$.setGamepadDeadZone( value );
 					}
 				}
 				function read( index ) {
@@ -42,14 +42,16 @@ for( const bundle of g_harness.BUNDLES ) {
 				}
 				try {
 					for( const name of [ "startGamepad", "stopGamepad", "inGamepad",
-						"setGamepadSensitivity", "onGamepad", "offGamepad" ]
+						"setGamepadDeadZone", "onGamepad", "offGamepad" ]
 					) {
 						if( typeof $[ name ] !== "function" ) {
 							throw new Error( `Missing command ${name}` );
 						}
 					}
-					if( $.ingamepad !== undefined ) {
-						throw new Error( "The old name ingamepad is still registered" );
+					for( const name of [ "ingamepad", "setGamepadSensitivity" ] ) {
+						if( $[ name ] !== undefined ) {
+							throw new Error( `The old name ${name} is still registered` );
+						}
 					}
 
 					// The dead zone reaches the plugin, and the first read records the pad
@@ -61,12 +63,24 @@ for( const bundle of g_harness.BUNDLES ) {
 					let caught;
 					try { set( "0.2" ); } catch( error ) { caught = error; }
 					if( !( caught instanceof TypeError ) ||
-						caught.code !== "INVALID_PARAMETERS"
+						caught.code !== "INVALID_DEAD_ZONE"
 					) {
 						throw new Error( "Expected a validation error" );
 					}
 					if( $.inGamepad().length !== 1 ) {
 						throw new Error( "Expected one pad in the list" );
+					}
+
+					// The option is gamepadDeadZone; the old option fails as unknown (Core 8)
+					$.set( { "gamepadDeadZone": 0.3 } );
+					let optionError;
+					try {
+						$.set( { "gamepadSensitivity": 0.3 } );
+					} catch( error ) {
+						optionError = error;
+					}
+					if( !optionError || optionError.code !== "INVALID_OPTION" ) {
+						throw new Error( "Expected gamepadSensitivity to be an unknown option" );
 					}
 					$.clearEvents( "gamepad" );
 				} finally {

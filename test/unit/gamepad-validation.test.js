@@ -69,7 +69,7 @@ function createHarness( options = {} ) {
 	 * has four released buttons and four centered axes.
 	 *
 	 * @param {number} index - Pad index.
-	 * @param {Object} [state] - `buttons` as booleans, `axes` as numbers.
+	 * @param {Object} [state] - `buttons` as booleans, `axes` as numbers, and `mapping`.
 	 * @returns {void}
 	 */
 	function setPad( index, state = {} ) {
@@ -98,7 +98,11 @@ function createHarness( options = {} ) {
 		if( state.axes ) {
 			axes = state.axes.slice();
 		}
-		pads[ index ] = { ...pad, "buttons": buttons, "axes": axes,
+		let mapping = pad.mapping;
+		if( state.mapping !== undefined ) {
+			mapping = state.mapping;
+		}
+		pads[ index ] = { ...pad, "buttons": buttons, "axes": axes, "mapping": mapping,
 			"timestamp": pad.timestamp + 1 };
 	}
 
@@ -154,13 +158,16 @@ function createHarness( options = {} ) {
 }
 
 /**
- * The harness with one pad whose axes exercise the dead zone, read once to start polling.
+ * The harness with one pad whose axes exercise the per-axis dead zone, read once to start
+ * polling. The pad has no standard mapping, so no axis pair is treated as a stick.
  *
  * @returns {Object} The harness, plus `poll()`, which runs one frame and returns pad 0's axes.
  */
-function createSensitivityHarness() {
+function createDeadZoneHarness() {
 	const h = createHarness();
-	h.setPad( 0, { "buttons": [], "axes": [ 0.5, -0.5, 0.1, -0.1, 0, 1, -1 ] } );
+	h.setPad( 0, {
+		"buttons": [], "axes": [ 0.5, -0.5, 0.1, -0.1, 0, 1, -1 ], "mapping": ""
+	} );
 	h.poll = () => {
 		assert.equal( h.frames.size, 1 );
 		h.frame();
@@ -179,18 +186,27 @@ function checkAxes( actual, expected ) {
 	}
 }
 
-const invalidValues = [ NaN, Infinity, -Infinity, -0.01, 1.01, "0.2", null, undefined,
-	true, false, {}, [], [ 0.2 ], new Number( 0.2 ), 0n, Symbol( "sensitivity" ) ];
+const invalidValues = [ NaN, Infinity, -Infinity, -0.01, 1, 1.01, "0.2", null, undefined,
+	true, false, {}, [], [ 0.2 ], new Number( 0.2 ), 0n, Symbol( "deadZone" ) ];
 
 for( const [ index, value ] of invalidValues.entries() ) {
-	test( `SYS-021 invalid sensitivity ${index} (${String( value )}) preserves polling`, () => {
-		const h = createSensitivityHarness();
-		h.commands.setGamepadSensitivity( { "sensitivity": 0.25 } );
+	test( `SYS-021 invalid dead zone ${index} (${String( value )}) preserves polling`, () => {
+		const h = createDeadZoneHarness();
+		h.commands.setGamepadDeadZone( { "deadZone": 0.25 } );
 		checkAxes( h.poll(), [ 1 / 3, -1 / 3, 0, 0, 0, 1, -1 ] );
-		assert.throws( () => h.commands.setGamepadSensitivity( { "sensitivity": value } ), {
-			"name": "TypeError", "code": "INVALID_PARAMETERS",
-			"message": "setGamepadSensitivity: sensitivity must be a number between 0 and 1."
-		} );
+
+		// A finite number out of range is a RangeError; anything else a TypeError (I11)
+		let expected = {
+			"name": "TypeError", "code": "INVALID_DEAD_ZONE",
+			"message": "setGamepadDeadZone: deadZone must be a finite number."
+		};
+		if( Number.isFinite( value ) ) {
+			expected = {
+				"name": "RangeError", "code": "INVALID_DEAD_ZONE",
+				"message": "setGamepadDeadZone: deadZone must be at least 0 and less than 1."
+			};
+		}
+		assert.throws( () => h.commands.setGamepadDeadZone( { "deadZone": value } ), expected );
 		h.setPad( 0, { "axes": [ 0.625, -0.625, 0.2, -0.2, 0, 1, -1 ] } );
 		checkAxes( h.poll(), [ 0.5, -0.5, 0, 0, 0, 1, -1 ] );
 	} );
@@ -295,27 +311,67 @@ test( "gamepad handlers removed during a dispatch do not run later in it, and of
 } );
 
 test( "SYS-021 rejected NaN cannot contaminate a subsequent axis update", () => {
-	const h = createSensitivityHarness();
-	h.commands.setGamepadSensitivity( { "sensitivity": 0.25 } );
+	const h = createDeadZoneHarness();
+	h.commands.setGamepadDeadZone( { "deadZone": 0.25 } );
 
 	// Check state preservation independently of whether validation throws.
-	try { h.commands.setGamepadSensitivity( { "sensitivity": NaN } ); } catch {}
+	try { h.commands.setGamepadDeadZone( { "deadZone": NaN } ); } catch {}
 	checkAxes( h.poll(), [ 1 / 3, -1 / 3, 0, 0, 0, 1, -1 ] );
 } );
 
-test( "SYS-021 default, fractional and boundary sensitivities retain finite axis output", () => {
-	const h = createSensitivityHarness();
+test( "SYS-021 default, fractional and boundary dead zones retain finite axis output", () => {
+	const h = createDeadZoneHarness();
 	checkAxes( h.poll(), [ 0.375, -0.375, 0, 0, 0, 1, -1 ] );
 	for( const value of [ 0, -0 ] ) {
-		h.commands.setGamepadSensitivity( { "sensitivity": value } );
+		h.commands.setGamepadDeadZone( { "deadZone": value } );
 		checkAxes( h.poll(), [ 0.5, -0.5, 0.1, -0.1, 0, 1, -1 ] );
 	}
-	h.commands.setGamepadSensitivity( { "sensitivity": 0.5 } );
+	h.commands.setGamepadDeadZone( { "deadZone": 0.5 } );
 	checkAxes( h.poll(), [ 0, 0, 0, 0, 0, 1, -1 ] );
-	h.commands.setGamepadSensitivity( { "sensitivity": 1 } );
+	h.commands.setGamepadDeadZone( { "deadZone": 0.99999 } );
 	h.setPad( 0, { "axes": [ 0.999995, -0.999995, 0.5, -0.5, 0, 1, -1 ] } );
 	checkAxes( h.poll(), [ 0.5, -0.5, 0, 0, 0, 1, -1 ] );
 } );
+
+test( "PAD-011 the standard sticks use a radial dead zone, other axes a per-axis one (A9, P13)",
+	() => {
+		const h = createHarness();
+		h.setPad( 0, { "axes": [ 0, 0, 0, 0, 0 ] } );
+		assert.equal( h.$.inGamepad().length, 1 );
+		assert.equal( h.$.setGamepadSensitivity, undefined );
+		const read = axes => {
+			h.setPad( 0, { "axes": axes } );
+			h.frame();
+			return Array.from( h.$.inGamepad( 0 ).axes );
+		};
+
+		// A diagonal just past the dead zone of 0.2 moves, equally on both axes
+		const small = read( [ 0.15, 0.15, 0, 0, 0 ] );
+		assert.ok( small[ 0 ] > 0 && Math.abs( small[ 0 ] - small[ 1 ] ) < 1e-12 );
+
+		// Near-cardinal movement keeps its direction instead of snapping to the axis
+		const near = read( [ 0.5, 0.1, 0, 0, 0 ] );
+		assert.ok( near[ 1 ] > 0 );
+		assert.ok( Math.abs( near[ 1 ] / near[ 0 ] - 0.2 ) < 1e-12 );
+		const nearDistance = ( Math.hypot( 0.5, 0.1 ) - 0.2 ) / 0.8;
+		assert.ok( Math.abs( Math.hypot( near[ 0 ], near[ 1 ] ) - nearDistance ) < 1e-12 );
+
+		// A full diagonal reaches a distance of 1, and a corner past 1 is clamped to it
+		const full = read( [ Math.SQRT1_2, Math.SQRT1_2, 0, 0, 0 ] );
+		assert.ok( Math.abs( Math.hypot( full[ 0 ], full[ 1 ] ) - 1 ) < 1e-12 );
+		const corner = read( [ 1, 1, 0, 0, 0 ] );
+		assert.ok( Math.abs( Math.hypot( corner[ 0 ], corner[ 1 ] ) - 1 ) < 1e-12 );
+
+		// Inside the dead zone a stick reads 0; the right stick is radial too; axis 4 is per axis
+		checkAxes( read( [ 0.1, 0.1, 0.15, -0.15, 0.5 ] ), [
+			0, 0, small[ 0 ], -small[ 0 ], 0.375
+		] );
+
+		// A pad without the standard mapping handles every axis on its own
+		h.setPad( 0, { "mapping": "" } );
+		checkAxes( read( [ 0.15, 0.15, 0.5, 0.1, 0 ] ), [ 0, 0, 0.375, 0, 0 ] );
+	}
+);
 
 /**
  * Count the edges a consumer sees while pad 0 runs P1's script: button 0 held for three

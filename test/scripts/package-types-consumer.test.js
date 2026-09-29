@@ -44,6 +44,9 @@ const LITE_PLUGIN_CONSUMERS = {
 		`\tconst index: number = data.index;`,
 		`\tvoid index;`,
 		`} );`,
+		`lite.set( { gamepadDeadZone: 0.5 } );`,
+		`lite.setGamepadDeadZone( 0.1 );`,
+		`// @ts-expect-error The dead-zone option is gamepadDeadZone.`,
 		`lite.set( { gamepadSensitivity: 0.5 } );`,
 		`// @ts-expect-error Keyboard commands need the keyboard plugin.`,
 		`lite.inKey();`

@@ -259,7 +259,7 @@ declare namespace Pi {
 		buttons: Array<GamepadButton>;
 
 		/**
-		 * Axis values from -1 to 1 after the dead zone set by setGamepadSensitivity(): values inside it read 0, and values outside it are scaled to start from 0.
+		 * Axis values from -1 to 1 after the dead zone set by setGamepadDeadZone(): radial for the two sticks of the standard mapping, per axis otherwise. Values inside it read 0, and values outside it are rescaled to start from 0.
 		 */
 		axes: Array<number>;
 
@@ -496,9 +496,9 @@ declare namespace Pi {
 		font?: number;
 
 		/**
-		 * Sets the dead zone sensitivity for gamepad analog sticks.
+		 * Sets the dead zone for gamepad sticks and axes.
 		 */
-		gamepadSensitivity?: number;
+		gamepadDeadZone?: number;
 
 		/**
 		 * Configures color noise ranges and optional seed for blending.
@@ -2856,16 +2856,18 @@ original thrown value if the callback throws synchronously. Callback return valu
 		setDefaultPal( pal: Array<any> ): void;
 
 		/**
-		 * Sets the dead zone sensitivity for gamepad analog sticks.
+		 * Sets the dead zone for gamepad sticks and axes.
 		 *
-		 * Sets the dead zone applied to every gamepad axis, to hide stick drift. The default is 0.2. An axis value whose size is below the dead zone reads 0; a larger value is scaled so that it starts from 0 at the edge of the dead zone and still reaches 1 at full tilt. Each axis is handled on its own.
+		 * Sets the dead zone that hides stick drift. The default is 0.2. Inside the dead zone an axis reads 0; outside it, the value is rescaled so that it starts from 0 at the edge of the dead zone and still reaches 1 at full tilt.
 		 *
-		 * The value must be a number from 0 to 1: 0 means no dead zone, and 1 is treated as 0.99999. Anything else throws a TypeError with code INVALID_PARAMETERS and keeps the previous setting. The new dead zone applies from the next update. It can also be set with set( { "gamepadSensitivity": value } ).
-		 * @param sensitivity Dead zone from 0 to 1 (0 = no dead zone). The default is 0.2.
+		 * The two sticks of the standard mapping, axes 0 and 1 and axes 2 and 3, use a radial dead zone: the stick's distance from the center is compared with the dead zone and rescaled, and the stick keeps its direction, so diagonal and near-cardinal movement are not lost or snapped to an axis. A full diagonal reaches a distance of 1. Every other axis, and every axis of a pad without the standard mapping, uses the dead zone on its own.
+		 *
+		 * The value is a finite number from 0 to under 1; 0 means no dead zone. A value that is not a finite number throws a TypeError, and one outside the range a RangeError, both with code INVALID_DEAD_ZONE, and the previous setting is kept. The new dead zone applies from the next update. It can also be set with set( { "gamepadDeadZone": value } ).
+		 * @param deadZone Dead zone from 0 to under 1 (0 = no dead zone). The default is 0.2.
 		 * @returns This function does not return a value.
 		 */
-		setGamepadSensitivity( params: { "sensitivity": number } ): void;
-		setGamepadSensitivity( sensitivity: number ): void;
+		setGamepadDeadZone( params: { "deadZone": number } ): void;
+		setGamepadDeadZone( deadZone: number ): void;
 
 		/**
 		 * Sets the active screen for graphics commands.

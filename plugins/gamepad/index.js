@@ -40,7 +40,7 @@ let m_isInitialized = false;
 let m_isStopped = false;
 let m_isLooping = false;
 let m_gamepadLoopId = null;
-let m_axesSensitivity = 0.2;
+let m_deadZone = 0.2;
 let m_tick = 0;
 let m_lastReadTick = -1;
 let m_isHidden = false;
@@ -65,9 +65,7 @@ export default function gamepadPlugin( pluginApi ) {
 	pluginApi.addCommand( "startGamepad", startGamepad, false, [] );
 	pluginApi.addCommand( "stopGamepad", stopGamepad, false, [] );
 	pluginApi.addCommand( "inGamepad", inGamepad, false, [ "gamepadIndex" ] );
-	pluginApi.addCommand(
-		"setGamepadSensitivity", setGamepadSensitivity, false, [ "sensitivity" ]
-	);
+	pluginApi.addCommand( "setGamepadDeadZone", setGamepadDeadZone, false, [ "deadZone" ] );
 	pluginApi.addCommand( "onGamepad", onGamepad, false, [ "mode", "fn", "once" ] );
 	pluginApi.addCommand( "offGamepad", offGamepad, false, [ "mode", "fn" ] );
 
@@ -192,27 +190,26 @@ function inGamepad( options ) {
 }
 
 /**
- * Set the dead zone used when reporting gamepad axes.
+ * Set the dead zone used when reporting gamepad axes: a finite number from 0 to under 1.
  *
  * @param {Object} options - Command options.
  * @returns {void}
  */
-function setGamepadSensitivity( options ) {
-	const sensitivity = options.sensitivity;
-
-	if( !Number.isFinite( sensitivity ) || sensitivity < 0 || sensitivity > 1 ) {
-		const error = new TypeError(
-			"setGamepadSensitivity: sensitivity must be a number between 0 and 1."
+function setGamepadDeadZone( options ) {
+	const deadZone = options.deadZone;
+	if( !Number.isFinite( deadZone ) ) {
+		throwCode(
+			TypeError, "setGamepadDeadZone: deadZone must be a finite number.", "INVALID_DEAD_ZONE"
 		);
-		error.code = "INVALID_PARAMETERS";
-		throw error;
 	}
-
-	if( sensitivity === 1 ) {
-		m_axesSensitivity = 0.99999;
-	} else {
-		m_axesSensitivity = sensitivity;
+	if( deadZone < 0 || deadZone >= 1 ) {
+		throwCode(
+			RangeError,
+			"setGamepadDeadZone: deadZone must be at least 0 and less than 1.",
+			"INVALID_DEAD_ZONE"
+		);
 	}
+	m_deadZone = deadZone;
 }
 
 /**
@@ -701,9 +698,7 @@ function recordGamepad( gamepadRawData ) {
 			"pressed": false, "value": 0, "pressStarted": false, "pressReleased": false
 		} );
 	}
-	for( let i = 0; i < gamepadRawData.axes.length; i += 1 ) {
-		state.axes.push( smoothAxis( gamepadRawData.axes[ i ] ) );
-	}
+	applyDeadZone( gamepadRawData, state.axes );
 	gamepadData.axes = state.axes.slice();
 	gamepadData.lastAxes = state.axes.slice();
 	m_gamepads[ index ] = gamepadData;
@@ -737,22 +732,70 @@ function updateGamepad( gamepadRawData, isEdges ) {
 		button.value = buttonNew.value;
 	}
 	state.buttons.length = gamepadRawData.buttons.length;
-	for( let i = 0; i < gamepadRawData.axes.length; i += 1 ) {
-		state.axes[ i ] = smoothAxis( gamepadRawData.axes[ i ] );
-	}
-	state.axes.length = gamepadRawData.axes.length;
+	applyDeadZone( gamepadRawData, state.axes );
 	state.timestamp = gamepadRawData.timestamp;
 	state.connected = gamepadRawData.connected;
 	state.vibrationActuator = gamepadRawData.vibrationActuator;
 }
 
-function smoothAxis( axis ) {
-	if( Math.abs( axis ) < m_axesSensitivity ) {
+/**
+ * Apply the dead zone to a pad's axes, into the target array. The two sticks of the standard
+ * mapping, axes 0 and 1 and axes 2 and 3, use a radial dead zone, so a stick keeps its direction;
+ * every other axis, and every axis of another mapping, uses it per axis.
+ *
+ * @param {Gamepad} gamepadRawData - The browser's pad.
+ * @param {Array<number>} target - Axis values, updated in place.
+ * @returns {void}
+ */
+function applyDeadZone( gamepadRawData, target ) {
+	const axes = gamepadRawData.axes;
+	let i = 0;
+	if( gamepadRawData.mapping === "standard" ) {
+		while( i < 4 && i + 1 < axes.length ) {
+			applyStickDeadZone( axes[ i ], axes[ i + 1 ], target, i );
+			i += 2;
+		}
+	}
+	while( i < axes.length ) {
+		target[ i ] = applyAxisDeadZone( axes[ i ] );
+		i += 1;
+	}
+	target.length = axes.length;
+}
+
+/**
+ * Apply the radial dead zone to one stick: inside the dead zone it reads 0; outside, its
+ * distance from the center is rescaled from the dead zone to 1 in the same direction.
+ *
+ * @param {number} x - Horizontal axis value.
+ * @param {number} y - Vertical axis value.
+ * @param {Array<number>} target - Axis values, updated in place.
+ * @param {number} index - Index of the stick's horizontal axis.
+ * @returns {void}
+ */
+function applyStickDeadZone( x, y, target, index ) {
+	const magnitude = Math.hypot( x, y );
+	if( magnitude === 0 || magnitude < m_deadZone ) {
+		target[ index ] = 0;
+		target[ index + 1 ] = 0;
+		return;
+	}
+	const scale = ( Math.min( magnitude, 1 ) - m_deadZone ) / ( 1 - m_deadZone ) / magnitude;
+	target[ index ] = x * scale;
+	target[ index + 1 ] = y * scale;
+}
+
+/**
+ * Apply the dead zone to one axis on its own, rescaled from the dead zone to 1.
+ *
+ * @param {number} axis - Axis value.
+ * @returns {number}
+ */
+function applyAxisDeadZone( axis ) {
+	if( Math.abs( axis ) < m_deadZone ) {
 		return 0;
 	}
-	axis = axis - Math.sign( axis ) * m_axesSensitivity;
-	axis = axis / ( 1 - m_axesSensitivity );
-	return axis;
+	return ( axis - Math.sign( axis ) * m_deadZone ) / ( 1 - m_deadZone );
 }
 
 /**
