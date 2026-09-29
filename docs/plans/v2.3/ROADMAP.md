@@ -16,9 +16,8 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Gamepad 3.3](#73-phase-3-additive-and-release-inputs) | Gamepad release inputs: the compatibility summary, the device checks, and the final size | Nothing |
-| 2 | [CI 3.11](#133-cicd) | Visual recapture: when a capture does not match its baseline, `run-visual-tests.js` waits two frames and captures once more before failing, and records the recapture as a report annotation. A one-off blank-canvas capture of `shaders_comprehensive` on windows-2025 failed a correct run of PR #94 | Gamepad 3.3 |
-| 3 | [Sound 11.1–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
+| 1 | [CI 3.11](#133-cicd) | Visual recapture: when a capture does not match its baseline, `run-visual-tests.js` waits two frames and captures once more before failing, and records the recapture as a report annotation. A one-off blank-canvas capture of `shaders_comprehensive` on windows-2025 failed a correct run of PR #94 | Nothing |
+| 2 | [Sound 11.1–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -30,9 +29,9 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Sound | [4](#4-sound) | Phases 0–10 done. Its listening checks are in Section 8.3; Phase 11 not started | Sound 11.1–11.5 |
 | Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Pointer | [6](#6-pointer) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
-| Gamepad | [7](#7-gamepad) | Phases 1–2 done; Phase 3: 3.1–3.2 done, 1 task left | Gamepad 3.3 |
+| Gamepad | [7](#7-gamepad) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
-| CI/CD | [13.3](#133-cicd) | CI 1.1–3.10 done; CI 3.11 queued after the gamepad phase | CI 3.11 |
+| CI/CD | [13.3](#133-cicd) | CI 1.1–3.10 done; CI 3.11 open | CI 3.11 |
 | Plugin removal | [13.1](#131-plugin-removal) | Complete (P.1–P.6) | — |
 | Release | [8](#8-release) | Waits for the other workstreams | R.1 |
 
@@ -611,11 +610,10 @@ and size recorded.
 
 ### 7.3 Phase 3: additive and release inputs
 
-Done: 3.1–3.2 ([Section 13.8](#138-gamepad)).
+Phase 3 is done: tasks 3.1–3.3 ([Section 13.8](#138-gamepad)).
 
 | # | Task | Findings | Status |
 | --- | --- | --- | --- |
-| 3.3 | **Release inputs.** Complete the compatibility summary below, add the open device checks to Section 8.3, and record the final size | — | — |
 
 ### 7.4 Compatibility summary
 
@@ -647,6 +645,10 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.3:
 - **A1:** "just pressed", "just released", and "axis changed" report what happened since the
   previous read, shared by every reader in the same frame, so timer-driven and slower loops see
   every press.
+- **Dispatch (I8, A3):** connection handlers are called from a copy of the list: a handler that
+  throws is reported with `console.error`, and the others still run; a handler registered during
+  a dispatch first runs for the next one, and one removed during it does not run later in it.
+  The pad list is updated before the handlers run.
 - **A2:** input keeps updating when the window loses focus but the page stays visible, where it
   used to freeze. Hiding the page releases every button and centers the axes, without reporting
   a release; a button still held when the page returns reads as pressed, not just pressed.
@@ -654,10 +656,11 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.3:
   loops over `inGamepad()` to set up players can set one up twice.
 - **A7 and I7:** pads, their `buttons` and `axes`, and the list are live objects updated in
   place. Copy them to keep a snapshot.
-- **Errors (I11):** validation throws with per-parameter codes instead of `INVALID_PARAMETERS`.
-  `getButton( "0" )` and other non-integer indices throw, a negative index throws
-  `RangeError`, `getButtonPressed()` past the buttons returns `false` instead of `null`, a
-  non-boolean `once` throws, and `setGamepadDeadZone( 1 )` throws where
+- **Errors (I11):** validation throws with per-parameter codes instead of `INVALID_PARAMETERS`. A
+  helper index that is neither an integer nor a standard name (A10) throws: `getButton( "0" )` used
+  to return button 0 and now throws `RangeError`, `getButton( 1.5 )` throws `TypeError`, and a
+  negative index throws `RangeError`, `getButtonPressed()` past the buttons returns `false` instead
+  of `null`, a non-boolean `once` throws, and `setGamepadDeadZone( 1 )` throws where
   `setGamepadSensitivity( 1 )` was accepted.
 - **A10 and A11:** additive; no upgrade entry.
 
@@ -721,8 +724,10 @@ in its workstream's evidence folder.
   (B11); touch and multi-touch on a phone or tablet in Chrome and Safari (PTR-002, PTR-003); a
   system gesture's `touchcancel` (PTR-005); pinch zoom with `setPinchZoom` on and off, the long
   press, and iOS double-tap zoom (PTR-014); a pen, if one is available.
-- [ ] Gamepad: re-check PAD-001, PAD-002, and PAD-017 in Chrome and Firefox with a controller;
-  Safari, if macOS hardware is available; `vibrateGamepad()` in Chrome (A11).
+- [ ] Gamepad: the release pass in `docs/evidence/gamepad-2.3/README.md`, in Chrome and Firefox
+  with a controller and in Safari if macOS hardware is available: the connect replay (A4),
+  press edges (A1, PAD-001, PAD-017), focus and a hidden tab (A2, PAD-002), the radial dead zone
+  (A9), reconnects, a stop and restart (I5, I6), names (A10), and `vibrateGamepad()` (A11).
 
 **Other:** a hardware-GPU check of the visual demos, and baseline approval for any fixture
 re-recorded during the release.
@@ -1142,7 +1147,8 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | 2.5 | Validation (A8, I11): `inGamepad( gamepadIndex )` and the six pad helpers check their index with `checkIndex()` before they read: a value that is not an integer, including `"0"`, `NaN`, and an omitted helper index, throws `TypeError`, and a negative index `RangeError`, both `INVALID_INDEX`, with a message starting with the command or method name and naming `gamepadIndex`, `buttonIndex`, or `axisIndex`. A well-formed index past the pad returns the empty value: `null` from `getButton()` and `inGamepad()`, `0` from `getAxis()`, and `false` from the other helpers, so `getButtonPressed()` returns `false` instead of `null`. `onGamepad` takes a boolean `once` or none (`TypeError`, `INVALID_ONCE`); its mode and function codes came with task 2.2. `INVALID_PARAMETERS` is left only in `setGamepadSensitivity`, which task 2.6 replaces. Metadata: `GamepadData` gives the index rule and the empty values, `getButtonPressed` returns `boolean`, and `inGamepad` and `onGamepad` name their codes. Tests: every helper and `inGamepad` with non-integers, a negative index, and an index past the pad, with exact messages; `once` rejected and accepted (P10) | [PAD-008](AUDIT-GAMEPAD.md#pad-008) | [#93](https://github.com/AndyStubbs/pijs/pull/93) |
 | 2.6 | Radial dead zone (A9, I12): on a pad with the standard mapping, the two sticks, axes 0 and 1 and axes 2 and 3, use a radial dead zone: a stick inside it reads 0, and outside it the stick's distance from the center is rescaled from the dead zone to 1, capped at 1, in the same direction, so a diagonal just past the dead zone moves, near-cardinal movement is not snapped to the axis, and a full diagonal reaches 1. Every other axis, and every axis of another mapping, keeps the per-axis model. `setGamepadSensitivity( sensitivity )` becomes `setGamepadDeadZone( deadZone )` with option `gamepadDeadZone`: a finite number from 0 to under 1, else `TypeError` for a non-finite value or `RangeError` out of range, both `INVALID_DEAD_ZONE`, keeping the previous setting; 1 is no longer accepted. The old name is in `_removed.toml`, and `set( { gamepadSensitivity } )` fails through Core 8 with `INVALID_OPTION`. `INVALID_PARAMETERS` is gone from the plugin. Metadata: `setGamepadDeadZone` replaces `setGamepadSensitivity`, and `GamepadData.axes` describes both models; the type check pins the command. Tests: the SYS-021 tests use `setGamepadDeadZone`, with 1 added to the rejected values and the error type per value, on a pad without the standard mapping, whose harness `setPad()` now takes a `mapping`; a new test checks the radial model on both sticks, the per-axis fifth axis, the clamp at 1, and a pad without the standard mapping (P13); the browser wiring test sets the option, checks the old option and command are gone, and uses a pad without the standard mapping; the Lite type consumer sets `gamepadDeadZone` and rejects `gamepadSensitivity`. `gamepad_01` adjusts the dead zone up to 0.95. Phase 2 exit: `docs/evidence/gamepad-2.3/size-phase2.json` and its README section (standalone 2.0.0: 2,576 bytes gzipped, +554 from Phase 1) | [PAD-011](AUDIT-GAMEPAD.md#pad-011) | [#94](https://github.com/AndyStubbs/pijs/pull/94) |
 | 3.1 | Standard names (A10, I13): the six pad helpers take a button or axis as a non-negative integer or an I13 name, which reads the position the standard mapping gives it on any pad: buttons `south` to `home` (0 to 16) for the four button helpers, and `leftX`, `leftY`, `rightX`, and `rightY` (0 to 3) for `getAxis()` and `getAxisChanged()`. Names are exact and per kind. An unknown name, including `"0"` and an axis name given to a button helper, throws `RangeError` with `INVALID_INDEX` (`getButton: buttonIndex "leftX" is not a button name.`); a value that is neither an integer nor a string throws `TypeError` (`must be an integer or a button name`). `inGamepad( gamepadIndex )` still takes integers only. Metadata: `GamepadData` lists the names and the rules, and the helper signatures take `number | string`; the type check pins `getButtonJustPressed`. Tests: every name against its index for all six helpers, a release by name, exact and per-kind names; the 2.5 validation test now expects `"0"` to be an unknown name and the new `TypeError` message; the Lite type consumer reads a button and an axis by name. Size: the standalone plugin is 2,768 bytes gzipped, +192 | — | [#96](https://github.com/AndyStubbs/pijs/pull/96) |
-| 3.2 | Vibration (A11): `vibrateGamepad( gamepadIndex, duration, strong, weak )` plays the pad's `vibrationActuator.playEffect( "dual-rumble" )` with `startDelay` 0 and returns `true`; it returns `false`, playing nothing, for a missing or disconnected pad or one whose actuator does not list `dual-rumble` (a browser that reports one `type` is checked by it, and an actuator that reports neither is tried). It reads the browser's pad directly, so it needs no polling and does not start it; a rejected effect promise is caught. `strong` and `weak` default to 1. Validation (I11): `INVALID_INDEX` as `inGamepad`, `INVALID_DURATION` (`TypeError` for a non-finite value, `RangeError` when negative), `INVALID_STRONG` and `INVALID_WEAK` (`TypeError` for a non-finite value, `RangeError` outside 0 to 1). Metadata: a new `vibrateGamepad` entry, and `GamepadData.vibrationActuator` points to it; the type check pins the signature. Tests: the effect and its parameters in both call forms, no polling, unsupported, missing, and disconnected pads, a single-`type` actuator with a rejected effect, and every validation error with its message, with nothing played; the harness `setPad()` takes a `vibrationActuator`; the browser wiring test lists the command; the Lite type consumer reads its `boolean`. The evidence `device-check.html` gains a **vibrateGamepad pad 0** button that records the return value. Size: the standalone plugin is 3,090 bytes gzipped, +322, above the 150-byte estimate; most of it is the validation and its messages | — | — |
+| 3.2 | Vibration (A11): `vibrateGamepad( gamepadIndex, duration, strong, weak )` plays the pad's `vibrationActuator.playEffect( "dual-rumble" )` with `startDelay` 0 and returns `true`; it returns `false`, playing nothing, for a missing or disconnected pad or one whose actuator does not list `dual-rumble` (a browser that reports one `type` is checked by it, and an actuator that reports neither is tried). It reads the browser's pad directly, so it needs no polling and does not start it; a rejected effect promise is caught. `strong` and `weak` default to 1. Validation (I11): `INVALID_INDEX` as `inGamepad`, `INVALID_DURATION` (`TypeError` for a non-finite value, `RangeError` when negative), `INVALID_STRONG` and `INVALID_WEAK` (`TypeError` for a non-finite value, `RangeError` outside 0 to 1). Metadata: a new `vibrateGamepad` entry, and `GamepadData.vibrationActuator` points to it; the type check pins the signature. Tests: the effect and its parameters in both call forms, no polling, unsupported, missing, and disconnected pads, a single-`type` actuator with a rejected effect, and every validation error with its message, with nothing played; the harness `setPad()` takes a `vibrationActuator`; the browser wiring test lists the command; the Lite type consumer reads its `boolean`. The evidence `device-check.html` gains a **vibrateGamepad pad 0** button that records the return value. Size: the standalone plugin is 3,090 bytes gzipped, +322, above the 150-byte estimate; most of it is the validation and its messages | — | [#97](https://github.com/AndyStubbs/pijs/pull/97) |
+| 3.3 | Release inputs: the compatibility summary (7.4) completed with dispatch (I8, A3) and the names' effect on string indices; the gamepad's device checks in Section 8.3 point to a release pass in `docs/evidence/gamepad-2.3/README.md`, with nine steps and expected results for the connect replay, press edges, focus and a hidden tab, the radial dead zone, reconnects, a stop and restart, names, and vibration. `device-check.html` gains a **Stop polling** toggle and rows for the left stick's distance from the center, the south button and left stick read by name, and the polling state; checked headless in Chromium with a scripted standard pad and no page errors. The final size, `size-final.json` on `main` at `9ba0a7b`: 3,090 bytes gzipped for the standalone plugin 2.0.0, +1,662 since the baseline. The audit's status table marks every finding done | — | — |
 
 ## 14. Glossary
 

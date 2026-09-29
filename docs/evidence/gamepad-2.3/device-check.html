@@ -18,20 +18,23 @@
 </head>
 <body>
 <!--
-Device check for the gamepad 2.3 audit (docs/plans/v2.3/AUDIT-GAMEPAD.md, Section 6).
+Device check for the gamepad 2.3 audit (docs/plans/v2.3/AUDIT-GAMEPAD.md, Section 6) and its
+release pass (docs/plans/v2.3/ROADMAP.md, Section 8.3).
 
 Compares what Pi.js reports with the browser's own Gamepad API for the behaviors that
 synthetic probes cannot settle: the privacy gate, connect callbacks, press edges read at two
-rates, state across a focus change, the dead zone, reconnect indices, and vibration.
+rates, state across a focus change or a hidden tab, the radial dead zone, reconnect indices,
+a stop and restart, standard names, and vibration.
 Serve the repository with `npm run server`, then open
 http://localhost:8080/docs/evidence/gamepad-2.3/device-check.html
 -->
-<h1>Gamepad device check (Pi.js 2.3 audit)</h1>
+<h1>Gamepad device check (Pi.js 2.3)</h1>
 <p>Follow the steps in docs/evidence/gamepad-2.3/README.md, then click
 <b>Copy results</b> and paste them into the conversation.</p>
 <div>
 	<button id="rumble">Rumble pad 0</button>
 	<button id="vibrate">vibrateGamepad pad 0</button>
+	<button id="polling">Stop polling</button>
 	<button id="reset">Reset counters</button>
 	<button id="copy">Copy results</button>
 </div>
@@ -51,9 +54,11 @@ const m_results = {
 	"rawDisconnectEvents": [],
 	"edges": null,
 	"blurSamples": [],
-	"deadZone": { "rawFramesOutside": 0, "piFramesZero": 0 },
-	"vibration": null
+	"deadZone": { "rawFramesOutside": 0, "piFramesZero": 0, "piMaxDistance": 0 },
+	"vibration": null,
+	"polling": []
 };
+let m_isPolling = true;
 let m_edges;
 let m_lastRawPressed = false;
 let m_frameTimes = [];
@@ -83,6 +88,7 @@ function resetEdges() {
 	m_results.edges = m_edges;
 	m_results.deadZone.rawFramesOutside = 0;
 	m_results.deadZone.piFramesZero = 0;
+	m_results.deadZone.piMaxDistance = 0;
 }
 
 function rawPad( index ) {
@@ -167,6 +173,8 @@ function frame( time ) {
 		if( pad.getButtonJustReleased( 0 ) ) {
 			m_edges.piFrameReleases += 1;
 		}
+		const distance = Math.hypot( pad.getAxis( 0 ), pad.getAxis( 1 ) );
+		m_results.deadZone.piMaxDistance = Math.max( m_results.deadZone.piMaxDistance, distance );
 	}
 	render( pad, raw );
 	requestAnimationFrame( frame );
@@ -205,6 +213,13 @@ function render( pad, raw ) {
 			pad.getAxis( 1 ).toFixed( 3 ) : "-" ],
 		[ "Stick frames outside 0.2 radius / Pi.js centered",
 			m_results.deadZone.rawFramesOutside + " / " + m_results.deadZone.piFramesZero ],
+		[ "Left stick distance: Pi.js now / max", pad ? Math.hypot( pad.getAxis( 0 ),
+			pad.getAxis( 1 ) ).toFixed( 3 ) + " / " + m_results.deadZone.piMaxDistance.toFixed( 3 )
+			: "-" ],
+		[ "By name: south pressed / leftX, leftY", pad ? pad.getButtonPressed( "south" ) +
+			" / " + pad.getAxis( "leftX" ).toFixed( 3 ) + ", " + pad.getAxis( "leftY" ).toFixed( 3 )
+			: "-" ],
+		[ "Polling", m_isPolling ? "running" : "stopped" ],
 		[ "vibrationActuator", raw ? String( !!raw.vibrationActuator ) : "-" ]
 	];
 	const table = document.getElementById( "state" );
@@ -248,6 +263,20 @@ document.getElementById( "vibrate" ).addEventListener( "click", () => {
 	const supported = $.vibrateGamepad( 0, 400, 1, 1 );
 	m_results.vibrateGamepad = supported;
 	log( "vibrateGamepad( 0, 400, 1, 1 ) returned " + supported );
+} );
+document.getElementById( "polling" ).addEventListener( "click", e => {
+	m_isPolling = !m_isPolling;
+	if( m_isPolling ) {
+		$.startGamepad();
+		e.target.textContent = "Stop polling";
+		log( "Polling started" );
+	} else {
+		$.stopGamepad();
+		e.target.textContent = "Start polling";
+		log( "Polling stopped" );
+	}
+	m_results.polling.push( { "t": ( ( performance.now() - m_start ) / 1000 ).toFixed( 2 ),
+		"running": m_isPolling } );
 } );
 document.getElementById( "reset" ).addEventListener( "click", () => {
 	resetEdges();
