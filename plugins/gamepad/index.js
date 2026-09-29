@@ -5,7 +5,7 @@
  * and connect/disconnect event management.
  *
  * @module plugins/gamepad
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 "use strict";
@@ -21,7 +21,7 @@ const m_gamepads = {};
 // Per pad: the state the loop last saw, and the edges it accumulated since the last read
 const m_padStates = {};
 
-// The list form of ingamepad(): one live array, refilled in place
+// The list form of inGamepad(): one live array, refilled in place
 const m_padList = [];
 
 // Handler registrations: { fn, isRemoved }, and for connect handlers `delivered`, the pads the
@@ -61,7 +61,7 @@ export default function gamepadPlugin( pluginApi ) {
 	// Register global commands
 	pluginApi.addCommand( "startGamepad", startGamepad, false, [] );
 	pluginApi.addCommand( "stopGamepad", stopGamepad, false, [] );
-	pluginApi.addCommand( "ingamepad", ingamepad, false, [ "gamepadIndex" ] );
+	pluginApi.addCommand( "inGamepad", inGamepad, false, [ "gamepadIndex" ] );
 	pluginApi.addCommand(
 		"setGamepadSensitivity", setGamepadSensitivity, false, [ "sensitivity" ]
 	);
@@ -115,7 +115,7 @@ function startGamepad() {
  */
 function stopGamepad() {
 
-	// Explicitly stop gamepad to prevent autostart when ingamepad is called
+	// Explicitly stop gamepad to prevent autostart when inGamepad is called
 	m_isStopped = true;
 	if( m_isLooping ) {
 		m_isLooping = false;
@@ -133,7 +133,7 @@ function stopGamepad() {
  * @param {Object} options - Command options.
  * @returns {Object|Array<Object>|null|undefined}
  */
-function ingamepad( options ) {
+function inGamepad( options ) {
 	const gamepadIndex = options.gamepadIndex;
 
 	// If stopped explicitly then return without auto starting
@@ -158,7 +158,7 @@ function ingamepad( options ) {
 	// Validate gamepadIndex
 	if( !Number.isInteger( gamepadIndex ) || gamepadIndex < 0 ) {
 		const error = new TypeError(
-			"ingamepad: gamepadIndex must be a non-negative integer or null."
+			"inGamepad: gamepadIndex must be a non-negative integer or null."
 		);
 		error.code = "INVALID_PARAMETERS";
 		throw error;
@@ -629,7 +629,7 @@ function clearGamepadEvents( screenData ) {
 if( typeof window !== "undefined" && window.pi ) {
 	window.pi.registerPlugin( {
 		"name": "gamepad",
-		"version": "1.0.0",
+		"version": "2.0.0",
 		"description": "Gamepad input handling for Pi.js",
 		"init": gamepadPlugin
 	} );

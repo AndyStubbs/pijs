@@ -6,7 +6,7 @@ summary = "Registers a callback function for when a gamepad is disconnected."
 description = """
 Registers a callback that runs when a gamepad disconnects. The callback receives the pad's
 index, id, mapping, and connected status (false), not its GamepadData. The pad has already left
-the list that ingamepad() returns when the callback runs.
+the list that inGamepad() returns when the callback runs.
 
 Registering starts polling, even after stopGamepad(). A callback that throws is reported with
 console.error(), and the other callbacks still run. clearEvents( "gamepad" ) removes every

@@ -12,7 +12,7 @@
 
 /*+++
 title = "Gamepad Test 02 - Multiple Gamepads"
-description = "Tests multiple gamepad support and ingamepad() with index parameter"
+description = "Tests multiple gamepad support and inGamepad() with index parameter"
 +++*/
 
 $.screen( "640x480" );
@@ -33,7 +33,7 @@ function draw() {
 	$.print( "Press buttons or move sticks to see real-time data" );
 	
 	// Get all gamepads
-	const allGamepads = $.ingamepad();
+	const allGamepads = $.inGamepad();
 	
 	$.setPos( 0, 5 );
 	$.setColor( 15 );
@@ -41,7 +41,7 @@ function draw() {
 
 	// Single column layout for 4 gamepads
 	for( let i = 0; i < 4; i++ ) {
-		const gp = $.ingamepad( i );
+		const gp = $.inGamepad( i );
 		const columnX = 0;
 		const startRow = 7 + ( i * 12 );
 		

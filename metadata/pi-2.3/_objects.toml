@@ -464,11 +464,11 @@ description = "Whether the button was released since the previous read."
 title = "GamepadData"
 summary = "Gamepad state and helper methods."
 description = """
-A connected gamepad, returned by ingamepad() and passed to onGamepadConnected callbacks. The
+A connected gamepad, returned by inGamepad() and passed to onGamepadConnected callbacks. The
 object is live: the same object is returned on every read and updated in place, including its
 buttons array, each button, axes, and lastAxes. Copy values to keep a snapshot.
 
-A read is an ingamepad() call or a call to one of the methods below, including on a pad kept
+A read is an inGamepad() call or a call to one of the methods below, including on a pad kept
 from an earlier read. The first read in each animation frame updates every pad with what
 happened since the last frame that had a read, so a press and a release between two reads are
 both reported; every other read in the same frame sees the same values.

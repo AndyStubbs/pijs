@@ -19,7 +19,7 @@ $.screen( "300x200" );
 $.setGamepadSensitivity( 0.2 );
 run();
 function run() {
-	const gamepad = $.ingamepad( 0 );
+	const gamepad = $.inGamepad( 0 );
 	if( gamepad ) {
 		const vAxis = gamepad.getAxis( 0 );
 		$.cls();
