@@ -12,6 +12,7 @@ import * as g_server from "./test-server.js";
 import * as g_reporter from "./minimal-reporter.js";
 import * as g_config from "../../playwright.config.js";
 import * as g_visualReview from "../../scripts/visual-review.js";
+import * as g_visualRecapture from "./visual-recapture.js";
 
 const ROOT = g_url.fileURLToPath( new URL( "../../", import.meta.url ) );
 
@@ -175,6 +176,8 @@ g_test.test( "reporter counts final outcomes once and isolates all visual modes"
 		}
 		if( status === "passed" ) {
 			annotations.push( { "type": "pixel-mismatch", "description": "0.13% pixels different" } );
+			annotations.push( { "type": "recapture", "description": "First capture 12.5% pixels " +
+				"different; the recapture matched" } );
 		}
 		return { "id": String( index ), "title": status, "results": results,
 			"annotations": annotations, "outcome": () => status };
@@ -191,19 +194,61 @@ g_test.test( "reporter counts final outcomes once and isolates all visual modes"
 		g_assert.equal( summary.retries, 1 );
 		g_assert.equal( summary.pendingBaselines, 1 );
 		g_assert.equal( summary.pixelMismatches, 1 );
+		g_assert.equal( summary.recaptures, 1 );
 		g_assert.equal( summary.status, "failed" );
 		for( const status of statuses ) { g_assert.equal( summary[ status ], 1 ); }
 		g_assert.ok( lines.includes(
 			"Pixel mismatch (report only): fixture_0: 0.13% pixels different"
 		) );
+		g_assert.ok( lines.includes(
+			"Recapture: fixture_0: First capture 12.5% pixels different; the recapture matched"
+		) );
 		lines.length = 0;
 		const html = g_fs.readFileSync( g_path.join( directory, "results.html" ), "utf8" );
 		g_assert.ok( html.includes( "Pixel mismatch (report only): 0.13% pixels different" ) );
+		g_assert.ok( html.includes(
+			"Recapture: First capture 12.5% pixels different; the recapture matched"
+		) );
+		g_assert.ok( html.includes( "recaptures: 1" ) );
 		g_assert.ok( html.includes( `/test/test-results/${mode}/screenshots/fixture_0.png` ) );
 		g_assert.ok( html.includes( `/test/playwright-report/${mode}/` ) );
 		g_assert.ok( html.includes( `const TEST_MODE = "${mode}"` ) );
 		g_assert.doesNotMatch( html, /\{\{[A-Z_]+\}\}/ );
 	}
+} );
+
+g_test.test( "a pixel mismatch is captured once more before it counts (CI 3.11)", async () => {
+	const run = async comparisons => {
+		const calls = [];
+		const result = await g_visualRecapture.compareWithRecapture(
+			() => {
+				calls.push( "compare" );
+				return comparisons.shift();
+			},
+			async () => { calls.push( "recapture" ); }
+		);
+		return { "calls": calls, ...result };
+	};
+	const match = { "match": true, "diffPercent": 0 };
+	const blank = { "match": false, "diffPercent": 12.5 };
+	const still = { "match": false, "diffPercent": 0.4 };
+	const size = { "match": false, "error": "Size mismatch: 1x1 vs 2x2" };
+
+	// A match, and a comparison error such as a size mismatch, are final
+	g_assert.deepEqual( await run( [ match ] ),
+		{ "calls": [ "compare" ], "comparison": match, "recapture": "" } );
+	g_assert.deepEqual( await run( [ size ] ),
+		{ "calls": [ "compare" ], "comparison": size, "recapture": "" } );
+
+	// A pixel mismatch is recaptured once; the second comparison decides, and is described
+	g_assert.deepEqual( await run( [ blank, match ] ), {
+		"calls": [ "compare", "recapture", "compare" ], "comparison": match,
+		"recapture": "First capture 12.5% pixels different; the recapture matched"
+	} );
+	g_assert.deepEqual( await run( [ blank, still ] ), {
+		"calls": [ "compare", "recapture", "compare" ], "comparison": still,
+		"recapture": "First capture 12.5% pixels different; the recapture also differed"
+	} );
 } );
 
 g_test.test( "review actions select each mode's candidate and reject invalid paths", () => {

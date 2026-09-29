@@ -16,8 +16,7 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [CI 3.11](#133-cicd) | Visual recapture: when a capture does not match its baseline, `run-visual-tests.js` waits two frames and captures once more before failing, and records the recapture as a report annotation. A one-off blank-canvas capture of `shaders_comprehensive` on windows-2025 failed a correct run of PR #94 | Nothing |
-| 2 | [Sound 11.1–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
+| 1 | [Sound 11.1–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -31,7 +30,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Pointer | [6](#6-pointer) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Gamepad | [7](#7-gamepad) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
-| CI/CD | [13.3](#133-cicd) | CI 1.1–3.10 done; CI 3.11 open | CI 3.11 |
+| CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.11) | — |
 | Plugin removal | [13.1](#131-plugin-removal) | Complete (P.1–P.6) | — |
 | Release | [8](#8-release) | Waits for the other workstreams | R.1 |
 
@@ -906,6 +905,7 @@ tarball. Findings: [AUDIT-CI.md](AUDIT-CI.md).
 | 3.8 | Required checks on `main` ([#12](https://github.com/AndyStubbs/pijs/pull/12)); documentation-only changes skip the test jobs ([#15](https://github.com/AndyStubbs/pijs/pull/15)) | — |
 | 3.9 | GitHub CLI and pull-request practice (Section 1.4) | — |
 | 3.10 | Resize waits: the noCss tests in `screen-lifecycle-browser.test.js` and `pointer-browser.test.js` wait up to 2 s for the canvas to reach each expected size instead of a fixed 80 ms, which a macOS runner missed after Gamepad 1.6 (run 36427632948); checks that nothing changes keep the fixed wait | [CI-008](AUDIT-CI.md#ci-008) |
+| 3.11 | Visual recapture: a pixel mismatch is captured once more before it counts. `test/scripts/visual-recapture.js` exports `compareWithRecapture()`: a match or a comparison error (size, missing file) is final; after a pixel mismatch the runner keeps the first capture, waits two animation frames, captures again to the same file, and the second comparison decides. Every recapture is reported: a `recapture` annotation with the first capture attached, `recapture` per test and a `recaptures` count in `summary.json`, a note on the results page, and a `Recapture: <fixture>: <description>` console line. Found when a Windows CI run of PR #94 captured all seven `shaders_comprehensive` canvases blank while the trace frames before and after showed them drawn. `test/README.md` describes it. Tests: `compareWithRecapture()` with a match, a size error, and a mismatch that matches or still differs on the recapture; the reporter test counts and prints a recapture and finds it on the results page. A run against a deliberately altered baseline recaptured once and still failed | — |
 
 **Compatibility summary.** No public API changes, so nothing goes in the upgrade guide. For the
 changelog (R.5): built on Windows, `pi.min.js` and `pi.lite.min.js` lose about 134 bytes of `\r`
