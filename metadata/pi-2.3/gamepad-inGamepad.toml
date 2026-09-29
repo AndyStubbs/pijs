@@ -9,8 +9,8 @@ undefined when no pad has it. Without one, or with null, returns every connected
 order, in one live array that is refilled on each call.
 
 The first read starts polling, unless stopGamepad() was called; after stopGamepad(), every read
-returns null until startGamepad() or a handler registration starts polling again. The first read
-records the current state without reporting buttons already held as just pressed.
+returns null until startGamepad() starts polling again. The first read records the current state
+without reporting buttons already held as just pressed.
 
 Pads are live objects updated in place. The first read in each animation frame reports what
 happened since the last frame that had a read, and every other read in the frame sees the same
