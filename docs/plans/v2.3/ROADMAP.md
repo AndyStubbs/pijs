@@ -16,7 +16,11 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Sound 11.6](#43-phase-11-test-upkeep) | Remove the Pi.js 2.2 sound references | The 2.3.0 listening pass (R.7) |
+| 1 | [R.2–R.4](#82-tasks) | `API.md`, the llms references and plugin READMEs, and the upgrade guide, in any order | Nothing. Can run in parallel |
+| 2 | [R.5](#82-tasks) | Package README, changelog, and `PUBLISH.md` | R.4 |
+| 3 | [R.6](#82-tasks) | Version check with `npm run release:check` | R.2–R.5 |
+| 4 | [R.7](#82-tasks) | Tests, the manual checks in Section 8.3, tag, snapshot, and publish | R.6 |
+| 5 | [Sound 11.6](#43-phase-11-test-upkeep) | Remove the Pi.js 2.2 sound references | The 2.3.0 listening pass (R.7) |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -32,7 +36,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
 | CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.11) | — |
 | Plugin removal | [13.1](#131-plugin-removal) | Complete (P.1–P.6) | — |
-| Release | [8](#8-release) | Waits for the other workstreams | R.1 |
+| Release | [8](#8-release) | R.1 done: the entry criteria are met ([Section 13.9](#139-release)) | R.2–R.4 |
 
 ### Documents
 
@@ -185,7 +189,7 @@ Sound Phases 9–11 ────────────────────
 | --- | --- | --- |
 | U1: Audits complete | Core, keyboard, pointer, gamepad, and test audits; CI exploration; every finding decided | Done 2026-09-26 |
 | U2: Roadmaps approved | Sections 3–7 approved; G1–G8 closed | Done 2026-09-27 |
-| U3: Implementation complete | Every workstream's exit criteria met with `npm test` green | Open |
+| U3: Implementation complete | Every workstream's exit criteria met with `npm test` green | Done 2026-09-29 (R.1) |
 | U4: Release | Section 8; the `releases/pi-2.3.0` snapshot exists | Open |
 
 Workstream milestones:
@@ -672,9 +676,10 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.3:
 
 ### 8.2 Tasks
 
+Done: R.1 ([Section 13.9](#139-release)).
+
 | # | Task | Status |
 | --- | --- | --- |
-| R.1 | Confirm the entry criteria and record any deferrals in the owning documents | — |
 | R.2 | Rewrite the `API.md` Sound and Music section and the Input sections (Keyboard; Mouse, Touch, and Press; Gamepad) to describe final behavior. Also: the `set()` and `removeScreen` text (Core 6, Core 8); that `clearEvents()` also removes handlers a plugin registers through the public input commands, written for plugin authors (Core 3, CORE-004); and the characters each built-in font draws and the one-cell-per-UTF-16-unit rule (C10, CORE-014) | — |
 | R.3 | Update the `docs/llms/` references and examples, commit the regenerated `pi.d.ts`, and update the plugin READMEs: `sound-advanced` for the expansion commands, a new pointer README, keyboard, and `docs/GAMEPAD.md` (PAD-013). State that the standalone plugin entry points are for Lite (C3) | — |
 | R.4 | Write `docs/UPGRADE-V2.3.md` from the compatibility summaries: core (Section 3.4), sound (Section 4.4), keyboard (5.4), pointer (6.4), gamepad (7.4), and plugin removal (13.1) | — |
@@ -750,8 +755,8 @@ All closed.
 - **Input conventions I1–I16:** Section 2.
 - **Sound D1–D6:** [DESIGN-SOUND §12](DESIGN-SOUND.md#12-decisions), all resolved.
 - **Sound expansion D7–D17:**
-  [DESIGN-SOUND-ADVANCED §11](DESIGN-SOUND-ADVANCED.md#11-decisions). Open: D13 and D14
-  (closed by Sound 9.3) and D15 (closed by Sound 10.3).
+  [DESIGN-SOUND-ADVANCED §11](DESIGN-SOUND-ADVANCED.md#11-decisions), all resolved; D13 and
+  D14 were closed by Sound 9.3 and D15 by Sound 10.3.
 - **Finding decisions:** the Review Decisions section of each audit.
 
 ## 10. Scope-Cut Order
@@ -1157,6 +1162,12 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | 3.2 | Vibration (A11): `vibrateGamepad( gamepadIndex, duration, strong, weak )` plays the pad's `vibrationActuator.playEffect( "dual-rumble" )` with `startDelay` 0 and returns `true`; it returns `false`, playing nothing, for a missing or disconnected pad or one whose actuator does not list `dual-rumble` (a browser that reports one `type` is checked by it, and an actuator that reports neither is tried). It reads the browser's pad directly, so it needs no polling and does not start it; a rejected effect promise is caught. `strong` and `weak` default to 1. Validation (I11): `INVALID_INDEX` as `inGamepad`, `INVALID_DURATION` (`TypeError` for a non-finite value, `RangeError` when negative), `INVALID_STRONG` and `INVALID_WEAK` (`TypeError` for a non-finite value, `RangeError` outside 0 to 1). Metadata: a new `vibrateGamepad` entry, and `GamepadData.vibrationActuator` points to it; the type check pins the signature. Tests: the effect and its parameters in both call forms, no polling, unsupported, missing, and disconnected pads, a single-`type` actuator with a rejected effect, and every validation error with its message, with nothing played; the harness `setPad()` takes a `vibrationActuator`; the browser wiring test lists the command; the Lite type consumer reads its `boolean`. The evidence `device-check.html` gains a **vibrateGamepad pad 0** button that records the return value. Size: the standalone plugin is 3,090 bytes gzipped, +322, above the 150-byte estimate; most of it is the validation and its messages | — | [#97](https://github.com/AndyStubbs/pijs/pull/97) |
 | 3.3 | Release inputs: the compatibility summary (7.4) completed with dispatch (I8, A3) and the names' effect on string indices; the gamepad's device checks in Section 8.3 point to a release pass in `docs/evidence/gamepad-2.3/README.md`, with nine steps and expected results for the connect replay, press edges, focus and a hidden tab, the radial dead zone, reconnects, a stop and restart, names, and vibration. `device-check.html` gains a **Stop polling** toggle and rows for the left stick's distance from the center, the south button and left stick read by name, and the polling state; checked headless in Chromium with a scripted standard pad and no page errors. The final size, `size-final.json` on `main` at `9ba0a7b`: 3,090 bytes gzipped for the standalone plugin 2.0.0, +1,662 since the baseline. The audit's status table marks every finding done | — | [#98](https://github.com/AndyStubbs/pijs/pull/98) |
 
+### 13.9 Release
+
+| # | Task |
+| --- | --- |
+| R.1 | Entry criteria confirmed on 2026-09-29 (Section 8.1). **Workstreams:** every task in Sections 3–7 is done, and each exit criterion is met: the findings each phase names are fixed with tests, the compatibility summaries (3.4, 4.4, 5.4, 6.4, 7.4) are complete, and sizes are in each `docs/evidence/<workstream>-2.3/` folder; the keyboard's final size is its Phase 2 file, which a later measurement matched. Sound 11.6 is scheduled after the listening pass, not cut. **Findings:** every accepted finding in the five audits is done, documented in R.2 and R.3 (CORE-003, CORE-004, CORE-014, CORE-019's package README, KEY-017, PTR-015, PAD-013, PAD-014), or deferred where its audit records it: C10's Latin-1 to CP437 mapping (CORE-014, Section 3.3). KEY-015's composed and mobile text is not planned (A16 dropped), and C4 was rejected. D14's PLAY cue markers are deferred to 2.3.x in DESIGN-SOUND-ADVANCED. Hardware and device confirmations are in the Section 8.3 checks. No new deferrals. **Decisions:** G1–G8, I1–I16, D1–D17, and each audit's Review Decisions are closed; Section 9.2 no longer calls D13–D15 open. **CI:** `ci.yml` on `main` passed on Linux, macOS (report-only pixels), and Windows at `1a34df9` (run 36595808091), after the macOS reference-test fix in Sound 11.5. Stale statuses updated: the test audit's pointer, keyboard, and gamepad handoffs (§5.2–5.4) are marked done with their tasks, and CI-008 records that no fixture carries `ciSkip`. Milestone U3 is done |
+
 ## 14. Glossary
 
 | Prefix | Meaning | Defined in |
@@ -1166,7 +1177,7 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | I1–I16 | Input conventions | Section 2 |
 | G1–G8 | Release decisions | Section 9.1 |
 | D1–D17 | Sound decisions | The sound design documents |
-| P.1–P.6, R.1–R.7 | Plugin removal and release tasks | Sections 13.1 and 8.2 |
+| P.1–P.6, R.1–R.7 | Plugin removal and release tasks | Sections 13.1, 8.2, and 13.9 |
 | U1–U4 | Release milestones | Section 1.5 |
 | M1–M5 | Sound milestones | Section 1.5 |
 | K1…, P1…, T1…, C01… | Probes in `docs/evidence/<workstream>-2.3/probes.js` | The evidence folders |

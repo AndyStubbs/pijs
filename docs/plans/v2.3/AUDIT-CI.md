@@ -397,7 +397,7 @@ what the release needs.
 | ID | Decision | Notes |
 | --- | --- | --- |
 | CI-001–CI-007 | Accepted | Done: CI 2.1, 2.2, 1.1, 1.2, 2.3, 3.1, 1.3 |
-| CI-008 | Accepted as a handoff | Pointer 1.9, Keyboard 1.13 (done), and Core 11 own the timing-sensitive fixtures. CI skips the flaky ones until fixed (`ciSkip`, CI 2.9) |
+| CI-008 | Accepted as a handoff | Done: Pointer 1.9, Keyboard 1.13, and Core 11 fixed the timing-sensitive fixtures, and no fixture carries `ciSkip` (CI 2.9 added the flag) |
 | CI-009–CI-013 | Accepted | Done: CI 1.4, 3.3–3.4, 2.4, 2.6, 2.5 |
 
 The decisions G4–G6 and G8 are recorded in [ROADMAP §9.1](ROADMAP.md#91-release-decisions).

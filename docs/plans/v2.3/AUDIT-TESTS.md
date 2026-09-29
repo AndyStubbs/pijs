@@ -670,26 +670,26 @@ go to their owner. The last column names the ROADMAP task that takes each item.
 
 | Item | Detail | Task |
 | --- | --- | --- |
-| Near-duplicate fixtures | `onpress_01`, `onpress_02`, and `ontouch_04` run identical command scripts (6.5–6.8 s each with one worker); `onmouse_03` is the same scenario without touch. `inmouse_01`, `intouch_01`, `inpress_01`, and `onmouse_01` repeat one X-drag at the same size. The first four take 24.5 s of single-worker time, the longest captures in the suite | Pointer 1.9 |
-| `patch-*` pointer tests | `patch-lifecycle` :427, :450 (the latter repeats `pointer_lifecycle_01`); `patch-browser` :83 (repeats the visual run), :380, :469 (repeats :380), and the pointer part of :256 | Moved to the pointer suites by TEST-014 and TEST-015; duplicates in Pointer 1.9 |
-| Gaps | `offtouch` has no test; `offclick`, `offpress`, and `setEnableContextMenu` have one each | Pointer 1.9 |
-| Manual pages | `ontouch_01`–`03` and `events_comprehensive` overlap the automated fixtures | Pointer 1.9 |
+| Near-duplicate fixtures | `onpress_01`, `onpress_02`, and `ontouch_04` run identical command scripts (6.5–6.8 s each with one worker); `onmouse_03` is the same scenario without touch. `inmouse_01`, `intouch_01`, `inpress_01`, and `onmouse_01` repeat one X-drag at the same size. The first four take 24.5 s of single-worker time, the longest captures in the suite | Done (Pointer 1.9) |
+| `patch-*` pointer tests | `patch-lifecycle` :427, :450 (the latter repeats `pointer_lifecycle_01`); `patch-browser` :83 (repeats the visual run), :380, :469 (repeats :380), and the pointer part of :256 | Moved to the pointer suites by TEST-014 and TEST-015; duplicates done (Pointer 1.9) |
+| Gaps | `offtouch` has no test; `offclick`, `offpress`, and `setEnableContextMenu` have one each | Done (Pointer 1.9) |
+| Manual pages | `ontouch_01`–`03` and `events_comprehensive` overlap the automated fixtures | Done (Pointer 1.9) |
 
 ### 5.3 Keyboard
 
 | Item | Detail | Task |
 | --- | --- | --- |
-| Waits | `keyboard_commands` spends 2.0 s in 35 `DL` commands | Keyboard 1.13 |
-| Node and browser pair | The SYS-003 browser tests in `keyboard-lifecycle-browser` repeat the Node test titles; the browser file needs to keep only real `KeyboardEvent` dispatch and cursor rendering | Keyboard 1.1 |
-| Gaps | `startKeyboard`, `stopKeyboard`, and `removeActionKeys` are covered only by `keyboard_commands` | Keyboard 1.9 |
-| Manual page | `html-manual/input_01` overlaps `keyboard_input` | Keyboard 1.12 |
+| Waits | `keyboard_commands` spends 2.0 s in 35 `DL` commands | Done (Keyboard 1.13) |
+| Node and browser pair | The SYS-003 browser tests in `keyboard-lifecycle-browser` repeat the Node test titles; the browser file needs to keep only real `KeyboardEvent` dispatch and cursor rendering | Done (Keyboard 1.1) |
+| Gaps | `startKeyboard`, `stopKeyboard`, and `removeActionKeys` are covered only by `keyboard_commands` | Done (Keyboard 1.9 for start and stop, 2.9 for `removeActionKeys`) |
+| Manual page | `html-manual/input_01` overlaps `keyboard_input` | Done (Keyboard 1.12) |
 
 ### 5.4 Gamepad
 
 | Item | Detail | Task |
 | --- | --- | --- |
-| Node and browser pair | `gamepad-validation-browser` adds only bundle wiring to the Node test | Gamepad 1.7 |
-| Gaps | `startGamepad`, `onGamepadConnected`, and `onGamepadDisconnected` have no test; `stopGamepad` has one | Gamepad 1.6 |
+| Node and browser pair | `gamepad-validation-browser` adds only bundle wiring to the Node test | Done (Gamepad 1.7) |
+| Gaps | `startGamepad`, `onGamepadConnected`, and `onGamepadDisconnected` have no test; `stopGamepad` has one | Done (Gamepad 1.6) |
 
 ### 5.5 Core audit
 
