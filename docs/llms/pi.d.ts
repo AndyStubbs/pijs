@@ -1136,8 +1136,8 @@ declare namespace Pi {
 		 *
 		 * $.clearEvents() clears per-screen handlers on every screen. A screen's clearEvents(), such as screen.clearEvents(), clears them on that screen only.
 		 *
-		 * The pointer plugin registers "mouse", "touch", and "press"; "press" also clears click handlers. These handlers are per-screen. The gamepad plugin registers "gamepad", which removes every onGamepadConnected and onGamepadDisconnected callback, whichever form is called. The keyboard plugin registers "keyboard", which removes every onKey() handler, whichever form is called; $.clearEvents() also cancels every input() prompt, and a screen's clearEvents() cancels only that screen's prompt. Clearing handlers does not stop tracking or polling.
-		 * @param type Optional type to clear (e.g., "keyboard", "mouse", "touch", "press", "gamepad").
+		 * The pointer plugin registers "mouse", "touch", "press", and "click", each clearing only the handlers of its command: onMouse, onTouch, onPress, and onClick. These handlers are per-screen. The gamepad plugin registers "gamepad", which removes every onGamepadConnected and onGamepadDisconnected callback, whichever form is called. The keyboard plugin registers "keyboard", which removes every onKey() handler, whichever form is called; $.clearEvents() also cancels every input() prompt, and a screen's clearEvents() cancels only that screen's prompt. Clearing handlers does not stop tracking or polling.
+		 * @param type Optional type to clear (e.g., "keyboard", "mouse", "click", "gamepad").
 		 * @returns This function does not return a value.
 		 */
 		clearEvents( params: { "type"?: string } ): void;

@@ -149,7 +149,7 @@ export function registerPress( pluginApi, helpers ) {
 		const fn = options.fn;
 		offevent(
 			"click", fn, [ "click" ], "offClick",
-			screenData.onClickEventListeners, "press"
+			screenData.onClickEventListeners, "click"
 		);
 	}
 
