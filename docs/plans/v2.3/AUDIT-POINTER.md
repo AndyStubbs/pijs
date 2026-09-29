@@ -600,4 +600,4 @@ the [ROADMAP](ROADMAP.md#6-pointer) tasks that implement each item.
 | B7 | One data shape | Accepted | Done (Pointer 2.3). Breaking; listed in the compatibility summary |
 | B10 | Per-screen gesture settings | Accepted | Breaking |
 | B11 | Wheel input | Accepted | Additive, in 2.3.0 (Pointer 3.1); handler shape follows I2 |
-| B13 | Allocation and live objects | Accepted | Decided by I7 (Pointer 2.5) |
+| B13 | Allocation and live objects | Accepted | Decided by I7. Done (Pointer 2.5) |

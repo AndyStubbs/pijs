@@ -7,7 +7,8 @@ description = """
 Stops mouse tracking on the screen canvas. Held buttons are released first: the onMouse and onPress
 'up' handlers run with cancelled set to true, and no click fires.
 
-While stopped, handlers stay registered but are not called, and inMouse() returns the last state.
+While stopped, handlers stay registered but are not called, inMouse() returns null, and inPress()
+returns null when its latest press came from the mouse.
 Reads and handler registration do not restart tracking; call startMouse().
 """
 example = """

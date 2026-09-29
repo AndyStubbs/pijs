@@ -48,16 +48,15 @@ export function registerMouse( pluginApi, helpers ) {
 
 	pluginApi.addScreenDataItem( "mouseStopped", false );
 	pluginApi.addScreenDataItem( "mouseStarted", false );
+
+	// The latest mouse data, or null before the first event and while stopped
 	pluginApi.addScreenDataItem( "mouse", null );
-	pluginApi.addScreenDataItem( "lastEvent", null );
 	pluginApi.addScreenDataItem( "isContextMenuEnabled", false );
 	pluginApi.addScreenDataItem( "onMouseEventListeners", {
 		"down": [],
 		"up": [],
 		"move": []
 	} );
-
-	pluginApi.addScreenInitFunction( initMouseData );
 
 	pluginApi.addCommand( "startMouse", startMouse, true, [] );
 	pluginApi.addCommand( "stopMouse", stopMouse, true, [] );
@@ -67,20 +66,6 @@ export function registerMouse( pluginApi, helpers ) {
 		"onMouse", onMouse, true, [ "mode", "fn", "once", "hitBox", "customData" ]
 	);
 	pluginApi.addCommand( "offMouse", offMouse, true, [ "mode", "fn" ] );
-
-	function initMouseData( screenData ) {
-		screenData.mouse = {
-			"x": Math.floor( screenData.width / 2 ),
-			"y": Math.floor( screenData.height / 2 ),
-			"lastX": Math.floor( screenData.width / 2 ),
-			"lastY": Math.floor( screenData.height / 2 ),
-			"buttons": 0,
-			"action": "none",
-			"type": "mouse",
-			"id": -1,
-			"cancelled": false
-		};
-	}
 
 	g_listeners.setHandlers( "mouse", {
 		"pointerdown": mouseDown,
@@ -125,13 +110,18 @@ export function registerMouse( pluginApi, helpers ) {
 
 	/**
 	 * Stop tracking mouse events on the screen. Held buttons are released first, through the
-	 * `"up"` handlers with `cancelled: true`.
+	 * `"up"` handlers with `cancelled: true`; then the mouse reads, and a press read that came
+	 * from the mouse, return null.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @returns {void}
 	 */
 	function stopMouse( screenData ) {
 		releaseHeldMouse( screenData );
+		screenData.mouse = null;
+		if( screenData.press !== null && screenData.press.type !== "touch" ) {
+			screenData.press = null;
+		}
 
 		// Explicitly set mouse to stoppedto prevent mouse commands from starting mouse when
 		// use explicitly sets it to true
@@ -144,20 +134,17 @@ export function registerMouse( pluginApi, helpers ) {
 		}
 	}
 
-	function getMouse( screenData ) {
-		return g_target.createPointerData( screenData.mouse );
-	}
-
 	/**
-	 * Read the current mouse position, buttons, and action.
+	 * Read the latest mouse data: the frozen object of the last event, the same one its handlers
+	 * received, or null before the first event and while stopped.
 	 *
 	 * @param {Object} screenData - Screen state.
-	 * @returns {Object}
+	 * @returns {Object|null}
 	 */
 	function inMouse( screenData ) {
 		g_target.validatePointerTarget( screenData, "inMouse" );
 		startMouseInternal( screenData );
-		return getMouse( screenData );
+		return screenData.mouse;
 	}
 
 	/**
@@ -242,11 +229,12 @@ export function registerMouse( pluginApi, helpers ) {
 		}
 
 		// Buttons pressed off the screen are not held, so a drag from outside reports none
-		updateMouse( screenData, e, "move", screenData.mouse.buttons & e.buttons );
+		if( !updateMouse( screenData, e, "move", getHeldButtons( screenData ) & e.buttons ) ) {
+			return;
+		}
 		updateHeld( screenData );
-		const mouseData = getMouse( screenData );
-		m_triggerEventListeners( "move", mouseData, screenData.onMouseEventListeners );
-		g_press.triggerPressListeners( screenData, "move", g_press.getMousePress( mouseData ) );
+		m_triggerEventListeners( "move", screenData.mouse, screenData.onMouseEventListeners );
+		g_press.triggerPressListeners( screenData, "move", screenData.press );
 	}
 
 	/**
@@ -264,11 +252,11 @@ export function registerMouse( pluginApi, helpers ) {
 		if( bit === undefined ) {
 			bit = 0;
 		}
-		updateMouse( screenData, e, "down", ( screenData.mouse.buttons & e.buttons ) | bit );
+		updateMouse( screenData, e, "down", ( getHeldButtons( screenData ) & e.buttons ) | bit );
 		updateHeld( screenData );
-		const mouseData = getMouse( screenData );
+		const mouseData = screenData.mouse;
 		m_triggerEventListeners( "down", mouseData, screenData.onMouseEventListeners );
-		g_press.triggerPressListeners( screenData, "down", g_press.getMousePress( mouseData ) );
+		g_press.triggerPressListeners( screenData, "down", screenData.press );
 		if( e.button === 0 ) {
 			g_press.triggerClickListeners( screenData, mouseData, "down", "mouse" );
 		}
@@ -286,7 +274,7 @@ export function registerMouse( pluginApi, helpers ) {
 	 */
 	function mouseUp( screenData, e ) {
 		const bit = BUTTON_BITS[ e.button ];
-		if( bit === undefined || ( screenData.mouse.buttons & bit ) === 0 ) {
+		if( bit === undefined || ( getHeldButtons( screenData ) & bit ) === 0 ) {
 			return;
 		}
 		updateMouse( screenData, e, "up", screenData.mouse.buttons & e.buttons & ~bit );
@@ -308,11 +296,11 @@ export function registerMouse( pluginApi, helpers ) {
 	 * @returns {void}
 	 */
 	function releaseHeldMouse( screenData ) {
-		if( !screenData.mouse || screenData.mouse.buttons === 0 ) {
+		if( getHeldButtons( screenData ) === 0 ) {
 			return;
 		}
 		const mouse = screenData.mouse;
-		screenData.mouse = {
+		setMouse( screenData, {
 			"x": mouse.x,
 			"y": mouse.y,
 			"lastX": mouse.x,
@@ -322,16 +310,29 @@ export function registerMouse( pluginApi, helpers ) {
 			"type": mouse.type,
 			"id": mouse.id,
 			"cancelled": true
-		};
+		} );
 		updateHeld( screenData );
 		dispatchRelease( screenData, "cancel" );
 	}
 
 	function dispatchRelease( screenData, clickAction ) {
-		const mouseData = getMouse( screenData );
+		const mouseData = screenData.mouse;
 		m_triggerEventListeners( "up", mouseData, screenData.onMouseEventListeners );
-		g_press.triggerPressListeners( screenData, "up", g_press.getMousePress( mouseData ) );
+		g_press.triggerPressListeners( screenData, "up", screenData.press );
 		g_press.triggerClickListeners( screenData, mouseData, clickAction, "mouse" );
+	}
+
+	/**
+	 * The buttons the screen holds.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {number}
+	 */
+	function getHeldButtons( screenData ) {
+		if( screenData.mouse === null ) {
+			return 0;
+		}
+		return screenData.mouse.buttons;
 	}
 
 	/**
@@ -341,7 +342,7 @@ export function registerMouse( pluginApi, helpers ) {
 	 * @returns {void}
 	 */
 	function updateHeld( screenData ) {
-		if( screenData.mouse.buttons !== 0 ) {
+		if( getHeldButtons( screenData ) !== 0 ) {
 			m_heldScreens.add( screenData );
 		} else {
 			m_heldScreens.delete( screenData );
@@ -367,26 +368,30 @@ export function registerMouse( pluginApi, helpers ) {
 	 * @param {PointerEvent} e - Mouse or pen pointer event.
 	 * @param {string} action - `"down"`, `"move"`, or `"up"`.
 	 * @param {number} buttons - Buttons held on the screen after the event.
-	 * @returns {void}
+	 * @returns {boolean} False for a move with no position to report.
 	 */
 	function updateMouse( screenData, e, action, buttons ) {
 
-		// A canvas with an empty content box keeps the last position
+		// A canvas with an empty content box keeps the last position, and has none to report
+		// before the first event
 		let position = g_target.pointerPosition( screenData, e );
 		if( !position ) {
 			position = screenData.mouse;
+		}
+		if( !position ) {
+			return false;
 		}
 		const { "x": x, "y": y } = position;
 
 		// The first event of the mouse reports its own position as the last one
 		let lastX = x;
 		let lastY = y;
-		if( screenData.mouse.action !== "none" ) {
+		if( screenData.mouse !== null ) {
 			lastX = screenData.mouse.x;
 			lastY = screenData.mouse.y;
 		}
 
-		screenData.mouse = {
+		setMouse( screenData, {
 			"x": x,
 			"y": y,
 			"lastX": lastX,
@@ -396,8 +401,20 @@ export function registerMouse( pluginApi, helpers ) {
 			"type": getPointerType( e ),
 			"id": e.pointerId,
 			"cancelled": false
-		};
-		screenData.lastEvent = "mouse";
+		} );
+		return true;
+	}
+
+	/**
+	 * Store the data of a mouse event, and the press data built from it, once per event.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {Object} record - The event's pointer fields.
+	 * @returns {void}
+	 */
+	function setMouse( screenData, record ) {
+		screenData.mouse = g_target.createPointerData( record );
+		screenData.press = g_press.getMousePress( screenData.mouse );
 	}
 
 	/**

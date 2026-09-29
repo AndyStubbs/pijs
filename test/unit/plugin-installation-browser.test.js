@@ -283,12 +283,9 @@ test( "late Pointer installation initializes existing lite screens", async () =>
 			"initialized": $.getPlugins().find( plugin => plugin.name === "pointer" ).initialized
 		} ) ), {
 			"commands": [ "function", "function", "function" ],
-			"first": { "x": 4, "y": 3, "lastX": 4, "lastY": 3, "buttons": 0,
-				"action": "none", "type": "mouse", "id": -1, "cancelled": false },
-			"second": { "x": 5, "y": 2, "lastX": 5, "lastY": 2, "buttons": 0,
-				"action": "none", "type": "mouse", "id": -1, "cancelled": false },
-			"global": { "x": 4, "y": 3, "lastX": 4, "lastY": 3, "buttons": 0,
-				"action": "none", "type": "mouse", "id": -1, "cancelled": false },
+			"first": null,
+			"second": null,
+			"global": null,
 			"initialized": true
 		} );
 

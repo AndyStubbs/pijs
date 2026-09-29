@@ -12,6 +12,9 @@ import * as g_listeners from "./listeners.js";
 // Module-level reference to startTouchInternal function
 let m_startTouchInternal = null;
 
+// The touch list with no touch down
+const NO_TOUCHES = Object.freeze( [] );
+
 /**
  * Start touch tracking through the registered touch implementation.
  *
@@ -47,6 +50,10 @@ export function registerTouch( pluginApi, helpers ) {
 	pluginApi.addScreenDataItem( "touchStopped", false );
 	pluginApi.addScreenDataItem( "touchStarted", false );
 	pluginApi.addScreenDataItem( "touches", {} );
+
+	// The frozen list inTouch() returns, replaced when a touch changes; set at screen init,
+	// since screen data items are copied without their freeze
+	pluginApi.addScreenDataItem( "touchList", null );
 	pluginApi.addScreenDataItem( "primaryTouchId", null );
 	pluginApi.addScreenDataItem( "touchPress", null );
 	pluginApi.addScreenDataItem( "onTouchEventListeners", {} );
@@ -63,6 +70,7 @@ export function registerTouch( pluginApi, helpers ) {
 	pluginApi.addCommand( "setPinchZoom", setPinchZoom, false, [ "isEnabled" ] );
 
 	function initTouchData( screenData ) {
+		screenData.touchList = NO_TOUCHES;
 		screenData.onTouchEventListeners = {
 			"down": [],
 			"up": [],
@@ -115,13 +123,17 @@ export function registerTouch( pluginApi, helpers ) {
 
 	/**
 	 * Stop tracking touch events. Held touches are released first, through the `"up"`
-	 * handlers with `cancelled: true`.
+	 * handlers with `cancelled: true`; then a press read that came from touch returns null.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @returns {void}
 	 */
 	function stopTouch( screenData ) {
 		releaseHeldTouches( screenData );
+		screenData.touchPress = null;
+		if( screenData.press !== null && screenData.press.type === "touch" ) {
+			screenData.press = null;
+		}
 
 		//Clear explicit touchStopped
 		screenData.touchStopped = true;
@@ -135,7 +147,8 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 
 	/**
-	 * Read the screen touch state.
+	 * Read the touches down: a frozen array, the same one until a touch changes, whose objects
+	 * are the ones the touch handlers received.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @returns {Array<Object>}
@@ -143,7 +156,7 @@ export function registerTouch( pluginApi, helpers ) {
 	function inTouch( screenData ) {
 		g_target.validatePointerTarget( screenData, "inTouch" );
 		startTouchInternal( screenData );
-		return getTouch( screenData );
+		return screenData.touchList;
 	}
 
 	/**
@@ -241,17 +254,17 @@ export function registerTouch( pluginApi, helpers ) {
 		if( isIdle && changed.length > 0 ) {
 			screenData.primaryTouchId = changed[ 0 ].id;
 		}
+		if( changed.length === 0 ) {
+			return false;
+		}
 		const primary = findTouch( changed, screenData.primaryTouchId );
 		if( primary ) {
 			setTouchPress( screenData, primary, primary.action, 1 );
 		}
-		if( changed.length === 0 ) {
-			return false;
-		}
+		updatePress( screenData );
 		m_triggerEventListeners( "down", changed, screenData.onTouchEventListeners );
 		if( primary ) {
-			const pressData = g_press.getTouchPress( screenData );
-			g_press.triggerPressListeners( screenData, "down", pressData );
+			g_press.triggerPressListeners( screenData, "down", screenData.press );
 		}
 		for( const touch of changed ) {
 			g_press.triggerClickListeners( screenData, touch, "down", touch.id );
@@ -268,10 +281,10 @@ export function registerTouch( pluginApi, helpers ) {
 		if( primary ) {
 			setTouchPress( screenData, primary, primary.action, 1 );
 		}
+		updatePress( screenData );
 		m_triggerEventListeners( "move", changed, screenData.onTouchEventListeners );
 		if( primary ) {
-			const pressData = g_press.getTouchPress( screenData );
-			g_press.triggerPressListeners( screenData, "move", pressData );
+			g_press.triggerPressListeners( screenData, "move", screenData.press );
 		}
 	}
 
@@ -301,7 +314,7 @@ export function registerTouch( pluginApi, helpers ) {
 		const changed = [];
 		for( const id in screenData.touches ) {
 			const touch = screenData.touches[ id ];
-			changed.push( copyTouch( {
+			changed.push( g_target.createPointerData( {
 				...touch, "lastX": touch.x, "lastY": touch.y, "buttons": 0, "action": "up",
 				"cancelled": true
 			} ) );
@@ -310,7 +323,8 @@ export function registerTouch( pluginApi, helpers ) {
 			return;
 		}
 		screenData.touches = {};
-		dispatchTouchRelease( screenData, changed, true );
+		screenData.touchList = NO_TOUCHES;
+		dispatchTouchRelease( screenData, Object.freeze( changed ), true );
 	}
 
 	/**
@@ -331,9 +345,10 @@ export function registerTouch( pluginApi, helpers ) {
 			setTouchPress( screenData, primary, "up", 0 );
 			screenData.primaryTouchId = null;
 		}
+		updatePress( screenData );
 		m_triggerEventListeners( "up", changed, screenData.onTouchEventListeners );
 		if( primary ) {
-			g_press.triggerPressListeners( screenData, "up", g_press.getTouchPress( screenData ) );
+			g_press.triggerPressListeners( screenData, "up", screenData.press );
 		}
 		for( const touch of changed ) {
 			if( isCancelled ) {
@@ -369,6 +384,19 @@ export function registerTouch( pluginApi, helpers ) {
 	}
 
 	/**
+	 * After a touch event, make the touch press the screen's press data, built once for the
+	 * event. Its `touches` changes with every touch, so every touch event rebuilds it.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {void}
+	 */
+	function updatePress( screenData ) {
+		if( screenData.touchPress !== null ) {
+			screenData.press = g_press.getTouchPress( screenData );
+		}
+	}
+
+	/**
 	 * Apply the touch a pointer event changed. Other touches keep their state and action, and an
 	 * ended touch is reported at the position where it lifted, then removed. A touch that starts
 	 * off the screen is ignored, and so are moves and ends of touches that are not held; moves
@@ -378,10 +406,9 @@ export function registerTouch( pluginApi, helpers ) {
 	 * @param {PointerEvent} e - Touch pointer event.
 	 * @param {string} action - `"down"`, `"move"`, or `"up"`.
 	 * @param {boolean} isCancelled - Whether the browser cancelled the touch.
-	 * @returns {Array<Object>} A copy of the changed touch, or none.
+	 * @returns {Array<Object>} A frozen array of the changed touch's data, or an empty array.
 	 */
 	function updateTouch( screenData, e, action, isCancelled ) {
-		screenData.lastEvent = "touch";
 		const previous = screenData.touches[ e.pointerId ];
 		let position = g_target.pointerPosition( screenData, e );
 		if( action === "down" ) {
@@ -405,21 +432,23 @@ export function registerTouch( pluginApi, helpers ) {
 		if( action === "up" ) {
 			buttons = 0;
 		}
-		const touchData = {
+		let lastX = position.x;
+		let lastY = position.y;
+		if( previous ) {
+			lastX = previous.x;
+			lastY = previous.y;
+		}
+		const touchData = g_target.createPointerData( {
 			"x": position.x,
 			"y": position.y,
-			"lastX": position.x,
-			"lastY": position.y,
+			"lastX": lastX,
+			"lastY": lastY,
 			"buttons": buttons,
 			"action": action,
 			"type": "touch",
 			"id": e.pointerId,
 			"cancelled": isCancelled
-		};
-		if( previous ) {
-			touchData.lastX = previous.x;
-			touchData.lastY = previous.y;
-		}
+		} );
 		const newTouches = {};
 		for( const id in screenData.touches ) {
 			newTouches[ id ] = screenData.touches[ id ];
@@ -430,19 +459,12 @@ export function registerTouch( pluginApi, helpers ) {
 			newTouches[ touchData.id ] = touchData;
 		}
 		screenData.touches = newTouches;
-		return [ copyTouch( touchData ) ];
-	}
-
-	function copyTouch( touch ) {
-		return g_target.createPointerData( touch );
-	}
-
-	function getTouch( screenData ) {
-		const touchArr = [];
-		for( const i in screenData.touches ) {
-			touchArr.push( copyTouch( screenData.touches[ i ] ) );
+		const touchList = [];
+		for( const id in newTouches ) {
+			touchList.push( newTouches[ id ] );
 		}
-		return touchArr;
+		screenData.touchList = Object.freeze( touchList );
+		return Object.freeze( [ touchData ] );
 	}
 
 	function getScreenDataFromEvent( e ) {

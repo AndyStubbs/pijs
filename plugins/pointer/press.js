@@ -24,6 +24,9 @@ export function registerPress( pluginApi, helpers ) {
 	m_triggerEventListeners = helpers.triggerEventListeners;
 	m_triggerClickListeners = helpers.triggerClickListeners;
 
+
+	// The latest press data, or null before the first event and while its input is stopped
+	pluginApi.addScreenDataItem( "press", null );
 	pluginApi.addScreenDataItem( "onPressEventListeners", {} );
 	pluginApi.addScreenDataItem( "onClickEventListeners", {} );
 
@@ -49,20 +52,17 @@ export function registerPress( pluginApi, helpers ) {
 	}
 
 	/**
-	 * Read the most recent mouse or touch press state.
+	 * Read the latest press data, from the mouse or the touches: the frozen object of the last
+	 * event, or null before the first event and while the input it came from is stopped.
 	 *
 	 * @param {Object} screenData - Screen state.
-	 * @returns {Object}
+	 * @returns {Object|null}
 	 */
 	function inPress( screenData ) {
 		g_target.validatePointerTarget( screenData, "inPress" );
 		g_mouse.startMouseInternal( screenData );
 		g_touch.startTouchInternal( screenData );
-		if( screenData.lastEvent === "touch" ) {
-			return getTouchPress( screenData );
-		} else {
-			return getMousePress( screenData.api.inMouse() );
-		}
+		return screenData.press;
 	}
 
 	/**
@@ -211,45 +211,25 @@ export function triggerClickListeners( screenData, data, action, pointerId ) {
 const NO_TOUCHES = Object.freeze( [] );
 
 /**
- * Build mouse press data: the mouse data with an empty `touches`.
+ * Build frozen mouse press data: the mouse data with an empty `touches`.
  *
  * @param {Object} mouseData - Mouse data.
  * @returns {Object}
  */
 export function getMousePress( mouseData ) {
-	return { ...mouseData, "touches": NO_TOUCHES };
+	return Object.freeze( { ...mouseData, "touches": NO_TOUCHES } );
 }
 
-// Touch press data before any touch
-const NO_TOUCH_PRESS = {
-	"x": -1,
-	"y": -1,
-	"lastX": -1,
-	"lastY": -1,
-	"buttons": 0,
-	"action": "none",
-	"type": "touch",
-	"id": -1,
-	"cancelled": false
-};
-
 /**
- * Build touch press data: the primary touch while it is down, then its release. `touches` holds
- * frozen copies of the touches still down, as separate objects, so the data serializes.
+ * Build frozen touch press data: the primary touch while it is down, then its release.
+ * `touches` is the screen's frozen list of the touches still down, as separate objects, so the
+ * data serializes.
  *
- * @param {Object} screenData - Screen state.
+ * @param {Object} screenData - Screen state, with a touch press.
  * @returns {Object}
  */
 export function getTouchPress( screenData ) {
-	let record = screenData.touchPress;
-	if( record === null ) {
-		record = NO_TOUCH_PRESS;
-	}
-	const touches = [];
-	for( const id in screenData.touches ) {
-		touches.push( Object.freeze( g_target.createPointerData( screenData.touches[ id ] ) ) );
-	}
-	return { ...g_target.createPointerData( record ), "touches": Object.freeze( touches ) };
+	return Object.freeze( { ...screenData.touchPress, "touches": screenData.touchList } );
 }
 
 

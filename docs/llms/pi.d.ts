@@ -17,7 +17,7 @@ declare namespace Pi {
 	/**
 	 * Click event data (mouse or touch).
 	 *
-	 * The data of the release that completed a click, passed to onClick callbacks, with action 'click'. It has the MouseData or TouchData fields of the release.
+	 * The data of the release that completed a click, passed to onClick callbacks, with action 'click'. It has the MouseData or TouchData fields of the release, and is frozen.
 	 */
 	interface ClickData {
 		/**
@@ -329,7 +329,7 @@ declare namespace Pi {
 	/**
 	 * Mouse state and event data.
 	 *
-	 * Mouse data containing position, button state, action, and previous position. Returned by inMouse() and passed to onMouse callbacks. Mouse, touch, press, and click data share one shape: x, y, lastX, lastY, buttons, action, type, id, and cancelled. Each read and each callback receives a new object.
+	 * Mouse data containing position, button state, action, and previous position. Returned by inMouse() and passed to onMouse callbacks. Mouse, touch, press, and click data share one shape: x, y, lastX, lastY, buttons, action, type, id, and cancelled. The data is created once per event and frozen: reads and handlers of the event receive the same object.
 	 *
 	 * Positions are in screen pixels. Moves over the canvas border or padding, and a release outside the canvas, report their true position, which can be outside the screen.
 	 */
@@ -360,7 +360,7 @@ declare namespace Pi {
 		buttons: number;
 
 		/**
-		 * Last action: 'none' before the first event, then 'down', 'move', or 'up'.
+		 * Last action: 'down', 'move', or 'up'.
 		 */
 		action: string;
 
@@ -370,7 +370,7 @@ declare namespace Pi {
 		type: string;
 
 		/**
-		 * Pointer identifier of the mouse or pen; -1 before the first event.
+		 * Pointer identifier of the mouse or pen.
 		 */
 		id: number;
 
@@ -693,7 +693,7 @@ declare namespace Pi {
 	/**
 	 * Press state data (mouse or touch).
 	 *
-	 * Press data from the primary pointer: the mouse, or the primary touch. Returned by inPress() and passed to onPress callbacks; type tells which input it came from. It has the fields of MouseData or TouchData, plus touches. A touch is primary when it starts with no other touch down, and stays primary until it lifts; after that, no touch is primary until every touch is up. Press data can be serialized with JSON.stringify().
+	 * Press data from the primary pointer: the mouse, or the primary touch. Returned by inPress() and passed to onPress callbacks; type tells which input it came from. It has the fields of MouseData or TouchData, plus touches. A touch is primary when it starts with no other touch down, and stays primary until it lifts; after that, no touch is primary until every touch is up. Press data is created once per event and frozen, and can be serialized with JSON.stringify().
 	 */
 	interface PressData {
 		/**
@@ -722,7 +722,7 @@ declare namespace Pi {
 		buttons: number;
 
 		/**
-		 * 'down', 'move', or 'up'; 'none' before the first event.
+		 * Last action: 'down', 'move', or 'up'.
 		 */
 		action: string;
 
@@ -732,7 +732,7 @@ declare namespace Pi {
 		type: string;
 
 		/**
-		 * Pointer identifier; -1 when no touch press has been seen.
+		 * Pointer identifier of the mouse, pen, or primary touch.
 		 */
 		id: number;
 
@@ -742,7 +742,7 @@ declare namespace Pi {
 		cancelled: boolean;
 
 		/**
-		 * Frozen copies of the touches still down, as separate objects; empty for the mouse.
+		 * The frozen inTouch() list of the touches still down; empty for the mouse.
 		 */
 		touches: Array<TouchData>;
 	}
@@ -920,7 +920,7 @@ declare namespace Pi {
 	/**
 	 * Single touch point data.
 	 *
-	 * Data for one touch point. inTouch() returns the touches still down, and onTouch callbacks receive the touch the event changed, in an array. Each read and each callback receives new objects.
+	 * Data for one touch point. inTouch() returns the touches still down, and onTouch callbacks receive the touch the event changed, in an array. Touch data is created once per event and frozen: the touch in the handlers' array is the same object inTouch() lists.
 	 */
 	interface TouchData {
 		/**
@@ -1447,26 +1447,26 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Gets the current mouse state and starts tracking if needed.
 		 *
-		 * Returns the current mouse state for use in an animation loop, as a new object on each call. Tracking starts on the first read unless stopMouse() was called.
+		 * Returns the mouse data of the latest mouse event, for use in an animation loop. The data is frozen, and it is the same object the event's onMouse handlers received; every read returns it until the next mouse event. Returns null before the first mouse event and while mouse tracking is stopped. Tracking starts on the first read unless stopMouse() was called.
 		 *
-		 * Before the first mouse event, the position is the center of the screen and the action is 'none'. buttons counts only buttons pressed on the screen, and a release outside the canvas is seen, so a drag that ends anywhere releases its button.
+		 * buttons counts only buttons pressed on the screen, and a release outside the canvas is seen, so a drag that ends anywhere releases its button.
 		 *
 		 * Requires an onscreen screen.
-		 * @returns Mouse data object with position, buttons, and action properties.
+		 * @returns Frozen mouse data of the latest event, or null before it and while stopped.
 		 */
-		inMouse(): MouseData;
+		inMouse(): MouseData | null;
 
 		/**
 		 * Gets the current press state (mouse or touch) and starts tracking if needed.
 		 *
 		 * Returns the press of the primary pointer, from whichever input was used last: the mouse data, or the primary touch. A touch is primary when it starts with no other touch down, and stays primary until it lifts; the other touches are listed in touches but do not move the press. After the primary touch lifts, the press keeps its release, with buttons 0 and action 'up', until the next primary touch.
 		 *
-		 * Returns a new object on each call. Mouse and touch tracking start on the first read unless stopped.
+		 * The data is frozen, and it is the same object the event's onPress handlers received; every read returns it until the next mouse or touch event. Returns null before the first event, and while the input the latest press came from is stopped. Mouse and touch tracking start on the first read unless stopped.
 		 *
 		 * Requires an onscreen screen.
-		 * @returns Press data of the primary pointer, from the mouse or touch.
+		 * @returns Frozen press data of the primary pointer, from the mouse or touch, or null.
 		 */
-		inPress(): PressData;
+		inPress(): PressData | null;
 
 		/**
 		 * Prompts the user for text input with a blinking cursor.
@@ -1499,7 +1499,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Gets the current touch state and starts tracking if needed.
 		 *
-		 * Returns the touches still down, ordered by identifier, as new objects on each call; the array is empty when no touch is down. Each touch has its own action. Tracking starts on the first read unless stopTouch() was called.
+		 * Returns the touches still down, ordered by identifier; the array is empty when no touch is down and while touch tracking is stopped. Each touch has its own action. The array and its touches are frozen: every read returns the same array until a touch changes, and each touch is the object the onTouch handlers received. Tracking starts on the first read unless stopTouch() was called.
 		 *
 		 * A touch that starts on the canvas border or padding is not tracked. Held touches are released when the page is hidden or stopTouch() is called.
 		 *
@@ -2098,7 +2098,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * Stops mouse tracking on the screen canvas. Held buttons are released first: the onMouse and onPress 'up' handlers run with cancelled set to true, and no click fires.
 		 *
-		 * While stopped, handlers stay registered but are not called, and inMouse() returns the last state. Reads and handler registration do not restart tracking; call startMouse().
+		 * While stopped, handlers stay registered but are not called, inMouse() returns null, and inPress() returns null when its latest press came from the mouse. Reads and handler registration do not restart tracking; call startMouse().
 		 * @returns This function does not return a value.
 		 */
 		stopMouse(): void;
@@ -2108,7 +2108,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 *
 		 * Stops touch tracking on the screen canvas. Held touches are released first: the onTouch 'up' handlers, and the onPress 'up' handlers for the primary touch, run with cancelled set to true, and no click fires.
 		 *
-		 * While stopped, handlers stay registered but are not called, and inTouch() returns the last state. Reads and handler registration do not restart tracking; call startTouch().
+		 * While stopped, handlers stay registered but are not called, inTouch() returns an empty array, and inPress() returns null when its latest press came from a touch. Reads and handler registration do not restart tracking; call startTouch().
 		 * @returns This function does not return a value.
 		 */
 		stopTouch(): void;

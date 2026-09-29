@@ -153,8 +153,8 @@ summary = "Mouse state and event data."
 description = """
 Mouse data containing position, button state, action, and previous position. Returned by
 inMouse() and passed to onMouse callbacks. Mouse, touch, press, and click data share one shape:
-x, y, lastX, lastY, buttons, action, type, id, and cancelled. Each read and each callback
-receives a new object.
+x, y, lastX, lastY, buttons, action, type, id, and cancelled. The data is created once per
+event and frozen: reads and handlers of the event receive the same object.
 
 Positions are in screen pixels. Moves over the canvas border or padding, and a release
 outside the canvas, report their true position, which can be outside the screen.
@@ -192,7 +192,7 @@ canvas is not held.
 [[objects.properties]]
 name = "action"
 type = "string"
-description = "Last action: 'none' before the first event, then 'down', 'move', or 'up'."
+description = "Last action: 'down', 'move', or 'up'."
 
 [[objects.properties]]
 name = "type"
@@ -202,7 +202,7 @@ description = "Input type: 'pen' for a pen, otherwise 'mouse'."
 [[objects.properties]]
 name = "id"
 type = "number"
-description = "Pointer identifier of the mouse or pen; -1 before the first event."
+description = "Pointer identifier of the mouse or pen."
 
 [[objects.properties]]
 name = "cancelled"
@@ -223,7 +223,7 @@ Press data from the primary pointer: the mouse, or the primary touch. Returned b
 and passed to onPress callbacks; type tells which input it came from. It has the fields of
 MouseData or TouchData, plus touches. A touch is primary when it starts with no other touch
 down, and stays primary until it lifts; after that, no touch is primary until every touch is up.
-Press data can be serialized with JSON.stringify().
+Press data is created once per event and frozen, and can be serialized with JSON.stringify().
 """
 
 [[objects.properties]]
@@ -254,7 +254,7 @@ description = "Mouse: the MouseData button bitmask. Touch: 1 while the primary t
 [[objects.properties]]
 name = "action"
 type = "string"
-description = "'down', 'move', or 'up'; 'none' before the first event."
+description = "Last action: 'down', 'move', or 'up'."
 
 [[objects.properties]]
 name = "type"
@@ -264,7 +264,7 @@ description = "Input type: 'mouse', 'pen', or 'touch'."
 [[objects.properties]]
 name = "id"
 type = "number"
-description = "Pointer identifier; -1 when no touch press has been seen."
+description = "Pointer identifier of the mouse, pen, or primary touch."
 
 [[objects.properties]]
 name = "cancelled"
@@ -274,7 +274,7 @@ description = "True for a release the player did not make, as in MouseData and T
 [[objects.properties]]
 name = "touches"
 type = "Array<TouchData>"
-description = "Frozen copies of the touches still down, as separate objects; empty for the mouse."
+description = "The frozen inTouch() list of the touches still down; empty for the mouse."
 
 # ============================================================================
 # ClickData
@@ -284,7 +284,7 @@ title = "ClickData"
 summary = "Click event data (mouse or touch)."
 description = """
 The data of the release that completed a click, passed to onClick callbacks, with action
-'click'. It has the MouseData or TouchData fields of the release.
+'click'. It has the MouseData or TouchData fields of the release, and is frozen.
 """
 
 [[objects.properties]]
@@ -340,8 +340,8 @@ title = "TouchData"
 summary = "Single touch point data."
 description = """
 Data for one touch point. inTouch() returns the touches still down, and onTouch callbacks
-receive the touch the event changed, in an array. Each read and each callback receives new
-objects.
+receive the touch the event changed, in an array. Touch data is created once per event and
+frozen: the touch in the handlers' array is the same object inTouch() lists.
 """
 
 [[objects.properties]]

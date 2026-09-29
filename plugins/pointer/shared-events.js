@@ -242,6 +242,7 @@ export function createEventHelpers( pluginApi ) {
 					if( newData.length > 0 ) {
 						isHit = true;
 					}
+					Object.freeze( newData );
 				} else {
 					newData = data;
 					if( utils.inRange( data, listener.hitBox ) ) {

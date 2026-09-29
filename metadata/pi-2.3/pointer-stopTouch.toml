@@ -8,7 +8,8 @@ Stops touch tracking on the screen canvas. Held touches are released first: the 
 handlers, and the onPress 'up' handlers for the primary touch, run with cancelled set to true, and
 no click fires.
 
-While stopped, handlers stay registered but are not called, and inTouch() returns the last state.
+While stopped, handlers stay registered but are not called, inTouch() returns an empty array, and
+inPress() returns null when its latest press came from a touch.
 Reads and handler registration do not restart tracking; call startTouch().
 """
 example = """
