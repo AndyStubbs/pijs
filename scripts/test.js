@@ -4,6 +4,7 @@ import * as g_path from "node:path";
 import * as g_url from "node:url";
 import * as g_childProcess from "node:child_process";
 import * as g_server from "../test/scripts/test-server.js";
+import * as g_audioEngines from "../test/unit/audio-engines.js";
 
 const ROOT = g_path.resolve( g_url.fileURLToPath( new URL( "..", import.meta.url ) ) );
 const PLAYWRIGHT = g_path.join( ROOT, "node_modules/playwright/cli.js" );
@@ -115,11 +116,11 @@ export async function main( args = process.argv.slice( 2 ) ) {
 	const groups = discoverTests();
 	const stages = [];
 	const add = ( name, run ) => stages.push( [ name, run ] );
-	const nodeTests = files => {
+	const nodeTests = ( files, env = {} ) => {
 		if( !files.length ) { throw new Error( "No maintained tests found for this stage." ); }
 		return runNode( [
 			"--test", "--test-concurrency=1", `--test-timeout=${TEST_TIMEOUT}`, ...files
-		] );
+		], env );
 	};
 	const isList = command === "visual" && forwarded.includes( "--list" );
 	if( [ "all", "visual", "firefox" ].includes( command ) && !isList ) {
@@ -129,7 +130,10 @@ export async function main( args = process.argv.slice( 2 ) ) {
 		add( "Node tests", () => nodeTests( groups.unit ) );
 	}
 	if( [ "all", "browser" ].includes( command ) ) {
-		add( "Browser regressions", () => nodeTests( groups.browser ) );
+		// The audio suites share one Firefox server instead of launching one each
+		add( "Browser regressions", () => g_audioEngines.withSharedFirefox(
+			env => nodeTests( groups.browser, env )
+		) );
 	}
 	if( [ "all", "types" ].includes( command ) ) {
 		add( "Metadata and types", async () => {

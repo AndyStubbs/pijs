@@ -103,6 +103,13 @@ Playwright's WebKit build as described below; iOS-specific audio behavior needs 
 The audio browser tests (`audio-*-browser.test.js`) run in Chromium, Firefox, and WebKit from
 `npm run test:browser`. Set `PI_AUDIO_ENGINES` to a comma-separated subset, such as
 `chromium,firefox`, while iterating. A missing engine fails with the install command.
+Firefox takes over a second to launch, so the browser regressions stage of `npm test` and
+`npm run test:browser` starts one Firefox server and passes its endpoint to the test files in
+`PI_AUDIO_FIREFOX_ENDPOINT`; each audio suite connects to it instead of launching Firefox, and
+the realtime suites, which need autoplay preferences, still launch their own. A focused
+`node --test` run of one file has no server and launches Firefox itself.
+`audio-engines-browser.test.js` checks that suites connect to the shared server, that a suite's
+`close()` leaves it for the next one, and that it closes with the stage.
 
 The offline render harness (`test/unit/audio-render-harness.js`) replaces the page's
 `AudioContext`, timers, clocks, `Math.random`, and visibility before any bundle loads, then renders

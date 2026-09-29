@@ -16,7 +16,7 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [Sound 11.1–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
+| 1 | [Sound 11.2–11.5](#43-phase-11-test-upkeep) | Sound test upkeep, in any order; first to cut, and can continue after 2.3.0 (Section 10) | Nothing. Can run in parallel |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -25,7 +25,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
 | Core | [3](#3-core) | Complete (Phases 1–3); Core 3 and C10 are written in R.2 | — |
-| Sound | [4](#4-sound) | Phases 0–10 done. Its listening checks are in Section 8.3; Phase 11 not started | Sound 11.1–11.5 |
+| Sound | [4](#4-sound) | Phases 0–10 done. Its listening checks are in Section 8.3; Phase 11: 11.1 done, 4 tasks left | Sound 11.2–11.5 |
 | Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Pointer | [6](#6-pointer) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Gamepad | [7](#7-gamepad) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
@@ -340,11 +340,10 @@ listening check, which is in the [release checklist](#83-manual-release-checks):
 ### 4.3 Phase 11: test upkeep
 
 The test audit's sound handoffs ([AUDIT-TESTS §5.1](AUDIT-TESTS.md#51-sound)). They change only
-tests, so they can continue after 2.3.0 (Section 10).
+tests, so they can continue after 2.3.0 (Section 10). Done: 11.1 ([Section 13.4](#134-sound)).
 
 | # | Task | Status |
 | --- | --- | --- |
-| 11.1 | One Firefox process per test stage instead of one per audio suite (about 20 s of the sound browser time), or a smaller Firefox subset in `npm test` with the full set in `test:firefox` | — |
 | 11.2 | Skip at the suite level when an engine lacks Web Audio or offline `suspend()`, instead of per test, so the report stays readable | — |
 | 11.3 | One shared `near()` helper for the `sound-advanced`, `sound-envelope`, `sound-play`, and `sound-samples` Node tests | — |
 | 11.4 | Decide whether `test/scripts/record-sound-references.js` and `test/media/sound-2.2/` are still needed, and remove them if not | — |
@@ -1059,6 +1058,12 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | 10.2 | `sample-source.js`: a source type registered on first use for each audio name, root frequency, and loop setting (`sample:"piano"`, `@392`, `:loop`), since a factory receives only the voice spec and PLAY observers report the note's own frequency; the factory reads the buffer per voice, sets `playbackRate` to `frequency / rootFrequency` with core's sweep rule, returns `frequency: null` and the buffer source's `detune`, loops or ends with the file, plays silence without a buffer, and plays each note from the file's start. Tests: type names, registration, the source contract, and the rate schedule in `sound-advanced.test.js`; offline renders through a page probe (`audio-sample-source-probe.js`, the new `sources` option of `audio-browser-suite.js`): three octaves, another root frequency, a sweep, vibrato, one-shot and looped ends, and a missing file, plus a single-pass case for Firefox. Not yet in the plugin bundle, so no size change |
 | 10.3 | Sample instruments: `defineInstrument` takes `audio`, `rootFrequency` (default 261.63), and `loop` (default `false`) and plays the file through a `sample-source.js` type; the other `synth()` options apply as before. Validation: `INVALID_AUDIO`, `INVALID_ROOT_FREQUENCY`, `INVALID_LOOP`, and `INVALID_INSTRUMENT` for `audio` with an `oType`, or `rootFrequency` or `loop` without `audio`. A note resolved while its file is not loaded, or is streamed, plays at volume 0 with one warning per instrument and `play()` call. Closed D15. Tests: validation and not-ready resolution in `sound-advanced.test.js`; offline renders of three octaves, a root frequency, a sweep, vibrato, loop and one-shot ends, a missing file with its one warning, and an envelope matching the oscillator's, plus a single-pass case for Firefox. The 10.2 page probe and its `sources` suite option are removed, since instruments cover every case. Size: +744 bytes in `sound-advanced`, which now includes `sample-source.js` |
 | 10.4 | `defineInstrument` metadata describes sample instruments, their errors, and the not-ready rule, with a sample instrument in its example; a type consumer passes `audio`, `rootFrequency`, and `loop`. `sound_advanced_01.html` gains a Sample instruments section: a plucked C4 string and a looped organ tone made in the page as WAV files and loaded with `loadAudio()`, and a song started before its file loads. Phase 10 exit: `size-phase10.json`, and M5 closed |
+
+**Phase 11: test upkeep** ([AUDIT-TESTS §5.1](AUDIT-TESTS.md#51-sound))
+
+| # | Task |
+| --- | --- |
+| 11.1 | One Firefox per test stage: `withSharedFirefox()` in `test/unit/audio-engines.js` starts one headless Firefox server for a stage and passes its endpoint in `PI_AUDIO_FIREFOX_ENDPOINT`; `launchEngine( "firefox" )` connects to it, and a suite's `close()` only disconnects, so the next suite reuses it. The browser regressions stage of `scripts/test.js` (`npm test`, `npm run test:browser`) runs its files inside it; the realtime suites, which need autoplay preferences, and focused `node --test` runs launch their own, and without Firefox in `PI_AUDIO_ENGINES` nothing is started. The 15 audio browser files, run as the stage runs them with `PI_AUDIO_REALTIME=0`, took 30 s instead of 41 s on the development machine, with the same 236 passes and 211 skips. `test/README.md` describes it. Test: `audio-engines-browser.test.js`: two suites in turn connect, run a page, and close, and the server is gone after the stage |
 
 ### 13.5 Core
 

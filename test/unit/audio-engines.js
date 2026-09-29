@@ -4,12 +4,17 @@
  * Audio tests run in Chromium, Firefox, and WebKit from one command. Set PI_AUDIO_ENGINES to a
  * comma-separated subset, such as "chromium,firefox", to run fewer engines while iterating.
  * Set PI_AUDIO_REALTIME=0 to skip the realtime suites on machines without an audio device.
+ * Firefox takes over a second to launch, so a test stage can share one Firefox server
+ * (withSharedFirefox()); each suite then connects to it instead of launching its own.
  */
 import * as g_playwright from "@playwright/test";
 import * as g_chromiumLaunch from "./chromium-launch.js";
 
 const ALL_ENGINES = [ "chromium", "firefox", "webkit" ];
 const INSTALL_HINT = "Install the audio test engines with: npx playwright install firefox webkit";
+
+// The environment variable that carries a shared Firefox server's endpoint to the test files
+const SHARED_FIREFOX = "PI_AUDIO_FIREFOX_ENDPOINT";
 
 /**
  * Origin of the blank documents that reusable pages navigate to. Localhost is a secure
@@ -86,6 +91,13 @@ const REALTIME_OPTIONS = {
  * @returns {Promise<Object>} Playwright browser
  */
 async function launchEngine( name, options = {} ) {
+
+	// A shared server has no realtime preferences, so realtime suites launch their own. Closing
+	// a connected browser disconnects it and leaves the server for the next suite
+	const endpoint = process.env[ SHARED_FIREFOX ];
+	if( name === "firefox" && endpoint && !options.realtimeAudio ) {
+		return g_playwright.firefox.connect( endpoint );
+	}
 	let launchOptions = { "headless": true };
 	if( options.realtimeAudio ) {
 		launchOptions = { ...launchOptions, ...REALTIME_OPTIONS[ name ] };
@@ -102,6 +114,35 @@ async function launchEngine( name, options = {} ) {
 			throw new Error( `${name} is not installed. ${INSTALL_HINT}`, { "cause": error } );
 		}
 		throw error;
+	}
+}
+
+/**
+ * Runs a function with one headless Firefox server that every audio suite it starts can share.
+ * The function receives the environment for its child processes; without Firefox in
+ * PI_AUDIO_ENGINES, it receives an empty one and nothing is launched. The server closes when
+ * the function settles.
+ *
+ * @param {Function} fn - Called with `{ PI_AUDIO_FIREFOX_ENDPOINT }`, or `{}`
+ * @returns {Promise<*>} What the function returns
+ */
+async function withSharedFirefox( fn ) {
+	if( !AUDIO_ENGINES.includes( "firefox" ) ) {
+		return fn( {} );
+	}
+	let server;
+	try {
+		server = await g_playwright.firefox.launchServer( { "headless": true } );
+	} catch( error ) {
+		if( /Executable doesn't exist|install/i.test( error.message ) ) {
+			throw new Error( `firefox is not installed. ${INSTALL_HINT}`, { "cause": error } );
+		}
+		throw error;
+	}
+	try {
+		return await fn( { [ SHARED_FIREFOX ]: server.wsEndpoint() } );
+	} finally {
+		await server.close();
 	}
 }
 
@@ -149,6 +190,6 @@ async function createReusablePage( browser, initScript ) {
 }
 
 export {
-	ALL_ENGINES, AUDIO_ENGINES, REALTIME_SKIP, createReusablePage, launchEngine, parseEngines,
-	parseRealtime
+	ALL_ENGINES, AUDIO_ENGINES, REALTIME_SKIP, SHARED_FIREFOX, createReusablePage, launchEngine,
+	parseEngines, parseRealtime, withSharedFirefox
 };

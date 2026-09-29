@@ -659,7 +659,7 @@ go to their owner. The last column names the ROADMAP task that takes each item.
 
 | Item | Detail | Task |
 | --- | --- | --- |
-| Firefox launches | Each audio suite launches its own Firefox, at about 1.4 s each (14 launches, about 20 s of the 51 s sound browser time). One engine process per stage, or a smaller Firefox subset in `npm test` with the full set in `test:firefox`, would cut most of it | Sound 11.1 |
+| Firefox launches | Each audio suite launches its own Firefox, at about 1.4 s each (14 launches, about 20 s of the 51 s sound browser time). One engine process per stage, or a smaller Firefox subset in `npm test` with the full set in `test:firefox`, would cut most of it | Done (Sound 11.1): one shared Firefox server per stage |
 | Permanent skips | 206 skipped cases on Windows: 139 WebKit (no Web Audio API) and 67 Firefox (no offline `suspend()`). Skipping at the suite level when the engine lacks the API would keep the report readable; the launch itself is cheap (0.2 s) | Sound 11.2 |
 | COV-004 audio case | `ownership-reentrancy-matrix.test.js:214` repeats `audio-lifecycle.test.js:80` (retry timing). Remove it or move it with TEST-004 | Done (TEST-004) |
 | Helper duplication | `near()` is defined in `sound-advanced`, `sound-envelope`, `sound-play`, and `sound-samples` Node tests | Sound 11.3 |
