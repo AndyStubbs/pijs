@@ -599,5 +599,5 @@ the [ROADMAP](ROADMAP.md#6-pointer) tasks that implement each item.
 | B6 | Pointer Events path | Accepted | Done (Pointer 2.2). Observable changes listed in the compatibility summary |
 | B7 | One data shape | Accepted | Done (Pointer 2.3). Breaking; listed in the compatibility summary |
 | B10 | Per-screen gesture settings | Accepted | Done (Pointer 2.7). Breaking; listed in the compatibility summary |
-| B11 | Wheel input | Accepted | Additive, in 2.3.0 (Pointer 3.1); handler shape follows I2 |
+| B11 | Wheel input | Accepted | Done (Pointer 3.1). Additive; handler shape follows I2 |
 | B13 | Allocation and live objects | Accepted | Decided by I7. Done (Pointer 2.5) |

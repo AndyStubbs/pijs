@@ -234,7 +234,10 @@ function createEventTarget( properties = {} ) {
 		"listeners": listeners,
 		"addEventListener": ( type, fn, options ) => {
 			if( !find( type, fn, options ) ) {
-				listeners.push( { "type": type, "fn": fn, "capture": isCapture( options ) } );
+				listeners.push( {
+					"type": type, "fn": fn, "capture": isCapture( options ),
+					"passive": Boolean( options && options.passive )
+				} );
 			}
 		},
 		"removeEventListener": ( type, fn, options ) => {

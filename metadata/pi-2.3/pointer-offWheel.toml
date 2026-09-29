@@ -1,0 +1,36 @@
+title = "offWheel"
+category = "pointer"
+isScreen = true
+plugin = "pointer"
+summary = "Removes a wheel event handler."
+description = """
+Removes the wheel handler registered with the function; the once, hitBox, and customData it was
+registered with do not matter. Wheel has one mode, so if fn is omitted or null, removes every
+wheel handler of the screen. When the last handler is removed, the page scrolls with the wheel
+over the canvas again. A handler removed during an event does not run later in it. The callback
+is checked as onWheel() checks it, with code INVALID_FUNCTION.
+"""
+example = """
+$.screen( "300x200" );
+let turns = 0;
+const handler = ( wheelData ) => {
+	turns += 1;
+	$.print( `Wheel ${turns}: ${wheelData.deltaY}` );
+	if( turns === 5 ) {
+		$.offWheel( handler );
+		$.print( "Wheel handler removed; the page scrolls again." );
+	}
+};
+$.onWheel( handler );
+"""
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( wheelData: WheelData, customData?: object ) => void"
+description = "Callback function to remove. If omitted or null, removes every wheel handler."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

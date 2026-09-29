@@ -1,7 +1,7 @@
 /**
  * Pi.js - Pointer Plugin
  *
- * Mouse, touch, and press handling ported from alpha.1 as a plugin.
+ * Mouse, touch, press, click, and wheel handling ported from alpha.1 as a plugin.
  *
  * @module plugins/pointer
  * @version 2.0.0
@@ -13,6 +13,7 @@ import * as g_sharedEvents from "./shared-events.js";
 import * as g_mouse from "./mouse.js";
 import * as g_touch from "./touch.js";
 import * as g_press from "./press.js";
+import * as g_wheel from "./wheel.js";
 
 
 /*************************************************************************************************
@@ -21,7 +22,7 @@ import * as g_press from "./press.js";
 
 
 /**
- * Register mouse, touch, press, and click commands with shared cleanup hooks.
+ * Register mouse, touch, press, click, and wheel commands with shared cleanup hooks.
  *
  * @param {Object} pluginApi - Plugin registration and screen access API.
  * @returns {void}
@@ -35,12 +36,14 @@ export default function pointerPlugin( pluginApi ) {
 	const mouseApi = g_mouse.registerMouse( pluginApi, helpers );
 	const touchApi = g_touch.registerTouch( pluginApi, helpers );
 	const pressApi = g_press.registerPress( pluginApi, helpers );
+	const wheelApi = g_wheel.registerWheel( pluginApi, helpers );
 
 	// Register one clearEvents type per handler command; each clears only its own handlers
 	registerScreenClear( pluginApi, "mouse", mouseApi.clearMouseEvents );
 	registerScreenClear( pluginApi, "touch", touchApi.clearTouchEvents );
 	registerScreenClear( pluginApi, "press", pressApi.clearPressEvents );
 	registerScreenClear( pluginApi, "click", pressApi.clearClickEvents );
+	registerScreenClear( pluginApi, "wheel", wheelApi.clearWheelEvents );
 
 	// Screen cleanup. Handlers are cleared before tracking stops, so the release of held input
 	// reaches no handler of a screen being removed
@@ -49,6 +52,7 @@ export default function pointerPlugin( pluginApi ) {
 		touchApi.clearTouchEvents( screenData );
 		pressApi.clearPressEvents( screenData );
 		pressApi.clearClickEvents( screenData );
+		wheelApi.clearWheelEvents( screenData );
 		if( screenData.mouseStarted ) {
 			mouseApi.stopMouse( screenData );
 		}

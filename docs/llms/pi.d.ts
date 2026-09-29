@@ -969,6 +969,33 @@ declare namespace Pi {
 		cancelled: boolean;
 	}
 
+	/**
+	 * Wheel event data.
+	 *
+	 * Data for one wheel event, passed to onWheel callbacks. It is created once per event and frozen. Deltas are in CSS pixels: positive deltaY scrolls down, and positive deltaX scrolls right.
+	 */
+	interface WheelData {
+		/**
+		 * X coordinate of the pointer in pixels; outside the screen over the border.
+		 */
+		x: number;
+
+		/**
+		 * Y coordinate of the pointer in pixels.
+		 */
+		y: number;
+
+		/**
+		 * Horizontal scroll amount in CSS pixels.
+		 */
+		deltaX: number;
+
+		/**
+		 * Vertical scroll amount in CSS pixels; positive when the wheel turns down.
+		 */
+		deltaY: number;
+	}
+
 	interface Screen extends PluginScreenCommands {
 		/**
 		 * Appends new colors to the current palette and returns their indices.
@@ -1136,7 +1163,7 @@ declare namespace Pi {
 		 *
 		 * $.clearEvents() clears per-screen handlers on every screen. A screen's clearEvents(), such as screen.clearEvents(), clears them on that screen only.
 		 *
-		 * The pointer plugin registers "mouse", "touch", "press", and "click", each clearing only the handlers of its command: onMouse, onTouch, onPress, and onClick. These handlers are per-screen. The gamepad plugin registers "gamepad", which removes every onGamepadConnected and onGamepadDisconnected callback, whichever form is called. The keyboard plugin registers "keyboard", which removes every onKey() handler, whichever form is called; $.clearEvents() also cancels every input() prompt, and a screen's clearEvents() cancels only that screen's prompt. Clearing handlers does not stop tracking or polling.
+		 * The pointer plugin registers "mouse", "touch", "press", "click", and "wheel", each clearing only the handlers of its command: onMouse, onTouch, onPress, onClick, and onWheel. These handlers are per-screen. The gamepad plugin registers "gamepad", which removes every onGamepadConnected and onGamepadDisconnected callback, whichever form is called. The keyboard plugin registers "keyboard", which removes every onKey() handler, whichever form is called; $.clearEvents() also cancels every input() prompt, and a screen's clearEvents() cancels only that screen's prompt. Clearing handlers does not stop tracking or polling.
 		 * @param type Optional type to clear (e.g., "keyboard", "mouse", "click", "gamepad").
 		 * @returns This function does not return a value.
 		 */
@@ -1585,6 +1612,16 @@ screen is removed before deferred processing completes, or with the original rea
 		offTouch( mode?: string | null, fn?: ( touches: Array<TouchData>, customData?: object ) => void ): void;
 
 		/**
+		 * Removes a wheel event handler.
+		 *
+		 * Removes the wheel handler registered with the function; the once, hitBox, and customData it was registered with do not matter. Wheel has one mode, so if fn is omitted or null, removes every wheel handler of the screen. When the last handler is removed, the page scrolls with the wheel over the canvas again. A handler removed during an event does not run later in it. The callback is checked as onWheel() checks it, with code INVALID_FUNCTION.
+		 * @param fn Callback function to remove. If omitted or null, removes every wheel handler.
+		 * @returns This function does not return a value.
+		 */
+		offWheel( params: { "fn"?: ( wheelData: WheelData, customData?: object ) => void } ): void;
+		offWheel( fn?: ( wheelData: WheelData, customData?: object ) => void ): void;
+
+		/**
 		 * Registers a callback function for click events (mouse or touch).
 		 *
 		 * Registers a callback that runs when a pointer is pressed and released inside the hit box: the left mouse button, or any single touch. Each pointer clicks on its own, so a second finger's tap inside the box clicks while the first is still down.
@@ -1670,6 +1707,27 @@ screen is removed before deferred processing completes, or with the original rea
 		 */
 		onTouch( params: { "mode": string; "fn": ( touches: Array<TouchData>, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
 		onTouch( mode: string, fn: ( touches: Array<TouchData>, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
+
+		/**
+		 * Registers a callback function for mouse wheel and trackpad scroll events.
+		 *
+		 * Registers a callback that runs when the wheel turns, or a trackpad scrolls, over the screen canvas, with the wheel data and the optional custom data. Deltas are in CSS pixels whatever the browser reports: a line is 16 pixels and a page is the window's width or height. With a hitBox, the callback runs only for wheel events inside it.
+		 *
+		 * While the screen has a wheel handler, the page does not scroll with the wheel over the canvas; when the last handler is removed, it scrolls again. Wheel handlers need no tracking, so the mouse start and stop commands do not affect them.
+		 *
+		 * A handler runs until it is removed. A handler is identified by its callback: registering the same callback again does nothing, whatever its once, hitBox, and customData, and offWheel removes it by the callback. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
+		 *
+		 * once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for a negative hitBox size, with code INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
+		 *
+		 * Requires an onscreen screen.
+		 * @param fn Callback function that receives (wheelData, customData).
+		 * @param once If true, this registration is removed before the callback's first run.
+		 * @param hitBox Optional area the wheel event must be inside. Defaults to the whole canvas.
+		 * @param customData Optional custom data passed to the callback function.
+		 * @returns This function does not return a value.
+		 */
+		onWheel( params: { "fn": ( wheelData: WheelData, customData?: object ) => void; "once"?: boolean; "hitBox"?: HitBox; "customData"?: any } ): void;
+		onWheel( fn: ( wheelData: WheelData, customData?: object ) => void, once?: boolean, hitBox?: HitBox, customData?: any ): void;
 
 		/**
 		 * Flood fills an area with a color, with optional tolerance or boundary color.
