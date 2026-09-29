@@ -1,6 +1,6 @@
-# Pi.js 2.2.0 API Reference
+# Pi.js 2.3.0 API Reference
 
-This document summarizes the public browser API in Pi.js 2.2.0.
+This document summarizes the public browser API in Pi.js 2.3.0.
 Commands generally accept either the positional signature shown here or a single options object.
 The generated declarations in
 `docs/llms/pi.d.ts` are the authoritative type reference.
@@ -74,15 +74,33 @@ reports `WEBGL_CONTEXT_RESTORE_FAILED` to the console with the underlying cause.
 - `setScreen( screen )`: Makes a screen object or ID active.
 - `getScreen( screenId )`: Returns the screen with that numeric ID.
 - `getAllScreens()`: Returns all current screen API objects.
-- `removeScreen( screen )`: Removes a supplied screen, or the active screen when omitted.
+- `removeScreen( screen )`: Removes a screen given as an object or ID, also as
+  `{ "screen": screen }`. A missing, unknown, or already removed screen throws
+  `INVALID_SCREEN_ID`. Call `removeScreen()` on a screen object to remove that screen.
 - `removeAllScreens()`: Removes every screen.
 - `canvas()`: Returns the active screen's `HTMLCanvasElement`.
 - `ready( callback )`: Waits for document readiness and pending resources; also returns a promise.
-- `set( options )`: Applies settings whose keys correspond to current `setX` commands.
-- `clearEvents( type )`: Clears one registered event type, or all types when omitted.
+- `set( options )`: Applies settings named after the `setX` commands, including those of loaded
+  plugins: `{ "color": 4 }` calls `setColor( 4 )`. See [Settings](#settings).
+- `clearEvents( type )`: Clears one event type, or every type when omitted. `$.clearEvents()`
+  clears handlers on every screen, and a screen's `clearEvents()` clears that screen's only. The
+  [input](#input) section lists the types.
 
 After removal, calls through a retained screen object throw a `TypeError` with code
 `DELETED_METHOD`.
+
+### Settings
+
+`set()` checks every option name before it applies any setting. A name that is not a setting,
+including a setting of a plugin that is not loaded, throws a `RangeError` with code
+`INVALID_OPTION`, and the call applies nothing. Options that are not an object throw a
+`TypeError` with code `INVALID_OPTIONS`. Options set to `null` are skipped. Screen settings apply
+to the active screen, and a `"screen"` option makes its screen active for the settings after it;
+a screen setting with no active screen throws `NO_ACTIVE_SCREEN`. Global settings can be set
+before a screen exists.
+
+An argument passed as `undefined` counts as omitted, in `set()` and in every command, so it takes
+its default.
 
 ## Views
 
@@ -106,9 +124,10 @@ $.screen( "320x200" );
 $.pushView( 20, 20, 120, 80 );
 $.cls();
 
-const mouse = $.inmouse();
-const local = $.screenToView( mouse.x, mouse.y );
-if( mouse.buttons & 1 ) {
+// inMouse() is null until the first mouse event
+const mouse = $.inMouse();
+if( mouse && ( mouse.buttons & 1 ) ) {
+	const local = $.screenToView( mouse.x, mouse.y );
 	$.circle( local.x, local.y, 3, "white" );
 }
 
@@ -188,6 +207,9 @@ not coerced to palette indices. `getPalColor()` returns `null` for invalid or no
 - `setColor( color )`: Sets the current drawing color.
 - `getColor( asIndex )`: Returns the current `PiColor`, or its index when requested.
 - `setDefaultColor( color )`: Sets the initial color for subsequently created screens.
+- `getDefaultColor( asIndex )`: Returns that color, or its index when requested.
+- `createColor( color )`: Converts a CSS color string, array, or color-like object into a
+  `PiColor`, without changing the drawing color or needing a screen.
 - `setPal( pal )`: Replaces the active screen's palette.
 - `getPal( include0 )`: Returns a copied palette, excluding index 0 by default.
 - `getPalColor( index )`: Returns a `PiColor` or `null` for an invalid index.
@@ -335,8 +357,11 @@ calling `$.ready()`, even while the other built-in font images are still loading
 - `setDefaultFont( fontId )`: Sets the font used by new screens.
 - `setFont( fontId )`: Selects a loaded font for the active screen.
 - `getAvailableFonts()`: Returns registered font metadata, including pending or failed URL loads.
-- `setChar( charCode, data )`: Replaces one character bitmap in the active font.
-- `setPrintSize( scaleWidth, scaleHeight, padX, padY )`: Sets font scale and spacing.
+- `setChar( charCode, data )`: Replaces one character bitmap in the active screen's font. The
+  change applies on every screen that uses the font; the font keeps its own copy of its image,
+  so the image or canvas it was loaded from is unchanged.
+- `setPrintSize( scaleWidth, scaleHeight, padX, padY )`: Sets font scale and spacing. Scales must
+  be finite numbers greater than 0, and padding an integer of 0 or more.
 - `print( msg, isInline, isCentered )`: Prints and advances the active view's cursor.
 - `setPos( col, row )`, `getPos()`: Set or read the character-cell cursor.
 - `setPosPx( x, y )`, `getPosPx()`: Set or read the pixel cursor.
@@ -352,98 +377,287 @@ If a URL image fails asynchronously, Pi.js logs an error and releases its readin
 font remains registered and selectable without an image. Readiness does not guarantee load success.
 Image and canvas elements are used directly; callers supply their usable image data.
 
+`loadFont` widths and heights must be integers of at least 1, and its margin an integer of 0 or
+more.
+
 Views save and restore print cursors. Wrapping, scrolling, rows, and columns use the requested
 active-view size and effective clip.
 
+### Characters
+
+Every UTF-16 code unit of a string takes one cell, so `print()` and `calcWidth()` count a character
+outside the Basic Multilingual Plane, such as an emoji, as two. Each unit is drawn with the glyph
+at its code in the font's charset. A code with no glyph, such as `"日"`, draws nothing but still
+takes its cell. With a font whose image is still loading or failed to load, `print()` warns once,
+draws nothing, and still advances the cursor.
+
+The five built-in fonts are 6x6 (font 0), 6x8 (font 1, the default), 8x8 (font 2), 8x14 (font 3),
+and 8x16 (font 4). Each holds codes 0–255 in the IBM PC code page 437 layout: 32–126 are ASCII,
+and 128–255 are code page 437's accented letters, box drawing, shading, and Greek and math
+symbols. Some codes below 32 are blank in some fonts. Codes 128–255 are not Latin-1: `"é"`
+(U+00E9, code 233) draws code page 437's Θ, and its é is code 130, `String.fromCharCode( 130 )`.
+
 ## Input
 
-Polling and handler registration automatically start the corresponding tracker. Explicit start
-commands are primarily useful after a stop command.
+The keyboard, pointer, and gamepad plugins are part of the Full bundle. With Lite, load
+`pijs-web/plugins/keyboard`, `pointer`, or `gamepad`. They follow the same rules:
+
+- **Start on first use.** The first read or handler registration starts tracking. A plugin adds
+  no listeners before then, so input from earlier is not seen. After a stop command, only the
+  matching start command resumes; reads and registrations do not. Handlers stay registered
+  while input is stopped, but are not called.
+- **Handler identity.** A handler is identified by its mode and function, and for the keyboard
+  by its key. Registering the same function for the same mode again does nothing, whatever its
+  `once` and other options. `once` removes the registration before the handler runs.
+- **Removal.** `offX( mode, fn )` removes that handler, `offX( mode )` every handler of the
+  mode, and `offX( null, fn )` the function from every mode. Omitting both throws
+  `INVALID_MODE`.
+- **Dispatch.** State is updated before handlers run, so a read inside a handler sees the event.
+  A handler registered during an event first runs for the next one, and a handler removed during
+  an event does not run later in it. A handler that throws is reported with `console.error()`,
+  and the other handlers still run.
+- **Cancelled releases.** Keys, mouse buttons, and touches the player did not release are
+  released through the `"up"` handlers with `cancelled: true`: when the page is hidden, a stop
+  command runs, or the browser cancels a pointer. The keyboard also does this when the window loses
+  focus, a key comes from an editable element, or an `input()` prompt starts.
+- **Frozen data.** Key, mouse, touch, press, click, and wheel data are frozen and created once
+  per event; a read returns the object the handlers received. Gamepads are live objects updated
+  in place.
+- **Errors.** An argument of the wrong type throws a `TypeError`, and one out of range a
+  `RangeError`, each with a code for the parameter, such as `INVALID_MODE`, `INVALID_FUNCTION`,
+  or `INVALID_ONCE`. Boolean flags must be booleans or omitted.
+
+`clearEvents()` takes the types `"keyboard"`, `"mouse"`, `"touch"`, `"press"`, `"click"`,
+`"wheel"`, and `"gamepad"`. Each removes only the handlers of its commands; clearing does not
+stop tracking.
 
 ### Keyboard
 
 - `startKeyboard()`, `stopKeyboard()`: Start or stop keyboard tracking.
-- `inkey( key )`: Returns one pressed-key object, all pressed keys, or `null`.
-- `setActionKeys( keys )`, `removeActionKeys( keys )`: Manage keys whose browser defaults are
-  prevented.
-- `onkey( key, mode, fn, once, allowRepeat )`: Registers an `"up"` or `"down"` handler.
-- `offkey( key, mode, fn, once, allowRepeat )`: Removes the matching handler.
+- `inKey( key )`: Returns the key data of a held key, or `null`. Without a key, returns a frozen
+  array of every held key, ordered by its latest keydown; the same array is returned until a key
+  changes.
+- `onKey( key, mode, fn, once, allowRepeat )`: Registers an `"up"` or `"down"` handler for a key,
+  an array of keys held together, or `"any"`.
+- `offKey( key, mode, fn )`: Removes key handlers; `offKey( key )` alone throws.
+- `setActionKeys( keys )`: Replaces the keys whose browser default is prevented, such as page
+  scrolling. `removeActionKeys( keys )` removes some of them.
 - `input( prompt, fn, cursor, isNumber, isInteger, allowNegative, maxLength )`: Displays a text or
   numeric prompt and returns a promise.
 - `cancelInput()`: Cancels the active prompt.
 
-Only one input prompt is active at a time. Cancellation by `cancelInput()`, Escape, replacement,
-event clearing, or removal of the owning screen resolves its promise with `null` and calls its
-callback once with `null`. Screen removal releases the prompt's timer, key handler, and background
-image without redrawing. Removing another screen leaves the prompt active. Prompt rendering uses
-the owning screen even when a different screen is selected.
+A key is named by its code, such as `"KeyA"` or `"Space"`, which names a physical key whatever
+the layout, or by its value, such as `"a"`, which names the character it types. Codes suit game
+controls. A value is held while any key that produced it is held. Key data has `code`, `key`,
+`location`, `altKey`, `ctrlKey`, `metaKey`, `shiftKey`, `repeat`, and `cancelled`.
+
+A `"down"` handler receives the keydown's data, and an `"up"` handler the keyup's. A release runs
+the handlers of the key's code, of the value it reports, and of the value it was pressed with.
+A combination's callback receives an array with each key's data in the order given; its array is
+copied, and a key listed twice counts once. Repeats reach `"down"` handlers only with
+`allowRepeat`. Keys typed into an editable element, such as an input field, are ignored.
+
+Only one input prompt is active at a time. Enter completes it and Escape cancels it. The prompt
+keeps to one line at the print cursor, and printing continues on the line below it. It reads its
+own keys, so it works after `stopKeyboard()`, and its keys, including the Enter that ends it, do
+not reach `onKey()` handlers or `inKey()`. It prevents the default action of the keys it handles;
+Ctrl and Meta shortcuts are left to the browser, and pasted text is inserted. With `isNumber` or
+`isInteger`, the value is a number, and a value with no digits is 0.
+
+`cancelInput()`, Escape, another `input()`, `clearEvents( "keyboard" )` from no screen or from the
+owning screen, and removal of the owning screen cancel the prompt: its promise resolves with
+`null`, and its callback is called once with `null`. Screen removal releases the prompt's timer,
+key handler, and background image without redrawing. Removing another screen leaves the prompt
+active. Prompt rendering uses the owning screen even when a different screen is selected.
 
 Input promises settle and session resources are released before completion callbacks run. Callbacks
 can start another prompt; the most recent input request wins, including requests made while an
 earlier replacement is cancelling a prompt. Starting input on a screen undergoing removal throws
 `SCREEN_REMOVED`; methods on an already removed screen retain the usual `DELETED_METHOD` error.
 
-Keyboard once-handlers are removed before invocation, including all entries for a combination.
-Handlers removed during dispatch are skipped. Keyup callbacks can still inspect the releasing key
-and match combinations; release cleanup preserves any new press dispatched by a callback.
-Synchronous exceptions from input callbacks and keyboard handlers are reported asynchronously as
-browser errors. Each error is reported separately; other handlers, key release, browser-default
-prevention for action keys, and screen cleanup continue. Callback return values are not awaited.
+### Mouse, Touch, Press, Click, and Wheel
 
-### Mouse, Touch, and Press
+These are screen commands: each screen tracks its own canvas, and an offscreen screen cannot
+receive pointer input.
 
-- `startMouse()`, `stopMouse()`, `inmouse()`
-- `startTouch()`, `stopTouch()`, `intouch()`
-- `inpress()`: Polls the unified mouse/touch press state.
-- `onmouse( mode, fn, once, hitBox, customData )`, `offmouse( mode, fn )`
-- `ontouch( mode, fn, once, hitBox, customData )`, `offtouch( mode, fn )`
-- `onpress( mode, fn, once, hitBox, customData )`, `offpress( mode, fn )`
-- `onclick( fn, once, hitBox, customData )`, `offclick( fn )`
-- `setEnableContextMenu( isEnabled )`, `setPinchZoom( isEnabled )`
+- `startMouse()`, `stopMouse()`, `inMouse()`
+- `startTouch()`, `stopTouch()`, `inTouch()`
+- `inPress()`: Returns the press of the primary pointer, the mouse or the primary touch.
+- `onMouse( mode, fn, once, hitBox, customData )`, `offMouse( mode, fn )`
+- `onTouch( mode, fn, once, hitBox, customData )`, `offTouch( mode, fn )`
+- `onPress( mode, fn, once, hitBox, customData )`, `offPress( mode, fn )`
+- `onClick( fn, once, hitBox, customData )`, `offClick( fn )`
+- `onWheel( fn, once, hitBox, customData )`, `offWheel( fn )`
+- `setContextMenu( isEnabled )`, `setPinchZoom( isEnabled )`
 
-Mouse and press callbacks receive one data object. Their `buttons` field is a bitmask: 1 is left,
-2 is right, and 4 is middle. Touch callbacks receive an array of touch objects. Pointer positions
-remain screen-relative inside views.
+The modes are `"down"`, `"move"`, and `"up"`. Mouse, touch, press, and click data share one shape:
+`x`, `y`, `lastX`, `lastY`, `buttons`, `action`, `type`, `id`, and `cancelled`. Positions are
+screen pixels, and remain screen-relative inside views. `buttons` is a bitmask for the mouse (1
+left, 2 right, 4 middle) and 1 while a touch is down. `type` is `"mouse"`, `"pen"`, or `"touch"`;
+mouse commands also report pens. `lastX` and `lastY` start at the current position.
+
+- **Touch** handlers receive an array with the one touch the event changed: touches that start
+  together arrive in separate calls, and an `"up"` handler receives the touch that lifted.
+  `inTouch()` returns the touches still down, and is empty after `stopTouch()`.
+- **Press** follows the primary pointer: the mouse, or the touch that started with no other
+  touch down. Its data adds `touches`, a copy of the touches down. `inMouse()` and `inPress()`
+  return `null` before the first event and while their input is stopped.
+- **Click** fires when the same pointer is pressed and released inside the hit box: the left
+  mouse button or a touch. Each finger clicks on its own, and a cancelled touch never clicks.
+  Click data has `action: "click"`.
+- **Wheel** data is `{ x, y, deltaX, deltaY }`, with deltas in CSS pixels. While a screen has
+  wheel handlers, the page does not scroll with the wheel over its canvas. Wheel handlers need
+  no tracking.
+
+A hit box is `{ x, y, width, height }` in screen pixels. With one, a handler runs only for events
+inside it; a click without one uses the screen's size when the handler is registered. The
+optional `customData` is passed to the handler as its second argument.
+
+A press that starts on the canvas border or padding is ignored. A press on the canvas keeps
+reporting moves after it leaves the canvas, and its release is reported wherever it happens,
+at its true position.
+
+While touch tracking runs, the canvas has `touch-action: none`, so the browser does not scroll
+or zoom with touches on it. `setPinchZoom( true )` sets it to `pinch-zoom` for that screen. The
+browser's context menu is suppressed on the canvas from screen creation; `setContextMenu( true )`
+lets it open. Neither setting starts tracking.
 
 ### Gamepad
 
-- `startGamepad()`, `stopGamepad()`: Start or stop the polling loop.
-- `ingamepad( gamepadIndex )`: Returns one gamepad or all gamepads.
-- `setGamepadSensitivity( sensitivity )`: Sets the analog dead zone from 0 to 1.
-- `onGamepadConnected( fn )`, `onGamepadDisconnected( fn )`: Register lifecycle callbacks.
+- `startGamepad()`, `stopGamepad()`: Start or stop polling, once per animation frame.
+- `inGamepad( gamepadIndex )`: Returns the pad with that index, or `null`. Without an index,
+  returns an array of every connected pad, in index order; it is empty when no pad is connected
+  and while polling is stopped.
+- `onGamepad( mode, fn, once )`, `offGamepad( mode, fn )`: Register or remove `"connect"` and
+  `"disconnect"` callbacks.
+- `setGamepadDeadZone( deadZone )`: Sets the dead zone, from 0 to under 1; the default is 0.2.
+- `vibrateGamepad( gamepadIndex, duration, strong, weak )`: Plays a dual-rumble effect for
+  `duration` milliseconds and returns `true`, or returns `false` where the pad or browser cannot
+  vibrate.
+
+A pad is a live object: the same object is returned on every read and updated in place,
+including its `buttons`, `axes`, and `lastAxes`. Copy values to keep a snapshot. The first read in
+each animation frame reports what happened since the previous frame that had a read, and every
+other read in the frame sees the same values, so a press and release between two reads are both
+reported.
+
+A pad's methods take a button or axis index, or a standard-mapping name, which reads the same
+position on any pad: `getButton()`, `getButtonPressed()`, `getButtonJustPressed()`,
+`getButtonJustReleased()`, `getAxis()`, and `getAxisChanged()`. The buttons are `south`, `east`,
+`west`, `north`, `leftShoulder`, `rightShoulder`, `leftTrigger`, `rightTrigger`, `select`, `start`,
+`leftStick`, `rightStick`, `dpadUp`, `dpadDown`, `dpadLeft`, `dpadRight`, and `home`, and the axes
+`leftX`, `leftY`, `rightX`, and `rightY`. An index past the pad's buttons or axes reads as empty:
+`null`, 0, or `false`.
+
+On pads with the standard mapping, the two sticks use a radial dead zone: the stick keeps its
+direction, and a full diagonal reads a distance of 1. Other axes use the dead zone on their own.
+
+A `"connect"` callback also receives the pads already connected when it is registered, and each
+connection once. A pad starts with every button released, so a button held when it appears is
+reported as just pressed on a later read. Hiding the page, or `stopGamepad()`, releases every
+button and centers the axes without reporting a release. Polling continues while the window loses
+focus but the page stays visible. `startGamepad()` after a stop reports the connections made or
+lost while stopped.
 
 ## Sound and Music
 
-### Audio Pools
+The `sound` plugin is part of the Full bundle. With Lite, load `pijs-web/plugins/sound`.
 
-- `loadAudio( src, name, poolSize )`: Creates an audio pool and returns its ID.
-- `playAudio( audioId, volume, startTime, duration )`: Plays one pool instance.
-- `stopAudio( audioId )`: Stops one pool, or all pools when omitted.
-- `removeAudio( audioId )`: Removes a pool and releases its resources.
+### Output and Voices
 
-Each audio slot holds `ready()` until it loads, reaches a terminal failure, or is removed.
-Recognized media errors retry up to three times, 100 ms apart; terminal failures are logged.
-Loaded slots remain playable when other slots fail or are still loading.
+Sounds play on three buses: `"sfx"` for `sound()`, `"music"` for `play()`, and `"audio"` for
+`playAudio()`. The buses mix into the master volume and then an output limiter.
 
-`removeAudio()` also cancels pending loads and retries, detaches load listeners, stops playback,
-and releases the media sources. It releases only that pool's outstanding readiness waits, and its
-name can be reused immediately. Late events from removed audio cannot affect a replacement pool.
-If synchronous initialization throws, the partially created pool is cleaned up and its name
-remains available; the original error is rethrown.
+- `setVolume( volume )`: Sets the master volume from 0 to 1; the default is 0.75.
+- `setBusVolume( bus, volume )`: Sets the volume of `"sfx"`, `"music"`, `"audio"`, or `"master"`,
+  which is the same as `setVolume()`. Changes ramp over 10 ms.
+- `setSoundLimiter( enabled )`: Turns the limiter on or off. It is on by default and keeps the
+  output within ±1.0: levels below its threshold pass unchanged, and above it the mix saturates
+  smoothly instead of clipping.
 
-### Synthesized Sound and PLAY
+Sounds, notes, and audio instances share 64 voices. When they are all in use, the oldest sound
+that overlaps the new one fades out to make room. Looping audio instances are never stopped to
+make room; when no voice can be freed, the new sound is rejected, and its ID is returned already
+finished, so operations on it do nothing. At most 1024 delayed requests can be pending; beyond
+that, the call throws `TOO_MANY_PENDING_SOUNDS`.
 
-- `sound( frequency, duration, volume, oType, delay, attack, decay )`: Plays a synthesized sound
-  and returns its string ID. It also accepts an options object.
+Sounds are scheduled slightly ahead of the audio clock. Every start and stop ramps over a few
+milliseconds, so nothing clicks: `stopSound()`, `stopPlay()`, and `stopAudio()` fade over 10 ms and
+are silent about 15 ms after the call. If the page stalls, a sound late by up to 25 ms starts at
+its place in the timeline, later ones are skipped, and future ones keep their times.
+
+Until the page receives its first user gesture, the browser keeps audio locked. One-shot sounds
+requested while locked return an ID but play nothing; looping audio and songs start when audio
+unlocks. Audio requires a page served over HTTP or HTTPS.
+
+### Synthesized Sound
+
+- `sound( frequency, duration, volume, oType, delay, attackTime, decayTime, sustainLevel,
+  releaseTime, pan, frequencyEnd )`: Plays a sound and returns its ID.
 - `stopSound( soundId )`: Stops one sound, or all sounds when omitted.
-- `setVolume( volume )`: Sets global sound and audio-pool volume from 0 to 1.
-- `play( playString )`: Plays BASIC-style music and returns a numeric track ID.
+
+`oType` is `"triangle"` (the default), `"sine"`, `"square"`, `"sawtooth"`, `"white"` or `"pink"`
+noise, a custom wave table, or a source type a plugin adds. The volume follows an ADSR envelope:
+the attack rises to `volume` over `attackTime`, the decay falls to `sustainLevel × volume` over
+`decayTime`, the sustain holds until `duration` ends, and the release fades out over
+`releaseTime` (default 0.1 s). `frequencyEnd` sweeps the pitch exponentially over `duration`.
+`pan` runs from -1 (left) to 1 (right), and the louder channel stays at `volume`. Frequency is
+not rounded.
+
+### PLAY
+
+- `play( playString )`: Plays music written in BASIC-style notation and returns a track ID.
 - `stopPlay( trackId )`: Stops one track, or all tracks when omitted.
+
+Notes are `A`–`G` with `#`, `+`, or `-`, a length, and dots; `N` plays a note by number. `O`, `<`,
+and `>` set the octave, `L` the default length, `T` the tempo, `P` a rest, `V` the volume, and `MP`
+the pan. `WS`, `WQ`, `WW`, `WT`, `WN`, and `WP` select sine, square, sawtooth, triangle, white
+noise, and pink noise. `MS`, `MN`, and `ML` set how much of each note's slot sounds, without
+changing the beat, and `MA`, `MD`, `MH`, and `MR` set the envelope. `@n` selects an instrument
+that a plugin provides. A comma starts another track at the time of the previous track's last
+command. Notes are scheduled as the song plays, so long songs use few resources. Unknown
+commands are ignored with one warning per call.
+
+### Audio Files
+
+- `loadAudio( src, name, stream )`: Loads an audio file and returns its audio ID.
+- `playAudio( audioId, volume, startTime, duration, loop, playbackRate, pan, delay )`: Plays an
+  instance and returns its instance ID.
+- `stopAudio( id )`, `pauseAudio( id )`, `resumeAudio( id )`: Stop, pause, or resume one
+  instance, every instance of an audio ID, or all audio when omitted.
+- `setAudio( instanceId, volume, playbackRate, pan )`: Changes a playing, delayed, or paused
+  instance.
+- `removeAudio( audioId )`: Removes a file and releases its resources.
+
+By default a file is decoded into memory, so any number of instances can play it with
+sample-accurate timing. With `stream` set to `true`, the file plays through a media element, one
+instance at a time; a new `playAudio()` fades out the current instance and takes its voice.
+`playbackRate` changes speed and pitch together, from 0.0625 to 16 for decoded audio and from 0.25
+to 4 for streamed audio. `startTime` and `duration` are times in the file, so `duration` scales
+with the rate. A paused instance keeps its position and holds no voice.
+
+Each `loadAudio()` holds `ready()` until the file loads, fails, or is removed. Network failures
+are retried three times, 100 ms apart; a file that fails logs an error, and `playAudio()` then
+throws `AUDIO_NOT_LOADED`. Loaded files stay playable when others fail or are still loading.
+
+`removeAudio()` cancels a load in progress, fades out playing instances, ends paused and delayed
+ones, and releases the file. Its readiness wait is released, and its name can be reused at once;
+late results from the removed load cannot affect a replacement. If synchronous setup throws,
+nothing is registered and the name stays available.
+
+### Sound Advanced Plugin
+
+`sound-advanced` adds `synth()`, `sfx()`, `definePreset()`, `generateSfx()`, `defineInstrument()`,
+`setBusEffect()`, `getSoundLevels()`, `startRecording()`, `stopRecording()`,
+`getRecordingState()`, `saveRecording()`, `onPlay()`, and `offPlay()`. It is in neither bundle:
+load `pijs-web/plugins/sound-advanced` after the Full bundle, or after Lite and the `sound`
+plugin. See its [README](../plugins/sound-advanced/README.md).
 
 ## Plugins
 
 - `registerPlugin( name, init, version, description, dependencies )`: Registers a plugin.
-- `getPlugins()`: Returns registered plugin status objects.
+- `getPlugins()`: Returns each plugin's `name`, `version`, `description`, `initialized`, and
+  `state`: `"pending"` while it waits for its dependencies, `"initialized"`, or `"failed"`.
 
 The options form makes plugin metadata clearer:
 
@@ -486,6 +700,28 @@ dynamic screen data onto each live screen, binds its screen commands, and runs i
 initialization hooks once. Earlier core and plugin initialization hooks are not replayed. Screens
 created afterward receive the same registrations through normal screen creation.
 
+Installation is all or nothing. A plugin's commands, settings, screen data, hooks, and
+`clearEvents` handlers take effect only after its `init` and its installation on existing
+screens both succeed. If either throws, none of them remain, its state is `"failed"`, and its
+name can be registered again. The `registerPlugin()` call that registered it throws
+`PLUGIN_INIT_FAILED`; a plugin that fails while another call resolves it, such as one waiting on
+a dependency that call registers, is reported with `console.error()` instead. The
+`pluginApi` registration methods throw `REGISTRATION_CLOSED` after `init` returns. Missing and
+cyclic dependencies stay `"pending"`, and a plugin initializes only after its dependencies have.
+
+A plugin can offer an API to the plugins that depend on it: `pluginApi.provideService( service )`
+publishes one object during `init`, and `pluginApi.getService( pluginName )` returns the service of
+a plugin listed in `dependencies`. The `sound` plugin provides the service that `sound-advanced`
+uses.
+
+Plugin scripts register themselves when loaded after Pi.js. The standalone scripts of the
+plugins that the Full bundle includes, `gamepad`, `keyboard`, `pointer`, `polygons`, and `sound`,
+are for Lite: loading one after the Full bundle throws `DUPLICATE_PLUGIN`.
+
+`clearEvents()` removes every handler of its type, including handlers that a plugin registered
+through the public input commands, such as `onPress()`. They are not restored, so a plugin that
+needs its handlers must register them again, or read input by polling, such as with `inPress()`.
+
 ## Screen Layout and Resource Behavior
 
 With `noCss: true` (default false), Pi.js does not write automatic canvas, container, html, or body
@@ -495,7 +731,7 @@ Logical x/e/m dimensions follow the container; display shader backing size follo
 canvas CSS content size before transforms. Canvas and container changes are observed. Hidden hosts retain their last
 valid allocation and recover when visible. Offscreen screens accept noCss as a no-op.
 Pointer input requires an onscreen target: screen creation changes the active screen, so use
-visible.inmouse() or setScreen(visible) after creating an offscreen buffer.
+visible.inMouse() or setScreen(visible) after creating an offscreen buffer.
 
 v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same
 orientation as u_texture.
@@ -505,8 +741,4 @@ resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise 
 upload is retained. No video rendering loop is created.
 
 Image onLoad/onError exceptions remain visible and release their resource wait exactly once.
-Pointer subscriptions register synchronously; additions during dispatch enter later snapshots.
-Replaying pooled audio clears that slot's old duration timer, including full-length playback.
-Plugin dependencies resolve after successful initialization, including late registrations;
-missing, cyclic, and failed dependencies remain initialized:false. Initializers run at most once.
 Failed screen creation rolls back its DOM, observers, commands, and GPU resources.

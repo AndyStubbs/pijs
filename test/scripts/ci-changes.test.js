@@ -26,7 +26,7 @@ test( "documentation and tooling files are skippable", () => {
 
 test( "files that tests, builds, or size reports read are not skippable", () => {
 	for( const file of [
-		"docs/llms/pi.d.ts", "docs/UPGRADE-V2.3.md", "releases/pi-latest/README.md",
+		"docs/llms/pi.d.ts", "docs/API.md", "docs/UPGRADE-V2.3.md", "releases/pi-latest/README.md",
 		"releases/pi-latest/CHANGELOG.md", "releases/PUBLISH.md", "plugins/PLUGIN-QUICKSTART.md",
 		"plugins/README.md",
 		"src/api/graphics.js", "plugins/sound/index.js", "metadata/pi-2.3/circle.json",
@@ -45,7 +45,7 @@ test( "Windows separators are normalized", () => {
 } );
 
 test( "a change needs tests unless every file is skippable", () => {
-	assert.equal( g_ciChanges.needsTests( [ "README.md", "docs/API.md", "" ] ), false );
+	assert.equal( g_ciChanges.needsTests( [ "README.md", "docs/UPGRADE-V2.2.md", "" ] ), false );
 	assert.equal( g_ciChanges.needsTests( [ "README.md", "src/core/state.js" ] ), true );
 	assert.equal( g_ciChanges.needsTests( [] ), true );
 	assert.equal( g_ciChanges.needsTests( [ "", "  " ] ), true );
@@ -57,7 +57,7 @@ test( "the command line reads paths from stdin", () => {
 			"input": input, "encoding": "utf8"
 		} );
 	};
-	assert.equal( run( "README.md\r\ndocs/API.md\n" ), "false\n" );
+	assert.equal( run( "README.md\r\ndocs/UPGRADE-V2.2.md\n" ), "false\n" );
 	assert.equal( run( "README.md\nsrc/core/state.js\n" ), "true\n" );
 	assert.equal( run( "" ), "true\n" );
 } );
