@@ -507,6 +507,11 @@ both reported; every other read in the same frame sees the same values.
 A pad starts with every button released, so a button held when the pad appears, such as the
 press that makes the browser expose it, is reported as just pressed on a later read. Button and
 axis numbers follow the browser's Gamepad API; the standard mapping has 17 buttons and 4 axes.
+
+The methods take a non-negative integer index. Another value throws a TypeError, and a negative
+index a RangeError, both with code INVALID_INDEX and a message starting with the method name. An
+index past the pad's buttons or axes returns the empty value: null from getButton(), 0 from
+getAxis(), and false from the other methods.
 """
 
 [[objects.properties]]
@@ -560,34 +565,34 @@ description = "Axis values at the previous read."
 name = "getButton"
 type = "function"
 signature = "( buttonIndex: number ) => GamepadButton | null"
-description = "Reads the button object, or null for an index outside the buttons array."
+description = "Reads the button object, or null past the buttons array."
 
 [[objects.properties]]
 name = "getButtonPressed"
 type = "function"
-signature = "( buttonIndex: number ) => boolean | null"
-description = "Reads whether the button is held, or null for an index outside the buttons array."
+signature = "( buttonIndex: number ) => boolean"
+description = "Reads whether the button is held; false past the buttons array."
 
 [[objects.properties]]
 name = "getButtonJustPressed"
 type = "function"
 signature = "( buttonIndex: number ) => boolean"
-description = "Reads whether the button was pressed since the previous read; false out of range."
+description = "Reads whether the button was pressed since the previous read; false past the array."
 
 [[objects.properties]]
 name = "getButtonJustReleased"
 type = "function"
 signature = "( buttonIndex: number ) => boolean"
-description = "Reads whether the button was released since the previous read; false out of range."
+description = "Reads whether the button was released since the previous read; false past the array."
 
 [[objects.properties]]
 name = "getAxis"
 type = "function"
 signature = "( axisIndex: number ) => number"
-description = "Reads the axis value; 0 for an index outside the axes array."
+description = "Reads the axis value; 0 past the axes array."
 
 [[objects.properties]]
 name = "getAxisChanged"
 type = "function"
 signature = "( axisIndex: number ) => boolean"
-description = "Reads whether the axis value differs from the previous read; false out of range."
+description = "Reads whether the axis value differs from the previous read; false past the array."

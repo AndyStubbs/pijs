@@ -26,7 +26,8 @@ clearEvents( "gamepad" ) removes every callback.
 Registering starts polling, unless stopGamepad() was called; a 'connect' callback registered while
 stopped receives the connected pads when startGamepad() resumes polling. The mode is 'connect' or
 'disconnect': another string throws a RangeError and a non-string a TypeError, with code
-INVALID_MODE; a fn that is not a function throws a TypeError with code INVALID_FUNCTION.
+INVALID_MODE; a fn that is not a function throws a TypeError with code INVALID_FUNCTION; and once
+is a boolean or omitted, else a TypeError with code INVALID_ONCE.
 """
 example = """
 $.screen( "300x200" );

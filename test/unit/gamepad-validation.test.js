@@ -798,6 +798,62 @@ test( "PAD-010 inGamepad() always returns an array, and inGamepad( index ) the p
 	assert.deepEqual( Array.from( h.$.inGamepad(), pad => pad.index ), [ 2 ] );
 } );
 
+test( "PAD-008 indices must be integers, and an index past the pad reads empty (A8, I11, P10)",
+	() => {
+		const h = createHarness();
+		h.setPad( 0 );
+		const pad = h.$.inGamepad( 0 );
+		const check = ( call, type, message ) => {
+			assert.throws( call, error => {
+				assert.deepEqual(
+					[ error.name, error.code, error.message ], [ type, "INVALID_INDEX", message ]
+				);
+				return true;
+			} );
+		};
+
+		// inGamepad() takes null or omitted for the list, or a non-negative integer
+		for( const index of [ 1.5, NaN, "0", Infinity, true ] ) {
+			check( () => h.$.inGamepad( index ), "TypeError",
+				"inGamepad: gamepadIndex must be an integer." );
+		}
+		check( () => h.$.inGamepad( -1 ), "RangeError",
+			"inGamepad: gamepadIndex must not be negative." );
+
+		// Every helper checks its index the same way, before it reads
+		const helpers = [
+			[ "getButton", "buttonIndex", null ],
+			[ "getButtonPressed", "buttonIndex", false ],
+			[ "getButtonJustPressed", "buttonIndex", false ],
+			[ "getButtonJustReleased", "buttonIndex", false ],
+			[ "getAxis", "axisIndex", 0 ],
+			[ "getAxisChanged", "axisIndex", false ]
+		];
+		for( const [ name, parameter, empty ] of helpers ) {
+			for( const index of [ 1.5, NaN, "0", undefined ] ) {
+				check( () => pad[ name ]( index ), "TypeError",
+					`${name}: ${parameter} must be an integer.` );
+			}
+			check( () => pad[ name ]( -1 ), "RangeError",
+				`${name}: ${parameter} must not be negative.` );
+
+			// Past the pad's four buttons and four axes: the empty value
+			assert.equal( pad[ name ]( 20 ), empty, name );
+		}
+		assert.equal( pad.getButton( 0 ).pressed, false );
+		assert.equal( pad.getButtonPressed( 3 ), false );
+		assert.equal( pad.getAxis( 3 ), 0 );
+
+		// onGamepad takes a boolean once, or none
+		assert.throws( () => h.$.onGamepad( "connect", () => {}, "true" ), error => {
+			return error.name === "TypeError" && error.code === "INVALID_ONCE" &&
+				error.message === "onGamepad: once must be a boolean.";
+		} );
+		h.$.onGamepad( "connect", () => {}, null );
+		h.$.onGamepad( "disconnect", () => {}, false );
+	}
+);
+
 test( "PAD-016 the first update after startGamepad() reports no edges (I6)", () => {
 	const h = createHarness();
 	h.setPad( 0 );

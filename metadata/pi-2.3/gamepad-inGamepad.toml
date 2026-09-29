@@ -18,7 +18,8 @@ Pads are live objects updated in place. The first read in each animation frame r
 happened since the last frame that had a read, and every other read in the frame sees the same
 values; see GamepadData.
 
-An index that is not a non-negative integer throws a TypeError with code INVALID_PARAMETERS.
+A gamepadIndex that is not an integer throws a TypeError, and a negative one a RangeError, both
+with code INVALID_INDEX; a well-formed index with no pad behind it returns null.
 """
 example = """
 $.screen( "300x200" );

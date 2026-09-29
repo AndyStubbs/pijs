@@ -159,12 +159,8 @@ function stopGamepad() {
 function inGamepad( options ) {
 	const gamepadIndex = options.gamepadIndex;
 	const isList = gamepadIndex === null || gamepadIndex === undefined;
-	if( !isList && ( !Number.isInteger( gamepadIndex ) || gamepadIndex < 0 ) ) {
-		const error = new TypeError(
-			"inGamepad: gamepadIndex must be a non-negative integer or null."
-		);
-		error.code = "INVALID_PARAMETERS";
-		throw error;
+	if( !isList ) {
+		checkIndex( "inGamepad", "gamepadIndex", gamepadIndex );
 	}
 
 	// While stopped, reads return empty state and do not restart polling
@@ -232,6 +228,9 @@ function onGamepad( options ) {
 	const fn = options.fn;
 	checkMode( "onGamepad", mode );
 	checkFunction( "onGamepad", fn );
+	if( options.once != null && typeof options.once !== "boolean" ) {
+		throwCode( TypeError, "onGamepad: once must be a boolean.", "INVALID_ONCE" );
+	}
 
 	let handler = null;
 	for( const registered of m_handlers[ mode ] ) {
@@ -240,7 +239,7 @@ function onGamepad( options ) {
 		}
 	}
 	if( handler === null ) {
-		handler = { "fn": fn, "once": !!( options.once ), "isRemoved": false };
+		handler = { "fn": fn, "once": options.once === true, "isRemoved": false };
 		if( mode === "connect" ) {
 			handler.delivered = new WeakSet();
 		}
@@ -344,6 +343,25 @@ function checkMode( command, mode ) {
 function checkFunction( command, fn ) {
 	if( typeof fn !== "function" ) {
 		throwCode( TypeError, `${command}: fn must be a function.`, "INVALID_FUNCTION" );
+	}
+}
+
+/**
+ * Check an index: `TypeError` for a value that is not an integer, `RangeError` for a negative
+ * one, both with code `INVALID_INDEX`. A well-formed index with nothing behind it is not an
+ * error; the caller returns its empty value.
+ *
+ * @param {string} command - Command or method name for error messages.
+ * @param {string} name - Parameter name for error messages.
+ * @param {*} index - Requested index.
+ * @returns {void}
+ */
+function checkIndex( command, name, index ) {
+	if( !Number.isInteger( index ) ) {
+		throwCode( TypeError, `${command}: ${name} must be an integer.`, "INVALID_INDEX" );
+	}
+	if( index < 0 ) {
+		throwCode( RangeError, `${command}: ${name} must not be negative.`, "INVALID_INDEX" );
 	}
 }
 
@@ -599,45 +617,52 @@ function createNewGamepadData( gamepadDataRaw ) {
 		"buttons": []
 	};
 
-	// Helper methods; each is a read, so it publishes the frame's state first
+	// Helper methods; each is a read, so it publishes the frame's state first. An index must be
+	// a non-negative integer; one past the pad's buttons or axes returns the empty value
 	newGamepadData.getButton = function( buttonIndex ) {
+		checkIndex( "getButton", "buttonIndex", buttonIndex );
 		readGamepads();
-		if( buttonIndex < 0 || buttonIndex >= this.buttons.length ) {
+		if( buttonIndex >= this.buttons.length ) {
 			return null;
 		}
 		return this.buttons[ buttonIndex ];
 	};
 	newGamepadData.getButtonPressed = function( buttonIndex ) {
+		checkIndex( "getButtonPressed", "buttonIndex", buttonIndex );
 		readGamepads();
-		if( buttonIndex < 0 || buttonIndex >= this.buttons.length ) {
-			return null;
+		if( buttonIndex >= this.buttons.length ) {
+			return false;
 		}
 		return this.buttons[ buttonIndex ].pressed;
 	};
 	newGamepadData.getButtonJustPressed = function( buttonIndex ) {
+		checkIndex( "getButtonJustPressed", "buttonIndex", buttonIndex );
 		readGamepads();
-		if( buttonIndex < 0 || buttonIndex >= this.buttons.length ) {
+		if( buttonIndex >= this.buttons.length ) {
 			return false;
 		}
 		return this.buttons[ buttonIndex ].pressStarted;
 	};
 	newGamepadData.getButtonJustReleased = function( buttonIndex ) {
+		checkIndex( "getButtonJustReleased", "buttonIndex", buttonIndex );
 		readGamepads();
-		if( buttonIndex < 0 || buttonIndex >= this.buttons.length ) {
+		if( buttonIndex >= this.buttons.length ) {
 			return false;
 		}
 		return this.buttons[ buttonIndex ].pressReleased;
 	};
 	newGamepadData.getAxis = function( axisIndex ) {
+		checkIndex( "getAxis", "axisIndex", axisIndex );
 		readGamepads();
-		if( axisIndex < 0 || axisIndex >= this.axes.length ) {
+		if( axisIndex >= this.axes.length ) {
 			return 0;
 		}
 		return this.axes[ axisIndex ];
 	};
 	newGamepadData.getAxisChanged = function( axisIndex ) {
+		checkIndex( "getAxisChanged", "axisIndex", axisIndex );
 		readGamepads();
-		if( axisIndex < 0 || axisIndex >= this.axes.length ) {
+		if( axisIndex >= this.axes.length ) {
 			return false;
 		}
 		const current = this.axes[ axisIndex ];
