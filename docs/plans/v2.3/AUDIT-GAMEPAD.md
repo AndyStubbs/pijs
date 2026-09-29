@@ -708,7 +708,7 @@ the [ROADMAP](ROADMAP.md#7-gamepad) tasks that implement each item.
 | PAD-008 | Helper index validation and range values | Accepted | Fixed by A8 with I11 codes (Gamepad 2.5, done) |
 | PAD-009 | Live object with replaced arrays | Accepted | Fixed by A7 (Gamepad 1.5) |
 | PAD-010 | Four `ingamepad()` return shapes | Accepted | Fixed by A6 (Gamepad 2.4, breaking, done) |
-| PAD-011 | Per-axis dead zone | Accepted | Fixed by A9 (Gamepad 2.6, breaking) |
+| PAD-011 | Per-axis dead zone | Accepted | Fixed by A9 (Gamepad 2.6, breaking, done) |
 | PAD-012 | No handler removal; screen-wide clear | Accepted | Fixed by A5 in the I2 shape (Gamepad 2.2 and 2.3, done) |
 | PAD-013 | `GAMEPAD.md` documents the removed API | Accepted | Rewritten in the release phase (R.3) |
 | PAD-014 | Metadata, declarations, `API.md` gaps | Accepted | Metadata and declarations in Gamepad 1.7 (done), then with each API change; `API.md` in R.2 |
@@ -718,6 +718,6 @@ the [ROADMAP](ROADMAP.md#7-gamepad) tasks that implement each item.
 | A1–A4, A7, A8, A12 | Fixes | Accepted | Gamepad Phase 1, except A8, which landed with I11 in Gamepad 2.5 |
 | A5 | Handler removal and `once` (§6) | Accepted | Decided by I2 and I4: `onGamepad()` and `offGamepad()`. Done (Gamepad 2.2 and 2.3) |
 | A6 | Return shapes | Accepted | Done (Gamepad 2.4). Breaking; listed in the compatibility summary |
-| A9 | Radial dead zone and rename | Accepted | Breaking: radial stick dead zone, and `setGamepadSensitivity` becomes `setGamepadDeadZone` (`gamepadDeadZone`). The old name fails as an unknown command (G3) |
+| A9 | Radial dead zone and rename | Accepted | Breaking: radial stick dead zone, and `setGamepadSensitivity` becomes `setGamepadDeadZone` (`gamepadDeadZone`). The old name fails as an unknown command (G3). Done (Gamepad 2.6) |
 | A10 | Standard-mapping names | Accepted | Additive. The names are I13 (Gamepad 3.1) |
 | A11 | `vibrateGamepad()` | Accepted | Additive (Gamepad 3.2). Returns false where unsupported (Firefox 156, iOS Safari) |

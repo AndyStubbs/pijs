@@ -17,6 +17,7 @@ methods = [
 	"onmouse",
 	"onpress",
 	"ontouch",
-	"setEnableContextMenu"
+	"setEnableContextMenu",
+	"setGamepadSensitivity"
 ]
 objects = []

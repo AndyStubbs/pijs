@@ -166,6 +166,10 @@ const REQUIRED_DECLARATIONS = [
 			"void, once?: boolean ): void;"
 	},
 	{
+		"name": "setGamepadDeadZone takes the dead zone",
+		"text": "setGamepadDeadZone( deadZone: number ): void;"
+	},
+	{
 		"name": "gamepad helper methods",
 		"text": "getButtonJustPressed: ( buttonIndex: number ) => boolean;"
 	},

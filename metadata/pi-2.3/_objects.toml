@@ -553,8 +553,9 @@ description = "Button states, in the browser's button order."
 name = "axes"
 type = "Array<number>"
 description = """
-Axis values from -1 to 1 after the dead zone set by setGamepadSensitivity(): values inside it \
-read 0, and values outside it are scaled to start from 0."""
+Axis values from -1 to 1 after the dead zone set by setGamepadDeadZone(): radial for the two \
+sticks of the standard mapping, per axis otherwise. Values inside it read 0, and values outside \
+it are rescaled to start from 0."""
 
 [[objects.properties]]
 name = "lastAxes"

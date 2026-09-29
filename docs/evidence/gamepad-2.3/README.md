@@ -13,6 +13,7 @@ This folder holds measurements and reproductions for the 2.3 gamepad audit
 | --- | --- |
 | `size-baseline.json` | `npm run size -- --out=docs/evidence/gamepad-2.3/size-baseline.json` at the revision |
 | `size-phase1.json` | The same command at the exit of gamepad Phase 1 (tasks 1.1–1.7), 2026-09-28 |
+| `size-phase2.json` | The same command at the exit of gamepad Phase 2 (tasks 2.1–2.6), 2026-09-28 |
 | `probes.js` | Reproductions P1–P14b (including P3b and P5b), run in Chromium, Firefox and WebKit against fresh in-memory bundles of the current source, plus a load check of the manual gamepad pages |
 | `probes-output.json` | Observed and expected results per engine and probe, with page errors |
 | `device-check.html` | A page for the physical-controller pass: Pi.js state next to the browser's own Gamepad API |
@@ -46,6 +47,24 @@ connect delivery and replay, and the listeners added on the first start. The Ful
 includes keyboard and pointer Phase 1 and core changes since the baseline; Lite has not changed
 since pointer Phase 1 exit (48,947), so gamepad Phase 1 added 539 bytes to Full (74,174 to
 74,713).
+
+## Size at Phase 2 exit
+
+`size-phase2.json`, measured on the `gamepad-2` branch after gamepad tasks 2.1–2.6. The
+standalone plugin is 2.0.0.
+
+| Bundle | Bytes | Gzip | Gzip change from Phase 1 |
+| --- | --- | --- | --- |
+| `gamepad` plugin 2.0.0 (standalone IIFE) | 6,871 | 2,576 | +554 |
+| `pi.min.js` (Full, includes gamepad) | 221,163 | 77,401 | +2,688 |
+| `pi.lite.min.js` (no gamepad) | 141,180 | 49,675 | +728 |
+
+The gamepad growth is `onGamepad` and `offGamepad` with per-mode registrations, `once`, and
+the removal forms; the stop that releases pads and the restart that catches up with
+connections; the return shapes; validation with per-parameter codes; and the radial stick dead
+zone. The Full change also includes keyboard Phase 2, pointer Phases 2 and 3, and the core tasks
+merged since the Phase 1 measurement, which Lite's +728 reflects. Against the pointer's final
+measurement (76,928), where Lite was already 49,675, gamepad Phase 2 added 473 bytes to Full.
 
 ## Probes
 
