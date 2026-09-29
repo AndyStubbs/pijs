@@ -3,8 +3,9 @@
  *
  * Loads the frozen releases/pi-2.2.0/pi.js bundle into the offline render harness in Chromium,
  * renders each preset, and writes 16-bit mono 48 kHz WAV files plus manifest.json to
- * test/media/sound-2.2/. Re-running it reproduces the same files, because the 2.2 bundle and
- * the harness are both deterministic.
+ * test/media/sound-2.2/. Re-running it reproduces the files to within one 16-bit step: presets
+ * that mix several voices can differ by that step, because Chromium sums a node's inputs in an
+ * address-dependent order. record-sound-references-browser.test.js checks it.
  *
  * Usage: npm run sound:references
  */
