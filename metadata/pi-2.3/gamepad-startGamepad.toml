@@ -5,11 +5,15 @@ plugin = "gamepad"
 summary = "Starts the gamepad input loop and begins monitoring for gamepad connections."
 description = """
 Starts polling gamepads once per animation frame. Polling also starts on first use: the first
-ingamepad() call or handler registration. Calling it again while polling does nothing.
+inGamepad() call or onGamepad() registration. After stopGamepad(), only startGamepad() starts it
+again. Calling it while polling does nothing.
 
 The first start adds the connection and page-visibility listeners and scans for pads that are
-already connected, passing each to the onGamepadConnected callbacks. The plugin adds no listener
-before then.
+already connected, passing each to the 'connect' callbacks of onGamepad(). The plugin adds no
+listener before then. A start after stopGamepad() catches up with the connections made while
+stopped: pads that left are removed through the 'disconnect' callbacks, and each 'connect'
+callback receives the connected pads it has not received. Its first update records the current
+state, so a button pressed while stopped reads as pressed, not as just pressed.
 
 Polling continues while the window loses focus but the page stays visible. When the page is
 hidden, every button is released and the axes read 0, without reporting a release; when it is
@@ -18,7 +22,7 @@ visible again, a button still held reads as pressed, not as just pressed.
 example = """
 $.screen( "300x200" );
 $.print( "Connect gamepad and press a button or move an axis to connect" );
-$.onGamepadConnected( ( gamepad ) => {
+$.onGamepad( "connect", ( gamepad ) => {
 	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
 	$.print( "Game is will start in 3 seconds" );
 	$.stopGamepad();
@@ -30,7 +34,7 @@ $.onGamepadConnected( ( gamepad ) => {
 
 run();
 function run() {
-	const gamepad = $.ingamepad( 0 );
+	const gamepad = $.inGamepad( 0 );
 	if( gamepad ) {
 		const vAxis = gamepad.getAxis( 0 );
 		$.cls();

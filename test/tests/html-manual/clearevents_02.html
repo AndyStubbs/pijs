@@ -108,7 +108,7 @@
 
 		function setupGamepad() {
 			try {
-				$.onGamepadConnected( ( gamepad ) => {
+				$.onGamepad( "connect", ( gamepad ) => {
 					log( `Gamepad connected: ${gamepad.id}` );
 				} );
 				log( "✓ Gamepad handler added (no screen required)" );

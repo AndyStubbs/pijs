@@ -1,0 +1,62 @@
+title = "onGamepad"
+category = "gamepad"
+isScreen = false
+plugin = "gamepad"
+summary = "Registers a callback function for gamepad connections or disconnections."
+description = """
+Registers a callback for the mode: 'connect' runs when a gamepad connects, with its GamepadData,
+and 'disconnect' runs when one disconnects, with its GamepadDisconnectData.
+
+A 'connect' callback also receives each pad that is already connected when it is registered, in
+index order. It receives each connection once, whether it learns of the pad from the start-up
+scan, this replay, or a connection event; a pad that disconnects and connects again is a new
+connection. The pad passed to it has every button released; a button held when it connected is
+reported as just pressed on a later read. A 'connect' callback registered by another gamepad
+callback receives the connected pads after that callback's dispatch ends. A pad has already left
+the list that inGamepad() returns when the 'disconnect' callbacks run.
+
+A callback runs until it is removed. A callback is identified by its mode and function:
+registering the same function for the same mode again does nothing, whatever its once, and
+offGamepad removes it by those two. once removes the registration before the callback runs, so
+a 'connect' callback with once receives one pad, the replay included. Callbacks added during a
+dispatch first run for the next one; a callback removed during a dispatch does not run later in
+it. A callback that throws is reported with console.error(), and the other callbacks still run.
+clearEvents( "gamepad" ) removes every callback.
+
+Registering starts polling, unless stopGamepad() was called; a 'connect' callback registered while
+stopped receives the connected pads when startGamepad() resumes polling. The mode is 'connect' or
+'disconnect': another string throws a RangeError and a non-string a TypeError, with code
+INVALID_MODE; a fn that is not a function throws a TypeError with code INVALID_FUNCTION; and once
+is a boolean or omitted, else a TypeError with code INVALID_ONCE.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Connect gamepad and press a button or move an axis to connect" );
+$.onGamepad( "connect", ( gamepad ) => {
+	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
+} );
+$.onGamepad( "disconnect", ( data ) => {
+	$.print( `Gamepad ${data.index} disconnected: ${data.id}` );
+} );
+"""
+
+[[parameters]]
+name = "mode"
+type = "string"
+description = "Event mode: 'connect' or 'disconnect'."
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( data: GamepadData | GamepadDisconnectData ) => void"
+description = "Callback that receives GamepadData or GamepadDisconnectData, by mode."
+
+[[parameters]]
+name = "once"
+type = "boolean"
+description = "If true, this registration is removed before the callback's first run."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

@@ -90,11 +90,11 @@ function rawPad( index ) {
 }
 
 // Connection callbacks: Pi.js handlers and the browser's own events, side by side.
-$.onGamepadConnected( pad => {
+$.onGamepad( "connect", pad => {
 	m_results.piConnectCalls.push( { "index": pad.index, "id": pad.id, "mapping": pad.mapping } );
 	log( "Pi connect: index " + pad.index + " " + pad.id + " (" + pad.mapping + ")" );
 } );
-$.onGamepadDisconnected( pad => {
+$.onGamepad( "disconnect", pad => {
 	m_results.piDisconnectCalls.push( { "index": pad.index } );
 	log( "Pi disconnect: index " + pad.index );
 } );
@@ -109,7 +109,7 @@ window.addEventListener( "gamepaddisconnected", e => {
 
 // Focus and visibility, with Pi.js and browser button 0 state sampled on each change.
 function sampleFocus( label ) {
-	const pad = $.ingamepad( 0 );
+	const pad = $.inGamepad( 0 );
 	const raw = rawPad( 0 );
 	const sample = {
 		"t": ( ( performance.now() - m_start ) / 1000 ).toFixed( 2 ),
@@ -142,7 +142,7 @@ function frame( time ) {
 		const span = m_frameTimes[ m_frameTimes.length - 1 ] - m_frameTimes[ 0 ];
 		m_results.refreshHz = Math.round( 59000 / span );
 	}
-	const pad = $.ingamepad( 0 );
+	const pad = $.inGamepad( 0 );
 	const raw = rawPad( 0 );
 	if( raw ) {
 		if( raw.buttons[ 0 ].pressed && !m_lastRawPressed ) {
@@ -174,7 +174,7 @@ requestAnimationFrame( frame );
 
 // Timer consumer at 30 Hz, like a fixed-step game loop.
 setInterval( () => {
-	const pad = $.ingamepad( 0 );
+	const pad = $.inGamepad( 0 );
 	if( pad ) {
 		if( pad.getButtonJustPressed( 0 ) ) {
 			m_edges.piTimerPresses += 1;
@@ -189,7 +189,7 @@ function render( pad, raw ) {
 	const rows = [
 		[ "Refresh (Hz)", m_results.refreshHz ],
 		[ "Focused / visibility", m_isFocused + " / " + document.visibilityState ],
-		[ "Pads (Pi.js)", ( $.ingamepad() || [] ).map( p => p.index ).join( ", " ) || "none" ],
+		[ "Pads (Pi.js)", $.inGamepad().map( p => p.index ).join( ", " ) || "none" ],
 		[ "Pads (browser)", Array.from( navigator.getGamepads() ).filter( p => p )
 			.map( p => p.index ).join( ", " ) || "none" ],
 		[ "Button 0 presses: browser", m_edges.rawPresses ],

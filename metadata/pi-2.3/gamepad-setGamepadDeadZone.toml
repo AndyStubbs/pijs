@@ -1,0 +1,47 @@
+title = "setGamepadDeadZone"
+category = "gamepad"
+isScreen = false
+plugin = "gamepad"
+summary = "Sets the dead zone for gamepad sticks and axes."
+description = """
+Sets the dead zone that hides stick drift. The default is 0.2. Inside the dead zone an axis reads
+0; outside it, the value is rescaled so that it starts from 0 at the edge of the dead zone and
+still reaches 1 at full tilt.
+
+The two sticks of the standard mapping, axes 0 and 1 and axes 2 and 3, use a radial dead zone:
+the stick's distance from the center is compared with the dead zone and rescaled, and the stick
+keeps its direction, so diagonal and near-cardinal movement are not lost or snapped to an axis.
+A full diagonal reaches a distance of 1. Every other axis, and every axis of a pad without the
+standard mapping, uses the dead zone on its own.
+
+The value is a finite number from 0 to under 1; 0 means no dead zone. A value that is not a
+finite number throws a TypeError, and one outside the range a RangeError, both with code
+INVALID_DEAD_ZONE, and the previous setting is kept. The new dead zone applies from the next
+update. It can also be set with set( { "gamepadDeadZone": value } ).
+"""
+example = """
+$.screen( "300x200" );
+$.setGamepadDeadZone( 0.15 );
+run();
+function run() {
+	const gamepad = $.inGamepad( 0 );
+	$.cls();
+	if( gamepad ) {
+
+		// The left stick moves the circle in any direction
+		const x = gamepad.getAxis( 0 );
+		const y = gamepad.getAxis( 1 );
+		$.circle( Math.floor( 150 + x * 100 ), Math.floor( 100 + y * 80 ), 8 );
+	}
+	requestAnimationFrame( run );
+}
+"""
+
+[[parameters]]
+name = "deadZone"
+type = "number"
+description = "Dead zone from 0 to under 1 (0 = no dead zone). The default is 0.2."
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

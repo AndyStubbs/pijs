@@ -31,16 +31,22 @@ const RESOLUTIONS = [ "bundler", "nodenext" ];
 // plugin that stays undeclared. Full already bundles every plugin except sound-advanced.
 const LITE_PLUGIN_CONSUMERS = {
 	"gamepad": [
-		`const pads = lite.ingamepad();`,
+		`const pads = lite.inGamepad();`,
 		`if( Array.isArray( pads ) && pads.length > 0 ) {`,
 		`\tconst pressed: boolean = pads[ 0 ].getButtonJustPressed( 0 );`,
 		`\tvoid pressed;`,
 		`}`,
-		`lite.onGamepadConnected( ( pad ) => { const id: string = pad.id; void id; } );`,
-		`lite.onGamepadDisconnected( ( data ) => {`,
+		`lite.onGamepad( "connect", ( pad ) => { const id: string = pad.id; void id; } );`,
+		`lite.offGamepad( null, () => {} );`,
+		`// @ts-expect-error The connection handlers are onGamepad and offGamepad.`,
+		`lite.onGamepadConnected( () => {} );`,
+		`lite.onGamepad( "disconnect", ( data ) => {`,
 		`\tconst index: number = data.index;`,
 		`\tvoid index;`,
 		`} );`,
+		`lite.set( { gamepadDeadZone: 0.5 } );`,
+		`lite.setGamepadDeadZone( 0.1 );`,
+		`// @ts-expect-error The dead-zone option is gamepadDeadZone.`,
 		`lite.set( { gamepadSensitivity: 0.5 } );`,
 		`// @ts-expect-error Keyboard commands need the keyboard plugin.`,
 		`lite.inKey();`
@@ -58,7 +64,7 @@ const LITE_PLUGIN_CONSUMERS = {
 		`// @ts-expect-error onkey is renamed onKey.`,
 		`lite.onkey( "KeyA", "down", () => {} );`,
 		`// @ts-expect-error Gamepad commands need the gamepad plugin.`,
-		`lite.ingamepad();`
+		`lite.inGamepad();`
 	],
 	"pointer": [
 		`const screen = lite.screen( "8x8" );`,

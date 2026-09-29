@@ -20,7 +20,7 @@ $.screen( "320x200" );
 let gamepadConnected = false;
 let gamepadIndex = null;
 let buttonPressed = "";
-let sensitivity = 0.2;
+let deadZone = 0.2;
 let axis0Value = 0;
 let axis1Value = 0;
 let axis2Value = 0;
@@ -47,25 +47,25 @@ const buttonStates = {
 };
 
 // Connection events
-$.onGamepadConnected( ( data ) => {
+$.onGamepad( "connect", ( data ) => {
 	gamepadConnected = true;
 	gamepadIndex = data.index;
 } );
 
-$.onGamepadDisconnected( ( data ) => {
+$.onGamepad( "disconnect", ( data ) => {
 	gamepadConnected = false;
 	gamepadIndex = null;
 } );
 
-// Sensitivity controls
+// Dead-zone controls
 $.onKey( "ArrowUp", "down", () => {
-	sensitivity = Math.min( 1, sensitivity + 0.05 );
-	$.setGamepadSensitivity( sensitivity );
+	deadZone = Math.min( 0.95, deadZone + 0.05 );
+	$.setGamepadDeadZone( deadZone );
 } );
 
 $.onKey( "ArrowDown", "down", () => {
-	sensitivity = Math.max( 0, sensitivity - 0.05 );
-	$.setGamepadSensitivity( sensitivity );
+	deadZone = Math.max( 0, deadZone - 0.05 );
+	$.setGamepadDeadZone( deadZone );
 } );
 
 
@@ -94,16 +94,16 @@ function draw() {
 	$.print( "Instructions:" );
 	$.print( "- Move analog sticks" );
 	$.print( "- Press any button" );
-	$.print( "- UP/DOWN: adjust sensitivity" );
+	$.print( "- UP/DOWN: adjust dead zone" );
 	
-	// Sensitivity display
+	// Dead-zone display
 	$.setPosPx( 6, 67 );
 	$.setColor( 14 );
-	$.print( `Sensitivity: ${sensitivity.toFixed( 2 )}` );
+	$.print( `Dead zone: ${deadZone.toFixed( 2 )}` );
 	
 	// Poll gamepad state
 	if( gamepadConnected && gamepadIndex !== null ) {
-		const gamepad = $.ingamepad( gamepadIndex );
+		const gamepad = $.inGamepad( gamepadIndex );
 		if( gamepad ) {
 
 			// Update button states

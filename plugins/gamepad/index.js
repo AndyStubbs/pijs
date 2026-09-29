@@ -5,7 +5,7 @@
  * and connect/disconnect event management.
  *
  * @module plugins/gamepad
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 "use strict";
@@ -21,13 +21,16 @@ const m_gamepads = {};
 // Per pad: the state the loop last saw, and the edges it accumulated since the last read
 const m_padStates = {};
 
-// The list form of ingamepad(): one live array, refilled in place
+// The list form of inGamepad(): one live array, refilled in place
 const m_padList = [];
 
-// Handler registrations: { fn, isRemoved }, and for connect handlers `delivered`, the pads the
-// handler has received. A registration removed during a dispatch is skipped for the rest of it
-let m_onConnectHandlers = [];
-let m_onDisconnectHandlers = [];
+// The modes of onGamepad() and offGamepad()
+const MODES = [ "connect", "disconnect" ];
+
+// Handler registrations by mode: { fn, once, isRemoved }, and for connect handlers `delivered`,
+// the pads the handler has received. A registration removed during a dispatch is skipped for the
+// rest of it
+let m_handlers = { "connect": [], "disconnect": [] };
 
 // Connect handlers registered during a dispatch receive the connected pads after it ends
 let m_dispatchDepth = 0;
@@ -37,7 +40,7 @@ let m_isInitialized = false;
 let m_isStopped = false;
 let m_isLooping = false;
 let m_gamepadLoopId = null;
-let m_axesSensitivity = 0.2;
+let m_deadZone = 0.2;
 let m_tick = 0;
 let m_lastReadTick = -1;
 let m_isHidden = false;
@@ -61,12 +64,10 @@ export default function gamepadPlugin( pluginApi ) {
 	// Register global commands
 	pluginApi.addCommand( "startGamepad", startGamepad, false, [] );
 	pluginApi.addCommand( "stopGamepad", stopGamepad, false, [] );
-	pluginApi.addCommand( "ingamepad", ingamepad, false, [ "gamepadIndex" ] );
-	pluginApi.addCommand(
-		"setGamepadSensitivity", setGamepadSensitivity, false, [ "sensitivity" ]
-	);
-	pluginApi.addCommand( "onGamepadConnected", onGamepadConnected, false, [ "fn" ] );
-	pluginApi.addCommand( "onGamepadDisconnected", onGamepadDisconnected, false, [ "fn" ] );
+	pluginApi.addCommand( "inGamepad", inGamepad, false, [ "gamepadIndex" ] );
+	pluginApi.addCommand( "setGamepadDeadZone", setGamepadDeadZone, false, [ "deadZone" ] );
+	pluginApi.addCommand( "onGamepad", onGamepad, false, [ "mode", "fn", "once" ] );
+	pluginApi.addCommand( "offGamepad", offGamepad, false, [ "mode", "fn" ] );
 
 	// Register clearEvents handler
 	pluginApi.registerClearEvents( "gamepad", clearGamepadEvents );
@@ -79,7 +80,9 @@ export default function gamepadPlugin( pluginApi ) {
 
 
 /**
- * Start gamepad polling and initialize connection listeners when needed.
+ * Start gamepad polling, adding the connection listeners on the first start. Calling it while
+ * polling does nothing. A start after stopGamepad() catches up with the connections made and
+ * lost while stopped, and its first update reports no edges.
  *
  * @returns {void}
  */
@@ -87,12 +90,13 @@ function startGamepad() {
 
 	// Remove explicit stops
 	m_isStopped = false;
-
-	// Schedule the loop before the scan, so a failing connect handler cannot leave it off
-	if( !m_isLooping ) {
-		m_isLooping = true;
-		m_gamepadLoopId = requestAnimationFrame( gamepadLoop );
+	if( m_isLooping ) {
+		return;
 	}
+
+	// Schedule the loop before the connection handlers run, so a failing one cannot leave it off
+	m_isLooping = true;
+	m_gamepadLoopId = requestAnimationFrame( gamepadLoop );
 
 	if( !m_isInitialized ) {
 		window.addEventListener( "gamepadconnected", gamepadConnected );
@@ -102,20 +106,34 @@ function startGamepad() {
 		// gamepad input to a visible page without focus
 		document.addEventListener( "visibilitychange", onVisibilityChange );
 		m_isInitialized = true;
+	} else {
 
-		// Scan for already-connected gamepads
-		scanForGamepads();
+		// Buttons held through the stop read as pressed, not as just pressed
+		m_isReturning = true;
+	}
+	syncConnections();
+}
+
+/**
+ * Start polling on first use: a read or a handler registration. After stopGamepad(), only
+ * startGamepad() starts it again.
+ *
+ * @returns {void}
+ */
+function startGamepadInternal() {
+	if( !m_isStopped ) {
+		startGamepad();
 	}
 }
 
 /**
- * Stop gamepad polling and prevent reads from restarting it automatically.
+ * Stop gamepad polling until startGamepad(). Every button is released and the axes read 0,
+ * without reporting a release, as when the page is hidden; connection handlers are not called
+ * while stopped.
  *
  * @returns {void}
  */
 function stopGamepad() {
-
-	// Explicitly stop gamepad to prevent autostart when ingamepad is called
 	m_isStopped = true;
 	if( m_isLooping ) {
 		m_isLooping = false;
@@ -124,20 +142,31 @@ function stopGamepad() {
 			m_gamepadLoopId = null;
 		}
 	}
+	releasePads();
 }
 
 /**
- * Read one gamepad or all connected gamepads, unless polling was explicitly stopped. The first
- * read starts polling and records the current state without edges.
+ * Read one gamepad, or every connected gamepad. The list form always returns the same live
+ * array, refilled in index order, and empty while polling is stopped; the index form returns
+ * the pad, or null when no pad has the index or polling is stopped. The first read starts
+ * polling, unless it was stopped, and records the current state without edges.
  *
  * @param {Object} options - Command options.
- * @returns {Object|Array<Object>|null|undefined}
+ * @returns {Object|Array<Object>|null}
  */
-function ingamepad( options ) {
+function inGamepad( options ) {
 	const gamepadIndex = options.gamepadIndex;
+	const isList = gamepadIndex === null || gamepadIndex === undefined;
+	if( !isList ) {
+		checkIndex( "inGamepad", "gamepadIndex", gamepadIndex );
+	}
 
-	// If stopped explicitly then return without auto starting
+	// While stopped, reads return empty state and do not restart polling
 	if( m_isStopped ) {
+		if( isList ) {
+			m_padList.length = 0;
+			return m_padList;
+		}
 		return null;
 	}
 	if( !m_isLooping ) {
@@ -146,95 +175,121 @@ function ingamepad( options ) {
 	}
 	readGamepads();
 
-	// If no index specified, return all gamepads in index order, in the same live array
-	if( gamepadIndex === null || gamepadIndex === undefined ) {
+	if( isList ) {
 		m_padList.length = 0;
 		for( const index in m_gamepads ) {
 			m_padList.push( m_gamepads[ index ] );
 		}
 		return m_padList;
 	}
+	const gamepadData = m_gamepads[ gamepadIndex ];
+	if( gamepadData === undefined ) {
+		return null;
+	}
+	return gamepadData;
+}
 
-	// Validate gamepadIndex
-	if( !Number.isInteger( gamepadIndex ) || gamepadIndex < 0 ) {
-		const error = new TypeError(
-			"ingamepad: gamepadIndex must be a non-negative integer or null."
+/**
+ * Set the dead zone used when reporting gamepad axes: a finite number from 0 to under 1.
+ *
+ * @param {Object} options - Command options.
+ * @returns {void}
+ */
+function setGamepadDeadZone( options ) {
+	const deadZone = options.deadZone;
+	if( !Number.isFinite( deadZone ) ) {
+		throwCode(
+			TypeError, "setGamepadDeadZone: deadZone must be a finite number.", "INVALID_DEAD_ZONE"
 		);
-		error.code = "INVALID_PARAMETERS";
-		throw error;
 	}
-
-	// Return specific gamepad or undefined if not found
-	return m_gamepads[ gamepadIndex ];
-}
-
-/**
- * Set the dead zone used when reporting gamepad axes.
- *
- * @param {Object} options - Command options.
- * @returns {void}
- */
-function setGamepadSensitivity( options ) {
-	const sensitivity = options.sensitivity;
-
-	if( !Number.isFinite( sensitivity ) || sensitivity < 0 || sensitivity > 1 ) {
-		const error = new TypeError(
-			"setGamepadSensitivity: sensitivity must be a number between 0 and 1."
+	if( deadZone < 0 || deadZone >= 1 ) {
+		throwCode(
+			RangeError,
+			"setGamepadDeadZone: deadZone must be at least 0 and less than 1.",
+			"INVALID_DEAD_ZONE"
 		);
-		error.code = "INVALID_PARAMETERS";
-		throw error;
 	}
-
-	if( sensitivity === 1 ) {
-		m_axesSensitivity = 0.99999;
-	} else {
-		m_axesSensitivity = sensitivity;
-	}
+	m_deadZone = deadZone;
 }
 
 /**
- * Register a callback for gamepad connections. The callback also receives the pads that are
- * already connected, once each.
+ * Register a callback for gamepad connections or disconnections. A connect callback also
+ * receives the pads that are already connected, once each. A handler is identified by its mode
+ * and function, so registering the same function for the same mode again does nothing.
  *
  * @param {Object} options - Command options.
  * @returns {void}
  */
-function onGamepadConnected( options ) {
+function onGamepad( options ) {
+	const mode = options.mode;
 	const fn = options.fn;
-
-	if( typeof fn !== "function" ) {
-		const error = new TypeError( "onGamepadConnected: fn must be a function." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
+	checkMode( "onGamepad", mode );
+	checkFunction( "onGamepad", fn );
+	if( options.once != null && typeof options.once !== "boolean" ) {
+		throwCode( TypeError, "onGamepad: once must be a boolean.", "INVALID_ONCE" );
 	}
 
-	const handler = { "fn": fn, "isRemoved": false, "delivered": new WeakSet() };
-	m_onConnectHandlers.push( handler );
-	startGamepad();
-	if( m_dispatchDepth > 0 ) {
-		m_pendingReplays.push( handler );
-	} else {
-		replayConnected( handler );
+	let handler = null;
+	for( const registered of m_handlers[ mode ] ) {
+		if( registered.fn === fn ) {
+			handler = registered;
+		}
+	}
+	if( handler === null ) {
+		handler = { "fn": fn, "once": options.once === true, "isRemoved": false };
+		if( mode === "connect" ) {
+			handler.delivered = new WeakSet();
+		}
+		m_handlers[ mode ].push( handler );
+	}
+
+	// While stopped, a connect handler receives the connected pads when polling starts again
+	startGamepadInternal();
+	if( m_isStopped ) {
+		return;
+	}
+	if( mode === "connect" ) {
+		if( m_dispatchDepth > 0 ) {
+			m_pendingReplays.push( handler );
+		} else {
+			replayConnected( handler );
+		}
 	}
 }
 
 /**
- * Register a callback for gamepad disconnections.
+ * Remove gamepad callbacks by mode and function. Without a function, every callback of the mode
+ * is removed; without a mode, the function is removed from both modes. Omitting both throws.
  *
  * @param {Object} options - Command options.
  * @returns {void}
  */
-function onGamepadDisconnected( options ) {
+function offGamepad( options ) {
+	const mode = options.mode;
 	const fn = options.fn;
-
-	if( typeof fn !== "function" ) {
-		const error = new TypeError( "onGamepadDisconnected: fn must be a function." );
-		error.code = "INVALID_PARAMETERS";
-		throw error;
+	if( mode == null && fn == null ) {
+		throwCode(
+			TypeError,
+			"offGamepad: mode or fn is required. To remove every handler, call " +
+			"clearEvents( \"gamepad\" ).",
+			"INVALID_MODE"
+		);
 	}
-
-	m_onDisconnectHandlers.push( { "fn": fn, "isRemoved": false } );
-	startGamepad();
+	let modes = MODES;
+	if( mode != null ) {
+		checkMode( "offGamepad", mode );
+		modes = [ mode ];
+	}
+	if( fn != null ) {
+		checkFunction( "offGamepad", fn );
+	}
+	for( const eachMode of modes ) {
+		for( const handler of m_handlers[ eachMode ].slice() ) {
+			if( fn == null || handler.fn === fn ) {
+				removeHandler( eachMode, handler );
+			}
+		}
+	}
 }
 
 
@@ -243,44 +298,141 @@ function onGamepadDisconnected( options ) {
  ************************************************************************************************/
 
 
+/**
+ * Throw a validation error with an error code.
+ *
+ * @param {Function} ErrorType - `TypeError` or `RangeError`.
+ * @param {string} message - Error message, starting with the command name.
+ * @param {string} code - Error code.
+ * @returns {never}
+ */
+function throwCode( ErrorType, message, code ) {
+	const error = new ErrorType( message );
+	error.code = code;
+	throw error;
+}
+
+/**
+ * Check a handler mode: `TypeError` for a mode that is not a string, `RangeError` for another
+ * string, both with code `INVALID_MODE`.
+ *
+ * @param {string} command - Command name for error messages.
+ * @param {*} mode - Requested mode.
+ * @returns {void}
+ */
+function checkMode( command, mode ) {
+	const message = `${command}: mode must be "connect" or "disconnect".`;
+	if( typeof mode !== "string" ) {
+		throwCode( TypeError, message, "INVALID_MODE" );
+	}
+	if( !MODES.includes( mode ) ) {
+		throwCode( RangeError, message, "INVALID_MODE" );
+	}
+}
+
+/**
+ * Check a handler function.
+ *
+ * @param {string} command - Command name for error messages.
+ * @param {*} fn - Requested handler.
+ * @returns {void}
+ */
+function checkFunction( command, fn ) {
+	if( typeof fn !== "function" ) {
+		throwCode( TypeError, `${command}: fn must be a function.`, "INVALID_FUNCTION" );
+	}
+}
+
+/**
+ * Check an index: `TypeError` for a value that is not an integer, `RangeError` for a negative
+ * one, both with code `INVALID_INDEX`. A well-formed index with nothing behind it is not an
+ * error; the caller returns its empty value.
+ *
+ * @param {string} command - Command or method name for error messages.
+ * @param {string} name - Parameter name for error messages.
+ * @param {*} index - Requested index.
+ * @returns {void}
+ */
+function checkIndex( command, name, index ) {
+	if( !Number.isInteger( index ) ) {
+		throwCode( TypeError, `${command}: ${name} must be an integer.`, "INVALID_INDEX" );
+	}
+	if( index < 0 ) {
+		throwCode( RangeError, `${command}: ${name} must not be negative.`, "INVALID_INDEX" );
+	}
+}
+
+/**
+ * Remove one registration. It is marked removed so a dispatch already in progress skips it.
+ *
+ * @param {string} mode - Mode of the registration.
+ * @param {Object} handler - The registration.
+ * @returns {void}
+ */
+function removeHandler( mode, handler ) {
+	handler.isRemoved = true;
+	const index = m_handlers[ mode ].indexOf( handler );
+	if( index !== -1 ) {
+		m_handlers[ mode ].splice( index, 1 );
+	}
+}
+
+
 function gamepadConnected( e ) {
+
+	// While stopped, the next start catches up with the connection
+	if( m_isStopped ) {
+		return;
+	}
 
 	// Record a new pad without consuming edges; the loop reports the press that exposed it
 	recordGamepad( e.gamepad );
 
 	// Trigger connect handlers. A handler that already received this pad, from the scan, a
 	// replay, or an earlier event for the same connection, is not called again
-	dispatch( m_onConnectHandlers, m_gamepads[ e.gamepad.index ], "onGamepadConnected" );
+	dispatch( m_handlers.connect, "connect", m_gamepads[ e.gamepad.index ] );
 }
 
 function gamepadDisconnected( e ) {
+
+	// While stopped, the next start catches up with the disconnection
+	if( m_isStopped ) {
+		return;
+	}
+	removeGamepad( e.gamepad );
+}
+
+/**
+ * Remove a pad from the list and call the disconnect handlers. The pad leaves the list before
+ * the handlers run, so a failing handler cannot keep it.
+ *
+ * @param {Object} gamepad - The browser's pad, or the tracked pad data.
+ * @returns {void}
+ */
+function removeGamepad( gamepad ) {
 	const data = {
-		"index": e.gamepad.index,
-		"id": e.gamepad.id,
-		"mapping": e.gamepad.mapping,
-		"connected": e.gamepad.connected
+		"index": gamepad.index,
+		"id": gamepad.id,
+		"mapping": gamepad.mapping,
+		"connected": false
 	};
-
-	// The pad leaves the list before the handlers run, so a failing handler cannot keep it
-	delete m_gamepads[ e.gamepad.index ];
-	delete m_padStates[ e.gamepad.index ];
-
-	// Trigger disconnect handlers
-	dispatch( m_onDisconnectHandlers, data, "onGamepadDisconnected" );
+	delete m_gamepads[ gamepad.index ];
+	delete m_padStates[ gamepad.index ];
+	dispatch( m_handlers.disconnect, "disconnect", data );
 }
 
 /**
  * Call each handler with the data. Handlers added during the dispatch first run in the next
  * one, and a handler removed during it does not run later in it. A connect handler receives
- * each pad once. A handler that throws is reported with `console.error`, and the others still
- * run.
+ * each pad once. A `once` handler is removed before it runs. A handler that throws is reported
+ * with `console.error`, and the others still run.
  *
  * @param {Array<Object>} handlers - Handler registrations.
+ * @param {string} mode - `"connect"` or `"disconnect"`.
  * @param {Object} data - Data passed to each handler.
- * @param {string} command - Command that registered the handlers, for error messages.
  * @returns {void}
  */
-function dispatch( handlers, data, command ) {
+function dispatch( handlers, mode, data ) {
 	m_dispatchDepth += 1;
 	for( const handler of handlers.slice() ) {
 		if( handler.isRemoved ) {
@@ -292,10 +444,13 @@ function dispatch( handlers, data, command ) {
 			}
 			handler.delivered.add( data );
 		}
+		if( handler.once ) {
+			removeHandler( mode, handler );
+		}
 		try {
 			handler.fn( data );
 		} catch( error ) {
-			console.error( `${command}: Handler failed:`, error );
+			console.error( `onGamepad: Handler for "${mode}" failed:`, error );
 		}
 	}
 	m_dispatchDepth -= 1;
@@ -315,7 +470,7 @@ function dispatch( handlers, data, command ) {
  */
 function replayConnected( handler ) {
 	for( const gamepadData of Object.values( m_gamepads ) ) {
-		dispatch( [ handler ], gamepadData, "onGamepadConnected" );
+		dispatch( [ handler ], "connect", gamepadData );
 	}
 }
 
@@ -347,19 +502,28 @@ function getBrowserGamepads() {
 	return [];
 }
 
-function scanForGamepads() {
-	const gamepads = getBrowserGamepads();
-
-	// Add any gamepads that are already connected but not in our list, then tell the handlers
-	const found = [];
-	for( let i = 0; i < gamepads.length; i++ ) {
-		if( gamepads[ i ] && !( gamepads[ i ].index in m_gamepads ) ) {
-			recordGamepad( gamepads[ i ] );
-			found.push( m_gamepads[ gamepads[ i ].index ] );
+/**
+ * Bring the pad list in line with the browser when polling starts: pads that are gone are
+ * removed through the disconnect handlers, new pads are recorded, and every connect handler
+ * receives each connected pad it has not received yet, in index order.
+ *
+ * @returns {void}
+ */
+function syncConnections() {
+	const present = {};
+	for( const gamepad of getBrowserGamepads() ) {
+		if( gamepad && gamepad.connected ) {
+			present[ gamepad.index ] = true;
+			recordGamepad( gamepad );
 		}
 	}
-	for( const gamepadData of found ) {
-		dispatch( m_onConnectHandlers, gamepadData, "onGamepadConnected" );
+	for( const gamepadData of Object.values( m_gamepads ) ) {
+		if( !present[ gamepadData.index ] ) {
+			removeGamepad( gamepadData );
+		}
+	}
+	for( const gamepadData of Object.values( m_gamepads ) ) {
+		dispatch( m_handlers.connect, "connect", gamepadData );
 	}
 }
 
@@ -450,45 +614,52 @@ function createNewGamepadData( gamepadDataRaw ) {
 		"buttons": []
 	};
 
-	// Helper methods; each is a read, so it publishes the frame's state first
+	// Helper methods; each is a read, so it publishes the frame's state first. An index must be
+	// a non-negative integer; one past the pad's buttons or axes returns the empty value
 	newGamepadData.getButton = function( buttonIndex ) {
+		checkIndex( "getButton", "buttonIndex", buttonIndex );
 		readGamepads();
-		if( buttonIndex < 0 || buttonIndex >= this.buttons.length ) {
+		if( buttonIndex >= this.buttons.length ) {
 			return null;
 		}
 		return this.buttons[ buttonIndex ];
 	};
 	newGamepadData.getButtonPressed = function( buttonIndex ) {
+		checkIndex( "getButtonPressed", "buttonIndex", buttonIndex );
 		readGamepads();
-		if( buttonIndex < 0 || buttonIndex >= this.buttons.length ) {
-			return null;
+		if( buttonIndex >= this.buttons.length ) {
+			return false;
 		}
 		return this.buttons[ buttonIndex ].pressed;
 	};
 	newGamepadData.getButtonJustPressed = function( buttonIndex ) {
+		checkIndex( "getButtonJustPressed", "buttonIndex", buttonIndex );
 		readGamepads();
-		if( buttonIndex < 0 || buttonIndex >= this.buttons.length ) {
+		if( buttonIndex >= this.buttons.length ) {
 			return false;
 		}
 		return this.buttons[ buttonIndex ].pressStarted;
 	};
 	newGamepadData.getButtonJustReleased = function( buttonIndex ) {
+		checkIndex( "getButtonJustReleased", "buttonIndex", buttonIndex );
 		readGamepads();
-		if( buttonIndex < 0 || buttonIndex >= this.buttons.length ) {
+		if( buttonIndex >= this.buttons.length ) {
 			return false;
 		}
 		return this.buttons[ buttonIndex ].pressReleased;
 	};
 	newGamepadData.getAxis = function( axisIndex ) {
+		checkIndex( "getAxis", "axisIndex", axisIndex );
 		readGamepads();
-		if( axisIndex < 0 || axisIndex >= this.axes.length ) {
+		if( axisIndex >= this.axes.length ) {
 			return 0;
 		}
 		return this.axes[ axisIndex ];
 	};
 	newGamepadData.getAxisChanged = function( axisIndex ) {
+		checkIndex( "getAxisChanged", "axisIndex", axisIndex );
 		readGamepads();
-		if( axisIndex < 0 || axisIndex >= this.axes.length ) {
+		if( axisIndex >= this.axes.length ) {
 			return false;
 		}
 		const current = this.axes[ axisIndex ];
@@ -527,9 +698,7 @@ function recordGamepad( gamepadRawData ) {
 			"pressed": false, "value": 0, "pressStarted": false, "pressReleased": false
 		} );
 	}
-	for( let i = 0; i < gamepadRawData.axes.length; i += 1 ) {
-		state.axes.push( smoothAxis( gamepadRawData.axes[ i ] ) );
-	}
+	applyDeadZone( gamepadRawData, state.axes );
 	gamepadData.axes = state.axes.slice();
 	gamepadData.lastAxes = state.axes.slice();
 	m_gamepads[ index ] = gamepadData;
@@ -563,22 +732,70 @@ function updateGamepad( gamepadRawData, isEdges ) {
 		button.value = buttonNew.value;
 	}
 	state.buttons.length = gamepadRawData.buttons.length;
-	for( let i = 0; i < gamepadRawData.axes.length; i += 1 ) {
-		state.axes[ i ] = smoothAxis( gamepadRawData.axes[ i ] );
-	}
-	state.axes.length = gamepadRawData.axes.length;
+	applyDeadZone( gamepadRawData, state.axes );
 	state.timestamp = gamepadRawData.timestamp;
 	state.connected = gamepadRawData.connected;
 	state.vibrationActuator = gamepadRawData.vibrationActuator;
 }
 
-function smoothAxis( axis ) {
-	if( Math.abs( axis ) < m_axesSensitivity ) {
+/**
+ * Apply the dead zone to a pad's axes, into the target array. The two sticks of the standard
+ * mapping, axes 0 and 1 and axes 2 and 3, use a radial dead zone, so a stick keeps its direction;
+ * every other axis, and every axis of another mapping, uses it per axis.
+ *
+ * @param {Gamepad} gamepadRawData - The browser's pad.
+ * @param {Array<number>} target - Axis values, updated in place.
+ * @returns {void}
+ */
+function applyDeadZone( gamepadRawData, target ) {
+	const axes = gamepadRawData.axes;
+	let i = 0;
+	if( gamepadRawData.mapping === "standard" ) {
+		while( i < 4 && i + 1 < axes.length ) {
+			applyStickDeadZone( axes[ i ], axes[ i + 1 ], target, i );
+			i += 2;
+		}
+	}
+	while( i < axes.length ) {
+		target[ i ] = applyAxisDeadZone( axes[ i ] );
+		i += 1;
+	}
+	target.length = axes.length;
+}
+
+/**
+ * Apply the radial dead zone to one stick: inside the dead zone it reads 0; outside, its
+ * distance from the center is rescaled from the dead zone to 1 in the same direction.
+ *
+ * @param {number} x - Horizontal axis value.
+ * @param {number} y - Vertical axis value.
+ * @param {Array<number>} target - Axis values, updated in place.
+ * @param {number} index - Index of the stick's horizontal axis.
+ * @returns {void}
+ */
+function applyStickDeadZone( x, y, target, index ) {
+	const magnitude = Math.hypot( x, y );
+	if( magnitude === 0 || magnitude < m_deadZone ) {
+		target[ index ] = 0;
+		target[ index + 1 ] = 0;
+		return;
+	}
+	const scale = ( Math.min( magnitude, 1 ) - m_deadZone ) / ( 1 - m_deadZone ) / magnitude;
+	target[ index ] = x * scale;
+	target[ index + 1 ] = y * scale;
+}
+
+/**
+ * Apply the dead zone to one axis on its own, rescaled from the dead zone to 1.
+ *
+ * @param {number} axis - Axis value.
+ * @returns {number}
+ */
+function applyAxisDeadZone( axis ) {
+	if( Math.abs( axis ) < m_deadZone ) {
 		return 0;
 	}
-	axis = axis - Math.sign( axis ) * m_axesSensitivity;
-	axis = axis / ( 1 - m_axesSensitivity );
-	return axis;
+	return ( axis - Math.sign( axis ) * m_deadZone ) / ( 1 - m_deadZone );
 }
 
 /**
@@ -591,23 +808,31 @@ function smoothAxis( axis ) {
 function onVisibilityChange() {
 	if( document.visibilityState === "hidden" ) {
 		m_isHidden = true;
-		for( const index in m_padStates ) {
-			const state = m_padStates[ index ];
-			for( const button of state.buttons ) {
-				button.pressed = false;
-				button.value = 0;
-			}
-			state.axes.fill( 0 );
-			state.pressStarted.length = 0;
-			state.pressReleased.length = 0;
-		}
-
-		// The next read publishes the released state, even within a frame already read
-		m_lastReadTick = -1;
+		releasePads();
 	} else if( m_isHidden ) {
 		m_isHidden = false;
 		m_isReturning = true;
 	}
+}
+
+/**
+ * Release every button, zero the axes, and clear pending edges, for a hidden page or a stop.
+ * The next read publishes the released state, even within a frame already read.
+ *
+ * @returns {void}
+ */
+function releasePads() {
+	for( const index in m_padStates ) {
+		const state = m_padStates[ index ];
+		for( const button of state.buttons ) {
+			button.pressed = false;
+			button.value = 0;
+		}
+		state.axes.fill( 0 );
+		state.pressStarted.length = 0;
+		state.pressReleased.length = 0;
+	}
+	m_lastReadTick = -1;
 }
 
 /**
@@ -618,18 +843,17 @@ function onVisibilityChange() {
  * @returns {void}
  */
 function clearGamepadEvents( screenData ) {
-	for( const handler of m_onConnectHandlers.concat( m_onDisconnectHandlers ) ) {
+	for( const handler of m_handlers.connect.concat( m_handlers.disconnect ) ) {
 		handler.isRemoved = true;
 	}
-	m_onConnectHandlers = [];
-	m_onDisconnectHandlers = [];
+	m_handlers = { "connect": [], "disconnect": [] };
 }
 
 // Auto-register in IIFE mode (when loaded via <script> tag)
 if( typeof window !== "undefined" && window.pi ) {
 	window.pi.registerPlugin( {
 		"name": "gamepad",
-		"version": "1.0.0",
+		"version": "2.0.0",
 		"description": "Gamepad input handling for Pi.js",
 		"init": gamepadPlugin
 	} );

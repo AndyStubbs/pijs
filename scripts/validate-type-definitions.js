@@ -157,9 +157,17 @@ const REQUIRED_DECLARATIONS = [
 			"object[] ) => void ): void;"
 	},
 	{
-		"name": "ingamepad return shapes",
-		"text": "ingamepad( gamepadIndex?: number ): GamepadData | Array<GamepadData> | null | " +
-			"undefined;"
+		"name": "inGamepad return shapes",
+		"text": "inGamepad( gamepadIndex?: number ): GamepadData | Array<GamepadData> | null;"
+	},
+	{
+		"name": "onGamepad callbacks receive pad or disconnect data",
+		"text": "onGamepad( mode: string, fn: ( data: GamepadData | GamepadDisconnectData ) => " +
+			"void, once?: boolean ): void;"
+	},
+	{
+		"name": "setGamepadDeadZone takes the dead zone",
+		"text": "setGamepadDeadZone( deadZone: number ): void;"
 	},
 	{
 		"name": "gamepad helper methods",

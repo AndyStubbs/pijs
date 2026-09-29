@@ -1,22 +1,25 @@
-title = "ingamepad"
+title = "inGamepad"
 category = "gamepad"
 isScreen = false
 plugin = "gamepad"
 summary = "Gets gamepad data for a specific gamepad or all gamepads."
 description = """
 Reads the connected gamepads. With a gamepadIndex, returns the GamepadData for that index, or
-undefined when no pad has it. Without one, or with null, returns every connected pad in index
-order, in one live array that is refilled on each call.
+null when no pad has it. Without one, or with null, always returns an array: every connected pad
+in index order, in one live array that is refilled on each call, and empty when no pad is
+connected. The list is compact, so a pad's position in it is not always its index; use its index
+property.
 
-The first read starts polling, unless stopGamepad() was called; after stopGamepad(), every read
-returns null until startGamepad() or a handler registration starts polling again. The first read
-records the current state without reporting buttons already held as just pressed.
+The first read starts polling, unless stopGamepad() was called; after stopGamepad(), the list form
+returns an empty array and the index form null, until startGamepad() starts polling again. The
+first read records the current state without reporting buttons already held as just pressed.
 
 Pads are live objects updated in place. The first read in each animation frame reports what
 happened since the last frame that had a read, and every other read in the frame sees the same
 values; see GamepadData.
 
-An index that is not a non-negative integer throws a TypeError with code INVALID_PARAMETERS.
+A gamepadIndex that is not an integer throws a TypeError, and a negative one a RangeError, both
+with code INVALID_INDEX; a well-formed index with no pad behind it returns null.
 """
 example = """
 $.screen( "300x200" );
@@ -25,7 +28,7 @@ let y = 100;
 let lt = 0;
 requestAnimationFrame( run );
 function run( t ) {
-	let gamepads = $.ingamepad();
+	let gamepads = $.inGamepad();
 	let factor = ( t - lt ) * 0.5;
 	lt = t;
 	$.cls();
@@ -51,8 +54,8 @@ description = "Gamepad index to read. If omitted or null, returns every connecte
 optional = true
 
 [[returns]]
-type = "GamepadData | Array<GamepadData> | null | undefined"
+type = "GamepadData | Array<GamepadData> | null"
 typeDesc = "*Many"
 description = """
-The pad for the index, or undefined when none has it; every connected pad when no index is \
-given; null while polling is stopped."""
+The pad for the index, or null when none has it or polling is stopped; with no index, an \
+array of every connected pad, empty while polling is stopped."""

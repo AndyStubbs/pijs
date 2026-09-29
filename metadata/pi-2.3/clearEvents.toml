@@ -11,11 +11,11 @@ screen.clearEvents(), clears them on that screen only.
 
 The pointer plugin registers "mouse", "touch", "press", "click", and "wheel", each clearing only
 the handlers of its command: onMouse, onTouch, onPress, onClick, and onWheel. These handlers are
-per-screen. The gamepad plugin registers "gamepad", which removes every onGamepadConnected and
-onGamepadDisconnected callback, whichever form is called. The keyboard plugin registers "keyboard",
-which removes every onKey() handler, whichever form is called; $.clearEvents() also cancels every
-input() prompt, and a screen's clearEvents() cancels only that screen's prompt. Clearing handlers
-does not stop tracking or polling.
+per-screen. The gamepad plugin registers "gamepad", which removes every onGamepad() callback,
+whichever form is called. The keyboard plugin registers "keyboard", which removes every onKey()
+handler, whichever form is called; $.clearEvents() also cancels every input() prompt, and a
+screen's clearEvents() cancels only that screen's prompt. Clearing handlers does not stop tracking
+or polling.
 """
 example = """
 $.screen( "300x200" );
