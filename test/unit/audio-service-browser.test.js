@@ -252,9 +252,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 			const service = __stubs.service();
 			return { "keys": Object.keys( service ).sort(), "version": service.version };
 		}, { "stubs": STUBS } );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.keys, SERVICE_MEMBERS );
 		assert.equal( result.version, 1 );
 	} );
@@ -299,9 +296,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 				} )()
 			};
 		}, { "stubs": STUBS } );
-		if( !result ) {
-			return;
-		}
 		assert.equal( result.builtIn, "DUPLICATE_SOURCE" );
 		assert.equal( result.custom, "DUPLICATE_SOURCE" );
 		assert.equal( result.twice, "DUPLICATE_SOURCE" );
@@ -343,9 +337,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 					)
 				} ) );
 			}, { "stubs": STUBS } );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result.errors, [] );
 			assert.deepEqual( result.source, [ "factory", "start", "stop", "ended", "dispose" ] );
 			assert.deepEqual( result.insert, [ "factory", "start", "stop", "dispose" ] );
@@ -398,9 +389,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 					"insert": __stubs.events( "insert" )
 				} ) );
 			}, { "stubs": STUBS } );
-			if( !result ) {
-				return;
-			}
 			const deadline = result.stoppedAt + LEAD + STOP_FADE;
 			assert.equal( result.sourceStops.length, 2 );
 			assertNear( result.sourceStops[ 1 ], deadline, 1e-9, "source stop" );
@@ -430,9 +418,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 					"insert": __stubs.events( "insert" )
 				} ) );
 			}, { "stubs": STUBS } );
-			if( !result ) {
-				return;
-			}
 			// An ended callback that arrives after cancellation is ignored by core
 			assert.deepEqual(
 				result.source.filter( event => event !== "ended" ),
@@ -481,9 +466,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 				"live": __audioHarness.liveSources()
 			} ) );
 		}, { "stubs": STUBS } );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.outcomes, [
 			"stub source factory failed", "stub insert factory failed", "stub source start failed"
 		] );
@@ -535,9 +517,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 					"other": __stubs.times( "insert1", "stop" )
 				} ) );
 			}, { "stubs": STUBS } );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result.errors, [] );
 
 			// Natural end, then the steal deadline at the conflict time, then the explicit stop
@@ -591,9 +570,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 					"events": [ "octave", "fifth", "noise" ].map( __stubs.events )
 				} ) );
 			}, { "stubs": STUBS } );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result.errors, [] );
 			for( const events of result.events ) {
 				assert.equal( events.filter( event => event === "dispose" ).length, 1 );
@@ -677,9 +653,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 					)
 				} ) );
 			}, { "stubs": STUBS } );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result.errors, [] );
 			assert.deepEqual( result.disposed, [ 1, 1, 1, 0 ] );
 			const left = channel( result );
@@ -732,9 +705,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 					} }
 				] } ).then( render => ( { ...render, "disposed": disposed, "mutedAt": mutedAt } ) );
 			}, { "stubs": STUBS } );
-			if( !result ) {
-				return;
-			}
 			assert.equal( result.disposed, 0 );
 			const left = channel( result );
 			assert.ok( g_metrics.peak( left, frame( 0.4 ), frame( 0.7 ) ) > 0.1, "echoes" );
@@ -794,9 +764,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 				} }
 			] } ).then( render => ( { ...render, "reads": reads } ) );
 		}, { "stubs": STUBS } );
-		if( !result ) {
-			return;
-		}
 		assert.ok( result.reads.before > 0.4, `before ${result.reads.before}` );
 
 		// The untapped analyser no longer follows the tone; the other tap still does
@@ -837,9 +804,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 				"command": codeOf( () => $.setBusVolume( "output", 0.5 ) )
 			};
 		}, { "stubs": STUBS } );
-		if( !result ) {
-			return;
-		}
 		assert.equal( result.tap, null );
 		assert.equal( result.untapType, "function" );
 		assert.match( result.message, /master, output\.$/ );
@@ -889,9 +853,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 				{ "time": 0.9, "run": () => read( true ) }
 			] } ).then( render => ( { ...render, "reads": reads } ) );
 		}, { "stubs": STUBS } );
-		if( !result ) {
-			return;
-		}
 		const left = channel( result );
 		const right = channel( result, 1 );
 		const peaks = {};
@@ -956,9 +917,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 				"pending": __stubs.events( "pending" )
 			} ) );
 		}, { "stubs": STUBS } );
-		if( !result ) {
-			return;
-		}
 
 		// The pending request holds its descriptor and builds its insert inside the window
 		assert.equal( result.created.initial, 0 );
@@ -996,9 +954,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 				"stubs": STUBS,
 				"actions": [ { "time": 0, "run": `ids => { ids.push( $.play( "${song}" ) ); }` } ]
 			} );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result.errors, [] );
 			const trackId = result.ids[ 0 ];
 			const notes = notesOf( result );
@@ -1051,9 +1006,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 				{ "time": 0.6, "run": "ids => { $.stopPlay(); $.stopPlay( ids[ 1 ] ); }" }
 			]
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		const [ first, second ] = result.ids;
 		const ends = endsOf( result );
@@ -1117,9 +1069,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 				};
 			} );
 		}, { "stubs": STUBS } );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		assert.deepEqual( result.codes, [ "INVALID_LISTENER" ] );
 
@@ -1157,9 +1106,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 				}` }
 			]
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		const notes = notesOf( result ).slice().sort( ( a, b ) => a.time - b.time );
 		const voices = playVoices( result.sources );
@@ -1194,9 +1140,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 				ids.push( $.play( "T120 L16 C D E" ) );
 			}` } ]
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		assert.equal( playVoices( result.sources ).length, 0 );
 		assert.deepEqual( notesOf( result ), [] );
@@ -1231,9 +1174,6 @@ g_suite.describeAudioEngines( "sound extension service", suite => {
 					"removed": service.getAudioBuffer( "chirp" )
 				};
 			}, { "stubs": STUBS, "wav": g_fixtures.wavBase64( g_fixtures.chirp( 0.5, 1 ) ) } );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result, {
 				"loading": null,
 				"isBuffer": true,

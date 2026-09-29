@@ -89,9 +89,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 				...render, "instance": instance, "sources": __audioHarness.sources()
 			} ) );
 		}, { "loader": LOADER, "wav": MONO_WAV } );
-		if( !result ) {
-			return;
-		}
 		assert.equal( result.instance, 1 );
 		const left = g_harness.decodeRender( result ).channels[ 0 ];
 		const end = LEAD + 0.4;
@@ -123,9 +120,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 				} );
 				return __audioHarness.render( { "singlePass": true } );
 			}, { "loader": LOADER, "wav": MONO_WAV, "rate": rate } );
-			if( !result ) {
-				return;
-			}
 			const left = g_harness.decodeRender( result ).channels[ 0 ];
 			const end = LEAD + 0.3 / rate;
 			const content = g_fixtures.playedContent( MONO_DATA, {
@@ -151,9 +145,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 			} );
 			return __audioHarness.render( { "singlePass": true } );
 		}, { "loader": LOADER, "wav": MONO_WAV } );
-		if( !result ) {
-			return;
-		}
 		const left = g_harness.decodeRender( result ).channels[ 0 ];
 		const end = LEAD + 0.9 / 1.5;
 		const content = g_fixtures.playedContent( MONO_DATA, {
@@ -173,9 +164,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 			$.playAudio( id );
 			return __audioHarness.render( { "singlePass": true } );
 		}, { "loader": LOADER, "wav": STEREO_WAV } );
-		if( !result ) {
-			return;
-		}
 		const channels = g_harness.decodeRender( result ).channels;
 		for( let c = 0; c < 2; c++ ) {
 			const content = g_fixtures.playedContent( STEREO_DATA[ c ], {
@@ -198,9 +186,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 			$.playAudio( { "audioId": id, "volume": 0.8, "pan": 0.5 } );
 			return __audioHarness.render( { "singlePass": true } );
 		}, { "loader": LOADER, "wav": MONO_WAV } );
-		if( !result ) {
-			return;
-		}
 		const [ left, right ] = g_harness.decodeRender( result ).channels;
 		const angle = 1.5 * Math.PI / 4;
 		const content = g_fixtures.playedContent( MONO_DATA, {
@@ -241,9 +226,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 				} }
 			] } ).then( render => ( { ...render, "times": times } ) );
 		}, { "loader": LOADER, "wav": MONO_WAV } );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		const left = g_harness.decodeRender( result ).channels[ 0 ];
 		const content = g_fixtures.playedContent( MONO_DATA, {
@@ -288,9 +270,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 				...render, "times": times, "sources": __audioHarness.sources()
 			} ) );
 		}, { "loader": LOADER, "wav": MONO_WAV } );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		const left = g_harness.decodeRender( result ).channels[ 0 ];
 		const pause = result.times[ 0 ] + LEAD;
@@ -363,9 +342,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 				...render, "resumedAt": ids.resumedAt, "sources": __audioHarness.sources()
 			} ) );
 		}, { "loader": LOADER, "wav": MONO_WAV } );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		const sources = sampleSources( result.sources );
 		assert.equal( sources.length, 3 );
@@ -431,9 +407,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 				...render, "calledAt": calledAt, "sources": __audioHarness.sources()
 			} ) );
 		}, { "loader": LOADER, "wav": MONO_WAV } );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		const sources = sampleSources( result.sources );
 		assert.equal( sources.length, 1 );
@@ -500,9 +473,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 				...render, "sources": __audioHarness.sources(), "ids": ids
 			} ) );
 		}, { "loader": LOADER, "wav": MONO_WAV } );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		const release = 0.64;
 		const sources = sampleSources( result.sources );
@@ -576,9 +546,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 					...render, "counts": counts, "sources": __audioHarness.sources()
 				} ) );
 			}, { "loader": LOADER, "wav": MONO_WAV } );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result.errors, [] );
 			const loops = sampleSources( result.sources );
 
@@ -627,9 +594,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 				...render, "counts": counts, "sources": __audioHarness.sources()
 			} ) );
 		}, { "loader": LOADER, "wav": MONO_WAV } );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		const counts = result.counts;
 		assert.equal( counts.admitted, counts.before + 1 );
@@ -663,9 +627,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 				...render, "maxLive": maxLive, "ids": ids, "sources": __audioHarness.sources()
 			} ) );
 		}, { "loader": LOADER, "wav": MONO_WAV } );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		assert.equal( new Set( result.ids ).size, 200 );
 		assert.ok( result.maxLive <= 128, `live voices peaked at ${result.maxLive}` );
@@ -705,9 +666,6 @@ g_suite.describeAudioEngines( "sound samples", suite => {
 				"ids": [ oneShot, loop ]
 			};
 		}, { "loader": LOADER, "wav": MONO_WAV } );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.ids, [ 1, 2 ] );
 		assert.equal( result.after - result.before, 1 );
 	} );

@@ -157,6 +157,11 @@ through `test/unit/audio-browser-suite.js`:
 | `sound-samples.test.js` | Sample position model: budgets, rate segments, end prediction (Node) |
 | `audio-lifecycle.test.js` | Sample loading, retries, removal, IDs, validation (Node sandbox) |
 
+The Node tests check the sound modules' logic directly: envelopes, admission, the position
+model, PLAY parsing, and the `sound-advanced` option, effect, preset, and sync rules. The browser
+tests keep what needs a page: rendered audio, the harness, and argument checks that only the
+bundled command layer reaches, with one case per rule that a Node test already covers.
+
 The sound Node tests compare numbers with `near( actual, expected, tolerance )` from
 `test/unit/assert-near.js`, which allows an absolute difference up to the tolerance (1e-9 by
 default) and never accepts NaN.
@@ -210,9 +215,10 @@ the observed extremes before changing them.
 `sound_play_01.html` play them for the A/B checks in the release listening pass.
 `record-sound-references.test.js` checks the manifest against the script's presets and the
 demos, and `record-sound-references-browser.test.js` re-renders each preset in Chromium and
-compares it with its file. Presets that mix several voices can differ by one 16-bit step between
-renders, because Chromium sums a node's inputs in an address-dependent order, so the check
-allows that step.
+compares it with its file, allowing one 16-bit step per sample: presets that mix several voices
+differ by that step between renders, because Chromium sums a node's inputs in an
+address-dependent order, and macOS Chromium differs from the Windows recording by it in
+hundreds of samples of a single voice.
 
 ### Listening check
 

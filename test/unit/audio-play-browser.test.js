@@ -170,9 +170,6 @@ g_suite.describeAudioEngines( "sound play", suite => {
 			const result = await suite.inHarness( {
 				"config": { "duration": duration }
 			}, renderSongs, { "songs": [ song ] } );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result.errors, [] );
 			const voices = voiceSources( result.sources );
 			assert.equal( voices.length, events.length );
@@ -211,9 +208,6 @@ g_suite.describeAudioEngines( "sound play", suite => {
 			const result = await suite.inHarness( {
 				"config": { "duration": 2.2 }
 			}, renderSongs, { "songs": songs, "hidden": true } );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result.errors, [] );
 			const voices = voiceSources( result.sources );
 			assert.equal( voices.length, 4 * 64 );
@@ -251,9 +245,6 @@ g_suite.describeAudioEngines( "sound play", suite => {
 		const result = await suite.inHarness( {
 			"config": { "duration": 2.5 }
 		}, renderSongs, { "songs": [ song ] } );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		const voices = voiceSources( result.sources );
 		assert.equal( events.length, 154 );
@@ -277,9 +268,6 @@ g_suite.describeAudioEngines( "sound play", suite => {
 			const result = await suite.inHarness( {
 				"config": { "duration": 1.2 }
 			}, renderSongs, { "songs": songs, "holdTimers": true, "releaseAt": release } );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result.errors, [] );
 
 			// Expected starts under the late-start rule at the overdue tick
@@ -325,9 +313,6 @@ g_suite.describeAudioEngines( "sound play", suite => {
 				"releaseAt": release,
 				"carrier": { "type": "sine", "frequency": 880, "start": release + LEAD }
 			} );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result.errors, [] );
 			const voices = voiceSources( result.sources );
 			const begin = release + LEAD;
@@ -362,9 +347,6 @@ g_suite.describeAudioEngines( "sound play", suite => {
 			const result = await suite.inHarness( {
 				"config": { "duration": 1.2 }
 			}, renderSongs, { "songs": [ song ], "wallAt": 0.1 } );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result.errors, [] );
 			const voices = voiceSources( result.sources );
 			assert.deepEqual(
@@ -394,9 +376,6 @@ g_suite.describeAudioEngines( "sound play", suite => {
 				...render, "stoppedAt": stoppedAt, "sources": __audioHarness.sources()
 			} ) );
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		const voices = voiceSources( result.sources );
 
@@ -436,9 +415,6 @@ g_suite.describeAudioEngines( "sound play", suite => {
 				...render, "stoppedAt": stoppedAt, "sources": __audioHarness.sources()
 			} ) );
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		const note = voiceSources( result.sources )[ 0 ];
 		assertNear( note.startTime, LEAD, 1e-9, "note start" );
@@ -521,9 +497,6 @@ g_suite.describeAudioEngines( "sound play", suite => {
 					...render, "log": log, "sources": __audioHarness.sources()
 				} ) );
 			} );
-			if( !result ) {
-				return;
-			}
 			assert.deepEqual( result.errors, [] );
 
 			// Parsing invoked no factory; each admitted note got a fresh insert, disposed once

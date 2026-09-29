@@ -147,9 +147,6 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 				"start": [ "output", 60, 32 ],
 				"actions": [ { "time": 0, "code": LOUD_CHORD } ]
 			} );
-			if( !result ) {
-				return;
-			}
 			const wav = decodeWav( result.wav );
 			assert.equal( wav.format, 3 );
 			assert.equal( wav.sampleRate, RATE );
@@ -187,9 +184,6 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 		}, recordRender, {
 			"actions": [ { "time": 0, "code": LOUD_CHORD } ]
 		} );
-		if( !result ) {
-			return;
-		}
 		const wav = decodeWav( result.wav );
 		assert.equal( wav.format, 1 );
 		assert.equal( wav.bitDepth, 16 );
@@ -216,9 +210,6 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 				$.play( "@0 T120 O4 L2 A" );
 			` } ]
 		} );
-		if( !result ) {
-			return;
-		}
 		const recorded = decodeWav( result.wav ).channels[ 0 ];
 		const rendered = channel( result );
 		const from = frame( 0.1 );
@@ -242,9 +233,6 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 				$.sound( { "frequency": 440, "duration": 1.4, "volume": 0.5 } );
 			` } ]
 		} );
-		if( !result ) {
-			return;
-		}
 		const wav = decodeWav( result.wav );
 		assert.equal( result.values.rendered.state, "full" );
 		assert.equal( result.values.rendered.duration, 1 );
@@ -295,9 +283,6 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 			codes.after = $.getRecordingState();
 			return codes;
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.equal( result.bus, "INVALID_BUS" );
 		assert.equal( result.durationLow, "INVALID_DURATION" );
 		assert.equal( result.durationHigh, "INVALID_DURATION" );
@@ -337,9 +322,6 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 			await $.stopRecording();
 			return { "code": code, "state": state, "after": $.getRecordingState().state };
 		}, WAIT_FOR_STATE );
-		if( !result ) {
-			return;
-		}
 		assert.equal( result.state, "full" );
 		assert.equal( result.code, "RECORDING_ACTIVE" );
 		assert.equal( result.after, "idle" );
@@ -351,9 +333,6 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 			const blob = await $.stopRecording();
 			return { "size": blob.size, "state": $.getRecordingState().state };
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.equal( result.size, 44 );
 		assert.equal( result.state, "idle" );
 	} );
@@ -383,9 +362,6 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 			await $.stopRecording();
 			return values;
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.equal( result.start, "RECORDING_UNAVAILABLE" );
 		assert.equal( result.startCause, "blocked" );
 		assert.equal( result.stop, "RECORDING_UNAVAILABLE" );

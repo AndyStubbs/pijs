@@ -60,9 +60,6 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 				( new Function( "return " + code ) )()();
 				return __audioHarness.render( { "singlePass": true } );
 			}, STRESS_CASES[ name ].toString() );
-			if( !result ) {
-				return;
-			}
 			const channels = g_harness.decodeRender( result ).channels;
 			const knee = g_tolerances.getTolerance( "limiterKneeShare", engine );
 			for( const channel of channels ) {
@@ -90,9 +87,6 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 				).length
 			} ) );
 		}, { "loader": g_fixtures.PAGE_LOADER, "wav": SAMPLE_WAV } );
-		if( !result ) {
-			return;
-		}
 		assert.equal( result.sources, 64 );
 		const channels = g_harness.decodeRender( result ).channels;
 		const knee = g_tolerances.getTolerance( "limiterKneeShare", engine );
@@ -112,9 +106,6 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 					$.sound( 440, 0.8, arg.volume, "square" );
 					return __audioHarness.render( { "singlePass": true } );
 				}, { "limiter": limiter, "volume": volume } );
-				if( !result ) {
-					return;
-				}
 				const left = g_harness.decodeRender( result ).channels[ 0 ];
 				const key = `${limiter}-${volume}`;
 				peaks[ key ] = g_metrics.peak( left, frame( 0.3 ), frame( 0.7 ) );
@@ -135,9 +126,6 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 			$.sound( 440, 0.3, 0.8, "sine" );
 			return __audioHarness.render( { "singlePass": true } );
 		} );
-		if( !result ) {
-			return;
-		}
 		const left = g_harness.decodeRender( result ).channels[ 0 ];
 		const peak = g_metrics.peak( left );
 		assert.ok( Math.abs( peak - 1.6 ) < 0.01, `peak ${peak}` );
@@ -155,9 +143,6 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 				}
 				return __audioHarness.render( { "singlePass": true } );
 			}, kind );
-			if( !result ) {
-				return;
-			}
 			const left = g_harness.decodeRender( result ).channels[ 0 ];
 			const peak = g_metrics.peak( left );
 			assert.ok( Math.abs( peak - 0.5 ) < 0.015, `peak ${peak}` );
@@ -170,9 +155,6 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 				$.sound( 440, 0.4, 0.3, "sine" );
 				return __audioHarness.render( { "singlePass": true } );
 			} );
-			if( !result ) {
-				return;
-			}
 			const left = g_harness.decodeRender( result ).channels[ 0 ];
 			const early = g_metrics.peak( left, frame( LEAD + 0.005 ), frame( 0.03 ) );
 			const settled = g_metrics.peak( left, frame( 0.2 ), frame( 0.3 ) );
@@ -198,9 +180,6 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 				} }
 			] } ).then( render => ( { ...render, "calledAt": calledAt } ) );
 		} );
-		if( !result ) {
-			return;
-		}
 		const left = g_harness.decodeRender( result ).channels[ 0 ];
 		assert.ok( g_metrics.peak( left, frame( 0.1 ), frame( 0.3 ) ) > 0.3 );
 
@@ -249,9 +228,6 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 				} )
 			} ) );
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.busErrors, [ "INVALID_BUS", "INVALID_VOLUME" ] );
 		const left = g_harness.decodeRender( result ).channels[ 0 ];
 		const carrier = g_harness.decodeChannels( [ result.carrier ] )[ 0 ];
@@ -290,9 +266,6 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 				} }
 			] } ).then( render => ( { ...render, "busErrors": errors } ) );
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual(
 			result.busErrors,
 			[ "INVALID_BUS", "INVALID_VOLUME", "INVALID_VOLUME", "INVALID_VOLUME" ]
@@ -334,9 +307,6 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 					} }
 				] } );
 			}, useBus );
-			if( !result ) {
-				return;
-			}
 			renders.push( g_harness.decodeRender( result ).channels[ 0 ] );
 		}
 		assert.deepEqual( renders[ 0 ], renders[ 1 ] );

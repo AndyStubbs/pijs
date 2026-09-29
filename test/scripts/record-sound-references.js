@@ -5,7 +5,8 @@
  * renders each preset, and writes 16-bit mono 48 kHz WAV files plus manifest.json to
  * test/media/sound-2.2/. Re-running it reproduces the files to within one 16-bit step: presets
  * that mix several voices can differ by that step, because Chromium sums a node's inputs in an
- * address-dependent order. record-sound-references-browser.test.js checks it.
+ * address-dependent order, and Chromium on another platform can differ by it in any preset.
+ * record-sound-references-browser.test.js checks it.
  *
  * Usage: npm run sound:references
  */

@@ -73,9 +73,6 @@ g_suite.describeAudioEngines( "sound design", suite => {
 				$.sound( { "duration": 1.8, "volume": 0.6, "oType": oType } );
 				return __audioHarness.render( { "singlePass": true } );
 			}, oType );
-			if( !result ) {
-				return;
-			}
 			const [ left, right ] = g_harness.decodeRender( result ).channels;
 			const spectrum = g_metrics.spectrumSlope( left, RATE, frame( 0.05 ), frame( 1.8 ) );
 			let expectedSlope = 0;
@@ -109,9 +106,6 @@ g_suite.describeAudioEngines( "sound design", suite => {
 				...render, "before": before
 			} ) );
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.equal( result.before.createBuffer, undefined );
 		assert.equal( result.before.createBufferSource, undefined );
 		assert.equal( result.nodeCounts.createBuffer, 2 );
@@ -129,9 +123,6 @@ g_suite.describeAudioEngines( "sound design", suite => {
 				...render, "sources": __audioHarness.sources()
 			} ) );
 		} );
-		if( !result ) {
-			return;
-		}
 		const offsets = result.sources.filter(
 			source => source.type === "AudioBufferSourceNode"
 		).map( source => source.offset );
@@ -164,9 +155,6 @@ g_suite.describeAudioEngines( "sound design", suite => {
 				$.sound( { ...call, "duration": 0.3, "oType": "white" } );
 				return __audioHarness.render( { "singlePass": true } );
 			}, call );
-			if( !result ) {
-				return;
-			}
 			renders.push( g_harness.decodeRender( result ).channels[ 0 ] );
 		}
 		assert.ok( g_metrics.peak( renders[ 0 ] ) > 0.1 );
@@ -187,9 +175,6 @@ g_suite.describeAudioEngines( "sound design", suite => {
 						} );
 						return __audioHarness.render( { "singlePass": true } );
 					}, pan );
-				if( !result ) {
-					return;
-				}
 				const [ left, right ] = g_harness.decodeRender( result ).channels;
 				measured.push( {
 					"pan": pan,
@@ -242,9 +227,6 @@ g_suite.describeAudioEngines( "sound design", suite => {
 				$.sound( call );
 				return __audioHarness.render( { "singlePass": true } );
 			}, call );
-			if( !result ) {
-				return;
-			}
 			const left = g_harness.decodeRender( result ).channels[ 0 ];
 			const sweep = { "start": LEAD, "gate": 0.6, "from": from, "to": to };
 			const windows = {
@@ -282,9 +264,6 @@ g_suite.describeAudioEngines( "sound design", suite => {
 				} }
 			] } ).then( render => ( { ...render, "sources": __audioHarness.sources() } ) );
 		} );
-		if( !result ) {
-			return;
-		}
 		assert.deepEqual( result.errors, [] );
 		const voice = result.sources.find( source => source.type === "OscillatorNode" &&
 			source.startTime > 0 );

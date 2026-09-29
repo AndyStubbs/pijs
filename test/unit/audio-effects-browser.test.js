@@ -154,9 +154,6 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 						$.sound( { "frequency": 2000, "duration": 0.5, "volume": 0.5,
 							"oType": "sine" } );` } ]
 				} );
-				if( !result ) {
-					return;
-				}
 				const level = toneAmplitude( channel( result ), 2000, frame( 0.1 ), frame( 0.4 ) );
 				const expected = 0.5 * biquadMagnitude( type, 1000, 1, 2000 );
 				assertNear( level, expected, expected * 0.02, type );
@@ -179,9 +176,6 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 					$.sound( { "frequency": 440, "duration": 0.5, "volume": 0.8,
 						"oType": "sine" } );` } ]
 			} );
-			if( !result ) {
-				return;
-			}
 			const left = channel( result );
 			const fundamental = toneAmplitude( left, 440, frame( 0.1 ), frame( 0.4 ) );
 			assert.ok( fundamental > 0.4, `drive ${drive} fundamental ${fundamental}` );
@@ -204,9 +198,6 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 					$.sound( { "frequency": 50, "duration": 0.4, "volume": 0.9,
 						"oType": "sine" } );` } ]
 			} );
-			if( !result ) {
-				return;
-			}
 			for( const index of [ 0, 1 ] ) {
 				const samples = channel( result, index );
 				const levels = new Set();
@@ -254,9 +245,6 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 				} ] } );
 				return { ...render, "warnings": warnings };
 			} );
-			if( !result ) {
-				return;
-			}
 			assert.equal( result.warnings.length, 1 );
 			assert.match( result.warnings[ 0 ], /bitcrush effect is unavailable/ );
 			const left = channel( result );
@@ -275,9 +263,6 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 				$.sound( { "frequency": 440, "duration": 1.3, "volume": 0.5,
 					"oType": "sine" } );` } ]
 		} );
-		if( !result ) {
-			return;
-		}
 
 		// A delay of CHORUS_DELAY + depth * sin( 2 pi rate t ) scales the frequency by
 		// 1 - 2 pi rate depth cos( 2 pi rate t )
@@ -317,9 +302,6 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 						$.sound( { "frequency": 220, "duration": 0.5, "volume": 0.8,
 							"oType": "sine" } );` } ]
 				} );
-				if( !result ) {
-					return;
-				}
 				const left = channel( result );
 				ratios.push(
 					toneAmplitude( left, 660, frame( 0.1 ), frame( 0.4 ) ) /
@@ -345,9 +327,6 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 					$.sound( { "frequency": 440, "duration": 0.3, "volume": 0.8,
 						"oType": "sine" } );` } ]
 			} );
-			if( !result ) {
-				return;
-			}
 			const left = channel( result );
 			assertNear( toneAmplitude( left, 440, frame( 0.05 ), frame( 0.25 ) ), 0.4, 0.004,
 				"volume" );
@@ -371,9 +350,6 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 			],
 			"carrier": { "type": "sine", "frequency": 440, "start": 256 / 48000 }
 		} );
-		if( !result ) {
-			return;
-		}
 		const left = channel( result );
 		const carrier = g_harness.decodeChannels( [ result.values.carrier ] )[ 0 ];
 		const at = result.values.at;
@@ -419,9 +395,6 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 						$.setBusEffect( "sfx", ${JSON.stringify( update )} );` }
 				]
 			} );
-			if( !result ) {
-				return;
-			}
 			const left = channel( result );
 			const at = result.values.at;
 			tails.push( {
@@ -473,16 +446,14 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 				$.setBusEffect( "music", "reverb", { "time": 0.5, "mix": 0.4 } );
 				$.setBusEffect( "audio", "bitcrush", { "bits": 4, "rate": 4, "mix": 0.8 } );` } ]
 		} );
-		if( !result ) {
-			return;
-		}
 
 		// Updated in place: one delay line plus the chorus's two, and no second convolver
 		assert.equal( result.nodeCounts.createDelay, 3 );
 		assert.equal( result.nodeCounts.createConvolver, 1 );
 	} );
 
-	test( "setBusEffect validates chains and the new effects", async () => {
+	// Chain and option rules are Node tests (sound-advanced.test.js); this checks the command
+	test( "setBusEffect passes on chain errors, checks the bus, and takes an object", async () => {
 		const result = await suite.inHarness( {}, () => {
 			const codeOf = fn => {
 				try {
@@ -492,25 +463,12 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 				}
 				return null;
 			};
-			const filter = { "effect": "filter" };
 			return [
-				codeOf( () => $.setBusEffect( "sfx", [ filter, filter, filter, filter, filter ] ) ),
-				codeOf( () => $.setBusEffect( "sfx", [ "filter" ] ) ),
 				codeOf( () => $.setBusEffect( "sfx", [ { "effect": "flanger" } ] ) ),
-				codeOf( () => $.setBusEffect( "sfx", [ filter ], { "cutoff": 500 } ) ),
-				codeOf( () => $.setBusEffect( "sfx", "filter", { "type": "notch" } ) ),
-				codeOf( () => $.setBusEffect( "sfx", "chorus", { "depth": 11 } ) ),
-				codeOf( () => $.setBusEffect( "output", [ filter ] ) ),
-				codeOf( () => $.setBusEffect( "sfx", [ filter, filter, filter, filter ] ) ),
+				codeOf( () => $.setBusEffect( "output", [ { "effect": "filter" } ] ) ),
 				codeOf( () => $.setBusEffect( { "bus": "sfx", "effect": [] } ) )
 			];
 		} );
-		if( !result ) {
-			return;
-		}
-		assert.deepEqual( result, [
-			"INVALID_EFFECT", "INVALID_EFFECT", "INVALID_EFFECT", "INVALID_OPTIONS",
-			"INVALID_EFFECT_OPTION", "INVALID_EFFECT_OPTION", "INVALID_BUS", null, null
-		] );
+		assert.deepEqual( result, [ "INVALID_EFFECT", "INVALID_BUS", null ] );
 	} );
 }, { "plugins": [ "sound-advanced" ] } );
