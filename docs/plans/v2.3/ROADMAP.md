@@ -16,9 +16,8 @@ Work in progress, in the order to take it up. Rows that can run in parallel say 
 
 | Order | Task | What | Waits on |
 | --- | --- | --- | --- |
-| 1 | [R.6](#82-tasks) | Version check with `npm run release:check` | Nothing |
-| 2 | [R.7](#82-tasks) | Tests, the manual checks in Section 8.3, tag, snapshot, and publish | R.6 |
-| 3 | [Sound 11.6](#43-phase-11-test-upkeep) | Remove the Pi.js 2.2 sound references | The 2.3.0 listening pass (R.7) |
+| 1 | [R.7](#82-tasks) | Tests, the manual checks in Section 8.3, tag, snapshot, and publish | Nothing |
+| 2 | [Sound 11.6](#43-phase-11-test-upkeep) | Remove the Pi.js 2.2 sound references | The 2.3.0 listening pass (R.7) |
 
 Open manual checks are collected in the [release checklist](#83-manual-release-checks).
 
@@ -34,7 +33,7 @@ Open manual checks are collected in the [release checklist](#83-manual-release-c
 | Tests | [13.2](#132-tests) | Complete (TEST-001–028). Its handoffs are tasks in the owning sections | — |
 | CI/CD | [13.3](#133-cicd) | Complete (CI 1.1–3.11) | — |
 | Plugin removal | [13.1](#131-plugin-removal) | Complete (P.1–P.6) | — |
-| Release | [8](#8-release) | R.1–R.5 done ([Section 13.9](#139-release)) | R.6 |
+| Release | [8](#8-release) | R.1–R.6 done ([Section 13.9](#139-release)) | R.7 |
 
 ### Documents
 
@@ -674,11 +673,10 @@ Input to `UPGRADE-V2.3.md` (R.4), completed by task 3.3:
 
 ### 8.2 Tasks
 
-Done: R.1–R.5 ([Section 13.9](#139-release)).
+Done: R.1–R.6 ([Section 13.9](#139-release)).
 
 | # | Task | Status |
 | --- | --- | --- |
-| R.6 | Verify that `package.json` (2.3.0), every plugin banner (`sound` 2.0.0, `sound-advanced` 1.0.0, `keyboard`, `pointer`, and `gamepad` 2.0.0), the release `package.json`, and the declaration headers agree, with `npm run release:check` | — |
 | R.7 | Run `npm test` and `npm run test:firefox`, the manual checks in Section 8.3, then tag `v2.3.0` so `release.yml` drafts the release, create the snapshot with `npm run snapshot`, and publish the verified tarball by hand | — |
 
 **Exit criteria:** every decision closed; the upgrade guide reviewed; `npm test` green and the
@@ -1165,6 +1163,7 @@ the [evidence README](../../evidence/sound-2.3/README.md).
 | R.3 | llms references and plugin guides. `docs/llms/pi.d.ts` needed no commit: a fresh build left it unchanged, since each API change regenerated it. `llms.txt`, `llms-full.txt`, and `examples.txt` are for 2.3.0: camelCase input commands, the input rules, pointer data, wheel, gamepad names and live pads, the new `sound()` envelope, audio instances and buses, `sound-advanced` in brief, and the plugin notes (all-or-nothing installation, services, Lite-only standalone scripts, `clearEvents()` and plugin handlers); `examples.txt` gains Clicks and Wheel, Gamepad Input, and Audio Files, and its touch mode `"start"` and `attack`/`decay` examples are fixed. `plugins/keyboard/README.md` is rewritten (it said the keyboard starts at load and documented `offkey`'s flags and a `dist/` build folder), `plugins/pointer/README.md` is new, and `docs/GAMEPAD.md` is rewritten for the six commands, the pad and its methods, names, connections, the radial dead zone, vibration, and stopping (PAD-013). `plugins/sound-advanced/README.md` adds the expansion: the four new effects and chains with in-place updates, the `"output"` levels bus, `generateSfx()`, sample instruments, recording, and `onPlay()`/`offPlay()`, and notes that `setBusVolume()` is in `sound`. Each guide of a bundled plugin says its standalone plugin is for Lite (C3). Audit notes for C3, PAD-013, and KEY-017 are updated. Tests: `test/scripts/llms-references.test.js` (the llms files call only current commands, name no removed one, state the version, and every JavaScript example parses) and `test/scripts/plugin-guides.test.js` (the same for the keyboard, pointer, polygons, and sound-advanced guides and `GAMEPAD.md`, and the bundled guides name Lite and `DUPLICATE_PLUGIN`); against the 2.2 texts both fail on every check but parsing, and a broken example fails the parse check. They and `api-reference.test.js` share `test/scripts/doc-checks.js`. `scripts/ci-changes.js` tests changes to the llms files and `GAMEPAD.md` |
 | R.4 | Upgrade guide: `docs/UPGRADE-V2.3.md`, in the form of the 2.2 guide, from the compatibility summaries in Sections 3.4, 5.4, 6.4, 7.4, and 13.1 and in DESIGN-SOUND §11 and DESIGN-SOUND-ADVANCED §10. It opens with a table of every renamed command, old and new, since renamed commands have no aliases (G3); then additions (`sound` commands, the `sound-advanced` 1.0.0 plugin, wheel input, gamepad names and vibration, `cancelled`, plugin services); compatibility changes for core, TypeScript, sound (`sound()` with the argument-7 example, audio files, voices and timing, PLAY, error codes), the shared input conventions, keyboard, pointer, and gamepad; the removed plugins; and fixes. Checked against the source where a summary was terse: `MP` is PLAY pan and `MH` the sustain level, `setBusVolume()` also takes the `audio` bus, and `sound-advanced` is in neither bundle. Test: `test/scripts/upgrade-guide.test.js` checks that the rename table lists every command in `metadata/pi-2.3/_removed.toml`; dropping `offkey` from it fails the test. `scripts/ci-changes.js` no longer skips CI for a change to the guide alone, since a test reads it; its test and `test/README.md` list the file. R.5 links the guide from the changelog and `PUBLISH.md` |
 | R.5 | Release documents. `releases/pi-latest/README.md`: a "Sound and input" section; the plugin list now has every plugin export (`polygons` and `sound-advanced` were missing), says which plugins Full includes and that their standalone entry points are for Lite (C3, CORE-003, CORE-019's README part), and how to load `sound-advanced`; the release validation text describes 2.3's coverage (Chromium on three platforms, Firefox and Playwright WebKit audio, no automated Safari tests) and links the v2.3 guide. `CHANGELOG.md`: a `[2.3.0]` entry in the 2.2 form, with the CI build note from Section 13.3 (Windows builds no longer add about 134 bytes of ``). `releases/PUBLISH.md` links the v2.3 guide. Also the root `README.md`, which still said 2.2.0: the version, the v2.3 guide, and the v2.2 guide among the earlier ones. Test: `test/scripts/release-docs.test.js` checks that the package README names every plugin export in `releases/pi-latest/package.json`, that the changelog's first heading is the package version, and that the README and `PUBLISH.md` link the upgrade guide for that version, which exists; against the 2.2 documents all three fail. `scripts/ci-changes.js` no longer skips CI for changes to these three files alone; its test and `test/README.md` list them |
+| R.6 | Versions agree. After `npm run build`, `npm run release:check` passes ("Release versions agree: 2.3.0", and with `--tag=v2.3.0`; `--tag=v2.3.1` is rejected): the root and release `package.json` are 2.3.0 with `majorVersion` 2.3, every library bundle's `@version` is 2.3.0, the declarations say `pi-2.3`, and each plugin bundle's `@version` matches its `banner.json`. The banners hold the planned versions: `sound`, `keyboard`, `pointer`, and `gamepad` 2.0.0, `sound-advanced` and `polygons` 1.0.0. Plugin declarations carry no version. The check did not cover the version each plugin registers, which `getPlugins()` reports and each `index.js` writes separately from its banner; they agree. Test: `metadata-runtime-browser.test.js` checks, for Full and for Lite with every plugin, that each plugin is initialized and registers the version in its banner; registering the keyboard as 2.0.1 fails both |
 
 ## 14. Glossary
 
