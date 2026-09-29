@@ -130,8 +130,8 @@ export async function main( args = process.argv.slice( 2 ) ) {
 		add( "Node tests", () => nodeTests( groups.unit ) );
 	}
 	if( [ "all", "browser" ].includes( command ) ) {
-		// The audio suites share one Firefox server instead of launching one each
-		add( "Browser regressions", () => g_audioEngines.withSharedFirefox(
+		// The audio suites share one Firefox server and one Web Audio support probe per engine
+		add( "Browser regressions", () => g_audioEngines.withAudioEngines(
 			env => nodeTests( groups.browser, env )
 		) );
 	}

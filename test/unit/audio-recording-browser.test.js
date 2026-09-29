@@ -139,8 +139,8 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 	for( const limiter of [ true, false ] ) {
 		test( `a float output recording equals the destination with the limiter ${
 			limiter ? "on" : "off"
-		}`, async t => {
-			const result = await suite.inHarness( t, {
+		}`, async () => {
+			const result = await suite.inHarness( {
 				"config": { "duration": 0.5 }
 			}, recordRender, {
 				"setup": `$.setSoundLimiter( ${limiter} );`,
@@ -181,8 +181,8 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 		} );
 	}
 
-	test( "a default recording is 16-bit output within one quantization step", async t => {
-		const result = await suite.inHarness( t, {
+	test( "a default recording is 16-bit output within one quantization step", async () => {
+		const result = await suite.inHarness( {
 			"config": { "duration": 0.5 }
 		}, recordRender, {
 			"actions": [ { "time": 0, "code": LOUD_CHORD } ]
@@ -205,8 +205,8 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 		}
 	} );
 
-	test( "a bus recording holds that bus only", async t => {
-		const result = await suite.inHarness( t, {
+	test( "a bus recording holds that bus only", async () => {
+		const result = await suite.inHarness( {
 			"config": { "duration": 0.6 }
 		}, recordRender, {
 			"setup": "$.setSoundLimiter( false );",
@@ -231,8 +231,8 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 		assert.ok( toneAmplitude( recorded, 1000, from, to ) < 1e-4 );
 	} );
 
-	test( "maxDuration stops capture and keeps the samples until stopped", async t => {
-		const result = await suite.inHarness( t, {
+	test( "maxDuration stops capture and keeps the samples until stopped", async () => {
+		const result = await suite.inHarness( {
 			"config": { "duration": 1.5 }
 		}, recordRender, {
 			"helpers": WAIT_FOR_STATE,
@@ -258,8 +258,8 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 		assert.equal( result.values.stopped.state, "idle" );
 	} );
 
-	test( "recording commands report every error code", async t => {
-		const result = await suite.inHarness( t, {}, async () => {
+	test( "recording commands report every error code", async () => {
+		const result = await suite.inHarness( {}, async () => {
 			function codeOf( fn ) {
 				try {
 					fn();
@@ -319,8 +319,8 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 		assert.deepEqual( result.after, { "state": "idle", "duration": 0 } );
 	} );
 
-	test( "a full recording rejects a new start until it is stopped", async t => {
-		const result = await suite.inHarness( t, {
+	test( "a full recording rejects a new start until it is stopped", async () => {
+		const result = await suite.inHarness( {
 			"config": { "duration": 1.2 }
 		}, async helpers => {
 			eval( helpers );
@@ -345,8 +345,8 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 		assert.equal( result.after, "idle" );
 	} );
 
-	test( "stopping while starting waits for the start", async t => {
-		const result = await suite.inHarness( t, {}, async () => {
+	test( "stopping while starting waits for the start", async () => {
+		const result = await suite.inHarness( {}, async () => {
 			$.startRecording();
 			const blob = await $.stopRecording();
 			return { "size": blob.size, "state": $.getRecordingState().state };
@@ -358,8 +358,8 @@ g_suite.describeAudioEngines( "sound recording", suite => {
 		assert.equal( result.state, "idle" );
 	} );
 
-	test( "a worklet that cannot load rejects and returns to idle", async t => {
-		const result = await suite.inHarness( t, {}, async () => {
+	test( "a worklet that cannot load rejects and returns to idle", async () => {
+		const result = await suite.inHarness( {}, async () => {
 			const addModule = AudioWorklet.prototype.addModule;
 			AudioWorklet.prototype.addModule = () => Promise.reject( new Error( "blocked" ) );
 			const values = {};

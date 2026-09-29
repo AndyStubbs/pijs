@@ -5,7 +5,9 @@
  * comma-separated subset, such as "chromium,firefox", to run fewer engines while iterating.
  * Set PI_AUDIO_REALTIME=0 to skip the realtime suites on machines without an audio device.
  * Firefox takes over a second to launch, so a test stage can share one Firefox server
- * (withSharedFirefox()); each suite then connects to it instead of launching its own.
+ * (withAudioEngines()); each suite then connects to it instead of launching its own. Suites skip
+ * an engine, or the tests that need offline suspend(), as a whole, so they read each engine's
+ * support before defining tests (loadSupport()); the stage probes it once for every suite.
  */
 import * as g_playwright from "@playwright/test";
 import * as g_chromiumLaunch from "./chromium-launch.js";
@@ -13,8 +15,10 @@ import * as g_chromiumLaunch from "./chromium-launch.js";
 const ALL_ENGINES = [ "chromium", "firefox", "webkit" ];
 const INSTALL_HINT = "Install the audio test engines with: npx playwright install firefox webkit";
 
-// The environment variable that carries a shared Firefox server's endpoint to the test files
+// The environment variables that carry a shared Firefox server's endpoint and each engine's
+// Web Audio support from the stage to the test files
 const SHARED_FIREFOX = "PI_AUDIO_FIREFOX_ENDPOINT";
+const ENGINE_SUPPORT = "PI_AUDIO_SUPPORT";
 
 /**
  * Origin of the blank documents that reusable pages navigate to. Localhost is a secure
@@ -87,14 +91,18 @@ const REALTIME_OPTIONS = {
  * Launches a headless browser for an engine, explaining how to install a missing one.
  *
  * @param {string} name - "chromium", "firefox", or "webkit"
- * @param {Object} [options] - { realtimeAudio: true } allows playback without a gesture
+ * @param {Object} [options] - { realtimeAudio: true } allows playback without a gesture;
+ * { endpoint } names a shared Firefox server in place of PI_AUDIO_FIREFOX_ENDPOINT
  * @returns {Promise<Object>} Playwright browser
  */
 async function launchEngine( name, options = {} ) {
 
 	// A shared server has no realtime preferences, so realtime suites launch their own. Closing
 	// a connected browser disconnects it and leaves the server for the next suite
-	const endpoint = process.env[ SHARED_FIREFOX ];
+	let endpoint = process.env[ SHARED_FIREFOX ];
+	if( options.endpoint ) {
+		endpoint = options.endpoint;
+	}
 	if( name === "firefox" && endpoint && !options.realtimeAudio ) {
 		return g_playwright.firefox.connect( endpoint );
 	}
@@ -118,31 +126,82 @@ async function launchEngine( name, options = {} ) {
 }
 
 /**
- * Runs a function with one headless Firefox server that every audio suite it starts can share.
- * The function receives the environment for its child processes; without Firefox in
- * PI_AUDIO_ENGINES, it receives an empty one and nothing is launched. The server closes when
- * the function settles.
+ * Reports each engine's Web Audio support from a blank page: whether it has AudioContext and
+ * OfflineAudioContext, and whether offline renders can suspend(), which clock-driven renders
+ * need.
  *
- * @param {Function} fn - Called with `{ PI_AUDIO_FIREFOX_ENDPOINT }`, or `{}`
+ * @param {string} [endpoint] - A shared Firefox server to connect to instead of launching one
+ * @returns {Promise<Object>} `{ [engine]: { webAudio, offlineSuspend } }` for AUDIO_ENGINES
+ */
+async function probeSupport( endpoint ) {
+	const entries = await Promise.all( AUDIO_ENGINES.map( async name => {
+		const browser = await launchEngine( name, { "endpoint": endpoint } );
+		try {
+			const page = await browser.newPage();
+			const support = await page.evaluate( () => {
+				const webAudio = typeof AudioContext === "function" &&
+					typeof OfflineAudioContext === "function";
+				return {
+					"webAudio": webAudio,
+					"offlineSuspend": webAudio &&
+						typeof OfflineAudioContext.prototype.suspend === "function"
+				};
+			} );
+			return [ name, support ];
+		} finally {
+			await browser.close();
+		}
+	} ) );
+	return Object.fromEntries( entries );
+}
+
+/**
+ * Returns each engine's Web Audio support for a test file: the stage's probe from
+ * PI_AUDIO_SUPPORT when it covers every engine in AUDIO_ENGINES, or a probe of its own, as in
+ * a focused node --test run.
+ *
+ * @returns {Promise<Object>} `{ [engine]: { webAudio, offlineSuspend } }`
+ */
+async function loadSupport() {
+	const value = process.env[ ENGINE_SUPPORT ];
+	if( value ) {
+		const support = JSON.parse( value );
+		if( AUDIO_ENGINES.every( name => support[ name ] ) ) {
+			return support;
+		}
+	}
+	return probeSupport();
+}
+
+/**
+ * Runs a test stage with the audio engines prepared once for every suite it starts: one
+ * headless Firefox server the suites share, and each engine's Web Audio support. The function
+ * receives the environment for its child processes. Without Firefox in PI_AUDIO_ENGINES, no
+ * server is launched. The server closes when the function settles.
+ *
+ * @param {Function} fn - Called with `{ PI_AUDIO_FIREFOX_ENDPOINT, PI_AUDIO_SUPPORT }`; the
+ * endpoint is present only with Firefox
  * @returns {Promise<*>} What the function returns
  */
-async function withSharedFirefox( fn ) {
-	if( !AUDIO_ENGINES.includes( "firefox" ) ) {
-		return fn( {} );
-	}
-	let server;
-	try {
-		server = await g_playwright.firefox.launchServer( { "headless": true } );
-	} catch( error ) {
-		if( /Executable doesn't exist|install/i.test( error.message ) ) {
-			throw new Error( `firefox is not installed. ${INSTALL_HINT}`, { "cause": error } );
+async function withAudioEngines( fn ) {
+	const env = {};
+	let server = null;
+	if( AUDIO_ENGINES.includes( "firefox" ) ) {
+		try {
+			server = await g_playwright.firefox.launchServer( { "headless": true } );
+		} catch( error ) {
+			if( /Executable doesn't exist|install/i.test( error.message ) ) {
+				throw new Error( `firefox is not installed. ${INSTALL_HINT}`, { "cause": error } );
+			}
+			throw error;
 		}
-		throw error;
+		env[ SHARED_FIREFOX ] = server.wsEndpoint();
 	}
 	try {
-		return await fn( { [ SHARED_FIREFOX ]: server.wsEndpoint() } );
+		env[ ENGINE_SUPPORT ] = JSON.stringify( await probeSupport( env[ SHARED_FIREFOX ] ) );
+		return await fn( env );
 	} finally {
-		await server.close();
+		await server?.close();
 	}
 }
 
@@ -190,6 +249,6 @@ async function createReusablePage( browser, initScript ) {
 }
 
 export {
-	ALL_ENGINES, AUDIO_ENGINES, REALTIME_SKIP, SHARED_FIREFOX, createReusablePage, launchEngine,
-	parseEngines, parseRealtime, withSharedFirefox
+	ALL_ENGINES, AUDIO_ENGINES, ENGINE_SUPPORT, REALTIME_SKIP, SHARED_FIREFOX, createReusablePage,
+	launchEngine, loadSupport, parseEngines, parseRealtime, probeSupport, withAudioEngines
 };

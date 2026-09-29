@@ -52,10 +52,11 @@ const STRESS_CASES = {
 
 g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 	const engine = suite.engine;
+	const clockTest = suite.clockTest;
 
 	for( const name in STRESS_CASES ) {
-		test( `the limiter keeps the ${name} within ±1.0`, async t => {
-			const result = await suite.inHarness( t, { "config": { "duration": 1.5 } }, code => {
+		test( `the limiter keeps the ${name} within ±1.0`, async () => {
+			const result = await suite.inHarness( { "config": { "duration": 1.5 } }, code => {
 				( new Function( "return " + code ) )()();
 				return __audioHarness.render( { "singlePass": true } );
 			}, STRESS_CASES[ name ].toString() );
@@ -72,8 +73,8 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 		} );
 	}
 
-	test( "the limiter keeps 64 simultaneous sample instances within ±1.0", async t => {
-		const result = await suite.inHarness( t, { "config": { "duration": 1 } }, async arg => {
+	test( "the limiter keeps 64 simultaneous sample instances within ±1.0", async () => {
+		const result = await suite.inHarness( { "config": { "duration": 1 } }, async arg => {
 			eval( arg.loader );
 			const id = await __loadWav( arg.wav );
 			for( let i = 0; i < 64; i++ ) {
@@ -102,11 +103,11 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 		}
 	} );
 
-	test( "the limiter leaves levels below its threshold unchanged", async t => {
+	test( "the limiter leaves levels below its threshold unchanged", async () => {
 		const peaks = {};
 		for( const limiter of [ true, false ] ) {
 			for( const volume of [ 0.3, 1 ] ) {
-				const result = await suite.inHarness( t, { "config": { "duration": 1 } }, arg => {
+				const result = await suite.inHarness( { "config": { "duration": 1 } }, arg => {
 					$.setSoundLimiter( arg.limiter );
 					$.sound( 440, 0.8, arg.volume, "square" );
 					return __audioHarness.render( { "singlePass": true } );
@@ -126,8 +127,8 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 		assert.ok( loss >= -0.01 && loss <= 1.5, `full-level loss ${loss} dB` );
 	} );
 
-	test( "setSoundLimiter( false ) bypasses both stages", async t => {
-		const result = await suite.inHarness( t, { "config": { "duration": 0.5 } }, () => {
+	test( "setSoundLimiter( false ) bypasses both stages", async () => {
+		const result = await suite.inHarness( { "config": { "duration": 0.5 } }, () => {
 			$.setSoundLimiter( false );
 			$.setVolume( 1 );
 			$.sound( 440, 0.3, 0.8, "sine" );
@@ -143,8 +144,8 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 	} );
 
 	for( const kind of [ "sound", "play" ] ) {
-		test( `setVolume() sets the master gain for ${kind}() voices`, async t => {
-			const result = await suite.inHarness( t, { "config": { "duration": 0.5 } }, kind => {
+		test( `setVolume() sets the master gain for ${kind}() voices`, async () => {
+			const result = await suite.inHarness( { "config": { "duration": 0.5 } }, kind => {
 				$.setSoundLimiter( false );
 				$.setVolume( 0.5 );
 				if( kind === "sound" ) {
@@ -164,8 +165,8 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 	}
 
 	test( "the limiter does not attenuate the first sound after the context starts",
-		async t => {
-			const result = await suite.inHarness( t, { "config": { "duration": 0.5 } }, () => {
+		async () => {
+			const result = await suite.inHarness( { "config": { "duration": 0.5 } }, () => {
 				$.sound( 440, 0.4, 0.3, "sine" );
 				return __audioHarness.render( { "singlePass": true } );
 			} );
@@ -181,9 +182,9 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 		}
 	);
 
-	test( "setVolume( 0 ) silences sound and play() voices", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1 }, "needsSuspend": true
+	clockTest( "setVolume( 0 ) silences sound and play() voices", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1 }
 		}, () => {
 			let calledAt = null;
 			return __audioHarness.render( { "actions": [
@@ -208,9 +209,9 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 		assert.ok( g_metrics.isSilent( left, frame( result.calledAt + 0.25 ), left.length ) );
 	} );
 
-	test( "the bus-volume service ramps one bus over 10 ms from the lead", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1 }, "needsSuspend": true
+	clockTest( "the bus-volume service ramps one bus over 10 ms from the lead", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1 }
 		}, () => {
 			let service = null;
 			pi.registerPlugin( {
@@ -265,9 +266,9 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 		assert.ok( residual.max <= g_tolerances.getTolerance( "stopResidualMax", engine ) );
 	} );
 
-	test( "setBusVolume() validates, and muting the sfx bus leaves music playing", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 1 }, "needsSuspend": true
+	clockTest( "setBusVolume() validates; muting the sfx bus leaves music playing", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 1 }
 		}, () => {
 			const errors = [];
 			const calls = [ [ "drums", 1 ], [ "sfx", 2 ], [ "sfx", "loud" ], [ "sfx" ] ];
@@ -313,11 +314,11 @@ g_suite.describeAudioEngines( "sound buses and limiter", suite => {
 		assert.ok( g_metrics.peak( right, frame( 0.4 ), frame( 0.9 ) ) > 0.2 );
 	} );
 
-	test( "setBusVolume( \"master\" ) matches setVolume()", async t => {
+	clockTest( "setBusVolume( \"master\" ) matches setVolume()", async () => {
 		const renders = [];
 		for( const useBus of [ true, false ] ) {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 0.6 }, "needsSuspend": true
+			const result = await suite.inHarness( {
+				"config": { "duration": 0.6 }
 			}, useBus => {
 				return __audioHarness.render( { "actions": [
 					{ "time": 0, "run": () => {

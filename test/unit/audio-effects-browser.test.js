@@ -140,11 +140,12 @@ async function renderEffects( arg ) {
 }
 
 g_suite.describeAudioEngines( "sound effects", suite => {
+	const clockTest = suite.clockTest;
 
 	for( const type of [ "lowpass", "highpass" ] ) {
 		test( `a ${type} filter matches the biquad response an octave past the cutoff`,
-			async t => {
-				const result = await suite.inHarness( t, {
+			async () => {
+				const result = await suite.inHarness( {
 					"config": { "duration": 0.6 }
 				}, renderEffects, {
 					"setup": SETUP + `
@@ -166,10 +167,10 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 		);
 	}
 
-	test( "distortion harmonics rise with drive", async t => {
+	test( "distortion harmonics rise with drive", async () => {
 		const ratios = [];
 		for( const drive of [ 0, 0.3, 0.8 ] ) {
-			const result = await suite.inHarness( t, {
+			const result = await suite.inHarness( {
 				"config": { "duration": 0.6 }
 			}, renderEffects, {
 				"setup": SETUP + `
@@ -192,8 +193,8 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 	} );
 
 	test( "the bitcrusher quantizes to its bit depth and holds samples for its rate",
-		async t => {
-			const result = await suite.inHarness( t, {
+		async () => {
+			const result = await suite.inHarness( {
 				"config": { "duration": 0.5 }
 			}, renderEffects, {
 				"setup": SETUP + `
@@ -227,8 +228,8 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 	);
 
 	test( "a bitcrusher whose worklet cannot load passes the dry signal and warns once",
-		async t => {
-			const result = await suite.inHarness( t, {
+		async () => {
+			const result = await suite.inHarness( {
 				"config": { "duration": 0.4 }
 			}, async () => {
 				const addModule = AudioWorklet.prototype.addModule;
@@ -264,8 +265,8 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 		}
 	);
 
-	test( "the chorus modulates pitch by its depth and rate, in opposite phase", async t => {
-		const result = await suite.inHarness( t, {
+	test( "the chorus modulates pitch by its depth and rate, in opposite phase", async () => {
+		const result = await suite.inHarness( {
 			"config": { "duration": 1.4 }
 		}, renderEffects, {
 			"setup": SETUP + `
@@ -298,7 +299,7 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 	} );
 
 	test( "a chain applies its effects in order; an empty chain keeps the bus volume",
-		async t => {
+		async () => {
 			const ratios = [];
 			for( const order of [ [ "filter", "distortion" ], [ "distortion", "filter" ] ] ) {
 				const chain = order.map( effect => {
@@ -307,7 +308,7 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 					}
 					return { "effect": "distortion", "drive": 0.8 };
 				} );
-				const result = await suite.inHarness( t, {
+				const result = await suite.inHarness( {
 					"config": { "duration": 0.6 }
 				}, renderEffects, {
 					"setup": SETUP + `
@@ -333,7 +334,7 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 			assert.ok( attenuation < 0.5 );
 			assert.ok( ratios[ 1 ] < ratios[ 0 ] * ( attenuation + 0.1 ), `ratios ${ratios}` );
 
-			const result = await suite.inHarness( t, {
+			const result = await suite.inHarness( {
 				"config": { "duration": 0.4 }
 			}, renderEffects, {
 				"setup": SETUP + `
@@ -354,9 +355,9 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 		}
 	);
 
-	test( "an in-place update ramps the mix without a click", async t => {
-		const result = await suite.inHarness( t, {
-			"config": { "duration": 0.8 }, "needsSuspend": true
+	clockTest( "an in-place update ramps the mix without a click", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 0.8 }
 		}, renderEffects, {
 			"setup": SETUP + `
 				$.setBusEffect( "sfx", "delay", { "time": 0.5, "feedback": 0, "mix": 0 } );`,
@@ -395,15 +396,15 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 		assert.equal( result.nodeCounts.createDelay, 1 );
 	} );
 
-	test( "an in-place update keeps the reverb tail; a rebuild option cuts it", async t => {
+	clockTest( "an in-place update keeps the reverb tail; a rebuild option cuts it", async () => {
 		const tails = [];
 		for( const update of [
 			[ { "effect": "filter", "cutoff": 8000 }, { "effect": "reverb", "mix": 1 } ],
 			[ { "effect": "filter", "cutoff": 20000 }, { "effect": "reverb", "mix": 1,
 				"time": 1.5 } ]
 		] ) {
-			const result = await suite.inHarness( t, {
-				"config": { "duration": 1 }, "needsSuspend": true
+			const result = await suite.inHarness( {
+				"config": { "duration": 1 }
 			}, renderEffects, {
 				"setup": SETUP + `
 					$.setBusEffect( "sfx", [
@@ -437,7 +438,7 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 		assert.equal( tails[ 1 ].convolvers, 2 );
 	} );
 
-	test( "in-place updates survive garbage collection of AudioParam wrappers", async t => {
+	test( "in-place updates survive garbage collection of AudioParam wrappers", async () => {
 
 		// WebKit replaces an unreferenced AudioParam wrapper after garbage collection, which
 		// once lost the effects' ramp records. Collect after building, while the crusher's
@@ -447,7 +448,7 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 			for( let i = 0; i < 100000; i++ ) { junk.push( { "i": i } ); }
 			junk = null;
 		}`;
-		const result = await suite.inHarness( t, {
+		const result = await suite.inHarness( {
 			"config": { "duration": 0.2 }
 		}, renderEffects, {
 			"setup": SETUP + `
@@ -481,8 +482,8 @@ g_suite.describeAudioEngines( "sound effects", suite => {
 		assert.equal( result.nodeCounts.createConvolver, 1 );
 	} );
 
-	test( "setBusEffect validates chains and the new effects", async t => {
-		const result = await suite.inHarness( t, {}, () => {
+	test( "setBusEffect validates chains and the new effects", async () => {
+		const result = await suite.inHarness( {}, () => {
 			const codeOf = fn => {
 				try {
 					fn();
