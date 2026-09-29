@@ -69,7 +69,8 @@ function createHarness( options = {} ) {
 	 * has four released buttons and four centered axes.
 	 *
 	 * @param {number} index - Pad index.
-	 * @param {Object} [state] - `buttons` as booleans, `axes` as numbers, and `mapping`.
+	 * @param {Object} [state] - `buttons` as booleans, `axes` as numbers, `mapping`, and
+	 *   `vibrationActuator`.
 	 * @returns {void}
 	 */
 	function setPad( index, state = {} ) {
@@ -102,8 +103,12 @@ function createHarness( options = {} ) {
 		if( state.mapping !== undefined ) {
 			mapping = state.mapping;
 		}
+		let vibrationActuator = pad.vibrationActuator;
+		if( state.vibrationActuator !== undefined ) {
+			vibrationActuator = state.vibrationActuator;
+		}
 		pads[ index ] = { ...pad, "buttons": buttons, "axes": axes, "mapping": mapping,
-			"timestamp": pad.timestamp + 1 };
+			"vibrationActuator": vibrationActuator, "timestamp": pad.timestamp + 1 };
 	}
 
 	/**
@@ -963,6 +968,106 @@ test( "gamepad helpers accept the standard-mapping names (A10, I13)", () => {
 				error.message === `${method}: ${parameter} "${value}" is not ${kind} name.`;
 		} );
 	}
+} );
+
+/**
+ * A vibration actuator that records the effects it is asked to play.
+ *
+ * @param {Object} [fields] - `effects` or `type`, as a browser reports them.
+ * @param {boolean} [isRejected] - Whether playEffect() returns a rejected promise.
+ * @returns {Object} The actuator, with `calls`.
+ */
+function createActuator( fields = { "effects": [ "dual-rumble", "trigger-rumble" ] },
+	isRejected = false ) {
+	const actuator = {
+		...fields,
+		"calls": [],
+		"playEffect": ( type, params ) => {
+			actuator.calls.push( JSON.parse( JSON.stringify( [ type, params ] ) ) );
+			if( isRejected ) {
+				return Promise.reject( new Error( "preempted" ) );
+			}
+			return Promise.resolve( "complete" );
+		}
+	};
+	return actuator;
+}
+
+test( "gamepad vibrateGamepad plays dual-rumble and reports support (A11)", async () => {
+	const h = createHarness();
+	const rumble = createActuator();
+	h.setPad( 0, { "vibrationActuator": rumble } );
+
+	// Full strength by default; vibration needs no polling
+	assert.equal( h.$.vibrateGamepad( 0, 200 ), true );
+	assert.equal( h.frames.size, 0 );
+	h.$.vibrateGamepad( 0, 100, 0.5, 0.25 );
+	h.$.vibrateGamepad( { "gamepadIndex": 0, "duration": 0, "weak": 0 } );
+	const params = ( duration, strong, weak ) => {
+		return [ "dual-rumble", {
+			"startDelay": 0, "duration": duration, "strongMagnitude": strong, "weakMagnitude": weak
+		} ];
+	};
+	assert.deepEqual( rumble.calls, [ params( 200, 1, 1 ), params( 100, 0.5, 0.25 ),
+		params( 0, 1, 0 ) ] );
+
+	// Unsupported pads return false and play nothing
+	const trigger = createActuator( { "effects": [ "trigger-rumble" ] } );
+	h.setPad( 1 );
+	h.setPad( 2, { "vibrationActuator": trigger } );
+	assert.equal( h.$.vibrateGamepad( 1, 200 ), false );
+	assert.equal( h.$.vibrateGamepad( 2, 200 ), false );
+	assert.equal( h.$.vibrateGamepad( 5, 200 ), false );
+	assert.equal( trigger.calls.length, 0 );
+
+	// An actuator that reports one type is used when it is dual-rumble; a rejected effect is
+	// handled
+	const typed = createActuator( { "type": "dual-rumble" }, true );
+	h.setPad( 3, { "vibrationActuator": typed } );
+	assert.equal( h.$.vibrateGamepad( 3, 50 ), true );
+	assert.equal( typed.calls.length, 1 );
+	await new Promise( resolve => setTimeout( resolve, 0 ) );
+
+	// A disconnected pad is not vibrated
+	h.disconnect( 0 );
+	assert.equal( h.$.vibrateGamepad( 0, 200 ), false );
+	assert.equal( rumble.calls.length, 3 );
+} );
+
+test( "gamepad vibrateGamepad validates its arguments with the I11 codes (A11, I11)", () => {
+	const h = createHarness();
+	const rumble = createActuator();
+	h.setPad( 0, { "vibrationActuator": rumble } );
+	const check = ( args, type, code, message ) => {
+		assert.throws( () => h.$.vibrateGamepad( ...args ), error => {
+			assert.deepEqual( [ error.name, error.code, error.message ], [ type, code, message ] );
+			return true;
+		} );
+	};
+	check( [ "0", 200 ], "TypeError", "INVALID_INDEX",
+		"vibrateGamepad: gamepadIndex must be an integer." );
+	check( [ -1, 200 ], "RangeError", "INVALID_INDEX",
+		"vibrateGamepad: gamepadIndex must not be negative." );
+	for( const duration of [ undefined, NaN, Infinity, "200" ] ) {
+		check( [ 0, duration ], "TypeError", "INVALID_DURATION",
+			"vibrateGamepad: duration must be a finite number." );
+	}
+	check( [ 0, -1 ], "RangeError", "INVALID_DURATION",
+		"vibrateGamepad: duration must not be negative." );
+	for( const [ index, name, code ] of [ [ 2, "strong", "INVALID_STRONG" ],
+		[ 3, "weak", "INVALID_WEAK" ] ] ) {
+		for( const value of [ NaN, "1", true ] ) {
+			const args = [ 0, 200, 1, 1 ];
+			args[ index ] = value;
+			check( args, "TypeError", code, `vibrateGamepad: ${name} must be a finite number.` );
+		}
+		for( const value of [ -0.1, 1.5 ] ) {
+			const args = [ 0, 200, 1, 1 ];
+			args[ index ] = value;
+			check( args, "RangeError", code, `vibrateGamepad: ${name} must be from 0 to 1.` );
+		}
+	}
+	assert.equal( rumble.calls.length, 0 );
 } );
 
 test( "PAD-016 the first update after startGamepad() reports no edges (I6)", () => {

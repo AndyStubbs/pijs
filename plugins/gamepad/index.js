@@ -76,6 +76,9 @@ export default function gamepadPlugin( pluginApi ) {
 	pluginApi.addCommand( "setGamepadDeadZone", setGamepadDeadZone, false, [ "deadZone" ] );
 	pluginApi.addCommand( "onGamepad", onGamepad, false, [ "mode", "fn", "once" ] );
 	pluginApi.addCommand( "offGamepad", offGamepad, false, [ "mode", "fn" ] );
+	pluginApi.addCommand(
+		"vibrateGamepad", vibrateGamepad, false, [ "gamepadIndex", "duration", "strong", "weak" ]
+	);
 
 	// Register clearEvents handler
 	pluginApi.registerClearEvents( "gamepad", clearGamepadEvents );
@@ -301,9 +304,94 @@ function offGamepad( options ) {
 }
 
 
+/**
+ * Rumble a gamepad through its vibration actuator's `"dual-rumble"` effect. The browser's pad is
+ * used directly, so vibration does not need polling. Returns whether the pad supports the
+ * effect; a missing pad or one without it returns false and plays nothing.
+ *
+ * @param {Object} options - Command options.
+ * @returns {boolean}
+ */
+function vibrateGamepad( options ) {
+	checkIndex( "vibrateGamepad", "gamepadIndex", options.gamepadIndex );
+	const duration = options.duration;
+	if( !Number.isFinite( duration ) ) {
+		throwCode(
+			TypeError, "vibrateGamepad: duration must be a finite number.", "INVALID_DURATION"
+		);
+	}
+	if( duration < 0 ) {
+		throwCode(
+			RangeError, "vibrateGamepad: duration must not be negative.", "INVALID_DURATION"
+		);
+	}
+	const strong = readMagnitude( "strong", options.strong, "INVALID_STRONG" );
+	const weak = readMagnitude( "weak", options.weak, "INVALID_WEAK" );
+
+	const pad = getBrowserGamepads()[ options.gamepadIndex ];
+	if( !pad || !pad.connected || !isDualRumble( pad.vibrationActuator ) ) {
+		return false;
+	}
+
+	// A rejected effect, such as one a newer effect preempts, needs no handling
+	const played = pad.vibrationActuator.playEffect( "dual-rumble", {
+		"startDelay": 0,
+		"duration": duration,
+		"strongMagnitude": strong,
+		"weakMagnitude": weak
+	} );
+	if( played && typeof played.catch === "function" ) {
+		played.catch( () => {} );
+	}
+	return true;
+}
+
+
 /*************************************************************************************************
  * Internal Helper Functions
  ************************************************************************************************/
+
+
+/**
+ * Read a rumble magnitude: a finite number from 0 to 1, or 1 when omitted.
+ *
+ * @param {string} name - Parameter name for error messages.
+ * @param {*} value - Requested magnitude.
+ * @param {string} code - Error code.
+ * @returns {number}
+ */
+function readMagnitude( name, value, code ) {
+	if( value === null || value === undefined ) {
+		return 1;
+	}
+	if( !Number.isFinite( value ) ) {
+		throwCode( TypeError, `vibrateGamepad: ${name} must be a finite number.`, code );
+	}
+	if( value < 0 || value > 1 ) {
+		throwCode( RangeError, `vibrateGamepad: ${name} must be from 0 to 1.`, code );
+	}
+	return value;
+}
+
+/**
+ * Whether a vibration actuator can play `"dual-rumble"`: it lists the effect, or, in browsers
+ * that report one effect type, has that type. An actuator that reports neither is tried.
+ *
+ * @param {Object|null} actuator - The pad's `vibrationActuator`.
+ * @returns {boolean}
+ */
+function isDualRumble( actuator ) {
+	if( !actuator || typeof actuator.playEffect !== "function" ) {
+		return false;
+	}
+	if( Array.isArray( actuator.effects ) ) {
+		return actuator.effects.includes( "dual-rumble" );
+	}
+	if( typeof actuator.type === "string" ) {
+		return actuator.type === "dual-rumble";
+	}
+	return true;
+}
 
 
 /**

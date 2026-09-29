@@ -42,6 +42,8 @@ const LITE_PLUGIN_CONSUMERS = {
 		`}`,
 		`lite.onGamepad( "connect", ( pad ) => { const id: string = pad.id; void id; } );`,
 		`lite.offGamepad( null, () => {} );`,
+		`const rumbled: boolean = lite.vibrateGamepad( 0, 200, 1, 0.5 );`,
+		`void rumbled;`,
 		`// @ts-expect-error The connection handlers are onGamepad and offGamepad.`,
 		`lite.onGamepadConnected( () => {} );`,
 		`lite.onGamepad( "disconnect", ( data ) => {`,
