@@ -427,6 +427,37 @@ type = "number"
 description = "Vertical scroll amount in CSS pixels; positive when the wheel turns down."
 
 # ============================================================================
+# GamepadDisconnectData
+# ============================================================================
+[[objects]]
+title = "GamepadDisconnectData"
+summary = "Data passed to onGamepad( 'disconnect' ) callbacks."
+description = """
+The disconnected pad's identity. Its GamepadData is no longer in the list that inGamepad()
+returns.
+"""
+
+[[objects.properties]]
+name = "index"
+type = "number"
+description = "Index the pad had."
+
+[[objects.properties]]
+name = "id"
+type = "string"
+description = "The browser's id string for the pad."
+
+[[objects.properties]]
+name = "mapping"
+type = "string"
+description = "The pad's mapping, such as 'standard'."
+
+[[objects.properties]]
+name = "connected"
+type = "boolean"
+description = "Always false."
+
+# ============================================================================
 # GamepadButton
 # ============================================================================
 [[objects]]
@@ -464,7 +495,7 @@ description = "Whether the button was released since the previous read."
 title = "GamepadData"
 summary = "Gamepad state and helper methods."
 description = """
-A connected gamepad, returned by inGamepad() and passed to onGamepadConnected callbacks. The
+A connected gamepad, returned by inGamepad() and passed to onGamepad( "connect" ) callbacks. The
 object is live: the same object is returned on every read and updated in place, including its
 buttons array, each button, axes, and lastAxes. Copy values to keep a snapshot.
 

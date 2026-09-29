@@ -162,6 +162,11 @@ const REQUIRED_DECLARATIONS = [
 			"undefined;"
 	},
 	{
+		"name": "onGamepad callbacks receive pad or disconnect data",
+		"text": "onGamepad( mode: string, fn: ( data: GamepadData | GamepadDisconnectData ) => " +
+			"void, once?: boolean ): void;"
+	},
+	{
 		"name": "gamepad helper methods",
 		"text": "getButtonJustPressed: ( buttonIndex: number ) => boolean;"
 	},

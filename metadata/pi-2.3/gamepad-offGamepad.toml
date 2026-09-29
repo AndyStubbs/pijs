@@ -1,0 +1,44 @@
+title = "offGamepad"
+category = "gamepad"
+isScreen = false
+plugin = "gamepad"
+summary = "Removes a gamepad connection or disconnection callback."
+description = """
+Removes callbacks registered with onGamepad. A callback is identified by its mode and function;
+the once it was registered with does not matter.
+
+With a mode and a function, removes that callback. Without a function, removes every callback of
+the mode. With a function and no mode (null, or no mode in the object form), removes the function
+from both modes. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "gamepad" )
+removes every callback.
+
+A callback removed during a dispatch does not run later in it. The mode and function are checked
+as onGamepad() checks them, with codes INVALID_MODE and INVALID_FUNCTION.
+"""
+example = """
+$.screen( "300x200" );
+function onConnect( gamepad ) {
+	$.print( `Gamepad ${gamepad.index} connected: ${gamepad.id}` );
+
+	// Only the first connection is announced
+	$.offGamepad( "connect", onConnect );
+}
+$.onGamepad( "connect", onConnect );
+"""
+
+[[parameters]]
+name = "mode"
+type = "string | null"
+description = "'connect' or 'disconnect'. If omitted or null, fn is removed from both modes."
+optional = true
+
+[[parameters]]
+name = "fn"
+type = "function"
+signature = "( data: GamepadData | GamepadDisconnectData ) => void"
+description = "Callback to remove. If omitted or null, every callback of the mode is removed."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

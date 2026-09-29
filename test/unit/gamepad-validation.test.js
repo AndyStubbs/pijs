@@ -203,6 +203,97 @@ test( "gamepad registers inGamepad, and not the old name (I1, I16)", () => {
 	assert.equal( h.commands.ingamepad, undefined );
 } );
 
+test( "gamepad onGamepad and offGamepad identify handlers by mode and function (A5, I4, P8)",
+	() => {
+		const h = createHarness();
+		const log = [];
+		const onConnect = pad => log.push( "connect " + pad.index );
+		const onDisconnect = data => log.push( "disconnect " + data.index );
+		const both = data => log.push( "both " + data.index );
+		assert.equal( h.$.onGamepadConnected, undefined );
+		assert.equal( h.$.onGamepadDisconnected, undefined );
+
+		// A second registration of the function for the mode does nothing, whatever its once
+		h.setPad( 0 );
+		h.$.onGamepad( "connect", onConnect );
+		h.$.onGamepad( "connect", onConnect, true );
+		h.$.onGamepad( { "mode": "disconnect", "fn": onDisconnect } );
+		h.$.onGamepad( "connect", both );
+		h.$.onGamepad( "disconnect", both );
+		assert.deepEqual( log, [ "connect 0", "both 0" ] );
+
+		// offGamepad( null, fn ) removes a function from both modes, and a mode and a function
+		// remove that handler
+		log.length = 0;
+		h.$.offGamepad( null, both );
+		h.$.offGamepad( "connect", onConnect );
+		h.disconnect( 0 );
+		h.setPad( 0 );
+		h.connect( 0 );
+		assert.deepEqual( log, [ "disconnect 0" ] );
+
+		// offGamepad( mode ) and the object form without fn remove every handler of the mode
+		h.$.offGamepad( { "mode": "disconnect" } );
+		h.disconnect( 0 );
+		assert.deepEqual( log, [ "disconnect 0" ] );
+
+		// A once handler runs for one pad, the replay of connected pads included
+		log.length = 0;
+		h.setPad( 0 );
+		h.connect( 0 );
+		h.setPad( 1 );
+		h.connect( 1 );
+		h.$.onGamepad( "connect", onConnect, true );
+		h.setPad( 2 );
+		h.connect( 2 );
+		h.$.onGamepad( "disconnect", onDisconnect, true );
+		h.disconnect( 1 );
+		h.disconnect( 2 );
+		assert.deepEqual( log, [ "connect 0", "disconnect 1" ] );
+
+		// Once spent, the function can be registered again, and receives the connected pads
+		h.$.onGamepad( "connect", onConnect );
+		assert.deepEqual( log, [ "connect 0", "disconnect 1", "connect 0" ] );
+	}
+);
+
+test( "gamepad handlers removed during a dispatch do not run later in it, and offGamepad " +
+	"validates its arguments (I4, I8)", () => {
+	const h = createHarness();
+	const log = [];
+	const removed = () => log.push( "removed" );
+	h.$.onGamepad( "disconnect", () => {
+		log.push( "first" );
+		h.$.offGamepad( "disconnect", removed );
+	} );
+	h.$.onGamepad( "disconnect", removed );
+	h.setPad( 0 );
+	h.connect( 0 );
+	h.disconnect( 0 );
+	assert.deepEqual( log, [ "first" ] );
+
+	const check = ( call, type, code, message ) => {
+		assert.throws( call, error => {
+			assert.deepEqual( [ error.name, error.code ], [ type, code ] );
+			if( message ) {
+				assert.equal( error.message, message );
+			}
+			return true;
+		} );
+	};
+	const fn = () => {};
+	check( () => h.$.onGamepad( "press", fn ), "RangeError", "INVALID_MODE",
+		"onGamepad: mode must be \"connect\" or \"disconnect\"." );
+	check( () => h.$.onGamepad( 5, fn ), "TypeError", "INVALID_MODE" );
+	check( () => h.$.onGamepad( "connect", "fn" ), "TypeError", "INVALID_FUNCTION",
+		"onGamepad: fn must be a function." );
+	check( () => h.$.offGamepad(), "TypeError", "INVALID_MODE",
+		"offGamepad: mode or fn is required. To remove every handler, call " +
+		"clearEvents( \"gamepad\" )." );
+	check( () => h.$.offGamepad( "press" ), "RangeError", "INVALID_MODE" );
+	check( () => h.$.offGamepad( "connect", 5 ), "TypeError", "INVALID_FUNCTION" );
+} );
+
 test( "SYS-021 rejected NaN cannot contaminate a subsequent axis update", () => {
 	const h = createSensitivityHarness();
 	h.commands.setGamepadSensitivity( { "sensitivity": 0.25 } );
@@ -343,7 +434,7 @@ test( "PAD-017 the press that exposes a pad is reported once (P3b)", () => {
 	const h = createHarness();
 	let presses = 0;
 	const seen = [];
-	h.$.onGamepadConnected( pad => {
+	h.$.onGamepad( "connect", pad => {
 		seen.push( [ pad.index, pad.buttons[ 0 ].pressed ] );
 	} );
 	function userLoop() {
@@ -450,8 +541,8 @@ test( "PAD-003 a throwing handler is reported and leaves no ghost pad (P5)", () 
 	h.$.startGamepad();
 	h.frame();
 	const later = [];
-	h.$.onGamepadDisconnected( () => { throw new Error( "disconnect handler" ); } );
-	h.$.onGamepadDisconnected( data => {
+	h.$.onGamepad( "disconnect", () => { throw new Error( "disconnect handler" ); } );
+	h.$.onGamepad( "disconnect", data => {
 		later.push( [ data.index, Array.from( h.$.inGamepad(), pad => pad.index ) ] );
 	} );
 	h.disconnect( 1 );
@@ -462,17 +553,17 @@ test( "PAD-003 a throwing handler is reported and leaves no ghost pad (P5)", () 
 	// The connect path
 	h.clearEvents();
 	const laterConnect = [];
-	h.$.onGamepadConnected( () => { throw new Error( "connect handler" ); } );
-	h.$.onGamepadConnected( pad => { laterConnect.push( pad.index ); } );
+	h.$.onGamepad( "connect", () => { throw new Error( "connect handler" ); } );
+	h.$.onGamepad( "connect", pad => { laterConnect.push( pad.index ); } );
 	h.setPad( 2 );
 	h.connect( 2 );
 
 	// Both handlers also received pad 0, which was already connected
 	assert.deepEqual( laterConnect, [ 0, 2 ] );
 	assert.deepEqual( h.errors.map( args => [ args[ 0 ], args[ 1 ].message ] ), [
-		[ "onGamepadDisconnected: Handler failed:", "disconnect handler" ],
-		[ "onGamepadConnected: Handler failed:", "connect handler" ],
-		[ "onGamepadConnected: Handler failed:", "connect handler" ]
+		[ "onGamepad: Handler for \"disconnect\" failed:", "disconnect handler" ],
+		[ "onGamepad: Handler for \"connect\" failed:", "connect handler" ],
+		[ "onGamepad: Handler for \"connect\" failed:", "connect handler" ]
 	] );
 } );
 
@@ -481,7 +572,7 @@ test( "PAD-004 a throwing handler in the start-up scan leaves polling running (P
 	h.setPad( 0 );
 	h.setPad( 1 );
 	const seen = [];
-	h.$.onGamepadConnected( pad => {
+	h.$.onGamepad( "connect", pad => {
 		seen.push( pad.index );
 		throw new Error( "scan handler" );
 	} );
@@ -497,10 +588,10 @@ test( "PAD-007 handlers added or cleared during a dispatch wait for the next eve
 	const h = createHarness();
 	const calls = [];
 	h.$.startGamepad();
-	h.$.onGamepadConnected( pad => {
+	h.$.onGamepad( "connect", pad => {
 		calls.push( "first " + pad.index );
 		if( calls.length === 1 ) {
-			h.$.onGamepadConnected( added => { calls.push( "added " + added.index ); } );
+			h.$.onGamepad( "connect", added => { calls.push( "added " + added.index ); } );
 			calls.push( "registered" );
 		}
 	} );
@@ -516,11 +607,11 @@ test( "PAD-007 handlers added or cleared during a dispatch wait for the next eve
 	// A clear during a dispatch stops the rest of it
 	calls.length = 0;
 	h.clearEvents();
-	h.$.onGamepadDisconnected( () => {
+	h.$.onGamepad( "disconnect", () => {
 		calls.push( "clearing" );
 		h.clearEvents();
 	} );
-	h.$.onGamepadDisconnected( () => { calls.push( "cleared" ); } );
+	h.$.onGamepad( "disconnect", () => { calls.push( "cleared" ); } );
 	h.disconnect( 0 );
 	h.disconnect( 1 );
 	assert.deepEqual( calls, [ "clearing" ] );
@@ -535,15 +626,15 @@ test( "PAD-005 new connect handlers receive the pads already connected, once (P7
 	const third = [];
 
 	// The start-up scan delivers to the first handler; the replay does not repeat it
-	h.$.onGamepadConnected( pad => { first.push( pad.index ); } );
-	h.$.onGamepadConnected( pad => { second.push( pad.index ); } );
+	h.$.onGamepad( "connect", pad => { first.push( pad.index ); } );
+	h.$.onGamepad( "connect", pad => { second.push( pad.index ); } );
 	assert.deepEqual( [ first, second ], [ [ 0, 2 ], [ 0, 2 ] ] );
 
 	// A pad the loop recorded before its event reaches every handler once, whenever it
 	// registered
 	h.setPad( 1 );
 	h.frame();
-	h.$.onGamepadConnected( pad => { third.push( pad.index ); } );
+	h.$.onGamepad( "connect", pad => { third.push( pad.index ); } );
 	h.connect( 1 );
 	assert.deepEqual( [ first, second, third ], [ [ 0, 2, 1 ], [ 0, 2, 1 ], [ 0, 1, 2 ] ] );
 
@@ -552,7 +643,7 @@ test( "PAD-005 new connect handlers receive the pads already connected, once (P7
 	h2.setPad( 0 );
 	h2.$.inGamepad();
 	const late = [];
-	h2.$.onGamepadConnected( pad => { late.push( pad.index ); } );
+	h2.$.onGamepad( "connect", pad => { late.push( pad.index ); } );
 	assert.deepEqual( late, [ 0 ] );
 } );
 
@@ -560,7 +651,7 @@ test( "PAD-006 a connection event for a tracked pad is not dispatched again (P3)
 	const h = createHarness();
 	h.setPad( 0 );
 	const calls = [];
-	h.$.onGamepadConnected( pad => { calls.push( pad.index ); } );
+	h.$.onGamepad( "connect", pad => { calls.push( pad.index ); } );
 	h.connect( 0 );
 	h.connect( 0 );
 	assert.deepEqual( calls, [ 0 ] );
@@ -640,8 +731,8 @@ test( "PAD-016 lifecycle: stop, reads, and registration after a stop (P8)", () =
 	// Today, registering a handler restarts polling after a stop; Gamepad 2.3 changes this
 	const connected = [];
 	const disconnected = [];
-	h.$.onGamepadConnected( pad => { connected.push( pad.index ); } );
-	h.$.onGamepadDisconnected( data => { disconnected.push( [ data.index, data.connected ] ); } );
+	h.$.onGamepad( "connect", pad => { connected.push( pad.index ); } );
+	h.$.onGamepad( "disconnect", data => { disconnected.push( [ data.index, data.connected ] ); } );
 	assert.equal( h.frames.size, 1 );
 	assert.equal( h.$.inGamepad( 0 ).index, 0 );
 

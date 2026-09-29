@@ -47,12 +47,12 @@ const buttonStates = {
 };
 
 // Connection events
-$.onGamepadConnected( ( data ) => {
+$.onGamepad( "connect", ( data ) => {
 	gamepadConnected = true;
 	gamepadIndex = data.index;
 } );
 
-$.onGamepadDisconnected( ( data ) => {
+$.onGamepad( "disconnect", ( data ) => {
 	gamepadConnected = false;
 	gamepadIndex = null;
 } );
