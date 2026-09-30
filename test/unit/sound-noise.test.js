@@ -1,5 +1,5 @@
 /**
- * Unit tests for the noise buffers in plugins/sound/noise.js: length, peak normalization,
+ * Unit tests for the noise buffers in plugins/sound/noise.js: length, RMS level,
  * spectra, the loop seam, caching, and random start offsets. A fake context captures the
  * generated buffers, and Math.random is seeded per test.
  */
@@ -65,12 +65,16 @@ test( "noise types are white and pink", () => {
 	assert.ok( !g_noise.isNoiseType( "sine" ) );
 } );
 
-test( "buffers are 2 s mono with their peak normalized to 1", () => {
-	for( const type of g_noise.NOISE_TYPES ) {
-		const data = noiseData( type, 1 );
-		assert.equal( data.length, 2 * RATE );
-		assert.ok( Math.abs( g_metrics.peak( data ) - 1 ) < 1e-6, type );
-		assert.ok( g_metrics.rms( data ) > 0.1, type );
+test( "buffers are 2 s mono at the RMS of a full-scale sawtooth, within full scale", () => {
+	for( const seed of [ 1, 2, 3 ] ) {
+		for( const type of g_noise.NOISE_TYPES ) {
+			const label = `${type} seed ${seed}`;
+			const data = noiseData( type, seed );
+			assert.equal( data.length, 2 * RATE );
+			const rms = g_metrics.rms( data );
+			assert.ok( Math.abs( rms / ( 1 / Math.sqrt( 3 ) ) - 1 ) < 0.02, `${label} rms ${rms}` );
+			assert.ok( g_metrics.peak( data ) <= 1, label );
+		}
 	}
 } );
 

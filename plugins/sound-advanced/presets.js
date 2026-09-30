@@ -31,12 +31,12 @@ export const BUILT_IN_PRESETS = {
 		"oType": "pulse", "duty": 0.25, "releaseTime": 0.06
 	},
 	"hit": {
-		"duration": 0.04, "volume": 0.7, "oType": "white", "releaseTime": 0.12,
-		"filterType": "lowpass", "filterCutoff": 1800
+		"duration": 0.05, "volume": 0.9, "oType": "white", "releaseTime": 0.12,
+		"filterType": "lowpass", "filterCutoff": 5000
 	},
 	"explosion": {
-		"duration": 0.5, "volume": 0.8, "oType": "pink", "decayTime": 0.45, "sustainLevel": 0.3,
-		"releaseTime": 0.5, "filterType": "lowpass", "filterCutoff": 300, "filterAmount": 2.5,
+		"duration": 0.5, "volume": 0.85, "oType": "pink", "decayTime": 0.45, "sustainLevel": 0.5,
+		"releaseTime": 0.5, "filterType": "lowpass", "filterCutoff": 800, "filterAmount": 2.5,
 		"filterDecayTime": 0.5, "filterSustainLevel": 0
 	},
 	"powerup": {

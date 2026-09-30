@@ -66,17 +66,17 @@ export const SFX_CATEGORIES = g_presets.freezeCopy( {
 		"oType": [ [ "white", 3 ], [ "pink", 1 ] ],
 		"filterType": [ [ "lowpass", 3 ], [ "bandpass", 1 ] ],
 		"numbers": [
-			[ "duration", 0.02, 0.1 ], [ "volume", 0.5, 0.8 ], [ "releaseTime", 0.05, 0.25 ],
-			[ "filterCutoff", 600, 5000, "filter" ]
+			[ "duration", 0.03, 0.1 ], [ "volume", 0.7, 1 ], [ "releaseTime", 0.05, 0.25 ],
+			[ "filterCutoff", 1500, 8000, "filter" ]
 		]
 	},
 	"explosion": {
-		"oType": [ [ "pink", 2 ], [ "white", 1 ] ],
+		"oType": [ [ "pink", 1 ] ],
 		"filterType": [ [ "lowpass", 1 ] ],
 		"numbers": [
-			[ "duration", 0.3, 1 ], [ "volume", 0.6, 0.9 ], [ "decayTime", 0.2, 0.8 ],
-			[ "sustainLevel", 0.1, 0.5 ], [ "releaseTime", 0.3, 1 ],
-			[ "filterCutoff", 150, 800, "filter" ], [ "filterAmount", 1, 4, "filter" ],
+			[ "duration", 0.3, 1 ], [ "volume", 0.7, 1 ], [ "decayTime", 0.2, 0.8 ],
+			[ "sustainLevel", 0.3, 0.7 ], [ "releaseTime", 0.3, 1 ],
+			[ "filterCutoff", 400, 1500, "filter" ], [ "filterAmount", 1, 4, "filter" ],
 			[ "filterDecayTime", 0.2, 1, "filter" ], [ "filterSustainLevel", 0, 0.3, "filter" ]
 		]
 	},

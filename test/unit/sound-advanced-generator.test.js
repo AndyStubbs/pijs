@@ -75,34 +75,34 @@ const RECORDED = {
 	],
 	"hit": [
 		{
-			"oType": "pink", "duration": 0.025, "volume": 0.736, "releaseTime": 0.123,
-			"filterCutoff": 4752.339, "filterType": "lowpass"
+			"oType": "pink", "duration": 0.035, "volume": 0.936, "releaseTime": 0.123,
+			"filterCutoff": 7634.138, "filterType": "lowpass"
 		},
 		{
-			"oType": "pink", "duration": 0.032, "volume": 0.55, "releaseTime": 0.188,
-			"filterCutoff": 844.634, "filterType": "lowpass"
+			"oType": "pink", "duration": 0.04, "volume": 0.75, "releaseTime": 0.188,
+			"filterCutoff": 1861.391, "filterType": "lowpass"
 		},
 		{
-			"oType": "white", "duration": 0.02, "volume": 0.687, "releaseTime": 0.068,
-			"filterCutoff": 679.26, "filterType": "lowpass"
+			"oType": "white", "duration": 0.03, "volume": 0.887, "releaseTime": 0.068,
+			"filterCutoff": 1617.089, "filterType": "lowpass"
 		}
 	],
 	"explosion": [
 		{
-			"oType": "white", "duration": 0.383, "volume": 0.686, "decayTime": 0.678,
-			"sustainLevel": 0.105, "releaseTime": 0.773, "filterCutoff": 150.116,
+			"oType": "pink", "duration": 0.383, "volume": 0.786, "decayTime": 0.678,
+			"sustainLevel": 0.305, "releaseTime": 0.773, "filterCutoff": 400.196,
 			"filterAmount": 1.418, "filterDecayTime": 0.905, "filterSustainLevel": 0.051,
 			"filterType": "lowpass"
 		},
 		{
-			"oType": "pink", "duration": 0.302, "volume": 0.755, "decayTime": 0.272,
-			"sustainLevel": 0.141, "releaseTime": 0.365, "filterCutoff": 311.2,
+			"oType": "pink", "duration": 0.302, "volume": 0.855, "decayTime": 0.272,
+			"sustainLevel": 0.341, "releaseTime": 0.365, "filterCutoff": 672.8,
 			"filterAmount": 2.105, "filterDecayTime": 0.338, "filterSustainLevel": 0.106,
 			"filterType": "lowpass"
 		},
 		{
-			"oType": "white", "duration": 0.691, "volume": 0.662, "decayTime": 0.202,
-			"sustainLevel": 0.145, "releaseTime": 0.327, "filterCutoff": 244.276,
+			"oType": "pink", "duration": 0.691, "volume": 0.762, "decayTime": 0.202,
+			"sustainLevel": 0.345, "releaseTime": 0.327, "filterCutoff": 559.544,
 			"filterAmount": 2.113, "filterDecayTime": 0.74, "filterSustainLevel": 0.256,
 			"filterType": "lowpass"
 		}
