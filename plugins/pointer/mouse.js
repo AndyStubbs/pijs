@@ -261,8 +261,11 @@ export function registerMouse( pluginApi, helpers ) {
 			return;
 		}
 		updateHeld( screenData );
+		const pressData = screenData.press;
 		m_triggerEventListeners( "move", screenData.mouse, screenData.onMouseEventListeners );
-		g_press.triggerPressListeners( screenData, "move", screenData.press );
+		if( isTracking( screenData ) ) {
+			g_press.triggerPressListeners( screenData, "move", pressData );
+		}
 	}
 
 	/**
@@ -283,8 +286,15 @@ export function registerMouse( pluginApi, helpers ) {
 		updateMouse( screenData, e, "down", ( getHeldButtons( screenData ) & e.buttons ) | bit );
 		updateHeld( screenData );
 		const mouseData = screenData.mouse;
+		const pressData = screenData.press;
 		m_triggerEventListeners( "down", mouseData, screenData.onMouseEventListeners );
-		g_press.triggerPressListeners( screenData, "down", screenData.press );
+		if( !isTracking( screenData ) ) {
+			return false;
+		}
+		g_press.triggerPressListeners( screenData, "down", pressData );
+		if( !isTracking( screenData ) ) {
+			return false;
+		}
 		if( e.button === 0 ) {
 			g_press.triggerClickListeners( screenData, mouseData, "down", "mouse" );
 		}
@@ -343,11 +353,40 @@ export function registerMouse( pluginApi, helpers ) {
 		dispatchRelease( screenData, "cancel" );
 	}
 
+	/**
+	 * Dispatch a release: the `"up"` handlers, the press release, then the clicks. A handler
+	 * that stops tracking ends the release, which then disarms the clicks without firing them;
+	 * one that removes the screen ends it at once.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @param {string} clickAction - `"up"` for a primary-button release, or `"cancel"`.
+	 * @returns {void}
+	 */
 	function dispatchRelease( screenData, clickAction ) {
 		const mouseData = screenData.mouse;
+		const pressData = screenData.press;
 		m_triggerEventListeners( "up", mouseData, screenData.onMouseEventListeners );
-		g_press.triggerPressListeners( screenData, "up", screenData.press );
+		if( isTracking( screenData ) ) {
+			g_press.triggerPressListeners( screenData, "up", pressData );
+		}
+		if( screenData.isRemoved ) {
+			return;
+		}
+		if( !isTracking( screenData ) ) {
+			clickAction = "cancel";
+		}
 		g_press.triggerClickListeners( screenData, mouseData, clickAction, "mouse" );
+	}
+
+	/**
+	 * Whether an event's dispatch goes on after its handlers ran. A handler may remove the
+	 * screen or stop mouse tracking, which ends the dispatch.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {boolean}
+	 */
+	function isTracking( screenData ) {
+		return !screenData.isRemoved && screenData.mouseStarted === true;
 	}
 
 	/**

@@ -6,7 +6,8 @@ summary = "Stops touch input tracking for this screen."
 description = """
 Stops touch tracking on the screen canvas. Held touches are released first: the onTouch 'up'
 handlers, and the onPress 'up' handlers for the primary touch, run with cancelled set to true, and
-no click fires.
+no click fires. Called from a handler, it ends that event: no press, click, or pointer capture
+follows it.
 
 While stopped, handlers stay registered but are not called, inTouch() returns an empty array, and
 inPress() returns null when its latest press came from a touch.

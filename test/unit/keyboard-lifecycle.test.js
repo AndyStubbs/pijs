@@ -114,8 +114,9 @@ function harness() {
 			data.captures.push( options );
 			images.set( options.name, {} );
 		};
-		data.api.blitImage = () => {
+		data.api.blitImage = image => {
 			assert.equal( data.isRemoved, false, "must not redraw during disposal" );
+			assert.ok( image, "a prompt redraws only a background it captured" );
 			data.draws++;
 		};
 		data.api.print = msg => {
@@ -290,6 +291,51 @@ test( "SYS-003 newest reentrant input wins over an outer replacement", async () 
 	assert.deepEqual( supersededValues, [ null ] );
 	empty( h );
 } );
+
+for( const action of [ "starts a prompt", "cancels the prompt", "removes the screen" ] ) {
+	test( `SYS-003 a key release handler that ${action} ends the prompt taking the keyboard`,
+		async () => {
+			const h = harness();
+			let nested = null;
+			h.api.onKey( "KeyA", "up", data => {
+				assert.equal( data.cancelled, true );
+				if( action === "starts a prompt" ) {
+					nested = h.start();
+				} else if( action === "cancels the prompt" ) {
+					h.commands.cancelInput( h.first );
+				} else {
+					h.dispose();
+				}
+			}, true );
+			h.key( "a", "down", { "code": "KeyA" } );
+			const values = [];
+			let outer;
+			assert.doesNotThrow( () => {
+				outer = h.start( h.first, value => values.push( value ) );
+			} );
+			assert.equal( await outer, null );
+			assert.deepEqual( values, [ null ] );
+			assert.equal( h.first.draws, 0, "the outer prompt drew nothing" );
+			if( nested !== null ) {
+
+				// Only the newest prompt captured a background, and it reads the keys
+				assert.equal( h.first.captures.length, 1 );
+				assert.equal( h.timers.size, 1 );
+				h.key( "a", "up", { "code": "KeyA" } );
+				for( const char of "hello" ) {
+					h.key( char );
+				}
+				h.key( "Enter" );
+				assert.equal( await nested, "hello" );
+			} else {
+				assert.equal( h.first.captures.length, 0 );
+			}
+			empty( h );
+			assert.deepEqual( h.microtasks, [] );
+			assert.deepEqual( h.errors, [] );
+		}
+	);
+}
 
 test( "SYS-003 prompt rendering uses only its owning screen cursor", async () => {
 	const h = harness();

@@ -100,7 +100,8 @@ export function registerWheel( pluginApi, helpers ) {
 
 	/**
 	 * Dispatch a wheel event over a canvas with handlers, and keep the page from scrolling. A
-	 * `once` handler removes itself, so the listener is updated after the dispatch.
+	 * `once` handler removes itself, so the listener is updated after the dispatch, unless a
+	 * handler removed the screen, whose cleanup already removed the listener.
 	 *
 	 * @param {WheelEvent} e - The wheel event.
 	 * @returns {void}
@@ -131,7 +132,9 @@ export function registerWheel( pluginApi, helpers ) {
 			"deltaY": e.deltaY * scale.y
 		} );
 		m_triggerEventListeners( "wheel", data, screenData.onWheelEventListeners );
-		updateListener( screenData );
+		if( !screenData.isRemoved ) {
+			updateListener( screenData );
+		}
 	}
 
 	return {

@@ -8,7 +8,7 @@ Requires the sound-advanced plugin. Use it to sync visuals and game events to mu
 
 A note's data is { type, trackId, track, time, duration, frequency, volume, delay }. trackId is the ID play() returned, track is the index of the comma-separated track, time is the note's audible start in audio context time, duration runs to the end of its release in seconds, and volume is its peak volume. An end's data is { type, trackId, stopped, delay }, where stopped is true after stopPlay(). delay is the seconds between the audible moment and the call. Every handler of an event receives the same frozen object.
 
-Handlers run on animation frames, on the first frame at or after the moment the note reaches the speakers, including the output latency the browser reports. Notes whose frame comes more than 250 ms late, for example while the tab is hidden, are skipped rather than delivered in a burst. Song ends are always delivered, and stopPlay() skips the song's remaining notes.
+Handlers run on animation frames, on the first frame at or after the moment the note reaches the speakers, including the output latency the browser reports. While audio is suspended, queued notes wait until it resumes and they sound. Notes whose frame comes more than 250 ms late, for example while the tab is hidden, are skipped rather than delivered in a burst. Song ends are always delivered, and stopPlay() skips the song's remaining notes.
 
 Registering the same function for the same mode again does nothing. A handler that throws is reported with console.error without stopping the others. clearEvents( "play" ) removes every handler. A mode other than "note" or "end" throws INVALID_MODE, fn that is not a function throws INVALID_FUNCTION, and once that is not a boolean throws INVALID_ONCE.
 """

@@ -244,6 +244,68 @@ test( "a trusted mouse release outside the canvas is released once (T1)", async 
 	}
 } );
 
+test( "trusted input whose handler stops tracking or removes the screen ends its dispatch",
+	async () => {
+		const page = await context.newPage();
+		const errors = [];
+		page.on( "pageerror", error => errors.push( error.message ) );
+		try {
+			await page.goto( "http://localhost:8080/" );
+			await page.setContent( "<html><body style='margin:0'>" +
+				"<div id='host' style='width:200px;height:200px'></div></body></html>" );
+			await page.addScriptTag( { "url": "/build/pi.js" } );
+			await page.evaluate( () => $.ready() );
+			const setUp = async kind => {
+				await page.evaluate( setUpKind => {
+					$.removeAllScreens();
+					window.log = [];
+					window.s = $.screen( { "aspect": "100x100", "container": "host" } );
+					const record = name => data => {
+						if( data === null ) {
+							window.log.push( [ name, null ] );
+						} else {
+							window.log.push( [ name, data.action, data.cancelled ] );
+						}
+					};
+					s.onPress( "down", record( "press" ) );
+					s.onPress( "down", record( "press box" ), false,
+						{ "x": 0, "y": 0, "width": 100, "height": 100 } );
+					s.onClick( record( "click" ) );
+					if( setUpKind === "stop" ) {
+						s.onMouse( "down", () => s.stopMouse(), true );
+					} else if( setUpKind === "remove" ) {
+						s.onMouse( "down", () => s.removeScreen() );
+					} else {
+						s.onWheel( () => s.removeScreen() );
+					}
+				}, kind );
+				const box = await page.locator( "canvas" ).boundingBox();
+				await page.mouse.move( box.x + box.width / 2, box.y + box.height / 2 );
+			};
+
+			// Stopping tracking in a mouse down handler: no press or click follows
+			await setUp( "stop" );
+			await page.mouse.down();
+			await page.mouse.up();
+			assert.deepEqual( await page.evaluate( () => window.log ), [] );
+
+			// Removing the screen in a mouse down or wheel handler
+			await setUp( "remove" );
+			await page.mouse.down();
+			await page.mouse.up();
+			await setUp( "wheel" );
+			await page.mouse.wheel( 0, 120 );
+			await page.waitForFunction( () => document.querySelectorAll( "canvas" ).length === 0 );
+			assert.deepEqual( await page.evaluate( () => ( {
+				"log": window.log, "canvases": document.querySelectorAll( "canvas" ).length
+			} ) ), { "log": [], "canvases": 0 } );
+			assert.deepEqual( errors, [] );
+		} finally {
+			await page.close();
+		}
+	}
+);
+
 test( "a trusted touch drag that leaves the canvas ends once, with touch-action none (B6)",
 	async () => {
 		const page = await context.newPage();

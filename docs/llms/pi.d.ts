@@ -2213,7 +2213,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Stops mouse input tracking for this screen.
 		 *
-		 * Stops mouse tracking on the screen canvas. Held buttons are released first: the onMouse and onPress 'up' handlers run with cancelled set to true, and no click fires.
+		 * Stops mouse tracking on the screen canvas. Held buttons are released first: the onMouse and onPress 'up' handlers run with cancelled set to true, and no click fires. Called from a handler, it ends that event: no press, click, or pointer capture follows it.
 		 *
 		 * While stopped, handlers stay registered but are not called, inMouse() returns null, and inPress() returns null when its latest press came from the mouse. Reads and handler registration do not restart tracking; call startMouse().
 		 * @returns This function does not return a value.
@@ -2223,7 +2223,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Stops touch input tracking for this screen.
 		 *
-		 * Stops touch tracking on the screen canvas. Held touches are released first: the onTouch 'up' handlers, and the onPress 'up' handlers for the primary touch, run with cancelled set to true, and no click fires.
+		 * Stops touch tracking on the screen canvas. Held touches are released first: the onTouch 'up' handlers, and the onPress 'up' handlers for the primary touch, run with cancelled set to true, and no click fires. Called from a handler, it ends that event: no press, click, or pointer capture follows it.
 		 *
 		 * While stopped, handlers stay registered but are not called, inTouch() returns an empty array, and inPress() returns null when its latest press came from a touch. Reads and handler registration do not restart tracking; call startTouch().
 		 * @returns This function does not return a value.
@@ -2444,11 +2444,13 @@ screen is removed before deferred processing completes, or with the original rea
 		 * Loads a spritesheet by URL or from an Image/Canvas element.
 		 *
 		 * Loads a spritesheet and slices it either automatically (connected components) or by a fixed grid. Sprites retain their source colors when the screen palette changes. Use the shader API for recoloring.
+		 *
+		 * In fixed grid mode, width and height must be integers of at least 1 (INVALID_DIMENSIONS), and margin an integer of 0 or more (INVALID_MARGIN), after rounding: a TypeError for a value that is not an integer, and a RangeError for one out of range.
 		 * @param src Spritesheet source: URL string, HTMLImageElement, or HTMLCanvasElement.
 		 * @param name Optional unique name for the spritesheet. Auto-generated if omitted.
 		 * @param width Sprite width for fixed grid mode.
 		 * @param height Sprite height for fixed grid mode.
-		 * @param margin Margin between sprites in fixed grid mode (default 0).
+		 * @param margin Margin between sprites in fixed grid mode; an integer of 0 or more. Defaults to 0.
 		 * @param onLoad Callback invoked when the spritesheet finishes loading.
 		 * @param onError Callback invoked if the spritesheet fails to load.
 		 * @returns The spritesheet name.

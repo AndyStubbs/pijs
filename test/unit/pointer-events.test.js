@@ -136,14 +136,19 @@ function harness() {
 	screen();
 
 	/**
-	 * Remove a screen as core does: its cleanup functions run, then it is gone.
+	 * Remove a screen as core does: it is marked removed, its cleanup functions run, and its
+	 * registered data items are cleared. The canvas stays readable, so tests can inspect it.
 	 *
 	 * @param {Object} screenData - Screen to remove.
 	 * @returns {void}
 	 */
 	function removeScreen( screenData ) {
+		screenData.isRemoved = true;
 		for( const fn of cleanupFunctions ) {
 			fn( screenData );
+		}
+		for( const name in screenDataItems ) {
+			screenData[ name ] = null;
 		}
 		delete screens[ screenData.id ];
 	}
@@ -954,6 +959,189 @@ test( "pointer removing a screen with input held calls none of its handlers", ()
 	assert.deepEqual( log, [] );
 	assert.deepEqual( other.canvas.listeners, [] );
 	assert.equal( $.inMouse(), null );
+} );
+
+/**
+ * Register a whole-screen and a hit-box press handler for every phase, a whole-screen click
+ * handler, and a click handler boxed to the top-left corner, logging each call as
+ * `[ name, action, cancelled ]`, or `[ name, null ]` for null data.
+ *
+ * @param {Object} api - Screen commands.
+ * @param {Array} log - Calls.
+ * @returns {void}
+ */
+function logPressAndClick( api, log ) {
+	const record = name => data => {
+		if( data === null ) {
+			log.push( [ name, null ] );
+		} else {
+			log.push( [ name, data.action, data.cancelled ] );
+		}
+	};
+	for( const mode of [ "down", "move", "up" ] ) {
+		api.onPress( mode, record( "press" ) );
+		api.onPress( mode, record( "press box" ), false,
+			{ "x": 0, "y": 0, "width": 100, "height": 100 } );
+	}
+	api.onClick( record( "click" ) );
+	api.onClick( record( "corner click" ), false, { "x": 0, "y": 0, "width": 40, "height": 40 } );
+}
+
+/**
+ * One kind of pointer input on a screen: the primary mouse button, or touch 1.
+ *
+ * @param {Object} h - Harness.
+ * @param {string} kind - `"mouse"` or `"touch"`.
+ * @param {Object} screenData - Target screen.
+ * @returns {Object} `{ down, move, up, on, stop, start }`; `down` returns its event, and `on`
+ *   registers a once handler.
+ */
+function pointerInput( h, kind, screenData ) {
+	const api = screenData.api;
+	if( kind === "mouse" ) {
+		return {
+			"down": ( x, y ) => h.mouse( "mousedown", x, y, 1, 0, screenData ),
+			"move": ( x, y ) => h.mouse( "mousemove", x, y, 1, 0, screenData ),
+			"up": ( x, y ) => h.mouse( "mouseup", x, y, 0, 0, screenData ),
+			"on": ( mode, fn ) => api.onMouse( mode, fn, true ),
+			"stop": () => api.stopMouse(),
+			"start": () => api.startMouse()
+		};
+	}
+	const at = ( x, y ) => [ { "id": 1, "x": x, "y": y } ];
+	return {
+		"down": ( x, y ) => h.touch( "touchstart", at( x, y ), undefined, screenData )[ 0 ],
+		"move": ( x, y ) => h.touch( "touchmove", at( x, y ), undefined, screenData ),
+		"up": ( x, y ) => h.touch( "touchend", [], at( x, y ), screenData ),
+		"on": ( mode, fn ) => api.onTouch( mode, fn, true ),
+		"stop": () => api.stopTouch(),
+		"start": () => api.startTouch()
+	};
+}
+
+test( "pointer a handler that stops tracking ends the event's dispatch", () => {
+	const PRESS_DOWN = [ [ "press", "down", false ], [ "press box", "down", false ] ];
+	const PRESS_UP = [ [ "press", "up", false ], [ "press box", "up", false ] ];
+	const CANCELLED = [ [ "press", "up", true ], [ "press box", "up", true ] ];
+
+	// A full press elsewhere, released in the corner: only the whole-screen click fires
+	const CLICK = [ ...PRESS_DOWN, ...PRESS_UP, [ "click", "click", false ] ];
+	for( const kind of [ "mouse", "touch" ] ) {
+		const setup = () => {
+			const h = harness();
+			const log = [];
+			const screenData = h.screen();
+			logPressAndClick( screenData.api, log );
+			const input = pointerInput( h, kind, screenData );
+			const pressElsewhere = () => {
+				log.length = 0;
+				input.down( 50, 50 );
+				input.up( 10, 10 );
+			};
+			return {
+				"h": h, "log": log, "api": screenData.api, "input": input,
+				"pressElsewhere": pressElsewhere
+			};
+		};
+
+		// In a down handler: the stop releases the input as cancelled, and the press, its
+		// clicks, and its pointer capture never follow
+		let t = setup();
+		t.input.on( "down", () => t.input.stop() );
+		const canvas = t.input.down( 10, 10 ).target;
+		assert.deepEqual( t.log, CANCELLED, `${kind} down` );
+		assert.equal( canvas.captures.size, 0, `${kind} down capture` );
+		t.input.start();
+		t.input.up( 10, 10 );
+		assert.deepEqual( t.log, CANCELLED, `${kind} release after a stopped down` );
+		t.pressElsewhere();
+		assert.deepEqual( t.log, CLICK, `${kind} after a stopped down` );
+		assert.deepEqual( t.h.errors, [] );
+
+		// In a move handler: no press move follows the cancelled release
+		t = setup();
+		t.input.down( 10, 10 );
+		t.log.length = 0;
+		t.input.on( "move", () => t.input.stop() );
+		t.input.move( 20, 20 );
+		assert.deepEqual( t.log, CANCELLED, `${kind} move` );
+		assert.deepEqual( t.h.errors, [] );
+
+		// In a press handler: the press handlers before it run, and no click is armed
+		t = setup();
+		t.api.onPress( "down", () => t.input.stop(), true );
+		t.input.down( 10, 10 );
+		assert.deepEqual( t.log, [ ...PRESS_DOWN, ...CANCELLED ], `${kind} press down` );
+		assert.equal( canvas.captures.size, 0, `${kind} press down capture` );
+		t.input.start();
+		t.pressElsewhere();
+		assert.deepEqual( t.log, CLICK, `${kind} after a stopped press` );
+		assert.deepEqual( t.h.errors, [] );
+
+		// In an up handler: the release ends, and disarms the clicks it would fire
+		t = setup();
+		t.input.down( 10, 10 );
+		t.log.length = 0;
+		t.input.on( "up", () => t.input.stop() );
+		t.input.up( 10, 10 );
+		assert.deepEqual( t.log, [], `${kind} up` );
+		t.input.start();
+		t.pressElsewhere();
+		assert.deepEqual( t.log, CLICK, `${kind} after a stopped release` );
+		assert.deepEqual( t.h.errors, [] );
+	}
+} );
+
+test( "pointer a handler that removes its screen ends the event's dispatch", () => {
+	const cases = [
+		[ "mouse down", ( api, fn ) => api.onMouse( "down", fn ), ( i ) => i.mouse.down( 10, 10 ) ],
+		[ "mouse move", ( api, fn ) => api.onMouse( "move", fn ), ( i ) => i.mouse.move( 10, 10 ) ],
+		[ "mouse up", ( api, fn ) => api.onMouse( "up", fn ), ( i ) => {
+			i.mouse.down( 10, 10 );
+			i.mouse.up( 10, 10 );
+		} ],
+		[ "press down", ( api, fn ) => api.onPress( "down", fn, true ),
+			( i ) => i.mouse.down( 10, 10 ) ],
+		[ "press up", ( api, fn ) => api.onPress( "up", fn ), ( i ) => {
+			i.mouse.down( 10, 10 );
+			i.mouse.up( 10, 10 );
+		} ],
+		[ "touch down", ( api, fn ) => api.onTouch( "down", fn ), ( i ) => i.touch.down( 10, 10 ) ],
+		[ "touch move", ( api, fn ) => api.onTouch( "move", fn ), ( i ) => {
+			i.touch.down( 10, 10 );
+			i.touch.move( 20, 20 );
+		} ],
+		[ "touch up", ( api, fn ) => api.onTouch( "up", fn ), ( i ) => {
+			i.touch.down( 10, 10 );
+			i.touch.up( 10, 10 );
+		} ],
+		[ "touch press down", ( api, fn ) => api.onPress( "down", fn ),
+			( i ) => i.touch.down( 10, 10 ) ],
+		[ "wheel", ( api, fn ) => api.onWheel( fn, true ), ( i ) => i.wheel() ]
+	];
+	for( const [ name, register, act ] of cases ) {
+		const h = harness();
+		const screenData = h.screen();
+		const canvas = screenData.canvas;
+		const log = [];
+		logPressAndClick( screenData.api, log );
+		register( screenData.api, () => {
+			log.length = 0;
+			h.removeScreen( screenData );
+		} );
+		act( {
+			"mouse": pointerInput( h, "mouse", screenData ),
+			"touch": pointerInput( h, "touch", screenData ),
+			"wheel": () => h.wheel( 10, 10, 0, 1, 0, screenData )
+		} );
+		assert.equal( screenData.isRemoved, true, `${name} removed` );
+		assert.deepEqual( log, [], `${name} calls after removal` );
+		if( name.endsWith( "down" ) ) {
+			assert.equal( canvas.captures.size, 0, `${name} capture` );
+		}
+		assert.deepEqual( canvas.listeners, [], `${name} listeners` );
+		assert.deepEqual( h.errors, [], `${name} errors` );
+	}
 } );
 
 test( "pointer presses on the border are ignored, and moves report true positions (P11)", () => {

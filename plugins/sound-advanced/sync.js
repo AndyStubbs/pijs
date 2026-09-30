@@ -3,9 +3,10 @@
  *
  * onPlay() and offPlay(): handlers for PLAY notes and song ends, called when the music is
  * heard. Events come from the sound service's observePlay, up to the scheduler's lookahead
- * before they sound, and wait in a queue until their audible time. An animation-frame loop
- * dispatches them and runs only while events are queued. Notes more than 250 ms late, for
- * example after a hidden tab becomes visible again, are dropped; song ends are always delivered.
+ * before they sound, and wait in a queue until their audible time, which follows the audio clock,
+ * so they keep waiting while the audio context is suspended. An animation-frame loop dispatches
+ * them and runs only while events are queued. Notes more than 250 ms late, for example after a
+ * hidden tab becomes visible again, are dropped; song ends are always delivered.
  *
  * @module plugins/sound-advanced/sync
  */
@@ -79,19 +80,25 @@ function validateFunction( command, fn ) {
  * so it includes the output latency. Before output starts it reports zero, and some engines
  * lack it; then the current render time plus outputLatency, or baseLatency, stands in.
  *
+ * The render time also bounds the timestamp: a context time is not heard before it is rendered
+ * and the latency has passed. While a context is suspended its render time stops, but some
+ * engines keep reporting the timestamp from before the suspension, until shortly after it
+ * resumes. The later of the two mappings keeps future notes waiting for the audio clock.
+ *
  * @param {BaseAudioContext} context - Audio context
  * @param {number} now - Current performance.now() time in milliseconds
  * @returns {number} Offset in milliseconds: page time = context time × 1000 + offset
  */
 export function getPageOffset( context, now ) {
+	const latency = context.outputLatency || context.baseLatency || 0;
+	const rendered = now - ( context.currentTime - latency ) * 1000;
 	if( typeof context.getOutputTimestamp === "function" ) {
 		const stamp = context.getOutputTimestamp();
 		if( stamp && stamp.performanceTime > 0 ) {
-			return stamp.performanceTime - stamp.contextTime * 1000;
+			return Math.max( stamp.performanceTime - stamp.contextTime * 1000, rendered );
 		}
 	}
-	const latency = context.outputLatency || context.baseLatency || 0;
-	return now - ( context.currentTime - latency ) * 1000;
+	return rendered;
 }
 
 

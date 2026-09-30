@@ -235,8 +235,9 @@ per minute.
 `onPlay( "note", fn )` calls `fn` for each note of a `play()` song as it starts to sound, and
 `onPlay( "end", fn )` once when a song finishes or is stopped. Handlers run on animation frames, on
 the first frame at or after the note reaches the speakers, including the output latency the
-browser reports. Notes more than 250 ms late, such as while the tab is hidden, are skipped rather
-than delivered in a burst; song ends are always delivered.
+browser reports. While audio is suspended, queued notes wait until it resumes and they sound.
+Notes more than 250 ms late, such as while the tab is hidden, are skipped rather than delivered
+in a burst; song ends are always delivered.
 
 A note's frozen data is `{ type, trackId, track, time, duration, frequency, volume, delay }`, and
 an end's is `{ type, trackId, stopped, delay }`. A handler is identified by its mode and function;
