@@ -9,6 +9,7 @@
 "use strict";
 
 import * as g_screenManager from "../core/screen-manager.js";
+import * as g_errors from "../core/errors.js";
 
 // Shaders are imported from external files via esbuild text loader
 import m_displayVertSrc from "./shaders/display.vert";
@@ -43,9 +44,7 @@ export function init() {
 export function compileShader( gl, type, source ) {
 	const shader = gl.createShader( type );
 	if( !shader ) {
-		const error = new Error( "screen: Failed to allocate shader." );
-		error.code = "WEBGL_ERROR";
-		throw error;
+		g_errors.throwError( Error, "screen: Failed to allocate shader.", "WEBGL_ERROR" );
 	}
 	gl.shaderSource( shader, source );
 	gl.compileShader( shader );
@@ -79,16 +78,16 @@ export function createShaderProgram( gl, vertexSrc, fragSrc, cmdName = "screen" 
 		fragmentShader = compileShader( gl, gl.FRAGMENT_SHADER, fragSrc );
 
 		if( !vertexShader || !fragmentShader ) {
-			const error = new Error( `${cmdName}: Unable to compile shaders.` );
-			error.code = "INVALID_SHADERS";
-			throw error;
+			g_errors.throwError(
+				Error, `${cmdName}: Unable to compile shaders.`, "INVALID_SHADERS"
+			);
 		}
 
 		program = gl.createProgram();
 		if( !program ) {
-			const error = new Error( `${cmdName}: Failed to allocate shader program.` );
-			error.code = "WEBGL_ERROR";
-			throw error;
+			g_errors.throwError(
+				Error, `${cmdName}: Failed to allocate shader program.`, "WEBGL_ERROR"
+			);
 		}
 		gl.attachShader( program, vertexShader );
 		gl.attachShader( program, fragmentShader );
@@ -96,9 +95,9 @@ export function createShaderProgram( gl, vertexSrc, fragSrc, cmdName = "screen" 
 
 		if( !gl.getProgramParameter( program, gl.LINK_STATUS ) ) {
 			const errLog = gl.getProgramInfoLog( program );
-			const error = new Error( `${cmdName}: Shader program error: ${errLog}.` );
-			error.code = "SHADER_PROGRAM_ERROR";
-			throw error;
+			g_errors.throwError(
+				Error, `${cmdName}: Shader program error: ${errLog}.`, "SHADER_PROGRAM_ERROR"
+			);
 		}
 
 		isProgramLinked = true;
@@ -163,9 +162,7 @@ export function setupDisplayShader( screenData ) {
 	const quadVao = gl.createVertexArray();
 	screenData.displayQuadVao = quadVao;
 	if( !positionBuffer || !quadVao ) {
-		const error = new Error( "screen: Failed to allocate display buffers." );
-		error.code = "WEBGL_ERROR";
-		throw error;
+		g_errors.throwError( Error, "screen: Failed to allocate display buffers.", "WEBGL_ERROR" );
 	}
 	gl.bindVertexArray( quadVao );
 	gl.bindBuffer( gl.ARRAY_BUFFER, positionBuffer );
@@ -353,11 +350,9 @@ function reflectCustomUniforms( gl, program ) {
 export function validateCustomShaderProgram( screenData, handle, cmdName ) {
 	const cache = getOrCreateCustomShaderProgram( screenData, handle, cmdName );
 	if( cache.locations.texture === null ) {
-		const error = new Error(
-			`${cmdName}: Missing required uniform u_texture in shader.`
+		g_errors.throwError(
+			Error, `${cmdName}: Missing required uniform u_texture in shader.`, "MISSING_U_TEXTURE"
 		);
-		error.code = "MISSING_U_TEXTURE";
-		throw error;
 	}
 	return cache;
 }

@@ -11,6 +11,7 @@
 import * as g_contextState from "../renderer/context-state.js";
 import * as g_alpha from "../renderer/alpha.js";
 import * as g_utils from "../core/utils.js";
+import * as g_errors from "../core/errors.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_colors from "./colors.js";
 import * as g_commands from "../core/commands.js";
@@ -80,9 +81,9 @@ function getPixel( screenData, options ) {
 	const px = g_utils.getInt( options.x, null );
 	const py = g_utils.getInt( options.y, null );
 	if( px === null || py === null ) {
-		const error = new TypeError( "getPixel: Parameters x and y must be integers." );
-		error.code = "INVALID_PARAMETER";
-		throw error;
+		g_errors.throwError(
+			TypeError, "getPixel: Parameters x and y must be integers.", "INVALID_PARAMETER"
+		);
 	}
 	const asIndex = options.asIndex ?? false;
 	const colorValue = readViewPixel( screenData, px, py );
@@ -104,9 +105,9 @@ function getPixelAsync( screenData, options ) {
 	const px = g_utils.getInt( options.x, null );
 	const py = g_utils.getInt( options.y, null );
 	if( px === null || py === null ) {
-		const error = new TypeError( "getPixelAsync: Parameters x and y must be integers." );
-		error.code = "INVALID_PARAMETER";
-		throw error;
+		g_errors.throwError(
+			TypeError, "getPixelAsync: Parameters x and y must be integers.", "INVALID_PARAMETER"
+		);
 	}
 	const asIndex = options.asIndex ?? false;
 	const resolved = resolveViewPixel( screenData, px, py );
@@ -157,11 +158,10 @@ function get( screenData, options ) {
 	const asIndex = options.asIndex ?? true;
 
 	if( pX === null || pY === null || pWidth === null || pHeight === null ) {
-		const error = new TypeError(
-			"get: Parameters x, y, width and height must be integers."
+		g_errors.throwError(
+			TypeError, "get: Parameters x, y, width and height must be integers.",
+			"INVALID_PARAMETER"
 		);
-		error.code = "INVALID_PARAMETER";
-		throw error;
 	}
 
 	if( pWidth <= 0 || pHeight <= 0 ) {
@@ -195,11 +195,10 @@ function getAsync( screenData, options ) {
 	const asIndex = options.asIndex ?? true;
 
 	if( pX === null || pY === null || pWidth === null || pHeight === null ) {
-		const error = new TypeError(
-			"getAsync: Parameters x, y, width and height must be integers."
+		g_errors.throwError(
+			TypeError, "getAsync: Parameters x, y, width and height must be integers.",
+			"INVALID_PARAMETER"
 		);
-		error.code = "INVALID_PARAMETER";
-		throw error;
 	}
 
 	if( pWidth <= 0 || pHeight <= 0 ) {
@@ -293,9 +292,9 @@ function filterImg( screenData, options ) {
 	const y2 = g_utils.getInt( options.y2, viewSnap.height - 1 );
 
 	if( !g_utils.isFunction( filter ) ) {
-		const error = new TypeError( "filterImg: Argument filter must be a callback function." );
-		error.code = "INVALID_CALLBACK";
-		throw error;
+		g_errors.throwError(
+			TypeError, "filterImg: Argument filter must be a callback function.", "INVALID_CALLBACK"
+		);
 	}
 
 	// Inclusive local corners → half-open, then intersect the captured clip
@@ -463,9 +462,9 @@ function putWrapper( screenData, data, x, y, include0 = false ) {
 
 	// Validate coordinates
 	if( pX === null || pY === null ) {
-		const error = new TypeError( "put: Parameters x and y must be integers." );
-		error.code = "INVALID_PARAMETER";
-		throw error;
+		g_errors.throwError(
+			TypeError, "put: Parameters x and y must be integers.", "INVALID_PARAMETER"
+		);
 	}
 
 	// Clip dest against the effective view clip in local coordinates

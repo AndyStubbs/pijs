@@ -8,6 +8,7 @@ import * as g_esbuild from "esbuild";
 import * as g_fs from "node:fs";
 import * as g_path from "node:path";
 import * as g_buildPlugin from "./build-plugin.js";
+import * as g_glslCompact from "./glsl-compact.js";
 import * as g_generateMetadata from "./generate-metadata.js";
 import * as g_validateTypeDefinitions from "./validate-type-definitions.js";
 import * as g_copyToRelease from "./copy-to-release.js";
@@ -150,8 +151,7 @@ function getBuildOptions( entryFile, banner ) {
 		"banner": { "js": banner },
 		"target": "es2020",
 		"platform": "browser",
-		"plugins": [ injectVersionPlugin, webpBase64Plugin ],
-		"loader": { ".vert": "text", ".frag": "text" },
+		"plugins": [ injectVersionPlugin, webpBase64Plugin, g_glslCompact.glslCompactPlugin ],
 		"sourceRoot": `../${sourceDir}/`,
 		"legalComments": "none"
 	};

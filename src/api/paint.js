@@ -10,6 +10,7 @@
 
 import * as g_colors from "./colors.js";
 import * as g_utils from "../core/utils.js";
+import * as g_errors from "../core/errors.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_commands from "../core/commands.js";
 import * as g_view from "./view.js";
@@ -60,26 +61,27 @@ function paint( screenData, options ) {
 	let boundaryColor = options.boundaryColor;
 
 	if( x === null || y === null ) {
-		const error = new TypeError( "paint: Parameters x and y must be integers" );
-		error.code = "INVALID_PARAMETER";
-		throw error;
+		g_errors.throwError(
+			TypeError, "paint: Parameters x and y must be integers", "INVALID_PARAMETER"
+		);
 	}
 
 	if( tolerance < 0 || tolerance > 1 ) {
-		const error = new RangeError(
+		g_errors.throwError(
+			RangeError,
 			"paint: Parameter tolerance must be a number between 0 and 1 " +
-			"(0 = exact match, 1 = any color)."
+			"(0 = exact match, 1 = any color).",
+			"INVALID_PARAMETER"
 		);
-		error.code = "INVALID_PARAMETER";
-		throw error;
 	}
 
 	// Get fill color
 	fillColor = g_colors.getColorValueByRawInput( screenData, fillColor );
 	if( fillColor === null ) {
-		const error = new RangeError( "paint: Parameter fillColor is not a valid color format." );
-		error.code = "INVALID_PARAMETER";
-		throw error;
+		g_errors.throwError(
+			RangeError, "paint: Parameter fillColor is not a valid color format.",
+			"INVALID_PARAMETER"
+		);
 	}
 
 	const view = screenData.view;
@@ -137,11 +139,10 @@ function paint( screenData, options ) {
 		// Boundary fill mode: skip pixels that match boundary color
 		boundaryColor = g_colors.getColorValueByRawInput( screenData, boundaryColor );
 		if( boundaryColor === null ) {
-			const error = new RangeError(
-				"paint: Parameter boundaryColor is not a valid color format."
+			g_errors.throwError(
+				RangeError, "paint: Parameter boundaryColor is not a valid color format.",
+				"INVALID_PARAMETER"
 			);
-			error.code = "INVALID_PARAMETER";
-			throw error;
 		}
 		shouldSkipPixel = ( pixelColor ) => {
 			const difference = g_utils.calcColorDifference( boundaryColor, pixelColor, weights );

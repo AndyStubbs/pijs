@@ -11,6 +11,7 @@
 "use strict";
 
 import * as g_utils from "../core/utils.js";
+import * as g_errors from "../core/errors.js";
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
@@ -98,9 +99,7 @@ function print( screenData, options ) {
 
 	// Check if font is set
 	if( !screenData.font ) {
-		const error = new Error( "print: No font set. Call setFont() first." );
-		error.code = "NO_FONT_SET";
-		throw error;
+		g_errors.throwError( Error, "print: No font set. Call setFont() first.", "NO_FONT_SET" );
 	}
 
 	const viewWidth = getViewWidth( screenData );
@@ -147,18 +146,16 @@ function setPos( screenData, options ) {
 
 	const font = screenData.font;
 	if( !font ) {
-		const error = new Error( "setPos: No font set. Call setFont() first." );
-		error.code = "NO_FONT_SET";
-		throw error;
+		g_errors.throwError( Error, "setPos: No font set. Call setFont() first.", "NO_FONT_SET" );
 	}
 	const printCursor = screenData.printCursor;
 
 	// Set the x value
 	if( col !== null ) {
 		if( isNaN( col ) ) {
-			const error = new TypeError( "setPos: parameter col must be a number" );
-			error.code = "INVALID_COL";
-			throw error;
+			g_errors.throwError(
+				TypeError, "setPos: parameter col must be a number", "INVALID_COL"
+			);
 		}
 		const viewWidth = getViewWidth( screenData );
 		let x = Math.floor( col * printCursor.width );
@@ -175,9 +172,9 @@ function setPos( screenData, options ) {
 	// Set the y value
 	if( row !== null ) {
 		if( isNaN( row ) ) {
-			const error = new TypeError( "setPos: parameter row must be a number" );
-			error.code = "INVALID_ROW";
-			throw error;
+			g_errors.throwError(
+				TypeError, "setPos: parameter row must be a number", "INVALID_ROW"
+			);
 		}
 		const viewHeight = getViewHeight( screenData );
 		let y = Math.floor( row * screenData.printCursor.height );
@@ -207,18 +204,14 @@ function setPosPx( screenData, options ) {
 
 	if( x != null ) {
 		if( isNaN( x ) ) {
-			const error = new TypeError( "setPosPx: parameter x must be a number" );
-			error.code = "INVALID_X";
-			throw error;
+			g_errors.throwError( TypeError, "setPosPx: parameter x must be a number", "INVALID_X" );
 		}
 		screenData.printCursor.x = Math.round( x );
 	}
 
 	if( y != null ) {
 		if( isNaN( y ) ) {
-			const error = new TypeError( "setPosPx: parameter y must be a number" );
-			error.code = "INVALID_Y";
-			throw error;
+			g_errors.throwError( TypeError, "setPosPx: parameter y must be a number", "INVALID_Y" );
 		}
 		screenData.printCursor.y = Math.round( y );
 	}
@@ -308,19 +301,18 @@ function setPrintSize( screenData, options ) {
 	if(
 		( scaleWidth !== null && scaleWidth <= 0 ) || ( scaleHeight !== null && scaleHeight <= 0 )
 	) {
-		const error = new RangeError(
-			"setPrintSize: Parameters scaleWidth and scaleHeight must be a number greater than 0."
+		g_errors.throwError(
+			RangeError,
+			"setPrintSize: Parameters scaleWidth and scaleHeight must be a number greater than 0.",
+			"INVALID_SIZE"
 		);
-		error.code = "INVALID_SIZE";
-		throw error;
 	}
 
 	if( ( padX !== null && padX < 0 ) || ( padY !== null && padY < 0 ) ) {
-		const error = new RangeError(
-			"setPrintSize: Parameters padX and padY must be 0 or greater."
+		g_errors.throwError(
+			RangeError, "setPrintSize: Parameters padX and padY must be 0 or greater.",
+			"INVALID_PADDING"
 		);
-		error.code = "INVALID_PADDING";
-		throw error;
 	}
 
 	if( scaleWidth !== null ) {
@@ -358,18 +350,17 @@ function readPrintSize( value, isPadding ) {
 	const parsed = g_utils.getFloat( value, null );
 	if( isPadding ) {
 		if( parsed === null || !Number.isInteger( parsed ) ) {
-			const error = new TypeError(
-				"setPrintSize: Parameters padX and padY must be integers."
+			g_errors.throwError(
+				TypeError, "setPrintSize: Parameters padX and padY must be integers.",
+				"INVALID_PADDING"
 			);
-			error.code = "INVALID_PADDING";
-			throw error;
 		}
 	} else if( parsed === null ) {
-		const error = new TypeError(
-			"setPrintSize: Parameters scaleWidth and scaleHeight must be finite numbers."
+		g_errors.throwError(
+			TypeError,
+			"setPrintSize: Parameters scaleWidth and scaleHeight must be finite numbers.",
+			"INVALID_SIZE"
 		);
-		error.code = "INVALID_SIZE";
-		throw error;
 	}
 	return parsed;
 }

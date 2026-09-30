@@ -10,6 +10,7 @@
 "use strict";
 
 import * as g_utils from "./utils.js";
+import * as g_errors from "./errors.js";
 import * as g_screenManager from "./screen-manager.js";
 
 // Null prototype, so option names such as "toString" are not found as inherited members
@@ -199,9 +200,9 @@ function ready( options ) {
 
 	// Validate callback if provided
 	if( callback != null && !g_utils.isFunction( callback ) ) {
-		const error = new TypeError( "ready: Parameter callback must be a function." );
-		error.code = "INVALID_CALLBACK";
-		throw error;
+		g_errors.throwError(
+			TypeError, "ready: Parameter callback must be a function.", "INVALID_CALLBACK"
+		);
 	}
 
 	// Never execute immediately - always defer to next tick
@@ -325,9 +326,9 @@ export function set( screenData, options ) {
 	// Unpack options
 	options = options.options;
 	if( !g_utils.isObjectLiteral( options ) ) {
-		const error = new TypeError( "set: Parameter options must be an object." );
-		error.code = "INVALID_OPTIONS";
-		throw error;
+		g_errors.throwError(
+			TypeError, "set: Parameter options must be an object.", "INVALID_OPTIONS"
+		);
 	}
 	const optionNames = Object.keys( options );
 	checkOptionNames( screenData, options, optionNames );
@@ -376,12 +377,12 @@ function checkOptionNames( screenData, options, optionNames ) {
 	for( const optionName of optionNames ) {
 		const setting = m_settings[ optionName ];
 		if( setting === undefined ) {
-			const error = new RangeError(
+			g_errors.throwError(
+				RangeError,
 				`set: Option "${optionName}" is not a setting. Check its spelling, or load the ` +
-				"plugin that provides it."
+				"plugin that provides it.",
+				"INVALID_OPTION"
 			);
-			error.code = "INVALID_OPTION";
-			throw error;
 		}
 		if( options[ optionName ] == null ) {
 			continue;

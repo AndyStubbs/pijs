@@ -13,6 +13,7 @@ import * as g_contextState from "./context-state.js";
 import * as g_shaders from "./shaders.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_blends from "../api/blends.js";
+import * as g_errors from "../core/errors.js";
 
 // Shaders are imported from external files via esbuild text loader
 import m_pointVertSrc from "./shaders/point.vert";
@@ -199,9 +200,9 @@ export function createBatch( screenData, type ) {
 		batch.mode = gl.POINTS;
 		batch.overrideGlobalBlend = false;
 	} else {
-		const error = new Error( `createBatch: Unknown batch type ${type}` );
-		error.code = "INVALID_BATCH_TYPE";
-		throw error;
+		g_errors.throwError(
+			Error, `createBatch: Unknown batch type ${type}`, "INVALID_BATCH_TYPE"
+		);
 	}
 
 	// Create the batch shader program
@@ -252,9 +253,7 @@ export function createBatch( screenData, type ) {
 		!batch.vertexVBO || !batch.colorVBO || !batch.vao ||
 		( batch.useTexture && !batch.texCoordVBO )
 	) {
-		const error = new Error( "screen: Failed to allocate batch buffers." );
-		error.code = "WEBGL_ERROR";
-		throw error;
+		g_errors.throwError( Error, "screen: Failed to allocate batch buffers.", "WEBGL_ERROR" );
 	}
 	gl.bindVertexArray( batch.vao );
 
@@ -545,9 +544,9 @@ function runShaderPass( screenData, drawOrderItem ) {
 		screenData, handle
 	);
 	if( locations.texture === null ) {
-		const error = new Error( "applyShader: Missing required uniform u_texture in shader." );
-		error.code = "MISSING_U_TEXTURE";
-		throw error;
+		g_errors.throwError(
+			Error, "applyShader: Missing required uniform u_texture in shader.", "MISSING_U_TEXTURE"
+		);
 	}
 
 	const w = screenData.width;
@@ -975,11 +974,10 @@ export function displayToCanvas( screenData ) {
 		const handle = screenData.displayShaderHandle;
 		const cache = g_shaders.getOrCreateCustomShaderProgram( screenData, handle );
 		if( cache.locations.texture === null ) {
-			const error = new Error(
-				"setDisplayShader: Missing required uniform u_texture in shader."
+			g_errors.throwError(
+				Error, "setDisplayShader: Missing required uniform u_texture in shader.",
+				"MISSING_U_TEXTURE"
 			);
-			error.code = "MISSING_U_TEXTURE";
-			throw error;
 		}
 		program = cache.program;
 		locations = cache.locations;

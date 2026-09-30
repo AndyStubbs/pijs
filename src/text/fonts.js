@@ -12,6 +12,7 @@
 "use strict";
 
 import * as g_utils from "../core/utils.js";
+import * as g_errors from "../core/errors.js";
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
@@ -163,24 +164,22 @@ function loadFont( options ) {
 	let charset = options.charset;
 
 	if( !Number.isInteger( width ) || !Number.isInteger( height ) ) {
-		const error = new TypeError( "loadFont: width and height must be integers." );
-		error.code = "INVALID_DIMENSIONS";
-		throw error;
+		g_errors.throwError(
+			TypeError, "loadFont: width and height must be integers.", "INVALID_DIMENSIONS"
+		);
 	}
 	if( width < 1 || height < 1 ) {
-		const error = new RangeError( "loadFont: width and height must be at least 1." );
-		error.code = "INVALID_DIMENSIONS";
-		throw error;
+		g_errors.throwError(
+			RangeError, "loadFont: width and height must be at least 1.", "INVALID_DIMENSIONS"
+		);
 	}
 	if( !Number.isInteger( margin ) ) {
-		const error = new TypeError( "loadFont: margin must be an integer." );
-		error.code = "INVALID_MARGIN";
-		throw error;
+		g_errors.throwError( TypeError, "loadFont: margin must be an integer.", "INVALID_MARGIN" );
 	}
 	if( margin < 0 ) {
-		const error = new RangeError( "loadFont: margin must be 0 or greater." );
-		error.code = "INVALID_MARGIN";
-		throw error;
+		g_errors.throwError(
+			RangeError, "loadFont: margin must be 0 or greater.", "INVALID_MARGIN"
+		);
 	}
 
 	// Default charset to 0 to 255
@@ -192,9 +191,9 @@ function loadFont( options ) {
 	}
 
 	if( !( Array.isArray( charset ) || typeof charset === "string" ) ) {
-		const error = new TypeError( "loadFont: charset must be an array or a string." );
-		error.code = "INVALID_CHARSET";
-		throw error;
+		g_errors.throwError(
+			TypeError, "loadFont: charset must be an array or a string.", "INVALID_CHARSET"
+		);
 	}
 
 	// Convert charset to array of integers (character codes)
@@ -259,9 +258,9 @@ function loadFontFromImage( fontSrc, font ) {
 		font.atlasWidth = fontSrc.width;
 		font.atlasHeight = fontSrc.height;
 	} else {
-		const error = new TypeError( "loadFont: fontSrc must be a string or Image element." );
-		error.code = "INVALID_FONT_SRC";
-		throw error;
+		g_errors.throwError(
+			TypeError, "loadFont: fontSrc must be a string or Image element.", "INVALID_FONT_SRC"
+		);
 	}
 }
 
@@ -359,9 +358,7 @@ function setDefaultFont( options ) {
 	const fontId = g_utils.getInt( options.fontId, null );
 
 	if( fontId === null || !m_fontMap.has( fontId ) ) {
-		const error = new RangeError( "setDefaultFont: invalid fontId" );
-		error.code = "INVALID_FONT_ID";
-		throw error;
+		g_errors.throwError( RangeError, "setDefaultFont: invalid fontId", "INVALID_FONT_ID" );
 	}
 
 	m_defaultFontId = fontId;
@@ -381,11 +378,11 @@ export function setFont( screenData, options ) {
 	// TODO-LATER: setFont should also accept a font object returned by getAvailableFonts
 
 	if( fontId === null || !m_fontMap.has( fontId ) ) {
-		const error = new RangeError(
-			"setFont: Parameter fontId must be an integer and an index in the available fonts."
+		g_errors.throwError(
+			RangeError,
+			"setFont: Parameter fontId must be an integer and an index in the available fonts.",
+			"INVALID_FONT_ID"
 		);
-		error.code = "INVALID_FONT_ID";
-		throw error;
 	}
 
 	const font = m_fontMap.get( fontId );
@@ -447,9 +444,9 @@ function setChar( screenData, options ) {
 
 	const font = screenData.font;
 	if( !font || !font.image ) {
-		const error = new Error( "setChar: No font image loaded on this screen." );
-		error.code = "NO_FONT_IMAGE";
-		throw error;
+		g_errors.throwError(
+			Error, "setChar: No font image loaded on this screen.", "NO_FONT_IMAGE"
+		);
 	}
 
 	// Convert string to char code
@@ -458,9 +455,9 @@ function setChar( screenData, options ) {
 	} else {
 		charCode = g_utils.getInt( charCode, null );
 		if( charCode === null ) {
-			const error = new TypeError( "setChar: charCode must be an integer or a string" );
-			error.code = "INVALID_CHAR_CODE";
-			throw error;
+			g_errors.throwError(
+				TypeError, "setChar: charCode must be an integer or a string", "INVALID_CHAR_CODE"
+			);
 		}
 	}
 
@@ -469,37 +466,36 @@ function setChar( screenData, options ) {
 		if( typeof data === "string" ) {
 			data = g_utils.hexToData( data, font.width, font.height );
 		} else {
-			const error = new TypeError( "setChar: data must be a 2D array or an encoded string" );
-			error.code = "INVALID_DATA";
-			throw error;
+			g_errors.throwError(
+				TypeError, "setChar: data must be a 2D array or an encoded string", "INVALID_DATA"
+			);
 		}
 	}
 
 	// Validate dimensions
 	if( data.length !== font.height ) {
-		const error = new RangeError(
-			`setChar: data height (${data.length}) must match font height (${font.height})`
+		g_errors.throwError(
+			RangeError,
+			`setChar: data height (${data.length}) must match font height (${font.height})`,
+			"INVALID_DATA_HEIGHT"
 		);
-		error.code = "INVALID_DATA_HEIGHT";
-		throw error;
 	}
 
 	for( let i = 0; i < data.length; i++ ) {
 		if( !Array.isArray( data[ i ] ) || data[ i ].length !== font.width ) {
-			const error = new RangeError(
-				`setChar: data width at row ${i} must match font width (${font.width})`
+			g_errors.throwError(
+				RangeError, `setChar: data width at row ${i} must match font width (${font.width})`,
+				"INVALID_DATA_WIDTH"
 			);
-			error.code = "INVALID_DATA_WIDTH";
-			throw error;
 		}
 	}
 
 	// Locate character cell in atlas
 	const charIndex = font.chars[ charCode ];
 	if( charIndex === undefined ) {
-		const error = new RangeError( "setChar: character not in font character set" );
-		error.code = "CHAR_NOT_IN_FONT";
-		throw error;
+		g_errors.throwError(
+			RangeError, "setChar: character not in font character set", "CHAR_NOT_IN_FONT"
+		);
 	}
 
 	const columns = Math.floor( font.atlasWidth / font.cellWidth );

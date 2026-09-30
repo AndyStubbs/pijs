@@ -11,6 +11,7 @@
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_commands from "../core/commands.js";
 import * as g_utils from "../core/utils.js";
+import * as g_errors from "../core/errors.js";
 import * as g_renderer from "../renderer/renderer.js";
 
 // Blends
@@ -63,12 +64,12 @@ function setBlend( screenData, options ) {
 	const blend = options.blend ?? screenData.blends.blend;
 
 	if( !BLENDS.has( blend ) ) {
-		const error = new TypeError(
+		g_errors.throwError(
+			TypeError,
 			"setBlend: Parameter blend is not a valid blend. Valid blends are (" +
-			`${Array.from( BLENDS ).join( ", " )}).`
+			`${Array.from( BLENDS ).join( ", " )}).`,
+			"INVALID_BLEND_MODE"
 		);
-		error.code = "INVALID_BLEND_MODE";
-		throw error;
 	}
 
 	// Set blend data on screen
@@ -108,9 +109,7 @@ function setNoise( screenData, options ) {
 		// Validate the noise option
 		const validateNoiseValFn = ( noiseVal ) => {
 			if( noiseVal === null ) {
-				const error = new TypeError( noiseErrorMsg );
-				error.code = "INVALID_NOISE_VALUE";
-				throw error;
+				g_errors.throwError( TypeError, noiseErrorMsg, "INVALID_NOISE_VALUE" );
 			}
 		};
 

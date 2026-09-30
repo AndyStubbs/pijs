@@ -13,6 +13,7 @@ import * as g_esbuild from "esbuild";
 import * as g_fs from "node:fs";
 import * as g_path from "node:path";
 import * as g_url from "node:url";
+import * as g_glslCompact from "./glsl-compact.js";
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
 function isMainModule() {
 	const entry = process.argv[ 1 ];
@@ -70,8 +71,7 @@ function getPluginBuildOptions( entryPoint, plugins, banner ) {
 		"sourcemap": true,
 		"target": "es2020",
 		"platform": "browser",
-		"loader": { ".vert": "text", ".frag": "text" },
-		"plugins": plugins,
+		"plugins": [ g_glslCompact.glslCompactPlugin, ...plugins ],
 		"legalComments": "none"
 	};
 

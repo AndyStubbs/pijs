@@ -11,6 +11,7 @@
 
 import * as g_commands from "../core/commands.js";
 import * as g_utils from "../core/utils.js";
+import * as g_errors from "../core/errors.js";
 import * as g_screenManager from "../core/screen-manager.js";
 
 // Max color difference used in find color by index
@@ -34,41 +35,29 @@ let m_defaultColor = -1;
  */
 export function init( api ) {
 
-	// Default 256-color palette (CGA + extended colors) - raw hex strings
-	const defaultPaletteHex = [
-		"#0000AA", "#00AA00", "#00AAAA", "#AA0000", "#AA00AA", "#AA5500", "#AAAAAA", "#555555",
-		"#5555FF", "#55FF55", "#55FFFF", "#FF5555", "#FF55FF", "#FFFF55", "#FFFFFF", "#000000",
-		"#141414", "#202020", "#2D2D2D", "#393939", "#454545", "#515151", "#616161", "#717171",
-		"#828282", "#929292", "#A2A2A2", "#B6B6B6", "#CACACA", "#E3E3E3", "#FFFFFF", "#0000FF",
-		"#4100FF", "#7D00FF", "#BE00FF", "#FF00FF", "#FF00BE", "#FF007D", "#FF0041", "#FF0000",
-		"#FF4100", "#FF7D00", "#FFBE00", "#FFFF00", "#BEFF00", "#7DFF00", "#41FF00", "#00FF00",
-		"#00FF41", "#00FF7D", "#00FFBE", "#00FFFF", "#00BEFF", "#007DFF", "#0041FF", "#7D7DFF",
-		"#9E7DFF", "#BE7DFF", "#DF7DFF", "#FF7DFF", "#FF7DDF", "#FF7DBE", "#FF7D9E", "#FF7D7D",
-		"#FF9E7D", "#FFBE7D", "#FFDF7D", "#FFFF7D", "#DFFF7D", "#BEFF7D", "#9EFF7D", "#7DFF7D",
-		"#7DFF9E", "#7DFFBE", "#7DFFDF", "#7DFFFF", "#7DDFFF", "#7DBEFF", "#7D9EFF", "#B6B6FF",
-		"#C6B6FF", "#DBB6FF", "#EBB6FF", "#FFB6FF", "#FFB6EB", "#FFB6DB", "#FFB6C6", "#FFB6B6",
-		"#FFC6B6", "#FFDBB6", "#FFEBB6", "#FFFFB6", "#EBFFB6", "#DBFFB6", "#C6FFB6", "#B6FFB6",
-		"#B6FFC6", "#B6FFDB", "#B6FFEB", "#B6FFFF", "#B6EBFF", "#B6DBFF", "#B6C6FF", "#000071",
-		"#1C0071", "#390071", "#550071", "#710071", "#710055", "#710039", "#71001C", "#710000",
-		"#711C00", "#713900", "#715500", "#717100", "#557100", "#397100", "#1C7100", "#007100",
-		"#00711C", "#007139", "#007155", "#007171", "#005571", "#003971", "#001C71", "#393971",
-		"#453971", "#553971", "#613971", "#713971", "#713961", "#713955", "#713945", "#713939",
-		"#714539", "#715539", "#716139", "#717139", "#617139", "#557139", "#457139", "#397139",
-		"#397145", "#397155", "#397161", "#397171", "#396171", "#395571", "#394571", "#515171",
-		"#595171", "#615171", "#695171", "#715171", "#715169", "#715161", "#715159", "#715151",
-		"#715951", "#716151", "#716951", "#717151", "#697151", "#617151", "#597151", "#517151",
-		"#517159", "#517161", "#517169", "#517171", "#516971", "#516171", "#515971", "#000041",
-		"#100041", "#200041", "#310041", "#410041", "#410031", "#410020", "#410010", "#410000",
-		"#411000", "#412000", "#413100", "#414100", "#314100", "#204100", "#104100", "#004100",
-		"#004110", "#004120", "#004131", "#004141", "#003141", "#002041", "#001041", "#202041",
-		"#282041", "#312041", "#392041", "#412041", "#412039", "#412031", "#412028", "#412020",
-		"#412820", "#413120", "#413920", "#414120", "#394120", "#314120", "#284120", "#204120",
-		"#204128", "#204131", "#204139", "#204141", "#203941", "#203141", "#202841", "#2D2D41",
-		"#312D41", "#352D41", "#3D2D41", "#412D41", "#412D3D", "#412D35", "#412D31", "#412D2D",
-		"#41312D", "#41352D", "#413D2D", "#41412D", "#3D412D", "#35412D", "#31412D", "#2D412D",
-		"#2D4131", "#2D4135", "#2D413D", "#2D4141", "#2D3D41", "#2D3541", "#2D3141", "#000000",
-		"#000000", "#000000", "#000000", "#000000", "#000000", "#000000"
-	];
+	// Default 256-color palette (CGA + extended colors). Entries are packed six-digit RGB hex
+	// values, expanded to "#RRGGBB" strings; setDefaultPal adds the transparent entry 0.
+	const defaultPaletteHex = (
+		"0000AA00AA0000AAAAAA0000AA00AAAA5500AAAAAA5555555555FF55FF5555FFFFFF5555FF55FFFFFF55" +
+		"FFFFFF0000001414142020202D2D2D393939454545515151616161717171828282929292A2A2A2B6B6B6" +
+		"CACACAE3E3E3FFFFFF0000FF4100FF7D00FFBE00FFFF00FFFF00BEFF007DFF0041FF0000FF4100FF7D00" +
+		"FFBE00FFFF00BEFF007DFF0041FF0000FF0000FF4100FF7D00FFBE00FFFF00BEFF007DFF0041FF7D7DFF" +
+		"9E7DFFBE7DFFDF7DFFFF7DFFFF7DDFFF7DBEFF7D9EFF7D7DFF9E7DFFBE7DFFDF7DFFFF7DDFFF7DBEFF7D" +
+		"9EFF7D7DFF7D7DFF9E7DFFBE7DFFDF7DFFFF7DDFFF7DBEFF7D9EFFB6B6FFC6B6FFDBB6FFEBB6FFFFB6FF" +
+		"FFB6EBFFB6DBFFB6C6FFB6B6FFC6B6FFDBB6FFEBB6FFFFB6EBFFB6DBFFB6C6FFB6B6FFB6B6FFC6B6FFDB" +
+		"B6FFEBB6FFFFB6EBFFB6DBFFB6C6FF0000711C007139007155007171007171005571003971001C710000" +
+		"711C007139007155007171005571003971001C710000710000711C007139007155007171005571003971" +
+		"001C71393971453971553971613971713971713961713955713945713939714539715539716139717139" +
+		"617139557139457139397139397145397155397161397171396171395571394571515171595171615171" +
+		"695171715171715169715161715159715151715951716151716951717151697151617151597151517151" +
+		"517159517161517169517171516971516171515971000041100041200041310041410041410031410020" +
+		"410010410000411000412000413100414100314100204100104100004100004110004120004131004141" +
+		"003141002041001041202041282041312041392041412041412039412031412028412020412820413120" +
+		"4139204141203941203141202841202041202041282041312041392041412039412031412028412D2D41" +
+		"312D41352D413D2D41412D41412D3D412D35412D31412D2D41312D41352D413D2D41412D3D412D35412D" +
+		"31412D2D412D2D41312D41352D413D2D41412D3D412D35412D3141000000000000000000000000000000" +
+		"000000000000"
+	).match( /.{6}/g ).map( color => "#" + color );
 
 	// Set the default pal and color
 	setDefaultPal( { "pal": defaultPaletteHex } );
@@ -120,17 +109,16 @@ function setDefaultPal( options ) {
 	const pal = options.pal;
 
 	if( !Array.isArray( pal ) ) {
-		const error = new TypeError( "setDefaultPal: Parameter pal must be an array." );
-		error.code = "INVALID_PARAMETER";
-		throw error;
+		g_errors.throwError(
+			TypeError, "setDefaultPal: Parameter pal must be an array.", "INVALID_PARAMETER"
+		);
 	}
 
 	if( pal.length === 0 ) {
-		const error = new RangeError(
-			"setDefaultPal: Parameter pal must have at least one color value."
+		g_errors.throwError(
+			RangeError, "setDefaultPal: Parameter pal must have at least one color value.",
+			"EMPTY_PALETTE"
 		);
-		error.code = "EMPTY_PALETTE";
-		throw error;
 	}
 
 	// Create default pal with the 0'th item set as a black transparent color
@@ -196,12 +184,12 @@ function getDefaultPal( options ) {
 function setDefaultColor( options ) {
 	const colorValue = getColorValueByRawInput( { "pal": m_defaultPal }, options.color );
 	if( colorValue === null ) {
-		const error = new TypeError(
+		g_errors.throwError(
+			TypeError,
 			"setDefaultColor: Parameter color must be a valid color or an integer palette " +
-			"index in range."
+			"index in range.",
+			"INVALID_PARAMETER"
 		);
-		error.code = "INVALID_PARAMETER";
-		throw error;
 	}
 	m_defaultColor = colorValue;
 }
@@ -230,11 +218,10 @@ function getDefaultColor( options ) {
 function createColor( options ) {
 	const color = g_utils.convertToColor( options.color );
 	if( color === null ) {
-		const error = new TypeError(
-			"createColor: Parameter color is not a valid color format."
+		g_errors.throwError(
+			TypeError, "createColor: Parameter color is not a valid color format.",
+			"INVALID_PARAMETER"
 		);
-		error.code = "INVALID_PARAMETER";
-		throw error;
 	}
 	return color;
 }
@@ -255,11 +242,9 @@ function setColor( screenData, options ) {
 	if( typeof colorInput === "number" ) {
 		colorValue = getColorValueByIndex( screenData, colorInput );
 		if( colorValue === null ) {
-			const error = new TypeError(
-				"setColor: Parameter color index is not in pal."
+			g_errors.throwError(
+				TypeError, "setColor: Parameter color index is not in pal.", "INVALID_PARAMETER"
 			);
-			error.code = "INVALID_PARAMETER";
-			throw error;
 		}
 	} else {
 
@@ -268,11 +253,10 @@ function setColor( screenData, options ) {
 
 		// If we were unable to convert this color than it is not a valid color format
 		if( colorValue === null ) {
-			const error = new TypeError(
-				"setColor: Parameter color is not a valid color format."
+			g_errors.throwError(
+				TypeError, "setColor: Parameter color is not a valid color format.",
+				"INVALID_PARAMETER"
 			);
-			error.code = "INVALID_PARAMETER";
-			throw error;
 		}
 	}
 
@@ -336,17 +320,15 @@ function setPal( screenData, options ) {
 	const pal = options.pal;
 
 	if( !Array.isArray( pal ) ) {
-		const error = new TypeError( "setPal: Parameter pal is must be an array." );
-		error.code = "INVALID_PARAMETER";
-		throw error;
+		g_errors.throwError(
+			TypeError, "setPal: Parameter pal is must be an array.", "INVALID_PARAMETER"
+		);
 	}
 
 	if( pal.length === 0 ) {
-		const error = new RangeError(
-			"setPal: Parameter pal must have at least one color value."
+		g_errors.throwError(
+			RangeError, "setPal: Parameter pal must have at least one color value.", "EMPTY_PALETTE"
 		);
-		error.code = "EMPTY_PALETTE";
-		throw error;
 	}
 
 	// Create a new pal with 0'th color set to black transparent
@@ -400,22 +382,20 @@ function getPalIndex( screenData, options ) {
 
 	// Validate tolerance variable
 	if( tolerance < 0 || tolerance > 1 ) {
-		const error = new RangeError(
+		g_errors.throwError(
+			RangeError,
 			"getPalIndex: Parameter tolerance must be a number between 0 and 1 " +
-			"(0 = exact match, 1 = any color)."
+			"(0 = exact match, 1 = any color).",
+			"INVALID_PARAMETER"
 		);
-		error.code = "INVALID_PARAMETER";
-		throw error;
 	}
 
 	// Convert to color value
 	const colorValue = g_utils.convertToColor( color );
 	if( colorValue === null ) {
-		const error = new TypeError(
-			"getPalIndex: Parameter color is not a valid color format."
+		g_errors.throwError(
+			TypeError, "getPalIndex: Parameter color is not a valid color format.", "INVALID_COLOR"
 		);
-		error.code = "INVALID_COLOR";
-		throw error;
 	}
 
 	const index = findColorIndexByColorValue( screenData, colorValue, tolerance );
@@ -435,9 +415,9 @@ function setBgColor( screenData, options ) {
 	if( color !== null ) {
 		screenData.canvas.style.backgroundColor = g_utils.colorToHex( color );
 	} else {
-		const error = new TypeError( "setBgColor: invalid color value for parameter color." );
-		error.code = "INVALID_COLOR";
-		throw error;
+		g_errors.throwError(
+			TypeError, "setBgColor: invalid color value for parameter color.", "INVALID_COLOR"
+		);
 	}
 }
 
@@ -459,11 +439,10 @@ function setContainerBgColor( screenData, options ) {
 	if( color !== null ) {
 		screenData.container.style.backgroundColor = g_utils.colorToHex( color );
 	} else {
-		const error = new TypeError(
-			"setContainerBgColor: invalid color value for parameter color."
+		g_errors.throwError(
+			TypeError, "setContainerBgColor: invalid color value for parameter color.",
+			"INVALID_COLOR"
 		);
-		error.code = "INVALID_COLOR";
-		throw error;
 	}
 }
 
@@ -480,25 +459,24 @@ function setPalColors( screenData, options ) {
 
 	// Validate indices array
 	if( !Array.isArray( indices ) ) {
-		const error = new TypeError( "setPalColors: Parameter indices must be an array." );
-		error.code = "INVALID_INDICES";
-		throw error;
+		g_errors.throwError(
+			TypeError, "setPalColors: Parameter indices must be an array.", "INVALID_INDICES"
+		);
 	}
 
 	// Validate colors array
 	if( !Array.isArray( colors ) ) {
-		const error = new TypeError( "setPalColors: Parameter colors must be an array." );
-		error.code = "INVALID_COLORS";
-		throw error;
+		g_errors.throwError(
+			TypeError, "setPalColors: Parameter colors must be an array.", "INVALID_COLORS"
+		);
 	}
 
 	// Arrays must have the same length
 	if( indices.length !== colors.length ) {
-		const error = new RangeError(
-			"setPalColors: Parameters indices and colors must have the same length."
+		g_errors.throwError(
+			RangeError, "setPalColors: Parameters indices and colors must have the same length.",
+			"LENGTH_MISMATCH"
 		);
-		error.code = "LENGTH_MISMATCH";
-		throw error;
 	}
 
 	// Arrays must not be empty
@@ -576,9 +554,9 @@ function addPalColors( screenData, options ) {
 
 	// Validate colors array
 	if( !Array.isArray( colors ) ) {
-		const error = new TypeError( "addPalColors: Parameter colors must be an array." );
-		error.code = "INVALID_COLORS";
-		throw error;
+		g_errors.throwError(
+			TypeError, "addPalColors: Parameter colors must be an array.", "INVALID_COLORS"
+		);
 	}
 
 	// Array must not be empty

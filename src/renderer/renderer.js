@@ -11,6 +11,7 @@
 
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
+import * as g_errors from "../core/errors.js";
 import * as g_postfx from "../api/postfx.js";
 import * as g_contextState from "./context-state.js";
 import * as g_shaders from "./shaders.js";
@@ -144,9 +145,9 @@ export function createContext( screenData ) {
 
 	// WebGL2 not available
 	if( !screenData.gl ) {
-		const error = new Error( "screen: Failed to create WebGL2 context. WebGL2 is required." );
-		error.code = "WEBGL_ERROR";
-		throw error;
+		g_errors.throwError(
+			Error, "screen: Failed to create WebGL2 context. WebGL2 is required.", "WEBGL_ERROR"
+		);
 	}
 
 	const gl = screenData.gl;
@@ -290,9 +291,7 @@ function createTextureAndFBO( screenData ) {
 	// Create texture
 	const fboTexture = gl.createTexture();
 	if( !fboTexture ) {
-		const error = new Error( "screen: Failed to create WebGL2 texture." );
-		error.code = "WEBGL_ERROR";
-		throw error;
+		g_errors.throwError( Error, "screen: Failed to create WebGL2 texture.", "WEBGL_ERROR" );
 	}
 
 	try {
@@ -312,9 +311,9 @@ function createTextureAndFBO( screenData ) {
 		// Create FBO
 		FBO = gl.createFramebuffer();
 		if( !FBO ) {
-			const error = new Error( "screen: Failed to create WebGL2 framebuffer." );
-			error.code = "WEBGL_ERROR";
-			throw error;
+			g_errors.throwError(
+				Error, "screen: Failed to create WebGL2 framebuffer.", "WEBGL_ERROR"
+			);
 		}
 		gl.bindFramebuffer( gl.FRAMEBUFFER, FBO );
 
@@ -327,9 +326,9 @@ function createTextureAndFBO( screenData ) {
 		// Make sure that framebuffer is complete
 		const status = gl.checkFramebufferStatus( gl.FRAMEBUFFER );
 		if( status !== gl.FRAMEBUFFER_COMPLETE ) {
-			const error = new Error( `screen: WebGL2 Framebuffer incomplete. ${status}` );
-			error.code = "WEBGL_ERROR";
-			throw error;
+			g_errors.throwError(
+				Error, `screen: WebGL2 Framebuffer incomplete. ${status}`, "WEBGL_ERROR"
+			);
 		}
 
 		// Unbind

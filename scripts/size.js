@@ -16,6 +16,7 @@ import * as g_path from "node:path";
 import * as g_url from "node:url";
 import * as g_build from "./build.js";
 import * as g_buildPlugin from "./build-plugin.js";
+import * as g_glslCompact from "./glsl-compact.js";
 import * as g_sizeUtils from "./size-utils.js";
 
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
@@ -269,8 +270,9 @@ async function measureVariant( spec ) {
 		"sourcemap": true,
 		"target": "es2020",
 		"platform": "browser",
-		"plugins": [ g_build.injectVersionPlugin, g_build.webpBase64Plugin ],
-		"loader": { ".vert": "text", ".frag": "text" },
+		"plugins": [
+			g_build.injectVersionPlugin, g_build.webpBase64Plugin, g_glslCompact.glslCompactPlugin
+		],
 		"legalComments": "none"
 	};
 	if( spec.banner ) {
