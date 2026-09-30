@@ -13,6 +13,7 @@ import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_images from "./images.js";
 import * as g_contextState from "../renderer/context-state.js";
+import * as g_errors from "../core/errors.js";
 
 /** Next id for shader handles */
 let m_nextShaderId = 0;
@@ -75,24 +76,25 @@ function createShader( options ) {
 	const uniforms = options.uniforms ?? null;
 
 	if( typeof fragmentSource !== "string" ) {
-		const error = new TypeError( "createShader: Parameter fragmentSource must be a string." );
-		error.code = "INVALID_FRAGMENT_SOURCE";
-		throw error;
+		g_errors.throwError(
+			TypeError, "createShader: Parameter fragmentSource must be a string.",
+			"INVALID_FRAGMENT_SOURCE"
+		);
 	}
 
 	if( fragmentSource.trim().length === 0 ) {
-		const error = new TypeError( "createShader: Parameter fragmentSource must not be empty." );
-		error.code = "INVALID_FRAGMENT_SOURCE";
-		throw error;
+		g_errors.throwError(
+			TypeError, "createShader: Parameter fragmentSource must not be empty.",
+			"INVALID_FRAGMENT_SOURCE"
+		);
 	}
 
 	// Make sure the fragment source is valid GLSL ES 3.00
 	if( !fragmentSource.includes( "#version 300 es" ) ) {
-		const error = new TypeError(
-			"createShader: Parameter fragmentSource must include #version 300 es."
+		g_errors.throwError(
+			TypeError, "createShader: Parameter fragmentSource must include #version 300 es.",
+			"INVALID_FRAGMENT_SOURCE"
 		);
-		error.code = "INVALID_FRAGMENT_SOURCE";
-		throw error;
 	}
 
 	validateUniformMap( uniforms, "createShader" );
@@ -118,11 +120,10 @@ function createShader( options ) {
  */
 function validateShaderId( shaderId, cmdName ) {
 	if( typeof shaderId !== "number" || !Number.isInteger( shaderId ) || shaderId < 0 ) {
-		const error = new TypeError(
-			`${cmdName}: Parameter shaderHandle must be a shader id from createShader.`
+		g_errors.throwError(
+			TypeError, `${cmdName}: Parameter shaderHandle must be a shader id from createShader.`,
+			"INVALID_SHADER_HANDLE"
 		);
-		error.code = "INVALID_SHADER_HANDLE";
-		throw error;
 	}
 	return shaderId;
 }
@@ -139,9 +140,10 @@ function getShaderInfo( screenData, options ) {
 	const shaderId = validateShaderId( options.shaderHandle, "getShaderInfo" );
 	const handle = m_shaderHandles.get( shaderId );
 	if( !handle ) {
-		const error = new TypeError( `getShaderInfo: Unknown shader handle id ${shaderId}.` );
-		error.code = "INVALID_SHADER_HANDLE";
-		throw error;
+		g_errors.throwError(
+			TypeError, `getShaderInfo: Unknown shader handle id ${shaderId}.`,
+			"INVALID_SHADER_HANDLE"
+		);
 	}
 
 	let compiledScreenCount = 0;
@@ -226,16 +228,17 @@ export function getShaderHandle( shaderHandle, cmdName ) {
 		cmdName = "applyShader";
 	}
 	if( shaderHandle == null ) {
-		const error = new TypeError( `${cmdName}: Parameter shaderHandle is required.` );
-		error.code = "INVALID_SHADER_HANDLE";
-		throw error;
+		g_errors.throwError(
+			TypeError, `${cmdName}: Parameter shaderHandle is required.`, "INVALID_SHADER_HANDLE"
+		);
 	}
 	if( typeof shaderHandle === "number" ) {
 		const handle = m_shaderHandles.get( shaderHandle );
 		if( !handle ) {
-			const error = new TypeError( `${cmdName}: Unknown shader handle id ${shaderHandle}.` );
-			error.code = "INVALID_SHADER_HANDLE";
-			throw error;
+			g_errors.throwError(
+				TypeError, `${cmdName}: Unknown shader handle id ${shaderHandle}.`,
+				"INVALID_SHADER_HANDLE"
+			);
 		}
 		return handle;
 	}
@@ -244,11 +247,11 @@ export function getShaderHandle( shaderHandle, cmdName ) {
 	) {
 		return shaderHandle;
 	}
-	const error = new TypeError(
-		`${cmdName}: Parameter shaderHandle must be a shader id or handle from createShader.`
+	g_errors.throwError(
+		TypeError,
+		`${cmdName}: Parameter shaderHandle must be a shader id or handle from createShader.`,
+		"INVALID_SHADER_HANDLE"
 	);
-	error.code = "INVALID_SHADER_HANDLE";
-	throw error;
 }
 
 
@@ -290,9 +293,9 @@ function mergeUniforms( defaults, overrides ) {
 
 function validateUniformMap( uniforms, cmdName ) {
 	if( uniforms != null && ( typeof uniforms !== "object" || Array.isArray( uniforms ) ) ) {
-		const error = new TypeError( `${cmdName}: Parameter uniforms must be an object.` );
-		error.code = "INVALID_UNIFORMS";
-		throw error;
+		g_errors.throwError(
+			TypeError, `${cmdName}: Parameter uniforms must be an object.`, "INVALID_UNIFORMS"
+		);
 	}
 }
 
@@ -308,17 +311,18 @@ function resolveSamplerSource( screenData, input, cmdName ) {
 		}
 	} catch( error ) {
 		if( error.code === "INVALID_NAME" ) {
-			const uniformError = new TypeError( `${cmdName}: Invalid sampler2D image input.` );
-			uniformError.code = "INVALID_UNIFORM_VALUE";
-			throw uniformError;
+			g_errors.throwError(
+				TypeError, `${cmdName}: Invalid sampler2D image input.`, "INVALID_UNIFORM_VALUE"
+			);
 		}
 		throw error;
 	}
 	const sourceData = g_screenManager.screenCanvasMap.get( source );
 	if( sourceData === screenData ) {
-		const error = new Error( `${cmdName}: A shader cannot sample its destination screen.` );
-		error.code = "FRAMEBUFFER_FEEDBACK_LOOP";
-		throw error;
+		g_errors.throwError(
+			Error, `${cmdName}: A shader cannot sample its destination screen.`,
+			"FRAMEBUFFER_FEEDBACK_LOOP"
+		);
 	}
 	return source;
 }

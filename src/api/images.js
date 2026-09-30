@@ -10,6 +10,7 @@
 
 import * as g_alpha from "../renderer/alpha.js";
 import * as g_utils from "../core/utils.js";
+import * as g_errors from "../core/errors.js";
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
@@ -88,27 +89,21 @@ function loadImage( options ) {
 	// Validate src parameter - can be string URL, Image element, or Canvas element
 	if( typeof src === "string" ) {
 		if( src === "" ) {
-			const error = new TypeError( srcErrMsg );
-			error.code = "INVALID_SRC";
-			throw error;
+			g_errors.throwError( TypeError, srcErrMsg, "INVALID_SRC" );
 		}
 	} else if( src && typeof src === "object" ) {
 		if( src.tagName !== "IMG" && src.tagName !== "CANVAS" ) {
-			const error = new TypeError( srcErrMsg );
-			error.code = "INVALID_SRC";
-			throw error;
+			g_errors.throwError( TypeError, srcErrMsg, "INVALID_SRC" );
 		}
 	} else {
-		const error = new TypeError( srcErrMsg );
-		error.code = "INVALID_SRC";
-		throw error;
+		g_errors.throwError( TypeError, srcErrMsg, "INVALID_SRC" );
 	}
 
 	// Validate name
 	if( name && typeof name !== "string" ) {
-		const error = new TypeError( "loadImage: Parameter name must be a string." );
-		error.code = "INVALID_NAME";
-		throw error;
+		g_errors.throwError(
+			TypeError, "loadImage: Parameter name must be a string.", "INVALID_NAME"
+		);
 	}
 
 	// Generate a name if none is provided
@@ -116,21 +111,21 @@ function loadImage( options ) {
 		name = generateImageName();
 	}
 	if( m_images[ name ] ) {
-		const error = new TypeError( "loadImage: Parameter name must be unique." );
-		error.code = "INVALID_NAME";
-		throw error;
+		g_errors.throwError(
+			TypeError, "loadImage: Parameter name must be unique.", "INVALID_NAME"
+		);
 	}
 
 	// Validate callbacks if provided
 	if( onLoadCallback != null && !g_utils.isFunction( onLoadCallback ) ) {
-		const error = new TypeError( "loadImage: Parameter onLoad must be a function." );
-		error.code = "INVALID_CALLBACK";
-		throw error;
+		g_errors.throwError(
+			TypeError, "loadImage: Parameter onLoad must be a function.", "INVALID_CALLBACK"
+		);
 	}
 	if( onErrorCallback != null && !g_utils.isFunction( onErrorCallback ) ) {
-		const error = new TypeError( "loadImage: Parameter onError must be a function." );
-		error.code = "INVALID_CALLBACK";
-		throw error;
+		g_errors.throwError(
+			TypeError, "loadImage: Parameter onError must be a function.", "INVALID_CALLBACK"
+		);
 	}
 
 	// Create blank image object
@@ -248,9 +243,9 @@ function loadImage( options ) {
 function removeImage( options ) {
 	const name = options.name;
 	if( typeof name !== "string" ) {
-		const error = new TypeError( "removeImage: Parameter name must be a string." );
-		error.code = "INVALID_NAME";
-		throw error;
+		g_errors.throwError(
+			TypeError, "removeImage: Parameter name must be a string.", "INVALID_NAME"
+		);
 	}
 
 	const imageObj = m_images[ name ];
@@ -348,30 +343,29 @@ function loadSpritesheet( options ) {
 
 	// Validate spriteWidth and spriteHeight for fixed mode
 	if( !isAuto && ( !Number.isInteger( spriteWidth ) || !Number.isInteger( spriteHeight ) ) ) {
-		const error = new TypeError( "loadSpritesheet: width and height must be integers." );
-		error.code = "INVALID_DIMENSIONS";
-		throw error;
+		g_errors.throwError(
+			TypeError, "loadSpritesheet: width and height must be integers.", "INVALID_DIMENSIONS"
+		);
 	}
 
 	// Size cannot be less than 1
 	if( !isAuto && ( spriteWidth < 1 || spriteHeight < 1 ) ) {
-		const error = new RangeError(
-			"loadSpritesheet: width and height must be greater than 0."
+		g_errors.throwError(
+			RangeError, "loadSpritesheet: width and height must be greater than 0.",
+			"INVALID_DIMENSIONS"
 		);
-		error.code = "INVALID_DIMENSIONS";
-		throw error;
 	}
 
 	// Validate margin; a negative margin would stop the grid from advancing
 	if( !Number.isInteger( margin ) ) {
-		const error = new TypeError( "loadSpritesheet: margin must be an integer." );
-		error.code = "INVALID_MARGIN";
-		throw error;
+		g_errors.throwError(
+			TypeError, "loadSpritesheet: margin must be an integer.", "INVALID_MARGIN"
+		);
 	}
 	if( margin < 0 ) {
-		const error = new RangeError( "loadSpritesheet: margin must be 0 or more." );
-		error.code = "INVALID_MARGIN";
-		throw error;
+		g_errors.throwError(
+			RangeError, "loadSpritesheet: margin must be 0 or more.", "INVALID_MARGIN"
+		);
 	}
 
 	// Generate a name if none is provided
@@ -381,26 +375,26 @@ function loadSpritesheet( options ) {
 
 	// Validate name
 	if( typeof name !== "string" ) {
-		const error = new TypeError( "loadSpritesheet: Parameter name must be a string." );
-		error.code = "INVALID_NAME";
-		throw error;
+		g_errors.throwError(
+			TypeError, "loadSpritesheet: Parameter name must be a string.", "INVALID_NAME"
+		);
 	}
 	if( m_images[ name ] ) {
-		const error = new TypeError( "loadSpritesheet: Parameter name must be unique." );
-		error.code = "INVALID_NAME";
-		throw error;
+		g_errors.throwError(
+			TypeError, "loadSpritesheet: Parameter name must be unique.", "INVALID_NAME"
+		);
 	}
 
 	// Validate callbacks if provided
 	if( onLoadCallback != null && !g_utils.isFunction( onLoadCallback ) ) {
-		const error = new TypeError( "loadSpritesheet: Parameter onLoad must be a function." );
-		error.code = "INVALID_CALLBACK";
-		throw error;
+		g_errors.throwError(
+			TypeError, "loadSpritesheet: Parameter onLoad must be a function.", "INVALID_CALLBACK"
+		);
 	}
 	if( onErrorCallback != null && !g_utils.isFunction( onErrorCallback ) ) {
-		const error = new TypeError( "loadSpritesheet: Parameter onError must be a function." );
-		error.code = "INVALID_CALLBACK";
-		throw error;
+		g_errors.throwError(
+			TypeError, "loadSpritesheet: Parameter onError must be a function.", "INVALID_CALLBACK"
+		);
 	}
 
 	// Load the image first, then process frames in callback
@@ -484,11 +478,10 @@ function createImageFromScreen( screenData, options ) {
 	let y2 = g_utils.getInt( options.y2, view.height - 1 );
 
 	if( view.clipWidth <= 0 || view.clipHeight <= 0 ) {
-		const error = new RangeError(
-			"createImageFromScreen: Region width and height must be greater than 0."
+		g_errors.throwError(
+			RangeError, "createImageFromScreen: Region width and height must be greater than 0.",
+			"INVALID_DIMENSIONS"
 		);
-		error.code = "INVALID_DIMENSIONS";
-		throw error;
 	}
 
 	// Inclusive local clip limits from the effective physical clip
@@ -506,11 +499,10 @@ function createImageFromScreen( screenData, options ) {
 	const height = Math.abs( y2 - y1 ) + 1;
 
 	if( width === 0 || height === 0 ) {
-		const error = new RangeError(
-			"createImageFromScreen: Region width and height must be greater than 0."
+		g_errors.throwError(
+			RangeError, "createImageFromScreen: Region width and height must be greater than 0.",
+			"INVALID_DIMENSIONS"
 		);
-		error.code = "INVALID_DIMENSIONS";
-		throw error;
 	}
 
 	// Physical top-left of the clamped inclusive corners
@@ -521,15 +513,14 @@ function createImageFromScreen( screenData, options ) {
 	if( !name || name === "" ) {
 		name = generateImageName();
 	} else if( typeof name !== "string" ) {
-		const error = new TypeError( "createImageFromScreen: Parameter name must be a string." );
-		error.code = "INVALID_NAME";
-		throw error;
-	} else if( m_images[ name ] ) {
-		const error = new Error(
-			`createImageFromScreen: name "${name}" is already used; name must be unique.`
+		g_errors.throwError(
+			TypeError, "createImageFromScreen: Parameter name must be a string.", "INVALID_NAME"
 		);
-		error.code = "DUPLICATE_NAME";
-		throw error;
+	} else if( m_images[ name ] ) {
+		g_errors.throwError(
+			Error, `createImageFromScreen: name "${name}" is already used; name must be unique.`,
+			"DUPLICATE_NAME"
+		);
 	}
 
 	// Create canvas copy using helper function
@@ -561,20 +552,18 @@ function setDefaultAnchor( screenData, options ) {
 
 	// Validate anchorX
 	if( anchorX === null || anchorX < 0 || anchorX > 1 ) {
-		const error = new TypeError(
-			"setDefaultAnchor: Parameter x must be a number between 0 and 1."
+		g_errors.throwError(
+			TypeError, "setDefaultAnchor: Parameter x must be a number between 0 and 1.",
+			"INVALID_ANCHOR"
 		);
-		error.code = "INVALID_ANCHOR";
-		throw error;
 	}
 
 	// Validate anchorY
 	if( anchorY === null || anchorY < 0 || anchorY > 1 ) {
-		const error = new TypeError(
-			"setDefaultAnchor: Parameter y must be a number between 0 and 1."
+		g_errors.throwError(
+			TypeError, "setDefaultAnchor: Parameter y must be a number between 0 and 1.",
+			"INVALID_ANCHOR"
 		);
-		error.code = "INVALID_ANCHOR";
-		throw error;
 	}
 
 	// Update default anchor values
@@ -595,22 +584,22 @@ function getSpritesheetData( screenData, options ) {
 
 	// Validate name
 	if( typeof name !== "string" ) {
-		const error = new TypeError( "getSpritesheetData: Parameter name must be a string." );
-		error.code = "INVALID_NAME";
-		throw error;
+		g_errors.throwError(
+			TypeError, "getSpritesheetData: Parameter name must be a string.", "INVALID_NAME"
+		);
 	}
 
 	const spriteData = getStoredImage( name );
 	if( !spriteData ) {
-		const error = new Error( `getSpritesheetData: Spritesheet "${name}" not found.` );
-		error.code = "IMAGE_NOT_FOUND";
-		throw error;
+		g_errors.throwError(
+			Error, `getSpritesheetData: Spritesheet "${name}" not found.`, "IMAGE_NOT_FOUND"
+		);
 	}
 
 	if( spriteData.type !== "spritesheet" ) {
-		const error = new Error( `getSpritesheetData: Image "${name}" is not a spritesheet.` );
-		error.code = "NOT_A_SPRITESHEET";
-		throw error;
+		g_errors.throwError(
+			Error, `getSpritesheetData: Image "${name}" is not a spritesheet.`, "NOT_A_SPRITESHEET"
+		);
 	}
 
 	const spriteDataResult = {
@@ -660,11 +649,10 @@ function createCanvasFromScreenRegion( screenData, x, y, width, height ) {
 	const pixelData = g_renderer.readPixelsRaw( screenData, x, y, width, height );
 
 	if( !pixelData ) {
-		const error = new Error(
-			"createCanvasFromScreenRegion: Failed to read pixel data from screen."
+		g_errors.throwError(
+			Error, "createCanvasFromScreenRegion: Failed to read pixel data from screen.",
+			"READ_FAILED"
 		);
-		error.code = "READ_FAILED";
-		throw error;
 	}
 
 	// Create canvas
@@ -722,25 +710,25 @@ export function getImageFromRawInput( imageOrName, fnName ) {
 		// Handle string image name
 		const imageData = getStoredImage( imageOrName );
 		if( !imageData ) {
-			const error = new Error( `${fnName}: Image "${imageOrName}" not found.` );
-			error.code = "IMAGE_NOT_FOUND";
-			throw error;
+			g_errors.throwError(
+				Error, `${fnName}: Image "${imageOrName}" not found.`, "IMAGE_NOT_FOUND"
+			);
 		}
 
 		// Make sure image is ready
 		if( imageData.status !== "ready" ) {
 			const imgName = `Image "${imageOrName}"`;
 			if( imageData.status === "loading" ) {
-				const error = new Error(
-					`${fnName}: "${imgName}" is still loading. Use $.ready() to wait for it.`
+				g_errors.throwError(
+					Error,
+					`${fnName}: "${imgName}" is still loading. Use $.ready() to wait for it.`,
+					"IMAGE_NOT_READY"
 				);
-				error.code = "IMAGE_NOT_READY";
-				throw error;
 			}
 			if( imageData.status === "error" ) {
-				const error = new Error( `${fnName}: "${imgName}" failed to load.` );
-				error.code = "IMAGE_LOAD_FAILED";
-				throw error;
+				g_errors.throwError(
+					Error, `${fnName}: "${imgName}" failed to load.`, "IMAGE_LOAD_FAILED"
+				);
 			}
 		}
 
@@ -756,11 +744,11 @@ export function getImageFromRawInput( imageOrName, fnName ) {
 	}
 
 	if( img === null ) {
-		const error = new TypeError(
-			`${fnName}: Parameter name must be a string, canvas element, or image element.`
+		g_errors.throwError(
+			TypeError,
+			`${fnName}: Parameter name must be a string, canvas element, or image element.`,
+			"INVALID_NAME"
 		);
-		error.code = "INVALID_NAME";
-		throw error;
 	}
 
 	return img;

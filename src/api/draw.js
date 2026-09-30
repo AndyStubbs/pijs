@@ -10,6 +10,7 @@
 
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
+import * as g_errors from "../core/errors.js";
 import * as g_commands from "../core/commands.js";
 
 
@@ -54,9 +55,9 @@ function draw( screenData, options ) {
 	let drawString = options.drawString;
 
 	if( typeof drawString !== "string" ) {
-		const error = new TypeError( "draw: Parameter drawString must be a string." );
-		error.code = "INVALID_PARAMETER";
-		throw error;
+		g_errors.throwError(
+			TypeError, "draw: Parameter drawString must be a string.", "INVALID_PARAMETER"
+		);
 	}
 
 	// Convert to uppercase

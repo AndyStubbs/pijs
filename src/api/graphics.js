@@ -12,6 +12,7 @@
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_utils from "../core/utils.js";
+import * as g_errors from "../core/errors.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_colors from "./colors.js";
 import * as g_images from "./images.js";
@@ -111,9 +112,9 @@ export function buildApi( sharedScreenData ) {
 
 		// Validate integer parameters
 		if( pX === null || pY === null || pRadius === null ) {
-			const error = new TypeError( "arc: Parameters x, y, and radius must be integers." );
-			error.code = "INVALID_PARAMETER";
-			throw error;
+			g_errors.throwError(
+				TypeError, "arc: Parameters x, y, and radius must be integers.", "INVALID_PARAMETER"
+			);
 		}
 
 		// Validate angle parameters (finite numbers in radians)
@@ -121,11 +122,10 @@ export function buildApi( sharedScreenData ) {
 			typeof angle1 !== "number" || !Number.isFinite( angle1 ) ||
 			typeof angle2 !== "number" || !Number.isFinite( angle2 )
 		) {
-			const error = new TypeError(
-				"arc: Parameters angle1 and angle2 must be finite numbers (in degrees)."
+			g_errors.throwError(
+				TypeError, "arc: Parameters angle1 and angle2 must be finite numbers (in degrees).",
+				"INVALID_PARAMETER"
 			);
-			error.code = "INVALID_PARAMETER";
-			throw error;
 		}
 
 		// Draw Arc
@@ -163,11 +163,10 @@ export function buildApi( sharedScreenData ) {
 			pX1 === null || pY1 === null || pX2 === null || pY2 === null ||
 			pX3 === null || pY3 === null || pX4 === null || pY4 === null
 		) {
-			const error = new TypeError(
-				"bezier: All control point coordinates must be integers."
+			g_errors.throwError(
+				TypeError, "bezier: All control point coordinates must be integers.",
+				"INVALID_PARAMETER"
 			);
-			error.code = "INVALID_PARAMETER";
-			throw error;
 		}
 
 		// Draw Bezier
@@ -194,11 +193,10 @@ export function buildApi( sharedScreenData ) {
 		const pRadius = sharedGetInt( radius, null );
 
 		if( pX === null || pY === null || pRadius === null ) {
-			const error = new TypeError(
-				"circle: Parameters x, y, and radius must be integers."
+			g_errors.throwError(
+				TypeError, "circle: Parameters x, y, and radius must be integers.",
+				"INVALID_PARAMETER"
 			);
-			error.code = "INVALID_PARAMETER";
-			throw error;
 		}
 
 		// Parse and validate fillColor here (single source of truth)
@@ -206,11 +204,10 @@ export function buildApi( sharedScreenData ) {
 		if( fillColor != null ) {
 			fillColorValue = sharedGetColorValueByRawInput( sharedScreenData, fillColor );
 			if( fillColorValue === null ) {
-				const error = new TypeError(
-					"circle: Parameter 'fillColor' must be a valid color."
+				g_errors.throwError(
+					TypeError, "circle: Parameter 'fillColor' must be a valid color.",
+					"INVALID_PARAMETER"
 				);
-				error.code = "INVALID_PARAMETER";
-				throw error;
 			}
 
 			// Fill in the circle
@@ -245,9 +242,10 @@ export function buildApi( sharedScreenData ) {
 		const pRy = sharedGetInt( radiusY, null );
 
 		if( pX === null || pY === null || pRx === null || pRy === null ) {
-			const error = new TypeError( "ellipse: Parameters x, y, rx, and ry must be integers." );
-			error.code = "INVALID_PARAMETER";
-			throw error;
+			g_errors.throwError(
+				TypeError, "ellipse: Parameters x, y, rx, and ry must be integers.",
+				"INVALID_PARAMETER"
+			);
 		}
 
 		// Parse and validate fillColor here (single source of truth)
@@ -255,11 +253,10 @@ export function buildApi( sharedScreenData ) {
 		if( fillColor != null ) {
 			fillColorValue = sharedGetColorValueByRawInput( sharedScreenData, fillColor );
 			if( fillColorValue === null ) {
-				const error = new TypeError(
-					"ellipse: Parameter 'fillColor' must be a valid color."
+				g_errors.throwError(
+					TypeError, "ellipse: Parameter 'fillColor' must be a valid color.",
+					"INVALID_PARAMETER"
 				);
-				error.code = "INVALID_PARAMETER";
-				throw error;
 			}
 
 			// Filled handled inside drawEllipse
@@ -292,9 +289,9 @@ export function buildApi( sharedScreenData ) {
 
 		// Make sure x1, y1, x2, y2 are integers
 		if( pX1 === null || pY1 === null || pX2 === null || pY2 === null ) {
-			const error = new TypeError( "line: Parameters x1, y1, x2, y2 must be integers." );
-			error.code = "INVALID_PARAMETER";
-			throw error;
+			g_errors.throwError(
+				TypeError, "line: Parameters x1, y1, x2, y2 must be integers.", "INVALID_PARAMETER"
+			);
 		}
 
 		// Draw Line
@@ -322,9 +319,9 @@ export function buildApi( sharedScreenData ) {
 
 		// Make sure x and y are integers
 		if( pX === null || pY === null ) {
-			const error = new TypeError( "pset: Parameters x and y must be integers." );
-			error.code = "INVALID_PARAMETER";
-			throw error;
+			g_errors.throwError(
+				TypeError, "pset: Parameters x and y must be integers.", "INVALID_PARAMETER"
+			);
 		}
 
 		// Draw the pixel
@@ -356,9 +353,10 @@ export function buildApi( sharedScreenData ) {
 		const pHeight = sharedGetInt( height, null );
 
 		if( pX === null || pY === null || pWidth === null || pHeight === null ) {
-			const error = new TypeError( "rect: Parameters x, y, width, height must be integers." );
-			error.code = "INVALID_PARAMETER";
-			throw error;
+			g_errors.throwError(
+				TypeError, "rect: Parameters x, y, width, height must be integers.",
+				"INVALID_PARAMETER"
+			);
 		}
 
 		if( pWidth < 1 || pHeight < 1 ) {
@@ -370,9 +368,10 @@ export function buildApi( sharedScreenData ) {
 		if( fillColor != null ) {
 			fillColorValue = sharedGetColorValueByRawInput( sharedScreenData, fillColor );
 			if( fillColorValue === null ) {
-				const error = new TypeError( "rect: Parameter 'fillColor' must be a valid color." );
-				error.code = "INVALID_PARAMETER";
-				throw error;
+				g_errors.throwError(
+					TypeError, "rect: Parameter 'fillColor' must be a valid color.",
+					"INVALID_PARAMETER"
+				);
 			}
 
 			// Fill in the rectangle
@@ -509,9 +508,9 @@ export function buildApi( sharedScreenData ) {
 
 		// Validate coordinates
 		if( x === null || y === null ) {
-			const error = new TypeError( "drawImage: Parameters x and y must be numbers." );
-			error.code = "INVALID_COORDINATES";
-			throw error;
+			g_errors.throwError(
+				TypeError, "drawImage: Parameters x and y must be numbers.", "INVALID_COORDINATES"
+			);
 		}
 
 		// Parses the color and makes sure it's in a valid format
@@ -563,57 +562,56 @@ export function buildApi( sharedScreenData ) {
 
 		// Validate name
 		if( typeof name !== "string" ) {
-			const error = new TypeError( "drawSprite: Parameter name must be a string." );
-			error.code = "INVALID_NAME";
-			throw error;
+			g_errors.throwError(
+				TypeError, "drawSprite: Parameter name must be a string.", "INVALID_NAME"
+			);
 		}
 
 		const spriteData = sharedGetStoredImage( name );
 		if( !spriteData ) {
-			const error = new Error( `drawSprite: Spritesheet "${name}" not found.` );
-			error.code = "IMAGE_NOT_FOUND";
-			throw error;
+			g_errors.throwError(
+				Error, `drawSprite: Spritesheet "${name}" not found.`, "IMAGE_NOT_FOUND"
+			);
 		}
 
 		// Validate it's a spritesheet
 		if( spriteData.type !== "spritesheet" ) {
-			const error = new Error( `drawSprite: Image "${name}" is not a spritesheet.` );
-			error.code = "NOT_A_SPRITESHEET";
-			throw error;
+			g_errors.throwError(
+				Error, `drawSprite: Image "${name}" is not a spritesheet.`, "NOT_A_SPRITESHEET"
+			);
 		}
 
 		if( spriteData.status !== "ready" ) {
 			const imgName = `Spritesheet "${name}"`;
 			if( spriteData.status === "loading" ) {
-				const error = new Error(
-					`drawSprite: ${imgName} is still loading. Use $.ready() to wait for it.`
+				g_errors.throwError(
+					Error, `drawSprite: ${imgName} is still loading. Use $.ready() to wait for it.`,
+					"IMAGE_NOT_READY"
 				);
-				error.code = "IMAGE_NOT_READY";
-				throw error;
 			}
 
 			if( spriteData.status === "error" ) {
-				const error = new Error( `drawSprite: ${imgName} failed to load.` );
-				error.code = "IMAGE_LOAD_FAILED";
-				throw error;
+				g_errors.throwError(
+					Error, `drawSprite: ${imgName} failed to load.`, "IMAGE_LOAD_FAILED"
+				);
 			}
 		}
 
 		// Validate frame
 		if( !Number.isInteger( frame ) || frame >= spriteData.frames.length || frame < 0 ) {
-			const error = new RangeError(
+			g_errors.throwError(
+				RangeError,
 				`drawSprite: Frame ${frame} is not valid. Spritesheet has ` +
-				`${spriteData.frames.length} frames.`
+				`${spriteData.frames.length} frames.`,
+				"INVALID_FRAME"
 			);
-			error.code = "INVALID_FRAME";
-			throw error;
 		}
 
 		// Validate coordinates
 		if( x === null || y === null ) {
-			const error = new TypeError( "drawSprite: Parameters x and y must be numbers." );
-			error.code = "INVALID_COORDINATES";
-			throw error;
+			g_errors.throwError(
+				TypeError, "drawSprite: Parameters x and y must be numbers.", "INVALID_COORDINATES"
+			);
 		}
 
 		// Parses the color and makes sure it's in a valid format

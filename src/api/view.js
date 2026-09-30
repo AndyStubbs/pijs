@@ -11,6 +11,7 @@
 "use strict";
 
 import * as g_utils from "../core/utils.js";
+import * as g_errors from "../core/errors.js";
 import * as g_commands from "../core/commands.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_renderer from "../renderer/renderer.js";
@@ -327,19 +328,17 @@ function parseViewRect( fnName, options ) {
 	const height = g_utils.getInt( options.height, null );
 
 	if( x === null || y === null || width === null || height === null ) {
-		const error = new TypeError(
-			`${fnName}: Parameters x, y, width, and height must be integers.`
+		g_errors.throwError(
+			TypeError, `${fnName}: Parameters x, y, width, and height must be integers.`,
+			"INVALID_PARAMETER"
 		);
-		error.code = "INVALID_PARAMETER";
-		throw error;
 	}
 
 	if( width < 0 || height < 0 ) {
-		const error = new RangeError(
-			`${fnName}: Parameters width and height must be 0 or greater.`
+		g_errors.throwError(
+			RangeError, `${fnName}: Parameters width and height must be 0 or greater.`,
+			"INVALID_PARAMETER"
 		);
-		error.code = "INVALID_PARAMETER";
-		throw error;
 	}
 
 	return {
@@ -397,9 +396,7 @@ function pushViewCmd( screenData, options ) {
  */
 function popViewCmd( screenData ) {
 	if( screenData.view.stack.length === 0 ) {
-		const error = new Error( "popView: No view to pop." );
-		error.code = "VIEW_STACK_EMPTY";
-		throw error;
+		g_errors.throwError( Error, "popView: No view to pop.", "VIEW_STACK_EMPTY" );
 	}
 
 	flushThenMutate( screenData, () => {
@@ -440,9 +437,9 @@ function viewToScreenCmd( screenData, options ) {
 	const x = g_utils.getInt( options.x, null );
 	const y = g_utils.getInt( options.y, null );
 	if( x === null || y === null ) {
-		const error = new TypeError( "viewToScreen: Parameters x and y must be integers." );
-		error.code = "INVALID_PARAMETER";
-		throw error;
+		g_errors.throwError(
+			TypeError, "viewToScreen: Parameters x and y must be integers.", "INVALID_PARAMETER"
+		);
 	}
 	return toScreen( screenData, x, y );
 }
@@ -458,9 +455,9 @@ function screenToViewCmd( screenData, options ) {
 	const x = g_utils.getInt( options.x, null );
 	const y = g_utils.getInt( options.y, null );
 	if( x === null || y === null ) {
-		const error = new TypeError( "screenToView: Parameters x and y must be integers." );
-		error.code = "INVALID_PARAMETER";
-		throw error;
+		g_errors.throwError(
+			TypeError, "screenToView: Parameters x and y must be integers.", "INVALID_PARAMETER"
+		);
 	}
 	return {
 		"x": x - screenData.view.originX,

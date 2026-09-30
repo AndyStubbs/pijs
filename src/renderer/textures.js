@@ -12,6 +12,7 @@ import * as g_contextState from "./context-state.js";
 import * as g_alpha from "./alpha.js";
 import * as g_screenManager from "../core/screen-manager.js";
 import * as g_batches from "./batches.js";
+import * as g_errors from "../core/errors.js";
 
 const m_textureSizes = new WeakMap();
 
@@ -152,9 +153,9 @@ function uploadImageToTexture( screenData, img, texture ) {
 				if( !screenData.textureCopyFBO ) {
 					screenData.textureCopyFBO = gl.createFramebuffer();
 					if( !screenData.textureCopyFBO ) {
-						const error = new Error( "Failed to create texture copy framebuffer." );
-						error.code = "WEBGL2_ERROR";
-						throw error;
+						g_errors.throwError(
+							Error, "Failed to create texture copy framebuffer.", "WEBGL2_ERROR"
+						);
 					}
 				}
 
@@ -253,9 +254,7 @@ function resolveWebGL2Texture( screenData, img ) {
 		if( contextTextureMap.size === 0 ) {
 			screenData.imageContextMap.delete( img );
 		}
-		const error = new Error( "Image has no decoded video frame yet." );
-		error.code = "IMAGE_NOT_READY";
-		throw error;
+		g_errors.throwError( Error, "Image has no decoded video frame yet.", "IMAGE_NOT_READY" );
 	}
 	if( texture ) {
 
@@ -296,9 +295,7 @@ function resolveWebGL2Texture( screenData, img ) {
 	// Create the texture
 	texture = gl.createTexture();
 	if( !texture ) {
-		const error = new Error( "Failed to create WebGL2 texture for image." );
-		error.code = "WEBGL2_ERROR";
-		throw error;
+		g_errors.throwError( Error, "Failed to create WebGL2 texture for image.", "WEBGL2_ERROR" );
 	}
 
 	try {
@@ -344,9 +341,10 @@ export function getTextureDrawInfo( screenData, img ) {
 		return { "texture": getWebGL2Texture( screenData, img ), "invertedY": false };
 	}
 	if( sourceData.FBO === screenData.FBO ) {
-		const error = new Error( "drawImage: A screen cannot draw its own framebuffer." );
-		error.code = "FRAMEBUFFER_FEEDBACK_LOOP";
-		throw error;
+		g_errors.throwError(
+			Error, "drawImage: A screen cannot draw its own framebuffer.",
+			"FRAMEBUFFER_FEEDBACK_LOOP"
+		);
 	}
 
 	// Preserve an earlier queued draw before the source framebuffer can be changed.

@@ -43,6 +43,7 @@
 "use strict";
 
 import * as g_utils from "./utils.js";
+import * as g_errors from "./errors.js";
 import * as g_commands from "./commands.js";
 import * as g_renderer from "../renderer/renderer.js";
 import * as g_graphics from "../api/graphics.js";
@@ -286,13 +287,13 @@ export function installScreenExtensions( screens, extensions ) {
  */
 export function getActiveScreen( fnName, isScreenOptional ) {
 	if( m_activeScreenData === null && !isScreenOptional ) {
-		const error = new Error(
+		g_errors.throwError(
+			Error,
 			fnName + ": You are attempting to call a method that requires a screen but there " +
 			"is currently no active screen. Call $.screen() before calling any graphics " +
-			"commands."
+			"commands.",
+			"NO_ACTIVE_SCREEN"
 		);
-		error.code = "NO_ACTIVE_SCREEN";
-		throw error;
 	}
 	return m_activeScreenData;
 }
@@ -306,11 +307,10 @@ export function getActiveScreen( fnName, isScreenOptional ) {
  */
 export function assertScreenAvailable( screenData ) {
 	if( screenData.isRemoved ) {
-		const error = new Error(
-			`Cannot complete deferred work on removed screen (id: ${screenData.id}).`
+		g_errors.throwError(
+			Error, `Cannot complete deferred work on removed screen (id: ${screenData.id}).`,
+			"SCREEN_REMOVED"
 		);
-		error.code = "SCREEN_REMOVED";
-		throw error;
 	}
 }
 
@@ -338,9 +338,7 @@ export function releaseOffscreenCanvas( canvas ) {
  */
 export function getScreenData( fnName, screenId ) {
 	if( !m_screens[ screenId ] ) {
-		const error = new Error( `${fnName}: Invalid screen id.` );
-		error.code = "INVALID_SCREEN_ID";
-		throw error;
+		g_errors.throwError( Error, `${fnName}: Invalid screen id.`, "INVALID_SCREEN_ID" );
 	}
 	return m_screens[ screenId ];
 }
@@ -386,16 +384,16 @@ export function getAllScreensData() {
  */
 function screen( options ) {
 	if( options.noCss != null && typeof options.noCss !== "boolean" ) {
-		const error = new TypeError( "screen: Parameter noCss must be a boolean." );
-		error.code = "INVALID_PARAMETER";
-		throw error;
+		g_errors.throwError(
+			TypeError, "screen: Parameter noCss must be a boolean.", "INVALID_PARAMETER"
+		);
 	}
 
 	// Validate resize callback
 	if( options.resizeCallback != null && !g_utils.isFunction( options.resizeCallback ) ) {
-		const error = new TypeError( "screen: Parameter resizeCallback must be a function." );
-		error.code = "INVALID_CALLBACK";
-		throw error;
+		g_errors.throwError(
+			TypeError, "screen: Parameter resizeCallback must be a function.", "INVALID_CALLBACK"
+		);
 	}
 
 	let parentData = null;
@@ -403,11 +401,10 @@ function screen( options ) {
 	let parentRenderContext = null;
 	if( options.parent != null ) {
 		if( !options.isOffscreen ) {
-			const error = new TypeError(
-				"screen: Parameter parent can only be used with an offscreen screen."
+			g_errors.throwError(
+				TypeError, "screen: Parameter parent can only be used with an offscreen screen.",
+				"INVALID_SCREEN_PARENT"
 			);
-			error.code = "INVALID_SCREEN_PARENT";
-			throw error;
 		}
 		if(
 			( typeof options.parent === "string" || typeof options.parent === "number" ) &&
@@ -420,11 +417,10 @@ function screen( options ) {
 			!m_screens[ options.parent.id ] ||
 			m_screens[ options.parent.id ].api !== options.parent
 		) {
-			const error = new TypeError(
-				"screen: Parameter parent must be an existing screen."
+			g_errors.throwError(
+				TypeError, "screen: Parameter parent must be an existing screen.",
+				"INVALID_SCREEN_PARENT"
 			);
-			error.code = "INVALID_SCREEN_PARENT";
-			throw error;
 		} else {
 			parentData = m_screens[ options.parent.id ];
 		}
@@ -434,9 +430,9 @@ function screen( options ) {
 
 	// Validate aspect - "Now Required"
 	if( typeof options.aspect !== "string" || options.aspect === "" ) {
-		const error = new Error( "screen: Parameter aspect must be a non-empty string." );
-		error.code = "INVALID_ASPECT";
-		throw error;
+		g_errors.throwError(
+			Error, "screen: Parameter aspect must be a non-empty string.", "INVALID_ASPECT"
+		);
 	}
 
 	const screenData = {
@@ -476,9 +472,9 @@ function screen( options ) {
 		// Parse aspect ratio
 		screenData.aspectData = parseAspect( options.aspect.toLowerCase() );
 		if( !screenData.aspectData ) {
-			const error = new Error( "screen: Parameter aspect is not valid." );
-			error.code = "INVALID_ASPECT";
-			throw error;
+			g_errors.throwError(
+				Error, "screen: Parameter aspect is not valid.", "INVALID_ASPECT"
+			);
 		}
 
 		// If it's not a ratio validate the dimensions
@@ -503,12 +499,12 @@ function screen( options ) {
 			};
 
 			if( screenData.aspectData.splitter !== "x" ) {
-				const error = new Error(
+				g_errors.throwError(
+					Error,
 					"screen: You must use aspect ratio with e(x)act pixel dimensions for offscreen " +
-					"screens. For example: 320x200 for width of 320 and height of 200 pixels."
+					"screens. For example: 320x200 for width of 320 and height of 200 pixels.",
+					"INVALID_OFFSCREEN_ASPECT"
 				);
-				error.code = "INVALID_OFFSCREEN_ASPECT";
-				throw error;
 			}
 			setupOffscreenCanvasOptions( screenData );
 			screenData.width = screenData.aspectData.width;
@@ -532,12 +528,12 @@ function screen( options ) {
 			}
 
 			if( !g_utils.isDomElement( screenData.container ) ) {
-				const error = new TypeError(
+				g_errors.throwError(
+					TypeError,
 					"screen: Invalid argument container. Container must be a DOM element or a string " +
-					"id of a DOM element."
+					"id of a DOM element.",
+					"INVALID_CONTAINER"
 				);
-				error.code = "INVALID_CONTAINER";
-				throw error;
 			}
 
 			// Create a default canvas
@@ -746,16 +742,15 @@ function setDefaultCanvasOptions( screenData ) {
 
 function validateDimensions( width, height ) {
 	if( width <= 0 || height <= 0 ) {
-		const error = new Error( "screen: Canvas dimensions must be positive." );
-		error.code = "INVALID_DIMENSIONS";
-		throw error;
+		g_errors.throwError(
+			Error, "screen: Canvas dimensions must be positive.", "INVALID_DIMENSIONS"
+		);
 	}
 	if( width > MAX_CANVAS_DIMENSION || height > MAX_CANVAS_DIMENSION ) {
-		const error = new Error(
-			`screen: Canvas dimensions exceed maximum of ${MAX_CANVAS_DIMENSION}px.`
+		g_errors.throwError(
+			Error, `screen: Canvas dimensions exceed maximum of ${MAX_CANVAS_DIMENSION}px.`,
+			"DIMENSION_TOO_LARGE"
 		);
-		error.code = "DIMENSION_TOO_LARGE";
-		throw error;
 	}
 }
 
@@ -811,12 +806,12 @@ function removeScreen( screenData ) {
 
 			// Use string replacement to avoid capturing screenData in closure
 			screenData.api[ key ] = () => {
-				const error = new TypeError(
+				g_errors.throwError(
+					TypeError,
 					`Cannot call ${key}() on removed screen (id: ${screenId}). ` +
-					"The screen has been removed from the page."
+					"The screen has been removed from the page.",
+					"DELETED_METHOD"
 				);
-				error.code = "DELETED_METHOD";
-				throw error;
 			};
 		}
 	}
@@ -918,9 +913,7 @@ function setScreen( options ) {
 		screenId = screenObj.id;
 	}
 	if( !m_screens[ screenId ] ) {
-		const error = new Error( "screen: Invalid screen." );
-		error.code = "INVALID_SCREEN";
-		throw error;
+		g_errors.throwError( Error, "screen: Invalid screen.", "INVALID_SCREEN" );
 	}
 
 	activateScreen( m_screens[ screenId ] );
@@ -936,15 +929,11 @@ function setScreen( options ) {
 function getScreen( options ) {
 	const screenId = g_utils.getInt( options.screenId, null );
 	if( screenId === null || screenId < 0 ) {
-		const error = new Error( "screen: Invalid screen id." );
-		error.code = "INVALID_SCREEN_ID";
-		throw error;
+		g_errors.throwError( Error, "screen: Invalid screen id.", "INVALID_SCREEN_ID" );
 	}
 	const screen = m_screens[ screenId ];
 	if( !screen ) {
-		const error = new Error( `screen: Screen "${screenId}" not found.` );
-		error.code = "SCREEN_NOT_FOUND";
-		throw error;
+		g_errors.throwError( Error, `screen: Screen "${screenId}" not found.`, "SCREEN_NOT_FOUND" );
 	}
 	return screen.api;
 }
@@ -1077,16 +1066,16 @@ export function refreshScreenSize( screenData, forcePresent ) {
  */
 export function resizeOffscreenScreen( screenData, width, height ) {
 	if( !screenData || !screenData.isOffscreen ) {
-		const error = new TypeError( "resizeOffscreenScreen: Screen must be offscreen." );
-		error.code = "INVALID_OFFSCREEN_SCREEN";
-		throw error;
+		g_errors.throwError(
+			TypeError, "resizeOffscreenScreen: Screen must be offscreen.",
+			"INVALID_OFFSCREEN_SCREEN"
+		);
 	}
 	if( !Number.isInteger( width ) || !Number.isInteger( height ) ) {
-		const error = new TypeError(
-			"resizeOffscreenScreen: Width and height must be integers."
+		g_errors.throwError(
+			TypeError, "resizeOffscreenScreen: Width and height must be integers.",
+			"INVALID_SCREEN_DIMENSIONS"
 		);
-		error.code = "INVALID_SCREEN_DIMENSIONS";
-		throw error;
 	}
 	validateDimensions( width, height );
 	if( screenData.width === width && screenData.height === height ) {

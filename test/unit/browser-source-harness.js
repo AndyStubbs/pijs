@@ -10,6 +10,7 @@ import * as g_url from "node:url";
 import * as g_test from "node:test";
 import * as g_assert from "node:assert/strict";
 import * as g_chromiumLaunch from "./chromium-launch.js";
+import * as g_glslCompact from "../../scripts/glsl-compact.js";
 const DIRNAME = g_path.dirname( g_url.fileURLToPath( import.meta.url ) );
 const fs = g_fsPromises;
 const path = g_path;
@@ -54,8 +55,7 @@ async function buildSource( entry, format = "iife", minify = false, options = {}
 		"minify": minify,
 		"target": "es2020",
 		"define": { "__VERSION__": JSON.stringify( version ) },
-		"loader": { ".vert": "text", ".frag": "text" },
-		"plugins": [ {
+		"plugins": [ g_glslCompact.glslCompactPlugin, {
 			"name": "test-font-data",
 			"setup": build => {
 				build.onLoad( { "filter": /\.webp$/ }, async args => {

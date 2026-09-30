@@ -11,6 +11,7 @@
 import * as g_commands from "./commands.js";
 import * as g_screenManager from "./screen-manager.js";
 import * as g_utils from "./utils.js";
+import * as g_errors from "./errors.js";
 
 const CLEAR_EVENTS_PARAMETERS = [ "type" ];
 const m_plugins = [];
@@ -86,17 +87,16 @@ function registerPlugin( options ) {
 
 	// Validate required parameters
 	if( !options.name || typeof options.name !== "string" ) {
-		const error = new TypeError( "registerPlugin: Plugin must have a 'name' property." );
-		error.code = "INVALID_PLUGIN_NAME";
-		throw error;
+		g_errors.throwError(
+			TypeError, "registerPlugin: Plugin must have a 'name' property.", "INVALID_PLUGIN_NAME"
+		);
 	}
 
 	if( !options.init || typeof options.init !== "function" ) {
-		const error = new TypeError(
-			`registerPlugin: Plugin '${options.name}' must have an 'init' function.`
+		g_errors.throwError(
+			TypeError, `registerPlugin: Plugin '${options.name}' must have an 'init' function.`,
+			"INVALID_PLUGIN_INIT"
 		);
-		error.code = "INVALID_PLUGIN_INIT";
-		throw error;
 	}
 
 	const dependencies = options.dependencies ?? [];
@@ -104,11 +104,10 @@ function registerPlugin( options ) {
 		!Array.isArray( dependencies ) ||
 		dependencies.some( name => typeof name !== "string" || name.trim() === "" )
 	) {
-		const error = new TypeError(
-			"registerPlugin: dependencies must be an array of nonempty strings."
+		g_errors.throwError(
+			TypeError, "registerPlugin: dependencies must be an array of nonempty strings.",
+			"INVALID_PLUGIN_DEPENDENCIES"
 		);
-		error.code = "INVALID_PLUGIN_DEPENDENCIES";
-		throw error;
 	}
 	options = { ...options, "dependencies": dependencies.slice() };
 
@@ -116,11 +115,10 @@ function registerPlugin( options ) {
 	const existingIndex = m_plugins.findIndex( p => p.name === options.name );
 	if( existingIndex !== -1 ) {
 		if( m_plugins[ existingIndex ].state !== "failed" ) {
-			const error = new Error(
-				`registerPlugin: Plugin '${options.name}' is already registered.`
+			g_errors.throwError(
+				Error, `registerPlugin: Plugin '${options.name}' is already registered.`,
+				"DUPLICATE_PLUGIN"
 			);
-			error.code = "DUPLICATE_PLUGIN";
-			throw error;
 		}
 		m_plugins.splice( existingIndex, 1 );
 	}
@@ -249,9 +247,7 @@ function clearEvents( screenData, options ) {
 			} else {
 				errorMessage += " No event handlers are registered.";
 			}
-			const error = new Error( errorMessage );
-			error.code = "INVALID_TYPE";
-			throw error;
+			g_errors.throwError( Error, errorMessage, "INVALID_TYPE" );
 		}
 
 		try {
@@ -302,15 +298,15 @@ function clearEvents( screenData, options ) {
  */
 function registerClearEvents( extensions, name, handler ) {
 	if( !name || typeof name !== "string" ) {
-		const error = new TypeError( "registerClearEvents: name must be a non-empty string." );
-		error.code = "INVALID_NAME";
-		throw error;
+		g_errors.throwError(
+			TypeError, "registerClearEvents: name must be a non-empty string.", "INVALID_NAME"
+		);
 	}
 
 	if( typeof handler !== "function" ) {
-		const error = new TypeError( "registerClearEvents: handler must be a function." );
-		error.code = "INVALID_HANDLER";
-		throw error;
+		g_errors.throwError(
+			TypeError, "registerClearEvents: handler must be a function.", "INVALID_HANDLER"
+		);
 	}
 
 	const lowerName = name.toLowerCase();
@@ -318,11 +314,10 @@ function registerClearEvents( extensions, name, handler ) {
 	const isDuplicate = m_clearEventsHandlers[ lowerName ] ||
 		extensions.clearEvents.some( item => item.name === lowerName );
 	if( isDuplicate ) {
-		const error = new Error(
-			`registerClearEvents: Handler with name "${name}" is already registered.`
+		g_errors.throwError(
+			Error, `registerClearEvents: Handler with name "${name}" is already registered.`,
+			"DUPLICATE_HANDLER"
 		);
-		error.code = "DUPLICATE_HANDLER";
-		throw error;
 	}
 
 	extensions.clearEvents.push( { "name": lowerName, "handler": handler } );
@@ -354,11 +349,10 @@ function initializePlugin( pluginInfo ) {
 	const session = { "isOpen": false, "hasService": false, "service": null };
 	const register = ( method, fn ) => ( ...args ) => {
 		if( !session.isOpen ) {
-			const error = new Error(
-				`${method}: Plugin '${pluginInfo.name}' can register only during init.`
+			g_errors.throwError(
+				Error, `${method}: Plugin '${pluginInfo.name}' can register only during init.`,
+				"REGISTRATION_CLOSED"
 			);
-			error.code = "REGISTRATION_CLOSED";
-			throw error;
 		}
 		fn( ...args );
 	};
@@ -471,19 +465,21 @@ function commitExtensions( extensions ) {
  */
 function provideService( session, service ) {
 	if( !session.isOpen ) {
-		const error = new Error( "provideService: Services can only be provided during init." );
-		error.code = "SERVICE_PROVIDE_CLOSED";
-		throw error;
+		g_errors.throwError(
+			Error, "provideService: Services can only be provided during init.",
+			"SERVICE_PROVIDE_CLOSED"
+		);
 	}
 	if( service === null || typeof service !== "object" ) {
-		const error = new TypeError( "provideService: service must be an object." );
-		error.code = "INVALID_SERVICE";
-		throw error;
+		g_errors.throwError(
+			TypeError, "provideService: service must be an object.", "INVALID_SERVICE"
+		);
 	}
 	if( session.hasService ) {
-		const error = new Error( "provideService: This plugin has already provided a service." );
-		error.code = "DUPLICATE_SERVICE";
-		throw error;
+		g_errors.throwError(
+			Error, "provideService: This plugin has already provided a service.",
+			"DUPLICATE_SERVICE"
+		);
 	}
 	session.hasService = true;
 	session.service = service;
@@ -507,11 +503,10 @@ function getService( pluginInfo, pluginName ) {
 		reason = "does not provide a service";
 	}
 	if( reason ) {
-		const error = new Error(
-			`getService: Plugin '${pluginName}' ${reason} for plugin '${pluginInfo.name}'.`
+		g_errors.throwError(
+			Error, `getService: Plugin '${pluginName}' ${reason} for plugin '${pluginInfo.name}'.`,
+			"SERVICE_NOT_AVAILABLE"
 		);
-		error.code = "SERVICE_NOT_AVAILABLE";
-		throw error;
 	}
 	return provider.service;
 }

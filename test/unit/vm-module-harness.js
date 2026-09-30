@@ -31,11 +31,20 @@ function readModuleSource( file, options = {} ) {
 	return source.replace( /export /g, "" );
 }
 
+// The real shared error helper, installed as `g_errors` unless a test supplies its own. It runs
+// in its own context and constructs whichever error constructor the calling module passes.
+const m_errors = ( () => {
+	const context = g_vm.createContext( {} );
+	g_vm.runInContext( readModuleSource( "src/core/errors.js" ), context );
+	return { "throwError": context.throwError };
+} )();
+
 /**
  * Run a source module in a new `vm` context.
  *
  * @param {string} file - Repository-relative source path, such as `src/api/pixels.js`.
- * @param {Object} [globals] - Stubs for the module's imports and browser globals.
+ * @param {Object} [globals] - Stubs for the module's imports and browser globals. The real
+ *   `g_errors` helper is provided unless overridden here.
  * @param {Object} [options] - Load options.
  * @param {boolean} [options.contextState] - Install the real `src/renderer/context-state.js`
  *   functions as `g_contextState`.
@@ -44,7 +53,7 @@ function readModuleSource( file, options = {} ) {
  * @returns {Object} The context, whose properties are the module's top-level functions.
  */
 function loadModule( file, globals = {}, options = {} ) {
-	const context = g_vm.createContext( { "console": console, ...globals } );
+	const context = g_vm.createContext( { "console": console, "g_errors": m_errors, ...globals } );
 	if( options.contextState ) {
 		g_vm.runInContext( readModuleSource( "src/renderer/context-state.js" ), context );
 		context.g_contextState = {
