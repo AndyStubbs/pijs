@@ -113,8 +113,7 @@ function loadImage( options ) {
 
 	// Generate a name if none is provided
 	if( !name || name === "" ) {
-		m_imageCount += 1;
-		name = "" + m_imageCount;
+		name = generateImageName();
 	}
 	if( m_images[ name ] ) {
 		const error = new TypeError( "loadImage: Parameter name must be unique." );
@@ -317,7 +316,7 @@ function cancelImageLoad( load ) {
  * @param {string} [options.name] - Optional name for the spritesheet
  * @param {number} [options.width] - Sprite width (required for fixed grid mode)
  * @param {number} [options.height] - Sprite height (required for fixed grid mode)
- * @param {number} [options.margin] - Margin between sprites (default: 0)
+ * @param {number} [options.margin] - Margin between sprites, 0 or more (default: 0)
  * @param {Function} [options.onLoad] - Callback when spritesheet loads
  * @param {Function} [options.onError] - Callback when spritesheet fails to load
  * @returns {string} Spritesheet name
@@ -363,17 +362,21 @@ function loadSpritesheet( options ) {
 		throw error;
 	}
 
-	// Validate margin
+	// Validate margin; a negative margin would stop the grid from advancing
 	if( !Number.isInteger( margin ) ) {
 		const error = new TypeError( "loadSpritesheet: margin must be an integer." );
+		error.code = "INVALID_MARGIN";
+		throw error;
+	}
+	if( margin < 0 ) {
+		const error = new RangeError( "loadSpritesheet: margin must be 0 or more." );
 		error.code = "INVALID_MARGIN";
 		throw error;
 	}
 
 	// Generate a name if none is provided
 	if( !name || name === "" ) {
-		m_imageCount += 1;
-		name = "" + m_imageCount;
+		name = generateImageName();
 	}
 
 	// Validate name
@@ -516,8 +519,7 @@ function createImageFromScreen( screenData, options ) {
 
 	// Generate a name if none is provided
 	if( !name || name === "" ) {
-		m_imageCount += 1;
-		name = "" + m_imageCount;
+		name = generateImageName();
 	} else if( typeof name !== "string" ) {
 		const error = new TypeError( "createImageFromScreen: Parameter name must be a string." );
 		error.code = "INVALID_NAME";
@@ -773,6 +775,21 @@ function isTexImageCompatible( img ) {
 		img instanceof ImageData ||
 		( typeof OffscreenCanvas !== "undefined" && img instanceof OffscreenCanvas )
 	);
+}
+
+/**
+ * Generate a name for an image registered without one. Explicit names can be numeric, so the
+ * counter skips any name already registered, whether ready, loading, or failed.
+ *
+ * @returns {string} Unused image name
+ */
+function generateImageName() {
+	let name;
+	do {
+		m_imageCount += 1;
+		name = "" + m_imageCount;
+	} while( m_images[ name ] );
+	return name;
 }
 
 /**

@@ -147,6 +147,8 @@ commands do not affect them.
 - State is updated before handlers run. A handler registered during an event first runs for the
   next one, and one removed during an event does not run later in it. A handler that throws is
   reported with `console.error()`, and the other handlers still run.
+- A handler that stops the event's tracking or removes its screen ends the event: no press,
+  click, or pointer capture follows it.
 
 ## Cancelled Releases
 

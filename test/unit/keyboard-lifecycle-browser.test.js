@@ -202,6 +202,36 @@ for( const bundle of g_harness.BUNDLES ) {
 			}
 		} );
 
+	test( `SYS-003 ${bundle}: a native key release that starts a prompt supersedes the prompt ` +
+		"taking the keyboard", async () => {
+		const { page, errors } = await open( bundle );
+		try {
+			await page.evaluate( () => {
+				window.__screen = $.screen( { "aspect": "160x80", "noCss": true } );
+				window.__nested = "pending";
+				$.onKey( "KeyA", "up", () => {
+					__screen.input( "Nested: " ).then( value => { window.__nested = value; } );
+				}, true );
+			} );
+			await page.keyboard.down( "KeyA" );
+			const outer = await page.evaluate( async () => {
+				try {
+					return await __screen.input( "Outer: " );
+				} catch( error ) {
+					return error.message;
+				}
+			} );
+			await page.keyboard.up( "KeyA" );
+			await page.keyboard.type( "hello" );
+			await page.keyboard.press( "Enter" );
+			assert.equal( outer, null );
+			assert.equal( await page.evaluate( () => window.__nested ), "hello" );
+			assert.deepEqual( errors, [] );
+		} finally {
+			await page.close();
+		}
+	} );
+
 	test( `KEY-004 ${bundle}: keys typed into a shadow-root input are ignored (K12)`, async () => {
 		const { page, errors } = await open( bundle );
 		try {

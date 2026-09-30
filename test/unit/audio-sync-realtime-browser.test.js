@@ -208,6 +208,46 @@ describe( "sound music sync (realtime)", { "skip": g_audioEngines.REALTIME_SKIP 
 		assert.deepEqual( result.ends, [ false ] );
 	} );
 
+	test( "notes queued before a suspension wait for the audio clock to resume", async () => {
+		await load();
+		const result = await page.evaluate( async () => {
+			const notes = [];
+			$.onPlay( "note", data => notes.push( {
+				"time": data.time,
+				"delay": data.delay,
+				"clock": __context.currentTime,
+				"state": __context.state
+			} ) );
+			$.play( "T120 L16 CDEFGABC" );
+			await __wait( 30 );
+			await __context.suspend();
+			const suspendedAt = __context.currentTime;
+			await __wait( 500 );
+			const duringSuspension = notes.length;
+			await __context.resume();
+			await __wait( 1500 );
+			return {
+				"notes": notes,
+				"suspendedAt": suspendedAt,
+				"duringSuspension": duringSuspension
+			};
+		} );
+		assert.deepEqual( errors, [] );
+		assert.equal( result.notes.length, 8, "every note is delivered once" );
+		for( const note of result.notes ) {
+			if( note.time > result.suspendedAt ) {
+				assert.equal( note.state, "running", `note at ${note.time} waited for the resume` );
+			}
+			assert.ok( note.clock >= note.time, `note at ${note.time} ran at ${note.clock}` );
+			assert.ok( note.delay <= 0.25, `note at ${note.time} dispatched ${note.delay} s late` );
+		}
+		const resumed = result.notes.slice( result.duringSuspension );
+		assert.ok(
+			resumed.some( note => note.time > result.suspendedAt ),
+			"notes after the suspension are delivered after the resume"
+		);
+	} );
+
 	test( "clearEvents( \"play\" ) and offPlay() remove handlers before their notes", async () => {
 		await load();
 		const result = await page.evaluate( async () => {

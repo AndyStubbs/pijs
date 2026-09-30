@@ -170,9 +170,16 @@ function input( screenData, options ) {
 	try {
 		startInput( inputData );
 	} catch( error ) {
-		m_inputData = null;
-		inputData.reject( error );
-		releaseInput( inputData );
+
+		// Settle and release only a session this request still owns; a newer prompt keeps its
+		// own, and a settled session has already been released
+		if( m_inputData === inputData ) {
+			m_inputData = null;
+			inputData.reject( error );
+			releaseInput( inputData );
+		} else {
+			reportInputError( error );
+		}
 	}
 
 	return promise;
@@ -200,6 +207,12 @@ function startInput( inputData ) {
 
 	// The prompt takes the keyboard, so keys held now are released, as cancelled
 	m_takeKeyboard();
+
+	// A release handler may start a newer prompt, cancel this one, or remove its screen; each
+	// settles and releases this session, so it starts no further
+	if( m_inputData !== inputData ) {
+		return;
+	}
 
 	// Create unique image name for background
 	const key = `${Date.now()}_${Math.random().toString( 36 ).substring( 2, 9 )}`;
@@ -474,7 +487,9 @@ function finishInput( isCancel, isDisposal = false ) {
 
 	inputData.resolve( val );
 	try {
-		if( !isDisposal && !screenData.isRemoved ) {
+
+		// A prompt cancelled before it captured its background has drawn nothing to restore
+		if( !isDisposal && !screenData.isRemoved && inputData.backgroundImage !== null ) {
 			showPrompt( inputData, true );
 
 			// Continue at column 0 of the line below the prompt

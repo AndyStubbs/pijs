@@ -277,9 +277,16 @@ export function registerTouch( pluginApi, helpers ) {
 			setTouchPress( screenData, primary, primary.action, 1 );
 		}
 		updatePress( screenData );
+		const pressData = screenData.press;
 		m_triggerEventListeners( "down", changed, screenData.onTouchEventListeners );
+		if( !isTracking( screenData ) ) {
+			return false;
+		}
 		if( primary ) {
-			g_press.triggerPressListeners( screenData, "down", screenData.press );
+			g_press.triggerPressListeners( screenData, "down", pressData );
+			if( !isTracking( screenData ) ) {
+				return false;
+			}
 		}
 		for( const touch of changed ) {
 			g_press.triggerClickListeners( screenData, touch, "down", touch.id );
@@ -297,9 +304,10 @@ export function registerTouch( pluginApi, helpers ) {
 			setTouchPress( screenData, primary, primary.action, 1 );
 		}
 		updatePress( screenData );
+		const pressData = screenData.press;
 		m_triggerEventListeners( "move", changed, screenData.onTouchEventListeners );
-		if( primary ) {
-			g_press.triggerPressListeners( screenData, "move", screenData.press );
+		if( primary && isTracking( screenData ) ) {
+			g_press.triggerPressListeners( screenData, "move", pressData );
 		}
 	}
 
@@ -344,7 +352,9 @@ export function registerTouch( pluginApi, helpers ) {
 
 	/**
 	 * Dispatch the release of ended touches, whose state is already removed: the `"up"`
-	 * handlers, the press release if the primary touch ended, and the clicks.
+	 * handlers, the press release if the primary touch ended, and the clicks. A handler that
+	 * stops tracking ends the release, which then disarms the clicks without firing them; one
+	 * that removes the screen ends it at once.
 	 *
 	 * @param {Object} screenData - Screen state.
 	 * @param {Array<Object>} changed - The ended touches.
@@ -361,9 +371,16 @@ export function registerTouch( pluginApi, helpers ) {
 			screenData.primaryTouchId = null;
 		}
 		updatePress( screenData );
+		const pressData = screenData.press;
 		m_triggerEventListeners( "up", changed, screenData.onTouchEventListeners );
-		if( primary ) {
-			g_press.triggerPressListeners( screenData, "up", screenData.press );
+		if( primary && isTracking( screenData ) ) {
+			g_press.triggerPressListeners( screenData, "up", pressData );
+		}
+		if( screenData.isRemoved ) {
+			return;
+		}
+		if( !isTracking( screenData ) ) {
+			isCancelled = true;
 		}
 		for( const touch of changed ) {
 			if( isCancelled ) {
@@ -372,6 +389,17 @@ export function registerTouch( pluginApi, helpers ) {
 				g_press.triggerClickListeners( screenData, touch, "up", touch.id );
 			}
 		}
+	}
+
+	/**
+	 * Whether an event's dispatch goes on after its handlers ran. A handler may remove the
+	 * screen or stop touch tracking, which ends the dispatch.
+	 *
+	 * @param {Object} screenData - Screen state.
+	 * @returns {boolean}
+	 */
+	function isTracking( screenData ) {
+		return !screenData.isRemoved && screenData.touchStarted === true;
 	}
 
 	function findTouch( touches, id ) {

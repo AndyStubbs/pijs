@@ -518,7 +518,10 @@ test( "context time maps to page time from the output timestamp or the reported 
 		"outputLatency": 0.05,
 		"getOutputTimestamp": () => ( { "contextTime": 1.9, "performanceTime": 5000 } )
 	};
-	assert.equal( g_sync.getPageOffset( stamped, 9999 ), 5000 - 1900 );
+	assert.equal( g_sync.getPageOffset( stamped, 5000 ), 5000 - 1900 );
+
+	// A timestamp that stops advancing, as while suspended, gives way to the render time
+	near( g_sync.getPageOffset( stamped, 5500 ), 5500 - 1950 );
 
 	// Before output starts the timestamp is zero, and the render time plus latency stands in
 	const starting = {
@@ -530,6 +533,126 @@ test( "context time maps to page time from the output timestamp or the reported 
 	near( g_sync.getPageOffset( starting, 6000 ), 6000 - 1950 );
 	near( g_sync.getPageOffset( { "currentTime": 2, "baseLatency": 0.01 }, 6000 ), 6000 - 1990 );
 	assert.equal( g_sync.getPageOffset( { "currentTime": 2 }, 6000 ), 4000 );
+} );
+
+/**
+ * A fake audio context whose clock runs with page time while running and stops while
+ * suspended. Its output timestamp follows one engine: "chromium" keeps the last one while
+ * suspended and for 20 ms after resuming, "firefox" pairs the stopped context time with the
+ * current page time, and "none" has no getOutputTimestamp().
+ *
+ * @param {string} engine - "chromium", "firefox", or "none"
+ * @returns {Object} { context, clock, advance, suspend, resume }
+ */
+function createAudioClock( engine ) {
+	const clock = { "now": 0, "time": 0, "isRunning": true, "staleUntil": 0, "stamp": null };
+	const context = {
+		"outputLatency": 0.04,
+		get currentTime() {
+			return clock.time;
+		}
+	};
+	if( engine === "chromium" ) {
+		context.getOutputTimestamp = () => clock.stamp;
+	} else if( engine === "firefox" ) {
+		context.getOutputTimestamp = () => ( {
+			"contextTime": clock.time - 0.04, "performanceTime": clock.now - 40
+		} );
+	}
+	const update = () => {
+		if( clock.isRunning && clock.now >= clock.staleUntil ) {
+			clock.stamp = { "contextTime": clock.time - 0.05, "performanceTime": clock.now };
+		}
+	};
+	update();
+	return {
+		"context": context,
+		"clock": clock,
+		"advance": ms => {
+			clock.now += ms;
+			if( clock.isRunning ) {
+				clock.time += ms / 1000;
+			}
+			update();
+		},
+		"suspend": () => {
+			clock.isRunning = false;
+		},
+		"resume": () => {
+			clock.isRunning = true;
+			clock.staleUntil = clock.now + 20;
+		}
+	};
+}
+
+test( "music sync keeps future notes queued while the audio clock is suspended", () => {
+	for( const engine of [ "chromium", "firefox", "none" ] ) {
+		const audio = createAudioClock( engine );
+		const frames = [];
+		let listener = null;
+		const sync = g_sync.createPlaySync( {
+			"observePlay": fn => {
+				listener = fn;
+				return () => {};
+			},
+			"now": () => audio.clock.now,
+			"contextTime": () => audio.clock.time,
+			"pageOffset": now => g_sync.getPageOffset( audio.context, now ),
+			"requestFrame": fn => frames.push( fn )
+		} );
+		const frame = ms => {
+			audio.advance( ms );
+			for( const fn of frames.splice( 0 ) ) {
+				fn();
+			}
+		};
+		const run = ms => {
+			for( let elapsed = 0; elapsed < ms; elapsed += 16 ) {
+				frame( 16 );
+			}
+		};
+		const events = [];
+		const record = data => events.push( {
+			"type": data.type, "trackId": data.trackId, "time": data.time, "delay": data.delay,
+			"clock": audio.clock.time, "isRunning": audio.clock.isRunning
+		} );
+		sync.onPlay( { "mode": "note", "fn": record } );
+		sync.onPlay( { "mode": "end", "fn": record } );
+		audio.advance( 300 );
+
+		// Notes admitted inside the lookahead, then a suspension before the later ones sound
+		for( const time of [ 0.31, 0.437, 0.562 ] ) {
+			listener( Object.freeze( playNote( 1, time ) ) );
+		}
+		listener( Object.freeze( playNote( 2, 0.5 ) ) );
+		run( 64 );
+		audio.suspend();
+		const frozen = audio.clock.time;
+		run( 500 );
+		assert.deepEqual(
+			events.filter( event => !event.isRunning ), [], `${engine}: nothing while suspended`
+		);
+
+		// Stopping a song while suspended drops its notes; its end follows the resume
+		listener( Object.freeze( { "type": "end", "trackId": 1, "stopped": true } ) );
+		run( 200 );
+		assert.deepEqual(
+			events.filter( event => !event.isRunning ), [], `${engine}: end while suspended`
+		);
+		audio.resume();
+		run( 500 );
+		const heard = events.map( event => `${event.type}:${event.trackId}:${event.time}` );
+		assert.deepEqual( heard, [ "note:1:0.31", "end:1:undefined", "note:2:0.5" ], engine );
+		assert.ok( events[ 0 ].clock <= frozen, `${engine}: the first note sounds before` );
+		for( const event of events.slice( 1 ) ) {
+			assert.ok( event.clock > frozen, `${engine}: ${event.type} after the resume` );
+		}
+		for( const event of events ) {
+			assert.ok( event.delay >= 0 && event.delay <= 0.05, `${engine}: delay ${event.delay}` );
+		}
+		const note = events[ 2 ];
+		assert.ok( note.clock >= note.time, `${engine}: the note waited for the audio clock` );
+	}
 } );
 
 /**

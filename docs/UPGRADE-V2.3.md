@@ -88,7 +88,8 @@ It is not part of either bundle; load `pijs-web/plugins/sound-advanced` after th
   active one, and cancels an `input()` prompt on any screen. Call `clearEvents()` on a screen to
   clear only that screen.
 - Input that used to be accepted now throws: `arc()` angles must be finite; `loadFont()` sizes
-  must be integers of at least 1 and its margin an integer of 0 or more; `setPrintSize()` scales
+  must be integers of at least 1 and its margin an integer of 0 or more; a `loadSpritesheet()`
+  margin must be 0 or more, where a negative one could hang the page; `setPrintSize()` scales
   must be finite and its padding an integer of 0 or more; and `$.removeScreen()` throws
   `INVALID_SCREEN_ID` for a missing, unknown, or already removed screen.
 - An argument passed as `undefined` counts as omitted, so it takes the default.
@@ -296,6 +297,8 @@ affected. Their source remains at the `v2.2.0` tag.
 
 - `getPal( false )` and `getDefaultPal( false )` exclude index 0, as the default does.
 - `getImage()` of an offscreen screen returns a canvas copy of its pixels.
+- An image loaded or captured without a name gets one no other image uses, where
+  `createImageFromScreen()` could replace an image registered under a numeric name.
 - `polygon()` fills shapes with coordinates far off the screen correctly.
 - `blitImage()` and `blitSprite()` accept every color form `drawImage()` accepts, and their
   object forms apply the documented defaults, where an omitted scale drew nothing.
