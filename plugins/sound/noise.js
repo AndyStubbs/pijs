@@ -18,6 +18,17 @@ const SEAM_SECONDS = 0.01;
 // Samples run through the pink filter before recording, so its state starts settled
 const PINK_WARMUP = 4800;
 
+// Buffer RMS: that of a full-scale sawtooth or triangle wave, so both noise types sound about
+// as loud as the tonal waveforms at the same volume. Scaling by peak instead would let pink
+// noise's rare large peaks set its level, leaving it much quieter.
+const NOISE_RMS = 1 / Math.sqrt( 3 );
+
+// Level where samples start to bend smoothly toward full scale, so none passes 1
+const KNEE = 0.8;
+
+// Gain passes: the knee lowers the RMS, so each pass after the first corrects the gain
+const LEVEL_PASSES = 3;
+
 // Buffers by type for the context they were made in
 let m_context = null;
 let m_buffers = {};
@@ -62,7 +73,36 @@ function createGenerator( type ) {
 }
 
 /**
- * Generate a noise buffer: seamless when looped, with its peak normalized to 1
+ * Get the root mean square of samples
+ *
+ * @param {Float32Array} data - Samples
+ * @returns {number} RMS
+ */
+function rms( data ) {
+	let sum = 0;
+	for( let i = 0; i < data.length; i++ ) {
+		sum += data[ i ] * data[ i ];
+	}
+	return Math.sqrt( sum / data.length );
+}
+
+/**
+ * Bend a sample above the knee smoothly toward full scale
+ *
+ * @param {number} sample - Sample
+ * @returns {number} Sample between -1 and 1
+ */
+function softLimit( sample ) {
+	const size = Math.abs( sample );
+	if( size <= KNEE ) {
+		return sample;
+	}
+	const bent = KNEE + ( 1 - KNEE ) * Math.tanh( ( size - KNEE ) / ( 1 - KNEE ) );
+	return Math.sign( sample ) * bent;
+}
+
+/**
+ * Generate a noise buffer: seamless when looped, at a fixed RMS with no sample past full scale
  *
  * @param {AudioContext} context - Audio context
  * @param {string} type - "white" or "pink"
@@ -90,18 +130,19 @@ function createNoiseBuffer( context, type ) {
 		data[ i ] = data[ i ] * Math.sin( angle ) + raw[ length + i ] * Math.cos( angle );
 	}
 
-	let peak = 0;
-	for( let i = 0; i < length; i++ ) {
-		peak = Math.max( peak, Math.abs( data[ i ] ) );
-	}
-	if( peak > 0 ) {
+	const leveled = new Float32Array( length );
+	let gain = NOISE_RMS / rms( data );
+	for( let pass = 0; pass < LEVEL_PASSES; pass++ ) {
+		if( pass > 0 ) {
+			gain *= NOISE_RMS / rms( leveled );
+		}
 		for( let i = 0; i < length; i++ ) {
-			data[ i ] /= peak;
+			leveled[ i ] = softLimit( data[ i ] * gain );
 		}
 	}
 
 	const buffer = context.createBuffer( 1, length, context.sampleRate );
-	buffer.copyToChannel( data, 0 );
+	buffer.copyToChannel( leveled, 0 );
 	return buffer;
 }
 
