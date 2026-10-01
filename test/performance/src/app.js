@@ -14,9 +14,13 @@ import * as g_testManager from "./test-manager.js";
 import * as g_reportManager from "./report-manager.js";
 
 const PI_VERSIONS = {
-	"2.2.0": {
+	"2.3.0": {
 		"path": "../../build/pi.js",
-		"menuName": "2.2.0 (Current Build)"
+		"menuName": "2.3.0 (Current Build)"
+	},
+	"2.2.0": {
+		"path": "../../releases/pi-2.2.0/pi.js",
+		"menuName": "2.2.0"
 	},
 	"2.1.0": {
 		"path": "../../releases/pi-2.1.0/pi.js",
@@ -25,19 +29,30 @@ const PI_VERSIONS = {
 	},
 	"2.0.3": {
 		"path": "../../releases/pi-2.0.3/pi.js",
+		"patchPath": "./src/patches/pi-2.0.3.js",
 		"pluginPath": "../../build/plugins/polygons/polygons.js",
 		"menuName": "2.0.3"
 	},
 	"1.2.5": {
 		"path": "../../releases/pi-1.2.5/pi.js",
+		"patchPath": "./src/patches/pi-1.2.5.js",
+		"pluginPath": "../../build/plugins/polygons/polygons.js",
 		"menuName": "1.2.5 (Legacy)"
 	}
 };
+
+// An all-versions run survives the reload each version switch needs through this storage key
+const AUTO_RUN_KEY = "autoRun";
+const AUTO_RUN_ROUNDS = 3;
+const AUTO_RUN_TIMEOUT = 2 * 60 * 60 * 1000;
 
 // App-level state for display positioning
 let m_centerPosY = 0;
 let m_reducedFlashing = false;
 let m_piVersion = localStorage.getItem( "piVersion" ) || "1.2.5";
+
+// Cleanup for the watchdog timer and cancel key of the all-versions run on this page load
+let m_autoRunCleanup = null;
 
 /**
  * Adds a DOM keydown listener that matches the specified key.
@@ -131,21 +146,32 @@ function loadPiJsScript( scriptPath ) {
 
 		const versionInfo = PI_VERSIONS[ m_piVersion ];
 
-		// If version 2+ and a plugin path exists, load the plugin first
-		if( m_piVersion.startsWith( "2." ) && versionInfo?.pluginPath ) {
-			loadPluginScript( versionInfo.pluginPath, () => {
+		// A patch loads before the plugin, since it supplies what the plugin needs from the core
+		const scriptPaths = [ versionInfo?.patchPath, versionInfo?.pluginPath ].filter(
+			( path ) => path
+		);
+		const loadNextScript = () => {
+			if( scriptPaths.length === 0 ) {
 				$.ready( initApp );
-			} );
-		} else {
-			$.ready( initApp );
-		}
+				return;
+			}
+			loadPluginScript( scriptPaths.shift(), loadNextScript );
+		};
+		loadNextScript();
 	};
 	script.onerror = function() {
 		console.error( "Failed to load Pi.js version:", m_piVersion, "from:", scriptPath );
 
+		// Results from the fallback would be recorded against the wrong version
+		const autoRunState = getAutoRunState();
+		if( autoRunState ) {
+			autoRunState.aborted = `Failed to load Pi.js ${m_piVersion}`;
+			saveAutoRunState( autoRunState );
+		}
+
 		// Fallback to default version
 		const fallbackVersion = PI_VERSIONS[ "1.2.5" ];
-		m_piVersion = fallbackVersion;
+		m_piVersion = "1.2.5";
 		const fallbackScript = document.createElement( "script" );
 		fallbackScript.src = fallbackVersion.path;
 		fallbackScript.onload = function() {
@@ -232,7 +258,12 @@ async function initApp() {
 		g_reportManager.init( api )
 	] );
 
-	showMainMenu();
+	// A stored all-versions run resumes here after each version switch reloads the page
+	if( getAutoRunState() ) {
+		continueAutoRun();
+	} else {
+		showMainMenu();
+	}
 }
 
 /**
@@ -266,19 +297,21 @@ function showMainMenu() {
 	$.print();
 	
 	// Create main menu table
-	let flashingMenuText = "4. Enable Reduced Flashing";
+	let flashingMenuText = "5. Enable Reduced Flashing";
 	if( m_reducedFlashing ) {
-		flashingMenuText = "4. Disable Reduced Flashing";
+		flashingMenuText = "5. Disable Reduced Flashing";
 	}
-	let endPadding = flashingMenuText.length;
-	const menuItems = [
-		"1. Run Performance Tests".padEnd( endPadding, " " ),
-		"2. View Previous Results".padEnd( endPadding, " " ),
-		"3. Recalculate Target FPS".padEnd( endPadding, " " ),
-		flashingMenuText.padEnd( endPadding, " " ),
-		"5. Change Pi.js Version".padEnd( endPadding, " " ),
-		"6. Exit".padEnd( endPadding )
+	const menuText = [
+		"1. Run Performance Tests",
+		`2. Run All Versions (${AUTO_RUN_ROUNDS} Rounds)`,
+		"3. View Previous Results",
+		"4. Recalculate Target FPS",
+		flashingMenuText,
+		"6. Change Pi.js Version",
+		"7. Exit"
 	];
+	const endPadding = Math.max( ...menuText.map( ( item ) => item.length ) );
+	const menuItems = menuText.map( ( item ) => item.padEnd( endPadding, " " ) );
 
 	$.setColor( 15 );
 	menuItems.forEach( ( item ) => $.print( item, false, true ) );
@@ -286,8 +319,8 @@ function showMainMenu() {
 	// Instruction - centered below table
 	$.print();
 	$.setColor( 7 );
-	$.print( "Enter Key (1 - 6)", false, true );
-	
+	$.print( "Enter Key (1 - 7)", false, true );
+
 	// Set up menu handlers
 	const menuKeyCleanups = [];
 	menuKeyCleanups.push( addKeyListener( "1", menu1 ) );
@@ -296,6 +329,7 @@ function showMainMenu() {
 	menuKeyCleanups.push( addKeyListener( "4", menu4 ) );
 	menuKeyCleanups.push( addKeyListener( "5", menu5 ) );
 	menuKeyCleanups.push( addKeyListener( "6", menu6 ) );
+	menuKeyCleanups.push( addKeyListener( "7", menu7 ) );
 
 	function menu1() {
 		clearMenuKeys();
@@ -304,25 +338,30 @@ function showMainMenu() {
 
 	function menu2() {
 		clearMenuKeys();
+		showAutoRunConfirmation();
+	}
+
+	function menu3() {
+		clearMenuKeys();
 		g_reportManager.showPreviousResults();
 	}
 
-	async function menu3() {
+	async function menu4() {
 		clearMenuKeys();
 		await showRecalculateFps();
 	}
 
-	function menu4() {
+	function menu5() {
 		clearMenuKeys();
 		toggleReducedFlashing();
 	}
 
-	function menu5() {
+	function menu6() {
 		clearMenuKeys();
 		showPiVersionMenu();
 	}
 
-	function menu6() {
+	function menu7() {
 		clearMenuKeys();
 		showExitMessage();
 	}
@@ -346,6 +385,272 @@ function toggleReducedFlashing() {
 
 	// Return to main menu
 	showMainMenu();
+}
+
+/**
+ * Reads the stored all-versions run state
+ *
+ * @returns {Object|null} The run state, or null when no run is in progress
+ */
+function getAutoRunState() {
+	try {
+		const state = JSON.parse( localStorage.getItem( AUTO_RUN_KEY ) );
+		if( state && Array.isArray( state.order ) ) {
+			return state;
+		}
+	} catch( error ) {
+		console.error( "Ignoring unreadable all-versions run state:", error );
+	}
+	return null;
+}
+
+/**
+ * Stores the all-versions run state so it survives a page reload
+ *
+ * @param {Object} state - The run state
+ * @returns {void}
+ */
+function saveAutoRunState( state ) {
+	localStorage.setItem( AUTO_RUN_KEY, JSON.stringify( state ) );
+}
+
+/**
+ * Builds the run order: every version once per round, so no version runs back-to-back
+ *
+ * @returns {Array<string>} Version keys in execution order
+ */
+function buildAutoRunOrder() {
+	const order = [];
+	for( let round = 0; round < AUTO_RUN_ROUNDS; round++ ) {
+		order.push( ...Object.keys( PI_VERSIONS ) );
+	}
+	return order;
+}
+
+/**
+ * Asks for confirmation, since an all-versions run deletes the saved results
+ *
+ * @returns {void}
+ */
+function showAutoRunConfirmation() {
+	const versionCount = Object.keys( PI_VERSIONS ).length;
+
+	$.cls();
+	printTitle();
+	$.setPos( 0, m_centerPosY - 2 );
+	$.setColor( 15 );
+	$.print( `Run all ${versionCount} versions, ${AUTO_RUN_ROUNDS} rounds each`, false, true );
+	$.print();
+	$.setColor( 4 );
+	$.print( "This deletes all saved results first", false, true );
+	$.print();
+	$.setColor( 15 );
+	$.print( "Press 'Y' to confirm, 'N' to cancel", false, true );
+
+	const cleanups = [];
+	const clearKeys = () => {
+		while( cleanups.length > 0 ) {
+			cleanups.pop()();
+		}
+	};
+	cleanups.push( addKeyListener( "KeyY", () => {
+		clearKeys();
+		startAutoRun();
+	} ) );
+	cleanups.push( addKeyListener( "KeyN", () => {
+		clearKeys();
+		showMainMenu();
+	} ) );
+}
+
+/**
+ * Clears the saved results and begins an all-versions run
+ *
+ * @returns {Promise<void>}
+ */
+async function startAutoRun() {
+	$.cls();
+	printTitle();
+	$.setPos( 0, m_centerPosY );
+	$.setColor( 15 );
+	$.print( "Clearing results...", false, true );
+
+	// Results left over from earlier runs would be mixed into the comparison medians
+	try {
+		const response = await fetch( "http://localhost:8080/api/delete-all-results", {
+			"method": "POST"
+		} );
+		const result = await response.json();
+		if( !response.ok || !result.success ) {
+			throw new Error( result.error || "Failed to clear results" );
+		}
+	} catch( error ) {
+		showAutoRunMessage( [ "Could not clear results", error.message ], 4, showMainMenu );
+		return;
+	}
+
+	saveAutoRunState( {
+		"startTime": Date.now(),
+		"order": buildAutoRunOrder(),
+		"index": 0,
+		"originalVersion": m_piVersion
+	} );
+	continueAutoRun();
+}
+
+/**
+ * Performs the next step of the stored all-versions run: finish, switch version, or test
+ *
+ * @returns {void}
+ */
+function continueAutoRun() {
+	const state = getAutoRunState();
+	if( !state ) {
+		showMainMenu();
+		return;
+	}
+
+	if( state.aborted ) {
+		endAutoRun( state );
+		showAutoRunMessage( [ "All-versions run stopped", state.aborted ], 4, showMainMenu );
+		return;
+	}
+
+	const remainingTime = state.startTime + AUTO_RUN_TIMEOUT - Date.now();
+	if( !( remainingTime > 0 ) ) {
+		endAutoRun( state );
+		showAutoRunMessage(
+			[ "All-versions run stopped", getAutoRunTimeoutText() ], 4, showMainMenu
+		);
+		return;
+	}
+
+	if( state.index >= state.order.length ) {
+		endAutoRun( state );
+		showAutoRunMessage(
+			[ "All-versions run complete", `${state.order.length} runs saved` ], 10,
+			() => g_reportManager.showPreviousResults(), "Press any key to view results"
+		);
+		return;
+	}
+
+	const version = state.order[ state.index ];
+	if( !PI_VERSIONS[ version ] ) {
+		endAutoRun( state );
+		showAutoRunMessage(
+			[ "All-versions run stopped", `Unknown Pi.js version: ${version}` ], 4, showMainMenu
+		);
+		return;
+	}
+
+	// The watchdog and cancel key also cover a reload that never completes its tests
+	if( !m_autoRunCleanup ) {
+		const timer = setTimeout( () => abortAutoRun( getAutoRunTimeoutText() ), remainingTime );
+		const removeKey = addKeyListener( "Escape", () => abortAutoRun( "Cancelled" ) );
+		m_autoRunCleanup = () => {
+			clearTimeout( timer );
+			removeKey();
+		};
+	}
+
+	if( version !== m_piVersion ) {
+		localStorage.setItem( "piVersion", version );
+		$.cls();
+		printTitle();
+		$.setPos( 0, m_centerPosY );
+		$.setColor( 15 );
+		$.print( `Run ${state.index + 1} of ${state.order.length}`, false, true );
+		$.print( `Switching to Pi.js version: ${version}`, false, true );
+		$.print();
+		$.setColor( 7 );
+		$.print( "Press Esc to cancel", false, true );
+		setTimeout( () => {
+
+			// Escape during the delay has already stored the abort and reloaded
+			window.location.reload();
+		}, 500 );
+		return;
+	}
+
+	g_testManager.startTests( async ( resultsObject ) => {
+		const saved = await g_reportManager.saveResults( resultsObject );
+		const currentState = getAutoRunState();
+		if( !currentState ) {
+			return;
+		}
+		if( !saved.success ) {
+			abortAutoRun( `Failed to save results: ${saved.error}` );
+			return;
+		}
+		currentState.index += 1;
+		saveAutoRunState( currentState );
+		continueAutoRun();
+	} );
+}
+
+/**
+ * Stops the all-versions run; the reload ends any test in progress and reports the reason
+ *
+ * @param {string} reason - Why the run stopped
+ * @returns {void}
+ */
+function abortAutoRun( reason ) {
+	const state = getAutoRunState();
+	if( state ) {
+		state.aborted = reason;
+		saveAutoRunState( state );
+	}
+	window.location.reload();
+}
+
+/**
+ * Removes the all-versions run state and restores the version selected before the run
+ *
+ * @param {Object} state - The run state
+ * @returns {void}
+ */
+function endAutoRun( state ) {
+	localStorage.removeItem( AUTO_RUN_KEY );
+	if( PI_VERSIONS[ state.originalVersion ] ) {
+		localStorage.setItem( "piVersion", state.originalVersion );
+	}
+	if( m_autoRunCleanup ) {
+		m_autoRunCleanup();
+		m_autoRunCleanup = null;
+	}
+}
+
+/**
+ * Describes the all-versions run time limit
+ *
+ * @returns {string} Timeout message
+ */
+function getAutoRunTimeoutText() {
+	return `Timed out after ${AUTO_RUN_TIMEOUT / 3600000} hours`;
+}
+
+/**
+ * Shows an all-versions run message and waits for a key
+ *
+ * @param {Array<string>} lines - Message lines
+ * @param {number} color - Palette color of the message
+ * @param {Function} next - Called after a key press
+ * @param {string} [prompt] - Instruction shown below the message
+ * @returns {void}
+ */
+function showAutoRunMessage(
+	lines, color, next, prompt = "Press any key to return to main menu"
+) {
+	$.canvas().style.opacity = "";
+	$.cls();
+	printTitle();
+	$.setPos( 0, m_centerPosY );
+	$.setColor( color );
+	lines.forEach( ( line ) => $.print( line, false, true ) );
+	$.print();
+	$.setColor( 7 );
+	$.print( prompt, false, true );
+	addKeyListener( "any", next, { "once": true } );
 }
 
 /**

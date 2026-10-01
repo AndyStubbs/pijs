@@ -33,7 +33,7 @@ export function getConfig( operationTypes ) {
 		"cleanUp": cleanUp,
 		"itemCountStart": 200,
 		"itemFactor": 10,
-		"exludeVersions": [ "1.2.5" ],
+		"exludeVersions": [],
 		"operationTypes": operationTypes
 	};
 }

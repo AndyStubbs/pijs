@@ -6,7 +6,7 @@
  * @module report-manager
  */
 
-export { init, showResults, postResults, showPreviousResults };
+export { init, showResults, postResults, saveResults, showPreviousResults };
 
 "use strict";
 
@@ -544,13 +544,21 @@ function displayComparisonGraph( files, runs, metricIndex ) {
 		const valueText = formatGraphValue( bar.value );
 		const versionText = bar.runs > 1 ? `${bar.version} (${bar.runs})` : bar.version;
 		const lineHeight = height / $.getRows();
+		const valueWidth = measureText( valueText );
+		const valueX = Math.max( 0, x + ( barWidth - valueWidth ) / 2 );
 		$.rect( x, y, barWidth, barHeight, colors[ i % colors.length ] );
-		$.setColor( 15 );
-		$.setPosPx(
-			Math.max( 0, x + ( barWidth - measureText( valueText ) ) / 2 ),
-			y + ( barHeight - lineHeight ) / 2
-		);
+
+		// The bars are all bright, so a value inside one is black; a value that does not fit
+		// sits above its bar on the black background instead.
+		if( barHeight >= lineHeight + 4 && barWidth >= valueWidth + 4 ) {
+			$.setColor( "black" );
+			$.setPosPx( valueX, y + ( barHeight - lineHeight ) / 2 );
+		} else {
+			$.setColor( 15 );
+			$.setPosPx( valueX, y - lineHeight - 2 );
+		}
 		$.print( valueText );
+		$.setColor( 15 );
 		$.setPosPx(
 			Math.max( 0, x + ( barWidth - measureText( versionText ) ) / 2 ),
 			chartBottom + 12
@@ -757,8 +765,33 @@ function showError( message ) {
 }
 
 /**
+ * Sends the test results to the server for storage without drawing anything
+ *
+ * @param {Object} resultsObject - Results object containing version, date, and tests array
+ * @returns {Promise<Object>} Object with success, plus filename or error
+ */
+async function saveResults( resultsObject ) {
+	try {
+		const response = await fetch( "http://localhost:8080/api/post-results", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify( resultsObject )
+		} );
+		const result = await response.json();
+		if( response.ok && result.success ) {
+			return { "success": true, "filename": result.filename };
+		}
+		return { "success": false, "error": result.error || "Failed to save results" };
+	} catch( error ) {
+		return { "success": false, "error": error.message };
+	}
+}
+
+/**
  * Posts the test results to the server for storage
- * 
+ *
  * @param {Object} resultsObject - Results object containing version, date, and tests array
  * @returns {void}
  */
@@ -778,41 +811,19 @@ async function postResults( resultsObject ) {
 	$.setColor( 7 );
 	$.print( "Posting results...", false, true );
 	
-	try {
-		// Send results to server
-		const response = await fetch( "http://localhost:8080/api/post-results", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify( resultsObject )
-		} );
-		
-		const result = await response.json();
-		
-		if( response.ok && result.success ) {
-			
-			// Mark results as posted in the object
-			m_currentResultsObject.posted = true;
+	const saved = await saveResults( resultsObject );
+	$.setPos( 0, contentStartRow + 2 );
+	if( saved.success ) {
 
-			// Show success message
-			$.setColor( 2 );
-			$.setPos( 0, contentStartRow + 2 );
-			$.print( `Results saved: ${result.filename}`, false, true );
-		} else {
-
-			// Show error message
-			$.setColor( 4 );
-			$.setPos( 0, contentStartRow + 2 );
-			$.print( `Error: ${result.error || "Failed to save results"}`, false, true );
-		}
-	} catch( error ) {
-		// Show error message
+		// Mark results as posted in the object
+		m_currentResultsObject.posted = true;
+		$.setColor( 2 );
+		$.print( `Results saved: ${saved.filename}`, false, true );
+	} else {
 		$.setColor( 4 );
-		$.setPos( 0, contentStartRow + 2 );
-		$.print( `Error: ${error.message}`, false, true );
+		$.print( `Error: ${saved.error}`, false, true );
 	}
-	
+
 	// Show instruction
 	$.setColor( 7 );
 	$.setPos( 0, contentStartRow + 4 );

@@ -89,6 +89,7 @@ let m_results = [];
 let m_testIndex = -1;
 let m_targetFps = 60;
 let m_api = null;
+let m_onComplete = null;
 
 /*
  * Initializes the test manager
@@ -104,10 +105,12 @@ async function init( api ) {
 
 /**
  * Starts the test suite from the beginning
- * 
+ *
+ * @param {Function} [onComplete] - Receives the results object instead of the results screen
  * @returns {Promise<void>}
  */
-async function startTests() {
+async function startTests( onComplete = null ) {
+	m_onComplete = onComplete;
 
 	// Update screen opacity based on setting
 	if( localStorage.getItem( "reducedFlashing" ) === "true" ) {
@@ -203,27 +206,18 @@ async function runNextTest() {
 			)
 		};
 		$.canvas().style.opacity = "";
-		g_reportManager.showResults( resultsObject );
+		if( m_onComplete ) {
+			m_onComplete( resultsObject );
+		} else {
+			g_reportManager.showResults( resultsObject );
+		}
 		return;
 	}
 
 	let test = m_tests[ m_testIndex ];
 
 	if( test.exludeVersions.includes( $.version ) ) {
-		m_results.push( {
-			"name": test.name,
-			"supported": false,
-			"medianFps": 0,
-			"itemCount": 0,
-			"itemCountPerSecond": 0,
-			"medianFrameMs": 0,
-			"p95FrameMs": 0,
-			"variabilityPercent": 0,
-			"sampleCount": 0,
-			"droppedFrames": 0,
-			"testTime": 0,
-			"score": 0
-		} );
+		m_results.push( createUnsupportedResult( test.name ) );
 		return await runNextTest();
 	}
 
@@ -242,12 +236,17 @@ async function runNextTest() {
 	let measurementFrames = [];
 	let droppedFrames = 0;
 
-	// Initialize the test
-	await test.init( test );
+	try {
 
-	// Workload-specific preparation fills caches before timed warm-up and calibration.
-	if( test.warmUp ) {
-		await test.warmUp();
+		// Initialize the test
+		await test.init( test );
+
+		// Workload-specific preparation fills caches before timed warm-up and calibration.
+		if( test.warmUp ) {
+			await test.warmUp();
+		}
+	} catch( error ) {
+		return await failTest( error );
 	}
 
 	// Start the test loop
@@ -350,7 +349,11 @@ async function runNextTest() {
 			}
 		}
 
-		test.run( itemCount, test.data );
+		try {
+			test.run( itemCount, test.data );
+		} catch( error ) {
+			return await failTest( error );
+		}
 		const currentFps = calcFpsFromMs( frameDuration );
 
 		//$.cls( 0, 0, 155, 65 );
@@ -366,6 +369,25 @@ async function runNextTest() {
 		$.print( "Phase:" + phase.padStart( 18, " " ) );
 		requestAnimationFrame( loop );
 	};
+
+	/**
+	 * Records a test that threw as unsupported so the remaining tests still run.
+	 *
+	 * @param {Error} error - Error thrown by the test
+	 * @returns {Promise<void>}
+	 */
+	async function failTest( error ) {
+		console.error( `Test "${test.name}" failed on Pi.js ${$.version}:`, error );
+		const result = createUnsupportedResult( test.name );
+		result.error = error.message;
+		m_results.push( result );
+		try {
+			test.cleanUp();
+		} catch( cleanUpError ) {
+			console.error( `Test "${test.name}" clean up failed:`, cleanUpError );
+		}
+		return await runNextTest();
+	}
 
 	/**
 	 * Updates the workload search bounds after a calibration sample.
@@ -394,6 +416,29 @@ async function runNextTest() {
 			itemCount = Math.floor( ( itemCount + lowerPassingCount ) / 2 );
 		}
 	}
+}
+
+/**
+ * Creates the result recorded for a test the loaded Pi.js version cannot run.
+ *
+ * @param {string} name - Test name
+ * @returns {Object} Result marked unsupported, with zeroed measurements
+ */
+function createUnsupportedResult( name ) {
+	return {
+		"name": name,
+		"supported": false,
+		"medianFps": 0,
+		"itemCount": 0,
+		"itemCountPerSecond": 0,
+		"medianFrameMs": 0,
+		"p95FrameMs": 0,
+		"variabilityPercent": 0,
+		"sampleCount": 0,
+		"droppedFrames": 0,
+		"testTime": 0,
+		"score": 0
+	};
 }
 
 /**
