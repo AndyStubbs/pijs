@@ -41,15 +41,18 @@ async function createPage( fileCount = 12 ) {
 		window.pixelPosition = null;
 		window.prints = [];
 		window.rectangles = [];
+		window.color = null;
 		window.$ = {
 			"cls": () => {},
-			"setColor": () => {},
+			"setColor": value => { window.color = value; },
 			"setPos": () => {},
 			"setPosPx": ( x, y ) => { window.pixelPosition = { x, y }; },
 			"print": value => {
 				const text = value === undefined ? "" : String( value );
 				window.output.push( text );
-				window.prints.push( { "text": text, "position": window.pixelPosition } );
+				window.prints.push( {
+					"text": text, "position": window.pixelPosition, "color": window.color
+				} );
 			},
 			"calcWidth": value => String( value ).length * 8,
 			"getCols": () => 100,
@@ -156,5 +159,29 @@ test( "comparison centers values and places versions directly below the graph", 
 	assert.equal( layout.score.position.y, y + ( height - 10 ) / 2 );
 	assert.equal( layout.version.position.x, x + ( width - 9 * 8 ) / 2 );
 	assert.equal( layout.version.position.y, 497 );
+	await page.close();
+} );
+
+test( "comparison values are black inside bars and white above bars they do not fit", async () => {
+	const page = await createPage();
+	await page.evaluate( () => reportManager.showPreviousResults() );
+	await page.keyboard.press( "c" );
+	await page.waitForFunction( () => rectangles.length === 2 );
+	const inside = await page.evaluate( () => prints.find( entry => entry.text === "10" ) );
+	assert.equal( inside.color, "black" );
+
+	// Bars narrower than their value cannot contain it
+	await page.evaluate( () => {
+		window.prints = [];
+		window.$.calcWidth = value => String( value ).length * 200;
+	} );
+	await page.keyboard.press( "ArrowDown" );
+	await page.waitForFunction( () => rectangles.length === 4 );
+	const result = await page.evaluate( () => ( {
+		"bar": rectangles[ 2 ],
+		"value": prints.find( entry => entry.text === "1.0k" )
+	} ) );
+	assert.equal( result.value.color, 15 );
+	assert.equal( result.value.position.y, result.bar[ 1 ] - 10 - 2 );
 	await page.close();
 } );

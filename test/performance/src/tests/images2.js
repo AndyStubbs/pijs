@@ -29,13 +29,8 @@ export function getConfig( testOptions ) {
 		"blit-images", "blit-images-colors", "blit-sprites", "blit-sprites-colors",
 		"draw-images", "draw-images-colors", "draw-sprites", "draw-sprites-colors"
 	];
-	const legacyCompatible = selectedOptions.length === 1 &&
-		[ "draw-images", "draw-sprites" ].includes( selectedOptions[ 0 ] );
 	const exludeVersions = [ "2.0.0-alpha.1", "2.0.0-alpha.0" ];
-	if( !legacyCompatible ) {
-		exludeVersions.push( "1.2.5" );
-	}
-	
+
 	// Generate test name based on options
 	let name = "Images Mixed Test";
 	
@@ -113,19 +108,30 @@ function generateRandomOperation() {
 	const testOption = m_testOptions[ optionIndex ];
 	const { useBlit, useSprite, useColor } = parseTestOption( testOption );
 	
+	// Pi.js 1.2.5 draws untinted images with its own commands and parameters. Its performance
+	// patch adds the blit and tint commands, which take the Pi.js 2 parameters.
+	const useLegacyParams = m_isLegacy && !useBlit && !useColor;
+
 	let drawFn;
 	if( useSprite ) {
 		if( useBlit ) {
 			drawFn = screen.blitSprite;
+		} else if( m_isLegacy && useColor ) {
+			drawFn = screen.drawSpriteColor;
 		} else {
 			drawFn = screen.drawSprite;
 		}
 	} else {
 		if( useBlit ) {
 			drawFn = screen.blitImage;
+		} else if( m_isLegacy && useColor ) {
+			drawFn = screen.drawImageColor;
 		} else {
 			drawFn = screen.drawImage;
 		}
+	}
+	if( !drawFn ) {
+		throw new Error( `Image command for ${testOption} not found` );
 	}
 
 	// Randomly decide which optional parameters to include
@@ -196,7 +202,7 @@ function generateRandomOperation() {
 		const frame = Math.floor(
 			m_seededRandom() * spriteData.frameCount
 		);
-		if( m_isLegacy ) {
+		if( useLegacyParams ) {
 			params = [ imageName, frame, x, y, angle, anchorX, anchorY, 255, scaleX, scaleY ];
 		} else {
 			params = [ imageName, frame, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ];
@@ -213,15 +219,19 @@ function generateRandomOperation() {
 			if( params[ 3 ] === 0 || params[ 3 ] === height ) {
 				dy *= -1;
 			}
-			const angleIndex = m_isLegacy ? 4 : 9;
+			const angleIndex = useLegacyParams ? 4 : 9;
 			params[ angleIndex ] += da;
 		};
 	} else {
 
 		// Draw an image
 		const imageName = g_loader.images[ Math.floor( m_seededRandom() * g_loader.images.length ) ];
-		if( m_isLegacy ) {
+		if( useLegacyParams ) {
 			params = [ imageName, x, y, angle, anchorX, anchorY, 255, scaleX, scaleY ];
+		} else if( m_isLegacy ) {
+
+			// The 1.2.5 getImage command captures the screen, so the patch takes the name
+			params = [ imageName, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ];
 		} else {
 			const image = $.getImage( imageName );
 			params = [ image, x, y, color, anchorX, anchorY, scaleX, scaleY, angle ];
@@ -237,7 +247,7 @@ function generateRandomOperation() {
 			if( params[ 2 ] === 0 || params[ 2 ] === height ) {
 				dy *= -1;
 			}
-			const angleIndex = m_isLegacy ? 3 : 8;
+			const angleIndex = useLegacyParams ? 3 : 8;
 			params[ angleIndex ] += da;
 		};
 	}

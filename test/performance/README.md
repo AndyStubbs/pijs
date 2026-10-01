@@ -228,10 +228,29 @@ shapes before timed warm-up begins. Other adaptive generators enable entropy mix
 strings do not establish identical work across page loads for those cases. The Pi-rendered status
 overlay participates in the adaptive measurement.
 
+A test that throws on the loaded Pi.js version is recorded as unsupported, with the error message
+in its saved result, and the remaining tests continue.
+
+Older cores load a patch from `src/patches/` before the polygons plugin, so that every version runs
+every test. The Pi.js 2.0.3 patch adds the screen view data that the plugin reads. The Pi.js 1.2.5
+patch adds plugin registration for the polygons plugin, `getPalColor`, `blitImage`, `blitSprite`,
+and the tinted `drawImageColor` and `drawSpriteColor`, built on public 1.2.5 commands and the
+screen's 2D context. Scores for those 1.2.5 tests measure the patch together with the Canvas 2D
+core: a tinted draw uses a cached tinted copy of the image, and a blit clears the destination
+region before drawing.
+
+**Run All Versions** deletes every saved result after confirmation, then runs each Pi.js version
+three times and saves each run automatically. Versions rotate in rounds, so no version runs twice
+in a row. Switching versions reloads the page; the run's progress is kept in `localStorage` under
+`autoRun` and resumes after each reload. Keep the tab visible, because hidden tabs stop receiving
+animation frames. `Esc` cancels the run, and it stops by itself two hours after it started. A run
+that stops early keeps the results saved up to that point. The version selected before the run
+is restored for the next page load.
+
 Post a run, open **View Previous Results**, and press `C` to compare adaptive scores. Arrow keys
 select individual tests. Bars use the median saved run for each version; overall comparisons use
-only the tests supported by every displayed version. Pi.js 1.2.5 has legacy argument handling and
-supports fewer cases. These scores are not combined with fixed-work submission timings.
+only the tests supported by every displayed version. These scores are not combined with fixed-work
+submission timings.
 
 ## Maintenance and checks
 

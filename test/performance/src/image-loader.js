@@ -90,7 +90,12 @@ export function init( options = {} ) {
 		}
 		
 		try {
-			$.loadSpritesheet( spritePath, spriteName, width, height, margin );
+
+			// Cores before 2.3.0 auto-detect frames only for null, and throw for undefined, so
+			// null keeps the loaded sheets the same on every version.
+			$.loadSpritesheet(
+				spritePath, spriteName, width ?? null, height ?? null, margin ?? null
+			);
 			m_spriteNames.push( spriteName );
 			m_loadedSprites.push( {
 				"name": spriteName,
