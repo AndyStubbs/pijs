@@ -13,12 +13,15 @@ const test = g_test.test;
 
 const SCRIPT = g_url.fileURLToPath( new URL( "../../scripts/ci-changes.js", import.meta.url ) );
 
-test( "documentation and tooling files are skippable", () => {
+test( "documentation, tooling, and demo files are skippable", () => {
 	for( const file of [
 		"README.md", "test/README.md", "docs/plans/v2.3/ROADMAP.md",
 		"docs/UPGRADE-V2.1.md", "docs/evidence/ci-2.3/runners.json", "docs/pijs-logo2.webp",
 		"tools/fonts/gen-fonts.js", ".vscode/settings.json", "LICENSE", "TODO.txt",
-		"AGENTS.md", ".cursorrules", ".github/dependabot.yml"
+		"AGENTS.md", ".cursorrules", ".gitignore", ".github/dependabot.yml",
+		"test/gamepad.html", "test/demos/galaga.html", "test/demos/sound_lab_01.html",
+		"test/demos/cga_shader_demo_01.html", "test/demos/music-maker/src/app.js",
+		"test/demos/music-maker/tests/codegen.test.js", "test/demos/sound-board/index.html"
 	] ) {
 		assert.equal( g_ciChanges.isSkippable( file ), true, file );
 	}
@@ -32,7 +35,9 @@ test( "files that tests, builds, or size reports read are not skippable", () => 
 		"releases/pi-latest/CHANGELOG.md", "releases/PUBLISH.md", "plugins/PLUGIN-QUICKSTART.md",
 		"plugins/README.md",
 		"src/api/graphics.js", "plugins/sound/index.js", "metadata/pi-2.3/circle.json",
-		"test/demos/shader_demo_01.html", "test/tests/html-core/circle_01.html",
+		"test/demos/shader_demo_01.html", "test/demos/shader_demo_07.html",
+		"test/tests/html-core/circle_01.html", "test/media/bomb.png", "test/libs/seedrandom.js",
+		"test/performance/benchmark/run.js", ".gitattributes",
 		"releases/pi-2.2.0/pi.js", "scripts/build.js", "package.json", "package-lock.json",
 		"playwright.config.js", ".github/workflows/ci.yml", ".editorconfig", ""
 	] ) {
@@ -44,11 +49,17 @@ test( "Windows separators are normalized", () => {
 	assert.equal( g_ciChanges.isSkippable( "docs\\plans\\A.md" ), true );
 	assert.equal( g_ciChanges.isSkippable( "docs\\llms\\pi.d.ts" ), false );
 	assert.equal( g_ciChanges.isSkippable( "plugins\\PLUGIN-SYSTEM.md" ), false );
+	assert.equal( g_ciChanges.isSkippable( "test\\demos\\sound-board\\js\\main.js" ), true );
+	assert.equal( g_ciChanges.isSkippable( "test\\demos\\shader_demo_02.html" ), false );
 } );
 
 test( "a change needs tests unless every file is skippable", () => {
 	assert.equal( g_ciChanges.needsTests( [ "README.md", "docs/UPGRADE-V2.2.md", "" ] ), false );
 	assert.equal( g_ciChanges.needsTests( [ "README.md", "src/core/state.js" ] ), true );
+	assert.equal( g_ciChanges.needsTests( [ "test/demos/music-maker/index.html" ] ), false );
+	assert.equal( g_ciChanges.needsTests(
+		[ "test/demos/galaga.html", "test/demos/shader_demo_03.html" ]
+	), true );
 	assert.equal( g_ciChanges.needsTests( [] ), true );
 	assert.equal( g_ciChanges.needsTests( [ "", "  " ] ), true );
 } );

@@ -335,7 +335,12 @@ The `test` job differs from a local `npm test` in these settings:
   `test/scripts/plugin-guides.test.js` checks with the plugin READMEs; and `docs/UPGRADE-V2.3.md`, whose renamed-command
   table `test/scripts/upgrade-guide.test.js` checks against `metadata/pi-2.3/_removed.toml`.
 - Files in `tools/` and `.vscode/`.
-- `LICENSE`, `TODO.txt`, `AGENTS.md`, `.cursorrules`, and `.github/dependabot.yml`.
+- Files in `test/demos/`, which are manual demos, except `shader_demo_01.html` to
+  `shader_demo_07.html`, whose shaders `test/unit/alpha-composition-browser.test.js` compiles.
+  A demo's own tests, such as `test/demos/music-maker/tests/`, are not part of `npm test`.
+- `test/gamepad.html`, a manual test page.
+- `LICENSE`, `TODO.txt`, `AGENTS.md`, `.cursorrules`, `.gitignore`, and
+  `.github/dependabot.yml`.
 
 `scripts/ci-changes.js` holds this list, and `test/scripts/ci-changes.test.js` covers it. Release
 runs always test. To check a local change, run
