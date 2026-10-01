@@ -15,8 +15,9 @@ import {
 	melodyTrack, drumTrack, buildTemplate, MAX_TRACKS, MAX_BARS, MAGIC, VELOCITIES
 } from "./song.js";
 import { trackLabel, songToCode } from "./codegen.js";
-import { downloadText, pickTextFile, fileName } from "./storage.js";
+import { downloadText, fileName, saveToLibrary } from "./storage.js";
 import { drawOverlay, openOverlay, closeOverlay } from "./overlays.js";
+import { tipFor, wrapText } from "./help.js";
 
 const $ = window.pi;
 
@@ -165,9 +166,11 @@ function handleKey( k ) {
 		return;
 	}
 	const overlay = app.overlay ? app.overlay.type : null;
-	if( overlay === "code" ) {
+	if( overlay === "code" || overlay === "help" ) {
 		if( k.code === "ArrowUp" || k.code === "ArrowDown" ) {
 			app.overlay.scroll += k.code === "ArrowUp" ? -1 : 1;
+		} else if( k.code === "PageUp" || k.code === "PageDown" ) {
+			app.overlay.scroll += k.code === "PageUp" ? -15 : 15;
 		}
 		return;
 	}
@@ -347,6 +350,35 @@ function drawEditor() {
 	}
 	ui.enabled = true;
 	drawToast();
+	drawTip();
+}
+
+// The pop-up tip for whatever the pointer is over, while TIPS is on.
+function drawTip() {
+	if( !app.tips || !ui.hot ) {
+		return;
+	}
+	const tip = tipFor( ui.hot );
+	if( !tip ) {
+		return;
+	}
+	const lines = wrapText( tip, 36 );
+	const w = Math.max( ...lines.map( line => line.length ) ) * CW + 9;
+	const h = lines.length * 9 + 6;
+	let x = ui.mx + 10;
+	let y = ui.my + 12;
+	if( x + w > W - 1 ) {
+		x = W - 1 - w;
+	}
+	if( y + h > H - 1 ) {
+		y = ui.my - h - 4;
+	}
+	x = Math.max( 1, x );
+	y = Math.max( 1, y );
+	fill( x + 2, y + 2, w, h, "#0b0c14" );
+	fill( x, y, w, h, PAL.black );
+	frame( x, y, w, h, PAL.yellow );
+	lines.forEach( ( line, i ) => text( x + 5, y + 4 + i * 9, line, PAL.white ) );
 }
 
 function drawToast() {
@@ -403,6 +435,7 @@ function drawTopBar() {
 		setTempo( "tempo-", song.tempo - 1 );
 	}
 	textCenter( 189, 4, 20, String( song.tempo ), COL.accent );
+	ui.hint( "tempo", 189, 2, 20, 12 );
 	if( ui.enabled && ui.wheelY && ui.over( 189, 2, 20, 12 ) ) {
 		pushUndo();
 		app.song.tempo = Math.max( 32, Math.min( 255, song.tempo - Math.sign( ui.wheelY ) * 2 ) );
@@ -454,6 +487,7 @@ function drawTracks() {
 		const y = TRACK_Y + i * TRACK_H;
 		const sel = i === app.sel;
 		const c = trackColor( i );
+		ui.hint( "track", 0, y, LEFT_W, TRACK_H - 1 );
 		bevel( 0, y, LEFT_W, TRACK_H - 1, sel ? shade( c, 0.32 ) : COL.face, sel ? c : COL.hi );
 		fill( 2, y + 2, 3, TRACK_H - 5, t.mute ? COL.hi : c );
 		text( 8, y + 3, fit( t.name, 13 ), sel ? PAL.white : c );
@@ -514,6 +548,7 @@ function addTrack( type ) {
 function drawVisualizer() {
 	const y0 = TRACK_Y + 8 * TRACK_H + 14;
 	bevel( 0, y0, LEFT_W, 227 - y0, COL.lo, COL.lo, COL.hi );
+	ui.hint( "vis", 0, y0, LEFT_W, 227 - y0 );
 	let levels = null;
 	try {
 		levels = $.getSoundLevels( "output", true );
@@ -758,6 +793,7 @@ function handleGridInput( g ) {
 		return { "step": g.first + i, "value": g.rows[ g.top + r ] };
 	};
 
+	ui.hint( g.isDrums ? "grid-drums" : "grid", GRID_X, GRID_Y, gw, gh );
 	if( ui.enabled && ui.wheelY && ui.over( ED_X, GRID_Y, GRID_W + LABEL_W + 16, gh ) ) {
 		scrollRows( g, Math.sign( ui.wheelY ) * Math.max( 1, Math.round( Math.abs( ui.wheelY ) / 40 ) ) );
 		ui.wheelY = 0;
@@ -864,6 +900,7 @@ function drawChordLane( g ) {
 		const x = GRID_X + ( b * STEPS_PER_BAR - g.first ) * g.cellW;
 		const w = STEPS_PER_BAR * g.cellW;
 		const hover = ui.enabled && ui.over( x, CHORD_Y, w, 9 );
+		ui.hint( "chord", x, CHORD_Y, w, 9 );
 		fill( x, CHORD_Y, w - 1, 9, hover ? PAL.navy : b % 2 ? "#232842" : "#2a3050" );
 		text( x + 2, CHORD_Y + 1, String( b + 1 ), shade( COL.dim, 0.6 ) );
 		const name = chordName( app.song.key, app.song.scale, app.song.chords[ b ] || 0 );
@@ -885,6 +922,7 @@ function drawChordLane( g ) {
 
 function drawLabels( g ) {
 	fill( ED_X, GRID_Y, LABEL_W - 1, g.visible * g.rowH, COL.face );
+	ui.hint( g.isDrums ? "label-drums" : "label", ED_X, GRID_Y, LABEL_W - 1, g.visible * g.rowH );
 	for( let r = 0; r < g.visible; r++ ) {
 		const v = g.rows[ g.top + r ];
 		const y = GRID_Y + r * g.rowH;
@@ -1033,6 +1071,7 @@ function drawScroll( g ) {
 	const trackY = GRID_Y + 13;
 	const trackH = h - 26;
 	fill( SCROLL_X, trackY, 12, trackH, COL.lo );
+	ui.hint( "vscroll", SCROLL_X, trackY, 12, trackH );
 	const thumbH = Math.max( 6, Math.round( trackH * g.visible / g.rows.length ) );
 	const maxTop = Math.max( 1, g.rows.length - g.visible );
 	const thumbY = trackY + Math.round( ( trackH - thumbH ) * g.top / maxTop );
@@ -1074,6 +1113,7 @@ function drawMinimap( g ) {
 	if( pos >= 0 ) {
 		fill( GRID_X + Math.floor( pos * scale ), MAP_Y - 1, 1, MAP_H + 2, PAL.yellow );
 	}
+	ui.hint( "map", GRID_X, MAP_Y - 1, GRID_W, MAP_H + 2 );
 	if( ui.pressIn( GRID_X, MAP_Y - 1, GRID_W, MAP_H + 2 ) ) {
 		ui.grab( "map" );
 	}
@@ -1145,12 +1185,15 @@ function drawBottom() {
 		text( 6, BTN_Y + 4, CHAR.note + " " + fit( song.title, 17 ), PAL.yellow );
 	}
 	const buttons = [
-		[ "NEW", 28 ], [ "DEMOS", 36 ], [ "CODE", 32 ], [ "SAVE", 32 ], [ "LOAD", 32 ], [ "WAV", 28 ],
-		[ "UNDO", 32 ], [ "REDO", 32 ], [ "HELP", 32 ]
+		[ "NEW", 28 ], [ "SAVE", 32 ], [ "LOAD", 32 ], [ "CODE", 32 ], [ "EXPORT", 42 ], [ "WAV", 28 ],
+		[ "UNDO", 32 ], [ "REDO", 32 ], [ "HELP", 32 ], [ "TIPS", 32 ]
 	];
 	let x = 128;
 	for( const [ name, w ] of buttons ) {
-		const color = { "CODE": PAL.green, "WAV": PAL.red, "DEMOS": PAL.blue }[ name ];
+		let color = { "CODE": PAL.green, "WAV": PAL.red, "LOAD": PAL.blue }[ name ];
+		if( name === "TIPS" && app.tips ) {
+			color = PAL.orange;
+		}
 		if( ui.button( "b-" + name, x, BTN_Y, w, 15, name, { "on": !!color, color } ) ) {
 			fileButton( name );
 		}
@@ -1163,21 +1206,25 @@ function fileButton( name ) {
 		case "NEW":
 			loadSong( buildTemplate( "blank" ), "NEW SONG - UNDO BRINGS BACK THE OLD ONE" );
 			break;
-		case "DEMOS":
-			openOverlay( "demos" );
+		case "SAVE":
+			if( saveToLibrary( app.song ) ) {
+				toast( "SAVED " + app.song.title + " IN THIS BROWSER - LOAD OPENS IT AGAIN" );
+			} else {
+				toast( "COULD NOT SAVE - USE EXPORT TO KEEP YOUR SONG AS A FILE", 4000 );
+			}
+			break;
+		case "LOAD":
+			openOverlay( "load" );
 			break;
 		case "CODE":
 			openOverlay( "code" );
 			break;
-		case "SAVE": {
+		case "EXPORT": {
 			const name = fileName( app.song.title, ".js" );
 			downloadText( name, songToCode( app.song ) );
-			toast( "SAVED " + name + " - LOAD IT BACK ANY TIME" );
+			toast( "EXPORTED " + name + " - LOAD CAN IMPORT IT BACK" );
 			break;
 		}
-		case "LOAD":
-			pickTextFile().then( importCode ).catch( () => {} );
-			break;
 		case "WAV":
 			openOverlay( "wav" );
 			break;
@@ -1189,6 +1236,10 @@ function fileButton( name ) {
 			break;
 		case "HELP":
 			openOverlay( "help" );
+			break;
+		case "TIPS":
+			app.tips = !app.tips;
+			toast( app.tips ? "TIPS ON: POINT AT ANYTHING TO SEE WHAT IT DOES" : "TIPS OFF" );
 			break;
 	}
 }

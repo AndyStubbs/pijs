@@ -21,6 +21,7 @@ export const app = {
 	"drag": null,
 	"toast": null,
 	"textEdit": null,
+	"tips": false, // pop-up tips for whatever the pointer is over
 	"keys": [],
 	"pianoHeld": {}, // key code -> pitch, for piano keys typed and still held down
 	"undoStack": [],

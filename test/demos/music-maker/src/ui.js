@@ -152,6 +152,7 @@ export const ui = {
 	"wheelY": 0,
 	"active": null,
 	"grabbed": null,
+	"hot": null, // id of the widget or area under the pointer, for the pop-up tips
 	"enabled": true,
 	"heldSince": 0,
 	"lastRepeat": 0,
@@ -182,6 +183,7 @@ export const ui = {
 		this.released = false;
 		this.rpressed = false;
 		this.grabbed = null;
+		this.hot = null;
 		this.wheelY = this.wheel;
 		this.wheel = 0;
 		const events = this.events;
@@ -238,10 +240,19 @@ export const ui = {
 		this.grabbed = id;
 	},
 
+	// Names the widget or area at this place, so a tip can explain it. Later calls win, so
+	// name an area before the widgets inside it.
+	hint( id, x, y, w, h ) {
+		if( this.enabled && this.over( x, y, w, h ) ) {
+			this.hot = id;
+		}
+	},
+
 	// Button with a label; returns true when clicked. Options: on (toggle look), color,
 	// textColor, repeat (fires while held), disabled.
 	button( id, x, y, w, h, label, o = {} ) {
 		const enabled = this.enabled && !o.disabled;
+		this.hint( id, x, y, w, h );
 		if( enabled && this.pressIn( x, y, w, h ) ) {
 			this.grab( id );
 		}
@@ -283,6 +294,7 @@ export const ui = {
 	// at the low end. Options: color, curve, format.
 	slider( id, x, y, w, h, value, min, max, o = {} ) {
 		const curve = o.curve || 1;
+		this.hint( id, x, y, w, h );
 		if( this.pressIn( x, y, w, h ) ) {
 			this.grab( id );
 		}

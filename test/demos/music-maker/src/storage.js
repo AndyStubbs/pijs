@@ -1,4 +1,4 @@
-// Autosave in localStorage, plus downloads, file picking and the clipboard.
+// Autosave and saved songs in localStorage, plus downloads, file picking and the clipboard.
 
 import { normalizeSong } from "./song.js";
 
@@ -18,6 +18,39 @@ export function loadLocal() {
 		return text ? normalizeSong( JSON.parse( text ) ) : null;
 	} catch( e ) {
 		return null;
+	}
+}
+
+// Saved songs: a list of { title, time, song }, newest first. Saving a song replaces the saved
+// song with the same title.
+const LIBRARY_KEY = "pixeltracks.library.v1";
+
+export function listSaved() {
+	try {
+		const list = JSON.parse( localStorage.getItem( LIBRARY_KEY ) || "[]" );
+		return Array.isArray( list ) ? list.filter( e => e && e.song && typeof e.title === "string" ) : [];
+	} catch( e ) {
+		return [];
+	}
+}
+
+// Returns false when the browser's storage is full or blocked.
+export function saveToLibrary( song ) {
+	const list = listSaved().filter( e => e.title !== song.title );
+	list.unshift( { "title": song.title, "time": Date.now(), "song": song } );
+	try {
+		localStorage.setItem( LIBRARY_KEY, JSON.stringify( list ) );
+		return true;
+	} catch( e ) {
+		return false;
+	}
+}
+
+export function deleteSaved( title ) {
+	try {
+		localStorage.setItem( LIBRARY_KEY, JSON.stringify( listSaved().filter( e => e.title !== title ) ) );
+	} catch( e ) {
+		// Nothing to do: the list is unchanged
 	}
 }
 

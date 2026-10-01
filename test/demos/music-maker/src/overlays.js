@@ -1,5 +1,5 @@
 // Pop-up screens drawn over the editor: instrument picker, sound editor, code viewer,
-// demo songs, WAV export and help.
+// song loader (saved songs and demos), WAV export and help.
 
 import { ui, PAL, COL, CHAR, fill, text, fit, bevel, panel, shade } from "./ui.js";
 import { app, track, trackColor, toast, pushUndo, changed, edit, loadSong, importCode, samplePitch } from "./state.js";
@@ -7,9 +7,12 @@ import {
 	PRESETS, KITS, CATEGORIES, WAVES, FILTERS, FILTER_NAMES, ARP_IDS, STYLES, STYLE_NAMES,
 	DRUM_NAMES, getPreset, getKit
 } from "./instruments.js";
-import { TEMPLATES, totalSteps } from "./song.js";
+import { TEMPLATES, totalSteps, normalizeSong } from "./song.js";
 import { songToCode } from "./codegen.js";
-import { copyText, readClipboard, downloadText, pickTextFile, fileName } from "./storage.js";
+import { HELP_LINES } from "./help.js";
+import {
+	copyText, readClipboard, downloadText, pickTextFile, fileName, listSaved, deleteSaved
+} from "./storage.js";
 
 const $ = window.pi;
 const W = 480;
@@ -42,8 +45,8 @@ export function drawOverlay() {
 		case "code":
 			drawCode();
 			break;
-		case "demos":
-			drawDemos();
+		case "load":
+			drawLoad();
 			break;
 		case "wav":
 			drawWav();
@@ -58,6 +61,38 @@ function closeBox( x, y ) {
 	if( ui.button( "ov-x", x, y, 11, 11, "X" ) ) {
 		closeOverlay();
 	}
+}
+
+// Scroll bar for a list of `total` lines that shows `rows` of them: arrow buttons and a thumb
+// to drag, in a column `height` tall. The mouse wheel scrolls too. Returns the new scroll.
+function scrollBar( id, sx, top, height, scroll, rows, total ) {
+	const maxScroll = Math.max( 0, total - rows );
+	if( ui.wheelY ) {
+		scroll += Math.sign( ui.wheelY ) * Math.max( 1, Math.round( Math.abs( ui.wheelY ) / 25 ) );
+		ui.wheelY = 0;
+	}
+	if( ui.button( id + "-up", sx, top, 10, 10, CHAR.up, { "repeat": true } ) ) {
+		scroll -= 2;
+	}
+	if( ui.button( id + "-dn", sx, top + height - 10, 10, 10, CHAR.down, { "repeat": true } ) ) {
+		scroll += 2;
+	}
+	const trackY = top + 11;
+	const trackH = height - 22;
+	fill( sx, trackY, 10, trackH, COL.lo );
+	ui.hint( id + "-scroll", sx, trackY, 10, trackH );
+	const thumbH = Math.max( 8, Math.round( trackH * Math.min( 1, rows / total ) ) );
+	if( ui.pressIn( sx, trackY, 10, trackH ) ) {
+		ui.grab( id + "-scroll" );
+	}
+	if( ui.active === id + "-scroll" && ui.down && trackH > thumbH ) {
+		const f = ( ui.my - trackY - thumbH / 2 ) / ( trackH - thumbH );
+		scroll = Math.round( Math.max( 0, Math.min( 1, f ) ) * maxScroll );
+	}
+	scroll = Math.max( 0, Math.min( maxScroll, scroll ) );
+	const thumbY = trackY + Math.round( ( trackH - thumbH ) * ( maxScroll ? scroll / maxScroll : 0 ) );
+	bevel( sx + 1, thumbY, 8, thumbH, COL.hi, PAL.light, COL.face );
+	return scroll;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -230,6 +265,7 @@ function drawSound() {
 		const whites = [ 0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23, 24 ];
 		const kw = 14;
 		const typed = Object.values( app.pianoHeld );
+		ui.hint( "keys", lx, ky, whites.length * kw, 32 );
 		whites.forEach( ( semi, i ) => {
 			const kx = lx + i * kw;
 			const id = "wk" + i;
@@ -328,87 +364,143 @@ function drawCode() {
 	const ax = x + 6;
 	const ay = y + 18;
 	fill( ax, ay, 450, CODE_ROWS * CODE_LH + 3, "#10111c" );
-	const maxScroll = Math.max( 0, ov.lines.length - CODE_ROWS );
-	if( ui.wheelY ) {
-		ov.scroll += Math.sign( ui.wheelY ) * Math.max( 1, Math.round( Math.abs( ui.wheelY ) / 25 ) );
-		ui.wheelY = 0;
-	}
-	ov.scroll = Math.max( 0, Math.min( maxScroll, ov.scroll ) );
+	ov.scroll = scrollBar( "code", ax + 452, ay, CODE_ROWS * CODE_LH + 3, ov.scroll, CODE_ROWS, ov.lines.length );
 	for( let i = 0; i < CODE_ROWS; i++ ) {
 		const line = ov.lines[ ov.scroll + i ];
 		if( line ) {
 			text( ax + 3, ay + 2 + i * CODE_LH, line.text, CODE_COLORS[ line.kind ] );
 		}
 	}
-	// Scroll bar
-	const sx = ax + 452;
-	if( ui.button( "code-up", sx, ay, 10, 10, CHAR.up, { "repeat": true } ) ) {
-		ov.scroll = Math.max( 0, ov.scroll - 2 );
-	}
-	if( ui.button( "code-dn", sx, ay + CODE_ROWS * CODE_LH - 7, 10, 10, CHAR.down, { "repeat": true } ) ) {
-		ov.scroll = Math.min( maxScroll, ov.scroll + 2 );
-	}
-	const trackY = ay + 11;
-	const trackH = CODE_ROWS * CODE_LH - 19;
-	fill( sx, trackY, 10, trackH, COL.lo );
-	const thumbH = Math.max( 8, Math.round( trackH * Math.min( 1, CODE_ROWS / ov.lines.length ) ) );
-	const thumbY = trackY + Math.round( ( trackH - thumbH ) * ( maxScroll ? ov.scroll / maxScroll : 0 ) );
-	if( ui.pressIn( sx, trackY, 10, trackH ) ) {
-		ui.grab( "code-scroll" );
-	}
-	if( ui.active === "code-scroll" && ui.down ) {
-		ov.scroll = Math.round( Math.max( 0, Math.min( 1, ( ui.my - trackY - thumbH / 2 ) / ( trackH - thumbH ) ) ) * maxScroll );
-	}
-	bevel( sx + 1, thumbY, 8, thumbH, COL.hi, PAL.light, COL.face );
 
 	const by = y + h - 20;
 	if( ui.button( "code-copy", x + 6, by, 70, 15, "COPY CODE", { "on": true, "color": PAL.green } ) ) {
 		copyText( ov.code ).then(
 			() => toast( "CODE COPIED - PASTE IT INTO ANY PI.JS PROGRAM" ),
-			() => toast( "COULD NOT COPY - USE SAVE .JS INSTEAD" )
+			() => toast( "COULD NOT COPY - USE EXPORT .JS INSTEAD" )
 		);
 	}
-	if( ui.button( "code-save", x + 80, by, 60, 15, "SAVE .JS" ) ) {
+	if( ui.button( "code-save", x + 80, by, 68, 15, "EXPORT .JS" ) ) {
 		const name = fileName( app.song.title, ".js" );
 		downloadText( name, ov.code );
-		toast( "SAVED " + name );
+		toast( "EXPORTED " + name );
 	}
-	if( ui.button( "code-paste", x + 144, by, 76, 15, "PASTE CODE" ) ) {
+	if( ui.button( "code-paste", x + 152, by, 76, 15, "PASTE CODE" ) ) {
 		readClipboard().then( textIn => {
 			if( textIn ) {
 				importCode( textIn );
 			}
 		}, () => toast( "PRESS CTRL+V TO PASTE CODE" ) );
 	}
-	if( ui.button( "code-load", x + 224, by, 64, 15, "LOAD FILE" ) ) {
+	if( ui.button( "code-load", x + 232, by, 76, 15, "IMPORT FILE" ) ) {
 		pickTextFile().then( importCode ).catch( () => {} );
 	}
-	text( x + 294, by + 4, fit( ov.lines.length + " LINES. CTRL+V LOADS CODE", 29 ), COL.dim );
+	text( x + 314, by + 4, fit( ov.lines.length + " LINES. CTRL+V LOADS CODE", 26 ), COL.dim );
 }
 
 // ---------------------------------------------------------------------------------------------
-// Demo songs
+// Load: songs saved in this browser, demo songs, and importing a file
 
-function drawDemos() {
+const LOAD_ROWS = 5;
+
+function savedDesc( entry ) {
+	const song = entry.song;
+	const tracks = Array.isArray( song.tracks ) ? song.tracks.length : 0;
+	const date = new Date( entry.time );
+	const when = date.getFullYear() + "-" + String( date.getMonth() + 1 ).padStart( 2, "0" ) + "-" +
+		String( date.getDate() ).padStart( 2, "0" );
+	return song.tempo + " BPM, " + song.bars + " BARS, " + tracks + ( tracks === 1 ? " TRACK" : " TRACKS" ) +
+		", " + when;
+}
+
+function drawLoad() {
+	const ov = app.overlay;
+	if( !ov.saved ) {
+		ov.saved = listSaved();
+		ov.tab = ov.saved.length ? "saved" : "demos";
+		ov.scroll = 0;
+		ov.confirm = null;
+	}
 	const x = 80;
-	const y = 28;
+	const y = 21;
 	const w = 320;
-	const h = 214;
-	panel( x, y, w, h, "DEMO SONGS", PAL.blue );
+	const h = 228;
+	panel( x, y, w, h, "LOAD A SONG", PAL.blue );
 	closeBox( x + w - 15, y + 3 );
-	text( x + 10, y + 20, "PICK ONE TO LOAD IT. TAKE IT APART AND REMIX IT!", COL.dim );
-	TEMPLATES.forEach( ( tpl, i ) => {
-		const by = y + 34 + i * 34;
-		if( ui.button( "demo" + i, x + 10, by, w - 20, 30, "" ) ) {
-			const song = tpl.build();
-			loadSong( song, tpl.name + " LOADED - UNDO GOES BACK TO YOUR SONG" );
-			if( tpl.id !== "blank" ) {
-				app.player.play( 0 );
+	[ [ "saved", "MY SONGS" ], [ "demos", "DEMOS" ] ].forEach( ( [ id, label ], i ) => {
+		if( ui.button( "load-tab-" + id, x + 10 + i * 74, y + 18, 70, 13, label, { "on": ov.tab === id, "color": PAL.blue } ) ) {
+			ov.tab = id;
+			ov.confirm = null;
+		}
+	} );
+	if( ui.button( "load-import", x + w - 90, y + 18, 80, 13, "IMPORT FILE" ) ) {
+		pickTextFile().then( importCode ).catch( () => {} );
+	}
+	const top = y + 47;
+	if( ov.tab === "demos" ) {
+		text( x + 10, y + 36, "PICK ONE TO LOAD IT. TAKE IT APART AND REMIX IT!", COL.dim );
+		TEMPLATES.forEach( ( tpl, i ) => {
+			const by = top + i * 34;
+			if( ui.button( "demo" + i, x + 10, by, w - 20, 30, "" ) ) {
+				const song = tpl.build();
+				loadSong( song, tpl.name + " LOADED - UNDO GOES BACK TO YOUR SONG" );
+				if( tpl.id !== "blank" ) {
+					app.player.play( 0 );
+				}
+			}
+			text( x + 18, by + 6, tpl.name, PAL.yellow );
+			text( x + 18, by + 17, tpl.desc, COL.dim );
+		} );
+		return;
+	}
+	if( !ov.saved.length ) {
+		text( x + 10, y + 36, "NO SAVED SONGS YET.", COL.dim );
+		text( x + 10, top + 6, "PRESS SAVE TO KEEP YOUR SONG IN THIS BROWSER.", COL.text );
+		text( x + 10, top + 18, "IMPORT FILE READS A SONG YOU EXPORTED.", COL.text );
+		return;
+	}
+	text( x + 10, y + 36, "SONGS SAVED IN THIS BROWSER. PICK ONE TO LOAD IT.", COL.dim );
+	const maxScroll = Math.max( 0, ov.saved.length - LOAD_ROWS );
+	if( ui.wheelY ) {
+		ov.scroll += Math.sign( ui.wheelY );
+		ui.wheelY = 0;
+	}
+	ov.scroll = Math.max( 0, Math.min( maxScroll, ov.scroll ) );
+	const rowW = w - 20 - ( maxScroll ? 14 : 0 );
+	for( let i = 0; i < LOAD_ROWS; i++ ) {
+		const entry = ov.saved[ ov.scroll + i ];
+		if( !entry ) {
+			break;
+		}
+		const by = top + i * 34;
+		if( ui.button( "saved" + i, x + 10, by, rowW - 44, 30, "" ) ) {
+			loadSong( normalizeSong( entry.song ), entry.title + " LOADED - UNDO GOES BACK TO YOUR SONG" );
+			return;
+		}
+		text( x + 18, by + 6, fit( entry.title, 30 ), PAL.yellow );
+		text( x + 18, by + 17, fit( savedDesc( entry ), Math.floor( ( rowW - 60 ) / 6 ) ), COL.dim );
+
+		// Deleting takes a second click, so a slip does not lose a song
+		const sure = ov.confirm === entry.title;
+		if( ui.button( "saved-del" + i, x + 10 + rowW - 42, by, 42, 30, sure ? "SURE?" : "DELETE", { "on": sure, "color": PAL.red } ) ) {
+			if( sure ) {
+				deleteSaved( entry.title );
+				ov.saved = listSaved();
+				ov.confirm = null;
+				toast( "DELETED " + entry.title );
+			} else {
+				ov.confirm = entry.title;
 			}
 		}
-		text( x + 18, by + 6, tpl.name, PAL.yellow );
-		text( x + 18, by + 17, tpl.desc, COL.dim );
-	} );
+	}
+	if( maxScroll ) {
+		const sx = x + w - 22;
+		if( ui.button( "load-up", sx, top, 12, 30, CHAR.up, { "repeat": true, "disabled": ov.scroll === 0 } ) ) {
+			ov.scroll -= 1;
+		}
+		if( ui.button( "load-dn", sx, top + ( LOAD_ROWS - 1 ) * 34, 12, 30, CHAR.down, { "repeat": true, "disabled": ov.scroll === maxScroll } ) ) {
+			ov.scroll += 1;
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -510,45 +602,31 @@ function drawWav() {
 // ---------------------------------------------------------------------------------------------
 // Help
 
-const HELP = [
-	[ PAL.yellow, "MAKING MUSIC" ],
-	[ COL.text, "1. PICK A TRACK ON THE LEFT: LEAD, BASS, DRUMS..." ],
-	[ COL.text, "2. CLICK THE GRID TO ADD A NOTE. DRAG RIGHT TO MAKE IT LONGER." ],
-	[ COL.text, "   CLICK A NOTE TO DELETE IT. DRAG A NOTE TO MOVE IT." ],
-	[ COL.text, "   RIGHT-CLICK A NOTE TO MAKE IT SOFTER." ],
-	[ COL.text, "3. LOCK SHOWS ONLY NOTES IN THE KEY, SO NOTHING SOUNDS WRONG." ],
-	[ COL.text, "   BRIGHT ROWS ARE THE NOTES OF EACH BAR'S CHORD - SAFE BETS!" ],
-	[ COL.text, "4. STUCK? MAGIC WRITES A MELODY, CHORDS, BASS OR BEAT FOR YOU." ],
-	[ COL.text, "5. CLICK A CHORD NAME ABOVE THE GRID TO CHANGE THAT BAR'S CHORD." ],
-	[ COL.text, "6. CHANGE THE SOUND WITH THE ARROWS, OR SHAPE IT WITH EDIT." ],
-	[ COL.text, "7. ADD SPACE WITH REV (REVERB), ECHO, CHOR (CHORUS), CRSH (CRUSH)." ],
-	[ PAL.yellow, "KEYS" ],
-	[ COL.text, "SPACE PLAY/STOP    CTRL+Z UNDO    CTRL+Y REDO    ESC CLOSE" ],
-	[ COL.text, "Z-M AND Q-U PLAY THE SELECTED TRACK LIKE A PIANO." ],
-	[ COL.text, "TURN ON REC, PRESS PLAY, AND TYPE NOTES TO RECORD THEM." ],
-	[ COL.text, "ARROWS SCROLL THE GRID. MOUSE WHEEL SCROLLS NOTES." ],
-	[ PAL.yellow, "YOUR SONG IS CODE" ],
-	[ COL.text, "CODE SHOWS YOUR SONG AS PI.JS PLAY() COMMANDS. SAVE WRITES IT TO" ],
-	[ COL.text, "A .JS FILE AND LOAD READS IT BACK. PASTE ANY PI.JS PLAY() CODE" ],
-	[ COL.text, "(CTRL+V) TO IMPORT IT. WAV RECORDS AN AUDIO FILE." ],
-	[ COL.dim, "YOUR WORK IS SAVED IN THIS BROWSER AUTOMATICALLY." ]
-];
+const HELP_ROWS = 20;
+const HELP_LH = 10;
+const HELP_COLORS = { "head": PAL.yellow, "text": COL.text, "note": PAL.cyan };
 
 function drawHelp() {
+	const ov = app.overlay;
+	ov.scroll = ov.scroll || 0;
 	const x = 16;
 	const y = 12;
 	const w = 448;
 	const h = 246;
 	panel( x, y, w, h, "HOW TO USE PI.JS TRACKS", PAL.sky );
 	closeBox( x + w - 15, y + 3 );
-	let ly = y + 20;
-	for( const [ color, line ] of HELP ) {
-		if( color === PAL.yellow && ly > y + 20 ) {
-			ly += 4;
+	const ax = x + 6;
+	const ay = y + 18;
+	const areaH = HELP_ROWS * HELP_LH + 3;
+	fill( ax, ay, 424, areaH, "#10111c" );
+	ov.scroll = scrollBar( "help", ax + 426, ay, areaH, ov.scroll, HELP_ROWS, HELP_LINES.length );
+	for( let i = 0; i < HELP_ROWS; i++ ) {
+		const line = HELP_LINES[ ov.scroll + i ];
+		if( line && line.text ) {
+			text( ax + 4, ay + 3 + i * HELP_LH, line.text, HELP_COLORS[ line.kind ] );
 		}
-		text( x + 10, ly, line, color );
-		ly += 10;
 	}
+	text( x + 8, y + h - 16, "SCROLL WITH THE WHEEL, THE ARROW KEYS OR THE BAR.", COL.dim );
 	if( ui.button( "help-ok", x + w - 70, y + h - 20, 56, 14, "GOT IT", { "on": true, "color": PAL.green } ) ) {
 		closeOverlay();
 	}

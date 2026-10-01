@@ -39,12 +39,17 @@ audio off until you click or press a key).
 - **Effects**: reverb, echo (synced to tempo), chorus and bit-crush on the music bus.
 - **Play live**: Z-M and Q-U play the selected track like a piano. Turn on REC while the
   song plays to record what you type.
-- **Demo songs**: Chip Quest, Neon Drive, Rainy Lofi, Dungeon Crawl, or start blank.
-- **Songs as code**: CODE shows the song as Pi.js commands, SAVE downloads it as a `.js`
-  file, and LOAD, paste (Ctrl+V) or drag-and-drop reads it back. Hand edits to the
-  `play()` strings are picked up. Any plain Pi.js `play()` code can be imported too.
+- **Save and load**: SAVE keeps the song in the browser under its title. LOAD lists your
+  saved songs and the demo songs (Chip Quest, Neon Drive, Rainy Lofi, Dungeon Crawl, or a
+  blank song) on two tabs, and imports a song file.
+- **Songs as code**: CODE shows the song as Pi.js commands and EXPORT downloads it as a
+  `.js` file. LOAD's IMPORT FILE, paste (Ctrl+V) or drag-and-drop reads it back. Hand
+  edits to the `play()` strings are picked up. Any plain Pi.js `play()` code can be
+  imported too.
 - **WAV export**: records the song (1x, 2x or 4x) and saves a 16-bit stereo `.wav`.
-- Undo/redo, and your song autosaves in the browser.
+- **Help**: HELP opens a scrolling guide to every part of the editor. TIPS turns on pop-up
+  tips: point at any button, slider or part of the screen to see what it does.
+- Undo/redo, and the song you are working on autosaves in the browser.
 
 ## Keys
 
