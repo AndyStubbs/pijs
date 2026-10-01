@@ -672,12 +672,12 @@ function drawTrackHeader() {
 				app.noteLen = len;
 			}
 		} );
-		if( ui.button( "lock", 264, ROW2_Y, 30, 11, "LOCK", { "on": app.lock, "color": PAL.teal } ) ) {
+		if( ui.button( "lock", 258, ROW2_Y, 30, 11, "LOCK", { "on": app.lock, "color": PAL.teal } ) ) {
 			app.lock = !app.lock;
 			toast( app.lock ? "LOCK ON: ONLY NOTES IN THE KEY ARE SHOWN" : "LOCK OFF: ALL 12 NOTES ARE SHOWN" );
 		}
 	}
-	if( ui.button( "magic", 296, ROW2_Y, 42, 11, CHAR.star + "MAGIC", { "on": true, "color": PAL.purple } ) ) {
+	if( ui.button( "magic", 290, ROW2_Y, 48, 11, CHAR.star + " MAGIC", { "on": true, "color": PAL.purple } ) ) {
 		app.menu = { "type": "magic" };
 	}
 	if( ui.button( "clear", 340, ROW2_Y, 32, 11, "CLEAR" ) ) {
@@ -1254,7 +1254,7 @@ function drawMenu() {
 		return;
 	}
 	const items = MAGIC[ t.type ];
-	const x = 296;
+	const x = 290;
 	const y = ROW2_Y + 12;
 	const w = 100;
 	const h = items.length * 12 + 16;
