@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Pi.js Tracks</title>
+	<style>
+		html, body {
+			margin: 0;
+			height: 100%;
+			background: #0b0c14;
+			overflow: hidden;
+		}
+		noscript {
+			color: #f4f4f4;
+			font-family: monospace;
+		}
+	</style>
+</head>
+<body>
+	<noscript>Pi.js Tracks needs JavaScript.</noscript>
+	<script src="../../../build/pi.js"></script>
+	<script src="../../../build/plugins/sound-advanced/sound-advanced.js"></script>
+	<script type="module">
+		import { start } from "./src/app.js";
+		start();
+	</script>
+</body>
+</html>
