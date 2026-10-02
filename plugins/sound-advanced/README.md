@@ -59,7 +59,7 @@ Sound is mixed on three buses before the master volume:
 | Bus | Carries |
 | --- | --- |
 | `"sfx"` | `sound()`, `synth()`, and `sfx()` |
-| `"music"` | `play()` |
+| `"music"` | `play()`, and `synth()` with `bus: "music"` |
 | `"audio"` | `playAudio()` |
 
 `"master"` is the mix of all three, after `setVolume()`.
@@ -85,6 +85,7 @@ parameter plus:
 | `vibratoShape`, `tremoloShape` | `"sine"` | `"sine"` is a steady wave; `"random"` moves to a new random value at the rate, for an uneven wobble |
 | `arpeggio`, `arpeggioRate` | none, 12 | Semitone offsets to cycle through, and steps per second |
 | `hold` | `false` | If `true`, the sound sustains until `releaseSound()` |
+| `bus` | `"sfx"` | `"sfx"` or `"music"`: the bus the sound plays on |
 
 ```javascript
 $.synth( {

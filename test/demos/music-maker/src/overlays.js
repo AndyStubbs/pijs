@@ -252,6 +252,13 @@ function drawSound() {
 	slider( "TREMOLO", "tremolo", 0, 1, rx, ry += 15, { "fmt": v => Math.round( v * 100 ) + "%" } );
 	choice( "ARPEGGIO", "arp", ARP_IDS, ARP_LABELS, rx, ry += 17, 26 );
 	slider( "ARP RATE", "arpRate", 2, 40, rx, ry += 15, { "step": 1, "fmt": v => p.arp === "off" ? "-" : v + "/S" } );
+	ry += 17;
+	text( rx, ry + 2, "RANDOM", COL.dim );
+	[ [ "vibratoRandom", "VIBRATO" ], [ "tremoloRandom", "TREMOLO" ] ].forEach( ( [ key, label ], i ) => {
+		if( ui.button( "rnd-" + key, rx + 56 + i * 60, ry, 58, 11, label, { "on": p[ key ] === true, "color": PAL.blue } ) ) {
+			set( key, !p[ key ] );
+		}
+	} );
 
 	// Test keyboard
 	const ky = y + h - 42;
@@ -264,7 +271,19 @@ function drawSound() {
 		const base = Math.floor( samplePitch( t ) / 12 ) * 12;
 		const whites = [ 0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23, 24 ];
 		const kw = 14;
-		const typed = Object.values( app.pianoHeld );
+		const typed = Object.values( app.pianoHeld ).map( held => held.pitch );
+
+		// A clicked key sounds for as long as the mouse button is down
+		const pressKey = pitch => {
+			ov.keySound = app.player.noteOn( app.sel, pitch );
+			if( ov.keySound === null ) {
+				app.player.preview( app.sel, pitch );
+			}
+		};
+		if( ov.keySound && !ui.down ) {
+			app.player.noteOff( ov.keySound );
+			ov.keySound = null;
+		}
 		ui.hint( "keys", lx, ky, whites.length * kw, 32 );
 		whites.forEach( ( semi, i ) => {
 			const kx = lx + i * kw;
@@ -272,7 +291,7 @@ function drawSound() {
 			const held = ( ui.active === id && ui.down ) || typed.includes( base + semi );
 			if( ui.pressIn( kx, ky, kw - 1, 32 ) ) {
 				ui.grab( id );
-				app.player.preview( app.sel, base + semi );
+				pressKey( base + semi );
 			}
 			fill( kx, ky, kw - 1, 32, held ? PAL.yellow : PAL.white );
 			fill( kx, ky + 30, kw - 1, 2, PAL.light );
@@ -288,7 +307,7 @@ function drawSound() {
 			if( ui.enabled && ui.pressed && ui.px >= kx && ui.px < kx + 8 && ui.py >= ky && ui.py < ky + 19 ) {
 				// Black keys sit on top of the white keys, so they win the press
 				ui.grab( id );
-				app.player.preview( app.sel, base + semi );
+				pressKey( base + semi );
 			}
 		} );
 		text( lx + 1, ky + 22, "C" + ( Math.floor( base / 12 ) - 1 ), PAL.gray );

@@ -15,7 +15,6 @@ export const app = {
 	"page": 0,
 	"noteLen": 2,
 	"lock": true,
-	"rec": false,
 	"overlay": null,
 	"menu": null,
 	"drag": null,
@@ -23,7 +22,7 @@ export const app = {
 	"textEdit": null,
 	"tips": false, // pop-up tips for whatever the pointer is over
 	"keys": [],
-	"pianoHeld": {}, // key code -> pitch, for piano keys typed and still held down
+	"pianoHeld": {}, // key code -> { pitch, sound } for piano keys that are held down
 	"undoStack": [],
 	"redoStack": [],
 	"seed": 1,

@@ -25,8 +25,11 @@ export const SYNTH_PARAMETERS = [
 	"sustainLevel", "releaseTime", "pan", "frequencyEnd", "filterType", "filterCutoff",
 	"filterQ", "filterAttackTime", "filterDecayTime", "filterSustainLevel", "filterReleaseTime",
 	"filterAmount", "vibratoRate", "vibratoDepth", "tremoloRate", "tremoloDepth", "duty",
-	"arpeggio", "arpeggioRate", "hold", "vibratoShape", "tremoloShape"
+	"arpeggio", "arpeggioRate", "hold", "vibratoShape", "tremoloShape", "bus"
 ];
+
+// Buses a synthesized sound can play on
+export const SYNTH_BUSES = [ "sfx", "music" ];
 
 // LFO shapes: a steady sine, or a random wobble
 export const LFO_SHAPES = [ "sine", "random" ];
@@ -464,6 +467,7 @@ function playHeld( name, resolved ) {
 		"sustainLevel": 1,
 		"releaseTime": resolved.releaseTime,
 		"pan": resolved.pan,
+		"bus": resolved.bus,
 		"inserts": inserts
 	}, name );
 	if( !held.disposed ) {
@@ -711,7 +715,8 @@ export function resolveSynthOptions( name, options ) {
 		"arpeggioRate": readNumber( options.arpeggioRate, 12 ),
 		"hold": options.hold ?? false,
 		"vibratoShape": options.vibratoShape ?? "sine",
-		"tremoloShape": options.tremoloShape ?? "sine"
+		"tremoloShape": options.tremoloShape ?? "sine",
+		"bus": options.bus ?? "sfx"
 	};
 
 	// sound() parameters
@@ -776,6 +781,12 @@ export function resolveSynthOptions( name, options ) {
 				param === "vibratoShape" ? "INVALID_VIBRATO_SHAPE" : "INVALID_TREMOLO_SHAPE"
 			);
 		}
+	}
+	if( SYNTH_BUSES.indexOf( resolved.bus ) === -1 ) {
+		throwCode(
+			Error, `${name}: Parameter bus must be one of: ${SYNTH_BUSES.join( ", " )}.`,
+			"INVALID_BUS"
+		);
 	}
 
 	return resolved;
@@ -887,6 +898,7 @@ export function resolveSynthSpec( name, options ) {
 		"sustainLevel": resolved.sustainLevel,
 		"releaseTime": resolved.releaseTime,
 		"pan": resolved.pan,
+		"bus": resolved.bus,
 		"inserts": buildSynthInserts( resolved, resolved.releaseTime )
 	};
 }

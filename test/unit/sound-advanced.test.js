@@ -102,7 +102,9 @@ test( "synth options take sound() defaults and validate every parameter", () => 
 		[ { "hold": 1 }, "INVALID_HOLD" ],
 		[ { "hold": "yes" }, "INVALID_HOLD" ],
 		[ { "vibratoShape": "square" }, "INVALID_VIBRATO_SHAPE" ],
-		[ { "tremoloShape": true }, "INVALID_TREMOLO_SHAPE" ]
+		[ { "tremoloShape": true }, "INVALID_TREMOLO_SHAPE" ],
+		[ { "bus": "audio" }, "INVALID_BUS" ],
+		[ { "bus": "master" }, "INVALID_BUS" ]
 	];
 	for( const [ options, code ] of cases ) {
 		assert.throws( () => g_synth.resolveSynthOptions( "synth", options ), { "code": code } );
@@ -117,9 +119,11 @@ test( "hold is a boolean that defaults to false and is the last positional param
 	assert.equal( g_synth.resolveSynthOptions( "synth", {} ).hold, false );
 	assert.equal( g_synth.resolveSynthOptions( "synth", { "hold": null } ).hold, false );
 	assert.equal( g_synth.resolveSynthOptions( "synth", { "hold": true } ).hold, true );
-	assert.deepEqual( g_synth.SYNTH_PARAMETERS.slice( -3 ), [
-		"hold", "vibratoShape", "tremoloShape"
+	assert.deepEqual( g_synth.SYNTH_PARAMETERS.slice( -4 ), [
+		"hold", "vibratoShape", "tremoloShape", "bus"
 	] );
+	assert.equal( g_synth.resolveSynthSpec( "synth", {} ).bus, "sfx" );
+	assert.equal( g_synth.resolveSynthSpec( "synth", { "bus": "music" } ).bus, "music" );
 
 	// A sound that is not held keeps its spec: the duration is the gate, with no extra insert
 	const spec = g_synth.resolveSynthSpec( "synth", { "hold": false, "duration": 0.4 } );

@@ -37,8 +37,8 @@ audio off until you click or press a key).
   e-piano, bells, plucks, arps, basses) and 3 drum kits. EDIT opens a synth editor with
   wave, envelope, filter sweep, vibrato, tremolo and arpeggio.
 - **Effects**: reverb, echo (synced to tempo), chorus and bit-crush on the music bus.
-- **Play live**: Z-M and Q-U play the selected track like a piano. Turn on REC while the
-  song plays to record what you type.
+- **Play live**: Z-M and Q-U play the selected track like a piano, and a note sounds for as
+  long as its key is down.
 - **Save and load**: SAVE keeps the song in the browser under its title. LOAD lists your
   saved songs and the demo songs (Chip Quest, Neon Drive, Rainy Lofi, Dungeon Crawl, or a
   blank song) on two tabs, and imports a song file.

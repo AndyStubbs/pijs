@@ -271,6 +271,25 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		);
 	} );
 
+	test( "synth() plays on the music bus when bus is music", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 0.8 }
+		}, renderActions, { "actions": [
+			{ "time": 0, "code": SETUP + `
+				$.setBusVolume( "music", 0.5 );
+				$.synth( { "frequency": 440, "duration": 0.6, "volume": 0.4, "oType": "sine" } );
+				$.synth( { "frequency": 1000, "duration": 0.6, "volume": 0.4, "oType": "sine",
+					"bus": "music" } );
+				$.synth( { "frequency": 2000, "volume": 0.4, "oType": "sine", "bus": "music",
+					"hold": true } );` }
+		] } );
+		const left = channel( result );
+		const level = frequency => toneAmplitude( left, frequency, frame( 0.1 ), frame( 0.5 ) );
+		assertNear( level( 440 ), 0.4, 0.01, "sfx bus" );
+		assertNear( level( 1000 ), 0.2, 0.01, "music bus" );
+		assertNear( level( 2000 ), 0.2, 0.01, "held on the music bus" );
+	} );
+
 	clockTest( "a held sound sustains until releaseSound() and then fades over its release",
 		async () => {
 			const result = await suite.inHarness( {

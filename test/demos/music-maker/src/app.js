@@ -73,7 +73,7 @@ export async function start() {
 	window.pixelTracks = app; // handy for poking at the song from the browser console
 	app.volume = 0.8;
 	$.onKey( "any", "down", k => app.keys.push( k ), false, true );
-	$.onKey( "any", "up", k => delete app.pianoHeld[ k.code ] );
+	$.onKey( "any", "up", k => releaseKey( k.code ) );
 
 	// The first gesture unlocks audio; play the start jingle inside its handler.
 	const begin = () => {
@@ -220,17 +220,29 @@ function pianoKey( code ) {
 		if( value < 12 || value > 119 ) {
 			return;
 		}
-		app.pianoHeld[ code ] = value;
 	}
-	app.player.preview( app.sel, value );
-	if( app.rec && app.player.playing && !app.overlay ) {
-		const total = totalSteps( app.song );
-		const step = Math.round( app.player.position() ) % total;
-		const len = t.type === "drums" ? 1 : snapLength( Math.min( app.noteLen, total - step ) );
-		pushUndo();
-		t.notes = t.notes.filter( n => !( n.s === step && n.p === value ) );
-		t.notes.push( { "s": step, "p": value, "l": len, "v": 1 } );
-		changed();
+
+	// A melody note sounds for as long as its key is down; a drum is a single hit
+	if( t.type === "drums" ) {
+		app.player.preview( app.sel, value );
+		return;
+	}
+	const held = { "pitch": value, "sound": app.player.noteOn( app.sel, value ) };
+	if( held.sound === null ) {
+		app.player.preview( app.sel, value );
+	}
+	app.pianoHeld[ code ] = held;
+}
+
+// A piano key came up: its note is released.
+function releaseKey( code ) {
+	const held = app.pianoHeld[ code ];
+	if( !held ) {
+		return;
+	}
+	delete app.pianoHeld[ code ];
+	if( held.sound !== null ) {
+		app.player.noteOff( held.sound );
 	}
 }
 
@@ -693,10 +705,6 @@ function drawTrackHeader() {
 			edit( s => doubleSong( s ) );
 			toast( "SONG DOUBLED TO " + app.song.bars + " BARS - NOW CHANGE THE COPY!" );
 		}
-	}
-	if( ui.button( "rec", 418, ROW2_Y, 24, 11, "REC", { "on": app.rec, "color": PAL.red } ) ) {
-		app.rec = !app.rec;
-		toast( app.rec ? "REC ON: PLAY, THEN TYPE Z-M OR Q-U TO RECORD NOTES" : "REC OFF" );
 	}
 	const g = gridGeom();
 	if( ui.button( "page-", 446, ROW2_Y, 15, 11, CHAR.left, { "disabled": app.page === 0 } ) ) {

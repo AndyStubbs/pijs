@@ -37,6 +37,8 @@ export const DEFAULT_PARAMS = {
 	"vibratoRate": 5.5,
 	"tremolo": 0,
 	"tremoloRate": 5,
+	"vibratoRandom": false,
+	"tremoloRandom": false,
 	"arp": "off",
 	"arpRate": 16,
 	"pitch": 0,
@@ -238,10 +240,16 @@ export function toSynth( p ) {
 	if( p.vibrato > 0 ) {
 		o.vibratoDepth = round( p.vibrato );
 		o.vibratoRate = round( p.vibratoRate );
+		if( p.vibratoRandom ) {
+			o.vibratoShape = "random";
+		}
 	}
 	if( p.tremolo > 0 ) {
 		o.tremoloDepth = round( p.tremolo );
 		o.tremoloRate = round( p.tremoloRate );
+		if( p.tremoloRandom ) {
+			o.tremoloShape = "random";
+		}
 	}
 	if( ARPS[ p.arp ] ) {
 		o.arpeggio = ARPS[ p.arp ].slice();
@@ -279,6 +287,8 @@ export function fromSynth( o ) {
 	p.vibratoRate = num( o.vibratoRate, 5 );
 	p.tremolo = num( o.tremoloDepth, 0 );
 	p.tremoloRate = num( o.tremoloRate, 5 );
+	p.vibratoRandom = o.vibratoShape === "random";
+	p.tremoloRandom = o.tremoloShape === "random";
 	if( Array.isArray( o.arpeggio ) ) {
 		const key = ARP_IDS.find( id => ARPS[ id ] && ARPS[ id ].join() === o.arpeggio.join() );
 		p.arp = key || "major";

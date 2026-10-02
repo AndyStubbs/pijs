@@ -265,6 +265,35 @@ export class Player {
 		);
 	}
 
+	// Starts a note of a melody track that sounds until noteOff(), and returns its sound ID.
+	// The note is the track's instrument played by synth() on the music bus, so it has the
+	// track's volume and pan and the song's effects, like a note of the song. Returns null
+	// when the track cannot hold a note: a drum track, or any track while a WAV records.
+	noteOn( trackIndex, pitch ) {
+		const track = this.song.tracks[ trackIndex ];
+		if( !track || track.type === "drums" || this.recording ) {
+			return null;
+		}
+		const inst = this.plan.instruments.find( i => i.track === trackIndex );
+		if( !inst ) {
+			return null;
+		}
+		const options = toSynth( inst.params );
+		return $.synth( {
+			...options,
+			"frequency": 440 * Math.pow( 2, ( pitch - 69 ) / 12 ),
+			"volume": options.volume * track.vol / 100,
+			"pan": track.pan / 100,
+			"hold": true,
+			"bus": "music"
+		} );
+	}
+
+	// Releases a note started with noteOn(); it fades over the instrument's release.
+	noteOff( soundId ) {
+		$.releaseSound( soundId );
+	}
+
 	// Records the song (played `loops` times) and resolves with a WAV Blob, or null if
 	// cancel() was called.
 	async record( loops, onProgress ) {

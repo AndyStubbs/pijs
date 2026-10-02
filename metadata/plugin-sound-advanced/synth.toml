@@ -14,7 +14,7 @@ Vibrato runs when vibratoDepth is above 0 and swings the pitch by up to vibratoD
 
 With hold set to true, the sound is held: after its attack and decay it stays at its sustain level until releaseSound() releases it, and setSynth() can change its volume, pitch, and filter cutoff while it plays. A held sound ignores duration and frequencyEnd. One that is never released releases by itself after 600 seconds. A hold that is not a boolean throws INVALID_HOLD.
 
-Sounds play on the sound-effects bus and follow the same delay, voice, and autoplay rules as sound(). The returned ID works with stopSound().
+Sounds play on the sound-effects bus, or on the music bus when bus is "music", so a note played by hand gets the music's volume and effects. They follow the same delay, voice, and autoplay rules as sound(). A bus that is neither throws INVALID_BUS. The returned ID works with stopSound().
 """
 example = """
 $.screen( "300x200" );
@@ -209,6 +209,12 @@ optional = true
 name = "tremoloShape"
 type = "string"
 description = "'sine' for a steady tremolo or 'random' for an uneven one (default: 'sine')."
+optional = true
+
+[[parameters]]
+name = "bus"
+type = "string"
+description = "Bus the sound plays on: 'sfx' or 'music' (default: 'sfx')."
 optional = true
 
 [[returns]]

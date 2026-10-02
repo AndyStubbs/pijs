@@ -131,6 +131,8 @@ export function normalizeParams( p ) {
 		"vibratoRate": num( src.vibratoRate, d.vibratoRate, 0.1, 20 ),
 		"tremolo": num( src.tremolo, d.tremolo, 0, 1 ),
 		"tremoloRate": num( src.tremoloRate, d.tremoloRate, 0.1, 60 ),
+		"vibratoRandom": src.vibratoRandom === true,
+		"tremoloRandom": src.tremoloRandom === true,
 		"arp": ARP_IDS.includes( src.arp ) ? src.arp : d.arp,
 		"arpRate": num( src.arpRate, d.arpRate, 1, 60 ),
 		"pitch": num( src.pitch, d.pitch, 0, 8000 ),
