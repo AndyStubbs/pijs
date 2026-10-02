@@ -40,7 +40,9 @@ not registered, so code that uses it fails at its first call.
 It is not part of either bundle; load `pijs-web/plugins/sound-advanced` after them.
 
 - `synth()` plays a synthesized voice with pulse waves, a filter and its envelope, vibrato,
-  arpeggio, tremolo, and periodic noise.
+  arpeggio, tremolo, and periodic noise. Vibrato and tremolo can be steady or random.
+- `synth()` with `hold` plays a sound that sustains until `releaseSound()` releases it, and
+  `setSynth()` changes its volume, pitch, and filter cutoff while it plays.
 - `sfx()` plays a preset, `definePreset()` adds one, and `generateSfx( category, seed,
   variation )` builds a repeatable sound effect.
 - `defineInstrument()` defines a PLAY instrument, synthesized or from a loaded file

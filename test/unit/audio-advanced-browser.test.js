@@ -1,6 +1,7 @@
 /**
  * Offline render tests for the sound-advanced plugin: synth() filter and filter envelope,
- * vibrato, tremolo, pulse duty, and arpeggio; periodic noise; bus reverb and delay and their
+ * vibrato, tremolo, pulse duty, and arpeggio; held sounds with releaseSound() and setSynth();
+ * periodic noise; bus reverb and delay and their
  * interaction with bus volume; getSoundLevels(); the built-in presets; and PLAY instruments,
  * synthesized and sampled. Each page loads the full bundle followed by the plugin's source
  * bundle.
@@ -222,6 +223,148 @@ g_suite.describeAudioEngines( "sound advanced", suite => {
 		const peak = g_metrics.peak( left, frame( 0.05 ), frame( 0.35 ) );
 		assert.ok( peak > 0.4 && peak <= 0.55, `pulse peak ${peak}` );
 	} );
+
+	test( "random tremolo and vibrato wobble unevenly within their depth", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 2.2 }
+		}, renderActions, { "actions": [
+			{ "time": 0, "code": SETUP + `
+				$.synth( { "frequency": 1000, "duration": 2, "volume": 0.5, "oType": "sine",
+					"tremoloRate": 20, "tremoloDepth": 0.6, "tremoloShape": "random",
+					"pan": -1 } );
+				$.synth( { "frequency": 440, "duration": 2, "volume": 0.5, "oType": "sine",
+					"vibratoRate": 10, "vibratoDepth": 200, "vibratoShape": "random",
+					"pan": 1 } );` }
+		] } );
+
+		// Tremolo: the level of each 5 ms window stays between volume × ( 1 − depth ) and volume
+		const left = channel( result );
+		const levels = [];
+		for( let t = 0.1; t < 1.9; t += 0.005 ) {
+			levels.push( g_metrics.peak( left, frame( t ), frame( t + 0.005 ) ) );
+		}
+		const lowest = Math.min( ...levels );
+		const highest = Math.max( ...levels );
+		assert.ok( highest <= 0.505, `tremolo ceiling ${highest}` );
+		assert.ok( lowest >= 0.19, `tremolo floor ${lowest}` );
+		assert.ok( highest - lowest > 0.15, `tremolo range ${lowest} to ${highest}` );
+
+		// A steady 20 Hz tremolo would repeat every 10 windows; the random one does not
+		const mean = levels.reduce( ( sum, level ) => sum + level, 0 ) / levels.length;
+		let same = 0;
+		let shifted = 0;
+		for( let i = 10; i < levels.length; i++ ) {
+			same += ( levels[ i ] - mean ) * ( levels[ i ] - mean );
+			shifted += ( levels[ i ] - mean ) * ( levels[ i - 10 ] - mean );
+		}
+		assert.ok( shifted / same < 0.6, `tremolo repeats: correlation ${shifted / same}` );
+
+		// Vibrato: the pitch moves, and stays within 200 cents of 440 Hz
+		const right = channel( result, 1 );
+		const pitch = frequencyTrack( right, 0.1, 1.9, 0.025 );
+		const limit = Math.pow( 2, 200 / 1200 );
+		assert.ok( Math.max( ...pitch ) < 440 * limit + 4, `highest pitch ${Math.max( ...pitch )}` );
+		assert.ok( Math.min( ...pitch ) > 440 / limit - 4, `lowest pitch ${Math.min( ...pitch )}` );
+		assert.ok(
+			Math.max( ...pitch ) - Math.min( ...pitch ) > 40,
+			`pitch range ${Math.min( ...pitch )} to ${Math.max( ...pitch )}`
+		);
+	} );
+
+	clockTest( "a held sound sustains until releaseSound() and then fades over its release",
+		async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 1.6 }
+			}, renderActions, { "actions": [
+				{ "time": 0, "code": SETUP + `
+					values.id = $.synth( { "frequency": 440, "duration": 0.1, "volume": 0.5,
+						"oType": "sine", "attackTime": 0.05, "decayTime": 0.1,
+						"sustainLevel": 0.5, "releaseTime": 0.2, "hold": true } );` },
+				{ "time": 1, "code": `
+					$.releaseSound( values.id );
+					$.releaseSound( values.id );` }
+			] } );
+			assert.match( result.values.id, /^sound_\d+$/ );
+			const left = channel( result );
+
+			// duration is ignored: the sound holds volume × sustainLevel long after 0.1 s
+			const sustained = toneAmplitude( left, 440, frame( 0.5 ), frame( 0.9 ) );
+			assertNear( sustained, 0.25, 0.01, "sustain level" );
+
+			// The release is the core's exponential, which falls to a tenth every quarter of
+			// releaseTime
+			const early = g_metrics.peak( left, frame( LEAD + 1.03 ), frame( LEAD + 1.04 ) );
+			const later = g_metrics.peak( left, frame( LEAD + 1.08 ), frame( LEAD + 1.09 ) );
+			assert.ok( early > 0.02 && early < 0.2, `release level ${early}` );
+			assertNear( later / early, 0.1, 0.02, "release shape" );
+			const after = g_metrics.peak( left, frame( LEAD + 1.25 ), frame( 1.6 ) );
+			assert.ok( after < 1e-4, `silence after the release ${after}` );
+		} );
+
+	clockTest( "setSynth() moves a held sound's volume, pitch, and filter cutoff", async () => {
+		const result = await suite.inHarness( {
+			"config": { "duration": 2.2 }
+		}, renderActions, { "actions": [
+			{ "time": 0, "code": SETUP + `
+				values.id = $.synth( { "frequency": 220, "volume": 0.4, "oType": "sawtooth",
+					"filterType": "lowpass", "filterCutoff": 300, "hold": true } );` },
+			{ "time": 0.5, "code": `$.setSynth( values.id, 0.2 );` },
+			{ "time": 1, "code": `$.setSynth( { "soundId": values.id, "detune": 1200 } );` },
+			{ "time": 1.5, "code": `
+				$.setSynth( { "soundId": values.id, "filterCutoff": 8000 } );` },
+			{ "time": 2, "code": `$.stopSound( values.id );` }
+		] } );
+		const left = channel( result );
+		const loud = toneAmplitude( left, 220, frame( 0.2 ), frame( 0.45 ) );
+		const quiet = toneAmplitude( left, 220, frame( 0.7 ), frame( 0.95 ) );
+		assert.ok( loud > 0.1, `fundamental ${loud}` );
+		assertNear( quiet / loud, 0.5, 0.02, "volume halves" );
+
+		// 1200 cents up is one octave: the fundamental moves from 220 Hz to 440 Hz
+		const low = toneAmplitude( left, 220, frame( 1.2 ), frame( 1.45 ) );
+		const high = toneAmplitude( left, 440, frame( 1.2 ), frame( 1.45 ) );
+		assert.ok( high > 0.05 && low < high / 20, `octave up: 220 Hz ${low}, 440 Hz ${high}` );
+
+		// Opening the filter lets the third harmonic through
+		const closed = toneAmplitude( left, 1320, frame( 1.2 ), frame( 1.45 ) );
+		const open = toneAmplitude( left, 1320, frame( 1.7 ), frame( 1.95 ) );
+		assert.ok( open > closed * 5, `third harmonic ${closed} then ${open}` );
+		const after = g_metrics.peak( left, frame( LEAD + 2.05 ), frame( 2.2 ) );
+		assert.ok( after < 1e-4, `silence after stopSound ${after}` );
+	} );
+
+	clockTest( "releaseSound() releases every held sound, from the level each has reached",
+		async () => {
+			const result = await suite.inHarness( {
+				"config": { "duration": 1.4 }
+			}, renderActions, { "actions": [
+				{ "time": 0, "code": SETUP + `
+					values.attacking = $.synth( { "frequency": 440, "volume": 0.5,
+						"oType": "sine", "attackTime": 1, "releaseTime": 0.1, "hold": true } );
+					values.delayed = $.synth( { "frequency": 660, "volume": 0.5,
+						"oType": "sine", "delay": 0.6, "hold": true } );
+					values.plain = $.synth( { "frequency": 880, "duration": 0.3, "volume": 0.3,
+						"oType": "sine" } );
+
+					// Sounds that are not held, and unknown IDs, are left alone
+					$.setSynth( values.plain, 0 );
+					$.releaseSound( values.plain );
+					$.releaseSound( "sound_none" );
+					$.setSynth( "sound_none", 0.5 );` },
+				{ "time": 0.25, "code": `$.releaseSound();` }
+			] } );
+			const left = channel( result );
+			const plain = toneAmplitude( left, 880, frame( 0.05 ), frame( 0.25 ) );
+			assertNear( plain, 0.3, 0.01, "the plain sound is unchanged" );
+
+			// A quarter of the way through its attack, the held sound is at a quarter of 0.5
+			const reached = toneAmplitude( left, 440, frame( 0.23 ), frame( 0.25 ) );
+			assert.ok( reached > 0.1 && reached < 0.13, `attack level ${reached}` );
+
+			// It fades from there, and the delayed sound is cancelled before it starts
+			const after = g_metrics.peak( left, frame( LEAD + 0.5 ), frame( 1.4 ) );
+			assert.ok( after < 1e-4, `silence after releasing all ${after}` );
+		} );
 
 	clockTest( "periodic noise repeats every 93 clock steps and follows its clock sweep",
 		async () => {

@@ -6,6 +6,12 @@
  * service builds only after admission. presets.js and instruments.js reuse the option parsing
  * and insert builders exported here.
  *
+ * A held sound (hold) stays at its sustain level until releaseSound() releases it, and
+ * setSynth() changes its volume, pitch, and filter cutoff while it plays. The sound service
+ * needs every voice's length up front, so a held voice is created with a flat envelope of
+ * MAX_HOLD seconds and a hold insert shapes it: the insert owns the volume envelope, which the
+ * release rewrites, and the nodes setSynth() moves.
+ *
  * @module plugins/sound-advanced/synth
  */
 
@@ -19,8 +25,31 @@ export const SYNTH_PARAMETERS = [
 	"sustainLevel", "releaseTime", "pan", "frequencyEnd", "filterType", "filterCutoff",
 	"filterQ", "filterAttackTime", "filterDecayTime", "filterSustainLevel", "filterReleaseTime",
 	"filterAmount", "vibratoRate", "vibratoDepth", "tremoloRate", "tremoloDepth", "duty",
-	"arpeggio", "arpeggioRate"
+	"arpeggio", "arpeggioRate", "hold", "vibratoShape", "tremoloShape"
 ];
+
+// LFO shapes: a steady sine, or a random wobble
+export const LFO_SHAPES = [ "sine", "random" ];
+
+export const SET_SYNTH_PARAMETERS = [ "soundId", "volume", "detune", "filterCutoff" ];
+
+// Longest time a held sound sustains before it releases by itself, in seconds
+export const MAX_HOLD = 600;
+
+// Largest pitch offset setSynth() accepts, in cents
+const MAX_DETUNE = 4800;
+
+// Time constant of a setSynth() change, which settles in about 20 ms
+const SET_TIME_CONSTANT = 0.007;
+
+// Core releases are exponential approaches that reach 1/10000 of their start value
+const LN_10000 = Math.log( 10000 );
+
+// The random LFO: a looping buffer of random points with straight lines between them. Each
+// point spans RANDOM_POINT_FRAMES frames, and the playback rate sets the points per second.
+const RANDOM_POINTS = 256;
+const RANDOM_POINT_FRAMES = 32;
+const RANDOM_SEED = 0x2F6E2B1;
 
 // Harmonics in a pulse wave table, and the number of cached duty values
 const PULSE_HARMONICS = 64;
@@ -36,6 +65,12 @@ const MIN_RAMP = 0.003;
 
 const m_pulseTables = new Map();
 let m_service = null;
+
+// Held sounds by sound ID, from the synth() call until the voice is disposed
+const m_held = new Map();
+
+// The random LFO buffer of each audio context
+const m_randomBuffers = new WeakMap();
 
 
 /*************************************************************************************************
@@ -240,22 +275,267 @@ function createFilterInsert( context, params ) {
 					filter.detune, params.envelope, when, gateEnd, params.amount * 1200
 				);
 			}
+			if( params.onStart ) {
+				params.onStart( filter );
+			}
 		}
 	} );
+}
+
+/**
+ * Hold insert: the volume envelope, level, and pitch offset of a held sound
+ *
+ * The envelope gain follows the sound's ADSR from the voice start, the level gain holds its
+ * volume, and a constant source offsets the pitch in cents. params.onStart receives these
+ * nodes when the voice starts, and params.onDispose runs when it is disposed.
+ *
+ * @param {BaseAudioContext} context - Audio context
+ * @param {Object} params - volume, envelope, onStart, and onDispose
+ * @returns {Object} Voice insert
+ */
+function createHoldInsert( context, params ) {
+	const envelope = context.createGain();
+	envelope.gain.value = 0;
+	const level = context.createGain();
+	level.gain.value = params.volume;
+	const pitch = context.createConstantSource();
+	pitch.offset.value = 0;
+	envelope.connect( level );
+	const insert = createInsert( {
+		"input": envelope,
+		"output": level,
+		"detune": pitch,
+		"sources": [ pitch ],
+		"nodes": [ pitch, envelope, level ],
+		"onStart": ( when, gateEnd ) => {
+			m_service.scheduleEnvelope( envelope.gain, params.envelope, when, gateEnd, 1 );
+			params.onStart( {
+				"when": when, "envelope": envelope.gain, "level": level.gain, "pitch": pitch.offset
+			} );
+		}
+	} );
+	const dispose = insert.dispose;
+	insert.dispose = () => {
+		dispose();
+		params.onDispose();
+	};
+	return insert;
+}
+
+/**
+ * Start the release stage of an envelope on an AudioParam at a context time
+ *
+ * Cancelling at `time` also removes an attack ramp still in progress, so inside the attack
+ * the ramp is re-created up to the value reached. Later stages keep their earlier events, and
+ * the release continues from the value they reach at `time`.
+ *
+ * @param {AudioParam} param - Parameter the envelope was scheduled on
+ * @param {Object} envelope - attackTime and releaseTime in seconds
+ * @param {number} start - Context time of the envelope start
+ * @param {number} peak - Peak value of the envelope
+ * @param {number} time - Context time at which the release begins
+ * @returns {number} Context time at which the release ends
+ */
+function releaseParam( param, envelope, start, peak, time ) {
+	const attack = Math.max( envelope.attackTime, MIN_RAMP );
+	const release = Math.max( envelope.releaseTime, MIN_RAMP );
+	param.cancelScheduledValues( time );
+	if( time - start < attack ) {
+		param.linearRampToValueAtTime( peak * ( time - start ) / attack, time );
+	}
+	param.setTargetAtTime( 0, time, release / LN_10000 );
+	param.setValueAtTime( 0, time + release );
+	return time + release;
+}
+
+/**
+ * Release a held sound: its volume and filter envelopes enter their release stages
+ *
+ * A sound that has not started yet is cancelled. The voice is stopped at the end of the volume
+ * release, which frees its voice slot.
+ *
+ * @param {Object} held - Held sound record
+ * @returns {void}
+ */
+function releaseHeld( held ) {
+	if( held.released ) {
+		return;
+	}
+	held.released = true;
+	const nodes = held.nodes;
+	if( nodes === null ) {
+		m_held.delete( held.id );
+		m_service.stopVoice( held.id );
+		return;
+	}
+	const time = Math.max( m_service.getContext().currentTime, nodes.when );
+	const end = releaseParam( nodes.envelope, held.envelope, nodes.when, 1, time );
+	if( held.filter && held.filterPeak !== 0 ) {
+		releaseParam(
+			held.filter.detune, held.filterEnvelope, nodes.when, held.filterPeak, time
+		);
+	}
+	m_service.stopVoice( held.id, end );
+}
+
+/**
+ * Move an AudioParam of a held sound to a new value without a click
+ *
+ * @param {AudioParam} param - Parameter to move
+ * @param {number} value - New value
+ * @param {number} start - Context time the voice starts
+ * @returns {void}
+ */
+function moveParam( param, value, start ) {
+	const time = Math.max( m_service.getContext().currentTime, start );
+	param.setTargetAtTime( value, time, SET_TIME_CONSTANT );
+}
+
+/**
+ * Remove the records of held sounds that never started, such as requests made while audio
+ * was locked or cancelled by stopSound() before their delay ran out
+ *
+ * @returns {void}
+ */
+function sweepHeld() {
+	const now = m_service.getContext().currentTime;
+	for( const held of m_held.values() ) {
+		if( held.nodes === null && now > held.expires ) {
+			m_held.delete( held.id );
+		}
+	}
+}
+
+/**
+ * Play resolved synth options as a held sound
+ *
+ * @param {string} name - Command name for error messages
+ * @param {Object} resolved - Options from resolveSynthOptions
+ * @returns {string} Sound ID
+ */
+function playHeld( name, resolved ) {
+	sweepHeld();
+	const held = {
+		"id": null,
+		"nodes": null,
+		"filter": null,
+		"released": false,
+		"disposed": false,
+		"expires": m_service.getContext().currentTime + resolved.delay + 1,
+		"envelope": { "attackTime": resolved.attackTime, "releaseTime": resolved.releaseTime },
+		"filterEnvelope": {
+			"attackTime": resolved.filterAttackTime, "releaseTime": resolved.filterReleaseTime
+		},
+		"filterPeak": resolved.filterAmount * 1200
+	};
+	const inserts = buildSynthInserts( resolved, resolved.releaseTime, filter => {
+		held.filter = filter;
+	} );
+	inserts.push( {
+		"factory": createHoldInsert,
+		"params": {
+			"volume": resolved.volume,
+			"envelope": {
+				"attackTime": resolved.attackTime,
+				"decayTime": resolved.decayTime,
+				"sustainLevel": resolved.sustainLevel,
+				"releaseTime": resolved.releaseTime
+			},
+			"onStart": nodes => {
+				held.nodes = nodes;
+			},
+			"onDispose": () => {
+				held.disposed = true;
+				m_held.delete( held.id );
+			}
+		}
+	} );
+
+	// The hold insert shapes the volume, so the voice itself is flat at full level
+	held.id = m_service.createVoice( {
+		"frequency": resolved.frequency,
+		"frequencyEnd": null,
+		"duration": MAX_HOLD,
+		"volume": 1,
+		"oType": resolveOType( resolved ),
+		"delay": resolved.delay,
+		"attackTime": 0,
+		"decayTime": 0,
+		"sustainLevel": 1,
+		"releaseTime": resolved.releaseTime,
+		"pan": resolved.pan,
+		"inserts": inserts
+	}, name );
+	if( !held.disposed ) {
+		m_held.set( held.id, held );
+	}
+	return held.id;
+}
+
+/**
+ * Get the random LFO buffer for a context, generated once per context
+ *
+ * The points come from a fixed seed, so the wobble is the same in every context; each LFO
+ * starts at a random point of the loop.
+ *
+ * @param {BaseAudioContext} context - Audio context
+ * @returns {AudioBuffer} Mono buffer of values from -1 to 1
+ */
+function getRandomBuffer( context ) {
+	let buffer = m_randomBuffers.get( context );
+	if( buffer ) {
+		return buffer;
+	}
+	const points = randomPoints( RANDOM_POINTS );
+	buffer = context.createBuffer( 1, RANDOM_POINTS * RANDOM_POINT_FRAMES, context.sampleRate );
+	const data = buffer.getChannelData( 0 );
+	for( let i = 0; i < data.length; i++ ) {
+		const index = Math.floor( i / RANDOM_POINT_FRAMES );
+		const from = points[ index ];
+		const to = points[ ( index + 1 ) % RANDOM_POINTS ];
+		data[ i ] = from + ( to - from ) * ( i % RANDOM_POINT_FRAMES ) / RANDOM_POINT_FRAMES;
+	}
+	m_randomBuffers.set( context, buffer );
+	return buffer;
+}
+
+/**
+ * Create the source of an LFO with values from -1 to 1
+ *
+ * "sine" is an oscillator at `rate` cycles per second. "random" moves to a new random value
+ * `rate` times per second, in straight lines.
+ *
+ * @param {BaseAudioContext} context - Audio context
+ * @param {Object} params - rate (Hz) and an optional shape
+ * @returns {AudioScheduledSourceNode} LFO source, not started
+ */
+function createLfo( context, params ) {
+	if( params.shape !== "random" ) {
+		const lfo = context.createOscillator();
+		lfo.frequency.value = params.rate;
+		return lfo;
+	}
+	const buffer = getRandomBuffer( context );
+	const lfo = context.createBufferSource();
+	lfo.buffer = buffer;
+	lfo.loop = true;
+	lfo.playbackRate.value = params.rate * RANDOM_POINT_FRAMES / context.sampleRate;
+	const start = lfo.start.bind( lfo );
+	lfo.start = when => start( when, Math.random() * buffer.duration );
+	return lfo;
 }
 
 /**
  * Tremolo insert: an LFO swings the chain gain between 1 − depth and 1
  *
  * @param {BaseAudioContext} context - Audio context
- * @param {Object} params - rate (Hz) and depth (0-1)
+ * @param {Object} params - rate (Hz), depth (0-1), and an optional shape
  * @returns {Object} Voice insert
  */
 function createTremoloInsert( context, params ) {
 	const amp = context.createGain();
 	amp.gain.value = 1 - params.depth / 2;
-	const lfo = context.createOscillator();
-	lfo.frequency.value = params.rate;
+	const lfo = createLfo( context, params );
 	const depth = context.createGain();
 	depth.gain.value = params.depth / 2;
 	lfo.connect( depth );
@@ -272,13 +552,12 @@ function createTremoloInsert( context, params ) {
  * Vibrato insert: an LFO in cents on the detune output; audio passes through unchanged
  *
  * @param {BaseAudioContext} context - Audio context
- * @param {Object} params - rate (Hz) and depth (cents)
+ * @param {Object} params - rate (Hz), depth (cents), and an optional shape
  * @returns {Object} Voice insert
  */
 function createVibratoInsert( context, params ) {
 	const pass = context.createGain();
-	const lfo = context.createOscillator();
-	lfo.frequency.value = params.rate;
+	const lfo = createLfo( context, params );
 	const depth = context.createGain();
 	depth.gain.value = params.depth;
 	lfo.connect( depth );
@@ -328,6 +607,24 @@ function createArpeggioInsert( context, params ) {
  * Exported Functions
  ************************************************************************************************/
 
+
+/**
+ * The points of the random LFO: values from -1 to 1 from a fixed seed
+ *
+ * @param {number} count - Number of points
+ * @returns {Array<number>} Points
+ */
+export function randomPoints( count ) {
+	const points = [];
+	let state = RANDOM_SEED;
+	for( let i = 0; i < count; i++ ) {
+
+		// A 32-bit linear congruential step; the high bits are the random ones
+		state = ( Math.imul( state, 1664525 ) + 1013904223 ) >>> 0;
+		points.push( state / 0x80000000 - 1 );
+	}
+	return points;
+}
 
 /**
  * Fourier tables for a pulse wave, cached per duty value
@@ -411,7 +708,10 @@ export function resolveSynthOptions( name, options ) {
 		"tremoloDepth": readNumber( options.tremoloDepth, 0 ),
 		"duty": readNumber( options.duty, 0.5 ),
 		"arpeggio": readArpeggio( name, options.arpeggio ),
-		"arpeggioRate": readNumber( options.arpeggioRate, 12 )
+		"arpeggioRate": readNumber( options.arpeggioRate, 12 ),
+		"hold": options.hold ?? false,
+		"vibratoShape": options.vibratoShape ?? "sine",
+		"tremoloShape": options.tremoloShape ?? "sine"
 	};
 
 	// sound() parameters
@@ -465,6 +765,18 @@ export function resolveSynthOptions( name, options ) {
 		);
 	}
 	checkPositive( name, resolved, "arpeggioRate", 100, "INVALID_ARPEGGIO_RATE" );
+	if( typeof resolved.hold !== "boolean" ) {
+		throwCode( TypeError, `${name}: Parameter hold must be a boolean.`, "INVALID_HOLD" );
+	}
+	for( const param of [ "vibratoShape", "tremoloShape" ] ) {
+		if( LFO_SHAPES.indexOf( resolved[ param ] ) === -1 ) {
+			throwCode(
+				Error,
+				`${name}: Parameter ${param} must be one of: ${LFO_SHAPES.join( ", " )}.`,
+				param === "vibratoShape" ? "INVALID_VIBRATO_SHAPE" : "INVALID_TREMOLO_SHAPE"
+			);
+		}
+	}
 
 	return resolved;
 }
@@ -477,37 +789,39 @@ export function resolveSynthOptions( name, options ) {
  *
  * @param {Object} resolved - Options from resolveSynthOptions
  * @param {number} releaseTime - Voice release in seconds, which bounds the arpeggio steps
+ * @param {Function} [onFilter] - Receives the filter node when a held voice starts
  * @returns {Array<Object>} Insert descriptors: { factory, params }
  */
-export function buildSynthInserts( resolved, releaseTime ) {
+export function buildSynthInserts( resolved, releaseTime, onFilter ) {
 	const inserts = [];
 	if( resolved.filterType !== null ) {
-		inserts.push( {
-			"factory": createFilterInsert,
-			"params": {
-				"type": resolved.filterType,
-				"cutoff": resolved.filterCutoff,
-				"q": resolved.filterQ,
-				"amount": resolved.filterAmount,
-				"envelope": {
-					"attackTime": resolved.filterAttackTime,
-					"decayTime": resolved.filterDecayTime,
-					"sustainLevel": resolved.filterSustainLevel,
-					"releaseTime": resolved.filterReleaseTime
-				}
+		const params = {
+			"type": resolved.filterType,
+			"cutoff": resolved.filterCutoff,
+			"q": resolved.filterQ,
+			"amount": resolved.filterAmount,
+			"envelope": {
+				"attackTime": resolved.filterAttackTime,
+				"decayTime": resolved.filterDecayTime,
+				"sustainLevel": resolved.filterSustainLevel,
+				"releaseTime": resolved.filterReleaseTime
 			}
-		} );
+		};
+		if( onFilter ) {
+			params.onStart = onFilter;
+		}
+		inserts.push( { "factory": createFilterInsert, "params": params } );
 	}
 	if( resolved.tremoloDepth > 0 ) {
 		inserts.push( {
 			"factory": createTremoloInsert,
-			"params": { "rate": resolved.tremoloRate, "depth": resolved.tremoloDepth }
+			"params": lfoParams( resolved.tremoloRate, resolved.tremoloDepth, resolved.tremoloShape )
 		} );
 	}
 	if( resolved.vibratoDepth > 0 ) {
 		inserts.push( {
 			"factory": createVibratoInsert,
-			"params": { "rate": resolved.vibratoRate, "depth": resolved.vibratoDepth }
+			"params": lfoParams( resolved.vibratoRate, resolved.vibratoDepth, resolved.vibratoShape )
 		} );
 	}
 	if( resolved.arpeggio !== null ) {
@@ -521,6 +835,22 @@ export function buildSynthInserts( resolved, releaseTime ) {
 		} );
 	}
 	return inserts;
+}
+
+/**
+ * Insert params of an LFO; the shape is included only when it is not the default sine
+ *
+ * @param {number} rate - Rate in Hz
+ * @param {number} depth - Depth
+ * @param {string} shape - "sine" or "random"
+ * @returns {Object} rate, depth, and shape when random
+ */
+function lfoParams( rate, depth, shape ) {
+	const params = { "rate": rate, "depth": depth };
+	if( shape !== "sine" ) {
+		params.shape = shape;
+	}
+	return params;
 }
 
 /**
@@ -569,7 +899,33 @@ export function resolveSynthSpec( name, options ) {
  * @returns {string} Sound ID for use with stopSound
  */
 export function playSynth( name, options ) {
+	if( options && options.hold === true ) {
+		return playHeld( name, resolveSynthOptions( name, options ) );
+	}
 	return m_service.createVoice( resolveSynthSpec( name, options ), name );
+}
+
+/**
+ * Resolve setSynth() options: each value is a validated number, or null when not given
+ *
+ * @param {Object} options - setSynth() options
+ * @returns {Object} volume, detune, and filterCutoff
+ */
+export function resolveSetSynth( options ) {
+	const resolved = {};
+	for( const param of [ "volume", "detune", "filterCutoff" ] ) {
+		resolved[ param ] = options[ param ] == null ? null : readNumber( options[ param ], NaN );
+	}
+	if( resolved.volume !== null ) {
+		checkRange( "setSynth", resolved, "volume", 0, 1, "INVALID_VOLUME" );
+	}
+	if( resolved.detune !== null ) {
+		checkRange( "setSynth", resolved, "detune", -MAX_DETUNE, MAX_DETUNE, "INVALID_DETUNE" );
+	}
+	if( resolved.filterCutoff !== null ) {
+		checkPositive( "setSynth", resolved, "filterCutoff", 24000, "INVALID_FILTER_CUTOFF" );
+	}
+	return resolved;
 }
 
 
@@ -599,10 +955,66 @@ export function register( pluginApi, service ) {
 	 * Vibrato and tremolo run when their depth is above 0, and the arpeggio cycles semitone
 	 * offsets at arpeggioRate steps per second.
 	 *
+	 * A held sound (hold) sustains until releaseSound() releases it.
+	 *
 	 * @param {Object} options - Command options
 	 * @returns {string} Sound ID for use with stopSound
 	 */
 	function synth( options ) {
 		return playSynth( "synth", options );
+	}
+
+
+	pluginApi.addCommand( "releaseSound", releaseSound, false, [ "soundId" ] );
+
+	/**
+	 * Release a held sound, or every held sound, into its release stage
+	 *
+	 * @param {Object} options - Command options
+	 * @param {string} options.soundId - Sound ID (null to release every held sound)
+	 * @returns {void}
+	 */
+	function releaseSound( options ) {
+		if( options.soundId == null ) {
+			for( const held of Array.from( m_held.values() ) ) {
+				releaseHeld( held );
+			}
+			return;
+		}
+		const held = m_held.get( options.soundId );
+		if( held ) {
+			releaseHeld( held );
+		}
+	}
+
+
+	pluginApi.addCommand( "setSynth", setSynth, false, SET_SYNTH_PARAMETERS );
+
+	/**
+	 * Change the volume, pitch offset, or filter cutoff of a held sound while it plays
+	 *
+	 * @param {Object} options - Command options
+	 * @param {string} options.soundId - Sound ID of a held sound
+	 * @param {number} options.volume - New volume 0-1
+	 * @param {number} options.detune - Pitch offset in cents
+	 * @param {number} options.filterCutoff - New filter cutoff in Hz
+	 * @returns {void}
+	 */
+	function setSynth( options ) {
+		const resolved = resolveSetSynth( options );
+		const held = m_held.get( options.soundId );
+		if( !held || held.nodes === null ) {
+			return;
+		}
+		const nodes = held.nodes;
+		if( resolved.volume !== null ) {
+			moveParam( nodes.level, resolved.volume, nodes.when );
+		}
+		if( resolved.detune !== null ) {
+			moveParam( nodes.pitch, resolved.detune, nodes.when );
+		}
+		if( resolved.filterCutoff !== null && held.filter ) {
+			moveParam( held.filter.frequency, resolved.filterCutoff, nodes.when );
+		}
 	}
 }

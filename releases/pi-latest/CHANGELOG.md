@@ -2,9 +2,9 @@
 
 - Rewrote the `sound` plugin (2.0.0) on sfx, music, and audio buses with an output limiter:
   ADSR envelopes, one voice budget, audio instances you can pause, resume, and change, and
-  streamed audio. Added the `sound-advanced` plugin (1.0.0): synth features, presets and
-  generated sound effects, instruments, bus effects, level meters, WAV recording, and handlers
-  timed to the music.
+  streamed audio. Added the `sound-advanced` plugin (1.0.0): synth features, held sounds
+  that sustain until released, presets and generated sound effects, instruments, bus effects,
+  level meters, WAV recording, and handlers timed to the music.
 - The `keyboard`, `pointer`, and `gamepad` plugins (2.0.0) share one set of input conventions:
   camelCase command names, handlers identified by mode and function, cancelled releases, and
   errors with per-parameter codes. Added wheel input, gamepad button names, and vibration.

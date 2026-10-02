@@ -597,9 +597,10 @@ $.removeAudio( audioId );
 instance of the file, or nothing for all audio. `playbackRate` is 0.0625–16 for decoded audio and
 0.25–4 for streamed audio.
 
-The `sound-advanced` plugin, loaded separately, adds `synth()`, `sfx()`, `definePreset()`,
-`generateSfx()`, `defineInstrument()`, `setBusEffect()`, `getSoundLevels()`, WAV recording with
-`startRecording()` and `saveRecording()`, and `onPlay()` handlers timed to the music.
+The `sound-advanced` plugin, loaded separately, adds `synth()`, held sounds with `releaseSound()`
+and `setSynth()`, `sfx()`, `definePreset()`, `generateSfx()`, `defineInstrument()`,
+`setBusEffect()`, `getSoundLevels()`, WAV recording with `startRecording()` and
+`saveRecording()`, and `onPlay()` handlers timed to the music.
 
 ## Plugins
 

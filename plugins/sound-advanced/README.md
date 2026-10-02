@@ -8,6 +8,8 @@ The Sound Advanced plugin 1.0.0 extends the `sound` plugin. It adds:
 
 - `synth()`: `sound()` with a filter and filter envelope, vibrato, tremolo, pulse waves, and
   arpeggios.
+- Held sounds: `synth()` with `hold`, `releaseSound()`, and `setSynth()`, for sounds that last
+  as long as something is happening and change while they play.
 - A `"periodic"` oType: NES-style looping noise for `sound()`, `synth()`, and instruments.
 - `setBusEffect()`: reverb, delay, filter, distortion, bitcrusher, and chorus on a bus, alone or
   in chains of up to four.
@@ -80,7 +82,9 @@ parameter plus:
 | `filterAmount` | 0 | Octaves the filter envelope moves the cutoff at its peak, -10 to 10 |
 | `vibratoRate`, `vibratoDepth` | 5, 0 | Vibrato in cycles per second and cents; off at depth 0 |
 | `tremoloRate`, `tremoloDepth` | 5, 0 | Tremolo in cycles per second and share of volume (0-1); off at depth 0 |
+| `vibratoShape`, `tremoloShape` | `"sine"` | `"sine"` is a steady wave; `"random"` moves to a new random value at the rate, for an uneven wobble |
 | `arpeggio`, `arpeggioRate` | none, 12 | Semitone offsets to cycle through, and steps per second |
+| `hold` | `false` | If `true`, the sound sustains until `releaseSound()` |
 
 ```javascript
 $.synth( {
@@ -89,6 +93,50 @@ $.synth( {
 	"filterDecayTime": 0.3, "filterSustainLevel": 0
 } );
 ```
+
+### Held sounds: `releaseSound( soundId )` and `setSynth( soundId, volume, detune, filterCutoff )`
+
+A sound played with `hold: true` plays its attack and decay, then stays at its sustain level
+until it is released. It ignores `duration` and `frequencyEnd`. Use it for sounds whose length
+is not known when they start: an engine, a beam, a charge-up, or a note on a keyboard.
+
+`releaseSound( soundId )` starts the release: the volume fades over `releaseTime` and the filter
+envelope over `filterReleaseTime`, from the levels they have reached. With no ID it releases
+every held sound. `stopSound()` still cuts a held sound off in 10 ms.
+
+`setSynth()` changes a held sound while it plays. Each value moves to its new setting in about
+20 ms, so it can be called every frame, and values that are omitted stay as they are:
+
+| Option | Range | Meaning |
+| --- | --- | --- |
+| `volume` | 0-1 | Replaces the sound's volume |
+| `detune` | -4800 to 4800 | Pitch offset in cents from `frequency`; no effect on noise |
+| `filterCutoff` | above 0, at most 24000 | Replaces the filter's cutoff; needs `filterType` |
+
+Both commands ignore IDs of sounds that are not held, have finished, or were never played. A held
+sound that has not started yet because of its `delay` is cancelled by `releaseSound()`.
+
+```javascript
+// An engine that burns while the space bar is down
+let engine = null;
+$.onKey( "Space", "down", () => {
+	engine = $.synth( {
+		"oType": "pink", "volume": 0.6, "attackTime": 0.8, "releaseTime": 1.2,
+		"filterType": "lowpass", "filterCutoff": 300, "hold": true
+	} );
+} );
+$.onKey( "Space", "up", () => {
+	$.releaseSound( engine );
+} );
+
+// Throttle: louder and brighter
+$.setSynth( { "soundId": engine, "volume": 0.9, "filterCutoff": 900 } );
+```
+
+A held sound takes one of the 64 voices like any other sound, and one that is never released
+releases by itself after 600 seconds. Its arpeggio steps 4096 times and then stays on its last
+step. A preset can set `hold`, and `sfx()` then returns the ID of a held sound. Instruments
+ignore `hold`, because `play()` sets the length of each note.
 
 ### Periodic noise
 

@@ -30,7 +30,8 @@ function store() {
 	}
 }
 
-// entry: { name, category, seed, params, effects }
+// entry: { name, category, seed, params, layers, hold, effects }. params is the first layer;
+// entries saved before sounds had layers hold only params.
 function snapshot( entry ) {
 	return JSON.parse( JSON.stringify( entry ) );
 }
@@ -41,7 +42,9 @@ export function restore( entry ) {
 		"name": entry.name,
 		"category": entry.category || "custom",
 		"seed": Number.isInteger( entry.seed ) ? entry.seed : null,
-		"params": fromSynthOptions( entry.params ),
+		"layers": ( Array.isArray( entry.layers ) && entry.layers.length > 0 ?
+			entry.layers : [ entry.params ] ).map( fromSynthOptions ),
+		"hold": entry.hold === true,
 		"effects": entry.effects ? restoreEffects( entry.effects ) : null
 	};
 }

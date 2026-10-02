@@ -1,6 +1,6 @@
 // Exports: WAV recording through the sound-advanced recorder, and Pi.js code or JSON text
 
-import { toSynthOptions, soundLength } from "./params.js";
+import { toSynthOptions, toOneShotOptions, soundLength } from "./params.js";
 import { buildChain, effectTail } from "./effects.js";
 import { trimWav } from "./wav.js";
 
@@ -30,22 +30,44 @@ function effectsCode( effects ) {
 		"$.setBusEffect( \"sfx\", " + formatJs( chain, "" ) + " );\n\n";
 }
 
-export function synthCode( params, effects ) {
-	return effectsCode( effects ) + "$.synth( " + formatJs( toSynthOptions( params ), "" ) + " );\n";
+// Code that plays every call at once. A held sound keeps its sound IDs and shows how to
+// release them.
+function playCode( calls, hold ) {
+	if( !hold ) {
+		return calls.map( call => call + ";\n" ).join( "" );
+	}
+	return "// Start the sound. It plays until it is released\n" +
+		"const sound = [\n" + calls.map( call => "\t" + call ).join( ",\n" ) + "\n];\n\n" +
+		"// Later, release it, for example when the key comes up\n" +
+		"sound.forEach( id => $.releaseSound( id ) );\n";
 }
 
-export function presetCode( name, params, effects ) {
-	const key = JSON.stringify( name );
-	return effectsCode( effects ) +
-		"$.definePreset( " + key + ", " + formatJs( toSynthOptions( params ), "" ) + " );\n" +
-		"$.sfx( " + key + " );\n";
+export function synthCode( layers, hold, effects ) {
+	const indent = hold ? "\t" : "";
+	const calls = layers.map(
+		params => "$.synth( " + formatJs( toSynthOptions( params, hold ), indent ) + " )"
+	);
+	return effectsCode( effects ) + playCode( calls, hold );
 }
 
-export function jsonText( params, effects ) {
-	return JSON.stringify( {
-		"synth": toSynthOptions( params ),
-		"busEffects": buildChain( effects )
-	}, null, "\t" ) + "\n";
+// One preset per layer: a preset holds one set of synth() options
+export function presetCode( name, layers, hold, effects ) {
+	const keys = layers.map(
+		( params, i ) => JSON.stringify( layers.length > 1 ? name + "-" + ( i + 1 ) : name )
+	);
+	const defines = layers.map( ( params, i ) => {
+		return "$.definePreset( " + keys[ i ] + ", " + formatJs( toSynthOptions( params, hold ), "" ) +
+			" );\n";
+	} );
+	return effectsCode( effects ) + defines.join( "" ) + "\n" +
+		playCode( keys.map( key => "$.sfx( " + key + " )" ), hold );
+}
+
+export function jsonText( layers, hold, effects ) {
+	const options = layers.map( params => toSynthOptions( params, hold ) );
+	const data = options.length === 1 ? { "synth": options[ 0 ] } : { "layers": options };
+	data.busEffects = buildChain( effects );
+	return JSON.stringify( data, null, "\t" ) + "\n";
 }
 
 export function fileName( name ) {
@@ -57,14 +79,17 @@ function wait( ms ) {
 	return new Promise( resolve => setTimeout( resolve, ms ) );
 }
 
-// Records one playback of the sound on the sfx bus (after its effects) and downloads it.
+// Records one playback of the sound's layers on the sfx bus (after its effects) and downloads
+// it. Each layer plays for its own length, so a held sound is recorded as one full burn.
 // Resolves with the saved file's size in bytes, or 0 when the recording was silent.
-export async function exportWav( params, effects, name, trim ) {
-	const seconds = soundLength( params ) + effectTail( effects ) + 0.25;
+export async function exportWav( layers, hold, effects, name, trim ) {
+	const seconds = Math.max( ...layers.map( soundLength ) ) + effectTail( effects ) + 0.25;
 	await $.startRecording( "sfx", Math.min( 600, Math.max( 1, Math.ceil( seconds + 0.5 ) ) ), 16 );
 	let blob;
 	try {
-		$.synth( toSynthOptions( params ) );
+		for( const params of layers ) {
+			$.synth( toOneShotOptions( params, hold ) );
+		}
 		await wait( seconds * 1000 );
 	} finally {
 		blob = await $.stopRecording();

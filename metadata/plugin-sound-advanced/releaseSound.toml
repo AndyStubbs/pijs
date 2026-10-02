@@ -1,0 +1,44 @@
+title = "releaseSound"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Releases a held sound, or every held sound, so it fades out over its release time."
+description = """
+Requires the sound-advanced plugin. A sound started with synth() or sfx() and hold set to true sustains until it is released. releaseSound() starts its release: the volume fades over releaseTime and the filter envelope over filterReleaseTime, from the levels they have reached, so a sound released during its attack fades from there. Use it for sounds that last as long as something is happening, such as an engine while a key is down.
+
+Pass a sound ID to release one sound, or nothing to release every held sound. IDs of sounds that are not held, that have finished, or that were never played are ignored, and releasing a sound twice does nothing more. A held sound that has not started yet because of its delay is cancelled.
+
+stopSound() still cuts a held sound off in 10 ms without its release.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Hold the space bar to fire the engine" );
+let engine = null;
+$.onKey( "Space", "down", () => {
+	engine = $.synth( {
+		"oType": "pink",
+		"volume": 0.6,
+		"attackTime": 0.8,
+		"releaseTime": 1.2,
+		"filterType": "lowpass",
+		"filterCutoff": 300,
+		"filterAmount": 2,
+		"filterAttackTime": 0.8,
+		"filterReleaseTime": 1.2,
+		"hold": true
+	} );
+} );
+$.onKey( "Space", "up", () => {
+	$.releaseSound( engine );
+} );
+"""
+
+[[parameters]]
+name = "soundId"
+type = "string"
+description = "Sound ID of a held sound. If null, releases every held sound."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

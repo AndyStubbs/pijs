@@ -4,14 +4,32 @@ import { C, SCREEN_W, SCREEN_H } from "./theme.js";
 import * as gui from "./gui.js";
 import {
 	CATEGORIES, WAVES, FILTER_TYPES, ARP_PATTERNS, SPECS, clamp, specToT, specFromT, formatValue,
-	fromSynthOptions, toSynthOptions, sanitizeParams, mutateParams, soundLength, isNoise, arpLabel
+	fromSynthOptions, toSynthOptions, toOneShotOptions, sanitizeParams, mutateParams, soundLength,
+	isNoise, arpLabel
 } from "./params.js";
 import { EFFECTS, MAX_CHAIN, defaultEffects, applyEffects, countEnabled } from "./effects.js";
 import { drawEnvelope, drawScope, drawSpectrum, drawMeter } from "./display.js";
 import * as exporter from "./exporter.js";
 import * as library from "./library.js";
+import { ENGINE_STYLES, generateEngine } from "./engine.js";
 
 const MAX_SEED = 4294967295;
+const MAX_LAYERS = 4;
+
+// The generator buttons: the generateSfx() categories, and the lab's own engine
+const GENERATORS = CATEGORIES.concat( [ "engine" ] );
+
+// Burn sliders, which set the envelope times of every layer at once
+const BURN_SPECS = {
+	"up": { "label": "BURN UP", "min": 0, "max": 3, "curve": "sq", "def": 0.5, "fmt": "s" },
+	"active": { "label": "ACTIVE", "min": 0.05, "max": 5, "curve": "exp", "def": 1, "fmt": "s" },
+	"down": { "label": "BURN DOWN", "min": 0, "max": 4, "curve": "sq", "def": 1, "fmt": "s" }
+};
+const BURN_TIPS = {
+	"up": "Time every layer takes to rise: sets its attack and filter attack",
+	"active": "Time at full burn after the burn up, for PLAY, AUTO, and the WAV file",
+	"down": "Time every layer takes to fade: sets its release and filter release"
+};
 const STATUS_MS = 5000;
 const STATUS_FRESH_MS = 2500;
 const DELETE_CONFIRM_MS = 3000;
@@ -33,7 +51,9 @@ const CATEGORY_TIPS = {
 	"powerup": "Rising arpeggio",
 	"blip": "Tiny UI tick",
 	"select": "Menu confirm",
-	"random": "Anything goes"
+	"random": "Anything goes",
+	"engine": "Layers that burn up, burn, and burn down. Each click is the next style: " +
+		ENGINE_STYLES.join( ", " )
 };
 
 const PARAM_TIPS = {
@@ -64,7 +84,24 @@ const PARAM_TIPS = {
 const SLIDER_HELP = "Drag, wheel for fine steps, right-click to reset";
 
 const state = {
-	"params": null,
+
+	// A sound is one to MAX_LAYERS layers that play together. params is the selected layer
+	"layers": [ null ],
+	"layer": 0,
+	get "params"() {
+		return this.layers[ this.layer ];
+	},
+	set "params"( value ) {
+		this.layers[ this.layer ] = value;
+	},
+
+	// A held sound plays while PLAY or Space is down, then releases
+	"hold": false,
+	"holding": false,
+
+	// Style of the last engine the ENGINE button made, so the next click makes the next style
+	"engineStyle": -1,
+	"releaseStart": -1,
 	"name": "",
 	"category": "",
 	"seed": null,
@@ -80,7 +117,7 @@ const state = {
 	"status": "",
 	"statusColor": C.status,
 	"statusTime": 0,
-	"soundId": null,
+	"soundIds": [],
 	"playStart": -1,
 	"playLength": 0,
 	"lastWheelPlay": 0,
@@ -108,19 +145,48 @@ function startAudio() {
 	$.sound( { "frequency": 440, "duration": 0.01, "volume": 0 } );
 }
 
-function play() {
+// Starts every layer, replacing the sound that is playing. Held, the layers play until they
+// are released; otherwise each plays once for its own length.
+function startLayers( held ) {
 	startAudio();
-	if( state.soundId !== null ) {
-		$.stopSound( state.soundId );
+	for( const soundId of state.soundIds ) {
+		$.stopSound( soundId );
 	}
+	state.soundIds = [];
+	state.holding = false;
+	state.releaseStart = -1;
 	try {
-		state.soundId = $.synth( toSynthOptions( state.params ) );
+		state.soundIds = state.layers.map( params => $.synth(
+			held ? toSynthOptions( params, true ) : toOneShotOptions( params, state.hold )
+		) );
 	} catch( err ) {
 		console.error( err );
 		setStatus( "SYNTH ERROR: " + ( err.code || err.message ), C.warn );
-		return;
+		return false;
 	}
 	markPlayhead();
+	return true;
+}
+
+// Plays the sound once, each layer for its own length
+function play() {
+	startLayers( false );
+}
+
+// Starts the sound held; it plays until releaseHeld()
+function startHeld() {
+	state.holding = startLayers( true );
+}
+
+function releaseHeld() {
+	if( !state.holding ) {
+		return;
+	}
+	state.holding = false;
+	state.releaseStart = performance.now();
+	for( const soundId of state.soundIds ) {
+		$.releaseSound( soundId );
+	}
 }
 
 function markPlayhead() {
@@ -145,7 +211,8 @@ function wheelPlay() {
 
 function stopAll() {
 	$.stopSound();
-	state.soundId = null;
+	state.soundIds = [];
+	state.holding = false;
 	state.playStart = -1;
 }
 
@@ -158,12 +225,17 @@ function historyEntry() {
 		"name": displayName(),
 		"category": state.category,
 		"seed": state.seed,
-		"params": state.params
+		"params": state.layers[ 0 ],
+		"layers": state.layers,
+		"hold": state.hold
 	};
 }
 
 function loadSound( sound ) {
-	state.params = sound.params;
+	state.layers = sound.layers;
+	state.layer = 0;
+	state.hold = sound.hold;
+	state.holding = false;
 	state.name = sound.name;
 	state.category = sound.category;
 	state.seed = sound.seed;
@@ -175,23 +247,50 @@ function loadSound( sound ) {
 }
 
 function generate( category, seed ) {
+	if( category === "engine" ) {
+		generateEngineSound( seed );
+		return;
+	}
 	if( seed === undefined ) {
 		seed = 1 + Math.floor( Math.random() * MAX_SEED );
 	}
-	const options = $.generateSfx( category, seed );
 	loadSound( {
 		"name": category + "-" + seed,
 		category,
 		seed,
-		"params": fromSynthOptions( options ),
-		"effects": null
+		"layers": [ fromSynthOptions( $.generateSfx( category, seed ) ) ],
+		"hold": false,
+
+		// An engine brings its own bus effects, so the sound after one starts without them
+		"effects": state.category === "engine" ? defaultEffects() : null
+	} );
+	library.addHistory( historyEntry() );
+	play();
+}
+
+// An engine's seed also picks its style. Without a seed, the next style is made.
+function generateEngineSound( seed ) {
+	const styles = ENGINE_STYLES.length;
+	if( seed === undefined ) {
+		state.engineStyle = ( state.engineStyle + 1 ) % styles;
+		seed = ( 1 + Math.floor( Math.random() * ( MAX_SEED / styles - 1 ) ) ) * styles + state.engineStyle;
+	}
+	const engine = generateEngine( seed );
+	state.engineStyle = ENGINE_STYLES.indexOf( engine.style );
+	loadSound( {
+		"name": engine.style + "-" + seed,
+		"category": "engine",
+		seed,
+		"layers": engine.layers,
+		"hold": true,
+		"effects": engine.effects
 	} );
 	library.addHistory( historyEntry() );
 	play();
 }
 
 function mutate() {
-	state.params = mutateParams( state.params, MUTATE_AMOUNT );
+	state.layers = state.layers.map( params => mutateParams( params, MUTATE_AMOUNT ) );
 	state.modified = true;
 	library.addHistory( historyEntry() );
 	play();
@@ -199,6 +298,67 @@ function mutate() {
 
 function setParam( key, value ) {
 	state.params = sanitizeParams( { ...state.params, [ key ]: value } );
+	state.modified = true;
+
+	// A sound that is being held follows its volume and cutoff sliders as they move
+	if( state.holding && ( key === "volume" || key === "filterCutoff" ) ) {
+		$.setSynth( { "soundId": state.soundIds[ state.layer ], [ key ]: state.params[ key ] } );
+	}
+}
+
+// A new layer starts as a copy of the selected one
+function addLayer() {
+	if( state.layers.length >= MAX_LAYERS ) {
+		return;
+	}
+	state.layers.splice( state.layer + 1, 0, { ...state.params } );
+	state.layer += 1;
+	state.modified = true;
+}
+
+function removeLayer() {
+	if( state.layers.length <= 1 ) {
+		return;
+	}
+	state.layers.splice( state.layer, 1 );
+	state.layer = Math.min( state.layer, state.layers.length - 1 );
+	state.modified = true;
+	autoPlay();
+}
+
+// The burn times, read from the first layer
+function burnValue( kind ) {
+	const p = state.layers[ 0 ];
+	if( kind === "up" ) {
+		return p.attackTime;
+	}
+	if( kind === "down" ) {
+		return p.releaseTime;
+	}
+	return Math.max( BURN_SPECS.active.min, p.duration - p.attackTime );
+}
+
+// Sets a burn time on every layer. The gate of a layer is its burn up plus its active time.
+// A layer with no sustain is a burst at the start, such as an ignition, and keeps its times.
+function setBurn( kind, value ) {
+	const active = burnValue( "active" );
+	state.layers = state.layers.map( p => {
+		if( p.sustainLevel === 0 ) {
+			return p;
+		}
+		const next = { ...p };
+		if( kind === "up" ) {
+			next.attackTime = value;
+			next.filterAttackTime = value;
+			next.duration = value + active;
+		} else if( kind === "down" ) {
+			next.releaseTime = value;
+			next.filterReleaseTime = value;
+		} else {
+			next.duration = p.attackTime + value;
+		}
+		return sanitizeParams( next );
+	} );
 	state.modified = true;
 }
 
@@ -262,7 +422,7 @@ async function askSeed() {
 	if( value === null ) {
 		return;
 	}
-	const category = CATEGORIES.indexOf( state.category ) === -1 ? "random" : state.category;
+	const category = GENERATORS.indexOf( state.category ) === -1 ? "random" : state.category;
 	generate( category, clamp( Math.floor( value ), 0, MAX_SEED ) );
 }
 
@@ -276,7 +436,9 @@ async function saveToLibrary() {
 		name,
 		"category": state.category,
 		"seed": state.seed,
-		"params": state.params,
+		"params": state.layers[ 0 ],
+		"layers": state.layers,
+		"hold": state.hold,
 		"effects": state.effects
 	} );
 	if( ok ) {
@@ -326,7 +488,9 @@ async function saveWav() {
 	setStatus( "RECORDING...", C.warn );
 	markPlayhead();
 	try {
-		const size = await exporter.exportWav( state.params, state.effects, state.name, state.trim );
+		const size = await exporter.exportWav(
+			state.layers, state.hold, state.effects, state.name, state.trim
+		);
 		if( size > 0 ) {
 			setStatus( "SAVED " + exporter.fileName( state.name ) + ".wav (" + Math.ceil( size / 1024 ) + " KB)" );
 		} else {
@@ -373,6 +537,42 @@ function paramRow( x, y, key, opts = {} ) {
 		dim
 	} );
 	gui.textRight( value === null ? "OFF" : formatValue( spec.fmt, value ), x + ROW_W, y + 1, dim ? C.dim : C.value );
+}
+
+// A slider that sets a burn time on every layer
+function burnRow( x, y, kind ) {
+	const spec = BURN_SPECS[ kind ];
+	const value = burnValue( kind );
+	gui.text( spec.label, x, y + 1, C.text );
+	gui.slider( "burn:" + kind, x + SLIDER_X, y, SLIDER_W, 9, specToT( spec, value ), {
+		"set": t => setBurn( kind, specFromT( spec, t ) ),
+		"step": dir => {
+			setBurn( kind, specFromT( spec, specToT( spec, burnValue( kind ) ) + dir * 0.02 ) );
+			wheelPlay();
+		},
+		"reset": () => {
+			setBurn( kind, spec.def );
+			autoPlay();
+		},
+		"release": autoPlay,
+		"tip": BURN_TIPS[ kind ] + ". " + SLIDER_HELP
+	} );
+	gui.textRight( formatValue( spec.fmt, value ), x + ROW_W, y + 1, C.value );
+}
+
+// The rate row of vibrato or tremolo. Its label is a button that switches the wobble between
+// steady and random.
+function rateRow( x, y, kind, dim ) {
+	const shapeKey = kind + "Shape";
+	const isRandom = state.params[ shapeKey ] === "random";
+	gui.button( "shape:" + kind, x, y - 1, 52, 11, isRandom ? "RANDOM" : "STEADY", () => {
+		setParam( shapeKey, isRandom ? "sine" : "random" );
+		autoPlay();
+	}, {
+		"on": isRandom,
+		"tip": "Steady is an even wave. Random wobbles unevenly, like an engine or a flame"
+	} );
+	paramRow( x, y, kind + "Rate", { dim, "noLabel": true } );
 }
 
 function cycleRow( x, y, id, label, valueLabel, onStep, tip ) {
@@ -425,44 +625,86 @@ function drawGenerate() {
 	const y = 30;
 	gui.panel( x, y, 150, 300, "GENERATE" );
 
-	const labels = CATEGORIES.map( ( category, i ) => ( i + 1 ) + "  " + category.toUpperCase() );
+	// The tenth generator takes the 0 key
+	const keys = GENERATORS.map( ( category, i ) => ( i + 1 ) % 10 );
+	const labels = GENERATORS.map( ( category, i ) => keys[ i ] + "  " + category.toUpperCase() );
 	const textX = columnTextX( labels, x + 8, 134 );
-	CATEGORIES.forEach( ( category, i ) => {
+	GENERATORS.forEach( ( category, i ) => {
 		gui.button(
-			"cat:" + category, x + 8, y + 18 + i * 19, 134, 16,
+			"cat:" + category, x + 8, y + 18 + i * 17, 134, 15,
 			labels[ i ],
 			() => generate( category ),
 			{
 				"on": state.category === category,
 				textX,
-				"tip": CATEGORY_TIPS[ category ] + ". Each click makes a new variant (key " + ( i + 1 ) + ")"
+				"tip": CATEGORY_TIPS[ category ] + ". Each click makes a new variant (key " + keys[ i ] + ")"
 			}
 		);
 	} );
 
-	const seedY = y + 196;
+	const seedY = y + 192;
 	gui.text( "SEED", x + 8, seedY + 4, C.dim );
 	gui.button( "seed", x + 38, seedY, 104, 14, state.seed === null ? "-" : String( state.seed ), askSeed, {
 		"textColor": C.value,
 		"tip": "The same category and seed always give the same sound. Click to type a seed"
 	} );
 
-	gui.button( "mutate", x + 8, seedY + 20, 134, 16, "MUTATE", mutate, {
+	gui.button( "mutate", x + 8, seedY + 18, 134, 16, "MUTATE", mutate, {
 		"tip": "Nudge every slider a little for a variation (key M)"
 	} );
-	gui.button( "play", x + 8, seedY + 42, 134, 30, "PLAY", play, {
-		"fill": C.play,
-		"fillHot": C.playHot,
-		"tip": "Play the sound (Space)"
-	} );
-	gui.button( "stop", x + 8, seedY + 78, 65, 16, "STOP", stopAll, {
+	if( state.hold ) {
+		gui.button( "play", x + 8, seedY + 38, 134, 20, "HOLD TO PLAY", null, {
+			"fill": C.play,
+			"fillHot": C.playHot,
+			"onDown": startHeld,
+			"onUp": releaseHeld,
+			"tip": "Hold to play the sound and let go to release it (Space)"
+		} );
+	} else {
+		gui.button( "play", x + 8, seedY + 38, 134, 20, "PLAY", play, {
+			"fill": C.play,
+			"fillHot": C.playHot,
+			"tip": "Play the sound (Space)"
+		} );
+	}
+	gui.button( "stop", x + 8, seedY + 62, 65, 16, "STOP", stopAll, {
 		"tip": "Stop every sound (key S)"
 	} );
-	gui.button( "auto", x + 77, seedY + 78, 65, 16, "AUTO", () => {
+	gui.button( "auto", x + 77, seedY + 62, 65, 16, "AUTO", () => {
 		state.autoPlay = !state.autoPlay;
 	}, {
 		"on": state.autoPlay,
 		"tip": "Play the sound after every change"
+	} );
+	gui.button( "hold", x + 8, seedY + 82, 134, 16, "HELD SOUND", () => {
+		releaseHeld();
+		state.hold = !state.hold;
+		state.modified = true;
+	}, {
+		"on": state.hold,
+		"tip": "A held sound plays for as long as PLAY or Space is down, then releases"
+	} );
+}
+
+// Layer tabs in the title bar of the parameters panel
+function drawLayerTabs( right, y ) {
+	const count = state.layers.length;
+	let x = right - 4 - 36 - 4 - 16 - 8 - count * 18;
+	gui.text( "LAYER", x - 36, y + 3, C.dim );
+	for( let i = 0; i < count; i++ ) {
+		gui.button( "layer:" + i, x, y + 1, 16, 11, String( i + 1 ), () => {
+			state.layer = i;
+		}, { "on": state.layer === i, "tip": "Edit layer " + ( i + 1 ) + ". The layers play together" } );
+		x += 18;
+	}
+	x += 8;
+	gui.button( "layer:add", x, y + 1, 16, 11, "+", addLayer, {
+		"disabled": count >= MAX_LAYERS,
+		"tip": "Add a layer, as a copy of this one. A sound has up to " + MAX_LAYERS + " layers"
+	} );
+	gui.button( "layer:del", x + 20, y + 1, 36, 11, "DEL", removeLayer, {
+		"disabled": count <= 1,
+		"tip": "Remove this layer"
 	} );
 }
 
@@ -470,6 +712,7 @@ function drawParams() {
 	const px = 164;
 	const py = 30;
 	gui.panel( px, py, 468, 300, "PARAMETERS" );
+	drawLayerTabs( px + 468, py );
 	const p = state.params;
 	const noise = isNoise( p );
 
@@ -497,7 +740,9 @@ function drawParams() {
 		setParam( "frequencyEnd", sweepOn ? null : Math.min( 5000, state.params.frequency * 2 ) );
 		autoPlay();
 	}, { "on": sweepOn, "tip": "Turn the pitch sweep on or off" } );
-	paramRow( x, y, "frequencyEnd", { "dim": noise || !sweepOn, "noLabel": true, "resetValue": null } );
+	paramRow( x, y, "frequencyEnd", {
+		"dim": noise || !sweepOn || state.hold, "noLabel": true, "resetValue": null
+	} );
 	y += ROW_H;
 
 	section( x, y, "ENVELOPE" );
@@ -536,14 +781,21 @@ function drawParams() {
 	y += ROW_H;
 	paramRow( x, y, "vibratoDepth", { "dim": noise } );
 	y += ROW_H;
-	paramRow( x, y, "vibratoRate", { "dim": noise || p.vibratoDepth === 0 } );
+	rateRow( x, y, "vibrato", noise || p.vibratoDepth === 0 );
 	y += ROW_H;
 
 	section( x, y, "TREMOLO" );
 	y += ROW_H;
 	paramRow( x, y, "tremoloDepth" );
 	y += ROW_H;
-	paramRow( x, y, "tremoloRate", { "dim": p.tremoloDepth === 0 } );
+	rateRow( x, y, "tremolo", p.tremoloDepth === 0 );
+	y += ROW_H;
+
+	section( x, y, "ALL LAYERS" );
+	for( const kind of [ "up", "active", "down" ] ) {
+		y += ROW_H;
+		burnRow( x, y, kind );
+	}
 }
 
 function drawEffects() {
@@ -631,15 +883,17 @@ function drawExport() {
 	}, { "on": state.trim, textX, "tip": "Cut silence from the start and end of the WAV file" } );
 	by += 24;
 	gui.button( "copy:synth", bx, by, bw, 16, "COPY $.synth()", () => {
-		copyText( "SYNTH CODE", exporter.synthCode( state.params, state.effects ) );
+		copyText( "SYNTH CODE", exporter.synthCode( state.layers, state.hold, state.effects ) );
 	}, { textX, "tip": "Copy a $.synth() call that plays this sound" } );
 	by += 20;
 	gui.button( "copy:preset", bx, by, bw, 16, "COPY PRESET", () => {
-		copyText( "PRESET CODE", exporter.presetCode( exporter.fileName( state.name ), state.params, state.effects ) );
+		copyText( "PRESET CODE", exporter.presetCode(
+			exporter.fileName( state.name ), state.layers, state.hold, state.effects
+		) );
 	}, { textX, "tip": "Copy $.definePreset() and $.sfx() calls for this sound" } );
 	by += 20;
 	gui.button( "copy:json", bx, by, bw, 16, "COPY JSON", () => {
-		copyText( "JSON", exporter.jsonText( state.params, state.effects ) );
+		copyText( "JSON", exporter.jsonText( state.layers, state.hold, state.effects ) );
 	}, { textX, "tip": "Copy the synth() options and bus effects as JSON" } );
 	by += 24;
 	gui.button( "save", bx, by, bw, 16, "SAVE TO LIBRARY", saveToLibrary, {
@@ -654,7 +908,17 @@ function drawDisplay( levels, peak ) {
 	gui.panel( x, y, 314, 300, "DISPLAY" );
 	let progress = -1;
 	if( state.playStart >= 0 && state.playLength > 0 ) {
-		progress = ( performance.now() - state.playStart ) / state.playLength;
+		const now = performance.now();
+		const gate = state.params.duration * 1000;
+		let elapsed = now - state.playStart;
+
+		// A held sound waits at the end of its gate, and moves on when it is released
+		if( state.holding ) {
+			elapsed = Math.min( elapsed, gate );
+		} else if( state.releaseStart >= 0 ) {
+			elapsed = Math.min( state.releaseStart - state.playStart, gate ) + now - state.releaseStart;
+		}
+		progress = elapsed / state.playLength;
 		if( progress > 1 ) {
 			state.playStart = -1;
 		}
@@ -753,7 +1017,7 @@ function drawFooter() {
 	const tip = age < STATUS_FRESH_MS ? "" : gui.hoverTip();
 	const msg = tip || ( age < STATUS_MS ? state.status : "" );
 	gui.text( gui.fit( msg.toUpperCase(), 600 ), 8, y + 4, tip ? C.text : state.statusColor );
-	gui.textRight( "SPACE PLAY  1-9 NEW  M MUTATE  S STOP", SCREEN_W - 8, y + 4, C.dim );
+	gui.textRight( "SPACE PLAY  0-9 NEW  M MUTATE  S STOP", SCREEN_W - 8, y + 4, C.dim );
 }
 
 // ---- Frame loop ----
@@ -800,9 +1064,16 @@ function frame() {
 
 function initKeys() {
 	$.onKey( "any", "down", startAudio );
-	$.onKey( "Space", "down", play );
-	CATEGORIES.forEach( ( category, i ) => {
-		$.onKey( "Digit" + ( i + 1 ), "down", () => generate( category ) );
+	$.onKey( "Space", "down", () => {
+		if( state.hold ) {
+			startHeld();
+		} else {
+			play();
+		}
+	} );
+	$.onKey( "Space", "up", releaseHeld );
+	GENERATORS.forEach( ( category, i ) => {
+		$.onKey( "Digit" + ( i + 1 ) % 10, "down", () => generate( category ) );
 	} );
 	$.onKey( "KeyM", "down", mutate );
 	$.onKey( "KeyS", "down", stopAll );
@@ -835,7 +1106,8 @@ async function main() {
 		"name": "coin",
 		"category": "coin",
 		"seed": 0,
-		"params": fromSynthOptions( $.generateSfx( "coin", 0 ) ),
+		"layers": [ fromSynthOptions( $.generateSfx( "coin", 0 ) ) ],
+		"hold": false,
 		"effects": null
 	} );
 	applyEffects( state.effects );

@@ -98,7 +98,11 @@ test( "synth options take sound() defaults and validate every parameter", () => 
 		[ { "duty": 1 }, "INVALID_DUTY" ],
 		[ { "arpeggio": [] }, "INVALID_ARPEGGIO" ],
 		[ { "arpeggio": [ 0, 60 ] }, "INVALID_ARPEGGIO" ],
-		[ { "arpeggioRate": 0 }, "INVALID_ARPEGGIO_RATE" ]
+		[ { "arpeggioRate": 0 }, "INVALID_ARPEGGIO_RATE" ],
+		[ { "hold": 1 }, "INVALID_HOLD" ],
+		[ { "hold": "yes" }, "INVALID_HOLD" ],
+		[ { "vibratoShape": "square" }, "INVALID_VIBRATO_SHAPE" ],
+		[ { "tremoloShape": true }, "INVALID_TREMOLO_SHAPE" ]
 	];
 	for( const [ options, code ] of cases ) {
 		assert.throws( () => g_synth.resolveSynthOptions( "synth", options ), { "code": code } );
@@ -107,6 +111,80 @@ test( "synth options take sound() defaults and validate every parameter", () => 
 		() => g_synth.resolveSynthOptions( "sfx", null ),
 		{ "code": "INVALID_OPTIONS", "message": /^sfx: / }
 	);
+} );
+
+test( "hold is a boolean that defaults to false and is the last positional parameter", () => {
+	assert.equal( g_synth.resolveSynthOptions( "synth", {} ).hold, false );
+	assert.equal( g_synth.resolveSynthOptions( "synth", { "hold": null } ).hold, false );
+	assert.equal( g_synth.resolveSynthOptions( "synth", { "hold": true } ).hold, true );
+	assert.deepEqual( g_synth.SYNTH_PARAMETERS.slice( -3 ), [
+		"hold", "vibratoShape", "tremoloShape"
+	] );
+
+	// A sound that is not held keeps its spec: the duration is the gate, with no extra insert
+	const spec = g_synth.resolveSynthSpec( "synth", { "hold": false, "duration": 0.4 } );
+	assert.equal( spec.duration, 0.4 );
+	assert.deepEqual( spec.inserts, [] );
+} );
+
+test( "LFO shapes default to sine, and random adds a shape to the insert params", () => {
+	const resolved = g_synth.resolveSynthOptions( "synth", {} );
+	assert.equal( resolved.vibratoShape, "sine" );
+	assert.equal( resolved.tremoloShape, "sine" );
+	assert.deepEqual( g_synth.LFO_SHAPES, [ "sine", "random" ] );
+
+	const spec = g_synth.resolveSynthSpec( "synth", {
+		"tremoloDepth": 0.5, "tremoloRate": 12, "tremoloShape": "random",
+		"vibratoDepth": 30, "vibratoShape": "sine"
+	} );
+	assert.deepEqual( spec.inserts.map( insert => insert.params ), [
+		{ "rate": 12, "depth": 0.5, "shape": "random" },
+		{ "rate": 5, "depth": 30 }
+	] );
+} );
+
+test( "the random LFO points are repeatable and spread over -1 to 1", () => {
+	const points = g_synth.randomPoints( 256 );
+	assert.deepEqual( g_synth.randomPoints( 256 ), points );
+	assert.ok( points.every( value => value >= -1 && value < 1 ) );
+	assert.ok( Math.min( ...points ) < -0.9 && Math.max( ...points ) > 0.9 );
+	const mean = points.reduce( ( sum, value ) => sum + value, 0 ) / points.length;
+	assert.ok( Math.abs( mean ) < 0.15, `mean ${mean}` );
+
+	// Neighbouring points are unrelated, unlike a steady wave
+	let product = 0;
+	for( let i = 1; i < points.length; i++ ) {
+		product += points[ i ] * points[ i - 1 ];
+	}
+	assert.ok( Math.abs( product / points.length ) < 0.1, `correlation ${product / points.length}` );
+} );
+
+test( "setSynth options are null when omitted and validated when given", () => {
+	assert.deepEqual( g_synth.SET_SYNTH_PARAMETERS, [
+		"soundId", "volume", "detune", "filterCutoff"
+	] );
+	assert.deepEqual(
+		g_synth.resolveSetSynth( { "soundId": "sound_1" } ),
+		{ "volume": null, "detune": null, "filterCutoff": null }
+	);
+	assert.deepEqual(
+		g_synth.resolveSetSynth( { "volume": 0, "detune": -1200, "filterCutoff": 24000 } ),
+		{ "volume": 0, "detune": -1200, "filterCutoff": 24000 }
+	);
+	const cases = [
+		[ { "volume": 1.5 }, "INVALID_VOLUME" ],
+		[ { "volume": -0.1 }, "INVALID_VOLUME" ],
+		[ { "volume": "loud" }, "INVALID_VOLUME" ],
+		[ { "detune": 4801 }, "INVALID_DETUNE" ],
+		[ { "detune": -4801 }, "INVALID_DETUNE" ],
+		[ { "filterCutoff": 0 }, "INVALID_FILTER_CUTOFF" ],
+		[ { "filterCutoff": 24001 }, "INVALID_FILTER_CUTOFF" ]
+	];
+	for( const [ options, code ] of cases ) {
+		assert.throws(
+			() => g_synth.resolveSetSynth( options ), { "code": code, "message": /^setSynth: / }
+		);
+	}
 } );
 
 test( "synth specs turn features into insert descriptors and pulse into wave tables", () => {

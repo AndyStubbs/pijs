@@ -111,11 +111,16 @@ function onUp( press ) {
 	}
 	const { widget, isRight } = m_active;
 	m_active = null;
-	if( isRight || press.cancelled ) {
+	if( isRight ) {
 		return;
 	}
+
+	// up also runs for a cancelled press, so something held by the press is always let go
 	if( widget.up ) {
 		widget.up( press );
+	}
+	if( press.cancelled ) {
+		return;
 	}
 	if( widget.click && contains( widget, press.x, press.y ) ) {
 		widget.click();
@@ -179,8 +184,9 @@ export function hline( x1, x2, y, color ) {
 
 // ---- Widgets ----
 
-// opts: on, disabled, tip, fill, fillHot, onRight, onWheel, textColor, textX (left-align the
-// label at this x instead of centering it)
+// opts: on, disabled, tip, fill, fillHot, onRight, onWheel, onDown and onUp (for a button that
+// acts while it is held), textColor, textX (left-align the label at this x instead of centering
+// it)
 export function button( id, x, y, w, h, label, onClick, opts = {} ) {
 	const hot = isHot( id ) && !opts.disabled;
 	const down = isActive( id );
@@ -210,6 +216,8 @@ export function button( id, x, y, w, h, label, onClick, opts = {} ) {
 		id, x, y, w, h,
 		"tip": opts.tip,
 		"click": opts.disabled ? null : onClick,
+		"down": opts.disabled ? null : opts.onDown,
+		"up": opts.onUp,
 		"rightClick": opts.onRight,
 		"wheel": opts.onWheel
 	} );

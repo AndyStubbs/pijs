@@ -649,9 +649,9 @@ nothing is registered and the name stays available.
 
 ### Sound Advanced Plugin
 
-`sound-advanced` adds `synth()`, `sfx()`, `definePreset()`, `generateSfx()`, `defineInstrument()`,
-`setBusEffect()`, `getSoundLevels()`, `startRecording()`, `stopRecording()`,
-`getRecordingState()`, `saveRecording()`, `onPlay()`, and `offPlay()`. It is in neither bundle:
+`sound-advanced` adds `synth()`, `releaseSound()`, `setSynth()`, `sfx()`, `definePreset()`,
+`generateSfx()`, `defineInstrument()`, `setBusEffect()`, `getSoundLevels()`, `startRecording()`,
+`stopRecording()`, `getRecordingState()`, `saveRecording()`, `onPlay()`, and `offPlay()`. It is in neither bundle:
 load `pijs-web/plugins/sound-advanced` after the Full bundle, or after Lite and the `sound`
 plugin. See its [README](../plugins/sound-advanced/README.md).
 

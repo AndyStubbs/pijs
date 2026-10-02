@@ -5,8 +5,14 @@ export const CATEGORIES = [
 	"coin", "laser", "jump", "hit", "explosion", "powerup", "blip", "select", "random"
 ];
 
-export const WAVES = [ "sine", "triangle", "square", "sawtooth", "pulse", "white", "pink" ];
+// "periodic" is the plugin's looping noise; its frequency sets how fast the pattern steps
+export const WAVES = [
+	"sine", "triangle", "square", "sawtooth", "pulse", "white", "pink", "periodic"
+];
 export const NOISE_WAVES = [ "white", "pink" ];
+
+// How vibrato and tremolo move: a steady wave, or a random wobble
+export const LFO_SHAPES = [ "sine", "random" ];
 
 // null means the filter is off
 export const FILTER_TYPES = [ null, "lowpass", "highpass", "bandpass", "notch" ];
@@ -41,8 +47,10 @@ export const SYNTH_DEFAULTS = {
 	"filterAmount": 0,
 	"vibratoRate": 5,
 	"vibratoDepth": 0,
+	"vibratoShape": "sine",
 	"tremoloRate": 5,
 	"tremoloDepth": 0,
+	"tremoloShape": "sine",
 	"duty": 0.5,
 	"arpeggio": null,
 	"arpeggioRate": 12
@@ -206,6 +214,11 @@ export function sanitizeParams( params ) {
 	if( FILTER_TYPES.indexOf( clean.filterType ) === -1 ) {
 		clean.filterType = null;
 	}
+	for( const key of [ "vibratoShape", "tremoloShape" ] ) {
+		if( LFO_SHAPES.indexOf( clean[ key ] ) === -1 ) {
+			clean[ key ] = "sine";
+		}
+	}
 	if( clean.arpeggio !== null ) {
 		const arp = Array.isArray( clean.arpeggio ) ?
 			clean.arpeggio.map( Number ).filter( Number.isFinite ).slice( 0, 32 )
@@ -217,8 +230,9 @@ export function sanitizeParams( params ) {
 }
 
 // Builds the smallest synth() options object that plays the parameter set: options equal to
-// synth()'s defaults, and options of switched-off features, are left out.
-export function toSynthOptions( params ) {
+// synth()'s defaults, and options of switched-off features, are left out. With hold, the
+// options are for a held sound, which ignores duration and frequencyEnd.
+export function toSynthOptions( params, hold = false ) {
 	const p = sanitizeParams( params );
 	const options = {};
 	const noise = isNoise( p );
@@ -244,10 +258,17 @@ export function toSynthOptions( params ) {
 	}
 	if( !noise ) {
 		add( "frequency" );
-		add( "frequencyEnd" );
+		if( !hold ) {
+			add( "frequencyEnd" );
+		}
 	}
-	// duration is always written, even at its default, so exported code shows the length
-	options.duration = roundSig( p.duration, 4 );
+	if( hold ) {
+		options.hold = true;
+	} else {
+
+		// duration is always written, even at its default, so exported code shows the length
+		options.duration = roundSig( p.duration, 4 );
+	}
 	for( const key of [ "volume", "attackTime", "decayTime", "sustainLevel", "releaseTime", "pan" ] ) {
 		add( key );
 	}
@@ -262,14 +283,27 @@ export function toSynthOptions( params ) {
 	if( p.vibratoDepth > 0 && !noise ) {
 		add( "vibratoDepth" );
 		add( "vibratoRate" );
+		add( "vibratoShape" );
 	}
 	if( p.tremoloDepth > 0 ) {
 		add( "tremoloDepth" );
 		add( "tremoloRate" );
+		add( "tremoloShape" );
 	}
 	if( p.arpeggio && !noise ) {
 		add( "arpeggio" );
 		add( "arpeggioRate" );
+	}
+	return options;
+}
+
+// Options that play a sound once, for its own length. A held sound is gated at its duration
+// and keeps the rest of its held options, so the preview and the WAV file match what it plays.
+export function toOneShotOptions( params, hold ) {
+	const options = toSynthOptions( params, hold );
+	if( hold ) {
+		delete options.hold;
+		options.duration = roundSig( sanitizeParams( params ).duration, 4 );
 	}
 	return options;
 }

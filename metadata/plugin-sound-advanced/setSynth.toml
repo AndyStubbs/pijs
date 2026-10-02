@@ -1,0 +1,58 @@
+title = "setSynth"
+category = "sound"
+isScreen = false
+plugin = "sound-advanced"
+summary = "Changes the volume, pitch, or filter cutoff of a held sound while it plays."
+description = """
+Requires the sound-advanced plugin. Changes a sound started with synth() or sfx() and hold set to true, for example to follow a throttle. Each value moves to its new setting in about 20 ms, without a click, so setSynth() can be called every frame. Values that are omitted or null stay as they are.
+
+volume replaces the sound's volume; the envelope, tremolo, and pan still apply to it. detune shifts the pitch by a number of cents from the sound's frequency, where 100 cents is a semitone and 1200 an octave; it has no effect on noise. filterCutoff replaces the filter's cutoff, which the filter envelope still moves, and does nothing on a sound that has no filter.
+
+IDs of sounds that are not held, that have finished, or that were never played are ignored. A released sound can still be changed until it ends.
+
+A volume outside 0-1 throws INVALID_VOLUME, a detune outside -4800 to 4800 throws INVALID_DETUNE, and a filterCutoff that is not above 0 and at most 24000 throws INVALID_FILTER_CUTOFF.
+"""
+example = """
+$.screen( "300x200" );
+$.print( "Hold the mouse button, then move up and down" );
+let tone = null;
+$.onMouse( "down", () => {
+	tone = $.synth( { "frequency": 110, "volume": 0.4, "oType": "sawtooth", "hold": true } );
+} );
+$.onMouse( "move", ( mouse ) => {
+	if( tone ) {
+		$.setSynth( { "soundId": tone, "detune": ( 100 - mouse.y ) * 12 } );
+	}
+} );
+$.onMouse( "up", () => {
+	$.releaseSound( tone );
+	tone = null;
+} );
+"""
+
+[[parameters]]
+name = "soundId"
+type = "string"
+description = "Sound ID of a held sound."
+
+[[parameters]]
+name = "volume"
+type = "number"
+description = "New volume, 0-1."
+optional = true
+
+[[parameters]]
+name = "detune"
+type = "number"
+description = "Pitch offset in cents from the sound's frequency, -4800 to 4800."
+optional = true
+
+[[parameters]]
+name = "filterCutoff"
+type = "number"
+description = "New filter cutoff in Hz, above 0 and at most 24000."
+optional = true
+
+[[returns]]
+type = "void"
+description = "This function does not return a value."

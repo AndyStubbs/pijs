@@ -10,7 +10,9 @@ oType also accepts "pulse", a square-like wave whose high part lasts for duty of
 
 The filter runs when filterType is set. filterCutoff sets its cutoff frequency and filterQ its resonance. The filter envelope moves the cutoff by filterAmount octaves at its peak, with its own attack, decay, sustain, and release, timed like the volume envelope from the start of the sound and the end of duration. A negative filterAmount lowers the cutoff instead.
 
-Vibrato runs when vibratoDepth is above 0 and swings the pitch by up to vibratoDepth cents at vibratoRate times per second. Tremolo runs when tremoloDepth is above 0 and dips the volume by up to tremoloDepth at tremoloRate times per second. An arpeggio cycles the pitch through semitone offsets, such as [0, 4, 7] for a major chord, at arpeggioRate steps per second until the sound ends.
+Vibrato runs when vibratoDepth is above 0 and swings the pitch by up to vibratoDepth cents at vibratoRate times per second. Tremolo runs when tremoloDepth is above 0 and dips the volume by up to tremoloDepth at tremoloRate times per second. vibratoShape and tremoloShape choose how each one moves: "sine" is a steady wave, and "random" moves to a new random value at the rate, within the same depth, which gives the uneven wobble of an engine, wind, or a flame. A shape that is neither throws INVALID_VIBRATO_SHAPE or INVALID_TREMOLO_SHAPE. An arpeggio cycles the pitch through semitone offsets, such as [0, 4, 7] for a major chord, at arpeggioRate steps per second until the sound ends.
+
+With hold set to true, the sound is held: after its attack and decay it stays at its sustain level until releaseSound() releases it, and setSynth() can change its volume, pitch, and filter cutoff while it plays. A held sound ignores duration and frequencyEnd. One that is never released releases by itself after 600 seconds. A hold that is not a boolean throws INVALID_HOLD.
 
 Sounds play on the sound-effects bus and follow the same delay, voice, and autoplay rules as sound(). The returned ID works with stopSound().
 """
@@ -191,6 +193,24 @@ type = "number"
 description = "Arpeggio steps per second, above 0 and at most 100 (default: 12)."
 optional = true
 
+[[parameters]]
+name = "hold"
+type = "boolean"
+description = "If true, the sound sustains until releaseSound() releases it (default: false)."
+optional = true
+
+[[parameters]]
+name = "vibratoShape"
+type = "string"
+description = "'sine' for a steady vibrato or 'random' for an uneven one (default: 'sine')."
+optional = true
+
+[[parameters]]
+name = "tremoloShape"
+type = "string"
+description = "'sine' for a steady tremolo or 'random' for an uneven one (default: 'sine')."
+optional = true
+
 [[returns]]
 type = "string"
-description = "Sound ID for use with stopSound()."
+description = "Sound ID for use with stopSound(), releaseSound(), and setSynth()."
