@@ -458,16 +458,16 @@ function drawLoad() {
 	if( ov.tab === "demos" ) {
 		text( x + 10, y + 36, "PICK ONE TO LOAD IT. TAKE IT APART AND REMIX IT!", COL.dim );
 		TEMPLATES.forEach( ( tpl, i ) => {
-			const by = top + i * 34;
-			if( ui.button( "demo" + i, x + 10, by, w - 20, 30, "" ) ) {
+			const by = top + i * 29;
+			if( ui.button( "demo" + i, x + 10, by, w - 20, 26, "" ) ) {
 				const song = tpl.build();
 				loadSong( song, tpl.name + " LOADED - UNDO GOES BACK TO YOUR SONG" );
 				if( tpl.id !== "blank" ) {
 					app.player.play( 0 );
 				}
 			}
-			text( x + 18, by + 6, tpl.name, PAL.yellow );
-			text( x + 18, by + 17, tpl.desc, COL.dim );
+			text( x + 18, by + 4, tpl.name, PAL.yellow );
+			text( x + 18, by + 15, tpl.desc, COL.dim );
 		} );
 		return;
 	}

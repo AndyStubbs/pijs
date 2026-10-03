@@ -534,6 +534,54 @@ export function genDrums( song, track, style = "rock", fills = true ) {
 // ---------------------------------------------------------------------------------------------
 // Demo songs
 
+const NOTE_SEMITONES = { "C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11 };
+
+// Notes written out by hand, for demos that play a known tune. Each word is a note name with
+// an optional # and its octave, or R for a rest, then a colon and the length in steps:
+// "E5:4 B4:2 R:2". The notes follow one another from the first step.
+function writtenNotes( text ) {
+	const notes = [];
+	let step = 0;
+	for( const word of text.trim().split( /\s+/ ) ) {
+		const [ name, length ] = word.split( ":" );
+		const steps = Number( length );
+		const m = /^([A-G])(#?)(\d)$/.exec( name );
+		if( m ) {
+			const pitch = ( Number( m[ 3 ] ) + 1 ) * 12 + NOTE_SEMITONES[ m[ 1 ] ] + ( m[ 2 ] ? 1 : 0 );
+			notes.push( note( step, pitch, steps ) );
+		}
+		step += steps;
+	}
+	return notes;
+}
+
+// Korobeiniki, a Russian folk song, in A minor: the melody, eight bars
+const FOLK_MELODY =
+	"E5:4 B4:2 C5:2 D5:4 C5:2 B4:2 A4:4 A4:2 C5:2 E5:4 D5:2 C5:2 " +
+	"B4:6 C5:2 D5:4 E5:4 C5:4 A4:4 A4:8 " +
+	"D5:6 F5:2 A5:4 G5:2 F5:2 E5:6 C5:2 E5:4 D5:2 C5:2 " +
+	"B4:4 B4:2 C5:2 D5:4 E5:4 C5:4 A4:4 A4:4 R:4 ";
+
+// Broken chords and a root-and-fifth bass for each chord of the tune
+const FOLK_HARP = {
+	"Am": "A4:2 C5:2 E5:2 C5:2 A4:2 C5:2 E5:2 C5:2 ",
+	"Em": "E4:2 G4:2 B4:2 G4:2 E4:2 G4:2 B4:2 G4:2 ",
+	"Dm": "D4:2 F4:2 A4:2 F4:2 D4:2 F4:2 A4:2 F4:2 ",
+	"C": "C4:2 E4:2 G4:2 E4:2 C4:2 E4:2 G4:2 E4:2 ",
+	"end": "A4:2 C5:2 E5:2 C5:2 A4:8 "
+};
+const FOLK_BASS = {
+	"Am": "A2:4 E3:4 A2:4 E3:4 ",
+	"Em": "E2:4 B2:4 E2:4 B2:4 ",
+	"Dm": "D2:4 A2:4 D2:4 A2:4 ",
+	"C": "C2:4 G2:4 C2:4 G2:4 ",
+	"end": "A2:4 E3:4 A2:8 "
+};
+
+// The chords of the eight bars, and their scale degrees in A minor
+const FOLK_CHORDS = [ "Am", "Am", "Em", "Am", "Dm", "C", "Em", "end" ];
+const FOLK_DEGREES = { "Am": 0, "Em": 4, "Dm": 3, "C": 2, "end": 0 };
+
 export const TEMPLATES = [
 	{
 		"id": "chip", "name": "CHIP QUEST", "desc": "Bouncy 8-bit adventure in C major",
@@ -604,6 +652,37 @@ export const TEMPLATES = [
 			const drums = drumTrack( "DRUMS", "electro", { "vol": 70 } );
 			genDrums( s, drums, "half" );
 			s.tracks = [ bells, harp, strings, bass, drums ];
+			return s;
+		}
+	},
+	{
+		"id": "folk", "name": "KOROBEINIKI", "desc": "Russian folk tune, chip style, in A minor",
+		build() {
+			const s = baseSong( { "title": "KOROBEINIKI", "tempo": 144, "key": 9, "scale": "minor", "bars": 16, "prog": 0,
+				"fx": { "reverb": 0.2, "echo": 0.1, "chorus": 0.15, "crush": 0 } } );
+
+			// The eight bars play twice
+			const twice = text => text + text;
+			s.chords = FOLK_CHORDS.concat( FOLK_CHORDS ).map( c => FOLK_DEGREES[ c ] );
+
+			// A softened chip lead: a gentler attack, a lowpass on the buzz, and a slower vibrato
+			const lead = melodyTrack( "LEAD", "chiplead", { "vol": 80 } );
+			lead.inst = { ...lead.inst, "attack": 0.004, "decay": 0.15, "sustain": 0.55, "release": 0.08,
+				"filter": "lowpass", "cutoff": 3500, "vibrato": 10, "vibratoRate": 5.5 };
+			lead.notes = writtenNotes( twice( FOLK_MELODY ) );
+
+			const harp = melodyTrack( "HARP", "harp", { "vol": 50, "pan": 25 } );
+			harp.notes = writtenNotes( twice( FOLK_CHORDS.map( c => FOLK_HARP[ c ] ).join( "" ) ) );
+			harp.view = 78;
+
+			// A bouncy bass: the triangle, cut short
+			const bass = melodyTrack( "BASS", "chipbass", { "vol": 75 } );
+			bass.inst = { ...bass.inst, "style": "staccato" };
+			bass.notes = writtenNotes( twice( FOLK_CHORDS.map( c => FOLK_BASS[ c ] ).join( "" ) ) );
+
+			const drums = drumTrack( "DRUMS", "chip", { "vol": 70 } );
+			genDrums( s, drums, "chip" );
+			s.tracks = [ lead, harp, bass, drums ];
 			return s;
 		}
 	},

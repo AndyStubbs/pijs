@@ -29,6 +29,7 @@ export const ARP_PATTERNS = [
 export const SYNTH_DEFAULTS = {
 	"frequency": 440,
 	"duration": 1,
+	"delay": 0,
 	"volume": 1,
 	"oType": "triangle",
 	"attackTime": 0,
@@ -69,6 +70,7 @@ export const SPECS = {
 	"decayTime": { "label": "DECAY", "min": 0, "max": 1, "curve": "sq", "def": 0, "fmt": "s" },
 	"sustainLevel": { "label": "SUSTAIN", "min": 0, "max": 1, "def": 1, "fmt": "pct" },
 	"releaseTime": { "label": "RELEASE", "min": 0, "max": 2, "curve": "sq", "def": 0.1, "fmt": "s" },
+	"delay": { "label": "DELAY", "min": 0, "max": 2, "curve": "sq", "def": 0, "fmt": "s" },
 	"arpeggioRate": { "label": "SPEED", "min": 1, "max": 60, "curve": "exp", "def": 12, "fmt": "rate" },
 	"filterCutoff": { "label": "CUTOFF", "min": 20, "max": 20000, "curve": "exp", "def": 1000, "fmt": "hz" },
 	"filterQ": { "label": "RESO", "min": 0, "max": 30, "curve": "sq", "def": 1, "fmt": "num" },
@@ -88,6 +90,7 @@ const LIMITS = {
 	"frequency": [ 1, 24000 ],
 	"frequencyEnd": [ 1, 24000 ],
 	"duration": [ 0.001, 30 ],
+	"delay": [ 0, 30 ],
 	"volume": [ 0, 1 ],
 	"attackTime": [ 0, 30 ],
 	"decayTime": [ 0, 30 ],
@@ -269,7 +272,9 @@ export function toSynthOptions( params, hold = false ) {
 		// duration is always written, even at its default, so exported code shows the length
 		options.duration = roundSig( p.duration, 4 );
 	}
-	for( const key of [ "volume", "attackTime", "decayTime", "sustainLevel", "releaseTime", "pan" ] ) {
+	for( const key of [
+		"delay", "volume", "attackTime", "decayTime", "sustainLevel", "releaseTime", "pan"
+	] ) {
 		add( key );
 	}
 	if( p.filterType ) {
@@ -313,6 +318,12 @@ export function soundLength( params ) {
 	return params.duration + params.releaseTime;
 }
 
+// Seconds from the moment a layer is played to the end of its release: its delay, then its
+// sound
+export function totalLength( params ) {
+	return params.delay + soundLength( params );
+}
+
 // Nudges every numeric slider by a small random amount, in slider space
 export function mutateParams( params, amount ) {
 	const next = { ...params };
@@ -320,8 +331,11 @@ export function mutateParams( params, amount ) {
 		if( next[ key ] === null ) {
 			continue;
 		}
-		// Leave switched-off features switched off
-		if( ( key === "vibratoDepth" || key === "tremoloDepth" ) && next[ key ] === 0 ) {
+		// Leave switched-off features switched off, and a layer that starts at once on time
+		if(
+			( key === "vibratoDepth" || key === "tremoloDepth" || key === "delay" ) &&
+			next[ key ] === 0
+		) {
 			continue;
 		}
 		const spec = SPECS[ key ];

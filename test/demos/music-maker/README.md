@@ -40,8 +40,8 @@ audio off until you click or press a key).
 - **Play live**: Z-M and Q-U play the selected track like a piano, and a note sounds for as
   long as its key is down.
 - **Save and load**: SAVE keeps the song in the browser under its title. LOAD lists your
-  saved songs and the demo songs (Chip Quest, Neon Drive, Rainy Lofi, Dungeon Crawl, or a
-  blank song) on two tabs, and imports a song file.
+  saved songs and the demo songs (Chip Quest, Neon Drive, Rainy Lofi, Dungeon Crawl,
+  Korobeiniki, or a blank song) on two tabs, and imports a song file.
 - **Songs as code**: CODE shows the song as Pi.js commands and EXPORT downloads it as a
   `.js` file. LOAD's IMPORT FILE, paste (Ctrl+V) or drag-and-drop reads it back. Hand
   edits to the `play()` strings are picked up. Any plain Pi.js `play()` code can be

@@ -1,6 +1,6 @@
 // Exports: WAV recording through the sound-advanced recorder, and Pi.js code or JSON text
 
-import { toSynthOptions, toOneShotOptions, soundLength } from "./params.js";
+import { toSynthOptions, toOneShotOptions, totalLength } from "./params.js";
 import { buildChain, effectTail } from "./effects.js";
 import { trimWav } from "./wav.js";
 
@@ -83,7 +83,7 @@ function wait( ms ) {
 // it. Each layer plays for its own length, so a held sound is recorded as one full burn.
 // Resolves with the saved file's size in bytes, or 0 when the recording was silent.
 export async function exportWav( layers, hold, effects, name, trim ) {
-	const seconds = Math.max( ...layers.map( soundLength ) ) + effectTail( effects ) + 0.25;
+	const seconds = Math.max( ...layers.map( totalLength ) ) + effectTail( effects ) + 0.25;
 	await $.startRecording( "sfx", Math.min( 600, Math.max( 1, Math.ceil( seconds + 0.5 ) ) ), 16 );
 	let blob;
 	try {

@@ -12,11 +12,15 @@ every sound is made with Pi.js `synth()`. The HTML page only loads the scripts.
 
 - **Generator**: one click per category (coin, laser, jump, hit, explosion, powerup, blip,
   select, random) using `generateSfx()`. Every sound has a seed, so you can get it back later.
-- **Engine**: a tenth generator the lab builds itself: layers of noise and tone that burn up,
-  burn, and burn down, with their own bus effects. Each click makes the next of four styles:
-  rocket, jet, retro, and hum.
+- **Two more pages of sounds**: compound sounds the lab builds itself from layers, each with
+  its own bus effects. Page 2 has engine, beam, alarm, UFO, charge, warp, wind, fire, and
+  thunder; page 3 has heartbeat, footstep, robot, bubbles, servo, airlock, level up, chime, and
+  countdown. The page buttons under the generators, or the `0` key, switch pages.
+- **Engine**: layers of noise and tone that burn up, burn, and burn down. Each click makes the
+  next of four styles: rocket, jet, retro, and hum.
 - **Layers**: a sound is up to four layers that play together. Each layer has its own full set
-  of parameters, and the burn sliders set the rise and fade times of every layer at once.
+  of parameters, including a delay before it starts, and the burn sliders set the rise and
+  fade times of every layer at once.
 - **Held sounds**: a held sound plays for as long as PLAY or Space is down and then releases,
   using `synth()` with `hold` and `releaseSound()`. Its volume and cutoff sliders change it
   while it plays, through `setSynth()`.
@@ -60,7 +64,8 @@ interact with the page.
 | Key         | Action                           |
 | ----------- | -------------------------------- |
 | `Space`     | Play the current sound (hold it down for a held sound) |
-| `1`–`9`, `0` | Generate a sound in a category  |
+| `1`–`9`     | Generate a sound from the page   |
+| `0`         | Next page of sounds              |
 | `M`         | Mutate                           |
 | `S`         | Stop all sounds                  |
 
@@ -92,6 +97,7 @@ js/gui.js           Small immediate-mode widget kit drawn and driven by Pi.js
 js/theme.js         Colors and layout constants
 js/params.js        Parameter schema, defaults, sanitizing, mutation
 js/engine.js        Engine sound generator
+js/recipes.js       Generators for the other compound sounds
 js/display.js       Envelope plot, oscilloscope, spectrum, and meter
 js/effects.js       Bus effect schema and chain building
 js/exporter.js      WAV recording and code/JSON export

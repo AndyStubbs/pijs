@@ -12,12 +12,15 @@ import { drawEnvelope, drawScope, drawSpectrum, drawMeter } from "./display.js";
 import * as exporter from "./exporter.js";
 import * as library from "./library.js";
 import { ENGINE_STYLES, generateEngine } from "./engine.js";
+import { RECIPE_NAMES, RECIPE_PAGES, generateRecipe } from "./recipes.js";
 
 const MAX_SEED = 4294967295;
 const MAX_LAYERS = 4;
 
-// The generator buttons: the generateSfx() categories, and the lab's own engine
-const GENERATORS = CATEGORIES.concat( [ "engine" ] );
+// The generator buttons, nine to a page: the generateSfx() categories, then the compound
+// sounds the lab builds itself
+const PAGES = [ CATEGORIES, [ "engine" ].concat( RECIPE_PAGES[ 0 ] ), RECIPE_PAGES[ 1 ] ];
+const GENERATORS = PAGES.flat();
 
 // Burn sliders, which set the envelope times of every layer at once
 const BURN_SPECS = {
@@ -53,7 +56,24 @@ const CATEGORY_TIPS = {
 	"select": "Menu confirm",
 	"random": "Anything goes",
 	"engine": "Layers that burn up, burn, and burn down. Each click is the next style: " +
-		ENGINE_STYLES.join( ", " )
+		ENGINE_STYLES.join( ", " ),
+	"beam": "A beam weapon that fires while it is held",
+	"alarm": "A siren: two tones that swap, or one that wails",
+	"ufo": "A warbling flying saucer",
+	"charge": "A power charging up: a swelling, rising sweep",
+	"warp": "A teleport: a rising shimmer and a whoosh",
+	"wind": "Gusting wind that blows while it is held",
+	"fire": "A flickering, crackling fire that burns while it is held",
+	"thunder": "A crack, then a rumble that rolls away",
+	"heartbeat": "One beat of a heart: lub, then dub",
+	"footstep": "A step: the heel, then the toe",
+	"robot": "A robot voice: a run of buzzing notes",
+	"bubbles": "A few bubbles rising, one after another",
+	"servo": "A motor that whirs while it is held",
+	"airlock": "An airlock: a whoosh and a hiss of air, then a thunk",
+	"levelup": "A level-up jingle: a quick run up a chord, then a held note",
+	"chime": "A bell-like chime that rings and fades",
+	"countdown": "Three beeps, then a higher one for go"
 };
 
 const PARAM_TIPS = {
@@ -67,6 +87,7 @@ const PARAM_TIPS = {
 	"decayTime": "Time from peak down to the sustain level",
 	"sustainLevel": "Level held until the gate ends",
 	"releaseTime": "Fade-out after the gate ends",
+	"delay": "Time before this layer starts, so layers can follow one another",
 	"arpeggioRate": "Arpeggio steps per second",
 	"filterCutoff": "Filter cutoff frequency",
 	"filterQ": "Filter resonance",
@@ -101,6 +122,10 @@ const state = {
 
 	// Style of the last engine the ENGINE button made, so the next click makes the next style
 	"engineStyle": -1,
+
+	// Page of generator buttons shown, and whether a generator set the bus effects
+	"page": 0,
+	"generatedEffects": false,
 	"releaseStart": -1,
 	"name": "",
 	"category": "",
@@ -189,8 +214,9 @@ function releaseHeld() {
 	}
 }
 
+// The playhead follows the selected layer, which starts after its delay
 function markPlayhead() {
-	state.playStart = performance.now();
+	state.playStart = performance.now() + state.params.delay * 1000;
 	state.playLength = soundLength( state.params ) * 1000;
 }
 
@@ -254,18 +280,27 @@ function generate( category, seed ) {
 	if( seed === undefined ) {
 		seed = 1 + Math.floor( Math.random() * MAX_SEED );
 	}
-	loadSound( {
-		"name": category + "-" + seed,
-		category,
-		seed,
-		"layers": [ fromSynthOptions( $.generateSfx( category, seed ) ) ],
-		"hold": false,
+	const sound = { "name": category + "-" + seed, category, seed };
+	if( RECIPE_NAMES.indexOf( category ) === -1 ) {
+		sound.layers = [ fromSynthOptions( $.generateSfx( category, seed ) ) ];
+		sound.hold = false;
 
-		// An engine brings its own bus effects, so the sound after one starts without them
-		"effects": state.category === "engine" ? defaultEffects() : null
-	} );
+		// A compound sound brings its own bus effects, so the sound after one starts without
+		// them
+		sound.effects = state.generatedEffects ? defaultEffects() : null;
+		state.generatedEffects = false;
+	} else {
+		Object.assign( sound, generateRecipe( category, seed ) );
+		sound.effects = sound.effects || defaultEffects();
+		state.generatedEffects = true;
+	}
+	loadSound( sound );
 	library.addHistory( historyEntry() );
 	play();
+}
+
+function turnPage( dir ) {
+	state.page = ( state.page + dir + PAGES.length ) % PAGES.length;
 }
 
 // An engine's seed also picks its style. Without a seed, the next style is made.
@@ -277,6 +312,7 @@ function generateEngineSound( seed ) {
 	}
 	const engine = generateEngine( seed );
 	state.engineStyle = ENGINE_STYLES.indexOf( engine.style );
+	state.generatedEffects = true;
 	loadSound( {
 		"name": engine.style + "-" + seed,
 		"category": "engine",
@@ -625,21 +661,30 @@ function drawGenerate() {
 	const y = 30;
 	gui.panel( x, y, 150, 300, "GENERATE" );
 
-	// The tenth generator takes the 0 key
-	const keys = GENERATORS.map( ( category, i ) => ( i + 1 ) % 10 );
-	const labels = GENERATORS.map( ( category, i ) => keys[ i ] + "  " + category.toUpperCase() );
-	const textX = columnTextX( labels, x + 8, 134 );
-	GENERATORS.forEach( ( category, i ) => {
+	// The label column is as wide as the widest label of any page, so it stays put
+	const label = ( category, i ) => ( i + 1 ) + "  " + category.toUpperCase();
+	const textX = columnTextX( PAGES.flatMap( page => page.map( label ) ), x + 8, 134 );
+	PAGES[ state.page ].forEach( ( category, i ) => {
 		gui.button(
 			"cat:" + category, x + 8, y + 18 + i * 17, 134, 15,
-			labels[ i ],
+			label( category, i ),
 			() => generate( category ),
 			{
 				"on": state.category === category,
 				textX,
-				"tip": CATEGORY_TIPS[ category ] + ". Each click makes a new variant (key " + keys[ i ] + ")"
+				"tip": CATEGORY_TIPS[ category ] + ". Each click makes a new variant (key " + ( i + 1 ) + ")"
 			}
 		);
+	} );
+
+	// Page buttons, in the tenth row
+	const pageY = y + 18 + 9 * 17;
+	gui.button( "page:prev", x + 8, pageY, 30, 15, "<", () => turnPage( -1 ), {
+		"tip": "Previous page of sounds (key 0 for the next page)"
+	} );
+	gui.textCenter( "PAGE " + ( state.page + 1 ) + "/" + PAGES.length, x + 75, pageY + 4, C.dim );
+	gui.button( "page:next", x + 112, pageY, 30, 15, ">", () => turnPage( 1 ), {
+		"tip": "Next page of sounds (key 0)"
 	} );
 
 	const seedY = y + 192;
@@ -747,7 +792,9 @@ function drawParams() {
 
 	section( x, y, "ENVELOPE" );
 	y += ROW_H;
-	for( const key of [ "duration", "attackTime", "decayTime", "sustainLevel", "releaseTime" ] ) {
+	for( const key of [
+		"duration", "attackTime", "decayTime", "sustainLevel", "releaseTime", "delay"
+	] ) {
 		paramRow( x, y, key );
 		y += ROW_H;
 	}
@@ -1017,7 +1064,7 @@ function drawFooter() {
 	const tip = age < STATUS_FRESH_MS ? "" : gui.hoverTip();
 	const msg = tip || ( age < STATUS_MS ? state.status : "" );
 	gui.text( gui.fit( msg.toUpperCase(), 600 ), 8, y + 4, tip ? C.text : state.statusColor );
-	gui.textRight( "SPACE PLAY  0-9 NEW  M MUTATE  S STOP", SCREEN_W - 8, y + 4, C.dim );
+	gui.textRight( "SPACE PLAY  1-9 NEW  0 PAGE  M MUTATE  S STOP", SCREEN_W - 8, y + 4, C.dim );
 }
 
 // ---- Frame loop ----
@@ -1072,9 +1119,15 @@ function initKeys() {
 		}
 	} );
 	$.onKey( "Space", "up", releaseHeld );
-	GENERATORS.forEach( ( category, i ) => {
-		$.onKey( "Digit" + ( i + 1 ) % 10, "down", () => generate( category ) );
-	} );
+	for( let i = 0; i < 9; i++ ) {
+		$.onKey( "Digit" + ( i + 1 ), "down", () => {
+			const category = PAGES[ state.page ][ i ];
+			if( category ) {
+				generate( category );
+			}
+		} );
+	}
+	$.onKey( "Digit0", "down", () => turnPage( 1 ) );
 	$.onKey( "KeyM", "down", mutate );
 	$.onKey( "KeyS", "down", stopAll );
 }

@@ -8,7 +8,7 @@ import { defaultEffects } from "./effects.js";
 export const ENGINE_STYLES = [ "rocket", "jet", "retro", "hum" ];
 
 // A small seeded random number generator (mulberry32)
-function random( seed ) {
+export function random( seed ) {
 	let state = seed >>> 0;
 	return () => {
 		state = ( state + 0x6D2B79F5 ) >>> 0;
@@ -22,7 +22,7 @@ function random( seed ) {
 // Envelope times shared by the layers of an engine: volume and filter rise over `up` and fall
 // over `down`. `close` is the share of `down` the filter takes to close, so a layer can lose
 // its brightness before it fades.
-function burn( up, down, close = 1 ) {
+export function burn( up, down, close = 1 ) {
 	return {
 		"duration": roundSig( up + 1, 3 ),
 		"attackTime": up,
@@ -33,7 +33,7 @@ function burn( up, down, close = 1 ) {
 }
 
 // Bus effects for an engine: the defaults with some effects switched on
-function effects( changes ) {
+export function effects( changes ) {
 	const state = defaultEffects();
 	for( const name of Object.keys( changes ) ) {
 		Object.assign( state[ name ], changes[ name ], { "on": true } );
