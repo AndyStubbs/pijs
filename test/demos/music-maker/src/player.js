@@ -13,6 +13,11 @@ const $ = window.pi;
 const LATENCY_GUESS = 0.12;
 const LOOP_SECONDS = 150;
 
+// Largest change in the measured gap between the page's clock and the audio clock, in
+// milliseconds, that is treated as jitter and smoothed. A bigger change means one clock
+// stood still, so the old gap is wrong.
+const CLOCK_JUMP_MS = 100;
+
 export class Player {
 	constructor() {
 		this.song = null;
@@ -204,7 +209,16 @@ export class Player {
 		const now = performance.now();
 		const audible = now - data.delay * 1000;
 		const pma = audible - data.time * 1000;
-		this.perfMinusAudio = this.perfMinusAudio === null ? pma : this.perfMinusAudio * 0.9 + pma * 0.1;
+
+		// The audio clock stands still while the browser suspends idle audio or the computer
+		// sleeps, and the page's clock may not, so the gap between them can jump by hours.
+		// Smoothing toward a jumped gap would take over a hundred notes, with the playhead far
+		// off and the loop restarting all the while, so take the new gap at once.
+		if( this.perfMinusAudio === null || Math.abs( pma - this.perfMinusAudio ) > CLOCK_JUMP_MS ) {
+			this.perfMinusAudio = pma;
+		} else {
+			this.perfMinusAudio = this.perfMinusAudio * 0.9 + pma * 0.1;
+		}
 		if( this.audioT0 === null ) {
 			// Usually this is the lane's first note, but late notes are skipped (for example
 			// in a background tab), so take the latest onset that is consistent with the

@@ -438,7 +438,7 @@ const RECIPES = {
 
 	// A level-up jingle: a quick run up a major chord on a pulse, then the octave held with a
 	// little vibrato, all doubled an octave down on a triangle
-	"levelup": range => {
+	"level up": range => {
 		const tone = range( 440, 660 );
 		const rate = range( 14, 18 );
 		const run = roundSig( 3 / rate - 0.005, 3 );

@@ -86,7 +86,7 @@ function playSong() {
 ```
 index.html        Page: loads Pi.js, the sound-advanced plugin and src/app.js
 src/              App modules
-tests/            Node tests for code generation, parsing and music helpers (node --test)
+tests/            Node tests for code generation, parsing, music helpers and playback timing
 ```
 
 Pi.js and its plugins are loaded from `build/` at the repository root.

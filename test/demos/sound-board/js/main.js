@@ -71,7 +71,7 @@ const CATEGORY_TIPS = {
 	"bubbles": "A few bubbles rising, one after another",
 	"servo": "A motor that whirs while it is held",
 	"airlock": "An airlock: a whoosh and a hiss of air, then a thunk",
-	"levelup": "A level-up jingle: a quick run up a chord, then a held note",
+	"level up": "A level-up jingle: a quick run up a chord, then a held note",
 	"chime": "A bell-like chime that rings and fades",
 	"countdown": "Three beeps, then a higher one for go"
 };
