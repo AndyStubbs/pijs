@@ -15,11 +15,11 @@ const SCRIPT = g_url.fileURLToPath( new URL( "../../scripts/ci-changes.js", impo
 
 test( "documentation, tooling, and demo files are skippable", () => {
 	for( const file of [
-		"README.md", "test/README.md", "docs/plans/v2.3/ROADMAP.md",
-		"docs/UPGRADE-V2.1.md", "docs/evidence/ci-2.3/runners.json", "docs/pijs-logo2.webp",
+		"README.md", "test/README.md", "docs/archive/plans/v2.3/ROADMAP.md",
+		"docs/UPGRADE-V2.1.md", "docs/archive/evidence/ci-2.3/runners.json", "docs/pijs-logo2.webp",
 		"tools/fonts/gen-fonts.js", ".vscode/settings.json", "LICENSE", "TODO.txt",
 		"AGENTS.md", ".cursorrules", ".gitignore", ".github/dependabot.yml",
-		"test/gamepad.html", "test/demos/galaga.html", "test/demos/sound_lab_01.html",
+		"test/demos/galaga.html", "test/demos/sound_lab_01.html",
 		"test/demos/cga_shader_demo_01.html", "test/demos/music-maker/src/app.js",
 		"test/demos/music-maker/tests/codegen.test.js", "test/demos/sound-board/index.html"
 	] ) {

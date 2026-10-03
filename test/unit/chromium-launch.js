@@ -6,7 +6,7 @@
  * instead of relying on Chromium's automatic fallback, which Chromium is removing:
  * `--disable-gpu` keeps a machine's GPU out of the path, and `--enable-unsafe-swiftshader`
  * keeps WebGL on SwiftShader. `--use-angle=swiftshader` is deliberately not used, because it
- * also changes how CSS-scaled canvases are composited (docs/plans/v2.3/AUDIT-CI.md, Q2).
+ * also changes how CSS-scaled canvases are composited (docs/archive/plans/v2.3/AUDIT-CI.md, Q2).
  *
  * The benchmark launches Chromium with its own flags and does not use these settings.
  */

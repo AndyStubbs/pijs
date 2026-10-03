@@ -51,7 +51,7 @@ The simplest way to use plugins in the browser:
 	<script src="build/pi.min.js"></script>
 	
 	<!-- Load plugin (auto-registers itself) -->
-	<script src="plugins/my-plugin/dist/my-plugin.min.js"></script>
+	<script src="build/plugins/my-plugin/my-plugin.min.js"></script>
 	
 	<script>
 		pi.ready( () => {
@@ -72,7 +72,7 @@ side effect. The ESM bundle auto-registers when `window.pi` already exists:
 
 ```javascript
 import pi from "./build/pi.esm.min.js";
-import "./plugins/my-plugin/dist/my-plugin.esm.min.js";
+import "./build/plugins/my-plugin/my-plugin.esm.min.js";
 
 pi.ready( () => {
 	pi.screen( { "aspect": "300x200" } );
@@ -85,7 +85,7 @@ case, import the plugin before Pi.js so its automatic registration cannot see `w
 register the initializer explicitly:
 
 ```javascript
-import myPlugin from "./plugins/my-plugin/dist/my-plugin.esm.min.js";
+import myPlugin from "./build/plugins/my-plugin/my-plugin.esm.min.js";
 import pi from "./build/pi.esm.min.js";
 
 pi.registerPlugin( {
@@ -392,7 +392,7 @@ This will:
 1. Build Pi.js in both formats (ESM and IIFE)
 2. Automatically discover and build all plugins in the `plugins/` directory
 3. Generate both minified and unminified versions
-4. Output plugin builds to `plugins/<plugin-name>/dist/`
+4. Output plugin builds to `build/plugins/<plugin-name>/`
 5. Skip any directories without an `index.js` file
 
 ### Build Individual Plugin

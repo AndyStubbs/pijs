@@ -10,7 +10,7 @@
  * Windows build has none, so its render tests skip). WebKit renders match Chromium's precision,
  * and every WebKit render test passes with Chromium's values, so WebKit uses them.
  * Calibration: Ubuntu 24.04 (WSL 2 and the ubuntu-24.04 runner) and the macos-15 runner,
- * WebKit 26 (docs/evidence/ci-2.3/linux-webkit-audio.json and runners.json).
+ * WebKit 26 (docs/archive/evidence/ci-2.3/linux-webkit-audio.json and runners.json).
  */
 
 const TOLERANCES = {

@@ -14,8 +14,7 @@ import * as g_url from "node:url";
 
 // Files outside docs/ that no test reads
 const SKIPPABLE_FILES = [
-	"LICENSE", "TODO.txt", "AGENTS.md", ".cursorrules", ".gitignore", ".github/dependabot.yml",
-	"test/gamepad.html"
+	"LICENSE", "TODO.txt", "AGENTS.md", ".cursorrules", ".gitignore", ".github/dependabot.yml"
 ];
 
 // Directories whose files no test reads. test/demos/ holds manual demos; a demo's own tests,
