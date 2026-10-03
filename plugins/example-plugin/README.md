@@ -104,7 +104,7 @@ pi.star( 300, 200, 100, 8 ); // 8-pointed star
 
 ```html
 <script src="../../build/pi.min.js"></script>
-<script src="dist/example-plugin.min.js"></script>
+<script src="../../build/plugins/example-plugin/example-plugin.min.js"></script>
 
 <script>
 	pi.ready( () => {
@@ -119,7 +119,7 @@ pi.star( 300, 200, 100, 8 ); // 8-pointed star
 
 ```javascript
 import pi from "../../build/pi.esm.min.js";
-import examplePlugin from "./plugins/example-plugin/dist/example-plugin.esm.min.js";
+import examplePlugin from "../../build/plugins/example-plugin/example-plugin.esm.min.js";
 
 pi.registerPlugin( {
 	"name": "example-plugin",
@@ -147,7 +147,7 @@ Or build just this plugin:
 node scripts/build-plugin.js example-plugin
 ```
 
-This creates (in the `dist/` directory):
+This creates (in `build/plugins/example-plugin/`):
 - `example-plugin.esm.js` (ES Module)
 - `example-plugin.esm.min.js` (ES Module, minified)
 - `example-plugin.js` (IIFE for browsers)

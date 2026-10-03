@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pointer Device Check</title>
+	<script src="../../../build/pi.js"></script>
+	<style>
+		body { font: 14px/1.4 monospace; margin: 16px; background: #111; color: #ddd;
+			min-height: 250vh; }
+		h1 { font-size: 18px; }
+		table { border-collapse: collapse; margin: 8px 0; }
+		td, th { border: 1px solid #444; padding: 2px 8px; text-align: left; }
+		button, input { font: inherit; margin: 4px 4px 4px 0; }
+		input { width: 4em; }
+		#host { width: 400px; max-width: 100%; height: 300px; margin: 16px 0; }
+		#host canvas { border: 8px solid #555; }
+		#log { white-space: pre-wrap; max-height: 240px; overflow: auto; border: 1px solid #444;
+			padding: 4px; }
+		.warn { color: #fc6; }
+	</style>
+</head>
+<body>
+<!--
+Device check for the pointer 2.3 audit (docs/archive/plans/v2.3/AUDIT-POINTER.md, Section 6) and its
+release pass (docs/archive/plans/v2.3/ROADMAP.md, Section 8.3).
+
+Compares what Pi.js reports with the browser's own pointer events for the behaviors that
+synthetic probes cannot settle: a release outside the canvas, non-primary buttons, stale
+clicks, state across a focus change or a hidden tab, the wheel, the context menu, coordinates
+on the canvas border, touches and system gestures, pinch zoom, and pens. Serve the repository
+with `npm run server`, then open
+http://localhost:8080/test/tests/html-manual/device_check_pointer_01.html
+-->
+<h1>Pointer device check (Pi.js 2.3)</h1>
+<p>Follow the steps in docs/archive/evidence/pointer-2.3/README.md, then click
+<b>Copy results</b> and paste them into the conversation. The green box is the click box.</p>
+<div>
+	<button id="reset">Reset counters</button>
+	<button id="menu">Enable context menu</button>
+	<button id="wheel">Remove wheel handler</button>
+	<button id="pinch">Enable pinch zoom</button>
+	<button id="copy">Copy results</button>
+</div>
+<div>
+	Step <input id="step" type="number" min="1" value="3">
+	<button id="record">Record step</button>
+</div>
+<div id="host"></div>
+<table id="state"></table>
+<div id="log"></div>
+<script>
+"use strict";
+
+const CLICK_BOX = { "x": 20, "y": 20, "width": 60, "height": 40 };
+const m_start = performance.now();
+const m_log = [];
+const m_results = {
+	"userAgent": navigator.userAgent,
+	"steps": {},
+	"focusSamples": [],
+	"contextMenuEnabled": false,
+	"wheelHandler": true,
+	"pinchZoom": false
+};
+let m_counts;
+let m_rawButtons = 0;
+
+resetCounts();
+
+function log( msg, isWarn ) {
+	const line = ( ( performance.now() - m_start ) / 1000 ).toFixed( 2 ) + "s " + msg;
+	m_log.push( line );
+	const div = document.createElement( "div" );
+	if( isWarn ) {
+		div.className = "warn";
+	}
+	div.textContent = line;
+	document.getElementById( "log" ).prepend( div );
+}
+
+function resetCounts() {
+	m_counts = {
+		"rawDown": 0, "rawUp": 0, "rawUpOutsideCanvas": 0, "rawWheel": 0,
+		"rawContextMenu": 0, "rawContextMenuPrevented": 0,
+		"rawTouchDown": 0, "rawTouchUp": 0, "rawTouchCancel": 0,
+		"piMouseDown": 0, "piMouseUp": 0, "piPressDown": 0, "piPressUp": 0,
+		"piTouchDown": 0, "piTouchUp": 0,
+		"piMouseCancelled": 0, "piTouchCancelled": 0, "piPressCancelled": 0,
+		"piClicks": 0, "piClickButtons": [], "piClickTypes": [],
+		"piWheel": 0, "piWheelDeltaY": 0,
+		"minX": null, "maxX": null, "minY": null, "maxY": null
+	};
+}
+
+// inMouse() and inPress() are null before the first event and while stopped
+function mouseSummary() {
+	const mouse = $.inMouse();
+	if( mouse === null ) {
+		return null;
+	}
+	return {
+		"x": mouse.x, "y": mouse.y, "buttons": mouse.buttons, "action": mouse.action,
+		"type": mouse.type
+	};
+}
+
+function pressButtons() {
+	const press = $.inPress();
+	if( press === null ) {
+		return null;
+	}
+	return press.buttons;
+}
+
+function snapshot( name ) {
+	const entry = {
+		"counts": JSON.parse( JSON.stringify( m_counts ) ),
+		"piMouse": mouseSummary(),
+		"piPressButtons": pressButtons(),
+		"piTouches": $.inTouch().length,
+		"rawButtons": m_rawButtons,
+		"scrollY": Math.round( window.scrollY ),
+		"canvasTouchAction": canvas.style.touchAction
+	};
+	m_results.steps[ name ] = entry;
+	log( "Recorded " + name + ": " + JSON.stringify( entry.counts ) );
+}
+
+const screen = $.screen( { "aspect": "200x150", "container": document.getElementById( "host" ) } );
+const canvas = screen.canvas();
+
+// Pi.js handlers
+$.onMouse( "down", () => { m_counts.piMouseDown += 1; } );
+$.onMouse( "up", data => {
+	m_counts.piMouseUp += 1;
+	if( data.cancelled ) {
+		m_counts.piMouseCancelled += 1;
+		log( "Pi mouse up cancelled", true );
+	}
+} );
+$.onMouse( "move", data => {
+	if( m_counts.minX === null ) {
+		m_counts.minX = data.x;
+		m_counts.maxX = data.x;
+		m_counts.minY = data.y;
+		m_counts.maxY = data.y;
+	}
+	m_counts.minX = Math.min( m_counts.minX, data.x );
+	m_counts.maxX = Math.max( m_counts.maxX, data.x );
+	m_counts.minY = Math.min( m_counts.minY, data.y );
+	m_counts.maxY = Math.max( m_counts.maxY, data.y );
+} );
+$.onTouch( "down", () => { m_counts.piTouchDown += 1; } );
+$.onTouch( "up", touches => {
+	m_counts.piTouchUp += 1;
+	if( touches[ 0 ].cancelled ) {
+		m_counts.piTouchCancelled += 1;
+		log( "Pi touch up cancelled", true );
+	}
+} );
+$.onPress( "down", () => { m_counts.piPressDown += 1; } );
+$.onPress( "up", data => {
+	m_counts.piPressUp += 1;
+	if( data.cancelled ) {
+		m_counts.piPressCancelled += 1;
+	}
+} );
+$.onClick( data => {
+	m_counts.piClicks += 1;
+	m_counts.piClickButtons.push( data.buttons );
+	m_counts.piClickTypes.push( data.type + " " + data.id );
+	log( "Pi click at " + data.x + "," + data.y + " by " + data.type + " " + data.id );
+}, false, CLICK_BOX );
+function onWheel( data ) {
+	m_counts.piWheel += 1;
+	m_counts.piWheelDeltaY += data.deltaY;
+}
+$.onWheel( onWheel );
+
+// Raw browser pointer events, observed on the window after Pi.js's canvas listeners. A press
+// captures its pointer, so a release outside the canvas still targets it; whether the release
+// is outside is decided by its position
+window.addEventListener( "pointerdown", e => {
+	if( e.pointerType === "touch" ) {
+		m_counts.rawTouchDown += 1;
+		return;
+	}
+	m_counts.rawDown += 1;
+	m_rawButtons = e.buttons;
+} );
+window.addEventListener( "pointerup", e => {
+	if( e.pointerType === "touch" ) {
+		m_counts.rawTouchUp += 1;
+		return;
+	}
+	m_counts.rawUp += 1;
+	m_rawButtons = e.buttons;
+	const rect = canvas.getBoundingClientRect();
+	if(
+		e.clientX < rect.left || e.clientX >= rect.right || e.clientY < rect.top ||
+		e.clientY >= rect.bottom
+	) {
+		m_counts.rawUpOutsideCanvas += 1;
+	}
+} );
+window.addEventListener( "pointercancel", e => {
+	if( e.pointerType === "touch" ) {
+		m_counts.rawTouchCancel += 1;
+	}
+} );
+window.addEventListener( "pointermove", e => {
+	if( e.pointerType !== "touch" ) {
+		m_rawButtons = e.buttons;
+	}
+} );
+window.addEventListener( "wheel", () => { m_counts.rawWheel += 1; }, { "passive": true } );
+window.addEventListener( "contextmenu", e => {
+	if( e.target !== canvas ) {
+		return;
+	}
+	m_counts.rawContextMenu += 1;
+	if( e.defaultPrevented ) {
+		m_counts.rawContextMenuPrevented += 1;
+	}
+} );
+
+function focusSample( name ) {
+	const mouse = mouseSummary();
+	const sample = {
+		"event": name,
+		"t": Math.round( performance.now() - m_start ),
+		"visibility": document.visibilityState,
+		"piMouse": mouse,
+		"rawButtons": m_rawButtons,
+		"piMouseUp": m_counts.piMouseUp,
+		"piPressUp": m_counts.piPressUp,
+		"piMouseCancelled": m_counts.piMouseCancelled
+	};
+	m_results.focusSamples.push( sample );
+	log( "Focus " + JSON.stringify( sample ), mouse !== null && mouse.buttons !== 0 );
+}
+window.addEventListener( "blur", () => focusSample( "blur" ) );
+window.addEventListener( "focus", () => focusSample( "focus" ) );
+document.addEventListener( "visibilitychange", () => focusSample( "visibility" ) );
+
+document.getElementById( "reset" ).addEventListener( "click", () => {
+	resetCounts();
+	log( "Counters reset" );
+} );
+document.getElementById( "menu" ).addEventListener( "click", e => {
+	m_results.contextMenuEnabled = !m_results.contextMenuEnabled;
+	$.setContextMenu( m_results.contextMenuEnabled );
+	if( m_results.contextMenuEnabled ) {
+		e.target.textContent = "Disable context menu";
+	} else {
+		e.target.textContent = "Enable context menu";
+	}
+	log( "Context menu enabled: " + m_results.contextMenuEnabled );
+} );
+document.getElementById( "wheel" ).addEventListener( "click", e => {
+	m_results.wheelHandler = !m_results.wheelHandler;
+	if( m_results.wheelHandler ) {
+		$.onWheel( onWheel );
+		e.target.textContent = "Remove wheel handler";
+	} else {
+		$.offWheel( onWheel );
+		e.target.textContent = "Add wheel handler";
+	}
+	log( "Wheel handler: " + m_results.wheelHandler );
+} );
+document.getElementById( "pinch" ).addEventListener( "click", e => {
+	m_results.pinchZoom = !m_results.pinchZoom;
+	$.setPinchZoom( m_results.pinchZoom );
+	if( m_results.pinchZoom ) {
+		e.target.textContent = "Disable pinch zoom";
+	} else {
+		e.target.textContent = "Enable pinch zoom";
+	}
+	log( "Pinch zoom enabled: " + m_results.pinchZoom );
+} );
+document.getElementById( "record" ).addEventListener( "click", () => {
+	const input = document.getElementById( "step" );
+	snapshot( "step" + input.value );
+	input.value = Number( input.value ) + 1;
+} );
+document.getElementById( "copy" ).addEventListener( "click", () => {
+	m_results.log = m_log;
+	const text = JSON.stringify( m_results, null, 1 );
+	navigator.clipboard.writeText( text ).then(
+		() => log( "Results copied" ),
+		() => {
+			log( "Clipboard unavailable; results printed to the console", true );
+			console.log( text );
+		}
+	);
+} );
+
+// Number keys record a step, so the mouse stays free; touch devices use Record step
+window.addEventListener( "keydown", e => {
+	if( e.key >= "1" && e.key <= "9" ) {
+		snapshot( "step" + e.key );
+	}
+} );
+
+function draw() {
+	$.cls();
+	$.setColor( 2 );
+	$.rect( CLICK_BOX );
+	const mouse = mouseSummary();
+	let mouseText = "none yet";
+	if( mouse !== null ) {
+		if( mouse.buttons ) {
+			$.setColor( 14 );
+		} else {
+			$.setColor( 7 );
+		}
+		$.circle( mouse.x, mouse.y, 3 );
+		mouseText = `x ${mouse.x} y ${mouse.y} buttons ${mouse.buttons} ${mouse.action} ` +
+			mouse.type;
+	}
+	$.setColor( 11 );
+	for( const touch of $.inTouch() ) {
+		$.circle( touch.x, touch.y, 6 );
+	}
+	const rows = [
+		[ "Pi inMouse", mouseText ],
+		[ "Pi inPress buttons", pressButtons() ],
+		[ "Browser buttons", m_rawButtons ],
+		[ "Down: browser / Pi mouse / Pi press",
+			`${m_counts.rawDown} / ${m_counts.piMouseDown} / ${m_counts.piPressDown}` ],
+		[ "Up: browser (outside canvas) / Pi mouse / Pi press",
+			`${m_counts.rawUp} (${m_counts.rawUpOutsideCanvas}) / ${m_counts.piMouseUp} / ` +
+			`${m_counts.piPressUp}` ],
+		[ "Cancelled releases: mouse / touch / press",
+			`${m_counts.piMouseCancelled} / ${m_counts.piTouchCancelled} / ` +
+			`${m_counts.piPressCancelled}` ],
+		[ "Touch: browser down / up / cancel", `${m_counts.rawTouchDown} / ` +
+			`${m_counts.rawTouchUp} / ${m_counts.rawTouchCancel}` ],
+		[ "Touch: Pi down / up / held", `${m_counts.piTouchDown} / ${m_counts.piTouchUp} / ` +
+			$.inTouch().length ],
+		[ "Pi clicks (buttons; by)", `${m_counts.piClicks} ` +
+			`(${m_counts.piClickButtons.join( "," )}; ${m_counts.piClickTypes.join( "," )})` ],
+		[ "Wheel: browser / Pi (deltaY sum)",
+			`${m_counts.rawWheel} / ${m_counts.piWheel} (${m_counts.piWheelDeltaY})` ],
+		[ "Page scrollY", Math.round( window.scrollY ) ],
+		[ "Canvas touch-action", canvas.style.touchAction || "(not set)" ],
+		[ "Context menu on canvas: events / prevented",
+			`${m_counts.rawContextMenu} / ${m_counts.rawContextMenuPrevented}` ],
+		[ "Move range x / y",
+			`${m_counts.minX}..${m_counts.maxX} / ${m_counts.minY}..${m_counts.maxY}` ]
+	];
+	document.getElementById( "state" ).innerHTML = rows.map(
+		r => `<tr><th>${r[ 0 ]}</th><td>${r[ 1 ]}</td></tr>`
+	).join( "" );
+	requestAnimationFrame( draw );
+}
+requestAnimationFrame( draw );
+log( "Ready. Screen 200x150; canvas border 8px." );
+</script>
+</body>
+</html>

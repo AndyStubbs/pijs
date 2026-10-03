@@ -1,4 +1,4 @@
-# Release verification (CI 3.6, docs/plans/v2.3/ROADMAP.md, decision G6).
+# Release verification (CI 3.6, docs/archive/plans/v2.3/ROADMAP.md, decision G6).
 #
 # On a v* tag, or run by hand: runs ci.yml's test matrix on all three platforms, then builds the
 # package on Linux, checks that its versions agree (R.6), packs it, and attaches the tarball to

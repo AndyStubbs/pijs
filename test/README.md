@@ -98,6 +98,10 @@ record the launch mode and the WebGL2 renderer.
 Safari itself is not tested because macOS hardware is unavailable. WebKit coverage comes from
 Playwright's WebKit build as described below; iOS-specific audio behavior needs a device.
 
+Physical keyboard, pointer, and gamepad checks use the `device_check_<plugin>_01.html` pages in
+`test/tests/html-manual/`, which show Pi.js state next to the browser's own events. The steps of
+each pass are in `docs/archive/evidence/<plugin>-2.3/README.md`.
+
 ### Audio engines
 
 The audio browser tests (`audio-*-browser.test.js`) run in Chromium, Firefox, and WebKit from
@@ -338,7 +342,6 @@ The `test` job differs from a local `npm test` in these settings:
 - Files in `test/demos/`, which are manual demos, except `shader_demo_01.html` to
   `shader_demo_07.html`, whose shaders `test/unit/alpha-composition-browser.test.js` compiles.
   A demo's own tests, such as `test/demos/music-maker/tests/`, are not part of `npm test`.
-- `test/gamepad.html`, a manual test page.
 - `LICENSE`, `TODO.txt`, `AGENTS.md`, `.cursorrules`, `.gitignore`, and
   `.github/dependabot.yml`.
 
@@ -347,7 +350,7 @@ runs always test. To check a local change, run
 `git diff --name-only main | node scripts/ci-changes.js`, which prints `true` when CI tests it.
 
 A pull request merges only with the `ci` check green; it summarizes `test` on Linux and Windows
-and `size`. The 2.3 ROADMAP (`docs/plans/v2.3/ROADMAP.md`, Section 1.4) has the full rules.
+and `size`. The 2.3 ROADMAP (`docs/archive/plans/v2.3/ROADMAP.md`, Section 1.4) has the full rules.
 When a job fails, its log names the failing test, and the job uploads `test/test-results/` and
 `test/playwright-report/` as an artifact kept 14 days:
 

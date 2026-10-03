@@ -19,8 +19,7 @@ const { createSourceContext } = g_browserSourceHarness;
 const ROOT = path.resolve( DIRNAME, "../.." );
 const GUIDE_FILES = [
 	"plugins/PLUGIN-QUICKSTART.md",
-	"plugins/PLUGIN-SYSTEM.md",
-	"plugins/PLUGIN-SYSTEM-SUMMARY.md"
+	"plugins/PLUGIN-SYSTEM.md"
 ];
 const MISSING_METHODS = [
 	"addScreenCommand", "addPixelCommand", "addAACommand", "addScreenInternalCommands"
