@@ -3,8 +3,8 @@
 Target release: Pi.js 2.3.0
 Last updated: 2026-10-03
 
-**Status: released.** Pi.js 2.3.0 was published on 2026-10-03, and this plan is archived. Its one
-open task, Sound 11.6, is carried in `TODO.txt`.
+**Status: released.** Pi.js 2.3.0 was published on 2026-10-03, and this plan is archived. Its last
+task, Sound 11.6, was done after the release.
 
 This is the definitive plan for 2.3. It holds every implementation step, the status of every
 workstream, and every cross-cutting decision. The audits record findings only, and the design
@@ -15,8 +15,8 @@ pull request.
 
 ### Next steps
 
-None in this plan. [Sound 11.6](#43-phase-11-test-upkeep), removing the Pi.js 2.2 sound
-references, is carried in `TODO.txt`.
+None. [Sound 11.6](#43-phase-11-test-upkeep), removing the Pi.js 2.2 sound references, was done
+after the release.
 
 The manual checks and their results are in the [release checklist](#83-manual-release-checks).
 
@@ -25,7 +25,7 @@ The manual checks and their results are in the [release checklist](#83-manual-re
 | Workstream | Section | Status | Next |
 | --- | --- | --- | --- |
 | Core | [3](#3-core) | Complete (Phases 1–3); Core 3 and C10 are written in R.2 | — |
-| Sound | [4](#4-sound) | Phases 0–10 done. Its listening checks are in Section 8.3; Phase 11: 11.1–11.5 done; 11.6 is carried in `TODO.txt` | — |
+| Sound | [4](#4-sound) | Phases 0–10 done. Its listening checks are in Section 8.3; Phase 11: 11.1–11.6 done | — |
 | Keyboard | [5](#5-keyboard) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Pointer | [6](#6-pointer) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
 | Gamepad | [7](#7-gamepad) | Complete (Phases 1–3). Its device checks are in Section 8.3 | — |
@@ -345,7 +345,7 @@ tests, so they can continue after 2.3.0 (Section 10). Done: 11.1–11.5
 
 | # | Task | Status |
 | --- | --- | --- |
-| 11.6 | Carried in `TODO.txt` since the release. After the 2.3.0 listening pass (R.7), remove the Pi.js 2.2 references: `test/scripts/record-sound-references.js` and its two tests, `test/media/sound-2.2/`, the `sound:references` script, and the 2.2 A/B controls in `sound_lab_01.html` and `sound_play_01.html` | — |
+| 11.6 | After the 2.3.0 listening pass (R.7), remove the Pi.js 2.2 references: `test/scripts/record-sound-references.js` and its two tests, `test/media/sound-2.2/`, the `sound:references` script, and the 2.2 A/B controls in `sound_lab_01.html` and `sound_play_01.html` | Done 2026-10-03 |
 
 ### 4.4 Compatibility summary
 

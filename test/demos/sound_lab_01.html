@@ -65,21 +65,6 @@
 			border: 1px solid #555;
 			border-radius: 4px;
 		}
-		table {
-			width: 100%;
-			border-collapse: collapse;
-		}
-		td, th {
-			padding: 8px 6px;
-			border-bottom: 1px solid #444;
-			text-align: left;
-			vertical-align: top;
-		}
-		canvas {
-			background: #1a1a1a;
-			width: 240px;
-			height: 48px;
-		}
 		.status {
 			color: #f99;
 		}
@@ -92,7 +77,7 @@
 <body>
 	<h1>Sound Lab</h1>
 	<p class="intro">
-		Shape a synthesized sound and compare it with recorded Pi.js 2.2 renders. Serve the
+		Shape a synthesized sound and listen to its envelope, level, pan, and sweeps. Serve the
 		repository with <code>npm run server</code> after <code>npm run build</code>, then open
 		this page from <code>http://localhost:8080/test/demos/sound_lab_01.html</code>.
 	</p>
@@ -104,10 +89,6 @@
 			<input id="masterVolume" type="range" min="0" max="1" step="0.01" value="0.75">
 			<output id="masterVolumeValue">0.75</output>
 		</div>
-		<p class="note">
-			Keep the master volume at 0.75 for level-matched A/B listening: the recorded
-			references include the 2.2 default master volume.
-		</p>
 		<label><input id="limiter" type="checkbox" checked> Output limiter</label>
 		<p class="note">
 			The limiter passes levels below its threshold unchanged. Turn it off to hear
@@ -150,27 +131,9 @@
 		</fieldset>
 	</div>
 
-	<div class="section">
-		<h2>A/B Against Pi.js 2.2</h2>
-		<p class="note">
-			A plays the recorded 2.2 render directly through an audio element, outside Pi.js.
-			B runs the equivalent 2.3 call live through this build: attack becomes attackTime,
-			the old duration plus attack becomes duration, and decay becomes releaseTime.
-		</p>
-		<p class="status" id="referenceStatus">Loading references...</p>
-		<table>
-			<thead>
-				<tr><th>Preset</th><th>Recorded 2.2 waveform</th><th>Listen</th></tr>
-			</thead>
-			<tbody id="referenceRows"></tbody>
-		</table>
-	</div>
-
 	<script src="../../build/pi.js"></script>
 	<script>
 		"use strict";
-
-		const REFERENCE_DIR = "../media/sound-2.2/";
 
 		const SYNTH_CONTROLS = [
 			{ "name": "frequency", "label": "Frequency", "min": 20, "max": 2000, "step": 1,
@@ -196,68 +159,6 @@
 			{ "name": "frequencyEnd", "label": "Freq. end", "min": 20, "max": 2000, "step": 1,
 				"value": 110 }
 		];
-
-		// 2.3 equivalents of the recorded 2.2 presets. Each call is a sound() options object,
-		// a sound() positional argument list, or a play() string.
-		const WAVE_TABLE = [
-			[ 0, 0.4, 0.4, 1, 1, 1, 0.3, 0.7, 0.6, 0.5, 0.9, 0.8 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
-		];
-		const PRESETS_2_3 = {
-			"default-triangle": [ [ 440 ] ],
-			"square-attack-decay": [ {
-				"frequency": 330, "duration": 0.45, "oType": "square", "attackTime": 0.05,
-				"releaseTime": 0.3
-			} ],
-			"sawtooth-bass": [ [ 110, 0.61, 0.8, "sawtooth", 0, 0.01, 0, 1, 0.2 ] ],
-			"sine-blip": [ {
-				"frequency": 1320, "duration": 0.05, "oType": "sine", "releaseTime": 0.05
-			} ],
-			"wave-table": [ [ 262, 0.5, 0.8, WAVE_TABLE, 0, 0, 0, 1, 0.1 ] ],
-			"play-phrase": [ "T176 L16 SQUARE O5 C E G C6 O5 G8 O6 C4" ],
-			"galaga-shoot": [
-				{ "frequency": 980, "duration": 0.047, "volume": 0.16, "oType": "square",
-					"attackTime": 0.002, "releaseTime": 0.042 },
-				{ "frequency": 1560, "duration": 0.031, "volume": 0.1, "oType": "triangle",
-					"attackTime": 0.001, "releaseTime": 0.028 },
-				{ "frequency": 420, "duration": 0.071, "volume": 0.08, "oType": "square",
-					"delay": 0.03, "attackTime": 0.001, "releaseTime": 0.065 }
-			],
-			"galaga-explosion": [
-				{ "frequency": 210, "duration": 0.124, "volume": 0.28, "oType": "sawtooth",
-					"attackTime": 0.004, "releaseTime": 0.11 },
-				{ "frequency": 92, "duration": 0.228, "volume": 0.3, "oType": "square",
-					"delay": 0.03, "attackTime": 0.008, "releaseTime": 0.2 },
-				{ "frequency": 48, "duration": 0.335, "volume": 0.22, "oType": "sawtooth",
-					"delay": 0.07, "attackTime": 0.015, "releaseTime": 0.3 },
-				{ "frequency": 36, "duration": 0.3, "volume": 0.14, "oType": "triangle",
-					"delay": 0.1, "attackTime": 0.02, "releaseTime": 0.26 }
-			]
-		};
-
-		function runPreset( calls ) {
-			for( const call of calls ) {
-				if( typeof call === "string" ) {
-					$.play( call );
-				} else if( Array.isArray( call ) ) {
-					$.sound( ...call );
-				} else {
-					$.sound( call );
-				}
-			}
-		}
-
-		function presetText( calls ) {
-			return calls.map( call => {
-				if( typeof call === "string" ) {
-					return "$.play( " + JSON.stringify( call ) + " );";
-				}
-				if( Array.isArray( call ) ) {
-					return "$.sound( " + call.map( arg => JSON.stringify( arg ) ).join( ", " ) + " );";
-				}
-				return "$.sound( " + JSON.stringify( call ) + " );";
-			} ).join( "\n" );
-		}
 
 		const OSCILLATOR_TYPES = [ "triangle", "sine", "square", "sawtooth", "white", "pink" ];
 
@@ -463,105 +364,9 @@
 			} );
 		}
 
-		// Reference A/B rows
-		function readWavSamples( buffer ) {
-			const view = new DataView( buffer );
-			const dataBytes = view.getUint32( 40, true );
-			const samples = new Float32Array( dataBytes / 2 );
-			for( let i = 0; i < samples.length; i++ ) {
-				samples[ i ] = view.getInt16( 44 + i * 2, true ) / 32767;
-			}
-			return samples;
-		}
-
-		function drawWaveform( canvas, samples ) {
-			const scale = window.devicePixelRatio || 1;
-			canvas.width = 240 * scale;
-			canvas.height = 48 * scale;
-			const context = canvas.getContext( "2d" );
-			const middle = canvas.height / 2;
-			const perColumn = Math.max( 1, Math.floor( samples.length / canvas.width ) );
-			context.fillStyle = "#6cf";
-			for( let x = 0; x < canvas.width; x++ ) {
-				let peak = 0;
-				const start = x * perColumn;
-				for( let i = start; i < start + perColumn && i < samples.length; i++ ) {
-					peak = Math.max( peak, Math.abs( samples[ i ] ) );
-				}
-				const height = Math.max( 1, peak * canvas.height );
-				context.fillRect( x, middle - height / 2, 1, height );
-			}
-		}
-
-		function addReferenceRow( preset ) {
-			const row = document.createElement( "tr" );
-			const nameCell = document.createElement( "td" );
-			const title = document.createElement( "strong" );
-			title.textContent = preset.label;
-			const code = document.createElement( "pre" );
-			code.textContent = preset.code;
-			nameCell.append( title, code );
-
-			const waveCell = document.createElement( "td" );
-			const canvas = document.createElement( "canvas" );
-			waveCell.appendChild( canvas );
-			fetch( REFERENCE_DIR + preset.file )
-				.then( response => response.arrayBuffer() )
-				.then( buffer => drawWaveform( canvas, readWavSamples( buffer ) ) );
-
-			const listenCell = document.createElement( "td" );
-			const playA = document.createElement( "button" );
-			playA.textContent = "A: 2.2";
-			const audio = new Audio( REFERENCE_DIR + preset.file );
-			playA.addEventListener( "click", () => {
-				audio.currentTime = 0;
-				audio.play();
-			} );
-			const playB = document.createElement( "button" );
-			playB.textContent = "B: this build";
-			const calls = PRESETS_2_3[ preset.name ];
-			const translated = document.createElement( "pre" );
-			translated.textContent = presetText( calls );
-			nameCell.appendChild( translated );
-			const run = () => runPreset( calls );
-			playB.addEventListener( "click", () => {
-				try {
-					run();
-				} catch( error ) {
-					playB.textContent = "B: " + error.code;
-				}
-			} );
-			listenCell.append( playA, playB );
-
-			row.append( nameCell, waveCell, listenCell );
-			document.getElementById( "referenceRows" ).appendChild( row );
-		}
-
-		function loadReferences() {
-			const status = document.getElementById( "referenceStatus" );
-			fetch( REFERENCE_DIR + "manifest.json" )
-				.then( response => {
-					if( !response.ok ) {
-						throw new Error( "HTTP " + response.status );
-					}
-					return response.json();
-				} )
-				.then( manifest => {
-					status.textContent = "";
-					for( const preset of manifest.presets ) {
-						addReferenceRow( preset );
-					}
-				} )
-				.catch( error => {
-					status.textContent = "Could not load the 2.2 references (" + error.message +
-						"). Serve the repository over HTTP.";
-				} );
-		}
-
 		buildSynthControls();
 		updateSynthCall();
 		setupMasterVolume();
-		loadReferences();
 		document.getElementById( "playSynth" ).addEventListener( "click", playSynth );
 		document.getElementById( "stopSynth" ).addEventListener( "click", stopAll );
 		document.getElementById( "panSweep" ).addEventListener( "click", panSweep );

@@ -616,3 +616,26 @@ without them.
   three tests above
 - **After**: 237 audio browser passes; 6 validation cases
 - **Pass Rate**: 100%
+
+## 2.3 Sound 11.6: 2.2 Sound References
+
+Date: 2026-10-03. Plan: `docs/archive/plans/v2.3/ROADMAP.md`, Section 4.3, task 11.6.
+
+### Summary
+The Pi.js 2.2 reference renders existed for the A/B checks of the 2.3.0 listening pass. With
+2.3.0 released, the references, the script that recorded them, and the A/B controls that played
+them are removed.
+
+### Removed Files
+- `test/media/sound-2.2/`: the manifest and eight WAV references.
+- `test/scripts/record-sound-references.js` and the `sound:references` script in `package.json`.
+- `test/scripts/record-sound-references.test.js` and
+  `test/scripts/record-sound-references-browser.test.js`. They checked only the references: the
+  manifest against the script's presets and the demos, and each preset's re-render against its
+  file. No library behavior loses coverage, so no covering test is named.
+
+### Changed Demos
+- `test/demos/sound_lab_01.html`: the "A/B Against Pi.js 2.2" section, its preset table and
+  waveform drawing, and the level-matching note are removed.
+- `test/demos/sound_play_01.html`: the "2.2 comparison" section is removed.
+- `test/README.md`: the listening check no longer has an A/B step.

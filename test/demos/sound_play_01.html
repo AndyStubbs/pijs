@@ -74,8 +74,7 @@
 	<p class="intro">
 		Listening demo for <code>play()</code> on the lookahead scheduler: PLAY envelopes,
 		articulation, pan, noise percussion, simultaneous tracks, and long songs. Use it to tune
-		the default envelope (MA 15, MD 20, MH 65, MR 20) by ear. Serve the repository over
-		HTTP (<code>npm run server</code>) so the 2.2 reference can load.
+		the default envelope (MA 15, MD 20, MH 65, MR 20) by ear.
 	</p>
 
 	<div class="section">
@@ -141,22 +140,12 @@
 			lookahead window, and it should keep playing without gaps.</p>
 	</div>
 
-	<div class="section">
-		<h2>2.2 comparison</h2>
-		<button id="reference">Play 2.2 reference</button>
-		<button id="current">Play in 2.3</button>
-		<p><code>T176 L16 SQUARE O5 C E G C6 O5 G8 O6 C4</code>. The 2.2 envelope fell to 80%
-			and paced notes shortened the beat; 2.3 keeps the beat and releases inside each
-			note.</p>
-	</div>
-
 	<pre id="log"></pre>
 
 	<script src="../../build/pi.js"></script>
 	<script>
 		"use strict";
 
-		const REFERENCE_SONG = "T176 L16 SQUARE O5 C E G C6 O5 G8 O6 C4";
 		const SONGS = {
 			"scale": [ "O4 L8 C D E F G A B > C4 < B A G F E D C4" ],
 			"dotted": [ "L4 C4. C8 C4.. C16 E4. E8 G2" ],
@@ -243,18 +232,6 @@
 				playStrings( SONGS[ button.dataset.song ], "" );
 			};
 		}
-
-		document.getElementById( "reference" ).onclick = () => {
-			stopAll();
-			const audio = new Audio( "../media/sound-2.2/play-phrase.wav" );
-			audio.play().catch( error => {
-				log( "reference: " + error.message );
-			} );
-		};
-		document.getElementById( "current" ).onclick = () => {
-			stopAll();
-			playStrings( [ REFERENCE_SONG ], "" );
-		};
 
 		document.addEventListener( "visibilitychange", () => {
 			if( document.hidden ) {

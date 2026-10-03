@@ -43,7 +43,6 @@ Afterwards, `git ls-files --eol` lists no `w/crlf` or `w/mixed` files.
 | `npm run size` | Minified and gzipped bundle, plugin, and differential sizes in `build/size-report.json` |
 | `npm run release:check [-- --tag=v<version>]` | After `npm run build`, checks that the tag, `package.json`, `releases/pi-latest/package.json`, and the bundle and declaration version banners agree (the release workflow runs it) |
 | `npm run size:diff -- <base.json> <head.json>` | Markdown table of the byte and gzip changes per bundle and plugin between two size reports, printed to stdout (CI's size job summary) |
-| `npm run sound:references` | Re-record the Pi.js 2.2 reference renders used by the sound demos |
 
 The complete workflow stops at the first failed stage. Node files run sequentially to limit competing
 browser and build processes. Each Node and browser test, and each test file as a whole, has a
@@ -222,16 +221,6 @@ envelope (`test/unit/audio-metrics.js`). Tolerances are recorded per metric and 
 `test/unit/audio-tolerances.js`; run the calibration test with `PI_AUDIO_CALIBRATE=1` to print
 the observed extremes before changing them.
 
-`npm run sound:references` re-records the Pi.js 2.2 reference renders in
-`test/media/sound-2.2/` from the frozen `releases/pi-2.2.0/pi.js` bundle. `sound_lab_01.html` and
-`sound_play_01.html` play them for the A/B checks in the release listening pass.
-`record-sound-references.test.js` checks the manifest against the script's presets and the
-demos, and `record-sound-references-browser.test.js` re-renders each preset in Chromium and
-compares it with its file, allowing one 16-bit step per sample: presets that mix several voices
-differ by that step between renders, because Chromium sums a node's inputs in an
-address-dependent order, and macOS Chromium differs from the Windows recording by it in
-hundreds of samples of a single voice.
-
 ### Listening check
 
 Each sound phase closes with a listening pass in every engine. Run `npm run build` and
@@ -246,15 +235,12 @@ Each sound phase closes with a listening pass in every engine. Run `npm run buil
 In each engine:
 
 1. Click the page once so the browser allows audio.
-2. With the master volume at 0.75, play A and B for every preset. B runs the 2.3 translation
-   of the recorded call. They should match in pitch, length, and level; the 2.3 envelope
-   curves differ slightly, and neither should click at onset or stop.
-3. Sweep the synth controls, including zero attack and release, pan, and the frequency sweep,
+2. Sweep the synth controls, including zero attack and release, pan, and the frequency sweep,
    and listen for clicks. Stop sounds while they play, and toggle the limiter before playing.
-4. Play white and pink noise, and use Pan sweep to check that the level stays even through
+3. Play white and pink noise, and use Pan sweep to check that the level stays even through
    center. Compare the noise pitch prototype (B) with the core call (A).
-5. Record the engine version and anything that differs between A and B.
-6. Open `test/demos/sound_samples_01.html`. Play one-shots, the scatter and burst, and a loop
+4. Record the engine version and any click, level, or pitch problem.
+5. Open `test/demos/sound_samples_01.html`. Play one-shots, the scatter and burst, and a loop
    while moving the volume, rate, and pan sliders; pause and resume it, including before a
    delayed start. Play and replace the stream, change its rate, and pause and resume it. Run
    the synth flood with loops playing, then fill 64 loops and confirm that new sounds are not
