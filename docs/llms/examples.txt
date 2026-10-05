@@ -1,6 +1,13 @@
 # Pi.js 2.3.0 Code Examples
 
 This file contains example code snippets demonstrating how to use Pi.js for various tasks.
+Each example assumes the Full bundle is loaded in a browser. Container IDs and media URLs refer
+to elements and assets supplied by the application. Serve audio examples over HTTP(S); playback
+requires a user gesture. For ES modules, use the named `$` import once before the examples:
+
+```javascript
+import { $ } from "pijs-web";
+```
 
 # QUICK REFERENCE INDEX
 - Task: Hello World -> see section ### Hello World
@@ -10,7 +17,7 @@ This file contains example code snippets demonstrating how to use Pi.js for vari
 - Task: Offscreen composition -> see section ### Parented Offscreen Screen
 - Task: Gamepad controls -> see section ### Gamepad Input
 - Task: Music and sound files -> see section ### Audio Files
-- Task: Pong Game -> see section ### Pong Game
+- Task: Pong scene -> see section ### Pong Scene
 - Task: Mary Had A Little Lamb -> see section ### Mary Had A Little Lamb
 - Task: Retro City Intro -> see section ### Retro City
 
@@ -302,7 +309,7 @@ $.ready( function() {
 	$.setFont( font );
 	$.setColor( 15 );
 	$.print( "Custom Font Text" );
-	
+
 	// Change font size
 	$.setPrintSize( 2, 2 );
 	$.print( "Larger Font" );
@@ -378,14 +385,14 @@ $.setContainerBgColor( "#000000" );  // Black container background
 ```javascript
 $.ready( function() {
 	$.screen( "640x480" );
-	
+
 	let x = 320;
 	let y = 240;
-	
+
 	// Polling method
 	function gameLoop() {
 		$.cls();
-		
+
 		if( $.inKey( "ArrowLeft" ) ) {
 			x -= 5;
 		}
@@ -398,10 +405,10 @@ $.ready( function() {
 		if( $.inKey( "ArrowDown" ) ) {
 			y += 5;
 		}
-		
+
 		$.setColor( 15 );
 		$.circle( x, y, 20 );
-		
+
 		requestAnimationFrame( gameLoop );
 	}
 	gameLoop();
@@ -414,26 +421,26 @@ $.ready( function() {
 	$.screen( "640x480" );
 	$.setColor( 15 );
 	$.print( "Press arrow keys to move" );
-	
+
 	let x = 320;
 	let y = 240;
-	
+
 	$.onKey( "ArrowLeft", "down", function() {
 		x -= 10;
 	} );
-	
+
 	$.onKey( "ArrowRight", "down", function() {
 		x += 10;
 	} );
-	
+
 	$.onKey( "ArrowUp", "down", function() {
 		y -= 10;
 	} );
-	
+
 	$.onKey( "ArrowDown", "down", function() {
 		y += 10;
 	} );
-	
+
 	function draw() {
 		$.cls();
 		$.setColor( 15 );
@@ -448,17 +455,17 @@ $.ready( function() {
 ```javascript
 $.ready( function() {
 	$.screen( "640x480" );
-	
+
 	$.setColor( 15 );
 	$.print( "Click and drag to draw" );
-	
+
 	$.onMouse( "down", function( e ) {
 		if( e.buttons & 1 ) {
 			$.setColor( 15 );
 			$.pset( e.x, e.y );
 		}
 	} );
-	
+
 	$.onMouse( "move", function( e ) {
 		if( e.buttons & 1 ) {
 			$.setColor( 15 );
@@ -472,13 +479,13 @@ $.ready( function() {
 ```javascript
 $.ready( function() {
 	$.screen( "640x480" );
-	
+
 	$.onTouch( "down", function( touches ) {
 		for( const touch of touches ) {
 			$.circle( touch.x, touch.y, 10, 15 );
 		}
 	} );
-	
+
 	$.onTouch( "move", function( touches ) {
 		for( const touch of touches ) {
 			$.circle( touch.x, touch.y, 10, 15 );
@@ -491,13 +498,13 @@ $.ready( function() {
 ```javascript
 $.ready( function() {
 	$.screen( "640x480" );
-	
+
 	// Works with both mouse and touch
 	$.onPress( "down", function( e ) {
 		$.setColor( 15 );
 		$.circle( e.x, e.y, 20 );
 	} );
-	
+
 	$.onPress( "move", function( e ) {
 		if( e.buttons > 0 ) {
 			$.setColor( 15 );
@@ -567,15 +574,15 @@ $.ready( function() {
 $.ready( async function() {
 	$.screen( "640x480" );
 	$.setColor( 15 );
-	
+
 	// Text input
 	const name = await $.input( "Enter your name: " );
 	$.print( "Hello, " + name + "!" );
-	
+
 	// Number input
 	const age = await $.input( "Enter your age: ", null, null, true, false, true );
 	$.print( "You are " + age + " years old." );
-	
+
 	// Integer input
 	const score = await $.input( "Enter score: ", null, null, true, true, false );
 	$.print( "Score: " + score );
@@ -588,75 +595,87 @@ $.ready( async function() {
 ```javascript
 $.ready( function() {
 	$.screen( "640x480" );
-	
-	// Play a beep
-	$.sound( { "frequency": 440, "duration": 0.5 } );
-	
-	// Play different waveforms
-	$.sound( { "frequency": 440, "duration": 0.5, "oType": "sine" } );
-	$.sound( { "frequency": 440, "duration": 0.5, "oType": "square" } );
-	$.sound( { "frequency": 440, "duration": 0.5, "oType": "triangle" } );
-	$.sound( { "frequency": 440, "duration": 0.5, "oType": "sawtooth" } );
-	
-	// With an ADSR envelope: attack, decay to the sustain level, then release
-	$.sound( {
-		"frequency": 440,
-		"duration": 1.0,
-		"attackTime": 0.2,
-		"decayTime": 0.3,
-		"sustainLevel": 0.6,
-		"releaseTime": 0.4
-	} );
 
-	// A sweep from 220 Hz to 880 Hz, panned left
-	$.sound( { "frequency": 220, "frequencyEnd": 880, "duration": 0.3, "pan": -0.8 } );
+	$.print( "Click to hear synthesized sounds" );
 
-	// White or pink noise
-	$.sound( { "duration": 0.2, "oType": "white", "releaseTime": 0.15 } );
+	$.onPress( "down", function() {
+
+		// Play a beep
+		$.sound( { "frequency": 440, "duration": 0.5 } );
+
+		// Delay each waveform so it can be heard separately.
+		$.sound( { "frequency": 440, "duration": 0.5, "oType": "sine", "delay": 0.7 } );
+		$.sound( { "frequency": 440, "duration": 0.5, "oType": "square", "delay": 1.4 } );
+		$.sound( { "frequency": 440, "duration": 0.5, "oType": "triangle", "delay": 2.1 } );
+		$.sound( { "frequency": 440, "duration": 0.5, "oType": "sawtooth", "delay": 2.8 } );
+
+		// With an ADSR envelope: attack, decay to the sustain level, then release
+		$.sound( {
+			"frequency": 440,
+			"duration": 1.0,
+			"delay": 3.5,
+			"attackTime": 0.2,
+			"decayTime": 0.3,
+			"sustainLevel": 0.6,
+			"releaseTime": 0.4
+		} );
+
+		// A sweep from 220 Hz to 880 Hz, panned left
+		$.sound( {
+			"frequency": 220, "frequencyEnd": 880, "duration": 0.3,
+			"pan": -0.8, "delay": 5
+		} );
+
+		// White or pink noise
+		$.sound( { "duration": 0.2, "oType": "white", "releaseTime": 0.15, "delay": 5.7 } );
+	}, true );
 } );
 ```
 
 ### Music (PLAY Command)
+
+Click to play the next notation sample. A comma starts another track at the previous track's
+last command, so single notes separated by commas form a chord.
+
 ```javascript
-$.ready( function() {
-	$.screen( "640x480" );
-	
-	// Simple scale
-	$.play( "C D E F G A B C5" );
-	
-	// With tempo and length
-	$.play( "T120 L4 C D E F G A B C5" );
-	
-	// Mary Had a Little Lamb
-	$.play( "L4 E D C D E E E2 D D D2 E G G2 E D C D E E E E D D E D C2" );
-	
-	// Multiple tracks (chords)
-	$.play( "C2, E2, G2" );  // C major chord
-	
-	// With octaves
-	$.play( "O3 C D E F G A B O4 C" );
-	
-	// Different styles
-	$.play( "MS C D E F G" );  // Staccato
-	$.play( "ML C D E F G" );  // Legato
-	$.play( "MN C D E F G" );  // Normal
-	
-	// Different waveforms
-	$.play( "SINE C D E F G" );
-	$.play( "SQUARE C D E F G" );
+$.screen( "640x480" );
+$.print( "Click to play the next music sample" );
+
+const songs = [
+	"T120 O4 L4 C D E F G A B >C",
+	"L4 E D C D E E E2 D D D2 E G G2 E D C D E E E E D D E D C2",
+	"C2, E2, G2",
+	"O3 C D E F G A B O4 C",
+	"MS C D E F G",
+	"ML C D E F G",
+	"MN C D E F G",
+	"WS C D E F G",
+	"WQ C D E F G"
+];
+let nextSong = 0;
+let track = null;
+
+$.onPress( "down", function() {
+	if( track !== null ) {
+		$.stopPlay( track );
+	}
+	track = $.play( songs[ nextSong ] );
+	nextSong = ( nextSong + 1 ) % songs.length;
 } );
 ```
 
 ### Volume Control
 ```javascript
-$.setVolume( 1.0 );  // 100%
-$.sound( { "frequency": 440, "duration": 0.5 } );
+$.screen( "320x200" );
+$.print( "Click to cycle the master volume" );
 
-$.setVolume( 0.5 );  // 50%
-$.sound( { "frequency": 440, "duration": 0.5 } );
-
-$.setVolume( 0.25 );  // 25%
-$.sound( { "frequency": 440, "duration": 0.5 } );
+const volumes = [ 1, 0.5, 0.25 ];
+let nextVolume = 0;
+$.onPress( "down", function() {
+	$.setVolume( volumes[ nextVolume ] );
+	$.sound( { "frequency": 440, "duration": 0.5 } );
+	nextVolume = ( nextVolume + 1 ) % volumes.length;
+} );
 ```
 
 ### Audio Files
@@ -696,10 +715,10 @@ $.loadImage( "sprite.png", "mySprite" );
 
 $.ready( function() {
 	$.screen( "640x480" );
-	
+
 	// Draw image
 	$.drawImage( "mySprite", 100, 100 );
-	
+
 	// Draw with transformations
 	$.drawImage( "mySprite", 200, 200, "#FFFFFFCC", 0.5, 0.5, 2, 2, 45 );
 	// x, y, color, anchorX, anchorY, scaleX, scaleY, angle in degrees
@@ -713,9 +732,9 @@ $.loadSpritesheet( "sprites.png", "player", 32, 32, 1 );
 
 $.ready( function() {
 	$.screen( "640x480" );
-	
+
 	let frame = 0;
-	
+
 	// Animate sprite
 	function animate() {
 		$.cls();
@@ -749,22 +768,22 @@ $.removeImage( captured );
 ```javascript
 $.ready( function() {
 	$.screen( "640x480" );
-	
+
 	let angle = 0;
-	
+
 	function animate() {
 		$.cls();
-		
+
 		angle += 0.1;
 		const x = 320 + Math.cos( angle ) * 100;
 		const y = 240 + Math.sin( angle ) * 100;
-		
+
 		$.setColor( 15 );
 		$.circle( x, y, 20 );
-		
+
 		requestAnimationFrame( animate );
 	}
-	
+
 	animate();
 } );
 ```
@@ -773,7 +792,7 @@ $.ready( function() {
 ```javascript
 $.ready( function() {
 	$.screen( "640x480" );
-	
+
 	const objects = [];
 	for( let i = 0; i < 10; i++ ) {
 		objects.push( {
@@ -784,17 +803,17 @@ $.ready( function() {
 			"color": Math.floor( Math.random() * 16 )
 		} );
 	}
-	
+
 	function animate() {
 		$.cls();
-		
+
 		for( let i = 0; i < objects.length; i++ ) {
 			const obj = objects[ i ];
-			
+
 			// Update position
 			obj.x += obj.vx;
 			obj.y += obj.vy;
-			
+
 			// Bounce off walls
 			if( obj.x < 0 || obj.x > 640 ) {
 				obj.vx = -obj.vx;
@@ -802,15 +821,15 @@ $.ready( function() {
 			if( obj.y < 0 || obj.y > 480 ) {
 				obj.vy = -obj.vy;
 			}
-			
+
 			// Draw
 			$.setColor( obj.color );
 			$.circle( obj.x, obj.y, 10 );
 		}
-		
+
 		requestAnimationFrame( animate );
 	}
-	
+
 	animate();
 } );
 ```
@@ -826,12 +845,12 @@ $.ready( function() {
 	let playerX = 320;
 	let playerY = 240;
 	let score = 0;
-	
+
 	function gameLoop() {
 
 		// Clear screen
 		$.cls();
-		
+
 		// Handle input
 		if( $.inKey( "ArrowLeft" ) ) {
 			playerX -= 5;
@@ -845,18 +864,18 @@ $.ready( function() {
 		if( $.inKey( "ArrowDown" ) ) {
 			playerY += 5;
 		}
-		
+
 		// Draw player
 		$.setColor( 15 );
 		$.circle( playerX, playerY, 20 );
-		
+
 		// Draw score
 		$.setPos( 0, 0 );
 		$.print( "Score: " + score );
-		
+
 		requestAnimationFrame( gameLoop );
 	}
-	
+
 	gameLoop();
 } );
 ```
@@ -872,36 +891,36 @@ function checkCollision( x1, y1, r1, x2, y2, r2 ) {
 
 $.ready( function() {
 	$.screen( "640x480" );
-	
+
 	let playerX = 320;
 	let playerY = 240;
 	let enemyX = 100;
 	let enemyY = 100;
-	
+
 	function gameLoop() {
 		$.cls();
-		
+
 		// Update player
 		if( $.inKey( "ArrowLeft" ) ) playerX -= 5;
 		if( $.inKey( "ArrowRight" ) ) playerX += 5;
 		if( $.inKey( "ArrowUp" ) ) playerY -= 5;
 		if( $.inKey( "ArrowDown" ) ) playerY += 5;
-		
+
 		// Check collision
 		if( checkCollision( playerX, playerY, 20, enemyX, enemyY, 20 ) ) {
 			$.setColor( 4 );  // Red
 			$.print( "COLLISION!" );
 		}
-		
+
 		// Draw
 		$.setColor( 15 );
 		$.circle( playerX, playerY, 20 );
 		$.setColor( 4 );
 		$.circle( enemyX, enemyY, 20 );
-		
+
 		requestAnimationFrame( gameLoop );
 	}
-	
+
 	gameLoop();
 } );
 ```
@@ -936,17 +955,21 @@ $.setColor( 15 );
 $.circle( 320, 240, 100 );
 
 // Apply filter to all pixels
-// Filter callback receives (color, x, y) where color is a PiColor object
+// The reusable pixel buffer contains RGBA channels at indices 0-3.
 // Return true to keep the pixel, false to remove it
-$.filterImg( function( color, x, y ) {
+$.filterImg( function( pixel, x, y ) {
 
-	// Modify color object properties (r, g, b, a)
-	color.r = 255 - color.r;
-	color.g = 255 - color.g;
-	color.b = 255 - color.b;
+	// Invert RGB and preserve alpha.
+	pixel[ 0 ] = 255 - pixel[ 0 ];
+	pixel[ 1 ] = 255 - pixel[ 1 ];
+	pixel[ 2 ] = 255 - pixel[ 2 ];
 	return true;  // Keep the modified pixel
 } );
 ```
+
+The filter captures its region and view at the call, then reads pixels after synchronous work.
+Draw above its result or capture it on a later task or animation frame. Return false to make a
+pixel transparent; copy the buffer if retaining a pixel beyond its callback.
 
 ### Multiple Screens
 ```javascript
@@ -955,12 +978,12 @@ $.ready( function() {
 	// Create multiple screens
 	const screen1 = $.screen( "320x240", "container1" );
 	const screen2 = $.screen( "320x240", "container2" );
-	
+
 	// Draw on screen 1
 	$.setScreen( screen1 );
 	$.setColor( 15 );
 	$.circle( 160, 120, 50 );
-	
+
 	// Draw on screen 2
 	$.setScreen( screen2 );
 	$.setColor( 4 );
@@ -1015,7 +1038,7 @@ $.circle( 320, 240, 50 );
 
 ### Creating a Simple Plugin
 ```javascript
-pi.registerPlugin( {
+$.registerPlugin( {
 	"name": "myPlugin",
 	"version": "1.0.0",
 	"description": "My custom plugin",
@@ -1075,7 +1098,9 @@ $.setColor( "#0000FF" );
 $.line( 200, 20, 300, 180 );
 ```
 
-### Pong Game
+### Pong Scene
+
+Draws the initial paddles and ball. Add movement and collision handling for gameplay.
 ```javascript
 $.screen( "640x480" );
 

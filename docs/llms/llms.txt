@@ -3,7 +3,8 @@
 ## Overview
 
 Pi.js is a browser-only WebGL 2 library for retro-style graphics, bitmap text, sound, and input.
-The global API is available as `pi` and, when it is not already defined, `$`.
+Use `import { $ } from "pijs-web"` for ES modules. Examples use `$` as the API binding.
+IIFE bundles expose `pi` and, when it is not already defined, `$` as globals.
 
 ## Key Facts
 
@@ -12,7 +13,6 @@ The global API is available as `pi` and, when it is not already defined, `$`.
   Lite only: loading one after Full throws `DUPLICATE_PLUGIN`. `sound-advanced` is in neither
   bundle; load it after Full, or after Lite and `sound`.
 - Input commands are camelCase: `inKey`, `onKey`, `inMouse`, `onPress`, `inGamepad`.
-  The lowercase 2.2 names are not registered.
 - `polygon( points, fillColor )` draws a closed outline with optional nonzero-winding fill.
 - Polygon points accept flat arrays, typed arrays, or `{ x, y }` arrays; replace them to edit vertices.
 - Create a screen before calling screen-scoped commands.
@@ -135,7 +135,8 @@ Mouse, touch, press, and click data share one frozen shape: `x`, `y`, `lastX`, `
 
 ```javascript
 $.onPress( "down", function( press ) {
-	$.pset( press.x, press.y, "yellow" );
+	$.setColor( "yellow" );
+	$.pset( press.x, press.y );
 } );
 $.onWheel( function( wheel ) {
 	zoom += wheel.deltaY * 0.001;
@@ -159,6 +160,8 @@ mapping: `south`, `east`, `west`, `north`, shoulders, triggers, `dpadUp`, and so
 ## Sound
 
 Sound needs a page served over HTTP(S) and plays after the first user gesture.
+One-shot sounds requested while audio is locked do not play. Looping audio and songs wait for
+unlocking; sounds requested inside the unlocking gesture handler can play immediately.
 
 ```javascript
 $.sound( 440, 0.2, 0.5, "square" );
@@ -174,7 +177,7 @@ await $.ready();
 const instance = $.playAudio( "music", 0.6, 0, 0, true );
 $.pauseAudio( instance );
 $.resumeAudio( instance );
-$.setBusVolume( "music", 0.5 );
+$.setBusVolume( "audio", 0.5 );
 ```
 
 `sound()` positions are `frequency`, `duration`, `volume`, `oType`, `delay`, `attackTime`,
@@ -219,6 +222,30 @@ $.removeShader( invert );
 Shader source must use GLSL ES 3.00 and declare `uniform sampler2D u_texture`. Known uniforms with
 invalid values throw synchronously.
 
+## Pixels and Filters
+
+`get( x, y, width, height )` returns palette-index rows; use `asIndex: false` for `PiColor` objects.
+`getPixel()` returns a `PiColor` by default. `put()` takes index rows and skips index 0 unless
+`include0` is true. Async reads reject with `SCREEN_REMOVED` if their screen is removed.
+`filterImg()` defers a CPU filter. Its callback receives a reusable `Uint8ClampedArray` of
+`[ r, g, b, a ]` plus view-local coordinates. Return truthy to keep the modified pixel, or falsy
+to make it transparent. It reads pixels after synchronous drawing finishes, so capture its result
+or draw above it on a later task or animation frame.
+
+```javascript
+$.filterImg( function( pixel ) {
+	pixel[ 0 ] = 255 - pixel[ 0 ];
+	pixel[ 1 ] = 255 - pixel[ 1 ];
+	pixel[ 2 ] = 255 - pixel[ 2 ];
+	return true;
+} );
+```
+
+Context loss suspends screens sharing the context and discards drawing; reads return transparent
+pixels and queued filters are canceled. Restoration rebuilds GPU resources with transparent
+framebuffers. Settings and shader handles survive; redraw framebuffer content and GPU-only glyph
+edits. A failed rebuild leaves rendering suspended and reports `WEBGL_CONTEXT_RESTORE_FAILED`.
+
 ## Parented Offscreen Screens
 
 ```javascript
@@ -254,24 +281,26 @@ function gameLoop() {
 gameLoop();
 ```
 
-## Screen layout and resource behavior
+## Screen Layout and Resource Behavior
 
-With `noCss: true` (default false), Pi.js does not write automatic canvas, container, html, or body
-styles. Supply usable canvas layout in host CSS. The canvas is still appended and its intrinsic
-size and WebGL resources are managed. Explicit background commands still apply requested styles.
-Logical x/e/m dimensions follow the container; display shader backing size follows the rendered
-canvas CSS content size before transforms. Canvas and container changes are observed. Hidden hosts retain their last
-valid allocation and recover when visible. Offscreen screens accept noCss as a no-op.
-Pointer input requires an onscreen target: screen creation changes the active screen, so use
-visible.inMouse() or setScreen(visible) after creating an offscreen buffer.
+With `noCss: true` (default false), Pi.js leaves automatic canvas, container, html, and body
+styles to host CSS. Supply usable canvas layout. Pi.js appends the canvas and manages its intrinsic
+size and WebGL resources. Explicit background commands still apply their requested styles.
+The `x` and `m` modes keep their requested logical dimensions; `e` computes its logical extent
+from the container. With a display shader, backing size follows the canvas CSS content size before
+transforms. Canvas and container changes are observed. Hidden hosts keep their last valid allocation
+and recover when visible. Offscreen screens accept `noCss` as a no-op.
 
-v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same
-orientation as u_texture.
-Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with
-vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on
-resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid
-upload is retained. No video rendering loop is created.
+Pointer input requires an onscreen target. Creating an offscreen screen makes it active; use
+`visible.inMouse()` or `$.setScreen( visible )` to read from the visible screen afterward.
 
-Image onLoad/onError exceptions remain visible and release their resource wait exactly once.
-Plugin installation is all or nothing; missing and cyclic dependencies stay pending.
+Shader `v_texCoord` uses bottom-left/y-up UVs. Custom `sampler2D` sources have the same
+orientation as `u_texture`. Drawing coordinates are top-left/y-down; convert UVs to logical pixels
+with `vec2( uv.x, 1.0 - uv.y ) * u_sourceSize`. Direct video sources upload when resolved for
+drawing or shader use and a decoded frame is available. First use without a decoded frame throws
+`IMAGE_NOT_READY`; subsequent unavailable frames keep the last valid upload. Pi.js creates no
+video rendering loop; request drawing or shader presentation as frames change.
+
+Image `onLoad`/`onError` exceptions remain visible and release the resource wait exactly once.
+`ready()` waits for resources to settle, including failures; it does not guarantee successful loads.
 Failed screen creation rolls back its DOM, observers, commands, and GPU resources.

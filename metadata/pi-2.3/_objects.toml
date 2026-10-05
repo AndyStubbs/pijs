@@ -50,8 +50,8 @@ description = "Return the active screen data, or throw if none unless isScreenOp
 [[objects.properties]]
 name = "getScreenData"
 type = "function"
-signature = "( fnName: string, screenId: string ) => any"
-description = "Get data for a specific screen by name."
+signature = "( fnName: string, screenId: number ) => any"
+description = "Get data for a specific screen by its numeric ID."
 
 [[objects.properties]]
 name = "getAllScreensData"
@@ -115,7 +115,8 @@ summary = "Rectangular area used for hit detection in event handlers."
 description = """
 A rectangular area in screen pixels that restricts a pointer handler (onClick, onMouse, onPress, onTouch) to input inside it. A point is inside when x <= point.x < x + width and y <= point.y < y + height, so the left and top edges are included and the right and bottom edges are not.
 
-Every value must be a postivie finite number, and fractions are allowed.
+Every value must be a finite number, and fractions are allowed. Positions may be negative;
+width and height must be zero or greater.
 """
 
 [[objects.properties]]

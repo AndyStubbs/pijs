@@ -325,7 +325,7 @@ declare namespace Pi {
 	 *
 	 * A rectangular area in screen pixels that restricts a pointer handler (onClick, onMouse, onPress, onTouch) to input inside it. A point is inside when x <= point.x < x + width and y <= point.y < y + height, so the left and top edges are included and the right and bottom edges are not.
 	 *
-	 * Every value must be a postivie finite number, and fractions are allowed.
+	 * Every value must be a finite number, and fractions are allowed. Positions may be negative; width and height must be zero or greater.
 	 */
 	interface HitBox {
 		/**
@@ -629,9 +629,9 @@ declare namespace Pi {
 		getActiveScreen: ( fnName: string, isScreenOptional?: boolean ) => any;
 
 		/**
-		 * Get data for a specific screen by name.
+		 * Get data for a specific screen by its numeric ID.
 		 */
-		getScreenData: ( fnName: string, screenId: string ) => any;
+		getScreenData: ( fnName: string, screenId: number ) => any;
 
 		/**
 		 * Get array of all screen data objects.
@@ -1307,20 +1307,20 @@ declare namespace Pi {
 		/**
 		 * Applies a filter function to a rectangular region of the screen.
 		 *
-		 * Queues a filter to run at end of frame. The filter callback receives a mutable pixel buffer (RGBA as Uint8ClampedArray) and x, y coordinates; return truthy to apply the modified pixel. If true is not returned in the callback the pixel will be filtered out and be set to black/transparent, even if it is not modified.
+		 * Defers a CPU filter until after the current synchronous work. The callback receives a reusable pixel buffer (RGBA as Uint8ClampedArray) and view-local x, y coordinates. Return truthy to keep the modified pixel, or falsy to make it transparent. Copy the buffer to retain a pixel beyond its callback.
 		 *
-		 * The region and view coordinates are captured when called. Pixel data is read when the queued filter runs. Removing the screen cancels queued filtering without invoking the callback. If a callback removes its own screen, filtering stops immediately, with no further callbacks or pixel upload. This command returns no promise; callback exceptions retain their normal behavior.
+		 * The region and view coordinates are captured when called. Pixel data is read when the queued filter runs. Removing the screen cancels queued filtering without invoking the callback. If a callback removes its own screen, filtering stops immediately, with no further callbacks or pixel upload. This command returns no promise; callback exceptions retain their normal behavior. Drawing performed synchronously after the call is included when the filter reads the framebuffer. Continue on a later task or animation frame to capture the result or draw above it.
 		 *
 		 * Filtering runs on the CPU rather than the GPU, so large areas may not be suitable for use in an animationFrame.
-		 * @param filter Callback (color, x, y) => truthy to accept modified pixel color, falsy to skip.
+		 * @param filter Callback (color, x, y): color holds RGBA at indices 0-3. Return truthy to keep the modified pixel, or falsy to make it transparent. Copy the buffer to retain it.
 		 * @param x1 Left coordinate (default 0).
 		 * @param y1 Top coordinate (default 0).
 		 * @param x2 Right coordinate (default screen width - 1).
 		 * @param y2 Bottom coordinate (default screen height - 1).
 		 * @returns This function does not return a value.
 		 */
-		filterImg( params: { "filter": ( color: PiColor, x: number, y: number ) => boolean; "x1"?: number; "y1"?: number; "x2"?: number; "y2"?: number } ): void;
-		filterImg( filter: ( color: PiColor, x: number, y: number ) => boolean, x1?: number, y1?: number, x2?: number, y2?: number ): void;
+		filterImg( params: { "filter": ( color: Uint8ClampedArray, x: number, y: number ) => boolean; "x1"?: number; "y1"?: number; "x2"?: number; "y2"?: number } ): void;
+		filterImg( filter: ( color: Uint8ClampedArray, x: number, y: number ) => boolean, x1?: number, y1?: number, x2?: number, y2?: number ): void;
 
 		/**
 		 * Reads a region of pixels as indices (default) or color values.
@@ -2276,14 +2276,14 @@ screen is removed before deferred processing completes, or with the original rea
 		getDefaultPal( include0?: boolean ): Array<PiColor>;
 
 		/**
-		 * Gets the image element by name, or a screen's canvas.
+		 * Resolves a registered image, direct image source, or screen.
 		 *
-		 * Returns the underlying Image or Canvas element for a previously loaded image. Given a screen, it returns the screen's canvas; for an offscreen screen, which has no canvas of its own, it returns a new canvas holding a copy of the screen's pixels.
-		 * @param name Image name, or a screen.
-		 * @returns The actual Image or Canvas element.
+		 * Returns the underlying Image or Canvas element for a registered image name. Direct image, video, canvas, ImageBitmap, ImageData, and OffscreenCanvas sources are returned as supplied. An onscreen Screen returns its canvas; an offscreen Screen returns a new canvas containing a copy of its logical framebuffer pixels.
+		 * @param name Registered image name, Screen, or direct image source.
+		 * @returns The resolved source, or a canvas containing the screen's pixels.
 		 */
-		getImage( params: { "name": string | Screen } ): HTMLImageElement | HTMLCanvasElement;
-		getImage( name: string | Screen ): HTMLImageElement | HTMLCanvasElement;
+		getImage( params: { "name": string | Screen | HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | ImageData | OffscreenCanvas } ): HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | ImageData | OffscreenCanvas;
+		getImage( name: string | Screen | HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | ImageData | OffscreenCanvas ): HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | ImageData | OffscreenCanvas;
 
 		/**
 		 * Returns a list of registered plugins and their status.

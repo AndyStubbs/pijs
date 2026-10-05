@@ -3,15 +3,17 @@ category = "pixels"
 isScreen = true
 summary = "Applies a filter function to a rectangular region of the screen."
 description = """
-Queues a filter to run at end of frame. The filter callback receives a mutable pixel buffer
-(RGBA as Uint8ClampedArray) and x, y coordinates; return truthy to apply the modified pixel. If
-true is not returned in the callback the pixel will be filtered out and be set to black/transparent,
-even if it is not modified.
+Defers a CPU filter until after the current synchronous work. The callback receives a reusable
+pixel buffer (RGBA as Uint8ClampedArray) and view-local x, y coordinates. Return truthy to keep
+the modified pixel, or falsy to make it transparent. Copy the buffer to retain a pixel beyond
+its callback.
 
 The region and view coordinates are captured when called. Pixel data is read when the queued
 filter runs. Removing the screen cancels queued filtering without invoking the callback. If a
 callback removes its own screen, filtering stops immediately, with no further callbacks or
 pixel upload. This command returns no promise; callback exceptions retain their normal behavior.
+Drawing performed synchronously after the call is included when the filter reads the framebuffer.
+Continue on a later task or animation frame to capture the result or draw above it.
 
 Filtering runs on the CPU rather than the GPU, so large areas may not be suitable for use in
 an animationFrame.
@@ -30,8 +32,8 @@ $.filterImg( function ( color, x, y ) {
 [[parameters]]
 name = "filter"
 type = "function"
-signature = "( color: PiColor, x: number, y: number ) => boolean"
-description = "Callback (color, x, y) => truthy to accept modified pixel color, falsy to skip."
+signature = "( color: Uint8ClampedArray, x: number, y: number ) => boolean"
+description = "Callback (color, x, y): color holds RGBA at indices 0-3. Return truthy to keep the modified pixel, or falsy to make it transparent. Copy the buffer to retain it."
 
 [[parameters]]
 name = "x1"

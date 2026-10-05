@@ -12,8 +12,21 @@ It provides GPU-accelerated, pixel-perfect rendering with no runtime dependencie
 - Coordinates: logical pixels with `(0, 0)` at the top-left
 - Rendering: automatic; drawing commands are batched internally
 
-The generated TypeScript declarations in `pi.d.ts` are the exhaustive signature reference. This
-file focuses on API selection, common behavior, and correct usage patterns.
+The generated TypeScript declarations in `pi.d.ts` describe the Full bundle's signatures.
+Separately loaded plugins supply declarations that augment the API when imported. This file
+focuses on API selection, common behavior, and correct usage patterns.
+
+Use the named `$` import for ES modules:
+
+```javascript
+import { $ } from "pijs-web";
+
+const screen = $.screen( "320x200" );
+screen.print( "Hello, Pi.js!" );
+```
+
+ESM also provides default `pi` and named `pi` exports. IIFE bundles expose the globals above.
+Examples use `$` as the API binding.
 
 ## Calling Conventions
 
@@ -49,6 +62,8 @@ Aspect separators have these meanings:
 The full signature is
 `screen( aspect, container, isOffscreen, resizeCallback, parent, noCss )`. Prefer an options object when
 creating an offscreen or parented screen.
+Offscreen screens require exact `x` dimensions. `noCss: true` leaves canvas layout to host CSS;
+see [Screen layout](#screen-layout-and-resource-behavior).
 
 ### Managing Screens
 
@@ -69,7 +84,7 @@ Calling a method on a removed screen throws an error with code `DELETED_METHOD`.
 ### Parented Offscreen Screens
 
 An offscreen screen can share an existing screen's WebGL context. This makes drawing its
-framebuffer into the parent more efficient and fixes the old same-context Y-orientation issue.
+framebuffer into the parent more efficient.
 The relationship controls context affinity only; it does not control ownership or cleanup.
 
 ```javascript
@@ -90,6 +105,18 @@ main.removeScreen();
 
 `parent` is valid only for an offscreen screen and may be a current screen object or screen ID.
 Invalid or deleted parents throw `INVALID_SCREEN_PARENT`.
+
+### WebGL Context Recovery
+
+Context loss suspends every screen sharing the WebGL context. Drawing and queued shader passes
+are discarded, reads return transparent pixels, and deferred pixel filters are canceled. A read
+spanning loss returns transparent pixels even if restoration completes before it settles.
+
+Restoration rebuilds resources for all surviving screens before rendering resumes. Framebuffers
+start transparent, so redraw the scene. Settings, views, font selections, shader handles, and
+display shader settings remain available. Images and font atlases upload again when needed;
+framebuffer pixels and GPU-only glyph edits are lost. A failed rebuild leaves the group suspended
+and reports `WEBGL_CONTEXT_RESTORE_FAILED` to the console.
 
 ## Drawing and Blending
 
@@ -121,8 +148,8 @@ $.setBlend( "replace" );
 $.setBlend( "alpha" );
 ```
 
-Use `setNoise( noise, seed )` for optional per-channel drawing noise. The Pi.js 1 pen system has
-no direct replacement in Pi.js 2; use primitives to construct wider or shaped strokes.
+Use `setNoise( noise, seed )` for optional per-channel drawing noise. Use filled primitives to
+construct wider or shaped strokes.
 
 ### Polygons
 
@@ -198,6 +225,11 @@ $.set( {
 } );
 ```
 
+`set()` validates every option name before applying settings. Unknown names throw `INVALID_OPTION`
+and apply nothing; invalid options objects throw `INVALID_OPTIONS`. Null settings are skipped.
+Global settings can be set before creating a screen. Screen settings require an active screen,
+or a `"screen"` setting earlier in the same options object. `undefined` arguments take defaults.
+
 ## Images and Sprites
 
 ### Loading
@@ -210,7 +242,7 @@ const imageName = $.loadImage( {
 	"src": "player.png",
 	"name": "player",
 	"onError": function( error ) {
-		console.error( error.message );
+		console.error( error );
 	}
 } );
 
@@ -226,7 +258,11 @@ await $.ready();
 ```
 
 Both loaders return the registered name. `getImage( name )` returns the underlying image or
-canvas element; `getSpritesheetData( name )` returns frame metadata.
+canvas element; `getSpritesheetData( name )` returns frame metadata. `getImage()` also accepts
+direct image sources or a `Screen`: an onscreen screen returns its canvas, and an offscreen
+screen returns a canvas copy of its logical pixels.
+URL loads hold `ready()` until they settle. Failed resources remain registered; using one throws
+`IMAGE_LOAD_FAILED`, while using a still-loading resource throws `IMAGE_NOT_READY`.
 
 ### Drawing
 
@@ -239,18 +275,22 @@ $.drawSprite( sheetName, 3, 200, 100, null, 0.5, 0.5, 1, 1, 0 );
 The transformation order after position is `color`, `anchorX`, `anchorY`, `scaleX`, `scaleY`,
 then `angle` in degrees. `blitImage()` and `blitSprite()` are lower-level replace-mode variants;
 their angle is in radians.
+Image drawing and shader samplers also accept `HTMLImageElement`, `HTMLVideoElement`,
+`HTMLCanvasElement`, `ImageBitmap`, `ImageData`, `OffscreenCanvas`, and Pi.js screens directly.
+Supply usable pixels for direct sources; they do not hold `ready()`.
 
 ### Capturing and Removing
 
 ```javascript
-const captureName = $.createImageFromScreen( "capture", 0, 0, 64, 64 );
+const captureName = $.createImageFromScreen( "capture", 0, 0, 63, 63 );
 $.drawImage( captureName, 100, 20 );
 $.removeImage( captureName );
 ```
 
 `createImageFromScreen()` uses inclusive corner coordinates `x1`, `y1`, `x2`, `y2` and returns
 the stored image name. `removeImage()` completes queued draws before releasing textures from all
-screens. A later draw with the removed name throws `IMAGE_NOT_FOUND`.
+screens. A later draw with the removed name throws `IMAGE_NOT_FOUND`. Removing a pending image or
+spritesheet cancels it silently, releases its readiness wait, and makes the name reusable at once.
 
 ## Pixels
 
@@ -267,15 +307,22 @@ const color = $.getPixel( 10, 10 );
 console.log( color.r, color.g, color.b, color.a );
 ```
 
-`getAsync()` and `getPixelAsync()` provide promise-based reads. `filterImg()` queues a CPU filter
-in draw order; its callback receives a mutable `PiColor` plus `x` and `y`, and must return truthy
-to keep the modified pixel.
+`getAsync()` and `getPixelAsync()` provide promise-based reads. Removing the screen rejects
+pending reads with `SCREEN_REMOVED`. `put()` accepts palette-index arrays and skips index 0 unless
+`include0` is true; color-object arrays cannot be passed to it.
+
+`filterImg( filter, x1, y1, x2, y2 )` defers a CPU filter for an inclusive rectangle. Its callback
+receives a reusable `Uint8ClampedArray` containing `[ r, g, b, a ]`, plus view-local `x` and `y`.
+Return truthy to keep the modified pixel, or falsy to make it transparent. The region and view are
+captured at the call, but pixels are read when the filter runs, including synchronous drawing
+after the call. Continue on a later task or animation frame to capture the result or draw above it.
+Screen removal or context loss cancels queued filtering.
 
 ```javascript
-$.filterImg( function( color ) {
-	color.r = 255 - color.r;
-	color.g = 255 - color.g;
-	color.b = 255 - color.b;
+$.filterImg( function( pixel ) {
+	pixel[ 0 ] = 255 - pixel[ 0 ];
+	pixel[ 1 ] = 255 - pixel[ 1 ];
+	pixel[ 2 ] = 255 - pixel[ 2 ];
 	return true;
 } );
 ```
@@ -283,6 +330,11 @@ $.filterImg( function( color ) {
 ## Bitmap Text
 
 Pi.js supports bitmap fonts only. Built-in font IDs are 0 through 4.
+Font 1, the default 6x8 font, is ready synchronously; other built-in fonts require `ready()`.
+The built-in fonts use IBM PC code page 437 glyphs at codes 0–255, with ASCII at 32–126.
+For example, the é glyph is code 130, `String.fromCharCode( 130 )`. Printing counts UTF-16 code
+units; an unavailable glyph consumes a cell without drawing. Pending or failed font images also
+advance the cursor without drawing and warn once.
 
 ```javascript
 const fontId = $.loadFont( {
@@ -304,6 +356,11 @@ $.print( "Centered", false, true );
 
 Other text helpers include `getPos()`, `getPosPx()`, `getCols()`, `getRows()`, `calcWidth()`,
 `setWordBreak()`, `setChar()`, `getAvailableFonts()`, and the global `setDefaultFont()`.
+`loadFont()` accepts URL strings, image elements, canvases, and `OffscreenCanvas`. A synchronous
+setup failure registers nothing. A failed URL load remains registered and selectable after its
+readiness wait settles. `setChar()` updates the shared font's glyph without modifying its original
+source element. `setPrintSize()` scales must be finite and positive; padding must be nonnegative
+integers.
 
 ## Views
 
@@ -655,6 +712,22 @@ tracking, dependency registration, event cleanup hooks, access to screen data, a
   `onPress()`, and does not restore them. A plugin that needs input should poll it or register
   its handlers again.
 
+IIFE plugin scripts register themselves after Pi.js loads. ESM plugins export an initializer:
+
+```javascript
+import { $ } from "pijs-web";
+import * as g_soundAdvanced from "pijs-web/plugins/sound-advanced";
+
+$.registerPlugin( {
+	"name": "sound-advanced",
+	"dependencies": [ "sound" ],
+	"init": g_soundAdvanced.default
+} );
+```
+
+For Lite, import from `"pijs-web/lite"` and register the `sound` initializer from
+`"pijs-web/plugins/sound"` before `sound-advanced`.
+
 ## Readiness and Animation
 
 `ready()` supports callbacks and promises and waits for the document plus pending registered
@@ -696,23 +769,24 @@ gameLoop();
 
 ## Screen Layout and Resource Behavior
 
-With `noCss: true` (default false), Pi.js does not write automatic canvas, container, html, or body
-styles. Supply usable canvas layout in host CSS. The canvas is still appended and its intrinsic
-size and WebGL resources are managed. Explicit background commands still apply requested styles.
-Logical x/e/m dimensions follow the container; display shader backing size follows the rendered
-canvas CSS content size before transforms. Canvas and container changes are observed. Hidden hosts retain their last
-valid allocation and recover when visible. Offscreen screens accept noCss as a no-op.
-Pointer input requires an onscreen target: screen creation changes the active screen, so use
-visible.inMouse() or setScreen(visible) after creating an offscreen buffer.
+With `noCss: true` (default false), Pi.js leaves automatic canvas, container, html, and body
+styles to host CSS. Supply usable canvas layout. Pi.js appends the canvas and manages its intrinsic
+size and WebGL resources. Explicit background commands still apply their requested styles.
+The `x` and `m` modes keep their requested logical dimensions; `e` computes its logical extent
+from the container. With a display shader, backing size follows the canvas CSS content size before
+transforms. Canvas and container changes are observed. Hidden hosts keep their last valid allocation
+and recover when visible. Offscreen screens accept `noCss` as a no-op.
 
-v_texCoord uses bottom-left/y-up UVs. Custom sampler2D images are normalized to the same
-orientation as u_texture.
-Drawing coordinates remain top-left/y-down; convert UVs to screen pixels with
-vec2(uv.x, 1.0 - uv.y) * u_sourceSize. Video sources refresh when decoded data is available on
-resolution; first use without a decoded frame throws IMAGE_NOT_READY, otherwise the last valid
-upload is retained. No video rendering loop is created.
+Pointer input requires an onscreen target. Creating an offscreen screen makes it active; use
+`visible.inMouse()` or `$.setScreen( visible )` to read from the visible screen afterward.
 
-Image onLoad/onError exceptions remain visible and release their resource wait exactly once.
-Plugin dependencies resolve after successful initialization; missing and cyclic dependencies stay
-pending.
+Shader `v_texCoord` uses bottom-left/y-up UVs. Custom `sampler2D` sources have the same
+orientation as `u_texture`. Drawing coordinates are top-left/y-down; convert UVs to logical pixels
+with `vec2( uv.x, 1.0 - uv.y ) * u_sourceSize`. Direct video sources upload when resolved for
+drawing or shader use and a decoded frame is available. First use without a decoded frame throws
+`IMAGE_NOT_READY`; subsequent unavailable frames keep the last valid upload. Pi.js creates no
+video rendering loop; request drawing or shader presentation as frames change.
+
+Image `onLoad`/`onError` exceptions remain visible and release the resource wait exactly once.
+`ready()` waits for resources to settle, including failures; it does not guarantee successful loads.
 Failed screen creation rolls back its DOM, observers, commands, and GPU resources.

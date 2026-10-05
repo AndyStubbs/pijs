@@ -1,9 +1,12 @@
 title = "getImage"
 category = "images"
 isScreen = false
-summary = "Gets the image element by name, or a screen's canvas."
+summary = "Resolves a registered image, direct image source, or screen."
 description = """
-Returns the underlying Image or Canvas element for a previously loaded image. Given a screen, it returns the screen's canvas; for an offscreen screen, which has no canvas of its own, it returns a new canvas holding a copy of the screen's pixels.
+Returns the underlying Image or Canvas element for a registered image name. Direct image,
+video, canvas, ImageBitmap, ImageData, and OffscreenCanvas sources are returned as supplied.
+An onscreen Screen returns its canvas; an offscreen Screen returns a new canvas containing a
+copy of its logical framebuffer pixels.
 """
 example = """
 $.screen( "300x200" );
@@ -16,11 +19,11 @@ $.ready( () => {
 
 [[parameters]]
 name = "name"
-type = "string | Screen"
+type = "string | Screen | HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | ImageData | OffscreenCanvas"
 typeDesc = "*Many"
-description = "Image name, or a screen."
+description = "Registered image name, Screen, or direct image source."
 
 [[returns]]
-type = "HTMLImageElement | HTMLCanvasElement"
+type = "HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | ImageData | OffscreenCanvas"
 typeDesc = "*HTMLElement"
-description = "The actual Image or Canvas element."
+description = "The resolved source, or a canvas containing the screen's pixels."
