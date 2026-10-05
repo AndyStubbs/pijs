@@ -98,7 +98,9 @@ It is not part of either bundle; load `pijs-web/plugins/sound-advanced` after th
 - The standalone plugin entry points (`pijs-web/plugins/…`) are for Lite. Loading one that the
   Full bundle already includes throws `DUPLICATE_PLUGIN`.
 - A plugin whose initialization fails leaves nothing installed, and its name can be registered
-  again. Registering a plugin after initialization throws `REGISTRATION_CLOSED`.
+  again.
+- A plugin can add commands, screen data, and screen hooks only while its `init` function runs.
+  Calling `addCommand()` or another `add...` method later throws `REGISTRATION_CLOSED`.
 
 ### TypeScript
 
