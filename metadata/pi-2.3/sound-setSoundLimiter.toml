@@ -4,11 +4,7 @@ isScreen = false
 plugin = "sound"
 summary = "Turns the output limiter on or off."
 description = """
-The limiter keeps the combined output of all sounds, music, and audio within ±1.0, so many sounds playing together saturate smoothly instead of clipping harshly. It is on by default. Levels below its threshold pass unchanged. It is a safety net against overload, not a mastering stage.
-
-The limiter has two stages: a compressor that reduces sustained overload, then a soft clipper that sets the absolute ceiling. Browsers whose compressor also reduces bright waveforms (such as square and sawtooth) below its threshold use the soft clipper alone, so levels match across browsers.
-
-Switching reconnects the output immediately, which can cause a brief discontinuity in sounds that are playing. Set it before playback starts.
+Keeps the combined output of sounds, music, and audio from clipping. It is on by default. Levels below its threshold pass through unchanged. Set it before playback starts.
 """
 example = """
 $.screen( "300x200" );

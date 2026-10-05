@@ -4,17 +4,7 @@ isScreen = false
 plugin = "gamepad"
 summary = "Rumbles a gamepad's vibration motors."
 description = """
-Plays the "dual-rumble" effect of the pad's vibration actuator for duration milliseconds, with
-the strong (low-frequency) and weak (high-frequency) motors at the given magnitudes. Returns true
-when the pad supports the effect and false when it does not, such as in Firefox and iOS Safari,
-or when no pad has the index; nothing plays then. Browsers may cap the duration, and a new effect
-replaces one that is still playing; a duration of 0 stops the rumble.
-
-Vibration reads the browser's pad directly, so it needs no polling and does not start it. The
-gamepadIndex is a non-negative integer (INVALID_INDEX); duration is a finite number that is not
-negative (INVALID_DURATION); strong and weak are finite numbers from 0 to 1, and 1 when omitted
-(INVALID_STRONG, INVALID_WEAK). A value of the wrong type throws a TypeError, and one out of
-range a RangeError.
+Plays the "dual-rumble" effect of the gamepad's vibration actuator for duration milliseconds, with the strong (low-frequency) and weak (high-frequency) motors at the given magnitudes. Returns true when the gamepad supports the effect and false when it does not, such as in Firefox and iOS Safari, or when no gamepad has the index; nothing plays then. Browsers may cap the duration, and a new effect replaces one that is still playing; a duration of 0 stops the rumble.
 """
 example = """
 $.screen( "300x200" );

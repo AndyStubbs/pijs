@@ -4,13 +4,11 @@ isScreen = false
 plugin = "sound"
 summary = "Plays loaded audio as a new instance and returns its instance ID."
 description = """
-Starts a new instance of audio loaded with loadAudio and returns its instance ID. The instance can then be stopped, paused, resumed, or changed with setAudio. Decoded audio can play many instances at once. Streamed audio has one instance at a time: a new playAudio fades out the current instance and replaces it.
+Starts a new instance of audio loaded with loadAudio and returns its instance ID. Use the ID with stopAudio, pauseAudio, resumeAudio, and setAudio. Decoded audio can play many instances at once. Streamed audio plays one instance at a time: a new playAudio replaces the current one.
 
-startTime and duration are measured in the file's own time. duration counts every loop pass, so a looping instance with duration 5 stops after 5 seconds of the file. A duration of 0 plays to the end of the file, or loops forever. playbackRate changes speed and pitch together, so at rate 0.5 a duration of 5 lasts 10 seconds. The rate must be between 0.0625 and 16 for decoded audio, and between 0.25 and 4 for streamed audio, or the call throws INVALID_PLAYBACK_RATE. pan places the instance from -1 (left) to 1 (right). delay starts the instance later, measured on the audio clock.
+duration and startTime are in the file's own time. A duration of 0 plays to the end, or loops forever when loop is set. playbackRate changes speed and pitch together. pan places the instance from -1 (left) to 1 (right). delay waits before the instance starts.
 
-Instances fade in and out over a few milliseconds, so they start and stop without clicks. They play on the audio bus through the master volume and the output limiter, and share the 64-voice limit with sound() and play(). Looping instances are never stopped to make room for other sounds; when every voice is held by a loop, new sounds are not played. A request that is not played still returns an instance ID, and operations on it do nothing.
-
-Until the page receives its first user gesture, the browser keeps audio locked. A one-shot requested while audio is locked is not played; a looping instance starts when audio unlocks.
+Until the page gets its first click, key, or touch, a one-shot plays nothing. A looping instance starts when audio unlocks.
 """
 example = """
 $.screen( "300x200" );

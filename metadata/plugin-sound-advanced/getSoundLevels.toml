@@ -4,11 +4,11 @@ isScreen = false
 plugin = "sound-advanced"
 summary = "Measures the current level of a sound bus, with optional spectrum and waveform data."
 description = """
-Requires the sound-advanced plugin. Measures the most recent 2048 samples of a bus after its effect and volume, which suits level meters and visualizers. "master" is measured after the master volume, before the output limiter, and "output" after the limiter, which is what the speakers receive.
+Measures the current level of a bus after its effect and volume. "master" is after the master volume, and "output" is what the speakers receive.
 
-peak is the largest sample magnitude and rms the average level, both from 0 upward. With spectrum, the result includes 1024 frequency bands in decibels from 0 Hz up to half the sample rate. With waveform, it includes the 2048 samples themselves. Arrays that were not requested are null.
+peak is the loudest sample and rms is the average level. With spectrum, the result includes frequency bands in decibels. With waveform, it includes the recent samples. Arrays that were not requested are null.
 
-The first call on a bus starts measuring it and returns silence, so call it every frame.
+The first call on a bus returns silence. Call it every frame after that.
 """
 example = """
 $.screen( "300x200" );

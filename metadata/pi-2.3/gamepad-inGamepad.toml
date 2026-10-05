@@ -4,22 +4,11 @@ isScreen = false
 plugin = "gamepad"
 summary = "Gets gamepad data for a specific gamepad or all gamepads."
 description = """
-Reads the connected gamepads. With a gamepadIndex, returns the GamepadData for that index, or
-null when no pad has it. Without one, or with null, always returns an array: every connected pad
-in index order, in one live array that is refilled on each call, and empty when no pad is
-connected. The list is compact, so a pad's position in it is not always its index; use its index
-property.
+Reads and returns the connected gamepads. With a gamepadIndex, returns the GamepadData for that index, or null. 
 
-The first read starts polling, unless stopGamepad() was called; after stopGamepad(), the list form
-returns an empty array and the index form null, until startGamepad() starts polling again. The
-first read records the current state without reporting buttons already held as just pressed.
-
-Pads are live objects updated in place. The first read in each animation frame reports what
+Gamepads are live objects updated in place. The first read in each animation frame reports what
 happened since the last frame that had a read, and every other read in the frame sees the same
-values; see GamepadData.
-
-A gamepadIndex that is not an integer throws a TypeError, and a negative one a RangeError, both
-with code INVALID_INDEX; a well-formed index with no pad behind it returns null.
+values.
 """
 example = """
 $.screen( "300x200" );

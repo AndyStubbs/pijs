@@ -6,9 +6,6 @@ description = """
 This function renders a circular arc segment to the active canvas.
 
 The angles are measured in degrees, clockwise from the positive x-axis. Equal start and end angles draw nothing. A difference of 360 degrees or more draws one complete outline matching circle(). Shorter differences wrap clockwise from the starting angle to the ending angle.
-
-The angles must be finite numbers; any other value throws a TypeError with code
-INVALID_PARAMETER.
 """
 example = """
 $.screen( "300x200" );

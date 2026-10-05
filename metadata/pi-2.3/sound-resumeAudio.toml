@@ -4,7 +4,7 @@ isScreen = false
 plugin = "sound"
 summary = "Resumes a paused audio instance, every instance of an audio ID, or all audio."
 description = """
-Resumes paused audio from its saved position with the rest of its duration, fading in over a few milliseconds. Pass an instance ID, an audio ID to resume every paused instance of that file, or nothing to resume all paused audio. Volume, rate, and pan changes made with setAudio while paused apply on resume. A resumed instance needs a free voice again; if every voice is held by a loop, it stays paused. Resuming a playing instance does nothing. Finished instance IDs are ignored; unknown IDs throw AUDIO_NOT_FOUND.
+Resumes paused audio from its saved position. Pass an instance ID, an audio ID to resume every paused instance of that file, or nothing to resume all paused audio. Volume, rate, and pan changes made while paused apply on resume.
 """
 example = """
 $.screen( "300x200" );

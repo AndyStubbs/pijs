@@ -4,11 +4,9 @@ isScreen = false
 plugin = "sound-advanced"
 summary = "Stops recording and returns the recording as a WAV file."
 description = """
-Requires the sound-advanced plugin. Stops the recording started by startRecording(), including a recording that stopped capturing at its maxDuration, and resolves with an audio/wav Blob. The last samples are flushed before the promise resolves, so nothing is lost at the end.
+Stops the recording from startRecording() and resolves with a WAV file. The file is stereo, as 16-bit or 32-bit samples. Pass it to saveRecording() to download it.
 
-The file is stereo at the audio context's sample rate, as 16-bit PCM or 32-bit float samples. Pass it to saveRecording() to download it, or play it back with URL.createObjectURL() and loadAudio().
-
-Stopping while the recording is still starting waits for it to start. Calling stopRecording() again before it resolves returns the same promise. With no recording, it throws NOT_RECORDING.
+Stopping while the recording is still starting waits for it to start.
 """
 example = """
 $.screen( "300x200" );

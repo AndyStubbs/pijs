@@ -2,9 +2,7 @@
 title = "PluginAPI"
 summary = "Plugin API object for extending Pi.js functionality."
 description = """
-Plugin API object passed to plugin initialization functions. Provides access
-to Pi.js internals for registering commands, adding screen data, and extending
-functionality.
+Plugin API object passed to plugin initialization functions. Provides access to Pi.js internals for registering commands, adding screen data, and extending functionality.
 """
 
 [[objects.properties]]
@@ -115,13 +113,9 @@ description = "Return the service of an initialized plugin named in this plugin'
 title = "HitBox"
 summary = "Rectangular area used for hit detection in event handlers."
 description = """
-A rectangular area in screen pixels that restricts a pointer handler (onClick, onMouse,
-onPress, onTouch) to input inside it. A point is inside when x <= point.x < x + width and
-y <= point.y < y + height, so the left and top edges are included and the right and bottom
-edges are not.
+A rectangular area in screen pixels that restricts a pointer handler (onClick, onMouse, onPress, onTouch) to input inside it. A point is inside when x <= point.x < x + width and y <= point.y < y + height, so the left and top edges are included and the right and bottom edges are not.
 
-Every value must be a finite number, and fractions are allowed. A negative width or height
-throws a RangeError with code INVALID_HITBOX.
+Every value must be a postivie finite number, and fractions are allowed.
 """
 
 [[objects.properties]]
@@ -151,13 +145,9 @@ description = "Height of the rectangle in pixels; 0 or more."
 title = "MouseData"
 summary = "Mouse state and event data."
 description = """
-Mouse data containing position, button state, action, and previous position. Returned by
-inMouse() and passed to onMouse callbacks. Mouse, touch, press, and click data share one shape:
-x, y, lastX, lastY, buttons, action, type, id, and cancelled. The data is created once per
-event and frozen: reads and handlers of the event receive the same object.
+Mouse data containing position, button state, action, and previous position. Returned by inMouse() and passed to onMouse callbacks. Mouse, touch, press, and click data share one shape: x, y, lastX, lastY, buttons, action, type, id, and cancelled. The data is created once per event and frozen: reads and handlers of the event receive the same object.
 
-Positions are in screen pixels. Moves over the canvas border or padding, and a release
-outside the canvas, report their true position, which can be outside the screen.
+Positions are in screen pixels. Moves over the canvas border or padding, and a release outside the canvas, report their true position, which can be outside the screen.
 """
 
 [[objects.properties]]
@@ -184,9 +174,7 @@ description = "Y coordinate before this event; the current Y on a pointer's firs
 name = "buttons"
 type = "number"
 description = """
-Bitmask of the buttons held (0 = none, 1 = left, 2 = right, 4 = middle). Only buttons pressed \
-on the screen count: a press that starts on the canvas border, the padding, or outside the \
-canvas is not held.
+Bitmask of the buttons held (0 = none, 1 = left, 2 = right, 4 = middle). Only buttons pressed on the screen count: a press that starts on the canvas border, the padding, or outside the canvas is not held.
 """
 
 [[objects.properties]]
@@ -208,8 +196,7 @@ description = "Pointer identifier of the mouse or pen."
 name = "cancelled"
 type = "boolean"
 description = """
-True for a release the player did not make: the browser cancelled the pointer, the page \
-was hidden, or stopMouse() was called with a button held. False otherwise.
+True for a release the player did not make: the browser cancelled the pointer, the page was hidden, or stopMouse() was called with a button held. False otherwise.
 """
 
 # ============================================================================
@@ -219,10 +206,8 @@ was hidden, or stopMouse() was called with a button held. False otherwise.
 title = "PressData"
 summary = "Press state data (mouse or touch)."
 description = """
-Press data from the primary pointer: the mouse, or the primary touch. Returned by inPress()
-and passed to onPress callbacks; type tells which input it came from. It has the fields of
-MouseData or TouchData, plus touches. A touch is primary when it starts with no other touch
-down, and stays primary until it lifts; after that, no touch is primary until every touch is up.
+Press data from the primary pointer: the mouse, or the primary touch. Returned by inPress() and passed to onPress callbacks; type tells which input it came from. It has the fields of MouseData or TouchData, plus touches. A touch is primary when it starts with no other touch down, and stays primary until it lifts; after that, no touch is primary until every touch is up.
+
 Press data is created once per event and frozen, and can be serialized with JSON.stringify().
 """
 
@@ -283,8 +268,7 @@ description = "The frozen inTouch() list of the touches still down; empty for th
 title = "ClickData"
 summary = "Click event data (mouse or touch)."
 description = """
-The data of the release that completed a click, passed to onClick callbacks, with action
-'click'. It has the MouseData or TouchData fields of the release, and is frozen.
+The data of the release that completed a click, passed to onClick callbacks, with action 'click'. It has the MouseData or TouchData fields of the release, and is frozen.
 """
 
 [[objects.properties]]
@@ -339,17 +323,14 @@ description = "Always false: a cancelled release never clicks."
 title = "TouchData"
 summary = "Single touch point data."
 description = """
-Data for one touch point. inTouch() returns the touches still down, and onTouch callbacks
-receive the touch the event changed, in an array. Touch data is created once per event and
-frozen: the touch in the handlers' array is the same object inTouch() lists.
+Data for one touch point. inTouch() returns the touches still down, and onTouch callbacks receive the touch the event changed, in an array. Touch data is created once per event and frozen: the touch in the handlers' array is the same object inTouch() lists.
 """
 
 [[objects.properties]]
 name = "x"
 type = "number"
 description = """
-Current X coordinate in pixels. A touch that moves or ends outside the screen reports its true \
-position, which can be outside the screen.
+Current X coordinate in pixels. A touch that moves or ends outside the screen reports its true position, which can be outside the screen.
 """
 
 [[objects.properties]]
@@ -391,8 +372,7 @@ description = "Touch identifier, the same for every event of one touch."
 name = "cancelled"
 type = "boolean"
 description = """
-True for an end the player did not make: the browser cancelled the touch, the page was hidden, \
-or stopTouch() was called. False otherwise.
+True for an end the player did not make: the browser cancelled the touch, the page was hidden, or stopTouch() was called. False otherwise.
 """
 
 # ============================================================================
@@ -402,8 +382,7 @@ or stopTouch() was called. False otherwise.
 title = "WheelData"
 summary = "Wheel event data."
 description = """
-Data for one wheel event, passed to onWheel callbacks. It is created once per event and frozen.
-Deltas are in CSS pixels: positive deltaY scrolls down, and positive deltaX scrolls right.
+Data for one wheel event, passed to onWheel callbacks. It is created once per event and frozen. Deltas are in CSS pixels: positive deltaY scrolls down, and positive deltaX scrolls right.
 """
 
 [[objects.properties]]
@@ -432,10 +411,7 @@ description = "Vertical scroll amount in CSS pixels; positive when the wheel tur
 [[objects]]
 title = "GamepadDisconnectData"
 summary = "Data passed to onGamepad( 'disconnect' ) callbacks."
-description = """
-The disconnected pad's identity. Its GamepadData is no longer in the list that inGamepad()
-returns.
-"""
+description = "The disconnected pad's identity. "
 
 [[objects.properties]]
 name = "index"
@@ -464,8 +440,7 @@ description = "Always false."
 title = "GamepadButton"
 summary = "State of one gamepad button."
 description = """
-One entry of GamepadData.buttons. It is live: the same object is updated in place on each
-read.
+One entry of GamepadData.buttons. It is live: the same object is updated in place on each read.
 """
 
 [[objects.properties]]
@@ -495,29 +470,7 @@ description = "Whether the button was released since the previous read."
 title = "GamepadData"
 summary = "Gamepad state and helper methods."
 description = """
-A connected gamepad, returned by inGamepad() and passed to onGamepad( "connect" ) callbacks. The
-object is live: the same object is returned on every read and updated in place, including its
-buttons array, each button, axes, and lastAxes. Copy values to keep a snapshot.
-
-A read is an inGamepad() call or a call to one of the methods below, including on a pad kept
-from an earlier read. The first read in each animation frame updates every pad with what
-happened since the last frame that had a read, so a press and a release between two reads are
-both reported; every other read in the same frame sees the same values.
-
-A pad starts with every button released, so a button held when the pad appears, such as the
-press that makes the browser expose it, is reported as just pressed on a later read. Button and
-axis numbers follow the browser's Gamepad API; the standard mapping has 17 buttons and 4 axes.
-
-The methods take a non-negative integer index or a standard-mapping name, which reads the
-button or axis at that position on any pad. Buttons: south, east, west, north, leftShoulder,
-rightShoulder, leftTrigger, rightTrigger, select, start, leftStick, rightStick, dpadUp, dpadDown,
-dpadLeft, dpadRight, and home (0 to 16). Axes: leftX, leftY, rightX, and rightY (0 to 3). Names
-are exact, and a button method does not take an axis name.
-
-A value that is neither an integer nor a string throws a TypeError, and a negative index or an
-unknown name a RangeError, both with code INVALID_INDEX and a message starting with the method
-name. An index past the pad's buttons or axes returns the empty value: null from getButton(), 0
-from getAxis(), and false from the other methods.
+A connected gamepad, returned by inGamepad() and passed to onGamepad( "connect" ) callbacks. The object is live: the same object is returned on every read and updated in place, including its buttons array, each button, axes, and lastAxes. Copy values to keep a snapshot.
 """
 
 [[objects.properties]]
@@ -558,10 +511,7 @@ description = "Button states, in the browser's button order."
 [[objects.properties]]
 name = "axes"
 type = "Array<number>"
-description = """
-Axis values from -1 to 1 after the dead zone set by setGamepadDeadZone(): radial for the two \
-sticks of the standard mapping, per axis otherwise. Values inside it read 0, and values outside \
-it are rescaled to start from 0."""
+description = "Axis values from -1 to 1 after the dead zone set by setGamepadDeadZone()."
 
 [[objects.properties]]
 name = "lastAxes"

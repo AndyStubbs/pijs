@@ -4,17 +4,17 @@ isScreen = false
 plugin = "sound-advanced"
 summary = "Plays a synthesized sound with a filter, vibrato, tremolo, pulse waves, and arpeggios."
 description = """
-Requires the sound-advanced plugin. Takes every sound() parameter and adds synthesis features. Each feature runs only when it is switched on, so a call with only sound() parameters plays the same as sound().
+Plays a sound with the same options as sound(), plus a filter, vibrato, tremolo, pulse waves, and arpeggios. A call that uses only sound() options plays the same as sound().
 
-oType also accepts "pulse", a square-like wave whose high part lasts for duty of each period. A duty of 0.5 is a square wave; 0.25 and 0.125 give the thinner tones of retro consoles.
+oType "pulse" is a square-like wave. duty sets how much of each cycle is high: 0.5 is a square wave, and smaller values are thinner.
 
-The filter runs when filterType is set. filterCutoff sets its cutoff frequency and filterQ its resonance. The filter envelope moves the cutoff by filterAmount octaves at its peak, with its own attack, decay, sustain, and release, timed like the volume envelope from the start of the sound and the end of duration. A negative filterAmount lowers the cutoff instead.
+The filter runs when filterType is set. filterCutoff is its frequency and filterQ its resonance. The filter envelope moves the cutoff by filterAmount octaves, with its own attack, decay, sustain, and release. A negative filterAmount lowers the cutoff.
 
-Vibrato runs when vibratoDepth is above 0 and swings the pitch by up to vibratoDepth cents at vibratoRate times per second. Tremolo runs when tremoloDepth is above 0 and dips the volume by up to tremoloDepth at tremoloRate times per second. vibratoShape and tremoloShape choose how each one moves: "sine" is a steady wave, and "random" moves to a new random value at the rate, within the same depth, which gives the uneven wobble of an engine, wind, or a flame. A shape that is neither throws INVALID_VIBRATO_SHAPE or INVALID_TREMOLO_SHAPE. An arpeggio cycles the pitch through semitone offsets, such as [0, 4, 7] for a major chord, at arpeggioRate steps per second until the sound ends.
+Vibrato swings the pitch when vibratoDepth is above 0. Tremolo dips the volume when tremoloDepth is above 0. vibratoShape and tremoloShape are "sine" for a steady wave or "random" for an uneven one. An arpeggio cycles through semitone offsets, such as [0, 4, 7], at arpeggioRate steps per second.
 
-With hold set to true, the sound is held: after its attack and decay it stays at its sustain level until releaseSound() releases it, and setSynth() can change its volume, pitch, and filter cutoff while it plays. A held sound ignores duration and frequencyEnd. One that is never released releases by itself after 600 seconds. A hold that is not a boolean throws INVALID_HOLD.
+With hold, the sound stays at its sustain level until releaseSound(). setSynth() can change its volume, pitch, and filter cutoff while it plays. A held sound ignores duration and frequencyEnd.
 
-Sounds play on the sound-effects bus, or on the music bus when bus is "music", so a note played by hand gets the music's volume and effects. They follow the same delay, voice, and autoplay rules as sound(). A bus that is neither throws INVALID_BUS. The returned ID works with stopSound().
+bus is "sfx" or "music". The returned ID works with stopSound().
 """
 example = """
 $.screen( "300x200" );

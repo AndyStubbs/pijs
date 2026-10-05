@@ -4,7 +4,7 @@ isScreen = false
 plugin = "sound"
 summary = "Stops a playing sound or all sounds."
 description = """
-Stops a specific sound by sound ID, or stops all sounds if soundId is null. A sound that is playing fades out over 10 ms, so it is silent about 15 ms after the call. A delayed sound that has not started is cancelled. IDs of sounds that have already finished, or were never played, are ignored.
+Stops one sound, or every sound when soundId is omitted. A sound that is playing fades out. A delayed sound that has not started is cancelled.
 """
 example = """
 $.screen( "300x200" );

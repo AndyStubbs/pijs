@@ -4,27 +4,11 @@ isScreen = true
 plugin = "pointer"
 summary = "Registers a callback function for mouse events."
 description = """
-Registers a callback that runs when a mouse event occurs, with the mouse data and the optional
-custom data. Mouse commands also observe pens, whose data has type set to 'pen'. With a hitBox,
-the callback runs only for events inside it. Registering starts tracking unless stopMouse() was
-called.
+Registers a callback for mouse events. The callback receives the mouse data and any custom data. Pens are included, with type set to 'pen'. With a hitBox, the callback runs only for events inside it.
 
-A press that starts on the canvas border or padding is ignored. A press on the canvas keeps
-reporting moves while it leaves the canvas, and 'up' runs for its release anywhere. 'up' also runs
-with cancelled set to true when the browser cancels the pointer, the page is hidden, or stopMouse()
-is called with a button held; moves and releases report their true position, which can be outside
-the screen.
+'down' runs when a button is pressed, 'move' when the pointer moves, and 'up' when a button is released. A press that starts on the canvas border or padding is ignored. A press on the canvas keeps reporting moves after it leaves the canvas, and 'up' runs for the release anywhere. 'up' also runs with cancelled set to true when the browser cancels the pointer, the page is hidden, or stopMouse() is called while a button is held.
 
-A handler runs until it is removed. A handler is identified by its mode and callback:
-registering the same callback for the same mode again does nothing, whatever its once, hitBox, and
-customData, and offMouse removes it by those two. once removes the registration before the handler
-runs. Handlers added during an event first run for the next event; a handler removed during an
-event does not run later in it. A handler that throws is reported with console.error(), and the
-other handlers still run.
-
-The mode is 'down', 'up', or 'move', and once is a boolean or omitted. Invalid arguments throw a
-TypeError for a wrong type or a RangeError for an unknown mode or a negative hitBox size, with
-code INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
+once removes the callback before its first run. Registering starts tracking unless stopMouse() was called.
 
 Requires an onscreen screen.
 """

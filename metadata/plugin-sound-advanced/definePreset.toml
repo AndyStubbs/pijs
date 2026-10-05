@@ -4,7 +4,7 @@ isScreen = false
 plugin = "sound-advanced"
 summary = "Adds or replaces a sound-effect preset for sfx()."
 description = """
-Requires the sound-advanced plugin. Stores a set of synth() options under a name, so sfx( name ) plays them. The options are validated and copied when the preset is defined, so an invalid option throws here, and later changes to the object have no effect. Defining a built-in name replaces that preset.
+Stores synth() options under a name, so sfx( name ) plays them. Defining a built-in name replaces that preset. Later changes to the options object do not change the preset.
 """
 example = """
 $.definePreset( "zap", {

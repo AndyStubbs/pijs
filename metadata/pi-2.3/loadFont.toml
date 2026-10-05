@@ -3,18 +3,9 @@ category = "text"
 isScreen = false
 summary = "Loads a bitmap font from an image source."
 description = """
-Loads a bitmap font from an image URL or Image/Canvas element. The font image should contain
-characters arranged in a grid. Each character cell is width+margin*2 by height+margin*2 pixels.
+Loads a bitmap font from an image URL, or from an Image or Canvas element. Characters are arranged in a grid. Each cell is the character size plus the margin on each side.
 
-If charset is not provided, defaults to characters 0-255. The charset can be an array of character
-codes or a string of characters.
-
-Returns a font ID that can be used with setFont. After calling loadFont, you should call $.ready()
-to wait for the image to load before using the font.
-
-width and height must be integers of at least 1 (INVALID_DIMENSIONS), and margin an integer of 0
-or more (INVALID_MARGIN): a TypeError for a value that is not an integer, and a RangeError for
-one out of range.
+If charset is omitted, the font uses character codes 0-255. charset can be an array of character codes or a string of characters. Returns a font ID for setFont. Call $.ready() before using the font.
 """
 example = """
 const fontId = $.loadFont( {

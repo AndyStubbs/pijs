@@ -4,18 +4,9 @@ isScreen = true
 plugin = "pointer"
 summary = "Removes a mouse event handler."
 description = """
-Removes mouse event handlers registered with onMouse. A handler is identified by its mode and
-callback; the once, hitBox, and customData it was registered with do not matter.
+Removes callbacks registered with onMouse. A callback is identified by its mode and function.
 
-With a mode and a callback, removes that handler. Without a callback, removes every handler of the
-mode. With a callback and no mode (null, or no mode in the object form), removes the callback from
-every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "mouse" ) removes
-every mouse handler.
-
-A handler removed during an event does not run later in it.
-
-The mode and callback are checked as onMouse() checks them, with codes INVALID_MODE and
-INVALID_FUNCTION.
+With a mode and a function, removes that callback. Without a function, removes every callback of the mode. With a function and no mode, removes the function from every mode.
 """
 example = """
 $.screen( "300x200" );

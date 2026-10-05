@@ -4,11 +4,9 @@ isScreen = false
 plugin = "sound-advanced"
 summary = "Plays a named sound-effect preset."
 description = """
-Requires the sound-advanced plugin. Plays a preset: a stored set of synth() options. The built-in presets are "coin", "laser", "jump", "hit", "explosion", "powerup", "blip", and "select". definePreset() adds presets or replaces these.
+Plays a named preset of synth() options. The built-in presets are "coin", "laser", "jump", "hit", "explosion", "powerup", "blip", and "select". definePreset() adds presets or replaces these.
 
-variation adds random pitch and length changes so repeated effects do not sound identical. At 1, the pitch moves by up to 3 semitones either way and the duration by up to 10%.
-
-A name that is not defined throws PRESET_NOT_FOUND.
+variation randomly changes the pitch and length so repeated effects do not sound identical. At 1, the pitch moves by up to 3 semitones and the duration by up to 10%.
 """
 example = """
 $.screen( "300x200" );

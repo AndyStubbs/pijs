@@ -4,7 +4,7 @@ isScreen = false
 plugin = "sound"
 summary = "Plays music using BASIC-style notation (inspired by QBasic PLAY command)."
 description = """
-Plays music from a notation string. Notes are scheduled just ahead of time as the song plays, so long songs use few resources. Songs play on the music bus.
+Plays music from a notation string.
 
 **Notes:**
 - A-G: Note letters (A, B, C, D, E, F, G)
@@ -41,8 +41,8 @@ Plays music from a notation string. Notes are scheduled just ahead of time as th
 - [[r],[i]]: Use a custom wave table
 
 **Articulation:**
-Each note fills a slot of its note length at the current tempo, and the song advances by whole slots. Articulation sets how much of the slot sounds; the rest is silent, so the beat never changes.
-- MS: Staccato (75% of the slot sounds)
+Sets how much of each note sounds. The beat stays the same.
+- MS: Staccato (75%)
 - MN: Normal (87.5%, default)
 - ML: Legato (100%)
 
@@ -52,7 +52,7 @@ Each note fills a slot of its note length at the current tempo, and the song adv
 - MH[n]: Sustain (hold) level, % of note volume (default 65)
 - MR[n]: Release time, % of the sounding length (default 20)
 
-The release happens inside the sounding length, so every note ends within its own slot. If MA + MD + MR is over 100, the note releases from the level it reached.
+The release finishes inside the note, so notes do not run into the next beat.
 
 **Instruments:**
 - @[n]: Select instrument n. Instruments are provided by a plugin that extends PLAY; without one, @n is ignored and a warning is logged.

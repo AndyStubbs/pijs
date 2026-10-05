@@ -4,25 +4,11 @@ isScreen = true
 plugin = "pointer"
 summary = "Registers a callback function for click events (mouse or touch)."
 description = """
-Registers a callback that runs when a pointer is pressed and released inside the hit box: the left
-mouse button, or any single touch. Each pointer clicks on its own, so a second finger's tap inside
-the box clicks while the first is still down.
+Registers a callback that runs when a pointer is pressed and released inside the hit box: the left mouse button, or a single touch. Each pointer clicks on its own.
 
-A press inside the box arms the click for that pointer, and its release inside the box fires it
-with the release data. A release outside the box, a release of another mouse button, or a cancel
-disarms it, so right and middle clicks, a drag that leaves the box, and a cancelled touch never
-click.
+A press inside the box starts the click, and the release inside the box runs the callback with the release data. A release outside the box, another mouse button, or a cancelled touch does not click. If no hitBox is given, the screen's size when the callback is registered is used.
 
-If no hitBox is provided, the screen's size when the handler is registered is used. A handler runs
-until it is removed. A handler is identified by its callback: registering the same callback again
-does nothing, whatever its once, hitBox, and customData, and offClick removes it by the callback.
-once removes the registration before the handler runs. Handlers added during an event first run
-for the next event; a handler removed during an event does not run later in it. A handler that
-throws is reported with console.error(), and the other handlers still run.
-
-once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a
-RangeError for a negative hitBox size, with code INVALID_FUNCTION, INVALID_ONCE, or
-INVALID_HITBOX.
+once removes the callback before its first run.
 
 Requires an onscreen screen.
 """

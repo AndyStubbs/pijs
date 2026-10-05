@@ -4,13 +4,11 @@ isScreen = false
 plugin = "sound-advanced"
 summary = "Registers a handler for PLAY notes or song ends, called when the music is heard."
 description = """
-Requires the sound-advanced plugin. Use it to sync visuals and game events to music started with play(). mode "note" calls fn for each note as it starts to sound, and "end" once when a song finishes or is stopped with stopPlay().
+Registers a callback for music started with play(). "note" runs for each note as it starts to sound. "end" runs once when a song finishes or stopPlay() stops it.
 
-A note's data is { type, trackId, track, time, duration, frequency, volume, delay }. trackId is the ID play() returned, track is the index of the comma-separated track, time is the note's audible start in audio context time, duration runs to the end of its release in seconds, and volume is its peak volume. An end's data is { type, trackId, stopped, delay }, where stopped is true after stopPlay(). delay is the seconds between the audible moment and the call. Every handler of an event receives the same frozen object.
+A note's data has type, trackId, track, time, duration, frequency, volume, and delay. trackId is the ID play() returned, and track is the index of the comma-separated track. duration runs to the end of the release, and volume is the peak volume. An end's data has type, trackId, stopped, and delay. stopped is true after stopPlay().
 
-Handlers run on animation frames, on the first frame at or after the moment the note reaches the speakers, including the output latency the browser reports. While audio is suspended, queued notes wait until it resumes and they sound. Notes whose frame comes more than 250 ms late, for example while the tab is hidden, are skipped rather than delivered in a burst. Song ends are always delivered, and stopPlay() skips the song's remaining notes.
-
-Registering the same function for the same mode again does nothing. A handler that throws is reported with console.error without stopping the others. clearEvents( "play" ) removes every handler. A mode other than "note" or "end" throws INVALID_MODE, fn that is not a function throws INVALID_FUNCTION, and once that is not a boolean throws INVALID_ONCE.
+once removes the callback before its first run. Callbacks run when the note is heard. Notes that would arrive late, such as while the tab is hidden, are skipped. Song ends are always delivered.
 """
 example = """
 $.screen( "300x200" );

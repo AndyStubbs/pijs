@@ -4,9 +4,7 @@ isScreen = false
 plugin = "sound"
 summary = "Sets the master volume for all sounds, music, and audio."
 description = """
-Sets the master volume, which scales sounds, music, and audio files together before the output limiter. The change ramps smoothly over a few milliseconds to avoid clicks.
-
-Volume is a multiplier: 0 = silent, 1 = full volume. The default is 0.75.
+Sets the master volume for sounds, music, and audio together. 0 is silent and 1 is full volume. The default is 0.75.
 """
 example = """
 $.screen( "300x200" );

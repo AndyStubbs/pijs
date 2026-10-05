@@ -4,18 +4,9 @@ isScreen = false
 plugin = "keyboard"
 summary = "Sets the keys whose default browser behavior is prevented."
 description = """
-Sets the action keys, replacing the previous set. Action keys have their default browser
-behavior prevented on keydown and keyup, for example page scrolling with the arrow keys or
-Space. This is useful for game controls where you don't want the browser to handle certain
-keys.
+Sets the action keys, replacing the previous set. The browser's default behavior is prevented for these keys, such as scrolling with the arrow keys or Space.
 
-Pass every action key in one call; an empty array clears them. set( { "actionKeys": [ ... ] } )
-sets them the same way, and removeActionKeys() removes some of them. Keys can be specified by
-code (e.g., "ArrowUp", "Space") or key value (e.g., " "). Setting action keys starts keyboard
-tracking, unless stopKeyboard() was called.
-
-Keys that are not an array of strings throw a TypeError, and an empty string in the array a
-RangeError, with code INVALID_KEYS; the set is then left unchanged.
+Pass every action key in one call. An empty array clears them. set( { "actionKeys": [ ... ] } ) sets them the same way. Keys can be a code (for example "ArrowUp") or a key value (for example " "). Setting them starts keyboard tracking unless stopKeyboard() was called.
 """
 example = """
 $.screen( "200x200" );

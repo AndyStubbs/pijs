@@ -4,13 +4,7 @@ isScreen = true
 plugin = "pointer"
 summary = "Enables or disables the right-click context menu."
 description = """
-Controls whether the browser's context menu opens on the screen canvas. The menu is suppressed
-from screen creation, whether or not mouse tracking runs, so right-clicks reach the mouse handlers
-instead; enable it here to let it open. The setting does not start mouse tracking, and stopping
-mouse tracking does not change it. isEnabled is a boolean, or omitted to suppress the menu; any
-other value throws a TypeError with code INVALID_IS_ENABLED.
-
-The option contextMenu of set() calls this command.
+Controls whether the browser's context menu opens on the screen canvas. The menu is suppressed when the screen is created, so right-clicks reach the mouse callbacks. Pass true to let the menu open. set( { "contextMenu": ... } ) calls this command.
 
 Requires an onscreen screen.
 """

@@ -4,9 +4,9 @@ isScreen = false
 plugin = "sound-advanced"
 summary = "Removes PLAY note or song end handlers registered with onPlay()."
 description = """
-Requires the sound-advanced plugin. A handler is identified by its mode and function; once does not matter. With a mode and a function, that handler is removed. With a mode and no function, every handler of that mode is removed. With null as the mode and a function, the function is removed from both modes.
+Removes callbacks registered with onPlay(). A callback is identified by its mode and function.
 
-Giving neither a mode nor a function throws INVALID_MODE; use clearEvents( "play" ) to remove every handler. A mode other than "note", "end", or null throws INVALID_MODE, and fn that is not a function throws INVALID_FUNCTION.
+With a mode and a function, removes that callback. Without a function, removes every callback of that mode. With no mode, removes the function from both modes.
 """
 example = """
 $.screen( "300x200" );

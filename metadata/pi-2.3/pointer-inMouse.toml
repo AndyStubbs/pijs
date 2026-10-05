@@ -4,13 +4,9 @@ isScreen = true
 plugin = "pointer"
 summary = "Gets the current mouse state and starts tracking if needed."
 description = """
-Returns the mouse data of the latest mouse event, for use in an animation loop. The data is
-frozen, and it is the same object the event's onMouse handlers received; every read returns it
-until the next mouse event. Returns null before the first mouse event and while mouse tracking is
-stopped. Tracking starts on the first read unless stopMouse() was called.
+Returns the mouse data from the latest mouse event, or null before the first event and while tracking is stopped. The first call starts tracking unless stopMouse() was called.
 
-buttons counts only buttons pressed on the screen, and a release outside the canvas is seen, so a
-drag that ends anywhere releases its button.
+Only buttons pressed on the screen are counted. A drag that ends outside the canvas still releases its button.
 
 Requires an onscreen screen.
 """

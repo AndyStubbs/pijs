@@ -4,11 +4,9 @@ isScreen = false
 plugin = "sound"
 summary = "Loads an audio file for playback with playAudio."
 description = """
-Loads an audio file and returns an audio ID for playAudio. By default the file is downloaded and decoded into memory, so any number of instances can play it at once with sample-accurate timing. Set stream to true for long files such as music: the file then plays through a media element instead of being decoded, which saves memory but allows only one instance at a time, and its timing is approximate. Decoded audio uses about 21 MB per stereo minute at 44.1 kHz, so streaming is recommended for music longer than about 30 seconds.
+Loads an audio file and returns an audio ID for playAudio. By default the file is decoded, so many instances can play it at once. Set stream to true for long files such as music: that uses less memory and plays one instance at a time.
 
-The file loads asynchronously; use $.ready() to wait for it. Network failures are retried up to three times. A file that fails to load logs an error, and playAudio then throws AUDIO_NOT_LOADED.
-
-Audio requires a page served over HTTP(S). file: URLs throw UNSUPPORTED_PROTOCOL, and cross-origin files need CORS headers.
+The file loads in the background. Call $.ready() before playing it. The page must be served over HTTP or HTTPS, and a cross-origin file needs CORS headers.
 """
 example = """
 $.screen( "300x200" );

@@ -4,19 +4,9 @@ isScreen = false
 plugin = "keyboard"
 summary = "Removes a key event handler."
 description = """
-Removes key event handlers registered with onKey. A handler is identified by its key or
-combination, its mode, and its callback; the once and allowRepeat flags it was registered with
-do not matter. A combination matches when it holds the same keys, in any order.
+Removes callbacks registered with onKey. A callback is identified by its key, mode, and function. A combination matches when it has the same keys, in any order.
 
-With a key, a mode, and a callback, removes that handler. Without a callback, removes every
-handler of the mode for the key. With a callback and no mode (null, or no mode in the object
-form), removes the callback from both modes. A key alone throws a TypeError with code
-INVALID_MODE; clearEvents( "keyboard" ) removes every key handler.
-
-A handler removed while a key event is being dispatched does not run later in that dispatch.
-
-The key, mode, and callback are checked as onKey() checks them, with codes INVALID_KEY,
-INVALID_MODE, and INVALID_FUNCTION.
+With a key, a mode, and a function, removes that callback. Without a function, removes every callback of that mode for the key. With a function and no mode, removes the function from both modes.
 """
 example = """
 $.screen( "300x200" );

@@ -4,7 +4,7 @@ isScreen = false
 plugin = "sound"
 summary = "Changes the volume, playback rate, or pan of an audio instance."
 description = """
-Changes a playing, delayed, or paused instance. Omitted values are unchanged. Volume and pan ramp over 10 ms. playbackRate changes speed and pitch together; it must stay within the range of the instance's loading mode (0.0625-16 decoded, 0.25-4 streamed), or the call throws INVALID_PLAYBACK_RATE. The duration passed to playAudio is file time, so a rate change also changes how long the rest of the instance lasts. Changes to a delayed instance apply from its start, and changes to a paused instance apply when it resumes. Finished instance IDs are ignored; an instance ID that was never returned throws AUDIO_NOT_FOUND.
+Changes a playing, delayed, or paused instance. Omitted values stay as they are. playbackRate changes speed and pitch together, and stays in the range for how the audio was loaded: 0.0625 to 16 for decoded audio, and 0.25 to 4 for streamed audio. A rate change also changes how long the rest of the instance lasts. Changes to a paused instance apply when it resumes.
 """
 example = """
 $.screen( "300x200" );

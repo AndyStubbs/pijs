@@ -4,7 +4,7 @@ isScreen = false
 plugin = "sound"
 summary = "Sets the volume of one sound bus."
 description = """
-Sound is mixed on three buses before the master volume: "sfx" carries sound(), "music" carries play(), and "audio" carries playAudio(). The bus volume applies after any bus effect set with the sound-advanced plugin's setBusEffect(), so it also fades an effect's tail. The change ramps over 10 ms. "master" is the same as setVolume().
+Sets the volume of one mix bus, before the master volume. "sfx" is sound(), "music" is play(), and "audio" is playAudio(). "master" is the same as setVolume().
 """
 example = """
 $.screen( "300x200" );

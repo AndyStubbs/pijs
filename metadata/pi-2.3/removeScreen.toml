@@ -3,12 +3,9 @@ category = "core"
 isScreen = false
 summary = "Removes a screen and cleans up all associated resources."
 description = """
-Removes a screen from the page and cleans up all WebGL2 resources, event handlers, and DOM elements.
-After removal, the screen object becomes invalid and calling methods on it will throw errors.
+Removes a screen and its canvas. After removal, calling methods on the screen throws.
 
-Can be called either as a global function with a screen ID/object, or as a method on a screen API
-object. The global form also takes { "screen": screen }. A missing, unknown, or already removed
-screen throws INVALID_SCREEN_ID.
+Call it as $.removeScreen( screen ) or as screen.removeScreen().
 """
 example = """
 const screen1 = $.screen( "320x200" );

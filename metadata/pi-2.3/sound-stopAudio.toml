@@ -4,7 +4,7 @@ isScreen = false
 plugin = "sound"
 summary = "Stops an audio instance, every instance of an audio ID, or all audio."
 description = """
-Stops audio with a short fade. Pass an instance ID from playAudio to stop one instance, an audio ID from loadAudio to stop every instance of that file, or nothing to stop all audio. A playing instance fades out over 10 ms, so it is silent about 15 ms after the call; paused and delayed instances end at once. Instance IDs that have already finished are ignored. An instance ID that was never returned, or an unknown audio ID, throws AUDIO_NOT_FOUND.
+Stops audio with a short fade. Pass an instance ID to stop one instance, an audio ID to stop every instance of that file, or nothing to stop all audio. An instance that has not started yet is cancelled.
 """
 example = """
 $.screen( "300x200" );

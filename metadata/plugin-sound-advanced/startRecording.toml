@@ -4,13 +4,9 @@ isScreen = false
 plugin = "sound-advanced"
 summary = "Starts recording the sound output, or one bus, to memory."
 description = """
-Requires the sound-advanced plugin. Captures what Pi.js plays in real time, for saving as a WAV file with stopRecording() and saveRecording(). "output" records the final signal after the limiter, exactly what the speakers receive. A bus name records that bus alone, after its effect and volume; "master" is recorded before the limiter.
+Records what Pi.js plays, for saving as a WAV file with stopRecording() and saveRecording(). "output" records what the speakers receive. A bus name records that bus alone, after its effect and volume. "master" is recorded before the limiter.
 
-The returned promise resolves when capture is running. The first recording loads a small audio worklet, so await the promise before playing anything that must be in the recording. If the worklet cannot load, for example because a Content Security Policy blocks blob: scripts, the promise rejects with the code RECORDING_UNAVAILABLE and the recording state returns to "idle".
-
-Recording follows the audio clock: nothing is captured while audio is locked before the first user gesture or suspended by the browser. At maxDuration capture stops and the state becomes "full"; the samples are kept until stopRecording() collects them. Only one recording runs at a time, so calling startRecording() again before stopRecording() finishes throws RECORDING_ACTIVE.
-
-A 16-bit stereo recording at 48 kHz uses about 11.5 MB of memory per minute; a 32-bit recording uses twice that.
+Wait for the returned promise before playing anything that must be in the recording. Nothing is captured before the page's first click, key, or touch. At maxDuration capture stops and the samples are kept until stopRecording(). Only one recording runs at a time.
 """
 example = """
 $.screen( "300x200" );
@@ -48,4 +44,4 @@ optional = true
 [[returns]]
 type = "Promise<void>"
 typeDesc = "Promise"
-description = "Resolves when capture is running; rejects with RECORDING_UNAVAILABLE when the audio worklet cannot load."
+description = "Resolves when capture is running."

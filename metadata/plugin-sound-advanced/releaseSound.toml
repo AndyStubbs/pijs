@@ -4,11 +4,9 @@ isScreen = false
 plugin = "sound-advanced"
 summary = "Releases a held sound, or every held sound, so it fades out over its release time."
 description = """
-Requires the sound-advanced plugin. A sound started with synth() or sfx() and hold set to true sustains until it is released. releaseSound() starts its release: the volume fades over releaseTime and the filter envelope over filterReleaseTime, from the levels they have reached, so a sound released during its attack fades from there. Use it for sounds that last as long as something is happening, such as an engine while a key is down.
+Starts the release of a sound started with synth() or sfx() and hold set to true. The volume fades over releaseTime from the level it has reached. Pass a sound ID to release one sound, or nothing to release every held sound.
 
-Pass a sound ID to release one sound, or nothing to release every held sound. IDs of sounds that are not held, that have finished, or that were never played are ignored, and releasing a sound twice does nothing more. A held sound that has not started yet because of its delay is cancelled.
-
-stopSound() still cuts a held sound off in 10 ms without its release.
+A held sound that has not started yet is cancelled. stopSound() ends a held sound immediately, without its release.
 """
 example = """
 $.screen( "300x200" );

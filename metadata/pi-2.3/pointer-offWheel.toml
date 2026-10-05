@@ -4,11 +4,7 @@ isScreen = true
 plugin = "pointer"
 summary = "Removes a wheel event handler."
 description = """
-Removes the wheel handler registered with the function; the once, hitBox, and customData it was
-registered with do not matter. Wheel has one mode, so if fn is omitted or null, removes every
-wheel handler of the screen. When the last handler is removed, the page scrolls with the wheel
-over the canvas again. A handler removed during an event does not run later in it. The callback
-is checked as onWheel() checks it, with code INVALID_FUNCTION.
+Removes a wheel callback registered with onWheel. If fn is omitted, removes every wheel callback on the screen. When the last one is removed, the page scrolls with the wheel over the canvas again.
 """
 example = """
 $.screen( "300x200" );

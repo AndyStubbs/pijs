@@ -4,51 +4,15 @@ isScreen = false
 plugin = "keyboard"
 summary = "Registers a callback function for key events."
 description = """
-Registers a callback function that will be called when a key event occurs. Keys can be named by
-code (e.g., "KeyA", "Space"), which names a physical key whatever the layout and modifiers, or
-by key value (e.g., "a", " "), which names the character it types. Codes suit game controls.
+Registers a callback for key presses and releases. Name a key by its code (for example "KeyA"), which is the physical key, or by its key value (for example "a"), which is the character it types.
 
-For single keys, the callback receives one key data object. A combination, given as an array of
-keys, runs when all of its keys are held, and its callback receives an array with the key data
-of each key in the order given.
+'down' runs when the key is pressed and receives its key data. 'up' runs when the key is released and receives the key data at release. "any" listens for every key.
 
-Use "any" as the key to listen for every key. The callback receives the key data of the key
-that was pressed or released.
+Pass an array of keys for a combination. It runs when all of those keys are held, and the callback receives an array of their key data. A combination's 'up' callback runs when one of its keys is released while the rest are still held.
 
-A "down" callback receives the key data of the keydown. An "up" callback receives the key data
-of the keyup, so its modifier state is the state at the release. A release runs the handlers of
-the key's code, of the value it reports, and of the value the key was pressed with, when a
-modifier changed it during the hold. Single-key and "any" up handlers run even for a key whose
-press was not seen. A combination's up handler runs when one of its keys is released while all
-were held, with the release data for that key and the held data for the others.
+'up' also runs, with cancelled set to true, when a held key is released because the window loses focus, the page is hidden, stopKeyboard() is called, or an input() prompt starts.
 
-Key state is updated before handlers run: in a "down" handler, inKey() reports the pressed key,
-and in an "up" handler, it no longer reports the released key. A handler registered while an
-event is being handled first runs for the next event, and a handler removed then is not called
-for the rest of it.
-
-Keys the player did not release are released through the "up" handlers too, with cancelled set
-to true: when the window loses focus, the page is hidden, stopKeyboard() is called, a key comes
-from an editable element, or an input() prompt starts. Their key data copies the last keydown,
-with repeat set to false. Each held key is released once; a later trigger finds nothing held.
-
-A handler is identified by its key or combination, its mode, and its callback: registering the
-same callback for the same keys and mode again does nothing, whatever its once and allowRepeat
-flags, and offKey removes it by those three. Registering starts keyboard tracking, unless
-stopKeyboard() was called; handlers stay registered while the keyboard is stopped, but are not
-called.
-
-Key data objects are frozen and carry cancelled, false unless the release was cancelled. Keys
-typed into an editable element, such as an input field, are ignored, and so are the keys of an
-active input() prompt. A callback that throws does not stop the others; its error is reported
-with console.error().
-
-The key is a non-empty string or a non-empty array of them. The array is copied, so changing it
-later does not change the handler, and a key listed twice counts once; "any" cannot be part of
-a combination. The mode is "up" or "down", and once and allowRepeat are booleans or omitted.
-Invalid arguments throw a TypeError for a wrong type or a RangeError for an empty key or an
-unknown mode, with code INVALID_KEY, INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or
-INVALID_ALLOW_REPEAT.
+once removes the callback before its first run. allowRepeat lets a 'down' callback run again while the key is held. Registering starts tracking unless stopKeyboard() was called. Keys typed into an input() prompt, or into an editable element on the page, are ignored.
 """
 example = """
 $.screen( "300x200" );

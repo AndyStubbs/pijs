@@ -4,14 +4,7 @@ isScreen = true
 plugin = "pointer"
 summary = "Stops touch input tracking for this screen."
 description = """
-Stops touch tracking on the screen canvas. Held touches are released first: the onTouch 'up'
-handlers, and the onPress 'up' handlers for the primary touch, run with cancelled set to true, and
-no click fires. Called from a handler, it ends that event: no press, click, or pointer capture
-follows it.
-
-While stopped, handlers stay registered but are not called, inTouch() returns an empty array, and
-inPress() returns null when its latest press came from a touch.
-Reads and handler registration do not restart tracking; call startTouch().
+Stops touch tracking until startTouch(). Held touches are released through the 'up' callbacks with cancelled set to true, and no click fires. While stopped, callbacks stay registered but are not called, and inTouch() returns an empty array. Reads and new callbacks do not restart tracking.
 """
 example = """
 $.screen( "300x200" );

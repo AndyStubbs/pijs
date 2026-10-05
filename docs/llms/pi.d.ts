@@ -215,14 +215,6 @@ declare namespace Pi {
 	 * Gamepad state and helper methods.
 	 *
 	 * A connected gamepad, returned by inGamepad() and passed to onGamepad( "connect" ) callbacks. The object is live: the same object is returned on every read and updated in place, including its buttons array, each button, axes, and lastAxes. Copy values to keep a snapshot.
-	 *
-	 * A read is an inGamepad() call or a call to one of the methods below, including on a pad kept from an earlier read. The first read in each animation frame updates every pad with what happened since the last frame that had a read, so a press and a release between two reads are both reported; every other read in the same frame sees the same values.
-	 *
-	 * A pad starts with every button released, so a button held when the pad appears, such as the press that makes the browser expose it, is reported as just pressed on a later read. Button and axis numbers follow the browser's Gamepad API; the standard mapping has 17 buttons and 4 axes.
-	 *
-	 * The methods take a non-negative integer index or a standard-mapping name, which reads the button or axis at that position on any pad. Buttons: south, east, west, north, leftShoulder, rightShoulder, leftTrigger, rightTrigger, select, start, leftStick, rightStick, dpadUp, dpadDown, dpadLeft, dpadRight, and home (0 to 16). Axes: leftX, leftY, rightX, and rightY (0 to 3). Names are exact, and a button method does not take an axis name.
-	 *
-	 * A value that is neither an integer nor a string throws a TypeError, and a negative index or an unknown name a RangeError, both with code INVALID_INDEX and a message starting with the method name. An index past the pad's buttons or axes returns the empty value: null from getButton(), 0 from getAxis(), and false from the other methods.
 	 */
 	interface GamepadData {
 		/**
@@ -261,7 +253,7 @@ declare namespace Pi {
 		buttons: Array<GamepadButton>;
 
 		/**
-		 * Axis values from -1 to 1 after the dead zone set by setGamepadDeadZone(): radial for the two sticks of the standard mapping, per axis otherwise. Values inside it read 0, and values outside it are rescaled to start from 0.
+		 * Axis values from -1 to 1 after the dead zone set by setGamepadDeadZone().
 		 */
 		axes: Array<number>;
 
@@ -304,7 +296,7 @@ declare namespace Pi {
 	/**
 	 * Data passed to onGamepad( 'disconnect' ) callbacks.
 	 *
-	 * The disconnected pad's identity. Its GamepadData is no longer in the list that inGamepad() returns.
+	 * The disconnected pad's identity.
 	 */
 	interface GamepadDisconnectData {
 		/**
@@ -333,7 +325,7 @@ declare namespace Pi {
 	 *
 	 * A rectangular area in screen pixels that restricts a pointer handler (onClick, onMouse, onPress, onTouch) to input inside it. A point is inside when x <= point.x < x + width and y <= point.y < y + height, so the left and top edges are included and the right and bottom edges are not.
 	 *
-	 * Every value must be a finite number, and fractions are allowed. A negative width or height throws a RangeError with code INVALID_HITBOX.
+	 * Every value must be a postivie finite number, and fractions are allowed.
 	 */
 	interface HitBox {
 		/**
@@ -724,7 +716,9 @@ declare namespace Pi {
 	/**
 	 * Press state data (mouse or touch).
 	 *
-	 * Press data from the primary pointer: the mouse, or the primary touch. Returned by inPress() and passed to onPress callbacks; type tells which input it came from. It has the fields of MouseData or TouchData, plus touches. A touch is primary when it starts with no other touch down, and stays primary until it lifts; after that, no touch is primary until every touch is up. Press data is created once per event and frozen, and can be serialized with JSON.stringify().
+	 * Press data from the primary pointer: the mouse, or the primary touch. Returned by inPress() and passed to onPress callbacks; type tells which input it came from. It has the fields of MouseData or TouchData, plus touches. A touch is primary when it starts with no other touch down, and stays primary until it lifts; after that, no touch is primary until every touch is up.
+	 *
+	 * Press data is created once per event and frozen, and can be serialized with JSON.stringify().
 	 */
 	interface PressData {
 		/**
@@ -1072,8 +1066,6 @@ declare namespace Pi {
 		 * This function renders a circular arc segment to the active canvas.
 		 *
 		 * The angles are measured in degrees, clockwise from the positive x-axis. Equal start and end angles draw nothing. A difference of 360 degrees or more draws one complete outline matching circle(). Shorter differences wrap clockwise from the starting angle to the ending angle.
-		 *
-		 * The angles must be finite numbers; any other value throws a TypeError with code INVALID_PARAMETER.
 		 * @param x The x coordinate of the center point of the arc's circle.
 		 * @param y The y coordinate of the center point of the arc's circle.
 		 * @param radius The radius of the arc's circle.
@@ -1193,8 +1185,6 @@ declare namespace Pi {
 		 * Clears queued/registered events. If type is provided, clears only that event type; otherwise clears events for all registered types.
 		 *
 		 * $.clearEvents() clears per-screen handlers on every screen. A screen's clearEvents(), such as screen.clearEvents(), clears them on that screen only.
-		 *
-		 * The pointer plugin registers "mouse", "touch", "press", "click", and "wheel", each clearing only the handlers of its command: onMouse, onTouch, onPress, onClick, and onWheel. These handlers are per-screen. The gamepad plugin registers "gamepad", which removes every onGamepad() callback, whichever form is called. The keyboard plugin registers "keyboard", which removes every onKey() handler, whichever form is called; $.clearEvents() also cancels every input() prompt, and a screen's clearEvents() cancels only that screen's prompt. Clearing handlers does not stop tracking or polling.
 		 * @param type Optional type to clear (e.g., "keyboard", "mouse", "click", "gamepad").
 		 * @returns This function does not return a value.
 		 */
@@ -1505,9 +1495,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Gets the current mouse state and starts tracking if needed.
 		 *
-		 * Returns the mouse data of the latest mouse event, for use in an animation loop. The data is frozen, and it is the same object the event's onMouse handlers received; every read returns it until the next mouse event. Returns null before the first mouse event and while mouse tracking is stopped. Tracking starts on the first read unless stopMouse() was called.
+		 * Returns the mouse data from the latest mouse event, or null before the first event and while tracking is stopped. The first call starts tracking unless stopMouse() was called.
 		 *
-		 * buttons counts only buttons pressed on the screen, and a release outside the canvas is seen, so a drag that ends anywhere releases its button.
+		 * Only buttons pressed on the screen are counted. A drag that ends outside the canvas still releases its button.
 		 *
 		 * Requires an onscreen screen.
 		 * @returns Frozen mouse data of the latest event, or null before it and while stopped.
@@ -1517,9 +1507,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Gets the current press state (mouse or touch) and starts tracking if needed.
 		 *
-		 * Returns the press of the primary pointer, from whichever input was used last: the mouse data, or the primary touch. A touch is primary when it starts with no other touch down, and stays primary until it lifts; the other touches are listed in touches but do not move the press. After the primary touch lifts, the press keeps its release, with buttons 0 and action 'up', until the next primary touch.
+		 * Returns the press of the primary pointer, from whichever was used last: the mouse, or the primary touch. A touch is primary when it starts with no other touch down, and stays primary until it lifts. Returns null before the first event, and while the input of the latest press is stopped.
 		 *
-		 * The data is frozen, and it is the same object the event's onPress handlers received; every read returns it until the next mouse or touch event. Returns null before the first event, and while the input the latest press came from is stopped. Mouse and touch tracking start on the first read unless stopped.
+		 * The first call starts mouse and touch tracking unless they were stopped.
 		 *
 		 * Requires an onscreen screen.
 		 * @returns Frozen press data of the primary pointer, from the mouse or touch, or null.
@@ -1529,19 +1519,13 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Prompts the user for text input with a blinking cursor.
 		 *
-		 * Displays a prompt at the print cursor and waits for the user to type a value. Enter completes the input and Escape cancels it. Returns a Promise that resolves with the value, or null if the input is cancelled, and optionally calls a callback function with the same value.
+		 * Shows a prompt at the print cursor and waits for the user to type. Enter completes the input and Escape cancels it. Returns a Promise that resolves with the value, or null when cancelled, and calls fn with the same value when fn is given.
 		 *
-		 * The prompt keeps to one line: when the value would reach the right edge, the end of the value is shown. After the input ends, printing continues at column 0 of the line below the prompt.
+		 * The prompt stays on one line. When it ends, printing continues on the next line. It reads keys itself, so it works after stopKeyboard(). Keys typed into the prompt do not reach onKey() or inKey().
 		 *
-		 * While the prompt is active it reads keys itself, so it works even after stopKeyboard(). It prevents the default action of the keys it handles, so typing does not scroll the page or move focus. Shortcuts with Ctrl or Meta are left to the browser, except AltGr, which types; pasted text is inserted one character at a time by the same rules as typed text. Keys typed into an editable element on the page, such as an input field, are ignored.
+		 * With isNumber or isInteger, only a number is accepted and the promise resolves with a number. isInteger rejects a decimal point. allowNegative accepts a leading minus sign. A value with no digits resolves to 0.
 		 *
-		 * The prompt's keys are its own: they do not reach onKey() handlers or inKey(), including the key that ends the prompt and the later release of keys pressed during it. Keys held when the prompt starts are released through the onKey() "up" handlers, with cancelled set to true, and their later release is not reported again.
-		 *
-		 * With isNumber or isInteger, the value is a number. Only digits, one decimal point unless isInteger is set, and a leading minus sign with allowNegative are accepted. Typing "-" adds the minus sign at the start, and "+" removes it; the minus sign counts toward maxLength. A value with no digits resolves to 0.
-		 *
-		 * The input is cancelled by cancelInput(), by clearEvents( "keyboard" ) called with no screen or from the screen that owns the prompt, by removing that screen, or by starting another input.
-		 *
-		 * The prompt and cursor are strings, the callback a function, and isNumber, isInteger, and allowNegative booleans; maxLength is an integer of at least 1. Omitted values, null or undefined, take their defaults. Invalid options throw a TypeError, or a RangeError for a maxLength below 1, with code INVALID_PROMPT, INVALID_FUNCTION, INVALID_CURSOR, INVALID_IS_NUMBER, INVALID_IS_INTEGER, INVALID_ALLOW_NEGATIVE, or INVALID_MAX_LENGTH.
+		 * The prompt is also cancelled by cancelInput(), by clearEvents( "keyboard" ) on its screen, by removing that screen, or by starting another input.
 		 * @param prompt Prompt text to display before the input field.
 		 * @param fn Optional callback function called with the input value, or null if cancelled.
 		 * @param cursor Cursor character to display. Omitted or empty, it is character code 219, which the built-in fonts draw as a block.
@@ -1557,9 +1541,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Gets the current touch state and starts tracking if needed.
 		 *
-		 * Returns the touches still down, ordered by identifier; the array is empty when no touch is down and while touch tracking is stopped. Each touch has its own action. The array and its touches are frozen: every read returns the same array until a touch changes, and each touch is the object the onTouch handlers received. Tracking starts on the first read unless stopTouch() was called.
+		 * Returns the touches still down, or an empty array when none is down or tracking is stopped. The first call starts tracking unless stopTouch() was called.
 		 *
-		 * A touch that starts on the canvas border or padding is not tracked. Held touches are released when the page is hidden or stopTouch() is called.
+		 * A touch that starts on the canvas border or padding is not included. Held touches are released when the page is hidden or stopTouch() is called.
 		 *
 		 * Requires an onscreen screen.
 		 * @returns Touches still down; empty when none is down.
@@ -1584,7 +1568,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a click event handler.
 		 *
-		 * Removes the click handler registered with the function; the once, hitBox, and customData it was registered with do not matter. Click has one mode, so if fn is omitted or null, removes every click handler of the screen. A handler removed during an event does not run later in it. The callback is checked as onClick() checks it, with code INVALID_FUNCTION.
+		 * Removes a click callback registered with onClick. If fn is omitted, removes every click callback on the screen.
 		 * @param fn Callback function to remove. If omitted or null, removes every click handler.
 		 * @returns This function does not return a value.
 		 */
@@ -1594,13 +1578,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a mouse event handler.
 		 *
-		 * Removes mouse event handlers registered with onMouse. A handler is identified by its mode and callback; the once, hitBox, and customData it was registered with do not matter.
+		 * Removes callbacks registered with onMouse. A callback is identified by its mode and function.
 		 *
-		 * With a mode and a callback, removes that handler. Without a callback, removes every handler of the mode. With a callback and no mode (null, or no mode in the object form), removes the callback from every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "mouse" ) removes every mouse handler.
-		 *
-		 * A handler removed during an event does not run later in it.
-		 *
-		 * The mode and callback are checked as onMouse() checks them, with codes INVALID_MODE and INVALID_FUNCTION.
+		 * With a mode and a function, removes that callback. Without a function, removes every callback of the mode. With a function and no mode, removes the function from every mode.
 		 * @param mode Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode.
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
@@ -1611,13 +1591,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a press event handler.
 		 *
-		 * Removes press event handlers registered with onPress. A handler is identified by its mode and callback; the once, hitBox, and customData it was registered with do not matter.
+		 * Removes callbacks registered with onPress. A callback is identified by its mode and function.
 		 *
-		 * With a mode and a callback, removes that handler. Without a callback, removes every handler of the mode. With a callback and no mode (null, or no mode in the object form), removes the callback from every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "press" ) removes every press handler.
-		 *
-		 * A handler removed during an event does not run later in it.
-		 *
-		 * The mode and callback are checked as onPress() checks them, with codes INVALID_MODE and INVALID_FUNCTION.
+		 * With a mode and a function, removes that callback. Without a function, removes every callback of the mode. With a function and no mode, removes the function from every mode.
 		 * @param mode Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode.
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
@@ -1628,13 +1604,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a touch event handler.
 		 *
-		 * Removes touch event handlers registered with onTouch. A handler is identified by its mode and callback; the once, hitBox, and customData it was registered with do not matter.
+		 * Removes callbacks registered with onTouch. A callback is identified by its mode and function.
 		 *
-		 * With a mode and a callback, removes that handler. Without a callback, removes every handler of the mode. With a callback and no mode (null, or no mode in the object form), removes the callback from every mode. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "touch" ) removes every touch handler.
-		 *
-		 * A handler removed during an event does not run later in it.
-		 *
-		 * The mode and callback are checked as onTouch() checks them, with codes INVALID_MODE and INVALID_FUNCTION.
+		 * With a mode and a function, removes that callback. Without a function, removes every callback of the mode. With a function and no mode, removes the function from every mode.
 		 * @param mode Mode ('down', 'up', or 'move'); if omitted or null, fn is removed from every mode.
 		 * @param fn Callback function to remove. If omitted or null, removes every handler of the mode.
 		 * @returns This function does not return a value.
@@ -1645,7 +1617,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a wheel event handler.
 		 *
-		 * Removes the wheel handler registered with the function; the once, hitBox, and customData it was registered with do not matter. Wheel has one mode, so if fn is omitted or null, removes every wheel handler of the screen. When the last handler is removed, the page scrolls with the wheel over the canvas again. A handler removed during an event does not run later in it. The callback is checked as onWheel() checks it, with code INVALID_FUNCTION.
+		 * Removes a wheel callback registered with onWheel. If fn is omitted, removes every wheel callback on the screen. When the last one is removed, the page scrolls with the wheel over the canvas again.
 		 * @param fn Callback function to remove. If omitted or null, removes every wheel handler.
 		 * @returns This function does not return a value.
 		 */
@@ -1655,13 +1627,11 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Registers a callback function for click events (mouse or touch).
 		 *
-		 * Registers a callback that runs when a pointer is pressed and released inside the hit box: the left mouse button, or any single touch. Each pointer clicks on its own, so a second finger's tap inside the box clicks while the first is still down.
+		 * Registers a callback that runs when a pointer is pressed and released inside the hit box: the left mouse button, or a single touch. Each pointer clicks on its own.
 		 *
-		 * A press inside the box arms the click for that pointer, and its release inside the box fires it with the release data. A release outside the box, a release of another mouse button, or a cancel disarms it, so right and middle clicks, a drag that leaves the box, and a cancelled touch never click.
+		 * A press inside the box starts the click, and the release inside the box runs the callback with the release data. A release outside the box, another mouse button, or a cancelled touch does not click. If no hitBox is given, the screen's size when the callback is registered is used.
 		 *
-		 * If no hitBox is provided, the screen's size when the handler is registered is used. A handler runs until it is removed. A handler is identified by its callback: registering the same callback again does nothing, whatever its once, hitBox, and customData, and offClick removes it by the callback. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
-		 *
-		 * once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for a negative hitBox size, with code INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
+		 * once removes the callback before its first run.
 		 *
 		 * Requires an onscreen screen.
 		 * @param fn Callback function that receives (clickData, customData).
@@ -1676,13 +1646,11 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Registers a callback function for mouse events.
 		 *
-		 * Registers a callback that runs when a mouse event occurs, with the mouse data and the optional custom data. Mouse commands also observe pens, whose data has type set to 'pen'. With a hitBox, the callback runs only for events inside it. Registering starts tracking unless stopMouse() was called.
+		 * Registers a callback for mouse events. The callback receives the mouse data and any custom data. Pens are included, with type set to 'pen'. With a hitBox, the callback runs only for events inside it.
 		 *
-		 * A press that starts on the canvas border or padding is ignored. A press on the canvas keeps reporting moves while it leaves the canvas, and 'up' runs for its release anywhere. 'up' also runs with cancelled set to true when the browser cancels the pointer, the page is hidden, or stopMouse() is called with a button held; moves and releases report their true position, which can be outside the screen.
+		 * 'down' runs when a button is pressed, 'move' when the pointer moves, and 'up' when a button is released. A press that starts on the canvas border or padding is ignored. A press on the canvas keeps reporting moves after it leaves the canvas, and 'up' runs for the release anywhere. 'up' also runs with cancelled set to true when the browser cancels the pointer, the page is hidden, or stopMouse() is called while a button is held.
 		 *
-		 * A handler runs until it is removed. A handler is identified by its mode and callback: registering the same callback for the same mode again does nothing, whatever its once, hitBox, and customData, and offMouse removes it by those two. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
-		 *
-		 * The mode is 'down', 'up', or 'move', and once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for an unknown mode or a negative hitBox size, with code INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
+		 * once removes the callback before its first run. Registering starts tracking unless stopMouse() was called.
 		 *
 		 * Requires an onscreen screen.
 		 * @param mode Event mode: 'down', 'up', or 'move'.
@@ -1698,13 +1666,11 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Registers a callback function for press events (mouse or touch).
 		 *
-		 * Registers a callback that runs for press events of the primary pointer, the mouse or the primary touch, with the press data and the optional custom data. Other touches reach onTouch handlers and inTouch() only. With a hitBox, the callback runs only for presses inside it.
+		 * Registers a callback for the primary pointer, either the mouse or the primary touch. Other touches are available from onTouch() and inTouch(). With a hitBox, the callback runs only for events inside it.
 		 *
-		 * 'up' runs for the mouse release anywhere and for the primary touch's release, with cancelled set to true for a release the player did not make: a cancelled touch, a hidden page, or a stop command. A press that starts on the canvas border or padding is ignored. Registering starts mouse and touch tracking unless stopped.
+		 * 'down', 'move', and 'up' follow that pointer. 'up' also runs with cancelled set to true for a release the player did not make. A press that starts on the canvas border or padding is ignored.
 		 *
-		 * A handler runs until it is removed. A handler is identified by its mode and callback: registering the same callback for the same mode again does nothing, whatever its once, hitBox, and customData, and offPress removes it by those two. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
-		 *
-		 * The mode is 'down', 'up', or 'move', and once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for an unknown mode or a negative hitBox size, with code INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
+		 * once removes the callback before its first run. Registering starts mouse and touch tracking unless they were stopped.
 		 *
 		 * Requires an onscreen screen.
 		 * @param mode Event mode: 'down', 'up', or 'move'.
@@ -1720,16 +1686,14 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Registers a callback function for touch events.
 		 *
-		 * Registers a callback that runs when a touch event occurs, with the touch it changed, in an array, and the optional custom data: 'down' receives the touch that started, 'move' the touch that moved, and 'up' the touch that ended, at the position where it lifted. Each touch is reported by its own event. Use inTouch() for every touch still down.
+		 * Registers a callback for touch events. The callback receives the touch that changed, in an array, and any custom data. Each touch is reported on its own. Use inTouch() for every touch still down.
 		 *
-		 * With a hitBox, the callback receives only the changed touches inside it, and runs only when there is one. 'up' also runs with cancelled set to true when the browser cancels a touch, the page is hidden, or stopTouch() is called. A touch that starts on the canvas border or padding is ignored. A touch that starts on the canvas keeps reporting moves and its end when it leaves the canvas. While touch is tracked, the canvas has touch-action set to none, so the browser does not scroll or zoom with touches that start there. Registering starts tracking unless stopTouch() was called.
+		 * 'down' receives the touch that started, 'move' the touch that moved, and 'up' the touch that ended. With a hitBox, the callback receives only the changed touches inside it. A touch that starts on the canvas border or padding is ignored. A touch that starts on the canvas keeps reporting moves and its end after it leaves the canvas. 'up' also runs with cancelled set to true when the browser cancels a touch, the page is hidden, or stopTouch() is called.
 		 *
-		 * A handler runs until it is removed. A handler is identified by its mode and callback: registering the same callback for the same mode again does nothing, whatever its once, hitBox, and customData, and offTouch removes it by those two. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
-		 *
-		 * The mode is 'down', 'up', or 'move', and once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for an unknown mode or a negative hitBox size, with code INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
+		 * While touch is tracked, the browser does not scroll or zoom from touches that start on the canvas. once removes the callback before its first run. Registering starts tracking unless stopTouch() was called.
 		 *
 		 * Requires an onscreen screen.
-		 * @param mode Event mode: 'down', 'up', or 'move'. Any other mode throws INVALID_MODE.
+		 * @param mode Event mode: 'down', 'up', or 'move'.
 		 * @param fn Callback function that receives (touches, customData) with the changed touches.
 		 * @param once If true, this registration is removed before the callback's first run.
 		 * @param hitBox Optional area; the callback receives only the changed touches inside it.
@@ -1742,13 +1706,11 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Registers a callback function for mouse wheel and trackpad scroll events.
 		 *
-		 * Registers a callback that runs when the wheel turns, or a trackpad scrolls, over the screen canvas, with the wheel data and the optional custom data. Deltas are in CSS pixels whatever the browser reports: a line is 16 pixels and a page is the window's width or height. With a hitBox, the callback runs only for wheel events inside it.
+		 * Registers a callback for mouse wheel and trackpad scroll events over the canvas. The callback receives the wheel data and any custom data. With a hitBox, it runs only for events inside it. Deltas are in CSS pixels.
 		 *
-		 * While the screen has a wheel handler, the page does not scroll with the wheel over the canvas; when the last handler is removed, it scrolls again. Wheel handlers need no tracking, so the mouse start and stop commands do not affect them.
+		 * While a wheel callback is registered, the page does not scroll from the wheel over the canvas. When the last one is removed, the page scrolls again.
 		 *
-		 * A handler runs until it is removed. A handler is identified by its callback: registering the same callback again does nothing, whatever its once, hitBox, and customData, and offWheel removes it by the callback. once removes the registration before the handler runs. Handlers added during an event first run for the next event; a handler removed during an event does not run later in it. A handler that throws is reported with console.error(), and the other handlers still run.
-		 *
-		 * once is a boolean or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for a negative hitBox size, with code INVALID_FUNCTION, INVALID_ONCE, or INVALID_HITBOX.
+		 * once removes the callback before its first run.
 		 *
 		 * Requires an onscreen screen.
 		 * @param fn Callback function that receives (wheelData, customData).
@@ -1925,13 +1887,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Applies multiple settings in a single call using an options object.
 		 *
-		 * Sets one or more global or screen-scoped settings. Any command registered as a "setX" command is available as an option with the lowercased name (e.g., setColor => { "color": ... }), including the settings of loaded plugins.
+		 * Sets one or more settings in one call. Any setX command is available as an option with the first letter lowercased, such as setColor as "color", including settings from loaded plugins.
 		 *
-		 * Behavior:
-		 * - May be called before or after a screen exists; screen-scoped settings are applied to the active   screen. A "screen" option makes its screen active for the settings after it.
-		 * - Settings routed to non-screen commands are applied globally.
-		 * - Options set to null are skipped.
-		 * - Every option name is checked before any setting is applied. A name that is not a setting,   including a setting of a plugin that is not loaded, throws a RangeError with code   INVALID_OPTION, and options that are not an object throw a TypeError with code   INVALID_OPTIONS. A screen setting with no active screen throws NO_ACTIVE_SCREEN.
+		 * Screen settings apply to the active screen. A "screen" option makes that screen active for the settings after it. Options set to null are skipped.
 		 * @param options Object whose keys map to available settings (e.g., { "color": 2, "font": 1 }).
 		 * @returns This function does not return a value.
 		 */
@@ -1965,9 +1923,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Sets a custom character bitmap in the current font.
 		 *
-		 * Modifies a character in the current screen's font atlas by replacing its bitmap data. The character must exist in the font's character set. The data can be provided as a 2D array of 0/1 values or as a hex-encoded string.
+		 * Replaces one character's bitmap in the current font. data is a 2D array of 0 and 1, or a hex string. The character must exist in the font.
 		 *
-		 * The font is shared, so the change applies on every screen that uses it, from the next time the character is printed; text printed before the change keeps the old glyph. The edit is made to the font's own copy of its image, so the image or canvas it was loaded from is not modified, and the change survives a lost and restored WebGL context.
+		 * The font is shared, so the change shows on every screen that uses it the next time the character is printed. Text already printed keeps the old glyph.
 		 * @param charCode Character code (number) or single-character string to modify.
 		 * @param data Character bitmap as 2D array [[row...], ...] where 1=on, 0=off, or hex-encoded string.
 		 * @returns This function does not return a value.
@@ -1998,9 +1956,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Enables or disables the right-click context menu.
 		 *
-		 * Controls whether the browser's context menu opens on the screen canvas. The menu is suppressed from screen creation, whether or not mouse tracking runs, so right-clicks reach the mouse handlers instead; enable it here to let it open. The setting does not start mouse tracking, and stopping mouse tracking does not change it. isEnabled is a boolean, or omitted to suppress the menu; any other value throws a TypeError with code INVALID_IS_ENABLED.
-		 *
-		 * The option contextMenu of set() calls this command.
+		 * Controls whether the browser's context menu opens on the screen canvas. The menu is suppressed when the screen is created, so right-clicks reach the mouse callbacks. Pass true to let the menu open. set( { "contextMenu": ... } ) calls this command.
 		 *
 		 * Requires an onscreen screen.
 		 * @param isEnabled If true, the context menu opens. If false, it is suppressed.
@@ -2128,9 +2084,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Enables or disables browser pinch zoom on the screen canvas.
 		 *
-		 * Sets the touch-action style of the screen canvas, at any time: 'pinch-zoom' when enabled, so a pinch that starts on the canvas zooms the page, and 'none' when disabled, so every touch on the canvas stays with the screen. The rest of the page, including the body, is not changed. isEnabled is a boolean, or omitted to disable pinch zoom; any other value throws a TypeError with code INVALID_IS_ENABLED.
+		 * Controls whether a pinch that starts on the screen canvas zooms the page. Pass false, or omit the argument, to keep those touches for the screen. Pass true to let the pinch zoom the page.
 		 *
-		 * Without this setting, the canvas has touch-action set to none while touch tracking runs, and stopping tracking restores the canvas's previous value. After this setting, tracking keeps its value. The setting does not start touch tracking. The option pinchZoom of set() calls this command.
+		 * The setting does not start touch tracking. set( { "pinchZoom": ... } ) calls this command.
 		 *
 		 * Requires an onscreen screen.
 		 * @param isEnabled If true, a pinch on the canvas zooms the page. If false, it does not.
@@ -2164,9 +2120,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Sets the scale factor for printed text.
 		 *
-		 * Sets the horizontal and vertical scale factors for bitmap font rendering. This allows you to make text larger or smaller. Scale values must be finite numbers greater than 0 (INVALID_SIZE).
-		 *
-		 * Use padX and padY to add extra padding between characters when they print to the screen. Padding must be an integer of 0 or more (INVALID_PADDING). Omitted parameters keep their current values.
+		 * Sets the horizontal and vertical scale of printed bitmap text, and optional extra space between characters. Omitted values keep their current setting.
 		 * @param scaleWidth Horizontal scale factor; a number greater than 0.
 		 * @param scaleHeight Vertical scale factor; a number greater than 0.
 		 * @param padX Extra horizontal padding between characters in pixels; an integer of 0 or more. Defaults to 0.
@@ -2189,9 +2143,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Starts mouse input tracking for this screen.
 		 *
-		 * Starts mouse tracking on the screen canvas. Tracking also starts on first use: the first inMouse(), inPress(), or handler registration. After stopMouse(), only startMouse() starts tracking again.
-		 *
-		 * When the page is hidden, held buttons are released through the 'up' handlers, with cancelled set to true.
+		 * Starts mouse tracking. Tracking also starts on the first inMouse(), inPress(), or mouse callback, so this is only needed after stopMouse(). Calling it while tracking is already running does nothing.
 		 *
 		 * Requires an onscreen screen.
 		 * @returns This function does not return a value.
@@ -2201,9 +2153,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Starts touch input tracking for this screen.
 		 *
-		 * Starts touch tracking on the screen canvas, and sets its touch-action style to none so the browser does not scroll or zoom with touches on it; stopTouch() restores the previous value. Tracking also starts on first use: the first inTouch(), inPress(), or handler registration. After stopTouch(), only startTouch() starts tracking again.
-		 *
-		 * When the page is hidden, held touches are released through the 'up' handlers, with cancelled set to true.
+		 * Starts touch tracking. Tracking also starts on the first inTouch(), inPress(), or touch callback, so this is only needed after stopTouch(). While tracking, the browser does not scroll or zoom from touches on the canvas. Calling it while tracking is already running does nothing.
 		 *
 		 * Requires an onscreen screen.
 		 * @returns This function does not return a value.
@@ -2213,9 +2163,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Stops mouse input tracking for this screen.
 		 *
-		 * Stops mouse tracking on the screen canvas. Held buttons are released first: the onMouse and onPress 'up' handlers run with cancelled set to true, and no click fires. Called from a handler, it ends that event: no press, click, or pointer capture follows it.
-		 *
-		 * While stopped, handlers stay registered but are not called, inMouse() returns null, and inPress() returns null when its latest press came from the mouse. Reads and handler registration do not restart tracking; call startMouse().
+		 * Stops mouse tracking until startMouse(). Held buttons are released through the 'up' callbacks with cancelled set to true, and no click fires. While stopped, callbacks stay registered but are not called, and inMouse() returns null. Reads and new callbacks do not restart tracking.
 		 * @returns This function does not return a value.
 		 */
 		stopMouse(): void;
@@ -2223,9 +2171,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Stops touch input tracking for this screen.
 		 *
-		 * Stops touch tracking on the screen canvas. Held touches are released first: the onTouch 'up' handlers, and the onPress 'up' handlers for the primary touch, run with cancelled set to true, and no click fires. Called from a handler, it ends that event: no press, click, or pointer capture follows it.
-		 *
-		 * While stopped, handlers stay registered but are not called, inTouch() returns an empty array, and inPress() returns null when its latest press came from a touch. Reads and handler registration do not restart tracking; call startTouch().
+		 * Stops touch tracking until startTouch(). Held touches are released through the 'up' callbacks with cancelled set to true, and no click fires. While stopped, callbacks stay registered but are not called, and inTouch() returns an empty array. Reads and new callbacks do not restart tracking.
 		 * @returns This function does not return a value.
 		 */
 		stopTouch(): void;
@@ -2360,13 +2306,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Gets gamepad data for a specific gamepad or all gamepads.
 		 *
-		 * Reads the connected gamepads. With a gamepadIndex, returns the GamepadData for that index, or null when no pad has it. Without one, or with null, always returns an array: every connected pad in index order, in one live array that is refilled on each call, and empty when no pad is connected. The list is compact, so a pad's position in it is not always its index; use its index property.
+		 * Reads and returns the connected gamepads. With a gamepadIndex, returns the GamepadData for that index, or null.
 		 *
-		 * The first read starts polling, unless stopGamepad() was called; after stopGamepad(), the list form returns an empty array and the index form null, until startGamepad() starts polling again. The first read records the current state without reporting buttons already held as just pressed.
-		 *
-		 * Pads are live objects updated in place. The first read in each animation frame reports what happened since the last frame that had a read, and every other read in the frame sees the same values; see GamepadData.
-		 *
-		 * A gamepadIndex that is not an integer throws a TypeError, and a negative one a RangeError, both with code INVALID_INDEX; a well-formed index with no pad behind it returns null.
+		 * Gamepads are live objects updated in place. The first read in each animation frame reports what happened since the last frame that had a read, and every other read in the frame sees the same values.
 		 * @param gamepadIndex Gamepad index to read. If omitted or null, returns every connected pad.
 		 * @returns The pad for the index, or null when none has it or polling is stopped; with no index, an array of every connected pad, empty while polling is stopped.
 		 */
@@ -2383,8 +2325,6 @@ screen is removed before deferred processing completes, or with the original rea
 		 * The first call starts keyboard tracking, unless stopKeyboard() was called; keys pressed before tracking starts are not reported. Keys typed into an input() prompt are not reported either.
 		 *
 		 * Key data objects contain: code, key, location, altKey, ctrlKey, metaKey, shiftKey, repeat, cancelled. They are frozen.
-		 *
-		 * A key that is not a string throws a TypeError, and an empty string a RangeError, with code INVALID_KEY; null is the same as no key.
 		 * @param key Key code or key value to check. If omitted, returns all pressed keys.
 		 * @returns Key data object if key is pressed, array of all pressed keys if no key specified, or null if key not pressed.
 		 */
@@ -2394,11 +2334,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Loads an audio file for playback with playAudio.
 		 *
-		 * Loads an audio file and returns an audio ID for playAudio. By default the file is downloaded and decoded into memory, so any number of instances can play it at once with sample-accurate timing. Set stream to true for long files such as music: the file then plays through a media element instead of being decoded, which saves memory but allows only one instance at a time, and its timing is approximate. Decoded audio uses about 21 MB per stereo minute at 44.1 kHz, so streaming is recommended for music longer than about 30 seconds.
+		 * Loads an audio file and returns an audio ID for playAudio. By default the file is decoded, so many instances can play it at once. Set stream to true for long files such as music: that uses less memory and plays one instance at a time.
 		 *
-		 * The file loads asynchronously; use $.ready() to wait for it. Network failures are retried up to three times. A file that fails to load logs an error, and playAudio then throws AUDIO_NOT_LOADED.
-		 *
-		 * Audio requires a page served over HTTP(S). file: URLs throw UNSUPPORTED_PROTOCOL, and cross-origin files need CORS headers.
+		 * The file loads in the background. Call $.ready() before playing it. The page must be served over HTTP or HTTPS, and a cross-origin file needs CORS headers.
 		 * @param src Audio file URL (e.g., 'sound.mp3', 'audio/beep.wav').
 		 * @param name A unique name to use as the audio ID. If omitted, an ID is generated.
 		 * @param stream True to stream the file through a media element instead of decoding it into memory (default: false).
@@ -2410,13 +2348,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Loads a bitmap font from an image source.
 		 *
-		 * Loads a bitmap font from an image URL or Image/Canvas element. The font image should contain characters arranged in a grid. Each character cell is width+margin*2 by height+margin*2 pixels.
+		 * Loads a bitmap font from an image URL, or from an Image or Canvas element. Characters are arranged in a grid. Each cell is the character size plus the margin on each side.
 		 *
-		 * If charset is not provided, defaults to characters 0-255. The charset can be an array of character codes or a string of characters.
-		 *
-		 * Returns a font ID that can be used with setFont. After calling loadFont, you should call $.ready() to wait for the image to load before using the font.
-		 *
-		 * width and height must be integers of at least 1 (INVALID_DIMENSIONS), and margin an integer of 0 or more (INVALID_MARGIN): a TypeError for a value that is not an integer, and a RangeError for one out of range.
+		 * If charset is omitted, the font uses character codes 0-255. charset can be an array of character codes or a string of characters. Returns a font ID for setFont. Call $.ready() before using the font.
 		 * @param src Font image source: URL string, Image element, or Canvas element.
 		 * @param width Character width in pixels (glyph width, excluding margin); an integer of at least 1.
 		 * @param height Character height in pixels (glyph height, excluding margin); an integer of at least 1.
@@ -2443,9 +2377,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Loads a spritesheet by URL or from an Image/Canvas element.
 		 *
-		 * Loads a spritesheet and slices it either automatically (connected components) or by a fixed grid. Sprites retain their source colors when the screen palette changes. Use the shader API for recoloring.
-		 *
-		 * In fixed grid mode, width and height must be integers of at least 1 (INVALID_DIMENSIONS), and margin an integer of 0 or more (INVALID_MARGIN), after rounding: a TypeError for a value that is not an integer, and a RangeError for one out of range.
+		 * Loads a spritesheet and slices it automatically, or on a fixed grid when width and height are given. Sprites keep their source colors when the screen palette changes.
 		 * @param src Spritesheet source: URL string, HTMLImageElement, or HTMLCanvasElement.
 		 * @param name Optional unique name for the spritesheet. Auto-generated if omitted.
 		 * @param width Sprite width for fixed grid mode.
@@ -2461,11 +2393,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a gamepad connection or disconnection callback.
 		 *
-		 * Removes callbacks registered with onGamepad. A callback is identified by its mode and function; the once it was registered with does not matter.
+		 * Removes callbacks registered with onGamepad. A callback is identified by its mode and function; the 'once' parameter is not used to identify the callback.
 		 *
-		 * With a mode and a function, removes that callback. Without a function, removes every callback of the mode. With a function and no mode (null, or no mode in the object form), removes the function from both modes. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "gamepad" ) removes every callback.
-		 *
-		 * A callback removed during a dispatch does not run later in it. The mode and function are checked as onGamepad() checks them, with codes INVALID_MODE and INVALID_FUNCTION.
+		 * A callback removed during a dispatch does will not run later.
 		 * @param mode 'connect' or 'disconnect'. If omitted or null, fn is removed from both modes.
 		 * @param fn Callback to remove. If omitted or null, every callback of the mode is removed.
 		 * @returns This function does not return a value.
@@ -2476,13 +2406,9 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Removes a key event handler.
 		 *
-		 * Removes key event handlers registered with onKey. A handler is identified by its key or combination, its mode, and its callback; the once and allowRepeat flags it was registered with do not matter. A combination matches when it holds the same keys, in any order.
+		 * Removes callbacks registered with onKey. A callback is identified by its key, mode, and function. A combination matches when it has the same keys, in any order.
 		 *
-		 * With a key, a mode, and a callback, removes that handler. Without a callback, removes every handler of the mode for the key. With a callback and no mode (null, or no mode in the object form), removes the callback from both modes. A key alone throws a TypeError with code INVALID_MODE; clearEvents( "keyboard" ) removes every key handler.
-		 *
-		 * A handler removed while a key event is being dispatched does not run later in that dispatch.
-		 *
-		 * The key, mode, and callback are checked as onKey() checks them, with codes INVALID_KEY, INVALID_MODE, and INVALID_FUNCTION.
+		 * With a key, a mode, and a function, removes that callback. Without a function, removes every callback of that mode for the key. With a function and no mode, removes the function from both modes.
 		 * @param key Key code, key value, "any", or combination array of the handlers to remove.
 		 * @param mode Event mode ("up" or "down"). If omitted or null, fn is removed from both modes.
 		 * @param fn Callback to remove. If omitted, every handler of the mode is removed.
@@ -2494,13 +2420,13 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Registers a callback function for gamepad connections or disconnections.
 		 *
-		 * Registers a callback for the mode: 'connect' runs when a gamepad connects, with its GamepadData, and 'disconnect' runs when one disconnects, with its GamepadDisconnectData.
+		 * Registers a callback for gamepad connections or disconnections.
 		 *
-		 * A 'connect' callback also receives each pad that is already connected when it is registered, in index order. It receives each connection once, whether it learns of the pad from the start-up scan, this replay, or a connection event; a pad that disconnects and connects again is a new connection. The pad passed to it has every button released; a button held when it connected is reported as just pressed on a later read. A 'connect' callback registered by another gamepad callback receives the connected pads after that callback's dispatch ends. A pad has already left the list that inGamepad() returns when the 'disconnect' callbacks run.
+		 * The 'connect' mode runs when a gamepad connects and receives that gamepad's GamepadData. It also receives each gamepad already connected when it is registered, in index order, once per connection.
 		 *
-		 * A callback runs until it is removed. A callback is identified by its mode and function: registering the same function for the same mode again does nothing, whatever its once, and offGamepad removes it by those two. once removes the registration before the callback runs, so a 'connect' callback with once receives one pad, the replay included. Callbacks added during a dispatch first run for the next one; a callback removed during a dispatch does not run later in it. A callback that throws is reported with console.error(), and the other callbacks still run. clearEvents( "gamepad" ) removes every callback.
+		 * The 'disconnect' mode runs when a gamepad disconnects and receives GamepadDisconnectData. By then the gamepad has left the list that inGamepad() returns.
 		 *
-		 * Registering starts polling, unless stopGamepad() was called; a 'connect' callback registered while stopped receives the connected pads when startGamepad() resumes polling. The mode is 'connect' or 'disconnect': another string throws a RangeError and a non-string a TypeError, with code INVALID_MODE; a fn that is not a function throws a TypeError with code INVALID_FUNCTION; and once is a boolean or omitted, else a TypeError with code INVALID_ONCE.
+		 * With once, the callback is removed before its first run. Registering starts polling unless stopGamepad() was called.
 		 * @param mode Event mode: 'connect' or 'disconnect'.
 		 * @param fn Callback that receives GamepadData or GamepadDisconnectData, by mode.
 		 * @param once If true, this registration is removed before the callback's first run.
@@ -2512,23 +2438,15 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Registers a callback function for key events.
 		 *
-		 * Registers a callback function that will be called when a key event occurs. Keys can be named by code (e.g., "KeyA", "Space"), which names a physical key whatever the layout and modifiers, or by key value (e.g., "a", " "), which names the character it types. Codes suit game controls.
+		 * Registers a callback for key presses and releases. Name a key by its code (for example "KeyA"), which is the physical key, or by its key value (for example "a"), which is the character it types.
 		 *
-		 * For single keys, the callback receives one key data object. A combination, given as an array of keys, runs when all of its keys are held, and its callback receives an array with the key data of each key in the order given.
+		 * 'down' runs when the key is pressed and receives its key data. 'up' runs when the key is released and receives the key data at release. "any" listens for every key.
 		 *
-		 * Use "any" as the key to listen for every key. The callback receives the key data of the key that was pressed or released.
+		 * Pass an array of keys for a combination. It runs when all of those keys are held, and the callback receives an array of their key data. A combination's 'up' callback runs when one of its keys is released while the rest are still held.
 		 *
-		 * A "down" callback receives the key data of the keydown. An "up" callback receives the key data of the keyup, so its modifier state is the state at the release. A release runs the handlers of the key's code, of the value it reports, and of the value the key was pressed with, when a modifier changed it during the hold. Single-key and "any" up handlers run even for a key whose press was not seen. A combination's up handler runs when one of its keys is released while all were held, with the release data for that key and the held data for the others.
+		 * 'up' also runs, with cancelled set to true, when a held key is released because the window loses focus, the page is hidden, stopKeyboard() is called, or an input() prompt starts.
 		 *
-		 * Key state is updated before handlers run: in a "down" handler, inKey() reports the pressed key, and in an "up" handler, it no longer reports the released key. A handler registered while an event is being handled first runs for the next event, and a handler removed then is not called for the rest of it.
-		 *
-		 * Keys the player did not release are released through the "up" handlers too, with cancelled set to true: when the window loses focus, the page is hidden, stopKeyboard() is called, a key comes from an editable element, or an input() prompt starts. Their key data copies the last keydown, with repeat set to false. Each held key is released once; a later trigger finds nothing held.
-		 *
-		 * A handler is identified by its key or combination, its mode, and its callback: registering the same callback for the same keys and mode again does nothing, whatever its once and allowRepeat flags, and offKey removes it by those three. Registering starts keyboard tracking, unless stopKeyboard() was called; handlers stay registered while the keyboard is stopped, but are not called.
-		 *
-		 * Key data objects are frozen and carry cancelled, false unless the release was cancelled. Keys typed into an editable element, such as an input field, are ignored, and so are the keys of an active input() prompt. A callback that throws does not stop the others; its error is reported with console.error().
-		 *
-		 * The key is a non-empty string or a non-empty array of them. The array is copied, so changing it later does not change the handler, and a key listed twice counts once; "any" cannot be part of a combination. The mode is "up" or "down", and once and allowRepeat are booleans or omitted. Invalid arguments throw a TypeError for a wrong type or a RangeError for an empty key or an unknown mode, with code INVALID_KEY, INVALID_MODE, INVALID_FUNCTION, INVALID_ONCE, or INVALID_ALLOW_REPEAT.
+		 * once removes the callback before its first run. allowRepeat lets a 'down' callback run again while the key is held. Registering starts tracking unless stopKeyboard() was called. Keys typed into an input() prompt, or into an editable element on the page, are ignored.
 		 * @param key Key code/key value string, array of keys for combinations, or "any" for any key.
 		 * @param mode Event mode: "up" for key release, "down" for key press.
 		 * @param fn Callback function that receives the key data, or an array of key data for a combination.
@@ -2542,7 +2460,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Pauses an audio instance, every instance of an audio ID, or all audio.
 		 *
-		 * Pauses audio and saves its position, so resumeAudio continues from the same place with the rest of its duration. Pass an instance ID, an audio ID to pause every instance of that file, or nothing to pause all audio. The instance fades out over 10 ms, and a paused instance holds no voice. Pausing an instance that has not started yet cancels its start; resuming it then plays from its startTime. Pausing a paused instance does nothing. Finished instance IDs are ignored; unknown IDs throw AUDIO_NOT_FOUND.
+		 * Pauses audio and keeps its position, so resumeAudio continues from there. Pass an instance ID, an audio ID to pause every instance of that file, or nothing to pause all audio. Pausing an instance that has not started yet cancels its start.
 		 * @param id Instance ID, or audio ID to pause all its instances. If omitted, pauses all audio.
 		 * @returns This function does not return a value.
 		 */
@@ -2552,7 +2470,7 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Plays music using BASIC-style notation (inspired by QBasic PLAY command).
 		 *
-		 * Plays music from a notation string. Notes are scheduled just ahead of time as the song plays, so long songs use few resources. Songs play on the music bus.
+		 * Plays music from a notation string.
 		 *
 		 * **Notes:**
 		 * - A-G: Note letters (A, B, C, D, E, F, G)
@@ -2588,8 +2506,8 @@ screen is removed before deferred processing completes, or with the original rea
 		 * - WP or PINK: Pink noise
 		 * - [[r],[i]]: Use a custom wave table
 		 *
-		 * **Articulation:** Each note fills a slot of its note length at the current tempo, and the song advances by whole slots. Articulation sets how much of the slot sounds; the rest is silent, so the beat never changes.
-		 * - MS: Staccato (75% of the slot sounds)
+		 * **Articulation:** Sets how much of each note sounds. The beat stays the same.
+		 * - MS: Staccato (75%)
 		 * - MN: Normal (87.5%, default)
 		 * - ML: Legato (100%)
 		 *
@@ -2599,7 +2517,7 @@ screen is removed before deferred processing completes, or with the original rea
 		 * - MH[n]: Sustain (hold) level, % of note volume (default 65)
 		 * - MR[n]: Release time, % of the sounding length (default 20)
 		 *
-		 * The release happens inside the sounding length, so every note ends within its own slot. If MA + MD + MR is over 100, the note releases from the level it reached.
+		 * The release finishes inside the note, so notes do not run into the next beat.
 		 *
 		 * **Instruments:**
 		 * - @[n]: Select instrument n. Instruments are provided by a plugin that extends PLAY; without one, @n is ignored and a warning is logged.
@@ -2616,13 +2534,11 @@ screen is removed before deferred processing completes, or with the original rea
 		/**
 		 * Plays loaded audio as a new instance and returns its instance ID.
 		 *
-		 * Starts a new instance of audio loaded with loadAudio and returns its instance ID. The instance can then be stopped, paused, resumed, or changed with setAudio. Decoded audio can play many instances at once. Streamed audio has one instance at a time: a new playAudio fades out the current instance and replaces it.
+		 * Starts a new instance of audio loaded with loadAudio and returns its instance ID. Use the ID with stopAudio, pauseAudio, resumeAudio, and setAudio. Decoded audio can play many instances at once. Streamed audio plays one instance at a time: a new playAudio replaces the current one.
 		 *
-		 * startTime and duration are measured in the file's own time. duration counts every loop pass, so a looping instance with duration 5 stops after 5 seconds of the file. A duration of 0 plays to the end of the file, or loops forever. playbackRate changes speed and pitch together, so at rate 0.5 a duration of 5 lasts 10 seconds. The rate must be between 0.0625 and 16 for decoded audio, and between 0.25 and 4 for streamed audio, or the call throws INVALID_PLAYBACK_RATE. pan places the instance from -1 (left) to 1 (right). delay starts the instance later, measured on the audio clock.
+		 * duration and startTime are in the file's own time. A duration of 0 plays to the end, or loops forever when loop is set. playbackRate changes speed and pitch together. pan places the instance from -1 (left) to 1 (right). delay waits before the instance starts.
 		 *
-		 * Instances fade in and out over a few milliseconds, so they start and stop without clicks. They play on the audio bus through the master volume and the output limiter, and share the 64-voice limit with sound() and play(). Looping instances are never stopped to make room for other sounds; when every voice is held by a loop, new sounds are not played. A request that is not played still returns an instance ID, and operations on it do nothing.
-		 *
-		 * Until the page receives its first user gesture, the browser keeps audio locked. A one-shot requested while audio is locked is not played; a looping instance starts when audio unlocks.
+		 * Until the page gets its first click, key, or touch, a one-shot plays nothing. A looping instance starts when audio unlocks.
 		 * @param audioId Audio ID returned from loadAudio.
 		 * @param volume Volume (0-1, default: 1).
 		 * @param startTime Offset into the file in seconds (default: 0).
@@ -2657,33 +2573,11 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Registers a plugin to extend Pi.js with custom commands and features.
 		 *
-		 * Registers a plugin that adds commands and per-screen behavior to Pi.js. Provide a unique name and an init function. init receives a pluginApi object; this is a callback argument, not a return value. Commands registered with addCommand appear on the Pi.js API and accept the same positional or options-object calling style as built-in commands.
+		 * Registers a plugin that adds commands and screen behavior. init receives a pluginApi object and uses it to add commands, screen data, and event handlers. Those methods work only while init runs. See PluginAPI for the methods.
 		 *
-		 * pluginApi methods and properties (the add and register methods work only while init runs, and throw REGISTRATION_CLOSED afterward):
+		 * version and description are stored for getPlugins. dependencies names plugins that must initialize first. A plugin with a missing or cyclic dependency stays pending. If init fails, the plugin's state is "failed", and registering that name again retries it.
 		 *
-		 * - **addCommand**(name, fn, isScreen, parameterNames, isScreenOptional): Add a command. Screen commands receive (screenData, options); global commands receive (options). Use screenData.api to draw. isScreenOptional allows a screen command when no screen is active.
-		 * - **addScreenDataItem**(name, defaultValue): Attach cloned data to every screen.
-		 * - **addScreenDataItemGetter**(name, getterFn): Attach per-screen data from a function called for each screen.
-		 * - **addScreenInitFunction**(initFn): Run when a screen is created, and once for screens that already exist.
-		 * - **addScreenPreCleanupFunction**(cleanupFn): Run first when a screen is removed. Cancel owned work and do not draw.
-		 * - **addScreenCleanupFunction**(cleanupFn): Run later when a screen is removed. Release remaining resources.
-		 * - **getActiveScreen**(fnName, isScreenOptional): Return the active screen data, or throw if none unless optional.
-		 * - **getScreenData**(fnName, screenId): Return screen data for a screen id.
-		 * - **getAllScreensData**(): Return all current screen data objects.
-		 * - **resizeOffscreenScreen**(screenData, width, height): Resize an offscreen screen.
-		 * - **getApi**(): Return the main Pi.js API object.
-		 * - **utils**: Shared helper functions for colors, parsing, and math.
-		 * - **wait**(): Hold $.ready() while an async resource loads.
-		 * - **done**(): Release one wait() so $.ready() can continue.
-		 * - **registerClearEvents**(name, handler): Handle $.clearEvents for an event type.
-		 * - **provideService**(service): During init, publish one service object for plugins that depend on this plugin. A second call throws DUPLICATE_SERVICE, a non-object throws INVALID_SERVICE, and a call after init throws SERVICE_PROVIDE_CLOSED.
-		 * - **getService**(pluginName): Return the service of a plugin listed in dependencies. Throws SERVICE_NOT_AVAILABLE when the plugin is not a declared dependency, is not initialized, or provided no service.
-		 *
-		 * Optional version and description are stored for getPlugins. Optional dependencies are other plugin names that must initialize first. Omit dependencies, or pass an empty array, if there are none. Missing or cyclic dependencies stay pending.
-		 *
-		 * Installation is all or nothing. The plugin's commands, settings, screen data, screen hooks, and clearEvents handlers take effect only after init and installation on existing screens both succeed. If either throws, none of them remain and the plugin's state in getPlugins is "failed"; side effects of the plugin's own code are not undone. A failure throws PLUGIN_INIT_FAILED from the registerPlugin call that registered the plugin. A plugin that fails while another call is resolving it, such as one waiting on the dependency that call registers, is reported with console.error instead. Plugins that depend on a failed plugin stay pending. Registering a failed plugin's name again retries it; any other duplicate name throws DUPLICATE_PLUGIN.
-		 *
-		 * If screens already exist when the plugin initializes, its commands and screen data are added to those screens and its screen init functions run once. Screens created later receive the same registrations automatically. Plugin scripts register themselves when loaded after Pi.js. The standalone scripts of plugins that the Full bundle includes are for Lite; loading one after the Full bundle throws DUPLICATE_PLUGIN.
+		 * If screens already exist, the plugin is installed on them. Screens created later get the same commands and data.
 		 * @param name Unique plugin name.
 		 * @param init Initialization function that receives pluginApi.
 		 * @param version Optional plugin version.
@@ -2697,9 +2591,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Removes keys from the action keys set.
 		 *
-		 * Removes keys from the action keys set. These keys will no longer have their default browser behavior prevented.
-		 *
-		 * Keys that are not an array of strings throw a TypeError, and an empty string in the array a RangeError, with code INVALID_KEYS.
+		 * Removes keys from the action keys set. Those keys go back to their normal browser behavior.
 		 * @param keys Array of key codes or key values to remove from action keys.
 		 * @returns This function does not return a value.
 		 */
@@ -2715,7 +2607,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Removes loaded audio and frees its resources.
 		 *
-		 * Removes audio loaded with loadAudio. A load still in progress is cancelled and no longer holds $.ready(). Playing instances fade out, paused and delayed instances end, and the memory is released. The audio ID is freed at once, so its name can be reused by a new loadAudio; results from the removed load can never affect the new one.
+		 * Removes audio loaded with loadAudio. A load still in progress is cancelled. Playing instances fade out, and the audio ID can be reused by a later loadAudio.
 		 * @param audioId Audio ID returned from loadAudio.
 		 * @returns This function does not return a value.
 		 */
@@ -2735,9 +2627,9 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Removes a screen and cleans up all associated resources.
 		 *
-		 * Removes a screen from the page and cleans up all WebGL2 resources, event handlers, and DOM elements. After removal, the screen object becomes invalid and calling methods on it will throw errors.
+		 * Removes a screen and its canvas. After removal, calling methods on the screen throws.
 		 *
-		 * Can be called either as a global function with a screen ID/object, or as a method on a screen API object. The global form also takes { "screen": screen }. A missing, unknown, or already removed screen throws INVALID_SCREEN_ID.
+		 * Call it as $.removeScreen( screen ) or as screen.removeScreen().
 		 * @param screen Screen ID (number) or screen API object to remove. Required in the global form; the declaration marks it optional because each screen's own removeScreen() takes none.
 		 * @returns This function does not return a value.
 		 */
@@ -2757,7 +2649,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Resumes a paused audio instance, every instance of an audio ID, or all audio.
 		 *
-		 * Resumes paused audio from its saved position with the rest of its duration, fading in over a few milliseconds. Pass an instance ID, an audio ID to resume every paused instance of that file, or nothing to resume all paused audio. Volume, rate, and pan changes made with setAudio while paused apply on resume. A resumed instance needs a free voice again; if every voice is held by a loop, it stays paused. Resuming a playing instance does nothing. Finished instance IDs are ignored; unknown IDs throw AUDIO_NOT_FOUND.
+		 * Resumes paused audio from its saved position. Pass an instance ID, an audio ID to resume every paused instance of that file, or nothing to resume all paused audio. Volume, rate, and pan changes made while paused apply on resume.
 		 * @param id Instance ID, or audio ID to resume all its instances. If omitted, resumes all paused audio.
 		 * @returns This function does not return a value.
 		 */
@@ -2767,23 +2659,21 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Creates a new screen (canvas) with specified dimensions and aspect ratio.
 		 *
-		 * Creates a WebGL 2 screen, makes it the active drawing target, and returns its Screen API object. Call screen before any graphics commands. Drawing writes into a logical framebuffer at the screen's resolution; Pi.js then presents that framebuffer to the canvas.
+		 * Creates a screen, makes it the active drawing target, and returns its Screen API. Call it before drawing.
 		 *
-		 * **aspect** uses `(width)(x|e|m)(height)`:
+		 * aspect uses (width)(x|e|m)(height):
 		 *
-		 * - **x**: Exact pixel dimensions (e.g., "320x200")
-		 * - **e**: Extend the logical area to fill the container while keeping the aspect ratio (e.g., "320e200")
-		 * - **m**: Scale by integer multiples of the target resolution (e.g., "320m200")
+		 * - x: exact pixel size, such as "320x200"
+		 * - e: fill the container while keeping the aspect ratio, such as "320e200"
+		 * - m: scale by whole multiples of the size, such as "320m200"
 		 *
-		 * For offscreen screens, only exact pixel dimensions (x) are allowed. An offscreen screen can use an  existing screen as its parent to share that screen's WebGL context. This allows drawImage to use  the offscreen framebuffer directly for faster drawing. The parent controls rendering-context  affinity only and does not establish lifecycle ownership.
-		 *
-		 *  Creating a screen makes it active. Pointer input requires an onscreen target, so after creating an offscreen buffer call setScreen on the visible screen or use visible.inMouse().
+		 * An offscreen screen uses exact pixels only. Give it a parent screen so drawImage can copy from it directly. After creating an offscreen screen, call setScreen on the visible screen before reading pointer input.
 		 * @param aspect Aspect ratio string in format (width)(x|e|m)(height), e.g., '300x200', '100e00', '300m200'.
 		 * @param container DOM element or element ID string to use as container. Defaults to document.body.
 		 * @param isOffscreen If true, creates an offscreen canvas that is not displayed. Requires exact pixel dimensions.
 		 * @param resizeCallback Callback function called when screen is resized. Receives (screenApi, fromSize, toSize).
-		 * @param parent Existing screen ID or screen API object whose WebGL context the offscreen screen uses. Only valid when isOffscreen is true. Enables fast drawImage calls directly from the offscreen framebuffer and does not establish lifecycle ownership.
-		 * @param noCss If true, Pi.js does not write automatic canvas, container, html, or body styles. Supply canvas layout in your own CSS. The canvas is still appended and its size and WebGL resources are managed. Explicit background commands still apply requested styles. Logical x/e/m dimensions follow the container; display shader backing size follows the canvas CSS content size. Hidden hosts keep their last valid size and recover when visible.
+		 * @param parent Existing screen to share drawing with. Only for an offscreen screen. Makes drawImage from that screen faster.
+		 * @param noCss If true, Pi.js does not set canvas or page styles. Supply the canvas layout in your own CSS.
 		 * @returns Screen API object with all graphics command and screen=true and id property.
 		 */
 		screen( params: { "aspect": string; "container"?: string | HTMLElement; "isOffscreen"?: boolean; "resizeCallback"?: ( screenApi: Screen, fromSize: Size, toSize: Size ) => void; "parent"?: number | Screen; "noCss"?: boolean } ): Screen;
@@ -2792,11 +2682,9 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Sets the keys whose default browser behavior is prevented.
 		 *
-		 * Sets the action keys, replacing the previous set. Action keys have their default browser behavior prevented on keydown and keyup, for example page scrolling with the arrow keys or Space. This is useful for game controls where you don't want the browser to handle certain keys.
+		 * Sets the action keys, replacing the previous set. The browser's default behavior is prevented for these keys, such as scrolling with the arrow keys or Space.
 		 *
-		 * Pass every action key in one call; an empty array clears them. set( { "actionKeys": [ ... ] } ) sets them the same way, and removeActionKeys() removes some of them. Keys can be specified by code (e.g., "ArrowUp", "Space") or key value (e.g., " "). Setting action keys starts keyboard tracking, unless stopKeyboard() was called.
-		 *
-		 * Keys that are not an array of strings throw a TypeError, and an empty string in the array a RangeError, with code INVALID_KEYS; the set is then left unchanged.
+		 * Pass every action key in one call. An empty array clears them. set( { "actionKeys": [ ... ] } ) sets them the same way. Keys can be a code (for example "ArrowUp") or a key value (for example " "). Setting them starts keyboard tracking unless stopKeyboard() was called.
 		 * @param keys Array of key codes or key values that become the action keys.
 		 * @returns This function does not return a value.
 		 */
@@ -2806,7 +2694,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Changes the volume, playback rate, or pan of an audio instance.
 		 *
-		 * Changes a playing, delayed, or paused instance. Omitted values are unchanged. Volume and pan ramp over 10 ms. playbackRate changes speed and pitch together; it must stay within the range of the instance's loading mode (0.0625-16 decoded, 0.25-4 streamed), or the call throws INVALID_PLAYBACK_RATE. The duration passed to playAudio is file time, so a rate change also changes how long the rest of the instance lasts. Changes to a delayed instance apply from its start, and changes to a paused instance apply when it resumes. Finished instance IDs are ignored; an instance ID that was never returned throws AUDIO_NOT_FOUND.
+		 * Changes a playing, delayed, or paused instance. Omitted values stay as they are. playbackRate changes speed and pitch together, and stays in the range for how the audio was loaded: 0.0625 to 16 for decoded audio, and 0.25 to 4 for streamed audio. A rate change also changes how long the rest of the instance lasts. Changes to a paused instance apply when it resumes.
 		 * @param instanceId Instance ID returned from playAudio.
 		 * @param volume Volume (0-1).
 		 * @param playbackRate Speed and pitch within the instance's mode range.
@@ -2819,7 +2707,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Sets the volume of one sound bus.
 		 *
-		 * Sound is mixed on three buses before the master volume: "sfx" carries sound(), "music" carries play(), and "audio" carries playAudio(). The bus volume applies after any bus effect set with the sound-advanced plugin's setBusEffect(), so it also fades an effect's tail. The change ramps over 10 ms. "master" is the same as setVolume().
+		 * Sets the volume of one mix bus, before the master volume. "sfx" is sound(), "music" is play(), and "audio" is playAudio(). "master" is the same as setVolume().
 		 * @param bus 'sfx', 'music', 'audio', or 'master'.
 		 * @param volume Volume, 0-1.
 		 * @returns This function does not return a value.
@@ -2863,10 +2751,6 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 * Sets the dead zone for gamepad sticks and axes.
 		 *
 		 * Sets the dead zone that hides stick drift. The default is 0.2. Inside the dead zone an axis reads 0; outside it, the value is rescaled so that it starts from 0 at the edge of the dead zone and still reaches 1 at full tilt.
-		 *
-		 * The two sticks of the standard mapping, axes 0 and 1 and axes 2 and 3, use a radial dead zone: the stick's distance from the center is compared with the dead zone and rescaled, and the stick keeps its direction, so diagonal and near-cardinal movement are not lost or snapped to an axis. A full diagonal reaches a distance of 1. Every other axis, and every axis of a pad without the standard mapping, uses the dead zone on its own.
-		 *
-		 * The value is a finite number from 0 to under 1; 0 means no dead zone. A value that is not a finite number throws a TypeError, and one outside the range a RangeError, both with code INVALID_DEAD_ZONE, and the previous setting is kept. The new dead zone applies from the next update. It can also be set with set( { "gamepadDeadZone": value } ).
 		 * @param deadZone Dead zone from 0 to under 1 (0 = no dead zone). The default is 0.2.
 		 * @returns This function does not return a value.
 		 */
@@ -2886,11 +2770,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Turns the output limiter on or off.
 		 *
-		 * The limiter keeps the combined output of all sounds, music, and audio within ±1.0, so many sounds playing together saturate smoothly instead of clipping harshly. It is on by default. Levels below its threshold pass unchanged. It is a safety net against overload, not a mastering stage.
-		 *
-		 * The limiter has two stages: a compressor that reduces sustained overload, then a soft clipper that sets the absolute ceiling. Browsers whose compressor also reduces bright waveforms (such as square and sawtooth) below its threshold use the soft clipper alone, so levels match across browsers.
-		 *
-		 * Switching reconnects the output immediately, which can cause a brief discontinuity in sounds that are playing. Set it before playback starts.
+		 * Keeps the combined output of sounds, music, and audio from clipping. It is on by default. Levels below its threshold pass through unchanged. Set it before playback starts.
 		 * @param enabled True to limit output (the default), false to bypass the limiter.
 		 * @returns This function does not return a value.
 		 */
@@ -2900,9 +2780,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Sets the master volume for all sounds, music, and audio.
 		 *
-		 * Sets the master volume, which scales sounds, music, and audio files together before the output limiter. The change ramps smoothly over a few milliseconds to avoid clicks.
-		 *
-		 * Volume is a multiplier: 0 = silent, 1 = full volume. The default is 0.75.
+		 * Sets the master volume for sounds, music, and audio together. 0 is silent and 1 is full volume. The default is 0.75.
 		 * @param volume Volume (0-1, default: 0.75).
 		 * @returns This function does not return a value.
 		 */
@@ -2912,27 +2790,21 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Plays a synthesized sound with an ADSR envelope using Web Audio API.
 		 *
-		 * Generates and plays a sound at a specific frequency using Web Audio API oscillators. Supports standard waveforms (triangle, sine, square, sawtooth), custom wavetables, and white or pink noise. Frequency is not rounded.
+		 * Plays a tone or noise with an ADSR envelope. The attack rises to volume, the decay falls to the sustain level, the sustain holds until duration ends, and the release fades to silence. The sound lasts for duration plus the release.
 		 *
-		 * The volume follows an ADSR envelope. The attack ramps linearly from silence to the peak volume over attackTime. The decay then falls toward sustainLevel × volume over decayTime, and the sustain holds until duration ends. The release fades from that level to silence over releaseTime. If duration ends before the attack and decay finish, the release starts from the level reached at that point. The total length is duration plus the release. Every onset and stop ramps over at least 3 ms, even when attackTime or releaseTime is 0, so sounds start and end without clicks.
+		 * oType selects the waveform: triangle, sine, square, sawtooth, white noise, pink noise, or a custom wavetable. frequencyEnd sweeps the pitch from frequency to frequencyEnd over duration. pan places the sound from -1 (left) to 1 (right). Noise ignores frequency.
 		 *
-		 * pan places the sound from -1 (left) to 1 (right). The louder channel always plays at volume, so a sound panned near center is as loud as an unpanned one, and the channels keep an equal-power balance. frequencyEnd sweeps the pitch exponentially from frequency to frequencyEnd over duration; both must then be greater than 0, or the call throws INVALID_FREQUENCY.
-		 *
-		 * The "white" and "pink" types play noise instead of a tone. White noise has equal energy at every frequency; pink noise falls by 3 dB per octave, which sounds deeper and softer. Each noise type loops one shared 2-second buffer, and every sound starts it at a random position so repeated hits do not sound identical. frequency and frequencyEnd have no effect on noise, though a sweep's values are still validated.
-		 *
-		 * Sounds play on the sound-effects bus through the master volume and the output limiter. A delay beyond the 0.2 second lookahead window is held as a pending request until its start approaches. At most 1024 requests can be pending; beyond that the call throws TOO_MANY_PENDING_SOUNDS. At most 64 sounds hold voice slots at once; when all are in use, the oldest overlapping sound fades out to make room.
-		 *
-		 * Until the page receives its first user gesture (pointer, key, or touch), the browser keeps audio locked. Calls made while audio is locked return an ID but play nothing; audio unlocks on the first gesture.
+		 * Until the page gets its first click, key, or touch, calls return an ID but play nothing.
 		 * @param frequency Frequency in Hz; no effect on noise (default: 440).
 		 * @param duration Gate length in seconds: how long the sound is held before the release begins (default: 1).
 		 * @param volume Peak volume 0-1 (default: 1).
 		 * @param oType Oscillator type: 'triangle', 'sine', 'square', 'sawtooth', 'white' or 'pink' noise, a source type added by a plugin (such as 'periodic' from sound-advanced), or custom wavetable array [[realArray], [imagArray]] (default: 'triangle').
 		 * @param delay Delay before playing in seconds (default: 0).
-		 * @param attackTime Seconds from silence to the peak volume (default: 0; at least 3 ms is always used).
+		 * @param attackTime Seconds from silence to the peak volume (default: 0).
 		 * @param decayTime Seconds from the peak to the sustain level (default: 0).
 		 * @param sustainLevel Fraction of the peak volume held until duration ends, 0-1 (default: 1).
-		 * @param releaseTime Seconds from the sustain level to silence after duration ends (default: 0.1; at least 3 ms is always used).
-		 * @param pan Stereo position from -1 (left) to 1 (right); the louder channel stays at volume (default: 0).
+		 * @param releaseTime Seconds from the sustain level to silence after duration ends (default: 0.1).
+		 * @param pan Stereo position from -1 (left) to 1 (right) (default: 0).
 		 * @param frequencyEnd Frequency in Hz to sweep to exponentially over duration; no effect on noise (default: no sweep).
 		 * @returns Sound ID for use with stopSound.
 		 */
@@ -2944,9 +2816,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		 *
 		 * Starts polling gamepads once per animation frame. Polling also starts on first use: the first inGamepad() call or onGamepad() registration. After stopGamepad(), only startGamepad() starts it again. Calling it while polling does nothing.
 		 *
-		 * The first start adds the connection and page-visibility listeners and scans for pads that are already connected, passing each to the 'connect' callbacks of onGamepad(). The plugin adds no listener before then. A start after stopGamepad() catches up with the connections made while stopped: pads that left are removed through the 'disconnect' callbacks, and each 'connect' callback receives the connected pads it has not received. Its first update records the current state, so a button pressed while stopped reads as pressed, not as just pressed.
-		 *
-		 * Polling continues while the window loses focus but the page stays visible. When the page is hidden, every button is released and the axes read 0, without reporting a release; when it is visible again, a button still held reads as pressed, not as just pressed.
+		 * Since startGamepad is automatically called any time an inGamepad or onGamepad is registered it's only required if a stopGamepad was called explicitly.
 		 * @returns This function does not return a value.
 		 */
 		startGamepad(): void;
@@ -2954,7 +2824,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Starts keyboard input monitoring.
 		 *
-		 * Starts the keyboard input monitoring system by adding the keydown and keyup listeners, and the blur and page-visibility listeners that release held keys. The keyboard also starts on first use: the first inKey() call, onKey() registration, or setActionKeys() call, including set( { "actionKeys": [ ... ] } ). The plugin adds no listener before then, so keys pressed earlier are not tracked. This command is needed only after stopKeyboard(), which nothing else undoes. Calling it again while the keyboard is running has no effect, and starting keeps the focused element's focus.
+		 * Starts keyboard tracking. Tracking also starts on the first inKey(), onKey(), or setActionKeys() call, so this is only needed after stopKeyboard(). Calling it while the keyboard is already running does nothing. Keys pressed before tracking starts are not reported.
 		 * @returns This function does not return a value.
 		 */
 		startKeyboard(): void;
@@ -2962,7 +2832,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops an audio instance, every instance of an audio ID, or all audio.
 		 *
-		 * Stops audio with a short fade. Pass an instance ID from playAudio to stop one instance, an audio ID from loadAudio to stop every instance of that file, or nothing to stop all audio. A playing instance fades out over 10 ms, so it is silent about 15 ms after the call; paused and delayed instances end at once. Instance IDs that have already finished are ignored. An instance ID that was never returned, or an unknown audio ID, throws AUDIO_NOT_FOUND.
+		 * Stops audio with a short fade. Pass an instance ID to stop one instance, an audio ID to stop every instance of that file, or nothing to stop all audio. An instance that has not started yet is cancelled.
 		 * @param id Instance ID, or audio ID to stop all its instances. If omitted, stops all audio.
 		 * @returns This function does not return a value.
 		 */
@@ -2972,9 +2842,9 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops the gamepad input loop.
 		 *
-		 * Stops polling until startGamepad(). While stopped, inGamepad() returns an empty array and inGamepad( index ) returns null; neither reads nor onGamepad() registrations restart polling. Every button is released and the axes read 0, without reporting a release, as when the page is hidden: a pad kept from an earlier read reports no button held.
+		 * Stops polling until startGamepad(). While stopped, inGamepad() returns an empty array and inGamepad( index ) returns null; neither reads nor onGamepad() registrations restart polling. Every button is released and the axes read 0, without reporting a release, as when the page is hidden: a gamepad kept from an earlier read reports no button held.
 		 *
-		 * Connection callbacks are not called while stopped, and pads do not join or leave the list. startGamepad() catches up: pads that disconnected while stopped are removed through the 'disconnect' callbacks, and the 'connect' callbacks receive the pads that connected.
+		 * Connection callbacks are not called while stopped, and gamepads do not join or leave the list. startGamepad() catches up: gamepads that disconnected while stopped are removed through the 'disconnect' callbacks, and the 'connect' callbacks receive the gamepads that connected.
 		 * @returns This function does not return a value.
 		 */
 		stopGamepad(): void;
@@ -2982,7 +2852,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops keyboard input monitoring.
 		 *
-		 * Stops the keyboard input monitoring system. Held keys are released first, through the "up" handlers with cancelled set to true; then the keydown and keyup listeners are removed. Keyboard events are no longer tracked until startKeyboard() is called again: while stopped, inKey() reports no keys, and handlers stay registered but are not called. Calling inKey(), registering a handler, or setting action keys does not restart it. An input() prompt keeps reading keys while the keyboard is stopped.
+		 * Stops keyboard tracking until startKeyboard(). Held keys are released through the 'up' callbacks, with cancelled set to true. While stopped, inKey() reports no keys, and callbacks stay registered but are not called. inKey(), onKey(), and setActionKeys() do not restart it. An input() prompt still reads keys.
 		 * @returns This function does not return a value.
 		 */
 		stopKeyboard(): void;
@@ -2990,7 +2860,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops playing music tracks.
 		 *
-		 * Stops a specific music track by track ID, or stops all tracks if trackId is null. Notes that are playing fade out over 10 ms, so the track is silent about 15 ms after the call. Notes that have not started are cancelled.
+		 * Stops one music track, or every track when trackId is omitted. Notes that are playing fade out. Notes that have not started are cancelled.
 		 * @param trackId Track ID to stop. If null, stops all tracks.
 		 * @returns This function does not return a value.
 		 */
@@ -3000,7 +2870,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Stops a playing sound or all sounds.
 		 *
-		 * Stops a specific sound by sound ID, or stops all sounds if soundId is null. A sound that is playing fades out over 10 ms, so it is silent about 15 ms after the call. A delayed sound that has not started is cancelled. IDs of sounds that have already finished, or were never played, are ignored.
+		 * Stops one sound, or every sound when soundId is omitted. A sound that is playing fades out. A delayed sound that has not started is cancelled.
 		 * @param soundId Sound ID returned from sound(). If null, stops all sounds.
 		 * @returns This function does not return a value.
 		 */
@@ -3010,9 +2880,7 @@ original thrown value if the callback throws synchronously. Callback return valu
 		/**
 		 * Rumbles a gamepad's vibration motors.
 		 *
-		 * Plays the "dual-rumble" effect of the pad's vibration actuator for duration milliseconds, with the strong (low-frequency) and weak (high-frequency) motors at the given magnitudes. Returns true when the pad supports the effect and false when it does not, such as in Firefox and iOS Safari, or when no pad has the index; nothing plays then. Browsers may cap the duration, and a new effect replaces one that is still playing; a duration of 0 stops the rumble.
-		 *
-		 * Vibration reads the browser's pad directly, so it needs no polling and does not start it. The gamepadIndex is a non-negative integer (INVALID_INDEX); duration is a finite number that is not negative (INVALID_DURATION); strong and weak are finite numbers from 0 to 1, and 1 when omitted (INVALID_STRONG, INVALID_WEAK). A value of the wrong type throws a TypeError, and one out of range a RangeError.
+		 * Plays the "dual-rumble" effect of the gamepad's vibration actuator for duration milliseconds, with the strong (low-frequency) and weak (high-frequency) motors at the given magnitudes. Returns true when the gamepad supports the effect and false when it does not, such as in Firefox and iOS Safari, or when no gamepad has the index; nothing plays then. Browsers may cap the duration, and a new effect replaces one that is still playing; a duration of 0 stops the rumble.
 		 * @param gamepadIndex Index of the pad to rumble.
 		 * @param duration Rumble length in milliseconds.
 		 * @param strong Strong (low-frequency) motor magnitude from 0 to 1. The default is 1.

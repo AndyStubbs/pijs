@@ -3,9 +3,7 @@ category = "images"
 isScreen = false
 summary = "Gets the image element by name, or a screen's canvas."
 description = """
-Returns the underlying Image or Canvas element for a previously loaded image. Given a screen, it
-returns the screen's canvas; for an offscreen screen, which has no canvas of its own, it returns a
-new canvas holding a copy of the screen's pixels.
+Returns the underlying Image or Canvas element for a previously loaded image. Given a screen, it returns the screen's canvas; for an offscreen screen, which has no canvas of its own, it returns a new canvas holding a copy of the screen's pixels.
 """
 example = """
 $.screen( "300x200" );

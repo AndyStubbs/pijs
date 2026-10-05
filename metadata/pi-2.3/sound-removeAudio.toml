@@ -4,7 +4,7 @@ isScreen = false
 plugin = "sound"
 summary = "Removes loaded audio and frees its resources."
 description = """
-Removes audio loaded with loadAudio. A load still in progress is cancelled and no longer holds $.ready(). Playing instances fade out, paused and delayed instances end, and the memory is released. The audio ID is freed at once, so its name can be reused by a new loadAudio; results from the removed load can never affect the new one.
+Removes audio loaded with loadAudio. A load still in progress is cancelled. Playing instances fade out, and the audio ID can be reused by a later loadAudio.
 """
 example = """
 $.screen( "300x200" );

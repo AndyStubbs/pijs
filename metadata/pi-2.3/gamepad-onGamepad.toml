@@ -4,30 +4,13 @@ isScreen = false
 plugin = "gamepad"
 summary = "Registers a callback function for gamepad connections or disconnections."
 description = """
-Registers a callback for the mode: 'connect' runs when a gamepad connects, with its GamepadData,
-and 'disconnect' runs when one disconnects, with its GamepadDisconnectData.
+Registers a callback for gamepad connections or disconnections.
 
-A 'connect' callback also receives each pad that is already connected when it is registered, in
-index order. It receives each connection once, whether it learns of the pad from the start-up
-scan, this replay, or a connection event; a pad that disconnects and connects again is a new
-connection. The pad passed to it has every button released; a button held when it connected is
-reported as just pressed on a later read. A 'connect' callback registered by another gamepad
-callback receives the connected pads after that callback's dispatch ends. A pad has already left
-the list that inGamepad() returns when the 'disconnect' callbacks run.
+The 'connect' mode runs when a gamepad connects and receives that gamepad's GamepadData. It also receives each gamepad already connected when it is registered, in index order, once per connection.
 
-A callback runs until it is removed. A callback is identified by its mode and function:
-registering the same function for the same mode again does nothing, whatever its once, and
-offGamepad removes it by those two. once removes the registration before the callback runs, so
-a 'connect' callback with once receives one pad, the replay included. Callbacks added during a
-dispatch first run for the next one; a callback removed during a dispatch does not run later in
-it. A callback that throws is reported with console.error(), and the other callbacks still run.
-clearEvents( "gamepad" ) removes every callback.
+The 'disconnect' mode runs when a gamepad disconnects and receives GamepadDisconnectData. By then the gamepad has left the list that inGamepad() returns.
 
-Registering starts polling, unless stopGamepad() was called; a 'connect' callback registered while
-stopped receives the connected pads when startGamepad() resumes polling. The mode is 'connect' or
-'disconnect': another string throws a RangeError and a non-string a TypeError, with code
-INVALID_MODE; a fn that is not a function throws a TypeError with code INVALID_FUNCTION; and once
-is a boolean or omitted, else a TypeError with code INVALID_ONCE.
+With once, the callback is removed before its first run. Registering starts polling unless stopGamepad() was called.
 """
 example = """
 $.screen( "300x200" );

@@ -4,11 +4,7 @@ isScreen = true
 plugin = "pointer"
 summary = "Starts mouse input tracking for this screen."
 description = """
-Starts mouse tracking on the screen canvas. Tracking also starts on first use: the first inMouse(),
-inPress(), or handler registration. After stopMouse(), only startMouse() starts tracking again.
-
-When the page is hidden, held buttons are released through the 'up' handlers, with cancelled set to
-true.
+Starts mouse tracking. Tracking also starts on the first inMouse(), inPress(), or mouse callback, so this is only needed after stopMouse(). Calling it while tracking is already running does nothing.
 
 Requires an onscreen screen.
 """

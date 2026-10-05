@@ -4,7 +4,7 @@ isScreen = false
 plugin = "sound"
 summary = "Stops playing music tracks."
 description = """
-Stops a specific music track by track ID, or stops all tracks if trackId is null. Notes that are playing fade out over 10 ms, so the track is silent about 15 ms after the call. Notes that have not started are cancelled.
+Stops one music track, or every track when trackId is omitted. Notes that are playing fade out. Notes that have not started are cancelled.
 """
 example = """
 $.screen( "300x200" );

@@ -3,11 +3,7 @@ category = "images"
 isScreen = false
 summary = "Loads a spritesheet by URL or from an Image/Canvas element."
 description = """
-Loads a spritesheet and slices it either automatically (connected components) or by a fixed grid. Sprites retain their source colors when the screen palette changes. Use the shader API for recoloring.
-
-In fixed grid mode, width and height must be integers of at least 1 (INVALID_DIMENSIONS), and
-margin an integer of 0 or more (INVALID_MARGIN), after rounding: a TypeError for a value that is
-not an integer, and a RangeError for one out of range.
+Loads a spritesheet and slices it automatically, or on a fixed grid when width and height are given. Sprites keep their source colors when the screen palette changes.
 """
 example = """
 $.screen( "150x100" );

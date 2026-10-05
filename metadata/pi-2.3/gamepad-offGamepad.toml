@@ -5,15 +5,9 @@ plugin = "gamepad"
 summary = "Removes a gamepad connection or disconnection callback."
 description = """
 Removes callbacks registered with onGamepad. A callback is identified by its mode and function;
-the once it was registered with does not matter.
+the 'once' parameter is not used to identify the callback.
 
-With a mode and a function, removes that callback. Without a function, removes every callback of
-the mode. With a function and no mode (null, or no mode in the object form), removes the function
-from both modes. Omitting both throws a TypeError with code INVALID_MODE; clearEvents( "gamepad" )
-removes every callback.
-
-A callback removed during a dispatch does not run later in it. The mode and function are checked
-as onGamepad() checks them, with codes INVALID_MODE and INVALID_FUNCTION.
+A callback removed during a dispatch does will not run later. 
 """
 example = """
 $.screen( "300x200" );

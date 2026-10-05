@@ -4,37 +4,13 @@ isScreen = true
 plugin = "keyboard"
 summary = "Prompts the user for text input with a blinking cursor."
 description = """
-Displays a prompt at the print cursor and waits for the user to type a value. Enter completes
-the input and Escape cancels it. Returns a Promise that resolves with the value, or null if the
-input is cancelled, and optionally calls a callback function with the same value.
+Shows a prompt at the print cursor and waits for the user to type. Enter completes the input and Escape cancels it. Returns a Promise that resolves with the value, or null when cancelled, and calls fn with the same value when fn is given.
 
-The prompt keeps to one line: when the value would reach the right edge, the end of the value
-is shown. After the input ends, printing continues at column 0 of the line below the prompt.
+The prompt stays on one line. When it ends, printing continues on the next line. It reads keys itself, so it works after stopKeyboard(). Keys typed into the prompt do not reach onKey() or inKey().
 
-While the prompt is active it reads keys itself, so it works even after stopKeyboard(). It
-prevents the default action of the keys it handles, so typing does not scroll the page or move
-focus. Shortcuts with Ctrl or Meta are left to the browser, except AltGr, which types; pasted
-text is inserted one character at a time by the same rules as typed text. Keys typed into an
-editable element on the page, such as an input field, are ignored.
+With isNumber or isInteger, only a number is accepted and the promise resolves with a number. isInteger rejects a decimal point. allowNegative accepts a leading minus sign. A value with no digits resolves to 0.
 
-The prompt's keys are its own: they do not reach onKey() handlers or inKey(), including the key
-that ends the prompt and the later release of keys pressed during it. Keys held when the prompt
-starts are released through the onKey() "up" handlers, with cancelled set to true, and their
-later release is not reported again.
-
-With isNumber or isInteger, the value is a number. Only digits, one decimal point unless
-isInteger is set, and a leading minus sign with allowNegative are accepted. Typing "-" adds the
-minus sign at the start, and "+" removes it; the minus sign counts toward maxLength. A value
-with no digits resolves to 0.
-
-The input is cancelled by cancelInput(), by clearEvents( "keyboard" ) called with no screen or
-from the screen that owns the prompt, by removing that screen, or by starting another input.
-
-The prompt and cursor are strings, the callback a function, and isNumber, isInteger, and
-allowNegative booleans; maxLength is an integer of at least 1. Omitted values, null or
-undefined, take their defaults. Invalid options throw a TypeError, or a RangeError for a
-maxLength below 1, with code INVALID_PROMPT, INVALID_FUNCTION, INVALID_CURSOR,
-INVALID_IS_NUMBER, INVALID_IS_INTEGER, INVALID_ALLOW_NEGATIVE, or INVALID_MAX_LENGTH.
+The prompt is also cancelled by cancelInput(), by clearEvents( "keyboard" ) on its screen, by removing that screen, or by starting another input.
 """
 example = """
 $.screen( "300x200" );

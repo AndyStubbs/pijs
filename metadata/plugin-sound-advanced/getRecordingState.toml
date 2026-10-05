@@ -4,9 +4,9 @@ isScreen = false
 plugin = "sound-advanced"
 summary = "Gets the recording state and the seconds recorded so far."
 description = """
-Requires the sound-advanced plugin. state is "idle" with no recording, "starting" while the first recording loads its audio worklet, "recording" while capturing, and "full" when the recording reached its maxDuration and waits for stopRecording().
+state is "idle" with no recording, "starting" while the first recording gets ready, "recording" while capturing, and "full" when the recording reached its maxDuration and is waiting for stopRecording().
 
-duration is the length captured so far, in seconds. It counts audio as it arrives, in steps of about 85 ms, and does not advance while audio is locked or suspended. It returns to 0 when the recording is stopped.
+duration is the seconds captured so far. It does not advance before the page's first click, key, or touch. It returns to 0 when the recording is stopped.
 """
 example = """
 $.screen( "300x200" );

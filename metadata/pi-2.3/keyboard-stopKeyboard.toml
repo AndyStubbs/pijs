@@ -4,12 +4,7 @@ isScreen = false
 plugin = "keyboard"
 summary = "Stops keyboard input monitoring."
 description = """
-Stops the keyboard input monitoring system. Held keys are released first, through the "up"
-handlers with cancelled set to true; then the keydown and keyup listeners are removed. Keyboard
-events are no longer tracked until startKeyboard() is called again: while stopped, inKey()
-reports no keys, and handlers stay registered but are not called. Calling inKey(), registering a
-handler, or setting action keys does not restart it. An input() prompt keeps reading keys while
-the keyboard is stopped.
+Stops keyboard tracking until startKeyboard(). Held keys are released through the 'up' callbacks, with cancelled set to true. While stopped, inKey() reports no keys, and callbacks stay registered but are not called. inKey(), onKey(), and setActionKeys() do not restart it. An input() prompt still reads keys.
 """
 example = """
 $.screen( "300x200" );

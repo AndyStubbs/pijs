@@ -3,11 +3,7 @@ category = "text"
 isScreen = true
 summary = "Sets the scale factor for printed text."
 description = """
-Sets the horizontal and vertical scale factors for bitmap font rendering. This allows you to
-make text larger or smaller. Scale values must be finite numbers greater than 0 (INVALID_SIZE).
-
-Use padX and padY to add extra padding between characters when they print to the screen. Padding
-must be an integer of 0 or more (INVALID_PADDING). Omitted parameters keep their current values.
+Sets the horizontal and vertical scale of printed bitmap text, and optional extra space between characters. Omitted values keep their current setting.
 """
 example = """
 $.screen( "320x200" );

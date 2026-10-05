@@ -4,7 +4,7 @@ isScreen = false
 plugin = "sound-advanced"
 summary = "Downloads a recording as a file."
 description = """
-Requires the sound-advanced plugin. Starts a browser download of a Blob, usually the WAV file returned by stopRecording(), under the given file name. Browsers may ask the user where to save the file, or block downloads that do not follow a user action, so call it from an input handler.
+Downloads a file, usually the WAV returned by stopRecording(), under the given name. Call it from an input handler, since browsers may block a download that does not follow a user action.
 """
 example = """
 $.screen( "300x200" );

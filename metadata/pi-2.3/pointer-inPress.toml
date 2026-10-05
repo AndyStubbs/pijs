@@ -4,16 +4,9 @@ isScreen = true
 plugin = "pointer"
 summary = "Gets the current press state (mouse or touch) and starts tracking if needed."
 description = """
-Returns the press of the primary pointer, from whichever input was used last: the mouse data, or
-the primary touch. A touch is primary when it starts with no other touch down, and stays primary
-until it lifts; the other touches are listed in touches but do not move the press. After the
-primary touch lifts, the press keeps its release, with buttons 0 and action 'up', until the next
-primary touch.
+Returns the press of the primary pointer, from whichever was used last: the mouse, or the primary touch. A touch is primary when it starts with no other touch down, and stays primary until it lifts. Returns null before the first event, and while the input of the latest press is stopped.
 
-The data is frozen, and it is the same object the event's onPress handlers received; every read
-returns it until the next mouse or touch event. Returns null before the first event, and while the
-input the latest press came from is stopped. Mouse and touch tracking start on the first read
-unless stopped.
+The first call starts mouse and touch tracking unless they were stopped.
 
 Requires an onscreen screen.
 """
